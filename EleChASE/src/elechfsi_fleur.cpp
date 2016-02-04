@@ -18,6 +18,8 @@ DistMatrix<F>* fleur_matrix(int n, F* buffer)
 
   F* localbuffer = mat->Buffer(); // this is the local buffer of the matrix
 
+  const int buffersize1 = mat->LocalWidth();
+  const int buffersize2 = mat->LocalHeight();
   int local_index = 0;
   int fleur_index = 0;
 
@@ -116,7 +118,7 @@ extern "C"
     //HermitianEig(UPPER, *(gd->H_mat), eigenval, evec, ASCENDING, subset );
     chase(UPPER, *(gd->H_mat), evec, eigenval, no_of_eigenpairs,
     	  nex, deg, gd->degrees, tol, resid, mode, opt);
-
+    Trsm(LEFT,UPPER,NORMAL,NON_UNIT,F(1),*(gd->S_mat),evec); //added back-transform
     //    Display( eigenval );
 
     delete[] resid; // Or maybe store it in gd.
@@ -155,11 +157,17 @@ extern "C"
     int local_index = 0;
 
     // Display(gd->eigenvalues);
-    // Display(gd->eigenvectors);
+    //cout<< "From fl_el_eigenvectors V0.4";
+    //Display(*gd->eigenvectors);
 
     for (int i = 0; i < neig; i++)
       {
         //Copy eigenvalue
+        int pe = mpi::Rank(gd->mpi_comm);
+        int in = i*mpi::Size(gd->mpi_comm)+pe;
+
+	// cerr<< "PE:" << pe << ":" << i << "->" << in << endl;
+        //cout<< "PE:" << pe << ":" <<gd->eigenvalues->LocalWidth()<< ":" <<gd->eigenvalues->LocalHeight()<<"\n"; 
         eig[i] = eigbuf[i];
 
         //Copy eigenvector
