@@ -1,5 +1,5 @@
-#ifndef OMP_CHFSI
-#define OMP_CHFSI
+#ifndef CHASE_CHASE_H
+#define CHASE_CHASE_H
 
 #include <iostream>
 using namespace std;
@@ -12,23 +12,26 @@ using namespace std;
 #include <iomanip>
 #include <fstream>
 #include <assert.h>
-#include <mkl.h>
-#include <mkl_vsl.h>
 #include <omp.h>
 #include <cstring>
+#include <random>
 
-#define OMP_RANDOM 1
-#define OMP_APPROX 0
+//#include <mkl_cblas.h>
+//#include <mkl_lapacke.h>
+#include <mkl.h>
 
-#define OMP_NO_OPT       0
-#define OMP_OPT          1
 
-#define OMP_CPU      0
-#define OMP_GPU      1
-#define OMP_XEON_PHI 2
+#define CHASE_MODE_TYPE char
+#define CHASE_MODE_RANDOM CHASE_MODE_TYPE('R')
+#define CHASE_MODE_APPROX CHASE_MODE_TYPE('A')
+
+#define CHASE_OPT_TYPE char
+#define CHASE_OPT_NONE CHASE_OPT_TYPE('N')
+#define CHASE_OPT_SINGLE CHASE_OPT_TYPE('S')
 
 static bool omp_stat = true;
-static int  omp_iteration;
+static int  omp_iteration = 0;
+static int  chase_filteredVecs = 0;
 static double omp_time[10] = {0.0};
 static int  omp_degmax = 50;
 static int  omp_degrees_len;
@@ -41,13 +44,16 @@ double minValue(double *v, int N);
 double maxValue(double *v, int N);
 int sortComp (const void * a, const void * b);
 void applyPerm2vect(int** perm, int n, int shift, MKL_Complex16* tmp, int N, MKL_Complex16* V);
-void swapEigPair(int i, int j, MKL_Complex16* ztmp, int N, MKL_Complex16* V, double *Lambda, int* P, int int_opt);
+void swapEigPair(int i, int j, MKL_Complex16* ztmp, int N, MKL_Complex16* V, double *Lambda, int* P, const CHASE_OPT_TYPE int_opt);
 void applyPerm2eigPair(int** perm, int n, MKL_Complex16* ztmp, int N, MKL_Complex16* V, double *Lambda);
 
 void get_iteration(int* iteration);
 void get_time(double* time);
+void get_filteredVecs(int* iterations);
 
-void chfsi(MKL_Complex16* const H, int N, MKL_Complex16* V, MKL_Complex16* W, double* ritzv, int nev, const int nex,  const int deg, const double tol, const int mode, const int opt, const int arch);
+void chfsi(MKL_Complex16* const H, int N, MKL_Complex16* V, MKL_Complex16* W,
+           double* ritzv, int nev, const int nex,  const int deg,
+           const double tol, const CHASE_MODE_TYPE mode, const CHASE_OPT_TYPE opt);
 
 #define BGN_TOTAL   0
 #define BGN_LANCZOS 1
@@ -72,4 +78,4 @@ void chfsi(MKL_Complex16* const H, int N, MKL_Complex16* V, MKL_Complex16* W, do
 #define RHO 0
 #define SP  1
 
-#endif  // OMP_CHFSI
+#endif  // CHASE_CHASE_H
