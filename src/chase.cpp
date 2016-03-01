@@ -31,147 +31,96 @@ void QR( int N, int nevex, MKL_Complex16 *W, MKL_Complex16 *tau )
 
 
 
-void RR( int N, int block, int blk, MKL_Complex16 *H, MKL_Complex16 *W, MKL_Complex16 *V,
-         double *Lambda, double abstol, MKL_Complex16* zmem, int lzmem, double *dmem, int ldmem, int *imem, int limem)
+void RR( int N, int block,  MKL_Complex16 *H, MKL_Complex16 *W, MKL_Complex16 *V,
+         double *Lambda)
 {
+  omp_time[BGN_RR] = omp_get_wtime(); 
+  MKL_Complex16 * A = new MKL_Complex16[block*block]; // For LAPACK.
+  MKL_Complex16 * X = new MKL_Complex16[block*block]; // For LAPACK.
 
-  MKL_Complex16 * A = new MKL_Complex16[blk*blk]; // For LAPACK.
-  MKL_Complex16 * X = new MKL_Complex16[blk*blk]; // For LAPACK.
+  int *isuppz = new int[2*block];
 
-  int *isuppz = new int[2*blk];
+  MKL_Complex16 alpha = MKL_Complex16 (1.0, 0.0);
+  MKL_Complex16 beta  = MKL_Complex16 (0.0, 0.0);
 
-      // [W, ~ ] = qr(W);
-  //
-    //ZGEQRF(&N, &blk, W, &N, tau, zmem, &lzmem, &INFO);
-    //ZUNGQR(&N, &blk, &blk, W, &N, tau, zmem, &lzmem, &INFO);
+  // V <- H*V
+  cblas_zgemm(
+    CblasColMajor,
+    CblasNoTrans,
+    CblasNoTrans,
+    N,
+    block,
+    N,
+    &alpha,
+    H,
+    N,
+    W,
+    N,
+    &beta,
+    V,
+    N
+    );
 
-    MKL_Complex16 alpha = MKL_Complex16 (1.0, 0.0);
-    MKL_Complex16 beta  = MKL_Complex16 (0.0, 0.0);
+  // A <- W * V
+  cblas_zgemm(
+    CblasColMajor,
+    CblasConjTrans,
+    CblasNoTrans,
+    block,
+    block,
+    N,
+    &alpha,
+    W,
+    N,
+    V,
+    N,
+    &beta,
+    A,
+    block
+    );
 
-#define cblas_layout CblasColMajor
+  int numeigs = 0;
+  LAPACKE_zheevr(
+    LAPACK_COL_MAJOR,
+    'V',
+    'A',
+    'U',
+    block,
+    A,
+    block,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    dlamch_( "S" ),
+    &numeigs,
+    Lambda,
+    X,
+    block,
+    isuppz
+    );
 
-    ZGEMM("N", "N", &N, &block, &N, &alpha, (const MKL_Complex16*)H, &N,
-          (const MKL_Complex16*)(W), &N, &beta, V, &N);
+  cblas_zgemm(
+    CblasColMajor,
+    CblasNoTrans,
+    CblasNoTrans,
+    N,
+    block,
+    block,
+    &alpha,
+    W,
+    N,
+    X,
+    block,
+    &beta,
+    V,
+    N
+    );
 
-    //     W' *(     )
-    ZGEMM("C", "N", &block, &block, &N, &alpha,
-          (const MKL_Complex16*)(W), &N, (const MKL_Complex16*)(V), &N,
-          &beta, A, &blk);
-/*
-    // V <- H*V
-    cblas_zgemm(
-      cblas_layout,
-      CblasNoTrans,
-      CblasNoTrans,
-      N,
-      block,
-      N,
-      &alpha,
-      H,
-      N,
-      W,
-      N,
-      &beta,
-      V,
-      N
-      );
-
-    // A <- W * V
-    cblas_zgemm(
-      cblas_layout,
-      CblasConjTrans,
-      CblasNoTrans,
-      block,
-      block,
-      N,
-      &alpha,
-      W,
-      N,
-      V,
-      N,
-      &beta,
-      A,
-      blk
-      );
-*/
-    /*
-    int numeigs = 0;
-    LAPACKE_zheevr(
-      LAPACK_COL_MAJOR,
-      'V',
-      'A',
-      'U',
-      block,
-      A,
-      blk,
-      NULL,
-      NULL,
-      NULL,
-      NULL,
-      dlamch_( "S" ),
-      &numeigs,
-      Lambda,
-      X,
-      blk,
-      isuppz
-      );
-    */
-
-    int notneeded;
-    int INFO;
-    zheevr_("V", "A", "U", &block, A, &blk,
-            NULL, NULL, NULL, NULL, &abstol, &notneeded, Lambda,
-            X, &blk, isuppz, zmem, &lzmem, dmem, &ldmem, imem, &limem, &INFO);
-
-
-    /*
-    cblas_zgemm(
-      cblas_layout,
-      CblasNoTrans,
-      CblasNoTrans,
-      N,
-      block,
-      block,
-      &alpha,
-      W,
-      N,
-      X,
-      blk,
-      &beta,
-      V,
-      N
-      );
-    */
-    
-    // W = W*Q;
-    ZGEMM("N", "N", &N, &block, &block, &alpha,
-          (const MKL_Complex16*)(W), &N, (const MKL_Complex16*)X, &blk,
-          &beta, V, &N );
-
-    delete[] A;
-    delete[] X;
-    delete[] isuppz;
-    
-    /*
-    // G = W' * H * W;
-    //          H * W
-    ZGEMM("N", "N", &N, &block, &N, &alpha, (const MKL_Complex16*)H, &N,
-          (const MKL_Complex16*)(W + N*converged), &N, &beta, V + N*converged, &N);
-
-    //     W' *(     )
-    ZGEMM("C", "N", &block, &block, &N, &alpha,
-          (const MKL_Complex16*)(W + N*converged), &N, (const MKL_Complex16*)(V + N*converged), &N,
-          &beta, A, &blk);
-
-    zheevr_("V", "A", "U", &block, A, &blk,
-            NULL, NULL, NULL, NULL, &abstol, &notneeded, Lambda,
-            X, &blk, isuppz, zmem, &lzmem, dmem, &ldmem, imem, &limem, &INFO);
-
-    // W = W*Q;
-    ZGEMM("N", "N", &N, &block, &block, &alpha,
-          (const MKL_Complex16*)(W + N*converged), &N, (const MKL_Complex16*)X, &blk,
-          &beta, V + N*converged, &N );
-    */
+  delete[] A;
+  delete[] X;
+  delete[] isuppz;
+  omp_time[END_RR] += (omp_get_wtime() - omp_time[BGN_RR]);
 }
 
 void chfsi(MKL_Complex16* const H, int N, MKL_Complex16* V, MKL_Complex16* W, double* ritzv, int nev, const int nex, int deg, const double tol, const CHASE_MODE_TYPE int_mode, const CHASE_OPT_TYPE int_opt)
@@ -180,6 +129,8 @@ void chfsi(MKL_Complex16* const H, int N, MKL_Complex16* V, MKL_Complex16* W, do
   MKL_Complex16 *swap = NULL; // Just a pointer for swapping V and W.
   MKL_Complex16 *tau = NULL; // Auxiliary vector needed for LAPACK functions.
   MKL_Complex16 alpha, beta; // Complex numbers needed for LAPACK functions.
+  alpha = MKL_Complex16 (1.0, 0.0);
+  beta  = MKL_Complex16 (0.0, 0.0);
 
   double *Lambda = NULL; // Pointer to the first element containing a not yet converged eigenvalue.
   double* resid = new double[nev]; // Residuals.
@@ -206,6 +157,7 @@ void chfsi(MKL_Complex16* const H, int N, MKL_Complex16* V, MKL_Complex16* W, do
   for(i = 0 ; i < 2 ; ++i) dopt[i] = new double[nev];
 
   //------------------------COMPUTING-THE-OPTIMAL-WORKSPACES-------------------------------
+  /*
   double abstol = dlamch_( "S" );
 
   MKL_Complex16 * A = new MKL_Complex16[blk*blk]; // For LAPACK.
@@ -241,16 +193,17 @@ void chfsi(MKL_Complex16* const H, int N, MKL_Complex16* V, MKL_Complex16* W, do
   zmem = new MKL_Complex16[lzmem];
   dmem = new double[ldmem];
   imem = new int[limem];
+  */
   //---------------------------------------------------------------------------------------
 
   //-----------------------GENERATE-A-RANDOM-VECTOR----------------------------------------
   // Create randomVector from Gaussian distribution with parameters 0,1. Needed for lanczos().
   MKL_Complex16 *randomVector = new MKL_Complex16[N];
   /*
-  VSLStreamStatePtr stream;
-  vslNewStream(&stream, VSL_BRNG_MT19937, rand()%1000+100);
-  vdRngGaussian(VSL_RNG_METHOD_GAUSSIAN_ICDF, stream, 2*N, (double*)randomVector, 0.0, 1.0);
-  vslDeleteStream(&stream);
+    VSLStreamStatePtr stream;
+    vslNewStream(&stream, VSL_BRNG_MT19937, rand()%1000+100);
+    vdRngGaussian(VSL_RNG_METHOD_GAUSSIAN_ICDF, stream, 2*N, (double*)randomVector, 0.0, 1.0);
+    vslDeleteStream(&stream);
   */
   std::mt19937 gen(2342.0); // TODO
   std::normal_distribution<> d;
@@ -259,32 +212,22 @@ void chfsi(MKL_Complex16* const H, int N, MKL_Complex16* V, MKL_Complex16* W, do
   {
     randomVector[i] = std::complex<double>( d(gen), d(gen) );
   }
-
   //---------------------------------------------------------------------------------------
 
   int converged = 0; // Number of converged eigenpairs.
   int iteration = 0; // Current iteration.
-
-  // Needed for the filter().
-  int omp_num_threads;
-  int omp_rank;
-  int omp_start;
-  int omp_work;
 
   // To store the approximations obtained from lanczos().
   double lowerb, upperb, lambda;
 
   omp_time[END_FILTER] = 0.0;
   omp_time[END_RR] = 0.0;
-  omp_time[END_CONV] =0.0;
+  omp_time[END_CONV] = 0.0;
 
-  omp_time[BGN_TOTAL] = omp_get_wtime(); //*********************************************TIME
+  omp_time[BGN_TOTAL] = omp_get_wtime();
 
-  omp_time[BGN_LANCZOS] = omp_get_wtime(); //*******************************************TIME
+  omp_time[BGN_LANCZOS] = omp_get_wtime();
 
-  // OUTPUT: (APPROX) upperb; (RANDOM) ritzv, upperb.
-  // ritzv  ... Vector - approximations of lambda_1,...,lambda_{nex+nev}.
-  // upperb ... Upper bound for the interval.
   lanczos(H, randomVector, N, blk, omp_lanczos, tol,
           int_mode == CHASE_MODE_RANDOM,
           (int_mode == CHASE_MODE_RANDOM) ? ritzv : NULL, &upperb);
@@ -435,51 +378,11 @@ void chfsi(MKL_Complex16* const H, int N, MKL_Complex16* V, MKL_Complex16* W, do
 
     }
 
-    omp_time[BGN_RR] = omp_get_wtime(); //**************************************************TIME
-
-    //-------------------------------------RAYLEIGH-RITZ----------------------------------------
+    //----------------------------------  QR  -------------------------------
     QR( N, blk, W, V + N*converged);
-    /*
-    // [W, ~ ] = qr(W);
-    tau = V + N*converged;
-    ZGEQRF(&N, &blk, W, &N, tau, zmem, &lzmem, &INFO);
-    ZUNGQR(&N, &blk, &blk, W, &N, tau, zmem, &lzmem, &INFO);
-    */
-
-    alpha = MKL_Complex16 (1.0, 0.0);
-    beta  = MKL_Complex16 (0.0, 0.0);
-
-
-    RR( N, block, blk,H, W + N*converged, V + N*converged, Lambda,
-        abstol, zmem, lzmem, dmem, ldmem, imem, limem);
-    /*
-
-    // G = W' * H * W;
-    //          H * W
-    alpha = MKL_Complex16 (1.0, 0.0);
-    beta  = MKL_Complex16 (0.0, 0.0);
-    ZGEMM("N", "N", &N, &block, &N, &alpha, (const MKL_Complex16*)H, &N,
-          (const MKL_Complex16*)(W + N*converged), &N, &beta, V + N*converged, &N);
-
-    //     W' *(     )
-    ZGEMM("C", "N", &block, &block, &N, &alpha,
-          (const MKL_Complex16*)(W + N*converged), &N, (const MKL_Complex16*)(V + N*converged), &N,
-          &beta, A, &blk);
-
-    zheevr_("V", "A", "U", &block, A, &blk,
-            NULL, NULL, NULL, NULL, &abstol, &notneeded, Lambda,
-            X, &blk, isuppz, zmem, &lzmem, dmem, &ldmem, imem, &limem, &INFO);
-
-    // W = W*Q;
-    ZGEMM("N", "N", &N, &block, &block, &alpha,
-          (const MKL_Complex16*)(W + N*converged), &N, (const MKL_Complex16*)X, &blk,
-          &beta, V + N*converged, &N );
-    */
-
-
+    //-------------------------------------RAYLEIGH-RITZ------------------------
+    RR( N, block, H, W + N*converged, V + N*converged, Lambda);
     //------------------------------------------------------------------------------------------
-
-    omp_time[END_RR] += (omp_get_wtime() - omp_time[BGN_RR]); //****************************TIME
 
     omp_time[BGN_CONV] = omp_get_wtime(); //************************************************TIME
 
@@ -558,11 +461,12 @@ void chfsi(MKL_Complex16* const H, int N, MKL_Complex16* V, MKL_Complex16* W, do
   for(i = 0 ; i < 5 ; ++i) delete[] iopt[i];
   for(i = 0 ; i < 2 ; ++i) delete[] dopt[i];
 
+/*
   delete[] zmem; delete[] dmem; delete[] imem;
   delete[] isuppz; delete[] resid;
   delete[] A; delete[] X;
+*/
 
-  return;
 }
 
 // Find the minimal value stored in vector v of dimension N.
