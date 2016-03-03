@@ -232,18 +232,19 @@ int main(int argc, char* argv[])
     TR.registerValue( i, "iterations", iterations );
 
     //-------------------------- Calculate Residuals ---------------------------
-    memcpy(V, W, sizeof(MKL_Complex16)*N*nev);
+    memcpy(W, V, sizeof(MKL_Complex16)*N*nev);
     MKL_Complex16 one(1.0);
     MKL_Complex16 zero(0.0);
     MKL_Complex16 eigval;
-    const int* iOne = new int(1);
+    int iOne = 1;
     for(int ttz = 0; ttz<nev;ttz++){
       eigval = -1.0 * Lambda[ttz];
-      zscal(&N,&eigval,W+ttz*N, iOne);
+      zscal(&N,&eigval,W+ttz*N, &iOne);
     }
     zhemm("L","L", &N, &nev, &one, H, &N, V, &N, &one, W, &N);
     double norm = zlange("M", &N, &nev, W, &N, NULL);
     TR.registerValue( i, "resd", norm);
+
 
     // Check eigenvector orthogonality
     MKL_Complex16 *unity = new MKL_Complex16[nev*nev];
@@ -259,6 +260,12 @@ int main(int argc, char* argv[])
     double norm2 = zlange("M", &nev, &nev, unity, &nev, NULL);
     TR.registerValue( i, "orth", norm2);
 
+    delete[] unity;
+
+    std::cout << "resd: " << norm << "\torth:" << norm2 << std::endl;
+
+    if( !std::is_sorted( Lambda, Lambda+nev ) )
+      std::cout << "not sorted"<< std::endl;
   } // for(int i = bgn; i <= end; ++i)
 
 

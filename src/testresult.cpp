@@ -145,7 +145,7 @@ TestResult::TestResult( bool compare_, std::string name_,
     }
     catch( std::exception &e )
     {
-      std::cout << "File not found, writing" << std::endl
+      std::cout << ANSI_BG_YELLOW << "File not found, writing" << ANSI_RESET <<std::endl
                 << "Consider creating the test profile for the whole sequence" << std::endl;
 
       save();
