@@ -5,7 +5,7 @@
 using namespace std;
 
 #include <complex>
-#define MKL_Complex16 complex<double>
+#define MKL_Complex16 std::complex<double>
 
 #include <mkl.h>
 

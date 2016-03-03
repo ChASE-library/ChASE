@@ -1,14 +1,13 @@
-#ifndef OMP_FILTER
-#define OMP_FILTER
-
-#include <iostream>
-using namespace std;
+#ifndef CHASE_FILTER_H
+#define CHASE_FILTER_H
 
 #include <complex>
-#define MKL_Complex16 complex<double>
 
-#include <mkl.h>
-#include <omp.h>
+#ifndef MKL_Complex16
+#define MKL_Complex16 std::complex<double>
+#endif
+
+#include <mkl_cblas.h>
 
 void filter(MKL_Complex16 *A, MKL_Complex16 *x, int n, int m,
             int deg, double lambda_1, double lower, double upper,
@@ -18,4 +17,4 @@ void filterModified(MKL_Complex16 *A, MKL_Complex16 *x, int n, int m, int nev,
                     int M, int *deg, double lambda_1, double lower, double upper,
                     MKL_Complex16 *y, int block);
 
-#endif // OMP_FILTER
+#endif // CHASE_FILTER_H

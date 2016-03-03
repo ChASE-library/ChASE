@@ -5,7 +5,10 @@
 using namespace std;
 
 #include <complex>
-#define MKL_Complex16 complex<double>
+
+#ifndef MKL_Complex16
+#define MKL_Complex16 std::complex<double>
+#endif
 
 #include <cstdlib>
 #include <string>
@@ -52,7 +55,7 @@ void get_time(double* time);
 void get_filteredVecs(int* iterations);
 
 void chfsi(MKL_Complex16* const H, int N, MKL_Complex16* V, MKL_Complex16* W,
-           double* ritzv, int nev, const int nex,  const int deg,
+           double* ritzv, int nev, const int nex,  const int deg, int* const degrees,
            const double tol, const CHASE_MODE_TYPE mode, const CHASE_OPT_TYPE opt);
 
 #define BGN_TOTAL   0

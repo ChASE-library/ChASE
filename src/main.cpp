@@ -155,6 +155,7 @@ int main(int argc, char* argv[])
   MKL_Complex16 *W = new MKL_Complex16[N*nevex];
   // eigenvalues
   double * Lambda = new double[nevex];
+  int *degrees  = new int[nevex];
 
   //----------------------------------------------------------------------------
   //----------------------------------------------------------------------------
@@ -219,7 +220,7 @@ int main(int argc, char* argv[])
 
     //------------------------------SOLVE-CURRENT-PROBLEM-----------------------
     readMatrix( H, path_in, i, ".bin", N*N);
-    chfsi(H, N, V, W, Lambda, nev, nex, deg, tol, mode[0], opt[0]);
+    chfsi(H, N, V, W, Lambda, nev, nex, deg, degrees, tol, mode[0], opt[0]);
     //--------------------------------------------------------------------------
 
     int iterations;

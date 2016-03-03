@@ -1,10 +1,8 @@
 #include "../include/filter.h"
-#include<iostream>
-using namespace std;
 
-void filter(MKL_Complex16 *A, MKL_Complex16 *x, int n, int m,
+void filter(MKL_Complex16 *A, MKL_Complex16 *V, int n, int m,
             int deg, double lambda_1, double lower, double upper,
-            MKL_Complex16 *y)
+            MKL_Complex16 *W)
 {
   MKL_Complex16 *tmp = NULL;
   MKL_Complex16 alpha;
@@ -16,50 +14,63 @@ void filter(MKL_Complex16 *A, MKL_Complex16 *x, int n, int m,
   double sigma_new;
   int i = 0;
 
-  //--------------------------------- A = A-cI -------------------------------------
+  //--------------------------------- A = A-cI ---------------------------------
   for( i = 0 ; i < n ; ++i )
     A[ i*n + i ] -= c;
-  //--------------------------------------------------------------------------------
 
-  //---------------------------- y = alpha*(A-cI)*x --------------------------------
+  //---------------------------- W = alpha*(A-cI)*V ----------------------------
   alpha = MKL_Complex16 (sigma_1 / e, 0.0);
   beta = MKL_Complex16 (0.0, 0.0);
 
-  ZGEMM("N", "N", &n, &m, &n, &alpha, (const MKL_Complex16*)(A), &n,
-        (const MKL_Complex16*)x, &n, &beta, y, &n);
-  //--------------------------------------------------------------------------------
+  cblas_zgemm(
+    CblasColMajor, CblasNoTrans, CblasNoTrans,
+    n, m, n,
+    &alpha,
+    A, n,
+    V, n,
+    &beta,
+    W, n
+    );
+
+//  ZGEMM("N", "N", &n, &m, &n, &alpha, (const MKL_Complex16*)(A), &n,
+//        (const MKL_Complex16*)V, &n, &beta, W, &n);
+
 
   for(i = 2; i <= deg; ++i)
     {
       sigma_new = 1.0 / ( 2.0/sigma_1 - sigma );
 
-      //---------------------- x = alpha(A-cI)y + beta*x ---------------------------
+      //---------------------- V = alpha(A-cI)W + beta*V -----------------------
       alpha = MKL_Complex16 (2.0*sigma_new / e, 0.0);
       beta = MKL_Complex16 (-sigma * sigma_new, 0.0);
 
-      ZGEMM("N", "N", &n, &m, &n, &alpha, (const MKL_Complex16*)(A), &n,
-            (const MKL_Complex16*)y, &n, &beta, x, &n);
-      //----------------------------------------------------------------------------
+      cblas_zgemm(
+        CblasColMajor, CblasNoTrans, CblasNoTrans,
+        n, m, n,
+        &alpha,
+        A, n,
+        W, n,
+        &beta,
+        V, n
+        );
 
-      tmp = x;
-      x   = y;
-      y   = tmp;
+      tmp = V;
+      V   = W;
+      W   = tmp;
 
       sigma = sigma_new;
     } // for(i = 2; i <= deg; ++i)
 
-  //-----------------------------------RESTORE-A------------------------------------
+//--------------------------------- A = A+cI ---------------------------------
   for(i = 0 ; i < n ; ++i)
     A[i*n + i] += c;
-  //--------------------------------------------------------------------------------
 
-  return;
 }
 
 
-void filterModified(MKL_Complex16 *A, MKL_Complex16 *x, int n, int m, int nev,
+void filterModified(MKL_Complex16 *A, MKL_Complex16 *V, int n, int m, int nev,
                     int M, int *deg, double lambda_1, double lower, double upper,
-                    MKL_Complex16 *y, int block)
+                    MKL_Complex16 *W, int block)
 {
   MKL_Complex16 *tmp = NULL;
   MKL_Complex16 alpha;
@@ -72,18 +83,23 @@ void filterModified(MKL_Complex16 *A, MKL_Complex16 *x, int n, int m, int nev,
   int i, j = 0;
   int opt = 0;
 
-  //----------------------------------- A = A-cI ------------------------------------
+  //----------------------------------- A = A-cI -------------------------------
   for( i = 0 ; i < n ; ++i )
     A[ i*n + i ] -= c;
-  //---------------------------------------------------------------------------------
 
-  //------------------------------- y = alpha*(A-cI)*x ------------------------------
+  //------------------------------- Y = alpha*(A-cI)*V -------------------------
   alpha = MKL_Complex16 (sigma_1 / e, 0.0);
   beta = MKL_Complex16 (0.0, 0.0);
 
-  ZGEMM("N", "N", &n, &m, &n, &alpha, (const MKL_Complex16*)(A), &n,
-        (const MKL_Complex16*)x, &n, &beta, y, &n);
-  //---------------------------------------------------------------------------------
+  cblas_zgemm(
+    CblasColMajor, CblasNoTrans, CblasNoTrans,
+    n, m, n,
+    &alpha,
+    A, n,
+    V, n,
+    &beta,
+    W, n
+    );
 
    while(j < block && deg[j++] == 1)
       ++opt;
@@ -95,21 +111,26 @@ void filterModified(MKL_Complex16 *A, MKL_Complex16 *x, int n, int m, int nev,
     {
       sigma_new = 1.0 / ( 2.0/sigma_1 - sigma );
 
-      //----------------------- x = alpha(A-cI)y + beta*x ----------------------------
+      //----------------------- V = alpha(A-cI)W + beta*V ----------------------
       alpha = MKL_Complex16 (2.0*sigma_new / e, 0.0);
       beta = MKL_Complex16 (-sigma * sigma_new, 0.0);
 
-      ZGEMM("N", "N", &n, &m, &n, &alpha, (const MKL_Complex16*)(A), &n,
-            (const MKL_Complex16*)y, &n, &beta, x, &n);
-      //------------------------------------------------------------------------------
+      cblas_zgemm(
+        CblasColMajor, CblasNoTrans, CblasNoTrans,
+        n, m, n,
+        &alpha,
+        A, n,
+        W, n,
+        &beta,
+        V, n
+        );
 
       sigma = sigma_new;
 
-      tmp = x;
-      x   = y;
-      y   = tmp;
+      tmp = V;
+      V   = W;
+      W   = tmp;
 
-      
       m += opt;
       while(j < block && deg[j++] == i)
          ++opt;
@@ -118,10 +139,7 @@ void filterModified(MKL_Complex16 *A, MKL_Complex16 *x, int n, int m, int nev,
 
     } // for(i = 2; i <= M; ++i)
 
-  //----------------------------------RESTORE-A---------------------------------------
+  //----------------------------------RESTORE-A---------------------------------
   for(i = 0 ; i < n ; ++i)
     A[i*n + i] += c;
-  //----------------------------------------------------------------------------------
-
-  return;
 }

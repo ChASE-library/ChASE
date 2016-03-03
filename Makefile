@@ -26,3 +26,9 @@ obj/%.o: src/%.cpp
 
 clean:
 	rm -f obj/* main.x
+
+test: main
+	./main.x --n 3893 --nev 256 --path_in ~/../slai00/MATrix/NaCl/size4k/bin/ --path_eigp ~/../slai00/MATrix/NaCl/size4k/direct-solutions/ --name "NaCl"
+
+test-debug: test
+	gdb -ex r --args ./main.x --n 3893 --nev 256 --path_in ~/../slai00/MATrix/NaCl/size4k/bin/ --path_eigp ~/../slai00/MATrix/NaCl/size4k/direct-solutions/ --name "NaCl"
