@@ -2,103 +2,39 @@
 
 void lanczos(MKL_Complex16 *B, MKL_Complex16 *v, int n, int blk, int m, double tol, int ctrl, double *ritzv, double *bound)
 {
+
+
+  int M = ( ctrl == 1 ) ? 4*blk : m;
+
   MKL_Complex16 *v0 = NULL; // Auxiliary vector.
 
-  double *TeValues  = NULL; // Eigenvalues  of the tridiagonal matrix T.
-  MKL_Complex16 *TeVectors = NULL; // Eigenvectors of the tridiagonal matrix T.
-  MKL_Complex16 *t = NULL; // Used for reorthogonalization.
+ // Eigenvalues  of the tridiagonal matrix T.
+  double *TeValues  =   TeValues = new double[M];
+ // Eigenvectors of the tridiagonal matrix T.
+  MKL_Complex16 *TeVectors = new MKL_Complex16[m*m];
 
-  double *d = NULL; // Contains the     diagonal elements of the tridiagonal matrix T.
-  double *e = NULL; // Contains the off-diagonal elements of the tridiagonal matrix T.
-  double *tmp_d = NULL; // Temporary storage for the array d.
-  double *tmp_e = NULL; // Temporary storage for the array e.
-  double *swap  = NULL; // Used for saving the tridiagonal matrix T.
+ // Contains the     diagonal elements of the tridiagonal matrix T.
+  double *d = new double[2*m];
+// Contains the off-diagonal elements of the tridiagonal matrix T.
+  double *e = new double[2*m];
 
   int tryrac   = 1; // Input parameter for dstemr_.
-  MKL_Complex16 *zwork = NULL;
-
-  int   *isuppz = NULL; // Input parameter for dstemr_. Not used (but needed).
-  double vl, vu; // Input parameter for dstemr_. Not used (but needed).
-  int    il, iu; // Input parameter for dstemr_. Not used (but needed).
-
-  int lzwork;
-
   int notneeded_m; // Output parameter of dstemr_.
+  int iONE = 1;
 
-  double Tnorm, tmp; // Used for the computation of the bound.
-
-  MKL_Complex16 alpha, alpha2;
+  MKL_Complex16 alpha;
   MKL_Complex16 beta;
   double real_alpha = 0.0;
   double real_beta  = 0.0;
 
-  MKL_Complex16 *G     = NULL;
-
-  int iONE = 1;
-  int INFO = 0;
-
-  int M = ( ctrl == 1 ) ? 4*blk : m;
-
+  int   *isuppz = new int[2*M]; // Input parameter for dstemr_. Not used (but needed).
   MKL_Complex16 *V = new MKL_Complex16[n*M]; // Transformation matrix consisted of Lanczos vectors.
 
-  //  if( ctrl == 0)
-  TeVectors = new MKL_Complex16[m*m];
-
+  MKL_Complex16 *G     = NULL;
   if( ctrl == 1 )
   {
-    lzwork = n > 2*M ? n : 2*M;
     G = new MKL_Complex16[n*n];
-    zwork = new MKL_Complex16[lzwork];
   }
-  //----------------------COMPUTATION-OF-THE-OPTIMAL-WORKSPACES-----------------
-  double *dwork = new double[1]; // Input parameter for dstemr_.
-  int *iwork = new int[1]; // Input parameter for dstemr_.
-
-  /*
-    LAPACKE_dstemr(
-    LAPACK_COL_MAJOR,
-    "V",
-    "A",
-    M,
-    d,
-    e,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    notneeded_m,
-    TeValues,
-    TeVectors,
-    M,
-    M,
-    isuppz,
-    tryrac
-    );
-  */
-
-  int ldwork = -1, liwork = -1;
-  dstemr_( "V", "A", &M, d, e, &vl, &vu, &il, &iu,
-           &notneeded_m, TeValues, (double*)TeVectors, &M, &M,
-           isuppz, &iONE, dwork, &ldwork, iwork, &liwork, &INFO );
-
-
-
-  ldwork = dwork[0];
-  liwork = iwork[0];
-
-  delete[] dwork; delete[] iwork;
-
-  ldwork = ldwork > 24*M ? ldwork : 24*M;
-  dwork = new double[ldwork];
-
-  liwork = (liwork > 10*M) ? liwork : 10*M;
-  iwork = new int[liwork];
-
-  TeValues = new double[M];
-  d = new double[2*m];
-  e = new double[2*m];
-  isuppz = new int[2*M];
-  //----------------------------------------------------------------------------
 
   //------------------------------ alpha = v / ||v|| ---------------------------
   real_alpha = DZNRM2( &n, (const MKL_Complex16*)v, &iONE );
@@ -142,7 +78,6 @@ void lanczos(MKL_Complex16 *B, MKL_Complex16 *v, int n, int blk, int m, double t
     //------------------------------- v = alpha*v1 + v -----------------------
     alpha *= MKL_Complex16 (-1.0,0.0);
 
-
     ZAXPY( &n, &alpha, (const MKL_Complex16*)v1, &iONE, v, &iONE );
     //------------------------------------------------------------------------
 
@@ -172,67 +107,98 @@ void lanczos(MKL_Complex16 *B, MKL_Complex16 *v, int n, int blk, int m, double t
     k += 1;
     if( k == m ) // Compute the upper bound.
     {
+      char jobz;
       if( ctrl == 1 ) // RANDOM: Compute eigenvalues only.
-      {
-        DSTEMR( "N", "A", &k, d, e, &vl, &vu, &il, &iu,
-                &notneeded_m, TeValues, (double*)TeVectors, &M, &k,
-                isuppz, &tryrac, dwork, &ldwork, iwork, &liwork, &INFO );
-      }
-      else // APPROX: Compute eigenvalues and eigenvectors.
-      {
-        DSTEMR( "V", "A", &k, d, e, &vl, &vu, &il, &iu,
-                &notneeded_m, TeValues, (double*)TeVectors, &M, &k,
-                isuppz, &tryrac, dwork, &ldwork, iwork, &liwork, &INFO );
-      }
-      // Find maximal absolute value of all obtained eigenvalue approximations.
-      // They are sorted so the values furthest from 0 are first and last.
-      Tnorm = ( fabs( TeValues[0] ) > fabs( TeValues[k-1] ) )
-        ? fabs( TeValues[0] ) : fabs( TeValues[k-1] );
+        jobz = 'N';
+      else            // APPROX: eigenvectors
+        jobz = 'V';
+
+      LAPACKE_dstemr(
+        LAPACK_COL_MAJOR,
+        jobz,    'A',
+        k,
+        d,    e,
+        NULL,    NULL,    NULL,    NULL,
+        &notneeded_m,
+        TeValues,
+        (double*)TeVectors,
+        M,    k,
+        isuppz,    &tryrac
+        );
+
+      double Tnorm = std::max( fabs( TeValues[0] ) , fabs( TeValues[k-1] ) );
 
       if( ctrl == 1 ) // RANDOM
         *bound = Tnorm + fabs(real_beta);
-      else // APPROX
-      {
+      else   // APPROX
         *bound = Tnorm + fabs(real_beta)*fabs(((double*)TeVectors)[(k-1)*M+k-1]);
-
-        //return;
-        goto end;
-      }
 
     } // if( k == m )
 
   } // for(int k = 0; k < M ; )
 
-
-  std::cout << "here..." << std::endl;
+  if( ctrl == 1)
+  {
   std::memcpy( G, B, n*n * sizeof(MKL_Complex16) );
 
+  MKL_Complex16 *TAU = new MKL_Complex16[M];
   // [V, ~ ] = qr(V);
-  ZGEQRF( &n, &M, V, &n, (MKL_Complex16*)dwork, zwork, &lzwork, &INFO );
+  //ZGEQRF( &n, &M, V, &n, (MKL_Complex16*)dwork, zwork, &lzwork, &INFO );
+  LAPACKE_zgeqrf(
+    LAPACK_COL_MAJOR,
+    n, M,
+    V, n,
+    TAU );
   // G = V'B
-  ZUNMQR( "L", "C", &n, &n, &M, V, &n, (MKL_Complex16*)dwork,
-          G, &n, zwork, &lzwork, &INFO );
+  LAPACKE_zunmqr(
+    LAPACK_COL_MAJOR,
+    'L', 'C',
+    n, n, M,
+    V, n,
+    TAU,
+    G, n );
   // G = V'BV
-  ZUNMQR( "R", "N", &M, &n, &M, V, &n, (MKL_Complex16*)dwork,
-          G, &n, zwork, &lzwork, &INFO );
+  LAPACKE_zunmqr(
+    LAPACK_COL_MAJOR,
+    'R', 'N',
+    M, n, M,
+    V, n,
+    TAU,
+    G, n );
+
+  delete[] TAU;
 
   //---------------------------FIND-EIGENVALUES-OF-G----------------------------
-  il = 1; iu = blk;
-  ZHEEVR( "N", "I", "U", &M, G, &n, &vl, &vu, &il, &iu, &tol,
-          &notneeded_m, TeValues, TeVectors, &M, isuppz,
-          zwork, &lzwork, dwork, &ldwork, iwork, &liwork, &INFO );
+//  il = 1; iu = blk;
+//  ZHEEVR( "N", "I", "U", &M, G, &n, &vl, &vu, &il, &iu, &tol,
+//          &notneeded_m, TeValues, TeVectors, &M, isuppz,
+//          zwork, &lzwork, dwork, &ldwork, iwork, &liwork, &INFO );
+
+  LAPACKE_zheevr(
+    LAPACK_COL_MAJOR,
+    'N', 'I', 'U',
+    M,
+    G,    n,
+    NULL,    NULL,
+    1,    blk,
+    tol,
+    &notneeded_m,
+    TeValues,
+    TeVectors,
+    M,
+    isuppz );
+
   // Eigenvalues stored in TeValues.
   DCOPY( &blk, TeValues, &iONE, ritzv, &iONE); // Copy the eigenvalues to output ritzv.
   //----------------------------------------------------------------------------
+  }
 
-end:
 
   delete[] V;
-  delete[] dwork;
-  delete[] iwork;
+  //delete[] dwork;
+  //delete[] iwork;
 
   // depending on ctrl, may be NULL (no manual check needed - delete[] checks it)
-  delete[] zwork;
   delete[] G;
   delete[] TeVectors;
 

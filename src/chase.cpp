@@ -3,6 +3,182 @@
 #include "../include/filter.h"
 
 template <typename T>
+void swap_kj(int k, int j, T* array);
+
+void ColSwap( MKL_Complex16 *V, int N, int i, int j );
+
+int calc_degrees( int N, int unconverged,  double upperb, double lowerb, double tol,
+                  double *ritzv, double *resid, int *degrees,
+                  MKL_Complex16 *V, MKL_Complex16 *W);
+
+int locking( int N, int unconverged, double tol,
+             double *ritzv, double *resid, int *degrees,
+             MKL_Complex16 *V);
+
+void resd( int N, int unconverged,
+           double *ritzv, double *resid,
+           MKL_Complex16 *H, MKL_Complex16 *V, MKL_Complex16 *W);
+
+void QR( int N, int nevex, int converged, MKL_Complex16 *W, MKL_Complex16 *tau );
+
+void RR( int N, int block, double *Lambda,
+         MKL_Complex16 *H, MKL_Complex16 *V, MKL_Complex16 *W );
+
+// approx solution (or random vecs in V)
+void chfsi(MKL_Complex16* const H, int N, MKL_Complex16* V, MKL_Complex16* W,
+           double* ritzv_, int nev, const int nex, int deg_, int* const degrees_,
+           const double tol, const CHASE_MODE_TYPE int_mode,
+           const CHASE_OPT_TYPE int_opt)
+{
+  MKL_Complex16 *RESULT = W;
+
+  double* resid_ = new double[nev];
+
+  const int nevex = nev + nex; // Block size for the algorithm.
+  int unconverged = nev;
+
+  // To store the approximations obtained from lanczos().
+  double lowerb, upperb, lambda;
+
+  // store input values
+  int deg = deg_;
+  int * degrees = degrees_;
+  double * ritzv = ritzv_;
+  double * resid = resid_;
+
+  MKL_Complex16 *V_Full = V;
+  MKL_Complex16 *W_Full = W;
+
+  //------------------------ VALIDATION ------------------------------
+  if ( int_opt != CHASE_OPT_NONE )
+    assert(degrees != NULL);
+
+  //---------------------- Generate a random vector ----------------------------
+  MKL_Complex16 *randomVector = new MKL_Complex16[N];
+  std::mt19937 gen(2342.0); // TODO
+  std::normal_distribution<> d;
+
+  for( std::size_t i=0; i < N; ++i)
+  {
+    randomVector[i] = std::complex<double>( d(gen), d(gen) );
+  }
+
+
+  int locked = 0; // Number of converged eigenpairs.
+  int iteration = 0; // Current iteration.
+
+  // --------------------------------- LANCZOS ---------------------------------
+  lanczos(H, randomVector, N, nevex, omp_lanczos, tol,
+          int_mode == CHASE_MODE_RANDOM,
+          (int_mode == CHASE_MODE_RANDOM) ? ritzv : NULL, &upperb);
+  delete[] randomVector; // Not needed anymore.
+
+  while( unconverged > 0 && iteration < omp_maxiter)
+  {
+    lambda = * std::min_element( ritzv_, ritzv_ + nevex );
+    lowerb = * std::max_element( ritzv, ritzv + unconverged + nex );
+
+    assert( lowerb < upperb );
+
+    std::cout
+      << "iteration: " << iteration
+      << "\t" << lambda << " " << lowerb
+      << " " << unconverged
+      << std::endl;
+
+    //--------------------------------- FILTER ---------------------------------
+    if( int_opt == CHASE_OPT_NONE || iteration == 0 )
+    {
+      chase_filteredVecs += (unconverged+nex)*deg; // Number of filtered vectors
+
+      filter(H, V, N, unconverged+nex, deg, lambda, lowerb, upperb, W);
+    }
+    else
+    {
+      deg = calc_degrees(
+        N, unconverged, upperb, lowerb, tol, ritzv, resid, degrees, V, W );
+
+      for( auto i = 0 ; i < unconverged ; ++i)
+        chase_filteredVecs += degrees[i];
+      chase_filteredVecs += nex*deg;
+
+      filterModified(H, V, N, unconverged+nex, nev, deg, degrees,
+                     lambda, lowerb, upperb, W, unconverged);
+
+    }
+
+    if( deg % 2 == 0) // To 'fix' the situation if the filter swapped them.
+    {
+      MKL_Complex16 *swap = NULL; // Just a pointer for swapping V and W.
+      swap = V; V = W; W = swap;
+      swap = V_Full; V_Full = W_Full; W_Full = swap;
+    }
+    // Solution is now in W
+
+    //----------------------------------- QR -----------------------------------
+    QR( N, nevex, locked, W_Full, V);
+
+    //----------------------------- RAYLEIGH  RITZ -----------------------------
+    RR( N, unconverged+nex, ritzv, H, V, W );
+    // returns eigenvectors in V
+
+    //-------------------------------- RESIDUAL --------------------------------
+    resd( N, unconverged, ritzv, resid, H, V, W );
+    // overwrites W with H*V
+
+    // -------------------------------- LOCKING --------------------------------
+    int new_converged = locking(
+      N, unconverged, tol, ritzv, resid, degrees, V );
+
+    // ---------------------------- Update pointers ----------------------------
+    // Since we double buffer we need the entire locked portion in W and V
+    memcpy( W, V, N*new_converged*sizeof(MKL_Complex16) );
+
+    locked += new_converged;
+    unconverged -= new_converged;
+
+    W += N*new_converged;
+    V += N*new_converged;
+    resid += new_converged;
+    ritzv += new_converged;
+    degrees += new_converged;
+
+    iteration++;
+  } // while ( converged < nev && iteration < omp_maxiter )
+
+  //---------------------SORT-EIGENPAIRS-ACCORDING-TO-EIGENVALUES---------------
+  for( auto i = 0; i < nev-1; ++i )
+    for( auto j = i+1; j < nev; ++j )
+    {
+      if( ritzv_[i] > ritzv_[j] )
+      {
+        swap_kj( i, j, ritzv_ );
+        ColSwap( V_Full, N, i, j );
+      }
+    }
+
+  omp_iteration = iteration;
+  delete[] resid_;
+}
+
+void get_iteration(int* iteration)
+{
+  *iteration = omp_iteration;
+}
+
+
+void get_time(double* time)
+{
+  for (int i = 0; i < 5; ++i)
+    time[i] = omp_time[5+i];
+}
+
+void get_filteredVecs(int* filteredVecs)
+{
+  *filteredVecs = chase_filteredVecs;
+}
+
+template <typename T>
 void swap_kj(int k, int j, T* array)
 {
   T tmp = array[k];
@@ -19,8 +195,8 @@ void ColSwap( MKL_Complex16 *V, int N, int i, int j )
   delete[] ztmp;
 }
 
-int calc_degrees( int N, int unconverged,  double upperb, double lowerb, double tol,
-                  double *ritzv, double *resid, int *degrees,
+int calc_degrees( int N, int unconverged,  double upperb, double lowerb,
+                  double tol, double *ritzv, double *resid, int *degrees,
                   MKL_Complex16 *V, MKL_Complex16 *W)
 {
 
@@ -37,12 +213,15 @@ int calc_degrees( int N, int unconverged,  double upperb, double lowerb, double 
       );
 
     degrees[i] = ceil(fabs(log(resid[i]/(tol))/log(rho)));
-    degrees[i] = std::min( degrees[i] + omp_delta, omp_degmax );
+    degrees[i] = std::min(
+      degrees[i] + omp_delta,
+      omp_degmax
+      );
   }
 
-  for (int j = 0; j < unconverged-1; ++j)
-    for (int k = j; k < unconverged; ++k)
-      if (degrees[k] < degrees[j])
+  for( auto  j = 0; j < unconverged-1; ++j )
+    for( auto  k = j; k < unconverged; ++k )
+      if( degrees[k] < degrees[j] )
       {
         swap_kj(k, j, degrees);
         swap_kj(k, j, ritzv);
@@ -72,8 +251,7 @@ int locking( int N, int unconverged, double tol,
   return converged;
 }
 
-void resd( int N, int unconverged,
-          double *ritzv, double *resid,
+void resd( int N, int unconverged, double *ritzv, double *resid,
           MKL_Complex16 *H, MKL_Complex16 *V, MKL_Complex16 *W)
 {
   MKL_Complex16 alpha = MKL_Complex16 (1.0, 0.0);
@@ -121,7 +299,6 @@ void QR( int N, int nevex, int converged, MKL_Complex16 *W, MKL_Complex16 *tau )
     W,    N,
     tau
     );
-
 
  memcpy( W, saveW, N*converged*sizeof(MKL_Complex16) );
  delete[] saveW;
@@ -187,177 +364,4 @@ void RR( int N, int block, double *Lambda,
   delete[] X;
   delete[] isuppz;
   //omp_time[END_RR] += (omp_get_wtime() - omp_time[BGN_RR]);
-}
-
-// approx solution (or random vexs in V)
-void chfsi(MKL_Complex16* const H, int N, MKL_Complex16* V, MKL_Complex16* W,
-           double* ritzv_, int nev, const int nex, int deg_, int* const degrees_,
-           const double tol, const CHASE_MODE_TYPE int_mode,
-           const CHASE_OPT_TYPE int_opt)
-{
-  MKL_Complex16 *RESULT = W;
-
-  double* resid_ = new double[nev];
-
-  const int nevex = nev + nex; // Block size for the algorithm.
-  int unconverged = nev;
-  int block = nev+nex;
-
-  int deg = deg_;
-
-  // To store the approximations obtained from lanczos().
-  double lowerb, upperb, lambda;
-
-  int * degrees = degrees_;
-  double * ritzv = ritzv_;
-  double * resid = resid_;
-
-  MKL_Complex16 *V_Full = V;
-  MKL_Complex16 *W_Full = W;
-  //-----------------------  VALIDATION  -----------------------------
-  if ( int_opt != CHASE_OPT_NONE )
-    assert(degrees != NULL);
-
-  //-----------------------GENERATE-A-RANDOM-VECTOR-----------------------------
-  MKL_Complex16 *randomVector = new MKL_Complex16[N];
-  std::mt19937 gen(2342.0); // TODO
-  std::normal_distribution<> d;
-
-  for( std::size_t i=0; i < N; ++i)
-  {
-    randomVector[i] = std::complex<double>( d(gen), d(gen) );
-  }
-  //----------------------------------------------------------------------------
-
-  int converged = 0; // Number of converged eigenpairs.
-  int iteration = 0; // Current iteration.
-
-  int *fake_degrees = new int[nev+nex];
-  for( int i = 0; i < nevex; ++i)
-    fake_degrees[i] = deg;
-  int fake_deg = deg;
-
-  lanczos(H, randomVector, N, nevex, omp_lanczos, tol,
-          int_mode == CHASE_MODE_RANDOM,
-          (int_mode == CHASE_MODE_RANDOM) ? ritzv : NULL, &upperb);
-  delete[] randomVector; // Not needed anymore.
-
-
-  while( converged < nev && iteration < omp_maxiter)
-  {
-
-    lambda = * std::min_element( ritzv_, ritzv_ + nevex );
-    lowerb = * std::max_element( ritzv_, ritzv_ + nevex );
-
-    assert( lowerb < upperb );
-
-    std::cout
-      << "iteration: " << iteration
-      << "\t" << lambda << " " << lowerb
-      << " " << unconverged
-      << std::endl;
-
-    //-------------------------------------FILTER-----------------------------
-    if( int_opt == CHASE_OPT_NONE || iteration == 0 )
-    {
-      chase_filteredVecs += (unconverged+nex)*deg; // Number of filtered vectors
-
-      filter(H, V, N, unconverged+nex, deg, lambda, lowerb, upperb, W);
-    }
-    else
-    {
-      deg = calc_degrees(
-        N, unconverged, upperb, lowerb, tol,
-        ritzv, resid, degrees,
-        V, W );
-
-      for( auto i = 0 ; i < unconverged ; ++i)
-        chase_filteredVecs += degrees[i];
-      chase_filteredVecs += nex*deg;
-
-      filterModified(H, V, N, unconverged+nex, nev, deg, degrees,
-                     lambda, lowerb, upperb, W, unconverged);
-
-    }
-    if(deg%2 == 0) // To 'fix' the situation if the filter swapped them.
-    {
-      MKL_Complex16 *swap = NULL; // Just a pointer for swapping V and W.
-      swap = V; V = W; W = swap;
-      swap = V_Full; V_Full = W_Full; W_Full = swap;
-    }
-    // Solution is in W
-
-    //----------------------------------  QR  -------------------------------
-    QR( N, nevex, converged, W_Full, V);
-
-    //-------------------------------------RAYLEIGH-RITZ------------------------
-    RR(
-      N, unconverged+nex,
-      ritzv,
-      H, V, W );
-    // returns eigenvectors in V
-
-    //----------------------------------RESIDUAL-----------------------------
-
-    resd(
-      N, unconverged,
-      ritzv, resid,
-      H, V, W );
-    // overwrites W with H*V
-
-    //---------------------------------- LOCKING -----------------------------
-    int new_converged = locking(
-      N, unconverged, tol,
-      ritzv, resid, degrees,
-      V );
-
-    //-------------------- update pointers and counts --------------------
-    converged += new_converged;
-    unconverged -= new_converged;
-
-    memcpy(W, V, N*new_converged*sizeof(MKL_Complex16));
-
-    W += N*new_converged;
-    V += N*new_converged;
-    resid += new_converged;
-    ritzv += new_converged;
-    degrees += new_converged;
-
-
-    //memcpy(W, V, N*nevex*sizeof(MKL_Complex16));
-    iteration++;
-  } // while ( converged < nev && iteration < omp_maxiter )
-
-  //-----------------------SORT-EIGENPAIRS-ACCORDING-TO-EIGENVALUES-------------
-  for( auto i = 0; i < nev-1; ++i )
-    for( auto j = i+1; j < nev; ++j )
-    {
-      if( ritzv_[i] > ritzv_[j] )
-      {
-        swap_kj( i, j, ritzv_ );
-        ColSwap( V_Full, N, i, j );
-      }
-    }
-  //----------------------------------------------------------------------------
-
-  omp_iteration = iteration;
-
-  delete[] resid_;
-}
-
-void get_iteration(int* iteration)
-{
-  *iteration = omp_iteration;
-}
-
-
-void get_time(double* time)
-{
-  for (int i = 0; i < 5; ++i)
-    time[i] = omp_time[5+i];
-}
-
-void get_filteredVecs(int* filteredVecs)
-{
-  *filteredVecs = chase_filteredVecs;
 }
