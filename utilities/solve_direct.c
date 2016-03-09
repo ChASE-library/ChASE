@@ -1,3 +1,8 @@
+/*
+module load intel-para/2015-07
+g++ solve_direct.c -o solve_direct -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -liomp5 -lpthread -std=c++11
+*/
+
 #include <iostream>
 #include <vector>
 #include <complex.h>
