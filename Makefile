@@ -1,34 +1,70 @@
 # Ensure that the obj/ folder exists
 MKDIR_P = mkdir -p
-.PHONY: obj_dir
-all: main
+BUILD_CUDA=1
 
 CXX=icpc
-CFLAGS+=-O2 -std=c++11 -g
-LDFLAGS+=-lboost_program_options -lboost_serialization
+CPPFLAGS+=-qopenmp
 
-CFLAGS+=-qopenmp
+CFLAGS+=-O2 -std=c++11 -g
 LDFLAGS+=-mkl
 
+CUDACXX=nvcc
+CUDAFLAGS+=
 
-#LDFLAGS+=-lgomp /usr/lib64/liblapack.a /usr/lib64/libblas.a  -lm
+CUDA_INCLUDE_DIR=${CUDA_ROOT}/include
+CUDA_LIBS_DIR=${CUDA_ROOT}/lib64
 
-OBJS=obj/chase.o obj/main.o obj/lanczos.o obj/filter.o obj/testresult.o
+BOOST_INCLUDE_DIR=${BOOST_ROOT}/include
+BOOST_LIBS_DIR=${BOOST_ROOT}/lib
 
-obj_dir:
-	${MKDIR_P} obj/
+################################################################################
+CUDA_FILE_DIR=src
+CPP_FILE_DIR=src
+HEADER_FILES := $(wildcard include/*.h)
+CPP_FILES := $(wildcard ${CPP_FILE_DIR}/*.cpp)
+
+ifdef BUILD_CUDA
+CUDA_FILES := $(wildcard ${CUDA_FILE_DIR}/*.cu)
+CFLAGS+=-DCHASE_BUILD_CUDA
+CFLAGS_CUDA=-I${CUDA_INCLUDE_DIR}
+LDFLAGS_CUDA=-L${CUDA_LIBS_DIR} -lcudart -lcublas -lnvToolsExt
+else
+CUDA_FILES =
+CFLAGS_CUDA=
+LDFLAGS_CUDA=
+endif
+
+
+CFLAGS_BOOST:=-I${BOOST_INCLUDE_DIR}
+LDFLAGS_BOOST=-L${BOOST_LIBS_DIR} -lboost_program_options -lboost_serialization
+
+CFLAGS+=${CFLAGS_BOOST} ${CFLAGS_CUDA}
+LDFLAGS+=${LDFLAGS_BOOST} ${LDFLAGS_CUDA}
+
+CPPFLAGS+=${CFLAGS} ${FLAG_OPENMP}
+CUDAFLAGS+=${CFLAGS}
+
+CPP_OBJS := $(addprefix obj/,$(notdir $(CPP_FILES:.cpp=.o)))
+CUDA_OBJS := $(addprefix obj/,$(notdir $(CUDA_FILES:.cu=.o)))
+OBJS=${CUDA_OBJS} ${CPP_OBJS}
+
+all: main
+
+${OBJS}: ${HEADER_FILES}
 
 main: obj_dir ${OBJS}
 	${CXX} ${OBJS} ${LDFLAGS} -o $@.x
 
-obj/%.o: src/%.cpp
-	${CXX} ${CFLAGS} -c $< -o $@
+obj/%.o: ${CPP_FILE_DIR}/%.cpp
+	${CXX} ${CPPFLAGS} -c $< -o $@
+
+obj/%.o: ${CUDA_FILE_DIR}/%.cu
+	${CUDACXX} ${CUDAFLAGS}  -c $< -o $@
+
+.PHONY: obj_dir clean test
+
+obj_dir:
+	${MKDIR_P} obj/
 
 clean:
 	rm -f obj/* main.x
-
-test: main
-	./main.x --n 3893 --nev 256 --path_in ~/../slai00/MATrix/NaCl/size4k/bin/ --path_eigp ~/../slai00/MATrix/NaCl/size4k/direct-solutions/ --name "NaCl"
-
-test-debug: test
-	gdb -ex r --args ./main.x --n 3893 --nev 256 --path_in ~/../slai00/MATrix/NaCl/size4k/bin/ --path_eigp ~/../slai00/MATrix/NaCl/size4k/direct-solutions/ --name "NaCl"

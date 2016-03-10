@@ -1,9 +1,9 @@
-#include "../include/chfsi.h"
+#include "../include/chase.h"
 #include "../include/testresult.h"
+#include "../include/lanczos.h"
 
 #include <random>
 #include <boost/program_options.hpp>
-#include <mkl.h> // todo: use lapacke and cblas
 
 namespace po = boost::program_options;
 
@@ -12,7 +12,7 @@ void readMatrix( T *H, std::string path_in, int index,
                  std::string suffix, int size )
 {
   std::ostringstream problem(std::ostringstream::ate);
-  problem << path_in << "gmat  1 " << setw(2) << index << suffix;
+  problem << path_in << "gmat  1 " << std::setw(2) << index << suffix;
 
   std::ifstream input( problem.str().c_str(), std::ios::binary );
 
@@ -37,13 +37,13 @@ int main(int argc, char* argv[])
   double tol;
   bool sequence;
 
-  string path_in;
-  string mode;
-  string opt;
-  string arch;
-  string path_eigp;
-  string path_out;
-  string path_name;
+  std::string path_in;
+  std::string mode;
+  std::string opt;
+  std::string arch;
+  std::string path_eigp;
+  std::string path_out;
+  std::string path_name;
 
   po::options_description desc("ChASE Options");
   desc.add_options()
@@ -55,10 +55,10 @@ int main(int argc, char* argv[])
     ("bgn", po::value<int>(&bgn)->default_value(2), "TODO")
     ("end", po::value<int>(&end)->default_value(2), "TODO")
     ("tol", po::value<double>(&tol)->default_value(1e-10), "TODO")
-    ("path_in", po::value<string>(&path_in)->required(), "TODO")
-    ("mode", po::value<string>(&mode)->default_value("A"), "valid values are R[andom] or A[pproximate]")
-    ("opt", po::value<string>(&opt)->default_value("S"), "TODO")
-    ("path_eigp", po::value<string>(&path_eigp), "TODO")
+    ("path_in", po::value<std::string>(&path_in)->required(), "TODO")
+    ("mode", po::value<std::string>(&mode)->default_value("A"), "valid values are R[andom] or A[pproximate]")
+    ("opt", po::value<std::string>(&opt)->default_value("S"), "TODO")
+    ("path_eigp", po::value<std::string>(&path_eigp), "TODO")
     ("sequence", po::value<bool>(&sequence)->default_value(false), "TODO")
     ;
 
@@ -94,6 +94,8 @@ int main(int argc, char* argv[])
 
   mode = toupper(mode.at(0));
   opt = toupper(opt.at(0));
+
+  std::cout << path_in << " " << path_eigp << std::endl;
 
 
   if( bgn > end )
@@ -145,19 +147,18 @@ int main(int argc, char* argv[])
     sequence
     );
 
-  int nevex = nev + nex; // Block size for the algorithm.
+  const int nevex = nev + nex; // Block size for the algorithm.
 
   // Matrix representing the generalized eigenvalue problem.
   MKL_Complex16 *H = new MKL_Complex16[N*N];
-  // Matrix which stores the approximate eigenvectors (INPUT to chfsi).
+  // Matrix which stores the approximate eigenvectors
   MKL_Complex16 *V = new MKL_Complex16[N*nevex];
-  // Matrix which stores the eigenvectors (OUTPUT of the chfsi function).
+  // Matrix which stores the eigenvectors
   MKL_Complex16 *W = new MKL_Complex16[N*nevex];
   // eigenvalues
   double * Lambda = new double[nevex];
   int *degrees  = new int[nevex];
 
-  //----------------------------------------------------------------------------
   //----------------------------------------------------------------------------
   //std::random_device rd;
   std::mt19937 gen(2342.0);
@@ -218,15 +219,46 @@ int main(int argc, char* argv[])
       mode = "A";
     }
 
-    //------------------------------SOLVE-CURRENT-PROBLEM-----------------------
     readMatrix( H, path_in, i, ".bin", N*N);
-    chfsi(H, N, V, W, Lambda, nev, nex, deg, degrees, tol, mode[0], opt[0]);
+
+
+    // test lanczos
+    {
+      double upperb;
+      double *ritzv_;
+      MKL_Complex16 *V_;
+      int num_its = 10;
+      int numvecs = 4;
+      if( mode[0] == CHASE_MODE_RANDOM )
+      {
+        ritzv_ = new double[nevex];
+        V_ = new MKL_Complex16[num_its*N];
+        num_its = 40;
+      }
+
+      lanczos( H, N, numvecs, num_its, nevex, &upperb,
+               mode[0] == CHASE_MODE_RANDOM,
+               ritzv_, V_);
+
+      if( mode[0] == CHASE_MODE_RANDOM )
+      {
+        double lambda = * std::min_element( ritzv_, ritzv_ + nevex );
+        double lowerb = * std::max_element( ritzv_, ritzv_ + nevex );
+        TR.registerValue( i, "lambda1", lambda );
+        TR.registerValue( i, "lowerb", lowerb );
+        delete[] ritzv_;
+        delete[] V_;
+      }
+
+      TR.registerValue( i, "upperb", upperb );
+    }
+
+    //------------------------------SOLVE-CURRENT-PROBLEM-----------------------
+    chase(H, N, V, W, Lambda, nev, nex, deg, degrees, tol, mode[0], opt[0]);
     //--------------------------------------------------------------------------
 
-    int iterations;
-    int filteredVecs;
-    get_iteration(&iterations); // Get the number of iterations.
-    get_filteredVecs(&filteredVecs);
+    int iterations = get_iter_count();
+    int filteredVecs = get_filtered_vecs();
 
     TR.registerValue( i, "filteredVecs", filteredVecs );
     TR.registerValue( i, "iterations", iterations );
@@ -239,10 +271,14 @@ int main(int argc, char* argv[])
     int iOne = 1;
     for(int ttz = 0; ttz<nev;ttz++){
       eigval = -1.0 * Lambda[ttz];
-      zscal(&N,&eigval,W+ttz*N, &iOne);
+      cblas_zscal( N, &eigval, W+ttz*N, 1);
     }
-    zhemm("L","L", &N, &nev, &one, H, &N, V, &N, &one, W, &N);
-    double norm = zlange("M", &N, &nev, W, &N, NULL);
+    cblas_zhemm(
+      CblasColMajor,
+      CblasLeft,
+      CblasLower,
+      N, nev, &one, H, N, V, N, &one, W, N);
+    double norm = LAPACKE_zlange( LAPACK_COL_MAJOR, 'M', N, nev, W, N);
     TR.registerValue( i, "resd", norm);
 
 
@@ -256,8 +292,10 @@ int main(int argc, char* argv[])
       }
     }
 
-    zgemm("C", "N", &nev, &nev, &N, &one, V, &N, V, &N, &neg_one, unity, &nev);
-    double norm2 = zlange("M", &nev, &nev, unity, &nev, NULL);
+    cblas_zgemm(
+      CblasColMajor,
+      CblasConjTrans, CblasNoTrans, nev, nev, N, &one, V, N, V, N, &neg_one, unity, nev);
+    double norm2 = LAPACKE_zlange( LAPACK_COL_MAJOR, 'M', nev, nev, unity, nev);
     TR.registerValue( i, "orth", norm2);
 
     delete[] unity;
@@ -270,6 +308,7 @@ int main(int argc, char* argv[])
 
 
   TR.done();
+  print_timings();
 
   delete[] H;
   delete[] V; delete[] W;

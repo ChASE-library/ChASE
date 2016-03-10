@@ -1,5 +1,5 @@
 #include "../include/testresult.h"
-#include "../include/chfsi.h"
+
 
 #define ANSI_FG_BLACK   "\x1b[30m"
 #define ANSI_FG_RED     "\x1b[31m"
@@ -52,11 +52,6 @@ void assertEqual( typename std::unordered_map<std::string,T>::iterator it,
 }
 
 TestResultIteration::TestResultIteration()
-  : compare( CHASE_TESTRESULT_COMPARE )
-    {};
-
-TestResultIteration::TestResultIteration( bool compare_ )
-  : compare( compare_ )
     {};
 
 void TestResultIteration::compareMembers( TestResultIteration &ref,
@@ -64,7 +59,7 @@ void TestResultIteration::compareMembers( TestResultIteration &ref,
     for( auto it = intMap.begin(); it != intMap.end(); ++it )
       assertEqual( it, ref.intMap, tests, fails );
     for( auto it = doubleMap.begin(); it != doubleMap.end(); ++it )
-      assertEqual<double>( it, ref.doubleMap, 10-8, tests, fails );
+      assertEqual<double>( it, ref.doubleMap, 0, tests, fails );
   }
 
   void TestResultIteration::registerValue( std::string key, int value )
@@ -107,7 +102,7 @@ TestResult::TestResult( bool compare_, std::string name_,
 
       if( sequence )
         fileNameBuilder << "_seq";
-      
+
       fileNameBuilder << ".xml";
       fileName = fileNameBuilder.str();
     };
@@ -131,6 +126,7 @@ TestResult::TestResult( bool compare_, std::string name_,
     std::ofstream ofs(this->name().c_str());
     boost::archive::xml_oarchive oa(ofs);
     oa << BOOST_SERIALIZATION_NVP(this);
+
   }
 
   void TestResult::loadAndCompare() {
@@ -145,8 +141,14 @@ TestResult::TestResult( bool compare_, std::string name_,
     }
     catch( std::exception &e )
     {
-      std::cout << ANSI_BG_YELLOW << "File not found, writing" << ANSI_RESET <<std::endl
+      std::cout << e.what() << std::endl;
+
+      std::cout << ANSI_FG_BLACK << ANSI_BG_YELLOW
+                << "File not found, writing" << std::endl
+                << ANSI_RESET << ANSI_RESET
                 << "Consider creating the test profile for the whole sequence" << std::endl;
+
+
 
       save();
       return;
@@ -174,7 +176,7 @@ void TestResult::reportResult( std::size_t tests, std::size_t fails )
 {
   if( fails == 0 )
     std::cout  << ANSI_BG_GREEN;
-    else
-      std::cout <<  ANSI_BG_RED;
+  else
+    std::cout <<  ANSI_BG_RED;
   std::cout <<  ANSI_FG_BLACK << "PASSED\t"  << (tests - fails) << " / " << tests << ANSI_RESET << std::endl;
 }

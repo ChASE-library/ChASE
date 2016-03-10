@@ -1,14 +1,25 @@
 #ifndef CHASE_LANCZOS_H
 #define CHASE_LANCZOS_H
 
+#include <iostream>
+
+#include <cstring> // memcpy
+#include <functional>
 #include <complex>
+#include <random>
+#include <algorithm>
+
 #define MKL_Complex16 std::complex<double>
 
-#include <mkl.h>
-#include <cstring> // memcpy
-#include <iostream> // memcpy
+#include <mkl_cblas.h>
+#include <mkl_lapacke.h>
 
-void lanczos(MKL_Complex16 *B, MKL_Complex16 *v, int n, int blk, int m,
-             double tol, int ctrl, double *ritzv, double *bound);
+#define CHASE_LANCZOS_FULLV true
+
+void lanczos(const MKL_Complex16 *H, int N, int numvec, int m, int nevex, double *upperb,
+             bool mode, double *ritzv_, MKL_Complex16 *V_);
+
+void lanczosM( const MKL_Complex16 *H, int n, int m, double *bound,
+               bool ctrl, MKL_Complex16 *V, double *ritzv,  double *ritzV );
 
 #endif // CHASE_LANCZOS_H

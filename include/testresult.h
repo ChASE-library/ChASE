@@ -1,17 +1,25 @@
-#ifndef CHASE_TESTRESULT
-#define CHASE_TESTRESULT
+#ifndef CHASE_TESTRESULT_H
+#define CHASE_TESTRESULT_H
+
+#define CHASE_TESTRESULT_WRITE true
+#define CHASE_TESTRESULT_COMPARE false
 
 #include <unordered_map>
-#include <fstream>
 #include <vector>
+#include <complex>
 
+#include <fstream>
 #include <boost/archive/xml_oarchive.hpp>
 #include <boost/archive/xml_iarchive.hpp>
 #include <boost/serialization/unordered_map.hpp>
 #include <boost/serialization/vector.hpp>
 
-#define CHASE_TESTRESULT_WRITE true
-#define CHASE_TESTRESULT_COMPARE false
+#ifndef MKL_Complex16
+#define MKL_Complex16 std::complex<double>
+#endif
+
+#include <mkl_cblas.h>
+#include <mkl_lapacke.h>
 
 class TestResultIteration {
 public:
@@ -19,14 +27,12 @@ public:
   friend std::ostream & operator<<(std::ostream &os, const TestResultIteration &tr);
 
   TestResultIteration();
-  TestResultIteration( bool compare_ );
 
   void compareMembers( TestResultIteration &ref, std::size_t &tests, std::size_t &fails );
   void registerValue( std::string key, int value );
   void registerValue( std::string key, double value );
 
 private:
-  const bool compare;
   std::unordered_map< std::string, int > intMap;
   std::unordered_map< std::string, double > doubleMap;
 
@@ -65,7 +71,7 @@ public:
 
 private:
 
-  const bool compare;
+  bool compare;
   std::string fileName;
   std::vector<TestResultIteration> iterationResults;
 
@@ -84,4 +90,4 @@ private:
   }
 };
 
-#endif // CHASE_TESTRESULT
+#endif // CHASE_TESTRESULT_H

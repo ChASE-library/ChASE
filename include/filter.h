@@ -9,12 +9,14 @@
 
 #include <mkl_cblas.h>
 
-void filter(MKL_Complex16 *A, MKL_Complex16 *x, int n, int m,
-            int deg, double lambda_1, double lower, double upper,
-            MKL_Complex16 *y);
-
-void filterModified(MKL_Complex16 *A, MKL_Complex16 *x, int n, int m, int nev,
+int filter(MKL_Complex16 *A, MKL_Complex16 *x, int n, int m,
                     int M, int *deg, double lambda_1, double lower, double upper,
-                    MKL_Complex16 *y, int block);
+                    MKL_Complex16 *y);
+
+#ifdef CHASE_BUILD_CUDA
+int cuda_filter( MKL_Complex16 *H, MKL_Complex16 *V, int n, int unprocessed,
+            int deg, int *degrees, double lambda_1, double lower, double upper,
+                 MKL_Complex16 *W );
+#endif
 
 #endif // CHASE_FILTER_H
