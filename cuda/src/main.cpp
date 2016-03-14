@@ -127,6 +127,12 @@ int main(int argc, char* argv[])
     return -1;
   }
 
+  //----------------------------------------------------------------------------
+
+  HANDLE_ERROR(cudaSetDeviceFlags(cudaDeviceScheduleYield));
+  magma_init();
+
+
   // -----Validation of test----
   bool testResultWrite;
   if( vm.count("write") )
@@ -308,6 +314,7 @@ int main(int argc, char* argv[])
 
 
   TR.done();
+  magma_finalize();
 
   delete[] H;
   delete[] V; delete[] W;

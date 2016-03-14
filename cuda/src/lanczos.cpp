@@ -52,8 +52,6 @@ int lanczos(const MKL_Complex16 *H, int N, int numvec, int m, int nevex, double 
     std::sort(ThetaSorted, ThetaSorted + numvec*m, std::less<double>());
 
     lambda = ThetaSorted[0];
-    std::cout << lambda << std::endl;
-
 
     double curr, prev = 0;
     const double sigma = 0.25;

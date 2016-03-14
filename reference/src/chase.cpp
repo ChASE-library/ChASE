@@ -38,25 +38,10 @@ void chase(MKL_Complex16* const H, int N, MKL_Complex16* V, MKL_Complex16* W,
 
   // --------------------------------- LANCZOS ---------------------------------
   start_clock( TimePtrs::Lanczos );
-#if 0
-  MKL_Complex16 *randomVector = new MKL_Complex16[N];
-  std::mt19937 gen(2342.0); // TODO
-  std::normal_distribution<> d;
-
-  for( std::size_t i=0; i < N; ++i)
-  {
-    randomVector[i] = std::complex<double>( d(gen), d(gen) );
-  }
-  lanczos(H, randomVector, N, nevex, chase_lanczos_iter, tol,
-          int_mode == CHASE_MODE_RANDOM,
-          (int_mode == CHASE_MODE_RANDOM) ? ritzv : NULL, &upperb);
-  delete[] randomVector; // Not needed anymore.
-
-#else
   bool random = int_mode == CHASE_MODE_RANDOM;
-  lanczos(H, N, 4, random? nevex/4 : chase_lanczos_iter, nevex, &upperb,
+  int vecLanczos = lanczos(H, N, 4, random? nevex/4 : chase_lanczos_iter, nevex, &upperb,
           random, random? ritzv : NULL, random? V : NULL );
-#endif
+
   end_clock( TimePtrs::Lanczos );
 
   int locked = 0; // Number of converged eigenpairs.

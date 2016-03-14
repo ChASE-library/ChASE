@@ -1,12 +1,11 @@
 # Ensure that the obj/ folder exists
 MKDIR_P = mkdir -p
-#BUILD_CUDA=1
 
 CXX=icpc
 CPPFLAGS+=-qopenmp
 
-CFLAGS+=-O2 -std=c++11 -g
-LDFLAGS+=-mkl
+CFLAGS+=-std=c++11 -O2
+LDFLAGS+=-g -qopenmp -mkl
 
 CUDACXX=nvcc
 CUDAFLAGS+=
@@ -17,29 +16,26 @@ CUDA_LIBS_DIR=${CUDA_ROOT}/lib64
 BOOST_INCLUDE_DIR=${BOOST_ROOT}/include
 BOOST_LIBS_DIR=${BOOST_ROOT}/lib
 
+MAGMA_ROOT=/home/jw193536/magma-2.0.1/
+
 ################################################################################
 CUDA_FILE_DIR=src
 CPP_FILE_DIR=src
 HEADER_FILES := $(wildcard include/*.h)
 CPP_FILES := $(wildcard ${CPP_FILE_DIR}/*.cpp)
 
-ifdef BUILD_CUDA
 CUDA_FILES := $(wildcard ${CUDA_FILE_DIR}/*.cu)
-CFLAGS+=-DCHASE_BUILD_CUDA
 CFLAGS_CUDA=-I${CUDA_INCLUDE_DIR}
-LDFLAGS_CUDA=-L${CUDA_LIBS_DIR} -lcudart -lcublas -lnvToolsExt
-else
-CUDA_FILES =
-CFLAGS_CUDA=
-LDFLAGS_CUDA=
-endif
+LDFLAGS_CUDA=-L${CUDA_LIBS_DIR} -lcudart -lcublas -lnvToolsExt -lcusparse
 
+CFLAGS_MAGMA=-I${MAGMA_ROOT}/include
+LDFLAGS_MAGMA=${MAGMA_ROOT}/lib/libmagma.a
 
 CFLAGS_BOOST:=-I${BOOST_INCLUDE_DIR}
 LDFLAGS_BOOST=-L${BOOST_LIBS_DIR} -lboost_program_options -lboost_serialization
 
-CFLAGS+=${CFLAGS_BOOST} ${CFLAGS_CUDA}
-LDFLAGS+=${LDFLAGS_BOOST} ${LDFLAGS_CUDA}
+CFLAGS+=${CFLAGS_BOOST} ${CFLAGS_CUDA} ${CFLAGS_MAGMA}
+LDFLAGS+=${LDFLAGS_BOOST} ${LDFLAGS_CUDA} ${LDFLAGS_MAGMA}
 
 CPPFLAGS+=${CFLAGS} ${FLAG_OPENMP}
 CUDAFLAGS+=${CFLAGS}
