@@ -18,7 +18,7 @@ void chase(MKL_Complex16* const H, int N, MKL_Complex16* V, MKL_Complex16* W,
   double lowerb, upperb, lambda;
   double normH = std::max(LAPACKE_zlange(LAPACK_COL_MAJOR, '1', N, N, H, N), 1.0);
   const double tol = tol_ * normH;
-
+  std::cout << "tolerance: " << tol << std::endl;
   double* resid_ = new double[nevex];
 
   // store input values
@@ -43,15 +43,14 @@ void chase(MKL_Complex16* const H, int N, MKL_Complex16* V, MKL_Complex16* W,
           random, random? ritzv : NULL, random? V : NULL );
 
   end_clock( TimePtrs::Lanczos );
-
   int locked = 0; // Number of converged eigenpairs.
   int iteration = 0; // Current iteration.
 
-  while( unconverged > nex && iteration < chase_max_iter)
+  while( unconverged > nex && iteration < 4*chase_max_iter)
   {
     lambda = * std::min_element( ritzv_, ritzv_ + nevex );
     lowerb = * std::max_element( ritzv, ritzv + unconverged );
-
+    upperb = lowerb + std::abs(lowerb - lambda);
     assert( lowerb < upperb );
     std::cout
       << "iteration: " << iteration
@@ -137,6 +136,7 @@ void chase(MKL_Complex16* const H, int N, MKL_Complex16* V, MKL_Complex16* W,
       }
     }
 
+  
   chase_iteration_count = iteration;
   delete[] resid_;
 

@@ -8,16 +8,19 @@
 namespace po = boost::program_options;
 
 template<typename T>
-void readMatrix( T *H, std::string path_in, int index,
-                 std::string suffix, int size )
+void readMatrix( T *H, std::string path_in, std::string spin, int kpoint, int index,
+                 std::string suffix, int size, bool legacy )
 {
   std::ostringstream problem(std::ostringstream::ate);
-  problem << path_in << "gmat  1 " << std::setw(2) << index << suffix;
-
+  if(legacy)
+    problem << path_in << "gmat  1 " << std::setw(2) << index << suffix;
+  else 
+    problem << path_in << "mat_" << spin << "_" << std::setfill('0') << std::setw(2) 
+	    << kpoint << "_" << std::setfill('0') << std::setw(2) << index << suffix;
+  
   std::ifstream input( problem.str().c_str(), std::ios::binary );
 
-  if(input.is_open())
-  {
+  if(input.is_open()) {
     input.read((char *) H, sizeof(T) * size);
   } else {
     throw std::string("error reading file: ") + problem.str();
@@ -45,6 +48,11 @@ int main(int argc, char* argv[])
   std::string path_out;
   std::string path_name;
 
+  int kpoint;
+  bool legacy;
+  std::string spin;
+  
+
   po::options_description desc("ChASE Options");
   desc.add_options()
     ("help,h", "show this message")
@@ -67,6 +75,9 @@ int main(int argc, char* argv[])
   testOP.add_options()
     ("write", "Write Profile")
     ("name", po::value<std::string>(&testName)->required(), "Name of the testing profile")
+    ("spin", po::value<std::string>(&spin)->default_value("d"), "spin")
+    ("kpoint", po::value<int>(&kpoint)->default_value(0), "kpoint")
+    ("legacy", po::value<bool>(&legacy)->default_value(false), "legacy")
     ;
 
   desc.add(testOP);
@@ -94,9 +105,6 @@ int main(int argc, char* argv[])
 
   mode = toupper(mode.at(0));
   opt = toupper(opt.at(0));
-
-  std::cout << path_in << " " << path_eigp << std::endl;
-
 
   if( bgn > end )
   {
@@ -169,27 +177,27 @@ int main(int argc, char* argv[])
     if( i == bgn || !sequence )
     {
       /*
-        if (path_eigp == "_" && int_mode == OMP_APPROX && i == bgn )
-        { // APPROX. No approximate pairs given.
-        //-------------------------SOLVE-PREVIOUS-PROBLEM-------------------------
-        app = ".bin"; // Read the matrix of the previous problem.
-        myreadwrite<MKL_Complex16>(H, path_in.c_str(), app.c_str(), i-1, N*N, 'r');
+	if (path_eigp == "_" && int_mode == OMP_APPROX && i == bgn )
+	{ // APPROX. No approximate pairs given.
+	  //-------------------------SOLVE-PREVIOUS-PROBLEM-------------------------
+	  app = ".bin"; // Read the matrix of the previous problem.
+	  myreadwrite<MKL_Complex16>(H, path_in.c_str(), app.c_str(), i-1, N*N, 'r');
 
-        // Solve the previous problem, store the eigenpairs in V and Lambda.
-        ZHEEVR("V", "I", "L", &N, H, &N, &vl, &vu, &il, &iu, &tol,
-        &notneeded, Lambda, V, &N, isuppz, zmem, &lzmem, dmem, &ldmem,
-        imem, &limem, &INFO);
+	  // Solve the previous problem, store the eigenpairs in V and Lambda.
+	  ZHEEVR("V", "I", "L", &N, H, &N, &vl, &vu, &il, &iu, &tol,
+	  &notneeded, Lambda, V, &N, isuppz, zmem, &lzmem, dmem, &ldmem,
+	  imem, &limem, &INFO);
 
-        //------------------------------------------------------------------------
-        // In next iteration the solutions to this one will be used as approximations.
-        path_eigp = path_out;
-        }
-        else */
+	  //------------------------------------------------------------------------
+	  // In next iteration the solutions to this one will be used as approximations.
+	  path_eigp = path_out;
+	  }
+	  else */
       if (mode[0] == CHASE_MODE_APPROX)
       { // APPROX. Approximate eigenpairs given.
         //-----------------------READ-APPROXIMATE-EIGENPAIRS----------------------
-        readMatrix( V, path_eigp, i-1, ".vct", N*nevex );
-        readMatrix( Lambda, path_eigp, i-1, ".vls", nevex );
+        readMatrix( V, path_eigp, spin, kpoint, i-1, ".vct", N*nevex, legacy );
+        readMatrix( Lambda, path_eigp, spin, kpoint, i-1, ".vls", nevex, legacy );
         //------------------------------------------------------------------------
       }
       else
@@ -210,10 +218,8 @@ int main(int argc, char* argv[])
       // previous solution
       mode = "A";
     }
-
-    readMatrix( H, path_in, i, ".bin", N*N);
-
-
+    readMatrix( H, path_in, spin, kpoint, i, ".bin", N*N, legacy);
+    
     // test lanczos
     {
       double upperb;
@@ -241,13 +247,13 @@ int main(int argc, char* argv[])
         delete[] ritzv_;
         delete[] V_;
       }
-
       TR.registerValue( i, "upperb", upperb );
     }
-
+    std::cout << "starting chase" << std::endl;
     //------------------------------SOLVE-CURRENT-PROBLEM-----------------------
     chase(H, N, V, W, Lambda, nev, nex, deg, degrees, tol, mode[0], opt[0]);
     //--------------------------------------------------------------------------
+
 
     int iterations = get_iter_count();
     int filteredVecs = get_filtered_vecs();
@@ -304,10 +310,17 @@ int main(int argc, char* argv[])
     print_timings();
     reset_clock();
     std::cout << "Filtered Vectors\t\t" << filteredVecs << std::endl;
+
+    std::cout << "Eigenvalues: " << std::endl;
+    for(int zzt = 0; zzt < nev; zzt++)
+      std::cout << Lambda[zzt] << std::endl;
+    std::cout << "End of eigenvalues. " << std::endl;
   } // for(int i = bgn; i <= end; ++i)
 
 
   TR.done();
+
+
 
   delete[] H;
   delete[] V; delete[] W;
