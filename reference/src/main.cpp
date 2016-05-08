@@ -18,6 +18,7 @@ void readMatrix( T *H, std::string path_in, std::string spin, int kpoint, int in
     problem << path_in << "mat_" << spin << "_" << std::setfill('0') << std::setw(2) 
 	    << kpoint << "_" << std::setfill('0') << std::setw(2) << index << suffix;
   
+  std::cout << problem.str() << std::endl;
   std::ifstream input( problem.str().c_str(), std::ios::binary );
 
   if(input.is_open()) {
@@ -219,7 +220,7 @@ int main(int argc, char* argv[])
       mode = "A";
     }
     readMatrix( H, path_in, spin, kpoint, i, ".bin", N*N, legacy);
-    
+
     // test lanczos
     {
       double upperb;
@@ -233,17 +234,18 @@ int main(int argc, char* argv[])
         V_ = new MKL_Complex16[num_its*N];
         num_its = 40;
       }
-
+      std::cout << "Starting lanczos - main" << std::endl;
       lanczos( H, N, numvecs, num_its, nevex, &upperb,
                mode[0] == CHASE_MODE_RANDOM,
                ritzv_, V_);
-
+      std::cout << "End lanczos - main" << std::endl;
       if( mode[0] == CHASE_MODE_RANDOM )
       {
         double lambda = * std::min_element( ritzv_, ritzv_ + nevex );
         double lowerb = * std::max_element( ritzv_, ritzv_ + nevex );
         TR.registerValue( i, "lambda1", lambda );
         TR.registerValue( i, "lowerb", lowerb );
+	std::cout << "Free memory" << std::endl;
         delete[] ritzv_;
         delete[] V_;
       }
