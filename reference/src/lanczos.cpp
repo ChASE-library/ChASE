@@ -3,9 +3,9 @@
 int lanczos(const MKL_Complex16 *H, int N, int numvec, int m, int nevex, double *upperb,
                 bool mode, double *ritzv_, MKL_Complex16 *V_)
 {
-
-    std::mt19937 gen(2342.0); // TODO
-    std::normal_distribution<> d;
+  assert( m >= 1 );
+  std::mt19937 gen(2342.0); // TODO
+  std::normal_distribution<> d;
 
   if( !mode )
   {
@@ -123,7 +123,7 @@ int lanczos(const MKL_Complex16 *H, int N, int numvec, int m, int nevex, double 
       delete[] ritzVc;
     }
 
-    lowerb = lowerb + std::abs(lowerb)*0.4;
+    //lowerb = lowerb + std::abs(lowerb)*0.4;
 
     for( auto i=0; i < nevex; ++i)
 //      ritzv_[i] = ThetaSorted[(numvec-1)*m+i];
@@ -133,6 +133,7 @@ int lanczos(const MKL_Complex16 *H, int N, int numvec, int m, int nevex, double 
     std::cout << lowerb << " " << lambda << std::endl;
 
     // Cleanup
+    delete[] ThetaSorted;
     delete[] Theta;
     delete[] Tau;
     delete[] V;
@@ -143,6 +144,7 @@ int lanczos(const MKL_Complex16 *H, int N, int numvec, int m, int nevex, double 
 void lanczosM( const MKL_Complex16 *H, int n, int m, double *upperb,
                 bool ctrl, MKL_Complex16 *V, double *ritzv,  double *ritzV )
 {
+  assert( m >= 1 );
   double *d = new double[m]();
   double *e = new double[m]();
 
@@ -172,7 +174,8 @@ void lanczosM( const MKL_Complex16 *H, int n, int m, double *upperb,
   for( auto k=0; k < m; ++k)
   {
     if( ctrl )
-    std::memcpy( V+k*n, v1, n*sizeof(MKL_Complex16) );
+      if( V+k*n != v1 )
+        std::memcpy( V+k*n, v1, n*sizeof(MKL_Complex16) );
 
     cblas_zgemv(
       CblasColMajor,

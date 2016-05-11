@@ -14,10 +14,10 @@ void readMatrix( T *H, std::string path_in, std::string spin, int kpoint, int in
   std::ostringstream problem(std::ostringstream::ate);
   if(legacy)
     problem << path_in << "gmat  1 " << std::setw(2) << index << suffix;
-  else 
-    problem << path_in << "mat_" << spin << "_" << std::setfill('0') << std::setw(2) 
-	    << kpoint << "_" << std::setfill('0') << std::setw(2) << index << suffix;
-  
+  else
+    problem << path_in << "mat_" << spin << "_" << std::setfill('0') << std::setw(2)
+            << kpoint << "_" << std::setfill('0') << std::setw(2) << index << suffix;
+
   std::cout << problem.str() << std::endl;
   std::ifstream input( problem.str().c_str(), std::ios::binary );
 
@@ -52,23 +52,25 @@ int main(int argc, char* argv[])
   int kpoint;
   bool legacy;
   std::string spin;
-  
 
   po::options_description desc("ChASE Options");
   desc.add_options()
     ("help,h", "show this message")
     ("n", po::value<int>(&N)->required(), "Size of the Input Matrix")
-    ("nev", po::value<int>(&nev)->required(), "nev")
-    ("nex", po::value<int>(&nex)->default_value(25), "nex")
-    ("deg", po::value<int>(&deg)->default_value(20), "deg")
-    ("bgn", po::value<int>(&bgn)->default_value(2), "TODO")
-    ("end", po::value<int>(&end)->default_value(2), "TODO")
-    ("tol", po::value<double>(&tol)->default_value(1e-10), "TODO")
-    ("path_in", po::value<std::string>(&path_in)->required(), "TODO")
-    ("mode", po::value<std::string>(&mode)->default_value("A"), "valid values are R[andom] or A[pproximate]")
-    ("opt", po::value<std::string>(&opt)->default_value("S"), "TODO")
-    ("path_eigp", po::value<std::string>(&path_eigp), "TODO")
-    ("sequence", po::value<bool>(&sequence)->default_value(false), "TODO")
+    ("nev", po::value<int>(&nev)->required(), "Wanted Number of Eigenpairs")
+    ("nex", po::value<int>(&nex)->default_value(25), "Extra Search Dimensions")
+    ("deg", po::value<int>(&deg)->default_value(20), "Initial filtering degree")
+    ("bgn", po::value<int>(&bgn)->default_value(2), "Start ell")
+    ("end", po::value<int>(&end)->default_value(2), "End ell")
+    ("spin", po::value<std::string>(&spin)->default_value("d"), "spin")
+    ("kpoint", po::value<int>(&kpoint)->default_value(0), "kpoint")
+    ("tol", po::value<double>(&tol)->default_value(1e-10), "Tolerance for Eigenpair convergence")
+    ("path_in", po::value<std::string>(&path_in)->required(), "Path to the input matrix/matrices")
+    ("mode", po::value<std::string>(&mode)->default_value("A"), "valid values are R(andom) or A(pproximate)")
+    ("opt", po::value<std::string>(&opt)->default_value("S"), "Optimi(S)e degree, or do (N)ot optimise")
+    ("path_eigp", po::value<std::string>(&path_eigp), "Path to approximate solutions, only required when mode is Approximate, otherwise not used")
+    ("sequence", po::value<bool>(&sequence)->default_value(false), "Treat as sequence of Problems. Previous ChASE solution is used, when available")
+    ("legacy", po::value<bool>(&legacy)->default_value(false), "Use legacy naming scheme?")
     ;
 
   std::string testName;
@@ -76,9 +78,6 @@ int main(int argc, char* argv[])
   testOP.add_options()
     ("write", "Write Profile")
     ("name", po::value<std::string>(&testName)->required(), "Name of the testing profile")
-    ("spin", po::value<std::string>(&spin)->default_value("d"), "spin")
-    ("kpoint", po::value<int>(&kpoint)->default_value(0), "kpoint")
-    ("legacy", po::value<bool>(&legacy)->default_value(false), "legacy")
     ;
 
   desc.add(testOP);
@@ -232,7 +231,8 @@ int main(int argc, char* argv[])
       {
         ritzv_ = new double[nevex];
         V_ = new MKL_Complex16[num_its*N];
-        num_its = 40;
+        num_its = std::min(40,nevex/numvecs);
+        num_its = std::max(1,num_its);
       }
       std::cout << "Starting lanczos - main" << std::endl;
       lanczos( H, N, numvecs, num_its, nevex, &upperb,

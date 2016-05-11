@@ -1,22 +1,4 @@
-# Ensure that the obj/ folder exists
-MKDIR_P = mkdir -p
-#BUILD_CUDA=1
-
-CXX=icpc
-CPPFLAGS+=-qopenmp
-
-CFLAGS+=-O2 -std=c++11 -g
-LDFLAGS+=-mkl
-
-CUDACXX=nvcc
-CUDAFLAGS+=
-
-CUDA_INCLUDE_DIR=${CUDA_ROOT}/include
-CUDA_LIBS_DIR=${CUDA_ROOT}/lib64
-
-BOOST_INCLUDE_DIR=${BOOST_ROOT}/include
-BOOST_LIBS_DIR=${BOOST_ROOT}/lib
-
+include make.inc
 ################################################################################
 CUDA_FILE_DIR=src
 CPP_FILE_DIR=src
@@ -34,7 +16,6 @@ CFLAGS_CUDA=
 LDFLAGS_CUDA=
 endif
 
-
 CFLAGS_BOOST:=-I${BOOST_INCLUDE_DIR}
 LDFLAGS_BOOST=-L${BOOST_LIBS_DIR} -lboost_program_options -lboost_serialization
 
@@ -48,9 +29,12 @@ CPP_OBJS := $(addprefix obj/,$(notdir $(CPP_FILES:.cpp=.o)))
 CUDA_OBJS := $(addprefix obj/,$(notdir $(CUDA_FILES:.cu=.o)))
 OBJS=${CUDA_OBJS} ${CPP_OBJS}
 
-all: main
+all: lib
 
 ${OBJS}: ${HEADER_FILES}
+
+lib: obj_dir obj/chase.o obj/filter.o obj/lanczos.o obj/timings.o
+	${AR} ${ARFLAGS} libchase.a  obj/chase.o obj/filter.o obj/lanczos.o obj/main.o obj/timings.o
 
 main: obj_dir ${OBJS}
 	${CXX} ${OBJS} ${LDFLAGS} -o $@.x
@@ -67,4 +51,4 @@ obj_dir:
 	${MKDIR_P} obj/
 
 clean:
-	rm -f obj/* main.x
+	rm -f obj/* main.x libchase.a
