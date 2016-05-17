@@ -34,17 +34,17 @@ Type definitions
 
 	      Defined by a preprocessing directive as
 	      ``std::complex<double>`` type in case ChASE does not
-	      make use of the MKL library.
+	      make use of the MKL library, but can use MKL's BLAS and LAPACK.
 
 .. cpp:type:: CHASE_MODE_TYPE
 
-	      Defined by a preprocessing directive as type ``char`` and
+	      Defined as type ``char`` via a preprocessing directive and
 	      used to define the type of the values of the
 	      :cpp:var:`mode` variable.
 
 .. cpp:type:: CHASE_OPT_TYPE
 
-	      Defined by a preprocessing directive as type ``char`` and
+	      Defined as type ``char`` via a preprocessing directive and
 	      used to define the type of the values of the
 	      :cpp:var:`opt` variable.
 
@@ -64,22 +64,23 @@ Variable definitions
 
 .. cpp:var:: int N
 
-	     Size of the matrix :cpp:var:`H`.
+	     Number of rows and columns of Matrix :cpp:var:`H`.
 	     
 .. cpp:var:: MKL_Complex16 * V
 
-	     Array containing a collection of vectors.  On entry, if
-	     :cpp:var:`mode` = ``A``, it is used to provide
-	     approximate eigenvectors which work as a preconditioner,
-	     speeding up the convergence of required eigenpairs.  On
-	     exit, the leading (:cpp:var:`N`, :cpp:var:`nev`) block
-	     contains eigenvectors at least as accurate as the
-	     required :cpp:var:`tol`.
+	     Array containing a collection of vectors, of size (:cpp:var:`N`,
+	     :cpp:var:`nev` + :cpp:var:`nex`).  On entry, if :cpp:var:`mode` =
+	     ``A``, it is used to provide approximate eigenvectors which work as
+	     a preconditioner, speeding up the convergence of required
+	     eigenpairs.  On exit, the leading (:cpp:var:`N`, :cpp:var:`nev`)
+	     block contains eigenvectors at least as accurate as the required
+	     :cpp:var:`tol`.
 
 .. cpp:var:: MKL_Complex16 * W
 	     
-	     Array containing a collection of auxiliary vectors used
-             as working space throughout the code.		  
+	     Array containing a collection of auxiliary vectors used as working
+	     space throughout the code, of size (:cpp:var:`N`, :cpp:var:`nev` +
+	     :cpp:var:`nex`).
      
 .. cpp:var:: double * ritz
 
@@ -89,12 +90,12 @@ Variable definitions
 	     lowest nev+nex eigenvalues of H.  On exit the leading
 	     :cpp:var:`nev` block contains the smallest nev
 	     eigenvalues of :cpp:var:`H`, in descending order. The
-	     remaining :cpp:var:`nex` entries are approximation to the
-	     next :cpp:var:`nex` eigenvalues.
+	     remaining :cpp:var:`nex` entries are an approximation to
+	     the next :cpp:var:`nex` eigenvalues.
 
 .. cpp:var:: int nev
 
-	     specifies the number of required eigenvalues. This is usually
+	     Specifies the number of required eigenvalues. This is usually
 	     a fraction of the total eigenspectrum. The maximum value of such
 	     fraction dependes on the size of the eigenproblem but as a rule
 	     of thumb should not exceed 10-20% in order to use ChASE
@@ -103,8 +104,8 @@ Variable definitions
 .. cpp:var:: int nex
 
 	     It specifies the initial size of the search subspace *S*
-	     such that size(*S*) = :cpp:var:`nev` +
-	     :cpp:var:`nex`). Its correct choice represents a
+	     such that size(*S*) = (:cpp:var:`nev` +
+	     :cpp:var:`nex`). Its optimal choice represents a
 	     trade-off between extra computations and an enhanced
 	     eigenpairs convergence ratio. Ideally it should be a
 	     fraction of :cpp:var:`nev` guaranteeing to include a
@@ -128,10 +129,9 @@ Variable definitions
      
 .. cpp:var:: int* const degrees
 
-	     Only used when ChASE is utilized to solve a sequence or
-	     correlated eigenproblems. Currently not used. It should
-	     contain :cpp:var:`nev` elements that specify the filter
-	     degrees used in the previous sub-sequence of
+	     Array of size :cpp:var:`nev` + :cpp:var:`nex`. While a required
+	     input array, the contents are ignored.  This variable is planned
+	     for cases where ChASE is utilized to solve a sequence or correlated
 	     eigenproblems.
 
 .. cpp:var:: const double tol

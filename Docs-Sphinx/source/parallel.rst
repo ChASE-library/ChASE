@@ -3,10 +3,13 @@ Parallel implementations
 
 Reference implementation
 ========================
-ChASE reference version can be use as a sequential code or by setting
-the variable NUM_THREADS = np
+ChASE reference version can be use as a sequential code. ChASE makes extensive
+use of Level 3 BLAS routines, and so will benefit from multi-threaded BLAS.
+Some BLAS versions require an environmental variable to be set in order to
+employ multiple threads. I.e., for MKL set ``MKL_NUM_THREADS=np`` and for OpenBLAS
+set ``OPENBLAS_NUM_THREADS=np``.
 As part of the reference version a special build can be invoked that
-offload only the filter to a GPU device.
+offloads only the filter to a GPU device.
 
 .. toctree::
    :maxdepth: 2
