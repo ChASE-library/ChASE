@@ -18,7 +18,6 @@ void chase(MKL_Complex16* const H, int N, MKL_Complex16* V, MKL_Complex16* W,
   double lowerb, upperb, lambda;
   double normH = std::max(LAPACKE_zlange(LAPACK_COL_MAJOR, '1', N, N, H, N), 1.0);
   const double tol = tol_ * normH;
-
   double* resid_ = new double[nevex];
 
   // store input values
@@ -39,26 +38,26 @@ void chase(MKL_Complex16* const H, int N, MKL_Complex16* V, MKL_Complex16* W,
   // --------------------------------- LANCZOS ---------------------------------
   start_clock( TimePtrs::Lanczos );
   bool random = int_mode == CHASE_MODE_RANDOM;
-  int vecLanczos = lanczos(H, N, 4, random? nevex/4 : chase_lanczos_iter, nevex, &upperb,
+  int vecLanczos = lanczos(H, N, 4, random? std::max(1,nevex/4) : chase_lanczos_iter, nevex, &upperb,
           random, random? ritzv : NULL, random? V : NULL );
 
   end_clock( TimePtrs::Lanczos );
-
   int locked = 0; // Number of converged eigenpairs.
   int iteration = 0; // Current iteration.
 
-  while( unconverged > nex && iteration < chase_max_iter)
+  while( unconverged > nex && iteration < 4*chase_max_iter)
   {
     lambda = * std::min_element( ritzv_, ritzv_ + nevex );
     lowerb = * std::max_element( ritzv, ritzv + unconverged );
-
+    //upperb = lowerb + std::abs(lowerb - lambda);
     assert( lowerb < upperb );
+#ifdef OUTPUT
     std::cout
       << "iteration: " << iteration
       << "\t" << lambda << " " << lowerb << " " << upperb
       << " " << unconverged
       << std::endl;
-
+#endif
     //--------------------------------- FILTER ---------------------------------
     if( int_opt != CHASE_OPT_NONE && iteration != 0 )
     {
@@ -136,6 +135,7 @@ void chase(MKL_Complex16* const H, int N, MKL_Complex16* V, MKL_Complex16* W,
         ColSwap( V_Full, N, i, j );
       }
     }
+
 
   chase_iteration_count = iteration;
   delete[] resid_;

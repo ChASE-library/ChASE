@@ -4,6 +4,7 @@
 #include <iostream>
 
 #include <cstring> // memcpy
+#include <assert.h>
 #include <functional>
 #include <complex>
 #include <random>

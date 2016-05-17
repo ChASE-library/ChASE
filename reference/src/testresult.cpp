@@ -59,7 +59,7 @@ void TestResultIteration::compareMembers( TestResultIteration &ref,
     for( auto it = intMap.begin(); it != intMap.end(); ++it )
       assertEqual( it, ref.intMap, tests, fails );
     for( auto it = doubleMap.begin(); it != doubleMap.end(); ++it )
-      assertEqual<double>( it, ref.doubleMap, 0, tests, fails );
+      assertEqual<double>( it, ref.doubleMap, 1e-6, tests, fails );
   }
 
   void TestResultIteration::registerValue( std::string key, int value )
