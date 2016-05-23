@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
+#include <mkl.h>
 
 using namespace std;
 
@@ -12,32 +13,26 @@ struct f_complex{
 
 
 
-void writefile( const char* filename, f_complex * arr, int m, int n){
+void writefile( const char* filename, f_complex * arr, unsigned long m, unsigned long n){
   unsigned long mat_size = m*n;
   unsigned long count = 0;
-  unsigned long o = m;
-  unsigned long p = n;
   cout << "Writing Matrix of size " << m << " * " << n << endl;
-  complex<double> * mat = new complex<double>[mat_size];
-  for(unsigned long i = 0; i < o; i++){
-      cout << "writing arr["<<i<< "]" << endl;
-    for(unsigned long j = 0; j < p; j++){
-      if(i == 20658)
-	cout << "arr["<<i<<"]["<<j<<"] - " << i*m+j<< endl;
-      mat[i*o+j] = complex<double>(arr[i*o+j].real, arr[i*o+j].imag);
-      if(arr[i*o+j].real == 0.0 && arr[i*o+j].imag == 0)
-	count++;
-    }
+  MKL_Complex16 * mat = new MKL_Complex16[mat_size];
+  for(unsigned long i = 0; i < mat_size; i++){
+    mat[i].real = arr[i].real;
+    mat[i].imag = arr[i].imag;
+    if(arr[i].real == 0.0 && arr[i].imag == 0.0)
+      count++;
   }
-  cout << "Nonzero elements: " << count << " of " << mat_size << "(" << count/mat_size*100 << ")" << endl;
+  cout << "Zero elements: " << count << " of " << mat_size << "(" << (double)count/(double)mat_size*100 << ")" << endl;
   cout << "Finished copying struct to datatype complex<double>" << endl;
   FILE *out = fopen(filename, "wb");
   if (out == NULL){
     fprintf( stderr, "Couldn't open file '%s'.\n", filename );
     exit( -1 );
   }
-  unsigned long written = fwrite( mat, sizeof(double _Complex), m, out ); 
-  if( written != m )
+  unsigned long written = fwrite( mat, sizeof(MKL_Complex16), m*n, out ); 
+  if( written != m*n )
     {
       fprintf( stderr, "Didn't write all the data.\n" );
       exit( -2 );
