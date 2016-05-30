@@ -313,10 +313,12 @@ int main(int argc, char* argv[])
     reset_clock();
     std::cout << "Filtered Vectors\t\t" << filteredVecs << std::endl;
 
+    /*
     std::cout << "Eigenvalues: " << std::endl;
     for(int zzt = 0; zzt < nev; zzt++)
       std::cout << Lambda[zzt] << std::endl;
     std::cout << "End of eigenvalues. " << std::endl;
+    */
   } // for(int i = bgn; i <= end; ++i)
 
 
