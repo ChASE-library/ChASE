@@ -230,9 +230,9 @@ int main(int argc, char* argv[])
       if( mode[0] == CHASE_MODE_RANDOM )
       {
         ritzv_ = new double[nevex];
-        V_ = new MKL_Complex16[num_its*N];
         num_its = std::min(40,nevex/numvecs);
         num_its = std::max(1,num_its);
+        V_ = new MKL_Complex16[num_its*N];
       }
       std::cout << "Starting lanczos - main" << std::endl;
       lanczos( H, N, numvecs, num_its, nevex, &upperb,
