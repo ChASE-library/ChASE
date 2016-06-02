@@ -47,9 +47,11 @@ void chase(MKL_Complex16* const H, int N, MKL_Complex16* V, MKL_Complex16* W,
 
   while( unconverged > nex && iteration < 4*chase_max_iter)
   {
-    lambda = * std::min_element( ritzv_, ritzv_ + nevex );
-    lowerb = * std::max_element( ritzv, ritzv + unconverged );
-    //upperb = lowerb + std::abs(lowerb - lambda);
+    if(unconverged < nevex || iteration == 0){
+      lambda = * std::min_element( ritzv_, ritzv_ + nevex );
+      lowerb = * std::max_element( ritzv, ritzv + unconverged );
+      //upperb = lowerb + std::abs(lowerb - lambda);
+    }
     assert( lowerb < upperb );
 #ifdef OUTPUT
     std::cout
