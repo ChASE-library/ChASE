@@ -1,7 +1,7 @@
 #include "../include/filter.h"
 
-int filter( MKL_Complex16 *A, MKL_Complex16 *V, int n, int unprocessed,
-            int deg, int *degrees, double lambda_1, double lower, double upper,
+std::size_t filter( MKL_Complex16 *A, MKL_Complex16 *V, std::size_t n, std::size_t unprocessed,
+            std::size_t deg, std::size_t *degrees, double lambda_1, double lower, double upper,
             MKL_Complex16 *W )
 {
   double c = (upper + lower) / 2;
@@ -10,13 +10,13 @@ int filter( MKL_Complex16 *A, MKL_Complex16 *V, int n, int unprocessed,
   double sigma     = sigma_1;
   double sigma_new;
 
-  int num_mult = 0;
-  int Av = 0;
+  std::size_t num_mult = 0;
+  std::size_t Av = 0;
 
   //----------------------------------- A = A-cI -------------------------------
-  for( auto i = 0 ; i < n ; ++i )
+  for( auto i = 0 ; i < n ; ++i ){
     A[ i*n + i ] -= c;
-
+  }
   //------------------------------- Y = alpha*(A-cI)*V -------------------------
   MKL_Complex16 alpha = MKL_Complex16 (sigma_1 / e, 0.0);
   MKL_Complex16 beta = MKL_Complex16 (0.0, 0.0);

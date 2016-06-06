@@ -1,18 +1,18 @@
 #include "../include/chase.h"
 
 template <typename T>
-void swap_kj(int k, int j, T* array);
+void swap_kj(std::size_t k, std::size_t j, T* array);
 
-void chase(MKL_Complex16* const H, int N, MKL_Complex16* V, MKL_Complex16* W,
-           double* ritzv_, int nev, const int nex, int deg_, int* const degrees_,
+void chase(MKL_Complex16* const H, std::size_t N, MKL_Complex16* V, MKL_Complex16* W,
+           double* ritzv_, std::size_t nev, const std::size_t nex, std::size_t deg_, std::size_t* const degrees_,
            const double tol_, const CHASE_MODE_TYPE int_mode,
            const CHASE_OPT_TYPE int_opt)
 {
   start_clock( TimePtrs::All );
 
   chase_filtered_vecs = 0;
-  const int nevex = nev + nex; // Block size for the algorithm.
-  int unconverged = nev + nex;
+  const std::size_t nevex = nev + nex; // Block size for the algorithm.
+  std::size_t unconverged = nev + nex;
 
   // To store the approximations obtained from lanczos().
   double lowerb, upperb, lambda;
@@ -21,8 +21,8 @@ void chase(MKL_Complex16* const H, int N, MKL_Complex16* V, MKL_Complex16* W,
   double* resid_ = new double[nevex];
 
   // store input values
-  int deg = deg_;
-  int * degrees = degrees_;
+  std::size_t deg = deg_;
+  std::size_t * degrees = degrees_;
   double * ritzv = ritzv_;
   double * resid = resid_;
 
@@ -38,12 +38,12 @@ void chase(MKL_Complex16* const H, int N, MKL_Complex16* V, MKL_Complex16* W,
   // --------------------------------- LANCZOS ---------------------------------
   start_clock( TimePtrs::Lanczos );
   bool random = int_mode == CHASE_MODE_RANDOM;
-  int vecLanczos = lanczos(H, N, 4, random? std::max(1,nevex/4) : chase_lanczos_iter, nevex, &upperb,
+  std::size_t vecLanczos = lanczos(H, N, 4, random? std::max((std::size_t)1,nevex/4) : chase_lanczos_iter, nevex, &upperb,
           random, random? ritzv : NULL, random? V : NULL );
 
   end_clock( TimePtrs::Lanczos );
-  int locked = 0; // Number of converged eigenpairs.
-  int iteration = 0; // Current iteration.
+  std::size_t locked = 0; // Number of converged eigenpairs.
+  std::size_t iteration = 0; // Current iteration.
 
   while( unconverged > nex && iteration < 4*chase_max_iter)
   {
@@ -72,13 +72,12 @@ void chase(MKL_Complex16* const H, int N, MKL_Complex16* V, MKL_Complex16* W,
     start_clock( TimePtrs::Filter );
 #ifdef CHASE_BUILD_CUDA
 
-    int Av = cuda_filter(
+    std::size_t Av = cuda_filter(
       H, V, N, unconverged, deg, degrees,
       lambda, lowerb, upperb, W );
 
 #else
-
-    int Av = filter(
+    std::size_t Av = filter(
       H, V, N, unconverged, deg, degrees,
       lambda, lowerb, upperb, W );
 
@@ -107,7 +106,7 @@ void chase(MKL_Complex16* const H, int N, MKL_Complex16* V, MKL_Complex16* W,
     calc_residuals( N, unconverged, normH, ritzv, resid, H, V, W );
 
     // -------------------------------- LOCKING --------------------------------
-    int new_converged = locking(
+    std::size_t new_converged = locking(
       N, unconverged, tol, ritzv, resid, degrees, V );
 
     // ---------------------------- Update pointers ----------------------------
@@ -146,20 +145,20 @@ void chase(MKL_Complex16* const H, int N, MKL_Complex16* V, MKL_Complex16* W,
 }
 
 
-int get_iter_count()
+std::size_t get_iter_count()
 {
   return chase_iteration_count;
 }
 
 
-int get_filtered_vecs()
+std::size_t get_filtered_vecs()
 {
   return chase_filtered_vecs;
 }
 
 
 template <typename T>
-void swap_kj(int k, int j, T* array)
+void swap_kj(std::size_t k, std::size_t j, T* array)
 {
   T tmp = array[k];
   array[k] = array[j];
@@ -167,7 +166,7 @@ void swap_kj(int k, int j, T* array)
 }
 
 
-void ColSwap( MKL_Complex16 *V, int N, int i, int j )
+void ColSwap( MKL_Complex16 *V, std::size_t N, std::size_t i, std::size_t j )
 {
   MKL_Complex16 *ztmp = new MKL_Complex16[N];
   memcpy(ztmp,  V+N*i, N*sizeof(MKL_Complex16));
@@ -177,8 +176,8 @@ void ColSwap( MKL_Complex16 *V, int N, int i, int j )
 }
 
 
-int calc_degrees( int N, int unconverged, int nex,  double upperb, double lowerb,
-                  double tol, double *ritzv, double *resid, int *degrees,
+std::size_t calc_degrees( std::size_t N, std::size_t unconverged, std::size_t nex,  double upperb, double lowerb,
+                  double tol, double *ritzv, double *resid, std::size_t *degrees,
                   MKL_Complex16 *V, MKL_Complex16 *W)
 {
   start_clock( TimePtrs::Degrees );
@@ -221,12 +220,12 @@ int calc_degrees( int N, int unconverged, int nex,  double upperb, double lowerb
 }
 
 
-int locking( int N, int unconverged, double tol,
-             double *ritzv, double *resid, int *degrees,
+std::size_t locking( std::size_t N, std::size_t unconverged, double tol,
+             double *ritzv, double *resid, std::size_t *degrees,
              MKL_Complex16 *V)
 {
-  int converged = 0;
-  for (int j = 0; j < unconverged; ++j)
+  std::size_t converged = 0;
+  for (auto j = 0; j < unconverged; ++j)
   {
     if (resid[j] > tol) continue;
     if (j != converged)
@@ -243,7 +242,7 @@ int locking( int N, int unconverged, double tol,
 
 
 void calc_residuals(
-  int N, int unconverged, double norm,
+  std::size_t N, std::size_t unconverged, double norm,
   double *ritzv, double *resid, MKL_Complex16 *H, MKL_Complex16 *V,
   MKL_Complex16 *W)
 {
@@ -262,7 +261,7 @@ void calc_residuals(
     );
 
   double norm1, norm2;
-  for( int i = 0 ; i < unconverged ; ++i )
+  for( auto i = 0 ; i < unconverged ; ++i )
   {
     beta  = MKL_Complex16 (-ritzv[i], 0.0);
     cblas_zaxpy( N, &beta, V+N*i, 1, W+N*i, 1);
@@ -273,7 +272,7 @@ void calc_residuals(
 }
 
 
-void QR( int N, int nevex, int converged, MKL_Complex16 *W,
+void QR( std::size_t N, std::size_t nevex, std::size_t converged, MKL_Complex16 *W,
          MKL_Complex16 *tau, MKL_Complex16 *saveW )
 {
   start_clock( TimePtrs::Qr );
@@ -298,7 +297,7 @@ void QR( int N, int nevex, int converged, MKL_Complex16 *W,
 }
 
 
-void RR( int N, int block, double *Lambda,
+void RR( std::size_t N, std::size_t block, double *Lambda,
          MKL_Complex16 *H, MKL_Complex16 *V, MKL_Complex16 *W )
 {
   start_clock( TimePtrs::Rr );

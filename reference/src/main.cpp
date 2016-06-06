@@ -8,8 +8,8 @@
 namespace po = boost::program_options;
 
 template<typename T>
-void readMatrix( T *H, std::string path_in, std::string spin, int kpoint, int index,
-                 std::string suffix, int size, bool legacy )
+void readMatrix( T *H, std::string path_in, std::string spin, std::size_t kpoint, std::size_t index,
+                 std::string suffix, std::size_t size, bool legacy )
 {
   std::ostringstream problem(std::ostringstream::ate);
   if(legacy)
@@ -20,7 +20,6 @@ void readMatrix( T *H, std::string path_in, std::string spin, int kpoint, int in
 
   std::cout << problem.str() << std::endl;
   std::ifstream input( problem.str().c_str(), std::ios::binary );
-
   if(input.is_open()) {
     input.read((char *) H, sizeof(T) * size);
   } else {
@@ -31,12 +30,12 @@ void readMatrix( T *H, std::string path_in, std::string spin, int kpoint, int in
 int main(int argc, char* argv[])
 {
 
-  int N;
-  int nev;
-  int nex;
-  int deg;
-  int bgn;
-  int end;
+  std::size_t N;
+  std::size_t nev;
+  std::size_t nex;
+  std::size_t deg;
+  std::size_t bgn;
+  std::size_t end;
 
   double tol;
   bool sequence;
@@ -49,21 +48,21 @@ int main(int argc, char* argv[])
   std::string path_out;
   std::string path_name;
 
-  int kpoint;
+  std::size_t kpoint;
   bool legacy;
   std::string spin;
 
   po::options_description desc("ChASE Options");
   desc.add_options()
     ("help,h", "show this message")
-    ("n", po::value<int>(&N)->required(), "Size of the Input Matrix")
-    ("nev", po::value<int>(&nev)->required(), "Wanted Number of Eigenpairs")
-    ("nex", po::value<int>(&nex)->default_value(25), "Extra Search Dimensions")
-    ("deg", po::value<int>(&deg)->default_value(20), "Initial filtering degree")
-    ("bgn", po::value<int>(&bgn)->default_value(2), "Start ell")
-    ("end", po::value<int>(&end)->default_value(2), "End ell")
+    ("n", po::value<std::size_t>(&N)->required(), "Size of the Input Matrix")
+    ("nev", po::value<std::size_t>(&nev)->required(), "Wanted Number of Eigenpairs")
+    ("nex", po::value<std::size_t>(&nex)->default_value(25), "Extra Search Dimensions")
+    ("deg", po::value<std::size_t>(&deg)->default_value(20), "Initial filtering degree")
+    ("bgn", po::value<std::size_t>(&bgn)->default_value(2), "Start ell")
+    ("end", po::value<std::size_t>(&end)->default_value(2), "End ell")
     ("spin", po::value<std::string>(&spin)->default_value("d"), "spin")
-    ("kpoint", po::value<int>(&kpoint)->default_value(0), "kpoint")
+    ("kpoint", po::value<std::size_t>(&kpoint)->default_value(0), "kpoint")
     ("tol", po::value<double>(&tol)->default_value(1e-10), "Tolerance for Eigenpair convergence")
     ("path_in", po::value<std::string>(&path_in)->required(), "Path to the input matrix/matrices")
     ("mode", po::value<std::string>(&mode)->default_value("A"), "valid values are R(andom) or A(pproximate)")
@@ -155,8 +154,7 @@ int main(int argc, char* argv[])
     sequence
     );
 
-  const int nevex = nev + nex; // Block size for the algorithm.
-
+  const std::size_t nevex = nev + nex; // Block size for the algorithm.
   // Matrix representing the generalized eigenvalue problem.
   MKL_Complex16 *H = new MKL_Complex16[N*N];
   // Matrix which stores the approximate eigenvectors
@@ -165,14 +163,14 @@ int main(int argc, char* argv[])
   MKL_Complex16 *W = new MKL_Complex16[N*nevex];
   // eigenvalues
   double * Lambda = new double[nevex];
-  int *degrees  = new int[nevex];
+  std::size_t *degrees  = new std::size_t[nevex];
 
   //----------------------------------------------------------------------------
   //std::random_device rd;
   std::mt19937 gen(2342.0);
   std::normal_distribution<> d;
 
-  for (int i = bgn; i <= end ; ++i)
+  for (auto i = bgn; i <= end ; ++i)
   {
     if( i == bgn || !sequence )
     {
@@ -225,40 +223,37 @@ int main(int argc, char* argv[])
       double upperb;
       double *ritzv_;
       MKL_Complex16 *V_;
-      int num_its = 10;
-      int numvecs = 4;
+      std::size_t num_its = 10;
+      std::size_t numvecs = 4;
       if( mode[0] == CHASE_MODE_RANDOM )
       {
         ritzv_ = new double[nevex];
-        num_its = std::min(40,nevex/numvecs);
-        num_its = std::max(1,num_its);
+        num_its = std::min((std::size_t)40,nevex/numvecs);
+        num_its = std::max((std::size_t)1,num_its);
         V_ = new MKL_Complex16[num_its*N];
       }
-      std::cout << "Starting lanczos - main" << std::endl;
       lanczos( H, N, numvecs, num_its, nevex, &upperb,
                mode[0] == CHASE_MODE_RANDOM,
                ritzv_, V_);
-      std::cout << "End lanczos - main" << std::endl;
       if( mode[0] == CHASE_MODE_RANDOM )
       {
         double lambda = * std::min_element( ritzv_, ritzv_ + nevex );
         double lowerb = * std::max_element( ritzv_, ritzv_ + nevex );
         TR.registerValue( i, "lambda1", lambda );
         TR.registerValue( i, "lowerb", lowerb );
-	std::cout << "Free memory" << std::endl;
         delete[] ritzv_;
         delete[] V_;
       }
       TR.registerValue( i, "upperb", upperb );
     }
-    std::cout << "starting chase" << std::endl;
+
     //------------------------------SOLVE-CURRENT-PROBLEM-----------------------
     chase(H, N, V, W, Lambda, nev, nex, deg, degrees, tol, mode[0], opt[0]);
     //--------------------------------------------------------------------------
 
 
-    int iterations = get_iter_count();
-    int filteredVecs = get_filtered_vecs();
+    std::size_t iterations = get_iter_count();
+    std::size_t filteredVecs = get_filtered_vecs();
 
     TR.registerValue( i, "filteredVecs", filteredVecs );
     TR.registerValue( i, "iterations", iterations );

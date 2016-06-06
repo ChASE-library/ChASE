@@ -29,15 +29,15 @@ public:
   TestResultIteration();
 
   void compareMembers( TestResultIteration &ref, std::size_t &tests, std::size_t &fails );
-  void registerValue( std::string key, int value );
+  void registerValue( std::string key, std::size_t value );
   void registerValue( std::string key, double value );
 
 private:
-  std::unordered_map< std::string, int > intMap;
+  std::unordered_map< std::string, std::size_t > intMap;
   std::unordered_map< std::string, double > doubleMap;
 
   template<class Archive>
-    void serialize(Archive & ar, const unsigned int version)
+    void serialize(Archive & ar, const std::size_t version)
   {
     ar & BOOST_SERIALIZATION_NVP(intMap)
       & BOOST_SERIALIZATION_NVP(doubleMap);
@@ -54,7 +54,7 @@ public:
   TestResult();
   TestResult( bool compare_, std::string name_ );
   TestResult( bool compare, std::string name,
-              int n, int nev, int nex, int deg,
+              std::size_t n, std::size_t nev, std::size_t nex, std::size_t deg,
               double tol, char mode, char opt, bool sequence);
 
   std::string name();
@@ -84,7 +84,7 @@ private:
   void compareMembers( TestResult &ref );
   void reportResult( std::size_t tests, std::size_t fails );
   template<class Archive>
-    void serialize(Archive & a, const unsigned int version)
+    void serialize(Archive & a, const std::size_t version)
   {
     a & BOOST_SERIALIZATION_NVP( iterationResults );
   }

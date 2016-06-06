@@ -28,38 +28,38 @@
 #define CHASE_OPT_NONE CHASE_OPT_TYPE('N')
 #define CHASE_OPT_SINGLE CHASE_OPT_TYPE('S')
 
-static int chase_max_deg = 50;
-static int chase_filtered_vecs = 0;
-static int chase_deg_extra = 2;
-static int chase_max_iter = 10;
-static int chase_lanczos_iter = 10;
-static int chase_iteration_count = 0;
+static std::size_t chase_max_deg = 50;
+static std::size_t chase_filtered_vecs = 0;
+static std::size_t chase_deg_extra = 2;
+static std::size_t chase_max_iter = 10;
+static std::size_t chase_lanczos_iter = 10;
+static std::size_t chase_iteration_count = 0;
 
-int get_iter_count();
-int get_filtered_vecs();
+std::size_t get_iter_count();
+std::size_t get_filtered_vecs();
 
-void chase(MKL_Complex16* H, int N, MKL_Complex16* V, MKL_Complex16* W,
-           double* ritzv, int nev, const int nex,  const int deg, int* const degrees,
+void chase(MKL_Complex16* H, std::size_t N, MKL_Complex16* V, MKL_Complex16* W,
+           double* ritzv, std::size_t nev, const std::size_t nex,  const std::size_t deg, std::size_t* const degrees,
            const double tol, const CHASE_MODE_TYPE mode, const CHASE_OPT_TYPE opt);
 
-void ColSwap( MKL_Complex16 *V, int N, int i, int j );
+void ColSwap( MKL_Complex16 *V, std::size_t N, std::size_t i, std::size_t j );
 
-int calc_degrees( int N, int unconverged, int core,  double upperb, double lowerb,
-                  double tol, double *ritzv, double *resid, int *degrees,
+std::size_t calc_degrees( std::size_t N, std::size_t unconverged, std::size_t core,  double upperb, double lowerb,
+                  double tol, double *ritzv, double *resid, std::size_t *degrees,
                   MKL_Complex16 *V, MKL_Complex16 *W);
 
-int locking( int N, int unconverged, double tol,
-             double *ritzv, double *resid, int *degrees,
+std::size_t locking( std::size_t N, std::size_t unconverged, double tol,
+             double *ritzv, double *resid, std::size_t *degrees,
              MKL_Complex16 *V);
 
-void calc_residuals( int N, int unconverged, double tol,
+void calc_residuals( std::size_t N, std::size_t unconverged, double tol,
            double *ritzv, double *resid,
            MKL_Complex16 *H, MKL_Complex16 *V, MKL_Complex16 *W);
 
-void QR( int N, int nevex, int converged, MKL_Complex16 *W,
+void QR( std::size_t N, std::size_t nevex, std::size_t converged, MKL_Complex16 *W,
          MKL_Complex16 *tau, MKL_Complex16 *saveW );
 
-void RR( int N, int block, double *Lambda,
+void RR( std::size_t N, std::size_t block, double *Lambda,
          MKL_Complex16 *H, MKL_Complex16 *V, MKL_Complex16 *W );
 
 #endif  // CHASE_CHASE_H

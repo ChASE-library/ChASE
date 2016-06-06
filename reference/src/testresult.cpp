@@ -62,7 +62,7 @@ void TestResultIteration::compareMembers( TestResultIteration &ref,
       assertEqual<double>( it, ref.doubleMap, 1e-6, tests, fails );
   }
 
-  void TestResultIteration::registerValue( std::string key, int value )
+  void TestResultIteration::registerValue( std::string key, std::size_t value )
   {
     intMap.insert({ key, value });
   }
@@ -85,7 +85,7 @@ TestResult::TestResult( bool compare_, std::string name_ )
 
 
 TestResult::TestResult( bool compare_, std::string name_,
-                        int n_, int nev_, int nex_, int deg_,
+                        std::size_t n_, std::size_t nev_, std::size_t nex_, std::size_t deg_,
                         double tol_, char mode_, char opt_, bool sequence)
   : compare(compare_)
     {

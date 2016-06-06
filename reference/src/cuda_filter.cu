@@ -53,8 +53,8 @@ static void handleError_cublas( cublasStatus_t error, const char *file, int line
 
 
 
-int cuda_filter( MKL_Complex16 *H, MKL_Complex16 *V, int n, int unprocessed,
-            int deg, int *degrees, double lambda_1, double lower, double upper,
+std::size_t cuda_filter( MKL_Complex16 *H, MKL_Complex16 *V, std::size_t n, std::size_t unprocessed,
+            std::size_t deg, std::size_t *degrees, double lambda_1, double lower, double upper,
             MKL_Complex16 *W )
 {
   int N = n;

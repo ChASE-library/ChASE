@@ -6,7 +6,6 @@ int lanczos(const MKL_Complex16 *H, int N, int numvec, int m, int nevex, double 
   assert( m >= 1 );
   std::mt19937 gen(2342.0); // TODO
   std::normal_distribution<> d;
-
   if( !mode )
   {
     // all we need is the upper bound
