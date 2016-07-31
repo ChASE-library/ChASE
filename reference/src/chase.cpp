@@ -2,12 +2,17 @@
 
 template <typename T>
 void swap_kj(std::size_t k, std::size_t j, T* array);
+void check_params(std::size_t N, std::size_t nev, std::size_t nex,
+		  const double tol, std::size_t deg_);
 
 void chase(MKL_Complex16* const H, std::size_t N, MKL_Complex16* V, MKL_Complex16* W,
            double* ritzv_, std::size_t nev, const std::size_t nex, std::size_t deg_, std::size_t* const degrees_,
            const double tol_, const CHASE_MODE_TYPE int_mode,
            const CHASE_OPT_TYPE int_opt)
 {
+  //Parameter check
+  check_params(N, nev, nex, tol_, deg_);
+
   start_clock( TimePtrs::All );
 
   chase_filtered_vecs = 0;
@@ -350,4 +355,32 @@ void RR( std::size_t N, std::size_t block, double *Lambda,
   delete[] A;
 
   end_clock( TimePtrs::Rr );
+}
+
+void check_params(std::size_t N, std::size_t nev, std::size_t nex,
+		  const double tol, std::size_t deg)
+{
+  bool abort_flag = false;
+  if(tol < 1e-14)
+    std::clog << "WARNING: Tolerance too small, may take a while." << std::endl;
+  if(deg < 8 || deg > chase_max_deg)
+    std::clog << "WARNING: Degree should be between 8 and " << chase_max_deg << "."
+              << " (current: " << deg << ")" << std::endl;
+  if((double)nex/nev < 0.15 || (double)nex/nev > 0.75)
+  {
+    std::clog << "WARNING: NEX should be between 0.15*NEV and 0.75*NEV."
+              << " (current: " << (double)nex/nev << ")" << std::endl;
+    //abort_flag = true;
+  }
+  if(nev+nex > N)
+  {
+    std::cerr << "ERROR: NEV+NEX has to be smaller than N." << std::endl;
+    abort_flag = true;
+  }
+
+  if(abort_flag)
+  {
+    std::cerr << "Stopping execution." << std::endl;
+    exit(-1);
+  }
 }
