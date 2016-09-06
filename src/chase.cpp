@@ -386,10 +386,12 @@ void check_params(std::size_t N, std::size_t nev, std::size_t nex,
 }
 
 extern "C" {
-void c_chase(MKL_Complex16* H, size_t N, MKL_Complex16* V, MKL_Complex16* W,
-             double* ritzv, int nev, int nex, size_t deg, size_t *degrees,
-           const double tol, const CHASE_MODE_TYPE mode, const CHASE_OPT_TYPE opt)
+void c_chase_(MKL_Complex16* H, int N, MKL_Complex16* V, MKL_Complex16* W,
+              double* ritzv, int* nev, int* nex, int* deg,
+              double *tol, char* mode, char* opt)
 {
-  chase( H, N, V, W, ritzv, nev, nex, deg, degrees, tol,  mode,  opt);
+  size_t *degrees = (size_t*) malloc( (*nev+*nex)*sizeof( size_t ) );
+  chase( H, N, V, W, ritzv, *nev, *nex, *deg, degrees, *tol, *mode, *opt);
+  free(degrees);
 }
 }
