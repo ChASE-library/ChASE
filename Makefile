@@ -34,7 +34,7 @@ all: lib
 ${OBJS}: ${HEADER_FILES}
 
 lib: obj_dir obj/chase.o obj/filter.o obj/lanczos.o obj/timings.o
-	${AR} ${ARFLAGS} libchase.a  obj/chase.o obj/filter.o obj/lanczos.o obj/main.o obj/timings.o
+	${AR} ${ARFLAGS} libchase.a  obj/chase.o obj/filter.o obj/lanczos.o obj/timings.o
 
 main: obj_dir ${OBJS}
 	${CXX} ${OBJS} ${LDFLAGS} -o $@.x

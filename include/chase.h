@@ -38,6 +38,13 @@ static std::size_t chase_iteration_count = 0;
 std::size_t get_iter_count();
 std::size_t get_filtered_vecs();
 
+
+extern "C" {
+void c_chase(MKL_Complex16* H, size_t N, MKL_Complex16* V, MKL_Complex16* W,
+             double* ritzv, int nev, int nex, size_t deg, size_t *degrees,
+             const double tol, const CHASE_MODE_TYPE mode, const CHASE_OPT_TYPE opt);
+}
+
 void chase(MKL_Complex16* H, std::size_t N, MKL_Complex16* V, MKL_Complex16* W,
            double* ritzv, std::size_t nev, const std::size_t nex,  const std::size_t deg, std::size_t* const degrees,
            const double tol, const CHASE_MODE_TYPE mode, const CHASE_OPT_TYPE opt);
