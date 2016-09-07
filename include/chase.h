@@ -40,7 +40,7 @@ std::size_t get_filtered_vecs();
 
 
 extern "C" {
-void c_chase_(MKL_Complex16* H, int N, MKL_Complex16* V, MKL_Complex16* W,
+void c_chase_(MKL_Complex16* H, int *N, MKL_Complex16* V, MKL_Complex16* W,
               double* ritzv, int* nev, int* nex, int* deg,
               double *tol, char* mode, char* opt);
 }
