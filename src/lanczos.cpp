@@ -98,7 +98,7 @@ int lanczos(const MKL_Complex16 *H, int N, int numvec, int m, int nevex, double 
       }
     }
 
-    std::cout << "Obtained " << idx << " vectors from DoS " << m << " " << idx << std::endl; 
+    //std::cout << "Obtained " << idx << " vectors from DoS " << m << " " << idx << std::endl; 
     if ( idx > 0 )
     {
       MKL_Complex16 *ritzVc = new MKL_Complex16[m*m]();
@@ -129,7 +129,7 @@ int lanczos(const MKL_Complex16 *H, int N, int numvec, int m, int nevex, double 
       ritzv_[i] = lambda;
     ritzv_[nevex-1] = lowerb;
 
-    std::cout << lowerb << " " << lambda << std::endl;
+    //std::cout << lowerb << " " << lambda << std::endl;
 
     // Cleanup
     delete[] ThetaSorted;

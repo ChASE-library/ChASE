@@ -57,7 +57,6 @@ void chase(MKL_Complex16* const H, std::size_t N, MKL_Complex16* V, MKL_Complex1
       lowerb = * std::max_element( ritzv, ritzv + unconverged );
       //upperb = lowerb + std::abs(lowerb - lambda);
     }
-    assert( lowerb < upperb );
 #ifdef OUTPUT
     std::cout
       << "iteration: " << iteration
@@ -65,6 +64,7 @@ void chase(MKL_Complex16* const H, std::size_t N, MKL_Complex16* V, MKL_Complex1
       << " " << unconverged
       << std::endl;
 #endif
+    assert( lowerb < upperb );
     //--------------------------------- FILTER ---------------------------------
     if( int_opt != CHASE_OPT_NONE && iteration != 0 )
     {
