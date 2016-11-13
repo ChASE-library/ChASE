@@ -66,8 +66,8 @@ void chase(MKL_Complex16* const H, std::size_t N, MKL_Complex16* V, MKL_Complex1
       << std::endl;
 #endif
     //    assert( lowerb < upperb );
-    if( lowerb < upperb ) {
-      std::cout << "ASSERTION FAILURE lowerb < upperb\n";
+    if( lowerb > upperb ) {
+      std::cout << "ASSERTION FAILURE lowerb > upperb\n";
       lowerb = upperb;
     }
     //--------------------------------- FILTER ---------------------------------
