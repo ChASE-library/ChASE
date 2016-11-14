@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <omp.h>
 #include <assert.h>
+#include <vector>
 
 #ifndef MKL_Complex16
 #define MKL_Complex16 std::complex<double>

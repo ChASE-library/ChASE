@@ -49,6 +49,7 @@ void chase(MKL_Complex16* const H, std::size_t N, MKL_Complex16* V, MKL_Complex1
   end_clock( TimePtrs::Lanczos );
   std::size_t locked = 0; // Number of converged eigenpairs.
   std::size_t iteration = 0; // Current iteration.
+  lowerb = * std::max_element( ritzv, ritzv + unconverged );
 
   while( unconverged > nex && iteration < 4*chase_max_iter)
   {
@@ -234,10 +235,23 @@ std::size_t locking( std::size_t N, std::size_t unconverged, double tol,
              double *ritzv, double *resid, std::size_t *degrees,
              MKL_Complex16 *V)
 {
+  // we build the permutation
+  std::vector<int> index(unconverged, 0);
+for (int i = 0 ; i != index.size() ; i++) {
+    index[i] = i;
+}
+sort(index.begin(), index.end(),
+    [&](const int& a, const int& b) {
+        return (ritzv[a] < ritzv[b]);
+    }
+);
+
+
   std::size_t converged = 0;
-  for (auto j = 0; j < unconverged; ++j)
+  for (auto k = 0; k < unconverged; ++k)
   {
-    if (resid[j] > tol) continue;
+    auto j = index[k]; // walk through 
+    if (resid[j] > tol) break;
     if (j != converged)
     {
       swap_kj( j, converged, resid ); // if we filter again
