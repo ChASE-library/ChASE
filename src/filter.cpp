@@ -10,6 +10,10 @@ std::size_t filter( MKL_Complex16 *A, MKL_Complex16 *V, std::size_t n, std::size
   double sigma     = sigma_1;
   double sigma_new;
 
+  MKL_Complex16 *V_, *W_;
+  V_ = V;
+  W_ = W;
+  std::size_t offset = 0;
   std::size_t num_mult = 0;
   std::size_t Av = 0;
 
@@ -35,7 +39,7 @@ std::size_t filter( MKL_Complex16 *A, MKL_Complex16 *V, std::size_t n, std::size
   num_mult++;
   while( unprocessed >= 0 && *degrees <= num_mult )
   {
-    degrees++; V+=n; W+=n; unprocessed--;
+    degrees++; V+=n; W+=n; unprocessed--; offset+=n;
   };
 
   for( auto i = 2; i <= deg; ++i )
@@ -45,6 +49,8 @@ std::size_t filter( MKL_Complex16 *A, MKL_Complex16 *V, std::size_t n, std::size
       //----------------------- V = alpha(A-cI)W + beta*V ----------------------
       alpha = MKL_Complex16 (2.0*sigma_new / e, 0.0);
       beta = MKL_Complex16 (-sigma * sigma_new, 0.0);
+
+      cblas_zcopy( offset, W_, 1, V_, 1 );
 
       cblas_zgemm(
         CblasColMajor, CblasNoTrans, CblasNoTrans,
