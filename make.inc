@@ -7,7 +7,7 @@ ARFLAGS = rcs
 # Requires CUDA, and does not deliver good performance for large matrices
 #BUILD_CUDA=1
 
-CFLAGS+=-O3 -std=c++11
+CFLAGS+=-O3 -std=c++11 -DOUTPUT
 LDFLAGS+=-mkl
 
 CXX=icpc

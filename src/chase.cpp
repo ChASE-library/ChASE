@@ -326,9 +326,13 @@ void RR( std::size_t N, std::size_t block, double *Lambda,
 {
   start_clock( TimePtrs::Rr );
   MKL_Complex16 * A = new MKL_Complex16[block*block]; // For LAPACK.
+  MKL_Complex16 * Z = new MKL_Complex16[block*block]; // For LAPACK.
+  int * isuppz = new int[2*block];
+
 
   MKL_Complex16 One = MKL_Complex16 (1.0, 0.0);
   MKL_Complex16 Zero  = MKL_Complex16 (0.0, 0.0);
+  int m;
 
   // V <- H*V
   cblas_zgemm(
@@ -352,14 +356,18 @@ void RR( std::size_t N, std::size_t block, double *Lambda,
     A,    block
     );
 
-  LAPACKE_zheevd(
-    LAPACK_COL_MAJOR,
-    'V',    'L',
-    block,
-    A,    block,
-    Lambda
-    );
+  // LAPACKE_zheevd(
+  //   LAPACK_COL_MAJOR,
+  //   'V',    'L',
+  //   block,
+  //   A,    block,
+  //   Lambda
+  //   );
 
+  LAPACKE_zheevr ( LAPACK_COL_MAJOR, 'V', 'A', 'L', block, A, block,
+                   1.0, 1.0, 1, 1, 1e-12, &m, Lambda, Z, block,
+                   isuppz );
+  cblas_zcopy( block*block, Z, 1, A, 1 );
 
   cblas_zgemm(
     CblasColMajor,    CblasNoTrans,    CblasNoTrans,
@@ -372,6 +380,8 @@ void RR( std::size_t N, std::size_t block, double *Lambda,
     );
 
   delete[] A;
+  delete[] Z;
+  delete[] isuppz;
 
   end_clock( TimePtrs::Rr );
 }
