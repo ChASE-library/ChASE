@@ -257,7 +257,8 @@ void lanczosM( const MKL_Complex16 *H, int n, int m, double *upperb,
     );
 
   *upperb = std::max( std::abs( ritzv[0] ) , std::abs( ritzv[m-1] ) )
-    + std::abs(real_beta) * std::abs( ritzV[m*m-1] );
+    + std::abs(real_beta);
+    //    + std::abs(real_beta) * std::abs( ritzV[m*m-1] );
 
   if( ctrl )
   {
