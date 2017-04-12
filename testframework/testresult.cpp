@@ -1,4 +1,4 @@
-#include "../include/testresult.h"
+#include "testresult.h"
 
 
 #define ANSI_FG_BLACK   "\x1b[30m"
@@ -125,7 +125,12 @@ TestResult::TestResult( bool compare_, std::string name_,
   void TestResult::save() {
     std::ofstream ofs(this->name().c_str());
     boost::archive::xml_oarchive oa(ofs);
+
+#ifdef __llvm__
+    oa << BOOST_SERIALIZATION_NVP(*this);
+#else
     oa << BOOST_SERIALIZATION_NVP(this);
+#endif
 
   }
 

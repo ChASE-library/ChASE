@@ -1,0 +1,510 @@
+#pragma once
+
+#include <algorithm>
+#include <iomanip>
+#include <assert.h>
+
+template < class T >
+void
+swap_kj(
+        std::size_t k,
+        std::size_t j,
+        T* array
+        )
+{
+  T tmp = array[k];
+  array[k] = array[j];
+  array[j] = tmp;
+}
+
+template < class T >
+std::size_t
+ChASE_Algorithm<T>::calc_degrees(
+                              ChASE< T > *single,
+                              std::size_t N,
+                              std::size_t unconverged,
+                              std::size_t nex,
+                              Base< T > upperb,
+                              Base< T > lowerb,
+                              Base< T > tol,
+                              Base< T > *ritzv,
+                              Base< T > *resid,
+                              std::size_t *degrees
+                              )
+{
+  ChASE_Config conf = single->getConfig();
+
+  Base< T > c = (upperb + lowerb) / 2; // Center of the interval.
+  Base< T > e = (upperb - lowerb) / 2; // Half-length of the interval.
+  Base< T > rho;
+
+  for( std::size_t i = 0; i < unconverged; ++i )
+    {
+      Base< T > t = (ritzv[i] - c)/e;
+      rho = std::max(
+                     std::abs( t - sqrt( t*t-1 ) ),
+                     std::abs( t + sqrt( t*t-1 ) )
+                     );
+
+      degrees[i] = ceil(std::abs(log(resid[i]/(tol))/log(rho)));
+      degrees[i] = std::min(
+                            degrees[i] + conf.getDegExtra(),
+                            conf.getMaxDeg()
+                            );
+    }
+
+  // todo: we used to do this, why?
+
+  for( std::size_t i = 0; i < unconverged-nex; ++i )
+    {
+      Base<T> t = (ritzv[i] - c)/e;
+      rho = std::max(
+                     std::abs( t - sqrt( t*t-1 ) ),
+                     std::abs( t + sqrt( t*t-1 ) )
+                     );
+
+      degrees[i] = ceil(std::abs(log(resid[i]/(tol))/log(rho)));
+      degrees[i] = std::min(
+                            degrees[i] + conf.getDegExtra(),
+                            conf.getMaxDeg()
+                            );
+    }
+
+  for( std::size_t i = unconverged-nex; i < unconverged; ++i )
+    {
+      degrees[i] = degrees[unconverged-1-nex];
+    }
+
+
+  // we sort according to degrees
+  for( std::size_t  j = 0; j < unconverged-1; ++j )
+    for( std::size_t k = j; k < unconverged; ++k )
+      if( degrees[k] < degrees[j] )
+        {
+          swap_kj(k, j, degrees); // for filter
+          swap_kj(k, j, ritzv);
+          swap_kj(k, j, resid);
+          single->swap( k, j );
+        }
+
+  return degrees[unconverged-1];
+}
+
+
+template < class T >
+std::size_t
+ChASE_Algorithm<T>::locking(
+                            ChASE< T > *single,
+                            std::size_t N,
+                            std::size_t unconverged,
+                            Base< T > tol,
+                            Base< T > *ritzv,
+                            Base< T > *resid,
+                            std::size_t *degrees
+                            )
+{
+  // we build the permutation
+  std::vector<int> index(unconverged, 0);
+  for (int i = 0 ; i != index.size() ; i++) {
+    index[i] = i;
+  }
+  sort(index.begin(), index.end(),
+       [&](const int& a, const int& b) {
+         return (ritzv[a] < ritzv[b]);
+       }
+       );
+
+
+  std::size_t converged = 0;
+  for (auto k = 0; k < unconverged; ++k)
+    {
+      auto j = index[k]; // walk through 
+      if (resid[j] > tol) break;
+      if (j != converged)
+        {
+          swap_kj( j, converged, resid ); // if we filter again
+          swap_kj( j, converged, ritzv );
+          single->swap( j, converged );
+
+          //      ColSwap( V, N, j, converged );
+        }
+      converged++;
+    }
+  return converged;
+}
+
+template < class T >
+std::size_t
+ChASE_Algorithm<T>::filter(
+                        ChASE< T > *single,
+                        std::size_t n,
+                        std::size_t unprocessed,
+                        std::size_t deg,
+                        std::size_t *degrees,
+                        Base<T> lambda_1,
+                        Base<T> lower,
+                        Base<T> upper
+                        )
+{
+  Base<T> c = (upper + lower) / 2;
+  Base<T> e = (upper - lower) / 2;
+  Base<T> sigma_1   = e / (lambda_1 - c);
+  Base<T> sigma     = sigma_1;
+  Base<T> sigma_new;
+
+  std::size_t offset   = 0;
+  std::size_t num_mult = 0;
+  std::size_t Av       = 0;
+
+  //----------------------------------- A = A-cI -------------------------------
+  single->shift( -c );
+  //------------------------------- Y = alpha*(A-cI)*V -------------------------
+  T alpha = T(sigma_1 / e, 0.0);
+  T beta = T(0.0, 0.0);
+
+  single->threeTerms( unprocessed, alpha, beta, offset );
+
+  Av += unprocessed;
+  num_mult++;
+  while( unprocessed >= 0 && *degrees <= num_mult )
+    {
+      degrees++; //V+=n; W+=n;
+      unprocessed--; offset+=n;
+    };
+
+  for( std::size_t i = 2; i <= deg; ++i )
+    {
+      sigma_new = 1.0 / ( 2.0/sigma_1 - sigma );
+
+      //----------------------- V = alpha(A-cI)W + beta*V ----------------------
+      alpha = T (2.0*sigma_new / e, 0.0);
+      beta = T (-sigma * sigma_new, 0.0);
+      single->threeTerms( unprocessed, alpha, beta, offset );
+
+      sigma = sigma_new;
+      Av += unprocessed;
+      num_mult++;
+      while( unprocessed >= 0 && *degrees <= num_mult )
+        {
+          degrees++; //V+=n; W+=n;
+          unprocessed--;
+          offset+=n;
+        }
+
+    } // for(i = 2; i <= deg; ++i)
+
+  //----------------------------------RESTORE-A---------------------------------
+  single->shift( +c, true );
+
+  return Av;
+}
+
+
+template < class T >
+void
+ChASE_Algorithm<T>::lanczos(
+                              ChASE< T > *single,
+                              int N,
+                              int numvec,
+                              int m,
+                              int nevex,
+                              Base<T> *upperb,
+                              bool mode,
+                              Base<T> *ritzv_
+                              )
+{
+  assert( m >= 1 );
+  std::mt19937 gen(2342.0); // TODO
+  std::normal_distribution<> d;
+
+  //T *H = single->getMatrixPtr();
+  //T *V_ = single->getVectorsPtr();
+
+  if( !mode )
+    {
+      // all we need is the upper bound
+      /* for( auto i=0; i < N; ++i) */
+      /*   V_[i] = T( d(gen), d(gen) ); */
+      single->lanczos(m, upperb);
+      return;
+    }
+
+  // we need a bound for lambda1.
+
+  //We will do numvec many Lanczos procedures and save all the eigenvalues,
+  //and the first entries of the eigenvectors
+  Base<T> *Theta = new Base<T>[numvec*m]();
+  Base<T> *Tau = new Base<T>[numvec*m]();
+
+  Base<T> *ritzV = new Base<T>[m*m]();
+  //MKL_Complex16 *V = new T[N*m];
+  Base<T> upperb_ = std::numeric_limits<Base<T>>::min();
+  Base<T> lowerb, lambda;
+
+  //  double *ritzV = new double[m*m]();
+
+
+  for( std::size_t i=0; i < numvec; ++i)
+    {
+      // Generate random vector
+      /* for( std::size_t k=0; k < N; ++k) */
+      /*   { */
+      /*     V_[k] = T( d(gen), d(gen) ); */
+      /*   } */
+      single->lanczos(m, &upperb_, Theta+m*i, Tau+m*i, ritzV);
+      *upperb = std::max( upperb_, *upperb );
+    }
+
+  std::cout << "THETA: ";
+  for( std::size_t k = 0; k < numvec*m; ++k )
+    std::cout << Theta[k] << " ";
+  std::cout << "\n";
+
+  double *ThetaSorted = new double[numvec*m];
+  for( auto k=0; k < numvec*m; ++k )
+    ThetaSorted[k] = Theta[k];
+  std::sort(ThetaSorted, ThetaSorted + numvec*m, std::less<double>());
+
+  lambda = ThetaSorted[0];
+  //    lowerb = lambda + (*upperb - lambda) / 2.0;
+  //std::cout << "lamabda: " << lambda << std::endl;
+
+  double curr, prev = 0;
+  const double sigma = 0.25;
+  const double threshold = 2*sigma*sigma/10;
+  const double search = static_cast<double>(nevex) / static_cast<double>(N);
+  // CDF of a Gaussian, erf is a c++11 function
+  const auto G = [&] ( double x ) -> double {
+    return 0.5 * (1 + std::erf( x / sqrt( 2*sigma*sigma ) ) );
+  };
+
+  for( auto i=0; i < numvec*m; ++i )
+    {
+      curr = 0;
+      for( int j=0; j < numvec*m; ++j )
+        {
+          if( ThetaSorted[i] < ( Theta[j] - threshold ) )
+            curr += 0;
+          else if( ThetaSorted[i] > ( Theta[j] + threshold ) )
+            curr += Tau[j] * 1;
+          else
+            curr += Tau[j] * G( ThetaSorted[i] - Theta[j] );
+        }
+      curr = curr / numvec;
+
+      if( curr > search )
+        {
+          if( std::abs( curr - search ) < std::abs( prev - search ) )
+            lowerb = ThetaSorted[i];
+          else
+            lowerb = ThetaSorted[i-1];
+          break;
+        }
+      prev = curr;
+    }
+
+
+  // Now we extract the Eigenvectors that correspond to eigenvalues < lowerb
+  int idx = 0;
+  for (int i = 0; i < m; ++i) {
+    if ( Theta[ (numvec-1)*m + i] > lowerb ) {
+      idx = i-1;
+      break;
+    }
+  }
+  /*
+    std::cout << "Obtained " << idx << " vectors from DoS " << m << " " << idx << std::endl; 
+    if ( idx > 0 )
+    {
+    MKL_Complex16 *ritzVc = new MKL_Complex16[m*m]();
+    for( auto i=0; i < m*m; ++i)
+    ritzVc[i] = MKL_Complex16( ritzV[i], 0);
+    single->lanczosDoS( idx, m, ritzVc );
+
+    delete[] ritzVc;
+
+    }
+  */
+  /*
+  // no DoS, just randomness inside V
+  {
+  MKL_Complex16 *V_ = single->getVectorsPtr();
+  for( std::size_t k=0; k < N*(nevex-idx); ++k)
+  {
+  V_[N*idx + k] = std::complex<double>( d(gen), d(gen) );
+  }
+  }
+  */
+
+  lowerb = lowerb + std::abs(lowerb)*0.4;
+
+  for( auto i=0; i < nevex; ++i)
+    {
+      //      ritzv_[i] = ThetaSorted[(numvec-1)*m+i];
+      ritzv_[i] = lambda;
+    }
+  ritzv_[nevex-1] = lowerb;
+
+  // Cleanup
+  delete[] ThetaSorted;
+  delete[] Theta;
+  delete[] Tau;
+  //    delete[] V;
+  return;
+}
+
+template < class T >
+ChASE_PerfData
+ChASE_Algorithm<T>::solve(
+                       ChASE< T > *single,
+                       std::size_t N,
+                       Base< T > *ritzv_,
+                       std::size_t nev,
+                       const std::size_t nex
+                     )
+{
+
+  ChASE_PerfData perf;
+
+  std::size_t* degrees_ = new std::size_t[nev+nex];
+  // todo dealloc
+
+  ChASE_Config config = single->getConfig();
+
+  double tol_ = config.getTol();
+
+  //Parameter check
+  //check_params(N, nev, nex, tol_, deg_ );
+
+  perf.start_clock( ChASE_PerfData::TimePtrs::All );
+
+  //perf.chase_filtered_vecs = 0;
+  const std::size_t nevex = nev + nex;
+  std::size_t unconverged = nev + nex;
+
+  // To store the approximations obtained from lanczos().
+  Base<T> lowerb, upperb, lambda;
+  Base<T> normH = single->getNorm();
+  const double tol = tol_ * normH;
+  Base<T>* resid_ = new Base<T>[nevex];
+
+  // store input values
+  std::size_t deg = config.getDeg();
+  std::size_t * degrees = degrees_;
+  Base< T > * ritzv = ritzv_;
+  Base< T > * resid = resid_;
+
+  //-------------------------------- VALIDATION --------------------------------
+  assert(degrees != NULL);
+  deg = std::min( deg, config.getMaxDeg() );
+  for( std::size_t i = 0; i < nevex; ++i )
+    degrees[i] = deg;
+
+  // --------------------------------- LANCZOS ---------------------------------
+  perf.start_clock( ChASE_PerfData::TimePtrs::Lanczos );
+  //bool random = int_mode == CHASE_MODE_RANDOM;
+  bool random = !config.use_approx();
+  //  std::complex<double> *H = single->getMatrixPtr();
+  //  std::complex<double> *V = single->getVectorsPtr();
+  lanczos(single, N, 6,
+          random? std::max((std::size_t)config.getLanczosIter(),nevex/4) : config.getLanczosIter(),
+          nevex, &upperb,
+          random, random? ritzv : NULL );
+
+  perf.end_clock( ChASE_PerfData::TimePtrs::Lanczos );
+  std::size_t locked = 0; // Number of converged eigenpairs.
+  std::size_t iteration = 0; // Current iteration.
+  lowerb = * std::max_element( ritzv, ritzv + unconverged );
+
+  while( unconverged > nex && iteration < config.getMaxIter() )
+    {
+      if(unconverged < nevex || iteration == 0){
+        lambda = * std::min_element( ritzv_, ritzv_ + nevex );
+        // TODO: what is a reasonable definition for lowerb, based on nev or based on nevex?
+        auto tmp = * std::max_element( ritzv, ritzv + unconverged );
+        lowerb = (lowerb + tmp ) / 2;
+        lowerb = tmp;
+        //upperb = lowerb + std::abs(lowerb - lambda);
+      }
+#ifdef OUTPUT
+      std::cout
+        << std::scientific
+        << "iteration: " << iteration
+        << "\t" << std::setprecision(6) << lambda << "\t" << std::setprecision(6) << lowerb << "\t" << std::setprecision(6) << upperb
+        << "\t" << unconverged
+        << std::endl;
+#endif
+      //    assert( lowerb < upperb );
+      if( lowerb > upperb ) {
+        std::cout << "ASSERTION FAILURE lowerb > upperb\n";
+        lowerb = upperb;
+      }
+      //-------------------------------- DEGREES --------------------------------
+      //    if( int_opt != CHASE_OPT_NONE && unconverged < nevex )
+      if( config.do_optimization() && unconverged < nevex )
+        {
+          perf.start_clock( ChASE_PerfData::TimePtrs::Degrees );
+          deg = calc_degrees(
+                             single, N, unconverged, nex, upperb, lowerb,
+                             tol, ritzv, resid, degrees );
+          perf.end_clock( ChASE_PerfData::TimePtrs::Degrees );
+        }
+
+      //--------------------------------- FILTER ---------------------------------
+      perf.start_clock( ChASE_PerfData::TimePtrs::Filter );
+      std::size_t Av = filter(
+                              single, N, unconverged, deg, degrees,
+                              lambda, lowerb, upperb );
+      perf.end_clock( ChASE_PerfData::TimePtrs::Filter );
+
+      perf.add_filtered_vecs( Av );
+
+      //----------------------------------- QR -----------------------------------
+      perf.start_clock( ChASE_PerfData::TimePtrs::Qr );
+      single->QR( locked );
+      perf.end_clock( ChASE_PerfData::TimePtrs::Qr );
+
+      // ----------------------------- RAYLEIGH  RITZ ----------------------------
+      perf.start_clock( ChASE_PerfData::TimePtrs::Rr );
+      single->RR( ritzv, unconverged );
+      perf.end_clock( ChASE_PerfData::TimePtrs::Rr );
+
+      // --------------------------- RESIDUAL & LOCKING --------------------------
+      perf.start_clock( ChASE_PerfData::TimePtrs::Resids_Locking );
+      single->resd( ritzv, resid, locked );
+
+      std::size_t new_converged = locking( single, N, unconverged, tol,
+                                           ritzv, resid, degrees );
+      perf.end_clock( ChASE_PerfData::TimePtrs::Resids_Locking );
+
+      // ---------------------------- Update pointers ----------------------------
+      // Since we double buffer we need the entire locked portion in W and V
+      single->lock( new_converged );
+
+      locked += new_converged;
+      unconverged -= new_converged;
+
+      resid += new_converged;
+      ritzv += new_converged;
+      degrees += new_converged;
+
+      iteration++;
+    } // while ( converged < nev && iteration < omp_maxiter )
+
+  //---------------------SORT-EIGENPAIRS-ACCORDING-TO-EIGENVALUES---------------
+  for( auto i = 0; i < nev-1; ++i )
+    for( auto j = i+1; j < nev; ++j )
+      {
+        if( ritzv_[i] > ritzv_[j] )
+          {
+            swap_kj( i, j, ritzv_ );
+            single->swap( i, j );
+          }
+      }
+
+  perf.add_iter_count(iteration);
+  delete[] resid_;
+
+  perf.end_clock( ChASE_PerfData::TimePtrs::All );
+  return perf;
+}
