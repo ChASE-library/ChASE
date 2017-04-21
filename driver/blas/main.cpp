@@ -1,5 +1,5 @@
 #include "chase_blas.hpp"
-#include "testresult.h"
+#include "testresult.hpp"
 //#include "../include/lanczos.h"
 
 
@@ -138,14 +138,14 @@ int main(int argc, char* argv[])
   }
 
   // -----Validation of test----
-  bool testResultWrite;
+  bool testResultCompare;
   if( vm.count("write") )
-    testResultWrite = CHASE_TESTRESULT_WRITE;
+    testResultCompare = false;
   else
-    testResultWrite = CHASE_TESTRESULT_COMPARE;
+    testResultCompare = true;
 
   TestResult TR(
-    testResultWrite,
+    testResultCompare,
     testName,
     N,
     nev,
@@ -245,7 +245,7 @@ int main(int argc, char* argv[])
 
 
 
-    Base< T > normH = std::max(t_lange(LAPACK_COL_MAJOR, '1', N, N, H, N), Base< T >(1.0) );
+    Base< T > normH = std::max(t_lange('1', N, N, H, N), Base< T >(1.0) );
     single->setNorm( normH );
 
 
@@ -313,7 +313,7 @@ int main(int argc, char* argv[])
       CblasLeft,
       CblasLower,
       N, nev, &one, H, N, V, N, &one, W, N);
-    Base<T> norm = t_lange( LAPACK_COL_MAJOR, 'M', N, nev, W, N);
+    Base<T> norm = t_lange( 'M', N, nev, W, N);
     TR.registerValue( i, "resd", norm);
 
 
@@ -338,7 +338,7 @@ int main(int argc, char* argv[])
       unity, nev
       );
 
-    Base<T> norm2 = t_lange( LAPACK_COL_MAJOR, 'M', nev, nev, unity, nev);
+    Base<T> norm2 = t_lange( 'M', nev, nev, unity, nev);
     TR.registerValue( i, "orth", norm2);
 
     delete[] unity;

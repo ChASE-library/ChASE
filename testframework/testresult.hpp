@@ -1,8 +1,8 @@
 #ifndef CHASE_TESTRESULT_H
 #define CHASE_TESTRESULT_H
 
-#define CHASE_TESTRESULT_WRITE true
-#define CHASE_TESTRESULT_COMPARE false
+// #define CHASE_TESTRESULT_WRITE true
+// #define CHASE_TESTRESULT_COMPARE false
 
 #include <unordered_map>
 #include <vector>
@@ -15,23 +15,63 @@
 #include <boost/serialization/unordered_map.hpp>
 #include <boost/serialization/vector.hpp>
 
-#ifndef MKL_Complex16
-#define MKL_Complex16 std::complex<double>
-#endif
 
-#include <mkl_cblas.h>
-#include <mkl_lapacke.h>
+
+template<typename T>
+void assertEqual( typename std::unordered_map<std::string,T>::iterator it,
+                  std::unordered_map<std::string,T> const &map,
+                  std::size_t &tests, std::size_t &fails)
+{
+  auto rhs = map.at( it->first );
+  if( it->second != rhs )
+  {
+    fails++;
+    std::cout << it->first << " fails comparison\t"
+              << "(calc)" << it->second<< " != " << rhs << "(reference)"
+              << std::endl;
+  }
+  tests++;
+}
+
+template<typename T>
+void assertEqual( typename std::unordered_map<std::string,T>::iterator it,
+                  std::unordered_map<std::string,T> const &map,
+                  T tolerance,std::size_t &tests, std::size_t &fails)
+{
+  auto rhs = map.at( it->first );
+  if( std::abs((it->second - rhs)/it->second) > tolerance )
+  {
+    fails++;
+    std::cout << it->first << " fails comparison\t|"
+              << it->second<< " - " << rhs << "| > " << tolerance
+              << std::endl;
+  }
+  tests++;
+}
+
 
 class TestResultIteration {
 public:
   friend class boost::serialization::access;
   friend std::ostream & operator<<(std::ostream &os, const TestResultIteration &tr);
 
-  TestResultIteration();
+  TestResultIteration()
+    {};
 
-  void compareMembers( TestResultIteration &ref, std::size_t &tests, std::size_t &fails );
-  void registerValue( std::string key, std::size_t value );
-  void registerValue( std::string key, double value );
+  void compareMembers( TestResultIteration &ref, std::size_t &tests, std::size_t &fails ){
+    for( auto it = intMap.begin(); it != intMap.end(); ++it )
+      assertEqual( it, ref.intMap, tests, fails );
+    for( auto it = doubleMap.begin(); it != doubleMap.end(); ++it )
+      assertEqual<double>( it, ref.doubleMap, 1e-6, tests, fails );
+  };
+  void registerValue( std::string key, std::size_t value )
+  {
+    intMap.insert({ key, value });
+  };
+  void registerValue( std::string key, double value )
+    {
+      doubleMap.insert({ key, value });
+    };
 
 private:
   std::unordered_map< std::string, std::size_t > intMap;
@@ -46,14 +86,15 @@ private:
 };
 
 
-
 class TestResult {
 public:
   friend class boost::serialization::access;
   friend std::ostream & operator<<(std::ostream &os, const TestResult &tr);
 
   TestResult();
+
   TestResult( bool compare_, std::string name_ );
+
   TestResult( bool compare, std::string name,
               std::size_t n, std::size_t nev, std::size_t nex, std::size_t deg,
               double tol, char mode, char opt, bool sequence);
@@ -61,12 +102,13 @@ public:
   std::string name();
 
   template<typename T>
-    void registerValue( std::size_t iteration, std::string key, T value )
+  void registerValue( std::size_t iteration, std::string key, T value )
   {
     // ensure the vector is large enough
     iterationResults.resize( std::max( iteration, iterationResults.size() ) );
     iterationResults[iteration-1].registerValue( key, value );
   }
+
 
   void done();
 
@@ -90,5 +132,8 @@ private:
     a & BOOST_SERIALIZATION_NVP( iterationResults );
   }
 };
+
+
+#include "testresult_impl.hpp"
 
 #endif // CHASE_TESTRESULT_H

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <complex>
+#include <iostream>
 
 typedef int CHASE_INT;
 

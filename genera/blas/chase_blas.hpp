@@ -335,7 +335,7 @@ public:
     Base<T>* ritzv = new Base<T>[m];
 
 
-    t_stemr(
+    t_stemr< Base<T> >(
                    LAPACK_COL_MAJOR,
                    'N',    'A',
                    m,

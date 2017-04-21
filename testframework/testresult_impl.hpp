@@ -1,6 +1,3 @@
-#include "testresult.h"
-
-
 #define ANSI_FG_BLACK   "\x1b[30m"
 #define ANSI_FG_RED     "\x1b[31m"
 #define ANSI_FG_GREEN   "\x1b[32m"
@@ -19,63 +16,8 @@
 #define ANSI_BG_WHITE   "\x1b[47m"
 #define ANSI_RESET      "\x1b[0m"
 
-template<typename T>
-void assertEqual( typename std::unordered_map<std::string,T>::iterator it,
-                  std::unordered_map<std::string,T> const &map,
-                  std::size_t &tests, std::size_t &fails)
-{
-  auto rhs = map.at( it->first );
-  if( it->second != rhs )
-  {
-    fails++;
-    std::cout << it->first << " fails comparison\t"
-              << "(calc)" << it->second<< " != " << rhs << "(reference)"
-              << std::endl;
-  }
-  tests++;
-}
-
-template<typename T>
-void assertEqual( typename std::unordered_map<std::string,T>::iterator it,
-                  std::unordered_map<std::string,T> const &map,
-                  T tolerance,std::size_t &tests, std::size_t &fails)
-{
-  auto rhs = map.at( it->first );
-  if( std::abs((it->second - rhs)/it->second) > tolerance )
-  {
-    fails++;
-    std::cout << it->first << " fails comparison\t|"
-              << it->second<< " - " << rhs << "| > " << tolerance
-              << std::endl;
-  }
-  tests++;
-}
-
-TestResultIteration::TestResultIteration()
-    {};
-
-void TestResultIteration::compareMembers( TestResultIteration &ref,
-                                          std::size_t &tests, std::size_t &fails ) {
-    for( auto it = intMap.begin(); it != intMap.end(); ++it )
-      assertEqual( it, ref.intMap, tests, fails );
-    for( auto it = doubleMap.begin(); it != doubleMap.end(); ++it )
-      assertEqual<double>( it, ref.doubleMap, 1e-6, tests, fails );
-  }
-
-  void TestResultIteration::registerValue( std::string key, std::size_t value )
-  {
-    intMap.insert({ key, value });
-  }
-
-  void TestResultIteration::registerValue( std::string key, double value )
-  {
-    doubleMap.insert({ key, value });
-  }
-
-////////////////////////////////////////////////////////////////////////////////
-
 TestResult::TestResult()
-  : compare(CHASE_TESTRESULT_COMPARE)
+  : compare(true)
   {};
 
 TestResult::TestResult( bool compare_, std::string name_ )
@@ -112,9 +54,10 @@ TestResult::TestResult( bool compare_, std::string name_,
     return this->fileName;
   }
 
-  void TestResult::done() {
+  void TestResult::done()
+  {
     // either save or compare
-    if( compare == CHASE_TESTRESULT_WRITE )
+    if( !compare )
       save();
     else
     {
@@ -122,7 +65,8 @@ TestResult::TestResult( bool compare_, std::string name_,
       loadAndCompare();
     }
   }
-  void TestResult::save() {
+  void TestResult::save()
+  {
     std::ofstream ofs(this->name().c_str());
     boost::archive::xml_oarchive oa(ofs);
 
@@ -134,7 +78,8 @@ TestResult::TestResult( bool compare_, std::string name_,
 
   }
 
-  void TestResult::loadAndCompare() {
+  void TestResult::loadAndCompare()
+  {
     // construct object
     TestResult ref;
     std::ifstream ifs(this->name().c_str());
