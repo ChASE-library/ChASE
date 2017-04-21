@@ -1,0 +1,7 @@
+build_blas:
+  stage: build
+  script: make clean build -C driver/blas/
+
+test_blas:
+  stage: test
+  script: make test -C driver/blas/
