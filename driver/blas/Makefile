@@ -22,4 +22,4 @@ test: ${BUILDDIR}/chase_blas.done
 mk_builddir:
 	mkdir -p ${BUILDDIR}
 
-all: ${BUILDDIR}/chase_blas.x
+build: ${BUILDDIR}/chase_blas.x
