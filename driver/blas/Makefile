@@ -1,5 +1,4 @@
 build:
-	module load Intel/2017.0.098-GCC-5.4.0  IntelMPI/2017.0.098 Boost/1.61.0-Python-2.7.12 imkl/2017.0.098 || true
 	icpc -DOUTPUT -std=c++11  -I../../testframework -I../../genera/blas  -I../../algorithm -qopenmp  main.cpp -mkl -lboost_program_options -lboost_serialization -o main.x
 
 clean:
