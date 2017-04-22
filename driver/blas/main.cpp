@@ -122,11 +122,11 @@ int main(int argc, char* argv[])
     return -1;
   }
 
-  if( opt != "N" && opt != "S" && opt != "M" )
+  if( opt != "N" && opt != "S" )
   {
     std::cout
       << "Illegal value for opt: " << opt << std::endl
-      << "Legal values are N, S, M" << std::endl;
+      << "Legal values are N, S" << std::endl;
     return -1;
   }
 
@@ -157,77 +157,64 @@ int main(int argc, char* argv[])
     sequence
     );
 
-  const std::size_t nevex = nev + nex; // Block size for the algorithm.
-  Base< T > * Lambda = new Base< T >[nevex];
+  //----------------------------------------------------------------------------
 
-  ChASE_Config config;
+  ChASE_Config config( N, nev, nex );
   config.setTol( tol );
   config.setDeg( deg );
+  config.setOpt( opt == "S" );
 
-  ChASE_Blas< T > *single
-    = new ChASE_Blas< T >( N, nev, nex, Lambda, config );
+  ChASE_Blas< T > *single = new ChASE_Blas< T >( config );
 
-  MKL_Complex16 *_H = new MKL_Complex16[N*N];
-
-  /*
-  // Matrix representing the generalized eigenvalue problem.
-  
-  // Matrix which stores the approximate eigenvectors
-  MKL_Complex16 *V = new MKL_Complex16[N*nevex];
-  // Matrix which stores the eigenvectors
-  MKL_Complex16 *W = new MKL_Complex16[N*nevex];
-  // eigenvalues
-  std::size_t *degrees  = new std::size_t[nevex];
-  */
-
-  //----------------------------------------------------------------------------
   //std::random_device rd;
   std::mt19937 gen(2342.0);
   std::normal_distribution<> d;
 
-
   T *V = single->getVectorsPtr();
   T *H = single->getMatrixPtr();
-  T *W = new T[N*nevex];
+  Base< T > * Lambda = single->getRitzv();
 
+  // the example matrices are stored in std::complex< double >
+  // so we read them as such and then case them
+  std::complex< double > *_H = new MKL_Complex16[N*N];
 
   for (auto i = bgn; i <= end ; ++i)
   {
     if( i == bgn || !sequence )
     {
       /*
-	if (path_eigp == "_" && int_mode == OMP_APPROX && i == bgn )
-	{ // APPROX. No approximate pairs given.
-	  //-------------------------SOLVE-PREVIOUS-PROBLEM-------------------------
-	  app = ".bin"; // Read the matrix of the previous problem.
-	  myreadwrite<MKL_Complex16>(H, path_in.c_str(), app.c_str(), i-1, N*N, 'r');
+        if (path_eigp == "_" && int_mode == OMP_APPROX && i == bgn )
+        { // APPROX. No approximate pairs given.
+        //-------------------------SOLVE-PREVIOUS-PROBLEM-------------------------
+        app = ".bin"; // Read the matrix of the previous problem.
+        myreadwrite<MKL_Complex16>(H, path_in.c_str(), app.c_str(), i-1, N*N, 'r');
 
-	  // Solve the previous problem, store the eigenpairs in V and Lambda.
-	  ZHEEVR("V", "I", "L", &N, H, &N, &vl, &vu, &il, &iu, &tol,
-	  &notneeded, Lambda, V, &N, isuppz, zmem, &lzmem, dmem, &ldmem,
-	  imem, &limem, &INFO);
+        // Solve the previous problem, store the eigenpairs in V and Lambda.
+        ZHEEVR("V", "I", "L", &N, H, &N, &vl, &vu, &il, &iu, &tol,
+        &notneeded, Lambda, V, &N, isuppz, zmem, &lzmem, dmem, &ldmem,
+        imem, &limem, &INFO);
 
-	  //------------------------------------------------------------------------
-	  // In next iteration the solutions to this one will be used as approximations.
-	  path_eigp = path_out;
-	  }
-	  else */
+        //------------------------------------------------------------------------
+        // In next iteration the solutions to this one will be used as approximations.
+        path_eigp = path_out;
+        }
+        else */
       if (mode[0] == 'A')
       { // APPROX. Approximate eigenpairs given.
         //-----------------------READ-APPROXIMATE-EIGENPAIRS----------------------
-        readMatrix( V, path_eigp, spin, kpoint, i-1, ".vct", N*nevex, legacy );
-        readMatrix( Lambda, path_eigp, spin, kpoint, i-1, ".vls", nevex, legacy );
+        readMatrix( V, path_eigp, spin, kpoint, i-1, ".vct", N*(nev+nex), legacy );
+        readMatrix( Lambda, path_eigp, spin, kpoint, i-1, ".vls", (nev+nex), legacy );
         //------------------------------------------------------------------------
       }
       else
       { // RANDOM.
         // Randomize V.
-        for( std::size_t i=0; i < N*nevex; ++i)
+        for( std::size_t i=0; i < N*(nev+nex); ++i)
         {
           V[i] = T( d(gen), d(gen) );
         }
         // Set Lambda to zeros. ( Lambda = zeros(N,1) )
-        for(int j=0; j<nevex; j++)
+        for(int j=0; j<(nev+nex); j++)
           Lambda[j]=0.0;
       }
     }
@@ -241,46 +228,11 @@ int main(int argc, char* argv[])
     // the input is complex double so we cast to T
     for( std::size_t idx = 0; idx < N*N; ++idx )
       H[idx] = _H[idx];
-    single->shift(1);
-
-
 
     Base< T > normH = std::max(t_lange('1', N, N, H, N), Base< T >(1.0) );
     single->setNorm( normH );
 
-
-    /*
-    // test lanczos
-    {
-      double upperb;
-      double *ritzv_;
-      MKL_Complex16 *V_;
-      std::size_t num_its = 10;
-      std::size_t numvecs = 4;
-      if( mode[0] == CHASE_MODE_RANDOM )
-      {
-        ritzv_ = new double[nevex];
-        num_its = std::min((std::size_t)40,nevex/numvecs);
-        num_its = std::max((std::size_t)1,num_its);
-        V_ = new MKL_Complex16[num_its*N];
-      }
-      lanczos( H, N, numvecs, num_its, nevex, &upperb,
-               mode[0] == CHASE_MODE_RANDOM,
-               ritzv_, V_);
-      if( mode[0] == CHASE_MODE_RANDOM )
-      {
-        double lambda = * std::min_element( ritzv_, ritzv_ + nevex );
-        double lowerb = * std::max_element( ritzv_, ritzv_ + nevex );
-        TR.registerValue( i, "lambda1", lambda );
-        TR.registerValue( i, "lowerb", lowerb );
-        delete[] ritzv_;
-        delete[] V_;
-      }
-      TR.registerValue( i, "upperb", upperb );
-    }
-    */
     //------------------------------SOLVE-CURRENT-PROBLEM-----------------------
-    //chase( single, N, Lambda, nev, nex, deg );
     single->solve();
     //--------------------------------------------------------------------------
 
@@ -293,60 +245,16 @@ int main(int argc, char* argv[])
     TR.registerValue( i, "iterations", iterations );
 
     //-------------------------- Calculate Residuals ---------------------------
-    T *V = single->getVectorsPtr();
-    for( CHASE_INT j = 0; j < N*(nev+nex); ++j )
-      {
-        W[j] = V[j];
-      }
+    Base<T> resd = single->residual();
+    Base<T> orth = single->orthogonality();
 
-    //    memcpy(W, V, sizeof(MKL_Complex16)*N*nev);
-    T one(1.0);
-    T zero(0.0);
-    T eigval;
-    int iOne = 1;
-    for(int ttz = 0; ttz<nev;ttz++){
-      eigval = -1.0 * Lambda[ttz];
-      t_scal( N, &eigval, W+ttz*N, 1);
-    }
-    t_hemm(
-      CblasColMajor,
-      CblasLeft,
-      CblasLower,
-      N, nev, &one, H, N, V, N, &one, W, N);
-    Base<T> norm = t_lange( 'M', N, nev, W, N);
-    TR.registerValue( i, "resd", norm);
+    TR.registerValue( i, "resd", resd);
+    TR.registerValue( i, "orth", orth);
 
+    perf.print();
 
-    // Check eigenvector orthogonality
-    T *unity = new T[nev*nev];
-    T neg_one(-1.0);
-    for(int ttz = 0; ttz < nev; ttz++){
-      for(int tty = 0; tty < nev; tty++){
-        if(ttz == tty) unity[nev*ttz+tty] = 1.0;
-        else unity[nev*ttz+tty] = 0.0;
-      }
-    }
-
-    t_gemm(
-      CblasColMajor,
-      CblasConjTrans, CblasNoTrans,
-      nev, nev, N,
-      &one,
-      V, N,
-      V, N,
-      &neg_one,
-      unity, nev
-      );
-
-    Base<T> norm2 = t_lange( 'M', nev, nev, unity, nev);
-    TR.registerValue( i, "orth", norm2);
-
-    delete[] unity;
-
-    std::cout << "resd: " << norm << "\torth:" << norm2 << std::endl;
-
-    perf.print_timings();
-    std::cout << "Filtered Vectors\t\t" << filteredVecs << std::endl;
+    if( resd > nev*normH*tol || orth > 1e-14 )
+      throw new std::exception();
 
   } // for(int i = bgn; i <= end; ++i)
 
@@ -361,12 +269,8 @@ int main(int argc, char* argv[])
 #endif
 
 
-  //delete[] H;
-  //delete[] V;
-  delete[] W;
-  delete[] Lambda;
-  //delete[] zmem; delete[] dmem; delete[] imem;
-  //delete[] isuppz;
+  delete single;
+  delete[] _H;
 
   return 0;
 }

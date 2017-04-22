@@ -39,7 +39,7 @@ void assertEqual( typename std::unordered_map<std::string,T>::iterator it,
                   T tolerance,std::size_t &tests, std::size_t &fails)
 {
   auto rhs = map.at( it->first );
-  if( std::abs((it->second - rhs)/it->second) > tolerance )
+  if( std::abs((it->second - rhs) / std::max( it->second, rhs )) > tolerance )
   {
     fails++;
     std::cout << it->first << " fails comparison\t|"
@@ -62,7 +62,7 @@ public:
     for( auto it = intMap.begin(); it != intMap.end(); ++it )
       assertEqual( it, ref.intMap, tests, fails );
     for( auto it = doubleMap.begin(); it != doubleMap.end(); ++it )
-      assertEqual<double>( it, ref.doubleMap, 1e-6, tests, fails );
+      assertEqual<double>( it, ref.doubleMap, 1e-1, tests, fails );
   };
   void registerValue( std::string key, std::size_t value )
   {

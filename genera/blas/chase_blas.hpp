@@ -13,19 +13,18 @@ template< class T >
 class ChASE_Blas : public ChASE<T> {
 
 public:
-  ChASE_Blas( CHASE_INT _N, CHASE_INT _nev, CHASE_INT _nex,
-              Base<T> *_ritzv, ChASE_Config _config )
+  ChASE_Blas( ChASE_Config _config )
     :
-    N(_N),
-    nev(_nev),
-    nex(_nex),
+    N(_config.getN()),
+    nev(_config.getNev()),
+    nex(_config.getNex()),
     locked(0),
-    ritzv(_ritzv),
     config(_config)
   {
     H = new T[ N*N ]();
     V = new T[ N*(nev+nex) ]();
     W = new T[ N*(nev+nex) ]();
+    ritzv = new Base<T>[ (nev+nex) ];
     approxV = V;
     workspace = W;
   };
@@ -43,7 +42,6 @@ public:
   ChASE_PerfData getPerfData() {
     return perf;
   }
-
 
   ChASE_Config getConfig() {
     return config;
@@ -535,8 +533,62 @@ public:
     }
   }
 
+
+  Base< T > residual() {
+    for( CHASE_INT j = 0; j < N*(nev+nex); ++j )
+      {
+        W[j] = V[j];
+      }
+
+    //    memcpy(W, V, sizeof(MKL_Complex16)*N*nev);
+    T one(1.0);
+    T zero(0.0);
+    T eigval;
+    int iOne = 1;
+    for(int ttz = 0; ttz<nev;ttz++){
+      eigval = -1.0 * ritzv[ttz];
+      t_scal( N, &eigval, W+ttz*N, 1);
+    }
+    t_hemm(
+           CblasColMajor,
+           CblasLeft,
+           CblasLower,
+           N, nev, &one, H, N, V, N, &one, W, N);
+    Base<T> norm = t_lange( 'M', N, nev, W, N);
+    //TR.registerValue( i, "resd", norm);
+    return norm;
+  }
+
+  Base< T > orthogonality() {
+    T one(1.0);
+    T zero(0.0);
+    // Check eigenvector orthogonality
+    T *unity = new T[nev*nev];
+    T neg_one(-1.0);
+    for(int ttz = 0; ttz < nev; ttz++){
+      for(int tty = 0; tty < nev; tty++){
+        if(ttz == tty) unity[nev*ttz+tty] = 1.0;
+        else unity[nev*ttz+tty] = 0.0;
+      }
+    }
+
+    t_gemm(
+           CblasColMajor,
+           CblasConjTrans, CblasNoTrans,
+           nev, nev, N,
+           &one,
+           V, N,
+           V, N,
+           &neg_one,
+           unity, nev
+           );
+    Base<T> norm = t_lange( 'M', nev, nev, unity, nev);
+    delete[] unity;
+    return norm;
+  }
+
 private:
-  CHASE_INT N, nev, nex, locked;
+  std::size_t N, nev, nex, locked;
   T *H, *V,  *W;
   T *approxV, *workspace;
   Base<T> norm;

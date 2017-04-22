@@ -2,11 +2,14 @@
 
 class ChASE_Config {
 public:
-  ChASE_Config() :
-    optimization(false),
-    approx(false),
-    tol(1e-10),
-    deg(20)
+  ChASE_Config(std::size_t _N, std::size_t _nev, std::size_t _nex)
+    : N(_N)
+    , nev(_nev)
+    , nex(_nex)
+    , optimization(false)
+    , approx(false)
+    , tol(1e-10)
+    , deg(20)
   {}
 
   bool use_approx() {
@@ -24,6 +27,11 @@ public:
   void setTol( double _tol ) {
     tol = _tol;
   }
+
+  void setOpt( bool flag ) {
+    optimization = flag;
+  }
+
 
   double getTol() {
     return tol;
@@ -46,13 +54,27 @@ public:
   }
 
   std::size_t getLanczosIter() {
-    return 20;
+    return 30;
+  }
+
+  std::size_t getN() {
+    return N;
+  }
+
+  std::size_t getNev() {
+    return nev;
+  }
+
+  std::size_t getNex() {
+    return nex;
   }
 
 private:
   bool optimization;
   bool approx;
   std::size_t deg;
+
+  std::size_t N, nev, nex;
 
   // not sure about this, would we ever need more?
   double tol;

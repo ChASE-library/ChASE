@@ -65,7 +65,13 @@ public:
       ;
   }
 
+  void print() {
+    //std::cout << "resd: " << norm << "\torth:" << norm2 << std::endl;
+    this->print_timings();
+    std::cout << "Filtered Vectors\t\t" << chase_filtered_vecs << "\n";
+    std::cout << "Iteration Count\t\t" << chase_iteration_count << "\n";
 
+  }
 
 private:
 

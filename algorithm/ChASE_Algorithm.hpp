@@ -31,7 +31,8 @@ public:
                Base< T > tol,
                Base< T > *ritzv,
                Base< T > *resid,
-               std::size_t *degrees
+               std::size_t *degrees,
+               std::size_t locked
                );
 
   static std::size_t
@@ -42,7 +43,8 @@ public:
           Base< T > tol,
           Base< T > *ritzv,
           Base< T > *resid,
-          std::size_t *degrees
+          std::size_t *degrees,
+          std::size_t locked
           );
 
   static std::size_t
@@ -57,7 +59,7 @@ public:
          Base<T> upper
          );
 
-  static void
+  static std::size_t
   lanczos(
           ChASE< T > *single,
           int N,
