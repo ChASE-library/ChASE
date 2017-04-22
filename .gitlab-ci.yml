@@ -3,6 +3,11 @@ build_blas:
   script:
   - module load Intel/2017.0.098-GCC-5.4.0  IntelMPI/2017.0.098 Boost/1.61.0-Python-2.7.12 imkl/2017.0.098
   - make clean build -C driver/blas/
+  artifacts:
+    paths:
+    - build/
+    - driver/blas/*.xml
+
 
 test_blas:
   stage: test
