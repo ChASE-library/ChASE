@@ -1,3 +1,4 @@
+/* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
 #pragma once
 
 #include <complex>
@@ -14,7 +15,7 @@ struct Base_Class
 };
 
 template <class Q>
-struct Base_Class< std::complex<Q> >
+struct Base_Class<std::complex<Q>>
 {
   typedef Q type;
 };
@@ -25,19 +26,22 @@ using Base = typename Base_Class<Q>::type;
 #include "ChASE_Config.hpp"
 #include "ChASE_Perf.hpp"
 
-template< class T >
-class ChASE {
+template <class T>
+class ChASE
+{
 public:
-  virtual void shift( T c, bool isunshift = false ) = 0;
-  virtual void threeTerms( CHASE_INT nev, T alpha, T beta, CHASE_INT offset )  = 0;
-  virtual void QR( CHASE_INT fixednev )  = 0;
-  virtual void RR( Base<T> *ritzv, CHASE_INT block )  = 0;
-  virtual void resd( Base<T> *ritzv, Base<T> *resd, CHASE_INT fixednev ) = 0;
-  virtual void swap( CHASE_INT i, CHASE_INT j ) = 0;
-  virtual void lanczos( CHASE_INT m, Base<T> *upperb ) = 0;
-  virtual void lanczos( CHASE_INT M, Base<T> *upperb, Base<T> *ritzv, Base<T> *Tau, Base<T> *ritzV ) = 0;
-  virtual void lanczosDoS( CHASE_INT idx, CHASE_INT m, T *ritzVc ) = 0;
-  virtual void lock( CHASE_INT new_converged ) = 0;
+  virtual void shift(T c, bool isunshift = false) = 0;
+  virtual void threeTerms(CHASE_INT nev, T alpha, T beta, CHASE_INT offset) = 0;
+  virtual void QR(CHASE_INT fixednev) = 0;
+  virtual void RR(Base<T>* ritzv, CHASE_INT block) = 0;
+  virtual void resd(Base<T>* ritzv, Base<T>* resd, CHASE_INT fixednev) = 0;
+  virtual void swap(CHASE_INT i, CHASE_INT j) = 0;
+  virtual void lanczos(CHASE_INT m, Base<T>* upperb) = 0;
+  virtual void lanczos(CHASE_INT M, Base<T>* upperb, Base<T>* ritzv,
+                       Base<T>* Tau, Base<T>* ritzV) = 0;
+  virtual void lanczosDoS(CHASE_INT idx, CHASE_INT m, T* ritzVc) = 0;
+  virtual void lock(CHASE_INT new_converged) = 0;
+  virtual void cpy(CHASE_INT new_converged) = 0;
   virtual Base<T> getNorm() = 0;
 
   virtual CHASE_INT getN() = 0;

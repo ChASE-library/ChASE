@@ -1,3 +1,4 @@
+/* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
 #ifndef CHASE_CHASE_H
 #define CHASE_CHASE_H
 
