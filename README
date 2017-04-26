@@ -85,3 +85,19 @@ some discrepancy between the "orth" numbers, i.e.:
     orth fails comparison	|4.11734e-15 - 3.66515e-15| > 1e-06
     orth fails comparison	|3.25221e-15 - 6.66134e-15| > 1e-06
     PASSED	10 / 12
+
+
+Matrices on Jureca
+------------------
+
+    Au-Ag system
+        n = 5638 -- nev = 972 -- N = 24 -- cd AuAg\size5k\bin
+        n = 8970 -- nev = 972 -- N = 31 -- cd AuAg\size8k\bin
+        n = 13379 -- nev = 972 -- N = 25 -- cd AuAg\size13k\bin 
+    Na-Cl system
+        n = 3893 -- nev = 256 -- N = 16 -- cd NaCl\size4k\bin
+        n = 6217 -- nev = 256 -- N = 16 -- cd NaCl\size6k\bin
+        n = 9273 -- nev = 256 -- N = 16 -- cd NaCl\size9k\bin 
+    Ti-O2 system
+        n = 12455 -- nev = 1076 -- N = 30 -- cd TiO2\size12k\bin
+        n = 29528 -- nev = 2560 -- N = 18 -- cd TiO2\size30k\bin
