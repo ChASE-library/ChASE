@@ -312,6 +312,10 @@ public:
 
       t_gemv(CblasColMajor, CblasNoTrans, n, n, &One, H, n, v1, 1, &Zero, w, 1);
 
+      // std::cout << "lanczos Av\n";
+      // for (std::size_t ll = 0; ll < 2; ++ll)
+      //   std::cout << w[ll] << "\n";
+
       t_dot(n, v1, 1, w, 1, &alpha);
 
       alpha = -alpha;
@@ -352,8 +356,10 @@ public:
     *upperb = std::max(std::abs(ritzv[0]), std::abs(ritzv[m - 1])) +
               std::abs(real_beta);
 
-    for (std::size_t k = 1; k < m; ++k)
+    for (std::size_t k = 1; k < m; ++k) {
       Tau[k] = std::abs(ritzV[k * m]) * std::abs(ritzV[k * m]);
+      //std::cout << Tau[k] << "\n";
+    }
 
     delete[] isuppz;
     delete[] d;

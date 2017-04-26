@@ -215,12 +215,14 @@ ChASE_Algorithm<T>::lanczos(ChASE<T>* single, int N, int numvec, int m,
     *upperb = std::max(upperb_, *upperb);
   }
 
-  /*
+#ifdef OUTPUT
   std::cout << "THETA: ";
   for( std::size_t k = 0; k < numvec*m; ++k )
     std::cout << Theta[k] << " ";
   std::cout << "\n";
-  */
+#endif
+
+
   double* ThetaSorted = new double[numvec * m];
   for (auto k = 0; k < numvec * m; ++k)
     ThetaSorted[k] = Theta[k];
