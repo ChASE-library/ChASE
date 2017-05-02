@@ -9,10 +9,12 @@ ${BUILDDIR}/chase_blas.x: | mk_builddir
 	  main.cpp \
 	  -mkl -lboost_program_options -lboost_serialization \
 	  -o ${BUILDDIR}/chase_blas.x
+	h5pcc -g -c hdf5.c -o ${BUILDDIR}/hdf5.o
 	icpc -DOUTPUT -std=c++11 -qopenmp -g \
 	  -I../../genera/blas  -I../../algorithm \
 	  lib.cpp \
 	  -c -o ${BUILDDIR}/chase_blas.o
+	ar rvs ${BUILDDIR}/libchase.a ${BUILDDIR}/hdf5.o ${BUILDDIR}/chase_blas.o
 
 ${BUILDDIR}/chase_blas.done: ${BUILDDIR}/chase_blas.x
 	${BUILDDIR}/chase_blas.x --n 3893 --mode "R" --opt "S" --name nacl   \
