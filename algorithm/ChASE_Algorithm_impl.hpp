@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <assert.h>
 #include <iomanip>
+#include <random>
 
 template <class T>
 void swap_kj(std::size_t k, std::size_t j, T* array)
@@ -128,7 +129,7 @@ std::size_t ChASE_Algorithm<T>::filter(ChASE<T>* single, std::size_t n,
     T alpha = T(sigma_1 / e, 0.0);
     T beta = T(0.0, 0.0);
 
-    single->threeTerms(unprocessed, alpha, beta, offset);
+    single->threeTerms(unprocessed, alpha, beta, offset/n);
 
     Av += unprocessed;
     num_mult++;
@@ -146,7 +147,7 @@ std::size_t ChASE_Algorithm<T>::filter(ChASE<T>* single, std::size_t n,
         //----------------------- V = alpha(A-cI)W + beta*V ----------------------
         alpha = T(2.0 * sigma_new / e, 0.0);
         beta = T(-sigma * sigma_new, 0.0);
-        single->threeTerms(unprocessed, alpha, beta, offset);
+        single->threeTerms(unprocessed, alpha, beta, offset/n);
 
         sigma = sigma_new;
         Av += unprocessed;
@@ -217,10 +218,12 @@ std::size_t ChASE_Algorithm<T>::lanczos(ChASE<T>* single, int N, int numvec,
     }
 
 #ifdef OUTPUT
+/*
     std::cout << "THETA: ";
     for (std::size_t k = 0; k < numvec * m; ++k)
         std::cout << Theta[k] << " ";
     std::cout << "\n";
+    */
 #endif
 
     double* ThetaSorted = new double[numvec * m];
@@ -403,11 +406,12 @@ ChASE_PerfData ChASE_Algorithm<T>::solve(ChASE<T>* single, std::size_t N,
 //--------------------------------- FILTER ---------------------------------
 
 #ifdef OUTPUT
+/*
         std::cout << "degrees\tresid\tritzv\n";
         for (std::size_t k = 0; k < std::min<std::size_t>(unconverged, 20); ++k)
             std::cout << degrees[k] << "\t" << resid[k] << "\t" << ritzv[k] << "\n";
+*/
 #endif
-
         perf.start_clock(ChASE_PerfData::TimePtrs::Filter);
         std::size_t Av = filter(single, N, unconverged, deg, degrees, lambda, lowerb, upperb);
         perf.end_clock(ChASE_PerfData::TimePtrs::Filter);
@@ -427,7 +431,8 @@ ChASE_PerfData ChASE_Algorithm<T>::solve(ChASE<T>* single, std::size_t N,
         perf.start_clock(ChASE_PerfData::TimePtrs::Resids_Locking);
         single->resd(ritzv, resid, locked);
 
-        std::size_t new_converged = locking(single, N, unconverged, tol, ritzv, resid, degrees, locked);
+        std::size_t new_converged = locking(single, N, unconverged, tol, ritzv,
+            resid, degrees, locked);
         perf.end_clock(ChASE_PerfData::TimePtrs::Resids_Locking);
 
         // ---------------------------- Update pointers ----------------------------
