@@ -98,8 +98,8 @@ public:
     void threeTerms(CHASE_INT nev, T alpha, T beta, CHASE_INT offset)
     {
         t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, N, nev, N, &alpha, H, N,
-            approxV + locked * N + offset, N, &beta,
-            workspace + locked * N + offset, N);
+            approxV + (locked + offset) * N, N, &beta,
+            workspace + (locked + offset) * N, N);
         std::swap(approxV, workspace);
     };
 
