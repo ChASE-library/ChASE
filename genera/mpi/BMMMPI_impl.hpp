@@ -204,17 +204,17 @@ void MPI_doGemm(MPI_Handler<T>* MPI_hand, T alpha, T beta, CHASE_INT offset, CHA
 #ifdef GPU_MODE
         GPU_doGemm(MPI_hand->B + offset, MPI_hand->IMT + offset, nev, &(MPI_hand->GPU_MPI_hand), MPI_hand->next);
 #else
-        t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, MPI_hand->m, nev, MPI_hand->n, One, MPI_hand->A, MPI_hand->m, MPI_hand->B + offset*MPI_hand->n, MPI_hand->n, Zero, MPI_hand->IMT + offset*MPI_hand->m, MPI_hand->m);
+        t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, MPI_hand->m, nev, MPI_hand->n, One, MPI_hand->A, MPI_hand->m, MPI_hand->B + offset * MPI_hand->n, MPI_hand->n, Zero, MPI_hand->IMT + offset * MPI_hand->m, MPI_hand->m);
 #endif
 
         //end = MPI_Wtime();
-        MPI_Allreduce(MPI_IN_PLACE, MPI_hand->IMT + offset*MPI_hand->m, MPI_hand->m * nev, getMPI_Type<T>(), MPI_SUM, MPI_hand->ROW_COMM);
+        MPI_Allreduce(MPI_IN_PLACE, MPI_hand->IMT + offset * MPI_hand->m, MPI_hand->m * nev, getMPI_Type<T>(), MPI_SUM, MPI_hand->ROW_COMM);
         dim = MPI_hand->m * nev;
         inc = 1;
         //scal(&dim,&beta,MPI_hand->C+offset,&inc);
-        t_scal(dim, &beta, MPI_hand->C + offset*MPI_hand->m, 1);
+        t_scal(dim, &beta, MPI_hand->C + offset * MPI_hand->m, 1);
         //zaxpy(&dim,&alpha,MPI_hand->IMT+offset,&inc,MPI_hand->C+offset,&inc);
-        t_axpy(dim, &alpha, MPI_hand->IMT + offset*MPI_hand->m, 1, MPI_hand->C + offset*MPI_hand->m, 1);
+        t_axpy(dim, &alpha, MPI_hand->IMT + offset * MPI_hand->m, 1, MPI_hand->C + offset * MPI_hand->m, 1);
 
         MPI_hand->next = 'c';
         return;
@@ -226,16 +226,16 @@ void MPI_doGemm(MPI_Handler<T>* MPI_hand, T alpha, T beta, CHASE_INT offset, CHA
 #ifdef GPU_MODE
         GPU_doGemm(MPI_hand->IMT + offset, MPI_hand->C + offset, nev, &(MPI_hand->GPU_MPI_hand), MPI_hand->next);
 #else
-        t_gemm(CblasColMajor, CblasConjTrans, CblasNoTrans, MPI_hand->n, nev, MPI_hand->m, One, MPI_hand->A, MPI_hand->m, MPI_hand->C + offset*MPI_hand->m, MPI_hand->m, Zero, MPI_hand->IMT + offset*MPI_hand->n, MPI_hand->n);
+        t_gemm(CblasColMajor, CblasConjTrans, CblasNoTrans, MPI_hand->n, nev, MPI_hand->m, One, MPI_hand->A, MPI_hand->m, MPI_hand->C + offset * MPI_hand->m, MPI_hand->m, Zero, MPI_hand->IMT + offset * MPI_hand->n, MPI_hand->n);
 #endif
         //end = MPI_Wtime();
-        MPI_Allreduce(MPI_IN_PLACE, MPI_hand->IMT + offset*MPI_hand->n, MPI_hand->n * nev, getMPI_Type<T>(), MPI_SUM, MPI_hand->COL_COMM);
+        MPI_Allreduce(MPI_IN_PLACE, MPI_hand->IMT + offset * MPI_hand->n, MPI_hand->n * nev, getMPI_Type<T>(), MPI_SUM, MPI_hand->COL_COMM);
         dim = MPI_hand->n * nev;
         inc = 1;
         //scal(&dim,&beta,MPI_hand->B+offset,&inc);
-        t_scal(dim, &beta, MPI_hand->B + offset*MPI_hand->n, 1);
+        t_scal(dim, &beta, MPI_hand->B + offset * MPI_hand->n, 1);
         //zaxpy(&dim,&alpha,MPI_hand->IMT+offset,&inc,MPI_hand->B+offset,&inc);
-        t_axpy(dim, &alpha, MPI_hand->IMT + offset*MPI_hand->n, 1, MPI_hand->B + offset*MPI_hand->n, 1);
+        t_axpy(dim, &alpha, MPI_hand->IMT + offset * MPI_hand->n, 1, MPI_hand->B + offset * MPI_hand->n, 1);
 
         MPI_hand->next = 'b';
         return;
@@ -307,15 +307,13 @@ void MPI_get_C(MPI_Handler<T>* MPI_hand, CHASE_INT* COff, CHASE_INT* CLen, T* C,
     return;
 }
 
-
 // TODO shift with offsets!
 template <typename T>
 void shiftA(MPI_Handler<T>* MPI_hand, T c)
 {
     for (size_t i = 0; i < MPI_hand->n; i++) {
         for (size_t j = 0; j < MPI_hand->m; j++) {
-          if( MPI_hand->off[0] + j == (i + MPI_hand->off[1]) )
-            {
+            if (MPI_hand->off[0] + j == (i + MPI_hand->off[1])) {
                 MPI_hand->A[i * MPI_hand->m + j] += c;
             }
         }
@@ -459,12 +457,17 @@ void assemble_C(MPI_Handler<T>* MPI_hand, CHASE_INT nevex, T* targetBuf)
         dimsIdx = 0;
     }
 
-    int gsize;
+    int gsize, rank;
     MPI_Comm_size(comm, &gsize);
-    int* recvcounts = (int*)malloc(gsize * sizeof(int));
-    int* displs = (int*)malloc(gsize * sizeof(int));
+    MPI_Comm_rank(comm, &rank);
+    std::vector<int> recvcounts(gsize);
+    std::vector<int> displs(gsize);
+    e
+        //int* recvcounts = (int*)malloc(gsize * sizeof(int));
+        //int* displs = (int*)malloc(gsize * sizeof(int));
 
-    for (auto i = 0; i < gsize; ++i) {
+        for (auto i = 0; i < gsize; ++i)
+    {
         recvcounts[i] = MPI_hand->global_n / MPI_hand->dims[dimsIdx];
         displs[i] = i * recvcounts[0];
     }
@@ -486,13 +489,63 @@ void assemble_C(MPI_Handler<T>* MPI_hand, CHASE_INT nevex, T* targetBuf)
 */
 
     //TODO
-    for (auto i = 0; i < nevex; ++i)
-    {
-        MPI_Allgatherv(
-            buff + subsize * i, subsize, getMPI_Type<T>(),
-            targetBuf + i * N, recvcounts, displs, getMPI_Type<T>(),
-            comm);
+    // for (auto i = 0; i < nevex; ++i)
+    // {
+    //     MPI_Allgatherv(
+    //         buff + subsize * i, subsize, getMPI_Type<T>(),
+    //         targetBuf + i * N, recvcounts, displs, getMPI_Type<T>(),
+    //         comm);
+    // }
+
+    std::vector<MPI_Request> reqs(gsize);
+    std::vector<MPI_Datatype> newType(gsize);
+
+    // Set up the datatype for the recv
+    for (auto i = 0; i < gsize; ++i) {
+
+        int array_of_sizes[2] = { MPI_hand->global_n, nevex };
+        int array_of_subsizes[2] = { recvcounts[i], nevex };
+        int array_of_starts[2] = { displs[i], 0 };
+
+        MPI_Type_create_subarray(
+            2,
+            array_of_sizes,
+            array_of_subsizes,
+            array_of_starts,
+            MPI_ORDER_FORTRAN,
+            getMPI_Type<T>(),
+            &(newType[i]));
+
+        MPI_Type_commit(&(newType[i]));
     }
+
+    for (auto i = 0; i < gsize; ++i) {
+        if (rank == i) {
+            // The sender sends from the appropriate buffer
+            MPI_Ibcast(buff, recvcounts[i] * nevex, getMPI_Type<T>(), i, comm, &reqs[i]);
+        } else {
+            //MPI_Bcast(MPI_hand->C, recvcounts[i] * nevex, getMPI_Type<T>(), i, comm);
+            // The recv goes right unto the correct bugger
+            MPI_Ibcast(targetBuf, 1, newType[i], i, comm, &reqs[i]);
+        }
+    }
+
+    // we copy the sender into the target Buffer directly
+    int i = rank;
+    for (auto j = 0; j < nevex; ++j) {
+        for (auto k = 0; k < recvcounts[i]; ++k) {
+            targetBuf[j * N + k + displs[i]] = buff[k + recvcounts[i] * j];
+            ; //targetBuf[j * N + k + displs[i]] = MPI_hand->C[k + recvcounts[i] * j];
+        }
+    }
+
+    MPI_Waitall(gsize, reqs.data(),
+        MPI_STATUSES_IGNORE);
+
+    for (auto i = 0; i < gsize; ++i) {
+        MPI_Type_free(&newType[i]);
+    }
+
     // for (auto i = 0; i < N * nevex; ++i) {
     //     targetBuf[i] = buff[i];
     // }

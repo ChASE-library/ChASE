@@ -213,14 +213,12 @@ public:
         T Zero = T(0.0, 0.0);
 
         // V <- H*V
-        t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, N, block, N, &One, H, N,
-            approxV + locked * N, N, &Zero, workspace + locked * N, N);
+        // t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, N, block, N, &One, H, N,
+        //     approxV + locked * N, N, &Zero, workspace + locked * N, N);
 
-        /*
         MPI_distribute_V(mpi_handle, approxV + locked * N, block);
         MPI_doGemm(mpi_handle, T(1.0), T(0.0), 0, block);
         assemble_C(mpi_handle, block, workspace + locked * N);
-        */
 
         // A <- W * V
         t_gemm(CblasColMajor, CblasConjTrans, CblasNoTrans, block, block, N, &One,
@@ -244,12 +242,12 @@ public:
 
         Base<T> norm = this->getNorm();
 
-        t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, N, unconverged, N, &alpha,
-            H, N, approxV + locked * N, N, &beta, workspace + locked * N, N);
+        // t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, N, unconverged, N, &alpha,
+        //     H, N, approxV + locked * N, N, &beta, workspace + locked * N, N);
 
-        // MPI_distribute_V(mpi_handle, approxV + locked * N, unconverged);
-        // MPI_doGemm(mpi_handle, T(1.0), T(0.0), 0, unconverged);
-        // assemble_C(mpi_handle, unconverged, workspace + locked * N);
+        MPI_distribute_V(mpi_handle, approxV + locked * N, unconverged);
+        MPI_doGemm(mpi_handle, T(1.0), T(0.0), 0, unconverged);
+        assemble_C(mpi_handle, unconverged, workspace + locked * N);
 
         Base<T> norm1, norm2;
         for (std::size_t i = 0; i < unconverged; ++i) {
@@ -316,7 +314,7 @@ public:
             //t_gemv(CblasColMajor, CblasNoTrans, n, n, &One, H, n, v1, 1, &Zero, w, 1);
             MPI_distribute_V(mpi_handle, v1, 1);
             MPI_doGemm(mpi_handle, T(1.0), T(0.0), 0, 1);
-            assemble_C(mpi_handle, block, w);
+            assemble_C(mpi_handle, 1, w);
 
             t_dot(n, v1, 1, w, 1, &alpha);
 
@@ -410,7 +408,7 @@ public:
             //t_gemv(CblasColMajor, CblasNoTrans, n, n, &One, H, n, v1, 1, &Zero, w, 1);
             MPI_distribute_V(mpi_handle, v1, 1);
             MPI_doGemm(mpi_handle, T(1.0), T(0.0), 0, 1);
-            assemble_C(mpi_handle, block, w);
+            assemble_C(mpi_handle, 1, w);
 
             // std::cout << "lanczos Av\n";
             // for (std::size_t ll = 0; ll < 2; ++ll)
