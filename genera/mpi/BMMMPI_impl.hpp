@@ -462,12 +462,10 @@ void assemble_C(MPI_Handler<T>* MPI_hand, CHASE_INT nevex, T* targetBuf)
     MPI_Comm_rank(comm, &rank);
     std::vector<int> recvcounts(gsize);
     std::vector<int> displs(gsize);
-    e
-        //int* recvcounts = (int*)malloc(gsize * sizeof(int));
-        //int* displs = (int*)malloc(gsize * sizeof(int));
+    //int* recvcounts = (int*)malloc(gsize * sizeof(int));
+    //int* displs = (int*)malloc(gsize * sizeof(int));
 
-        for (auto i = 0; i < gsize; ++i)
-    {
+    for (auto i = 0; i < gsize; ++i) {
         recvcounts[i] = MPI_hand->global_n / MPI_hand->dims[dimsIdx];
         displs[i] = i * recvcounts[0];
     }

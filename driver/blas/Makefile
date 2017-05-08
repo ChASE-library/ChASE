@@ -10,7 +10,7 @@ ${BUILDDIR}/chase_blas.x: | mk_builddir
 	  -mkl -lboost_program_options -lboost_serialization \
 	  -o ${BUILDDIR}/chase_blas.x
 
-${BUILDDIR}/libchase.a
+${BUILDDIR}/libchase.a:
 	h5pcc -g -c hdf5.c -o ${BUILDDIR}/hdf5.o
 	mpicxx -cxx=icpc -DOUTPUT -std=c++11 -qopenmp -g \
 	  -I../../genera/blas  -I../../algorithm \
