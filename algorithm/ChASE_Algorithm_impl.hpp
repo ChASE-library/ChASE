@@ -129,7 +129,7 @@ std::size_t ChASE_Algorithm<T>::filter(ChASE<T>* single, std::size_t n,
     T alpha = T(sigma_1 / e, 0.0);
     T beta = T(0.0, 0.0);
 
-    single->threeTerms(unprocessed, alpha, beta, offset/n);
+    single->threeTerms(unprocessed, alpha, beta, offset / n);
 
     Av += unprocessed;
     num_mult++;
@@ -147,7 +147,7 @@ std::size_t ChASE_Algorithm<T>::filter(ChASE<T>* single, std::size_t n,
         //----------------------- V = alpha(A-cI)W + beta*V ----------------------
         alpha = T(2.0 * sigma_new / e, 0.0);
         beta = T(-sigma * sigma_new, 0.0);
-        single->threeTerms(unprocessed, alpha, beta, offset/n);
+        single->threeTerms(unprocessed, alpha, beta, offset / n);
 
         sigma = sigma_new;
         Av += unprocessed;
@@ -364,8 +364,7 @@ ChASE_PerfData ChASE_Algorithm<T>::solve(ChASE<T>* single, std::size_t N,
     //  std::complex<double> *H = single->getMatrixPtr();
     //  std::complex<double> *V = single->getVectorsPtr();
     std::size_t DoSVectors = lanczos(single, N, 6,
-        random ? std::max((std::size_t)config.getLanczosIter(), nevex / 4)
-               : config.getLanczosIter(),
+        config.getLanczosIter(),
         nevex, &upperb, random, random ? ritzv : NULL);
 
     perf.end_clock(ChASE_PerfData::TimePtrs::Lanczos);

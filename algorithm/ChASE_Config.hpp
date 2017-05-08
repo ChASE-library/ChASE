@@ -36,7 +36,7 @@ public:
 
     std::size_t getMaxIter() { return 40; }
 
-    std::size_t getLanczosIter() { return 30; }
+    std::size_t getLanczosIter() { return 45; }
 
     std::size_t getN() { return N; }
 
