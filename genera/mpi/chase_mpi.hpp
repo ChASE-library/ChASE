@@ -109,15 +109,16 @@ public:
     void shift(T c, bool isunshift = false)
     {
         shiftA(mpi_handle, c);
-        for (CHASE_INT i = 0; i < N; ++i)
-            H[i * N + i] += c;
+        // for (CHASE_INT i = 0; i < N; ++i)
+        //     H[i * N + i] += c;
 
         if (isunshift) {
-            std::vector<T> vec(mpi_handle->global_n * (nev + nex - locked));
+
             assemble_C(mpi_handle, nev + nex - locked, approxV + locked * N);
 
             // TODO: assemble full vector approxV from distributed MPI
             /*
+            std::vector<T> vec(mpi_handle->global_n * (nev + nex - locked));
             {
                 assemble_C(mpi_handle, nev + nex - locked, vec.data());
                 Base<T> norm = 0;

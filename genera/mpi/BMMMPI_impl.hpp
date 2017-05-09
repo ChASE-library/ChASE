@@ -130,10 +130,6 @@ void MPI_handler_init(MPI_Handler<T>* MPI_hand, CHASE_INT global_n, CHASE_INT ne
 template <typename T>
 void MPI_distribute_H(MPI_Handler<T>* MPI_hand, T* H_Full)
 {
-    std::cout << "distributing H\n";
-    std::cout << MPI_hand->n << " " << MPI_hand->off[0] << " " << MPI_hand->off[1] << "\n";
-    //TODO: Write a proper distribute function so that only one process needs to read the file;
-
     for (size_t i = 0; i < MPI_hand->n; i++) {
         for (size_t j = 0; j < MPI_hand->m; j++) {
             MPI_hand->A[i * MPI_hand->m + j] = H_Full[MPI_hand->off[0] + j + (i + MPI_hand->off[1]) * MPI_hand->global_n];
@@ -147,22 +143,26 @@ void MPI_distribute_H(MPI_Handler<T>* MPI_hand, T* H_Full)
 template <typename T>
 void MPI_distribute_V(MPI_Handler<T>* MPI_hand, T* V, CHASE_INT nev)
 {
-    // TODO: not global_n
     MPI_hand->next = 'c';
 
     for (auto j = 0; j < nev; j++) {
-        for (auto i = 0; i < MPI_hand->n; i++) {
-            MPI_hand->B[j * MPI_hand->n + i] = 0; //V[j * MPI_hand->global_n + i + MPI_hand->off[1]];
-        }
-
-        for (auto i = 0; i < MPI_hand->m; i++) {
-            MPI_hand->C[j * MPI_hand->m + i] = V[j * MPI_hand->global_n + i + MPI_hand->off[0]];
-        }
-
-        for (auto i = 0; i < std::max(MPI_hand->m, MPI_hand->n); i++) {
-            MPI_hand->IMT[j * std::max(MPI_hand->m, MPI_hand->n) + i] = 0;
-        }
+        memcpy(MPI_hand->C + j * MPI_hand->m, V + j * MPI_hand->global_n + MPI_hand->off[0], MPI_hand->m * sizeof(T));
+        //  for (auto i = 0; i < MPI_hand->m; i++) {
+        //    MPI_hand->C[j * MPI_hand->m + i] = V[j * MPI_hand->global_n + i + MPI_hand->off[0]];
+        // }
     }
+
+    // for (auto j = 0; j < nev; j++) {
+    //     for (auto i = 0; i < MPI_hand->n; i++) {
+    //         MPI_hand->B[j * MPI_hand->n + i] = 0; //V[j * MPI_hand->global_n + i + MPI_hand->off[1]];
+    //     }
+    // }
+
+    // for (auto j = 0; j < nev; j++) {
+    //     for (auto i = 0; i < std::max(MPI_hand->m, MPI_hand->n); i++) {
+    //         MPI_hand->IMT[j * std::max(MPI_hand->m, MPI_hand->n) + i] = 0;
+    //     }
+    // }
 }
 
 //This function should fill arrays with data
@@ -531,20 +531,15 @@ void assemble_C(MPI_Handler<T>* MPI_hand, CHASE_INT nevex, T* targetBuf)
     // we copy the sender into the target Buffer directly
     int i = rank;
     for (auto j = 0; j < nevex; ++j) {
-        for (auto k = 0; k < recvcounts[i]; ++k) {
-            targetBuf[j * N + k + displs[i]] = buff[k + recvcounts[i] * j];
-            ; //targetBuf[j * N + k + displs[i]] = MPI_hand->C[k + recvcounts[i] * j];
-        }
+        memcpy(targetBuf + j * N + displs[i], buff + recvcounts[i] * j, recvcounts[i] * sizeof(T));
+        // for (auto k = 0; k < recvcounts[i]; ++k) {
+        //     targetBuf[j * N + k + displs[i]] = buff[k + recvcounts[i] * j];
+        // }
     }
 
-    MPI_Waitall(gsize, reqs.data(),
-        MPI_STATUSES_IGNORE);
+    MPI_Waitall(gsize, reqs.data(), MPI_STATUSES_IGNORE);
 
     for (auto i = 0; i < gsize; ++i) {
         MPI_Type_free(&newType[i]);
     }
-
-    // for (auto i = 0; i < N * nevex; ++i) {
-    //     targetBuf[i] = buff[i];
-    // }
 }
