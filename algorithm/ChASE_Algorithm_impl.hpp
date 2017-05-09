@@ -171,12 +171,11 @@ std::size_t ChASE_Algorithm<T>::filter(ChASE<T>* single, std::size_t n,
 
 template <class T>
 std::size_t ChASE_Algorithm<T>::lanczos(ChASE<T>* single, int N, int numvec,
-    int m, int nevex, Base<T>* upperb,
-    bool mode, Base<T>* ritzv_)
+    int m, int nevex, Base<T>* upperb, bool mode, Base<T>* ritzv_)
 {
     assert(m >= 1);
-    std::mt19937 gen(2342.0); // TODO
-    std::normal_distribution<> d;
+    //std::mt19937 gen(2342.0); // TODO
+    //std::normal_distribution<> d;
 
     // T *H = single->getMatrixPtr();
     // T *V_ = single->getVectorsPtr();
@@ -214,7 +213,7 @@ std::size_t ChASE_Algorithm<T>::lanczos(ChASE<T>* single, int N, int numvec,
         /*   } */
         single->lanczos(m, i, &upperb_, Theta + m * i, Tau + m * i, ritzV);
         *upperb = std::max(upperb_, *upperb);
-        std::cout << "upperb " << upperb_ << " " << *upperb << "\n";
+        //std::cout << "upperb " << upperb_ << " " << *upperb << "\n";
     }
 
 #ifdef OUTPUT
