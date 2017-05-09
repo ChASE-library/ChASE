@@ -494,22 +494,26 @@ public:
     Base<T> residual()
     {
         for (CHASE_INT j = 0; j < N * (nev + nex); ++j) {
-            W[j] = V[j];
+            workspace[j] = approxV[j];
         }
 
-        //    memcpy(W, V, sizeof(MKL_Complex16)*N*nev);
         T one(1.0);
         T zero(0.0);
         T eigval;
         int iOne = 1;
         for (int ttz = 0; ttz < nev; ttz++) {
             eigval = -1.0 * ritzv[ttz];
-            t_scal(N, &eigval, W + ttz * N, 1);
+            t_scal(N, &eigval, workspace + ttz * N, 1);
         }
-        t_hemm(CblasColMajor, CblasLeft, CblasLower, N, nev, &one, H, N, V, N, &one,
-            W, N);
-        Base<T> norm = t_lange('M', N, nev, W, N);
-        // TR.registerValue( i, "resd", norm);
+
+        // t_hemm(CblasColMajor, CblasLeft, CblasLower, N, nev, &one, H, N,
+        //     approxV, N, &one, workspace, N);
+        MPI_distribute_V(mpi_handle, approxV, nev);
+        MPI_distribute_W(mpi_handle, workspace, nev);
+        MPI_doGemm(mpi_handle, T(1.0), T(1.0), 0, nev);
+        assemble_C(mpi_handle, nev, workspace);
+
+        Base<T> norm = t_lange('M', N, nev, workspace, N);
         return norm;
     }
 
@@ -529,8 +533,9 @@ public:
             }
         }
 
-        t_gemm(CblasColMajor, CblasConjTrans, CblasNoTrans, nev, nev, N, &one, V, N,
-            V, N, &neg_one, unity, nev);
+        t_gemm(CblasColMajor, CblasConjTrans, CblasNoTrans, nev, nev, N, &one,
+            approxV, N, approxV, N, &neg_one, unity, nev);
+
         Base<T> norm = t_lange('M', nev, nev, unity, nev);
         delete[] unity;
         return norm;

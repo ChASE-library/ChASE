@@ -192,7 +192,7 @@ std::size_t ChASE_Algorithm<T>::lanczos(ChASE<T>* single, int N, int numvec,
     // we need a bound for lambda1.
 
     // We will do numvec many Lanczos procedures and save all the eigenvalues,
-    // and the first entries of the eigenvectors
+    // and the first entrieXs of the eigenvectors
     Base<T>* Theta = new Base<T>[ numvec * m ]();
     Base<T>* Tau = new Base<T>[ numvec * m ]();
 
@@ -311,6 +311,7 @@ std::size_t ChASE_Algorithm<T>::lanczos(ChASE<T>* single, int N, int numvec,
     delete[] ThetaSorted;
     delete[] Theta;
     delete[] Tau;
+    delete[] ritzV;
     //    delete[] V;
     return idx;
 }
@@ -363,8 +364,7 @@ ChASE_PerfData ChASE_Algorithm<T>::solve(ChASE<T>* single, std::size_t N,
     bool random = !config.use_approx();
     //  std::complex<double> *H = single->getMatrixPtr();
     //  std::complex<double> *V = single->getVectorsPtr();
-    std::size_t DoSVectors = lanczos(single, N, 6,
-        config.getLanczosIter(),
+    std::size_t DoSVectors = lanczos(single, N, 6, config.getLanczosIter(),
         nevex, &upperb, random, random ? ritzv : NULL);
 
     perf.end_clock(ChASE_PerfData::TimePtrs::Lanczos);
