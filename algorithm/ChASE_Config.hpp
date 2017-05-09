@@ -30,7 +30,7 @@ public:
 
     std::size_t getDeg() { return deg; }
 
-    std::size_t getMaxDeg() { return 20; }
+    std::size_t getMaxDeg() { return 36; }
 
     std::size_t getDegExtra() { return 2; }
 

@@ -62,6 +62,10 @@ std::size_t ChASE_Algorithm<T>::calc_degrees(
         degrees[i] = degrees[unconverged - 1 - nex];
     }
 
+    for (std::size_t i = 0; i < unconverged; ++i) {
+        degrees[i] += degrees[i] % 2;
+    }
+
     // we sort according to degrees
     for (std::size_t j = 0; j < unconverged - 1; ++j)
         for (std::size_t k = j; k < unconverged; ++k)
@@ -157,8 +161,8 @@ std::size_t ChASE_Algorithm<T>::filter(ChASE<T>* single, std::size_t n,
             unprocessed--;
             offset += n;
             // TODO
-            if (num_mult < deg)
-                single->cpy(offset / n);
+            // if (num_mult < deg)
+            //     single->cpy(offset / n);
         }
 
     } // for(i = 2; i <= deg; ++i)
