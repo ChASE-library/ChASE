@@ -38,6 +38,7 @@ public:
 
     void print_timings()
     {
+
         std::cout << "All\t\t" << timings[TimePtrs::All] << std::endl
                   << "Lanczos\t\t" << timings[TimePtrs::Lanczos] << std::endl
                   << "Degrees\t\t" << timings[TimePtrs::Degrees] << std::endl
@@ -46,6 +47,20 @@ public:
                   << "RR\t\t" << timings[TimePtrs::Rr] << std::endl
                   << "Resid+Locking\t" << timings[TimePtrs::Resids_Locking]
                   << std::endl;
+
+        std::cout
+            << " | All | Lanczos | Degrees | Filter | QR | RR | Resid | "
+            << std::endl;
+
+        std::cout
+            << " | " << timings[TimePtrs::All]
+            << " | " << timings[TimePtrs::Lanczos]
+            << " | " << timings[TimePtrs::Degrees]
+            << " | " << timings[TimePtrs::Filter]
+            << " | " << timings[TimePtrs::Qr]
+            << " | " << timings[TimePtrs::Rr]
+            << " | " << timings[TimePtrs::Resids_Locking]
+            << " | " << std::endl;
     }
 
     void print()
