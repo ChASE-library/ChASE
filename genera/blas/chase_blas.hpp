@@ -390,6 +390,7 @@ public:
         t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, N, idx, m, &alpha,
             workspace, N, ritzVc, m, &beta, approxV, N);
 
+        /*
         // TODO this may not be necessary, check memory footprint of
         //      lanczos on approxV
         {
@@ -399,6 +400,7 @@ public:
                 approxV[N * idx + k] = T(d(gen), d(gen));
             }
         }
+        */
     }
 
     Base<T> residual()

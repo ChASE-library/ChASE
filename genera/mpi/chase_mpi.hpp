@@ -479,13 +479,15 @@ public:
 
         // TODO this may not be necessary, check memory footprint of
         //      lanczos on approxV
+        /*
         {
             std::mt19937 gen(2342.0);
             std::normal_distribution<> d;
-            for (std::size_t k = 0; k < N * (nev + nex - idx); ++k) {
-                approxV[N * idx + k] = T(d(gen), d(gen));
+            for (std::size_t k = 0; k < N * (m - idx); ++k) {
+                approxV[k + idx * N] = T(d(gen), d(gen));
             }
         }
+        */
     }
 
     Base<T> residual()

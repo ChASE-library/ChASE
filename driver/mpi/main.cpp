@@ -170,7 +170,7 @@ int main(int argc, char* argv[])
                 //------------------------------------------------------------------------
             } else { // RANDOM.
                 // Randomize V.
-                for (CHASE_INT i = 0; i < N * nev + nex; ++i) {
+                for (CHASE_INT i = 0; i < N * (nev + nex); ++i) {
                     V[i] = T(d(gen), d(gen));
                 }
                 // Set Lambda to zeros. ( Lambda = zeros(N,1) )
