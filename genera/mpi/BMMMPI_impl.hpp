@@ -169,10 +169,9 @@ template <typename T>
 void MPI_distribute_W(MPI_Handler<T>* MPI_hand, T* V, CHASE_INT nev)
 {
     for (auto j = 0; j < nev; j++) {
-0        std::memcpy(MPI_hand->B + j * MPI_hand->n, V + j * MPI_hand->global_n + MPI_hand->off[1], MPI_hand->n * sizeof(T));
+        std::memcpy(MPI_hand->B + j * MPI_hand->n, V + j * MPI_hand->global_n + MPI_hand->off[1], MPI_hand->n * sizeof(T));
     }
 }
-
 
 //This function should fill arrays with data
 //For now it just generates random data

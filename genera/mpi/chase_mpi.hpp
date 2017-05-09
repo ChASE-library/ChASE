@@ -114,7 +114,7 @@ public:
 
         if (isunshift) {
 
-            assemble_C(mpi_handle, nev + nex - locked, approxV + locked * N);
+            // we now do this in QR
 
             // TODO: assemble full vector approxV from distributed MPI
             /*
@@ -194,6 +194,9 @@ public:
 
     void QR(CHASE_INT fixednev)
     {
+
+        assemble_C(mpi_handle, nev + nex - locked, approxV + locked * N);
+
         CHASE_INT nevex = nev + nex;
         T* tau = workspace + fixednev * N;
 
