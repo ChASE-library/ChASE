@@ -357,6 +357,10 @@ public:
 
         *upperb = std::max(std::abs(ritzv[0]), std::abs(ritzv[m - 1])) + std::abs(real_beta); // TODO
 
+        int rank;
+        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+        std::cout << "[" << rank << "] upperb: " << *upperb << "\n";
+
         delete[] ritzv;
         delete[] isuppz;
         delete[] d;
@@ -453,6 +457,10 @@ public:
             ritzv, ritzV, m, m, isuppz, &tryrac);
 
         *upperb = std::max(std::abs(ritzv[0]), std::abs(ritzv[m - 1])) + std::abs(real_beta);
+
+        int rank;
+        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+        std::cout << "[" << rank << "] upperb: " << *upperb << "\n";
 
         for (std::size_t k = 1; k < m; ++k) {
             Tau[k] = std::abs(ritzV[k * m]) * std::abs(ritzV[k * m]);
