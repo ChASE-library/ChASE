@@ -394,7 +394,7 @@ ChASE_PerfData ChASE_Algorithm<T>::solve(ChASE<T>* single, std::size_t N,
         }
         //-------------------------------- DEGREES --------------------------------
         //    if( int_opt != CHASE_OPT_NONE && unconverged < nevex )
-        if (config.do_optimization() && unconverged < nevex - DoSVectors) {
+        if (config.do_optimization() && iteration != 0) {
             perf.start_clock(ChASE_PerfData::TimePtrs::Degrees);
             deg = calc_degrees(single, N, unconverged, nex, upperb, lowerb, tol,
                 ritzv, resid, degrees, locked);
