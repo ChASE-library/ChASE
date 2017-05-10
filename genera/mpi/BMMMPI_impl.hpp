@@ -5,7 +5,8 @@
 //This function initializes all arrays, communicators and calculates
 //offsets, sizes and dimensions.
 template <typename T>
-void MPI_handler_init(MPI_Handler<T>* MPI_hand, CHASE_INT global_n, CHASE_INT nev)
+void MPI_handler_init(MPI_Handler<T>* MPI_hand, MPI_Comm comm,
+    CHASE_INT global_n, CHASE_INT nev)
 {
     //global_n is dimension of problem matrix H
     CHASE_MPIINT periodic[] = { 0, 0 };
@@ -14,14 +15,14 @@ void MPI_handler_init(MPI_Handler<T>* MPI_hand, CHASE_INT global_n, CHASE_INT ne
     CHASE_MPIINT r;
     //global_n = 22360;
     MPI_hand->global_n = global_n;
-    MPI_Comm_size(MPI_COMM_WORLD, &(MPI_hand->nprocs));
+    MPI_Comm_size(comm, &(MPI_hand->nprocs));
 
     //There must never be more then global_n processes.
     if (MPI_hand->nprocs > MPI_hand->global_n) {
         printf("ERROR: number of processes preceeds dimension of the problem\n");
         return;
     }
-    MPI_Comm_rank(MPI_COMM_WORLD, &(MPI_hand->rank));
+    MPI_Comm_rank(comm, &(MPI_hand->rank));
     MPI_hand->dims[0] = MPI_hand->dims[1] = 0;
 
     //This creates optimal grid for block decomposition
@@ -33,7 +34,7 @@ void MPI_handler_init(MPI_Handler<T>* MPI_hand, CHASE_INT global_n, CHASE_INT ne
     //______________________________________________________________________//
 
     //Useful cartesian communicator
-    MPI_Cart_create(MPI_COMM_WORLD, 2, MPI_hand->dims, periodic, reorder, &(MPI_hand->CART_COMM));
+    MPI_Cart_create(comm, 2, MPI_hand->dims, periodic, reorder, &(MPI_hand->CART_COMM));
 
     //Calculating ranks which will consist wog and col group and later row and col communicators
     MPI_Cart_coords(MPI_hand->CART_COMM, MPI_hand->rank, 2, MPI_hand->coord);
@@ -56,8 +57,8 @@ void MPI_handler_init(MPI_Handler<T>* MPI_hand, CHASE_INT global_n, CHASE_INT ne
     MPI_Comm_group(MPI_hand->CART_COMM, &(MPI_hand->origGroup));
     MPI_Group_incl(MPI_hand->origGroup, MPI_hand->dims[1], MPI_hand->ranks_row, &(MPI_hand->ROW));
     MPI_Group_incl(MPI_hand->origGroup, MPI_hand->dims[0], MPI_hand->ranks_col, &(MPI_hand->COL));
-    MPI_Comm_create(MPI_COMM_WORLD, MPI_hand->ROW, &(MPI_hand->ROW_COMM));
-    MPI_Comm_create(MPI_COMM_WORLD, MPI_hand->COL, &(MPI_hand->COL_COMM));
+    MPI_Comm_create(comm, MPI_hand->ROW, &(MPI_hand->ROW_COMM));
+    MPI_Comm_create(comm, MPI_hand->COL, &(MPI_hand->COL_COMM));
 
     MPI_hand->nev = nev;
     //offsets of matrix blocks in respect to the full matrix H

@@ -34,9 +34,9 @@ public:
         approxV = V;
         workspace = W;
 
-        mpi_handle = new MPI_Handler;
-        MPI_handler_init(mpi_hand, N, nev + nex);
-        MPI_distribute_H(mpi_hand, H_);
+        mpi_handle = new MPI_Handler<T>;
+        MPI_handler_init(mpi_handle, aComm, N, nev + nex);
+        MPI_distribute_H(mpi_handle, H_);
     };
 
     ChASE_MPI(ChASE_Config _config, MPI_Comm aComm)
@@ -56,7 +56,7 @@ public:
         workspace = W;
 
         mpi_handle = new MPI_Handler<T>;
-        MPI_handler_init(mpi_handle, N, nev + nex);
+        MPI_handler_init(mpi_handle, aComm, N, nev + nex);
     };
 
     ChASE_MPI(const ChASE_MPI&) = delete;

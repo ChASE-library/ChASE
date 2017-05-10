@@ -74,13 +74,14 @@ struct MPI_Handler {
 };
 
 template <typename T>
-void MPI_handler_init(MPI_Handler<T>* MPI_MPI_hand, CHASE_INT global_n, CHASE_INT nev);
+void MPI_handler_init(MPI_Handler<T>* MPI_hand, MPI_Comm comm,
+    CHASE_INT global_n, CHASE_INT nev);
 
 template <typename T>
 void MPI_destroy(MPI_Handler<T>* MPI_hand);
 
 template <typename T>
-void MPI_load(MPI_Handler<T>* MPI_MPI_hand);
+void MPI_load(MPI_Handler<T>* MPI_hand);
 
 template <typename T>
 void MPI_distribute_H(MPI_Handler<T>* MPI_Hand, T* H_Full);
@@ -89,13 +90,16 @@ template <typename T>
 void MPI_distribute_V(MPI_Handler<T>* MPI_Hand, T* V, CHASE_INT nev);
 
 template <typename T>
-void MPI_doGemm(MPI_Handler<T>* MPI_hand, T alpha, T beta, CHASE_INT offset, CHASE_INT nev);
+void MPI_doGemm(MPI_Handler<T>* MPI_hand, T alpha, T beta, CHASE_INT offset,
+    CHASE_INT nev);
 
 template <typename T>
-void MPI_get_off(MPI_Handler<T>* MPI_hand, CHASE_INT* xoff, CHASE_INT* yoff, CHASE_INT* xlen, CHASE_INT* ylen);
+void MPI_get_off(MPI_Handler<T>* MPI_hand, CHASE_INT* xoff, CHASE_INT* yoff,
+    CHASE_INT* xlen, CHASE_INT* ylen);
 
 template <typename T>
-void MPI_get_C(MPI_Handler<T>* MPI_hand, CHASE_INT* COff, CHASE_INT* CLen, T* C, CHASE_INT nev);
+void MPI_get_C(MPI_Handler<T>* MPI_hand, CHASE_INT* COff, CHASE_INT* CLen, T* C,
+    CHASE_INT nev);
 
 template <typename T>
 void shiftA(MPI_Handler<T>* MPI_Hand, T c);
@@ -104,7 +108,8 @@ template <typename T>
 void MPI_lock_vectors(MPI_Handler<T>* MPI_hand, CHASE_INT nev);
 
 template <typename T>
-void cpy_vectors(MPI_Handler<T>* MPI_hand, CHASE_INT new_converged, CHASE_INT locked);
+void cpy_vectors(MPI_Handler<T>* MPI_hand, CHASE_INT new_converged,
+    CHASE_INT locked);
 
 template <typename T>
 void debug_H(MPI_Handler<T>* MPI_Hand);
