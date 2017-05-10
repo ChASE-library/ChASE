@@ -48,7 +48,7 @@ public:
         , dealloc(true)
         , mComm(aComm)
     {
-        H = new T[N * N]();
+        //H = new T[N * N]();
         V = new T[N * (nev + nex)]();
         W = new T[N * (nev + nex)]();
         ritzv = new Base<T>[ (nev + nex) ];
@@ -64,7 +64,7 @@ public:
     ~ChASE_MPI()
     {
         if (dealloc) {
-            delete[] H;
+          //delete[] H;
             delete[] V;
             delete[] ritzv;
         }
@@ -77,13 +77,18 @@ public:
 
     ChASE_Config getConfig() { return config; }
 
-    CHASE_INT getN() { return N; }
+    std::size_t getN() { return N; }
 
     CHASE_INT getNev() { return nev; }
 
     CHASE_INT getNex() { return nex; }
 
     Base<T>* getRitzv() { return ritzv; }
+
+    void distribute_H(T* aH)
+    {
+        MPI_distribute_H(mpi_handle, aH);
+    }
 
     // TODO: everything should be owned by chASE_MPI, deg should be part of
     // ChasE_Config
@@ -94,8 +99,8 @@ public:
         // MPI_Finalize();
         // std::exit(0);
 
-        if (dealloc)
-            MPI_distribute_H(mpi_handle, H);
+        // if (dealloc)
+        //     MPI_distribute_H(mpi_handle, H);
 
         perf = ChASE_Algorithm<T>::solve(this, N, ritzv, nev, nex);
     }
@@ -283,7 +288,7 @@ public:
     void lanczos(CHASE_INT m, Base<T>* upperb)
     {
         // todo
-        CHASE_INT n = N;
+        std::size_t n = N;
 
         T* v1 = workspace;
         for (std::size_t k = 0; k < N; ++k)

@@ -84,7 +84,7 @@ void MPI_handler_init(MPI_Handler<T>* MPI_hand, MPI_Comm comm,
     cudaMallocHost(&(MPI_hand->C), MPI_hand->m * MPI_hand->nev * sizeof(T));
     cudaMallocHost(&(MPI_hand->IMT), (MPI_hand->m > MPI_hand->n ? MPI_hand->m : MPI_hand->n) * MPI_hand->nev * sizeof(T));
 #else
-    MPI_hand->A = new T[MPI_hand->m * MPI_hand->n]();
+    MPI_hand->A = new T[static_cast<std::size_t>(MPI_hand->m) * static_cast<std::size_t>(MPI_hand->n)]();
     MPI_hand->B = new T[MPI_hand->n * MPI_hand->nev]();
     MPI_hand->C = new T[MPI_hand->m * MPI_hand->nev]();
     MPI_hand->IMT = new T[(MPI_hand->m > MPI_hand->n ? MPI_hand->m : MPI_hand->n) * MPI_hand->nev]();
