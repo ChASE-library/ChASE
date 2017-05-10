@@ -8,8 +8,8 @@
 namespace po = boost::program_options;
 
 template <typename T>
-void readMatrix(T* H, std::string path_in, std::string spin, CHASE_INT kpoint, CHASE_INT index,
-    std::string suffix, CHASE_INT size, bool legacy)
+void readMatrix(T* H, std::string path_in, std::string spin, CHASE_INT kpoint, std::size_t index,
+    std::string suffix, std::size_t size, bool legacy)
 {
     std::ostringstream problem(std::ostringstream::ate);
     if (legacy)
@@ -32,7 +32,7 @@ typedef std::complex<double> T;
 int main(int argc, char* argv[])
 {
 
-    CHASE_INT N;
+    std::size_t N;
     CHASE_INT nev;
     CHASE_INT nex;
     CHASE_INT deg;
@@ -55,7 +55,7 @@ int main(int argc, char* argv[])
     std::string spin;
 
     po::options_description desc("ChASE Options");
-    desc.add_options()("help,h", "show this message")("n", po::value<CHASE_INT>(&N)->required(), "Size of the Input Matrix")("nev", po::value<CHASE_INT>(&nev)->required(), "Wanted Number of Eigenpairs")("nex", po::value<CHASE_INT>(&nex)->default_value(25), "Extra Search Dimensions")("deg", po::value<CHASE_INT>(&deg)->default_value(20), "Initial filtering degree")("bgn", po::value<CHASE_INT>(&bgn)->default_value(2), "Start ell")("end", po::value<CHASE_INT>(&end)->default_value(2), "End ell")("spin", po::value<std::string>(&spin)->default_value("d"), "spin")("kpoint", po::value<CHASE_INT>(&kpoint)->default_value(0), "kpoint")("tol", po::value<double>(&tol)->default_value(1e-10), "Tolerance for Eigenpair convergence")("path_in", po::value<std::string>(&path_in)->required(), "Path to the input matrix/matrices")("mode", po::value<std::string>(&mode)->default_value("A"), "valid values are R(andom) or A(pproximate)")("opt", po::value<std::string>(&opt)->default_value("S"), "Optimi(S)e degree, or do (N)ot optimise")("path_eigp", po::value<std::string>(&path_eigp), "Path to approximate solutions, only required when mode is Approximate, otherwise not used")("sequence", po::value<bool>(&sequence)->default_value(false), "Treat as sequence of Problems. Previous ChASE solution is used, when available")("legacy", po::value<bool>(&legacy)->default_value(false), "Use legacy naming scheme?");
+    desc.add_options()("help,h", "show this message")("n", po::value<std::size_t>(&N)->required(), "Size of the Input Matrix")("nev", po::value<CHASE_INT>(&nev)->required(), "Wanted Number of Eigenpairs")("nex", po::value<CHASE_INT>(&nex)->default_value(25), "Extra Search Dimensions")("deg", po::value<CHASE_INT>(&deg)->default_value(20), "Initial filtering degree")("bgn", po::value<CHASE_INT>(&bgn)->default_value(2), "Start ell")("end", po::value<CHASE_INT>(&end)->default_value(2), "End ell")("spin", po::value<std::string>(&spin)->default_value("d"), "spin")("kpoint", po::value<CHASE_INT>(&kpoint)->default_value(0), "kpoint")("tol", po::value<double>(&tol)->default_value(1e-10), "Tolerance for Eigenpair convergence")("path_in", po::value<std::string>(&path_in)->required(), "Path to the input matrix/matrices")("mode", po::value<std::string>(&mode)->default_value("A"), "valid values are R(andom) or A(pproximate)")("opt", po::value<std::string>(&opt)->default_value("S"), "Optimi(S)e degree, or do (N)ot optimise")("path_eigp", po::value<std::string>(&path_eigp), "Path to approximate solutions, only required when mode is Approximate, otherwise not used")("sequence", po::value<bool>(&sequence)->default_value(false), "Treat as sequence of Problems. Previous ChASE solution is used, when available")("legacy", po::value<bool>(&legacy)->default_value(false), "Use legacy naming scheme?");
 
     std::string testName;
     po::options_description testOP("Test options");
@@ -135,12 +135,13 @@ int main(int argc, char* argv[])
     std::normal_distribution<> d;
 
     T* V = single->getVectorsPtr();
-    T* H = single->getMatrixPtr();
+    T* H;// = single->getMatrixPtr();
     Base<T>* Lambda = single->getRitzv();
 
     // the example matrices are stored in std::complex< double >
     // so we read them as such and then case them
-    std::complex<double>* _H = new MKL_Complex16[N * N];
+    std::complex<double>* _H = new MKL_Complex16[static_cast<std::size_t>(N)
+        * static_cast<std::size_t>(N)];
 
     //----------------------------------------------------------------------------
 
@@ -184,13 +185,15 @@ int main(int argc, char* argv[])
         }
         readMatrix(_H, path_in, spin, kpoint, i, ".bin", N * N, legacy);
 
-        for (std::size_t idx = 0; idx < N * N; ++idx)
-            H[idx] = _H[idx];
+        // for (std::size_t idx = 0; idx < N * N; ++idx)
+        //     H[idx] = _H[idx];
+        H = _H;
 
         Base<T> normH = std::max(t_lange('1', N, N, H, N), Base<T>(1.0));
         single->setNorm(normH);
 
         //------------------------------SOLVE-CURRENT-PROBLEM-----------------------
+        single->distribute_H(H);
         single->solve();
         //--------------------------------------------------------------------------
 

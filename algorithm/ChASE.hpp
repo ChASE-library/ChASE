@@ -44,7 +44,7 @@ public:
     virtual void cpy(CHASE_INT new_converged) = 0;
     virtual Base<T> getNorm() = 0;
 
-    virtual CHASE_INT getN() = 0;
+    virtual std::size_t getN() = 0;
     virtual CHASE_INT getNev() = 0;
     virtual CHASE_INT getNex() = 0;
     virtual Base<T>* getRitzv() = 0;
