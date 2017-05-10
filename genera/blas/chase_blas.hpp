@@ -62,7 +62,7 @@ public:
 
     ChASE_Config getConfig() { return config; }
 
-    CHASE_INT getN() { return N; }
+    std::size_t getN() { return N; }
 
     CHASE_INT getNev() { return nev; }
 
