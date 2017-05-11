@@ -97,9 +97,11 @@ void chase_write_hdf5(MPI_Comm comm, float complex* H, size_t N_)
     free(offsets_node);
 }
 
-void chase_read_matrix(MPI_Comm comm, size_t* dims_ret,
-    float complex** data_ptr)
+void chase_read_matrix(MPI_Comm comm, size_t xoff, size_t yoff, size_t xlen,
+    size_t ylen, float complex* H)
 {
+    printf("%zu %zu\n", xlen, ylen);
+    printf("%zu %zu\n", xoff, yoff);
 
     int myrank;
     int nprocs;
@@ -117,35 +119,43 @@ void chase_read_matrix(MPI_Comm comm, size_t* dims_ret,
     H5Pclose(plist_id);
 
     dset_id = H5Dopen(file_id, "Hamiltonian", H5P_DEFAULT);
-    hid_t fspace = H5Dget_space(dset_id);
+    //hid_t fspace = H5Dget_space(dset_id);
 
     //    H5Sclose(fspace);
     // now get the size of the dataset
-    const int ndims = H5Sget_simple_extent_ndims(fspace);
-    assert(ndims == 2);
-    hsize_t* dims = malloc(ndims * sizeof(hsize_t));
-    H5Sget_simple_extent_dims(fspace, dims, NULL);
+    /* const int ndims = H5Sget_simple_extent_ndims(fspace); */
+    /* assert(ndims == 2); */
+    /* hsize_t* dims = malloc(ndims * sizeof(hsize_t)); */
+    /* H5Sget_simple_extent_dims(fspace, dims, NULL); */
 
-    float complex* data = (float complex*)malloc(dims[0] * dims[1] * sizeof(float complex));
-
-    *data_ptr = data;
-    dims_ret[0] = dims[0];
-    dims_ret[1] = dims[1];
+    /* printf("%zu %zu\n", dims[0], dims[1]); */
 
     plist_id = H5Pcreate(H5P_DATASET_XFER);
-    H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE);
+    //H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE);
 
     hid_t complex_id = H5Tcreate(H5T_COMPOUND, sizeof(complex_t));
     H5Tinsert(complex_id, "real", HOFFSET(complex_t, re), H5T_NATIVE_FLOAT);
     H5Tinsert(complex_id, "imag", HOFFSET(complex_t, im), H5T_NATIVE_FLOAT);
 
-    H5Dread(dset_id, complex_id, fspace, fspace, plist_id, data);
+    hsize_t count[2];
+    hsize_t offset[2];
+    offset[1] = xoff;
+    offset[0] = yoff;
+    count[1] = xlen;
+    count[0] = ylen;
+
+    //memspace
+    hid_t mspace1 = H5Screate_simple(2, count, NULL);
+    hid_t fspace = H5Dget_space(dset_id);
+    H5Sselect_hyperslab(fspace, H5S_SELECT_SET, offset, NULL, count, NULL);
+
+    H5Dread(dset_id, complex_id, mspace1, fspace, plist_id, H);
 
     H5Dclose(dset_id);
     H5Sclose(fspace);
-    //    H5Sclose(mspace1);
+    H5Sclose(mspace1);
     H5Pclose(plist_id);
     H5Fclose(file_id);
 
-    free(dims);
+    //    free(dims);
 }

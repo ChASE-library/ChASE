@@ -9,8 +9,8 @@
 
 extern "C" {
 void chase_write_hdf5(MPI_Comm comm, std::complex<float>* H, size_t N);
-void chase_read_matrix(MPI_Comm comm, size_t* dims_ret,
-    std::complex<float>** data_ptr);
+void chase_read_matrix(MPI_Comm comm, std::size_t xoff, std::size_t yoff, std::size_t xlen,
+    std::size_t ylen, std::complex<float>* H);
 
 void c_chase_(MPI_Fint* Fcomm, std::complex<float>* H, int* N,
     std::complex<float>* V, float* ritzv, int* nev, int* nex,
@@ -18,48 +18,52 @@ void c_chase_(MPI_Fint* Fcomm, std::complex<float>* H, int* N,
 {
 
     MPI_Comm comm = MPI_Comm_f2c(*Fcomm);
-    std::cout << "entering chase H[0] = " << H[0] << std::endl;
-    std::cout << "tol: " << *tol << std::endl;
+    ChASE_MPI<std::complex<float> >* single;
+
+    double start_time = omp_get_wtime();
+    double stop_time;
+
+    CHASE_INT xoff;
+    CHASE_INT yoff;
+    CHASE_INT xlen;
+    CHASE_INT ylen;
 
     std::mt19937 gen(2342.0); // TODO
     std::normal_distribution<> d;
 
-    int mpi_size = 0;
-    MPI_Comm_size(comm, &mpi_size);
-
-    ChASE_MPI<std::complex<float> >* single;
-    std::complex<float>* HH;
-
-    if (mpi_size > 1) {
-        chase_write_hdf5(comm, H, *N);
-        MPI_Barrier(comm);
-        size_t dims_ret[2];
-        chase_read_matrix(comm, dims_ret, &HH);
-        assert(dims_ret[0] == dims_ret[1]);
-
-        ChASE_Config config(dims_ret[0], *nev, *nex);
-        config.setTol(*tol);
-        config.setDeg(*deg);
-        config.setOpt(opt == "S" || opt == "s");
-
-        single = new ChASE_MPI<std::complex<float> >(config, MPI_COMM_SELF, HH, V,
-            ritzv);
-    } else {
-        ChASE_Config config(*N, *nev, *nex);
-        config.setTol(*tol);
-        config.setDeg(*deg);
-        config.setOpt(opt == "S" || opt == "s");
-        HH = H;
-
-        single = new ChASE_MPI<std::complex<float> >(config, MPI_COMM_SELF, HH, V,
-            ritzv);
-    }
-
     for (std::size_t k = 0; k < *N * (*nev + *nex); ++k)
         V[k] = std::complex<float>(d(gen), d(gen));
 
-    float normH = std::max<float>(t_lange('1', *N, *N, HH, *N), float(1.0));
-    single->setNorm(normH);
+    std::cout << "V[0] : " << V[0] << "\n";
+
+    //chase_write_hdf5(comm, H, *N);
+    MPI_Barrier(comm);
+
+    ChASE_Config config(*N, *nev, *nex);
+    config.setTol(*tol);
+    config.setDeg(*deg);
+    config.setOpt(opt == "S" || opt == "s");
+
+    single = new ChASE_MPI<std::complex<float> >(config, comm, H, V, ritzv);
+    single->get_off(&xoff, &yoff, &xlen, &ylen);
+
+    // std::complex<float>* HH = single->getMatrixPtr();
+    // chase_read_matrix(comm, xoff, yoff, xlen, ylen, HH);
+
+    std::cout << xoff << " "
+              << yoff << " "
+              << xlen << " "
+              << ylen << "\n";
+
+    //float normH = std::max<float>(t_lange('1', *N, *N, HH, *N), float(1.0));
+    single->setNorm(6);
+
+    stop_time = omp_get_wtime();
+    int rank;
+    MPI_Comm_rank(comm, &rank);
+    if (rank == 0)
+        std::cout << "time for reading writing matrix and init: "
+                  << stop_time - start_time << "\n";
 
     single->solve();
     delete single;

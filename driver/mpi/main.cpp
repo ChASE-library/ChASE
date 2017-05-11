@@ -123,6 +123,8 @@ int main(int argc, char* argv[])
     //----------------------------------------------------------------------------
     MPI_Init(NULL, NULL);
 
+    std::cout << std::setprecision(16);
+
     ChASE_Config config(N, nev, nex);
     config.setTol(tol);
     config.setDeg(deg);

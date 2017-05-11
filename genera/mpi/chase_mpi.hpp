@@ -39,6 +39,38 @@ public:
         MPI_distribute_H(mpi_handle, H_);
     };
 
+    ChASE_MPI(ChASE_Config _config, MPI_Comm aComm, T* V_, Base<T>* ritzv_)
+        : N(_config.getN())
+        , nev(_config.getNev())
+        , nex(_config.getNex())
+        , locked(0)
+        , config(_config)
+        , dealloc(false)
+        , V(V_)
+        , ritzv(ritzv_)
+        , mComm(aComm)
+    {
+        W = new T[N * (nev + nex)]();
+        approxV = V;
+        workspace = W;
+
+        mpi_handle = new MPI_Handler<T>;
+        MPI_handler_init(mpi_handle, aComm, N, nev + nex);
+
+        CHASE_INT xoff;
+        CHASE_INT yoff;
+        CHASE_INT xlen;
+        CHASE_INT ylen;
+        get_off(&xoff, &yoff, &xlen, &ylen);
+        std::cout << "init chase...\n"
+                  << xoff << " " << yoff << "\n"
+                  << xlen << " " << ylen << "\n";
+
+        // H = new T[static_cast<std::size_t>(xlen)
+        //     * static_cast<std::size_t>(ylen)]();
+        H = mpi_handle->A;
+    };
+
     ChASE_MPI(ChASE_Config _config, MPI_Comm aComm)
         : N(_config.getN())
         , nev(_config.getNev())
@@ -64,7 +96,7 @@ public:
     ~ChASE_MPI()
     {
         if (dealloc) {
-          //delete[] H;
+            //delete[] H;
             delete[] V;
             delete[] ritzv;
         }
@@ -74,6 +106,12 @@ public:
     };
 
     ChASE_PerfData getPerfData() { return perf; }
+
+    void get_off(CHASE_INT* xoff, CHASE_INT* yoff,
+        CHASE_INT* xlen, CHASE_INT* ylen)
+    {
+        MPI_get_off(mpi_handle, xoff, yoff, xlen, ylen);
+    }
 
     ChASE_Config getConfig() { return config; }
 
@@ -94,14 +132,6 @@ public:
     // ChasE_Config
     void solve()
     {
-
-        // test();
-        // MPI_Finalize();
-        // std::exit(0);
-
-        // if (dealloc)
-        //     MPI_distribute_H(mpi_handle, H);
-
         perf = ChASE_Algorithm<T>::solve(this, N, ritzv, nev, nex);
     }
 
