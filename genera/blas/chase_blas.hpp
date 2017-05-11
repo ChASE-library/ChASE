@@ -72,7 +72,10 @@ public:
 
     // TODO: everything should be owned by chASE_Blas, deg should be part of
     // ChasE_Config
-    void solve() { perf = ChASE_Algorithm<T>::solve(this, N, ritzv, nev, nex); }
+    void solve()
+    {
+        perf = ChASE_Algorithm<T>::solve(this, N, ritzv, nev, nex);
+    }
 
     T* getMatrixPtr() { return H; }
 
@@ -140,6 +143,7 @@ public:
             approxV + locked * N, N, A, block, &Zero, workspace + locked * N, N);
 
         std::swap(approxV, workspace);
+        // we can swap, since the locked part were copied over as part of the QR
 
         delete[] A;
     };
@@ -352,6 +356,8 @@ public:
             ritzv, ritzV, m, m, isuppz, &tryrac);
 
         *upperb = std::max(std::abs(ritzv[0]), std::abs(ritzv[m - 1])) + std::abs(real_beta);
+
+        std::cout << "upperb: " << *upperb << "\n";
 
         for (std::size_t k = 1; k < m; ++k) {
             Tau[k] = std::abs(ritzV[k * m]) * std::abs(ritzV[k * m]);

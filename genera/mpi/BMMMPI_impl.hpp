@@ -206,7 +206,7 @@ void MPI_doGemm(MPI_Handler<T>* MPI_hand, T alpha, T beta, CHASE_INT offset, CHA
     T* One = new T(1.0, 0.0);
     T* Zero = new T(0.0, 0.0);
     double start, end;
-    CHASE_INT dim, inc;
+    std::size_t dim, inc;
     if (MPI_hand->next == 'b') {
 //printf("\nReduction over rows on process %d.\n",MPI_hand->rank);
 //start = MPI_Wtime();
@@ -289,7 +289,7 @@ void MPI_get_C(MPI_Handler<T>* MPI_hand, CHASE_INT* COff, CHASE_INT* CLen, T* C,
         printf("ERROR: Impossible to get C because MPI_Handler<T> is not initialized!\n");
         return;
     }
-    CHASE_INT size;
+    std::size_t size;
     CHASE_INT inc = 1;
     if (MPI_hand->next == 'b') {
         *COff = MPI_hand->off[1];
@@ -418,7 +418,7 @@ template <typename T>
 void MPI_lock_vectors(MPI_Handler<T>* MPI_hand, CHASE_INT nev)
 {
     //std::cout << "locking " <<  nev << " vectors\n";
-    CHASE_INT size = nev * MPI_hand->n;
+    std::size_t size = nev * MPI_hand->n;
     CHASE_INT inc = 1;
     if (MPI_hand->next == 'c')
         //copy(&size,MPI_hand->C,&inc,MPI_hand->B,&inc);
@@ -443,9 +443,9 @@ template <typename T>
 void assemble_C(MPI_Handler<T>* MPI_hand, CHASE_INT nevex, T* targetBuf)
 {
 
-    int N = MPI_hand->global_n;
-    int dimsIdx;
-    int subsize;
+    std::size_t N = MPI_hand->global_n;
+    std::size_t dimsIdx;
+    std::size_t subsize;
     T* buff;
     MPI_Comm comm;
     if (MPI_hand->next == 'b') {

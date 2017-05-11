@@ -148,6 +148,7 @@ int main(int argc, char* argv[])
         opt[0], sequence);
 
     //----------------------------------------------------------------------------
+    std::cout << std::setprecision(16);
 
     ChASE_Config config(N, nev, nex);
     config.setTol(tol);
