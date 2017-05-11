@@ -47,14 +47,15 @@ void c_chase_(MPI_Fint* Fcomm, std::complex<float>* H, int* N,
 {
 
     MPI_Comm comm = MPI_Comm_f2c(*Fcomm);
-    std::cout << "entering chase H[0] = " << H[0] << std::endl;
-    std::cout << "tol: " << *tol << std::endl;
+    int mpi_size = 0;
+    MPI_Comm_size(comm, &mpi_size);
 
     std::mt19937 gen(2342.0); // TODO
     std::normal_distribution<> d;
 
-    int mpi_size = 0;
-    MPI_Comm_size(comm, &mpi_size);
+    for (std::size_t k = 0; k < *N * (*nev + *nex); ++k)
+        V[k] = std::complex<float>(d(gen), d(gen));
+    std::cout << "V[0] : " << V[0] << "\n";
 
     ChASE_Blas<std::complex<float> >* single;
     std::complex<float>* HH;
@@ -83,11 +84,8 @@ void c_chase_(MPI_Fint* Fcomm, std::complex<float>* H, int* N,
         single = new ChASE_Blas<std::complex<float> >(config, HH, V, ritzv);
     }
 
-    for (std::size_t k = 0; k < *N * (*nev + *nex); ++k)
-        V[k] = std::complex<float>(d(gen), d(gen));
-
-    float normH = std::max<float>(t_lange('1', *N, *N, HH, *N), float(1.0));
-    single->setNorm(normH);
+    //    float normH = std::max<float>(t_lange('1', *N, *N, HH, *N), float(1.0));
+    single->setNorm(6);
 
     single->solve();
     delete single;
