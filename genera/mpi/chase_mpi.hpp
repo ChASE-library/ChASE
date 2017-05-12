@@ -62,9 +62,6 @@ public:
         CHASE_INT xlen;
         CHASE_INT ylen;
         get_off(&xoff, &yoff, &xlen, &ylen);
-        std::cout << "init chase...\n"
-                  << xoff << " " << yoff << "\n"
-                  << xlen << " " << ylen << "\n";
 
         // H = new T[static_cast<std::size_t>(xlen)
         //     * static_cast<std::size_t>(ylen)]();
@@ -198,13 +195,11 @@ public:
         MPI_distribute_V(mpi_handle, approxV + locked * N, nevex);
         threeTerms(nevex, T(1, 0), T(0, 0), 0);
         //threeTerms( nevex, T(1,0), T(0,0), 0 );
-        std::cout << "done distributing...\n";
         assemble_C(mpi_handle, nevex, vec.data());
         Base<T> norm = 0;
         for (auto kk = 0; kk < N * (nevex); ++kk)
             norm += std::abs(vec.data()[kk] - approxV[locked * N + kk])
                 * std::abs(vec.data()[kk] - approxV[locked * N + kk]);
-        std::cout << "norm transport filter: " << norm << "\n";
     }
 
     // todo this is wrong we want the END of V
@@ -397,7 +392,7 @@ public:
 
         int rank;
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-        std::cout << "[" << rank << "] upperb: " << *upperb << "\n";
+        //std::cout << "[" << rank << "] upperb: " << *upperb << "\n";
 
         delete[] ritzv;
         delete[] isuppz;
@@ -498,7 +493,7 @@ public:
 
         int rank;
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-        std::cout << "[" << rank << "] upperb: " << *upperb << "\n";
+        //std::cout << "[" << rank << "] upperb: " << *upperb << "\n";
 
         for (std::size_t k = 1; k < m; ++k) {
             Tau[k] = std::abs(ritzV[k * m]) * std::abs(ritzV[k * m]);
@@ -585,6 +580,14 @@ public:
         Base<T> norm = t_lange('M', nev, nev, unity, nev);
         delete[] unity;
         return norm;
+    }
+
+    void output(std::string str)
+    {
+        int rank;
+        MPI_Comm_rank(mComm, &rank);
+        if (rank == 0)
+            std::cout << str;
     }
 
 private:

@@ -100,9 +100,6 @@ void chase_write_hdf5(MPI_Comm comm, float complex* H, size_t N_)
 void chase_read_matrix(MPI_Comm comm, size_t xoff, size_t yoff, size_t xlen,
     size_t ylen, float complex* H)
 {
-    printf("%zu %zu\n", xlen, ylen);
-    printf("%zu %zu\n", xoff, yoff);
-
     int myrank;
     int nprocs;
 

@@ -454,6 +454,11 @@ public:
         return norm;
     }
 
+    void output(std::string str)
+    {
+        std::cout << str;
+    }
+
 private:
     std::size_t N, nev, nex, locked;
     T *H, *V, *W;

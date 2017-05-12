@@ -55,7 +55,6 @@ void c_chase_(MPI_Fint* Fcomm, std::complex<float>* H, int* N,
 
     for (std::size_t k = 0; k < *N * (*nev + *nex); ++k)
         V[k] = std::complex<float>(d(gen), d(gen));
-    std::cout << "V[0] : " << V[0] << "\n";
 
     ChASE_Blas<std::complex<float> >* single;
     std::complex<float>* HH;

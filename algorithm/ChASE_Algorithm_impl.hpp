@@ -279,8 +279,8 @@ std::size_t ChASE_Algorithm<T>::lanczos(ChASE<T>* single, int N, int numvec,
     }
 
 #ifdef OUTPUT
-    std::cout << "Obtained " << idx << " vectors from DoS " << m << " " << idx
-              << std::endl;
+// std::cout << "Obtained " << idx << " vectors from DoS " << m << " " << idx
+//           << std::endl;
 #endif
     if (idx > 0) {
         T* ritzVc = new T[m * m]();
@@ -386,10 +386,14 @@ ChASE_PerfData ChASE_Algorithm<T>::solve(ChASE<T>* single, std::size_t N,
             // upperb = lowerb + std::abs(lowerb - lambda);
         }
 #ifdef OUTPUT
-        std::cout << std::scientific << "iteration: " << iteration << "\t"
-                  << std::setprecision(6) << lambda << "\t" << std::setprecision(6)
-                  << lowerb << "\t" << std::setprecision(6) << upperb << "\t"
-                  << unconverged << std::endl;
+        std::ostringstream oss;
+
+        oss << std::scientific << "iteration: " << iteration << "\t"
+            << std::setprecision(6) << lambda << "\t" << std::setprecision(6)
+            << lowerb << "\t" << std::setprecision(6) << upperb << "\t"
+            << unconverged << std::endl;
+
+        single->output(oss.str());
 #endif
         //    assert( lowerb < upperb );
         if (lowerb > upperb) {

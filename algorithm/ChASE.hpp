@@ -51,6 +51,10 @@ public:
 
     virtual ChASE_Config getConfig() = 0;
     virtual void solve() = 0;
+
+#ifdef OUTPUT
+    virtual void output(std::string str) = 0;
+#endif
 };
 
 #include "ChASE_Algorithm.hpp"
