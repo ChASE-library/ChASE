@@ -108,13 +108,14 @@ void MPI_handler_init(MPI_Handler<T>* MPI_hand, MPI_Comm comm,
     */
 #endif
 
+    /*
     printf("\n***********************************************************\n");
     printf("MPI Handler on process %d initialized.\n Dimensions of grid: %d, %d.\n", MPI_hand->rank, MPI_hand->dims[0], MPI_hand->dims[1]);
     printf("Block with coordinates [%d,%d] has dimensions %d, %d\n", MPI_hand->coord[0], MPI_hand->coord[1], MPI_hand->m, MPI_hand->n);
     printf("Block with coordinates [%d,%d] has offsets %d, %d\n", MPI_hand->coord[0], MPI_hand->coord[1], MPI_hand->off[0], MPI_hand->off[1]);
-
+    */
     //Initializing these important stuff
-    MPI_hand->next = 'b';
+    MPI_hand->next = 'c';
     MPI_hand->initialized = 1;
 //initializing GPU_MPI_handler which will on its own recognize the GPUS
 #ifdef GPU_MODE
@@ -332,7 +333,7 @@ void shiftA(MPI_Handler<T>* MPI_hand, T c)
     shiftA(&(MPI_hand->GPU_MPI_hand), c);
 #endif
 }
-
+/*
 template <typename T>
 void debug_H(MPI_Handler<T>* MPI_hand)
 {
@@ -413,7 +414,7 @@ void debug_IMT(MPI_Handler<T>* MPI_hand)
         std::cout << "\n";
     }
 }
-
+*/
 template <typename T>
 void MPI_lock_vectors(MPI_Handler<T>* MPI_hand, CHASE_INT nev)
 {

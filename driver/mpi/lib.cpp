@@ -34,26 +34,20 @@ void c_chase_(MPI_Fint* Fcomm, std::complex<float>* H, int* N,
     for (std::size_t k = 0; k < *N * (*nev + *nex); ++k)
         V[k] = std::complex<float>(d(gen), d(gen));
 
-    std::cout << "V[0] : " << V[0] << "\n";
-
-    //chase_write_hdf5(comm, H, *N);
+    chase_write_hdf5(comm, H, *N);
     MPI_Barrier(comm);
 
     ChASE_Config config(*N, *nev, *nex);
     config.setTol(*tol);
     config.setDeg(*deg);
     config.setOpt(opt == "S" || opt == "s");
+    config.setLanczosIter(25);
 
-    single = new ChASE_MPI<std::complex<float> >(config, comm, H, V, ritzv);
+    single = new ChASE_MPI<std::complex<float> >(config, comm, V, ritzv);
     single->get_off(&xoff, &yoff, &xlen, &ylen);
 
-    // std::complex<float>* HH = single->getMatrixPtr();
-    // chase_read_matrix(comm, xoff, yoff, xlen, ylen, HH);
-
-    std::cout << xoff << " "
-              << yoff << " "
-              << xlen << " "
-              << ylen << "\n";
+    std::complex<float>* HH = single->getMatrixPtr();
+    chase_read_matrix(comm, xoff, yoff, xlen, ylen, HH);
 
     //float normH = std::max<float>(t_lange('1', *N, *N, HH, *N), float(1.0));
     single->setNorm(6);

@@ -129,6 +129,7 @@ public:
     // ChasE_Config
     void solve()
     {
+        MPI_Barrier(mComm);
         perf = ChASE_Algorithm<T>::solve(this, N, ritzv, nev, nex);
     }
 

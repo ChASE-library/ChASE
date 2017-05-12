@@ -13,6 +13,9 @@ public:
         , approx(false)
         , tol(1e-10)
         , deg(20)
+        , mDegExtra(2)
+        , mMaxIter(40)
+        , mLanczosIter(45)
     {
     }
 
@@ -32,11 +35,15 @@ public:
 
     std::size_t getMaxDeg() { return 36; }
 
-    std::size_t getDegExtra() { return 2; }
+    std::size_t getDegExtra() { return mDegExtra; }
 
-    std::size_t getMaxIter() { return 40; }
+    std::size_t getMaxIter() { return mMaxIter; }
 
-    std::size_t getLanczosIter() { return 45; }
+    std::size_t getLanczosIter() { return mLanczosIter; }
+    void setLanczosIter(std::size_t aLanczosIter)
+    {
+        mLanczosIter = aLanczosIter;
+    }
 
     std::size_t getN() { return N; }
 
@@ -48,6 +55,10 @@ private:
     bool optimization;
     bool approx;
     std::size_t deg;
+
+    std::size_t mDegExtra;
+    std::size_t mMaxIter;
+    std::size_t mLanczosIter;
 
     std::size_t N, nev, nex;
 
