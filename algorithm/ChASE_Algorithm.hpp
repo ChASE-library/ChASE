@@ -25,7 +25,7 @@ public:
 
     static std::size_t locking(ChASE<T>* single, std::size_t N,
         std::size_t unconverged, Base<T> tol,
-        Base<T>* ritzv, Base<T>* resid,
+        Base<T>* ritzv, Base<T>* resid, Base<T>* residLast,
         std::size_t* degrees, std::size_t locked);
 
     static std::size_t filter(ChASE<T>* single, std::size_t n,

@@ -82,7 +82,7 @@ std::size_t ChASE_Algorithm<T>::calc_degrees(
 template <class T>
 std::size_t ChASE_Algorithm<T>::locking(ChASE<T>* single, std::size_t N,
     std::size_t unconverged, Base<T> tol,
-    Base<T>* Lritzv, Base<T>* resid,
+    Base<T>* Lritzv, Base<T>* resid, Base<T>* residLast,
     std::size_t* degrees,
     std::size_t locked)
 {
@@ -97,10 +97,20 @@ std::size_t ChASE_Algorithm<T>::locking(ChASE<T>* single, std::size_t N,
     std::size_t converged = 0;
     for (auto k = 0; k < unconverged; ++k) {
         auto j = index[k]; // walk through
-        if (resid[j] > tol)
-            break;
+        if (resid[j] > tol) {
+            // don't break if we did not make progress with last iteration
+            if (resid[j] < residLast[j]) {
+                break;
+            } else {
+                std::ostringstream oss;
+                oss << "locking unconvered pair "
+                    << resid[j] << " " << residLast[j] << "\n";
+                single->output(oss.str());
+            }
+        }
         if (j != converged) {
             swap_kj(j, converged, resid); // if we filter again
+            swap_kj(j, converged, residLast); // if we filter again
             swap_kj(j, converged, Lritzv);
             single->swap(j, converged);
 
@@ -348,12 +358,19 @@ ChASE_PerfData ChASE_Algorithm<T>::solve(ChASE<T>* single, std::size_t N,
     Base<T> normH = single->getNorm();
     const double tol = tol_ * normH;
     Base<T>* resid_ = new Base<T>[ nevex ];
+    Base<T>* residLast_ = new Base<T>[ nevex ];
+    // this will be copie into residLast
+    for (auto i = 0; i < nevex; ++i) {
+        residLast_[i] = std::numeric_limits<Base<T> >::max();
+        resid_[i] = std::numeric_limits<Base<T> >::max();
+    }
 
     // store input values
     std::size_t deg = config.getDeg();
     std::size_t* degrees = degrees_;
     Base<T>* ritzv = ritzv_;
     Base<T>* resid = resid_;
+    Base<T>* residLast = residLast_;
 
     //-------------------------------- VALIDATION --------------------------------
     assert(degrees != NULL);
@@ -386,14 +403,16 @@ ChASE_PerfData ChASE_Algorithm<T>::solve(ChASE<T>* single, std::size_t N,
             // upperb = lowerb + std::abs(lowerb - lambda);
         }
 #ifdef OUTPUT
-        std::ostringstream oss;
+        {
+            std::ostringstream oss;
 
-        oss << std::scientific << "iteration: " << iteration << "\t"
-            << std::setprecision(6) << lambda << "\t" << std::setprecision(6)
-            << lowerb << "\t" << std::setprecision(6) << upperb << "\t"
-            << unconverged << std::endl;
+            oss << std::scientific << "iteration: " << iteration << "\t"
+                << std::setprecision(6) << lambda << "\t" << std::setprecision(6)
+                << lowerb << "\t" << std::setprecision(6) << upperb << "\t"
+                << unconverged << std::endl;
 
-        single->output(oss.str());
+            single->output(oss.str());
+        }
 #endif
         //    assert( lowerb < upperb );
         if (lowerb > upperb) {
@@ -412,6 +431,15 @@ ChASE_PerfData ChASE_Algorithm<T>::solve(ChASE<T>* single, std::size_t N,
 //--------------------------------- FILTER ---------------------------------
 
 #ifdef OUTPUT
+        {
+            std::ostringstream oss;
+            oss << "degrees\tresid\tresidLast\tritzv\n";
+            for (std::size_t k = 0; k < std::min<std::size_t>(unconverged, 20); ++k)
+                oss << degrees[k] << "\t" << resid[k] << "\t" << residLast[k]
+                    << "\t" << ritzv[k] << "\n";
+
+            single->output(oss.str());
+        }
 /*
         std::cout << "degrees\tresid\tritzv\n";
         for (std::size_t k = 0; k < std::min<std::size_t>(unconverged, 20); ++k)
@@ -435,10 +463,13 @@ ChASE_PerfData ChASE_Algorithm<T>::solve(ChASE<T>* single, std::size_t N,
 
         // --------------------------- RESIDUAL & LOCKING --------------------------
         perf.start_clock(ChASE_PerfData::TimePtrs::Resids_Locking);
+
+        for (auto i = 0; i < unconverged; ++i)
+            residLast[i] = std::min(residLast[i], resid[i]);
         single->resd(ritzv, resid, locked);
 
         std::size_t new_converged = locking(single, N, unconverged, tol, ritzv,
-            resid, degrees, locked);
+            resid, residLast, degrees, locked);
         perf.end_clock(ChASE_PerfData::TimePtrs::Resids_Locking);
 
         // ---------------------------- Update pointers ----------------------------
@@ -449,6 +480,7 @@ ChASE_PerfData ChASE_Algorithm<T>::solve(ChASE<T>* single, std::size_t N,
         unconverged -= new_converged;
 
         resid += new_converged;
+        residLast += new_converged;
         ritzv += new_converged;
         degrees += new_converged;
 
@@ -466,6 +498,7 @@ ChASE_PerfData ChASE_Algorithm<T>::solve(ChASE<T>* single, std::size_t N,
 
     perf.add_iter_count(iteration);
     delete[] resid_;
+    delete[] residLast_;
 
     perf.end_clock(ChASE_PerfData::TimePtrs::All);
     return perf;
