@@ -10,12 +10,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define FLOAT_TYPE float
+#define FLOAT_TYPE_HDF H5T_NATIVE_FLOAT
+
 typedef struct complex_t {
-    float re; /*real part */
-    float im; /*imaginary part */
+    FLOAT_TYPE re; /*real part */
+    FLOAT_TYPE im; /*imaginary part */
 } complex_t;
 
-void chase_write_hdf5(MPI_Comm comm, float complex* H, size_t N_)
+void chase_write_hdf5(MPI_Comm comm, FLOAT_TYPE complex* H, size_t N_)
 {
 
     int myrank;
@@ -39,13 +42,8 @@ void chase_write_hdf5(MPI_Comm comm, float complex* H, size_t N_)
     H5Pclose(plist_id);
 
     hid_t complex_id = H5Tcreate(H5T_COMPOUND, sizeof(complex_t));
-    H5Tinsert(complex_id, "real", HOFFSET(complex_t, re), H5T_NATIVE_FLOAT);
-    H5Tinsert(complex_id, "imag", HOFFSET(complex_t, im), H5T_NATIVE_FLOAT);
-    // CompType complex_id( sizeof(complex_t) );
-    // complex_id.insertMember( "real", HOFFSET(complex_t, re),
-    // PredType::NATIVE_FLOAT);
-    // complex_id.insertMember( "imag", HOFFSET(complex_t, im),
-    // PredType::NATIVE_FLOAT);
+    H5Tinsert(complex_id, "real", HOFFSET(complex_t, re), FLOAT_TYPE_HDF);
+    H5Tinsert(complex_id, "imag", HOFFSET(complex_t, im), FLOAT_TYPE_HDF);
 
     hsize_t dimsf[2]; // dataset dimensions
     dimsf[0] = (hsize_t)N;
@@ -82,7 +80,7 @@ void chase_write_hdf5(MPI_Comm comm, float complex* H, size_t N_)
     H5Sselect_hyperslab(fspace, H5S_SELECT_SET, offset, NULL, count, NULL);
 
     plist_id = H5Pcreate(H5P_DATASET_XFER);
-    H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE);
+    //H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE);
 
     H5Dwrite(dset_id, complex_id, mspace1, fspace, plist_id, H);
 
@@ -98,7 +96,7 @@ void chase_write_hdf5(MPI_Comm comm, float complex* H, size_t N_)
 }
 
 void chase_read_matrix(MPI_Comm comm, size_t xoff, size_t yoff, size_t xlen,
-    size_t ylen, float complex* H)
+    size_t ylen, FLOAT_TYPE complex* H)
 {
     int myrank;
     int nprocs;
@@ -131,8 +129,8 @@ void chase_read_matrix(MPI_Comm comm, size_t xoff, size_t yoff, size_t xlen,
     //H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE);
 
     hid_t complex_id = H5Tcreate(H5T_COMPOUND, sizeof(complex_t));
-    H5Tinsert(complex_id, "real", HOFFSET(complex_t, re), H5T_NATIVE_FLOAT);
-    H5Tinsert(complex_id, "imag", HOFFSET(complex_t, im), H5T_NATIVE_FLOAT);
+    H5Tinsert(complex_id, "real", HOFFSET(complex_t, re), FLOAT_TYPE_HDF);
+    H5Tinsert(complex_id, "imag", HOFFSET(complex_t, im), FLOAT_TYPE_HDF);
 
     hsize_t count[2];
     hsize_t offset[2];
