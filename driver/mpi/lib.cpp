@@ -9,8 +9,8 @@
 
 extern "C" {
 void chase_write_hdf5(MPI_Comm comm, std::complex<float>* H, size_t N);
-void chase_read_matrix(MPI_Comm comm, std::size_t xoff, std::size_t yoff, std::size_t xlen,
-    std::size_t ylen, std::complex<float>* H);
+void chase_read_matrix(MPI_Comm comm, std::size_t xoff, std::size_t yoff,
+    std::size_t xlen, std::size_t ylen, std::complex<float>* H);
 
 void c_chase_(MPI_Fint* Fcomm, std::complex<float>* H, int* N,
     std::complex<float>* V, float* ritzv, int* nev, int* nex,
@@ -50,8 +50,9 @@ void c_chase_(MPI_Fint* Fcomm, std::complex<float>* H, int* N,
     chase_read_matrix(comm, xoff, yoff, xlen, ylen, HH);
 
     //float normH = std::max<float>(t_lange('1', *N, *N, HH, *N), float(1.0));
-    single->setNorm(6);
+    single->setNorm(9);
 
+    MPI_Barrier(comm);
     stop_time = omp_get_wtime();
     int rank;
     MPI_Comm_rank(comm, &rank);
@@ -60,6 +61,7 @@ void c_chase_(MPI_Fint* Fcomm, std::complex<float>* H, int* N,
                   << stop_time - start_time << "\n";
 
     single->solve();
+
     delete single;
 }
 }

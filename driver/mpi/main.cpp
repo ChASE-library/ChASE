@@ -5,6 +5,14 @@
 #include <boost/program_options.hpp>
 #include <random>
 
+typedef std::complex<float> T;
+
+extern "C" {
+void chase_write_hdf5(MPI_Comm comm, T* H, size_t N);
+void chase_read_matrix(MPI_Comm comm, std::size_t xoff, std::size_t yoff,
+    std::size_t xlen, std::size_t ylen, T* H);
+}
+
 namespace po = boost::program_options;
 
 template <typename T>
@@ -26,8 +34,6 @@ void readMatrix(T* H, std::string path_in, std::string spin, CHASE_INT kpoint, s
         throw std::string("error reading file: ") + problem.str();
     }
 }
-
-typedef std::complex<double> T;
 
 int main(int argc, char* argv[])
 {
@@ -123,27 +129,39 @@ int main(int argc, char* argv[])
     //----------------------------------------------------------------------------
     MPI_Init(NULL, NULL);
 
+    int rank, size;
+
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+
     std::cout << std::setprecision(16);
+
+    CHASE_INT xoff;
+    CHASE_INT yoff;
+    CHASE_INT xlen;
+    CHASE_INT ylen;
 
     ChASE_Config config(N, nev, nex);
     config.setTol(tol);
     config.setDeg(deg);
+    config.setLanczosIter(25);
     config.setOpt(opt == "S");
 
-    ChASE_MPI<T>* single = new ChASE_MPI<T>(config, MPI_COMM_WORLD);
+    T* V = new T[N * (nev + nex)];
+    T* H; // = single->getMatrixPtr();
+    Base<T>* Lambda = new Base<T>[ nev + nex ];
+
+    ChASE_MPI<T>* single = new ChASE_MPI<T>(config, MPI_COMM_WORLD, V, Lambda);
+    //chase_read_matrix(comm, xoff, yoff, xlen, ylen, HH);
 
     // std::random_device rd;
     std::mt19937 gen(2342.0);
     std::normal_distribution<> d;
 
-    T* V = single->getVectorsPtr();
-    T* H;// = single->getMatrixPtr();
-    Base<T>* Lambda = single->getRitzv();
-
     // the example matrices are stored in std::complex< double >
     // so we read them as such and then case them
-    std::complex<double>* _H = new MKL_Complex16[static_cast<std::size_t>(N)
-        * static_cast<std::size_t>(N)];
+    // std::complex<double>* _H = new MKL_Complex16[static_cast<std::size_t>(N)
+    //     * static_cast<std::size_t>(N)];
 
     //----------------------------------------------------------------------------
 
@@ -185,17 +203,20 @@ int main(int argc, char* argv[])
             // previous solution
             mode = "A";
         }
-        readMatrix(_H, path_in, spin, kpoint, i, ".bin", N * N, legacy);
 
-        // for (std::size_t idx = 0; idx < N * N; ++idx)
-        //     H[idx] = _H[idx];
-        H = _H;
+        single->get_off(&xoff, &yoff, &xlen, &ylen);
+        H = single->getMatrixPtr();
+        chase_read_matrix(MPI_COMM_WORLD, xoff, yoff, xlen, ylen, H);
 
-        Base<T> normH = std::max(t_lange('1', N, N, H, N), Base<T>(1.0));
+        // readMatrix(H, path_in, spin, kpoint, i, ".bin", N * N, legacy);
+        // assert(size == 1);
+
+        MPI_Barrier(MPI_COMM_WORLD);
+
+        Base<T> normH = 9; //std::max(t_lange('1', N, N, H, N), Base<T>(1.0));
         single->setNorm(normH);
 
         //------------------------------SOLVE-CURRENT-PROBLEM-----------------------
-        single->distribute_H(H);
         single->solve();
         //--------------------------------------------------------------------------
 
@@ -214,17 +235,22 @@ int main(int argc, char* argv[])
         TR.registerValue(i, "resd", resd);
         TR.registerValue(i, "orth", orth);
 
-        int rank;
-        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
         if (rank == 0)
             perf.print();
 
-        if (resd > nev * normH * tol || orth > 1e-14)
+        if (resd > nev * normH * tol) {
+            std::cout << "resd too bad\n";
             throw new std::exception();
+        }
+        // if (orth > 1e-14)
+        //   {
+        //     throw new std::exception();
+        //   }
 
     } // for(int i = bgn; i <= end; ++i)
 
-    TR.done();
+    if (rank == 0)
+        TR.done();
 
     MPI_Finalize();
 
@@ -236,7 +262,7 @@ int main(int argc, char* argv[])
 #endif
 
     delete single;
-    delete[] _H;
+    //delete[] _H;
 
     return 0;
 }
