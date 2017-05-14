@@ -28,6 +28,7 @@ public:
     void setTol(double _tol) { tol = _tol; }
 
     void setOpt(bool flag) { optimization = flag; }
+    void setApprox(bool flag) { approx = flag; }
 
     double getTol() { return tol; }
 

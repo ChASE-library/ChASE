@@ -79,6 +79,7 @@ void c_chase_(MPI_Fint* Fcomm, std::complex<float>* H, int* N,
         config.setTol(*tol);
         config.setDeg(*deg);
         config.setOpt(opt == "S" || opt == "s");
+        config.setOpt(mode == "A" || mode == "a");
         config.setLanczosIter(25);
         HH = H;
 

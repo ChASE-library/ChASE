@@ -154,6 +154,7 @@ int main(int argc, char* argv[])
     config.setTol(tol);
     config.setDeg(deg);
     config.setOpt(opt == "S");
+    config.setApprox(mode == "A");
 
     ChASE_Blas<T>* single = new ChASE_Blas<T>(config);
 
