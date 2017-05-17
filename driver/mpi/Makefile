@@ -32,7 +32,7 @@ ${BUILDDIR}/libchase_${GENUS}.a: mk_builddir
 	mpicxx -cxx=icpc -DOUTPUT -std=c++11 -qopenmp -g \
 	  -I../../genera/${GENUS}  -I../../algorithm \
 	  lib.cpp  -c -o ${BUILDDIR}/chase_${GENUS}.o
-	  ar rvs ${BUILDDIR}/libchase_${GENUS}.a ${BUILDDIR}/hdf5.o ${BUILDDIR}/chase_${GENUS}.o
+	  ar rvs ${BUILDDIR}/libchase_${GENUS}.a ${BUILDDIR}/hdf5_${GENUS}.o ${BUILDDIR}/chase_${GENUS}.o
 
 
 ${BUILDDIR}/chase_${GENUS}.done: ${BUILDDIR}/chase_${GENUS}.x
