@@ -10,35 +10,36 @@ extern "C" {
 void chase_write_hdf5(MPI_Comm comm, std::complex<float>* H, size_t N);
 void chase_read_matrix(MPI_Comm comm, size_t* dims_ret,
     std::complex<float>** data_ptr);
-
 /*
-void c_chase_(std::complex<float> *H, int *N, std::complex<float> *V,
-            float *ritzv, int *nev, int *nex, int *deg, double *tol,
-            char *mode, char *opt) {
-std::cout << "entering chase" << std::endl;
-std::cout << "tol: " << *tol << std::endl;
-ChASE_Config config(*N, *nev, *nex);
+void c_chase_(std::complex<float>* H, int* N, std::complex<float>* V,
+    float* ritzv, int* nev, int* nex, int* deg, double* tol,
+    char* mode, char* opt)
+{
+    std::cout << "entering chase" << std::endl;
+    std::cout << "tol: " << *tol << std::endl;
+    ChASE_Config config(*N, *nev, *nex);
 
-config.setTol(*tol);
-config.setDeg(*deg);
-config.setOpt(opt == "S" || opt == "s");
+    config.setTol(*tol);
+    config.setDeg(*deg);
+    config.setOpt(opt == "S" || opt == "s");
+    config.setApprox(mode == "A" || mode == "a");
 
-std::mt19937 gen(2342.0); // TODO
-std::normal_distribution<> d;
+    std::mt19937 gen(2342.0); // TODO
+    std::normal_distribution<> d;
 
-for (std::size_t k = 0; k < *N * (*nev + *nex); ++k)
-  V[k] = std::complex<float>(d(gen), d(gen));
+    if (!config.use_approx())
+        for (std::size_t k = 0; k < *N * (*nev + *nex); ++k)
+            V[k] = std::complex<float>(d(gen), d(gen));
 
-ChASE_Blas<std::complex<float>> *single =
-    new ChASE_Blas<std::complex<float>>(config, H, V, ritzv);
+    ChASE_Blas<std::complex<float> >* single = new ChASE_Blas<std::complex<float> >(config, H, V, ritzv);
 
-float normH = std::max<float>(t_lange('1', *N, *N, H, *N), float(1.0));
-single->setNorm(normH);
+    float normH = std::max<float>(t_lange('1', *N, *N, H, *N), float(1.0));
+    single->setNorm(normH);
 
-single->solve();
-std::cout << ritzv[0] << "\n";
+    single->solve();
+    std::cout << ritzv[0] << "\n";
 
-delete single;
+    delete single;
 }
 */
 void c_chase_(MPI_Fint* Fcomm, std::complex<float>* H, int* N,
@@ -53,9 +54,6 @@ void c_chase_(MPI_Fint* Fcomm, std::complex<float>* H, int* N,
     std::mt19937 gen(2342.0); // TODO
     std::normal_distribution<> d;
 
-    for (std::size_t k = 0; k < *N * (*nev + *nex); ++k)
-        V[k] = std::complex<float>(d(gen), d(gen));
-
     ChASE_Blas<std::complex<float> >* single;
     std::complex<float>* HH;
 
@@ -69,7 +67,8 @@ void c_chase_(MPI_Fint* Fcomm, std::complex<float>* H, int* N,
         ChASE_Config config(dims_ret[0], *nev, *nex);
         config.setTol(*tol);
         config.setDeg(*deg);
-        config.setOpt(opt == "S" || opt == "s");
+        config.setOpt(*opt == 'S' || *opt == 's');
+        config.setApprox(*mode == 'A' || *mode == 'a');
         config.setLanczosIter(25);
 
         single = new ChASE_Blas<std::complex<float> >(config, HH, V, ritzv);
@@ -78,13 +77,17 @@ void c_chase_(MPI_Fint* Fcomm, std::complex<float>* H, int* N,
         ChASE_Config config(*N, *nev, *nex);
         config.setTol(*tol);
         config.setDeg(*deg);
-        config.setOpt(opt == "S" || opt == "s");
-        config.setOpt(mode == "A" || mode == "a");
+        config.setOpt(*opt == 'S' || *opt == 's');
+        config.setApprox(*mode == 'A' || *mode == 'a');
         config.setLanczosIter(25);
         HH = H;
 
         single = new ChASE_Blas<std::complex<float> >(config, HH, V, ritzv);
     }
+
+    if (!config.use_approx())
+        for (std::size_t k = 0; k < *N * (*nev + *nex); ++k)
+            V[k] = std::complex<float>(d(gen), d(gen));
 
     //    float normH = std::max<float>(t_lange('1', *N, *N, HH, *N), float(1.0));
     single->setNorm(6);

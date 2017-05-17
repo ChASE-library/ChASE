@@ -31,8 +31,7 @@ void c_chase_(MPI_Fint* Fcomm, std::complex<float>* H, int* N,
     std::mt19937 gen(2342.0); // TODO
     std::normal_distribution<> d;
 
-    for (std::size_t k = 0; k < *N * (*nev + *nex); ++k)
-        V[k] = std::complex<float>(d(gen), d(gen));
+    int rank;
 
     chase_write_hdf5(comm, H, *N);
     MPI_Barrier(comm);
@@ -40,7 +39,8 @@ void c_chase_(MPI_Fint* Fcomm, std::complex<float>* H, int* N,
     ChASE_Config config(*N, *nev, *nex);
     config.setTol(*tol);
     config.setDeg(*deg);
-    config.setOpt(opt == "S" || opt == "s");
+    config.setOpt(*opt == 'S' || *opt == 's');
+    config.setApprox(*mode == 'A' || *mode == 'a');
     config.setLanczosIter(25);
 
     single = new ChASE_MPI<std::complex<float> >(config, comm, V, ritzv);
@@ -51,6 +51,10 @@ void c_chase_(MPI_Fint* Fcomm, std::complex<float>* H, int* N,
 
     //float normH = std::max<float>(t_lange('1', *N, *N, HH, *N), float(1.0));
     single->setNorm(9);
+
+    if (!config.use_approx())
+        for (std::size_t k = 0; k < *N * (*nev + *nex); ++k)
+            V[k] = std::complex<float>(d(gen), d(gen));
 
     MPI_Barrier(comm);
     stop_time = omp_get_wtime();

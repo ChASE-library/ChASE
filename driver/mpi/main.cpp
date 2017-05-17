@@ -146,6 +146,7 @@ int main(int argc, char* argv[])
     config.setDeg(deg);
     config.setLanczosIter(25);
     config.setOpt(opt == "S");
+    config.setApprox(mode == "A");
 
     T* V = new T[N * (nev + nex)];
     T* H; // = single->getMatrixPtr();
