@@ -18,6 +18,8 @@ typedef struct complex_t {
     FLOAT_TYPE im; /*imaginary part */
 } complex_t;
 
+#define HDF_FILE "work/slai/slai10/array_%d.hdf5"
+
 void chase_write_hdf5(MPI_Comm comm, FLOAT_TYPE complex* H, size_t N_)
 {
 
@@ -37,8 +39,11 @@ void chase_write_hdf5(MPI_Comm comm, FLOAT_TYPE complex* H, size_t N_)
     hid_t plist_id = H5Pcreate(H5P_FILE_ACCESS);
     H5Pset_fapl_mpio(plist_id, comm, info);
 
+    char filename[100];
+    sprintf(filename, HDF_FILE, nprocs);
+
     hid_t file_id, dset_id;
-    file_id = H5Fcreate("array.hdf5", H5F_ACC_TRUNC, H5P_DEFAULT, plist_id);
+    file_id = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, plist_id);
     H5Pclose(plist_id);
 
     hid_t complex_id = H5Tcreate(H5T_COMPOUND, sizeof(complex_t));
@@ -80,7 +85,7 @@ void chase_write_hdf5(MPI_Comm comm, FLOAT_TYPE complex* H, size_t N_)
     H5Sselect_hyperslab(fspace, H5S_SELECT_SET, offset, NULL, count, NULL);
 
     plist_id = H5Pcreate(H5P_DATASET_XFER);
-    //H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE);
+    H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE);
 
     H5Dwrite(dset_id, complex_id, mspace1, fspace, plist_id, H);
 
@@ -104,29 +109,23 @@ void chase_read_matrix(MPI_Comm comm, size_t xoff, size_t yoff, size_t xlen,
     MPI_Comm_size(comm, &nprocs);
     MPI_Comm_rank(comm, &myrank);
 
+    char filename[100];
+    sprintf(filename, HDF_FILE, nprocs);
+
     MPI_Info info = MPI_INFO_NULL;
     hid_t plist_id = H5Pcreate(H5P_FILE_ACCESS);
     H5Pset_fapl_mpio(plist_id, comm, info);
 
     hid_t file_id, dset_id;
     // H5File *file = new H5File( "array.hdf5", H5F_ACC_TRUNC );
-    file_id = H5Fopen("array.hdf5", H5F_ACC_RDONLY, plist_id);
+    file_id = H5Fopen(filename, H5F_ACC_RDONLY, plist_id);
     H5Pclose(plist_id);
 
     dset_id = H5Dopen(file_id, "Hamiltonian", H5P_DEFAULT);
     //hid_t fspace = H5Dget_space(dset_id);
 
-    //    H5Sclose(fspace);
-    // now get the size of the dataset
-    /* const int ndims = H5Sget_simple_extent_ndims(fspace); */
-    /* assert(ndims == 2); */
-    /* hsize_t* dims = malloc(ndims * sizeof(hsize_t)); */
-    /* H5Sget_simple_extent_dims(fspace, dims, NULL); */
-
-    /* printf("%zu %zu\n", dims[0], dims[1]); */
-
     plist_id = H5Pcreate(H5P_DATASET_XFER);
-    //H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE);
+    H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE);
 
     hid_t complex_id = H5Tcreate(H5T_COMPOUND, sizeof(complex_t));
     H5Tinsert(complex_id, "real", HOFFSET(complex_t, re), FLOAT_TYPE_HDF);

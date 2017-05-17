@@ -62,6 +62,11 @@ void c_chase_(MPI_Fint* Fcomm, std::complex<float>* H, int* N,
 
     single->solve();
 
+    ChASE_PerfData perf = single->getPerfData();
+
+    if (rank == 0)
+        perf.print();
+
     delete single;
 }
 }
