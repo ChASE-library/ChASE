@@ -22,7 +22,7 @@ std::size_t ChASE_Algorithm<T>::calc_degrees(
     Base<T> upperb, Base<T> lowerb, Base<T> tol, Base<T>* ritzv, Base<T>* resid,
     std::size_t* degrees, std::size_t locked)
 {
-    ChASE_Config conf = single->getConfig();
+    ChASE_Config<T> conf = single->getConfig();
 
     Base<T> c = (upperb + lowerb) / 2; // Center of the interval.
     Base<T> e = (upperb - lowerb) / 2; // Half-length of the interval.
@@ -340,7 +340,7 @@ ChASE_PerfData ChASE_Algorithm<T>::solve(ChASE<T>* single, std::size_t N,
     std::size_t* degrees_ = new std::size_t[nev + nex];
     // todo dealloc
 
-    ChASE_Config config = single->getConfig();
+    ChASE_Config<T> config = single->getConfig();
 
     double tol_ = config.getTol();
 

@@ -141,7 +141,7 @@ int main(int argc, char* argv[])
     CHASE_INT xlen;
     CHASE_INT ylen;
 
-    ChASE_Config config(N, nev, nex);
+    ChASE_Config<T> config(N, nev, nex);
     config.setTol(tol);
     config.setDeg(deg);
     config.setLanczosIter(25);

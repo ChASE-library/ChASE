@@ -33,11 +33,12 @@ void c_chase_(MPI_Fint* Fcomm, std::complex<float>* H, int* N,
     std::normal_distribution<> d;
 
     int rank;
+    MPI_Comm_rank(comm, &rank);
 
     chase_write_hdf5(comm, H, *N);
     MPI_Barrier(comm);
 
-    ChASE_Config config(*N, *nev, *nex);
+    ChASE_Config<std::complex<float> > config(*N, *nev, *nex);
     config.setTol(*tol);
     config.setDeg(*deg);
     config.setOpt(*opt == 'S' || *opt == 's');
@@ -65,8 +66,7 @@ void c_chase_(MPI_Fint* Fcomm, std::complex<float>* H, int* N,
 
     MPI_Barrier(comm);
     stop_time = omp_get_wtime();
-    int rank;
-    MPI_Comm_rank(comm, &rank);
+
     if (rank == 0)
         std::cout << "time for reading writing matrix and init: "
                   << stop_time - start_time << "\n";

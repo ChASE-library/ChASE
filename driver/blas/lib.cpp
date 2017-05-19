@@ -53,37 +53,31 @@ void c_chase_(MPI_Fint* Fcomm, std::complex<float>* H, int* N,
 
     std::mt19937 gen(2342.0); // TODO
     std::normal_distribution<> d;
+    size_t dims_ret[2];
 
     ChASE_Blas<std::complex<float> >* single;
     std::complex<float>* HH;
 
+    MPI_Barrier(comm);
+
     if (mpi_size > 1) {
         chase_write_hdf5(comm, H, *N);
-        MPI_Barrier(comm);
-        size_t dims_ret[2];
         chase_read_matrix(comm, dims_ret, &HH);
         assert(dims_ret[0] == dims_ret[1]);
-
-        ChASE_Config config(dims_ret[0], *nev, *nex);
-        config.setTol(*tol);
-        config.setDeg(*deg);
-        config.setOpt(*opt == 'S' || *opt == 's');
-        config.setApprox(*mode == 'A' || *mode == 'a');
-        config.setLanczosIter(25);
-
-        single = new ChASE_Blas<std::complex<float> >(config, HH, V, ritzv);
     } else {
-
-        ChASE_Config config(*N, *nev, *nex);
-        config.setTol(*tol);
-        config.setDeg(*deg);
-        config.setOpt(*opt == 'S' || *opt == 's');
-        config.setApprox(*mode == 'A' || *mode == 'a');
-        config.setLanczosIter(25);
+        dims_ret[0] = *N;
+        dims_ret[1] = *N;
         HH = H;
-
-        single = new ChASE_Blas<std::complex<float> >(config, HH, V, ritzv);
     }
+
+    ChASE_Config<std::complex<float> > config(dims_ret[0], *nev, *nex);
+    config.setTol(*tol);
+    config.setDeg(*deg);
+    config.setOpt(*opt == 'S' || *opt == 's');
+    config.setApprox(*mode == 'A' || *mode == 'a');
+    config.setLanczosIter(25);
+
+    single = new ChASE_Blas<std::complex<float> >(config, HH, V, ritzv);
 
     if (!config.use_approx())
         for (std::size_t k = 0; k < *N * (*nev + *nex); ++k)

@@ -49,7 +49,7 @@ public:
     virtual CHASE_INT getNex() = 0;
     virtual Base<T>* getRitzv() = 0;
 
-    virtual ChASE_Config getConfig() = 0;
+    virtual ChASE_Config<T> getConfig() = 0;
     virtual void solve() = 0;
 
 #ifdef OUTPUT

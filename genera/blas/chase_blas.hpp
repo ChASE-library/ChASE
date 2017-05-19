@@ -14,7 +14,7 @@
 template <class T>
 class ChASE_Blas : public ChASE<T> {
 public:
-    ChASE_Blas(ChASE_Config _config, T* H_, T* V_, Base<T>* ritzv_)
+    ChASE_Blas(ChASE_Config<T> _config, T* H_, T* V_, Base<T>* ritzv_)
         : N(_config.getN())
         , nev(_config.getNev())
         , nex(_config.getNex())
@@ -30,7 +30,7 @@ public:
         workspace = W;
     };
 
-    ChASE_Blas(ChASE_Config _config)
+    ChASE_Blas(ChASE_Config<T> _config)
         : N(_config.getN())
         , nev(_config.getNev())
         , nex(_config.getNex())
@@ -60,7 +60,7 @@ public:
 
     ChASE_PerfData getPerfData() { return perf; }
 
-    ChASE_Config getConfig() { return config; }
+    ChASE_Config<T> getConfig() { return config; }
 
     std::size_t getN() { return N; }
 
@@ -466,7 +466,7 @@ private:
     Base<T> norm;
     Base<T>* ritzv;
 
-    ChASE_Config config;
+    ChASE_Config<T> config;
     ChASE_PerfData perf;
 
     const bool dealloc;

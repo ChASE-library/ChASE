@@ -18,7 +18,7 @@
 template <class T>
 class ChASE_MPI : public ChASE<T> {
 public:
-    ChASE_MPI(ChASE_Config _config, MPI_Comm aComm, T* H_, T* V_, Base<T>* ritzv_)
+    ChASE_MPI(ChASE_Config<T> _config, MPI_Comm aComm, T* H_, T* V_, Base<T>* ritzv_)
         : N(_config.getN())
         , nev(_config.getNev())
         , nex(_config.getNex())
@@ -39,7 +39,7 @@ public:
         MPI_distribute_H(mpi_handle, H_);
     };
 
-    ChASE_MPI(ChASE_Config _config, MPI_Comm aComm, T* V_, Base<T>* ritzv_)
+    ChASE_MPI(ChASE_Config<T> _config, MPI_Comm aComm, T* V_, Base<T>* ritzv_)
         : N(_config.getN())
         , nev(_config.getNev())
         , nex(_config.getNex())
@@ -68,7 +68,7 @@ public:
         H = mpi_handle->A;
     };
 
-    ChASE_MPI(ChASE_Config _config, MPI_Comm aComm)
+    ChASE_MPI(ChASE_Config<T> _config, MPI_Comm aComm)
         : N(_config.getN())
         , nev(_config.getNev())
         , nex(_config.getNex())
@@ -110,7 +110,7 @@ public:
         MPI_get_off(mpi_handle, xoff, yoff, xlen, ylen);
     }
 
-    ChASE_Config getConfig() { return config; }
+    ChASE_Config<T> getConfig() { return config; }
 
     std::size_t getN() { return N; }
 
@@ -598,7 +598,7 @@ private:
     Base<T> norm;
     Base<T>* ritzv;
 
-    ChASE_Config config;
+    ChASE_Config<T> config;
     ChASE_PerfData perf;
 
     MPI_Comm mComm;

@@ -150,7 +150,7 @@ int main(int argc, char* argv[])
     //----------------------------------------------------------------------------
     std::cout << std::setprecision(16);
 
-    ChASE_Config config(N, nev, nex);
+    ChASE_Config<T> config(N, nev, nex);
     config.setTol(tol);
     config.setDeg(deg);
     config.setOpt(opt == "S");
