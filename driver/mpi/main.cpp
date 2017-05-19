@@ -149,11 +149,11 @@ int main(int argc, char* argv[])
     config.setApprox(mode == "A");
 
     T* V = new T[N * (nev + nex)];
-    T* H; // = single->getMatrixPtr();
     Base<T>* Lambda = new Base<T>[ nev + nex ];
 
     ChASE_MPI<T>* single = new ChASE_MPI<T>(config, MPI_COMM_WORLD, V, Lambda);
-    //chase_read_matrix(comm, xoff, yoff, xlen, ylen, HH);
+
+    T* H = single->getMatrixPtr();
 
     // std::random_device rd;
     std::mt19937 gen(2342.0);
@@ -205,16 +205,17 @@ int main(int argc, char* argv[])
             mode = "A";
         }
 
-        single->get_off(&xoff, &yoff, &xlen, &ylen);
-        H = single->getMatrixPtr();
-        chase_read_matrix(MPI_COMM_WORLD, xoff, yoff, xlen, ylen, H);
-
-        // readMatrix(H, path_in, spin, kpoint, i, ".bin", N * N, legacy);
+        if (size == 1) {
+            readMatrix(H, path_in, spin, kpoint, i, ".bin", N * N, legacy);
+        } else {
+            single->get_off(&xoff, &yoff, &xlen, &ylen);
+            chase_read_matrix(MPI_COMM_WORLD, xoff, yoff, xlen, ylen, H);
+        }
         // assert(size == 1);
 
         MPI_Barrier(MPI_COMM_WORLD);
 
-        Base<T> normH = 9; //std::max(t_lange('1', N, N, H, N), Base<T>(1.0));
+        Base<T> normH = 5; //std::max(t_lange('1', N, N, H, N), Base<T>(1.0));
         single->setNorm(normH);
 
         //------------------------------SOLVE-CURRENT-PROBLEM-----------------------

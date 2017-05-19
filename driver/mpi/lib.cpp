@@ -16,8 +16,9 @@ void c_chase_(MPI_Fint* Fcomm, std::complex<float>* H, int* N,
     std::complex<float>* V, float* ritzv, int* nev, int* nex,
     int* deg, double* tol, char* mode, char* opt)
 {
-
     MPI_Comm comm = MPI_Comm_f2c(*Fcomm);
+    int size;
+    MPI_Comm_size(comm, &size);
     ChASE_MPI<std::complex<float> >* single;
 
     double start_time = omp_get_wtime();
@@ -47,7 +48,13 @@ void c_chase_(MPI_Fint* Fcomm, std::complex<float>* H, int* N,
     single->get_off(&xoff, &yoff, &xlen, &ylen);
 
     std::complex<float>* HH = single->getMatrixPtr();
-    chase_read_matrix(comm, xoff, yoff, xlen, ylen, HH);
+    if (size == 1) {
+        for (auto i = 0; i < *N * *N; ++i)
+            HH[i] = H[i];
+
+    } else {
+        chase_read_matrix(comm, xoff, yoff, xlen, ylen, HH);
+    }
 
     //float normH = std::max<float>(t_lange('1', *N, *N, HH, *N), float(1.0));
     single->setNorm(9);
