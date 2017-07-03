@@ -5,8 +5,11 @@
 #include <iostream>
 #include <random>
 
-#include "../../algorithm/ChASE.hpp"
+#include "ChASE.hpp"
+#include "template_wrapper.hpp"
 
+// TODO:
+// -- random vectors for lanczos?
 // #include "./chase_blas_factory.hpp"
 
 #include "template_wrapper.hpp"
@@ -448,6 +451,7 @@ class ChASE_Blas : public ChASE<T> {
       }
     }
 
+<<<<<<< HEAD
     t_gemm(CblasColMajor, CblasConjTrans, CblasNoTrans, nev_, nev_, N_, &one,
            &*V_, N_, &*V_, N_, &neg_one, &unity[0], nev_);
     Base<T> norm = t_lange('M', nev_, nev_, &unity[0], nev_);
@@ -487,6 +491,20 @@ class ChASE_Blas : public ChASE<T> {
 
   ChASE_Config config_;
   ChASE_PerfData perf_;
+=======
+
+   private:
+    std::size_t N, nev, nex, locked;
+    T *H, *V, *W;
+    T *approxV, *workspace;
+    Base<T> norm;
+    Base<T>* ritzv;
+
+    ChASE_Config<T> config;
+    ChASE_PerfData perf;
+
+    const bool dealloc;
+>>>>>>> a8057cb7ea34a373a8e6cba09d08697c249ce13e
 };
 
 // TODO

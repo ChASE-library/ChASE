@@ -16,8 +16,9 @@ void c_chase_(MPI_Fint* Fcomm, std::complex<float>* H, int* N,
     std::complex<float>* V, float* ritzv, int* nev, int* nex,
     int* deg, double* tol, char* mode, char* opt)
 {
-
     MPI_Comm comm = MPI_Comm_f2c(*Fcomm);
+    int size;
+    MPI_Comm_size(comm, &size);
     ChASE_MPI<std::complex<float> >* single;
 
     double start_time = omp_get_wtime();
@@ -31,31 +32,41 @@ void c_chase_(MPI_Fint* Fcomm, std::complex<float>* H, int* N,
     std::mt19937 gen(2342.0); // TODO
     std::normal_distribution<> d;
 
-    for (std::size_t k = 0; k < *N * (*nev + *nex); ++k)
-        V[k] = std::complex<float>(d(gen), d(gen));
+    int rank;
+    MPI_Comm_rank(comm, &rank);
 
     chase_write_hdf5(comm, H, *N);
     MPI_Barrier(comm);
 
-    ChASE_Config config(*N, *nev, *nex);
+    ChASE_Config<std::complex<float> > config(*N, *nev, *nex);
     config.setTol(*tol);
     config.setDeg(*deg);
-    config.setOpt(opt == "S" || opt == "s");
+    config.setOpt(*opt == 'S' || *opt == 's');
+    config.setApprox(*mode == 'A' || *mode == 'a');
     config.setLanczosIter(25);
 
     single = new ChASE_MPI<std::complex<float> >(config, comm, V, ritzv);
     single->get_off(&xoff, &yoff, &xlen, &ylen);
 
     std::complex<float>* HH = single->getMatrixPtr();
-    chase_read_matrix(comm, xoff, yoff, xlen, ylen, HH);
+    if (size == 1) {
+        for (auto i = 0; i < *N * *N; ++i)
+            HH[i] = H[i];
+
+    } else {
+        chase_read_matrix(comm, xoff, yoff, xlen, ylen, HH);
+    }
 
     //float normH = std::max<float>(t_lange('1', *N, *N, HH, *N), float(1.0));
     single->setNorm(9);
 
+    if (!config.use_approx())
+        for (std::size_t k = 0; k < *N * (*nev + *nex); ++k)
+            V[k] = std::complex<float>(d(gen), d(gen));
+
     MPI_Barrier(comm);
     stop_time = omp_get_wtime();
-    int rank;
-    MPI_Comm_rank(comm, &rank);
+
     if (rank == 0)
         std::cout << "time for reading writing matrix and init: "
                   << stop_time - start_time << "\n";
