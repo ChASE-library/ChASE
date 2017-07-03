@@ -10,10 +10,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define FLOAT_TYPE float
+#define FLOAT_TYPE_HDF H5T_NATIVE_FLOAT
+
 typedef struct complex_t {
-    float re; /*real part */
-    float im; /*imaginary part */
+    FLOAT_TYPE re; /*real part */
+    FLOAT_TYPE im; /*imaginary part */
 } complex_t;
+
+#define HDF_FILE "array.hdf5"
 
 void chase_write_hdf5(MPI_Comm comm, float complex* H, size_t N_)
 {
@@ -97,6 +102,61 @@ void chase_write_hdf5(MPI_Comm comm, float complex* H, size_t N_)
     free(offsets_node);
 }
 
+void chase_read_matrix(MPI_Comm comm, size_t xoff, size_t yoff, size_t xlen,
+    size_t ylen, FLOAT_TYPE complex* H)
+{
+    int myrank;
+    int nprocs;
+
+    MPI_Comm_size(comm, &nprocs);
+    MPI_Comm_rank(comm, &myrank);
+
+    char filename[100];
+    sprintf(filename, HDF_FILE, nprocs);
+
+    MPI_Info info = MPI_INFO_NULL;
+    hid_t plist_id = H5Pcreate(H5P_FILE_ACCESS);
+    H5Pset_fapl_mpio(plist_id, comm, info);
+
+    hid_t file_id, dset_id;
+    // H5File *file = new H5File( "array.hdf5", H5F_ACC_TRUNC );
+    file_id = H5Fopen(filename, H5F_ACC_RDONLY, plist_id);
+    H5Pclose(plist_id);
+
+    dset_id = H5Dopen(file_id, "Hamiltonian", H5P_DEFAULT);
+    //hid_t fspace = H5Dget_space(dset_id);
+
+    plist_id = H5Pcreate(H5P_DATASET_XFER);
+    H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE);
+
+    hid_t complex_id = H5Tcreate(H5T_COMPOUND, sizeof(complex_t));
+    H5Tinsert(complex_id, "real", HOFFSET(complex_t, re), FLOAT_TYPE_HDF);
+    H5Tinsert(complex_id, "imag", HOFFSET(complex_t, im), FLOAT_TYPE_HDF);
+
+    hsize_t count[2];
+    hsize_t offset[2];
+    offset[1] = xoff;
+    offset[0] = yoff;
+    count[1] = xlen;
+    count[0] = ylen;
+
+    //memspace
+    hid_t mspace1 = H5Screate_simple(2, count, NULL);
+    hid_t fspace = H5Dget_space(dset_id);
+    H5Sselect_hyperslab(fspace, H5S_SELECT_SET, offset, NULL, count, NULL);
+
+    H5Dread(dset_id, complex_id, mspace1, fspace, plist_id, H);
+
+    H5Dclose(dset_id);
+    H5Sclose(fspace);
+    H5Sclose(mspace1);
+    H5Pclose(plist_id);
+    H5Fclose(file_id);
+
+    //    free(dims);
+}
+/*
+
 void chase_read_matrix(MPI_Comm comm, size_t* dims_ret,
     float complex** data_ptr)
 {
@@ -141,6 +201,8 @@ void chase_read_matrix(MPI_Comm comm, size_t* dims_ret,
 
     H5Dread(dset_id, complex_id, fspace, fspace, plist_id, data);
 
+    printf("done reading...\n");
+
     H5Dclose(dset_id);
     H5Sclose(fspace);
     //    H5Sclose(mspace1);
@@ -149,3 +211,4 @@ void chase_read_matrix(MPI_Comm comm, size_t* dims_ret,
 
     free(dims);
 }
+*/

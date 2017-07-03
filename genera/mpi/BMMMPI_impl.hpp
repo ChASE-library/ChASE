@@ -77,36 +77,19 @@ void MPI_handler_init(MPI_Handler<T>* MPI_hand, MPI_Comm comm,
         MPI_hand->n = MPI_hand->global_n - (MPI_hand->dims[1] - 1) * (MPI_hand->global_n / MPI_hand->dims[1]);
     }
 
-#ifdef GPU_MODE
     //Allocation of memory
-    cudaMallocHost(&(MPI_hand->A), MPI_hand->m * MPI_hand->n * sizeof(T));
-    cudaMallocHost(&(MPI_hand->B), MPI_hand->n * MPI_hand->nev * sizeof(T));
-    cudaMallocHost(&(MPI_hand->C), MPI_hand->m * MPI_hand->nev * sizeof(T));
-    cudaMallocHost(&(MPI_hand->IMT), (MPI_hand->m > MPI_hand->n ? MPI_hand->m : MPI_hand->n) * MPI_hand->nev * sizeof(T));
-#else
+    // TODO use cudaMallocHost
+    /*
     MPI_hand->A = new T[static_cast<std::size_t>(MPI_hand->m) * static_cast<std::size_t>(MPI_hand->n)]();
     MPI_hand->B = new T[MPI_hand->n * MPI_hand->nev]();
     MPI_hand->C = new T[MPI_hand->m * MPI_hand->nev]();
     MPI_hand->IMT = new T[(MPI_hand->m > MPI_hand->n ? MPI_hand->m : MPI_hand->n) * MPI_hand->nev]();
-
-/*
-      // Note: this is untested
-    std::mt19937 gen(2342.0); // TODO
-    std::normal_distribution<> d;
-    for (auto j = 0; j < MPI_hand->n * MPI_hand->nev; j++) {
-        if (std::is_same<T, Base<T> >::value)
-            MPI_hand->B[j] = T(d(gen));
-        else
-            MPI_hand->B[j] = T(d(gen), d(gen));
-    }
-    for (auto j = 0; j < MPI_hand->m * MPI_hand->nev; j++) {
-        if (std::is_same<T, Base<T> >::value)
-            MPI_hand->C[j] = T(d(gen));
-        else
-            MPI_hand->C[j] = T(d(gen), d(gen));
-    }
     */
-#endif
+
+    MPI_hand->A = new T[static_cast<std::size_t>(MPI_hand->m) * static_cast<std::size_t>(MPI_hand->n)]();
+    MPI_hand->B = new T[MPI_hand->n * MPI_hand->nev]();
+    MPI_hand->C = new T[MPI_hand->m * MPI_hand->nev]();
+    MPI_hand->IMT = new T[(MPI_hand->m > MPI_hand->n ? MPI_hand->m : MPI_hand->n) * MPI_hand->nev]();
 
     /*
     printf("\n***********************************************************\n");
@@ -117,15 +100,10 @@ void MPI_handler_init(MPI_Handler<T>* MPI_hand, MPI_Comm comm,
     //Initializing these important stuff
     MPI_hand->next = 'c';
     MPI_hand->initialized = 1;
-//initializing GPU_MPI_handler which will on its own recognize the GPUS
+
+//initializing GPU_MPI_handler which will on its own recognize the GPUs
 #ifdef GPU_MODE
-    {
-        CHASE_INT count;
-        cudaError_t err = cudaGetDeviceCount(&count);
-        printf("\n******************************************************************************\nNUMBER OF DEVICES ON PROCESS %d: %d\n ", MPI_hand->rank, count);
-        printf("%s\n****************************************************************************\n\n", cudaGetErrorString(err));
-    }
-    GPU_init(MPI_hand->m, MPI_hand->n, MPI_hand->nev, &(MPI_hand->GPU_MPI_hand));
+    MPI_hand->chase_gpu_helper = new ChaseGpuHelper<T>(MPI_hand->m, MPI_hand->n, MPI_hand->nev);
 #endif
 }
 
@@ -138,7 +116,7 @@ void MPI_distribute_H(MPI_Handler<T>* MPI_hand, T* H_Full)
         }
     }
 #ifdef GPU_MODE
-    GPU_load(MPI_hand->A, &(MPI_hand->GPU_MPI_hand));
+    MPI_hand->chase_gpu_helper->GpuLoad(MPI_hand->A);
 #endif
 }
 
@@ -149,20 +127,11 @@ void MPI_distribute_V(MPI_Handler<T>* MPI_hand, T* V, CHASE_INT nev)
 
     for (auto j = 0; j < nev; j++) {
         std::memcpy(MPI_hand->C + j * MPI_hand->m, V + j * MPI_hand->global_n + MPI_hand->off[0], MPI_hand->m * sizeof(T));
-        //  for (auto i = 0; i < MPI_hand->m; i++) {
-        //    MPI_hand->C[j * MPI_hand->m + i] = V[j * MPI_hand->global_n + i + MPI_hand->off[0]];
-        // }
     }
 
     // for (auto j = 0; j < nev; j++) {
     //     for (auto i = 0; i < MPI_hand->n; i++) {
-    //         MPI_hand->B[j * MPI_hand->n + i] = 0; //V[j * MPI_hand->global_n + i + MPI_hand->off[1]];
-    //     }
-    // }
-
-    // for (auto j = 0; j < nev; j++) {
-    //     for (auto i = 0; i < std::max(MPI_hand->m, MPI_hand->n); i++) {
-    //         MPI_hand->IMT[j * std::max(MPI_hand->m, MPI_hand->n) + i] = 0;
+    //         MPI_hand->B[j * MPI_hand->n + i] = V[j * MPI_hand->global_n + i + MPI_hand->off[1]];
     //     }
     // }
 }
@@ -173,26 +142,6 @@ void MPI_distribute_W(MPI_Handler<T>* MPI_hand, T* V, CHASE_INT nev)
     for (auto j = 0; j < nev; j++) {
         std::memcpy(MPI_hand->B + j * MPI_hand->n, V + j * MPI_hand->global_n + MPI_hand->off[1], MPI_hand->n * sizeof(T));
     }
-}
-
-//This function should fill arrays with data
-//For now it just generates random data
-template <typename T>
-void MPI_load(MPI_Handler<T>* MPI_hand)
-{
-    // initA(MPI_hand);
-    // initB(MPI_hand);
-
-    //Sets C to zero initially (This would be starting iteration)
-    CHASE_INT k = MPI_hand->m * MPI_hand->nev;
-    T alpha = { 0, 0 };
-    CHASE_INT incx = 1;
-    //scal(&k,&alpha,MPI_hand->C,&incx);
-    t_scal(k, &alpha, MPI_hand->C, 1);
-//load data onto GPUS
-#ifdef GPU_MODE
-//GPU_load(MPI_hand->A,&(MPI_hand->GPU_MPI_hand));
-#endif
 }
 
 //This function performs multiplication. It checks whether it is time for
@@ -212,19 +161,51 @@ void MPI_doGemm(MPI_Handler<T>* MPI_hand, T alpha, T beta, CHASE_INT offset, CHA
 //printf("\nReduction over rows on process %d.\n",MPI_hand->rank);
 //start = MPI_Wtime();
 #ifdef GPU_MODE
-        GPU_doGemm(MPI_hand->B + offset, MPI_hand->IMT + offset, nev, &(MPI_hand->GPU_MPI_hand), MPI_hand->next);
+        //        MPI_hand->chase_gpu_helper->GpuLoad(MPI_hand->A);
+        MPI_hand->chase_gpu_helper->GpuDoGemm(MPI_hand->B + offset * MPI_hand->n,
+            MPI_hand->IMT + offset * MPI_hand->m, nev, MPI_hand->next);
+//GPU_doGemm(MPI_hand->B + offset, MPI_hand->IMT + offset, nev, &(MPI_hand->GPU_MPI_hand), MPI_hand->next);
 #else
-        t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, MPI_hand->m, nev, MPI_hand->n, One, MPI_hand->A, MPI_hand->m, MPI_hand->B + offset * MPI_hand->n, MPI_hand->n, Zero, MPI_hand->IMT + offset * MPI_hand->m, MPI_hand->m);
+        t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, MPI_hand->m, nev,
+            MPI_hand->n, One, MPI_hand->A, MPI_hand->m,
+            MPI_hand->B + offset * MPI_hand->n, MPI_hand->n, Zero,
+            MPI_hand->IMT + offset * MPI_hand->m, MPI_hand->m);
 #endif
-
+        /*
+        // TODO: here we need to check difference of gemm and cublas
+        {
+            std::size_t maxsize = std::max(MPI_hand->m, MPI_hand->n);
+            std::vector<T> data(maxsize * MPI_hand->global_n);
+            t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, MPI_hand->m, nev,
+                MPI_hand->n, One, MPI_hand->A, MPI_hand->m,
+                MPI_hand->B + offset * MPI_hand->n, MPI_hand->n, Zero,
+                data.data(), MPI_hand->m);
+            Base<T> norm = 0;
+            for (auto i = 0; i < MPI_hand->m * nev; ++i)
+                norm += std::abs(data[i] - MPI_hand->IMT[offset * MPI_hand->m + i]);
+            std::cout << "diffnormB " << norm << "\n";
+            std::ofstream myfile;
+            myfile.open("B.txt", std::ofstream::out | std::ofstream::app);
+            for (auto i = 0; i < MPI_hand->m * nev; i++) {
+                myfile
+                    << std::abs(data[i] - MPI_hand->IMT[offset * MPI_hand->m + i]) << " ";
+            }
+            for (auto i = 0; i < (MPI_hand->nev - nev)*MPI_hand->m; i++) {
+                myfile << 0 << " ";
+            }
+            myfile << "\n";
+        }
+        */
         //end = MPI_Wtime();
-        MPI_Allreduce(MPI_IN_PLACE, MPI_hand->IMT + offset * MPI_hand->m, MPI_hand->m * nev, getMPI_Type<T>(), MPI_SUM, MPI_hand->ROW_COMM);
+        MPI_Allreduce(MPI_IN_PLACE, MPI_hand->IMT + offset * MPI_hand->m,
+            MPI_hand->m * nev, getMPI_Type<T>(), MPI_SUM, MPI_hand->ROW_COMM);
         dim = MPI_hand->m * nev;
         inc = 1;
         //scal(&dim,&beta,MPI_hand->C+offset,&inc);
         t_scal(dim, &beta, MPI_hand->C + offset * MPI_hand->m, 1);
         //zaxpy(&dim,&alpha,MPI_hand->IMT+offset,&inc,MPI_hand->C+offset,&inc);
-        t_axpy(dim, &alpha, MPI_hand->IMT + offset * MPI_hand->m, 1, MPI_hand->C + offset * MPI_hand->m, 1);
+        t_axpy(dim, &alpha, MPI_hand->IMT + offset * MPI_hand->m, 1,
+            MPI_hand->C + offset * MPI_hand->m, 1);
 
         MPI_hand->next = 'c';
         return;
@@ -234,18 +215,52 @@ void MPI_doGemm(MPI_Handler<T>* MPI_hand, T alpha, T beta, CHASE_INT offset, CHA
 //printf("\nReduction over columns on process %d\n", MPI_hand->rank);
 //start = MPI_Wtime();
 #ifdef GPU_MODE
-        GPU_doGemm(MPI_hand->IMT + offset, MPI_hand->C + offset, nev, &(MPI_hand->GPU_MPI_hand), MPI_hand->next);
+        // Somewhat unintuitive the gpu does B<-A*C
+        //        MPI_hand->chase_gpu_helper->GpuLoad(MPI_hand->A);
+        MPI_hand->chase_gpu_helper->GpuDoGemm(MPI_hand->IMT + offset * MPI_hand->n,
+            MPI_hand->C + offset * MPI_hand->m, nev, MPI_hand->next);
+//GPU_doGemm(MPI_hand->IMT + offset, MPI_hand->C + offset, nev, &(MPI_hand->GPU_MPI_hand), MPI_hand->next);
 #else
-        t_gemm(CblasColMajor, CblasConjTrans, CblasNoTrans, MPI_hand->n, nev, MPI_hand->m, One, MPI_hand->A, MPI_hand->m, MPI_hand->C + offset * MPI_hand->m, MPI_hand->m, Zero, MPI_hand->IMT + offset * MPI_hand->n, MPI_hand->n);
+        t_gemm(CblasColMajor, CblasConjTrans, CblasNoTrans, MPI_hand->n, nev,
+            MPI_hand->m, One, MPI_hand->A, MPI_hand->m,
+            MPI_hand->C + offset * MPI_hand->m, MPI_hand->m, Zero,
+            MPI_hand->IMT + offset * MPI_hand->n, MPI_hand->n);
 #endif
+        /*
+        // TODO: here we need to check difference of gemm and cublas
+        if (nev > 1) {
+            std::size_t maxsize = std::max(MPI_hand->m, MPI_hand->n);
+            std::vector<T> data(maxsize * MPI_hand->global_n);
+            t_gemm(CblasColMajor, CblasConjTrans, CblasNoTrans, MPI_hand->n, nev,
+                MPI_hand->m, One, MPI_hand->A, MPI_hand->m,
+                MPI_hand->C + offset * MPI_hand->m, MPI_hand->m, Zero,
+                data.data(), MPI_hand->n);
+            Base<T> norm = 0;
+            for (auto i = 0; i < MPI_hand->global_n * nev; ++i)
+                norm += std::abs(data[i] - MPI_hand->IMT[offset * MPI_hand->n + i]);
+            std::cout << "diffnormC " << norm << "\n";
+
+            std::ofstream myfile;
+            myfile.open("C.txt", std::ofstream::out | std::ofstream::app);
+            for (auto i = 0; i < nev+MPI_hand->n; i++) {
+                myfile << std::abs(data[i] - MPI_hand->IMT[offset * MPI_hand->n + i]) << " ";
+            }
+            for (auto i = 0; i < (MPI_hand->nev - nev)*MPI_hand->n; i++) {
+                myfile << 0 << " ";
+            }
+            myfile << "\n";
+        }
+        */
         //end = MPI_Wtime();
-        MPI_Allreduce(MPI_IN_PLACE, MPI_hand->IMT + offset * MPI_hand->n, MPI_hand->n * nev, getMPI_Type<T>(), MPI_SUM, MPI_hand->COL_COMM);
+        MPI_Allreduce(MPI_IN_PLACE, MPI_hand->IMT + offset * MPI_hand->n,
+            MPI_hand->n * nev, getMPI_Type<T>(), MPI_SUM, MPI_hand->COL_COMM);
         dim = MPI_hand->n * nev;
         inc = 1;
         //scal(&dim,&beta,MPI_hand->B+offset,&inc);
         t_scal(dim, &beta, MPI_hand->B + offset * MPI_hand->n, 1);
         //zaxpy(&dim,&alpha,MPI_hand->IMT+offset,&inc,MPI_hand->B+offset,&inc);
-        t_axpy(dim, &alpha, MPI_hand->IMT + offset * MPI_hand->n, 1, MPI_hand->B + offset * MPI_hand->n, 1);
+        t_axpy(dim, &alpha, MPI_hand->IMT + offset * MPI_hand->n, 1,
+            MPI_hand->B + offset * MPI_hand->n, 1);
 
         MPI_hand->next = 'b';
         return;
@@ -261,10 +276,11 @@ void MPI_destroy(MPI_Handler<T>* MPI_hand)
     free(MPI_hand->ranks_row);
     free(MPI_hand->ranks_col);
 #ifdef GPU_MODE
-    cudaFreeHost(MPI_hand->A);
-    cudaFreeHost(MPI_hand->B);
-    cudaFreeHost(MPI_hand->C);
-    GPU_destroy(&(MPI_hand->GPU_MPI_hand));
+// TODO free memory
+//cudaFreeHost(MPI_hand->A);
+//cudaFreeHost(MPI_hand->B);
+//cudaFreeHost(MPI_hand->C);
+//GPU_destroy(&(MPI_hand->GPU_MPI_hand));
 #endif
 }
 
@@ -296,14 +312,12 @@ void MPI_get_C(MPI_Handler<T>* MPI_hand, CHASE_INT* COff, CHASE_INT* CLen, T* C,
         *COff = MPI_hand->off[1];
         *CLen = MPI_hand->m;
         size = MPI_hand->m * nev;
-        // TODO
         //copy(&size,MPI_hand->C,&inc,C,&inc);
         t_copy(size, MPI_hand->B, inc, C, inc);
     } else if (MPI_hand->next == 'c') {
         *COff = MPI_hand->off[0];
         *CLen = MPI_hand->n;
         size = MPI_hand->n * nev;
-        // TODO
         //copy(&size,MPI_hand->C,&inc,C,&inc);
         t_copy(size, MPI_hand->C, inc, C, inc);
     } else
@@ -330,7 +344,8 @@ void shiftA(MPI_Handler<T>* MPI_hand, T c)
     }
 
 #ifdef GPU_MODE
-    shiftA(&(MPI_hand->GPU_MPI_hand), c);
+    //MPI_hand->chase_gpu_helper->shiftA(c);
+    MPI_hand->chase_gpu_helper->GpuLoad(MPI_hand->A);
 #endif
 }
 /*
@@ -415,6 +430,14 @@ void debug_IMT(MPI_Handler<T>* MPI_hand)
     }
 }
 */
+#ifdef GPU_MODE
+template <typename T>
+void MPI_GPU_load(MPI_Handler<T>* MPI_hand)
+{
+    MPI_hand->chase_gpu_helper->GpuLoad(MPI_hand->A);
+}
+#endif
+
 template <typename T>
 void MPI_lock_vectors(MPI_Handler<T>* MPI_hand, CHASE_INT nev)
 {
@@ -480,30 +503,6 @@ void assemble_C(MPI_Handler<T>* MPI_hand, CHASE_INT nevex, T* targetBuf)
         displs[i] = i * recvcounts[0];
     }
     recvcounts[gsize - 1] = MPI_hand->global_n - (MPI_hand->dims[dimsIdx] - 1) * (MPI_hand->global_n / MPI_hand->dims[dimsIdx]);
-
-    /*
-    std::cout << "N: " << N << "\n";
-    std::cout << "nev: " << nevex << "\n";
-    std::cout << "size: " << gsize << "\n";
-    std::cout << "dims: " << MPI_hand->dims[dimsIdx] << "\n";
-    std::cout << "next: " << MPI_hand->next << "\n";
-    std::cout << "subsize: " << subsize << "\n";
-
-
-    for (auto i = 0; i < gsize; ++i) {
-        std::cout << i << "   count: " << recvcounts[i] << " " << displs[i] << "\n";
-    }
-
-*/
-
-    //TODO
-    // for (auto i = 0; i < nevex; ++i)
-    // {
-    //     MPI_Allgatherv(
-    //         buff + subsize * i, subsize, getMPI_Type<T>(),
-    //         targetBuf + i * N, recvcounts, displs, getMPI_Type<T>(),
-    //         comm);
-    // }
 
     std::vector<MPI_Request> reqs(gsize);
     std::vector<MPI_Datatype> newType(gsize);

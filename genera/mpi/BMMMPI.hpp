@@ -10,12 +10,13 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
-#include <math.h>
 #include <mkl.h>
 #include <mpi.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string>
+
+#ifdef GPU_MODE
+#include <MMMGPU.hpp>
+#endif
 
 //TODO this should be a class
 // then we don't need template variables
@@ -69,7 +70,7 @@ struct MPI_Handler {
     char next;
     CHASE_INT initialized;
 #ifdef GPU_MODE
-    GPU_Handler GPU_MPI_hand;
+  ChaseGpuHelper<T> *chase_gpu_helper;
 #endif
 };
 

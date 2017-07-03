@@ -5,14 +5,14 @@
 #include <boost/program_options.hpp>
 #include <random>
 
-typedef std::complex<float> T;
-
+typedef std::complex<double> T;
+/*
 extern "C" {
 void chase_write_hdf5(MPI_Comm comm, T* H, size_t N);
 void chase_read_matrix(MPI_Comm comm, std::size_t xoff, std::size_t yoff,
     std::size_t xlen, std::size_t ylen, T* H);
 }
-
+*/
 namespace po = boost::program_options;
 
 template <typename T>
@@ -204,15 +204,18 @@ int main(int argc, char* argv[])
             mode = "A";
         }
 
-        single->get_off(&xoff, &yoff, &xlen, &ylen);
         H = single->getMatrixPtr();
-        chase_read_matrix(MPI_COMM_WORLD, xoff, yoff, xlen, ylen, H);
-
-        // readMatrix(H, path_in, spin, kpoint, i, ".bin", N * N, legacy);
+        // if (size == 1) {
+        readMatrix(H, path_in, spin, kpoint, i, ".bin", N * N, legacy);
+        // } else {
+        //     single->get_off(&xoff, &yoff, &xlen, &ylen);
+        //     chase_read_matrix(MPI_COMM_WORLD, xoff, yoff, xlen, ylen, H);
+        // }
         // assert(size == 1);
 
         MPI_Barrier(MPI_COMM_WORLD);
 
+        std::cout << "using a fixed norm of 9\n";
         Base<T> normH = 9; //std::max(t_lange('1', N, N, H, N), Base<T>(1.0));
         single->setNorm(normH);
 
@@ -239,7 +242,8 @@ int main(int argc, char* argv[])
             perf.print();
 
         if (resd > nev * normH * tol) {
-            std::cout << "resd too bad\n";
+          std::cout << "resd too bad\n"
+                    << resd << "<" << nev << "*" << normH << "*" << tol << "\n" ;
             throw new std::exception();
         }
         // if (orth > 1e-14)
