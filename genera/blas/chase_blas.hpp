@@ -1,475 +1,492 @@
 /* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
 #pragma once
 
-#include <cstring> //memcpy
+#include <cstring>  //memcpy
 #include <iostream>
 #include <random>
 
-#include "ChASE.hpp"
+#include "../../algorithm/ChASE.hpp"
+
+// #include "./chase_blas_factory.hpp"
+
 #include "template_wrapper.hpp"
+
+#include "./chase_blas_matrices.hpp"
+
+#include "../../matrixFree/matrixFreeInterface/matrixFreeInterface.hpp"
+// #include "../../matrixFree/blas/matrixFreeBlas.hpp"
+// #include "../../matrixFree/cuda/matrixFreeCuda.hpp"
+// #include "../../matrixFree/mpi/matrixFreeMPI.hpp"
+
+#include "mpi.h"
 
 // TODO:
 // -- random vectors for lanczos?
 
 template <class T>
 class ChASE_Blas : public ChASE<T> {
-public:
-    ChASE_Blas(ChASE_Config _config, T* H_, T* V_, Base<T>* ritzv_)
-        : N(_config.getN())
-        , nev(_config.getNev())
-        , nex(_config.getNex())
-        , locked(0)
-        , config(_config)
-        , dealloc(false)
-        , H(H_)
-        , V(V_)
-        , ritzv(ritzv_)
-    {
-        W = new T[N * (nev + nex)]();
-        approxV = V;
-        workspace = W;
-    };
+ public:
+  ChASE_Blas(ChASE_Config config, std::unique_ptr<MatrixFreeInterface<T>> gemm,
+             ChASE_Blas_Matrices<T> matrices)
+      : N_(config.getN()),
+        nev_(config.getNev()),
+        nex_(config.getNex()),
+        locked_(0),
+        config_(config),
+        gemm_(std::move(gemm)),
+        matrices_(std::move(matrices)) {
+    V_ = matrices_.get_V1();
+    W_ = matrices_.get_V2();
+    ritzv_ = matrices_.get_Ritzv();
 
-    ChASE_Blas(ChASE_Config _config)
-        : N(_config.getN())
-        , nev(_config.getNev())
-        , nex(_config.getNex())
-        , locked(0)
-        , config(_config)
-        , dealloc(true)
-    {
-        H = new T[N * N]();
-        V = new T[N * (nev + nex)]();
-        W = new T[N * (nev + nex)]();
-        ritzv = new Base<T>[ (nev + nex) ];
-        approxV = V;
-        workspace = W;
-    };
+    approxV_ = V_;
+    workspace_ = W_;
+  }
 
-    ChASE_Blas(const ChASE_Blas&) = delete;
+  ChASE_Blas(const ChASE_Blas&) = delete;
 
-    ~ChASE_Blas()
-    {
-        if (dealloc) {
-            delete[] H;
-            delete[] V;
-            delete[] ritzv;
-        }
-        delete[] W;
-    };
+  ~ChASE_Blas() {}
 
-    ChASE_PerfData getPerfData() { return perf; }
+  ChASE_PerfData getPerfData() { return perf_; }
 
-    ChASE_Config getConfig() { return config; }
+  ChASE_Config getConfig() { return config_; }
 
-    std::size_t getN() { return N; }
+  std::size_t getN() { return N_; }
 
-    CHASE_INT getNev() { return nev; }
+  CHASE_INT getNev() { return nev_; }
 
-    CHASE_INT getNex() { return nex; }
+  CHASE_INT getNex() { return nex_; }
 
-    Base<T>* getRitzv() { return ritzv; }
+  Base<T>* getRitzv() { return ritzv_; }
 
-    // TODO: everything should be owned by chASE_Blas, deg should be part of
-    // ChasE_Config
-    void solve()
-    {
-        perf = ChASE_Algorithm<T>::solve(this, N, ritzv, nev, nex);
+  // TODO: everything should be owned by chASE_Blas, deg should be part of
+  // ChasE_Config
+  void solve() {
+    perf_ = ChASE_Algorithm<T>::solve(this, N_, ritzv_, nev_, nex_);
+  }
+
+  T* getVectorsPtr() { return approxV_; }
+
+  T* getWorkspacePtr() { return workspace_; }
+
+  void shift(T c, bool isunshift = false) {
+    if (!isunshift) {
+      gemm_->preApplication(approxV_, locked_, nev_ + nex_ - locked_);
     }
 
-    T* getMatrixPtr() { return H; }
-
-    T* getVectorsPtr() { return approxV; }
-
-    T* getWorkspacePtr() { return workspace; }
-
-    void shift(T c, bool isunshift = false)
-    {
-        for (CHASE_INT i = 0; i < N; ++i)
-            H[i * N + i] += c;
-    };
-
-    // todo this is wrong we want the END of V
-    void cpy(CHASE_INT new_converged)
-    {
-        //    memcpy( workspace+locked*N, approxV+locked*N,
-        //    N*(new_converged)*sizeof(T) );
-        memcpy(approxV + locked * N, workspace + locked * N,
-            N * (new_converged) * sizeof(T));
-    };
-
-    void threeTerms(CHASE_INT nev, T alpha, T beta, CHASE_INT offset)
-    {
-        t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, N, nev, N, &alpha, H, N,
-            approxV + (locked + offset) * N, N, &beta,
-            workspace + (locked + offset) * N, N);
-        std::swap(approxV, workspace);
-    };
-
-    void Hv(T alpha);
-
-    void QR(CHASE_INT fixednev)
-    {
-        CHASE_INT nevex = nev + nex;
-        T* tau = workspace + fixednev * N;
-
-        memcpy(workspace, approxV, N * fixednev * sizeof(T));
-        t_geqrf(LAPACK_COL_MAJOR, N, nevex, approxV, N, tau);
-        t_gqr(LAPACK_COL_MAJOR, N, nevex, nevex, approxV, N, tau);
-
-        memcpy(approxV, workspace, N * fixednev * sizeof(T));
-    };
-
-    void RR(Base<T>* ritzv, CHASE_INT block)
-    {
-        // CHASE_INT block = nev+nex - fixednev;
-
-        T* A = new T[block * block]; // For LAPACK.
+    // for (std::size_t i = 0; i < N_; ++i) {
+    //     H_[i + i * N_] += c;
+    // }
+
+    gemm_->shiftMatrix(c);
+  };
+
+  // todo this is wrong we want the END of V
+  void cpy(CHASE_INT new_converged){
+      //    memcpy( workspace+locked*N, approxV+locked*N,
+      //    N*(new_converged)*sizeof(T) );
+      // memcpy(approxV + locked * N, workspace + locked * N,
+      //     N * (new_converged) * sizeof(T));
+  };
+
+  void threeTerms(CHASE_INT block, T alpha, T beta, CHASE_INT offset) {
+    // t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans,
+    //     N_, block, N_,
+    //     &alpha,
+    //     H_, N_,
+    //     approxV_ + (locked_ + offset) * N_, N_,
+    //     &beta,
+    //     workspace_ + (locked_ + offset) * N_, N_);
+    // std::swap(approxV_, workspace_);
+    gemm_->apply(alpha, beta, offset, block);
+  };
+
+  void Hv(T alpha);
+
+  void QR(CHASE_INT fixednev) {
+    gemm_->postApplication(approxV_, nev_ + nex_ - locked_);
+
+    std::size_t nevex = nev_ + nex_;
+    T* tau = workspace_ + fixednev * N_;
+
+    std::memcpy(workspace_, approxV_, N_ * fixednev * sizeof(T));
+    t_geqrf(LAPACK_COL_MAJOR, N_, nevex, approxV_, N_, tau);
+    t_gqr(LAPACK_COL_MAJOR, N_, nevex, nevex, approxV_, N_, tau);
+
+    std::memcpy(approxV_, workspace_, N_ * fixednev * sizeof(T));
+  };
+
+  void RR(Base<T>* ritzv, CHASE_INT block) {
+    // CHASE_INT block = nev+nex - fixednev;
+
+    T* A = new T[block * block];  // For LAPACK.
+
+    T One = T(1.0, 0.0);
+    T Zero = T(0.0, 0.0);
+
+    gemm_->preApplication(approxV_, locked_, block);
+    gemm_->apply(One, Zero, 0, block);
+    gemm_->postApplication(workspace_, block);
+
+    // V <- H* V
+    // t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans,
+    //     N_, block, N_,
+    //     &One,
+    //     H_, N_,
+    //     approxV_ + locked_ * N_, N_,
+    //     &Zero,
+    //     workspace_ + locked_ * N_, N_);
+
+    // A <- W * V
+    t_gemm(CblasColMajor, CblasConjTrans, CblasNoTrans, block, block, N_, &One,
+           approxV_ + locked_ * N_, N_, workspace_ + locked_ * N_, N_, &Zero, A,
+           block);
+
+    t_heevd(LAPACK_COL_MAJOR, 'V', 'L', block, A, block, ritzv);
+
+    t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, N_, block, block, &One,
+           approxV_ + locked_ * N_, N_, A, block, &Zero,
+           workspace_ + locked_ * N_, N_);
+
+    std::swap(approxV_, workspace_);
+    // we can swap, since the locked part were copied over as part of the QR
+
+    delete[] A;
+  };
+
+  void resd(Base<T>* ritzv, Base<T>* resid, CHASE_INT fixednev) {
+    T alpha = T(1.0, 0.0);
+    T beta = T(0.0, 0.0);
+    CHASE_INT unconverged = (nev_ + nex_) - fixednev;
+
+    Base<T> norm = this->getNorm();
+
+    gemm_->preApplication(approxV_, locked_, unconverged);
+    gemm_->apply(alpha, beta, 0, unconverged);
+    gemm_->postApplication(workspace_, unconverged);
+
+    // t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, N_, unconverged, N_,
+    // &alpha,
+    //     H_, N_, approxV_ + locked_ * N_, N_, &beta, workspace_ + locked_ *
+    //     N_, N_);
+
+    Base<T> norm1, norm2;
+    for (std::size_t i = 0; i < unconverged; ++i) {
+      beta = T(-ritzv[i], 0.0);
+      t_axpy(N_, &beta, (approxV_ + locked_ * N_) + N_ * i, 1,
+             (workspace_ + locked_ * N_) + N_ * i, 1);
 
-        T One = T(1.0, 0.0);
-        T Zero = T(0.0, 0.0);
-
-        // V <- H*V
-        t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, N, block, N, &One, H, N,
-            approxV + locked * N, N, &Zero, workspace + locked * N, N);
-
-        // A <- W * V
-        t_gemm(CblasColMajor, CblasConjTrans, CblasNoTrans, block, block, N, &One,
-            approxV + locked * N, N, workspace + locked * N, N, &Zero, A, block);
-
-        t_heevd(LAPACK_COL_MAJOR, 'V', 'L', block, A, block, ritzv);
-
-        t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, N, block, block, &One,
-            approxV + locked * N, N, A, block, &Zero, workspace + locked * N, N);
+      norm1 = t_nrm2(N_, (workspace_ + locked_ * N_) + N_ * i, 1);
+      resid[i] = norm1 / norm;
+    }
+  };
 
-        std::swap(approxV, workspace);
-        // we can swap, since the locked part were copied over as part of the QR
+  void swap(CHASE_INT i, CHASE_INT j) {
+    T* ztmp = new T[N_];
+    memcpy(ztmp, approxV_ + N_ * i, N_ * sizeof(T));
+    memcpy(approxV_ + N_ * i, approxV_ + N_ * j, N_ * sizeof(T));
+    memcpy(approxV_ + N_ * j, ztmp, N_ * sizeof(T));
+    memcpy(ztmp, workspace_ + N_ * i, N_ * sizeof(T));
+    memcpy(workspace_ + N_ * i, workspace_ + N_ * j, N_ * sizeof(T));
+    memcpy(workspace_ + N_ * j, ztmp, N_ * sizeof(T));
+    delete[] ztmp;
+  };
+
+  Base<T> getNorm() { return norm_; };
 
-        delete[] A;
-    };
+  void setNorm(Base<T> norm) { norm_ = norm; };
+
+  void lanczos(CHASE_INT m, Base<T>* upperb) {
+    // todo
+    CHASE_INT n = N_;
+
+    T* v1 = workspace_;
+    for (std::size_t k = 0; k < N_; ++k) v1[k] = V_[k];
 
-    void resd(Base<T>* ritzv, Base<T>* resid, CHASE_INT fixednev)
-    {
-        T alpha = T(1.0, 0.0);
-        T beta = T(0.0, 0.0);
-        CHASE_INT unconverged = (nev + nex) - fixednev;
+    // assert( m >= 1 );
+    Base<T>* d = new Base<T>[ m ]();
+    Base<T>* e = new Base<T>[ m ]();
 
-        Base<T> norm = this->getNorm();
+    // SO C++03 5.3.4[expr.new]/15
+    T* v0_ = new T[n]();
+    T* w_ = new T[n]();
 
-        t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, N, unconverged, N, &alpha,
-            H, N, approxV + locked * N, N, &beta, workspace + locked * N, N);
+    T* v0 = v0_;
+    T* w = w_;
+
+    T alpha = T(1.0, 0.0);
+    T beta = T(0.0, 0.0);
+    T One = T(1.0, 0.0);
+    T Zero = T(0.0, 0.0);
+
+    //  T *v1 = V;
+    // ENSURE that v1 has one norm
+    Base<T> real_alpha = t_nrm2(n, v1, 1);
+    alpha = T(1 / real_alpha, 0.0);
+    t_scal(n, &alpha, v1, 1);
+    Base<T> real_beta = 0;
 
-        Base<T> norm1, norm2;
-        for (std::size_t i = 0; i < unconverged; ++i) {
-            beta = T(-ritzv[i], 0.0);
-            t_axpy(N, &beta, (approxV + locked * N) + N * i, 1,
-                (workspace + locked * N) + N * i, 1);
+    real_beta = 0;
+
+    for (std::size_t k = 0; k < m; ++k) {
+      // t_gemv(CblasColMajor, CblasNoTrans, N_, N_, &One, H_, N_, v1, 1, &Zero,
+      // w, 1);
+      gemm_->applyVec(v1, w);
 
-            norm1 = t_nrm2(N, (workspace + locked * N) + N * i, 1);
-            resid[i] = norm1 / norm;
-        }
-    };
+      t_dot(n, v1, 1, w, 1, &alpha);
 
-    void swap(CHASE_INT i, CHASE_INT j)
-    {
-        T* ztmp = new T[N];
-        memcpy(ztmp, approxV + N * i, N * sizeof(T));
-        memcpy(approxV + N * i, approxV + N * j, N * sizeof(T));
-        memcpy(approxV + N * j, ztmp, N * sizeof(T));
-        memcpy(ztmp, workspace + N * i, N * sizeof(T));
-        memcpy(workspace + N * i, workspace + N * j, N * sizeof(T));
-        memcpy(workspace + N * j, ztmp, N * sizeof(T));
-        delete[] ztmp;
-    };
+      alpha = -alpha;
+      t_axpy(n, &alpha, v1, 1, w, 1);
+      alpha = -alpha;
 
-    Base<T> getNorm() { return norm; };
+      d[k] = alpha.real();
+      if (k == m - 1) break;
 
-    void setNorm(Base<T> norm_) { norm = norm_; };
+      beta = T(-real_beta, 0);
+      t_axpy(n, &beta, v0, 1, w, 1);
+      beta = -beta;
 
-    void lanczos(CHASE_INT m, Base<T>* upperb)
-    {
-        // todo
-        CHASE_INT n = N;
+      real_beta = t_nrm2(n, w, 1);
+      beta = T(1.0 / real_beta, 0.0);
 
-        T* v1 = workspace;
-        for (std::size_t k = 0; k < N; ++k)
-            v1[k] = V[k];
+      t_scal(n, &beta, w, 1);
 
-        // assert( m >= 1 );
-        Base<T>* d = new Base<T>[ m ]();
-        Base<T>* e = new Base<T>[ m ]();
+      e[k] = real_beta;
 
-        // SO C++03 5.3.4[expr.new]/15
-        T* v0_ = new T[n]();
-        T* w_ = new T[n]();
+      std::swap(v1, v0);
+      std::swap(v1, w);
+    }
 
-        T* v0 = v0_;
-        T* w = w_;
+    delete[] w_;
+    delete[] v0_;
 
-        T alpha = T(1.0, 0.0);
-        T beta = T(0.0, 0.0);
-        T One = T(1.0, 0.0);
-        T Zero = T(0.0, 0.0);
-
-        //  T *v1 = V;
-        // ENSURE that v1 has one norm
-        Base<T> real_alpha = t_nrm2(n, v1, 1);
-        alpha = T(1 / real_alpha, 0.0);
-        t_scal(n, &alpha, v1, 1);
-        Base<T> real_beta = 0;
+    CHASE_INT notneeded_m;
+    CHASE_INT vl, vu;
+    Base<T> ul, ll;
+    CHASE_INT tryrac = 0;
+    CHASE_INT* isuppz = new CHASE_INT[2 * m];
+    Base<T>* ritzv = new Base<T>[ m ];
 
-        real_beta = 0;
+    t_stemr<Base<T>>(LAPACK_COL_MAJOR, 'N', 'A', m, d, e, ul, ll, vl, vu,
+                     &notneeded_m, ritzv_, NULL, m, m, isuppz, &tryrac);
 
-        for (std::size_t k = 0; k < m; ++k) {
-            t_gemv(CblasColMajor, CblasNoTrans, n, n, &One, H, n, v1, 1, &Zero, w, 1);
+    *upperb = std::max(std::abs(ritzv[0]), std::abs(ritzv[m - 1])) +
+              std::abs(real_beta);  // TODO
 
-            t_dot(n, v1, 1, w, 1, &alpha);
+    delete[] ritzv;
+    delete[] isuppz;
+    delete[] d;
+    delete[] e;
+  };
 
-            alpha = -alpha;
-            t_axpy(n, &alpha, v1, 1, w, 1);
-            alpha = -alpha;
+  // we need to be careful how we deal with memory here
+  // we will operate within Workspace
+  void lanczos(CHASE_INT M, CHASE_INT idx, Base<T>* upperb, Base<T>* ritzv,
+               Base<T>* Tau, Base<T>* ritzV) {
+    // todo
+    CHASE_INT m = M;
+    CHASE_INT n = N_;
 
-            d[k] = alpha.real();
-            if (k == m - 1)
-                break;
+    // assert( m >= 1 );
 
-            beta = T(-real_beta, 0);
-            t_axpy(n, &beta, v0, 1, w, 1);
-            beta = -beta;
+    // The first m*N part is reserved for the lanczos vectors
+    Base<T>* d = new Base<T>[ m ]();
+    Base<T>* e = new Base<T>[ m ]();
 
-            real_beta = t_nrm2(n, w, 1);
-            beta = T(1.0 / real_beta, 0.0);
+    // SO C++03 5.3.4[expr.new]/15
+    T* v0_ = new T[n]();
+    T* w_ = new T[n]();
 
-            t_scal(n, &beta, w, 1);
+    T* v0 = v0_;
+    T* w = w_;
 
-            e[k] = real_beta;
+    T alpha = T(1.0, 0.0);
+    T beta = T(0.0, 0.0);
+    T One = T(1.0, 0.0);
+    T Zero = T(0.0, 0.0);
 
-            std::swap(v1, v0);
-            std::swap(v1, w);
-        }
+    // V is filled with randomness
+    T* v1 = workspace_;
+    for (std::size_t k = 0; k < N_; ++k) v1[k] = V_[k + idx * N_];
 
-        delete[] w_;
-        delete[] v0_;
+    // ENSURE that v1 has one norm
+    Base<T> real_alpha = t_nrm2(n, v1, 1);
+    alpha = T(1 / real_alpha, 0.0);
+    t_scal(n, &alpha, v1, 1);
+    Base<T> real_beta = 0;
 
-        CHASE_INT notneeded_m;
-        CHASE_INT vl, vu;
-        Base<T> ul, ll;
-        CHASE_INT tryrac = 0;
-        CHASE_INT* isuppz = new CHASE_INT[2 * m];
-        Base<T>* ritzv = new Base<T>[ m ];
+    real_beta = static_cast<Base<T>>(0);
+    for (std::size_t k = 0; k < m; ++k) {
+      if (workspace_ + k * n != v1)
+        memcpy(workspace_ + k * n, v1, n * sizeof(T));
 
-        t_stemr<Base<T> >(LAPACK_COL_MAJOR, 'N', 'A', m, d, e, ul, ll, vl, vu,
-            &notneeded_m, ritzv, NULL, m, m, isuppz, &tryrac);
+      // t_gemv(CblasColMajor, CblasNoTrans, n, n, &One, H_, n, v1, 1, &Zero, w,
+      // 1);
 
-        *upperb = std::max(std::abs(ritzv[0]), std::abs(ritzv[m - 1])) + std::abs(real_beta); // TODO
+      gemm_->applyVec(v1, w);
 
-        delete[] ritzv;
-        delete[] isuppz;
-        delete[] d;
-        delete[] e;
-    };
+      // std::cout << "lanczos Av\n";
+      // for (std::size_t ll = 0; ll < 2; ++ll)
+      //   std::cout << w[ll] << "\n";
 
-    // we need to be careful how we deal with memory here
-    // we will operate within Workspace
-    void lanczos(CHASE_INT M, CHASE_INT idx, Base<T>* upperb, Base<T>* ritzv,
-        Base<T>* Tau, Base<T>* ritzV)
-    {
-        // todo
-        CHASE_INT m = M;
-        CHASE_INT n = N;
+      t_dot(n, v1, 1, w, 1, &alpha);
 
-        // assert( m >= 1 );
+      alpha = -alpha;
+      t_axpy(n, &alpha, v1, 1, w, 1);
+      alpha = -alpha;
 
-        // The first m*N part is reserved for the lanczos vectors
-        Base<T>* d = new Base<T>[ m ]();
-        Base<T>* e = new Base<T>[ m ]();
+      d[k] = alpha.real();
+      if (k == m - 1) break;
 
-        // SO C++03 5.3.4[expr.new]/15
-        T* v0_ = new T[n]();
-        T* w_ = new T[n]();
+      beta = T(-real_beta, 0);
+      t_axpy(n, &beta, v0, 1, w, 1);
+      beta = -beta;
 
-        T* v0 = v0_;
-        T* w = w_;
+      real_beta = t_nrm2(n, w, 1);
+      beta = T(1.0 / real_beta, 0.0);
 
-        T alpha = T(1.0, 0.0);
-        T beta = T(0.0, 0.0);
-        T One = T(1.0, 0.0);
-        T Zero = T(0.0, 0.0);
+      t_scal(n, &beta, w, 1);
 
-        // V is filled with randomness
-        T* v1 = workspace;
-        for (std::size_t k = 0; k < N; ++k)
-            v1[k] = V[k + idx * N];
+      e[k] = real_beta;
 
-        // ENSURE that v1 has one norm
-        Base<T> real_alpha = t_nrm2(n, v1, 1);
-        alpha = T(1 / real_alpha, 0.0);
-        t_scal(n, &alpha, v1, 1);
-        Base<T> real_beta = 0;
+      std::swap(v1, v0);
+      std::swap(v1, w);
+    }
 
-        real_beta = static_cast<Base<T> >(0);
-        for (std::size_t k = 0; k < m; ++k) {
-            if (workspace + k * n != v1)
-                memcpy(workspace + k * n, v1, n * sizeof(T));
+    delete[] w_;
+    delete[] v0_;
 
-            t_gemv(CblasColMajor, CblasNoTrans, n, n, &One, H, n, v1, 1, &Zero, w, 1);
+    CHASE_INT notneeded_m;
+    CHASE_INT vl, vu;
+    Base<T> ul, ll;
+    CHASE_INT tryrac = 0;
+    CHASE_INT* isuppz = new CHASE_INT[2 * m];
 
-            // std::cout << "lanczos Av\n";
-            // for (std::size_t ll = 0; ll < 2; ++ll)
-            //   std::cout << w[ll] << "\n";
-
-            t_dot(n, v1, 1, w, 1, &alpha);
-
-            alpha = -alpha;
-            t_axpy(n, &alpha, v1, 1, w, 1);
-            alpha = -alpha;
-
-            d[k] = alpha.real();
-            if (k == m - 1)
-                break;
-
-            beta = T(-real_beta, 0);
-            t_axpy(n, &beta, v0, 1, w, 1);
-            beta = -beta;
-
-            real_beta = t_nrm2(n, w, 1);
-            beta = T(1.0 / real_beta, 0.0);
-
-            t_scal(n, &beta, w, 1);
-
-            e[k] = real_beta;
-
-            std::swap(v1, v0);
-            std::swap(v1, w);
-        }
-
-        delete[] w_;
-        delete[] v0_;
-
-        CHASE_INT notneeded_m;
-        CHASE_INT vl, vu;
-        Base<T> ul, ll;
-        CHASE_INT tryrac = 0;
-        CHASE_INT* isuppz = new CHASE_INT[2 * m];
-
-        t_stemr(LAPACK_COL_MAJOR, 'V', 'A', m, d, e, ul, ll, vl, vu, &notneeded_m,
+    t_stemr(LAPACK_COL_MAJOR, 'V', 'A', m, d, e, ul, ll, vl, vu, &notneeded_m,
             ritzv, ritzV, m, m, isuppz, &tryrac);
 
-        *upperb = std::max(std::abs(ritzv[0]), std::abs(ritzv[m - 1])) + std::abs(real_beta);
+    *upperb = std::max(std::abs(ritzv[0]), std::abs(ritzv[m - 1])) +
+              std::abs(real_beta);
 
-        std::cout << "upperb: " << *upperb << "\n";
+    std::cout << "upperb: " << *upperb << "\n";
 
-        for (std::size_t k = 1; k < m; ++k) {
-            Tau[k] = std::abs(ritzV[k * m]) * std::abs(ritzV[k * m]);
-            // std::cout << Tau[k] << "\n";
-        }
-
-        delete[] isuppz;
-        delete[] d;
-        delete[] e;
-    };
-
-    void lock(CHASE_INT new_converged)
-    {
-        memcpy(workspace + locked * N, approxV + locked * N,
-            N * (new_converged) * sizeof(T));
-        locked += new_converged;
-    };
-
-    double compare(T* V_)
-    {
-        double norm = 0;
-        for (CHASE_INT i = 0; i < (nev + nex) * N; ++i)
-            norm += std::abs(V_[i] - approxV[i]) * std::abs(V_[i] - approxV[i]);
-        std::cout << "norm: " << norm << "\n";
-
-        norm = 0;
-        for (CHASE_INT i = 0; i < (locked)*N; ++i)
-            norm += std::abs(V_[i] - approxV[i]) * std::abs(V_[i] - approxV[i]);
-        std::cout << "norm: " << norm << "\n";
+    for (std::size_t k = 1; k < m; ++k) {
+      Tau[k] = std::abs(ritzV[k * m]) * std::abs(ritzV[k * m]);
+      // std::cout << Tau[k] << "\n";
     }
 
-    void lanczosDoS(CHASE_INT idx, CHASE_INT m, T* ritzVc)
-    {
-        T alpha = T(1, 0);
-        T beta = T(0, 0);
-        t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, N, idx, m, &alpha,
-            workspace, N, ritzVc, m, &beta, approxV, N);
+    delete[] isuppz;
+    delete[] d;
+    delete[] e;
+  };
 
-        /*
-        // TODO this may not be necessary, check memory footprint of
-        //      lanczos on approxV
-        {
-            std::mt19937 gen(2342.0);
-            std::normal_distribution<> d;
-            for (std::size_t k = 0; k < N * (nev + nex - idx); ++k) {
-                approxV[N * idx + k] = T(d(gen), d(gen));
-            }
-        }
-        */
+  void lock(CHASE_INT new_converged) {
+    std::memcpy(workspace_ + locked_ * N_, approxV_ + locked_ * N_,
+                N_ * (new_converged) * sizeof(T));
+    locked_ += new_converged;
+  };
+
+  double compare(T* V_) {
+    double norm = 0;
+    for (CHASE_INT i = 0; i < (nev + nex) * N; ++i)
+      norm += std::abs(V_[i] - approxV[i]) * std::abs(V_[i] - approxV[i]);
+    std::cout << "norm: " << norm << "\n";
+
+    norm = 0;
+    for (CHASE_INT i = 0; i < (locked_)*N; ++i)
+      norm += std::abs(V_[i] - approxV[i]) * std::abs(V_[i] - approxV[i]);
+    std::cout << "norm: " << norm << "\n";
+  }
+
+  void lanczosDoS(CHASE_INT idx, CHASE_INT m, T* ritzVc) {
+    T alpha = T(1, 0);
+    T beta = T(0, 0);
+    t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, N_, idx, m, &alpha,
+           workspace_, N_, ritzVc, m, &beta, approxV_, N_);
+  }
+
+  Base<T> residual() {
+    for (CHASE_INT j = 0; j < N_ * (nev_ + nex_); ++j) {
+      W_[j] = V_[j];
     }
 
-    Base<T> residual()
-    {
-        for (CHASE_INT j = 0; j < N * (nev + nex); ++j) {
-            W[j] = V[j];
-        }
-
-        //    memcpy(W, V, sizeof(MKL_Complex16)*N*nev);
-        T one(1.0);
-        T zero(0.0);
-        T eigval;
-        int iOne = 1;
-        for (int ttz = 0; ttz < nev; ttz++) {
-            eigval = -1.0 * ritzv[ttz];
-            t_scal(N, &eigval, W + ttz * N, 1);
-        }
-        t_hemm(CblasColMajor, CblasLeft, CblasLower, N, nev, &one, H, N, V, N, &one,
-            W, N);
-        Base<T> norm = t_lange('M', N, nev, W, N);
-        // TR.registerValue( i, "resd", norm);
-        return norm;
+    //    memcpy(W, V, sizeof(MKL_Complex16)*N*nev);
+    T one(1.0);
+    T zero(0.0);
+    T eigval;
+    int iOne = 1;
+    for (int ttz = 0; ttz < nev_; ttz++) {
+      eigval = -1.0 * ritzv_[ttz];
+      t_scal(N_, &eigval, W_ + ttz * N_, 1);
     }
 
-    Base<T> orthogonality()
-    {
-        T one(1.0);
-        T zero(0.0);
-        // Check eigenvector orthogonality
-        T* unity = new T[nev * nev];
-        T neg_one(-1.0);
-        for (int ttz = 0; ttz < nev; ttz++) {
-            for (int tty = 0; tty < nev; tty++) {
-                if (ttz == tty)
-                    unity[nev * ttz + tty] = 1.0;
-                else
-                    unity[nev * ttz + tty] = 0.0;
-            }
-        }
+    gemm_->preApplication(V_, W_, 0, nev_);
+    gemm_->apply(one, one, 0, nev_);
+    gemm_->postApplication(W_, nev_);
 
-        t_gemm(CblasColMajor, CblasConjTrans, CblasNoTrans, nev, nev, N, &one, V, N,
-            V, N, &neg_one, unity, nev);
-        Base<T> norm = t_lange('M', nev, nev, unity, nev);
-        delete[] unity;
-        return norm;
+    // t_hemm(CblasColMajor, CblasLeft, CblasLower, N_, nev_, &one, H_, N_, V_,
+    // N_, &one,
+    //     W_, N_);
+
+    Base<T> norm = t_lange('M', N_, nev_, W_, N_);
+    // TR.registerValue( i, "resd", norm);
+    return norm;
+  }
+
+  Base<T> orthogonality() {
+    T one(1.0);
+    T zero(0.0);
+    // Check eigenvector orthogonality
+    auto unity = std::unique_ptr<T[]>(new T[nev_ * nev_]);
+    T neg_one(-1.0);
+    for (int ttz = 0; ttz < nev_; ttz++) {
+      for (int tty = 0; tty < nev_; tty++) {
+        if (ttz == tty)
+          unity[nev_ * ttz + tty] = 1.0;
+        else
+          unity[nev_ * ttz + tty] = 0.0;
+      }
     }
 
-    void output(std::string str)
-    {
-        std::cout << str;
-    }
+    t_gemm(CblasColMajor, CblasConjTrans, CblasNoTrans, nev_, nev_, N_, &one,
+           &*V_, N_, &*V_, N_, &neg_one, &unity[0], nev_);
+    Base<T> norm = t_lange('M', nev_, nev_, &unity[0], nev_);
+    return norm;
+  }
 
-private:
-    std::size_t N, nev, nex, locked;
-    T *H, *V, *W;
-    T *approxV, *workspace;
-    Base<T> norm;
-    Base<T>* ritzv;
+  void output(std::string str) {
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    if (rank == 0) std::cout << str;
+  }
 
-    ChASE_Config config;
-    ChASE_PerfData perf;
+  T* getMatrixPtr() { return gemm_->get_H(); }
 
-    const bool dealloc;
+  void get_off(CHASE_INT* xoff, CHASE_INT* yoff, CHASE_INT* xlen,
+               CHASE_INT* ylen) {
+    gemm_->get_off(xoff, yoff, xlen, ylen);
+  }
+
+ private:
+  std::size_t N_;
+  std::size_t nev_;
+  std::size_t nex_;
+  std::size_t locked_;
+
+  //  T* H_;
+  T* V_;
+  T* W_;
+  T* approxV_;
+  T* workspace_;
+
+  Base<T> norm_;
+  Base<T>* ritzv_;
+
+  std::unique_ptr<MatrixFreeInterface<T>> gemm_;
+  ChASE_Blas_Matrices<T> matrices_;
+
+  ChASE_Config config_;
+  ChASE_PerfData perf_;
 };
 
 // TODO

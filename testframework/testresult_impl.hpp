@@ -17,38 +17,28 @@
 #define ANSI_BG_WHITE "\x1b[47m"
 #define ANSI_RESET "\x1b[0m"
 
-TestResult::TestResult()
-  : compare(true){};
+TestResult::TestResult() : compare(true){};
 
 TestResult::TestResult(bool compare_, std::string name_)
-  : compare(compare_)
-  , fileName(name_ + ".xml"){};
+    : compare(compare_), fileName(name_ + ".xml"){};
 
 TestResult::TestResult(bool compare_, std::string name_, std::size_t n_,
                        std::size_t nev_, std::size_t nex_, std::size_t deg_,
                        double tol_, char mode_, char opt_, bool sequence)
-  : compare(compare_)
-{
+    : compare(compare_) {
   std::ostringstream fileNameBuilder(std::ostringstream::ate);
   fileNameBuilder << name_ << "_" << n_ << "_" << nev_ << "_" << nex_ << "_"
                   << deg_ << "_" << tol_ << "_" << mode_ << "_" << opt_;
 
-  if (sequence)
-    fileNameBuilder << "_seq";
+  if (sequence) fileNameBuilder << "_seq";
 
   fileNameBuilder << ".xml";
   fileName = fileNameBuilder.str();
 };
 
-std::string
-TestResult::name()
-{
-  return this->fileName;
-}
+std::string TestResult::name() { return this->fileName; }
 
-void
-TestResult::done()
-{
+void TestResult::done() {
   // either save or compare
   if (!compare)
     save();
@@ -57,22 +47,18 @@ TestResult::done()
     loadAndCompare();
   }
 }
-void
-TestResult::save()
-{
+void TestResult::save() {
   std::ofstream ofs(this->name().c_str());
   boost::archive::xml_oarchive oa(ofs);
 
-#ifdef __llvm__
-  oa << BOOST_SERIALIZATION_NVP(*this);
-#else
+#ifdef __INTEL_COMPILER
   oa << BOOST_SERIALIZATION_NVP(this);
+#else
+  oa << BOOST_SERIALIZATION_NVP(*this);
 #endif
 }
 
-void
-TestResult::loadAndCompare()
-{
+void TestResult::loadAndCompare() {
   // construct object
   TestResult ref;
   std::ifstream ifs(this->name().c_str());
@@ -96,9 +82,7 @@ TestResult::loadAndCompare()
   compareMembers(ref);
 }
 
-void
-TestResult::compareMembers(TestResult& ref)
-{
+void TestResult::compareMembers(TestResult& ref) {
   std::size_t tests = 0;
   std::size_t fails = 0;
 
@@ -114,9 +98,7 @@ TestResult::compareMembers(TestResult& ref)
   reportResult(tests, fails);
 }
 
-void
-TestResult::reportResult(std::size_t tests, std::size_t fails)
-{
+void TestResult::reportResult(std::size_t tests, std::size_t fails) {
   if (fails == 0)
     std::cout << ANSI_BG_GREEN;
   else
