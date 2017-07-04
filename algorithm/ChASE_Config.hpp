@@ -53,6 +53,7 @@ std::size_t initMaxDeg<float>(bool approx, bool optimization) {
 
 template <>
 std::size_t initMaxDeg<std::complex<float> >(bool approx, bool optimization) {
+  return 12;
   return initMaxDeg<double>(approx, optimization) / 2;
 };
 

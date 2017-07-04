@@ -29,7 +29,8 @@
 template <class T>
 class ChASE_Blas : public ChASE<T> {
  public:
-  ChASE_Blas(ChASE_Config config, std::unique_ptr<MatrixFreeInterface<T>> gemm,
+  ChASE_Blas(ChASE_Config<T> config,
+             std::unique_ptr<MatrixFreeInterface<T>> gemm,
              ChASE_Blas_Matrices<T> matrices)
       : N_(config.getN()),
         nev_(config.getNev()),
@@ -46,13 +47,13 @@ class ChASE_Blas : public ChASE<T> {
     workspace_ = W_;
   }
 
-  ChASE_Blas(const ChASE_Blas&) = delete;
+  ChASE_Blas(const ChASE_Blas &) = delete;
 
   ~ChASE_Blas() {}
 
   ChASE_PerfData getPerfData() { return perf_; }
 
-  ChASE_Config getConfig() { return config_; }
+  ChASE_Config<T> getConfig() { return config_; }
 
   std::size_t getN() { return N_; }
 
@@ -60,7 +61,7 @@ class ChASE_Blas : public ChASE<T> {
 
   CHASE_INT getNex() { return nex_; }
 
-  Base<T>* getRitzv() { return ritzv_; }
+  Base<T> *getRitzv() { return ritzv_; }
 
   // TODO: everything should be owned by chASE_Blas, deg should be part of
   // ChasE_Config
@@ -68,9 +69,9 @@ class ChASE_Blas : public ChASE<T> {
     perf_ = ChASE_Algorithm<T>::solve(this, N_, ritzv_, nev_, nex_);
   }
 
-  T* getVectorsPtr() { return approxV_; }
+  T *getVectorsPtr() { return approxV_; }
 
-  T* getWorkspacePtr() { return workspace_; }
+  T *getWorkspacePtr() { return workspace_; }
 
   void shift(T c, bool isunshift = false) {
     if (!isunshift) {
@@ -110,7 +111,7 @@ class ChASE_Blas : public ChASE<T> {
     gemm_->postApplication(approxV_, nev_ + nex_ - locked_);
 
     std::size_t nevex = nev_ + nex_;
-    T* tau = workspace_ + fixednev * N_;
+    T *tau = workspace_ + fixednev * N_;
 
     std::memcpy(workspace_, approxV_, N_ * fixednev * sizeof(T));
     t_geqrf(LAPACK_COL_MAJOR, N_, nevex, approxV_, N_, tau);
@@ -119,10 +120,10 @@ class ChASE_Blas : public ChASE<T> {
     std::memcpy(approxV_, workspace_, N_ * fixednev * sizeof(T));
   };
 
-  void RR(Base<T>* ritzv, CHASE_INT block) {
+  void RR(Base<T> *ritzv, CHASE_INT block) {
     // CHASE_INT block = nev+nex - fixednev;
 
-    T* A = new T[block * block];  // For LAPACK.
+    T *A = new T[block * block];  // For LAPACK.
 
     T One = T(1.0, 0.0);
     T Zero = T(0.0, 0.0);
@@ -157,7 +158,7 @@ class ChASE_Blas : public ChASE<T> {
     delete[] A;
   };
 
-  void resd(Base<T>* ritzv, Base<T>* resid, CHASE_INT fixednev) {
+  void resd(Base<T> *ritzv, Base<T> *resid, CHASE_INT fixednev) {
     T alpha = T(1.0, 0.0);
     T beta = T(0.0, 0.0);
     CHASE_INT unconverged = (nev_ + nex_) - fixednev;
@@ -185,7 +186,7 @@ class ChASE_Blas : public ChASE<T> {
   };
 
   void swap(CHASE_INT i, CHASE_INT j) {
-    T* ztmp = new T[N_];
+    T *ztmp = new T[N_];
     memcpy(ztmp, approxV_ + N_ * i, N_ * sizeof(T));
     memcpy(approxV_ + N_ * i, approxV_ + N_ * j, N_ * sizeof(T));
     memcpy(approxV_ + N_ * j, ztmp, N_ * sizeof(T));
@@ -199,23 +200,23 @@ class ChASE_Blas : public ChASE<T> {
 
   void setNorm(Base<T> norm) { norm_ = norm; };
 
-  void lanczos(CHASE_INT m, Base<T>* upperb) {
+  void lanczos(CHASE_INT m, Base<T> *upperb) {
     // todo
     CHASE_INT n = N_;
 
-    T* v1 = workspace_;
+    T *v1 = workspace_;
     for (std::size_t k = 0; k < N_; ++k) v1[k] = V_[k];
 
     // assert( m >= 1 );
-    Base<T>* d = new Base<T>[ m ]();
-    Base<T>* e = new Base<T>[ m ]();
+    Base<T> *d = new Base<T>[ m ]();
+    Base<T> *e = new Base<T>[ m ]();
 
     // SO C++03 5.3.4[expr.new]/15
-    T* v0_ = new T[n]();
-    T* w_ = new T[n]();
+    T *v0_ = new T[n]();
+    T *w_ = new T[n]();
 
-    T* v0 = v0_;
-    T* w = w_;
+    T *v0 = v0_;
+    T *w = w_;
 
     T alpha = T(1.0, 0.0);
     T beta = T(0.0, 0.0);
@@ -267,8 +268,8 @@ class ChASE_Blas : public ChASE<T> {
     CHASE_INT vl, vu;
     Base<T> ul, ll;
     CHASE_INT tryrac = 0;
-    CHASE_INT* isuppz = new CHASE_INT[2 * m];
-    Base<T>* ritzv = new Base<T>[ m ];
+    CHASE_INT *isuppz = new CHASE_INT[2 * m];
+    Base<T> *ritzv = new Base<T>[ m ];
 
     t_stemr<Base<T>>(LAPACK_COL_MAJOR, 'N', 'A', m, d, e, ul, ll, vl, vu,
                      &notneeded_m, ritzv_, NULL, m, m, isuppz, &tryrac);
@@ -284,8 +285,8 @@ class ChASE_Blas : public ChASE<T> {
 
   // we need to be careful how we deal with memory here
   // we will operate within Workspace
-  void lanczos(CHASE_INT M, CHASE_INT idx, Base<T>* upperb, Base<T>* ritzv,
-               Base<T>* Tau, Base<T>* ritzV) {
+  void lanczos(CHASE_INT M, CHASE_INT idx, Base<T> *upperb, Base<T> *ritzv,
+               Base<T> *Tau, Base<T> *ritzV) {
     // todo
     CHASE_INT m = M;
     CHASE_INT n = N_;
@@ -293,15 +294,15 @@ class ChASE_Blas : public ChASE<T> {
     // assert( m >= 1 );
 
     // The first m*N part is reserved for the lanczos vectors
-    Base<T>* d = new Base<T>[ m ]();
-    Base<T>* e = new Base<T>[ m ]();
+    Base<T> *d = new Base<T>[ m ]();
+    Base<T> *e = new Base<T>[ m ]();
 
     // SO C++03 5.3.4[expr.new]/15
-    T* v0_ = new T[n]();
-    T* w_ = new T[n]();
+    T *v0_ = new T[n]();
+    T *w_ = new T[n]();
 
-    T* v0 = v0_;
-    T* w = w_;
+    T *v0 = v0_;
+    T *w = w_;
 
     T alpha = T(1.0, 0.0);
     T beta = T(0.0, 0.0);
@@ -309,7 +310,7 @@ class ChASE_Blas : public ChASE<T> {
     T Zero = T(0.0, 0.0);
 
     // V is filled with randomness
-    T* v1 = workspace_;
+    T *v1 = workspace_;
     for (std::size_t k = 0; k < N_; ++k) v1[k] = V_[k + idx * N_];
 
     // ENSURE that v1 has one norm
@@ -363,7 +364,7 @@ class ChASE_Blas : public ChASE<T> {
     CHASE_INT vl, vu;
     Base<T> ul, ll;
     CHASE_INT tryrac = 0;
-    CHASE_INT* isuppz = new CHASE_INT[2 * m];
+    CHASE_INT *isuppz = new CHASE_INT[2 * m];
 
     t_stemr(LAPACK_COL_MAJOR, 'V', 'A', m, d, e, ul, ll, vl, vu, &notneeded_m,
             ritzv, ritzV, m, m, isuppz, &tryrac);
@@ -389,7 +390,7 @@ class ChASE_Blas : public ChASE<T> {
     locked_ += new_converged;
   };
 
-  double compare(T* V_) {
+  double compare(T *V_) {
     double norm = 0;
     for (CHASE_INT i = 0; i < (nev + nex) * N; ++i)
       norm += std::abs(V_[i] - approxV[i]) * std::abs(V_[i] - approxV[i]);
@@ -401,7 +402,7 @@ class ChASE_Blas : public ChASE<T> {
     std::cout << "norm: " << norm << "\n";
   }
 
-  void lanczosDoS(CHASE_INT idx, CHASE_INT m, T* ritzVc) {
+  void lanczosDoS(CHASE_INT idx, CHASE_INT m, T *ritzVc) {
     T alpha = T(1, 0);
     T beta = T(0, 0);
     t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, N_, idx, m, &alpha,
@@ -451,7 +452,6 @@ class ChASE_Blas : public ChASE<T> {
       }
     }
 
-<<<<<<< HEAD
     t_gemm(CblasColMajor, CblasConjTrans, CblasNoTrans, nev_, nev_, N_, &one,
            &*V_, N_, &*V_, N_, &neg_one, &unity[0], nev_);
     Base<T> norm = t_lange('M', nev_, nev_, &unity[0], nev_);
@@ -464,10 +464,10 @@ class ChASE_Blas : public ChASE<T> {
     if (rank == 0) std::cout << str;
   }
 
-  T* getMatrixPtr() { return gemm_->get_H(); }
+  T *getMatrixPtr() { return gemm_->get_H(); }
 
-  void get_off(CHASE_INT* xoff, CHASE_INT* yoff, CHASE_INT* xlen,
-               CHASE_INT* ylen) {
+  void get_off(CHASE_INT *xoff, CHASE_INT *yoff, CHASE_INT *xlen,
+               CHASE_INT *ylen) {
     gemm_->get_off(xoff, yoff, xlen, ylen);
   }
 
@@ -478,33 +478,19 @@ class ChASE_Blas : public ChASE<T> {
   std::size_t locked_;
 
   //  T* H_;
-  T* V_;
-  T* W_;
-  T* approxV_;
-  T* workspace_;
+  T *V_;
+  T *W_;
+  T *approxV_;
+  T *workspace_;
 
   Base<T> norm_;
-  Base<T>* ritzv_;
+  Base<T> *ritzv_;
 
   std::unique_ptr<MatrixFreeInterface<T>> gemm_;
   ChASE_Blas_Matrices<T> matrices_;
 
-  ChASE_Config config_;
+  ChASE_Config<T> config_;
   ChASE_PerfData perf_;
-=======
-
-   private:
-    std::size_t N, nev, nex, locked;
-    T *H, *V, *W;
-    T *approxV, *workspace;
-    Base<T> norm;
-    Base<T>* ritzv;
-
-    ChASE_Config<T> config;
-    ChASE_PerfData perf;
-
-    const bool dealloc;
->>>>>>> a8057cb7ea34a373a8e6cba09d08697c249ce13e
 };
 
 // TODO

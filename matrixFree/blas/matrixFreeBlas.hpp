@@ -13,10 +13,8 @@
 template <class T>
 class MatrixFreeBlas : public MatrixFreeInterface<T> {
  public:
-  explicit MatrixFreeBlas(T* H, std::size_t n,
-                          std::size_t maxBlock)
-      : N_(n), H_(H), V1_(new T[N_ * maxBlock]), V2_(new T[N_ * maxBlock]) {
-  }
+  explicit MatrixFreeBlas(T* H, std::size_t n, std::size_t maxBlock)
+      : N_(n), H_(H), V1_(new T[N_ * maxBlock]), V2_(new T[N_ * maxBlock]) {}
 
   MatrixFreeBlas() = delete;
   MatrixFreeBlas(MatrixFreeBlas const& rhs) = delete;
@@ -42,8 +40,8 @@ class MatrixFreeBlas : public MatrixFreeInterface<T> {
            &alpha,                                     // V2 <-
            H_, N_,                                     //      alpha * H*V1
            get_V1() + offset * N_, N_,                 //      + beta * V2
-           &beta, get_V2() + offset * N_,              //
-           N_);
+           &beta,                                      //
+           get_V2() + offset * N_,  N_);
     std::swap(V1_, V2_);
   }
 

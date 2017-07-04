@@ -387,6 +387,11 @@ ChASE_PerfData ChASE_Algorithm<T>::solve(ChASE<T>* single, std::size_t N,
   std::size_t iteration = 0;  // Current iteration.
   lowerb = *std::max_element(ritzv, ritzv + unconverged);
 
+  // TODO!!
+  perf.start_clock(ChASE_PerfData::TimePtrs::Qr);
+  single->QR(locked);
+  perf.end_clock(ChASE_PerfData::TimePtrs::Qr);
+
   while (unconverged > nex && iteration < config.getMaxIter()) {
     if (unconverged < nevex - DoSVectors || iteration == 0) {
       lambda = *std::min_element(ritzv_, ritzv_ + nevex);

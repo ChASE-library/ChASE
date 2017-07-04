@@ -8,7 +8,7 @@
 #include "chase_blas_factory.hpp"
 #include "testresult.hpp"
 
-typedef std::complex<double> T;
+typedef std::complex<float> T;
 
 extern "C" {
 void chase_write_hdf5(MPI_Comm comm, T* H, size_t N);
@@ -154,7 +154,7 @@ int main(int argc, char* argv[]) {
   std::cout << std::setprecision(16);
   MPI_Init(NULL, NULL);
 
-  ChASE_Config config(N, nev, nex);
+  ChASE_Config<T> config(N, nev, nex);
   config.setTol(tol);
   config.setDeg(deg);
   config.setOpt(opt == "S");
@@ -175,7 +175,7 @@ int main(int argc, char* argv[]) {
 
   // the example matrices are stored in std::complex< double >
   // so we read them as such and then case them
-  std::complex<double>* _H = new MKL_Complex16[N * N];
+  // std::complex<double>* _H = new MKL_Complex16[N * N];
 
   for (auto i = bgn; i <= end; ++i) {
     if (i == bgn || !sequence) {
@@ -233,67 +233,18 @@ int main(int argc, char* argv[]) {
     //     chase_read_matrix(MPI_COMM_WORLD, xoff, yoff, xlen, ylen, H);
     // } else {
     std::cout << "reading from plain file\n";
-    readMatrix(_H, path_in, spin, kpoint, i, ".bin", N * N, legacy);
+    readMatrix(H, path_in, spin, kpoint, i, ".bin", N * N, legacy);
     //}
 
-<<<<<<< HEAD
     // the input is complex double so we cast to T
-    for (std::size_t idx = 0; idx < N * N; ++idx) H[idx] = _H[idx];
-=======
-    // -----Validation of test----
-    bool testResultCompare;
-    if (vm.count("write"))
-        testResultCompare = false;
-    else
-        testResultCompare = true;
-
-    TestResult TR(testResultCompare, testName, N, nev, nex, deg, tol, mode[0],
-        opt[0], sequence);
-
-    //----------------------------------------------------------------------------
-    std::cout << std::setprecision(16);
-
-    ChASE_Config<T> config(N, nev, nex);
-    config.setTol(tol);
-    config.setDeg(deg);
-    config.setOpt(opt == "S");
-    config.setApprox(mode == "A");
-
-    ChASE_Blas<T>* single = new ChASE_Blas<T>(config);
-
-    // std::random_device rd;
-    std::mt19937 gen(2342.0);
-    std::normal_distribution<> d;
-
-    T* V = single->getVectorsPtr();
-    T* H = single->getMatrixPtr();
-    Base<T>* Lambda = single->getRitzv();
-
-    // the example matrices are stored in std::complex< double >
-    // so we read them as such and then case them
-    std::complex<double>* _H = new MKL_Complex16[N * N];
-
-    for (auto i = bgn; i <= end; ++i) {
-        if (i == bgn || !sequence) {
-            /*
-        if (path_eigp == "_" && int_mode == OMP_APPROX && i == bgn )
-        { // APPROX. No approximate pairs given.
-        //-------------------------SOLVE-PREVIOUS-PROBLEM-------------------------
-        app = ".bin"; // Read the matrix of the previous problem.
-        myreadwrite<MKL_Complex16>(H, path_in.c_str(), app.c_str(), i-1, N*N,
-        'r');
-
-        // Solve the previous problem, store the eigenpairs in V and Lambda.
-        ZHEEVR("V", "I", "L", &N, H, &N, &vl, &vu, &il, &iu, &tol,
-        &notneeded, Lambda, V, &N, isuppz, zmem, &lzmem, dmem, &ldmem,
-        imem, &limem, &INFO);
->>>>>>> a8057cb7ea34a373a8e6cba09d08697c249ce13e
+    // for (std::size_t idx = 0; idx < N * N; ++idx) H[idx] = _H[idx];
 
     Base<T> normH;
-    // normH = std::max(t_lange('1', N, N, H, N), Base<T>(1.0));
-    normH = 9;
+    normH = std::max(t_lange('1', N, N, H, N), Base<T>(1.0));
 
-    std::cout << "setting norm to static value " << normH << "\n";
+    // normH = 9;
+    //    std::cout << "setting norm to static value " << normH << "\n";
+
     single->setNorm(normH);
 
     //------------------------------SOLVE-CURRENT-PROBLEM-----------------------

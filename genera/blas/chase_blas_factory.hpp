@@ -12,31 +12,49 @@
 
 #include "./skewedMatrixProperties.hpp"
 
-#include "../../matrixFree/blas/matrixFreeBlas.hpp"
-#include "../../matrixFree/blasInplace/matrixFreeBlasInplace.hpp"
-#include "../../matrixFree/blasSkewed/matrixFreeBlas.hpp"
-#include "../../matrixFree/cuda/matrixFreeCuda.hpp"
-#include "../../matrixFree/cudaSkewed/matrixFreeCuda.hpp"
-#include "../../matrixFree/mpi/matrixFreeMPI.hpp"
-
-#include "chase_blas.hpp"
-#include "template_wrapper.hpp"
-
 #define MATRIX_FREE_IMPLEMENTATION_MPI_BLAS 1
 #define MATRIX_FREE_IMPLEMENTATION_MPI_CUDA 2
 #define MATRIX_FREE_IMPLEMENTATION_CUDA 3
 #define MATRIX_FREE_IMPLEMENTATION_BLAS_INPLACE 4
 #define MATRIX_FREE_IMPLEMENTATION_BLAS 5
+#define MATRIX_FREE_IMPLEMENTATION_DEBUG 6
 
 #ifndef MATRIX_FREE_IMPLEMENTATION
-#define MATRIX_FREE_IMPLEMENTATION MATRIX_FREE_IMPLEMENTATION_MPI_BLAS
+#define MATRIX_FREE_IMPLEMENTATION MATRIX_FREE_IMPLEMENTATION_DEBUG
 #endif
+
+#if MATRIX_FREE_IMPLEMENTATION == MATRIX_FREE_IMPLEMENTATION_MPI_CUDA
+#include "../../matrixFree/cudaSkewed/matrixFreeCuda.hpp"
+#include "../../matrixFree/mpi/matrixFreeMPI.hpp"
+
+#elif MATRIX_FREE_IMPLEMENTATION == MATRIX_FREE_IMPLEMENTATION_MPI_BLAS
+#include "../../matrixFree/blasSkewed/matrixFreeBlas.hpp"
+#include "../../matrixFree/mpi/matrixFreeMPI.hpp"
+
+#elif MATRIX_FREE_IMPLEMENTATION == MATRIX_FREE_IMPLEMENTATION_CUDA
+#include "../../matrixFree/cuda/matrixFreeCuda.hpp"
+
+#elif MATRIX_FREE_IMPLEMENTATION == MATRIX_FREE_IMPLEMENTATION_BLAS_INPLACE
+#include "../../matrixFree/blasInplace/matrixFreeBlasInplace.hpp"
+
+#elif MATRIX_FREE_IMPLEMENTATION == MATRIX_FREE_IMPLEMENTATION_BLAS
+#include "../../matrixFree/blas/matrixFreeBlas.hpp"
+
+#elif MATRIX_FREE_IMPLEMENTATION == MATRIX_FREE_IMPLEMENTATION_DEBUG
+#include "../../matrixFree/debug/matrixFreeDebug.hpp"
+
+#else
+
+#endif
+
+#include "chase_blas.hpp"
+#include "template_wrapper.hpp"
 
 template <class T>
 class ChASEFactory {
  public:
   static std::unique_ptr<ChASE_Blas<T>> constructChASE(
-      ChASE_Config config, T* V, Base<T>* ritzv,
+      ChASE_Config<T> config, T *V, Base<T> *ritzv,
       MPI_Comm comm = MPI_COMM_WORLD) {
     std::size_t N = config.getN();
     std::size_t max_block = config.getNev() + config.getNex();
@@ -73,6 +91,10 @@ class ChASEFactory {
     auto gemm = std::unique_ptr<MatrixFreeInterface<T>>(
         new MatrixFreeBlasInplace<T>(matrices.get_H(), matrices.get_V1(),
                                      matrices.get_V2(), N, max_block));
+
+#elif MATRIX_FREE_IMPLEMENTATION == MATRIX_FREE_IMPLEMENTATION_DEBUG
+    auto gemm = std::unique_ptr<MatrixFreeInterface<T>>(
+        new MatrixFreeDebug<T>(matrices.get_H(), N, max_block));
 #else
     // Try the simplest MatrixFreeBlas
     auto gemm = std::unique_ptr<MatrixFreeInterface<T>>(
