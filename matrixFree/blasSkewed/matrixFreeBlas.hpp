@@ -80,8 +80,13 @@ class MatrixFreeBlasSkewed : public MatrixFreeInterface<T> {
     T alpha = T(1.0);
     T beta = T(0.0);
 
-    t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, N_, 1, N_, &alpha, H_, N_,
-           B, N_, &beta, C, N_);
+    t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans,  //
+           N_, 1, N_,                                  //
+           &alpha,                                     //
+           H_, N_,                                     //
+           B, N_,                                      //
+           &beta,                                      //
+           C, N_);                                     //
   }
 
   void get_off(CHASE_INT* xoff, CHASE_INT* yoff, CHASE_INT* xlen,

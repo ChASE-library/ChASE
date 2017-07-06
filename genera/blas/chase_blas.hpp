@@ -45,6 +45,8 @@ class ChASE_Blas : public ChASE<T> {
 
     approxV_ = V_;
     workspace_ = W_;
+
+    H_ = gemm_->get_H();
   }
 
   ChASE_Blas(const ChASE_Blas &) = delete;
@@ -79,7 +81,7 @@ class ChASE_Blas : public ChASE<T> {
     }
 
     // for (std::size_t i = 0; i < N_; ++i) {
-    //     H_[i + i * N_] += c;
+    //   H_[i + i * N_] += c;
     // }
 
     gemm_->shiftMatrix(c);
@@ -94,15 +96,16 @@ class ChASE_Blas : public ChASE<T> {
   };
 
   void threeTerms(CHASE_INT block, T alpha, T beta, CHASE_INT offset) {
-    // t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans,
-    //     N_, block, N_,
-    //     &alpha,
-    //     H_, N_,
-    //     approxV_ + (locked_ + offset) * N_, N_,
-    //     &beta,
-    //     workspace_ + (locked_ + offset) * N_, N_);
-    // std::swap(approxV_, workspace_);
+    // t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans,  //
+    //        N_, block, N_,                              //
+    //        &alpha,                                     //
+    //        H_, N_,                                     //
+    //        approxV_ + (locked_ + offset) * N_, N_,     //
+    //        &beta,                                      //
+    //        workspace_ + (locked_ + offset) * N_, N_);
+
     gemm_->apply(alpha, beta, offset, block);
+    std::swap(approxV_, workspace_);
   };
 
   void Hv(T alpha);
@@ -133,13 +136,13 @@ class ChASE_Blas : public ChASE<T> {
     gemm_->postApplication(workspace_, block);
 
     // V <- H* V
-    // t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans,
-    //     N_, block, N_,
-    //     &One,
-    //     H_, N_,
-    //     approxV_ + locked_ * N_, N_,
-    //     &Zero,
-    //     workspace_ + locked_ * N_, N_);
+    // t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans,  //
+    //        N_, block, N_,                              //
+    //        &One,                                       //
+    //        H_, N_,                                     //
+    //        approxV_ + locked_ * N_, N_,                //
+    //        &Zero,                                      //
+    //        workspace_ + locked_ * N_, N_);
 
     // A <- W * V
     t_gemm(CblasColMajor, CblasConjTrans, CblasNoTrans, block, block, N_, &One,
@@ -169,10 +172,13 @@ class ChASE_Blas : public ChASE<T> {
     gemm_->apply(alpha, beta, 0, unconverged);
     gemm_->postApplication(workspace_, unconverged);
 
-    // t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, N_, unconverged, N_,
-    // &alpha,
-    //     H_, N_, approxV_ + locked_ * N_, N_, &beta, workspace_ + locked_ *
-    //     N_, N_);
+    // t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans,  //
+    //        N_, unconverged, N_,                        //
+    //        &alpha,                                     //
+    //        H_, N_,                                     //
+    //        approxV_ + locked_ * N_, N_,                //
+    //        &beta,                                      //
+    //        workspace_ + locked_ * N_, N_);
 
     Base<T> norm1, norm2;
     for (std::size_t i = 0; i < unconverged; ++i) {
@@ -190,6 +196,7 @@ class ChASE_Blas : public ChASE<T> {
     memcpy(ztmp, approxV_ + N_ * i, N_ * sizeof(T));
     memcpy(approxV_ + N_ * i, approxV_ + N_ * j, N_ * sizeof(T));
     memcpy(approxV_ + N_ * j, ztmp, N_ * sizeof(T));
+
     memcpy(ztmp, workspace_ + N_ * i, N_ * sizeof(T));
     memcpy(workspace_ + N_ * i, workspace_ + N_ * j, N_ * sizeof(T));
     memcpy(workspace_ + N_ * j, ztmp, N_ * sizeof(T));
@@ -428,9 +435,12 @@ class ChASE_Blas : public ChASE<T> {
     gemm_->apply(one, one, 0, nev_);
     gemm_->postApplication(W_, nev_);
 
-    // t_hemm(CblasColMajor, CblasLeft, CblasLower, N_, nev_, &one, H_, N_, V_,
-    // N_, &one,
-    //     W_, N_);
+    // t_hemm(CblasColMajor, CblasLeft, CblasLower,  //
+    //        N_, nev_,                              //
+    //        &one,                                  //
+    //        H_, N_,                                //
+    //        V_, N_,                                //
+    //        &one, W_, N_);
 
     Base<T> norm = t_lange('M', N_, nev_, W_, N_);
     // TR.registerValue( i, "resd", norm);
@@ -477,7 +487,7 @@ class ChASE_Blas : public ChASE<T> {
   std::size_t nex_;
   std::size_t locked_;
 
-  //  T* H_;
+  T *H_;
   T *V_;
   T *W_;
   T *approxV_;

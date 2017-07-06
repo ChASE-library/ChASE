@@ -10,7 +10,7 @@
 #include "chase_blas.hpp"
 #include "chase_blas_matrices.hpp"
 
-#include "./skewedMatrixProperties.hpp"
+#include "skewedMatrixProperties.hpp"
 
 #define MATRIX_FREE_IMPLEMENTATION_MPI_BLAS 1
 #define MATRIX_FREE_IMPLEMENTATION_MPI_CUDA 2
@@ -20,7 +20,7 @@
 #define MATRIX_FREE_IMPLEMENTATION_DEBUG 6
 
 #ifndef MATRIX_FREE_IMPLEMENTATION
-#define MATRIX_FREE_IMPLEMENTATION MATRIX_FREE_IMPLEMENTATION_DEBUG
+#define MATRIX_FREE_IMPLEMENTATION MATRIX_FREE_IMPLEMENTATION_MPI_BLAS
 #endif
 
 #if MATRIX_FREE_IMPLEMENTATION == MATRIX_FREE_IMPLEMENTATION_MPI_CUDA
@@ -54,19 +54,27 @@ template <class T>
 class ChASEFactory {
  public:
   static std::unique_ptr<ChASE_Blas<T>> constructChASE(
-      ChASE_Config<T> config, T *V, Base<T> *ritzv,
+      ChASE_Config<T> config, T *H, T *V, Base<T> *ritzv,
       MPI_Comm comm = MPI_COMM_WORLD) {
     std::size_t N = config.getN();
     std::size_t max_block = config.getNev() + config.getNex();
 
-    assert(V == NULL);
+#if MATRIX_FREE_IMPLEMENTATION == MATRIX_FREE_IMPLEMENTATION_MPI_CUDA || \
+    MATRIX_FREE_IMPLEMENTATION == MATRIX_FREE_IMPLEMENTATION_MPI_BLAS
 
-    auto matrices = ChASE_Blas_Matrices<T>(N, max_block);
+    assert(H == nullptr);
 
-#if MATRIX_FREE_IMPLEMENTATION == MATRIX_FREE_IMPLEMENTATION_MPI_CUDA
     auto properties = std::shared_ptr<SkewedMatrixProperties<T>>(
         new SkewedMatrixProperties<T>(N, max_block, comm));
 
+    auto matrices = ChASE_Blas_Matrices<T>(N, max_block, V, ritzv, properties);
+#else
+    auto matrices = ChASE_Blas_Matrices<T>(N, max_block, V, ritzv);
+#endif
+
+
+
+#if MATRIX_FREE_IMPLEMENTATION == MATRIX_FREE_IMPLEMENTATION_MPI_CUDA
     auto gemm_skewed = std::unique_ptr<MatrixFreeInterface<T>>(
         new MatrixFreeCudaSkewed<T>(properties));
 
@@ -74,9 +82,6 @@ class ChASEFactory {
         new MatrixFreeMPI<T>(properties, std::move(gemm_skewed)));
 
 #elif MATRIX_FREE_IMPLEMENTATION == MATRIX_FREE_IMPLEMENTATION_MPI_BLAS
-    auto properties = std::shared_ptr<SkewedMatrixProperties<T>>(
-        new SkewedMatrixProperties<T>(N, max_block, comm));
-
     auto gemm_skewed = std::unique_ptr<MatrixFreeInterface<T>>(
         new MatrixFreeBlasSkewed<T>(properties));
 

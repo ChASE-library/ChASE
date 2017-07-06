@@ -7,7 +7,7 @@ template <class T>
 class MatrixFreeBlasInplace : public MatrixFreeInterface<T> {
  public:
   MatrixFreeBlasInplace(T* H, T* V1, T* V2, std::size_t n, std::size_t maxBlock)
-      : n_(n), V1_(V1), V2_(V2), H_(H) {}
+      : N_(n), V1_(V1), V2_(V2), H_(H) {}
 
   ~MatrixFreeBlasInplace() {}
 
@@ -15,20 +15,23 @@ class MatrixFreeBlasInplace : public MatrixFreeInterface<T> {
     locked_ = locked;
 
     if (V != V1_) std::swap(V1_, V2_);
+    assert(V == V1_);
   }
 
   void preApplication(T* V1, T* V2, std::size_t locked, std::size_t block) {
     this->preApplication(V1, locked, block);
   }
 
-  void apply(T alpha, T beta, std::size_t offset, std::size_t block) {
+  void apply(T const alpha, T const beta, std::size_t const offset,
+             std::size_t const block) {
+    assert(V2_ != V1_);
     t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans,  //
-           n_, block, n_,                              //
+           N_, block, N_,                              //
            &alpha,                                     // V2_ <-
-           H_, n_,                                     //   H * V1_
-           V1_ + (locked_ + offset) * n_, n_,          //   + V2_
+           H_, N_,                                     //   H * V1_
+           V1_ + (locked_ + offset) * N_, N_,          //   + V2_
            &beta,                                      //
-           V2_ + (locked_ + offset) * n_, n_);         //
+           V2_ + (locked_ + offset) * N_, N_);         //
 
     std::swap(V1_, V2_);
   }
@@ -36,13 +39,16 @@ class MatrixFreeBlasInplace : public MatrixFreeInterface<T> {
   bool postApplication(T* V, std::size_t block) {
     // this is somewhat a hack, but causes the approxV in the next
     // preApplication to be the same pointer content as V1_
-    std::swap(V1_, V2_);
+    // std::swap(V1_, V2_);
+
+    assert(V == V1_);
+
     return false;
   }
 
-  void shiftMatrix(T c) {
-    for (std::size_t i = 0; i < n_; ++i) {
-      H_[i + i * n_] += c;
+  void shiftMatrix(T const c) override {
+    for (std::size_t i = 0; i < N_; ++i) {
+      H_[i + i * N_] += c;
     }
   }
 
@@ -51,12 +57,12 @@ class MatrixFreeBlasInplace : public MatrixFreeInterface<T> {
     T beta = T(0.0);
 
     t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans,  //
-           n_, 1, n_,                                  //
+           N_, 1, N_,                                  //
            &alpha,                                     //
-           H_, n_,                                     //
-           B, n_,                                      //
+           H_, N_,                                     //
+           B, N_,                                      //
            &beta,                                      //
-           C, n_);                                     //
+           C, N_);                                     //
   }
 
   T* get_H() const override { return H_; }
@@ -65,12 +71,12 @@ class MatrixFreeBlasInplace : public MatrixFreeInterface<T> {
                CHASE_INT* ylen) const override {
     *xoff = 0;
     *yoff = 0;
-    *xlen = n_;
-    *ylen = n_;
+    *xlen = N_;
+    *ylen = N_;
   }
 
  private:
-  std::size_t n_;
+  std::size_t N_;
   std::size_t locked_;
 
   T* H_;

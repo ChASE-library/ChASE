@@ -96,15 +96,16 @@ std::size_t ChASE_Algorithm<T>::locking(ChASE<T>* single, std::size_t N,
   for (auto k = 0; k < unconverged; ++k) {
     auto j = index[k];  // walk through
     if (resid[j] > tol) {
-      // don't break if we did not make progress with last iteration
+      //don't break if we did not make progress with last iteration
       if (resid[j] < residLast[j]) {
         break;
       } else {
         std::ostringstream oss;
         oss << "locking unconvered pair " << resid[j] << " " << residLast[j]
-            << "\n";
+            << " tolerance is: " << tol << " val: " << Lritzv[j] << "\n";
         single->output(oss.str());
       }
+
     }
     if (j != converged) {
       swap_kj(j, converged, resid);      // if we filter again
@@ -388,9 +389,9 @@ ChASE_PerfData ChASE_Algorithm<T>::solve(ChASE<T>* single, std::size_t N,
   lowerb = *std::max_element(ritzv, ritzv + unconverged);
 
   // TODO!!
-  perf.start_clock(ChASE_PerfData::TimePtrs::Qr);
-  single->QR(locked);
-  perf.end_clock(ChASE_PerfData::TimePtrs::Qr);
+  // perf.start_clock(ChASE_PerfData::TimePtrs::Qr);
+  // single->QR(locked);
+  // perf.end_clock(ChASE_PerfData::TimePtrs::Qr);
 
   while (unconverged > nex && iteration < config.getMaxIter()) {
     if (unconverged < nevex - DoSVectors || iteration == 0) {

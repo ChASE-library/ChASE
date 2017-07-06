@@ -8,7 +8,7 @@
 #include "chase_blas_factory.hpp"
 #include "testresult.hpp"
 
-typedef std::complex<float> T;
+typedef std::complex<double> T;
 
 extern "C" {
 void chase_write_hdf5(MPI_Comm comm, T* H, size_t N);
@@ -160,18 +160,26 @@ int main(int argc, char* argv[]) {
   config.setOpt(opt == "S");
   config.setApprox(mode == "A");
 
+  auto V__ = std::unique_ptr<T[]>(new T[N * (nev + nex)]);
+  auto Lambda__ = std::unique_ptr<Base<T>[]>(new Base<T>[ (nev + nex) ]);
+
+  T* V = V__.get();
+  Base<T>* Lambda = Lambda__.get();
+
   // ChASE_Blas<T>* single = new ChASE_Blas<T>(config);
-  std::unique_ptr<ChASE_Blas<T>> single_ =
-      ChASEFactory<T>::constructChASE(config, NULL, NULL, MPI_COMM_WORLD);
+  // std::unique_ptr<ChASE_Blas<T>> single_ =
+  //     ChASEFactory<T>::constructChASE(config, NULL, NULL,
+  //     MPI_COMM_WORLD);
+  std::unique_ptr<ChASE_Blas<T>> single_ = ChASEFactory<T>::constructChASE(
+      config, nullptr, V, Lambda, MPI_COMM_WORLD);
+
   ChASE_Blas<T>* single = single_.get();
 
   // std::random_device rd;
   std::mt19937 gen(2342.0);
   std::normal_distribution<> d;
 
-  T* V = single->getVectorsPtr();
   T* H = single->getMatrixPtr();
-  Base<T>* Lambda = single->getRitzv();
 
   // the example matrices are stored in std::complex< double >
   // so we read them as such and then case them

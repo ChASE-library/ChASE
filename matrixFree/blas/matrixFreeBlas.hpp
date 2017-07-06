@@ -24,7 +24,7 @@ class MatrixFreeBlas : public MatrixFreeInterface<T> {
   void preApplication(T* V, std::size_t const locked,
                       std::size_t const block) override {
     locked_ = locked;
-    std::memcpy(get_V1(), V + locked_ * N_, N_ * block * sizeof(T));
+    std::memcpy(get_V1(), V + locked * N_, N_ * block * sizeof(T));
   }
 
   void preApplication(T* V1, T* V2, std::size_t const locked,
@@ -41,7 +41,7 @@ class MatrixFreeBlas : public MatrixFreeInterface<T> {
            H_, N_,                                     //      alpha * H*V1
            get_V1() + offset * N_, N_,                 //      + beta * V2
            &beta,                                      //
-           get_V2() + offset * N_,  N_);
+           get_V2() + offset * N_, N_);
     std::swap(V1_, V2_);
   }
 
