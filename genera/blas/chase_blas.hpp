@@ -128,8 +128,8 @@ class ChASE_Blas : public ChASE<T> {
 
     T *A = new T[block * block];  // For LAPACK.
 
-    T One = T(1.0, 0.0);
-    T Zero = T(0.0, 0.0);
+    T One = T(1.0);
+    T Zero = T(0.0);
 
     gemm_->preApplication(approxV_, locked_, block);
     gemm_->apply(One, Zero, 0, block);
@@ -162,8 +162,8 @@ class ChASE_Blas : public ChASE<T> {
   };
 
   void resd(Base<T> *ritzv, Base<T> *resid, CHASE_INT fixednev) {
-    T alpha = T(1.0, 0.0);
-    T beta = T(0.0, 0.0);
+    T alpha = T(1.0);
+    T beta = T(0.0);
     CHASE_INT unconverged = (nev_ + nex_) - fixednev;
 
     Base<T> norm = this->getNorm();
@@ -182,7 +182,7 @@ class ChASE_Blas : public ChASE<T> {
 
     Base<T> norm1, norm2;
     for (std::size_t i = 0; i < unconverged; ++i) {
-      beta = T(-ritzv[i], 0.0);
+      beta = T(-ritzv[i]);
       t_axpy(N_, &beta, (approxV_ + locked_ * N_) + N_ * i, 1,
              (workspace_ + locked_ * N_) + N_ * i, 1);
 
@@ -225,15 +225,15 @@ class ChASE_Blas : public ChASE<T> {
     T *v0 = v0_;
     T *w = w_;
 
-    T alpha = T(1.0, 0.0);
-    T beta = T(0.0, 0.0);
-    T One = T(1.0, 0.0);
-    T Zero = T(0.0, 0.0);
+    T alpha = T(1.0);
+    T beta = T(0.0);
+    T One = T(1.0);
+    T Zero = T(0.0);
 
     //  T *v1 = V;
     // ENSURE that v1 has one norm
     Base<T> real_alpha = t_nrm2(n, v1, 1);
-    alpha = T(1 / real_alpha, 0.0);
+    alpha = T(1 / real_alpha);
     t_scal(n, &alpha, v1, 1);
     Base<T> real_beta = 0;
 
@@ -250,15 +250,15 @@ class ChASE_Blas : public ChASE<T> {
       t_axpy(n, &alpha, v1, 1, w, 1);
       alpha = -alpha;
 
-      d[k] = alpha.real();
+      d[k] = std::real(alpha);
       if (k == m - 1) break;
 
-      beta = T(-real_beta, 0);
+      beta = T(-real_beta);
       t_axpy(n, &beta, v0, 1, w, 1);
       beta = -beta;
 
       real_beta = t_nrm2(n, w, 1);
-      beta = T(1.0 / real_beta, 0.0);
+      beta = T(1.0 / real_beta);
 
       t_scal(n, &beta, w, 1);
 
@@ -311,10 +311,10 @@ class ChASE_Blas : public ChASE<T> {
     T *v0 = v0_;
     T *w = w_;
 
-    T alpha = T(1.0, 0.0);
-    T beta = T(0.0, 0.0);
-    T One = T(1.0, 0.0);
-    T Zero = T(0.0, 0.0);
+    T alpha = T(1.0);
+    T beta = T(0.0);
+    T One = T(1.0);
+    T Zero = T(0.0);
 
     // V is filled with randomness
     T *v1 = workspace_;
@@ -322,7 +322,7 @@ class ChASE_Blas : public ChASE<T> {
 
     // ENSURE that v1 has one norm
     Base<T> real_alpha = t_nrm2(n, v1, 1);
-    alpha = T(1 / real_alpha, 0.0);
+    alpha = T(1 / real_alpha);
     t_scal(n, &alpha, v1, 1);
     Base<T> real_beta = 0;
 
@@ -346,15 +346,15 @@ class ChASE_Blas : public ChASE<T> {
       t_axpy(n, &alpha, v1, 1, w, 1);
       alpha = -alpha;
 
-      d[k] = alpha.real();
+      d[k] = std::real(alpha);
       if (k == m - 1) break;
 
-      beta = T(-real_beta, 0);
+      beta = T(-real_beta);
       t_axpy(n, &beta, v0, 1, w, 1);
       beta = -beta;
 
       real_beta = t_nrm2(n, w, 1);
-      beta = T(1.0 / real_beta, 0.0);
+      beta = T(1.0 / real_beta);
 
       t_scal(n, &beta, w, 1);
 
@@ -396,10 +396,10 @@ class ChASE_Blas : public ChASE<T> {
                 N_ * (new_converged) * sizeof(T));
     locked_ += new_converged;
   };
-
+  /*
   double compare(T *V_) {
     double norm = 0;
-    for (CHASE_INT i = 0; i < (nev + nex) * N; ++i)
+    for (CHASE_INT i = 0; i < (nev_ + nex_) * N; ++i)
       norm += std::abs(V_[i] - approxV[i]) * std::abs(V_[i] - approxV[i]);
     std::cout << "norm: " << norm << "\n";
 
@@ -408,10 +408,10 @@ class ChASE_Blas : public ChASE<T> {
       norm += std::abs(V_[i] - approxV[i]) * std::abs(V_[i] - approxV[i]);
     std::cout << "norm: " << norm << "\n";
   }
-
+  */
   void lanczosDoS(CHASE_INT idx, CHASE_INT m, T *ritzVc) {
-    T alpha = T(1, 0);
-    T beta = T(0, 0);
+    T alpha = T(1);
+    T beta = T(0);
     t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, N_, idx, m, &alpha,
            workspace_, N_, ritzVc, m, &beta, approxV_, N_);
   }
@@ -469,8 +469,8 @@ class ChASE_Blas : public ChASE<T> {
   }
 
   void output(std::string str) {
-    int rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    int rank = 0;
+    //MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     if (rank == 0) std::cout << str;
   }
 

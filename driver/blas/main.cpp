@@ -8,15 +8,41 @@
 #include "chase_blas_factory.hpp"
 #include "testresult.hpp"
 
-typedef std::complex<double> T;
+// typedef std::complex<double> T;
 
+/*
 extern "C" {
+template <typename T>
 void chase_write_hdf5(MPI_Comm comm, T* H, size_t N);
+template <typename T>
 void chase_read_matrix(MPI_Comm comm, std::size_t xoff, std::size_t yoff,
                        std::size_t xlen, std::size_t ylen, T* H);
 }
-
+*/
 namespace po = boost::program_options;
+
+template <typename T>
+T getRandomT(std::function<double(void)> f);
+
+template <>
+double getRandomT(std::function<double(void)> f) {
+  return double(f());
+}
+
+template <>
+float getRandomT(std::function<double(void)> f) {
+  return float(f());
+}
+
+template <>
+std::complex<double> getRandomT(std::function<double(void)> f) {
+  return std::complex<double>(f(), f());
+}
+
+template <>
+std::complex<float> getRandomT(std::function<double(void)> f) {
+  return std::complex<float>(f(), f());
+}
 
 template <typename T>
 void readMatrix(T* H, std::string path_in, std::string spin, std::size_t kpoint,
@@ -39,22 +65,22 @@ void readMatrix(T* H, std::string path_in, std::string spin, std::size_t kpoint,
   }
 }
 
-int main(int argc, char* argv[]) {
-  std::size_t N;
-  std::size_t nev;
-  std::size_t nex;
-  std::size_t deg;
-  std::size_t bgn;
-  std::size_t end;
+struct ChASE_DriverProblemConfig {
+  std::size_t N;    // Size of the Matrix
+  std::size_t nev;  // Number of sought after eigenvalues
+  std::size_t nex;  // Extra size of subspace
+  std::size_t deg;  // initial degree
+  std::size_t bgn;  // beginning of sequence
+  std::size_t end;  // end of sequence
 
-  double tol;
-  bool sequence;
+  double tol;     // desired tolerance
+  bool sequence;  // handle this as a sequence?
 
-  std::string path_in;
-  std::string mode;
-  std::string opt;
-  std::string arch;
-  std::string path_eigp;
+  std::string path_in;    // path to the matrix input files
+  std::string mode;       // Approx or Random mode
+  std::string opt;        // enable optimisation of degree
+  std::string arch;       // ??
+  std::string path_eigp;  // TODO
   std::string path_out;
   std::string path_name;
 
@@ -62,93 +88,34 @@ int main(int argc, char* argv[]) {
   bool legacy;
   std::string spin;
 
-  po::options_description desc("ChASE Options");
-  desc.add_options()("help,h", "show this message")(
-      "n", po::value<std::size_t>(&N)->required(), "Size of the Input Matrix")(
-      "nev", po::value<std::size_t>(&nev)->required(),
-      "Wanted Number of Eigenpairs")(
-      "nex", po::value<std::size_t>(&nex)->default_value(25),
-      "Extra Search Dimensions")(
-      "deg", po::value<std::size_t>(&deg)->default_value(20),
-      "Initial filtering degree")(
-      "bgn", po::value<std::size_t>(&bgn)->default_value(2), "Start ell")(
-      "end", po::value<std::size_t>(&end)->default_value(2), "End ell")(
-      "spin", po::value<std::string>(&spin)->default_value("d"), "spin")(
-      "kpoint", po::value<std::size_t>(&kpoint)->default_value(0), "kpoint")(
-      "tol", po::value<double>(&tol)->default_value(1e-10),
-      "Tolerance for Eigenpair convergence")(
-      "path_in", po::value<std::string>(&path_in)->required(),
-      "Path to the input matrix/matrices")(
-      "mode", po::value<std::string>(&mode)->default_value("A"),
-      "valid values are R(andom) or A(pproximate)")(
-      "opt", po::value<std::string>(&opt)->default_value("S"),
-      "Optimi(S)e degree, or do (N)ot optimise")(
-      "path_eigp", po::value<std::string>(&path_eigp),
-      "Path to approximate solutions, only required when mode is Approximate, "
-      "otherwise not used")(
-      "sequence", po::value<bool>(&sequence)->default_value(false),
-      "Treat as sequence of Problems. Previous ChASE solution is used, when "
-      "available")("legacy", po::value<bool>(&legacy)->default_value(false),
-                   "Use legacy naming scheme?");
+  bool complex;
+  bool isdouble;
+};
 
-  std::string testName;
-  po::options_description testOP("Test options");
-  testOP.add_options()("write", "Write Profile")(
-      "name", po::value<std::string>(&testName)->required(),
-      "Name of the testing profile");
+template <typename T>
+int do_chase(ChASE_DriverProblemConfig conf, TestResult TR) {
+  // todo due to legacy reasons we unpack the struct
+  std::size_t N = conf.N;
+  std::size_t nev = conf.nev;
+  std::size_t nex = conf.nex;
+  std::size_t deg = conf.deg;
+  std::size_t bgn = conf.bgn;
+  std::size_t end = conf.end;
 
-  desc.add(testOP);
+  double tol = conf.tol;
+  bool sequence = conf.sequence;
 
-  po::variables_map vm;
-  po::store(po::parse_command_line(argc, argv, desc), vm);
+  std::string path_in = conf.path_in;
+  std::string mode = conf.mode;
+  std::string opt = conf.opt;
+  std::string arch;
+  std::string path_eigp = conf.path_eigp;
+  std::string path_out = conf.path_out;
+  std::string path_name = conf.path_name;
 
-  if (vm.count("help")) {
-    std::cout << desc << std::endl;
-    return 1;
-  }
-
-  try {
-    po::notify(vm);
-  } catch (std::exception& e) {
-    std::cout << e.what() << std::endl << std::endl << desc << std::endl;
-    return -1;
-  }
-
-  mode = toupper(mode.at(0));
-  opt = toupper(opt.at(0));
-
-  if (bgn > end) {
-    std::cout << "Begin must be smaller than End!" << std::endl;
-    return -1;
-  }
-
-  if (mode != "R" && mode != "A") {
-    std::cout << "Illegal value for mode: \"" << mode << "\"" << std::endl
-              << "Legal values are R or A" << std::endl;
-    return -1;
-  }
-
-  if (opt != "N" && opt != "S") {
-    std::cout << "Illegal value for opt: " << opt << std::endl
-              << "Legal values are N, S" << std::endl;
-    return -1;
-  }
-
-  if (path_eigp.empty() && mode == "A") {
-    std::cout << "eigp is required when mode is " << mode << std::endl;
-    // TODO verify that eigp is a valid path
-    return -1;
-  }
-
-  // -----Validation of test----
-  bool testResultCompare;
-  if (vm.count("write"))
-    testResultCompare = false;
-  else
-    testResultCompare = true;
-
-  TestResult TR(testResultCompare, testName, N, nev, nex, deg, tol, mode[0],
-                opt[0], sequence);
+  std::size_t kpoint = conf.kpoint;
+  bool legacy = conf.legacy;
+  std::string spin = conf.spin;
 
   //----------------------------------------------------------------------------
   std::cout << std::setprecision(16);
@@ -161,7 +128,7 @@ int main(int argc, char* argv[]) {
   config.setApprox(mode == "A");
 
   auto V__ = std::unique_ptr<T[]>(new T[N * (nev + nex)]);
-  auto Lambda__ = std::unique_ptr<Base<T>[]>(new Base<T>[ (nev + nex) ]);
+  auto Lambda__ = std::unique_ptr<Base<T>[]>(new Base<T>[(nev + nex)]);
 
   T* V = V__.get();
   Base<T>* Lambda = Lambda__.get();
@@ -207,16 +174,17 @@ int main(int argc, char* argv[]) {
   }
   else */
       if (mode[0] == 'A') {  // APPROX. Approximate eigenpairs given.
-        //-----------------------READ-APPROXIMATE-EIGENPAIRS----------------------
+        //-----------------------READ-APPROXIMATE-EIGENPAIRS--------------------
         readMatrix(V, path_eigp, spin, kpoint, i - 1, ".vct", N * (nev + nex),
                    legacy);
         readMatrix(Lambda, path_eigp, spin, kpoint, i - 1, ".vls", (nev + nex),
                    legacy);
-        //------------------------------------------------------------------------
+        //----------------------------------------------------------------------
       } else {  // RANDOM.
         // Randomize V.
         for (std::size_t i = 0; i < N * (nev + nex); ++i) {
-          V[i] = T(d(gen), d(gen));
+          // V[i] = T(d(gen)); // TODO
+          V[i] = getRandomT<T>([&]() { return d(gen); });
         }
         // Set Lambda to zeros. ( Lambda = zeros(N,1) )
         for (int j = 0; j < (nev + nex); j++) Lambda[j] = 0.0;
@@ -286,8 +254,6 @@ int main(int argc, char* argv[]) {
 
   }  // for(int i = bgn; i <= end; ++i)
 
-  TR.done();
-
 #ifdef PRINT_EIGENVALUES
   std::cout << "Eigenvalues: " << std::endl;
   for (int zzt = 0; zzt < nev; zzt++)
@@ -297,6 +263,146 @@ int main(int argc, char* argv[]) {
 
   // delete single;
   // delete[] _H;
+
+  return 0;
+}
+
+int main(int argc, char* argv[]) {
+  ChASE_DriverProblemConfig conf;
+
+  po::options_description desc("ChASE Options");
+  desc.add_options()(                                                     //
+      "help,h",                                                           //
+      "show this message"                                                 //
+      )(                                                                  //
+      "n", po::value<std::size_t>(&conf.N)->required(),                   //
+      "Size of the Input Matrix"                                          //
+      )(                                                                  //
+      "double", po::value<bool>(&conf.isdouble)->default_value(true),     //
+      "Is matrix complex double valued, false indicates the single type"  //
+      )(                                                                  //
+      "complex", po::value<bool>(&conf.complex)->default_value(true),     //
+      "Matrix is complex valued"                                          //
+      )(                                                                  //
+      "nev", po::value<std::size_t>(&conf.nev)->required(),               //
+      "Wanted Number of Eigenpairs"                                       //
+      )(                                                                  //
+      "nex", po::value<std::size_t>(&conf.nex)->default_value(25),        //
+      "Extra Search Dimensions"                                           //
+      )(                                                                  //
+      "deg", po::value<std::size_t>(&conf.deg)->default_value(20),        //
+      "Initial filtering degree"                                          //
+      )(                                                                  //
+      "bgn", po::value<std::size_t>(&conf.bgn)->default_value(2),         //
+      "Start ell"                                                         //
+      )(                                                                  //
+      "end", po::value<std::size_t>(&conf.end)->default_value(2),         //
+      "End ell"                                                           //
+      )(                                                                  //
+      "spin", po::value<std::string>(&conf.spin)->default_value("d"),     //
+      "spin"                                                              //
+      )(                                                                  //
+      "kpoint", po::value<std::size_t>(&conf.kpoint)->default_value(0),   //
+      "kpoint"                                                            //
+      )(                                                                  //
+      "tol", po::value<double>(&conf.tol)->default_value(1e-10),          //
+      "Tolerance for Eigenpair convergence"                               //
+      )(                                                                  //
+      "path_in", po::value<std::string>(&conf.path_in)->required(),       //
+      "Path to the input matrix/matrices"                                 //
+      )(                                                                  //
+      "mode", po::value<std::string>(&conf.mode)->default_value("A"),     //
+      "valid values are R(andom) or A(pproximate)"                        //
+      )(                                                                  //
+      "opt", po::value<std::string>(&conf.opt)->default_value("S"),       //
+      "Optimi(S)e degree, or do (N)ot optimise"                           //
+      )(                                                                  //
+      "path_eigp", po::value<std::string>(&conf.path_eigp),               //
+      "Path to approximate solutions, only required when mode"            //
+      "is Approximate, otherwise not used"                                //
+      )(                                                                  //
+      "sequence", po::value<bool>(&conf.sequence)->default_value(false),  //
+      "Treat as sequence of Problems. Previous ChASE solution is used,"   //
+      "when available"                                                    //
+      )(                                                                  //
+      "legacy", po::value<bool>(&conf.legacy)->default_value(false),      //
+      "Use legacy naming scheme?");                                       //
+
+  std::string testName;
+  po::options_description testOP("Test options");
+  testOP.add_options()(                                       //
+      "write",                                                //
+      "Write Profile"                                         //
+      )(                                                      //
+      "name", po::value<std::string>(&testName)->required(),  //
+      "Name of the testing profile");                         //
+
+  desc.add(testOP);
+
+  po::variables_map vm;
+  po::store(po::parse_command_line(argc, argv, desc), vm);
+  po::notify(vm);
+
+  /// TODO add driver without interactivity
+
+  // print help
+  if (vm.count("help")) {
+    std::cout << desc << std::endl;
+    return 1;
+  }
+
+  // some normalization
+  conf.mode = toupper(conf.mode.at(0));
+  conf.opt = toupper(conf.opt.at(0));
+
+  // Additional Error checks
+  // TODO this should be a member of struct
+  if (conf.bgn > conf.end) {
+    std::cout << "Begin must be smaller than End!" << std::endl;
+    return -1;
+  }
+
+  if (conf.mode != "R" && conf.mode != "A") {
+    std::cout << "Illegal value for mode: \"" << conf.mode << "\"" << std::endl
+              << "Legal values are R or A" << std::endl;
+    return -1;
+  }
+
+  if (conf.opt != "N" && conf.opt != "S") {
+    std::cout << "Illegal value for opt: " << conf.opt << std::endl
+              << "Legal values are N, S" << std::endl;
+    return -1;
+  }
+
+  if (conf.path_eigp.empty() && conf.mode == "A") {
+    std::cout << "eigp is required when mode is " << conf.mode << std::endl;
+    // TODO verify that eigp is a valid path
+    return -1;
+  }
+
+  // -----Validation of test----
+  bool testResultCompare;
+  if (vm.count("write"))
+    testResultCompare = false;
+  else
+    testResultCompare = true;
+
+  TestResult TR(testResultCompare, testName, conf.N, conf.nev, conf.nex,
+                conf.deg, conf.tol, conf.mode[0], conf.opt[0], conf.sequence);
+
+  if (conf.complex) {
+    if (conf.isdouble)
+      do_chase<std::complex<double>>(conf, TR);
+    else  // single
+      do_chase<std::complex<float>>(conf, TR);
+  } else {
+    if (conf.isdouble)
+      do_chase<double>(conf, TR);
+    else  // single
+      do_chase<float>(conf, TR);
+  }
+
+  TR.done();
 
   return 0;
 }

@@ -17,7 +17,7 @@ mk_builddir:
 build: | ${BUILDDIR}/chase_${GENUS}.x
 
 ${BUILDDIR}/chase_${GENUS}.x: mk_builddir
-	icpc -DOUTPUT -std=c++11 -qopenmp -g \
+	mpicxx -DOUTPUT -std=c++11 -qopenmp -g \
 	  -I../../testframework -I../../genera/${GENUS} \
 	  -I../../algorithm \
 	  main.cpp \

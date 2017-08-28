@@ -100,10 +100,12 @@ std::size_t ChASE_Algorithm<T>::locking(ChASE<T>* single, std::size_t N,
       if (resid[j] < residLast[j]) {
         break;
       } else {
+#ifdef OUTPUT
         std::ostringstream oss;
         oss << "locking unconvered pair " << resid[j] << " " << residLast[j]
             << " tolerance is: " << tol << " val: " << Lritzv[j] << "\n";
         single->output(oss.str());
+#endif
       }
 
     }
@@ -138,8 +140,8 @@ std::size_t ChASE_Algorithm<T>::filter(ChASE<T>* single, std::size_t n,
   //----------------------------------- A = A-cI -------------------------------
   single->shift(-c);
   //------------------------------- Y = alpha*(A-cI)*V -------------------------
-  T alpha = T(sigma_1 / e, 0.0);
-  T beta = T(0.0, 0.0);
+  T alpha = T(sigma_1 / e);
+  T beta = T(0.0);
 
   single->threeTerms(unprocessed, alpha, beta, offset / n);
 
@@ -157,8 +159,8 @@ std::size_t ChASE_Algorithm<T>::filter(ChASE<T>* single, std::size_t n,
     sigma_new = 1.0 / (2.0 / sigma_1 - sigma);
 
     //----------------------- V = alpha(A-cI)W + beta*V ----------------------
-    alpha = T(2.0 * sigma_new / e, 0.0);
-    beta = T(-sigma * sigma_new, 0.0);
+    alpha = T(2.0 * sigma_new / e);
+    beta = T(-sigma * sigma_new);
     single->threeTerms(unprocessed, alpha, beta, offset / n);
 
     sigma = sigma_new;
@@ -292,7 +294,7 @@ std::size_t ChASE_Algorithm<T>::lanczos(ChASE<T>* single, int N, int numvec,
 #endif
   if (idx > 0) {
     T* ritzVc = new T[m * m]();
-    for (auto i = 0; i < m * m; ++i) ritzVc[i] = T(ritzV[i], 0);
+    for (auto i = 0; i < m * m; ++i) ritzVc[i] = T(ritzV[i]);
     single->lanczosDoS(idx, m, ritzVc);
 
     delete[] ritzVc;
