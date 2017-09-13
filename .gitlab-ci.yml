@@ -7,6 +7,7 @@ build:
   artifacts:
     paths:
     - build/
+    - Makefile
 
 test:
   stage: test
