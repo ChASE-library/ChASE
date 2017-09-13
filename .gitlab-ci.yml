@@ -15,4 +15,4 @@ test:
   - make test
   artifacts:
     paths:
-    - *.xml
+    - ./*.xml
