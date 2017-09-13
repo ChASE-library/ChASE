@@ -18,7 +18,7 @@ typedef struct complex_t {
     FLOAT_TYPE im; /*imaginary part */
 } complex_t;
 
-#define HDF_FILE "work/slai/slai10/array_%d.hdf5"
+#define HDF_FILE "array.hdf5"
 
 void chase_write_hdf5(MPI_Comm comm, FLOAT_TYPE complex* H, size_t N_)
 {

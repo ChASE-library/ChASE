@@ -93,7 +93,7 @@ struct ChASE_DriverProblemConfig {
 };
 
 template <typename T>
-int do_chase(ChASE_DriverProblemConfig conf, TestResult TR) {
+int do_chase(ChASE_DriverProblemConfig& conf, TestResult& TR) {
   // todo due to legacy reasons we unpack the struct
   std::size_t N = conf.N;
   std::size_t nev = conf.nev;
@@ -119,7 +119,6 @@ int do_chase(ChASE_DriverProblemConfig conf, TestResult TR) {
 
   //----------------------------------------------------------------------------
   std::cout << std::setprecision(16);
-  MPI_Init(NULL, NULL);
 
   ChASE_Config<T> config(N, nev, nex);
   config.setTol(tol);
@@ -200,8 +199,8 @@ int do_chase(ChASE_DriverProblemConfig conf, TestResult TR) {
     CHASE_INT xlen;
     CHASE_INT ylen;
 
-    int size;
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    // int size = 1;
+    // MPI_Comm_size(MPI_COMM_WORLD, &size);
 
     // if (size > 1) {
     //     std::cout << "reading from hdf5\n";
@@ -268,6 +267,10 @@ int do_chase(ChASE_DriverProblemConfig conf, TestResult TR) {
 }
 
 int main(int argc, char* argv[]) {
+#ifdef HAS_MPI
+  MPI_Init(NULL, NULL);
+#endif
+
   ChASE_DriverProblemConfig conf;
 
   po::options_description desc("ChASE Options");
@@ -390,19 +393,22 @@ int main(int argc, char* argv[]) {
   TestResult TR(testResultCompare, testName, conf.N, conf.nev, conf.nex,
                 conf.deg, conf.tol, conf.mode[0], conf.opt[0], conf.sequence);
 
-  if (conf.complex) {
-    if (conf.isdouble)
-      do_chase<std::complex<double>>(conf, TR);
-    else  // single
-      do_chase<std::complex<float>>(conf, TR);
-  } else {
-    if (conf.isdouble)
-      do_chase<double>(conf, TR);
-    else  // single
-      do_chase<float>(conf, TR);
-  }
+  //   if (conf.complex) {
+  if (conf.isdouble)
+    do_chase<std::complex<double>>(conf, TR);
+  else  // single
+    do_chase<std::complex<float>>(conf, TR);
+  // } else {
+  //   if (conf.isdouble)
+  //     do_chase<double>(conf, TR);
+  //   else  // single
+  //     do_chase<float>(conf, TR);
+  // }
 
   TR.done();
 
+#ifdef HAS_MPI
+  MPI_Finalize();
+#endif
   return 0;
 }

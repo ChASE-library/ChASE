@@ -5,3 +5,5 @@
 *~
 CCPE.pdf
 Docs-Sphinx/build/**
+CMakeFiles/
+CMakeCache.txt
