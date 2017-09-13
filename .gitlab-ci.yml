@@ -1,35 +1,18 @@
-build_blas:
+build:
   stage: build
   script:
   - module load Intel/2017.0.098-GCC-5.4.0  IntelMPI/2017.0.098 Boost/1.61.0-Python-2.7.12 imkl/2017.0.098 HDF5
-  - make clean build -C driver/blas/
+  - FC=ifort CC=icc CXX=icpc cmake .
+  - make
   artifacts:
     paths:
     - build/
 
-build_mpi:
-  stage: build
-  script:
-  - module load Intel/2017.0.098-GCC-5.4.0  IntelMPI/2017.0.098 Boost/1.61.0-Python-2.7.12 imkl/2017.0.098 HDF5
-  - make clean build -C driver/mpi/
-  artifacts:
-    paths:
-    - build/
-
-test_blas:
+test:
   stage: test
   script:
   - module load Intel/2017.0.098-GCC-5.4.0  IntelMPI/2017.0.098 Boost/1.61.0-Python-2.7.12 imkl/2017.0.098
-  - make test -C driver/blas/
+  - make test
   artifacts:
     paths:
-    - driver/blas/*.xml
-
-# test_mpi:
-#   stage: test
-#   script:
-#   - module load Intel/2017.0.098-GCC-5.4.0  IntelMPI/2017.0.098 Boost/1.61.0-Python-2.7.12 imkl/2017.0.098
-#   - make test -C driver/mpi/
-#   artifacts:
-#     paths:
-#     - driver/mpi/*.xml
+    - *.xml

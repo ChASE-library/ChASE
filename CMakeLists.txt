@@ -2,6 +2,7 @@
 # Specify the minimum version for CMake
 
 cmake_minimum_required( VERSION 3.7 )
+enable_testing()
 
 # Project's name
 
@@ -76,6 +77,11 @@ if( Boost_FOUND )
     )
   target_compile_definitions( ${DRIVER_NAME} PUBLIC
     MATRIX_FREE_IMPLEMENTATION=MATRIX_FREE_IMPLEMENTATION_BLAS_INPLACE
+    )
+
+  add_test(
+    NAME blas_test1
+    COMMAND ${EXECUTABLE_OUTPUT_PATH}/blas_driver --n 22360 --mode "R" --opt "S" --name jlesc --path_in /data/winkelmann/JLESC/SingleP/size23k/bin8/ --nev 100 --bgn 1 --end 1 --nex 50 --tol 1e-5 --deg 8 --double false
     )
 endif()
 
