@@ -344,15 +344,14 @@ int main(int argc, char* argv[]) {
 
   po::variables_map vm;
   po::store(po::parse_command_line(argc, argv, desc), vm);
-  po::notify(vm);
-
-  /// TODO add driver without interactivity
 
   // print help
   if (vm.count("help")) {
     std::cout << desc << std::endl;
     return 1;
   }
+
+  po::notify(vm);
 
   // some normalization
   conf.mode = toupper(conf.mode.at(0));
