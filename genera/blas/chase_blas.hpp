@@ -68,6 +68,10 @@ class ChASE_Blas : public ChASE<T> {
   // TODO: everything should be owned by chASE_Blas, deg should be part of
   // ChasE_Config
   void solve() {
+    locked_ = 0;
+    approxV_ = V_;
+    workspace_ = W_;
+
     perf_ = ChASE_Algorithm<T>::solve(this, N_, ritzv_, nev_, nex_);
   }
 
@@ -215,8 +219,8 @@ class ChASE_Blas : public ChASE<T> {
     for (std::size_t k = 0; k < N_; ++k) v1[k] = V_[k];
 
     // assert( m >= 1 );
-    Base<T> *d = new Base<T>[ m ]();
-    Base<T> *e = new Base<T>[ m ]();
+    Base<T> *d = new Base<T>[m]();
+    Base<T> *e = new Base<T>[m]();
 
     // SO C++03 5.3.4[expr.new]/15
     T *v0_ = new T[n]();
@@ -301,8 +305,8 @@ class ChASE_Blas : public ChASE<T> {
     // assert( m >= 1 );
 
     // The first m*N part is reserved for the lanczos vectors
-    Base<T> *d = new Base<T>[ m ]();
-    Base<T> *e = new Base<T>[ m ]();
+    Base<T> *d = new Base<T>[m]();
+    Base<T> *e = new Base<T>[m]();
 
     // SO C++03 5.3.4[expr.new]/15
     T *v0_ = new T[n]();
@@ -470,7 +474,7 @@ class ChASE_Blas : public ChASE<T> {
 
   void output(std::string str) {
     int rank = 0;
-    //MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    // MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     if (rank == 0) std::cout << str;
   }
 

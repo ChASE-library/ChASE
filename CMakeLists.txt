@@ -36,8 +36,8 @@ FortranCInterface_HEADER( ${CMAKE_BINARY_DIR}/include/fortran_mangle.h
 include_directories( blas ${CMAKE_BINARY_DIR}/include/ )
 
 # ## BLAS / LAPACK ##
-find_package( LAPACK REQUIRED )
 find_package( BLAS   REQUIRED )
+find_package( LAPACK REQUIRED )
 
 # ## OPENMP ##
 find_package( OpenMP REQUIRED )
@@ -50,8 +50,12 @@ endif()
 # ## BOOST ##
 # TODO: do not make required, just don't build driver
 find_package( Boost COMPONENTS serialization program_options )
-find_package( MPI  )
-find_package( MPI  )
+find_package( MPI  REQUIRED)
+if( OPENMP_FOUND )
+  set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${MPI_C_COMPILE_FLAGS}" )
+  set( CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} ${MPI_CXX_COMPILE_FLAGS}" )
+endif()
+
 find_package( CUDA )
 
 
@@ -74,16 +78,51 @@ if( Boost_FOUND )
     ${BLAS_LIBRARIES}
     ${LAPACK_LIBRARIES}
     ${Boost_LIBRARIES}
+    ${MPI_CXX_LIBRARIES}
     )
   target_compile_definitions( ${DRIVER_NAME} PUBLIC
     MATRIX_FREE_IMPLEMENTATION=MATRIX_FREE_IMPLEMENTATION_BLAS_INPLACE
     )
+  target_include_directories( ${DRIVER_NAME} PRIVATE ${MPI_CXX_INCLUDE_PATH} )
 
   add_test(
-    NAME blas_test1
+    NAME "${DRIVER_NAME}_test1"
     COMMAND ${EXECUTABLE_OUTPUT_PATH}/blas_driver --n 22360 --mode "R" --opt "S" --name jlesc --path_in /data/winkelmann/JLESC/SingleP/size23k/bin8/ --nev 100 --bgn 1 --end 1 --nex 50 --tol 1e-5 --deg 8 --double false
     )
 endif()
+
+## Basic BLAS implementation ##
+SET( LIB_NAME "blas_basic_lib" )
+SET( DRIVER_NAME "blas_basic_driver" )
+
+add_library( ${LIB_NAME} STATIC driver/blas/lib.cpp )
+target_link_libraries( ${LIB_NAME}
+  ${BLAS_LIBRARIES}
+  ${LAPACK_LIBRARIES}
+  )
+target_compile_definitions( ${LIB_NAME} PUBLIC
+  MATRIX_FREE_IMPLEMENTATION=MATRIX_FREE_IMPLEMENTATION_BLAS
+  )
+
+if( Boost_FOUND )
+  add_executable( ${DRIVER_NAME} driver/blas/main.cpp )
+  target_link_libraries( ${DRIVER_NAME}
+    ${BLAS_LIBRARIES}
+    ${LAPACK_LIBRARIES}
+    ${Boost_LIBRARIES}
+    ${MPI_CXX_LIBRARIES}
+    )
+  target_compile_definitions( ${DRIVER_NAME} PUBLIC
+    MATRIX_FREE_IMPLEMENTATION=MATRIX_FREE_IMPLEMENTATION_BLAS
+    )
+  target_include_directories( ${DRIVER_NAME} PRIVATE ${MPI_CXX_INCLUDE_PATH} )
+
+  add_test(
+    NAME "${DRIVER_NAME}_test1"
+    COMMAND ${EXECUTABLE_OUTPUT_PATH}/blas_driver --n 22360 --mode "R" --opt "S" --name jlesc --path_in /data/winkelmann/JLESC/SingleP/size23k/bin8/ --nev 100 --bgn 1 --end 1 --nex 50 --tol 1e-5 --deg 8 --double false
+    )
+endif()
+
 
 ## CUDA implementation ##
 if( CUDA_FOUND )
@@ -106,6 +145,7 @@ if( CUDA_FOUND )
       ${LAPACK_LIBRARIES}
       ${Boost_LIBRARIES}
       ${CUDA_LIBRARIES}
+      ${MPI_CXX_LIBRARIES}
       )
     target_compile_definitions( ${DRIVER_NAME} PUBLIC
       MATRIX_FREE_IMPLEMENTATION=MATRIX_FREE_IMPLEMENTATION_CUDA

@@ -96,7 +96,7 @@ std::size_t ChASE_Algorithm<T>::locking(ChASE<T>* single, std::size_t N,
   for (auto k = 0; k < unconverged; ++k) {
     auto j = index[k];  // walk through
     if (resid[j] > tol) {
-      //don't break if we did not make progress with last iteration
+      // don't break if we did not make progress with last iteration
       if (resid[j] < residLast[j]) {
         break;
       } else {
@@ -107,7 +107,6 @@ std::size_t ChASE_Algorithm<T>::locking(ChASE<T>* single, std::size_t N,
         single->output(oss.str());
 #endif
       }
-
     }
     if (j != converged) {
       swap_kj(j, converged, resid);      // if we filter again
@@ -206,10 +205,10 @@ std::size_t ChASE_Algorithm<T>::lanczos(ChASE<T>* single, int N, int numvec,
 
   // We will do numvec many Lanczos procedures and save all the eigenvalues,
   // and the first entrieXs of the eigenvectors
-  Base<T>* Theta = new Base<T>[ numvec * m ]();
-  Base<T>* Tau = new Base<T>[ numvec * m ]();
+  Base<T>* Theta = new Base<T>[numvec * m]();
+  Base<T>* Tau = new Base<T>[numvec * m]();
 
-  Base<T>* ritzV = new Base<T>[ m * m ]();
+  Base<T>* ritzV = new Base<T>[m * m]();
   // MKL_Complex16 *V = new T[N*m];
   Base<T> upperb_;
   Base<T> lowerb, lambda;
@@ -232,11 +231,13 @@ std::size_t ChASE_Algorithm<T>::lanczos(ChASE<T>* single, int N, int numvec,
 
 #ifdef OUTPUT
 /*
-    std::cout << "THETA: ";
-    for (std::size_t k = 0; k < numvec * m; ++k)
-        std::cout << Theta[k] << " ";
-    std::cout << "\n";
-    */
+std::cout << "THETA:";
+for (std::size_t k = 0; k < numvec * m; ++k) {
+  if( k % 5 == 0 ) std::cout << "\n";
+  std::cout << Theta[k] << " ";
+}
+std::cout << "\n";
+*/
 #endif
 
   double* ThetaSorted = new double[numvec * m];
@@ -295,21 +296,22 @@ std::size_t ChASE_Algorithm<T>::lanczos(ChASE<T>* single, int N, int numvec,
   if (idx > 0) {
     T* ritzVc = new T[m * m]();
     for (auto i = 0; i < m * m; ++i) ritzVc[i] = T(ritzV[i]);
-    single->lanczosDoS(idx, m, ritzVc);
+    // TODO
+    // single->lanczosDoS(idx, m, ritzVc);
 
     delete[] ritzVc;
   }
 
   /*
-// no DoS, just randomness inside V
-{
-MKL_Complex16 *V_ = single->getVectorsPtr();
-for( std::size_t k=0; k < N*(nevex-idx); ++k)
-{
-V_[N*idx + k] = std::complex<double>( d(gen), d(gen) );
-}
-}
-*/
+  // no DoS, just randomness inside V
+  {
+  MKL_Complex16 *V_ = single->getVectorsPtr();
+  for( std::size_t k=0; k < N*(nevex-idx); ++k)
+  {
+  V_[N*idx + k] = std::complex<double>( d(gen), d(gen) );
+  }
+  }
+  */
 
   // lowerb = lowerb + std::abs(lowerb)*0.25;
 
@@ -354,8 +356,8 @@ ChASE_PerfData ChASE_Algorithm<T>::solve(ChASE<T>* single, std::size_t N,
   Base<T> lowerb, upperb, lambda;
   Base<T> normH = single->getNorm();
   const double tol = tol_ * normH;
-  Base<T>* resid_ = new Base<T>[ nevex ];
-  Base<T>* residLast_ = new Base<T>[ nevex ];
+  Base<T>* resid_ = new Base<T>[nevex];
+  Base<T>* residLast_ = new Base<T>[nevex];
   // this will be copie into residLast
   for (auto i = 0; i < nevex; ++i) {
     residLast_[i] = std::numeric_limits<Base<T> >::max();
