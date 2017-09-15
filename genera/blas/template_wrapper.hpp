@@ -9,7 +9,6 @@
 // #include <mkl_lapack.h>
 // #include <mkl_blas.h>
 
-
 #include <fortran_mangle.h>
 #include <mkl_lapacke.h>
 
@@ -19,11 +18,10 @@
 #define CblasNoTrans 3
 #define CblasColMajor 1
 // #define LAPACK_COL_MAJOR 1
-#define  CBLAS_TRANSPOSE int
+#define CBLAS_TRANSPOSE int
 // #define lapack_logical int
 // #include <mkl_cblas.h>
 // #include <mkl_lapacke.h>
-
 
 template <typename T>
 Base<T> t_lange(char norm, std::size_t m, std::size_t n, T* A, std::size_t lda);
@@ -39,7 +37,8 @@ void t_gemm(const CBLAS_LAYOUT Layout, const CBLAS_TRANSPOSE transa,
 // void t_hemm(const CBLAS_LAYOUT Layout, const CBLAS_SIDE side,
 //             const CBLAS_UPLO uplo, const std::size_t m, const std::size_t n,
 //             const T* alpha, const T* a, const std::size_t lda, const T* b,
-//             const std::size_t ldb, const T* beta, T* c, const std::size_t ldc);
+//             const std::size_t ldb, const T* beta, T* c, const std::size_t
+//             ldc);
 
 template <typename T>
 void t_axpy(const std::size_t n, const T* a, const T* x, const std::size_t incx,
@@ -77,8 +76,8 @@ std::size_t t_stemr(int matrix_layout, char jobz, char range, std::size_t n,
                     int* isuppz, lapack_logical* tryrac);
 
 template <typename T>
-void t_dot(const std::size_t n, const T* x, const std::size_t incx, const T* y,
-           const std::size_t incy, T* dotc);
+T t_dot(const std::size_t n, const T* x, const std::size_t incx, const T* y,
+        const std::size_t incy);
 
 #include "template_wrapper_impl.hpp"
 

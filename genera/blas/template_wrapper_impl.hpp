@@ -76,9 +76,10 @@ void t_axpy(const std::size_t n, const std::complex<double>* a,
 }
 
 // xDOT
+/* TODO
 template <>
-void t_dot(const std::size_t n, const float* x, const std::size_t incx,
-           const float* y, const std::size_t incy, float* dot) {
+float t_dot(const std::size_t n, const float* x, const std::size_t incx,
+           const float* y, const std::size_t incy) {
   BlasInt n_ = n;
   BlasInt incx_ = incx;
   BlasInt incy_ = incy;
@@ -94,25 +95,39 @@ void t_dot(const std::size_t n, const double* x, const std::size_t incx,
 
   *dot = FC_GLOBAL(ddot, DDOT)(&n_, x, &incx_, y, &incy_);
 }
+*/
 template <>
-void t_dot(const std::size_t n, const std::complex<float>* x,
-           const std::size_t incx, const std::complex<float>* y,
-           const std::size_t incy, std::complex<float>* dotc) {
+scomplex t_dot(const std::size_t n, const std::complex<float>* x,
+               const std::size_t incx, const std::complex<float>* y,
+               const std::size_t incy) {
   BlasInt n_ = n;
   BlasInt incx_ = incx;
   BlasInt incy_ = incy;
+  scomplex result;
 
-  FC_GLOBAL(cdotc, CDOTC)(dotc, &n_, x, &incx_, y, &incy_);
+#if defined(FORTRAN_COMPLEX_FUNCTIONS_RETURN_VOID)
+  FC_GLOBAL(cdotc, CDOTC)(&result, &n_, x, &incx_, y, &incy_);
+#else
+  result = FC_GLOBAL(cdotc, CDOTC)(&n_, x, &incx_, y, &incy_);
+#endif
+  return result;
 }
 template <>
-void t_dot(const std::size_t n, const std::complex<double>* x,
-           const std::size_t incx, const std::complex<double>* y,
-           const std::size_t incy, std::complex<double>* dotc) {
+dcomplex t_dot(const std::size_t n, const std::complex<double>* x,
+               const std::size_t incx, const std::complex<double>* y,
+               const std::size_t incy) {
   BlasInt n_ = n;
   BlasInt incx_ = incx;
   BlasInt incy_ = incy;
+  dcomplex result;
 
-  FC_GLOBAL(zdotc, ZDOTC)(dotc, &n_, x, &incx_, y, &incy_);
+#if defined(FORTRAN_COMPLEX_FUNCTIONS_RETURN_VOID)
+  FC_GLOBAL(zdotc, ZDOTC)(&result, &n_, x, &incx_, y, &incy_);
+#else
+  result = FC_GLOBAL(zdotc, ZDOTC)(&n_, x, &incx_, y, &incy_);
+#endif
+
+  return result;
 }
 
 /*
@@ -486,7 +501,30 @@ template <>
 std::size_t t_gqr(int matrix_layout, std::size_t m, std::size_t n,
                   std::size_t k, std::complex<double>* a, std::size_t lda,
                   const std::complex<double>* tau) {
-  return LAPACKE_zungqr(matrix_layout, m, n, k, a, lda, tau);
+  //  return LAPACKE_zungqr(matrix_layout, m, n, k, a, lda, tau);
+
+  BlasInt m_ = m;
+  BlasInt n_ = n;
+  BlasInt k_ = k;
+  BlasInt lda_ = lda;
+
+  std::complex<double>* work;
+  std::complex<double> numwork;
+  BlasInt lwork, info;
+
+  lwork = -1;
+  FC_GLOBAL(zungqr, ZUNGQR)
+  (&m_, &n_, &k_, a, &lda_, tau, &numwork, &lwork, &info);
+  assert(info == 0);
+
+  lwork = static_cast<std::size_t>(real(numwork));
+  auto ptr = std::unique_ptr<std::complex<double>[]> {
+    new std::complex<double>[ lwork ]
+  };
+  work = ptr.get();
+
+  FC_GLOBAL(zungqr, ZUNGQR)(&m_, &n_, &k_, a, &lda_, tau, work, &lwork, &info);
+  assert(info == 0);
 }
 template <>
 std::size_t t_gqr(int matrix_layout, std::size_t m, std::size_t n,
@@ -537,7 +575,46 @@ t_heevd(int matrix_layout, char jobz, char uplo, std::size_t n, float* a,
 template <>
 std::size_t t_heevd(int matrix_layout, char jobz, char uplo, std::size_t n,
                     std::complex<double>* a, std::size_t lda, double* w) {
-  return LAPACKE_zheevd(matrix_layout, jobz, uplo, n, a, lda, w);
+  // return LAPACKE_zheevd(matrix_layout, jobz, uplo, n, a, lda, w);
+
+  BlasInt n_ = n;
+  BlasInt lda_ = lda;
+  BlasInt lwork, info, lrwork, liwork;
+
+  std::complex<double>* work;
+  std::complex<double> numwork;
+  double* rwork;
+  double rnumwork;
+  BlasInt* iwork;
+  BlasInt inumwork;
+
+  lwork = -1;
+  lrwork = -1;
+  liwork = -1;
+
+  FC_GLOBAL(zheevd, zHEEVD)
+  (&jobz, &uplo, &n_, a, &lda_, w, &numwork, &lwork, &rnumwork, &lrwork,
+   &inumwork, &liwork, &info);
+  assert(info == 0);
+
+  lwork = static_cast<std::size_t>(real(numwork));
+  auto ptr = std::unique_ptr<std::complex<double>[]> {
+    new std::complex<double>[ lwork ]
+  };
+  work = ptr.get();
+
+  lrwork = static_cast<std::size_t>(rnumwork);
+  auto rptr = std::unique_ptr<double[]>{new double[lrwork]};
+  rwork = rptr.get();
+
+  liwork = static_cast<std::size_t>(inumwork);
+  auto iptr = std::unique_ptr<BlasInt[]>{new BlasInt[liwork]};
+  iwork = iptr.get();
+
+  FC_GLOBAL(zheevd, ZHEEVD)
+  (&jobz, &uplo, &n_, a, &lda_, w, work, &lwork, rwork, &lrwork, iwork, &liwork,
+   &info);
+  assert(info == 0);
 }
 template <>
 std::size_t t_heevd(int matrix_layout, char jobz, char uplo, std::size_t n,
@@ -651,8 +728,40 @@ std::size_t t_stemr(int matrix_layout, char jobz, char range, std::size_t n,
                     std::size_t iu, int* m, double* w, double* z,
                     std::size_t ldz, std::size_t nzc, int* isuppz,
                     lapack_logical* tryrac) {
-  return LAPACKE_dstemr(matrix_layout, jobz, range, n, d, e, vl, vu, il, iu, m,
-                        w, z, ldz, nzc, isuppz, tryrac);
+  // return LAPACKE_dstemr(matrix_layout, jobz, range, n, d, e, vl, vu, il, iu,
+  // m,
+  //                       w, z, ldz, nzc, isuppz, tryrac);
+
+  BlasInt n_ = n;
+  BlasInt ldz_ = ldz;
+  BlasInt il_ = il;
+  BlasInt iu_ = iu;
+  BlasInt nzc_ = nzc;
+  BlasInt lwork, info, liwork;
+
+  double* work;
+  double numwork;
+  BlasInt* iwork;
+  BlasInt inumwork;
+
+  lwork = -1;
+  liwork = -1;
+
+  FC_GLOBAL(dstemr, SSTEMR)
+  (&jobz, &range, &n_, d, e, &vl, &vu, &il_, &iu_, m, w, z, &ldz_, &nzc_,
+   isuppz, tryrac, &numwork, &lwork, &inumwork, &liwork, &info);
+
+  lwork = static_cast<std::size_t>((numwork));
+  auto ptr = std::unique_ptr<double[]>{new double[lwork]};
+  work = ptr.get();
+
+  liwork = static_cast<std::size_t>(inumwork);
+  auto iptr = std::unique_ptr<BlasInt[]>{new BlasInt[liwork]};
+  iwork = iptr.get();
+
+  FC_GLOBAL(dstemr, DSTEMR)
+  (&jobz, &range, &n_, d, e, &vl, &vu, &il_, &iu_, m, w, z, &ldz_, &nzc_,
+   isuppz, tryrac, work, &lwork, iwork, &liwork, &info);
 }
 template <>
 std::size_t t_stemr(int matrix_layout, char jobz, char range, std::size_t n,

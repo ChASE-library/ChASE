@@ -248,7 +248,7 @@ class ChASE_Blas : public ChASE<T> {
       // w, 1);
       gemm_->applyVec(v1, w);
 
-      t_dot(n, v1, 1, w, 1, &alpha);
+      alpha = t_dot(n, v1, 1, w, 1);
 
       alpha = -alpha;
       t_axpy(n, &alpha, v1, 1, w, 1);
@@ -280,7 +280,7 @@ class ChASE_Blas : public ChASE<T> {
     Base<T> ul, ll;
     CHASE_INT tryrac = 0;
     CHASE_INT *isuppz = new CHASE_INT[2 * m];
-    Base<T> *ritzv = new Base<T>[ m ];
+    Base<T> *ritzv = new Base<T>[m];
 
     t_stemr<Base<T>>(LAPACK_COL_MAJOR, 'N', 'A', m, d, e, ul, ll, vl, vu,
                      &notneeded_m, ritzv_, NULL, m, m, isuppz, &tryrac);
@@ -344,7 +344,7 @@ class ChASE_Blas : public ChASE<T> {
       // for (std::size_t ll = 0; ll < 2; ++ll)
       //   std::cout << w[ll] << "\n";
 
-      t_dot(n, v1, 1, w, 1, &alpha);
+      alpha = t_dot(n, v1, 1, w, 1);
 
       alpha = -alpha;
       t_axpy(n, &alpha, v1, 1, w, 1);

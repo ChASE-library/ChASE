@@ -42,18 +42,27 @@ void FC_GLOBAL(ddot, DDOT)(const BlasInt* n, const double* x,
                            const BlasInt* incy, double* dot);
 */
 float FC_GLOBAL(sdot, SDOT)(const BlasInt* n, const float* x,
-                           const BlasInt* incx, const float* y,
-                           const BlasInt* incy);
+                            const BlasInt* incx, const float* y,
+                            const BlasInt* incy);
 double FC_GLOBAL(ddot, DDOT)(const BlasInt* n, const double* x,
-                           const BlasInt* incx, const double* y,
-                           const BlasInt* incy);
-void FC_GLOBAL(cdotc, CDOTC)(scomplex* pres, const BlasInt* n,
+                             const BlasInt* incx, const double* y,
+                             const BlasInt* incy);
+#if defined(FORTRAN_COMPLEX_FUNCTIONS_RETURN_VOID)
+void FC_GLOBAL(cdotc, CDOTC)(scomplex* result, const BlasInt* n,
                              const scomplex* x, const BlasInt* incx,
                              const scomplex* y, const BlasInt* incy);
-void FC_GLOBAL(zdotc, ZDOTC)(dcomplex* pres, const BlasInt* n,
+void FC_GLOBAL(zdotc, ZDOTC)(dcomplex* result, const BlasInt* n,
                              const dcomplex* x, const BlasInt* incx,
                              const dcomplex* y, const BlasInt* incy);
 
+#else
+scomplex FC_GLOBAL(cdotc, CDOTC)(const BlasInt* n, const scomplex* x,
+                                 const BlasInt* incx, const scomplex* y,
+                                 const BlasInt* incy);
+dcomplex FC_GLOBAL(zdotc, ZDOTC)(const BlasInt* n, const dcomplex* x,
+                                 const BlasInt* incx, const dcomplex* y,
+                                 const BlasInt* incy);
+#endif
 // xNRM2
 float FC_GLOBAL(snrm2, SNRM2)(const BlasInt* n, const float* x,
                               const BlasInt* incx);
@@ -156,7 +165,7 @@ void FC_GLOBAL(cungqr,
                CUNGQR)(const BlasInt* m, const BlasInt* n, const BlasInt* k,
                        scomplex* a, const BlasInt* lda, const scomplex* tau,
                        scomplex* work, const BlasInt* lwork, BlasInt* info);
-void FC_GLOBAL(zugnqr,
+void FC_GLOBAL(zungqr,
                ZUNGQR)(const BlasInt* m, const BlasInt* n, const BlasInt* k,
                        dcomplex* a, const BlasInt* lda, const dcomplex* tau,
                        dcomplex* work, const BlasInt* lwork, BlasInt* info);
@@ -202,8 +211,8 @@ void FC_GLOBAL(cheevd, CHEEVD)(const char* jobz, const char* uplo,
                                const BlasInt* liwork, BlasInt* info);
 void FC_GLOBAL(zheevd, ZHEEVD)(const char* jobz, const char* uplo,
                                const BlasInt* n, dcomplex* a,
-                               const BlasInt* lda, float* w, dcomplex* work,
-                               const BlasInt* lwork, float* rwork,
+                               const BlasInt* lda, double* w, dcomplex* work,
+                               const BlasInt* lwork, double* rwork,
                                const BlasInt* lrwork, BlasInt* iwork,
                                const BlasInt* liwork, BlasInt* info);
 
