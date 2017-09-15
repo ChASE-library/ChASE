@@ -146,7 +146,7 @@ class SkewedMatrixProperties {
         for (auto i = 0; i < dims_[dim_idx]; ++i) {
           // int array_of_sizes[2] = { N, max_block_ };
           // int array_of_subsizes[2] = { recvcounts_[dim_idx][i], max_block_ };
-          int array_of_sizes[2] = {N_, 1};
+          int array_of_sizes[2] = {static_cast<int>(N_), 1};
           int array_of_subsizes[2] = {recvcounts_[dim_idx][i], 1};
           int array_of_starts[2] = {displs_[dim_idx][i], 0};
 

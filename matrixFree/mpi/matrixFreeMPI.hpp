@@ -136,7 +136,7 @@ class MatrixFreeMPI : public MatrixFreeInterface<T> {
 
     // Set up the datatype for the recv
     for (auto i = 0; i < gsize; ++i) {
-      int array_of_sizes[2] = {N_, 1};
+      int array_of_sizes[2] = {static_cast<int>(N_), 1};
       int array_of_subsizes[2] = {recvcounts[i], 1};
       int array_of_starts[2] = {displs[i], 0};
 
