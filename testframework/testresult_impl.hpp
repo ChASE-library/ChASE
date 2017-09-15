@@ -52,9 +52,11 @@ void TestResult::save() {
   boost::archive::xml_oarchive oa(ofs);
 
 #ifdef __INTEL_COMPILER
-  oa << BOOST_SERIALIZATION_NVP(this);
+  oa << boost::serialization::make_nvp("TestResult", this);
+#elif defined(__GNUC__) || defined(__GNUG__)
+  oa << boost::serialization::make_nvp("TestResult", *this);
 #else
-  oa << BOOST_SERIALIZATION_NVP(*this);
+  oa << boost::serialization::make_nvp("TestResult", *this);
 #endif
 }
 
