@@ -4,7 +4,12 @@
 #include <hdf5.h>
 #include <mpi.h>
 #include <random>
-#include "chase_blas_factory.hpp"
+
+#include "genera/matrixfree/blas_templates.h"
+#include "genera/matrixfree/factory.h"
+
+
+using namespace chase;
 
 using T = std::complex<float>;
 
@@ -77,24 +82,24 @@ void c_chase_(MPI_Fint* Fcomm, std::complex<float>* H, int* N,
   //   HH = H;
   // }
 
-  ChASE_Config<std::complex<float>> config(*N, *nev, *nex);
+  ChaseConfig<std::complex<float>> config(*N, *nev, *nex);
   config.setTol(*tol);
   config.setDeg(*deg);
   config.setOpt(*opt == 'S' || *opt == 's');
   config.setApprox(*mode == 'A' || *mode == 'a');
   config.setLanczosIter(25);
 
-  std::unique_ptr<ChASE_Blas<T>> single = ChASEFactory<T>::constructChASE(
-      config, nullptr, V, ritzv, MPI_COMM_WORLD);
+  std::unique_ptr<MatrixFreeChase<T>> single =
+    constructChASE(config, static_cast<T*>(nullptr), V, ritzv, MPI_COMM_WORLD);
 
   CHASE_INT xoff;
   CHASE_INT yoff;
   CHASE_INT xlen;
   CHASE_INT ylen;
 
-  single->get_off(&xoff, &yoff, &xlen, &ylen);
+  single->GetOff(&xoff, &yoff, &xlen, &ylen);
 
-  std::complex<float>* HH = single->getMatrixPtr();
+  std::complex<float>* HH = single->GetMatrixPtr();
   if (mpi_size == 1) {
     for (auto i = 0; i < *N * *N; ++i) HH[i] = H[i];
 
@@ -109,8 +114,8 @@ void c_chase_(MPI_Fint* Fcomm, std::complex<float>* H, int* N,
       V[k] = std::complex<float>(d(gen), d(gen));
 
   //    float normH = std::max<float>(t_lange('1', *N, *N, HH, *N), float(1.0));
-  single->setNorm(6);
+  single->SetNorm(6);
 
-  single->solve();
+  single->Solve();
 }
 }

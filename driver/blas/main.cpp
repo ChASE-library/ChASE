@@ -4,9 +4,14 @@
 
 // #include "chase_blas.hpp"
 #include <boost/program_options.hpp>
+#include <limits>
 #include <random>
-#include "chase_blas_factory.hpp"
-#include "testresult.hpp"
+
+#include "genera/matrixfree/blas_templates.h"
+#include "genera/matrixfree/factory.h"
+#include "testframework/testresult.hpp"
+
+using namespace chase;
 
 // typedef std::complex<double> T;
 
@@ -20,29 +25,6 @@ void chase_read_matrix(MPI_Comm comm, std::size_t xoff, std::size_t yoff,
 }
 */
 namespace po = boost::program_options;
-
-template <typename T>
-T getRandomT(std::function<double(void)> f);
-
-template <>
-double getRandomT(std::function<double(void)> f) {
-  return double(f());
-}
-
-template <>
-float getRandomT(std::function<double(void)> f) {
-  return float(f());
-}
-
-template <>
-std::complex<double> getRandomT(std::function<double(void)> f) {
-  return std::complex<double>(f(), f());
-}
-
-template <>
-std::complex<float> getRandomT(std::function<double(void)> f) {
-  return std::complex<float>(f(), f());
-}
 
 template <typename T>
 void readMatrix(T* H, std::string path_in, std::string spin, std::size_t kpoint,
@@ -117,10 +99,16 @@ int do_chase(ChASE_DriverProblemConfig& conf, TestResult& TR) {
   bool legacy = conf.legacy;
   std::string spin = conf.spin;
 
+  int rank, size;
+
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+
   //----------------------------------------------------------------------------
   std::cout << std::setprecision(16);
 
-  ChASE_Config<T> config(N, nev, nex);
+  ChaseConfig<T> config(N, nev, nex);
   config.setTol(tol);
   config.setDeg(deg);
   config.setOpt(opt == "S");
@@ -132,20 +120,20 @@ int do_chase(ChASE_DriverProblemConfig& conf, TestResult& TR) {
   T* V = V__.get();
   Base<T>* Lambda = Lambda__.get();
 
-  // ChASE_Blas<T>* single = new ChASE_Blas<T>(config);
-  // std::unique_ptr<ChASE_Blas<T>> single_ =
+  // ChASE_Blas<T>* single = new MatrixFreeChase<T>(config);
+  // std::unique_ptr<MatrixFreeChase<T>> single_ =
   //     ChASEFactory<T>::constructChASE(config, NULL, NULL,
   //     MPI_COMM_WORLD);
-  std::unique_ptr<ChASE_Blas<T>> single_ = ChASEFactory<T>::constructChASE(
-      config, nullptr, V, Lambda, MPI_COMM_WORLD);
+  std::unique_ptr<MatrixFreeChase<T>> single_ = constructChASE(
+      config, static_cast<T*>(nullptr), V, Lambda, MPI_COMM_WORLD);
 
-  ChASE_Blas<T>* single = single_.get();
+  MatrixFreeChase<T>* single = single_.get();
 
   // std::random_device rd;
   std::mt19937 gen(2342.0);
   std::normal_distribution<> d;
 
-  T* H = single->getMatrixPtr();
+  T* H = single->GetMatrixPtr();
 
   // the example matrices are stored in std::complex< double >
   // so we read them as such and then case them
@@ -182,7 +170,6 @@ int do_chase(ChASE_DriverProblemConfig& conf, TestResult& TR) {
       } else {  // RANDOM.
         // Randomize V.
         for (std::size_t i = 0; i < N * (nev + nex); ++i) {
-          // V[i] = T(d(gen)); // TODO
           V[i] = getRandomT<T>([&]() { return d(gen); });
         }
         // Set Lambda to zeros. ( Lambda = zeros(N,1) )
@@ -207,26 +194,39 @@ int do_chase(ChASE_DriverProblemConfig& conf, TestResult& TR) {
     //     single->get_off(&xoff, &yoff, &xlen, &ylen);
     //     chase_read_matrix(MPI_COMM_WORLD, xoff, yoff, xlen, ylen, H);
     // } else {
-    std::cout << "reading from plain file\n";
-    readMatrix(H, path_in, spin, kpoint, i, ".bin", N * N, legacy);
-    //}
+    // std::cout << "reading from plain file\n";
+    // readMatrix(H, path_in, spin, kpoint, i, ".bin", N * N, legacy);
+    // //}
+
+    if (size == 1) {
+      readMatrix(H, path_in, spin, kpoint, i, ".bin", N * N, legacy);
+    } else {
+      single->GetOff(&xoff, &yoff, &xlen, &ylen);
+      std::vector<T> HH{N * N};
+      readMatrix(HH.data(), path_in, spin, kpoint, i, ".bin", N * N, legacy);
+
+      for (std::size_t i = 0; i < xlen; i++)
+        for (std::size_t j = 0; j < ylen; j++) {
+          H[i * N + j] = HH[yoff + j + (xoff * i) * N];
+        }
+    }
 
     // the input is complex double so we cast to T
     // for (std::size_t idx = 0; idx < N * N; ++idx) H[idx] = _H[idx];
 
     Base<T> normH;
-    normH = std::max(t_lange('1', N, N, H, N), Base<T>(1.0));
+    normH = std::max(t_lange('F', N, N, H, N), Base<T>(1.0));
 
     // normH = 9;
-    //    std::cout << "setting norm to static value " << normH << "\n";
+    // std::cout << "setting norm to static value " << normH << "\n";
 
-    single->setNorm(normH);
+    single->SetNorm(normH);
 
     //------------------------------SOLVE-CURRENT-PROBLEM-----------------------
-    single->solve();
+    single->Solve();
     //--------------------------------------------------------------------------
 
-    ChASE_PerfData perf = single->getPerfData();
+    ChasePerfData perf = single->GetPerfData();
 
     std::size_t iterations = perf.get_iter_count();
     std::size_t filteredVecs = perf.get_filtered_vecs();
@@ -235,8 +235,8 @@ int do_chase(ChASE_DriverProblemConfig& conf, TestResult& TR) {
     TR.registerValue(i, "iterations", iterations);
 
     //-------------------------- Calculate Residuals ---------------------------
-    Base<T> resd = single->residual();
-    Base<T> orth = single->orthogonality();
+    Base<T> resd = single->Residual();
+    Base<T> orth = single->Orthogonality();
 
     TR.registerValue(i, "resd", resd);
     TR.registerValue(i, "orth", orth);
@@ -250,6 +250,8 @@ int do_chase(ChASE_DriverProblemConfig& conf, TestResult& TR) {
                 << std::numeric_limits<Base<T>>::epsilon() * 100 << "\n";
       throw new std::exception();
     }
+
+    if (conf.sequence) config.setApprox(true);
 
   }  // for(int i = bgn; i <= end; ++i)
 
@@ -268,7 +270,7 @@ int do_chase(ChASE_DriverProblemConfig& conf, TestResult& TR) {
 
 int main(int argc, char* argv[]) {
 #ifdef HAS_MPI
-  MPI_Init(NULL, NULL);
+  MPI_Init(&argc, &argv);
 #endif
 
   ChASE_DriverProblemConfig conf;
@@ -396,7 +398,8 @@ int main(int argc, char* argv[]) {
   if (conf.isdouble)
     do_chase<std::complex<double>>(conf, TR);
   else  // single
-    do_chase<std::complex<float>>(conf, TR);
+    // do_chase<std::complex<float>>(conf, TR);
+    std::cout << "single not implemented\n";
   // } else {
   //   if (conf.isdouble)
   //     do_chase<double>(conf, TR);
