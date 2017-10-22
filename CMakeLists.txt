@@ -12,8 +12,8 @@ set(CMAKE_BUILD_TYPE Release)
 
 project( ChASE )
 
-set( ChASE_VERSION_MAJOR 0 )
-set( ChASE_VERSION_MINOR 9 )
+# set( ChASE_VERSION_MAJOR 0 )
+# set( ChASE_VERSION_MINOR 9 )
 
 
 # ## C++11 ##
@@ -26,7 +26,7 @@ add_definitions( "-DOUTPUT" )
 set( EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR} )
 set( LIBRARY_OUTPUT_PATH    ${CMAKE_BINARY_DIR} )
 
-include_directories("${PROJECT_SOURCE_DIR}")
+include_directories(${PROJECT_SOURCE_DIR})
 
 # underscores for FORTRAN
 enable_language( Fortran )
@@ -35,7 +35,7 @@ FortranCInterface_HEADER( ${CMAKE_BINARY_DIR}/include/fortran_mangle.h
   MACRO_NAMESPACE "FC_"
   SYMBOL_NAMESPACE "FC_"
   )
-include_directories( blas ${CMAKE_BINARY_DIR}/include/ )
+include_directories( blas "${CMAKE_BINARY_DIR}/include/" )
 
 # ## BLAS / LAPACK ##
 find_package( BLAS   REQUIRED )
@@ -212,11 +212,18 @@ endif()
 
 
 
-find_package(Elemental)
+#find_package(Elemental)
+set( Elemental_LIBRARIES  "-lelemental -lpmrrr -lpthread -mkl")
+set( Elemental_INCLUDE_DIRS "/homeb/slai/slai10/elemental/include")
+set( Elemental_DEFINITIONS "")
+set( Elemental_LINK_FLAGS "-L/homeb/slai/slai10/elemental/lib")
+
+
 SET( DRIVER_NAME "elemental_driver")
 add_executable(${DRIVER_NAME}  driver/elemental/main.cpp )
 target_link_libraries( ${DRIVER_NAME}
   ${Elemental_LIBRARIES}
+  ${MPI_CXX_LIBRARIES}
   )
 target_compile_definitions(${DRIVER_NAME} PUBLIC ${Elemental_DEFINITIONS} HAS_ELEMENTAL=1 HAS_MPI=1 
 #_GLIBCXX_USE_CXX11_ABI=1

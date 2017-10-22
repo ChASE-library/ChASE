@@ -7,9 +7,12 @@
 #include <limits>
 #include <random>
 
+#include "algorithm/table_exporter.h"
 #include "genera/matrixfree/blas_templates.h"
 #include "genera/matrixfree/factory.h"
 #include "testframework/testresult.hpp"
+
+extern double CHASE_ADJUST_LOWERB;
 
 using namespace chase;
 
@@ -65,6 +68,7 @@ struct ChASE_DriverProblemConfig {
   std::string path_eigp;  // TODO
   std::string path_out;
   std::string path_name;
+  std::string test_name;
 
   std::size_t kpoint;
   bool legacy;
@@ -103,7 +107,6 @@ int do_chase(ChASE_DriverProblemConfig& conf, TestResult& TR) {
 
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
-
 
   //----------------------------------------------------------------------------
   std::cout << std::setprecision(16);
@@ -197,17 +200,21 @@ int do_chase(ChASE_DriverProblemConfig& conf, TestResult& TR) {
     // std::cout << "reading from plain file\n";
     // readMatrix(H, path_in, spin, kpoint, i, ".bin", N * N, legacy);
     // //}
+    ////////////////////
 
-    if (size == 1) {
-      readMatrix(H, path_in, spin, kpoint, i, ".bin", N * N, legacy);
-    } else {
+    // if (size == 1) {
+    //   readMatrix(H, path_in, spin, kpoint, i, ".bin", N * N, legacy);
+    // } else
+    {
       single->GetOff(&xoff, &yoff, &xlen, &ylen);
-      std::vector<T> HH{N * N};
+      std::cout << xoff << " " << yoff << " " << xlen << " " << ylen << "\n";
+      std::vector<T> HH;
+      HH.reserve(N * N);
       readMatrix(HH.data(), path_in, spin, kpoint, i, ".bin", N * N, legacy);
 
-      for (std::size_t i = 0; i < xlen; i++)
-        for (std::size_t j = 0; j < ylen; j++) {
-          H[i * N + j] = HH[yoff + j + (xoff * i) * N];
+      for (std::size_t x = 0; x < xlen; x++)
+        for (std::size_t y = 0; y < ylen; y++) {
+          H[x + N * y] = HH[(xoff + x) + N * (yoff + y)];
         }
     }
 
@@ -242,6 +249,12 @@ int do_chase(ChASE_DriverProblemConfig& conf, TestResult& TR) {
     TR.registerValue(i, "orth", orth);
 
     perf.print();
+
+    // void export_sql(std::string name, std::size_t idx, std::size_t nev,
+    //                 std::size_t nex, bool approx, bool opt, ChasePerfData
+    //                 perf) {
+
+    export_sql<T>(conf.test_name, static_cast<std::size_t>(i), config, perf);
 
     if (resd > nev * normH * tol ||
         orth > (std::numeric_limits<Base<T>>::epsilon() * 100)) {
@@ -333,14 +346,16 @@ int main(int argc, char* argv[]) {
       "legacy", po::value<bool>(&conf.legacy)->default_value(false),      //
       "Use legacy naming scheme?");                                       //
 
-  std::string testName;
   po::options_description testOP("Test options");
-  testOP.add_options()(                                       //
-      "write",                                                //
-      "Write Profile"                                         //
-      )(                                                      //
-      "name", po::value<std::string>(&testName)->required(),  //
-      "Name of the testing profile");                         //
+  testOP.add_options()(                                                       //
+      "write",                                                                //
+      "Write Profile"                                                         //
+      )(                                                                      //
+      "adjust", po::value<double>(&CHASE_ADJUST_LOWERB)->default_value(0.0),  //
+      "TMP: ADJUST LOWERB"                                                    //
+      )(                                                                      //
+      "name", po::value<std::string>(&conf.test_name)->required(),            //
+      "Name of the testing profile");                                         //
 
   desc.add(testOP);
 
@@ -391,7 +406,7 @@ int main(int argc, char* argv[]) {
   else
     testResultCompare = true;
 
-  TestResult TR(testResultCompare, testName, conf.N, conf.nev, conf.nex,
+  TestResult TR(testResultCompare, conf.test_name, conf.N, conf.nev, conf.nex,
                 conf.deg, conf.tol, conf.mode[0], conf.opt[0], conf.sequence);
 
   //   if (conf.complex) {

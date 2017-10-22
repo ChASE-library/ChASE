@@ -6,9 +6,11 @@
 #ifdef HAS_MPI
 #include <mpi.h>
 #endif
+#include <chrono>
 #include <iostream>
 #include <vector>
-#include <chrono>
+
+#include "types.h"
 
 namespace chase {
 
@@ -26,13 +28,21 @@ class ChasePerfData {
 
   std::size_t get_filtered_vecs() { return chase_filtered_vecs; }
 
+  std::vector<std::chrono::duration<double>> get_timings() {
+    return timings;
+  }
+
   void add_iter_count(std::size_t add) { chase_iteration_count += add; }
 
   void add_filtered_vecs(std::size_t add) { chase_filtered_vecs += add; }
 
-  void start_clock(TimePtrs t) { start_times[t] = std::chrono::high_resolution_clock::now(); }
+  void start_clock(TimePtrs t) {
+    start_times[t] = std::chrono::high_resolution_clock::now();
+  }
 
-  void end_clock(TimePtrs t) { timings[t] += std::chrono::high_resolution_clock::now() - start_times[t]; }
+  void end_clock(TimePtrs t) {
+    timings[t] += std::chrono::high_resolution_clock::now() - start_times[t];
+  }
 
   void print() {
 // std::cout << "resd: " << norm << "\torth:" << norm2 << std::endl;
@@ -47,11 +57,11 @@ class ChasePerfData {
                  "QR | RR | Resid | "
               << std::endl;
 
+    int size = 1;
 #ifdef HAS_MPI
-    int size;
     MPI_Comm_size(MPI_COMM_WORLD, &size);
-    std::cout << " | " << size;
 #endif
+    std::cout << " | " << size;
     std::cout << " | " << chase_iteration_count << " | " << chase_filtered_vecs;
 
     this->print_timings();
@@ -71,15 +81,18 @@ class ChasePerfData {
     std::cout << " | " << timings[TimePtrs::All].count() << " | "
               << timings[TimePtrs::Lanczos].count() << " | "
               << timings[TimePtrs::Degrees].count() << " | "
-              << timings[TimePtrs::Filter].count() << " | " << timings[TimePtrs::Qr].count()
-              << " | " << timings[TimePtrs::Rr].count() << " | "
-              << timings[TimePtrs::Resids_Locking].count() << " | " << std::endl;
+              << timings[TimePtrs::Filter].count() << " | "
+              << timings[TimePtrs::Qr].count() << " | "
+              << timings[TimePtrs::Rr].count() << " | "
+              << timings[TimePtrs::Resids_Locking].count() << " | "
+              << std::endl;
   }
 
   std::size_t chase_iteration_count;
   std::size_t chase_filtered_vecs;
 
   std::vector<std::chrono::duration<double>> timings;
-  std::vector<std::chrono::time_point<std::chrono::high_resolution_clock>> start_times;
+  std::vector<std::chrono::time_point<std::chrono::high_resolution_clock>>
+      start_times;
 };
 }

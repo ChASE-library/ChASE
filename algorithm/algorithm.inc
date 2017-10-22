@@ -1,5 +1,7 @@
 /* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
 
+static double CHASE_ADJUST_LOWERB = 0.0;
+
 namespace chase {
 
 template <class T>
@@ -284,11 +286,6 @@ std::cout << "\n";
     }
   }
 
-#ifdef OUTPUT
-  std::cout << "Obtained " << idx << " vectors from DoS " << m << " " << idx
-            << std::endl;
-#endif
-
   if (idx > 0) {
     // cast to (generally complex T)
     T* ritzVc = new T[m * m]();
@@ -396,6 +393,8 @@ ChasePerfData Algorithm<T>::solve(Chase<T>* single, std::size_t N,
   std::size_t locked = 0;     // Number of converged eigenpairs.
   std::size_t iteration = 0;  // Current iteration.
   lowerb = *std::max_element(ritzv, ritzv + unconverged);
+  lambda = *std::min_element(ritzv_, ritzv_ + nevex);
+  lowerb = lowerb + (lowerb-lambda)/2 * CHASE_ADJUST_LOWERB;
 
   // TODO!!
   // perf.start_clock(ChasePerfData::TimePtrs::Qr);
@@ -403,7 +402,7 @@ ChasePerfData Algorithm<T>::solve(Chase<T>* single, std::size_t N,
   // perf.end_clock(ChasePerfData::TimePtrs::Qr);
 
   while (unconverged > nex && iteration < config.getMaxIter()) {
-    if (unconverged < nevex - DoSVectors || iteration == 0) {
+    if (unconverged < nevex) {
       lambda = *std::min_element(ritzv_, ritzv_ + nevex);
       // TODO: what is a reasonable definition for lowerb, based on nev or based
       // on nevex?
