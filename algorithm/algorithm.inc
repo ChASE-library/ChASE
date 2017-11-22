@@ -12,12 +12,10 @@ void swap_kj(std::size_t k, std::size_t j, T* array) {
 }
 
 template <class T>
-std::size_t Algorithm<T>::calc_degrees(Chase<T>* single, std::size_t N,
-                                       std::size_t unconverged, std::size_t nex,
-                                       Base<T> upperb, Base<T> lowerb,
-                                       Base<T> tol, Base<T>* ritzv,
-                                       Base<T>* resid, std::size_t* degrees,
-                                       std::size_t locked) {
+std::size_t Algorithm<T>::calc_degrees(
+    Chase<T>* single, std::size_t N, std::size_t unconverged, std::size_t nex,
+    Base<T> upperb, Base<T> lowerb, Base<T> tol, Base<T>* ritzv, Base<T>* resid,
+    Base<T>* residLast, std::size_t* degrees, std::size_t locked) {
   ChaseConfig<T> conf = single->GetConfig();
 
   Base<T> c = (upperb + lowerb) / 2;  // Center of the interval.
@@ -69,6 +67,7 @@ for( std::size_t i = 0; i < unconverged; ++i )
         swap_kj(k, j, degrees);  // for filter
         swap_kj(k, j, ritzv);
         swap_kj(k, j, resid);
+        swap_kj(k, j, residLast);
         single->Swap(k + locked, j + locked);
       }
 
@@ -99,19 +98,18 @@ std::size_t Algorithm<T>::locking(Chase<T>* single, std::size_t N,
       } else {
 #ifdef OUTPUT
         std::ostringstream oss;
-        oss << "locking unconverged pair " << resid[j] << " " << residLast[j]
-            << " tolerance is: " << tol << " val: " << Lritzv[j] << "\n";
+        oss << "locking unconverged pair is:" << resid[j]
+            << " was:" << residLast[j] << " tolerance is: " << tol
+            << " val: " << Lritzv[j] << "\n";
         single->Output(oss.str());
 #endif
       }
     }
     if (j != converged) {
-      swap_kj(j, converged, resid);      // if we filter again
+      swap_kj(j, converged, resid);  // if we filter again
       swap_kj(j, converged, residLast);  // if we filter again
       swap_kj(j, converged, Lritzv);
-      single->Swap(j, converged);
-
-      //      ColSwap( V, N, j, converged );
+      single->Swap(j + locked, converged + locked);
     }
     converged++;
   }
@@ -248,8 +246,7 @@ std::cout << "\n";
   double curr, prev = 0;
   const double sigma = 0.25;
   const double threshold = 2 * sigma * sigma / 10;
-  const double search = static_cast<double>(nevex + single->GetNex() / 2) /
-                        static_cast<double>(N);
+  const double search = static_cast<double>(nevex) / static_cast<double>(N);
   // CDF of a Gaussian, erf is a c++11 function
   const auto G = [&](double x) -> double {
     return 0.5 * (1 + std::erf(x / sqrt(2 * sigma * sigma)));
@@ -343,7 +340,7 @@ ChasePerfData Algorithm<T>::solve(Chase<T>* single, std::size_t N,
 
   ChaseConfig<T>& config = single->GetConfig();
 
-  double tol_ = config.getTol();
+  const double tol = config.getTol();
 
   // Parameter check
   // check_params(N, nev, nex, tol_, deg_ );
@@ -356,8 +353,6 @@ ChasePerfData Algorithm<T>::solve(Chase<T>* single, std::size_t N,
 
   // To store the approximations obtained from lanczos().
   Base<T> lowerb, upperb, lambda;
-  const Base<T> normH = single->GetNorm();
-  const double tol = tol_ * normH;
   Base<T>* resid_ = new Base<T>[nevex];
   Base<T>* residLast_ = new Base<T>[nevex];
   // this will be copie into residLast
@@ -368,6 +363,7 @@ ChasePerfData Algorithm<T>::solve(Chase<T>* single, std::size_t N,
 
   // store input values
   std::size_t deg = config.getDeg();
+  deg += deg % 2;
   std::size_t* degrees = degrees_;
   Base<T>* ritzv = ritzv_;
   Base<T>* resid = resid_;
@@ -378,7 +374,7 @@ ChasePerfData Algorithm<T>::solve(Chase<T>* single, std::size_t N,
   deg = std::min(deg, config.getMaxDeg());
   for (std::size_t i = 0; i < nevex; ++i) degrees[i] = deg;
 
-  single->Shift(0);
+  single->Shift(0.0);
 
   // --------------------------------- LANCZOS ---------------------------------
   perf.start_clock(ChasePerfData::TimePtrs::Lanczos);
@@ -386,6 +382,7 @@ ChasePerfData Algorithm<T>::solve(Chase<T>* single, std::size_t N,
   bool random = !config.use_approx();
   //  std::complex<double> *H = single->getMatrixPtr();
   //  std::complex<double> *V = single->getVectorsPtr();
+  // todo make m=4 a config
   std::size_t DoSVectors = lanczos(single, N, 4, config.getLanczosIter(), nevex,
                                    &upperb, random, random ? ritzv : NULL);
 
@@ -394,7 +391,7 @@ ChasePerfData Algorithm<T>::solve(Chase<T>* single, std::size_t N,
   std::size_t iteration = 0;  // Current iteration.
   lowerb = *std::max_element(ritzv, ritzv + unconverged);
   lambda = *std::min_element(ritzv_, ritzv_ + nevex);
-  lowerb = lowerb + (lowerb-lambda)/2 * CHASE_ADJUST_LOWERB;
+  lowerb = lowerb + (lowerb - lambda) / 2 * CHASE_ADJUST_LOWERB;
 
   // TODO!!
   // perf.start_clock(ChasePerfData::TimePtrs::Qr);
@@ -432,7 +429,7 @@ ChasePerfData Algorithm<T>::solve(Chase<T>* single, std::size_t N,
     if (config.do_optimization() && iteration != 0) {
       perf.start_clock(ChasePerfData::TimePtrs::Degrees);
       deg = calc_degrees(single, N, unconverged, nex, upperb, lowerb, tol,
-                         ritzv, resid, degrees, locked);
+                         ritzv, resid, residLast, degrees, locked);
       perf.end_clock(ChasePerfData::TimePtrs::Degrees);
     }
 
@@ -478,8 +475,11 @@ ChasePerfData Algorithm<T>::solve(Chase<T>* single, std::size_t N,
       residLast[i] = std::min(residLast[i], resid[i]);
     single->Resd(ritzv, resid, locked);
 
-    std::size_t new_converged = locking(single, N, unconverged, tol, ritzv,
-                                        resid, residLast, degrees, locked);
+    perf.add_iter_blocksize(unconverged);
+
+    std::size_t new_converged =
+        locking(single, N, unconverged - nex, tol, ritzv, resid, residLast,
+                degrees, locked);
 
     perf.end_clock(ChasePerfData::TimePtrs::Resids_Locking);
 

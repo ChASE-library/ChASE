@@ -29,7 +29,7 @@ class Algorithm {
   static std::size_t calc_degrees(Chase<T>* single, std::size_t N,
                                   std::size_t unconverged, std::size_t nex,
                                   Base<T> upperb, Base<T> lowerb, Base<T> tol,
-                                  Base<T>* ritzv, Base<T>* resid,
+                                  Base<T>* ritzv, Base<T>* resid, Base<T>* residLast,
                                   std::size_t* degrees, std::size_t locked);
 
   static std::size_t locking(Chase<T>* single, std::size_t N,

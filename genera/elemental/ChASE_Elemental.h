@@ -76,8 +76,8 @@ class ElementalChase : public Chase<T> {
   void RR(Base<T>* ritzv, CHASE_INT block) override {
     //*
     El::Grid const& grid = H_.Grid();
-    El::DistMatrix<T> H_reduced{block, block, grid};
-    El::DistMatrix<T> V_reduced{block, block, grid};
+    El::DistMatrix<T> H_reduced{grid};
+    El::DistMatrix<T> V_reduced{grid};
     El::DistMatrix<Base<T>, El::VR, El::STAR> ritzv_tmp{block, 1, grid};
 
     auto approxV =
@@ -85,16 +85,9 @@ class ElementalChase : public Chase<T> {
     auto workspace =
         El::View(*workspace_, 0, locked_, N_, nex_ + nev_ - locked_);
 
-    El::Gemm(El::NORMAL, El::NORMAL,  //
-             T(1.0),                  //
-             H_,                      //
-             approxV,                 //
-             T(0.0),                  //
-             workspace                //
-             );                       //
+    H_reduced.AlignWith(approxV);
+    H_reduced.Resize(block, block);
 
-    // THis workss??!
-    /*
     El::Hemm(El::LEFT, El::LOWER,  //
              T(1.0),               //
              H_,                   //
@@ -102,7 +95,7 @@ class ElementalChase : public Chase<T> {
              T(0.0),               //
              workspace             //
              );
-    */
+
     El::Gemm(El::ADJOINT, El::NORMAL,  //
              T(1.0),                   //
              approxV,                  //
@@ -116,10 +109,14 @@ class ElementalChase : public Chase<T> {
     for (std::size_t i = 0; i < ritzv_tmp.Height(); ++i)
       ritzv[i] = ritzv_tmp.Get(i, 0);
 
+    // Back transformation.
+    H_reduced.AlignWith(approxV);
+    H_reduced = V_reduced;
+
     El::Gemm(El::NORMAL, El::NORMAL,  //
              T(1.0),                  //
              approxV,                 //
-             V_reduced,               //
+             H_reduced,               //
              T(0.0),                  //
              workspace                //
              );
@@ -193,7 +190,6 @@ class ElementalChase : public Chase<T> {
     // El::Hemm(El::LEFT, El::LOWER, T(1.0), H_, approxV, T(0.0), workspace);
 
     Base<T> norm_2;
-    Base<T> norm = (std::max(this->GetNorm(), 1.0));
     for (std::size_t i = 0; i < workspace.Width(); ++i) {
       // auto wi = El::View(workspace, El::IR(0, N_), El::IR(i, i + 1));
       auto wi = El::View(workspace, 0, i, N_, 1);
@@ -204,7 +200,7 @@ class ElementalChase : public Chase<T> {
       // || H x - lambda x || / ( max( ||H||, |lambda| ) )
       // norm_2 <- || H x - lambda x ||
       norm_2 = El::Nrm2(wi);
-      resid[i] = norm_2 / norm;
+      resid[i] = norm_2;
     }
 
     /*/
@@ -388,7 +384,10 @@ class ElementalChase : public Chase<T> {
              );                              //
   }
 
-  Base<T> GetNorm() override { return H_norm_; };
+  Base<T> GetNorm() override {
+    std::err << "not implemented\n";
+    return 0.0;
+  };
 
   std::size_t GetN() override { return H_.Width(); }
 
@@ -400,12 +399,7 @@ class ElementalChase : public Chase<T> {
   ChaseConfig<T>& GetConfig() { return config_; }
 
   void Solve() {
-    // V_ = *approxV_;
-    // approxV_ = &V_;
-    // workspace_ = &W_;
-    // El::MakeGaussian(W_);  // TODO(jan)
     locked_ = 0;
-    H_norm_ = El::FrobeniusNorm(H_);
     ChasePerfData p =
         Algorithm<T>::solve(this, N_, this->GetRitzv(), nev_, nex_);
     if (H_.Grid().Rank() == 0) p.print();
@@ -440,7 +434,6 @@ class ElementalChase : public Chase<T> {
   std::size_t locked_;
 
   ChaseConfig<T>& config_;
-  Base<T> H_norm_;
 
   El::DistMatrix<T>& H_;
   El::DistMatrix<T> V_;

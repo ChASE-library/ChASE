@@ -41,6 +41,12 @@ void export_sql(std::string name, std::size_t idx, ChaseConfig<T> conf,
   names.push_back("filtered_vecs");
   values.push_back(std::to_string(perf.get_filtered_vecs()));
 
+  names.push_back("GFLOPS");
+  values.push_back(std::to_string(perf.get_flops(conf.getN())));
+
+  names.push_back("GFLOPS_filter");
+  values.push_back(std::to_string(perf.get_filter_flops(conf.getN())));
+
   names.push_back("name");
   values.push_back("'" + name + "'");
 
@@ -70,7 +76,6 @@ void export_sql(std::string name, std::size_t idx, ChaseConfig<T> conf,
 
   names.push_back("chase_adjust_lowerb");
   values.push_back(std::to_string(CHASE_ADJUST_LOWERB));
-
 
   auto timings = perf.get_timings();
   names.push_back("time_all");
@@ -109,4 +114,4 @@ void export_sql(std::string name, std::size_t idx, ChaseConfig<T> conf,
   for (auto value : values) std::cout << value << ",";
   std::cout << "'" + now + "' );\n";
 }
-} // namespace chase
+}  // namespace chase

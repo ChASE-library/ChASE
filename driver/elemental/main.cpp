@@ -9,6 +9,8 @@ using std::chrono::duration_cast;
 
 using T = El::Complex<double>;
 
+extern double CHASE_ADJUST_LOWERB;
+
 int main(int argc, char* argv[]) {
   El::Initialize(argc, argv);
   El::mpi::Comm comm = El::mpi::COMM_WORLD;
@@ -21,8 +23,11 @@ int main(int argc, char* argv[]) {
   const El::Int bgn = El::Input<El::Int>("--bgn", "bgn seq");
   const El::Int end = El::Input<El::Int>("--end", "end seq");
   const bool opt = El::Input<bool>("--opt", "optimize?", true);
+  const double adjust = El::Input<bool>("--adjust", "adjust", 0.0);
   El::ProcessInput();
 
+
+  CHASE_ADJUST_LOWERB = adjust;
   //*
   // std::size_t N = 3893;
   // std::size_t nev = 256;
@@ -81,7 +86,7 @@ int main(int argc, char* argv[]) {
       // || H x - lambda x || / ( max( ||H||, |lambda| ) )
       // norm_2 <- || H x - lambda x ||
       Base<T> norm_2 = El::Nrm2(wi);
-      Base<T> norm = norm_2 / (std::max(single.GetNorm(), 1.0));
+      Base<T> norm = norm_2;
 
       largest_norm = std::max(norm, largest_norm);
 
