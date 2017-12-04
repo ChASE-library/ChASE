@@ -478,6 +478,8 @@ ChasePerfData Algorithm<T>::solve(Chase<T>* single, std::size_t N,
 
     std::size_t new_converged = locking(single, N, unconverged, tol, ritzv,
                                         resid, residLast, degrees, locked);
+    perf.add_iter_blocksize(unconverged);
+
 
     perf.end_clock(ChasePerfData::TimePtrs::Resids_Locking);
 

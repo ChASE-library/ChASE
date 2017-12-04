@@ -241,12 +241,7 @@ int do_chase(ChASE_DriverProblemConfig& conf, TestResult& TR) {
 
     TR.registerValue(i, "resd", resd);
     TR.registerValue(i, "orth", orth);
-
-    perf.print();
-
-    // void export_sql(std::string name, std::size_t idx, std::size_t nev,
-    //                 std::size_t nex, bool approx, bool opt, ChasePerfData
-    //                 perf) {
+    perf.print(N);
 
     export_sql<T>(conf.test_name, static_cast<std::size_t>(i), config, perf);
 
