@@ -63,9 +63,6 @@ class MatrixFreeChase : public chase::Chase<T> {
 
   void Solve() {
     locked_ = 0;
-    approxV_ = V_;
-    workspace_ = W_;
-
     perf_ = chase::Algorithm<T>::solve(this, N_, ritzv_, nev_, nex_);
   }
 
@@ -114,7 +111,9 @@ class MatrixFreeChase : public chase::Chase<T> {
     std::size_t nevex = nev_ + nex_;
     T *tau = workspace_ + fixednev * N_;
 
-    std::memcpy(workspace_, approxV_, N_ * fixednev * sizeof(T));
+    // we don't need this, as we copy to workspace when locking
+    // std::memcpy(workspace_, approxV_, N_ * fixednev * sizeof(T));
+
     t_geqrf(LAPACK_COL_MAJOR, N_, nevex, approxV_, N_, tau);
     t_gqr(LAPACK_COL_MAJOR, N_, nevex, nevex, approxV_, N_, tau);
 
@@ -154,9 +153,14 @@ class MatrixFreeChase : public chase::Chase<T> {
 
     t_heevd(LAPACK_COL_MAJOR, 'V', 'L', block, A, block, ritzv);
 
-    t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, N_, block, block, &One,
-           approxV_ + locked_ * N_, N_, A, block, &Zero,
-           workspace_ + locked_ * N_, N_);
+    t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans,  //
+           N_, block, block,                           //
+           &One,                                       //
+           approxV_ + locked_ * N_, N_,                //
+           A, block,                                   //
+           &Zero,                                      //
+           workspace_ + locked_ * N_, N_               //
+           );
 
     std::swap(approxV_, workspace_);
     // we can swap, since the locked part were copied over as part of the QR
@@ -168,8 +172,6 @@ class MatrixFreeChase : public chase::Chase<T> {
     T alpha = T(1.0);
     T beta = T(0.0);
     CHASE_INT unconverged = (nev_ + nex_) - fixednev;
-
-    Base<T> norm = std::max(this->GetNorm(), 1.0);
 
     gemm_->preApplication(approxV_, locked_, unconverged);
     gemm_->apply(alpha, beta, 0, unconverged);
@@ -183,14 +185,16 @@ class MatrixFreeChase : public chase::Chase<T> {
     //        &beta,                                      //
     //        workspace_ + locked_ * N_, N_);
 
-    Base<T> norm1;
     for (std::size_t i = 0; i < unconverged; ++i) {
       beta = T(-ritzv[i]);
-      t_axpy(N_, &beta, (approxV_ + locked_ * N_) + N_ * i, 1,
-             (workspace_ + locked_ * N_) + N_ * i, 1);
+      t_axpy(                                      //
+          N_,                                      //
+          &beta,                                   //
+          (approxV_ + locked_ * N_) + N_ * i, 1,   //
+          (workspace_ + locked_ * N_) + N_ * i, 1  //
+          );
 
-      norm1 = t_nrm2(N_, (workspace_ + locked_ * N_) + N_ * i, 1);
-      resid[i] = norm1 / norm;
+      resid[i] = t_nrm2(N_, (workspace_ + locked_ * N_) + N_ * i, 1);
     }
   };
 
@@ -250,6 +254,7 @@ class MatrixFreeChase : public chase::Chase<T> {
     for (std::size_t k = 0; k < m; ++k) {
       // t_gemv(CblasColMajor, CblasNoTrans, N_, N_, &One, H_, N_, v1, 1, &Zero,
       // w, 1);
+
       gemm_->applyVec(v1, w);
 
       alpha = t_dot(n, v1, 1, w, 1);
@@ -431,7 +436,7 @@ class MatrixFreeChase : public chase::Chase<T> {
 
   Base<T> Residual() {
     for (CHASE_INT j = 0; j < N_ * (nev_ + nex_); ++j) {
-      W_[j] = V_[j];
+      workspace_[j] = approxV_[j];
     }
 
     //    memcpy(W, V, sizeof(MKL_Complex16)*N*nev);
@@ -441,12 +446,12 @@ class MatrixFreeChase : public chase::Chase<T> {
     int iOne = 1;
     for (int ttz = 0; ttz < nev_; ttz++) {
       eigval = -1.0 * ritzv_[ttz];
-      t_scal(N_, &eigval, W_ + ttz * N_, 1);
+      t_scal(N_, &eigval, workspace_ + ttz * N_, 1);
     }
 
-    gemm_->preApplication(V_, W_, 0, nev_);
+    gemm_->preApplication(approxV_, workspace_, 0, nev_);
     gemm_->apply(one, one, 0, nev_);
-    gemm_->postApplication(W_, nev_);
+    gemm_->postApplication(workspace_, nev_);
 
     // t_hemm(CblasColMajor, CblasLeft, CblasLower,  //
     //        N_, nev_,                              //
@@ -455,8 +460,7 @@ class MatrixFreeChase : public chase::Chase<T> {
     //        V_, N_,                                //
     //        &one, W_, N_);
 
-    Base<T> norm = t_lange('M', N_, nev_, W_, N_);
-    // TR.registerValue( i, "resd", norm);
+    Base<T> norm = t_lange('M', N_, nev_, workspace_, N_);
     return norm;
   }
 
@@ -476,7 +480,7 @@ class MatrixFreeChase : public chase::Chase<T> {
     }
 
     t_gemm(CblasColMajor, CblasConjTrans, CblasNoTrans, nev_, nev_, N_, &one,
-           &*V_, N_, &*V_, N_, &neg_one, &unity[0], nev_);
+           &*approxV_, N_, &*approxV_, N_, &neg_one, &unity[0], nev_);
     Base<T> norm = t_lange('M', nev_, nev_, &unity[0], nev_);
     return norm;
   }

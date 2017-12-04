@@ -12,12 +12,10 @@ void swap_kj(std::size_t k, std::size_t j, T* array) {
 }
 
 template <class T>
-std::size_t Algorithm<T>::calc_degrees(Chase<T>* single, std::size_t N,
-                                       std::size_t unconverged, std::size_t nex,
-                                       Base<T> upperb, Base<T> lowerb,
-                                       Base<T> tol, Base<T>* ritzv,
-                                       Base<T>* resid, std::size_t* degrees,
-                                       std::size_t locked) {
+std::size_t Algorithm<T>::calc_degrees(
+    Chase<T>* single, std::size_t N, std::size_t unconverged, std::size_t nex,
+    Base<T> upperb, Base<T> lowerb, Base<T> tol, Base<T>* ritzv, Base<T>* resid,
+    Base<T>* residLast, std::size_t* degrees, std::size_t locked) {
   ChaseConfig<T> conf = single->GetConfig();
 
   Base<T> c = (upperb + lowerb) / 2;  // Center of the interval.
@@ -69,6 +67,7 @@ for( std::size_t i = 0; i < unconverged; ++i )
         swap_kj(k, j, degrees);  // for filter
         swap_kj(k, j, ritzv);
         swap_kj(k, j, resid);
+        swap_kj(k, j, residLast);
         single->Swap(k + locked, j + locked);
       }
 
@@ -99,19 +98,18 @@ std::size_t Algorithm<T>::locking(Chase<T>* single, std::size_t N,
       } else {
 #ifdef OUTPUT
         std::ostringstream oss;
-        oss << "locking unconverged pair " << resid[j] << " " << residLast[j]
-            << " tolerance is: " << tol << " val: " << Lritzv[j] << "\n";
+        oss << "locking unconverged pair is:" << resid[j]
+            << " was:" << residLast[j] << " tolerance is: " << tol
+            << " val: " << Lritzv[j] << "\n";
         single->Output(oss.str());
 #endif
       }
     }
     if (j != converged) {
-      swap_kj(j, converged, resid);      // if we filter again
+      swap_kj(j, converged, resid);  // if we filter again
       swap_kj(j, converged, residLast);  // if we filter again
       swap_kj(j, converged, Lritzv);
-      single->Swap(j, converged);
-
-      //      ColSwap( V, N, j, converged );
+      single->Swap(j + locked, converged + locked);
     }
     converged++;
   }
@@ -430,7 +428,7 @@ ChasePerfData Algorithm<T>::solve(Chase<T>* single, std::size_t N,
     if (config.do_optimization() && iteration != 0) {
       perf.start_clock(ChasePerfData::TimePtrs::Degrees);
       deg = calc_degrees(single, N, unconverged, nex, upperb, lowerb, tol,
-                         ritzv, resid, degrees, locked);
+                         ritzv, resid, residLast, degrees, locked);
       perf.end_clock(ChasePerfData::TimePtrs::Degrees);
     }
 
@@ -476,10 +474,11 @@ ChasePerfData Algorithm<T>::solve(Chase<T>* single, std::size_t N,
       residLast[i] = std::min(residLast[i], resid[i]);
     single->Resd(ritzv, resid, locked);
 
-    std::size_t new_converged = locking(single, N, unconverged, tol, ritzv,
-                                        resid, residLast, degrees, locked);
     perf.add_iter_blocksize(unconverged);
 
+    std::size_t new_converged =
+        locking(single, N, unconverged - nex, tol, ritzv, resid, residLast,
+                degrees, locked);
 
     perf.end_clock(ChasePerfData::TimePtrs::Resids_Locking);
 
