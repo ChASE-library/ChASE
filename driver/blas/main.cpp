@@ -181,7 +181,7 @@ int do_chase(ChASE_DriverProblemConfig& conf, TestResult& TR) {
     } else {
       // when doing a sequence and we are not in the first iteration, we use the
       // previous solution
-      mode = "A";
+      config.setApprox(true);
     }
 
     CHASE_INT xoff;
@@ -254,11 +254,9 @@ int do_chase(ChASE_DriverProblemConfig& conf, TestResult& TR) {
         orth > (std::numeric_limits<Base<T>>::epsilon() * 100)) {
       std::cout << "resd:" << resd << "(" << nev * tol << ")\n"
                 << "orth: " << orth << "("
-                << std::numeric_limits<Base<T>>::epsilon() * 100 << "\n";
+                << std::numeric_limits<Base<T>>::epsilon() * 100 << ")\n";
       throw new std::exception();
     }
-
-    if (conf.sequence) config.setApprox(true);
 
   }  // for(int i = bgn; i <= end; ++i)
 

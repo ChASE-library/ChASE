@@ -133,7 +133,7 @@ class MatrixFreeChase : public chase::Chase<T> {
     gemm_->apply(One, Zero, 0, block);
     gemm_->postApplication(workspace_, block);
 
-    // V <- H*V
+    // W <- H*V
     // t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans,  //
     //        N_, block, N_,                              //
     //        &One,                                       //
