@@ -246,8 +246,7 @@ std::cout << "\n";
   double curr, prev = 0;
   const double sigma = 0.25;
   const double threshold = 2 * sigma * sigma / 10;
-  const double search = static_cast<double>(nevex + single->GetNex() / 2) /
-                        static_cast<double>(N);
+  const double search = static_cast<double>(nevex) / static_cast<double>(N);
   // CDF of a Gaussian, erf is a c++11 function
   const auto G = [&](double x) -> double {
     return 0.5 * (1 + std::erf(x / sqrt(2 * sigma * sigma)));
@@ -364,6 +363,7 @@ ChasePerfData Algorithm<T>::solve(Chase<T>* single, std::size_t N,
 
   // store input values
   std::size_t deg = config.getDeg();
+  deg += deg % 2;
   std::size_t* degrees = degrees_;
   Base<T>* ritzv = ritzv_;
   Base<T>* resid = resid_;
@@ -374,7 +374,7 @@ ChasePerfData Algorithm<T>::solve(Chase<T>* single, std::size_t N,
   deg = std::min(deg, config.getMaxDeg());
   for (std::size_t i = 0; i < nevex; ++i) degrees[i] = deg;
 
-  single->Shift(0);
+  single->Shift(0.0);
 
   // --------------------------------- LANCZOS ---------------------------------
   perf.start_clock(ChasePerfData::TimePtrs::Lanczos);
@@ -382,6 +382,7 @@ ChasePerfData Algorithm<T>::solve(Chase<T>* single, std::size_t N,
   bool random = !config.use_approx();
   //  std::complex<double> *H = single->getMatrixPtr();
   //  std::complex<double> *V = single->getVectorsPtr();
+  // todo make m=4 a config
   std::size_t DoSVectors = lanczos(single, N, 4, config.getLanczosIter(), nevex,
                                    &upperb, random, random ? ritzv : NULL);
 
@@ -390,7 +391,7 @@ ChasePerfData Algorithm<T>::solve(Chase<T>* single, std::size_t N,
   std::size_t iteration = 0;  // Current iteration.
   lowerb = *std::max_element(ritzv, ritzv + unconverged);
   lambda = *std::min_element(ritzv_, ritzv_ + nevex);
-  lowerb = lowerb + (lowerb-lambda)/2 * CHASE_ADJUST_LOWERB;
+  lowerb = lowerb + (lowerb - lambda) / 2 * CHASE_ADJUST_LOWERB;
 
   // TODO!!
   // perf.start_clock(ChasePerfData::TimePtrs::Qr);
@@ -442,7 +443,7 @@ ChasePerfData Algorithm<T>::solve(Chase<T>* single, std::size_t N,
         oss << degrees[k] << "\t" << resid[k] << "\t" << residLast[k] << "\t"
             << ritzv[k] << "\n";
 
-      single->Output(oss.str());
+      //single->Output(oss.str());
     }
 /*
         std::cout << "degrees\tresid\tritzv\n";
