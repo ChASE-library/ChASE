@@ -86,7 +86,7 @@ int main(int argc, char* argv[]) {
       // || H x - lambda x || / ( max( ||H||, |lambda| ) )
       // norm_2 <- || H x - lambda x ||
       Base<T> norm_2 = El::Nrm2(wi);
-      Base<T> norm = norm_2 / (std::max(single.GetNorm(), 1.0));
+      Base<T> norm = norm_2;
 
       largest_norm = std::max(norm, largest_norm);
 

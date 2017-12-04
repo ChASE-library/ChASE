@@ -19,7 +19,6 @@ class ElementalChase : public Chase<T> {
         nex_(config.getNex()),
         locked_(0),
         config_(config),
-        H_norm_(1),
         H_(H),
         V_(N_, nev_ + nex_, H_.Grid()),
         W_(N_, nev_ + nex_, H_.Grid()),
@@ -190,7 +189,6 @@ class ElementalChase : public Chase<T> {
     // El::Hemm(El::LEFT, El::LOWER, T(1.0), H_, approxV, T(0.0), workspace);
 
     Base<T> norm_2;
-    Base<T> norm = (std::max(this->GetNorm(), 1.0));
     for (std::size_t i = 0; i < workspace.Width(); ++i) {
       // auto wi = El::View(workspace, El::IR(0, N_), El::IR(i, i + 1));
       auto wi = El::View(workspace, 0, i, N_, 1);
@@ -201,7 +199,7 @@ class ElementalChase : public Chase<T> {
       // || H x - lambda x || / ( max( ||H||, |lambda| ) )
       // norm_2 <- || H x - lambda x ||
       norm_2 = El::Nrm2(wi);
-      resid[i] = norm_2 / norm;
+      resid[i] = norm_2;
     }
 
     /*/
@@ -385,7 +383,10 @@ class ElementalChase : public Chase<T> {
              );                              //
   }
 
-  Base<T> GetNorm() override { return H_norm_; };
+  Base<T> GetNorm() override {
+    std::cerr << "not implemented\n";
+    return 0.0;
+  };
 
   std::size_t GetN() override { return H_.Width(); }
 
@@ -398,7 +399,6 @@ class ElementalChase : public Chase<T> {
 
   void Solve() {
     locked_ = 0;
-    H_norm_ = El::FrobeniusNorm(H_);
     ChasePerfData p =
         Algorithm<T>::solve(this, N_, this->GetRitzv(), nev_, nex_);
     if (H_.Grid().Rank() == 0) p.print();
@@ -433,7 +433,6 @@ class ElementalChase : public Chase<T> {
   std::size_t locked_;
 
   ChaseConfig<T>& config_;
-  Base<T> H_norm_;
 
   El::DistMatrix<T>& H_;
   El::DistMatrix<T> V_;

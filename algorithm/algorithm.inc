@@ -343,7 +343,7 @@ ChasePerfData Algorithm<T>::solve(Chase<T>* single, std::size_t N,
 
   ChaseConfig<T>& config = single->GetConfig();
 
-  double tol_ = config.getTol();
+  const double tol = config.getTol();
 
   // Parameter check
   // check_params(N, nev, nex, tol_, deg_ );
@@ -356,8 +356,6 @@ ChasePerfData Algorithm<T>::solve(Chase<T>* single, std::size_t N,
 
   // To store the approximations obtained from lanczos().
   Base<T> lowerb, upperb, lambda;
-  const Base<T> normH = single->GetNorm();
-  const double tol = tol_ * normH;
   Base<T>* resid_ = new Base<T>[nevex];
   Base<T>* residLast_ = new Base<T>[nevex];
   // this will be copie into residLast

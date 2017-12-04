@@ -221,13 +221,7 @@ int do_chase(ChASE_DriverProblemConfig& conf, TestResult& TR) {
     // the input is complex double so we cast to T
     // for (std::size_t idx = 0; idx < N * N; ++idx) H[idx] = _H[idx];
 
-    Base<T> normH;
-    normH = std::max(t_lange('F', N, N, H, N), Base<T>(1.0));
-
-    // normH = 9;
-    // std::cout << "setting norm to static value " << normH << "\n";
-
-    single->SetNorm(normH);
+    single->SetNorm(0.0);
 
     //------------------------------SOLVE-CURRENT-PROBLEM-----------------------
     single->Solve();
@@ -256,9 +250,9 @@ int do_chase(ChASE_DriverProblemConfig& conf, TestResult& TR) {
 
     export_sql<T>(conf.test_name, static_cast<std::size_t>(i), config, perf);
 
-    if (resd > nev * normH * tol ||
+    if (resd > nev * tol ||
         orth > (std::numeric_limits<Base<T>>::epsilon() * 100)) {
-      std::cout << "resd:" << resd << "(" << nev * normH * tol << ")\n"
+      std::cout << "resd:" << resd << "(" << nev * tol << ")\n"
                 << "orth: " << orth << "("
                 << std::numeric_limits<Base<T>>::epsilon() * 100 << "\n";
       throw new std::exception();
