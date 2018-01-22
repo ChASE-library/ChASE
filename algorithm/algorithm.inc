@@ -1,6 +1,6 @@
 /* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
 
-static double CHASE_ADJUST_LOWERB = 0.0;
+double CHASE_ADJUST_LOWERB = 0.0;
 
 namespace chase {
 

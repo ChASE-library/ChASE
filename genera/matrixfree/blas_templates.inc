@@ -84,15 +84,28 @@ void t_axpy(const std::size_t n, const std::complex<double>* a,
 
 // Dot is not worth the trouble to link to a blas function
 template <typename T>
-T t_dot(const std::size_t n, const T* x, const std::size_t incx, const T* y,
-        const std::size_t incy) {
-  T gamma;
-  T alpha = 0;
+std::complex<T> t_dot(const std::size_t n, const std::complex<T>* x,
+                      const std::size_t incx, const std::complex<T>* y,
+                      const std::size_t incy) {
+  std::complex<T> gamma;
+  std::complex<T> alpha = 0;
   for (BlasInt i = 0; i < n; ++i) {
     alpha += std::conj(x[i * incx]) * y[i * incy];
   }
   return alpha;
 }
+
+template <typename T>
+T t_dot(const std::size_t n, const T* x, const std::size_t incx, const T* y,
+        const std::size_t incy) {
+  T gamma;
+  T alpha = 0;
+  for (BlasInt i = 0; i < n; ++i) {
+    alpha += (x[i * incx]) * y[i * incy];
+  }
+  return alpha;
+}
+
 /*
 template <>
 double
@@ -787,4 +800,4 @@ std::size_t t_stemr(int matrix_layout, char jobz, char range, std::size_t n,
   (&jobz, &range, &n_, d, e, &vl, &vu, &il_, &iu_, m, w, z, &ldz_, &nzc_,
    isuppz, tryrac, work, &lwork, iwork, &liwork, &info);
 }
-}
+}  // namespace chase
