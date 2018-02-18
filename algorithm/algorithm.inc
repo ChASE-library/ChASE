@@ -1,6 +1,6 @@
 /* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
 
-static double CHASE_ADJUST_LOWERB = 0.0;
+double CHASE_ADJUST_LOWERB = 0.0;
 
 namespace chase {
 
@@ -388,7 +388,7 @@ ChasePerfData Algorithm<T>::solve(Chase<T>* single, std::size_t N,
   //  std::complex<double> *H = single->getMatrixPtr();
   //  std::complex<double> *V = single->getVectorsPtr();
   // todo make m=4 a config
-  std::size_t DoSVectors = lanczos(single, N, 4, config.getLanczosIter(), nevex,
+  std::size_t DoSVectors = lanczos(single, N, 4, std::min(N/2,config.getLanczosIter()), nevex,
                                    &upperb, random, random ? ritzv : NULL);
 
   perf.end_clock(ChasePerfData::TimePtrs::Lanczos);
