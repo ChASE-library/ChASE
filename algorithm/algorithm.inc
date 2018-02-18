@@ -106,7 +106,7 @@ std::size_t Algorithm<T>::locking(Chase<T>* single, std::size_t N,
       }
     }
     if (j != converged) {
-      swap_kj(j, converged, resid);  // if we filter again
+      swap_kj(j, converged, resid);      // if we filter again
       swap_kj(j, converged, residLast);  // if we filter again
       swap_kj(j, converged, Lritzv);
       single->Swap(j + locked, converged + locked);
@@ -225,14 +225,14 @@ std::size_t Algorithm<T>::lanczos(Chase<T>* single, int N, int numvec,
   }
 
 #ifdef OUTPUT
-/*
-std::cout << "THETA:";
-for (std::size_t k = 0; k < numvec * m; ++k) {
-  if( k % 5 == 0 ) std::cout << "\n";
-  std::cout << Theta[k] << " ";
-}
-std::cout << "\n";
-*/
+    /*
+  std::cout << "THETA:";
+  for (std::size_t k = 0; k < numvec * m; ++k) {
+    if( k % 5 == 0 ) std::cout << "\n";
+    std::cout << Theta[k] << " ";
+  }
+  std::cout << "\n";
+    */
 #endif
 
   double* ThetaSorted = new double[numvec * m];
@@ -281,6 +281,12 @@ std::cout << "\n";
       idx = i - 1;
       break;
     }
+  }
+
+  {
+    std::ostringstream oss;
+    oss << "extracted " << idx << " vectors from DoS\n";
+    single->Output(oss.str());
   }
 
   if (idx > 0) {
@@ -332,11 +338,8 @@ std::cout << "\n";
 template <class T>
 ChasePerfData Algorithm<T>::solve(Chase<T>* single, std::size_t N,
                                   Base<T>* ritzv_, std::size_t nev,
-                                  const std::size_t nex) {
+                                  const std::size_t nex, Base<T>* resid_) {
   ChasePerfData perf;
-
-  std::size_t* degrees_ = new std::size_t[nev + nex];
-  // todo dealloc
 
   ChaseConfig<T>& config = single->GetConfig();
 
@@ -353,7 +356,9 @@ ChasePerfData Algorithm<T>::solve(Chase<T>* single, std::size_t N,
 
   // To store the approximations obtained from lanczos().
   Base<T> lowerb, upperb, lambda;
-  Base<T>* resid_ = new Base<T>[nevex];
+
+  // todo dealloc
+  std::size_t* degrees_ = new std::size_t[nev + nex];
   Base<T>* residLast_ = new Base<T>[nevex];
   // this will be copie into residLast
   for (auto i = 0; i < nevex; ++i) {
@@ -433,7 +438,8 @@ ChasePerfData Algorithm<T>::solve(Chase<T>* single, std::size_t N,
       perf.end_clock(ChasePerfData::TimePtrs::Degrees);
     }
 
-//--------------------------------- FILTER ---------------------------------
+      //--------------------------------- FILTER
+      //---------------------------------
 
 #ifdef OUTPUT
     {
@@ -443,7 +449,7 @@ ChasePerfData Algorithm<T>::solve(Chase<T>* single, std::size_t N,
         oss << degrees[k] << "\t" << resid[k] << "\t" << residLast[k] << "\t"
             << ritzv[k] << "\n";
 
-      //single->Output(oss.str());
+      // single->Output(oss.str());
     }
 /*
         std::cout << "degrees\tresid\tritzv\n";
@@ -508,10 +514,9 @@ ChasePerfData Algorithm<T>::solve(Chase<T>* single, std::size_t N,
     }
 
   perf.add_iter_count(iteration);
-  delete[] resid_;
   delete[] residLast_;
 
   perf.end_clock(ChasePerfData::TimePtrs::All);
   return perf;
 }
-}
+}  // namespace chase

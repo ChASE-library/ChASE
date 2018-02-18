@@ -93,4 +93,10 @@ class MatrixFreeBlas : public MatrixFreeInterface<T> {
   std::unique_ptr<T> V1_;
   std::unique_ptr<T> V2_;
 };
+
+template <typename T>
+struct is_skewed_matrixfree<MatrixFreeBlas<T>> {
+  static const bool value = false;
+};
+
 }

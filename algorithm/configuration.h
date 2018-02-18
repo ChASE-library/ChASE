@@ -5,6 +5,7 @@
 
 #include <complex>
 #include <cstring>  //memcpy
+#include <iomanip>
 #include <random>
 
 namespace chase {
@@ -108,7 +109,17 @@ template <>
 double initTolerance<std::complex<float> >(bool approx, bool optimization) {
   return initTolerance<float>(approx, optimization);
 }
-}  // ChASE_Config_Helper
+
+static const std::size_t key_width = 30;
+static const std::size_t val_width = 8;
+
+template <typename T>
+void pretty_print(std::ostream& oss, std::string key, T value) {
+  oss << "    " << std::left << std::setfill('.') << std::setw(key_width) << key
+      << std::right << std::setw(val_width) << value << '\n';
+}
+
+}  // namespace ChASE_Config_Helper
 
 template <class T>
 class ChaseConfig {
@@ -119,7 +130,7 @@ class ChaseConfig {
         nex(_nex),
         optimization(false),
         approx(false),
-        mMaxIter(2000),
+        mMaxIter(25),
         mDegExtra(2) {
     mMaxDeg = ChASE_Config_Helper::initMaxDeg<T>(approx, optimization);
     deg = ChASE_Config_Helper::initDeg<T>(approx, optimization);
@@ -128,35 +139,35 @@ class ChaseConfig {
     tol = ChASE_Config_Helper::initTolerance<T>(approx, optimization);
   }
 
-  bool use_approx() { return approx; }
+  bool use_approx() const { return approx; }
   void setApprox(bool flag) { approx = flag; }
 
-  bool do_optimization() { return optimization; }
+  bool do_optimization() const { return optimization; }
   void setOpt(bool flag) { optimization = flag; }
 
-  std::size_t getDeg() { return deg; }
+  std::size_t getDeg() const { return deg; }
   void setDeg(std::size_t _deg) { deg = _deg; }
 
-  double getTol() { return tol; }
+  double getTol() const { return tol; }
   void setTol(double _tol) { tol = _tol; }
 
-  std::size_t getMaxDeg() { return mMaxDeg; }
+  std::size_t getMaxDeg() const { return mMaxDeg; }
   void setMaxDeg(std::size_t maxDeg_) { mMaxDeg = maxDeg_; }
 
-  std::size_t getDegExtra() { return mDegExtra; }
+  std::size_t getDegExtra() const { return mDegExtra; }
   void setDegExtra(std::size_t degExtra) { mDegExtra = degExtra; }
 
-  std::size_t getMaxIter() { return mMaxIter; }
+  std::size_t getMaxIter() const { return mMaxIter; }
   void setMaxIter(std::size_t maxIter) { mMaxIter = maxIter; }
 
-  std::size_t getLanczosIter() { return mLanczosIter; }
+  std::size_t getLanczosIter() const { return mLanczosIter; }
   void setLanczosIter(std::size_t aLanczosIter) { mLanczosIter = aLanczosIter; }
 
-  std::size_t getN() { return N; }
+  std::size_t getN() const { return N; }
 
-  std::size_t getNev() { return nev; }
+  std::size_t getNev() const { return nev; }
 
-  std::size_t getNex() { return nex; }
+  std::size_t getNex() const { return nex; }
 
  private:
   bool optimization;
@@ -173,4 +184,37 @@ class ChaseConfig {
   // not sure about this, would we ever need more?
   double tol;
 };
-}
+
+template <typename T>
+std::ostream& operator<<(std::ostream& oss_, const ChaseConfig<T>& rhs) {
+  using namespace ChASE_Config_Helper;
+  std::ostringstream oss;
+
+  oss << "ChASE Configuration:\n";
+  oss << "  "
+      << "General Parameters"
+      << "\n";
+  pretty_print(oss, "N:", rhs.getN());
+  pretty_print(oss, "nev:", rhs.getNev());
+  pretty_print(oss, "nex:", rhs.getNex());
+  pretty_print(oss, "Optimize Degree?", rhs.do_optimization());
+  pretty_print(oss, "Have approximate Solution?", rhs.use_approx());
+  pretty_print(oss, "Target residual tolerance:", rhs.getTol());
+  oss << "  "
+      << "Filter Parameters"
+      << "\n";
+  pretty_print(oss, "Initial filter degree:", rhs.getDeg());
+  pretty_print(oss, "Extra filter degree:", rhs.getDegExtra());
+  pretty_print(oss, "Maximum filter degree:", rhs.getMaxDeg());
+  oss << "  "
+      << "Parameters for Spectral Estimates"
+      << "\n";
+  pretty_print(oss, "Max # of Iterations:", rhs.getMaxIter());
+  pretty_print(oss, "# of Lanczos Iterations:", rhs.getLanczosIter());
+  oss << "\n";
+
+  oss_ << oss.str();
+  return oss_;
+};
+
+}  // namespace chase

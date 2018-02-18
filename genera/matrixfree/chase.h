@@ -7,7 +7,9 @@
 #include <memory>
 #include <random>
 
+#ifdef HAS_MPI
 #include "mpi.h"
+#endif
 
 #include "algorithm/chase.h"
 
@@ -25,6 +27,37 @@ namespace matrixfree {
 template <class T>
 class MatrixFreeChase : public chase::Chase<T> {
  public:
+  /*
+  // case 1:
+template <template <typename> class MF, typename T>
+  MatrixFreeChase(ChaseConfig<T> &config,
+                  matrices) {
+static_assert(!is_skewed_matrixfree<MF<T>>::value,"MatrixFreeChASE Must be non-skewed");
+  auto gemm = std::unique_ptr<MatrixFreeInterface<T>>(
+      new MF<T>(matrices.get_H(), N, max_block));
+....
+}
+
+// case 2:
+MatrixFreeChase(config, skewed_matrices, comm )
+{
+static_assert(is_skewed_matrixfree<MF<T>>::value,"MatrixFreeChASE Must be skewed");
+  auto properties = std::shared_ptr<SkewedMatrixProperties<T>>(
+      new SkewedMatrixProperties<T>(N, max_block, comm));
+
+  auto matrices = ChASE_Blas_Matrices<T>(N, max_block, V, ritzv, properties);
+
+  auto gemm_skewed = std::unique_ptr<MatrixFreeInterface<T>>(
+      new MF<T>(properties));
+
+  auto gemm = std::unique_ptr<MatrixFreeInterface<T>>(
+      new MatrixFreeMPI<T>(properties, std::move(gemm_skewed)));
+
+....
+
+}
+
+  */
   MatrixFreeChase(ChaseConfig<T> &config,
                   std::unique_ptr<MatrixFreeInterface<T>> gemm,
                   ChASE_Blas_Matrices<T> matrices)
@@ -38,6 +71,7 @@ class MatrixFreeChase : public chase::Chase<T> {
     V_ = matrices_.get_V1();
     W_ = matrices_.get_V2();
     ritzv_ = matrices_.get_Ritzv();
+    resid_ = matrices_.get_Resid();
 
     approxV_ = V_;
     workspace_ = W_;
@@ -63,7 +97,7 @@ class MatrixFreeChase : public chase::Chase<T> {
 
   void Solve() {
     locked_ = 0;
-    perf_ = chase::Algorithm<T>::solve(this, N_, ritzv_, nev_, nex_);
+    perf_ = chase::Algorithm<T>::solve(this, N_, ritzv_, nev_, nex_, resid_);
   }
 
   T *GetVectorsPtr() { return approxV_; }
@@ -149,7 +183,7 @@ class MatrixFreeChase : public chase::Chase<T> {
            workspace_ + locked_ * N_, N_,                //
            &Zero,                                        //
            A, block                                      //
-           );
+    );
 
     t_heevd(LAPACK_COL_MAJOR, 'V', 'L', block, A, block, ritzv);
 
@@ -160,7 +194,7 @@ class MatrixFreeChase : public chase::Chase<T> {
            A, block,                                   //
            &Zero,                                      //
            workspace_ + locked_ * N_, N_               //
-           );
+    );
 
     std::swap(approxV_, workspace_);
     // we can swap, since the locked part were copied over as part of the QR
@@ -192,7 +226,7 @@ class MatrixFreeChase : public chase::Chase<T> {
           &beta,                                   //
           (approxV_ + locked_ * N_) + N_ * i, 1,   //
           (workspace_ + locked_ * N_) + N_ * i, 1  //
-          );
+      );
 
       resid[i] = t_nrm2(N_, (workspace_ + locked_ * N_) + N_ * i, 1);
     }
@@ -219,8 +253,8 @@ class MatrixFreeChase : public chase::Chase<T> {
     CHASE_INT n = N_;
 
     T *v1 = workspace_;
-    std::random_device rd;
-    std::mt19937 gen(rd());
+    // std::random_device rd;
+    std::mt19937 gen(2342.0);
     std::normal_distribution<> normal_distribution;
 
     for (std::size_t k = 0; k < N_; ++k)
@@ -431,7 +465,7 @@ class MatrixFreeChase : public chase::Chase<T> {
            ritzVc, m,                                  //
            &beta,                                      //
            approxV_, N_                                //
-           );
+    );
   }
 
   Base<T> Residual() {
@@ -487,7 +521,11 @@ class MatrixFreeChase : public chase::Chase<T> {
 
   void Output(std::string str) override {
     int rank = 0;
-    // MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#ifdef HAS_MPI
+    int init = 0;
+    MPI_Initialized(&init);
+    if (init) MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
     if (rank == 0) std::cout << str;
   }
 
@@ -497,6 +535,8 @@ class MatrixFreeChase : public chase::Chase<T> {
               CHASE_INT *ylen) override {
     gemm_->get_off(xoff, yoff, xlen, ylen);
   }
+
+  Base<T>* getResid() {return resid_;}
 
  private:
   std::size_t N_;
@@ -512,6 +552,7 @@ class MatrixFreeChase : public chase::Chase<T> {
 
   Base<T> norm_;
   Base<T> *ritzv_;
+  Base<T> *resid_;
 
   std::unique_ptr<MatrixFreeInterface<T>> gemm_;
   ChASE_Blas_Matrices<T> matrices_;
@@ -551,6 +592,6 @@ ChASE_Config::chase_max_deg << "."
     }
  }
 */
-}
-}
+}  // namespace matrixfree
+}  // namespace chase
 #endif

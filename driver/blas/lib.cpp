@@ -3,11 +3,12 @@
 #include <complex.h>
 #include <hdf5.h>
 #include <mpi.h>
+#include <limits>
 #include <random>
 
+#include "algorithm/table_exporter.h"
 #include "genera/matrixfree/blas_templates.h"
 #include "genera/matrixfree/factory.h"
-
 
 using namespace chase;
 
@@ -89,8 +90,8 @@ void c_chase_(MPI_Fint* Fcomm, std::complex<float>* H, int* N,
   config.setApprox(*mode == 'A' || *mode == 'a');
   config.setLanczosIter(25);
 
-  std::unique_ptr<MatrixFreeChase<T>> single =
-    constructChASE(config, static_cast<T*>(nullptr), V, ritzv, MPI_COMM_WORLD);
+  std::unique_ptr<MatrixFreeChase<T>> single = constructChASE(
+      config, static_cast<T*>(nullptr), V, ritzv, MPI_COMM_WORLD);
 
   CHASE_INT xoff;
   CHASE_INT yoff;
@@ -114,7 +115,7 @@ void c_chase_(MPI_Fint* Fcomm, std::complex<float>* H, int* N,
       V[k] = std::complex<float>(d(gen), d(gen));
 
   //    float normH = std::max<float>(t_lange('1', *N, *N, HH, *N), float(1.0));
-  single->SetNorm(6);
+  single->SetNorm(0.0);
 
   single->Solve();
 }

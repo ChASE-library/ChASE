@@ -1,6 +1,7 @@
 /* -*- Mode: C++; -*- */
 #pragma once
 #include <complex>
+#include <functional>
 
 #define CHASE_VERSION_MAJOR 0
 #define CHASE_VERSION_MINOR 9

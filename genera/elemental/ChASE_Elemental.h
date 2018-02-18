@@ -24,6 +24,7 @@ class ElementalChase : public Chase<T> {
         W_(N_, nev_ + nex_, H_.Grid()),
         // ritzv_(H_.Grid()),
         ritzv_(nev_ + nex_),
+        resid_(nev_ + nex_),
         approxV_(&V_),
         workspace_(&W_) {
     El::MakeGaussian(V_);
@@ -334,6 +335,9 @@ class ElementalChase : public Chase<T> {
     El::DistMatrix<Base<T>, El::STAR, El::STAR> lambda{m, 1, H_.Grid()};
     El::DistMatrix<Base<T>, El::STAR, El::STAR> ElRitzV{m, m, H_.Grid()};
 
+    El::Display(e, "e");
+    El::Display(d, "d");
+
     El::HermitianTridiagEig(d, e, lambda, ElRitzV, El::ASCENDING);
 
     for (std::size_t k = 0; k < m; ++k) {
@@ -347,6 +351,8 @@ class ElementalChase : public Chase<T> {
       Tau[k] = std::abs(ElRitzV.Get(0, k)) * std::abs(ElRitzV.Get(0, k));
       // std::cout << Tau[k] << "\n";
     }
+
+    El::Display(lambda, "lamdba");
   }
 
   void Lock(CHASE_INT new_converged) override {
@@ -394,14 +400,13 @@ class ElementalChase : public Chase<T> {
   CHASE_INT GetNex() override { return nex_; }
 
   Base<T>* GetRitzv() override { return ritzv_.data(); }
+  Base<T>* GetResid() { return resid_.data(); }
 
   ChaseConfig<T>& GetConfig() { return config_; }
 
   void Solve() {
     locked_ = 0;
-    ChasePerfData p =
-        Algorithm<T>::solve(this, N_, this->GetRitzv(), nev_, nex_);
-    if (H_.Grid().Rank() == 0) p.print();
+    perf_ = Algorithm<T>::solve(this, N_, this->GetRitzv(), nev_, nex_, this->GetResid());
   }
 
   void GetOff(CHASE_INT* xoff, CHASE_INT* yoff, CHASE_INT* xlen,
@@ -426,6 +431,8 @@ class ElementalChase : public Chase<T> {
   El::DistMatrix<T>& GetV() { return *approxV_; }
   // El::DistMatrix<Base<T>, El::VR, El::STAR>& GetRitzvEl() { return ritzv_; }
 
+  ChasePerfData GetPerfData() { return perf_; }
+
  private:
   std::size_t const N_;
   std::size_t const nev_;
@@ -433,6 +440,7 @@ class ElementalChase : public Chase<T> {
   std::size_t locked_;
 
   ChaseConfig<T>& config_;
+  ChasePerfData perf_;
 
   El::DistMatrix<T>& H_;
   El::DistMatrix<T> V_;
@@ -440,6 +448,7 @@ class ElementalChase : public Chase<T> {
 
   //  El::DistMatrix<Base<T>, El::VR, El::STAR> ritzv_;
   std::vector<Base<T>> ritzv_;
+  std::vector<Base<T>> resid_;
 
   El::DistMatrix<T>* approxV_;
   El::DistMatrix<T>* workspace_;

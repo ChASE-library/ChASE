@@ -6,8 +6,10 @@
 #include <assert.h>
 #include <mpi.h>
 #include <memory>
+#include <type_traits>
 
 #include "algorithm/chase.h"
+#include "algorithm/configuration.h"
 
 #include "genera/matrixfree/chase.h"
 
@@ -105,5 +107,6 @@ static std::unique_ptr<MatrixFreeChase<T>> constructChASE(
   return std::unique_ptr<MatrixFreeChase<T>>(
       new MatrixFreeChase<T>(config, std::move(gemm), std::move(matrices)));
 }
-}
+
+}  // namespace chase
 #endif  // _CHASE_GENERA_BLAS_CHASE_BLAS_FACTORY_

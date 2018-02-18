@@ -24,7 +24,7 @@ template <class T>
 class Algorithm {
  public:
   static ChasePerfData solve(Chase<T>* single, std::size_t N, Base<T>* ritzv,
-                             std::size_t nev, const std::size_t nex);
+                             std::size_t nev, const std::size_t nex, Base<T>* resid_);
 
   static std::size_t calc_degrees(Chase<T>* single, std::size_t N,
                                   std::size_t unconverged, std::size_t nex,

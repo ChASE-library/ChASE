@@ -11,10 +11,44 @@ using T = El::Complex<double>;
 
 extern double CHASE_ADJUST_LOWERB;
 
+template <typename F>
+void read_matrix(El::DistMatrix<F>* A, std::string filename) {
+  const std::size_t c_shift = A->ColShift();  // first row we own
+  const std::size_t r_shift = A->RowShift();  // first col we own
+  const std::size_t c_stride = A->ColStride();
+  const std::size_t r_stride = A->RowStride();
+  const std::size_t l_height = A->LocalHeight();
+  const std::size_t l_width = A->LocalWidth();
+  F tmp;
+
+  FILE* stream = fopen(filename.c_str(), "rb");
+  if (stream == NULL) {
+    std::cerr << "Couldn't open file " << filename << std::endl;
+    std::cout << "error: " << std::strerror(errno) << '\n';
+    exit(-1);
+  }
+
+  for (auto lj = 0; lj < l_width; ++lj)
+    for (auto li = 0; li < l_height; ++li) {
+      // Our process owns the rows c_shift:c_stride:n,
+      // and the columns           r_shift:r_stride:n.
+      auto i = c_shift + li * c_stride;
+      auto j = r_shift + lj * r_stride;
+
+      fseek(stream, (j * A->Height() + i) * sizeof(F), SEEK_SET);
+      fread(reinterpret_cast<void*>(&tmp), sizeof(F), 1, stream);
+
+      A->SetLocal(li, lj, tmp);
+    }
+
+  fclose(stream);
+  El::mpi::Barrier(A->Grid().Comm());
+  return;
+}
+
 int main(int argc, char* argv[]) {
   El::Initialize(argc, argv);
   El::mpi::Comm comm = El::mpi::COMM_WORLD;
-  El::Grid grid{comm, 1};
 
   const El::Int N = El::Input<El::Int>("--n", "matrix width");
   const El::Int nev = El::Input<El::Int>("--nev", "EPs");
@@ -24,8 +58,11 @@ int main(int argc, char* argv[]) {
   const El::Int end = El::Input<El::Int>("--end", "end seq");
   const bool opt = El::Input<bool>("--opt", "optimize?", true);
   const double adjust = El::Input<bool>("--adjust", "adjust", 0.0);
+  const El::Int gridsize = El::Input<El::Int>("--grid", "grid", 1);
+  const bool legacy = El::Input<bool>("--legacy", "legacy", false);
   El::ProcessInput();
 
+  El::Grid grid{comm, gridsize};
 
   CHASE_ADJUST_LOWERB = adjust;
   //*
@@ -33,8 +70,8 @@ int main(int argc, char* argv[]) {
   // std::size_t nev = 256;
   // std::size_t nex = 100;
 
-  El::DistMatrix<El::Complex<double>> H{grid};
-  El::Gaussian(H, N, N);
+  El::DistMatrix<El::Complex<double>> H{N, N, grid};
+  //  El::Gaussian(H, N, N);
 
   ChaseConfig<std::complex<double>> config__{N, nev, nex};
   config__.setOpt(opt);
@@ -46,12 +83,21 @@ int main(int argc, char* argv[]) {
   for (std::size_t it = bgn; it <= end; ++it) {
     ///////////// READ MATRIX ////////
     std::ostringstream oss;
-    oss << path << "/gmat  1 " << std::setw(2) << it << ".bin";
-    // El::Read(H, std::string(
-    //                 "/homeb/slai/slai00/MATrix/NaCl/size4k/bin/gmat  1
-    //                 1.bin"),
-    //          El::BINARY_FLAT, true);
-    El::Read(H, oss.str(), El::BINARY_FLAT);
+    std::string spin = "d";
+    std::size_t kpoint = 0;
+    if (legacy)
+      oss << path << "/gmat  1 " << std::setw(2) << it << ".bin";
+    else
+      oss << path << "mat_" << spin << "_" << std::setfill('0') << std::setw(2)
+          << kpoint << "_" << std::setfill('0') << std::setw(2) << it << ".bin";
+
+    read_matrix(&H, oss.str());
+
+    auto Anorm = El::Norm(H);
+
+    if (H.Grid().Rank() == 0) {
+      std::cout << "Done reading File\nnorm: " << Anorm << "\n";
+    }
 
     /*/
       std::size_t N = 10;
@@ -67,6 +113,7 @@ int main(int argc, char* argv[]) {
     //*/
 
     single.Solve();
+    auto perf = single.GetPerfData();
 
     Base<T> largest_norm = 0;
     El::DistMatrix<Base<T>, El::STAR, El::STAR> ritzv{nev + nex, 1, H.Grid()};
@@ -98,6 +145,11 @@ int main(int argc, char* argv[]) {
 
     config__.setApprox(true);
 
+    if (H.Grid().Rank() == 0) {
+      perf.print();
+    }
+
+#if 0
     {
       //      El::HermitianEigCtrl<T> ctrl;
       // El::HermitianEigSubset<double> subset;
@@ -126,6 +178,7 @@ int main(int argc, char* argv[]) {
                   << "\n";
       }
     }
+#endif
   }
   return 0;
 }

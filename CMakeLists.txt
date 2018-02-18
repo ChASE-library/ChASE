@@ -6,8 +6,8 @@ cmake_minimum_required( VERSION 3.7 )
 enable_testing()
 
 
-set(CMAKE_BUILD_TYPE Release)
-#set(CMAKE_BUILD_TYPE Debug)
+#set(CMAKE_BUILD_TYPE Release)
+set(CMAKE_BUILD_TYPE Debug)
 # Project's name
 
 project( ChASE )
@@ -60,11 +60,28 @@ if( MPI_FOUND )
 endif()
 
 find_package( CUDA )
+if( CUDA_FOUND )
+  add_definitions( "-DHAS_CUDA=1" )
+endif()
+
+add_executable( "driver" driver/blas/noinput.cpp )
+target_link_libraries( "driver"
+  ${BLAS_LIBRARIES}
+  ${LAPACK_LIBRARIES}
+  ${Boost_LIBRARIES}
+  ${MPI_CXX_LIBRARIES}
+  )
+target_compile_definitions( "driver" PUBLIC
+  MATRIX_FREE_IMPLEMENTATION=MATRIX_FREE_IMPLEMENTATION_BLAS_INPLACE
+  )
+target_include_directories( "driver" PRIVATE ${MPI_CXX_INCLUDE_PATH} )
+
 
 
 ## BLAS implementation ##
 SET( LIB_NAME "blas_lib" )
 SET( DRIVER_NAME "blas_driver" )
+
 
 add_library( ${LIB_NAME} STATIC driver/blas/lib.cpp )
 target_link_libraries( ${LIB_NAME}
@@ -86,7 +103,8 @@ if( Boost_FOUND )
   target_compile_definitions( ${DRIVER_NAME} PUBLIC
     MATRIX_FREE_IMPLEMENTATION=MATRIX_FREE_IMPLEMENTATION_BLAS_INPLACE
     )
-  target_include_directories( ${DRIVER_NAME} PRIVATE ${MPI_CXX_INCLUDE_PATH} )
+
+  target_include_directories( ${DRIVER_NAME} PRIVATE ${MPI_CXX_INCLUDE_PATH} ${Boost_INCLUDE_DIRS} )
 
   add_test(
     NAME "${DRIVER_NAME}_test1"
@@ -118,7 +136,8 @@ if( Boost_FOUND )
   target_compile_definitions( ${DRIVER_NAME} PUBLIC
     MATRIX_FREE_IMPLEMENTATION=MATRIX_FREE_IMPLEMENTATION_BLAS
     )
-  target_include_directories( ${DRIVER_NAME} PRIVATE ${MPI_CXX_INCLUDE_PATH} )
+
+  target_include_directories( ${DRIVER_NAME} PRIVATE ${MPI_CXX_INCLUDE_PATH} ${Boost_INCLUDE_DIRS} )
 
   add_test(
     NAME "${DRIVER_NAME}_test1"
@@ -159,20 +178,20 @@ endif()
 
 ## MPI+BLAS implementation ##
 if( MPI_FOUND )
-#  set( LIB_NAME "mpi_lib" )
+  set( LIB_NAME "mpi_lib" )
   set( DRIVER_NAME "mpi_driver" )
 
-  # add_library(${LIB_NAME} STATIC driver/blas/lib.cpp )
-  # target_link_libraries( ${LIB_NAME}
-  #   ${BLAS_LIBRARIES}
-  #   ${LAPACK_LIBRARIES}
-  #   ${MPI_CXX_LIBRARIES}
-  #   )
-  # target_compile_definitions( ${LIB_NAME} PUBLIC
-  #   MATRIX_FREE_IMPLEMENTATION=MATRIX_FREE_IMPLEMENTATION_MPI_BLAS
-  #   HAS_MPI=1
-  #   )
-  # target_include_directories( ${LIB_NAME} PRIVATE ${MPI_CXX_INCLUDE_PATH} )
+  add_library(${LIB_NAME} STATIC driver/blas/lib.cpp driver/blas/hdf5.c )
+  target_link_libraries( ${LIB_NAME}
+    ${BLAS_LIBRARIES}
+    ${LAPACK_LIBRARIES}
+    ${MPI_CXX_LIBRARIES}
+    )
+  target_compile_definitions( ${LIB_NAME} PUBLIC
+    MATRIX_FREE_IMPLEMENTATION=MATRIX_FREE_IMPLEMENTATION_MPI_BLAS
+    HAS_MPI=1
+    )
+  target_include_directories( ${LIB_NAME} PRIVATE ${MPI_CXX_INCLUDE_PATH} )
 
   if( Boost_FOUND )
     add_executable( ${DRIVER_NAME} driver/blas/main.cpp )
@@ -186,6 +205,8 @@ if( MPI_FOUND )
       MATRIX_FREE_IMPLEMENTATION=MATRIX_FREE_IMPLEMENTATION_MPI_BLAS
       HAS_MPI=1
       )
+
+    target_include_directories( ${DRIVER_NAME} PRIVATE ${MPI_CXX_INCLUDE_PATH} ${Boost_INCLUDE_DIRS} )
   endif()
 endif()
 
@@ -210,8 +231,6 @@ if( CUDA_FOUND AND MPI_FOUND )
   endif()
 endif()
 
-
-
 #find_package(Elemental)
 set( Elemental_LIBRARIES  "-lelemental -lpmrrr -lpthread -mkl")
 set( Elemental_INCLUDE_DIRS "/homeb/slai/slai10/elemental/include")
@@ -221,6 +240,22 @@ set( Elemental_LINK_FLAGS "-L/homeb/slai/slai10/elemental/lib")
 
 SET( DRIVER_NAME "elemental_driver")
 add_executable(${DRIVER_NAME}  driver/elemental/main.cpp )
+target_link_libraries( ${DRIVER_NAME}
+  ${Elemental_LIBRARIES}
+  ${MPI_CXX_LIBRARIES}
+  )
+target_compile_definitions(${DRIVER_NAME} PUBLIC ${Elemental_DEFINITIONS} HAS_ELEMENTAL=1 HAS_MPI=1 
+#_GLIBCXX_USE_CXX11_ABI=1
+)
+target_include_directories(${DRIVER_NAME} PUBLIC ${Elemental_INCLUDE_DIRS})
+if(Elemental_LINK_FLAGS)
+  set_target_properties(${DRIVER_NAME}
+    PROPERTIES LINK_FLAGS ${Elemental_LINK_FLAGS})
+endif()
+
+
+SET( DRIVER_NAME "elemental_direct_driver")
+add_executable(${DRIVER_NAME}  driver/elemental/direct.cpp )
 target_link_libraries( ${DRIVER_NAME}
   ${Elemental_LIBRARIES}
   ${MPI_CXX_LIBRARIES}

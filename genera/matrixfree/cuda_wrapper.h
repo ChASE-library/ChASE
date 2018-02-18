@@ -1,3 +1,5 @@
+#pragma once
+
 #include <cuComplex.h>
 #include <cublas_v2.h>
 #include <cuda.h>

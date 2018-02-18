@@ -1,7 +1,7 @@
 #pragma once
 
-#include "genera/matrixfree/matrixfree_interface.h"
 #include "genera/matrixfree/blas_templates.h"
+#include "genera/matrixfree/matrixfree_interface.h"
 #include "genera/matrixfree/matrixfree_properties.h"
 
 namespace chase {
@@ -116,4 +116,10 @@ class MatrixFreeBlasSkewed : public MatrixFreeInterface<T> {
 
   std::shared_ptr<SkewedMatrixProperties<T>> matrix_properties_;
 };
-}
+
+template <typename T>
+struct is_skewed_matrixfree<MatrixFreeBlasSkewed<T>> {
+  static const bool value = true;
+};
+
+}  // namespace chase

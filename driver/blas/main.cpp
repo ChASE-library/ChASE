@@ -41,12 +41,37 @@ void readMatrix(T* H, std::string path_in, std::string spin, std::size_t kpoint,
             << std::setw(2) << kpoint << "_" << std::setfill('0')
             << std::setw(2) << index << suffix;
 
-  std::cout << problem.str() << std::endl;
+  // std::cout << problem.str() << std::endl;
   std::ifstream input(problem.str().c_str(), std::ios::binary);
   if (input.is_open()) {
     input.read((char*)H, sizeof(T) * size);
   } else {
     throw std::string("error reading file: ") + problem.str();
+  }
+}
+
+template <typename T>
+void readMatrix(T* H, std::string path_in, std::string spin, std::size_t kpoint,
+                std::size_t index, std::string suffix, std::size_t size,
+                bool legacy, CHASE_INT xoff, CHASE_INT yoff, CHASE_INT xlen,
+                CHASE_INT ylen) {
+  std::size_t N = std::sqrt(size);
+  std::ostringstream problem(std::ostringstream::ate);
+  if (legacy)
+    problem << path_in << "gmat  1 " << std::setw(2) << index << suffix;
+  else
+    problem << path_in << "mat_" << spin << "_" << std::setfill('0')
+            << std::setw(2) << kpoint << "_" << std::setfill('0')
+            << std::setw(2) << index << suffix;
+
+  std::ifstream input(problem.str().c_str(), std::ios::binary);
+  if (!input.is_open()) {
+    throw std::string("error reading file: ") + problem.str();
+  }
+
+  for (std::size_t y = 0; y < ylen; y++) {
+    input.seekg(((xoff) + N * (yoff + y)) * sizeof(T));
+    input.read(reinterpret_cast<char*>(H + xlen * y), xlen * sizeof(T));
   }
 }
 
@@ -207,15 +232,18 @@ int do_chase(ChASE_DriverProblemConfig& conf, TestResult& TR) {
     // } else
     {
       single->GetOff(&xoff, &yoff, &xlen, &ylen);
-      std::cout << xoff << " " << yoff << " " << xlen << " " << ylen << "\n";
-      std::vector<T> HH;
-      HH.reserve(N * N);
-      readMatrix(HH.data(), path_in, spin, kpoint, i, ".bin", N * N, legacy);
+      // std::vector<T> HH(N * N);
 
-      for (std::size_t x = 0; x < xlen; x++)
-        for (std::size_t y = 0; y < ylen; y++) {
-          H[x + N * y] = HH[(xoff + x) + N * (yoff + y)];
-        }
+      // readMatrix(HH.data(), path_in, spin, kpoint, i, ".bin", N * N, legacy);
+
+      // for (std::size_t x = 0; x < xlen; x++)
+      //   for (std::size_t y = 0; y < ylen; y++) {
+      //     H[x + xlen * y] = HH.at((xoff + x) * N + (yoff + y));
+      //   }
+      std::cout << "start reading matrix\n";
+      readMatrix(H, path_in, spin, kpoint, i, ".bin", N * N, legacy, xoff, yoff,
+                 xlen, ylen);
+      std::cout << "done reading matrix\n";
     }
 
     // the input is complex double so we cast to T
@@ -241,9 +269,11 @@ int do_chase(ChASE_DriverProblemConfig& conf, TestResult& TR) {
 
     TR.registerValue(i, "resd", resd);
     TR.registerValue(i, "orth", orth);
-    perf.print(N);
 
-    export_sql<T>(conf.test_name, static_cast<std::size_t>(i), config, perf);
+    if (rank == 0) {
+      perf.print(N);
+      export_sql<T>(conf.test_name, static_cast<std::size_t>(i), config, perf);
+    }
 
     if (resd > nev * tol ||
         orth > (std::numeric_limits<Base<T>>::epsilon() * 100)) {
@@ -409,7 +439,9 @@ int main(int argc, char* argv[]) {
   //     do_chase<float>(conf, TR);
   // }
 
-  TR.done();
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  if (rank == 0) TR.done();
 
 #ifdef HAS_MPI
   MPI_Finalize();

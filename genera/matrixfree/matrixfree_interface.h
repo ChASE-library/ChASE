@@ -22,9 +22,18 @@
 
 namespace chase {
 
+// Type Trait
+template <typename T>
+struct is_skewed_matrixfree {
+  static const bool value = false;
+};
+
 template <class T>
 class MatrixFreeInterface {
  public:
+
+  typedef T value_type;
+
   // After a call to shiftMatrix(T c) all subsequent calls to apply() and
   //   applyVec() perform the multiplication with a shifted H
   virtual void shiftMatrix(T c) = 0;
