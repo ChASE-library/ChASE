@@ -5,9 +5,11 @@
 #include <memory>
 
 #include "genera/matrixfree/blas_templates.h"
+#include "genera/matrixfree/matrixfree_data.h"
 #include "genera/matrixfree/matrixfree_interface.h"
 
 namespace chase {
+namespace matrixfree {
 
 //
 // A very simple implementation of MatrixFreeInterface
@@ -17,8 +19,12 @@ namespace chase {
 template <class T>
 class MatrixFreeBlas : public MatrixFreeInterface<T> {
  public:
-  explicit MatrixFreeBlas(T* H, std::size_t n, std::size_t maxBlock)
-      : N_(n), H_(H), V1_(new T[N_ * maxBlock]), V2_(new T[N_ * maxBlock]) {}
+  explicit MatrixFreeBlas(ChASE_Blas_Matrices<T>& matrices, std::size_t n,
+                          std::size_t maxBlock)
+      : N_(n),
+        H_(matrices.get_H()),
+        V1_(new T[N_ * maxBlock]),
+        V2_(new T[N_ * maxBlock]) {}
 
   MatrixFreeBlas() = delete;
   MatrixFreeBlas(MatrixFreeBlas const& rhs) = delete;
@@ -99,4 +105,5 @@ struct is_skewed_matrixfree<MatrixFreeBlas<T>> {
   static const bool value = false;
 };
 
-}
+}  // namespace matrixfree
+}  // namespace chase

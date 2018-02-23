@@ -137,7 +137,7 @@ std::size_t Algorithm<T>::filter(Chase<T>* single, std::size_t n,
   T alpha = T(sigma_1 / e);
   T beta = T(0.0);
 
-  single->ThreeTerms(unprocessed, alpha, beta, offset / n);
+  single->HEMM(unprocessed, alpha, beta, offset / n);
 
   Av += unprocessed;
   num_mult++;
@@ -155,7 +155,7 @@ std::size_t Algorithm<T>::filter(Chase<T>* single, std::size_t n,
     //----------------------- V = alpha(A-cI)W + beta*V ----------------------
     alpha = T(2.0 * sigma_new / e);
     beta = T(-sigma * sigma_new);
-    single->ThreeTerms(unprocessed, alpha, beta, offset / n);
+    single->HEMM(unprocessed, alpha, beta, offset / n);
 
     sigma = sigma_new;
     Av += unprocessed;
@@ -164,9 +164,6 @@ std::size_t Algorithm<T>::filter(Chase<T>* single, std::size_t n,
       degrees++;  // V+=n; W+=n;
       unprocessed--;
       offset += n;
-      // TODO
-      // if (num_mult < deg)
-      //     single->cpy(offset / n);
     }
 
   }  // for(i = 2; i <= deg; ++i)
@@ -226,13 +223,13 @@ std::size_t Algorithm<T>::lanczos(Chase<T>* single, int N, int numvec,
 
 #ifdef OUTPUT
     /*
-  std::cout << "THETA:";
-  for (std::size_t k = 0; k < numvec * m; ++k) {
-    if( k % 5 == 0 ) std::cout << "\n";
-    std::cout << Theta[k] << " ";
-  }
-  std::cout << "\n";
-    */
+    std::cout << "THETA:";
+    for (std::size_t k = 0; k < numvec * m; ++k) {
+      if( k % 5 == 0 ) std::cout << "\n";
+      std::cout << Theta[k] << " ";
+    }
+    std::cout << "\n";
+  */
 #endif
 
   double* ThetaSorted = new double[numvec * m];
@@ -336,12 +333,18 @@ std::size_t Algorithm<T>::lanczos(Chase<T>* single, int N, int numvec,
 }
 
 template <class T>
-ChasePerfData Algorithm<T>::solve(Chase<T>* single, std::size_t N,
-                                  Base<T>* ritzv_, std::size_t nev,
-                                  const std::size_t nex, Base<T>* resid_) {
-  ChasePerfData perf;
+ChasePerfData Algorithm<T>::solve(Chase<T>* single) {
+  single->Reset();
 
+  ChasePerfData perf;
   ChaseConfig<T>& config = single->GetConfig();
+
+  std::size_t N = config.getN();
+  std::size_t nev = config.getNev();
+  const std::size_t nex = config.getNex();
+
+  Base<T>* resid_ = single->GetResid();
+  Base<T>* ritzv_ = single->GetRitzv();
 
   const double tol = config.getTol();
 
@@ -388,8 +391,9 @@ ChasePerfData Algorithm<T>::solve(Chase<T>* single, std::size_t N,
   //  std::complex<double> *H = single->getMatrixPtr();
   //  std::complex<double> *V = single->getVectorsPtr();
   // todo make m=4 a config
-  std::size_t DoSVectors = lanczos(single, N, 4, std::min(N/2,config.getLanczosIter()), nevex,
-                                   &upperb, random, random ? ritzv : NULL);
+  std::size_t DoSVectors = lanczos(
+      single, N, 4, std::min(nevex, std::min(N / 2, config.getLanczosIter())),
+      nevex, &upperb, random, random ? ritzv : NULL);
 
   perf.end_clock(ChasePerfData::TimePtrs::Lanczos);
   std::size_t locked = 0;     // Number of converged eigenpairs.

@@ -23,30 +23,37 @@ namespace chase {
 template <class T>
 class Algorithm {
  public:
-  static ChasePerfData solve(Chase<T>* single, std::size_t N, Base<T>* ritzv,
-                             std::size_t nev, const std::size_t nex, Base<T>* resid_);
+  static ChasePerfData solve(Chase<T>* single);
 
-  static std::size_t calc_degrees(Chase<T>* single, std::size_t N,
+  static std::size_t calc_degrees(Chase<T>* kernel, std::size_t N,
                                   std::size_t unconverged, std::size_t nex,
                                   Base<T> upperb, Base<T> lowerb, Base<T> tol,
-                                  Base<T>* ritzv, Base<T>* resid, Base<T>* residLast,
-                                  std::size_t* degrees, std::size_t locked);
+                                  Base<T>* ritzv, Base<T>* resid,
+                                  Base<T>* residLast, std::size_t* degrees,
+                                  std::size_t locked);
 
-  static std::size_t locking(Chase<T>* single, std::size_t N,
+  static std::size_t locking(Chase<T>* kernel, std::size_t N,
                              std::size_t unconverged, Base<T> tol,
                              Base<T>* ritzv, Base<T>* resid, Base<T>* residLast,
                              std::size_t* degrees, std::size_t locked);
 
-  static std::size_t filter(Chase<T>* single, std::size_t n,
+  static std::size_t filter(Chase<T>* kernel, std::size_t n,
                             std::size_t unprocessed, std::size_t deg,
                             std::size_t* degrees, Base<T> lambda_1,
                             Base<T> lower, Base<T> upper);
 
-  static std::size_t lanczos(Chase<T>* single, int N, int numvec, int m,
+  static std::size_t lanczos(Chase<T>* kernel, int N, int numvec, int m,
                              int nevex, Base<T>* upperb, bool mode,
                              Base<T>* ritzv_);
 };
+
+template <typename T>
+void Solve(Chase<T>* single) {
+  // todo decorator for performance
+  Algorithm<T>::solve(single);
 }
+
+}  // namespace chase
 
 #include "algorithm.inc"
 

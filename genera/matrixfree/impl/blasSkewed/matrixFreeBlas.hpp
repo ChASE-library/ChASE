@@ -4,18 +4,18 @@
 #include "genera/matrixfree/matrixfree_interface.h"
 #include "genera/matrixfree/matrixfree_properties.h"
 
-namespace chase {
+#include "genera/matrixfree/impl/mpi/matrixFreeMPI.hpp"
 
+namespace chase {
+namespace matrixfree {
 //
 //  This Class is meant to be used with MatrixFreeMPI
-//
-// MatrixFreeBlasSkewed does not take responsibility of the
 //
 template <class T>
 class MatrixFreeBlasSkewed : public MatrixFreeInterface<T> {
  public:
   MatrixFreeBlasSkewed(
-      std::shared_ptr<SkewedMatrixProperties<T>> matrix_properties) {
+      SkewedMatrixProperties<T> *matrix_properties) {
     // TODO
     // ldc_ = matrix_properties->get_ldc();
     // ldb_ = matrix_properties->get_ldb();
@@ -114,7 +114,7 @@ class MatrixFreeBlasSkewed : public MatrixFreeInterface<T> {
   T* C_;
   T* IMT_;
 
-  std::shared_ptr<SkewedMatrixProperties<T>> matrix_properties_;
+  SkewedMatrixProperties<T>* matrix_properties_;
 };
 
 template <typename T>
@@ -122,4 +122,5 @@ struct is_skewed_matrixfree<MatrixFreeBlasSkewed<T>> {
   static const bool value = true;
 };
 
+}  // namespace matrixfree
 }  // namespace chase

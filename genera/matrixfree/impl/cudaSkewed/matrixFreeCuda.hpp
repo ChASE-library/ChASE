@@ -7,11 +7,12 @@
 #include <cuda_runtime.h>
 #include <complex>
 
+#include "genera/matrixfree/blas_templates.h"
 #include "genera/matrixfree/cuda_wrapper.h"
 #include "genera/matrixfree/matrixfree_interface.h"
-#include "genera/matrixfree/blas_templates.h"
 
 namespace chase {
+namespace matrixfree {
 
 template <class T>
 class MatrixFreeCudaSkewed : public MatrixFreeInterface<T> {
@@ -217,4 +218,5 @@ class MatrixFreeCudaSkewed : public MatrixFreeInterface<T> {
   cublasHandle_t handle_;
   std::shared_ptr<SkewedMatrixProperties<T>> matrix_properties_;
 };
-}
+}  // namespace matrixfree
+}  // namespace chase

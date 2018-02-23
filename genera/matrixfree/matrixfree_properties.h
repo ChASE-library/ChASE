@@ -5,8 +5,14 @@
 #include <vector>
 
 #include "algorithm/types.h"
+#include "genera/matrixfree/matrixfree_data.h"
 
 namespace chase {
+namespace matrixfree {
+
+/*
+ * Logic for an MPI parallel HEMM
+ */
 
 template <typename T>
 MPI_Datatype getMPI_Type();
@@ -204,6 +210,13 @@ class SkewedMatrixProperties {
 
   int get_my_rank(std::size_t dim_idx) { return rank_cart_[dim_idx]; }
 
+  ChASE_Blas_Matrices<T> create_matrices(T* V1 = nullptr,
+                                           Base<T>* ritzv = nullptr,
+                                           T* V2 = nullptr,
+                                           Base<T>* resid = nullptr) const {
+    return ChASE_Blas_Matrices<T>(comm_, N_, max_block_, V1, ritzv, V2, resid);
+  }
+
  private:
   std::size_t N_;
   std::size_t max_block_;
@@ -231,4 +244,5 @@ class SkewedMatrixProperties {
   MPI_Int coord_[2];
   CHASE_INT off_[2];
 };
-}
+}  // namespace matrixfree
+}  // namespace chase

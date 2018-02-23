@@ -1,8 +1,8 @@
 #include <chrono>
 #include <complex>
 
-using std::chrono::nanoseconds;
 using std::chrono::duration_cast;
+using std::chrono::nanoseconds;
 
 #include "genera/elemental/ChASE_Elemental.h"
 #include "genera/matrixfree/blas_templates.h"
@@ -73,12 +73,14 @@ int main(int argc, char* argv[]) {
   El::DistMatrix<El::Complex<double>> H{N, N, grid};
   //  El::Gaussian(H, N, N);
 
-  ChaseConfig<std::complex<double>> config__{N, nev, nex};
-  config__.setOpt(opt);
-  ChaseConfig<El::Complex<double>>* config =
-      reinterpret_cast<ChaseConfig<El::Complex<double>>*>(&config__);
+  ElementalChase<El::Complex<double>> single{N, nev, nex, H};
+  auto& config_ = single.GetConfig();
+  auto config = &config_;
 
-  ElementalChase<El::Complex<double>> single{*config, H};
+  // ChaseConfig<std::complex<double>> config__{N, nev, nex};
+  // config__.setOpt(opt);
+  // ChaseConfig<El::Complex<double>>* config =
+  //     reinterpret_cast<ChaseConfig<El::Complex<double>>*>(&config__);
 
   for (std::size_t it = bgn; it <= end; ++it) {
     ///////////// READ MATRIX ////////
@@ -112,7 +114,7 @@ int main(int argc, char* argv[]) {
       reinterpret_cast<ChaseConfig<El::Complex<double>>*>(&config__);
     //*/
 
-    single.Solve();
+    chase::Solve(&single);
     auto perf = single.GetPerfData();
 
     Base<T> largest_norm = 0;
@@ -143,7 +145,7 @@ int main(int argc, char* argv[]) {
       // }
     }
 
-    config__.setApprox(true);
+    config_.setApprox(true);
 
     if (H.Grid().Rank() == 0) {
       perf.print();

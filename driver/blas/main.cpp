@@ -9,12 +9,14 @@
 
 #include "algorithm/table_exporter.h"
 #include "genera/matrixfree/blas_templates.h"
-#include "genera/matrixfree/factory.h"
+#include "genera/matrixfree/chase.h"
+#include "genera/matrixfree/impl/blasSkewed/matrixFreeBlas.hpp"
 #include "testframework/testresult.hpp"
 
 extern double CHASE_ADJUST_LOWERB;
 
 using namespace chase;
+using namespace chase::matrixfree;
 
 // typedef std::complex<double> T;
 
@@ -133,6 +135,8 @@ int do_chase(ChASE_DriverProblemConfig& conf, TestResult& TR) {
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 
+  typedef MatrixFreeChase<MatrixFreeBlasSkewed, T> MFC;
+
   //----------------------------------------------------------------------------
   std::cout << std::setprecision(16);
 
@@ -152,10 +156,15 @@ int do_chase(ChASE_DriverProblemConfig& conf, TestResult& TR) {
   // std::unique_ptr<MatrixFreeChase<T>> single_ =
   //     ChASEFactory<T>::constructChASE(config, NULL, NULL,
   //     MPI_COMM_WORLD);
-  std::unique_ptr<MatrixFreeChase<T>> single_ = constructChASE(
-      config, static_cast<T*>(nullptr), V, Lambda, MPI_COMM_WORLD);
 
-  MatrixFreeChase<T>* single = single_.get();
+  // std::unique_ptr<MatrixFreeChase<T>> single_ = constructChASE(
+  //     config, static_cast<T*>(nullptr), V, Lambda, MPI_COMM_WORLD);
+
+  auto single_ =
+      MFC(config, new SkewedMatrixProperties<T>(N, nev + nex, MPI_COMM_WORLD),
+          V, Lambda);
+
+  auto single = &single_;
 
   // std::random_device rd;
   std::mt19937 gen(2342.0);
@@ -249,10 +258,8 @@ int do_chase(ChASE_DriverProblemConfig& conf, TestResult& TR) {
     // the input is complex double so we cast to T
     // for (std::size_t idx = 0; idx < N * N; ++idx) H[idx] = _H[idx];
 
-    single->SetNorm(0.0);
-
     //------------------------------SOLVE-CURRENT-PROBLEM-----------------------
-    single->Solve();
+    chase::Solve(single);
     //--------------------------------------------------------------------------
 
     ChasePerfData perf = single->GetPerfData();

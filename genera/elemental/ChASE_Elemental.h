@@ -13,12 +13,13 @@ namespace El = elem;
 template <class T>
 class ElementalChase : public Chase<T> {
  public:
-  ElementalChase(ChaseConfig<T>& config, El::DistMatrix<T>& H)
-      : N_(config.getN()),
-        nev_(config.getNev()),
-        nex_(config.getNex()),
+  ElementalChase(std::size_t N, std::size_t nev, std::size_t nex,
+                 El::DistMatrix<T>& H)
+      : N_(N),
+        nev_(nev),
+        nex_(nex),
         locked_(0),
-        config_(config),
+        config_(N, nev, nex),
         H_(H),
         V_(N_, nev_ + nex_, H_.Grid()),
         W_(N_, nev_ + nex_, H_.Grid()),
@@ -36,7 +37,7 @@ class ElementalChase : public Chase<T> {
     El::UpdateDiagonal(H_, c);
   }
 
-  void ThreeTerms(CHASE_INT block, T alpha, T beta, CHASE_INT offset) override {
+  void HEMM(CHASE_INT block, T alpha, T beta, CHASE_INT offset) override {
     // auto approxV = El::LockedView(*approxV_, El::IR(0, N_),
     // GetActive(offset));
     // auto workspace = El::View(*workspace_, El::IR(0, N_), GetActive(offset));
@@ -51,7 +52,7 @@ class ElementalChase : public Chase<T> {
              approxV,              //
              beta,                 //
              workspace             //
-             );                    //
+    );                             //
 
     std::swap(approxV_, workspace_);
   }
@@ -94,7 +95,7 @@ class ElementalChase : public Chase<T> {
              approxV,              //
              T(0.0),               //
              workspace             //
-             );
+    );
 
     El::Gemm(El::ADJOINT, El::NORMAL,  //
              T(1.0),                   //
@@ -102,7 +103,7 @@ class ElementalChase : public Chase<T> {
              workspace,                //
              T(0.0),                   //
              H_reduced                 //
-             );                        //
+    );                                 //
 
     El::HermitianEig(El::LOWER, H_reduced, ritzv_tmp, V_reduced, El::ASCENDING);
 
@@ -119,7 +120,7 @@ class ElementalChase : public Chase<T> {
              H_reduced,               //
              T(0.0),                  //
              workspace                //
-             );
+    );
 
     std::swap(approxV_, workspace_);
 
@@ -254,7 +255,7 @@ class ElementalChase : public Chase<T> {
                v1,                   //
                T(0.0),               //
                w                     //
-               );                    //
+      );                             //
 
       alpha = El::Dot(v1, w);
 
@@ -313,7 +314,7 @@ class ElementalChase : public Chase<T> {
                v1,                   //
                T(0.0),               //
                w                     //
-               );                    //
+      );                             //
 
       alpha = El::Dot(v1, w);
 
@@ -386,15 +387,10 @@ class ElementalChase : public Chase<T> {
              lanczos_vectors, ritz_vectors,  //
              T(1.0),                         //
              dos_vectors                     //
-             );                              //
+    );                                       //
   }
 
-  Base<T> GetNorm() override {
-    std::cerr << "not implemented\n";
-    return 0.0;
-  };
-
-  std::size_t GetN() override { return H_.Width(); }
+  std::size_t GetN() const override { return H_.Width(); }
 
   CHASE_INT GetNev() override { return nev_; }
   CHASE_INT GetNex() override { return nex_; }
@@ -404,10 +400,7 @@ class ElementalChase : public Chase<T> {
 
   ChaseConfig<T>& GetConfig() { return config_; }
 
-  void Solve() {
-    locked_ = 0;
-    perf_ = Algorithm<T>::solve(this, N_, this->GetRitzv(), nev_, nex_, this->GetResid());
-  }
+  void Reset() { locked_ = 0; }
 
   void GetOff(CHASE_INT* xoff, CHASE_INT* yoff, CHASE_INT* xlen,
               CHASE_INT* ylen) {
@@ -439,7 +432,7 @@ class ElementalChase : public Chase<T> {
   std::size_t const nex_;
   std::size_t locked_;
 
-  ChaseConfig<T>& config_;
+  ChaseConfig<T> config_;
   ChasePerfData perf_;
 
   El::DistMatrix<T>& H_;

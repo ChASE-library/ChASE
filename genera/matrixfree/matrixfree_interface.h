@@ -21,6 +21,7 @@
 // subclass.
 
 namespace chase {
+namespace matrixfree {
 
 // Type Trait
 template <typename T>
@@ -31,7 +32,6 @@ struct is_skewed_matrixfree {
 template <class T>
 class MatrixFreeInterface {
  public:
-
   typedef T value_type;
 
   // After a call to shiftMatrix(T c) all subsequent calls to apply() and
@@ -84,4 +84,5 @@ class MatrixFreeInterface {
   // Returns ptr to H, which may be used to populate H.
   virtual T* get_H() const = 0;
 };
-}
+}  // namespace matrixfree
+}  // namespace chase

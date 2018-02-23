@@ -66,7 +66,7 @@ if( CUDA_FOUND )
   add_definitions( "-DHAS_CUDA=1" )
 endif()
 
-add_executable( "driver" driver/blas/noinput.cpp )
+cuda_add_executable( "driver" driver/blas/noinput.cpp )
 target_link_libraries( "driver"
   ${BLAS_LIBRARIES}
   ${LAPACK_LIBRARIES}
@@ -77,7 +77,7 @@ target_compile_definitions( "driver" PUBLIC
   MATRIX_FREE_IMPLEMENTATION=MATRIX_FREE_IMPLEMENTATION_BLAS_INPLACE
   )
 target_include_directories( "driver" PRIVATE ${MPI_CXX_INCLUDE_PATH} )
-
+cuda_add_cublas_to_target( "driver" )
 
 
 ## BLAS implementation ##

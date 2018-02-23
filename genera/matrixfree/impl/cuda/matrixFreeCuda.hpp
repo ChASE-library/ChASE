@@ -5,19 +5,21 @@
 
 #include "genera/matrixfree/cuda_wrapper.h"
 #include "genera/matrixfree/matrixfree_interface.h"
-#include "genera/matrixfree/matrixfree_interface.h"
 
 namespace chase {
+namespace matrixfree {
 
 template <class T>
 class MatrixFreeCuda : public MatrixFreeInterface<T> {
  public:
-  MatrixFreeCuda(T* H, std::size_t n, std::size_t maxBlock) : n_(n) {
+  MatrixFreeCuda(ChASE_Blas_Matrices<T>& matrices, std::size_t n,
+                 std::size_t maxBlock)
+      : n_(n) {
     cuda_exec(cudaMalloc(&(V1_), n_ * maxBlock * sizeof(T)));
     cuda_exec(cudaMalloc(&(V2_), n_ * maxBlock * sizeof(T)));
     cuda_exec(cudaMalloc(&(H_), n_ * n_ * sizeof(T)));
 
-    OrigH_ = H;
+    OrigH_ = matrices.get_H();
 
     std::size_t pitch_host = n_ * sizeof(T);
     std::size_t pitch_device = n_ * sizeof(T);
@@ -123,4 +125,12 @@ class MatrixFreeCuda : public MatrixFreeInterface<T> {
   cudaStream_t stream_;
   cublasHandle_t handle_;
 };
-}
+
+template <typename T>
+struct is_skewed_matrixfree<MatrixFreeCuda<T>> {
+  static const bool value = false;
+};
+
+
+}  // namespace matrixfree
+}  // namespace chase

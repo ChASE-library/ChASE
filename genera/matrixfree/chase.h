@@ -15,35 +15,76 @@
 
 #include "./blas_templates.h"
 #include "./matrixfree_data.h"
-#include "./matrixfree_interface.h"
+//#include "./matrixfree_interface.h"
+#include "genera/matrixfree/impl/mpi/matrixFreeMPI.hpp"
 
 // TODO:
 // -- random vectors for lanczos?
 
 namespace chase {
-
 namespace matrixfree {
 
-template <class T>
+template <template <typename> class MF, class T>
 class MatrixFreeChase : public chase::Chase<T> {
  public:
-  /*
   // case 1:
-template <template <typename> class MF, typename T>
-  MatrixFreeChase(ChaseConfig<T> &config,
-                  matrices) {
-static_assert(!is_skewed_matrixfree<MF<T>>::value,"MatrixFreeChASE Must be non-skewed");
-  auto gemm = std::unique_ptr<MatrixFreeInterface<T>>(
-      new MF<T>(matrices.get_H(), N, max_block));
-....
-}
+  // todo? take all arguments of matrices and entirely wrap it?
+  MatrixFreeChase(std::size_t N, std::size_t nev, std::size_t nex,
+                  T *V1 = nullptr, Base<T> *ritzv = nullptr, T *H = nullptr,
+                  T *V2 = nullptr, Base<T> *resid = nullptr)
+      : N_(N),
+        nev_(nev),
+        nex_(nex),
+        locked_(0),
+        config_(N, nev, nex),
+        matrices_(N_, nev_ + nex_, V1, ritzv, H, V2, resid),
+        gemm_(new MF<T>(matrices_, N_, nev_ + nex_)) {
+    ritzv_ = matrices_.get_Ritzv();
+    resid_ = matrices_.get_Resid();
 
+    V_ = matrices_.get_V1();
+    W_ = matrices_.get_V2();
+
+    approxV_ = matrices_.get_V1();
+    workspace_ = matrices_.get_V2();
+    H_ = gemm_->get_H();
+  }
+
+  // case 2: MPI
+  MatrixFreeChase(SkewedMatrixProperties<T> *properties, std::size_t N,
+                  std::size_t nev, std::size_t nex, T *V1 = nullptr,
+                  Base<T> *ritzv = nullptr, T *V2 = nullptr,
+                  Base<T> *resid = nullptr)
+      : N_(N),
+        nev_(nev),
+        nex_(nex),
+        locked_(0),
+        config_(N, nev, nex),
+        properties_(properties),
+        matrices_(std::move(
+            properties_.get()->create_matrices(V1, ritzv, V2, resid))),
+        gemm_(new MatrixFreeMPI<T>(properties_.get(),
+                                   new MF<T>(properties_.get()))) {
+    V_ = matrices_.get_V1();
+    W_ = matrices_.get_V2();
+    ritzv_ = matrices_.get_Ritzv();
+    resid_ = matrices_.get_Resid();
+
+    approxV_ = V_;
+    workspace_ = W_;
+
+    // H_ = gemm_->get_H();
+    static_assert(is_skewed_matrixfree<MF<T>>::value,
+                  "MatrixFreeChASE Must be skewed");
+  }
+
+  /*
 // case 2:
 MatrixFreeChase(config, skewed_matrices, comm )
 {
-static_assert(is_skewed_matrixfree<MF<T>>::value,"MatrixFreeChASE Must be skewed");
-  auto properties = std::shared_ptr<SkewedMatrixProperties<T>>(
-      new SkewedMatrixProperties<T>(N, max_block, comm));
+static_assert(is_skewed_matrixfree<MF<T>>::value,"MatrixFreeChASE Must be
+skewed"); auto properties = std::shared_ptr<SkewedMatrixProperties<T>>( new
+SkewedMatrixProperties<T>(N, max_block, comm));
 
   auto matrices = ChASE_Blas_Matrices<T>(N, max_block, V, ritzv, properties);
 
@@ -52,12 +93,10 @@ static_assert(is_skewed_matrixfree<MF<T>>::value,"MatrixFreeChASE Must be skewed
 
   auto gemm = std::unique_ptr<MatrixFreeInterface<T>>(
       new MatrixFreeMPI<T>(properties, std::move(gemm_skewed)));
-
 ....
-
 }
-
   */
+
   MatrixFreeChase(ChaseConfig<T> &config,
                   std::unique_ptr<MatrixFreeInterface<T>> gemm,
                   ChASE_Blas_Matrices<T> matrices)
@@ -87,7 +126,7 @@ static_assert(is_skewed_matrixfree<MF<T>>::value,"MatrixFreeChASE Must be skewed
 
   ChaseConfig<T> &GetConfig() { return config_; }
 
-  std::size_t GetN() override { return N_; }
+  std::size_t GetN() const override { return N_; }
 
   CHASE_INT GetNev() override { return nev_; }
 
@@ -95,10 +134,7 @@ static_assert(is_skewed_matrixfree<MF<T>>::value,"MatrixFreeChASE Must be skewed
 
   Base<T> *GetRitzv() override { return ritzv_; }
 
-  void Solve() {
-    locked_ = 0;
-    perf_ = chase::Algorithm<T>::solve(this, N_, ritzv_, nev_, nex_, resid_);
-  }
+  void Reset() { locked_ = 0; }
 
   T *GetVectorsPtr() { return approxV_; }
 
@@ -124,7 +160,7 @@ static_assert(is_skewed_matrixfree<MF<T>>::value,"MatrixFreeChASE Must be skewed
       //     N * (new_converged) * sizeof(T));
   };
 
-  void ThreeTerms(CHASE_INT block, T alpha, T beta, CHASE_INT offset) override {
+  void HEMM(CHASE_INT block, T alpha, T beta, CHASE_INT offset) override {
     // t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans,  //
     //        N_, block, N_,                              //
     //        &alpha,                                     //
@@ -243,10 +279,6 @@ static_assert(is_skewed_matrixfree<MF<T>>::value,"MatrixFreeChASE Must be skewed
     memcpy(workspace_ + N_ * j, ztmp, N_ * sizeof(T));
     delete[] ztmp;
   };
-
-  Base<T> GetNorm() override { return norm_; };
-
-  void SetNorm(Base<T> norm) { norm_ = norm; };
 
   void Lanczos(CHASE_INT m, Base<T> *upperb) override {
     // todo
@@ -532,16 +564,16 @@ static_assert(is_skewed_matrixfree<MF<T>>::value,"MatrixFreeChASE Must be skewed
   T *GetMatrixPtr() { return gemm_->get_H(); }
 
   void GetOff(CHASE_INT *xoff, CHASE_INT *yoff, CHASE_INT *xlen,
-              CHASE_INT *ylen) override {
+              CHASE_INT *ylen) {
     gemm_->get_off(xoff, yoff, xlen, ylen);
   }
 
-  Base<T>* getResid() {return resid_;}
+  Base<T> *GetResid() { return resid_; }
 
  private:
-  std::size_t N_;
-  std::size_t nev_;
-  std::size_t nex_;
+  const std::size_t N_;
+  const std::size_t nev_;
+  const std::size_t nex_;
   std::size_t locked_;
 
   T *H_;
@@ -550,14 +582,14 @@ static_assert(is_skewed_matrixfree<MF<T>>::value,"MatrixFreeChASE Must be skewed
   T *approxV_;
   T *workspace_;
 
-  Base<T> norm_;
   Base<T> *ritzv_;
   Base<T> *resid_;
 
-  std::unique_ptr<MatrixFreeInterface<T>> gemm_;
+  std::unique_ptr<SkewedMatrixProperties<T>> properties_;
   ChASE_Blas_Matrices<T> matrices_;
+  std::unique_ptr<MatrixFreeInterface<T>> gemm_;
 
-  ChaseConfig<T> &config_;
+  ChaseConfig<T> config_;
   ChasePerfData perf_;
 };
 

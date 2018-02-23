@@ -10,7 +10,7 @@
 
 namespace chase {
 
-namespace ChASE_Config_Helper {
+namespace chase_config_helper {
 template <typename T>
 std::size_t initMaxDeg(bool approx, bool optimization);
 
@@ -23,9 +23,6 @@ std::size_t initLanczosIter(bool approx, bool optimization);
 template <typename T>
 double initTolerance(bool approx, bool optimization);
 
-// TODO: we require even degree!
-// matrixFree/blasSkewed requires it
-
 template <>
 std::size_t initMaxDeg<double>(bool approx, bool optimization) {
   return 36;
@@ -33,8 +30,7 @@ std::size_t initMaxDeg<double>(bool approx, bool optimization) {
 
 template <>
 std::size_t initDeg<double>(bool approx, bool optimization) {
-  //  return 20;
-  return 10;
+  return 20;
 };
 
 template <>
@@ -119,7 +115,7 @@ void pretty_print(std::ostream& oss, std::string key, T value) {
       << std::right << std::setw(val_width) << value << '\n';
 }
 
-}  // namespace ChASE_Config_Helper
+}  // namespace chase_config_helper
 
 template <class T>
 class ChaseConfig {
@@ -131,12 +127,16 @@ class ChaseConfig {
         optimization(false),
         approx(false),
         mMaxIter(25),
-        mDegExtra(2) {
-    mMaxDeg = ChASE_Config_Helper::initMaxDeg<T>(approx, optimization);
-    deg = ChASE_Config_Helper::initDeg<T>(approx, optimization);
+        mDegExtra(2),
+        num_lanczos_(6) {
+    mMaxDeg = chase_config_helper::initMaxDeg<T>(approx, optimization);
+    deg = chase_config_helper::initDeg<T>(approx, optimization);
     mLanczosIter =
-        ChASE_Config_Helper::initLanczosIter<T>(approx, optimization);
-    tol = ChASE_Config_Helper::initTolerance<T>(approx, optimization);
+        chase_config_helper::initLanczosIter<T>(approx, optimization);
+    tol = chase_config_helper::initTolerance<T>(approx, optimization);
+
+    // TODO: we require even degree!
+    // matrixFree/blasSkewed requires it
   }
 
   bool use_approx() const { return approx; }
@@ -161,7 +161,10 @@ class ChaseConfig {
   void setMaxIter(std::size_t maxIter) { mMaxIter = maxIter; }
 
   std::size_t getLanczosIter() const { return mLanczosIter; }
-  void setLanczosIter(std::size_t aLanczosIter) { mLanczosIter = aLanczosIter; }
+  void setLanczosIter(std::size_t lanczosIter) { mLanczosIter = lanczosIter; }
+
+  std::size_t getNumLanczos() const { return num_lanczos_; }
+  void setNumLanczos(std::size_t lanczosIter) { num_lanczos_ = lanczosIter; }
 
   std::size_t getN() const { return N; }
 
@@ -170,6 +173,8 @@ class ChaseConfig {
   std::size_t getNex() const { return nex; }
 
  private:
+  std::size_t const N, nev, nex;
+
   bool optimization;
   bool approx;
   std::size_t deg;
@@ -178,16 +183,14 @@ class ChaseConfig {
   std::size_t mMaxIter;
   std::size_t mLanczosIter;
   std::size_t mMaxDeg;
+  std::size_t num_lanczos_;
 
-  std::size_t N, nev, nex;
-
-  // not sure about this, would we ever need more?
   double tol;
 };
 
 template <typename T>
 std::ostream& operator<<(std::ostream& oss_, const ChaseConfig<T>& rhs) {
-  using namespace ChASE_Config_Helper;
+  using namespace chase_config_helper;
   std::ostringstream oss;
 
   oss << "ChASE Configuration:\n";
@@ -200,6 +203,7 @@ std::ostream& operator<<(std::ostream& oss_, const ChaseConfig<T>& rhs) {
   pretty_print(oss, "Optimize Degree?", rhs.do_optimization());
   pretty_print(oss, "Have approximate Solution?", rhs.use_approx());
   pretty_print(oss, "Target residual tolerance:", rhs.getTol());
+  pretty_print(oss, "Max # of Iterations:", rhs.getMaxIter());
   oss << "  "
       << "Filter Parameters"
       << "\n";
@@ -209,7 +213,6 @@ std::ostream& operator<<(std::ostream& oss_, const ChaseConfig<T>& rhs) {
   oss << "  "
       << "Parameters for Spectral Estimates"
       << "\n";
-  pretty_print(oss, "Max # of Iterations:", rhs.getMaxIter());
   pretty_print(oss, "# of Lanczos Iterations:", rhs.getLanczosIter());
   oss << "\n";
 

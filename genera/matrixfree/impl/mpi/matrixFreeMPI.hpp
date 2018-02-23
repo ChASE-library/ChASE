@@ -1,22 +1,23 @@
 #pragma once
 
 #include <mpi.h>
+#include <iterator>
 
 //#include "../blas/matrixFreeBlas.hpp"
 //#include "../blasSkewed/matrixFreeBlas.hpp"
 
+#include "genera/matrixfree/matrixfree_interface.h"
 #include "genera/matrixfree/matrixfree_properties.h"
 
-#include <iterator>
-
 namespace chase {
+namespace matrixfree {
 
 template <class T>
 class MatrixFreeMPI : public MatrixFreeInterface<T> {
  public:
-  MatrixFreeMPI(std::shared_ptr<SkewedMatrixProperties<T>> matrix_properties,
-                std::unique_ptr<MatrixFreeInterface<T>> gemm)
-      : gemm_(std::move(gemm)) {
+  MatrixFreeMPI(SkewedMatrixProperties<T>* matrix_properties,
+                MatrixFreeInterface<T>* gemm)
+      : gemm_(gemm) {
     ldc_ = matrix_properties->get_ldc();
     ldb_ = matrix_properties->get_ldb();
 
@@ -269,6 +270,7 @@ class MatrixFreeMPI : public MatrixFreeInterface<T> {
   CHASE_INT* off_;
 
   std::unique_ptr<MatrixFreeInterface<T>> gemm_;
-  std::shared_ptr<SkewedMatrixProperties<T>> matrix_properties_;
+  SkewedMatrixProperties<T>* matrix_properties_;
 };
-}
+}  // namespace matrixfree
+}  // namespace chase
