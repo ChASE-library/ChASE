@@ -48,7 +48,7 @@ class ChaseElemental : public Chase<T> {
     El::UpdateDiagonal(H_, c);
   }
 
-  void HEMM(CHASE_INT block, T alpha, T beta, CHASE_INT offset) override {
+  void HEMM(std::size_t block, T alpha, T beta, std::size_t offset) override {
     auto approxV = El::LockedView(*approxV_, 0, locked_ + offset, N_,
                                   nex_ + nev_ - locked_ - offset);
     auto workspace = El::View(*workspace_, 0, locked_ + offset, N_,
@@ -65,7 +65,7 @@ class ChaseElemental : public Chase<T> {
     std::swap(approxV_, workspace_);
   }
 
-  void QR(CHASE_INT fixednev) override {
+  void QR(std::size_t fixednev) override {
     auto locked_vectors = El::LockedView(*approxV_, 0, 0, N_, locked_);
     auto saved_locked_vectors = El::LockedView(*workspace_, 0, 0, N_, locked_);
 
@@ -74,7 +74,7 @@ class ChaseElemental : public Chase<T> {
     locked_vectors = saved_locked_vectors;
   }
 
-  void RR(Base<T>* ritzv, CHASE_INT block) override {
+  void RR(Base<T>* ritzv, std::size_t block) override {
     //*
     El::Grid const& grid = H_.Grid();
     El::DistMatrix<T> H_reduced{grid};
@@ -125,7 +125,7 @@ class ChaseElemental : public Chase<T> {
     std::swap(approxV_, workspace_);
   }
 
-  void Resd(Base<T>* ritzv, Base<T>* resid, CHASE_INT fixednev) override {
+  void Resd(Base<T>* ritzv, Base<T>* resid, std::size_t fixednev) override {
     auto approxV =
         El::LockedView(*approxV_, 0, locked_, N_, nex_ + nev_ - locked_);
     auto workspace =
@@ -151,12 +151,12 @@ class ChaseElemental : public Chase<T> {
     }
   }
 
-  void Swap(CHASE_INT i, CHASE_INT j) override {
+  void Swap(std::size_t i, std::size_t j) override {
     El::ColSwap(*approxV_, i, j);
     El::ColSwap(*workspace_, i, j);
   }
 
-  void Lanczos(CHASE_INT m, Base<T>* upperb) override {
+  void Lanczos(std::size_t m, Base<T>* upperb) override {
     T alpha;
     T beta = 0;
 
@@ -208,7 +208,7 @@ class ChaseElemental : public Chase<T> {
         std::abs(std::real(beta));
   };
 
-  void Lanczos(CHASE_INT m, CHASE_INT idx, Base<T>* upperb, Base<T>* ritzv,
+  void Lanczos(std::size_t m, std::size_t idx, Base<T>* upperb, Base<T>* ritzv,
                Base<T>* Tau, Base<T>* ritzV) override {
     T alpha;
     T beta = 0;
@@ -260,8 +260,8 @@ class ChaseElemental : public Chase<T> {
     El::DistMatrix<Base<T>, El::STAR, El::STAR> lambda{m, 1, H_.Grid()};
     El::DistMatrix<Base<T>, El::STAR, El::STAR> ElRitzV{m, m, H_.Grid()};
 
-    El::Display(e, "e");
-    El::Display(d, "d");
+    // El::Display(e, "e");
+    // El::Display(d, "d");
 
     El::HermitianTridiagEig(d, e, lambda, ElRitzV, El::ASCENDING);
 
@@ -277,10 +277,10 @@ class ChaseElemental : public Chase<T> {
       // std::cout << Tau[k] << "\n";
     }
 
-    El::Display(lambda, "lamdba");
+    // El::Display(lambda, "lamdba");
   }
 
-  void Lock(CHASE_INT new_converged) override {
+  void Lock(std::size_t new_converged) override {
     // auto workspace_new = El::View(*workspace_, El::IR(0, N_),
     //                               El::IR(locked_, locked_ + new_converged));
     // workspace_new = El::View(*approxV_, El::IR(0, N_),
@@ -292,7 +292,7 @@ class ChaseElemental : public Chase<T> {
     locked_ += new_converged;
   }
 
-  void LanczosDos(CHASE_INT idx, CHASE_INT m, T* ritzVc) override {
+  void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc) override {
     // we saved the lanczos vectors in workspace
     // auto lanczos_vectors = El::View(*workspace_, El::IR(0, N_), El::IR(0,
     // m));
@@ -316,8 +316,8 @@ class ChaseElemental : public Chase<T> {
 
   std::size_t GetN() const override { return H_.Width(); }
 
-  CHASE_INT GetNev() override { return nev_; }
-  CHASE_INT GetNex() override { return nex_; }
+  std::size_t GetNev() override { return nev_; }
+  std::size_t GetNex() override { return nex_; }
 
   Base<T>* GetRitzv() override { return ritzv_.data(); }
   Base<T>* GetResid() { return resid_.data(); }
