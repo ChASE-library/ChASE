@@ -21,4 +21,4 @@ endif()
 
 # Driver
 add_executable( "chase_driver" EXCLUDE_FROM_ALL driver/noinput.cpp )
-target_link_libraries(driver chase_mpi)
+target_link_libraries(chase_driver chase_mpi)
