@@ -39,7 +39,7 @@ target_compile_options( chase_mpi INTERFACE
   ${MPI_CXX_COMPILE_FLAGS}
   )
 
-find_package( CUDA REQUIRED )
+find_package( CUDA )
 if( CUDA_FOUND )
   target_compile_definitions( chase_mpi INTERFACE "-DBUILD_CUDA" )
   target_include_directories( chase_mpi INTERFACE ${CUDA_INCLUDE_DIRS} )

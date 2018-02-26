@@ -19,9 +19,7 @@ if( CHASE_OUTPUT )
   target_compile_definitions( chase_algorithm  INTERFACE "-DCHASE_OUTPUT" )
 endif()
 
-set( CMAKE_BUILD_TYPE Debug )
-
 # Driver
-#add_executable( "driver" EXCLUDE_FROM_ALL driver/noinput.cpp )
-add_executable( "driver" driver/noinput.cpp )
+add_executable( "driver" EXCLUDE_FROM_ALL driver/noinput.cpp )
+#add_executable( "driver" driver/noinput.cpp )
 target_link_libraries(driver chase_mpi)
