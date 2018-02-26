@@ -1,4 +1,4 @@
-ChASE Reference Version 0.9rc
+ChASE Version 0.9rc
 =============================
 
 The Chebyshev Accelerated Subspace iteration Eigensolver.
@@ -21,5 +21,5 @@ ChASE build with the CMake system.
 The following should generate a driver that demonstrates how to use ChASE:
 
          cmake /path/to/this/repo
-         make driver
+         make chase_driver
 

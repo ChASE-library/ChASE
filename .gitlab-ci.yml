@@ -3,14 +3,14 @@ build:
   script:
   - module load Intel/2017.0.098-GCC-5.4.0  IntelMPI/2017.0.098 Boost/1.61.0-Python-2.7.12 imkl/2017.0.098 HDF5
   - FC=ifort CC=icc CXX=icpc cmake .
-  - make driver
+  - make chase_driver
   artifacts:
     paths:
-    - build/
     - Makefile
+    - ./chase_driver
 
 test:
   stage: test
   script:
   - module load Intel/2017.0.098-GCC-5.4.0  IntelMPI/2017.0.098 Boost/1.61.0-Python-2.7.12 imkl/2017.0.098
-  - ./driver
+  - ./chase_driver
