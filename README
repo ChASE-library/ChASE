@@ -1,103 +1,25 @@
-ChASE Reference Version 1.0R160511
-==================================
+ChASE Reference Version 0.9rc
+=============================
 
-Installation
-------------
+The Chebyshev Accelerated Subspace iteration Eigensolver.
 
-All  relevant settings  should be  in  the Make  configuration file  `make.inc`.
-ChASE  requires a  BLAS and  LAPACK implementation.  At the  moment only  MKL is
-supported. There is a rudamentary CUDA mode, enabled by specifing `BUILD_CUDA=1`
-in the `make.inc` file.  Building the CUDA version requires CUDA and CuBLAS.
+We provide two versions of ChASE:
+1. ChASE-MPI
 
+   Using an custom MPI-based routine for the `HEMM`.
 
-Notes
------
+2. ChASE-Elemental
 
-- At the moment ChASE requires the input matrix to be in general---i.e. not upper or lower---form. ChASE uses `zgemm` for matrix-matrix multiplications. This is scheduled to be changed in the near future in favor of `zhemm`.
-- ChASE only supports complex doubles at the moment. Support for at least doubles, and potentially single precision, is planned for the near future.
+   Using the Elemental distributed-memory linear algebra framework.
+   http://libelemental.org/
 
+Building ChASE
+--------------
 
-Testing ChASE
--------------
+ChASE build with the CMake system.
 
-`make main` builds a driver routine for ChASE. Building the main routine requires Boost, but ChASE itself does not.
-The driver can be used to test ChASE, and to illustrate the use of the solver. To test ChASE download a test matrix from:
-[www.hpac.aices.rwth-aachen.de/~winkelmann/ChASE/NaCl.tar.xz](www.hpac.aices.rwth-aachen.de/~winkelmann/ChASE/NaCl.tar.xz) (~451Mb).
-Un-taring the file, and moving`NaCl_3893_5_20_20_1e-10_R_S_seq.xml` to the ChASE directory.
-Invoking
+The following should generate a driver that demonstrates how to use ChASE:
 
-     ./main.x --path_in $PATH_TO_DOWNLOAD/NaCl/ --legacy=1 --n 3893 --nev 5 --nex 20 --mode R --sequence=1 --bgn 1 --end 2 --name NaCl
+         cmake /path/to/this/repo
+         make driver
 
-Should produce someting similar to the following:
-
-    Starting lanczos - main
-    -0.37092
-    Obtained 0 vectors from DoS 6 0
-    -0.283958 -0.37092
-    End lanczos - main
-    Free memory
-    starting chase
-    -0.37092
-    Obtained 0 vectors from DoS 6 0
-    -0.283958 -0.37092
-    resd: 3.55211e-09	orth:3.66515e-15
-    All		40.9402
-    Lanczos		0.586641
-    Degrees		0.000155926
-    Filter		37.6856
-    QR		0.0476434
-    RR		1.25777
-    Resid+Locking	1.24027
-    Filtered Vectors		7127
-    Eigenvalues: 
-    -0.498049
-    -0.493519
-    -0.490007
-    -0.490007
-    -0.489882
-    End of eigenvalues. 
-    /homeb/slai/slai10/../slai00/MATrix/NaCl/size4k/bin/gmat  1  2.bin
-    Starting lanczos - main
-    End lanczos - main
-    starting chase
-    resd: 6.25913e-09	orth:6.66134e-15
-    All		25.9319
-    Lanczos		0.210436
-    Degrees		1.38283e-05
-    Filter		24.0801
-    QR		0.0272341
-    RR		0.755221
-    Resid+Locking	0.741924
-    Filtered Vectors		4741
-    Eigenvalues: 
-    -0.494698
-    -0.490117
-    -0.490117
-    -0.489965
-    -0.486566
-    End of eigenvalues. 
-    PASSED	12 / 12
-
-Note the PASSED 12/12 at the end. If multiple MKL threads are used, there may be
-some discrepancy between the "orth" numbers, i.e.:
-
-    [...]
-    orth fails comparison	|4.11734e-15 - 3.66515e-15| > 1e-06
-    orth fails comparison	|3.25221e-15 - 6.66134e-15| > 1e-06
-    PASSED	10 / 12
-
-
-Matrices on Jureca
-------------------
-
-    Au-Ag system
-        n = 5638 -- nev = 972 -- N = 24 -- cd AuAg\size5k\bin
-        n = 8970 -- nev = 972 -- N = 31 -- cd AuAg\size8k\bin
-        n = 13379 -- nev = 972 -- N = 25 -- cd AuAg\size13k\bin 
-    Na-Cl system
-        n = 3893 -- nev = 256 -- N = 16 -- cd NaCl\size4k\bin
-        n = 6217 -- nev = 256 -- N = 16 -- cd NaCl\size6k\bin
-        n = 9273 -- nev = 256 -- N = 16 -- cd NaCl\size9k\bin 
-    Ti-O2 system
-        n = 12455 -- nev = 1076 -- N = 30 -- cd TiO2\size12k\bin
-        n = 29528 -- nev = 2560 -- N = 18 -- cd TiO2\size30k\bin

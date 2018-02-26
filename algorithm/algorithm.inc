@@ -1,6 +1,12 @@
-/* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
-
-double CHASE_ADJUST_LOWERB = 0.0;
+/* -*- Mode: C++; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+// This file is a part of ChASE.
+// Copyright (c) 2015-2018, Simulation Laboratory Quantum Materials,
+//   Forschungszentrum Juelich GmbH, Germany
+// and
+// Copyright (c) 2016-2018, Aachen Institute for Advanced Study in Computational
+//   Engineering Science, RWTH Aachen University, Germany All rights reserved.
+// License is 3-clause BSD:
+// https://github.com/SimLabQuantumMaterials/ChASE/
 
 namespace chase {
 
@@ -22,34 +28,13 @@ std::size_t Algorithm<T>::calc_degrees(
   Base<T> e = (upperb - lowerb) / 2;  // Half-length of the interval.
   Base<T> rho;
 
-  /*
-for( std::size_t i = 0; i < unconverged; ++i )
-  {
-    Base< T > t = (ritzv[i] - c)/e;
-    rho = std::max(
-                   std::abs( t - sqrt( t*t-1 ) ),
-                   std::abs( t + sqrt( t*t-1 ) )
-                   );
-
-    degrees[i] = ceil(std::abs(log(resid[i]/(tol))/log(rho)));
-    degrees[i] = std::min(
-                          degrees[i] + conf.getDegExtra(),
-                          conf.getMaxDeg()
-                          );
-  }
-*/
-
-  // The argument here is that we don't want to do the maximum number
-  // of iterations on the nex vectors.
-  // TODO: we assume the order doesn't change very much
-  //       and only calc the first unconverged-nex ones
   for (std::size_t i = 0; i < unconverged - nex; ++i) {
     Base<T> t = (ritzv[i] - c) / e;
     rho = std::max(std::abs(t - std::sqrt(t * t - 1)),
                    std::abs(t + std::sqrt(t * t - 1)));
 
     degrees[i] = std::ceil(std::abs(std::log(resid[i] / tol) / std::log(rho)));
-    degrees[i] = std::min(degrees[i] + conf.getDegExtra(), conf.getMaxDeg());
+    degrees[i] = std::min(degrees[i] + conf.GetDegExtra(), conf.GetMaxDeg());
   }
 
   for (std::size_t i = unconverged - nex; i < unconverged; ++i) {
@@ -96,7 +81,7 @@ std::size_t Algorithm<T>::locking(Chase<T>* single, std::size_t N,
       if (resid[j] < residLast[j]) {
         break;
       } else {
-#ifdef OUTPUT
+#ifdef CHASE_OUTPUT
         std::ostringstream oss;
         oss << "locking unconverged pair is:" << resid[j]
             << " was:" << residLast[j] << " tolerance is: " << tol
@@ -160,7 +145,7 @@ std::size_t Algorithm<T>::filter(Chase<T>* single, std::size_t n,
     sigma = sigma_new;
     Av += unprocessed;
     num_mult++;
-    while (unprocessed >= 0 && *degrees <= num_mult) {
+    while (unprocessed != 0 && *degrees <= num_mult) {
       degrees++;  // V+=n; W+=n;
       unprocessed--;
       offset += n;
@@ -179,11 +164,6 @@ std::size_t Algorithm<T>::lanczos(Chase<T>* single, int N, int numvec,
                                   int const m, int nevex, Base<T>* upperb,
                                   bool mode, Base<T>* ritzv_) {
   assert(m >= 1);
-  // std::mt19937 gen(2342.0); // TODO
-  // std::normal_distribution<> d;
-
-  // T *H = single->getMatrixPtr();
-  // T *V_ = single->getVectorsPtr();
 
   if (!mode) {
     // all we need is the upper bound
@@ -201,11 +181,8 @@ std::size_t Algorithm<T>::lanczos(Chase<T>* single, int N, int numvec,
   Base<T>* Tau = new Base<T>[numvec * m]();
 
   Base<T>* ritzV = new Base<T>[m * m]();
-  // MKL_Complex16 *V = new T[N*m];
   Base<T> upperb_;
   Base<T> lowerb, lambda;
-
-  //  double *ritzV = new double[m*m]();
 
   single->Lanczos(m, 0, &upperb_, Theta + m * 0, Tau + m * 0, ritzV);
   *upperb = upperb_;
@@ -218,10 +195,9 @@ std::size_t Algorithm<T>::lanczos(Chase<T>* single, int N, int numvec,
     /*   } */
     single->Lanczos(m, i, &upperb_, Theta + m * i, Tau + m * i, ritzV);
     *upperb = std::max(upperb_, *upperb);
-    // std::cout << "upperb " << upperb_ << " " << *upperb << "\n";
   }
 
-#ifdef OUTPUT
+#ifdef CHASE_OUTPUT
     /*
     std::cout << "THETA:";
     for (std::size_t k = 0; k < numvec * m; ++k) {
@@ -235,10 +211,7 @@ std::size_t Algorithm<T>::lanczos(Chase<T>* single, int N, int numvec,
   double* ThetaSorted = new double[numvec * m];
   for (auto k = 0; k < numvec * m; ++k) ThetaSorted[k] = Theta[k];
   std::sort(ThetaSorted, ThetaSorted + numvec * m, std::less<double>());
-
   lambda = ThetaSorted[0];
-  //    lowerb = lambda + (*upperb - lambda) / 2.0;
-  // std::cout << "lamabda: " << lambda << std::endl;
 
   double curr, prev = 0;
   const double sigma = 0.25;
@@ -280,11 +253,13 @@ std::size_t Algorithm<T>::lanczos(Chase<T>* single, int N, int numvec,
     }
   }
 
+#ifdef CHASE_OUTPUT
   {
     std::ostringstream oss;
     oss << "extracted " << idx << " vectors from DoS\n";
     single->Output(oss.str());
   }
+#endif
 
   if (idx > 0) {
     // cast to (generally complex T)
@@ -295,19 +270,7 @@ std::size_t Algorithm<T>::lanczos(Chase<T>* single, int N, int numvec,
     delete[] ritzVc;
   }
 
-  /*
-  // no DoS, just randomness inside V
-  {
-  MKL_Complex16 *V_ = single->getVectorsPtr();
-  for( std::size_t k=0; k < N*(nevex-idx); ++k)
-  {
-  V_[N*idx + k] = std::complex<double>( d(gen), d(gen) );
-  }
-  }
-  */
-
   // lowerb = lowerb + std::abs(lowerb)*0.25;
-
   for (auto i = 0; i < idx; ++i) {
     ritzv_[i] = Theta[(numvec - 1) * m + i];
   }
@@ -333,90 +296,71 @@ std::size_t Algorithm<T>::lanczos(Chase<T>* single, int N, int numvec,
 }
 
 template <class T>
-ChasePerfData Algorithm<T>::solve(Chase<T>* single) {
-  single->Reset();
+void Algorithm<T>::solve(Chase<T>* single) {
+  single->Start();
 
-  ChasePerfData perf;
   ChaseConfig<T>& config = single->GetConfig();
 
-  std::size_t N = config.getN();
-  std::size_t nev = config.getNev();
-  const std::size_t nex = config.getNex();
+  std::size_t N = config.GetN();
+  std::size_t nev = config.GetNev();
+  const std::size_t nex = config.GetNex();
+  const std::size_t num_lanczos = config.GetNumLanczos();
 
   Base<T>* resid_ = single->GetResid();
   Base<T>* ritzv_ = single->GetRitzv();
 
-  const double tol = config.getTol();
+  const double tol = config.GetTol();
 
-  // Parameter check
-  // check_params(N, nev, nex, tol_, deg_ );
-
-  perf.start_clock(ChasePerfData::TimePtrs::All);
-
-  // perf.chase_filtered_vecs = 0;
   const std::size_t nevex = nev + nex;
   std::size_t unconverged = nev + nex;
 
   // To store the approximations obtained from lanczos().
   Base<T> lowerb, upperb, lambda;
 
-  // todo dealloc
-  std::size_t* degrees_ = new std::size_t[nev + nex];
-  Base<T>* residLast_ = new Base<T>[nevex];
-  // this will be copie into residLast
+  std::vector<std::size_t> degrees_(nev + nex);
+  std::vector<Base<T>> residLast_(nevex);
+
+  // this will be copied into residLast
   for (auto i = 0; i < nevex; ++i) {
-    residLast_[i] = std::numeric_limits<Base<T> >::max();
-    resid_[i] = std::numeric_limits<Base<T> >::max();
+    residLast_[i] = std::numeric_limits<Base<T>>::max();
+    resid_[i] = std::numeric_limits<Base<T>>::max();
   }
 
   // store input values
-  std::size_t deg = config.getDeg();
+  std::size_t deg = config.GetDeg();
   deg += deg % 2;
-  std::size_t* degrees = degrees_;
+  std::size_t* degrees = degrees_.data();
   Base<T>* ritzv = ritzv_;
   Base<T>* resid = resid_;
-  Base<T>* residLast = residLast_;
+  Base<T>* residLast = residLast_.data();
 
   //-------------------------------- VALIDATION --------------------------------
   assert(degrees != NULL);
-  deg = std::min(deg, config.getMaxDeg());
+  deg = std::min(deg, config.GetMaxDeg());
   for (std::size_t i = 0; i < nevex; ++i) degrees[i] = deg;
 
   single->Shift(0.0);
 
   // --------------------------------- LANCZOS ---------------------------------
-  perf.start_clock(ChasePerfData::TimePtrs::Lanczos);
-  // bool random = int_mode == CHASE_MODE_RANDOM;
-  bool random = !config.use_approx();
-  //  std::complex<double> *H = single->getMatrixPtr();
-  //  std::complex<double> *V = single->getVectorsPtr();
-  // todo make m=4 a config
-  std::size_t DoSVectors = lanczos(
-      single, N, 4, std::min(nevex, std::min(N / 2, config.getLanczosIter())),
-      nevex, &upperb, random, random ? ritzv : NULL);
+  bool random = !config.UseApprox();
+  std::size_t DoSVectors =
+      lanczos(single, N, num_lanczos,
+              std::min(nevex, std::min(N / 2, config.GetLanczosIter())), nevex,
+              &upperb, random, random ? ritzv : NULL);
 
-  perf.end_clock(ChasePerfData::TimePtrs::Lanczos);
   std::size_t locked = 0;     // Number of converged eigenpairs.
   std::size_t iteration = 0;  // Current iteration.
   lowerb = *std::max_element(ritzv, ritzv + unconverged);
   lambda = *std::min_element(ritzv_, ritzv_ + nevex);
-  lowerb = lowerb + (lowerb - lambda) / 2 * CHASE_ADJUST_LOWERB;
 
-  // TODO!!
-  // perf.start_clock(ChasePerfData::TimePtrs::Qr);
-  // single->QR(locked);
-  // perf.end_clock(ChasePerfData::TimePtrs::Qr);
-
-  while (unconverged > nex && iteration < config.getMaxIter()) {
+  while (unconverged > nex && iteration < config.GetMaxIter()) {
     if (unconverged < nevex) {
       lambda = *std::min_element(ritzv_, ritzv_ + nevex);
-      // TODO: what is a reasonable definition for lowerb, based on nev or based
-      // on nevex?
       auto tmp = *std::max_element(ritzv, ritzv + unconverged);
       lowerb = (lowerb + tmp) / 2;
       lowerb = tmp;
     }
-#ifdef OUTPUT
+#ifdef CHASE_OUTPUT
     {
       std::ostringstream oss;
 
@@ -434,18 +378,13 @@ ChasePerfData Algorithm<T>::solve(Chase<T>* single) {
       lowerb = upperb;
     }
     //-------------------------------- DEGREES --------------------------------
-    //    if( int_opt != CHASE_OPT_NONE && unconverged < nevex )
-    if (config.do_optimization() && iteration != 0) {
-      perf.start_clock(ChasePerfData::TimePtrs::Degrees);
+    if (config.DoOptimization() && iteration != 0) {
       deg = calc_degrees(single, N, unconverged, nex, upperb, lowerb, tol,
                          ritzv, resid, residLast, degrees, locked);
-      perf.end_clock(ChasePerfData::TimePtrs::Degrees);
     }
 
-      //--------------------------------- FILTER
-      //---------------------------------
-
-#ifdef OUTPUT
+      //------------------------------- FILTER -------------------------------
+#ifdef CHASE_OUTPUT
     {
       std::ostringstream oss;
       oss << "degrees\tresid\tresidLast\tritzv\n";
@@ -462,36 +401,20 @@ ChasePerfData Algorithm<T>::solve(Chase<T>* single) {
    "\n";
 */
 #endif
-    perf.start_clock(ChasePerfData::TimePtrs::Filter);
     std::size_t Av =
         filter(single, N, unconverged, deg, degrees, lambda, lowerb, upperb);
-    perf.end_clock(ChasePerfData::TimePtrs::Filter);
-    perf.add_filtered_vecs(Av);
-
     //----------------------------------- QR -----------------------------------
-    perf.start_clock(ChasePerfData::TimePtrs::Qr);
     single->QR(locked);
-    perf.end_clock(ChasePerfData::TimePtrs::Qr);
-
     // ----------------------------- RAYLEIGH  RITZ ----------------------------
-    perf.start_clock(ChasePerfData::TimePtrs::Rr);
     single->RR(ritzv, unconverged);
-    perf.end_clock(ChasePerfData::TimePtrs::Rr);
-
     // --------------------------- RESIDUAL & LOCKING --------------------------
-    perf.start_clock(ChasePerfData::TimePtrs::Resids_Locking);
-
     for (auto i = 0; i < unconverged; ++i)
       residLast[i] = std::min(residLast[i], resid[i]);
     single->Resd(ritzv, resid, locked);
 
-    perf.add_iter_blocksize(unconverged);
-
     std::size_t new_converged =
         locking(single, N, unconverged - nex, tol, ritzv, resid, residLast,
                 degrees, locked);
-
-    perf.end_clock(ChasePerfData::TimePtrs::Resids_Locking);
 
     // ---------------------------- Update pointers ----------------------------
     // Since we double buffer we need the entire locked portion in W and V
@@ -517,10 +440,6 @@ ChasePerfData Algorithm<T>::solve(Chase<T>* single) {
       }
     }
 
-  perf.add_iter_count(iteration);
-  delete[] residLast_;
-
-  perf.end_clock(ChasePerfData::TimePtrs::All);
-  return perf;
+  single->End();
 }
 }  // namespace chase
