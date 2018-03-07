@@ -17,7 +17,6 @@
 #include "mpi.h"
 
 #include "algorithm/chase.hpp"
-#include "algorithm/performance.hpp"
 
 #include "blas_templates.hpp"
 #include "chase_mpi_matrices.hpp"
@@ -82,8 +81,6 @@ class ChaseMpi : public chase::Chase<T> {
   ChaseMpi(const ChaseMpi &) = delete;
 
   ~ChaseMpi() {}
-
-  ChasePerfData GetPerfData() { return perf_; }
 
   ChaseConfig<T> &GetConfig() { return config_; }
 
@@ -554,7 +551,6 @@ class ChaseMpi : public chase::Chase<T> {
   std::unique_ptr<ChaseMpiHemmInterface<T>> gemm_;
 
   ChaseConfig<T> config_;
-  ChasePerfData perf_;
 };
 
 // TODO

@@ -1,8 +1,5 @@
 # -*- Mode: cmake -*-
 
-# Specify the minimum version for CMake
-cmake_minimum_required( VERSION 3.7 )
-
 add_library( chase_mpi INTERFACE )
 target_link_libraries(chase_mpi INTERFACE chase_algorithm)
 
