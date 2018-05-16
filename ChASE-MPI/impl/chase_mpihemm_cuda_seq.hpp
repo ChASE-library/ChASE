@@ -16,6 +16,9 @@
 #include "blas_cuda_wrapper.hpp"
 #include "chase_mpihemm_interface.hpp"
 
+void chase_zshift_matrix(std::complex<double>* A, int n, double shift,
+                         cudaStream_t* stream_);
+
 namespace chase {
 namespace mpi {
 
@@ -24,7 +27,7 @@ class ChaseMpiHemmCudaSeq : public ChaseMpiHemmInterface<T> {
  public:
   ChaseMpiHemmCudaSeq(ChaseMpiMatrices<T>& matrices, std::size_t n,
                       std::size_t maxBlock)
-      : n_(n) {
+      : n_(n), copied_(false) {
     cuda_exec(cudaMalloc(&(V1_), n_ * maxBlock * sizeof(T)));
     cuda_exec(cudaMalloc(&(V2_), n_ * maxBlock * sizeof(T)));
     cuda_exec(cudaMalloc(&(H_), n_ * n_ * sizeof(T)));
@@ -38,9 +41,6 @@ class ChaseMpiHemmCudaSeq : public ChaseMpiHemmInterface<T> {
     cublasCreate(&handle_);
     cuda_exec(cudaStreamCreate(&stream_));
     cublasSetStream(handle_, stream_);
-
-    cuda_exec(
-        cudaMemcpy(H_, OrigH_, n_ * n_ * sizeof(T), cudaMemcpyHostToDevice));
   }
 
   ~ChaseMpiHemmCudaSeq() {
@@ -53,13 +53,13 @@ class ChaseMpiHemmCudaSeq : public ChaseMpiHemmInterface<T> {
 
   void preApplication(T* V, std::size_t locked, std::size_t block) {
     locked_ = locked;
-    cuda_exec(cudaMemcpy(V1_, V + locked * n_, block * n_ * sizeof(T),
-                         cudaMemcpyHostToDevice));
+    cuda_exec(cudaMemcpyAsync(V1_, V + locked * n_, block * n_ * sizeof(T),
+                              cudaMemcpyHostToDevice, stream_));
   }
 
   void preApplication(T* V1, T* V2, std::size_t locked, std::size_t block) {
-    cuda_exec(cudaMemcpy(V2_, V2 + locked * n_, block * n_ * sizeof(T),
-                         cudaMemcpyHostToDevice));
+    cuda_exec(cudaMemcpyAsync(V2_, V2 + locked * n_, block * n_ * sizeof(T),
+                              cudaMemcpyHostToDevice, stream_));
 
     this->preApplication(V1, locked, block);
   }
@@ -76,19 +76,24 @@ class ChaseMpiHemmCudaSeq : public ChaseMpiHemmInterface<T> {
   }
 
   bool postApplication(T* V, std::size_t block) {
-    cuda_exec(cudaMemcpy(V + locked_ * n_, V1_, block * n_ * sizeof(T),
-                         cudaMemcpyDeviceToHost));
-
+    cuda_exec(cudaMemcpyAsync(V + locked_ * n_, V1_, block * n_ * sizeof(T),
+                              cudaMemcpyDeviceToHost, stream_));
+    cudaStreamSynchronize(stream_);
     return false;
   }
 
-  void shiftMatrix(T c) {
-    for (std::size_t i = 0; i < n_; ++i) {
-      OrigH_[i + i * n_] += c;
+  void shiftMatrix(T c, bool isunshift = false) {
+    // for (std::size_t i = 0; i < n_; ++i) {
+    //   OrigH_[i + i * n_] += c;
+    // }
+
+    if (!copied_) {
+      cuda_exec(cudaMemcpyAsync(H_, OrigH_, n_ * n_ * sizeof(T),
+                                cudaMemcpyHostToDevice, stream_));
+      copied_ = true;
     }
 
-    cuda_exec(
-        cudaMemcpy(H_, OrigH_, n_ * n_ * sizeof(T), cudaMemcpyHostToDevice));
+    chase_zshift_matrix(H_, n_, std::real(c), &stream_);
   }
 
   void applyVec(T* B, T* C) {
@@ -97,6 +102,10 @@ class ChaseMpiHemmCudaSeq : public ChaseMpiHemmInterface<T> {
 
     t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, n_, 1, n_, &alpha, OrigH_,
            n_, B, n_, &beta, C, n_);
+
+    // this->preApplication(B, 0, 1);
+    // this->apply(alpha, beta, 0, 1);
+    // this->postApplication(C, 1);
   }
 
   void get_off(std::size_t* xoff, std::size_t* yoff, std::size_t* xlen,
@@ -109,6 +118,8 @@ class ChaseMpiHemmCudaSeq : public ChaseMpiHemmInterface<T> {
 
   T* get_H() const override { return OrigH_; }
 
+  void Start() override { copied_ = false; }
+
  private:
   std::size_t n_;
   std::size_t locked_;
@@ -118,6 +129,7 @@ class ChaseMpiHemmCudaSeq : public ChaseMpiHemmInterface<T> {
   T* OrigH_;
   cudaStream_t stream_;
   cublasHandle_t handle_;
+  bool copied_;
 };
 
 template <typename T>

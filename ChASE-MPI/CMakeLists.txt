@@ -1,7 +1,7 @@
 # -*- Mode: cmake -*-
 
 # Specify the minimum version for CMake
-cmake_minimum_required( VERSION 3.7 )
+cmake_minimum_required( VERSION 3.8 )
 
 add_library( chase_mpi INTERFACE )
 target_link_libraries(chase_mpi INTERFACE chase_algorithm)
@@ -39,12 +39,6 @@ target_compile_options( chase_mpi INTERFACE
   ${MPI_CXX_COMPILE_FLAGS}
   )
 
-find_package( CUDA )
-if( CUDA_FOUND )
-  target_compile_definitions( chase_mpi INTERFACE "-DBUILD_CUDA" )
-  target_include_directories( chase_mpi INTERFACE ${CUDA_INCLUDE_DIRS} )
-  target_link_libraries( chase_mpi INTERFACE
-    ${CUDA_CUBLAS_LIBRARIES}
-    ${CUDA_LIBRARIES}
-    )
-endif()
+
+  add_library( chase_mpi_cuda "kernels/shift.cu" )
+  set_target_properties( chase_mpi_cuda PROPERTIES CUDA_SEPARABLE_COMPILATION ON)

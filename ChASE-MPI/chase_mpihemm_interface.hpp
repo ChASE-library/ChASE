@@ -47,7 +47,7 @@ class ChaseMpiHemmInterface {
 
   // After a call to shiftMatrix(T c) all subsequent calls to apply() and
   //   applyVec() perform the multiplication with a shifted H
-  virtual void shiftMatrix(T c) = 0;
+  virtual void shiftMatrix(T c,bool isunshift = false) = 0;
 
   // preApplication prepares internal state to perform the GEMM:
   // V2 <- alpha * H*V1 + beta*V2
@@ -94,6 +94,7 @@ class ChaseMpiHemmInterface {
 
   // Returns ptr to H, which may be used to populate H.
   virtual T* get_H() const = 0;
+  virtual void Start() = 0;
 };
 }  // namespace matrixfree
 }  // namespace chase

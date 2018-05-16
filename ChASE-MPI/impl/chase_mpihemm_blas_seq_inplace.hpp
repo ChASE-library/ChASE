@@ -22,7 +22,7 @@ template <class T>
 class ChaseMpiHemmBlasSeqInplace : public ChaseMpiHemmInterface<T> {
  public:
   ChaseMpiHemmBlasSeqInplace(ChaseMpiMatrices<T>& matrices, std::size_t n,
-                        std::size_t maxBlock)
+                             std::size_t maxBlock)
       : N_(n),
         V1_(matrices.get_V1()),
         V2_(matrices.get_V2()),
@@ -65,7 +65,7 @@ class ChaseMpiHemmBlasSeqInplace : public ChaseMpiHemmInterface<T> {
     return false;
   }
 
-  void shiftMatrix(T const c) override {
+  void shiftMatrix(T const c,bool isunshift = false) override {
     for (std::size_t i = 0; i < N_; ++i) {
       H_[i + i * N_] += c;
     }
@@ -94,6 +94,10 @@ class ChaseMpiHemmBlasSeqInplace : public ChaseMpiHemmInterface<T> {
     *ylen = N_;
   }
 
+
+  void Start() override {}
+
+
  private:
   std::size_t N_;
   std::size_t locked_;
@@ -108,5 +112,5 @@ struct is_skewed_matrixfree<ChaseMpiHemmBlasSeqInplace<T>> {
   static const bool value = false;
 };
 
-}  // namespace matrixfree
+}  // namespace mpi
 }  // namespace chase

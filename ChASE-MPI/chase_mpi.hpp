@@ -95,7 +95,10 @@ class ChaseMpi : public chase::Chase<T> {
 
   Base<T> *GetRitzv() override { return ritzv_; }
 
-  void Start() { locked_ = 0; }
+  void Start() {
+    locked_ = 0;
+    gemm_->Start();
+  }
   void End() {}
 
   T *GetVectorsPtr() { return approxV_; }
@@ -111,7 +114,7 @@ class ChaseMpi : public chase::Chase<T> {
     //   H_[i + i * N_] += c;
     // }
 
-    gemm_->shiftMatrix(c);
+    gemm_->shiftMatrix(c, isunshift);
   };
 
   // todo this is wrong we want the END of V
