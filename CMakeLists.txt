@@ -28,5 +28,8 @@ if( CHASE_OUTPUT )
 endif()
 
 # Driver
-add_executable( "chase_driver" EXCLUDE_FROM_ALL driver/noinput.cpp )
+add_executable( "chase_driver" driver/noinput.cpp )
 target_link_libraries(chase_driver chase_mpi)
+
+enable_testing()
+add_test( BASIC "chase_driver" )
