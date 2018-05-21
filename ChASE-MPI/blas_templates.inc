@@ -170,36 +170,26 @@ float t_lange(char norm, std::size_t m, std::size_t n, std::complex<float>* A,
 }
 
 // Overload of ?gemm functions
-/*
+
 template <>
-void
-t_gemm<double>(const CBLAS_LAYOUT Layout, const CBLAS_TRANSPOSE transa,
-               const CBLAS_TRANSPOSE transb, const std::size_t m,
-               const std::size_t n, const std::size_t k, const double* alpha,
-               const double* a, const std::size_t lda, const double* b,
-               const std::size_t ldb, const double* beta, double* c,
-               const std::size_t ldc)
-{
-  // cblas_dgemm(Layout, transa, transb, m, n, k, *alpha, a, lda, b, ldb, *beta,
-c,
-  //             ldc);
+void t_gemm<double>(const CBLAS_LAYOUT Layout, const CBLAS_TRANSPOSE transa,
+                    const CBLAS_TRANSPOSE transb, const std::size_t m,
+                    const std::size_t n, const std::size_t k,
+                    const double* alpha, const double* a, const std::size_t lda,
+                    const double* b, const std::size_t ldb, const double* beta,
+                    double* c, const std::size_t ldc) {
+  // cblas_dgemm(Layout, transa, transb, m, n, k, *alpha, a, lda, b, ldb,
+  // *beta,c, ldc);
 
+  char TA, TB;
 
- char TA, TB;
+  if (transa == CblasNoTrans) TA = 'N';
+  if (transa == CblasTrans) TA = 'T';
+  if (transa == CblasConjTrans) TA = 'C';
 
-  if( transa == CblasNoTrans )
-    TA = 'N';
-  if( transa == CblasTrans )
-    TA = 'T';
-  if( transa == CblasConjTrans )
-    TA = 'C';
-
-  if( transb == CblasNoTrans )
-    TB = 'N';
-  if( transb == CblasTrans )
-    TB = 'T';
-  if( transb == CblasConjTrans )
-    TB = 'C';
+  if (transb == CblasNoTrans) TB = 'N';
+  if (transb == CblasTrans) TB = 'T';
+  if (transb == CblasConjTrans) TB = 'C';
 
   BlasInt m_ = m;
   BlasInt n_ = n;
@@ -208,40 +198,29 @@ c,
   BlasInt ldb_ = ldb;
   BlasInt ldc_ = ldc;
 
-  FC_GLOBAL(dgemm,DGEMM)(&TA, &TB, &m_, &n_, &k_, alpha, a, &lda_, b, &ldb_,
-beta, c,
-        &ldc_);
-
+  FC_GLOBAL(dgemm, DGEMM)
+  (&TA, &TB, &m_, &n_, &k_, alpha, a, &lda_, b, &ldb_, beta, c, &ldc_);
 }
 
 template <>
-void
-t_gemm<float>(const CBLAS_LAYOUT Layout, const CBLAS_TRANSPOSE transa,
-              const CBLAS_TRANSPOSE transb, const std::size_t m,
-              const std::size_t n, const std::size_t k, const float* alpha,
-              const float* a, const std::size_t lda, const float* b,
-              const std::size_t ldb, const float* beta, float* c,
-              const std::size_t ldc)
-{
+void t_gemm<float>(const CBLAS_LAYOUT Layout, const CBLAS_TRANSPOSE transa,
+                   const CBLAS_TRANSPOSE transb, const std::size_t m,
+                   const std::size_t n, const std::size_t k, const float* alpha,
+                   const float* a, const std::size_t lda, const float* b,
+                   const std::size_t ldb, const float* beta, float* c,
+                   const std::size_t ldc) {
   // cblas_sgemm(Layout, transa, transb, m, n, k, *alpha, a, lda, b, ldb, *beta,
-c,
-  //             ldc);
+  // c, ldc);
 
- char TA, TB;
+  char TA, TB;
 
-  if( transa == CblasNoTrans )
-    TA = 'N';
-  if( transa == CblasTrans )
-    TA = 'T';
-  if( transa == CblasConjTrans )
-    TA = 'C';
+  if (transa == CblasNoTrans) TA = 'N';
+  if (transa == CblasTrans) TA = 'T';
+  if (transa == CblasConjTrans) TA = 'C';
 
-  if( transb == CblasNoTrans )
-    TB = 'N';
-  if( transb == CblasTrans )
-    TB = 'T';
-  if( transb == CblasConjTrans )
-    TB = 'C';
+  if (transb == CblasNoTrans) TB = 'N';
+  if (transb == CblasTrans) TB = 'T';
+  if (transb == CblasConjTrans) TB = 'C';
 
   BlasInt m_ = m;
   BlasInt n_ = n;
@@ -250,12 +229,10 @@ c,
   BlasInt ldb_ = ldb;
   BlasInt ldc_ = ldc;
 
-  FC_GLOBAL(sgemm,SGEMM)(&TA, &TB, &m_, &n_, &k_, alpha, a, &lda_, b, &ldb_,
-beta, c,
-        &ldc_);
-
+  FC_GLOBAL(sgemm, SGEMM)
+  (&TA, &TB, &m_, &n_, &k_, alpha, a, &lda_, b, &ldb_, beta, c, &ldc_);
 }
-*/
+
 template <>
 void t_hemm(const CBLAS_LAYOUT Layout, const CBLAS_SIDE side,
             const CBLAS_UPLO uplo, const std::size_t m, const std::size_t n,
@@ -370,7 +347,7 @@ float t_nrm2(const std::size_t n, const std::complex<float>* x,
 }
 
 // Overload of ?geqrf functions
-/*
+
 template <>
 std::size_t
 t_geqrf(int matrix_layout, std::size_t m, std::size_t n, double* a,
@@ -431,7 +408,7 @@ t_geqrf(int matrix_layout, std::size_t m, std::size_t n, float* a,
   assert(info == 0);
 
 }
-*/
+
 template <>
 std::size_t t_geqrf(int matrix_layout, std::size_t m, std::size_t n,
                     std::complex<double>* a, std::size_t lda,
@@ -486,23 +463,62 @@ std::size_t t_geqrf(int matrix_layout, std::size_t m, std::size_t n,
   FC_GLOBAL(cgeqrf, CGEQRF)(&m_, &n_, a, &lda_, tau, work, &lwork, &info);
   assert(info == 0);
 }
-/*
+
 // Overload of ?gqr functions
 template <>
-std::size_t
-t_gqr(int matrix_layout, std::size_t m, std::size_t n, std::size_t k, double* a,
-      std::size_t lda, const double* tau)
-{
-  return LAPACKE_dorgqr(matrix_layout, m, n, k, a, lda, tau);
+std::size_t t_gqr(int matrix_layout, std::size_t m, std::size_t n,
+                  std::size_t k, double* a, std::size_t lda,
+                  const double* tau) {
+  // return LAPACKE_dorgqr(matrix_layout, m, n, k, a, lda, tau);
+
+  BlasInt m_ = m;
+  BlasInt n_ = n;
+  BlasInt k_ = k;
+  BlasInt lda_ = lda;
+
+  double* work;
+  double numwork;
+  BlasInt lwork, info;
+
+  lwork = -1;
+  FC_GLOBAL(dorgqr, DORGQR)
+  (&m_, &n_, &k_, a, &lda_, tau, &numwork, &lwork, &info);
+  assert(info == 0);
+
+  lwork = static_cast<std::size_t>(numwork);
+  auto ptr = std::vector<double>(numwork);
+  work = ptr.data();
+
+  FC_GLOBAL(dorgqr, DORGQR)(&m_, &n_, &k_, a, &lda_, tau, work, &lwork, &info);
+  assert(info == 0);
 }
 template <>
-std::size_t
-t_gqr(int matrix_layout, std::size_t m, std::size_t n, std::size_t k, float* a,
-      std::size_t lda, const float* tau)
-{
-  return LAPACKE_sorgqr(matrix_layout, m, n, k, a, lda, tau);
+std::size_t t_gqr(int matrix_layout, std::size_t m, std::size_t n,
+                  std::size_t k, float* a, std::size_t lda, const float* tau) {
+  // return LAPACKE_sorgqr(matrix_layout, m, n, k, a, lda, tau);
+
+  BlasInt m_ = m;
+  BlasInt n_ = n;
+  BlasInt k_ = k;
+  BlasInt lda_ = lda;
+
+  float* work;
+  float numwork;
+  BlasInt lwork, info;
+
+  lwork = -1;
+  FC_GLOBAL(sorgqr, SORGQR)
+  (&m_, &n_, &k_, a, &lda_, tau, &numwork, &lwork, &info);
+  assert(info == 0);
+
+  lwork = static_cast<std::size_t>(numwork);
+  auto ptr = std::vector<float>(numwork);
+  work = ptr.data();
+
+  FC_GLOBAL(sorgqr, SORGQR)(&m_, &n_, &k_, a, &lda_, tau, work, &lwork, &info);
+  assert(info == 0);
 }
-*/
+
 template <>
 std::size_t t_gqr(int matrix_layout, std::size_t m, std::size_t n,
                   std::size_t k, std::complex<double>* a, std::size_t lda,
@@ -561,23 +577,74 @@ std::size_t t_gqr(int matrix_layout, std::size_t m, std::size_t n,
   FC_GLOBAL(cungqr, CUNGQR)(&m_, &n_, &k_, a, &lda_, tau, work, &lwork, &info);
   assert(info == 0);
 }
-/*
+
 // Overload of ?heevd functions
 template <>
-std::size_t
-t_heevd(int matrix_layout, char jobz, char uplo, std::size_t n, double* a,
-        std::size_t lda, double* w)
-{
-  return LAPACKE_dsyevd(matrix_layout, jobz, uplo, n, a, lda, w);
+std::size_t t_heevd(int matrix_layout, char jobz, char uplo, std::size_t n,
+                    double* a, std::size_t lda, double* w) {
+  // return LAPACKE_dsyevd(matrix_layout, jobz, uplo, n, a, lda, w);
+  BlasInt n_ = n;
+  BlasInt lda_ = lda;
+  BlasInt lwork, info, lrwork, liwork;
+
+  double* work;
+  double numwork;
+  BlasInt* iwork;
+  BlasInt inumwork;
+
+  lwork = -1;
+  liwork = -1;
+
+  FC_GLOBAL(dsyevd, DSYEVD)
+  (&jobz, &uplo, &n_, a, &lda_, w, &numwork, &lwork, &inumwork, &liwork, &info);
+  assert(info == 0);
+
+  lwork = static_cast<std::size_t>(numwork);
+  auto ptr = std::vector<double>(lwork);
+  work = ptr.data();
+
+  liwork = static_cast<std::size_t>(inumwork);
+  auto iptr = std::vector<BlasInt>(liwork);
+  iwork = iptr.data();
+
+  FC_GLOBAL(dsyevd, DSYEVD)
+  (&jobz, &uplo, &n_, a, &lda_, w, work, &lwork, iwork, &liwork, &info);
+  assert(info == 0);
 }
 template <>
-std::size_t
-t_heevd(int matrix_layout, char jobz, char uplo, std::size_t n, float* a,
-        std::size_t lda, float* w)
-{
-  return LAPACKE_ssyevd(matrix_layout, jobz, uplo, n, a, lda, w);
+std::size_t t_heevd(int matrix_layout, char jobz, char uplo, std::size_t n,
+                    float* a, std::size_t lda, float* w) {
+  // return LAPACKE_ssyevd(matrix_layout, jobz, uplo, n, a, lda, w);
+
+  BlasInt n_ = n;
+  BlasInt lda_ = lda;
+  BlasInt lwork, info, lrwork, liwork;
+
+  float* work;
+  float numwork;
+  BlasInt* iwork;
+  BlasInt inumwork;
+
+  lwork = -1;
+  liwork = -1;
+
+  FC_GLOBAL(ssyevd, SSYEVD)
+  (&jobz, &uplo, &n_, a, &lda_, w, &numwork, &lwork, &inumwork, &liwork, &info);
+  assert(info == 0);
+
+  lwork = static_cast<std::size_t>(numwork);
+  auto ptr = std::vector<float>(lwork);
+  work = ptr.data();
+
+  liwork = static_cast<std::size_t>(inumwork);
+  auto iptr = std::vector<BlasInt>(liwork);
+  iwork = iptr.data();
+
+  FC_GLOBAL(ssyevd, SSYEVD)
+  (&jobz, &uplo, &n_, a, &lda_, w, work, &lwork, iwork, &liwork, &info);
+  assert(info == 0);
 }
-*/
+
 template <>
 std::size_t t_heevd(int matrix_layout, char jobz, char uplo, std::size_t n,
                     std::complex<double>* a, std::size_t lda, double* w) {
@@ -598,7 +665,7 @@ std::size_t t_heevd(int matrix_layout, char jobz, char uplo, std::size_t n,
   lrwork = -1;
   liwork = -1;
 
-  FC_GLOBAL(zheevd, zHEEVD)
+  FC_GLOBAL(zheevd, ZHEEVD)
   (&jobz, &uplo, &n_, a, &lda_, w, &numwork, &lwork, &rnumwork, &lrwork,
    &inumwork, &liwork, &info);
   assert(info == 0);
@@ -677,7 +744,22 @@ t_gemv(const CBLAS_LAYOUT Layout, const CBLAS_TRANSPOSE trans,
        const std::size_t incx, const double* beta, double* y,
        const std::size_t incy)
 {
-  cblas_dgemv(Layout, trans, m, n, *alpha, a, lda, x, incx, *beta, y, incy);
+  //cblas_dgemv(Layout, trans, m, n, *alpha, a, lda, x, incx, *beta, y, incy);
+
+  char TA;
+
+  if (trans == CblasNoTrans) TA = 'N';
+  if (trans == CblasTrans) TA = 'T';
+  if (trans == CblasConjTrans) TA = 'C';
+
+  BlasInt m_ = m;
+  BlasInt n_ = n;
+  BlasInt lda_ = lda;
+  BlasInt incx_ = incx;
+  BlasInt incy_ = incy;
+
+  FC_GLOBAL(cgemv, CGEMV)
+  (&TA, &m_, &n_, alpha, a, &lda_, x, &incx_, beta, y, &incy_);
 }
 template <>
 void
@@ -687,7 +769,23 @@ t_gemv(const CBLAS_LAYOUT Layout, const CBLAS_TRANSPOSE trans,
        const std::size_t incx, const float* beta, float* y,
        const std::size_t incy)
 {
-  cblas_sgemv(Layout, trans, m, n, *alpha, a, lda, x, incx, *beta, y, incy);
+  //cblas_sgemv(Layout, trans, m, n, *alpha, a, lda, x, incx, *beta, y, incy);
+
+  char TA;
+
+  if (trans == CblasNoTrans) TA = 'N';
+  if (trans == CblasTrans) TA = 'T';
+  if (trans == CblasConjTrans) TA = 'C';
+
+  BlasInt m_ = m;
+  BlasInt n_ = n;
+  BlasInt lda_ = lda;
+  BlasInt incx_ = incx;
+  BlasInt incy_ = incy;
+
+  FC_GLOBAL(sgemv, SGEMV)
+  (&TA, &m_, &n_, alpha, a, &lda_, x, &incx_, beta, y, &incy_);
+
 }
 template <>
 void
@@ -698,9 +796,23 @@ t_gemv(const CBLAS_LAYOUT Layout, const CBLAS_TRANSPOSE trans,
        const std::size_t incx, const std::complex<double>* beta,
        std::complex<double>* y, const std::size_t incy)
 {
-  cblas_zgemv(Layout, trans, m, n, alpha, a, lda, x, incx, beta, y, incy);
+  //cblas_zgemv(Layout, trans, m, n, alpha, a, lda, x, incx, beta, y, incy);
+
+  char TA;
+
+  if (trans == CblasNoTrans) TA = 'N';
+  if (trans == CblasTrans) TA = 'T';
+  if (trans == CblasConjTrans) TA = 'C';
+
+  BlasInt m_ = m;
+  BlasInt n_ = n;
+  BlasInt lda_ = lda;
+  BlasInt incx_ = incx;
+  BlasInt incy_ = incy;
+
+  FC_GLOBAL(zgemv, ZGEMV)
+  (&TA, &m_, &n_, alpha, a, &lda_, x, &incx_, beta, y, &incy_);
 }
-*/
 template <>
 void t_gemv(const CBLAS_LAYOUT Layout, const CBLAS_TRANSPOSE trans,
             const std::size_t m, const std::size_t n,
@@ -725,7 +837,7 @@ void t_gemv(const CBLAS_LAYOUT Layout, const CBLAS_TRANSPOSE trans,
   FC_GLOBAL(cgemv, CGEMV)
   (&TA, &m_, &n_, alpha, a, &lda_, x, &incx_, beta, y, &incy_);
 }
-
+*/
 // Overload of ?stemr functions
 
 template <>

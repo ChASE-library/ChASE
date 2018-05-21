@@ -217,13 +217,11 @@ void FC_GLOBAL(dstemr,
 void FC_GLOBAL(ssyevd, SSYEVD)(const char* jobz, const char* uplo,
                                const BlasInt* n, float* a, const BlasInt* lda,
                                float* w, float* work, const BlasInt* lwork,
-                               float* rwork, const BlasInt* lrwork,
                                BlasInt* iwork, const BlasInt* liwork,
                                BlasInt* info);
 void FC_GLOBAL(dsyevd, DSYEVD)(const char* jobz, const char* uplo,
                                const BlasInt* n, double* a, const BlasInt* lda,
                                double* w, double* work, const BlasInt* lwork,
-                               double* rwork, const BlasInt* lrwork,
                                BlasInt* iwork, const BlasInt* liwork,
                                BlasInt* info);
 void FC_GLOBAL(cheevd, CHEEVD)(const char* jobz, const char* uplo,
