@@ -14,8 +14,8 @@
 #include <memory>
 #include <vector>
 
-#include "chase_mpi_matrices.hpp"
 #include "algorithm/types.hpp"
+#include "chase_mpi_matrices.hpp"
 
 namespace chase {
 namespace mpi {

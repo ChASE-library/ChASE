@@ -11,8 +11,8 @@
 #pragma once
 
 #include "ChASE-MPI/blas_templates.hpp"
-#include "ChASE-MPI/chase_mpihemm_interface.hpp"
 #include "ChASE-MPI/chase_mpi_properties.hpp"
+#include "ChASE-MPI/chase_mpihemm_interface.hpp"
 
 namespace chase {
 namespace mpi {
@@ -78,7 +78,7 @@ class ChaseMpiHemmBlas : public ChaseMpiHemmInterface<T> {
     return false;
   }
 
-  void shiftMatrix(T c) {
+  void shiftMatrix(T c, bool isunshift = false) {
     // for (std::size_t i = 0; i < n_; i++) {
     //     H_[i * m_ + i] += c;
     // }
@@ -107,6 +107,8 @@ class ChaseMpiHemmBlas : public ChaseMpiHemmInterface<T> {
 
   T* get_H() const override { return matrix_properties_->get_H(); }
 
+  void Start() override {}
+
  private:
   enum NextOp { cAb, bAc };
 
@@ -129,5 +131,5 @@ struct is_skewed_matrixfree<ChaseMpiHemmBlas<T>> {
   static const bool value = true;
 };
 
-}  // namespace matrixfree
+}  // namespace mpi
 }  // namespace chase

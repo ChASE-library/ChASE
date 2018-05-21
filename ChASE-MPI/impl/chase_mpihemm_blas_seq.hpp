@@ -67,7 +67,7 @@ class ChaseMpiHemmBlasSeq : public ChaseMpiHemmInterface<T> {
     return false;
   }
 
-  void shiftMatrix(T const c) override {
+  void shiftMatrix(T const c, bool isunshift = false) override {
     for (std::size_t i = 0; i < N_; ++i) {
       H_[i + i * N_] += c;
     }
@@ -98,6 +98,8 @@ class ChaseMpiHemmBlasSeq : public ChaseMpiHemmInterface<T> {
 
   T* get_V1() const { return V1_.get(); }
   T* get_V2() const { return V2_.get(); }
+
+  void Start() override {}
 
  private:
   std::size_t N_;

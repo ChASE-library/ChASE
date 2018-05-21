@@ -21,6 +21,12 @@
 #include "blas_templates.hpp"
 #include "chase_mpihemm_interface.hpp"
 
+void chase_zshift_mpi_matrix(std::complex<double>* A, std::size_t* off,
+                             std::size_t n, std::size_t m, double shift,
+                             cudaStream_t* stream_);
+
+void chase_zshift_matrix(std::complex<double>* A, int n, double shift,
+                         cudaStream_t* stream_);
 namespace chase {
 namespace mpi {
 
@@ -36,6 +42,9 @@ class ChaseMpiHemmCuda : public ChaseMpiHemmInterface<T> {
     orig_B_ = matrix_properties->get_B();
     orig_C_ = matrix_properties->get_C();
     orig_IMT_ = matrix_properties->get_IMT();
+
+    off_ = matrix_properties->get_off();
+    copied_ = false;
 
     matrix_properties_ = matrix_properties;
 
@@ -63,9 +72,9 @@ class ChaseMpiHemmCuda : public ChaseMpiHemmInterface<T> {
   }
 
   void preApplication(T* V, T* V2, std::size_t locked, std::size_t block) {
-    cuda_exec(cudaMemcpy(B_, orig_B_, block * n_ * sizeof(T),
-                         cudaMemcpyHostToDevice));
-    cudaDeviceSynchronize();
+    // cuda_exec(cudaMemcpy(B_, orig_B_, block * n_ * sizeof(T),
+    //                      cudaMemcpyHostToDevice));
+    // cudaDeviceSynchronize();
     this->preApplication(V, locked, block);
   }
 
@@ -102,22 +111,35 @@ class ChaseMpiHemmCuda : public ChaseMpiHemmInterface<T> {
 
     cuda_exec(cudaMemcpyAsync(buf_target, IMT_, m * block * sizeof(T),
                               cudaMemcpyDeviceToHost, stream_));
-
-    cudaStreamSynchronize(stream_);
   }
 
-  bool postApplication(T* V, std::size_t block) { return false; }
+  bool postApplication(T* V, std::size_t block) {
+    cudaStreamSynchronize(stream_);
+    return false;
+  }
 
-  void shiftMatrix(T c) {
-    // The MPI part already shifts H_, so we just copy to the device
+  void shiftMatrix(T c, bool isunshift = false) {
+    if (!copied_) {
+      cuda_exec(cudaMemcpyAsync(H_, orig_H_, m_ * n_ * sizeof(T),
+                                cudaMemcpyHostToDevice, stream_));
+      copied_ = true;
+    }
+
+    // cudaDeviceSynchronize();
     cuda_exec(
         cudaMemcpy(H_, orig_H_, n_ * m_ * sizeof(T), cudaMemcpyHostToDevice));
-    cudaDeviceSynchronize();
+
+    // chase_zshift_mpi_matrix(H_, off_, n_, m_, std::real(c), &stream_);
+    // chase_zshift_matrix(H_, n_, std::real(c), &stream_);
   }
 
   void applyVec(T* B, T* C) {
     T alpha = T(1.0);
     T beta = T(0.0);
+
+    // this->preApplication(B, 0, 1);
+    // this->apply(alpha, beta, 0, 1);
+    // this->postApplication(C, 1);
 
     t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, n_, 1, n_, &alpha,
            orig_H_, n_, B, n_, &beta, C, n_);
@@ -132,6 +154,7 @@ class ChaseMpiHemmCuda : public ChaseMpiHemmInterface<T> {
   }
 
   T* get_H() const override { return matrix_properties_->get_H(); }
+  void Start() override { copied_ = false; }
 
  private:
   enum NextOp { cAb, bAc };
@@ -150,6 +173,10 @@ class ChaseMpiHemmCuda : public ChaseMpiHemmInterface<T> {
   T* orig_C_;
   T* orig_IMT_;
   T* orig_H_;
+
+  std::size_t* off_;
+
+  bool copied_;
 
   cudaStream_t stream_;
   cublasHandle_t handle_;

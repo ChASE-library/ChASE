@@ -221,7 +221,7 @@ class ChaseMpiHemm : public ChaseMpiHemmInterface<T> {
     */
   }
 
-  void shiftMatrix(T c) {
+  void shiftMatrix(T c,bool isunshift = false) {
     for (std::size_t i = 0; i < n_; i++) {
       for (std::size_t j = 0; j < m_; j++) {
         if (off_[0] + j == (i + off_[1])) {
@@ -253,6 +253,9 @@ class ChaseMpiHemm : public ChaseMpiHemmInterface<T> {
   }
 
   T* get_H() const override { return matrix_properties_->get_H(); }
+  void Start() override {
+    gemm_->Start();
+  }
 
  private:
   enum NextOp { cAb, bAc };

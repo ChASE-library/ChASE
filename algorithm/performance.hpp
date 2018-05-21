@@ -16,8 +16,8 @@
 #include <iostream>
 #include <vector>
 
-#include "types.hpp"
 #include "interface.hpp"
+#include "types.hpp"
 
 namespace chase {
 
@@ -191,11 +191,16 @@ class PerformanceDecoratorChase : public chase::Chase<T> {
  public:
   PerformanceDecoratorChase(Chase<T> *chase) : chase_(chase), perf_() {}
 
-  void Shift(T c, bool isunshift = false) { chase_->Shift(c, isunshift); }
+  void Shift(T c, bool isunshift = false) {
+    if (isunshift)
+      perf_.end_clock(ChasePerfData::TimePtrs::Filter);
+    else
+      perf_.start_clock(ChasePerfData::TimePtrs::Filter);
+
+    chase_->Shift(c, isunshift);
+  }
   void HEMM(std::size_t nev, T alpha, T beta, std::size_t offset) {
-    perf_.start_clock(ChasePerfData::TimePtrs::Filter);
     chase_->HEMM(nev, alpha, beta, offset);
-    perf_.end_clock(ChasePerfData::TimePtrs::Filter);
     perf_.add_filtered_vecs(nev);
   }
   void QR(std::size_t fixednev) {
