@@ -1,6 +1,12 @@
-/* -*- Mode: C++; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
-/* vim: set ts=8 sts=2 et sw=2 tw=80: */
-/* TODO License */
+/* -*- Mode: C++; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+// This file is a part of ChASE.
+// Copyright (c) 2015-2018, Simulation Laboratory Quantum Materials,
+//   Forschungszentrum Juelich GmbH, Germany
+// and
+// Copyright (c) 2016-2018, Aachen Institute for Advanced Study in Computational
+//   Engineering Science, RWTH Aachen University, Germany All rights reserved.
+// License is 3-clause BSD:
+// https://github.com/SimLabQuantumMaterials/ChASE/
 
 #include <complex>
 #include <memory>
@@ -85,7 +91,7 @@ int main() {
 #endif
 
   // Generate Clement matrix
-  std::vector<T> H(N * N);
+  std::vector<T> H(N * N, T(0.0));
   for (auto i = 0; i < N; ++i) {
     H[i + N * i] = 0;
     if (i != N - 1) H[i + 1 + N * i] = std::sqrt(i * (N + 1 - i));
@@ -94,7 +100,7 @@ int main() {
 
   for (auto idx = 0; idx < idx_max; ++idx) {
     if (rank == 0) {
-      std::cout << "Staring Problem #" << idx << "\n";
+      std::cout << "Starting Problem #" << idx << "\n";
       if (config.UseApprox()) {
         std::cout << "Using approximate solution\n";
       }
