@@ -7,6 +7,7 @@
 #include <random>
 #include <vector>
 
+#include "algorithm/performance.hpp"
 #include "ChASE-MPI/chase_mpi.hpp"
 
 #include "ChASE-MPI/impl/chase_mpihemm_blas.hpp"

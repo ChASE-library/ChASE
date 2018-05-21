@@ -5,7 +5,7 @@ build:
   - mkdir -p build
   - cd build
   - FC=ifort CC=icc CXX=icpc cmake ..
-  - make
+  - make VERBOSE=1
   artifacts:
     paths:
     - Makefile
