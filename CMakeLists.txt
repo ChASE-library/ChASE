@@ -13,20 +13,48 @@ FIND_PACKAGE(OpenMP REQUIRED)
 
 # ## algorithm ##
 add_library(chase_algorithm INTERFACE)
-target_include_directories(chase_algorithm INTERFACE "${CMAKE_CURRENT_LIST_DIR}")
+#target_include_directories(chase_algorithm INTERFACE "${CMAKE_CURRENT_LIST_DIR}")
+
+target_include_directories( chase_algorithm INTERFACE
+  "$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}>"
+  $<INSTALL_INTERFACE:include/>  # <prefix>/include/mylib
+)
+
+
 target_compile_features(chase_algorithm INTERFACE cxx_std_11)
-
-
-# ## ChASE-MPI ##
-add_subdirectory( "ChASE-MPI/")
-add_subdirectory( "ChASE-Elemental/")
-
 
 option( CHASE_OUTPUT "ChASE will provide output at each iteration")
 if( CHASE_OUTPUT )
   target_compile_definitions( chase_algorithm  INTERFACE "-DCHASE_OUTPUT" )
 endif()
 
+install( TARGETS chase_algorithm
+  EXPORT chase-headers
+  LIBRARY DESTINATION lib
+  INCLUDES DESTINATION include
+  ARCHIVE DESTINATION lib
+  )
+
+
+install(DIRECTORY algorithm DESTINATION include/algorithm
+  FILES_MATCHING
+    PATTERN "*.hpp"
+    PATTERN "*.inc"
+)
+
+install(EXPORT chase-headers
+  NAMESPACE ChASE::
+  EXPORT_LINK_INTERFACE_LIBRARIES
+  DESTINATION share
+  )
+
+# ## ChASE-MPI ##
+add_subdirectory( "ChASE-MPI/")
+add_subdirectory( "ChASE-Elemental/")
+
 # Driver
-add_executable( "chase_driver" EXCLUDE_FROM_ALL driver/noinput.cpp )
+add_executable( "chase_driver" driver/noinput.cpp )
 target_link_libraries(chase_driver chase_mpi)
+
+enable_testing()
+add_test( BASIC "chase_driver" )

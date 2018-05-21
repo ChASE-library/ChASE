@@ -196,6 +196,13 @@ class ChaseMpiProperties {
   int* get_dims() { return dims_; }
   // offsets of this rank
   std::size_t* get_off() { return off_; }
+  void get_off(std::size_t* xoff, std::size_t* yoff, std::size_t* xlen,
+               std::size_t* ylen) {
+    *xoff = off_[0];
+    *yoff = off_[1];
+    *xlen = m_;
+    *ylen = n_;
+  }
   // coordinates in the cartesian communicator grid
   int* get_coord() { return coord_; }
 

@@ -1,8 +1,5 @@
 # -*- Mode: cmake -*-
 
-# Specify the minimum version for CMake
-cmake_minimum_required( VERSION 3.7 )
-
 # for the moment ChASE only supports Elemental v.84
 # which does not come with CMake support
 if(EXISTS "$ENV{ELEMENTAL_ROOT}/conf/ElemVars")
