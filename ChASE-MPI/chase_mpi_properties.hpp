@@ -114,19 +114,28 @@ class ChaseMpiProperties {
     */
 
     // offsets
-    off_[0] = coord_[0] * (N_ / dims_[0]);
-    off_[1] = coord_[1] * (N_ / dims_[1]);
+    // off_[0] = coord_[0] * (N_ / dims_[0]);
+    // off_[1] = coord_[1] * (N_ / dims_[1]);
 
     // size of local part of H
+    int len;
+
+    len = std::min(N_, N_ / dims_[0] + 1);
+    off_[0] = coord_[0] * len;
+
     if (coord_[0] < dims_[0] - 1) {
-      m_ = N_ / dims_[0];
+      m_ = len;
     } else {
-      m_ = N_ - (dims_[0] - 1) * (N_ / dims_[0]);
+      m_ = N_ - (dims_[0] - 1) * len;
     }
+
+    len = std::min(N_, N_ / dims_[1] + 1);
+    off_[1] = coord_[1] * len;
+
     if (coord_[1] < dims_[1] - 1) {
-      n_ = N_ / dims_[1];
+      n_ = len;
     } else {
-      n_ = N_ - (dims_[1] - 1) * (N_ / dims_[1]);
+      n_ = N_ - (dims_[1] - 1) * len;
     }
 
     H_.reset(new T[n_ * m_]());
@@ -148,11 +157,12 @@ class ChaseMpiProperties {
         newType_[dim_idx].resize(dims_[dim_idx]);
 
         for (auto i = 0; i < dims_[dim_idx]; ++i) {
-          recvcounts_[dim_idx][i] = N_ / dims_[dim_idx];
+          len = std::min(N_, N_ / dims_[dim_idx] + 1);
+          recvcounts_[dim_idx][i] = len;
           displs_[dim_idx][i] = i * recvcounts_[dim_idx][0];
         }
         recvcounts_[dim_idx][dims_[dim_idx] - 1] =
-            N_ - (dims_[dim_idx] - 1) * (N_ / dims_[dim_idx]);
+            N_ - (dims_[dim_idx] - 1) * len;
 
         // TODO //
         // we reduce over rows or cols and not all of them
