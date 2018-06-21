@@ -37,6 +37,7 @@ class ChaseMpi : public chase::Chase<T> {
       : N_(N),
         nev_(nev),
         nex_(nex),
+        rank_(0),
         locked_(0),
         config_(N, nev, nex),
         matrices_(N_, nev_ + nex_, V1, ritzv, H, V2, resid),
@@ -65,6 +66,10 @@ class ChaseMpi : public chase::Chase<T> {
             properties_.get()->create_matrices(V1, ritzv, V2, resid))),
         gemm_(new ChaseMpiHemm<T>(properties_.get(),
                                   new MF<T>(properties_.get()))) {
+    int init;
+    MPI_Initialized(&init);
+    if (init) MPI_Comm_rank(MPI_COMM_WORLD, &rank_);
+
     V_ = matrices_.get_V1();
     W_ = matrices_.get_V2();
     ritzv_ = matrices_.get_Ritzv();
@@ -515,13 +520,7 @@ class ChaseMpi : public chase::Chase<T> {
 
 #ifdef CHASE_OUTPUT
   void Output(std::string str) override {
-    int rank = 0;
-
-    int init = 0;
-    MPI_Initialized(&init);
-    if (init) MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
-    if (rank == 0) std::cout << str;
+    if (rank_ == 0) std::cout << str;
   }
 #endif
 
@@ -538,6 +537,7 @@ class ChaseMpi : public chase::Chase<T> {
   const std::size_t N_;
   const std::size_t nev_;
   const std::size_t nex_;
+  int rank_;
   std::size_t locked_;
 
   T *H_;

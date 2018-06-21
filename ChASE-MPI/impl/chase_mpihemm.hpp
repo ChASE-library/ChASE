@@ -13,8 +13,8 @@
 #include <mpi.h>
 #include <iterator>
 
-#include "ChASE-MPI/chase_mpihemm_interface.hpp"
 #include "ChASE-MPI/chase_mpi_properties.hpp"
+#include "ChASE-MPI/chase_mpihemm_interface.hpp"
 
 namespace chase {
 namespace mpi {
@@ -23,7 +23,7 @@ template <class T>
 class ChaseMpiHemm : public ChaseMpiHemmInterface<T> {
  public:
   ChaseMpiHemm(ChaseMpiProperties<T>* matrix_properties,
-                ChaseMpiHemmInterface<T>* gemm)
+               ChaseMpiHemmInterface<T>* gemm)
       : gemm_(gemm) {
     ldc_ = matrix_properties->get_ldc();
     ldb_ = matrix_properties->get_ldb();
@@ -132,8 +132,6 @@ class ChaseMpiHemm : public ChaseMpiHemmInterface<T> {
     MPI_Comm_rank(comm, &rank);
     std::vector<int> recvcounts(gsize);
     std::vector<int> displs(gsize);
-    // int* recvcounts = (int*)malloc(gsize * sizeof(int));
-    // int* displs = (int*)malloc(gsize * sizeof(int));
 
     for (auto i = 0; i < gsize; ++i) {
       recvcounts[i] = N_ / dims_[dimsIdx];
@@ -163,21 +161,15 @@ class ChaseMpiHemm : public ChaseMpiHemmInterface<T> {
         MPI_Ibcast(buff, recvcounts[i] * block, getMPI_Type<T>(), i, comm,
                    &reqs[i]);
       } else {
-        // MPI_Bcast(MPI_hand->C, recvcounts[i] * nevex, getMPI_Type<T>(), i,
-        // comm);
         // The recv goes right unto the correct bugger
         MPI_Ibcast(targetBuf, block, newType[i], i, comm, &reqs[i]);
       }
     }
 
     // we copy the sender into the target Buffer directly
-    int i = rank;
     for (auto j = 0; j < block; ++j) {
       std::memcpy(targetBuf + j * N + displs[i], buff + recvcounts[i] * j,
                   recvcounts[i] * sizeof(T));
-      // for (auto k = 0; k < recvcounts[i]; ++k) {
-      //     targetBuf[j * N + k + displs[i]] = buff[k + recvcounts[i] * j];
-      // }
     }
 
     MPI_Waitall(gsize, reqs.data(), MPI_STATUSES_IGNORE);
@@ -185,43 +177,9 @@ class ChaseMpiHemm : public ChaseMpiHemmInterface<T> {
     for (auto i = 0; i < gsize; ++i) {
       MPI_Type_free(&newType[i]);
     }
-
-    /*
-    std::size_t comm_size = matrix_properties_->get_dims()[dimsIdx];
-    std::vector<MPI_Request> reqs(comm_size);
-
-    for (auto i = 0; i < comm_size; ++i) {
-        if (matrix_properties_->get_my_rank(dimsIdx) == i) {
-            // The sender sends from the appropriate buffer
-            MPI_Ibcast(buff, matrix_properties_->get_recvcounts()[dimsIdx][i] *
-    block, getMPI_Type<T>(), i, comm, &reqs[i]);
-        } else {
-            //MPI_Bcast(MPI_hand->C, recvcounts[i] * nevex, getMPI_Type<T>(), i,
-    comm);
-            // The recv goes right unto the correct buffer
-            //                 MPI_Ibcast(targetBuf, 1, newType[i], i, comm,
-    &reqs[i]);
-
-            MPI_Ibcast(V + N_ * locked_ + off_[dimsIdx], block,
-    matrix_properties_->get_new_type()[dimsIdx][i], i, comm, &reqs[i]);
-        }
-    }
-
-    // we copy the sender into the target Buffer directly
-    int i = matrix_properties_->get_my_rank(dimsIdx);
-    for (auto j = 0; j < block; ++j) {
-        std::memcpy(
-            V + j * N_ + matrix_properties_->get_displs()[dimsIdx][i] + N_ *
-    locked_,
-            buff + matrix_properties_->get_recvcounts()[dimsIdx][i] * j,
-            matrix_properties_->get_recvcounts()[dimsIdx][i] * sizeof(T));
-    }
-    MPI_Waitall(matrix_properties_->get_dims()[dimsIdx], reqs.data(),
-    MPI_STATUSES_IGNORE);
-    */
   }
 
-  void shiftMatrix(T c,bool isunshift = false) {
+  void shiftMatrix(T c, bool isunshift = false) {
     for (std::size_t i = 0; i < n_; i++) {
       for (std::size_t j = 0; j < m_; j++) {
         if (off_[0] + j == (i + off_[1])) {
@@ -253,9 +211,7 @@ class ChaseMpiHemm : public ChaseMpiHemmInterface<T> {
   }
 
   T* get_H() const override { return matrix_properties_->get_H(); }
-  void Start() override {
-    gemm_->Start();
-  }
+  void Start() override { gemm_->Start(); }
 
  private:
   enum NextOp { cAb, bAc };
@@ -282,5 +238,5 @@ class ChaseMpiHemm : public ChaseMpiHemmInterface<T> {
   std::unique_ptr<ChaseMpiHemmInterface<T>> gemm_;
   ChaseMpiProperties<T>* matrix_properties_;
 };
-}  // namespace matrixfree
+}  // namespace mpi
 }  // namespace chase
