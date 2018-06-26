@@ -43,8 +43,30 @@ target_compile_options( chase_mpi INTERFACE
   ${MPI_CXX_COMPILE_FLAGS}
   )
 
-add_library( chase_mpi_cuda "kernels/shift.cu" )
-set_target_properties( chase_mpi_cuda PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+
+include(CheckLanguage)
+check_language(CUDA)
+#set( CMAKE_CUDA_COMPILER FALSE )
+if(CMAKE_CUDA_COMPILER)
+  find_package( CUDA REQUIRED )
+  enable_language(CUDA)
+
+  add_library( chase_mpi_cuda "kernels/shift.cu" )
+  set_target_properties( chase_mpi_cuda PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+
+  # We need cublas for chase_mpi
+  target_include_directories( chase_mpi INTERFACE
+    ${CUDA_INCLUDE_DIRS}
+    )
+  target_link_libraries( chase_mpi INTERFACE
+    ${CUDA_CUBLAS_LIBRARIES}
+    )
+
+
+else()
+  message(STATUS "No CUDA support")
+endif()
+
 
 install( TARGETS chase_mpi
   EXPORT chase-mpi

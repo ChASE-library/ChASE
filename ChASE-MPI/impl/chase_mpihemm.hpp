@@ -161,11 +161,12 @@ class ChaseMpiHemm : public ChaseMpiHemmInterface<T> {
         MPI_Ibcast(buff, recvcounts[i] * block, getMPI_Type<T>(), i, comm,
                    &reqs[i]);
       } else {
-        // The recv goes right unto the correct bugger
+        // The recv goes right unto the correct buffer
         MPI_Ibcast(targetBuf, block, newType[i], i, comm, &reqs[i]);
       }
     }
 
+    int i = rank;
     // we copy the sender into the target Buffer directly
     for (auto j = 0; j < block; ++j) {
       std::memcpy(targetBuf + j * N + displs[i], buff + recvcounts[i] * j,

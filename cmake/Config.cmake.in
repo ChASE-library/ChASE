@@ -2,6 +2,6 @@
 
 
 
-include("${CMAKE_CURRENT_LIST_DIR}/chase-headers.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/chase-header.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/chase-mpi.cmake")
 check_required_components("@PROJECT_NAME@")

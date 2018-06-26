@@ -1,9 +1,9 @@
 # -*- Mode: cmake -*-
 cmake_minimum_required( VERSION 3.8 )
 
-project( ChASE LANGUAGES C CXX CUDA )
+project( ChASE LANGUAGES C CXX )
 
-FIND_PACKAGE(OpenMP REQUIRED)
+# FIND_PACKAGE(OpenMP REQUIRED)
 # if (OPENMP_FOUND)
 #     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
 #     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
@@ -56,6 +56,7 @@ target_link_libraries(chase_driver chase_mpi)
 enable_testing()
 add_test( BASIC "chase_driver" )
 
+# Install ChASE as a CMake package
 include(CMakePackageConfigHelpers)
 configure_package_config_file(
     "cmake/Config.cmake.in"
