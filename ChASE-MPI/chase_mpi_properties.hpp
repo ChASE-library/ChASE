@@ -79,44 +79,6 @@ class ChaseMpiProperties {
     free_coords[1] = 0;
     MPI_Cart_sub(cartComm, free_coords, &col_comm_);
 
-    /*
-    //Calculating ranks which will consist wog and col group and later row and
-    col communicators
-    MPI_Cart_coords(cartComm, rank_, 2, coord_);
-    CHASE_MPIINT* ranks_row = (CHASE_MPIINT*)malloc(dims_[1] *
-    sizeof(CHASE_MPIINT));
-    CHASE_MPIINT* ranks_col = (CHASE_MPIINT*)malloc(dims_[0] *
-    sizeof(CHASE_MPIINT));
-    int r;
-    MPI_Group origGroup, ROW, COL;
-
-    for (auto i = 0; i < dims_[0]; i++) {
-        coord_[0] = i;
-        coord_[1] = coord_[1];
-        MPI_Cart_rank(cartComm, coord_, &r);
-        ranks_col[i] = r;
-    }
-
-    for (auto j = 0; j < dims_[1]; j++) {
-        coord_[1] = j;
-        coord_[0] = coord_[0];
-        MPI_Cart_rank(cartComm, coord_, &r);
-        ranks_row[j] = r;
-        MPI_Cart_rank(cartComm, coord_, &r);
-        ranks_row[j] = r;
-    }
-    MPI_Comm_group(cartComm, &(origGroup));
-    MPI_Group_incl(origGroup, dims_[1], ranks_row, &(ROW));
-    MPI_Group_incl(origGroup, dims_[0], ranks_col, &(COL));
-    MPI_Comm_create(comm, ROW, &(row_comm_));
-    MPI_Comm_create(comm, COL, &(col_comm_));
-    MPI_Cart_coords(cartComm, rank_, 2, coord_);
-    */
-
-    // offsets
-    // off_[0] = coord_[0] * (N_ / dims_[0]);
-    // off_[1] = coord_[1] * (N_ / dims_[1]);
-
     // size of local part of H
     int len;
 
@@ -253,6 +215,7 @@ class ChaseMpiProperties {
   std::size_t n_;
   std::size_t m_;
 
+  // TODO this should be std::array<std::vector<>,2>
   std::vector<std::vector<int> > recvcounts_;
   std::vector<std::vector<int> > displs_;
   std::vector<std::vector<MPI_Datatype> > newType_;

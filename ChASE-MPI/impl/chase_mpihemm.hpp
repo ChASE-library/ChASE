@@ -125,19 +125,12 @@ class ChaseMpiHemm : public ChaseMpiHemmInterface<T> {
       dimsIdx = 1;
     }
 
-    // std::memcpy(V + locked_ * N_, buff, N_ * block * sizeof(T));
-
     int gsize, rank;
     MPI_Comm_size(comm, &gsize);
     MPI_Comm_rank(comm, &rank);
-    std::vector<int> recvcounts(gsize);
-    std::vector<int> displs(gsize);
 
-    for (auto i = 0; i < gsize; ++i) {
-      recvcounts[i] = N_ / dims_[dimsIdx];
-      displs[i] = i * recvcounts[0];
-    }
-    recvcounts[gsize - 1] = N_ - (dims_[dimsIdx] - 1) * (N_ / dims_[dimsIdx]);
+    auto& recvcounts = matrix_properties_->get_recvcounts()[dimsIdx];
+    auto& displs = matrix_properties_->get_displs()[dimsIdx];
 
     std::vector<MPI_Request> reqs(gsize);
     std::vector<MPI_Datatype> newType(gsize);
