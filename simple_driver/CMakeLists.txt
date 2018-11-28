@@ -20,16 +20,16 @@ if( ${Boost_FOUND} )
 
 
   ##############################################################################
-  #                blas_seq_driver: no GPU, $A$ not distributed
+  #                simple_seq_driver: no GPU, $A$ not distributed
   ##############################################################################
-  add_executable( "blas_seq_driver"
+  add_executable( "simple_seq_driver"
     "simple_driver.cpp"
     )
-  target_link_libraries( "blas_seq_driver" PRIVATE chase_mpi_driver )
+  target_link_libraries( "simple_seq_driver" PRIVATE chase_mpi_driver )
 
-  add_executable( "blas_driver" "simple_driver.cpp" )
-  target_link_libraries( "blas_driver" chase_mpi_driver )
-  target_compile_definitions( "blas_driver" PRIVATE USE_MPI=1 )
+  add_executable( "simple_driver" "simple_driver.cpp" )
+  target_link_libraries( "simple_driver" chase_mpi_driver )
+  target_compile_definitions( "simple_driver" PRIVATE USE_MPI=1 )
 
   # add_executable( "gpu_seq_driver" "simple_driver.cpp" )
   # target_link_libraries( "gpu_seq_driver"
