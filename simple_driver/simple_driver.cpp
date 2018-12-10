@@ -85,7 +85,7 @@ template <typename T>
 void readMatrix(T* H, std::string path_in, std::size_t size) {
   std::ostringstream problem(std::ostringstream::ate);
   problem << path_in;
-  
+
   std::cout << "start reading matrix\n";
   std::cout << problem.str() << std::endl;
   std::cout << "size = " << size << std::endl;
@@ -123,9 +123,9 @@ int main(int argc, char* argv[]) {
   MPI_Init(&argc, &argv);
   int rank = 0;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  
+
   ChASE_DriverProblemConfig conf;
-  
+
   po::options_description desc("ChASE Options");
   desc.add_options()(                                                     //
       "help,h",                                                           //
@@ -155,38 +155,23 @@ int main(int argc, char* argv[]) {
       "end", po::value<std::size_t>(&conf.end)->default_value(2),         //
       "End ell"                                                           //
       )(                                                                  //
-      "spin", po::value<std::string>(&conf.spin)->default_value("d"),     //
-      "spin"                                                              //
-      )(                                                                  //
-      "kpoint", po::value<std::size_t>(&conf.kpoint)->default_value(0),   //
-      "kpoint"                                                            //
-      )(                                                                  //
       "tol", po::value<double>(&conf.tol)->default_value(1e-10),          //
       "Tolerance for Eigenpair convergence"                               //
       )(                                                                  //
-      "path_in", po::value<std::string>(&conf.path_in)->default_value(""), //
-      "Path to the input matrix/matrices"                                 //
-      )(                                                                  //
-      "input", po::value<std::string>(&conf.input)->default_value(""), //
+      "input", po::value<std::string>(&conf.input)->default_value(""),    //
       "Path to the input matrix/matrices"                                 //
       )(                                                                  //
       "mode", po::value<std::string>(&conf.mode)->default_value("R"),     //
       "valid values are R(andom) or A(pproximate)"                        //
       )(                                                                  //
-      "opt", po::value<std::string>(&conf.opt)->default_value("S"),       //
+      "opt", po::value<std::string>(&conf.opt)->default_value("N"),       //
       "Optimi(S)e degree, or do (N)ot optimise"                           //
       )(                                                                  //
       "path_eigp", po::value<std::string>(&conf.path_eigp),               //
       "Path to approximate solutions, only required when mode"            //
       "is Approximate, otherwise not used"                                //
-      )(                                                                  //
-      "sequence", po::value<bool>(&conf.sequence)->default_value(false),  //
-      "Treat as sequence of Problems. Previous ChASE solution is used,"   //
-      "when available"                                                    //
-      )(                                                                  //
-      "legacy", po::value<bool>(&conf.legacy)->default_value(false),      //
-      "Use legacy naming scheme?");                                       //
-      
+      );                                                                  //
+
   po::variables_map vm;
   po::store(po::parse_command_line(argc, argv, desc), vm);
 
@@ -226,7 +211,7 @@ int main(int argc, char* argv[]) {
     // TODO verify that eigp is a valid path
     return -1;
   }
-  
+
   if (conf.input != "" && conf.N == 1001) {
     std::cout << "Ensure to manully set option --n with the correct matrix size. Currently n= " << conf.N << std::endl;
   }
@@ -289,19 +274,19 @@ int main(int argc, char* argv[]) {
     if (i != N - 1) H[i + 1 + N * i] = std::sqrt(i * (N + 1 - i));
     if (i != N - 1) H[i + N * (i + 1)] = std::sqrt(i * (N + 1 - i));
   }*/
-  
+
   std::vector<T> H(N * N, T(0.0));
-  
+
   if(conf.input == "") {
     generateClement(H, N);
-    
+
     // Load matrix into distributed buffer
     for (std::size_t x = 0; x < xlen; x++) {
       for (std::size_t y = 0; y < ylen; y++) {
         single.GetMatrixPtr()[x + xlen * y] = H.at((xoff + x) * N + (yoff + y));
       }
     }
-    
+
     // print first off-diag elements of H
     if (rank == 0) {
       for (auto i = 1; i < std::size_t(6); ++i)
@@ -316,16 +301,16 @@ int main(int argc, char* argv[]) {
 //     readMatrix(M, conf.input, N * N);
     readMatrix(M, conf.input, N * N, xoff, yoff, xlen, ylen);
     // print first off-diag elements of H
-    if (rank == 0) {
-      for (auto i = 1; i < std::size_t(6); ++i)
-        std::cout << "|  " << std::setw(4) << i  << " | " << std::setw(20)
-                  << single.GetMatrixPtr()[i+N*i-1]
-                  << "  |\n";
-      std::cout << "\n\n\n";
-    }
-    std::cout << " Not jet supported  \n";
+    // if (rank == 0) {
+    //   for (auto i = 1; i < std::size_t(6); ++i)
+    //     std::cout << "|  " << std::setw(4) << i  << " | " << std::setw(20)
+    //               << single.GetMatrixPtr()[i+N*i-1]
+    //               << "  |\n";
+    //   std::cout << "\n\n\n";
+    // }
+    // std::cout << " Not jet supported  \n";
   }
-  
+
 
   for (auto idx = 0; idx < idx_max; ++idx) {
     if (rank == 0) {
