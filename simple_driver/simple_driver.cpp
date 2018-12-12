@@ -399,12 +399,23 @@ int main(int argc, char* argv[]) {
     if( conf.perturb > 1e-20 ) {
       config.SetApprox(true);
       // Perturb Full Clement matrix
-      for (std::size_t i = 1; i < N; ++i) {
-        for (std::size_t j = 1; j < i; ++j) {
-          T element_perturbation = T(d(gen), d(gen)) * conf.perturb;
-          H[j + N * i] += element_perturbation;
-          H[i + N * j] += std::conj(element_perturbation);
-        }
+//       for (std::size_t i = 1; i < N; ++i) {
+//         for (std::size_t j = 1; j < i; ++j) {
+//           T element_perturbation = T(d(gen), d(gen)) * conf.perturb;
+//           H[j + N * i] += element_perturbation;
+//           H[i + N * j] += std::conj(element_perturbation);
+//         }
+//       }
+      // Pertrub Eigenvector
+      Base<T> Vnorm = 0;
+      for (std::size_t i = 1; i < N * (nev + nex); ++i) {
+        T element_perturbation = T(d(gen), d(gen)) * conf.perturb;
+        V[ i ] += element_perturbation;
+        Vnorm += real(V[i] * V[i]);
+      }
+      Vnorm = std::sqrt(Vnorm);
+      for (std::size_t i = 1; i < N * (nev + nex); ++i) {
+        V[ i ] = V[ i ] / Vnorm;
       }
     }
 
