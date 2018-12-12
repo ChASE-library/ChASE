@@ -54,6 +54,7 @@ struct ChASE_DriverProblemConfig {
 
   std::string path_in;    // path to the matrix input files
   std::string input;    // path to the matrix input files
+  std::string output;
   std::string mode;       // Approx or Random mode
   std::string opt;        // enable optimisation of degree
   std::string arch;       // ??
@@ -61,6 +62,8 @@ struct ChASE_DriverProblemConfig {
   std::string path_out;
   std::string path_name;
   std::string test_name;
+  
+  Base<T> perturb;
 
   std::size_t kpoint;
   bool legacy;
@@ -126,7 +129,7 @@ int main(int argc, char* argv[]) {
 
   ChASE_DriverProblemConfig conf;
 
-  po::options_description desc("ChASE Options");
+  po::options_description desc("ChASE Simple Driver Options");
   desc.add_options()(                                                     //
       "help,h",                                                           //
       "show this message"                                                 //
@@ -161,6 +164,9 @@ int main(int argc, char* argv[]) {
       "input", po::value<std::string>(&conf.input)->default_value(""),    //
       "Path to the input matrix/matrices"                                 //
       )(                                                                  //
+      "output", po::value<std::string>(&conf.output)->default_value("eig.txt"),    //
+      "Path to the write the eigenvalues"                                 //
+      )(                                                                  //
       "mode", po::value<std::string>(&conf.mode)->default_value("R"),     //
       "valid values are R(andom) or A(pproximate)"                        //
       )(                                                                  //
@@ -170,6 +176,9 @@ int main(int argc, char* argv[]) {
       "path_eigp", po::value<std::string>(&conf.path_eigp),               //
       "Path to approximate solutions, only required when mode"            //
       "is Approximate, otherwise not used"                                //
+      )(                                                                  //
+      "perturb", po::value<Base<T>>(&conf.perturb)->default_value(0),  //
+      "Perturbation of eigenvalues used for second run"                   //
       );                                                                  //
 
   po::variables_map vm;
@@ -219,8 +228,12 @@ int main(int argc, char* argv[]) {
   std::size_t N = conf.N;
   std::size_t nev = conf.nev;
   std::size_t nex = conf.nex;
-  std::size_t idx_max = 3;
-  Base<T> perturb = 1e-4;
+  std::size_t idx_max=2;
+  if( conf.perturb > 1e-20 ) {
+    idx_max= 2;}
+  else {
+    idx_max = 1;}
+//   Base<T> perturb = 1e-4;
 
   std::mt19937 gen(1337.0);
   std::normal_distribution<> d;
@@ -246,11 +259,19 @@ int main(int argc, char* argv[]) {
   config.SetOpt(conf.opt == "S");
   config.SetApprox(conf.mode == "A");
 
-  if (rank == 0)
-    std::cout << "Solving " << idx_max << " symmetrized Clement matrices (" << N
-              << "x" << N << ") with element-wise random perturbation of "
-              << perturb << '\n'
-              << config;
+  if (rank == 0) {
+    if(conf.input == "") {
+      std::cout << "Solving " << idx_max << " symmetrized Clement matrices (" << N
+                << "x" << N << ") with element-wise random perturbation of "
+                << conf.perturb << '\n'
+                << config;
+    } else {
+      std::cout << "Solving input matrix " << conf.input << " (" << N
+                << "x" << N << ") with element-wise random perturbation of "
+                << conf.perturb << '\n'
+                << config;
+    }
+  }
 
   // randomize V
   for (std::size_t i = 0; i < N * (nev + nex); ++i) {
@@ -311,10 +332,12 @@ int main(int argc, char* argv[]) {
     // std::cout << " Not jet supported  \n";
   }
 
-
   for (auto idx = 0; idx < idx_max; ++idx) {
     if (rank == 0) {
-      std::cout << "Starting Problem #" << idx << "\n";
+      if( conf.perturb > 1e-20 )
+        std::cout << "Starting Problem #" << idx << "\n";
+      else
+        std::cout << "Starting Problem " << conf.input << "\n";
       if (config.UseApprox()) {
         std::cout << "Using approximate solution\n";
       }
@@ -324,9 +347,13 @@ int main(int argc, char* argv[]) {
     chase::Solve(&performanceDecorator);
 
     if (rank == 0) {
+      std::cout << " ChASE timings: " << "\n";
       performanceDecorator.GetPerfData().print();
       Base<T>* resid = single.GetResid();
-      std::cout << "Finished Problem #" << idx << "\n";
+      if( conf.perturb > 1e-20 )
+        std::cout << "Finished Problem #" << idx << "\n";
+      else
+        std::cout << "Finished Problem \n";
       std::cout << "Printing first 5 eigenvalues and residuals\n";
       std::cout
           << "| Index |       Eigenvalue      |         Residual      |\n"
@@ -341,15 +368,43 @@ int main(int argc, char* argv[]) {
                   << Lambda[i] << "  | " << std::setw(width) << resid[i]
                   << "  |\n";
       std::cout << "\n\n\n";
+    
+    
+    
+      if(idx == 0){
+        std::ofstream outputFile(conf.output);
+        
+        outputFile
+          << "| Index |       Eigenvalue      |         Residual      |\n"
+          << "|-------|-----------------------|-----------------------|\n";
+        std::size_t width = 20;
+        outputFile << std::setprecision(12);
+        outputFile << std::setfill(' ');
+        outputFile << std::scientific;
+        outputFile << std::right;
+        for (auto i = 0; i < nev; ++i)
+          outputFile << "|  " << std::setw(4) << i + 1 << " | " << std::setw(width)
+                    << Lambda[i] << "  | " << std::setw(width) << resid[i]
+                    << "  |\n";
+        outputFile << "\n\n\n";
+        
+        outputFile.close();
+        
+        std::cout << "Eigenvalues written to " << conf.output << "\n";
+        
+      }
     }
-
-    config.SetApprox(true);
-    // Perturb Full Clement matrix
-    for (std::size_t i = 1; i < N; ++i) {
-      for (std::size_t j = 1; j < i; ++j) {
-        T element_perturbation = T(d(gen), d(gen)) * perturb;
-        H[j + N * i] += element_perturbation;
-        H[i + N * j] += std::conj(element_perturbation);
+    
+    
+    if( conf.perturb > 1e-20 ) {
+      config.SetApprox(true);
+      // Perturb Full Clement matrix
+      for (std::size_t i = 1; i < N; ++i) {
+        for (std::size_t j = 1; j < i; ++j) {
+          T element_perturbation = T(d(gen), d(gen)) * conf.perturb;
+          H[j + N * i] += element_perturbation;
+          H[i + N * j] += std::conj(element_perturbation);
+        }
       }
     }
 
