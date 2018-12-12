@@ -415,7 +415,7 @@ int main(int argc, char* argv[]) {
       }
       Vnorm = std::sqrt(Vnorm);
       for (std::size_t i = 1; i < N * (nev + nex); ++i) {
-        V[ i ] = V[ i ] / Vnorm;
+        single.GetVectorsPtr()[i] = V[ i ] / Vnorm;
       }
     }
 
