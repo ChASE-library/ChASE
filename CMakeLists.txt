@@ -54,7 +54,11 @@ add_executable( "chase_driver" driver/noinput.cpp )
 target_link_libraries(chase_driver chase_mpi)
 
 # Simple Driver
-add_subdirectory("./simple_driver")
+option(BUILD_SIMPLEDRIVER "Build Simple Driver" OFF)
+if(BUILD_SIMPLEDRIVER)
+  message(STATUS "Building Simple Driver")
+  add_subdirectory("./simple_driver")
+endif()
 
 enable_testing()
 add_test( BASIC "chase_driver" )
