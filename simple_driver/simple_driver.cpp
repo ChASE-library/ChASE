@@ -152,12 +152,6 @@ int main(int argc, char* argv[]) {
       "deg", po::value<std::size_t>(&conf.deg)->default_value(20),        //
       "Initial filtering degree"                                          //
       )(                                                                  //
-      "bgn", po::value<std::size_t>(&conf.bgn)->default_value(2),         //
-      "Start ell"                                                         //
-      )(                                                                  //
-      "end", po::value<std::size_t>(&conf.end)->default_value(2),         //
-      "End ell"                                                           //
-      )(                                                                  //
       "tol", po::value<double>(&conf.tol)->default_value(1e-10),          //
       "Tolerance for Eigenpair convergence"                               //
       )(                                                                  //
@@ -173,11 +167,7 @@ int main(int argc, char* argv[]) {
       "opt", po::value<std::string>(&conf.opt)->default_value("N"),       //
       "Optimi(S)e degree, or do (N)ot optimise"                           //
       )(                                                                  //
-      "path_eigp", po::value<std::string>(&conf.path_eigp),               //
-      "Path to approximate solutions, only required when mode"            //
-      "is Approximate, otherwise not used"                                //
-      )(                                                                  //
-      "perturb", po::value<Base<T>>(&conf.perturb)->default_value(0),  //
+      "perturb", po::value<Base<T>>(&conf.perturb)->default_value(0),     //
       "Perturbation of eigenvalues used for second run"                   //
       );                                                                  //
 
@@ -198,10 +188,6 @@ int main(int argc, char* argv[]) {
 
   // Additional Error checks
   // TODO this should be a member of struct
-  if (conf.bgn > conf.end) {
-    std::cout << "Begin must be smaller than End!" << std::endl;
-    return -1;
-  }
 
   if (conf.mode != "R" && conf.mode != "A") {
     std::cout << "Illegal value for mode: \"" << conf.mode << "\"" << std::endl
@@ -212,12 +198,6 @@ int main(int argc, char* argv[]) {
   if (conf.opt != "N" && conf.opt != "S") {
     std::cout << "Illegal value for opt: " << conf.opt << std::endl
               << "Legal values are N, S" << std::endl;
-    return -1;
-  }
-
-  if (conf.path_eigp.empty() && conf.mode == "A") {
-    std::cout << "eigp is required when mode is " << conf.mode << std::endl;
-    // TODO verify that eigp is a valid path
     return -1;
   }
 
