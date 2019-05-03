@@ -136,9 +136,15 @@ class ChasePerfData {
       std::cout << " | GFLOPS | GFLOPS/s ";
     }
 
-    std::cout << " | Size  | Iterations | Vecs  |  All | Lanczos | "
-                 "Filter | QR | RR | Resid | "
+    std::cout << " | Size  | Iterations | Vecs   |  All       | Lanczos    | "
+                 "Filter     | QR         | RR         | Resid      | "
               << std::endl;
+    
+    std::size_t width = 20;
+    std::cout << std::setprecision(8);
+    std::cout << std::setfill(' ');
+//     std::cout << std::scientific;
+    std::cout << std::right;
 
     if (N != 0) {
       std::size_t flops = get_flops(N);
@@ -152,8 +158,8 @@ class ChasePerfData {
 
     int size;
     MPI_Comm_size(MPI_COMM_WORLD, &size);
-    std::cout << " | " << size;
-    std::cout << " | " << chase_iteration_count << " | " << chase_filtered_vecs;
+    std::cout << " | " << std::setw(5) << size;
+    std::cout << " | " << std::setw(10) << chase_iteration_count << " | " << std::setw(6) << chase_filtered_vecs;
 
     this->print_timings();
   }
@@ -167,14 +173,20 @@ class ChasePerfData {
     //           << "RR\t\t" << timings[TimePtrs::Rr] << std::endl
     //           << "Resid+Locking\t" << timings[TimePtrs::Resids_Locking]
     //           << std::endl;
-
-    std::cout << " | " << timings[TimePtrs::All].count() << " | "
-              << timings[TimePtrs::Lanczos].count() << " | "
-              << timings[TimePtrs::Filter].count() << " | "
-              << timings[TimePtrs::Qr].count() << " | "
-              << timings[TimePtrs::Rr].count() << " | "
-              << timings[TimePtrs::Resids_Locking].count() << " | "
-              << std::endl;
+    
+    std::size_t width = 10;
+    std::cout << std::setprecision(6);
+    std::cout << std::setfill(' ');
+//     std::cout << std::scientific;
+    std::cout << std::right;
+    
+    std::cout << " | " << std::setw(width) << timings[TimePtrs::All].count()
+              << " | " << std::setw(width) << timings[TimePtrs::Lanczos].count()
+              << " | " << std::setw(width) << timings[TimePtrs::Filter].count()
+              << " | " << std::setw(width) << timings[TimePtrs::Qr].count()
+              << " | " << std::setw(width) << timings[TimePtrs::Rr].count()
+              << " | " << std::setw(width) << timings[TimePtrs::Resids_Locking].count()
+              << " | " << std::endl;
   }
 
   std::size_t chase_iteration_count;
