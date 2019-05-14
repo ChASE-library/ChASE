@@ -226,7 +226,7 @@ int main(int argc, char* argv[]) {
   auto Lambda = std::vector<Base<T>>(nev + nex);
 
 #ifdef USE_MPI
-  CHASE single(new ChaseMpiProperties<T>(N, nev, nex, MPI_COMM_SELF), V.data(),
+  CHASE single(new ChaseMpiProperties<T>(N, nev, nex, MPI_COMM_WORLD), V.data(),
                Lambda.data());
 #else
   CHASE single(N, nev, nex, V.data(), Lambda.data());
