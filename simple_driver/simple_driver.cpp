@@ -24,7 +24,7 @@
 #include "ChASE-MPI/impl/chase_mpihemm_blas_seq.hpp"
 #include "ChASE-MPI/impl/chase_mpihemm_blas_seq_inplace.hpp"
 
-#ifdef BUILD_CUDA
+#ifdef DRIVER_BUILD_CUDA
 #include "ChASE-MPI/impl/chase_mpihemm_cuda.hpp"
 #include "ChASE-MPI/impl/chase_mpihemm_cuda_seq.hpp"
 #endif
@@ -33,11 +33,19 @@ using T = std::complex<double>;
 using namespace chase;
 using namespace chase::mpi;
 
-#ifdef USE_MPI
-typedef ChaseMpi<ChaseMpiHemmBlas, T> CHASE;
+#ifdef DRIVER_BUILD_CUDA
+  #ifdef USE_MPI
+     typedef ChaseMpi<ChaseMpiHemmCuda, T> CHASE;
+  #else
+     typedef ChaseMpi<ChaseMpiHemmCudaSeq, T> CHASE;
+  #endif  // USE_MPI
 #else
-typedef ChaseMpi<ChaseMpiHemmBlasSeq, T> CHASE;
-#endif
+  #ifdef USE_MPI
+    typedef ChaseMpi<ChaseMpiHemmBlas, T> CHASE;
+  #else
+    typedef ChaseMpi<ChaseMpiHemmBlasSeq, T> CHASE;
+  #endif
+#endif	// BUILD_CUDA
 
 namespace po = boost::program_options;
 
