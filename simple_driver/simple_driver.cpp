@@ -26,6 +26,7 @@
 
 #ifdef DRIVER_BUILD_CUDA
 #include "ChASE-MPI/impl/chase_mpihemm_cuda.hpp"
+#include "ChASE-MPI/impl/chase_mpihemm_mgpu.hpp"
 #include "ChASE-MPI/impl/chase_mpihemm_cuda_seq.hpp"
 #endif
 
@@ -36,6 +37,7 @@ using namespace chase::mpi;
 #ifdef DRIVER_BUILD_CUDA
   #ifdef USE_MPI
      typedef ChaseMpi<ChaseMpiHemmCuda, T> CHASE;
+     //typedef ChaseMpi<ChaseMpiHemmMultiGPU, T> CHASE;
   #else
      typedef ChaseMpi<ChaseMpiHemmCudaSeq, T> CHASE;
   #endif  // USE_MPI

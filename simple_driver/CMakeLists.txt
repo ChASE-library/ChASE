@@ -27,6 +27,9 @@ if( ${Boost_FOUND} )
     )
   target_link_libraries( "simple_seq_driver" PRIVATE chase_mpi_driver )
 
+  ##############################################################################
+  #                simple_driver: no GPU, MPI ($A$ distributed among MPI-ranks)
+  ##############################################################################
   add_executable( "simple_driver" "simple_driver.cpp" )
   target_link_libraries( "simple_driver" chase_mpi_driver )
   target_compile_definitions( "simple_driver" PRIVATE USE_MPI=1 )
