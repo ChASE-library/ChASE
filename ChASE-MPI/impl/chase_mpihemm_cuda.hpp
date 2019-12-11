@@ -15,6 +15,7 @@
 #include <cublas_v2.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
+#include <cuda_profiler_api.h>
 #include <complex>
 
 #include "blas_cuda_wrapper.hpp"
@@ -48,13 +49,22 @@ class ChaseMpiHemmCuda : public ChaseMpiHemmInterface<T> {
 
     matrix_properties_ = matrix_properties;
 
+    /// Set cuda device fore each MPI rank. The cuda devices are choose such as MPI_rank & number-of-devices
+    int num_of_devices;
+    int mpi_rank = matrix_properties_->get_my_rank();
+    cuda_exec(cudaGetDeviceCount(&num_of_devices));
+    cuda_exec(cudaSetDevice(mpi_rank % num_of_devices));
+
+    std::cout << "MPI rank " << mpi_rank << " running on GPU device " << mpi_rank%num_of_devices << std::endl;
+
     auto maxBlock = matrix_properties_->get_max_block();
     cuda_exec(cudaMalloc(&(B_), std::max(n_, m_) * maxBlock * sizeof(T)));
     cuda_exec(cudaMalloc(&(IMT_), std::max(n_, m_) * maxBlock * sizeof(T)));
     cuda_exec(cudaMalloc(&(H_), m_ * n_ * sizeof(T)));
 
-    cuda_exec(cudaSetDevice(0));
+    /// Create CUBLAS context
     cublasCreate(&handle_);
+
     cuda_exec(cudaStreamCreate(&stream_));
     cublasSetStream(handle_, stream_);
   }
