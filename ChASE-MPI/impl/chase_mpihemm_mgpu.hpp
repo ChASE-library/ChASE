@@ -45,31 +45,42 @@ class ChaseMpiHemmMultiGPU : public ChaseMpiHemmInterface<T> {
     orig_IMT_ = matrix_properties->get_IMT();
 
     off_ = matrix_properties->get_off();
-    copied_ = false;
+    //copied_ = false;
 
     matrix_properties_ = matrix_properties;
 
-    auto maxBlock = matrix_properties_->get_max_block();
-	
 	// Remove allocation of memories. Will be done in mgpu_gpu class (constructor)
-	mgpuHemm = mgpu_cudaHemm<T>();
 
-    cuda_exec(cudaMalloc(&(B_), std::max(n_, m_) * maxBlock * sizeof(T)));
-    cuda_exec(cudaMalloc(&(IMT_), std::max(n_, m_) * maxBlock * sizeof(T)));
-    cuda_exec(cudaMalloc(&(H_), m_ * n_ * sizeof(T)));
+    int num_of_devices;
+    int mpi_rank = matrix_properties_->get_my_rank();
+    cuda_exec(cudaGetDeviceCount(&num_of_devices));
 
-    cuda_exec(cudaSetDevice(0));
+    int device_id = mpi_rank % num_of_devices;
+    cuda_exec(cudaSetDevice(device_id));
+
+    std::cout << "[CHASE_MGPU] MPI rank " << mpi_rank << " running on GPU device " << mpi_rank%num_of_devices << std::endl;
+
+    std::size_t maxBlock = matrix_properties_->get_max_block();
+    //cuda_exec(cudaMalloc(&(B_), std::max(n_, m_) * maxBlock * sizeof(T)));
+    //cuda_exec(cudaMalloc(&(IMT_), std::max(n_, m_) * maxBlock * sizeof(T)));
+    //cuda_exec(cudaMalloc(&(H_), m_ * n_ * sizeof(T)));
+
+    /// Create CUBLAS context
     cublasCreate(&handle_);
+
+	/// Create and set cuda stream
     cuda_exec(cudaStreamCreate(&stream_));
     cublasSetStream(handle_, stream_);
 
-	printf("MPI rank %d working on MultiGPU CUDA implementation\n", matrix_properties_->get_my_rank());
+	/// Construct a new object for handling multi-GPU HEMM execution
+	mgpuHemm = new mgpu_cudaHemm<T>(handle_, stream_, m_, n_, maxBlock);
   }
 
   ~ChaseMpiHemmMultiGPU() {
-    cudaFree(B_);
-    cudaFree(IMT_);
-    cudaFree(H_);
+    //cudaFree(B_);
+    //cudaFree(IMT_);
+    //cudaFree(H_);
+    delete mgpuHemm;
     cudaStreamDestroy(stream_);
     cublasDestroy(handle_);
   }
@@ -110,7 +121,7 @@ class ChaseMpiHemmMultiGPU : public ChaseMpiHemmInterface<T> {
       next_ = NextOp::bAc;
     }
 
-    cuda_exec(cudaMemcpyAsync(B_, buf_init, block * k * sizeof(T),
+    /*cuda_exec(cudaMemcpyAsync(B_, buf_init, block * k * sizeof(T),
                               cudaMemcpyHostToDevice, stream_));
 
     cublasTgemm(handle_, transa, CUBLAS_OP_N, m, n, k, &alpha, H_, m_, B_, k,
@@ -118,6 +129,8 @@ class ChaseMpiHemmMultiGPU : public ChaseMpiHemmInterface<T> {
 
     cuda_exec(cudaMemcpyAsync(buf_target, IMT_, m * block * sizeof(T),
                               cudaMemcpyDeviceToHost, stream_));
+	*/
+	mgpuHemm->computeHemm(buf_init, buf_target, m, n, k, block, alpha, beta, transa);
   }
 
   bool postApplication(T* V, std::size_t block) {
@@ -126,7 +139,7 @@ class ChaseMpiHemmMultiGPU : public ChaseMpiHemmInterface<T> {
   }
 
   void shiftMatrix(T c, bool isunshift = false) {
-    if (!copied_) {
+    /*if (!copied_) {
       cuda_exec(cudaMemcpyAsync(H_, orig_H_, m_ * n_ * sizeof(T),
                                 cudaMemcpyHostToDevice, stream_));
       copied_ = true;
@@ -135,6 +148,9 @@ class ChaseMpiHemmMultiGPU : public ChaseMpiHemmInterface<T> {
     // cudaDeviceSynchronize();
     cuda_exec(
         cudaMemcpy(H_, orig_H_, n_ * m_ * sizeof(T), cudaMemcpyHostToDevice));
+	*/
+	mgpuHemm->distributeH(orig_H_);
+
 
     // chase_zshift_mpi_matrix(H_, off_, n_, m_, std::real(c), &stream_);
     // chase_zshift_matrix(H_, n_, std::real(c), &stream_);
@@ -172,11 +188,11 @@ class ChaseMpiHemmMultiGPU : public ChaseMpiHemmInterface<T> {
 
   NextOp next_;
 
-  mgpu_cudaHemm<T> mgpuHemm;
+  mgpu_cudaHemm<T> *mgpuHemm;
 
-  T* B_;
-  T* IMT_;
-  T* H_;
+  //T* B_;
+  //T* IMT_;
+  //T* H_;
 
   T* orig_B_;
   T* orig_C_;
@@ -189,6 +205,8 @@ class ChaseMpiHemmMultiGPU : public ChaseMpiHemmInterface<T> {
 
   cudaStream_t stream_;
   cublasHandle_t handle_;
+
+  /// Matrix properties
   ChaseMpiProperties<T>* matrix_properties_;
 };
 
