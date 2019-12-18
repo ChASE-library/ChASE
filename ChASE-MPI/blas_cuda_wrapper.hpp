@@ -63,7 +63,7 @@ cublasStatus_t cublasTgemm(cublasHandle_t handle, cublasOperation_t transa,
                      reinterpret_cast<cuDoubleComplex*>(C), ldc);
 }
 
-#if 0
+#if 1
 cublasStatus_t cublasTaxpy(cublasHandle_t handle, int n, const float* alpha,
                            const float* x, int incx, float* y, int incy) {
   return cublasSaxpy(handle, n, alpha, x, incx, y, incy);
