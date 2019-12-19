@@ -12,6 +12,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <complex>
+#include <iomanip>
 #include <cuda_runtime_api.h>
 #include <cublas_v2.h>
 #include <cuda_profiler_api.h>
@@ -63,56 +64,64 @@ int main (int argc, char *argv[]) {
 
 	/// Read matrix size
 	m = atoi(argv[1]);
-    n = atoi(argv[2]);
+	n = atoi(argv[2]);
 	blockDim = atoi(argv[3]);
 
+	int ldH = m;
+	int ldV = n;
+	int ldW = m;
+
 	// Allocate arrays for A, B, and C on the host
-	cudaMallocHost((void**)&H, m*n*sizeof(T));
-	cudaMallocHost((void**)&V, std::max(m,n)*blockDim*sizeof(T));
-	cudaMallocHost((void**)&W, std::max(m,n)*blockDim*sizeof(T));
-	cudaMallocHost((void**)&GPU_OUT, std::max(m,n)*blockDim*sizeof(T));
+	cudaMallocHost((void**)&H, ldH*n*sizeof(T));
+	cudaMallocHost((void**)&V, ldV*blockDim*sizeof(T));
+	cudaMallocHost((void**)&W, ldW*blockDim*sizeof(T));
+	cudaMallocHost((void**)&GPU_OUT, ldW*blockDim*sizeof(T));
 
 	// Fill matrices with random values
-	num_elem = std::max(m,n) * blockDim;
+	num_elem = ldV * blockDim;
 	zlarnv_(&two, iseed1, &num_elem, V);
+	num_elem = ldW * blockDim;
 	zlarnv(&two, iseed2, &num_elem, W);
-	num_elem = m * n;
+	num_elem = ldH * n;
 	zlarnv(&two, iseed3, &num_elem, H);
 
 	std::cout << std::endl << "====== CPU PART ====== " << std::endl;
  	/// Compute CPU version
 	char side = CblasLeft;
 	char uplo = CblasUpper;
-	cblas_zgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, m, blockDim, n, &alpha, H, m, V, std::max(m,n), &beta, W, std::max(m,n));
-
-	std::cout << "CPU output: " << std::endl;
-	print(W, blockDim, std::max(m,n), blockDim);
+	cblas_zgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, m, blockDim, n, &alpha, H, ldH, V, ldV, &beta, W, ldW);
 
 	std::cout << std::endl << "====== GPU PART ====== " << std::endl;
 	// Construct a new MGPU object
 	M = new MGPU(m, n, blockDim);
 
 	// Copy H to GPUs
-    M->distribute_H(H);
+	M->distribute_H(H, ldH);
 	
 	// Copy V and W to GPUs
-	M->distribute_V(V, n, blockDim);	
+	M->distribute_V(V, ldV, blockDim);	
 
 	// Run on GPUs
 	M->computeHemm(blockDim, alpha, beta);
 	
 	// Collect results from GPUs
-	M->return_V(GPU_OUT, m, blockDim);
+	M->return_V(GPU_OUT, ldW, blockDim);
+
+	//M->synchronizeAll();
+
+#if 0
+	std::cout << "CPU output: " << std::endl;
+	print(W, ldW, m, blockDim);
 
 	std::cout << std::endl << "GPU output: " << std::endl;
-	print(GPU_OUT, blockDim, std::max(m,n), blockDim);
-	
+	print(GPU_OUT, ldW, m, blockDim);
+#endif	
 	// Compare CPU and GPUs results
-	alpha = -1.0;
-	cblas_zaxpy(std::max(m,n)*blockDim, &alpha, GPU_OUT, 1, W, 1);
+	std::complex<double> zalpha(-1.0, 0.0);
+	cblas_zaxpy(m*blockDim, &zalpha, GPU_OUT, 1, W, 1);
 
 	char norm = 'F';
-	int rows = std::max(m,n);
+	int rows = m;
 	double *tmp = nullptr;
 	double error = zlange(&norm, &rows, &blockDim, W, &rows, tmp);
 
@@ -132,7 +141,8 @@ void print(T *A, int ldA, int m, int n) {
 
 	for (int i=0; i<m; i++) {
 		for (int j=0; j<n; j++) {
-			std::cout << real(A[i*ldA + j]) << " ";
+			//std::cout << std::fixed << std::setprecision(6) << std::setw(10) << real(A[i*ldA + j]) << " ";
+			std::cout << std::fixed << std::setprecision(6) << std::setw(10) << A[j*ldA + i] << " ";
 		}
 		std::cout << std::endl;
 	}

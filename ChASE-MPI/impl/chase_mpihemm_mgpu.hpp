@@ -160,7 +160,7 @@ class ChaseMpiHemmMultiGPU : public ChaseMpiHemmInterface<T> {
     cuda_exec(
         cudaMemcpy(H_, orig_H_, n_ * m_ * sizeof(T), cudaMemcpyHostToDevice));
 	*/
-	mgpuHemm->distribute_H(orig_H_);
+	mgpuHemm->distribute_H(orig_H_, m_);
 
 
     // chase_zshift_mpi_matrix(H_, off_, n_, m_, std::real(c), &stream_);
