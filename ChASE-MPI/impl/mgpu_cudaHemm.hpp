@@ -66,6 +66,10 @@ namespace chase {
 					IMT_ = (T**) malloc(num_devices * sizeof(T*));
 					WRKSPACE_ = (T**) malloc(num_devices * sizeof(T*));
 
+					pitchB = (std::size_t*) malloc(num_devices * sizeof(std::size_t));
+					pitchH = (std::size_t*) malloc(num_devices * sizeof(std::size_t));
+					pitchIMT = (std::size_t*) malloc(num_devices * sizeof(std::size_t));
+					pitchWRK = (std::size_t*) malloc(num_devices * sizeof(std::size_t));
 
 					/* Compute number of tiles of matrix H
 					 * The number of tiles depends on number of the available GPU devices */
@@ -73,13 +77,13 @@ namespace chase {
 					ntile_m_ = num_devices/ntile_n_;
 
 					/* Compute tile dimensions */
-					dim_tile_n_ = std::min(n_, n_/ntile_n_);
-					dim_tile_m_ = std::min(m_, m_/ntile_m_);
+					dim_tile_n_ = std::min(n_, (n_+ntile_n_-1)/ntile_n_);
+					dim_tile_m_ = std::min(m_, (m_+ntile_m_-1)/ntile_m_);
 					
 					/* Set leading dimensions of the GPU arrays */
 					ldB = dim_tile_n_;
 					ldIMT = dim_tile_m_;
-					ldWRK = std::max(dim_tile_n_, dim_tile_n_);
+					ldWRK = std::max(dim_tile_m_, dim_tile_n_);
 					ldH = dim_tile_m_;
 
 					std::cout << "Number of tiles: "<<ntile_m_ << " x " << ntile_n_ << std::endl;
@@ -107,10 +111,14 @@ namespace chase {
 							cuda_exec(cudaSetDevice(gpu_id));
 
 							//* Allocate memories for H, IMT and B matrices */
-							cuda_exec(cudaMalloc((void**)&B_[gpu_id], ldB * maxBlock_ * sizeof(T)));
-							cuda_exec(cudaMalloc((void**)&IMT_[gpu_id], ldIMT * maxBlock_ * sizeof(T)));
-							cuda_exec(cudaMalloc((void**)&WRKSPACE_[gpu_id], ldWRK * maxBlock_ * sizeof(T)));
-							cuda_exec(cudaMalloc((void**)&H_[gpu_id], ldH * dim_col * sizeof(T)));
+							//cuda_exec(cudaMalloc((void**)&B_[gpu_id], ldB * maxBlock_ * sizeof(T)));
+							//cuda_exec(cudaMalloc((void**)&IMT_[gpu_id], ldIMT * maxBlock_ * sizeof(T)));
+							//cuda_exec(cudaMalloc((void**)&WRKSPACE_[gpu_id], ldWRK * maxBlock_ * sizeof(T)));
+							//cuda_exec(cudaMalloc((void**)&H_[gpu_id], ldH * dim_col * sizeof(T)));
+							cuda_exec(cudaMallocPitch((void**)&B_[gpu_id], &pitchB[gpu_id],  maxBlock_*sizeof(T), ldB));
+							cuda_exec(cudaMallocPitch((void**)&IMT_[gpu_id], &pitchIMT[gpu_id], maxBlock_ * sizeof(T), ldIMT));
+							cuda_exec(cudaMallocPitch((void**)&WRKSPACE_[gpu_id], &pitchWRK[gpu_id], maxBlock_ * sizeof(T), ldWRK));
+							cuda_exec(cudaMallocPitch((void**)&H_[gpu_id], &pitchH[gpu_id], dim_col * sizeof(T), ldH));
 						}
 					}
 
@@ -139,6 +147,10 @@ namespace chase {
 					free(WRKSPACE_);
 					free(H_);
 					free(devices_id);
+					free(pitchB);
+					free(pitchH);
+					free(pitchIMT);
+					free(pitchWRK);
 
 					cudaEventDestroy(start);
 					cudaEventDestroy(stop);
@@ -162,8 +174,9 @@ namespace chase {
 								int dev_id = dev_x * ntile_n_ + dev_y;
 								cuda_exec(cudaSetDevice(dev_id));
 								//cuda_exec(cudaMemcpy2DAsync(H_[dev_id], Hpitch, &orig_H[start_row * n_ + start_col], n_*sizeof(T), dim_col * sizeof(T), dim_row, cudaMemcpyHostToDevice, stream_[dev_id]));
-								cublasError = cublasSetMatrixAsync(dim_row, dim_col, sizeof(T), &orig_H[start_row*n_ + start_col], ld_origH, H_[dev_id], ldH, stream_[dev_id]);
-								if(cublasError != CUBLAS_STATUS_SUCCESS) std::cout << "Error in cublasSetMatrixAsync" << std::endl;
+								//cublasError = cublasSetMatrixAsync(dim_row, dim_col, sizeof(T), &orig_H[start_row*n_ + start_col], ld_origH, H_[dev_id], ldH, stream_[dev_id]);
+								cublasError = cublasSetMatrixAsync(dim_row, dim_col, sizeof(T), &orig_H[start_col * ld_origH + start_row], ld_origH, H_[dev_id], ldH, stream_[dev_id]);
+								if(cublasError != CUBLAS_STATUS_SUCCESS) std::cout << "Error in cublasSetMatrixAsync H" << std::endl;
 							}
 						}
 						copied_ = true;
@@ -180,8 +193,9 @@ namespace chase {
 								int dev_id = dev_x * ntile_n_ + dev_y;
 								cuda_exec(cudaSetDevice(dev_id));
 								//cuda_exec(cudaMemcpy2DAsync(H_[dev_id], Hpitch, &orig_H[start_row * n_ + start_col], n_*sizeof(T), dim_col * sizeof(T), dim_row, cudaMemcpyHostToDevice, stream_[dev_id]));
-								cublasError = cublasSetMatrixAsync(dim_row, dim_col, sizeof(T), &orig_H[start_row*n_ + start_col], ld_origH, H_[dev_id], ldH, stream_[dev_id]);
-								if(cublasError != CUBLAS_STATUS_SUCCESS) std::cout << "Error in cublasSetMatrixAsync" << std::endl;
+								//cublasError = cublasSetMatrixAsync(dim_row, dim_col, sizeof(T), &orig_H[start_row*n_ + start_col], ld_origH, H_[dev_id], ldH, stream_[dev_id]);
+								cublasError = cublasSetMatrixAsync(dim_row, dim_col, sizeof(T), &orig_H[start_col * ld_origH + start_row], ld_origH, H_[dev_id], ldH, stream_[dev_id]);
+								if(cublasError != CUBLAS_STATUS_SUCCESS) std::cout << "Error in cublasSetMatrixAsync H" << std::endl;
 							}
 						}
 
@@ -211,7 +225,8 @@ namespace chase {
 							for (int dev = i; dev < num_devices; dev += ntile_n_) {
 								cuda_exec(cudaSetDevice(dev));
 								//cuda_exec(cudaMemcpy2DAsync(B_[dev], Bpitch, &buf_init[start_row*maxBlock_], maxBlock_*sizeof(T), block*sizeof(T), dim_row, cudaMemcpyHostToDevice, stream_[dev]));
-								cublasError = cublasSetMatrixAsync(dim_row, block, sizeof(T), &buf_init[start_row*maxBlock_], ldBuf, B_[dev], ldB, stream_[dev]);
+								//cublasError = cublasSetMatrixAsync(dim_row, block, sizeof(T), &buf_init[start_row*maxBlock_], ldBuf, B_[dev], ldB, stream_[dev]);
+								cublasError = cublasSetMatrixAsync(dim_row, block, sizeof(T), &buf_init[start_row], ldBuf, B_[dev], ldB, stream_[dev]);
 								if(cublasError != CUBLAS_STATUS_SUCCESS) std::cout << "Error in cublasSetMatrixAsync V/W" << std::endl;
 
 							}
@@ -236,7 +251,8 @@ namespace chase {
 							for (int dev = start_dev_id; dev < start_dev_id + ntile_n_; dev++) {
 								cuda_exec(cudaSetDevice(dev));
 								//cuda_exec(cudaMemcpy2DAsync(B_[dev], Bpitch, &buf_init[start_row*maxBlock_], maxBlock_*sizeof(T), block*sizeof(T), dim_row, cudaMemcpyHostToDevice, stream_[dev]));
-								cublasError = cublasSetMatrixAsync(dim_row, block, sizeof(T), &buf_init[start_row*maxBlock_], ldBuf, B_[dev], ldB, stream_[dev]);
+								//cublasError = cublasSetMatrixAsync(dim_row, block, sizeof(T), &buf_init[start_row*maxBlock_], ldBuf, B_[dev], ldB, stream_[dev]);
+								cublasError = cublasSetMatrixAsync(dim_row, block, sizeof(T), &buf_init[start_row], ldBuf, B_[dev], ldB, stream_[dev]);
 								if(cublasError != CUBLAS_STATUS_SUCCESS) std::cout << "Error in cublasSetMatrixAsync V/W" << std::endl;
 							}
 						}
@@ -320,18 +336,23 @@ namespace chase {
 					for (int s = 1; s < num_tile_cols; s <<= 1) {
 
 						for (int dev = s; dev < num_devices; dev += 2*s) {
-							tile_dim_row = get_tile_size_row(dev);
+							tile_dim_row = get_tile_size_row(dev/ntile_n_);
 
 							if (s == 1) {
-								//cuda_exec(cudaMemcpy2DAsync(WRKSPACE_[dev-s], WRKpitch, WRKSPACE_[dev], WRKpitch, block*sizeof(T), tile_dim_row, cudaMemcpyDeviceToDevice, stream_[dev-s]));
-								cuda_exec(cudaMemcpyAsync(WRKSPACE_[dev-s], WRKSPACE_[dev], block*sizeof(T) * tile_dim_row, cudaMemcpyDeviceToDevice, stream_[dev-s]));
+								//cuda_exec(cudaMemcpy2DAsync(WRKSPACE_[dev-s], pitchWRK[dev-s], WRKSPACE_[dev], pitchWRK[dev], block*sizeof(T), tile_dim_row, cudaMemcpyDeviceToDevice, stream_[dev-s]));
+								//cuda_exec(cudaMemcpy2DAsync(WRKSPACE_[dev-s], pitchWRK[dev-s], WRKSPACE_[dev], pitchWRK[dev], maxBlock_*sizeof(T), ldWRK, cudaMemcpyDeviceToDevice, stream_[dev-s]));
+								cuda_exec(cudaMemcpyAsync(WRKSPACE_[dev-s], WRKSPACE_[dev], block*sizeof(T)*ldWRK, cudaMemcpyDeviceToDevice, stream_[dev-s]));
 							} else {
-								//cuda_exec(cudaMemcpy2DAsync(WRKSPACE_[dev-s], WRKpitch, IMT_[dev], IMTpitch, block*sizeof(T), tile_dim_row, cudaMemcpyDeviceToDevice, stream_[dev-s]));
-								cuda_exec(cudaMemcpyAsync(WRKSPACE_[dev-s], IMT_[dev], block*sizeof(T) * tile_dim_row, cudaMemcpyDeviceToDevice, stream_[dev-s]));
+								//cuda_exec(cudaMemcpy2DAsync(WRKSPACE_[dev-s], pitchWRK[dev-s], IMT_[dev], pitchIMT[dev], block*sizeof(T), tile_dim_row, cudaMemcpyDeviceToDevice, stream_[dev-s]));
+								cuda_exec(cudaMemcpyAsync(WRKSPACE_[dev-s], IMT_[dev], block*sizeof(T)*ldIMT, cudaMemcpyDeviceToDevice, stream_[dev-s]));
 							}
 
+							// TODO: Might be critical since WRKSPACE has paddings. Rows might be longer than maxBlock_ and Taxpy does not catch all the elements.
+							// Straight forward solution is to compute Taxpy on the entire WRKSPACE (ldWRK * maxBlock_)
 							cuda_exec(cudaSetDevice(dev-s));	
-							cublasError = cublasTaxpy(handle_[dev-s], block*tile_dim_row, &one, WRKSPACE_[dev-s], 1, IMT_[dev-s], 1);
+							cuda_exec(cudaStreamSynchronize(stream_[dev-s]));
+							//cublasError = cublasTaxpy(handle_[dev-s], block*tile_dim_row, &one, WRKSPACE_[dev-s], 1, IMT_[dev-s], 1);
+							cublasError = cublasTaxpy(handle_[dev-s], (pitchWRK[dev-s]/sizeof(T))*tile_dim_row, &one, WRKSPACE_[dev-s], 1, IMT_[dev-s], 1);
 							if(cublasError != CUBLAS_STATUS_SUCCESS) std::cout << "Error in Taxpy " << std::endl;
 						}
 						
@@ -348,7 +369,8 @@ namespace chase {
 							for (int dev_y = 1; dev_y < ntile_n_; dev_y++) {
 								dest_id = src_id + dev_y;
 								//cuda_exec(cudaMemcpy2DAsync(IMT_[dest_id], IMTpitch, IMT_[src_id], IMTpitch, block*sizeof(T), tile_dim_row, cudaMemcpyDeviceToDevice, stream_[dest_id]));
-								cuda_exec(cudaMemcpyAsync(IMT_[dest_id], IMT_[src_id], block*sizeof(T) * tile_dim_row, cudaMemcpyDeviceToDevice, stream_[dest_id]));
+								//cuda_exec(cudaMemcpyAsync(IMT_[dest_id], IMT_[src_id], block*sizeof(T) * tile_dim_row, cudaMemcpyDeviceToDevice, stream_[dest_id]));
+								cuda_exec(cudaMemcpy2DAsync(IMT_[dest_id], pitchIMT[dest_id], IMT_[src_id], pitchIMT[src_id], block*sizeof(T), tile_dim_row, cudaMemcpyDeviceToDevice, stream_[dest_id]));
 							}
 						}
 					} else {
@@ -359,7 +381,8 @@ namespace chase {
 							for (int dev_y = 1; dev_y < ntile_m_; dev_y++) {
 								dest_id = src_id + ntile_n_*dev_y;
 								//cuda_exec(cudaMemcpy2DAsync(IMT_[dest_id], IMTpitch, IMT_[src_id], IMTpitch, block*sizeof(T), tile_dim_row, cudaMemcpyDeviceToDevice, stream_[dest_id]));
-								cuda_exec(cudaMemcpyAsync(IMT_[dest_id], IMT_[src_id], block*sizeof(T) * tile_dim_row, cudaMemcpyDeviceToDevice, stream_[dest_id]));
+								//cuda_exec(cudaMemcpyAsync(IMT_[dest_id], IMT_[src_id], block*sizeof(T) * tile_dim_row, cudaMemcpyDeviceToDevice, stream_[dest_id]));
+								cuda_exec(cudaMemcpy2DAsync(IMT_[dest_id], pitchIMT[dest_id], IMT_[src_id], pitchIMT[src_id], block*sizeof(T), tile_dim_row, cudaMemcpyDeviceToDevice, stream_[dest_id]));
 							}
 						}
 					}
@@ -384,8 +407,9 @@ namespace chase {
 
 							cuda_exec(cudaSetDevice(src_gpu));
 							//cuda_exec(cudaMemcpy2DAsync(&buf_target[start_row * maxBlock_], maxBlock_*sizeof(T), IMT_[src_gpu], IMTpitch, block*sizeof(T), tile_dim_row, cudaMemcpyDeviceToHost, stream_[src_gpu]));
-							cublasError = cublasGetMatrixAsync(tile_dim_row, block, sizeof(T), IMT_[src_gpu], ldIMT, &buf_target[start_row * maxBlock_], ldBuf, stream_[src_gpu]);
-							if(cublasError != CUBLAS_STATUS_SUCCESS) std::cout << "Error in cublasGetMatAsync " << std::endl;
+							//cublasError = cublasGetMatrixAsync(tile_dim_row, block, sizeof(T), IMT_[src_gpu], ldIMT, &buf_target[start_row * maxBlock_], ldBuf, stream_[src_gpu]);
+							cublasError = cublasGetMatrixAsync(tile_dim_row, block, sizeof(T), IMT_[src_gpu], ldIMT, &buf_target[start_row], ldBuf, stream_[src_gpu]);
+							if(cublasError != CUBLAS_STATUS_SUCCESS) std::cout << "Error in cublasGetMatAsync W" << std::endl;
 						}
 
 					} else {
@@ -396,11 +420,14 @@ namespace chase {
 
 							cuda_exec(cudaSetDevice(src_gpu));
 							//cuda_exec(cudaMemcpy2DAsync(&buf_target[start_row * maxBlock_], maxBlock_*sizeof(T), IMT_[src_gpu], IMTpitch, block*sizeof(T), tile_dim_row, cudaMemcpyDeviceToHost, stream_[src_gpu]));
-							cublasError = cublasGetMatrixAsync(tile_dim_row, block, sizeof(T), IMT_[src_gpu], ldIMT, &buf_target[start_row * maxBlock_], ldBuf, stream_[src_gpu]);
-							if(cublasError != CUBLAS_STATUS_SUCCESS) std::cout << "Error in cublasGetMatAsync " << std::endl;
+							//cublasError = cublasGetMatrixAsync(tile_dim_row, block, sizeof(T), IMT_[src_gpu], ldIMT, &buf_target[start_row * maxBlock_], ldBuf, stream_[src_gpu]);
+							cublasError = cublasGetMatrixAsync(tile_dim_row, block, sizeof(T), IMT_[src_gpu], ldIMT, &buf_target[start_row], ldBuf, stream_[src_gpu]);
+							if(cublasError != CUBLAS_STATUS_SUCCESS) std::cout << "Error in cublasGetMatAsync W" << std::endl; 
 						}
 
 					}
+
+					/* Synchronize all devices before return to the caller function*/
 					this->synchronizeAll();
 				}
 
@@ -438,6 +465,12 @@ namespace chase {
 				std::size_t ldIMT;
 				std::size_t ldWRK;
 				std::size_t ldH;
+				
+				/// Pitched values
+				std::size_t *pitchB = nullptr;
+				std::size_t *pitchIMT = nullptr;
+				std::size_t *pitchWRK = nullptr;
+				std::size_t *pitchH = nullptr;
 				
 				bool copied_;
 

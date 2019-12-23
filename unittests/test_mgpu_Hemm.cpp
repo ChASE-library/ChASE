@@ -58,9 +58,10 @@ int main (int argc, char *argv[]) {
 	/// Hemm parameters
 	//T alpha(1.5, 1.0);
 	//T beta(0.0, 0.0);
-	double alpha = 1.5;
-	double beta = 0.0;	
-	char transa = 'N';	
+	std::complex<double> alpha(1.5, 0.0);
+	std::complex<double> beta(0.0, 0.0);	
+	char transa = 'N';
+	char transb = 'N';
 
 	/// Read matrix size
 	m = atoi(argv[1]);
@@ -79,17 +80,24 @@ int main (int argc, char *argv[]) {
 
 	// Fill matrices with random values
 	num_elem = ldV * blockDim;
-	zlarnv_(&two, iseed1, &num_elem, V);
+	zlarnv(&two, iseed1, &num_elem, V);
 	num_elem = ldW * blockDim;
 	zlarnv(&two, iseed2, &num_elem, W);
 	num_elem = ldH * n;
 	zlarnv(&two, iseed3, &num_elem, H);
 
+#if 1
+    std::cout << "H = " << std::endl;
+	print(H, ldH, m, n);
+
+	std::cout << "V = " << std::endl;
+	print(V, ldV, m, blockDim); 
+#endif
 	std::cout << std::endl << "====== CPU PART ====== " << std::endl;
  	/// Compute CPU version
-	char side = CblasLeft;
-	char uplo = CblasUpper;
-	cblas_zgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, m, blockDim, n, &alpha, H, ldH, V, ldV, &beta, W, ldW);
+
+	//cblas_zgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, m, blockDim, n, &alpha, H, ldH, V, ldV, &beta, W, ldW);
+	zgemm(&transa, &transb, &m, &blockDim, &n, &alpha, H, &ldH, V, &ldV, &beta, W, &ldW);
 
 	std::cout << std::endl << "====== GPU PART ====== " << std::endl;
 	// Construct a new MGPU object
@@ -109,7 +117,7 @@ int main (int argc, char *argv[]) {
 
 	//M->synchronizeAll();
 
-#if 0
+#if 1
 	std::cout << "CPU output: " << std::endl;
 	print(W, ldW, m, blockDim);
 
@@ -142,7 +150,7 @@ void print(T *A, int ldA, int m, int n) {
 	for (int i=0; i<m; i++) {
 		for (int j=0; j<n; j++) {
 			//std::cout << std::fixed << std::setprecision(6) << std::setw(10) << real(A[i*ldA + j]) << " ";
-			std::cout << std::fixed << std::setprecision(6) << std::setw(10) << A[j*ldA + i] << " ";
+			std::cout << std::fixed << std::setprecision(6) << std::setw(25) << A[j*ldA + i] << " ";
 		}
 		std::cout << std::endl;
 	}
