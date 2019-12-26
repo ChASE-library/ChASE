@@ -86,7 +86,7 @@ int main (int argc, char *argv[]) {
 	num_elem = ldH * n;
 	zlarnv(&two, iseed3, &num_elem, H);
 
-#if 1
+#if 0
     std::cout << "H = " << std::endl;
 	print(H, ldH, m, n);
 
@@ -117,21 +117,39 @@ int main (int argc, char *argv[]) {
 
 	//M->synchronizeAll();
 
-#if 1
+#if 0
 	std::cout << "CPU output: " << std::endl;
 	print(W, ldW, m, blockDim);
 
 	std::cout << std::endl << "GPU output: " << std::endl;
 	print(GPU_OUT, ldW, m, blockDim);
 #endif	
+
+#if 0
+	double err = 10e-12;
+	std::cout << "Error on positions: " << std::endl;
+	for(int i=0; i<m; i++){
+		for(int j=0; j<blockDim; j++){
+			if(real(GPU_OUT[j*ldW+i]) - real(W[j*ldW+i]) > err && imag(GPU_OUT[j*ldW+i]) - imag(W[j*ldW+i]) > err) std::cout<<"("<<i<< ","<<j<<"), ";
+		}
+	}
+	std::cout << std::endl;
+#endif
 	// Compare CPU and GPUs results
 	std::complex<double> zalpha(-1.0, 0.0);
 	cblas_zaxpy(m*blockDim, &zalpha, GPU_OUT, 1, W, 1);
 
-	char norm = 'F';
+#if 0
+	std::cout << "Difference after zaxpy:" << std::endl;
+	for(int i=0; i<m*blockDim; i++){
+		if (real(W[i]) > err || imag(W[i]) > err) std::cout << i << ", ";
+	}
+	std::cout << std::endl;
+#endif
+	char norm = 'M';
 	int rows = m;
 	double *tmp = nullptr;
-	double error = zlange(&norm, &rows, &blockDim, W, &rows, tmp);
+	double error = zlange(&norm, &rows, &blockDim, W, &ldW, tmp);
 
 	// Print output
 	std::cout << "Absolute error = " << std::scientific << error << std::endl;

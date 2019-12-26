@@ -81,9 +81,10 @@ namespace chase {
 					dim_tile_m_ = std::min(m_, (m_+ntile_m_-1)/ntile_m_);
 					
 					/* Set leading dimensions of the GPU arrays */
-					ldB = dim_tile_n_;
-					ldIMT = dim_tile_m_;
+					//ldB = dim_tile_n_;
+					//ldIMT = dim_tile_m_;
 					ldWRK = std::max(dim_tile_m_, dim_tile_n_);
+					ldB = ldIMT = ldWRK;
 					ldH = dim_tile_m_;
 
 					std::cout << "Number of tiles: "<<ntile_m_ << " x " << ntile_n_ << std::endl;
@@ -352,7 +353,7 @@ namespace chase {
 							cuda_exec(cudaSetDevice(dev-s));	
 							cuda_exec(cudaStreamSynchronize(stream_[dev-s]));
 							//cublasError = cublasTaxpy(handle_[dev-s], block*tile_dim_row, &one, WRKSPACE_[dev-s], 1, IMT_[dev-s], 1);
-							cublasError = cublasTaxpy(handle_[dev-s], (pitchWRK[dev-s]/sizeof(T))*tile_dim_row, &one, WRKSPACE_[dev-s], 1, IMT_[dev-s], 1);
+							cublasError = cublasTaxpy(handle_[dev-s], (pitchWRK[dev-s]/sizeof(T))*ldWRK, &one, WRKSPACE_[dev-s], 1, IMT_[dev-s], 1);
 							if(cublasError != CUBLAS_STATUS_SUCCESS) std::cout << "Error in Taxpy " << std::endl;
 						}
 						
