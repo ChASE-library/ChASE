@@ -140,7 +140,7 @@ class ChaseMpiHemmMultiGPU : public ChaseMpiHemmInterface<T> {
 	mgpuHemm->computeHemm(block, alpha, beta);
 
 	/// Return computed block-vector to CPU
-	mgpuHemm->return_V(buf_target, m, block);
+	mgpuHemm->return_W(buf_target, m, block);
   }
 
   bool postApplication(T* V, std::size_t block) {

@@ -113,7 +113,7 @@ int main (int argc, char *argv[]) {
 	M->computeHemm(blockDim, alpha, beta);
 	
 	// Collect results from GPUs
-	M->return_V(GPU_OUT, ldW, blockDim);
+	M->return_W(GPU_OUT, ldW, blockDim);
 
 	//M->synchronizeAll();
 
