@@ -60,6 +60,7 @@ int main (int argc, char *argv[]) {
 	//T beta(0.0, 0.0);
 	std::complex<double> alpha(1.5, 0.0);
 	std::complex<double> beta(0.0, 0.0);	
+	std::complex<double> one(1.0, 0.0);
 	char transa = 'N';
 	char transb = 'N';
 
@@ -76,7 +77,7 @@ int main (int argc, char *argv[]) {
 	cudaMallocHost((void**)&H, ldH*n*sizeof(T));
 	cudaMallocHost((void**)&V, ldV*blockDim*sizeof(T));
 	cudaMallocHost((void**)&W, ldW*blockDim*sizeof(T));
-	cudaMallocHost((void**)&GPU_OUT, ldW*blockDim*sizeof(T));
+	cudaMallocHost((void**)&GPU_OUT, ldV*blockDim*sizeof(T));
 
 	// Fill matrices with random values
 	num_elem = ldV * blockDim;
@@ -86,6 +87,9 @@ int main (int argc, char *argv[]) {
 	num_elem = ldH * n;
 	zlarnv(&two, iseed3, &num_elem, H);
 
+	// Copy V to GPU_OUT
+	memcpy((void*)GPU_OUT, (void*)V, ldV*blockDim*sizeof(T));
+
 #if 0
     std::cout << "H = " << std::endl;
 	print(H, ldH, m, n);
@@ -94,35 +98,65 @@ int main (int argc, char *argv[]) {
 	print(V, ldV, m, blockDim); 
 #endif
 	std::cout << std::endl << "====== CPU PART ====== " << std::endl;
- 	/// Compute CPU version
 
-	//cblas_zgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, m, blockDim, n, &alpha, H, ldH, V, ldV, &beta, W, ldW);
+
+ 	/// Compute CPU version
+ 	/* FIRST STEP: W_1 = H * V_0 + W_0 */
 	zgemm(&transa, &transb, &m, &blockDim, &n, &alpha, H, &ldH, V, &ldV, &beta, W, &ldW);
 
+#if 0
+	std::cout << "CPU output step 1: " << std::endl;
+	print(W, ldW, m, blockDim);
+#endif	
+
+	/* SECOND STEP: V_1 = H^T * W_1 + V_0 */
+	transa = 'C';
+	zgemm(&transa, &transb, &n, &blockDim, &m, &alpha, H, &ldH, W, &ldW, &one, V, &ldV);
+
 	std::cout << std::endl << "====== GPU PART ====== " << std::endl;
+
 	// Construct a new MGPU object
 	M = new MGPU(m, n, blockDim);
 
 	// Copy H to GPUs
 	M->distribute_H(H, ldH);
 	
-	// Copy V and W to GPUs
-	M->distribute_V(V, ldV, blockDim);	
+	/* FIRST STEP: W_1 = H * V_0 + W_0 */
+	// Copy V to GPUs
+	M->distribute_V(GPU_OUT, ldV, blockDim);	
 
 	// Run on GPUs
 	M->computeHemm(blockDim, alpha, beta);
 	
 	// Collect results from GPUs
-	M->return_W(GPU_OUT, ldW, blockDim);
+	M->return_W(W, ldW, blockDim);
+
+#if 0
+	std::cout << std::endl << "GPU output step 1: " << std::endl;
+	print(W, ldW, m, blockDim);
+#endif	
+	// SECOND STEP: V_1 = H^T * W_1 + V_0 */
+	
+	/* Switch operation to V = H * W + V */
+	M->switch_operation();
+
+	// Distribute previously computed W to the devices.
+	M->distribute_V(W, ldW, blockDim);	
+
+	// Run HEMM on GPUs
+	M->computeHemm(blockDim, alpha, one);
+
+	// Collect results
+	M->return_W(GPU_OUT, ldV, blockDim);
 
 	//M->synchronizeAll();
 
 #if 0
-	std::cout << "CPU output: " << std::endl;
-	print(W, ldW, m, blockDim);
+	std::cout << "CPU output step 2: " << std::endl;
+	print(V, ldV, n, blockDim);
 
-	std::cout << std::endl << "GPU output: " << std::endl;
-	print(GPU_OUT, ldW, m, blockDim);
+	std::cout << std::endl << "GPU output step 2: " << std::endl;
+	print(GPU_OUT, ldV, n, blockDim);
 #endif	
 
 #if 0
@@ -137,7 +171,7 @@ int main (int argc, char *argv[]) {
 #endif
 	// Compare CPU and GPUs results
 	std::complex<double> zalpha(-1.0, 0.0);
-	cblas_zaxpy(m*blockDim, &zalpha, GPU_OUT, 1, W, 1);
+	cblas_zaxpy(n*blockDim, &zalpha, GPU_OUT, 1, V, 1);
 
 #if 0
 	std::cout << "Difference after zaxpy:" << std::endl;
@@ -147,9 +181,9 @@ int main (int argc, char *argv[]) {
 	std::cout << std::endl;
 #endif
 	char norm = 'M';
-	int rows = m;
+	int rows = n;
 	double *tmp = nullptr;
-	double error = zlange(&norm, &rows, &blockDim, W, &ldW, tmp);
+	double error = zlange(&norm, &rows, &blockDim, V, &ldV, tmp);
 
 	// Print output
 	std::cout << "Absolute error = " << std::scientific << error << std::endl;

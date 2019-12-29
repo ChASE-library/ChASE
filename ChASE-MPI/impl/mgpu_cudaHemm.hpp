@@ -228,7 +228,7 @@ namespace chase {
 						/* Divide buf_init input tile ntile_n_ tiles and distribute to GPU such as
  						 * that tile i goes to the GPUs with GPU_ID % ntile_n_ == i
  						 */ 
-						for (int i=0; i<ntile_n_; i++) {
+						for (int i = 0; i < ntile_n_; i++) {
 
 							/* buf_init is divided into row-panels which dimension and starting index 
  							 * correspond to the dimension of the tiled matrix H by columns
@@ -288,22 +288,21 @@ namespace chase {
 					bool leading_gpu = false;
 					cublasOperation_t transa;
 
+					T *matrix = nullptr;
+				    std::size_t pitchMat;
+					cuda_exec(cudaMallocPitch((void**)&matrix, &pitchMat,  maxBlock_*sizeof(T), ldWRK));
+
 					if (next_ == NextOp::bAc) {
-
-					//cublasTgemm(handle_, transa, CUBLAS_OP_N, m, n, k, &alpha, H_, m_, B_, k,
-					//			&beta, IMT_, m);
-
 						transa = CUBLAS_OP_C;
 						num_tile_rows = ntile_n_;
 						num_tile_cols = ntile_m_;
-						//next_ = NextOp::cAb;
 					} else {
 						transa = CUBLAS_OP_N;
 						num_tile_rows = ntile_m_;
 						num_tile_cols = ntile_n_;
-						//next_ = NextOp::bAc;
 					}
 
+					int dev_id; 
 					for (int dev_x = 0; dev_x < ntile_m_; dev_x++) {
 						
 						tile_dim_row = get_tile_size_row(dev_x);
@@ -320,6 +319,7 @@ namespace chase {
 								} else {
 									leading_gpu = false;
 								}
+								dev_id = dev_x * ntile_n_ + dev_y;
 							} else {
 								m = tile_dim_col;
 								n = block;
@@ -329,8 +329,9 @@ namespace chase {
 								} else {
 									leading_gpu = false;
 								}
+								dev_id = dev_x * ntile_n_ + dev_y;
 							}
-							int dev_id = dev_x * ntile_n_ + dev_y;
+							//int dev_id = dev_x * ntile_n_ + dev_y;
 		
 							cuda_exec(cudaSetDevice(dev_id));
 							if (leading_gpu) {
@@ -338,11 +339,17 @@ namespace chase {
 								//	&beta, IMT_[dev_id], ldIMT);
 								cublasTgemm(handle_[dev_id], transa, CUBLAS_OP_N, m, n, k, &alpha, H_[dev_id], ldH, V[dev_id], ldV,
 									&beta, W[dev_id], ldW);
+									
+									//cublasGetMatrixAsync(m, n, sizeof(T), W[dev_id], ldW, matrix, ldWRK, stream_[dev_id]);
+									//cudaStreamSynchronize(stream_[dev_id]);
 							} else {
 								//cublasTgemm(handle_[dev_id], transa, CUBLAS_OP_N, m, n, k, &alpha, H_[dev_id], ldH, B_[dev_id], ldB,
 								//	&zero, WRKSPACE_[dev_id], ldWRK);
 								cublasTgemm(handle_[dev_id], transa, CUBLAS_OP_N, m, n, k, &alpha, H_[dev_id], ldH, V[dev_id], ldV,
 									&zero, WRKSPACE_[dev_id], ldWRK);
+
+									//cublasGetMatrixAsync(m, n, sizeof(T), WRKSPACE_[dev_id], ldWRK, matrix, ldWRK, stream_[dev_id]);
+									//cudaStreamSynchronize(stream_[dev_id]);
 							}
 						}
 					}
@@ -351,32 +358,64 @@ namespace chase {
 					this->synchronizeAll();
 
 					/* Compute the final solution from partial per-GPU solutions */
-					/* */
+					/* Collect intermediat results from GPUs in the same rows in the first GPU in the row*/
+					int gpu_src;
+					int gpu_dest;
 					for (int s = 1; s < num_tile_cols; s <<= 1) {
 
-						for (int dev = s; dev < num_devices; dev += 2*s) {
-							tile_dim_row = get_tile_size_row(dev/ntile_n_);
+						if (next_ == NextOp::cAb) {
+							for (int dev = s; dev < num_devices; dev += 2*s) {
+								tile_dim_row = get_tile_size_row(dev/ntile_n_);
 
-							if (s == 1) {
-								//cuda_exec(cudaMemcpy2DAsync(WRKSPACE_[dev-s], pitchWRK[dev-s], WRKSPACE_[dev], pitchWRK[dev], maxBlock_*sizeof(T), ldWRK, cudaMemcpyDeviceToDevice, stream_[dev-s]));
-								cuda_exec(cudaMemcpyAsync(WRKSPACE_[dev-s], WRKSPACE_[dev], block*sizeof(T)*ldWRK, cudaMemcpyDeviceToDevice, stream_[dev-s]));
-							} else {
-								//cuda_exec(cudaMemcpyAsync(WRKSPACE_[dev-s], IMT_[dev], block*sizeof(T)*ldIMT, cudaMemcpyDeviceToDevice, stream_[dev-s]));
-								cuda_exec(cudaMemcpyAsync(WRKSPACE_[dev-s], W[dev], block*sizeof(T)*ldW, cudaMemcpyDeviceToDevice, stream_[dev-s]));
+								//cudaStreamSynchronize(stream_[dev-s]);
+								//if (s == 1) {
+								if (s == 1 || (num_tile_cols%2 != 0 && dev == num_devices-1)) {
+									//cuda_exec(cudaMemcpy2DAsync(WRKSPACE_[dev-s], pitchWRK[dev-s], WRKSPACE_[dev], pitchWRK[dev], block*sizeof(T), ldWRK, cudaMemcpyDeviceToDevice, stream_[dev-s]));
+									cuda_exec(cudaMemcpyAsync(WRKSPACE_[dev-s], WRKSPACE_[dev], block*sizeof(T)*ldWRK, cudaMemcpyDeviceToDevice, stream_[dev-s]));
+								//	std::cout<<"Device " << dev << " in the case s == 1" << std::endl;
+								} else {
+									//cuda_exec(cudaMemcpy2DAsync(WRKSPACE_[dev-s], pitchWRK[dev-s], W[dev], pitchW[dev], block*sizeof(T), ldW, cudaMemcpyDeviceToDevice, stream_[dev-s]));
+									cuda_exec(cudaMemcpyAsync(WRKSPACE_[dev-s], W[dev], block*sizeof(T)*ldW, cudaMemcpyDeviceToDevice, stream_[dev-s]));
+								//	std::cout<<"Device " << dev << " in the case s != 1" << std::endl;
+								}
+
+								// TODO: Might be critical since WRKSPACE has paddings. Rows might be longer than maxBlock_ and Taxpy does not catch all the elements.
+								// Straight forward solution is to compute Taxpy on the entire WRKSPACE (ldWRK * maxBlock_)
+								cuda_exec(cudaSetDevice(dev-s));	
+								cuda_exec(cudaStreamSynchronize(stream_[dev-s]));
+								//cublasError = cublasTaxpy(handle_[dev-s], (pitchWRK[dev-s]/sizeof(T))*ldWRK, &one, WRKSPACE_[dev-s], 1, IMT_[dev-s], 1);
+								cublasError = cublasTaxpy(handle_[dev-s], (pitchWRK[dev-s]/sizeof(T))*ldWRK, &one, WRKSPACE_[dev-s], 1, W[dev-s], 1);
+								if(cublasError != CUBLAS_STATUS_SUCCESS) std::cout << "Error in Taxpy " << std::endl;
 							}
+						} else {
+							for (int dev_x = 0; dev_x < ntile_n_; dev_x++) {
+								for (int dev_y = dev_x+s*ntile_n_; dev_y < num_devices; dev_y += 2*s*ntile_n_) {
+									gpu_src = dev_y;
+									gpu_dest = dev_y - s*ntile_n_; 
 
-							// TODO: Might be critical since WRKSPACE has paddings. Rows might be longer than maxBlock_ and Taxpy does not catch all the elements.
-							// Straight forward solution is to compute Taxpy on the entire WRKSPACE (ldWRK * maxBlock_)
-							cuda_exec(cudaSetDevice(dev-s));	
-							cuda_exec(cudaStreamSynchronize(stream_[dev-s]));
-							//cublasError = cublasTaxpy(handle_[dev-s], (pitchWRK[dev-s]/sizeof(T))*ldWRK, &one, WRKSPACE_[dev-s], 1, IMT_[dev-s], 1);
-							cublasError = cublasTaxpy(handle_[dev-s], (pitchWRK[dev-s]/sizeof(T))*ldWRK, &one, WRKSPACE_[dev-s], 1, W[dev-s], 1);
-							if(cublasError != CUBLAS_STATUS_SUCCESS) std::cout << "Error in Taxpy " << std::endl;
+									tile_dim_row = get_tile_size_row(dev_y/ntile_m_);
+									if (s == 1 || (num_tile_cols%2 != 0 && dev_y/ntile_n_ == ntile_m_-1)) {
+										cuda_exec(cudaMemcpyAsync(WRKSPACE_[gpu_dest], WRKSPACE_[gpu_src], block*sizeof(T)*ldWRK, cudaMemcpyDeviceToDevice, stream_[gpu_dest]));
+									//	std::cout<<"Device " << gpu_src << " in the case s == 1" << std::endl;
+									} else {
+										cuda_exec(cudaMemcpyAsync(WRKSPACE_[gpu_dest], W[gpu_src], block*sizeof(T)*ldW, cudaMemcpyDeviceToDevice, stream_[gpu_dest]));
+									//	std::cout<<"Device " << gpu_src << " in the case s != 1" << std::endl;
+									}
+
+									// TODO: Might be critical since WRKSPACE has paddings. Rows might be longer than maxBlock_ and Taxpy does not catch all the elements.
+									// Straight forward solution is to compute Taxpy on the entire WRKSPACE (ldWRK * maxBlock_)
+									cuda_exec(cudaSetDevice(gpu_dest));	
+									cuda_exec(cudaStreamSynchronize(stream_[gpu_dest]));
+									//cublasError = cublasTaxpy(handle_[dev-s], (pitchWRK[dev-s]/sizeof(T))*ldWRK, &one, WRKSPACE_[dev-s], 1, IMT_[dev-s], 1);
+									cublasError = cublasTaxpy(handle_[gpu_dest], (pitchWRK[gpu_dest]/sizeof(T))*ldWRK, &one, WRKSPACE_[gpu_dest], 1, W[gpu_dest], 1);
+									if(cublasError != CUBLAS_STATUS_SUCCESS) std::cout << "Error in Taxpy " << std::endl;
+								}
+							}
 						}
 						
 					}
 
-					/* Disturibute the results from the leading GPUs to other GPUs in a row */
+					/* Distribute the results from the leading GPUs to other GPUs in a row */
 					int src_id, dest_id;
 
 					if (next_ == NextOp::cAb) {
@@ -402,6 +441,8 @@ namespace chase {
 							}
 						}
 					}
+
+					cudaFree(matrix);
 				}
 
 				/* Collect the computed V/W from the GPUs */
