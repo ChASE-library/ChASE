@@ -53,6 +53,15 @@ if( ${Boost_FOUND} )
       ${CUDA_LIBRARIES}
       )
     target_compile_definitions( "gpu_driver" PRIVATE DRIVER_BUILD_CUDA=1 USE_MPI=1 )
+
+    add_executable( mgpu_driver "simple_driver.cpp" )
+    target_link_libraries( mgpu_driver
+      chase_mpi_driver
+      chase_mpi_cuda
+      ${CUDA_CUBLAS_LIBRARIES}
+      ${CUDA_LIBRARIES}
+      )
+    target_compile_definitions( "mgpu_driver" PRIVATE DRIVER_BUILD_MGPU=1 USE_MPI=1 )
   endif()
 
 else()
