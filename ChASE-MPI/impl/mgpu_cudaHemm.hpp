@@ -42,7 +42,7 @@ namespace chase {
 				
 					/// Get number of available GPU devices
 					cuda_exec(cudaGetDeviceCount(&num_devices));
-					std::cout << "Running on " << num_devices << " devices!" << std::endl;
+					//std::cout << "Running on " << num_devices << " devices!" << std::endl;
 
 					/// Allocate array for device indices, handles and streams;
 					devices_id = (int*) malloc(num_devices * sizeof(int));
@@ -279,7 +279,6 @@ namespace chase {
 				//void computeHemm(std::size_t m, std::size_t n, std::size_t k, T alpha, T beta) {
 				void computeHemm(std::size_t block, T alpha, T beta) {
 
-					std::cout << "Computing Hemm..." << std::endl;
 					std::size_t m, n, k;
 					std::size_t tile_dim_row, tile_dim_col;
 					std::size_t num_tile_rows, num_tile_cols;
