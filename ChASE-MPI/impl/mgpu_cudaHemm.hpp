@@ -17,10 +17,18 @@
 #include "chase_mpi_properties.hpp"
 #include "blas_cuda_wrapper.hpp"
 
-//
-// This class provides the basic functionality for multi-GPU Hemm.
-// The core functionalies are to distribute H, V and W between the GPUs and to
-// perform the Hemm operation in distributed manner
+/**
+ * This class provides the basic functionality for a series of  a multi-GPU Hemm-s.
+ * The core functionalies are to distribute H, V and W between the GPU devices and to
+ * perform the Hemm operation in distributed manner among all GPU devices. 
+ * The class supports two type of operations
+ *
+ * 		W = alpha * H * V + beta * W (refered as 'cAb' operation)
+ * or
+ * 		V = alpha * H^C * W + beta * V (refered as 'bAc' operation)
+ *
+ * 	such that not additional redististribution of H is required between successive Hemm calls.
+ */
 
 namespace chase {
 	namespace mpi {
@@ -32,48 +40,45 @@ namespace chase {
 
 				typedef T value_type;
 
-				/* Constructor - sets GPUs, cublas handle, streams */
+				/* Constructor - sets GPUs, allocate device arrays, create cublas handles and streams */
 				mgpu_cudaHemm() {};
 
-				//mgpu_cudaHemm(cublasHandle_t handle, cudaStream_t stream, std::size_t m, std::size_t n, std::size_t maxBlock) :
-				//handle_(handle), stream_(stream), m_(m), n_(n), maxBlock_(maxBlock) {
 				mgpu_cudaHemm(std::size_t m, std::size_t n, std::size_t maxBlock) :
 				m_(m), n_(n), maxBlock_(maxBlock) {
 				
-					/// Get number of available GPU devices
+					/* Get number of available GPU devices */
 					cuda_exec(cudaGetDeviceCount(&num_devices));
-					//std::cout << "Running on " << num_devices << " devices!" << std::endl;
 
-					/// Allocate array for device indices, handles and streams;
-					devices_id = (int*) malloc(num_devices * sizeof(int));
+					/* Allocate array for device indices, handles and streams */
 					handle_ = (cublasHandle_t*) malloc(num_devices * sizeof(cublasHandle_t));
 					stream_ = (cudaStream_t*) malloc(num_devices * sizeof(cudaStream_t));
 
-					/// Populate list of devices, create handles and streams for each device
+					/* Populate list of devices, create handles and streams for each device */
 					for (int dev=0; dev<num_devices; dev++) {
-						devices_id[dev] = dev;
-
 						cuda_exec(cudaSetDevice(dev));
 						cublasCreate(&handle_[dev]);
 						cuda_exec(cudaStreamCreate(&stream_[dev]));
 						cublasSetStream(handle_[dev], stream_[dev]);
 					}
 
-					/// Allocate arrays to hold pointers to memory allocations on each device for
-					/// matrices H, B and IMT
+					/* Allocate arrays to hold pointers to memory allocations on each device for
+					 * matrices H, B and IMT */
 					H_ = (T**) malloc(num_devices * sizeof(T*));
 					B_ = (T**) malloc(num_devices * sizeof(T*));
 					IMT_ = (T**) malloc(num_devices * sizeof(T*));
 					WRKSPACE_ = (T**) malloc(num_devices * sizeof(T*));
 
+					/* Pointers to memory location of the HEMM operands. The class always computes W = H * V + W operation */
 					W = (T**) malloc(num_devices * sizeof(T*));
 					V = (T**) malloc(num_devices * sizeof(T*));
 					
+					/* Allocate arrays to hold pitch values for each 2D array */
 					pitchB = (std::size_t*) malloc(num_devices * sizeof(std::size_t));
 					pitchH = (std::size_t*) malloc(num_devices * sizeof(std::size_t));
 					pitchIMT = (std::size_t*) malloc(num_devices * sizeof(std::size_t));
 					pitchWRK = (std::size_t*) malloc(num_devices * sizeof(std::size_t));
 
+					/* Pointers to pitch values of the HEMM operands */
 					pitchW = (std::size_t*) malloc(num_devices * sizeof(std::size_t));
 					pitchV = (std::size_t*) malloc(num_devices * sizeof(std::size_t));
 
@@ -87,8 +92,7 @@ namespace chase {
 					dim_tile_m_ = std::min(m_, (m_+ntile_m_-1)/ntile_m_);
 					
 					/* Set leading dimensions of the GPU arrays */
-					//ldB = dim_tile_n_;
-					//ldIMT = dim_tile_m_;
+					/// TODO: ldB and ldIMT does not to be large as ldWRK but rather dim_tile_m and dim_tile_n_, respectively
 					ldWRK = std::max(dim_tile_m_, dim_tile_n_);
 					ldB = ldIMT = ldWRK;
 					ldH = dim_tile_m_;
@@ -96,20 +100,20 @@ namespace chase {
 					std::cout << "Number of tiles: "<<ntile_m_ << " x " << ntile_n_ << std::endl;
 					std::cout << "Tile dimension: "<<dim_tile_m_ << " x " << dim_tile_n_ << std::endl;
 
-					int dim_row = 0;
-					int dim_col = 0;
+					int tile_x = 0;
+					int tile_y = 0;
 
 					/* Pass through the tiles in row-major order (one-by-one tile row)
 					 * compute dimension and allocate arrays asynchronously od devices */
 					for (int dev_x = 0; dev_x < ntile_m_; dev_x++) {
 
 						/* Get the number of rows in the current tile */
-						dim_row = get_tile_size_row(dev_x);
+						tile_x = get_tile_size_row(dev_x);
 
 						for (int dev_y = 0; dev_y < ntile_n_; dev_y++) {
 
 							/* Get the number of columns in the current tile */
-							dim_col = get_tile_size_col(dev_y);
+							tile_y = get_tile_size_col(dev_y);
 
 							/* Get the GPU id */
 							int gpu_id = dev_x * ntile_n_ + dev_y;
@@ -118,26 +122,25 @@ namespace chase {
 							cuda_exec(cudaSetDevice(gpu_id));
 
 							//* Allocate memories for H, IMT and B matrices */
-							//cuda_exec(cudaMalloc((void**)&B_[gpu_id], ldB * maxBlock_ * sizeof(T)));
-							//cuda_exec(cudaMalloc((void**)&IMT_[gpu_id], ldIMT * maxBlock_ * sizeof(T)));
-							//cuda_exec(cudaMalloc((void**)&WRKSPACE_[gpu_id], ldWRK * maxBlock_ * sizeof(T)));
-							//cuda_exec(cudaMalloc((void**)&H_[gpu_id], ldH * dim_col * sizeof(T)));
 							cuda_exec(cudaMallocPitch((void**)&B_[gpu_id], &pitchB[gpu_id],  maxBlock_*sizeof(T), ldB));
 							cuda_exec(cudaMallocPitch((void**)&IMT_[gpu_id], &pitchIMT[gpu_id], maxBlock_ * sizeof(T), ldIMT));
 							cuda_exec(cudaMallocPitch((void**)&WRKSPACE_[gpu_id], &pitchWRK[gpu_id], maxBlock_ * sizeof(T), ldWRK));
-							cuda_exec(cudaMallocPitch((void**)&H_[gpu_id], &pitchH[gpu_id], dim_col * sizeof(T), ldH));
+							cuda_exec(cudaMallocPitch((void**)&H_[gpu_id], &pitchH[gpu_id], tile_y * sizeof(T), ldH));
 						}
 					}
 
+					/* Keep info wether the matrix H_ is distributed among devices or not. In the initialization phase, it is not distributed */
 					copied_ = false;
 					next_ = NextOp::cAb;
 
-					/* Set memory pointers. The initial configuration is: IMT = H * B + IMT */
+					/* Set memory pointers. The initial configuration is: IMT = H * B + IMT, i.e. V = B and W = IMT */
 					this->switch_pointers();
 
 					/* Start timing events */
 					cuda_exec(cudaEventCreate(&start));
 					cuda_exec(cudaEventCreate(&stop));
+
+					/* Set time collectors to zero */
 					time_copy_H = 0;
 				}
 
@@ -158,7 +161,6 @@ namespace chase {
 					free(H_);
 					free(V);
 					free(W);
-					free(devices_id);
 					free(pitchB);
 					free(pitchH);
 					free(pitchIMT);
@@ -170,149 +172,185 @@ namespace chase {
 					cudaEventDestroy(stop);
 				}
 
-				/* Divide given matrix H to block and distribute among GPUs */
+				/* Distribute given matrix orig_H among GPUs */
 				void distribute_H(T* orig_H, std::size_t ld_origH) {
 
-					int dim_row, dim_col;
+					/* Tile dimension */
+					int tile_x, tile_y;
+
+					/* Start row/col position in the given matrix */
 					int start_row, start_col;
 
+					/* If H is not distributed among devices (i.e. the first call to the distribute_H), distribute it */
 					if( !copied_ ) {
+
+						/* Pass through the rows of the tiled matrix H */
 						for (int dev_x = 0; dev_x < ntile_m_; dev_x++) {
-							dim_row = get_tile_size_row(dev_x);
+
+							/* Get the number of rows in the tile */
+							tile_x = get_tile_size_row(dev_x);
+
+							/* Get the starting row-index of the tile */
 							start_row = dev_x * dim_tile_m_;
 
+							/* Pass through the columns of the tiled matrix H */
 							for(int dev_y = 0; dev_y < ntile_n_; dev_y++) {
-								dim_col = get_tile_size_col(dev_y);
+
+								/* FGet the number of columns in the tile */
+								tile_y = get_tile_size_col(dev_y);
+
+								/* Get the starting column-index of the tile */
 								start_col = dev_y * dim_tile_n_;
 
+								/* Compute the device id (ranging from 0..num_devices-1 */
 								int dev_id = dev_x * ntile_n_ + dev_y;
+
+								/* Set a device and asyncronously transfer the tile to that device's memory */
 								cuda_exec(cudaSetDevice(dev_id));
-								//cuda_exec(cudaMemcpy2DAsync(H_[dev_id], Hpitch, &orig_H[start_row * n_ + start_col], n_*sizeof(T), dim_col * sizeof(T), dim_row, cudaMemcpyHostToDevice, stream_[dev_id]));
-								//cublasError = cublasSetMatrixAsync(dim_row, dim_col, sizeof(T), &orig_H[start_row*n_ + start_col], ld_origH, H_[dev_id], ldH, stream_[dev_id]);
-								cublasError = cublasSetMatrixAsync(dim_row, dim_col, sizeof(T), &orig_H[start_col * ld_origH + start_row], ld_origH, H_[dev_id], ldH, stream_[dev_id]);
-								if(cublasError != CUBLAS_STATUS_SUCCESS) std::cout << "Error in cublasSetMatrixAsync H" << std::endl;
+								cublasError = cublasSetMatrixAsync(tile_x, tile_y, sizeof(T), &orig_H[start_col * ld_origH + start_row], ld_origH, H_[dev_id], ldH, stream_[dev_id]);
+								if(cublasError != CUBLAS_STATUS_SUCCESS) {
+									std::cout << "Error in cublasSetMatrixAsync H" << std::endl;
+								}
 							}
 						}
+						/* Next time the function is called, no need to distribute it again */
 						copied_ = true;
 					}
+	
+					/* If H already distributed, then don't have to do nothing. */
+					/// TODO: Currently, the shift of H is done on CPU and there is no "smart" way to update it on devices. Therefore, for now, the H is redistributed
 					else {
 						for (int dev_x = 0; dev_x < ntile_m_; dev_x++) {
-							dim_row = get_tile_size_row(dev_x);
+							tile_x = get_tile_size_row(dev_x);
 							start_row = dev_x * dim_tile_m_;
 
 							for(int dev_y = 0; dev_y < ntile_n_; dev_y++) {
-								dim_col = get_tile_size_col(dev_y);
+								tile_y = get_tile_size_col(dev_y);
 								start_col = dev_y * dim_tile_n_;
 
 								int dev_id = dev_x * ntile_n_ + dev_y;
 								cuda_exec(cudaSetDevice(dev_id));
-								//cuda_exec(cudaMemcpy2DAsync(H_[dev_id], Hpitch, &orig_H[start_row * n_ + start_col], n_*sizeof(T), dim_col * sizeof(T), dim_row, cudaMemcpyHostToDevice, stream_[dev_id]));
-								//cublasError = cublasSetMatrixAsync(dim_row, dim_col, sizeof(T), &orig_H[start_row*n_ + start_col], ld_origH, H_[dev_id], ldH, stream_[dev_id]);
-								cublasError = cublasSetMatrixAsync(dim_row, dim_col, sizeof(T), &orig_H[start_col * ld_origH + start_row], ld_origH, H_[dev_id], ldH, stream_[dev_id]);
-								if(cublasError != CUBLAS_STATUS_SUCCESS) std::cout << "Error in cublasSetMatrixAsync H" << std::endl;
+								cublasError = cublasSetMatrixAsync(tile_x, tile_y, sizeof(T), &orig_H[start_col * ld_origH + start_row], ld_origH, H_[dev_id], ldH, stream_[dev_id]);
+								if(cublasError != CUBLAS_STATUS_SUCCESS) {
+									std::cout << "Error in cublasSetMatrixAsync H" << std::endl;
+								}
 							}
 						}
 
 					}
 				}
 
-				/* Divide given tall-skinny matrices V/W into panels and distributed them among GPUs */
+				/* Divide given matrix buf_init into panels and distributed among GPUs */
 				void distribute_V (T* buf_init, std::size_t ldBuf, std::size_t block) {
 
-					/// Dimension of the block and start index
-					int dim_row;
+					/* Number of rows in the tile */
+					int tile_x;
+
+					/* Index of the first row of the tile */
 					int start_row;
 
+					/* In the case of cAb operation, i.e. W = H * V + W */
 					if (next_ == NextOp::cAb) {
 
-						/* Divide buf_init input tile ntile_n_ tiles and distribute to GPU such as
- 						 * that tile i goes to the GPUs with GPU_ID % ntile_n_ == i
- 						 */ 
+						/* Divide buf_init in row-panels matching the number of tile-columns of tiled H */ 
 						for (int i = 0; i < ntile_n_; i++) {
 
-							/* buf_init is divided into row-panels which dimension and starting index 
- 							 * correspond to the dimension of the tiled matrix H by columns
-							 */
-							dim_row = get_tile_size_col(i);
+							/* Number of rows in the tile */
+							tile_x = get_tile_size_col(i);
+
+							/* Index of the first row in the tile in the global H indexing */
 							start_row = i * dim_tile_n_;
 
+							/* Pass through all devices */
 							for (int dev = i; dev < num_devices; dev += ntile_n_) {
+
 								cuda_exec(cudaSetDevice(dev));
-								//cuda_exec(cudaMemcpy2DAsync(B_[dev], Bpitch, &buf_init[start_row*maxBlock_], maxBlock_*sizeof(T), block*sizeof(T), dim_row, cudaMemcpyHostToDevice, stream_[dev]));
-								//cublasError = cublasSetMatrixAsync(dim_row, block, sizeof(T), &buf_init[start_row*maxBlock_], ldBuf, B_[dev], ldB, stream_[dev]);
-								//cublasError = cublasSetMatrixAsync(dim_row, block, sizeof(T), &buf_init[start_row], ldBuf, B_[dev], ldB, stream_[dev]);
-								cublasError = cublasSetMatrixAsync(dim_row, block, sizeof(T), &buf_init[start_row], ldBuf, V[dev], ldV, stream_[dev]);
-								if(cublasError != CUBLAS_STATUS_SUCCESS) std::cout << "Error in cublasSetMatrixAsync V/W" << std::endl;
+								cublasError = cublasSetMatrixAsync(tile_x, block, sizeof(T), &buf_init[start_row], ldBuf, V[dev], ldV, stream_[dev]);
+								if(cublasError != CUBLAS_STATUS_SUCCESS) {
+									std::cout << "Error in cublasSetMatrixAsync V/W" << " in cAb" << std::endl;
+								}
 
 							}
 						}
-					//cuda_exec(cudaMemcpyAsync(B_, buf_init, block * k * sizeof(T), 
-					//						  cudaMemcpyHostToDevice, stream_));
 					}
+					/* The case V = H^C * W + V */
 					else {
-
 						/* Divide buf_init input tile ntile_m_ tiles and distribute to GPU such as
  						 * that tile i goes to the GPUs with GPU_ID % ntile_m_ == i
  						 */ 
+						/* Divide buf_init in row-panels matching the number of tile-rows of the tiled H (because H is (conjugate) transposed */ 
 						for (int i = 0; i < ntile_m_; i++) {
 
-							/* buf_init is divided into row-panels which dimension and starting index 
- 							 * correspond to the dimension of the tiled matrix H by columns
-							 */
-							dim_row = get_tile_size_row(i);
+							/* Number of rows in the tile */
+							tile_x = get_tile_size_row(i);
+
+							/* Index of the first row in the tile in the global H indexing */
 							start_row = i * dim_tile_m_;
 							
+							/* Compute index of the first GPU device in the (transponsed) tile-row of the tiled matrix H */
 							int start_dev_id = i * ntile_n_;
+
+							/* Pass through all the devices in the tile-row */
 							for (int dev = start_dev_id; dev < start_dev_id + ntile_n_; dev++) {
+
 								cuda_exec(cudaSetDevice(dev));
-								//cuda_exec(cudaMemcpy2DAsync(B_[dev], Bpitch, &buf_init[start_row*maxBlock_], maxBlock_*sizeof(T), block*sizeof(T), dim_row, cudaMemcpyHostToDevice, stream_[dev]));
-								//cublasError = cublasSetMatrixAsync(dim_row, block, sizeof(T), &buf_init[start_row*maxBlock_], ldBuf, B_[dev], ldB, stream_[dev]);
-								cublasError = cublasSetMatrixAsync(dim_row, block, sizeof(T), &buf_init[start_row], ldBuf, V[dev], ldV, stream_[dev]);
-								if(cublasError != CUBLAS_STATUS_SUCCESS) std::cout << "Error in cublasSetMatrixAsync V/W" << std::endl;
+								cublasError = cublasSetMatrixAsync(tile_x, block, sizeof(T), &buf_init[start_row], ldBuf, V[dev], ldV, stream_[dev]);
+								if(cublasError != CUBLAS_STATUS_SUCCESS) {
+									std::cout << "Error in cublasSetMatrixAsync V/W" << " in bAc" << std::endl;
+								}
 							}
 						}
 					}
 				}
 
 				/* Compute Hemm */
-				//void computeHemm(T* buf_init, T* buf_target, std::size_t m, std::size_t n, std::size_t k, std::size_t block, T alpha, T beta, cublasOperation_t transa) {
-				//void computeHemm(std::size_t m, std::size_t n, std::size_t k, T alpha, T beta) {
 				void computeHemm(std::size_t block, T alpha, T beta) {
 
+					/* Parameters for a local <T>hemm operation */
 					std::size_t m, n, k;
-					std::size_t tile_dim_row, tile_dim_col;
-					std::size_t num_tile_rows, num_tile_cols;
-					T zero = 0;
-					T one = 1;
-					bool leading_gpu = false;
 					cublasOperation_t transa;
 
-					T *matrix = nullptr;
-				    std::size_t pitchMat;
-					cuda_exec(cudaMallocPitch((void**)&matrix, &pitchMat,  maxBlock_*sizeof(T), ldWRK));
+					/* Dimension of the tile */
+					std::size_t tile_x, tile_y;
+	
+					/* Define '0' and '1' */
+					T zero = 0;
+					T one = 1;
 
+					/* Auxiliary variables */
+					bool leading_gpu = false;
+					std::size_t num_tile_cols;
+
+					/* Set transa (for H). In the case bAc H is (conjugate-)transposed */
 					if (next_ == NextOp::bAc) {
 						transa = CUBLAS_OP_C;
-						num_tile_rows = ntile_n_;
 						num_tile_cols = ntile_m_;
 					} else {
 						transa = CUBLAS_OP_N;
-						num_tile_rows = ntile_m_;
 						num_tile_cols = ntile_n_;
 					}
 
 					int dev_id; 
+					/* Visit all the tiles of the tile matrix H and compute local (partial) HEMM operations */
+
+					/* Pass through the rows of tiled H */
 					for (int dev_x = 0; dev_x < ntile_m_; dev_x++) {
 						
-						tile_dim_row = get_tile_size_row(dev_x);
+						/* Number of rows in the tile */
+						tile_x = get_tile_size_row(dev_x);
+
+						/* Pass through the columns of tiled H */
 						for (int dev_y = 0; dev_y < ntile_n_; dev_y++) {
 						
-							tile_dim_col = get_tile_size_col(dev_y);
+							/* Number of columns in the tile */
+							tile_y = get_tile_size_col(dev_y);
 
+							/* Get m, n, k for each operation cAb and bAc. 
+ 							 * The first GPU of each row stored intermediat results in W, others in the WRKSPACE array */
 							if (next_ == NextOp::cAb) {
-								m = tile_dim_row;
+								m = tile_x;
 								n = block;
-								k = tile_dim_col;
+								k = tile_y;
 								if(dev_y == 0) {
 									leading_gpu = true;
 								} else {
@@ -320,9 +358,9 @@ namespace chase {
 								}
 								dev_id = dev_x * ntile_n_ + dev_y;
 							} else {
-								m = tile_dim_col;
+								m = tile_y;
 								n = block;
-								k = tile_dim_row;
+								k = tile_x;
 								if(dev_x == 0) {
 									leading_gpu = true;
 								} else {
@@ -330,25 +368,16 @@ namespace chase {
 								}
 								dev_id = dev_x * ntile_n_ + dev_y;
 							}
-							//int dev_id = dev_x * ntile_n_ + dev_y;
 		
+							/* Set device and compute local Tgemm. The GPUs operating on the the first tiles in the rows are updating
+ 							 * W, while other GPUs store intermediate results in the cleaned (multiplied by '0') WRKSPACE array */
 							cuda_exec(cudaSetDevice(dev_id));
 							if (leading_gpu) {
-								//cublasTgemm(handle_[dev_id], transa, CUBLAS_OP_N, m, n, k, &alpha, H_[dev_id], ldH, B_[dev_id], ldB,
-								//	&beta, IMT_[dev_id], ldIMT);
 								cublasTgemm(handle_[dev_id], transa, CUBLAS_OP_N, m, n, k, &alpha, H_[dev_id], ldH, V[dev_id], ldV,
 									&beta, W[dev_id], ldW);
-									
-									//cublasGetMatrixAsync(m, n, sizeof(T), W[dev_id], ldW, matrix, ldWRK, stream_[dev_id]);
-									//cudaStreamSynchronize(stream_[dev_id]);
 							} else {
-								//cublasTgemm(handle_[dev_id], transa, CUBLAS_OP_N, m, n, k, &alpha, H_[dev_id], ldH, B_[dev_id], ldB,
-								//	&zero, WRKSPACE_[dev_id], ldWRK);
 								cublasTgemm(handle_[dev_id], transa, CUBLAS_OP_N, m, n, k, &alpha, H_[dev_id], ldH, V[dev_id], ldV,
 									&zero, WRKSPACE_[dev_id], ldWRK);
-
-									//cublasGetMatrixAsync(m, n, sizeof(T), WRKSPACE_[dev_id], ldWRK, matrix, ldWRK, stream_[dev_id]);
-									//cudaStreamSynchronize(stream_[dev_id]);
 							}
 						}
 					}
@@ -356,33 +385,27 @@ namespace chase {
 					/* Synchronize all GPUs */
 					this->synchronizeAll();
 
-					/* Compute the final solution from partial per-GPU solutions */
-					/* Collect intermediat results from GPUs in the same rows in the first GPU in the row*/
 					int gpu_src;
 					int gpu_dest;
+
+					/* Compute the final solution from partial per-GPU solutions.
+					 * Collect intermediate results from the GPUs in the same rows to the first GPU in the row.
+					 * Implemented as a parallel prefix sum. 
+					 * In the first step the odd GPUs transfer their partial solutions (tile products) to a one previos GPU (i.e. the one with the index-1) where the
+					 * sum of two tiles are computed and so on. */ 
 					for (int s = 1; s < num_tile_cols; s <<= 1) {
 
 						if (next_ == NextOp::cAb) {
 							for (int dev = s; dev < num_devices; dev += 2*s) {
-								tile_dim_row = get_tile_size_row(dev/ntile_n_);
+								tile_x = get_tile_size_row(dev/ntile_n_);
 
-								//cudaStreamSynchronize(stream_[dev-s]);
-								//if (s == 1) {
 								if (s == 1 || (num_tile_cols%2 != 0 && dev == num_devices-1)) {
-									//cuda_exec(cudaMemcpy2DAsync(WRKSPACE_[dev-s], pitchWRK[dev-s], WRKSPACE_[dev], pitchWRK[dev], block*sizeof(T), ldWRK, cudaMemcpyDeviceToDevice, stream_[dev-s]));
 									cuda_exec(cudaMemcpyAsync(WRKSPACE_[dev-s], WRKSPACE_[dev], block*sizeof(T)*ldWRK, cudaMemcpyDeviceToDevice, stream_[dev-s]));
-								//	std::cout<<"Device " << dev << " in the case s == 1" << std::endl;
 								} else {
-									//cuda_exec(cudaMemcpy2DAsync(WRKSPACE_[dev-s], pitchWRK[dev-s], W[dev], pitchW[dev], block*sizeof(T), ldW, cudaMemcpyDeviceToDevice, stream_[dev-s]));
 									cuda_exec(cudaMemcpyAsync(WRKSPACE_[dev-s], W[dev], block*sizeof(T)*ldW, cudaMemcpyDeviceToDevice, stream_[dev-s]));
-								//	std::cout<<"Device " << dev << " in the case s != 1" << std::endl;
 								}
-
-								// TODO: Might be critical since WRKSPACE has paddings. Rows might be longer than maxBlock_ and Taxpy does not catch all the elements.
-								// Straight forward solution is to compute Taxpy on the entire WRKSPACE (ldWRK * maxBlock_)
 								cuda_exec(cudaSetDevice(dev-s));	
 								cuda_exec(cudaStreamSynchronize(stream_[dev-s]));
-								//cublasError = cublasTaxpy(handle_[dev-s], (pitchWRK[dev-s]/sizeof(T))*ldWRK, &one, WRKSPACE_[dev-s], 1, IMT_[dev-s], 1);
 								cublasError = cublasTaxpy(handle_[dev-s], (pitchWRK[dev-s]/sizeof(T))*ldWRK, &one, WRKSPACE_[dev-s], 1, W[dev-s], 1);
 								if(cublasError != CUBLAS_STATUS_SUCCESS) std::cout << "Error in Taxpy " << std::endl;
 							}
@@ -392,20 +415,14 @@ namespace chase {
 									gpu_src = dev_y;
 									gpu_dest = dev_y - s*ntile_n_; 
 
-									tile_dim_row = get_tile_size_row(dev_y/ntile_m_);
+									tile_x = get_tile_size_row(dev_y/ntile_m_);
 									if (s == 1 || (num_tile_cols%2 != 0 && dev_y/ntile_n_ == ntile_m_-1)) {
 										cuda_exec(cudaMemcpyAsync(WRKSPACE_[gpu_dest], WRKSPACE_[gpu_src], block*sizeof(T)*ldWRK, cudaMemcpyDeviceToDevice, stream_[gpu_dest]));
-									//	std::cout<<"Device " << gpu_src << " in the case s == 1" << std::endl;
 									} else {
 										cuda_exec(cudaMemcpyAsync(WRKSPACE_[gpu_dest], W[gpu_src], block*sizeof(T)*ldW, cudaMemcpyDeviceToDevice, stream_[gpu_dest]));
-									//	std::cout<<"Device " << gpu_src << " in the case s != 1" << std::endl;
 									}
-
-									// TODO: Might be critical since WRKSPACE has paddings. Rows might be longer than maxBlock_ and Taxpy does not catch all the elements.
-									// Straight forward solution is to compute Taxpy on the entire WRKSPACE (ldWRK * maxBlock_)
 									cuda_exec(cudaSetDevice(gpu_dest));	
 									cuda_exec(cudaStreamSynchronize(stream_[gpu_dest]));
-									//cublasError = cublasTaxpy(handle_[dev-s], (pitchWRK[dev-s]/sizeof(T))*ldWRK, &one, WRKSPACE_[dev-s], 1, IMT_[dev-s], 1);
 									cublasError = cublasTaxpy(handle_[gpu_dest], (pitchWRK[gpu_dest]/sizeof(T))*ldWRK, &one, WRKSPACE_[gpu_dest], 1, W[gpu_dest], 1);
 									if(cublasError != CUBLAS_STATUS_SUCCESS) std::cout << "Error in Taxpy " << std::endl;
 								}
@@ -414,72 +431,60 @@ namespace chase {
 						
 					}
 
-					/* Distribute the results from the leading GPUs to other GPUs in a row */
+					/* Finally, distribute the final result from the leading (first GPUs in the rows of the tiled H) to other GPUs in a row. 
+ 					 * This step is required in order to have all GPU updated for next call to computeHemm. */
 					int src_id, dest_id;
 
 					if (next_ == NextOp::cAb) {
 						
 						for (int dev_x = 0; dev_x < ntile_m_; dev_x++) {
 							src_id = dev_x * ntile_n_;
-							tile_dim_row = get_tile_size_row(dev_x);
+							tile_x = get_tile_size_row(dev_x);
 							for (int dev_y = 1; dev_y < ntile_n_; dev_y++) {
 								dest_id = src_id + dev_y;
-								//cuda_exec(cudaMemcpy2DAsync(IMT_[dest_id], pitchIMT[dest_id], IMT_[src_id], pitchIMT[src_id], block*sizeof(T), tile_dim_row, cudaMemcpyDeviceToDevice, stream_[dest_id]));
-								cuda_exec(cudaMemcpy2DAsync(W[dest_id], pitchW[dest_id], W[src_id], pitchW[src_id], block*sizeof(T), tile_dim_row, cudaMemcpyDeviceToDevice, stream_[dest_id]));
+								cuda_exec(cudaMemcpy2DAsync(W[dest_id], pitchW[dest_id], W[src_id], pitchW[src_id], block*sizeof(T), tile_x, cudaMemcpyDeviceToDevice, stream_[dest_id]));
 							}
 						}
 					} else {
 
 						for (int dev_x = 0; dev_x < ntile_n_; dev_x++) {
 							src_id = dev_x;
-							tile_dim_row = get_tile_size_col(dev_x);
+							tile_x = get_tile_size_col(dev_x);
 							for (int dev_y = 1; dev_y < ntile_m_; dev_y++) {
 								dest_id = src_id + ntile_n_*dev_y;
-								//cuda_exec(cudaMemcpy2DAsync(IMT_[dest_id], pitchIMT[dest_id], IMT_[src_id], pitchIMT[src_id], block*sizeof(T), tile_dim_row, cudaMemcpyDeviceToDevice, stream_[dest_id]));
-								cuda_exec(cudaMemcpy2DAsync(W[dest_id], pitchW[dest_id], W[src_id], pitchW[src_id], block*sizeof(T), tile_dim_row, cudaMemcpyDeviceToDevice, stream_[dest_id]));
+								cuda_exec(cudaMemcpy2DAsync(W[dest_id], pitchW[dest_id], W[src_id], pitchW[src_id], block*sizeof(T), tile_x, cudaMemcpyDeviceToDevice, stream_[dest_id]));
 							}
 						}
 					}
-
-					cudaFree(matrix);
 				}
 
-				/* Collect the computed V/W from the GPUs */
+				/* Collect and return the computed W from the GPUs to the host*/
 				void return_W (T* buf_target, std::size_t ldBuf, std::size_t block) {
 
-					//cuda_exec(cudaMemcpyAsync(buf_target, IMT_, m * block * sizeof(T),
-					//		  				  cudaMemcpyDeviceToHost, stream_));
-					
 					/*  */
-					int tile_dim_row;
+					int tile_x;
 					int start_row;
 					int src_gpu;
 
 					if (next_ == NextOp::cAb) {
 						for (int dev_x = 0; dev_x < ntile_m_; dev_x++) {
 							src_gpu = dev_x * ntile_n_;
-							tile_dim_row = get_tile_size_row(dev_x);
+							tile_x = get_tile_size_row(dev_x);
 							start_row = dev_x * dim_tile_m_;
 
 							cuda_exec(cudaSetDevice(src_gpu));
-							//cuda_exec(cudaMemcpy2DAsync(&buf_target[start_row * maxBlock_], maxBlock_*sizeof(T), IMT_[src_gpu], IMTpitch, block*sizeof(T), tile_dim_row, cudaMemcpyDeviceToHost, stream_[src_gpu]));
-							//cublasError = cublasGetMatrixAsync(tile_dim_row, block, sizeof(T), IMT_[src_gpu], ldIMT, &buf_target[start_row * maxBlock_], ldBuf, stream_[src_gpu]);
-							//cublasError = cublasGetMatrixAsync(tile_dim_row, block, sizeof(T), IMT_[src_gpu], ldIMT, &buf_target[start_row], ldBuf, stream_[src_gpu]);
-							cublasError = cublasGetMatrixAsync(tile_dim_row, block, sizeof(T), W[src_gpu], ldW, &buf_target[start_row], ldBuf, stream_[src_gpu]);
+							cublasError = cublasGetMatrixAsync(tile_x, block, sizeof(T), W[src_gpu], ldW, &buf_target[start_row], ldBuf, stream_[src_gpu]);
 							if(cublasError != CUBLAS_STATUS_SUCCESS) std::cout << "Error in cublasGetMatAsync W" << std::endl;
 						}
 
 					} else {
 						for (int dev_x = 0; dev_x < ntile_n_; dev_x++) {
 							src_gpu = dev_x;
-							tile_dim_row = get_tile_size_col(dev_x);
+							tile_x = get_tile_size_col(dev_x);
 							start_row = dev_x * dim_tile_n_;
 
 							cuda_exec(cudaSetDevice(src_gpu));
-							//cuda_exec(cudaMemcpy2DAsync(&buf_target[start_row * maxBlock_], maxBlock_*sizeof(T), IMT_[src_gpu], IMTpitch, block*sizeof(T), tile_dim_row, cudaMemcpyDeviceToHost, stream_[src_gpu]));
-							//cublasError = cublasGetMatrixAsync(tile_dim_row, block, sizeof(T), IMT_[src_gpu], ldIMT, &buf_target[start_row * maxBlock_], ldBuf, stream_[src_gpu]);
-							//cublasError = cublasGetMatrixAsync(tile_dim_row, block, sizeof(T), IMT_[src_gpu], ldIMT, &buf_target[start_row], ldBuf, stream_[src_gpu]);
-							cublasError = cublasGetMatrixAsync(tile_dim_row, block, sizeof(T), W[src_gpu], ldW, &buf_target[start_row], ldBuf, stream_[src_gpu]);
+							cublasError = cublasGetMatrixAsync(tile_x, block, sizeof(T), W[src_gpu], ldW, &buf_target[start_row], ldBuf, stream_[src_gpu]);
 							if(cublasError != CUBLAS_STATUS_SUCCESS) std::cout << "Error in cublasGetMatAsync W" << std::endl; 
 						}
 
@@ -489,7 +494,7 @@ namespace chase {
 					this->synchronizeAll();
 				}
 
-				/// Synchronize all streams
+				/* Synchronize all devices */
 				void synchronizeAll() {
 
 					for (int i = 0; i < num_devices; i++) {
@@ -497,10 +502,12 @@ namespace chase {
 					}
 				}
 
+				/* Switch pointers to per-device 2D arrays depending on the next operation (cAb or bAc) */
 				void switch_pointers(){
 
+					this->synchronizeAll();
 					for(int gpu_id = 0; gpu_id < num_devices; gpu_id++) {
-						/* Computation direction is W = A * V + W */
+						/* If next operation is set to W = H * V + W */
 						if (next_ == NextOp::cAb) {
 							V[gpu_id] = B_[gpu_id];
 							W[gpu_id] = IMT_[gpu_id];
@@ -510,7 +517,7 @@ namespace chase {
 
 							ldV = ldB;
 							ldW = ldIMT;
-						/* Computation direction is V = A * W + V */
+						/* Computation direction is V = H^C * W + V */
 						} else {
 							W[gpu_id] = B_[gpu_id];
 							V[gpu_id] = IMT_[gpu_id];
@@ -525,7 +532,7 @@ namespace chase {
 					
 				}
 
-				/// Swap V and W (switch between C = A B + C and C = A^T B + C 
+				/* Switch operation, between W = H * V + W and V = H^C W + V */
 				void switch_operation() {
 
 					/* Change operation */
@@ -539,8 +546,22 @@ namespace chase {
 					this->switch_pointers();
 				}
 
+				/* Set operation, bAc or cAb */
+				void set_operation(int next) {
+
+					if(next == 0) {
+						next_ = NextOp::cAb;
+					} else if(next == 1) {
+						next_ = NextOp::bAc;
+					} else {
+						std::cout << "Wrong operation identifier!" << std::endl;
+					}
+					this->switch_pointers();
+				}
+
 			private:
 
+				/// Dimension of the input matrices H (m*n), W(m*maxBlock) and V(n*maxBlock)
 				std::size_t n_;
 				std::size_t m_;
 				std::size_t maxBlock_;
@@ -583,7 +604,6 @@ namespace chase {
 
 				/// List of GPU devices
 				int num_devices;
-				int *devices_id = nullptr;
 
 				/// Number of tiles in m/n direction
 				int ntile_m_;
@@ -606,7 +626,7 @@ namespace chase {
 				/// Cublas error
 				cublasStatus_t cublasError;
 
-				/// Return x-dimension of tile in m-direction
+				/// Return the number of rows of the tile with row-index 'tile_position'
 				int get_tile_size_row (int tile_position) {
 					if (tile_position + 1 == ntile_m_) {
 						return m_ - tile_position * dim_tile_m_;
@@ -614,6 +634,8 @@ namespace chase {
 						return dim_tile_m_;
 					}
 				}
+
+				/// Return the number of columns of the tile with column-index 'tile_position'
 				int get_tile_size_col (int tile_position) {
 					if (tile_position + 1 == ntile_n_) {
 						return n_ - tile_position * dim_tile_n_;
@@ -621,7 +643,6 @@ namespace chase {
 						return dim_tile_n_;
 					}
 				}
-
 		};
 	}  // namespace matrixfree
 }  // namespace chase

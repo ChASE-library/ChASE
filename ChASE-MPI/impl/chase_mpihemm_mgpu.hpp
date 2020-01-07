@@ -53,7 +53,7 @@ class ChaseMpiHemmMultiGPU : public ChaseMpiHemmInterface<T> {
 	// Remove allocation of memories. Will be done in mgpu_gpu class (constructor)
 
     int num_of_devices;
-    int mpi_rank = matrix_properties_->get_my_rank();
+    mpi_rank = matrix_properties_->get_my_rank();
     cuda_exec(cudaGetDeviceCount(&num_of_devices));
 
     //int device_id = mpi_rank % num_of_devices;
@@ -103,6 +103,7 @@ class ChaseMpiHemmMultiGPU : public ChaseMpiHemmInterface<T> {
 
   void preApplication(T* V, std::size_t locked, std::size_t block) {
     next_ = NextOp::bAc;
+	mgpuHemm->set_operation(next_);
   }
 
   void preApplication(T* V, T* V2, std::size_t locked, std::size_t block) {
@@ -118,21 +119,31 @@ class ChaseMpiHemmMultiGPU : public ChaseMpiHemmInterface<T> {
     std::size_t m, n, k;
     cublasOperation_t transa;
     std::size_t leading_dim;
+	std::size_t ldBufInit;
+	std::size_t ldBufTarget;
 
     if (next_ == NextOp::bAc) {
       buf_init = orig_C_ + offset * m_;
       buf_target = orig_IMT_ + offset * n_;
+      //buf_target = orig_IMT_ + offset * std::max(n_,m_);
       m = n_;
       n = block;
       k = m_;
+      ldBufInit = m_;
+	  //ldBufTarget = std::max(m_,n_); 
+	  ldBufTarget = n_; 
       transa = CUBLAS_OP_C;
       next_ = NextOp::cAb;
     } else {
       buf_init = orig_B_ + offset * n_;
       buf_target = orig_IMT_ + offset * m_;
+      //buf_target = orig_IMT_ + offset * std::max(m_,n_);
       m = m_;
       n = block;
       k = n_;
+	  ldBufInit = n_;
+      //ldBufTarget = std::max(m_,n_);
+      ldBufTarget = m_;
       transa = CUBLAS_OP_N;
       next_ = NextOp::bAc;
     }
@@ -148,18 +159,23 @@ class ChaseMpiHemmMultiGPU : public ChaseMpiHemmInterface<T> {
 	*/
 	cudaProfilerStart();
 	/// Transfer block-vector to GPUs
-    mgpuHemm->distribute_V(buf_init, k, block);
+    //mgpuHemm->distribute_V(buf_init, k, block);
+    mgpuHemm->distribute_V(buf_init, ldBufInit, block);
 
 	/// Compute Hemm
 	//mgpuHemm->computeHemm(buf_init, buf_target, m, n, k, block, alpha, beta, transa);
 	//mgpuHemm->computeHemm(m, n, k, alpha, beta, transa);
+
 	mgpuHemm->computeHemm(block, alpha, beta);
 
-	mgpuHemm->synchronizeAll();
+	//mgpuHemm->synchronizeAll();
 
 	/// Return computed block-vector to CPU
-	mgpuHemm->return_W(buf_target, m, block);
+	//mgpuHemm->return_W(buf_target, m, block);
+	mgpuHemm->return_W(buf_target, ldBufTarget, block);
 
+	//mgpuHemm->synchronizeAll();
+	
 	mgpuHemm->switch_operation();
 	cudaProfilerStop();
   }
@@ -235,6 +251,8 @@ class ChaseMpiHemmMultiGPU : public ChaseMpiHemmInterface<T> {
   T* orig_H_;
 
   std::size_t* off_;
+
+  int mpi_rank;
 
   bool copied_;
 
