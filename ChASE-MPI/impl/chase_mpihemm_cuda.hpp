@@ -18,6 +18,8 @@
 #include <cuda_profiler_api.h>
 #include <complex>
 
+#include <chrono>
+
 #include "blas_cuda_wrapper.hpp"
 #include "blas_templates.hpp"
 #include "chase_mpihemm_interface.hpp"
@@ -28,6 +30,9 @@ void chase_zshift_mpi_matrix(std::complex<double>* A, std::size_t* off,
 
 void chase_zshift_matrix(std::complex<double>* A, int n, double shift,
                          cudaStream_t* stream_);
+
+using namespace std::chrono;
+
 namespace chase {
 namespace mpi {
 
@@ -67,6 +72,11 @@ class ChaseMpiHemmCuda : public ChaseMpiHemmInterface<T> {
 
     cuda_exec(cudaStreamCreate(&stream_));
     cublasSetStream(handle_, stream_);
+
+	time_copy_H = std::chrono::milliseconds::zero(); 
+	time_copy_W = std::chrono::milliseconds::zero();
+	time_copy_V = std::chrono::milliseconds::zero();
+	time_gemm = std::chrono::milliseconds::zero();
   }
 
   ~ChaseMpiHemmCuda() {
@@ -75,6 +85,13 @@ class ChaseMpiHemmCuda : public ChaseMpiHemmInterface<T> {
     cudaFree(H_);
     cudaStreamDestroy(stream_);
     cublasDestroy(handle_);
+
+	std::cout << "CUDA_HEMM timings: " << std::endl;
+	std::cout << "Copy H   = " << time_copy_H.count()/1000 << " sec" << std::endl;
+	std::cout << "Copy V   = " << time_copy_V.count()/1000 << " sec" << std::endl;
+	std::cout << "Return W = " << time_copy_W.count()/1000 << " sec"   << std::endl;
+	std::cout << "Hemm     = " << time_gemm.count()/1000 << " sec"  << std::endl;
+	std::cout << std::endl;
   }
 
   void preApplication(T* V, std::size_t locked, std::size_t block) {
@@ -113,14 +130,27 @@ class ChaseMpiHemmCuda : public ChaseMpiHemmInterface<T> {
       next_ = NextOp::bAc;
     }
 
+
+	auto start = high_resolution_clock::now();
     cuda_exec(cudaMemcpyAsync(B_, buf_init, block * k * sizeof(T),
                               cudaMemcpyHostToDevice, stream_));
+	cudaStreamSynchronize(stream_);
+	auto stop = high_resolution_clock::now();
+	time_copy_V += stop - start;
 
+	start = high_resolution_clock::now();
     cublasTgemm(handle_, transa, CUBLAS_OP_N, m, n, k, &alpha, H_, m_, B_, k,
                 &beta, IMT_, m);
+	cudaDeviceSynchronize();
+	stop = high_resolution_clock::now();
+	time_gemm += stop - start;
 
+	start = high_resolution_clock::now();
     cuda_exec(cudaMemcpyAsync(buf_target, IMT_, m * block * sizeof(T),
                               cudaMemcpyDeviceToHost, stream_));
+	cudaStreamSynchronize(stream_);
+	stop = high_resolution_clock::now();
+	time_copy_W += stop - start;
   }
 
   bool postApplication(T* V, std::size_t block) {
@@ -129,18 +159,25 @@ class ChaseMpiHemmCuda : public ChaseMpiHemmInterface<T> {
   }
 
   void shiftMatrix(T c, bool isunshift = false) {
+
+	auto start = high_resolution_clock::now();
     if (!copied_) {
       cuda_exec(cudaMemcpyAsync(H_, orig_H_, m_ * n_ * sizeof(T),
                                 cudaMemcpyHostToDevice, stream_));
       copied_ = true;
+	  cudaStreamSynchronize(stream_);
+
     }
 
     // cudaDeviceSynchronize();
     cuda_exec(
         cudaMemcpy(H_, orig_H_, n_ * m_ * sizeof(T), cudaMemcpyHostToDevice));
 
+		cudaStreamSynchronize(0);
     // chase_zshift_mpi_matrix(H_, off_, n_, m_, std::real(c), &stream_);
     // chase_zshift_matrix(H_, n_, std::real(c), &stream_);
+	auto stop = high_resolution_clock::now();
+	time_copy_H += stop - start;
   }
 
   void applyVec(T* B, T* C) {
@@ -191,6 +228,12 @@ class ChaseMpiHemmCuda : public ChaseMpiHemmInterface<T> {
   cudaStream_t stream_;
   cublasHandle_t handle_;
   ChaseMpiProperties<T>* matrix_properties_;
+
+  /// Timing variables
+  std::chrono::duration<double, std::milli> time_copy_H;
+  std::chrono::duration<double, std::milli> time_copy_W;
+  std::chrono::duration<double, std::milli> time_copy_V;
+  std::chrono::duration<double, std::milli> time_gemm;
 };
 
 template <typename T>

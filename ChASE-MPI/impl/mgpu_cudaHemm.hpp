@@ -13,6 +13,8 @@
 #include <cstdlib>
 #include <iostream>
 
+#include <chrono>
+
 #include "algorithm/types.hpp"
 #include "chase_mpi_properties.hpp"
 #include "blas_cuda_wrapper.hpp"
@@ -29,6 +31,8 @@
  *
  * 	such that not additional redististribution of H is required between successive Hemm calls.
  */
+
+using namespace std::chrono;
 
 namespace chase {
 	namespace mpi {
@@ -137,11 +141,17 @@ namespace chase {
 					this->switch_pointers();
 
 					/* Start timing events */
-					cuda_exec(cudaEventCreate(&start));
-					cuda_exec(cudaEventCreate(&stop));
+					//cuda_exec(cudaEventCreate(&start));
+					//cuda_exec(cudaEventCreate(&stop));
 
 					/* Set time collectors to zero */
-					time_copy_H = 0;
+					time_copy_H = std::chrono::milliseconds::zero(); 
+					time_copy_W = std::chrono::milliseconds::zero();
+					time_copy_V = std::chrono::milliseconds::zero();
+					time_gemm = std::chrono::milliseconds::zero();
+					time_dist = std::chrono::milliseconds::zero();
+					time_axpy = std::chrono::milliseconds::zero();
+					time_redist = std::chrono::milliseconds::zero();
 				}
 
 				/* Remove local variables and free arrays */
@@ -168,8 +178,19 @@ namespace chase {
 					free(pitchV);
 					free(pitchW);
 
-					cudaEventDestroy(start);
-					cudaEventDestroy(stop);
+					//std::cout << "HEMM timings: " << std::endl;
+					//std::cout << "Copy H   = " << time_copy_H.count()/1000 << " sec" << std::endl;
+					//std::cout << "Copy V   = " << time_copy_V.count()/1000 << " sec" << std::endl;
+					//std::cout << "Return W = " << time_copy_W.count()/1000 << " sec"   << std::endl;
+					std::cout << "Hemm     = " << (time_gemm.count()+time_dist.count()+time_axpy.count()+time_redist.count())/1000 << " sec"  << std::endl;
+					std::cout << "\t gemm   = " << time_gemm.count()/1000 << " sec"  << std::endl;
+					std::cout << "\t dist   = " << time_dist.count()/1000 << " sec"  << std::endl;
+					std::cout << "\t axpy   = " << time_axpy.count()/1000 << " sec"   << std::endl;
+					std::cout << "\t redist = " << time_redist.count()/1000 << " sec"   << std::endl;
+					std::cout << std::endl;
+
+					//cudaEventDestroy(start);
+					//cudaEventDestroy(stop);
 				}
 
 				/* Distribute given matrix orig_H among GPUs */
@@ -180,6 +201,8 @@ namespace chase {
 
 					/* Start row/col position in the given matrix */
 					int start_row, start_col;
+
+					//auto start = high_resolution_clock::now();
 
 					/* If H is not distributed among devices (i.e. the first call to the distribute_H), distribute it */
 					if( !copied_ ) {
@@ -238,6 +261,10 @@ namespace chase {
 						}
 
 					}
+
+					//this->synchronizeAll();
+					//auto stop = high_resolution_clock::now();
+					//time_copy_H += stop -start;
 				}
 
 				/* Divide given matrix buf_init into panels and distributed among GPUs */
@@ -248,6 +275,8 @@ namespace chase {
 
 					/* Index of the first row of the tile */
 					int start_row;
+
+					//auto start = high_resolution_clock::now();
 
 					/* In the case of cAb operation, i.e. W = H * V + W */
 					if (next_ == NextOp::cAb) {
@@ -301,6 +330,11 @@ namespace chase {
 							}
 						}
 					}
+
+					//this->synchronizeAll();
+					//auto stop = high_resolution_clock::now();
+					//time_copy_V += stop - start;
+					
 				}
 
 				/* Compute Hemm */
@@ -332,6 +366,8 @@ namespace chase {
 
 					int dev_id; 
 					/* Visit all the tiles of the tile matrix H and compute local (partial) HEMM operations */
+
+					auto start = high_resolution_clock::now();
 
 					/* Pass through the rows of tiled H */
 					for (int dev_x = 0; dev_x < ntile_m_; dev_x++) {
@@ -385,8 +421,13 @@ namespace chase {
 					/* Synchronize all GPUs */
 					this->synchronizeAll();
 
+					auto stop = high_resolution_clock::now();
+					time_gemm += stop - start;
+
 					int gpu_src;
 					int gpu_dest;
+
+					start = high_resolution_clock::now();
 
 					/* Compute the final solution from partial per-GPU solutions.
 					 * Collect intermediate results from the GPUs in the same rows to the first GPU in the row.
@@ -428,12 +469,17 @@ namespace chase {
 								}
 							}
 						}
-						
 					}
 
+					this->synchronizeAll();
+					stop = high_resolution_clock::now();
+					time_axpy += stop - start;					
+	
 					/* Finally, distribute the final result from the leading (first GPUs in the rows of the tiled H) to other GPUs in a row. 
  					 * This step is required in order to have all GPU updated for next call to computeHemm. */
 					int src_id, dest_id;
+
+					start = high_resolution_clock::now();
 
 					if (next_ == NextOp::cAb) {
 						
@@ -456,6 +502,10 @@ namespace chase {
 							}
 						}
 					}
+
+					this->synchronizeAll();
+					stop = high_resolution_clock::now();
+					time_redist += stop - start;
 				}
 
 				/* Collect and return the computed W from the GPUs to the host*/
@@ -465,6 +515,8 @@ namespace chase {
 					int tile_x;
 					int start_row;
 					int src_gpu;
+
+					//auto start = high_resolution_clock::now();
 
 					if (next_ == NextOp::cAb) {
 						for (int dev_x = 0; dev_x < ntile_m_; dev_x++) {
@@ -492,6 +544,9 @@ namespace chase {
 
 					/* Synchronize all devices before return to the caller function*/
 					this->synchronizeAll();
+
+					//auto stop = high_resolution_clock::now();
+					//time_copy_W += stop - start;
 				}
 
 				/* Synchronize all devices */
@@ -613,9 +668,12 @@ namespace chase {
 				int dim_tile_m_;
 				int dim_tile_n_;
 
-  				/// Timing values
-  				cudaEvent_t start, stop;
-				float time_copy_H;
+  				/// Timing variables
+				std::chrono::duration<double, std::milli> time_copy_H;
+				std::chrono::duration<double, std::milli> time_copy_W;
+				std::chrono::duration<double, std::milli> time_copy_V;
+				std::chrono::duration<double, std::milli> time_gemm, time_dist, time_axpy, time_redist;
+				std::chrono::duration<double, std::milli> local_time;
 
 				/// Cublas handler for
 				cublasHandle_t *handle_ = nullptr;
