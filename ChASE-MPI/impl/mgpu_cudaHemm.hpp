@@ -182,12 +182,12 @@ namespace chase {
 					//std::cout << "Copy H   = " << time_copy_H.count()/1000 << " sec" << std::endl;
 					//std::cout << "Copy V   = " << time_copy_V.count()/1000 << " sec" << std::endl;
 					//std::cout << "Return W = " << time_copy_W.count()/1000 << " sec"   << std::endl;
-					std::cout << "Hemm     = " << (time_gemm.count()+time_dist.count()+time_axpy.count()+time_redist.count())/1000 << " sec"  << std::endl;
-					std::cout << "\t gemm   = " << time_gemm.count()/1000 << " sec"  << std::endl;
-					std::cout << "\t dist   = " << time_dist.count()/1000 << " sec"  << std::endl;
-					std::cout << "\t axpy   = " << time_axpy.count()/1000 << " sec"   << std::endl;
-					std::cout << "\t redist = " << time_redist.count()/1000 << " sec"   << std::endl;
-					std::cout << std::endl;
+					//std::cout << "Hemm     = " << (time_gemm.count()+time_dist.count()+time_axpy.count()+time_redist.count())/1000 << " sec"  << std::endl;
+					//std::cout << "\t gemm   = " << time_gemm.count()/1000 << " sec"  << std::endl;
+					//std::cout << "\t dist   = " << time_dist.count()/1000 << " sec"  << std::endl;
+					//std::cout << "\t axpy   = " << time_axpy.count()/1000 << " sec"   << std::endl;
+					//std::cout << "\t redist = " << time_redist.count()/1000 << " sec"   << std::endl;
+					//std::cout << std::endl;
 
 					//cudaEventDestroy(start);
 					//cudaEventDestroy(stop);
@@ -367,7 +367,7 @@ namespace chase {
 					int dev_id; 
 					/* Visit all the tiles of the tile matrix H and compute local (partial) HEMM operations */
 
-					auto start = high_resolution_clock::now();
+					//auto start = high_resolution_clock::now();
 
 					/* Pass through the rows of tiled H */
 					for (int dev_x = 0; dev_x < ntile_m_; dev_x++) {
@@ -421,13 +421,13 @@ namespace chase {
 					/* Synchronize all GPUs */
 					this->synchronizeAll();
 
-					auto stop = high_resolution_clock::now();
-					time_gemm += stop - start;
+					//auto stop = high_resolution_clock::now();
+					//time_gemm += stop - start;
 
 					int gpu_src;
 					int gpu_dest;
 
-					start = high_resolution_clock::now();
+					//start = high_resolution_clock::now();
 
 					/* Compute the final solution from partial per-GPU solutions.
 					 * Collect intermediate results from the GPUs in the same rows to the first GPU in the row.
@@ -471,17 +471,17 @@ namespace chase {
 						}
 					}
 
-					this->synchronizeAll();
-					stop = high_resolution_clock::now();
-					time_axpy += stop - start;					
+					//this->synchronizeAll();
+					//stop = high_resolution_clock::now();
+					//time_axpy += stop - start;					
 	
 					/* Finally, distribute the final result from the leading (first GPUs in the rows of the tiled H) to other GPUs in a row. 
  					 * This step is required in order to have all GPU updated for next call to computeHemm. */
-					int src_id, dest_id;
+					//int src_id, dest_id;
 
-					start = high_resolution_clock::now();
+					//start = high_resolution_clock::now();
 
-					if (next_ == NextOp::cAb) {
+					/*if (next_ == NextOp::cAb) {
 						
 						for (int dev_x = 0; dev_x < ntile_m_; dev_x++) {
 							src_id = dev_x * ntile_n_;
@@ -502,10 +502,10 @@ namespace chase {
 							}
 						}
 					}
-
-					this->synchronizeAll();
-					stop = high_resolution_clock::now();
-					time_redist += stop - start;
+					*/
+					//this->synchronizeAll();
+					//stop = high_resolution_clock::now();
+					//time_redist += stop - start;
 				}
 
 				/* Collect and return the computed W from the GPUs to the host*/
@@ -543,7 +543,7 @@ namespace chase {
 					}
 
 					/* Synchronize all devices before return to the caller function*/
-					this->synchronizeAll();
+					//this->synchronizeAll();
 
 					//auto stop = high_resolution_clock::now();
 					//time_copy_W += stop - start;
