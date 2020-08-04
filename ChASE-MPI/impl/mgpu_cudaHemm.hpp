@@ -13,7 +13,9 @@
 #include <cstdlib>
 #include <iostream>
 
+#if USE_TIMER
 #include <chrono>
+#endif
 
 #include "algorithm/types.hpp"
 #include "chase_mpi_properties.hpp"
@@ -32,7 +34,9 @@
  * 	such that not additional redististribution of H is required between successive Hemm calls.
  */
 
+#if USE_TIMER
 using namespace std::chrono;
+#endif
 
 namespace chase {
 	namespace mpi {
@@ -140,10 +144,7 @@ namespace chase {
 					/* Set memory pointers. The initial configuration is: IMT = H * B + IMT, i.e. V = B and W = IMT */
 					this->switch_pointers();
 
-					/* Start timing events */
-					//cuda_exec(cudaEventCreate(&start));
-					//cuda_exec(cudaEventCreate(&stop));
-
+#if USE_TIMER
 					/* Set time collectors to zero */
 					time_copy_H = std::chrono::milliseconds::zero(); 
 					time_copy_W = std::chrono::milliseconds::zero();
@@ -152,6 +153,7 @@ namespace chase {
 					time_dist = std::chrono::milliseconds::zero();
 					time_axpy = std::chrono::milliseconds::zero();
 					time_redist = std::chrono::milliseconds::zero();
+#endif
 				}
 
 				/* Remove local variables and free arrays */
@@ -178,19 +180,18 @@ namespace chase {
 					free(pitchV);
 					free(pitchW);
 
-					//std::cout << "HEMM timings: " << std::endl;
-					//std::cout << "Copy H   = " << time_copy_H.count()/1000 << " sec" << std::endl;
-					//std::cout << "Copy V   = " << time_copy_V.count()/1000 << " sec" << std::endl;
-					//std::cout << "Return W = " << time_copy_W.count()/1000 << " sec"   << std::endl;
-					//std::cout << "Hemm     = " << (time_gemm.count()+time_dist.count()+time_axpy.count()+time_redist.count())/1000 << " sec"  << std::endl;
-					//std::cout << "\t gemm   = " << time_gemm.count()/1000 << " sec"  << std::endl;
-					//std::cout << "\t dist   = " << time_dist.count()/1000 << " sec"  << std::endl;
-					//std::cout << "\t axpy   = " << time_axpy.count()/1000 << " sec"   << std::endl;
-					//std::cout << "\t redist = " << time_redist.count()/1000 << " sec"   << std::endl;
-					//std::cout << std::endl;
-
-					//cudaEventDestroy(start);
-					//cudaEventDestroy(stop);
+#if USE_TIMER
+					std::cout << "HEMM timings: " << std::endl;
+					std::cout << "Copy H   = " << time_copy_H.count()/1000 << " sec" << std::endl;
+					std::cout << "Copy V   = " << time_copy_V.count()/1000 << " sec" << std::endl;
+					std::cout << "Return W = " << time_copy_W.count()/1000 << " sec"   << std::endl;
+					std::cout << "Hemm     = " << (time_gemm.count()+time_dist.count()+time_axpy.count()+time_redist.count())/1000 << " sec"  << std::endl;
+					std::cout << "\t gemm   = " << time_gemm.count()/1000 << " sec"  << std::endl;
+					std::cout << "\t dist   = " << time_dist.count()/1000 << " sec"  << std::endl;
+					std::cout << "\t axpy   = " << time_axpy.count()/1000 << " sec"   << std::endl;
+					std::cout << "\t redist = " << time_redist.count()/1000 << " sec"   << std::endl;
+					std::cout << std::endl;
+#endif
 				}
 
 				/* Distribute given matrix orig_H among GPUs */
@@ -202,7 +203,9 @@ namespace chase {
 					/* Start row/col position in the given matrix */
 					int start_row, start_col;
 
-					//auto start = high_resolution_clock::now();
+#if USE_TIMER
+					auto start = high_resolution_clock::now();
+#endif
 
 					/* If H is not distributed among devices (i.e. the first call to the distribute_H), distribute it */
 					if( !copied_ ) {
@@ -262,9 +265,11 @@ namespace chase {
 
 					}
 
-					//this->synchronizeAll();
-					//auto stop = high_resolution_clock::now();
-					//time_copy_H += stop -start;
+					this->synchronizeAll();
+#if USE_TIMER
+					auto stop = high_resolution_clock::now();
+					time_copy_H += stop -start;
+#endif
 				}
 
 				/* Divide given matrix buf_init into panels and distributed among GPUs */
@@ -276,7 +281,9 @@ namespace chase {
 					/* Index of the first row of the tile */
 					int start_row;
 
-					//auto start = high_resolution_clock::now();
+#if USE_TIMER
+					auto start = high_resolution_clock::now();
+#endif
 
 					/* In the case of cAb operation, i.e. W = H * V + W */
 					if (next_ == NextOp::cAb) {
@@ -331,9 +338,11 @@ namespace chase {
 						}
 					}
 
-					//this->synchronizeAll();
-					//auto stop = high_resolution_clock::now();
-					//time_copy_V += stop - start;
+					this->synchronizeAll();
+#if USE_TIMER
+					auto stop = high_resolution_clock::now();
+					time_copy_V += stop - start;
+#endif
 					
 				}
 
@@ -367,7 +376,9 @@ namespace chase {
 					int dev_id; 
 					/* Visit all the tiles of the tile matrix H and compute local (partial) HEMM operations */
 
-					//auto start = high_resolution_clock::now();
+#if USE_TIMER
+					auto start = high_resolution_clock::now();
+#endif
 
 					/* Pass through the rows of tiled H */
 					for (int dev_x = 0; dev_x < ntile_m_; dev_x++) {
@@ -421,13 +432,17 @@ namespace chase {
 					/* Synchronize all GPUs */
 					this->synchronizeAll();
 
-					//auto stop = high_resolution_clock::now();
-					//time_gemm += stop - start;
+#if USE_TIMER
+					auto stop = high_resolution_clock::now();
+					time_gemm += stop - start;
+#endif
 
 					int gpu_src;
 					int gpu_dest;
 
-					//start = high_resolution_clock::now();
+#if USE_TIMER
+					start = high_resolution_clock::now();
+#endif
 
 					/* Compute the final solution from partial per-GPU solutions.
 					 * Collect intermediate results from the GPUs in the same rows to the first GPU in the row.
@@ -471,41 +486,11 @@ namespace chase {
 						}
 					}
 
-					//this->synchronizeAll();
-					//stop = high_resolution_clock::now();
-					//time_axpy += stop - start;					
-	
-					/* Finally, distribute the final result from the leading (first GPUs in the rows of the tiled H) to other GPUs in a row. 
- 					 * This step is required in order to have all GPU updated for next call to computeHemm. */
-					//int src_id, dest_id;
-
-					//start = high_resolution_clock::now();
-
-					/*if (next_ == NextOp::cAb) {
-						
-						for (int dev_x = 0; dev_x < ntile_m_; dev_x++) {
-							src_id = dev_x * ntile_n_;
-							tile_x = get_tile_size_row(dev_x);
-							for (int dev_y = 1; dev_y < ntile_n_; dev_y++) {
-								dest_id = src_id + dev_y;
-								cuda_exec(cudaMemcpy2DAsync(W[dest_id], pitchW[dest_id], W[src_id], pitchW[src_id], block*sizeof(T), tile_x, cudaMemcpyDeviceToDevice, stream_[dest_id]));
-							}
-						}
-					} else {
-
-						for (int dev_x = 0; dev_x < ntile_n_; dev_x++) {
-							src_id = dev_x;
-							tile_x = get_tile_size_col(dev_x);
-							for (int dev_y = 1; dev_y < ntile_m_; dev_y++) {
-								dest_id = src_id + ntile_n_*dev_y;
-								cuda_exec(cudaMemcpy2DAsync(W[dest_id], pitchW[dest_id], W[src_id], pitchW[src_id], block*sizeof(T), tile_x, cudaMemcpyDeviceToDevice, stream_[dest_id]));
-							}
-						}
-					}
-					*/
-					//this->synchronizeAll();
-					//stop = high_resolution_clock::now();
-					//time_redist += stop - start;
+					this->synchronizeAll();
+#if USE_TIMER
+					stop = high_resolution_clock::now();
+					time_axpy += stop - start;					
+#endif
 				}
 
 				/* Collect and return the computed W from the GPUs to the host*/
@@ -516,7 +501,9 @@ namespace chase {
 					int start_row;
 					int src_gpu;
 
-					//auto start = high_resolution_clock::now();
+#if USE_TIMER
+					auto start = high_resolution_clock::now();
+#endif
 
 					if (next_ == NextOp::cAb) {
 						for (int dev_x = 0; dev_x < ntile_m_; dev_x++) {
@@ -543,10 +530,12 @@ namespace chase {
 					}
 
 					/* Synchronize all devices before return to the caller function*/
-					//this->synchronizeAll();
+					this->synchronizeAll();
 
-					//auto stop = high_resolution_clock::now();
-					//time_copy_W += stop - start;
+#if USE_TIMER
+					auto stop = high_resolution_clock::now();
+					time_copy_W += stop - start;
+#endif
 				}
 
 				/* Synchronize all devices */
@@ -668,12 +657,14 @@ namespace chase {
 				int dim_tile_m_;
 				int dim_tile_n_;
 
+#if USE_TIMER
   				/// Timing variables
 				std::chrono::duration<double, std::milli> time_copy_H;
 				std::chrono::duration<double, std::milli> time_copy_W;
 				std::chrono::duration<double, std::milli> time_copy_V;
 				std::chrono::duration<double, std::milli> time_gemm, time_dist, time_axpy, time_redist;
 				std::chrono::duration<double, std::milli> local_time;
+#endif
 
 				/// Cublas handler for
 				cublasHandle_t *handle_ = nullptr;
