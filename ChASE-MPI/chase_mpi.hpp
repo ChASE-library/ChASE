@@ -23,6 +23,13 @@
 
 #include "./impl/chase_mpihemm.hpp"
 
+#if USE_TIMER
+#include <chrono>
+using namespace std::chrono;
+#endif
+
+#include <omp.h>
+
 namespace chase {
 namespace mpi {
 
@@ -42,6 +49,7 @@ class ChaseMpi : public chase::Chase<T> {
         config_(N, nev, nex),
         matrices_(N_, nev_ + nex_, V1, ritzv, H, V2, resid),
         gemm_(new MF<T>(matrices_, N_, nev_ + nex_)) {
+
     ritzv_ = matrices_.get_Ritzv();
     resid_ = matrices_.get_Resid();
 
@@ -78,7 +86,6 @@ class ChaseMpi : public chase::Chase<T> {
     approxV_ = V_;
     workspace_ = W_;
 
-    // H_ = gemm_->get_H();
     static_assert(is_skewed_matrixfree<MF<T>>::value,
                   "MatrixFreeChASE Must be skewed");
   }
@@ -112,10 +119,6 @@ class ChaseMpi : public chase::Chase<T> {
       gemm_->preApplication(approxV_, locked_, nev_ + nex_ - locked_);
     }
 
-    // for (std::size_t i = 0; i < N_; ++i) {
-    //   H_[i + i * N_] += c;
-    // }
-
     gemm_->shiftMatrix(c, isunshift);
   };
 
@@ -128,14 +131,6 @@ class ChaseMpi : public chase::Chase<T> {
   };
 
   void HEMM(std::size_t block, T alpha, T beta, std::size_t offset) override {
-    // t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans,  //
-    //        N_, block, N_,                              //
-    //        &alpha,                                     //
-    //        H_, N_,                                     //
-    //        approxV_ + (locked_ + offset) * N_, N_,     //
-    //        &beta,                                      //
-    //        workspace_ + (locked_ + offset) * N_, N_);
-
     gemm_->apply(alpha, beta, offset, block);
     std::swap(approxV_, workspace_);
   };
@@ -158,16 +153,38 @@ class ChaseMpi : public chase::Chase<T> {
   };
 
   void RR(Base<T> *ritzv, std::size_t block) override {
-    // std::size_t block = nev+nex - fixednev;
 
     T *A = new T[block * block];  // For LAPACK.
 
+#if USE_TIMER
+	// Timing values
+    std::chrono::duration<double, std::milli> time_gemm_1;
+    std::chrono::duration<double, std::milli> time_gemm_2;
+    std::chrono::duration<double, std::milli> time_gemm_3;
+    std::chrono::duration<double, std::milli> time_heevd;
+	
+	// Initialize timing values
+	time_gemm_1 = std::chrono::milliseconds::zero(); 
+	time_gemm_2 = std::chrono::milliseconds::zero(); 
+	time_gemm_3 = std::chrono::milliseconds::zero(); 
+	time_heevd = std::chrono::milliseconds::zero(); 
+#endif
+	
     T One = T(1.0);
     T Zero = T(0.0);
+
+#if USE_TIMER
+	auto start = high_resolution_clock::now();
+#endif
 
     gemm_->preApplication(approxV_, locked_, block);
     gemm_->apply(One, Zero, 0, block);
     gemm_->postApplication(workspace_, block);
+
+#if USE_TIMER
+	auto stop = high_resolution_clock::now();
+	time_gemm_1 = stop - start;
+#endif
 
     // W <- H*V
     // t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans,  //
@@ -179,6 +196,10 @@ class ChaseMpi : public chase::Chase<T> {
     //        workspace_ + locked_ * N_, N_);
 
     // A <- W' * V
+#if USE_TIMER
+    start = high_resolution_clock::now();
+#endif
+
     t_gemm(CblasColMajor, CblasConjTrans, CblasNoTrans,  //
            block, block, N_,                             //
            &One,                                         //
@@ -188,7 +209,21 @@ class ChaseMpi : public chase::Chase<T> {
            A, block                                      //
     );
 
+#if USE_TIMER
+	stop = high_resolution_clock::now();
+	time_gemm_2 = stop - start;
+
+    start = high_resolution_clock::now();
+#endif
+
     t_heevd(LAPACK_COL_MAJOR, 'V', 'L', block, A, block, ritzv);
+
+#if USE_TIMER
+	stop = high_resolution_clock::now();
+	time_heevd = stop - start;
+
+    start = high_resolution_clock::now();
+#endif
 
     t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans,  //
            N_, block, block,                           //
@@ -199,8 +234,22 @@ class ChaseMpi : public chase::Chase<T> {
            workspace_ + locked_ * N_, N_               //
     );
 
+#if USE_TIMER
+	stop = high_resolution_clock::now();
+	time_gemm_3 = stop - start;
+#endif
+
     std::swap(approxV_, workspace_);
     // we can swap, since the locked part were copied over as part of the QR
+
+#if USE_TIMER
+	std::cout << "RR timings: " << std::endl;
+	std::cout << "Block size = " << block << std::endl;
+	std::cout << "Gemm 1 (apply) = " << time_gemm_1.count()/1000 << " sec" << std::endl;
+	std::cout << "Gemm 2 (mkl)   = " << time_gemm_2.count()/1000 << " sec" << std::endl;
+	std::cout << "HEEVD (mkl)    = " << time_heevd.count()/1000 << " sec" << std::endl;
+	std::cout << "Gemm 3 (mkl)   = " << time_gemm_3.count()/1000 << " sec" << std::endl;
+#endif
 
     delete[] A;
   };

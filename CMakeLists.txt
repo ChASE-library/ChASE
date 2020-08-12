@@ -53,6 +53,13 @@ add_subdirectory( "ChASE-Elemental/")
 add_executable( "chase_driver" driver/noinput.cpp )
 target_link_libraries(chase_driver chase_mpi)
 
+# Unit tests
+option(UNITTEST "Build unit tests" OFF)
+if(UNITTEST)
+	message(STATUS "Building unittests")
+	add_subdirectory("./unittests")
+endif()
+
 # Simple Driver
 option(BUILD_SIMPLEDRIVER "Build Simple Driver" OFF)
 if(BUILD_SIMPLEDRIVER)

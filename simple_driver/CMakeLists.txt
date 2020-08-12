@@ -27,6 +27,9 @@ if( ${Boost_FOUND} )
     )
   target_link_libraries( "simple_seq_driver" PRIVATE chase_mpi_driver )
 
+  ##############################################################################
+  #                simple_driver: no GPU, MPI ($A$ distributed among MPI-ranks)
+  ##############################################################################
   add_executable( "simple_driver" "simple_driver.cpp" )
   target_link_libraries( "simple_driver" chase_mpi_driver )
   target_compile_definitions( "simple_driver" PRIVATE USE_MPI=1 )
@@ -42,6 +45,9 @@ if( ${Boost_FOUND} )
 
   if(TARGET chase_mpi_cuda )
     enable_language(CUDA)
+
+    option(TIMER "Builder timer routines" OFF)
+
     add_executable( gpu_driver "simple_driver.cpp" )
     target_link_libraries( gpu_driver
       chase_mpi_driver
@@ -49,7 +55,24 @@ if( ${Boost_FOUND} )
       ${CUDA_CUBLAS_LIBRARIES}
       ${CUDA_LIBRARIES}
       )
-    target_compile_definitions( "gpu_driver" PRIVATE DRIVER_BUILD_CUDA=1 USE_MPI=1 )
+    if(TIMER)
+      target_compile_definitions( "gpu_driver" PRIVATE DRIVER_BUILD_CUDA=1 USE_MPI=1 USE_TIMER=1)
+	else()
+      target_compile_definitions( "gpu_driver" PRIVATE DRIVER_BUILD_CUDA=1 USE_MPI=1 )
+	endif()
+
+    add_executable( mgpu_driver "simple_driver.cpp" )
+    target_link_libraries( mgpu_driver
+      chase_mpi_driver
+      chase_mpi_cuda
+      ${CUDA_CUBLAS_LIBRARIES}
+      ${CUDA_LIBRARIES}
+      )
+    if(TIMER) 
+      target_compile_definitions( "mgpu_driver" PRIVATE DRIVER_BUILD_MGPU=1 USE_MPI=1 USE_TIMER=1)
+    else()
+      target_compile_definitions( "mgpu_driver" PRIVATE DRIVER_BUILD_MGPU=1 USE_MPI=1 )
+    endif()
   endif()
 
 else()

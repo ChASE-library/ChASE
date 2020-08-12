@@ -29,6 +29,11 @@
 #include "ChASE-MPI/impl/chase_mpihemm_cuda_seq.hpp"
 #endif
 
+#ifdef DRIVER_BUILD_MGPU
+#include "ChASE-MPI/impl/chase_mpihemm_mgpu.hpp"
+#include "ChASE-MPI/impl/chase_mpihemm_cuda_seq.hpp"
+#endif
+
 using T = std::complex<double>;
 using namespace chase;
 using namespace chase::mpi;
@@ -39,6 +44,12 @@ using namespace chase::mpi;
   #else
      typedef ChaseMpi<ChaseMpiHemmCudaSeq, T> CHASE;
   #endif  // USE_MPI
+#elif DRIVER_BUILD_MGPU
+  #ifdef USE_MPI
+     typedef ChaseMpi<ChaseMpiHemmMultiGPU, T> CHASE;
+  #else
+	 typedef ChaseMpi<ChaseMpiHemmCudaSeq, T> CHASE;
+  #endif
 #else
   #ifdef USE_MPI
     typedef ChaseMpi<ChaseMpiHemmBlas, T> CHASE;
