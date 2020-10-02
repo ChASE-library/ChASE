@@ -3,15 +3,10 @@ cmake_minimum_required( VERSION 3.8 )
 
 project( ChASE LANGUAGES C CXX )
 
-# FIND_PACKAGE(OpenMP REQUIRED)
-# if (OPENMP_FOUND)
-#     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-#     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-#     set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
-# endif()
-
 # ## algorithm ##
 add_library(chase_algorithm INTERFACE)
+
+include(GNUInstallDirs)
 
 target_include_directories( chase_algorithm INTERFACE
   "$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}>"
@@ -32,7 +27,7 @@ install( TARGETS chase_algorithm
   )
 
 
-install(DIRECTORY algorithm DESTINATION include/algorithm
+install(DIRECTORY algorithm DESTINATION include
   FILES_MATCHING
     PATTERN "*.hpp"
     PATTERN "*.inc"
@@ -42,10 +37,10 @@ install(EXPORT chase-headers
   NAMESPACE ChASE::
   FILE chase-header.cmake
   EXPORT_LINK_INTERFACE_LIBRARIES
-  DESTINATION share
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
   )
 
-# ## ChASE-MPI ##
+ ## ChASE-MPI ##
 add_subdirectory( "ChASE-MPI/")
 add_subdirectory( "ChASE-Elemental/")
 
@@ -75,10 +70,10 @@ include(CMakePackageConfigHelpers)
 configure_package_config_file(
     "cmake/Config.cmake.in"
     "${CMAKE_CURRENT_BINARY_DIR}/chase-config.cmake"
-    INSTALL_DESTINATION share
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
 )
 
 install( FILES
   "${CMAKE_CURRENT_BINARY_DIR}/chase-config.cmake"
-  DESTINATION share
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
   )

@@ -28,6 +28,7 @@ find_package( BLAS   REQUIRED )
 find_package( LAPACK REQUIRED )
 find_package( MPI    REQUIRED )
 
+
 target_include_directories( chase_mpi INTERFACE
   ${MPI_CXX_INCLUDE_PATH}
   )
@@ -89,5 +90,5 @@ install(EXPORT chase-mpi
   NAMESPACE ChASE::
   FILE chase-mpi.cmake
   EXPORT_LINK_INTERFACE_LIBRARIES
-  DESTINATION share
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
   )
