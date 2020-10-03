@@ -40,7 +40,10 @@ install(EXPORT chase-headers
   DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
   )
 
- ## ChASE-MPI ##
+## Tests
+add_subdirectory( "tests/")
+
+## ChASE-MPI ##
 add_subdirectory( "ChASE-MPI/")
 add_subdirectory( "ChASE-Elemental/")
 
@@ -57,6 +60,9 @@ if(UNITTEST)
 	message(STATUS "Building unittests")
 	add_subdirectory("./unittests")
 endif()
+
+enable_testing()
+add_test( BASIC "./tests/chase_driver" )
 
 # Install ChASE as a CMake package
 include(CMakePackageConfigHelpers)
