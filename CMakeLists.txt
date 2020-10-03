@@ -44,9 +44,12 @@ install(EXPORT chase-headers
 add_subdirectory( "ChASE-MPI/")
 add_subdirectory( "ChASE-Elemental/")
 
-# Driver
-add_executable( "chase_driver" driver/noinput.cpp )
-target_link_libraries(chase_driver chase_mpi)
+# Examples
+option(BUILD_WITH_EXAMPLES "Build the examples" OFF)
+if(BUILD_WITH_EXAMPLES)
+        message(STATUS "Building the examples of ChASE")
+        add_subdirectory("./examples")
+endif()
 
 # Unit tests
 option(UNITTEST "Build unit tests" OFF)
@@ -54,16 +57,6 @@ if(UNITTEST)
 	message(STATUS "Building unittests")
 	add_subdirectory("./unittests")
 endif()
-
-# Simple Driver
-option(BUILD_SIMPLEDRIVER "Build Simple Driver" OFF)
-if(BUILD_SIMPLEDRIVER)
-  message(STATUS "Building Simple Driver")
-  add_subdirectory("./simple_driver")
-endif()
-
-enable_testing()
-add_test( BASIC "chase_driver" )
 
 # Install ChASE as a CMake package
 include(CMakePackageConfigHelpers)
