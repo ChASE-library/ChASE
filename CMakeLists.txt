@@ -41,7 +41,8 @@ install(EXPORT chase-headers
   )
 
 ## Tests
-add_subdirectory( "tests/")
+add_executable( "chase_driver" tests/noinput.cpp )
+target_link_libraries(chase_driver chase_mpi)
 
 ## ChASE-MPI ##
 add_subdirectory( "ChASE-MPI/")
@@ -62,7 +63,7 @@ if(UNITTEST)
 endif()
 
 enable_testing()
-add_test( BASIC "./tests/chase_driver" )
+add_test( BASIC "chase_driver" )
 
 # Install ChASE as a CMake package
 include(CMakePackageConfigHelpers)
