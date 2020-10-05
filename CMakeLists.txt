@@ -10,8 +10,9 @@ include(GNUInstallDirs)
 
 target_include_directories( chase_algorithm INTERFACE
   "$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}>"
-  $<INSTALL_INTERFACE:include/>  # <prefix>/include/mylib
+  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>  # <prefix>/include/mylib
 )
+
 target_compile_features(chase_algorithm INTERFACE cxx_auto_type)
 
 option( CHASE_OUTPUT "ChASE will provide output at each iteration")
@@ -21,13 +22,13 @@ endif()
 
 install( TARGETS chase_algorithm
   EXPORT chase-headers
-  LIBRARY DESTINATION lib
-  INCLUDES DESTINATION include
-  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
   )
 
 
-install(DIRECTORY algorithm DESTINATION include
+install(DIRECTORY algorithm DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
   FILES_MATCHING
     PATTERN "*.hpp"
     PATTERN "*.inc"
@@ -67,11 +68,22 @@ add_test( BASIC "chase_driver" )
 
 # Install ChASE as a CMake package
 include(CMakePackageConfigHelpers)
+
+if(TARGET chase_cuda )
+configure_package_config_file(
+    "cmake/Config_CUDA.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/chase-config.cmake"
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
+)
+
+else()
 configure_package_config_file(
     "cmake/Config.cmake.in"
     "${CMAKE_CURRENT_BINARY_DIR}/chase-config.cmake"
     INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
 )
+
+endif()
 
 install( FILES
   "${CMAKE_CURRENT_BINARY_DIR}/chase-config.cmake"

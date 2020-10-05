@@ -40,7 +40,7 @@ if( ${Boost_FOUND} )
   #   2_input_output_mgpu: multi-GPU/node, MPI ($A$ distributed among MPI-ranks)
   ##############################################################################
 
-  if(TARGET chase_mpi_cuda )
+  if(TARGET chase_cuda )
     enable_language(CUDA)
 
     option(TIMER "Builder timer routines" OFF)
@@ -48,7 +48,7 @@ if( ${Boost_FOUND} )
     add_executable( 2_input_output_gpu "2_input_output.cpp" )
     target_link_libraries( 2_input_output_gpu
       chase_mpi_driver
-      chase_mpi_cuda
+      chase_cuda
       ${CUDA_CUBLAS_LIBRARIES}
       ${CUDA_LIBRARIES}
       )
@@ -58,10 +58,10 @@ if( ${Boost_FOUND} )
       target_compile_definitions( "2_input_output_gpu" PRIVATE DRIVER_BUILD_CUDA=1 USE_MPI=1 )
 	endif()
 
-    add_executable( 2_input_output_mgpu "3_input_output.cpp" )
+    add_executable( 2_input_output_mgpu "2_input_output.cpp" )
     target_link_libraries( 2_input_output_mgpu
       chase_mpi_driver
-      chase_mpi_cuda
+      chase_cuda
       ${CUDA_CUBLAS_LIBRARIES}
       ${CUDA_LIBRARIES}
       )

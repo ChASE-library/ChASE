@@ -20,7 +20,7 @@ FortranCInterface_HEADER( ${CMAKE_BINARY_DIR}/fortran_mangle.h
 list(APPEND includePath ${CMAKE_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories( chase_mpi INTERFACE
   "$<BUILD_INTERFACE:${includePath}>"
-  $<INSTALL_INTERFACE:include/ChASE-MPI>  # <prefix>/include/mylib
+  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/ChASE-MPI>  # <prefix>/include/mylib
 )
 
 ## BLAS / LAPACK ##
@@ -44,16 +44,58 @@ target_compile_options( chase_mpi INTERFACE
   ${MPI_CXX_COMPILE_FLAGS}
   )
 
+install( TARGETS chase_mpi
+  EXPORT chase-mpi
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  )
+
+install(DIRECTORY . DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ChASE-MPI/
+  FILES_MATCHING
+    PATTERN "*.hpp"
+    PATTERN "*.inc"
+)
+
+install( FILES  ${CMAKE_BINARY_DIR}/fortran_mangle.h
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  )
+
+install(EXPORT chase-mpi
+  NAMESPACE ChASE::
+  FILE chase-mpi.cmake
+  EXPORT_LINK_INTERFACE_LIBRARIES
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
+  )
 
 include(CheckLanguage)
 check_language(CUDA)
-#set( CMAKE_CUDA_COMPILER FALSE )
 if(CMAKE_CUDA_COMPILER)
   find_package( CUDA REQUIRED )
   enable_language(CUDA)
 
-  add_library( chase_mpi_cuda "kernels/shift.cu" )
-  set_target_properties( chase_mpi_cuda PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+  add_library( chase_cuda "kernels/shift.cu" )
+
+  set_target_properties( chase_cuda PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+ 
+  target_include_directories(
+      chase_cuda
+      PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>
+             $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/ChASE-MPI>)
+
+  install( TARGETS chase_cuda
+    EXPORT chase-cuda
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    )
+
+  install(EXPORT chase-cuda
+    NAMESPACE ChASE::
+    FILE chase-cuda.cmake
+    EXPORT_LINK_INTERFACE_LIBRARIES
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
+    )
 
   # We need cublas for chase_mpi
   target_include_directories( chase_mpi INTERFACE
@@ -69,26 +111,3 @@ else()
 endif()
 
 
-install( TARGETS chase_mpi
-  EXPORT chase-mpi
-  LIBRARY DESTINATION lib
-  INCLUDES DESTINATION include
-  ARCHIVE DESTINATION lib
-  )
-
-install(DIRECTORY . DESTINATION include/ChASE-MPI/
-  FILES_MATCHING
-    PATTERN "*.hpp"
-    PATTERN "*.inc"
-)
-
-install( FILES  ${CMAKE_BINARY_DIR}/fortran_mangle.h
-  DESTINATION include
-  )
-
-install(EXPORT chase-mpi
-  NAMESPACE ChASE::
-  FILE chase-mpi.cmake
-  EXPORT_LINK_INTERFACE_LIBRARIES
-  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
-  )
