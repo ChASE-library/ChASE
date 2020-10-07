@@ -13,7 +13,7 @@
 #include <cstring>
 #include <memory>
 
-#include "chase_mpihemm_interface.hpp"
+#include "ChASE-MPI/chase_mpihemm_interface.hpp"
 
 namespace chase {
 namespace mpi {

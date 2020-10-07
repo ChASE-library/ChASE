@@ -22,9 +22,9 @@
 #include <chrono>
 #endif
 
-#include "blas_cuda_wrapper.hpp"
-#include "blas_templates.hpp"
-#include "chase_mpihemm_interface.hpp"
+#include "ChASE-MPI/blas_cuda_wrapper.hpp"
+#include "ChASE-MPI/blas_templates.hpp"
+#include "ChASE-MPI/chase_mpihemm_interface.hpp"
 #include "mgpu_cudaHemm.hpp"
 
 void chase_zshift_mpi_matrix(std::complex<double>* A, std::size_t* off,

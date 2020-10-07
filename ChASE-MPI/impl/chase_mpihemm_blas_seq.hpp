@@ -13,8 +13,8 @@
 #include <cstring>
 #include <memory>
 
-#include "blas_templates.hpp"
-#include "chase_mpi_matrices.hpp"
+#include "ChASE-MPI/blas_templates.hpp"
+#include "ChASE-MPI/chase_mpi_matrices.hpp"
 
 namespace chase {
 namespace mpi {

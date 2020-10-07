@@ -13,8 +13,8 @@
 #include <assert.h>
 #include <complex>
 
-#include "blas_cuda_wrapper.hpp"
-#include "chase_mpihemm_interface.hpp"
+#include "ChASE-MPI/blas_cuda_wrapper.hpp"
+#include "ChASE-MPI/chase_mpihemm_interface.hpp"
 
 void chase_zshift_matrix(std::complex<double>* A, int n, double shift,
                          cudaStream_t* stream_);
