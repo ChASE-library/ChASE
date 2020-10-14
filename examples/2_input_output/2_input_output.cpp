@@ -20,43 +20,29 @@
 #include "algorithm/performance.hpp"
 #include "ChASE-MPI/chase_mpi.hpp"
 
-#include "ChASE-MPI/impl/chase_mpihemm_blas.hpp"
 #include "ChASE-MPI/impl/chase_mpihemm_blas_seq.hpp"
 #include "ChASE-MPI/impl/chase_mpihemm_blas_seq_inplace.hpp"
 
-#ifdef DRIVER_BUILD_CUDA
-#include "ChASE-MPI/impl/chase_mpihemm_cuda.hpp"
-#include "ChASE-MPI/impl/chase_mpihemm_cuda_seq.hpp"
-#endif
-
-#ifdef DRIVER_BUILD_MGPU
-#include "ChASE-MPI/impl/chase_mpihemm_mgpu.hpp"
-#include "ChASE-MPI/impl/chase_mpihemm_cuda_seq.hpp"
+#ifdef USE_MPI
+#include "ChASE-MPI/impl/chase_mpihemm_blas.hpp"
+  #ifdef DRIVER_BUILD_MGPU
+  #include "ChASE-MPI/impl/chase_mpihemm_mgpu.hpp"
+  #endif
 #endif
 
 using T = std::complex<double>;
 using namespace chase;
 using namespace chase::mpi;
 
-#ifdef DRIVER_BUILD_CUDA
-  #ifdef USE_MPI
-     typedef ChaseMpi<ChaseMpiHemmCuda, T> CHASE;
-  #else
-     typedef ChaseMpi<ChaseMpiHemmCudaSeq, T> CHASE;
-  #endif  // USE_MPI
-#elif DRIVER_BUILD_MGPU
-  #ifdef USE_MPI
-     typedef ChaseMpi<ChaseMpiHemmMultiGPU, T> CHASE;
-  #else
-	 typedef ChaseMpi<ChaseMpiHemmCudaSeq, T> CHASE;
-  #endif
+#ifdef USE_MPI
+    #ifdef DRIVER_BUILD_MGPU
+        typedef ChaseMpi<ChaseMpiHemmMultiGPU, T> CHASE;
+    #else
+        typedef ChaseMpi<ChaseMpiHemmBlas, T> CHASE;
+    #endif //CUDA or not
 #else
-  #ifdef USE_MPI
-    typedef ChaseMpi<ChaseMpiHemmBlas, T> CHASE;
-  #else
     typedef ChaseMpi<ChaseMpiHemmBlasSeq, T> CHASE;
-  #endif
-#endif	// BUILD_CUDA
+#endif //seq ChASE
 
 namespace po = boost::program_options;
 
@@ -142,9 +128,12 @@ void readMatrix(T* H, std::string path_in, std::size_t size,
 }
 
 int main(int argc, char* argv[]) {
-  MPI_Init(&argc, &argv);
   int rank = 0;
+
+#ifdef USE_MPI
+  MPI_Init(&argc, &argv);
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
 
   ChASE_DriverProblemConfig conf;
 
@@ -347,7 +336,9 @@ int main(int argc, char* argv[]) {
 
     if (rank == 0) {
       std::cout << " ChASE timings: " << "\n";
+//#ifdef USE_MPI
       performanceDecorator.GetPerfData().print();
+//#endif
       Base<T>* resid = single.GetResid();
       if( conf.perturb > 1e-20 )
         std::cout << "Finished Problem #" << idx << "\n";
@@ -418,6 +409,9 @@ int main(int argc, char* argv[]) {
       }
     }
 
+#ifdef USE_MPI
     MPI_Barrier(MPI_COMM_WORLD);
+#endif
+
   }
 }

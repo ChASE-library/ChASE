@@ -5,6 +5,9 @@ cmake_minimum_required( VERSION 3.8 )
 
 # project( ChASE-MPI LANGUAGES C CXX CUDA )
 
+add_library( chase_seq INTERFACE )
+target_link_libraries(chase_seq INTERFACE chase_algorithm)
+
 add_library( chase_mpi INTERFACE )
 target_link_libraries(chase_mpi INTERFACE chase_algorithm)
 
@@ -16,8 +19,13 @@ FortranCInterface_HEADER( ${CMAKE_BINARY_DIR}/fortran_mangle.h
   SYMBOL_NAMESPACE "FC_"
   )
 
-
 list(APPEND includePath ${CMAKE_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
+
+target_include_directories( chase_seq INTERFACE
+  "$<BUILD_INTERFACE:${includePath}>"
+  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/ChASE-MPI>  # <prefix>/include/mylib
+)
+
 target_include_directories( chase_mpi INTERFACE
   "$<BUILD_INTERFACE:${includePath}>"
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/ChASE-MPI>  # <prefix>/include/mylib
@@ -28,6 +36,29 @@ find_package( BLAS   REQUIRED )
 find_package( LAPACK REQUIRED )
 find_package( MPI    REQUIRED )
 
+
+target_link_libraries( chase_seq INTERFACE
+  ${BLAS_LIBRARIES}
+  ${LAPACK_LIBRARIES}
+  )
+
+target_compile_options( chase_seq INTERFACE
+  ${CMAKE_C_FLAGS}
+  )
+
+install( TARGETS chase_seq
+  EXPORT chase-seq
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  )
+
+install(EXPORT chase-seq
+  NAMESPACE ChASE::
+  FILE chase-seq.cmake
+  EXPORT_LINK_INTERFACE_LIBRARIES
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
+  )
 
 target_include_directories( chase_mpi INTERFACE
   ${MPI_CXX_INCLUDE_PATH}
@@ -83,6 +114,13 @@ if(CMAKE_CUDA_COMPILER)
       PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>
              $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/ChASE-MPI>)
 
+  target_include_directories( chase_cuda INTERFACE
+    ${CUDA_INCLUDE_DIRS}
+    )
+  target_link_libraries( chase_cuda INTERFACE
+    ${CUDA_CUBLAS_LIBRARIES}
+    )
+
   install( TARGETS chase_cuda
     EXPORT chase-cuda
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -96,15 +134,6 @@ if(CMAKE_CUDA_COMPILER)
     EXPORT_LINK_INTERFACE_LIBRARIES
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
     )
-
-  # We need cublas for chase_mpi
-  target_include_directories( chase_mpi INTERFACE
-    ${CUDA_INCLUDE_DIRS}
-    )
-  target_link_libraries( chase_mpi INTERFACE
-    ${CUDA_CUBLAS_LIBRARIES}
-    )
-
 
 else()
   message(STATUS "No CUDA support")
