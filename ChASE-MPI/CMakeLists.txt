@@ -7,6 +7,7 @@ cmake_minimum_required( VERSION 3.8 )
 
 add_library( chase_seq INTERFACE )
 target_link_libraries(chase_seq INTERFACE chase_algorithm)
+target_compile_definitions(chase_seq INTERFACE NO_MPI=1 )
 
 add_library( chase_mpi INTERFACE )
 target_link_libraries(chase_mpi INTERFACE chase_algorithm)
