@@ -100,7 +100,6 @@ struct ChASE_DriverProblemConfig {
   std::string path_eigp;  // TODO
   std::string path_out;
   std::string path_name;
-  std::string test_name;
 
   std::size_t kpoint;
   bool legacy;
@@ -308,16 +307,6 @@ int main(int argc, char* argv[]) {
       )(                                                                  //
       "legacy", po::value<bool>(&conf.legacy)->default_value(false),      //
       "Use legacy naming scheme?");                                       //
-
-  po::options_description testOP("Test options");
-  testOP.add_options()(                                             //
-      "write",                                                      //
-      "Write Profile"                                               //
-      )(                                                            //
-      "name", po::value<std::string>(&conf.test_name)->required(),  //
-      "Name of the testing profile");                               //
-
-  desc.add(testOP);
 
   po::variables_map vm;
   po::store(po::parse_command_line(argc, argv, desc), vm);
