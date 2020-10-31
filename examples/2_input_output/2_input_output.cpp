@@ -62,14 +62,26 @@ void readMatrix(T* H, std::string path_in, std::string spin, std::size_t kpoint,
                 std::size_t xlen, std::size_t ylen) {
   std::size_t N = std::sqrt(size);
   std::ostringstream problem(std::ostringstream::ate);
-  if (legacy)
-    problem << path_in << "gmat  1 " << std::setw(2) << index << suffix;
-  else
+
+  int rank;
+
+#ifdef USE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
+  rank = 0;
+#endif
+
+  if (legacy){
+	problem << path_in << "gmat  1 " << std::setw(2) << index << suffix;
+  }
+  else{
     problem << path_in << "mat_" << spin << "_" << std::setfill('0')
             << std::setw(2) << kpoint << "_" << std::setfill('0')
             << std::setw(2) << index << suffix;
+  } 
 
-  std::cout << problem.str() << std::endl;
+  if (rank == 0) std::cout << problem.str() << std::endl;
+
   std::ifstream input(problem.str().c_str(), std::ios::binary);
   if (!input.is_open()) {
     throw new std::logic_error(std::string("error reading file: ") +
@@ -210,9 +222,9 @@ int do_chase(ChASE_DriverProblemConfig& conf) {
     std::size_t ylen;
 
     single.GetOff(&xoff, &yoff, &xlen, &ylen);
-    std::cout << "start reading matrix\n";
+    if(rank == 0) std::cout << "start reading matrix\n";
     readMatrix(H, path_in, spin, kpoint, i, ".bin", N * N, legacy, xoff, yoff, xlen, ylen);
-    std::cout << "done reading matrix\n";
+    if(rank == 0) std::cout << "done reading matrix\n";
     
     PerformanceDecoratorChase<T> performanceDecorator(&single);
 
