@@ -295,9 +295,12 @@ int main(int argc, char* argv[]) {
     if (i != N - 1) H[i + N * (i + 1)] = std::sqrt(i * (N + 1 - i));
   }*/
 
-  std::vector<T> H(N * N, T(0.0));
-
   if(conf.input == "") {
+
+	std::cout << "[SIMPLE DRIVER] Rank " << rank << " generating matrix: " << N << " x " << N << std::endl;
+	std::vector<T> H(N * N, T(0.0));
+	std::cout << "[SIMPLE DRIVER] Rank " << rank << "H generated!" << std::endl;
+
     generateClement(H, N);
 
     // Load matrix into distributed buffer
