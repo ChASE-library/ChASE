@@ -7,3 +7,6 @@ CCPE.pdf
 Docs-Sphinx/build/**
 CMakeFiles/
 CMakeCache.txt
+
+# Exclude folders
+build*/

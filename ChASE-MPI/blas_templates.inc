@@ -349,8 +349,7 @@ float t_nrm2(const std::size_t n, const std::complex<float>* x,
 // Overload of ?geqrf functions
 
 template <>
-std::size_t
-t_geqrf(int matrix_layout, std::size_t m, std::size_t n, double* a,
+std::size_t t_geqrf(int matrix_layout, std::size_t m, std::size_t n, double* a,
         std::size_t lda, double* tau)
 {
 //return LAPACKE_dgeqrf(matrix_layout, m, n, a, lda, tau);
@@ -376,11 +375,10 @@ t_geqrf(int matrix_layout, std::size_t m, std::size_t n, double* a,
 
   FC_GLOBAL(dgeqrf,DGEQRF)(&m_, &n_, a, &lda_, tau, work, &lwork, &info);
   assert(info == 0);
-
+  return info;
 }
 template <>
-std::size_t
-t_geqrf(int matrix_layout, std::size_t m, std::size_t n, float* a,
+std::size_t t_geqrf(int matrix_layout, std::size_t m, std::size_t n, float* a,
         std::size_t lda, float* tau)
 {
   //return LAPACKE_sgeqrf(matrix_layout, m, n, a, lda, tau);
@@ -406,7 +404,7 @@ t_geqrf(int matrix_layout, std::size_t m, std::size_t n, float* a,
 
   FC_GLOBAL(sgeqrf,SGEQRF)(&m_, &n_, a, &lda_, tau, work, &lwork, &info);
   assert(info == 0);
-
+  return info;
 }
 
 template <>
@@ -435,6 +433,7 @@ std::size_t t_geqrf(int matrix_layout, std::size_t m, std::size_t n,
 
   FC_GLOBAL(zgeqrf, ZGEQRF)(&m_, &n_, a, &lda_, tau, work, &lwork, &info);
   assert(info == 0);
+  return info;
 }
 
 template <>
@@ -462,6 +461,7 @@ std::size_t t_geqrf(int matrix_layout, std::size_t m, std::size_t n,
 
   FC_GLOBAL(cgeqrf, CGEQRF)(&m_, &n_, a, &lda_, tau, work, &lwork, &info);
   assert(info == 0);
+  return info;
 }
 
 // Overload of ?gqr functions
@@ -491,6 +491,7 @@ std::size_t t_gqr(int matrix_layout, std::size_t m, std::size_t n,
 
   FC_GLOBAL(dorgqr, DORGQR)(&m_, &n_, &k_, a, &lda_, tau, work, &lwork, &info);
   assert(info == 0);
+  return info;
 }
 template <>
 std::size_t t_gqr(int matrix_layout, std::size_t m, std::size_t n,
@@ -517,6 +518,7 @@ std::size_t t_gqr(int matrix_layout, std::size_t m, std::size_t n,
 
   FC_GLOBAL(sorgqr, SORGQR)(&m_, &n_, &k_, a, &lda_, tau, work, &lwork, &info);
   assert(info == 0);
+  return info;
 }
 
 template <>
@@ -547,7 +549,9 @@ std::size_t t_gqr(int matrix_layout, std::size_t m, std::size_t n,
 
   FC_GLOBAL(zungqr, ZUNGQR)(&m_, &n_, &k_, a, &lda_, tau, work, &lwork, &info);
   assert(info == 0);
+  return info;
 }
+
 template <>
 std::size_t t_gqr(int matrix_layout, std::size_t m, std::size_t n,
                   std::size_t k, std::complex<float>* a, std::size_t lda,
@@ -576,6 +580,7 @@ std::size_t t_gqr(int matrix_layout, std::size_t m, std::size_t n,
 
   FC_GLOBAL(cungqr, CUNGQR)(&m_, &n_, &k_, a, &lda_, tau, work, &lwork, &info);
   assert(info == 0);
+  return info;
 }
 
 // Overload of ?heevd functions
@@ -610,7 +615,9 @@ std::size_t t_heevd(int matrix_layout, char jobz, char uplo, std::size_t n,
   FC_GLOBAL(dsyevd, DSYEVD)
   (&jobz, &uplo, &n_, a, &lda_, w, work, &lwork, iwork, &liwork, &info);
   assert(info == 0);
+  return info;
 }
+
 template <>
 std::size_t t_heevd(int matrix_layout, char jobz, char uplo, std::size_t n,
                     float* a, std::size_t lda, float* w) {
@@ -643,6 +650,7 @@ std::size_t t_heevd(int matrix_layout, char jobz, char uplo, std::size_t n,
   FC_GLOBAL(ssyevd, SSYEVD)
   (&jobz, &uplo, &n_, a, &lda_, w, work, &lwork, iwork, &liwork, &info);
   assert(info == 0);
+  return info;
 }
 
 template <>
@@ -688,7 +696,9 @@ std::size_t t_heevd(int matrix_layout, char jobz, char uplo, std::size_t n,
   (&jobz, &uplo, &n_, a, &lda_, w, work, &lwork, rwork, &lrwork, iwork, &liwork,
    &info);
   assert(info == 0);
+  return info;
 }
+
 template <>
 std::size_t t_heevd(int matrix_layout, char jobz, char uplo, std::size_t n,
                     std::complex<float>* a, std::size_t lda, float* w) {
@@ -732,6 +742,7 @@ std::size_t t_heevd(int matrix_layout, char jobz, char uplo, std::size_t n,
   (&jobz, &uplo, &n_, a, &lda_, w, work, &lwork, rwork, &lrwork, iwork, &liwork,
    &info);
   assert(info == 0);
+  return info;
 }
 
 // Overload of ?gemv functions
@@ -870,7 +881,7 @@ std::size_t t_stemr(int matrix_layout, char jobz, char range, std::size_t n,
    isuppz, tryrac, &numwork, &lwork, &inumwork, &liwork, &info);
 
   lwork = static_cast<std::size_t>((numwork));
-  auto ptr = std::unique_ptr<double[]>{new double[lwork]};
+  auto ptr = std::unique_ptr<double[]>(new double[lwork]);
   work = ptr.get();
 
   liwork = static_cast<std::size_t>(inumwork);
@@ -880,7 +891,11 @@ std::size_t t_stemr(int matrix_layout, char jobz, char range, std::size_t n,
   FC_GLOBAL(dstemr, DSTEMR)
   (&jobz, &range, &n_, d, e, &vl, &vu, &il_, &iu_, m, w, z, &ldz_, &nzc_,
    isuppz, tryrac, work, &lwork, iwork, &liwork, &info);
+
+  assert(info == 0);
+  return info;
 }
+
 template <>
 std::size_t t_stemr(int matrix_layout, char jobz, char range, std::size_t n,
                     float* d, float* e, float vl, float vu, std::size_t il,
@@ -920,6 +935,9 @@ std::size_t t_stemr(int matrix_layout, char jobz, char range, std::size_t n,
   FC_GLOBAL(sstemr, SSTEMR)
   (&jobz, &range, &n_, d, e, &vl, &vu, &il_, &iu_, m, w, z, &ldz_, &nzc_,
    isuppz, tryrac, work, &lwork, iwork, &liwork, &info);
+
+  assert(info == 0);
+  return info;
 }
 
 }  // namespace mpi
