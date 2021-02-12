@@ -13,13 +13,11 @@
 #include <cstdlib>
 #include <iostream>
 
-#if USE_TIMER
 #include <chrono>
-#endif
 
 #include "algorithm/types.hpp"
-#include "ChASE-MPI/chase_mpi_properties.hpp"
-#include "ChASE-MPI/blas_cuda_wrapper.hpp"
+#include "chase_mpi_properties.hpp"
+#include "blas_cuda_wrapper.hpp"
 
 /**
  * This class provides the basic functionality for a series of  a multi-GPU Hemm-s.
@@ -34,9 +32,7 @@
  * 	such that not additional redististribution of H is required between successive Hemm calls.
  */
 
-#if USE_TIMER
 using namespace std::chrono;
-#endif
 
 namespace chase {
 	namespace mpi {
@@ -54,16 +50,24 @@ namespace chase {
 				mgpu_cudaHemm(std::size_t m, std::size_t n, std::size_t maxBlock) :
 				m_(m), n_(n), maxBlock_(maxBlock) {
 				
+					MPI_Comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, &shmcomm);
+					MPI_Comm_size(shmcomm, &shmsize_);
+					MPI_Comm_rank(shmcomm, &shmrank_);
+					MPI_Comm_rank(MPI_COMM_WORLD, &globalrank_);
+	
 					/* Get number of available GPU devices */
 					cuda_exec(cudaGetDeviceCount(&num_devices));
 
+					/* Divide devices among MPI ranks */
+					num_devices_per_rank = num_devices / shmsize_;
+
 					/* Allocate array for device indices, handles and streams */
-					handle_ = (cublasHandle_t*) malloc(num_devices * sizeof(cublasHandle_t));
-					stream_ = (cudaStream_t*) malloc(num_devices * sizeof(cudaStream_t));
+					handle_ = (cublasHandle_t*) malloc(num_devices_per_rank * sizeof(cublasHandle_t));
+					stream_ = (cudaStream_t*) malloc(num_devices_per_rank * sizeof(cudaStream_t));
 
 					/* Populate list of devices, create handles and streams for each device */
-					for (int dev=0; dev<num_devices; dev++) {
-						cuda_exec(cudaSetDevice(dev));
+					for (int dev=0; dev<num_devices_per_rank; dev++) {
+						cuda_exec(cudaSetDevice(shmrank_*num_devices_per_rank + dev));
 						cublasCreate(&handle_[dev]);
 						cuda_exec(cudaStreamCreate(&stream_[dev]));
 						cublasSetStream(handle_[dev], stream_[dev]);
@@ -71,29 +75,29 @@ namespace chase {
 
 					/* Allocate arrays to hold pointers to memory allocations on each device for
 					 * matrices H, B and IMT */
-					H_ = (T**) malloc(num_devices * sizeof(T*));
-					B_ = (T**) malloc(num_devices * sizeof(T*));
-					IMT_ = (T**) malloc(num_devices * sizeof(T*));
-					WRKSPACE_ = (T**) malloc(num_devices * sizeof(T*));
+					H_ = (T**) malloc(num_devices_per_rank * sizeof(T*));
+					B_ = (T**) malloc(num_devices_per_rank * sizeof(T*));
+					IMT_ = (T**) malloc(num_devices_per_rank * sizeof(T*));
+					WRKSPACE_ = (T**) malloc(num_devices_per_rank * sizeof(T*));
 
 					/* Pointers to memory location of the HEMM operands. The class always computes W = H * V + W operation */
-					W = (T**) malloc(num_devices * sizeof(T*));
-					V = (T**) malloc(num_devices * sizeof(T*));
+					W = (T**) malloc(num_devices_per_rank * sizeof(T*));
+					V = (T**) malloc(num_devices_per_rank * sizeof(T*));
 					
 					/* Allocate arrays to hold pitch values for each 2D array */
-					pitchB = (std::size_t*) malloc(num_devices * sizeof(std::size_t));
-					pitchH = (std::size_t*) malloc(num_devices * sizeof(std::size_t));
-					pitchIMT = (std::size_t*) malloc(num_devices * sizeof(std::size_t));
-					pitchWRK = (std::size_t*) malloc(num_devices * sizeof(std::size_t));
+					pitchB = (std::size_t*) malloc(num_devices_per_rank * sizeof(std::size_t));
+					pitchH = (std::size_t*) malloc(num_devices_per_rank * sizeof(std::size_t));
+					pitchIMT = (std::size_t*) malloc(num_devices_per_rank * sizeof(std::size_t));
+					pitchWRK = (std::size_t*) malloc(num_devices_per_rank * sizeof(std::size_t));
 
 					/* Pointers to pitch values of the HEMM operands */
-					pitchW = (std::size_t*) malloc(num_devices * sizeof(std::size_t));
-					pitchV = (std::size_t*) malloc(num_devices * sizeof(std::size_t));
+					pitchW = (std::size_t*) malloc(num_devices_per_rank * sizeof(std::size_t));
+					pitchV = (std::size_t*) malloc(num_devices_per_rank * sizeof(std::size_t));
 
 					/* Compute number of tiles of matrix H
 					 * The number of tiles depends on number of the available GPU devices */
-					ntile_n_ = sqrt(num_devices);
-					ntile_m_ = num_devices/ntile_n_;
+					ntile_n_ = sqrt(num_devices_per_rank);
+					ntile_m_ = num_devices_per_rank/ntile_n_;
 
 					/* Compute tile dimensions */
 					dim_tile_n_ = std::min(n_, (n_+ntile_n_-1)/ntile_n_);
@@ -105,8 +109,10 @@ namespace chase {
 					ldB = ldIMT = ldWRK;
 					ldH = dim_tile_m_;
 
-					std::cout << "Number of tiles: "<<ntile_m_ << " x " << ntile_n_ << std::endl;
-					std::cout << "Tile dimension: "<<dim_tile_m_ << " x " << dim_tile_n_ << std::endl;
+					std::cout << "[MGPU_HEMM] MPI rank global/local = " << globalrank_ << "/" << shmrank_ << std::endl;
+					std::cout << "[MGPU_HEMM] GPUs per rank   = " << num_devices_per_rank << std::endl;
+					std::cout << "[MGPU_HEMM] Number of tiles = "<<ntile_m_ << " x " << ntile_n_ << std::endl;
+					std::cout << "[MGPU_HEMM] Tile dimension  = "<<dim_tile_m_ << " x " << dim_tile_n_ << std::endl;
 
 					int tile_x = 0;
 					int tile_y = 0;
@@ -127,7 +133,7 @@ namespace chase {
 							int gpu_id = dev_x * ntile_n_ + dev_y;
 
 							/* Set device */
-							cuda_exec(cudaSetDevice(gpu_id));
+							cuda_exec(cudaSetDevice(shmrank_*num_devices_per_rank + gpu_id));
 
 							//* Allocate memories for H, IMT and B matrices */
 							cuda_exec(cudaMallocPitch((void**)&B_[gpu_id], &pitchB[gpu_id],  maxBlock_*sizeof(T), ldB));
@@ -144,7 +150,10 @@ namespace chase {
 					/* Set memory pointers. The initial configuration is: IMT = H * B + IMT, i.e. V = B and W = IMT */
 					this->switch_pointers();
 
-#if USE_TIMER
+					/* Start timing events */
+					//cuda_exec(cudaEventCreate(&start));
+					//cuda_exec(cudaEventCreate(&stop));
+
 					/* Set time collectors to zero */
 					time_copy_H = std::chrono::milliseconds::zero(); 
 					time_copy_W = std::chrono::milliseconds::zero();
@@ -153,13 +162,12 @@ namespace chase {
 					time_dist = std::chrono::milliseconds::zero();
 					time_axpy = std::chrono::milliseconds::zero();
 					time_redist = std::chrono::milliseconds::zero();
-#endif
 				}
 
 				/* Remove local variables and free arrays */
 				~mgpu_cudaHemm() { 
 
-					for (int dev=0; dev<num_devices; dev++) {
+					for (int dev=0; dev<num_devices_per_rank; dev++) {
 						cudaStreamDestroy(stream_[dev]);
 						cublasDestroy(handle_[dev]);
 						cudaFree(H_[dev]);
@@ -180,18 +188,19 @@ namespace chase {
 					free(pitchV);
 					free(pitchW);
 
-#if USE_TIMER
-					std::cout << "HEMM timings: " << std::endl;
-					std::cout << "Copy H   = " << time_copy_H.count()/1000 << " sec" << std::endl;
-					std::cout << "Copy V   = " << time_copy_V.count()/1000 << " sec" << std::endl;
-					std::cout << "Return W = " << time_copy_W.count()/1000 << " sec"   << std::endl;
-					std::cout << "Hemm     = " << (time_gemm.count()+time_dist.count()+time_axpy.count()+time_redist.count())/1000 << " sec"  << std::endl;
-					std::cout << "\t gemm   = " << time_gemm.count()/1000 << " sec"  << std::endl;
-					std::cout << "\t dist   = " << time_dist.count()/1000 << " sec"  << std::endl;
-					std::cout << "\t axpy   = " << time_axpy.count()/1000 << " sec"   << std::endl;
-					std::cout << "\t redist = " << time_redist.count()/1000 << " sec"   << std::endl;
-					std::cout << std::endl;
-#endif
+					//std::cout << "HEMM timings: " << std::endl;
+					//std::cout << "Copy H   = " << time_copy_H.count()/1000 << " sec" << std::endl;
+					//std::cout << "Copy V   = " << time_copy_V.count()/1000 << " sec" << std::endl;
+					//std::cout << "Return W = " << time_copy_W.count()/1000 << " sec"   << std::endl;
+					//std::cout << "Hemm     = " << (time_gemm.count()+time_dist.count()+time_axpy.count()+time_redist.count())/1000 << " sec"  << std::endl;
+					//std::cout << "\t gemm   = " << time_gemm.count()/1000 << " sec"  << std::endl;
+					//std::cout << "\t dist   = " << time_dist.count()/1000 << " sec"  << std::endl;
+					//std::cout << "\t axpy   = " << time_axpy.count()/1000 << " sec"   << std::endl;
+					//std::cout << "\t redist = " << time_redist.count()/1000 << " sec"   << std::endl;
+					//std::cout << std::endl;
+
+					//cudaEventDestroy(start);
+					//cudaEventDestroy(stop);
 				}
 
 				/* Distribute given matrix orig_H among GPUs */
@@ -203,9 +212,7 @@ namespace chase {
 					/* Start row/col position in the given matrix */
 					int start_row, start_col;
 
-#if USE_TIMER
-					auto start = high_resolution_clock::now();
-#endif
+					//auto start = high_resolution_clock::now();
 
 					/* If H is not distributed among devices (i.e. the first call to the distribute_H), distribute it */
 					if( !copied_ ) {
@@ -232,7 +239,7 @@ namespace chase {
 								int dev_id = dev_x * ntile_n_ + dev_y;
 
 								/* Set a device and asyncronously transfer the tile to that device's memory */
-								cuda_exec(cudaSetDevice(dev_id));
+								cuda_exec(cudaSetDevice(shmrank_*num_devices_per_rank + dev_id));
 								cublasError = cublasSetMatrixAsync(tile_x, tile_y, sizeof(T), &orig_H[start_col * ld_origH + start_row], ld_origH, H_[dev_id], ldH, stream_[dev_id]);
 								if(cublasError != CUBLAS_STATUS_SUCCESS) {
 									std::cout << "Error in cublasSetMatrixAsync H" << std::endl;
@@ -255,7 +262,7 @@ namespace chase {
 								start_col = dev_y * dim_tile_n_;
 
 								int dev_id = dev_x * ntile_n_ + dev_y;
-								cuda_exec(cudaSetDevice(dev_id));
+								cuda_exec(cudaSetDevice(shmrank_*num_devices_per_rank + dev_id));
 								cublasError = cublasSetMatrixAsync(tile_x, tile_y, sizeof(T), &orig_H[start_col * ld_origH + start_row], ld_origH, H_[dev_id], ldH, stream_[dev_id]);
 								if(cublasError != CUBLAS_STATUS_SUCCESS) {
 									std::cout << "Error in cublasSetMatrixAsync H" << std::endl;
@@ -265,11 +272,9 @@ namespace chase {
 
 					}
 
-					this->synchronizeAll();
-#if USE_TIMER
-					auto stop = high_resolution_clock::now();
-					time_copy_H += stop -start;
-#endif
+					//this->synchronizeAll();
+					//auto stop = high_resolution_clock::now();
+					//time_copy_H += stop -start;
 				}
 
 				/* Divide given matrix buf_init into panels and distributed among GPUs */
@@ -281,9 +286,7 @@ namespace chase {
 					/* Index of the first row of the tile */
 					int start_row;
 
-#if USE_TIMER
-					auto start = high_resolution_clock::now();
-#endif
+					//auto start = high_resolution_clock::now();
 
 					/* In the case of cAb operation, i.e. W = H * V + W */
 					if (next_ == NextOp::cAb) {
@@ -298,9 +301,9 @@ namespace chase {
 							start_row = i * dim_tile_n_;
 
 							/* Pass through all devices */
-							for (int dev = i; dev < num_devices; dev += ntile_n_) {
+							for (int dev = i; dev < num_devices_per_rank; dev += ntile_n_) {
 
-								cuda_exec(cudaSetDevice(dev));
+								cuda_exec(cudaSetDevice(shmrank_*num_devices_per_rank + dev));
 								cublasError = cublasSetMatrixAsync(tile_x, block, sizeof(T), &buf_init[start_row], ldBuf, V[dev], ldV, stream_[dev]);
 								if(cublasError != CUBLAS_STATUS_SUCCESS) {
 									std::cout << "Error in cublasSetMatrixAsync V/W" << " in cAb" << std::endl;
@@ -329,7 +332,7 @@ namespace chase {
 							/* Pass through all the devices in the tile-row */
 							for (int dev = start_dev_id; dev < start_dev_id + ntile_n_; dev++) {
 
-								cuda_exec(cudaSetDevice(dev));
+								cuda_exec(cudaSetDevice(shmrank_*num_devices_per_rank + dev));
 								cublasError = cublasSetMatrixAsync(tile_x, block, sizeof(T), &buf_init[start_row], ldBuf, V[dev], ldV, stream_[dev]);
 								if(cublasError != CUBLAS_STATUS_SUCCESS) {
 									std::cout << "Error in cublasSetMatrixAsync V/W" << " in bAc" << std::endl;
@@ -338,11 +341,9 @@ namespace chase {
 						}
 					}
 
-					this->synchronizeAll();
-#if USE_TIMER
-					auto stop = high_resolution_clock::now();
-					time_copy_V += stop - start;
-#endif
+					//this->synchronizeAll();
+					//auto stop = high_resolution_clock::now();
+					//time_copy_V += stop - start;
 					
 				}
 
@@ -376,9 +377,7 @@ namespace chase {
 					int dev_id; 
 					/* Visit all the tiles of the tile matrix H and compute local (partial) HEMM operations */
 
-#if USE_TIMER
-					auto start = high_resolution_clock::now();
-#endif
+					//auto start = high_resolution_clock::now();
 
 					/* Pass through the rows of tiled H */
 					for (int dev_x = 0; dev_x < ntile_m_; dev_x++) {
@@ -418,7 +417,7 @@ namespace chase {
 		
 							/* Set device and compute local Tgemm. The GPUs operating on the the first tiles in the rows are updating
  							 * W, while other GPUs store intermediate results in the cleaned (multiplied by '0') WRKSPACE array */
-							cuda_exec(cudaSetDevice(dev_id));
+							cuda_exec(cudaSetDevice(shmrank_*num_devices_per_rank + dev_id));
 							if (leading_gpu) {
 								cublasTgemm(handle_[dev_id], transa, CUBLAS_OP_N, m, n, k, &alpha, H_[dev_id], ldH, V[dev_id], ldV,
 									&beta, W[dev_id], ldW);
@@ -432,17 +431,13 @@ namespace chase {
 					/* Synchronize all GPUs */
 					this->synchronizeAll();
 
-#if USE_TIMER
-					auto stop = high_resolution_clock::now();
-					time_gemm += stop - start;
-#endif
+					//auto stop = high_resolution_clock::now();
+					//time_gemm += stop - start;
 
 					int gpu_src;
 					int gpu_dest;
 
-#if USE_TIMER
-					start = high_resolution_clock::now();
-#endif
+					//start = high_resolution_clock::now();
 
 					/* Compute the final solution from partial per-GPU solutions.
 					 * Collect intermediate results from the GPUs in the same rows to the first GPU in the row.
@@ -452,22 +447,22 @@ namespace chase {
 					for (int s = 1; s < num_tile_cols; s <<= 1) {
 
 						if (next_ == NextOp::cAb) {
-							for (int dev = s; dev < num_devices; dev += 2*s) {
+							for (int dev = s; dev < num_devices_per_rank; dev += 2*s) {
 								tile_x = get_tile_size_row(dev/ntile_n_);
 
-								if (s == 1 || (num_tile_cols%2 != 0 && dev == num_devices-1)) {
+								if (s == 1 || (num_tile_cols%2 != 0 && dev == num_devices_per_rank-1)) {
 									cuda_exec(cudaMemcpyAsync(WRKSPACE_[dev-s], WRKSPACE_[dev], block*sizeof(T)*ldWRK, cudaMemcpyDeviceToDevice, stream_[dev-s]));
 								} else {
 									cuda_exec(cudaMemcpyAsync(WRKSPACE_[dev-s], W[dev], block*sizeof(T)*ldW, cudaMemcpyDeviceToDevice, stream_[dev-s]));
 								}
-								cuda_exec(cudaSetDevice(dev-s));	
+								cuda_exec(cudaSetDevice(shmrank_*num_devices_per_rank + dev-s));	
 								cuda_exec(cudaStreamSynchronize(stream_[dev-s]));
 								cublasError = cublasTaxpy(handle_[dev-s], (pitchWRK[dev-s]/sizeof(T))*ldWRK, &one, WRKSPACE_[dev-s], 1, W[dev-s], 1);
 								if(cublasError != CUBLAS_STATUS_SUCCESS) std::cout << "Error in Taxpy " << std::endl;
 							}
 						} else {
 							for (int dev_x = 0; dev_x < ntile_n_; dev_x++) {
-								for (int dev_y = dev_x+s*ntile_n_; dev_y < num_devices; dev_y += 2*s*ntile_n_) {
+								for (int dev_y = dev_x+s*ntile_n_; dev_y < num_devices_per_rank; dev_y += 2*s*ntile_n_) {
 									gpu_src = dev_y;
 									gpu_dest = dev_y - s*ntile_n_; 
 
@@ -477,7 +472,7 @@ namespace chase {
 									} else {
 										cuda_exec(cudaMemcpyAsync(WRKSPACE_[gpu_dest], W[gpu_src], block*sizeof(T)*ldW, cudaMemcpyDeviceToDevice, stream_[gpu_dest]));
 									}
-									cuda_exec(cudaSetDevice(gpu_dest));	
+									cuda_exec(cudaSetDevice(shmrank_*num_devices_per_rank + gpu_dest));	
 									cuda_exec(cudaStreamSynchronize(stream_[gpu_dest]));
 									cublasError = cublasTaxpy(handle_[gpu_dest], (pitchWRK[gpu_dest]/sizeof(T))*ldWRK, &one, WRKSPACE_[gpu_dest], 1, W[gpu_dest], 1);
 									if(cublasError != CUBLAS_STATUS_SUCCESS) std::cout << "Error in Taxpy " << std::endl;
@@ -486,11 +481,41 @@ namespace chase {
 						}
 					}
 
-					this->synchronizeAll();
-#if USE_TIMER
-					stop = high_resolution_clock::now();
-					time_axpy += stop - start;					
-#endif
+					//this->synchronizeAll();
+					//stop = high_resolution_clock::now();
+					//time_axpy += stop - start;					
+	
+					/* Finally, distribute the final result from the leading (first GPUs in the rows of the tiled H) to other GPUs in a row. 
+ 					 * This step is required in order to have all GPU updated for next call to computeHemm. */
+					//int src_id, dest_id;
+
+					//start = high_resolution_clock::now();
+
+					/*if (next_ == NextOp::cAb) {
+						
+						for (int dev_x = 0; dev_x < ntile_m_; dev_x++) {
+							src_id = dev_x * ntile_n_;
+							tile_x = get_tile_size_row(dev_x);
+							for (int dev_y = 1; dev_y < ntile_n_; dev_y++) {
+								dest_id = src_id + dev_y;
+								cuda_exec(cudaMemcpy2DAsync(W[dest_id], pitchW[dest_id], W[src_id], pitchW[src_id], block*sizeof(T), tile_x, cudaMemcpyDeviceToDevice, stream_[dest_id]));
+							}
+						}
+					} else {
+
+						for (int dev_x = 0; dev_x < ntile_n_; dev_x++) {
+							src_id = dev_x;
+							tile_x = get_tile_size_col(dev_x);
+							for (int dev_y = 1; dev_y < ntile_m_; dev_y++) {
+								dest_id = src_id + ntile_n_*dev_y;
+								cuda_exec(cudaMemcpy2DAsync(W[dest_id], pitchW[dest_id], W[src_id], pitchW[src_id], block*sizeof(T), tile_x, cudaMemcpyDeviceToDevice, stream_[dest_id]));
+							}
+						}
+					}
+					*/
+					//this->synchronizeAll();
+					//stop = high_resolution_clock::now();
+					//time_redist += stop - start;
 				}
 
 				/* Collect and return the computed W from the GPUs to the host*/
@@ -501,9 +526,7 @@ namespace chase {
 					int start_row;
 					int src_gpu;
 
-#if USE_TIMER
-					auto start = high_resolution_clock::now();
-#endif
+					//auto start = high_resolution_clock::now();
 
 					if (next_ == NextOp::cAb) {
 						for (int dev_x = 0; dev_x < ntile_m_; dev_x++) {
@@ -511,7 +534,7 @@ namespace chase {
 							tile_x = get_tile_size_row(dev_x);
 							start_row = dev_x * dim_tile_m_;
 
-							cuda_exec(cudaSetDevice(src_gpu));
+							cuda_exec(cudaSetDevice(shmrank_*num_devices_per_rank + src_gpu));
 							cublasError = cublasGetMatrixAsync(tile_x, block, sizeof(T), W[src_gpu], ldW, &buf_target[start_row], ldBuf, stream_[src_gpu]);
 							if(cublasError != CUBLAS_STATUS_SUCCESS) std::cout << "Error in cublasGetMatAsync W" << std::endl;
 						}
@@ -522,7 +545,7 @@ namespace chase {
 							tile_x = get_tile_size_col(dev_x);
 							start_row = dev_x * dim_tile_n_;
 
-							cuda_exec(cudaSetDevice(src_gpu));
+							cuda_exec(cudaSetDevice(shmrank_*num_devices_per_rank + src_gpu));
 							cublasError = cublasGetMatrixAsync(tile_x, block, sizeof(T), W[src_gpu], ldW, &buf_target[start_row], ldBuf, stream_[src_gpu]);
 							if(cublasError != CUBLAS_STATUS_SUCCESS) std::cout << "Error in cublasGetMatAsync W" << std::endl; 
 						}
@@ -530,18 +553,16 @@ namespace chase {
 					}
 
 					/* Synchronize all devices before return to the caller function*/
-					this->synchronizeAll();
+					//this->synchronizeAll();
 
-#if USE_TIMER
-					auto stop = high_resolution_clock::now();
-					time_copy_W += stop - start;
-#endif
+					//auto stop = high_resolution_clock::now();
+					//time_copy_W += stop - start;
 				}
 
 				/* Synchronize all devices */
 				void synchronizeAll() {
 
-					for (int i = 0; i < num_devices; i++) {
+					for (int i = 0; i < num_devices_per_rank; i++) {
 						cudaStreamSynchronize(stream_[i]);
 					}
 				}
@@ -550,7 +571,7 @@ namespace chase {
 				void switch_pointers(){
 
 					this->synchronizeAll();
-					for(int gpu_id = 0; gpu_id < num_devices; gpu_id++) {
+					for(int gpu_id = 0; gpu_id < num_devices_per_rank; gpu_id++) {
 						/* If next operation is set to W = H * V + W */
 						if (next_ == NextOp::cAb) {
 							V[gpu_id] = B_[gpu_id];
@@ -648,6 +669,7 @@ namespace chase {
 
 				/// List of GPU devices
 				int num_devices;
+				int num_devices_per_rank;
 
 				/// Number of tiles in m/n direction
 				int ntile_m_;
@@ -657,16 +679,20 @@ namespace chase {
 				int dim_tile_m_;
 				int dim_tile_n_;
 
-#if USE_TIMER
   				/// Timing variables
 				std::chrono::duration<double, std::milli> time_copy_H;
 				std::chrono::duration<double, std::milli> time_copy_W;
 				std::chrono::duration<double, std::milli> time_copy_V;
 				std::chrono::duration<double, std::milli> time_gemm, time_dist, time_axpy, time_redist;
 				std::chrono::duration<double, std::milli> local_time;
-#endif
 
-				/// Cublas handler for
+				/// MPI ranks and communication
+				MPI_Comm shmcomm;
+				int shmsize_;
+				int shmrank_;
+				int globalrank_;
+
+				/// Cublas handler
 				cublasHandle_t *handle_ = nullptr;
 			
 				/// Cuda streams

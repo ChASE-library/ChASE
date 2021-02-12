@@ -63,6 +63,7 @@ cublasStatus_t cublasTgemm(cublasHandle_t handle, cublasOperation_t transa,
                      reinterpret_cast<cuDoubleComplex*>(C), ldc);
 }
 
+#if 1
 cublasStatus_t cublasTaxpy(cublasHandle_t handle, int n, const float* alpha,
                            const float* x, int incx, float* y, int incy) {
   return cublasSaxpy(handle, n, alpha, x, incx, y, incy);
@@ -90,7 +91,7 @@ cublasStatus_t cublasTaxpy(cublasHandle_t handle, int n,
                      reinterpret_cast<const cuDoubleComplex*>(x), incx,
                      reinterpret_cast<cuDoubleComplex*>(y), incy);
 }
-
+#endif
 /*
 void shiftMatrixGPU(float* A, int lda, int n, float shift, int offset,
                     cudaStream_t stream);

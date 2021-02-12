@@ -24,12 +24,12 @@ list(APPEND includePath ${CMAKE_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_include_directories( chase_seq INTERFACE
   "$<BUILD_INTERFACE:${includePath}>"
-  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/ChASE-MPI>  # <prefix>/include/mylib
+  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/ChASE-MPI>  # <prefix>/include/ChASE-MPI
 )
 
 target_include_directories( chase_mpi INTERFACE
   "$<BUILD_INTERFACE:${includePath}>"
-  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/ChASE-MPI>  # <prefix>/include/mylib
+  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/ChASE-MPI>  # <prefix>/include/ChASE-MPI
 )
 
 ## BLAS / LAPACK ##

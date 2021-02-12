@@ -7,6 +7,6 @@ CCPE.pdf
 Docs-Sphinx/build/**
 CMakeFiles/
 CMakeCache.txt
-build
-./build
-./examples/2_input_output/build
+
+# Exclude folders
+build*/

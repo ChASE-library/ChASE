@@ -273,6 +273,7 @@ class ChaseMpiProperties {
        }       
     }
 
+
     ChaseMpiProperties(std::size_t N, std::size_t nev, std::size_t nex,
                      MPI_Comm comm = MPI_COMM_WORLD)
       : N_(N), nev_(nev), nex_(nex), max_block_(nev + nex), comm_(comm) {
@@ -381,13 +382,6 @@ class ChaseMpiProperties {
         send_lens_[dim_idx][dims_[dim_idx] - 1] = N_ - (dims_[dim_idx] - 1) * len;
     }
   }
-
-  // destruktor
-  /*
-  for (auto i = 0; i < gsize; ++i) {
-      MPI_Type_free(&newType[i]);
-  }
-*/
 
   std::size_t get_N() { return N_; };
   std::size_t get_n() { return n_; };

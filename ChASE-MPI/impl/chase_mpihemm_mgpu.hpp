@@ -18,13 +18,11 @@
 #include <complex>
 #include <cuda_profiler_api.h>
 
-#if USE_TIMER
 #include <chrono>
-#endif
 
-#include "ChASE-MPI/blas_cuda_wrapper.hpp"
-#include "ChASE-MPI/blas_templates.hpp"
-#include "ChASE-MPI/chase_mpihemm_interface.hpp"
+#include "blas_cuda_wrapper.hpp"
+#include "blas_templates.hpp"
+#include "chase_mpihemm_interface.hpp"
 #include "mgpu_cudaHemm.hpp"
 
 void chase_zshift_mpi_matrix(std::complex<double>* A, std::size_t* off,
@@ -34,9 +32,7 @@ void chase_zshift_mpi_matrix(std::complex<double>* A, std::size_t* off,
 void chase_zshift_matrix(std::complex<double>* A, int n, double shift,
                          cudaStream_t* stream_);
 
-#if USE_TIMER
 using namespace std::chrono;
-#endif
 
 namespace chase {
 namespace mpi {
@@ -60,14 +56,14 @@ class ChaseMpiHemmMultiGPU : public ChaseMpiHemmInterface<T> {
 
 	// Remove allocation of memories. Will be done in mgpu_gpu class (constructor)
 
-    int num_of_devices;
+    int num_devices;
     mpi_rank = matrix_properties_->get_my_rank();
-    cuda_exec(cudaGetDeviceCount(&num_of_devices));
+    cuda_exec(cudaGetDeviceCount(&num_devices));
 
     std::size_t maxBlock = matrix_properties_->get_max_block();
 
-    std::cout << "[CHASE_MGPU] MPI rank " << mpi_rank << " running on "<< num_of_devices << std::endl;
-	std::cout << "[CHASE_MGPU] MPI rank " << mpi_rank << "local dimensions: " << std::endl << "\t m = " <<  m_ << std::endl << "\t n = " << n_ << std::endl << "\t block = " << maxBlock << std::endl;
+	std::cout << "[MGPU_HEMM] MPI rank " << mpi_rank << " found " << num_devices << " GPU devices" << std::endl;
+	std::cout << "[MGPU_HEMM] MPI rank " << mpi_rank << " operating on: m = " <<  m_ << ", n = " << n_ << ", block = " << maxBlock << std::endl;
 
 	/* Register H, B, C and IMT as pinned-memories on host */
 	cuda_exec(cudaHostRegister((void*)orig_H_, m_*n_*sizeof(T), cudaHostRegisterDefault));
@@ -78,14 +74,11 @@ class ChaseMpiHemmMultiGPU : public ChaseMpiHemmInterface<T> {
 	/// Construct a new object for handling multi-GPU HEMM execution
 	mgpuHemm = new mgpu_cudaHemm<T>(m_, n_, maxBlock);
 
-#if USE_TIMER
 	time_copy_H = std::chrono::milliseconds::zero(); 
 	time_copy_W = std::chrono::milliseconds::zero();
 	time_copy_V = std::chrono::milliseconds::zero();
 	time_gemm = std::chrono::milliseconds::zero();
-	time_applyVec = std::chrono::milliseconds::zero();
-	time_shift = std::chrono::milliseconds::zero();
-#endif
+	time_apply_vec = std::chrono::milliseconds::zero();
   }
 
   ~ChaseMpiHemmMultiGPU() {
@@ -95,16 +88,13 @@ class ChaseMpiHemmMultiGPU : public ChaseMpiHemmInterface<T> {
     cuda_exec(cudaHostUnregister(orig_IMT_));
     delete mgpuHemm;
 
-#if USE_TIMER
-	std::cout << "MGPU_CUDA_HEMM timings: " << std::endl;
-	std::cout << "Copy H   = " << time_copy_H.count()/1000 << " sec" << std::endl;
-	std::cout << "Copy V   = " << time_copy_V.count()/1000 << " sec" << std::endl;
-	std::cout << "Return W = " << time_copy_W.count()/1000 << " sec"   << std::endl;
-	std::cout << "Hemm     = " << time_gemm.count()/1000 << " sec"  << std::endl;
-	std::cout << "ApplyVec = " << time_applyVec.count()/1000 << " sec"  << std::endl;
-	std::cout << "shift = " << time_shift.count()/1000 << " sec"  << std::endl;
+	std::cout << "[MGPU_HEMM] Multi-GPU HEMM timings (per component): " << std::endl;
+	std::cout << "[MGPU_HEMM] Copy H   = " << time_copy_H.count()/1000 << " sec" << std::endl;
+	std::cout << "[MGPU_HEMM] Copy V   = " << time_copy_V.count()/1000 << " sec" << std::endl;
+	std::cout << "[MGPU_HEMM] Return W = " << time_copy_W.count()/1000 << " sec"   << std::endl;
+	std::cout << "[MGPU_HEMM] Hemm     = " << time_gemm.count()/1000 << " sec"  << std::endl;
+	std::cout << "[MGPU_HEMM] AppyVec  = " << time_apply_vec.count()/1000 << " sec"  << std::endl;
 	std::cout << std::endl;
-#endif
   }
 
   void preApplication(T* V, std::size_t locked, std::size_t block) {
@@ -113,6 +103,9 @@ class ChaseMpiHemmMultiGPU : public ChaseMpiHemmInterface<T> {
   }
 
   void preApplication(T* V, T* V2, std::size_t locked, std::size_t block) {
+    // cuda_exec(cudaMemcpy(B_, orig_B_, block * n_ * sizeof(T),
+    //                      cudaMemcpyHostToDevice));
+    // cudaDeviceSynchronize();
     this->preApplication(V, locked, block);
   }
 
@@ -148,43 +141,32 @@ class ChaseMpiHemmMultiGPU : public ChaseMpiHemmInterface<T> {
     }
 
 	/// Transfer block-vector to GPUs
-#if USE_TIMER
 	auto start = high_resolution_clock::now();
-#endif
     mgpuHemm->distribute_V(buf_init, ldBufInit, block);
 	mgpuHemm->synchronizeAll();
-#if USE_TIMER
 	auto stop = high_resolution_clock::now();
 	time_copy_V += stop - start;
-#endif
 
 	/// Compute Hemm
-#if USE_TIMER
 	start = high_resolution_clock::now();
-#endif
 	mgpuHemm->computeHemm(block, alpha, beta);
 	mgpuHemm->synchronizeAll();
-#if USE_TIMER
 	stop = high_resolution_clock::now();
 	time_gemm += stop - start;
-#endif
 
 	/// Return computed block-vector to CPU
-#if USE_TIMER
 	start = high_resolution_clock::now();
-#endif
 	mgpuHemm->return_W(buf_target, ldBufTarget, block);
 	mgpuHemm->synchronizeAll();
-#if USE_TIMER
 	stop = high_resolution_clock::now();
 	time_copy_W += stop - start;
-#endif
 
 	mgpuHemm->switch_operation();
+	//cudaProfilerStop();
   }
 
   bool postApplication(T* V, std::size_t block) {
-    /*  */
+    //cudaStreamSynchronize(stream_);
 	mgpuHemm->synchronizeAll();
 
     return false;
@@ -192,31 +174,30 @@ class ChaseMpiHemmMultiGPU : public ChaseMpiHemmInterface<T> {
 
   void shiftMatrix(T c, bool isunshift = false) {
 
-#if USE_TIMER
 	auto start = high_resolution_clock::now();
-#endif
 	mgpuHemm->distribute_H(orig_H_, m_);
 	mgpuHemm->synchronizeAll();
 
-#if USE_TIMER
+    // chase_zshift_mpi_matrix(H_, off_, n_, m_, std::real(c), &stream_);
+    // chase_zshift_matrix(H_, n_, std::real(c), &stream_);
 	auto stop = high_resolution_clock::now();
-	time_shift += stop - start;
-#endif
+	time_copy_H += stop - start;
   }
 
   void applyVec(T* B, T* C) {
     T alpha = T(1.0);
     T beta = T(0.0);
 
-#if USE_TIMER
+    // this->preApplication(B, 0, 1);
+    // this->apply(alpha, beta, 0, 1);
+    // this->postApplication(C, 1);
 	auto start = high_resolution_clock::now();
-#endif
+
     t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, n_, 1, n_, &alpha,
            orig_H_, n_, B, n_, &beta, C, n_);
-#if USE_TIMER
+
 	auto stop = high_resolution_clock::now();
-	time_applyVec += stop -start;
-#endif
+	time_apply_vec += stop - start;
   }
 
   void get_off(std::size_t* xoff, std::size_t* yoff, std::size_t* xlen,
@@ -228,16 +209,6 @@ class ChaseMpiHemmMultiGPU : public ChaseMpiHemmInterface<T> {
   }
 
   T* get_H() const override { return matrix_properties_->get_H(); }
-  std::size_t get_mblocks() const override {return matrix_properties_->get_mblocks();}
-  std::size_t get_nblocks() const override {return matrix_properties_->get_nblocks();}
-  std::size_t get_n() const override {return matrix_properties_->get_n();}
-  std::size_t get_m() const override {return matrix_properties_->get_m();}
-  int *get_coord() const override {return matrix_properties_->get_coord();}
-  void get_offs_lens(std::size_t* &r_offs, std::size_t* &r_lens, std::size_t* &r_offs_l,
-                  std::size_t* &c_offs, std::size_t* &c_lens, std::size_t* &c_offs_l) const override{
-     matrix_properties_->get_offs_lens(r_offs, r_lens, r_offs_l, c_offs, c_lens, c_offs_l);
-  }
-
   void Start() override { copied_ = false; }
 
  private:
@@ -265,15 +236,12 @@ class ChaseMpiHemmMultiGPU : public ChaseMpiHemmInterface<T> {
   /// Matrix properties
   ChaseMpiProperties<T>* matrix_properties_;
 
-#if USE_TIMER
   /// Timing variables
   std::chrono::duration<double, std::milli> time_copy_H;
   std::chrono::duration<double, std::milli> time_copy_W;
   std::chrono::duration<double, std::milli> time_copy_V;
   std::chrono::duration<double, std::milli> time_gemm;
-  std::chrono::duration<double, std::milli> time_applyVec;
-  std::chrono::duration<double, std::milli> time_shift;
-#endif
+  std::chrono::duration<double, std::milli> time_apply_vec;
 };
 
 template <typename T>
