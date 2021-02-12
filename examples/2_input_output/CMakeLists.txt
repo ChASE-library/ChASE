@@ -47,28 +47,33 @@ if( ${Boost_FOUND} )
 
   add_executable( "2_input_output" "2_input_output.cpp" )
   target_link_libraries( "2_input_output" chase_mpi_driver )
-  target_compile_definitions( "2_input_output" PRIVATE USE_MPI=1 )
+  target_compile_definitions( "2_input_output" PRIVATE USE_MPI=1)
+
+  add_executable( "2_input_output_block_cyclic" "2_input_output.cpp" )
+  target_link_libraries( "2_input_output_block_cyclic" chase_mpi_driver )
+  target_compile_definitions( "2_input_output_block_cyclic" PRIVATE USE_MPI=1 USE_BLOCK_CYCLIC=1)
+
+  ##############################################################################
+  #   2_input_output_mgpu: multi-GPU/node, MPI ($A$ distributed among MPI-ranks)
+  ##############################################################################
 
   if(TARGET chase_cuda )
     enable_language(CUDA)
 
     option(TIMER "Builder timer routines" OFF)
 
-  ##############################################################################
-  #   2_input_output_mgpu: multi-GPU/node, MPI ($A$ distributed among MPI-ranks)
-  ##############################################################################
-
     add_executable( 2_input_output_mgpu "2_input_output.cpp" )
-    target_link_libraries( 2_input_output_mgpu
-      chase_mpi_driver
-      chase_cuda
-#      ${CUDA_CUBLAS_LIBRARIES}
-#      ${CUDA_LIBRARIES}
-      )
+    target_link_libraries( 2_input_output_mgpu chase_mpi_driver chase_cuda)
+
+    add_executable( 2_input_output_mgpu_block_cyclic "2_input_output.cpp" )
+    target_link_libraries( 2_input_output_mgpu_block_cyclic chase_mpi_driver chase_cuda)
+
     if(TIMER) 
       target_compile_definitions( "2_input_output_mgpu" PRIVATE DRIVER_BUILD_MGPU=1 USE_MPI=1 USE_TIMER=1)
+      target_compile_definitions( "2_input_output_mgpu_block_cyclic" PRIVATE DRIVER_BUILD_MGPU=1 USE_MPI=1 USE_TIMER=1 USE_BLOCK_CYCLIC=1)
     else()
-      target_compile_definitions( "2_input_output_mgpu" PRIVATE DRIVER_BUILD_MGPU=1 USE_MPI=1 )
+      target_compile_definitions( "2_input_output_mgpu" PRIVATE DRIVER_BUILD_MGPU=1 USE_MPI=1 USE_TIMER=0)
+      target_compile_definitions( "2_input_output_mgpu_block_cyclic" PRIVATE DRIVER_BUILD_MGPU=1 USE_MPI=1 USE_BLOCK_CYCLIC=1 USE_TIMER=0)      
     endif()
   endif()
 else()

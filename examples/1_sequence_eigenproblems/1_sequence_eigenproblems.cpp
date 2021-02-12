@@ -21,14 +21,26 @@ typedef ChaseMpi<ChaseMpiHemmBlas, T> CHASE;
 int main(int argc, char** argv)
 {
   MPI_Init(NULL, NULL);
-  int rank = 0;
+  int rank = 0, size;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
 
   std::size_t N = 1001; //problem size
   std::size_t nev = 100; //number of eigenpairs to be computed
   std::size_t nex = 20; //extra searching space
   std::size_t idx_max = 5; //number of eigenproblems to be solved in sequence
   Base<T> perturb = 1e-4; //perturbation of elements for the matrices in sequence
+
+#ifdef USE_BLOCK_CYCLIC
+  /*parameters of block-cyclic data layout*/
+  std::size_t NB = 50; //block size for block-cyclic data layout
+  int dims[2];
+  dims[0] = dims[1] = 0;
+  //MPI proc grid = dims[0] x dims[1]
+  MPI_Dims_create(size, 2, dims);
+  int irsrc = 0;
+  int icsrc = 0;
+#endif
 
   std::mt19937 gen(1337.0);
   std::normal_distribution<> d;
@@ -41,8 +53,13 @@ int main(int argc, char** argv)
   auto Lambda = std::vector<Base<T>>(nev + nex); //eigenvalues
 
   /*construct eigenproblem to be solved*/
-  CHASE single(new ChaseMpiProperties<T>(N, nev, nex, MPI_COMM_SELF), V.data(),
+#ifdef USE_BLOCK_CYCLIC
+  CHASE single(new ChaseMpiProperties<T>(N, NB, NB, nev, nex, dims[0], dims[1], (char *)"C", irsrc, icsrc, MPI_COMM_WORLD),
+                    V.data(), Lambda.data());
+#else
+  CHASE single(new ChaseMpiProperties<T>(N, nev, nex, MPI_COMM_WORLD), V.data(),
                Lambda.data());
+#endif
 
   /*Setup configure for ChASE*/
   auto& config = single.GetConfig();
@@ -58,18 +75,17 @@ int main(int argc, char** argv)
   if (rank == 0)
     std::cout << "Solving " << idx_max << " symmetrized Clement matrices (" << N
               << "x" << N << ") with element-wise random perturbation of "
-              << perturb << '\n'
+	      << perturb
+#ifdef USE_BLOCK_CYCLIC
+              << " with block-cyclic data layout: " << NB << "x" << NB
+#endif
+	      << '\n'
               << config;
 
   /*randomize V*/
   for (std::size_t i = 0; i < N * (nev + nex); ++i) {
     V[i] = T(d(gen), d(gen));
   }
-
-  std::size_t xoff, yoff, xlen, ylen;
-
-  /*Get Offset and length of block of H on each node*/
-  single.GetOff(&xoff, &yoff, &xlen, &ylen);
 
   std::vector<T> H(N * N, T(0.0));
 
@@ -80,6 +96,24 @@ int main(int argc, char** argv)
     if (i != N - 1) H[i + N * (i + 1)] = std::sqrt(i * (N + 1 - i));
   }
 
+#ifdef USE_BLOCK_CYCLIC
+  /*local block number = mblocks x nblocks*/
+  std::size_t mblocks = single.get_mblocks();
+  std::size_t nblocks = single.get_nblocks();
+
+  /*local matrix size = m x n*/
+  std::size_t m = single.get_m();
+  std::size_t n = single.get_n();
+
+  /*global and local offset/length of each block of block-cyclic data*/
+  std::size_t *r_offs, *c_offs, *r_lens, *c_lens, *r_offs_l, *c_offs_l;
+  single.get_offs_lens(r_offs, r_lens, r_offs_l, c_offs, c_lens, c_offs_l);
+#else  
+  std::size_t xoff, yoff, xlen, ylen;
+  /*Get Offset and length of block of H on each node*/
+  single.GetOff(&xoff, &yoff, &xlen, &ylen);
+#endif
+
   for (auto idx = 0; idx < idx_max; ++idx) {
     if (rank == 0) {
       std::cout << "Starting Problem #" << idx << "\n";
@@ -88,12 +122,25 @@ int main(int argc, char** argv)
       }
     }
 
+#ifdef USE_BLOCK_CYCLIC
+    /*distribute Clement matrix into block cyclic data layout */
+    for(std::size_t j = 0; j < nblocks; j++){
+        for(std::size_t i = 0; i < mblocks; i++){
+            for(std::size_t q = 0; q < c_lens[j]; q++){
+                for(std::size_t p = 0; p < r_lens[i]; p++){
+                    single.GetMatrixPtr()[(q + c_offs_l[j]) * m + p + r_offs_l[i]] = H[(q + c_offs[j]) * N + p + r_offs[i]];
+                }
+            }
+        }
+    }
+#else    
     /*Load different blocks of H to each node*/
     for (std::size_t x = 0; x < xlen; x++) {
       for (std::size_t y = 0; y < ylen; y++) {
         single.GetMatrixPtr()[x + xlen * y] = H.at((xoff + x) * N + (yoff + y));
       }
     }
+#endif
 
     /*Performance Decorator to meaure the performance of kernels of ChASE*/
     PerformanceDecoratorChase<T> performanceDecorator(&single);
