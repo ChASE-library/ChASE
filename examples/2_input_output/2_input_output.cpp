@@ -94,6 +94,51 @@ void readMatrix(T* H, std::string path_in, std::string spin, std::size_t kpoint,
   }
 }
 
+template <typename T>
+void readMatrix(T* H, std::string path_in, std::string spin, std::size_t kpoint,
+                std::size_t index, std::string suffix, std::size_t size, bool legacy, 
+		std::size_t m, std::size_t mblocks, std::size_t nblocks,
+            	std::size_t* r_offs, std::size_t* r_lens, std::size_t* r_offs_l, 
+		std::size_t* c_offs, std::size_t* c_lens, std::size_t* c_offs_l){
+  std::size_t N = std::sqrt(size);
+  std::ostringstream problem(std::ostringstream::ate);
+
+  int rank;
+
+#ifdef USE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
+  rank = 0;
+#endif
+
+  if (legacy){
+        problem << path_in << "gmat  1 " << std::setw(2) << index << suffix;
+  }
+  else{
+    problem << path_in << "mat_" << spin << "_" << std::setfill('0')
+            << std::setw(2) << kpoint << "_" << std::setfill('0')
+            << std::setw(2) << index << suffix;
+  }
+
+  if (rank == 0) std::cout << problem.str() << std::endl;
+
+  std::ifstream input(problem.str().c_str(), std::ios::binary);
+  if (!input.is_open()) {
+    throw new std::logic_error(std::string("error reading file: ") +
+                               problem.str());
+  }
+   
+  for(std::size_t j = 0; j < nblocks; j++){
+      for(std::size_t i = 0; i < mblocks; i++){
+          for(std::size_t q = 0; q < c_lens[j]; q++){
+	      input.seekg(((q + c_offs[j]) * N + r_offs[i])* sizeof(T));
+	      input.read(reinterpret_cast<char*>(H + (q + c_offs_l[j]) * m + r_offs_l[i]), r_lens[i] * sizeof(T));
+	  }
+      }
+  }
+  
+}
+
 struct ChASE_DriverProblemConfig {
   std::size_t N;    // Size of the Matrix
   std::size_t nev;  // Number of sought after eigenvalues
@@ -119,6 +164,16 @@ struct ChASE_DriverProblemConfig {
 
   bool complex;
   bool isdouble;
+  
+#ifdef USE_BLOCK_CYCLIC
+  std::size_t mbsize;
+  std::size_t nbsize;
+  int dim0;
+  int dim1;
+  int irsrc;
+  int icsrc;
+  std::string major;
+#endif  
 };
 
 template <typename T>
@@ -145,7 +200,25 @@ int do_chase(ChASE_DriverProblemConfig& conf) {
   std::size_t kpoint = conf.kpoint;
   bool legacy = conf.legacy;
   std::string spin = conf.spin;
+#ifdef USE_BLOCK_CYCLIC
+  std::size_t mbsize = conf.mbsize;
+  std::size_t nbsize = conf.nbsize;
+  int dim0 = conf.dim0;
+  int dim1 = conf.dim1;
+  int irsrc = conf.irsrc;
+  int icsrc = conf.irsrc;
+  std::string major = conf.major;
 
+  if(dim0 == 0 || dim1 == 0){
+    int dims[2];
+    dims[0] = dims[1] = 0;
+    int gsize;
+    MPI_Comm_size(MPI_COMM_WORLD, &gsize);    
+    MPI_Dims_create(gsize, 2, dims);
+    dim0 = dims[0];
+    dim1 = dims[1];    
+  }
+#endif  
   int rank, size;
 
 #ifdef USE_MPI
@@ -176,8 +249,13 @@ int do_chase(ChASE_DriverProblemConfig& conf) {
 #endif //seq ChASE
 
 #ifdef USE_MPI
+#ifdef USE_BLOCK_CYCLIC
+  CHASE single(new ChaseMpiProperties<T>(N, mbsize, nbsize, nev, nex, dim0, dim1, const_cast<char*>(major.c_str()), irsrc, icsrc, MPI_COMM_WORLD),
+                    V, Lambda);
+#else
   CHASE single(new ChaseMpiProperties<T>(N, nev, nex, MPI_COMM_WORLD), V,
                Lambda);
+#endif
 #else
   CHASE single(N, nev, nex, V, Lambda);
 #endif
@@ -216,14 +294,34 @@ int do_chase(ChASE_DriverProblemConfig& conf) {
       config.SetApprox(true);
     }
 
+#ifdef USE_BLOCK_CYCLIC
+  /*local block number = mblocks x nblocks*/
+    std::size_t mblocks = single.get_mblocks();
+    std::size_t nblocks = single.get_nblocks();
+
+    /*local matrix size = m x n*/
+    std::size_t m = single.get_m();
+    std::size_t n = single.get_n();
+
+    /*global and local offset/length of each block of block-cyclic data*/
+    std::size_t *r_offs, *c_offs, *r_lens, *c_lens, *r_offs_l, *c_offs_l;
+
+    single.get_offs_lens(r_offs, r_lens, r_offs_l, c_offs, c_lens, c_offs_l);
+#else    
     std::size_t xoff;
     std::size_t yoff;
     std::size_t xlen;
     std::size_t ylen;
 
     single.GetOff(&xoff, &yoff, &xlen, &ylen);
+#endif
+
     if(rank == 0) std::cout << "start reading matrix\n";
+#ifdef USE_BLOCK_CYCLIC
+    readMatrix(H, path_in, spin, kpoint, i, ".bin", N*N, legacy, m, mblocks, nblocks, r_offs, r_lens, r_offs_l, c_offs, c_lens, c_offs_l);
+#else
     readMatrix(H, path_in, spin, kpoint, i, ".bin", N * N, legacy, xoff, yoff, xlen, ylen);
+#endif
     if(rank == 0) std::cout << "done reading matrix\n";
     
     PerformanceDecoratorChase<T> performanceDecorator(&single);
@@ -316,8 +414,34 @@ int main(int argc, char* argv[]) {
       "sequence", po::value<bool>(&conf.sequence)->default_value(false),  //
       "Treat as sequence of Problems. Previous ChASE solution is used,"   //
       "when available"                                                    //
+      )
+#ifdef USE_BLOCK_CYCLIC
+      (                                                                   //
+      "mbsize", po::value<std::size_t>(&conf.mbsize)->default_value(50),  //
+      "block size for the row"                                            //
       )(                                                                  //
-      "legacy", po::value<bool>(&conf.legacy)->default_value(false),      //
+      "nbsize", po::value<std::size_t>(&conf.nbsize)->default_value(50),  //
+      "block size for the column"                                         //
+      )(                                                                  //
+      "dim0", po::value<int>(&conf.dim0)->default_value(0),               //
+      "row number of MPI proc grid"                                       //
+      )(                                                                  //
+      "dim1", po::value<int>(&conf.dim1)->default_value(0),               //
+      "column number of MPI proc grid"                                    //
+      )(								  //
+      "irsrc", po::value<int>(&conf.irsrc)->default_value(0),             //
+      "The process row over which the first row of matrix is"             //
+      "distributed."                                                      //
+      )(                                                                  //
+      "icsrc", po::value<int>(&conf.icsrc)->default_value(0),             //
+      "The process column over which the first column of the array A is"  //
+      "distributed."                                                      //
+      )(                                                                  //
+      "major", po::value<std::string>(&conf.mode)->default_value("C"),    //
+      "Major of MPI proc grid, valid values are R(ow) or C(olumn)"        //
+      )
+#endif      
+      ("legacy", po::value<bool>(&conf.legacy)->default_value(false),     //
       "Use legacy naming scheme?");                                       //
 
   po::variables_map vm;

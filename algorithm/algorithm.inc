@@ -183,7 +183,6 @@ std::size_t Algorithm<T>::lanczos(Chase<T>* single, int N, int numvec,
   Base<T>* ritzV = new Base<T>[m * m]();
   Base<T> upperb_;
   Base<T> lowerb, lambda;
-
   single->Lanczos(m, 0, &upperb_, Theta + m * 0, Tau + m * 0, ritzV);
   *upperb = upperb_;
 
@@ -340,14 +339,12 @@ void Algorithm<T>::solve(Chase<T>* single) {
   for (std::size_t i = 0; i < nevex; ++i) degrees[i] = deg;
 
   single->Shift(0.0);
-
   // --------------------------------- LANCZOS ---------------------------------
   bool random = !config.UseApprox();
   std::size_t DoSVectors =
       lanczos(single, N, num_lanczos,
               std::min(nevex, std::min(N / 2, config.GetLanczosIter())), nevex,
               &upperb, random, random ? ritzv : NULL);
-
   std::size_t locked = 0;     // Number of converged eigenpairs.
   std::size_t iteration = 0;  // Current iteration.
   lowerb = *std::max_element(ritzv, ritzv + unconverged);
@@ -382,8 +379,7 @@ void Algorithm<T>::solve(Chase<T>* single) {
       deg = calc_degrees(single, N, unconverged, nex, upperb, lowerb, tol,
                          ritzv, resid, residLast, degrees, locked);
     }
-
-      //------------------------------- FILTER -------------------------------
+    //------------------------------- FILTER -------------------------------
 #ifdef CHASE_OUTPUT
     {
       std::ostringstream oss;

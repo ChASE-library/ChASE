@@ -94,6 +94,15 @@ class ChaseMpiHemmInterface {
 
   // Returns ptr to H, which may be used to populate H.
   virtual T* get_H() const = 0;
+  virtual std::size_t get_mblocks() const = 0;
+  virtual std::size_t get_nblocks() const = 0;
+  virtual std::size_t get_m() const = 0;
+  virtual std::size_t get_n() const = 0;
+  virtual int *get_coord() const = 0;
+  virtual void get_offs_lens(std::size_t* &r_offs, std::size_t* &r_lens, std::size_t* &r_offs_l,
+                  std::size_t* &c_offs, std::size_t* &c_lens, std::size_t* &c_offs_l) const = 0;
+
+
   virtual void Start() = 0;
 };
 }  // namespace matrixfree

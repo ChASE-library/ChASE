@@ -228,6 +228,16 @@ class ChaseMpiHemmMultiGPU : public ChaseMpiHemmInterface<T> {
   }
 
   T* get_H() const override { return matrix_properties_->get_H(); }
+  std::size_t get_mblocks() const override {return matrix_properties_->get_mblocks();}
+  std::size_t get_nblocks() const override {return matrix_properties_->get_nblocks();}
+  std::size_t get_n() const override {return matrix_properties_->get_n();}
+  std::size_t get_m() const override {return matrix_properties_->get_m();}
+  int *get_coord() const override {return matrix_properties_->get_coord();}
+  void get_offs_lens(std::size_t* &r_offs, std::size_t* &r_lens, std::size_t* &r_offs_l,
+                  std::size_t* &c_offs, std::size_t* &c_lens, std::size_t* &c_offs_l) const override{
+     matrix_properties_->get_offs_lens(r_offs, r_lens, r_offs_l, c_offs, c_lens, c_offs_l);
+  }
+
   void Start() override { copied_ = false; }
 
  private:
