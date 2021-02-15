@@ -8,7 +8,6 @@
 #include <iomanip>
 #include <chrono>
 #include <cstdlib>
-#include "scalapack_templates.hpp"
 
 #include "algorithm/performance.hpp"
 #include "ChASE-MPI/chase_mpi.hpp"
@@ -16,6 +15,12 @@
 #include "ChASE-MPI/impl/chase_mpihemm_blas_seq.hpp"
 #include "ChASE-MPI/impl/chase_mpihemm_blas_seq_inplace.hpp"
 #include "ChASE-MPI/impl/chase_mpihemm_blas.hpp"
+
+#ifdef DRIVER_BUILD_MGPU
+#include "ChASE-MPI/impl/chase_mpihemm_mgpu.hpp"
+#endif
+
+#include "scalapack_templates.hpp"
 
 const int i_zero = 0, i_one = 1;
 const std::size_t sze_one = 1;
@@ -135,7 +140,11 @@ void readMatrix(T* H, std::string path_in, std::string prefix,
 
 using T = std::complex<double>;
 
+#ifdef DRIVER_BUILD_MGPU
+typedef ChaseMpi<ChaseMpiHemmMultiGPU, T> CHASE;
+#else
 typedef ChaseMpi<ChaseMpiHemmBlas, T> CHASE;
+#endif
 
 struct ChASE_DriverProblemConfig {
   std::size_t N;    // Size of the Matrix
