@@ -16,8 +16,8 @@
 #include <chrono>
 
 #include "algorithm/types.hpp"
-#include "chase_mpi_properties.hpp"
-#include "blas_cuda_wrapper.hpp"
+#include "ChASE-MPI/chase_mpi_properties.hpp"
+#include "ChASE-MPI/blas_cuda_wrapper.hpp"
 
 /**
  * This class provides the basic functionality for a series of  a multi-GPU Hemm-s.
