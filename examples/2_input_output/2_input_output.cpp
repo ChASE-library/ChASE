@@ -139,6 +139,71 @@ void readMatrix(T* H, std::string path_in, std::string spin, std::size_t kpoint,
   
 }
 
+template <typename T>
+void readMatrix(T* H, std::string path_in, std::size_t size,
+                std::size_t xoff, std::size_t yoff,
+                std::size_t xlen, std::size_t ylen) {
+  std::size_t N = std::sqrt(size);
+  std::ostringstream problem(std::ostringstream::ate);
+  problem << path_in;
+  int rank;
+#ifdef USE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
+  rank = 0;
+#endif
+
+  if (rank == 0) std::cout << problem.str() << std::endl;
+  std::ifstream input(problem.str().c_str(), std::ios::binary);
+  if (!input.is_open()) {
+    throw new std::logic_error(std::string("error reading file: ") +
+                               problem.str());
+  }
+
+  for (std::size_t y = 0; y < ylen; y++) {
+    input.seekg(((xoff) + N * (yoff + y)) * sizeof(T));
+    input.read(reinterpret_cast<char*>(H + xlen * y), xlen * sizeof(T));
+  }
+}
+
+
+template <typename T>
+void readMatrix(T* H, std::string path_in, std::size_t size, 
+                std::size_t m, std::size_t mblocks, std::size_t nblocks,
+                std::size_t* r_offs, std::size_t* r_lens, std::size_t* r_offs_l,
+                std::size_t* c_offs, std::size_t* c_lens, std::size_t* c_offs_l){
+
+      	std::size_t N = std::sqrt(size);
+  std::ostringstream problem(std::ostringstream::ate);
+  problem << path_in;
+
+  int rank;
+
+#ifdef USE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#else
+  rank = 0;
+#endif
+
+  if (rank == 0) std::cout << problem.str() << std::endl;
+
+  std::ifstream input(problem.str().c_str(), std::ios::binary);
+  if (!input.is_open()) {
+    throw new std::logic_error(std::string("error reading file: ") +
+                               problem.str());
+  }
+
+  for(std::size_t j = 0; j < nblocks; j++){
+      for(std::size_t i = 0; i < mblocks; i++){
+          for(std::size_t q = 0; q < c_lens[j]; q++){
+              input.seekg(((q + c_offs[j]) * N + r_offs[i])* sizeof(T));
+              input.read(reinterpret_cast<char*>(H + (q + c_offs_l[j]) * m + r_offs_l[i]), r_lens[i] * sizeof(T));
+          }
+      }
+  }
+
+}
+
 struct ChASE_DriverProblemConfig {
   std::size_t N;    // Size of the Matrix
   std::size_t nev;  // Number of sought after eigenvalues
@@ -264,13 +329,16 @@ int do_chase(ChASE_DriverProblemConfig& conf) {
   config.SetTol(tol);
   config.SetDeg(deg);
   config.SetOpt(opt == "S");
-  config.SetApprox(mode == "A");
 
-  std::mt19937 gen(2342.0);
+  std::mt19937 gen(1337.0);
   std::normal_distribution<> d;
 
   T* H = single.GetMatrixPtr();
-  
+
+  if(!sequence){
+    bgn = end = 1;
+  }
+
   for (auto i = bgn; i <= end; ++i) {
     if (i == bgn || !sequence) {
       if (mode[0] == 'A') {
@@ -318,9 +386,17 @@ int do_chase(ChASE_DriverProblemConfig& conf) {
 
     if(rank == 0) std::cout << "start reading matrix\n";
 #ifdef USE_BLOCK_CYCLIC
-    readMatrix(H, path_in, spin, kpoint, i, ".bin", N*N, legacy, m, mblocks, nblocks, r_offs, r_lens, r_offs_l, c_offs, c_lens, c_offs_l);
+    if(sequence){
+      readMatrix(H, path_in, spin, kpoint, i, ".bin", N*N, legacy, m, mblocks, nblocks, r_offs, r_lens, r_offs_l, c_offs, c_lens, c_offs_l);
+    }else{
+      readMatrix(H, path_in, N*N, m, mblocks, nblocks, r_offs, r_lens, r_offs_l, c_offs, c_lens, c_offs_l);    
+    }
 #else
-    readMatrix(H, path_in, spin, kpoint, i, ".bin", N * N, legacy, xoff, yoff, xlen, ylen);
+    if(sequence){    
+      readMatrix(H, path_in, spin, kpoint, i, ".bin", N * N, legacy, xoff, yoff, xlen, ylen);
+    }else{
+      readMatrix(H, path_in, N * N, xoff, yoff, xlen, ylen);    
+    }
 #endif
     if(rank == 0) std::cout << "done reading matrix\n";
     
@@ -336,16 +412,28 @@ int do_chase(ChASE_DriverProblemConfig& conf) {
 #endif
 
     if (rank == 0) {
+      std::cout << " ChASE timings: " << "\n";
       performanceDecorator.GetPerfData().print();
-    }
-  }
-
 #ifdef PRINT_EIGENVALUES
-  std::cout << "Eigenvalues: " << std::endl;
-  for (int zzt = 0; zzt < nev; zzt++)
-    std::cout << std::setprecision(16) << Lambda[zzt] << std::endl;
-  std::cout << "End of eigenvalues. " << std::endl;
-#endif
+      Base<T>* resid = single.GetResid();
+      std::cout << "Finished Problem \n";
+      std::cout << "Printing first 5 eigenvalues and residuals\n";
+      std::cout
+          << "| Index |       Eigenvalue      |         Residual      |\n"
+          << "|-------|-----------------------|-----------------------|\n";
+      std::size_t width = 20;
+      std::cout << std::setprecision(12);
+      std::cout << std::setfill(' ');
+      std::cout << std::scientific;
+      std::cout << std::right;
+      for (auto i = 0; i < std::min(std::size_t(5), nev); ++i)
+        std::cout << "|  " << std::setw(4) << i + 1 << " | " << std::setw(width)
+                  << Lambda[i] << "  | " << std::setw(width) << resid[i]
+                  << "  |\n";
+      std::cout << "\n\n\n";
+#endif      
+    }    
+  }
 
   return 0;
 
