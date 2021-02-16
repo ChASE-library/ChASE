@@ -97,6 +97,7 @@ class ChaseMpiHemmMultiGPU : public ChaseMpiHemmInterface<T> {
 	std::cout << "[MGPU_HEMM] Hemm     = " << time_gemm.count()/1000 << " sec"  << std::endl;
 	std::cout << "[MGPU_HEMM] AppyVec  = " << time_apply_vec.count()/1000 << " sec"  << std::endl;
 	std::cout << std::endl;
+#endif
   }
 
   void preApplication(T* V, std::size_t locked, std::size_t block) {
