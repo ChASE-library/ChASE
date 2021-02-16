@@ -23,6 +23,13 @@ if( ${Boost_FOUND} )
   target_link_libraries( "2_input_output_block_cyclic" chase_mpi ${Boost_LIBRARIES})
   target_compile_definitions( "2_input_output_block_cyclic" PRIVATE USE_MPI=1 USE_BLOCK_CYCLIC=1)  
 
+  install (TARGETS 2_input_output_seq
+            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})  
+  install (TARGETS 2_input_output
+            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+  install (TARGETS 2_input_output_block_cyclic
+            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+
   ##############################################################################
   #   2_input_output_mgpu: multi-GPU/node, MPI ($A$ distributed among MPI-ranks)
   ##############################################################################
@@ -37,6 +44,11 @@ if( ${Boost_FOUND} )
     add_executable( 2_input_output_mgpu_block_cyclic "2_input_output.cpp" )
     target_link_libraries( 2_input_output_mgpu_block_cyclic chase_mpi chase_cuda ${Boost_LIBRARIES})
     target_compile_definitions( "2_input_output_mgpu_block_cyclic" PRIVATE DRIVER_BUILD_MGPU=1 USE_MPI=1 USE_BLOCK_CYCLIC=1)
+
+    install (TARGETS 2_input_output_mgpu
+              RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+    install (TARGETS 2_input_output_mgpu_block_cyclic
+              RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
   endif()  
 

@@ -59,7 +59,7 @@ if(EXISTS "${CMAKE_PREFIX_PATH}/lib64/cmake/ChASE/chase-cuda.cmake")
 
     add_executable(chase-app-gpu)
 
-    target_sources(chase-app-gpu PRIVATE chase-app-gpu.cpp)
+    target_sources(chase-app-gpu PRIVATE chase-app.cpp)
 
     target_compile_features(chase-app-gpu INTERFACE cxx_auto_type)
 
@@ -73,9 +73,8 @@ if(EXISTS "${CMAKE_PREFIX_PATH}/lib64/cmake/ChASE/chase-cuda.cmake")
       ${MPI_CXX_LIBRARIES}
       )  
 
-    target_link_libraries(chase-app-gpu PUBLIC ChASE::chase_mpi)
-
-    target_link_libraries(chase-app-gpu PUBLIC ChASE::chase_cuda)
+    target_link_libraries(chase-app-gpu PUBLIC ChASE::chase_mpi ChASE::chase_cuda)
+    target_compile_definitions(chase-app-gpu PRIVATE DRIVER_BUILD_MGPU=1 USE_MPI=1)
 
   endif()
 endif()

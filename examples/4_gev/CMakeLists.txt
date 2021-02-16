@@ -21,6 +21,9 @@ if( ${Boost_FOUND} )
     add_executable( "4_gev" 4_gev.cpp )
     target_link_libraries("4_gev" chase_mpi SCALAPACK::SCALAPACK ${Boost_LIBRARIES})
 
+    install (TARGETS 4_gev
+            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+
     ##############################################################################
     #     4_gev_mgpu: multi-GPU/node, MPI ($A$ distributed among MPI-ranks)
     ##############################################################################
@@ -29,6 +32,9 @@ if( ${Boost_FOUND} )
       add_executable( "4_gev_mgpu" 4_gev.cpp )
       target_link_libraries("4_gev_mgpu" chase_mpi chase_cuda SCALAPACK::SCALAPACK ${Boost_LIBRARIES})
       target_compile_definitions( "4_gev_mgpu" PRIVATE DRIVER_BUILD_MGPU=1)
+      install (TARGETS 4_gev_mgpu
+              RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+
     endif()
 
   endif()

@@ -119,8 +119,8 @@ class ChaseMpiHemmCudaSeq : public ChaseMpiHemmInterface<T> {
   T* get_H() const override { return OrigH_; }
   std::size_t get_mblocks() const override {return 1;}
   std::size_t get_nblocks() const override {return 1;}
-  std::size_t get_n() const override {return N_;}
-  std::size_t get_m() const override {return N_;}
+  std::size_t get_n() const override {return n_;}
+  std::size_t get_m() const override {return n_;}
   int *get_coord() const override {
           int coord[2] = {0, 0};
           return coord;
@@ -129,10 +129,10 @@ class ChaseMpiHemmCudaSeq : public ChaseMpiHemmInterface<T> {
                   std::size_t* &c_offs, std::size_t* &c_lens, std::size_t* &c_offs_l) const override{
 
           std::size_t r_offs_[1] = {0};
-          std::size_t r_lens_[1]; r_lens_[0] = N_;
+          std::size_t r_lens_[1]; r_lens_[0] = n_;
           std::size_t r_offs_l_[1] = {0};
           std::size_t c_offs_[1] = {0};
-          std::size_t c_lens_[1]; r_lens_[0] = N_;
+          std::size_t c_lens_[1]; r_lens_[0] = n_;
           std::size_t c_offs_l_[1] = {0};
 
           r_offs = r_offs_;
