@@ -26,15 +26,27 @@ The following should generate a driver that demonstrates how to use ChASE:
     cmake ..
     make
 
-### SIMPLE DRIVER
+### Build with Examples 
 
-For a quick test and usage of the library, we provide a ready-to-use simple driver. In order to build the simple driver together with ChASE the sequence of building commands is slightly modified as below:
+For a quick test and usage of the library, we provide several ready-to-use examples. In order to build these examples with ChASE the sequence of building commands is slightly modified as below:
 
     cd ChASE/
     mkdir build
     cd build/    
-    cmake .. -DBUILD_SIMPLEDRIVER=ON
+    cmake .. -DBUILD_WITH_EXAMPLES=ON
     make
+
+In order to quick test of ChASE using the previous simple driver, please use follow example instead:
+
+```bash
+./examples/2_input_output/2_input_output --path_in=${MATRIX_BINARY}
+```
+
+For the test of multi-GPU support ChASE, please use:
+
+```bash
+./examples/2_input_output/2_input_output_mgpu --path_in=${MATRIX_BINARY}
+```
 
 ### Build with support to multithreaded BLIS library
 

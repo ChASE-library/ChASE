@@ -45,6 +45,12 @@ class ChaseMpiHemm : public ChaseMpiHemmInterface<T> {
     dims_ = matrix_properties->get_dims();
     coord_ = matrix_properties->get_coord();
     off_ = matrix_properties->get_off();
+
+    matrix_properties->get_offs_lens(r_offs_, r_lens_, r_offs_l_, c_offs_, c_lens_, c_offs_l_);
+    mb_ = matrix_properties->get_mb();
+    nb_ = matrix_properties->get_nb();    
+    mblocks_ = matrix_properties->get_mblocks();
+    nblocks_ = matrix_properties->get_nblocks();
   }
 
   ~ChaseMpiHemm() {}
@@ -53,9 +59,10 @@ class ChaseMpiHemm : public ChaseMpiHemmInterface<T> {
     next_ = NextOp::bAc;
     locked_ = locked;
 
-    for (auto j = 0; j < block; j++) {
-      std::memcpy(C_ + j * m_, V + j * N_ + off_[0] + locked * N_,
-                  m_ * sizeof(T));
+    for (auto j = 0; j < block; j++){
+   	for(auto i = 0; i < mblocks_; i++){
+	    std::memcpy(C_ + j * m_ + r_offs_l_[i], V + j * N_ + locked * N_ + r_offs_[i], r_lens_[i] * sizeof(T));
+	} 
     }
 
     gemm_->preApplication(V, locked, block);
@@ -63,8 +70,9 @@ class ChaseMpiHemm : public ChaseMpiHemmInterface<T> {
 
   void preApplication(T* V1, T* V2, std::size_t locked, std::size_t block) {
     for (auto j = 0; j < block; j++) {
-      std::memcpy(B_ + j * n_, V2 + j * N_ + off_[1] + locked * N_,
-                  n_ * sizeof(T));
+	for(auto i = 0; i < nblocks_; i++){
+            std::memcpy(B_ + j * n_ + c_offs_l_[i], V2 + j * N_ + locked * N_ + c_offs_[i], c_lens_[i] * sizeof(T));	    
+	}	
     }
 
     gemm_->preApplication(V1, V2, locked, block);
@@ -101,6 +109,7 @@ class ChaseMpiHemm : public ChaseMpiHemmInterface<T> {
 
       next_ = NextOp::bAc;
     }
+
   }
   bool postApplication(T* V, std::size_t block) {
     gemm_->postApplication(V, block);
@@ -108,85 +117,93 @@ class ChaseMpiHemm : public ChaseMpiHemmInterface<T> {
     std::size_t N = N_;
     std::size_t dimsIdx;
     std::size_t subsize;
+    std::size_t blocksize;
+    std::size_t nbblocks;
+
     T* buff;
     MPI_Comm comm;
+    std::size_t *offs, *lens, *offs_l;  
 
     T* targetBuf = V + locked_ * N;
 
     if (next_ == NextOp::bAc) {
       subsize = m_;
+      blocksize = mb_;
       buff = C_;
       comm = col_comm_;
       dimsIdx = 0;
+      offs = r_offs_;
+      lens = r_lens_;
+      offs_l = r_offs_l_;
+      nbblocks = mblocks_;
     } else {
       subsize = n_;
+      blocksize = nb_;
       buff = B_;
       comm = row_comm_;
       dimsIdx = 1;
+      offs = c_offs_;
+      lens = c_lens_;
+      offs_l = c_offs_l_; 
+      nbblocks = nblocks_;      
     }
 
     int gsize, rank;
     MPI_Comm_size(comm, &gsize);
     MPI_Comm_rank(comm, &rank);
 
-    auto& recvcounts = matrix_properties_->get_recvcounts()[dimsIdx];
-    auto& displs = matrix_properties_->get_displs()[dimsIdx];
+    auto& blockcounts = matrix_properties_->get_blockcounts()[dimsIdx];
+    auto& blocklens = matrix_properties_->get_blocklens()[dimsIdx];
+    auto& blockdispls = matrix_properties_->get_blockdispls()[dimsIdx];
+    auto& sendlens = matrix_properties_->get_sendlens()[dimsIdx];
 
     std::vector<MPI_Request> reqs(gsize);
     std::vector<MPI_Datatype> newType(gsize);
 
-    // Set up the datatype for the recv
-    for (auto i = 0; i < gsize; ++i) {
-      int array_of_sizes[2] = {static_cast<int>(N_), 1};
-      int array_of_subsizes[2] = {recvcounts[i], 1};
-      int array_of_starts[2] = {displs[i], 0};
 
-      MPI_Type_create_subarray(2, array_of_sizes, array_of_subsizes,
-                               array_of_starts, MPI_ORDER_FORTRAN,
-                               getMPI_Type<T>(), &(newType[i]));
-
-      MPI_Type_commit(&(newType[i]));
+    for(auto j = 0; j < gsize; j++){
+        MPI_Type_indexed(blockcounts[j], blocklens[j].data(), blockdispls[j].data(), getMPI_Type<T>(), &(newType[j]));
+        MPI_Type_commit(&(newType[j]));
     }
 
-    for (auto i = 0; i < gsize; ++i) {
-      if (rank == i) {
-        // The sender sends from the appropriate buffer
-        MPI_Ibcast(buff, recvcounts[i] * block, getMPI_Type<T>(), i, comm,
-                   &reqs[i]);
-      } else {
-        // The recv goes right unto the correct buffer
-        MPI_Ibcast(targetBuf, block, newType[i], i, comm, &reqs[i]);
-      }
+    for(auto j = 0; j < block; j++){
+        for(auto i = 0; i < nbblocks; i++){
+	    std::memcpy(targetBuf + j*N + offs[i], buff + j*subsize + offs_l[i], lens[i] * sizeof(T));
+	}    
+    }	
+
+    for(auto i = 0; i < block; i++){
+        for (auto j = 0; j < gsize; j++) {
+            MPI_Ibcast(targetBuf + i * N , 1, newType[j], j, comm, &reqs[j]);
+	}
+        MPI_Waitall(gsize, reqs.data(), MPI_STATUSES_IGNORE);
     }
 
-    int i = rank;
-    // we copy the sender into the target Buffer directly
-    for (auto j = 0; j < block; ++j) {
-      std::memcpy(targetBuf + j * N + displs[i], buff + recvcounts[i] * j,
-                  recvcounts[i] * sizeof(T));
+    for (auto j = 0; j < gsize; j++) {
+      MPI_Type_free(&newType[j]);
     }
-
-    MPI_Waitall(gsize, reqs.data(), MPI_STATUSES_IGNORE);
-
-    for (auto i = 0; i < gsize; ++i) {
-      MPI_Type_free(&newType[i]);
-    }
-	return true;
+    return true;
   }
 
   void shiftMatrix(T c, bool isunshift = false) {
-    for (std::size_t i = 0; i < n_; i++) {
-      for (std::size_t j = 0; j < m_; j++) {
-        if (off_[0] + j == (i + off_[1])) {
-          H_[i * m_ + j] += c;
+	
+    for(std::size_t j = 0; j < nblocks_; j++){
+        for(std::size_t i = 0; i < mblocks_; i++){
+            for(std::size_t q = 0; q < c_lens_[j]; q++){
+                for(std::size_t p = 0; p < r_lens_[i]; p++){
+		    if(q + c_offs_[j] == p + r_offs_[i]){
+		        H_[(q + c_offs_l_[j]) * m_ + p + r_offs_l_[i]] += c;
+		    }
+		}
+            }
         }
-      }
     }
     gemm_->shiftMatrix(c);
   }
 
   void applyVec(T* B, T* C) {
     // TODO
+
     T One = T(1.0);
     T Zero = T(0.0);
 
@@ -206,6 +223,16 @@ class ChaseMpiHemm : public ChaseMpiHemmInterface<T> {
   }
 
   T* get_H() const override { return matrix_properties_->get_H(); }
+  std::size_t get_mblocks() const override {return mblocks_;}
+  std::size_t get_nblocks() const override {return nblocks_;}
+  std::size_t get_n() const override {return n_;}
+  std::size_t get_m() const override {return m_;}  
+  int *get_coord() const override {return matrix_properties_->get_coord();}
+  void get_offs_lens(std::size_t* &r_offs, std::size_t* &r_lens, std::size_t* &r_offs_l,
+                  std::size_t* &c_offs, std::size_t* &c_lens, std::size_t* &c_offs_l) const override{
+     matrix_properties_->get_offs_lens(r_offs, r_lens, r_offs_l, c_offs, c_lens, c_offs_l); 
+  }
+
   void Start() override { gemm_->Start(); }
 
  private:
@@ -229,6 +256,17 @@ class ChaseMpiHemm : public ChaseMpiHemmInterface<T> {
   int* dims_;
   int* coord_;
   std::size_t* off_;
+
+  std::size_t *r_offs_;
+  std::size_t *r_lens_;
+  std::size_t *r_offs_l_;
+  std::size_t *c_offs_;
+  std::size_t *c_lens_;
+  std::size_t *c_offs_l_;
+  std::size_t nb_;
+  std::size_t mb_;
+  std::size_t nblocks_;
+  std::size_t mblocks_;
 
   std::unique_ptr<ChaseMpiHemmInterface<T>> gemm_;
   ChaseMpiProperties<T>* matrix_properties_;

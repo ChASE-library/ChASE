@@ -257,7 +257,6 @@ class ChaseMpi : public chase::Chase<T> {
   void Lanczos(std::size_t m, Base<T> *upperb) override {
     // todo
     std::size_t n = N_;
-
     T *v1 = workspace_;
     // std::random_device rd;
     std::mt19937 gen(2342.0);
@@ -281,22 +280,18 @@ class ChaseMpi : public chase::Chase<T> {
     T beta = T(0.0);
     T One = T(1.0);
     T Zero = T(0.0);
-
     //  T *v1 = V;
     // ENSURE that v1 has one norm
     Base<T> real_alpha = t_nrm2(n, v1, 1);
     alpha = T(1 / real_alpha);
     t_scal(n, &alpha, v1, 1);
     Base<T> real_beta = 0;
-
     real_beta = 0;
 
     for (std::size_t k = 0; k < m; ++k) {
       // t_gemv(CblasColMajor, CblasNoTrans, N_, N_, &One, H_, N_, v1, 1, &Zero,
       // w, 1);
-
       gemm_->applyVec(v1, w);
-
       alpha = t_dot(n, v1, 1, w, 1);
 
       alpha = -alpha;
@@ -386,7 +381,6 @@ class ChaseMpi : public chase::Chase<T> {
 
       // t_gemv(CblasColMajor, CblasNoTrans, n, n, &One, H_, n, v1, 1, &Zero, w,
       // 1);
-
       gemm_->applyVec(v1, w);
 
       // std::cout << "lanczos Av\n";
@@ -425,10 +419,8 @@ class ChaseMpi : public chase::Chase<T> {
     Base<T> ul, ll;
     int tryrac = 0;
     int *isuppz = new int[2 * m];
-
     t_stemr(LAPACK_COL_MAJOR, 'V', 'A', m, d, e, ul, ll, vl, vu, &notneeded_m,
             ritzv, ritzV, m, m, isuppz, &tryrac);
-
     *upperb = std::max(std::abs(ritzv[0]), std::abs(ritzv[m - 1])) +
               std::abs(real_beta);
 
@@ -532,6 +524,15 @@ class ChaseMpi : public chase::Chase<T> {
 #endif
 
   T *GetMatrixPtr() { return gemm_->get_H(); }
+  std::size_t get_mblocks() {return gemm_->get_mblocks();}
+  std::size_t get_nblocks() {return gemm_->get_nblocks();}
+  std::size_t get_m() {return gemm_->get_m();}
+  std::size_t get_n() {return gemm_->get_n();}
+  int *get_coord() {return gemm_->get_coord();}
+  void get_offs_lens(std::size_t* &r_offs, std::size_t* &r_lens, std::size_t* &r_offs_l, 
+		  std::size_t* &c_offs, std::size_t* &c_lens, std::size_t* &c_offs_l){
+      gemm_->get_offs_lens(r_offs, r_lens, r_offs_l, c_offs, c_lens, c_offs_l);
+  }
 
   void GetOff(std::size_t *xoff, std::size_t *yoff, std::size_t *xlen,
               std::size_t *ylen) {

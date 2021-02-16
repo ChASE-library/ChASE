@@ -62,9 +62,10 @@ class ChaseMpiHemmMultiGPU : public ChaseMpiHemmInterface<T> {
 
     std::size_t maxBlock = matrix_properties_->get_max_block();
 
+#ifdef MGPU_TIMER    
 	std::cout << "[MGPU_HEMM] MPI rank " << mpi_rank << " found " << num_devices << " GPU devices" << std::endl;
 	std::cout << "[MGPU_HEMM] MPI rank " << mpi_rank << " operating on: m = " <<  m_ << ", n = " << n_ << ", block = " << maxBlock << std::endl;
-
+#endif
 	/* Register H, B, C and IMT as pinned-memories on host */
 	cuda_exec(cudaHostRegister((void*)orig_H_, m_*n_*sizeof(T), cudaHostRegisterDefault));
 	cuda_exec(cudaHostRegister((void*)orig_B_, n_*maxBlock*sizeof(T), cudaHostRegisterDefault));
@@ -88,6 +89,7 @@ class ChaseMpiHemmMultiGPU : public ChaseMpiHemmInterface<T> {
     cuda_exec(cudaHostUnregister(orig_IMT_));
     delete mgpuHemm;
 
+#ifdef MGPU_TIMER
 	std::cout << "[MGPU_HEMM] Multi-GPU HEMM timings (per component): " << std::endl;
 	std::cout << "[MGPU_HEMM] Copy H   = " << time_copy_H.count()/1000 << " sec" << std::endl;
 	std::cout << "[MGPU_HEMM] Copy V   = " << time_copy_V.count()/1000 << " sec" << std::endl;
@@ -209,6 +211,16 @@ class ChaseMpiHemmMultiGPU : public ChaseMpiHemmInterface<T> {
   }
 
   T* get_H() const override { return matrix_properties_->get_H(); }
+  std::size_t get_mblocks() const override {return matrix_properties_->get_mblocks();}
+  std::size_t get_nblocks() const override {return matrix_properties_->get_nblocks();}
+  std::size_t get_n() const override {return matrix_properties_->get_n();}
+  std::size_t get_m() const override {return matrix_properties_->get_m();}
+  int *get_coord() const override {return matrix_properties_->get_coord();}
+  void get_offs_lens(std::size_t* &r_offs, std::size_t* &r_lens, std::size_t* &r_offs_l,
+                  std::size_t* &c_offs, std::size_t* &c_lens, std::size_t* &c_offs_l) const override{
+     matrix_properties_->get_offs_lens(r_offs, r_lens, r_offs_l, c_offs, c_lens, c_offs_l);
+  }
+
   void Start() override { copied_ = false; }
 
  private:

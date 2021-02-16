@@ -11,7 +11,10 @@
 #ifndef CHASE_ALGORITHM_PERFORMANCE_HPP
 #define CHASE_ALGORITHM_PERFORMANCE_HPP
 
-#include <mpi.h>
+#ifndef NO_MPI
+    #include <mpi.h>
+#endif
+
 #include <chrono>
 #include <iostream>
 #include <vector>
@@ -157,7 +160,11 @@ class ChasePerfData {
     }
 
     int size;
+#ifndef NO_MPI
     MPI_Comm_size(MPI_COMM_WORLD, &size);
+#else
+    size = 1;
+#endif
     std::cout << " | " << std::setw(5) << size;
     std::cout << " | " << std::setw(10) << chase_iteration_count << " | " << std::setw(6) << chase_filtered_vecs;
 

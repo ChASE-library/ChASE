@@ -13,8 +13,8 @@
 #include <cstring>
 #include <memory>
 
-#include "blas_templates.hpp"
-#include "chase_mpi_matrices.hpp"
+#include "ChASE-MPI/blas_templates.hpp"
+#include "ChASE-MPI/chase_mpi_matrices.hpp"
 
 namespace chase {
 namespace mpi {
@@ -98,6 +98,32 @@ class ChaseMpiHemmBlasSeq : public ChaseMpiHemmInterface<T> {
 
   T* get_V1() const { return V1_.get(); }
   T* get_V2() const { return V2_.get(); }
+  std::size_t get_mblocks() const override {return 1;}
+  std::size_t get_nblocks() const override {return 1;}
+  std::size_t get_n() const override {return N_;}
+  std::size_t get_m() const override {return N_;}
+  int *get_coord() const override {
+	  int *coord = new int[2];
+	  coord[0] = coord[1] = 0;
+	  return coord;
+  }
+  void get_offs_lens(std::size_t* &r_offs, std::size_t* &r_lens, std::size_t* &r_offs_l,
+                  std::size_t* &c_offs, std::size_t* &c_lens, std::size_t* &c_offs_l) const override{
+
+	  std::size_t r_offs_[1] = {0};
+          std::size_t r_lens_[1]; r_lens_[0] = N_;
+	  std::size_t r_offs_l_[1] = {0};
+          std::size_t c_offs_[1] = {0};
+          std::size_t c_lens_[1]; r_lens_[0] = N_;
+          std::size_t c_offs_l_[1] = {0};
+
+	  r_offs = r_offs_;
+	  r_lens = r_lens_;
+	  r_offs_l = r_offs_l_;
+          c_offs = c_offs_;
+          c_lens = c_lens_;
+          c_offs_l = c_offs_l_;
+  }
 
   void Start() override {}
 
