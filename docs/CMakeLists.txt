@@ -91,6 +91,8 @@ if(LATEX_FOUND)
                     COMMENT "Generating PDF documentation into ${SPHINX_BUILD}/pdf/")
 endif()
 
+install(DIRECTORY ${SPHINX_BUILD}/
+        DESTINATION ${CMAKE_INSTALL_DOCDIR})
 
 #updating Github Pages which host this documentation
 find_package(Git REQUIRED)
