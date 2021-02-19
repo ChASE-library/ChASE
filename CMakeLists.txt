@@ -1,7 +1,7 @@
 # -*- Mode: cmake -*-
 cmake_minimum_required( VERSION 3.8 )
 
-project( ChASE LANGUAGES C CXX )
+project( ChASE LANGUAGES C CXX VERSION 0.91 )
 
 # ## algorithm ##
 add_library(chase_algorithm INTERFACE)
@@ -65,6 +65,13 @@ endif()
 
 enable_testing()
 add_test( BASIC "chase_driver" )
+
+# Documentation
+option(BUILD_WITH_DOCS "Build the examples" OFF)
+if(BUILD_WITH_DOCS)
+    message(STATUS "Building Documentation of ChASE")
+    add_subdirectory("./docs")
+endif()
 
 # Install ChASE as a CMake package
 include(CMakePackageConfigHelpers)
