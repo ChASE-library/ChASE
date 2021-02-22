@@ -22,17 +22,17 @@
 #include "chase_mpi_matrices.hpp"
 
 #include "./impl/chase_mpihemm.hpp"
+#include "./impl/chase_mpidla.hpp"
 
 #include <omp.h>
 
 namespace chase {
 namespace mpi {
 
-template <template <typename> class MF, class T>
+template <template <typename> class MF,template <typename> class DLA, class T>
 class ChaseMpi : public chase::Chase<T> {
  public:
-  // case 1:
-  // todo? take all arguments of matrices and entirely wrap it?
+  // case 1: no MPI
   ChaseMpi(std::size_t N, std::size_t nev, std::size_t nex, T *V1 = nullptr,
            Base<T> *ritzv = nullptr, T *H = nullptr, T *V2 = nullptr,
            Base<T> *resid = nullptr)
@@ -43,7 +43,9 @@ class ChaseMpi : public chase::Chase<T> {
         locked_(0),
         config_(N, nev, nex),
         matrices_(N_, nev_ + nex_, V1, ritzv, H, V2, resid),
-        gemm_(new MF<T>(matrices_, N_, nev_ + nex_)) {
+        gemm_(new MF<T>(matrices_, N_, nev_ + nex_)), 
+        dla_(new ChaseMpiDLA<T>(new DLA<T>()))
+  {
     ritzv_ = matrices_.get_Ritzv();
     resid_ = matrices_.get_Resid();
 
@@ -55,7 +57,7 @@ class ChaseMpi : public chase::Chase<T> {
     H_ = gemm_->get_H();
   }
 
-  // case 2: MPI
+  // case 2: MPI   
   ChaseMpi(ChaseMpiProperties<T> *properties, T *V1 = nullptr,
            Base<T> *ritzv = nullptr, T *V2 = nullptr, Base<T> *resid = nullptr)
       : N_(properties->get_N()),
@@ -67,16 +69,13 @@ class ChaseMpi : public chase::Chase<T> {
         matrices_(std::move(
             properties_.get()->create_matrices(V1, ritzv, V2, resid))),
         gemm_(new ChaseMpiHemm<T>(properties_.get(),
-                                  new MF<T>(properties_.get()))) {
+                                  new MF<T>(properties_.get()))), 
+	dla_(new ChaseMpiDLA<T>(new DLA<T>()))
+  {
     int init;
     MPI_Initialized(&init);
     if (init) MPI_Comm_rank(MPI_COMM_WORLD, &rank_);
 
-/*	if (init) {
-		MPI_Comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, &shmcomm);
-		MPI_Comm_rank(shmcomm, &shmrank_);
-	}
-*/
     V_ = matrices_.get_V1();
     W_ = matrices_.get_V2();
     ritzv_ = matrices_.get_Ritzv();
@@ -153,13 +152,11 @@ class ChaseMpi : public chase::Chase<T> {
     gemm_->postApplication(approxV_, nev_ + nex_ - locked_);
 
     std::size_t nevex = nev_ + nex_;
-    T *tau = workspace_ + fixednev * N_;
 
     // we don't need this, as we copy to workspace when locking
     // std::memcpy(workspace_, approxV_, N_ * fixednev * sizeof(T));
 
-    t_geqrf(LAPACK_COL_MAJOR, N_, nevex, approxV_, N_, tau);
-    t_gqr(LAPACK_COL_MAJOR, N_, nevex, nevex, approxV_, N_, tau);
+    dla_->gegqr(N_, nevex, approxV_, N_);
 
     std::memcpy(approxV_, workspace_, N_ * fixednev * sizeof(T));
   };
@@ -167,7 +164,7 @@ class ChaseMpi : public chase::Chase<T> {
   void RR(Base<T> *ritzv, std::size_t block) override {
     // std::size_t block = nev+nex - fixednev;
 
-    T *A = new T[block * block];  // For LAPACK.
+//    T *A = new T[block * block];  // For LAPACK.
 
     T One = T(1.0);
     T Zero = T(0.0);
@@ -185,31 +182,12 @@ class ChaseMpi : public chase::Chase<T> {
     //        &Zero,                                      //
     //        workspace_ + locked_ * N_, N_);
 
-    // A <- W' * V
-    t_gemm(CblasColMajor, CblasConjTrans, CblasNoTrans,  //
-           block, block, N_,                             //
-           &One,                                         //
-           approxV_ + locked_ * N_, N_,                  //
-           workspace_ + locked_ * N_, N_,                //
-           &Zero,                                        //
-           A, block                                      //
-    );
-
-    t_heevd(LAPACK_COL_MAJOR, 'V', 'L', block, A, block, ritzv);
-
-    t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans,  //
-           N_, block, block,                           //
-           &One,                                       //
-           approxV_ + locked_ * N_, N_,                //
-           A, block,                                   //
-           &Zero,                                      //
-           workspace_ + locked_ * N_, N_               //
-    );
+    dla_->RR_kernel(N_, block, approxV_, locked_, workspace_, One, Zero, ritzv);
 
     std::swap(approxV_, workspace_);
     // we can swap, since the locked part were copied over as part of the QR
 
-    delete[] A;
+ //   delete[] A;
   };
 
   void Resd(Base<T> *ritzv, Base<T> *resid, std::size_t fixednev) override {
@@ -231,14 +209,14 @@ class ChaseMpi : public chase::Chase<T> {
 
     for (std::size_t i = 0; i < unconverged; ++i) {
       beta = T(-ritzv[i]);
-      t_axpy(                                      //
+      dla_->axpy(                                      //
           N_,                                      //
           &beta,                                   //
           (approxV_ + locked_ * N_) + N_ * i, 1,   //
           (workspace_ + locked_ * N_) + N_ * i, 1  //
       );
 
-      resid[i] = t_nrm2(N_, (workspace_ + locked_ * N_) + N_ * i, 1);
+      resid[i] = dla_->nrm2(N_, (workspace_ + locked_ * N_) + N_ * i, 1);
     }
   };
 
@@ -282,9 +260,9 @@ class ChaseMpi : public chase::Chase<T> {
     T Zero = T(0.0);
     //  T *v1 = V;
     // ENSURE that v1 has one norm
-    Base<T> real_alpha = t_nrm2(n, v1, 1);
+    Base<T> real_alpha = dla_->nrm2(n, v1, 1);
     alpha = T(1 / real_alpha);
-    t_scal(n, &alpha, v1, 1);
+    dla_->scal(n, &alpha, v1, 1);
     Base<T> real_beta = 0;
     real_beta = 0;
 
@@ -292,23 +270,23 @@ class ChaseMpi : public chase::Chase<T> {
       // t_gemv(CblasColMajor, CblasNoTrans, N_, N_, &One, H_, N_, v1, 1, &Zero,
       // w, 1);
       gemm_->applyVec(v1, w);
-      alpha = t_dot(n, v1, 1, w, 1);
+      alpha = dla_->dot(n, v1, 1, w, 1);
 
       alpha = -alpha;
-      t_axpy(n, &alpha, v1, 1, w, 1);
+      dla_->axpy(n, &alpha, v1, 1, w, 1);
       alpha = -alpha;
 
       d[k] = std::real(alpha);
       if (k == m - 1) break;
 
       beta = T(-real_beta);
-      t_axpy(n, &beta, v0, 1, w, 1);
+      dla_->axpy(n, &beta, v0, 1, w, 1);
       beta = -beta;
 
-      real_beta = t_nrm2(n, w, 1);
+      real_beta = dla_->nrm2(n, w, 1);
       beta = T(1.0 / real_beta);
 
-      t_scal(n, &beta, w, 1);
+      dla_->scal(n, &beta, w, 1);
 
       e[k] = real_beta;
 
@@ -326,7 +304,7 @@ class ChaseMpi : public chase::Chase<T> {
     int *isuppz = new int[2 * m];
     Base<T> *ritzv = new Base<T>[m];
 
-    t_stemr<Base<T>>(LAPACK_COL_MAJOR, 'N', 'A', m, d, e, ul, ll, vl, vu,
+    dla_->stemr(LAPACK_COL_MAJOR, 'N', 'A', m, d, e, ul, ll, vl, vu,
                      &notneeded_m, ritzv, NULL, m, m, isuppz, &tryrac);
 
     *upperb = std::max(std::abs(ritzv[0]), std::abs(ritzv[m - 1])) +
@@ -369,9 +347,9 @@ class ChaseMpi : public chase::Chase<T> {
     for (std::size_t k = 0; k < N_; ++k) v1[k] = V_[k + idx * N_];
 
     // ENSURE that v1 has one norm
-    Base<T> real_alpha = t_nrm2(n, v1, 1);
+    Base<T> real_alpha = dla_->nrm2(n, v1, 1);
     alpha = T(1 / real_alpha);
-    t_scal(n, &alpha, v1, 1);
+    dla_->scal(n, &alpha, v1, 1);
 
     Base<T> real_beta = 0.0;
 
@@ -387,23 +365,23 @@ class ChaseMpi : public chase::Chase<T> {
       // for (std::size_t ll = 0; ll < 2; ++ll)
       //   std::cout << w[ll] << "\n";
 
-      alpha = t_dot(n, v1, 1, w, 1);
+      alpha = dla_->dot(n, v1, 1, w, 1);
 
       alpha = -alpha;
-      t_axpy(n, &alpha, v1, 1, w, 1);
+      dla_->axpy(n, &alpha, v1, 1, w, 1);
       alpha = -alpha;
 
       d[k] = std::real(alpha);
       if (k == m - 1) break;
 
       beta = T(-real_beta);
-      t_axpy(n, &beta, v0, 1, w, 1);
+      dla_->axpy(n, &beta, v0, 1, w, 1);
       beta = -beta;
 
-      real_beta = t_nrm2(n, w, 1);
+      real_beta = dla_->nrm2(n, w, 1);
       beta = T(1.0 / real_beta);
 
-      t_scal(n, &beta, w, 1);
+      dla_->scal(n, &beta, w, 1);
 
       e[k] = real_beta;
 
@@ -419,7 +397,7 @@ class ChaseMpi : public chase::Chase<T> {
     Base<T> ul, ll;
     int tryrac = 0;
     int *isuppz = new int[2 * m];
-    t_stemr(LAPACK_COL_MAJOR, 'V', 'A', m, d, e, ul, ll, vl, vu, &notneeded_m,
+    dla_->stemr(LAPACK_COL_MAJOR, 'V', 'A', m, d, e, ul, ll, vl, vu, &notneeded_m,
             ritzv, ritzV, m, m, isuppz, &tryrac);
     *upperb = std::max(std::abs(ritzv[0]), std::abs(ritzv[m - 1])) +
               std::abs(real_beta);
@@ -456,7 +434,7 @@ class ChaseMpi : public chase::Chase<T> {
     T alpha = T(1.0);
     T beta = T(0.0);
 
-    t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans,  //
+    dla_->gemm_small(CblasColMajor, CblasNoTrans, CblasNoTrans,  //
            N_, idx, m,                                 //
            &alpha,                                     //
            workspace_, N_,                             //
@@ -478,7 +456,7 @@ class ChaseMpi : public chase::Chase<T> {
     int iOne = 1;
     for (int ttz = 0; ttz < nev_; ttz++) {
       eigval = -1.0 * ritzv_[ttz];
-      t_scal(N_, &eigval, workspace_ + ttz * N_, 1);
+      dla_->scal(N_, &eigval, workspace_ + ttz * N_, 1);
     }
 
     gemm_->preApplication(approxV_, workspace_, 0, nev_);
@@ -492,7 +470,7 @@ class ChaseMpi : public chase::Chase<T> {
     //        V_, N_,                                //
     //        &one, W_, N_);
 
-    Base<T> norm = t_lange('M', N_, nev_, workspace_, N_);
+    Base<T> norm = dla_->lange('M', N_, nev_, workspace_, N_);
     return norm;
   }
 
@@ -511,9 +489,9 @@ class ChaseMpi : public chase::Chase<T> {
       }
     }
 
-    t_gemm(CblasColMajor, CblasConjTrans, CblasNoTrans, nev_, nev_, N_, &one,
+    dla_->gemm_large(CblasColMajor, CblasConjTrans, CblasNoTrans, nev_, nev_, N_, &one,
            &*approxV_, N_, &*approxV_, N_, &neg_one, &unity[0], nev_);
-    Base<T> norm = t_lange('M', nev_, nev_, &unity[0], nev_);
+    Base<T> norm = dla_lange('M', nev_, nev_, &unity[0], nev_);
     return norm;
   }
 
@@ -560,7 +538,7 @@ class ChaseMpi : public chase::Chase<T> {
   std::unique_ptr<ChaseMpiProperties<T>> properties_;
   ChaseMpiMatrices<T> matrices_;
   std::unique_ptr<ChaseMpiHemmInterface<T>> gemm_;
-
+  std::unique_ptr<ChaseMpiDLAInterface<T>> dla_;
   ChaseConfig<T> config_;
 };
 

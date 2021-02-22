@@ -25,14 +25,16 @@
 #include "ChASE-MPI/impl/chase_mpihemm_cuda_seq.hpp"
 #endif
 
+#include "ChASE-MPI/impl/chase_mpidla_blas_lapack.hpp"
+
 using T = std::complex<double>;
 using namespace chase;
 using namespace chase::mpi;
 
 #ifdef USE_MPI
-typedef ChaseMpi<ChaseMpiHemmBlas, T> CHASE;
+typedef ChaseMpi<ChaseMpiHemmBlas, ChaseMpiDLABlasLapack, T> CHASE;
 #else
-typedef ChaseMpi<ChaseMpiHemmBlasSeq, T> CHASE;
+typedef ChaseMpi<ChaseMpiHemmBlasSeq, ChaseMpiDLABlasLapack, T> CHASE;
 #endif
 
 int main() {
