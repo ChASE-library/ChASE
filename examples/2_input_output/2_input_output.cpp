@@ -22,10 +22,13 @@
 #include "ChASE-MPI/impl/chase_mpihemm_blas_seq.hpp"
 #include "ChASE-MPI/impl/chase_mpihemm_blas_seq_inplace.hpp"
 
+#include "ChASE-MPI/impl/chase_mpidla_blas_lapack.hpp"
+
 #ifdef USE_MPI
 #include "ChASE-MPI/impl/chase_mpihemm_blas.hpp"
   #ifdef DRIVER_BUILD_MGPU
   #include "ChASE-MPI/impl/chase_mpihemm_mgpu.hpp"
+  #include "ChASE-MPI/impl/chase_mpidla_cuda.hpp"
   #endif
 #endif
 
@@ -305,12 +308,12 @@ int do_chase(ChASE_DriverProblemConfig& conf) {
 
 #ifdef USE_MPI
     #ifdef DRIVER_BUILD_MGPU
-        typedef ChaseMpi<ChaseMpiHemmMultiGPU, T> CHASE;
+        typedef ChaseMpi<ChaseMpiHemmMultiGPU, ChaseMpiDLACUDA, T> CHASE;
     #else
-        typedef ChaseMpi<ChaseMpiHemmBlas, T> CHASE;
+        typedef ChaseMpi<ChaseMpiHemmBlas, ChaseMpiDLABlasLapack, T> CHASE;
     #endif //CUDA or not
 #else
-    typedef ChaseMpi<ChaseMpiHemmBlasSeq, T> CHASE;
+    typedef ChaseMpi<ChaseMpiHemmBlasSeq, ChaseMpiDLABlasLapack, T> CHASE;
 #endif //seq ChASE
 
 #ifdef USE_MPI

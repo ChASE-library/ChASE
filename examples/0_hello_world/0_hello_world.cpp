@@ -11,12 +11,14 @@
 #include "ChASE-MPI/impl/chase_mpihemm_blas_seq.hpp"
 #include "ChASE-MPI/impl/chase_mpihemm_blas_seq_inplace.hpp"
 
+#include "ChASE-MPI/impl/chase_mpidla_blas_lapack.hpp"
+
 using T = std::complex<double>;
 using namespace chase;
 using namespace chase::mpi;
 
 /*use ChASE-MPI without GPU support*/
-typedef ChaseMpi<ChaseMpiHemmBlas, T> CHASE;
+typedef ChaseMpi<ChaseMpiHemmBlas, ChaseMpiDLABlasLapack, T> CHASE;
 
 int main(int argc, char** argv)
 {

@@ -16,6 +16,8 @@
 #include "ChASE-MPI/impl/chase_mpihemm_blas_seq_inplace.hpp"
 #include "ChASE-MPI/impl/chase_mpihemm_blas.hpp"
 
+#include "ChASE-MPI/impl/chase_mpidla_blas_lapack.hpp"
+
 #ifdef DRIVER_BUILD_MGPU
 #include "ChASE-MPI/impl/chase_mpihemm_mgpu.hpp"
 #endif
@@ -141,9 +143,9 @@ void readMatrix(T* H, std::string path_in, std::string prefix,
 using T = std::complex<double>;
 
 #ifdef DRIVER_BUILD_MGPU
-typedef ChaseMpi<ChaseMpiHemmMultiGPU, T> CHASE;
+typedef ChaseMpi<ChaseMpiHemmMultiGPU, ChaseMpiDLABlasLapack, T> CHASE;
 #else
-typedef ChaseMpi<ChaseMpiHemmBlas, T> CHASE;
+typedef ChaseMpi<ChaseMpiHemmBlas, ChaseMpiDLABlasLapack, T> CHASE;
 #endif
 
 struct ChASE_DriverProblemConfig {
