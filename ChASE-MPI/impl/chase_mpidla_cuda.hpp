@@ -18,7 +18,13 @@ namespace mpi {
 template <class T>
 class ChaseMpiDLACUDA : public ChaseMpiDLAInterface<T> {
    public:
-     ChaseMpiDLACUDA(){
+     ChaseMpiDLACUDA(ChaseMpiProperties<T>* matrix_properties){
+
+     	matrix_properties_ = matrix_properties;
+	N_ = matrix_properties_->get_N();
+        nev_ = matrix_properties_->GetNev();	
+        nex_ = matrix_properties_->GetNex();	
+
 	MPI_Comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, &shmcomm_);
 	MPI_Comm_size(shmcomm_, &shmsize_);
 	MPI_Comm_rank(shmcomm_, &shmrank_);
@@ -35,13 +41,71 @@ class ChaseMpiDLACUDA : public ChaseMpiDLAInterface<T> {
             cusolverDnCreate(&cusolverH_[dev]);
             cublasCreate(&cublasH_[dev]);
         }
+
+	cudaSetDevice(0);
+        cuda_exec(cudaMalloc ((void**)&devInfo_, sizeof(int)));
+        cuda_exec(cudaMalloc ((void**)&d_V_  , sizeof(T)*N_*(nev_ + nex_)));
+        cuda_exec(cudaMalloc ((void**)&d_return_  , sizeof(T)*(nev_ + nex_)));
+
+	int lwork_qr = 0;
+        int lwork_geqrf = 0;
+        int lwork_orgqr = 0;
+	int lwork_heevd = 0;
+        cudaSetDevice(0);
+        cusolver_status_ = cusolverDnTgeqrf_bufferSize(
+            cusolverH_[0],
+            N_,
+            nev_ + nex_,
+            d_V_,
+            N_,
+            &lwork_geqrf);
+        assert (cusolver_status_ == CUSOLVER_STATUS_SUCCESS);
+        cudaSetDevice(0);
+        cusolver_status_ = cusolverDnTgqr_bufferSize(
+            cusolverH_[0],
+            N_,
+            nev_ + nex_,
+            nev_ + nex_,
+            d_V_,
+            N_,
+            d_return_,
+            &lwork_orgqr);
+        assert (cusolver_status_ == CUSOLVER_STATUS_SUCCESS);
+
+        lwork_qr = (lwork_geqrf > lwork_orgqr)? lwork_geqrf : lwork_orgqr;
+
+        cudaSetDevice(0);
+        cusolver_status_ = cusolverDnTheevd_bufferSize(
+            cusolverH_[0],
+            CUSOLVER_EIG_MODE_VECTOR,
+            CUBLAS_FILL_MODE_LOWER,
+            nev_ + nex_,
+            d_A_,
+            nev_ + nex_,
+            d_ritz_,
+            &lwork_heevd);
+        assert (cusolver_status_ == CUSOLVER_STATUS_SUCCESS);
+
+        lwork_ = (lwork_qr > lwork_heevd)? lwork_qr : lwork_heevd;
+
+	cudaSetDevice(0);
+        cuda_exec(cudaMalloc((void**)&d_work_, sizeof(T)*lwork_));
+
      }
 
      ~ChaseMpiDLACUDA(){
-	for (int dev=0; dev < num_devices_per_rank_; dev++) {
+
+     	for (int dev=0; dev < num_devices_per_rank_; dev++) {
 	    if (cusolverH_[dev]) cusolverDnDestroy(cusolverH_[dev]);
             if (cublasH_[dev]) cublasDestroy(cublasH_[dev]);	
 	}
+
+	if (devInfo_) cudaFree(devInfo_);
+        if (d_V_) cudaFree(d_V_);
+	if (d_return_) cudaFree(d_return_);
+        if (d_work_) cudaFree(d_work_);	
+        if (d_ritz_) cudaFree(d_ritz_);
+        if (d_A_) cudaFree(d_A_);	
      }
      
     Base<T> lange(char norm, std::size_t m, std::size_t n, T* A, std::size_t lda){
@@ -50,57 +114,19 @@ class ChaseMpiDLACUDA : public ChaseMpiDLAInterface<T> {
 
     void gegqr(std::size_t N, std::size_t nevex, T * approxV, std::size_t LDA){
 
-        T *d_V = NULL;
-    	T *d_tau = NULL;
-    	int *devInfo = NULL;
-    	T *d_work = NULL;
-
-        int lwork_geqrf = 0;
-        int lwork_orgqr = 0;
-        int lwork = 0;
-
-        int info_gpu = 0;
         cudaSetDevice(0); 	
-	cuda_exec(cudaMalloc ((void**)&d_V  , sizeof(T)*N*nevex));
-        cuda_exec(cudaMalloc ((void**)&d_tau  , sizeof(T)*nevex));
-        cuda_exec(cudaMalloc ((void**)&devInfo  , sizeof(int)));
-        cudaSetDevice(0);	
-	cuda_exec(cudaMemcpy(d_V, approxV, sizeof(T)*N*nevex, cudaMemcpyHostToDevice));
-        cudaSetDevice(0);
-        cusolver_status_ = cusolverDnTgeqrf_bufferSize(
-            cusolverH_[0],
-            N,
-            nevex,
-            d_V,
-            LDA,
-            &lwork_geqrf);
-        assert (cusolver_status_ == CUSOLVER_STATUS_SUCCESS);
-	cudaSetDevice(0);
-	cusolver_status_ = cusolverDnTgqr_bufferSize(
-            cusolverH_[0],
-            N,
-            nevex,
-            nevex,
-            d_V,
-            LDA,
-	    d_tau,
-            &lwork_orgqr);
-        assert (cusolver_status_ == CUSOLVER_STATUS_SUCCESS);
-
-	lwork = (lwork_geqrf > lwork_orgqr)? lwork_geqrf : lwork_orgqr;
-        cudaSetDevice(0);
-        cuda_exec(cudaMalloc((void**)&d_work, sizeof(T)*lwork));
+	cuda_exec(cudaMemcpy(d_V_, approxV, sizeof(T)*N*nevex, cudaMemcpyHostToDevice));
         cudaSetDevice(0);
         cusolver_status_ = cusolverDnTgeqrf(
             cusolverH_[0],
             N,
             nevex,
-            d_V,
+            d_V_,
             LDA,
-            d_tau,
-            d_work,
-            lwork,
-            devInfo);
+            d_return_,
+            d_work_,
+            lwork_,
+            devInfo_);
         assert(CUSOLVER_STATUS_SUCCESS == cusolver_status_);
         cudaSetDevice(0);
 	cusolver_status_ = cusolverDnTgqr(
@@ -108,21 +134,15 @@ class ChaseMpiDLACUDA : public ChaseMpiDLAInterface<T> {
             N,
             nevex,
             nevex,
-            d_V,
+            d_V_,
             LDA,
-            d_tau,
-            d_work,
-            lwork,
-            devInfo);
+            d_return_,
+            d_work_,
+            lwork_,
+            devInfo_);
         assert(CUSOLVER_STATUS_SUCCESS == cusolver_status_);
         cudaSetDevice(0);
-        cuda_exec(cudaMemcpy(approxV, d_V, sizeof(T)*N*nevex, cudaMemcpyDeviceToHost));
-
-	if (d_V    ) cudaFree(d_V);
-        if (d_tau  ) cudaFree(d_tau);
-        if (devInfo) cudaFree(devInfo);
-        if (d_work ) cudaFree(d_work);
-
+        cuda_exec(cudaMemcpy(approxV, d_V_, sizeof(T)*N*nevex, cudaMemcpyDeviceToHost));
     }
 
     void axpy(std::size_t N, T * alpha, T * x, std::size_t incx, T *y, std::size_t incy){
@@ -161,21 +181,13 @@ class ChaseMpiDLACUDA : public ChaseMpiDLAInterface<T> {
 
     void RR_kernel(std::size_t N, std::size_t block, T *approxV, std::size_t locked, T *workspace, T One, T Zero, Base<T> *ritzv){
  
-      T *d_V = NULL;
       T *d_W = NULL;
-      T *d_A = NULL;
-      Base<T> *d_ritz = NULL;
-      T *d_work = NULL;
-      int *devInfo = NULL;
-      int lwork = 0;
-      int info_gpu = 0;
 
       cudaSetDevice(0);
-      cuda_exec(cudaMalloc ((void**)&d_V, sizeof(T) * N * block));
       cuda_exec(cudaMalloc ((void**)&d_W, sizeof(T) * N * block));
-      cuda_exec(cudaMalloc ((void**)&d_A, sizeof(T) * block * block));
+      cuda_exec(cudaMalloc ((void**)&d_A_, sizeof(T) * block * block));
       cudaSetDevice(0);
-      cuda_exec(cudaMemcpy(d_V, approxV + locked * N, sizeof(T)* N * block, cudaMemcpyHostToDevice));
+      cuda_exec(cudaMemcpy(d_V_, approxV + locked * N, sizeof(T)* N * block, cudaMemcpyHostToDevice));
       cuda_exec(cudaMemcpy(d_W, workspace + locked * N, sizeof(T)* N * block, cudaMemcpyHostToDevice));
       cudaSetDevice(0);
       cublas_status_ = cublasTgemm(
@@ -186,41 +198,28 @@ class ChaseMpiDLACUDA : public ChaseMpiDLAInterface<T> {
 	block,
 	N,
 	&One,
-        d_V, N,
+        d_V_, N,
         d_W, N,
         &Zero,
-        d_A, 
+        d_A_, 
 	block);
       assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
       //HEEVD
+
       cudaSetDevice(0);
-      cuda_exec(cudaMalloc ((void**)&d_ritz, sizeof(Base<T>) * block));
-      cuda_exec(cudaMalloc ((void**)&devInfo, sizeof(int)));
-      cudaSetDevice(0);
-      cusolver_status_ = cusolverDnTheevd_bufferSize(
-            cusolverH_[0],
-            CUSOLVER_EIG_MODE_VECTOR,
-	    CUBLAS_FILL_MODE_LOWER,
-            block,
-            d_A,
-            block,
-	    d_ritz,
-            &lwork);	
-      assert (cusolver_status_ == CUSOLVER_STATUS_SUCCESS);
-      cudaSetDevice(0);
-      cuda_exec(cudaMalloc((void**)&d_work, sizeof(T)*lwork));
+      cuda_exec(cudaMalloc ((void**)&d_ritz_, sizeof(Base<T>) * block));
       cudaSetDevice(0);
       cusolver_status_ = cusolverDnTheevd(
             cusolverH_[0],
             CUSOLVER_EIG_MODE_VECTOR,
             CUBLAS_FILL_MODE_LOWER,
             block,
-            d_A,
+            d_A_,
             block,
-            d_ritz,
-	    d_work,
-	    lwork,
-            devInfo);	
+            d_ritz_,
+	    d_work_,
+	    lwork_,
+            devInfo_);	
       assert (cusolver_status_ == CUSOLVER_STATUS_SUCCESS);
       cudaSetDevice(0);
       cublas_status_ = cublasTgemm(
@@ -231,23 +230,20 @@ class ChaseMpiDLACUDA : public ChaseMpiDLAInterface<T> {
         block,
         block,
         &One,
-        d_V, N,
-        d_A, block,
+        d_V_, N,
+        d_A_, block,
         &Zero,
         d_W,
         N);
       assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
       cudaSetDevice(0);
-      cuda_exec(cudaMemcpy(approxV + locked * N, d_V, sizeof(T)* N * block, cudaMemcpyDeviceToHost));
+      cuda_exec(cudaMemcpy(approxV + locked * N, d_V_, sizeof(T)* N * block, cudaMemcpyDeviceToHost));
       cuda_exec(cudaMemcpy(workspace + locked * N, d_W, sizeof(T)* N * block, cudaMemcpyDeviceToHost));
-      cuda_exec(cudaMemcpy(ritzv, d_ritz, sizeof(Base<T>) * block, cudaMemcpyDeviceToHost));
+      cuda_exec(cudaMemcpy(ritzv, d_ritz_, sizeof(Base<T>) * block, cudaMemcpyDeviceToHost));
 
-      if (d_A) cudaFree(d_A);
+      if (d_A_) cudaFree(d_A_);
       if (d_W) cudaFree(d_W);
-      if (d_V) cudaFree(d_V);
-      if (d_ritz) cudaFree(d_ritz);
-      if (devInfo) cudaFree(devInfo);
-      if (d_work) cudaFree(d_work);
+      if (d_ritz_) cudaFree(d_ritz_);
     }
 
 
@@ -279,6 +275,20 @@ class ChaseMpiDLACUDA : public ChaseMpiDLAInterface<T> {
 	int shmrank_;
 	int globalrank_;
 	int num_devices_per_rank_;
+
+	int *devInfo_ = NULL;
+      	T *d_V_ = NULL;
+	T *d_return_ = NULL;
+	T *d_work_ = NULL;
+        int lwork_ = 0;
+      	T *d_A_ = NULL;
+        Base<T> *d_ritz_ = NULL;
+
+	ChaseMpiProperties<T>* matrix_properties_;
+
+	std::size_t N_;
+  	std::size_t nev_;
+  	std::size_t nex_;
 };
 
 }  // namespace mpi

@@ -70,7 +70,7 @@ class ChaseMpi : public chase::Chase<T> {
             properties_.get()->create_matrices(V1, ritzv, V2, resid))),
         gemm_(new ChaseMpiHemm<T>(properties_.get(),
                                   new MF<T>(properties_.get()))), 
-	dla_(new ChaseMpiDLA<T>(new DLA<T>()))
+	dla_(new ChaseMpiDLA<T>(new DLA<T>(properties_.get())))
   {
     int init;
     MPI_Initialized(&init);

@@ -8,7 +8,15 @@ namespace mpi {
 template <class T>
 class ChaseMpiDLABlasLapack : public ChaseMpiDLAInterface<T> {
    public:
-     ChaseMpiDLABlasLapack(){}
+
+     ChaseMpiDLABlasLapack(){
+
+     }
+
+     ChaseMpiDLABlasLapack(ChaseMpiProperties<T>* matrix_properties){
+     
+     }
+
      ~ChaseMpiDLABlasLapack(){}
 
     Base<T> lange(char norm, std::size_t m, std::size_t n, T* A, std::size_t lda){
