@@ -129,8 +129,8 @@ void pretty_print(std::ostream& oss, std::string key, T value) {
   //! A class to set up all the parameters of the eigensolver
   /*!
       Besides setting up the standard parameters such as size of the
-      matrix `_N` defining the eigenproblem, number of wanted
-      eigenvalues `_nev`, the public functions of this class
+      matrix `N` defining the eigenproblem, number of wanted
+      eigenvalues `nev`, the public functions of this class
       initialize all internal parameters and allow the experienced
       user to set up the values of parameters of core functionalities
       (e.g. lanczos DoS). The aim is to influence the behavior of the
@@ -141,10 +141,20 @@ void pretty_print(std::ostream& oss, std::string key, T value) {
 template <class T>
 class ChaseConfig {
  public:
+  //! Constructor for the ChaseConfig class
+  /*!
+      Requires the explicit values for the initalization of the size
+      of the matrix `N`, the number of sought after extremal
+      eigenvalues, and the number of extra eigenvalue `nex` which
+      defines, together with `nev` the search space.
+      \param _N Size of the square matrix defining the eigenproblem.
+      \param _nev Number of desired extremal eigenvalues.
+      \param _nex Number of eigenvalues augmenting the search space. Usually a relatively small fraction of `nev`. 
+   */
   ChaseConfig(std::size_t _N, std::size_t _nev, std::size_t _nex)
-      : N_(_N),
-        nev_(_nev),
-        nex_(_nex),
+    : N_(_N /*!< Initializes the size of the matrix defining the eigenproblem. */), 
+      nev_(_nev /*!< Initializes the number of desired extremal eigenpairs. */), 
+      nex_(_nex), /*!< Initializes the number of extra eigenpairs defining the search space. */
         optimization_(true),
         approx_(false),
         max_iter_(25),
