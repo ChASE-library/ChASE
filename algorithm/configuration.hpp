@@ -19,6 +19,7 @@
 namespace chase {
 
 namespace chase_config_helper {
+
 template <typename T>
 std::size_t initMaxDeg(bool approx, bool optimization);
 
@@ -125,6 +126,18 @@ void pretty_print(std::ostream& oss, std::string key, T value) {
 
 }  // namespace chase_config_helper
 
+  //! A class to set up all the parameters of the eigensolver
+  /*!
+      Besides setting up the standard parameters such as size of the
+      matrix `_N` defining the eigenproblem, number of wanted
+      eigenvalues `_nev`, the public functions of this class
+      initialize all internal parameters and allow the experienced
+      user to set up the values of parameters of core functionalities
+      (e.g. lanczos DoS). The aim is to influence the behavior of the
+      library in special cases when the default values of the
+      parameters return a suboptimal efficiency in terms of
+      performance and/or accuracy.
+   */
 template <class T>
 class ChaseConfig {
  public:
@@ -150,7 +163,22 @@ class ChaseConfig {
   bool DoOptimization() const { return optimization_; }
   void SetOpt(bool flag) { optimization_ = flag; }
 
+  //! Gets the degree of the Chebyshev filter used by ChASE
+  /*!
+      The value returned is the degree used by the filter when it is
+      called (when ``optimization == 'true'`` this value is used only the
+      first time the filter is called)
+      \return The value used by the Chebyshev filter
+   */
   std::size_t GetDeg() const { return deg_; }
+  //! Set the value of the initial degree of the Chebyshev filter.
+  /*!
+      Depending if the `optimization` parameter is set to `false` or `true`
+      (it is `true` by default), the value of `_deg` is used by the Chebyshev
+      filter respectively every time or just the first time it is called.
+      \param _deg Value set by the expert user and should in general be between *10* and *25*. The default value is *20*. If a odd value is inserted, the function makes it even. This is necessary due to the swapping of the matrix of vectors within the filter. It is strongly suggested to avoid values above the higher between *40* and the value returned by `GetMaxDeg`.
+      \sa GetMaxDeg
+   */
   void SetDeg(std::size_t _deg) {
     deg_ = _deg;
     deg_ += deg_ % 2;
@@ -160,6 +188,11 @@ class ChaseConfig {
   void SetTol(double _tol) { tol_ = _tol; }
 
   std::size_t GetMaxDeg() const { return max_deg_; }
+  //! Set the maximum value of the degree of the Chebyshev filter
+  /*!
+      When ``optimization = true``, the Chebyshev filter degree is computed automatically. Because the computed values could be quite large for eigenvectors at the end of the sought after spectrum, a maximum value is set to avoid numerical instabilities that may trigger eigenpairs divergence.
+      \param _maxDeg This value should be set by the expert user. It is set to 36 by default. It can be lowered in case of the onset of early instabilities but it should not be lower than 20-25 to avoid the filter becomes ineffective. It can be increased whenever it is known there is a spectral gap between the value of `nev_` and the value of `nev_ + nex_`. It is strongly suggested to never exceed the value of 70.  
+   */
   void SetMaxDeg(std::size_t _maxDeg) {
     max_deg_ = _maxDeg;
     max_deg_ += max_deg_ % 2;
