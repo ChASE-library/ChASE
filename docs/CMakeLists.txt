@@ -46,6 +46,7 @@ set(DOXYGEN_INTERNAL_DOCS NO)
 set(DOXYGEN_EXCLUDE_PATTERNS "*.rst")
 set(DOXYGEN_EXCLUDE_PATTERNS "*.tex")
 set(DOXYGEN_PROJECT_BRIEF "ChASE: an Iterative Solver for Dense Eigenproblems")
+set(DOXYGEN_EXTRACT_PRIVATE YES)
 
 make_directory(${DOXYGEN_HTML_OUTPUT})
 
