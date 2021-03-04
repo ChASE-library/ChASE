@@ -142,7 +142,10 @@ class ChaseMpi : public chase::Chase<T> {
     //        &beta,                                      //
     //        workspace_ + (locked_ + offset) * N_, N_);
 
+//    if(rank_ == 0) std::cout << "begin HEMM" << std::endl;
     gemm_->apply(alpha, beta, offset, block);
+//    if(rank_ == 0) std::cout << "end HEMM" << std::endl;
+
     std::swap(approxV_, workspace_);
   };
 
