@@ -149,7 +149,7 @@ class ChaseConfig {
       defines, together with `nev`, the search space. All the other
       private members of the class are initialized using default values
       either specified directly (e.g. `max_iter`) or specified using a
-      function that is part of the ChaseConfig namespeace (e.g. `initMaxDeg`).
+      function that is part of the ChaseConfig namespace (e.g. `initMaxDeg`).
 
       \param _N Size of the square matrix defining the eigenproblem.
       \param _nev Number of desired extremal eigenvalues.
@@ -171,13 +171,43 @@ class ChaseConfig {
     tol_ = chase_config_helper::initTolerance<T>(approx_, optimization_);
   }
 
+  //! Returns the value of the `approx_` flag.
+  /*! The value of the `approx_` flag indicates if ChASE has been used
+      with the engagement of approximate solutions as it is typical
+      when solving for sequences of eigenvalue problems occurring in
+      Density Functional Theory.
+      \return The value of the `approx_` flag.
+   */
   bool UseApprox() const { return approx_; }
+
+  //! Sets the `approx_` flag  to either `'true'` or `'false'`.
+  /*! This function is used to change the value of `approx_` so that
+      the eigensolver can use approximate solutions inputed through a
+      matrix of initial vectors.
+      \param flag A boolean parameter which admits either a `'true'` or `'false'` value. 
+   */
   void SetApprox(bool flag) { approx_ = flag; }
 
+  //! Returns the value of the `optimization_` flag.
+  /*! The value of the `optimization_` flag indicates when ChASE
+      computes a polynomial degree optimized for each single desired
+      eigenpairs. The optimization minimizes the number of operations
+      required for the eigenpairs to have a residual which is just
+      below the specified tolerance threshold.
+      \return The value of the `optimization_` flag
+   */
   bool DoOptimization() const { return optimization_; }
+
+  //! Sets the `optimization_` flag to either `'true'` or `'false'`.
+  /*! This function is used to change the value of `optimization_` so
+      that the eigensolver minimizes the number of FLOPs needed to
+      reach convergence for the entire sought after subspace of the
+      spectrum.
+      \param flag A boolean parameter which admits either a `'true'` or `'false'` value.
+   */
   void SetOpt(bool flag) { optimization_ = flag; }
 
-  //! Gets the degree of the Chebyshev filter used by ChASE
+  //! Returns the degree of the Chebyshev filter used by ChASE
   /*!
       The value returned is the degree used by the filter when it is
       called (when ``optimization == 'true'`` this value is used only the
@@ -185,32 +215,58 @@ class ChaseConfig {
       \return The value used by the Chebyshev filter
    */
   std::size_t GetDeg() const { return deg_; }
+  
   //! Set the value of the initial degree of the Chebyshev filter.
   /*!
-      Depending if the `optimization` parameter is set to `false` or `true`
-      (it is `true` by default), the value of `_deg` is used by the Chebyshev
-      filter respectively every time or just the first time it is called.
+      Depending if the `optimization` parameter is set to `false` or
+      `true`, the value of `_deg` is used by the Chebyshev filter
+      respectively every time or just the first time it is called.
       \param _deg Value set by the expert user and should in general be between *10* and *25*. The default value is *20*. If a odd value is inserted, the function makes it even. This is necessary due to the swapping of the matrix of vectors within the filter. It is strongly suggested to avoid values above the higher between *40* and the value returned by `GetMaxDeg`.
-      \sa GetMaxDeg
    */
   void SetDeg(std::size_t _deg) {
     deg_ = _deg;
     deg_ += deg_ % 2;
   }
 
+  //! Returns the threshold value of the eigenpair's residual tolerance.
+  /*! The value of the tolerance is used as threshold for all the
+      residuals of the desired eigenpaits. Whenever an eigenpair's
+      residual decreases below such a value it is declared as
+      converged, and is consequently deflated and locked.
+      \return The value of the `tol_` parameter.
+   */
   double GetTol() const { return tol_; }
+
+  //! Sets the value of the threshold of the eigenpair's residual tolerance.
+  /*! The value of the tolerance should be set carefully keeping in
+      mind that the residual of the eigenpairs is limited by the
+      accuracy of the dense eigensolver used within the Rayleigh-Ritz
+      procedure. As such it should hardly be set below *1e-14* in
+      double precision. As a rule of thumb a minimum value of *1e-04*
+      and *1e-08* should be used respectively in single and double
+      precision.
+      \param _tol A type double number usually specified in scientific notation (e.g. *1e-10*).
+   */
   void SetTol(double _tol) { tol_ = _tol; }
 
+  //! Returns the integer value of the maximum degree used by the polynomial filter.
+  /*! The value of `max_deg_` indicates the upper bound for the degree
+      of the polynomial for any of the vectors filtered. Such bound is
+      important to avoid potential numerical instabilities that may
+      occur and impede the convergence of the eigenpairs,
+      expecially the one close to the upper end of the desired
+      subspace of the spectrum.
+      \return The value of the maximum degree of the Chebyshev filter.
+   */
   std::size_t GetMaxDeg() const { return max_deg_; }
-  //! Set the maximum value of the degree of the Chebyshev filter
-  /*!
-      When ``optimization = true``, the Chebyshev filter degree is
+  
+  //! Sets the maximum value of the degree of the Chebyshev filter
+  /*! When ``optimization = true``, the Chebyshev filter degree is
       computed automatically. Because the computed values could be
       quite large for eigenvectors at the end of the sought after
       spectrum, a maximum value is set to avoid numerical
       instabilities that may trigger eigenpairs divergence.
-
-      \param _maxDeg This value should be set by the expert user. It is set to 36 by default. It can be lowered in case of the onset of early instabilities but it should not be lower than 20-25 to avoid the filter becomes ineffective. It can be increased whenever it is known there is a spectral gap between the value of `nev_` and the value of `nev_ + nex_`. It is strongly suggested to never exceed the value of 70.  
+      \param _maxDeg This value should be set by the expert user. It is set to *36* by default. It can be lowered in case of the onset of early instabilities but it should not be lower than *20-25* to avoid the filter becomes ineffective. It can be increased whenever it is known there is a spectral gap between the value of `nev_` and the value of `nev_ + nex_`. It is strongly suggested to never exceed the value of *70*.  
    */
   void SetMaxDeg(std::size_t _maxDeg) {
     max_deg_ = _maxDeg;
@@ -287,7 +343,7 @@ class ChaseConfig {
 
   //! An optional parameter indicating the degree of the polynomial filter.
   /*!
-      When the flag `optimization` is set to `'true'`, its value is
+      When the flag `optimization_` is set to `'true'`, its value is
       used only the first first time the filter routine is
       called. Otherwise this value is used for each vector and all
       subsequent subspace iterations. This variable is initialized by
@@ -304,7 +360,7 @@ class ChaseConfig {
 
   //! An optional parameter that limits from above the value of the allowed polynomial filter.
   /*!
-      When the flag `optimization` is set to `'true'`, it avoids that
+      When the flag `optimization_` is set to `'true'`, it avoids that
       a vector is filtered with a too high of a degree which may
       introduce numerical instabilities and slow or even impede
       convergence. This variable is initialized by the
@@ -315,7 +371,7 @@ class ChaseConfig {
 
   //! An optional parameter augmenting of few units the polynomial degree automatic computed by ChASE.
   /*!
-      This parameter is exclusively used when the flag `optimization`
+      This parameter is exclusively used when the flag `optimization_`
       is set to `'true'` and should never be larger than a single
       digit. This variable is initialized by the constructor. Its
       default value is set to *2*.
