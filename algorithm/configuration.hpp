@@ -261,7 +261,7 @@ class ChaseConfig {
   std::size_t GetMaxDeg() const { return max_deg_; }
   
   //! Sets the maximum value of the degree of the Chebyshev filter
-  /*! When ``optimization = true``, the Chebyshev filter degree is
+  /*! When `optimization = 'true'`, the Chebyshev filter degree is
       computed automatically. Because the computed values could be
       quite large for eigenvectors at the end of the sought after
       spectrum, a maximum value is set to avoid numerical
@@ -273,22 +273,116 @@ class ChaseConfig {
     max_deg_ += max_deg_ % 2;
   }
 
+  //! Returns the extra degree added to the polynomial filter.
+  /*! When `optimization = 'true'`, each vector is filtered with a
+      polynomial of a given calculated degree. Because the degree is
+      predicted based on an heuristic fomula, such degree is augmented
+      by a small value to ensure that the residual of the
+      corresponding vector will be almost always lower than the
+      required threshold tolerance.
+      \return The extra value added to a computed vector of polynomial degrees. 
+   */
   std::size_t GetDegExtra() const { return deg_extra_; }
+
+  //! Sets the value of the extra degree added to the polynomial filter.
+  /*! The value of `degExtra` should be a single digit number usually
+      not exceeding *5* or *6*. The expert user can modify the default
+      value (which is *2*) in those cases where the heuristic to
+      automatically compute the vector of optimal degrees seems to
+      underestimate the value of the degree necessary for the
+      eigenpairs to be declared converged.
+      \param degExtra Value of the extra degree.
+   */
   void SetDegExtra(std::size_t degExtra) { deg_extra_ = degExtra; }
 
+  //! Returns the value of the maximum number of subspace iterations allowed within ChASE.
+  /*! In order to avoid that the eigensolver would runoff unchecked,
+      ChASE is given a upper bound on the number of subspace iteration
+      it can execute. This is a normal safety mechanism when the
+      algorithm fails to converge some eigenpairs whose residuals
+      would continue to oscillate without above the tolerance
+      threshold.
+      \return The value of the maximum number of subspace iterations allowed.
+   */
   std::size_t GetMaxIter() const { return max_iter_; }
+
+  //! Sets the value of the maximum number of subspace iterations within ChASE.
+  /*! Typically ChASE requires a number of single digit iterations to
+      converge. In extreme cases such number can grow up to *10* or *12*. 
+      An increasing number of iterations usually implies that
+      the eigensolver is not used for the intended purpose or that the
+      spectrum of eigenproblem tackled is particularly
+      problematic. The default value of `maxIter` is set to *25*.
+      \param maxIter Value of the maximum number of subspace iterations.
+   */ 
   void SetMaxIter(std::size_t maxIter) { max_iter_ = maxIter; }
 
+  //! Returns the number of Lanczos iterations executed by ChASE.
+  /*! In order to estimate the spectral bounds, ChASE executes a
+      limited number of Lanczos steps. These steps are then used to
+      compute a spectral estimate based on the Density of State (DoS)
+      algorithm.
+      \return The total number of the Lanczos iterations used by the DoS algorithm.
+   */
   std::size_t GetLanczosIter() const { return lanczos_iter_; }
+
+  //! Sets the number of Lanczos iterations executed by ChASE.
+  /*! For the DoS algorithm to work effectively without overburdening
+      the eigensolver, the number of Lanczos iteration should be not
+      less than *10* but also no more than *100* . ChASE does not need
+      very precise spectral estimates because at each iteration such
+      estimates are automatically improved by the approximate spectrum
+      computed. This is the reason why the default value of
+      `lanczos_iter_` is *25*.
+      \param lanczosIter Value of the total number of Lanczos iterations executed by ChASE. 
+   */
   void SetLanczosIter(std::size_t lanczosIter) { lanczos_iter_ = lanczosIter; }
 
+  //! Returns the number of stochastic vectors used for the spectral estimates.
+  /*! After having executed a number of Lanczos steps, ChASE uses a
+      cheap and efficient estimator to calculate the value of the upper
+      extremum of the search space. Such an estimator uses a small
+      number of stochastic vectors.
+      \return Number of stochastic vectors used by ChASE for the spectral estimate.
+   */
   std::size_t GetNumLanczos() const { return num_lanczos_; }
+
+  //! Sets the number of stochastic vectors used for the spectral estimates.
+  /*! The stochastic estimator used by ChASE is based on a cheap and
+      efficient DoS algorithm. Because ChASE does not need precise
+      estimates of the upper extremum of the search space, the number
+      of vectors used is quite small. The default value used is
+      *4*. The expert user can change the value to a larger number (it
+      is not suggested to use a smaller value) and pay a slightly
+      higher computing cost. It is not suggested to exceed a value for
+      `num_lanczos` higher than *20*.
+      \param lanczosIter Number of stochastic vectors used by ChASE.
+   */
   void SetNumLanczos(std::size_t lanczosIter) { num_lanczos_ = lanczosIter; }
 
+  //! Returns the size of the eigenproblem
+  /*! This function returns the size of the matrix defining the
+      standard or the generalized eigenvalue problem.
+      \return Rank of the matrix.
+   */
   std::size_t GetN() const { return N_; }
 
+  //! Returns the number of desired eigenpairs.
+  /*! The number of sought after eigenpairs as also specified in the
+      constructor ChASEConfig.
+      \return Number of desired eigenpairs.
+   */
   std::size_t GetNev() const { return nev_; }
 
+  //! Returns the number of extra eigenpairs that are used to augment the search subspace.
+  /*! ChASE effectively uses an enlarged subspace to improve the
+      convergence of the algorithm. With a very small value of `nex_`,
+      the eigenpairs at the end of the desired interval may have hard
+      time to converge. By including a small but substantial number of
+      extra values (in most case no more than 20% of `nev_`), ensures
+      that ChASE converges smoothly without stagnating.
+      \return Number of extra eigenpairs augmenting the search space.
+   */
   std::size_t GetNex() const { return nex_; }
 
  private:
