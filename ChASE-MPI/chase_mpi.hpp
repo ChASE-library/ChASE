@@ -21,7 +21,6 @@
 #include "blas_templates.hpp"
 #include "chase_mpi_matrices.hpp"
 
-#include "./impl/chase_mpihemm.hpp"
 #include "./impl/chase_mpidla.hpp"
 
 #include <omp.h>
@@ -29,10 +28,11 @@
 namespace chase {
 namespace mpi {
 
-template <template <typename> class MF,template <typename> class DLA, class T>
+template <template <typename> class MF, class T>
 class ChaseMpi : public chase::Chase<T> {
  public:
-  // case 1: no MPI
+  // case 1:
+  // todo? take all arguments of matrices and entirely wrap it?
   ChaseMpi(std::size_t N, std::size_t nev, std::size_t nex, T *V1 = nullptr,
            Base<T> *ritzv = nullptr, T *H = nullptr, T *V2 = nullptr,
            Base<T> *resid = nullptr)
@@ -43,9 +43,8 @@ class ChaseMpi : public chase::Chase<T> {
         locked_(0),
         config_(N, nev, nex),
         matrices_(N_, nev_ + nex_, V1, ritzv, H, V2, resid),
-        gemm_(new MF<T>(matrices_, N_, nev_ + nex_)), 
-        dla_(new ChaseMpiDLA<T>(new DLA<T>()))
-  {
+        dla_(new MF<T>(matrices_, N_, nev_ + nex_)) {
+
     ritzv_ = matrices_.get_Ritzv();
     resid_ = matrices_.get_Resid();
 
@@ -54,10 +53,10 @@ class ChaseMpi : public chase::Chase<T> {
 
     approxV_ = matrices_.get_V1();
     workspace_ = matrices_.get_V2();
-    H_ = gemm_->get_H();
+    H_ = dla_->get_H();
   }
 
-  // case 2: MPI   
+  // case 2: MPI
   ChaseMpi(ChaseMpiProperties<T> *properties, T *V1 = nullptr,
            Base<T> *ritzv = nullptr, T *V2 = nullptr, Base<T> *resid = nullptr)
       : N_(properties->get_N()),
@@ -68,10 +67,8 @@ class ChaseMpi : public chase::Chase<T> {
         properties_(properties),
         matrices_(std::move(
             properties_.get()->create_matrices(V1, ritzv, V2, resid))),
-        gemm_(new ChaseMpiHemm<T>(properties_.get(),
-                                  new MF<T>(properties_.get()))), 
-	dla_(new ChaseMpiDLA<T>(new DLA<T>(properties_.get())))
-  {
+        dla_(new ChaseMpiDLA<T>(properties_.get(),
+                                  new MF<T>(properties_.get()))) {
     int init;
     MPI_Initialized(&init);
     if (init) MPI_Comm_rank(MPI_COMM_WORLD, &rank_);
@@ -84,7 +81,6 @@ class ChaseMpi : public chase::Chase<T> {
     approxV_ = V_;
     workspace_ = W_;
 
-    // H_ = gemm_->get_H();
     static_assert(is_skewed_matrixfree<MF<T>>::value,
                   "MatrixFreeChASE Must be skewed");
   }
@@ -105,7 +101,7 @@ class ChaseMpi : public chase::Chase<T> {
 
   void Start() {
     locked_ = 0;
-    gemm_->Start();
+    dla_->Start();
   }
   void End() {}
 
@@ -115,14 +111,10 @@ class ChaseMpi : public chase::Chase<T> {
 
   void Shift(T c, bool isunshift = false) override {
     if (!isunshift) {
-      gemm_->preApplication(approxV_, locked_, nev_ + nex_ - locked_);
+      dla_->preApplication(approxV_, locked_, nev_ + nex_ - locked_);
     }
 
-    // for (std::size_t i = 0; i < N_; ++i) {
-    //   H_[i + i * N_] += c;
-    // }
-
-    gemm_->shiftMatrix(c, isunshift);
+    dla_->shiftMatrix(c, isunshift);
   };
 
   // todo this is wrong we want the END of V
@@ -134,28 +126,16 @@ class ChaseMpi : public chase::Chase<T> {
   };
 
   void HEMM(std::size_t block, T alpha, T beta, std::size_t offset) override {
-    // t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans,  //
-    //        N_, block, N_,                              //
-    //        &alpha,                                     //
-    //        H_, N_,                                     //
-    //        approxV_ + (locked_ + offset) * N_, N_,     //
-    //        &beta,                                      //
-    //        workspace_ + (locked_ + offset) * N_, N_);
-
-//    if(rank_ == 0) std::cout << "begin HEMM" << std::endl;
-    gemm_->apply(alpha, beta, offset, block);
-//    if(rank_ == 0) std::cout << "end HEMM" << std::endl;
-
+    dla_->apply(alpha, beta, offset, block);
     std::swap(approxV_, workspace_);
   };
 
   void Hv(T alpha);
 
   void QR(std::size_t fixednev) override {
-    gemm_->postApplication(approxV_, nev_ + nex_ - locked_);
+    dla_->postApplication(approxV_, nev_ + nex_ - locked_);
 
     std::size_t nevex = nev_ + nex_;
-
     // we don't need this, as we copy to workspace when locking
     // std::memcpy(workspace_, approxV_, N_ * fixednev * sizeof(T));
 
@@ -165,16 +145,13 @@ class ChaseMpi : public chase::Chase<T> {
   };
 
   void RR(Base<T> *ritzv, std::size_t block) override {
-    // std::size_t block = nev+nex - fixednev;
-
-//    T *A = new T[block * block];  // For LAPACK.
 
     T One = T(1.0);
     T Zero = T(0.0);
 
-    gemm_->preApplication(approxV_, locked_, block);
-    gemm_->apply(One, Zero, 0, block);
-    gemm_->postApplication(workspace_, block);
+    dla_->preApplication(approxV_, locked_, block);
+    dla_->apply(One, Zero, 0, block);
+    dla_->postApplication(workspace_, block);
 
     // W <- H*V
     // t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans,  //
@@ -188,9 +165,9 @@ class ChaseMpi : public chase::Chase<T> {
     dla_->RR_kernel(N_, block, approxV_, locked_, workspace_, One, Zero, ritzv);
 
     std::swap(approxV_, workspace_);
+
     // we can swap, since the locked part were copied over as part of the QR
 
- //   delete[] A;
   };
 
   void Resd(Base<T> *ritzv, Base<T> *resid, std::size_t fixednev) override {
@@ -198,9 +175,9 @@ class ChaseMpi : public chase::Chase<T> {
     T beta = T(0.0);
     std::size_t unconverged = (nev_ + nex_) - fixednev;
 
-    gemm_->preApplication(approxV_, locked_, unconverged);
-    gemm_->apply(alpha, beta, 0, unconverged);
-    gemm_->postApplication(workspace_, unconverged);
+    dla_->preApplication(approxV_, locked_, unconverged);
+    dla_->apply(alpha, beta, 0, unconverged);
+    dla_->postApplication(workspace_, unconverged);
 
     // t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans,  //
     //        N_, unconverged, N_,                        //
@@ -272,7 +249,7 @@ class ChaseMpi : public chase::Chase<T> {
     for (std::size_t k = 0; k < m; ++k) {
       // t_gemv(CblasColMajor, CblasNoTrans, N_, N_, &One, H_, N_, v1, 1, &Zero,
       // w, 1);
-      gemm_->applyVec(v1, w);
+      dla_->applyVec(v1, w);
       alpha = dla_->dot(n, v1, 1, w, 1);
 
       alpha = -alpha;
@@ -362,7 +339,7 @@ class ChaseMpi : public chase::Chase<T> {
 
       // t_gemv(CblasColMajor, CblasNoTrans, n, n, &One, H_, n, v1, 1, &Zero, w,
       // 1);
-      gemm_->applyVec(v1, w);
+      dla_->applyVec(v1, w);
 
       // std::cout << "lanczos Av\n";
       // for (std::size_t ll = 0; ll < 2; ++ll)
@@ -462,9 +439,9 @@ class ChaseMpi : public chase::Chase<T> {
       dla_->scal(N_, &eigval, workspace_ + ttz * N_, 1);
     }
 
-    gemm_->preApplication(approxV_, workspace_, 0, nev_);
-    gemm_->apply(one, one, 0, nev_);
-    gemm_->postApplication(workspace_, nev_);
+    dla_->preApplication(approxV_, workspace_, 0, nev_);
+    dla_->apply(one, one, 0, nev_);
+    dla_->postApplication(workspace_, nev_);
 
     // t_hemm(CblasColMajor, CblasLeft, CblasLower,  //
     //        N_, nev_,                              //
@@ -494,7 +471,7 @@ class ChaseMpi : public chase::Chase<T> {
 
     dla_->gemm_large(CblasColMajor, CblasConjTrans, CblasNoTrans, nev_, nev_, N_, &one,
            &*approxV_, N_, &*approxV_, N_, &neg_one, &unity[0], nev_);
-    Base<T> norm = dla_lange('M', nev_, nev_, &unity[0], nev_);
+    Base<T> norm = dla_->lange('M', nev_, nev_, &unity[0], nev_);
     return norm;
   }
 
@@ -504,20 +481,20 @@ class ChaseMpi : public chase::Chase<T> {
   }
 #endif
 
-  T *GetMatrixPtr() { return gemm_->get_H(); }
-  std::size_t get_mblocks() {return gemm_->get_mblocks();}
-  std::size_t get_nblocks() {return gemm_->get_nblocks();}
-  std::size_t get_m() {return gemm_->get_m();}
-  std::size_t get_n() {return gemm_->get_n();}
-  int *get_coord() {return gemm_->get_coord();}
+  T *GetMatrixPtr() { return dla_->get_H(); }
+  std::size_t get_mblocks() {return dla_->get_mblocks();}
+  std::size_t get_nblocks() {return dla_->get_nblocks();}
+  std::size_t get_m() {return dla_->get_m();}
+  std::size_t get_n() {return dla_->get_n();}
+  int *get_coord() {return dla_->get_coord();}
   void get_offs_lens(std::size_t* &r_offs, std::size_t* &r_lens, std::size_t* &r_offs_l, 
 		  std::size_t* &c_offs, std::size_t* &c_lens, std::size_t* &c_offs_l){
-      gemm_->get_offs_lens(r_offs, r_lens, r_offs_l, c_offs, c_lens, c_offs_l);
+      dla_->get_offs_lens(r_offs, r_lens, r_offs_l, c_offs, c_lens, c_offs_l);
   }
 
   void GetOff(std::size_t *xoff, std::size_t *yoff, std::size_t *xlen,
               std::size_t *ylen) {
-    gemm_->get_off(xoff, yoff, xlen, ylen);
+    dla_->get_off(xoff, yoff, xlen, ylen);
   }
 
   Base<T> *GetResid() { return resid_; }
@@ -540,8 +517,8 @@ class ChaseMpi : public chase::Chase<T> {
 
   std::unique_ptr<ChaseMpiProperties<T>> properties_;
   ChaseMpiMatrices<T> matrices_;
-  std::unique_ptr<ChaseMpiHemmInterface<T>> gemm_;
   std::unique_ptr<ChaseMpiDLAInterface<T>> dla_;
+
   ChaseConfig<T> config_;
 };
 

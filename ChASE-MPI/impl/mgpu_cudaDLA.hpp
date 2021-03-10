@@ -38,18 +38,25 @@ namespace chase {
 	namespace mpi {
 
 		template <class T>
-		class mgpu_cudaHemm {
+		class mgpu_cudaDLA {
 
 			public:
 
 				typedef T value_type;
 
 				/* Constructor - sets GPUs, allocate device arrays, create cublas handles and streams */
-				mgpu_cudaHemm() {};
+				mgpu_cudaDLA() {};
 
-				mgpu_cudaHemm(std::size_t m, std::size_t n, std::size_t maxBlock) :
-				m_(m), n_(n), maxBlock_(maxBlock) {
+				mgpu_cudaDLA(ChaseMpiProperties<T>* matrix_properties, 
+					      std::size_t m, 
+					      std::size_t n, 
+					      std::size_t maxBlock) :
+					      m_(m), n_(n), maxBlock_(maxBlock) {
 				
+					N_ = matrix_properties->get_N();
+        				nev_ = matrix_properties->GetNev();	
+        				nex_ = matrix_properties->GetNex();	
+
 					MPI_Comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, &shmcomm);
 					MPI_Comm_size(shmcomm, &shmsize_);
 					MPI_Comm_rank(shmcomm, &shmrank_);
@@ -65,12 +72,19 @@ namespace chase {
 					handle_ = (cublasHandle_t*) malloc(num_devices_per_rank * sizeof(cublasHandle_t));
 					stream_ = (cudaStream_t*) malloc(num_devices_per_rank * sizeof(cudaStream_t));
 
+					cusolverH_ = (cusolverDnHandle_t*) malloc(num_devices_per_rank * sizeof(cusolverDnHandle_t));
+
+                                        stream2_ = (cudaStream_t*) malloc(num_devices_per_rank * sizeof(cudaStream_t));
+
 					/* Populate list of devices, create handles and streams for each device */
 					for (int dev=0; dev<num_devices_per_rank; dev++) {
 						cuda_exec(cudaSetDevice(shmrank_*num_devices_per_rank + dev));
 						cublasCreate(&handle_[dev]);
 						cuda_exec(cudaStreamCreate(&stream_[dev]));
 						cublasSetStream(handle_[dev], stream_[dev]);
+						cusolverDnCreate(&cusolverH_[dev]);
+                                                cuda_exec(cudaStreamCreate(&stream2_[dev]));			
+                                                cusolverDnSetStream(cusolverH_[dev], stream2_[dev]);						
 					}
 
 					/* Allocate arrays to hold pointers to memory allocations on each device for
@@ -154,6 +168,39 @@ namespace chase {
 					//cuda_exec(cudaEventCreate(&start));
 					//cuda_exec(cudaEventCreate(&stop));
 
+					//QR memory
+					cudaSetDevice(shmrank_*num_devices_per_rank);
+				        cuda_exec(cudaMalloc ((void**)&devInfo_, sizeof(int)));
+        				cuda_exec(cudaMalloc ((void**)&d_V_  , sizeof(T)*N_*(nev_ + nex_)));
+        				cuda_exec(cudaMalloc ((void**)&d_return_  , sizeof(T)*(nev_ + nex_)));
+				        int lwork_geqrf = 0;
+        				int lwork_orgqr = 0;
+        				cudaSetDevice(shmrank_*num_devices_per_rank);
+					cusolver_status_ = cusolverDnTgeqrf_bufferSize(
+            				  cusolverH_[0],
+            				  N_,
+            				  nev_ + nex_,
+            				  d_V_,
+            				  N_,
+            				  &lwork_geqrf);
+        				assert (cusolver_status_ == CUSOLVER_STATUS_SUCCESS);
+        				cudaSetDevice(shmrank_*num_devices_per_rank);
+					cusolver_status_ = cusolverDnTgqr_bufferSize(
+            				  cusolverH_[0],
+            				  N_,
+            				  nev_ + nex_,
+            				  nev_ + nex_,
+            				  d_V_,
+            				  N_,
+            				  d_return_,
+            				  &lwork_orgqr);
+        			        assert (cusolver_status_ == CUSOLVER_STATUS_SUCCESS);
+
+        				lwork_ = (lwork_geqrf > lwork_orgqr)? lwork_geqrf : lwork_orgqr;
+
+					cudaSetDevice(shmrank_*num_devices_per_rank);
+        				cuda_exec(cudaMalloc((void**)&d_work_, sizeof(T)*lwork_));
+
 					/* Set time collectors to zero */
 					time_copy_H = std::chrono::milliseconds::zero(); 
 					time_copy_W = std::chrono::milliseconds::zero();
@@ -165,15 +212,18 @@ namespace chase {
 				}
 
 				/* Remove local variables and free arrays */
-				~mgpu_cudaHemm() { 
+				~mgpu_cudaDLA() { 
 
 					for (int dev=0; dev<num_devices_per_rank; dev++) {
 						cudaStreamDestroy(stream_[dev]);
+                                                cudaStreamDestroy(stream2_[dev]);
 						cublasDestroy(handle_[dev]);
 						cudaFree(H_[dev]);
 						cudaFree(B_[dev]);
 						cudaFree(IMT_[dev]);
 						cudaFree(WRKSPACE_[dev]);
+				   	        if (cusolverH_[dev]) cusolverDnDestroy(cusolverH_[dev]);
+
 					}
 					free(B_);
 					free(IMT_);
@@ -188,6 +238,11 @@ namespace chase {
 					free(pitchV);
 					free(pitchW);
 
+					if (devInfo_) cudaFree(devInfo_);
+        				if (d_V_) cudaFree(d_V_);
+					if (d_return_) cudaFree(d_return_);
+        				if (d_work_) cudaFree(d_work_);	
+					
 					//std::cout << "HEMM timings: " << std::endl;
 					//std::cout << "Copy H   = " << time_copy_H.count()/1000 << " sec" << std::endl;
 					//std::cout << "Copy V   = " << time_copy_V.count()/1000 << " sec" << std::endl;
@@ -624,6 +679,103 @@ namespace chase {
 					this->switch_pointers();
 				}
 
+				void gegqr(std::size_t N, std::size_t nevex, T * approxV, std::size_t LDA){
+				    
+				    cudaSetDevice(shmrank_*num_devices_per_rank);
+			  	    cuda_exec(cudaMemcpy(d_V_, approxV, sizeof(T)*N*nevex, cudaMemcpyHostToDevice));
+			            cudaSetDevice(shmrank_*num_devices_per_rank);
+			   	    cusolver_status_ = cusolverDnTgeqrf(
+            				cusolverH_[0],
+            				N,
+            				nevex,
+            				d_V_,
+            				LDA,
+            				d_return_,
+            				d_work_,
+            				lwork_,
+            				devInfo_);
+        			    assert(CUSOLVER_STATUS_SUCCESS == cusolver_status_);
+        			    cudaSetDevice(shmrank_*num_devices_per_rank);
+				    cusolver_status_ = cusolverDnTgqr(
+            				cusolverH_[0],
+            				N,
+            				nevex,
+            				nevex,
+            				d_V_,
+            				LDA,
+            				d_return_,
+            				d_work_,
+           				lwork_,
+            			        devInfo_);
+        			    assert(CUSOLVER_STATUS_SUCCESS == cusolver_status_);
+        			    cudaSetDevice(shmrank_*num_devices_per_rank);
+				    cuda_exec(cudaMemcpy(approxV, d_V_, sizeof(T)*N*nevex, cudaMemcpyDeviceToHost));
+
+				}
+
+
+ 				 void RR_kernel(std::size_t N, 
+						std::size_t block, 
+						T *approxV, 
+						std::size_t locked, 
+						T *workspace, 
+						T One, 
+						T Zero, 
+						Base<T> *ritzv)
+				 {
+				     T *A = new T[block * block];
+        			     T *d_A_ = NULL;
+        			     T *d_W_ = NULL;
+			             cudaSetDevice(shmrank_*num_devices_per_rank);	
+        			     cuda_exec(cudaMalloc ((void**)&d_W_, sizeof(T) * N * block));
+        			     cuda_exec(cudaMalloc ((void**)&d_A_, sizeof(T) * block * block));
+       				     cudaSetDevice(shmrank_*num_devices_per_rank);
+				     cuda_exec(cudaMemcpy(d_V_, approxV + locked * N, sizeof(T)* N * block, cudaMemcpyHostToDevice));
+        			     cuda_exec(cudaMemcpy(d_W_, workspace + locked * N, sizeof(T)* N * block, cudaMemcpyHostToDevice));
+        			     cudaSetDevice(shmrank_*num_devices_per_rank);
+
+				     cublas_status_ = cublasTgemm(
+	  				handle_[0],
+	  				CUBLAS_OP_C,
+	  				CUBLAS_OP_N,
+	  				block,
+	  				block,
+	  				N,
+	  				&One,
+          				d_V_, N,
+          				d_W_, N,
+          				&Zero,
+          				d_A_, 
+	  				block);
+        			     assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
+        			     cuda_exec(cudaMemcpy(A, d_A_, sizeof(T)* block * block, cudaMemcpyDeviceToHost));	
+        			     t_heevd(LAPACK_COL_MAJOR, 'V', 'L', block, A, block, ritzv);
+        			     cuda_exec(cudaMemcpy(d_A_, A, sizeof(T)* block * block, cudaMemcpyHostToDevice));
+
+				     cudaSetDevice(shmrank_*num_devices_per_rank);
+      				     cublas_status_ = cublasTgemm(
+            				handle_[0],
+            				CUBLAS_OP_N,
+            				CUBLAS_OP_N,
+            				N,
+            				block,
+            				block,
+            				&One,
+            				d_V_, N,
+            				d_A_, block,
+            				&Zero,
+            				d_W_,
+            				N);
+      				    assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
+			            cudaSetDevice(shmrank_*num_devices_per_rank);
+  				    cuda_exec(cudaMemcpy(approxV + locked * N, d_V_, sizeof(T)* N * block, cudaMemcpyDeviceToHost));
+      				    cuda_exec(cudaMemcpy(workspace + locked * N, d_W_, sizeof(T)* N * block, cudaMemcpyDeviceToHost));
+
+      				    if (d_A_) cudaFree(d_A_);
+      				    if (d_W_) cudaFree(d_W_);
+
+				 }
+
 			private:
 
 				/// Dimension of the input matrices H (m*n), W(m*maxBlock) and V(n*maxBlock)
@@ -631,6 +783,9 @@ namespace chase {
 				std::size_t m_;
 				std::size_t maxBlock_;
 				std::size_t max_dim_;
+			  	std::size_t nev_;
+  				std::size_t nex_;
+                                std::size_t N_;
 
 				/// Storage spaces
 				T** B_ = nullptr;
@@ -700,6 +855,17 @@ namespace chase {
 
 				/// Cublas error
 				cublasStatus_t cublasError;
+
+				cublasStatus_t cublas_status_ = CUBLAS_STATUS_SUCCESS;
+        			cusolverStatus_t cusolver_status_ = CUSOLVER_STATUS_SUCCESS;
+				cusolverDnHandle_t *cusolverH_ = nullptr;
+                                cudaStream_t *stream2_ = nullptr;
+
+				int *devInfo_ = NULL;
+      				T *d_V_ = NULL;
+				T *d_return_ = NULL;
+				T *d_work_ = NULL;
+        			int lwork_ = 0;
 
 				/// Return the number of rows of the tile with row-index 'tile_position'
 				int get_tile_size_row (int tile_position) {

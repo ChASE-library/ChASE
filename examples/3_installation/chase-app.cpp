@@ -6,15 +6,13 @@
 #include "algorithm/performance.hpp"
 #include "ChASE-MPI/chase_mpi.hpp"
 
-#include "ChASE-MPI/impl/chase_mpihemm_blas.hpp"
-#include "ChASE-MPI/impl/chase_mpihemm_blas_seq.hpp"
-#include "ChASE-MPI/impl/chase_mpihemm_blas_seq_inplace.hpp"
-
-#include "ChASE-MPI/impl/chase_mpidla_blas_lapack.hpp"
+#include "ChASE-MPI/impl/chase_mpidla_blaslapack.hpp"
+#include "ChASE-MPI/impl/chase_mpidla_blaslapack_seq.hpp"
+#include "ChASE-MPI/impl/chase_mpidla_blaslapack_seq_inplace.hpp"
 
 #ifdef DRIVER_BUILD_MGPU 
-#include "ChASE-MPI/impl/chase_mpihemm_mgpu.hpp"
-#include "ChASE-MPI/impl/chase_mpihemm_cuda_seq.hpp"
+#include "ChASE-MPI/impl/chase_mpidla_mgpu.hpp"
+#include "ChASE-MPI/impl/chase_mpidla_cuda_seq.hpp"
 #endif
 
 using T = std::complex<double>;
@@ -22,9 +20,9 @@ using namespace chase;
 using namespace chase::mpi;
 
 #ifdef DRIVER_BUILD_MGPU
-typedef ChaseMpi<ChaseMpiHemmMultiGPU, ChaseMpiDLABlasLapack, T> CHASE;
+typedef ChaseMpi<ChaseMpiDLAMultiGPU, T> CHASE;
 #else
-typedef ChaseMpi<ChaseMpiHemmBlas, ChaseMpiDLABlasLapack, T> CHASE;
+typedef ChaseMpi<ChaseMpiDLABlaslapack, T> CHASE;
 #endif
 
 int main(int argc, char** argv)

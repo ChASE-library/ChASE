@@ -22,8 +22,8 @@
 
 #include "blas_cuda_wrapper.hpp"
 #include "blas_templates.hpp"
-#include "chase_mpihemm_interface.hpp"
-#include "mgpu_cudaHemm.hpp"
+#include "chase_mpidla_interface.hpp"
+#include "mgpu_cudaDLA.hpp"
 
 void chase_zshift_mpi_matrix(std::complex<double>* A, std::size_t* off,
                              std::size_t n, std::size_t m, double shift,
@@ -38,9 +38,9 @@ namespace chase {
 namespace mpi {
 
 template <class T>
-class ChaseMpiHemmMultiGPU : public ChaseMpiHemmInterface<T> {
+class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
  public:
-  ChaseMpiHemmMultiGPU(ChaseMpiProperties<T>* matrix_properties) {
+  ChaseMpiDLAMultiGPU(ChaseMpiProperties<T>* matrix_properties) {
     n_ = matrix_properties->get_n();
     m_ = matrix_properties->get_m();
     N_ = matrix_properties->get_N();
@@ -73,7 +73,7 @@ class ChaseMpiHemmMultiGPU : public ChaseMpiHemmInterface<T> {
 	cuda_exec(cudaHostRegister((void*)orig_C_, m_*maxBlock*sizeof(T), cudaHostRegisterDefault));
 
 	/// Construct a new object for handling multi-GPU HEMM execution
-	mgpuHemm = new mgpu_cudaHemm<T>(m_, n_, maxBlock);
+	mgpuDLA = new mgpu_cudaDLA<T>(matrix_properties, m_, n_, maxBlock);
 
 	time_copy_H = std::chrono::milliseconds::zero(); 
 	time_copy_W = std::chrono::milliseconds::zero();
@@ -82,12 +82,12 @@ class ChaseMpiHemmMultiGPU : public ChaseMpiHemmInterface<T> {
 	time_apply_vec = std::chrono::milliseconds::zero();
   }
 
-  ~ChaseMpiHemmMultiGPU() {
+  ~ChaseMpiDLAMultiGPU() {
     cuda_exec(cudaHostUnregister(orig_H_));
     cuda_exec(cudaHostUnregister(orig_B_));
     cuda_exec(cudaHostUnregister(orig_C_));
     cuda_exec(cudaHostUnregister(orig_IMT_));
-    delete mgpuHemm;
+    delete mgpuDLA;
 
 #ifdef MGPU_TIMER
 	std::cout << "[MGPU_HEMM] Multi-GPU HEMM timings (per component): " << std::endl;
@@ -102,7 +102,7 @@ class ChaseMpiHemmMultiGPU : public ChaseMpiHemmInterface<T> {
 
   void preApplication(T* V, std::size_t locked, std::size_t block) {
     next_ = NextOp::bAc;
-	mgpuHemm->set_operation(next_);
+	mgpuDLA->set_operation(next_);
   }
 
   void preApplication(T* V, T* V2, std::size_t locked, std::size_t block) {
@@ -145,32 +145,32 @@ class ChaseMpiHemmMultiGPU : public ChaseMpiHemmInterface<T> {
 
 	/// Transfer block-vector to GPUs
 	auto start = high_resolution_clock::now();
-    mgpuHemm->distribute_V(buf_init, ldBufInit, block);
-	mgpuHemm->synchronizeAll();
+    mgpuDLA->distribute_V(buf_init, ldBufInit, block);
+	mgpuDLA->synchronizeAll();
 	auto stop = high_resolution_clock::now();
 	time_copy_V += stop - start;
 
 	/// Compute Hemm
 	start = high_resolution_clock::now();
-	mgpuHemm->computeHemm(block, alpha, beta);
-	mgpuHemm->synchronizeAll();
+	mgpuDLA->computeHemm(block, alpha, beta);
+	mgpuDLA->synchronizeAll();
 	stop = high_resolution_clock::now();
 	time_gemm += stop - start;
 
 	/// Return computed block-vector to CPU
 	start = high_resolution_clock::now();
-	mgpuHemm->return_W(buf_target, ldBufTarget, block);
-	mgpuHemm->synchronizeAll();
+	mgpuDLA->return_W(buf_target, ldBufTarget, block);
+	mgpuDLA->synchronizeAll();
 	stop = high_resolution_clock::now();
 	time_copy_W += stop - start;
 
-	mgpuHemm->switch_operation();
+	mgpuDLA->switch_operation();
 	//cudaProfilerStop();
   }
 
   bool postApplication(T* V, std::size_t block) {
     //cudaStreamSynchronize(stream_);
-	mgpuHemm->synchronizeAll();
+	mgpuDLA->synchronizeAll();
 
     return false;
   }
@@ -178,8 +178,8 @@ class ChaseMpiHemmMultiGPU : public ChaseMpiHemmInterface<T> {
   void shiftMatrix(T c, bool isunshift = false) {
 
 	auto start = high_resolution_clock::now();
-	mgpuHemm->distribute_H(orig_H_, m_);
-	mgpuHemm->synchronizeAll();
+	mgpuDLA->distribute_H(orig_H_, m_);
+	mgpuDLA->synchronizeAll();
 
     // chase_zshift_mpi_matrix(H_, off_, n_, m_, std::real(c), &stream_);
     // chase_zshift_matrix(H_, n_, std::real(c), &stream_);
@@ -224,6 +224,57 @@ class ChaseMpiHemmMultiGPU : public ChaseMpiHemmInterface<T> {
 
   void Start() override { copied_ = false; }
 
+  Base<T> lange(char norm, std::size_t m, std::size_t n, T* A, std::size_t lda){
+      return t_lange(norm, m, n, A, lda);
+  }
+
+  void gegqr(std::size_t N, std::size_t nevex, T * approxV, std::size_t LDA){
+      mgpuDLA->gegqr(N, nevex, approxV, LDA);
+  }
+
+  void axpy(std::size_t N, T * alpha, T * x, std::size_t incx, T *y, std::size_t incy){ }
+  void scal(std::size_t N, T *a, T *x, std::size_t incx){ }
+
+  Base<T> nrm2(std::size_t n, T *x, std::size_t incx){
+      return t_nrm2(n, x, incx);
+  }
+
+  T dot(std::size_t n, T* x, std::size_t incx, T* y, std::size_t incy){
+      return t_dot(n, x, incx, y, incy);
+  }
+
+  void gemm_small(CBLAS_LAYOUT Layout, CBLAS_TRANSPOSE transa,
+                         CBLAS_TRANSPOSE transb, std::size_t m,
+                         std::size_t n, std::size_t k, T* alpha,
+                         T* a, std::size_t lda, T* b,
+                         std::size_t ldb, T* beta, T* c, std::size_t ldc)
+  {}
+
+  void gemm_large(CBLAS_LAYOUT Layout, CBLAS_TRANSPOSE transa,
+                         CBLAS_TRANSPOSE transb, std::size_t m,
+                         std::size_t n, std::size_t k, T* alpha,
+                         T* a, std::size_t lda, T* b,
+                         std::size_t ldb, T* beta, T* c, std::size_t ldc)
+  {}
+
+  std::size_t stemr(int matrix_layout, char jobz, char range, std::size_t n,
+                    double* d, double* e, double vl, double vu, std::size_t il, std::size_t iu,
+                    int* m, double* w, double* z, std::size_t ldz, std::size_t nzc,
+                    int* isuppz, lapack_logical* tryrac){
+      return t_stemr<double>(matrix_layout, jobz, range, n, d, e, vl, vu, il, iu, m, w, z, ldz, nzc, isuppz, tryrac);
+  }
+
+  std::size_t stemr(int matrix_layout, char jobz, char range, std::size_t n,
+                    float* d, float* e, float vl, float vu, std::size_t il, std::size_t iu,
+                    int* m, float* w, float* z, std::size_t ldz, std::size_t nzc,
+                    int* isuppz, lapack_logical* tryrac){
+      return t_stemr<float>(matrix_layout, jobz, range, n, d, e, vl, vu, il, iu, m, w, z, ldz, nzc, isuppz, tryrac);
+  }
+
+  void RR_kernel(std::size_t N, std::size_t block, T *approxV, std::size_t locked, T *workspace, T One, T Zero, Base<T> *ritzv){
+      mgpuDLA->RR_kernel(N, block, approxV, locked, workspace, One, Zero, ritzv);
+  }
+
  private:
   enum NextOp { cAb, bAc };
 
@@ -233,7 +284,7 @@ class ChaseMpiHemmMultiGPU : public ChaseMpiHemmInterface<T> {
 
   NextOp next_;
 
-  mgpu_cudaHemm<T> *mgpuHemm;
+  mgpu_cudaDLA<T> *mgpuDLA;
 
   T* orig_B_;
   T* orig_C_;
@@ -258,7 +309,7 @@ class ChaseMpiHemmMultiGPU : public ChaseMpiHemmInterface<T> {
 };
 
 template <typename T>
-struct is_skewed_matrixfree<ChaseMpiHemmMultiGPU<T>> {
+struct is_skewed_matrixfree<ChaseMpiDLAMultiGPU<T>> {
   static const bool value = true;
 };
 
