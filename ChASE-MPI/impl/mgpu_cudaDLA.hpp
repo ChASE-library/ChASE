@@ -682,7 +682,7 @@ namespace chase {
 				void gegqr(std::size_t N, std::size_t nevex, T * approxV, std::size_t LDA){
 				    
 				    cudaSetDevice(shmrank_*num_devices_per_rank);
-			  	    cuda_exec(cudaMemcpy(d_V_, approxV, sizeof(T)*N*nevex, cudaMemcpyHostToDevice));
+			  	    cuda_exec(cudaMemcpyAsync(d_V_, approxV, sizeof(T)*N*nevex, cudaMemcpyHostToDevice, stream2_[0]));
 			            cudaSetDevice(shmrank_*num_devices_per_rank);
 			   	    cusolver_status_ = cusolverDnTgeqrf(
             				cusolverH_[0],
@@ -709,8 +709,7 @@ namespace chase {
             			        devInfo_);
         			    assert(CUSOLVER_STATUS_SUCCESS == cusolver_status_);
         			    cudaSetDevice(shmrank_*num_devices_per_rank);
-				    cuda_exec(cudaMemcpy(approxV, d_V_, sizeof(T)*N*nevex, cudaMemcpyDeviceToHost));
-
+				    cuda_exec(cudaMemcpyAsync(approxV, d_V_, sizeof(T)*N*nevex, cudaMemcpyDeviceToHost, stream2_[0]));
 				}
 
 
@@ -726,14 +725,14 @@ namespace chase {
 				     T *A = new T[block * block];
         			     T *d_A_ = NULL;
         			     T *d_W_ = NULL;
-			             cudaSetDevice(shmrank_*num_devices_per_rank);	
+                                     cudaDeviceSynchronize();
+				     cudaSetDevice(shmrank_*num_devices_per_rank);	
         			     cuda_exec(cudaMalloc ((void**)&d_W_, sizeof(T) * N * block));
         			     cuda_exec(cudaMalloc ((void**)&d_A_, sizeof(T) * block * block));
        				     cudaSetDevice(shmrank_*num_devices_per_rank);
-				     cuda_exec(cudaMemcpy(d_V_, approxV + locked * N, sizeof(T)* N * block, cudaMemcpyHostToDevice));
-        			     cuda_exec(cudaMemcpy(d_W_, workspace + locked * N, sizeof(T)* N * block, cudaMemcpyHostToDevice));
-        			     cudaSetDevice(shmrank_*num_devices_per_rank);
-
+				     cuda_exec(cudaMemcpyAsync(d_V_, approxV + locked * N, sizeof(T)* N * block, cudaMemcpyHostToDevice, stream_[0]));
+				     cuda_exec(cudaMemcpyAsync(d_W_, workspace + locked * N, sizeof(T)* N * block, cudaMemcpyHostToDevice, stream_[0]));
+				     cudaSetDevice(shmrank_*num_devices_per_rank);
 				     cublas_status_ = cublasTgemm(
 	  				handle_[0],
 	  				CUBLAS_OP_C,
@@ -748,12 +747,54 @@ namespace chase {
           				d_A_, 
 	  				block);
         			     assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
-        			     cuda_exec(cudaMemcpy(A, d_A_, sizeof(T)* block * block, cudaMemcpyDeviceToHost));	
-        			     t_heevd(LAPACK_COL_MAJOR, 'V', 'L', block, A, block, ritzv);
-        			     cuda_exec(cudaMemcpy(d_A_, A, sizeof(T)* block * block, cudaMemcpyHostToDevice));
+				     // start of CPU heevd 
+				     
+/* 				     cuda_exec(cudaMemcpyAsync(A, d_A_, sizeof(T)* block * block, cudaMemcpyDeviceToHost, stream_[0]));	
+                                     cudaDeviceSynchronize();
+				     t_heevd(LAPACK_COL_MAJOR, 'V', 'L', block, A, block, ritzv);
+        			     cuda_exec(cudaMemcpyAsync(d_A_, A, sizeof(T)* block * block, cudaMemcpyHostToDevice, stream_[0]));				   
+				     
+*/				     // end of CPU heevd
+				     // start of cuSolver heevd 
+				     cudaDeviceSynchronize();
+				     Base<T> *d_ritz_ = NULL;
+        			     T *d_work_heevd_ = NULL;
+        			     int lwork_heevd_ = 0;
+			             cudaSetDevice(shmrank_*num_devices_per_rank);
+        			     cuda_exec(cudaMalloc ((void**)&d_ritz_, sizeof(Base<T>) * block));
+			             cudaSetDevice(shmrank_*num_devices_per_rank);
+			             cusolver_status_ = cusolverDnTheevd_bufferSize(
+            				cusolverH_[0],
+            				CUSOLVER_EIG_MODE_VECTOR,
+            				CUBLAS_FILL_MODE_LOWER,
+            				block,
+            				d_A_,
+            				block,
+            				d_ritz_,
+            				&lwork_heevd_);
+      				     assert (cusolver_status_ == CUSOLVER_STATUS_SUCCESS);
+		                     cudaSetDevice(shmrank_*num_devices_per_rank);
+  				     cuda_exec(cudaMalloc((void**)&d_work_heevd_, sizeof(T)*lwork_heevd_));
+        			     cudaSetDevice(shmrank_*num_devices_per_rank);
+  					cusolver_status_ = cusolverDnTheevd(
+            				cusolverH_[0],
+            				CUSOLVER_EIG_MODE_VECTOR,
+            				CUBLAS_FILL_MODE_LOWER,
+            				block,
+            				d_A_,
+            				block,
+            				d_ritz_,
+	    				d_work_heevd_,
+	    				lwork_heevd_,
+            			        devInfo_);	
+      				     assert (cusolver_status_ == CUSOLVER_STATUS_SUCCESS);
+                                     cuda_exec(cudaMemcpyAsync(ritzv, d_ritz_, sizeof(Base<T>) * block, cudaMemcpyDeviceToHost, stream2_[0]));
+				     cudaDeviceSynchronize();
+				     if (d_ritz_) cudaFree(d_ritz_);				     
+				     // end of cusolver HEEVD
 
 				     cudaSetDevice(shmrank_*num_devices_per_rank);
-      				     cublas_status_ = cublasTgemm(
+				     cublas_status_ = cublasTgemm(
             				handle_[0],
             				CUBLAS_OP_N,
             				CUBLAS_OP_N,
@@ -767,10 +808,11 @@ namespace chase {
             				d_W_,
             				N);
       				    assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
-			            cudaSetDevice(shmrank_*num_devices_per_rank);
-  				    cuda_exec(cudaMemcpy(approxV + locked * N, d_V_, sizeof(T)* N * block, cudaMemcpyDeviceToHost));
-      				    cuda_exec(cudaMemcpy(workspace + locked * N, d_W_, sizeof(T)* N * block, cudaMemcpyDeviceToHost));
-
+ 				    cudaSetDevice(shmrank_*num_devices_per_rank);
+  				    cuda_exec(cudaMemcpyAsync(approxV + locked * N, d_V_, sizeof(T)* N * block, cudaMemcpyDeviceToHost, stream_[0]));
+      				    cuda_exec(cudaMemcpyAsync(workspace + locked * N, d_W_, sizeof(T)* N * block, cudaMemcpyDeviceToHost, stream_[0]));
+				    //related to cusolver HEEVD
+                                    cudaDeviceSynchronize();
       				    if (d_A_) cudaFree(d_A_);
       				    if (d_W_) cudaFree(d_W_);
 
@@ -887,3 +929,5 @@ namespace chase {
 		};
 	}  // namespace matrixfree
 }  // namespace chase
+
+
