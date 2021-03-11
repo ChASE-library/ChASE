@@ -5,7 +5,7 @@ Performance
 
 .. doxygenclass:: chase::ChasePerfData
    :project: ChASE
-   :members: get_flops, get_filter_flops, get_filter_flops, print
+   :members: get_iter_count, get_filtered_vecs, get_flops, get_filter_flops, print
 
 .. doxygenclass:: chase::PerformanceDecoratorChase
    :project: ChASE
