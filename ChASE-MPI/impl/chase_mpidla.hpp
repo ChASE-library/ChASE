@@ -12,6 +12,7 @@
 
 #include <mpi.h>
 #include <iterator>
+#include <numeric>
 
 #include "ChASE-MPI/chase_mpi_properties.hpp"
 #include "ChASE-MPI/chase_mpidla_interface.hpp"
@@ -55,7 +56,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
 
   ~ChaseMpiDLA() {}
 
-  void preApplication(T* V, std::size_t locked, std::size_t block) {
+  void preApplication(T* V, std::size_t locked, std::size_t block) override {
     next_ = NextOp::bAc;
     locked_ = locked;
 
@@ -68,7 +69,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
     dla_->preApplication(V, locked, block);
   }
 
-  void preApplication(T* V1, T* V2, std::size_t locked, std::size_t block) {
+  void preApplication(T* V1, T* V2, std::size_t locked, std::size_t block) override {
     for (auto j = 0; j < block; j++) {
 	for(auto i = 0; i < nblocks_; i++){
             std::memcpy(B_ + j * n_ + c_offs_l_[i], V2 + j * N_ + locked * N_ + c_offs_[i], c_lens_[i] * sizeof(T));	    
@@ -80,7 +81,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
     this->preApplication(V1, locked, block);
   }
 
-  void apply(T alpha, T beta, std::size_t offset, std::size_t block) {
+  void apply(T alpha, T beta, std::size_t offset, std::size_t block) override {
     T One = T(1.0);
     T Zero = T(0.0);
 
@@ -111,7 +112,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
     }
 
   }
-  bool postApplication(T* V, std::size_t block) {
+  bool postApplication(T* V, std::size_t block) override {
     dla_->postApplication(V, block);
 
     std::size_t N = N_;
@@ -156,36 +157,77 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
     auto& blocklens = matrix_properties_->get_blocklens()[dimsIdx];
     auto& blockdispls = matrix_properties_->get_blockdispls()[dimsIdx];
     auto& sendlens = matrix_properties_->get_sendlens()[dimsIdx];
+    auto& g_offset = matrix_properties_->get_g_offsets()[dimsIdx];
+
+    std::vector<std::vector<int>> block_cyclic_displs;
+    block_cyclic_displs.resize(gsize);
+
+    int displs_cnt = 0;
+    for (auto j = 0; j < gsize; ++j) {
+	    block_cyclic_displs[j].resize(blockcounts[j]);
+    	for (auto i = 0; i < blockcounts[j]; ++i){
+	        block_cyclic_displs[j][i] = displs_cnt;
+            displs_cnt += blocklens[j][i];
+	    }
+    }
 
     std::vector<MPI_Request> reqs(gsize);
     std::vector<MPI_Datatype> newType(gsize);
 
+    //std::vector<int> g_offset;
+    //std::vector<int> g_length;
+
+    //g_offset.resize(gsize);
+    //g_length.resize(gsize);
+
+    //MPI_Allgather(&offs[0], 1, MPI_INT, g_offset.data(), 1, MPI_INT, comm);
+    //MPI_Allgather(&subsize, 1, MPI_INT, g_length.data(), 1, MPI_INT, comm);
+
+    for (auto j = 0; j < gsize; ++j) {
+      int array_of_sizes[2] = {static_cast<int>(N_), 1};
+      int array_of_subsizes[2] = {static_cast<int>(sendlens[j]), 1};
+      int array_of_starts[2] = {block_cyclic_displs[j][0], 0};
+
+      MPI_Type_create_subarray(2, array_of_sizes, array_of_subsizes,
+                               array_of_starts, MPI_ORDER_FORTRAN,
+                               getMPI_Type<T>(), &(newType[j]));
+
+      MPI_Type_commit(&(newType[j]));
+    }
 
     for(auto j = 0; j < gsize; j++){
-        MPI_Type_indexed(blockcounts[j], blocklens[j].data(), blockdispls[j].data(), getMPI_Type<T>(), &(newType[j]));
-        MPI_Type_commit(&(newType[j]));
+      for (auto i = 0; i < block; ++i) {
+        std::memcpy(targetBuf + i * N_ + block_cyclic_displs[j][0], buff + sendlens[j] * i,
+                  sendlens[j] * sizeof(T));
+      
+      }
     }
 
-    for(auto j = 0; j < block; j++){
-        for(auto i = 0; i < nbblocks; i++){
-	    std::memcpy(targetBuf + j*N + offs[i], buff + j*subsize + offs_l[i], lens[i] * sizeof(T));
-	}    
-    }	
-
-    for(auto i = 0; i < block; i++){
-        for (auto j = 0; j < gsize; j++) {
-            MPI_Ibcast(targetBuf + i * N , 1, newType[j], j, comm, &reqs[j]);
-	}
-        MPI_Waitall(gsize, reqs.data(), MPI_STATUSES_IGNORE);
+    for(auto j = 0; j < gsize; j++){
+        MPI_Ibcast(targetBuf, block, newType[j], j, comm, &reqs[j]);
     }
 
+    MPI_Waitall(gsize, reqs.data(), MPI_STATUSES_IGNORE);
+
+    T *tmp = new T[N_ *  block];
+    std::memcpy(tmp, targetBuf, sizeof(T) * N_ *  block);
+    
+    for(auto j = 0; j < gsize; j++){
+	      for (auto i = 0; i < blockcounts[j]; ++i){
+	        t_lacpy('A', blocklens[j][i], block, tmp + block_cyclic_displs[j][i], 
+			             N_, targetBuf + blockdispls[j][i] , N_);
+	     }
+    }
+
+    //std::cout << targetBuf[444] << std::endl;
     for (auto j = 0; j < gsize; j++) {
-      MPI_Type_free(&newType[j]);
+        MPI_Type_free(&newType[j]);
     }
+
     return true;
   }
 
-  void shiftMatrix(T c, bool isunshift = false) {
+  void shiftMatrix(T c, bool isunshift = false) override {
 	
     for(std::size_t j = 0; j < nblocks_; j++){
         for(std::size_t i = 0; i < mblocks_; i++){
@@ -201,7 +243,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
     dla_->shiftMatrix(c);
   }
 
-  void applyVec(T* B, T* C) {
+  void applyVec(T* B, T* C) override {
     // TODO
 
     T One = T(1.0);
@@ -235,29 +277,29 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
 
   void Start() override { dla_->Start(); }
 
-  Base<T> lange(char norm, std::size_t m, std::size_t n, T* A, std::size_t lda){
+  Base<T> lange(char norm, std::size_t m, std::size_t n, T* A, std::size_t lda) override {
       return dla_->lange(norm, m, n, A, lda);
   }
 
-  void gegqr(std::size_t N, std::size_t nevex, T * approxV, std::size_t LDA){
+  void gegqr(std::size_t N, std::size_t nevex, T * approxV, std::size_t LDA) override {
       dla_->gegqr(N, nevex, approxV, LDA);
   }
 
-  void axpy(std::size_t N, T * alpha, T * x, std::size_t incx, T *y, std::size_t incy){
+  void axpy(std::size_t N, T * alpha, T * x, std::size_t incx, T *y, std::size_t incy) override {
       t_axpy(N, alpha, x, incx, y, incy);
       dla_->axpy(N, alpha, x, incx, y, incy);
   }
 
-  void scal(std::size_t N, T *a, T *x, std::size_t incx){
+  void scal(std::size_t N, T *a, T *x, std::size_t incx) override {
       t_scal(N, a, x, incx);
       dla_->scal(N, a, x, incx);
   }
 
-  Base<T> nrm2(std::size_t n, T *x, std::size_t incx){
+  Base<T> nrm2(std::size_t n, T *x, std::size_t incx) override {
       return dla_->nrm2(n, x, incx);
   }
 
-  T dot(std::size_t n, T* x, std::size_t incx, T* y, std::size_t incy){
+  T dot(std::size_t n, T* x, std::size_t incx, T* y, std::size_t incy) override {
       return dla_->dot(n, x, incx, y, incy);
   }
  
@@ -265,7 +307,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
                          CBLAS_TRANSPOSE transb, std::size_t m,
                          std::size_t n, std::size_t k, T* alpha,
                          T* a, std::size_t lda, T* b,
-                         std::size_t ldb, T* beta, T* c, std::size_t ldc)
+                         std::size_t ldb, T* beta, T* c, std::size_t ldc) override
   {
       t_gemm(Layout, transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
       dla_->gemm_small(Layout, transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
@@ -275,7 +317,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
                          CBLAS_TRANSPOSE transb, std::size_t m,
                          std::size_t n, std::size_t k, T* alpha,
                          T* a, std::size_t lda, T* b,
-                         std::size_t ldb, T* beta, T* c, std::size_t ldc)
+                         std::size_t ldb, T* beta, T* c, std::size_t ldc) override
   {
       t_gemm(Layout, transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
       dla_->gemm_large(Layout, transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
@@ -284,18 +326,18 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
   std::size_t stemr(int matrix_layout, char jobz, char range, std::size_t n,
                     double* d, double* e, double vl, double vu, std::size_t il, std::size_t iu,
                     int* m, double* w, double* z, std::size_t ldz, std::size_t nzc,
-                    int* isuppz, lapack_logical* tryrac){
+                    int* isuppz, lapack_logical* tryrac) override {
       return dla_->stemr(matrix_layout, jobz, range, n, d, e, vl, vu, il, iu, m, w, z, ldz, nzc, isuppz, tryrac);
   }
 
   std::size_t stemr(int matrix_layout, char jobz, char range, std::size_t n,
                     float* d, float* e, float vl, float vu, std::size_t il, std::size_t iu,
                     int* m, float* w, float* z, std::size_t ldz, std::size_t nzc,
-                    int* isuppz, lapack_logical* tryrac){
+                    int* isuppz, lapack_logical* tryrac) override {
       return dla_->stemr(matrix_layout, jobz, range, n, d, e, vl, vu, il, iu, m, w, z, ldz, nzc, isuppz, tryrac);
   }
 
-  void RR_kernel(std::size_t N, std::size_t block, T *approxV, std::size_t locked, T *workspace, T One, T Zero, Base<T> *ritzv){
+  void RR_kernel(std::size_t N, std::size_t block, T *approxV, std::size_t locked, T *workspace, T One, T Zero, Base<T> *ritzv) override {
       dla_->RR_kernel(N, block, approxV, locked, workspace, One, Zero, ritzv);	
   }
   

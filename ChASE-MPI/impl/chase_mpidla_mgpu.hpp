@@ -100,19 +100,19 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
 #endif
   }
 
-  void preApplication(T* V, std::size_t locked, std::size_t block) {
+  void preApplication(T* V, std::size_t locked, std::size_t block)  override {
     next_ = NextOp::bAc;
 	mgpuDLA->set_operation(next_);
   }
 
-  void preApplication(T* V, T* V2, std::size_t locked, std::size_t block) {
+  void preApplication(T* V, T* V2, std::size_t locked, std::size_t block)  override {
     // cuda_exec(cudaMemcpy(B_, orig_B_, block * n_ * sizeof(T),
     //                      cudaMemcpyHostToDevice));
     // cudaDeviceSynchronize();
     this->preApplication(V, locked, block);
   }
 
-  void apply(T alpha, T beta, std::size_t offset, std::size_t block) {
+  void apply(T alpha, T beta, std::size_t offset, std::size_t block) override  {
     T* buf_init;
     T* buf_target;
     std::size_t m, n, k;
@@ -168,14 +168,14 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
 	//cudaProfilerStop();
   }
 
-  bool postApplication(T* V, std::size_t block) {
+  bool postApplication(T* V, std::size_t block)  override {
     //cudaStreamSynchronize(stream_);
 	mgpuDLA->synchronizeAll();
 
     return false;
   }
 
-  void shiftMatrix(T c, bool isunshift = false) {
+  void shiftMatrix(T c, bool isunshift = false)  override {
 
 	auto start = high_resolution_clock::now();
 	mgpuDLA->distribute_H(orig_H_, m_);
@@ -187,7 +187,7 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
 	time_copy_H += stop - start;
   }
 
-  void applyVec(T* B, T* C) {
+  void applyVec(T* B, T* C)  override {
     T alpha = T(1.0);
     T beta = T(0.0);
 
@@ -204,7 +204,7 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
   }
 
   void get_off(std::size_t* xoff, std::size_t* yoff, std::size_t* xlen,
-               std::size_t* ylen) const {
+               std::size_t* ylen) const  override  {
     *xoff = 0;
     *yoff = 0;
     *xlen = m_;
@@ -224,22 +224,22 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
 
   void Start() override { copied_ = false; }
 
-  Base<T> lange(char norm, std::size_t m, std::size_t n, T* A, std::size_t lda){
+  Base<T> lange(char norm, std::size_t m, std::size_t n, T* A, std::size_t lda) override {
       return t_lange(norm, m, n, A, lda);
   }
 
-  void gegqr(std::size_t N, std::size_t nevex, T * approxV, std::size_t LDA){
+  void gegqr(std::size_t N, std::size_t nevex, T * approxV, std::size_t LDA) override {
       mgpuDLA->gegqr(N, nevex, approxV, LDA);
   }
 
-  void axpy(std::size_t N, T * alpha, T * x, std::size_t incx, T *y, std::size_t incy){ }
-  void scal(std::size_t N, T *a, T *x, std::size_t incx){ }
+  void axpy(std::size_t N, T * alpha, T * x, std::size_t incx, T *y, std::size_t incy) override { }
+  void scal(std::size_t N, T *a, T *x, std::size_t incx) override { }
 
-  Base<T> nrm2(std::size_t n, T *x, std::size_t incx){
+  Base<T> nrm2(std::size_t n, T *x, std::size_t incx) override {
       return t_nrm2(n, x, incx);
   }
 
-  T dot(std::size_t n, T* x, std::size_t incx, T* y, std::size_t incy){
+  T dot(std::size_t n, T* x, std::size_t incx, T* y, std::size_t incy) override {
       return t_dot(n, x, incx, y, incy);
   }
 
@@ -247,31 +247,31 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
                          CBLAS_TRANSPOSE transb, std::size_t m,
                          std::size_t n, std::size_t k, T* alpha,
                          T* a, std::size_t lda, T* b,
-                         std::size_t ldb, T* beta, T* c, std::size_t ldc)
+                         std::size_t ldb, T* beta, T* c, std::size_t ldc) override 
   {}
 
   void gemm_large(CBLAS_LAYOUT Layout, CBLAS_TRANSPOSE transa,
                          CBLAS_TRANSPOSE transb, std::size_t m,
                          std::size_t n, std::size_t k, T* alpha,
                          T* a, std::size_t lda, T* b,
-                         std::size_t ldb, T* beta, T* c, std::size_t ldc)
+                         std::size_t ldb, T* beta, T* c, std::size_t ldc) override 
   {}
 
   std::size_t stemr(int matrix_layout, char jobz, char range, std::size_t n,
                     double* d, double* e, double vl, double vu, std::size_t il, std::size_t iu,
                     int* m, double* w, double* z, std::size_t ldz, std::size_t nzc,
-                    int* isuppz, lapack_logical* tryrac){
+                    int* isuppz, lapack_logical* tryrac) override {
       return t_stemr<double>(matrix_layout, jobz, range, n, d, e, vl, vu, il, iu, m, w, z, ldz, nzc, isuppz, tryrac);
   }
 
   std::size_t stemr(int matrix_layout, char jobz, char range, std::size_t n,
                     float* d, float* e, float vl, float vu, std::size_t il, std::size_t iu,
                     int* m, float* w, float* z, std::size_t ldz, std::size_t nzc,
-                    int* isuppz, lapack_logical* tryrac){
+                    int* isuppz, lapack_logical* tryrac) override {
       return t_stemr<float>(matrix_layout, jobz, range, n, d, e, vl, vu, il, iu, m, w, z, ldz, nzc, isuppz, tryrac);
   }
 
-  void RR_kernel(std::size_t N, std::size_t block, T *approxV, std::size_t locked, T *workspace, T One, T Zero, Base<T> *ritzv){
+  void RR_kernel(std::size_t N, std::size_t block, T *approxV, std::size_t locked, T *workspace, T One, T Zero, Base<T> *ritzv) override {
       mgpuDLA->RR_kernel(N, block, approxV, locked, workspace, One, Zero, ritzv);
   }
 

@@ -749,14 +749,14 @@ namespace chase {
         			     assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
 				     // start of CPU heevd 
 				     
-/* 				     cuda_exec(cudaMemcpyAsync(A, d_A_, sizeof(T)* block * block, cudaMemcpyDeviceToHost, stream_[0]));	
+ 				     cuda_exec(cudaMemcpyAsync(A, d_A_, sizeof(T)* block * block, cudaMemcpyDeviceToHost, stream_[0]));	
                                      cudaDeviceSynchronize();
 				     t_heevd(LAPACK_COL_MAJOR, 'V', 'L', block, A, block, ritzv);
         			     cuda_exec(cudaMemcpyAsync(d_A_, A, sizeof(T)* block * block, cudaMemcpyHostToDevice, stream_[0]));				   
 				     
-*/				     // end of CPU heevd
+				     // end of CPU heevd
 				     // start of cuSolver heevd 
-				     cudaDeviceSynchronize();
+/*				     cudaDeviceSynchronize();
 				     Base<T> *d_ritz_ = NULL;
         			     T *d_work_heevd_ = NULL;
         			     int lwork_heevd_ = 0;
@@ -792,7 +792,7 @@ namespace chase {
 				     cudaDeviceSynchronize();
 				     if (d_ritz_) cudaFree(d_ritz_);				     
 				     // end of cusolver HEEVD
-
+*/
 				     cudaSetDevice(shmrank_*num_devices_per_rank);
 				     cublas_status_ = cublasTgemm(
             				handle_[0],

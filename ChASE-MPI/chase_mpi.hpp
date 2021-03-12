@@ -23,7 +23,7 @@
 
 #include "./impl/chase_mpidla.hpp"
 
-#include <omp.h>
+//#include <omp.h>
 
 namespace chase {
 namespace mpi {
@@ -89,7 +89,7 @@ class ChaseMpi : public chase::Chase<T> {
 
   ~ChaseMpi() {}
 
-  ChaseConfig<T> &GetConfig() { return config_; }
+  ChaseConfig<T> &GetConfig()  override { return config_; }
 
   std::size_t GetN() const override { return N_; }
 
@@ -99,11 +99,11 @@ class ChaseMpi : public chase::Chase<T> {
 
   Base<T> *GetRitzv() override { return ritzv_; }
 
-  void Start() {
+  void Start()  override {
     locked_ = 0;
     dla_->Start();
   }
-  void End() {}
+  void End() override {}
 
   T *GetVectorsPtr() { return approxV_; }
 
@@ -497,7 +497,7 @@ class ChaseMpi : public chase::Chase<T> {
     dla_->get_off(xoff, yoff, xlen, ylen);
   }
 
-  Base<T> *GetResid() { return resid_; }
+  Base<T> *GetResid()  override { return resid_; }
 
  private:
   const std::size_t N_;

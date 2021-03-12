@@ -30,19 +30,19 @@ class ChaseMpiDLABlaslapackSeqInplace : public ChaseMpiDLAInterface<T> {
 
   ~ChaseMpiDLABlaslapackSeqInplace() {}
 
-  void preApplication(T* V, std::size_t locked, std::size_t block) {
+  void preApplication(T* V, std::size_t locked, std::size_t block) override {
     locked_ = locked;
 
     if (V != V1_) std::swap(V1_, V2_);
     assert(V == V1_);
   }
 
-  void preApplication(T* V1, T* V2, std::size_t locked, std::size_t block) {
+  void preApplication(T* V1, T* V2, std::size_t locked, std::size_t block) override {
     this->preApplication(V1, locked, block);
   }
 
   void apply(T const alpha, T const beta, std::size_t const offset,
-             std::size_t const block) {
+             std::size_t const block) override {
     assert(V2_ != V1_);
     t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans,  //
            N_, block, N_,                              //
@@ -55,7 +55,7 @@ class ChaseMpiDLABlaslapackSeqInplace : public ChaseMpiDLAInterface<T> {
     std::swap(V1_, V2_);
   }
 
-  bool postApplication(T* V, std::size_t block) {
+  bool postApplication(T* V, std::size_t block) override {
     // this is somewhat a hack, but causes the approxV in the next
     // preApplication to be the same pointer content as V1_
     // std::swap(V1_, V2_);
@@ -99,7 +99,10 @@ class ChaseMpiDLABlaslapackSeqInplace : public ChaseMpiDLAInterface<T> {
   std::size_t get_n() const override {return N_;}
   std::size_t get_m() const override {return N_;}
   int *get_coord() const override {
-          int coord[2] = {0, 0};
+          int *coord = new int[2];
+          coord[0] = 0;
+          coord[1] = 0;
+
           return coord;
   }
   void get_offs_lens(std::size_t* &r_offs, std::size_t* &r_lens, std::size_t* &r_offs_l,
@@ -122,11 +125,11 @@ class ChaseMpiDLABlaslapackSeqInplace : public ChaseMpiDLAInterface<T> {
 
   void Start() override {}
 
-  Base<T> lange(char norm, std::size_t m, std::size_t n, T* A, std::size_t lda){
+  Base<T> lange(char norm, std::size_t m, std::size_t n, T* A, std::size_t lda) override {
       return t_lange(norm, m, n, A, lda);
   }  
 
-  void gegqr(std::size_t N, std::size_t nevex, T * approxV, std::size_t LDA){
+  void gegqr(std::size_t N, std::size_t nevex, T * approxV, std::size_t LDA) override {
       auto tau = std::unique_ptr<T[]> {
           new T[ nevex ]
       };
@@ -134,19 +137,19 @@ class ChaseMpiDLABlaslapackSeqInplace : public ChaseMpiDLAInterface<T> {
       t_gqr(LAPACK_COL_MAJOR, N, nevex, nevex, approxV, LDA, tau.get());
   }
 
-  void axpy(std::size_t N, T * alpha, T * x, std::size_t incx, T *y, std::size_t incy){
+  void axpy(std::size_t N, T * alpha, T * x, std::size_t incx, T *y, std::size_t incy) override {
       t_axpy(N, alpha, x, incx, y, incy);
   }
 
-  void scal(std::size_t N, T *a, T *x, std::size_t incx){
+  void scal(std::size_t N, T *a, T *x, std::size_t incx) override {
       t_scal(N, a, x, incx);
   }
 
-  Base<T> nrm2(std::size_t n, T *x, std::size_t incx){
+  Base<T> nrm2(std::size_t n, T *x, std::size_t incx) override {
       return t_nrm2(n, x, incx);
   }
 
-  T dot(std::size_t n, T* x, std::size_t incx, T* y, std::size_t incy){
+  T dot(std::size_t n, T* x, std::size_t incx, T* y, std::size_t incy) override {
       return t_dot(n, x, incx, y, incy);
   }
 
@@ -154,7 +157,7 @@ class ChaseMpiDLABlaslapackSeqInplace : public ChaseMpiDLAInterface<T> {
                          CBLAS_TRANSPOSE transb, std::size_t m,
                          std::size_t n, std::size_t k, T* alpha,
                          T* a, std::size_t lda, T* b,
-                         std::size_t ldb, T* beta, T* c, std::size_t ldc)
+                         std::size_t ldb, T* beta, T* c, std::size_t ldc) override 
   {
       t_gemm(Layout, transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
   }
@@ -163,7 +166,7 @@ class ChaseMpiDLABlaslapackSeqInplace : public ChaseMpiDLAInterface<T> {
                          CBLAS_TRANSPOSE transb, std::size_t m,
                          std::size_t n, std::size_t k, T* alpha,
                          T* a, std::size_t lda, T* b,
-                         std::size_t ldb, T* beta, T* c, std::size_t ldc)
+                         std::size_t ldb, T* beta, T* c, std::size_t ldc) override 
   {
       t_gemm(Layout, transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
   }
@@ -171,18 +174,18 @@ class ChaseMpiDLABlaslapackSeqInplace : public ChaseMpiDLAInterface<T> {
   std::size_t stemr(int matrix_layout, char jobz, char range, std::size_t n,
                     double* d, double* e, double vl, double vu, std::size_t il, std::size_t iu,
                     int* m, double* w, double* z, std::size_t ldz, std::size_t nzc,
-                    int* isuppz, lapack_logical* tryrac){
+                    int* isuppz, lapack_logical* tryrac) override {
       return t_stemr<double>(matrix_layout, jobz, range, n, d, e, vl, vu, il, iu, m, w, z, ldz, nzc, isuppz, tryrac);
   }
 
   std::size_t stemr(int matrix_layout, char jobz, char range, std::size_t n,
                     float* d, float* e, float vl, float vu, std::size_t il, std::size_t iu,
                     int* m, float* w, float* z, std::size_t ldz, std::size_t nzc,
-                    int* isuppz, lapack_logical* tryrac){
+                    int* isuppz, lapack_logical* tryrac) override {
       return t_stemr<float>(matrix_layout, jobz, range, n, d, e, vl, vu, il, iu, m, w, z, ldz, nzc, isuppz, tryrac);
   }
 
-  void RR_kernel(std::size_t N, std::size_t block, T *approxV, std::size_t locked, T *workspace, T One, T Zero, Base<T> *ritzv){
+  void RR_kernel(std::size_t N, std::size_t block, T *approxV, std::size_t locked, T *workspace, T One, T Zero, Base<T> *ritzv) override {
       T *A = new T[block * block];
 
       // A <- W' * V

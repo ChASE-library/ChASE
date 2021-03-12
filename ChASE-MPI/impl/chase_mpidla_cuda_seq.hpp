@@ -94,20 +94,20 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
 
   }
 
-  void preApplication(T* V, std::size_t locked, std::size_t block) {
+  void preApplication(T* V, std::size_t locked, std::size_t block) override {
     locked_ = locked;
     cuda_exec(cudaMemcpyAsync(V1_, V + locked * n_, block * n_ * sizeof(T),
                               cudaMemcpyHostToDevice, stream_));
   }
 
-  void preApplication(T* V1, T* V2, std::size_t locked, std::size_t block) {
+  void preApplication(T* V1, T* V2, std::size_t locked, std::size_t block) override {
     cuda_exec(cudaMemcpyAsync(V2_, V2 + locked * n_, block * n_ * sizeof(T),
                               cudaMemcpyHostToDevice, stream_));
 
     this->preApplication(V1, locked, block);
   }
 
-  void apply(T alpha, T beta, std::size_t offset, std::size_t block) {
+  void apply(T alpha, T beta, std::size_t offset, std::size_t block) override {
     cublasTgemm(handle_, CUBLAS_OP_N, CUBLAS_OP_N,  //
                 n_, block, n_,                      //
                 &alpha,                             //
@@ -118,14 +118,14 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
     std::swap(V1_, V2_);
   }
 
-  bool postApplication(T* V, std::size_t block) {
+  bool postApplication(T* V, std::size_t block) override {
     cuda_exec(cudaMemcpyAsync(V + locked_ * n_, V1_, block * n_ * sizeof(T),
                               cudaMemcpyDeviceToHost, stream_));
     cudaStreamSynchronize(stream_);
     return false;
   }
 
-  void shiftMatrix(T c, bool isunshift = false) {
+  void shiftMatrix(T c, bool isunshift = false) override {
     // for (std::size_t i = 0; i < n_; ++i) {
     //   OrigH_[i + i * n_] += c;
     // }
@@ -139,7 +139,7 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
     chase_zshift_matrix(H_, n_, std::real(c), &stream_);
   }
 
-  void applyVec(T* B, T* C) {
+  void applyVec(T* B, T* C) override {
     T alpha = T(1.0);
     T beta = T(0.0);
 
@@ -188,23 +188,23 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
 
   void Start() override { copied_ = false; }
 
-  Base<T> lange(char norm, std::size_t m, std::size_t n, T* A, std::size_t lda){
+  Base<T> lange(char norm, std::size_t m, std::size_t n, T* A, std::size_t lda) override {
       return t_lange(norm, m, n, A, lda);
   }
 
-  void axpy(std::size_t N, T * alpha, T * x, std::size_t incx, T *y, std::size_t incy){
+  void axpy(std::size_t N, T * alpha, T * x, std::size_t incx, T *y, std::size_t incy) override {
       t_axpy(N, alpha, x, incx, y, incy);
   }
 
-  void scal(std::size_t N, T *a, T *x, std::size_t incx){
+  void scal(std::size_t N, T *a, T *x, std::size_t incx) override {
       t_scal(N, a, x, incx);
   }
 
-  Base<T> nrm2(std::size_t n, T *x, std::size_t incx){
+  Base<T> nrm2(std::size_t n, T *x, std::size_t incx) override {
       return t_nrm2(n, x, incx);
   }
 
-  T dot(std::size_t n, T* x, std::size_t incx, T* y, std::size_t incy){
+  T dot(std::size_t n, T* x, std::size_t incx, T* y, std::size_t incy) override {
       return t_dot(n, x, incx, y, incy);
   }
 
@@ -212,7 +212,7 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
                          CBLAS_TRANSPOSE transb, std::size_t m,
                          std::size_t n, std::size_t k, T* alpha,
                          T* a, std::size_t lda, T* b,
-                         std::size_t ldb, T* beta, T* c, std::size_t ldc)
+                         std::size_t ldb, T* beta, T* c, std::size_t ldc) override 
   {
       t_gemm(Layout, transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
   }
@@ -221,7 +221,7 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
                          CBLAS_TRANSPOSE transb, std::size_t m,
                          std::size_t n, std::size_t k, T* alpha,
                          T* a, std::size_t lda, T* b,
-                         std::size_t ldb, T* beta, T* c, std::size_t ldc)
+                         std::size_t ldb, T* beta, T* c, std::size_t ldc) override 
   {
       t_gemm(Layout, transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
   }
@@ -229,18 +229,18 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
   std::size_t stemr(int matrix_layout, char jobz, char range, std::size_t n,
                     double* d, double* e, double vl, double vu, std::size_t il, std::size_t iu,
                     int* m, double* w, double* z, std::size_t ldz, std::size_t nzc,
-                    int* isuppz, lapack_logical* tryrac){
+                    int* isuppz, lapack_logical* tryrac) override {
       return t_stemr<double>(matrix_layout, jobz, range, n, d, e, vl, vu, il, iu, m, w, z, ldz, nzc, isuppz, tryrac);
   }
 
   std::size_t stemr(int matrix_layout, char jobz, char range, std::size_t n,
                     float* d, float* e, float vl, float vu, std::size_t il, std::size_t iu,
                     int* m, float* w, float* z, std::size_t ldz, std::size_t nzc,
-                    int* isuppz, lapack_logical* tryrac){
+                    int* isuppz, lapack_logical* tryrac) override {
       return t_stemr<float>(matrix_layout, jobz, range, n, d, e, vl, vu, il, iu, m, w, z, ldz, nzc, isuppz, tryrac);
   }
 
-  void gegqr(std::size_t N, std::size_t nevex, T * approxV, std::size_t LDA){
+  void gegqr(std::size_t N, std::size_t nevex, T * approxV, std::size_t LDA) override {
     	cudaSetDevice(0);
 	cuda_exec(cudaMemcpy(d_V_, approxV, sizeof(T)*N*nevex, cudaMemcpyHostToDevice));
         cudaSetDevice(shmrank_*num_devices_per_rank_);
@@ -272,7 +272,7 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
 	cuda_exec(cudaMemcpy(approxV, d_V_, sizeof(T)*N*nevex, cudaMemcpyDeviceToHost));
   }
 
-  void RR_kernel(std::size_t N, std::size_t block, T *approxV, std::size_t locked, T *workspace, T One, T Zero, Base<T> *ritzv){
+  void RR_kernel(std::size_t N, std::size_t block, T *approxV, std::size_t locked, T *workspace, T One, T Zero, Base<T> *ritzv) override {
         T *A = new T[block * block];
 
         T *d_A_ = NULL;
