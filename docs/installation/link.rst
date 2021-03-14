@@ -20,12 +20,16 @@ the following files have to be included in the header file.
     #include "ChASE-MPI/chase_mpi.hpp"
 
     /*USE ChASE-MPI without GPUs*/
+    /*With MPI support for distributed-memory system*/
     #include "ChASE-MPI/impl/chase_mpihemm_blas.hpp"
+    /*Without MPI support for single-node system*/
     #include "ChASE-MPI/impl/chase_mpihemm_blas_seq.hpp"
     #include "ChASE-MPI/impl/chase_mpihemm_blas_seq_inplace.hpp"
 
     /*USE ChASE-MPI with GPUs*/
+    /*With MPI support for distributed-memory system*/
     #include "ChASE-MPI/impl/chase_mpihemm_mgpu.hpp"
+    /*Without MPI support for single-node system*/    
     #include "ChASE-MPI/impl/chase_mpihemm_cuda_seq.hpp"
 
 
@@ -114,31 +118,9 @@ Where to Find Useful Linking Information
 
 The standard installation of ChASE can already provide some
 information about the linking, which can be extracted when it
-generates the `CMake configuration files`. Below is a snippet from the
-**lines 56-59** of the configuration file ``${ChASEROOT}/lib64/cmake/ChASE/chase-mpi.cmake`` of our installation of ChASE with GPU support on JUWELS.
-
-.. code-block:: cmake
-
-  set_target_properties(ChASE::chase_mpi PROPERTIES
-    INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include/ChASE-MPI; 
-        /gpfs/software/juwels/stages/2019a/software/psmpi/5.4.4-1-GCC-8.3.0/include; 
-        /p/software/juwels/stages/2019a/software/psmpi/5.4.4-1-GCC-8.3.0/include;
-        /gpfs/software/juwels/stages/2019a/software/CUDA/10.1.105/include;${_IMPORT_PREFIX}/include"
-
-    INTERFACE_LINK_LIBRARIES "ChASE::chase_algorithm;
-        /p/software/juwels/stages/2019a/software/imkl/2019.5.281-gpsmpi-2019a.1/mkl/lib/intel64/libmkl_gf_lp64.so;
-        /p/software/juwels/stages/2019a/software/imkl/2019.5.281-gpsmpi-2019a.1/mkl/lib/intel64/libmkl_gnu_thread.so;
-        /p/software/juwels/stages/2019a/software/imkl/2019.5.281-gpsmpi-2019a.1/mkl/lib/intel64/libmkl_core.so;
-        /gpfs/software/juwels/stages/2019a/software/GCCcore/8.3.0/lib64/libgomp.so;
-        -lpthread;-lm;-ldl;
-        /p/software/juwels/stages/2019a/software/imkl/2019.5.281-gpsmpi-2019a.1/mkl/lib/intel64/libmkl_gf_lp64.so;
-        /p/software/juwels/stages/2019a/software/imkl/2019.5.281-gpsmpi-2019a.1/mkl/lib/intel64/libmkl_gnu_thread.so;
-        /p/software/juwels/stages/2019a/software/imkl/2019.5.281-gpsmpi-2019a.1/mkl/lib/intel64/libmkl_core.so;
-        /gpfs/software/juwels/stages/2019a/software/GCCcore/8.3.0/lib64/libgomp.so;-lpthread;-lm;-ldl;
-        /opt/ddn/ime/lib/libim_client.so;/p/software/juwels/stages/2019a/software/psmpi/5.4.4-1-GCC-8.3.0/lib/libmpicxx.so;
-        /p/software/juwels/stages/2019a/software/psmpi/5.4.4-1-GCC-8.3.0/lib/libmpi.so;
-        /gpfs/software/juwels/stages/2019a/software/CUDA/10.1.105/lib64/libcublas.so")
-
+generates the `CMake configuration files`. More details, the linking information 
+can be obtained from the
+**lines 56-59** of the configuration file ``${ChASEROOT}/lib64/cmake/ChASE/chase-mpi.cmake``.
 
 
 Pure CPU version
@@ -154,11 +136,11 @@ For the pure CPU version, the installation of ChASE is header-only, so it is onl
 Multi-GPU version
 """"""""""""""""""
 
-For the GPU version, apart from including the ChASE header files and other external libraries, it is also necessary to link against to the libraries ``libchase_cuda.a`` ``CUDA runtime`` and ``CUBLAS``.
+For the GPU version, apart from including the ChASE header files and other external libraries, it is also necessary to link against to the libraries ``libchase_cuda.a`` ``CUDA runtime``, ``cuBLAS`` and ``cuSOLVER``.
 
 .. code-block:: console
 
-    mpicxx chase-app-gpu.cpp -o chase-app-gpu -I${ChASEROOT}/include -L${ChASEROOT}/lib/libchase_cuda.a ${BLASLIBRARIES} ${LAPACKLIBRARIES} ${CUBLASLIBRARIES} ${CUDA_RUNTIME_LIBRARIES}
+    mpicxx chase-app-gpu.cpp -o chase-app-gpu -I${ChASEROOT}/include -L${ChASEROOT}/lib/libchase_cuda.a ${BLASLIBRARIES} ${LAPACKLIBRARIES} ${CUBLASLIBRARIES} ${CUSOLVERLIBRARIES} ${CUDA_RUNTIME_LIBRARIES}
 
 .. note::
     For the users of Intel MKL as the BLAS/LAPACK implementation for
@@ -194,7 +176,7 @@ Here below is a template of this ``Makefile`` for `example: 3_installation <http
   #                  -lmkl_core
 
   ## Optional for multi-GPU version of ChASE ##
-  LIBS_CUDA = -lcublas -lcudart ## link to the libraries of both cuBLAS and CUDA runtime
+  LIBS_CUDA = -lcublas -lcusolver -lcudart ## link to the libraries of cuBLAS, cuSOLVER and CUDA runtime
 
   ## Optional for multi-GPU version of ChASE ##
   LIBS_CHASE_CUDA = ${ChASEROOT}/lib64/libchase_cuda.a

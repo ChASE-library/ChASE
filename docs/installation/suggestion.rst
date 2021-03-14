@@ -34,12 +34,14 @@ ChASE with multi-GPUs
 ---------------------
 
 Currently, ChASE is able to offload the most intensive computation (Hermitian Matrix-Matrix 
-Multiplications) to GPUs. The multi-GPUs version of ChASE is able to use all available cards for
-each node. This multi-GPUs version requires 1 MPI task per node to manage the inter-node 
-communication. Some less intensive computation is also assigned to this MPI task and executed
+Multiplications), QR factorization and Rayleigh-Ritz computation to GPUs. 
+The multi-GPUs version of ChASE is able to use all available cards for
+each node. This multi-GPUs version supports either 1 MPI task to manage all cards or 1 MPI task
+to manage only 1 binded GPU card. Some less intensive computation is also assigned to this MPI task and executed
 in multi-threading mode.
 
-An example of a job script for a ``SLURM`` scheduler is given below:
+Below is an example of a job script for a ``SLURM`` scheduler which allocates 1 MPI task with 
+multi-GPUs per node:
 
 .. code-block:: bash
 
@@ -50,5 +52,20 @@ An example of a job script for a ``SLURM`` scheduler is given below:
     #SBATCH --nodes=4
     #SBATCH --ntasks=4
     #SBATCH --ntasks-per-node=1
+    #SBATCH --cpus-per-task=24
+    #SBATCH --gres=gpu:4
+
+Below is an example of a job script for a ``SLURM`` scheduler which allocates
+multi-GPUs per node and each GPU card bound to 1 MPI task:
+
+.. code-block:: bash
+
+    # This is an example on the JUWELS GPU partition, in which each node has 4 V100 NVIDIA GPUs.
+    # This example allocates 4 nodes, 16 MPI tasks, each node has 4 task,
+    # and 4 GPUs per node, each GPU card is bound to 1 MPI task.
+    #!/bin/bash -x
+    #SBATCH --nodes=4
+    #SBATCH --ntasks=16
+    #SBATCH --ntasks-per-node=4
     #SBATCH --cpus-per-task=24
     #SBATCH --gres=gpu:4

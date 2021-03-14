@@ -17,23 +17,22 @@ The following snippet shows how to install ChASE on the JUWELS cluster
   make install
   ### Intel Compiler ###
   ml intel-para CMake
-  cmake .. -DCMAKE_INSTALL_PREFIX=${ChASEROOT} -DCMAKE_C_COMPILER=icc -DCMAKE_CXX_COMPILER=icpc -DCMAKE_C_FLAGS=-no-multibyte-chars -DCMAKE_CXX_FLAGS=-no-multibyte-chars
+  cmake .. -DCMAKE_INSTALL_PREFIX=${ChASEROOT} -DCMAKE_C_COMPILER=icc -DCMAKE_CXX_COMPILER=icpc
   make install
 
 .. note::
 
-  For the installation with the ``Intel Compiler``, two additional flags ``-DCMAKE_C_FLAGS=-no-multibyte-chars`` and ``-DCMAKE_CXX_FLAGS=-no-multibyte-chars`` are added to ignore
+  For the installation with the ``Intel Compiler``, two additional flags ``-DCMAKE_C_FLAGS=-no-multibyte-chars`` and ``-DCMAKE_CXX_FLAGS=-no-multibyte-chars`` might be required if
   the following error ``Catastrophic error: could not set locale "" to
-  allow processing of multibyte characters`` produced by an internal
+  allow processing of multibyte characters`` are encoutered, which is produced by an internal
   bug appearing in some versions of the Intel Compiler.
-  These flags can be omitted if such a problem does not occur.
 
 Installation with GPU Support
 ------------------------------------
 
 In order to compile ChASE with GPU support one needs to have installed
 and loaded a CUDA compiler, which will also enable the use of
-``cuBLAS``. On the JUWELS cluster this can
+``cuBLAS`` and ``cuSOLVER``. On the JUWELS cluster this can
 be achieved by loading the module CUDA in addition to the
 modules necessary to compile ChASE on a CPU-only cluster. Make sure, that
 ChASE is executed on a computer/node with at least one GPU device
@@ -72,7 +71,7 @@ examples on the JUWELS cluster:
   ml load CUDA
   cmake .. -DCMAKE_INSTALL_PREFIX=${ChASEROOT} -DBUILD_WITH_EXAMPLES=ON
   make install
-  ### Run example #1 ###
+  ### Run example #0 ###
   ./examples/0_hello_world/0_hello_world
 
 An MPI launcher has to be used to run an example in parallel. For

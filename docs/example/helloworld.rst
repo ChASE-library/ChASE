@@ -1,22 +1,23 @@
 C++ Code
 ----------
 
+This example shows the way to construct ChASE with both block
+distribution and block-cyclic distribution of the Hermtian matrix.
+
 .. code-block:: c++
     
     #include <complex>
     #include <memory>
     #include <random>
     #include <vector>
-    #include <iostream>     // std::cout
-    #include <fstream>      // std::ifstream
 
     /*include ChASE headers*/
     #include "algorithm/performance.hpp"
     #include "ChASE-MPI/chase_mpi.hpp"
-
+    /*include ChASE-MPI interface which implements HEMM 
+    for Pure-CPU distributed-memory systems*/
     #include "ChASE-MPI/impl/chase_mpihemm_blas.hpp"
-    #include "ChASE-MPI/impl/chase_mpihemm_blas_seq.hpp"
-    #include "ChASE-MPI/impl/chase_mpihemm_blas_seq_inplace.hpp"
+
 
     using T = std::complex<double>;
     using namespace chase;
@@ -24,46 +25,77 @@ C++ Code
 
     /*use ChASE-MPI without GPU support*/
     typedef ChaseMpi<ChaseMpiHemmBlas, T> CHASE;
+    /*
+    // For ChASE-MPI without MPI
+    typedef ChaseMpi<ChaseMpiHemmBlasSeq, T> CHASE;
+    // For ChASE-MPI with MPI + multiGPUs
+    typedef ChaseMpi<ChaseMpiHemmMultiGPU, T> CHASE;
+    */
 
-    int main(int argc, char* argv[]) {
-
-      MPI_Init(&argc, &argv);
-      int rank = 0;
+    int main(int argc, char** argv)
+    {
+      MPI_Init(NULL, NULL);
+      int rank = 0, size;
       MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+      MPI_Comm_size(MPI_COMM_WORLD, &size);
 
       std::size_t N = 1001; //problem size
-      std::size_t nev = 100; //number of eigenpairs to be computed
-      std::size_t nex = 25; //extra searching space
+      std::size_t nev = 40; //number of eigenpairs to be computed
+      std::size_t nex = 20; //extra searching space
 
-      auto V = std::vector<T>(N * (nev + nex));  //eigevectors
+    #ifdef USE_BLOCK_CYCLIC
+      /*parameters of block-cyclic data layout*/
+      std::size_t NB = 50; //block size for block-cyclic data layout
+      int dims[2]; 
+      dims[0] = dims[1] = 0;
+      //MPI proc grid = dims[0] x dims[1]
+      MPI_Dims_create(size, 2, dims);
+      int irsrc = 0; 
+      int icsrc = 0;
+    #endif
+  
+      std::mt19937 gen(1337.0);
+      std::normal_distribution<> d;
+
+      auto V = std::vector<T>(N * (nev + nex)); //eigevectors
       auto Lambda = std::vector<Base<T>>(nev + nex); //eigenvalues
 
       /*construct eigenproblem to be solved*/
-      CHASE single(new ChaseMpiProperties<T>(N, nev, nex, MPI_COMM_WORLD), V.data(), Lambda.data());
+    #ifdef USE_BLOCK_CYCLIC
+      /*Use block-cyclic layout to distribute matrix*/
+      CHASE single(new ChaseMpiProperties<T>(N, NB, NB, nev, nex, dims[0], dims[1], (char *)"C", irsrc, icsrc, MPI_COMM_WORLD), 
+            V.data(), Lambda.data());
+    #else
+      /*Use block layout to distribute matrix*/
+      CHASE single(new ChaseMpiProperties<T>(N, nev, nex, MPI_COMM_WORLD), V.data(),
+                 Lambda.data());
+    #endif
 
-      /*Setup configure for ChASE*/
+      /*Setup configuration for ChASE*/
       auto& config = single.GetConfig();
-
       /*Tolerance for Eigenpair convergence*/
-      config.SetTol(1.0e-10);
+      config.SetTol(1e-10);
       /*Initial filtering degree*/
       config.SetDeg(20);
       /*Optimi(S)e degree*/
-      config.SetOpt(True);
+      config.SetOpt(true);
+      config.SetMaxIter(25);
 
-      std::mt19937 gen(1337.0);
-      std::normal_distribution<> d;
-    
-      /*randomize V*/
+      if (rank == 0)
+        std::cout << "Solving a symmetrized Clement matrices (" << N
+                  << "x" << N << ")"
+    #ifdef USE_BLOCK_CYCLIC       
+              << " with block-cyclic data layout: " << NB << "x" << NB 
+    #endif
+        << '\n'       
+              << config;
+
+      /*randomize V as the initial guess*/
       for (std::size_t i = 0; i < N * (nev + nex); ++i) {
         V[i] = T(d(gen), d(gen));
       }
 
-      /*Get Offset and length of block of H on each node*/
-      std::size_t xoff, yoff, xlen, ylen;
-      single.GetOff(&xoff, &yoff, &xlen, &ylen);
-
-      std::vector<T> H(N * N, T(0.0)); /*Hermitian matrix*/
+      std::vector<T> H(N * N, T(0.0));
 
       /*Generate Clement matrix*/
       for (auto i = 0; i < N; ++i) {
@@ -72,26 +104,60 @@ C++ Code
         if (i != N - 1) H[i + N * (i + 1)] = std::sqrt(i * (N + 1 - i));
       }
 
+      if (rank == 0) {
+          std::cout << "Starting Problem #1" << "\n";
+      }
+
+      std::cout << std::setprecision(16);
+
+    #ifdef USE_BLOCK_CYCLIC
+      /*local block number = mblocks x nblocks*/
+      std::size_t mblocks = single.get_mblocks();
+      std::size_t nblocks = single.get_nblocks();
+
+      /*local matrix size = m x n*/
+      std::size_t m = single.get_m();
+      std::size_t n = single.get_n();
+
+      /*global and local offset/length of each block of block-cyclic data*/
+      std::size_t *r_offs, *c_offs, *r_lens, *c_lens, *r_offs_l, *c_offs_l;
+      single.get_offs_lens(r_offs, r_lens, r_offs_l, c_offs, c_lens, c_offs_l);
+
+      /*distribute Clement matrix into block cyclic data layout */
+      for(std::size_t j = 0; j < nblocks; j++){
+          for(std::size_t i = 0; i < mblocks; i++){
+              for(std::size_t q = 0; q < c_lens[j]; q++){
+                  for(std::size_t p = 0; p < r_lens[i]; p++){
+                      single.GetMatrixPtr()[(q + c_offs_l[j]) * m + p + r_offs_l[i]] = H[(q + c_offs[j]) * N + p + r_offs[i]];
+                  }
+              }
+          }
+      }
+
+    #else  
+      std::size_t xoff, yoff, xlen, ylen;
+
+      /*Get Offset and length of block of H on each node*/
+      single.GetOff(&xoff, &yoff, &xlen, &ylen);
+
       /*Load different blocks of H to each node*/
       for (std::size_t x = 0; x < xlen; x++) {
         for (std::size_t y = 0; y < ylen; y++) {
           single.GetMatrixPtr()[x + xlen * y] = H.at((xoff + x) * N + (yoff + y));
         }
       }
+    #endif
 
       /*Performance Decorator to meaure the performance of kernels of ChASE*/
       PerformanceDecoratorChase<T> performanceDecorator(&single);
-
       /*Solve the eigenproblem*/
       chase::Solve(&performanceDecorator);
-
       /*Output*/
-      if(rank == 0){
-        std::cout << " ChASE timings: " << "\n";
-        /*Print the timings of different kernels of ChASE*/
+      if (rank == 0) {
         performanceDecorator.GetPerfData().print();
-        std::cout << "Finished Problem \n";
-        /*Print first five eigenvalues and the related residuals*/
+        Base<T>* resid = single.GetResid();
+        std::cout << "Finished Problem #1" << "\n";
+        std::cout << "Printing first 5 eigenvalues and residuals\n";
         std::cout
             << "| Index |       Eigenvalue      |         Residual      |\n"
             << "|-------|-----------------------|-----------------------|\n";
@@ -105,16 +171,19 @@ C++ Code
                     << Lambda[i] << "  | " << std::setw(width) << resid[i]
                     << "  |\n";
           std::cout << "\n\n\n";
-
       }
 
-      return 0;
-
+      MPI_Finalize();
     }
+
+
 
 
 Output
 ---------
+
+The output of this example gives the timings of important kernels of ChASE and prints the first
+5 computed eigenvalues and related residuals.
 
 .. code-block:: bash
 
