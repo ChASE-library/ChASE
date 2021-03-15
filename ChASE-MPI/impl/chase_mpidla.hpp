@@ -38,6 +38,9 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
     C_ = matrix_properties->get_C();
     IMT_ = matrix_properties->get_IMT();
 
+    std::size_t max_block_ = matrix_properties->get_max_block();
+    Buff_ = new T[N_ *  max_block_];
+
     matrix_properties_ = matrix_properties;
 
     row_comm_ = matrix_properties->get_row_comm();
@@ -54,7 +57,9 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
     nblocks_ = matrix_properties->get_nblocks();
   }
 
-  ~ChaseMpiDLA() {}
+  ~ChaseMpiDLA() {
+    delete[] Buff_;
+  }
 
   void preApplication(T* V, std::size_t locked, std::size_t block) override {
     next_ = NextOp::bAc;
@@ -92,7 +97,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
 
       MPI_Allreduce(MPI_IN_PLACE, IMT_ + offset * n_, dim, getMPI_Type<T>(),
                     MPI_SUM, col_comm_);
-
+                    
       t_scal(dim, &beta, B_ + offset * n_, 1);
       t_axpy(dim, &alpha, IMT_ + offset * n_, 1, B_ + offset * n_, 1);
 
@@ -174,15 +179,6 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
     std::vector<MPI_Request> reqs(gsize);
     std::vector<MPI_Datatype> newType(gsize);
 
-    //std::vector<int> g_offset;
-    //std::vector<int> g_length;
-
-    //g_offset.resize(gsize);
-    //g_length.resize(gsize);
-
-    //MPI_Allgather(&offs[0], 1, MPI_INT, g_offset.data(), 1, MPI_INT, comm);
-    //MPI_Allgather(&subsize, 1, MPI_INT, g_length.data(), 1, MPI_INT, comm);
-
     for (auto j = 0; j < gsize; ++j) {
       int array_of_sizes[2] = {static_cast<int>(N_), 1};
       int array_of_subsizes[2] = {static_cast<int>(sendlens[j]), 1};
@@ -195,31 +191,28 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
       MPI_Type_commit(&(newType[j]));
     }
 
+    //T *tmp = new T[N_ *  block];
+
     for(auto j = 0; j < gsize; j++){
       for (auto i = 0; i < block; ++i) {
-        std::memcpy(targetBuf + i * N_ + block_cyclic_displs[j][0], buff + sendlens[j] * i,
+        std::memcpy(Buff_ + i * N_ + block_cyclic_displs[j][0], buff + sendlens[j] * i,
                   sendlens[j] * sizeof(T));
-      
+
       }
     }
 
     for(auto j = 0; j < gsize; j++){
-        MPI_Ibcast(targetBuf, block, newType[j], j, comm, &reqs[j]);
+        MPI_Ibcast(Buff_, block, newType[j], j, comm, &reqs[j]);
     }
-
     MPI_Waitall(gsize, reqs.data(), MPI_STATUSES_IGNORE);
 
-    T *tmp = new T[N_ *  block];
-    std::memcpy(tmp, targetBuf, sizeof(T) * N_ *  block);
-    
     for(auto j = 0; j < gsize; j++){
 	      for (auto i = 0; i < blockcounts[j]; ++i){
-	        t_lacpy('A', blocklens[j][i], block, tmp + block_cyclic_displs[j][i], 
+	        t_lacpy('A', blocklens[j][i], block, Buff_ + block_cyclic_displs[j][i], 
 			             N_, targetBuf + blockdispls[j][i] , N_);
 	     }
     }
 
-    //std::cout << targetBuf[444] << std::endl;
     for (auto j = 0; j < gsize; j++) {
         MPI_Type_free(&newType[j]);
     }
@@ -356,6 +349,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
   T* B_;
   T* C_;
   T* IMT_;
+  T *Buff_;
 
   NextOp next_;
   MPI_Comm row_comm_, col_comm_;
