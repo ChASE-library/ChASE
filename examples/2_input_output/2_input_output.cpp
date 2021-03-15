@@ -505,10 +505,10 @@ int main(int argc, char* argv[]) {
       )
 #ifdef USE_BLOCK_CYCLIC
       (                                                                   //
-      "mbsize", po::value<std::size_t>(&conf.mbsize)->default_value(500),  //
+      "mbsize", po::value<std::size_t>(&conf.mbsize)->default_value(400),  //
       "block size for the row"                                            //
       )(                                                                  //
-      "nbsize", po::value<std::size_t>(&conf.nbsize)->default_value(500),  //
+      "nbsize", po::value<std::size_t>(&conf.nbsize)->default_value(400),  //
       "block size for the column"                                         //
       )(                                                                  //
       "dim0", po::value<int>(&conf.dim0)->default_value(0),               //
