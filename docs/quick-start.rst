@@ -10,9 +10,8 @@ install ChASE on a laptop or a workstation equipped with a Linux or
 Unix OS. Because ChASE uses `CMake <http://www.cmake.org>`__ for
 autodecting dependencies and mananging configuration options across
 different platforms, it can be easily configured on any Linux and Unix
-based operating systems. At the end of the installation process the
-user can utilize a ready-to-use driver to directly test ChASE on a
-matrix of his choice.
+based operating systems. Multiple examples are also provided, and
+user can utilize them to directly test ChASE on a matrix of his choice.
 
 
 Getting ChASE
@@ -39,7 +38,7 @@ In addition to a recent ``C++`` compiler ChASE's external dependencies are
 `CMake <http://www.cmake.org/>`__ , `MPI
 <http://en.wikipedia.org/wiki/Message_Passing_Interface>`__ , `BLAS <http://netlib.org/blas>`__ ,
 `LAPACK <http://netlib.org/lapack>`__. To enhance the usability of the
-ready-to-use driver it is also necessary to install the `Boost
+ready-to-use examples, it is also necessary to install the `Boost
 <https://www.boost.org/>`__ library. 
 
 .. toctree::
@@ -54,7 +53,7 @@ Quick Installation and Execution
 
 Installing the ChASE library on Linux or Mac OS requires cloning the
 source files from a public github repository and compile them in few
-steps. A simple driver, provided with the source files, can be used to
+steps. An example, provided with the source files, can be used to
 run ChASE on a single computing node for the solution of an isolated
 Hermitian standard eigenproblem.
 

@@ -73,7 +73,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'ChASE'
-copyright = u'2018, SimLab Quantum Materials'
+copyright = u'2021, SimLab Quantum Materials'
 author = u'Edoardo Di Napoli'
 
 # The version info for the project you're documenting, acts as replacement for

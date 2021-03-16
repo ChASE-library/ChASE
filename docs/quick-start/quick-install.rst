@@ -82,7 +82,7 @@ One could also specify a subset or all arguments. The minimal
 arguments that need to be provided are the input matrix and the size
 of such matrix::
 
-  ./2_input_output/2_input_output --n <MatrixSize> --input <YourOwnFolder/YourMatrixToSolve.bin>
+  ./2_input_output/2_input_output --n <MatrixSize> --path_in <YourOwnFolder/YourMatrixToSolve.bin>
   
 To run this example with MPI, start the command with the mpi launcher of your choice, e.g. `mpirun` or `srun`.
 
@@ -107,13 +107,10 @@ For sake of completeness we provide a complete list below.
   --bgn arg (=2)            Start index of matrix sequence (if any) 
   --end arg (=2)            End index of matrix sequence (if any)
   --tol arg (=1e-10)        Minimum tolerance required to declare eigenpairs converged
-  --input arg               Path to the input matrix/matrices
+  --path_in arg               Path to the input matrix/matrices
   --output arg (=eig.txt)   Path to the write the eigenvalues
   --mode arg (=R)           Valid values are ``R`` (Random) or ``A`` (Approximate)
   --opt arg (=N)            Valid values are Optimi ``S`` e, or do ``N`` ot optimise degree
   --path_eigp arg           Path to approximate solutions, only required when 
                             mode is ``A`` pproximate, otherwise not used
-  --perturb arg (=0)        Perturbation of eigenvalues used for
-                            second run. Only used with single matrix
-			    to test effectiveness of ``A`` pproximate mode
   ========================= =================================================================

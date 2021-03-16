@@ -27,9 +27,9 @@ Namespace: chase
 
 An overview of the namespaces and related important classes defined in
 ChASE is given in this section.
-The basic namespace of ChASE is ``chase``, which includes (1) the virtual abstract 
-classes of numerical kernels; (2) the numerical algorithm of ChASE implemented by these virtual 
-abstract classes; (3) the module that sets the configuration of the parameter of ChASE; (4) the module
+The basic namespace of ChASE is ``chase``, which includes (1) the abstract 
+classes of numerical kernels with virtual functions; (2) the numerical algorithm of ChASE implemented by these virtual 
+functions; (3) the module that sets the configuration of the parameter of ChASE; (4) the module
 that sets the profiling and timing of the numerical kernels of ChASE.
 
 
@@ -39,7 +39,7 @@ that sets the profiling and timing of the numerical kernels of ChASE.
    module/namespace
 
 Selected Classes
-===================
+-----------------
 
 Several important classes, implemented in the namespace ``chase``, are
 illustrated in this section.
@@ -75,20 +75,66 @@ ChASE-MPI
 The namespace ``chase::mpi``, which is defined inside the namespace ``chase`` and in parallel with namespace ``chase::elemental``,
 provides the parallel implementation of ChASE based on ``MPI`` (and ``CUDA``) by re-implementing
 the numerical kernels as virtual functions within the abstraction targeting homogenous and hetergenous architectures (multi-GPUs).
-
 For the user documentation, we provides only the constructors of the related classes without
 the details of implementation.
+
+
+1. The class ``ChaseMpiMatrices`` defines the construction of matrices and vectors
+for both non-MPI mode and MPI mode which are used in ChASE.
 
 .. toctree::
    :maxdepth: 2
 
    module/chasempimatrices
+
+2. The class ``ChaseMpiProperties`` defines the construction of MPI environment for ChASE, both for the block
+distribution and block-cyclic distribution.   
+
+.. toctree::
+   :maxdepth: 2
+
    module/chasempiproperties
+
+3. The class ``ChaseMpiHemmInterface`` defines the virtual functions required for the implementation
+of ``ChaseMpiHemm``.
+
+
+4. ``ChaseMpi`` defines the ChASE-MPI class. It is an templated classes with two types required: 
+an implementation of ``ChaseMpiHemmInterface`` and the scalar type to be used in the applications.
+
+
+.. toctree::
+   :maxdepth: 2
+
    module/chasempi
+
+5. ``ChaseMpiHemmBlasSeq`` defines the implementation of ``ChaseMpiHemmInterface``
+for single node system without MPI.   
+
+.. toctree::
+   :maxdepth: 2
+
    module/chasempihemmseq
+
+6. ``ChaseMpiHemmBlas`` defines the implementation of ``ChaseMpiHemmInterface``
+for homogeneous distributed-memory systems.  
+
+.. toctree::
+   :maxdepth: 2
+
    module/chasempihemmblas
+
+7. ``ChaseMpiHemmMultiGPU`` defines the implementation of ``ChaseMpiHemmInterface``
+for heterogeneous distributed-memory systems with multi-GPUs per node. 
+
+.. toctree::
+   :maxdepth: 2
+
    module/chasempihemmmultigpu
 
+.. note::
+    For the usage of these classes, please refer to :ref:`hello-world-chase`
+    in the User Documentation. 
 
 .. note::
     For more details of the implementation of ChASE-MPI, please refer to :ref:`para-chase-mpi`
