@@ -23,7 +23,20 @@
 #include "types.hpp"
 
 namespace chase {
-
+  //! ChASE class for collecting data relative to FLOPs, timings, etc.
+  /*! The ChasePerfData class collects and handles information relative to the execution of the eigensolver. It collects information about 
+      - Number of subspace iterations
+      - Number of filtered vectors 
+      - Timings of each main algorithmic procedure (Lanczos, Filter, etc.)
+      - Number of FLOPs executed
+      
+      The number of iterations and filtered vectors can be used to
+      monitor the behavior of the algorithm as it attempts to converge
+      all the desired eigenpairs. The timings and number of FLOPs are
+      use to measure performance, especially parallel performance. The
+      timings are stored in a vector of objects derived by the class
+      template `std::chrono::duration`.
+   */
 class ChasePerfData {
  public:
   ChasePerfData()
@@ -44,12 +57,49 @@ class ChasePerfData {
     std::fill(timings.begin(), timings.end(), std::chrono::duration<double>());
   }
 
+  //! Returns the number of total subspace iterations executed by ChASE.
+  /*! The *S* in ChASE stands for *Subspace iteration*. The main
+      engine under the hood of ChASE is a *loop* enveloping all the
+      main routines executed by the code. Because of this structure,
+      ChASE is a truly interative algorithm based on subspace
+      filtering. Counting the number of times such a loop is repeated
+      gives a measure of the effectiveness of the algorithm and it is
+      usually a non-linear function of the spectral distribution. For
+      example, when using the flag `approximate_ = 'true'` to solve a
+      sequence of eigenproblems, one can observe that the number of
+      subspace iteration decreases as a function of sequences index.
+      \return The total number of subspace iterations.
+   */
   std::size_t get_iter_count() { return chase_iteration_count; }
 
+  //! Returns the cumulative number of times each column vector is filtered by one degree.
+  /*! The most computationally expensive routine of ChASE is the
+      Chebyshev filter. Within the filter a matrix of vectors *V* is
+      filtered with a varying degree each time a subspace iteration is
+      executed. This counter return the total number of times each
+      vector in *V* goes through a filtering step. For instance, when
+      the flag `optim_ = false `, such a number roughly corresponds to
+      rank(V) x degree x iter_count. When the `optim_` is set
+      to `true` such a calculation is quite more complicated. Roughly
+      speaking, this counter is useful to monitor the convergence
+      ration of the filtered vectors and together with
+      `get_iter_count` convey the effectiveness of the algorithm.
+      \return Cumulative number of filtered vectors.
+   */
   std::size_t get_filtered_vecs() { return chase_filtered_vecs; }
 
   std::vector<std::chrono::duration<double>> get_timings() { return timings; }
 
+  //! Returns the total number of FLOPs executed by ChASE.
+  /*! When measuring performance, it is fundamental to understand how
+      many operations a routine executes against the total time to
+      solutions. This counter returns the total amount of operations
+      executed by ChASE and can be used to extract the performance of
+      ChASE and compare it with theoretical peak performance of the
+      platform where the code is executed.
+      \param N Size of the eigenproblem matrix
+      \return The total number of operations executed by ChASE.
+   */ 
   std::size_t get_flops(std::size_t N) {
     std::size_t flop_count = 0;
     for (auto block : chase_iter_blocksizes) {
@@ -110,6 +160,20 @@ class ChasePerfData {
     return flop_count / 1e9;
   }
 
+  //! Returns the total number of FLOPs of the Chebyshev filter
+  /*! Similar to `get_flops`, this counter return the total number of
+      operations executed by the Chebyshev filter alone. Since the
+      filter is the routine that executes, on average, 80% of the
+      total FLOPs of ChASE, this counter is a good indicator of the
+      performance of the entire algorithm. Because the filter executes
+      almost exclusively BLAS-3 operations, this counter is quite
+      useful to monitor how well the filter is close to the peak
+      performance of the platform where ChASE is executed. This can be
+      quite useful to fine tune the use of the computational resources
+      used.
+      \param N Size of the eigenproblem matrix
+      \return The total number of operations executed by the polynomial filter.
+   */
   std::size_t get_filter_flops(std::size_t N) {
     return (8 * N * chase_filtered_vecs * N + 18 * N * chase_filtered_vecs) /
            1e9;
@@ -131,6 +195,9 @@ class ChasePerfData {
     timings[t] += std::chrono::high_resolution_clock::now() - start_times[t];
   }
 
+  //! Print function outputting all previous counters and timings for all routines
+  /*! 
+   */ 
   void print(std::size_t N = 0) {
     // std::cout << "resd: " << norm << "\torth:" << norm2 << std::endl;
     // std::cout << "Filtered Vectors\t\t" << chase_filtered_vecs << "\n";
