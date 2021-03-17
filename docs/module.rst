@@ -50,24 +50,7 @@ which faciliate the user for the parameter configuration and performance profili
 
    module/config
    module/perf
-   module/base
 
-ChASE-Elemental
-================
-
-The namespace ``chase::elemental``, which is defined inside the namespace ``chase``, 
-provides the parallel implementation of ChASE based on the Elemental library by re-implementing 
-the numerical kernels as virtual functions calls within the abstract class. For the benefit of the user, only the constructor of this ChaseElemental
-class is provided here. 
-
-.. toctree::
-   :maxdepth: 2
-
-   module/elemental
-
-.. note::
-    For more details relative to the implementation of ChASE-MPI, please refer to :ref:`para-chase-elemental` 
-    in the Developer Documentation.
 
 ChASE-MPI
 ==========
@@ -139,3 +122,21 @@ for heterogeneous distributed-memory systems with multi-GPUs per node.
 .. note::
     For more details of the implementation of ChASE-MPI, please refer to :ref:`para-chase-mpi`
     in the Developer Documentation.
+
+
+ChASE-Elemental
+================
+
+The namespace ``chase::elemental``, which is defined inside the namespace ``chase``,
+provides the parallel implementation of ChASE based on the Elemental library by re-implementing
+the numerical kernels as virtual functions calls within the abstract class. For the benefit of the user, only the constructor of this ChaseElemental
+class is provided here.
+
+.. toctree::
+   :maxdepth: 2
+
+   module/elemental
+
+.. note::
+    For more details relative to the implementation of ChASE-MPI, please refer to :ref:`para-chase-elemental`
+    in the Developer Documentation. 

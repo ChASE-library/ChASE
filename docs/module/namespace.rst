@@ -59,11 +59,6 @@ functionalties:
   The details of this class are only provided in the developer documentation,
   please refer to :ref:`algorithmic-structure`.
 
-chase::Base
-^^^^^^^^^^^^
-
-This class defines ...
-
 chase::ChaseConfig
 ^^^^^^^^^^^^^^^^^^^
 
