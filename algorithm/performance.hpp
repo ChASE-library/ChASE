@@ -195,8 +195,22 @@ class ChasePerfData {
     timings[t] += std::chrono::high_resolution_clock::now() - start_times[t];
   }
 
-  //! Print function outputting all previous counters and timings for all routines
-  /*! 
+  //! Print function outputting counters and timings for all routines
+  /*! It prints by default ( for N = 0) in the order,  
+      - size of the eigenproblem
+      - total number of subspace iterations executed
+      - total number of filtered vectors
+      - time-to-solution of the following 6 main sections of the ChASE algorithm:
+         1. Total time-to-solution
+         2. Estimates of the spectral bounds based on Lanczos, 
+         3. Chebyshev filter, 
+         4. QR decomposition, 
+         5. Raleygh-Ritz procedure including the solution of the reduced dense problem, 
+         6. Computation of the eigenpairs residuals
+
+      When the parameter `N` is set to be a number else than zero, the
+      function returns total FLOPs and filter FLOPs, respectively.
+      \param N Control parameter. By default equal to *0*.
    */ 
   void print(std::size_t N = 0) {
     // std::cout << "resd: " << norm << "\torth:" << norm2 << std::endl;
@@ -219,7 +233,7 @@ class ChasePerfData {
     if (N != 0) {
       std::size_t flops = get_flops(N);
       std::size_t filter_flops =
-          8 * N * chase_filtered_vecs * N + 18 * N * chase_filtered_vecs;
+        8 * N * chase_filtered_vecs * N + 18 * N * chase_filtered_vecs; // Why not using get_filter_flops ?
       std::cout << " | " << flops;
       std::cout << " | "
                 << static_cast<double>(filter_flops) /
@@ -271,7 +285,26 @@ class ChasePerfData {
   std::vector<std::chrono::time_point<std::chrono::high_resolution_clock>>
       start_times;
 };
-
+  //! A derived class used to extract performance and configuration data.
+  /*! This is a class derived from the Chase class which plays the
+      role of interface for the kernels used by the library. All
+      members of the Chase class are virtual functions. These
+      functions are re-implemented in the PerformanceDecoratorChase
+      class. All derived members that provide an interface to
+      computational kernels are reimplemented by *decorating* the
+      original function with time pointers which are members of the
+      ChasePerfData class. All derived members that provide an
+      interface to input or output data are called without any
+      specific decoration. In addition to the virtual member of the
+      Chase class, the PerformanceDecoratorChase class has also among
+      its public members a reference to an object of type
+      ChasePerfData. When using Chase to solve an eigenvalue problem,
+      the members of the PerformanceDecoratorChase are called instead
+      of the virtual functions members of the Chase class. In this
+      way, all parameters and counters are automatically invoked and
+      returned in the correct order.  
+      \see Chase
+   */ 
 template <class T>
 class PerformanceDecoratorChase : public chase::Chase<T> {
  public:

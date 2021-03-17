@@ -9,4 +9,4 @@ Performance
 
 .. doxygenclass:: chase::PerformanceDecoratorChase
    :project: ChASE
-   :members: PerformanceDecoratorChase, Start, End, GetN, GetNev, GetNex, GetRitzv, GetResid, GetConfig, GetPerfData
+   :members: GetConfig, GetPerfData
