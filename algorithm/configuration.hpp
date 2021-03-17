@@ -180,11 +180,11 @@ class ChaseConfig {
    */
   bool UseApprox() const { return approx_; }
 
-  //! Sets the `approx_` flag  to either `'true'` or `'false'`.
+  //! Sets the `approx_` flag  to either `true` or `false`.
   /*! This function is used to change the value of `approx_` so that
       the eigensolver can use approximate solutions inputed through a
       matrix of initial vectors.
-      \param flag A boolean parameter which admits either a `'true'` or `'false'` value. 
+      \param flag A boolean parameter which admits either a `true` or `false` value. 
    */
   void SetApprox(bool flag) { approx_ = flag; }
 
@@ -198,30 +198,34 @@ class ChaseConfig {
    */
   bool DoOptimization() const { return optimization_; }
 
-  //! Sets the `optimization_` flag to either `'true'` or `'false'`.
+  //! Sets the `optimization_` flag to either `true` or `false`.
   /*! This function is used to change the value of `optimization_` so
       that the eigensolver minimizes the number of FLOPs needed to
       reach convergence for the entire sought after subspace of the
       spectrum.
-      \param flag A boolean parameter which admits either a `'true'` or `'false'` value.
+      \param flag A boolean parameter which admits either a `true` or `false` value.
    */
   void SetOpt(bool flag) { optimization_ = flag; }
 
   //! Returns the degree of the Chebyshev filter used by ChASE
   /*!
       The value returned is the degree used by the filter when it is
-      called (when ``optimization == 'true'`` this value is used only the
+      called (when ``optimization_ == 'true'`` this value is used only the
       first time the filter is called)
       \return The value used by the Chebyshev filter
    */
   std::size_t GetDeg() const { return deg_; }
-  
+
   //! Set the value of the initial degree of the Chebyshev filter.
   /*!
-      Depending if the `optimization` parameter is set to `false` or
+      Depending if the `optimization_` parameter is set to `false` or
       `true`, the value of `_deg` is used by the Chebyshev filter
       respectively every time or just the first time it is called.
-      \param _deg Value set by the expert user and should in general be between *10* and *25*. The default value is *20*. If a odd value is inserted, the function makes it even. This is necessary due to the swapping of the matrix of vectors within the filter. It is strongly suggested to avoid values above the higher between *40* and the value returned by `GetMaxDeg`.
+      \param _deg Value set by the expert user and should in general be between *10* and *25*. 
+      The default value is *20*. If a odd value is inserted, the function makes it even. 
+      This is necessary due to the swapping of the matrix of vectors within the filter. 
+      It is strongly suggested to avoid values above the higher between *40* and the value 
+      returned by \ref GetMaxDeg().
    */
   void SetDeg(std::size_t _deg) {
     deg_ = _deg;
@@ -233,6 +237,8 @@ class ChaseConfig {
       residuals of the desired eigenpaits. Whenever an eigenpair's
       residual decreases below such a value it is declared as
       converged, and is consequently deflated and locked.
+      For an eigenpair \f$(\lambda_i,V_i)\f$, the residual in ChASE
+      is defined as the Euclidean norm: \f$||AV_i-\lambda_iV_i||_2\f$.
       \return The value of the `tol_` parameter.
    */
   double GetTol() const { return tol_; }
@@ -261,12 +267,18 @@ class ChaseConfig {
   std::size_t GetMaxDeg() const { return max_deg_; }
   
   //! Sets the maximum value of the degree of the Chebyshev filter
-  /*! When `optimization = 'true'`, the Chebyshev filter degree is
+  /*! When ``optimization = 'true'``, the Chebyshev filter degree is
       computed automatically. Because the computed values could be
       quite large for eigenvectors at the end of the sought after
       spectrum, a maximum value is set to avoid numerical
       instabilities that may trigger eigenpairs divergence.
-      \param _maxDeg This value should be set by the expert user. It is set to *36* by default. It can be lowered in case of the onset of early instabilities but it should not be lower than *20-25* to avoid the filter becomes ineffective. It can be increased whenever it is known there is a spectral gap between the value of `nev_` and the value of `nev_ + nex_`. It is strongly suggested to never exceed the value of *70*.  
+      \param _maxDeg This value should be set by the expert user. 
+      It is set to *36* by default. It can be lowered in case of 
+      the onset of early instabilities but it should not be lower 
+      than *20-25* to avoid the filter becomes ineffective. 
+      It can be increased whenever it is known there is a spectral gap 
+      between the value of `nev_` and the value of `nev_ + nex_`. 
+      It is strongly suggested to never exceed the value of *70*.  
    */
   void SetMaxDeg(std::size_t _maxDeg) {
     max_deg_ = _maxDeg;
@@ -274,7 +286,7 @@ class ChaseConfig {
   }
 
   //! Returns the extra degree added to the polynomial filter.
-  /*! When `optimization = 'true'`, each vector is filtered with a
+  /*! When ``optimization = 'true'``, each vector is filtered with a
       polynomial of a given calculated degree. Because the degree is
       predicted based on an heuristic fomula, such degree is augmented
       by a small value to ensure that the residual of the
@@ -351,8 +363,8 @@ class ChaseConfig {
   /*! The stochastic estimator used by ChASE is based on a cheap and
       efficient DoS algorithm. Because ChASE does not need precise
       estimates of the upper extremum of the search space, the number
-      of vectors used is quite small. The default value used is
-      *4*. The expert user can change the value to a larger number (it
+      of vectors used is quite small. The default value used is *4*. 
+      The expert user can change the value to a larger number (it
       is not suggested to use a smaller value) and pay a slightly
       higher computing cost. It is not suggested to exceed a value for
       `num_lanczos` higher than *20*.
@@ -413,7 +425,7 @@ class ChaseConfig {
 
   //! An optional flag indicating if approximate eigenvectors are provided by the user.
   /*!
-      This variable is initialized by the constructor. Its default value is set to `'false'`
+      This variable is initialized by the constructor. Its default value is set to `false`.
    */  
   bool approx_;
 
@@ -437,7 +449,7 @@ class ChaseConfig {
 
   //! An optional parameter indicating the degree of the polynomial filter.
   /*!
-      When the flag `optimization_` is set to `'true'`, its value is
+      When the flag `optimization_` is set to `true`, its value is
       used only the first first time the filter routine is
       called. Otherwise this value is used for each vector and all
       subsequent subspace iterations. This variable is initialized by
@@ -448,13 +460,13 @@ class ChaseConfig {
 
   //! An optional flag indicating if the filter uses a polynomial degree optimized for each single vector.
   /*!
-      This variable is initialized by the constructor. Its default value is set to `'true'`
+      This variable is initialized by the constructor. Its default value is set to `true`.
    */
   bool optimization_;
 
   //! An optional parameter that limits from above the value of the allowed polynomial filter.
   /*!
-      When the flag `optimization_` is set to `'true'`, it avoids that
+      When the flag `optimization_` is set to `true`, it avoids that
       a vector is filtered with a too high of a degree which may
       introduce numerical instabilities and slow or even impede
       convergence. This variable is initialized by the
@@ -466,7 +478,7 @@ class ChaseConfig {
   //! An optional parameter augmenting of few units the polynomial degree automatic computed by ChASE.
   /*!
       This parameter is exclusively used when the flag `optimization_`
-      is set to `'true'` and should never be larger than a single
+      is set to `true` and should never be larger than a single
       digit. This variable is initialized by the constructor. Its
       default value is set to *2*.
    */  

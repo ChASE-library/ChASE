@@ -61,11 +61,11 @@ class ChasePerfData {
   /*! The *S* in ChASE stands for *Subspace iteration*. The main
       engine under the hood of ChASE is a *loop* enveloping all the
       main routines executed by the code. Because of this structure,
-      ChASE is a truly interative algorithm based on subspace
+      ChASE is a truly iterative algorithm based on subspace
       filtering. Counting the number of times such a loop is repeated
       gives a measure of the effectiveness of the algorithm and it is
       usually a non-linear function of the spectral distribution. For
-      example, when using the flag `approximate_ = 'true'` to solve a
+      example, when using the flag ``approximate_ = 'true'`` to solve a
       sequence of eigenproblems, one can observe that the number of
       subspace iteration decreases as a function of sequences index.
       \return The total number of subspace iterations.
