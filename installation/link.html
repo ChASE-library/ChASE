@@ -1,0 +1,448 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Linking ChASE to other Application Software &mdash; ChASE 0.9.1 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../_static/ChASE_Logo_Favicon_RGB.png"/>
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="../theme_overrides.css" type="text/css" />
+  
+
+  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="ChASE 0.9.1 documentation" href="../index.html"/>
+        <link rel="up" title="Installation and Setup on a Cluster" href="../installation.html"/>
+        <link rel="next" title="ChASE with MPI+OpenMP" href="suggestion.html"/>
+        <link rel="prev" title="Installation on a CPU-only Cluster" href="installcluster.html"/>
+    <link href="../_static/theme_overrides.css" rel="stylesheet" type="text/css">
+
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html">
+          
+
+          
+            
+            <img src="../_static/ChASE_Logo_RGB.png" class="logo" />
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.9rc
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <p class="caption"><span class="caption-text">INTRODUCTION</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../chase.html">ChASE: an Iterative Solver for Dense Eigenproblems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../version.html">Versions of the library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../license.html">Licenses and Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reference.html">References and Contributors</a></li>
+</ul>
+<p class="caption"><span class="caption-text">USER DOCUMENTATION</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../quick-start.html">Quick Start</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../installation.html">Installation and Setup on a Cluster</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../installation.html#library-dependencies">Library Dependencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../installation.html#installation-on-cluster">Installation on Cluster</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../installation.html#linking-chase">Linking ChASE</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Linking ChASE to other Application Software</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#include-headers">Include headers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#linking-to-chase-by-using-cmake">Linking to ChASE by using CMake</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#direct-linking">Direct linking</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#linking-by-makefile">Linking by Makefile</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#interface-of-chase-to-fortran-c">Interface of ChASE to Fortran &amp; C</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#interface-to-fortran">Interface to Fortran</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#interface-to-c">Interface to C</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../installation.html#recommendation-on-the-usage-of-computing-resources">Recommendation on the usage of Computing Resources</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../example.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../module.html">Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../parameters.html">Parameters and Configurations</a></li>
+</ul>
+<p class="caption"><span class="caption-text">DEVELOPER DOCUMENTATION</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../algorithm.html">General algorithm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../abstract.html">Virtual Abstract of Numerical Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../parallel.html">Parallel implementations</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">ChASE</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+        <li><a href="../installation.html">Installation and Setup on a Cluster</a> &raquo;</li>
+      
+    <li>Linking ChASE to other Application Software</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        
+          <a href="../_sources/installation/link.rst.txt" rel="nofollow"> View page source</a>
+        
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="linking-chase-to-other-application-software">
+<h1>Linking ChASE to other Application Software<a class="headerlink" href="#linking-chase-to-other-application-software" title="Permalink to this headline">¶</a></h1>
+<p>In this section, we give the guidelines for the integration
+of the ChASE library into a given application software.</p>
+<div class="section" id="include-headers">
+<h2>Include headers<a class="headerlink" href="#include-headers" title="Permalink to this headline">¶</a></h2>
+<p>In order to use ChASE in an application code written in <code class="docutils literal notranslate"><span class="pre">C/C++</span></code>
+the following files have to be included in the header file.</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cm">/*Performance Decorator of ChASE*/</span>
+<span class="cp">#include</span> <span class="cpf">&quot;algorithm/performance.hpp&quot;</span><span class="cp"></span>
+
+<span class="cm">/*Common interface of ChASE-MPI*/</span>
+<span class="cp">#include</span> <span class="cpf">&quot;ChASE-MPI/chase_mpi.hpp&quot;</span><span class="cp"></span>
+
+<span class="cm">/*USE ChASE-MPI without GPUs*/</span>
+<span class="cm">/*With MPI support for distributed-memory system*/</span>
+<span class="cp">#include</span> <span class="cpf">&quot;ChASE-MPI/impl/chase_mpihemm_blas.hpp&quot;</span><span class="cp"></span>
+<span class="cm">/*Without MPI support for single-node system*/</span>
+<span class="cp">#include</span> <span class="cpf">&quot;ChASE-MPI/impl/chase_mpihemm_blas_seq.hpp&quot;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&quot;ChASE-MPI/impl/chase_mpihemm_blas_seq_inplace.hpp&quot;</span><span class="cp"></span>
+
+<span class="cm">/*USE ChASE-MPI with GPUs*/</span>
+<span class="cm">/*With MPI support for distributed-memory system*/</span>
+<span class="cp">#include</span> <span class="cpf">&quot;ChASE-MPI/impl/chase_mpihemm_mgpu.hpp&quot;</span><span class="cp"></span>
+<span class="cm">/*Without MPI support for single-node system*/</span>
+<span class="cp">#include</span> <span class="cpf">&quot;ChASE-MPI/impl/chase_mpihemm_cuda_seq.hpp&quot;</span><span class="cp"></span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="linking-to-chase-by-using-cmake">
+<span id="link-by-cmake"></span><h2>Linking to ChASE by using CMake<a class="headerlink" href="#linking-to-chase-by-using-cmake" title="Permalink to this headline">¶</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">CMakeLists.txt</span></code> (see code window below) is an example on how to link ChASE installation
+using CMake. In this example ChASE is linked to a source file named <code class="docutils literal notranslate"><span class="pre">chase_app.cpp</span></code>.
+The <code class="docutils literal notranslate"><span class="pre">CMakeLists.txt</span></code> should then be included in the main directory
+of the application software as well as the <code class="docutils literal notranslate"><span class="pre">chase_app.cpp</span></code> file.</p>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">cmake_minimum_required</span><span class="p">(</span><span class="s">VERSION</span> <span class="s">3.8</span><span class="p">)</span>
+
+<span class="nb">project</span><span class="p">(</span><span class="s">chase-app</span> <span class="s">VERSION</span> <span class="s">0.0.1</span> <span class="s">LANGUAGES</span> <span class="s">CXX</span><span class="p">)</span>
+
+<span class="c">#find installation of ChASE</span>
+<span class="nb">find_package</span><span class="p">(</span> <span class="s">chase</span> <span class="s">REQUIRED</span> <span class="s">CONFIG</span><span class="p">)</span>
+<span class="c"># find other dependencies of ChASE: BLAS, LAPACK, OpenMP, MPI, etc</span>
+<span class="nb">find_package</span><span class="p">(</span> <span class="s">BLAS</span>   <span class="s">REQUIRED</span> <span class="p">)</span>
+<span class="nb">find_package</span><span class="p">(</span> <span class="s">LAPACK</span> <span class="s">REQUIRED</span> <span class="p">)</span>
+<span class="nb">find_package</span><span class="p">(</span> <span class="s">OpenMP</span><span class="p">)</span>
+
+<span class="nb">find_package</span><span class="p">(</span><span class="s">MPI</span> <span class="s">REQUIRED</span><span class="p">)</span>
+<span class="nb">if</span><span class="p">(</span><span class="s">MPI_FOUND</span><span class="p">)</span>
+  <span class="nb">SET</span><span class="p">(</span><span class="s">CMAKE_CXX_COMPILER</span> <span class="o">${</span><span class="nv">MPI_CXX_COMPILER</span><span class="o">}</span><span class="p">)</span>
+<span class="nb">endif</span><span class="p">()</span>
+
+<span class="c"># enable OpenMP multi-threading</span>
+<span class="nb">set</span><span class="p">(</span><span class="s">CMAKE_CXX_FLAGS</span> <span class="s2">&quot;${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}&quot;</span><span class="p">)</span>
+
+<span class="nb">add_executable</span><span class="p">(</span><span class="o">${</span><span class="nv">PROJECT_NAME</span><span class="o">}</span><span class="p">)</span>
+
+<span class="c"># add the source file of application</span>
+<span class="nb">target_sources</span><span class="p">(</span><span class="o">${</span><span class="nv">PROJECT_NAME</span><span class="o">}</span> <span class="s">PRIVATE</span> <span class="s">chase_app.cpp</span><span class="p">)</span>
+
+<span class="nb">target_compile_features</span><span class="p">(</span><span class="o">${</span><span class="nv">PROJECT_NAME</span><span class="o">}</span> <span class="s">INTERFACE</span> <span class="s">cxx_auto_type</span><span class="p">)</span>
+
+<span class="nb">target_include_directories</span><span class="p">(</span> <span class="o">${</span><span class="nv">PROJECT_NAME</span><span class="o">}</span> <span class="s">INTERFACE</span>
+  <span class="o">${</span><span class="nv">MPI_CXX_INCLUDE_PATH</span><span class="o">}</span>
+  <span class="p">)</span>
+
+<span class="c"># link to BLAS, LAPACK and MPI</span>
+<span class="nb">target_link_libraries</span><span class="p">(</span> <span class="o">${</span><span class="nv">PROJECT_NAME</span><span class="o">}</span> <span class="s">INTERFACE</span>
+  <span class="o">${</span><span class="nv">BLAS_LIBRARIES</span><span class="o">}</span>
+  <span class="o">${</span><span class="nv">LAPACK_LIBRARIES</span><span class="o">}</span>
+  <span class="o">${</span><span class="nv">MPI_CXX_LIBRARIES</span><span class="o">}</span>
+  <span class="p">)</span>
+
+<span class="c"># link to ChASE</span>
+<span class="nb">target_link_libraries</span><span class="p">(</span><span class="o">${</span><span class="nv">PROJECT_NAME</span><span class="o">}</span> <span class="s">PUBLIC</span> <span class="s">ChASE::chase_mpi</span><span class="p">)</span>
+
+<span class="c"># if users want to compile the application with multi-GPU version of ChASE</span>
+<span class="c"># the target should be linked to the both the library ChASE::chase_mpi</span>
+<span class="c"># and the library ChASE::chase_cuda</span>
+<span class="nb">target_link_libraries</span><span class="p">(</span><span class="o">${</span><span class="nv">PROJECT_NAME</span><span class="o">}</span> <span class="s">PUBLIC</span> <span class="s">ChASE::chase_cuda</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>With CMake, the application software can be compiled by the following commands:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">mkdir build &amp; cd build</span>
+<span class="go">cmake .. -DCMAKE_PREFIX_PATH=${ChASEROOT}</span>
+<span class="go">make</span>
+</pre></div>
+</div>
+<p><a class="reference external" href="https://gitlab.version.fz-juelich.de/SLai/ChASE/-/tree/cmake/examples/3_installation">example: 3_installation</a>
+provides an example which illustrates the way to link ChASE by CMake with or without GPU supports. (This link should be replaced by the link on github later.)</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>We highly recommand to link ChASE with CMake. The installation of ChASE allows to use CMake to find and link it easily.</p>
+</div>
+</div>
+<div class="section" id="direct-linking">
+<h2>Direct linking<a class="headerlink" href="#direct-linking" title="Permalink to this headline">¶</a></h2>
+<p>If users want to manually link to ChASE, it is necessary to link to
+the ChASE installation, the <code class="docutils literal notranslate"><span class="pre">BLAS/LAPACK</span></code> libraries, <code class="docutils literal notranslate"><span class="pre">OpenMP</span></code>
+programming interface (Optional: if multi-threading is required), and
+<code class="docutils literal notranslate"><span class="pre">CUDA</span></code> programming interface (Optional: if CUDA is required).</p>
+<div class="section" id="where-to-find-useful-linking-information">
+<h3>Where to Find Useful Linking Information<a class="headerlink" href="#where-to-find-useful-linking-information" title="Permalink to this headline">¶</a></h3>
+<p>The standard installation of ChASE can already provide some
+information about the linking, which can be extracted when it
+generates the <cite>CMake configuration files</cite>. More details, the linking information
+can be obtained from the
+<strong>lines 56-59</strong> of the configuration file <code class="docutils literal notranslate"><span class="pre">${ChASEROOT}/lib64/cmake/ChASE/chase-mpi.cmake</span></code>.</p>
+</div>
+<div class="section" id="pure-cpu-version">
+<h3>Pure CPU version<a class="headerlink" href="#pure-cpu-version" title="Permalink to this headline">¶</a></h3>
+<p>For the pure CPU version, the installation of ChASE is header-only, so it is only necessary to include the ChASE header files and other external libraries such as <code class="docutils literal notranslate"><span class="pre">BLAS/LAPACK</span></code>.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">mpicxx chase-app.cpp -o chase-app -I${ChASEROOT}/include ${BLASLIBRARIES} ${LAPACKLIBRARIES}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="multi-gpu-version">
+<h3>Multi-GPU version<a class="headerlink" href="#multi-gpu-version" title="Permalink to this headline">¶</a></h3>
+<p>For the GPU version, apart from including the ChASE header files and other external libraries, it is also necessary to link against to the libraries <code class="docutils literal notranslate"><span class="pre">libchase_cuda.a</span></code> <code class="docutils literal notranslate"><span class="pre">CUDA</span> <span class="pre">runtime</span></code>, <code class="docutils literal notranslate"><span class="pre">cuBLAS</span></code> and <code class="docutils literal notranslate"><span class="pre">cuSOLVER</span></code>.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">mpicxx chase-app-gpu.cpp -o chase-app-gpu -I${ChASEROOT}/include -L${ChASEROOT}/lib/libchase_cuda.a ${BLASLIBRARIES} ${LAPACKLIBRARIES} ${CUBLASLIBRARIES} ${CUSOLVERLIBRARIES} ${CUDA_RUNTIME_LIBRARIES}</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For the users of Intel MKL as the BLAS/LAPACK implementation for
+ChASE, useful guidelines for linking can be found in <a class="reference external" href="https://software.intel.com/content/www/us/en/develop/articles/intel-mkl-link-line-advisor.html">Intel® Math Kernel Library Link Line Advisor</a> .</p>
+</div>
+</div>
+</div>
+<div class="section" id="linking-by-makefile">
+<h2>Linking by Makefile<a class="headerlink" href="#linking-by-makefile" title="Permalink to this headline">¶</a></h2>
+<p>Similar as the direct linking, it is also possible to link ChASE by <code class="docutils literal notranslate"><span class="pre">Makefile</span></code>.
+Here below is a template of this <code class="docutils literal notranslate"><span class="pre">Makefile</span></code> for <a class="reference external" href="https://gitlab.version.fz-juelich.de/SLai/ChASE/-/tree/cmake/examples/3_installation">example: 3_installation</a>.</p>
+<div class="highlight-Makefile notranslate"><div class="highlight"><pre><span></span><span class="nv">ChASEROOT</span> <span class="o">=</span> /The/installation/path/of/ChASE/on/your/platform
+
+<span class="nv">CXX</span> <span class="o">=</span> mpicxx <span class="c1">#or other mpi CXX compiler</span>
+
+<span class="nv">CXXFLAGS</span> <span class="o">=</span> <span class="se">\</span>
+    -Wall -fopenmp -MMD <span class="se">\</span>
+
+<span class="nv">INCLUDE_DIR</span> <span class="o">=</span> <span class="si">${</span><span class="nv">ChASEROOT</span><span class="si">}</span>/include <span class="c1">#include the headers of ChASE</span>
+
+<span class="nv">LIBS_BLASLAPACK</span> <span class="o">=</span> /your/BLAS/LAPACK/LIBRARIES
+
+<span class="c">## Below is an example which uses MKL as BLAS/LAPACK ##</span>
+<span class="c">#LIBS_BLASLAPACK = -lmkl_gf_lp64 \</span>
+<span class="c">#                  -lmkl_gnu_thread \</span>
+<span class="c">#                  -lmkl_core -lgomp \</span>
+<span class="c">#                  -lpthread -lm \</span>
+<span class="c">#                  -lmkl_gf_lp64 \</span>
+<span class="c">#                  -lmkl_gnu_thread \</span>
+<span class="c">#                  -lmkl_core</span>
+
+<span class="c">## Optional for multi-GPU version of ChASE ##</span>
+<span class="nv">LIBS_CUDA</span> <span class="o">=</span> -lcublas -lcusolver -lcudart <span class="c1">## link to the libraries of cuBLAS, cuSOLVER and CUDA runtime</span>
+
+<span class="c">## Optional for multi-GPU version of ChASE ##</span>
+<span class="nv">LIBS_CHASE_CUDA</span> <span class="o">=</span> <span class="si">${</span><span class="nv">ChASEROOT</span><span class="si">}</span>/lib64/libchase_cuda.a
+
+<span class="nf">chase-app</span><span class="o">:</span> <span class="n">LIBS</span> = ${<span class="n">LIBS_BLASLAPACK</span>} <span class="c">#executable generated by chase-app.cpp</span>
+
+<span class="nf">chase-app-gpu</span><span class="o">:</span> <span class="n">LIBS</span> = ${<span class="n">LIBS_BLASLAPACK</span>} -<span class="n">L</span>${<span class="n">LIBS_CHASE_CUDA</span>} ${<span class="n">LIBS_CUDA</span>} <span class="c">#executable generated by chase-app-gpu.cpp</span>
+
+<span class="nv">src</span> <span class="o">=</span> <span class="si">${</span><span class="nv">wildcard</span><span class="p"> *.cpp</span><span class="si">}</span>
+<span class="nv">exe</span> <span class="o">=</span> <span class="si">${</span><span class="nv">basename</span><span class="p"> </span><span class="si">${</span><span class="nv">src</span><span class="si">}}</span>
+
+<span class="nf">all</span><span class="o">:</span> <span class="k">$(</span><span class="nv">exe</span><span class="k">)</span>
+
+<span class="nf">.SUFFIXES</span><span class="o">:</span>
+
+<span class="nf">%</span><span class="o">:</span> %.<span class="n">cpp</span>
+        <span class="si">${</span><span class="nv">CXX</span><span class="si">}</span> <span class="si">${</span><span class="nv">CXXFLAGS</span><span class="si">}</span> <span class="si">${</span><span class="nv">LIBS</span><span class="si">}</span> -I<span class="si">${</span><span class="nv">INCLUDE_DIR</span><span class="si">}</span> -o <span class="nv">$@</span> $&lt;
+
+<span class="nf">clean</span><span class="o">:</span>
+        -rm -f <span class="k">$(</span>exe<span class="k">)</span> *.o
+
+<span class="cp">-include *.d</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="interface-of-chase-to-fortran-c">
+<h1>Interface of ChASE to Fortran &amp; C<a class="headerlink" href="#interface-of-chase-to-fortran-c" title="Permalink to this headline">¶</a></h1>
+<p>ChASE is written in <code class="docutils literal notranslate"><span class="pre">C++</span></code> with templates, which is able to support the computation with
+multiple scalar types and precisions. In order to integrate ChASE into <code class="docutils literal notranslate"><span class="pre">Fortran</span></code> or <code class="docutils literal notranslate"><span class="pre">C</span></code>
+based applications, we provide its interfaces to both ChASE and C.</p>
+<div class="section" id="interface-to-fortran">
+<h2>Interface to Fortran<a class="headerlink" href="#interface-to-fortran" title="Permalink to this headline">¶</a></h2>
+<p>Interface to Fortran</p>
+</div>
+<div class="section" id="interface-to-c">
+<h2>Interface to C<a class="headerlink" href="#interface-to-c" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="suggestion.html" class="btn btn-neutral float-right" title="ChASE with MPI+OpenMP" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="installcluster.html" class="btn btn-neutral" title="Installation on a CPU-only Cluster" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2021, SimLab Quantum Materials.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.9.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="../_static/language_data.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

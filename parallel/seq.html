@@ -1,0 +1,364 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Single node ChASE &mdash; ChASE 0.9.1 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../_static/ChASE_Logo_Favicon_RGB.png"/>
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="../theme_overrides.css" type="text/css" />
+  
+
+  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="ChASE 0.9.1 documentation" href="../index.html"/>
+        <link rel="up" title="Implementation of ChASE-MPI" href="mpi.html"/>
+        <link rel="next" title="CPUs" href="cpu.html"/>
+        <link rel="prev" title="Interface for ChASE-MPI" href="comm.html"/>
+    <link href="../_static/theme_overrides.css" rel="stylesheet" type="text/css">
+
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html">
+          
+
+          
+            
+            <img src="../_static/ChASE_Logo_RGB.png" class="logo" />
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.9rc
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <p class="caption"><span class="caption-text">INTRODUCTION</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../chase.html">ChASE: an Iterative Solver for Dense Eigenproblems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../version.html">Versions of the library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../license.html">Licenses and Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reference.html">References and Contributors</a></li>
+</ul>
+<p class="caption"><span class="caption-text">USER DOCUMENTATION</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../quick-start.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation and Setup on a Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../example.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../module.html">Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../parameters.html">Parameters and Configurations</a></li>
+</ul>
+<p class="caption"><span class="caption-text">DEVELOPER DOCUMENTATION</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../algorithm.html">General algorithm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../abstract.html">Virtual Abstract of Numerical Kernels</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../parallel.html">Parallel implementations</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="elemental.html">Implementation of ChASE-Elemental</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="mpi.html">Implementation of ChASE-MPI</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="comm.html">Interface for ChASE-MPI</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Single node ChASE</a></li>
+<li class="toctree-l3"><a class="reference internal" href="cpu.html">CPUs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="gpu.html">multi-GPUs</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">ChASE</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+        <li><a href="../parallel.html">Parallel implementations</a> &raquo;</li>
+      
+        <li><a href="mpi.html">Implementation of ChASE-MPI</a> &raquo;</li>
+      
+    <li>Single node ChASE</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        
+          <a href="../_sources/parallel/seq.rst.txt" rel="nofollow"> View page source</a>
+        
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="single-node-chase">
+<h1>Single node ChASE<a class="headerlink" href="#single-node-chase" title="Permalink to this headline">¶</a></h1>
+<p>Work in progress.</p>
+<dl class="cpp class">
+<dt id="_CPPv4I0EN5chase3mpi19ChaseMpiHemmBlasSeqE">
+<span id="_CPPv3I0EN5chase3mpi19ChaseMpiHemmBlasSeqE"></span><span id="_CPPv2I0EN5chase3mpi19ChaseMpiHemmBlasSeqE"></span>template&lt;class <code class="sig-name descname">T</code>&gt;<br /><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_hemm_blas_seq"></span><em class="property">class </em><code class="sig-prename descclassname"><a class="reference internal" href="../.unused_material/reference/chase.html#_CPPv45chaseP13MKL_Complex16iP13MKL_Complex16P13MKL_Complex16PdiKiKiPCiKdK15CHASE_MODE_TYPEK14CHASE_OPT_TYPE" title="chase">chase</a>::mpi<code class="sig-prename descclassname">::</code></code><code class="sig-name descname">ChaseMpiHemmBlasSeq</code> : <em class="property">public</em> <a class="reference internal" href="../.unused_material/reference/chase.html#_CPPv45chaseP13MKL_Complex16iP13MKL_Complex16P13MKL_Complex16PdiKiKiPCiKdK15CHASE_MODE_TYPEK14CHASE_OPT_TYPE" title="chase">chase</a>::mpi::<a class="reference internal" href="comm.html#_CPPv4I0EN5chase3mpi21ChaseMpiHemmInterfaceE" title="chase::mpi::ChaseMpiHemmInterface">ChaseMpiHemmInterface</a>&lt;<a class="reference internal" href="#_CPPv4I0EN5chase3mpi19ChaseMpiHemmBlasSeqE" title="chase::mpi::ChaseMpiHemmBlasSeq::T">T</a>&gt;<a class="headerlink" href="#_CPPv4I0EN5chase3mpi19ChaseMpiHemmBlasSeqE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric">Public Functions</p>
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi19ChaseMpiHemmBlasSeq19ChaseMpiHemmBlasSeqER16ChaseMpiMatricesI1TENSt6size_tENSt6size_tE">
+<span id="_CPPv3N5chase3mpi19ChaseMpiHemmBlasSeq19ChaseMpiHemmBlasSeqER16ChaseMpiMatricesI1TENSt6size_tENSt6size_tE"></span><span id="_CPPv2N5chase3mpi19ChaseMpiHemmBlasSeq19ChaseMpiHemmBlasSeqER16ChaseMpiMatricesI1TENSt6size_tENSt6size_tE"></span><span id="chase::mpi::ChaseMpiHemmBlasSeq::ChaseMpiHemmBlasSeq__ChaseMpiMatrices:T:R.std::s.std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_hemm_blas_seq_1ad4cbfbae28658a7abccba6a80483f546"></span><code class="sig-name descname">ChaseMpiHemmBlasSeq</code><span class="sig-paren">(</span><a class="reference internal" href="../module/chasempimatrices.html#_CPPv4I0EN5chase3mpi16ChaseMpiMatricesE" title="chase::mpi::ChaseMpiMatrices">ChaseMpiMatrices</a>&lt;<a class="reference internal" href="#_CPPv4I0EN5chase3mpi19ChaseMpiHemmBlasSeqE" title="chase::mpi::ChaseMpiHemmBlasSeq::T">T</a>&gt; &amp;<em>matrices</em>, std::size_t <em>n</em>, std::size_t <em>maxBlock</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi19ChaseMpiHemmBlasSeq19ChaseMpiHemmBlasSeqER16ChaseMpiMatricesI1TENSt6size_tENSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi19ChaseMpiHemmBlasSeq19ChaseMpiHemmBlasSeqEv">
+<span id="_CPPv3N5chase3mpi19ChaseMpiHemmBlasSeq19ChaseMpiHemmBlasSeqEv"></span><span id="_CPPv2N5chase3mpi19ChaseMpiHemmBlasSeq19ChaseMpiHemmBlasSeqEv"></span><span id="chase::mpi::ChaseMpiHemmBlasSeq::ChaseMpiHemmBlasSeq"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_hemm_blas_seq_1aba712abf8b00eb5e840e5e5911bb3d5d"></span><code class="sig-name descname">ChaseMpiHemmBlasSeq</code><span class="sig-paren">(</span><span class="sig-paren">)</span> = delete<a class="headerlink" href="#_CPPv4N5chase3mpi19ChaseMpiHemmBlasSeq19ChaseMpiHemmBlasSeqEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi19ChaseMpiHemmBlasSeq19ChaseMpiHemmBlasSeqERK19ChaseMpiHemmBlasSeq">
+<span id="_CPPv3N5chase3mpi19ChaseMpiHemmBlasSeq19ChaseMpiHemmBlasSeqERK19ChaseMpiHemmBlasSeq"></span><span id="_CPPv2N5chase3mpi19ChaseMpiHemmBlasSeq19ChaseMpiHemmBlasSeqERK19ChaseMpiHemmBlasSeq"></span><span id="chase::mpi::ChaseMpiHemmBlasSeq::ChaseMpiHemmBlasSeq__ChaseMpiHemmBlasSeqCR"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_hemm_blas_seq_1a29122ff10642fe388075578db2fd2605"></span><code class="sig-name descname">ChaseMpiHemmBlasSeq</code><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4N5chase3mpi19ChaseMpiHemmBlasSeq19ChaseMpiHemmBlasSeqERK19ChaseMpiHemmBlasSeq" title="chase::mpi::ChaseMpiHemmBlasSeq::ChaseMpiHemmBlasSeq">ChaseMpiHemmBlasSeq</a> <em class="property">const</em> &amp;<em>rhs</em><span class="sig-paren">)</span> = delete<a class="headerlink" href="#_CPPv4N5chase3mpi19ChaseMpiHemmBlasSeq19ChaseMpiHemmBlasSeqERK19ChaseMpiHemmBlasSeq" title="Permalink to this definition">¶</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi19ChaseMpiHemmBlasSeqD0Ev">
+<span id="_CPPv3N5chase3mpi19ChaseMpiHemmBlasSeqD0Ev"></span><span id="_CPPv2N5chase3mpi19ChaseMpiHemmBlasSeqD0Ev"></span><span id="chase::mpi::ChaseMpiHemmBlasSeq::~ChaseMpiHemmBlasSeq"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_hemm_blas_seq_1af82867d85e4770ec36a63807699f2c04"></span><code class="sig-name descname">~ChaseMpiHemmBlasSeq</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi19ChaseMpiHemmBlasSeqD0Ev" title="Permalink to this definition">¶</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi19ChaseMpiHemmBlasSeq14preApplicationEP1TKNSt6size_tEKNSt6size_tE">
+<span id="_CPPv3N5chase3mpi19ChaseMpiHemmBlasSeq14preApplicationEP1TKNSt6size_tEKNSt6size_tE"></span><span id="_CPPv2N5chase3mpi19ChaseMpiHemmBlasSeq14preApplicationEP1TKNSt6size_tEKNSt6size_tE"></span><span id="chase::mpi::ChaseMpiHemmBlasSeq::preApplication__TP.std::sC.std::sC"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_hemm_blas_seq_1a1b8661dba8f0c923ae3f3be03c14642c"></span>void <code class="sig-name descname">preApplication</code><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi19ChaseMpiHemmBlasSeqE" title="chase::mpi::ChaseMpiHemmBlasSeq::T">T</a> *<em>V</em>, std::size_t <em class="property">const</em> <em>locked</em>, std::size_t <em class="property">const</em> <em>block</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi19ChaseMpiHemmBlasSeq14preApplicationEP1TKNSt6size_tEKNSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi19ChaseMpiHemmBlasSeq14preApplicationEP1TP1TKNSt6size_tEKNSt6size_tE">
+<span id="_CPPv3N5chase3mpi19ChaseMpiHemmBlasSeq14preApplicationEP1TP1TKNSt6size_tEKNSt6size_tE"></span><span id="_CPPv2N5chase3mpi19ChaseMpiHemmBlasSeq14preApplicationEP1TP1TKNSt6size_tEKNSt6size_tE"></span><span id="chase::mpi::ChaseMpiHemmBlasSeq::preApplication__TP.TP.std::sC.std::sC"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_hemm_blas_seq_1a9cb0fc8b5159bfcb857e07a6eba4d198"></span>void <code class="sig-name descname">preApplication</code><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi19ChaseMpiHemmBlasSeqE" title="chase::mpi::ChaseMpiHemmBlasSeq::T">T</a> *<em>V1</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi19ChaseMpiHemmBlasSeqE" title="chase::mpi::ChaseMpiHemmBlasSeq::T">T</a> *<em>V2</em>, std::size_t <em class="property">const</em> <em>locked</em>, std::size_t <em class="property">const</em> <em>block</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi19ChaseMpiHemmBlasSeq14preApplicationEP1TP1TKNSt6size_tEKNSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi19ChaseMpiHemmBlasSeq5applyEK1TK1TKNSt6size_tEKNSt6size_tE">
+<span id="_CPPv3N5chase3mpi19ChaseMpiHemmBlasSeq5applyEK1TK1TKNSt6size_tEKNSt6size_tE"></span><span id="_CPPv2N5chase3mpi19ChaseMpiHemmBlasSeq5applyEK1TK1TKNSt6size_tEKNSt6size_tE"></span><span id="chase::mpi::ChaseMpiHemmBlasSeq::apply__TC.TC.std::sC.std::sC"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_hemm_blas_seq_1afd6c04bd759bbba2cdbba356f268b382"></span>void <code class="sig-name descname">apply</code><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi19ChaseMpiHemmBlasSeqE" title="chase::mpi::ChaseMpiHemmBlasSeq::T">T</a> <em class="property">const</em> <em>alpha</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi19ChaseMpiHemmBlasSeqE" title="chase::mpi::ChaseMpiHemmBlasSeq::T">T</a> <em class="property">const</em> <em>beta</em>, <em class="property">const</em> std::size_t <em>offset</em>, <em class="property">const</em> std::size_t <em>block</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi19ChaseMpiHemmBlasSeq5applyEK1TK1TKNSt6size_tEKNSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi19ChaseMpiHemmBlasSeq15postApplicationEP1TKNSt6size_tE">
+<span id="_CPPv3N5chase3mpi19ChaseMpiHemmBlasSeq15postApplicationEP1TKNSt6size_tE"></span><span id="_CPPv2N5chase3mpi19ChaseMpiHemmBlasSeq15postApplicationEP1TKNSt6size_tE"></span><span id="chase::mpi::ChaseMpiHemmBlasSeq::postApplication__TP.std::sC"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_hemm_blas_seq_1a4755bc06ff1bf0fd09edea077665afdf"></span>bool <code class="sig-name descname">postApplication</code><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi19ChaseMpiHemmBlasSeqE" title="chase::mpi::ChaseMpiHemmBlasSeq::T">T</a> *<em>V</em>, std::size_t <em class="property">const</em> <em>block</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi19ChaseMpiHemmBlasSeq15postApplicationEP1TKNSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi19ChaseMpiHemmBlasSeq11shiftMatrixEK1Tb">
+<span id="_CPPv3N5chase3mpi19ChaseMpiHemmBlasSeq11shiftMatrixEK1Tb"></span><span id="_CPPv2N5chase3mpi19ChaseMpiHemmBlasSeq11shiftMatrixEK1Tb"></span><span id="chase::mpi::ChaseMpiHemmBlasSeq::shiftMatrix__TC.b"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_hemm_blas_seq_1aae7c0188f5bb5efb4ea33337799d17ae"></span>void <code class="sig-name descname">shiftMatrix</code><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi19ChaseMpiHemmBlasSeqE" title="chase::mpi::ChaseMpiHemmBlasSeq::T">T</a> <em class="property">const</em> <em>c</em>, bool <em>isunshift</em> = false<span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi19ChaseMpiHemmBlasSeq11shiftMatrixEK1Tb" title="Permalink to this definition">¶</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi19ChaseMpiHemmBlasSeq8applyVecEP1TP1T">
+<span id="_CPPv3N5chase3mpi19ChaseMpiHemmBlasSeq8applyVecEP1TP1T"></span><span id="_CPPv2N5chase3mpi19ChaseMpiHemmBlasSeq8applyVecEP1TP1T"></span><span id="chase::mpi::ChaseMpiHemmBlasSeq::applyVec__TP.TP"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_hemm_blas_seq_1a901b8153ed8fb49725b9b9e17cc9141e"></span>void <code class="sig-name descname">applyVec</code><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi19ChaseMpiHemmBlasSeqE" title="chase::mpi::ChaseMpiHemmBlasSeq::T">T</a> *<em>B</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi19ChaseMpiHemmBlasSeqE" title="chase::mpi::ChaseMpiHemmBlasSeq::T">T</a> *<em>C</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi19ChaseMpiHemmBlasSeq8applyVecEP1TP1T" title="Permalink to this definition">¶</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4NK5chase3mpi19ChaseMpiHemmBlasSeq7get_offEPNSt6size_tEPNSt6size_tEPNSt6size_tEPNSt6size_tE">
+<span id="_CPPv3NK5chase3mpi19ChaseMpiHemmBlasSeq7get_offEPNSt6size_tEPNSt6size_tEPNSt6size_tEPNSt6size_tE"></span><span id="_CPPv2NK5chase3mpi19ChaseMpiHemmBlasSeq7get_offEPNSt6size_tEPNSt6size_tEPNSt6size_tEPNSt6size_tE"></span><span id="chase::mpi::ChaseMpiHemmBlasSeq::get_off__std::sP.std::sP.std::sP.std::sPC"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_hemm_blas_seq_1a77afd53ba45c29be781bc6f54f28e88c"></span>void <code class="sig-name descname">get_off</code><span class="sig-paren">(</span>std::size_t *<em>xoff</em>, std::size_t *<em>yoff</em>, std::size_t *<em>xlen</em>, std::size_t *<em>ylen</em><span class="sig-paren">)</span> <em class="property">const</em> <em class="property">override</em><a class="headerlink" href="#_CPPv4NK5chase3mpi19ChaseMpiHemmBlasSeq7get_offEPNSt6size_tEPNSt6size_tEPNSt6size_tEPNSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4NK5chase3mpi19ChaseMpiHemmBlasSeq5get_HEv">
+<span id="_CPPv3NK5chase3mpi19ChaseMpiHemmBlasSeq5get_HEv"></span><span id="_CPPv2NK5chase3mpi19ChaseMpiHemmBlasSeq5get_HEv"></span><span id="chase::mpi::ChaseMpiHemmBlasSeq::get_HC"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_hemm_blas_seq_1ac0e16ddd620f0bbb566b98abb1feb28b"></span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi19ChaseMpiHemmBlasSeqE" title="chase::mpi::ChaseMpiHemmBlasSeq::T">T</a> *<code class="sig-name descname">get_H</code><span class="sig-paren">(</span><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv4NK5chase3mpi19ChaseMpiHemmBlasSeq5get_HEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4NK5chase3mpi19ChaseMpiHemmBlasSeq6get_V1Ev">
+<span id="_CPPv3NK5chase3mpi19ChaseMpiHemmBlasSeq6get_V1Ev"></span><span id="_CPPv2NK5chase3mpi19ChaseMpiHemmBlasSeq6get_V1Ev"></span><span id="chase::mpi::ChaseMpiHemmBlasSeq::get_V1C"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_hemm_blas_seq_1a0539653881e51968739213bfd6e4b46e"></span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi19ChaseMpiHemmBlasSeqE" title="chase::mpi::ChaseMpiHemmBlasSeq::T">T</a> *<code class="sig-name descname">get_V1</code><span class="sig-paren">(</span><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv4NK5chase3mpi19ChaseMpiHemmBlasSeq6get_V1Ev" title="Permalink to this definition">¶</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4NK5chase3mpi19ChaseMpiHemmBlasSeq6get_V2Ev">
+<span id="_CPPv3NK5chase3mpi19ChaseMpiHemmBlasSeq6get_V2Ev"></span><span id="_CPPv2NK5chase3mpi19ChaseMpiHemmBlasSeq6get_V2Ev"></span><span id="chase::mpi::ChaseMpiHemmBlasSeq::get_V2C"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_hemm_blas_seq_1afcd09a41a5d516b38ddd459e55623781"></span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi19ChaseMpiHemmBlasSeqE" title="chase::mpi::ChaseMpiHemmBlasSeq::T">T</a> *<code class="sig-name descname">get_V2</code><span class="sig-paren">(</span><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv4NK5chase3mpi19ChaseMpiHemmBlasSeq6get_V2Ev" title="Permalink to this definition">¶</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4NK5chase3mpi19ChaseMpiHemmBlasSeq11get_mblocksEv">
+<span id="_CPPv3NK5chase3mpi19ChaseMpiHemmBlasSeq11get_mblocksEv"></span><span id="_CPPv2NK5chase3mpi19ChaseMpiHemmBlasSeq11get_mblocksEv"></span><span id="chase::mpi::ChaseMpiHemmBlasSeq::get_mblocksC"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_hemm_blas_seq_1ad24c492d8b1b78bd3971f5a40a991a03"></span>std::size_t <code class="sig-name descname">get_mblocks</code><span class="sig-paren">(</span><span class="sig-paren">)</span> <em class="property">const</em> <em class="property">override</em><a class="headerlink" href="#_CPPv4NK5chase3mpi19ChaseMpiHemmBlasSeq11get_mblocksEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4NK5chase3mpi19ChaseMpiHemmBlasSeq11get_nblocksEv">
+<span id="_CPPv3NK5chase3mpi19ChaseMpiHemmBlasSeq11get_nblocksEv"></span><span id="_CPPv2NK5chase3mpi19ChaseMpiHemmBlasSeq11get_nblocksEv"></span><span id="chase::mpi::ChaseMpiHemmBlasSeq::get_nblocksC"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_hemm_blas_seq_1a3b8ce31aaecc170331cc4add69c95f47"></span>std::size_t <code class="sig-name descname">get_nblocks</code><span class="sig-paren">(</span><span class="sig-paren">)</span> <em class="property">const</em> <em class="property">override</em><a class="headerlink" href="#_CPPv4NK5chase3mpi19ChaseMpiHemmBlasSeq11get_nblocksEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4NK5chase3mpi19ChaseMpiHemmBlasSeq5get_nEv">
+<span id="_CPPv3NK5chase3mpi19ChaseMpiHemmBlasSeq5get_nEv"></span><span id="_CPPv2NK5chase3mpi19ChaseMpiHemmBlasSeq5get_nEv"></span><span id="chase::mpi::ChaseMpiHemmBlasSeq::get_nC"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_hemm_blas_seq_1a01106990a1fc69a4e3088460312c4242"></span>std::size_t <code class="sig-name descname">get_n</code><span class="sig-paren">(</span><span class="sig-paren">)</span> <em class="property">const</em> <em class="property">override</em><a class="headerlink" href="#_CPPv4NK5chase3mpi19ChaseMpiHemmBlasSeq5get_nEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4NK5chase3mpi19ChaseMpiHemmBlasSeq5get_mEv">
+<span id="_CPPv3NK5chase3mpi19ChaseMpiHemmBlasSeq5get_mEv"></span><span id="_CPPv2NK5chase3mpi19ChaseMpiHemmBlasSeq5get_mEv"></span><span id="chase::mpi::ChaseMpiHemmBlasSeq::get_mC"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_hemm_blas_seq_1afef18936ebfc6223a44498d56bf73112"></span>std::size_t <code class="sig-name descname">get_m</code><span class="sig-paren">(</span><span class="sig-paren">)</span> <em class="property">const</em> <em class="property">override</em><a class="headerlink" href="#_CPPv4NK5chase3mpi19ChaseMpiHemmBlasSeq5get_mEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4NK5chase3mpi19ChaseMpiHemmBlasSeq9get_coordEv">
+<span id="_CPPv3NK5chase3mpi19ChaseMpiHemmBlasSeq9get_coordEv"></span><span id="_CPPv2NK5chase3mpi19ChaseMpiHemmBlasSeq9get_coordEv"></span><span id="chase::mpi::ChaseMpiHemmBlasSeq::get_coordC"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_hemm_blas_seq_1a696b2e54bed73bb28a3516a0db2b5154"></span>int *<code class="sig-name descname">get_coord</code><span class="sig-paren">(</span><span class="sig-paren">)</span> <em class="property">const</em> <em class="property">override</em><a class="headerlink" href="#_CPPv4NK5chase3mpi19ChaseMpiHemmBlasSeq9get_coordEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4NK5chase3mpi19ChaseMpiHemmBlasSeq13get_offs_lensERPNSt6size_tERPNSt6size_tERPNSt6size_tERPNSt6size_tERPNSt6size_tERPNSt6size_tE">
+<span id="_CPPv3NK5chase3mpi19ChaseMpiHemmBlasSeq13get_offs_lensERPNSt6size_tERPNSt6size_tERPNSt6size_tERPNSt6size_tERPNSt6size_tERPNSt6size_tE"></span><span id="_CPPv2NK5chase3mpi19ChaseMpiHemmBlasSeq13get_offs_lensERPNSt6size_tERPNSt6size_tERPNSt6size_tERPNSt6size_tERPNSt6size_tERPNSt6size_tE"></span><span id="chase::mpi::ChaseMpiHemmBlasSeq::get_offs_lens__std::sPR.std::sPR.std::sPR.std::sPR.std::sPR.std::sPRC"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_hemm_blas_seq_1af086e8a7d8e2ce222e5cb67a2a1e621d"></span>void <code class="sig-name descname">get_offs_lens</code><span class="sig-paren">(</span>std::size_t *&amp;<em>r_offs</em>, std::size_t *&amp;<em>r_lens</em>, std::size_t *&amp;<em>r_offs_l</em>, std::size_t *&amp;<em>c_offs</em>, std::size_t *&amp;<em>c_lens</em>, std::size_t *&amp;<em>c_offs_l</em><span class="sig-paren">)</span> <em class="property">const</em> <em class="property">override</em><a class="headerlink" href="#_CPPv4NK5chase3mpi19ChaseMpiHemmBlasSeq13get_offs_lensERPNSt6size_tERPNSt6size_tERPNSt6size_tERPNSt6size_tERPNSt6size_tERPNSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi19ChaseMpiHemmBlasSeq5StartEv">
+<span id="_CPPv3N5chase3mpi19ChaseMpiHemmBlasSeq5StartEv"></span><span id="_CPPv2N5chase3mpi19ChaseMpiHemmBlasSeq5StartEv"></span><span id="chase::mpi::ChaseMpiHemmBlasSeq::Start"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_hemm_blas_seq_1afb51c4342479fad535890996840cc419"></span>void <code class="sig-name descname">Start</code><span class="sig-paren">(</span><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi19ChaseMpiHemmBlasSeq5StartEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd></dd></dl>
+
+</div>
+</dd></dl>
+
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="cpu.html" class="btn btn-neutral float-right" title="CPUs" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="comm.html" class="btn btn-neutral" title="Interface for ChASE-MPI" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2021, SimLab Quantum Materials.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.9.1',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="../_static/language_data.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
