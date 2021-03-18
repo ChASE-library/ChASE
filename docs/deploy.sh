@@ -2,7 +2,7 @@
 
 rm -rf $1
 
-git clone https://gitlab.version.fz-juelich.de/SLai/ChASE.git $1
+git clone ssh://git@gitlab.version.fz-juelich.de:10022/SLai/ChASE.git $1
 
 cd $1
 
