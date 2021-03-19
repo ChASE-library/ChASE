@@ -78,12 +78,12 @@ distribution and block-cyclic distribution.
 
    module/chasempiproperties
 
-3. The class ``ChaseMpiHemmInterface`` defines the virtual functions required for the implementation
-of ``ChaseMpiHemm``.
+3. The class ``ChaseMpiDLAInterface`` defines the virtual functions required for the implementation
+of ``ChaseMpiDLA``.
 
 
 4. ``ChaseMpi`` defines the ChASE-MPI class. It is an templated classes with two types required: 
-an implementation of ``ChaseMpiHemmInterface`` and the scalar type to be used in the applications.
+an implementation of ``ChaseMpiDLAInterface`` and the scalar type to be used in the applications.
 
 
 .. toctree::
@@ -91,29 +91,29 @@ an implementation of ``ChaseMpiHemmInterface`` and the scalar type to be used in
 
    module/chasempi
 
-5. ``ChaseMpiHemmBlasSeq`` defines the implementation of ``ChaseMpiHemmInterface``
+5. ``ChaseMpiDLABlaslapackSeq`` defines the implementation of ``ChaseMpiDLABlaslapackSeq``
 for single node system without MPI.   
 
 .. toctree::
    :maxdepth: 2
 
-   module/chasempihemmseq
+   module/chasempidlaseq
 
-6. ``ChaseMpiHemmBlas`` defines the implementation of ``ChaseMpiHemmInterface``
+6. ``ChaseMpiDLABlaslapack`` defines the implementation of ``ChaseMpiDLAInterface``
 for homogeneous distributed-memory systems.  
 
 .. toctree::
    :maxdepth: 2
 
-   module/chasempihemmblas
+   module/chasempidlablaslapack
 
-7. ``ChaseMpiHemmMultiGPU`` defines the implementation of ``ChaseMpiHemmInterface``
+7. ``ChaseMpiDLAMultiGPU`` defines the implementation of ``ChaseMpiDLAInterface``
 for heterogeneous distributed-memory systems with multi-GPUs per node. 
 
 .. toctree::
    :maxdepth: 2
 
-   module/chasempihemmmultigpu
+   module/chasempidlamultigpu
 
 .. note::
     For the usage of these classes, please refer to :ref:`hello-world-chase`

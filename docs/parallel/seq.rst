@@ -2,6 +2,6 @@ Single node ChASE
 ==============================
 Work in progress.
 
-.. doxygenclass:: chase::mpi::ChaseMpiHemmBlasSeq
+.. doxygenclass:: chase::mpi::ChaseMpiDLABlaslapackSeq
    :project: ChASE
 

@@ -14,22 +14,20 @@ distribution and block-cyclic distribution of the Hermtian matrix.
     /*include ChASE headers*/
     #include "algorithm/performance.hpp"
     #include "ChASE-MPI/chase_mpi.hpp"
-    /*include ChASE-MPI interface which implements HEMM 
-    for Pure-CPU distributed-memory systems*/
-    #include "ChASE-MPI/impl/chase_mpihemm_blas.hpp"
-
+    /*include ChASE-MPI interface for Pure-CPU distributed-memory systems*/
+    #include "ChASE-MPI/impl/chase_mpidla_blaslapack.hpp"
 
     using T = std::complex<double>;
     using namespace chase;
     using namespace chase::mpi;
 
     /*use ChASE-MPI without GPU support*/
-    typedef ChaseMpi<ChaseMpiHemmBlas, T> CHASE;
+    typedef ChaseMpi<ChaseMpiDLABlaslapack, T> CHASE;
     /*
     // For ChASE-MPI without MPI
-    typedef ChaseMpi<ChaseMpiHemmBlasSeq, T> CHASE;
+    typedef ChaseMpi<ChaseMpiDLABlaslapackSeq, T> CHASE;
     // For ChASE-MPI with MPI + multiGPUs
-    typedef ChaseMpi<ChaseMpiHemmMultiGPU, T> CHASE;
+    typedef ChaseMpi<ChaseMpiDLAMultiGPU, T> CHASE;
     */
 
     int main(int argc, char** argv)
