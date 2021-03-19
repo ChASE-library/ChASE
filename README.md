@@ -53,3 +53,15 @@ For the test of multi-GPU support ChASE, please use:
 If you want to build the ChASE against the multithreaded BLIS library one have to provide the full path to multithreaded BLIS library, such as:
 
     cmake .. -DBLAS_LIBRARIES="<path-to-instal-dir>/lib/libblas-mt.so"
+
+### Build with documentation of ChASE
+
+If you want to build with its documentation, the `CMake` variable `BUILD_WITH_DOCS` should be explicitly set `ON`.
+This variable is set to be `OFF` in default.
+
+e.g.,
+
+```bash
+cmake .. ${OTHER CMAKE FLAGS} -DBUILD_WITH_DOCS=ON
+```
+

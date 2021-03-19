@@ -10,3 +10,6 @@ CMakeCache.txt
 
 # Exclude folders
 build*/
+./build
+build
+
