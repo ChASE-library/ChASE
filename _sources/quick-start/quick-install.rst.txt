@@ -6,7 +6,7 @@ ChASE is an open source project and it is available on `GitHub
 one needs to have the `git <http://git-scm.com/>`_ utility installed. 
 To clone a local copy of the ChASE repository execute the command::
 
-    git clone https://github.com/SimLabQuantumMaterials/ChASE.git
+    git clone https://github.com/ChASE-library/ChASE
 
 
 .. _build-label:

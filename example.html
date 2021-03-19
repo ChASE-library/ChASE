@@ -190,18 +190,21 @@ we give an introduction about these examples.</p>
 <p class="admonition-title">Note</p>
 <ol class="arabic simple">
 <li><p>All the first three examples are compiled if user installs ChASE with the option <code class="docutils literal notranslate"><span class="pre">-DBUILD_WITH_EXAMPLES=ON</span></code>.</p></li>
-<li><p>In order to build the example <a class="reference external" href="https://gitlab.version.fz-juelich.de/SLai/ChASE/-/tree/cmake/examples/2_input_output">2_input_output</a> and
-<a class="reference external" href="https://gitlab.version.fz-juelich.de/SLai/ChASE/-/tree/cmake/examples/4_gev">4_gev</a>,
+<li><p>In order to build the example <a class="reference external" href="https://github.com/ChASE-library/ChASE/tree/master/examples/2_input_output">2_input_output</a> and
+<a class="reference external" href="https://github.com/ChASE-library/ChASE/tree/master/examples/4_gev">4_gev</a>,
 the module <strong>Boost</strong> should be uploaded from the software stack
 or installed by the user.</p></li>
-<li><p>The example <a class="reference external" href="https://gitlab.version.fz-juelich.de/SLai/ChASE/-/tree/cmake/examples/3_installation">3_installation</a>
-shows how to link ChASE by user’s application through <strong>CMake</strong>. This example won’t be built until the independant compilation by users.</p></li>
+<li><p>The example <a class="reference external" href="https://github.com/ChASE-library/ChASE/tree/master/examples/3_installation">3_installation</a>
+shows how to link ChASE by user’s application through
+<strong>CMake</strong>. This example will not build automatically together
+with the compilation/installation of ChASE. It has to be
+compiled independently by the user.</p></li>
 </ol>
 </div>
 <div class="section" id="hello-world">
 <span id="hello-world-chase"></span><h2>0. Hello World<a class="headerlink" href="#hello-world" title="Permalink to this headline">¶</a></h2>
 <p>The first example in this section is
-<a class="reference external" href="https://gitlab.version.fz-juelich.de/SLai/ChASE/-/tree/cmake/examples/0_hello_world">0_hello_world</a>. This example constructs a simple Clement matrix and find a given
+<a class="reference external" href="https://github.com/ChASE-library/ChASE/tree/master/examples/0_hello_world">0_hello_world</a>. This example constructs a simple Clement matrix and find a given
 number of its eigenpairs.</p>
 <div class="toctree-wrapper compound">
 <ul>
@@ -213,7 +216,7 @@ number of its eigenpairs.</p>
 <div class="section" id="sequence-of-eigenproblems">
 <h2>1. Sequence of Eigenproblems<a class="headerlink" href="#sequence-of-eigenproblems" title="Permalink to this headline">¶</a></h2>
 <p>The second example in this section is
-<a class="reference external" href="https://gitlab.version.fz-juelich.de/SLai/ChASE/-/tree/cmake/examples/1_sequence_eigenproblems">1_sequence_eigenproblems</a>. The purpose of this example is to illustrate how
+<a class="reference external" href="https://github.com/ChASE-library/ChASE/tree/master/examples/1_sequence_eigenproblems">1_sequence_eigenproblems</a>. The purpose of this example is to illustrate how
 ChASE can be used to solve a sequence of eigenproblems. This example
 is quite similar to the previous one. The only difference is that after solving
 one problem, the elements of related Clement matrix are perturbed, and the
@@ -230,7 +233,7 @@ code in the example.</p>
 </div>
 <div class="section" id="parallel-i-o-and-configuration">
 <h2>2. Parallel I/O and Configuration<a class="headerlink" href="#parallel-i-o-and-configuration" title="Permalink to this headline">¶</a></h2>
-<p>The third example in this section <a class="reference external" href="https://gitlab.version.fz-juelich.de/SLai/ChASE/-/tree/cmake/examples/2_input_output">2_input_output</a>
+<p>The third example in this section <a class="reference external" href="https://github.com/ChASE-library/ChASE/tree/master/examples/2_input_output">2_input_output</a>
 is quite similar to two previous ones. The differences are: 1) the
 configuration of parameters of ChASE from command line (supported by
 Boost); 2) the parallel I/O which loads the local matrices into the computing nodes in parallel.</p>
@@ -247,11 +250,11 @@ Boost); 2) the parallel I/O which loads the local matrices into the computing no
 </div>
 <div class="section" id="installation-and-linking">
 <h2>3. Installation and Linking<a class="headerlink" href="#installation-and-linking" title="Permalink to this headline">¶</a></h2>
-<p>The fourth example <a class="reference external" href="https://gitlab.version.fz-juelich.de/SLai/ChASE/-/tree/cmake/examples/3_installation">3_installation</a> shows the way to link ChASE to other applications, for more information, please visit <a class="reference internal" href="installation/link.html#link-by-cmake"><span class="std std-ref">Linking to ChASE by using CMake</span></a>.</p>
+<p>The fourth example <a class="reference external" href="https://github.com/ChASE-library/ChASE/tree/master/examples/3_installation">3_installation</a> shows the way to link ChASE to other applications, for more information, please visit <a class="reference internal" href="installation/link.html#link-by-cmake"><span class="std std-ref">Linking to ChASE by using CMake</span></a>.</p>
 </div>
 <div class="section" id="generalized-eigenproblem">
 <h2>4. Generalized Eigenproblem<a class="headerlink" href="#generalized-eigenproblem" title="Permalink to this headline">¶</a></h2>
-<p>The fifth example <a class="reference external" href="https://gitlab.version.fz-juelich.de/SLai/ChASE/-/tree/cmake/examples/4_gev">4_gev</a> shows an example
+<p>The fifth example <a class="reference external" href="https://github.com/ChASE-library/ChASE/tree/master/examples/4_gev">4_gev</a> shows an example
 to solve Generalized Eigenproblem of the form
 <span class="math notranslate nohighlight">\(A\hat{x} = \lambda B \hat{x}\)</span>, with <span class="math notranslate nohighlight">\(B\)</span> s.p.d. by the
 Cholesky Factorization provided by ScaLAPACK.</p>

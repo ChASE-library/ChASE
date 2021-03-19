@@ -18,17 +18,17 @@ Getting ChASE
 =============
 
 
-ChASE is able to get by cloning the repository directly using ``git``:
+ChASE can be easily obtained by cloning the repository directly using ``git``:
 
 .. code-block:: sh
 
-    git clone https://github.com/SimLabQuantumMaterials/ChASE
+    git clone https://github.com/ChASE-library/ChASE
 
 It is also recommended that you check out the latest stable tag:
 
 .. code-block:: sh
 
-    git checkout x.x.x
+    git checkout v1.0.0
 
 
 Dependencies

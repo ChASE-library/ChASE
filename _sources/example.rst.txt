@@ -11,15 +11,18 @@ we give an introduction about these examples.
    1. All the first three examples are compiled if user installs ChASE with the option ``-DBUILD_WITH_EXAMPLES=ON``.
 
    2. In order to build the example `2_input_output
-      <https://gitlab.version.fz-juelich.de/SLai/ChASE/-/tree/cmake/examples/2_input_output>`_ and
+      <https://github.com/ChASE-library/ChASE/tree/master/examples/2_input_output>`_ and
       `4_gev
-      <https://gitlab.version.fz-juelich.de/SLai/ChASE/-/tree/cmake/examples/4_gev>`_,
+      <https://github.com/ChASE-library/ChASE/tree/master/examples/4_gev>`_,
       the module **Boost** should be uploaded from the software stack
       or installed by the user.
 
    3. The example `3_installation
-      <https://gitlab.version.fz-juelich.de/SLai/ChASE/-/tree/cmake/examples/3_installation>`_
-      shows how to link ChASE by user's application through **CMake**. This example won't be built until the independant compilation by users.
+      <https://github.com/ChASE-library/ChASE/tree/master/examples/3_installation>`_
+      shows how to link ChASE by user's application through
+      **CMake**. This example will not build automatically together
+      with the compilation/installation of ChASE. It has to be
+      compiled independently by the user.
 
 .. _hello-world-chase:
 
@@ -27,7 +30,7 @@ we give an introduction about these examples.
 ================
 
 The first example in this section is 
-`0_hello_world <https://gitlab.version.fz-juelich.de/SLai/ChASE/-/tree/cmake/examples/0_hello_world>`_. This example constructs a simple Clement matrix and find a given 
+`0_hello_world <https://github.com/ChASE-library/ChASE/tree/master/examples/0_hello_world>`_. This example constructs a simple Clement matrix and find a given 
 number of its eigenpairs.
 
 .. toctree::
@@ -39,7 +42,7 @@ number of its eigenpairs.
 =============================
 
 The second example in this section is
-`1_sequence_eigenproblems <https://gitlab.version.fz-juelich.de/SLai/ChASE/-/tree/cmake/examples/1_sequence_eigenproblems>`_. The purpose of this example is to illustrate how 
+`1_sequence_eigenproblems <https://github.com/ChASE-library/ChASE/tree/master/examples/1_sequence_eigenproblems>`_. The purpose of this example is to illustrate how 
 ChASE can be used to solve a sequence of eigenproblems. This example 
 is quite similar to the previous one. The only difference is that after solving
 one problem, the elements of related Clement matrix are perturbed, and the
@@ -59,7 +62,7 @@ code in the example.
 ===================================
 
 The third example in this section `2_input_output
-<https://gitlab.version.fz-juelich.de/SLai/ChASE/-/tree/cmake/examples/2_input_output>`_
+<https://github.com/ChASE-library/ChASE/tree/master/examples/2_input_output>`_
 is quite similar to two previous ones. The differences are: 1) the
 configuration of parameters of ChASE from command line (supported by
 Boost); 2) the parallel I/O which loads the local matrices into the computing nodes in parallel.
@@ -74,13 +77,13 @@ Boost); 2) the parallel I/O which loads the local matrices into the computing no
 3. Installation and Linking
 ============================
 
-The fourth example `3_installation <https://gitlab.version.fz-juelich.de/SLai/ChASE/-/tree/cmake/examples/3_installation>`_ shows the way to link ChASE to other applications, for more information, please visit :ref:`link_by_cmake`.
+The fourth example `3_installation <https://github.com/ChASE-library/ChASE/tree/master/examples/3_installation>`_ shows the way to link ChASE to other applications, for more information, please visit :ref:`link_by_cmake`.
 
 
 4. Generalized Eigenproblem
 ============================
 
-The fifth example `4_gev <https://gitlab.version.fz-juelich.de/SLai/ChASE/-/tree/cmake/examples/4_gev>`_ shows an example
+The fifth example `4_gev <https://github.com/ChASE-library/ChASE/tree/master/examples/4_gev>`_ shows an example
 to solve Generalized Eigenproblem of the form
 :math:`A\hat{x} = \lambda B \hat{x}`, with :math:`B` s.p.d. by the
 Cholesky Factorization provided by ScaLAPACK.

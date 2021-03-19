@@ -116,11 +116,6 @@
 <li class="toctree-l4"><a class="reference internal" href="#linking-by-makefile">Linking by Makefile</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#interface-of-chase-to-fortran-c">Interface of ChASE to Fortran &amp; C</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#interface-to-fortran">Interface to Fortran</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#interface-to-c">Interface to C</a></li>
-</ul>
-</li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../installation.html#recommendation-on-the-usage-of-computing-resources">Recommendation on the usage of Computing Resources</a></li>
@@ -268,7 +263,7 @@ of the application software as well as the <code class="docutils literal notrans
 <span class="go">make</span>
 </pre></div>
 </div>
-<p><a class="reference external" href="https://gitlab.version.fz-juelich.de/SLai/ChASE/-/tree/cmake/examples/3_installation">example: 3_installation</a>
+<p><a class="reference external" href="https://github.com/ChASE-library/ChASE/tree/master/examples/3_installation">example: 3_installation</a>
 provides an example which illustrates the way to link ChASE by CMake with or without GPU supports. (This link should be replaced by the link on github later.)</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -287,7 +282,7 @@ programming interface (Optional: if multi-threading is required), and
 information about the linking, which can be extracted when it
 generates the <cite>CMake configuration files</cite>. More details, the linking information
 can be obtained from the
-<strong>lines 56-59</strong> of the configuration file <code class="docutils literal notranslate"><span class="pre">${ChASEROOT}/lib64/cmake/ChASE/chase-mpi.cmake</span></code>.</p>
+<strong>lines 56-59</strong> of the configuration file <code class="docutils literal notranslate"><span class="pre">${ChASEROOT}/lib/cmake/ChASE/chase-mpi.cmake</span></code>.</p>
 </div>
 <div class="section" id="pure-cpu-version">
 <h3>Pure CPU version<a class="headerlink" href="#pure-cpu-version" title="Permalink to this headline">¶</a></h3>
@@ -312,7 +307,7 @@ ChASE, useful guidelines for linking can be found in <a class="reference externa
 <div class="section" id="linking-by-makefile">
 <h2>Linking by Makefile<a class="headerlink" href="#linking-by-makefile" title="Permalink to this headline">¶</a></h2>
 <p>Similar as the direct linking, it is also possible to link ChASE by <code class="docutils literal notranslate"><span class="pre">Makefile</span></code>.
-Here below is a template of this <code class="docutils literal notranslate"><span class="pre">Makefile</span></code> for <a class="reference external" href="https://gitlab.version.fz-juelich.de/SLai/ChASE/-/tree/cmake/examples/3_installation">example: 3_installation</a>.</p>
+Here below is a template of this <code class="docutils literal notranslate"><span class="pre">Makefile</span></code> for <a class="reference external" href="https://github.com/ChASE-library/ChASE/tree/master/examples/3_installation">example: 3_installation</a>.</p>
 <div class="highlight-Makefile notranslate"><div class="highlight"><pre><span></span><span class="nv">ChASEROOT</span> <span class="o">=</span> /The/installation/path/of/ChASE/on/your/platform
 
 <span class="nv">CXX</span> <span class="o">=</span> mpicxx <span class="c1">#or other mpi CXX compiler</span>
@@ -359,19 +354,6 @@ Here below is a template of this <code class="docutils literal notranslate"><spa
 <span class="cp">-include *.d</span>
 </pre></div>
 </div>
-</div>
-</div>
-<div class="section" id="interface-of-chase-to-fortran-c">
-<h1>Interface of ChASE to Fortran &amp; C<a class="headerlink" href="#interface-of-chase-to-fortran-c" title="Permalink to this headline">¶</a></h1>
-<p>ChASE is written in <code class="docutils literal notranslate"><span class="pre">C++</span></code> with templates, which is able to support the computation with
-multiple scalar types and precisions. In order to integrate ChASE into <code class="docutils literal notranslate"><span class="pre">Fortran</span></code> or <code class="docutils literal notranslate"><span class="pre">C</span></code>
-based applications, we provide its interfaces to both ChASE and C.</p>
-<div class="section" id="interface-to-fortran">
-<h2>Interface to Fortran<a class="headerlink" href="#interface-to-fortran" title="Permalink to this headline">¶</a></h2>
-<p>Interface to Fortran</p>
-</div>
-<div class="section" id="interface-to-c">
-<h2>Interface to C<a class="headerlink" href="#interface-to-c" title="Permalink to this headline">¶</a></h2>
 </div>
 </div>
 

@@ -98,7 +98,7 @@ With CMake, the application software can be compiled by the following commands:
    cmake .. -DCMAKE_PREFIX_PATH=${ChASEROOT}
    make
 
-`example: 3_installation <https://gitlab.version.fz-juelich.de/SLai/ChASE/-/tree/cmake/examples/3_installation>`_
+`example: 3_installation <https://github.com/ChASE-library/ChASE/tree/master/examples/3_installation>`_
 provides an example which illustrates the way to link ChASE by CMake with or without GPU supports. (This link should be replaced by the link on github later.)
 
 .. note::
@@ -120,7 +120,7 @@ The standard installation of ChASE can already provide some
 information about the linking, which can be extracted when it
 generates the `CMake configuration files`. More details, the linking information 
 can be obtained from the
-**lines 56-59** of the configuration file ``${ChASEROOT}/lib64/cmake/ChASE/chase-mpi.cmake``.
+**lines 56-59** of the configuration file ``${ChASEROOT}/lib/cmake/ChASE/chase-mpi.cmake``.
 
 
 Pure CPU version
@@ -151,7 +151,7 @@ Linking by Makefile
 ^^^^^^^^^^^^^^^^^^^^
 
 Similar as the direct linking, it is also possible to link ChASE by ``Makefile``. 
-Here below is a template of this ``Makefile`` for `example: 3_installation <https://gitlab.version.fz-juelich.de/SLai/ChASE/-/tree/cmake/examples/3_installation>`_.
+Here below is a template of this ``Makefile`` for `example: 3_installation <https://github.com/ChASE-library/ChASE/tree/master/examples/3_installation>`_.
 
 .. code-block:: Makefile
 
@@ -201,18 +201,20 @@ Here below is a template of this ``Makefile`` for `example: 3_installation <http
   -include *.d
 
 
-Interface of ChASE to Fortran & C
-----------------------------------
+.. Interface of ChASE to Fortran & C
+   ----------------------------------
 
-ChASE is written in ``C++`` with templates, which is able to support the computation with
-multiple scalar types and precisions. In order to integrate ChASE into ``Fortran`` or ``C``
-based applications, we provide its interfaces to both ChASE and C.
+   ChASE is written in ``C++`` with templates, which is able to support the computation with
+   multiple scalar types and precisions. In order to integrate ChASE into ``Fortran`` or ``C``
+   based applications, we provide its interfaces to both ChASE and C.
 
-Interface to Fortran
-^^^^^^^^^^^^^^^^^^^^^
 
-Interface to Fortran
 
-Interface to C
-^^^^^^^^^^^^^^^
+.. Interface to Fortran
+   ^^^^^^^^^^^^^^^^^^^^^
+
+   Interface to Fortran
+
+.. Interface to C
+   ^^^^^^^^^^^^^^^
 
