@@ -99,7 +99,7 @@ install(DIRECTORY ${SPHINX_BUILD}/
 find_package(Git REQUIRED)
 if(Git_FOUND)
   add_custom_target(Deploy
-                    COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/deploy.sh ${SPHINX_BUILD}/old_html ${SPHINX_BUILD}/sphinx/html
+                    COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/deploy.sh ${SPHINX_BUILD}/old_html ${SPHINX_BUILD}/html
                     COMMENT "Uploading documentation into Github Pages")
 else()
   message(FATAL_ERROR "GIT cannot be found which is necessary for updating webpages")
