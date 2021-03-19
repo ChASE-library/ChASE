@@ -184,22 +184,20 @@ distribution and block-cyclic distribution of the Hermtian matrix.</p>
 <span class="cm">/*include ChASE headers*/</span>
 <span class="cp">#include</span> <span class="cpf">&quot;algorithm/performance.hpp&quot;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&quot;ChASE-MPI/chase_mpi.hpp&quot;</span><span class="cp"></span>
-<span class="cm">/*include ChASE-MPI interface which implements HEMM</span>
-<span class="cm">for Pure-CPU distributed-memory systems*/</span>
-<span class="cp">#include</span> <span class="cpf">&quot;ChASE-MPI/impl/chase_mpihemm_blas.hpp&quot;</span><span class="cp"></span>
-
+<span class="cm">/*include ChASE-MPI interface for Pure-CPU distributed-memory systems*/</span>
+<span class="cp">#include</span> <span class="cpf">&quot;ChASE-MPI/impl/chase_mpidla_blaslapack.hpp&quot;</span><span class="cp"></span>
 
 <span class="k">using</span> <span class="n">T</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">complex</span><span class="o">&lt;</span><span class="kt">double</span><span class="o">&gt;</span><span class="p">;</span>
 <span class="k">using</span> <span class="k">namespace</span> <span class="n">chase</span><span class="p">;</span>
 <span class="k">using</span> <span class="k">namespace</span> <span class="n">chase</span><span class="o">::</span><span class="n">mpi</span><span class="p">;</span>
 
 <span class="cm">/*use ChASE-MPI without GPU support*/</span>
-<span class="k">typedef</span> <span class="n">ChaseMpi</span><span class="o">&lt;</span><span class="n">ChaseMpiHemmBlas</span><span class="p">,</span> <span class="n">T</span><span class="o">&gt;</span> <span class="n">CHASE</span><span class="p">;</span>
+<span class="k">typedef</span> <span class="n">ChaseMpi</span><span class="o">&lt;</span><span class="n">ChaseMpiDLABlaslapack</span><span class="p">,</span> <span class="n">T</span><span class="o">&gt;</span> <span class="n">CHASE</span><span class="p">;</span>
 <span class="cm">/*</span>
 <span class="cm">// For ChASE-MPI without MPI</span>
-<span class="cm">typedef ChaseMpi&lt;ChaseMpiHemmBlasSeq, T&gt; CHASE;</span>
+<span class="cm">typedef ChaseMpi&lt;ChaseMpiDLABlaslapackSeq, T&gt; CHASE;</span>
 <span class="cm">// For ChASE-MPI with MPI + multiGPUs</span>
-<span class="cm">typedef ChaseMpi&lt;ChaseMpiHemmMultiGPU, T&gt; CHASE;</span>
+<span class="cm">typedef ChaseMpi&lt;ChaseMpiDLAMultiGPU, T&gt; CHASE;</span>
 <span class="cm">*/</span>
 
 <span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span><span class="o">**</span> <span class="n">argv</span><span class="p">)</span>

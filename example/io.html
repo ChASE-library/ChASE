@@ -179,7 +179,7 @@
   <div class="section" id="chase-object-and-configuration">
 <h1>ChASE Object and Configuration<a class="headerlink" href="#chase-object-and-configuration" title="Permalink to this headline">¶</a></h1>
 <p>ChASE parameters can be configured as follows:</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">typedef</span> <span class="n">ChaseMpi</span><span class="o">&lt;</span><span class="n">ChaseMpiHemmBlas</span><span class="p">,</span> <span class="n">T</span><span class="o">&gt;</span> <span class="n">CHASE</span><span class="p">;</span>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">typedef</span> <span class="n">ChaseMpi</span><span class="o">&lt;</span><span class="n">ChaseMpiDLABlaslapack</span><span class="p">,</span> <span class="n">T</span><span class="o">&gt;</span> <span class="n">CHASE</span><span class="p">;</span>
 <span class="cm">/* Construction of ChASE object */</span>
 <span class="n">CHASE</span> <span class="nf">single</span><span class="p">(</span><span class="k">new</span> <span class="n">ChaseMpiProperties</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">nev</span><span class="p">,</span> <span class="n">nex</span><span class="p">,</span> <span class="n">MPI_COMM_WORLD</span><span class="p">),</span> <span class="n">V</span><span class="p">.</span><span class="n">data</span><span class="p">(),</span>
              <span class="n">Lambda</span><span class="p">.</span><span class="n">data</span><span class="p">());</span>
@@ -207,7 +207,7 @@ reused by the users to implement their own applications.</p>
 <div class="section" id="block-distribution">
 <h2>Block Distribution<a class="headerlink" href="#block-distribution" title="Permalink to this headline">¶</a></h2>
 <p>This is an example to load a matrix from local into block distribution data layout.</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="o">&gt;</span>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="nc">T</span><span class="o">&gt;</span>
 <span class="kt">void</span> <span class="n">readMatrix</span><span class="p">(</span><span class="n">T</span><span class="o">*</span> <span class="n">H</span><span class="p">,</span> <span class="cm">/*The pointer to store the local part of matrix on each MPI rank*/</span>
                 <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">path_in</span><span class="p">,</span> <span class="cm">/*The path to load binary file of matrix*/</span>
                 <span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">size</span><span class="p">,</span> <span class="cm">/*size = N * N, in which N is the size of matrix to be loaded*/</span>
@@ -248,7 +248,7 @@ be obtained by the member function of ChASE-MPI class as follows.</p>
 <div class="section" id="block-cyclic-distribution">
 <h2>Block-Cyclic Distribution<a class="headerlink" href="#block-cyclic-distribution" title="Permalink to this headline">¶</a></h2>
 <p>This is an example to load a matrix from local into block-cyclic distribution data layout.</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="o">&gt;</span>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="nc">T</span><span class="o">&gt;</span>
 <span class="kt">void</span> <span class="n">readMatrix</span><span class="p">(</span><span class="n">T</span><span class="o">*</span> <span class="n">H</span><span class="p">,</span> <span class="cm">/*The pointer to store the local part of matrix on each MPI rank*/</span>
                 <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">path_in</span><span class="p">,</span> <span class="cm">/*The path to load binary file of matrix*/</span>
                 <span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">size</span><span class="p">,</span> <span class="cm">/*size = N * N, in which N is the size of matrix to be loaded*/</span>

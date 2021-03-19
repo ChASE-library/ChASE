@@ -185,11 +185,11 @@ To clone a local copy of the ChASE repository execute the command:</p>
 <p>On a Linux system with MPI and CMake installed in the standard
 locations, ChASE can be build by executing in order the
 following commands (after having cloned the repository):</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span>cd ChASE/
-mkdir build
-cd build/
-cmake .. -DCMAKE_INSTALL_PREFIX=${ChASEROOT}
-make install
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="n">ChASE</span><span class="o">/</span>
+<span class="n">mkdir</span> <span class="n">build</span>
+<span class="n">cd</span> <span class="n">build</span><span class="o">/</span>
+<span class="n">cmake</span> <span class="p">..</span> <span class="o">-</span><span class="n">DCMAKE_INSTALL_PREFIX</span><span class="o">=</span><span class="n">$</span><span class="p">{</span><span class="n">ChASEROOT</span><span class="p">}</span>
+<span class="n">make</span> <span class="n">install</span>
 </pre></div>
 </div>
 <p>In the commands above, the variable <code class="docutils literal notranslate"><span class="pre">${CHASEROOT}</span></code> is the path to
@@ -230,11 +230,11 @@ the additional use of the
 <code class="docutils literal notranslate"><span class="pre">Boost</span></code> should also be provided before the installation of ChASE.
 In order to build these examples together with ChASE
 the sequence of building commands should be slightly modified as below:</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span>cd ChASE/
-mkdir build
-cd build/
-cmake .. -DCMAKE_INSTALL_PREFIX=${ChASEROOT} -DBUILD_WITH_EXAMPLES=ON
-make install
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="n">ChASE</span><span class="o">/</span>
+<span class="n">mkdir</span> <span class="n">build</span>
+<span class="n">cd</span> <span class="n">build</span><span class="o">/</span>
+<span class="n">cmake</span> <span class="p">..</span> <span class="o">-</span><span class="n">DCMAKE_INSTALL_PREFIX</span><span class="o">=</span><span class="n">$</span><span class="p">{</span><span class="n">ChASEROOT</span><span class="p">}</span> <span class="o">-</span><span class="n">DBUILD_WITH_EXAMPLES</span><span class="o">=</span><span class="n">ON</span>
+<span class="n">make</span> <span class="n">install</span>
 </pre></div>
 </div>
 <p>Executing ChASE using the ready-to-use examples is rather

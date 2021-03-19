@@ -192,16 +192,15 @@ the following files have to be included in the header file.</p>
 
 <span class="cm">/*USE ChASE-MPI without GPUs*/</span>
 <span class="cm">/*With MPI support for distributed-memory system*/</span>
-<span class="cp">#include</span> <span class="cpf">&quot;ChASE-MPI/impl/chase_mpihemm_blas.hpp&quot;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&quot;ChASE-MPI/impl/chase_mpidla_blaslapack.hpp&quot;</span><span class="cp"></span>
 <span class="cm">/*Without MPI support for single-node system*/</span>
-<span class="cp">#include</span> <span class="cpf">&quot;ChASE-MPI/impl/chase_mpihemm_blas_seq.hpp&quot;</span><span class="cp"></span>
-<span class="cp">#include</span> <span class="cpf">&quot;ChASE-MPI/impl/chase_mpihemm_blas_seq_inplace.hpp&quot;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&quot;chase_mpidla_blaslapack_seq.hpp&quot;</span><span class="cp"></span>
 
 <span class="cm">/*USE ChASE-MPI with GPUs*/</span>
 <span class="cm">/*With MPI support for distributed-memory system*/</span>
-<span class="cp">#include</span> <span class="cpf">&quot;ChASE-MPI/impl/chase_mpihemm_mgpu.hpp&quot;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&quot;ChASE-MPI/impl/chase_mpidla_mgpu.hpp&quot;</span><span class="cp"></span>
 <span class="cm">/*Without MPI support for single-node system*/</span>
-<span class="cp">#include</span> <span class="cpf">&quot;ChASE-MPI/impl/chase_mpihemm_cuda_seq.hpp&quot;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&quot;ChASE-MPI/impl/chase_mpidla_cuda_seq.hpp&quot;</span><span class="cp"></span>
 </pre></div>
 </div>
 </div>
@@ -282,7 +281,7 @@ programming interface (Optional: if multi-threading is required), and
 information about the linking, which can be extracted when it
 generates the <cite>CMake configuration files</cite>. More details, the linking information
 can be obtained from the
-<strong>lines 56-59</strong> of the configuration file <code class="docutils literal notranslate"><span class="pre">${ChASEROOT}/lib/cmake/ChASE/chase-mpi.cmake</span></code>.</p>
+<strong>lines 56-59</strong> of the configuration file <code class="docutils literal notranslate"><span class="pre">${ChASEROOT}/lib/cmake/ChASE/chase-mpi.cmake</span></code> or <code class="docutils literal notranslate"><span class="pre">${ChASEROOT}/lib64/cmake/ChASE/chase-mpi.cmake</span></code>, depending on the architectures of systems.</p>
 </div>
 <div class="section" id="pure-cpu-version">
 <h3>Pure CPU version<a class="headerlink" href="#pure-cpu-version" title="Permalink to this headline">¶</a></h3>

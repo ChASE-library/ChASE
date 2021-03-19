@@ -5,7 +5,7 @@ ChASE parameters can be configured as follows:
 
 .. code:: c++
   
-  typedef ChaseMpi<ChaseMpiHemmBlas, T> CHASE;
+  typedef ChaseMpi<ChaseMpiDLABlaslapack, T> CHASE;
   /* Construction of ChASE object */
   CHASE single(new ChaseMpiProperties<T>(N, nev, nex, MPI_COMM_WORLD), V.data(),
                Lambda.data());

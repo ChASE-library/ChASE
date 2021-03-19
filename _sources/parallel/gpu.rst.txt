@@ -3,6 +3,6 @@ multi-GPUs
 
 work in progress
 
-.. doxygenclass:: chase::mpi::ChaseMpiHemmMultiGPU
+.. doxygenclass:: chase::mpi::ChaseMpiDLAMultiGPU
    :project: ChASE
 

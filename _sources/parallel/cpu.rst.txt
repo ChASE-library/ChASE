@@ -3,5 +3,5 @@ CPUs
 
 work in progress
 
-.. doxygenclass:: chase::mpi::ChaseMpiHemmBlas
+.. doxygenclass:: chase::mpi::ChaseMpiDLABlaslapack
    :project: ChASE
