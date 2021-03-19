@@ -7,16 +7,16 @@
 #include "algorithm/performance.hpp"
 #include "ChASE-MPI/chase_mpi.hpp"
 
-#include "ChASE-MPI/impl/chase_mpihemm_blas.hpp"
-#include "ChASE-MPI/impl/chase_mpihemm_blas_seq.hpp"
-#include "ChASE-MPI/impl/chase_mpihemm_blas_seq_inplace.hpp"
+#include "ChASE-MPI/impl/chase_mpidla_blaslapack.hpp"
+#include "ChASE-MPI/impl/chase_mpidla_blaslapack_seq.hpp"
+#include "ChASE-MPI/impl/chase_mpidla_blaslapack_seq_inplace.hpp"
 
 using T = std::complex<double>;
 using namespace chase;
 using namespace chase::mpi;
 
 /*use ChASE-MPI without GPU support*/
-typedef ChaseMpi<ChaseMpiHemmBlas, T> CHASE;
+typedef ChaseMpi<ChaseMpiDLABlaslapack, T> CHASE;
 
 int main(int argc, char** argv)
 {
@@ -180,6 +180,8 @@ int main(int argc, char** argv)
 
     MPI_Barrier(MPI_COMM_WORLD);
   }
+
+  MPI_Finalize();
 
 }
 

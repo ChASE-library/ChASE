@@ -19,13 +19,13 @@
 #include "algorithm/performance.hpp"
 #include "ChASE-MPI/chase_mpi.hpp"
 
-#include "ChASE-MPI/impl/chase_mpihemm_blas_seq.hpp"
-#include "ChASE-MPI/impl/chase_mpihemm_blas_seq_inplace.hpp"
+#include "ChASE-MPI/impl/chase_mpidla_blaslapack_seq.hpp"
+#include "ChASE-MPI/impl/chase_mpidla_blaslapack_seq_inplace.hpp"
 
 #ifdef USE_MPI
-#include "ChASE-MPI/impl/chase_mpihemm_blas.hpp"
+#include "ChASE-MPI/impl/chase_mpidla_blaslapack.hpp"
   #ifdef DRIVER_BUILD_MGPU
-  #include "ChASE-MPI/impl/chase_mpihemm_mgpu.hpp"
+  #include "ChASE-MPI/impl/chase_mpidla_mgpu.hpp"
   #endif
 #endif
 
@@ -305,12 +305,12 @@ int do_chase(ChASE_DriverProblemConfig& conf) {
 
 #ifdef USE_MPI
     #ifdef DRIVER_BUILD_MGPU
-        typedef ChaseMpi<ChaseMpiHemmMultiGPU, T> CHASE;
+        typedef ChaseMpi<ChaseMpiDLAMultiGPU, T> CHASE;
     #else
-        typedef ChaseMpi<ChaseMpiHemmBlas, T> CHASE;
+        typedef ChaseMpi<ChaseMpiDLABlaslapack, T> CHASE;
     #endif //CUDA or not
 #else
-    typedef ChaseMpi<ChaseMpiHemmBlasSeq, T> CHASE;
+    typedef ChaseMpi<ChaseMpiDLABlaslapackSeq, T> CHASE;
 #endif //seq ChASE
 
 #ifdef USE_MPI
@@ -505,10 +505,10 @@ int main(int argc, char* argv[]) {
       )
 #ifdef USE_BLOCK_CYCLIC
       (                                                                   //
-      "mbsize", po::value<std::size_t>(&conf.mbsize)->default_value(50),  //
+      "mbsize", po::value<std::size_t>(&conf.mbsize)->default_value(400),  //
       "block size for the row"                                            //
       )(                                                                  //
-      "nbsize", po::value<std::size_t>(&conf.nbsize)->default_value(50),  //
+      "nbsize", po::value<std::size_t>(&conf.nbsize)->default_value(400),  //
       "block size for the column"                                         //
       )(                                                                  //
       "dim0", po::value<int>(&conf.dim0)->default_value(0),               //

@@ -57,6 +57,7 @@ void FC_GLOBAL(ddot, DDOT)(const BlasInt* n, const double* x,
                            const BlasInt* incx, const double* y,
                            const BlasInt* incy, double* dot);
 */
+/*
 float FC_GLOBAL(sdot, SDOT)(const BlasInt* n, const float* x,
                             const BlasInt* incx, const float* y,
                             const BlasInt* incy);
@@ -79,6 +80,7 @@ dcomplex FC_GLOBAL(zdotc, ZDOTC)(const BlasInt* n, const dcomplex* x,
                                  const BlasInt* incx, const dcomplex* y,
                                  const BlasInt* incy);
 #endif
+*/
 // xNRM2
 float FC_GLOBAL(snrm2, SNRM2)(const BlasInt* n, const float* x,
                               const BlasInt* incx);
@@ -158,6 +160,15 @@ void FC_GLOBAL(zhemm, ZHEMM)(const char* side, const char* uplo,
 ////////////
 // LAPACK //
 ////////////
+// xLACPY
+void FC_GLOBAL(slacpy, SLACPY)(const char* uplo, const BlasInt* m, const BlasInt* n, 
+			       const float* a, const BlasInt* lda, float* b, const BlasInt* ldb);
+void FC_GLOBAL(dlacpy, DLACPY)(const char* uplo, const BlasInt* m, const BlasInt* n,
+                               const double* a, const BlasInt* lda, double* b, const BlasInt* ldb);
+void FC_GLOBAL(clacpy, CLACPY)(const char* uplo, const BlasInt* m, const BlasInt* n,
+                               const scomplex* a, const BlasInt* lda, scomplex* b, const BlasInt* ldb);
+void FC_GLOBAL(zlacpy, ZLACPY)(const char* uplo, const BlasInt* m, const BlasInt* n,
+                               const dcomplex* a, const BlasInt* lda, dcomplex* b, const BlasInt* ldb);
 
 // xGEQRF
 void FC_GLOBAL(sgeqrf, SGEQRF)(const BlasInt* m, const BlasInt* n, float* a,

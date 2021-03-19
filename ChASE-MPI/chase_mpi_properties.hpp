@@ -251,12 +251,17 @@ class ChaseMpiProperties {
        std::size_t send[2];
        send[0] = irsrc_;
        send[1] = icsrc_;
+       g_offsets_.resize(2);
+
        for (std::size_t dim_idx = 0; dim_idx < 2; dim_idx++) {
            block_lens_[dim_idx].resize(dims_[dim_idx]);
-           block_displs_[dim_idx].resize(dims_[dim_idx]);	   
+           block_displs_[dim_idx].resize(dims_[dim_idx]);
+           
+           int displs_cnt = 0;
+  
 	   for(std::size_t i = 0; i < dims_[dim_idx]; i++){
 	       block_lens_[dim_idx][i].resize(block_counts_[dim_idx][i]);
-               block_displs_[dim_idx][i].resize(block_counts_[dim_idx][i]);	       
+               block_displs_[dim_idx][i].resize(block_counts_[dim_idx][i]);
                nr = 0; cnt = 0; send[0] = irsrc_; send[1] = icsrc_;
 	       for(std::size_t r = 0; r < N_; r += blocksize[dim_idx], send[dim_idx] = (send[dim_idx] + 1) % dims_[dim_idx]){
 	           nr = blocksize[dim_idx];
@@ -266,11 +271,14 @@ class ChaseMpiProperties {
 		   if(i == send[dim_idx]){
 		       block_lens_[dim_idx][i][cnt] = nr;
                        block_displs_[dim_idx][i][cnt] = r;
+                       g_offsets_[dim_idx].push_back(r);
+
 		       cnt++;		       
 		   }
 	       }
 	   }
-       }       
+       }
+       
     }
 
 
@@ -362,6 +370,7 @@ class ChaseMpiProperties {
     block_displs_.resize(2);
     block_lens_.resize(2);
     send_lens_.resize(2);
+    g_offsets_.resize(2);
 
     for (std::size_t dim_idx = 0; dim_idx < 2; dim_idx++) {
         block_lens_[dim_idx].resize(dims_[dim_idx]);
@@ -374,13 +383,16 @@ class ChaseMpiProperties {
 	    block_lens_[dim_idx][i][0] = len;
 	    block_displs_[dim_idx][i][0] = i * block_lens_[dim_idx][0][0];
 	    send_lens_[dim_idx][i] = len;
+      g_offsets_[dim_idx].push_back(block_displs_[dim_idx][i][0]);
 	}
 	block_lens_[dim_idx][dims_[dim_idx] - 1].resize(1);
         block_displs_[dim_idx][dims_[dim_idx] - 1].resize(1);
 	block_lens_[dim_idx][dims_[dim_idx] - 1][0] = N_ - (dims_[dim_idx] - 1) * len;
         block_displs_[dim_idx][dims_[dim_idx] - 1][0] = (dims_[dim_idx] - 1) * block_lens_[dim_idx][0][0];
         send_lens_[dim_idx][dims_[dim_idx] - 1] = N_ - (dims_[dim_idx] - 1) * len;
+        g_offsets_[dim_idx].push_back(block_displs_[dim_idx][dims_[dim_idx] - 1][0]);
     }
+
   }
 
   std::size_t get_N() { return N_; };
@@ -458,6 +470,7 @@ class ChaseMpiProperties {
   const std::vector<std::vector<std::vector<int>>>& get_blocklens() { return block_lens_; }
   const std::vector<std::vector<std::vector<int>>>& get_blockdispls() { return block_displs_; }
   const std::vector<std::vector<int>>& get_sendlens() { return send_lens_; }
+  const std::vector<std::vector<int>>& get_g_offsets() { return g_offsets_; }
 
   int get_nprocs() { return nprocs_; }
   // TODO this should take a dimIdx and return the rank of the col or row
@@ -500,6 +513,7 @@ class ChaseMpiProperties {
   std::vector<std::vector<std::vector<int>>> block_lens_;
   std::vector<std::vector<std::vector<int>>> block_displs_;
   std::vector<std::vector<int>> send_lens_;
+  std::vector<std::vector<int>> g_offsets_;
 
   MPI_Comm comm_;
 

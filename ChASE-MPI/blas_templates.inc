@@ -346,6 +346,50 @@ float t_nrm2(const std::size_t n, const std::complex<float>* x,
   return FC_GLOBAL(scnrm2, SCNRM2)(&n_, x, &incx_);
 }
 
+template <>
+void t_lacpy(const char uplo, const std::size_t m, const std::size_t n,
+                const float* a, const std::size_t lda, float* b, const std::size_t ldb)
+{
+  BlasInt m_ = m;
+  BlasInt n_ = n;
+  BlasInt lda_ = lda;
+  BlasInt ldb_ = ldb;
+  FC_GLOBAL(slacpy, SLACPY)(&uplo, &m_, &n_, a, &lda_, b, &ldb_);
+}
+
+template <>
+void t_lacpy(const char uplo, const std::size_t m, const std::size_t n,
+                const double* a, const std::size_t lda, double* b, const std::size_t ldb)
+{
+  BlasInt m_ = m;
+  BlasInt n_ = n;
+  BlasInt lda_ = lda;
+  BlasInt ldb_ = ldb;
+  FC_GLOBAL(dlacpy, DLACPY)(&uplo, &m_, &n_, a, &lda_, b, &ldb_);
+}
+
+template <>
+void t_lacpy(const char uplo, const std::size_t m, const std::size_t n,
+                const std::complex<float>* a, const std::size_t lda, std::complex<float>* b, const std::size_t ldb)
+{
+  BlasInt m_ = m;
+  BlasInt n_ = n;
+  BlasInt lda_ = lda;
+  BlasInt ldb_ = ldb;
+  FC_GLOBAL(clacpy, CLACPY)(&uplo, &m_, &n_, a, &lda_, b, &ldb_);
+}
+
+template <>
+void t_lacpy(const char uplo, const std::size_t m, const std::size_t n,
+                const std::complex<double>* a, const std::size_t lda, std::complex<double>* b, const std::size_t ldb)
+{
+  BlasInt m_ = m;
+  BlasInt n_ = n;
+  BlasInt lda_ = lda;
+  BlasInt ldb_ = ldb;
+  FC_GLOBAL(zlacpy, ZLACPY)(&uplo, &m_, &n_, a, &lda_, b, &ldb_);
+}
+
 // Overload of ?geqrf functions
 
 template <>
