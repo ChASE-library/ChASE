@@ -7,7 +7,7 @@ The following snippet shows how to install ChASE on the JUWELS cluster
 
 .. code-block:: console
 
-  git clone https://github.com/SimLabQuantumMaterials/ChASE.git
+  git clone https://github.com/ChASE-library/ChASE.git
   cd ChASE/
   mkdir build
   cd build/
@@ -43,7 +43,7 @@ support on JUWELS:
 
 .. code-block:: console
 
-  git clone https://github.com/SimLabQuantumMaterials/ChASE.git
+  git clone https://github.com/ChASE-library/ChASE.git
   cd ChASE/
   mkdir build
   cd build/
@@ -62,7 +62,7 @@ examples on the JUWELS cluster:
 
 .. code-block:: console
 
-  git clone https://github.com/SimLabQuantumMaterials/ChASE.git
+  git clone https://github.com/ChASE-library/ChASE.git
   cd ChASE/
   mkdir build
   cd build/
