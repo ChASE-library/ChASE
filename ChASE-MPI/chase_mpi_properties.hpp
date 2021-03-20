@@ -68,6 +68,19 @@ std::pair<std::size_t, std::size_t> numroc(std::size_t n, std::size_t nb, int ip
     return std::make_pair(numroc, nb_loc);
 }
 
+  //! @brief A class to setup `MPI` properties for the implementation of `ChASE` on distributed-memory systems.
+  /*! @details
+      The ChaseMpiProperties class creates a 2D grid of MPI nodes with fixed width and height. It defines also
+      the datalayout to distribute an Hermitian matrix `A` of side `N` across this 2D grid of
+      MPI nodes. Currently, two data layouts are supported in ChASE.
+        - Block distribution scheme in which is a submatrix of `A` is assigned to one single MPI node;
+        - Block-Cyclic distribution scheme, which distributes a series of submatrices of `A` to the MPI
+          nodes in a round-robin manner so that each MPI rank gets seral non-adjacent blocks. 
+      @tparam T: the scalar type used for the application. ChASE is templated
+      for real and complex numbers with both Single Precision and Double Precision,
+      thus `T` can be one of `float`, `double`, `std::complex<float>` and 
+      `std::complex<double>`.
+   */
 template <class T>
 class ChaseMpiProperties {
  public:
@@ -397,6 +410,10 @@ class ChaseMpiProperties {
 
   }
 
+  //! Returns the rank of matrix `A` which is distributed within 2D MPI grid.
+  /*! 
+      \return the rank of matrix `A`.
+   */
   std::size_t get_N() { return N_; };
   std::size_t get_n() { return n_; };
   std::size_t get_m() { return m_; };
@@ -407,7 +424,14 @@ class ChaseMpiProperties {
   std::size_t get_nb() { return nb_; };
   std::size_t get_mb() { return mb_; };
 
+  /*! 
+      \return the row communicator within 2D MPI grid.
+   */
   MPI_Comm get_row_comm() { return row_comm_; }
+
+  /*! 
+      \return the column communicator within 2D MPI grid.
+   */  
   MPI_Comm get_col_comm() { return col_comm_; }
 
   // dimensions of cartesian communicator grid
@@ -477,9 +501,16 @@ class ChaseMpiProperties {
   const std::vector<std::vector<int>>& get_sendlens() { return send_lens_; }
   const std::vector<std::vector<int>>& get_g_offsets() { return g_offsets_; }
 
+  //! Returns the total number of MPI nodes within MPI communicator where ChASE is working on.
+  /*! 
+      \return the total number of MPI nodes within the root MPI communicator.
+   */
   int get_nprocs() { return nprocs_; }
-  // TODO this should take a dimIdx and return the rank of the col or row
-  // communicator
+
+  //! Returns the rank of MPI node within 2D grid.
+  /*! 
+      \return the rank of MPI node within 2D grid.
+   */
   int get_my_rank() { return rank_; }
 
   ChaseMpiMatrices<T> create_matrices(T* V1 = nullptr, Base<T>* ritzv = nullptr,
@@ -489,22 +520,96 @@ class ChaseMpiProperties {
   }
 
  private:
+
+  ///////////////////////////////////////////////////
+  // General parameters of the eigenproblem
+  //////////////////////////////////////////////////
+
+  //! Global size of the matrix *A* defining the eigenproblem.
+  /*!    This variable is initialized by the constructor using the value of the first
+      of its input parameters `N`. 
+      This variable is private, it can be access by the member function get_N().      
+   */
   std::size_t N_;
+
+  //! Number of desired extremal eigenpairs
+  /*!
+      This variable is initialized by the constructor using the value
+      of its input parameters `nev`. 
+      This variable is private, it can be access by the member function GetNev().
+   */
   std::size_t nev_;
+
+  //! Increment of the search subspace so that its total size is `nev + nex`.
+  /*!
+      This variable is initialized by the constructor using the value
+      of its input parameters `nex`.
+      This variable is private, it can be access by the member function GetNex().
+   */  
   std::size_t nex_;
+
+  //! Maximum column number of matrix `V`
+  /*!
+      This variable is initialized by the constructor using the `sum`
+      of its input parameters `nex` and `nev`. Thus we have `max_block_=nev_+nex_`.
+      This variable is private, it can be access by the member function get_max_block().
+   */    
   std::size_t max_block_;
 
+  //! Column number of the local matrix on each `MPI` node.
+  /*!
+        - For `Block Distribution`, this variable is initialed based on the global size
+        of matrix `A` and dimension of the column of `MPI` 2D grid.
+        - For `Block-Cyclic Distribution`, it is determined also by block size
+        of submatrices `nb_`, etc. 
+        This variable is private, it can be access by the member function get_n().
+   */  
   std::size_t n_;
+
+  //! Row number of the local matrix on each `MPI` node.
+  /*!
+        - For `Block Distribution`, this variable is initialed based on the global size
+        of matrix `A` and dimension of the column of `MPI` 2D grid.
+        - For `Block-Cyclic Distribution`, it is determined also by block size
+        of submatrices `mb_`, etc. 
+        This variable is private, it can be access by the member function get_m().        
+   */  
   std::size_t m_;
 
-  //block size for block-cylic data layout
-  //if nb_ = n_ and mb = m_, block-cylic data layout
-  //equals to default block layout of ChASE
+  //! Column blocking factor.
+  /*!
+        - For `Block Distribution`, this variable equals to the variable `n_`.
+        - For `Block-Cyclic Distribution`, it is initialized by the parameter of
+        the constructor `nb`, 
+        This variable is private, it can be access by the member function get_nb().
+   */ 
   std::size_t nb_;
+
+  //! Row blocking factor.
+  /*!
+        - For `Block Distribution`, this variable equals to the variable `m_`.
+        - For `Block-Cyclic Distribution`, it is initialized by the parameter of
+        the constructor `mb`, 
+        This variable is private, it can be access by the member function get_mb().      
+   */  
   std::size_t mb_;
+
+ 
   std::size_t nblocks_;
   std::size_t mblocks_;
+
+  //! Process row over which the first row of the global matrix A is distributed. 
+  /*! This variable matters only for the `Block-Cyclic Distribution`, it is initialized
+      by the parameter irsrc of the constructor.  
+      This variable is private, it can be access by the member function get_irsrc().      
+  */
   int irsrc_;
+
+  //! Process column over which the first column of the global matrix A is distributed. 
+  /*! This variable matters only for the `Block-Cyclic Distribution`, it is initialized
+      by the parameter irsrc of the constructor.  
+      This variable is private, it can be access by the member function get_icsrc().            
+  */
   int icsrc_;
   std::unique_ptr<std::size_t[]> r_offs_;
   std::unique_ptr<std::size_t[]> r_lens_;
@@ -513,16 +618,24 @@ class ChaseMpiProperties {
   std::unique_ptr<std::size_t[]> c_lens_;
   std::unique_ptr<std::size_t[]> c_offs_l_;
 
-  // TODO this should be std::array<std::vector<>,2>
   std::vector<std::vector<int>> block_counts_;
   std::vector<std::vector<std::vector<int>>> block_lens_;
   std::vector<std::vector<std::vector<int>>> block_displs_;
   std::vector<std::vector<int>> send_lens_;
   std::vector<std::vector<int>> g_offsets_;
 
+  //! The MPI communicator when ChASE is working on.
+  /*!
+      This variable is initialized by the constructor using the value
+      of its input parameters `comm`.
+   */ 
   MPI_Comm comm_;
 
+
+  //! Total number of MPI nodes in the MPI communicator where ChASE is working on.
   int nprocs_;
+
+  //! The rank of each MPI node within the MPI communicator where ChASE is working on.
   int rank_;
 
   std::unique_ptr<T[]> H_;
@@ -530,9 +643,37 @@ class ChaseMpiProperties {
   std::unique_ptr<T[]> C_;
   std::unique_ptr<T[]> IMT_;
 
-  MPI_Comm row_comm_, col_comm_;
+  //! The row communicator of the constructed 2D grid of MPI codes.
+  /*!
+      This variable is initialized in the constructor, after the construction of
+      `MPI` 2D grid.
+      This variable is private, it can be access by the member function get_row_comm().            
+   */ 
+  MPI_Comm row_comm_; 
+
+  //! The column communicator of the constructed 2D grid of MPI codes.
+  /*!
+      This variable is initialized in the constructor, after the construction of
+      `MPI` 2D grid.
+      This variable is private, it can be access by the member function get_col_comm().            
+   */ 
+  MPI_Comm col_comm_;
+
+  //! The array with two elements determines the dimension of 2D grid of `MPI` nodes.
+  /*!
+      - For `Block Distribution`, it is initialized by `MPI_Fims_create` which creates a division
+      of `MPI` ranks in a cartesian grid.
+      - For `Block-Cyclic Distribution`, it is initialized by the input paramters `row_dim` and `col_dim`.
+      More precise, we have `dims_[0] = row_dim` and `dims_[1] = col_dim`.     
+   */  
   int dims_[2];
+
+  //! The array with two elements indicates the coordinates of each MPI node within the 2D grid of `MPI` nodes.
+  /*!
+      This variable is determined by the properties of 2D grid of `MPI` node.    
+   */    
   int coord_[2];
+
   std::size_t off_[2];
 
   std::string data_layout;
