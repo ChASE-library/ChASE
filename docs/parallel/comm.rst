@@ -3,5 +3,4 @@ Interface for ChASE-MPI
 
 work in progress
 
-.. doxygenclass:: chase::mpi::ChaseMpiDLAInterface
-   :project: ChASE
+For more details of ChASE-MPI interface, please visit :ref:`ChaseMpiDLAInterface`.

@@ -1,6 +1,11 @@
 ChaseMpiDLABlaslapack
-----------------------
+^^^^^^^^^^^^^^^^^^^^^^^
 
-.. doxygenfunction:: chase::mpi::ChaseMpiDLABlaslapack::ChaseMpiDLABlaslapack(ChaseMpiProperties<T> *matrix_properties)
-   :project: ChASE
+``ChaseMpiDLABlaslapack`` defines the implementation of ``ChaseMpiDLAInterface``
+for homogeneous distributed-memory systems.
+
+
+.. note::
+    For more details of the implementation of ChASE-MPI, please refer to :ref:`para-chase-mpi`
+    in the Developer Documentation.
 

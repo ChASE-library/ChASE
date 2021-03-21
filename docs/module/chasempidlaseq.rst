@@ -1,7 +1,12 @@
 
 ChaseMpiDLABlaslapackSeq
--------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. doxygenfunction:: chase::mpi::ChaseMpiDLABlaslapackSeq::ChaseMpiDLABlaslapackSeq(ChaseMpiMatrices<T> &matrices, std::size_t n, std::size_t maxBlock)
-   :project: ChASE
+``ChaseMpiDLABlaslapackSeq`` defines the implementation of ``ChaseMpiDLABlaslapackSeq``
+for single node system without MPI.  
+
+
+.. note::
+    For more details of the implementation of ChASE-MPI, please refer to :ref:`para-chase-mpi`
+    in the Developer Documentation.
 
