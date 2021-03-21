@@ -38,7 +38,7 @@
               href="../genindex.html"/>
         <link rel="search" title="Search" href="../search.html"/>
     <link rel="top" title="ChASE 0.9.1 documentation" href="../index.html"/>
-        <link rel="up" title="Modules" href="../module.html"/>
+        <link rel="up" title="ChaseMpiDLA" href="chasempidla.html"/>
         <link rel="next" title="Constructor of ChaseElemental" href="elemental.html"/>
         <link rel="prev" title="ChaseMpiDLABlaslapack" href="chasempidlablaslapack.html"/>
     <link href="../_static/theme_overrides.css" rel="stylesheet" type="text/css">
@@ -114,9 +114,13 @@
 <li class="toctree-l3"><a class="reference internal" href="chasempimatrices.html">ChaseMpiMatrices</a></li>
 <li class="toctree-l3"><a class="reference internal" href="chasempiproperties.html">ChaseMpiProperties</a></li>
 <li class="toctree-l3"><a class="reference internal" href="chasempi.html">ChaseMpi</a></li>
-<li class="toctree-l3"><a class="reference internal" href="chasempidlaseq.html">ChaseMpiDLABlaslapackSeq</a></li>
-<li class="toctree-l3"><a class="reference internal" href="chasempidlablaslapack.html">ChaseMpiDLABlaslapack</a></li>
-<li class="toctree-l3 current"><a class="current reference internal" href="#">ChaseMpiDLAMultiGPU</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="chasempidla.html">ChaseMpiDLA</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="chasempidlainterface.html">ChaseMpiDLAInterface</a></li>
+<li class="toctree-l4"><a class="reference internal" href="chasempidlaseq.html">ChaseMpiDLABlaslapackSeq</a></li>
+<li class="toctree-l4"><a class="reference internal" href="chasempidlablaslapack.html">ChaseMpiDLABlaslapack</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">ChaseMpiDLAMultiGPU</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../module.html#chase-elemental">ChASE-Elemental</a></li>
@@ -161,6 +165,8 @@
       
         <li><a href="../module.html">Modules</a> &raquo;</li>
       
+        <li><a href="chasempidla.html">ChaseMpiDLA</a> &raquo;</li>
+      
     <li>ChaseMpiDLAMultiGPU</li>
     <li class="wy-breadcrumbs-aside">
       
@@ -177,11 +183,13 @@
             
   <div class="section" id="chasempidlamultigpu">
 <h1>ChaseMpiDLAMultiGPU<a class="headerlink" href="#chasempidlamultigpu" title="Permalink to this headline">¶</a></h1>
-<dl class="cpp function">
-<dt id="_CPPv4N5chase3mpi19ChaseMpiDLAMultiGPU19ChaseMpiDLAMultiGPUEP18ChaseMpiPropertiesI1TE">
-<span id="_CPPv3N5chase3mpi19ChaseMpiDLAMultiGPU19ChaseMpiDLAMultiGPUEP18ChaseMpiPropertiesI1TE"></span><span id="_CPPv2N5chase3mpi19ChaseMpiDLAMultiGPU19ChaseMpiDLAMultiGPUEP18ChaseMpiPropertiesI1TE"></span><span id="chase::mpi::ChaseMpiDLAMultiGPU::ChaseMpiDLAMultiGPU__ChaseMpiProperties:T:P"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u_1a6a1801f85ac3f18fc3da7fc8c9cfd9d4"></span><code class="sig-prename descclassname"><a class="reference internal" href="../.unused_material/reference/chase.html#_CPPv45chaseP13MKL_Complex16iP13MKL_Complex16P13MKL_Complex16PdiKiKiPCiKdK15CHASE_MODE_TYPEK14CHASE_OPT_TYPE" title="chase">chase</a>::mpi::ChaseMpiDLAMultiGPU<code class="sig-prename descclassname">::</code></code><code class="sig-name descname">ChaseMpiDLAMultiGPU</code><span class="sig-paren">(</span><a class="reference internal" href="chasempiproperties.html#_CPPv4I0EN5chase3mpi18ChaseMpiPropertiesE" title="chase::mpi::ChaseMpiProperties">ChaseMpiProperties</a>&lt;T&gt; *<em>matrix_properties</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi19ChaseMpiDLAMultiGPU19ChaseMpiDLAMultiGPUEP18ChaseMpiPropertiesI1TE" title="Permalink to this definition">¶</a><br /></dt>
-<dd></dd></dl>
-
+<p><code class="docutils literal notranslate"><span class="pre">ChaseMpiDLAMultiGPU</span></code> defines the implementation of <code class="docutils literal notranslate"><span class="pre">ChaseMpiDLAInterface</span></code>
+for heterogeneous distributed-memory systems with multi-GPUs per node.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For more details of the implementation of ChASE-MPI, please refer to <a class="reference internal" href="../parallel/mpi.html#para-chase-mpi"><span class="std std-ref">Implementation of ChASE-MPI</span></a>
+in the Developer Documentation.</p>
+</div>
 </div>
 
 

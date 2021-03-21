@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Interface for ChASE-MPI &mdash; ChASE 0.9.1 documentation</title>
+  <title>ChaseMpiDLA &mdash; ChASE 0.9.1 documentation</title>
   
 
   
@@ -38,9 +38,9 @@
               href="../genindex.html"/>
         <link rel="search" title="Search" href="../search.html"/>
     <link rel="top" title="ChASE 0.9.1 documentation" href="../index.html"/>
-        <link rel="up" title="Implementation of ChASE-MPI" href="mpi.html"/>
-        <link rel="next" title="Single node ChASE" href="seq.html"/>
-        <link rel="prev" title="Implementation of ChASE-MPI" href="mpi.html"/>
+        <link rel="up" title="Modules" href="../module.html"/>
+        <link rel="next" title="ChaseMpiDLAInterface" href="chasempidlainterface.html"/>
+        <link rel="prev" title="ChaseMpi" href="chasempi.html"/>
     <link href="../_static/theme_overrides.css" rel="stylesheet" type="text/css">
 
 
@@ -103,28 +103,36 @@
 <li class="toctree-l1"><a class="reference internal" href="../reference.html">References and Contributors</a></li>
 </ul>
 <p class="caption"><span class="caption-text">USER DOCUMENTATION</span></p>
-<ul>
+<ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../quick-start.html">Quick Start</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation and Setup on a Cluster</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../example.html">Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../module.html">Modules</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../module.html">Modules</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../module.html#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../module.html#namespace-chase">Namespace: chase</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../module.html#chase-mpi">ChASE-MPI</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="chasempimatrices.html">ChaseMpiMatrices</a></li>
+<li class="toctree-l3"><a class="reference internal" href="chasempiproperties.html">ChaseMpiProperties</a></li>
+<li class="toctree-l3"><a class="reference internal" href="chasempi.html">ChaseMpi</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">ChaseMpiDLA</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="chasempidlainterface.html">ChaseMpiDLAInterface</a></li>
+<li class="toctree-l4"><a class="reference internal" href="chasempidlaseq.html">ChaseMpiDLABlaslapackSeq</a></li>
+<li class="toctree-l4"><a class="reference internal" href="chasempidlablaslapack.html">ChaseMpiDLABlaslapack</a></li>
+<li class="toctree-l4"><a class="reference internal" href="chasempidlamultigpu.html">ChaseMpiDLAMultiGPU</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../module.html#chase-elemental">ChASE-Elemental</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="../parameters.html">Parameters and Configurations</a></li>
 </ul>
 <p class="caption"><span class="caption-text">DEVELOPER DOCUMENTATION</span></p>
-<ul class="current">
+<ul>
 <li class="toctree-l1"><a class="reference internal" href="../algorithm.html">General algorithm</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../abstract.html">Virtual Abstract of Numerical Kernels</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="../parallel.html">Parallel implementations</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="elemental.html">Implementation of ChASE-Elemental</a></li>
-<li class="toctree-l2 current"><a class="reference internal" href="mpi.html">Implementation of ChASE-MPI</a><ul class="current">
-<li class="toctree-l3 current"><a class="current reference internal" href="#">Interface for ChASE-MPI</a></li>
-<li class="toctree-l3"><a class="reference internal" href="seq.html">Single node ChASE</a></li>
-<li class="toctree-l3"><a class="reference internal" href="cpu.html">CPUs</a></li>
-<li class="toctree-l3"><a class="reference internal" href="gpu.html">multi-GPUs</a></li>
-</ul>
-</li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="../parallel.html">Parallel implementations</a></li>
 </ul>
 
             
@@ -155,15 +163,13 @@
   <ul class="wy-breadcrumbs">
     <li><a href="../index.html">Docs</a> &raquo;</li>
       
-        <li><a href="../parallel.html">Parallel implementations</a> &raquo;</li>
+        <li><a href="../module.html">Modules</a> &raquo;</li>
       
-        <li><a href="mpi.html">Implementation of ChASE-MPI</a> &raquo;</li>
-      
-    <li>Interface for ChASE-MPI</li>
+    <li>ChaseMpiDLA</li>
     <li class="wy-breadcrumbs-aside">
       
         
-          <a href="../_sources/parallel/comm.rst.txt" rel="nofollow"> View page source</a>
+          <a href="../_sources/module/chasempidla.rst.txt" rel="nofollow"> View page source</a>
         
       
     </li>
@@ -173,10 +179,28 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="interface-for-chase-mpi">
-<h1>Interface for ChASE-MPI<a class="headerlink" href="#interface-for-chase-mpi" title="Permalink to this headline">¶</a></h1>
-<p>work in progress</p>
-<p>For more details of ChASE-MPI interface, please visit <a class="reference internal" href="../module/chasempidlainterface.html#chasempidlainterface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>.</p>
+  <div class="section" id="chasempidla">
+<h1>ChaseMpiDLA<a class="headerlink" href="#chasempidla" title="Permalink to this headline">¶</a></h1>
+<p>The class <code class="docutils literal notranslate"><span class="pre">ChaseMpiDLAInterface</span></code> defines the virtual functions required for the implementation
+of <code class="docutils literal notranslate"><span class="pre">ChaseMpiDLA</span></code>.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="chasempidlainterface.html">ChaseMpiDLAInterface</a></li>
+</ul>
+</div>
+<p>We provides multiple implementations of <code class="docutils literal notranslate"><span class="pre">DLA</span></code> targeting different computing architectures (CPUs or GPUs, sequential or parallel, shared-memory or distributed-memory) for ChASE.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="chasempidlaseq.html">ChaseMpiDLABlaslapackSeq</a></li>
+<li class="toctree-l1"><a class="reference internal" href="chasempidlablaslapack.html">ChaseMpiDLABlaslapack</a></li>
+<li class="toctree-l1"><a class="reference internal" href="chasempidlamultigpu.html">ChaseMpiDLAMultiGPU</a></li>
+</ul>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For the usage of these classes, please refer to <a class="reference internal" href="../example.html#hello-world-chase"><span class="std std-ref">0. Hello World</span></a>
+in the User Documentation.</p>
+</div>
 </div>
 
 
@@ -186,10 +210,10 @@
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="seq.html" class="btn btn-neutral float-right" title="Single node ChASE" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="chasempidlainterface.html" class="btn btn-neutral float-right" title="ChaseMpiDLAInterface" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="mpi.html" class="btn btn-neutral" title="Implementation of ChASE-MPI" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="chasempi.html" class="btn btn-neutral" title="ChaseMpi" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   

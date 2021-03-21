@@ -122,9 +122,7 @@
 <li class="toctree-l3"><a class="reference internal" href="module/chasempimatrices.html">ChaseMpiMatrices</a></li>
 <li class="toctree-l3"><a class="reference internal" href="module/chasempiproperties.html">ChaseMpiProperties</a></li>
 <li class="toctree-l3"><a class="reference internal" href="module/chasempi.html">ChaseMpi</a></li>
-<li class="toctree-l3"><a class="reference internal" href="module/chasempidlaseq.html">ChaseMpiDLABlaslapackSeq</a></li>
-<li class="toctree-l3"><a class="reference internal" href="module/chasempidlablaslapack.html">ChaseMpiDLABlaslapack</a></li>
-<li class="toctree-l3"><a class="reference internal" href="module/chasempidlamultigpu.html">ChaseMpiDLAMultiGPU</a></li>
+<li class="toctree-l3"><a class="reference internal" href="module/chasempidla.html">ChaseMpiDLA</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#chase-elemental">ChASE-Elemental</a><ul>
@@ -261,45 +259,25 @@ distribution and block-cyclic distribution.</p>
 <li class="toctree-l1"><a class="reference internal" href="module/chasempiproperties.html">ChaseMpiProperties</a></li>
 </ul>
 </div>
-<p>3. The class <code class="docutils literal notranslate"><span class="pre">ChaseMpiDLAInterface</span></code> defines the virtual functions required for the implementation
-of <code class="docutils literal notranslate"><span class="pre">ChaseMpiDLA</span></code>.</p>
-<p>4. <code class="docutils literal notranslate"><span class="pre">ChaseMpi</span></code> defines the ChASE-MPI class. It is an templated classes with two types required:
+<p>3. <code class="docutils literal notranslate"><span class="pre">ChaseMpi</span></code> defines the ChASE-MPI class. It is an templated classes with two types required:
 an implementation of <code class="docutils literal notranslate"><span class="pre">ChaseMpiDLAInterface</span></code> and the scalar type to be used in the applications.</p>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="module/chasempi.html">ChaseMpi</a></li>
 </ul>
 </div>
-<p>5. <code class="docutils literal notranslate"><span class="pre">ChaseMpiDLABlaslapackSeq</span></code> defines the implementation of <code class="docutils literal notranslate"><span class="pre">ChaseMpiDLABlaslapackSeq</span></code>
-for single node system without MPI.</p>
+<p>4. <code class="docutils literal notranslate"><span class="pre">ChaseMpiDLA</span></code>, in which <code class="docutils literal notranslate"><span class="pre">DLA</span></code> is short for <code class="docutils literal notranslate"><span class="pre">Dense</span> <span class="pre">Linear</span> <span class="pre">Algebra</span></code>, provides multi-implementation
+of dense matrix operations on different computing architectures that are required by <code class="docutils literal notranslate"><span class="pre">ChASE</span></code>, e.g., Hermitian Matrix-Matrix Multiplication (HEMM), QR factorization, etc. These ‘s no single class <code class="docutils literal notranslate"><span class="pre">ChaseMpiDLA</span></code> in <code class="docutils literal notranslate"><span class="pre">ChASE</span></code>, we provide an interface class for these <cite>DLA</cite> operations, and multiple classes with different implentations derived from this interface class.</p>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="module/chasempidlaseq.html">ChaseMpiDLABlaslapackSeq</a></li>
+<li class="toctree-l1"><a class="reference internal" href="module/chasempidla.html">ChaseMpiDLA</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="module/chasempidlainterface.html">ChaseMpiDLAInterface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="module/chasempidlaseq.html">ChaseMpiDLABlaslapackSeq</a></li>
+<li class="toctree-l2"><a class="reference internal" href="module/chasempidlablaslapack.html">ChaseMpiDLABlaslapack</a></li>
+<li class="toctree-l2"><a class="reference internal" href="module/chasempidlamultigpu.html">ChaseMpiDLAMultiGPU</a></li>
 </ul>
-</div>
-<p>6. <code class="docutils literal notranslate"><span class="pre">ChaseMpiDLABlaslapack</span></code> defines the implementation of <code class="docutils literal notranslate"><span class="pre">ChaseMpiDLAInterface</span></code>
-for homogeneous distributed-memory systems.</p>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="module/chasempidlablaslapack.html">ChaseMpiDLABlaslapack</a></li>
+</li>
 </ul>
-</div>
-<p>7. <code class="docutils literal notranslate"><span class="pre">ChaseMpiDLAMultiGPU</span></code> defines the implementation of <code class="docutils literal notranslate"><span class="pre">ChaseMpiDLAInterface</span></code>
-for heterogeneous distributed-memory systems with multi-GPUs per node.</p>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="module/chasempidlamultigpu.html">ChaseMpiDLAMultiGPU</a></li>
-</ul>
-</div>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>For the usage of these classes, please refer to <a class="reference internal" href="example.html#hello-world-chase"><span class="std std-ref">0. Hello World</span></a>
-in the User Documentation.</p>
-</div>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>For more details of the implementation of ChASE-MPI, please refer to <a class="reference internal" href="parallel/mpi.html#para-chase-mpi"><span class="std std-ref">Implementation of ChASE-MPI</span></a>
-in the Developer Documentation.</p>
 </div>
 </div>
 <div class="section" id="chase-elemental">
@@ -312,11 +290,6 @@ class is provided here.</p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="module/elemental.html">Constructor of ChaseElemental</a></li>
 </ul>
-</div>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>For more details relative to the implementation of ChASE-MPI, please refer to <a class="reference internal" href="parallel/elemental.html#para-chase-elemental"><span class="std std-ref">Implementation of ChASE-Elemental</span></a>
-in the Developer Documentation.</p>
 </div>
 </div>
 </div>
