@@ -25,7 +25,7 @@
 namespace chase {
 namespace mpi {
 
-//! A derived class to implement ChASE based on MPI and Dense Linear Algebra (`DLA`) routines.
+//! A derived class of Chase to implement ChASE based on MPI and Dense Linear Algebra (`DLA`) routines.
   /*!
     This is a calls derived from the Chase class which plays the
       role of interface for the kernels used by the library. All

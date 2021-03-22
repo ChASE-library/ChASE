@@ -17,9 +17,18 @@
 namespace chase {
 namespace mpi {
 
+//! A derived class of ChaseMpiDLAInterface which implements mostly the MPI collective communications part of ChASE-MPI targeting the distributed-memory systens with or w/o GPUs.
+/*! The computation in node are mostly implemented in ChaseMpiDLABlaslapack and ChaseMpiDLAMultiGPU. 
+    It supports both `Block Distribution` and `Block-Cyclic Distribution` schemes.
+*/ 
 template <class T>
 class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
  public:
+  //! A constructor of ChaseMpiDLA.
+  /*!
+    @param matrix_properties: it is an object of ChaseMpiProperties, which defines the MPI environment and data distribution scheme in ChASE-MPI.
+    @param dla: it is an object of ChaseMpiDLAInterface, which defines the implementation of in-node computation for ChASE-MPI. Currently, it can be one of ChaseMpiDLABlaslapack and ChaseMpiDLAMultiGPU. 
+  */
   ChaseMpiDLA(ChaseMpiProperties<T>* matrix_properties,
                ChaseMpiDLAInterface<T>* dla)
       : dla_(dla) {
@@ -68,6 +77,10 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
     delete[] Buff_;
   }
 
+  /*! - For ChaseMpiDLA, `preApplication` is implemented within `std::memcpy`.
+      - **Parallelism on distributed-memory system SUPPORT**
+      - For the meaning of this function, please visit ChaseMpiDLAInterface.
+  */
   void preApplication(T* V, std::size_t locked, std::size_t block) override {
     next_ = NextOp::bAc;
     locked_ = locked;
@@ -81,6 +94,10 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
     dla_->preApplication(V, locked, block);
   }
 
+  /*! - For ChaseMpiDLA, `preApplication` is implemented within `std::memcpy`.
+      - **Parallelism on distributed-memory system SUPPORT**
+      - For the meaning of this function, please visit ChaseMpiDLAInterface.
+  */
   void preApplication(T* V1, T* V2, std::size_t locked, std::size_t block) override {
     for (auto j = 0; j < block; j++) {
 	for(auto i = 0; i < nblocks_; i++){
@@ -93,6 +110,15 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
     this->preApplication(V1, locked, block);
   }
 
+   /*!
+      - In ChaseMpiDLA, collective communication of `HEMM` operation based on MPI which **ALLREDUCE** the product of local matrices either within the column communicator or row communicator.
+      - In ChaseMpiDLA, `scal` and `axpy` are implemented with the one provided by `BLAS`.
+      - **Parallelism on distributed-memory system SUPPORT**
+      - **Parallelism within node for ChaseMpiDLABlaslapack if multi-threading is enabled**          
+      - **Parallelism within node among multi-GPUs for ChaseMpiDLAMultiGPU**
+      - **Parallelism within each GPU for ChaseMpiDLAMultiGPU**             
+      - For the meaning of this function, please visit ChaseMpiDLAInterface.
+  */
   void apply(T alpha, T beta, std::size_t offset, std::size_t block) override {
     T One = T(1.0);
     T Zero = T(0.0);
@@ -122,8 +148,13 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
 
       next_ = NextOp::bAc;
     }
-
   }
+
+  /*!
+     - For ChaseMpiDLA,  `postApplication` operation brocasts asynchronously the final product of `HEMM` to each MPI rank. 
+     - **Parallelism on distributed-memory system SUPPORT**
+     - For the meaning of this function, please visit ChaseMpiDLAInterface.  
+  */
   bool postApplication(T* V, std::size_t block) override {
     dla_->postApplication(V, block);
 
@@ -248,6 +279,11 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
     return true;
   }
 
+  /*!
+    - For ChaseMpiDLA,  `shiftMatrix` is implemented in nested loop for both `Block Distribution` and `Block-Cyclic Distribution`.
+    - **Parallelism on distributed-memory system SUPPORT**
+    - For the meaning of this function, please visit ChaseMpiDLAInterface.    
+  */
   void shiftMatrix(T c, bool isunshift = false) override {
 	
     for(std::size_t j = 0; j < nblocks_; j++){
@@ -264,6 +300,14 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
     dla_->shiftMatrix(c);
   }
 
+  /*!
+    - For ChaseMpiDLA,  `applyVec` is implemented by `preApplication`, `apply` and `postApplication` implemented in this class.
+    - **Parallelism on distributed-memory system SUPPORT**
+    - **Parallelism within node for ChaseMpiDLABlaslapack if multi-threading is enabled**          
+    - **Parallelism within node among multi-GPUs for ChaseMpiDLAMultiGPU**
+    - **Parallelism within each GPU for ChaseMpiDLAMultiGPU**    
+    - For the meaning of this function, please visit ChaseMpiDLAInterface.    
+  */
   void applyVec(T* B, T* C) override {
     // TODO
 
@@ -298,32 +342,74 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
 
   void Start() override { dla_->Start(); }
 
+  /*!
+    - For ChaseMpiDLA, `lange` is implemented by calling the one in ChaseMpiDLABlaslapack and ChaseMpiDLAMultiGPU.
+    - This implementation is the same for both with or w/o GPUs.
+    - **Parallelism is SUPPORT only within node**
+    - For the meaning of this function, please visit ChaseMpiDLAInterface.
+  */
   Base<T> lange(char norm, std::size_t m, std::size_t n, T* A, std::size_t lda) override {
       return dla_->lange(norm, m, n, A, lda);
   }
 
+  /*!
+    - For ChaseMpiDLA, `gegqr` is implemented by calling the one in ChaseMpiDLABlaslapack and ChaseMpiDLAMultiGPU.
+    - This implementation is the same for both with or w/o GPUs.
+    - **Parallelism is SUPPORT only within node**
+    - For the meaning of this function, please visit ChaseMpiDLAInterface.
+  */
   void gegqr(std::size_t N, std::size_t nevex, T * approxV, std::size_t LDA) override {
       dla_->gegqr(N, nevex, approxV, LDA);
   }
 
+  /*!
+    - For ChaseMpiDLA, `axpy` is implemented by calling the one in ChaseMpiDLABlaslapack and ChaseMpiDLAMultiGPU.
+    - This implementation is the same for both with or w/o GPUs.
+    - **Parallelism is SUPPORT only within node**
+    - For the meaning of this function, please visit ChaseMpiDLAInterface.
+  */
   void axpy(std::size_t N, T * alpha, T * x, std::size_t incx, T *y, std::size_t incy) override {
       t_axpy(N, alpha, x, incx, y, incy);
       dla_->axpy(N, alpha, x, incx, y, incy);
   }
 
+  /*!
+    - For ChaseMpiDLA, `scal` is implemented by calling the one in ChaseMpiDLABlaslapack and ChaseMpiDLAMultiGPU.
+    - This implementation is the same for both with or w/o GPUs.
+    - **Parallelism is SUPPORT only within node**
+    - For the meaning of this function, please visit ChaseMpiDLAInterface.
+  */
   void scal(std::size_t N, T *a, T *x, std::size_t incx) override {
       t_scal(N, a, x, incx);
       dla_->scal(N, a, x, incx);
   }
 
+  /*!
+    - For ChaseMpiDLA, `nrm2` is implemented by calling the one in ChaseMpiDLABlaslapack and ChaseMpiDLAMultiGPU.
+    - This implementation is the same for both with or w/o GPUs.
+    - **Parallelism is SUPPORT only within node**
+    - For the meaning of this function, please visit ChaseMpiDLAInterface.
+  */
   Base<T> nrm2(std::size_t n, T *x, std::size_t incx) override {
       return dla_->nrm2(n, x, incx);
   }
 
+  /*!
+    - For ChaseMpiDLA, `dot` is implemented by calling the one in ChaseMpiDLABlaslapack and ChaseMpiDLAMultiGPU.
+    - This implementation is the same for both with or w/o GPUs.
+    - **Parallelism is SUPPORT only within node**
+    - For the meaning of this function, please visit ChaseMpiDLAInterface.
+  */
   T dot(std::size_t n, T* x, std::size_t incx, T* y, std::size_t incy) override {
       return dla_->dot(n, x, incx, y, incy);
   }
  
+   /*!
+   - For ChaseMpiDLA, `gemm_small` is implemented with `xGEMM` provided by `BLAS`.
+   - This implementation is the same for both with or w/o GPUs.
+   - **Parallelism is SUPPORT only within node**    
+   - For the meaning of this function, please visit ChaseMpiDLAInterface.
+  */
   void gemm_small(CBLAS_LAYOUT Layout, CBLAS_TRANSPOSE transa,
                          CBLAS_TRANSPOSE transb, std::size_t m,
                          std::size_t n, std::size_t k, T* alpha,
@@ -334,6 +420,12 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
       dla_->gemm_small(Layout, transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
   }
 
+   /*!
+   - For ChaseMpiDLA, `gemm_large` is implemented with `xGEMM` provided by `BLAS`.
+   - This implementation is the same for both with or w/o GPUs.   
+   - **Parallelism is SUPPORT only within node**    
+   - For the meaning of this function, please visit ChaseMpiDLAInterface.
+  */
   void gemm_large(CBLAS_LAYOUT Layout, CBLAS_TRANSPOSE transa,
                          CBLAS_TRANSPOSE transb, std::size_t m,
                          std::size_t n, std::size_t k, T* alpha,
@@ -344,6 +436,12 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
       dla_->gemm_large(Layout, transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
   }
 
+  /*!
+    - For ChaseMpiDLA, `stemr` with real and double precision scalar, is implemented by calling the one in ChaseMpiDLABlaslapack and ChaseMpiDLAMultiGPU.
+    - This implementation is the same for both with or w/o GPUs.
+    - **Parallelism is SUPPORT only within node**
+    - For the meaning of this function, please visit ChaseMpiDLAInterface.
+  */
   std::size_t stemr(int matrix_layout, char jobz, char range, std::size_t n,
                     double* d, double* e, double vl, double vu, std::size_t il, std::size_t iu,
                     int* m, double* w, double* z, std::size_t ldz, std::size_t nzc,
@@ -351,6 +449,12 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
       return dla_->stemr(matrix_layout, jobz, range, n, d, e, vl, vu, il, iu, m, w, z, ldz, nzc, isuppz, tryrac);
   }
 
+  /*!
+    - For ChaseMpiDLA, `stemr` with real and single precision scalar, is implemented by calling the one in ChaseMpiDLABlaslapack and ChaseMpiDLAMultiGPU.
+    - This implementation is the same for both with or w/o GPUs.
+    - **Parallelism is SUPPORT only within node**
+    - For the meaning of this function, please visit ChaseMpiDLAInterface.
+  */
   std::size_t stemr(int matrix_layout, char jobz, char range, std::size_t n,
                     float* d, float* e, float vl, float vu, std::size_t il, std::size_t iu,
                     int* m, float* w, float* z, std::size_t ldz, std::size_t nzc,
@@ -358,6 +462,12 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
       return dla_->stemr(matrix_layout, jobz, range, n, d, e, vl, vu, il, iu, m, w, z, ldz, nzc, isuppz, tryrac);
   }
 
+  /*!
+    - For ChaseMpiDLA, `RR_kernel` with real and double precision scalar, is implemented by calling the one in ChaseMpiDLABlaslapack and ChaseMpiDLAMultiGPU.
+    - This implementation is the same for both with or w/o GPUs.
+    - **Parallelism is SUPPORT only within node**
+    - For the meaning of this function, please visit ChaseMpiDLAInterface.
+  */
   void RR_kernel(std::size_t N, std::size_t block, T *approxV, std::size_t locked, T *workspace, T One, T Zero, Base<T> *ritzv) override {
       dla_->RR_kernel(N, block, approxV, locked, workspace, One, Zero, ritzv);	
   }
