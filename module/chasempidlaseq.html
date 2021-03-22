@@ -39,7 +39,7 @@
         <link rel="search" title="Search" href="../search.html"/>
     <link rel="top" title="ChASE 0.9.1 documentation" href="../index.html"/>
         <link rel="up" title="ChaseMpiDLA" href="chasempidla.html"/>
-        <link rel="next" title="ChaseMpiDLABlaslapack" href="chasempidlablaslapack.html"/>
+        <link rel="next" title="ChaseMpiDLABlaslapackSeqInplace" href="chasempidlaseqInplace.html"/>
         <link rel="prev" title="ChaseMpiDLAInterface" href="chasempidlainterface.html"/>
     <link href="../_static/theme_overrides.css" rel="stylesheet" type="text/css">
 
@@ -117,6 +117,9 @@
 <li class="toctree-l3 current"><a class="reference internal" href="chasempidla.html">ChaseMpiDLA</a><ul class="current">
 <li class="toctree-l4"><a class="reference internal" href="chasempidlainterface.html">ChaseMpiDLAInterface</a></li>
 <li class="toctree-l4 current"><a class="current reference internal" href="#">ChaseMpiDLABlaslapackSeq</a></li>
+<li class="toctree-l4"><a class="reference internal" href="chasempidlaseqInplace.html">ChaseMpiDLABlaslapackSeqInplace</a></li>
+<li class="toctree-l4"><a class="reference internal" href="chasempidlacudaseq.html">ChaseMpiDLACudaSeq</a></li>
+<li class="toctree-l4"><a class="reference internal" href="chasempidlaImpl.html">ChaseMpiDLA</a></li>
 <li class="toctree-l4"><a class="reference internal" href="chasempidlablaslapack.html">ChaseMpiDLABlaslapack</a></li>
 <li class="toctree-l4"><a class="reference internal" href="chasempidlamultigpu.html">ChaseMpiDLAMultiGPU</a></li>
 </ul>
@@ -183,11 +186,11 @@
             
   <div class="section" id="chasempidlablaslapackseq">
 <h1>ChaseMpiDLABlaslapackSeq<a class="headerlink" href="#chasempidlablaslapackseq" title="Permalink to this headline">¶</a></h1>
-<p><code class="docutils literal notranslate"><span class="pre">ChaseMpiDLABlaslapackSeq</span></code> defines the implementation of <code class="docutils literal notranslate"><span class="pre">ChaseMpiDLABlaslapackSeq</span></code>
-for single node system without MPI.</p>
+<p><code class="docutils literal notranslate"><span class="pre">ChaseMpiDLABlaslapackSeq</span></code> defines an implementation of <code class="docutils literal notranslate"><span class="pre">ChaseMpiDLAInterface</span></code>
+for single node system with pure CPUs. This implementation doesn’t require MPI support.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>For more details of the implementation of ChASE-MPI, please refer to <a class="reference internal" href="../parallel/mpi.html#para-chase-mpi"><span class="std std-ref">Implementation of ChASE-MPI</span></a>
+<p>For more details of the implementation of ChASE-MPI, please refer to <a class="reference internal" href="../parallel/seq.html#single-node-cpus"><span class="std std-ref">Single node with Pure CPUs</span></a>
 in the Developer Documentation.</p>
 </div>
 </div>
@@ -199,7 +202,7 @@ in the Developer Documentation.</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="chasempidlablaslapack.html" class="btn btn-neutral float-right" title="ChaseMpiDLABlaslapack" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="chasempidlaseqInplace.html" class="btn btn-neutral float-right" title="ChaseMpiDLABlaslapackSeqInplace" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="chasempidlainterface.html" class="btn btn-neutral" title="ChaseMpiDLAInterface" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>

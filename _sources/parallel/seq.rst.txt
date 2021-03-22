@@ -1,7 +1,8 @@
-Single node ChASE
+.. _single-node-cpus:
+
+Single node with Pure CPUs
 ==============================
-Work in progress.
 
 .. doxygenclass:: chase::mpi::ChaseMpiDLABlaslapackSeq
    :project: ChASE
-
+   :members: ChaseMpiDLABlaslapack,shiftMatrix, preApplication,apply,postApplication,applyVec,lange,gegqr,axpy,scal,nrm2,dot,gemm_small,gemm_large,stemr,RR_kernel

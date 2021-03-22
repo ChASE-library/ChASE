@@ -16,7 +16,10 @@ We provides multiple implementations of ``DLA`` targeting different computing ar
 .. toctree::
    :maxdepth: 3
 
-   chasempidlaseq 
+   chasempidlaseq
+   chasempidlaseqInplace
+   chasempidlacudaseq 
+   chasempidlaImpl
    chasempidlablaslapack
    chasempidlamultigpu
 

@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Implementation of ChASE-MPI &mdash; ChASE 0.9.1 documentation</title>
+  <title>ChASE-MPI &mdash; ChASE 0.9.1 documentation</title>
   
 
   
@@ -40,7 +40,7 @@
     <link rel="top" title="ChASE 0.9.1 documentation" href="../index.html"/>
         <link rel="up" title="Parallel implementations" href="../parallel.html"/>
         <link rel="next" title="Interface for ChASE-MPI" href="comm.html"/>
-        <link rel="prev" title="Implementation of ChASE-Elemental" href="elemental.html"/>
+        <link rel="prev" title="ChASE-Elemental" href="elemental.html"/>
     <link href="../_static/theme_overrides.css" rel="stylesheet" type="text/css">
 
 
@@ -115,12 +115,11 @@
 <li class="toctree-l1"><a class="reference internal" href="../algorithm.html">General algorithm</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../abstract.html">Virtual Abstract of Numerical Kernels</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../parallel.html">Parallel implementations</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="elemental.html">Implementation of ChASE-Elemental</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Implementation of ChASE-MPI</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="elemental.html">ChASE-Elemental</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">ChASE-MPI</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="comm.html">Interface for ChASE-MPI</a></li>
-<li class="toctree-l3"><a class="reference internal" href="seq.html">Single node ChASE</a></li>
-<li class="toctree-l3"><a class="reference internal" href="cpu.html">CPUs</a></li>
-<li class="toctree-l3"><a class="reference internal" href="gpu.html">multi-GPUs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="shm.html">Shared Memory Architecture</a></li>
+<li class="toctree-l3"><a class="reference internal" href="distm.html">Distributed-Memory Architecture</a></li>
 </ul>
 </li>
 </ul>
@@ -157,7 +156,7 @@
       
         <li><a href="../parallel.html">Parallel implementations</a> &raquo;</li>
       
-    <li>Implementation of ChASE-MPI</li>
+    <li>ChASE-MPI</li>
     <li class="wy-breadcrumbs-aside">
       
         
@@ -171,15 +170,24 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="implementation-of-chase-mpi">
-<span id="para-chase-mpi"></span><h1>Implementation of ChASE-MPI<a class="headerlink" href="#implementation-of-chase-mpi" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="chase-mpi">
+<span id="para-chase-mpi"></span><h1>ChASE-MPI<a class="headerlink" href="#chase-mpi" title="Permalink to this headline">¶</a></h1>
 <p>Work in progress.</p>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="comm.html">Interface for ChASE-MPI</a></li>
-<li class="toctree-l1"><a class="reference internal" href="seq.html">Single node ChASE</a></li>
-<li class="toctree-l1"><a class="reference internal" href="cpu.html">CPUs</a></li>
-<li class="toctree-l1"><a class="reference internal" href="gpu.html">multi-GPUs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="shm.html">Shared Memory Architecture</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="seq.html">Single node with Pure CPUs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="seqinplace.html">Single node Inplace mode</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gpu_seq.html">Single GPU</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="distm.html">Distributed-Memory Architecture</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="mpi_dla.html">Inter-node Implementation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cpu.html">CPUs in node</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gpu.html">multi-GPUs in node</a></li>
+</ul>
+</li>
 </ul>
 </div>
 </div>
@@ -194,7 +202,7 @@
         <a href="comm.html" class="btn btn-neutral float-right" title="Interface for ChASE-MPI" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="elemental.html" class="btn btn-neutral" title="Implementation of ChASE-Elemental" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="elemental.html" class="btn btn-neutral" title="ChASE-Elemental" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
