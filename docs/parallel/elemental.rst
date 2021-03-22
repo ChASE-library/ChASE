@@ -7,4 +7,3 @@ Work in progress.
 
 .. doxygenclass:: chase::elemental::ChaseElemental
    :project: ChASE
-
