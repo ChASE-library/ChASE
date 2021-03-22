@@ -1,7 +1,7 @@
-Single node ChASE
+.. _single-node-cpus:
+
+Single node with Pure CPUs
 ==============================
-Work in progress.
 
 .. doxygenclass:: chase::mpi::ChaseMpiDLABlaslapackSeq
    :project: ChASE
-

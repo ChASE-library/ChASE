@@ -6,6 +6,6 @@ for heterogeneous distributed-memory systems with multi-GPUs per node.
 
 
 .. note::
-    For more details of the implementation of ChASE-MPI, please refer to :ref:`para-chase-mpi`
+    For more details of the implementation of ChASE-MPI, please refer to :ref:`para-chase-mpi-gpu`
     in the Developer Documentation.
 

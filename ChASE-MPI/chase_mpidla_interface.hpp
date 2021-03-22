@@ -42,6 +42,15 @@ struct is_skewed_matrixfree {
       derived classes targeting different computing architectures. Currently, in `ChASE`, we provide multiple derived
       classes chase::mpi::ChaseMpiDLABlaslapack, chase::mpi::ChaseMpiDLABlaslapackSeq, chase::mpi::ChaseMpiDLABlaslapackSeqInplace,
       chase::mpi::ChaseMpiDLACudaSeq and chase::mpi::ChaseMpiDLAMultiGPU.
+      
+      This **MatrixFreeInterface** provides the Matrix-Matrix multiplication for use in
+      ChASE. The core functionality is `apply()`, which performs a `HEMM`.
+      - **ASSUMPTION 1**: MatrixFreeInterface assumes that `apply()` is called an even number
+             of times. This is always the case when used with algorithm of ChASE.
+      - **ASSUMPTION 2**: `shiftMatrix` must be called at least once before `apply()` is called.
+      Some implementations may use `shift()` to transfer the matrix to the GPU).
+      - The manner is which the Matrix `H` is loaded into the class is defined by the 
+      subclass. Further, the size of the vectors `V1` and `V2` must be known to any subclass.
       @tparam T: the scalar type used for the application. ChASE is templated
       for real and complex numbers with both Single Precision and Double Precision,
       thus `T` can be one of `float`, `double`, `std::complex<float>` and 

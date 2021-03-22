@@ -1,4 +1,6 @@
-CPUs
+.. _para-chase-mpi-cpu:
+
+CPUs in node
 -------------------
 
 work in progress

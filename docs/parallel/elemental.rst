@@ -1,7 +1,7 @@
 .. _para-chase-elemental:
 
 
-Implementation of ChASE-Elemental
+ChASE-Elemental
 =================================
 Work in progress.
 

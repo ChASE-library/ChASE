@@ -2,11 +2,11 @@
 ChaseMpiDLABlaslapackSeq
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-``ChaseMpiDLABlaslapackSeq`` defines the implementation of ``ChaseMpiDLABlaslapackSeq``
-for single node system without MPI.  
+``ChaseMpiDLABlaslapackSeq`` defines an implementation of ``ChaseMpiDLAInterface``
+for single node system with pure CPUs. This implementation doesn't require MPI support.  
 
 
 .. note::
-    For more details of the implementation of ChASE-MPI, please refer to :ref:`para-chase-mpi`
+    For more details of the implementation of ChASE-MPI, please refer to :ref:`single-node-cpus`
     in the Developer Documentation.
 

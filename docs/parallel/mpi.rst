@@ -1,14 +1,13 @@
 .. _para-chase-mpi:
 
-Implementation of ChASE-MPI
+ChASE-MPI
 ==============================
 Work in progress.
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
 
    comm
-   seq
-   cpu
-   gpu
+   shm
+   distm
 
