@@ -8,6 +8,6 @@ The computation intra-node, either with CPUs or GPUs, are implemented within cla
 
 
 .. note::
-    For more details of the implementation of ChASE-MPI, please refer to :ref:`ara-chase-inter-node`
+    For more details of the implementation of ChASE-MPI, please refer to :ref:`para-chase-inter-node`
     in the Developer Documentation.
 
