@@ -355,7 +355,7 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
         - The 2nd operation which computes the eigenpairs of `A`, is implemented by `(SY)HEEVD` from `LAPACK`.
         - The 3rd operation which computes `W<-V*A` is implemented by `cublasXgemm` from `cuBLAS`.
       - **for (SY)HHEVD, parallelism is SUPPORT within node if multi-threading is actived**
-      - **for `cublasXgemm`, parallelism is SUPPORT within one GPU card**
+      - **for cublasXgemm, parallelism is SUPPORT within one GPU card**
       - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */  
 

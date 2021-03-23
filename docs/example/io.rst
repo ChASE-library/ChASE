@@ -125,7 +125,8 @@ This is an example to load a matrix from local into block-cyclic distribution da
 
 For the parameters **m**, **mblocks**, **nblocks**, **r_offs**, **r_lens**, **r_offs_l**, 
 **c_offs**, **c_lens** and **c_offs_l**, 
-they can be obtained by the member function ``get_offs_lens``  of :ref:`ChaseMpi` class as follows.
+they can be obtained by the member functions ``get_mblocks``, ``get_nblocks``, 
+``get_m``, ``get_n``, and ``get_offs_lens``  of :ref:`ChaseMpi` class as follows.
 
 
 .. code:: c++

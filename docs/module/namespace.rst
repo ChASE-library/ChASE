@@ -9,23 +9,23 @@ defined in the abstract class that correspond to calls to numerical
 kernels required by ChASE. It includes the
 following functionalities:
 
-  * HEMM: Hermitian Matrix-Matrix Multiplication
+  * ``HEMM``: Hermitian Matrix-Matrix Multiplication
 
-  * QR: QR factorization
+  * ``QR``: QR factorization
 
-  * RR: Rayleigh-Ritz projection and small problem solver
+  * ``RR``: Rayleigh-Ritz projection and small problem solver
 
-  * Resd: compute the eigenpair residuals
+  * ``Resd``: compute the eigenpair residuals
 
-  * Lanczos: estimate the bounds of user-interested spectrum by Lanczos eigensolver
+  * ``Lanczos``: estimate the bounds of user-interested spectrum by Lanczos eigensolver
 
-  * LanczosDos: estimate the spectral distribution of eigenvalues
+  * ``LanczosDos``: estimate the spectral distribution of eigenvalues
 
-  * Swap: swap the two matrices of vectors used in the Chebyschev filter
+  * ``Swap``: swap the two matrices of vectors used in the Chebyschev filter
 
-  * Locking: locking the converged eigenpairs
+  * ``Locking``: locking the converged eigenpairs
 
-  * Shift: shift the diagonal of the A matrix used in the 3-terms
+  * ``Shift``: shift the diagonal of matrix ``A`` used in the 3-terms
     recurrence relation implemented in the Chebyschev filter
 
   * etc ..

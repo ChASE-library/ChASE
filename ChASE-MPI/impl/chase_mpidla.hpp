@@ -345,7 +345,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
   /*!
     - For ChaseMpiDLA, `lange` is implemented by calling the one in ChaseMpiDLABlaslapack and ChaseMpiDLAMultiGPU.
     - This implementation is the same for both with or w/o GPUs.
-    - **Parallelism is SUPPORT only within node**
+    - **Parallelism is SUPPORT within node if multi-threading is actived**
     - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
   Base<T> lange(char norm, std::size_t m, std::size_t n, T* A, std::size_t lda) override {
@@ -355,7 +355,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
   /*!
     - For ChaseMpiDLA, `gegqr` is implemented by calling the one in ChaseMpiDLABlaslapack and ChaseMpiDLAMultiGPU.
     - This implementation is the same for both with or w/o GPUs.
-    - **Parallelism is SUPPORT only within node**
+    - **Parallelism is SUPPORT within node if multi-threading is actived**
     - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
   void gegqr(std::size_t N, std::size_t nevex, T * approxV, std::size_t LDA) override {
@@ -365,7 +365,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
   /*!
     - For ChaseMpiDLA, `axpy` is implemented by calling the one in ChaseMpiDLABlaslapack and ChaseMpiDLAMultiGPU.
     - This implementation is the same for both with or w/o GPUs.
-    - **Parallelism is SUPPORT only within node**
+    - **Parallelism is SUPPORT within node if multi-threading is actived**
     - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
   void axpy(std::size_t N, T * alpha, T * x, std::size_t incx, T *y, std::size_t incy) override {
@@ -376,7 +376,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
   /*!
     - For ChaseMpiDLA, `scal` is implemented by calling the one in ChaseMpiDLABlaslapack and ChaseMpiDLAMultiGPU.
     - This implementation is the same for both with or w/o GPUs.
-    - **Parallelism is SUPPORT only within node**
+    - **Parallelism is SUPPORT within node if multi-threading is actived**
     - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
   void scal(std::size_t N, T *a, T *x, std::size_t incx) override {
@@ -387,7 +387,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
   /*!
     - For ChaseMpiDLA, `nrm2` is implemented by calling the one in ChaseMpiDLABlaslapack and ChaseMpiDLAMultiGPU.
     - This implementation is the same for both with or w/o GPUs.
-    - **Parallelism is SUPPORT only within node**
+    - **Parallelism is SUPPORT within node if multi-threading is actived**
     - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
   Base<T> nrm2(std::size_t n, T *x, std::size_t incx) override {
@@ -397,7 +397,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
   /*!
     - For ChaseMpiDLA, `dot` is implemented by calling the one in ChaseMpiDLABlaslapack and ChaseMpiDLAMultiGPU.
     - This implementation is the same for both with or w/o GPUs.
-    - **Parallelism is SUPPORT only within node**
+    - **Parallelism is SUPPORT within node if multi-threading is actived**
     - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
   T dot(std::size_t n, T* x, std::size_t incx, T* y, std::size_t incy) override {
@@ -407,7 +407,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
    /*!
    - For ChaseMpiDLA, `gemm_small` is implemented with `xGEMM` provided by `BLAS`.
    - This implementation is the same for both with or w/o GPUs.
-   - **Parallelism is SUPPORT only within node**    
+   - **Parallelism is SUPPORT within node if multi-threading is actived**    
    - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
   void gemm_small(CBLAS_LAYOUT Layout, CBLAS_TRANSPOSE transa,
@@ -423,7 +423,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
    /*!
    - For ChaseMpiDLA, `gemm_large` is implemented with `xGEMM` provided by `BLAS`.
    - This implementation is the same for both with or w/o GPUs.   
-   - **Parallelism is SUPPORT only within node**    
+   - **Parallelism is SUPPORT within node if multi-threading is actived**    
    - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
   void gemm_large(CBLAS_LAYOUT Layout, CBLAS_TRANSPOSE transa,
@@ -439,7 +439,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
   /*!
     - For ChaseMpiDLA, `stemr` with real and double precision scalar, is implemented by calling the one in ChaseMpiDLABlaslapack and ChaseMpiDLAMultiGPU.
     - This implementation is the same for both with or w/o GPUs.
-    - **Parallelism is SUPPORT only within node**
+    - **Parallelism is SUPPORT within node if multi-threading is actived**
     - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
   std::size_t stemr(int matrix_layout, char jobz, char range, std::size_t n,
@@ -452,7 +452,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
   /*!
     - For ChaseMpiDLA, `stemr` with real and single precision scalar, is implemented by calling the one in ChaseMpiDLABlaslapack and ChaseMpiDLAMultiGPU.
     - This implementation is the same for both with or w/o GPUs.
-    - **Parallelism is SUPPORT only within node**
+    - **Parallelism is SUPPORT within node if multi-threading is actived**
     - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
   std::size_t stemr(int matrix_layout, char jobz, char range, std::size_t n,
@@ -465,7 +465,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
   /*!
     - For ChaseMpiDLA, `RR_kernel` with real and double precision scalar, is implemented by calling the one in ChaseMpiDLABlaslapack and ChaseMpiDLAMultiGPU.
     - This implementation is the same for both with or w/o GPUs.
-    - **Parallelism is SUPPORT only within node**
+    - **Parallelism is SUPPORT within node if multi-threading is actived**
     - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
   void RR_kernel(std::size_t N, std::size_t block, T *approxV, std::size_t locked, T *workspace, T One, T Zero, Base<T> *ritzv) override {

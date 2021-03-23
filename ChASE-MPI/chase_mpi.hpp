@@ -25,24 +25,23 @@
 namespace chase {
 namespace mpi {
 
-//! A derived class of Chase to implement ChASE based on MPI and Dense Linear Algebra (`DLA`) routines.
+//! A derived class of Chase to implement ChASE based on MPI and Dense Linear Algebra (**DLA**) routines.
   /*!
     This is a calls derived from the Chase class which plays the
-      role of interface for the kernels used by the library. All
-      members of the Chase class are virtual functions. These
+      role of interface for the kernels used by the library. 
+      - All members of the Chase class are virtual functions. These
       functions are re-implemented in the ChaseMpi
-      class. All derived members that provide an interface to the computational
-      kernels are re-implemented by using the Dense Linear Algebra routines
-      listed in the class ChaseMpiDLAInterface. The DLA functions in ChaseMpiDLAInterface
-      are also vritual functions, which are differently implemented targeting different
-      computing architectures (sequential/parallel, CPU/GPU, shared-memory/distributed-memory, etc). 
-      In the class ChaseMpi, the calling of DLA functions are indeed
+      class.
+      - All the members functions of ChaseMpi, which are the implementation of the virtual functions in class Chase, 
+        are implemented using the *DLA* routines provided by the class ChaseMpiDLAInterface.
+      -  The DLA functions in ChaseMpiDLAInterface are also vritual functions, which are differently implemented targeting different
+      computing architectures (sequential/parallel, CPU/GPU, shared-memory/distributed-memory, etc). In the class ChaseMpi, the calling of DLA functions are indeed
       calling their implementations from different derived classes. Thus this ChaseMpi 
-      class is able to have multi-types of implementation for various architectures.
-      For the implementation of the class ChaseMpi targeting distributed-memory platforms based
+      class is able to have customized implementation for various architectures.
+      - For the implementation of the class ChaseMpi targeting distributed-memory platforms based
       on MPI, the setup of MPI environment and communication scheme,
       and the distribution of data (matrix, vectors) across MPI nodes are following the ChaseMpiProperties class,
-      the distribution of matrix can be either `Block` or `Block-Cyclic` layout.
+      the distribution of matrix can be either **Block** or **Block-Cyclic** scheme.
       @tparam MF: A class derived from ChaseMpiDLAInterface, which indicates the selected implementation of DLA that to be used by ChaseMpi Object.
       @tparam T: the scalar type used for the application. ChASE is templated
       for real and complex numbers with both Single Precision and Double Precision,
@@ -57,14 +56,19 @@ class ChaseMpi : public chase::Chase<T> {
   // todo? take all arguments of matrices and entirely wrap it?
   //! A constructor of the ChaseMpi class which gives an implenentation of ChASE for shared-memory architecture, without MPI.
   /*!
-     The `private members` of this classes are initialized by the parameters of this constructor. For the
-     variable `N_`, it is initialized by the first parameter of this constructor `N`. The variables `nev_` and
+     The private members of this classes are initialized by the parameters of this constructor.
+     - For the
+     variable `N_`, it is initialized by the first parameter of this constructor `N`. 
+     - The variables `nev_` and
      and `nex_` are initialized by the parameters of this constructor `nev` and `nex`, respectively.
-     The variable `rank_` is set to be 0 since non MPI is supported. The variable `locked_` is initially set to be 0.
-     The variable `config_` is setup by the constructor of ChaseConfig which takes the parameters `N`, `nev` and `nex`.
-     The variable `matrices_` is setup directly by the constructor of ChaseMpiMatrices which takes the paramter `H`, `N`,
-     `nev`, `nex`, `V1`, `ritzv`, `V2` and `resid`. The variable `dla_` is initialized by `MF` which is a derived class
-     of ChaseMpiDLAInterface.
+     - The variable `rank_` is set to be 0 since non MPI is supported. The variable `locked_` is initially set to be 0.
+     - The variable `config_` is setup by the constructor of ChaseConfig which takes the parameters `N`, `nev` and `nex`.
+     - The variable `matrices_` is setup directly by the constructor of ChaseMpiMatrices which takes the paramter `H`, `N`,
+     `nev`, `nex`, `V1`, `ritzv`, `V2` and `resid`. 
+     - The variable `dla_` is initialized by `MF` which is a derived class
+     of ChaseMpiDLAInterface. In ChASE, the candidates of `MF` for non-MPI case are the classes `ChaseMpiDLABlaslapackSeq`,
+     `ChaseMpiDLABlaslapackSeqInplace` and `ChaseMpiDLACudaSeq`.
+
      @param N: size of the square matrix defining the eigenproblem.
      @param nev: Number of desired extremal eigenvalues.
      @param nex: Number of eigenvalues augmenting the search space. Usually a relatively small fraction of `nev`.
@@ -100,13 +104,20 @@ class ChaseMpi : public chase::Chase<T> {
   // case 2: MPI
   //! A constructor of the ChaseMpi class which gives an implenentation of ChASE for distributed-memory architecture, with the support of MPI.
   /*!
-     The `private members` of this classes are initialized by the parameters of this constructor. For the
+     The private members of this classes are initialized by the parameters of this constructor. 
+     - For the
      variable `N_`, `nev_` and `nex_` are initialized by the first parameter of this constructor `properties_`.
-     The variable `rank_` is initialized by `MPI_Comm_rank`. The variable `locked_` is initially set to be 0.
-     The variable `config_` is setup by the constructor of ChaseConfig which takes the parameters `N`, `nev` and `nex`.
-     The variable `matrices_` is constructed by the `create_matrices` function defined in ChaseMpiProperties.
-     The variable `dla_` for the distributed-memory is initialized by the constructor of ChaseDLAMpi which takes
-     bpth `properties_` and `MF`.
+     - The variable `rank_` is initialized by `MPI_Comm_rank`. The variable `locked_` is initially set to be 0.
+     - The variable `config_` is setup by the constructor of ChaseConfig which takes the parameters `N`, `nev` and `nex`.
+     - The variable `matrices_` is constructed by the `create_matrices` function defined in ChaseMpiProperties.
+     - The variable `dla_` for the distributed-memory is initialized by the constructor of ChaseMpiDLA which takes
+     both `properties_` and `MF`. In MPI case, the implementation of are split into two classses: 
+        - the class ChaseMpiDLA implements mainly the MPI collective communication part of ChASE
+     with MPI support. 
+        - The local computation tasks within each MPI is implemented by another two classes derived also from the class ChaseMpiDLAInterface:
+     `ChaseMpiDLABlaslapack` for pure-CPUs version and `chaseMpiDLAMultiGPU` for multi-GPUs version.
+        - Thus, for this constructor, a combination of ChaseMpiDLA and one of ChaseMpiDLABlaslapack and chaseMpiDLAMultiGPU is required.
+     
      @param properties: an object of ChaseMpiProperties which setups the MPI environment and data distribution scheme for ChaseMpi targeting distributed-memory systems.
      @param V1: a pointer to a rectangular matrix of size `N * (nev+nex)`.
      @param ritzv: a pointer to an array to store the computed Ritz values.
@@ -765,8 +776,8 @@ class ChaseMpi : public chase::Chase<T> {
   /*!
     - For the constructor of class ChaseMpi without MPI, 
    this variable is initialized directly by the **template parameter** `MF`.
-    - For the constructor of class ChaseMpi with MPI, this variable is implemented by considering `properties_`  and `MPI`.
-    which are identical on each MPI node. It is initalized within the construction of ChaseMpiMatrices.
+    - For the constructor of class ChaseMpi with MPI, this variable is implemented by considering `properties_`  and `MF`.
+    It is initalized within the construction of ChaseMpiMatrices.
   */
   std::unique_ptr<ChaseMpiDLAInterface<T>> dla_;
 

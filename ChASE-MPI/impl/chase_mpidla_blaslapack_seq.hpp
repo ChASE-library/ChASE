@@ -155,7 +155,7 @@ class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T> {
 
   /*!
     - For ChaseMpiDLABlaslapackSeq, `lange` is implemented using `LAPACK` routine `xLANGE`.
-    - **Parallelism is SUPPORT only within node**
+    - **Parallelism is SUPPORT within node if multi-threading is actived**
     - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
   Base<T> lange(char norm, std::size_t m, std::size_t n, T* A, std::size_t lda) override {
@@ -164,7 +164,7 @@ class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T> {
 
   /*!
     - For ChaseMpiDLABlaslapackSeq, `gegqr` is implemented using `LAPACK` routine `xGEQRF` and `xUMGQR`.
-    - **Parallelism is SUPPORT only within node**    
+    - **Parallelism is SUPPORT within node if multi-threading is actived**    
     - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
   void gegqr(std::size_t N, std::size_t nevex, T * approxV, std::size_t LDA) override {
@@ -177,7 +177,7 @@ class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T> {
 
   /*!
     - For ChaseMpiDLABlaslapackSeq, `axpy` is implemented using `BLAS` routine `xAXPY`.
-   - **Parallelism is SUPPORT only within node**    
+   - **Parallelism is SUPPORT within node if multi-threading is actived**    
     - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
   void axpy(std::size_t N, T * alpha, T * x, std::size_t incx, T *y, std::size_t incy) override {
@@ -186,7 +186,7 @@ class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T> {
 
   /*!
     - For ChaseMpiDLABlaslapackSeq, `scal` is implemented using `BLAS` routine `xSCAL`.
-    - **Parallelism is SUPPORT only within node**   
+    - **Parallelism is SUPPORT within node if multi-threading is actived**   
     - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
   void scal(std::size_t N, T *a, T *x, std::size_t incx) override {
@@ -195,7 +195,7 @@ class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T> {
 
   /*!
     - For ChaseMpiDLABlaslapackSeq, `nrm2` is implemented using `BLAS` routine `xNRM2`.
-    - **Parallelism is SUPPORT only within node**    
+    - **Parallelism is SUPPORT within node if multi-threading is actived**    
     - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
   Base<T> nrm2(std::size_t n, T *x, std::size_t incx) override {
@@ -204,7 +204,7 @@ class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T> {
 
   /*!
     - For ChaseMpiDLABlaslapackSeq, `dot` is implemented using `BLAS` routine `xDOT`.
-    - **Parallelism is SUPPORT only within node**       
+    - **Parallelism is SUPPORT within node if multi-threading is actived**       
     - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
   T dot(std::size_t n, T* x, std::size_t incx, T* y, std::size_t incy) override {
@@ -213,7 +213,7 @@ class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T> {
 
   /*!
     - For ChaseMpiDLABlaslapackSeq, `gemm_small` is implemented using `BLAS` routine `xGEMM`.
-    - **Parallelism is SUPPORT only within node**    
+    - **Parallelism is SUPPORT within node if multi-threading is actived**    
     - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
   void gemm_small(CBLAS_LAYOUT Layout, CBLAS_TRANSPOSE transa,
@@ -227,7 +227,7 @@ class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T> {
 
   /*!
     - For ChaseMpiDLABlaslapackSeq, `gemm_small` is implemented using `BLAS` routine `xGEMM`.
-    - **Parallelism is SUPPORT only within node**    
+    - **Parallelism is SUPPORT within node if multi-threading is actived**    
     - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
   void gemm_large(CBLAS_LAYOUT Layout, CBLAS_TRANSPOSE transa,
@@ -241,7 +241,7 @@ class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T> {
 
   /*!
    - For ChaseMpiDLABlaslapackSeq, `stemr` with scalar being real and double precision, is implemented using `LAPACK` routine `DSTEMR`.
-   - **Parallelism is SUPPORT only within node**    
+   - **Parallelism is SUPPORT within node if multi-threading is actived**    
    - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
   std::size_t stemr(int matrix_layout, char jobz, char range, std::size_t n,
@@ -253,7 +253,7 @@ class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T> {
 
   /*!
    - For ChaseMpiDLABlaslapackSeq, `stemr` with scalar being real and single precision, is implemented using `LAPACK` routine `SSTEMR`.
-   - **Parallelism is SUPPORT only within node**    
+   - **Parallelism is SUPPORT within node if multi-threading is actived**    
    - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
   std::size_t stemr(int matrix_layout, char jobz, char range, std::size_t n,
@@ -268,7 +268,7 @@ class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T> {
         - The 1st operation `A <- W^T * V` is implemented by `GEMM` from `BLAS`.
         - The 2nd operation which computes the eigenpairs of `A`, is implemented by `(SY)HEEVD` from `LAPACK`.
         - The 3rd operation which computes `W<-V*A` is implemented by `GEMM` from `BLAS`.
-      - **Parallelism is SUPPORT only within node**    
+      - **Parallelism is SUPPORT within node if multi-threading is actived**    
       - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */  
   void RR_kernel(std::size_t N, std::size_t block, T *approxV, std::size_t locked, T *workspace, T One, T Zero, Base<T> *ritzv) override {

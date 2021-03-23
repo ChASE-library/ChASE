@@ -49,7 +49,7 @@ struct is_skewed_matrixfree {
              of times. This is always the case when used with algorithm of ChASE.
       - **ASSUMPTION 2**: `shiftMatrix` must be called at least once before `apply()` is called.
       Some implementations may use `shift()` to transfer the matrix to the GPU).
-      - The manner is which the Matrix `H` is loaded into the class is defined by the 
+      - The manner in which the Matrix `H` is loaded into the class is defined by the 
       subclass. Further, the size of the vectors `V1` and `V2` must be known to any subclass.
       @tparam T: the scalar type used for the application. ChASE is templated
       for real and complex numbers with both Single Precision and Double Precision,
@@ -95,7 +95,7 @@ class ChaseMpiDLAInterface {
   // After a call to this function the state of V2 is undefined.
 
   /*!
-    Compared to `preApplication` defined previously, this This function only populates `V1`.
+    Compared to `preApplication` defined previously, this function only populates `V1`.
     After a call to this function the state of V2 is undefined.
     This is a virtual function, its implementation varies differently in different derived classes.
     @param V1: a `N * max_block_` rectangular matrix
@@ -176,7 +176,7 @@ class ChaseMpiDLAInterface {
   //! Perform a `LAPACK-like` function which returns the value of the 1-norm, Frobenius norm, infinity-norm, or the largest absolute value of any element of a general rectangular matrix `A` with scalar type `T`.
   /*!
     @param norm: specifies the value to be returned in `lange`.
-    @oaram m: the number of rows of the matrix A.
+    @param m: the number of rows of the matrix A.
     @param n: the number of columns of the matrix A.
     @param A: A is an array of type `T`, dimension `(lda, n)`, the `m` by `n` matrix `A`.
     @param lda: the leading dimension of the array `A`.
@@ -251,7 +251,7 @@ class ChaseMpiDLAInterface {
      @param[in] b: an array of type `T`, dimension `( ldb, kb )`, where `kb` is `n`  when  `transb=3`,  and is  `k`  otherwise. Before entry with  `transb=3`,  the leading  `k` by `n` part of the array  `b`  must contain the matrix  `b`,  otherwise the leading  `n` by `k`  part of the array  `b`  must contain  the matrix `b`. 
      @param[in] ldb: it specifies the first dimension of `b`. When `transa=3`, it must be at least `max(1, k)`, otherwise it must be at least `(1, n)`.
      @param[in] beta: it specifies the scalar `beta`.
-     @param[in/out] c: an array of type `T`, dimension `( ldc, n )`.
+     @param[in/out] `c`: an array of type `T`, dimension `( ldc, n )`.
      @param[in] ldc: it specifies the first dimension of `c`. It must be at least `max(1,m)`.
   */ 
   virtual void gemm_small(CBLAS_LAYOUT Layout, CBLAS_TRANSPOSE transa,
@@ -279,7 +279,7 @@ class ChaseMpiDLAInterface {
      @param[in] b: an array of type `T`, dimension `( ldb, kb )`, where `kb` is `n`  when  `transb=3`,  and is  `k`  otherwise. Before entry with  `transb=3`,  the leading  `k` by `n` part of the array  `b`  must contain the matrix  `b`,  otherwise the leading  `n` by `k`  part of the array  `b`  must contain  the matrix `b`. 
      @param[in] ldb: it specifies the first dimension of `b`. When `transa=3`, it must be at least `max(1, k)`, otherwise it must be at least `(1, n)`.
      @param[in] beta: it specifies the scalar `beta`.
-     @param[in/out] c: an array of type `T`, dimension `( ldc, n )`.
+     @param[in/out] `c`: an array of type `T`, dimension `( ldc, n )`.
      @param[in] ldc: it specifies the first dimension of `c`. It must be at least `max(1,m)`.
   */ 
   virtual void gemm_large(CBLAS_LAYOUT Layout, CBLAS_TRANSPOSE transa,

@@ -1,8 +1,6 @@
 Distributed-Memory Architecture
 ================================
 
-Work in progress.
-
 .. toctree::
    :maxdepth: 2
 

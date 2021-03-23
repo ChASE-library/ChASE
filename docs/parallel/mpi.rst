@@ -2,7 +2,6 @@
 
 ChASE-MPI
 ==============================
-Work in progress.
 
 .. toctree::
    :maxdepth: 3
