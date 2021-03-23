@@ -235,7 +235,7 @@ reused by the users to implement their own applications.</p>
 </pre></div>
 </div>
 <p>For the parameters <strong>xoff</strong>, <strong>yoff</strong>, <strong>xlen</strong> and <strong>ylen</strong>, they can
-be obtained by the member function of ChASE-MPI class as follows.</p>
+be obtained by the member function <code class="docutils literal notranslate"><span class="pre">GetOff</span></code> of <a class="reference internal" href="../module/chasempi.html#chasempi"><span class="std std-ref">ChaseMpi</span></a> class as follows.</p>
 <div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">xoff</span><span class="p">;</span>
 <span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">yoff</span><span class="p">;</span>
 <span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">xlen</span><span class="p">;</span>
@@ -287,7 +287,8 @@ be obtained by the member function of ChASE-MPI class as follows.</p>
 </div>
 <p>For the parameters <strong>m</strong>, <strong>mblocks</strong>, <strong>nblocks</strong>, <strong>r_offs</strong>, <strong>r_lens</strong>, <strong>r_offs_l</strong>,
 <strong>c_offs</strong>, <strong>c_lens</strong> and <strong>c_offs_l</strong>,
-they can be obtained by the member functions of ChASE-MPI class as follows.</p>
+they can be obtained by the member functions <code class="docutils literal notranslate"><span class="pre">get_mblocks</span></code>, <code class="docutils literal notranslate"><span class="pre">get_nblocks</span></code>,
+<code class="docutils literal notranslate"><span class="pre">get_m</span></code>, <code class="docutils literal notranslate"><span class="pre">get_n</span></code>, and <code class="docutils literal notranslate"><span class="pre">get_offs_lens</span></code>  of <a class="reference internal" href="../module/chasempi.html#chasempi"><span class="std std-ref">ChaseMpi</span></a> class as follows.</p>
 <div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cm">/*local block number = mblocks x nblocks*/</span>
 <span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">mblocks</span> <span class="o">=</span> <span class="n">single</span><span class="p">.</span><span class="n">get_mblocks</span><span class="p">();</span>
 <span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">nblocks</span> <span class="o">=</span> <span class="n">single</span><span class="p">.</span><span class="n">get_nblocks</span><span class="p">();</span>

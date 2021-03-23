@@ -181,7 +181,6 @@
             
   <div class="section" id="inter-node-implementation">
 <span id="para-chase-inter-node"></span><h1>Inter-node Implementation<a class="headerlink" href="#inter-node-implementation" title="Permalink to this headline">¶</a></h1>
-<p>work in progress</p>
 <dl class="cpp class">
 <dt id="_CPPv4I0EN5chase3mpi11ChaseMpiDLAE">
 <span id="_CPPv3I0EN5chase3mpi11ChaseMpiDLAE"></span><span id="_CPPv2I0EN5chase3mpi11ChaseMpiDLAE"></span>template&lt;class <code class="sig-name descname">T</code>&gt;<br /><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a"></span><em class="property">class </em><code class="sig-prename descclassname"><a class="reference internal" href="../.unused_material/reference/chase.html#_CPPv45chaseP13MKL_Complex16iP13MKL_Complex16P13MKL_Complex16PdiKiKiPCiKdK15CHASE_MODE_TYPEK14CHASE_OPT_TYPE" title="chase">chase</a>::mpi<code class="sig-prename descclassname">::</code></code><code class="sig-name descname">ChaseMpiDLA</code> : <em class="property">public</em> <a class="reference internal" href="../.unused_material/reference/chase.html#_CPPv45chaseP13MKL_Complex16iP13MKL_Complex16P13MKL_Complex16PdiKiKiPCiKdK15CHASE_MODE_TYPEK14CHASE_OPT_TYPE" title="chase">chase</a>::mpi::<a class="reference internal" href="../module/chasempidlainterface.html#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface">ChaseMpiDLAInterface</a>&lt;<a class="reference internal" href="#_CPPv4I0EN5chase3mpi11ChaseMpiDLAE" title="chase::mpi::ChaseMpiDLA::T">T</a>&gt;<a class="headerlink" href="#_CPPv4I0EN5chase3mpi11ChaseMpiDLAE" title="Permalink to this definition">¶</a><br /></dt>
@@ -268,7 +267,7 @@
 <dd><p><ul class="simple">
 <li><p>For <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_d_l_a"><span class="std std-ref">ChaseMpiDLA</span></a>, <code class="docutils literal notranslate"><span class="pre">lange</span></code> is implemented by calling the one in <a class="reference internal" href="cpu.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_blaslapack"><span class="std std-ref">ChaseMpiDLABlaslapack</span></a> and <a class="reference internal" href="gpu.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u"><span class="std std-ref">ChaseMpiDLAMultiGPU</span></a>.</p></li>
 <li><p>This implementation is the same for both with or w/o GPUs.</p></li>
-<li><p><strong>Parallelism is SUPPORT only within node</strong></p></li>
+<li><p><strong>Parallelism is SUPPORT within node if multi-threading is actived</strong></p></li>
 <li><p>For the meaning of this function, please visit <a class="reference internal" href="../module/chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>. </p></li>
 </ul>
 </p>
@@ -280,7 +279,7 @@
 <dd><p><ul class="simple">
 <li><p>For <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_d_l_a"><span class="std std-ref">ChaseMpiDLA</span></a>, <code class="docutils literal notranslate"><span class="pre">gegqr</span></code> is implemented by calling the one in <a class="reference internal" href="cpu.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_blaslapack"><span class="std std-ref">ChaseMpiDLABlaslapack</span></a> and <a class="reference internal" href="gpu.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u"><span class="std std-ref">ChaseMpiDLAMultiGPU</span></a>.</p></li>
 <li><p>This implementation is the same for both with or w/o GPUs.</p></li>
-<li><p><strong>Parallelism is SUPPORT only within node</strong></p></li>
+<li><p><strong>Parallelism is SUPPORT within node if multi-threading is actived</strong></p></li>
 <li><p>For the meaning of this function, please visit <a class="reference internal" href="../module/chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>. </p></li>
 </ul>
 </p>
@@ -292,7 +291,7 @@
 <dd><p><ul class="simple">
 <li><p>For <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_d_l_a"><span class="std std-ref">ChaseMpiDLA</span></a>, <code class="docutils literal notranslate"><span class="pre">axpy</span></code> is implemented by calling the one in <a class="reference internal" href="cpu.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_blaslapack"><span class="std std-ref">ChaseMpiDLABlaslapack</span></a> and <a class="reference internal" href="gpu.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u"><span class="std std-ref">ChaseMpiDLAMultiGPU</span></a>.</p></li>
 <li><p>This implementation is the same for both with or w/o GPUs.</p></li>
-<li><p><strong>Parallelism is SUPPORT only within node</strong></p></li>
+<li><p><strong>Parallelism is SUPPORT within node if multi-threading is actived</strong></p></li>
 <li><p>For the meaning of this function, please visit <a class="reference internal" href="../module/chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>. </p></li>
 </ul>
 </p>
@@ -304,7 +303,7 @@
 <dd><p><ul class="simple">
 <li><p>For <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_d_l_a"><span class="std std-ref">ChaseMpiDLA</span></a>, <code class="docutils literal notranslate"><span class="pre">scal</span></code> is implemented by calling the one in <a class="reference internal" href="cpu.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_blaslapack"><span class="std std-ref">ChaseMpiDLABlaslapack</span></a> and <a class="reference internal" href="gpu.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u"><span class="std std-ref">ChaseMpiDLAMultiGPU</span></a>.</p></li>
 <li><p>This implementation is the same for both with or w/o GPUs.</p></li>
-<li><p><strong>Parallelism is SUPPORT only within node</strong></p></li>
+<li><p><strong>Parallelism is SUPPORT within node if multi-threading is actived</strong></p></li>
 <li><p>For the meaning of this function, please visit <a class="reference internal" href="../module/chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>. </p></li>
 </ul>
 </p>
@@ -316,7 +315,7 @@
 <dd><p><ul class="simple">
 <li><p>For <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_d_l_a"><span class="std std-ref">ChaseMpiDLA</span></a>, <code class="docutils literal notranslate"><span class="pre">nrm2</span></code> is implemented by calling the one in <a class="reference internal" href="cpu.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_blaslapack"><span class="std std-ref">ChaseMpiDLABlaslapack</span></a> and <a class="reference internal" href="gpu.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u"><span class="std std-ref">ChaseMpiDLAMultiGPU</span></a>.</p></li>
 <li><p>This implementation is the same for both with or w/o GPUs.</p></li>
-<li><p><strong>Parallelism is SUPPORT only within node</strong></p></li>
+<li><p><strong>Parallelism is SUPPORT within node if multi-threading is actived</strong></p></li>
 <li><p>For the meaning of this function, please visit <a class="reference internal" href="../module/chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>. </p></li>
 </ul>
 </p>
@@ -328,7 +327,7 @@
 <dd><p><ul class="simple">
 <li><p>For <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_d_l_a"><span class="std std-ref">ChaseMpiDLA</span></a>, <code class="docutils literal notranslate"><span class="pre">dot</span></code> is implemented by calling the one in <a class="reference internal" href="cpu.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_blaslapack"><span class="std std-ref">ChaseMpiDLABlaslapack</span></a> and <a class="reference internal" href="gpu.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u"><span class="std std-ref">ChaseMpiDLAMultiGPU</span></a>.</p></li>
 <li><p>This implementation is the same for both with or w/o GPUs.</p></li>
-<li><p><strong>Parallelism is SUPPORT only within node</strong></p></li>
+<li><p><strong>Parallelism is SUPPORT within node if multi-threading is actived</strong></p></li>
 <li><p>For the meaning of this function, please visit <a class="reference internal" href="../module/chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>. </p></li>
 </ul>
 </p>
@@ -340,7 +339,7 @@
 <dd><p><ul class="simple">
 <li><p>For <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_d_l_a"><span class="std std-ref">ChaseMpiDLA</span></a>, <code class="docutils literal notranslate"><span class="pre">gemm_small</span></code> is implemented with <code class="docutils literal notranslate"><span class="pre">xGEMM</span></code> provided by <code class="docutils literal notranslate"><span class="pre">BLAS</span></code>.</p></li>
 <li><p>This implementation is the same for both with or w/o GPUs.</p></li>
-<li><p><strong>Parallelism is SUPPORT only within node</strong> </p></li>
+<li><p><strong>Parallelism is SUPPORT within node if multi-threading is actived</strong> </p></li>
 <li><p>For the meaning of this function, please visit <a class="reference internal" href="../module/chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>. </p></li>
 </ul>
 </p>
@@ -352,7 +351,7 @@
 <dd><p><ul class="simple">
 <li><p>For <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_d_l_a"><span class="std std-ref">ChaseMpiDLA</span></a>, <code class="docutils literal notranslate"><span class="pre">gemm_large</span></code> is implemented with <code class="docutils literal notranslate"><span class="pre">xGEMM</span></code> provided by <code class="docutils literal notranslate"><span class="pre">BLAS</span></code>.</p></li>
 <li><p>This implementation is the same for both with or w/o GPUs. </p></li>
-<li><p><strong>Parallelism is SUPPORT only within node</strong> </p></li>
+<li><p><strong>Parallelism is SUPPORT within node if multi-threading is actived</strong> </p></li>
 <li><p>For the meaning of this function, please visit <a class="reference internal" href="../module/chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>. </p></li>
 </ul>
 </p>
@@ -364,7 +363,7 @@
 <dd><p><ul class="simple">
 <li><p>For <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_d_l_a"><span class="std std-ref">ChaseMpiDLA</span></a>, <code class="docutils literal notranslate"><span class="pre">stemr</span></code> with real and double precision scalar, is implemented by calling the one in <a class="reference internal" href="cpu.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_blaslapack"><span class="std std-ref">ChaseMpiDLABlaslapack</span></a> and <a class="reference internal" href="gpu.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u"><span class="std std-ref">ChaseMpiDLAMultiGPU</span></a>.</p></li>
 <li><p>This implementation is the same for both with or w/o GPUs.</p></li>
-<li><p><strong>Parallelism is SUPPORT only within node</strong></p></li>
+<li><p><strong>Parallelism is SUPPORT within node if multi-threading is actived</strong></p></li>
 <li><p>For the meaning of this function, please visit <a class="reference internal" href="../module/chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>. </p></li>
 </ul>
 </p>
@@ -376,7 +375,7 @@
 <dd><p><ul class="simple">
 <li><p>For <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_d_l_a"><span class="std std-ref">ChaseMpiDLA</span></a>, <code class="docutils literal notranslate"><span class="pre">stemr</span></code> with real and single precision scalar, is implemented by calling the one in <a class="reference internal" href="cpu.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_blaslapack"><span class="std std-ref">ChaseMpiDLABlaslapack</span></a> and <a class="reference internal" href="gpu.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u"><span class="std std-ref">ChaseMpiDLAMultiGPU</span></a>.</p></li>
 <li><p>This implementation is the same for both with or w/o GPUs.</p></li>
-<li><p><strong>Parallelism is SUPPORT only within node</strong></p></li>
+<li><p><strong>Parallelism is SUPPORT within node if multi-threading is actived</strong></p></li>
 <li><p>For the meaning of this function, please visit <a class="reference internal" href="../module/chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>. </p></li>
 </ul>
 </p>
@@ -388,7 +387,7 @@
 <dd><p><ul class="simple">
 <li><p>For <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_d_l_a"><span class="std std-ref">ChaseMpiDLA</span></a>, <code class="docutils literal notranslate"><span class="pre">RR_kernel</span></code> with real and double precision scalar, is implemented by calling the one in <a class="reference internal" href="cpu.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_blaslapack"><span class="std std-ref">ChaseMpiDLABlaslapack</span></a> and <a class="reference internal" href="gpu.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u"><span class="std std-ref">ChaseMpiDLAMultiGPU</span></a>.</p></li>
 <li><p>This implementation is the same for both with or w/o GPUs.</p></li>
-<li><p><strong>Parallelism is SUPPORT only within node</strong></p></li>
+<li><p><strong>Parallelism is SUPPORT within node if multi-threading is actived</strong></p></li>
 <li><p>For the meaning of this function, please visit <a class="reference internal" href="../module/chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>. </p></li>
 </ul>
 </p>

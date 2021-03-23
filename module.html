@@ -188,7 +188,7 @@
 <h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
 <p>The implementation of ChASE provides a stand-alone high-performance
 parallel library based on our original design of the Chebyshev
-accelerated subspace iteration algorithm. the ChASE library promises the portability
+accelerated subspace iteration algorithm. The ChASE library promises the portability
 to heterogeneous architectures and the easy intergration ito existing codes. This goal is
 achieved by seperating the implementation of the ChASE algorithm from the required numerical
 kernels via an interface based on pure C++ abstract classes. Classes derived from this interface
@@ -243,31 +243,33 @@ which faciliate the user for the parameter configuration and performance profili
 <p>The namespace <code class="docutils literal notranslate"><span class="pre">chase::mpi</span></code>, which is defined inside the namespace <code class="docutils literal notranslate"><span class="pre">chase</span></code> and in parallel with namespace <code class="docutils literal notranslate"><span class="pre">chase::elemental</span></code>,
 provides the parallel implementation of ChASE based on <code class="docutils literal notranslate"><span class="pre">MPI</span></code> (and <code class="docutils literal notranslate"><span class="pre">CUDA</span></code>) by re-implementing
 the numerical kernels as virtual functions within the abstraction targeting homogenous and hetergenous architectures (multi-GPUs).
-For the user documentation, we provides only the constructors of the related classes without
-the details of implementation.</p>
-<p>1. The class <code class="docutils literal notranslate"><span class="pre">ChaseMpiMatrices</span></code> defines the construction of matrices and vectors
-for both non-MPI mode and MPI mode which are used in ChASE.</p>
+.. For the user documentation, we provides only the constructors of the related classes without
+.. the details of implementation.</p>
+<p>1. The class <code class="docutils literal notranslate"><span class="pre">chase::mpi::ChaseMpiMatrices</span></code> defines the allocation of buffers for matrices and vectors in ChASE library
+for both non-MPI mode and MPI mode d.</p>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="module/chasempimatrices.html">ChaseMpiMatrices</a></li>
 </ul>
 </div>
-<p>2. The class <code class="docutils literal notranslate"><span class="pre">ChaseMpiProperties</span></code> defines the construction of MPI environment for ChASE, both for the block
-distribution and block-cyclic distribution.</p>
+<p>2. The class <code class="docutils literal notranslate"><span class="pre">chase::mpi::ChaseMpiProperties</span></code> defines the construction of MPI environment and data distribution scheme (both <strong>Block
+Distribution</strong> and <strong>Block-Cyclic Distribution</strong>) for ChASE.</p>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="module/chasempiproperties.html">ChaseMpiProperties</a></li>
 </ul>
 </div>
-<p>3. <code class="docutils literal notranslate"><span class="pre">ChaseMpi</span></code> defines the ChASE-MPI class. It is an templated classes with two types required:
-an implementation of <code class="docutils literal notranslate"><span class="pre">ChaseMpiDLAInterface</span></code> and the scalar type to be used in the applications.</p>
+<p>3. <code class="docutils literal notranslate"><span class="pre">chase::mpi::ChaseMpi</span></code> is a derived class of <code class="docutils literal notranslate"><span class="pre">chase::Chase</span></code>. This class gives an implementation of the virtual functions of <cite>chase::Chase</cite> class
+which defines the essential numerical kernels of ChASE algorithm. It is an templated class with two types required:
+an implementation of <code class="docutils literal notranslate"><span class="pre">chase::mpi::ChaseMpiDLAInterface</span></code> and the scalar type to be used in the applications. Different objects of <code class="docutils literal notranslate"><span class="pre">chase::mpi::ChaseMpi</span></code>
+can be created targeting different computing platforms by selecting various derived classes of <code class="docutils literal notranslate"><span class="pre">chase::mpi::ChaseMpiDLAInterface</span></code>.</p>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="module/chasempi.html">ChaseMpi</a></li>
 </ul>
 </div>
-<p>4. <code class="docutils literal notranslate"><span class="pre">ChaseMpiDLA</span></code>, in which <code class="docutils literal notranslate"><span class="pre">DLA</span></code> is short for <code class="docutils literal notranslate"><span class="pre">Dense</span> <span class="pre">Linear</span> <span class="pre">Algebra</span></code>, provides multi-implementation
-of dense matrix operations on different computing architectures that are required by <code class="docutils literal notranslate"><span class="pre">ChASE</span></code>, e.g., Hermitian Matrix-Matrix Multiplication (HEMM), QR factorization, etc. These ‘s no single class <code class="docutils literal notranslate"><span class="pre">ChaseMpiDLA</span></code> in <code class="docutils literal notranslate"><span class="pre">ChASE</span></code>, we provide an interface class for these <cite>DLA</cite> operations, and multiple classes with different implentations derived from this interface class.</p>
+<p>4. <code class="docutils literal notranslate"><span class="pre">chase::mpi::ChaseMpiDLA</span></code>, in which <strong>DLA</strong> is short for <strong>Dense Linear Algebra</strong>, provides multi-implementations
+of dense matrix operations on different computing architectures that are required by ChASE-MPI, e.g., Hermitian Matrix-Matrix Multiplication (HEMM), QR factorization, etc. These ‘s NO single class named <code class="docutils literal notranslate"><span class="pre">ChaseMpiDLA</span></code> in ChASE, we provide an interface class <code class="docutils literal notranslate"><span class="pre">chase::mpi::ChaseMpiDLAInterface</span></code> with virtual functions for these <strong>DLA</strong> operations, and multiple classes with different implementations derived from this interface class.</p>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="module/chasempidla.html">ChaseMpiDLA</a><ul>

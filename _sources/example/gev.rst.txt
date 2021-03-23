@@ -43,7 +43,7 @@ More details of implementation, please visit
 Choleksy Factorization + ChASE
 -------------------------------
 
-ChASE parameters can be configured as follows:
+A generalized eigenproblem can be solved by combing ChASE with ScaLAPACK as follows:
 
 .. code:: c++
 

@@ -110,6 +110,7 @@
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Parameters and Configurations</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#general-parameters">General Parameters</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#chebyshev-filter">Chebyshev Filter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#lanczos-dos-spectral-estimator">Lanczos DoS (Spectral Estimator)</a></li>
 </ul>
 </li>
 </ul>
@@ -181,13 +182,13 @@
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p><a class="reference internal" href=".unused_material/reference/chase.html#_CPPv41N" title="N"><code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">N</span></code></a></p></td>
+<tr class="row-even"><td><p><code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">N_</span></code></p></td>
 <td><p>Rank of the matrix
 <span class="math notranslate nohighlight">\(A\)</span>.</p></td>
 <td></td>
 <td><p>N/A</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href=".unused_material/reference/chase.html#_CPPv43nev" title="nev"><code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">nev</span></code></a></p></td>
+<tr class="row-odd"><td><p><code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">nev_</span></code></p></td>
 <td><p>Number of desired
 eigenpairs</p></td>
 <td><p>No more than 20%
@@ -196,25 +197,25 @@ eigenvalues
 (or rank of <span class="math notranslate nohighlight">\(A\)</span>)</p></td>
 <td><p>N/A</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href=".unused_material/reference/chase.html#_CPPv43nex" title="nex"><code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">nex</span></code></a></p></td>
+<tr class="row-even"><td><p><code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">nex_</span></code></p></td>
 <td><p>Search space increment
 such that the overall
 size of the search space
-is <a class="reference internal" href=".unused_material/reference/chase.html#_CPPv43nev" title="nev"><code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">nev</span></code></a> +
-<a class="reference internal" href=".unused_material/reference/chase.html#_CPPv43nex" title="nex"><code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">nex</span></code></a>.</p></td>
+is <code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">nev_</span></code> +
+<code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">nex_</span></code>.</p></td>
 <td><p>In most cases 20% of
 the value of
-<a class="reference internal" href=".unused_material/reference/chase.html#_CPPv43nev" title="nev"><code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">nev</span></code></a>. Best
+<code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">nev_</span></code>. Best
 case scenario for
 optimal convergence
 is when there is a
 large
 spectrum gap between
-<a class="reference internal" href=".unused_material/reference/chase.html#_CPPv43nev" title="nev"><code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">nev</span></code></a> and
-<a class="reference internal" href=".unused_material/reference/chase.html#_CPPv43nex" title="nex"><code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">nex</span></code></a>.</p></td>
+<code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">nev_</span></code> and
+<code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">nex_</span></code>.</p></td>
 <td><p>N/A</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">approx</span></code></p></td>
+<tr class="row-odd"><td><p><code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">approx_</span></code></p></td>
 <td><p>An optional flag
 indicating whether the
 user provides ChASE with
@@ -223,17 +224,20 @@ or uses ChASE in
 isolation as a
 traditional black-box
 solver</p></td>
-<td><p>When <code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">approx</span></code>
-is set to true, ChASE
-expects the arrays
-<a class="reference internal" href=".unused_material/reference/chase.html#_CPPv41V" title="V"><code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">V</span></code></a> and
-<code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">ritzv</span></code> to hold
+<td><p>When <code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">approx_</span></code>
+is set to <code class="docutils literal notranslate"><span class="pre">true</span></code>,
+ChASE expects to receive
+in input two arrays
+holding
 approximate vectors and
 values, respectively</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">false</span></code>
-(black-box solver)</p></td>
+<td><blockquote>
+<div><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p>
+</div></blockquote>
+<p>(black-box solver)</p>
+</td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href=".unused_material/reference/chase.html#_CPPv43tol" title="tol"><code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">tol</span></code></a></p></td>
+<tr class="row-even"><td><p><code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">tol_</span></code></p></td>
 <td><p>An optional parameter
 indicating the minimal
 value for the residual
@@ -250,7 +254,7 @@ respectively.</p></td>
 DP. <code class="docutils literal notranslate"><span class="pre">1e-05</span></code>
 in SP.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">maxIter</span></code></p></td>
+<tr class="row-odd"><td><p><code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">max_iter_</span></code></p></td>
 <td><p>An optional parameter set
 as to avoid that ChASE
 internal while loop runs
@@ -259,8 +263,8 @@ cases where convergence
 of the desired eigenpairs
 cannot be secured. Once
 reached the
-<code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">maxIter</span></code>, ChASE
-stops execution and
+<code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">max_iter_</span></code>,
+ChASE stops execution and
 returns.</p></td>
 <td><p>Typically ChASE does not
 need more than 10
@@ -290,34 +294,36 @@ to convergence.</p></td>
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p><a class="reference internal" href=".unused_material/reference/chase.html#_CPPv43deg" title="deg"><code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">deg</span></code></a></p></td>
+<tr class="row-even"><td><p><code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">deg_</span></code></p></td>
 <td><p>Polynomial degree for the
 Chebyshev filter. When
 the value of
-<code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">optim</span></code> = true
-, this is the <cite>initial</cite>
+<code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">optimization_</span></code>
+= <code class="docutils literal notranslate"><span class="pre">true</span></code>,
+this is the <cite>initial</cite>
 polynomial degree used
 in only the first
 subspace iteration.
 Otherwise the same value
-<a class="reference internal" href=".unused_material/reference/chase.html#_CPPv43deg" title="deg"><code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">deg</span></code></a> is used
+<code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">deg_</span></code> is used
 for every vector
 for each filter call.</p></td>
 <td><p>When
-<code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">optim</span></code> = true
-it is advisable to set
+<code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">optimization_</span></code>
+= <code class="docutils literal notranslate"><span class="pre">true</span></code>, it is
+advisable to set
 to a value not larger
 than <code class="docutils literal notranslate"><span class="pre">10</span></code>. If
-<code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">optim</span></code> = false
-then it is advised to
-select a value not
-smaller than <code class="docutils literal notranslate"><span class="pre">15</span></code>
-but not larger than
-<code class="docutils literal notranslate"><span class="pre">30</span></code>.</p></td>
+<code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">optimization_</span></code>
+= <code class="docutils literal notranslate"><span class="pre">false</span></code>, then it is
+advised to select a
+value not smaller than
+<code class="docutils literal notranslate"><span class="pre">15</span></code> but not larger
+than <code class="docutils literal notranslate"><span class="pre">30</span></code>.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">20</span></code> in DP,
-<code class="docutils literal notranslate"><span class="pre">10</span></code> in SP.</p></td>
+<code class="docutils literal notranslate"><span class="pre">10</span></code> in SP</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">optim</span></code></p></td>
+<tr class="row-odd"><td><p><code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">optimization_</span></code></p></td>
 <td><p>An optional flag
 indicating that the
 filter uses a vector of
@@ -334,18 +340,19 @@ avoid wasting extra
 FLOPs.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">degExtra</span></code></p></td>
+<tr class="row-even"><td><p><code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">deg_extra_</span></code></p></td>
 <td><p>A small value used only
 in combination with
-<code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">optim</span></code> = true.</p></td>
+<code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">optimization_</span></code>
+= <code class="docutils literal notranslate"><span class="pre">true</span></code>.</p></td>
 <td><p>Usually a small number
 never larger than <code class="docutils literal notranslate"><span class="pre">5</span></code>.
 Apart for rare cases,
-avoind changing the
+avoid changing the
 default value.</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">2</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">degMax</span></code></p></td>
+<tr class="row-odd"><td><p><code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">max_deg_</span></code></p></td>
 <td><p>A parameter which avoids
 that vectors with a
 rather small convergence
@@ -361,6 +368,84 @@ quite careful to set it
 too high (&gt; <code class="docutils literal notranslate"><span class="pre">50</span></code>).</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">36</span></code> in DP,
 <code class="docutils literal notranslate"><span class="pre">18</span></code> in SP.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="lanczos-dos-spectral-estimator">
+<h2>Lanczos DoS (Spectral Estimator)<a class="headerlink" href="#lanczos-dos-spectral-estimator" title="Permalink to this headline">¶</a></h2>
+<table class="colwidths-given docutils align-default" id="lanczos-dos-parameters">
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 19%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Parameter</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Suggested value</p></th>
+<th class="head"><p>Default value</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">lanczos_iter_</span></code></p></td>
+<td><p>In order to estimate the spectral
+bounds, ChASE executes a limited
+number of Lanczos steps. These
+steps are then used to compute an
+estimate of <span class="math notranslate nohighlight">\(\lambda_1\)</span>,
+<span class="math notranslate nohighlight">\(\lambda_{nev+nex}\)</span>, and
+<span class="math notranslate nohighlight">\(\lambda_N\)</span>  based on the
+Density of State (DoS) algorithm.</p></td>
+<td><p>ChASE does not need very
+precise spectral
+estimates because at
+each iteration such
+estimates are
+automatically
+improved by the
+approximate spectrum
+computed. For the DoS
+algorithm to work
+effectively without
+overburdening the
+eigensolver, the number
+of Lanczos iteration
+should be not less than
+<code class="docutils literal notranslate"><span class="pre">10</span></code> but also no
+more than <code class="docutils literal notranslate"><span class="pre">100</span></code>.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">25</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">num_lanczos_</span></code></p></td>
+<td><p>After having executed a number
+of Lanczos steps, ChASE uses a
+cheap and efficient estimator
+to calculate the value of the
+upper extremum of the search space.
+Such an estimator uses a small
+number of stochastic vectors
+indicated by the variable
+<code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">num_lanczos_</span></code>.</p></td>
+<td><p>Because ChASE does not
+need precise estimates
+of the upper extremum
+of the search space,
+the number of vectors
+used is quite small.
+The expert user can
+can change the value
+to a larger number than
+the default value (it
+is not suggested to
+use a smaller value)
+and pay a higher
+computing cost. It is
+suggested to not
+set a value for
+<code class="xref cpp cpp-var docutils literal notranslate"><span class="pre">num_lanczos_</span></code>
+higher than <code class="docutils literal notranslate"><span class="pre">20</span></code>.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">4</span></code></p></td>
 </tr>
 </tbody>
 </table>

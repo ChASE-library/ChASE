@@ -178,12 +178,12 @@
 <dl class="cpp class">
 <dt id="_CPPv4I0EN5chase3mpi16ChaseMpiMatricesE">
 <span id="_CPPv3I0EN5chase3mpi16ChaseMpiMatricesE"></span><span id="_CPPv2I0EN5chase3mpi16ChaseMpiMatricesE"></span>template&lt;class <code class="sig-name descname">T</code>&gt;<br /><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_matrices"></span><em class="property">class </em><code class="sig-prename descclassname"><a class="reference internal" href="../.unused_material/reference/chase.html#_CPPv45chaseP13MKL_Complex16iP13MKL_Complex16P13MKL_Complex16PdiKiKiPCiKdK15CHASE_MODE_TYPEK14CHASE_OPT_TYPE" title="chase">chase</a>::mpi<code class="sig-prename descclassname">::</code></code><code class="sig-name descname">ChaseMpiMatrices</code><a class="headerlink" href="#_CPPv4I0EN5chase3mpi16ChaseMpiMatricesE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>A class to setup the buffers of matrices and vectors which will be used by ChASE. </p>
+<dd><p>A class to setup the buffers of matrices and vectors which will be used by ChASE-MPI. </p>
 <p>This class provides two constructors:<ul class="simple">
 <li><p>Allocating the buffers for <a class="reference internal" href="chasempi.html#classchase_1_1mpi_1_1_chase_mpi"><span class="std std-ref">ChaseMpi</span></a> without MPI support.</p></li>
 <li><p>Allocating the buffers for <a class="reference internal" href="chasempi.html#classchase_1_1mpi_1_1_chase_mpi"><span class="std std-ref">ChaseMpi</span></a> with MPI support. <dl class="simple">
 <dt><strong>Template Parameters</strong></dt><dd><ul class="breatheparameterlist">
-<li><p><code class="docutils literal notranslate"><span class="pre">T</span></code>: the scalar type used for the application. ChASE is templated for real and complex numbers with both Single Precision and Double Precision, thus <code class="docutils literal notranslate"><span class="pre">T</span></code> can be one of <code class="docutils literal notranslate"><span class="pre">float</span></code>, <code class="docutils literal notranslate"><span class="pre">double</span></code>, <code class="docutils literal notranslate"><span class="pre">std::complex&lt;float&gt;</span></code> and <code class="docutils literal notranslate"><span class="pre">std::complex&lt;double&gt;</span></code>. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">T</span></code>: the scalar type used for the application. ChASE is templated for real and complex scalar with both Single Precision and Double Precision, thus <code class="docutils literal notranslate"><span class="pre">T</span></code> can be one of <code class="docutils literal notranslate"><span class="pre">float</span></code>, <code class="docutils literal notranslate"><span class="pre">double</span></code>, <code class="docutils literal notranslate"><span class="pre">std::complex&lt;float&gt;</span></code> and <code class="docutils literal notranslate"><span class="pre">std::complex&lt;double&gt;</span></code>. </p></li>
 </ul>
 </dd>
 </dl>
@@ -196,10 +196,13 @@
 <dt id="_CPPv4N5chase3mpi16ChaseMpiMatrices16ChaseMpiMatricesENSt6size_tENSt6size_tEP1TP4BaseI1TEP1TP1TP4BaseI1TE">
 <span id="_CPPv3N5chase3mpi16ChaseMpiMatrices16ChaseMpiMatricesENSt6size_tENSt6size_tEP1TP4BaseI1TEP1TP1TP4BaseI1TE"></span><span id="_CPPv2N5chase3mpi16ChaseMpiMatrices16ChaseMpiMatricesENSt6size_tENSt6size_tEP1TP4BaseI1TEP1TP1TP4BaseI1TE"></span><span id="chase::mpi::ChaseMpiMatrices::ChaseMpiMatrices__std::s.std::s.TP.Base:T:P.TP.TP.Base:T:P"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_matrices_1ac7d54956be8cdd3531ad17c1bcf628ba"></span><code class="sig-name descname">ChaseMpiMatrices</code><span class="sig-paren">(</span>std::size_t <em>N</em>, std::size_t <em>max_block</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi16ChaseMpiMatricesE" title="chase::mpi::ChaseMpiMatrices::T">T</a> *<em>V1</em> = nullptr, Base&lt;<a class="reference internal" href="#_CPPv4I0EN5chase3mpi16ChaseMpiMatricesE" title="chase::mpi::ChaseMpiMatrices::T">T</a>&gt; *<em>ritzv</em> = nullptr, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi16ChaseMpiMatricesE" title="chase::mpi::ChaseMpiMatrices::T">T</a> *<em>H</em> = nullptr, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi16ChaseMpiMatricesE" title="chase::mpi::ChaseMpiMatrices::T">T</a> *<em>V2</em> = nullptr, Base&lt;<a class="reference internal" href="#_CPPv4I0EN5chase3mpi16ChaseMpiMatricesE" title="chase::mpi::ChaseMpiMatrices::T">T</a>&gt; *<em>resid</em> = nullptr<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi16ChaseMpiMatrices16ChaseMpiMatricesENSt6size_tENSt6size_tEP1TP4BaseI1TEP1TP1TP4BaseI1TE" title="Permalink to this definition">¶</a><br /></dt>
 <dd><p>A constructor of <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_matrices"><span class="std std-ref">ChaseMpiMatrices</span></a> for <strong>Non-MPI case</strong> which allocates everything required. </p>
-<p>The <code class="docutils literal notranslate"><span class="pre">private</span> <span class="pre">members</span></code> of this class are initialized by the parameters of this constructor. For <code class="docutils literal notranslate"><span class="pre">H__</span></code> and <code class="docutils literal notranslate"><span class="pre">H_</span></code>, they are of size <code class="docutils literal notranslate"><span class="pre">N</span> <span class="pre">*</span> <span class="pre">N</span></code>. For <code class="docutils literal notranslate"><span class="pre">V1__</span></code>, V1_<code class="docutils literal notranslate"><span class="pre">,</span> <span class="pre">V2__</span></code> and <code class="docutils literal notranslate"><span class="pre">V1_</span></code>, they are of size <code class="docutils literal notranslate"><span class="pre">N</span> <span class="pre">*</span> <span class="pre">max_block</span></code>. For <code class="docutils literal notranslate"><span class="pre">ritzv__</span></code>, ritzv_<code class="docutils literal notranslate"><span class="pre">,</span> <span class="pre">resid__</span></code> and <code class="docutils literal notranslate"><span class="pre">resid_</span></code>, they are of size <code class="docutils literal notranslate"><span class="pre">N</span> <span class="pre">*</span> <span class="pre">max_block</span></code>. <dl class="simple">
-<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<p>The <strong>private members</strong> of this class are initialized by the parameters of this constructor.<ul class="simple">
+<li><p>For <code class="docutils literal notranslate"><span class="pre">H__</span></code> and <code class="docutils literal notranslate"><span class="pre">H_</span></code>, they are of size <code class="docutils literal notranslate"><span class="pre">N</span> <span class="pre">*</span> <span class="pre">N</span></code>.</p></li>
+<li><p>For <code class="docutils literal notranslate"><span class="pre">V1__</span></code>, <code class="docutils literal notranslate"><span class="pre">V1_</span></code>, <code class="docutils literal notranslate"><span class="pre">V2__</span></code> and <code class="docutils literal notranslate"><span class="pre">V1_</span></code>, they are of size <code class="docutils literal notranslate"><span class="pre">N</span> <span class="pre">*</span> <span class="pre">max_block</span></code>.</p></li>
+<li><p>For <code class="docutils literal notranslate"><span class="pre">ritzv__</span></code>, <code class="docutils literal notranslate"><span class="pre">ritzv_</span></code>, <code class="docutils literal notranslate"><span class="pre">resid__</span></code> and <code class="docutils literal notranslate"><span class="pre">resid_</span></code>, they are of size <code class="docutils literal notranslate"><span class="pre">max_block</span></code>. <dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist">
 <li><p><code class="docutils literal notranslate"><span class="pre">N</span></code>: size of the square matrix defining the eigenproblem. </p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">max_block</span></code>: Maximum column number of matrix <code class="docutils literal notranslate"><span class="pre">V1_</span></code> and <code class="docutils literal notranslate"><span class="pre">V2_</span></code>. It equal to <code class="docutils literal notranslate"><span class="pre">nev_</span> <span class="pre">+</span> <span class="pre">nex_</span></code>. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">max_block</span></code>: Maximum column number of matrix <code class="docutils literal notranslate"><span class="pre">V1_</span></code> and <code class="docutils literal notranslate"><span class="pre">V2_</span></code>. It equals to <code class="docutils literal notranslate"><span class="pre">nev_</span> <span class="pre">+</span> <span class="pre">nex_</span></code>. </p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">V1</span></code>: a pointer to the buffer <code class="docutils literal notranslate"><span class="pre">V1_</span></code>. </p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">ritz</span></code>: a pointer to the buffer <code class="docutils literal notranslate"><span class="pre">ritz_</span></code>. </p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">H</span></code>: a pointer to the buffer <code class="docutils literal notranslate"><span class="pre">H_</span></code>. </p></li>
@@ -208,6 +211,8 @@
 </ul>
 </dd>
 </dl>
+</p></li>
+</ul>
 </p>
 </dd></dl>
 
@@ -215,11 +220,14 @@
 <dt id="_CPPv4N5chase3mpi16ChaseMpiMatrices16ChaseMpiMatricesE8MPI_CommNSt6size_tENSt6size_tEP1TP4BaseI1TEP1TP4BaseI1TE">
 <span id="_CPPv3N5chase3mpi16ChaseMpiMatrices16ChaseMpiMatricesE8MPI_CommNSt6size_tENSt6size_tEP1TP4BaseI1TEP1TP4BaseI1TE"></span><span id="_CPPv2N5chase3mpi16ChaseMpiMatrices16ChaseMpiMatricesE8MPI_CommNSt6size_tENSt6size_tEP1TP4BaseI1TEP1TP4BaseI1TE"></span><span id="chase::mpi::ChaseMpiMatrices::ChaseMpiMatrices__MPI_Comm.std::s.std::s.TP.Base:T:P.TP.Base:T:P"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_matrices_1a5f7e0b36cf6d61bee132b623ace1f9b7"></span><code class="sig-name descname">ChaseMpiMatrices</code><span class="sig-paren">(</span>MPI_Comm <em>comm</em>, std::size_t <em>N</em>, std::size_t <em>max_block</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi16ChaseMpiMatricesE" title="chase::mpi::ChaseMpiMatrices::T">T</a> *<em>V1</em> = nullptr, Base&lt;<a class="reference internal" href="#_CPPv4I0EN5chase3mpi16ChaseMpiMatricesE" title="chase::mpi::ChaseMpiMatrices::T">T</a>&gt; *<em>ritzv</em> = nullptr, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi16ChaseMpiMatricesE" title="chase::mpi::ChaseMpiMatrices::T">T</a> *<em>V2</em> = nullptr, Base&lt;<a class="reference internal" href="#_CPPv4I0EN5chase3mpi16ChaseMpiMatricesE" title="chase::mpi::ChaseMpiMatrices::T">T</a>&gt; *<em>resid</em> = nullptr<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi16ChaseMpiMatrices16ChaseMpiMatricesE8MPI_CommNSt6size_tENSt6size_tEP1TP4BaseI1TEP1TP4BaseI1TE" title="Permalink to this definition">¶</a><br /></dt>
 <dd><p>A constructor of <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_matrices"><span class="std std-ref">ChaseMpiMatrices</span></a> for <strong>MPI case</strong> which allocates everything required except <code class="docutils literal notranslate"><span class="pre">H_</span></code>. </p>
-<p>The <code class="docutils literal notranslate"><span class="pre">private</span> <span class="pre">members</span></code> of this class are initialized by the parameters of this constructor. For <code class="docutils literal notranslate"><span class="pre">V1__</span></code>, V1_<code class="docutils literal notranslate"><span class="pre">,</span> <span class="pre">V2__</span></code> and <code class="docutils literal notranslate"><span class="pre">V1_</span></code>, they are of size <code class="docutils literal notranslate"><span class="pre">N</span> <span class="pre">*</span> <span class="pre">max_block</span></code>. For <code class="docutils literal notranslate"><span class="pre">ritzv__</span></code>, ritzv_<code class="docutils literal notranslate"><span class="pre">,</span> <span class="pre">resid__</span></code> and <code class="docutils literal notranslate"><span class="pre">resid_</span></code>, they are of size <code class="docutils literal notranslate"><span class="pre">N</span> <span class="pre">*</span> <span class="pre">max_block</span></code>. <code class="docutils literal notranslate"><span class="pre">H_</span></code> is not allocated here, but in <a class="reference internal" href="chasempiproperties.html#classchase_1_1mpi_1_1_chase_mpi_properties"><span class="std std-ref">ChaseMpiProperties</span></a> class. <dl class="simple">
-<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">comm</span></code>: the working MPI communicator to ChASE. </p></li>
+<p>The <strong>private members</strong> of this class are initialized by the parameters of this constructor.<ul class="simple">
+<li><p>For <code class="docutils literal notranslate"><span class="pre">V1__</span></code>, <code class="docutils literal notranslate"><span class="pre">V1_</span></code>, <code class="docutils literal notranslate"><span class="pre">V2__</span></code> and <code class="docutils literal notranslate"><span class="pre">V1_</span></code>, they are of size <code class="docutils literal notranslate"><span class="pre">N</span> <span class="pre">*</span> <span class="pre">max_block</span></code>.</p></li>
+<li><p>For <code class="docutils literal notranslate"><span class="pre">ritzv__</span></code>, <code class="docutils literal notranslate"><span class="pre">ritzv_</span></code>, <code class="docutils literal notranslate"><span class="pre">resid__</span></code> and <code class="docutils literal notranslate"><span class="pre">resid_</span></code>, they are of size <code class="docutils literal notranslate"><span class="pre">N</span> <span class="pre">*</span> <span class="pre">max_block</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">H_</span></code> is not allocated here, but in <a class="reference internal" href="chasempiproperties.html#classchase_1_1mpi_1_1_chase_mpi_properties"><span class="std std-ref">ChaseMpiProperties</span></a> class which takes the MPI environment and data distribution scheme into account. <dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist">
+<li><p><code class="docutils literal notranslate"><span class="pre">comm</span></code>: the working MPI communicator of ChASE. </p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">N</span></code>: size of the square matrix defining the eigenproblem. </p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">max_block</span></code>: Maximum column number of matrix <code class="docutils literal notranslate"><span class="pre">V1_</span></code> and <code class="docutils literal notranslate"><span class="pre">V2_</span></code>. It equal to <code class="docutils literal notranslate"><span class="pre">nev_</span> <span class="pre">+</span> <span class="pre">nex_</span></code>. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">max_block</span></code>: Maximum column number of matrix <code class="docutils literal notranslate"><span class="pre">V1_</span></code> and <code class="docutils literal notranslate"><span class="pre">V2_</span></code>. It equals to <code class="docutils literal notranslate"><span class="pre">nev_</span> <span class="pre">+</span> <span class="pre">nex_</span></code>. </p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">V1</span></code>: a pointer to the buffer <code class="docutils literal notranslate"><span class="pre">V1_</span></code>. </p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">ritz</span></code>: a pointer to the buffer <code class="docutils literal notranslate"><span class="pre">ritz_</span></code>. </p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">V2</span></code>: a pointer to the buffer <code class="docutils literal notranslate"><span class="pre">V2_</span></code>. </p></li>
@@ -227,14 +235,17 @@
 </ul>
 </dd>
 </dl>
+</p></li>
+</ul>
 </p>
 </dd></dl>
 
 <dl class="cpp function">
 <dt id="_CPPv4N5chase3mpi16ChaseMpiMatrices5get_HEv">
 <span id="_CPPv3N5chase3mpi16ChaseMpiMatrices5get_HEv"></span><span id="_CPPv2N5chase3mpi16ChaseMpiMatrices5get_HEv"></span><span id="chase::mpi::ChaseMpiMatrices::get_H"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_matrices_1a4d67809ef4c3265bafb66216211bf096"></span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi16ChaseMpiMatricesE" title="chase::mpi::ChaseMpiMatrices::T">T</a> *<code class="sig-name descname">get_H</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi16ChaseMpiMatrices5get_HEv" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Return buffer stores the (local part if applicable) matrix A. <dl class="simple">
-<dt><strong>Return</strong></dt><dd><p>H_, a private member of this class. </p>
+<dd><p>Return buffer stores the (local part if applicable) matrix A. </p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p><code class="docutils literal notranslate"><span class="pre">H_</span></code>, a private member of this class. </p>
 </dd>
 </dl>
 </p>
@@ -243,8 +254,9 @@
 <dl class="cpp function">
 <dt id="_CPPv4N5chase3mpi16ChaseMpiMatrices6get_V1Ev">
 <span id="_CPPv3N5chase3mpi16ChaseMpiMatrices6get_V1Ev"></span><span id="_CPPv2N5chase3mpi16ChaseMpiMatrices6get_V1Ev"></span><span id="chase::mpi::ChaseMpiMatrices::get_V1"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_matrices_1ad3cefe3ab83e92cea1c1110bc4433235"></span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi16ChaseMpiMatricesE" title="chase::mpi::ChaseMpiMatrices::T">T</a> *<code class="sig-name descname">get_V1</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi16ChaseMpiMatrices6get_V1Ev" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Return the buffer <code class="docutils literal notranslate"><span class="pre">V1_</span></code> which will be right-multiplied to <code class="docutils literal notranslate"><span class="pre">A</span></code> during the process of ChASE. <dl class="simple">
-<dt><strong>Return</strong></dt><dd><p>V1_, a private member of this class. </p>
+<dd><p>Return the buffer <code class="docutils literal notranslate"><span class="pre">V1_</span></code> which will be right-multiplied to <code class="docutils literal notranslate"><span class="pre">A</span></code> during the process of ChASE. </p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p><code class="docutils literal notranslate"><span class="pre">V1_</span></code>, a private member of this class. </p>
 </dd>
 </dl>
 </p>
@@ -253,8 +265,9 @@
 <dl class="cpp function">
 <dt id="_CPPv4N5chase3mpi16ChaseMpiMatrices6get_V2Ev">
 <span id="_CPPv3N5chase3mpi16ChaseMpiMatrices6get_V2Ev"></span><span id="_CPPv2N5chase3mpi16ChaseMpiMatrices6get_V2Ev"></span><span id="chase::mpi::ChaseMpiMatrices::get_V2"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_matrices_1a84fdc46588329a9676c181fae94f5e51"></span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi16ChaseMpiMatricesE" title="chase::mpi::ChaseMpiMatrices::T">T</a> *<code class="sig-name descname">get_V2</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi16ChaseMpiMatrices6get_V2Ev" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p><dl class="simple">
-<dt><strong>Return</strong></dt><dd><p>V2_, a private member of this class. </p>
+<dd><p>Return the buffer <code class="docutils literal notranslate"><span class="pre">V2_</span></code> whose conjugate transpose will be left-multiplied to <code class="docutils literal notranslate"><span class="pre">A</span></code> during the process of ChASE. </p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p><code class="docutils literal notranslate"><span class="pre">V2_</span></code>, a private member of this class. </p>
 </dd>
 </dl>
 </p>
@@ -263,8 +276,9 @@
 <dl class="cpp function">
 <dt id="_CPPv4N5chase3mpi16ChaseMpiMatrices9get_RitzvEv">
 <span id="_CPPv3N5chase3mpi16ChaseMpiMatrices9get_RitzvEv"></span><span id="_CPPv2N5chase3mpi16ChaseMpiMatrices9get_RitzvEv"></span><span id="chase::mpi::ChaseMpiMatrices::get_Ritzv"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_matrices_1a5720cb1e6a8f13c1da9b9d0d3ccfb88f"></span>Base&lt;<a class="reference internal" href="#_CPPv4I0EN5chase3mpi16ChaseMpiMatricesE" title="chase::mpi::ChaseMpiMatrices::T">T</a>&gt; *<code class="sig-name descname">get_Ritzv</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi16ChaseMpiMatrices9get_RitzvEv" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Return the buffer which stores the computed Ritz values. <dl class="simple">
-<dt><strong>Return</strong></dt><dd><p>ritzv_, a private member of this class. </p>
+<dd><p>Return the buffer which stores the computed Ritz values. </p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p><code class="docutils literal notranslate"><span class="pre">ritzv_</span></code>, a private member of this class. </p>
 </dd>
 </dl>
 </p>
@@ -273,8 +287,9 @@
 <dl class="cpp function">
 <dt id="_CPPv4N5chase3mpi16ChaseMpiMatrices9get_ResidEv">
 <span id="_CPPv3N5chase3mpi16ChaseMpiMatrices9get_ResidEv"></span><span id="_CPPv2N5chase3mpi16ChaseMpiMatrices9get_ResidEv"></span><span id="chase::mpi::ChaseMpiMatrices::get_Resid"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_matrices_1a29e409a47f084fd18c2820d714cc9930"></span>Base&lt;<a class="reference internal" href="#_CPPv4I0EN5chase3mpi16ChaseMpiMatricesE" title="chase::mpi::ChaseMpiMatrices::T">T</a>&gt; *<code class="sig-name descname">get_Resid</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi16ChaseMpiMatrices9get_ResidEv" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Return the buffer which stores the residual of computed Ritz pairs. <dl class="simple">
-<dt><strong>Return</strong></dt><dd><p>resid_, a private member of this class. </p>
+<dd><p>Return the buffer which stores the residual of computed Ritz pairs. </p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p><code class="docutils literal notranslate"><span class="pre">resid_</span></code>, a private member of this class. </p>
 </dd>
 </dl>
 </p>
@@ -286,19 +301,19 @@
 <dl class="cpp var">
 <dt id="_CPPv4N5chase3mpi16ChaseMpiMatrices3H__E">
 <span id="_CPPv3N5chase3mpi16ChaseMpiMatrices3H__E"></span><span id="_CPPv2N5chase3mpi16ChaseMpiMatrices3H__E"></span><span id="chase::mpi::ChaseMpiMatrices::H____std::unique_ptr:TA:"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_matrices_1a78357bd9c06f87f171c54f2eb3ff032e"></span>std::unique_ptr&lt;<a class="reference internal" href="#_CPPv4I0EN5chase3mpi16ChaseMpiMatricesE" title="chase::mpi::ChaseMpiMatrices::T">T</a>[]&gt; <code class="sig-name descname">H__</code><a class="headerlink" href="#_CPPv4N5chase3mpi16ChaseMpiMatrices3H__E" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>A smart pointer which manages the buffer of <code class="docutils literal notranslate"><span class="pre">H_</span></code> which stores the (local part if applicable) matrix <code class="docutils literal notranslate"><span class="pre">A</span></code>. </p>
+<dd><p>A smart pointer which manages the buffer of <code class="docutils literal notranslate"><span class="pre">H_</span></code> which stores (local part if applicable) matrix <code class="docutils literal notranslate"><span class="pre">A</span></code>. </p>
 </dd></dl>
 
 <dl class="cpp var">
 <dt id="_CPPv4N5chase3mpi16ChaseMpiMatrices4V1__E">
 <span id="_CPPv3N5chase3mpi16ChaseMpiMatrices4V1__E"></span><span id="_CPPv2N5chase3mpi16ChaseMpiMatrices4V1__E"></span><span id="chase::mpi::ChaseMpiMatrices::V1____std::unique_ptr:TA:"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_matrices_1a918ebe978f9ad787b2a4d5b7b2da9736"></span>std::unique_ptr&lt;<a class="reference internal" href="#_CPPv4I0EN5chase3mpi16ChaseMpiMatricesE" title="chase::mpi::ChaseMpiMatrices::T">T</a>[]&gt; <code class="sig-name descname">V1__</code><a class="headerlink" href="#_CPPv4N5chase3mpi16ChaseMpiMatrices4V1__E" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>A smart pointer which manages the buffer of <code class="docutils literal notranslate"><span class="pre">V1_</span></code> which which will be right-multiplied to <code class="docutils literal notranslate"><span class="pre">A</span></code> during the process of ChASE. The eigenvectors obtained will also stored in <code class="docutils literal notranslate"><span class="pre">V1_</span></code>. </p>
+<dd><p>A smart pointer which manages the buffer of <code class="docutils literal notranslate"><span class="pre">V1_</span></code> which will be right-multiplied to <code class="docutils literal notranslate"><span class="pre">A</span></code> during the process of ChASE. The eigenvectors obtained will also stored in <code class="docutils literal notranslate"><span class="pre">V1_</span></code>. </p>
 </dd></dl>
 
 <dl class="cpp var">
 <dt id="_CPPv4N5chase3mpi16ChaseMpiMatrices4V2__E">
 <span id="_CPPv3N5chase3mpi16ChaseMpiMatrices4V2__E"></span><span id="_CPPv2N5chase3mpi16ChaseMpiMatrices4V2__E"></span><span id="chase::mpi::ChaseMpiMatrices::V2____std::unique_ptr:TA:"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_matrices_1aac709c16c42497e22f450c4e39e6a8f5"></span>std::unique_ptr&lt;<a class="reference internal" href="#_CPPv4I0EN5chase3mpi16ChaseMpiMatricesE" title="chase::mpi::ChaseMpiMatrices::T">T</a>[]&gt; <code class="sig-name descname">V2__</code><a class="headerlink" href="#_CPPv4N5chase3mpi16ChaseMpiMatrices4V2__E" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>A smart pointer which manages the buffer of <code class="docutils literal notranslate"><span class="pre">V2_</span></code> whose conjugate transpose which will be left-multiplied to <code class="docutils literal notranslate"><span class="pre">A</span></code> during the process of ChASE. </p>
+<dd><p>A smart pointer which manages the buffer of <code class="docutils literal notranslate"><span class="pre">V2_</span></code> whose conjugate transpose will be left-multiplied to <code class="docutils literal notranslate"><span class="pre">A</span></code> during the process of ChASE. </p>
 </dd></dl>
 
 <dl class="cpp var">
@@ -316,19 +331,19 @@
 <dl class="cpp var">
 <dt id="_CPPv4N5chase3mpi16ChaseMpiMatrices2H_E">
 <span id="_CPPv3N5chase3mpi16ChaseMpiMatrices2H_E"></span><span id="_CPPv2N5chase3mpi16ChaseMpiMatrices2H_E"></span><span id="chase::mpi::ChaseMpiMatrices::H___TP"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_matrices_1ac25078b2620f560e9a694495c9e33b5e"></span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi16ChaseMpiMatricesE" title="chase::mpi::ChaseMpiMatrices::T">T</a> *<code class="sig-name descname">H_</code><a class="headerlink" href="#_CPPv4N5chase3mpi16ChaseMpiMatrices2H_E" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>The buffer stores the (local part if applicable) matrix <code class="docutils literal notranslate"><span class="pre">A</span></code>. </p>
+<dd><p>The buffer stores (local part if applicable) matrix <code class="docutils literal notranslate"><span class="pre">A</span></code>. </p>
 </dd></dl>
 
 <dl class="cpp var">
 <dt id="_CPPv4N5chase3mpi16ChaseMpiMatrices3V1_E">
 <span id="_CPPv3N5chase3mpi16ChaseMpiMatrices3V1_E"></span><span id="_CPPv2N5chase3mpi16ChaseMpiMatrices3V1_E"></span><span id="chase::mpi::ChaseMpiMatrices::V1___TP"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_matrices_1ac7658ea8b2e4ec0cdf8b970e27794b18"></span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi16ChaseMpiMatricesE" title="chase::mpi::ChaseMpiMatrices::T">T</a> *<code class="sig-name descname">V1_</code><a class="headerlink" href="#_CPPv4N5chase3mpi16ChaseMpiMatrices3V1_E" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>The buffer of <code class="docutils literal notranslate"><span class="pre">V1_</span></code> which will be right-multiplied to <code class="docutils literal notranslate"><span class="pre">A</span></code> during the process of ChASE. The eigenvectors obtained will also stored in <code class="docutils literal notranslate"><span class="pre">V_</span></code>. </p>
+<dd><p>The buffer of <code class="docutils literal notranslate"><span class="pre">V1_</span></code> which will be right-multiplied to <code class="docutils literal notranslate"><span class="pre">A</span></code> during the process of ChASE. The eigenvectors obtained will also be stored in <code class="docutils literal notranslate"><span class="pre">V_</span></code>. </p>
 </dd></dl>
 
 <dl class="cpp var">
 <dt id="_CPPv4N5chase3mpi16ChaseMpiMatrices3V2_E">
 <span id="_CPPv3N5chase3mpi16ChaseMpiMatrices3V2_E"></span><span id="_CPPv2N5chase3mpi16ChaseMpiMatrices3V2_E"></span><span id="chase::mpi::ChaseMpiMatrices::V2___TP"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_matrices_1aa5bb4764a52e5288a4d0c8c39fa23428"></span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi16ChaseMpiMatricesE" title="chase::mpi::ChaseMpiMatrices::T">T</a> *<code class="sig-name descname">V2_</code><a class="headerlink" href="#_CPPv4N5chase3mpi16ChaseMpiMatrices3V2_E" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>The buffer of <code class="docutils literal notranslate"><span class="pre">V2_</span></code> whose conjugate transpose which will be left-multiplied to <code class="docutils literal notranslate"><span class="pre">A</span></code> during the process of ChASE. </p>
+<dd><p>The buffer of <code class="docutils literal notranslate"><span class="pre">V2_</span></code> whose conjugate transpose will be left-multiplied to <code class="docutils literal notranslate"><span class="pre">A</span></code> during the process of ChASE. </p>
 </dd></dl>
 
 <dl class="cpp var">
