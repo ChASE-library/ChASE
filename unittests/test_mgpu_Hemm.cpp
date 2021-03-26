@@ -1,3 +1,10 @@
+// This file is a part of the ChASE library.
+// Copyright (c) 2015-2021, Simulation and Data Laboratory Quantum Materials,
+// Forschungszentrum Juelich GmbH, Germany.
+// All rights reserved.
+// ChASE is licensed under the 3-clause BSD license (BSD 2.0).
+// https://github.com/ChASE-library/ChASE/
+
 /**
  * The program tests the mgpu_cudaHemm class for computing
  *
