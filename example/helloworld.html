@@ -109,6 +109,7 @@
 <li class="toctree-l1 current"><a class="reference internal" href="../example.html">Examples</a><ul class="current">
 <li class="toctree-l2 current"><a class="reference internal" href="../example.html#hello-world">0. Hello World</a><ul class="current">
 <li class="toctree-l3 current"><a class="current reference internal" href="#">C++ Code</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#execution">Execution</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#output">Output</a></li>
 </ul>
 </li>
@@ -343,6 +344,17 @@ distribution and block-cyclic distribution of the Hermtian matrix.</p>
 
   <span class="n">MPI_Finalize</span><span class="p">();</span>
 <span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="execution">
+<h1>Execution<a class="headerlink" href="#execution" title="Permalink to this headline">¶</a></h1>
+<p>The execution of this example through the command line is:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">mpirun</span> <span class="o">-</span><span class="n">np</span> <span class="n">$</span><span class="p">{</span><span class="n">NPROCS</span><span class="p">}</span> <span class="p">.</span><span class="o">/</span><span class="mi">0</span><span class="n">_hello_world</span><span class="o">/</span><span class="mi">0</span><span class="n">_hello_world</span>
+</pre></div>
+</div>
+<p>For the execution of this example with <strong>Block-Cyclic Distribution</strong>, it can be done as:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">mpirun</span> <span class="o">-</span><span class="n">np</span> <span class="n">$</span><span class="p">{</span><span class="n">NPROCS</span><span class="p">}</span> <span class="p">.</span><span class="o">/</span><span class="mi">0</span><span class="n">_hello_world</span><span class="o">/</span><span class="mi">0</span><span class="n">_hello_world_block_cyclic</span>
 </pre></div>
 </div>
 </div>
