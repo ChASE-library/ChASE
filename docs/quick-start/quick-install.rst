@@ -57,10 +57,11 @@ Quick Hands-on by Examples
 ------------------------------
 
 For a quick test and usage of the library, we provide various ready-to-use
-examples which use ChASE to solve eigenproblems. These examples make
+examples which use ChASE to solve eigenproblems. Some of these examples make
 the additional use of the 
 ``C++`` library ``Boost`` for the parsing of command line values. Thus
-``Boost`` should also be provided before the installation of ChASE.
+``Boost`` should also be provided before the installation of ChASE if users
+would like to build ChASE with these examples.
 In order to build these examples together with ChASE
 the sequence of building commands should be slightly modified as below::
 
@@ -71,46 +72,37 @@ the sequence of building commands should be slightly modified as below::
   make install
 
 Executing ChASE using the ready-to-use examples is rather
-straightforward. For instance, example 2 is executed by simply typing
+straightforward. For instance, :ref:`hello-world-chase` is executed by simply typing
 the line below::
 
-  ./2_input_output/2_input_output
+  ./0_hello_world/0_hello_world
 
-One can call this example without any argument as above. In this case a
-Clement matrix is generated and default values are used.  
-One could also specify a subset or all arguments. The minimal
-arguments that need to be provided are the input matrix and the size
-of such matrix::
+In this example, a Clement matrix is generated and default values of parameters are used.  
 
-  ./2_input_output/2_input_output --n <MatrixSize> --path_in <YourOwnFolder/YourMatrixToSolve.bin>
-  
 To run this example with MPI, start the command with the mpi launcher of your choice, e.g. `mpirun` or `srun`.
 
-All additional arguments can be listed with -h::
-
-  ./2_input_output/2_input_output -h
-
-For sake of completeness we provide a complete list below.
+For sake of completeness we provide a complete list of parameters in this example below.
 
 .. table::
 
-  ========================= =================================================================
+  ========================= ===================================================================================================
   Parameter (default value) Description
-  ========================= =================================================================
-  -h [ --help ]             Shows the full list of parameters
-  --n arg (=1001)           Size of the Input Matrix
-  --double arg (=1)         Are matrix entries of type double, false indicates type single
-  --complex arg (=1)        Is matrix complex valued, false indicates a real matrix 
-  --nev arg (=100)          Wanted Number of Eigenpairs
-  --nex arg (=25)           Extra Search Dimensions
-  --deg arg (=20)           Initial filtering degree
-  --bgn arg (=2)            Start index of matrix sequence (if any) 
-  --end arg (=2)            End index of matrix sequence (if any)
-  --tol arg (=1e-10)        Minimum tolerance required to declare eigenpairs converged
-  --path_in arg               Path to the input matrix/matrices
-  --output arg (=eig.txt)   Path to the write the eigenvalues
-  --mode arg (=R)           Valid values are ``R`` (Random) or ``A`` (Approximate)
-  --opt arg (=N)            Valid values are Optimi ``S`` e, or do ``N`` ot optimise degree
-  --path_eigp arg           Path to approximate solutions, only required when 
-                            mode is ``A`` pproximate, otherwise not used
-  ========================= =================================================================
+  ========================= ===================================================================================================
+  N (=1001)                 Size of the Input Matrix
+  nev (=40)                 Wanted Number of Eigenpairs
+  nex (=20)                 Extra Search Dimensions
+  deg (=20)                 Initial filtering degree, value set by ``config.SetDeg(20)``
+  tol (=1e-10)              Minimum tolerance required to declare eigenpairs converged, value set by ``config.SetTol(1e-10)``
+  opt (=true)               If optimize the degree of filter internally by ChASE, value set by ``config.SetOpt(true)``
+  ========================= ===================================================================================================
+
+.. note::  
+  For the quick test and benchmark, user can modify some of parameters, e.g., to change the size of matrix ``N`` which will generate 
+  a clement matrix of different size, to change the number of wanted eigepairs ``nev``, etc.
+
+.. note::
+  For the fine tuning of more parameters in ChASE, please visit :ref:`configuration_object`, in which we provide a class
+  to set up all the parameters of eigensolvers. For the suggestion of selecting values of parameters, please visit :ref:`parameters_and_config`.
+
+.. note::
+  For a complete explanation of all the examples, please visit :ref:`examples-chase`.

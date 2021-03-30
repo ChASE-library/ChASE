@@ -1,3 +1,5 @@
+.. _parameters_and_config:
+
 Parameters and Configurations
 ************************************
 
