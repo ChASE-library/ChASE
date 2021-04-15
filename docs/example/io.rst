@@ -162,9 +162,13 @@ This examples provides multiple implementation of ChASE targeting different comp
 5. ``2_input_output_mgpu_block_cyclic``: ChASE for distributed memory systems with MPI support (with GPUs),  and **Block-Cyclic Distribution**.
 
 
-This example uses `Boost` for parsing the parameters, thus the required parameters and configuration can be gotten by the `help` flag::
+This example uses `Boost` for parsing the parameters, thus the
+required parameters and configuration can be gotten by the `help`
+flag:
 
-  ./2_input_output/2_input_output -h
+.. code-block:: sh
+
+    ./2_input_output/2_input_output -h
 
 
 Solving single problem
@@ -172,9 +176,11 @@ Solving single problem
 
 Here we utilize ``2_input_output`` as an example to illustrate the way to use ChASE to solve single eigenproblem with loading external matrix.
 
-The execution of this example through the command line is::
+The execution of this example through the command line is:
 
-  mpirun -np ${NPROCS} ./2_input_output/2_input_output --path_in=${MATRIX_BINARY_FILE} --n=${RANK_OF_MATRIX} --nev=${NB_of_WANTED_EIGENPAIRS} --nex=${EXTERNAL_SEARCHNING_SPACE} --mode=R
+.. code-block:: sh
+
+    mpirun -np ${NPROCS} ./2_input_output/2_input_output --path_in=${MATRIX_BINARY_FILE} --n=${RANK_OF_MATRIX} --nev=${NB_of_WANTED_EIGENPAIRS} --nex=${EXTERNAL_SEARCHNING_SPACE} --mode=R
 
 
 Solving a sequence of problems
@@ -182,9 +188,11 @@ Solving a sequence of problems
 
 Here we also utilize ``2_input_output`` as an example to illustrate the way to use ChASE to solve a sequence of eigenproblems with loading external matrix.
 
-The execution of this example through the command line is::
+The execution of this example through the command line is:
 
-  mpirun -np ${NPROCS} ./2_input_output/2_input_output --path_in=${DIRECTORY_STORE_MATRICES} --n=${RANK_OF_MATRIX} --nev=${NB_of_WANTED_EIGENPAIRS} --nex=${EXTERNAL_SEARCHNING_SPACE} --legacy=true --mode=R --bgn=2 --end=10 --sequence=true
+.. code-block:: sh
+
+    mpirun -np ${NPROCS} ./2_input_output/2_input_output --path_in=${DIRECTORY_STORE_MATRICES} --n=${RANK_OF_MATRIX} --nev=${NB_of_WANTED_EIGENPAIRS} --nex=${EXTERNAL_SEARCHNING_SPACE} --legacy=true --mode=R --bgn=2 --end=10 --sequence=true
 
 In this example, for each physical system, a number (``N``) of matrices are available, which should be solved in sequence. 
 All the matrices are named ``gmat/ /1/ ell``, with ``ell`` varying from ``1`` to ``N``. The flag ``--legacy=true`` enables

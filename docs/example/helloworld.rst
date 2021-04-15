@@ -179,14 +179,19 @@ distribution and block-cyclic distribution of the Hermtian matrix.
 Execution
 ----------
 
-The execution of this example through the command line is::
+The execution of this example through the command line is:
 
-  mpirun -np ${NPROCS} ./0_hello_world/0_hello_world
+.. code-block:: sh
+
+    mpirun -np ${NPROCS} ./0_hello_world/0_hello_world
 
 
-For the execution of this example with **Block-Cyclic Distribution**, it can be done as::
+For the execution of this example with **Block-Cyclic Distribution**,
+it can be done as:
 
-  mpirun -np ${NPROCS} ./0_hello_world/0_hello_world_block_cyclic
+.. code-block:: sh
+
+    mpirun -np ${NPROCS} ./0_hello_world/0_hello_world_block_cyclic
 
 
 Output
