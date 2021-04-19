@@ -60,7 +60,7 @@ def main():
 
     # Parse input arguments.
 
-    parser = argparse.ArgumentParser(description='The program computes the main memory requirements per MPI-rank based on the given input values: problem size, number of sough-after eigenpairs, extra search dimension and the number of MPI ranks')
+    parser = argparse.ArgumentParser(description='The program computes the main memory requirements per MPI-rank and optionally GPU memory usage, based on the given input values: problem size, number of sough-after eigenpairs, extra search dimension, the number of MPI ranks and GPUs per MPI-rank')
     requiredNamed = parser.add_argument_group('Required arguments')
     requiredNamed.add_argument("--n", metavar="size", help='Size of the input matrix', type=int, required=True)
     requiredNamed.add_argument("--nev", metavar="nev", help='Number of eigenpairs', type=int, required=True)
