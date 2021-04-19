@@ -30,6 +30,26 @@ example of a job script for a  ``SLURM`` scheduler is given below:
     #SBATCH --ntasks-per-socket=1
     #SBATCH --cpus-per-task=24
 
+An important aspect of executing ChASE on a parallel cluster is the
+memory footprint of the library. It is important to avoid that such
+memory footprint per MPI task exceeds the amount of main memory
+available to the compiled code. To help the user to make the correct
+decision in terms of resources a simple formula can be used ::
+
+  16 * [n * m + (n + m + max(m,n)) * block + 3 * N *
+  block]/(1024^3) GigaByte
+
+where ``n`` and ``m`` are fractions of ``N`` which depend on the size
+of the MPI grid of precessors. For instance in the job script above
+``n = N/2`` and ``m = N/4`` (or viceversa). Correspondingly ``N`` is
+the size of the eigenproblem and ``block`` is at most ``nev + nex``.
+Note that the factor ``16`` is valid for double precision floating
+numbers. Using such a formula one can verify if the allocation of
+resources is enough to solve for the problem at hand. For instance,
+for a ``N = 20,000`` and a ``nev + nex = 2,000``, the total memory per
+MPI rank is ``3.28 GB``.
+
+
 ChASE with multi-GPUs
 ---------------------
 
@@ -69,3 +89,14 @@ multi-GPUs per node and each GPU card bound to 1 MPI task:
     #SBATCH --ntasks-per-node=4
     #SBATCH --cpus-per-task=24
     #SBATCH --gres=gpu:4
+
+As mentiond in the previous section, it is important to make sure that
+the memory footprint of the library does not exceed the memory
+available on the GPU card. For instance, in the case of the last job
+script (one GPU card for one MPI task) with ``N = 40,000`` and ``nev +
+nex = 4,000``, the memory for each MPI task, and consequently on each
+GPU card, is ::
+
+   16 * [10^3 * 10^3 + 3 * 10^3 * 4 * 10^3 + 3 * 4 * 10^4 *
+   10^3]/(1024^3) GigaByte = 1.9 GB 
+  

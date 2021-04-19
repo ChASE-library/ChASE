@@ -268,11 +268,12 @@
 <div class="section" id="execution">
 <h1>Execution<a class="headerlink" href="#execution" title="Permalink to this headline">¶</a></h1>
 <p>The execution of this example through the command line is:</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">mpirun</span> <span class="o">-</span><span class="n">np</span> <span class="n">$</span><span class="p">{</span><span class="n">NPROCS</span><span class="p">}</span> <span class="p">.</span><span class="o">/</span><span class="mi">1</span><span class="n">_sequence_eigenproblems</span><span class="o">/</span><span class="mi">1</span><span class="n">_sequence_eigenproblems</span>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>mpirun -np <span class="si">${</span><span class="nv">NPROCS</span><span class="si">}</span> ./1_sequence_eigenproblems/1_sequence_eigenproblems
 </pre></div>
 </div>
-<p>For the execution of this example with <strong>Block-Cyclic Distribution</strong>, it can be done as:</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">mpirun</span> <span class="o">-</span><span class="n">np</span> <span class="n">$</span><span class="p">{</span><span class="n">NPROCS</span><span class="p">}</span> <span class="p">.</span><span class="o">/</span><span class="mi">1</span><span class="n">_sequence_eigenproblems</span><span class="o">/</span><span class="mi">1</span><span class="n">_sequence_eigenproblems_block_cyclic</span>
+<p>For the execution of this example with <strong>Block-Cyclic Distribution</strong>,
+it can be done as:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>mpirun -np <span class="si">${</span><span class="nv">NPROCS</span><span class="si">}</span> ./1_sequence_eigenproblems/1_sequence_eigenproblems_block_cyclic
 </pre></div>
 </div>
 </div>

@@ -200,6 +200,24 @@ example of a job script for a  <code class="docutils literal notranslate"><span 
 <span class="c1">#SBATCH --cpus-per-task=24</span>
 </pre></div>
 </div>
+<p>An important aspect of executing ChASE on a parallel cluster is the
+memory footprint of the library. It is important to avoid that such
+memory footprint per MPI task exceeds the amount of main memory
+available to the compiled code. To help the user to make the correct
+decision in terms of resources a simple formula can be used</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="mi">16</span> <span class="o">*</span> <span class="p">[</span><span class="n">n</span> <span class="o">*</span> <span class="n">m</span> <span class="o">+</span> <span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="n">m</span> <span class="o">+</span> <span class="n">max</span><span class="p">(</span><span class="n">m</span><span class="p">,</span><span class="n">n</span><span class="p">))</span> <span class="o">*</span> <span class="n">block</span> <span class="o">+</span> <span class="mi">3</span> <span class="o">*</span> <span class="n">N</span> <span class="o">*</span>
+<span class="n">block</span><span class="p">]</span><span class="o">/</span><span class="p">(</span><span class="mi">1024</span><span class="o">^</span><span class="mi">3</span><span class="p">)</span> <span class="n">GigaByte</span>
+</pre></div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">n</span></code> and <code class="docutils literal notranslate"><span class="pre">m</span></code> are fractions of <code class="docutils literal notranslate"><span class="pre">N</span></code> which depend on the size
+of the MPI grid of precessors. For instance in the job script above
+<code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">=</span> <span class="pre">N/2</span></code> and <code class="docutils literal notranslate"><span class="pre">m</span> <span class="pre">=</span> <span class="pre">N/4</span></code> (or viceversa). Correspondingly <code class="docutils literal notranslate"><span class="pre">N</span></code> is
+the size of the eigenproblem and <code class="docutils literal notranslate"><span class="pre">block</span></code> is at most <code class="docutils literal notranslate"><span class="pre">nev</span> <span class="pre">+</span> <span class="pre">nex</span></code>.
+Note that the factor <code class="docutils literal notranslate"><span class="pre">16</span></code> is valid for double precision floating
+numbers. Using such a formula one can verify if the allocation of
+resources is enough to solve for the problem at hand. For instance,
+for a <code class="docutils literal notranslate"><span class="pre">N</span> <span class="pre">=</span> <span class="pre">20,000</span></code> and a <code class="docutils literal notranslate"><span class="pre">nev</span> <span class="pre">+</span> <span class="pre">nex</span> <span class="pre">=</span> <span class="pre">2,000</span></code>, the total memory per
+MPI rank is <code class="docutils literal notranslate"><span class="pre">3.28</span> <span class="pre">GB</span></code>.</p>
 </div>
 <div class="section" id="chase-with-multi-gpus">
 <h1>ChASE with multi-GPUs<a class="headerlink" href="#chase-with-multi-gpus" title="Permalink to this headline">¶</a></h1>
@@ -233,6 +251,16 @@ multi-GPUs per node and each GPU card bound to 1 MPI task:</p>
 <span class="c1">#SBATCH --ntasks-per-node=4</span>
 <span class="c1">#SBATCH --cpus-per-task=24</span>
 <span class="c1">#SBATCH --gres=gpu:4</span>
+</pre></div>
+</div>
+<p>As mentiond in the previous section, it is important to make sure that
+the memory footprint of the library does not exceed the memory
+available on the GPU card. For instance, in the case of the last job
+script (one GPU card for one MPI task) with <code class="docutils literal notranslate"><span class="pre">N</span> <span class="pre">=</span> <span class="pre">40,000</span></code> and <code class="docutils literal notranslate"><span class="pre">nev</span> <span class="pre">+</span>
+<span class="pre">nex</span> <span class="pre">=</span> <span class="pre">4,000</span></code>, the memory for each MPI task, and consequently on each
+GPU card, is</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="mi">16</span> <span class="o">*</span> <span class="p">[</span><span class="mi">10</span><span class="o">^</span><span class="mi">3</span> <span class="o">*</span> <span class="mi">10</span><span class="o">^</span><span class="mi">3</span> <span class="o">+</span> <span class="mi">3</span> <span class="o">*</span> <span class="mi">10</span><span class="o">^</span><span class="mi">3</span> <span class="o">*</span> <span class="mi">4</span> <span class="o">*</span> <span class="mi">10</span><span class="o">^</span><span class="mi">3</span> <span class="o">+</span> <span class="mi">3</span> <span class="o">*</span> <span class="mi">4</span> <span class="o">*</span> <span class="mi">10</span><span class="o">^</span><span class="mi">4</span> <span class="o">*</span>
+<span class="mi">10</span><span class="o">^</span><span class="mi">3</span><span class="p">]</span><span class="o">/</span><span class="p">(</span><span class="mi">1024</span><span class="o">^</span><span class="mi">3</span><span class="p">)</span> <span class="n">GigaByte</span> <span class="o">=</span> <span class="mf">1.9</span> <span class="n">GB</span>
 </pre></div>
 </div>
 </div>

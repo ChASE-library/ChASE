@@ -176,7 +176,7 @@
 <p>ChASE is an open source project and it is available on <a class="reference external" href="https://github.com/">GitHub</a>. In order to download the source code of ChASE
 one needs to have the <a class="reference external" href="http://git-scm.com/">git</a> utility installed.
 To clone a local copy of the ChASE repository execute the command:</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">clone</span> <span class="nl">https</span><span class="p">:</span><span class="c1">//github.com/ChASE-library/ChASE</span>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>git clone https://github.com/ChASE-library/ChASE
 </pre></div>
 </div>
 </div>
@@ -185,15 +185,15 @@ To clone a local copy of the ChASE repository execute the command:</p>
 <p>On a Linux system with MPI and CMake installed in the standard
 locations, ChASE can be build by executing in order the
 following commands (after having cloned the repository):</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="n">ChASE</span><span class="o">/</span>
-<span class="n">mkdir</span> <span class="n">build</span>
-<span class="n">cd</span> <span class="n">build</span><span class="o">/</span>
-<span class="n">cmake</span> <span class="p">..</span> <span class="o">-</span><span class="n">DCMAKE_INSTALL_PREFIX</span><span class="o">=</span><span class="n">$</span><span class="p">{</span><span class="n">ChASEROOT</span><span class="p">}</span>
-<span class="n">make</span> <span class="n">install</span>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span> ChASE/
+mkdir build
+<span class="nb">cd</span> build/
+cmake .. -DCMAKE_INSTALL_PREFIX<span class="o">=</span><span class="si">${</span><span class="nv">ChASEROOT</span><span class="si">}</span>
+make install
 </pre></div>
 </div>
 <p>In the commands above, the variable <code class="docutils literal notranslate"><span class="pre">${CHASEROOT}</span></code> is the path to
-install ChASE on user’s laptops. In fact,
+install ChASE on user’s laptops.
 CMake will auto-detect the dependencies and select the default
 installed modules. In order to select a specific module installation,
 one can manually specify several build options,
@@ -217,7 +217,7 @@ MPI implementation by, for example, setting the following variables.</p>
 </div>
 <p>For instance, installing ChASE on an Apple computer with gcc and
 Accelerate, one could execute the following command:</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">cmake</span> <span class="o">-</span><span class="n">DCMAKE_CXX_COMPILER</span><span class="o">=</span><span class="n">g</span><span class="o">++</span> <span class="o">-</span><span class="n">DCMAKE_C_COMPILER</span><span class="o">=</span><span class="n">gcc</span> <span class="o">-</span><span class="n">DCMAKE_Fortran_COMPILER</span><span class="o">=</span><span class="n">gfortran</span> <span class="p">..</span>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>cmake -DCMAKE_CXX_COMPILER<span class="o">=</span>g++ -DCMAKE_C_COMPILER<span class="o">=</span>gcc -DCMAKE_Fortran_COMPILER<span class="o">=</span>gfortran ..
 </pre></div>
 </div>
 </div>
@@ -230,18 +230,19 @@ the additional use of the
 <code class="docutils literal notranslate"><span class="pre">Boost</span></code> should also be provided before the installation of ChASE if users
 would like to build ChASE with these examples.
 In order to build these examples together with ChASE
-the sequence of building commands should be slightly modified as below:</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="n">ChASE</span><span class="o">/</span>
-<span class="n">mkdir</span> <span class="n">build</span>
-<span class="n">cd</span> <span class="n">build</span><span class="o">/</span>
-<span class="n">cmake</span> <span class="p">..</span> <span class="o">-</span><span class="n">DCMAKE_INSTALL_PREFIX</span><span class="o">=</span><span class="n">$</span><span class="p">{</span><span class="n">ChASEROOT</span><span class="p">}</span> <span class="o">-</span><span class="n">DBUILD_WITH_EXAMPLES</span><span class="o">=</span><span class="n">ON</span>
-<span class="n">make</span> <span class="n">install</span>
+the sequence of building commands should be slightly modified as
+below:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span> ChASE/
+mkdir build
+<span class="nb">cd</span> build/
+cmake .. -DCMAKE_INSTALL_PREFIX<span class="o">=</span><span class="si">${</span><span class="nv">ChASEROOT</span><span class="si">}</span> -DBUILD_WITH_EXAMPLES<span class="o">=</span>ON
+make install
 </pre></div>
 </div>
 <p>Executing ChASE using the ready-to-use examples is rather
 straightforward. For instance, <a class="reference internal" href="../example.html#hello-world-chase"><span class="std std-ref">0. Hello World</span></a> is executed by simply typing
 the line below:</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="p">.</span><span class="o">/</span><span class="mi">0</span><span class="n">_hello_world</span><span class="o">/</span><span class="mi">0</span><span class="n">_hello_world</span>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>./0_hello_world/0_hello_world
 </pre></div>
 </div>
 <p>In this example, a Clement matrix is generated and default values of parameters are used.</p>

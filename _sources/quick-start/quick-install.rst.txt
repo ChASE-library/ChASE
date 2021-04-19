@@ -4,7 +4,9 @@ Cloning ChASE source code
 ChASE is an open source project and it is available on `GitHub
 <https://github.com/>`_. In order to download the source code of ChASE
 one needs to have the `git <http://git-scm.com/>`_ utility installed. 
-To clone a local copy of the ChASE repository execute the command::
+To clone a local copy of the ChASE repository execute the command:
+
+.. code-block:: sh
 
     git clone https://github.com/ChASE-library/ChASE
 
@@ -16,8 +18,10 @@ Building and Installing the ChASE library
 
 On a Linux system with MPI and CMake installed in the standard
 locations, ChASE can be build by executing in order the
-following commands (after having cloned the repository)::
+following commands (after having cloned the repository):
 
+.. code-block:: sh
+		
     cd ChASE/
     mkdir build
     cd build/
@@ -25,7 +29,7 @@ following commands (after having cloned the repository)::
     make install
 
 In the commands above, the variable ``${CHASEROOT}`` is the path to
-install ChASE on user's laptops. In fact,
+install ChASE on user's laptops.
 CMake will auto-detect the dependencies and select the default
 installed modules. In order to select a specific module installation,
 one can manually specify several build options,
@@ -48,7 +52,9 @@ MPI implementation by, for example, setting the following variables. ::
     -D MPI_Fortran_COMPILER=/usr/bin/mpif90
 
 For instance, installing ChASE on an Apple computer with gcc and
-Accelerate, one could execute the following command::
+Accelerate, one could execute the following command:
+
+.. code-block:: sh
 
     cmake -DCMAKE_CXX_COMPILER=g++ -DCMAKE_C_COMPILER=gcc -DCMAKE_Fortran_COMPILER=gfortran ..
 
@@ -63,19 +69,24 @@ the additional use of the
 ``Boost`` should also be provided before the installation of ChASE if users
 would like to build ChASE with these examples.
 In order to build these examples together with ChASE
-the sequence of building commands should be slightly modified as below::
+the sequence of building commands should be slightly modified as
+below:
 
-  cd ChASE/
-  mkdir build
-  cd build/
-  cmake .. -DCMAKE_INSTALL_PREFIX=${ChASEROOT} -DBUILD_WITH_EXAMPLES=ON
-  make install
+.. code-block:: sh
+
+    cd ChASE/
+    mkdir build
+    cd build/
+    cmake .. -DCMAKE_INSTALL_PREFIX=${ChASEROOT} -DBUILD_WITH_EXAMPLES=ON
+    make install
 
 Executing ChASE using the ready-to-use examples is rather
 straightforward. For instance, :ref:`hello-world-chase` is executed by simply typing
-the line below::
+the line below:
 
-  ./0_hello_world/0_hello_world
+.. code-block:: sh
+
+    ./0_hello_world/0_hello_world
 
 In this example, a Clement matrix is generated and default values of parameters are used.  
 

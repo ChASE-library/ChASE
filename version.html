@@ -195,10 +195,11 @@ is best used in its pure MPI build. In this configuration, ChASE
 is typically used with one MPI rank per computing node and as
 many threads as number of available cores per node.</p></li>
 <li><p><strong>GPU build:</strong> ChASE-MPI can be configured to take advantage of
-graphics card on heterogeneous computing clusters. Currently only
-one GPU card per MPI rank is supported. Support for multi-GPUs is
-currently under testing phase and it it is expected to be part of the
-next release in 2021.</p></li>
+graphics card on heterogeneous computing clusters. Currently we
+support the use of one or more GPU cards per computing node in
+a number of flexible configurations: for instance on computing nodes
+with 4 cards per node one can choose to compile and execute the
+program with one, two or four GPU card per MPI rank.</p></li>
 </ul>
 </div></blockquote>
 </div>
