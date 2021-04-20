@@ -6,12 +6,38 @@ import numpy as np
 
 def get_mem_CPU(N, n_, m_, block_):
 
-       tot_mem = n_*m_ + n_*block_ + m_*block_ + max(m_,n_)*block_ + 3 * N * block_
+       tot_mem = float(n_*m_ + n_*block_ + m_*block_ + max(m_,n_)*block_ + 3 * N * block_)
        tot_mem *= 16
        tot_mem /= pow(1024,3)
 
        return tot_mem
 	
+def get_workspace_heevd(n):
+    
+    # HEEVD
+    lwork_heevd = float(1 + 5*n + 2*pow(n,2))
+    lwork_heevd *= 16
+    lwork_heevd /= pow(1024,3)
+
+    return lwork_heevd
+
+def get_workspace_qr(n):
+   
+    # Optimal block size. On modern CPUs it is usually 64 or 128
+    nb = 128
+
+    # QR
+    lwork_qr = float(n * nb)
+    lwork_qr *= 16
+    lwork_qr /= pow(1024,3)
+
+    # GQR - xORNQR
+    lwork_gqr = float(n * nb)
+    lwork_gqr *= 16
+    lwork_gqr /= pow(1024,3)
+
+    return lwork_qr + lwork_gqr
+
 def get_mpi_grid(n):
 
     idealSqrt = np.sqrt(n);
@@ -39,17 +65,17 @@ def get_mem_GPU(N, n_, m_, block_):
     max_dim = max(m_, n_)
 
     # HEMM memory
-    hemm_mem = 3 * block_ * max_dim + m_ * n_
+    hemm_mem = float(3 * block_ * max_dim + m_ * n_)
     hemm_mem *= 16
     hemm_mem /= pow(1024,3)
 
     # QR memory
-    qr_mem = N * block_
+    qr_mem = float(N * block_)
     qr_mem *= 16
     qr_mem /= pow(1024,3)
 
     # RR memory
-    rr_mem = N * block_ + block_ * block_
+    rr_mem = float(N * block_ + block_ * block_)
     rr_mem *= 16
     rr_mem /= pow(1024,3)
 
@@ -86,12 +112,19 @@ def main():
     # Compute total amount of required memory per MPI rank
     tot_mem = get_mem_CPU(N, n_, m_, nev+nex)
 
+    # Add heevd workspace (in both MPI-only and MPI+GPU heevd kernel is executed on the CPU)
+    tot_mem += get_workspace_heevd(nev+nex)
+
     if (gpus):
         [gpu_row, gpu_col] = get_mpi_grid(gpus);
         gpu_n_ = n_ / gpu_row
         gpu_m_ = m_ / gpu_col
     
         tot_gpu = get_mem_GPU(N, gpu_n_, gpu_m_, nev+nex)
+    else:
+        # If not using GPU, then workspace arrays for QR and HEEVD are allocated in the main memory
+        tot_mem += get_workspace_qr(nev+nex)
+
 
     print('\n')
     print('Problem size')
@@ -115,12 +148,12 @@ def main():
 
 
     print('\n')
-    print('Main memory usage per MPI-rank: ' + str(tot_mem) + ' GB');
-    print('Total main memory usage (' + str(comm_size) + ' ranks): ' + str(tot_mem * comm_size) + 'GB');
+    print('Main memory usage per MPI-rank: ' + str(format(tot_mem, '.3f')) + ' GB');
+    print('Total main memory usage (' + str(comm_size) + ' ranks): ' + str(format(tot_mem * comm_size, '.3f')) + ' GB');
 
     if(gpus):
-        print('\nMemory requirement per single GPU: ' + str(tot_gpu) + ' GB')
-        print('GPU memory requirement per MPI-rank (' + str(gpus) + ' GPUs): ' + str(tot_gpu * gpus) + ' GB')
+        print('\nMemory requirement per single GPU: ' + str(format(tot_gpu, '.3f')) + ' GB')
+        print('GPU memory requirement per MPI-rank (' + str(gpus) + ' GPUs): ' + str(format(tot_gpu * gpus, '.3f')) + ' GB')
     print('\n')
 
 if __name__ == '__main__':
