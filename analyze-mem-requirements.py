@@ -21,10 +21,12 @@ def get_workspace_heevd(n):
 
     return lwork_heevd
 
-def get_workspace_qr(n):
-   
-    # Optimal block size. On modern CPUs it is usually 64 or 128
-    nb = 128
+def get_workspace_qr(n, nb):
+    '''
+    Input arguments:
+        n - number of columns
+        nb - algorithmic block size
+    '''
 
     # QR
     lwork_qr = float(n * nb)
@@ -92,7 +94,10 @@ def main():
     requiredNamed.add_argument("--nev", metavar="nev", help='Number of eigenpairs', type=int, required=True)
     requiredNamed.add_argument("--nex", metavar="nex", help='Number of extra search space vectors', type=int, required=True)
     requiredNamed.add_argument("--mpi", metavar="mpi-ranks", help='Number of MPI processes', type=int, required=True)
-    requiredNamed.add_argument("--gpus", metavar="num-gpus", help='Number of GPUs per MPI-rank', type=int, default='0')
+    parser.add_argument("--gpus", metavar="num gpus", help='Number of GPUs per MPI-rank', type=int, default='0')
+    parser.add_argument("--nb", metavar="block size", help='Algoritmic block size for QR and ORMTR', type=int, default=128)
+    parser.add_argument("--nrows", metavar="MPI rows", help='Row number of MPI proc grid', type=int, default=0)
+    parser.add_argument("--ncols", metavar="MPI cols", help='Column number of MPI proc grid', type=int, default=0)
     args = parser.parse_args()
 
     # Read inputs
@@ -101,9 +106,23 @@ def main():
     nex = args.nex
     comm_size = args.mpi
     gpus = args.gpus
+    mpi_row = args.nrows
+    mpi_col = args.ncols
+    nb = args.nb
 
     # Compute MPI grid
-    [mpi_row, mpi_col] = get_mpi_grid(comm_size);
+    # If row and col dimension is not set, then compute based on
+    if (mpi_row == 0 and mpi_col == 0):
+        [mpi_row, mpi_col] = get_mpi_grid(comm_size)
+    else:
+        if (mpi_row == 0 and mpi_col != 0):
+            mpi_row = comm_size / mpi_col
+        elif (mpi_row != 0 and mpi_col == 0):
+            mpi_col = comm_size / mpi_row
+
+    if (mpi_row * mpi_col != comm_size):
+        print('The number of MPI row / columns (' + str(mpi_row) + 'x' + str(mpi_col) + ') does not matching the total MPI grid size (' + str(comm_size) +'). Exiting...')
+        exit()
 
     # Compute per-MPI block dimension
     n_ = N / mpi_row
@@ -116,14 +135,14 @@ def main():
     tot_mem += get_workspace_heevd(nev+nex)
 
     if (gpus):
-        [gpu_row, gpu_col] = get_mpi_grid(gpus);
+        [gpu_row, gpu_col] = get_mpi_grid(gpus)
         gpu_n_ = n_ / gpu_row
         gpu_m_ = m_ / gpu_col
     
         tot_gpu = get_mem_GPU(N, gpu_n_, gpu_m_, nev+nex)
     else:
         # If not using GPU, then workspace arrays for QR and HEEVD are allocated in the main memory
-        tot_mem += get_workspace_qr(nev+nex)
+        tot_mem += get_workspace_qr(nev+nex, nb)
 
 
     print('\n')
