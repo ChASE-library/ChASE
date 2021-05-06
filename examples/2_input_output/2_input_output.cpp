@@ -227,7 +227,7 @@ struct ChASE_DriverProblemConfig {
   bool legacy;
   std::string spin;
 
-  bool complex;
+  bool iscomplex;
   bool isdouble;
   
 #ifdef USE_BLOCK_CYCLIC
@@ -457,10 +457,10 @@ int main(int argc, char* argv[]) {
       "Size of the Input Matrix"                                          //
       )(                                                                  //
       "double", po::value<bool>(&conf.isdouble)->default_value(true),     //
-      "Is matrix complex double valued, false indicates the single type"  //
+      "Is matrix double valued, false indicates the single type"  		  //
       )(                                                                  //
-      "complex", po::value<bool>(&conf.complex)->default_value(true),     //
-      "Matrix is complex valued"                                          //
+      "complex", po::value<bool>(&conf.iscomplex)->default_value(true),   //
+      "Matrix is complex, false indicated the real matrix"		          //
       )(                                                                  //
       "nev", po::value<std::size_t>(&conf.nev)->required(),               //
       "Wanted Number of Eigenpairs"                                       //
@@ -568,7 +568,11 @@ int main(int argc, char* argv[]) {
   }
 
   if (conf.isdouble) {
-    do_chase<std::complex<double>>(conf);
+	if (conf.iscomplex) {
+    	do_chase<std::complex<double>>(conf);
+	} else {
+		do_chase<double>(conf);
+	}
   } else {
     std::cout << "single not implemented\n";
   }
