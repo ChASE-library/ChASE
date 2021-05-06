@@ -115,7 +115,7 @@ T t_dot(const std::size_t n, const T* x, const std::size_t incx, const T* y,
   return alpha;
 }
 
-/*
+
 template <>
 double
 t_lange<double>(char norm, std::size_t m, std::size_t n, double* A,
@@ -130,7 +130,7 @@ t_lange<double>(char norm, std::size_t m, std::size_t n, double* A,
   FC_GLOBAL(dlange,DLANGE)(&norm, &m_, &n_, A, &lda_, nullptr);
 
 }
-
+/*
 template <>
 float
 t_lange(char norm, std::size_t m, std::size_t n, float* A, std::size_t lda)
