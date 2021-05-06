@@ -4,24 +4,26 @@ import os.path
 import argparse
 import numpy as np
 
-def get_mem_CPU(N, n_, m_, block_):
+precision = { 'double': 8, 'float': 4, 'complex': 8, 'dcomplex': 16 }
+
+def get_mem_CPU(N, n_, m_, block_, float_type):
 
        tot_mem = float(n_*m_ + n_*block_ + m_*block_ + max(m_,n_)*block_ + 3 * N * block_)
-       tot_mem *= 16
+       tot_mem *= precision[float_type]
        tot_mem /= pow(1024,3)
 
        return tot_mem
 	
-def get_workspace_heevd(n):
+def get_workspace_heevd(n, float_type):
     
     # HEEVD
     lwork_heevd = float(1 + 5*n + 2*pow(n,2))
-    lwork_heevd *= 16
+    lwork_heevd *= precision[float_type]
     lwork_heevd /= pow(1024,3)
 
     return lwork_heevd
 
-def get_workspace_qr(n, nb):
+def get_workspace_qr(n, nb, float_type):
     '''
     Input arguments:
         n - number of columns
@@ -30,12 +32,12 @@ def get_workspace_qr(n, nb):
 
     # QR
     lwork_qr = float(n * nb)
-    lwork_qr *= 16
+    lwork_qr *= precision[float_type]
     lwork_qr /= pow(1024,3)
 
     # GQR - xORNQR
     lwork_gqr = float(n * nb)
-    lwork_gqr *= 16
+    lwork_gqr *= precision[float_type]
     lwork_gqr /= pow(1024,3)
 
     return lwork_qr + lwork_gqr
@@ -59,7 +61,7 @@ def get_mpi_grid(n):
 
     return divisors[hIndex], divisors[wIndex]
 
-def get_mem_GPU(N, n_, m_, block_):
+def get_mem_GPU(N, n_, m_, block_, float_type):
     """ 
         Receives the total matrix size (N) and the number of columns (n_) and rows (m_) of the GPU block
     """
@@ -68,17 +70,17 @@ def get_mem_GPU(N, n_, m_, block_):
 
     # HEMM memory
     hemm_mem = float(3 * block_ * max_dim + m_ * n_)
-    hemm_mem *= 16
+    hemm_mem *= precision[float_type]
     hemm_mem /= pow(1024,3)
 
     # QR memory
     qr_mem = float(N * block_)
-    qr_mem *= 16
+    qr_mem *= precision[float_type]
     qr_mem /= pow(1024,3)
 
     # RR memory
     rr_mem = float(N * block_ + block_ * block_)
-    rr_mem *= 16
+    rr_mem *= precision[float_type]
     rr_mem /= pow(1024,3)
 
     return hemm_mem + qr_mem + rr_mem
@@ -98,6 +100,7 @@ def main():
     parser.add_argument("--nb", metavar="block size", help='Algoritmic block size for QR and ORMTR', type=int, default=128)
     parser.add_argument("--nrows", metavar="MPI rows", help='Row number of MPI proc grid', type=int, default=0)
     parser.add_argument("--ncols", metavar="MPI cols", help='Column number of MPI proc grid', type=int, default=0)
+    parser.add_argument("--type", metavar="Type", help='Numerical type used in the calculations. Possible values: complex, double', default='double')
     args = parser.parse_args()
 
     # Read inputs
@@ -109,6 +112,13 @@ def main():
     mpi_row = args.nrows
     mpi_col = args.ncols
     nb = args.nb
+    float_type = args.type
+
+    # Determine floating point type 
+    if ( not float_type in precision):
+        print('Missing or not supported floating point type: ' + str(float_type))
+        exit()
+
 
     # Compute MPI grid
     # If row and col dimension is not set, then compute based on
@@ -129,20 +139,20 @@ def main():
     m_ = N / mpi_col
 
     # Compute total amount of required memory per MPI rank
-    tot_mem = get_mem_CPU(N, n_, m_, nev+nex)
+    tot_mem = get_mem_CPU(N, n_, m_, nev+nex, float_type)
 
     # Add heevd workspace (in both MPI-only and MPI+GPU heevd kernel is executed on the CPU)
-    tot_mem += get_workspace_heevd(nev+nex)
+    tot_mem += get_workspace_heevd(nev+nex, float_type)
 
     if (gpus):
         [gpu_row, gpu_col] = get_mpi_grid(gpus)
         gpu_n_ = n_ / gpu_row
         gpu_m_ = m_ / gpu_col
     
-        tot_gpu = get_mem_GPU(N, gpu_n_, gpu_m_, nev+nex)
+        tot_gpu = get_mem_GPU(N, gpu_n_, gpu_m_, nev+nex, float_type)
     else:
         # If not using GPU, then workspace arrays for QR and HEEVD are allocated in the main memory
-        tot_mem += get_workspace_qr(nev+nex, nb)
+        tot_mem += get_workspace_qr(nev+nex, nb, float_type)
 
 
     print('\n')
@@ -151,6 +161,7 @@ def main():
     print('Matrix size:   ' + str(N))
     print('Eigenpairs:    ' + str(nev))
     print('Extra vectors: ' + str(nex))
+    print('Precision:     ' + float_type + ' (' + str(precision[float_type]) + ' bytes)')
 
     print("\nMPI configuration")
     print("-------------------------------")
@@ -165,14 +176,13 @@ def main():
         print('GPU grid:   ' + str(gpu_row) + ' x ' + str(gpu_col))
         print('Block size: ' + str(gpu_n_) + ' x ' + str(gpu_m_))
 
-
     print('\n')
     print('Main memory usage per MPI-rank: ' + str(format(tot_mem, '.3f')) + ' GB');
     print('Total main memory usage (' + str(comm_size) + ' ranks): ' + str(format(tot_mem * comm_size, '.3f')) + ' GB');
 
     if(gpus):
-        print('\nMemory requirement per single GPU: ' + str(format(tot_gpu, '.3f')) + ' GB')
-        print('GPU memory requirement per MPI-rank (' + str(gpus) + ' GPUs): ' + str(format(tot_gpu * gpus, '.3f')) + ' GB')
+        print('\nMemory requirement per GPU: ' + str(format(tot_gpu, '.3f')) + ' GB')
+        print('Total GPU memory per MPI-rank (' + str(gpus) + ' GPUs): ' + str(format(tot_gpu * gpus, '.3f')) + ' GB')
     print('\n')
 
 if __name__ == '__main__':
