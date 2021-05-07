@@ -229,7 +229,10 @@ struct ChASE_DriverProblemConfig {
 
   bool iscomplex;
   bool isdouble;
-  
+
+  std::size_t lanczosIter; 
+  std::size_t numLanczos;
+
 #ifdef USE_BLOCK_CYCLIC
   std::size_t mbsize;
   std::size_t nbsize;
@@ -261,6 +264,9 @@ int do_chase(ChASE_DriverProblemConfig& conf) {
   std::string path_eigp = conf.path_eigp;
   std::string path_out = conf.path_out;
   std::string path_name = conf.path_name;
+
+  std::size_t lanczosIter = conf.lanczosIter;
+  std::size_t numLanczos = conf.numLanczos;
 
   std::size_t kpoint = conf.kpoint;
   bool legacy = conf.legacy;
@@ -329,6 +335,8 @@ int do_chase(ChASE_DriverProblemConfig& conf) {
   config.SetTol(tol);
   config.SetDeg(deg);
   config.SetOpt(opt == "S");
+  config.SetLanczosIter(lanczosIter);
+  config.SetNumLanczos(numLanczos);
 
   std::mt19937 gen(1337.0);
   std::normal_distribution<> d;
@@ -502,6 +510,13 @@ int main(int argc, char* argv[]) {
       "sequence", po::value<bool>(&conf.sequence)->default_value(false),  //
       "Treat as sequence of Problems. Previous ChASE solution is used,"   //
       "when available"                                                    //
+      )(
+      "lanczosIter",po::value<std::size_t>(&conf.lanczosIter)->default_value(25),
+      "Sets the number of Lanczos iterations executed by ChASE."
+      )(
+      "numLanczos", po::value<std::size_t>(&conf.numLanczos)->default_value(4),	
+      " Sets the number of stochastic vectors used for the spectral estimates"
+      "in Lanczos" 
       )
 #ifdef USE_BLOCK_CYCLIC
       (                                                                   //
