@@ -117,8 +117,7 @@ T t_dot(const std::size_t n, const T* x, const std::size_t incx, const T* y,
 
 
 template <>
-double
-t_lange<double>(char norm, std::size_t m, std::size_t n, double* A,
+double t_lange(char norm, std::size_t m, std::size_t n, double* A,
                 std::size_t lda)
 {
   //return LAPACKE_dlange(LAPACK_COL_MAJOR, norm, m, n, A, lda);
@@ -127,13 +126,13 @@ t_lange<double>(char norm, std::size_t m, std::size_t n, double* A,
   BlasInt n_ = n;
   BlasInt lda_ = lda;
 
-  FC_GLOBAL(dlange,DLANGE)(&norm, &m_, &n_, A, &lda_, nullptr);
+  return FC_GLOBAL(dlange,DLANGE)(&norm, &m_, &n_, A, &lda_, nullptr);
 
 }
-/*
+
 template <>
-float
-t_lange(char norm, std::size_t m, std::size_t n, float* A, std::size_t lda)
+float t_lange(char norm, std::size_t m, std::size_t n, float* A, 
+				std::size_t lda)
 {
   //return LAPACKE_slange(LAPACK_COL_MAJOR, norm, m, n, A, lda);
 
@@ -141,10 +140,10 @@ t_lange(char norm, std::size_t m, std::size_t n, float* A, std::size_t lda)
   BlasInt n_ = n;
   BlasInt lda_ = lda;
 
-  FC_GLOBAL(slange,SLANGE)(&norm, &m_, &n_, A, &lda_, nullptr);
+  return FC_GLOBAL(slange,SLANGE)(&norm, &m_, &n_, A, &lda_, nullptr);
 
 }
-*/
+
 template <>
 double t_lange(char norm, std::size_t m, std::size_t n, std::complex<double>* A,
                std::size_t lda) {

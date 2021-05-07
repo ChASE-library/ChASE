@@ -388,7 +388,7 @@ void Algorithm<T>::solve(Chase<T>* single) {
         oss << degrees[k] << "\t" << resid[k] << "\t" << residLast[k] << "\t"
             << ritzv[k] << "\n";
 
-      // single->Output(oss.str());
+      single->Output(oss.str());
     }
 /*
         std::cout << "degrees\tresid\tritzv\n";
