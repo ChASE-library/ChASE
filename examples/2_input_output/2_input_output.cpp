@@ -211,7 +211,8 @@ struct ChASE_DriverProblemConfig {
   std::size_t deg;  // initial degree
   std::size_t bgn;  // beginning of sequence
   std::size_t end;  // end of sequence
-
+  
+  std::size_t maxIter; // maximum number of subspace iterations within ChASE.
   std::size_t maxDeg; //maximum value of the degree of the Chebyshev filter
   double tol;     // desired tolerance
   bool sequence;  // handle this as a sequence?
@@ -255,6 +256,7 @@ int do_chase(ChASE_DriverProblemConfig& conf) {
   std::size_t bgn = conf.bgn;
   std::size_t end = conf.end;
   std::size_t maxDeg = conf.maxDeg;
+  std::size_t maxIter = conf.maxIter;
 
   double tol = conf.tol;
   bool sequence = conf.sequence;
@@ -340,6 +342,7 @@ int do_chase(ChASE_DriverProblemConfig& conf) {
   config.SetLanczosIter(lanczosIter);
   config.SetNumLanczos(numLanczos);
   config.SetMaxDeg(maxDeg);
+  config.SetMaxIter(maxIter);
 
   std::mt19937 gen(1337.0);
   std::normal_distribution<> d;
@@ -482,8 +485,12 @@ int main(int argc, char* argv[]) {
       "deg", po::value<std::size_t>(&conf.deg)->default_value(20),        //
       "Initial filtering degree"                                          //
       )(
-      "maxDeg", po::value<std::size_t>(&conf.maxDeg)->default_value(25),     //
+      "maxDeg", po::value<std::size_t>(&conf.maxDeg)->default_value(25),  //
       "Sets the maximum value of the degree of the Chebyshev filter"
+      )(
+      "maxIter", po::value<std::size_t>(&conf.maxIter)->default_value(25), //
+      "Sets the value of the maximum number of subspace iterations"
+      "within ChASE"
       )(                                                                  //
       "bgn", po::value<std::size_t>(&conf.bgn)->default_value(2),         //
       "Start ell"                                                         //
