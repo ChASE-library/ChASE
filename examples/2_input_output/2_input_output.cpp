@@ -485,7 +485,7 @@ int main(int argc, char* argv[]) {
       "deg", po::value<std::size_t>(&conf.deg)->default_value(20),        //
       "Initial filtering degree"                                          //
       )(
-      "maxDeg", po::value<std::size_t>(&conf.maxDeg)->default_value(25),  //
+      "maxDeg", po::value<std::size_t>(&conf.maxDeg)->default_value(36),  //
       "Sets the maximum value of the degree of the Chebyshev filter"
       )(
       "maxIter", po::value<std::size_t>(&conf.maxIter)->default_value(25), //
