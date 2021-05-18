@@ -122,7 +122,7 @@ namespace chase {
 					ldWRK = std::max(dim_tile_m_, dim_tile_n_);
 					ldB = ldIMT = ldWRK;
 					ldH = dim_tile_m_;
-#ifdef MGPU_TIMER
+#ifdef TIMER
 					std::cout << "[MGPU_HEMM] MPI rank global/local = " << globalrank_ << "/" << shmrank_ << std::endl;
 					std::cout << "[MGPU_HEMM] GPUs per rank   = " << num_devices_per_rank << std::endl;
 					std::cout << "[MGPU_HEMM] Number of tiles = "<<ntile_m_ << " x " << ntile_n_ << std::endl;

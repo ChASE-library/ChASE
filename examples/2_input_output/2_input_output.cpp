@@ -211,7 +211,9 @@ struct ChASE_DriverProblemConfig {
   std::size_t deg;  // initial degree
   std::size_t bgn;  // beginning of sequence
   std::size_t end;  // end of sequence
-
+  
+  std::size_t maxIter; // maximum number of subspace iterations within ChASE.
+  std::size_t maxDeg; //maximum value of the degree of the Chebyshev filter
   double tol;     // desired tolerance
   bool sequence;  // handle this as a sequence?
 
@@ -227,9 +229,12 @@ struct ChASE_DriverProblemConfig {
   bool legacy;
   std::string spin;
 
-  bool complex;
+  bool iscomplex;
   bool isdouble;
-  
+
+  std::size_t lanczosIter; 
+  std::size_t numLanczos;
+
 #ifdef USE_BLOCK_CYCLIC
   std::size_t mbsize;
   std::size_t nbsize;
@@ -250,6 +255,8 @@ int do_chase(ChASE_DriverProblemConfig& conf) {
   std::size_t deg = conf.deg;
   std::size_t bgn = conf.bgn;
   std::size_t end = conf.end;
+  std::size_t maxDeg = conf.maxDeg;
+  std::size_t maxIter = conf.maxIter;
 
   double tol = conf.tol;
   bool sequence = conf.sequence;
@@ -261,6 +268,9 @@ int do_chase(ChASE_DriverProblemConfig& conf) {
   std::string path_eigp = conf.path_eigp;
   std::string path_out = conf.path_out;
   std::string path_name = conf.path_name;
+
+  std::size_t lanczosIter = conf.lanczosIter;
+  std::size_t numLanczos = conf.numLanczos;
 
   std::size_t kpoint = conf.kpoint;
   bool legacy = conf.legacy;
@@ -329,6 +339,10 @@ int do_chase(ChASE_DriverProblemConfig& conf) {
   config.SetTol(tol);
   config.SetDeg(deg);
   config.SetOpt(opt == "S");
+  config.SetLanczosIter(lanczosIter);
+  config.SetNumLanczos(numLanczos);
+  config.SetMaxDeg(maxDeg);
+  config.SetMaxIter(maxIter);
 
   std::mt19937 gen(1337.0);
   std::normal_distribution<> d;
@@ -457,10 +471,10 @@ int main(int argc, char* argv[]) {
       "Size of the Input Matrix"                                          //
       )(                                                                  //
       "double", po::value<bool>(&conf.isdouble)->default_value(true),     //
-      "Is matrix complex double valued, false indicates the single type"  //
+      "Is matrix double valued, false indicates the single type"  		  //
       )(                                                                  //
-      "complex", po::value<bool>(&conf.complex)->default_value(true),     //
-      "Matrix is complex valued"                                          //
+      "complex", po::value<bool>(&conf.iscomplex)->default_value(true),   //
+      "Matrix is complex, false indicated the real matrix"		          //
       )(                                                                  //
       "nev", po::value<std::size_t>(&conf.nev)->required(),               //
       "Wanted Number of Eigenpairs"                                       //
@@ -470,6 +484,13 @@ int main(int argc, char* argv[]) {
       )(                                                                  //
       "deg", po::value<std::size_t>(&conf.deg)->default_value(20),        //
       "Initial filtering degree"                                          //
+      )(
+      "maxDeg", po::value<std::size_t>(&conf.maxDeg)->default_value(36),  //
+      "Sets the maximum value of the degree of the Chebyshev filter"
+      )(
+      "maxIter", po::value<std::size_t>(&conf.maxIter)->default_value(25), //
+      "Sets the value of the maximum number of subspace iterations"
+      "within ChASE"
       )(                                                                  //
       "bgn", po::value<std::size_t>(&conf.bgn)->default_value(2),         //
       "Start ell"                                                         //
@@ -502,6 +523,13 @@ int main(int argc, char* argv[]) {
       "sequence", po::value<bool>(&conf.sequence)->default_value(false),  //
       "Treat as sequence of Problems. Previous ChASE solution is used,"   //
       "when available"                                                    //
+      )(
+      "lanczosIter",po::value<std::size_t>(&conf.lanczosIter)->default_value(25),
+      "Sets the number of Lanczos iterations executed by ChASE."
+      )(
+      "numLanczos", po::value<std::size_t>(&conf.numLanczos)->default_value(4),	
+      " Sets the number of stochastic vectors used for the spectral estimates"
+      "in Lanczos" 
       )
 #ifdef USE_BLOCK_CYCLIC
       (                                                                   //
@@ -568,7 +596,11 @@ int main(int argc, char* argv[]) {
   }
 
   if (conf.isdouble) {
-    do_chase<std::complex<double>>(conf);
+	if (conf.iscomplex) {
+    	do_chase<std::complex<double>>(conf);
+	} else {
+		do_chase<double>(conf);
+	}
   } else {
     std::cout << "single not implemented\n";
   }

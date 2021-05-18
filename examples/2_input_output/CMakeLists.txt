@@ -17,7 +17,7 @@ if( ${Boost_FOUND} )
 
   add_executable( "2_input_output" "2_input_output.cpp" )
   target_link_libraries( "2_input_output" chase_mpi ${Boost_LIBRARIES})
-  target_compile_definitions( "2_input_output" PRIVATE USE_MPI=1)
+  target_compile_definitions( "2_input_output" PRIVATE USE_MPI=1 PRINT_EIGENVALUES=1 CHASE_OUTPUT=1)
 
   add_executable( "2_input_output_block_cyclic" "2_input_output.cpp" )
   target_link_libraries( "2_input_output_block_cyclic" chase_mpi ${Boost_LIBRARIES})
