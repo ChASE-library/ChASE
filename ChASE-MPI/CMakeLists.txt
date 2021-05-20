@@ -37,14 +37,19 @@ find_package( BLAS   REQUIRED )
 find_package( LAPACK REQUIRED )
 find_package( MPI    REQUIRED )
 
+target_include_directories( chase_seq INTERFACE
+  ${MPI_CXX_INCLUDE_PATH}
+  )
 
 target_link_libraries( chase_seq INTERFACE
   ${BLAS_LIBRARIES}
   ${LAPACK_LIBRARIES}
+  ${MPI_CXX_LIBRARIES}  
   )
 
 target_compile_options( chase_seq INTERFACE
   ${CMAKE_C_FLAGS}
+  ${MPI_CXX_COMPILE_FLAGS}  
   )
 
 install( TARGETS chase_seq
