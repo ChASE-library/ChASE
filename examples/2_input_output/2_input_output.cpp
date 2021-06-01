@@ -15,6 +15,7 @@
 #include <vector>
 #include <iostream> 
 #include <fstream>
+#include <chrono>
 
 #include "algorithm/performance.hpp"
 #include "ChASE-MPI/chase_mpi.hpp"
@@ -398,6 +399,11 @@ int do_chase(ChASE_DriverProblemConfig& conf) {
     single.GetOff(&xoff, &yoff, &xlen, &ylen);
 #endif
 
+    std::chrono::high_resolution_clock::time_point start, end;
+    std::chrono::duration<double> elapsed;
+
+    start = std::chrono::high_resolution_clock::now();
+
     if(rank == 0) std::cout << "start reading matrix\n";
 #ifdef USE_BLOCK_CYCLIC
     if(sequence){
@@ -412,7 +418,14 @@ int do_chase(ChASE_DriverProblemConfig& conf) {
       readMatrix(H, path_in, N * N, xoff, yoff, xlen, ylen);    
     }
 #endif
-    if(rank == 0) std::cout << "done reading matrix\n";
+
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    end = std::chrono::high_resolution_clock::now();
+
+    elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
+
+    if(rank == 0) std::cout <<  "matrix are loaded in " << elapsed.count() << " seconds" << std::endl;
     
     PerformanceDecoratorChase<T> performanceDecorator(&single);
 
