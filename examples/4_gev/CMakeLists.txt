@@ -29,6 +29,17 @@ if( ${Boost_FOUND} )
     ##############################################################################
     if(TARGET chase_cuda )
       enable_language(CUDA)
+  
+      if (NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+        set (CMAKE_CUDA_ARCHITECTURES "80")
+      endif()
+    
+      if (${CMAKE_VERSION} VERSION_LESS "3.18.0")
+        foreach(CODE ${CMAKE_CUDA_ARCHITECTURES})
+          set (CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -gencode arch=compute_${CODE},code=sm_${CODE}")
+        endforeach()
+      endif()
+
       add_executable( "4_gev_mgpu" 4_gev.cpp )
       target_link_libraries("4_gev_mgpu" chase_mpi chase_cuda SCALAPACK::SCALAPACK ${Boost_LIBRARIES})
       target_compile_definitions( "4_gev_mgpu" PRIVATE DRIVER_BUILD_MGPU=1)

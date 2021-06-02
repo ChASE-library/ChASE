@@ -108,8 +108,40 @@ install(EXPORT chase-mpi
 include(CheckLanguage)
 check_language(CUDA)
 if(CMAKE_CUDA_COMPILER)
-  find_package( CUDA REQUIRED )
+
+  if (${CMAKE_VERSION} VERSION_LESS "3.18.0")
+    find_package(CUDA REQUIRED)
+  elseif(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.17.0")
+    find_package(CUDAToolkit REQUIRED)	  
+    set(CUDA_CUBLAS_LIBRARIES CUDA::cublas)
+    set(CUDA_cusolver_LIBRARY CUDA::cusolver)    
+  endif()
+
   enable_language(CUDA)
+
+  # If variable not defined, set it to default value in order to comply with CMake Policy CMP0104
+  if (NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+      set (CMAKE_CUDA_ARCHITECTURES "80")
+  endif()
+
+  # If cuda compute compatibility of your GPU is 8.6 (e.g. RTX 3090) you should build with
+  # -DCMAKE_CUDA_ARCHITECTURES=86. In the case you want to build code for more than one 
+  # CUDA compute capability (e.g. 70, 75, 80 and 86) then build with
+  # -DCMAKE_CUDA_ARCHITECTURES="70;75;80;86"
+
+  # If CMAKE_VERSION < 3.18 then CMake is not compliant with CMAKE policy CMP0104 (introduced 
+  # in CMake 3.18) which defines that the variable CMAKE_CUDA_ARCHITECTURES has to be initialized.
+  # In that case, the code generation flag has to be set manually.
+  # For simplicity and compatibility with newer (3.18+) CMake version, the CMAKE_CUDA_ARCHITECTURES 
+  # variable has to be always set, not matter the cmake version.
+  if (${CMAKE_VERSION} VERSION_LESS "3.18.0")
+    message("CMAKE version less than 3.18. Using old CMAKE CUDA policy for defining CUDA code generation flags")
+    foreach(CODE ${CMAKE_CUDA_ARCHITECTURES})
+      set (CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -gencode arch=compute_${CODE},code=sm_${CODE}")
+    endforeach()
+  endif()
+
+  message("-- Configuring the build of CUDA with the compute capability of ${CMAKE_CUDA_ARCHITECTURES}")
 
   add_library( chase_cuda "kernels/shift.cu" )
 
