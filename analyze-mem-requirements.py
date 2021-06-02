@@ -100,7 +100,7 @@ def main():
     parser.add_argument("--nb", metavar="block size", help='Algoritmic block size for QR and ORMTR', type=int, default=128)
     parser.add_argument("--nrows", metavar="MPI rows", help='Row number of MPI proc grid', type=int, default=0)
     parser.add_argument("--ncols", metavar="MPI cols", help='Column number of MPI proc grid', type=int, default=0)
-    parser.add_argument("--type", metavar="Type", help='Numerical type used in the calculations. Possible values: complex, double', default='double')
+    parser.add_argument("--type", metavar="Type", help='Numerical type used in the calculations. Possible values: complex, dcomplex, float, double', default='double')
     args = parser.parse_args()
 
     # Read inputs
