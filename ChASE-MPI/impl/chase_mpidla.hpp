@@ -191,8 +191,21 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
       MPI_Type_commit(&(newType[j]));
     }
 
-    //T *tmp = new T[N_ *  block];
+    for(auto i = 0; i < gsize; i++){
+      if (rank == i) {
+        MPI_Ibcast(buff, sendlens[i] * block, getMPI_Type<T>(), i, comm, &reqs[i]);
+      } else {
+        MPI_Ibcast(Buff_, block, newType[i], i, comm, &reqs[i]);
+      }
+    }
 
+    int i = rank;
+
+    for (auto j = 0; j < block; ++j) {
+      std::memcpy(Buff_ + j * N_ + block_cyclic_displs[i][0], buff + sendlens[i] * j, sendlens[i] * sizeof(T));
+    }
+
+/*
     for(auto j = 0; j < gsize; j++){
       for (auto i = 0; i < block; ++i) {
         std::memcpy(Buff_ + i * N_ + block_cyclic_displs[j][0], buff + sendlens[j] * i,
@@ -204,6 +217,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
     for(auto j = 0; j < gsize; j++){
         MPI_Ibcast(Buff_, block, newType[j], j, comm, &reqs[j]);
     }
+*/
     MPI_Waitall(gsize, reqs.data(), MPI_STATUSES_IGNORE);
 
     for(auto j = 0; j < gsize; j++){
