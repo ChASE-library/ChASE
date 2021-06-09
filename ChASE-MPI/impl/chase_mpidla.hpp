@@ -39,7 +39,6 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
     IMT_ = matrix_properties->get_IMT();
 
     std::size_t max_block_ = matrix_properties->get_max_block();
-    Buff_ = new T[N_ *  max_block_];
 
     matrix_properties_ = matrix_properties;
 
@@ -50,11 +49,18 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
     coord_ = matrix_properties->get_coord();
     off_ = matrix_properties->get_off();
 
+    data_layout = matrix_properties->get_dataLayout();
+
     matrix_properties->get_offs_lens(r_offs_, r_lens_, r_offs_l_, c_offs_, c_lens_, c_offs_l_);
     mb_ = matrix_properties->get_mb();
     nb_ = matrix_properties->get_nb();    
+
     mblocks_ = matrix_properties->get_mblocks();
     nblocks_ = matrix_properties->get_nblocks();
+
+    if(data_layout.compare("Block-Cyclic") == 0){
+       Buff_ = new T[N_ *  max_block_]; 
+    }
   }
 
   ~ChaseMpiDLA() {
@@ -191,40 +197,47 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
       MPI_Type_commit(&(newType[j]));
     }
 
-    for(auto i = 0; i < gsize; i++){
-      if (rank == i) {
-        MPI_Ibcast(buff, sendlens[i] * block, getMPI_Type<T>(), i, comm, &reqs[i]);
-      } else {
-        MPI_Ibcast(Buff_, block, newType[i], i, comm, &reqs[i]);
+    if(data_layout.compare("Block-Cyclic") == 0){
+      for(auto i = 0; i < gsize; i++){
+        if (rank == i) {
+          MPI_Ibcast(buff, sendlens[i] * block, getMPI_Type<T>(), i, comm, &reqs[i]);
+        } else {
+	  MPI_Ibcast(Buff_, block, newType[i], i, comm, &reqs[i]);
+	}
       }
+    }else{
+      for(auto i = 0; i < gsize; i++){
+        if (rank == i) {
+          MPI_Ibcast(buff, sendlens[i] * block, getMPI_Type<T>(), i, comm, &reqs[i]);
+        } else {
+          MPI_Ibcast(targetBuf, block, newType[i], i, comm, &reqs[i]);
+        }
+      }    
     }
 
     int i = rank;
 
-    for (auto j = 0; j < block; ++j) {
-      std::memcpy(Buff_ + j * N_ + block_cyclic_displs[i][0], buff + sendlens[i] * j, sendlens[i] * sizeof(T));
+    if(data_layout.compare("Block-Cyclic") == 0){
+    	for (auto j = 0; j < block; ++j) {
+      	    std::memcpy(Buff_ + j * N_ + block_cyclic_displs[i][0], buff + sendlens[i] * j, sendlens[i] * sizeof(T));
+    	}
+    }else{
+        for (auto j = 0; j < block; ++j) {
+            std::memcpy(targetBuf + j * N_ + block_cyclic_displs[i][0], buff + sendlens[i] * j, sendlens[i] * sizeof(T));
+        }    
     }
 
-/*
-    for(auto j = 0; j < gsize; j++){
-      for (auto i = 0; i < block; ++i) {
-        std::memcpy(Buff_ + i * N_ + block_cyclic_displs[j][0], buff + sendlens[j] * i,
-                  sendlens[j] * sizeof(T));
-
-      }
-    }
-
-    for(auto j = 0; j < gsize; j++){
-        MPI_Ibcast(Buff_, block, newType[j], j, comm, &reqs[j]);
-    }
-*/
     MPI_Waitall(gsize, reqs.data(), MPI_STATUSES_IGNORE);
 
-    for(auto j = 0; j < gsize; j++){
+    if(data_layout.compare("Block-Cyclic") == 0){
+
+    	for(auto j = 0; j < gsize; j++){
 	      for (auto i = 0; i < blockcounts[j]; ++i){
 	        t_lacpy('A', blocklens[j][i], block, Buff_ + block_cyclic_displs[j][i], 
 			             N_, targetBuf + blockdispls[j][i] , N_);
 	     }
+    	}
+
     }
 
     for (auto j = 0; j < gsize; j++) {
@@ -382,6 +395,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
   std::size_t nblocks_;
   std::size_t mblocks_;
 
+  std::string data_layout;
   std::unique_ptr<ChaseMpiDLAInterface<T>> dla_;
   ChaseMpiProperties<T>* matrix_properties_;
 };

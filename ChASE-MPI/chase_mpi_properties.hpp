@@ -80,7 +80,9 @@ class ChaseMpiProperties {
     ChaseMpiProperties(std::size_t N, std::size_t mb, std::size_t nb, std::size_t nev,
                   std::size_t nex, int row_dim, int col_dim, char *grid_major, int irsrc, int icsrc, MPI_Comm comm)
       : N_(N), mb_(mb), nb_(nb), nev_(nev), nex_(nex), max_block_(nev + nex), irsrc_(irsrc), icsrc_(icsrc), comm_(comm) {
-   
+  
+        data_layout = "Block-Cyclic";
+
 	std::size_t blocknb[2];
         std::size_t N_loc[2];	
 	std::size_t blocksize[2];
@@ -285,6 +287,9 @@ class ChaseMpiProperties {
     ChaseMpiProperties(std::size_t N, std::size_t nev, std::size_t nex,
                      MPI_Comm comm = MPI_COMM_WORLD)
       : N_(N), nev_(nev), nex_(nex), max_block_(nev + nex), comm_(comm) {
+
+    data_layout = "Block-Block";
+
     int periodic[] = {0, 0};
     int reorder = 0;
     int free_coords[2];
@@ -453,6 +458,9 @@ class ChaseMpiProperties {
       c_offs_l = c_offs_l_.get();
   }
 
+  std::string get_dataLayout(){
+      return data_layout;
+  }
 
   // coordinates in the cartesian communicator grid
   int* get_coord() { return coord_; }
@@ -529,6 +537,9 @@ class ChaseMpiProperties {
   int dims_[2];
   int coord_[2];
   std::size_t off_[2];
+
+  std::string data_layout;
+
 };
 }  // namespace mpi
 }  // namespace chase
