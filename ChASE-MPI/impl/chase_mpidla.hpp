@@ -58,9 +58,13 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
     mblocks_ = matrix_properties->get_mblocks();
     nblocks_ = matrix_properties->get_nblocks();
 
+    int sign = 0;
     if(data_layout.compare("Block-Cyclic") == 0){
-       Buff_ = new T[N_ *  max_block_]; 
+	sign = 1;
     }
+
+    Buff_ = new T[sign * N_ *  max_block_];
+
   }
 
   ~ChaseMpiDLA() {
