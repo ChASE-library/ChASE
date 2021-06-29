@@ -8,7 +8,7 @@ FortranCInterface_HEADER( ${CMAKE_BINARY_DIR}/fortran_mangle.h
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake-modules")
 
 find_package( SCALAPACK)
-find_package( Boost COMPONENTS serialization program_options )
+find_package( Boost COMPONENTS serialization program_options filesystem )
 
 if( ${Boost_FOUND} )
 
