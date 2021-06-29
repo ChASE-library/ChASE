@@ -6,9 +6,13 @@ import numpy as np
 
 precision = { 'double': 8, 'float': 4, 'complex': 8, 'dcomplex': 16 }
 
-def get_mem_CPU(N, n_, m_, block_, float_type):
+def get_mem_CPU(N, n_, m_, block_, float_type, data_layout):
 
-       tot_mem = float(n_*m_ + n_*block_ + m_*block_ + max(m_,n_)*block_ + 3 * N * block_)
+       tot_mem = float(n_*m_ + n_*block_ + m_*block_ + max(m_,n_)*block_ + 2 * N * block_)
+
+       if data_layout == "block-cyclic":
+           tot_mem +=  N * block_
+
        tot_mem *= precision[float_type]
        tot_mem /= pow(1024,3)
 
@@ -101,6 +105,7 @@ def main():
     parser.add_argument("--nrows", metavar="MPI rows", help='Row number of MPI proc grid', type=int, default=0)
     parser.add_argument("--ncols", metavar="MPI cols", help='Column number of MPI proc grid', type=int, default=0)
     parser.add_argument("--type", metavar="Type", help='Numerical type used in the calculations. Possible values: complex, dcomplex, float, double', default='double')
+    parser.add_argument("--layout", metavar="Data Layout", help='The data layout of matrix across MPI grid. Possible values: block, block-cyclic', default='block')
     args = parser.parse_args()
 
     # Read inputs
@@ -113,6 +118,7 @@ def main():
     mpi_col = args.ncols
     nb = args.nb
     float_type = args.type
+    data_layout = args.layout 
 
     # Determine floating point type 
     if ( not float_type in precision):
@@ -139,7 +145,7 @@ def main():
     m_ = N / mpi_col
 
     # Compute total amount of required memory per MPI rank
-    tot_mem = get_mem_CPU(N, n_, m_, nev+nex, float_type)
+    tot_mem = get_mem_CPU(N, n_, m_, nev+nex, float_type, data_layout)
 
     # Add heevd workspace (in both MPI-only and MPI+GPU heevd kernel is executed on the CPU)
     tot_mem += get_workspace_heevd(nev+nex, float_type)
@@ -168,7 +174,11 @@ def main():
     print('#MPI ranks:    ' + str(comm_size))
     print('MPI grid size: ' + str(mpi_row) + ' x ' + str(mpi_col))
     print('Block size:    ' + str(n_) + ' x ' + str(m_))
-    
+
+    print("\nMatrix Distribution")
+    print("-------------------------------")
+    print('Data Layout:   ' + data_layout)
+
     if(gpus):
         print('\nGPU configuration per MPI-rank')
         print("-------------------------------")

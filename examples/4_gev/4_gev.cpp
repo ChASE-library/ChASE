@@ -1,4 +1,5 @@
 #include <boost/program_options.hpp>
+#include <boost/filesystem.hpp>
 #include <stdio.h>
 #include <iostream>
 #include <fstream>
@@ -28,6 +29,8 @@ const std::size_t sze_one = 1;
 typedef std::size_t DESC[ 9 ];
 
 namespace po = boost::program_options;
+namespace bf = boost::filesystem;
+
 using namespace::chase;
 using namespace::chase::mpi;
 
@@ -120,6 +123,21 @@ void readMatrix(T* H, std::string path_in, std::string prefix,
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   problem << path_in << prefix << "  1 " << std::setw(2) << index << suffix;
   if (rank == 0) std::cout << "]> Loading " << problem.str() << std::endl;
+
+  std::size_t file_size = bf::file_size(problem.str().c_str());
+
+  try{
+    if(size * sizeof(T) != file_size ){
+      throw std::logic_error(std::string("The given file : ") +
+                               problem.str() + std::string(" of size ") + std::to_string(file_size) +
+                               std::string(" doesn't equals to the required size of matrix of size ") + std::to_string(size * sizeof(T)));
+    }
+  }
+  catch(std::exception &e)
+  {
+    std::cerr << "Caught " << typeid( e ).name( ) << " : "<< e.what( ) << std::endl;
+    return ;
+  }
 
   std::ifstream input(problem.str().c_str(), std::ios::binary);
 
