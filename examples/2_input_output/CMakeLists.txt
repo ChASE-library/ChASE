@@ -1,4 +1,4 @@
-find_package( Boost COMPONENTS serialization program_options )
+find_package( Boost COMPONENTS serialization program_options filesystem )
 
 if( ${Boost_FOUND} )
 

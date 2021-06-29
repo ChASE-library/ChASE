@@ -8,6 +8,7 @@
 // License is 3-clause BSD:
 // https://github.com/SimLabQuantumMaterials/ChASE/
 #include <boost/program_options.hpp>
+#include <boost/filesystem.hpp>
 #include <limits>
 #include <random>
 #include <memory>
@@ -34,6 +35,7 @@ using namespace chase;
 using namespace chase::mpi;
 
 namespace po = boost::program_options;
+namespace bf = boost::filesystem;
 
 template <typename T>
 void readMatrix(T* H, std::string path_in, std::string spin, std::size_t kpoint,
@@ -49,6 +51,9 @@ void readMatrix(T* H, std::string path_in, std::string spin, std::size_t kpoint,
 
   std::cout << problem.str() << std::endl;
   std::ifstream input(problem.str().c_str(), std::ios::binary);
+
+  std::cout << problem.str().c_str() << " " << "---" << bf::file_size(problem.str().c_str()) << '\n';
+
   if (input.is_open()) {
     input.read((char*)H, sizeof(T) * size);
   } else {
@@ -82,6 +87,21 @@ void readMatrix(T* H, std::string path_in, std::string spin, std::size_t kpoint,
   } 
 
   if (rank == 0) std::cout << problem.str() << std::endl;
+
+  std::size_t file_size = bf::file_size(problem.str().c_str());
+
+  try{
+    if(size * sizeof(T) != file_size ){
+      throw std::logic_error(std::string("The given file : ") +
+                               problem.str() + std::string(" of size ") + std::to_string(file_size) +
+                               std::string(" doesn't equals to the required size of matrix of size ") + std::to_string(size * sizeof(T)));
+    }
+  }
+  catch(std::exception &e)
+  {
+    std::cerr << "Caught " << typeid( e ).name( ) << " : "<< e.what( ) << std::endl;
+    return ;
+  } 
 
   std::ifstream input(problem.str().c_str(), std::ios::binary);
   if (!input.is_open()) {
@@ -122,6 +142,21 @@ void readMatrix(T* H, std::string path_in, std::string spin, std::size_t kpoint,
   }
 
   if (rank == 0) std::cout << problem.str() << std::endl;
+  
+  std::size_t file_size = bf::file_size(problem.str().c_str());
+
+  try{
+    if(size * sizeof(T) != file_size ){
+      throw std::logic_error(std::string("The given file : ") +
+                               problem.str() + std::string(" of size ") + std::to_string(file_size) +
+                               std::string(" doesn't equals to the required size of matrix of size ") + std::to_string(size * sizeof(T)));
+    }
+  }
+  catch(std::exception &e)
+  {
+    std::cerr << "Caught " << typeid( e ).name( ) << " : "<< e.what( ) << std::endl;
+    return ;
+  }
 
   std::ifstream input(problem.str().c_str(), std::ios::binary);
   if (!input.is_open()) {
@@ -155,7 +190,25 @@ void readMatrix(T* H, std::string path_in, std::size_t size,
 #endif
 
   if (rank == 0) std::cout << problem.str() << std::endl;
+
+
+  std::size_t file_size = bf::file_size(problem.str().c_str());
+
+  try{
+    if(size * sizeof(T) != file_size ){
+      throw std::logic_error(std::string("The given file : ") +
+                               problem.str() + std::string(" of size ") + std::to_string(file_size) +
+                               std::string(" doesn't equals to the required size of matrix of size ") + std::to_string(size * sizeof(T)));
+    }
+  }
+  catch(std::exception &e)
+  {
+    std::cerr << "Caught " << typeid( e ).name( ) << " : "<< e.what( ) << std::endl;
+    return ;
+  }
+
   std::ifstream input(problem.str().c_str(), std::ios::binary);
+
   if (!input.is_open()) {
     throw new std::logic_error(std::string("error reading file: ") +
                                problem.str());
@@ -187,6 +240,22 @@ void readMatrix(T* H, std::string path_in, std::size_t size,
 #endif
 
   if (rank == 0) std::cout << problem.str() << std::endl;
+
+
+  std::size_t file_size = bf::file_size(problem.str().c_str());
+
+  try{
+    if(size * sizeof(T) != file_size ){
+      throw std::logic_error(std::string("The given file : ") +
+                               problem.str() + std::string(" of size ") + std::to_string(file_size) +
+                               std::string(" doesn't equals to the required size of matrix of size ") + std::to_string(size * sizeof(T)));
+    }
+  }
+  catch(std::exception &e)
+  {
+    std::cerr << "Caught " << typeid( e ).name( ) << " : "<< e.what( ) << std::endl;
+    return ;
+  }
 
   std::ifstream input(problem.str().c_str(), std::ios::binary);
   if (!input.is_open()) {
