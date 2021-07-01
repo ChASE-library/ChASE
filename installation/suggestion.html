@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>ChASE with MPI+OpenMP &mdash; ChASE 0.9.1 documentation</title>
+  <title>ChASE with MPI+OpenMP &mdash; ChASE v1.0.0 documentation</title>
   
 
   
@@ -37,7 +37,7 @@
         <link rel="index" title="Index"
               href="../genindex.html"/>
         <link rel="search" title="Search" href="../search.html"/>
-    <link rel="top" title="ChASE 0.9.1 documentation" href="../index.html"/>
+    <link rel="top" title="ChASE v1.0.0 documentation" href="../index.html"/>
         <link rel="up" title="Installation and Setup on a Cluster" href="../installation.html"/>
         <link rel="next" title="Examples" href="../example.html"/>
         <link rel="prev" title="Linking ChASE to other Application Software" href="link.html"/>
@@ -74,7 +74,7 @@
             
             
               <div class="version">
-                0.9rc
+                v1.0.0
               </div>
             
           
@@ -110,16 +110,8 @@
 <li class="toctree-l2"><a class="reference internal" href="../installation.html#installation-on-cluster">Installation on Cluster</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../installation.html#linking-chase">Linking ChASE</a></li>
 <li class="toctree-l2 current"><a class="reference internal" href="../installation.html#recommendation-on-the-usage-of-computing-resources">Recommendation on the usage of Computing Resources</a><ul class="current">
-<li class="toctree-l3 current"><a class="current reference internal" href="#">ChASE with MPI+OpenMP</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#allocating-ressources-and-running-jobs-slurm">Allocating Ressources and Running jobs (SLURM)</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#estimating-memory-requirement">Estimating Memory Requirement</a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="#chase-with-multi-gpus">ChASE with multi-GPUs</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#id1">Allocating Ressources and Running jobs (SLURM)</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#id2">Estimating Memory Requirement</a></li>
-</ul>
-</li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">ChASE with MPI+OpenMP</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#chase-with-multi-gpus">ChASE with multi-GPUs</a></li>
 </ul>
 </li>
 </ul>
@@ -195,8 +187,6 @@ should be considered. In order to attain good performance, we recommand:</p>
 <li><p>Bind the CPUs to the relevant MPI tasks.</p></li>
 </ol>
 </div></blockquote>
-<div class="section" id="allocating-ressources-and-running-jobs-slurm">
-<h2>Allocating Ressources and Running jobs (SLURM)<a class="headerlink" href="#allocating-ressources-and-running-jobs-slurm" title="Permalink to this headline">¶</a></h2>
 <p>The optimal use of resources is usually achieved by carefully
 designing the script code which is used for the job submission. An
 example of a job script for a  <code class="docutils literal notranslate"><span class="pre">SLURM</span></code> scheduler is given below:</p>
@@ -210,96 +200,24 @@ example of a job script for a  <code class="docutils literal notranslate"><span 
 <span class="c1">#SBATCH --cpus-per-task=24</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="estimating-memory-requirement">
-<h2>Estimating Memory Requirement<a class="headerlink" href="#estimating-memory-requirement" title="Permalink to this headline">¶</a></h2>
 <p>An important aspect of executing ChASE on a parallel cluster is the
 memory footprint of the library. It is important to avoid that such
 memory footprint per MPI task exceeds the amount of main memory
 available to the compiled code. To help the user to make the correct
-decision in terms of resources a simple formula for <strong>Block distribution</strong> of matrix can be used</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">sizeof</span><span class="p">(</span><span class="n">float_type</span><span class="p">)</span> <span class="o">*</span><span class="p">[</span><span class="n">n</span> <span class="o">*</span> <span class="n">m</span> <span class="o">+</span> <span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="n">m</span> <span class="o">+</span> <span class="n">max</span><span class="p">(</span><span class="n">m</span><span class="p">,</span><span class="n">n</span><span class="p">))</span> <span class="o">*</span> <span class="n">block</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">N</span> <span class="o">*</span>
-<span class="n">block</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">+</span> <span class="mi">5</span><span class="o">*</span><span class="n">n</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">pow</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">nb</span><span class="p">]</span><span class="o">/</span><span class="p">(</span><span class="mi">1024</span><span class="o">^</span><span class="mi">3</span><span class="p">)</span> <span class="n">GigaByte</span>
+decision in terms of resources a simple formula can be used</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="mi">16</span> <span class="o">*</span> <span class="p">[</span><span class="n">n</span> <span class="o">*</span> <span class="n">m</span> <span class="o">+</span> <span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="n">m</span> <span class="o">+</span> <span class="n">max</span><span class="p">(</span><span class="n">m</span><span class="p">,</span><span class="n">n</span><span class="p">))</span> <span class="o">*</span> <span class="n">block</span> <span class="o">+</span> <span class="mi">3</span> <span class="o">*</span> <span class="n">N</span> <span class="o">*</span>
+<span class="n">block</span><span class="p">]</span><span class="o">/</span><span class="p">(</span><span class="mi">1024</span><span class="o">^</span><span class="mi">3</span><span class="p">)</span> <span class="n">GigaByte</span>
 </pre></div>
 </div>
 <p>where <code class="docutils literal notranslate"><span class="pre">n</span></code> and <code class="docutils literal notranslate"><span class="pre">m</span></code> are fractions of <code class="docutils literal notranslate"><span class="pre">N</span></code> which depend on the size
 of the MPI grid of precessors. For instance in the job script above
-<code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">=</span> <span class="pre">N/nrows</span></code> and <code class="docutils literal notranslate"><span class="pre">m</span> <span class="pre">=</span> <span class="pre">N/ncols</span></code>, with the size of MPI grid <code class="docutils literal notranslate"><span class="pre">nrows*ncols</span></code>.
-Correspondingly <code class="docutils literal notranslate"><span class="pre">N</span></code> is
+<code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">=</span> <span class="pre">N/2</span></code> and <code class="docutils literal notranslate"><span class="pre">m</span> <span class="pre">=</span> <span class="pre">N/4</span></code> (or viceversa). Correspondingly <code class="docutils literal notranslate"><span class="pre">N</span></code> is
 the size of the eigenproblem and <code class="docutils literal notranslate"><span class="pre">block</span></code> is at most <code class="docutils literal notranslate"><span class="pre">nev</span> <span class="pre">+</span> <span class="pre">nex</span></code>.
-Note that the factor <code class="docutils literal notranslate"><span class="pre">sizeof(float_type)</span></code> is valid for single precision real,
-double precision real, single precision complex and double precision complex floating numbers.
-The value of this factor for these four types of floating numbers are respectively:
-<code class="docutils literal notranslate"><span class="pre">4</span></code>, <code class="docutils literal notranslate"><span class="pre">8</span></code>, <code class="docutils literal notranslate"><span class="pre">8</span></code>, <code class="docutils literal notranslate"><span class="pre">16</span></code>.
-<code class="docutils literal notranslate"><span class="pre">nb</span></code> is the algorithmic block size used by the implementation of QR.</p>
-<p>For ChASE with <strong>Block-Cyclic distribution</strong> of matrix, addtional memory of
-size <code class="docutils literal notranslate"><span class="pre">sizeof(float_type)</span> <span class="pre">*</span> <span class="pre">N</span> <span class="pre">*</span> <span class="pre">block</span></code> is required for managing the internal reshuffing
-for block-cyclic data layout. Thus the total memory required is:</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">sizeof</span><span class="p">(</span><span class="n">float_type</span><span class="p">)</span> <span class="o">*</span><span class="p">[</span><span class="n">n</span> <span class="o">*</span> <span class="n">m</span> <span class="o">+</span> <span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="n">m</span> <span class="o">+</span> <span class="n">max</span><span class="p">(</span><span class="n">m</span><span class="p">,</span><span class="n">n</span><span class="p">))</span> <span class="o">*</span> <span class="n">block</span> <span class="o">+</span> <span class="mi">3</span> <span class="o">*</span> <span class="n">N</span> <span class="o">*</span>
-<span class="n">block</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">+</span> <span class="mi">5</span><span class="o">*</span><span class="n">n</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">pow</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">nb</span><span class="p">]</span><span class="o">/</span><span class="p">(</span><span class="mi">1024</span><span class="o">^</span><span class="mi">3</span><span class="p">)</span> <span class="n">GigaByte</span>
-</pre></div>
-</div>
-<p>We provide a simple python script to estimate the memory requirement of ChASE depending
-on the matrix size and available computation ressources: <a class="reference external" href="https://github.com/ChASE-library/ChASE/blob/master/scripts/analyze-mem-requirements.py">analyze-mem-requirements.py</a></p>
-<p>The usage of this script is quite simple. For ChASE with <strong>Block Distribution</strong>:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">python analyze-mem-requirements.py --n ${n} --nev ${nev} --nex ${nex} --mpi ${nodes}</span>
-</pre></div>
-</div>
-<p>in which <code class="docutils literal notranslate"><span class="pre">${n}</span></code> is the rank of matrix, <code class="docutils literal notranslate"><span class="pre">${nev}</span></code> is the number of eigenpairs to be computed,  <code class="docutils literal notranslate"><span class="pre">${nex}</span></code> is the external size of searching space, and <code class="docutils literal notranslate"><span class="pre">${nodes}</span></code> are the number of MPI ranks to be used. Below is an example of output:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>Problem size
--------------------------------
-Matrix size:   <span class="m">360000</span>
-Eigenpairs:    <span class="m">2500</span>
-Extra vectors: <span class="m">500</span>
-Precision:     double <span class="o">(</span><span class="m">8</span> bytes<span class="o">)</span>
-
-MPI configuration
--------------------------------
-<span class="c1">#MPI ranks:    1152</span>
-MPI grid size: <span class="m">32</span> x <span class="m">36</span>
-Block size:    <span class="m">11250</span>.0 x <span class="m">10000</span>.0
-
-Matrix Distribution
--------------------------------
-Data Layout:   block
-
-
-Main memory usage per MPI-rank: <span class="m">17</span>.798 GB
-Total main memory usage <span class="o">(</span><span class="m">1824</span> ranks<span class="o">)</span>: <span class="m">20503</span>.089 GB
-</pre></div>
-</div>
-<p>Using such a formula one can verify if the allocation of
+Note that the factor <code class="docutils literal notranslate"><span class="pre">16</span></code> is valid for double precision floating
+numbers. Using such a formula one can verify if the allocation of
 resources is enough to solve for the problem at hand. For instance,
-for a <code class="docutils literal notranslate"><span class="pre">N</span> <span class="pre">=</span> <span class="pre">360,000</span></code> and a <code class="docutils literal notranslate"><span class="pre">nev</span> <span class="pre">+</span> <span class="pre">nex</span> <span class="pre">=</span> <span class="pre">3,000</span></code> with <code class="docutils literal notranslate"><span class="pre">1152</span></code> MPI ranks, the total memory per MPI rank is <code class="docutils literal notranslate"><span class="pre">17.354</span> <span class="pre">GB</span></code>.</p>
-<p>For ChASE with <strong>Block-Cylic Distribution</strong>:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">python analyze-mem-requirements.py --n ${n} --nev ${nev} --nex ${nex} --mpi ${nodes} --nrows ${nrows} --ncols ${ncols} --layout block-cyclic</span>
-</pre></div>
-</div>
-<p>For the estimation of the memory requirement of ChASE with <strong>Block-Cyclic Distribution</strong>, at least three more arguments by the flags <code class="docutils literal notranslate"><span class="pre">--nrows</span></code>, <code class="docutils literal notranslate"><span class="pre">--ncols</span></code> and <code class="docutils literal notranslate"><span class="pre">--layout</span></code>. The implementation of ChASE with <strong>Block-Cyclic Distribution</strong> requires users provides explicitly
-the required MPI grid size. Moreover, the flag <code class="docutils literal notranslate"><span class="pre">--layout</span></code> should also be explicitly set as <code class="docutils literal notranslate"><span class="pre">block-cyclic</span></code> to active the mode of <strong>Block-Cyclic Distribution</strong>. Below is an example of output:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>Problem size
--------------------------------
-Matrix size:   <span class="m">360000</span>
-Eigenpairs:    <span class="m">2500</span>
-Extra vectors: <span class="m">500</span>
-Precision:     double <span class="o">(</span><span class="m">8</span> bytes<span class="o">)</span>
-
-MPI configuration
--------------------------------
-<span class="c1">#MPI ranks:    1152</span>
-MPI grid size: <span class="m">32</span> x <span class="m">36</span>
-Block size:    <span class="m">11250</span>.0 x <span class="m">10000</span>.0
-
-Matrix Distribution
--------------------------------
-Data Layout:   block-cyclic
-
-
-Main memory usage per MPI-rank: <span class="m">25</span>.844 GB
-Total main memory usage <span class="o">(</span><span class="m">1152</span> ranks<span class="o">)</span>: <span class="m">29772</span>.803 GB
-</pre></div>
-</div>
-</div>
+for a <code class="docutils literal notranslate"><span class="pre">N</span> <span class="pre">=</span> <span class="pre">20,000</span></code> and a <code class="docutils literal notranslate"><span class="pre">nev</span> <span class="pre">+</span> <span class="pre">nex</span> <span class="pre">=</span> <span class="pre">2,000</span></code>, the total memory per
+MPI rank is <code class="docutils literal notranslate"><span class="pre">3.28</span> <span class="pre">GB</span></code>.</p>
 </div>
 <div class="section" id="chase-with-multi-gpus">
 <h1>ChASE with multi-GPUs<a class="headerlink" href="#chase-with-multi-gpus" title="Permalink to this headline">¶</a></h1>
@@ -309,8 +227,6 @@ The multi-GPUs version of ChASE is able to use all available cards for
 each node. This multi-GPUs version supports either 1 MPI task to manage all cards or 1 MPI task
 to manage only 1 binded GPU card. Some less intensive computation is also assigned to this MPI task and executed
 in multi-threading mode.</p>
-<div class="section" id="id1">
-<h2>Allocating Ressources and Running jobs (SLURM)<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
 <p>Below is an example of a job script for a <code class="docutils literal notranslate"><span class="pre">SLURM</span></code> scheduler which allocates 1 MPI task with
 multi-GPUs per node:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># This is an example on the JUWELS GPU partition, in which each node has 4 V100 NVIDIA GPUs.</span>
@@ -322,8 +238,6 @@ multi-GPUs per node:</p>
 <span class="c1">#SBATCH --ntasks-per-node=1</span>
 <span class="c1">#SBATCH --cpus-per-task=24</span>
 <span class="c1">#SBATCH --gres=gpu:4</span>
-
-<span class="nb">export</span> <span class="nv">CUDA_VISIBLE_DEVICES</span><span class="o">=</span><span class="m">0</span>,1,2,3
 </pre></div>
 </div>
 <p>Below is an example of a job script for a <code class="docutils literal notranslate"><span class="pre">SLURM</span></code> scheduler which allocates
@@ -337,115 +251,17 @@ multi-GPUs per node and each GPU card bound to 1 MPI task:</p>
 <span class="c1">#SBATCH --ntasks-per-node=4</span>
 <span class="c1">#SBATCH --cpus-per-task=24</span>
 <span class="c1">#SBATCH --gres=gpu:4</span>
-
-<span class="nb">export</span> <span class="nv">CUDA_VISIBLE_DEVICES</span><span class="o">=</span><span class="m">0</span>,1,2,3
 </pre></div>
 </div>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>For the usage of ChASE with multi-GPUs, the environment variable <code class="docutils literal notranslate"><span class="pre">CUDA_VISIBLE_DEVICES</span></code> should also be set before the execution of ChASE, which indicates explicity the available
-GPU devices per computing node. More the number of available GPU/node should be always equal to or
-larger than the allocated MPI ranks per node.</p>
-</div>
-</div>
-<div class="section" id="id2">
-<h2>Estimating Memory Requirement<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h2>
-<p>As mentiond in the previous section, for ChASE with multi-GPUs, it is important to make sure that
+<p>As mentiond in the previous section, it is important to make sure that
 the memory footprint of the library does not exceed the memory
-available on the GPU card. For ChASE with multi-GPUs using <strong>Block distribution</strong> of matrix, the
-memory requirement of CPU is:</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">sizeof</span><span class="p">(</span><span class="n">float_type</span><span class="p">)</span> <span class="o">*</span><span class="p">[</span><span class="n">n</span> <span class="o">*</span> <span class="n">m</span> <span class="o">+</span> <span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="n">m</span> <span class="o">+</span> <span class="n">max</span><span class="p">(</span><span class="n">m</span><span class="p">,</span><span class="n">n</span><span class="p">))</span> <span class="o">*</span> <span class="n">block</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">N</span> <span class="o">*</span>
-<span class="n">block</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">+</span> <span class="mi">5</span><span class="o">*</span><span class="n">n</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">pow</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="mi">2</span><span class="p">)]</span><span class="o">/</span><span class="p">(</span><span class="mi">1024</span><span class="o">^</span><span class="mi">3</span><span class="p">)</span> <span class="n">GigaByte</span>
+available on the GPU card. For instance, in the case of the last job
+script (one GPU card for one MPI task) with <code class="docutils literal notranslate"><span class="pre">N</span> <span class="pre">=</span> <span class="pre">40,000</span></code> and <code class="docutils literal notranslate"><span class="pre">nev</span> <span class="pre">+</span>
+<span class="pre">nex</span> <span class="pre">=</span> <span class="pre">4,000</span></code>, the memory for each MPI task, and consequently on each
+GPU card, is</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="mi">16</span> <span class="o">*</span> <span class="p">[</span><span class="mi">10</span><span class="o">^</span><span class="mi">3</span> <span class="o">*</span> <span class="mi">10</span><span class="o">^</span><span class="mi">3</span> <span class="o">+</span> <span class="mi">3</span> <span class="o">*</span> <span class="mi">10</span><span class="o">^</span><span class="mi">3</span> <span class="o">*</span> <span class="mi">4</span> <span class="o">*</span> <span class="mi">10</span><span class="o">^</span><span class="mi">3</span> <span class="o">+</span> <span class="mi">3</span> <span class="o">*</span> <span class="mi">4</span> <span class="o">*</span> <span class="mi">10</span><span class="o">^</span><span class="mi">4</span> <span class="o">*</span>
+<span class="mi">10</span><span class="o">^</span><span class="mi">3</span><span class="p">]</span><span class="o">/</span><span class="p">(</span><span class="mi">1024</span><span class="o">^</span><span class="mi">3</span><span class="p">)</span> <span class="n">GigaByte</span> <span class="o">=</span> <span class="mf">1.9</span> <span class="n">GB</span>
 </pre></div>
-</div>
-<p>And the memory requirement of each GPU is:</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">sizeof</span><span class="p">(</span><span class="n">float_type</span><span class="p">)</span> <span class="o">*</span><span class="p">[</span><span class="mi">3</span> <span class="o">*</span> <span class="n">block</span> <span class="o">*</span> <span class="n">max</span><span class="p">(</span><span class="n">gpu_m</span><span class="p">,</span> <span class="n">gpu_n</span><span class="p">)</span> <span class="o">+</span> <span class="n">gpu_m</span> <span class="o">*</span> <span class="n">gpu_n</span> <span class="o">+</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">N</span> <span class="o">+</span> <span class="n">block</span><span class="p">)</span> <span class="o">*</span> <span class="n">block</span><span class="p">]</span><span class="o">/</span><span class="p">(</span><span class="mi">1024</span><span class="o">^</span><span class="mi">3</span><span class="p">)</span> <span class="n">GigaByte</span>
-</pre></div>
-</div>
-<p>In the formule related to GPU, new introduced parameters <code class="docutils literal notranslate"><span class="pre">gpu_m</span></code> and <code class="docutils literal notranslate"><span class="pre">gpu_n</span></code> are fractions of <code class="docutils literal notranslate"><span class="pre">m</span></code> and <code class="docutils literal notranslate"><span class="pre">n</span></code> which depend on the size of grid of GPUs per MPI rank. More precisely, <code class="docutils literal notranslate"><span class="pre">gpu_m=m/gpu_col</span></code> and <code class="docutils literal notranslate"><span class="pre">gpu_n=n/gpu_row</span></code>, in which the grid of GPUs per MPI rank is <code class="docutils literal notranslate"><span class="pre">gpu_row</span> <span class="pre">*</span> <span class="pre">gpu_col</span></code>. In ChASE, <code class="docutils literal notranslate"><span class="pre">gpu_row</span></code> and <code class="docutils literal notranslate"><span class="pre">gpu_col</span></code> are automatically computed by considering the available number of GPUs per MPI rank.</p>
-<p>It is possible to estimate the memory costs of both CPUs and GPUs for ChASE multi-GPUs by this python script: <a class="reference external" href="https://github.com/ChASE-library/ChASE/blob/master/scripts/analyze-mem-requirements.py">analyze-mem-requirements.py</a></p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">python analyze-mem-requirements.py --n ${n} --nev ${nev} --nex ${nex} --mpi ${nodes} --gpus ${nb_gpus}</span>
-</pre></div>
-</div>
-<p>It is quite similar to the one for ChASE with pure-CPUs, the only additional required information is <code class="docutils literal notranslate"><span class="pre">${nb_gpus}</span></code>, which indicates the number of GPUs used per MPI rank.
-Here is an example of output:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>Problem size
--------------------------------
-Matrix size:   <span class="m">360000</span>
-Eigenpairs:    <span class="m">2500</span>
-Extra vectors: <span class="m">500</span>
-Precision:     double <span class="o">(</span><span class="m">8</span> bytes<span class="o">)</span>
-
-MPI configuration
--------------------------------
-<span class="c1">#MPI ranks:    1152</span>
-MPI grid size: <span class="m">32</span> x <span class="m">36</span>
-Block size:    <span class="m">11250</span>.0 x <span class="m">10000</span>.0
-
-Matrix Distribution
--------------------------------
-Data Layout:   block
-
-GPU configuration per MPI-rank
--------------------------------
-<span class="c1">#GPUs:      4</span>
-GPU grid:   <span class="m">2</span> x <span class="m">2</span>
-Block size: <span class="m">5625</span>.0 x <span class="m">5000</span>.0
-
-
-Main memory usage per MPI-rank: <span class="m">17</span>.792 GB
-Total main memory usage <span class="o">(</span><span class="m">1152</span> ranks<span class="o">)</span>: <span class="m">20496</span>.497 GB
-
-Memory requirement per GPU: <span class="m">16</span>.747 GB
-Total GPU memory per MPI-rank <span class="o">(</span><span class="m">4</span> GPUs<span class="o">)</span>: <span class="m">66</span>.988 GB
-</pre></div>
-</div>
-<p>For ChASE with multi-GPUS using <strong>Block-Cyclic Distribution</strong>, the memory requirement of GPU is the same as the one with <strong>Block Distribution</strong>, and the CPUs require addtional memory of
-size <code class="docutils literal notranslate"><span class="pre">sizeof(float_type)</span> <span class="pre">*</span> <span class="pre">N</span> <span class="pre">*</span> <span class="pre">block</span></code>. Thus the formule is:</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">sizeof</span><span class="p">(</span><span class="n">float_type</span><span class="p">)</span> <span class="o">*</span><span class="p">[</span><span class="n">n</span> <span class="o">*</span> <span class="n">m</span> <span class="o">+</span> <span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="n">m</span> <span class="o">+</span> <span class="n">max</span><span class="p">(</span><span class="n">m</span><span class="p">,</span><span class="n">n</span><span class="p">))</span> <span class="o">*</span> <span class="n">block</span> <span class="o">+</span> <span class="mi">3</span> <span class="o">*</span> <span class="n">N</span> <span class="o">*</span>
-<span class="n">block</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">+</span> <span class="mi">5</span><span class="o">*</span><span class="n">n</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">pow</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="mi">2</span><span class="p">)]</span><span class="o">/</span><span class="p">(</span><span class="mi">1024</span><span class="o">^</span><span class="mi">3</span><span class="p">)</span> <span class="n">GigaByte</span>
-</pre></div>
-</div>
-<p>The usage of provided python script is:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">python analyze-mem-requirements.py --n ${n} --nev ${nev} --nex ${nex} --mpi ${nodes} --nrows ${nrows} --ncols ${ncols} --layout block-cyclic --gpus ${nb_gpus}</span>
-</pre></div>
-</div>
-<p>Here is an example of output:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>Problem size
--------------------------------
-Matrix size:   <span class="m">360000</span>
-Eigenpairs:    <span class="m">2500</span>
-Extra vectors: <span class="m">500</span>
-Precision:     double <span class="o">(</span><span class="m">8</span> bytes<span class="o">)</span>
-
-MPI configuration
--------------------------------
-<span class="c1">#MPI ranks:    1152</span>
-MPI grid size: <span class="m">32</span> x <span class="m">36</span>
-Block size:    <span class="m">11250</span>.0 x <span class="m">10000</span>.0
-
-Matrix Distribution
--------------------------------
-Data Layout:   block-cyclic
-
-GPU configuration per MPI-rank
--------------------------------
-<span class="c1">#GPUs:      4</span>
-GPU grid:   <span class="m">2</span> x <span class="m">2</span>
-Block size: <span class="m">5625</span>.0 x <span class="m">5000</span>.0
-
-
-Main memory usage per MPI-rank: <span class="m">25</span>.839 GB
-Total main memory usage <span class="o">(</span><span class="m">1152</span> ranks<span class="o">)</span>: <span class="m">29766</span>.212 GB
-
-Memory requirement per GPU: <span class="m">16</span>.747 GB
-Total GPU memory per MPI-rank <span class="o">(</span><span class="m">4</span> GPUs<span class="o">)</span>: <span class="m">66</span>.988 GB
-</pre></div>
-</div>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>The estimation of memory requirement by <a class="reference external" href="https://github.com/ChASE-library/ChASE/blob/master/scripts/analyze-mem-requirements.py">analyze-mem-requirements.py</a> is only based on the algorithmic aspects of ChASE. The buffer and memory requirement of libraries such as <code class="docutils literal notranslate"><span class="pre">MPI</span></code> has not been considered. So despite the python script calculation of memory consumption, some combination of MPI libraries (e.g., ParastationMPI) could lead to the crash of ChASE with <code class="docutils literal notranslate"><span class="pre">out</span> <span class="pre">of</span> <span class="pre">memory</span></code> even if the memory available is within the estimated bounds.</p>
-</div>
 </div>
 </div>
 
@@ -490,7 +306,7 @@ Total GPU memory per MPI-rank <span class="o">(</span><span class="m">4</span> G
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.9.1',
+            VERSION:'v1.0.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true
