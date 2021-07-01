@@ -91,6 +91,23 @@ C++ Code
     ...
   */
 
+Execution
+----------
+
+The execution of this example through the command line is:
+
+.. code-block:: sh
+
+    mpirun -np ${NPROCS} ./1_sequence_eigenproblems/1_sequence_eigenproblems
+
+
+For the execution of this example with **Block-Cyclic Distribution**,
+it can be done as:
+
+.. code-block:: sh
+
+    mpirun -np ${NPROCS} ./1_sequence_eigenproblems/1_sequence_eigenproblems_block_cyclic
+
 
 Output
 -------

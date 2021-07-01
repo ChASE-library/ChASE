@@ -33,7 +33,20 @@ using namespace std::chrono;
 
 namespace chase {
 	namespace mpi {
+		//! A class to defines the multi-GPU implementation of DLA within node.
+		/*! This class mainly implements a multi-GPU for `HEMM`, which is able to be executed either with 1 MPI managing multi-GPUs or each GPU being bounded to one MPI rank.
+			This class mainly provides the basic functionality for a series of  a multi-GPU Hemm-s.
+			The core functionalies are to distribute H, V and W between the GPU devices and to
+			perform the Hemm operation in distributed manner among all GPU devices. 
+			The class supports two type of operations
+			  - W = alpha * H * V + beta * W (refered as 'cAb' operation)
+			  - V = alpha * H^C * W + beta * V (refered as 'bAc' operation)
 
+			such that not additional redististribution of H is required between successive Hemm calls. 
+			
+			This class also provides single-GPU implementation of `gegqr` and `RR_kernel`.
+		  
+		*/
 		template <class T>
 		class mgpu_cudaDLA {
 
@@ -43,7 +56,14 @@ namespace chase {
 
 				/* Constructor - sets GPUs, allocate device arrays, create cublas handles and streams */
 				mgpu_cudaDLA() {};
-
+				/* Constructor - sets GPUs, allocate device arrays, create cublas handles and streams */
+				//! A constructor of mgpu_cudaDLA which sets GPUs, allocate device arrays, create cublas and cusolver handles and streams.
+				/*!
+					@param matrix_properties: 	it is an object of ChaseMpiProperties, which defines the MPI environment and data distribution scheme in ChASE-MPI.
+					@param m: row number of local matrix stored on each MPI rank.
+					@param n: column number of local matrix stored on each MPI rank.
+					@param maxBlock: maximum number of column of the rectangular matrix `V`, which equals to `nev+nex`.
+				*/
 				mgpu_cudaDLA(ChaseMpiProperties<T>* matrix_properties, 
 					      std::size_t m, 
 					      std::size_t n, 
@@ -256,6 +276,11 @@ namespace chase {
 				}
 
 				/* Distribute given matrix orig_H among GPUs */
+				//! This member functions Distribute given matrix `orig_H` among GPUs
+				/*!
+					@param orig_H: original matrix to be distributed on Host
+					@param ld_origH: leading dimension of `orig_H`.
+				*/
 				void distribute_H(T* orig_H, std::size_t ld_origH) {
 
 					/* Tile dimension */
@@ -330,6 +355,12 @@ namespace chase {
 				}
 
 				/* Divide given matrix buf_init into panels and distributed among GPUs */
+				//! This member function divides given matrix `buf_init` into panels and distributed among GPUs
+				/*!
+					@param buf_init: the given matrix to be divided into panels and distributed among GPUs
+					@param ldBuf: the leading dimension of `buf_init`
+					@param block: number of non-converged eigenvectors, it indicates the number of columns in `V` which performs the `HEMM` operation.
+				*/
 				void distribute_V (T* buf_init, std::size_t ldBuf, std::size_t block) {
 
 					/* Number of rows in the tile */
@@ -400,6 +431,11 @@ namespace chase {
 				}
 
 				/* Compute Hemm */
+				//! This member function computes HEMM within each GPU card.
+				/*!
+					@param block: number of non-converged eigenvectors, it indicates the number of columns in `V` which performs the `HEMM` operation.
+					@param alpha&beta: scalars of type `T` in `HEMM` functions.
+				*/
 				void computeHemm(std::size_t block, T alpha, T beta) {
 
 					/* Parameters for a local <T>hemm operation */
@@ -571,6 +607,12 @@ namespace chase {
 				}
 
 				/* Collect and return the computed W from the GPUs to the host*/
+				//! This member function collects and returns the computed `W` from the GPUs to the host
+				/*!
+					@param buf_target: the matrix host which the computed `W` should be copied to.
+					@param ldBuf: the leading dimension of `buf_target`
+					@param block: number of non-converged eigenvectors, it indicates the number of columns in `V` which performs the `HEMM` operation.
+				*/
 				void return_W (T* buf_target, std::size_t ldBuf, std::size_t block) {
 
 					/*  */
@@ -612,6 +654,7 @@ namespace chase {
 				}
 
 				/* Synchronize all devices */
+				//! This member function synchronizes all devices
 				void synchronizeAll() {
 
 					for (int i = 0; i < num_devices_per_rank; i++) {
@@ -620,6 +663,7 @@ namespace chase {
 				}
 
 				/* Switch pointers to per-device 2D arrays depending on the next operation (cAb or bAc) */
+				//! This member function switches pointers to per-device 2D arrays depending on the next operation (cAb or bAc)
 				void switch_pointers(){
 
 					this->synchronizeAll();
@@ -650,6 +694,7 @@ namespace chase {
 				}
 
 				/* Switch operation, between W = H * V + W and V = H^C W + V */
+				//! This function defines a switch operation, between W = H * V + W and V = H^C W + V 
 				void switch_operation() {
 
 					/* Change operation */
@@ -675,7 +720,11 @@ namespace chase {
 					}
 					this->switch_pointers();
 				}
-
+  /*!
+    - `gegqr` is implemented using `cuSOLVER` routines `cusolverDnXgeqrf` and `cusolverDnXumgqr`.
+    - **Parallelism is SUPPORT within one GPU card**
+    - For the meaning of this function, please visit ChaseMpiDLAInterface.
+  */
 				void gegqr(std::size_t N, std::size_t nevex, T * approxV, std::size_t LDA){
 				    
 				    cudaSetDevice(shmrank_*num_devices_per_rank);
@@ -709,8 +758,16 @@ namespace chase {
 				    cuda_exec(cudaMemcpyAsync(approxV, d_V_, sizeof(T)*N*nevex, cudaMemcpyDeviceToHost, stream2_[0]));
 				}
 
-
- 				 void RR_kernel(std::size_t N, 
+ /*!
+        - `RR_kernel` is implemented by `cublasXgemm` routine provided by `cuBLAS` and `(SY)HEEVD` routine provided by `LAPACK`.
+        	- The 1st operation `A <- W^T * V` is implemented by `cublasXgemm` from `cuBLAS`.
+        	- The 2nd operation which computes the eigenpairs of `A`, is implemented by `(SY)HEEVD` from `LAPACK`.
+        	- The 3rd operation which computes `W<-V*A` is implemented by `cublasXgemm` from `cuBLAS`.
+      	- **for (SY)HHEVD, parallelism is SUPPORT within node if multi-threading is actived**
+      	- **for cublasXgemm, parallelism is SUPPORT within one GPU card**
+      	- For the meaning of this function, please visit ChaseMpiDLAInterface.
+  */  
+   				 void RR_kernel(std::size_t N, 
 						std::size_t block, 
 						T *approxV, 
 						std::size_t locked, 

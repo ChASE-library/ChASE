@@ -84,7 +84,7 @@ find_package(LATEX)
 if(LATEX_FOUND)
   set(LATEX_PDF_FILE ${CMAKE_PROJECT_NAME}_${CMAKE_PROJECT_VERSION}.pdf)
   make_directory(${CMAKE_BINARY_DIR}/sphinx/pdf)
-  add_custom_target(PDF ALL
+  add_custom_target(PDF
                     COMMAND ${XELATEX_COMPILER} -output-directory ${SPHINX_BUILD}/latex -synctex=1 -interaction=nonstopmode ${SPHINX_BUILD}/latex/*.tex
                     COMMAND ${CMAKE_COMMAND} -E copy *.pdf ${SPHINX_BUILD}/pdf/${LATEX_PDF_FILE}.pdf
                     WORKING_DIRECTORY ${SPHINX_BUILD}/latex

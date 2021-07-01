@@ -29,10 +29,11 @@ hardware resources.
      many threads as number of available cores per node.
 
    * **GPU build:** ChASE-MPI can be configured to take advantage of
-     graphics card on heterogeneous computing clusters. Currently only
-     one GPU card per MPI rank is supported. Support for multi-GPUs is
-     currently under testing phase and it it is expected to be part of the
-     next release in 2021.
+     graphics card on heterogeneous computing clusters. Currently we
+     support the use of one or more GPU cards per computing node in
+     a number of flexible configurations: for instance on computing nodes
+     with 4 cards per node one can choose to compile and execute the
+     program with one, two or four GPU card per MPI rank.
 
 
 Matrix Distributions

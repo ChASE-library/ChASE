@@ -21,16 +21,15 @@ the following files have to be included in the header file.
 
     /*USE ChASE-MPI without GPUs*/
     /*With MPI support for distributed-memory system*/
-    #include "ChASE-MPI/impl/chase_mpihemm_blas.hpp"
+    #include "ChASE-MPI/impl/chase_mpidla_blaslapack.hpp"
     /*Without MPI support for single-node system*/
-    #include "ChASE-MPI/impl/chase_mpihemm_blas_seq.hpp"
-    #include "ChASE-MPI/impl/chase_mpihemm_blas_seq_inplace.hpp"
+    #include "chase_mpidla_blaslapack_seq.hpp"
 
     /*USE ChASE-MPI with GPUs*/
     /*With MPI support for distributed-memory system*/
-    #include "ChASE-MPI/impl/chase_mpihemm_mgpu.hpp"
+    #include "ChASE-MPI/impl/chase_mpidla_mgpu.hpp"
     /*Without MPI support for single-node system*/    
-    #include "ChASE-MPI/impl/chase_mpihemm_cuda_seq.hpp"
+    #include "ChASE-MPI/impl/chase_mpidla_cuda_seq.hpp"
 
 
 .. _link_by_cmake:
@@ -120,7 +119,7 @@ The standard installation of ChASE can already provide some
 information about the linking, which can be extracted when it
 generates the `CMake configuration files`. More details, the linking information 
 can be obtained from the
-**lines 56-59** of the configuration file ``${ChASEROOT}/lib/cmake/ChASE/chase-mpi.cmake``.
+**lines 56-59** of the configuration file ``${ChASEROOT}/lib/cmake/ChASE/chase-mpi.cmake`` or ``${ChASEROOT}/lib64/cmake/ChASE/chase-mpi.cmake``, depending on the architectures of systems.
 
 
 Pure CPU version

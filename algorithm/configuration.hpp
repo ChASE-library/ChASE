@@ -126,8 +126,8 @@ void pretty_print(std::ostream& oss, std::string key, T value) {
   //! A class to set up all the parameters of the eigensolver
   /*!
       Besides setting up the standard parameters such as size of the
-      matrix `N` defining the eigenproblem, number of wanted
-      eigenvalues `nev`, the public functions of this class
+      matrix `N_` defining the eigenproblem, number of wanted
+      eigenvalues `nev_`, the public functions of this class
       initialize all internal parameters and allow the experienced
       user to set up the values of parameters of core functionalities
       (e.g. lanczos DoS). The aim is to influence the behavior of the
@@ -140,12 +140,12 @@ class ChaseConfig {
  public:
   //! Constructor for the ChaseConfig class
   /*!
-      Requires the explicit values for the initalization of the size `N`
+      Requires the explicit values for the initalization of the size `N_`
       of the matrix *A*, the number of sought after extremal
-      eigenvalues `nev`, and the number of extra eigenvalue `nex` which
-      defines, together with `nev`, the search space. All the other
+      eigenvalues `nev_`, and the number of extra eigenvalue `nex_` which
+      defines, together with `nev_`, the search space. All the other
       private members of the class are initialized using default values
-      either specified directly (e.g. `max_iter`) or specified using a
+      either specified directly (e.g. `max_iter_`) or specified using a
       function that is part of the ChaseConfig namespace (e.g. `initMaxDeg`).
 
       \param _N Size of the square matrix defining the eigenproblem.
@@ -244,7 +244,7 @@ class ChaseConfig {
   /*! The value of the tolerance should be set carefully keeping in
       mind that the residual of the eigenpairs is limited by the
       accuracy of the dense eigensolver used within the Rayleigh-Ritz
-      procedure. As such it should hardly be set below *1e-14* in
+      procedure. As such it should hardly be set below \f$1e-14\f$ in
       double precision. As a rule of thumb a minimum value of *1e-04*
       and *1e-08* should be used respectively in single and double
       precision.
@@ -264,7 +264,7 @@ class ChaseConfig {
   std::size_t GetMaxDeg() const { return max_deg_; }
   
   //! Sets the maximum value of the degree of the Chebyshev filter
-  /*! When ``optimization = 'true'``, the Chebyshev filter degree is
+  /*! When ``optimization_ == 'true'``, the Chebyshev filter degree is
       computed automatically. Because the computed values could be
       quite large for eigenvectors at the end of the sought after
       spectrum, a maximum value is set to avoid numerical
@@ -283,7 +283,7 @@ class ChaseConfig {
   }
 
   //! Returns the extra degree added to the polynomial filter.
-  /*! When ``optimization = 'true'``, each vector is filtered with a
+  /*! When ``optimization_ == 'true'``, each vector is filtered with a
       polynomial of a given calculated degree. Because the degree is
       predicted based on an heuristic fomula, such degree is augmented
       by a small value to ensure that the residual of the
@@ -364,7 +364,7 @@ class ChaseConfig {
       The expert user can change the value to a larger number (it
       is not suggested to use a smaller value) and pay a slightly
       higher computing cost. It is not suggested to exceed a value for
-      `num_lanczos` higher than *20*.
+      `num_lanczos_` higher than *20*.
       \param lanczosIter Number of stochastic vectors used by ChASE.
    */
   void SetNumLanczos(std::size_t lanczosIter) { num_lanczos_ = lanczosIter; }

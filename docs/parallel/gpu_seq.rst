@@ -1,8 +1,8 @@
-.. _para-chase-mpi-cpu:
+.. _chase-single-gpu:
 
-CPUs in node
--------------------
+Single GPU
+==============================
 
-.. doxygenclass:: chase::mpi::ChaseMpiDLABlaslapack
+.. doxygenclass:: chase::mpi::ChaseMpiDLACudaSeq
    :project: ChASE
    :members: ChaseMpiDLABlaslapack,shiftMatrix, preApplication,apply,postApplication,applyVec,lange,gegqr,axpy,scal,nrm2,dot,gemm_small,gemm_large,stemr,RR_kernel

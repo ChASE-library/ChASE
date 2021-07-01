@@ -34,9 +34,15 @@ using namespace std::chrono;
 namespace chase {
 namespace mpi {
 
+//! A derived class of ChaseMpiDLAInterface which implements the inter-node computation for a MPI-based implementation with GPU supports of ChASE.
+/*! This implementation supports to use all the GPU cards available on each node. The multi-GPU within node can be managed either with 1 MPI rank or each GPU be bounded to one MPI rank. 
+*/
 template <class T>
 class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
  public:
+  //! A constructor of ChaseMpiDLAMultiGPU.
+  //! This construct set up the CUDA environment and register device memory which will be used by ChASE.
+  //! @param matrix_properties: it is an object of ChaseMpiProperties, which defines the MPI environment and data distribution scheme in ChASE-MPI.  
   ChaseMpiDLAMultiGPU(ChaseMpiProperties<T>* matrix_properties) {
     n_ = matrix_properties->get_n();
     m_ = matrix_properties->get_m();
@@ -97,11 +103,17 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
 #endif
   }
 
+  /*! - For ChaseMpiDLAMultiGPU, `preApplication` is implemented only with the operation of switching operation flags.
+      - For the meaning of this function, please visit ChaseMpiDLAInterface.
+  */
   void preApplication(T* V, std::size_t locked, std::size_t block)  override {
     next_ = NextOp::bAc;
 	mgpuDLA->set_operation(next_);
   }
 
+  /*! - For ChaseMpiDLAMultiGPU, `preApplication` is implemented only with the operation of switching operation flags.
+      - For the meaning of this function, please visit ChaseMpiDLAInterface.
+  */
   void preApplication(T* V, T* V2, std::size_t locked, std::size_t block)  override {
     // cuda_exec(cudaMemcpy(B_, orig_B_, block * n_ * sizeof(T),
     //                      cudaMemcpyHostToDevice));
@@ -109,6 +121,15 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
     this->preApplication(V, locked, block);
   }
 
+   /*!
+      - For ChaseMpiDLAMultiGPU, the matrix-matrix multiplication of local matrices are offloaded to multi-GPUs available on the node. The collection of local product among multi-GPUs is done by MPI communication scheme. The computation on each GPU card is implemented with `cublasXgemm` provided by `cuBLAS`.
+      - The multi-GPU HEMM within each node is implemented in class mgpu_cudaDLA.
+      - The collective communication based on MPI which **ALLREDUCE** the product of local matrices either within the column communicator or row communicator, is implemented within ChaseMpiDLA.
+      - **Parallelism on distributed-memory system SUPPORT**
+      - **Parallelism within each node among multi-GPUs SUPPORT** 
+      - **Parallelism within each GPU SUPPORT**             
+      - For the meaning of this function, please visit ChaseMpiDLAInterface.
+  */
   void apply(T alpha, T beta, std::size_t offset, std::size_t block) override  {
     T* buf_init;
     T* buf_target;
@@ -165,6 +186,10 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
 	//cudaProfilerStop();
   }
 
+  /*!
+     - For ChaseMpiDLAMultiGPU,  `postApplication` is implemented for the synchronization among the GPUs bounded to a same MPI rank.
+     - For the meaning of this function, please visit ChaseMpiDLAInterface.  
+  */
   bool postApplication(T* V, std::size_t block)  override {
     //cudaStreamSynchronize(stream_);
 	mgpuDLA->synchronizeAll();
@@ -172,6 +197,12 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
     return false;
   }
 
+  /*!
+    - For ChaseMpiDLAMultiGPU, `shiftMatrix` is implemented in ChaseMpiDLA which is executed on CPUs.
+    - **Parallelism on distributed-memory system SUPPORT**
+    - The distribution of matrix `H` owned by each MPI rank to the GPUs bounded to it, it is called in this function. The implementation is within class mgpu_cudaDLA.
+    - For the meaning of this function, please visit ChaseMpiDLAInterface.    
+  */
   void shiftMatrix(T c, bool isunshift = false)  override {
 
 	auto start = high_resolution_clock::now();
@@ -184,6 +215,13 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
 	time_copy_H += stop - start;
   }
 
+  /*!
+    - For ChaseMpiDLAMultiGPU,  `applyVec` is implemented in ChaseMpiDLA.
+    - **Parallelism on distributed-memory system SUPPORT**
+    - **Parallelism within each node among multi-GPUs SUPPORT** 
+    - **Parallelism within each GPU SUPPORT**     
+    - For the meaning of this function, please visit ChaseMpiDLAInterface.    
+  */
   void applyVec(T* B, T* C)  override {
     T alpha = T(1.0);
     T beta = T(0.0);
@@ -221,25 +259,61 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
 
   void Start() override { copied_ = false; }
 
+  /*!
+    - For ChaseMpiDLAMultiGPU, `lange` is implemented using `LAPACK` routine `xLANGE`.
+    - **Parallelism is SUPPORT within node if multi-threading is enabled**
+    - For the meaning of this function, please visit ChaseMpiDLAInterface.
+  */
   Base<T> lange(char norm, std::size_t m, std::size_t n, T* A, std::size_t lda) override {
       return t_lange(norm, m, n, A, lda);
   }
 
+  /*!
+    - For ChaseMpiDLAMultiGPU, `gegqr` is implemented by calling `gegqr` function of class mgpu_cudaDLA, whose implementation is based on `cuSOLVER` routines `cusolverDnXgeqrf` and `cusolverDnXumgqr`.
+    - **Parallelism is SUPPORT within one GPU card**
+    - For the meaning of this function, please visit ChaseMpiDLAInterface.
+  */
   void gegqr(std::size_t N, std::size_t nevex, T * approxV, std::size_t LDA) override {
       mgpuDLA->gegqr(N, nevex, approxV, LDA);
   }
 
+  /*!
+    - For ChaseMpiDLAMultiGPU, `axpy` is implemented in ChaseMpiDLA.
+   - **Parallelism is SUPPORT within node if multi-threading is enabled**    
+    - For the meaning of this function, please visit ChaseMpiDLAInterface.
+  */
   void axpy(std::size_t N, T * alpha, T * x, std::size_t incx, T *y, std::size_t incy) override { }
+
+  /*!
+    - For ChaseMpiDLAMultiGPU, `scal` is implemented in ChaseMpiDLA
+    - **Parallelism is SUPPORT within node if multi-threading is enabled**   
+    - For the meaning of this function, please visit ChaseMpiDLAInterface.
+  */  
   void scal(std::size_t N, T *a, T *x, std::size_t incx) override { }
 
+  /*!
+    - For ChaseMpiDLAMultiGPU, `nrm2` is implemented using `BLAS` routine `xNRM2`.
+    - **Parallelism is SUPPORT within node if multi-threading is enabled**    
+    - For the meaning of this function, please visit ChaseMpiDLAInterface.
+  */
   Base<T> nrm2(std::size_t n, T *x, std::size_t incx) override {
       return t_nrm2(n, x, incx);
   }
 
+ /*!
+    - For ChaseMpiDLAMultiGPU, `dot` is implemented using `BLAS` routine `xDOT`.
+    - **Parallelism is SUPPORT within node if multi-threading is enabled**       
+    - For the meaning of this function, please visit ChaseMpiDLAInterface.
+  */
   T dot(std::size_t n, T* x, std::size_t incx, T* y, std::size_t incy) override {
       return t_dot(n, x, incx, y, incy);
   }
 
+  /*!
+   - For ChaseMpiDLAMultiGPU, `gemm_small` is implemented in ChaseMpiDLA.
+   - **Parallelism is SUPPORT within node if multi-threading is enabled**    
+   - For the meaning of this function, please visit ChaseMpiDLAInterface.
+  */
   void gemm_small(CBLAS_LAYOUT Layout, CBLAS_TRANSPOSE transa,
                          CBLAS_TRANSPOSE transb, std::size_t m,
                          std::size_t n, std::size_t k, T* alpha,
@@ -247,6 +321,11 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
                          std::size_t ldb, T* beta, T* c, std::size_t ldc) override 
   {}
 
+  /*!
+   - For ChaseMpiDLAMultiGPU, `gemm_large` is implemented in ChaseMpiDLA.
+   - **Parallelism is SUPPORT within node if multi-threading is enabled**    
+   - For the meaning of this function, please visit ChaseMpiDLAInterface.
+  */
   void gemm_large(CBLAS_LAYOUT Layout, CBLAS_TRANSPOSE transa,
                          CBLAS_TRANSPOSE transb, std::size_t m,
                          std::size_t n, std::size_t k, T* alpha,
@@ -254,6 +333,11 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
                          std::size_t ldb, T* beta, T* c, std::size_t ldc) override 
   {}
 
+  /*!
+   - For ChaseMpiDLAMultiGPU, `stemr` with scalar being real and double precision, is implemented using `LAPACK` routine `DSTEMR`.
+   - **Parallelism is SUPPORT within node if multi-threading is enabled**    
+   - For the meaning of this function, please visit ChaseMpiDLAInterface.
+  */
   std::size_t stemr(int matrix_layout, char jobz, char range, std::size_t n,
                     double* d, double* e, double vl, double vu, std::size_t il, std::size_t iu,
                     int* m, double* w, double* z, std::size_t ldz, std::size_t nzc,
@@ -261,6 +345,11 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
       return t_stemr<double>(matrix_layout, jobz, range, n, d, e, vl, vu, il, iu, m, w, z, ldz, nzc, isuppz, tryrac);
   }
 
+  /*!
+   - For ChaseMpiDLAMultiGPU, `stemr` with scalar being real and single precision, is implemented using `LAPACK` routine `SSTEMR`.
+   - **Parallelism is SUPPORT within node if multi-threading is enabled**    
+   - For the meaning of this function, please visit ChaseMpiDLAInterface.
+  */
   std::size_t stemr(int matrix_layout, char jobz, char range, std::size_t n,
                     float* d, float* e, float vl, float vu, std::size_t il, std::size_t iu,
                     int* m, float* w, float* z, std::size_t ldz, std::size_t nzc,
@@ -268,6 +357,15 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
       return t_stemr<float>(matrix_layout, jobz, range, n, d, e, vl, vu, il, iu, m, w, z, ldz, nzc, isuppz, tryrac);
   }
 
+  /*!
+    - For ChaseMpiDLAMultiGPU, `RR_kernel` is implemented by calling the `RR_kernel` function of class mgpu_cudaDLA, whose implementation is based on `cuBLAS` routine `cublasXgemm` and `LAPACK` routine `(SY)HEEVD`.
+        - The 1st operation `A <- W^T * V` is implemented by `cublasXgemm` from `cuBLAS`.
+        - The 2nd operation which computes the eigenpairs of `A`, is implemented by `(SY)HEEVD` from `LAPACK`.
+        - The 3rd operation which computes `W<-V*A` is implemented by `cublasXgemm` from `cuBLAS`.
+    - **for (SY)HHEVD, parallelism is SUPPORT within node if multi-threading is actived**
+    - **for cublasXgemm, parallelism is SUPPORT within one GPU card**
+    - For the meaning of this function, please visit ChaseMpiDLAInterface.
+  */  
   void RR_kernel(std::size_t N, std::size_t block, T *approxV, std::size_t locked, T *workspace, T One, T Zero, Base<T> *ritzv) override {
       mgpuDLA->RR_kernel(N, block, approxV, locked, workspace, One, Zero, ritzv);
   }

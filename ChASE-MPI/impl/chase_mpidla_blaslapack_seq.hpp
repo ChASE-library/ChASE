@@ -20,9 +20,15 @@ namespace mpi {
 // We duplicate the two vector sets from ChASE_Blas and copy
 // into the duplicates before each GEMM call.
 
+//! A derived class of ChaseMpiDLAInterface which implements ChASE targeting shared-memory architectures with only CPUs available. 
 template <class T>
 class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T> {
  public:
+  //! A constructor of ChaseMpiDLABlaslapackSeq.
+  /*! @param matrices: it is an object of ChaseMpiMatrices, which allocates the required buffer.
+      @param n: size of matrix defining the eigenproblem.
+      @param maxBlock: maximum column number of matrix `V`, which equals to `nev+nex`.
+  */
   explicit ChaseMpiDLABlaslapackSeq(ChaseMpiMatrices<T>& matrices, std::size_t n,
                                std::size_t maxBlock)
       : N_(n),
@@ -35,18 +41,30 @@ class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T> {
 
   ~ChaseMpiDLABlaslapackSeq() {}
 
+  /*! - For ChaseMpiDLABlaslapackSeq, the core of `preApplication` is implemented with `std::memcpy`, which copies `block` vectors from `V` to `V1`.
+      - **Parallelism is NOT SUPPORT**
+      - For the meaning of this function, please visit ChaseMpiDLAInterface.
+  */
   void preApplication(T* V, std::size_t const locked,
                       std::size_t const block) override {
     locked_ = locked;
     std::memcpy(get_V1(), V + locked * N_, N_ * block * sizeof(T));
   }
 
+  /*! - For ChaseMpiDLABlaslapackSeq, the core of `preApplication` is implemented with `std::memcpy`, which copies `block` vectors from `V2` to `V2_`.
+      - **Parallelism is NOT SUPPORT**
+      - For the meaning of this function, please visit ChaseMpiDLAInterface.
+  */
   void preApplication(T* V1, T* V2, std::size_t const locked,
                       std::size_t const block) override {
     std::memcpy(get_V2(), V2 + locked * N_, N_ * block * sizeof(T));
     this->preApplication(V1, locked, block);
   }
 
+  /*! - For ChaseMpiDLABlaslapackSeq, `apply` is implemented with `GEMM` provided by `BLAS`.
+      - **Parallelism is SUPPORT within node if multi-threading is actived**
+      - For the meaning of this function, please visit ChaseMpiDLAInterface.
+  */
   void apply(T const alpha, T const beta, const std::size_t offset,
              const std::size_t block) override {
     t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans,  //
@@ -58,18 +76,29 @@ class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T> {
            get_V2() + offset * N_, N_);
     std::swap(V1_, V2_);
   }
-
+  /*! - For ChaseMpiDLABlaslapackSeq, the core of `postApplication` is implemented with `std::memcpy`, which copies `block` vectors from `V1` to `V`.
+      - **Parallelism is NOT SUPPORT**
+      - For the meaning of this function, please visit ChaseMpiDLAInterface.
+  */
   bool postApplication(T* V, std::size_t const block) override {
     std::memcpy(V + locked_ * N_, get_V1(), N_ * block * sizeof(T));
     return false;
   }
 
+  /*! - For ChaseMpiDLABlaslapackSeq, `shiftMatrix` is implemented by a loop of length `N_`.
+      - **Parallelism is NOT SUPPORT**
+      - For the meaning of this function, please visit ChaseMpiDLAInterface.
+  */
   void shiftMatrix(T const c, bool isunshift = false) override {
     for (std::size_t i = 0; i < N_; ++i) {
       H_[i + i * N_] += c;
     }
   }
 
+  /*! - For ChaseMpiDLABlaslapackSeq, `applyVec` is implemented with `GEMM` provided by `BLAS`.
+      - **Parallelism is SUPPORT within node if multi-threading is actived**
+      - For the meaning of this function, please visit ChaseMpiDLAInterface.
+  */
   void applyVec(T* B, T* C) override {
     T const alpha = T(1.0);
     T const beta = T(0.0);
@@ -124,10 +153,20 @@ class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T> {
 
   void Start() override {}
 
+  /*!
+    - For ChaseMpiDLABlaslapackSeq, `lange` is implemented using `LAPACK` routine `xLANGE`.
+    - **Parallelism is SUPPORT within node if multi-threading is actived**
+    - For the meaning of this function, please visit ChaseMpiDLAInterface.
+  */
   Base<T> lange(char norm, std::size_t m, std::size_t n, T* A, std::size_t lda) override {
       return t_lange(norm, m, n, A, lda);
   }
 
+  /*!
+    - For ChaseMpiDLABlaslapackSeq, `gegqr` is implemented using `LAPACK` routine `xGEQRF` and `xUMGQR`.
+    - **Parallelism is SUPPORT within node if multi-threading is actived**    
+    - For the meaning of this function, please visit ChaseMpiDLAInterface.
+  */
   void gegqr(std::size_t N, std::size_t nevex, T * approxV, std::size_t LDA) override {
       auto tau = std::unique_ptr<T[]> {
           new T[ nevex ]
@@ -136,22 +175,47 @@ class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T> {
       t_gqr(LAPACK_COL_MAJOR, N, nevex, nevex, approxV, LDA, tau.get());
   }
 
+  /*!
+    - For ChaseMpiDLABlaslapackSeq, `axpy` is implemented using `BLAS` routine `xAXPY`.
+   - **Parallelism is SUPPORT within node if multi-threading is actived**    
+    - For the meaning of this function, please visit ChaseMpiDLAInterface.
+  */
   void axpy(std::size_t N, T * alpha, T * x, std::size_t incx, T *y, std::size_t incy) override {
       t_axpy(N, alpha, x, incx, y, incy);
   }
 
+  /*!
+    - For ChaseMpiDLABlaslapackSeq, `scal` is implemented using `BLAS` routine `xSCAL`.
+    - **Parallelism is SUPPORT within node if multi-threading is actived**   
+    - For the meaning of this function, please visit ChaseMpiDLAInterface.
+  */
   void scal(std::size_t N, T *a, T *x, std::size_t incx) override {
       t_scal(N, a, x, incx);
   }
 
+  /*!
+    - For ChaseMpiDLABlaslapackSeq, `nrm2` is implemented using `BLAS` routine `xNRM2`.
+    - **Parallelism is SUPPORT within node if multi-threading is actived**    
+    - For the meaning of this function, please visit ChaseMpiDLAInterface.
+  */
   Base<T> nrm2(std::size_t n, T *x, std::size_t incx) override {
       return t_nrm2(n, x, incx);
   }
 
+  /*!
+    - For ChaseMpiDLABlaslapackSeq, `dot` is implemented using `BLAS` routine `xDOT`.
+    - **Parallelism is SUPPORT within node if multi-threading is actived**       
+    - For the meaning of this function, please visit ChaseMpiDLAInterface.
+  */
   T dot(std::size_t n, T* x, std::size_t incx, T* y, std::size_t incy) override {
       return t_dot(n, x, incx, y, incy);
   }
 
+  /*!
+    - For ChaseMpiDLABlaslapackSeq, `gemm_small` is implemented using `BLAS` routine `xGEMM`.
+    - **Parallelism is SUPPORT within node if multi-threading is actived**    
+    - For the meaning of this function, please visit ChaseMpiDLAInterface.
+  */
   void gemm_small(CBLAS_LAYOUT Layout, CBLAS_TRANSPOSE transa,
                          CBLAS_TRANSPOSE transb, std::size_t m,
                          std::size_t n, std::size_t k, T* alpha,
@@ -161,6 +225,11 @@ class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T> {
       t_gemm(Layout, transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
   }
 
+  /*!
+    - For ChaseMpiDLABlaslapackSeq, `gemm_small` is implemented using `BLAS` routine `xGEMM`.
+    - **Parallelism is SUPPORT within node if multi-threading is actived**    
+    - For the meaning of this function, please visit ChaseMpiDLAInterface.
+  */
   void gemm_large(CBLAS_LAYOUT Layout, CBLAS_TRANSPOSE transa,
                          CBLAS_TRANSPOSE transb, std::size_t m,
                          std::size_t n, std::size_t k, T* alpha,
@@ -170,6 +239,11 @@ class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T> {
       t_gemm(Layout, transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
   }
 
+  /*!
+   - For ChaseMpiDLABlaslapackSeq, `stemr` with scalar being real and double precision, is implemented using `LAPACK` routine `DSTEMR`.
+   - **Parallelism is SUPPORT within node if multi-threading is actived**    
+   - For the meaning of this function, please visit ChaseMpiDLAInterface.
+  */
   std::size_t stemr(int matrix_layout, char jobz, char range, std::size_t n,
                     double* d, double* e, double vl, double vu, std::size_t il, std::size_t iu,
                     int* m, double* w, double* z, std::size_t ldz, std::size_t nzc,
@@ -177,6 +251,11 @@ class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T> {
       return t_stemr<double>(matrix_layout, jobz, range, n, d, e, vl, vu, il, iu, m, w, z, ldz, nzc, isuppz, tryrac);
   }
 
+  /*!
+   - For ChaseMpiDLABlaslapackSeq, `stemr` with scalar being real and single precision, is implemented using `LAPACK` routine `SSTEMR`.
+   - **Parallelism is SUPPORT within node if multi-threading is actived**    
+   - For the meaning of this function, please visit ChaseMpiDLAInterface.
+  */
   std::size_t stemr(int matrix_layout, char jobz, char range, std::size_t n,
                     float* d, float* e, float vl, float vu, std::size_t il, std::size_t iu,
                     int* m, float* w, float* z, std::size_t ldz, std::size_t nzc,
@@ -184,6 +263,14 @@ class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T> {
       return t_stemr<float>(matrix_layout, jobz, range, n, d, e, vl, vu, il, iu, m, w, z, ldz, nzc, isuppz, tryrac);
   }
 
+  /*!
+      - For ChaseMpiDLABlaslapackSeq, `RR_kernel` is implemented by `GEMM` routine provided by `BLAS` and `(SY)HEEVD` routine provided by `LAPACK`.
+        - The 1st operation `A <- W^T * V` is implemented by `GEMM` from `BLAS`.
+        - The 2nd operation which computes the eigenpairs of `A`, is implemented by `(SY)HEEVD` from `LAPACK`.
+        - The 3rd operation which computes `W<-V*A` is implemented by `GEMM` from `BLAS`.
+      - **Parallelism is SUPPORT within node if multi-threading is actived**    
+      - For the meaning of this function, please visit ChaseMpiDLAInterface.
+  */  
   void RR_kernel(std::size_t N, std::size_t block, T *approxV, std::size_t locked, T *workspace, T One, T Zero, Base<T> *ritzv) override {
       T *A = new T[block * block];
 

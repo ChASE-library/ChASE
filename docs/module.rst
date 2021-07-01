@@ -7,7 +7,7 @@ Overview
 
 The implementation of ChASE provides a stand-alone high-performance 
 parallel library based on our original design of the Chebyshev
-accelerated subspace iteration algorithm. the ChASE library promises the portability 
+accelerated subspace iteration algorithm. The ChASE library promises the portability 
 to heterogeneous architectures and the easy intergration ito existing codes. This goal is
 achieved by seperating the implementation of the ChASE algorithm from the required numerical
 kernels via an interface based on pure C++ abstract classes. Classes derived from this interface 
@@ -58,32 +58,31 @@ ChASE-MPI
 The namespace ``chase::mpi``, which is defined inside the namespace ``chase`` and in parallel with namespace ``chase::elemental``,
 provides the parallel implementation of ChASE based on ``MPI`` (and ``CUDA``) by re-implementing
 the numerical kernels as virtual functions within the abstraction targeting homogenous and hetergenous architectures (multi-GPUs).
-For the user documentation, we provides only the constructors of the related classes without
-the details of implementation.
+.. For the user documentation, we provides only the constructors of the related classes without
+.. the details of implementation.
 
 
-1. The class ``ChaseMpiMatrices`` defines the construction of matrices and vectors
-for both non-MPI mode and MPI mode which are used in ChASE.
+1. The class ``chase::mpi::ChaseMpiMatrices`` defines the allocation of buffers for matrices and vectors in ChASE library
+for both non-MPI mode and MPI mode d.
 
 .. toctree::
    :maxdepth: 2
 
    module/chasempimatrices
 
-2. The class ``ChaseMpiProperties`` defines the construction of MPI environment for ChASE, both for the block
-distribution and block-cyclic distribution.   
+2. The class ``chase::mpi::ChaseMpiProperties`` defines the construction of MPI environment and data distribution scheme (both **Block
+Distribution** and **Block-Cyclic Distribution**) for ChASE.   
 
 .. toctree::
    :maxdepth: 2
 
    module/chasempiproperties
 
-3. The class ``ChaseMpiHemmInterface`` defines the virtual functions required for the implementation
-of ``ChaseMpiHemm``.
 
-
-4. ``ChaseMpi`` defines the ChASE-MPI class. It is an templated classes with two types required: 
-an implementation of ``ChaseMpiHemmInterface`` and the scalar type to be used in the applications.
+3. ``chase::mpi::ChaseMpi`` is a derived class of ``chase::Chase``. This class gives an implementation of the virtual functions of `chase::Chase` class
+which defines the essential numerical kernels of ChASE algorithm. It is an templated class with two types required: 
+an implementation of ``chase::mpi::ChaseMpiDLAInterface`` and the scalar type to be used in the applications. Different objects of ``chase::mpi::ChaseMpi``
+can be created targeting different computing platforms by selecting various derived classes of ``chase::mpi::ChaseMpiDLAInterface``.
 
 
 .. toctree::
@@ -91,37 +90,13 @@ an implementation of ``ChaseMpiHemmInterface`` and the scalar type to be used in
 
    module/chasempi
 
-5. ``ChaseMpiHemmBlasSeq`` defines the implementation of ``ChaseMpiHemmInterface``
-for single node system without MPI.   
+4. ``chase::mpi::ChaseMpiDLA``, in which **DLA** is short for **Dense Linear Algebra**, provides multi-implementations
+of dense matrix operations on different computing architectures that are required by ChASE-MPI, e.g., Hermitian Matrix-Matrix Multiplication (HEMM), QR factorization, etc. These 's NO single class named ``ChaseMpiDLA`` in ChASE, we provide an interface class ``chase::mpi::ChaseMpiDLAInterface`` with virtual functions for these **DLA** operations, and multiple classes with different implementations derived from this interface class.
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
 
-   module/chasempihemmseq
-
-6. ``ChaseMpiHemmBlas`` defines the implementation of ``ChaseMpiHemmInterface``
-for homogeneous distributed-memory systems.  
-
-.. toctree::
-   :maxdepth: 2
-
-   module/chasempihemmblas
-
-7. ``ChaseMpiHemmMultiGPU`` defines the implementation of ``ChaseMpiHemmInterface``
-for heterogeneous distributed-memory systems with multi-GPUs per node. 
-
-.. toctree::
-   :maxdepth: 2
-
-   module/chasempihemmmultigpu
-
-.. note::
-    For the usage of these classes, please refer to :ref:`hello-world-chase`
-    in the User Documentation. 
-
-.. note::
-    For more details of the implementation of ChASE-MPI, please refer to :ref:`para-chase-mpi`
-    in the Developer Documentation.
+   module/chasempidla
 
 
 ChASE-Elemental
@@ -137,6 +112,3 @@ class is provided here.
 
    module/elemental
 
-.. note::
-    For more details relative to the implementation of ChASE-MPI, please refer to :ref:`para-chase-elemental`
-    in the Developer Documentation. 
