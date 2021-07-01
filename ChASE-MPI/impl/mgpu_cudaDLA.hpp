@@ -756,6 +756,8 @@ namespace chase {
         			    assert(CUSOLVER_STATUS_SUCCESS == cusolver_status_);
         			    cudaSetDevice(shmrank_*num_devices_per_rank);
 				    cuda_exec(cudaMemcpyAsync(approxV, d_V_, sizeof(T)*N*nevex, cudaMemcpyDeviceToHost, stream2_[0]));
+				    cudaStreamSynchronize(stream2_[0]);
+
 				}
 
  /*!
@@ -865,6 +867,8 @@ namespace chase {
  				    cudaSetDevice(shmrank_*num_devices_per_rank);
   				    cuda_exec(cudaMemcpyAsync(approxV + locked * N, d_V_, sizeof(T)* N * block, cudaMemcpyDeviceToHost, stream_[0]));
       				    cuda_exec(cudaMemcpyAsync(workspace + locked * N, d_W_, sizeof(T)* N * block, cudaMemcpyDeviceToHost, stream_[0]));
+				    cudaStreamSynchronize(stream_[0]);
+
 				    //related to cusolver HEEVD
                                     cudaDeviceSynchronize();
       				    if (d_A_) cudaFree(d_A_);
