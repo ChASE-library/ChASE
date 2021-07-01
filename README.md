@@ -1,67 +1,84 @@
-# ChASE Version 0.9rc
-=============================
+<img src="docs/images/ChASE_Logo_RGB.png" alt="Matrix Generation Pattern" style="zoom:60%;" />
 
-The Chebyshev Accelerated Subspace iteration Eigensolver.
+# ChASE: a Chebyshev Accelerated Subspace Eigensolver for Dense Eigenproblems
 
-We provide two versions of ChASE:
+The **Ch**ebyshev **A**ccelerated **S**ubspace **E**igensolver (ChASE) is a modern and scalable library based on subspace iteration with polynomial acceleration to solve dense Hermitian (Symmetric) algebraic eigenvalue problems, especially solving dense Hermitian eigenproblems arragend in a sequence. Novel to ChASE is the computation of the spectral estimates that enter in the filter and an optimization of the polynomial degree that further reduces the necessary floating-point operations. 
+
+ChASE is written in C++ using the modern software engineering concepts that favor a simple integration in application codes and a straightforward portability over heterogeneous platforms. When solving sequences of Hermitian eigenproblems for a portion of their extremal spectrum, ChASE greatly benefits from the sequence’s spectral properties and outperforms direct solvers in many scenarios. The library ships with two distinct parallelization schemes, supports execution over distributed GPUs, and is easily extensible to other parallel computing architectures.
+
+## Use Case and Features
+
+- **Real and Complex:** ChASE is templated for real and complex numbers. So it can be used to solve *real symmetric* eigenproblems as well as *complex Hermitian* ones.
+- **Eigespectrum:** ChASE algorithm is designed to solve for the *extremal portion* of the eigenspectrum of matrix `A`. The library is particularly efficient when no more than `20%` of the extremal portion of the eigenspectrum is sought after. For larger fractions the subspace iteration algorithm may struggle to be competitive. Converge could become an issue for fractions close to or larger than `50%`.
+- **Type of Problem:** ChASE can currently handle only standard eigenvalue problems. 
+- **Sequences:** ChASE is particularly efficient when dealing with *sequences of eigenvalue problems*, where the eigenvectors solving for one problem can be use as input to accelerate the solution of the next one.
+- **Vectors input:** Since it is based on subspace iteration, ChASE can receive as input a matrix of vector equal to the number of desired eigenvalues. ChASE can experience substantial speed-ups when this input matrix contains some information about the sought after eigenvectors.
+- **Degree optimization:** For a fixed accuracy level, ChASE can optimize the degree of the Chebyshev polynomial filter so as to minimize the number of FLOPs necessary to reach convergence.
+- **Precision:** ChASE is also templated to work in *Single Precision* (SP) or *Double Precision* (DP).
+
+## Versions of the library
+
+The library comes in two main versions: 
+
 1. **ChASE-MPI**
 
-   Using an custom MPI-based routine for the `HEMM`.
+   ChASE-MPI is the default version of the library and can be installed with the minimum amount of dependencies (BLAS, LAPACK, and MPI). 
+
+   ChASE-MPI supports different configurations depending on the available hardware resources.
+
+   > - **Shared memory build:** This is the simplest configuration and should be exclusively selected when ChASE is used on only one computing node or on a single CPU. The simplicity of this configuration resides in the way the Matrix-Matrix kernel is implemented with respect to the full MPI build.
+   > - **MPI+Threads build:** On multi-core homogeneous CPU clusters ChASE is best used in its pure MPI build. In this configuration, ChASE is typically used with one MPI rank per computing node and as many threads as number of available cores per node.
+   > - **GPU build:** ChASE-MPI can be configured to take advantage of graphics card on heterogeneous computing clusters. Currently we support the use of one or more GPU cards per computing node in a number of flexible configurations: for instance on computing nodes with 4 cards per node one can choose to compile and execute the program with one, two or four GPU card per MPI rank.
+
+   ChASE support two types of data distribution of matrix `A` across 2D MPI grid:
+
+   > - **Block Distribution**:  each MPI rank of 2D grid is assigned a block of dense matrix **A**.
+   > - **Block-Cyclic Distribution**: This distribution scheme was introduced for the implementation of dense matrix computations on distributed-memory machines, to improve the load balance of matrix computation if the amount of work differs for different entries of a matrix. For more details about **Block-Cyclic Distribution**, please refer to [Netlib](https://www.netlib.org/scalapack/slug/node75.html) website.
 
 2. **ChASE-Elemental**
 
-   Using the Elemental distributed-memory linear algebra framework.
-   http://libelemental.org/
+   ChASE-Elemental requires the additional installation of the [Elemental](https://github.com/elemental/Elemental) library.
 
-## Building ChASE
---------------
+## Documentation
 
-### ChASE build with the CMake system.
+The documentation of ChASE is available [online](https://chase-library.github.io/ChASE/index.html).
 
-The following should generate a driver that demonstrates how to use ChASE:
+## Developers
 
-    cd ChASE/
-    mkdir build
-    cd build/
-    cmake ..
-    make
+### Main developers
 
-### Build with Examples 
+- Edoardo Di Napoli – Algorithm design and development
+- Xinzhe Wu – Algorithm development, advanced parallel implementation, developer documentation
+- Davor Davidovic – Advanced parallel GPU implementation and optimization
 
-For a quick test and usage of the library, we provide several ready-to-use examples. In order to build these examples with ChASE the sequence of building commands is slightly modified as below:
+### Current contributors
 
-    cd ChASE/
-    mkdir build
-    cd build/    
-    cmake .. -DBUILD_WITH_EXAMPLES=ON
-    make
+- Xiao Zhang – Integration of ChASE into Jena BSE code
+- Miriam Hinzen, Daniel Wortmann – Integration of ChASE into FLEUR code
+- Sebastian Achilles – Library benchmarking on parallel platforms, documentation
 
-In order to quick test of ChASE using the previous simple driver, please use follow example instead:
+### Past contributors
 
-```bash
-./examples/2_input_output/2_input_output --path_in=${MATRIX_BINARY}
-```
+- Jan Winkelmann – DoS algorithm development and advanced `C++` implementation
+- Paul Springer – Advanced GPU implementation
+- Marija Kranjcevic – OpenMP `C++` implementation
+- Josip Zubrinic – Early GPU algorithm development and implementation
+- Jens Rene Suckert – Lanczos algorithm and GPU implementation
+- Mario Berljafa – Early `C` and `MPI` implementation using the Elemental library
 
-For the test of multi-GPU support ChASE, please use:
 
-```bash
-./examples/2_input_output/2_input_output_mgpu --path_in=${MATRIX_BINARY}
-```
+## Contribution
 
-### Build with support to multithreaded BLIS library
+This repository mirrors the principal Gitlab repository. If you want to contribute as developer to this project please contact e.di.napoli@fz-juelich.de.
 
-If you want to build the ChASE against the multithreaded BLIS library one have to provide the full path to multithreaded BLIS library, such as:
+## How to Cite the Code
 
-    cmake .. -DBLAS_LIBRARIES="<path-to-instal-dir>/lib/libblas-mt.so"
+The main reference of ChASE is [1] while [2] provides some early results on scalability and usage on sequences of eigenproblems generated by Materials Science applications.
 
-### Build with documentation of ChASE
+> - [1] J. Winkelmann, P. Springer, and E. Di Napoli. *ChASE: a Chebyshev Accelerated Subspace iteration Eigensolver for sequences of Hermitian eigenvalue problems.* ACM Transaction on Mathematical Software, **45** Num.2, Art.21, (2019). [DOI:10.1145/3313828](https://doi.org/10.1145/3313828) , [[arXiv:1805.10121](https://arxiv.org/abs/1805.10121/) ]
+> - [2] M. Berljafa, D. Wortmann, and E. Di Napoli. *An Optimized and Scalable Eigensolver for Sequences of Eigenvalue Problems.* Concurrency & Computation: Practice and Experience **27** (2015), pp. 905-922. [DOI:10.1002/cpe.3394](https://onlinelibrary.wiley.com/doi/pdf/10.1002/cpe.3394) , [[arXiv:1404.4161](https://arxiv.org/abs/1404.4161) ].
 
-If you want to build with its documentation, the `CMake` variable `BUILD_WITH_DOCS` should be explicitly set `ON`.
-This variable is set to be `OFF` in default.
+## Copyright and License
 
-e.g.,
-
-```bash
-cmake .. ${OTHER CMAKE FLAGS} -DBUILD_WITH_DOCS=ON
-```
+[3-Clause BSD License (BSD License 2.0)](https://github.com/ChASE-library/ChASE/blob/master/LICENSE)
 
