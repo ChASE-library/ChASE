@@ -25,10 +25,10 @@ The library comes in two main versions:
    ChASE-MPI is the default version of the library and can be installed with the minimum amount of dependencies (BLAS, LAPACK, and MPI).  It supports different configurations depending on the available hardware resources.
 
    - **Shared memory build:** This is the simplest configuration and should be exclusively selected when ChASE is used on only one computing node or on a single CPU. 
-- **MPI+Threads build:** On multi-core homogeneous CPU clusters, ChASE is best used in its pure MPI build. In this configuration, ChASE is typically used with one MPI rank per NUMA domain and as many threads as number of available cores per NUMA domain.
+   - **MPI+Threads build:** On multi-core homogeneous CPU clusters, ChASE is best used in its pure MPI build. In this configuration, ChASE is typically used with one MPI rank per NUMA domain and as many threads as number of available cores per NUMA domain.
    - **GPU build:** ChASE-MPI can be configured to take advantage of GPUs on heterogeneous computing clusters. Currently we support the use of one or more GPU cards per computing node in a number of flexible configurations: for instance on computing nodes with 4 cards per node one can choose to compile and execute the program with one, two or four GPU card per MPI rank.
    
-   ChASE support two types of data distribution of matrix `A` across 2D MPI grid:
+   ChASE-MPI support two types of data distribution of matrix `A` across 2D MPI grid:
 
    - **Block Distribution**:  each MPI rank of 2D grid is assigned a block of dense matrix **A**.
 
