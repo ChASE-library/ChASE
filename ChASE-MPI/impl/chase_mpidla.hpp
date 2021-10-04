@@ -285,19 +285,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
     - For the meaning of this function, please visit ChaseMpiDLAInterface.    
   */
   void shiftMatrix(T c, bool isunshift = false) override {
-	
-    for(std::size_t j = 0; j < nblocks_; j++){
-        for(std::size_t i = 0; i < mblocks_; i++){
-            for(std::size_t q = 0; q < c_lens_[j]; q++){
-                for(std::size_t p = 0; p < r_lens_[i]; p++){
-		    if(q + c_offs_[j] == p + r_offs_[i]){
-		        H_[(q + c_offs_l_[j]) * m_ + p + r_offs_l_[i]] += c;
-		    }
-		}
-            }
-        }
-    }
-    dla_->shiftMatrix(c);
+    dla_->shiftMatrix(c, isunshift);
   }
 
   /*!

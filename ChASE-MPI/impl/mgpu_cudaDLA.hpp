@@ -74,6 +74,13 @@ namespace chase {
         				nev_ = matrix_properties->GetNev();	
         				nex_ = matrix_properties->GetNex();	
 
+    					matrix_properties->get_offs_lens(r_offs_, r_lens_, r_offs_l_, c_offs_, c_lens_, c_offs_l_);
+    					mb_ = matrix_properties->get_mb();
+    					nb_ = matrix_properties->get_nb();
+
+    					mblocks_ = matrix_properties->get_mblocks();
+    					nblocks_ = matrix_properties->get_nblocks();
+
 					MPI_Comm_split_type(MPI_COMM_WORLD, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, &shmcomm);
 					MPI_Comm_size(shmcomm, &shmsize_);
 					MPI_Comm_rank(shmcomm, &shmrank_);
@@ -281,19 +288,17 @@ namespace chase {
 					@param orig_H: original matrix to be distributed on Host
 					@param ld_origH: leading dimension of `orig_H`.
 				*/
-				void distribute_H(T* orig_H, std::size_t ld_origH) {
 
-					/* Tile dimension */
+				void distribute_H(T* orig_H, std::size_t ld_origH ) {
+
 					int tile_x, tile_y;
 
-					/* Start row/col position in the given matrix */
 					int start_row, start_col;
 
 					//auto start = high_resolution_clock::now();
 
 					/* If H is not distributed among devices (i.e. the first call to the distribute_H), distribute it */
 					if( !copied_ ) {
-
 						/* Pass through the rows of the tiled matrix H */
 						for (int dev_x = 0; dev_x < ntile_m_; dev_x++) {
 
@@ -321,39 +326,101 @@ namespace chase {
 								if(cublasError != CUBLAS_STATUS_SUCCESS) {
 									std::cout << "Error in cublasSetMatrixAsync H" << std::endl;
 								}
+								//cuda_exec(cudaSetDevice(shmrank_*num_devices_per_rank + dev_id));
+								//chase_zshift_mpi_matrix(H_[dev_id], start_row, start_col, tile_x, tile_y, ldH, std::real(c), stream_[dev_id]);
+
 							}
 						}
 						/* Next time the function is called, no need to distribute it again */
 						copied_ = true;
 					}
 	
-					/* If H already distributed, then don't have to do nothing. */
-					/// TODO: Currently, the shift of H is done on CPU and there is no "smart" way to update it on devices. Therefore, for now, the H is redistributed
-					else {
-						for (int dev_x = 0; dev_x < ntile_m_; dev_x++) {
-							tile_x = get_tile_size_row(dev_x);
-							start_row = dev_x * dim_tile_m_;
-
-							for(int dev_y = 0; dev_y < ntile_n_; dev_y++) {
-								tile_y = get_tile_size_col(dev_y);
-								start_col = dev_y * dim_tile_n_;
-
-								int dev_id = dev_x * ntile_n_ + dev_y;
-								cuda_exec(cudaSetDevice(shmrank_*num_devices_per_rank + dev_id));
-								cublasError = cublasSetMatrixAsync(tile_x, tile_y, sizeof(T), &orig_H[start_col * ld_origH + start_row], ld_origH, H_[dev_id], ldH, stream_[dev_id]);
-								if(cublasError != CUBLAS_STATUS_SUCCESS) {
-									std::cout << "Error in cublasSetMatrixAsync H" << std::endl;
-								}
-							}
-						}
-
-					}
-
 					//this->synchronizeAll();
 					//auto stop = high_resolution_clock::now();
 					//time_copy_H += stop -start;
 				}
 
+
+                                void  shiftMatrix(T c, bool isunshift = false) {
+                                        int tile_x, tile_y;
+                                        int count_x = 0, count_y = 0;
+
+                                        int start_row, start_col;
+
+                                         for (int dev_x = 0; dev_x < ntile_m_; dev_x++){
+                                                tile_x = get_tile_size_row(dev_x);
+                                                start_row = dev_x * dim_tile_m_;
+
+                                                for(int dev_y = 0; dev_y < ntile_n_; dev_y++) {
+                                                        tile_y = get_tile_size_col(dev_y);
+                                                        start_col = dev_y * dim_tile_n_;
+                                                        int dev_id = dev_x * ntile_n_ + dev_y;
+                                                        std::vector<int> off_m, off_n;
+
+                                                        for(std::size_t j = 0; j < nblocks_; j++){
+                                                                for(std::size_t i = 0; i < mblocks_; i++){
+                                                                        for(std::size_t q = 0; q < c_lens_[j]; q++){
+                                                                                for(std::size_t p = 0; p < r_lens_[i]; p++){
+
+                                                                                        if(q + c_offs_l_[j] >= start_col && q + c_offs_l_[j] < start_col + tile_y && p + r_offs_l_[i] >= start_row && p + r_offs_l_[i] < start_row + tile_x){
+                                                                                                int s, t;
+                                                                                                //t, s, global index
+                                                                                                t = q + c_offs_[j];
+                                                                                                s = p + r_offs_[i];
+
+                                                                                                if(t == s){
+                                                                                                        off_m.push_back(p + r_offs_l_[i] - start_row);
+                                                                                                        off_n.push_back(q + c_offs_l_[j] - start_col);
+                                                                                                }
+                                                                                        }
+
+                                                                                }
+                                                                        }
+                                                                }
+                                                        }
+
+
+
+                                                        int *d_off_m, *d_off_n;
+                                                        int off_size = off_m.size();
+
+                                                        cuda_exec(cudaSetDevice(shmrank_*num_devices_per_rank + dev_id));
+                                                        cudaMalloc(&d_off_m, off_size * sizeof(int));
+                                                        cudaMalloc(&d_off_n, off_size * sizeof(int));
+                                                        cudaMemcpy(d_off_m, off_m.data(), off_size* sizeof(int), cudaMemcpyHostToDevice);
+                                                        cudaMemcpy(d_off_n, off_n.data(), off_size* sizeof(int), cudaMemcpyHostToDevice);
+                                                        cuda_exec(cudaSetDevice(shmrank_*num_devices_per_rank + dev_id));
+                                                        chase_shift_mgpu_matrix(H_[dev_id], d_off_m, d_off_n, off_size, ldH, std::real(c), stream_[dev_id]);
+
+
+                                                        cudaFree(d_off_m);
+                                                        cudaFree(d_off_n);
+
+                                                }
+                                         }
+                                }
+
+/*
+				void shiftMatrix(T c, bool isunshift = false){
+			                int tile_x, tile_y;
+				    	int start_row, start_col;
+                                        for (int dev_x = 0; dev_x < ntile_m_; dev_x++) {
+                                        	tile_x = get_tile_size_row(dev_x);
+                                                start_row = dev_x * dim_tile_m_;
+
+                                                for(int dev_y = 0; dev_y < ntile_n_; dev_y++) {
+                                                	tile_y = get_tile_size_col(dev_y);
+                                                        start_col = dev_y * dim_tile_n_;
+
+                                                        int dev_id = dev_x * ntile_n_ + dev_y;
+                                                        cuda_exec(cudaSetDevice(shmrank_*num_devices_per_rank + dev_id));
+                                                        chase_zshift_mpi_matrix(H_[dev_id], start_row, start_col, tile_x, tile_y, ldH, std::real(c), stream_[dev_id]);
+
+                                                }
+                                         }
+
+				}
+*/
 				/* Divide given matrix buf_init into panels and distributed among GPUs */
 				//! This member function divides given matrix `buf_init` into panels and distributed among GPUs
 				/*!
@@ -966,6 +1033,18 @@ namespace chase {
 				T *d_return_ = NULL;
 				T *d_work_ = NULL;
         			int lwork_ = 0;
+
+			  	std::size_t *r_offs_;
+  			        std::size_t *r_lens_;
+  				std::size_t *r_offs_l_;
+  				std::size_t *c_offs_;
+  				std::size_t *c_lens_;
+  				std::size_t *c_offs_l_;
+  				std::size_t nb_;
+  				std::size_t mb_;
+  				std::size_t nblocks_;
+  				std::size_t mblocks_;
+
 
 				/// Return the number of rows of the tile with row-index 'tile_position'
 				int get_tile_size_row (int tile_position) {
