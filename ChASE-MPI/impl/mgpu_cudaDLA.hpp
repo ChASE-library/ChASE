@@ -181,6 +181,57 @@ namespace chase {
 						}
 					}
 
+	
+					//for shifting matrix on gpus
+					int start_row, start_col;
+ 					d_off_m_ = (int**) malloc(num_devices_per_rank * sizeof(int*));
+                                        d_off_n_ = (int**) malloc(num_devices_per_rank * sizeof(int*));
+
+                                        for (int dev_x = 0; dev_x < ntile_m_; dev_x++){
+                                               tile_x = get_tile_size_row(dev_x);
+                                               start_row = dev_x * dim_tile_m_;
+
+                                               for(int dev_y = 0; dev_y < ntile_n_; dev_y++) {
+                                                       tile_y = get_tile_size_col(dev_y);
+                                                       start_col = dev_y * dim_tile_n_;
+                                                       int dev_id = dev_x * ntile_n_ + dev_y;
+                                                       std::vector<int> off_m, off_n;
+                                                       
+						       for(std::size_t j = 0; j < nblocks_; j++){
+                                                               for(std::size_t i = 0; i < mblocks_; i++){
+                                                                       for(std::size_t q = 0; q < c_lens_[j]; q++){
+                                                                               for(std::size_t p = 0; p < r_lens_[i]; p++){
+
+                                                                                       if(q + c_offs_l_[j] >= start_col && q + c_offs_l_[j] < start_col + tile_y && p + r_offs_l_[i] >= start_row && p + r_offs_l_[i] < start_row + tile_x){
+                                                                                               int s, t;
+                                                                                               //t, s, global index
+                                                                                               t = q + c_offs_[j];
+                                                                                               s = p + r_offs_[i];
+
+                                                                                               if(t == s){
+                                                                                                       off_m.push_back(p + r_offs_l_[i] - start_row);
+                                                                                                       off_n.push_back(q + c_offs_l_[j] - start_col);
+                                                                                               }
+                                                                                       }
+
+                                                                               }
+                                                                       }
+                                                               }
+                                                       }
+
+						       int off_size = off_m.size();
+						       diagonal_offs_.push_back(off_size);
+						       cuda_exec(cudaSetDevice(shmrank_*num_devices_per_rank + dev_id));
+                                                       cudaMalloc(&d_off_m_[dev_id], off_size * sizeof(int));
+                                                       cudaMalloc(&d_off_n_[dev_id], off_size * sizeof(int));
+                                                       cudaMemcpy(d_off_m_[dev_id], off_m.data(), off_size* sizeof(int), cudaMemcpyHostToDevice);
+                                                       cudaMemcpy(d_off_n_[dev_id], off_n.data(), off_size* sizeof(int), cudaMemcpyHostToDevice);
+
+						}
+					}
+
+
+					//
 					/* Keep info wether the matrix H_ is distributed among devices or not. In the initialization phase, it is not distributed */
 					copied_ = false;
 					next_ = NextOp::cAb;
@@ -248,6 +299,8 @@ namespace chase {
 						cudaFree(WRKSPACE_[dev]);
 				   	        if (cusolverH_[dev]) cusolverDnDestroy(cusolverH_[dev]);
 
+						cudaFree(d_off_m_[dev]);
+						cudaFree(d_off_n_[dev]);
 					}
 					free(B_);
 					free(IMT_);
@@ -355,72 +408,18 @@ namespace chase {
                                                         tile_y = get_tile_size_col(dev_y);
                                                         start_col = dev_y * dim_tile_n_;
                                                         int dev_id = dev_x * ntile_n_ + dev_y;
-                                                        std::vector<int> off_m, off_n;
-
-                                                        for(std::size_t j = 0; j < nblocks_; j++){
-                                                                for(std::size_t i = 0; i < mblocks_; i++){
-                                                                        for(std::size_t q = 0; q < c_lens_[j]; q++){
-                                                                                for(std::size_t p = 0; p < r_lens_[i]; p++){
-
-                                                                                        if(q + c_offs_l_[j] >= start_col && q + c_offs_l_[j] < start_col + tile_y && p + r_offs_l_[i] >= start_row && p + r_offs_l_[i] < start_row + tile_x){
-                                                                                                int s, t;
-                                                                                                //t, s, global index
-                                                                                                t = q + c_offs_[j];
-                                                                                                s = p + r_offs_[i];
-
-                                                                                                if(t == s){
-                                                                                                        off_m.push_back(p + r_offs_l_[i] - start_row);
-                                                                                                        off_n.push_back(q + c_offs_l_[j] - start_col);
-                                                                                                }
-                                                                                        }
-
-                                                                                }
-                                                                        }
-                                                                }
-                                                        }
 
 
+   							int off_size = diagonal_offs_[dev_id];
 
-                                                        int *d_off_m, *d_off_n;
-                                                        int off_size = off_m.size();
 
                                                         cuda_exec(cudaSetDevice(shmrank_*num_devices_per_rank + dev_id));
-                                                        cudaMalloc(&d_off_m, off_size * sizeof(int));
-                                                        cudaMalloc(&d_off_n, off_size * sizeof(int));
-                                                        cudaMemcpy(d_off_m, off_m.data(), off_size* sizeof(int), cudaMemcpyHostToDevice);
-                                                        cudaMemcpy(d_off_n, off_n.data(), off_size* sizeof(int), cudaMemcpyHostToDevice);
-                                                        cuda_exec(cudaSetDevice(shmrank_*num_devices_per_rank + dev_id));
-                                                        chase_shift_mgpu_matrix(H_[dev_id], d_off_m, d_off_n, off_size, ldH, std::real(c), stream_[dev_id]);
-
-
-                                                        cudaFree(d_off_m);
-                                                        cudaFree(d_off_n);
+                                                        chase_shift_mgpu_matrix(H_[dev_id], d_off_m_[dev_id], d_off_n_[dev_id], off_size, ldH, std::real(c), stream_[dev_id]);
 
                                                 }
                                          }
                                 }
 
-/*
-				void shiftMatrix(T c, bool isunshift = false){
-			                int tile_x, tile_y;
-				    	int start_row, start_col;
-                                        for (int dev_x = 0; dev_x < ntile_m_; dev_x++) {
-                                        	tile_x = get_tile_size_row(dev_x);
-                                                start_row = dev_x * dim_tile_m_;
-
-                                                for(int dev_y = 0; dev_y < ntile_n_; dev_y++) {
-                                                	tile_y = get_tile_size_col(dev_y);
-                                                        start_col = dev_y * dim_tile_n_;
-
-                                                        int dev_id = dev_x * ntile_n_ + dev_y;
-                                                        cuda_exec(cudaSetDevice(shmrank_*num_devices_per_rank + dev_id));
-                                                        chase_zshift_mpi_matrix(H_[dev_id], start_row, start_col, tile_x, tile_y, ldH, std::real(c), stream_[dev_id]);
-
-                                                }
-                                         }
-
-				}
-*/
 				/* Divide given matrix buf_init into panels and distributed among GPUs */
 				//! This member function divides given matrix `buf_init` into panels and distributed among GPUs
 				/*!
@@ -1045,7 +1044,11 @@ namespace chase {
   				std::size_t nblocks_;
   				std::size_t mblocks_;
 
-
+				//for shifting matrix on gpus
+				int **d_off_m_ = nullptr;
+				int **d_off_n_ = nullptr;
+				std::vector<int> diagonal_offs_;
+				
 				/// Return the number of rows of the tile with row-index 'tile_position'
 				int get_tile_size_row (int tile_position) {
 					if (tile_position + 1 == ntile_m_) {
