@@ -18,15 +18,46 @@ __global__ void zshift_matrix(cuDoubleComplex* A, int n, double shift) {
   if (idx < n) A[(idx)*n + idx].x += shift;
 }
 
-__global__ void zshift_mpi_matrix(cuDoubleComplex* A, std::size_t* off,
-                                  std::size_t n, std::size_t m, double shift) {
+__global__ void sshift_mgpu_matrix(float* A, int* off_m, int* off_n,
+                                  int offsize, int ldH, float shift) {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
-  int j = blockIdx.y * blockDim.y + threadIdx.y;
-
-  if (off[0] + j == (i + off[1]) && i < n && j < m) {
-    A[i * m + j].x += shift;
+  int ind;
+  if(i < offsize){
+        ind = off_n[i] * ldH + off_m[i];
+        A[ind] += shift;
   }
 }
+
+__global__ void dshift_mgpu_matrix(double* A, int* off_m, int* off_n,
+                                  int offsize, int ldH, double shift) {
+  int i = blockIdx.x * blockDim.x + threadIdx.x;
+  int ind;
+  if(i < offsize){
+        ind = off_n[i] * ldH + off_m[i];
+        A[ind] += shift;
+  }
+}
+
+__global__ void cshift_mgpu_matrix(cuComplex* A, int* off_m, int* off_n,
+                                  int offsize, int ldH, double shift) {
+  int i = blockIdx.x * blockDim.x + threadIdx.x;
+  int ind;
+  if(i < offsize){
+        ind = off_n[i] * ldH + off_m[i];
+        A[ind].x += shift;
+  }
+}
+
+__global__ void zshift_mgpu_matrix(cuDoubleComplex* A, int* off_m, int* off_n,
+                                  int offsize, int ldH, double shift) {
+  int i = blockIdx.x * blockDim.x + threadIdx.x;
+  int ind;
+  if(i < offsize){
+  	ind = off_n[i] * ldH + off_m[i];
+	A[ind].x += shift;
+  }
+}
+
 
 void chase_zshift_matrix(std::complex<double>* A, int n, double shift,
                          cudaStream_t* stream_) {
@@ -35,17 +66,55 @@ void chase_zshift_matrix(std::complex<double>* A, int n, double shift,
       reinterpret_cast<cuDoubleComplex*>(A), n, shift);
 }
 
-void chase_zshift_mpi_matrix(std::complex<double>* A, std::size_t* off,
-                             std::size_t n, std::size_t m, double shift,
-                             cudaStream_t* stream_) {
-  // x  ^= i \in [0,n_]
-  // y  ^= j \in [0,m_]
-  //dim3 threadsPerBlock(16, 16);
-  // dim3 numBlocks(n + (threadsPerBlock.x - 1) / threadsPerBlock.x,
-  //                m + (threadsPerBlock.y - 1) / threadsPerBlock.y);
+void chase_shift_mgpu_matrix(float* A, int* off_m, int* off_n,
+                            int offsize, int ldH, float shift,
+                             cudaStream_t stream_) {
 
-  dim3 threadsPerBlock(16, 16);
-  dim3 numBlocks(1, 1);
-  zshift_mpi_matrix<<<numBlocks, threadsPerBlock, 0, *stream_>>>(  //
-      reinterpret_cast<cuDoubleComplex*>(A), off, n, m, shift);
+  unsigned int grid = (offsize + 256 - 1) / 256;
+  dim3 threadsPerBlock(256, 1);
+  dim3 numBlocks(grid, 1);
+  sshift_mgpu_matrix<<<numBlocks, threadsPerBlock, 0, stream_>>>(  //
+      A, off_m, off_n, offsize, ldH, shift);
+
 }
+
+
+void chase_shift_mgpu_matrix(double* A, int* off_m, int* off_n,
+                            int offsize, int ldH, double shift,
+                             cudaStream_t stream_) {
+
+  unsigned int grid = (offsize + 256 - 1) / 256;
+  dim3 threadsPerBlock(256, 1);
+  dim3 numBlocks(grid, 1);
+  dshift_mgpu_matrix<<<numBlocks, threadsPerBlock, 0, stream_>>>(  //
+      A, off_m, off_n, offsize, ldH, shift);
+
+}
+
+void chase_shift_mgpu_matrix(std::complex<float>* A, int* off_m, int* off_n,
+                            int offsize, int ldH, float shift,
+                             cudaStream_t stream_) {
+
+  unsigned int grid = (offsize + 256 - 1) / 256;
+  dim3 threadsPerBlock(256, 1);
+  dim3 numBlocks(grid, 1);
+  cshift_mgpu_matrix<<<numBlocks, threadsPerBlock, 0, stream_>>>(  //
+      reinterpret_cast<cuComplex*>(A), off_m, off_n, //
+                                offsize, ldH, shift);
+
+}
+
+
+void chase_shift_mgpu_matrix(std::complex<double>* A, int* off_m, int* off_n,
+                            int offsize, int ldH, double shift,
+                             cudaStream_t stream_) {
+  
+  unsigned int grid = (offsize + 256 - 1) / 256;
+  dim3 threadsPerBlock(256, 1);
+  dim3 numBlocks(grid, 1);
+  zshift_mgpu_matrix<<<numBlocks, threadsPerBlock, 0, stream_>>>(  //
+      reinterpret_cast<cuDoubleComplex*>(A), off_m, off_n, //
+      				offsize, ldH, shift);
+
+}
+

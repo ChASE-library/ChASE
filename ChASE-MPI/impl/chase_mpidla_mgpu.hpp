@@ -22,12 +22,22 @@
 #include "chase_mpidla_interface.hpp"
 #include "mgpu_cudaDLA.hpp"
 
-void chase_zshift_mpi_matrix(std::complex<double>* A, std::size_t* off,
-                             std::size_t n, std::size_t m, double shift,
-                             cudaStream_t* stream_);
+void chase_shift_mgpu_matrix(float* A, int* off_m, int* off_n,
+                            int offsize, int ldH, float shift,
+                             cudaStream_t stream_);
 
-void chase_zshift_matrix(std::complex<double>* A, int n, double shift,
-                         cudaStream_t* stream_);
+void chase_shift_mgpu_matrix(double* A, int* off_m, int* off_n,
+                            int offsize, int ldH, double shift,
+                             cudaStream_t stream_);
+
+void chase_shift_mgpu_matrix(std::complex<double>* A, int* off_m, int* off_n,
+                             int offsize, int ldH, double shift,
+                             cudaStream_t stream_);
+
+void chase_shift_mgpu_matrix(std::complex<float>* A, int* off_m, int* off_n,
+                             int offsize, int ldH, float shift,
+                             cudaStream_t stream_);
+
 
 using namespace std::chrono;
 
@@ -207,6 +217,7 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
 
 	auto start = high_resolution_clock::now();
 	mgpuDLA->distribute_H(orig_H_, m_);
+        mgpuDLA->shiftMatrix(c);
 	mgpuDLA->synchronizeAll();
 
     // chase_zshift_mpi_matrix(H_, off_, n_, m_, std::real(c), &stream_);
