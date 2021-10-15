@@ -41,13 +41,20 @@ install(EXPORT chase-headers
   DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
   )
 
-## Tests
-add_executable( "chase_driver" tests/noinput.cpp )
-target_link_libraries(chase_driver chase_mpi)
-
 ## ChASE-MPI ##
 add_subdirectory( "ChASE-MPI/")
 add_subdirectory( "ChASE-Elemental/")
+
+## Tests
+add_executable( "chase_driver" tests/noinput.cpp )
+
+if(TARGET chase_cuda )
+  enable_language(CUDA)
+  target_link_libraries(chase_driver chase_mpi chase_cuda)
+  target_compile_definitions(chase_driver PRIVATE USE_GPU=1)
+else()
+  target_link_libraries(chase_driver chase_mpi)
+endif()
 
 # Examples
 option(BUILD_WITH_EXAMPLES "Build the examples" OFF)
