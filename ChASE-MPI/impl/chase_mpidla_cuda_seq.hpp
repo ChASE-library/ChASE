@@ -13,8 +13,13 @@
 #include "ChASE-MPI/blas_cuda_wrapper.hpp"
 #include "ChASE-MPI/chase_mpidla_interface.hpp"
 
-void chase_zshift_matrix(std::complex<double>* A, int n, double shift,
-                         cudaStream_t* stream_);
+void chase_shift_matrix(float* A, int n, float shift, cudaStream_t* stream_);
+
+void chase_shift_matrix(double* A, int n, double shift, cudaStream_t* stream_);
+
+void chase_shift_matrix(std::complex<float>* A, int n, float shift, cudaStream_t* stream_);
+
+void chase_shift_matrix(std::complex<double>* A, int n, double shift, cudaStream_t* stream_);
 
 namespace chase {
 namespace mpi {
@@ -45,9 +50,9 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
     cublasCreate(&handle_);
     cuda_exec(cudaStreamCreate(&stream_));
     cublasSetStream(handle_, stream_);
-
-    cuda_exec(cudaSetDevice(0));
     cusolverDnCreate(&cusolverH_);
+    cuda_exec(cudaStreamCreate(&stream2_));    
+    cusolverDnSetStream(cusolverH_, stream2_);
     cuda_exec(cudaSetDevice(0));
     cuda_exec(cudaMalloc ((void**)&devInfo_, sizeof(int)));
     cuda_exec(cudaMalloc ((void**)&d_V_  , sizeof(T)*n_*max_block_));
@@ -57,21 +62,21 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
     int lwork_orgqr = 0;
     cuda_exec(cudaSetDevice(0));	
     cusolver_status_ = cusolverDnTgeqrf_bufferSize(
-            cusolverH_[0],
-            N_,
-            nev_ + nex_,
+            cusolverH_,
+            n_,
+	    max_block_,
             d_V_,
-            N_,
+            n_,
             &lwork_geqrf);
     assert (cusolver_status_ == CUSOLVER_STATUS_SUCCESS);
     cuda_exec(cudaSetDevice(0));
     cusolver_status_ = cusolverDnTgqr_bufferSize(
-            cusolverH_[0],
-            N_,
-            nev_ + nex_,
-            nev_ + nex_,
+            cusolverH_,
+            n_,
+            max_block_,
+            max_block_,
             d_V_,
-            N_,
+            n_,
             d_return_,
             &lwork_orgqr);
     assert (cusolver_status_ == CUSOLVER_STATUS_SUCCESS);
@@ -80,8 +85,6 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
     
     cuda_exec(cudaSetDevice(0));
     cuda_exec(cudaMalloc((void**)&d_work_, sizeof(T)*lwork_));
-    
-
   }
 
   ~ChaseMpiDLACudaSeq() {
@@ -89,6 +92,7 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
     cudaFree(V2_);
     cudaFree(H_);
     cudaStreamDestroy(stream_);
+    cudaStreamDestroy(stream2_);
     cublasDestroy(handle_);
     cusolverDnDestroy(cusolverH_);
     if (devInfo_) cudaFree(devInfo_);
@@ -160,7 +164,7 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
       copied_ = true;
     }
 
-    chase_zshift_matrix(H_, n_, std::real(c), &stream_);
+    chase_shift_matrix(H_, n_, std::real(c), &stream_);
   }
 
   /*! - For ChaseMpiDLACudaSeq, `applyVec` is implemented with `GEMM` provided by `BLAS`.
@@ -193,7 +197,8 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
   std::size_t get_n() const override {return n_;}
   std::size_t get_m() const override {return n_;}
   int *get_coord() const override {
-          int coord[2] = {0, 0};
+	  int *coord = new int [2];
+          coord[0] = 0; coord[1] = 0;
           return coord;
   }
   void get_offs_lens(std::size_t* &r_offs, std::size_t* &r_lens, std::size_t* &r_offs_l,
@@ -318,11 +323,10 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
     - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
   void gegqr(std::size_t N, std::size_t nevex, T * approxV, std::size_t LDA) override {
-    	cudaSetDevice(0);
+	cudaSetDevice(0);
 	cuda_exec(cudaMemcpy(d_V_, approxV, sizeof(T)*N*nevex, cudaMemcpyHostToDevice));
-        cudaSetDevice(shmrank_*num_devices_per_rank_);
 	cusolver_status_ = cusolverDnTgeqrf(
-            cusolverH_[0],
+            cusolverH_,
             N,
             nevex,
             d_V_,
@@ -332,9 +336,8 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
             lwork_,
             devInfo_);
         assert(CUSOLVER_STATUS_SUCCESS == cusolver_status_);
-        cudaSetDevice(0);
 	cusolver_status_ = cusolverDnTgqr(
-            cusolverH_[0],
+            cusolverH_,
             N,
             nevex,
             nevex,
@@ -345,7 +348,6 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
             lwork_,
             devInfo_);
         assert(CUSOLVER_STATUS_SUCCESS == cusolver_status_);
-        cudaSetDevice(shmrank_*num_devices_per_rank_);
 	cuda_exec(cudaMemcpy(approxV, d_V_, sizeof(T)*N*nevex, cudaMemcpyDeviceToHost));
   }
 
@@ -365,15 +367,13 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
         T *d_A_ = NULL;
         T *d_W_ = NULL;
 
-        cudaSetDevice(shmrank_*num_devices_per_rank_);	
-        cuda_exec(cudaMalloc ((void**)&d_W_, sizeof(T) * N * block));
+        cudaSetDevice(0);
+	cuda_exec(cudaMalloc ((void**)&d_W_, sizeof(T) * N * block));
         cuda_exec(cudaMalloc ((void**)&d_A_, sizeof(T) * block * block));
-        cudaSetDevice(shmrank_*num_devices_per_rank_);
 	cuda_exec(cudaMemcpy(d_V_, approxV + locked * N, sizeof(T)* N * block, cudaMemcpyHostToDevice));
         cuda_exec(cudaMemcpy(d_W_, workspace + locked * N, sizeof(T)* N * block, cudaMemcpyHostToDevice));
-        cudaSetDevice(shmrank_*num_devices_per_rank_);
 	cublas_status_ = cublasTgemm(
-	  handle_[0],
+	  handle_,
 	  CUBLAS_OP_C,
 	  CUBLAS_OP_N,
 	  block,
@@ -387,14 +387,12 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
 	  block);
         assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
 
-
         cuda_exec(cudaMemcpy(A, d_A_, sizeof(T)* block * block, cudaMemcpyDeviceToHost));	
         t_heevd(LAPACK_COL_MAJOR, 'V', 'L', block, A, block, ritzv);
         cuda_exec(cudaMemcpy(d_A_, A, sizeof(T)* block * block, cudaMemcpyHostToDevice));
 
-	cudaSetDevice(shmrank_*num_devices_per_rank_);
       	cublas_status_ = cublasTgemm(
-            handle_[0],
+            handle_,
             CUBLAS_OP_N,
             CUBLAS_OP_N,
             N,
@@ -407,7 +405,6 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
             d_W_,
             N);
       	assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
-        cudaSetDevice(shmrank_*num_devices_per_rank_);
   	cuda_exec(cudaMemcpy(approxV + locked * N, d_V_, sizeof(T)* N * block, cudaMemcpyDeviceToHost));
       	cuda_exec(cudaMemcpy(workspace + locked * N, d_W_, sizeof(T)* N * block, cudaMemcpyDeviceToHost));
 
@@ -434,7 +431,7 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
   T* V2_;
   T* H_;
   T* OrigH_;
-  cudaStream_t stream_;
+  cudaStream_t stream_, stream2_;
   cublasHandle_t handle_;
   cusolverDnHandle_t cusolverH_;
   bool copied_;

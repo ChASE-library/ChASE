@@ -9,6 +9,7 @@
 #include <memory>
 #include <random>
 #include <vector>
+#include <type_traits>
 
 #include "algorithm/performance.hpp"
 #include "ChASE-MPI/chase_mpi.hpp"
@@ -17,12 +18,18 @@
 #include "ChASE-MPI/impl/chase_mpidla_blaslapack_seq.hpp"
 #include "ChASE-MPI/impl/chase_mpidla_blaslapack_seq_inplace.hpp"
 
+#ifdef USE_GPU
+#include "ChASE-MPI/impl/chase_mpidla_cuda_seq.hpp"
+#endif
+
 using T = std::complex<double>;
+//using T = double;
 using namespace chase;
 using namespace chase::mpi;
 
-#ifdef USE_MPI
-typedef ChaseMpi<ChaseMpiDLABlaslapack, T> CHASE;
+#ifdef USE_GPU
+typedef ChaseMpi<ChaseMpiDLACudaSeq, T> CHASE;
+//typedef ChaseMpi<ChaseMpiDLABlaslapackSeq, T> CHASE;
 #else
 typedef ChaseMpi<ChaseMpiDLABlaslapackSeq, T> CHASE;
 #endif
@@ -32,9 +39,9 @@ int main() {
   int rank = 0;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-  std::size_t N = 1001;
-  std::size_t nev = 100;
-  std::size_t nex = 20;
+  std::size_t N = 5001;
+  std::size_t nev = 200;
+  std::size_t nex = 60;
   std::size_t idx_max = 3;
   Base<T> perturb = 1e-4;
 
@@ -48,12 +55,7 @@ int main() {
   auto V = std::vector<T>(N * (nev + nex));
   auto Lambda = std::vector<Base<T>>(nev + nex);
 
-#ifdef USE_MPI
-  CHASE single(new ChaseMpiProperties<T>(N, nev, nex, MPI_COMM_SELF), V.data(),
-               Lambda.data());
-#else
   CHASE single(N, nev, nex, V.data(), Lambda.data());
-#endif
 
   auto& config = single.GetConfig();
   config.SetTol(1e-10);
@@ -69,19 +71,15 @@ int main() {
 
   // randomize V
   for (std::size_t i = 0; i < N * (nev + nex); ++i) {
-    V[i] = T(d(gen), d(gen));
+      V[i] = T(d(gen));
   }
 
   std::size_t xoff, yoff, xlen, ylen;
-#ifdef USE_MPI
-  single.GetOff(&xoff, &yoff, &xlen, &ylen);
-#else
   xoff = 0;
   yoff = 0;
   xlen = N;
   ylen = N;
-#endif
-
+ 
   // Generate Clement matrix
   std::vector<T> H(N * N, T(0.0));
   for (auto i = 0; i < N; ++i) {
@@ -132,12 +130,11 @@ int main() {
     // Perturb Full Clement matrix
     for (std::size_t i = 1; i < N; ++i) {
       for (std::size_t j = 1; j < i; ++j) {
-        T element_perturbation = T(d(gen), d(gen)) * perturb;
+        T element_perturbation = T(d(gen)) * perturb;
         H[j + N * i] += element_perturbation;
-        H[i + N * j] += std::conj(element_perturbation);
+        H[i + N * j] += element_perturbation;
       }
     }
 
-    MPI_Barrier(MPI_COMM_WORLD);
   }
 }

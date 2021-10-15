@@ -13,6 +13,21 @@
 
 #define BLOCKDIM 256
 
+__global__ void sshift_matrix(float* A, int n, float shift) {
+  int idx = blockIdx.x * blockDim.x + threadIdx.x;
+  if (idx < n) A[(idx)*n + idx] += shift;
+}
+
+__global__ void dshift_matrix(double* A, int n, double shift) {
+  int idx = blockIdx.x * blockDim.x + threadIdx.x;
+  if (idx < n) A[(idx)*n + idx] += shift;
+}
+
+__global__ void cshift_matrix(cuComplex* A, int n, float shift) {
+  int idx = blockIdx.x * blockDim.x + threadIdx.x;
+  if (idx < n) A[(idx)*n + idx].x += shift;
+}
+
 __global__ void zshift_matrix(cuDoubleComplex* A, int n, double shift) {
   int idx = blockIdx.x * blockDim.x + threadIdx.x;
   if (idx < n) A[(idx)*n + idx].x += shift;
@@ -39,7 +54,7 @@ __global__ void dshift_mgpu_matrix(double* A, int* off_m, int* off_n,
 }
 
 __global__ void cshift_mgpu_matrix(cuComplex* A, int* off_m, int* off_n,
-                                  int offsize, int ldH, double shift) {
+                                  int offsize, int ldH, float shift) {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   int ind;
   if(i < offsize){
@@ -58,8 +73,28 @@ __global__ void zshift_mgpu_matrix(cuDoubleComplex* A, int* off_m, int* off_n,
   }
 }
 
+void chase_shift_matrix(float* A, int n, float shift,
+                         cudaStream_t* stream_) {
+  int num_blocks = (n + (BLOCKDIM - 1)) / BLOCKDIM;
+  sshift_matrix<<<num_blocks, BLOCKDIM, 0, *stream_>>>(
+      A, n, shift);
+}
 
-void chase_zshift_matrix(std::complex<double>* A, int n, double shift,
+void chase_shift_matrix(double* A, int n, double shift,
+                         cudaStream_t* stream_) {
+  int num_blocks = (n + (BLOCKDIM - 1)) / BLOCKDIM;
+  dshift_matrix<<<num_blocks, BLOCKDIM, 0, *stream_>>>(
+      A, n, shift);
+}
+
+void chase_shift_matrix(std::complex<float>* A, int n, float shift,
+                         cudaStream_t* stream_) {
+  int num_blocks = (n + (BLOCKDIM - 1)) / BLOCKDIM;
+  cshift_matrix<<<num_blocks, BLOCKDIM, 0, *stream_>>>(
+      reinterpret_cast<cuComplex*>(A), n, shift);
+}
+
+void chase_shift_matrix(std::complex<double>* A, int n, double shift,
                          cudaStream_t* stream_) {
   int num_blocks = (n + (BLOCKDIM - 1)) / BLOCKDIM;
   zshift_matrix<<<num_blocks, BLOCKDIM, 0, *stream_>>>(
