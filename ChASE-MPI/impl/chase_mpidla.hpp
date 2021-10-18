@@ -150,13 +150,21 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
     } else {  // cAb
 
       dim = m_ * block;
+	  nvtxRangePushA("apply");
       dla_->apply(One, Zero, offset, block);
+	  nvtxRangePop();
 
+      nvtxRangePushA("Allreduce");
       MPI_Allreduce(MPI_IN_PLACE, IMT_ + offset * m_, dim, getMPI_Type<T>(),
                     MPI_SUM, row_comm_);
+	  nvtxRangePop();
 
+	  nvtxRangePushA("scal");
       t_scal(dim, &beta, C_ + offset * m_, 1);
+	  nvtxRangePop();
+      nvtxRangePushA("axpy");
       t_axpy(dim, &alpha, IMT_ + offset * m_, 1, C_ + offset * m_, 1);
+	  nvtxRangePop();
 
       next_ = NextOp::bAc;
     }
