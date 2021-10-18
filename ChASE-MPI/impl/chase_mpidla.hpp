@@ -11,6 +11,8 @@
 #include <iterator>
 #include <numeric>
 
+#include <nvToolsExt.h>
+
 #include "ChASE-MPI/chase_mpi_properties.hpp"
 #include "ChASE-MPI/chase_mpidla_interface.hpp"
 
@@ -126,13 +128,23 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
     std::size_t dim;
     if (next_ == NextOp::bAc) {
       dim = n_ * block;
-      dla_->apply(One, Zero, offset, block);
 
+	  printf("MPI rank: %d, n_ = %d, block = %d\n", N_, n_, block);
+	  nvtxRangePushA("apply");
+      dla_->apply(One, Zero, offset, block);
+	  nvtxRangePop();
+
+      nvtxRangePushA("Allreduce");
       MPI_Allreduce(MPI_IN_PLACE, IMT_ + offset * n_, dim, getMPI_Type<T>(),
                     MPI_SUM, col_comm_);
-                    
+      nvtxRangePop();
+
+	  nvtxRangePushA("scal");
       t_scal(dim, &beta, B_ + offset * n_, 1);
+      nvtxRangePop();
+      nvtxRangePushA("axpy");
       t_axpy(dim, &alpha, IMT_ + offset * n_, 1, B_ + offset * n_, 1);
+	  nvtxRangePop();
 
       next_ = NextOp::cAb;
     } else {  // cAb

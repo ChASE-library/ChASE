@@ -114,12 +114,16 @@ std::size_t Algorithm<T>::filter(Chase<T>* single, std::size_t n,
   std::size_t Av = 0;
 
   //----------------------------------- A = A-cI -------------------------------
+  nvtxRangePushA("filter:shift");
   single->Shift(-c);
+  nvtxRangePop();
   //------------------------------- Y = alpha*(A-cI)*V -------------------------
   T alpha = T(sigma_1 / e);
   T beta = T(0.0);
 
+  nvtxRangePushA("filter:hemm");
   single->HEMM(unprocessed, alpha, beta, offset / n);
+  nvtxRangePop();
 
   Av += unprocessed;
   num_mult++;
@@ -137,7 +141,10 @@ std::size_t Algorithm<T>::filter(Chase<T>* single, std::size_t n,
     //----------------------- V = alpha(A-cI)W + beta*V ----------------------
     alpha = T(2.0 * sigma_new / e);
     beta = T(-sigma * sigma_new);
+
+    nvtxRangePushA("filter:hemm");
     single->HEMM(unprocessed, alpha, beta, offset / n);
+    nvtxRangePop();
 
     sigma = sigma_new;
     Av += unprocessed;
@@ -151,7 +158,9 @@ std::size_t Algorithm<T>::filter(Chase<T>* single, std::size_t n,
   }  // for(i = 2; i <= deg; ++i)
 
   //----------------------------------RESTORE-A---------------------------------
+  nvtxRangePushA("filter:restore A");
   single->Shift(+c, true);
+  nvtxRangePop();
 
   return Av;
 }
@@ -335,6 +344,7 @@ void Algorithm<T>::solve(Chase<T>* single) {
   deg = std::min(deg, config.GetMaxDeg());
   for (std::size_t i = 0; i < nevex; ++i) degrees[i] = deg;
 
+  nvtxRangePushA("Lanczos");
   single->Shift(0.0);
   // --------------------------------- LANCZOS ---------------------------------
   bool random = !config.UseApprox();
@@ -346,6 +356,7 @@ void Algorithm<T>::solve(Chase<T>* single) {
   std::size_t iteration = 0;  // Current iteration.
   lowerb = *std::max_element(ritzv, ritzv + unconverged);
   lambda = *std::min_element(ritzv_, ritzv_ + nevex);
+  nvtxRangePop();
 
   while (unconverged > nex && iteration < config.GetMaxIter()) {
     if (unconverged < nevex) {
@@ -372,11 +383,12 @@ void Algorithm<T>::solve(Chase<T>* single) {
       lowerb = upperb;
     }
     //-------------------------------- DEGREES --------------------------------
+	nvtxRangePushA("Degrees");
     if (config.DoOptimization() && iteration != 0) {
       deg = calc_degrees(single, N, unconverged, nex, upperb, lowerb, tol,
                          ritzv, resid, residLast, degrees, locked);
     }
-    //------------------------------- FILTER -------------------------------
+	nvtxRangePop();
 #ifdef CHASE_OUTPUT
     {
       std::ostringstream oss;
@@ -394,13 +406,21 @@ void Algorithm<T>::solve(Chase<T>* single) {
    "\n";
 */
 #endif
+    //------------------------------- FILTER -------------------------------
+	nvtxRangePushA("Filter");
     std::size_t Av =
         filter(single, N, unconverged, deg, degrees, lambda, lowerb, upperb);
+	nvtxRangePop();
     //----------------------------------- QR -----------------------------------
+	nvtxRangePushA("QR");
     single->QR(locked);
+	nvtxRangePop();
     // ----------------------------- RAYLEIGH  RITZ ----------------------------
+	nvtxRangePushA("RR");
     single->RR(ritzv, unconverged);
+	nvtxRangePop();
     // --------------------------- RESIDUAL & LOCKING --------------------------
+	nvtxRangePushA("Residual");
     for (auto i = 0; i < unconverged; ++i)
       residLast[i] = std::min(residLast[i], resid[i]);
     single->Resd(ritzv, resid, locked);
@@ -408,7 +428,7 @@ void Algorithm<T>::solve(Chase<T>* single) {
     std::size_t new_converged =
         locking(single, N, unconverged - nex, tol, ritzv, resid, residLast,
                 degrees, locked);
-
+	nvtxRangePop();
     // ---------------------------- Update pointers ----------------------------
     // Since we double buffer we need the entire locked portion in W and V
     single->Lock(new_converged);
