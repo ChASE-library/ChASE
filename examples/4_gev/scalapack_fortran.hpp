@@ -38,6 +38,26 @@ void FC_GLOBAL(descinit, DESCINIT)(BlasInt *desc, BlasInt *m, BlasInt *n, BlasIn
 // Scalapack //
 //////////////
 
+//PBLAS
+//psgeadd
+void FC_GLOBAL(psgeadd, PSGEADD)(const char* trans, BlasInt *m, BlasInt *n, float* alpha, float* a,
+	       			 BlasInt *ia, BlasInt *ja, BlasInt *desc_a, float* beta, float* c,  BlasInt *ic, 
+				 BlasInt *jc, BlasInt *desc_c);
+//pdgeadd
+void FC_GLOBAL(pdgeadd, PDGEADD)(const char* trans, BlasInt *m, BlasInt *n, double* alpha, double* a,
+                                 BlasInt *ia, BlasInt *ja, BlasInt *desc_a, double* beta, double* c,  BlasInt *ic,
+                                 BlasInt *jc, BlasInt *desc_c);
+
+//pcgeadd
+void FC_GLOBAL(pcgeadd, PCGEADD)(const char* trans, BlasInt *m, BlasInt *n, std::complex<float>* alpha, std::complex<float>* a,
+                                 BlasInt *ia, BlasInt *ja, BlasInt *desc_a, std::complex<float>* beta, std::complex<float>* c,  BlasInt *ic,
+                                 BlasInt *jc, BlasInt *desc_c);
+
+//pzgeadd
+void FC_GLOBAL(pzgeadd, PZGEADD)(const char* trans, BlasInt *m, BlasInt *n, std::complex<double>* alpha, std::complex<double>* a,
+                                 BlasInt *ia, BlasInt *ja, BlasInt *desc_a, std::complex<double>* beta, std::complex<double>* c,  BlasInt *ic,
+                                 BlasInt *jc, BlasInt *desc_c);
+
 //Cholesky factorization
 //pspotrf
 void FC_GLOBAL(pspotrf, PSPOTRF)(const char* uplo, BlasInt *n, float *a, BlasInt *ia,

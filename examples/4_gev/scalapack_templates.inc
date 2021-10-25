@@ -80,6 +80,118 @@ void descinit(std::size_t *desc, std::size_t *m, std::size_t *n, std::size_t *mb
 
 }
 
+template <>
+void t_geadd(const char trans, const std::size_t m, std::size_t n, float alpha, float *a, const std::size_t ia,
+                const std::size_t ja, std::size_t *desc_a, float beta, float *c, const std::size_t ic,
+                const std::size_t jc, std::size_t *desc_c)
+{
+  BlasInt m_ = m;
+  BlasInt n_ = n;
+  BlasInt ia_ = ia;
+  BlasInt ja_ = ja;
+  BlasInt *desc_a_ = new BlasInt[9];
+  BlasInt ic_ = ic;
+  BlasInt jc_ = jc;
+  BlasInt *desc_c_ = new BlasInt[9];
+
+  for(int i = 0; i < 9; i++){
+      desc_a_[i] = static_cast<BlasInt>(desc_a[i]);
+      desc_c_[i] = static_cast<BlasInt>(desc_c[i]);
+  }
+  
+  FC_GLOBAL(psgeadd, PSGEADD)
+  (&trans, &m_, &n_, &alpha, a, &ia_, &ja_, desc_a_, &beta, c, &ic_, &jc_, desc_c_);
+
+}
+
+template <>
+void t_geadd(const char trans, const std::size_t m, std::size_t n, double alpha, double *a, const std::size_t ia,	
+                const std::size_t ja, std::size_t *desc_a, double beta, double *c, const std::size_t ic,
+                const std::size_t jc, std::size_t *desc_c)
+{
+  BlasInt m_ = m;
+  BlasInt n_ = n;
+  BlasInt ia_ = ia;
+  BlasInt ja_ = ja;
+  BlasInt *desc_a_ = new BlasInt[9];
+  BlasInt ic_ = ic;
+  BlasInt jc_ = jc;
+  BlasInt *desc_c_ = new BlasInt[9];
+
+  for(int i = 0; i < 9; i++){
+      desc_a_[i] = static_cast<BlasInt>(desc_a[i]);
+      desc_c_[i] = static_cast<BlasInt>(desc_c[i]);
+  }
+
+  FC_GLOBAL(pdgeadd, PDGEADD)
+  (&trans, &m_, &n_, &alpha, a, &ia_, &ja_, desc_a_, &beta, c, &ic_, &jc_, desc_c_);
+
+}
+
+template <>
+void t_geadd(const char trans, const std::size_t m, std::size_t n, std::complex<float> alpha, std::complex<float> *a, const std::size_t ia,
+                const std::size_t ja, std::size_t *desc_a, std::complex<float> beta, std::complex<float> *c, const std::size_t ic,
+                const std::size_t jc, std::size_t *desc_c)
+{
+  BlasInt m_ = m;
+  BlasInt n_ = n;
+  BlasInt ia_ = ia;
+  BlasInt ja_ = ja;
+  BlasInt *desc_a_ = new BlasInt[9];
+  BlasInt ic_ = ic;
+  BlasInt jc_ = jc;
+  BlasInt *desc_c_ = new BlasInt[9];
+  char trans_;
+
+  if(trans == 'T'){
+      trans_ = 'C';
+  }else{
+      trans_ = trans;
+  }
+
+  for(int i = 0; i < 9; i++){
+      desc_a_[i] = static_cast<BlasInt>(desc_a[i]);
+      desc_c_[i] = static_cast<BlasInt>(desc_c[i]);
+  }
+
+
+  FC_GLOBAL(pcgeadd, PCGEADD)
+  (&trans_, &m_, &n_, &alpha, a, &ia_, &ja_, desc_a_, &beta, c, &ic_, &jc_, desc_c_);
+
+}
+
+
+template <>
+void t_geadd(const char trans, const std::size_t m, std::size_t n, std::complex<double> alpha, std::complex<double> *a, const std::size_t ia,
+                const std::size_t ja, std::size_t *desc_a, std::complex<double> beta, std::complex<double> *c, const std::size_t ic,		
+                const std::size_t jc, std::size_t *desc_c)
+{
+  BlasInt m_ = m;
+  BlasInt n_ = n;
+  BlasInt ia_ = ia;
+  BlasInt ja_ = ja;
+  BlasInt *desc_a_ = new BlasInt[9];
+  BlasInt ic_ = ic;
+  BlasInt jc_ = jc;
+  BlasInt *desc_c_ = new BlasInt[9];
+  char trans_;
+
+  if(trans == 'T'){
+      trans_ = 'C';
+  }else{
+      trans_ = trans;
+  }
+
+  for(int i = 0; i < 9; i++){
+      desc_a_[i] = static_cast<BlasInt>(desc_a[i]);
+      desc_c_[i] = static_cast<BlasInt>(desc_c[i]);
+  }
+
+
+  FC_GLOBAL(pzgeadd, PZGEADD)
+  (&trans_, &m_, &n_, &alpha, a, &ia_, &ja_, desc_a_, &beta, c, &ic_, &jc_, desc_c_);
+
+}
 
 template <>
 void t_ppotrf(const char uplo, const std::size_t n, float *a, const std::size_t ia,

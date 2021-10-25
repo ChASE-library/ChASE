@@ -205,6 +205,7 @@ struct ChASE_DriverProblemConfig {
 template <typename T>
 int do_chase_gev(ChASE_DriverProblemConfig& conf) {
 
+  T alpha = 0.5;
   std::size_t N = conf.N;
   std::size_t nev = conf.nev;
   std::size_t nex = conf.nex;
@@ -263,9 +264,11 @@ int do_chase_gev(ChASE_DriverProblemConfig& conf) {
   //Initalize Scalapack environment
   int myproc, nprocs;
   blacs_pinfo( &myproc, &nprocs );
+
   int ictxt;
   int val;
   blacs_get( &ictxt, &i_zero, &val );
+
   blacs_gridinit( &ictxt, major.at(0), &dim0, &dim1 );
   int myrow, mycol;
   blacs_gridinfo( &ictxt, &dim0, &dim1, &myrow, &mycol);
@@ -314,15 +317,15 @@ int do_chase_gev(ChASE_DriverProblemConfig& conf) {
 
   // Using ChASE-MPI functionalities to get some additional information 
   // on the block cyclic data layout which faciliates the implementation
-  /*local block number = mblocks x nblocks*/
+  //local block number = mblocks x nblocks
   std::size_t mblocks = single.get_mblocks(); 
   std::size_t nblocks = single.get_nblocks();
 
-  /*local matrix size = m x n*/
+  //local matrix size = m x n
   std::size_t m = single.get_m(); // should = N_loc_r
   std::size_t n = single.get_n(); // should = N_loc_c
 
-  /*global and local offset/length of each block of block-cyclic data*/
+  //global and local offset/length of each block of block-cyclic data
   std::size_t *r_offs, *c_offs, *r_lens, *c_lens, *r_offs_l, *c_offs_l;
 
   single.get_offs_lens(r_offs, r_lens, r_offs_l, c_offs, c_lens, c_offs_l);
@@ -347,9 +350,9 @@ int do_chase_gev(ChASE_DriverProblemConfig& conf) {
     // and generate S as an Identity matrix
     if(path_in.empty())
     {
-      /*Generate Clement matrix*/
+      //Generate Clement matrix
       std::vector<T> HH = generateClementMat<T>(N);
-      /*Generate an Identify matrix*/
+      //Generate an Identify matrix
       std::vector<T> SS = generateEyeMat<T>(N);
       //redistribute into HH and SS into block cyclic layout
       for(std::size_t j = 0; j < nblocks; j++){
@@ -389,6 +392,11 @@ int do_chase_gev(ChASE_DriverProblemConfig& conf) {
     // Reduce H * X = eig * S ( X to the standard from H' * X' = eig * X'
     // with H' = L^{-1} * H * (L^T)^{-1}
     t_psyhegst<T>(i_one, 'U', N, H, sze_one, sze_one, desc, S, sze_one, sze_one, desc, &scale);
+
+    // ensure H' to be exact Symmetric/Hermtian by H' = 0.5*H'+0.5*transpose(H')
+    T *tmpH = new T [m * n];
+    std::memcpy(tmpH, H, m * n * sizeof(T));
+    t_geadd<T>('T', N, N, alpha, tmpH, sze_one, sze_one, desc, alpha, H, sze_one, sze_one, desc);
 
     ed = std::chrono::high_resolution_clock::now();
     elapsed[2][idx - 1] = std::chrono::duration_cast<std::chrono::duration<double>>(ed - st_loc);
@@ -506,7 +514,7 @@ int do_chase_gev(ChASE_DriverProblemConfig& conf) {
             << "---------------------------------------------------------------------------------------------------------------------------------------------------------------"
 	    << std::endl;
   }
-
+  
   return 0;
 }
 
