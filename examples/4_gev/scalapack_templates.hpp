@@ -22,6 +22,11 @@ void descinit(std::size_t *desc, std::size_t *m, std::size_t *n, std::size_t *mb
         const int *irsrc, const int *icsrc, int *ictxt, std::size_t *lld, int *info);
 
 template <typename T>
+void t_geadd(const char trans, const std::size_t m, std::size_t n, T alpha, T*a, const std::size_t ia,
+                const std::size_t ja, std::size_t *desc_a, T beta, T *c, const std::size_t ic,
+                const std::size_t jc, std::size_t *desc_c);
+
+template <typename T>
 void t_ppotrf(const char uplo, const std::size_t n, T *a, const std::size_t ia, 
 	      const std::size_t ja, std::size_t *desc_a);
 
