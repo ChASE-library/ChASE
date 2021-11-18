@@ -56,6 +56,7 @@ namespace chase {
 
 				/* Constructor - sets GPUs, allocate device arrays, create cublas handles and streams */
 				mgpu_cudaDLA() {};
+
 				/* Constructor - sets GPUs, allocate device arrays, create cublas handles and streams */
 				//! A constructor of mgpu_cudaDLA which sets GPUs, allocate device arrays, create cublas and cusolver handles and streams.
 				/*!
@@ -146,7 +147,7 @@ namespace chase {
 					ldWRK = std::max(dim_tile_m_, dim_tile_n_);
 					ldB = ldIMT = ldWRK;
 					ldH = dim_tile_m_;
-#ifdef TIMER
+#ifdef MGPU_TIMER
 					std::cout << "[MGPU_HEMM] MPI rank global/local = " << globalrank_ << "/" << shmrank_ << std::endl;
 					std::cout << "[MGPU_HEMM] GPUs per rank   = " << num_devices_per_rank << std::endl;
 					std::cout << "[MGPU_HEMM] Number of tiles = "<<ntile_m_ << " x " << ntile_n_ << std::endl;
@@ -320,19 +321,6 @@ namespace chase {
 					if (d_return_) cudaFree(d_return_);
         				if (d_work_) cudaFree(d_work_);	
 					
-					//std::cout << "HEMM timings: " << std::endl;
-					//std::cout << "Copy H   = " << time_copy_H.count()/1000 << " sec" << std::endl;
-					//std::cout << "Copy V   = " << time_copy_V.count()/1000 << " sec" << std::endl;
-					//std::cout << "Return W = " << time_copy_W.count()/1000 << " sec"   << std::endl;
-					//std::cout << "Hemm     = " << (time_gemm.count()+time_dist.count()+time_axpy.count()+time_redist.count())/1000 << " sec"  << std::endl;
-					//std::cout << "\t gemm   = " << time_gemm.count()/1000 << " sec"  << std::endl;
-					//std::cout << "\t dist   = " << time_dist.count()/1000 << " sec"  << std::endl;
-					//std::cout << "\t axpy   = " << time_axpy.count()/1000 << " sec"   << std::endl;
-					//std::cout << "\t redist = " << time_redist.count()/1000 << " sec"   << std::endl;
-					//std::cout << std::endl;
-
-					//cudaEventDestroy(start);
-					//cudaEventDestroy(stop);
 				}
 
 				/* Distribute given matrix orig_H among GPUs */
@@ -347,8 +335,6 @@ namespace chase {
 					int tile_x, tile_y;
 
 					int start_row, start_col;
-
-					//auto start = high_resolution_clock::now();
 
 					/* If H is not distributed among devices (i.e. the first call to the distribute_H), distribute it */
 					if( !copied_ ) {
@@ -387,10 +373,6 @@ namespace chase {
 						/* Next time the function is called, no need to distribute it again */
 						copied_ = true;
 					}
-	
-					//this->synchronizeAll();
-					//auto stop = high_resolution_clock::now();
-					//time_copy_H += stop -start;
 				}
 
 
@@ -434,8 +416,6 @@ namespace chase {
 
 					/* Index of the first row of the tile */
 					int start_row;
-
-					//auto start = high_resolution_clock::now();
 
 					/* In the case of cAb operation, i.e. W = H * V + W */
 					if (next_ == NextOp::cAb) {
@@ -489,10 +469,6 @@ namespace chase {
 							}
 						}
 					}
-
-					//this->synchronizeAll();
-					//auto stop = high_resolution_clock::now();
-					//time_copy_V += stop - start;
 					
 				}
 
@@ -512,8 +488,8 @@ namespace chase {
 					std::size_t tile_x, tile_y;
 	
 					/* Define '0' and '1' */
-					T zero = 0;
-					T one = 1;
+					T zero = T(0.0);
+					T one = T(1.0);
 
 					/* Auxiliary variables */
 					bool leading_gpu = false;
@@ -529,9 +505,8 @@ namespace chase {
 					}
 
 					int dev_id; 
-					/* Visit all the tiles of the tile matrix H and compute local (partial) HEMM operations */
 
-					//auto start = high_resolution_clock::now();
+					/* Visit all the tiles of the tile matrix H and compute local (partial) HEMM operations */
 
 					/* Pass through the rows of tiled H */
 					for (int dev_x = 0; dev_x < ntile_m_; dev_x++) {
@@ -585,18 +560,13 @@ namespace chase {
 					/* Synchronize all GPUs */
 					this->synchronizeAll();
 
-					//auto stop = high_resolution_clock::now();
-					//time_gemm += stop - start;
-
 					int gpu_src;
 					int gpu_dest;
-
-					//start = high_resolution_clock::now();
 
 					/* Compute the final solution from partial per-GPU solutions.
 					 * Collect intermediate results from the GPUs in the same rows to the first GPU in the row.
 					 * Implemented as a parallel prefix sum. 
-					 * In the first step the odd GPUs transfer their partial solutions (tile products) to a one previos GPU (i.e. the one with the index-1) where the
+					 * In the first step the odd GPUs transfer their partial solutions (tile products) to a one previous GPU (i.e. the one with the index-1) where the
 					 * sum of two tiles are computed and so on. */ 
 					for (int s = 1; s < num_tile_cols; s <<= 1) {
 
@@ -609,16 +579,16 @@ namespace chase {
 								} else {
 									cuda_exec(cudaMemcpyAsync(WRKSPACE_[dev-s], W[dev], block*sizeof(T)*ldW, cudaMemcpyDeviceToDevice, stream_[dev-s]));
 								}
-								cuda_exec(cudaSetDevice(shmrank_*num_devices_per_rank + dev-s));	
-								cuda_exec(cudaStreamSynchronize(stream_[dev-s]));
+								cuda_exec(cudaSetDevice(shmrank_*num_devices_per_rank + dev-s));
+								//cuda_exec(cudaStreamSynchronize(stream_[dev-s]));
 								cublasError = cublasTaxpy(handle_[dev-s], (pitchWRK[dev-s]/sizeof(T))*ldWRK, &one, WRKSPACE_[dev-s], 1, W[dev-s], 1);
-								if(cublasError != CUBLAS_STATUS_SUCCESS) std::cout << "Error in Taxpy " << std::endl;
+								//if(cublasError != CUBLAS_STATUS_SUCCESS) std::cout << "Error in Taxpy " << std::endl;
 							}
 						} else {
 							for (int dev_x = 0; dev_x < ntile_n_; dev_x++) {
 								for (int dev_y = dev_x+s*ntile_n_; dev_y < num_devices_per_rank; dev_y += 2*s*ntile_n_) {
 									gpu_src = dev_y;
-									gpu_dest = dev_y - s*ntile_n_; 
+									gpu_dest = dev_y - s*ntile_n_;
 
 									tile_x = get_tile_size_row(dev_y/ntile_m_);
 									if (s == 1 || (num_tile_cols%2 != 0 && dev_y/ntile_n_ == ntile_m_-1)) {
@@ -626,26 +596,21 @@ namespace chase {
 									} else {
 										cuda_exec(cudaMemcpyAsync(WRKSPACE_[gpu_dest], W[gpu_src], block*sizeof(T)*ldW, cudaMemcpyDeviceToDevice, stream_[gpu_dest]));
 									}
-									cuda_exec(cudaSetDevice(shmrank_*num_devices_per_rank + gpu_dest));	
-									cuda_exec(cudaStreamSynchronize(stream_[gpu_dest]));
+									cuda_exec(cudaSetDevice(shmrank_*num_devices_per_rank + gpu_dest));
+									//cuda_exec(cudaStreamSynchronize(stream_[gpu_dest]));
 									cublasError = cublasTaxpy(handle_[gpu_dest], (pitchWRK[gpu_dest]/sizeof(T))*ldWRK, &one, WRKSPACE_[gpu_dest], 1, W[gpu_dest], 1);
-									if(cublasError != CUBLAS_STATUS_SUCCESS) std::cout << "Error in Taxpy " << std::endl;
+									//if(cublasError != CUBLAS_STATUS_SUCCESS) std::cout << "Error in Taxpy " << std::endl;
 								}
 							}
 						}
 					}
-
-					//this->synchronizeAll();
-					//stop = high_resolution_clock::now();
-					//time_axpy += stop - start;					
 	
 					/* Finally, distribute the final result from the leading (first GPUs in the rows of the tiled H) to other GPUs in a row. 
  					 * This step is required in order to have all GPU updated for next call to computeHemm. */
-					//int src_id, dest_id;
+					/*int src_id, dest_id;
 
-					//start = high_resolution_clock::now();
 
-					/*if (next_ == NextOp::cAb) {
+					if (next_ == NextOp::cAb) {
 						
 						for (int dev_x = 0; dev_x < ntile_m_; dev_x++) {
 							src_id = dev_x * ntile_n_;
@@ -665,11 +630,8 @@ namespace chase {
 								cuda_exec(cudaMemcpy2DAsync(W[dest_id], pitchW[dest_id], W[src_id], pitchW[src_id], block*sizeof(T), tile_x, cudaMemcpyDeviceToDevice, stream_[dest_id]));
 							}
 						}
-					}
-					*/
-					//this->synchronizeAll();
-					//stop = high_resolution_clock::now();
-					//time_redist += stop - start;
+					}*/
+					
 				}
 
 				/* Collect and return the computed W from the GPUs to the host*/
@@ -685,8 +647,6 @@ namespace chase {
 					int tile_x;
 					int start_row;
 					int src_gpu;
-
-					//auto start = high_resolution_clock::now();
 
 					if (next_ == NextOp::cAb) {
 						for (int dev_x = 0; dev_x < ntile_m_; dev_x++) {
@@ -712,11 +672,6 @@ namespace chase {
 
 					}
 
-					/* Synchronize all devices before return to the caller function*/
-					//this->synchronizeAll();
-
-					//auto stop = high_resolution_clock::now();
-					//time_copy_W += stop - start;
 				}
 
 				/* Synchronize all devices */

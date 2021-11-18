@@ -71,6 +71,13 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
 
     int num_devices;
     mpi_rank = matrix_properties_->get_my_rank();
+	
+	MPI_Comm row_comm = matrix_properties_->get_row_comm();
+	MPI_Comm col_comm = matrix_properties_->get_col_comm();
+
+	MPI_Comm_rank(row_comm, &mpi_row_rank);
+	MPI_Comm_rank(col_comm, &mpi_col_rank);
+
     cuda_exec(cudaGetDeviceCount(&num_devices));
 
     std::size_t maxBlock = matrix_properties_->get_max_block();
@@ -141,6 +148,8 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
       - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
   void apply(T alpha, T beta, std::size_t offset, std::size_t block) override  {
+
+	T Zero = T(0.0);
     T* buf_init;
     T* buf_target;
     std::size_t m, n, k;
@@ -159,6 +168,9 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
 	  ldBufTarget = n_; 
       transa = CUBLAS_OP_C;
       next_ = NextOp::cAb;
+	  if (mpi_col_rank != 0) {
+			beta = Zero;
+	  }
     } else {
       buf_init = orig_B_ + offset * n_;
       buf_target = orig_IMT_ + offset * m_;
@@ -169,9 +181,13 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
       ldBufTarget = m_;
       transa = CUBLAS_OP_N;
       next_ = NextOp::bAc;
+	  if (mpi_row_rank != 0) {
+			beta = Zero;
+	  }
     }
 
 	/// Transfer block-vector to GPUs
+	// TODO: Do not distribute buf_init if beta == 0 -> spare one copying
 	auto start = high_resolution_clock::now();
     mgpuDLA->distribute_V(buf_init, ldBufInit, block);
 	mgpuDLA->synchronizeAll();
@@ -193,7 +209,6 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
 	time_copy_W += stop - start;
 
 	mgpuDLA->switch_operation();
-	//cudaProfilerStop();
   }
 
   /*!
@@ -400,6 +415,8 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
   std::size_t* off_;
 
   int mpi_rank;
+  int mpi_row_rank;
+  int mpi_col_rank;
 
   bool copied_;
 

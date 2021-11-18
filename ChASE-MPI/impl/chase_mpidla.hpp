@@ -127,43 +127,55 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
 
     std::size_t dim;
     if (next_ == NextOp::bAc) {
+
       dim = n_ * block;
 
-	  printf("MPI rank: %d, n_ = %d, block = %d\n", N_, n_, block);
 	  nvtxRangePushA("apply");
-      dla_->apply(One, Zero, offset, block);
+	  /// TODO: pass col_comm_ to apply function so only processor with rank 0 use beta, others compute with Zero
+      //dla_->apply(One, Zero, offset, block);
+      dla_->apply(alpha, beta, offset, block);
+      //dla_->apply(alpha, Zero, offset, block);
 	  nvtxRangePop();
 
       nvtxRangePushA("Allreduce");
-      MPI_Allreduce(MPI_IN_PLACE, IMT_ + offset * n_, dim, getMPI_Type<T>(),
+      //MPI_Allreduce(MPI_IN_PLACE, IMT_ + offset * n_, dim, getMPI_Type<T>(),
+      MPI_Allreduce(IMT_ + offset * n_, B_ + offset * n_, dim, getMPI_Type<T>(),
                     MPI_SUM, col_comm_);
       nvtxRangePop();
 
 	  nvtxRangePushA("scal");
-      t_scal(dim, &beta, B_ + offset * n_, 1);
+      //t_scal(dim, &beta, B_ + offset * n_, 1);
       nvtxRangePop();
       nvtxRangePushA("axpy");
-      t_axpy(dim, &alpha, IMT_ + offset * n_, 1, B_ + offset * n_, 1);
+      //t_axpy(dim, &alpha, IMT_ + offset * n_, 1, B_ + offset * n_, 1);
+      //t_axpy(dim, &One, IMT_ + offset * n_, 1, B_ + offset * n_, 1);
+	  //std::memcpy(B_ + offset * n_, IMT_ + offset * n_, dim * sizeof(T));
 	  nvtxRangePop();
 
       next_ = NextOp::cAb;
     } else {  // cAb
 
       dim = m_ * block;
+
 	  nvtxRangePushA("apply");
-      dla_->apply(One, Zero, offset, block);
+      //dla_->apply(One, Zero, offset, block);
+      //dla_->apply(alpha, Zero, offset, block);
+      dla_->apply(alpha, beta, offset, block);
 	  nvtxRangePop();
 
       nvtxRangePushA("Allreduce");
-      MPI_Allreduce(MPI_IN_PLACE, IMT_ + offset * m_, dim, getMPI_Type<T>(),
+      //MPI_Allreduce(MPI_IN_PLACE, IMT_ + offset * m_, dim, getMPI_Type<T>(),
+      MPI_Allreduce(IMT_ + offset * m_, C_ + offset * m_, dim, getMPI_Type<T>(),
                     MPI_SUM, row_comm_);
 	  nvtxRangePop();
 
 	  nvtxRangePushA("scal");
-      t_scal(dim, &beta, C_ + offset * m_, 1);
+      //t_scal(dim, &beta, C_ + offset * m_, 1);
 	  nvtxRangePop();
       nvtxRangePushA("axpy");
-      t_axpy(dim, &alpha, IMT_ + offset * m_, 1, C_ + offset * m_, 1);
+      //t_axpy(dim, &alpha, IMT_ + offset * m_, 1, C_ + offset * m_, 1);
+      //t_axpy(dim, &One, IMT_ + offset * m_, 1, C_ + offset * m_, 1);
+	  //std::memcpy(C_ + offset * m_, IMT_ + offset * m_, dim * sizeof(T));
 	  nvtxRangePop();
 
       next_ = NextOp::bAc;
