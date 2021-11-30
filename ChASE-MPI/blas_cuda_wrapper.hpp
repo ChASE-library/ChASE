@@ -433,6 +433,39 @@ void shiftMatrixGPU(std::complex<double>* A, int lda, int n,
                     cudaStream_t stream);
 */
 
+static const char *cublasGetErrorString(cublasStatus_t error)
+{
+    switch (error)
+    {
+        case CUBLAS_STATUS_SUCCESS:
+            return "CUBLAS_STATUS_SUCCESS";
+
+        case CUBLAS_STATUS_NOT_INITIALIZED:
+            return "CUBLAS_STATUS_NOT_INITIALIZED";
+
+        case CUBLAS_STATUS_ALLOC_FAILED:
+            return "CUBLAS_STATUS_ALLOC_FAILED";
+
+        case CUBLAS_STATUS_INVALID_VALUE:
+            return "CUBLAS_STATUS_INVALID_VALUE";
+
+        case CUBLAS_STATUS_ARCH_MISMATCH:
+            return "CUBLAS_STATUS_ARCH_MISMATCH";
+
+        case CUBLAS_STATUS_MAPPING_ERROR:
+            return "CUBLAS_STATUS_MAPPING_ERROR";
+
+        case CUBLAS_STATUS_EXECUTION_FAILED:
+            return "CUBLAS_STATUS_EXECUTION_FAILED";
+
+        case CUBLAS_STATUS_INTERNAL_ERROR:
+            return "CUBLAS_STATUS_INTERNAL_ERROR";
+    }
+
+    return "<unknown>";
+}
+
+
 #define cuda_exec(func_call)                             \
   do {                                                   \
     cudaError_t error = (func_call);                     \
@@ -440,6 +473,17 @@ void shiftMatrixGPU(std::complex<double>* A, int lda, int n,
     if (error != cudaSuccess) {                          \
       fprintf(stderr, "%s:%d: %s\n", __FILE__, __LINE__, \
               cudaGetErrorString(error));                \
+      exit(EXIT_FAILURE);                                \
+    }                                                    \
+  } while (0)
+
+#define cublas_exec(func_call)                           \
+  do {                                                   \
+    cublasStatus_t error = (func_call);                   \
+                                                         \
+    if (error != CUBLAS_STATUS_SUCCESS) {                \
+      fprintf(stderr, "%s:%d: %s\n", __FILE__, __LINE__, \
+              cublasGetErrorString(error));                \
       exit(EXIT_FAILURE);                                \
     }                                                    \
   } while (0)

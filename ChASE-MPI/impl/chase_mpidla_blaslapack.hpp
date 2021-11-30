@@ -44,6 +44,13 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
     nblocks_ = matrix_properties->get_nblocks();
 
     matrix_properties_ = matrix_properties;
+
+	MPI_Comm row_comm = matrix_properties_->get_row_comm();
+	MPI_Comm col_comm = matrix_properties_->get_col_comm();
+
+	MPI_Comm_rank(row_comm, &mpi_row_rank);
+	MPI_Comm_rank(col_comm, &mpi_col_rank);
+
   }
 
   ~ChaseMpiDLABlaslapack() {}
@@ -74,15 +81,29 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
       - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
   void apply(T alpha, T beta, std::size_t offset, std::size_t block) override {
+
+	T Zero = T(0.0);
+
     if (next_ == NextOp::bAc) {
+
+      if (mpi_col_rank != 0) {
+         beta = Zero;
+      }
+
       t_gemm<T>(CblasColMajor, CblasConjTrans, CblasNoTrans, n_,
                 static_cast<std::size_t>(block), m_, &alpha, H_, m_,
-                C_ + offset * m_, m_, &beta, IMT_ + offset * n_, n_);
+                C_ + offset * m_, m_, &beta, B_ + offset * n_, n_);
       next_ = NextOp::cAb;
+
     } else {
+ 
+     if (mpi_row_rank != 0) {
+         beta = Zero;
+      }
+
       t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, m_,
              static_cast<std::size_t>(block), n_, &alpha, H_, m_,
-             B_ + offset * n_, n_, &beta, IMT_ + offset * m_, m_);
+             B_ + offset * n_, n_, &beta, C_ + offset * m_, m_);
       next_ = NextOp::bAc;
     }
   }
@@ -328,6 +349,9 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
   std::size_t mb_;
   std::size_t nblocks_;
   std::size_t mblocks_;
+
+  int mpi_row_rank;
+  int mpi_col_rank;
 
   ChaseMpiProperties<T>* matrix_properties_;
 };
