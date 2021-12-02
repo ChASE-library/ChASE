@@ -15,8 +15,6 @@
 
 #include "interface.hpp"
 
-#include <nvToolsExt.h>
-
 namespace chase {
 
 template <class T>
