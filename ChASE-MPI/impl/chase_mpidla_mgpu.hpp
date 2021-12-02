@@ -61,7 +61,6 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
     orig_H_ = matrix_properties->get_H();
     orig_B_ = matrix_properties->get_B();
     orig_C_ = matrix_properties->get_C();
-    orig_IMT_ = matrix_properties->get_IMT();
 
     off_ = matrix_properties->get_off();
 
@@ -91,7 +90,6 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
 	/* Register H, B, C and IMT as pinned-memories on host */
 	cuda_exec(cudaHostRegister((void*)orig_H_, m_*n_*sizeof(T), cudaHostRegisterDefault));
 	cuda_exec(cudaHostRegister((void*)orig_B_, n_*maxBlock*sizeof(T), cudaHostRegisterDefault));
-	cuda_exec(cudaHostRegister((void*)orig_IMT_, std::max(n_,m_)*maxBlock*sizeof(T), cudaHostRegisterDefault));
 	cuda_exec(cudaHostRegister((void*)orig_C_, m_*maxBlock*sizeof(T), cudaHostRegisterDefault));
 
 	/// Construct a new object for handling multi-GPU HEMM execution
@@ -109,7 +107,6 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
     cuda_exec(cudaHostUnregister(orig_H_));
     cuda_exec(cudaHostUnregister(orig_B_));
     cuda_exec(cudaHostUnregister(orig_C_));
-    cuda_exec(cudaHostUnregister(orig_IMT_));
     delete mgpuDLA;
 
 #ifdef MGPU_TIMER
@@ -429,7 +426,6 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
 
   T* orig_B_;
   T* orig_C_;
-  T* orig_IMT_;
   T* orig_H_;
 
   std::size_t* off_;

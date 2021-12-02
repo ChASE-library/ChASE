@@ -44,7 +44,6 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
     H_ = matrix_properties->get_H();
     B_ = matrix_properties->get_B();
     C_ = matrix_properties->get_C();
-    IMT_ = matrix_properties->get_IMT();
 
     std::size_t max_block_ = matrix_properties->get_max_block();
 
@@ -473,7 +472,6 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
   T* H_;
   T* B_;
   T* C_;
-  T* IMT_;
   T *Buff_;
 
   NextOp next_;

@@ -34,7 +34,6 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
     H_ = matrix_properties->get_H();
     B_ = matrix_properties->get_B();
     C_ = matrix_properties->get_C();
-    IMT_ = matrix_properties->get_IMT();
 
     matrix_properties->get_offs_lens(r_offs_, r_lens_, r_offs_l_, c_offs_, c_lens_, c_offs_l_);
     mb_ = matrix_properties->get_mb();
@@ -337,7 +336,6 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
   T* H_;
   T* B_;
   T* C_;
-  T* IMT_;
 
   std::size_t *r_offs_;
   std::size_t *r_lens_;

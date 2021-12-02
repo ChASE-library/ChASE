@@ -708,15 +708,15 @@ namespace chase {
     - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
 				void gegqr(std::size_t N, std::size_t nevex, T * approxV, std::size_t LDA){
-				    
-					/*auto tau = std::unique_ptr<T[]> {
+/*				    
+					auto tau = std::unique_ptr<T[]> {
 						new T[ nevex ]
 					};
 
 					t_geqrf(LAPACK_COL_MAJOR, N, nevex, approxV, LDA, tau.get());
 					t_gqr(LAPACK_COL_MAJOR, N, nevex, nevex, approxV, LDA, tau.get());
-*/
 
+*/
 					cudaSetDevice(shmrank_*num_devices_per_rank);
 					cuda_exec(cudaMemcpyAsync(d_V_, approxV, sizeof(T)*N*nevex, cudaMemcpyHostToDevice, stream2_[0]));
 					cudaSetDevice(shmrank_*num_devices_per_rank);
@@ -747,7 +747,8 @@ namespace chase {
 					cudaSetDevice(shmrank_*num_devices_per_rank);
 					cuda_exec(cudaMemcpyAsync(approxV, d_V_, sizeof(T)*N*nevex, cudaMemcpyDeviceToHost, stream2_[0]));
 					cudaStreamSynchronize(stream2_[0]);
-					
+
+				
 				}
 
  /*!

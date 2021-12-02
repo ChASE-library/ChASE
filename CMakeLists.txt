@@ -42,8 +42,8 @@ install(EXPORT chase-headers
   )
 
 ## Tests
-#add_executable( "chase_driver" tests/noinput.cpp )
-#target_link_libraries(chase_driver chase_mpi ${CUDA_nvToolsExt_LIBRARY})
+add_executable( "chase_driver" tests/noinput.cpp )
+target_link_libraries(chase_driver chase_mpi)
 
 ## ChASE-MPI ##
 add_subdirectory( "ChASE-MPI/")
