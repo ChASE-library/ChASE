@@ -11,8 +11,6 @@
 #include <iterator>
 #include <numeric>
 
-#include <nvToolsExt.h>
-
 #include "ChASE-MPI/chase_mpi_properties.hpp"
 #include "ChASE-MPI/chase_mpidla_interface.hpp"
 
