@@ -1,5 +1,7 @@
 find_package( Boost COMPONENTS serialization program_options filesystem )
 
+enable_language(CUDA)
+
 if( ${Boost_FOUND} )
 
   ##############################################################################
@@ -9,18 +11,18 @@ if( ${Boost_FOUND} )
   add_executable( "2_input_output_seq"
     "2_input_output.cpp"
     )
-  target_link_libraries( "2_input_output_seq" PRIVATE chase_seq ${Boost_LIBRARIES} )
+  target_link_libraries( "2_input_output_seq" PRIVATE chase_seq ${Boost_LIBRARIES} ${CUDA_nvToolsExt_LIBRARY})
 
   ##############################################################################
   #           2_input_output: no GPU, MPI ($A$ distributed among MPI-ranks)
   ##############################################################################
 
   add_executable( "2_input_output" "2_input_output.cpp" )
-  target_link_libraries( "2_input_output" chase_mpi ${Boost_LIBRARIES})
+  target_link_libraries( "2_input_output" chase_mpi ${Boost_LIBRARIES} ${CUDA_nvToolsExt_LIBRARY})
   target_compile_definitions( "2_input_output" PRIVATE USE_MPI=1 PRINT_EIGENVALUES=1 CHASE_OUTPUT=1)
 
   add_executable( "2_input_output_block_cyclic" "2_input_output.cpp" )
-  target_link_libraries( "2_input_output_block_cyclic" chase_mpi ${Boost_LIBRARIES})
+  target_link_libraries( "2_input_output_block_cyclic" chase_mpi ${Boost_LIBRARIES} ${CUDA_nvToolsExt_LIBRARY})
   target_compile_definitions( "2_input_output_block_cyclic" PRIVATE USE_MPI=1 USE_BLOCK_CYCLIC=1)  
 
   install (TARGETS 2_input_output_seq
@@ -48,11 +50,11 @@ if( ${Boost_FOUND} )
     endif()
 
     add_executable( 2_input_output_mgpu "2_input_output.cpp" )
-    target_link_libraries( 2_input_output_mgpu chase_mpi chase_cuda ${Boost_LIBRARIES})
-    target_compile_definitions( "2_input_output_mgpu" PRIVATE DRIVER_BUILD_MGPU=1 USE_MPI=1)
+    target_link_libraries( 2_input_output_mgpu chase_mpi chase_cuda ${Boost_LIBRARIES} ${CUDA_nvToolsExt_LIBRARY})
+    target_compile_definitions( "2_input_output_mgpu" PRIVATE DRIVER_BUILD_MGPU=1 CHASE_OUTPUT=1 PRINT_EIGENVALUES=1 USE_MPI=1)
 
     add_executable( 2_input_output_mgpu_block_cyclic "2_input_output.cpp" )
-    target_link_libraries( 2_input_output_mgpu_block_cyclic chase_mpi chase_cuda ${Boost_LIBRARIES})
+    target_link_libraries( 2_input_output_mgpu_block_cyclic chase_mpi chase_cuda ${Boost_LIBRARIES} ${CUDA_nvToolsExt_LIBRARY})
     target_compile_definitions( "2_input_output_mgpu_block_cyclic" PRIVATE DRIVER_BUILD_MGPU=1 USE_MPI=1 USE_BLOCK_CYCLIC=1)
 
     install (TARGETS 2_input_output_mgpu

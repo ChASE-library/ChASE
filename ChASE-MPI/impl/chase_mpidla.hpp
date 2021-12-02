@@ -42,7 +42,6 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
     H_ = matrix_properties->get_H();
     B_ = matrix_properties->get_B();
     C_ = matrix_properties->get_C();
-    IMT_ = matrix_properties->get_IMT();
 
     std::size_t max_block_ = matrix_properties->get_max_block();
 
@@ -125,26 +124,23 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
 
     std::size_t dim;
     if (next_ == NextOp::bAc) {
-      dim = n_ * block;
-      dla_->apply(One, Zero, offset, block);
 
-      MPI_Allreduce(MPI_IN_PLACE, IMT_ + offset * n_, dim, getMPI_Type<T>(),
+      dim = n_ * block;
+
+      dla_->apply(alpha, beta, offset, block);
+
+      MPI_Allreduce(MPI_IN_PLACE, B_ + offset * n_, dim, getMPI_Type<T>(),
                     MPI_SUM, col_comm_);
-                    
-      t_scal(dim, &beta, B_ + offset * n_, 1);
-      t_axpy(dim, &alpha, IMT_ + offset * n_, 1, B_ + offset * n_, 1);
 
       next_ = NextOp::cAb;
     } else {  // cAb
 
       dim = m_ * block;
-      dla_->apply(One, Zero, offset, block);
 
-      MPI_Allreduce(MPI_IN_PLACE, IMT_ + offset * m_, dim, getMPI_Type<T>(),
+      dla_->apply(alpha, beta, offset, block);
+
+      MPI_Allreduce(MPI_IN_PLACE, C_ + offset * m_, dim, getMPI_Type<T>(),
                     MPI_SUM, row_comm_);
-
-      t_scal(dim, &beta, C_ + offset * m_, 1);
-      t_axpy(dim, &alpha, IMT_ + offset * m_, 1, C_ + offset * m_, 1);
 
       next_ = NextOp::bAc;
     }
@@ -474,7 +470,6 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
   T* H_;
   T* B_;
   T* C_;
-  T* IMT_;
   T *Buff_;
 
   NextOp next_;

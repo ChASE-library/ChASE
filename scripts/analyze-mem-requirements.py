@@ -16,7 +16,7 @@ precision = { 'double': 8, 'float': 4, 'complex': 8, 'dcomplex': 16 }
 
 def get_mem_CPU(N, n_, m_, block_, float_type, data_layout):
 
-       tot_mem = float(n_*m_ + n_*block_ + m_*block_ + max(m_,n_)*block_ + 2 * N * block_)
+       tot_mem = float(n_*m_ + n_*block_ + m_*block_ + 2 * N * block_)
 
        if data_layout == "block-cyclic":
            tot_mem +=  N * block_

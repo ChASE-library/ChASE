@@ -137,6 +137,7 @@ std::size_t Algorithm<T>::filter(Chase<T>* single, std::size_t n,
     //----------------------- V = alpha(A-cI)W + beta*V ----------------------
     alpha = T(2.0 * sigma_new / e);
     beta = T(-sigma * sigma_new);
+
     single->HEMM(unprocessed, alpha, beta, offset / n);
 
     sigma = sigma_new;
@@ -376,7 +377,6 @@ void Algorithm<T>::solve(Chase<T>* single) {
       deg = calc_degrees(single, N, unconverged, nex, upperb, lowerb, tol,
                          ritzv, resid, residLast, degrees, locked);
     }
-    //------------------------------- FILTER -------------------------------
 #ifdef CHASE_OUTPUT
     {
       std::ostringstream oss;
@@ -394,6 +394,7 @@ void Algorithm<T>::solve(Chase<T>* single) {
    "\n";
 */
 #endif
+    //------------------------------- FILTER -------------------------------
     std::size_t Av =
         filter(single, N, unconverged, deg, degrees, lambda, lowerb, upperb);
     //----------------------------------- QR -----------------------------------
@@ -408,7 +409,6 @@ void Algorithm<T>::solve(Chase<T>* single) {
     std::size_t new_converged =
         locking(single, N, unconverged - nex, tol, ritzv, resid, residLast,
                 degrees, locked);
-
     // ---------------------------- Update pointers ----------------------------
     // Since we double buffer we need the entire locked portion in W and V
     single->Lock(new_converged);

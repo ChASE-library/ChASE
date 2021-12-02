@@ -286,7 +286,6 @@ class ChaseMpiProperties {
        H_.reset(new T[n_ * m_]());
        B_.reset(new T[n_ * max_block_]());
        C_.reset(new T[m_ * max_block_]());
-       IMT_.reset(new T[std::max(n_, m_) * max_block_]());
 
        //for MPI communication
        block_counts_.resize(2);
@@ -436,7 +435,6 @@ class ChaseMpiProperties {
     H_.reset(new T[n_ * m_]());
     B_.reset(new T[n_ * max_block_]());
     C_.reset(new T[m_ * max_block_]());
-    IMT_.reset(new T[std::max(n_, m_) * max_block_]());
 
     block_counts_.resize(2);
     for (std::size_t dim_idx = 0; dim_idx < 2; dim_idx++) {
@@ -692,11 +690,6 @@ class ChaseMpiProperties {
     \return `C_`: the pointer to store local part of W for the MPI communication.
   */   
   T* get_C() { return C_.get(); }
-
-  /*! 
-    \return `IMT_`: a poniter to the memory which is used for the MPI collective communications for the MPI-based implementation of HEMM.
-  */
-  T* get_IMT() { return IMT_.get(); }
 
   /*! 
     \return `block_counts_`: 2D array which stores the block number of local matrix on each MPI node in each dimension.
@@ -993,13 +986,6 @@ class ChaseMpiProperties {
       size `m_ * max_block_`.
    */   
   std::unique_ptr<T[]> C_;
-
-  //! A temporary memory the MPI collective communications for the MPI-based implementation of `HEMM`.
-  /*!
-      This variable is initialized during the construction of ChaseMpiProperties of
-      size `std::max(n_, m_) * max_block_`.
-   */   
-  std::unique_ptr<T[]> IMT_;
 
   //! The row communicator of the constructed 2D grid of MPI codes.
   /*!

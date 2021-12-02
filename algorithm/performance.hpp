@@ -152,7 +152,7 @@ class ChasePerfData {
     // filter
     // 8MNK + 18MN
     flop_count +=
-        8 * N * chase_filtered_vecs * N + 18 * N * chase_filtered_vecs;
+        8 * N * chase_filtered_vecs * N + 16 * N * chase_filtered_vecs;
 
     return flop_count / 1e9;
   }
@@ -172,7 +172,7 @@ class ChasePerfData {
       \return The total number of operations executed by the polynomial filter.
    */
   std::size_t get_filter_flops(std::size_t N) {
-    return (8 * N * chase_filtered_vecs * N + 18 * N * chase_filtered_vecs) /
+    return (8 * N * chase_filtered_vecs * N + 16 * N * chase_filtered_vecs) /
            1e9;
   }
 
@@ -229,8 +229,7 @@ class ChasePerfData {
 
     if (N != 0) {
       std::size_t flops = get_flops(N);
-      std::size_t filter_flops =
-        8 * N * chase_filtered_vecs * N + 18 * N * chase_filtered_vecs; // Why not using get_filter_flops ?
+      std::size_t filter_flops = get_filter_flops(N);
       std::cout << " | " << flops;
       std::cout << " | "
                 << static_cast<double>(filter_flops) /

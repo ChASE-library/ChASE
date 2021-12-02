@@ -61,7 +61,6 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
     orig_H_ = matrix_properties->get_H();
     orig_B_ = matrix_properties->get_B();
     orig_C_ = matrix_properties->get_C();
-    orig_IMT_ = matrix_properties->get_IMT();
 
     off_ = matrix_properties->get_off();
 
@@ -71,9 +70,18 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
 
     int num_devices;
     mpi_rank = matrix_properties_->get_my_rank();
+	
+	MPI_Comm row_comm = matrix_properties_->get_row_comm();
+	MPI_Comm col_comm = matrix_properties_->get_col_comm();
+
+	MPI_Comm_rank(row_comm, &mpi_row_rank);
+	MPI_Comm_rank(col_comm, &mpi_col_rank);
+
     cuda_exec(cudaGetDeviceCount(&num_devices));
 
     std::size_t maxBlock = matrix_properties_->get_max_block();
+
+	previous_offset_ = -1;
 
 #ifdef MGPU_TIMER    
 	std::cout << "[MGPU_HEMM] MPI rank " << mpi_rank << " found " << num_devices << " GPU devices" << std::endl;
@@ -82,7 +90,6 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
 	/* Register H, B, C and IMT as pinned-memories on host */
 	cuda_exec(cudaHostRegister((void*)orig_H_, m_*n_*sizeof(T), cudaHostRegisterDefault));
 	cuda_exec(cudaHostRegister((void*)orig_B_, n_*maxBlock*sizeof(T), cudaHostRegisterDefault));
-	cuda_exec(cudaHostRegister((void*)orig_IMT_, std::max(n_,m_)*maxBlock*sizeof(T), cudaHostRegisterDefault));
 	cuda_exec(cudaHostRegister((void*)orig_C_, m_*maxBlock*sizeof(T), cudaHostRegisterDefault));
 
 	/// Construct a new object for handling multi-GPU HEMM execution
@@ -93,13 +100,13 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
 	time_copy_V = std::chrono::milliseconds::zero();
 	time_gemm = std::chrono::milliseconds::zero();
 	time_apply_vec = std::chrono::milliseconds::zero();
+
   }
 
   ~ChaseMpiDLAMultiGPU() {
     cuda_exec(cudaHostUnregister(orig_H_));
     cuda_exec(cudaHostUnregister(orig_B_));
     cuda_exec(cudaHostUnregister(orig_C_));
-    cuda_exec(cudaHostUnregister(orig_IMT_));
     delete mgpuDLA;
 
 #ifdef MGPU_TIMER
@@ -119,6 +126,7 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
   void preApplication(T* V, std::size_t locked, std::size_t block)  override {
     next_ = NextOp::bAc;
 	mgpuDLA->set_operation(next_);
+	previous_offset_ = -1;
   }
 
   /*! - For ChaseMpiDLAMultiGPU, `preApplication` is implemented only with the operation of switching operation flags.
@@ -141,6 +149,8 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
       - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
   void apply(T alpha, T beta, std::size_t offset, std::size_t block) override  {
+
+	T Zero = T(0.0);
     T* buf_init;
     T* buf_target;
     std::size_t m, n, k;
@@ -151,7 +161,7 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
 
     if (next_ == NextOp::bAc) {
       buf_init = orig_C_ + offset * m_;
-      buf_target = orig_IMT_ + offset * n_;
+      buf_target = orig_B_ + offset * n_;
       m = n_;
       n = block;
       k = m_;
@@ -159,9 +169,12 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
 	  ldBufTarget = n_; 
       transa = CUBLAS_OP_C;
       next_ = NextOp::cAb;
+	  if (mpi_col_rank != 0) {
+			beta = Zero;
+	  }
     } else {
       buf_init = orig_B_ + offset * n_;
-      buf_target = orig_IMT_ + offset * m_;
+      buf_target = orig_C_ + offset * m_;
       m = m_;
       n = block;
       k = n_;
@@ -169,31 +182,48 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
       ldBufTarget = m_;
       transa = CUBLAS_OP_N;
       next_ = NextOp::bAc;
+	  if (mpi_row_rank != 0) {
+			beta = Zero;
+	  }
     }
 
+	/* Set local offset for W. The column-matrix from the previuos step 
+ 	 * (already distributed among GPUs) had different (equal or smaller) 
+ 	 * offset. We have to find the differene between the offset used in
+ 	 * the previous call and the current one
+ 	 */
+	std::size_t W_offset;
+	if(previous_offset_ == -1) {
+		W_offset = 0;
+	} else {
+		W_offset = offset - previous_offset_;
+	}
+
 	/// Transfer block-vector to GPUs
-	auto start = high_resolution_clock::now();
+	// TODO: Do not distribute buf_init if beta == 0 -> spare one copying
+    auto start = high_resolution_clock::now();
     mgpuDLA->distribute_V(buf_init, ldBufInit, block);
-	mgpuDLA->synchronizeAll();
-	auto stop = high_resolution_clock::now();
-	time_copy_V += stop - start;
+    mgpuDLA->synchronizeAll();
+    auto stop = high_resolution_clock::now();
+    time_copy_V += stop - start;
 
 	/// Compute Hemm
 	start = high_resolution_clock::now();
-	mgpuDLA->computeHemm(block, alpha, beta);
+	mgpuDLA->computeHemm(block, W_offset, alpha, beta);
 	mgpuDLA->synchronizeAll();
 	stop = high_resolution_clock::now();
 	time_gemm += stop - start;
 
 	/// Return computed block-vector to CPU
 	start = high_resolution_clock::now();
-	mgpuDLA->return_W(buf_target, ldBufTarget, block);
+	mgpuDLA->return_W(buf_target, ldBufTarget, block, W_offset);
 	mgpuDLA->synchronizeAll();
 	stop = high_resolution_clock::now();
 	time_copy_W += stop - start;
 
 	mgpuDLA->switch_operation();
-	//cudaProfilerStop();
+
+	previous_offset_ = offset;
   }
 
   /*!
@@ -203,6 +233,8 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
   bool postApplication(T* V, std::size_t block)  override {
     //cudaStreamSynchronize(stream_);
 	mgpuDLA->synchronizeAll();
+
+	previous_offset_ = -1;
 
     return false;
   }
@@ -394,14 +426,17 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
 
   T* orig_B_;
   T* orig_C_;
-  T* orig_IMT_;
   T* orig_H_;
 
   std::size_t* off_;
 
   int mpi_rank;
+  int mpi_row_rank;
+  int mpi_col_rank;
 
   bool copied_;
+
+  int previous_offset_;
 
   /// Matrix properties
   ChaseMpiProperties<T>* matrix_properties_;
