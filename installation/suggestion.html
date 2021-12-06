@@ -218,7 +218,7 @@ memory footprint of the library. It is important to avoid that such
 memory footprint per MPI task exceeds the amount of main memory
 available to the compiled code. To help the user to make the correct
 decision in terms of resources a simple formula for <strong>Block distribution</strong> of matrix can be used</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">sizeof</span><span class="p">(</span><span class="n">float_type</span><span class="p">)</span> <span class="o">*</span><span class="p">[</span><span class="n">n</span> <span class="o">*</span> <span class="n">m</span> <span class="o">+</span> <span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="n">m</span> <span class="o">+</span> <span class="n">max</span><span class="p">(</span><span class="n">m</span><span class="p">,</span><span class="n">n</span><span class="p">))</span> <span class="o">*</span> <span class="n">block</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">N</span> <span class="o">*</span>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">sizeof</span><span class="p">(</span><span class="n">float_type</span><span class="p">)</span> <span class="o">*</span><span class="p">[</span><span class="n">n</span> <span class="o">*</span> <span class="n">m</span> <span class="o">+</span> <span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="n">m</span><span class="p">)</span> <span class="o">*</span> <span class="n">block</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">N</span> <span class="o">*</span>
 <span class="n">block</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">+</span> <span class="mi">5</span><span class="o">*</span><span class="n">n</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">pow</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">nb</span><span class="p">]</span><span class="o">/</span><span class="p">(</span><span class="mi">1024</span><span class="o">^</span><span class="mi">3</span><span class="p">)</span> <span class="n">GigaByte</span>
 </pre></div>
 </div>
@@ -235,7 +235,7 @@ The value of this factor for these four types of floating numbers are respective
 <p>For ChASE with <strong>Block-Cyclic distribution</strong> of matrix, addtional memory of
 size <code class="docutils literal notranslate"><span class="pre">sizeof(float_type)</span> <span class="pre">*</span> <span class="pre">N</span> <span class="pre">*</span> <span class="pre">block</span></code> is required for managing the internal reshuffing
 for block-cyclic data layout. Thus the total memory required is:</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">sizeof</span><span class="p">(</span><span class="n">float_type</span><span class="p">)</span> <span class="o">*</span><span class="p">[</span><span class="n">n</span> <span class="o">*</span> <span class="n">m</span> <span class="o">+</span> <span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="n">m</span> <span class="o">+</span> <span class="n">max</span><span class="p">(</span><span class="n">m</span><span class="p">,</span><span class="n">n</span><span class="p">))</span> <span class="o">*</span> <span class="n">block</span> <span class="o">+</span> <span class="mi">3</span> <span class="o">*</span> <span class="n">N</span> <span class="o">*</span>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">sizeof</span><span class="p">(</span><span class="n">float_type</span><span class="p">)</span> <span class="o">*</span><span class="p">[</span><span class="n">n</span> <span class="o">*</span> <span class="n">m</span> <span class="o">+</span> <span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="n">m</span><span class="p">)</span> <span class="o">*</span> <span class="n">block</span> <span class="o">+</span> <span class="mi">3</span> <span class="o">*</span> <span class="n">N</span> <span class="o">*</span>
 <span class="n">block</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">+</span> <span class="mi">5</span><span class="o">*</span><span class="n">n</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">pow</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">nb</span><span class="p">]</span><span class="o">/</span><span class="p">(</span><span class="mi">1024</span><span class="o">^</span><span class="mi">3</span><span class="p">)</span> <span class="n">GigaByte</span>
 </pre></div>
 </div>
@@ -264,8 +264,8 @@ Matrix Distribution
 Data Layout:   block
 
 
-Main memory usage per MPI-rank: <span class="m">17</span>.798 GB
-Total main memory usage <span class="o">(</span><span class="m">1824</span> ranks<span class="o">)</span>: <span class="m">20503</span>.089 GB
+Main memory usage per MPI-rank: <span class="m">17</span>.546 GB
+Total main memory usage <span class="o">(</span><span class="m">1824</span> ranks<span class="o">)</span>: <span class="m">20213</span>.410 GB
 </pre></div>
 </div>
 <p>Using such a formula one can verify if the allocation of
@@ -295,8 +295,8 @@ Matrix Distribution
 Data Layout:   block-cyclic
 
 
-Main memory usage per MPI-rank: <span class="m">25</span>.844 GB
-Total main memory usage <span class="o">(</span><span class="m">1152</span> ranks<span class="o">)</span>: <span class="m">29772</span>.803 GB
+Main memory usage per MPI-rank: <span class="m">25</span>.593 GB
+Total main memory usage <span class="o">(</span><span class="m">1152</span> ranks<span class="o">)</span>: <span class="m">29483</span>.125 GB
 </pre></div>
 </div>
 </div>

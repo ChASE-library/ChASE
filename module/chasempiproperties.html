@@ -594,16 +594,6 @@
 </dd></dl>
 
 <dl class="cpp function">
-<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties7get_IMTEv">
-<span id="_CPPv3N5chase3mpi18ChaseMpiProperties7get_IMTEv"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties7get_IMTEv"></span><span id="chase::mpi::ChaseMpiProperties::get_IMT"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a4ad481a62d4ef9c00372de4db9b98695"></span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiPropertiesE" title="chase::mpi::ChaseMpiProperties::T">T</a> *<code class="sig-name descname">get_IMT</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties7get_IMTEv" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p><dl class="simple">
-<dt><strong>Return</strong></dt><dd><p><code class="docutils literal notranslate"><span class="pre">IMT_</span></code>: a poniter to the memory which is used for the MPI collective communications for the MPI-based implementation of HEMM. </p>
-</dd>
-</dl>
-</p>
-</dd></dl>
-
-<dl class="cpp function">
 <dt id="_CPPv4N5chase3mpi18ChaseMpiProperties15get_blockcountsEv">
 <span id="_CPPv3N5chase3mpi18ChaseMpiProperties15get_blockcountsEv"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties15get_blockcountsEv"></span><span id="chase::mpi::ChaseMpiProperties::get_blockcounts"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a038af537b19859e6736216152c82176f"></span><em class="property">const</em> std::vector&lt;std::vector&lt;int&gt;&gt; &amp;<code class="sig-name descname">get_blockcounts</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties15get_blockcountsEv" title="Permalink to this definition">¶</a><br /></dt>
 <dd><p><dl class="simple">
@@ -947,13 +937,6 @@
 <span id="_CPPv3N5chase3mpi18ChaseMpiProperties2C_E"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties2C_E"></span><span id="chase::mpi::ChaseMpiProperties::C___std::unique_ptr:TA:"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a81b5da6c38a367cba679ec1eb9888244"></span>std::unique_ptr&lt;<a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiPropertiesE" title="chase::mpi::ChaseMpiProperties::T">T</a>[]&gt; <code class="sig-name descname">C_</code><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties2C_E" title="Permalink to this definition">¶</a><br /></dt>
 <dd><p>A temporary memory allocated to store local part of W for the MPI collective communications for the MPI-based implementation of <code class="docutils literal notranslate"><span class="pre">HEMM</span></code>. </p>
 <p>This variable is initialized during the construction of <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_properties"><span class="std std-ref">ChaseMpiProperties</span></a> of size <code class="docutils literal notranslate"><span class="pre">m_</span> <span class="pre">*</span> <span class="pre">max_block_</span></code>. </p>
-</dd></dl>
-
-<dl class="cpp var">
-<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties4IMT_E">
-<span id="_CPPv3N5chase3mpi18ChaseMpiProperties4IMT_E"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties4IMT_E"></span><span id="chase::mpi::ChaseMpiProperties::IMT___std::unique_ptr:TA:"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a405079d03b694661e7cef63bbdec36a4"></span>std::unique_ptr&lt;<a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiPropertiesE" title="chase::mpi::ChaseMpiProperties::T">T</a>[]&gt; <code class="sig-name descname">IMT_</code><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties4IMT_E" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>A temporary memory the MPI collective communications for the MPI-based implementation of <code class="docutils literal notranslate"><span class="pre">HEMM</span></code>. </p>
-<p>This variable is initialized during the construction of <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_properties"><span class="std std-ref">ChaseMpiProperties</span></a> of size <code class="docutils literal notranslate"><span class="pre">std::max(n_,</span> <span class="pre">m_)</span> <span class="pre">*</span> <span class="pre">max_block_</span></code>. </p>
 </dd></dl>
 
 <dl class="cpp var">

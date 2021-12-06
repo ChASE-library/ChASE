@@ -43,7 +43,7 @@ memory footprint per MPI task exceeds the amount of main memory
 available to the compiled code. To help the user to make the correct
 decision in terms of resources a simple formula for **Block distribution** of matrix can be used ::
 
-  sizeof(float_type) *[n * m + (n + m + max(m,n)) * block + 2 * N *
+  sizeof(float_type) *[n * m + (n + m) * block + 2 * N *
   block + 1 + 5*n + 2*pow(n,2) + 2 * nb]/(1024^3) GigaByte
 
 where ``n`` and ``m`` are fractions of ``N`` which depend on the size
@@ -61,7 +61,7 @@ For ChASE with **Block-Cyclic distribution** of matrix, addtional memory of
 size ``sizeof(float_type) * N * block`` is required for managing the internal reshuffing
 for block-cyclic data layout. Thus the total memory required is::
 
-  sizeof(float_type) *[n * m + (n + m + max(m,n)) * block + 3 * N *
+  sizeof(float_type) *[n * m + (n + m) * block + 3 * N *
   block + 1 + 5*n + 2*pow(n,2) + 2 * nb]/(1024^3) GigaByte
 
 
@@ -97,8 +97,8 @@ in which ``${n}`` is the rank of matrix, ``${nev}`` is the number of eigenpairs 
     Data Layout:   block
 
 
-    Main memory usage per MPI-rank: 17.798 GB
-    Total main memory usage (1824 ranks): 20503.089 GB
+    Main memory usage per MPI-rank: 17.546 GB
+    Total main memory usage (1824 ranks): 20213.410 GB
 
 
 Using such a formula one can verify if the allocation of
@@ -136,8 +136,8 @@ the required MPI grid size. Moreover, the flag ``--layout`` should also be expli
     Data Layout:   block-cyclic
 
 
-    Main memory usage per MPI-rank: 25.844 GB
-    Total main memory usage (1152 ranks): 29772.803 GB
+    Main memory usage per MPI-rank: 25.593 GB
+    Total main memory usage (1152 ranks): 29483.125 GB
 
 
 ChASE with multi-GPUs
