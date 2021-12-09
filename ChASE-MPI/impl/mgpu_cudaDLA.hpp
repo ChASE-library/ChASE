@@ -185,9 +185,9 @@ namespace chase {
 
 	
 					//for shifting matrix on gpus
-					int start_row, start_col;
- 					d_off_m_ = (int**) malloc(num_devices_per_rank * sizeof(int*));
-					d_off_n_ = (int**) malloc(num_devices_per_rank * sizeof(int*));
+					std::size_t start_row, start_col;
+ 					d_off_m_ = (std::size_t**) malloc(num_devices_per_rank * sizeof(std::size_t*));
+					d_off_n_ = (std::size_t**) malloc(num_devices_per_rank * sizeof(std::size_t*));
 
 					for (int dev_x = 0; dev_x < ntile_m_; dev_x++){
 						tile_x = get_tile_size_row(dev_x);
@@ -197,7 +197,7 @@ namespace chase {
 							tile_y = get_tile_size_col(dev_y);
 							start_col = dev_y * dim_tile_n_;
 							int dev_id = dev_x * ntile_n_ + dev_y;
-							std::vector<int> off_m, off_n;
+							std::vector<std::size_t> off_m, off_n;
                                                        
 							for(std::size_t j = 0; j < nblocks_; j++){
 								for(std::size_t i = 0; i < mblocks_; i++){
@@ -205,7 +205,7 @@ namespace chase {
 										for(std::size_t p = 0; p < r_lens_[i]; p++){
 
 											if(q + c_offs_l_[j] >= start_col && q + c_offs_l_[j] < start_col + tile_y && p + r_offs_l_[i] >= start_row && p + r_offs_l_[i] < start_row + tile_x){
-												int s, t;
+												std::size_t s, t;
 												//t, s, global index
 												t = q + c_offs_[j];
 												s = p + r_offs_[i];
@@ -221,13 +221,13 @@ namespace chase {
 								}
 							}
 
-							int off_size = off_m.size();
+							std::size_t off_size = off_m.size();
 							diagonal_offs_.push_back(off_size);
 							cuda_exec(cudaSetDevice(shmrank_*num_devices_per_rank + dev_id));
-							cudaMalloc(&d_off_m_[dev_id], off_size * sizeof(int));
-							cudaMalloc(&d_off_n_[dev_id], off_size * sizeof(int));
-							cudaMemcpy(d_off_m_[dev_id], off_m.data(), off_size* sizeof(int), cudaMemcpyHostToDevice);
-							cudaMemcpy(d_off_n_[dev_id], off_n.data(), off_size* sizeof(int), cudaMemcpyHostToDevice);
+							cudaMalloc(&d_off_m_[dev_id], off_size * sizeof(std::size_t));
+							cudaMalloc(&d_off_n_[dev_id], off_size * sizeof(std::size_t));
+							cudaMemcpy(d_off_m_[dev_id], off_m.data(), off_size* sizeof(std::size_t), cudaMemcpyHostToDevice);
+							cudaMemcpy(d_off_n_[dev_id], off_n.data(), off_size* sizeof(std::size_t), cudaMemcpyHostToDevice);
 
 						}
 					}
@@ -377,7 +377,7 @@ namespace chase {
 					int tile_x, tile_y;
 					int count_x = 0, count_y = 0;
 
-					int start_row, start_col;
+					std::size_t start_row, start_col;
 
 					for (int dev_x = 0; dev_x < ntile_m_; dev_x++){
 						tile_x = get_tile_size_row(dev_x);
@@ -388,7 +388,7 @@ namespace chase {
 							start_col = dev_y * dim_tile_n_;
 							int dev_id = dev_x * ntile_n_ + dev_y;
 							
-							int off_size = diagonal_offs_[dev_id];
+							std::size_t off_size = diagonal_offs_[dev_id];
 
 							cuda_exec(cudaSetDevice(shmrank_*num_devices_per_rank + dev_id));
 							chase_shift_mgpu_matrix(H_[dev_id], d_off_m_[dev_id], d_off_n_[dev_id], off_size, ldH, std::real(c), stream_[dev_id]);
@@ -971,9 +971,9 @@ namespace chase {
   				std::size_t mblocks_;
 
 				//for shifting matrix on gpus
-				int **d_off_m_ = nullptr;
-				int **d_off_n_ = nullptr;
-				std::vector<int> diagonal_offs_;
+				std::size_t **d_off_m_ = nullptr;
+				std::size_t  **d_off_n_ = nullptr;
+				std::vector<std::size_t> diagonal_offs_;
 				
 				/// Return the number of rows of the tile with row-index 'tile_position'
 				int get_tile_size_row (int tile_position) {

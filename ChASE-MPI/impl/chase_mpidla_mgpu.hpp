@@ -22,20 +22,20 @@
 #include "chase_mpidla_interface.hpp"
 #include "mgpu_cudaDLA.hpp"
 
-void chase_shift_mgpu_matrix(float* A, int* off_m, int* off_n,
-                            int offsize, int ldH, float shift,
+void chase_shift_mgpu_matrix(float* A, std::size_t* off_m, std::size_t* off_n,
+                            std::size_t offsize, std::size_t ldH, float shift,
                              cudaStream_t stream_);
 
-void chase_shift_mgpu_matrix(double* A, int* off_m, int* off_n,
-                            int offsize, int ldH, double shift,
+void chase_shift_mgpu_matrix(double* A, std::size_t* off_m, std::size_t* off_n,
+                            std::size_t offsize, std::size_t ldH, double shift,
                              cudaStream_t stream_);
 
-void chase_shift_mgpu_matrix(std::complex<double>* A, int* off_m, int* off_n,
-                             int offsize, int ldH, double shift,
+void chase_shift_mgpu_matrix(std::complex<double>* A, std::size_t* off_m, std::size_t* off_n,
+                             std::size_t offsize, std::size_t ldH, double shift,
                              cudaStream_t stream_);
 
-void chase_shift_mgpu_matrix(std::complex<float>* A, int* off_m, int* off_n,
-                             int offsize, int ldH, float shift,
+void chase_shift_mgpu_matrix(std::complex<float>* A, std::size_t* off_m, std::size_t* off_n,
+                             std::size_t offsize, std::size_t ldH, float shift,
                              cudaStream_t stream_);
 
 
