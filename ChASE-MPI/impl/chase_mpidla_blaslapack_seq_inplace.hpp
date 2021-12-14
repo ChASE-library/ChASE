@@ -168,6 +168,9 @@ class ChaseMpiDLABlaslapackSeqInplace : public ChaseMpiDLAInterface<T> {
     - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
   void gegqr(std::size_t N, std::size_t nevex, T * approxV, std::size_t LDA) override {
+      
+      this->postApplication(approxV, nevex - locked_);
+
       auto tau = std::unique_ptr<T[]> {
           new T[ nevex ]
       };

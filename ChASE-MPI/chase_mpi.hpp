@@ -236,7 +236,7 @@ class ChaseMpi : public chase::Chase<T> {
   //! After the explicit construction of Q, its first `fixednev` number of vectors are overwritten by the converged eigenvectors stored in `workspace_`.
   //! @param fixednev: total number of converged eigenpairs before this time QR factorization.  
   void QR(std::size_t fixednev) override {
-    dla_->postApplication(approxV_, nev_ + nex_ - locked_);
+    //dla_->postApplication(approxV_, nev_ + nex_ - locked_);
 
     std::size_t nevex = nev_ + nex_;
     // we don't need this, as we copy to workspace when locking

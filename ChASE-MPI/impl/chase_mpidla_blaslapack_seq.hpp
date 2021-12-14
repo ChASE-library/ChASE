@@ -177,6 +177,9 @@ class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T> {
       t_gqr(LAPACK_COL_MAJOR, N, nevex, nevex, approxV, LDA, tau.get());
       */
       //Xinzhe: replaced with CholeskyQR2
+
+      this->postApplication(approxV, nevex - locked_);
+
       T one = T(1.0);
       T zero = T(0.0);
 
