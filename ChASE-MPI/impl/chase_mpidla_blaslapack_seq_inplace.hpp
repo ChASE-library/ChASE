@@ -301,6 +301,10 @@ class ChaseMpiDLABlaslapackSeqInplace : public ChaseMpiDLAInterface<T> {
       delete[] A;
   }
 
+  void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_t locked, std::size_t unconverged) override{
+
+  }
+
  private:
   std::size_t N_;
   std::size_t locked_;

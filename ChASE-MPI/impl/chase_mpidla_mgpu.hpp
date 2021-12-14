@@ -413,6 +413,10 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
       mgpuDLA->RR_kernel(N, block, approxV, locked, workspace, One, Zero, ritzv);
   }
 
+  void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_t locked, std::size_t unconverged) override{
+
+  }
+
  private:
   enum NextOp { cAb, bAc };
 

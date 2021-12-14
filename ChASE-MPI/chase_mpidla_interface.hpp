@@ -356,6 +356,7 @@ class ChaseMpiDLAInterface {
   */
   virtual void RR_kernel(std::size_t N, std::size_t block, T *approxV, std::size_t locked, T *workspace, T One, T Zero, Base<T> *ritzv) = 0;
 
+  virtual void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_t locked, std::size_t unconverged) = 0;
 };
 }  // namespace matrixfree
 }  // namespace chase

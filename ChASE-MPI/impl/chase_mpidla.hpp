@@ -476,6 +476,40 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
       dla_->RR_kernel(N, block, approxV, locked, workspace, One, Zero, ritzv);	
   }
   
+  void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_t locked, std::size_t unconverged) override{
+    T one = T(1.0);
+    T neg_one = T(-1.0);
+    T beta = T(0.0);
+
+    auto ptr = std::unique_ptr<T[]> {
+      new T[ unconverged * unconverged ]
+    };
+
+    for(std::size_t i = 0; i < unconverged; i++){
+      for(std::size_t j = 0; j < unconverged; j++){
+        if(i == j){
+          ptr[i * unconverged + j] = ritzv[i];
+        }
+        else{
+          ptr[i * unconverged + j] = T(0.0);
+        }
+      }
+    }
+
+    t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, m_, unconverged, unconverged, &one, approxV_ + locked * N_ + off_[0], N_, ptr.get(), unconverged, &neg_one, workspace_ + locked * N_ + off_[0], N_);
+
+    for (std::size_t i = 0; i < unconverged; ++i) {
+      auto tmp = this->nrm2(m_, (workspace_ + locked * N_ + off_[0]) + N_ * i, 1);
+      resid[i] = tmp * tmp;
+    }
+
+    MPI_Allreduce(MPI_IN_PLACE, resid, unconverged, getMPI_Type<Base<T>>(), MPI_SUM, col_comm_);
+
+    for (std::size_t i = 0; i < unconverged; ++i) {
+      resid[i] = sqrt(resid[i]);
+    }
+  }
+
  private:
   enum NextOp { cAb, bAc };
 

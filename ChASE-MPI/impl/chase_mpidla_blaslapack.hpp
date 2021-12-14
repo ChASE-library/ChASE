@@ -323,7 +323,10 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
       delete[] A;    	
   }
 
+  void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_t locked, std::size_t unconverged) override{
 
+  }
+  
  private:
   enum NextOp { cAb, bAc };
 

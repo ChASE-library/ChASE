@@ -416,6 +416,10 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
 	
   }
 
+  void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_t locked, std::size_t unconverged) override{
+
+  }
+  
  private:
   std::size_t n_;
   std::size_t locked_;

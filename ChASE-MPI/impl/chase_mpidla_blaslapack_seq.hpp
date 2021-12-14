@@ -315,6 +315,23 @@ class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T> {
       delete[] A;
   }
 
+  void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_t locked, std::size_t unconverged) override{
+    T alpha = T(1.0);
+    T beta = T(0.0);
+
+    for (std::size_t i = 0; i < unconverged; ++i) {
+      beta = T(-ritzv[i]);
+      axpy(                                      
+          N_,                                      
+          &beta,                                   
+          (approxV_ + locked * N_) + N_ * i, 1,   
+          (workspace_ + locked * N_) + N_ * i, 1  
+      );
+
+      resid[i] = nrm2(N_, (workspace_ + locked * N_) + N_ * i, 1);
+    }
+  }
+
  private:
   std::size_t N_;
   std::size_t locked_;
