@@ -229,16 +229,56 @@ void t_gemm<float>(const CBLAS_LAYOUT Layout, const CBLAS_TRANSPOSE transa,
   (&TA, &TB, &m_, &n_, &k_, alpha, a, &lda_, b, &ldb_, beta, c, &ldc_);
 }
 
+
 template <>
-void t_hemm(const CBLAS_LAYOUT Layout, const CBLAS_SIDE side,
-            const CBLAS_UPLO uplo, const std::size_t m, const std::size_t n,
-            const std::complex<double>* alpha, const std::complex<double>* a,
-            const std::size_t lda, const std::complex<double>* b,
-            const std::size_t ldb, const std::complex<double>* beta,
-            std::complex<double>* c, const std::size_t ldc) {
-  char side_, uplo_;
-  side_ = 'L';
-  uplo_ = 'L';
+void t_syhemm(const char side, const char uplo, const std::size_t m, const std::size_t n,
+            const float* alpha, float* a, const std::size_t lda, float* b,
+            const std::size_t ldb, const float* beta, float* c, const std::size_t ldc){
+
+  BlasInt m_ = m;
+  BlasInt n_ = n;
+  BlasInt lda_ = lda;
+  BlasInt ldb_ = ldb;
+  BlasInt ldc_ = ldc;
+
+  FC_GLOBAL(ssymm, SSYMM)
+  (&side, &uplo, &m_, &n_, alpha, a, &lda_, b, &ldb_, beta, c, &ldc_);
+}
+
+template <>
+void t_syhemm(const char side, const char uplo, const std::size_t m, const std::size_t n,
+            const double* alpha, double* a, const std::size_t lda, double* b,
+            const std::size_t ldb, const double* beta, double* c, const std::size_t ldc){
+
+  BlasInt m_ = m;
+  BlasInt n_ = n;
+  BlasInt lda_ = lda;
+  BlasInt ldb_ = ldb;
+  BlasInt ldc_ = ldc;
+
+  FC_GLOBAL(dsymm, DSYMM)
+  (&side, &uplo, &m_, &n_, alpha, a, &lda_, b, &ldb_, beta, c, &ldc_);
+}
+
+template <>
+void t_syhemm(const char side, const char uplo, const std::size_t m, const std::size_t n,
+            const std::complex<float>* alpha, std::complex<float>* a, const std::size_t lda, std::complex<float>* b,
+            const std::size_t ldb, const std::complex<float>* beta, std::complex<float>* c, const std::size_t ldc){
+
+  BlasInt m_ = m;
+  BlasInt n_ = n;
+  BlasInt lda_ = lda;
+  BlasInt ldb_ = ldb;
+  BlasInt ldc_ = ldc;
+
+  FC_GLOBAL(chemm, CHEMM)
+  (&side, &uplo, &m_, &n_, alpha, a, &lda_, b, &ldb_, beta, c, &ldc_);
+}
+
+template <>
+void t_syhemm(const char side, const char uplo, const std::size_t m, const std::size_t n,
+            const std::complex<double>* alpha, std::complex<double>* a, const std::size_t lda, std::complex<double>* b,
+            const std::size_t ldb, const std::complex<double>* beta, std::complex<double>* c, const std::size_t ldc){
 
   BlasInt m_ = m;
   BlasInt n_ = n;
@@ -247,7 +287,7 @@ void t_hemm(const CBLAS_LAYOUT Layout, const CBLAS_SIDE side,
   BlasInt ldc_ = ldc;
 
   FC_GLOBAL(zhemm, ZHEMM)
-  (&side_, &uplo_, &m_, &n_, alpha, a, &lda_, b, &ldb_, beta, c, &ldc_);
+  (&side, &uplo, &m_, &n_, alpha, a, &lda_, b, &ldb_, beta, c, &ldc_);
 }
 
 template <>
@@ -308,6 +348,71 @@ void t_gemm<std::complex<float>>(
 
   FC_GLOBAL(cgemm, CGEMM)
   (&TA, &TB, &m_, &n_, &k_, alpha, a, &lda_, b, &ldb_, beta, c, &ldc_);
+}
+
+
+template <>
+void t_syherk(const char uplo, const char trans,
+              const std::size_t n, const std::size_t k,
+              const float* alpha, float* a, const std::size_t lda,
+              const float* beta, float* c, const std::size_t ldc)
+{
+  BlasInt n_ = n;
+  BlasInt k_ = k;
+  BlasInt lda_ = lda;
+  BlasInt ldc_ = ldc;
+
+  FC_GLOBAL(ssyrk, SSYRK)
+  (&uplo, &trans, &n_, &k_, alpha, a, &lda_, beta, c, &ldc_);
+}
+
+
+template <>
+void t_syherk(const char uplo, const char trans,
+              const std::size_t n, const std::size_t k,
+              const double* alpha, double* a, const std::size_t lda,
+              const double* beta, double* c, const std::size_t ldc)
+{
+  BlasInt n_ = n;
+  BlasInt k_ = k;
+  BlasInt lda_ = lda;
+  BlasInt ldc_ = ldc;
+
+  FC_GLOBAL(dsyrk, DSYRK)
+  (&uplo, &trans, &n_, &k_, alpha, a, &lda_, beta, c, &ldc_);
+}
+
+
+template <>
+void t_syherk(const char uplo, const char trans,
+              const std::size_t n, const std::size_t k,
+              const std::complex<float>* alpha, std::complex<float>* a, const std::size_t lda,
+              const std::complex<float>* beta, std::complex<float>* c, const std::size_t ldc)
+{
+  BlasInt n_ = n;
+  BlasInt k_ = k;
+  BlasInt lda_ = lda;
+  BlasInt ldc_ = ldc;
+
+  FC_GLOBAL(cherk, CHERK)
+  (&uplo, &trans, &n_, &k_, alpha, a, &lda_, beta, c, &ldc_);
+}
+
+
+template <>
+void t_syherk(const char uplo, const char trans,
+              const std::size_t n, const std::size_t k,
+              const std::complex<double>* alpha, std::complex<double>* a, const std::size_t lda,
+              const std::complex<double>* beta, std::complex<double>* c, const std::size_t ldc)
+{
+  BlasInt n_ = n;
+  BlasInt k_ = k;
+  BlasInt lda_ = lda;
+  BlasInt ldc_ = ldc;
+
+  FC_GLOBAL(zherk, ZHERK)
+  (&uplo, &trans, &n_, &k_, alpha, a, &lda_, beta, c, &ldc_);
+
 }
 
 // xNRM2
@@ -979,6 +1084,118 @@ std::size_t t_stemr(int matrix_layout, char jobz, char range, std::size_t n,
   assert(info == 0);
   return info;
 }
+
+template <>
+std::size_t t_potrf(const char uplo, const std::size_t n, float* a, const std::size_t lda)
+{
+  BlasInt n_ = n;
+  BlasInt lda_ = lda;
+  BlasInt info;
+  
+  FC_GLOBAL(spotrf, SPOTRF)
+  (&uplo, &n_, a, &lda_, &info);
+  assert(info == 0);
+  return info;
+}
+
+template <>
+std::size_t t_potrf(const char uplo, const std::size_t n, double* a, const std::size_t lda)
+{
+  BlasInt n_ = n;
+  BlasInt lda_ = lda;
+  BlasInt info;
+  
+  FC_GLOBAL(dpotrf, DPOTRF)
+  (&uplo, &n_, a, &lda_, &info);
+  assert(info == 0);
+  return info;
+}
+
+template <>
+std::size_t t_potrf(const char uplo, const std::size_t n, std::complex<float>* a, const std::size_t lda)
+{
+  BlasInt n_ = n;
+  BlasInt lda_ = lda;
+  BlasInt info;
+  
+  FC_GLOBAL(cpotrf, CPOTRF)
+  (&uplo, &n_, a, &lda_, &info);
+  assert(info == 0);
+  return info;
+}
+
+template <>
+std::size_t t_potrf(const char uplo, const std::size_t n, std::complex<double>* a, const std::size_t lda)
+{
+  BlasInt n_ = n;
+  BlasInt lda_ = lda;
+  BlasInt info;
+  
+  FC_GLOBAL(zpotrf, ZPOTRF)
+  (&uplo, &n_, a, &lda_, &info);
+  assert(info == 0);
+  return info;
+}
+
+
+template <>
+void t_trsm(const char side, const char uplo, const char trans, const char diag,
+            const std::size_t m, const std::size_t n, const float* alpha,
+            const float* a, const std::size_t lda, const float* b, const std::size_t ldb)
+{
+  BlasInt m_ = m;
+  BlasInt n_ = n;
+  BlasInt lda_ = lda;
+  BlasInt ldb_ = ldb;
+  
+  FC_GLOBAL(strsm, STRSM)
+  (&side, &uplo, &trans, &diag, &m_, &n_, alpha, a, &lda_, b, &ldb_);
+}
+
+template <>
+void t_trsm(const char side, const char uplo, const char trans, const char diag,
+            const std::size_t m, const std::size_t n, const double* alpha,
+            const double* a, const std::size_t lda, const double* b, const std::size_t ldb)
+{
+  BlasInt m_ = m;
+  BlasInt n_ = n;
+  BlasInt lda_ = lda;
+  BlasInt ldb_ = ldb;
+  
+  FC_GLOBAL(dtrsm, DTRSM)
+  (&side, &uplo, &trans, &diag, &m_, &n_, alpha, a, &lda_, b, &ldb_);
+}
+
+template <>
+void t_trsm(const char side, const char uplo, const char trans, const char diag,
+            const std::size_t m, const std::size_t n, const std::complex<float>* alpha,
+            const std::complex<float>* a, const std::size_t lda, const std::complex<float>* b, const std::size_t ldb)
+{
+  BlasInt m_ = m;
+  BlasInt n_ = n;
+  BlasInt lda_ = lda;
+  BlasInt ldb_ = ldb;
+  
+  FC_GLOBAL(ctrsm, CTRSM)
+  (&side, &uplo, &trans, &diag, &m_, &n_, alpha, a, &lda_, b, &ldb_);
+}
+
+
+template <>
+void t_trsm(const char side, const char uplo, const char trans, const char diag,
+            const std::size_t m, const std::size_t n, const std::complex<double>* alpha,
+            const std::complex<double>* a, const std::size_t lda, const std::complex<double>* b, const std::size_t ldb)
+{
+  BlasInt m_ = m;
+  BlasInt n_ = n;
+  BlasInt lda_ = lda;
+  BlasInt ldb_ = ldb;
+  
+  FC_GLOBAL(ztrsm, ZTRSM)
+  (&side, &uplo, &trans, &diag, &m_, &n_, alpha, a, &lda_, b, &ldb_);
+}
+
+
 
 }  // namespace mpi
 }  // namespace chase

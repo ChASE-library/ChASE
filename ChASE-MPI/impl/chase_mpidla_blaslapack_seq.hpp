@@ -34,7 +34,8 @@ class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T> {
       : N_(n),
         H_(matrices.get_H()),
         V1_(new T[N_ * maxBlock]),
-        V2_(new T[N_ * maxBlock]) {}
+        V2_(new T[N_ * maxBlock]),
+        A_(new T[maxBlock * maxBlock]){}
 
   ChaseMpiDLABlaslapackSeq() = delete;
   ChaseMpiDLABlaslapackSeq(ChaseMpiDLABlaslapackSeq const& rhs) = delete;
@@ -168,11 +169,24 @@ class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T> {
     - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
   void gegqr(std::size_t N, std::size_t nevex, T * approxV, std::size_t LDA) override {
+      /*
       auto tau = std::unique_ptr<T[]> {
           new T[ nevex ]
       };
       t_geqrf(LAPACK_COL_MAJOR, N, nevex, approxV, LDA, tau.get());
       t_gqr(LAPACK_COL_MAJOR, N, nevex, nevex, approxV, LDA, tau.get());
+      */
+      //Xinzhe: replaced with CholeskyQR2
+      T one = T(1.0);
+      T zero = T(0.0);
+
+      t_syherk('U', 'C', nevex, N, &one, approxV, N, &zero, A_.get(), nevex);
+      t_potrf('U', nevex, A_.get(), nevex);
+      t_trsm('R', 'U', 'N', 'N', N, nevex, &one, A_.get(), nevex, approxV, N);
+
+      t_syherk('U', 'C', nevex, N, &one, approxV, N, &zero, A_.get(), nevex);
+      t_potrf('U', nevex, A_.get(), nevex);
+      t_trsm('R', 'U', 'N', 'N', N, nevex, &one, A_.get(), nevex, approxV, N);             
   }
 
   /*!
@@ -304,6 +318,7 @@ class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T> {
   T* H_;
   std::unique_ptr<T> V1_;
   std::unique_ptr<T> V2_;
+  std::unique_ptr<T> A_; //for CholeskyQR
 };
 
 template <typename T>

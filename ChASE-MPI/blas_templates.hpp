@@ -37,11 +37,17 @@ void t_gemm(const CBLAS_LAYOUT Layout, const CBLAS_TRANSPOSE transa,
             const T* a, const std::size_t lda, const T* b,
             const std::size_t ldb, const T* beta, T* c, const std::size_t ldc);
 
+
 template <typename T>
-void t_hemm(const CBLAS_LAYOUT Layout, const CBLAS_SIDE side,
-            const CBLAS_UPLO uplo, const std::size_t m, const std::size_t n,
-            const T* alpha, const T* a, const std::size_t lda, const T* b,
+void t_syhemm(const char side, const char uplo, const std::size_t m, const std::size_t n,
+            const T* alpha,  T* a, const std::size_t lda, T* b,
             const std::size_t ldb, const T* beta, T* c, const std::size_t ldc);
+
+template <typename T>
+void t_syherk(const char uplo, const char trans,
+              const std::size_t n, const std::size_t k,
+              const T* alpha, T* a, const std::size_t lda,
+              const T* beta, T* c, const std::size_t ldc);
 
 template <typename T>
 void t_axpy(const std::size_t n, const T* a, const T* x, const std::size_t incx,
@@ -85,6 +91,14 @@ std::size_t t_stemr(int matrix_layout, char jobz, char range, std::size_t n,
 template <typename T>
 T t_dot(const std::size_t n, const T* x, const std::size_t incx, const T* y,
         const std::size_t incy);
+
+template <typename T>
+std::size_t t_potrf(const char uplo, const std::size_t n, T* a, const std::size_t lda);
+
+template <typename T>
+void t_trsm(const char side, const char uplo, const char trans, const char diag,
+            const std::size_t m, const std::size_t n, const T* alpha,
+            const T* a, const std::size_t lda, const T* b, const std::size_t ldb);
 
 }  // namespace mpi
 }  // namespace chase
