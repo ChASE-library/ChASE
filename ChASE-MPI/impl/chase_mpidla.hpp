@@ -345,7 +345,25 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
   void gegqr(std::size_t N, std::size_t nevex, T * approxV, std::size_t LDA) override {
 
       this->postApplication(approxV, nevex - locked_);
-      dla_->gegqr(N, nevex, approxV, LDA);
+      //dla_->gegqr(N, nevex, approxV, LDA);
+    
+      auto A_ = std::unique_ptr<T[]> {
+        new T[ nevex * nevex ]
+      };
+
+      T one = T(1.0);
+      T zero = T(0.0);
+      std::size_t off = off_[0];
+
+      t_syherk('U', 'C', nevex, m_, &one, approxV + off, N, &zero, A_.get(), nevex);
+      MPI_Allreduce(MPI_IN_PLACE, A_.get(), nevex * nevex, getMPI_Type<T>(), MPI_SUM, col_comm_);
+      t_potrf('U', nevex, A_.get(), nevex);
+      t_trsm('R', 'U', 'N', 'N', N, nevex, &one, A_.get(), nevex, approxV, N);
+
+      t_syherk('U', 'C', nevex, m_, &one, approxV + off, N, &zero, A_.get(), nevex);
+      MPI_Allreduce(MPI_IN_PLACE, A_.get(), nevex * nevex, getMPI_Type<T>(), MPI_SUM, col_comm_);
+      t_potrf('U', nevex, A_.get(), nevex);
+      t_trsm('R', 'U', 'N', 'N', N, nevex, &one, A_.get(), nevex, approxV, N); 
   }
 
   /*!
