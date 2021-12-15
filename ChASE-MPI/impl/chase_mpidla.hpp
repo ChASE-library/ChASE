@@ -83,7 +83,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
       recv_offsets_[i].resize(send_lens_[i].size());
       recv_offsets_[i][0] = 0;
       for(auto j = 1; j < recv_offsets_[i].size(); j++){
-        recv_offsets_[i][j] += send_lens_[i][j-1];
+        recv_offsets_[i][j] = recv_offsets_[i][j-1] + send_lens_[i][j-1];
       }
     }    
 
@@ -381,13 +381,15 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
 
       //CholeskyQR2
       for(int i = 0; i < 2; i++){
+	//dla_->syherk('U', 'C', nevex, N, &one, approxV, N, &zero, A_.get(), nevex);//rebundant version for debug
         //parallel within column communicator
-        dla_->syherk('U', 'C', nevex, m_, &one, approxV + recv_offsets_[0][col_rank_], N, &zero, A_.get(), nevex);
+      	dla_->syherk('U', 'C', nevex, m_, &one, approxV + recv_offsets_[0][col_rank_], N, &zero, A_.get(), nevex);
         MPI_Allreduce(MPI_IN_PLACE, A_.get(), nevex * nevex, getMPI_Type<T>(), MPI_SUM, col_comm_);
         //rebundantly
         dla_->potrf('U', nevex, A_.get(), nevex);
         //parallel within column communicator
-        dla_->trsm('R', 'U', 'N', 'N', m_, nevex, &one, A_.get(), nevex, approxV + recv_offsets_[0][col_rank_], N);
+	dla_->trsm('R', 'U', 'N', 'N', m_, nevex, &one, A_.get(), nevex, approxV + recv_offsets_[0][col_rank_], N);
+        //dla_->trsm('R', 'U', 'N', 'N', N, nevex, &one, A_.get(), nevex, approxV, N); ////rebundant version for debug
       }
 
       for (auto i = 0; i < col_size_; ++i){
@@ -542,6 +544,19 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
         }
       }
     }
+   
+    //rebundant version for debug 
+/*
+    dla_->gemm_large(CblasColMajor, CblasNoTrans, CblasNoTrans, N_, unconverged, unconverged, &one, approxV_ + locked * N_, //
+          N_, ptr.get(), unconverged, &neg_one, workspace_ + locked * N_, N_);
+
+    for (std::size_t i = 0; i < unconverged; ++i) {
+
+	resid[i] = this->nrm2(N_, workspace_ + locked * N_ + N_ * i, 1);
+    }
+        std::cout << "grank = " << col_rank_ << ", m = " << m_ << ", off = " << recv_offsets_[0][col_rank_] << std::endl;
+*/
+    ////////
 
     dla_->gemm_large(CblasColMajor, CblasNoTrans, CblasNoTrans, m_, unconverged, unconverged, &one, approxV_ + locked * N_ + recv_offsets_[0][col_rank_], //
           N_, ptr.get(), unconverged, &neg_one, workspace_ + locked * N_ + recv_offsets_[0][col_rank_], N_);
