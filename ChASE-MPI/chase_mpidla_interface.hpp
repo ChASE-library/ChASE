@@ -354,6 +354,16 @@ class ChaseMpiDLAInterface {
     @param[in] Zero: scalar `T(0)`.
     @param[out] ritzv: a real vector which stores the computed eigenvalues.
   */
+
+  virtual void syherk(char uplo, char trans, std::size_t n, std::size_t k, T* alpha, T* a, std::size_t lda, T* beta, T* c, std::size_t ldc) = 0;
+
+  virtual void potrf(char uplo, std::size_t n, T* a, std::size_t lda) = 0;
+
+  virtual void trsm(char side, char uplo, char trans, char diag,
+                      std::size_t m, std::size_t n, T* alpha,
+                      T* a, std::size_t lda, T* b, std::size_t ldb) = 0;
+
+
   virtual void RR_kernel(std::size_t N, std::size_t block, T *approxV, std::size_t locked, T *workspace, T One, T Zero, Base<T> *ritzv) = 0;
 
   virtual void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_t locked, std::size_t unconverged) = 0;

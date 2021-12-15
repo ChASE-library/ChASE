@@ -38,7 +38,7 @@ int main(int argc, char** argv)
 
 #ifdef USE_BLOCK_CYCLIC
   /*parameters of block-cyclic data layout*/
-  std::size_t NB = 50; //block size for block-cyclic data layout
+  std::size_t NB = 20; //block size for block-cyclic data layout
   int dims[2]; 
   dims[0] = dims[1] = 0;
   //MPI proc grid = dims[0] x dims[1]
@@ -115,6 +115,7 @@ int main(int argc, char** argv)
   single.get_offs_lens(r_offs, r_lens, r_offs_l, c_offs, c_lens, c_offs_l);
 
 #ifdef CHASE_OUTPUT
+/*  
   //coordination of each MPI rank in 2D grid
   int *coord = new int[2];
 
@@ -134,6 +135,7 @@ int main(int argc, char** argv)
 	  << std::endl;
     }
   }
+*/
 #endif
 
   /*distribute Clement matrix into block cyclic data layout */

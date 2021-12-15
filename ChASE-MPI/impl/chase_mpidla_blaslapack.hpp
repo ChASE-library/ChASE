@@ -35,6 +35,8 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
     B_ = matrix_properties->get_B();
     C_ = matrix_properties->get_C();
 
+    off_ = matrix_properties->get_off();
+
     matrix_properties->get_offs_lens(r_offs_, r_lens_, r_offs_l_, c_offs_, c_lens_, c_offs_l_);
     mb_ = matrix_properties->get_mb();
     nb_ = matrix_properties->get_nb();
@@ -251,7 +253,10 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
                          std::size_t n, std::size_t k, T* alpha,
                          T* a, std::size_t lda, T* b,
                          std::size_t ldb, T* beta, T* c, std::size_t ldc) override
-  {}
+  {
+      t_gemm(Layout, transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
+
+  }
   /*!
    - For ChaseMpiDLABlaslapack, `gemm_large` is implemented in ChaseMpiDLA.
    - **Parallelism is SUPPORT within node if multi-threading is enabled.**    
@@ -262,7 +267,9 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
                          std::size_t n, std::size_t k, T* alpha,
                          T* a, std::size_t lda, T* b,
                          std::size_t ldb, T* beta, T* c, std::size_t ldc) override
-  {}
+  {
+      t_gemm(Layout, transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
+  }
 
   /*!
    - For ChaseMpiDLABlaslapack, `stemr` with scalar being real and double precision, is implemented using `LAPACK` routine `DSTEMR`.
@@ -323,10 +330,22 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
       delete[] A;    	
   }
 
-  void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_t locked, std::size_t unconverged) override{
-
+  void syherk(char uplo, char trans, std::size_t n, std::size_t k, T* alpha, T* a, std::size_t lda, T* beta, T* c, std::size_t ldc)  override  {
+      t_syherk(uplo, trans, n, k, alpha, a, lda, beta, c, ldc);
   }
-  
+
+  void potrf(char uplo, std::size_t n, T* a, std::size_t lda) override{
+      t_potrf(uplo, n, a, lda);
+  }
+
+  void trsm(char side, char uplo, char trans, char diag,
+                      std::size_t m, std::size_t n, T* alpha,
+                      T* a, std::size_t lda, T* b, std::size_t ldb) override{
+      t_trsm(side, uplo, trans, diag, m, n, alpha, a, lda, b, ldb);
+  }
+
+  void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_t locked, std::size_t unconverged) override{}
+
  private:
   enum NextOp { cAb, bAc };
 
@@ -340,6 +359,7 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
   T* B_;
   T* C_;
 
+  std::size_t* off_;
   std::size_t *r_offs_;
   std::size_t *r_lens_;
   std::size_t *r_offs_l_;

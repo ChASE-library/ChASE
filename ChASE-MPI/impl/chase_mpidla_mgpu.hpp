@@ -362,7 +362,9 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
                          std::size_t n, std::size_t k, T* alpha,
                          T* a, std::size_t lda, T* b,
                          std::size_t ldb, T* beta, T* c, std::size_t ldc) override 
-  {}
+  {
+    t_gemm(Layout, transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
+  }
 
   /*!
    - For ChaseMpiDLAMultiGPU, `gemm_large` is implemented in ChaseMpiDLA.
@@ -374,7 +376,9 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
                          std::size_t n, std::size_t k, T* alpha,
                          T* a, std::size_t lda, T* b,
                          std::size_t ldb, T* beta, T* c, std::size_t ldc) override 
-  {}
+  {
+    t_gemm(Layout, transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
+  }
 
   /*!
    - For ChaseMpiDLAMultiGPU, `stemr` with scalar being real and double precision, is implemented using `LAPACK` routine `DSTEMR`.
@@ -409,13 +413,25 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
     - **for cublasXgemm, parallelism is SUPPORT within one GPU card**
     - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */  
+  void syherk(char uplo, char trans, std::size_t n, std::size_t k, T* alpha, T* a, std::size_t lda, T* beta, T* c, std::size_t ldc) override {
+      t_syherk(uplo, trans, n, k, alpha, a, lda, beta, c, ldc);
+  }
+
+  void potrf(char uplo, std::size_t n, T* a, std::size_t lda) override{
+      t_potrf(uplo, n, a, lda);
+  }
+
+  void trsm(char side, char uplo, char trans, char diag,
+                      std::size_t m, std::size_t n, T* alpha,
+                      T* a, std::size_t lda, T* b, std::size_t ldb) override{
+      t_trsm(side, uplo, trans, diag, m, n, alpha, a, lda, b, ldb);
+  }
+
   void RR_kernel(std::size_t N, std::size_t block, T *approxV, std::size_t locked, T *workspace, T One, T Zero, Base<T> *ritzv) override {
       mgpuDLA->RR_kernel(N, block, approxV, locked, workspace, One, Zero, ritzv);
   }
 
-  void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_t locked, std::size_t unconverged) override{
-
-  }
+  void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_t locked, std::size_t unconverged) override{}
 
  private:
   enum NextOp { cAb, bAc };

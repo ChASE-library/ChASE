@@ -415,11 +415,22 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
       	if (d_W_) cudaFree(d_W_);
 	
   }
+  
+  void syherk(char uplo, char trans, std::size_t n, std::size_t k, T* alpha, T* a, std::size_t lda, T* beta, T* c, std::size_t ldc)  override  {
+  }
+
+  void potrf(char uplo, std::size_t n, T* a, std::size_t lda) override{
+  }
+
+  void trsm(char side, char uplo, char trans, char diag,
+                      std::size_t m, std::size_t n, T* alpha,
+                      T* a, std::size_t lda, T* b, std::size_t ldb) override{
+  }
 
   void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_t locked, std::size_t unconverged) override{
 
   }
-  
+
  private:
   std::size_t n_;
   std::size_t locked_;
