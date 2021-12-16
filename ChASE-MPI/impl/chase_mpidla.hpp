@@ -534,6 +534,10 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
       new T[ unconverged * unconverged ]
     };
 
+    auto dots = std::unique_ptr<T[]> {
+      new T[ unconverged ]
+    };
+
     for(std::size_t i = 0; i < unconverged; i++){
       for(std::size_t j = 0; j < unconverged; j++){
         if(i == j){
@@ -558,19 +562,23 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
 */
     ////////
 
+    
     dla_->gemm_large(CblasColMajor, CblasNoTrans, CblasNoTrans, m_, unconverged, unconverged, &one, approxV_ + locked * N_ + recv_offsets_[0][col_rank_], //
           N_, ptr.get(), unconverged, &neg_one, workspace_ + locked * N_ + recv_offsets_[0][col_rank_], N_);
 
     for (std::size_t i = 0; i < unconverged; ++i) {
-      auto part_nrm = this->nrm2(m_, (workspace_ + locked * N_ + recv_offsets_[0][col_rank_]) + N_ * i, 1);
-      resid[i] = part_nrm * part_nrm;
+   	Base<T> part_nrm = 0.0;
+	for(std::size_t j = 0; j < m_; j++){
+	    part_nrm += t_sqrt_norm(workspace_[locked * N_ +  + N_ * i + recv_offsets_[0][col_rank_] + j]);
+	}
+	resid[i] = part_nrm;
     }
 
     /////
     MPI_Allreduce(MPI_IN_PLACE, resid, unconverged, getMPI_Type<Base<T>>(), MPI_SUM, col_comm_);
 
     for (std::size_t i = 0; i < unconverged; ++i) {
-      resid[i] = sqrt(resid[i]);
+	resid[i] = std::sqrt(resid[i]);	
     }
 
   }

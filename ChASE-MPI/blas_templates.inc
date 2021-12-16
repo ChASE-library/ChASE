@@ -15,6 +15,27 @@
 
 namespace chase {
 namespace mpi {
+
+template<>
+float t_sqrt_norm(float x){
+    return x * x;
+}
+
+template<>
+double t_sqrt_norm(double x){
+    return x * x;
+}
+
+template<>
+float t_sqrt_norm(std::complex<float> x){
+    return std::norm(x);
+}
+
+template<>
+double t_sqrt_norm(std::complex<double> x){
+    return std::norm(x);
+}
+
 // xSCAL
 template <>
 void t_scal(const std::size_t n, const float* a, float* x,
