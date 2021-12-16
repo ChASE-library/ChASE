@@ -327,6 +327,11 @@ class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T> {
 
   }
 
+  void heevd(int matrix_layout, char jobz, char uplo, std::size_t n,
+                    T* a, std::size_t lda, Base<T>* w) override {
+
+  }
+
   void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_t locked, std::size_t unconverged) override{
     T alpha = T(1.0);
     T beta = T(0.0);

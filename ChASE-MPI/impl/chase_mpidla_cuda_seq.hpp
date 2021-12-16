@@ -427,6 +427,11 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
                       T* a, std::size_t lda, T* b, std::size_t ldb) override{
   }
 
+  void heevd(int matrix_layout, char jobz, char uplo, std::size_t n,
+                    T* a, std::size_t lda, Base<T>* w) override {
+
+  }
+
   void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_t locked, std::size_t unconverged) override{
 
   }

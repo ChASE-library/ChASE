@@ -427,8 +427,13 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
       t_trsm(side, uplo, trans, diag, m, n, alpha, a, lda, b, ldb);
   }
 
+  void heevd(int matrix_layout, char jobz, char uplo, std::size_t n,
+                    T* a, std::size_t lda, Base<T>* w) override {
+    t_heevd(LAPACK_COL_MAJOR, 'V', 'L', block, A, block, ritzv);
+  }
+
   void RR_kernel(std::size_t N, std::size_t block, T *approxV, std::size_t locked, T *workspace, T One, T Zero, Base<T> *ritzv) override {
-      mgpuDLA->RR_kernel(N, block, approxV, locked, workspace, One, Zero, ritzv);
+      //mgpuDLA->RR_kernel(N, block, approxV, locked, workspace, One, Zero, ritzv);
   }
 
   void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_t locked, std::size_t unconverged) override{}

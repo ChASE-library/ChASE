@@ -363,6 +363,9 @@ class ChaseMpiDLAInterface {
                       std::size_t m, std::size_t n, T* alpha,
                       T* a, std::size_t lda, T* b, std::size_t ldb) = 0;
 
+  virtual void heevd(int matrix_layout, char jobz, char uplo, std::size_t n,
+                    T* a, std::size_t lda, Base<T>* w) = 0;
+
 
   virtual void RR_kernel(std::size_t N, std::size_t block, T *approxV, std::size_t locked, T *workspace, T One, T Zero, Base<T> *ritzv) = 0;
 

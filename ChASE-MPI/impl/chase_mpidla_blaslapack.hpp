@@ -346,6 +346,13 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
 
   void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_t locked, std::size_t unconverged) override{}
 
+  void heevd(int matrix_layout, char jobz, char uplo, std::size_t n,
+                    T* a, std::size_t lda, Base<T>* w) override {
+
+      t_heevd(matrix_layout, jobz,uplo, n, a, lda, w);
+  }
+
+
  private:
   enum NextOp { cAb, bAc };
 
