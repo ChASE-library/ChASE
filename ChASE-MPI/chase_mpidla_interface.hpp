@@ -357,7 +357,7 @@ class ChaseMpiDLAInterface {
 
   virtual void syherk(char uplo, char trans, std::size_t n, std::size_t k, T* alpha, T* a, std::size_t lda, T* beta, T* c, std::size_t ldc) = 0;
 
-  virtual void potrf(char uplo, std::size_t n, T* a, std::size_t lda) = 0;
+  virtual int potrf(char uplo, std::size_t n, T* a, std::size_t lda) = 0;
 
   virtual void trsm(char side, char uplo, char trans, char diag,
                       std::size_t m, std::size_t n, T* alpha,

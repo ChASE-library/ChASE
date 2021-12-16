@@ -417,8 +417,8 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
       t_syherk(uplo, trans, n, k, alpha, a, lda, beta, c, ldc);
   }
 
-  void potrf(char uplo, std::size_t n, T* a, std::size_t lda) override{
-      t_potrf(uplo, n, a, lda);
+  int potrf(char uplo, std::size_t n, T* a, std::size_t lda) override{
+      return t_potrf(uplo, n, a, lda);
   }
 
   void trsm(char side, char uplo, char trans, char diag,
@@ -429,7 +429,7 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
 
   void heevd(int matrix_layout, char jobz, char uplo, std::size_t n,
                     T* a, std::size_t lda, Base<T>* w) override {
-    t_heevd(LAPACK_COL_MAJOR, 'V', 'L', block, A, block, ritzv);
+        t_heevd(matrix_layout, jobz,uplo, n, a, lda, w);
   }
 
   void RR_kernel(std::size_t N, std::size_t block, T *approxV, std::size_t locked, T *workspace, T One, T Zero, Base<T> *ritzv) override {

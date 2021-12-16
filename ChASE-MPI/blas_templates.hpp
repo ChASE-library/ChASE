@@ -96,7 +96,7 @@ T t_dot(const std::size_t n, const T* x, const std::size_t incx, const T* y,
         const std::size_t incy);
 
 template <typename T>
-std::size_t t_potrf(const char uplo, const std::size_t n, T* a, const std::size_t lda);
+int t_potrf(const char uplo, const std::size_t n, T* a, const std::size_t lda);
 
 template <typename T>
 void t_trsm(const char side, const char uplo, const char trans, const char diag,

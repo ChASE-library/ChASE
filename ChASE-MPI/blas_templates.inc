@@ -1107,7 +1107,7 @@ std::size_t t_stemr(int matrix_layout, char jobz, char range, std::size_t n,
 }
 
 template <>
-std::size_t t_potrf(const char uplo, const std::size_t n, float* a, const std::size_t lda)
+int t_potrf(const char uplo, const std::size_t n, float* a, const std::size_t lda)
 {
   BlasInt n_ = n;
   BlasInt lda_ = lda;
@@ -1115,12 +1115,11 @@ std::size_t t_potrf(const char uplo, const std::size_t n, float* a, const std::s
   
   FC_GLOBAL(spotrf, SPOTRF)
   (&uplo, &n_, a, &lda_, &info);
-  assert(info == 0);
   return info;
 }
 
 template <>
-std::size_t t_potrf(const char uplo, const std::size_t n, double* a, const std::size_t lda)
+int t_potrf(const char uplo, const std::size_t n, double* a, const std::size_t lda)
 {
   BlasInt n_ = n;
   BlasInt lda_ = lda;
@@ -1128,12 +1127,12 @@ std::size_t t_potrf(const char uplo, const std::size_t n, double* a, const std::
   
   FC_GLOBAL(dpotrf, DPOTRF)
   (&uplo, &n_, a, &lda_, &info);
-  assert(info == 0);
+  
   return info;
 }
 
 template <>
-std::size_t t_potrf(const char uplo, const std::size_t n, std::complex<float>* a, const std::size_t lda)
+int t_potrf(const char uplo, const std::size_t n, std::complex<float>* a, const std::size_t lda)
 {
   BlasInt n_ = n;
   BlasInt lda_ = lda;
@@ -1141,12 +1140,12 @@ std::size_t t_potrf(const char uplo, const std::size_t n, std::complex<float>* a
   
   FC_GLOBAL(cpotrf, CPOTRF)
   (&uplo, &n_, a, &lda_, &info);
-  assert(info == 0);
+
   return info;
 }
 
 template <>
-std::size_t t_potrf(const char uplo, const std::size_t n, std::complex<double>* a, const std::size_t lda)
+int t_potrf(const char uplo, const std::size_t n, std::complex<double>* a, const std::size_t lda)
 {
   BlasInt n_ = n;
   BlasInt lda_ = lda;
@@ -1154,7 +1153,7 @@ std::size_t t_potrf(const char uplo, const std::size_t n, std::complex<double>* 
   
   FC_GLOBAL(zpotrf, ZPOTRF)
   (&uplo, &n_, a, &lda_, &info);
-  assert(info == 0);
+
   return info;
 }
 

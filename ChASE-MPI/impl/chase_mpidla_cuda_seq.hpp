@@ -419,7 +419,8 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
   void syherk(char uplo, char trans, std::size_t n, std::size_t k, T* alpha, T* a, std::size_t lda, T* beta, T* c, std::size_t ldc)  override  {
   }
 
-  void potrf(char uplo, std::size_t n, T* a, std::size_t lda) override{
+  int potrf(char uplo, std::size_t n, T* a, std::size_t lda) override{
+            return 0;
   }
 
   void trsm(char side, char uplo, char trans, char diag,

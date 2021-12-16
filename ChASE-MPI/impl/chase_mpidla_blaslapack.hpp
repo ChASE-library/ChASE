@@ -334,8 +334,8 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
       t_syherk(uplo, trans, n, k, alpha, a, lda, beta, c, ldc);
   }
 
-  void potrf(char uplo, std::size_t n, T* a, std::size_t lda) override{
-      t_potrf(uplo, n, a, lda);
+  int potrf(char uplo, std::size_t n, T* a, std::size_t lda) override{
+      return t_potrf(uplo, n, a, lda);
   }
 
   void trsm(char side, char uplo, char trans, char diag,
