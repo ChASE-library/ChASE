@@ -392,6 +392,207 @@ cusolverDnTheevd(
     return cusolverDnZheevd(handle, jobz, uplo, n, reinterpret_cast<cuDoubleComplex*>(A), lda, W, reinterpret_cast<cuDoubleComplex*>(work), lwork, devInfo);
 }
 
+
+cusolverStatus_t
+cusolverDnTpotrf_bufferSize(cusolverDnHandle_t handle,
+                 cublasFillMode_t uplo,
+                 int n,
+                 float *A,
+                 int lda,
+                 int *Lwork ){
+
+
+    return cusolverDnSpotrf_bufferSize(handle, uplo, n, A, lda, Lwork);
+}
+
+cusolverStatus_t
+cusolverDnTpotrf_bufferSize(cusolverDnHandle_t handle,
+                 cublasFillMode_t uplo,
+                 int n,
+                 double *A,
+                 int lda,
+                 int *Lwork ){
+
+
+    return cusolverDnDpotrf_bufferSize(handle, uplo, n, A, lda, Lwork);
+}
+
+cusolverStatus_t
+cusolverDnTpotrf_bufferSize(cusolverDnHandle_t handle,
+                 cublasFillMode_t uplo,
+                 int n,
+                 std::complex<float> *A,
+                 int lda,
+                 int *Lwork ){
+
+
+    return cusolverDnCpotrf_bufferSize(handle, uplo, n,  reinterpret_cast<cuComplex*>(A), lda, Lwork);
+}
+
+cusolverStatus_t
+cusolverDnTpotrf_bufferSize(cusolverDnHandle_t handle,
+                 cublasFillMode_t uplo,
+                 int n,
+                 std::complex<double> *A,
+                 int lda,
+                 int *Lwork ){
+
+
+    return cusolverDnZpotrf_bufferSize(handle, uplo, n,  reinterpret_cast<cuDoubleComplex*>(A), lda, Lwork);
+}
+
+
+cusolverStatus_t
+cusolverDnTpotrf(cusolverDnHandle_t handle,
+           cublasFillMode_t uplo,
+           int n,
+           float *A,
+           int lda,
+           float *Workspace,
+           int Lwork,
+           int *devInfo ){
+
+    return cusolverDnSpotrf(handle, uplo, n, A, lda, Workspace, Lwork, devInfo);
+}
+
+cusolverStatus_t
+cusolverDnTpotrf(cusolverDnHandle_t handle,
+           cublasFillMode_t uplo,
+           int n,
+           double *A,
+           int lda,
+           double *Workspace,
+           int Lwork,
+           int *devInfo ){
+
+    return cusolverDnDpotrf(handle, uplo, n, A, lda, Workspace, Lwork, devInfo);
+}
+
+cusolverStatus_t
+cusolverDnTpotrf(cusolverDnHandle_t handle,
+           cublasFillMode_t uplo,
+           int n,
+           std::complex<float> *A,
+           int lda,
+           std::complex<float> *Workspace,
+           int Lwork,
+           int *devInfo ){
+
+    return cusolverDnCpotrf(handle, uplo, n,  reinterpret_cast<cuComplex*>(A), lda,  reinterpret_cast<cuComplex*>(Workspace), Lwork, devInfo);
+}
+
+cusolverStatus_t
+cusolverDnTpotrf(cusolverDnHandle_t handle,
+           cublasFillMode_t uplo,
+           int n,
+           std::complex<double> *A,
+           int lda,
+           std::complex<double> *Workspace,
+           int Lwork,
+           int *devInfo ){
+
+    return cusolverDnZpotrf(handle, uplo, n,  reinterpret_cast<cuDoubleComplex*>(A), lda,  reinterpret_cast<cuDoubleComplex*>(Workspace), Lwork, devInfo);
+}
+
+////
+cublasStatus_t cublasTsyherk(cublasHandle_t handle,
+                           cublasFillMode_t uplo, cublasOperation_t trans,
+                           int n, int k,
+                           const float           *alpha,
+                           const float           *A, int lda,
+                           const float           *beta,
+                           float           *C, int ldc){
+
+    return cublasSsyrk(handle, uplo, trans, n, k, alpha, A, lda, beta, C, ldc);
+}
+
+
+cublasStatus_t cublasTsyherk(cublasHandle_t handle,
+                           cublasFillMode_t uplo, cublasOperation_t trans,
+                           int n, int k,
+                           const double           *alpha,
+                           const double           *A, int lda,
+                           const double           *beta,
+                           double           *C, int ldc){
+
+    return cublasDsyrk(handle, uplo, trans, n, k, alpha, A, lda, beta, C, ldc);
+}
+
+
+cublasStatus_t cublasTsyherk(cublasHandle_t handle,
+                           cublasFillMode_t uplo, cublasOperation_t trans,
+                           int n, int k,
+                           const float  *alpha,
+                           const std::complex<float>       *A, int lda,
+                           const float  *beta,
+                           std::complex<float>       *C, int ldc){
+
+    return cublasCherk(handle, uplo, trans, n, k, alpha, reinterpret_cast<const cuComplex*>(A), lda, beta, reinterpret_cast<cuComplex*>(C), ldc);
+
+}
+
+cublasStatus_t cublasTsyherk(cublasHandle_t handle,
+                           cublasFillMode_t uplo, cublasOperation_t trans,
+                           int n, int k,
+                           const double *alpha,
+                           const std::complex<double> *A, int lda,
+                           const double *beta,
+                           std::complex<double> *C, int ldc){
+
+    return cublasZherk(handle, uplo, trans, n, k, alpha, reinterpret_cast<const cuDoubleComplex*>(A), lda, beta, reinterpret_cast<cuDoubleComplex*>(C), ldc);
+}
+
+
+/////
+cublasStatus_t cublasTtrsm(cublasHandle_t handle,
+                           cublasSideMode_t side, cublasFillMode_t uplo,
+                           cublasOperation_t trans, cublasDiagType_t diag,
+                           int m, int n,
+                           const float           *alpha,
+                           const float           *A, int lda,
+                           float           *B, int ldb){
+
+    return cublasStrsm(handle, side, uplo, trans, diag, m, n, alpha, A, lda, B, ldb);
+
+}
+
+cublasStatus_t cublasTtrsm(cublasHandle_t handle,
+                           cublasSideMode_t side, cublasFillMode_t uplo,
+                           cublasOperation_t trans, cublasDiagType_t diag,
+                           int m, int n,
+                           const double          *alpha,
+                           const double          *A, int lda,
+                           double          *B, int ldb){
+
+    return cublasDtrsm(handle, side, uplo, trans, diag, m, n, alpha, A, lda, B, ldb);
+
+}
+
+
+cublasStatus_t cublasTtrsm(cublasHandle_t handle,
+                           cublasSideMode_t side, cublasFillMode_t uplo,
+                           cublasOperation_t trans, cublasDiagType_t diag,
+                           int m, int n,
+                           const std::complex<float>       *alpha,
+                           const std::complex<float>       *A, int lda,
+                           std::complex<float>       *B, int ldb){
+
+    return cublasCtrsm(handle, side, uplo, trans, diag, m, n, reinterpret_cast<const cuComplex*>(alpha), reinterpret_cast<const cuComplex*>(A), lda, reinterpret_cast<cuComplex*>(B), ldb);
+
+}
+
+cublasStatus_t cublasTtrsm(cublasHandle_t handle,
+                           cublasSideMode_t side, cublasFillMode_t uplo,
+                           cublasOperation_t trans, cublasDiagType_t diag,
+                           int m, int n,
+                           const std::complex<double>       *alpha,
+                           const std::complex<double>       *A, int lda,
+                           std::complex<double>       *B, int ldb){
+
+    return cublasZtrsm(handle, side, uplo, trans, diag, m, n, reinterpret_cast<const cuDoubleComplex*>(alpha), reinterpret_cast<const cuDoubleComplex*>(A), lda, reinterpret_cast<cuDoubleComplex*>(B), ldb);
+
+}
+
 #if 1
 cublasStatus_t cublasTaxpy(cublasHandle_t handle, int n, const float* alpha,
                            const float* x, int incx, float* y, int incy) {

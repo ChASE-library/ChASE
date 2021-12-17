@@ -432,6 +432,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
 */
 
       /* Distributed version */   
+
       dla_->syherk('U', 'C', nevex, m_, &one, approxV + recv_offsets_[0][col_rank_], N, &zero, A_.get(), nevex);
       MPI_Allreduce(MPI_IN_PLACE, A_.get(), nevex * nevex, getMPI_Type<T>(), MPI_SUM, col_comm_);
 
