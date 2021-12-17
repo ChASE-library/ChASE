@@ -317,7 +317,6 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
     - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
   void gegqr(std::size_t N, std::size_t nevex, T * approxV, std::size_t LDA) override {
-      mgpuDLA->gegqr(N, nevex, approxV, LDA);
   }
 
   /*!
@@ -363,7 +362,7 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
                          T* a, std::size_t lda, T* b,
                          std::size_t ldb, T* beta, T* c, std::size_t ldc) override 
   {
-    t_gemm(Layout, transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
+     mgpuDLA->gemm_small(m, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
   }
 
   /*!
@@ -377,7 +376,7 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
                          T* a, std::size_t lda, T* b,
                          std::size_t ldb, T* beta, T* c, std::size_t ldc) override 
   {
-    t_gemm(Layout, transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
+     mgpuDLA->gemm_large(m, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
   }
 
   /*!
@@ -418,7 +417,7 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
   }
 
   int potrf(char uplo, std::size_t n, T* a, std::size_t lda) override{
-      return t_potrf(uplo, n, a, lda);
+      return mgpuDLA->potrf(uplo, n, a, lda);
   }
 
   void trsm(char side, char uplo, char trans, char diag,
@@ -429,11 +428,16 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
 
   void heevd(int matrix_layout, char jobz, char uplo, std::size_t n,
                     T* a, std::size_t lda, Base<T>* w) override {
-        t_heevd(matrix_layout, jobz,uplo, n, a, lda, w);
+        //t_heevd(matrix_layout, jobz,uplo, n, a, lda, w);
+	mgpuDLA->heevd(n, a, lda, w);
+  }
+
+  void heevd2(std::size_t m_, std::size_t block, std::size_t N, T *approxV, T* A, T* workspace, std::size_t locked, Base<T>* ritzv) override {
+  	mgpuDLA->heevd2(m_, block, N, approxV,
+                        A, workspace, locked, ritzv);
   }
 
   void RR_kernel(std::size_t N, std::size_t block, T *approxV, std::size_t locked, T *workspace, T One, T Zero, Base<T> *ritzv) override {
-      //mgpuDLA->RR_kernel(N, block, approxV, locked, workspace, One, Zero, ritzv);
   }
 
   void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_t locked, std::size_t unconverged) override{}

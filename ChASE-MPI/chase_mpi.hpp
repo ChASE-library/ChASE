@@ -534,7 +534,7 @@ class ChaseMpi : public chase::Chase<T> {
     T alpha = T(1.0);
     T beta = T(0.0);
 
-    dla_->gemm_small(CblasColMajor, CblasNoTrans, CblasNoTrans,  //
+    t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans,  //
            N_, idx, m,                                 //
            &alpha,                                     //
            workspace_, N_,                             //
@@ -602,7 +602,7 @@ class ChaseMpi : public chase::Chase<T> {
       }
     }
 
-    dla_->gemm_large(CblasColMajor, CblasConjTrans, CblasNoTrans, nev_, nev_, N_, &one,
+    t_gemm(CblasColMajor, CblasConjTrans, CblasNoTrans, nev_, nev_, N_, &one,
            &*approxV_, N_, &*approxV_, N_, &neg_one, &unity[0], nev_);
     Base<T> norm = dla_->lange('M', nev_, nev_, &unity[0], nev_);
     return norm;

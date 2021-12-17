@@ -288,6 +288,7 @@ class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T> {
       - **Parallelism is SUPPORT within node if multi-threading is actived**    
       - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */  
+
   void RR_kernel(std::size_t N, std::size_t block, T *approxV, std::size_t locked, T *workspace, T One, T Zero, Base<T> *ritzv) override {
       T *A = new T[block * block];
 
@@ -332,6 +333,8 @@ class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T> {
                     T* a, std::size_t lda, Base<T>* w) override {
 
   }
+
+  void heevd2(std::size_t m_, std::size_t block, std::size_t N, T *approxV, T* A, T* workspace, std::size_t locked, Base<T>* ritzv) override {}
 
   void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_t locked, std::size_t unconverged) override{
     T alpha = T(1.0);

@@ -304,30 +304,6 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
       - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */  
   void RR_kernel(std::size_t N, std::size_t block, T *approxV, std::size_t locked, T *workspace, T One, T Zero, Base<T> *ritzv) override {
-      T *A = new T[block * block];
-
-      // A <- W' * V
-      t_gemm(CblasColMajor, CblasConjTrans, CblasNoTrans,  
-             block, block, N,                             
-             &One,                                        
-             approxV + locked * N, N,                  
-             workspace + locked * N, N,               
-             &Zero,                                        
-             A, block                                      
-      );
-
-      t_heevd(LAPACK_COL_MAJOR, 'V', 'L', block, A, block, ritzv);
-
-      t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans,  
-           N, block, block,                           
-           &One,                                       
-           approxV + locked * N, N,                
-           A, block,                                   
-           &Zero,                                      
-           workspace + locked * N, N              
-      );
-
-      delete[] A;    	
   }
 
   void syherk(char uplo, char trans, std::size_t n, std::size_t k, T* alpha, T* a, std::size_t lda, T* beta, T* c, std::size_t ldc)  override  {
@@ -352,7 +328,22 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
       t_heevd(matrix_layout, jobz,uplo, n, a, lda, w);
   }
 
+  void heevd2(std::size_t m_, std::size_t block, std::size_t N, T *approxV, T* A, T* workspace, std::size_t locked, Base<T>* ritzv) override {
 
+      T One = T(1.0);
+      T Zero = T(0.0);  
+      this->heevd(LAPACK_COL_MAJOR, 'V', 'L', block, A, block, ritzv);
+      this->gemm_large(CblasColMajor, CblasNoTrans, CblasNoTrans,
+           m_, block, block,
+           &One,
+          approxV, N,
+           A, block,
+           &Zero,
+           workspace, N
+      );
+
+  
+  }
  private:
   enum NextOp { cAb, bAc };
 

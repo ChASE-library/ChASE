@@ -369,6 +369,10 @@ class ChaseMpiDLAInterface {
 
   virtual void RR_kernel(std::size_t N, std::size_t block, T *approxV, std::size_t locked, T *workspace, T One, T Zero, Base<T> *ritzv) = 0;
 
+  virtual void heevd2(std::size_t m_, std::size_t block, std::size_t N, T *approxV, T* A, T* workspace, std::size_t locked, Base<T>* ritzv) = 0;
+//  virtual void RR_kernel(std::size_t m_, std::size_t block, T *approxV, std::size_t ldv, T *A, std::size_t lda, T* workspace, std::size_t ldw, std::size_t locked, Base<T> *ritzv) = 0;
+
+
   virtual void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_t locked, std::size_t unconverged) = 0;
 };
 }  // namespace matrixfree
