@@ -534,14 +534,7 @@ class ChaseMpi : public chase::Chase<T> {
     T alpha = T(1.0);
     T beta = T(0.0);
 
-    t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans,  //
-           N_, idx, m,                                 //
-           &alpha,                                     //
-           workspace_, N_,                             //
-           ritzVc, m,                                  //
-           &beta,                                      //
-           approxV_, N_                                //
-    );
+    dla_->LanczosDos(N_, idx, m, workspace_, N_, ritzVc, m, approxV_, N_);
   }
 
   //! This function return the residual of computed eigenpairs.
@@ -587,6 +580,7 @@ class ChaseMpi : public chase::Chase<T> {
     this function return the largest absolute value of any elemental of a `nev_ * nev_` matrix:
     \f$approxV^H * approxV - I\f$.
   */
+/*  
   Base<T> Orthogonality() {
     T one(1.0);
     T zero(0.0);
@@ -607,7 +601,7 @@ class ChaseMpi : public chase::Chase<T> {
     Base<T> norm = dla_->lange('M', nev_, nev_, &unity[0], nev_);
     return norm;
   }
-
+*/
 #ifdef CHASE_OUTPUT
   void Output(std::string str) override {
     if (rank_ == 0) std::cout << str;

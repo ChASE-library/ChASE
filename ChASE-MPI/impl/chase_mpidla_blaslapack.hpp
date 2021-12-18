@@ -306,6 +306,10 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
   void RR_kernel(std::size_t N, std::size_t block, T *approxV, std::size_t locked, T *workspace, T One, T Zero, Base<T> *ritzv) override {
   }
 
+  void LanczosDos(std::size_t N_, std::size_t idx, std::size_t m, T *workspace_, std::size_t ldw, T *ritzVc, std::size_t ldr, T* approxV_, std::size_t ldv) override{
+
+  }
+
   void syherk(char uplo, char trans, std::size_t n, std::size_t k, T* alpha, T* a, std::size_t lda, T* beta, T* c, std::size_t ldc)  override  {
       t_syherk(uplo, trans, n, k, alpha, a, lda, beta, c, ldc);
   }
@@ -328,22 +332,80 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
       t_heevd(matrix_layout, jobz,uplo, n, a, lda, w);
   }
 
-  void heevd2(std::size_t m_, std::size_t block, std::size_t N, T *approxV, T* A, T* workspace, std::size_t locked, Base<T>* ritzv) override {
-
+  void heevd2(std::size_t m_, std::size_t block, T* A, std::size_t lda, T *approxV, std::size_t ldv, T* workspace, std::size_t ldw, std::size_t offset, Base<T>* ritzv) override {
+ 
       T One = T(1.0);
       T Zero = T(0.0);  
       this->heevd(LAPACK_COL_MAJOR, 'V', 'L', block, A, block, ritzv);
       this->gemm_large(CblasColMajor, CblasNoTrans, CblasNoTrans,
            m_, block, block,
            &One,
-          approxV, N,
-           A, block,
+           approxV + offset, ldv,
+           A, lda,
            &Zero,
-           workspace, N
+           workspace + offset, ldw
       );
 
-  
   }
+
+
+  int shiftedcholQR(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv, T *A, std::size_t lda, std::size_t offset) override {
+
+      int grank;
+      MPI_Comm_rank(MPI_COMM_WORLD, &grank);
+
+      T one = T(1.0);
+      T zero = T(0.0);
+
+      //backup of A in case Cholesky factorization failed
+      auto A2 = std::unique_ptr<T[]> {
+        new T[ nevex * nevex ]
+      };
+
+      std::memcpy(A2.get(), A, nevex * nevex * sizeof(T));
+
+      int info = -1;
+
+      info = this->potrf('U', nevex, A, lda);
+
+      if(info != 0){
+ 	 //first CholeskyQR with shift: https://doi.org/10.1137/18M1218212
+	 Base<T> normV = t_lange('F', ldv, nevex, approxV, ldv);
+         // generate shift	
+	 std::size_t mul = ldv * nevex + nevex * nevex + nevex;
+	 Base<T> s = 11.0 * static_cast<Base<T>>(mul) * std::numeric_limits<Base<T>>::epsilon() * normV;
+#if defined(CHASE_OUTPUT)
+         if(grank == 0){
+             std::cout << "Cholesky Factorization is failed for QR, a shift is performed: " << s << std::endl;
+         }
+#endif
+	 //recovery of the A before Cholesky factorization
+	 std::memcpy(A, A2.get(), nevex * nevex * sizeof(T));
+	 //shift matrix A with s
+         for(std::size_t i = 0; i < nevex; i++){
+             A[i * nevex + i] = A[i * nevex + i] + s;
+         }
+	 this->potrf('U', nevex, A, lda);
+     }
+     
+     this->trsm('R', 'U', 'N', 'N', m_, nevex, &one, A, lda, approxV + offset, ldv);
+
+     return info;
+  }
+
+  int cholQR(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv, T *A, std::size_t lda, std::size_t offset) override {
+
+      T one = T(1.0);
+      T zero = T(0.0);
+
+      int info = -1;
+
+      info = this->potrf('U', nevex, A, lda);
+      this->trsm('R', 'U', 'N', 'N', m_, nevex, &one, A, lda, approxV + offset, ldv);
+
+      return info;
+  }
+
  private:
   enum NextOp { cAb, bAc };
 

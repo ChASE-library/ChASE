@@ -354,6 +354,9 @@ class ChaseMpiDLAInterface {
     @param[in] Zero: scalar `T(0)`.
     @param[out] ritzv: a real vector which stores the computed eigenvalues.
   */
+  virtual void RR_kernel(std::size_t N, std::size_t block, T *approxV, std::size_t locked, T *workspace, T One, T Zero, Base<T> *ritzv) = 0;
+
+  virtual void LanczosDos(std::size_t N_, std::size_t idx, std::size_t m, T *workspace_, std::size_t ldw, T *ritzVc, std::size_t ldr, T* approxV_, std::size_t ldv) = 0;
 
   virtual void syherk(char uplo, char trans, std::size_t n, std::size_t k, T* alpha, T* a, std::size_t lda, T* beta, T* c, std::size_t ldc) = 0;
 
@@ -367,11 +370,11 @@ class ChaseMpiDLAInterface {
                     T* a, std::size_t lda, Base<T>* w) = 0;
 
 
-  virtual void RR_kernel(std::size_t N, std::size_t block, T *approxV, std::size_t locked, T *workspace, T One, T Zero, Base<T> *ritzv) = 0;
+  virtual void heevd2(std::size_t m_, std::size_t block, T* A, std::size_t lda, T *approxV, std::size_t ldv, T* workspace, std::size_t ldw, std::size_t offset, Base<T>* ritzv) = 0;
 
-  virtual void heevd2(std::size_t m_, std::size_t block, std::size_t N, T *approxV, T* A, T* workspace, std::size_t locked, Base<T>* ritzv) = 0;
-//  virtual void RR_kernel(std::size_t m_, std::size_t block, T *approxV, std::size_t ldv, T *A, std::size_t lda, T* workspace, std::size_t ldw, std::size_t locked, Base<T> *ritzv) = 0;
+  virtual int shiftedcholQR(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv, T *A, std::size_t lda, std::size_t offset) = 0;
 
+  virtual int cholQR(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv, T *A, std::size_t lda, std::size_t offset) = 0;
 
   virtual void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_t locked, std::size_t unconverged) = 0;
 };

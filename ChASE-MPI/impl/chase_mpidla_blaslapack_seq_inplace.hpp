@@ -301,6 +301,20 @@ class ChaseMpiDLABlaslapackSeqInplace : public ChaseMpiDLAInterface<T> {
       delete[] A;
   }
 
+  void LanczosDos(std::size_t N_, std::size_t idx, std::size_t m, T *workspace_, std::size_t ldw, T *ritzVc, std::size_t ldr, T* approxV_, std::size_t ldv) override{
+    T alpha = T(1.0);
+    T beta = T(0.0);
+
+    t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans,
+           N_, idx, m,
+           &alpha,
+           workspace_, ldw,
+           ritzVc, ldr,
+           &beta,
+           approxV_, ldv
+    );
+  }
+
   void syherk(char uplo, char trans, std::size_t n, std::size_t k, T* alpha, T* a, std::size_t lda, T* beta, T* c, std::size_t ldc)  override  {
   }
 
@@ -317,7 +331,17 @@ class ChaseMpiDLABlaslapackSeqInplace : public ChaseMpiDLAInterface<T> {
                     T* a, std::size_t lda, Base<T>* w) override {
   }
 
-  void heevd2(std::size_t m_, std::size_t block, std::size_t N, T *approxV, T* A, T* workspace, std::size_t locked, Base<T>* ritzv) override {}
+  void heevd2(std::size_t m_, std::size_t block, T* A, std::size_t lda, T *approxV, std::size_t ldv, T* workspace, std::size_t ldw, std::size_t offset, Base<T>* ritzv) override {
+  }
+
+  int shiftedcholQR(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv, T *A, std::size_t lda, std::size_t offset) override {
+      return 0;  
+  }
+
+  int cholQR(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv, T *A, std::size_t lda, std::size_t offset) override {
+
+      return 0;
+  }
 
   void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_t locked, std::size_t unconverged) override{
 
