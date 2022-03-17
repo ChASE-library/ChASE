@@ -1,3 +1,4 @@
+[![License](https://img.shields.io/github/license/ChASE-library/ChASE)](https://github.com/ChASE-library/ChASE/blob/master/LICENSE)
 <img src="docs/images/ChASE_Logo_RGB.png" alt="Matrix Generation Pattern" style="zoom:40%;" />
 
 # ChASE: a Chebyshev Accelerated Subspace Eigensolver for Dense Eigenproblems
