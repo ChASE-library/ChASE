@@ -1,4 +1,4 @@
-[![License](https://img.shields.io/github/license/ChASE-library/ChASE)](https://github.com/ChASE-library/ChASE/blob/master/LICENSE) [![DOI](https://zenodo.org/badge/349075288.svg)](https://zenodo.org/badge/latestdoi/349075288) [![Latest Version](https://img.shields.io/github/v/release/ChASE-library/ChASE)](https://github.com/ChASE-library/ChASE/releases/latest)
+[![License](https://img.shields.io/github/license/ChASE-library/ChASE)](https://github.com/ChASE-library/ChASE/blob/master/LICENSE) [![DOI](https://zenodo.org/badge/349075288.svg)](https://zenodo.org/badge/latestdoi/349075288) [![Latest Version](https://img.shields.io/github/v/release/ChASE-library/ChASE)](https://github.com/ChASE-library/ChASE/releases/latest) [![DOI](https://img.shields.io/badge/DOI-10.1145%2F3313828%20-orange)](https://doi.org/10.1145/3313828)
 <img src="docs/images/ChASE_Logo_RGB.png" alt="Matrix Generation Pattern" style="zoom:40%;" />
 
 # ChASE: a Chebyshev Accelerated Subspace Eigensolver for Dense Eigenproblems
