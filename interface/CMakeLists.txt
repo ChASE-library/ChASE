@@ -1,5 +1,14 @@
 add_library( "chase_c" "chase_c.cpp" )
-target_link_libraries("chase_c" PUBLIC chase_mpi)
+
+option(INTERFACE_WITH_MGPU "Build the examples" OFF)
+
+if(INTERFACE_WITH_MGPU)
+  enable_language(CUDA)
+  target_link_libraries("chase_c" PUBLIC chase_mpi chase_cuda)
+  target_compile_definitions("chase_c" PRIVATE HAS_GPU=1)
+else()
+  target_link_libraries("chase_c" PUBLIC chase_mpi)	
+endif()
 
 install( TARGETS chase_c
   EXPORT chase-c
@@ -24,7 +33,7 @@ set(
 add_library("chase_f" "chase_f.f90")
 set_target_properties(
   "chase_f"
-  PROPERTIES
+  PROPERTIES Fortran_PREPROCESS ON
   POSITION_INDEPENDENT_CODE TRUE
   Fortran_MODULE_DIRECTORY "${MODULE_OUTPUT_DIR}"
 )
@@ -37,6 +46,9 @@ target_include_directories(
 )
 
 target_link_libraries("chase_f" PUBLIC chase_c)
+if(INTERFACE_WITH_MGPU)
+  target_compile_definitions("chase_f" PRIVATE HAS_GPU=1)
+endif()
 
 install( TARGETS chase_f
   EXPORT chase-f
