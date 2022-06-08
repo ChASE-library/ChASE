@@ -35,18 +35,41 @@ int main(int argc, char** argv)
   std::size_t N = 1001; //problem size
   std::size_t nev = 40; //number of eigenpairs to be computed
   std::size_t nex = 20; //extra searching space
+  
+  int dims[2];
+  dims[0] = dims[1] = 0;
+  //MPI proc grid = dims[0] x dims[1]
+  MPI_Dims_create(size, 2, dims);
 
 #ifdef USE_BLOCK_CYCLIC
   /*parameters of block-cyclic data layout*/
   std::size_t NB = 50; //block size for block-cyclic data layout
-  int dims[2]; 
-  dims[0] = dims[1] = 0;
-  //MPI proc grid = dims[0] x dims[1]
-  MPI_Dims_create(size, 2, dims);
   int irsrc = 0; 
   int icsrc = 0;
 #endif
-  
+
+#ifdef USE_GIVEN_DIST
+  //column major
+  std::size_t m, n;
+  std::size_t len;
+  int myrow = rank % dims[0];
+  int mycol = rank / dims[0];  
+  len =  std::min(N, N / dims[0] + 1);
+  if( myrow < dims[0] - 1){
+    m = len;	  
+  } else {
+    m = N - (dims[0] - 1) * len;
+  }
+
+  len =  std::min(N, N / dims[1] + 1);
+  if( mycol < dims[1] - 1){
+    n = len;
+  } else {
+    n = N - (dims[1] - 1) * len;
+  }  
+
+#endif
+
   std::mt19937 gen(1337.0);
   std::normal_distribution<> d;
 
@@ -57,7 +80,10 @@ int main(int argc, char** argv)
 #ifdef USE_BLOCK_CYCLIC
   CHASE single(new ChaseMpiProperties<T>(N, NB, NB, nev, nex, dims[0], dims[1], (char *)"C", irsrc, icsrc, MPI_COMM_WORLD), 
 		    V.data(), Lambda.data());
-#else
+#elif defined(USE_GIVEN_DIST)
+  CHASE single(new ChaseMpiProperties<T>(N, nev, nex, m, n, dims[0], dims[1], MPI_COMM_WORLD), V.data(),
+               Lambda.data());
+#else  
   CHASE single(new ChaseMpiProperties<T>(N, nev, nex, MPI_COMM_WORLD), V.data(),
                Lambda.data());
 #endif
