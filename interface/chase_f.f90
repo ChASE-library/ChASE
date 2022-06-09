@@ -42,39 +42,71 @@ MODULE chase_diag
 
   ! MPI
   INTERFACE
-     SUBROUTINE pdchase_init( mpi_comm, n, mbsize, nbsize, nev, nex, dim0, dim1, grid_major, irsrc, icsrc) & 
-                     BIND( c, name = 'pdchase_init' )
+     SUBROUTINE pdchase_init_block( mpi_comm, n, nev, nex, m_, n_, dim0, dim1) &
+                     BIND( c, name = 'pdchase_init_block' )
        USE, INTRINSIC                :: iso_c_binding
-       INTEGER(c_int)                :: mpi_comm, n, mbsize, nbsize, nev, nex, dim0, dim1, irsrc, icsrc
-       CHARACTER(len=1,kind=c_char)  :: grid_major
-     END SUBROUTINE pdchase_init
+       INTEGER(c_int)                :: mpi_comm, n, nev, nex, m_, n_, dim0, dim1
+     END SUBROUTINE pdchase_init_block
   END INTERFACE
 
   INTERFACE
-     SUBROUTINE pzchase_init( mpi_comm, n, mbsize, nbsize, nev, nex, dim0, dim1, grid_major, irsrc, icsrc) &
-                     BIND( c, name = 'pzchase_init' )
+     SUBROUTINE pzchase_init_block( mpi_comm, n, nev, nex, m_, n_, dim0, dim1) &
+                     BIND( c, name = 'pzchase_init_block' )
        USE, INTRINSIC                :: iso_c_binding
-       INTEGER(c_int)                :: mpi_comm, n, mbsize, nbsize, nev, nex, dim0, dim1, irsrc, icsrc
-       CHARACTER(len=1,kind=c_char)  :: grid_major
-     END SUBROUTINE pzchase_init
+       INTEGER(c_int)                :: mpi_comm, n, nev, nex, m_, n_, dim0, dim1
+     END SUBROUTINE pzchase_init_block
   END INTERFACE
 
   INTERFACE
-     SUBROUTINE pschase_init( mpi_comm, n, mbsize, nbsize, nev, nex, dim0, dim1, grid_major, irsrc, icsrc) &
-                     BIND( c, name = 'pschase_init' )
+     SUBROUTINE pcchase_init_block( mpi_comm, n, nev, nex, m_, n_, dim0, dim1) &
+                     BIND( c, name = 'pcchase_init_block' )
        USE, INTRINSIC                :: iso_c_binding
-       INTEGER(c_int)                :: mpi_comm, n, mbsize, nbsize, nev, nex, dim0, dim1, irsrc, icsrc
-       CHARACTER(len=1,kind=c_char)  :: grid_major
-     END SUBROUTINE pschase_init
+       INTEGER(c_int)                :: mpi_comm, n, nev, nex, m_, n_, dim0, dim1
+     END SUBROUTINE pcchase_init_block
   END INTERFACE
 
   INTERFACE
-     SUBROUTINE pcchase_init( mpi_comm, n, mbsize, nbsize, nev, nex, dim0, dim1, grid_major, irsrc, icsrc) &
-                     BIND( c, name = 'pcchase_init' )
+     SUBROUTINE pschase_init_block( mpi_comm, n, nev, nex, m_, n_, dim0, dim1) &
+                     BIND( c, name = 'pschase_init_block' )
+       USE, INTRINSIC                :: iso_c_binding
+       INTEGER(c_int)                :: mpi_comm, n, nev, nex, m_, n_, dim0, dim1
+     END SUBROUTINE pschase_init_block
+  END INTERFACE
+
+  INTERFACE
+     SUBROUTINE pdchase_init_blockcyclic( mpi_comm, n, mbsize, nbsize, nev, nex, dim0, dim1, grid_major, irsrc, icsrc) & 
+                     BIND( c, name = 'pdchase_init_blockcyclic' )
        USE, INTRINSIC                :: iso_c_binding
        INTEGER(c_int)                :: mpi_comm, n, mbsize, nbsize, nev, nex, dim0, dim1, irsrc, icsrc
        CHARACTER(len=1,kind=c_char)  :: grid_major
-     END SUBROUTINE pcchase_init
+     END SUBROUTINE pdchase_init_blockcyclic
+  END INTERFACE
+
+  INTERFACE
+     SUBROUTINE pzchase_init_blockcyclic( mpi_comm, n, mbsize, nbsize, nev, nex, dim0, dim1, grid_major, irsrc, icsrc) &
+                     BIND( c, name = 'pzchase_init_blockcyclic' )
+       USE, INTRINSIC                :: iso_c_binding
+       INTEGER(c_int)                :: mpi_comm, n, mbsize, nbsize, nev, nex, dim0, dim1, irsrc, icsrc
+       CHARACTER(len=1,kind=c_char)  :: grid_major
+     END SUBROUTINE pzchase_init_blockcyclic
+  END INTERFACE
+
+  INTERFACE
+     SUBROUTINE pschase_init_blockcyclic( mpi_comm, n, mbsize, nbsize, nev, nex, dim0, dim1, grid_major, irsrc, icsrc) &
+                     BIND( c, name = 'pschase_init_blockcyclic' )
+       USE, INTRINSIC                :: iso_c_binding
+       INTEGER(c_int)                :: mpi_comm, n, mbsize, nbsize, nev, nex, dim0, dim1, irsrc, icsrc
+       CHARACTER(len=1,kind=c_char)  :: grid_major
+     END SUBROUTINE pschase_init_blockcyclic
+  END INTERFACE
+
+  INTERFACE
+     SUBROUTINE pcchase_init_blockcyclic( mpi_comm, n, mbsize, nbsize, nev, nex, dim0, dim1, grid_major, irsrc, icsrc) &
+                     BIND( c, name = 'pcchase_init_blockcyclic' )
+       USE, INTRINSIC                :: iso_c_binding
+       INTEGER(c_int)                :: mpi_comm, n, mbsize, nbsize, nev, nex, dim0, dim1, irsrc, icsrc
+       CHARACTER(len=1,kind=c_char)  :: grid_major
+     END SUBROUTINE pcchase_init_blockcyclic
   END INTERFACE
 
   INTERFACE

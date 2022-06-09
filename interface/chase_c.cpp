@@ -53,6 +53,24 @@ class ChASE_State {
 						    char *grid_major,
 						    int irsrc,
 						    int icsrc,
+						    MPI_Comm comm);
+  /* N: dimension of matrix
+   * nev: number of eigenpairs to be computed
+   * nex: dimension of extra space to compute eigenpairs
+   * m: row number of local matrix on each MPI rank
+   * n: column number of local matrix on each MPI rank
+   * dim0: dimension of row communicator
+   * dim1: dimension of column communicator
+   * comm: working MPI communicator
+  */
+  template <typename T>
+  static ChaseMpiProperties<T>* constructProperties(std::size_t N,
+                                                    std::size_t nev,
+                                                    std::size_t nex,
+						    std::size_t m,
+						    std::size_t n,
+                                                    int dim0,
+                                                    int dim1,
                                                     MPI_Comm comm);
   template <typename T>
   static ChaseMpiProperties<T>* getProperties();
@@ -137,6 +155,61 @@ ChaseMpiProperties<std::complex<float>>* ChASE_State::constructProperties(std::s
   return complex_single_prec;
 }
 
+template <>
+ChaseMpiProperties<double>* ChASE_State::constructProperties(std::size_t N,
+                                                    std::size_t nev,
+                                                    std::size_t nex,
+                                                    std::size_t m,
+                                                    std::size_t n,
+                                                    int dim0,
+                                                    int dim1,
+                                                    MPI_Comm comm){
+
+  double_prec = new ChaseMpiProperties<double>(N, nev, nex, m, n, dim0, dim1, comm);
+  return double_prec;      	
+}
+
+template <>
+ChaseMpiProperties<float>* ChASE_State::constructProperties(std::size_t N,
+                                                    std::size_t nev,
+                                                    std::size_t nex,
+                                                    std::size_t m,
+                                                    std::size_t n,
+                                                    int dim0,
+                                                    int dim1,
+                                                    MPI_Comm comm){
+
+  single_prec = new ChaseMpiProperties<float>(N, nev, nex, m, n, dim0, dim1, comm);
+  return single_prec;
+}
+
+template <>
+ChaseMpiProperties<std::complex<double>>* ChASE_State::constructProperties(std::size_t N,
+                                                    std::size_t nev,
+                                                    std::size_t nex,
+                                                    std::size_t m,
+                                                    std::size_t n,
+                                                    int dim0,
+                                                    int dim1,
+                                                    MPI_Comm comm){
+
+  complex_double_prec = new ChaseMpiProperties<std::complex<double>>(N, nev, nex, m, n, dim0, dim1, comm);
+  return complex_double_prec;
+}
+
+template <>
+ChaseMpiProperties<std::complex<float>>* ChASE_State::constructProperties(std::size_t N,
+                                                    std::size_t nev,
+                                                    std::size_t nex,
+                                                    std::size_t m,
+                                                    std::size_t n,
+                                                    int dim0,
+                                                    int dim1,
+                                                    MPI_Comm comm){
+
+  complex_single_prec = new ChaseMpiProperties<std::complex<float>>(N, nev, nex, m, n, dim0, dim1, comm);
+  return complex_single_prec;
+}
 
 template <>
 ChaseMpiProperties<double>* ChASE_State::getProperties() {
@@ -185,12 +258,12 @@ void chase_seq(T* H, int* N, T* V, Base<T>* ritzv, int* nev, int* nex,
   start_times[2] = std::chrono::high_resolution_clock::now();
   chase::Solve(&performanceDecorator);
   timings[2] = std::chrono::high_resolution_clock::now() - start_times[2];
-  std::cout << "ChASE]> Seq-ChASE Solve done in: " << timings[2].count() << "\n";
-
-  performanceDecorator.GetPerfData().print();
-  
   timings[1] = std::chrono::high_resolution_clock::now() - start_times[1];
+#ifdef INFO_PRINT  
+  std::cout << "ChASE]> Seq-ChASE Solve done in: " << timings[2].count() << "\n";
+  performanceDecorator.GetPerfData().print();  
   std::cout << "ChASE]> total time in ChASE: " << timings[1].count() << "\n";
+#endif  
 }
 
 template <typename T>
@@ -202,9 +275,22 @@ void chase_setup(MPI_Fint* fcomm, int* N, int *mbsize, int *nbsize, int* nev, in
 }
 
 template <typename T>
+void chase_setup(MPI_Fint* fcomm, int* N, int *nev, int *nex, int* m, int* n,
+                 int *dim0, int *dim1){
+    MPI_Comm comm = MPI_Comm_f2c(*fcomm);
+    auto props = ChASE_State::constructProperties<T>(*N, *nev, *nex, *m, *n, *dim0,
+                                                     *dim1, comm);
+}
+
+template <typename T>
 void chase_solve(T* H, T* V, Base<T>* ritzv, int* deg, double* tol, char* mode,
                  char* opt) {
   typedef ChaseMpi<ChaseMpiDLABlaslapack, T> CHASE;
+
+  std::vector<std::chrono::duration<double>> timings(3);
+  std::vector<std::chrono::time_point<std::chrono::high_resolution_clock>> start_times(3);
+
+  start_times[1] = std::chrono::high_resolution_clock::now();
 
   std::mt19937 gen(2342.0);
   std::normal_distribution<> d;
@@ -235,14 +321,30 @@ void chase_solve(T* H, T* V, Base<T>* ritzv, int* deg, double* tol, char* mode,
   config.SetOpt(*opt == 'S');
   config.SetApprox(*mode == 'A');
 
-  chase::Solve(&single);
+  PerformanceDecoratorChase<T> performanceDecorator(&single);
+  start_times[2] = std::chrono::high_resolution_clock::now();
+  chase::Solve(&performanceDecorator);
+
+  timings[2] = std::chrono::high_resolution_clock::now() - start_times[2];
+  timings[1] = std::chrono::high_resolution_clock::now() - start_times[1];
+#ifdef INFO_PRINT  
+  if(myRank == 0){
+      std::cout << "ChASE-MPI]> ChASE Solve done in: " << timings[2].count() << "\n";
+      performanceDecorator.GetPerfData().print();
+      std::cout << "ChASE-MPI]> total time in ChASE: " << timings[1].count() << "\n";      
+  }
+#endif
 }
+
 #ifdef HAS_GPU
 template <typename T>
 void chase_solve_mgpu(T* H, T* V, Base<T>* ritzv, int* deg, double* tol, char* mode,
                  char* opt) {
   
   typedef ChaseMpi<ChaseMpiDLAMultiGPU, T> CHASE;	
+  
+  std::vector<std::chrono::duration<double>> timings(3);
+  std::vector<std::chrono::time_point<std::chrono::high_resolution_clock>> start_times(3);
 
   std::mt19937 gen(2342.0);
   std::normal_distribution<> d;
@@ -273,7 +375,20 @@ void chase_solve_mgpu(T* H, T* V, Base<T>* ritzv, int* deg, double* tol, char* m
   config.SetOpt(*opt == 'S');
   config.SetApprox(*mode == 'A');
 
-  chase::Solve(&single);
+  PerformanceDecoratorChase<T> performanceDecorator(&single);
+  start_times[2] = std::chrono::high_resolution_clock::now();
+  chase::Solve(&performanceDecorator);
+
+  timings[2] = std::chrono::high_resolution_clock::now() - start_times[2];
+  timings[1] = std::chrono::high_resolution_clock::now() - start_times[1];
+#ifdef INFO_PRINT
+  if(myRank == 0){
+      std::cout << "ChASE-MGPU]> ChASE Solve done in: " << timings[2].count() << "\n";
+      performanceDecorator.GetPerfData().print();
+      std::cout << "ChASE-MGPU]> total time in ChASE: " << timings[1].count() << "\n";
+  }
+#endif
+
 }
 #endif
 
@@ -303,7 +418,35 @@ void schase_(float* H, int* N, float* V, float* ritzv, int* nev, int* nex,
   chase_seq<float>(H, N, V, ritzv, nev, nex, deg, tol, mode, opt);
 }
 
-void pzchase_init(MPI_Fint* fcomm, int* N, int *mbsize, int *nbsize, int* nev, int* nex, 
+void pzchase_init_block(MPI_Fint* fcomm, int* N, int *nev, int *nex, int* m, int* n,
+                int *dim0, int *dim1){
+
+  chase_setup<std::complex<double>>(fcomm, N, nev, nex, m, n, dim0, dim1);
+
+}
+
+void pdchase_init_block(MPI_Fint* fcomm, int* N, int *nev, int *nex, int* m, int* n,
+                int *dim0, int *dim1){
+
+  chase_setup<double>(fcomm, N, nev, nex, m, n, dim0, dim1);
+
+}
+
+void pcchase_init_block(MPI_Fint* fcomm, int* N, int *nev, int *nex, int* m, int* n,
+                int *dim0, int *dim1){
+
+  chase_setup<std::complex<float>>(fcomm, N, nev, nex, m, n, dim0, dim1);
+
+}
+
+void pschase_init_block(MPI_Fint* fcomm, int* N, int *nev, int *nex, int* m, int* n,
+                int *dim0, int *dim1){
+
+  chase_setup<float>(fcomm, N, nev, nex, m, n, dim0, dim1);
+
+}
+
+void pzchase_init_blockcyclic(MPI_Fint* fcomm, int* N, int *mbsize, int *nbsize, int* nev, int* nex, 
 		int *dim0, int *dim1, char *grid_major, int *irsrc, int *icsrc){
 
   chase_setup<std::complex<double>>(fcomm, N, mbsize, nbsize, nev, nex, dim0, dim1,
@@ -311,7 +454,7 @@ void pzchase_init(MPI_Fint* fcomm, int* N, int *mbsize, int *nbsize, int* nev, i
 
 }
 
-void pdchase_init(MPI_Fint* fcomm, int* N, int *mbsize, int *nbsize, int* nev, int* nex,
+void pdchase_init_blockcyclic(MPI_Fint* fcomm, int* N, int *mbsize, int *nbsize, int* nev, int* nex,
                 int *dim0, int *dim1, char *grid_major, int *irsrc, int *icsrc){
 
   chase_setup<double>(fcomm, N, mbsize, nbsize, nev, nex, dim0, dim1,
@@ -319,7 +462,7 @@ void pdchase_init(MPI_Fint* fcomm, int* N, int *mbsize, int *nbsize, int* nev, i
 
 }
 
-void pcchase_init(MPI_Fint* fcomm, int* N, int *mbsize, int *nbsize, int* nev, int* nex,
+void pcchase_init_blockcyclic(MPI_Fint* fcomm, int* N, int *mbsize, int *nbsize, int* nev, int* nex,
                 int *dim0, int *dim1, char *grid_major, int *irsrc, int *icsrc){
 
   chase_setup<std::complex<float>>(fcomm, N, mbsize, nbsize, nev, nex, dim0, dim1,
@@ -327,7 +470,7 @@ void pcchase_init(MPI_Fint* fcomm, int* N, int *mbsize, int *nbsize, int* nev, i
 
 }
 
-void pschase_init(MPI_Fint* fcomm, int* N, int *mbsize, int *nbsize, int* nev, int* nex,
+void pschase_init_blockcyclic(MPI_Fint* fcomm, int* N, int *mbsize, int *nbsize, int* nev, int* nex,
                 int *dim0, int *dim1, char *grid_major, int *irsrc, int *icsrc){
 
   chase_setup<float>(fcomm, N, mbsize, nbsize, nev, nex, dim0, dim1,
