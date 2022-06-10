@@ -71,7 +71,19 @@ class ChASE_State {
 						    std::size_t n,
                                                     int dim0,
                                                     int dim1,
+						    MPI_Comm comm);
+  /* N: dimension of matrix
+   * nev: number of eigenpairs to be computed
+   * nex: dimension of extra space to compute eigenpairs
+   * comm: working MPI communicator
+  */
+  template <typename T>
+  static ChaseMpiProperties<T>* constructProperties(std::size_t N,
+                                                    std::size_t nev,
+                                                    std::size_t nex,
                                                     MPI_Comm comm);
+
+
   template <typename T>
   static ChaseMpiProperties<T>* getProperties();
 
@@ -212,6 +224,47 @@ ChaseMpiProperties<std::complex<float>>* ChASE_State::constructProperties(std::s
 }
 
 template <>
+ChaseMpiProperties<double>* ChASE_State::constructProperties(std::size_t N,
+                                                    std::size_t nev,
+                                                    std::size_t nex,
+                                                    MPI_Comm comm){
+
+  double_prec = new ChaseMpiProperties<double>(N, nev, nex, comm);
+  return double_prec;
+}
+
+template <>
+ChaseMpiProperties<float>* ChASE_State::constructProperties(std::size_t N,
+                                                    std::size_t nev,
+                                                    std::size_t nex,
+                                                    MPI_Comm comm){
+
+  single_prec = new ChaseMpiProperties<float>(N, nev, nex, comm);
+  return single_prec;
+}
+
+template <>
+ChaseMpiProperties<std::complex<double>>* ChASE_State::constructProperties(std::size_t N,
+                                                    std::size_t nev,
+                                                    std::size_t nex,
+                                                    MPI_Comm comm){
+
+  complex_double_prec = new ChaseMpiProperties<std::complex<double>>(N, nev, nex, comm);
+  return complex_double_prec;
+}
+
+template <>
+ChaseMpiProperties<std::complex<float>>* ChASE_State::constructProperties(std::size_t N,
+                                                    std::size_t nev,
+                                                    std::size_t nex,
+                                                    MPI_Comm comm){
+
+  complex_single_prec = new ChaseMpiProperties<std::complex<float>>(N, nev, nex, comm);
+  return complex_single_prec;
+}
+
+
+template <>
 ChaseMpiProperties<double>* ChASE_State::getProperties() {
   return double_prec;
 }
@@ -280,6 +333,12 @@ void chase_setup(MPI_Fint* fcomm, int* N, int *nev, int *nex, int* m, int* n,
     MPI_Comm comm = MPI_Comm_f2c(*fcomm);
     auto props = ChASE_State::constructProperties<T>(*N, *nev, *nex, *m, *n, *dim0,
                                                      *dim1, comm);
+}
+
+template <typename T>
+void chase_setup(MPI_Fint* fcomm, int* N, int *nev, int *nex ){
+    MPI_Comm comm = MPI_Comm_f2c(*fcomm);
+    auto props = ChASE_State::constructProperties<T>(*N, *nev, *nex, comm);
 }
 
 template <typename T>
@@ -416,6 +475,30 @@ void cchase_(std::complex<float>* H, int* N, std::complex<float>* V,
 void schase_(float* H, int* N, float* V, float* ritzv, int* nev, int* nex,
              int* deg, double* tol, char* mode, char* opt) {
   chase_seq<float>(H, N, V, ritzv, nev, nex, deg, tol, mode, opt);
+}
+
+void pzchase_init(MPI_Fint* fcomm, int* N, int *nev, int *nex){
+
+  chase_setup<std::complex<double>>(fcomm, N, nev, nex);
+
+}
+
+void pdchase_init(MPI_Fint* fcomm, int* N, int *nev, int *nex){
+
+  chase_setup<double>(fcomm, N, nev, nex);
+
+}
+
+void pcchase_init(MPI_Fint* fcomm, int* N, int *nev, int *nex){
+
+  chase_setup<std::complex<float>>(fcomm, N, nev, nex);
+
+}
+
+void pschase_init(MPI_Fint* fcomm, int* N, int *nev, int *nex){
+
+  chase_setup<float>(fcomm, N, nev, nex);
+
 }
 
 void pzchase_init_block(MPI_Fint* fcomm, int* N, int *nev, int *nex, int* m, int* n,

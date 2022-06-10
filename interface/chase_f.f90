@@ -42,6 +42,38 @@ MODULE chase_diag
 
   ! MPI
   INTERFACE
+     SUBROUTINE pdchase_init( mpi_comm, n, nev, nex) &
+                     BIND( c, name = 'pdchase_init' )
+       USE, INTRINSIC                :: iso_c_binding
+       INTEGER(c_int)                :: mpi_comm, n, nev, nex
+     END SUBROUTINE pdchase_init
+  END INTERFACE
+
+  INTERFACE
+     SUBROUTINE pzchase_init( mpi_comm, n, nev, nex) &
+                     BIND( c, name = 'pzchase_init' )
+       USE, INTRINSIC                :: iso_c_binding
+       INTEGER(c_int)                :: mpi_comm, n, nev, nex
+     END SUBROUTINE pzchase_init
+  END INTERFACE
+
+  INTERFACE
+     SUBROUTINE pcchase_init( mpi_comm, n, nev, nex) &
+                     BIND( c, name = 'pcchase_init' )
+       USE, INTRINSIC                :: iso_c_binding
+       INTEGER(c_int)                :: mpi_comm, n, nev, nex
+     END SUBROUTINE pcchase_init
+  END INTERFACE
+
+  INTERFACE
+     SUBROUTINE pschase_init( mpi_comm, n, nev, nex) &
+                     BIND( c, name = 'pschase_init' )
+       USE, INTRINSIC                :: iso_c_binding
+       INTEGER(c_int)                :: mpi_comm, n, nev, nex
+     END SUBROUTINE pschase_init
+  END INTERFACE
+  
+  INTERFACE
      SUBROUTINE pdchase_init_block( mpi_comm, n, nev, nex, m_, n_, dim0, dim1) &
                      BIND( c, name = 'pdchase_init_block' )
        USE, INTRINSIC                :: iso_c_binding
