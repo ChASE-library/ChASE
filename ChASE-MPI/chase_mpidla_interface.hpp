@@ -169,7 +169,7 @@ class ChaseMpiDLAInterface {
   virtual void get_offs_lens(std::size_t* &r_offs, std::size_t* &r_lens, std::size_t* &r_offs_l,
                   std::size_t* &c_offs, std::size_t* &c_lens, std::size_t* &c_offs_l) const = 0;
 
-
+  virtual int get_nprocs() const = 0;
   virtual void Start() = 0;
 
   // other BLAS and LAPACK routines

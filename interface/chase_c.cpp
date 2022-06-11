@@ -312,11 +312,9 @@ void chase_seq(T* H, int* N, T* V, Base<T>* ritzv, int* nev, int* nex,
   chase::Solve(&performanceDecorator);
   timings[2] = std::chrono::high_resolution_clock::now() - start_times[2];
   timings[1] = std::chrono::high_resolution_clock::now() - start_times[1];
-#ifdef INFO_PRINT  
   std::cout << "ChASE]> Seq-ChASE Solve done in: " << timings[2].count() << "\n";
   performanceDecorator.GetPerfData().print();  
   std::cout << "ChASE]> total time in ChASE: " << timings[1].count() << "\n";
-#endif  
 }
 
 template <typename T>
@@ -386,13 +384,11 @@ void chase_solve(T* H, T* V, Base<T>* ritzv, int* deg, double* tol, char* mode,
 
   timings[2] = std::chrono::high_resolution_clock::now() - start_times[2];
   timings[1] = std::chrono::high_resolution_clock::now() - start_times[1];
-#ifdef INFO_PRINT  
   if(myRank == 0){
       std::cout << "ChASE-MPI]> ChASE Solve done in: " << timings[2].count() << "\n";
       performanceDecorator.GetPerfData().print();
       std::cout << "ChASE-MPI]> total time in ChASE: " << timings[1].count() << "\n";      
   }
-#endif
 }
 
 #ifdef HAS_GPU

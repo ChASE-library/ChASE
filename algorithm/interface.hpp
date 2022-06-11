@@ -37,7 +37,9 @@ class Chase {
   virtual Base<T> *GetRitzv() = 0;
   virtual Base<T> *GetResid() = 0;
   virtual ChaseConfig<T> &GetConfig() = 0;
-
+#ifndef NO_MPI  
+  virtual int get_nprocs() = 0;
+#endif  
 #ifdef CHASE_OUTPUT
   virtual void Output(std::string str) = 0;
 #endif

@@ -663,6 +663,11 @@ class ChaseMpi : public chase::Chase<T> {
   //! \return `resid_`: a  pointer to the memory allocated to store the residual of each computed eigenpair.  
   Base<T> *GetResid()  override { return resid_; }
 
+  //! This member function return the number of MPI processes used by ChASE
+  //! \return the number of MPI ranks in the communicator used by ChASE
+  int get_nprocs() override {
+      return dla_->get_nprocs();
+  }
  private:
   //!Global size of the matrix A defining the eigenproblem.
   /*!

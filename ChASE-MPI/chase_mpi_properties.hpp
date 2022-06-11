@@ -523,7 +523,7 @@ class ChaseMpiProperties {
       \param comm the working MPI communicator for ChASE.
    */
     ChaseMpiProperties(std::size_t N, std::size_t nev, std::size_t nex,
-                     MPI_Comm comm = MPI_COMM_WORLD)
+                     MPI_Comm comm)
       : N_(N), nev_(nev), nex_(nex), max_block_(nev + nex), comm_(comm) {
 
     data_layout = "Block-Block";
