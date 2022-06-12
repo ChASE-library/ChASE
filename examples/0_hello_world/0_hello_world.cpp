@@ -53,21 +53,17 @@ int main(int argc, char** argv)
   std::size_t m, n;
   std::size_t len;
   int myrow = rank % dims[0];
-  int mycol = rank / dims[0];  
-  len =  std::min(N, N / dims[0] + 1);
-  if( myrow < dims[0] - 1){
-    m = len;	  
-  } else {
-    m = N - (dims[0] - 1) * len;
+  int mycol = rank / dims[0];
+  if(N % dims[0] == 0){
+      m = N / dims[0];
+  }else{
+      m =  std::min(N, N / dims[0] + 1);
+  } 
+  if(N % dims[1] == 0){
+      n = N / dims[1];
+  }else{
+      n =  std::min(N, N / dims[1] + 1);
   }
-
-  len =  std::min(N, N / dims[1] + 1);
-  if( mycol < dims[1] - 1){
-    n = len;
-  } else {
-    n = N - (dims[1] - 1) * len;
-  }  
-
 #endif
 
   std::mt19937 gen(1337.0);

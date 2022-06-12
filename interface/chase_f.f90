@@ -142,30 +142,30 @@ MODULE chase_diag
   END INTERFACE
 
   INTERFACE
-     SUBROUTINE pdchase(h, v, ritzv, deg, tol, mode, opt ) BIND( c, name = 'pdchase_' )
+     SUBROUTINE pdchase(h, ldh, v, ritzv, deg, tol, mode, opt ) BIND( c, name = 'pdchase_' )
        USE, INTRINSIC :: iso_c_binding
        REAL(c_double)        :: h(*), v(*)
-       INTEGER(c_int)                :: deg
+       INTEGER(c_int)                :: deg, ldh
        REAL(c_double)                :: ritzv(*), tol
        CHARACTER(len=1,kind=c_char)  :: mode, opt
      END SUBROUTINE pdchase
   END INTERFACE
 
   INTERFACE
-     SUBROUTINE pzchase(h, v, ritzv, deg, tol, mode, opt ) BIND( c, name = 'pzchase_' )
+     SUBROUTINE pzchase(h, ldh, v, ritzv, deg, tol, mode, opt ) BIND( c, name = 'pzchase_' )
        USE, INTRINSIC :: iso_c_binding
        COMPLEX(c_double_complex)     :: h(*), v(*)
-       INTEGER(c_int)                :: deg
+       INTEGER(c_int)                :: deg, ldh
        REAL(c_double)                :: ritzv(*), tol
        CHARACTER(len=1,kind=c_char)  :: mode, opt
      END SUBROUTINE pzchase
   END INTERFACE
 
   INTERFACE
-     SUBROUTINE pschase(h, v, ritzv, deg, tol, mode, opt ) BIND( c, name = 'pschase_' )
+     SUBROUTINE pschase(h, ldh, v, ritzv, deg, tol, mode, opt ) BIND( c, name = 'pschase_' )
        USE, INTRINSIC :: iso_c_binding
        REAL(c_float)                 :: h(*), v(*)
-       INTEGER(c_int)                :: deg
+       INTEGER(c_int)                :: deg, ldh
        REAL(c_float)                 :: ritzv(*)
        REAL(c_double)                :: tol
        CHARACTER(len=1,kind=c_char)  :: mode, opt
@@ -173,10 +173,10 @@ MODULE chase_diag
   END INTERFACE
 
   INTERFACE
-     SUBROUTINE pcchase(h, v, ritzv, deg, tol, mode, opt ) BIND( c, name = 'pcchase_' )
+     SUBROUTINE pcchase(h, ldh, v, ritzv, deg, tol, mode, opt ) BIND( c, name = 'pcchase_' )
        USE, INTRINSIC :: iso_c_binding
        COMPLEX(c_float_complex)      :: h(*), v(*)
-       INTEGER(c_int)                :: deg
+       INTEGER(c_int)                :: deg, ldh
        REAL(c_float)                 :: ritzv(*)
        REAL(c_double)                :: tol
        CHARACTER(len=1,kind=c_char)  :: mode, opt
@@ -185,30 +185,30 @@ MODULE chase_diag
 
 #if defined(HAS_GPU)
   INTERFACE
-     SUBROUTINE pdchase_mgpu(h, v, ritzv, deg, tol, mode, opt ) BIND( c, name = 'pdchase_mgpu_' )
+     SUBROUTINE pdchase_mgpu(h, ldh, v, ritzv, deg, tol, mode, opt ) BIND( c, name = 'pdchase_mgpu_' )
        USE, INTRINSIC :: iso_c_binding
        REAL(c_double)        :: h(*), v(*)
-       INTEGER(c_int)                :: deg
+       INTEGER(c_int)                :: deg, ldh
        REAL(c_double)                :: ritzv(*), tol
        CHARACTER(len=1,kind=c_char)  :: mode, opt
      END SUBROUTINE pdchase_mgpu
   END INTERFACE
 
   INTERFACE
-     SUBROUTINE pzchase_mgpu(h, v, ritzv, deg, tol, mode, opt ) BIND( c, name = 'pzchase_mgpu_' )
+     SUBROUTINE pzchase_mgpu(h, ldh, v, ritzv, deg, tol, mode, opt ) BIND( c, name = 'pzchase_mgpu_' )
        USE, INTRINSIC :: iso_c_binding
        COMPLEX(c_double_complex)     :: h(*), v(*)
-       INTEGER(c_int)                :: deg
+       INTEGER(c_int)                :: deg, ldh
        REAL(c_double)                :: ritzv(*), tol
        CHARACTER(len=1,kind=c_char)  :: mode, opt
      END SUBROUTINE pzchase_mgpu
   END INTERFACE
 
   INTERFACE
-     SUBROUTINE pschase_mgpu(h, v, ritzv, deg, tol, mode, opt ) BIND( c, name = 'pschase_mgpu_' )
+     SUBROUTINE pschase_mgpu(h, ldh, v, ritzv, deg, tol, mode, opt ) BIND( c, name = 'pschase_mgpu_' )
        USE, INTRINSIC :: iso_c_binding
        REAL(c_float)                 :: h(*), v(*)
-       INTEGER(c_int)                :: deg
+       INTEGER(c_int)                :: deg, ldh
        REAL(c_float)                 :: ritzv(*)
        REAL(c_double)                :: tol
        CHARACTER(len=1,kind=c_char)  :: mode, opt
@@ -216,10 +216,10 @@ MODULE chase_diag
   END INTERFACE
 
   INTERFACE
-     SUBROUTINE pcchase_mgpu(h, v, ritzv, deg, tol, mode, opt ) BIND( c, name = 'pcchase_mgpu_' )
+     SUBROUTINE pcchase_mgpu(h, ldh, v, ritzv, deg, tol, mode, opt ) BIND( c, name = 'pcchase_mgpu_' )
        USE, INTRINSIC :: iso_c_binding
        COMPLEX(c_float_complex)      :: h(*), v(*)
-       INTEGER(c_int)                :: deg
+       INTEGER(c_int)                :: deg, ldh
        REAL(c_float)                 :: ritzv(*)
        REAL(c_double)                :: tol
        CHARACTER(len=1,kind=c_char)  :: mode, opt

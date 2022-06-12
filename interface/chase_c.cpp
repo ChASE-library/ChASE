@@ -289,7 +289,7 @@ void chase_seq(T* H, int* N, T* V, Base<T>* ritzv, int* nev, int* nex,
 
   std::vector<std::chrono::duration<double>> timings(3);
   std::vector<std::chrono::time_point<std::chrono::high_resolution_clock>> start_times(3);
-  
+
   start_times[1] = std::chrono::high_resolution_clock::now();
 
   std::mt19937 gen(2342.0);
@@ -340,7 +340,7 @@ void chase_setup(MPI_Fint* fcomm, int* N, int *nev, int *nex ){
 }
 
 template <typename T>
-void chase_solve(T* H, T* V, Base<T>* ritzv, int* deg, double* tol, char* mode,
+void chase_solve(T* H, int *LDH, T* V, Base<T>* ritzv, int* deg, double* tol, char* mode,
                  char* opt) {
   typedef ChaseMpi<ChaseMpiDLABlaslapack, T> CHASE;
 
@@ -354,7 +354,7 @@ void chase_solve(T* H, T* V, Base<T>* ritzv, int* deg, double* tol, char* mode,
   ChaseMpiProperties<T>* props = ChASE_State::getProperties<T>();
 
   int myRank = props->get_my_rank();
-
+  int ldh = *LDH;
   CHASE single(props, V, ritzv);
 
   T* H_ = single.GetMatrixPtr();
@@ -371,8 +371,16 @@ void chase_solve(T* H, T* V, Base<T>* ritzv, int* deg, double* tol, char* mode,
     for (std::size_t k = 0; k < N * (nev + nex); ++k)
       V[k] = getRandomT<T>([&]() { return d(gen); });
 
-  for (std::size_t k = 0; k < m * n; ++k) H_[k] = H[k];
+  
+  for(auto j = 0; j < n; j++ ){
+      for(auto i = 0; i < m; i++){
+          H_[m * j + i] = H[j * ldh + i];
+      }
+  }
+  
 
+  //std::cout << myRank << ": m = " << m << ", n = " << n << ", ldh = " << ldh << std::endl;  
+  
   config.SetTol(*tol);
   config.SetDeg(*deg);
   config.SetOpt(*opt == 'S');
@@ -393,11 +401,12 @@ void chase_solve(T* H, T* V, Base<T>* ritzv, int* deg, double* tol, char* mode,
 
 #ifdef HAS_GPU
 template <typename T>
-void chase_solve_mgpu(T* H, T* V, Base<T>* ritzv, int* deg, double* tol, char* mode,
+void chase_solve_mgpu(T* H, int *LDH, T* V, Base<T>* ritzv, int* deg, double* tol, char* mode,
                  char* opt) {
   
   typedef ChaseMpi<ChaseMpiDLAMultiGPU, T> CHASE;	
   
+  int ldh = *LDH;
   std::vector<std::chrono::duration<double>> timings(3);
   std::vector<std::chrono::time_point<std::chrono::high_resolution_clock>> start_times(3);
 
@@ -423,7 +432,11 @@ void chase_solve_mgpu(T* H, T* V, Base<T>* ritzv, int* deg, double* tol, char* m
     for (std::size_t k = 0; k < N * (nev + nex); ++k)
       V[k] = getRandomT<T>([&]() { return d(gen); });
 
-  for (std::size_t k = 0; k < m * n; ++k) H_[k] = H[k];
+  for(auto j = 0; j < n; j++ ){
+      for(auto i = 0; i < m; i++){
+          H_[m * j + i] = H[j * ldh + i];
+      }
+  }
 
   config.SetTol(*tol);
   config.SetDeg(*deg);
@@ -557,45 +570,45 @@ void pschase_init_blockcyclic(MPI_Fint* fcomm, int* N, int *mbsize, int *nbsize,
 
 }
 
-void pzchase_(std::complex<double>* H, std::complex<double>* V,
+void pzchase_(std::complex<double>* H, int *ldh, std::complex<double>* V,
                   double* ritzv, int* deg, double* tol, char* mode, char* opt) {
-  chase_solve<std::complex<double>>(H, V, ritzv, deg, tol, mode, opt);
+  chase_solve<std::complex<double>>(H, ldh, V, ritzv, deg, tol, mode, opt);
 }
 
-void pdchase_(double* H, double* V, double* ritzv, int* deg, double* tol,
+void pdchase_(double* H, int *ldh, double* V, double* ritzv, int* deg, double* tol,
                   char* mode, char* opt) {
-  chase_solve<double>(H, V, ritzv, deg, tol, mode, opt);
+  chase_solve<double>(H, ldh, V, ritzv, deg, tol, mode, opt);
 }
 
-void pcchase_(std::complex<float>* H, std::complex<float>* V,
+void pcchase_(std::complex<float>* H, int *ldh, std::complex<float>* V,
                   float* ritzv, int* deg, double* tol, char* mode, char* opt) {
-  chase_solve<std::complex<float>>(H, V, ritzv, deg, tol, mode, opt);
+  chase_solve<std::complex<float>>(H, ldh, V, ritzv, deg, tol, mode, opt);
 }
 
-void pschase_(float* H, float* V, float* ritzv, int* deg, double* tol,
+void pschase_(float* H, int *ldh, float* V, float* ritzv, int* deg, double* tol,
                   char* mode, char* opt) {
-  chase_solve<float>(H, V, ritzv, deg, tol, mode, opt);
+  chase_solve<float>(H, ldh, V, ritzv, deg, tol, mode, opt);
 }
 
 #ifdef HAS_GPU
-void pzchase_mgpu_(std::complex<double>* H, std::complex<double>* V,
+void pzchase_mgpu_(std::complex<double>* H, int *ldh, std::complex<double>* V,
                   double* ritzv, int* deg, double* tol, char* mode, char* opt) {
-  chase_solve_mgpu<std::complex<double>>(H, V, ritzv, deg, tol, mode, opt);
+  chase_solve_mgpu<std::complex<double>>(H, ldh, V, ritzv, deg, tol, mode, opt);
 }
 
-void pdchase_mgpu_(double* H, double* V, double* ritzv, int* deg, double* tol,
+void pdchase_mgpu_(double* H, int *ldh, double* V, double* ritzv, int* deg, double* tol,
                   char* mode, char* opt) {
-  chase_solve_mgpu<double>(H, V, ritzv, deg, tol, mode, opt);
+  chase_solve_mgpu<double>(H, ldh, V, ritzv, deg, tol, mode, opt);
 }
 
-void pcchase_mgpu_(std::complex<float>* H, std::complex<float>* V,
+void pcchase_mgpu_(std::complex<float>* H, int *ldh, std::complex<float>* V,
                   float* ritzv, int* deg, double* tol, char* mode, char* opt) {
-  chase_solve_mgpu<std::complex<float>>(H, V, ritzv, deg, tol, mode, opt);
+  chase_solve_mgpu<std::complex<float>>(H, ldh, V, ritzv, deg, tol, mode, opt);
 }
 
-void pschase_mgpu_(float* H, float* V, float* ritzv, int* deg, double* tol,
+void pschase_mgpu_(float* H, int *ldh, float* V, float* ritzv, int* deg, double* tol,
                   char* mode, char* opt) {
-  chase_solve_mgpu<float>(H, V, ritzv, deg, tol, mode, opt);
+  chase_solve_mgpu<float>(H, ldh, V, ritzv, deg, tol, mode, opt);
 }
 #endif
 
