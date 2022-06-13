@@ -376,7 +376,6 @@ void chase_solve(T* H, int *LDH, T* V, Base<T>* ritzv, int* deg, double* tol, ch
     for (std::size_t k = 0; k < N * (nev + nex); ++k)
       V[k] = getRandomT<T>([&]() { return d(gen); });
 
-  
   for(auto j = 0; j < n; j++ ){
       for(auto i = 0; i < m; i++){
           H_[m * j + i] = H[j * ldh + i];
