@@ -185,7 +185,7 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
                   std::size_t* &c_offs, std::size_t* &c_lens, std::size_t* &c_offs_l) const override{
      matrix_properties_->get_offs_lens(r_offs, r_lens, r_offs_l, c_offs, c_lens, c_offs_l);
   }
-
+  int get_nprocs() const override {return matrix_properties_->get_nprocs();}
   void Start() override {}
 
   /*!

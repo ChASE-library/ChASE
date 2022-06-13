@@ -334,6 +334,188 @@ class ChaseMpiProperties {
        
     }
 
+  //! A constructor of the class ChaseMpiProperties which distributes matrix `A` in `Block Distribution`.
+  /*!
+      It constructs a 2D grid of MPI ranks within the MPI communicator `comm_`.
+
+      - The dimensions of this 2D grid is determined by the input arguments `npr` and `npc`. The 2D grid is `npr x npc`
+      - It distributes the Hermitian matrix `A` in a **Block-Dsitribution** scheme.
+
+      This constructor requires the explicit values for the initalization of the size `N`
+      of the matrix *A*, the number of sought after extremal
+      eigenvalues `nev`, and the number of extra eigenvalue `nex` which
+      defines, together with `nev`, the search space, the dimension of local matrix `m` and `n`,
+      the 2D MPI grid `npr` and `npc`, and the working MPI communicator `comm_`.
+
+      All the private members are either initialized
+      directly by these parameters, or setup within the construction of this constructor.
+
+      \param N Size of the square matrix defining the eigenproblem.
+      \param nev Number of desired extremal eigenvalues.
+      \param nex Number of eigenvalues augmenting the search space. Usually a relatively small fraction of `nev`.
+      \param m row number of local matrix on each MPI rank
+      \param n column number of local matrix on each MPI rank
+      \param npr row number of 2D MPI grid
+      \param npc column number of 2D MPI grid
+      \param comm the working MPI communicator for ChASE.
+   */    
+    ChaseMpiProperties(std::size_t N, std::size_t nev, std::size_t nex, std::size_t m, 
+		    std::size_t n, int npr, int npc, char *grid_major, MPI_Comm comm)
+      : N_(N), nev_(nev), nex_(nex), max_block_(nev + nex), m_(m), n_(n), comm_(comm) {
+
+	data_layout = "Block-Block";
+
+	int tmp_dims_[2];
+    	dims_[0] = npr;
+	dims_[1] = npc;
+        
+	bool col_major = false;
+
+    	if(strcmp (grid_major, "C") == 0){
+    	    col_major = true;
+	}
+
+	if(col_major){
+            tmp_dims_[1] = npr;
+            tmp_dims_[0] = npc;		
+	}else{
+            tmp_dims_[0] = npr;
+            tmp_dims_[1] = npc;
+	}
+
+        int periodic[] = {0, 0};
+        int reorder = 0;
+        int free_coords[2];
+        int row_procs, col_procs;
+        int tmp_coord[2];
+
+	MPI_Comm cartComm;
+
+        MPI_Cart_create(comm, 2, tmp_dims_, periodic, reorder, &cartComm);
+    
+	MPI_Comm_size(cartComm, &nprocs_);
+       	MPI_Comm_rank(cartComm, &rank_);
+    	MPI_Cart_coords(cartComm, rank_, 2, tmp_coord);
+
+    	if(col_major){
+            coord_[1] = tmp_coord[0];
+            coord_[0] = tmp_coord[1];	
+    	}else{
+            coord_[1] = tmp_coord[1];
+            coord_[0] = tmp_coord[0];    
+        }
+
+        if (nprocs_ > N_) throw std::exception();
+
+        // row communicator
+        if(col_major){
+            free_coords[0] = 1;
+            free_coords[1] = 0;
+        }else{
+            free_coords[0] = 0;
+            free_coords[1] = 1;    
+        }
+
+        MPI_Cart_sub(cartComm, free_coords, &row_comm_);
+        MPI_Comm_size(row_comm_, &row_procs);
+
+        // column communicator
+    	if(col_major){
+            free_coords[0] = 0;
+            free_coords[1] = 1;
+        }else{
+            free_coords[0] = 1;
+            free_coords[1] = 0;
+        }
+
+        MPI_Cart_sub(cartComm, free_coords, &col_comm_);
+        MPI_Comm_size(col_comm_, &col_procs);    
+
+        int myrow = coord_[0];
+        int mycol = coord_[1];
+
+	std::size_t len;
+	len = m;
+	off_[0] = coord_[0] * len;
+	if(coord_[0] < dims_[0] - 1){
+	    m_ = len;
+	}else{
+	    m_ = N_ - (dims_[0] - 1) * len;
+	}
+
+	len = n;
+	off_[1] = coord_[1] * len;
+
+    	if (coord_[1] < dims_[1] - 1) {
+      	    n_ = len;
+    	} else {
+      	    n_ = N_ - (dims_[1] - 1) * len;
+    	}
+
+    	mb_ = m_;
+    	nb_ = n_;
+    	mblocks_ = 1;
+    	nblocks_ = 1;
+
+    	irsrc_ = 0;
+    	icsrc_ = 0;
+    
+    	r_offs_.reset(new std::size_t[1]());
+    	r_lens_.reset(new std::size_t[1]());
+    	r_offs_l_.reset(new std::size_t[1]());
+    	c_offs_.reset(new std::size_t[1]());
+    	c_lens_.reset(new std::size_t[1]());
+    	c_offs_l_.reset(new std::size_t[1]());
+   
+    	r_offs_[0] = off_[0];
+    	r_lens_[0] = m_;
+    	r_offs_l_[0] = 0;
+    	c_offs_[0] = off_[1];
+    	c_lens_[0] = n_;    
+    	c_offs_l_[0] = 0;
+
+    	H_.reset(new T[n_ * m_]());
+    	B_.reset(new T[n_ * max_block_]());
+    	C_.reset(new T[m_ * max_block_]());
+
+    	block_counts_.resize(2);
+    	for (std::size_t dim_idx = 0; dim_idx < 2; dim_idx++) {
+            block_counts_[dim_idx].resize(dims_[dim_idx]);
+	    for(std::size_t i = 0; i < dims_[dim_idx]; i++){
+	    	block_counts_[dim_idx][i] = 1; 
+            }
+    	}
+
+    	block_displs_.resize(2);
+    	block_lens_.resize(2);
+    	send_lens_.resize(2);
+    	g_offsets_.resize(2);
+
+        for (std::size_t dim_idx = 0; dim_idx < 2; dim_idx++) {
+            block_lens_[dim_idx].resize(dims_[dim_idx]);
+            block_displs_[dim_idx].resize(dims_[dim_idx]);	   
+            send_lens_[dim_idx].resize(dims_[dim_idx]);
+	    for(std::size_t i = 0; i < dims_[dim_idx]; ++i){
+	        block_lens_[dim_idx][i].resize(1);
+            	block_displs_[dim_idx][i].resize(1);
+            	if(dim_idx == 0){
+		    len = m;
+		}else{
+		    len = n;
+		}
+	    	block_lens_[dim_idx][i][0] = len;
+	    	block_displs_[dim_idx][i][0] = i * block_lens_[dim_idx][0][0];
+	    	send_lens_[dim_idx][i] = len;
+      		g_offsets_[dim_idx].push_back(block_displs_[dim_idx][i][0]);
+	    }
+	    block_lens_[dim_idx][dims_[dim_idx] - 1].resize(1);
+            block_displs_[dim_idx][dims_[dim_idx] - 1].resize(1);
+	    block_lens_[dim_idx][dims_[dim_idx] - 1][0] = N_ - (dims_[dim_idx] - 1) * len;
+            block_displs_[dim_idx][dims_[dim_idx] - 1][0] = (dims_[dim_idx] - 1) * block_lens_[dim_idx][0][0];
+            send_lens_[dim_idx][dims_[dim_idx] - 1] = N_ - (dims_[dim_idx] - 1) * len;
+            g_offsets_[dim_idx].push_back(block_displs_[dim_idx][dims_[dim_idx] - 1][0]);
+	}
+    }
 
   //! A constructor of the class ChaseMpiProperties which distributes matrix `A` in `Block Distribution`. 
   /*!
@@ -358,7 +540,7 @@ class ChaseMpiProperties {
       \param comm the working MPI communicator for ChASE.
    */
     ChaseMpiProperties(std::size_t N, std::size_t nev, std::size_t nex,
-                     MPI_Comm comm = MPI_COMM_WORLD)
+                     MPI_Comm comm)
       : N_(N), nev_(nev), nex_(nex), max_block_(nev + nex), comm_(comm) {
 
     data_layout = "Block-Block";
@@ -367,7 +549,6 @@ class ChaseMpiProperties {
     int reorder = 0;
     int free_coords[2];
     MPI_Comm cartComm;
-
     // create cartesian communicator
     MPI_Comm_size(comm, &nprocs_);
     dims_[0] = dims_[1] = 0;
@@ -376,6 +557,7 @@ class ChaseMpiProperties {
     MPI_Comm_size(cartComm, &nprocs_);
     MPI_Comm_rank(cartComm, &rank_);
     MPI_Cart_coords(cartComm, rank_, 2, coord_);
+
 
     if (nprocs_ > N_) throw std::exception();
 
@@ -392,7 +574,11 @@ class ChaseMpiProperties {
     // size of local part of H
     int len;
 
-    len = std::min(N_, N_ / dims_[0] + 1);
+    if(N_ % dims_[0] == 0){
+        len = N_ / dims_[0];
+    }else{
+        len = std::min(N_, N_ / dims_[0] + 1);
+    }
     off_[0] = coord_[0] * len;
 
     if (coord_[0] < dims_[0] - 1) {
@@ -401,7 +587,11 @@ class ChaseMpiProperties {
       m_ = N_ - (dims_[0] - 1) * len;
     }
 
-    len = std::min(N_, N_ / dims_[1] + 1);
+    if(N_ % dims_[1] == 0){
+        len = N_ / dims_[1];
+    }else{
+        len = std::min(N_, N_ / dims_[1] + 1);
+    }    
     off_[1] = coord_[1] * len;
 
     if (coord_[1] < dims_[1] - 1) {
@@ -456,11 +646,15 @@ class ChaseMpiProperties {
 	for(std::size_t i = 0; i < dims_[dim_idx]; ++i){
 	    block_lens_[dim_idx][i].resize(1);
             block_displs_[dim_idx][i].resize(1);
-            len = std::min(N_, N_ / dims_[dim_idx] + 1);
+	    if(N_ % dims_[dim_idx] == 0){
+	        len = N_ / dims_[dim_idx];
+	    }else{
+	        len = std::min(N_, N_ / dims_[dim_idx] + 1);
+	    }
 	    block_lens_[dim_idx][i][0] = len;
 	    block_displs_[dim_idx][i][0] = i * block_lens_[dim_idx][0][0];
 	    send_lens_[dim_idx][i] = len;
-      g_offsets_[dim_idx].push_back(block_displs_[dim_idx][i][0]);
+      	    g_offsets_[dim_idx].push_back(block_displs_[dim_idx][i][0]);
 	}
 	block_lens_[dim_idx][dims_[dim_idx] - 1].resize(1);
         block_displs_[dim_idx][dims_[dim_idx] - 1].resize(1);
