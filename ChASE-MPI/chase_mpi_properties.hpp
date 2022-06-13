@@ -360,7 +360,7 @@ class ChaseMpiProperties {
       \param comm the working MPI communicator for ChASE.
    */    
     ChaseMpiProperties(std::size_t N, std::size_t nev, std::size_t nex, std::size_t m, 
-		    std::size_t n, int npr, int npc, MPI_Comm comm)
+		    std::size_t n, int npr, int npc, char *grid_major, MPI_Comm comm)
       : N_(N), nev_(nev), nex_(nex), max_block_(nev + nex), m_(m), n_(n), comm_(comm) {
 
 	data_layout = "Block-Block";
@@ -368,9 +368,20 @@ class ChaseMpiProperties {
 	int tmp_dims_[2];
     	dims_[0] = npr;
 	dims_[1] = npc;
-	
-        tmp_dims_[0] = npr;
-        tmp_dims_[1] = npc;
+        
+	bool col_major = false;
+
+    	if(strcmp (grid_major, "C") == 0){
+    	    col_major = true;
+	}
+
+	if(col_major){
+            tmp_dims_[1] = npr;
+            tmp_dims_[0] = npc;		
+	}else{
+            tmp_dims_[0] = npr;
+            tmp_dims_[1] = npc;
+	}
 
         int periodic[] = {0, 0};
         int reorder = 0;
@@ -386,22 +397,36 @@ class ChaseMpiProperties {
        	MPI_Comm_rank(cartComm, &rank_);
     	MPI_Cart_coords(cartComm, rank_, 2, tmp_coord);
 
-        coord_[0] = tmp_coord[0];
-        coord_[1] = tmp_coord[1];	
+    	if(col_major){
+            coord_[1] = tmp_coord[0];
+            coord_[0] = tmp_coord[1];	
+    	}else{
+            coord_[1] = tmp_coord[1];
+            coord_[0] = tmp_coord[0];    
+        }
 
         if (nprocs_ > N_) throw std::exception();
 
-	// row major grid
         // row communicator
-        free_coords[0] = 0;
-        free_coords[1] = 1;
+        if(col_major){
+            free_coords[0] = 1;
+            free_coords[1] = 0;
+        }else{
+            free_coords[0] = 0;
+            free_coords[1] = 1;    
+        }
 
         MPI_Cart_sub(cartComm, free_coords, &row_comm_);
         MPI_Comm_size(row_comm_, &row_procs);
 
         // column communicator
-        free_coords[0] = 1;
-        free_coords[1] = 0;
+    	if(col_major){
+            free_coords[0] = 0;
+            free_coords[1] = 1;
+        }else{
+            free_coords[0] = 1;
+            free_coords[1] = 0;
+        }
 
         MPI_Cart_sub(cartComm, free_coords, &col_comm_);
         MPI_Comm_size(col_comm_, &col_procs);    

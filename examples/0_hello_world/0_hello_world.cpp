@@ -77,7 +77,7 @@ int main(int argc, char** argv)
   CHASE single(new ChaseMpiProperties<T>(N, NB, NB, nev, nex, dims[0], dims[1], (char *)"C", irsrc, icsrc, MPI_COMM_WORLD), 
 		    V.data(), Lambda.data());
 #elif defined(USE_GIVEN_DIST)
-  CHASE single(new ChaseMpiProperties<T>(N, nev, nex, m, n, dims[0], dims[1], MPI_COMM_WORLD), V.data(),
+  CHASE single(new ChaseMpiProperties<T>(N, nev, nex, m, n, dims[0], dims[1], (char *)"C", MPI_COMM_WORLD), V.data(),
                Lambda.data());
 #else  
   CHASE single(new ChaseMpiProperties<T>(N, nev, nex, MPI_COMM_WORLD), V.data(),

@@ -71,6 +71,7 @@ class ChASE_State {
 						    std::size_t n,
                                                     int dim0,
                                                     int dim1,
+						    char *grid_major,
 						    MPI_Comm comm);
   /* N: dimension of matrix
    * nev: number of eigenpairs to be computed
@@ -175,9 +176,10 @@ ChaseMpiProperties<double>* ChASE_State::constructProperties(std::size_t N,
                                                     std::size_t n,
                                                     int dim0,
                                                     int dim1,
+						    char *grid_major,
                                                     MPI_Comm comm){
 
-  double_prec = new ChaseMpiProperties<double>(N, nev, nex, m, n, dim0, dim1, comm);
+  double_prec = new ChaseMpiProperties<double>(N, nev, nex, m, n, dim0, dim1, grid_major, comm);
   return double_prec;      	
 }
 
@@ -189,9 +191,10 @@ ChaseMpiProperties<float>* ChASE_State::constructProperties(std::size_t N,
                                                     std::size_t n,
                                                     int dim0,
                                                     int dim1,
+						    char *grid_major,
                                                     MPI_Comm comm){
 
-  single_prec = new ChaseMpiProperties<float>(N, nev, nex, m, n, dim0, dim1, comm);
+  single_prec = new ChaseMpiProperties<float>(N, nev, nex, m, n, dim0, dim1, grid_major, comm);
   return single_prec;
 }
 
@@ -203,9 +206,10 @@ ChaseMpiProperties<std::complex<double>>* ChASE_State::constructProperties(std::
                                                     std::size_t n,
                                                     int dim0,
                                                     int dim1,
+						    char *grid_major,
                                                     MPI_Comm comm){
 
-  complex_double_prec = new ChaseMpiProperties<std::complex<double>>(N, nev, nex, m, n, dim0, dim1, comm);
+  complex_double_prec = new ChaseMpiProperties<std::complex<double>>(N, nev, nex, m, n, dim0, dim1, grid_major, comm);
   return complex_double_prec;
 }
 
@@ -217,9 +221,10 @@ ChaseMpiProperties<std::complex<float>>* ChASE_State::constructProperties(std::s
                                                     std::size_t n,
                                                     int dim0,
                                                     int dim1,
+						    char *grid_major,
                                                     MPI_Comm comm){
 
-  complex_single_prec = new ChaseMpiProperties<std::complex<float>>(N, nev, nex, m, n, dim0, dim1, comm);
+  complex_single_prec = new ChaseMpiProperties<std::complex<float>>(N, nev, nex, m, n, dim0, dim1, grid_major, comm);
   return complex_single_prec;
 }
 
@@ -327,10 +332,10 @@ void chase_setup(MPI_Fint* fcomm, int* N, int *mbsize, int *nbsize, int* nev, in
 
 template <typename T>
 void chase_setup(MPI_Fint* fcomm, int* N, int *nev, int *nex, int* m, int* n,
-                 int *dim0, int *dim1){
+                 int *dim0, int *dim1, char *grid_major){
     MPI_Comm comm = MPI_Comm_f2c(*fcomm);
     auto props = ChASE_State::constructProperties<T>(*N, *nev, *nex, *m, *n, *dim0,
-                                                     *dim1, comm);
+                                                     *dim1, grid_major, comm);
 }
 
 template <typename T>
@@ -511,30 +516,30 @@ void pschase_init(MPI_Fint* fcomm, int* N, int *nev, int *nex){
 }
 
 void pzchase_init_block(MPI_Fint* fcomm, int* N, int *nev, int *nex, int* m, int* n,
-                int *dim0, int *dim1){
+                int *dim0, int *dim1, char *grid_major){
 
-  chase_setup<std::complex<double>>(fcomm, N, nev, nex, m, n, dim0, dim1);
+  chase_setup<std::complex<double>>(fcomm, N, nev, nex, m, n, dim0, dim1, grid_major);
 
 }
 
 void pdchase_init_block(MPI_Fint* fcomm, int* N, int *nev, int *nex, int* m, int* n,
-                int *dim0, int *dim1){
+                int *dim0, int *dim1, char *grid_major){
 
-  chase_setup<double>(fcomm, N, nev, nex, m, n, dim0, dim1);
+  chase_setup<double>(fcomm, N, nev, nex, m, n, dim0, dim1, grid_major);
 
 }
 
 void pcchase_init_block(MPI_Fint* fcomm, int* N, int *nev, int *nex, int* m, int* n,
-                int *dim0, int *dim1){
+                int *dim0, int *dim1, char *grid_major){
 
-  chase_setup<std::complex<float>>(fcomm, N, nev, nex, m, n, dim0, dim1);
+  chase_setup<std::complex<float>>(fcomm, N, nev, nex, m, n, dim0, dim1, grid_major);
 
 }
 
 void pschase_init_block(MPI_Fint* fcomm, int* N, int *nev, int *nex, int* m, int* n,
-                int *dim0, int *dim1){
+                int *dim0, int *dim1, char *grid_major){
 
-  chase_setup<float>(fcomm, N, nev, nex, m, n, dim0, dim1);
+  chase_setup<float>(fcomm, N, nev, nex, m, n, dim0, dim1, grid_major);
 
 }
 

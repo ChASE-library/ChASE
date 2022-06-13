@@ -74,34 +74,38 @@ MODULE chase_diag
   END INTERFACE
   
   INTERFACE
-     SUBROUTINE pdchase_init_block( mpi_comm, n, nev, nex, m_, n_, dim0, dim1) &
+     SUBROUTINE pdchase_init_block( mpi_comm, n, nev, nex, m_, n_, dim0, dim1, grid_major) &
                      BIND( c, name = 'pdchase_init_block' )
        USE, INTRINSIC                :: iso_c_binding
        INTEGER(c_int)                :: mpi_comm, n, nev, nex, m_, n_, dim0, dim1
+       CHARACTER(len=1,kind=c_char)  :: grid_major
      END SUBROUTINE pdchase_init_block
   END INTERFACE
 
   INTERFACE
-     SUBROUTINE pzchase_init_block( mpi_comm, n, nev, nex, m_, n_, dim0, dim1) &
+     SUBROUTINE pzchase_init_block( mpi_comm, n, nev, nex, m_, n_, dim0, dim1, grid_major) &
                      BIND( c, name = 'pzchase_init_block' )
        USE, INTRINSIC                :: iso_c_binding
        INTEGER(c_int)                :: mpi_comm, n, nev, nex, m_, n_, dim0, dim1
+       CHARACTER(len=1,kind=c_char)  :: grid_major
      END SUBROUTINE pzchase_init_block
   END INTERFACE
 
   INTERFACE
-     SUBROUTINE pcchase_init_block( mpi_comm, n, nev, nex, m_, n_, dim0, dim1) &
+     SUBROUTINE pcchase_init_block( mpi_comm, n, nev, nex, m_, n_, dim0, dim1, grid_major) &
                      BIND( c, name = 'pcchase_init_block' )
        USE, INTRINSIC                :: iso_c_binding
        INTEGER(c_int)                :: mpi_comm, n, nev, nex, m_, n_, dim0, dim1
+       CHARACTER(len=1,kind=c_char)  :: grid_major
      END SUBROUTINE pcchase_init_block
   END INTERFACE
 
   INTERFACE
-     SUBROUTINE pschase_init_block( mpi_comm, n, nev, nex, m_, n_, dim0, dim1) &
+     SUBROUTINE pschase_init_block( mpi_comm, n, nev, nex, m_, n_, dim0, dim1, grid_major) &
                      BIND( c, name = 'pschase_init_block' )
        USE, INTRINSIC                :: iso_c_binding
        INTEGER(c_int)                :: mpi_comm, n, nev, nex, m_, n_, dim0, dim1
+       CHARACTER(len=1,kind=c_char)  :: grid_major
      END SUBROUTINE pschase_init_block
   END INTERFACE
 
