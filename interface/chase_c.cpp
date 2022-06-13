@@ -468,7 +468,24 @@ void chase_solve_mgpu(T* H, int *LDH, T* V, Base<T>* ritzv, int* deg, double* to
 #endif
 
 extern "C" {
+/** @defgroup chasc-c ChASE C Interface
+ *  @brief: this module provides a C interface of ChASE 
+ *  @{
+ */
 
+//! shard-memory version of ChASE with complex scalar in double precison
+/*!
+ * @param[in] H pointer to the local portion of the matrix to be diagonalized
+ * @param[in] N global matrix size of the matrix to be diagonalized
+ * @param[inout] a `(Nxnev+nex)` matrix, input is the initial guess eigenvectors, and for output, the first `nev` columns are overwritten by the desired eigenvectors
+ * @param[out] ritzv an array of size `nev` which contains the desired eigenvalues
+ * @param[int] nev number of desired eigenpairs
+ * @param[int] nex extra searching space size
+ * @param[int] deg initial degree of Cheyshev polynomial filter
+ * @param[int] tol desired absolute tolerance of computed eigenpairs
+ * @param[int] mode for sequences of eigenproblems, if reusing the eigenpairs obtained from last system. If `mode = A`, reuse, otherwise, not.
+ * @param[int] opt determining if using internal optimization of Chebyshev polynomial degree. If `opt=S`, use, otherwise, no.
+ */  
 void zchase_(std::complex<double>* H, int* N, std::complex<double>* V,
              double* ritzv, int* nev, int* nex, int* deg, double* tol,
              char* mode, char* opt) {
@@ -476,11 +493,37 @@ void zchase_(std::complex<double>* H, int* N, std::complex<double>* V,
                                    opt);
 }
 
+//! shard-memory version of ChASE with real scalar in double precison
+/*!
+ * @param[in] H pointer to the local portion of the matrix to be diagonalized
+ * @param[in] N global matrix size of the matrix to be diagonalized
+ * @param[inout] a `(Nxnev+nex)` matrix, input is the initial guess eigenvectors, and for output, the first `nev` columns are overwritten by the desired eigenvectors
+ * @param[out] ritzv an array of size `nev` which contains the desired eigenvalues
+ * @param[int] nev number of desired eigenpairs
+ * @param[int] nex extra searching space size
+ * @param[int] deg initial degree of Cheyshev polynomial filter
+ * @param[int] tol desired absolute tolerance of computed eigenpairs
+ * @param[int] mode for sequences of eigenproblems, if reusing the eigenpairs obtained from last system. If `mode = A`, reuse, otherwise, not.
+ * @param[int] opt determining if using internal optimization of Chebyshev polynomial degree. If `opt=S`, use, otherwise, no.
+ */  
 void dchase_(double* H, int* N, double* V, double* ritzv, int* nev, int* nex,
              int* deg, double* tol, char* mode, char* opt) {
   chase_seq<double>(H, N, V, ritzv, nev, nex, deg, tol, mode, opt);
 }
 
+//! shard-memory version of ChASE with complex scalar in single precison
+/*!
+ * @param[in] H pointer to the local portion of the matrix to be diagonalized
+ * @param[in] N global matrix size of the matrix to be diagonalized
+ * @param[inout] a `(Nxnev+nex)` matrix, input is the initial guess eigenvectors, and for output, the first `nev` columns are overwritten by the desired eigenvectors
+ * @param[out] ritzv an array of size `nev` which contains the desired eigenvalues
+ * @param[int] nev number of desired eigenpairs
+ * @param[int] nex extra searching space size
+ * @param[int] deg initial degree of Cheyshev polynomial filter
+ * @param[int] tol desired absolute tolerance of computed eigenpairs
+ * @param[int] mode for sequences of eigenproblems, if reusing the eigenpairs obtained from last system. If `mode = A`, reuse, otherwise, not.
+ * @param[int] opt determining if using internal optimization of Chebyshev polynomial degree. If `opt=S`, use, otherwise, no.
+ */  
 void cchase_(std::complex<float>* H, int* N, std::complex<float>* V,
              float* ritzv, int* nev, int* nex, int* deg, double* tol,
              char* mode, char* opt) {
@@ -488,29 +531,72 @@ void cchase_(std::complex<float>* H, int* N, std::complex<float>* V,
                                    opt);
 }
 
+//! shard-memory version of ChASE with real scalar in single precison
+/*!
+ * @param[in] H pointer to the local portion of the matrix to be diagonalized
+ * @param[in] N global matrix size of the matrix to be diagonalized
+ * @param[inout] a `(Nxnev+nex)` matrix, input is the initial guess eigenvectors, and for output, the first `nev` columns are overwritten by the desired eigenvectors
+ * @param[out] ritzv an array of size `nev` which contains the desired eigenvalues
+ * @param[int] nev number of desired eigenpairs
+ * @param[int] nex extra searching space size
+ * @param[int] deg initial degree of Cheyshev polynomial filter
+ * @param[int] tol desired absolute tolerance of computed eigenpairs
+ * @param[int] mode for sequences of eigenproblems, if reusing the eigenpairs obtained from last system. If `mode = A`, reuse, otherwise, not.
+ * @param[int] opt determining if using internal optimization of Chebyshev polynomial degree. If `opt=S`, use, otherwise, no.
+ */  
 void schase_(float* H, int* N, float* V, float* ritzv, int* nev, int* nex,
              int* deg, double* tol, char* mode, char* opt) {
   chase_seq<float>(H, N, V, ritzv, nev, nex, deg, tol, mode, opt);
 }
 
+//! an initialisation of environment for distributed ChASE for complex scalar in double precision
+/*!
+ * A built-in mechanism is used to distributed the Hermitian/Symmetric matrices in ChASE
+ * @param[in] fcomm the working MPI communicator
+ * @param[in] N global matrix size of the matrix to be diagonalized
+ * @param[int] nev number of desired eigenpairs
+ * @param[int] nex extra searching space size
+ */  
 void pzchase_init(MPI_Fint* fcomm, int* N, int *nev, int *nex){
 
   chase_setup<std::complex<double>>(fcomm, N, nev, nex);
 
 }
 
+//! an initialisation of environment for distributed ChASE
+/*!
+ * A built-in mechanism is used to distributed the Hermitian/Symmetric matrices in ChASE for real scalar in double precision
+ * @param[in] fcomm the working MPI communicator
+ * @param[in] N global matrix size of the matrix to be diagonalized
+ * @param[int] nev number of desired eigenpairs
+ * @param[int] nex extra searching space size
+ */  
 void pdchase_init(MPI_Fint* fcomm, int* N, int *nev, int *nex){
 
   chase_setup<double>(fcomm, N, nev, nex);
 
 }
-
+//! an initialisation of environment for distributed ChASE for complex scalar in single precision
+/*!
+ * A built-in mechanism is used to distributed the Hermitian/Symmetric matrices in ChASE
+ * @param[in] fcomm the working MPI communicator
+ * @param[in] N global matrix size of the matrix to be diagonalized
+ * @param[int] nev number of desired eigenpairs
+ * @param[int] nex extra searching space size
+ */ 
 void pcchase_init(MPI_Fint* fcomm, int* N, int *nev, int *nex){
 
   chase_setup<std::complex<float>>(fcomm, N, nev, nex);
 
 }
-
+//! an initialisation of environment for distributed ChASE for real scalar in single precision
+/*!
+ * A built-in mechanism is used to distributed the Hermitian/Symmetric matrices in ChASE
+ * @param[in] fcomm the working MPI communicator
+ * @param[in] N global matrix size of the matrix to be diagonalized
+ * @param[int] nev number of desired eigenpairs
+ * @param[int] nex extra searching space size
+ */ 
 void pschase_init(MPI_Fint* fcomm, int* N, int *nev, int *nex){
 
   chase_setup<float>(fcomm, N, nev, nex);
@@ -618,5 +704,6 @@ void pschase_mgpu_(float* H, int *ldh, float* V, float* ritzv, int* deg, double*
   chase_solve_mgpu<float>(H, ldh, V, ritzv, deg, tol, mode, opt);
 }
 #endif
+/** @} */ // end of chasc-c
 
 }  // extern C 
