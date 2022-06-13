@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>ChaseMpiProperties &mdash; ChASE v1.0.0 documentation</title>
+  <title>ChaseMpiProperties &mdash; ChASE v1.1.2 documentation</title>
   
 
   
@@ -37,7 +37,7 @@
         <link rel="index" title="Index"
               href="../genindex.html"/>
         <link rel="search" title="Search" href="../search.html"/>
-    <link rel="top" title="ChASE v1.0.0 documentation" href="../index.html"/>
+    <link rel="top" title="ChASE v1.1.2 documentation" href="../index.html"/>
         <link rel="up" title="Modules" href="../module.html"/>
         <link rel="next" title="ChaseMpi" href="chasempi.html"/>
         <link rel="prev" title="ChaseMpiMatrices" href="chasempimatrices.html"/>
@@ -74,7 +74,7 @@
             
             
               <div class="version">
-                v1.0.0
+                v1.1.2
               </div>
             
           
@@ -228,8 +228,36 @@
 </dd></dl>
 
 <dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties18ChaseMpiPropertiesENSt6size_tENSt6size_tENSt6size_tENSt6size_tENSt6size_tEiiPc8MPI_Comm">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties18ChaseMpiPropertiesENSt6size_tENSt6size_tENSt6size_tENSt6size_tENSt6size_tEiiPc8MPI_Comm"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties18ChaseMpiPropertiesENSt6size_tENSt6size_tENSt6size_tENSt6size_tENSt6size_tEiiPc8MPI_Comm"></span><span id="chase::mpi::ChaseMpiProperties::ChaseMpiProperties__std::s.std::s.std::s.std::s.std::s.i.i.cP.MPI_Comm"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1aafb9174f699fc5f3d173fd318d58cd6b"></span><code class="sig-name descname">ChaseMpiProperties</code><span class="sig-paren">(</span>std::size_t <em>N</em>, std::size_t <em>nev</em>, std::size_t <em>nex</em>, std::size_t <em>m</em>, std::size_t <em>n</em>, int <em>npr</em>, int <em>npc</em>, char *<em>grid_major</em>, MPI_Comm <em>comm</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties18ChaseMpiPropertiesENSt6size_tENSt6size_tENSt6size_tENSt6size_tENSt6size_tEiiPc8MPI_Comm" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>A constructor of the class <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_properties"><span class="std std-ref">ChaseMpiProperties</span></a> which distributes matrix <code class="docutils literal notranslate"><span class="pre">A</span></code> in <code class="docutils literal notranslate"><span class="pre">Block</span> <span class="pre">Distribution</span></code>. </p>
+<p>It constructs a 2D grid of MPI ranks within the MPI communicator <code class="docutils literal notranslate"><span class="pre">comm_</span></code>.</p>
+<p><ul class="simple">
+<li><p>The dimensions of this 2D grid is determined by the input arguments <code class="docutils literal notranslate"><span class="pre">npr</span></code> and <code class="docutils literal notranslate"><span class="pre">npc</span></code>. The 2D grid is <code class="docutils literal notranslate"><span class="pre">npr</span> <span class="pre">x</span> <span class="pre">npc</span></code></p></li>
+<li><p>It distributes the Hermitian matrix <code class="docutils literal notranslate"><span class="pre">A</span></code> in a <strong>Block-Dsitribution</strong> scheme.</p></li>
+</ul>
+</p>
+<p>This constructor requires the explicit values for the initalization of the size <code class="docutils literal notranslate"><span class="pre">N</span></code> of the matrix <em>A</em>, the number of sought after extremal eigenvalues <code class="docutils literal notranslate"><span class="pre">nev</span></code>, and the number of extra eigenvalue <code class="docutils literal notranslate"><span class="pre">nex</span></code> which defines, together with <code class="docutils literal notranslate"><span class="pre">nev</span></code>, the search space, the dimension of local matrix <code class="docutils literal notranslate"><span class="pre">m</span></code> and <code class="docutils literal notranslate"><span class="pre">n</span></code>, the 2D MPI grid <code class="docutils literal notranslate"><span class="pre">npr</span></code> and <code class="docutils literal notranslate"><span class="pre">npc</span></code>, and the working MPI communicator <code class="docutils literal notranslate"><span class="pre">comm_</span></code>.</p>
+<p>All the private members are either initialized directly by these parameters, or setup within the construction of this constructor.</p>
+<p><dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">N</span></code>: Size of the square matrix defining the eigenproblem. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">nev</span></code>: Number of desired extremal eigenvalues. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">nex</span></code>: Number of eigenvalues augmenting the search space. Usually a relatively small fraction of <code class="docutils literal notranslate"><span class="pre">nev</span></code>. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">m</span></code>: row number of local matrix on each MPI rank </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">n</span></code>: column number of local matrix on each MPI rank </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">npr</span></code>: row number of 2D MPI grid </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">npc</span></code>: column number of 2D MPI grid </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">comm</span></code>: the working MPI communicator for ChASE. </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
 <dt id="_CPPv4N5chase3mpi18ChaseMpiProperties18ChaseMpiPropertiesENSt6size_tENSt6size_tENSt6size_tE8MPI_Comm">
-<span id="_CPPv3N5chase3mpi18ChaseMpiProperties18ChaseMpiPropertiesENSt6size_tENSt6size_tENSt6size_tE8MPI_Comm"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties18ChaseMpiPropertiesENSt6size_tENSt6size_tENSt6size_tE8MPI_Comm"></span><span id="chase::mpi::ChaseMpiProperties::ChaseMpiProperties__std::s.std::s.std::s.MPI_Comm"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1ab2e2a2efd87a04172ee21fe872575a7b"></span><code class="sig-name descname">ChaseMpiProperties</code><span class="sig-paren">(</span>std::size_t <em>N</em>, std::size_t <em>nev</em>, std::size_t <em>nex</em>, MPI_Comm <em>comm</em> = MPI_COMM_WORLD<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties18ChaseMpiPropertiesENSt6size_tENSt6size_tENSt6size_tE8MPI_Comm" title="Permalink to this definition">¶</a><br /></dt>
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties18ChaseMpiPropertiesENSt6size_tENSt6size_tENSt6size_tE8MPI_Comm"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties18ChaseMpiPropertiesENSt6size_tENSt6size_tENSt6size_tE8MPI_Comm"></span><span id="chase::mpi::ChaseMpiProperties::ChaseMpiProperties__std::s.std::s.std::s.MPI_Comm"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a6237975d71586c88167b20ba0337b193"></span><code class="sig-name descname">ChaseMpiProperties</code><span class="sig-paren">(</span>std::size_t <em>N</em>, std::size_t <em>nev</em>, std::size_t <em>nex</em>, MPI_Comm <em>comm</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties18ChaseMpiPropertiesENSt6size_tENSt6size_tENSt6size_tE8MPI_Comm" title="Permalink to this definition">¶</a><br /></dt>
 <dd><p>A constructor of the class <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_properties"><span class="std std-ref">ChaseMpiProperties</span></a> which distributes matrix <code class="docutils literal notranslate"><span class="pre">A</span></code> in <code class="docutils literal notranslate"><span class="pre">Block</span> <span class="pre">Distribution</span></code>. </p>
 <p>It constructs a 2D grid of MPI ranks within the MPI communicator <code class="docutils literal notranslate"><span class="pre">comm_</span></code>.</p>
 <p><ul class="simple">
@@ -1029,7 +1057,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'v1.0.0',
+            VERSION:'v1.1.2',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true
