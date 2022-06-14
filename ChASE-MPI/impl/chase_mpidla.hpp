@@ -39,7 +39,6 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
     n_ = matrix_properties->get_n();
     m_ = matrix_properties->get_m();
 
-    H_ = matrix_properties->get_H();
     B_ = matrix_properties->get_B();
     C_ = matrix_properties->get_C();
 
@@ -467,7 +466,6 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
   std::size_t m_;
   std::size_t N_;
 
-  T* H_;
   T* B_;
   T* C_;
   T *Buff_;

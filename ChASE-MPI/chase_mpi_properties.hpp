@@ -130,7 +130,7 @@ class ChaseMpiProperties {
       \param comm the working MPI communicator for ChASE.
    */  
     ChaseMpiProperties(std::size_t N, std::size_t mb, std::size_t nb, std::size_t nev,
-                  std::size_t nex, int row_dim, int col_dim, char *grid_major, int irsrc, int icsrc, MPI_Comm comm)
+                  std::size_t nex, int row_dim, int col_dim, char *grid_major, int irsrc, int icsrc, MPI_Comm comm, bool H_preAlloc=true)
       : N_(N), mb_(mb), nb_(nb), nev_(nev), nex_(nex), max_block_(nev + nex), irsrc_(irsrc), icsrc_(icsrc), comm_(comm) {
   
         data_layout = "Block-Cyclic";
@@ -223,6 +223,8 @@ class ChaseMpiProperties {
 	m_ = N_loc[0];
 	n_ = N_loc[1];
 
+    ldh_ = m_;
+
 #ifdef CHASE_OUTPUT
 	std::cout << grid_major << " " << dims_[0] <<"x"<< dims_[1] << ", " << "rank: " << rank_ << " (" << coord_[0] << ","
 	    << coord_[1] << "), row_comm_size = " << row_procs << ", col_comm_size = " << col_procs << ", local matrix size = "
@@ -283,7 +285,10 @@ class ChaseMpiProperties {
            c_offs_l_[j] = c_offs_l_[j - 1] + c_lens_[j - 1];
        } 
 
-       H_.reset(new T[n_ * m_]());
+       if(H_preAlloc){
+           H_.reset(new T[n_ * m_]());        
+       }
+
        B_.reset(new T[n_ * max_block_]());
        C_.reset(new T[m_ * max_block_]());
 
@@ -360,7 +365,7 @@ class ChaseMpiProperties {
       \param comm the working MPI communicator for ChASE.
    */    
     ChaseMpiProperties(std::size_t N, std::size_t nev, std::size_t nex, std::size_t m, 
-		    std::size_t n, int npr, int npc, char *grid_major, MPI_Comm comm)
+		    std::size_t n, int npr, int npc, char *grid_major, MPI_Comm comm, bool H_preAlloc=true)
       : N_(N), nev_(nev), nex_(nex), max_block_(nev + nex), m_(m), n_(n), comm_(comm) {
 
 	data_layout = "Block-Block";
@@ -445,6 +450,7 @@ class ChaseMpiProperties {
 
 	len = n;
 	off_[1] = coord_[1] * len;
+    ldh_ = m_;
 
     	if (coord_[1] < dims_[1] - 1) {
       	    n_ = len;
@@ -474,8 +480,10 @@ class ChaseMpiProperties {
     	c_lens_[0] = n_;    
     	c_offs_l_[0] = 0;
 
-    	H_.reset(new T[n_ * m_]());
-    	B_.reset(new T[n_ * max_block_]());
+        if(H_preAlloc){
+           H_.reset(new T[n_ * m_]());        
+        }
+        B_.reset(new T[n_ * max_block_]());
     	C_.reset(new T[m_ * max_block_]());
 
     	block_counts_.resize(2);
@@ -540,7 +548,7 @@ class ChaseMpiProperties {
       \param comm the working MPI communicator for ChASE.
    */
     ChaseMpiProperties(std::size_t N, std::size_t nev, std::size_t nex,
-                     MPI_Comm comm)
+                     MPI_Comm comm, bool H_preAlloc=true)
       : N_(N), nev_(nev), nex_(nex), max_block_(nev + nex), comm_(comm) {
 
     data_layout = "Block-Block";
@@ -599,7 +607,7 @@ class ChaseMpiProperties {
     } else {
       n_ = N_ - (dims_[1] - 1) * len;
     }
-
+    ldh_ = m_;
     mb_ = m_;
     nb_ = n_;
     mblocks_ = 1;
@@ -622,7 +630,10 @@ class ChaseMpiProperties {
     c_lens_[0] = n_;    
     c_offs_l_[0] = 0;
 
-    H_.reset(new T[n_ * m_]());
+
+    if(H_preAlloc){
+        H_.reset(new T[n_ * m_]());        
+    }
     B_.reset(new T[n_ * max_block_]());
     C_.reset(new T[m_ * max_block_]());
 
@@ -671,6 +682,8 @@ class ChaseMpiProperties {
       \return `N_`: the rank of matrix `A`.
    */
   std::size_t get_N() { return N_; };
+
+  std::size_t get_ldh() { return ldh_; };
 
   //! Returns column number of the local matrix on each MPI node.
   /*! 
@@ -937,6 +950,12 @@ class ChaseMpiProperties {
     return ChaseMpiMatrices<T>(comm_, N_, max_block_, V1, ritzv, V2, resid);
   }
 
+  ChaseMpiMatrices<T> create_matrices(T* H = nullptr, std::size_t ldh=0, T* V1 = nullptr, Base<T>* ritzv = nullptr,
+                                      T* V2 = nullptr,
+                                      Base<T>* resid = nullptr) const {
+     return ChaseMpiMatrices<T>(comm_, N_, m_, n_, max_block_, V1, ritzv, H, ldh, V2, resid);
+  }
+
  private:
 
   ///////////////////////////////////////////////////
@@ -950,6 +969,7 @@ class ChaseMpiProperties {
    */
   std::size_t N_;
 
+  std::size_t ldh_;
   //! Number of desired extremal eigenpairs
   /*!
       This variable is initialized by the constructor using the value

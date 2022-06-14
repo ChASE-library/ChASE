@@ -79,29 +79,12 @@ int main(int argc, char** argv)
 #elif defined(USE_GIVEN_DIST)
   CHASE single(new ChaseMpiProperties<T>(N, nev, nex, m, n, dims[0], dims[1], (char *)"C", MPI_COMM_WORLD), V.data(),
                Lambda.data());
+#elif defined(NO_COPY_H)
+  auto props = new ChaseMpiProperties<T>(N, nev, nex, MPI_COMM_WORLD, false);
 #else  
   CHASE single(new ChaseMpiProperties<T>(N, nev, nex, MPI_COMM_WORLD), V.data(),
                Lambda.data());
 #endif
-
-  /*Setup configure for ChASE*/
-  auto& config = single.GetConfig();
-  /*Tolerance for Eigenpair convergence*/
-  config.SetTol(1e-10);
-  /*Initial filtering degree*/
-  config.SetDeg(20);
-  /*Optimi(S)e degree*/
-  config.SetOpt(true);
-  config.SetMaxIter(25);
-
-  if (rank == 0)
-    std::cout << "Solving a symmetrized Clement matrices (" << N
-              << "x" << N << ")"
-#ifdef USE_BLOCK_CYCLIC	      
-              << " with block-cyclic data layout: " << NB << "x" << NB 
-#endif
-	      << '\n'	      
-              << config;
 
   /*randomize V*/
   for (std::size_t i = 0; i < N * (nev + nex); ++i) {
@@ -169,6 +152,19 @@ int main(int argc, char** argv)
       }
   }
 
+#elif defined(NO_COPY_H)
+  std::size_t xoff, yoff, xlen, ylen, ldh;
+  props->get_off(&xoff, &yoff, &xlen, &ylen);
+  ldh = N / size + 1;
+  T *h_loc = new T[ldh * ylen];
+  for (std::size_t x = 0; x < xlen; x++) {
+    for (std::size_t y = 0; y < ylen; y++) {
+      h_loc[x + ldh * y] = H[(xoff + x) * N + (yoff + y)];
+    }
+  }
+
+  CHASE single(props, h_loc, ldh, V.data(), Lambda.data());  
+
 #else  
   std::size_t xoff, yoff, xlen, ylen;
 
@@ -181,7 +177,27 @@ int main(int argc, char** argv)
       single.GetMatrixPtr()[x + xlen * y] = H.at((xoff + x) * N + (yoff + y));
     }
   }
+
 #endif
+
+  /*Setup configure for ChASE*/
+  auto& config = single.GetConfig();
+  /*Tolerance for Eigenpair convergence*/
+  config.SetTol(1e-10);
+  /*Initial filtering degree*/
+  config.SetDeg(20);
+  /*Optimi(S)e degree*/
+  config.SetOpt(true);
+  config.SetMaxIter(25);
+
+  if (rank == 0)
+    std::cout << "Solving a symmetrized Clement matrices (" << N
+              << "x" << N << ")"
+#ifdef USE_BLOCK_CYCLIC       
+              << " with block-cyclic data layout: " << NB << "x" << NB 
+#endif
+        << '\n'       
+              << config;
 
   /*Performance Decorator to meaure the performance of kernels of ChASE*/
   PerformanceDecoratorChase<T> performanceDecorator(&single);

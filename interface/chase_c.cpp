@@ -112,7 +112,7 @@ ChaseMpiProperties<double>* ChASE_State::constructProperties(std::size_t N,
                                                              int icsrc,    
                                                        	     MPI_Comm comm) {
   double_prec = new ChaseMpiProperties<double>(N, mbsize, nbsize, nev, nex, dim0, 
-		  				dim1, grid_major, irsrc, icsrc,comm);
+		  				dim1, grid_major, irsrc, icsrc,comm, false);
   return double_prec;
 }
 
@@ -129,7 +129,7 @@ ChaseMpiProperties<std::complex<double>>* ChASE_State::constructProperties(std::
                                                              int icsrc,
                                                              MPI_Comm comm) {
   complex_double_prec = new ChaseMpiProperties<std::complex<double>>(N, mbsize, nbsize, nev, nex, dim0,
-                                                dim1, grid_major, irsrc, icsrc,comm);
+                                                dim1, grid_major, irsrc, icsrc,comm, false);
   return complex_double_prec;
 }
 
@@ -147,7 +147,7 @@ ChaseMpiProperties<float>* ChASE_State::constructProperties(std::size_t N,
                                                              int icsrc,
                                                              MPI_Comm comm) {
   single_prec = new ChaseMpiProperties<float>(N, mbsize, nbsize, nev, nex, dim0,
-                                                dim1, grid_major, irsrc, icsrc,comm);
+                                                dim1, grid_major, irsrc, icsrc,comm, false);
   return single_prec;
 }
 
@@ -164,7 +164,7 @@ ChaseMpiProperties<std::complex<float>>* ChASE_State::constructProperties(std::s
                                                              int icsrc,
                                                              MPI_Comm comm) {
   complex_single_prec = new ChaseMpiProperties<std::complex<float>>(N, mbsize, nbsize, nev, nex, dim0,
-                                                dim1, grid_major, irsrc, icsrc,comm);
+                                                dim1, grid_major, irsrc, icsrc,comm, false);
   return complex_single_prec;
 }
 
@@ -179,7 +179,7 @@ ChaseMpiProperties<double>* ChASE_State::constructProperties(std::size_t N,
 						    char *grid_major,
                                                     MPI_Comm comm){
 
-  double_prec = new ChaseMpiProperties<double>(N, nev, nex, m, n, dim0, dim1, grid_major, comm);
+  double_prec = new ChaseMpiProperties<double>(N, nev, nex, m, n, dim0, dim1, grid_major, comm, false);
   return double_prec;      	
 }
 
@@ -194,7 +194,7 @@ ChaseMpiProperties<float>* ChASE_State::constructProperties(std::size_t N,
 						    char *grid_major,
                                                     MPI_Comm comm){
 
-  single_prec = new ChaseMpiProperties<float>(N, nev, nex, m, n, dim0, dim1, grid_major, comm);
+  single_prec = new ChaseMpiProperties<float>(N, nev, nex, m, n, dim0, dim1, grid_major, comm, false);
   return single_prec;
 }
 
@@ -209,7 +209,7 @@ ChaseMpiProperties<std::complex<double>>* ChASE_State::constructProperties(std::
 						    char *grid_major,
                                                     MPI_Comm comm){
 
-  complex_double_prec = new ChaseMpiProperties<std::complex<double>>(N, nev, nex, m, n, dim0, dim1, grid_major, comm);
+  complex_double_prec = new ChaseMpiProperties<std::complex<double>>(N, nev, nex, m, n, dim0, dim1, grid_major, comm, false);
   return complex_double_prec;
 }
 
@@ -224,7 +224,7 @@ ChaseMpiProperties<std::complex<float>>* ChASE_State::constructProperties(std::s
 						    char *grid_major,
                                                     MPI_Comm comm){
 
-  complex_single_prec = new ChaseMpiProperties<std::complex<float>>(N, nev, nex, m, n, dim0, dim1, grid_major, comm);
+  complex_single_prec = new ChaseMpiProperties<std::complex<float>>(N, nev, nex, m, n, dim0, dim1, grid_major, comm, false);
   return complex_single_prec;
 }
 
@@ -234,7 +234,7 @@ ChaseMpiProperties<double>* ChASE_State::constructProperties(std::size_t N,
                                                     std::size_t nex,
                                                     MPI_Comm comm){
 
-  double_prec = new ChaseMpiProperties<double>(N, nev, nex, comm);
+  double_prec = new ChaseMpiProperties<double>(N, nev, nex, comm, false);
   return double_prec;
 }
 
@@ -244,7 +244,7 @@ ChaseMpiProperties<float>* ChASE_State::constructProperties(std::size_t N,
                                                     std::size_t nex,
                                                     MPI_Comm comm){
 
-  single_prec = new ChaseMpiProperties<float>(N, nev, nex, comm);
+  single_prec = new ChaseMpiProperties<float>(N, nev, nex, comm, false);
   return single_prec;
 }
 
@@ -254,7 +254,7 @@ ChaseMpiProperties<std::complex<double>>* ChASE_State::constructProperties(std::
                                                     std::size_t nex,
                                                     MPI_Comm comm){
 
-  complex_double_prec = new ChaseMpiProperties<std::complex<double>>(N, nev, nex, comm);
+  complex_double_prec = new ChaseMpiProperties<std::complex<double>>(N, nev, nex, comm, false);
   return complex_double_prec;
 }
 
@@ -264,7 +264,7 @@ ChaseMpiProperties<std::complex<float>>* ChASE_State::constructProperties(std::s
                                                     std::size_t nex,
                                                     MPI_Comm comm){
 
-  complex_single_prec = new ChaseMpiProperties<std::complex<float>>(N, nev, nex, comm);
+  complex_single_prec = new ChaseMpiProperties<std::complex<float>>(N, nev, nex, comm, false);
   return complex_single_prec;
 }
 
@@ -360,12 +360,7 @@ void chase_solve(T* H, int *LDH, T* V, Base<T>* ritzv, int* deg, double* tol, ch
 
   int myRank = props->get_my_rank();
   int ldh = *LDH;
-  CHASE single(props, V, ritzv);
-
-  T* H_ = single.GetMatrixPtr();
-  std::size_t m, n;
-  m = props->get_m();
-  n = props->get_n();
+  CHASE single(props, H, ldh, V, ritzv);
 
   ChaseConfig<T>& config = single.GetConfig();
   auto N = config.GetN();
@@ -375,17 +370,6 @@ void chase_solve(T* H, int *LDH, T* V, Base<T>* ritzv, int* deg, double* tol, ch
   if (!config.UseApprox())
     for (std::size_t k = 0; k < N * (nev + nex); ++k)
       V[k] = getRandomT<T>([&]() { return d(gen); });
-/*
-  for(auto j = 0; j < n; j++ ){
-      for(auto i = 0; i < m; i++){
-          H_[m * j + i] = H[j * ldh + i];
-      }
-  }
-*/  
-
-  t_lacpy('A', m, n, H, ldh, H_, m);
-
-  //std::cout << myRank << ": m = " << m << ", n = " << n << ", ldh = " << ldh << std::endl;  
   
   config.SetTol(*tol);
   config.SetDeg(*deg);
@@ -424,10 +408,7 @@ void chase_solve_mgpu(T* H, int *LDH, T* V, Base<T>* ritzv, int* deg, double* to
 
   CHASE single(props, V, ritzv);
 
-  T* H_ = single.GetMatrixPtr();
-  std::size_t m, n;
-  m = props->get_m();
-  n = props->get_n();
+  CHASE single(props, H, ldh, V, ritzv);
 
   ChaseConfig<T>& config = single.GetConfig();
   auto N = config.GetN();
@@ -437,14 +418,7 @@ void chase_solve_mgpu(T* H, int *LDH, T* V, Base<T>* ritzv, int* deg, double* to
   if (!config.UseApprox())
     for (std::size_t k = 0; k < N * (nev + nex); ++k)
       V[k] = getRandomT<T>([&]() { return d(gen); });
-/*
-  for(auto j = 0; j < n; j++ ){
-      for(auto i = 0; i < m; i++){
-          H_[m * j + i] = H[j * ldh + i];
-      }
-  }
-*/
-  t_lacpy('A', m, n, H, ldh, H_, m);
+
   config.SetTol(*tol);
   config.SetDeg(*deg);
   config.SetOpt(*opt == 'S');

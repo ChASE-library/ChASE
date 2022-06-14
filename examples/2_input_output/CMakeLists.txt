@@ -1,7 +1,5 @@
 find_package( Boost COMPONENTS serialization program_options filesystem )
 
-enable_language(CUDA)
-
 if( ${Boost_FOUND} )
 
   ##############################################################################

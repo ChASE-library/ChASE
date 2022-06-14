@@ -22,7 +22,7 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
  public:
   //! A constructor of ChaseMpiDLABlaslapack.
   //! @param matrix_properties: it is an object of ChaseMpiProperties, which defines the MPI environment and data distribution scheme in ChASE-MPI.
-  ChaseMpiDLABlaslapack(ChaseMpiProperties<T>* matrix_properties) {
+  ChaseMpiDLABlaslapack(ChaseMpiProperties<T>* matrix_properties, ChaseMpiMatrices<T>& matrices) {
     // TODO
     // ldc_ = matrix_properties->get_ldc();
     // ldb_ = matrix_properties->get_ldb();
@@ -31,7 +31,14 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
     m_ = matrix_properties->get_m();
     N_ = matrix_properties->get_N();
 
-    H_ = matrix_properties->get_H();
+    H_ = matrices.get_H();
+    ldh_ = matrices.get_ldh();
+    if(H_ == nullptr){
+      H_ = matrix_properties->get_H();
+      ldh_ = matrix_properties->get_ldh();
+    }
+
+    std::cout << "LDH: " << ldh_ << std::endl;
     B_ = matrix_properties->get_B();
     C_ = matrix_properties->get_C();
 
@@ -90,7 +97,7 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
       }
 
       t_gemm<T>(CblasColMajor, CblasConjTrans, CblasNoTrans, n_,
-                static_cast<std::size_t>(block), m_, &alpha, H_, m_,
+                static_cast<std::size_t>(block), m_, &alpha, H_, ldh_,
                 C_ + offset * m_, m_, &beta, B_ + offset * n_, n_);
       next_ = NextOp::cAb;
 
@@ -101,7 +108,7 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
       }
 
       t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, m_,
-             static_cast<std::size_t>(block), n_, &alpha, H_, m_,
+             static_cast<std::size_t>(block), n_, &alpha, H_, ldh_,
              B_ + offset * n_, n_, &beta, C_ + offset * m_, m_);
       next_ = NextOp::bAc;
     }
@@ -140,7 +147,7 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
             for(std::size_t q = 0; q < c_lens_[j]; q++){
                 for(std::size_t p = 0; p < r_lens_[i]; p++){
                     if(q + c_offs_[j] == p + r_offs_[i]){
-                        H_[(q + c_offs_l_[j]) * m_ + p + r_offs_l_[i]] += c;
+                        H_[(q + c_offs_l_[j]) * ldh_ + p + r_offs_l_[i]] += c;
                     }
                 }
             }
@@ -332,7 +339,7 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
 
   std::size_t n_;
   std::size_t m_;
-
+  std::size_t ldh_;
   T* H_;
   T* B_;
   T* C_;
