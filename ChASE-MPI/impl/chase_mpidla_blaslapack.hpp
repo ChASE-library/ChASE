@@ -38,7 +38,6 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
       ldh_ = matrix_properties->get_ldh();
     }
 
-    std::cout << "LDH: " << ldh_ << std::endl;
     B_ = matrix_properties->get_B();
     C_ = matrix_properties->get_C();
 

@@ -12,7 +12,8 @@
 #include <mpi.h>
 #include <random>
 #include <chrono>
-
+#include <filesystem>
+#include <fstream>
 #include "algorithm/performance.hpp"
 #include "ChASE-MPI/blas_templates.hpp"
 #include "ChASE-MPI/chase_mpi.hpp"
@@ -308,9 +309,27 @@ void chase_seq(T* H, int* N, T* V, Base<T>* ritzv, int* nev, int* nex,
   config.SetOpt(*opt == 'S');
   config.SetApprox(*mode == 'A');
 
-  if (!config.UseApprox())
-    for (std::size_t k = 0; k < *N * (*nev + *nex); ++k)
-      V[k] = getRandomT<T>([&]() { return d(gen); });
+  std::string rnd_file;
+  if(sizeof(T) == 2 * sizeof(Base<T>)){
+      rnd_file = "rnd_z.bin";
+  }else if(sizeof(T) == sizeof(Base<T>)){
+      rnd_file = "rnd_d.bin";
+  }
+
+  if (!config.UseApprox()){
+    std::filesystem::path rnd_file_fs{rnd_file};
+    if(std::filesystem::exists(rnd_file_fs)){
+        std::ostringstream problem(std::ostringstream::ate);
+        problem << rnd_file;
+        std::ifstream infile(problem.str().c_str(), std::ios::binary);
+        infile.read((char*)V, sizeof(T) * (*N) * (*nev + *nex));
+        std::cout << "ChASE loaded initial vector from local binary file: " <<  rnd_file << std::endl;
+    }else{
+        for (std::size_t k = 0; k < (*N) * (*nev + *nex); ++k){
+            V[k] = getRandomT<T>([&]() { return d(gen);  });
+        }
+    }
+  }
 
   PerformanceDecoratorChase<T> performanceDecorator(&single);
   start_times[2] = std::chrono::high_resolution_clock::now();
@@ -366,11 +385,28 @@ void chase_solve(T* H, int *LDH, T* V, Base<T>* ritzv, int* deg, double* tol, ch
   auto N = config.GetN();
   auto nev = config.GetNev();
   auto nex = config.GetNex();
-
-  if (!config.UseApprox())
-    for (std::size_t k = 0; k < N * (nev + nex); ++k)
-      V[k] = getRandomT<T>([&]() { return d(gen); });
+ 
+  std::string rnd_file;
+  if(sizeof(T) == 2 * sizeof(Base<T>)){
+      rnd_file = "rnd_z.bin";
+  }else if(sizeof(T) == sizeof(Base<T>)){
+      rnd_file = "rnd_d.bin";
+  }
   
+  if (!config.UseApprox()){
+    std::filesystem::path rnd_file_fs{rnd_file};
+    if(std::filesystem::exists(rnd_file_fs)){
+        std::ostringstream problem(std::ostringstream::ate);
+        problem << rnd_file;
+	std::ifstream infile(problem.str().c_str(), std::ios::binary);
+        infile.read((char*)V, sizeof(T) * N * (nev + nex));
+	if(myRank == 0) std::cout << "ChASE loaded initial vector from local binary file: " << 	rnd_file << std::endl;
+    }else{
+        for (std::size_t k = 0; k < N * (nev + nex); ++k){
+            V[k] = getRandomT<T>([&]() { return d(gen);  });
+        }
+    }
+  }  
   config.SetTol(*tol);
   config.SetDeg(*deg);
   config.SetOpt(*opt == 'S');
@@ -405,9 +441,7 @@ void chase_solve_mgpu(T* H, int *LDH, T* V, Base<T>* ritzv, int* deg, double* to
   ChaseMpiProperties<T>* props = ChASE_State::getProperties<T>();
 
   int myRank = props->get_my_rank();
-
-  CHASE single(props, V, ritzv);
-
+  int ldh = *LDH;
   CHASE single(props, H, ldh, V, ritzv);
 
   ChaseConfig<T>& config = single.GetConfig();
@@ -415,10 +449,27 @@ void chase_solve_mgpu(T* H, int *LDH, T* V, Base<T>* ritzv, int* deg, double* to
   auto nev = config.GetNev();
   auto nex = config.GetNex();
 
-  if (!config.UseApprox())
-    for (std::size_t k = 0; k < N * (nev + nex); ++k)
-      V[k] = getRandomT<T>([&]() { return d(gen); });
+  std::string rnd_file;
+  if(sizeof(T) == 2 * sizeof(Base<T>)){
+      rnd_file = "rnd_z.bin";
+  }else if(sizeof(T) == sizeof(Base<T>)){
+      rnd_file = "rnd_d.bin";
+  }
 
+  if (!config.UseApprox()){
+    std::filesystem::path rnd_file_fs{rnd_file};
+    if(std::filesystem::exists(rnd_file_fs)){
+        std::ostringstream problem(std::ostringstream::ate);
+        problem << rnd_file;
+        std::ifstream infile(problem.str().c_str(), std::ios::binary);
+        infile.read((char*)V, sizeof(T) * N * (nev + nex));
+        if(myRank == 0) std::cout << "ChASE loaded initial vector from local binary file: " <<  rnd_file << std::endl;
+    }else{
+        for (std::size_t k = 0; k < N * (nev + nex); ++k){
+            V[k] = getRandomT<T>([&]() { return d(gen);  });
+        }
+    }
+  }
   config.SetTol(*tol);
   config.SetDeg(*deg);
   config.SetOpt(*opt == 'S');
@@ -430,14 +481,11 @@ void chase_solve_mgpu(T* H, int *LDH, T* V, Base<T>* ritzv, int* deg, double* to
 
   timings[2] = std::chrono::high_resolution_clock::now() - start_times[2];
   timings[1] = std::chrono::high_resolution_clock::now() - start_times[1];
-#ifdef INFO_PRINT
   if(myRank == 0){
-      std::cout << "ChASE-MGPU]> ChASE Solve done in: " << timings[2].count() << "\n";
+      std::cout << "ChASE-MPI]> ChASE Solve done in: " << timings[2].count() << "\n";
       performanceDecorator.GetPerfData().print();
-      std::cout << "ChASE-MGPU]> total time in ChASE: " << timings[1].count() << "\n";
-  }
-#endif
-
+      std::cout << "ChASE-MPI]> total time in ChASE: " << timings[1].count() << "\n";
+  }  
 }
 #endif
 

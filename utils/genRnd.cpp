@@ -1,0 +1,125 @@
+// This file is a part of the ChASE library.
+// Copyright (c) 2015-2021, Simulation and Data Laboratory Quantum Materials,
+// Forschungszentrum Juelich GmbH, Germany.
+// All rights reserved.
+// ChASE is licensed under the 3-clause BSD license (BSD 2.0).
+// https://github.com/ChASE-library/ChASE/
+#include <iostream>
+#include <fstream>
+#include <complex>
+#include <iomanip>
+#include <typeinfo>
+#include <vector>
+#include <chrono>
+#include <filesystem>
+#include <random>
+
+#include "algorithm/types.hpp"
+
+namespace fs = std::filesystem;
+
+std::string getCmdOption(int argc, char* argv[], const std::string& option)
+{
+    std::string cmd;
+     for( int i = 0; i < argc; ++i)
+     {
+          std::string arg = argv[i];
+          if(0 == arg.find(option))
+          {
+	       cmd = argv[i + 1];
+               return cmd;
+          }
+     }
+     return cmd;
+}
+
+template <typename T>
+void wrtMatIntoBinary(T *H, std::string path_out, std::size_t size){
+  std::ostringstream problem(std::ostringstream::ate);
+  problem << path_out;
+
+  std::cout << "]> writing matrix into ";
+  std::cout << problem.str();
+  std::cout << " of size = " << size << std::endl;
+
+  auto outfile = std::fstream(problem.str().c_str(), std::ios::out | std::ios::binary);
+
+  outfile.write((char*)&H[0], size * sizeof(T));
+
+  outfile.close();
+
+}
+
+template <typename T>
+void readMatFromBinary(T *H, std::string path_in, std::size_t size){
+  std::ostringstream problem(std::ostringstream::ate);
+  problem << path_in;
+
+  std::cout << "]> start reading matrix from binary file ";
+  std::cout << problem.str();
+  std::cout << " of size = " << size << std::endl;
+
+  std::ifstream infile(problem.str().c_str(), std::ios::binary);
+
+  infile.read((char*)H, sizeof(T) * size);
+
+  infile.close();
+}
+
+
+int main (int argc, char *argv[]){
+
+    std::size_t N = 10000000;
+    std::string path_out;
+    //parser
+    std::string N_str = getCmdOption(argc, argv, "--N");
+    if(!N_str.empty()){
+    	N = std::stoi(N_str);
+    }
+    path_out = getCmdOption(argc, argv, "--path_out");
+    if(path_out.empty()){
+    	path_out = "./output/";
+    }
+
+    std::vector<double> dbuf(N);
+    std::vector<float> sbuf(N);
+    std::vector<std::complex<float>> cbuf(N);
+    std::vector<std::complex<double>> zbuf(N);
+
+    fs::path outpath{path_out};
+
+    if(!fs::exists(outpath)){
+	fs::create_directory(outpath);    
+    }
+
+    std::ostringstream drnd_str, zrnd_str, srnd_str, crnd_str;
+    drnd_str << path_out << "rnd_d.bin";
+    zrnd_str << path_out << "rnd_z.bin";
+    crnd_str << path_out << "rnd_c.bin";
+    srnd_str << path_out << "rnd_s.bin";
+
+    std::mt19937 gen(2342.0);
+    std::normal_distribution<> d;
+    
+    for (std::size_t k = 0; k < N; ++k){
+      dbuf[k] = getRandomT<double>([&]() { return d(gen); });
+    }
+    wrtMatIntoBinary<double>(dbuf.data(), drnd_str.str(), N);
+    //
+    for (std::size_t k = 0; k < N; ++k){
+      sbuf[k] = getRandomT<float>([&]() { return d(gen); });
+    }
+    wrtMatIntoBinary<float>(sbuf.data(), srnd_str.str(), N);
+    //
+    for (std::size_t k = 0; k < N; ++k){
+      zbuf[k] = getRandomT<std::complex<double>>([&]() { return d(gen); });
+    }
+    wrtMatIntoBinary<std::complex<double>>(zbuf.data(), zrnd_str.str(), N);
+    //
+    for (std::size_t k = 0; k < N ; ++k){
+      cbuf[k] = getRandomT<std::complex<float>>([&]() { return d(gen); });
+    }
+    wrtMatIntoBinary<std::complex<float>>(cbuf.data(), crnd_str.str(), N);
+
+    return 0;
+}
