@@ -12,7 +12,6 @@
 #include <mpi.h>
 #include <random>
 #include <chrono>
-#include <filesystem>
 #include <fstream>
 #include "algorithm/performance.hpp"
 #include "ChASE-MPI/blas_templates.hpp"
@@ -21,6 +20,7 @@
 #include "ChASE-MPI/impl/chase_mpidla_blaslapack.hpp"
 #include "ChASE-MPI/impl/chase_mpidla_blaslapack_seq.hpp"
 #include "ChASE-MPI/impl/chase_mpidla_blaslapack_seq_inplace.hpp"
+#include <sys/stat.h>
 
 #ifdef HAS_GPU
   #include "ChASE-MPI/impl/chase_mpidla_mgpu.hpp"
@@ -28,6 +28,12 @@
 
 using namespace chase;
 using namespace chase::mpi;
+
+bool IsPathExist(const std::string &s)
+{
+  struct stat buffer;
+  return (stat (s.c_str(), &buffer) == 0);
+}
 
 class ChASE_State {
  public:
@@ -317,8 +323,7 @@ void chase_seq(T* H, int* N, T* V, Base<T>* ritzv, int* nev, int* nex,
   }
 
   if (!config.UseApprox()){
-    std::filesystem::path rnd_file_fs{rnd_file};
-    if(std::filesystem::exists(rnd_file_fs)){
+    if(IsPathExist(rnd_file)){
         std::ostringstream problem(std::ostringstream::ate);
         problem << rnd_file;
         std::ifstream infile(problem.str().c_str(), std::ios::binary);
@@ -394,9 +399,8 @@ void chase_solve(T* H, int *LDH, T* V, Base<T>* ritzv, int* deg, double* tol, ch
   }
   
   if (!config.UseApprox()){
-    std::filesystem::path rnd_file_fs{rnd_file};
-    if(std::filesystem::exists(rnd_file_fs)){
-        std::ostringstream problem(std::ostringstream::ate);
+    if(IsPathExist(rnd_file)){
+  	std::ostringstream problem(std::ostringstream::ate);
         problem << rnd_file;
 	std::ifstream infile(problem.str().c_str(), std::ios::binary);
         infile.read((char*)V, sizeof(T) * N * (nev + nex));
@@ -457,9 +461,8 @@ void chase_solve_mgpu(T* H, int *LDH, T* V, Base<T>* ritzv, int* deg, double* to
   }
 
   if (!config.UseApprox()){
-    std::filesystem::path rnd_file_fs{rnd_file};
-    if(std::filesystem::exists(rnd_file_fs)){
-        std::ostringstream problem(std::ostringstream::ate);
+    if(IsPathExist(rnd_file)){
+  	std::ostringstream problem(std::ostringstream::ate);
         problem << rnd_file;
         std::ifstream infile(problem.str().c_str(), std::ios::binary);
         infile.read((char*)V, sizeof(T) * N * (nev + nex));

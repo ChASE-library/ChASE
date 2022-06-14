@@ -13,10 +13,15 @@
 #include <chrono>
 #include <filesystem>
 #include <random>
+#include <sys/stat.h>
 
 #include "algorithm/types.hpp"
 
-namespace fs = std::filesystem;
+bool IsPathExist(const std::string &s)
+{
+  struct stat buffer;
+  return (stat (s.c_str(), &buffer) == 0);
+}
 
 std::string getCmdOption(int argc, char* argv[], const std::string& option)
 {
@@ -86,10 +91,8 @@ int main (int argc, char *argv[]){
     std::vector<std::complex<float>> cbuf(N);
     std::vector<std::complex<double>> zbuf(N);
 
-    fs::path outpath{path_out};
-
-    if(!fs::exists(outpath)){
-	fs::create_directory(outpath);    
+    if(!IsPathExist(path_out)){
+        mkdir(path_out.c_str(), 0700);
     }
 
     std::ostringstream drnd_str, zrnd_str, srnd_str, crnd_str;
