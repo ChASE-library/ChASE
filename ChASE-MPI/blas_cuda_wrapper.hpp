@@ -112,7 +112,7 @@ cusolverDnTgeqrf_bufferSize(cusolverDnHandle_t handle,
 
 
 cusolverStatus_t cusolverDnTgeqrf(cusolverDnHandle_t handle, int m, int n, float *A,
-				  int lda, float *TAU, float *Workspace, int Lwork, int *devInfo){
+                  int lda, float *TAU, float *Workspace, int Lwork, int *devInfo){
   return cusolverDnSgeqrf(handle, m, n, A, lda, TAU, Workspace, Lwork, devInfo);
 }
 
@@ -124,8 +124,8 @@ cusolverStatus_t cusolverDnTgeqrf(cusolverDnHandle_t handle, int m, int n, doubl
 cusolverStatus_t cusolverDnTgeqrf(cusolverDnHandle_t handle, int m, int n, std::complex<float> *A,
                                   int lda, std::complex<float> *TAU, std::complex<float> *Workspace, int Lwork, int *devInfo){
   return cusolverDnCgeqrf(handle, m, n,  reinterpret_cast<cuComplex*>(A), 
-			  lda,  reinterpret_cast<cuComplex*>(TAU),  
-			  reinterpret_cast<cuComplex*>(Workspace), Lwork, devInfo);
+              lda,  reinterpret_cast<cuComplex*>(TAU),  
+              reinterpret_cast<cuComplex*>(Workspace), Lwork, devInfo);
 }
 
 cusolverStatus_t cusolverDnTgeqrf(cusolverDnHandle_t handle, int m, int n, std::complex<double> *A,

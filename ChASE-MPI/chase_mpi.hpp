@@ -136,7 +136,7 @@ class ChaseMpi : public chase::Chase<T> {
         matrices_(std::move(
             properties_.get()->create_matrices(V1, ritzv, V2, resid))),
         dla_(new ChaseMpiDLA<T>(properties_.get(),
-                                  new MF<T>(properties_.get()))) {
+                                  new MF<T>(properties_.get(),matrices_))) {
     int init;
     MPI_Initialized(&init);
     if (init) MPI_Comm_rank(MPI_COMM_WORLD, &rank_);
@@ -153,6 +153,34 @@ class ChaseMpi : public chase::Chase<T> {
                   "MatrixFreeChASE Must be skewed");
   }
 
+  ChaseMpi(ChaseMpiProperties<T> *properties,  T *H = nullptr, std::size_t ldh=0, T *V1 = nullptr,
+           Base<T> *ritzv = nullptr,T *V2 = nullptr, Base<T> *resid = nullptr)
+      : N_(properties->get_N()),
+        nev_(properties->GetNev()),
+        nex_(properties->GetNex()),
+        locked_(0),
+        config_(N_, nev_, nex_),
+        properties_(properties),
+        matrices_(std::move(
+            properties_.get()->create_matrices(H, ldh, V1, ritzv, V2, resid))),
+        dla_(new ChaseMpiDLA<T>(properties_.get(),
+                                  new MF<T>(properties_.get(),matrices_))) {
+    int init;
+    MPI_Initialized(&init);
+    if (init) MPI_Comm_rank(MPI_COMM_WORLD, &rank_);
+
+    V_ = matrices_.get_V1();
+    W_ = matrices_.get_V2();
+    ritzv_ = matrices_.get_Ritzv();
+    resid_ = matrices_.get_Resid();
+    
+    approxV_ = V_;
+    workspace_ = W_;
+    H_ = matrices_.get_H();
+
+    static_assert(is_skewed_matrixfree<MF<T>>::value,
+                  "MatrixFreeChASE Must be skewed");
+  }
   //! It prevents the copy operation of the constructor of ChaseMpi.
   ChaseMpi(const ChaseMpi &) = delete;
 
@@ -647,6 +675,11 @@ class ChaseMpi : public chase::Chase<T> {
   //! \return `resid_`: a  pointer to the memory allocated to store the residual of each computed eigenpair.  
   Base<T> *GetResid()  override { return resid_; }
 
+  //! This member function return the number of MPI processes used by ChASE
+  //! \return the number of MPI ranks in the communicator used by ChASE
+  int get_nprocs() override {
+      return dla_->get_nprocs();
+  }
  private:
   //!Global size of the matrix A defining the eigenproblem.
   /*!
@@ -707,7 +740,8 @@ class ChaseMpi : public chase::Chase<T> {
     the memory is allocated directly by ChaseMpiMatrices of size `N_ * (nex_ + nex_)`.
     - For the constructor of class ChaseMpi with MPI, this variable is a pointer to a rectangular matrix of `V` of size `N_ * (nex_ + nex_)`, 
     which are identical on each MPI node. It is initalized within the construction of ChaseMpiMatrices.
-  */   
+  */
+
   T *V_;
 
   //! A pointer to the memory allocated to store a rectangular matrix `W`, whose conjugate transpose will be left-multiplied to `A` during the process of ChASE.

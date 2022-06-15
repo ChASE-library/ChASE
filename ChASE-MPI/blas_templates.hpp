@@ -61,7 +61,7 @@ Base<T> t_nrm2(const std::size_t n, const T* x, const std::size_t incx);
 
 template <typename T>
 void t_lacpy(const char uplo, const std::size_t m, const std::size_t n,
-		const T* a, const std::size_t lda, T* b, const std::size_t ldb);
+                const T* a, const std::size_t lda, T* b, const std::size_t ldb);
 
 template <typename T>
 std::size_t t_geqrf(int matrix_layout, std::size_t m, std::size_t n, T* a,

@@ -1,5 +1,5 @@
+[![License](https://img.shields.io/github/license/ChASE-library/ChASE)](https://github.com/ChASE-library/ChASE/blob/master/LICENSE) [![DOI](https://zenodo.org/badge/349075288.svg)](https://zenodo.org/badge/latestdoi/349075288) [![Latest Version](https://img.shields.io/github/v/release/ChASE-library/ChASE)](https://github.com/ChASE-library/ChASE/releases/latest) [![DOI](https://img.shields.io/badge/DOI-10.1145%2F3313828%20-orange)](https://doi.org/10.1145/3313828) [![DOI](https://img.shields.io/badge/DOI-10.1002%2Fcpe.3394%20-orange)](https://doi.org/10.1002/cpe.3394)
 <img src="docs/images/ChASE_Logo_RGB.png" alt="Matrix Generation Pattern" style="zoom:40%;" />
-
 # ChASE: a Chebyshev Accelerated Subspace Eigensolver for Dense Eigenproblems
 
 The **Ch**ebyshev **A**ccelerated **S**ubspace **E**igensolver (ChASE) is a modern and scalable library based on subspace iteration with polynomial acceleration to solve dense Hermitian (Symmetric) algebraic eigenvalue problems, especially solving dense Hermitian eigenproblems arragend in a sequence. Novel to ChASE is the computation of the spectral estimates that enter in the filter and an optimization of the polynomial degree that further reduces the necessary floating-point operations. 

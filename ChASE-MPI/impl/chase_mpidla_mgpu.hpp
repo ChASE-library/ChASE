@@ -53,12 +53,18 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
   //! A constructor of ChaseMpiDLAMultiGPU.
   //! This construct set up the CUDA environment and register device memory which will be used by ChASE.
   //! @param matrix_properties: it is an object of ChaseMpiProperties, which defines the MPI environment and data distribution scheme in ChASE-MPI.  
-  ChaseMpiDLAMultiGPU(ChaseMpiProperties<T>* matrix_properties) {
+  ChaseMpiDLAMultiGPU(ChaseMpiProperties<T>* matrix_properties, ChaseMpiMatrices<T>& matrices) {
     n_ = matrix_properties->get_n();
     m_ = matrix_properties->get_m();
     N_ = matrix_properties->get_N();
 
-    orig_H_ = matrix_properties->get_H();
+    orig_H_ = matrices.get_H();
+    ldh_ = matrices.get_ldh();
+    if(orig_H_ == nullptr){
+      orig_H_ = matrix_properties->get_H();
+      ldh_ = matrix_properties->get_ldh();
+    }
+
     orig_B_ = matrix_properties->get_B();
     orig_C_ = matrix_properties->get_C();
 
@@ -88,7 +94,7 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
 	std::cout << "[MGPU_HEMM] MPI rank " << mpi_rank << " operating on: m = " <<  m_ << ", n = " << n_ << ", block = " << maxBlock << std::endl;
 #endif
 	/* Register H, B, C and IMT as pinned-memories on host */
-	cuda_exec(cudaHostRegister((void*)orig_H_, m_*n_*sizeof(T), cudaHostRegisterDefault));
+	cuda_exec(cudaHostRegister((void*)orig_H_, ldh_*n_*sizeof(T), cudaHostRegisterDefault));
 	cuda_exec(cudaHostRegister((void*)orig_B_, n_*maxBlock*sizeof(T), cudaHostRegisterDefault));
 	cuda_exec(cudaHostRegister((void*)orig_C_, m_*maxBlock*sizeof(T), cudaHostRegisterDefault));
 
@@ -248,7 +254,7 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
   void shiftMatrix(T c, bool isunshift = false)  override {
 
 	auto start = high_resolution_clock::now();
-	mgpuDLA->distribute_H(orig_H_, m_);
+	mgpuDLA->distribute_H(orig_H_, ldh_);
         mgpuDLA->shiftMatrix(c);
 	mgpuDLA->synchronizeAll();
 
@@ -299,7 +305,7 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
                   std::size_t* &c_offs, std::size_t* &c_lens, std::size_t* &c_offs_l) const override{
      matrix_properties_->get_offs_lens(r_offs, r_lens, r_offs_l, c_offs, c_lens, c_offs_l);
   }
-
+  int get_nprocs() const override {return matrix_properties_->get_nprocs();}
   void Start() override { copied_ = false; }
 
   /*!
@@ -473,6 +479,7 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
   T* orig_C_;
   T* orig_H_;
 
+  std::size_t ldh_;
   std::size_t* off_;
 
   int mpi_rank;

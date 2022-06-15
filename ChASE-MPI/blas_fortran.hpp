@@ -199,7 +199,7 @@ void FC_GLOBAL(zherk, ZHERK)(const char* uplo, const char* transB,
 ////////////
 // xLACPY
 void FC_GLOBAL(slacpy, SLACPY)(const char* uplo, const BlasInt* m, const BlasInt* n, 
-			       const float* a, const BlasInt* lda, float* b, const BlasInt* ldb);
+                               const float* a, const BlasInt* lda, float* b, const BlasInt* ldb);
 void FC_GLOBAL(dlacpy, DLACPY)(const char* uplo, const BlasInt* m, const BlasInt* n,
                                const double* a, const BlasInt* lda, double* b, const BlasInt* ldb);
 void FC_GLOBAL(clacpy, CLACPY)(const char* uplo, const BlasInt* m, const BlasInt* n,

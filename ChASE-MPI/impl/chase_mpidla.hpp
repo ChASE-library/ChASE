@@ -39,7 +39,6 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
     n_ = matrix_properties->get_n();
     m_ = matrix_properties->get_m();
 
-    H_ = matrix_properties->get_H();
     B_ = matrix_properties->get_B();
     C_ = matrix_properties->get_C();
 
@@ -348,7 +347,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
                   std::size_t* &c_offs, std::size_t* &c_lens, std::size_t* &c_offs_l) const override{
      matrix_properties_->get_offs_lens(r_offs, r_lens, r_offs_l, c_offs, c_lens, c_offs_l); 
   }
-
+  int get_nprocs() const override {return matrix_properties_->get_nprocs();}
   void Start() override { dla_->Start(); }
 
   /*!
@@ -651,7 +650,6 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
   std::size_t m_;
   std::size_t N_;
 
-  T* H_;
   T* B_;
   T* C_;
   T *Buff_;

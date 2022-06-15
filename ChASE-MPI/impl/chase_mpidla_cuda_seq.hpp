@@ -201,6 +201,7 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
           coord[0] = 0; coord[1] = 0;
           return coord;
   }
+  int get_nprocs() const override {return 1;}  
   void get_offs_lens(std::size_t* &r_offs, std::size_t* &r_lens, std::size_t* &r_offs_l,
                   std::size_t* &c_offs, std::size_t* &c_lens, std::size_t* &c_offs_l) const override{
 

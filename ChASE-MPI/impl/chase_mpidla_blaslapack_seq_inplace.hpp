@@ -150,7 +150,7 @@ class ChaseMpiDLABlaslapackSeqInplace : public ChaseMpiDLAInterface<T> {
           c_lens = c_lens_;
           c_offs_l = c_offs_l_;
   }
-
+  int get_nprocs() const override {return 1;}
   void Start() override {}
 
   /*!

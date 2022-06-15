@@ -55,6 +55,7 @@ class ChaseMpiMatrices {
         V2__(V2 == nullptr ? new T[N * max_block] : nullptr),
         ritzv__(ritzv == nullptr ? new Base<T>[max_block] : nullptr),
         resid__(resid == nullptr ? new Base<T>[max_block] : nullptr),
+        ldh_(N),
         // if value is null we take allocated
         H_(H == nullptr ? H__.get() : H),
         V1_(V1 == nullptr ? V1__.get() : V1),
@@ -86,12 +87,32 @@ class ChaseMpiMatrices {
         V2__(V2 == nullptr ? new T[N * max_block] : nullptr),
         ritzv__(ritzv == nullptr ? new Base<T>[max_block] : nullptr),
         resid__(resid == nullptr ? new Base<T>[max_block] : nullptr),
+        //for this case, ldh_ should define in chasempiproperties
+        ldh_(0),
         // if value is null we take allocated
         H_(nullptr),
         V1_(V1 == nullptr ? V1__.get() : V1),
         V2_(V2 == nullptr ? V2__.get() : V2),
         ritzv_(ritzv == nullptr ? ritzv__.get() : ritzv),
         resid_(resid == nullptr ? resid__.get() : resid) {}
+
+  ChaseMpiMatrices(MPI_Comm comm, std::size_t N, std::size_t m, std::size_t n, std::size_t max_block, 
+                   T* V1 = nullptr, Base<T>* ritzv = nullptr, T* H = nullptr, std::size_t ldh = 0, T* V2 = nullptr,
+                   Base<T>* resid = nullptr)
+      // if value is null then allocate otherwise don't
+      : H__(H == nullptr ? new T[m * n] : nullptr),
+        V1__(V1 == nullptr ? new T[N * max_block] : nullptr),
+        V2__(V2 == nullptr ? new T[N * max_block] : nullptr),
+        ritzv__(ritzv == nullptr ? new Base<T>[max_block] : nullptr),
+        resid__(resid == nullptr ? new Base<T>[max_block] : nullptr),
+        ldh_(ldh == 0 ? m : ldh),
+        // if value is null we take allocated
+        H_(H == nullptr ? H__.get() : H),
+        V1_(V1 == nullptr ? V1__.get() : V1),
+        V2_(V2 == nullptr ? V2__.get() : V2),
+        ritzv_(ritzv == nullptr ? ritzv__.get() : ritzv),
+        resid_(resid == nullptr ? resid__.get() : resid) {
+        }
 
   //! Return buffer stores the (local part if applicable) matrix A.
   /*! \return `H_`, a private member of this class.
@@ -113,6 +134,8 @@ class ChaseMpiMatrices {
   /*! \return `resid_`, a private member of this class.      
   */
   Base<T>* get_Resid() { return resid_; }
+
+  std::size_t get_ldh() { return ldh_; }
 
  private:
   //! A smart pointer which manages the buffer of `H_` which stores (local part if applicable) matrix `A`. 
@@ -136,6 +159,8 @@ class ChaseMpiMatrices {
   Base<T>* ritzv_;
   //! The buffer which stores the residual of computed Ritz pairs.  
   Base<T>* resid_;
+
+  std::size_t ldh_;
 };
 }  // namespace mpi
 }  // namespace chase

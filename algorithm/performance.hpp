@@ -176,6 +176,10 @@ class ChasePerfData {
            1e9;
   }
 
+  void set_nprocs(int nProcs){
+      nprocs = nProcs;
+  }
+
   void add_iter_count(std::size_t add) { chase_iteration_count += add; }
 
   void add_iter_blocksize(std::size_t nevex) {
@@ -236,13 +240,7 @@ class ChasePerfData {
                        timings[TimePtrs::Filter].count() / 1e9;
     }
 
-    int size;
-#ifndef NO_MPI
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
-#else
-    size = 1;
-#endif
-    std::cout << " | " << std::setw(5) << size;
+    std::cout << " | " << std::setw(5) << nprocs;
     std::cout << " | " << std::setw(10) << chase_iteration_count << " | " << std::setw(6) << chase_filtered_vecs;
 
     this->print_timings();
@@ -280,6 +278,7 @@ class ChasePerfData {
   std::vector<std::chrono::duration<double>> timings;
   std::vector<std::chrono::time_point<std::chrono::high_resolution_clock>>
       start_times;
+  int nprocs;
 };
   //! A derived class used to extract performance and configuration data.
   /*! This is a class derived from the Chase class which plays the
@@ -359,6 +358,11 @@ class PerformanceDecoratorChase : public chase::Chase<T> {
     perf_.Reset();
     perf_.start_clock(ChasePerfData::TimePtrs::All);
     perf_.start_clock(ChasePerfData::TimePtrs::Lanczos);
+    perf_.set_nprocs(chase_->get_nprocs());
+  }
+
+  int get_nprocs() {
+      return chase_->get_nprocs();
   }
 
   void End() {

@@ -56,6 +56,8 @@ else()
   target_link_libraries(chase_driver chase_mpi)
 endif()
 
+add_subdirectory("interface")
+
 # Examples
 option(BUILD_WITH_EXAMPLES "Build the examples" OFF)
 if(BUILD_WITH_EXAMPLES)
@@ -63,13 +65,7 @@ if(BUILD_WITH_EXAMPLES)
         add_subdirectory("./examples")
 endif()
 
-# Unit tests
-option(UNITTEST "Build unit tests" OFF)
-if(UNITTEST)
-	message(STATUS "Building unittests")
-	add_subdirectory("./unittests")
-endif()
-
+add_subdirectory("./utils")
 enable_testing()
 add_test( BASIC "chase_driver" )
 

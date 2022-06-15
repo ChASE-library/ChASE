@@ -150,7 +150,7 @@ double t_lange(char norm, std::size_t m, std::size_t n, double* A,
 
 template <>
 float t_lange(char norm, std::size_t m, std::size_t n, float* A, 
-				std::size_t lda)
+        std::size_t lda)
 {
   //return LAPACKE_slange(LAPACK_COL_MAJOR, norm, m, n, A, lda);
 
