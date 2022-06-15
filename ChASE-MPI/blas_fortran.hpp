@@ -149,18 +149,57 @@ void FC_GLOBAL(zgemm,
                       const dcomplex* beta, dcomplex* C, const BlasInt* CLDim);
 
 // TODO
+void FC_GLOBAL(ssymm, SSYMM)(const char* side, const char* uplo,
+                             const BlasInt* m, const BlasInt* n,
+                             const float* alpha,  float* a,
+                             const BlasInt* lda,  float* b,
+                             const BlasInt* ldb, const float* beta,
+                             float* c, const BlasInt* ldc);
+
+void FC_GLOBAL(dsymm, DSYMM)(const char* side, const char* uplo,
+                             const BlasInt* m, const BlasInt* n,
+                             const double* alpha, double* a,
+                             const BlasInt* lda, double* b,
+                             const BlasInt* ldb, const double* beta,
+                             double* c, const BlasInt* ldc);
+
+void FC_GLOBAL(chemm, CHEMM)(const char* side, const char* uplo,
+                             const BlasInt* m, const BlasInt* n,
+                             const scomplex* alpha, scomplex* a,
+                             const BlasInt* lda, scomplex* b,
+                             const BlasInt* ldb, const scomplex* beta,
+                             scomplex* c, const BlasInt* ldc);
+
 void FC_GLOBAL(zhemm, ZHEMM)(const char* side, const char* uplo,
                              const BlasInt* m, const BlasInt* n,
-                             const dcomplex* alpha, const dcomplex* a,
-                             const BlasInt* lda, const dcomplex* b,
+                             const dcomplex* alpha, dcomplex* a,
+                             const BlasInt* lda, dcomplex* b,
                              const BlasInt* ldb, const dcomplex* beta,
                              dcomplex* c, const BlasInt* ldc);
+
+// xSYRK + xHERK
+void FC_GLOBAL(ssyrk, SSYRK)(const char* uplo, const char* transB,
+                             const BlasInt* n, const BlasInt* k,
+                             const float* alpha, float* A, const BlasInt* lda,
+                             const float* beta, float *C, const BlasInt* ldc);
+void FC_GLOBAL(dsyrk, DSYRK)(const char* uplo, const char* transB,
+                             const BlasInt* n, const BlasInt* k,
+                             const double* alpha, double * A, const BlasInt* lda,
+                             const double* beta, double *C, const BlasInt* ldc);
+void FC_GLOBAL(cherk, CHERK)(const char* uplo, const char* transB,
+                             const BlasInt* n, const BlasInt* k,
+                             const scomplex* alpha, scomplex* A, const BlasInt* lda,
+                             const scomplex* beta, scomplex *C, const BlasInt* ldc);
+void FC_GLOBAL(zherk, ZHERK)(const char* uplo, const char* transB,
+                             const BlasInt* n, const BlasInt* k,
+                             const dcomplex* alpha, dcomplex* A, const BlasInt* lda,
+                             const dcomplex* beta, dcomplex *C, const BlasInt* ldc);
 ////////////
 // LAPACK //
 ////////////
 // xLACPY
 void FC_GLOBAL(slacpy, SLACPY)(const char* uplo, const BlasInt* m, const BlasInt* n, 
-			       const float* a, const BlasInt* lda, float* b, const BlasInt* ldb);
+                               const float* a, const BlasInt* lda, float* b, const BlasInt* ldb);
 void FC_GLOBAL(dlacpy, DLACPY)(const char* uplo, const BlasInt* m, const BlasInt* n,
                                const double* a, const BlasInt* lda, double* b, const BlasInt* ldb);
 void FC_GLOBAL(clacpy, CLACPY)(const char* uplo, const BlasInt* m, const BlasInt* n,
@@ -259,6 +298,32 @@ float FC_GLOBAL(clange, CLANGE)(const char* norm, const BlasInt* m,
 double FC_GLOBAL(zlange, ZLANGE)(const char* norm, const BlasInt* m,
                                  const BlasInt* n, const dcomplex* a,
                                  const BlasInt* lda, double* work);
+
+
+
+// xPOTRF
+void FC_GLOBAL(spotrf, SPOTRF)(const char* uplo, const BlasInt* n,
+                               float* a, const BlasInt* lda, BlasInt* info);
+void FC_GLOBAL(dpotrf, DPOTRF)(const char* uplo, const BlasInt* n,
+                               double* a, const BlasInt* lda, BlasInt* info);
+void FC_GLOBAL(cpotrf, CPOTRF)(const char* uplo, const BlasInt* n,
+                               scomplex* a, const BlasInt* lda, BlasInt* info);
+void FC_GLOBAL(zpotrf, ZPOTRF)(const char* uplo, const BlasInt* n,
+                               dcomplex* a, const BlasInt* lda, BlasInt* info);
+
+// xTRSM
+void FC_GLOBAL(strsm, STRSM)(const char* side, const char* uplo, const char* trans, const char* diag,
+                             const BlasInt* m, const BlasInt* n, const float* alpha,
+                             const float* a, const BlasInt*lda, const float* b, const BlasInt*ldb);
+void FC_GLOBAL(dtrsm, DTRSM)(const char* side, const char* uplo, const char* trans, const char* diag,
+                             const BlasInt* m, const BlasInt* n, const double* alpha,
+                             const double* a, const BlasInt*lda, const double* b, const BlasInt*ldb);
+void FC_GLOBAL(ctrsm, CTRSM)(const char* side, const char* uplo, const char* trans, const char* diag,
+                             const BlasInt* m, const BlasInt* n, const scomplex* alpha,
+                             const scomplex* a, const BlasInt*lda, const scomplex* b, const BlasInt*ldb);
+void FC_GLOBAL(ztrsm, ZTRSM)(const char* side, const char* uplo, const char* trans, const char* diag,
+                             const BlasInt* m, const BlasInt* n, const dcomplex* alpha,
+                             const dcomplex* a, const BlasInt*lda, const dcomplex* b, const BlasInt*ldb);
 
 }  // extern "C"
 }  // namespace mpi
