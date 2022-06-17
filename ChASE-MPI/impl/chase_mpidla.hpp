@@ -369,7 +369,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
   void gegqr(std::size_t N, std::size_t nevex, T * approxV, std::size_t LDA) override {
 
       this->postApplication(approxV, nevex - locked_);
-      
+
       int grank;
       MPI_Comm_rank(MPI_COMM_WORLD, &grank); 
 
@@ -381,23 +381,22 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
       T zero = T(0.0);
 
       int info = -1;
-      int qr_cnt = 0;
 
       /* Distributed version */   
       dla_->syherk('U', 'C', nevex, m_, &one, approxV + recv_offsets_[0][col_rank_], N, &zero, A_.get(), nevex);
       MPI_Allreduce(MPI_IN_PLACE, A_.get(), nevex * nevex, getMPI_Type<T>(), MPI_SUM, col_comm_);
 
-      info = dla_->shiftedcholQR(m_, nevex, approxV, N, A_.get(), nevex, recv_offsets_[0][col_rank_]);
-
-      if(info == 0){
-          qr_cnt++;
-      }
-      
-      //continue the rest CholQR, if shifted CholQR performed, continue with CholQR2, other CholQR
-      for(int i = qr_cnt; i < 2; i++){
-          dla_->syherk('U', 'C', nevex, m_, &one, approxV + recv_offsets_[0][col_rank_], N, &zero, A_.get(), nevex);
-          MPI_Allreduce(MPI_IN_PLACE, A_.get(), nevex * nevex, getMPI_Type<T>(), MPI_SUM, col_comm_);
-	  dla_->cholQR(m_, nevex, approxV, N, A_.get(), nevex, recv_offsets_[0][col_rank_]);
+      info = dla_->potrf('U', nevex, A_.get(), nevex);
+   
+      if(info != 0){
+         if(grank == 0) std::cout << "CholQR is unstable, use lapack qr instead" << std::endl;
+         dla_->gegqr(N, nevex, approxV, LDA);
+      }else{
+         dla_->trsm('R', 'U', 'N', 'N', m_, nevex, &one, A_.get(), nevex, approxV + recv_offsets_[0][col_rank_], N);
+	 dla_->syherk('U', 'C', nevex, m_, &one, approxV + recv_offsets_[0][col_rank_], N, &zero, A_.get(), nevex);
+         MPI_Allreduce(MPI_IN_PLACE, A_.get(), nevex * nevex, getMPI_Type<T>(), MPI_SUM, col_comm_);
+	 info = dla_->potrf('U', nevex, A_.get(), nevex);
+         dla_->trsm('R', 'U', 'N', 'N', m_, nevex, &one, A_.get(), nevex, approxV + recv_offsets_[0][col_rank_], N);
       }
 
       for (auto i = 0; i < col_size_; ++i){
@@ -513,7 +512,8 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
     - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
   void RR_kernel(std::size_t N, std::size_t block, T *approxV, std::size_t locked, T *workspace, T One, T Zero, Base<T> *ritzv) override {
-
+//	dla_->RR_kernel(N, block, approxV, locked, workspace, One, Zero, ritzv);
+	  
       int grank;
       MPI_Comm_rank(MPI_COMM_WORLD, &grank);
       T *A = new T[block * block];
@@ -537,7 +537,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
       }
       MPI_Waitall(col_size_, reqs_.data(), MPI_STATUSES_IGNORE);
 
-      delete[] A;   
+      delete[] A;  
   }
 
   void LanczosDos(std::size_t N_, std::size_t idx, std::size_t m, T *workspace_, std::size_t ldw, T *ritzVc, std::size_t ldr, T* approxV_, std::size_t ldv) override{

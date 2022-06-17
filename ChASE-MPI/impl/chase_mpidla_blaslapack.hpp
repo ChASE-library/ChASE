@@ -310,6 +310,31 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
       - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */  
   void RR_kernel(std::size_t N, std::size_t block, T *approxV, std::size_t locked, T *workspace, T One, T Zero, Base<T> *ritzv) override {
+      T *A = new T[block * block];
+
+      // A <- W' * V
+      t_gemm(CblasColMajor, CblasConjTrans, CblasNoTrans,  
+             block, block, N,                             
+             &One,                                        
+             approxV + locked * N, N,                  
+             workspace + locked * N, N,               
+             &Zero,                                        
+             A, block                                      
+      );
+
+      t_heevd(LAPACK_COL_MAJOR, 'V', 'L', block, A, block, ritzv);
+
+      t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans,  
+           N, block, block,                           
+           &One,                                       
+           approxV + locked * N, N,                
+           A, block,                                   
+           &Zero,                                      
+           workspace + locked * N, N              
+      );
+
+      delete[] A;    
+
   }
 
   void LanczosDos(std::size_t N_, std::size_t idx, std::size_t m, T *workspace_, std::size_t ldw, T *ritzVc, std::size_t ldr, T* approxV_, std::size_t ldv) override{
@@ -356,13 +381,13 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
 
 
   int shiftedcholQR(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv, T *A, std::size_t lda, std::size_t offset) override {
-
+/*
       int grank;
       MPI_Comm_rank(MPI_COMM_WORLD, &grank);
 
       T one = T(1.0);
       T zero = T(0.0);
-
+*/
       //backup of A in case Cholesky factorization failed
       auto A2 = std::unique_ptr<T[]> {
         new T[ nevex * nevex ]
@@ -373,13 +398,19 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
       int info = -1;
 
       info = this->potrf('U', nevex, A, lda);
-
+/*
       if(info != 0){
  	 //first CholeskyQR with shift: https://doi.org/10.1137/18M1218212
 	 Base<T> normV = t_lange('F', ldv, nevex, approxV, ldv);
          // generate shift	
 	 std::size_t mul = ldv * nevex + nevex * nevex + nevex;
+	 //std::cout << "NormV: " << normV << ", mul: " << mul << ", epsilon: " << std::numeric_limits<Base<T>>::epsilon() << std::endl;
 	 Base<T> s = 11.0 * static_cast<Base<T>>(mul) * std::numeric_limits<Base<T>>::epsilon() * normV;
+         s = std::numeric_limits<Base<T>>::epsilon();
+	 if(grank == 0){
+             std::cout << "Cholesky Factorization is failed for QR, a shift is performed: " << s << std::endl;
+         }	 
+         //Base<T> s = std::numeric_limits<Base<T>>::epsilon();
 #if defined(CHASE_OUTPUT)
          if(grank == 0){
              std::cout << "Cholesky Factorization is failed for QR, a shift is performed: " << s << std::endl;
@@ -395,7 +426,7 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
      }
      
      this->trsm('R', 'U', 'N', 'N', m_, nevex, &one, A, lda, approxV + offset, ldv);
-
+*/
      return info;
   }
 

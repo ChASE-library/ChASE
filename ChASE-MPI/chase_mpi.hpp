@@ -330,7 +330,18 @@ class ChaseMpi : public chase::Chase<T> {
     //        approxV_ + locked_ * N_, N_,                //
     //        &beta,                                      //
     //        workspace_ + locked_ * N_, N_);
+/*    for (std::size_t i = 0; i < unconverged; ++i) {
+      beta = T(-ritzv[i]);
+      dla_->axpy(                                      //
+          N_,                                      //
+          &beta,                                   //
+          (approxV_ + locked_ * N_) + N_ * i, 1,   //
+          (workspace_ + locked_ * N_) + N_ * i, 1  //
+      );
 
+      resid[i] = dla_->nrm2(N_, (workspace_ + locked_ * N_) + N_ * i, 1);
+    }
+*/
     dla_ -> Resd(approxV_, workspace_,ritzv, resid, locked_, unconverged);
   };
 
