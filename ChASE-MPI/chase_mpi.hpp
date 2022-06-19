@@ -330,7 +330,7 @@ class ChaseMpi : public chase::Chase<T> {
     //        approxV_ + locked_ * N_, N_,                //
     //        &beta,                                      //
     //        workspace_ + locked_ * N_, N_);
-/*    for (std::size_t i = 0; i < unconverged; ++i) {
+ /*   for (std::size_t i = 0; i < unconverged; ++i) {
       beta = T(-ritzv[i]);
       dla_->axpy(                                      //
           N_,                                      //

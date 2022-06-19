@@ -27,7 +27,7 @@ typedef ChaseMpi<ChaseMpiDLABlaslapack, T> CHASE;
 
 int main(int argc, char** argv)
 {
-  MPI_Init(NULL, NULL);
+  MPI_Init(&argc,&argv);
   int rank = 0, size;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -157,7 +157,7 @@ int main(int argc, char** argv)
 #elif defined(NO_COPY_H)
   std::size_t xoff, yoff, xlen, ylen, ldh;
   props->get_off(&xoff, &yoff, &xlen, &ylen);
-  ldh = N / size + 1;
+  ldh = N / dims[0] + 1;
   T *h_loc = new T[ldh * ylen];
   for (std::size_t x = 0; x < xlen; x++) {
     for (std::size_t y = 0; y < ylen; y++) {

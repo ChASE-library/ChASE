@@ -10,13 +10,10 @@
 #include <mpi.h>
 #include <iterator>
 #include <numeric>
-
 #include "ChASE-MPI/chase_mpi_properties.hpp"
 #include "ChASE-MPI/chase_mpidla_interface.hpp"
-
 namespace chase {
 namespace mpi {
-
 //! A derived class of ChaseMpiDLAInterface which implements mostly the MPI collective communications part of ChASE-MPI targeting the distributed-memory systens with or w/o GPUs.
 /*! The computation in node are mostly implemented in ChaseMpiDLABlaslapack and ChaseMpiDLAMultiGPU. 
     It supports both `Block Distribution` and `Block-Cyclic Distribution` schemes.
@@ -69,12 +66,13 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
 
     Buff_ = new T[sign * N_ *  max_block_];
 
-
+    MPI_Comm_size(row_comm_, &row_size_);
+    MPI_Comm_rank(row_comm_, &row_rank_);
     MPI_Comm_size(col_comm_, &col_size_);
     MPI_Comm_rank(col_comm_, &col_rank_);
 
-    reqs_.resize(col_size_);
-    newType_.resize(col_size_);
+    reqs_.resize(row_size_);
+    newType_.resize(row_size_);
 
     send_lens_ = matrix_properties_->get_sendlens();
     recv_offsets_.resize(send_lens_.size());
@@ -86,10 +84,10 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
       }
     }    
 
-    for (auto i = 0; i < col_size_; ++i){ 
+    for (auto i = 0; i < row_size_; ++i){ 
       int array_of_sizes[2] = {static_cast<int>(N_), 1};
-      int array_of_subsizes[2] = {send_lens_[0][i], 1};
-      int array_of_starts[2] = {recv_offsets_[0][i], 0};
+      int array_of_subsizes[2] = {send_lens_[1][i], 1};
+      int array_of_starts[2] = {recv_offsets_[1][i], 0};
 
       MPI_Type_create_subarray(2, array_of_sizes, array_of_subsizes,
                                array_of_starts, MPI_ORDER_FORTRAN,
@@ -97,9 +95,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
 
       MPI_Type_commit(&(newType_[i]));
     }
-
   }
-
   ~ChaseMpiDLA() {
     delete[] Buff_;
   }
@@ -367,7 +363,48 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
     - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
   void gegqr(std::size_t N, std::size_t nevex, T * approxV, std::size_t LDA) override {
+/*
+     this->postApplication(approxV, nevex - locked_);
+      dla_->gegqr(N, nevex, approxV, LDA);
+*/
+      this->postApplication(approxV, nevex - locked_);
+      
+      int grank;
+      MPI_Comm_rank(MPI_COMM_WORLD, &grank); 
 
+      auto A_ = std::unique_ptr<T[]> {
+        new T[ nevex * nevex ]
+      };
+
+      T one = T(1.0);
+      T zero = T(0.0);
+
+      int info = -1;
+      int qr_cnt = 0;
+
+      dla_->syherk('U', 'C', nevex, n_, &one, approxV + recv_offsets_[1][row_rank_], N, &zero, A_.get(), nevex);
+      MPI_Allreduce(MPI_IN_PLACE, A_.get(), nevex * nevex, getMPI_Type<T>(), MPI_SUM, row_comm_);
+      info = dla_->shiftedcholQR(n_, nevex, approxV, N, A_.get(), nevex, recv_offsets_[1][row_rank_]);
+
+      if(info == 0){
+          qr_cnt++;
+      }
+      
+      //continue the rest CholQR, if shifted CholQR performed, continue with CholQR2, other CholQR
+      for(int i = qr_cnt; i < 2; i++){
+          dla_->syherk('U', 'C', nevex, n_, &one, approxV + recv_offsets_[1][row_rank_], N, &zero, A_.get(), nevex);
+          MPI_Allreduce(MPI_IN_PLACE, A_.get(), nevex * nevex, getMPI_Type<T>(), MPI_SUM, row_comm_);
+	  dla_->cholQR(n_, nevex, approxV, N, A_.get(), nevex, recv_offsets_[1][row_rank_]);
+      }
+
+      for (auto i = 0; i < row_size_; ++i){
+          MPI_Ibcast(approxV, nevex, newType_[i], i, row_comm_, &reqs_[i]);
+      }
+
+      MPI_Waitall(row_size_, reqs_.data(), MPI_STATUSES_IGNORE);
+
+	  
+/*
       this->postApplication(approxV, nevex - locked_);
 
       int grank;
@@ -382,9 +419,9 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
 
       int info = -1;
 
-      /* Distributed version */   
-      dla_->syherk('U', 'C', nevex, m_, &one, approxV + recv_offsets_[0][col_rank_], N, &zero, A_.get(), nevex);
-      MPI_Allreduce(MPI_IN_PLACE, A_.get(), nevex * nevex, getMPI_Type<T>(), MPI_SUM, col_comm_);
+      /// Distributed version    
+      dla_->syherk('U', 'C', nevex, n_, &one, approxV + recv_offsets_[1][row_rank_], N, &zero, A_.get(), nevex);
+      MPI_Allreduce(MPI_IN_PLACE, A_.get(), nevex * nevex, getMPI_Type<T>(), MPI_SUM, row_comm_);
 
       info = dla_->potrf('U', nevex, A_.get(), nevex);
    
@@ -392,19 +429,18 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
          if(grank == 0) std::cout << "CholQR is unstable, use lapack qr instead" << std::endl;
          dla_->gegqr(N, nevex, approxV, LDA);
       }else{
-         dla_->trsm('R', 'U', 'N', 'N', m_, nevex, &one, A_.get(), nevex, approxV + recv_offsets_[0][col_rank_], N);
-	 dla_->syherk('U', 'C', nevex, m_, &one, approxV + recv_offsets_[0][col_rank_], N, &zero, A_.get(), nevex);
-         MPI_Allreduce(MPI_IN_PLACE, A_.get(), nevex * nevex, getMPI_Type<T>(), MPI_SUM, col_comm_);
+         dla_->trsm('R', 'U', 'N', 'N', n_, nevex, &one, A_.get(), nevex, approxV + recv_offsets_[1][row_rank_], N);
+	 dla_->syherk('U', 'C', nevex, n_, &one, approxV + recv_offsets_[1][row_rank_], N, &zero, A_.get(), nevex);
+         MPI_Allreduce(MPI_IN_PLACE, A_.get(), nevex * nevex, getMPI_Type<T>(), MPI_SUM, row_comm_);
 	 info = dla_->potrf('U', nevex, A_.get(), nevex);
-         dla_->trsm('R', 'U', 'N', 'N', m_, nevex, &one, A_.get(), nevex, approxV + recv_offsets_[0][col_rank_], N);
+         dla_->trsm('R', 'U', 'N', 'N', n_, nevex, &one, A_.get(), nevex, approxV + recv_offsets_[1][row_rank_], N);
+      }
+      for (auto i = 0; i < row_size_; ++i){
+          MPI_Ibcast(approxV, nevex, newType_[i], i, row_comm_, &reqs_[i]);
       }
 
-      for (auto i = 0; i < col_size_; ++i){
-          MPI_Ibcast(approxV, nevex, newType_[i], i, col_comm_, &reqs_[i]);
-      }
-
-      MPI_Waitall(col_size_, reqs_.data(), MPI_STATUSES_IGNORE);
-
+      MPI_Waitall(row_size_, reqs_.data(), MPI_STATUSES_IGNORE);
+*/
   }
 
   /*!
@@ -512,7 +548,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
     - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
   void RR_kernel(std::size_t N, std::size_t block, T *approxV, std::size_t locked, T *workspace, T One, T Zero, Base<T> *ritzv) override {
-//	dla_->RR_kernel(N, block, approxV, locked, workspace, One, Zero, ritzv);
+	//dla_->RR_kernel(N, block, approxV, locked, workspace, One, Zero, ritzv);
 	  
       int grank;
       MPI_Comm_rank(MPI_COMM_WORLD, &grank);
@@ -520,45 +556,58 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
 
       // A <- W' * V
       dla_->gemm_small(CblasColMajor, CblasConjTrans, CblasNoTrans,  
-             block, block, m_,                             
+             block, block, n_,                             
              &One,                                        
-             approxV + locked * N + recv_offsets_[0][col_rank_] , N,                  
-             workspace + locked * N + recv_offsets_[0][col_rank_], N,               
+             approxV + locked * N + recv_offsets_[1][row_rank_] , N,                  
+             workspace + locked * N + recv_offsets_[1][row_rank_], N,               
              &Zero,                                        
              A, block                                      
       );
       
-      MPI_Allreduce(MPI_IN_PLACE, A, block * block, getMPI_Type<T>(), MPI_SUM, col_comm_);
+      MPI_Allreduce(MPI_IN_PLACE, A, block * block, getMPI_Type<T>(), MPI_SUM, row_comm_);
       
-      dla_->heevd2(m_, block, A, block, approxV, N, workspace, N, locked * N + recv_offsets_[0][col_rank_], ritzv);
+      dla_->heevd2(n_, block, A, block, approxV, N, workspace, N, locked * N + recv_offsets_[1][row_rank_], ritzv);
       
-      for (auto i = 0; i < col_size_; ++i){
-        MPI_Ibcast(workspace + locked * N, block, newType_[i], i, col_comm_, &reqs_[i]);
+      for (auto i = 0; i < row_size_; ++i){
+        MPI_Ibcast(workspace + locked * N, block, newType_[i], i, row_comm_, &reqs_[i]);
       }
-      MPI_Waitall(col_size_, reqs_.data(), MPI_STATUSES_IGNORE);
+      MPI_Waitall(row_size_, reqs_.data(), MPI_STATUSES_IGNORE);
 
       delete[] A;  
   }
 
   void LanczosDos(std::size_t N_, std::size_t idx, std::size_t m, T *workspace_, std::size_t ldw, T *ritzVc, std::size_t ldr, T* approxV_, std::size_t ldv) override{
+/*    T alpha = T(1.0);
+    T beta = T(0.0);
 
+    dla_->gemm_small(CblasColMajor, CblasNoTrans, CblasNoTrans,  //
+           N_, idx, m,                                 //
+           &alpha,                                     //
+           workspace_, N_,                             //
+           ritzVc, m,                                  //
+           &beta,                                      //
+           approxV_, N_                                //
+    );
+*/	  
+	  
     T alpha = T(1.0);
     T beta = T(0.0);
 
     dla_->gemm_large(CblasColMajor, CblasNoTrans, CblasNoTrans,
-           m_, idx, m,
+           n_, idx, m,
            &alpha,
-           workspace_ + recv_offsets_[0][col_rank_], ldw,
+           workspace_ + recv_offsets_[1][row_rank_], ldw,
            ritzVc, ldr,
            &beta,
-           approxV_ + recv_offsets_[0][col_rank_], ldv
+           approxV_ + recv_offsets_[1][row_rank_], ldv
     );
 
-      for (auto i = 0; i < col_size_; ++i){
-          MPI_Ibcast(approxV_, idx, newType_[i], i, col_comm_, &reqs_[i]);
+      for (auto i = 0; i < row_size_; ++i){
+          MPI_Ibcast(approxV_, idx, newType_[i], i, row_comm_, &reqs_[i]);
       }
 
-      MPI_Waitall(col_size_, reqs_.data(), MPI_STATUSES_IGNORE);
+      MPI_Waitall(row_size_, reqs_.data(), MPI_STATUSES_IGNORE);
+
   }
 
   void syherk(char uplo, char trans, std::size_t n, std::size_t k, T* alpha, T* a, std::size_t lda, T* beta, T* c, std::size_t ldc) override {
@@ -620,18 +669,18 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
       }
     }
     
-    dla_->gemm_large(CblasColMajor, CblasNoTrans, CblasNoTrans, m_, unconverged, unconverged, &one, approxV_ + locked * N_ + recv_offsets_[0][col_rank_], //
-          N_, ptr.get(), unconverged, &neg_one, workspace_ + locked * N_ + recv_offsets_[0][col_rank_], N_);
+    dla_->gemm_large(CblasColMajor, CblasNoTrans, CblasNoTrans, n_, unconverged, unconverged, &one, approxV_ + locked * N_ + recv_offsets_[1][row_rank_], //
+          N_, ptr.get(), unconverged, &neg_one, workspace_ + locked * N_ + recv_offsets_[1][row_rank_], N_);
 
     for (std::size_t i = 0; i < unconverged; ++i) {
    	norm[i] = 0.0;
-	for(std::size_t j = 0; j < m_; j++){
-	    norm[i] += t_sqrt_norm(workspace_[locked * N_ +  + N_ * i + recv_offsets_[0][col_rank_] + j]);
+	for(std::size_t j = 0; j < n_; j++){
+	    norm[i] += t_sqrt_norm(workspace_[locked * N_ +  + N_ * i + recv_offsets_[1][row_rank_] + j]);
 	}
     }
 
     /////
-    MPI_Allreduce(norm.get(), resid, unconverged, getMPI_Type<Base<T>>(), MPI_SUM, col_comm_);
+    MPI_Allreduce(norm.get(), resid, unconverged, getMPI_Type<Base<T>>(), MPI_SUM, row_comm_);
 
     for (std::size_t i = 0; i < unconverged; ++i) {
 	resid[i] = std::sqrt(resid[i]);	
@@ -676,9 +725,10 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
   std::vector<std::vector<int>> send_lens_;
   std::vector<std::vector<int>> recv_offsets_;
 
+  int row_size_;
+  int row_rank_;
   int col_size_;
   int col_rank_;
-
   std::string data_layout;
   std::unique_ptr<ChaseMpiDLAInterface<T>> dla_;
   ChaseMpiProperties<T>* matrix_properties_;

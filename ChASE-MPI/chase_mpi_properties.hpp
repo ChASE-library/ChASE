@@ -336,7 +336,6 @@ class ChaseMpiProperties {
 	       }
 	   }
        }
-       
     }
 
   //! A constructor of the class ChaseMpiProperties which distributes matrix `A` in `Block Distribution`.
@@ -674,7 +673,6 @@ class ChaseMpiProperties {
         send_lens_[dim_idx][dims_[dim_idx] - 1] = N_ - (dims_[dim_idx] - 1) * len;
         g_offsets_[dim_idx].push_back(block_displs_[dim_idx][dims_[dim_idx] - 1][0]);
     }
-
   }
 
   //! Returns the rank of matrix `A` which is distributed within 2D MPI grid.
@@ -936,7 +934,6 @@ class ChaseMpiProperties {
       \return `rank_`: the rank of MPI node within 2D grid.
    */
   int get_my_rank() { return rank_; }
-
   //! Create a ChaseMpiMatrices object which stores the operating matrices and vectors for ChASE-MPI.
   /*!
     @param V1 a `N * max_block_` rectangular matrix for the operation `A*V1`.
@@ -1239,7 +1236,6 @@ class ChaseMpiProperties {
   std::size_t off_[2];
 
   std::string data_layout;
-
 };
 }  // namespace mpi
 }  // namespace chase
