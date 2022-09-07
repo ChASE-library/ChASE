@@ -398,7 +398,17 @@ void Algorithm<T>::solve(Chase<T>* single) {
     std::size_t Av =
         filter(single, N, unconverged, deg, degrees, lambda, lowerb, upperb);
     //----------------------------------- QR -----------------------------------
-    single->QR(locked);
+    if(iteration == 0){
+      //first time QR uses the one with high numerical stability, e.g., householder, tsqr, etc
+      single->stabQR(locked);
+      //std::cout << "#" << iteration << ", use stable QR" << std::endl;
+    }else{
+      //the rest QR use fast QR algorithm, such as choleskyQR2, block classic gram schmit, etc
+      single->fastQR(locked);
+      //std::cout << "#" << iteration << ", use fast QR" << std::endl;
+
+    }
+
     // ----------------------------- RAYLEIGH  RITZ ----------------------------
     single->RR(ritzv, unconverged);
     // --------------------------- RESIDUAL & LOCKING --------------------------

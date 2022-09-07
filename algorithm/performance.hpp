@@ -322,6 +322,19 @@ class PerformanceDecoratorChase : public chase::Chase<T> {
     chase_->QR(fixednev);
     perf_.end_clock(ChasePerfData::TimePtrs::Qr);
   }
+
+  void stabQR(std::size_t fixednev) {
+    perf_.start_clock(ChasePerfData::TimePtrs::Qr);
+    chase_->stabQR(fixednev);
+    perf_.end_clock(ChasePerfData::TimePtrs::Qr);
+  }
+
+  void fastQR(std::size_t fixednev) {
+    perf_.start_clock(ChasePerfData::TimePtrs::Qr);
+    chase_->fastQR(fixednev);
+    perf_.end_clock(ChasePerfData::TimePtrs::Qr);
+  }
+
   void RR(Base<T> *ritzv, std::size_t block) {
     perf_.start_clock(ChasePerfData::TimePtrs::Rr);
     chase_->RR(ritzv, block);

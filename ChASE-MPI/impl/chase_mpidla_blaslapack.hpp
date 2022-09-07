@@ -400,25 +400,15 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
       info = this->potrf('U', nevex, A, lda);
 
       if(info != 0){
- 	 //first CholeskyQR with shift: https://doi.org/10.1137/18M1218212
-         // generate shift
-         std::size_t mul = ldv * nevex + nevex * nevex + nevex;
-     	 Base<T> normV = t_lange('F', ldv, nevex, approxV, ldv);
-	 long double normVl = 0;
-	 for(auto i = 0; i < ldv * nevex; i++){
-	     normVl += t_sqrt_norm(approxV[i]);
-	 }
-	 normVl = std::sqrt(normVl);
-         long double ss = 11.0 * static_cast<long double>(mul) * std::numeric_limits<Base<T>>::epsilon() * normVl;
-	 Base<T> s = 11.0 * static_cast<Base<T>>(mul) * std::numeric_limits<Base<T>>::epsilon() * normV;
-	 if(grank == 0){
-	     std::cout << "NormVl: " << normVl << ", mul: " << mul << ", epsilon: " << std::numeric_limits<Base<T>>::epsilon() << ", ss: " << static_cast<Base<T>>(ss) << std::endl;
-	     std::cout << "NormV: " << normV << ", mul: " << mul << ", epsilon: " << std::numeric_limits<Base<T>>::epsilon() << ", s: " << s << std::endl;
-	 }
-	 s = 100 * static_cast<Base<T>>(ss);
-	 if(grank == 0){
-             std::cout << "Cholesky Factorization is failed for QR, a shift is performed: " << s << std::endl;
-         }	 
+ 	      //first CholeskyQR with shift: https://doi.org/10.1137/18M1218212
+        // generate shift
+        std::size_t mul = ldv * nevex + nevex * nevex + nevex;
+     	  Base<T> normV = t_lange('F', ldv, nevex, approxV, ldv);
+
+	      Base<T> s = 11.0 * static_cast<Base<T>>(mul) * std::numeric_limits<Base<T>>::epsilon() * normV;
+	      if(grank == 0){
+            std::cout << "Cholesky Factorization is failed for QR, a shift is performed: " << s << std::endl;
+        }	 
 	 //recovery of the A before Cholesky factorization
 	 std::memcpy(A, A2.get(), nevex * nevex * sizeof(T));
 	 //shift matrix A with s

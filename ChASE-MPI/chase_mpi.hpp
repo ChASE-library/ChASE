@@ -274,6 +274,43 @@ class ChaseMpi : public chase::Chase<T> {
 
     std::memcpy(approxV_, workspace_, N_ * fixednev * sizeof(T));
   };
+  //! This member function implements the virtual one declared in Chase class.
+  //! This member function performs a QR factorization with an explicit construction of the unitary matrix `Q`.
+  //! After the explicit construction of Q, its first `fixednev` number of vectors are overwritten by the converged eigenvectors stored in `workspace_`.
+  //! @param fixednev: total number of converged eigenpairs before this time QR factorization.  
+  void stabQR(std::size_t fixednev) override{
+    //dla_->postApplication(approxV_, nev_ + nex_ - locked_);
+
+    std::size_t nevex = nev_ + nex_;
+    // we don't need this, as we copy to workspace when locking
+    // std::memcpy(workspace_, approxV_, N_ * fixednev * sizeof(T));
+
+    //for current implementation, use LAPACK househoulder QR
+    auto tau = std::unique_ptr<T[]> {
+        new T[ nevex ]
+    };
+
+    t_geqrf(LAPACK_COL_MAJOR, N_, nevex, approxV_, N_, tau.get());
+    t_gqr(LAPACK_COL_MAJOR, N_, nevex, nevex, approxV_, N_, tau.get());
+
+
+    std::memcpy(approxV_, workspace_, N_ * fixednev * sizeof(T));
+  }
+  //! This member function implements the virtual one declared in Chase class.
+  //! This member function performs a QR factorization with an explicit construction of the unitary matrix `Q`.
+  //! After the explicit construction of Q, its first `fixednev` number of vectors are overwritten by the converged eigenvectors stored in `workspace_`.
+  //! @param fixednev: total number of converged eigenpairs before this time QR factorization.  
+  void fastQR(std::size_t fixednev) override{
+    //dla_->postApplication(approxV_, nev_ + nex_ - locked_);
+
+    std::size_t nevex = nev_ + nex_;
+    // we don't need this, as we copy to workspace when locking
+    // std::memcpy(workspace_, approxV_, N_ * fixednev * sizeof(T));
+    // for current MPI version, it points to shift choleksyQR2
+    dla_->gegqr(N_, nevex, approxV_, N_);
+
+    std::memcpy(approxV_, workspace_, N_ * fixednev * sizeof(T));    
+  }
 
   //! This member function implements the virtual one declared in Chase class.
   /*! This function performs the Rayleigh-Ritz projection, which projects the eigenproblem
