@@ -381,7 +381,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
 
       int info = -1;
       int qr_cnt = 0;
-
+/*
       dla_->syherk('U', 'C', nevex, n_, &one, approxV + recv_offsets_[1][row_rank_], N, &zero, A_.get(), nevex);
       MPI_Allreduce(MPI_IN_PLACE, A_.get(), nevex * nevex, getMPI_Type<T>(), MPI_SUM, row_comm_);
       info = dla_->shiftedcholQR(n_, nevex, approxV, N, A_.get(), nevex, recv_offsets_[1][row_rank_]);
@@ -389,7 +389,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
       if(info == 0){
           qr_cnt++;
       }
-      
+  */    
       //continue the rest CholQR, if shifted CholQR performed, continue with CholQR2, other CholQR
       for(int i = qr_cnt; i < 2; i++){
           dla_->syherk('U', 'C', nevex, n_, &one, approxV + recv_offsets_[1][row_rank_], N, &zero, A_.get(), nevex);
@@ -404,43 +404,6 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
       MPI_Waitall(row_size_, reqs_.data(), MPI_STATUSES_IGNORE);
 
 	  
-/*
-      this->postApplication(approxV, nevex - locked_);
-
-      int grank;
-      MPI_Comm_rank(MPI_COMM_WORLD, &grank); 
-
-      auto A_ = std::unique_ptr<T[]> {
-        new T[ nevex * nevex ]
-      };
-
-      T one = T(1.0);
-      T zero = T(0.0);
-
-      int info = -1;
-
-      /// Distributed version    
-      dla_->syherk('U', 'C', nevex, n_, &one, approxV + recv_offsets_[1][row_rank_], N, &zero, A_.get(), nevex);
-      MPI_Allreduce(MPI_IN_PLACE, A_.get(), nevex * nevex, getMPI_Type<T>(), MPI_SUM, row_comm_);
-
-      info = dla_->potrf('U', nevex, A_.get(), nevex);
-   
-      if(info != 0){
-         if(grank == 0) std::cout << "CholQR is unstable, use lapack qr instead" << std::endl;
-         dla_->gegqr(N, nevex, approxV, LDA);
-      }else{
-         dla_->trsm('R', 'U', 'N', 'N', n_, nevex, &one, A_.get(), nevex, approxV + recv_offsets_[1][row_rank_], N);
-	 dla_->syherk('U', 'C', nevex, n_, &one, approxV + recv_offsets_[1][row_rank_], N, &zero, A_.get(), nevex);
-         MPI_Allreduce(MPI_IN_PLACE, A_.get(), nevex * nevex, getMPI_Type<T>(), MPI_SUM, row_comm_);
-	 info = dla_->potrf('U', nevex, A_.get(), nevex);
-         dla_->trsm('R', 'U', 'N', 'N', n_, nevex, &one, A_.get(), nevex, approxV + recv_offsets_[1][row_rank_], N);
-      }
-      for (auto i = 0; i < row_size_; ++i){
-          MPI_Ibcast(approxV, nevex, newType_[i], i, row_comm_, &reqs_[i]);
-      }
-
-      MPI_Waitall(row_size_, reqs_.data(), MPI_STATUSES_IGNORE);
-*/
   }
 
   /*!
