@@ -391,7 +391,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
       }
   */    
       //continue the rest CholQR, if shifted CholQR performed, continue with CholQR2, other CholQR
-      for(int i = qr_cnt; i < 2; i++){
+      for(int i = qr_cnt; i < 1; i++){
           dla_->syherk('U', 'C', nevex, n_, &one, approxV + recv_offsets_[1][row_rank_], N, &zero, A_.get(), nevex);
           MPI_Allreduce(MPI_IN_PLACE, A_.get(), nevex * nevex, getMPI_Type<T>(), MPI_SUM, row_comm_);
 	  dla_->cholQR(n_, nevex, approxV, N, A_.get(), nevex, recv_offsets_[1][row_rank_]);
