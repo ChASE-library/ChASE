@@ -1215,340 +1215,263 @@ void t_trsm(const char side, const char uplo, const char trans, const char diag,
   (&side, &uplo, &trans, &diag, &m_, &n_, alpha, a, &lda_, b, &ldb_);
 }
 
-
-#if defined(HAS_SCALAPACK)
-void blacs_pinfo(int *mypnum, int *nprocs){
-  printf("A\n");
-  int mypnum_, nprocs_;
-  FC_GLOBAL(blacs_pinfo, BLACS_PINFO)
-  (&mypnum_, &nprocs_);
-  printf("B\n");
-  *mypnum = mypnum_;
-  *nprocs = nprocs_;
-}
-
-void blacs_get(int *icontxt, const int *what, int *val ){
-  BlasInt val_;
-  BlasInt icontxt_;
-  BlasInt what_ = *what;
-  FC_GLOBAL(blacs_get, BLACS_GET)(&icontxt_, &what_, &val_);
-  *val = val_; 
-  *icontxt = icontxt_; 
-}
-
-void blacs_gridinit(int *icontxt, const char layout, const int *nprow, const int *npcol){
-  BlasInt icontxt_;
-  FC_GLOBAL(blacs_gridinit, BLACS_GRIDINIT)(&icontxt_, &layout, nprow, npcol);  
-  *icontxt = icontxt_; 
-}
-
-void blacs_gridmap(int *icontxt, int *usermap, const int ldumap, const int nprow, const int npcol){
-  BlasInt icontxt_;
-  BlasInt nprow_ = nprow;
-  BlasInt npcol_ = npcol;
-  BlasInt ldumap_ = ldumap;
-  FC_GLOBAL(blacs_gridmap, BLACS_GRIDMAP)(&icontxt_, usermap, &ldumap_, &nprow_, &npcol_);
-  *icontxt = icontxt_;
-}
-
-void blacs_gridinfo(int *icontxt, int *nprow, int *npcol, int *myprow, int *mypcol){
-  BlasInt nprow_, npcol_, myprow_, mypcol_, icontxt_;
-  icontxt_ = *icontxt;
-  FC_GLOBAL(blacs_gridinfo, BLACS_GRIDINFO)( &icontxt_, &nprow_, &npcol_, &myprow_, &mypcol_);
-  *nprow = nprow_;
-  *npcol = npcol_;
-  *myprow = myprow_;
-  *mypcol = mypcol_;
-}
-
-
-void descinit(std::size_t *desc, std::size_t *m, std::size_t *n, std::size_t *mb, std::size_t *nb, 
-	const int *irsrc, const int *icsrc, int *ictxt, std::size_t *lld, int *info)
+//SCALAPACK
+void t_descinit(std::size_t *desc, std::size_t *m, std::size_t *n, std::size_t *mb, std::size_t *nb,
+	int *irsrc, int *icsrc, int *ictxt, std::size_t *lld, int *info)
 {
   BlasInt *desc_ = new BlasInt[9];
   BlasInt m_ = *m;
   BlasInt n_ = *n;
   BlasInt mb_ = *mb;
   BlasInt nb_ = *nb;
-  const BlasInt irsrc_ = *irsrc;
-  const BlasInt icsrc_ = *icsrc;
+  BlasInt irsrc_ = *irsrc;
+  BlasInt icsrc_ = *icsrc;
   BlasInt ictxt_ = *ictxt;
   BlasInt lld_ = *lld;
   BlasInt info_ = *info;
-  FC_GLOBAL(descinit, DESCINIT)(desc_, &m_, &n_, &mb_, &nb_, &irsrc_, &icsrc_, &ictxt_, &lld_, &info_);
+  descinit_(desc_, &m_, &n_, &mb_, &nb_, &irsrc_, &icsrc_, &ictxt_, &lld_, &info_);
   *info = info_;
 
   for(int i = 0; i < 9; i++){
       desc[i] = static_cast<std::size_t>(desc_[i]);
   }
-
 }
 
 template <>
-void t_pgeqrf(const std::size_t m, const std::size_t n, float *a, const std::size_t ia,
-              const std::size_t ja, std::size_t *desc_a, float *tau){
-  BlasInt m_ = m;
-  BlasInt n_ = n; 
-  BlasInt ia_ = ia;
-  BlasInt ja_ = ja;
-  BlasInt *desc_a_ = new BlasInt[9];
+void t_pgeqrf(std::size_t m, std::size_t n, double *A, int ia, int ja, std::size_t *desc_a, double *tau){
+  BlasInt *desc_ = new BlasInt[9];
   for(int i = 0; i < 9; i++){
-      desc_a_[i] = static_cast<BlasInt>(desc_a[i]);
+      desc_[i] = static_cast<std::size_t>(desc_a[i]);
   }
-  
-  BlasInt info_ = 0;
-  float* work; float numwork;
-  BlasInt lwork;
-  lwork = -1;
-  FC_GLOBAL(psgeqrf, PSGEQRF)
-  (&m_, &n_, a, &ia_, &ja_, desc_a_, tau, &numwork, &lwork, &info_);
-  
-  lwork = (int)numwork;
-  
-  auto wptr = std::unique_ptr<float[]> {
-        new float[ lwork ]
-  };
-  
-  work = wptr.get();
-  FC_GLOBAL(psgeqrf, PSGEQRF)
-  (&m_, &n_, a, &ia_, &ja_, desc_a_, tau, work, &lwork, &info_);
-
-  assert(info_ == 0);
-}
-
-template <>
-void t_pgeqrf(const std::size_t m, const std::size_t n, double *a, const std::size_t ia,
-              const std::size_t ja, std::size_t *desc_a, double *tau){
   BlasInt m_ = m;
   BlasInt n_ = n;
-  BlasInt ia_ = ia;
-  BlasInt ja_ = ja;
-  BlasInt *desc_a_ = new BlasInt[9];
-  for(int i = 0; i < 9; i++){
-      desc_a_[i] = static_cast<BlasInt>(desc_a[i]);
-  }
 
-  BlasInt info_ = 0;
-  double* work; double numwork;
-  BlasInt lwork;
+  double* work; 
+  double numwork; 
+  BlasInt lwork, info;
   lwork = -1;
-  FC_GLOBAL(pdgeqrf, PDGEQRF)
-  (&m_, &n_, a, &ia_, &ja_, desc_a_, tau, &numwork, &lwork, &info_);
+    
+  pdgeqrf_(&m_, &n_, A, &ia, &ja, desc_, tau, &numwork, &lwork, &info);
 
   lwork = (int)numwork;
 
   auto wptr = std::unique_ptr<double[]> {
-        new double[ lwork ]
+      new double[ lwork ]
   };
 
   work = wptr.get();
-  FC_GLOBAL(pdgeqrf, PDGEQRF)
-  (&m_, &n_, a, &ia_, &ja_, desc_a_, tau, work, &lwork, &info_);
 
-  assert(info_ == 0);	      
+  pdgeqrf_(&m_, &n_, A, &ia, &ja, desc_, tau, work, &lwork, &info);
+  assert(info == 0);
 }
 
 template <>
-void t_pgeqrf(const std::size_t m, const std::size_t n, std::complex<float> *a, const std::size_t ia,
-              const std::size_t ja, std::size_t *desc_a, std::complex<float> *tau){
-
+void t_pgeqrf(std::size_t m, std::size_t n, float *A, int ia, int ja, std::size_t *desc_a, float *tau){
+  BlasInt *desc_ = new BlasInt[9];
+  for(int i = 0; i < 9; i++){
+      desc_[i] = static_cast<std::size_t>(desc_a[i]);
+  }
   BlasInt m_ = m;
   BlasInt n_ = n;
-  BlasInt ia_ = ia;
-  BlasInt ja_ = ja;
-  BlasInt *desc_a_ = new BlasInt[9];
-  for(int i = 0; i < 9; i++){
-      desc_a_[i] = static_cast<BlasInt>(desc_a[i]);
-  }
 
-  BlasInt info_ = 0;
-  std::complex<float>* work; std::complex<float> numwork;
-  BlasInt lwork;
+  float* work;
+  float numwork;
+  BlasInt lwork, info;
   lwork = -1;
-  FC_GLOBAL(pcgeqrf, PCGEQRF)
-  (&m_, &n_, a, &ia_, &ja_, desc_a_, tau, &numwork, &lwork, &info_);
-  lwork = static_cast<std::size_t>(real(numwork));
 
-  auto wptr = std::unique_ptr<std::complex<float>[]> {
-        new std::complex<float>[ lwork ]
-  };
-
-  work = wptr.get();
-  FC_GLOBAL(pcgeqrf, PCGEQRF)
-  (&m_, &n_, a, &ia_, &ja_, desc_a_, tau, work, &lwork, &info_);
-
-  assert(info_ == 0);
-
-}
-
-template <>
-void t_pgeqrf(const std::size_t m, const std::size_t n, std::complex<double> *a, const std::size_t ia,
-              const std::size_t ja, std::size_t *desc_a, std::complex<double> *tau){
-
-  BlasInt m_ = m;
-  BlasInt n_ = n;
-  BlasInt ia_ = ia;
-  BlasInt ja_ = ja;
-  BlasInt *desc_a_ = new BlasInt[9];
-  for(int i = 0; i < 9; i++){
-      desc_a_[i] = static_cast<BlasInt>(desc_a[i]);
-  }
-
-  BlasInt info_ = 0;
-  std::complex<double>* work; std::complex<double> numwork;
-  BlasInt lwork;
-  lwork = -1;
-  FC_GLOBAL(pzgeqrf, PZGEQRF)
-  (&m_, &n_, a, &ia_, &ja_, desc_a_, tau, &numwork, &lwork, &info_);
-  lwork = static_cast<std::size_t>(real(numwork));
-
-  auto wptr = std::unique_ptr<std::complex<double>[]> {
-        new std::complex<double>[ lwork ]
-  };
-
-  work = wptr.get();
-  FC_GLOBAL(pzgeqrf, PZGEQRF)
-  (&m_, &n_, a, &ia_, &ja_, desc_a_, tau, work, &lwork, &info_);
-
-  assert(info_ == 0);	      
-
-}
-
-template <>
-void t_pgqr(const std::size_t m, const std::size_t n,  const std::size_t k, float *a, const std::size_t ia,
-              const std::size_t ja, std::size_t *desc_a, float *tau){
-  BlasInt m_ = m;
-  BlasInt n_ = n;
-  BlasInt k_ = k;
-  BlasInt ia_ = ia;
-  BlasInt ja_ = ja;
-  BlasInt *desc_a_ = new BlasInt[9];
-  for(int i = 0; i < 9; i++){
-      desc_a_[i] = static_cast<BlasInt>(desc_a[i]);
-  }
-
-  BlasInt info_ = 0;
-  float* work; float numwork;
-  BlasInt lwork;
-  lwork = -1;
-  FC_GLOBAL(psorgqr, PSORGQR)
-  (&m_, &n_, &k_, a, &ia_, &ja_, desc_a_, tau, &numwork, &lwork, &info_);
+  psgeqrf_(&m_, &n_, A, &ia, &ja, desc_, tau, &numwork, &lwork, &info);
 
   lwork = (int)numwork;
 
   auto wptr = std::unique_ptr<float[]> {
-        new float[ lwork ]
+      new float[ lwork ]
   };
 
   work = wptr.get();
-  FC_GLOBAL(psorgqr, PSORGQR)  
-  (&m_, &n_, &k_, a, &ia_, &ja_, desc_a_, tau, work, &lwork, &info_);
 
-  assert(info_ == 0);
+  psgeqrf_(&m_, &n_, A, &ia, &ja, desc_, tau, work, &lwork, &info);
+  assert(info == 0);
+}
+
+
+template <>
+void t_pgeqrf(std::size_t m, std::size_t n, std::complex<double> *A, int ia, int ja, std::size_t *desc_a, std::complex<double> *tau){
+  BlasInt *desc_ = new BlasInt[9];
+  for(int i = 0; i < 9; i++){
+      desc_[i] = static_cast<std::size_t>(desc_a[i]);
+  }
+  BlasInt m_ = m;
+  BlasInt n_ = n;
+
+  std::complex<double>* work;
+  std::complex<double> numwork;
+  BlasInt lwork, info;
+  lwork = -1;
+
+  pzgeqrf_(&m_, &n_, A, &ia, &ja, desc_, tau, &numwork, &lwork, &info);
+
+  lwork = (int)real(numwork);
+
+  auto wptr = std::unique_ptr<std::complex<double>[]> {
+      new std::complex<double>[ lwork ]
+  };
+
+  work = wptr.get();
+
+  pzgeqrf_(&m_, &n_, A, &ia, &ja, desc_, tau, work, &lwork, &info);
+  assert(info == 0);
 }
 
 template <>
-void t_pgqr(const std::size_t m, const std::size_t n,  const std::size_t k, double *a, const std::size_t ia,
-              const std::size_t ja, std::size_t *desc_a, double *tau){
+void t_pgeqrf(std::size_t m, std::size_t n, std::complex<float> *A, int ia, int ja, std::size_t *desc_a, std::complex<float> *tau){
+  BlasInt *desc_ = new BlasInt[9];
+  for(int i = 0; i < 9; i++){
+      desc_[i] = static_cast<std::size_t>(desc_a[i]);
+  }
+  BlasInt m_ = m;
+  BlasInt n_ = n;
+
+  std::complex<float>* work;
+  std::complex<float> numwork;
+  BlasInt lwork, info;
+  lwork = -1;
+
+  pcgeqrf_(&m_, &n_, A, &ia, &ja, desc_, tau, &numwork, &lwork, &info);
+
+  lwork = (int)real(numwork);
+
+  auto wptr = std::unique_ptr<std::complex<float>[]> {
+      new std::complex<float>[ lwork ]
+  };
+
+  work = wptr.get();
+
+  pcgeqrf_(&m_, &n_, A, &ia, &ja, desc_, tau, work, &lwork, &info);
+  assert(info == 0);
+}
+
+
+template <>
+void t_pgqr(std::size_t m, std::size_t n, std::size_t k, double *A, int ia, int ja, std::size_t *desc_a, double *tau ){
+  BlasInt *desc_ = new BlasInt[9];
+  for(int i = 0; i < 9; i++){
+      desc_[i] = static_cast<std::size_t>(desc_a[i]);
+  }
   BlasInt m_ = m;
   BlasInt n_ = n;
   BlasInt k_ = k;
-  BlasInt ia_ = ia;
-  BlasInt ja_ = ja;
-  BlasInt *desc_a_ = new BlasInt[9];
-  for(int i = 0; i < 9; i++){
-      desc_a_[i] = static_cast<BlasInt>(desc_a[i]);
-  }
 
-  BlasInt info_ = 0;
-  double* work; double numwork;
-  BlasInt lwork;
+  double* work;
+  double numwork;
+  BlasInt lwork, info;
   lwork = -1;
-  FC_GLOBAL(pdorgqr, PDORGQR)
-  (&m_, &n_, &k_, a, &ia_, &ja_, desc_a_, tau, &numwork, &lwork, &info_);
+
+  pdorgqr_(&m_, &n_, &k_, A, &ia, &ja, desc_, tau, &numwork, &lwork, &info);
 
   lwork = (int)numwork;
 
   auto wptr = std::unique_ptr<double[]> {
-        new double[ lwork ]
+      new double[ lwork ]
   };
 
   work = wptr.get();
-  FC_GLOBAL(pdorgqr, PDORGQR)
-  (&m_, &n_, &k_, a, &ia_, &ja_, desc_a_, tau, work, &lwork, &info_);
 
-  assert(info_ == 0);
+  pdorgqr_(&m_, &n_, &k_, A, &ia, &ja, desc_, tau, work, &lwork, &info);
+  assert(info == 0);
 }
 
-template <>
-void t_pgqr(const std::size_t m, const std::size_t n, const std::size_t k, std::complex<float> *a, const std::size_t ia,
-              const std::size_t ja, std::size_t *desc_a, std::complex<float> *tau){
 
+template <>
+void t_pgqr(std::size_t m, std::size_t n, std::size_t k, float *A, int ia, int ja, std::size_t *desc_a, float *tau){
+  BlasInt *desc_ = new BlasInt[9];
+  for(int i = 0; i < 9; i++){
+      desc_[i] = static_cast<std::size_t>(desc_a[i]);
+  }
   BlasInt m_ = m;
   BlasInt n_ = n;
-  BlasInt k_ = k;
-  BlasInt ia_ = ia;
-  BlasInt ja_ = ja;
-  BlasInt *desc_a_ = new BlasInt[9];
-  for(int i = 0; i < 9; i++){
-      desc_a_[i] = static_cast<BlasInt>(desc_a[i]);
-  }
+  BlasInt k_ = n;
 
-  BlasInt info_ = 0;
-  std::complex<float>* work; std::complex<float> numwork;
-  BlasInt lwork;
+  float* work;
+  float numwork;
+  BlasInt lwork, info;
   lwork = -1;
-  FC_GLOBAL(pcungqr, PCUNGQR)
-  (&m_, &n_, &k_, a, &ia_, &ja_, desc_a_, tau, &numwork, &lwork, &info_);
-  lwork = static_cast<std::size_t>(real(numwork));
 
-  auto wptr = std::unique_ptr<std::complex<float>[]> {
-        new std::complex<float>[ lwork ]
+  psorgqr_(&m_, &n_, &k_, A, &ia, &ja, desc_, tau, &numwork, &lwork, &info);
+
+  lwork = (int)numwork;
+
+  auto wptr = std::unique_ptr<float[]> {
+      new float[ lwork ]
   };
 
   work = wptr.get();
-  FC_GLOBAL(pcungqr, PCUNGQR)
-  (&m_, &n_, &k_, a, &ia_, &ja_, desc_a_, tau, work, &lwork, &info_);
 
-  assert(info_ == 0);
-
+  psorgqr_(&m_, &n_, &k_, A, &ia, &ja, desc_, tau, work, &lwork, &info);
+  assert(info == 0);
 }
 
-template <>
-void t_pgqr(const std::size_t m, const std::size_t n, const std::size_t k, std::complex<double> *a, const std::size_t ia,
-              const std::size_t ja, std::size_t *desc_a, std::complex<double> *tau){
 
+template <>
+void t_pgqr(std::size_t m, std::size_t n, std::size_t k, std::complex<double> *A, int ia, int ja, std::size_t *desc_a, std::complex<double> *tau){
+  BlasInt *desc_ = new BlasInt[9];
+  for(int i = 0; i < 9; i++){
+      desc_[i] = static_cast<std::size_t>(desc_a[i]);
+  }
   BlasInt m_ = m;
   BlasInt n_ = n;
   BlasInt k_ = k;
-  BlasInt ia_ = ia;
-  BlasInt ja_ = ja;
-  BlasInt *desc_a_ = new BlasInt[9];
-  for(int i = 0; i < 9; i++){
-      desc_a_[i] = static_cast<BlasInt>(desc_a[i]);
-  }
 
-  BlasInt info_ = 0;
-  std::complex<double>* work; std::complex<double> numwork;
-  BlasInt lwork;
+  std::complex<double>* work;
+  std::complex<double> numwork;
+  BlasInt lwork, info;
   lwork = -1;
-  FC_GLOBAL(pzungqr, PZUNGQR)
-  (&m_, &n_, &k_, a, &ia_, &ja_, desc_a_, tau, &numwork, &lwork, &info_);
-  lwork = static_cast<std::size_t>(real(numwork));
+
+  pzungqr_(&m_, &n_, &k_, A, &ia, &ja, desc_, tau, &numwork, &lwork, &info);
+
+  lwork = (int)real(numwork);
 
   auto wptr = std::unique_ptr<std::complex<double>[]> {
-        new std::complex<double>[ lwork ]
+      new std::complex<double>[ lwork ]
   };
 
   work = wptr.get();
-  FC_GLOBAL(pzungqr, PZUNGQR)
-  (&m_, &n_, &k_, a, &ia_, &ja_, desc_a_, tau, work, &lwork, &info_);
 
-  assert(info_ == 0);
-
+  pzungqr_(&m_, &n_, &k_, A, &ia, &ja, desc_, tau, work, &lwork, &info);
+  assert(info == 0);
 }
 
-#endif	
+template <>
+void t_pgqr(std::size_t m, std::size_t n, std::size_t k, std::complex<float> *A, int ia, int ja, std::size_t *desc_a, std::complex<float> *tau){
+  BlasInt *desc_ = new BlasInt[9];
+  for(int i = 0; i < 9; i++){
+      desc_[i] = static_cast<std::size_t>(desc_a[i]);
+  }
+  BlasInt m_ = m;
+  BlasInt n_ = n;
+  BlasInt k_ = k;
+
+  std::complex<float>* work;
+  std::complex<float> numwork;
+  BlasInt lwork, info;
+  lwork = -1;
+
+  pcungqr_(&m_, &n_, &k_, A, &ia, &ja, desc_, tau, &numwork, &lwork, &info);
+
+  lwork = (int)real(numwork);
+
+  auto wptr = std::unique_ptr<std::complex<float>[]> {
+      new std::complex<float>[ lwork ]
+  };
+
+  work = wptr.get();
+
+  pcungqr_(&m_, &n_, &k_, A, &ia, &ja, desc_, tau, work, &lwork, &info);
+  assert(info == 0);
+}
+
+
+
+
 
 }  // namespace mpi
 }  // namespace chase

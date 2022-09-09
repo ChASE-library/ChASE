@@ -102,22 +102,38 @@ template <typename T>
 void t_trsm(const char side, const char uplo, const char trans, const char diag,
             const std::size_t m, const std::size_t n, const T* alpha,
             const T* a, const std::size_t lda, const T* b, const std::size_t ldb);
-#if defined(HAS_SCALAPACK)
-void blacs_pinfo(int *mypnum, int *nprocs);
-void blacs_get(int *icontxt, const int *what, int *val );
-void blacs_gridinit(int *icontxt, const char layout, const int *nprow, const int *npcol);
-void blacs_gridinfo(int *icontxt, int *nprow, int *npcol, int *myprow, int *mypcol);
-void descinit(std::size_t *desc, std::size_t *m, std::size_t *n, std::size_t *mb, std::size_t *nb,
-        const int *irsrc, const int *icsrc, int *ictxt, std::size_t *lld, int *info);
-void blacs_gridmap(int *icontxt, int *usermap, const int ldumap, const int nprow, const int npcol);
-template <typename T>
-void t_pgeqrf(const std::size_t m, const std::size_t n, T *a, const std::size_t ia, 
-	      const std::size_t ja, std::size_t *desc_a, T *tau);
-template <typename T>
-void t_pgqr(const std::size_t m, const std::size_t n, const std::size_t k, T *a, const std::size_t ia,
-              const std::size_t ja, std::size_t *desc_a, T *tau);
 
-#endif
+
+//scalapack
+//BLACS
+extern "C" void blacs_get_(int*, int*, int*);
+extern "C" void blacs_pinfo_(int*, int*);
+extern "C" void blacs_gridinit_(int*, char*, int*, int*);
+extern "C" void blacs_gridinfo_(int*, int*, int*, int*, int*);
+extern "C" void descinit_(int*, int*, int*, int*, int*, int*, int*, int*, int*, int*);
+extern "C" void blacs_gridexit_(int*);
+extern "C" void blacs_gridmap_(int *, int *, int *, int *, int *);
+
+
+void t_descinit(std::size_t *desc, std::size_t *m, std::size_t *n, std::size_t *mb, std::size_t *nb,
+        int *irsrc, int *icsrc, int *ictxt, std::size_t *lld, int *info);
+
+
+//ScaLAPACK
+extern "C" void pdgeqrf_(int *, int*, double*, int*, int*, int*,  double*, double*, int*, int*);
+extern "C" void psgeqrf_(int *, int*, float*, int*, int*, int*,  float*, float*, int*, int*);
+extern "C" void pcgeqrf_(int *, int*, std::complex<float>*, int*, int*, int*,  std::complex<float>*, std::complex<float>*, int*, int*);
+extern "C" void pzgeqrf_(int *, int*, std::complex<double>*, int*, int*, int*,  std::complex<double>*, std::complex<double>*, int*, int*);
+
+extern "C" void pdorgqr_(int*, int*, int*, double*, int*, int*, int *, double *, double *, int *, int *);
+extern "C" void psorgqr_(int*, int*, int*, float*, int*, int*, int *, float *, float *, int *, int *);
+extern "C" void pzungqr_(int*, int*, int*, std::complex<double>*, int*, int*, int *,  std::complex<double> *,  std::complex<double> *, int *, int *);
+extern "C" void pcungqr_(int*, int*, int*, std::complex<float>*, int*, int*, int *,  std::complex<float> *,  std::complex<float> *, int *, int *);
+
+template <typename T>
+void t_pgeqrf(std::size_t m, std::size_t n, T *A, int ia, int ja, std::size_t *desc_a, T *tau );
+template <typename T>
+void t_pgqr(std::size_t m, std::size_t n, std::size_t k, T *A, int ia, int ja, std::size_t *desc_a, T *tau );
 
 
 }  // namespace mpi

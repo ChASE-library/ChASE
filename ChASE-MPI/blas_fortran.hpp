@@ -325,46 +325,6 @@ void FC_GLOBAL(ztrsm, ZTRSM)(const char* side, const char* uplo, const char* tra
                              const BlasInt* m, const BlasInt* n, const dcomplex* alpha,
                              const dcomplex* a, const BlasInt*lda, const dcomplex* b, const BlasInt*ldb);
 
-#if defined(HAS_SCALAPACK)
-////////////
-// BLACS //
-////////////
-void FC_GLOBAL(blacs_pinfo, BLACS_PINFO)(int *mypnum, int *nprocs);
-void FC_GLOBAL(blacs_get, BLACS_GET)(BlasInt *icontxt, const BlasInt *what, BlasInt *val );
-void FC_GLOBAL(blacs_gridinit, BLACS_GRIDINIT)(BlasInt *icontxt, const char* layout, 
-				const BlasInt *nprow, const BlasInt *npcol);
-void FC_GLOBAL(blacs_gridinfo, BLACS_GRIDINFO)(BlasInt *icontxt, BlasInt *nprow, BlasInt *npcol, 
-			        BlasInt *myprow, BlasInt *mypcol);
-
-void FC_GLOBAL(blacs_gridmap, BLACS_GRIDMAP)(BlasInt *icontxt, BlasInt * usermap, BlasInt *ldumap, BlasInt *nprow, BlasInt *npcol);
-
-void FC_GLOBAL(descinit, DESCINIT)(BlasInt *desc, BlasInt *m, BlasInt *n, BlasInt *mb, BlasInt *nb, 
-		const BlasInt *irsrc, const BlasInt *icsrc, BlasInt *ictxt, BlasInt *lld, BlasInt *info);
-
-/////////////
-//ScaLAPACK//
-/////////////
-
-//pxgeqrf
-void FC_GLOBAL(psgeqrf, PSGEQRF)(BlasInt *m, BlasInt *n, float *a, BlasInt *ia, BlasInt *ja, 
-				 BlasInt *desc_a, float *tau, float *work, BlasInt *lda, BlasInt *info);
-void FC_GLOBAL(pdgeqrf, PDGEQRF)(BlasInt *m, BlasInt *n, double *a, BlasInt *ia, BlasInt *ja,
-                                 BlasInt *desc_a, double *tau, double *work, BlasInt *lda, BlasInt *info);
-void FC_GLOBAL(pcgeqrf, PCGEQRF)(BlasInt *m, BlasInt *n, scomplex *a, BlasInt *ia, BlasInt *ja,
-                                 BlasInt *desc_a, scomplex *tau, scomplex *work, BlasInt *lda, BlasInt *info);
-void FC_GLOBAL(pzgeqrf, PZGEQRF)(BlasInt *m, BlasInt *n, dcomplex *a, BlasInt *ia, BlasInt *ja,
-                                 BlasInt *desc_a, dcomplex *tau, dcomplex *work, BlasInt *lda, BlasInt *info);
-//pxor(un)grf
-void FC_GLOBAL(psorgqr, PSORGQR)(BlasInt *m, BlasInt *n, BlasInt *k, float *a, BlasInt *ia, BlasInt *ja,
-                                 BlasInt *desc_a, float *tau, float *work, BlasInt *lda, BlasInt *info);
-void FC_GLOBAL(pdorgqr, PDORGQR)(BlasInt *m, BlasInt *n, BlasInt *k, double *a, BlasInt *ia, BlasInt *ja,
-                                 BlasInt *desc_a, double *tau, double *work, BlasInt *lda, BlasInt *info);
-void FC_GLOBAL(pcungqr, PCUNGQR)(BlasInt *m, BlasInt *n, BlasInt *k, scomplex *a, BlasInt *ia, BlasInt *ja,
-                                 BlasInt *desc_a, scomplex *tau, scomplex *work, BlasInt *lda, BlasInt *info);
-void FC_GLOBAL(pzungqr, PZUNGQR)(BlasInt *m, BlasInt *n, BlasInt *k, dcomplex *a, BlasInt *ia, BlasInt *ja,
-                                 BlasInt *desc_a, dcomplex *tau, dcomplex *work, BlasInt *lda, BlasInt *info);
-
-#endif
 
 }  // extern "C"
 }  // namespace mpi

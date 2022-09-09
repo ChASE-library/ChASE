@@ -498,4 +498,3 @@ mark_as_advanced(SCALAPACK_PREFIX)
 
 _add_scalapack_target()
 
-
