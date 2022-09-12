@@ -1215,6 +1215,7 @@ void t_trsm(const char side, const char uplo, const char trans, const char diag,
   (&side, &uplo, &trans, &diag, &m_, &n_, alpha, a, &lda_, b, &ldb_);
 }
 
+#if defined(HAS_SCALAPACK)
 //SCALAPACK
 void t_descinit(std::size_t *desc, std::size_t *m, std::size_t *n, std::size_t *mb, std::size_t *nb,
 	int *irsrc, int *icsrc, int *ictxt, std::size_t *lld, int *info)
@@ -1468,7 +1469,7 @@ void t_pgqr(std::size_t m, std::size_t n, std::size_t k, std::complex<float> *A,
   pcungqr_(&m_, &n_, &k_, A, &ia, &ja, desc_, tau, work, &lwork, &info);
   assert(info == 0);
 }
-
+#endif
 
 
 

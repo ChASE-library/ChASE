@@ -37,7 +37,7 @@ find_package( BLAS   REQUIRED )
 find_package( LAPACK REQUIRED )
 find_package( MPI    REQUIRED )
 
-find_package( SCALAPACK REQUIRED)
+find_package( SCALAPACK )
 
 target_include_directories( chase_seq INTERFACE
   ${MPI_CXX_INCLUDE_PATH}
@@ -47,8 +47,13 @@ target_link_libraries( chase_seq INTERFACE
   ${BLAS_LIBRARIES}
   ${LAPACK_LIBRARIES}
   ${MPI_CXX_LIBRARIES} 
-  SCALAPACK::SCALAPACK 
   )
+
+if(SCALAPACK_FOUND)
+  target_link_libraries( chase_seq INTERFACE
+  	SCALAPACK::SCALAPACK
+  	)
+endif()
 target_compile_options( chase_seq INTERFACE
   ${CMAKE_C_FLAGS}
   ${MPI_CXX_COMPILE_FLAGS}  
@@ -76,12 +81,20 @@ target_link_libraries( chase_mpi INTERFACE
   ${BLAS_LIBRARIES}
   ${LAPACK_LIBRARIES}
   ${MPI_CXX_LIBRARIES}
-  SCALAPACK::SCALAPACK
   )
+
 target_compile_options( chase_mpi INTERFACE
   ${CMAKE_C_FLAGS}
   ${MPI_CXX_COMPILE_FLAGS}
   )
+if(SCALAPACK_FOUND)
+  target_link_libraries( chase_mpi INTERFACE
+        SCALAPACK::SCALAPACK
+        )
+  target_compile_definitions( chase_mpi INTERFACE 
+	  "-DHAS_SCALAPACK" 
+	)
+endif()
 
 install( TARGETS chase_mpi
   EXPORT chase-mpi

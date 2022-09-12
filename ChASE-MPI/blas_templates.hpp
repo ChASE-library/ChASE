@@ -118,7 +118,7 @@ extern "C" void blacs_gridmap_(int *, int *, int *, int *, int *);
 void t_descinit(std::size_t *desc, std::size_t *m, std::size_t *n, std::size_t *mb, std::size_t *nb,
         int *irsrc, int *icsrc, int *ictxt, std::size_t *lld, int *info);
 
-
+#if defined(HAS_SCALAPACK)
 //ScaLAPACK
 extern "C" void pdgeqrf_(int *, int*, double*, int*, int*, int*,  double*, double*, int*, int*);
 extern "C" void psgeqrf_(int *, int*, float*, int*, int*, int*,  float*, float*, int*, int*);
@@ -134,7 +134,7 @@ template <typename T>
 void t_pgeqrf(std::size_t m, std::size_t n, T *A, int ia, int ja, std::size_t *desc_a, T *tau );
 template <typename T>
 void t_pgqr(std::size_t m, std::size_t n, std::size_t k, T *A, int ia, int ja, std::size_t *desc_a, T *tau );
-
+#endif
 
 }  // namespace mpi
 }  // namespace chase

@@ -336,6 +336,65 @@ class ChaseMpiProperties {
 	       }
 	   }
        }
+#if defined(HAS_SCALAPACK)
+       //test for SCALAPACK
+       // Initialize BLACS
+       int iam_b, nprocs_b;
+       int zero = 0;
+       int ictxt, myrow_b, mycol_b;
+
+       blacs_pinfo_(&iam_b, &nprocs_b) ;
+       blacs_get_(&zero, &zero, &ictxt );
+       rcom1D_ctxt_ = ictxt;
+
+       int userMap1[dims_[1]];
+       if(col_major == false ){
+          for(int i = 0; i < dims_[1]; i++){
+              userMap1[i] = ( rank_ / dims_[1] ) * dims_[1] + i;
+          }
+       }else{
+          for(int i = 0; i < dims_[1]; i++){
+              userMap1[i] = ( rank_ % dims_[0] ) + i * dims_[0];
+          }
+       }
+    
+       int ONE = 1;
+       blacs_gridmap_(&rcom1D_ctxt_, userMap1, &dims_[1], &dims_[1], &ONE );
+       int g_nr, g_nc, g_mr, g_mc;
+       blacs_gridinfo_(&rcom1D_ctxt_, &g_nr, &g_nc, &g_mr, &g_mc);
+
+       std::size_t desc1D[9];
+       int info;
+
+       std::size_t nx_b = 64;
+       t_descinit(desc1D, &N_, &nev_, &nb_, &nx_b, &zero, &zero, &rcom1D_ctxt_, &n_, &info);
+       T *X = new T[n_ * nev_];
+       for(std::size_t i = 0; i < n_ * nev_; i++){
+           X[i] = T(i * i + rank_);
+       }
+
+       std::unique_ptr<T []> tau(new T[nev_]);
+       double MPIt1 = MPI_Wtime();
+       t_pgeqrf(N_, nev_, X, ONE, ONE, desc1D, tau.get() );
+       t_pgqr(N_, nev_, nev_, X, ONE, ONE, desc1D, tau.get());
+       double MPIt2 = MPI_Wtime();
+       if(rank_ == 0){
+           printf("SCALAPACK time %e s.\n", MPIt2 - MPIt1);
+       }
+
+       for(std::size_t i = 0; i < N_ * nev_; i++){
+           X[i] = T(i * i + rank_);
+       }
+
+       std::unique_ptr<T []> tau2(new T[nev_]);
+       double MPIt3 = MPI_Wtime();
+       t_geqrf(LAPACK_COL_MAJOR, N_, nev_, X, N_, tau2.get() );
+       t_gqr(LAPACK_COL_MAJOR, N_, nev_, nev_, X, N_, tau2.get());
+       double MPIt4 = MPI_Wtime();
+       if(rank_ == 0){
+           printf("LAPACK time %e s.\n", MPIt4 - MPIt3);
+       }
+#endif
     }
 
   //! A constructor of the class ChaseMpiProperties which distributes matrix `A` in `Block Distribution`.
@@ -523,6 +582,76 @@ class ChaseMpiProperties {
             g_offsets_[dim_idx].push_back(block_displs_[dim_idx][dims_[dim_idx] - 1][0]);
 	}
 
+#if defined(HAS_SCALAPACK)
+    //test for SCALAPACK
+    // Initialize BLACS
+    int iam_b, nprocs_b;
+    int zero = 0;
+    int ictxt, myrow_b, mycol_b;
+    
+    blacs_pinfo_(&iam_b, &nprocs_b) ;
+    blacs_get_(&zero, &zero, &ictxt );
+    rcom1D_ctxt_ = ictxt;
+
+    int userMap1[dims_[1]];
+    if(col_major == false ){
+        for(int i = 0; i < dims_[1]; i++){
+            userMap1[i] = ( rank_ / dims_[1] ) * dims_[1] + i;        
+        }
+    }else{
+        for(int i = 0; i < dims_[1]; i++){
+            userMap1[i] = ( rank_ % dims_[0] ) + i * dims_[0];
+        }    
+    }
+    int ONE = 1;
+    blacs_gridmap_(&rcom1D_ctxt_, userMap1, &dims_[1], &dims_[1], &ONE );
+    int g_nr, g_nc, g_mr, g_mc;
+    blacs_gridinfo_(&rcom1D_ctxt_, &g_nr, &g_nc, &g_mr, &g_mc);
+
+    std::size_t desc1D[9];
+    int info;
+    std::size_t nb_ = n_;
+
+    if(col_major == false ){
+        if( (rank_+1) % dims_[1] == 0 && dims_[1] != 1){
+	    nb_ = (N_ - n_) / (dims_[1] - 1);
+        }
+    }else{
+        if( (rank_ - (rank_ % dims_[0])) / dims_[0] == (dims_[1] - 1) && dims_[1] != 1){
+            nb_ = (N_ - n_) / (dims_[1] - 1);
+        }    
+    }
+
+    std::size_t nx_b = 64;
+    t_descinit(desc1D, &N_, &nev_, &n, &nx_b, &zero, &zero, &rcom1D_ctxt_, &n_, &info);
+    T *X = new T[n_ * nev_];
+    for(std::size_t i = 0; i < n_ * nev_; i++){
+        X[i] = T(i + rank_);
+    }
+ 
+    std::unique_ptr<T []> tau(new T[nev_]);
+    double MPIt1 = MPI_Wtime();
+    t_pgeqrf(N_, nev_, X, ONE, ONE, desc1D, tau.get() );
+    t_pgqr(N_, nev_, nev_, X, ONE, ONE, desc1D, tau.get());
+    double MPIt2 = MPI_Wtime();
+    if(rank_ == 0){
+        printf("SCALAPACK time %e s.\n", MPIt2 - MPIt1);
+    }
+
+    for(std::size_t i = 0; i < N_ * nev_; i++){
+        X[i] = T(i + rank_);
+    }
+
+    std::unique_ptr<T []> tau2(new T[nev_]);
+    double MPIt3 = MPI_Wtime();
+    t_geqrf(LAPACK_COL_MAJOR, N_, nev_, X, N_, tau2.get() );
+    t_gqr(LAPACK_COL_MAJOR, N_, nev_, nev_, X, N_, tau2.get());
+    double MPIt4 = MPI_Wtime();
+    if(rank_ == 0){
+        printf("LAPACK time %e s.\n", MPIt4 - MPIt3);
+    }
+    
+#endif	
 
     }
 
@@ -676,6 +805,7 @@ class ChaseMpiProperties {
         g_offsets_[dim_idx].push_back(block_displs_[dim_idx][dims_[dim_idx] - 1][0]);
     }
 
+#if defined(HAS_SCALAPACK)
     //test for SCALAPACK
     // Initialize BLACS
     int iam_b, nprocs_b;
@@ -684,7 +814,7 @@ class ChaseMpiProperties {
 	
     blacs_pinfo_(&iam_b, &nprocs_b) ;
     blacs_get_(&zero, &zero, &ictxt );
-    int ictxt_r = ictxt;
+    rcom1D_ctxt_ = ictxt;
 
     int userMap1[dims_[1]];
 
@@ -693,9 +823,9 @@ class ChaseMpiProperties {
     }
 
     int ONE = 1;
-    blacs_gridmap_(&ictxt_r, userMap1, &dims_[1], &dims_[1], &ONE );
+    blacs_gridmap_(&rcom1D_ctxt_, userMap1, &dims_[1], &dims_[1], &ONE );
     int g_nr, g_nc, g_mr, g_mc;
-    blacs_gridinfo_(&ictxt_r, &g_nr, &g_nc, &g_mr, &g_mc);
+    blacs_gridinfo_(&rcom1D_ctxt_, &g_nr, &g_nc, &g_mr, &g_mc);
     
     std::size_t desc1D[9];
     int info;
@@ -705,7 +835,7 @@ class ChaseMpiProperties {
     }
 
     std::size_t nx_b = 64;
-    t_descinit(desc1D, &N_, &nev_, &nb_, &nx_b, &zero, &zero, &ictxt_r, &n_, &info);
+    t_descinit(desc1D, &N_, &nev_, &nb_, &nx_b, &zero, &zero, &rcom1D_ctxt_, &n_, &info);
     T *X = new T[n_ * nev_];
     for(std::size_t i = 0; i < n_ * nev_; i++){
         X[i] = T(i + rank_);
@@ -732,9 +862,15 @@ class ChaseMpiProperties {
     if(rank_ == 0){
         printf("LAPACK time %e s.\n", MPIt4 - MPIt3);
     }
+#endif
 
   }
 
+#if defined(HAS_SCALAPACK)
+    int get_rcom1D_ctxt(){
+        return rcom1D_ctxt_;
+    }
+#endif    
   //! Returns the rank of matrix `A` which is distributed within 2D MPI grid.
   /*! 
       \return `N_`: the rank of matrix `A`.
@@ -1296,6 +1432,10 @@ class ChaseMpiProperties {
   std::size_t off_[2];
 
   std::string data_layout;
+#if defined(HAS_SCALAPACK)
+  //! ScaLAPACK context for each row communicator. This context is in 1D grid, with only 1 column
+  int rcom1D_ctxt_;
+#endif
 };
 }  // namespace mpi
 }  // namespace chase
