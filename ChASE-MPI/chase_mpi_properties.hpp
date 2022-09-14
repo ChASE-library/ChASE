@@ -339,11 +339,9 @@ class ChaseMpiProperties {
 #if defined(HAS_SCALAPACK)
        //test for SCALAPACK
        // Initialize BLACS
-       int iam_b, nprocs_b;
        int zero = 0;
-       int ictxt, myrow_b, mycol_b;
+       int ictxt;
 
-       blacs_pinfo_(&iam_b, &nprocs_b) ;
        blacs_get_(&zero, &zero, &ictxt );
        rcom1D_ctxt_ = ictxt;
 
@@ -360,40 +358,13 @@ class ChaseMpiProperties {
     
        int ONE = 1;
        blacs_gridmap_(&rcom1D_ctxt_, userMap1, &dims_[1], &dims_[1], &ONE );
-       int g_nr, g_nc, g_mr, g_mc;
-       blacs_gridinfo_(&rcom1D_ctxt_, &g_nr, &g_nc, &g_mr, &g_mc);
-
-       std::size_t desc1D[9];
+    
        int info;
+       std::size_t nevex_ = nev_ + nex_;
+       std::size_t bs = 64;
+       std::size_t nx_b = std::min(bs, nevex_);
+       t_descinit(desc1D_Nxnevx_, &N_, &nevex_, &nb_, &nx_b, &zero, &zero, &rcom1D_ctxt_, &n_, &info);
 
-       std::size_t nx_b = 64;
-       t_descinit(desc1D, &N_, &nev_, &nb_, &nx_b, &zero, &zero, &rcom1D_ctxt_, &n_, &info);
-       T *X = new T[n_ * nev_];
-       for(std::size_t i = 0; i < n_ * nev_; i++){
-           X[i] = T(i * i + rank_);
-       }
-
-       std::unique_ptr<T []> tau(new T[nev_]);
-       double MPIt1 = MPI_Wtime();
-       t_pgeqrf(N_, nev_, X, ONE, ONE, desc1D, tau.get() );
-       t_pgqr(N_, nev_, nev_, X, ONE, ONE, desc1D, tau.get());
-       double MPIt2 = MPI_Wtime();
-       if(rank_ == 0){
-           printf("SCALAPACK time %e s.\n", MPIt2 - MPIt1);
-       }
-
-       for(std::size_t i = 0; i < N_ * nev_; i++){
-           X[i] = T(i * i + rank_);
-       }
-
-       std::unique_ptr<T []> tau2(new T[nev_]);
-       double MPIt3 = MPI_Wtime();
-       t_geqrf(LAPACK_COL_MAJOR, N_, nev_, X, N_, tau2.get() );
-       t_gqr(LAPACK_COL_MAJOR, N_, nev_, nev_, X, N_, tau2.get());
-       double MPIt4 = MPI_Wtime();
-       if(rank_ == 0){
-           printf("LAPACK time %e s.\n", MPIt4 - MPIt3);
-       }
 #endif
     }
 
@@ -585,11 +556,9 @@ class ChaseMpiProperties {
 #if defined(HAS_SCALAPACK)
     //test for SCALAPACK
     // Initialize BLACS
-    int iam_b, nprocs_b;
     int zero = 0;
-    int ictxt, myrow_b, mycol_b;
+    int ictxt;
     
-    blacs_pinfo_(&iam_b, &nprocs_b) ;
     blacs_get_(&zero, &zero, &ictxt );
     rcom1D_ctxt_ = ictxt;
 
@@ -605,52 +574,13 @@ class ChaseMpiProperties {
     }
     int ONE = 1;
     blacs_gridmap_(&rcom1D_ctxt_, userMap1, &dims_[1], &dims_[1], &ONE );
-    int g_nr, g_nc, g_mr, g_mc;
-    blacs_gridinfo_(&rcom1D_ctxt_, &g_nr, &g_nc, &g_mr, &g_mc);
 
-    std::size_t desc1D[9];
     int info;
-    std::size_t nb_ = n_;
+    std::size_t nevex_ = nev_ + nex_;
+    std::size_t blocksize = 64;
+    std::size_t nx_b = std::min(blocksize, nevex_);
+    t_descinit(desc1D_Nxnevx_, &N_, &nevex_, &n, &nx_b, &zero, &zero, &rcom1D_ctxt_, &n_, &info);
 
-    if(col_major == false ){
-        if( (rank_+1) % dims_[1] == 0 && dims_[1] != 1){
-	    nb_ = (N_ - n_) / (dims_[1] - 1);
-        }
-    }else{
-        if( (rank_ - (rank_ % dims_[0])) / dims_[0] == (dims_[1] - 1) && dims_[1] != 1){
-            nb_ = (N_ - n_) / (dims_[1] - 1);
-        }    
-    }
-
-    std::size_t nx_b = 64;
-    t_descinit(desc1D, &N_, &nev_, &n, &nx_b, &zero, &zero, &rcom1D_ctxt_, &n_, &info);
-    T *X = new T[n_ * nev_];
-    for(std::size_t i = 0; i < n_ * nev_; i++){
-        X[i] = T(i + rank_);
-    }
- 
-    std::unique_ptr<T []> tau(new T[nev_]);
-    double MPIt1 = MPI_Wtime();
-    t_pgeqrf(N_, nev_, X, ONE, ONE, desc1D, tau.get() );
-    t_pgqr(N_, nev_, nev_, X, ONE, ONE, desc1D, tau.get());
-    double MPIt2 = MPI_Wtime();
-    if(rank_ == 0){
-        printf("SCALAPACK time %e s.\n", MPIt2 - MPIt1);
-    }
-
-    for(std::size_t i = 0; i < N_ * nev_; i++){
-        X[i] = T(i + rank_);
-    }
-
-    std::unique_ptr<T []> tau2(new T[nev_]);
-    double MPIt3 = MPI_Wtime();
-    t_geqrf(LAPACK_COL_MAJOR, N_, nev_, X, N_, tau2.get() );
-    t_gqr(LAPACK_COL_MAJOR, N_, nev_, nev_, X, N_, tau2.get());
-    double MPIt4 = MPI_Wtime();
-    if(rank_ == 0){
-        printf("LAPACK time %e s.\n", MPIt4 - MPIt3);
-    }
-    
 #endif	
 
     }
@@ -808,11 +738,9 @@ class ChaseMpiProperties {
 #if defined(HAS_SCALAPACK)
     //test for SCALAPACK
     // Initialize BLACS
-    int iam_b, nprocs_b;
     int zero = 0;
-    int ictxt, myrow_b, mycol_b;
+    int ictxt;
 	
-    blacs_pinfo_(&iam_b, &nprocs_b) ;
     blacs_get_(&zero, &zero, &ictxt );
     rcom1D_ctxt_ = ictxt;
 
@@ -821,47 +749,17 @@ class ChaseMpiProperties {
     for(int i = 0; i < dims_[1]; i++){
          userMap1[i] = ( rank_ / dims_[1] ) * dims_[1] + i;        
     }
-
     int ONE = 1;
     blacs_gridmap_(&rcom1D_ctxt_, userMap1, &dims_[1], &dims_[1], &ONE );
-    int g_nr, g_nc, g_mr, g_mc;
-    blacs_gridinfo_(&rcom1D_ctxt_, &g_nr, &g_nc, &g_mr, &g_mc);
-    
-    std::size_t desc1D[9];
     int info;
     std::size_t nb_ = n_;
     if( (rank_+1) % dims_[1] == 0 && dims_[1] != 1){
 	nb_ = (N_ - n_) / (dims_[1] - 1);
     }
-
-    std::size_t nx_b = 64;
-    t_descinit(desc1D, &N_, &nev_, &nb_, &nx_b, &zero, &zero, &rcom1D_ctxt_, &n_, &info);
-    T *X = new T[n_ * nev_];
-    for(std::size_t i = 0; i < n_ * nev_; i++){
-        X[i] = T(i + rank_);
-    }
- 
-    std::unique_ptr<T []> tau(new T[nev_]);
-    double MPIt1 = MPI_Wtime();
-    t_pgeqrf(N_, nev_, X, ONE, ONE, desc1D, tau.get() );
-    t_pgqr(N_, nev_, nev_, X, ONE, ONE, desc1D, tau.get());
-    double MPIt2 = MPI_Wtime();
-    if(rank_ == 0){
-        printf("SCALAPACK time %e s.\n", MPIt2 - MPIt1);
-    }
-
-    for(std::size_t i = 0; i < N_ * nev_; i++){
-        X[i] = T(i + rank_);
-    }
-
-    std::unique_ptr<T []> tau2(new T[nev_]);
-    double MPIt3 = MPI_Wtime();
-    t_geqrf(LAPACK_COL_MAJOR, N_, nev_, X, N_, tau2.get() );
-    t_gqr(LAPACK_COL_MAJOR, N_, nev_, nev_, X, N_, tau2.get());
-    double MPIt4 = MPI_Wtime();
-    if(rank_ == 0){
-        printf("LAPACK time %e s.\n", MPIt4 - MPIt3);
-    }
+    std::size_t nevex_ = nev_ + nex_;
+    std::size_t blocksize = 64;
+    std::size_t nx_b = std::min(blocksize, nevex_);
+    t_descinit(desc1D_Nxnevx_, &N_, &nevex_, &nb_, &nx_b, &zero, &zero, &rcom1D_ctxt_, &n_, &info);
 #endif
 
   }
@@ -869,6 +767,10 @@ class ChaseMpiProperties {
 #if defined(HAS_SCALAPACK)
     int get_rcom1D_ctxt(){
         return rcom1D_ctxt_;
+    }
+
+    std::size_t *get_desc1D_Nxnevx(){
+    	return desc1D_Nxnevx_;
     }
 #endif    
   //! Returns the rank of matrix `A` which is distributed within 2D MPI grid.
@@ -1435,6 +1337,7 @@ class ChaseMpiProperties {
 #if defined(HAS_SCALAPACK)
   //! ScaLAPACK context for each row communicator. This context is in 1D grid, with only 1 column
   int rcom1D_ctxt_;
+  std::size_t desc1D_Nxnevx_[9];
 #endif
 };
 }  // namespace mpi

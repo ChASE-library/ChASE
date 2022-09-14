@@ -464,6 +464,17 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
 
   void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_t locked, std::size_t unconverged) override{}
 
+  void hhQR(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv) override{
+
+  }
+
+  void hhQR_dist(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv)override{
+  }
+  void cholQR1(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv )override{
+  }
+  void cholQR1_dist(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv)override{
+  }
+
  private:
   enum NextOp { cAb, bAc };
 

@@ -379,7 +379,17 @@ class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T> {
     }
   }
 
-  
+  void hhQR(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv) override {
+
+  }
+
+  void hhQR_dist(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv) override {
+  }
+  void cholQR1(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv) override {
+  }
+  void cholQR1_dist(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv) override {
+  }
+
  private:
   std::size_t N_;
   std::size_t locked_;

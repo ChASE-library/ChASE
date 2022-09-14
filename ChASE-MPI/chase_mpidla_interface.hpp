@@ -377,6 +377,12 @@ class ChaseMpiDLAInterface {
   virtual int cholQR(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv, T *A, std::size_t lda, std::size_t offset) = 0;
 
   virtual void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_t locked, std::size_t unconverged) = 0;
+
+  virtual void hhQR(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv) = 0;
+  virtual void hhQR_dist(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv) = 0;
+  virtual void cholQR1(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv) = 0;
+  virtual void cholQR1_dist(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv) = 0;
+
 };
 }  // namespace matrixfree
 }  // namespace chase

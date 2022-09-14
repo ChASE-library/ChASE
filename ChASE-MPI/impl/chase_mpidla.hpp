@@ -95,6 +95,11 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
 
       MPI_Type_commit(&(newType_[i]));
     }
+
+#if defined(HAS_SCALAPACK)
+    desc1D_Nxnevx_ = matrix_properties->get_desc1D_Nxnevx();    
+#endif
+
   }
   ~ChaseMpiDLA() {
     delete[] Buff_;
@@ -367,6 +372,29 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
      this->postApplication(approxV, nevex - locked_);
       dla_->gegqr(N, nevex, approxV, LDA);
 */
+
+/*	  
+#if defined(HAS_SCALAPACK)
+     T *X = new T[n_ * nevex];
+     int ggrank;
+     MPI_Comm_rank(MPI_COMM_WORLD, &ggrank);
+     for(std::size_t i = 0; i < n_ * nevex; i++){
+         X[i] = T(i * i + ggrank);
+     }
+     std::unique_ptr<T []> tau(new T[nevex]);
+     double MPIt1 = MPI_Wtime();
+     int ONE = 1;
+     t_pgeqrf(N, nevex, X, ONE, ONE, desc1D_Nxnevx_, tau.get() );
+     t_pgqr(N_, nevex, nevex, X, ONE, ONE, desc1D_Nxnevx_, tau.get());
+     double MPIt2 = MPI_Wtime();
+
+     if(ggrank == 0){
+         printf("SCALAPACK time %e s.\n", MPIt2 - MPIt1);
+     }
+     delete[] X;
+
+#endif	
+*/	  
       this->postApplication(approxV, nevex - locked_);
       
       int grank;
@@ -651,6 +679,69 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
 
   }
 
+  void hhQR(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv) override{
+    this->postApplication(approxV, nevex - locked_);
+    auto tau = std::unique_ptr<T[]> {
+        new T[ nevex ]
+    };
+
+    t_geqrf(LAPACK_COL_MAJOR, m_, nevex, approxV, ldv, tau.get());
+    t_gqr(LAPACK_COL_MAJOR, m_, nevex, nevex, approxV, ldv, tau.get());      
+  }
+
+  void hhQR_dist(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv) override {
+#if defined(HAS_SCALAPACK)
+    this->postApplication(approxV, nevex - locked_);
+    std::unique_ptr<T []> tau(new T[nevex]);
+    int one = 1;
+    t_pgeqrf(m_, nevex, approxV + recv_offsets_[1][row_rank_], one, one, desc1D_Nxnevx_, tau.get() );
+    t_pgqr(m_, nevex, nevex, approxV + recv_offsets_[1][row_rank_], one, one, desc1D_Nxnevx_, tau.get());
+    for (auto i = 0; i < row_size_; ++i){
+        MPI_Ibcast(approxV, nevex, newType_[i], i, row_comm_, &reqs_[i]);
+    }
+    MPI_Waitall(row_size_, reqs_.data(), MPI_STATUSES_IGNORE);
+#endif
+  }
+  
+  void cholQR1(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv) override {
+   this->postApplication(approxV, nevex - locked_);
+   auto A_ = std::unique_ptr<T[]> {
+      new T[ nevex * nevex ]
+   };
+
+   T one = T(1.0);
+   T zero = T(0.0);
+
+   int info = -1;
+
+   t_syherk('U', 'C', nevex, m_, &one, approxV, ldv, &zero, A_.get(), nevex);
+   info = t_potrf('U', nevex, A_.get(), nevex);
+   assert(info == 0);
+   t_trsm('R', 'U', 'N', 'N', m_, nevex, &one, A_.get(), nevex, approxV, ldv);
+
+  }
+  void cholQR1_dist(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv) override{
+   this->postApplication(approxV, nevex - locked_);
+   auto A_ = std::unique_ptr<T[]> {
+      new T[ nevex * nevex ]
+   };
+
+   T one = T(1.0);
+   T zero = T(0.0);
+
+   int info = -1;
+
+   dla_->syherk('U', 'C', nevex, n_, &one, approxV + recv_offsets_[1][row_rank_], m_, &zero, A_.get(), nevex);   
+   MPI_Allreduce(MPI_IN_PLACE, A_.get(), nevex * nevex, getMPI_Type<T>(), MPI_SUM, row_comm_);
+   dla_->cholQR(n_, nevex, approxV, m_, A_.get(), nevex, recv_offsets_[1][row_rank_]);  
+   
+   for (auto i = 0; i < row_size_; ++i){
+        MPI_Ibcast(approxV, nevex, newType_[i], i, row_comm_, &reqs_[i]);
+   }
+
+   MPI_Waitall(row_size_, reqs_.data(), MPI_STATUSES_IGNORE);
+   
+  }
  private:
   enum NextOp { cAb, bAc };
 
@@ -695,6 +786,12 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
   std::string data_layout;
   std::unique_ptr<ChaseMpiDLAInterface<T>> dla_;
   ChaseMpiProperties<T>* matrix_properties_;
+
+#if defined(HAS_SCALAPACK)
+  std::size_t *desc1D_Nxnevx_;
+#endif  
+
+  
 };
 }  // namespace mpi
 }  // namespace chase
