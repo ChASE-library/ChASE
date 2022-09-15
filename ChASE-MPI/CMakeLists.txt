@@ -51,7 +51,7 @@ target_link_libraries( chase_seq INTERFACE
 
 if(SCALAPACK_FOUND)
   target_link_libraries( chase_seq INTERFACE
-  	SCALAPACK::SCALAPACK
+  	${SCALAPACK_LIBRARIES}
   	)
 endif()
 target_compile_options( chase_seq INTERFACE
@@ -89,7 +89,7 @@ target_compile_options( chase_mpi INTERFACE
   )
 if(SCALAPACK_FOUND)
   target_link_libraries( chase_mpi INTERFACE
-        SCALAPACK::SCALAPACK
+        ${SCALAPACK_LIBRARIES}
         )
   target_compile_definitions( chase_mpi INTERFACE 
 	  "-DHAS_SCALAPACK" 

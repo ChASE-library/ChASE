@@ -32,7 +32,7 @@ int main(int argc, char** argv)
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-  std::size_t N = 10001; //problem size
+  std::size_t N = 20002; //problem size
   std::size_t nev = 800; //number of eigenpairs to be computed
   std::size_t nex = 400; //extra searching space
   
@@ -190,7 +190,7 @@ int main(int argc, char** argv)
   config.SetDeg(20);
   /*Optimi(S)e degree*/
   config.SetOpt(true);
-  config.SetMaxIter(25);
+  config.SetMaxIter(2);
 
   if (rank == 0)
     std::cout << "Solving a symmetrized Clement matrices (" << N

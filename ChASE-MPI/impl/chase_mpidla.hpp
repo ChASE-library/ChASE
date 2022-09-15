@@ -215,6 +215,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
       lens = c_lens_;
       offs_l = c_offs_l_; 
       nbblocks = nblocks_;      
+
     }
 
     int gsize, rank;
@@ -372,34 +373,9 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
      this->postApplication(approxV, nevex - locked_);
       dla_->gegqr(N, nevex, approxV, LDA);
 */
-
-/*	  
-#if defined(HAS_SCALAPACK)
-     T *X = new T[n_ * nevex];
-     int ggrank;
-     MPI_Comm_rank(MPI_COMM_WORLD, &ggrank);
-     for(std::size_t i = 0; i < n_ * nevex; i++){
-         X[i] = T(i * i + ggrank);
-     }
-     std::unique_ptr<T []> tau(new T[nevex]);
-     double MPIt1 = MPI_Wtime();
-     int ONE = 1;
-     t_pgeqrf(N, nevex, X, ONE, ONE, desc1D_Nxnevx_, tau.get() );
-     t_pgqr(N_, nevex, nevex, X, ONE, ONE, desc1D_Nxnevx_, tau.get());
-     double MPIt2 = MPI_Wtime();
-
-     if(ggrank == 0){
-         printf("SCALAPACK time %e s.\n", MPIt2 - MPIt1);
-     }
-     delete[] X;
-
-#endif	
-*/	  
-      this->postApplication(approxV, nevex - locked_);
-      
       int grank;
-      MPI_Comm_rank(MPI_COMM_WORLD, &grank); 
-
+      MPI_Comm_rank(MPI_COMM_WORLD, &grank);	  
+      this->postApplication(approxV, nevex - locked_);
       auto A_ = std::unique_ptr<T[]> {
         new T[ nevex * nevex ]
       };
@@ -680,31 +656,60 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
   }
 
   void hhQR(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv) override{
+    int grank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &grank);
+   double t1 = MPI_Wtime();
+
     this->postApplication(approxV, nevex - locked_);
+     double t2 = MPI_Wtime();
     auto tau = std::unique_ptr<T[]> {
         new T[ nevex ]
     };
 
     t_geqrf(LAPACK_COL_MAJOR, m_, nevex, approxV, ldv, tau.get());
     t_gqr(LAPACK_COL_MAJOR, m_, nevex, nevex, approxV, ldv, tau.get());      
+    double t3 = MPI_Wtime();
+    if(grank == 0) std::cout << " LAPACK QR time: " << t3 - t2 << ", postApplication time: " << t2 - t1 << std::endl;
+
   }
 
   void hhQR_dist(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv) override {
 #if defined(HAS_SCALAPACK)
-    this->postApplication(approxV, nevex - locked_);
+    int grank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &grank);
+   if(grank == 0) std::cout << "hh locked: " << locked_ << std::endl;    
+    double t1 = MPI_Wtime();
     std::unique_ptr<T []> tau(new T[nevex]);
     int one = 1;
+    t_pgeqrf(m_, nevex, B_, one, one, desc1D_Nxnevx_, tau.get() );
+    t_pgqr(m_, nevex, nevex, B_, one, one, desc1D_Nxnevx_, tau.get());
+    double t2 = MPI_Wtime();
+    this->postApplication(approxV, nevex);
+    double t3 = MPI_Wtime();
+
+    if(grank == 0) std::cout << " SCALAPACK QR time: " << t2 - t1 << ", Ibcast time: " << t3 - t2 << std::endl;
+
+/*    
     t_pgeqrf(m_, nevex, approxV + recv_offsets_[1][row_rank_], one, one, desc1D_Nxnevx_, tau.get() );
     t_pgqr(m_, nevex, nevex, approxV + recv_offsets_[1][row_rank_], one, one, desc1D_Nxnevx_, tau.get());
+    double t2 = MPI_Wtime();    
     for (auto i = 0; i < row_size_; ++i){
         MPI_Ibcast(approxV, nevex, newType_[i], i, row_comm_, &reqs_[i]);
     }
     MPI_Waitall(row_size_, reqs_.data(), MPI_STATUSES_IGNORE);
+    double t3 = MPI_Wtime();
+
+    if(grank == 0) std::cout << "PostApplication time: " << t1 - t0 << "SCALAPACK QR time: " << t2 - t1 << ", Ibcast time: " << t3 - t2 << std::endl;
+*/
 #endif
   }
   
   void cholQR1(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv) override {
+    int grank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &grank);
+   double t1 = MPI_Wtime();
    this->postApplication(approxV, nevex - locked_);
+   double t2 = MPI_Wtime();
    auto A_ = std::unique_ptr<T[]> {
       new T[ nevex * nevex ]
    };
@@ -718,29 +723,53 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
    info = t_potrf('U', nevex, A_.get(), nevex);
    assert(info == 0);
    t_trsm('R', 'U', 'N', 'N', m_, nevex, &one, A_.get(), nevex, approxV, ldv);
+   double t3 = MPI_Wtime();
+   if(grank == 0) std::cout << " CholQR time: " << t3 - t2 << ", postApplication time: " << t2 - t1 << std::endl;
 
   }
   void cholQR1_dist(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv) override{
-   this->postApplication(approxV, nevex - locked_);
+//   this->postApplication(approxV, nevex - locked_);
+
+   int grank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &grank);
    auto A_ = std::unique_ptr<T[]> {
       new T[ nevex * nevex ]
    };
 
+   if(grank == 0) std::cout << "chol locked: " << locked_ << std::endl;
    T one = T(1.0);
    T zero = T(0.0);
 
    int info = -1;
+   
+   double t1 = MPI_Wtime();
 
+   dla_->syherk('U', 'C', nevex, n_, &one, B_, n_, &zero, A_.get(), nevex);
+   MPI_Allreduce(MPI_IN_PLACE, A_.get(), nevex * nevex, getMPI_Type<T>(), MPI_SUM, row_comm_);
+   info = t_potrf('U', nevex, A_.get(), nevex);
+   assert(info == 0);
+   t_trsm('R', 'U', 'N', 'N', n_, nevex, &one, A_.get(), nevex, B_, n_);
+
+   double t2 = MPI_Wtime();
+   this->postApplication(approxV, nevex);
+   double t3 = MPI_Wtime();
+   if(grank == 0) std::cout <<  " CholQR1 time: " << t2 - t1 << ", Ibcast time: " << t3 - t2 << std::endl;
+
+/*
    dla_->syherk('U', 'C', nevex, n_, &one, approxV + recv_offsets_[1][row_rank_], m_, &zero, A_.get(), nevex);   
    MPI_Allreduce(MPI_IN_PLACE, A_.get(), nevex * nevex, getMPI_Type<T>(), MPI_SUM, row_comm_);
    dla_->cholQR(n_, nevex, approxV, m_, A_.get(), nevex, recv_offsets_[1][row_rank_]);  
    
+   double t2 = MPI_Wtime();
+
    for (auto i = 0; i < row_size_; ++i){
         MPI_Ibcast(approxV, nevex, newType_[i], i, row_comm_, &reqs_[i]);
    }
 
    MPI_Waitall(row_size_, reqs_.data(), MPI_STATUSES_IGNORE);
-   
+   double t3 = MPI_Wtime();
+   if(grank == 0) std::cout << " CholQR1 time: " << t2 - t1 << ", Ibcast time: " << t3 - t2 << std::endl;
+*/
   }
  private:
   enum NextOp { cAb, bAc };

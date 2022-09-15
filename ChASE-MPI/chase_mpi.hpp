@@ -279,7 +279,7 @@ class ChaseMpi : public chase::Chase<T> {
   //! After the explicit construction of Q, its first `fixednev` number of vectors are overwritten by the converged eigenvectors stored in `workspace_`.
   //! @param fixednev: total number of converged eigenpairs before this time QR factorization.  
   void stabQR(std::size_t fixednev) override{
-    dla_->postApplication(approxV_, nev_ + nex_ - locked_);
+    //dla_->postApplication(approxV_, nev_ + nex_ - locked_);
 
     std::size_t nevex = nev_ + nex_;
     // we don't need this, as we copy to workspace when locking
@@ -294,8 +294,8 @@ class ChaseMpi : public chase::Chase<T> {
     t_gqr(LAPACK_COL_MAJOR, N_, nevex, nevex, approxV_, N_, tau.get());
 */
 
-    dla_->hhQR_dist(N_, nevex, approxV_, N_);
-    //dla_->hhQR(N_, nevex, approxV_, N_);
+    //dla_->hhQR_dist(N_, nevex, approxV_, N_);
+    dla_->hhQR(N_, nevex, approxV_, N_);
     std::memcpy(approxV_, workspace_, N_ * fixednev * sizeof(T));
   }
   //! This member function implements the virtual one declared in Chase class.
@@ -304,8 +304,8 @@ class ChaseMpi : public chase::Chase<T> {
   //! @param fixednev: total number of converged eigenpairs before this time QR factorization.  
   void fastQR(std::size_t fixednev) override{
     std::size_t nevex = nev_ + nex_;
-    dla_->cholQR1_dist(N_, nevex, approxV_, N_);
-    //dla_->cholQR1(N_, nevex, approxV_, N_);
+    //dla_->cholQR1_dist(N_, nevex, approxV_, N_);
+    dla_->cholQR1(N_, nevex, approxV_, N_);
     std::memcpy(approxV_, workspace_, N_ * fixednev * sizeof(T));    
   }
 

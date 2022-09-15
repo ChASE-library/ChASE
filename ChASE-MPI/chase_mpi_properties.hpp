@@ -361,7 +361,7 @@ class ChaseMpiProperties {
     
        int info;
        std::size_t nevex_ = nev_ + nex_;
-       std::size_t bs = 64;
+       std::size_t bs = 32;
        std::size_t nx_b = std::min(bs, nevex_);
        t_descinit(desc1D_Nxnevx_, &N_, &nevex_, &nb_, &nx_b, &zero, &zero, &rcom1D_ctxt_, &n_, &info);
 
@@ -577,7 +577,7 @@ class ChaseMpiProperties {
 
     int info;
     std::size_t nevex_ = nev_ + nex_;
-    std::size_t blocksize = 64;
+    std::size_t blocksize = 32;
     std::size_t nx_b = std::min(blocksize, nevex_);
     t_descinit(desc1D_Nxnevx_, &N_, &nevex_, &n, &nx_b, &zero, &zero, &rcom1D_ctxt_, &n_, &info);
 
@@ -757,7 +757,7 @@ class ChaseMpiProperties {
 	nb_ = (N_ - n_) / (dims_[1] - 1);
     }
     std::size_t nevex_ = nev_ + nex_;
-    std::size_t blocksize = 64;
+    std::size_t blocksize = 32;
     std::size_t nx_b = std::min(blocksize, nevex_);
     t_descinit(desc1D_Nxnevx_, &N_, &nevex_, &nb_, &nx_b, &zero, &zero, &rcom1D_ctxt_, &n_, &info);
 #endif
