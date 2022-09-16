@@ -166,7 +166,14 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
 
     chase_shift_matrix(H_, n_, std::real(c), &stream_);
   }
+  void HxB(T alpha, T beta, std::size_t offset,
+                     std::size_t block)override{
 
+  }
+
+  void iAllGather_B(T *V,  T* B, std::size_t block)override{
+
+  }
   /*! - For ChaseMpiDLACudaSeq, `applyVec` is implemented with `GEMM` provided by `BLAS`.
       - **Parallelism is SUPPORT within node if multi-threading is actived**
       - For the meaning of this function, please visit ChaseMpiDLAInterface.
@@ -474,7 +481,10 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
   }
   void cholQR1_dist(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv) override {
   }
+  void Lock(T * workspace_, std::size_t new_converged) override{}
 
+  void Swap(std::size_t i, std::size_t j)override{}
+  
  private:
   std::size_t n_;
   std::size_t locked_;

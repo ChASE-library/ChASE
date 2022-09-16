@@ -96,7 +96,6 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
       if (mpi_col_rank != 0) {
          beta = Zero;
       }
-
       t_gemm<T>(CblasColMajor, CblasConjTrans, CblasNoTrans, n_,
                 static_cast<std::size_t>(block), m_, &alpha, H_, ldh_,
                 C_ + offset * m_, m_, &beta, B_ + offset * n_, n_);
@@ -107,7 +106,6 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
      if (mpi_row_rank != 0) {
          beta = Zero;
       }
-
       t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, m_,
              static_cast<std::size_t>(block), n_, &alpha, H_, ldh_,
              B_ + offset * n_, n_, &beta, C_ + offset * m_, m_);
@@ -154,6 +152,24 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
             }
         }
     }
+
+  }
+
+  void HxB(T alpha, T beta, std::size_t offset, std::size_t block)override{
+
+      T Zero = T(0.0);
+
+     if (mpi_row_rank != 0) {
+         beta = Zero;
+      }
+
+      t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, m_,
+             static_cast<std::size_t>(block), n_, &alpha, H_, ldh_,
+             B_ + offset * n_, n_, &beta, C_ + offset * m_, m_);
+
+  }
+
+  void iAllGather_B(T *V,  T* B, std::size_t block)override{
 
   }
 
@@ -449,6 +465,10 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
   
   void cholQR1_dist(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv) override {
   }
+
+  void Lock(T * workspace_,  std::size_t new_converged) override{}
+
+  void Swap(std::size_t i, std::size_t j)override{}
 
  private:
   enum NextOp { cAb, bAc };

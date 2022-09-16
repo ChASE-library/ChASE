@@ -320,18 +320,6 @@ class ChaseMpi : public chase::Chase<T> {
     T One = T(1.0);
     T Zero = T(0.0);
 
-    dla_->preApplication(approxV_, locked_, block);
-    dla_->apply(One, Zero, 0, block);
-    dla_->postApplication(workspace_, block);
-
-    // W <- H*V
-    // t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans,  //
-    //        N_, block, N_,                              //
-    //        &One,                                       //
-    //        H_, N_,                                     //
-    //        approxV_ + locked_ * N_, N_,                //
-    //        &Zero,                                      //
-    //        workspace_ + locked_ * N_, N_);
 
     dla_->RR_kernel(N_, block, approxV_, locked_, workspace_, One, Zero, ritzv);
 
@@ -353,29 +341,6 @@ class ChaseMpi : public chase::Chase<T> {
     T beta = T(0.0);
     std::size_t unconverged = (nev_ + nex_) - fixednev;
 
-    dla_->preApplication(approxV_, locked_, unconverged);
-    dla_->apply(alpha, beta, 0, unconverged);
-    dla_->postApplication(workspace_, unconverged);
-
-    // t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans,  //
-    //        N_, unconverged, N_,                        //
-    //        &alpha,                                     //
-    //        H_, N_,                                     //
-    //        approxV_ + locked_ * N_, N_,                //
-    //        &beta,                                      //
-    //        workspace_ + locked_ * N_, N_);
- /*   for (std::size_t i = 0; i < unconverged; ++i) {
-      beta = T(-ritzv[i]);
-      dla_->axpy(                                      //
-          N_,                                      //
-          &beta,                                   //
-          (approxV_ + locked_ * N_) + N_ * i, 1,   //
-          (workspace_ + locked_ * N_) + N_ * i, 1  //
-      );
-
-      resid[i] = dla_->nrm2(N_, (workspace_ + locked_ * N_) + N_ * i, 1);
-    }
-*/
     dla_ -> Resd(approxV_, workspace_,ritzv, resid, locked_, unconverged);
   };
 
@@ -383,15 +348,16 @@ class ChaseMpi : public chase::Chase<T> {
   //! It swaps the two matrices of vectors used in the Chebyschev filter
   //! @param i&j: the column indexing `i` and `j` are swapped in both rectangular matrices `approxV_` and `workspace_`.
   void Swap(std::size_t i, std::size_t j) override {
+    dla_->Swap(i, j);
+
     T *ztmp = new T[N_];
-    memcpy(ztmp, approxV_ + N_ * i, N_ * sizeof(T));
-    memcpy(approxV_ + N_ * i, approxV_ + N_ * j, N_ * sizeof(T));
-    memcpy(approxV_ + N_ * j, ztmp, N_ * sizeof(T));
 
     memcpy(ztmp, workspace_ + N_ * i, N_ * sizeof(T));
     memcpy(workspace_ + N_ * i, workspace_ + N_ * j, N_ * sizeof(T));
     memcpy(workspace_ + N_ * j, ztmp, N_ * sizeof(T));
+    
     delete[] ztmp;
+
   };
 
   //! This member function implements the virtual one declared in Chase class.
@@ -584,23 +550,12 @@ class ChaseMpi : public chase::Chase<T> {
   //! It locks the `new_converged` eigenvectors, which makes `locked_ += new_converged`.
   //! @param new_converged: number of newly converged eigenpairs in the present iterative step.
   void Lock(std::size_t new_converged) override {
-    std::memcpy(workspace_ + locked_ * N_, approxV_ + locked_ * N_,
-                N_ * (new_converged) * sizeof(T));
+    //std::memcpy(workspace_ + locked_ * N_, approxV_ + locked_ * N_,
+     //           N_ * (new_converged) * sizeof(T));
+    dla_->Lock(workspace_, new_converged);
     locked_ += new_converged;
   };
-  /*
-  double compare(T *V_) {
-    double norm = 0;
-    for (std::size_t i = 0; i < (nev_ + nex_) * N; ++i)
-      norm += std::abs(V_[i] - approxV[i]) * std::abs(V_[i] - approxV[i]);
-    std::cout << "norm: " << norm << "\n";
 
-    norm = 0;
-    for (std::size_t i = 0; i < (locked_)*N; ++i)
-      norm += std::abs(V_[i] - approxV[i]) * std::abs(V_[i] - approxV[i]);
-    std::cout << "norm: " << norm << "\n";
-  }
-  */
   //! This member function implements the virtual one declared in Chase class.
   //! It estimates the spectral distribution of eigenvalues.
   void LanczosDos(std::size_t idx, std::size_t m, T *ritzVc) override {

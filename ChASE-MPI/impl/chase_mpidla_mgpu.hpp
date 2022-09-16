@@ -264,6 +264,14 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
 	time_copy_H += stop - start;
   }
 
+  void HxB(T alpha, T beta, std::size_t offset,
+                     std::size_t block)override{
+
+  }
+
+  void iAllGather_B(T *V,  T* B, std::size_t block)override{
+
+  }
   /*!
     - For ChaseMpiDLAMultiGPU,  `applyVec` is implemented in ChaseMpiDLA.
     - **Parallelism on distributed-memory system SUPPORT**
@@ -474,6 +482,11 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
   }
   void cholQR1_dist(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv)override{
   }
+
+  void Lock(T * workspace_, std::size_t new_converged) override{}
+
+  void Swap(std::size_t i, std::size_t j)override{}
+  
 
  private:
   enum NextOp { cAb, bAc };
