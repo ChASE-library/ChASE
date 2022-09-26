@@ -272,6 +272,12 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
   void iAllGather_B(T *V,  T* B, std::size_t block)override{
 
   }
+
+  void asynCxHGatherC(T *V, std::size_t block) override {
+    
+  }
+
+  
   /*!
     - For ChaseMpiDLAMultiGPU,  `applyVec` is implemented in ChaseMpiDLA.
     - **Parallelism on distributed-memory system SUPPORT**

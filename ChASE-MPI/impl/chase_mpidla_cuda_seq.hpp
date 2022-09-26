@@ -174,6 +174,12 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
   void iAllGather_B(T *V,  T* B, std::size_t block)override{
 
   }
+
+  void asynCxHGatherC(T *V, std::size_t block) override {
+    
+  }
+
+  
   /*! - For ChaseMpiDLACudaSeq, `applyVec` is implemented with `GEMM` provided by `BLAS`.
       - **Parallelism is SUPPORT within node if multi-threading is actived**
       - For the meaning of this function, please visit ChaseMpiDLAInterface.

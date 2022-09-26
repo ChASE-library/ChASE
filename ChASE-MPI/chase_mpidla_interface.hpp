@@ -133,6 +133,8 @@ class ChaseMpiDLAInterface {
 
   virtual void iAllGather_B(T *V, T* B, std::size_t block) = 0;
 
+  virtual void asynCxHGatherC(T *V, std::size_t block) = 0;
+
   virtual void Lock(T * workspace_, std::size_t new_converged) = 0;
   virtual void Swap(std::size_t i, std::size_t j) = 0;
 

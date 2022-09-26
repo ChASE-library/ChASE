@@ -228,10 +228,10 @@ class ChaseMpi : public chase::Chase<T> {
   //! For the construction of ChaseMpi with MPI, this function is naturally in parallel across the MPI nodes, since the shift operation only takes places on selected local matrices which stores in a distributed manner. 
   //! @param c: the shift value on the diagonal of matrix `A`.
   void Shift(T c, bool isunshift = false) override {
-    if (!isunshift) {
+ /*   if (!isunshift) {
       dla_->preApplication(approxV_, locked_, nev_ + nex_ - locked_);
     }
-
+*/
     dla_->shiftMatrix(c, isunshift);
   };
 
@@ -442,6 +442,9 @@ class ChaseMpi : public chase::Chase<T> {
     *upperb = std::max(std::abs(ritzv[0]), std::abs(ritzv[m - 1])) +
               std::abs(real_beta);
 
+
+    dla_->preApplication(approxV_, locked_, nev_ + nex_ - locked_);
+
     delete[] ritzv;
     delete[] isuppz;
     delete[] d;
@@ -541,6 +544,7 @@ class ChaseMpi : public chase::Chase<T> {
       // std::cout << Tau[k] << "\n";
     }
 
+    dla_->preApplication(approxV_, locked_, nev_ + nex_ - locked_);
     delete[] isuppz;
     delete[] d;
     delete[] e;

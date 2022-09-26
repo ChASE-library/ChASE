@@ -291,6 +291,7 @@ class ChaseMpiProperties {
 
        B_.reset(new T[n_ * max_block_]());
        C_.reset(new T[m_ * max_block_]());
+       C2_.reset(new T[m_ * max_block_]());
 
        //for MPI communication
        block_counts_.resize(2);
@@ -514,6 +515,7 @@ class ChaseMpiProperties {
         }
         B_.reset(new T[n_ * max_block_]());
     	C_.reset(new T[m_ * max_block_]());
+        C2_.reset(new T[m_ * max_block_]());
 
     	block_counts_.resize(2);
     	for (std::size_t dim_idx = 0; dim_idx < 2; dim_idx++) {
@@ -696,6 +698,7 @@ class ChaseMpiProperties {
     }
     B_.reset(new T[n_ * max_block_]());
     C_.reset(new T[m_ * max_block_]());
+    C2_.reset(new T[m_ * max_block_]());
 
     block_counts_.resize(2);
     for (std::size_t dim_idx = 0; dim_idx < 2; dim_idx++) {
@@ -993,6 +996,8 @@ class ChaseMpiProperties {
     \return `C_`: the pointer to store local part of W for the MPI communication.
   */   
   T* get_C() { return C_.get(); }
+
+  T* get_C2() { return C2_.get(); }
 
   /*! 
     \return `block_counts_`: 2D array which stores the block number of local matrix on each MPI node in each dimension.
@@ -1295,6 +1300,8 @@ class ChaseMpiProperties {
       size `m_ * max_block_`.
    */   
   std::unique_ptr<T[]> C_;
+
+  std::unique_ptr<T[]> C2_;  
 
   //! The row communicator of the constructed 2D grid of MPI codes.
   /*!

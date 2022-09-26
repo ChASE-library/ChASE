@@ -30,7 +30,8 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
     n_ = matrix_properties->get_n();
     m_ = matrix_properties->get_m();
     N_ = matrix_properties->get_N();
-
+    nev_ = matrix_properties->GetNev();
+    nex_ = matrix_properties->GetNex();
     H_ = matrices.get_H();
     ldh_ = matrices.get_ldh();
     if(H_ == nullptr){
@@ -40,6 +41,7 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
 
     B_ = matrix_properties->get_B();
     C_ = matrix_properties->get_C();
+    C2_ = matrix_properties->get_C2();
 
     off_ = matrix_properties->get_off();
 
@@ -172,6 +174,18 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
   void iAllGather_B(T *V,  T* B, std::size_t block)override{
 
   }
+
+  void asynCxHGatherC(T *V, std::size_t block) override {
+    T alpha = T(1.0);
+    T beta = T(0.0); 
+    std::size_t locked = nev_ + nex_ - block;
+
+    t_gemm<T>(CblasColMajor, CblasConjTrans, CblasNoTrans, n_,
+                static_cast<std::size_t>(block), m_, &alpha, H_, ldh_,
+                C_ + locked * m_, m_, &beta, B_ + locked * n_, n_);
+
+  }
+
 
   /*!
     - For ChaseMpiDLABlaslapack,  `applyVec` is implemented in ChaseMpiDLA.
@@ -326,31 +340,29 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
       - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */  
   void RR_kernel(std::size_t N, std::size_t block, T *approxV, std::size_t locked, T *workspace, T One, T Zero, Base<T> *ritzv) override {
-      T *A = new T[block * block];
 
-      // A <- W' * V
-      t_gemm(CblasColMajor, CblasConjTrans, CblasNoTrans,  
-             block, block, N,                             
-             &One,                                        
-             approxV + locked * N, N,                  
-             workspace + locked * N, N,               
-             &Zero,                                        
-             A, block                                      
+      auto A_ = std::unique_ptr<T[]> {
+        new T[ block * block ]
+      };
+
+      t_gemm<T>(CblasColMajor, CblasConjTrans, CblasNoTrans, N_,
+                static_cast<std::size_t>(block), N_, &One, H_, N_,
+                C_ + locked * N_, N_, &Zero, B_ + locked * N_, N_);
+
+      t_gemm<T>(CblasColMajor, CblasConjTrans, CblasNoTrans, block,
+                block, N_, &One, approxV + locked * N_, N_,
+                B_ + locked * N_, N_, &Zero, A_.get(), block);
+      
+      t_heevd(LAPACK_COL_MAJOR, 'V', 'L', block, A_.get(), block, ritzv);
+
+      t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans,
+           N_, block, block,
+           &One,
+           C2_+ locked * N_, N_,
+           A_.get(), block,
+           &Zero,
+           C_+ locked * N_, N_
       );
-
-      t_heevd(LAPACK_COL_MAJOR, 'V', 'L', block, A, block, ritzv);
-
-      t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans,  
-           N, block, block,                           
-           &One,                                       
-           approxV + locked * N, N,                
-           A, block,                                   
-           &Zero,                                      
-           workspace + locked * N, N              
-      );
-
-      delete[] A;    
-
   }
 
   void LanczosDos(std::size_t N_, std::size_t idx, std::size_t m, T *workspace_, std::size_t ldw, T *ritzVc, std::size_t ldr, T* approxV_, std::size_t ldv) override{
@@ -371,7 +383,54 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
       t_trsm(side, uplo, trans, diag, m, n, alpha, a, lda, b, ldb);
   }
 
-  void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_t locked, std::size_t unconverged) override{}
+  void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_t locked, std::size_t unconverged) override{
+      T one = T(1.0);
+      T neg_one = T(-1.0);
+      T beta = T(0.0);
+
+      t_gemm<T>(CblasColMajor, CblasConjTrans, CblasNoTrans, N_,
+                unconverged, N_, &one, H_, N_,
+                C_ + locked * N_, N_, &beta, B_ + locked * N_, N_);
+
+      auto ptr = std::unique_ptr<T[]> {
+        new T[ unconverged * unconverged ]
+      };
+
+      auto norm = std::unique_ptr<Base<T>[]> {
+        new Base<T>[ unconverged ]
+      };
+
+      for(std::size_t i = 0; i < unconverged; i++){
+        for(std::size_t j = 0; j < unconverged; j++){
+          if(i == j){
+            ptr[i * unconverged + j] = ritzv[i];
+          }
+          else{
+            ptr[i * unconverged + j] = T(0.0);
+          }
+        }
+      }
+
+
+      t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, N_, unconverged, unconverged, &one, 
+                    approxV_ + locked * N_, N_, //
+                    ptr.get(), unconverged, &neg_one, 
+                    B_ + locked * N_, N_);
+
+      for (std::size_t i = 0; i < unconverged; ++i) {
+        norm[i] = 0.0;
+        for(std::size_t j = 0; j < N_; j++){
+          norm[i] += t_sqrt_norm(B_[locked * N_ + i * N_ + j]);
+        }
+      }
+
+
+      std::memcpy(resid, norm.get(), unconverged * sizeof(Base<T>));
+
+      for (std::size_t i = 0; i < unconverged; ++i) {
+        resid[i] = std::sqrt(resid[i]); 
+      }
+  }
 
   void heevd(int matrix_layout, char jobz, char uplo, std::size_t n,
                     T* a, std::size_t lda, Base<T>* w) override {
@@ -482,6 +541,7 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
   T* H_;
   T* B_;
   T* C_;
+  T* C2_;
 
   std::size_t* off_;
   std::size_t *r_offs_;
@@ -494,7 +554,8 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
   std::size_t mb_;
   std::size_t nblocks_;
   std::size_t mblocks_;
-
+  std::size_t nev_;
+  std::size_t nex_;
   int mpi_row_rank;
   int mpi_col_rank;
 
