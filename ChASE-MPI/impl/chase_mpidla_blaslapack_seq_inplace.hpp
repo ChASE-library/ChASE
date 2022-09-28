@@ -58,8 +58,8 @@ class ChaseMpiDLABlaslapackSeqInplace : public ChaseMpiDLAInterface<T> {
       - **Parallelism is SUPPORT within node if multi-threading is actived**
       - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
-  void apply(T const alpha, T const beta, std::size_t const offset,
-             std::size_t const block) override {
+  void apply(T alpha, T beta, std::size_t offset, std::size_t block,  std::size_t locked) override {
+
     assert(V2_ != V1_);
     t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans,  //
            N_, block, N_,                              //
@@ -75,7 +75,7 @@ class ChaseMpiDLABlaslapackSeqInplace : public ChaseMpiDLAInterface<T> {
   /*! - For ChaseMpiDLABlaslapackSeqInplace, `postApplication` doesn't require explicit implementation here.
       - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
-  bool postApplication(T* V, std::size_t block) override {
+  bool postApplication(T* V, std::size_t block, std::size_t locked) override {
     // this is somewhat a hack, but causes the approxV in the next
     // preApplication to be the same pointer content as V1_
     // std::swap(V1_, V2_);
@@ -366,13 +366,13 @@ class ChaseMpiDLABlaslapackSeqInplace : public ChaseMpiDLAInterface<T> {
 
   }
 
-  void hhQR_dist(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv) override {
+  void hhQR_dist(std::size_t m_, std::size_t nevex,std::size_t locked, T *approxV, std::size_t ldv) override {
  
   }
  
   void cholQR1(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv) override{
   }
-  void cholQR1_dist(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv) override {
+  void cholQR1_dist(std::size_t N, std::size_t nevex, std::size_t locked, T *approxV, std::size_t ldv) override{
   }
   void Lock(T * workspace_, std::size_t new_converged) override{}
 

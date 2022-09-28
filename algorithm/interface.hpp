@@ -32,6 +32,7 @@ class Chase {
   virtual void Lock(std::size_t new_converged) = 0;
   virtual void Start() = 0;
   virtual void End() = 0;
+  virtual void initVecs() = 0;
 
   virtual std::size_t GetN() const = 0;
   virtual std::size_t GetNev() = 0;

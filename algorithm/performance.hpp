@@ -305,6 +305,10 @@ class PerformanceDecoratorChase : public chase::Chase<T> {
  public:
   PerformanceDecoratorChase(Chase<T> *chase) : chase_(chase), perf_() {}
 
+  void initVecs(){
+    chase_->initVecs();
+  }
+
   void Shift(T c, bool isunshift = false) {
     if (isunshift)
       perf_.end_clock(ChasePerfData::TimePtrs::Filter);

@@ -234,6 +234,10 @@ class ChaseMpi : public chase::Chase<T> {
 */
     dla_->shiftMatrix(c, isunshift);
   };
+  
+  void initVecs() override{
+    dla_->preApplication(approxV_, 0, nev_ + nex_);
+  }
 
   // todo this is wrong we want the END of V
   void Cpy(std::size_t new_converged){
@@ -253,8 +257,8 @@ class ChaseMpi : public chase::Chase<T> {
       @param offset: the offset of column number which the `HEMM` starts from.
   */
   void HEMM(std::size_t block, T alpha, T beta, std::size_t offset) override {
-    dla_->apply(alpha, beta, offset, block);
-    std::swap(approxV_, workspace_);
+    dla_->apply(alpha, beta, offset, block, locked_);
+//    std::swap(approxV_, workspace_);
   };
 
   void Hv(T alpha);
@@ -293,10 +297,10 @@ class ChaseMpi : public chase::Chase<T> {
     t_geqrf(LAPACK_COL_MAJOR, N_, nevex, approxV_, N_, tau.get());
     t_gqr(LAPACK_COL_MAJOR, N_, nevex, nevex, approxV_, N_, tau.get());
 */
-    dla_->cholQR1_dist(N_, nevex, approxV_, N_);
-    //dla_->hhQR_dist(N_, nevex, approxV_, N_);
+    //dla_->cholQR1_dist(N_, nevex, approxV_, N_);
+    dla_->hhQR_dist(N_, nevex, locked_, approxV_, N_);
     //dla_->hhQR(N_, nevex, approxV_, N_);
-    std::memcpy(approxV_, workspace_, N_ * fixednev * sizeof(T));
+    //std::memcpy(approxV_, workspace_, N_ * fixednev * sizeof(T));
   }
   //! This member function implements the virtual one declared in Chase class.
   //! This member function performs a QR factorization with an explicit construction of the unitary matrix `Q`.
@@ -304,9 +308,9 @@ class ChaseMpi : public chase::Chase<T> {
   //! @param fixednev: total number of converged eigenpairs before this time QR factorization.  
   void fastQR(std::size_t fixednev) override{
     std::size_t nevex = nev_ + nex_;
-    dla_->cholQR1_dist(N_, nevex, approxV_, N_);
+    dla_->cholQR1_dist(N_, nevex, locked_, approxV_, N_);
     //dla_->cholQR1(N_, nevex, approxV_, N_);
-    std::memcpy(approxV_, workspace_, N_ * fixednev * sizeof(T));    
+    //std::memcpy(approxV_, workspace_, N_ * fixednev * sizeof(T));    
   }
 
   //! This member function implements the virtual one declared in Chase class.
@@ -323,7 +327,7 @@ class ChaseMpi : public chase::Chase<T> {
 
     dla_->RR_kernel(N_, block, approxV_, locked_, workspace_, One, Zero, ritzv);
 
-    std::swap(approxV_, workspace_);
+    //std::swap(approxV_, workspace_);
 
     // we can swap, since the locked part were copied over as part of the QR
 
@@ -349,15 +353,6 @@ class ChaseMpi : public chase::Chase<T> {
   //! @param i&j: the column indexing `i` and `j` are swapped in both rectangular matrices `approxV_` and `workspace_`.
   void Swap(std::size_t i, std::size_t j) override {
     dla_->Swap(i, j);
-
-    T *ztmp = new T[N_];
-
-    memcpy(ztmp, workspace_ + N_ * i, N_ * sizeof(T));
-    memcpy(workspace_ + N_ * i, workspace_ + N_ * j, N_ * sizeof(T));
-    memcpy(workspace_ + N_ * j, ztmp, N_ * sizeof(T));
-    
-    delete[] ztmp;
-
   };
 
   //! This member function implements the virtual one declared in Chase class.
@@ -443,7 +438,7 @@ class ChaseMpi : public chase::Chase<T> {
               std::abs(real_beta);
 
 
-    dla_->preApplication(approxV_, locked_, nev_ + nex_ - locked_);
+    //dla_->preApplication(approxV_, 0, nev_ + nex_);
 
     delete[] ritzv;
     delete[] isuppz;
@@ -544,7 +539,6 @@ class ChaseMpi : public chase::Chase<T> {
       // std::cout << Tau[k] << "\n";
     }
 
-    dla_->preApplication(approxV_, locked_, nev_ + nex_ - locked_);
     delete[] isuppz;
     delete[] d;
     delete[] e;
@@ -556,7 +550,7 @@ class ChaseMpi : public chase::Chase<T> {
   void Lock(std::size_t new_converged) override {
     //std::memcpy(workspace_ + locked_ * N_, approxV_ + locked_ * N_,
      //           N_ * (new_converged) * sizeof(T));
-    dla_->Lock(workspace_, new_converged);
+    //dla_->Lock(workspace_, new_converged);
     locked_ += new_converged;
   };
 
@@ -567,6 +561,8 @@ class ChaseMpi : public chase::Chase<T> {
     T beta = T(0.0);
 
     dla_->LanczosDos(N_, idx, m, workspace_, N_, ritzVc, m, approxV_, N_);
+    //dla_->preApplication(approxV_, 0, nev_ + nex_);
+
   }
 
   //! This function return the residual of computed eigenpairs.
@@ -592,8 +588,8 @@ class ChaseMpi : public chase::Chase<T> {
     }
 
     dla_->preApplication(approxV_, workspace_, 0, nev_);
-    dla_->apply(one, one, 0, nev_);
-    dla_->postApplication(workspace_, nev_);
+    dla_->apply(one, one, 0, nev_, 0);
+    dla_->postApplication(workspace_, nev_, 0);
 
     // t_hemm(CblasColMajor, CblasLeft, CblasLower,  //
     //        N_, nev_,                              //

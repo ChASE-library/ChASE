@@ -32,9 +32,9 @@ int main(int argc, char** argv)
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-  std::size_t N = 100; //problem size
-  std::size_t nev = 10; //number of eigenpairs to be computed
-  std::size_t nex = 5; //extra searching space
+  std::size_t N = 1001; //problem size
+  std::size_t nev = 100; //number of eigenpairs to be computed
+  std::size_t nex = 20; //extra searching space
   
   int dims[2];
   dims[0] = dims[1] = 0;

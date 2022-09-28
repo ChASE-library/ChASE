@@ -119,7 +119,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
 
     for (auto j = 0; j < block; j++){
    	for(auto i = 0; i < mblocks_; i++){
-	    std::memcpy(C_ + j * m_ + r_offs_l_[i], V + j * N_ + locked * N_ + r_offs_[i], r_lens_[i] * sizeof(T));
+	    std::memcpy(C_ + locked * m_ +j * m_ + r_offs_l_[i], V + j * N_ + locked * N_ + r_offs_[i], r_lens_[i] * sizeof(T));
 	} 
     }
 
@@ -133,7 +133,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
   void preApplication(T* V1, T* V2, std::size_t locked, std::size_t block) override {
     for (auto j = 0; j < block; j++) {
 	for(auto i = 0; i < nblocks_; i++){
-            std::memcpy(B_ + j * n_ + c_offs_l_[i], V2 + j * N_ + locked * N_ + c_offs_[i], c_lens_[i] * sizeof(T));	    
+            std::memcpy(B_ + locked * n_ + j * n_ + c_offs_l_[i], V2 + j * N_ + locked * N_ + c_offs_[i], c_lens_[i] * sizeof(T));	    
 	}	
     }
 
@@ -151,7 +151,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
       - **Parallelism within each GPU for ChaseMpiDLAMultiGPU**             
       - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
-  void apply(T alpha, T beta, std::size_t offset, std::size_t block) override {
+  void apply(T alpha, T beta, std::size_t offset, std::size_t block,  std::size_t locked) override {
     T One = T(1.0);
     T Zero = T(0.0);
 
@@ -160,9 +160,9 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
 
       dim = n_ * block;
 
-      dla_->apply(alpha, beta, offset, block);
+      dla_->apply(alpha, beta, offset, block, locked);
 
-      MPI_Allreduce(MPI_IN_PLACE, B_ + offset * n_, dim, getMPI_Type<T>(),
+      MPI_Allreduce(MPI_IN_PLACE, B_ + locked * n_ + offset * n_, dim, getMPI_Type<T>(),
                     MPI_SUM, col_comm_);
 
       next_ = NextOp::cAb;
@@ -170,11 +170,10 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
 
       dim = m_ * block;
 
-      dla_->apply(alpha, beta, offset, block);
+      dla_->apply(alpha, beta, offset, block, locked);
 
-      MPI_Allreduce(MPI_IN_PLACE, C_ + offset * m_, dim, getMPI_Type<T>(),
+      MPI_Allreduce(MPI_IN_PLACE, C_ +locked * m_ + offset * m_, dim, getMPI_Type<T>(),
                     MPI_SUM, row_comm_);
-
       next_ = NextOp::bAc;
     }
   }
@@ -184,8 +183,8 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
      - **Parallelism on distributed-memory system SUPPORT**
      - For the meaning of this function, please visit ChaseMpiDLAInterface.  
   */
-  bool postApplication(T* V, std::size_t block) override {
-    dla_->postApplication(V, block);
+  bool postApplication(T* V, std::size_t block, std::size_t locked) override {
+    dla_->postApplication(V, block, locked);
 
     std::size_t N = N_;
     std::size_t dimsIdx;
@@ -202,7 +201,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
     if (next_ == NextOp::bAc) {
       subsize = m_;
       blocksize = mb_;
-      buff = C_;
+      buff = C_+locked * m_;
       comm = col_comm_;
       dimsIdx = 0;
       offs = r_offs_;
@@ -212,7 +211,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
     } else {
       subsize = n_;
       blocksize = nb_;
-      buff = B_;
+      buff = B_+locked * n_;
       comm = row_comm_;
       dimsIdx = 1;
       offs = c_offs_;
@@ -391,7 +390,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
     - For the meaning of this function, please visit ChaseMpiDLAInterface.    
   */
   void shiftMatrix(T c, bool isunshift = false) override {
-    dla_->shiftMatrix(c, isunshift);
+            dla_->shiftMatrix(c, isunshift);
   }
 
   /*!
@@ -409,10 +408,8 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
     T Zero = T(0.0);
 
     this->preApplication(B, 0, 1);
-    this->apply(One, Zero, 0, 1);
-    this->postApplication(C, 1);
-
-    // gemm_->applyVec(B, C);
+    this->apply(One, Zero, 0, 1, 0);
+    this->postApplication(C, 1, 0);
   }
 
   void get_off(std::size_t* xoff, std::size_t* yoff, std::size_t* xlen,
@@ -573,15 +570,17 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
 
 
 void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_t locked, std::size_t unconverged) override{
+      
       std::memcpy(approxV_+locked*N_, C2_+locked*N_, N_ * unconverged * sizeof(T));
+
       dla_->Resd(approxV_, workspace_, ritzv, resid, locked, unconverged);
   }
 
 
   void LanczosDos(std::size_t N_, std::size_t idx, std::size_t m, T *workspace_, std::size_t ldw, T *ritzVc, std::size_t ldr, T* approxV_, std::size_t ldv) override{
   	  
-    T alpha = T(1.0);
-    T beta = T(0.0);
+    T alpha = 1.0;
+    T beta = 0.0;
 
     dla_->gemm_large(CblasColMajor, CblasNoTrans, CblasNoTrans,
            n_, idx, m,
@@ -640,7 +639,7 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
     MPI_Comm_rank(MPI_COMM_WORLD, &grank);
    double t1 = MPI_Wtime();
 
-    this->postApplication(approxV, nevex - locked_);
+    this->postApplication(approxV, nevex - locked_, locked_);
      double t2 = MPI_Wtime();
     auto tau = std::unique_ptr<T[]> {
         new T[ nevex ]
@@ -653,8 +652,8 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
 
   }
 
-  void hhQR_dist(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv) override {
-#if defined(HAS_SCALAPACK)
+  void hhQR_dist(std::size_t m_, std::size_t nevex,std::size_t locked, T *approxV, std::size_t ldv) override {
+/*#if defined(HAS_SCALAPACK)
     int grank;
     MPI_Comm_rank(MPI_COMM_WORLD, &grank);
    if(grank == 0) std::cout << "hh locked: " << locked_ << std::endl;    
@@ -668,13 +667,27 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
     if(grank == 0) std::cout << " SCALAPACK QR time: " << t2 - t1 << std::endl;
 
 #endif
+*/ 
+
+    auto tau = std::unique_ptr<T[]> {
+        new T[ nevex ]
+    };
+
+    t_geqrf(LAPACK_COL_MAJOR, N_, nevex, C_, N_, tau.get());
+    t_gqr(LAPACK_COL_MAJOR, N_, nevex, nevex, C_, N_, tau.get());  
+
+    
+
+   std::memcpy(C_, C2_, locked_ * N_ * sizeof(T));
+   std::memcpy(C2_+locked_ * N_, C_ + locked_ * N_, (nevex - locked_) * N_ * sizeof(T));
+
   }
   
   void cholQR1(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv) override {
     int grank;
     MPI_Comm_rank(MPI_COMM_WORLD, &grank);
    double t1 = MPI_Wtime();
-   this->postApplication(approxV, nevex - locked_);
+   this->postApplication(approxV, nevex - locked_, locked_);
    double t2 = MPI_Wtime();
    auto A_ = std::unique_ptr<T[]> {
       new T[ nevex * nevex ]
@@ -693,7 +706,8 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
    if(grank == 0) std::cout << " CholQR time: " << t3 - t2 << ", postApplication time: " << t2 - t1 << std::endl;
 
   }
-  void cholQR1_dist(std::size_t N, std::size_t nevex, T *approxV, std::size_t ldv) override{
+  void cholQR1_dist(std::size_t N, std::size_t nevex, std::size_t locked, T *approxV, std::size_t ldv) override{
+
    auto A_ = std::unique_ptr<T[]> {
       new T[ nevex * nevex ]
    };
@@ -705,16 +719,16 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
    info = t_potrf('U', nevex, A_.get(), nevex);
    assert(info == 0);
    t_trsm('R', 'U', 'N', 'N', N_, nevex, &one, A_.get(), nevex, C_, N_);
-
-   std::memcpy(C_, C2_, locked_ * m_ * sizeof(T));
-   std::memcpy(C2_+locked_ * m_, C_ + locked_ * m_, (nevex - locked_) * m_ * sizeof(T));
+         
+   std::memcpy(C_, C2_, locked_ * N_ * sizeof(T));
+   std::memcpy(C2_+locked_ * N_, C_ + locked_ * N_, (nevex - locked_) * N_ * sizeof(T));
 
   }
 
   void Lock(T * workspace_, std::size_t new_converged) override{}
 
   void Swap(std::size_t i, std::size_t j)override{
-    T *tmp = new T[n_];
+    T *tmp = new T[N_];
 
     memcpy(tmp, C_ + m_ * i, m_ * sizeof(T));
     memcpy(C_ + m_ * i, C_ + m_ * j, m_ * sizeof(T));

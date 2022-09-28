@@ -89,7 +89,7 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
       - **Parallelism is SUPPORT within node if multi-threading is actived**        
       - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
-  void apply(T alpha, T beta, std::size_t offset, std::size_t block) override {
+  void apply(T alpha, T beta, std::size_t offset, std::size_t block,  std::size_t locked) override {
 
 	T Zero = T(0.0);
 
@@ -100,7 +100,7 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
       }
       t_gemm<T>(CblasColMajor, CblasConjTrans, CblasNoTrans, n_,
                 static_cast<std::size_t>(block), m_, &alpha, H_, ldh_,
-                C_ + offset * m_, m_, &beta, B_ + offset * n_, n_);
+                C_ + offset * m_ + locked * m_, m_, &beta, B_ + locked * n_ + offset * n_, n_);
       next_ = NextOp::cAb;
 
     } else {
@@ -110,7 +110,7 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
       }
       t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, m_,
              static_cast<std::size_t>(block), n_, &alpha, H_, ldh_,
-             B_ + offset * n_, n_, &beta, C_ + offset * m_, m_);
+             B_ + offset * n_ + locked * n_, n_, &beta, C_ + offset * m_ + locked * m_, m_);
       next_ = NextOp::bAc;
     }
   }
@@ -121,14 +121,14 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
      - **Parallelism on distributed-memory system SUPPORT**
      - For the meaning of this function, please visit ChaseMpiDLAInterface.  
   */
-  bool postApplication(T* V, std::size_t block) override {
-    T* buff;
+  bool postApplication(T* V, std::size_t block, std::size_t locked) override {
+ /*   T* buff;
     if (next_ == NextOp::bAc) {
       buff = C_;
     } else {
       buff = B_;
     }
-
+*/
     // std::memcpy(V + locked_ * N_, buff, N_ * block * sizeof(T));
     return false;
   }
@@ -352,7 +352,8 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
       t_gemm<T>(CblasColMajor, CblasConjTrans, CblasNoTrans, block,
                 block, N_, &One, approxV + locked * N_, N_,
                 B_ + locked * N_, N_, &Zero, A_.get(), block);
-      
+
+
       t_heevd(LAPACK_COL_MAJOR, 'V', 'L', block, A_.get(), block, ritzv);
 
       t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans,
@@ -456,46 +457,7 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
 
 
   int shiftedcholQR(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv, T *A, std::size_t lda, std::size_t offset) override {
-
-      int grank;
-      MPI_Comm_rank(MPI_COMM_WORLD, &grank);
-
-      T one = T(1.0);
-      T zero = T(0.0);
-
-      //backup of A in case Cholesky factorization failed
-      auto A2 = std::unique_ptr<T[]> {
-        new T[ nevex * nevex ]
-      };
-
-      std::memcpy(A2.get(), A, nevex * nevex * sizeof(T));
-
-      int info = -1;
-
-      info = this->potrf('U', nevex, A, lda);
-
-      if(info != 0){
- 	      //first CholeskyQR with shift: https://doi.org/10.1137/18M1218212
-        // generate shift
-        std::size_t mul = ldv * nevex + nevex * nevex + nevex;
-     	  Base<T> normV = t_lange('F', ldv, nevex, approxV, ldv);
-
-	      Base<T> s = 11.0 * static_cast<Base<T>>(mul) * std::numeric_limits<Base<T>>::epsilon() * normV;
-	      if(grank == 0){
-            std::cout << "Cholesky Factorization is failed for QR, a shift is performed: " << s << std::endl;
-        }	 
-	 //recovery of the A before Cholesky factorization
-	 std::memcpy(A, A2.get(), nevex * nevex * sizeof(T));
-	 //shift matrix A with s
-         for(std::size_t i = 0; i < nevex; i++){
-             A[i * nevex + i] = A[i * nevex + i] + s;
-         }
-	 this->potrf('U', nevex, A, lda);
-     }
-     
-     this->trsm('R', 'U', 'N', 'N', m_, nevex, &one, A, lda, approxV + offset, ldv);
-
-     return info;
+    return 0;
   }
 
   int cholQR(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv, T *A, std::size_t lda, std::size_t offset) override {
@@ -515,14 +477,14 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
 
   }
 
-  void hhQR_dist(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv) override {
+  void hhQR_dist(std::size_t m_, std::size_t nevex,std::size_t locked, T *approxV, std::size_t ldv) override {
   }
   
   void cholQR1(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv) override {
   
   }
   
-  void cholQR1_dist(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv) override {
+  void cholQR1_dist(std::size_t N, std::size_t nevex, std::size_t locked, T *approxV, std::size_t ldv) override{
   }
 
   void Lock(T * workspace_,  std::size_t new_converged) override{}

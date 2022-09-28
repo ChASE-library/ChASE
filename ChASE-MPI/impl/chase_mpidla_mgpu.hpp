@@ -154,7 +154,7 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
       - **Parallelism within each GPU SUPPORT**             
       - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
-  void apply(T alpha, T beta, std::size_t offset, std::size_t block) override  {
+  void apply(T alpha, T beta, std::size_t offset, std::size_t block,  std::size_t locked) override {
 
 	T Zero = T(0.0);
     T* buf_init;
@@ -236,7 +236,7 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
      - For ChaseMpiDLAMultiGPU,  `postApplication` is implemented for the synchronization among the GPUs bounded to a same MPI rank.
      - For the meaning of this function, please visit ChaseMpiDLAInterface.  
   */
-  bool postApplication(T* V, std::size_t block)  override {
+  bool postApplication(T* V, std::size_t block, std::size_t locked)  override {
     //cudaStreamSynchronize(stream_);
 	mgpuDLA->synchronizeAll();
 
@@ -277,7 +277,7 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
     
   }
 
-  
+
   /*!
     - For ChaseMpiDLAMultiGPU,  `applyVec` is implemented in ChaseMpiDLA.
     - **Parallelism on distributed-memory system SUPPORT**
@@ -482,11 +482,11 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
 
   }
 
-  void hhQR_dist(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv)override{
+  void hhQR_dist(std::size_t m_, std::size_t nevex, std::size_t locked,T *approxV, std::size_t ldv)override{
   }
   void cholQR1(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv )override{
   }
-  void cholQR1_dist(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv)override{
+  void cholQR1_dist(std::size_t N, std::size_t nevex, std::size_t locked, T *approxV, std::size_t ldv) override{
   }
 
   void Lock(T * workspace_, std::size_t new_converged) override{}

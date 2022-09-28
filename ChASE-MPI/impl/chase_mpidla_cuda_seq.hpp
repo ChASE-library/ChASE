@@ -127,7 +127,7 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
       - **Parallelism is SUPPORT within one GPU card**
       - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
-  void apply(T alpha, T beta, std::size_t offset, std::size_t block) override {
+  void apply(T alpha, T beta, std::size_t offset, std::size_t block,  std::size_t locked) override {
     cublasTgemm(handle_, CUBLAS_OP_N, CUBLAS_OP_N,  //
                 n_, block, n_,                      //
                 &alpha,                             //
@@ -142,7 +142,7 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
       - **Parallelism is NOT SUPPORT**
       - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
-  bool postApplication(T* V, std::size_t block) override {
+  bool postApplication(T* V, std::size_t block, std::size_t locked) override {
     cuda_exec(cudaMemcpyAsync(V + locked_ * n_, V1_, block * n_ * sizeof(T),
                               cudaMemcpyDeviceToHost, stream_));
     cudaStreamSynchronize(stream_);
@@ -179,7 +179,7 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
     
   }
 
-  
+
   /*! - For ChaseMpiDLACudaSeq, `applyVec` is implemented with `GEMM` provided by `BLAS`.
       - **Parallelism is SUPPORT within node if multi-threading is actived**
       - For the meaning of this function, please visit ChaseMpiDLAInterface.
@@ -481,11 +481,11 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
 
   }
 
-  void hhQR_dist(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv)override{
+  void hhQR_dist(std::size_t m_, std::size_t nevex,std::size_t locked, T *approxV, std::size_t ldv)override{
   }
   void cholQR1(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv) override {
   }
-  void cholQR1_dist(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv) override {
+  void cholQR1_dist(std::size_t N, std::size_t nevex, std::size_t locked, T *approxV, std::size_t ldv) override{
   }
   void Lock(T * workspace_, std::size_t new_converged) override{}
 

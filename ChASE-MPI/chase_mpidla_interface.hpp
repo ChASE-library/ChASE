@@ -126,7 +126,7 @@ class ChaseMpiDLAInterface {
     @param block: number of non-converged eigenvectors, it indicates the number of vectors in `V1` and `V2` to perform `HEMM`.
   */
   virtual void apply(T alpha, T beta, std::size_t offset,
-                     std::size_t block) = 0;
+                     std::size_t block, std::size_t locked) = 0;
   // H x V, in which V is distributed as B
   virtual void HxB(T alpha, T beta, std::size_t offset,
                      std::size_t block) = 0;
@@ -147,7 +147,7 @@ class ChaseMpiDLAInterface {
     @param V: the vectors which `V2` are copied to.
     @param block: number of vectors to be copied to `V` from `V2`.
   */
-  virtual bool postApplication(T* V, std::size_t block) = 0;
+  virtual bool postApplication(T* V, std::size_t block, std::size_t locked) = 0;
 
   // Performs a GEMV with alpha=1.0 and beta=0.0
   // Equivalent to calling:
@@ -389,9 +389,9 @@ class ChaseMpiDLAInterface {
   virtual void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_t locked, std::size_t unconverged) = 0;
 
   virtual void hhQR(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv) = 0;
-  virtual void hhQR_dist(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv) = 0;
+  virtual void hhQR_dist(std::size_t m_, std::size_t nevex, std::size_t locked, T *approxV, std::size_t ldv) = 0;
   virtual void cholQR1(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv) = 0;
-  virtual void cholQR1_dist(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv) = 0;
+  virtual void cholQR1_dist(std::size_t m_, std::size_t nevex, std::size_t locked, T *approxV, std::size_t ldv) = 0;
 
 };
 }  // namespace matrixfree
