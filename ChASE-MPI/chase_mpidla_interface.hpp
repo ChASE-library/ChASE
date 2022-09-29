@@ -127,13 +127,7 @@ class ChaseMpiDLAInterface {
   */
   virtual void apply(T alpha, T beta, std::size_t offset,
                      std::size_t block, std::size_t locked) = 0;
-  // H x V, in which V is distributed as B
-  virtual void HxB(T alpha, T beta, std::size_t offset,
-                     std::size_t block) = 0;
-
-  virtual void iAllGather_B(T *V, T* B, std::size_t block) = 0;
-
-  virtual void asynCxHGatherC(T *V, std::size_t block) = 0;
+  virtual void asynCxHGatherC(T *V, std::size_t locked, std::size_t block) = 0;
 
   virtual void Lock(T * workspace_, std::size_t new_converged) = 0;
   virtual void Swap(std::size_t i, std::size_t j) = 0;
@@ -381,13 +375,7 @@ class ChaseMpiDLAInterface {
 
 
   virtual void heevd2(std::size_t m_, std::size_t block, T* A, std::size_t lda, T *approxV, std::size_t ldv, T* workspace, std::size_t ldw, std::size_t offset, Base<T>* ritzv) = 0;
-
-  virtual int shiftedcholQR(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv, T *A, std::size_t lda, std::size_t offset) = 0;
-
-  virtual int cholQR(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv, T *A, std::size_t lda, std::size_t offset) = 0;
-
   virtual void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_t locked, std::size_t unconverged) = 0;
-
   virtual void hhQR(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv) = 0;
   virtual void hhQR_dist(std::size_t m_, std::size_t nevex, std::size_t locked, T *approxV, std::size_t ldv) = 0;
   virtual void cholQR1(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv) = 0;

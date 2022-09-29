@@ -157,33 +157,14 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
 
   }
 
-  void HxB(T alpha, T beta, std::size_t offset, std::size_t block)override{
-
-      T Zero = T(0.0);
-
-     if (mpi_row_rank != 0) {
-         beta = Zero;
-      }
-
-      t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, m_,
-             static_cast<std::size_t>(block), n_, &alpha, H_, ldh_,
-             B_ + offset * n_, n_, &beta, C_ + offset * m_, m_);
-
-  }
-
-  void iAllGather_B(T *V,  T* B, std::size_t block)override{
-
-  }
-
-  void asynCxHGatherC(T *V, std::size_t block) override {
+  void asynCxHGatherC(T *V, std::size_t locked, std::size_t block) override {
     T alpha = T(1.0);
     T beta = T(0.0); 
-    std::size_t locked = nev_ + nex_ - block;
+    //std::size_t locked = nev_ + nex_ - block;
 
     t_gemm<T>(CblasColMajor, CblasConjTrans, CblasNoTrans, n_,
                 static_cast<std::size_t>(block), m_, &alpha, H_, ldh_,
                 C_ + locked * m_, m_, &beta, B_ + locked * n_, n_);
-
   }
 
 
@@ -455,23 +436,6 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
 
   }
 
-
-  int shiftedcholQR(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv, T *A, std::size_t lda, std::size_t offset) override {
-    return 0;
-  }
-
-  int cholQR(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv, T *A, std::size_t lda, std::size_t offset) override {
-
-      T one = T(1.0);
-      T zero = T(0.0);
-
-      int info = -1;
-
-      info = this->potrf('U', nevex, A, lda);
-      this->trsm('R', 'U', 'N', 'N', m_, nevex, &one, A, lda, approxV + offset, ldv);
-
-      return info;
-  }
 
   void hhQR(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv) override {
 

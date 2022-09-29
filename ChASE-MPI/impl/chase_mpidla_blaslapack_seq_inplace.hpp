@@ -95,20 +95,7 @@ class ChaseMpiDLABlaslapackSeqInplace : public ChaseMpiDLAInterface<T> {
     }
   }
 
-  void HxB(T alpha, T beta, std::size_t offset,
-                     std::size_t block)override{
-
-  }
-
-  void iAllGather_B(T *V,  T* B, std::size_t block)override{
-
-  }
-
-  void asynCxHGatherC(T *V, std::size_t block) override {
-    
-  }
-
-
+  void asynCxHGatherC(T *V, std::size_t locked, std::size_t block) override {}
 
   /*! - For ChaseMpiDLABlaslapackSeqInplace, `applyVec` is implemented with `GEMM` provided by `BLAS`.
       - **Parallelism is SUPPORT within node if multi-threading is actived**
@@ -349,14 +336,6 @@ class ChaseMpiDLABlaslapackSeqInplace : public ChaseMpiDLAInterface<T> {
   void heevd2(std::size_t m_, std::size_t block, T* A, std::size_t lda, T *approxV, std::size_t ldv, T* workspace, std::size_t ldw, std::size_t offset, Base<T>* ritzv) override {
   }
 
-  int shiftedcholQR(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv, T *A, std::size_t lda, std::size_t offset) override {
-      return 0;  
-  }
-
-  int cholQR(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv, T *A, std::size_t lda, std::size_t offset) override {
-
-      return 0;
-  }
 
   void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_t locked, std::size_t unconverged) override{
 

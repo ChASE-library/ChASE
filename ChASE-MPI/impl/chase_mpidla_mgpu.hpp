@@ -264,18 +264,8 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
 	time_copy_H += stop - start;
   }
 
-  void HxB(T alpha, T beta, std::size_t offset,
-                     std::size_t block)override{
 
-  }
-
-  void iAllGather_B(T *V,  T* B, std::size_t block)override{
-
-  }
-
-  void asynCxHGatherC(T *V, std::size_t block) override {
-    
-  }
+  void asynCxHGatherC(T *V, std::size_t locked, std::size_t block) override {}
 
 
   /*!
@@ -461,19 +451,6 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
    
 	mgpuDLA->heevd2(m_, block, A, lda, approxV, ldv, workspace, ldw, offset, ritzv); 
   
-  }
-
-  int shiftedcholQR(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv, T *A, std::size_t lda, std::size_t offset) override {
-      int info = -1;
-      info = mgpuDLA->shiftedcholQR(m_, nevex, approxV, ldv, A, lda, offset);
-      return info;  
-  }
-
-  int cholQR(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv, T *A, std::size_t lda, std::size_t offset) override {
-
-      int info = -1;
-      info = mgpuDLA->cholQR(m_, nevex, approxV, ldv, A, lda, offset);
-      return info;
   }
 
   void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_t locked, std::size_t unconverged) override{}

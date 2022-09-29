@@ -78,6 +78,9 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
     reqs_.resize(row_size_);
     newType_.resize(row_size_);
 
+    reqs_c_.resize(col_size_);
+    newType_c_.resize(col_size_);
+
     send_lens_ = matrix_properties_->get_sendlens();
     recv_offsets_.resize(send_lens_.size());
     for(auto i = 0; i < send_lens_.size(); i++){
@@ -98,6 +101,18 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
                                getMPI_Type<T>(), &(newType_[i]));
 
       MPI_Type_commit(&(newType_[i]));
+    }
+
+    for (auto i = 0; i < col_size_; ++i){ 
+      int array_of_sizes[2] = {static_cast<int>(N_), 1};
+      int array_of_subsizes[2] = {send_lens_[0][i], 1};
+      int array_of_starts[2] = {recv_offsets_[0][i], 0};
+
+      MPI_Type_create_subarray(2, array_of_sizes, array_of_subsizes,
+                               array_of_starts, MPI_ORDER_FORTRAN,
+                               getMPI_Type<T>(), &(newType_c_[i]));
+
+      MPI_Type_commit(&(newType_c_[i]));
     }
 
 #if defined(HAS_SCALAPACK)
@@ -304,82 +319,154 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
     return true;
   }
 
-  void HxB(T alpha, T beta, std::size_t offset, std::size_t block)override{
-    std::size_t dim = m_ * block;
-    dla_->HxB(alpha, beta, offset, block);
-    MPI_Allreduce(MPI_IN_PLACE, C_ + offset * m_, dim, getMPI_Type<T>(), MPI_SUM, row_comm_);
-  }
+  void asynCxHGatherC(T *V, std::size_t locked, std::size_t block) override {
+///==>don't change
 
-  void iAllGather_B(T *V,  T* B, std::size_t block)override{
+    int csize;
+    int crank;
+    MPI_Comm_size(col_comm_, &csize);
+    MPI_Comm_rank(col_comm_, &crank);
 
-    std::size_t N = N_;
-    std::size_t dimsIdx;
-    std::size_t subsize;
-    std::size_t blocksize;
-    std::size_t nbblocks;
+    int rsize;
+    int rrank;
+    MPI_Comm_size(row_comm_, &rsize);
+    MPI_Comm_rank(row_comm_, &rrank);
 
-    MPI_Comm comm;
-    std::size_t *offs, *lens, *offs_l;  
+//<==don't change
 
-    int gsize;
-    int rank;
-    MPI_Comm_size(row_comm_, &gsize);
-    MPI_Comm_rank(row_comm_, &rank);
-    std::vector<MPI_Request> reqs(gsize);
-    std::vector<MPI_Datatype> newType(gsize);
+/*    //col com
+    std::size_t dimsIdx = 0;
 
-    T* targetBuf = V + locked_ * N;
+    auto& blockcounts_c = matrix_properties_->get_blockcounts()[dimsIdx];
+    auto& blocklens_c = matrix_properties_->get_blocklens()[dimsIdx];
+    auto& blockdispls_c = matrix_properties_->get_blockdispls()[dimsIdx];
 
-    for(auto i = 0; i < gsize; i++){
-        if (rank == i) {
-          MPI_Ibcast(B, int(send_lens_[1][i]) * block, getMPI_Type<T>(), i, row_comm_, &reqs[i]);
-        } else {
-          MPI_Ibcast(targetBuf, block, newType_[i], i, row_comm_, &reqs[i]);
+    auto& blockcounts_r = matrix_properties_->get_blockcounts()[dimsIdx];
+    auto& blocklens_r = matrix_properties_->get_blocklens()[dimsIdx];
+    auto& blockdispls_r = matrix_properties_->get_blockdispls()[dimsIdx];    
+
+    //key: global index 
+    //value: index in the collected buf of c 
+    std::map<int, int> C_Map;
+    std::map<int, int>::iterator it;
+
+    std::vector<int> B_gIndex;
+    std::vector<int> B_continuos;
+
+    int cnt = 0;
+    for(auto j = 0; j < csize; ++j){
+      for(auto i = 0; i < blockcounts_c[j]; ++i){
+        for(auto k = blockdispls_c[j][i]; k < blockdispls_c[j][i] + blocklens_c[j][i]; ++k){
+          C_Map.insert({k, cnt});
+          //if(crank == 0)std::cout << "key: " << k << " ; " << "value: " << cnt << std::endl;
+          cnt++;
         }
+      }
     }
-    
-    int i = rank;
-    
-    for (auto j = 0; j < block; ++j) {
-        std::memcpy(targetBuf + j * N_ + recv_offsets_[1][i], B + send_lens_[1][i] * j, send_lens_[1][i] * sizeof(T));
-    }  
 
-    MPI_Waitall(gsize, reqs.data(), MPI_STATUSES_IGNORE);
-  }
+    dimsIdx = 1;
+    
+    for(auto i = 0; i < blockcounts_r[rrank]; ++i){
+      for(auto k = blockdispls_r[rrank][i]; k < blockdispls_r[rrank][i] + blocklens_r[rrank][i]; ++k ){
+        B_gIndex.push_back(k);
+      }
+    }
 
-  void asynCxHGatherC(T *V, std::size_t block) override {
-    std::size_t locked = nev_ + nex_ - block;
+    B_gIndex.push_back(-1);
+
+    it = C_Map.find(0);
+    B_continuos.push_back(it->second);
+    int last_idx = it->second;
+    int cnt2 = last_idx;    
+    
+    for(auto i = 1; i < B_gIndex.size(); i++){
+      it = C_Map.find(i);
+      if(it->second == last_idx + 1){
+        cnt2++;
+      }else{
+        B_continuos.push_back(cnt2);
+        B_continuos.push_back(it->second);
+        cnt2 = it->second;
+      }
+      last_idx = it->second;
+    }
+
+    it = C_Map.find(B_gIndex.size());
+    if(it->second == last_idx + 1){
+      cnt2++;
+      B_continuos.push_back(cnt2);
+    }else{
+      B_continuos.push_back(it->second);
+      B_continuos.push_back(it->second);
+    }
+  
     std::size_t dim = n_ * block;
-    dla_->asynCxHGatherC(V, block);
+
+
+    if(data_layout.compare("Block-Cyclic") == 0){
+      //targetBuf = Buff_ + locked * N_;
+    }else{
+      //targetBuf = V + locked * N_;
+    }
+
+    T *buff = C2_ + locked * m_;
+
+    for(auto i = 0; i < csize; i++){
+        if (crank == i) {
+          MPI_Ibcast(C2_ + locked * m_, int(send_lens_[0][i]) * block, getMPI_Type<T>(), i, col_comm_, &reqs_c_[i]);
+        } else {
+          MPI_Ibcast(V + locked * N_, block, newType_c_[i], i, col_comm_, &reqs_c_[i]);
+        }
+    }     
+
+    dla_->asynCxHGatherC(V, locked, block);
+
+    MPI_Waitall(csize, reqs_c_.data(), MPI_STATUSES_IGNORE);
+
     MPI_Allreduce(MPI_IN_PLACE, B_ + locked * n_, dim, getMPI_Type<T>(), MPI_SUM, col_comm_); // V' * H
 
-    MPI_Comm comm;
-    std::size_t *offs, *lens, *offs_l;  
+    int i = crank;
 
-    int gsize;
-    int rank;
-    MPI_Comm_size(col_comm_, &gsize);
-    MPI_Comm_rank(col_comm_, &rank);
-    std::vector<MPI_Request> reqs(gsize);
-    std::vector<MPI_Datatype> newType(gsize);
-
-    T* targetBuf = V + locked * N_;
-
-    for(auto i = 0; i < gsize; i++){
-        if (rank == i) {
-          MPI_Ibcast(C2_, int(send_lens_[0][i]) * block, getMPI_Type<T>(), i, col_comm_, &reqs[i]);
-        } else {
-          MPI_Ibcast(targetBuf, block, newType_[i], i, col_comm_, &reqs[i]);
-        }
-    }
-    
-    int i = rank;
-    
     for (auto j = 0; j < block; ++j) {
-        std::memcpy(targetBuf + j * N_ + recv_offsets_[0][i], C2_ + send_lens_[0][i] * j, send_lens_[0][i] * sizeof(T));
-    }  
+        std::memcpy(V + locked * N_  + j * N_ + recv_offsets_[0][i], C2_ + locked * m_ + send_lens_[0][i] * j, send_lens_[0][i] * sizeof(T));
+    } 
 
-    MPI_Waitall(gsize, reqs.data(), MPI_STATUSES_IGNORE);
+    if(data_layout.compare("Block-Cyclic") == 0){
+      int offset = 0;
+      for(auto i = 0; i < B_continuos.size()-4; i = i + 2){
+        auto height = B_continuos[i+1] - B_continuos[i] + 1;
+        t_lacpy('A', height, block, V + locked * N_ + B_continuos[i], N_,  Buff_ + locked * N_ + recv_offsets_[1][rrank] + offset, N_);
+        offset += height;
+      }
+      std::swap(Buff_, V);
+    }
+*/
+///==>don't change
+    std::size_t dim = n_ * block;
+
+    T *targetBuf = V + locked * N_;
+    T *buff = C2_ + locked * m_;
+
+    for(auto i = 0; i < csize; i++){
+        if (crank == i) {
+          MPI_Ibcast(buff, int(send_lens_[0][i]) * block, getMPI_Type<T>(), i, col_comm_, &reqs_c_[i]);
+        } else {
+          MPI_Ibcast(targetBuf, block, newType_c_[i], i, col_comm_, &reqs_c_[i]);
+        }
+    }     
+
+    dla_->asynCxHGatherC(V, locked, block);
+
+    MPI_Waitall(csize, reqs_c_.data(), MPI_STATUSES_IGNORE);
+
+    MPI_Allreduce(MPI_IN_PLACE, B_ + locked * n_, dim, getMPI_Type<T>(), MPI_SUM, col_comm_); // V' * H
+
+    int i = crank;
+
+    for (auto j = 0; j < block; ++j) {
+        std::memcpy(targetBuf + j * N_ + recv_offsets_[0][i], buff + send_lens_[0][i] * j, send_lens_[0][i] * sizeof(T));
+    }  
+//<==don't change
 
   }
 
@@ -560,20 +647,90 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
   */
   void RR_kernel(std::size_t N, std::size_t block, T *approxV, std::size_t locked, T *workspace, T One, T Zero, Base<T> *ritzv) override {
       
-      std::memcpy(approxV+locked*N_, C2_+locked*N_, N_ * block * sizeof(T));
+      this->asynCxHGatherC(approxV, locked, block);
 
-      dla_->RR_kernel(N, block, approxV, locked, workspace, One, Zero, ritzv);
+      auto A_ = std::unique_ptr<T[]> {
+        new T[ block * block ]
+      };
 
-      std::memcpy(C2_+locked*N_, C_+locked*N_, N_ * block * sizeof(T));
+      dla_->gemm_small(CblasColMajor, CblasConjTrans, CblasNoTrans, 
+                    block, block, n_, 
+                    &One, 
+                    approxV + locked * N + recv_offsets_[1][row_rank_], N,
+                    B_ + locked * n_, n_, 
+                    &Zero, 
+                    A_.get(), block);
+
+      MPI_Allreduce(MPI_IN_PLACE, A_.get(), block * block, getMPI_Type<T>(), MPI_SUM, row_comm_);
+
+      dla_->heevd(LAPACK_COL_MAJOR, 'V', 'L', block, A_.get(), block, ritzv);
+
+
+      dla_->gemm_small(CblasColMajor, CblasNoTrans, CblasNoTrans,
+                   m_, block, block, 
+                   &One, 
+                   C2_ + locked * m_, m_,
+                   A_.get(), block,
+                   &Zero,
+                   C_ + locked * m_, m_
+                   );
+
+      std::memcpy(C2_+locked*m_, C_+locked*m_, m_ * block * sizeof(T));
+
 
   }
 
 
 void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_t locked, std::size_t unconverged) override{
-      
-      std::memcpy(approxV_+locked*N_, C2_+locked*N_, N_ * unconverged * sizeof(T));
 
-      dla_->Resd(approxV_, workspace_, ritzv, resid, locked, unconverged);
+      this->asynCxHGatherC(approxV_, locked, unconverged);
+
+      T one = T(1.0);
+      T neg_one = T(-1.0);
+      T beta = T(0.0);
+
+      auto A_ = std::unique_ptr<T[]> {
+        new T[ unconverged * unconverged ]
+      };
+
+      auto norm = std::unique_ptr<Base<T>[]> {
+        new Base<T>[ unconverged ]
+      };
+
+      for(std::size_t i = 0; i < unconverged; i++){
+        for(std::size_t j = 0; j < unconverged; j++){
+          if(i == j){
+            A_[i * unconverged + j] = ritzv[i];
+          }
+          else{
+            A_[i * unconverged + j] = T(0.0);
+          }
+        }
+      }
+
+      dla_->gemm_small(CblasColMajor, CblasNoTrans, CblasNoTrans, 
+                       n_, unconverged, unconverged, 
+                       &one, 
+                       approxV_ + locked * N_ + recv_offsets_[1][row_rank_], N_,
+                       A_.get(), unconverged,
+                       &neg_one, 
+                       B_ + locked * n_, n_);
+
+
+      for (std::size_t i = 0; i < unconverged; ++i) {
+        norm[i] = 0.0;
+        for(std::size_t j = 0; j < n_; j++){
+          norm[i] += t_sqrt_norm(B_[locked * n_ + i * n_ + j]);
+        }
+      }
+
+      MPI_Allreduce(norm.get(), resid, unconverged, getMPI_Type<Base<T>>(), MPI_SUM, row_comm_);
+
+      for (std::size_t i = 0; i < unconverged; ++i) {
+        resid[i] = std::sqrt(resid[i]); 
+      }
+
+
   }
 
 
@@ -622,33 +779,7 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
   void heevd2(std::size_t m_, std::size_t block, T* A, std::size_t lda, T *approxV, std::size_t ldv, T* workspace, std::size_t N, std::size_t offset, Base<T>* ritzv) override {
   }
 
-  int shiftedcholQR(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv, T *A, std::size_t lda, std::size_t offset) override {
-  
-      return 0;
-  }
-
-  int cholQR(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv, T *A, std::size_t lda, std::size_t offset) override {
-
-      return 0;
-  }
-
-  
-
   void hhQR(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv) override{
-    int grank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &grank);
-   double t1 = MPI_Wtime();
-
-    this->postApplication(approxV, nevex - locked_, locked_);
-     double t2 = MPI_Wtime();
-    auto tau = std::unique_ptr<T[]> {
-        new T[ nevex ]
-    };
-
-    t_geqrf(LAPACK_COL_MAJOR, m_, nevex, approxV, ldv, tau.get());
-    t_gqr(LAPACK_COL_MAJOR, m_, nevex, nevex, approxV, ldv, tau.get());      
-    double t3 = MPI_Wtime();
-    if(grank == 0) std::cout << " LAPACK QR time: " << t3 - t2 << ", postApplication time: " << t2 - t1 << std::endl;
 
   }
 
@@ -663,72 +794,40 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
     t_pgeqrf(m_, nevex, B_, one, one, desc1D_Nxnevx_, tau.get() );
     t_pgqr(m_, nevex, nevex, B_, one, one, desc1D_Nxnevx_, tau.get());
    double t2 = MPI_Wtime();
-
-    if(grank == 0) std::cout << " SCALAPACK QR time: " << t2 - t1 << std::endl;
-
+    if(grank == 0) std::cout << " SCALAPACK QR time: " << t2 - t1 << std::endl;   
+    std::memcpy(C_, C2_, locked_ * m_ * sizeof(T));
+    std::memcpy(C2_+locked_ * m_, C_ + locked_ * m_, (nevex - locked_) * m_ * sizeof(T));   
 #endif
-*/ 
-
-    auto tau = std::unique_ptr<T[]> {
-        new T[ nevex ]
-    };
-
-    t_geqrf(LAPACK_COL_MAJOR, N_, nevex, C_, N_, tau.get());
-    t_gqr(LAPACK_COL_MAJOR, N_, nevex, nevex, C_, N_, tau.get());  
-
-    
-
-   std::memcpy(C_, C2_, locked_ * N_ * sizeof(T));
-   std::memcpy(C2_+locked_ * N_, C_ + locked_ * N_, (nevex - locked_) * N_ * sizeof(T));
-
+*/
   }
   
   void cholQR1(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv) override {
-    int grank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &grank);
-   double t1 = MPI_Wtime();
-   this->postApplication(approxV, nevex - locked_, locked_);
-   double t2 = MPI_Wtime();
-   auto A_ = std::unique_ptr<T[]> {
-      new T[ nevex * nevex ]
-   };
-
-   T one = T(1.0);
-   T zero = T(0.0);
-
-   int info = -1;
-
-   t_syherk('U', 'C', nevex, m_, &one, approxV, ldv, &zero, A_.get(), nevex);
-   info = t_potrf('U', nevex, A_.get(), nevex);
-   assert(info == 0);
-   t_trsm('R', 'U', 'N', 'N', m_, nevex, &one, A_.get(), nevex, approxV, ldv);
-   double t3 = MPI_Wtime();
-   if(grank == 0) std::cout << " CholQR time: " << t3 - t2 << ", postApplication time: " << t2 - t1 << std::endl;
-
   }
+
   void cholQR1_dist(std::size_t N, std::size_t nevex, std::size_t locked, T *approxV, std::size_t ldv) override{
 
-   auto A_ = std::unique_ptr<T[]> {
+    auto A_ = std::unique_ptr<T[]> {
       new T[ nevex * nevex ]
-   };
-   T one = T(1.0);
-   T zero = T(0.0);
+    };
+    T one = T(1.0);
+    T zero = T(0.0);
+    int info = -1;
 
-   int info = -1;
-   t_syherk('U', 'C', nevex, N_, &one, C_, N_, &zero, A_.get(), nevex);
-   info = t_potrf('U', nevex, A_.get(), nevex);
-   assert(info == 0);
-   t_trsm('R', 'U', 'N', 'N', N_, nevex, &one, A_.get(), nevex, C_, N_);
-         
-   std::memcpy(C_, C2_, locked_ * N_ * sizeof(T));
-   std::memcpy(C2_+locked_ * N_, C_ + locked_ * N_, (nevex - locked_) * N_ * sizeof(T));
+    dla_->syherk('U', 'C', nevex, m_, &one, C_, m_, &zero, A_.get(), nevex);
+    MPI_Allreduce(MPI_IN_PLACE, A_.get(), nevex * nevex, getMPI_Type<T>(), MPI_SUM, col_comm_);
+    info = t_potrf('U', nevex, A_.get(), nevex);
+    assert(info == 0);   
+    dla_->trsm('R', 'U', 'N', 'N', m_, nevex, &one, A_.get(), nevex, C_, m_);
+
+    std::memcpy(C_, C2_, locked * m_ * sizeof(T));
+    std::memcpy(C2_+locked * m_, C_ + locked * m_, (nevex - locked) * m_ * sizeof(T));   
 
   }
 
   void Lock(T * workspace_, std::size_t new_converged) override{}
 
   void Swap(std::size_t i, std::size_t j)override{
-    T *tmp = new T[N_];
+    T *tmp = new T[m_];
 
     memcpy(tmp, C_ + m_ * i, m_ * sizeof(T));
     memcpy(C_ + m_ * i, C_ + m_ * j, m_ * sizeof(T));
@@ -778,6 +877,8 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
   
   std::vector<MPI_Request> reqs_;
   std::vector<MPI_Datatype> newType_;
+  std::vector<MPI_Request> reqs_c_;
+  std::vector<MPI_Datatype> newType_c_;  
   std::vector<std::vector<int>> send_lens_;
   std::vector<std::vector<int>> recv_offsets_;
 

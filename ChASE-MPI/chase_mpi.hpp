@@ -297,8 +297,8 @@ class ChaseMpi : public chase::Chase<T> {
     t_geqrf(LAPACK_COL_MAJOR, N_, nevex, approxV_, N_, tau.get());
     t_gqr(LAPACK_COL_MAJOR, N_, nevex, nevex, approxV_, N_, tau.get());
 */
-    //dla_->cholQR1_dist(N_, nevex, approxV_, N_);
-    dla_->hhQR_dist(N_, nevex, locked_, approxV_, N_);
+    dla_->cholQR1_dist(N_, nevex, locked_, approxV_, N_);
+    //dla_->hhQR_dist(N_, nevex, locked_, approxV_, N_);
     //dla_->hhQR(N_, nevex, approxV_, N_);
     //std::memcpy(approxV_, workspace_, N_ * fixednev * sizeof(T));
   }
