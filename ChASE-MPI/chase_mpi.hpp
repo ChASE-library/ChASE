@@ -214,7 +214,9 @@ class ChaseMpi : public chase::Chase<T> {
     locked_ = 0;
     dla_->Start();
   }
-  void End() override {}
+  void End() override {
+    dla_->postApplication(approxV_, nev_ + nex_, 0 );
+  }
 
   //! \return `approxV_`: A pointer to the memory allocated to store a rectangular matrix `approxV_`, which will be right-multiplied to `A` during the process of ChASE. The eigenvectors obtained will also stored in `approxV_`.
   T *GetVectorsPtr() { return approxV_; }
@@ -271,9 +273,6 @@ class ChaseMpi : public chase::Chase<T> {
     //dla_->postApplication(approxV_, nev_ + nex_ - locked_);
 
     std::size_t nevex = nev_ + nex_;
-    // we don't need this, as we copy to workspace when locking
-    // std::memcpy(workspace_, approxV_, N_ * fixednev * sizeof(T));
-
     dla_->gegqr(N_, nevex, approxV_, N_);
 
     std::memcpy(approxV_, workspace_, N_ * fixednev * sizeof(T));
@@ -286,21 +285,8 @@ class ChaseMpi : public chase::Chase<T> {
     //dla_->postApplication(approxV_, nev_ + nex_ - locked_);
 
     std::size_t nevex = nev_ + nex_;
-    // we don't need this, as we copy to workspace when locking
-    // std::memcpy(workspace_, approxV_, N_ * fixednev * sizeof(T));
-
-    //for current implementation, use LAPACK househoulder QR
-/*    auto tau = std::unique_ptr<T[]> {
-        new T[ nevex ]
-    };
-
-    t_geqrf(LAPACK_COL_MAJOR, N_, nevex, approxV_, N_, tau.get());
-    t_gqr(LAPACK_COL_MAJOR, N_, nevex, nevex, approxV_, N_, tau.get());
-*/
     dla_->cholQR1_dist(N_, nevex, locked_, approxV_, N_);
     //dla_->hhQR_dist(N_, nevex, locked_, approxV_, N_);
-    //dla_->hhQR(N_, nevex, approxV_, N_);
-    //std::memcpy(approxV_, workspace_, N_ * fixednev * sizeof(T));
   }
   //! This member function implements the virtual one declared in Chase class.
   //! This member function performs a QR factorization with an explicit construction of the unitary matrix `Q`.
@@ -309,8 +295,6 @@ class ChaseMpi : public chase::Chase<T> {
   void fastQR(std::size_t fixednev) override{
     std::size_t nevex = nev_ + nex_;
     dla_->cholQR1_dist(N_, nevex, locked_, approxV_, N_);
-    //dla_->cholQR1(N_, nevex, approxV_, N_);
-    //std::memcpy(approxV_, workspace_, N_ * fixednev * sizeof(T));    
   }
 
   //! This member function implements the virtual one declared in Chase class.
@@ -324,13 +308,7 @@ class ChaseMpi : public chase::Chase<T> {
     T One = T(1.0);
     T Zero = T(0.0);
 
-
     dla_->RR_kernel(N_, block, approxV_, locked_, workspace_, One, Zero, ritzv);
-
-    //std::swap(approxV_, workspace_);
-
-    // we can swap, since the locked part were copied over as part of the QR
-
   };
 
   //! This member function implements the virtual one declared in Chase class.

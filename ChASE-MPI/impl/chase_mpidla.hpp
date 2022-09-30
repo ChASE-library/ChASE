@@ -66,7 +66,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
 
     int sign = 0;
     if(data_layout.compare("Block-Cyclic") == 0){
-	sign = 1;
+	     sign = 1;
     }
 
     Buff_ = new T[sign * N_ *  max_block_];
@@ -119,6 +119,68 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
 #if defined(HAS_SCALAPACK)
     desc1D_Nxnevx_ = matrix_properties->get_desc1D_Nxnevx();    
 #endif
+
+    if(data_layout.compare("Block-Cyclic") == 0){
+
+      auto& blockcounts_c = matrix_properties_->get_blockcounts()[0];
+      auto& blocklens_c = matrix_properties_->get_blocklens()[0];
+      auto& blockdispls_c = matrix_properties_->get_blockdispls()[0];
+
+      auto& blockcounts_r = matrix_properties_->get_blockcounts()[1];
+      auto& blocklens_r = matrix_properties_->get_blocklens()[1];
+      auto& blockdispls_r = matrix_properties_->get_blockdispls()[1];    
+
+      //key: global index 
+      //value: index in the collected buf of c 
+      std::map<int, int> C_Map;
+      std::map<int, int>::iterator it;
+
+      std::vector<int> B_gIndex;
+
+      int cnt = 0;
+      for(auto j = 0; j < col_size_; ++j){
+        for(auto i = 0; i < blockcounts_c[j]; ++i){
+          for(auto k = blockdispls_c[j][i]; k < blockdispls_c[j][i] + blocklens_c[j][i]; ++k){
+            C_Map.insert({k, cnt});
+            cnt++;
+          }
+        }
+      }
+    
+      for(auto i = 0; i < blockcounts_r[row_rank_]; ++i){
+        for(auto k = blockdispls_r[row_rank_][i]; k < blockdispls_r[row_rank_][i] + blocklens_r[row_rank_][i]; ++k ){
+          B_gIndex.push_back(k);
+        }
+      }
+
+      B_gIndex.push_back(-1);
+  
+      it = C_Map.find(0);
+      B_continuos_.push_back(it->second);
+      int last_idx = it->second;
+      int cnt2 = last_idx;    
+    
+      for(auto i = 1; i < B_gIndex.size(); i++){
+        it = C_Map.find(i);
+        if(it->second == last_idx + 1){
+          cnt2++;
+        }else{
+          B_continuos_.push_back(cnt2);
+          B_continuos_.push_back(it->second);
+          cnt2 = it->second;
+        }
+        last_idx = it->second;
+      }
+
+      it = C_Map.find(B_gIndex.size());
+      if(it->second == last_idx + 1){
+        cnt2++;
+        B_continuos_.push_back(cnt2);
+      }else{
+        B_continuos_.push_back(it->second);
+        B_continuos_.push_back(it->second);
+      }
+    }
 
   }
   ~ChaseMpiDLA() {
@@ -320,7 +382,6 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
   }
 
   void asynCxHGatherC(T *V, std::size_t locked, std::size_t block) override {
-///==>don't change
 
     int csize;
     int crank;
@@ -331,87 +392,6 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
     int rrank;
     MPI_Comm_size(row_comm_, &rsize);
     MPI_Comm_rank(row_comm_, &rrank);
-
-//<==don't change
-
-   //col com
-    std::size_t dimsIdx = 0;
-
-    auto& blockcounts_c = matrix_properties_->get_blockcounts()[dimsIdx];
-    auto& blocklens_c = matrix_properties_->get_blocklens()[dimsIdx];
-    auto& blockdispls_c = matrix_properties_->get_blockdispls()[dimsIdx];
-
-    dimsIdx = 1;
-
-    auto& blockcounts_r = matrix_properties_->get_blockcounts()[dimsIdx];
-    auto& blocklens_r = matrix_properties_->get_blocklens()[dimsIdx];
-    auto& blockdispls_r = matrix_properties_->get_blockdispls()[dimsIdx];    
-
-    //key: global index 
-    //value: index in the collected buf of c 
-    std::map<int, int> C_Map;
-    std::map<int, int>::iterator it;
-
-    std::vector<int> B_gIndex;
-    std::vector<int> B_continuos;
-
-
-    if(data_layout.compare("Block-Cyclic") == 0){
-      double start, end;
-      start = MPI_Wtime();
-      int cnt = 0;
-      for(auto j = 0; j < csize; ++j){
-        for(auto i = 0; i < blockcounts_c[j]; ++i){
-          for(auto k = blockdispls_c[j][i]; k < blockdispls_c[j][i] + blocklens_c[j][i]; ++k){
-            C_Map.insert({k, cnt});
-          //if(crank == 0)std::cout << "key: " << k << " ; " << "value: " << cnt << std::endl;
-            cnt++;
-          }
-        }
-      }
-    
-      for(auto i = 0; i < blockcounts_r[rrank]; ++i){
-        for(auto k = blockdispls_r[rrank][i]; k < blockdispls_r[rrank][i] + blocklens_r[rrank][i]; ++k ){
-          B_gIndex.push_back(k);
-        }
-      }
-
-      B_gIndex.push_back(-1);
-  
-      it = C_Map.find(0);
-      B_continuos.push_back(it->second);
-      int last_idx = it->second;
-      int cnt2 = last_idx;    
-    
-      for(auto i = 1; i < B_gIndex.size(); i++){
-        it = C_Map.find(i);
-        if(it->second == last_idx + 1){
-          cnt2++;
-        }else{
-          B_continuos.push_back(cnt2);
-          B_continuos.push_back(it->second);
-          cnt2 = it->second;
-        }
-        last_idx = it->second;
-      }
-
-      it = C_Map.find(B_gIndex.size());
-      if(it->second == last_idx + 1){
-        cnt2++;
-        B_continuos.push_back(cnt2);
-      }else{
-        B_continuos.push_back(it->second);
-        B_continuos.push_back(it->second);
-      }
-
-      end = MPI_Wtime();
-
-      if(crank == 0)std::cout << "indexing game costs: " << end - start << "s.\n";
-    }
-    /*
-    for(auto k = 0; k < B_continuos.size()-4; k=k+2){
-      if(col_rank_ == 0) std::cout << "[" << B_continuos[k] << ", " << B_continuos[k+1] << "]\n"; 
-    }*/
   
     std::size_t dim = n_ * block;
 
@@ -446,42 +426,12 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
 
     if(data_layout.compare("Block-Cyclic") == 0){
       int offset = 0;
-      for(auto i = 0; i < B_continuos.size()-4; i = i + 2){
-        auto height = B_continuos[i+1] - B_continuos[i] + 1;
-//        if(col_rank_==0)std::cout << height << "x" << block << "from V+" << locked * N_ << "+" << B_continuos[i] << " to Buff+" << locked * N_ << "+" << recv_offsets_[i][rrank] << "+" << offset << std::endl;
-        t_lacpy('A', height, block, targetBuf + B_continuos[i], N_,  V + locked * N_ + recv_offsets_[1][rrank] + offset, N_);
+      for(auto i = 0; i < B_continuos_.size()-4; i = i + 2){
+        auto height = B_continuos_[i+1] - B_continuos_[i] + 1;
+        t_lacpy('A', height, block, targetBuf + B_continuos_[i], N_,  V + locked * N_ + recv_offsets_[1][rrank] + offset, N_);
         offset += height;
       }
     }
-
-/*
-///==>don't change
-    std::size_t dim = n_ * block;
-
-    T *targetBuf = V + locked * N_;
-    T *buff = C2_ + locked * m_;
-
-    for(auto i = 0; i < csize; i++){
-        if (crank == i) {
-          MPI_Ibcast(buff, int(send_lens_[0][i]) * block, getMPI_Type<T>(), i, col_comm_, &reqs_c_[i]);
-        } else {
-          MPI_Ibcast(targetBuf, block, newType_c_[i], i, col_comm_, &reqs_c_[i]);
-        }
-    }     
-
-    dla_->asynCxHGatherC(V, locked, block);
-
-    MPI_Waitall(csize, reqs_c_.data(), MPI_STATUSES_IGNORE);
-
-    MPI_Allreduce(MPI_IN_PLACE, B_ + locked * n_, dim, getMPI_Type<T>(), MPI_SUM, col_comm_); // V' * H
-
-    int i = crank;
-
-    for (auto j = 0; j < block; ++j) {
-        std::memcpy(targetBuf + j * N_ + recv_offsets_[0][i], buff + send_lens_[0][i] * j, send_lens_[0][i] * sizeof(T));
-    }  
-//<==don't change
-*/
   }
 
 
@@ -895,6 +845,7 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
   std::vector<MPI_Datatype> newType_c_;  
   std::vector<std::vector<int>> send_lens_;
   std::vector<std::vector<int>> recv_offsets_;
+  std::vector<int> B_continuos_;
 
   int row_size_;
   int row_rank_;

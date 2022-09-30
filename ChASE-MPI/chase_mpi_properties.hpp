@@ -998,7 +998,6 @@ class ChaseMpiProperties {
   T* get_C() { return C_.get(); }
 
   T* get_C2() { return C2_.get(); }
-
   /*! 
     \return `block_counts_`: 2D array which stores the block number of local matrix on each MPI node in each dimension.
   */ 
