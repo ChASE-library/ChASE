@@ -328,7 +328,7 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
   */
   void gegqr(std::size_t N, std::size_t nevex, T * approxV, std::size_t LDA) override {
 
-      this->postApplication(approxV, nevex - locked_);
+      this->postApplication(approxV, nevex - locked_, locked_);
 
 	cudaSetDevice(0);
 	cuda_exec(cudaMemcpy(d_V_, approxV, sizeof(T)*N*nevex, cudaMemcpyHostToDevice));

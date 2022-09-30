@@ -154,25 +154,25 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
       }
 
       B_gIndex.push_back(-1);
-  
-      it = C_Map.find(0);
+ 
+      it = C_Map.find(B_gIndex[0]); 
       B_continuos_.push_back(it->second);
       int last_idx = it->second;
       int cnt2 = last_idx;    
     
       for(auto i = 1; i < B_gIndex.size(); i++){
-        it = C_Map.find(i);
+        it = C_Map.find(B_gIndex[i]);
         if(it->second == last_idx + 1){
           cnt2++;
         }else{
-          B_continuos_.push_back(cnt2);
+          B_continuos_.push_back(cnt2);	  
           B_continuos_.push_back(it->second);
           cnt2 = it->second;
         }
         last_idx = it->second;
       }
 
-      it = C_Map.find(B_gIndex.size());
+      it = C_Map.find(B_gIndex[B_gIndex.size()]);
       if(it->second == last_idx + 1){
         cnt2++;
         B_continuos_.push_back(cnt2);

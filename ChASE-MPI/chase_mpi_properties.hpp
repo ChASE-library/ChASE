@@ -224,13 +224,13 @@ class ChaseMpiProperties {
 	n_ = N_loc[1];
 
     ldh_ = m_;
-
+/*
 #ifdef CHASE_OUTPUT
 	std::cout << grid_major << " " << dims_[0] <<"x"<< dims_[1] << ", " << "rank: " << rank_ << " (" << coord_[0] << ","
 	    << coord_[1] << "), row_comm_size = " << row_procs << ", col_comm_size = " << col_procs << ", local matrix size = "
 	    << m_ << "x" << n_ << ", num of blocks in local = " << mblocks_ << "x" << nblocks_ << std::endl;
 #endif
-
+*/
 	r_offs_.reset(new std::size_t[mblocks_]());
         r_lens_.reset(new std::size_t[mblocks_]());
         r_offs_l_.reset(new std::size_t[mblocks_]());
