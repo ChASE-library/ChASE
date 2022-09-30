@@ -10,6 +10,7 @@
 #include <mpi.h>
 #include <iterator>
 #include <numeric>
+#include <map>
 #include "ChASE-MPI/chase_mpi_properties.hpp"
 #include "ChASE-MPI/chase_mpidla_interface.hpp"
 namespace chase {
