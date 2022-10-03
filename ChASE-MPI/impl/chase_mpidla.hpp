@@ -653,13 +653,14 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
       T neg_one = T(-1.0);
       T beta = T(0.0);
 
+      auto norm = std::unique_ptr<Base<T>[]> {
+        new Base<T>[ unconverged ]
+      };      
+/*
       auto A_ = std::unique_ptr<T[]> {
         new T[ unconverged * unconverged ]
       };
 
-      auto norm = std::unique_ptr<Base<T>[]> {
-        new Base<T>[ unconverged ]
-      };
 
       for(std::size_t i = 0; i < unconverged; i++){
         for(std::size_t j = 0; j < unconverged; j++){
@@ -679,15 +680,22 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
                        A_.get(), unconverged,
                        &neg_one, 
                        B_ + locked * n_, n_);
+*/
+      for(auto i =0; i < unconverged; i++){
+        T alpha = -ritzv[i];
+        t_axpy(n_, &alpha, approxV_ + locked * N_ + i * N_ + recv_offsets_[1][row_rank_], 1, B_ + locked * n_ + i * n_, 1);
 
-
+        Base<T> tmp = dla_->nrm2(n_, B_ + locked * n_ + i * n_, 1);
+        norm[i] = std::pow(tmp, 2);
+      }
+/*
       for (std::size_t i = 0; i < unconverged; ++i) {
         norm[i] = 0.0;
         for(std::size_t j = 0; j < n_; j++){
           norm[i] += t_sqrt_norm(B_[locked * n_ + i * n_ + j]);
         }
       }
-
+*/
       MPI_Allreduce(norm.get(), resid, unconverged, getMPI_Type<Base<T>>(), MPI_SUM, row_comm_);
 
       for (std::size_t i = 0; i < unconverged; ++i) {
