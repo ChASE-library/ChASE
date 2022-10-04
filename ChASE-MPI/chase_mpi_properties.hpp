@@ -340,6 +340,30 @@ class ChaseMpiProperties {
 #if defined(HAS_SCALAPACK)
        //test for SCALAPACK
        // Initialize BLACS
+
+       int zero = 0;
+       int ictxt;
+       blacs_get_(&zero, &zero, &ictxt );
+       colcomm_ctxt_ = ictxt;
+       int userMap[dims_[0]];
+       if(col_major == false ){
+          for(int i = 0; i < dims_[0]; i++){
+             userMap[i] = ( rank_ % dims_[1] ) + dims_[1] * i;
+          }
+       }else{
+          for(int i = 0; i < dims_[0]; i++){
+             userMap[i] = ( rank_ / dims_[0] ) * dims_[0] + i;
+          }
+       }
+       int ONE = 1;
+       blacs_gridmap_(&colcomm_ctxt_, userMap, &dims_[0], &dims_[0], &ONE );
+       int info;
+       std::size_t nevex_ = nev_ + nex_;
+       std::size_t bsize = 32;
+       std::size_t nx_b = std::min(bsize, nevex_);
+       t_descinit(desc1D_Nxnevx_, &N_, &nevex_, &mb_, &nx_b, &irsrc_, &zero, &colcomm_ctxt_, &m_, &info);
+
+/*
        int zero = 0;
        int ictxt;
 
@@ -365,7 +389,7 @@ class ChaseMpiProperties {
        std::size_t bs = 32;
        std::size_t nx_b = std::min(bs, nevex_);
        t_descinit(desc1D_Nxnevx_, &N_, &nevex_, &nb_, &nx_b, &zero, &zero, &rcom1D_ctxt_, &n_, &info);
-
+*/
 #endif
     }
 
@@ -557,7 +581,30 @@ class ChaseMpiProperties {
 
 #if defined(HAS_SCALAPACK)
     //test for SCALAPACK
-    // Initialize BLACS
+    int zero = 0;
+    int ictxt;
+
+    blacs_get_(&zero, &zero, &ictxt );
+    colcomm_ctxt_ = ictxt;
+    int userMap[dims_[0]];
+    if(col_major == false ){
+        for(int i = 0; i < dims_[0]; i++){
+            userMap[i] = ( rank_ % dims_[1] ) + dims_[1] * i;
+        }
+    }else{
+        for(int i = 0; i < dims_[0]; i++){
+            userMap[i] = ( rank_ / dims_[0] ) * dims_[0] + i;
+        }
+    }
+    int ONE = 1;
+    blacs_gridmap_(&colcomm_ctxt_, userMap, &dims_[0], &dims_[0], &ONE );
+    int info;
+    std::size_t nevex_ = nev_ + nex_;
+    std::size_t bsize = 32;
+    std::size_t nx_b = std::min(bsize, nevex_);
+    t_descinit(desc1D_Nxnevx_, &N_, &nevex_, &m, &nx_b, &zero, &zero, &colcomm_ctxt_, &m_, &info);
+
+/*    // Initialize BLACS
     int zero = 0;
     int ictxt;
     
@@ -582,7 +629,7 @@ class ChaseMpiProperties {
     std::size_t blocksize = 32;
     std::size_t nx_b = std::min(blocksize, nevex_);
     t_descinit(desc1D_Nxnevx_, &N_, &nevex_, &n, &nx_b, &zero, &zero, &rcom1D_ctxt_, &n_, &info);
-
+*/
 #endif	
 
     }
@@ -741,7 +788,31 @@ class ChaseMpiProperties {
 #if defined(HAS_SCALAPACK)
     //test for SCALAPACK
     // Initialize BLACS
+
     int zero = 0;
+    int ictxt;
+    blacs_get_(&zero, &zero, &ictxt );
+    colcomm_ctxt_ = ictxt;
+    int userMap[dims_[0]];
+    for(int i = 0; i < dims_[0]; i++){
+         userMap[i] = ( rank_ % dims_[1] ) + dims_[1] * i;        
+    }
+
+    int ONE = 1;
+    blacs_gridmap_(&colcomm_ctxt_, userMap, &dims_[0], &dims_[0], &ONE );
+
+    int info;
+    std::size_t mb_ = m_;
+    if( (rank_ / dims_[1]) + 1 == dims_[0] && dims_[0] != 1){
+        mb_ = (N_ - m_) / (dims_[0] - 1);
+    }
+
+    std::size_t nevex_ = nev_ + nex_;
+    std::size_t bsize = 32;
+    std::size_t nx_b = std::min(bsize, nevex_);
+    t_descinit(desc1D_Nxnevx_, &N_, &nevex_, &mb_, &nx_b, &zero, &zero, &colcomm_ctxt_, &m_, &info);
+
+/*    int zero = 0;
     int ictxt;
 	
     blacs_get_(&zero, &zero, &ictxt );
@@ -763,13 +834,14 @@ class ChaseMpiProperties {
     std::size_t blocksize = 32;
     std::size_t nx_b = std::min(blocksize, nevex_);
     t_descinit(desc1D_Nxnevx_, &N_, &nevex_, &nb_, &nx_b, &zero, &zero, &rcom1D_ctxt_, &n_, &info);
+*/
 #endif
 
   }
 
 #if defined(HAS_SCALAPACK)
-    int get_rcom1D_ctxt(){
-        return rcom1D_ctxt_;
+    int get_colcomm_ctxt(){
+        return colcomm_ctxt_;
     }
 
     std::size_t *get_desc1D_Nxnevx(){
@@ -1342,7 +1414,7 @@ class ChaseMpiProperties {
   std::string data_layout;
 #if defined(HAS_SCALAPACK)
   //! ScaLAPACK context for each row communicator. This context is in 1D grid, with only 1 column
-  int rcom1D_ctxt_;
+  int colcomm_ctxt_;
   std::size_t desc1D_Nxnevx_[9];
 #endif
 };

@@ -755,7 +755,7 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
 
   }
 
-  void hhQR_dist(std::size_t m_, std::size_t nevex,std::size_t locked, T *approxV, std::size_t ldv) override {
+  void hhQR_dist(std::size_t N_, std::size_t nevex,std::size_t locked, T *approxV, std::size_t ldv) override {
 /*#if defined(HAS_SCALAPACK)
     int grank;
     MPI_Comm_rank(MPI_COMM_WORLD, &grank);
@@ -771,6 +771,14 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
     std::memcpy(C2_+locked_ * m_, C_ + locked_ * m_, (nevex - locked_) * m_ * sizeof(T));   
 #endif
 */
+#if defined(HAS_SCALAPACK)
+    std::unique_ptr<T []> tau(new T[nevex]);
+    int one = 1;
+    t_pgeqrf(N_, nevex, C_, one, one, desc1D_Nxnevx_, tau.get() );
+    t_pgqr(N_, nevex, nevex, C_, one, one, desc1D_Nxnevx_, tau.get());
+    std::memcpy(C_, C2_, locked * m_ * sizeof(T));
+    std::memcpy(C2_+locked * m_, C_ + locked * m_, (nevex - locked) * m_ * sizeof(T));
+#endif	  
   }
   
   void cholQR1(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv) override {
