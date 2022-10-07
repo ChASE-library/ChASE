@@ -285,8 +285,8 @@ class ChaseMpi : public chase::Chase<T> {
     //dla_->postApplication(approxV_, nev_ + nex_ - locked_);
 
     std::size_t nevex = nev_ + nex_;
-    //dla_->cholQR1_dist(N_, nevex, locked_, approxV_, N_);
-    dla_->hhQR_dist(N_, nevex, locked_, approxV_, N_);
+    dla_->cholQR1_dist(N_, nevex, locked_, approxV_, N_);
+    //dla_->hhQR_dist(N_, nevex, locked_, approxV_, N_);
   }
   //! This member function implements the virtual one declared in Chase class.
   //! This member function performs a QR factorization with an explicit construction of the unitary matrix `Q`.
