@@ -173,7 +173,7 @@ class ChaseMpi : public chase::Chase<T> {
     W_ = matrices_.get_V2();
     ritzv_ = matrices_.get_Ritzv();
     resid_ = matrices_.get_Resid();
-    
+
     approxV_ = V_;
     workspace_ = W_;
     H_ = matrices_.get_H();
@@ -242,12 +242,7 @@ class ChaseMpi : public chase::Chase<T> {
   }
 
   // todo this is wrong we want the END of V
-  void Cpy(std::size_t new_converged){
-      //    memcpy( workspace+locked*N, approxV+locked*N,
-      //    N*(new_converged)*sizeof(T) );
-      // memcpy(approxV + locked * N, workspace + locked * N,
-      //     N * (new_converged) * sizeof(T));
-  };
+  void Cpy(std::size_t new_converged){};
 
   //! This member function implements the virtual one declared in Chase class.
   //! This member function computes \f$approxV = alpha * A*approxV + beta * approxV\f$.
@@ -260,7 +255,6 @@ class ChaseMpi : public chase::Chase<T> {
   */
   void HEMM(std::size_t block, T alpha, T beta, std::size_t offset) override {
     dla_->apply(alpha, beta, offset, block, locked_);
-//    std::swap(approxV_, workspace_);
   };
 
   void Hv(T alpha);
@@ -269,24 +263,14 @@ class ChaseMpi : public chase::Chase<T> {
   //! This member function performs a QR factorization with an explicit construction of the unitary matrix `Q`.
   //! After the explicit construction of Q, its first `fixednev` number of vectors are overwritten by the converged eigenvectors stored in `workspace_`.
   //! @param fixednev: total number of converged eigenpairs before this time QR factorization.  
-  void QR(std::size_t fixednev) override {
-    //dla_->postApplication(approxV_, nev_ + nex_ - locked_);
-
-    std::size_t nevex = nev_ + nex_;
-    dla_->gegqr(N_, nevex, approxV_, N_);
-
-    std::memcpy(approxV_, workspace_, N_ * fixednev * sizeof(T));
-  };
+  void QR(std::size_t fixednev) override {};
   //! This member function implements the virtual one declared in Chase class.
   //! This member function performs a QR factorization with an explicit construction of the unitary matrix `Q`.
   //! After the explicit construction of Q, its first `fixednev` number of vectors are overwritten by the converged eigenvectors stored in `workspace_`.
   //! @param fixednev: total number of converged eigenpairs before this time QR factorization.  
   void stabQR(std::size_t fixednev) override{
-    //dla_->postApplication(approxV_, nev_ + nex_ - locked_);
-
     std::size_t nevex = nev_ + nex_;
     dla_->cholQR1_dist(N_, nevex, locked_, approxV_, N_);
-    //dla_->hhQR_dist(N_, nevex, locked_, approxV_, N_);
   }
   //! This member function implements the virtual one declared in Chase class.
   //! This member function performs a QR factorization with an explicit construction of the unitary matrix `Q`.
@@ -415,9 +399,6 @@ class ChaseMpi : public chase::Chase<T> {
     *upperb = std::max(std::abs(ritzv[0]), std::abs(ritzv[m - 1])) +
               std::abs(real_beta);
 
-
-    //dla_->preApplication(approxV_, 0, nev_ + nex_);
-
     delete[] ritzv;
     delete[] isuppz;
     delete[] d;
@@ -526,9 +507,6 @@ class ChaseMpi : public chase::Chase<T> {
   //! It locks the `new_converged` eigenvectors, which makes `locked_ += new_converged`.
   //! @param new_converged: number of newly converged eigenpairs in the present iterative step.
   void Lock(std::size_t new_converged) override {
-    //std::memcpy(workspace_ + locked_ * N_, approxV_ + locked_ * N_,
-     //           N_ * (new_converged) * sizeof(T));
-    //dla_->Lock(workspace_, new_converged);
     locked_ += new_converged;
   };
 
@@ -539,7 +517,6 @@ class ChaseMpi : public chase::Chase<T> {
     T beta = T(0.0);
 
     dla_->LanczosDos(N_, idx, m, workspace_, N_, ritzVc, m, approxV_, N_);
-    //dla_->preApplication(approxV_, 0, nev_ + nex_);
 
   }
 
@@ -550,6 +527,7 @@ class ChaseMpi : public chase::Chase<T> {
     \f$A * approxV - Ritz*approxV\f$, in which Ritz is a `nev_ * nev_` matrix whose diagonal stores
     the elemental of `ritzv_` in order, and whose other elements are `0`.
   */
+ /*
   Base<T> Residual() {
     for (std::size_t j = 0; j < N_ * (nev_ + nex_); ++j) {
       workspace_[j] = approxV_[j];
@@ -569,17 +547,10 @@ class ChaseMpi : public chase::Chase<T> {
     dla_->apply(one, one, 0, nev_, 0);
     dla_->postApplication(workspace_, nev_, 0);
 
-    // t_hemm(CblasColMajor, CblasLeft, CblasLower,  //
-    //        N_, nev_,                              //
-    //        &one,                                  //
-    //        H_, N_,                                //
-    //        V_, N_,                                //
-    //        &one, W_, N_);
-
     Base<T> norm = dla_->lange('M', N_, nev_, workspace_, N_);
     return norm;
   }
-
+*/
   //! This function checks the orthogonality of computed eigenvectors.
   /*! 
     For the computed eigenvectors stored in `approxV` with `nev` number of eigenvectors,

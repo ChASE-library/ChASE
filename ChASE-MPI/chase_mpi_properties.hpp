@@ -364,33 +364,6 @@ class ChaseMpiProperties {
        std::size_t nx_b = std::min(bsize, nevex_);
        t_descinit(desc1D_Nxnevx_, &N_, &nevex_, &mb_, &nx_b, &irsrc_, &zero, &colcomm_ctxt_, &m_, &info);
 
-/*
-       int zero = 0;
-       int ictxt;
-
-       blacs_get_(&zero, &zero, &ictxt );
-       rcom1D_ctxt_ = ictxt;
-
-       int userMap1[dims_[1]];
-       if(col_major == false ){
-          for(int i = 0; i < dims_[1]; i++){
-              userMap1[i] = ( rank_ / dims_[1] ) * dims_[1] + i;
-          }
-       }else{
-          for(int i = 0; i < dims_[1]; i++){
-              userMap1[i] = ( rank_ % dims_[0] ) + i * dims_[0];
-          }
-       }
-    
-       int ONE = 1;
-       blacs_gridmap_(&rcom1D_ctxt_, userMap1, &dims_[1], &dims_[1], &ONE );
-    
-       int info;
-       std::size_t nevex_ = nev_ + nex_;
-       std::size_t bs = 32;
-       std::size_t nx_b = std::min(bs, nevex_);
-       t_descinit(desc1D_Nxnevx_, &N_, &nevex_, &nb_, &nx_b, &zero, &zero, &rcom1D_ctxt_, &n_, &info);
-*/
 #endif
     }
 
@@ -513,8 +486,16 @@ class ChaseMpiProperties {
       	    n_ = N_ - (dims_[1] - 1) * len;
     	}
 
-    	mb_ = m_;
-    	nb_ = n_;
+        nb_ = n_;
+        if(coord_[1] == dims_[1] - 1 && dims_[1] != 1){
+            nb_ = (N_ - n_) / (dims_[1] - 1);
+        }
+
+        mb_ = m_;
+        if(coord_[0] == dims_[0] - 1 && dims_[0] != 1){
+            mb_ = (N_ - m_) / (dims_[0] - 1);
+        }
+
     	mblocks_ = 1;
     	nblocks_ = 1;
 
@@ -604,34 +585,8 @@ class ChaseMpiProperties {
     std::size_t nevex_ = nev_ + nex_;
     std::size_t bsize = 32;
     std::size_t nx_b = std::min(bsize, nevex_);
-    t_descinit(desc1D_Nxnevx_, &N_, &nevex_, &m, &nx_b, &zero, &zero, &colcomm_ctxt_, &m_, &info);
+    t_descinit(desc1D_Nxnevx_, &N_, &nevex_, &mb_, &nx_b, &zero, &zero, &colcomm_ctxt_, &m_, &info);
 
-/*    // Initialize BLACS
-    int zero = 0;
-    int ictxt;
-    
-    blacs_get_(&zero, &zero, &ictxt );
-    rcom1D_ctxt_ = ictxt;
-
-    int userMap1[dims_[1]];
-    if(col_major == false ){
-        for(int i = 0; i < dims_[1]; i++){
-            userMap1[i] = ( rank_ / dims_[1] ) * dims_[1] + i;        
-        }
-    }else{
-        for(int i = 0; i < dims_[1]; i++){
-            userMap1[i] = ( rank_ % dims_[0] ) + i * dims_[0];
-        }    
-    }
-    int ONE = 1;
-    blacs_gridmap_(&rcom1D_ctxt_, userMap1, &dims_[1], &dims_[1], &ONE );
-
-    int info;
-    std::size_t nevex_ = nev_ + nex_;
-    std::size_t blocksize = 32;
-    std::size_t nx_b = std::min(blocksize, nevex_);
-    t_descinit(desc1D_Nxnevx_, &N_, &nevex_, &n, &nx_b, &zero, &zero, &rcom1D_ctxt_, &n_, &info);
-*/
 #endif	
 
     }
@@ -719,8 +674,17 @@ class ChaseMpiProperties {
       n_ = N_ - (dims_[1] - 1) * len;
     }
     ldh_ = m_;
-    mb_ = m_;
+        
     nb_ = n_;
+    if(coord_[1] == dims_[1] - 1 && dims_[1] != 1){
+        nb_ = (N_ - n_) / (dims_[1] - 1);
+    }
+
+    mb_ = m_;
+    if(coord_[0] == dims_[0] - 1 && dims_[0] != 1){
+        mb_ = (N_ - m_) / (dims_[0] - 1);
+    }
+
     mblocks_ = 1;
     nblocks_ = 1;
 
@@ -805,39 +769,10 @@ class ChaseMpiProperties {
     blacs_gridmap_(&colcomm_ctxt_, userMap, &dims_[0], &dims_[0], &ONE );
 
     int info;
-    std::size_t mb_ = m_;
-    if( (rank_ / dims_[1]) + 1 == dims_[0] && dims_[0] != 1){
-        mb_ = (N_ - m_) / (dims_[0] - 1);
-    }
-
     std::size_t nevex_ = nev_ + nex_;
     std::size_t bsize = 32;
     std::size_t nx_b = std::min(bsize, nevex_);
     t_descinit(desc1D_Nxnevx_, &N_, &nevex_, &mb_, &nx_b, &zero, &zero, &colcomm_ctxt_, &m_, &info);
-
-/*    int zero = 0;
-    int ictxt;
-	
-    blacs_get_(&zero, &zero, &ictxt );
-    rcom1D_ctxt_ = ictxt;
-
-    int userMap1[dims_[1]];
-
-    for(int i = 0; i < dims_[1]; i++){
-         userMap1[i] = ( rank_ / dims_[1] ) * dims_[1] + i;        
-    }
-    int ONE = 1;
-    blacs_gridmap_(&rcom1D_ctxt_, userMap1, &dims_[1], &dims_[1], &ONE );
-    int info;
-    std::size_t nb_ = n_;
-    if( (rank_+1) % dims_[1] == 0 && dims_[1] != 1){
-	nb_ = (N_ - n_) / (dims_[1] - 1);
-    }
-    std::size_t nevex_ = nev_ + nex_;
-    std::size_t blocksize = 32;
-    std::size_t nx_b = std::min(blocksize, nevex_);
-    t_descinit(desc1D_Nxnevx_, &N_, &nevex_, &nb_, &nx_b, &zero, &zero, &rcom1D_ctxt_, &n_, &info);
-*/
 #endif
 
   }

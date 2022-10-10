@@ -43,7 +43,7 @@ int main(int argc, char** argv)
 
 #ifdef USE_BLOCK_CYCLIC
   /*parameters of block-cyclic data layout*/
-  std::size_t NB = 32; //block size for block-cyclic data layout
+  std::size_t NB = 8; //block size for block-cyclic data layout
   int irsrc = 0; 
   int icsrc = 0;
 #endif

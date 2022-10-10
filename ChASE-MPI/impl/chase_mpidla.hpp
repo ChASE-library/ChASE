@@ -62,6 +62,9 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
     mb_ = matrix_properties->get_mb();
     nb_ = matrix_properties->get_nb();    
 
+    icsrc_ = matrix_properties->get_icsrc();
+    irsrc_ = matrix_properties->get_irsrc();
+
     mblocks_ = matrix_properties->get_mblocks();
     nblocks_ = matrix_properties->get_nblocks();
 
@@ -79,9 +82,6 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
 
     reqs_.resize(row_size_);
     newType_.resize(row_size_);
-
-    reqs_c_.resize(col_size_);
-    newType_c_.resize(col_size_);
 
     send_lens_ = matrix_properties_->get_sendlens();
     recv_offsets_.resize(send_lens_.size());
@@ -105,97 +105,14 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
       MPI_Type_commit(&(newType_[i]));
     }
 
-    for (auto i = 0; i < col_size_; ++i){ 
-      int array_of_sizes[2] = {static_cast<int>(N_), 1};
-      int array_of_subsizes[2] = {send_lens_[0][i], 1};
-      int array_of_starts[2] = {recv_offsets_[0][i], 0};
-
-      MPI_Type_create_subarray(2, array_of_sizes, array_of_subsizes,
-                               array_of_starts, MPI_ORDER_FORTRAN,
-                               getMPI_Type<T>(), &(newType_c_[i]));
-
-      MPI_Type_commit(&(newType_c_[i]));
-    }
 
 #if defined(HAS_SCALAPACK)
     desc1D_Nxnevx_ = matrix_properties->get_desc1D_Nxnevx();    
 #endif
 
-    if(data_layout.compare("Block-Cyclic") == 0){
-
-      auto& blockcounts_c = matrix_properties_->get_blockcounts()[0];
-      auto& blocklens_c = matrix_properties_->get_blocklens()[0];
-      auto& blockdispls_c = matrix_properties_->get_blockdispls()[0];
-
-      auto& blockcounts_r = matrix_properties_->get_blockcounts()[1];
-      auto& blocklens_r = matrix_properties_->get_blocklens()[1];
-      auto& blockdispls_r = matrix_properties_->get_blockdispls()[1];    
-
-      //key: global index 
-      //value: index in the collected buf of c 
-      std::map<int, int> C_Map;
-      std::map<int, int>::iterator it;
-
-      std::vector<int> B_gIndex;
-
-      int cnt = 0;
-      for(auto j = 0; j < col_size_; ++j){
-        for(auto i = 0; i < blockcounts_c[j]; ++i){
-          for(auto k = blockdispls_c[j][i]; k < blockdispls_c[j][i] + blocklens_c[j][i]; ++k){
-            C_Map.insert({k, cnt});
-            cnt++;
-          }
-        }
-      }
-    
-      for(auto i = 0; i < blockcounts_r[row_rank_]; ++i){
-        for(auto k = blockdispls_r[row_rank_][i]; k < blockdispls_r[row_rank_][i] + blocklens_r[row_rank_][i]; ++k ){
-          B_gIndex.push_back(k);
-        }
-      }
-
-      B_gIndex.push_back(-1);
- 
-      it = C_Map.find(B_gIndex[0]); 
-      B_continuos_.push_back(it->second);
-      int last_idx = it->second;
-      int cnt2 = last_idx;    
-    
-      for(auto i = 1; i < B_gIndex.size(); i++){
-        it = C_Map.find(B_gIndex[i]);
-        if(it->second == last_idx + 1){
-          cnt2++;
-        }else{
-          B_continuos_.push_back(cnt2);	  
-          B_continuos_.push_back(it->second);
-          cnt2 = it->second;
-        }
-        last_idx = it->second;
-      }
-
-      it = C_Map.find(B_gIndex[B_gIndex.size()]);
-      if(it->second == last_idx + 1){
-        cnt2++;
-        B_continuos_.push_back(cnt2);
-      }else{
-        B_continuos_.push_back(it->second);
-        B_continuos_.push_back(it->second);
-      }
-    }
-
-    std::size_t nb_ = n_;
-    if(row_rank_ == row_size_ - 1 && row_size_ != 1){
-        nb_ = (N_ - n_) / (row_size_ - 1);
-    }
-
-    std::size_t mb_ = m_;
-    if(col_rank_ == col_size_ - 1 && col_size_ != 1){
-        mb_ = (N_ - m_) / (col_size_ - 1);
-    }
-
-    int c_dest = 0;
+    int c_dest = icsrc_;
     c_dests.push_back(c_dest);
-    int c_src = 0;
+    int c_src = irsrc_;
     c_srcs.push_back(c_src);
     int c_len = 1;
     int b_disp = 0;
@@ -203,44 +120,36 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
     b_disps.push_back(b_disp);
     c_disps.push_back(c_disp);
 
+
     for(auto i = 1; i < N_; i++){
-    auto dest_tmp = i / nb_;
-    auto src_tmp = i / mb_;
-    if(dest_tmp == c_dest && src_tmp == c_src){
+      auto src_tmp = (i / mb_) % col_size_;
+      auto dest_tmp = (i / nb_) % row_size_;
+      if(dest_tmp == c_dest && src_tmp == c_src){
         c_len += 1;
-    }else{
+      }else{
         c_lens.push_back(c_len);
-        c_dest = i / nb_;
-        b_disp = i % nb_;
-        c_disp = i % mb_;
-        c_src = i / mb_;
+        c_dest = (i / nb_) % row_size_;
+        b_disp = i % nb_ + ((i / nb_) / row_size_) * nb_;
+        c_disp = i % mb_ + ((i / mb_) / col_size_) * mb_;
+        c_src = (i / mb_) % col_size_;
         c_srcs.push_back(c_src);
         c_dests.push_back(c_dest);
         b_disps.push_back(b_disp);
         c_disps.push_back(c_disp);
-        c_len = 1;
-    }
+        c_len = 1;        
+      }
     }
     c_lens.push_back(c_len);
-
-    for(auto i = 0; i < c_lens.size(); i++){
-        if(row_rank_ == c_dests[i]){
-            std::cout << "[" << col_rank_ << "," << row_rank_ << "]: broadcasting from rank #" << c_srcs[i] << " of displacement " << c_disps[i] << " of C within column communicator #" << c_dests[i] << " of displacement " << b_disps[i] << " in B with lens " << c_lens[i] << "\n";
-        }
-    }
 
     reqsc2b_.resize(c_lens.size());
     c_sends_.resize(c_lens.size());
     b_recvs_.resize(c_lens.size());
 
-
     for(auto i = 0; i < c_lens.size(); i++){
         if(row_rank_ == c_dests[i]){
            if(col_rank_ == c_srcs[i]){
-             int m1 = static_cast<int>(mb_);
-             if(c_srcs[i] == col_size_ - 1){
-               m1 = N_ - (col_size_ - 1) * mb_;
-             }
+             int m1 = send_lens_[0][col_rank_];
+
              int array_of_sizes[2] = {m1, 1};
              int array_of_subsizes[2] = {c_lens[i], 1};
              int array_of_starts[2] = {c_disps[i], 0};
@@ -249,6 +158,8 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
                                     array_of_starts, MPI_ORDER_FORTRAN,
                                     getMPI_Type<T>(), &(c_sends_[i]));
              MPI_Type_commit(&(c_sends_[i]));
+
+             std::cout << "[" << col_rank_ << "," << row_rank_ << "]\n";
          }else{
              int array_of_sizes2[2] = {static_cast<int>(n_), 1};
              int array_of_starts2[2] = {b_disps[i], 0};
@@ -256,12 +167,11 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
              MPI_Type_create_subarray(2, array_of_sizes2, array_of_subsizes2,
                                array_of_starts2, MPI_ORDER_FORTRAN,
                                getMPI_Type<T>(), &(b_recvs_[i]));
-            MPI_Type_commit(&(b_recvs_[i]));
+             MPI_Type_commit(&(b_recvs_[i]));
 
          }
        }
     }
-
 
 
   }
@@ -504,70 +414,6 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
         t_lacpy('A', c_lens[i], block, C2_ + locked * m_ + c_disps[i], m_, B2_ + locked * n_ + b_disps[i], n_ );
       }
     }
-
-/*
-    if(col_rank_ == 0){
-        int array_of_sizes[2] = {static_cast<int>(m_), 1};
-        int array_of_subsizes[2] = {static_cast<int>(m_), 1};
-        int array_of_starts[2] = {0, 0};      
-        MPI_Datatype type0;
-        MPI_Type_create_subarray(2, array_of_sizes, array_of_subsizes,
-                               array_of_starts, MPI_ORDER_FORTRAN,
-                               getMPI_Type<T>(), &(type0));
-
-        MPI_Type_commit(&(type0));
-
-        MPI_Ibcast(C2_ + locked * m_,  block, type0, 0, col_comm_, &reqs_[0]);
-    }else{
-        int array_of_sizes[2] = {static_cast<int>(N_), 1};
-        int array_of_subsizes[2] = {static_cast<int>(m_), 1};
-        int array_of_starts[2] = {0, 0};
-        MPI_Type_create_subarray(2, array_of_sizes, array_of_subsizes,
-                               array_of_starts, MPI_ORDER_FORTRAN,
-                               getMPI_Type<T>(), &(newType_[0]));
-
-        MPI_Type_commit(&(newType_[0]));
-                        
-        MPI_Ibcast(B2_ + locked * n_, block, newType_[0], 0, col_comm_,  &reqs_[0]);
-    }
-
-    MPI_Wait( &reqs_[0], MPI_STATUSES_IGNORE);
-
-    if(col_rank_ == 1){
-        int array_of_sizes[2] = {static_cast<int>(m_), 1};
-        int array_of_subsizes[2] = {static_cast<int>(m_), 1};
-        int array_of_starts[2] = {0, 0};      
-        MPI_Datatype type1;
-        MPI_Type_create_subarray(2, array_of_sizes, array_of_subsizes,
-                               array_of_starts, MPI_ORDER_FORTRAN,
-                               getMPI_Type<T>(), &(type1));
-
-        MPI_Type_commit(&(type1));
-            
-        MPI_Ibcast(C2_ + locked * m_,  block, type1, 1, col_comm_,  &reqs_[1]);
-    }else{
-        int array_of_sizes[2] = {static_cast<int>(N_), 1};
-        int array_of_subsizes[2] = {static_cast<int>(m_), 1};
-        int array_of_starts[2] = {static_cast<int>(m_), 0};
-        MPI_Type_create_subarray(2, array_of_sizes, array_of_subsizes,
-                               array_of_starts, MPI_ORDER_FORTRAN,
-                               getMPI_Type<T>(), &(newType_[1]));
-
-        MPI_Type_commit(&(newType_[1]));
-                        
-        MPI_Ibcast(B2_ + locked * n_, block, newType_[1], 1, col_comm_,  &reqs_[1]);
-    }
-
-    MPI_Wait( &reqs_[1], MPI_STATUSES_IGNORE);
-
-    if(col_rank_ == 0){
-        t_lacpy('A', m_, block, C2_ + locked * m_, m_, B2_ + locked * n_, n_ );
-    }
-
-    if(col_rank_ == 1){
-        t_lacpy('A', m_, block, C2_ + locked * m_, m_, B2_ + locked * n_ + m_, n_ );
-    }
-*/
  
   }
 
@@ -757,7 +603,6 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
       dla_->gemm_small(CblasColMajor, CblasConjTrans, CblasNoTrans, 
                     block, block, n_, 
                     &One, 
-                    //approxV + locked * N + recv_offsets_[1][row_rank_], N,
                     B2_ + locked * n_, n_,
                     B_ + locked * n_, n_, 
                     &Zero, 
@@ -798,7 +643,6 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
       for(auto i =0; i < unconverged; i++){
         T alpha = -ritzv[i];
         t_axpy(n_, &alpha, 
-               //approxV_ + locked * N_ + i * N_ + recv_offsets_[1][row_rank_], 1, 
                B2_ + locked * n_ + i * n_, 1, 
                B_ + locked * n_ + i * n_, 1);
 
@@ -815,7 +659,6 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
 
   }
 
-
   void LanczosDos(std::size_t N_, std::size_t idx, std::size_t m, T *workspace_, std::size_t ldw, T *ritzVc, std::size_t ldr, T* approxV_, std::size_t ldv) override{
   	  
     T alpha = 1.0;
@@ -829,12 +672,6 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
            &beta,
            approxV_ + recv_offsets_[1][row_rank_], ldv
     );
-
-      for (auto i = 0; i < row_size_; ++i){
-          MPI_Ibcast(approxV_, idx, newType_[i], i, row_comm_, &reqs_[i]);
-      }
-
-      MPI_Waitall(row_size_, reqs_.data(), MPI_STATUSES_IGNORE);
 
   }
 
@@ -866,21 +703,6 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
   }
 
   void hhQR_dist(std::size_t N_, std::size_t nevex,std::size_t locked, T *approxV, std::size_t ldv) override {
-/*#if defined(HAS_SCALAPACK)
-    int grank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &grank);
-   if(grank == 0) std::cout << "hh locked: " << locked_ << std::endl;    
-    double t1 = MPI_Wtime();
-    std::unique_ptr<T []> tau(new T[nevex]);
-    int one = 1;
-    t_pgeqrf(m_, nevex, B_, one, one, desc1D_Nxnevx_, tau.get() );
-    t_pgqr(m_, nevex, nevex, B_, one, one, desc1D_Nxnevx_, tau.get());
-   double t2 = MPI_Wtime();
-    if(grank == 0) std::cout << " SCALAPACK QR time: " << t2 - t1 << std::endl;   
-    std::memcpy(C_, C2_, locked_ * m_ * sizeof(T));
-    std::memcpy(C2_+locked_ * m_, C_ + locked_ * m_, (nevex - locked_) * m_ * sizeof(T));   
-#endif
-*/
 #if defined(HAS_SCALAPACK)
     std::unique_ptr<T []> tau(new T[nevex]);
     int one = 1;
@@ -968,11 +790,9 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
   
   std::vector<MPI_Request> reqs_;
   std::vector<MPI_Datatype> newType_;
-  std::vector<MPI_Request> reqs_c_;
-  std::vector<MPI_Datatype> newType_c_;  
+
   std::vector<std::vector<int>> send_lens_;
   std::vector<std::vector<int>> recv_offsets_;
-  std::vector<int> B_continuos_;
 
   std::vector<MPI_Request> reqsc2b_;
   std::vector<MPI_Datatype> c_sends_;
@@ -983,6 +803,8 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
   std::vector<int> b_disps;
   std::vector<int> c_disps;
 
+  int icsrc_;
+  int irsrc_;
   int row_size_;
   int row_rank_;
   int col_size_;
