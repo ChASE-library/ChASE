@@ -270,7 +270,7 @@ class ChaseMpi : public chase::Chase<T> {
   //! @param fixednev: total number of converged eigenpairs before this time QR factorization.  
   void stabQR(std::size_t fixednev) override{
     std::size_t nevex = nev_ + nex_;
-    dla_->cholQR1_dist(N_, nevex, locked_, approxV_, N_);
+    dla_->hhQR_dist(N_, nevex, locked_, approxV_, N_);
   }
   //! This member function implements the virtual one declared in Chase class.
   //! This member function performs a QR factorization with an explicit construction of the unitary matrix `Q`.

@@ -898,7 +898,6 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
       delete[] Vrnd;
     }
 
-    
     // ENSURE that v1 has one norm
     Base<T> nrm_partial = dla_->nrm2(m_, C_, 1);
     Base<T> pw2 = std::pow(nrm_partial, 2); 
@@ -974,128 +973,6 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
     delete[] v0_;
     delete[] v00_;
 
-/*  
-    std::size_t m = mIters;
-    std::size_t n = N_;
-
-    T *v0_ = new T[n]();
-    T *w_ = new T[n]();
-
-    T *v0 = v0_;
-    T *w = w_;
-
-    T alpha = T(1.0);
-    T beta = T(0.0);
-    T One = T(1.0);
-    T Zero = T(0.0);
-    
-    std::cout << idx << std::endl;
-
-    // V is filled with randomness
-    T *v1 = workspace_;
-
-    if(idx >= 0){
-      for (std::size_t k = 0; k < N_; ++k) v1[k] = V_[k + idx * N_];
-    }else{
-    // std::random_device rd;
-      std::mt19937 gen(2342.0);
-      std::normal_distribution<> normal_distribution;
-
-      for (std::size_t k = 0; k < N_; ++k){
-        v1[k] = getRandomT<T>([&]() { return normal_distribution(gen); });
-      }
-    }
-
-    // ENSURE that v1 has one norm
-    Base<T> real_alpha = dla_->nrm2(n, v1, 1);
-    alpha = T(1 / real_alpha);
-    dla_->scal(n, &alpha, v1, 1);
-
-    Base<T> real_beta = 0.0;
-
-    if(m % 2 != 0){
-      m = m + 1;
-    }
-
-    for (std::size_t k = 0; k < m; k = k + 2) {
-      if (workspace_ + k * n != v1){
-        memcpy(workspace_ + k * n, v1, n * sizeof(T));
-      }
-
-      this->applyVec(v1, w);
-
-      alpha = dla_->dot(n, v1, 1, w, 1);
-
-      alpha = -alpha;
-      dla_->axpy(n, &alpha, v1, 1, w, 1);
-      alpha = -alpha;
-
-      d[k] = std::real(alpha);
-      std::cout << "alpha 1: " << alpha <<  std::endl;
-
-
-      if (k == m - 1) break;
-
-      beta = T(-real_beta);
-      dla_->axpy(n, &beta, v0, 1, w, 1);
-      beta = -beta;
-      std::cout << "beta 1: " << beta <<  std::endl;      
-
-      real_beta = dla_->nrm2(n, w, 1); 
-      std::cout << "real_beta 2: " << real_beta <<  std::endl;
-
-      beta = T(1.0 / real_beta);
-
-      dla_->scal(n, &beta, w, 1);
-
-      e[k] = real_beta;
-
-      std::swap(v1, v0);
-      std::swap(v1, w); 
-    
-      //
-      if (workspace_ + (k + 1) * n != v1){
-        memcpy(workspace_ + (k + 1) * n, v1, n * sizeof(T));
-      }
-
-      this->applyVec(v1, w);
-
-      alpha = dla_->dot(n, v1, 1, w, 1);
-      alpha = -alpha;
-      dla_->axpy(n, &alpha, v1, 1, w, 1);
-      alpha = -alpha;
-
-      d[k+1] = std::real(alpha);
-      std::cout << "alpha 2: " << alpha <<  std::endl;
-
-      if (k + 1 == m - 1) break;
-
-      beta = T(-real_beta);
-      std::cout << "beta 2: " << beta << " " << w[1] << " " << v0[1] <<  std::endl;      
-      dla_->axpy(n, &beta, v0, 1, w, 1);
-      beta = -beta;
-
-      real_beta = dla_->nrm2(n, w, 1); 
-      std::cout << "real_beta 2: " << real_beta <<  std::endl;
-
-      beta = T(1.0 / real_beta);
-      dla_->scal(n, &beta, w, 1);
-
-      e[k+1] = real_beta;
-
-      std::swap(v1, v0);
-      std::swap(v1, w); 
-
-      //std::cout << "real_beta: " << real_beta <<  std::endl;
-
-    }
-
-    *rbeta = real_beta;
-
-    delete[] w_;
-    delete[] v0_;
-*/
-
   }
 
 
@@ -1104,7 +981,7 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
     T alpha = 1.0;
     T beta = 0.0;
 
-/*    dla_->gemm_large(CblasColMajor, CblasNoTrans, CblasNoTrans,
+    dla_->gemm_large(CblasColMajor, CblasNoTrans, CblasNoTrans,
            m_, idx, m,
            &alpha,
            C2_ + idx * m_, m_,
@@ -1113,15 +990,6 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
            C_ + idx * m_, m_
     );    
 
-    dla_->gemm_large(CblasColMajor, CblasNoTrans, CblasNoTrans,
-           n_, idx, m,
-           &alpha,
-           workspace_ + recv_offsets_[1][row_rank_], ldw,
-           ritzVc, ldr,
-           &beta,
-           approxV_ + recv_offsets_[1][row_rank_], ldv
-    );
-*/
   }
 
  private:
