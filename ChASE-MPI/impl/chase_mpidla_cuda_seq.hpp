@@ -168,7 +168,9 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
   }
 
   void asynCxHGatherC(T *V, std::size_t locked, std::size_t block) override {}
-
+  void asynHxBGatherB(T *V, std::size_t locked, std::size_t block) override {}
+  void B2C(T *v1, T *v2, std::size_t locked, std::size_t block) override {}
+  void C2B(T *c, T *b, std::size_t locked, std::size_t block) override{}
 
   /*! - For ChaseMpiDLACudaSeq, `applyVec` is implemented with `GEMM` provided by `BLAS`.
       - **Parallelism is SUPPORT within node if multi-threading is actived**
@@ -471,6 +473,8 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
   void Lock(T * workspace_, std::size_t new_converged) override{}
 
   void Swap(std::size_t i, std::size_t j)override{}
+
+  void lanczos(std::size_t mIters, int idx, Base<T> *d, Base<T> *e,  Base<T> *rbeta,  T *V_, T *workspace_)override{}
   
  private:
   std::size_t n_;

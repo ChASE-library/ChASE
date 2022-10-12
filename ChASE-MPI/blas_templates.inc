@@ -119,6 +119,7 @@ std::complex<T> t_dot(const std::size_t n, const std::complex<T>* x,
   for (BlasInt i = 0; i < n; ++i) {
     alpha += std::conj(x[i * incx]) * y[i * incy];
   }
+
   return alpha;
 }
 

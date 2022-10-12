@@ -167,6 +167,18 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
                 C_ + locked * m_, m_, &beta, B_ + locked * n_, n_);
   }
 
+  void asynHxBGatherB(T *V, std::size_t locked, std::size_t block) override {
+    T alpha = T(1.0);
+    T beta = T(0.0);     
+
+    t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, m_,
+             static_cast<std::size_t>(block), n_, &alpha, H_, ldh_,
+             B_ + locked * n_, n_, &beta, C_ + locked * m_, m_);    
+  }
+
+
+  void B2C(T *v1, T *v2, std::size_t locked, std::size_t block) override {}
+  void C2B(T *c, T *b, std::size_t locked, std::size_t block) override{}
 
   /*!
     - For ChaseMpiDLABlaslapack,  `applyVec` is implemented in ChaseMpiDLA.
@@ -234,14 +246,18 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
    - **Parallelism is SUPPORT within node if multi-threading is enabled.**    
     - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
-  void axpy(std::size_t N, T * alpha, T * x, std::size_t incx, T *y, std::size_t incy) override { }
+  void axpy(std::size_t N, T * alpha, T * x, std::size_t incx, T *y, std::size_t incy) override { 
+      t_axpy(N, alpha, x, incx, y, incy);
+  }
 
   /*!
     - For ChaseMpiDLABlaslapack, `scal` is implemented in ChaseMpiDLA
     - **Parallelism is SUPPORT within node if multi-threading is enabled.**   
     - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
-  void scal(std::size_t N, T *a, T *x, std::size_t incx) override { }
+  void scal(std::size_t N, T *a, T *x, std::size_t incx) override { 
+    t_scal(N, a, x, incx);
+}
 
   /*!
     - For ChaseMpiDLABlaslapack, `nrm2` is implemented using `BLAS` routine `xNRM2`.
@@ -454,6 +470,9 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
   void Lock(T * workspace_,  std::size_t new_converged) override{}
 
   void Swap(std::size_t i, std::size_t j)override{}
+
+  void lanczos(std::size_t mIters, int idx, Base<T> *d, Base<T> *e,  Base<T> *rbeta,  T *V_, T *workspace_)override{}
+
 
  private:
   enum NextOp { cAb, bAc };

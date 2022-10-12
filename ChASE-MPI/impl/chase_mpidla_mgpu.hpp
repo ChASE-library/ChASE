@@ -266,6 +266,9 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
 
 
   void asynCxHGatherC(T *V, std::size_t locked, std::size_t block) override {}
+  void asynHxBGatherB(T *V, std::size_t locked, std::size_t block) override {}
+  void B2C(T *v1, T *v2, std::size_t locked, std::size_t block) override {}
+  void C2B(T *c, T *b, std::size_t locked, std::size_t block) override{}
 
 
   /*!
@@ -470,6 +473,7 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
 
   void Swap(std::size_t i, std::size_t j)override{}
   
+  void lanczos(std::size_t mIters, int idx, Base<T> *d, Base<T> *e,  Base<T> *rbeta,  T *V_, T *workspace_)override{}
 
  private:
   enum NextOp { cAb, bAc };

@@ -32,9 +32,9 @@ int main(int argc, char** argv)
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-  std::size_t N = 51; //problem size
-  std::size_t nev = 4; //number of eigenpairs to be computed
-  std::size_t nex = 2; //extra searching space
+  std::size_t N = 1001; //problem size
+  std::size_t nev = 100; //number of eigenpairs to be computed
+  std::size_t nex = 20; //extra searching space
   
   int dims[2];
   dims[0] = dims[1] = 0;
@@ -43,19 +43,18 @@ int main(int argc, char** argv)
 
 #ifdef USE_BLOCK_CYCLIC
   /*parameters of block-cyclic data layout*/
-  std::size_t NB = 8; //block size for block-cyclic data layout
+  std::size_t NB = 32; //block size for block-cyclic data layout
   int irsrc = 0; 
   int icsrc = 0;
 #endif
 
 #ifdef USE_GIVEN_DIST
   //column major
-  ///
-  int tmp;
+  /*int tmp;
   tmp = dims[0];
   dims[0] = dims[1];
   dims[1] = tmp;
-  //////  
+  */  
   std::size_t m, n;
   std::size_t len;
   int myrow = rank % dims[0];

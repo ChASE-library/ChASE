@@ -120,7 +120,6 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
     b_disps.push_back(b_disp);
     c_disps.push_back(c_disp);
 
-
     for(auto i = 1; i < N_; i++){
       auto src_tmp = (i / mb_) % col_size_;
       auto dest_tmp = (i / nb_) % row_size_;
@@ -158,8 +157,6 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
                                     array_of_starts, MPI_ORDER_FORTRAN,
                                     getMPI_Type<T>(), &(c_sends_[i]));
              MPI_Type_commit(&(c_sends_[i]));
-
-             std::cout << "[" << col_rank_ << "," << row_rank_ << "]\n";
          }else{
              int array_of_sizes2[2] = {static_cast<int>(n_), 1};
              int array_of_starts2[2] = {b_disps[i], 0};
@@ -172,6 +169,68 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
          }
        }
     }
+
+///
+    int b_dest = irsrc_;
+    b_dests.push_back(b_dest);
+    int b_src = icsrc_;
+    b_srcs.push_back(b_src);
+    int b_len = 1;
+    int c_disp_2 = 0;
+    int b_disp_2 = 0;
+    b_disps_2.push_back(b_disp_2);
+    c_disps_2.push_back(c_disp_2);
+
+    for(auto i = 1; i < N_; i++){
+      auto src_tmp = (i / nb_) % row_size_;
+      auto dest_tmp = (i / mb_) % col_size_;
+      if(dest_tmp == b_dest && src_tmp == b_src){
+        b_len += 1;
+      }else{
+        b_lens.push_back(b_len);
+        b_dest = (i / mb_) % col_size_;
+        c_disp_2 = i % mb_ + ((i / mb_) / col_size_) * mb_;
+        b_disp_2 = i % nb_ + ((i / nb_) / row_size_) * nb_;
+        b_src = (i / nb_) % row_size_;
+        b_srcs.push_back(b_src);
+        b_dests.push_back(b_dest);
+        c_disps_2.push_back(c_disp_2);
+        b_disps_2.push_back(b_disp_2);
+        b_len = 1;        
+      }
+    }
+    b_lens.push_back(b_len);
+
+    reqsb2c_.resize(b_lens.size());
+    b_sends_.resize(b_lens.size());
+    c_recvs_.resize(b_lens.size());
+
+    for(auto i = 0; i < b_lens.size(); i++){
+        if(col_rank_ == b_dests[i]){
+           if(row_rank_ == b_srcs[i]){
+             int n1 = send_lens_[1][row_rank_];
+
+             int array_of_sizes[2] = {n1, 1};
+             int array_of_subsizes[2] = {b_lens[i], 1};
+             int array_of_starts[2] = {b_disps_2[i], 0};
+
+             MPI_Type_create_subarray(2, array_of_sizes, array_of_subsizes,
+                                    array_of_starts, MPI_ORDER_FORTRAN,
+                                    getMPI_Type<T>(), &(b_sends_[i]));
+             MPI_Type_commit(&(b_sends_[i]));
+         }else{
+             int array_of_sizes2[2] = {static_cast<int>(m_), 1};
+             int array_of_starts2[2] = {c_disps_2[i], 0};
+             int array_of_subsizes2[2] = {b_lens[i], 1};
+             MPI_Type_create_subarray(2, array_of_sizes2, array_of_subsizes2,
+                               array_of_starts2, MPI_ORDER_FORTRAN,
+                               getMPI_Type<T>(), &(c_recvs_[i]));
+             MPI_Type_commit(&(c_recvs_[i]));
+
+         }
+       }
+    }
+
 
 
   }
@@ -374,17 +433,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
   }
 
   void asynCxHGatherC(T *V, std::size_t locked, std::size_t block) override {
-
-    int csize;
-    int crank;
-    MPI_Comm_size(col_comm_, &csize);
-    MPI_Comm_rank(col_comm_, &crank);
-
-    int rsize;
-    int rrank;
-    MPI_Comm_size(row_comm_, &rsize);
-    MPI_Comm_rank(row_comm_, &rrank);
-  
+   
     std::size_t dim = n_ * block;
 
     for(auto i = 0; i < c_lens.size(); i++){
@@ -398,6 +447,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
        }
     }
 
+
     dla_->asynCxHGatherC(V, locked, block);
 
     for(auto i = 0; i < c_lens.size(); i++){
@@ -408,7 +458,6 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
 
     MPI_Allreduce(MPI_IN_PLACE, B_ + locked * n_, dim, getMPI_Type<T>(), MPI_SUM, col_comm_); // V' * H
 
-
     for(auto i = 0; i < c_lens.size(); i++){
       if(row_rank_ == c_dests[i] && col_rank_ == c_srcs[i]){
         t_lacpy('A', c_lens[i], block, C2_ + locked * m_ + c_disps[i], m_, B2_ + locked * n_ + b_disps[i], n_ );
@@ -417,6 +466,89 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
  
   }
 
+
+  void asynHxBGatherB(T *V, std::size_t locked, std::size_t block) override {
+  
+    std::size_t dim = m_ * block;
+
+    for(auto i = 0; i < b_lens.size(); i++){
+        if(col_rank_ == b_dests[i]){
+           if(row_rank_ == b_srcs[i]){
+              MPI_Ibcast(B2_ + locked * n_,  block, b_sends_[i], b_srcs[i], row_comm_, &reqsb2c_[i]);
+         }else{
+              MPI_Ibcast(C2_ + locked * m_, block, c_recvs_[i], b_srcs[i], row_comm_,  &reqsb2c_[i]);
+
+         }
+       }
+    }
+
+    dla_->asynHxBGatherB(V, locked, block);
+
+    for(auto i = 0; i < b_lens.size(); i++){
+      if(col_rank_ == b_dests[i]){
+        MPI_Wait( &reqsb2c_[i], MPI_STATUSES_IGNORE);
+      }
+    }
+
+    MPI_Allreduce(MPI_IN_PLACE, C_ + locked * m_, dim, getMPI_Type<T>(), MPI_SUM, row_comm_); // V' * H
+
+
+    for(auto i = 0; i < b_lens.size(); i++){
+      if(col_rank_ == b_dests[i] && row_rank_ == b_srcs[i]){
+        t_lacpy('A', b_lens[i], block, B2_ + locked * n_ + b_disps_2[i], n_, C2_ + locked * m_ + c_disps_2[i], m_ );
+      }
+    }
+ 
+  }
+
+  void B2C(T *b, T *c, std::size_t locked, std::size_t block) override {
+    for(auto i = 0; i < b_lens.size(); i++){
+        if(col_rank_ == b_dests[i]){
+           if(row_rank_ == b_srcs[i]){
+              MPI_Ibcast(b + locked * n_,  block, b_sends_[i], b_srcs[i], row_comm_, &reqsb2c_[i]);
+         }else{
+              MPI_Ibcast(c + locked * m_, block, c_recvs_[i], b_srcs[i], row_comm_,  &reqsb2c_[i]);
+         }
+       }
+    }
+
+    for(auto i = 0; i < b_lens.size(); i++){
+      if(col_rank_ == b_dests[i]){
+        MPI_Wait( &reqsb2c_[i], MPI_STATUSES_IGNORE);
+      }
+    }
+
+    for(auto i = 0; i < b_lens.size(); i++){
+      if(col_rank_ == b_dests[i] && row_rank_ == b_srcs[i]){
+        t_lacpy('A', b_lens[i], block, b + locked * n_ + b_disps_2[i], n_, c + locked * m_ + c_disps_2[i], m_ );
+      }
+    }
+  }
+
+  void C2B(T *c, T *b, std::size_t locked, std::size_t block) override{
+    for(auto i = 0; i < c_lens.size(); i++){
+        if(row_rank_ == c_dests[i]){
+           if(col_rank_ == c_srcs[i]){
+              MPI_Ibcast(c + locked * m_,  block, c_sends_[i], c_srcs[i], col_comm_, &reqsc2b_[i]);
+         }else{
+              MPI_Ibcast(b + locked * n_, block, b_recvs_[i], c_srcs[i], col_comm_,  &reqsc2b_[i]);
+
+         }
+       }
+    }
+
+    for(auto i = 0; i < c_lens.size(); i++){
+      if(row_rank_ == c_dests[i]){
+        MPI_Wait( &reqsc2b_[i], MPI_STATUSES_IGNORE);
+      }
+    }
+
+    for(auto i = 0; i < c_lens.size(); i++){
+      if(row_rank_ == c_dests[i] && col_rank_ == c_srcs[i]){
+        t_lacpy('A', c_lens[i], block, c + locked * m_ + c_disps[i], m_, b + locked * n_ + b_disps[i], n_ );
+      }
+    }    
+  }
 
   /*!
     - For ChaseMpiDLA,  `shiftMatrix` is implemented in nested loop for both `Block Distribution` and `Block-Cyclic Distribution`.
@@ -495,7 +627,6 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
     - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
   void axpy(std::size_t N, T * alpha, T * x, std::size_t incx, T *y, std::size_t incy) override {
-      t_axpy(N, alpha, x, incx, y, incy);
       dla_->axpy(N, alpha, x, incx, y, incy);
   }
 
@@ -506,7 +637,6 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
     - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
   void scal(std::size_t N, T *a, T *x, std::size_t incx) override {
-      t_scal(N, a, x, incx);
       dla_->scal(N, a, x, incx);
   }
 
@@ -659,21 +789,7 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
 
   }
 
-  void LanczosDos(std::size_t N_, std::size_t idx, std::size_t m, T *workspace_, std::size_t ldw, T *ritzVc, std::size_t ldr, T* approxV_, std::size_t ldv) override{
-  	  
-    T alpha = 1.0;
-    T beta = 0.0;
 
-    dla_->gemm_large(CblasColMajor, CblasNoTrans, CblasNoTrans,
-           n_, idx, m,
-           &alpha,
-           workspace_ + recv_offsets_[1][row_rank_], ldw,
-           ritzVc, ldr,
-           &beta,
-           approxV_ + recv_offsets_[1][row_rank_], ldv
-    );
-
-  }
 
   void syherk(char uplo, char trans, std::size_t n, std::size_t k, T* alpha, T* a, std::size_t lda, T* beta, T* c, std::size_t ldc) override {
       dla_->syherk(uplo, trans, n, k, alpha, a, lda, beta, c, ldc);
@@ -752,6 +868,260 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
     delete[] tmp;
   }
 
+  void lanczos(std::size_t mIters, int idx, Base<T> *d, Base<T> *e,  Base<T> *rbeta,  T *V_, T *workspace_)override{
+
+    T *v0_ = new T[n_]();
+    T *v00_ = new T[m_]();
+
+    T *v0 = v0_;
+    T *v00 = v00_;
+
+    T alpha = T(1.0);
+    T beta = T(0.0);
+    T One = T(1.0);
+    T Zero = T(0.0);
+
+    std::cout << idx << std::endl;
+
+    if(idx >= 0){
+      //this->preApplication(V_, 0, 1);
+        for(auto i = 0; i < mblocks_; i++){
+          std::memcpy(C_ + r_offs_l_[i], V_ + idx * N_ + r_offs_[i], r_lens_[i] * sizeof(T));
+        }   
+    }else{
+    // std::random_device rd;
+      std::mt19937 gen(2342.0);
+      std::normal_distribution<> normal_distribution;
+      T *Vrnd = new T[N_];
+      for (std::size_t k = 0; k < N_; ++k){
+        Vrnd[k] = getRandomT<T>([&]() { return normal_distribution(gen); });
+      }
+      this->preApplication(Vrnd, 0, 1);
+      delete[] Vrnd;
+    }
+
+    
+    // ENSURE that v1 has one norm
+    Base<T> nrm_partial = dla_->nrm2(m_, C_, 1);
+    Base<T> pw2 = std::pow(nrm_partial, 2); 
+    MPI_Allreduce(MPI_IN_PLACE, &pw2, 1, getMPI_Type<Base<T>>(), MPI_SUM, col_comm_);
+    Base<T> real_alpha = std::sqrt(pw2);
+    alpha = T(1 / real_alpha);
+    dla_->scal(m_, &alpha, C_, 1);
+
+    Base<T> real_beta = 0.0;
+    std::memcpy(C2_, C_, m_ * sizeof(T));
+
+    if(mIters % 2 != 0){
+      mIters = mIters + 1;
+    }
+
+    for (std::size_t k = 0; k < mIters; k = k + 2) {
+      //#1
+      this->asynCxHGatherC(V_, 0, 1); // Hv1 = B ~ w; v1->B2_ ~ v1
+      alpha = dla_->dot(n_, B2_, 1, B_, 1);
+      MPI_Allreduce(MPI_IN_PLACE, &alpha, 1, getMPI_Type<T>(), MPI_SUM, row_comm_);      
+      alpha = -alpha;
+      dla_->axpy(n_, &alpha, B2_, 1, B_, 1); // w = w - alpha v1: w ~ B_, v1 ~ B2_
+      alpha = -alpha;
+      d[k] = std::real(alpha);
+      if (k == mIters - 1) break;
+      beta = T(-real_beta);
+      dla_->axpy(n_, &beta, v0, 1, B_, 1);
+      beta = -beta;
+      auto p = dla_->nrm2(n_, B_, 1); 
+      auto p2 = std::pow(p, 2);
+      MPI_Allreduce(MPI_IN_PLACE, &p2, 1, getMPI_Type<Base<T>>(), MPI_SUM, row_comm_);  
+      real_beta = std::sqrt(p2);
+
+      beta = T(1.0 / real_beta);
+      dla_->scal(n_, &beta, B_, 1);
+
+      e[k] = real_beta;
+      std::memcpy(B2_, B_, n_ * sizeof(T));
+      this->B2C(v0, v00, 0, 1); 
+
+      //#2
+      this->asynHxBGatherB(V_, 0, 1); // Hv1 = C ~ w, v1->C2 ~ v1
+      alpha = dla_->dot(m_, C2_, 1, C_, 1);
+      MPI_Allreduce(MPI_IN_PLACE, &alpha, 1, getMPI_Type<T>(), MPI_SUM, col_comm_); 
+      alpha = -alpha;
+      dla_->axpy(m_, &alpha, C2_, 1, C_, 1);
+      alpha = -alpha;      
+      d[k+1] = std::real(alpha);
+      if (k + 1 == mIters - 1) break;
+      beta = T(-real_beta);
+      dla_->axpy(m_, &beta, v00, 1, C_, 1);
+      beta = -beta;
+      p = dla_->nrm2(m_, C_, 1);
+      p2 = std::pow(p, 2);
+      MPI_Allreduce(MPI_IN_PLACE, &p2, 1, getMPI_Type<Base<T>>(), MPI_SUM, col_comm_);  
+      real_beta = std::sqrt(p2);
+
+      beta = T(1.0 / real_beta);
+      dla_->scal(m_, &beta, C_, 1);
+ 
+      e[k+1] = real_beta;
+      std::memcpy(C2_, C_, m_ * sizeof(T));
+      if(k != mIters - 2){
+        this->C2B(v00, v0, 0, 1);
+      }
+
+    }
+
+    *rbeta = real_beta;
+
+    delete[] v0_;
+    delete[] v00_;
+/*
+  
+    std::size_t m = mIters;
+    std::size_t n = N_;
+
+    T *v0_ = new T[n]();
+    T *w_ = new T[n]();
+
+    T *v0 = v0_;
+    T *w = w_;
+
+    T alpha = T(1.0);
+    T beta = T(0.0);
+    T One = T(1.0);
+    T Zero = T(0.0);
+   
+    // V is filled with randomness
+    T *v1 = workspace_;
+
+    if(idx >= 0){
+      for (std::size_t k = 0; k < N_; ++k) v1[k] = V_[k + idx * N_];
+    }else{
+    // std::random_device rd;
+      std::mt19937 gen(2342.0);
+      std::normal_distribution<> normal_distribution;
+
+      for (std::size_t k = 0; k < N_; ++k){
+        v1[k] = getRandomT<T>([&]() { return normal_distribution(gen); });
+      }
+    }
+
+    // ENSURE that v1 has one norm
+    Base<T> real_alpha = dla_->nrm2(n, v1, 1);
+    alpha = T(1 / real_alpha);
+    dla_->scal(n, &alpha, v1, 1);
+
+    Base<T> real_beta = 0.0;
+
+    if(m % 2 != 0){
+      m = m + 1;
+    }
+
+    for (std::size_t k = 0; k < m; k = k + 2) {
+      if (workspace_ + k * n != v1){
+        memcpy(workspace_ + k * n, v1, n * sizeof(T));
+      }
+
+      this->applyVec(v1, w);
+
+
+      for(auto i = 0; i < n; i++){
+        std::cout << "w : " << w[i] << std::endl;
+      }
+
+      alpha = dla_->dot(n, v1, 1, w, 1);
+
+      std::cout << "alpha1 " << alpha << std::endl;
+      alpha = -alpha;
+      dla_->axpy(n, &alpha, v1, 1, w, 1);
+      alpha = -alpha;
+
+      d[k] = std::real(alpha);
+      if (k == m - 1) break;
+
+      beta = T(-real_beta);
+      dla_->axpy(n, &beta, v0, 1, w, 1);
+      beta = -beta;
+
+      real_beta = dla_->nrm2(n, w, 1); 
+      beta = T(1.0 / real_beta);
+      std::cout << "beta1 " << beta << std::endl;    
+
+      dla_->scal(n, &beta, w, 1);
+
+      e[k] = real_beta;
+
+      std::swap(v1, v0);
+      std::swap(v1, w); 
+    
+      //
+      if (workspace_ + (k + 1) * n != v1){
+        memcpy(workspace_ + (k + 1) * n, v1, n * sizeof(T));
+      }
+
+      this->applyVec(v1, w);
+
+      alpha = dla_->dot(n, v1, 1, w, 1);
+      std::cout << "alpha2 " << alpha << std::endl;
+      alpha = -alpha;
+      dla_->axpy(n, &alpha, v1, 1, w, 1);
+      alpha = -alpha;
+
+      d[k+1] = std::real(alpha);
+      if (k + 1 == m - 1) break;
+
+      beta = T(-real_beta);
+      dla_->axpy(n, &beta, v0, 1, w, 1);
+      beta = -beta;
+      std::cout << "beta2 " << beta << std::endl;    
+
+      real_beta = dla_->nrm2(n, w, 1); 
+            std::cout << "nrm " << real_beta << std::endl;
+
+
+
+      beta = T(1.0 / real_beta);
+      dla_->scal(n, &beta, w, 1);
+
+      e[k+1] = real_beta;
+
+      std::swap(v1, v0);
+      std::swap(v1, w); 
+
+    }
+
+    *rbeta = real_beta;
+
+    delete[] w_;
+    delete[] v0_;
+*/
+
+  }
+
+
+  void LanczosDos(std::size_t N_, std::size_t idx, std::size_t m, T *workspace_, std::size_t ldw, T *ritzVc, std::size_t ldr, T* approxV_, std::size_t ldv) override{
+      
+    T alpha = 1.0;
+    T beta = 0.0;
+
+/*    dla_->gemm_large(CblasColMajor, CblasNoTrans, CblasNoTrans,
+           m_, idx, m,
+           &alpha,
+           C2_ + idx * m_, m_,
+           ritzVc, ldr,
+           &beta,
+           C_ + idx * m_, m_
+    );    
+
+    dla_->gemm_large(CblasColMajor, CblasNoTrans, CblasNoTrans,
+           n_, idx, m,
+           &alpha,
+           workspace_ + recv_offsets_[1][row_rank_], ldw,
+           ritzVc, ldr,
+           &beta,
+           approxV_ + recv_offsets_[1][row_rank_], ldv
+    );
+*/
+  }
+
  private:
   enum NextOp { cAb, bAc };
 
@@ -802,6 +1172,15 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
   std::vector<int> c_lens;
   std::vector<int> b_disps;
   std::vector<int> c_disps;
+
+  std::vector<MPI_Request> reqsb2c_;
+  std::vector<MPI_Datatype> b_sends_;
+  std::vector<MPI_Datatype> c_recvs_;
+  std::vector<int> b_dests;
+  std::vector<int> b_srcs;
+  std::vector<int> b_lens;
+  std::vector<int> c_disps_2;
+  std::vector<int> b_disps_2;
 
   int icsrc_;
   int irsrc_;
