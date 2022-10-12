@@ -881,8 +881,6 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
     T One = T(1.0);
     T Zero = T(0.0);
 
-    std::cout << idx << std::endl;
-
     if(idx >= 0){
       //this->preApplication(V_, 0, 1);
         for(auto i = 0; i < mblocks_; i++){
@@ -925,6 +923,7 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
       dla_->axpy(n_, &alpha, B2_, 1, B_, 1); // w = w - alpha v1: w ~ B_, v1 ~ B2_
       alpha = -alpha;
       d[k] = std::real(alpha);
+
       if (k == mIters - 1) break;
       beta = T(-real_beta);
       dla_->axpy(n_, &beta, v0, 1, B_, 1);
@@ -938,9 +937,9 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
       dla_->scal(n_, &beta, B_, 1);
 
       e[k] = real_beta;
-      std::memcpy(B2_, B_, n_ * sizeof(T));
-      this->B2C(v0, v00, 0, 1); 
-
+      //v1->v0, v0->w, w->v1 (B2 ~ v1, B ~ w)
+      this->B2C(B2_, v00, 0, 1); 
+      std::memcpy(B2_, B_, n_ * sizeof(T)); //w->v1
       //#2
       this->asynHxBGatherB(V_, 0, 1); // Hv1 = C ~ w, v1->C2 ~ v1
       alpha = dla_->dot(m_, C2_, 1, C_, 1);
@@ -951,6 +950,7 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
       d[k+1] = std::real(alpha);
       if (k + 1 == mIters - 1) break;
       beta = T(-real_beta);
+      //std::cout << "beta 2: " << beta << v0[1] << " " << v00[1] <<  std::endl;      
       dla_->axpy(m_, &beta, v00, 1, C_, 1);
       beta = -beta;
       p = dla_->nrm2(m_, C_, 1);
@@ -962,19 +962,19 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
       dla_->scal(m_, &beta, C_, 1);
  
       e[k+1] = real_beta;
-      std::memcpy(C2_, C_, m_ * sizeof(T));
       if(k != mIters - 2){
-        this->C2B(v00, v0, 0, 1);
-      }
-
+        this->C2B(C2_, v0, 0, 1);
+        std::memcpy(C2_, C_, m_ * sizeof(T));
+      }  
     }
 
     *rbeta = real_beta;
 
+
     delete[] v0_;
     delete[] v00_;
-/*
-  
+
+/*  
     std::size_t m = mIters;
     std::size_t n = N_;
 
@@ -988,7 +988,9 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
     T beta = T(0.0);
     T One = T(1.0);
     T Zero = T(0.0);
-   
+    
+    std::cout << idx << std::endl;
+
     // V is filled with randomness
     T *v1 = workspace_;
 
@@ -1022,28 +1024,27 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
 
       this->applyVec(v1, w);
 
-
-      for(auto i = 0; i < n; i++){
-        std::cout << "w : " << w[i] << std::endl;
-      }
-
       alpha = dla_->dot(n, v1, 1, w, 1);
 
-      std::cout << "alpha1 " << alpha << std::endl;
       alpha = -alpha;
       dla_->axpy(n, &alpha, v1, 1, w, 1);
       alpha = -alpha;
 
       d[k] = std::real(alpha);
+      std::cout << "alpha 1: " << alpha <<  std::endl;
+
+
       if (k == m - 1) break;
 
       beta = T(-real_beta);
       dla_->axpy(n, &beta, v0, 1, w, 1);
       beta = -beta;
+      std::cout << "beta 1: " << beta <<  std::endl;      
 
       real_beta = dla_->nrm2(n, w, 1); 
+      std::cout << "real_beta 2: " << real_beta <<  std::endl;
+
       beta = T(1.0 / real_beta);
-      std::cout << "beta1 " << beta << std::endl;    
 
       dla_->scal(n, &beta, w, 1);
 
@@ -1060,23 +1061,22 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
       this->applyVec(v1, w);
 
       alpha = dla_->dot(n, v1, 1, w, 1);
-      std::cout << "alpha2 " << alpha << std::endl;
       alpha = -alpha;
       dla_->axpy(n, &alpha, v1, 1, w, 1);
       alpha = -alpha;
 
       d[k+1] = std::real(alpha);
+      std::cout << "alpha 2: " << alpha <<  std::endl;
+
       if (k + 1 == m - 1) break;
 
       beta = T(-real_beta);
+      std::cout << "beta 2: " << beta << " " << w[1] << " " << v0[1] <<  std::endl;      
       dla_->axpy(n, &beta, v0, 1, w, 1);
       beta = -beta;
-      std::cout << "beta2 " << beta << std::endl;    
 
       real_beta = dla_->nrm2(n, w, 1); 
-            std::cout << "nrm " << real_beta << std::endl;
-
-
+      std::cout << "real_beta 2: " << real_beta <<  std::endl;
 
       beta = T(1.0 / real_beta);
       dla_->scal(n, &beta, w, 1);
@@ -1085,6 +1085,8 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
 
       std::swap(v1, v0);
       std::swap(v1, w); 
+
+      //std::cout << "real_beta: " << real_beta <<  std::endl;
 
     }
 
