@@ -819,11 +819,18 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
   }
 
   void hhQR_dist(std::size_t N_, std::size_t nevex,std::size_t locked, T *approxV, std::size_t ldv) override {
-#if defined(HAS_SCALAPACK)
     std::unique_ptr<T []> tau(new T[nevex]);
+#if defined(HAS_SCALAPACK)
     int one = 1;
     t_pgeqrf(N_, nevex, C_, one, one, desc1D_Nxnevx_, tau.get() );
     t_pgqr(N_, nevex, nevex, C_, one, one, desc1D_Nxnevx_, tau.get());
+    std::memcpy(C_, C2_, locked * m_ * sizeof(T));
+    std::memcpy(C2_+locked * m_, C_ + locked * m_, (nevex - locked) * m_ * sizeof(T));
+#else
+    this->postApplication(approxV, nevex - locked, locked);
+    t_geqrf(LAPACK_COL_MAJOR, N_, nevex, approxV, N_, tau.get());
+    t_gqr(LAPACK_COL_MAJOR, N_, nevex, nevex, approxV, N_, tau.get());
+    this->preApplication(approxV, locked, nevex - locked);
     std::memcpy(C_, C2_, locked * m_ * sizeof(T));
     std::memcpy(C2_+locked * m_, C_ + locked * m_, (nevex - locked) * m_ * sizeof(T));
 #endif	  
@@ -909,11 +916,15 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
     Base<T> real_beta = 0.0;
     std::memcpy(C2_, C_, m_ * sizeof(T));
 
-    if(mIters % 2 != 0){
-      mIters = mIters + 1;
+    std::size_t end;
+
+    if(mIters % 2 == 0){
+      end = mIters;
+    }else{
+      end = mIters - 1;
     }
 
-    for (std::size_t k = 0; k < mIters; k = k + 2) {
+    for (std::size_t k = 0; k < end; k = k + 2) {
       //#1
       this->asynCxHGatherC(V_, 0, 1); // Hv1 = B ~ w; v1->B2_ ~ v1
       alpha = dla_->dot(n_, B2_, 1, B_, 1);
@@ -967,12 +978,192 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
       }  
     }
 
+    if(mIters % 2 != 0){
+      std::size_t k = mIters - 1;
+
+      this->asynCxHGatherC(V_, 0, 1); // Hv1 = B ~ w; v1->B2_ ~ v1
+      alpha = dla_->dot(n_, B2_, 1, B_, 1);
+      MPI_Allreduce(MPI_IN_PLACE, &alpha, 1, getMPI_Type<T>(), MPI_SUM, row_comm_);      
+      alpha = -alpha;
+      dla_->axpy(n_, &alpha, B2_, 1, B_, 1); // w = w - alpha v1: w ~ B_, v1 ~ B2_
+      alpha = -alpha;
+      d[k] = std::real(alpha);
+
+      beta = T(-real_beta);
+      dla_->axpy(n_, &beta, v0, 1, B_, 1);
+      beta = -beta;
+      auto p = dla_->nrm2(n_, B_, 1); 
+      auto p2 = std::pow(p, 2);
+      MPI_Allreduce(MPI_IN_PLACE, &p2, 1, getMPI_Type<Base<T>>(), MPI_SUM, row_comm_);  
+      real_beta = std::sqrt(p2);
+
+      beta = T(1.0 / real_beta);
+      dla_->scal(n_, &beta, B_, 1);
+
+      e[k] = real_beta;
+
+      this->B2C(B_, C_, 0, 1);      
+    }
+
     *rbeta = real_beta;
 
 
     delete[] v0_;
     delete[] v00_;
 
+    for(auto i = 0; i < m_; i++){
+      C2_[i] = T(0.0);
+    }
+
+/*  
+    std::size_t m = mIters;
+    std::size_t n = N_;
+
+    T *v0_ = new T[n]();
+    T *w_ = new T[n]();
+
+    T *v0 = v0_;
+    T *w = w_;
+
+    T alpha = T(1.0);
+    T beta = T(0.0);
+    T One = T(1.0);
+    T Zero = T(0.0);
+    
+    std::cout << idx << std::endl;
+
+    // V is filled with randomness
+    T *v1 = workspace_;
+
+    if(idx >= 0){
+      for (std::size_t k = 0; k < N_; ++k) v1[k] = V_[k + idx * N_];
+    }else{
+    // std::random_device rd;
+      std::mt19937 gen(2342.0);
+      std::normal_distribution<> normal_distribution;
+
+      for (std::size_t k = 0; k < N_; ++k){
+        v1[k] = getRandomT<T>([&]() { return normal_distribution(gen); });
+      }
+    }
+
+    // ENSURE that v1 has one norm
+    Base<T> real_alpha = dla_->nrm2(n, v1, 1);
+    alpha = T(1 / real_alpha);
+    dla_->scal(n, &alpha, v1, 1);
+
+    Base<T> real_beta = 0.0;
+
+    std::size_t end;
+
+    if(m % 2 == 0){
+      end = m;
+    }else{
+      end = m - 1;
+    }
+
+    for (std::size_t k = 0; k < end; k = k + 1) {
+      if (workspace_ + k * n != v1){
+        memcpy(workspace_ + k * n, v1, n * sizeof(T));
+      }
+
+      this->applyVec(v1, w);
+
+      alpha = dla_->dot(n, v1, 1, w, 1);
+
+      alpha = -alpha;
+      dla_->axpy(n, &alpha, v1, 1, w, 1);
+      alpha = -alpha;
+
+      d[k] = std::real(alpha);
+
+
+      if (k == m - 1) break;
+
+      beta = T(-real_beta);
+      dla_->axpy(n, &beta, v0, 1, w, 1);
+      beta = -beta;
+
+      real_beta = dla_->nrm2(n, w, 1); 
+
+      beta = T(1.0 / real_beta);
+
+      dla_->scal(n, &beta, w, 1);
+
+      e[k] = real_beta;
+
+      std::swap(v1, v0);
+      std::swap(v1, w); 
+    
+      //
+      if (workspace_ + (k + 1) * n != v1){
+        memcpy(workspace_ + (k + 1) * n, v1, n * sizeof(T));
+      }
+
+      this->applyVec(v1, w);
+
+      alpha = dla_->dot(n, v1, 1, w, 1);
+      alpha = -alpha;
+      dla_->axpy(n, &alpha, v1, 1, w, 1);
+      alpha = -alpha;
+
+      d[k+1] = std::real(alpha);
+
+      if (k + 1 == m - 1) break;
+
+      beta = T(-real_beta);
+      dla_->axpy(n, &beta, v0, 1, w, 1);
+      beta = -beta;
+
+      real_beta = dla_->nrm2(n, w, 1); 
+
+      beta = T(1.0 / real_beta);
+      dla_->scal(n, &beta, w, 1);
+
+      e[k+1] = real_beta;
+
+      std::swap(v1, v0);
+      std::swap(v1, w); 
+    }
+
+    if(m % 2 != 0){
+      std::size_t k = m - 1;
+      
+      if (workspace_ + k * n != v1){
+        memcpy(workspace_ + k * n, v1, n * sizeof(T));
+      }
+
+      this->applyVec(v1, w);
+
+      alpha = dla_->dot(n, v1, 1, w, 1);
+
+      alpha = -alpha;
+      dla_->axpy(n, &alpha, v1, 1, w, 1);
+      alpha = -alpha;
+
+      d[k] = std::real(alpha);
+
+      beta = T(-real_beta);
+      dla_->axpy(n, &beta, v0, 1, w, 1);
+      beta = -beta;
+
+      real_beta = dla_->nrm2(n, w, 1); 
+
+      beta = T(1.0 / real_beta);
+
+      dla_->scal(n, &beta, w, 1);
+
+      e[k] = real_beta;
+
+      std::swap(v1, v0);
+      std::swap(v1, w);                 
+    }
+
+    *rbeta = real_beta;
+
+    delete[] w_;
+    delete[] v0_;
+*/
   }
 
 

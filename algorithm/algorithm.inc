@@ -159,7 +159,7 @@ std::size_t Algorithm<T>::filter(Chase<T>* single, std::size_t n,
 
 template <class T>
 std::size_t Algorithm<T>::lanczos(Chase<T>* single, int N, int numvec,
-                                  int const m, int nevex, Base<T>* upperb,
+                                  int m, int nevex, Base<T>* upperb,
                                   bool mode, Base<T>* ritzv_) {
   assert(m >= 1);
 

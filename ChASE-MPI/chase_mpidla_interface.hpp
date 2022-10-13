@@ -384,7 +384,6 @@ class ChaseMpiDLAInterface {
   virtual void cholQR1(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv) = 0;
   virtual void cholQR1_dist(std::size_t m_, std::size_t nevex, std::size_t locked, T *approxV, std::size_t ldv) = 0;
   virtual void lanczos(std::size_t mIters, int idx, Base<T> *d, Base<T> *e,  Base<T> *rbeta, T *V_, T *workspace_) = 0;
-
 };
 }  // namespace matrixfree
 }  // namespace chase
