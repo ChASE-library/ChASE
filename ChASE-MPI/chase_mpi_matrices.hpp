@@ -84,7 +84,7 @@ class ChaseMpiMatrices {
       // if value is null then allocate otherwise don't
       : H__(nullptr),
         V1__(V1 == nullptr ? new T[N * max_block] : nullptr),
-        V2__(V2 == nullptr ? new T[N * max_block] : nullptr),
+        //V2__(V2 == nullptr ? new T[N * max_block] : nullptr),
         ritzv__(ritzv == nullptr ? new Base<T>[max_block] : nullptr),
         resid__(resid == nullptr ? new Base<T>[max_block] : nullptr),
         //for this case, ldh_ should define in chasempiproperties
@@ -102,7 +102,7 @@ class ChaseMpiMatrices {
       // if value is null then allocate otherwise don't
       : H__(H == nullptr ? new T[m * n] : nullptr),
         V1__(V1 == nullptr ? new T[N * max_block] : nullptr),
-        V2__(V2 == nullptr ? new T[N * max_block] : nullptr),
+        //V2__(V2 == nullptr ? new T[N * max_block] : nullptr),
         ritzv__(ritzv == nullptr ? new Base<T>[max_block] : nullptr),
         resid__(resid == nullptr ? new Base<T>[max_block] : nullptr),
         ldh_(ldh == 0 ? m : ldh),

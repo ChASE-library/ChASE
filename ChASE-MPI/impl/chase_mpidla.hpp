@@ -230,9 +230,6 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
          }
        }
     }
-
-
-
   }
   ~ChaseMpiDLA() {
     delete[] Buff_;
@@ -827,10 +824,10 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
     std::memcpy(C_, C2_, locked * m_ * sizeof(T));
     std::memcpy(C2_+locked * m_, C_ + locked * m_, (nevex - locked) * m_ * sizeof(T));
 #else
-    this->postApplication(approxV, nevex - locked, locked);
+    this->postApplication(approxV, nevex, 0);
     t_geqrf(LAPACK_COL_MAJOR, N_, nevex, approxV, N_, tau.get());
     t_gqr(LAPACK_COL_MAJOR, N_, nevex, nevex, approxV, N_, tau.get());
-    this->preApplication(approxV, locked, nevex - locked);
+    this->preApplication(approxV, 0, nevex);
     std::memcpy(C_, C2_, locked * m_ * sizeof(T));
     std::memcpy(C2_+locked * m_, C_ + locked * m_, (nevex - locked) * m_ * sizeof(T));
 #endif	  
@@ -840,7 +837,8 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
   }
 
   void cholQR1_dist(std::size_t N, std::size_t nevex, std::size_t locked, T *approxV, std::size_t ldv) override{
-
+    int grank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &grank);
     auto A_ = std::unique_ptr<T[]> {
       new T[ nevex * nevex ]
     };
@@ -851,11 +849,32 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
     dla_->syherk('U', 'C', nevex, m_, &one, C_, m_, &zero, A_.get(), nevex);
     MPI_Allreduce(MPI_IN_PLACE, A_.get(), nevex * nevex, getMPI_Type<T>(), MPI_SUM, col_comm_);
     info = t_potrf('U', nevex, A_.get(), nevex);
-    assert(info == 0);   
-    dla_->trsm('R', 'U', 'N', 'N', m_, nevex, &one, A_.get(), nevex, C_, m_);
+    
+    if(info == 0){
+      dla_->trsm('R', 'U', 'N', 'N', m_, nevex, &one, A_.get(), nevex, C_, m_);
 
-    std::memcpy(C_, C2_, locked * m_ * sizeof(T));
-    std::memcpy(C2_+locked * m_, C_ + locked * m_, (nevex - locked) * m_ * sizeof(T));   
+      int choldeg = 1;
+      char *choldegenv;
+      choldegenv = getenv("CHASE_CHOLQR_DEGREE");
+      if(choldegenv){
+        choldeg = std::atoi(choldegenv);
+      }
+#ifdef CHASE_OUTPUT   
+      if(grank == 0) std::cout << "choldegee: " << choldeg << std::endl;
+#endif
+      for(auto i = 0; i < choldeg - 1; i++){
+        dla_->syherk('U', 'C', nevex, m_, &one, C_, m_, &zero, A_.get(), nevex);
+        MPI_Allreduce(MPI_IN_PLACE, A_.get(), nevex * nevex, getMPI_Type<T>(), MPI_SUM, col_comm_);
+        t_potrf('U', nevex, A_.get(), nevex);
+        dla_->trsm('R', 'U', 'N', 'N', m_, nevex, &one, A_.get(), nevex, C_, m_);
+      }
+      std::memcpy(C_, C2_, locked * m_ * sizeof(T));
+      std::memcpy(C2_+locked * m_, C_ + locked * m_, (nevex - locked) * m_ * sizeof(T));  
+    }else{
+      if(grank == 0) std::cout << "cholQR failed because of ill-conditioned vector, use Householder QR instead" << std::endl;
+      this->hhQR_dist(N, nevex, locked, approxV, ldv);
+    }
+ 
 
   }
 
@@ -877,145 +896,13 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
 
   void lanczos(std::size_t mIters, int idx, Base<T> *d, Base<T> *e,  Base<T> *rbeta,  T *V_, T *workspace_)override{
 
-    T *v0_ = new T[n_]();
-    T *v00_ = new T[m_]();
-
-    T *v0 = v0_;
-    T *v00 = v00_;
-
-    T alpha = T(1.0);
-    T beta = T(0.0);
-    T One = T(1.0);
-    T Zero = T(0.0);
-
-    if(idx >= 0){
-      //this->preApplication(V_, 0, 1);
-        for(auto i = 0; i < mblocks_; i++){
-          std::memcpy(C_ + r_offs_l_[i], V_ + idx * N_ + r_offs_[i], r_lens_[i] * sizeof(T));
-        }   
-    }else{
-    // std::random_device rd;
-      std::mt19937 gen(2342.0);
-      std::normal_distribution<> normal_distribution;
-      T *Vrnd = new T[N_];
-      for (std::size_t k = 0; k < N_; ++k){
-        Vrnd[k] = getRandomT<T>([&]() { return normal_distribution(gen); });
-      }
-      this->preApplication(Vrnd, 0, 1);
-      delete[] Vrnd;
+    if (lanczos_workspace_ == nullptr){
+     //std::cout << "allocated workspace for Lanczos" << std::endl;
+     lanczos_workspace_ =  std::unique_ptr<T []> {
+        new T[ N_ * mIters]
+      }; 
     }
-
-    // ENSURE that v1 has one norm
-    Base<T> nrm_partial = dla_->nrm2(m_, C_, 1);
-    Base<T> pw2 = std::pow(nrm_partial, 2); 
-    MPI_Allreduce(MPI_IN_PLACE, &pw2, 1, getMPI_Type<Base<T>>(), MPI_SUM, col_comm_);
-    Base<T> real_alpha = std::sqrt(pw2);
-    alpha = T(1 / real_alpha);
-    dla_->scal(m_, &alpha, C_, 1);
-
-    Base<T> real_beta = 0.0;
-    std::memcpy(C2_, C_, m_ * sizeof(T));
-
-    std::size_t end;
-
-    if(mIters % 2 == 0){
-      end = mIters;
-    }else{
-      end = mIters - 1;
-    }
-
-    for (std::size_t k = 0; k < end; k = k + 2) {
-      //#1
-      this->asynCxHGatherC(V_, 0, 1); // Hv1 = B ~ w; v1->B2_ ~ v1
-      alpha = dla_->dot(n_, B2_, 1, B_, 1);
-      MPI_Allreduce(MPI_IN_PLACE, &alpha, 1, getMPI_Type<T>(), MPI_SUM, row_comm_);      
-      alpha = -alpha;
-      dla_->axpy(n_, &alpha, B2_, 1, B_, 1); // w = w - alpha v1: w ~ B_, v1 ~ B2_
-      alpha = -alpha;
-      d[k] = std::real(alpha);
-
-      if (k == mIters - 1) break;
-      beta = T(-real_beta);
-      dla_->axpy(n_, &beta, v0, 1, B_, 1);
-      beta = -beta;
-      auto p = dla_->nrm2(n_, B_, 1); 
-      auto p2 = std::pow(p, 2);
-      MPI_Allreduce(MPI_IN_PLACE, &p2, 1, getMPI_Type<Base<T>>(), MPI_SUM, row_comm_);  
-      real_beta = std::sqrt(p2);
-
-      beta = T(1.0 / real_beta);
-      dla_->scal(n_, &beta, B_, 1);
-
-      e[k] = real_beta;
-      //v1->v0, v0->w, w->v1 (B2 ~ v1, B ~ w)
-      this->B2C(B2_, v00, 0, 1); 
-      std::memcpy(B2_, B_, n_ * sizeof(T)); //w->v1
-      //#2
-      this->asynHxBGatherB(V_, 0, 1); // Hv1 = C ~ w, v1->C2 ~ v1
-      alpha = dla_->dot(m_, C2_, 1, C_, 1);
-      MPI_Allreduce(MPI_IN_PLACE, &alpha, 1, getMPI_Type<T>(), MPI_SUM, col_comm_); 
-      alpha = -alpha;
-      dla_->axpy(m_, &alpha, C2_, 1, C_, 1);
-      alpha = -alpha;      
-      d[k+1] = std::real(alpha);
-      if (k + 1 == mIters - 1) break;
-      beta = T(-real_beta);
-      //std::cout << "beta 2: " << beta << v0[1] << " " << v00[1] <<  std::endl;      
-      dla_->axpy(m_, &beta, v00, 1, C_, 1);
-      beta = -beta;
-      p = dla_->nrm2(m_, C_, 1);
-      p2 = std::pow(p, 2);
-      MPI_Allreduce(MPI_IN_PLACE, &p2, 1, getMPI_Type<Base<T>>(), MPI_SUM, col_comm_);  
-      real_beta = std::sqrt(p2);
-
-      beta = T(1.0 / real_beta);
-      dla_->scal(m_, &beta, C_, 1);
  
-      e[k+1] = real_beta;
-      if(k != mIters - 2){
-        this->C2B(C2_, v0, 0, 1);
-        std::memcpy(C2_, C_, m_ * sizeof(T));
-      }  
-    }
-
-    if(mIters % 2 != 0){
-      std::size_t k = mIters - 1;
-
-      this->asynCxHGatherC(V_, 0, 1); // Hv1 = B ~ w; v1->B2_ ~ v1
-      alpha = dla_->dot(n_, B2_, 1, B_, 1);
-      MPI_Allreduce(MPI_IN_PLACE, &alpha, 1, getMPI_Type<T>(), MPI_SUM, row_comm_);      
-      alpha = -alpha;
-      dla_->axpy(n_, &alpha, B2_, 1, B_, 1); // w = w - alpha v1: w ~ B_, v1 ~ B2_
-      alpha = -alpha;
-      d[k] = std::real(alpha);
-
-      beta = T(-real_beta);
-      dla_->axpy(n_, &beta, v0, 1, B_, 1);
-      beta = -beta;
-      auto p = dla_->nrm2(n_, B_, 1); 
-      auto p2 = std::pow(p, 2);
-      MPI_Allreduce(MPI_IN_PLACE, &p2, 1, getMPI_Type<Base<T>>(), MPI_SUM, row_comm_);  
-      real_beta = std::sqrt(p2);
-
-      beta = T(1.0 / real_beta);
-      dla_->scal(n_, &beta, B_, 1);
-
-      e[k] = real_beta;
-
-      this->B2C(B_, C_, 0, 1);      
-    }
-
-    *rbeta = real_beta;
-
-
-    delete[] v0_;
-    delete[] v00_;
-
-    for(auto i = 0; i < m_; i++){
-      C2_[i] = T(0.0);
-    }
-
-/*  
     std::size_t m = mIters;
     std::size_t n = N_;
 
@@ -1030,10 +917,8 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
     T One = T(1.0);
     T Zero = T(0.0);
     
-    std::cout << idx << std::endl;
-
     // V is filled with randomness
-    T *v1 = workspace_;
+    T *v1 = lanczos_workspace_.get();
 
     if(idx >= 0){
       for (std::size_t k = 0; k < N_; ++k) v1[k] = V_[k + idx * N_];
@@ -1054,18 +939,9 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
 
     Base<T> real_beta = 0.0;
 
-    std::size_t end;
-
-    if(m % 2 == 0){
-      end = m;
-    }else{
-      end = m - 1;
-    }
-
-    for (std::size_t k = 0; k < end; k = k + 1) {
-      if (workspace_ + k * n != v1){
-        memcpy(workspace_ + k * n, v1, n * sizeof(T));
-      }
+    for (std::size_t k = 0; k < m; k = k + 1) {
+      if (lanczos_workspace_.get() + k * n != v1)
+        memcpy(lanczos_workspace_.get() + k * n, v1, n * sizeof(T));
 
       this->applyVec(v1, w);
 
@@ -1094,76 +970,13 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
 
       std::swap(v1, v0);
       std::swap(v1, w); 
-    
-      //
-      if (workspace_ + (k + 1) * n != v1){
-        memcpy(workspace_ + (k + 1) * n, v1, n * sizeof(T));
-      }
-
-      this->applyVec(v1, w);
-
-      alpha = dla_->dot(n, v1, 1, w, 1);
-      alpha = -alpha;
-      dla_->axpy(n, &alpha, v1, 1, w, 1);
-      alpha = -alpha;
-
-      d[k+1] = std::real(alpha);
-
-      if (k + 1 == m - 1) break;
-
-      beta = T(-real_beta);
-      dla_->axpy(n, &beta, v0, 1, w, 1);
-      beta = -beta;
-
-      real_beta = dla_->nrm2(n, w, 1); 
-
-      beta = T(1.0 / real_beta);
-      dla_->scal(n, &beta, w, 1);
-
-      e[k+1] = real_beta;
-
-      std::swap(v1, v0);
-      std::swap(v1, w); 
-    }
-
-    if(m % 2 != 0){
-      std::size_t k = m - 1;
-      
-      if (workspace_ + k * n != v1){
-        memcpy(workspace_ + k * n, v1, n * sizeof(T));
-      }
-
-      this->applyVec(v1, w);
-
-      alpha = dla_->dot(n, v1, 1, w, 1);
-
-      alpha = -alpha;
-      dla_->axpy(n, &alpha, v1, 1, w, 1);
-      alpha = -alpha;
-
-      d[k] = std::real(alpha);
-
-      beta = T(-real_beta);
-      dla_->axpy(n, &beta, v0, 1, w, 1);
-      beta = -beta;
-
-      real_beta = dla_->nrm2(n, w, 1); 
-
-      beta = T(1.0 / real_beta);
-
-      dla_->scal(n, &beta, w, 1);
-
-      e[k] = real_beta;
-
-      std::swap(v1, v0);
-      std::swap(v1, w);                 
+                    
     }
 
     *rbeta = real_beta;
 
     delete[] w_;
-    delete[] v0_;
-*/
+    delete[] v0_;    
   }
 
 
@@ -1171,16 +984,22 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
       
     T alpha = 1.0;
     T beta = 0.0;
-
     dla_->gemm_large(CblasColMajor, CblasNoTrans, CblasNoTrans,
-           m_, idx, m,
+           n_, idx, m,
            &alpha,
-           C2_ + idx * m_, m_,
+           lanczos_workspace_.get() + recv_offsets_[1][row_rank_], ldw,
            ritzVc, ldr,
            &beta,
-           C_ + idx * m_, m_
-    );    
+           approxV_ + recv_offsets_[1][row_rank_], ldv
+    );
 
+    for (auto i = 0; i < row_size_; ++i){
+        MPI_Ibcast(approxV_, idx, newType_[i], i, row_comm_, &reqs_[i]);
+    }
+
+    MPI_Waitall(row_size_, reqs_.data(), MPI_STATUSES_IGNORE);
+   
+    
   }
 
  private:
@@ -1242,6 +1061,8 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
   std::vector<int> b_lens;
   std::vector<int> c_disps_2;
   std::vector<int> b_disps_2;
+
+  std::unique_ptr<T[]> lanczos_workspace_;
 
   int icsrc_;
   int irsrc_;

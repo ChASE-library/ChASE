@@ -357,6 +357,7 @@ void Algorithm<T>::solve(Chase<T>* single) {
       auto tmp = *std::max_element(ritzv, ritzv + unconverged);
       lowerb = (lowerb + tmp) / 2;
       lowerb = tmp;
+
     }
 
 #ifdef CHASE_OUTPUT

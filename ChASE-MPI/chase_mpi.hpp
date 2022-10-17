@@ -279,7 +279,21 @@ class ChaseMpi : public chase::Chase<T> {
   //! @param fixednev: total number of converged eigenpairs before this time QR factorization.  
   void fastQR(std::size_t fixednev) override{
     std::size_t nevex = nev_ + nex_;
-    dla_->cholQR1_dist(N_, nevex, locked_, approxV_, N_);
+    int grank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &grank);
+    char *cholddisable;
+    cholddisable = getenv("CHASE_DISABLE_CHOLQR");
+    int diasable = 0;
+    if(cholddisable){
+      diasable = std::atoi(cholddisable);
+    }   
+    if(diasable == 1){
+      if(grank == 0) std::cout << "CholQR is disabled, always use Householder QR. " << std::endl;
+      dla_->hhQR_dist(N_, nevex, locked_, approxV_, N_);
+    }else{
+      dla_->cholQR1_dist(N_, nevex, locked_, approxV_, N_);
+    }
+
   }
 
   //! This member function implements the virtual one declared in Chase class.
@@ -317,6 +331,194 @@ class ChaseMpi : public chase::Chase<T> {
   void Swap(std::size_t i, std::size_t j) override {
     dla_->Swap(i, j);
   };
+/*
+ //! This member function implements the virtual one declared in Chase class.
+  //! It estimates the upper bound of user-interested spectrum by Lanczos eigensolver
+  //! @param m: the iterative steps for Lanczos eigensolver.
+  //! @param upperb: a pointer to the upper bound estimated by Lanczos eigensolver.
+  void Lanczos(std::size_t m, Base<T> *upperb) override {
+    // todo
+    std::size_t n = N_;
+    T *v1 = workspace_;
+    // std::random_device rd;
+    std::mt19937 gen(2342.0);
+    std::normal_distribution<> normal_distribution;
+
+    for (std::size_t k = 0; k < N_; ++k)
+      v1[k] = getRandomT<T>([&]() { return normal_distribution(gen); });
+
+    // assert( m >= 1 );
+    Base<T> *d = new Base<T>[m]();
+    Base<T> *e = new Base<T>[m]();
+
+    // SO C++03 5.3.4[expr.new]/15
+    T *v0_ = new T[n]();
+    T *w_ = new T[n]();
+
+    T *v0 = v0_;
+    T *w = w_;
+
+    T alpha = T(1.0);
+    T beta = T(0.0);
+    T One = T(1.0);
+    T Zero = T(0.0);
+    //  T *v1 = V;
+    // ENSURE that v1 has one norm
+    Base<T> real_alpha = dla_->nrm2(n, v1, 1);
+    alpha = T(1 / real_alpha);
+    dla_->scal(n, &alpha, v1, 1);
+    Base<T> real_beta = 0;
+    real_beta = 0;
+
+    for (std::size_t k = 0; k < m; ++k) {
+      // t_gemv(CblasColMajor, CblasNoTrans, N_, N_, &One, H_, N_, v1, 1, &Zero,
+      // w, 1);
+      dla_->applyVec(v1, w);
+      alpha = dla_->dot(n, v1, 1, w, 1);
+
+      alpha = -alpha;
+      dla_->axpy(n, &alpha, v1, 1, w, 1);
+      alpha = -alpha;
+
+      d[k] = std::real(alpha);
+      if (k == m - 1) break;
+
+      beta = T(-real_beta);
+      dla_->axpy(n, &beta, v0, 1, w, 1);
+      beta = -beta;
+
+      real_beta = dla_->nrm2(n, w, 1);
+      beta = T(1.0 / real_beta);
+
+      dla_->scal(n, &beta, w, 1);
+
+      e[k] = real_beta;
+
+      std::swap(v1, v0);
+      std::swap(v1, w);
+    }
+
+    delete[] w_;
+    delete[] v0_;
+
+    int notneeded_m;
+    std::size_t vl, vu;
+    Base<T> ul, ll;
+    int tryrac = 0;
+    int *isuppz = new int[2 * m];
+    Base<T> *ritzv = new Base<T>[m];
+
+    dla_->stemr(LAPACK_COL_MAJOR, 'N', 'A', m, d, e, ul, ll, vl, vu,
+                     &notneeded_m, ritzv, NULL, m, m, isuppz, &tryrac);
+
+    *upperb = std::max(std::abs(ritzv[0]), std::abs(ritzv[m - 1])) +
+              std::abs(real_beta);
+
+    delete[] ritzv;
+    delete[] isuppz;
+    delete[] d;
+    delete[] e;
+  };
+
+  // we need to be careful how we deal with memory here
+  // we will operate within Workspace
+  //! This member function implements the virtual one declared in Chase class.
+  //! It estimates the upper bound of user-interested spectrum by Lanczos eigensolver
+  void Lanczos(std::size_t M, std::size_t idx, Base<T> *upperb, Base<T> *ritzv,
+               Base<T> *Tau, Base<T> *ritzV) override {
+    // todo
+    std::size_t m = M;
+    std::size_t n = N_;
+
+    // assert( m >= 1 );
+
+    // The first m*N part is reserved for the lanczos vectors
+    Base<T> *d = new Base<T>[m]();
+    Base<T> *e = new Base<T>[m]();
+
+    // SO C++03 5.3.4[expr.new]/15
+    T *v0_ = new T[n]();
+    T *w_ = new T[n]();
+
+    T *v0 = v0_;
+    T *w = w_;
+
+    T alpha = T(1.0);
+    T beta = T(0.0);
+    T One = T(1.0);
+    T Zero = T(0.0);
+
+    // V is filled with randomness
+    T *v1 = workspace_;
+    for (std::size_t k = 0; k < N_; ++k) v1[k] = V_[k + idx * N_];
+
+    // ENSURE that v1 has one norm
+    Base<T> real_alpha = dla_->nrm2(n, v1, 1);
+    alpha = T(1 / real_alpha);
+    dla_->scal(n, &alpha, v1, 1);
+
+    Base<T> real_beta = 0.0;
+
+    for (std::size_t k = 0; k < m; ++k) {
+      if (workspace_ + k * n != v1)
+        memcpy(workspace_ + k * n, v1, n * sizeof(T));
+
+      // t_gemv(CblasColMajor, CblasNoTrans, n, n, &One, H_, n, v1, 1, &Zero, w,
+      // 1);
+      dla_->applyVec(v1, w);
+
+      // std::cout << "lanczos Av\n";
+      // for (std::size_t ll = 0; ll < 2; ++ll)
+      //   std::cout << w[ll] << "\n";
+
+      alpha = dla_->dot(n, v1, 1, w, 1);
+
+      alpha = -alpha;
+      dla_->axpy(n, &alpha, v1, 1, w, 1);
+      alpha = -alpha;
+
+      d[k] = std::real(alpha);
+      if (k == m - 1) break;
+
+      beta = T(-real_beta);
+      dla_->axpy(n, &beta, v0, 1, w, 1);
+      beta = -beta;
+
+      real_beta = dla_->nrm2(n, w, 1);
+      beta = T(1.0 / real_beta);
+
+      dla_->scal(n, &beta, w, 1);
+
+      e[k] = real_beta;
+
+      std::swap(v1, v0);
+      std::swap(v1, w);
+    }
+
+    delete[] w_;
+    delete[] v0_;
+
+    int notneeded_m;
+    std::size_t vl, vu;
+    Base<T> ul, ll;
+    int tryrac = 0;
+    int *isuppz = new int[2 * m];
+    dla_->stemr(LAPACK_COL_MAJOR, 'V', 'A', m, d, e, ul, ll, vl, vu, &notneeded_m,
+            ritzv, ritzV, m, m, isuppz, &tryrac);
+    *upperb = std::max(std::abs(ritzv[0]), std::abs(ritzv[m - 1])) +
+              std::abs(real_beta);
+
+    for (std::size_t k = 1; k < m; ++k) {
+      Tau[k] = std::abs(ritzV[k * m]) * std::abs(ritzV[k * m]);
+      // std::cout << Tau[k] << "\n";
+    }
+
+    delete[] isuppz;
+    delete[] d;
+    delete[] e;
+  };
+
+*/
 
   //! This member function implements the virtual one declared in Chase class.
   //! It estimates the upper bound of user-interested spectrum by Lanczos eigensolver
