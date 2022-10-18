@@ -105,131 +105,80 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
       MPI_Type_commit(&(newType_[i]));
     }
 
-
 #if defined(HAS_SCALAPACK)
     desc1D_Nxnevx_ = matrix_properties->get_desc1D_Nxnevx();    
 #endif
 
-    int c_dest = icsrc_;
-    c_dests.push_back(c_dest);
-    int c_src = irsrc_;
-    c_srcs.push_back(c_src);
-    int c_len = 1;
-    int b_disp = 0;
-    int c_disp = 0;
-    b_disps.push_back(b_disp);
-    c_disps.push_back(c_disp);
-
-    for(auto i = 1; i < N_; i++){
-      auto src_tmp = (i / mb_) % col_size_;
-      auto dest_tmp = (i / nb_) % row_size_;
-      if(dest_tmp == c_dest && src_tmp == c_src){
-        c_len += 1;
-      }else{
-        c_lens.push_back(c_len);
-        c_dest = (i / nb_) % row_size_;
-        b_disp = i % nb_ + ((i / nb_) / row_size_) * nb_;
-        c_disp = i % mb_ + ((i / mb_) / col_size_) * mb_;
-        c_src = (i / mb_) % col_size_;
-        c_srcs.push_back(c_src);
-        c_dests.push_back(c_dest);
-        b_disps.push_back(b_disp);
-        c_disps.push_back(c_disp);
-        c_len = 1;        
+    isSameDist_ = row_size_ == col_size_ && irsrc_ == icsrc_ && mb_ == nb_;
+    if(isSameDist_){
+      for(auto i = 0; i < col_size_; i++){
+        c_dests.push_back(i);
+        c_srcs.push_back(i);
+        c_lens.push_back(send_lens_[0][i]);
+        b_disps.push_back(recv_offsets_[0][i]);
+        c_disps.push_back(0);      
       }
+    }else{     
+      int c_dest = icsrc_;
+      c_dests.push_back(c_dest);
+      int c_src = irsrc_;
+      c_srcs.push_back(c_src);
+      int c_len = 1;
+      int b_disp = 0;
+      int c_disp = 0;
+      b_disps.push_back(b_disp);
+      c_disps.push_back(c_disp);
+
+      for(auto i = 1; i < N_; i++){
+        auto src_tmp = (i / mb_) % col_size_;
+        auto dest_tmp = (i / nb_) % row_size_;
+        if(dest_tmp == c_dest && src_tmp == c_src){
+          c_len += 1;
+        }else{
+          c_lens.push_back(c_len);
+          c_dest = (i / nb_) % row_size_;
+          b_disp = i % nb_ + ((i / nb_) / row_size_) * nb_;
+          c_disp = i % mb_ + ((i / mb_) / col_size_) * mb_;
+          c_src = (i / mb_) % col_size_;
+          c_srcs.push_back(c_src);
+          c_dests.push_back(c_dest);
+          b_disps.push_back(b_disp);
+          c_disps.push_back(c_disp);
+          c_len = 1;        
+        }
+      }
+      c_lens.push_back(c_len);
     }
-    c_lens.push_back(c_len);
 
     reqsc2b_.resize(c_lens.size());
     c_sends_.resize(c_lens.size());
     b_recvs_.resize(c_lens.size());
-
+    
     for(auto i = 0; i < c_lens.size(); i++){
-        if(row_rank_ == c_dests[i]){
-           if(col_rank_ == c_srcs[i]){
-             int m1 = send_lens_[0][col_rank_];
+      if(row_rank_ == c_dests[i]){
+        if(col_rank_ == c_srcs[i]){
+          int m1 = send_lens_[0][col_rank_];
+          int array_of_sizes[2] = {m1, 1};
+          int array_of_subsizes[2] = {c_lens[i], 1};
+          int array_of_starts[2] = {c_disps[i], 0};
 
-             int array_of_sizes[2] = {m1, 1};
-             int array_of_subsizes[2] = {c_lens[i], 1};
-             int array_of_starts[2] = {c_disps[i], 0};
+          MPI_Type_create_subarray(2, array_of_sizes, array_of_subsizes,
+                                      array_of_starts, MPI_ORDER_FORTRAN,
+                                      getMPI_Type<T>(), &(c_sends_[i]));
+          MPI_Type_commit(&(c_sends_[i]));
+        }else{
+          int array_of_sizes2[2] = {static_cast<int>(n_), 1};
+          int array_of_starts2[2] = {b_disps[i], 0};
+          int array_of_subsizes2[2] = {c_lens[i], 1};
+          MPI_Type_create_subarray(2, array_of_sizes2, array_of_subsizes2,
+                                 array_of_starts2, MPI_ORDER_FORTRAN,
+                                 getMPI_Type<T>(), &(b_recvs_[i]));
+          MPI_Type_commit(&(b_recvs_[i]));
 
-             MPI_Type_create_subarray(2, array_of_sizes, array_of_subsizes,
-                                    array_of_starts, MPI_ORDER_FORTRAN,
-                                    getMPI_Type<T>(), &(c_sends_[i]));
-             MPI_Type_commit(&(c_sends_[i]));
-         }else{
-             int array_of_sizes2[2] = {static_cast<int>(n_), 1};
-             int array_of_starts2[2] = {b_disps[i], 0};
-             int array_of_subsizes2[2] = {c_lens[i], 1};
-             MPI_Type_create_subarray(2, array_of_sizes2, array_of_subsizes2,
-                               array_of_starts2, MPI_ORDER_FORTRAN,
-                               getMPI_Type<T>(), &(b_recvs_[i]));
-             MPI_Type_commit(&(b_recvs_[i]));
-
-         }
-       }
-    }
-
-///
-    int b_dest = irsrc_;
-    b_dests.push_back(b_dest);
-    int b_src = icsrc_;
-    b_srcs.push_back(b_src);
-    int b_len = 1;
-    int c_disp_2 = 0;
-    int b_disp_2 = 0;
-    b_disps_2.push_back(b_disp_2);
-    c_disps_2.push_back(c_disp_2);
-
-    for(auto i = 1; i < N_; i++){
-      auto src_tmp = (i / nb_) % row_size_;
-      auto dest_tmp = (i / mb_) % col_size_;
-      if(dest_tmp == b_dest && src_tmp == b_src){
-        b_len += 1;
-      }else{
-        b_lens.push_back(b_len);
-        b_dest = (i / mb_) % col_size_;
-        c_disp_2 = i % mb_ + ((i / mb_) / col_size_) * mb_;
-        b_disp_2 = i % nb_ + ((i / nb_) / row_size_) * nb_;
-        b_src = (i / nb_) % row_size_;
-        b_srcs.push_back(b_src);
-        b_dests.push_back(b_dest);
-        c_disps_2.push_back(c_disp_2);
-        b_disps_2.push_back(b_disp_2);
-        b_len = 1;        
+        }
       }
     }
-    b_lens.push_back(b_len);
 
-    reqsb2c_.resize(b_lens.size());
-    b_sends_.resize(b_lens.size());
-    c_recvs_.resize(b_lens.size());
-
-    for(auto i = 0; i < b_lens.size(); i++){
-        if(col_rank_ == b_dests[i]){
-           if(row_rank_ == b_srcs[i]){
-             int n1 = send_lens_[1][row_rank_];
-
-             int array_of_sizes[2] = {n1, 1};
-             int array_of_subsizes[2] = {b_lens[i], 1};
-             int array_of_starts[2] = {b_disps_2[i], 0};
-
-             MPI_Type_create_subarray(2, array_of_sizes, array_of_subsizes,
-                                    array_of_starts, MPI_ORDER_FORTRAN,
-                                    getMPI_Type<T>(), &(b_sends_[i]));
-             MPI_Type_commit(&(b_sends_[i]));
-         }else{
-             int array_of_sizes2[2] = {static_cast<int>(m_), 1};
-             int array_of_starts2[2] = {c_disps_2[i], 0};
-             int array_of_subsizes2[2] = {b_lens[i], 1};
-             MPI_Type_create_subarray(2, array_of_sizes2, array_of_subsizes2,
-                               array_of_starts2, MPI_ORDER_FORTRAN,
-                               getMPI_Type<T>(), &(c_recvs_[i]));
-             MPI_Type_commit(&(c_recvs_[i]));
-
-         }
-       }
-    }
   }
   ~ChaseMpiDLA() {
     delete[] Buff_;
@@ -464,88 +413,11 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
   }
 
 
-  void asynHxBGatherB(T *V, std::size_t locked, std::size_t block) override {
-  
-    std::size_t dim = m_ * block;
+  void asynHxBGatherB(T *V, std::size_t locked, std::size_t block) override {}
 
-    for(auto i = 0; i < b_lens.size(); i++){
-        if(col_rank_ == b_dests[i]){
-           if(row_rank_ == b_srcs[i]){
-              MPI_Ibcast(B2_ + locked * n_,  block, b_sends_[i], b_srcs[i], row_comm_, &reqsb2c_[i]);
-         }else{
-              MPI_Ibcast(C2_ + locked * m_, block, c_recvs_[i], b_srcs[i], row_comm_,  &reqsb2c_[i]);
+  void B2C(T *b, T *c, std::size_t locked, std::size_t block) override {}
 
-         }
-       }
-    }
-
-    dla_->asynHxBGatherB(V, locked, block);
-
-    for(auto i = 0; i < b_lens.size(); i++){
-      if(col_rank_ == b_dests[i]){
-        MPI_Wait( &reqsb2c_[i], MPI_STATUSES_IGNORE);
-      }
-    }
-
-    MPI_Allreduce(MPI_IN_PLACE, C_ + locked * m_, dim, getMPI_Type<T>(), MPI_SUM, row_comm_); // V' * H
-
-
-    for(auto i = 0; i < b_lens.size(); i++){
-      if(col_rank_ == b_dests[i] && row_rank_ == b_srcs[i]){
-        t_lacpy('A', b_lens[i], block, B2_ + locked * n_ + b_disps_2[i], n_, C2_ + locked * m_ + c_disps_2[i], m_ );
-      }
-    }
- 
-  }
-
-  void B2C(T *b, T *c, std::size_t locked, std::size_t block) override {
-    for(auto i = 0; i < b_lens.size(); i++){
-        if(col_rank_ == b_dests[i]){
-           if(row_rank_ == b_srcs[i]){
-              MPI_Ibcast(b + locked * n_,  block, b_sends_[i], b_srcs[i], row_comm_, &reqsb2c_[i]);
-         }else{
-              MPI_Ibcast(c + locked * m_, block, c_recvs_[i], b_srcs[i], row_comm_,  &reqsb2c_[i]);
-         }
-       }
-    }
-
-    for(auto i = 0; i < b_lens.size(); i++){
-      if(col_rank_ == b_dests[i]){
-        MPI_Wait( &reqsb2c_[i], MPI_STATUSES_IGNORE);
-      }
-    }
-
-    for(auto i = 0; i < b_lens.size(); i++){
-      if(col_rank_ == b_dests[i] && row_rank_ == b_srcs[i]){
-        t_lacpy('A', b_lens[i], block, b + locked * n_ + b_disps_2[i], n_, c + locked * m_ + c_disps_2[i], m_ );
-      }
-    }
-  }
-
-  void C2B(T *c, T *b, std::size_t locked, std::size_t block) override{
-    for(auto i = 0; i < c_lens.size(); i++){
-        if(row_rank_ == c_dests[i]){
-           if(col_rank_ == c_srcs[i]){
-              MPI_Ibcast(c + locked * m_,  block, c_sends_[i], c_srcs[i], col_comm_, &reqsc2b_[i]);
-         }else{
-              MPI_Ibcast(b + locked * n_, block, b_recvs_[i], c_srcs[i], col_comm_,  &reqsc2b_[i]);
-
-         }
-       }
-    }
-
-    for(auto i = 0; i < c_lens.size(); i++){
-      if(row_rank_ == c_dests[i]){
-        MPI_Wait( &reqsc2b_[i], MPI_STATUSES_IGNORE);
-      }
-    }
-
-    for(auto i = 0; i < c_lens.size(); i++){
-      if(row_rank_ == c_dests[i] && col_rank_ == c_srcs[i]){
-        t_lacpy('A', c_lens[i], block, c + locked * m_ + c_disps[i], m_, b + locked * n_ + b_disps[i], n_ );
-      }
-    }    
-  }
+  void C2B(T *c, T *b, std::size_t locked, std::size_t block) override{}
 
   /*!
     - For ChaseMpiDLA,  `shiftMatrix` is implemented in nested loop for both `Block Distribution` and `Block-Cyclic Distribution`.
@@ -782,11 +654,7 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
       for (std::size_t i = 0; i < unconverged; ++i) {
         resid[i] = std::sqrt(resid[i]); 
       }
-
-
   }
-
-
 
   void syherk(char uplo, char trans, std::size_t n, std::size_t k, T* alpha, T* a, std::size_t lda, T* beta, T* c, std::size_t ldc) override {
       dla_->syherk(uplo, trans, n, k, alpha, a, lda, beta, c, ldc);
@@ -853,7 +721,7 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
     if(info == 0){
       dla_->trsm('R', 'U', 'N', 'N', m_, nevex, &one, A_.get(), nevex, C_, m_);
 
-      int choldeg = 1;
+      int choldeg = 2;
       char *choldegenv;
       choldegenv = getenv("CHASE_CHOLQR_DEGREE");
       if(choldegenv){
@@ -871,11 +739,11 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
       std::memcpy(C_, C2_, locked * m_ * sizeof(T));
       std::memcpy(C2_+locked * m_, C_ + locked * m_, (nevex - locked) * m_ * sizeof(T));  
     }else{
+#ifdef CHASE_OUTPUT         
       if(grank == 0) std::cout << "cholQR failed because of ill-conditioned vector, use Householder QR instead" << std::endl;
+#endif      
       this->hhQR_dist(N, nevex, locked, approxV, ldv);
     }
- 
-
   }
 
   void Lock(T * workspace_, std::size_t new_converged) override{}
@@ -1044,6 +912,8 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
   std::vector<std::vector<int>> send_lens_;
   std::vector<std::vector<int>> recv_offsets_;
 
+  bool isSameDist_; //is the same distribution for the row/column communicator
+
   std::vector<MPI_Request> reqsc2b_;
   std::vector<MPI_Datatype> c_sends_;
   std::vector<MPI_Datatype> b_recvs_;
@@ -1052,15 +922,6 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
   std::vector<int> c_lens;
   std::vector<int> b_disps;
   std::vector<int> c_disps;
-
-  std::vector<MPI_Request> reqsb2c_;
-  std::vector<MPI_Datatype> b_sends_;
-  std::vector<MPI_Datatype> c_recvs_;
-  std::vector<int> b_dests;
-  std::vector<int> b_srcs;
-  std::vector<int> b_lens;
-  std::vector<int> c_disps_2;
-  std::vector<int> b_disps_2;
 
   std::unique_ptr<T[]> lanczos_workspace_;
 
