@@ -115,7 +115,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
         c_dests.push_back(i);
         c_srcs.push_back(i);
         c_lens.push_back(send_lens_[0][i]);
-        b_disps.push_back(recv_offsets_[0][i]);
+        b_disps.push_back(0);
         c_disps.push_back(0);      
       }
     }else{     
