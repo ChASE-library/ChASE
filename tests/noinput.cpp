@@ -14,25 +14,14 @@
 #include "algorithm/performance.hpp"
 #include "ChASE-MPI/chase_mpi.hpp"
 
-#include "ChASE-MPI/impl/chase_mpidla_blaslapack.hpp"
 #include "ChASE-MPI/impl/chase_mpidla_blaslapack_seq.hpp"
-#include "ChASE-MPI/impl/chase_mpidla_blaslapack_seq_inplace.hpp"
-
-#ifdef USE_GPU
-#include "ChASE-MPI/impl/chase_mpidla_cuda_seq.hpp"
-#endif
 
 using T = std::complex<double>;
 //using T = double;
 using namespace chase;
 using namespace chase::mpi;
 
-#ifdef USE_GPU
-typedef ChaseMpi<ChaseMpiDLACudaSeq, T> CHASE;
-//typedef ChaseMpi<ChaseMpiDLABlaslapackSeq, T> CHASE;
-#else
 typedef ChaseMpi<ChaseMpiDLABlaslapackSeq, T> CHASE;
-#endif
 
 int main() {
   MPI_Init(NULL, NULL);

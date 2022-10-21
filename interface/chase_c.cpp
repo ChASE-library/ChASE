@@ -369,7 +369,7 @@ void chase_setup(MPI_Fint* fcomm, int* N, int *nev, int *nex ){
 }
 
 template <typename T>
-void chase_solve(T* H, int *LDH, T* V, Base<T>* ritzv, int* deg, double* tol, char* mode,
+void chase_solve(T* H, int *LDH, T* V, int* ldv, Base<T>* ritzv, int* deg, double* tol, char* mode,
                  char* opt) {
   typedef ChaseMpi<ChaseMpiDLABlaslapack, T> CHASE;
 
@@ -384,7 +384,9 @@ void chase_solve(T* H, int *LDH, T* V, Base<T>* ritzv, int* deg, double* tol, ch
 
   int myRank = props->get_my_rank();
   int ldh = *LDH;
-  CHASE single(props, H, ldh, V, ritzv);
+  std::size_t ldv1 = *ldv; 
+
+  CHASE single(props, H, ldh, V, ldv1, ritzv);
 
   ChaseConfig<T>& config = single.GetConfig();
   auto N = config.GetN();
@@ -431,7 +433,7 @@ void chase_solve(T* H, int *LDH, T* V, Base<T>* ritzv, int* deg, double* tol, ch
 
 #ifdef HAS_GPU
 template <typename T>
-void chase_solve_mgpu(T* H, int *LDH, T* V, Base<T>* ritzv, int* deg, double* tol, char* mode,
+void chase_solve_mgpu(T* H, int *LDH, T* V, int *ldv, Base<T>* ritzv, int* deg, double* tol, char* mode,
                  char* opt) {
   
   typedef ChaseMpi<ChaseMpiDLAMultiGPU, T> CHASE;	
@@ -446,7 +448,8 @@ void chase_solve_mgpu(T* H, int *LDH, T* V, Base<T>* ritzv, int* deg, double* to
 
   int myRank = props->get_my_rank();
   int ldh = *LDH;
-  CHASE single(props, H, ldh, V, ritzv);
+  std::size_t ldv1 = *ldv; 
+  CHASE single(props, H, ldh, V, ldv1, ritzv);
 
   ChaseConfig<T>& config = single.GetConfig();
   auto N = config.GetN();
@@ -688,45 +691,45 @@ void pschase_init_blockcyclic(MPI_Fint* fcomm, int* N, int *mbsize, int *nbsize,
 
 }
 
-void pzchase_(std::complex<double>* H, int *ldh, std::complex<double>* V,
+void pzchase_(std::complex<double>* H, int *ldh, std::complex<double>* V, int *ldv,
                   double* ritzv, int* deg, double* tol, char* mode, char* opt) {
-  chase_solve<std::complex<double>>(H, ldh, V, ritzv, deg, tol, mode, opt);
+  chase_solve<std::complex<double>>(H, ldh, V, ldv, ritzv, deg, tol, mode, opt);
 }
 
-void pdchase_(double* H, int *ldh, double* V, double* ritzv, int* deg, double* tol,
+void pdchase_(double* H, int *ldh, double* V,  int *ldv, double* ritzv, int* deg, double* tol,
                   char* mode, char* opt) {
-  chase_solve<double>(H, ldh, V, ritzv, deg, tol, mode, opt);
+  chase_solve<double>(H, ldh, V, ldv, ritzv, deg, tol, mode, opt);
 }
 
-void pcchase_(std::complex<float>* H, int *ldh, std::complex<float>* V,
+void pcchase_(std::complex<float>* H, int *ldh, std::complex<float>* V,  int *ldv,
                   float* ritzv, int* deg, double* tol, char* mode, char* opt) {
-  chase_solve<std::complex<float>>(H, ldh, V, ritzv, deg, tol, mode, opt);
+  chase_solve<std::complex<float>>(H, ldh, V, ldv, ritzv, deg, tol, mode, opt);
 }
 
-void pschase_(float* H, int *ldh, float* V, float* ritzv, int* deg, double* tol,
+void pschase_(float* H, int *ldh, float* V,  int *ldv, float* ritzv, int* deg, double* tol,
                   char* mode, char* opt) {
-  chase_solve<float>(H, ldh, V, ritzv, deg, tol, mode, opt);
+  chase_solve<float>(H, ldh, V, ldv, ritzv, deg, tol, mode, opt);
 }
 
 #ifdef HAS_GPU
-void pzchase_mgpu_(std::complex<double>* H, int *ldh, std::complex<double>* V,
+void pzchase_mgpu_(std::complex<double>* H, int *ldh, std::complex<double>* V, int *ldv,
                   double* ritzv, int* deg, double* tol, char* mode, char* opt) {
-  chase_solve_mgpu<std::complex<double>>(H, ldh, V, ritzv, deg, tol, mode, opt);
+  chase_solve_mgpu<std::complex<double>>(H, ldh, V, ldv, ritzv, deg, tol, mode, opt);
 }
 
-void pdchase_mgpu_(double* H, int *ldh, double* V, double* ritzv, int* deg, double* tol,
+void pdchase_mgpu_(double* H, int *ldh, double* V,  int *ldv, double* ritzv, int* deg, double* tol,
                   char* mode, char* opt) {
-  chase_solve_mgpu<double>(H, ldh, V, ritzv, deg, tol, mode, opt);
+  chase_solve_mgpu<double>(H, ldh, V, ldv, ritzv, deg, tol, mode, opt);
 }
 
-void pcchase_mgpu_(std::complex<float>* H, int *ldh, std::complex<float>* V,
+void pcchase_mgpu_(std::complex<float>* H, int *ldh, std::complex<float>* V,  int *ldv,
                   float* ritzv, int* deg, double* tol, char* mode, char* opt) {
-  chase_solve_mgpu<std::complex<float>>(H, ldh, V, ritzv, deg, tol, mode, opt);
+  chase_solve_mgpu<std::complex<float>>(H, ldh, V, ldv, ritzv, deg, tol, mode, opt);
 }
 
-void pschase_mgpu_(float* H, int *ldh, float* V, float* ritzv, int* deg, double* tol,
+void pschase_mgpu_(float* H, int *ldh, float* V,  int *ldv, float* ritzv, int* deg, double* tol,
                   char* mode, char* opt) {
-  chase_solve_mgpu<float>(H, ldh, V, ritzv, deg, tol, mode, opt);
+  chase_solve_mgpu<float>(H, ldh, V, ldv, ritzv, deg, tol, mode, opt);
 }
 #endif
 /** @} */ // end of chasc-c

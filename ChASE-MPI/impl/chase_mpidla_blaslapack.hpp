@@ -63,6 +63,8 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
   }
 
   ~ChaseMpiDLABlaslapack() {}
+  void initVecs(T *V, std::size_t ldv1) override{}  
+  void initRndVecs(T *V, std::size_t ldv1) override {}
 
   /*! - For ChaseMpiDLABlaslapack, `preApplication` is implemented within ChaseMpiDLA.
       - **Parallelism on distributed-memory system SUPPORT**
@@ -91,7 +93,7 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
   */
   void apply(T alpha, T beta, std::size_t offset, std::size_t block,  std::size_t locked) override {
 
-	T Zero = T(0.0);
+	  T Zero = T(0.0);
 
     if (next_ == NextOp::bAc) {
 
@@ -362,6 +364,7 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
            C_+ locked * N_, N_
       );
   }
+  void C2V(T *v1, T *v2, std::size_t block) override {}
 
   void LanczosDos(std::size_t N_, std::size_t idx, std::size_t m, T *workspace_, std::size_t ldw, T *ritzVc, std::size_t ldr, T* approxV_, std::size_t ldv) override{
 
@@ -471,8 +474,9 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
 
   void Swap(std::size_t i, std::size_t j)override{}
 
-  void lanczos(std::size_t mIters, int idx, Base<T> *d, Base<T> *e,  Base<T> *rbeta,  T *V_, T *workspace_)override{}
+  void lanczos(std::size_t mIters, int idx, Base<T> *d, Base<T> *e,  Base<T> *rbeta,  T *V_, std::size_t ldv1, T *workspace_)override{}
 
+  void cpyRtizVecs(T *V_, std::size_t ldv1) override {}
 
  private:
   enum NextOp { cAb, bAc };

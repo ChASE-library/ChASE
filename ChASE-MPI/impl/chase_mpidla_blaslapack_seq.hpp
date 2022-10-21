@@ -41,6 +41,9 @@ class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T> {
   ChaseMpiDLABlaslapackSeq(ChaseMpiDLABlaslapackSeq const& rhs) = delete;
 
   ~ChaseMpiDLABlaslapackSeq() {}
+  void initVecs(T *V, std::size_t ldv1) override{}  
+  void initRndVecs(T *V, std::size_t ldv1) override {}
+  void C2V(T *v1, T *v2, std::size_t block) override {}
 
   /*! - For ChaseMpiDLABlaslapackSeq, the core of `preApplication` is implemented with `std::memcpy`, which copies `block` vectors from `V` to `V1`.
       - **Parallelism is NOT SUPPORT**
@@ -389,7 +392,8 @@ class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T> {
 
   void Swap(std::size_t i, std::size_t j)override{}
 
-  void lanczos(std::size_t mIters, int idx, Base<T> *d, Base<T> *e,  Base<T> *rbeta,  T *V_, T *workspace_)override{}
+  void lanczos(std::size_t mIters, int idx, Base<T> *d, Base<T> *e,  Base<T> *rbeta,  T *V_, std::size_t ldv1, T *workspace_)override{}
+  void cpyRtizVecs(T *V_, std::size_t ldv1) override {}
 
  private:
   std::size_t N_;

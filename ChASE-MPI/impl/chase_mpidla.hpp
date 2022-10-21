@@ -184,6 +184,28 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
     delete[] Buff_;
   }
 
+  void initVecs(T *V, std::size_t ldv1) override{
+    next_ = NextOp::bAc;
+    //std::memcpy(C_, V, m_ * (nev_ + nex_) * sizeof(T));
+    t_lacpy('A', m_, nev_ + nex_, V, ldv1, C_ , m_);
+    dla_->preApplication(V, 0, nev_ + nex_);
+  }
+
+  void initRndVecs(T *V, std::size_t ldv1) override {
+    std::mt19937 gen(1337.0);
+    std::normal_distribution<> d;
+    for(auto j = 0; j < nev_ + nex_; j++){
+      std::size_t cnt = 0;
+      for(auto i = 0; i < N_; i++){
+        auto rnk = (i / mb_) % col_size_;
+        auto rnd = getRandomT<T>([&]() { return d(gen);});
+        if(col_rank_ == rnk){
+          V[cnt + j * ldv1] = rnd;
+          cnt++;
+        }
+      }
+    }
+  }
   /*! - For ChaseMpiDLA, `preApplication` is implemented within `std::memcpy`.
       - **Parallelism on distributed-memory system SUPPORT**
       - For the meaning of this function, please visit ChaseMpiDLAInterface.
@@ -197,7 +219,6 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
 	    std::memcpy(C_ + locked * m_ +j * m_ + r_offs_l_[i], V + j * N_ + locked * N_ + r_offs_[i], r_lens_[i] * sizeof(T));
 	} 
     }
-
     dla_->preApplication(V, locked, block);
   }
 
@@ -253,6 +274,109 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
     }
   }
 
+  //v1->v2
+  void C2V(T *v1, T *v2, std::size_t block) override {
+    std::size_t N = N_;
+    std::size_t dimsIdx;
+    std::size_t subsize;
+    std::size_t blocksize;
+    std::size_t nbblocks;
+    T* buff;
+    MPI_Comm comm;
+    std::size_t *offs, *lens, *offs_l;  
+    T* targetBuf = v2;
+      
+    subsize = m_;
+    blocksize = mb_;
+    buff = v1;
+    comm = col_comm_;
+    dimsIdx = 0;
+    offs = r_offs_;
+    lens = r_lens_;
+    offs_l = r_offs_l_;
+    nbblocks = mblocks_;
+
+    int gsize, rank;
+    MPI_Comm_size(comm, &gsize);
+    MPI_Comm_rank(comm, &rank);
+
+    auto& blockcounts = matrix_properties_->get_blockcounts()[dimsIdx];
+    auto& blocklens = matrix_properties_->get_blocklens()[dimsIdx];
+    auto& blockdispls = matrix_properties_->get_blockdispls()[dimsIdx];
+    auto& sendlens = matrix_properties_->get_sendlens()[dimsIdx];
+    auto& g_offset = matrix_properties_->get_g_offsets()[dimsIdx];
+
+    std::vector<std::vector<int>> block_cyclic_displs;
+    block_cyclic_displs.resize(gsize);
+
+    int displs_cnt = 0;
+    for (auto j = 0; j < gsize; ++j) {
+      block_cyclic_displs[j].resize(blockcounts[j]);
+      for (auto i = 0; i < blockcounts[j]; ++i){
+          block_cyclic_displs[j][i] = displs_cnt;
+            displs_cnt += blocklens[j][i];
+      }
+    }
+
+
+    std::vector<MPI_Request> reqs(gsize);
+    std::vector<MPI_Datatype> newType(gsize);
+
+    for (auto j = 0; j < gsize; ++j) {
+      int array_of_sizes[2] = {static_cast<int>(N_), 1};
+      int array_of_subsizes[2] = {static_cast<int>(sendlens[j]), 1};
+      int array_of_starts[2] = {block_cyclic_displs[j][0], 0};
+
+      MPI_Type_create_subarray(2, array_of_sizes, array_of_subsizes,
+                               array_of_starts, MPI_ORDER_FORTRAN,
+                               getMPI_Type<T>(), &(newType[j]));
+
+      MPI_Type_commit(&(newType[j]));
+    }
+
+    if(data_layout.compare("Block-Cyclic") == 0){
+      for(auto i = 0; i < gsize; i++){
+        if (rank == i) {
+          MPI_Ibcast(buff, sendlens[i] * block, getMPI_Type<T>(), i, comm, &reqs[i]);
+        } else {
+        MPI_Ibcast(Buff_, block, newType[i], i, comm, &reqs[i]);
+        }
+      }
+    }else{
+      for(auto i = 0; i < gsize; i++){
+        if (rank == i) {
+          MPI_Ibcast(buff, sendlens[i] * block, getMPI_Type<T>(), i, comm, &reqs[i]);
+        } else {
+          MPI_Ibcast(targetBuf, block, newType[i], i, comm, &reqs[i]);
+        }
+      }    
+    }
+
+    int i = rank;
+
+    if(data_layout.compare("Block-Cyclic") == 0){
+      for (auto j = 0; j < block; ++j) {
+            std::memcpy(Buff_ + j * N_ + block_cyclic_displs[i][0], buff + sendlens[i] * j, sendlens[i] * sizeof(T));
+      }
+    }else{
+        for (auto j = 0; j < block; ++j) {
+            std::memcpy(targetBuf + j * N_ + block_cyclic_displs[i][0], buff + sendlens[i] * j, sendlens[i] * sizeof(T));
+        }    
+    }
+
+    MPI_Waitall(gsize, reqs.data(), MPI_STATUSES_IGNORE);
+
+    if(data_layout.compare("Block-Cyclic") == 0){
+      for(auto j = 0; j < gsize; j++){
+        for (auto i = 0; i < blockcounts[j]; ++i){
+          t_lacpy('A', blocklens[j][i], block, Buff_ + block_cyclic_displs[j][i], 
+                   N_, targetBuf + blockdispls[j][i] , N_);
+       }
+      }
+
+    }
+
+  }
   /*!
      - For ChaseMpiDLA,  `postApplication` operation brocasts asynchronously the final product of `HEMM` to each MPI rank. 
      - **Parallelism on distributed-memory system SUPPORT**
@@ -412,12 +536,17 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
  
   }
 
+  void asynHxBGatherB(T *V, std::size_t locked, std::size_t block) override {
+ 
+  }
 
-  void asynHxBGatherB(T *V, std::size_t locked, std::size_t block) override {}
+  void B2C(T *b, T *c, std::size_t locked, std::size_t block) override {
+ 
+  }
 
-  void B2C(T *b, T *c, std::size_t locked, std::size_t block) override {}
-
-  void C2B(T *c, T *b, std::size_t locked, std::size_t block) override{}
+  void C2B(T *c, T *b, std::size_t locked, std::size_t block) override{
+     
+  }
 
   /*!
     - For ChaseMpiDLA,  `shiftMatrix` is implemented in nested loop for both `Block Distribution` and `Block-Cyclic Distribution`.
@@ -683,7 +812,7 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
 
   }
 
-  void hhQR_dist(std::size_t N_, std::size_t nevex,std::size_t locked, T *approxV, std::size_t ldv) override {
+  void hhQR_dist(std::size_t N_, std::size_t nevex,std::size_t locked, T *workspace, std::size_t ldv) override {
     std::unique_ptr<T []> tau(new T[nevex]);
 #if defined(HAS_SCALAPACK)
     int one = 1;
@@ -692,12 +821,15 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
     std::memcpy(C_, C2_, locked * m_ * sizeof(T));
     std::memcpy(C2_+locked * m_, C_ + locked * m_, (nevex - locked) * m_ * sizeof(T));
 #else
-    this->postApplication(approxV, nevex, 0);
-    t_geqrf(LAPACK_COL_MAJOR, N_, nevex, approxV, N_, tau.get());
-    t_gqr(LAPACK_COL_MAJOR, N_, nevex, nevex, approxV, N_, tau.get());
-    this->preApplication(approxV, 0, nevex);
+    int grank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &grank);
+    if(grank == 0) std::cout << "ScaLAPACK is not available, use LAPACK Householder QR instead" << std::endl;
+    this->postApplication(workspace, nevex, 0);
+    t_geqrf(LAPACK_COL_MAJOR, N_, nevex, workspace, N_, tau.get());
+    t_gqr(LAPACK_COL_MAJOR, N_, nevex, nevex, workspace, N_, tau.get());
+    this->preApplication(workspace, 0, nevex);
     std::memcpy(C_, C2_, locked * m_ * sizeof(T));
-    std::memcpy(C2_+locked * m_, C_ + locked * m_, (nevex - locked) * m_ * sizeof(T));
+    std::memcpy(C2_+locked * m_, C_ + locked * m_, (nevex - locked) * m_ * sizeof(T));    
 #endif	  
   }
   
@@ -762,14 +894,7 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
     delete[] tmp;
   }
 
-  void lanczos(std::size_t mIters, int idx, Base<T> *d, Base<T> *e,  Base<T> *rbeta,  T *V_, T *workspace_)override{
-
-    if (lanczos_workspace_ == nullptr){
-     //std::cout << "allocated workspace for Lanczos" << std::endl;
-     lanczos_workspace_ =  std::unique_ptr<T []> {
-        new T[ N_ * mIters]
-      }; 
-    }
+  void lanczos(std::size_t mIters, int idx, Base<T> *d, Base<T> *e,  Base<T> *rbeta,  T *V_, std::size_t ldv1, T *workspace_)override{
  
     std::size_t m = mIters;
     std::size_t n = N_;
@@ -786,12 +911,12 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
     T Zero = T(0.0);
     
     // V is filled with randomness
-    T *v1 = lanczos_workspace_.get();
+    T *v1_ = new T[n]();
+    T *v1 = v1_;
 
     if(idx >= 0){
-      for (std::size_t k = 0; k < N_; ++k) v1[k] = V_[k + idx * N_];
+      this->C2V(V_ + idx * ldv1, v1, 1);
     }else{
-    // std::random_device rd;
       std::mt19937 gen(2342.0);
       std::normal_distribution<> normal_distribution;
 
@@ -808,9 +933,11 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
     Base<T> real_beta = 0.0;
 
     for (std::size_t k = 0; k < m; k = k + 1) {
-      if (lanczos_workspace_.get() + k * n != v1)
-        memcpy(lanczos_workspace_.get() + k * n, v1, n * sizeof(T));
 
+      for(auto i = 0; i < mblocks_; i++){
+        std::memcpy(C_ + k * m_ + r_offs_l_[i], v1 + r_offs_[i], r_lens_[i] * sizeof(T));
+      }
+         
       this->applyVec(v1, w);
 
       alpha = dla_->dot(n, v1, 1, w, 1);
@@ -838,36 +965,37 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
 
       std::swap(v1, v0);
       std::swap(v1, w); 
-                    
+                                
     }
 
     *rbeta = real_beta;
 
     delete[] w_;
-    delete[] v0_;    
+    delete[] v0_;
+
   }
 
 
-  void LanczosDos(std::size_t N_, std::size_t idx, std::size_t m, T *workspace_, std::size_t ldw, T *ritzVc, std::size_t ldr, T* approxV_, std::size_t ldv) override{
+  void LanczosDos(std::size_t N_, std::size_t idx, std::size_t m, T *workspace_, std::size_t ldw, T *ritzVc, std::size_t ldr, T* approxV_, std::size_t ldv1) override{
       
     T alpha = 1.0;
     T beta = 0.0;
+
     dla_->gemm_large(CblasColMajor, CblasNoTrans, CblasNoTrans,
-           n_, idx, m,
+           m_, idx, m,
            &alpha,
-           lanczos_workspace_.get() + recv_offsets_[1][row_rank_], ldw,
+           C_, m_,
            ritzVc, ldr,
            &beta,
-           approxV_ + recv_offsets_[1][row_rank_], ldv
+           approxV_, ldv1
     );
+  }
 
-    for (auto i = 0; i < row_size_; ++i){
-        MPI_Ibcast(approxV_, idx, newType_[i], i, row_comm_, &reqs_[i]);
-    }
 
-    MPI_Waitall(row_size_, reqs_.data(), MPI_STATUSES_IGNORE);
-   
-    
+  void cpyRtizVecs(T *V_, std::size_t ldv1) override {
+ //   std::memcpy(V_, C_, m_ * nev_ * sizeof(T));
+    t_lacpy('A', m_, nev_, C_, m_, V_ , ldv1);
+  
   }
 
  private:
@@ -922,8 +1050,6 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
   std::vector<int> c_lens;
   std::vector<int> b_disps;
   std::vector<int> c_disps;
-
-  std::unique_ptr<T[]> lanczos_workspace_;
 
   int icsrc_;
   int irsrc_;

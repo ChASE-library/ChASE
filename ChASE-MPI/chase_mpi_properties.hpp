@@ -467,8 +467,8 @@ class ChaseMpiProperties {
         int myrow = coord_[0];
         int mycol = coord_[1];
 
-	std::size_t len;
-	len = m;
+	    std::size_t len;
+	   len = m;
 	off_[0] = coord_[0] * len;
 	if(coord_[0] < dims_[0] - 1){
 	    m_ = len;
@@ -1056,16 +1056,16 @@ class ChaseMpiProperties {
     @param V2 a `N * max_block_` rectangular matrix for the operation `V2^T*A`.
     @param resid a `max_block_` vector which stores the residual of each computed Ritz value.
   */
-  ChaseMpiMatrices<T> create_matrices(T* V1 = nullptr, Base<T>* ritzv = nullptr,
+  ChaseMpiMatrices<T> create_matrices(T* V1 = nullptr, std::size_t ldv1 = 0,  Base<T>* ritzv = nullptr,
                                       T* V2 = nullptr,
                                       Base<T>* resid = nullptr) const {
-    return ChaseMpiMatrices<T>(comm_, N_, max_block_, V1, ritzv, V2, resid);
+    return ChaseMpiMatrices<T>(comm_, N_, m_, n_, max_block_, V1, ldv1, ritzv, V2, resid);
   }
 
-  ChaseMpiMatrices<T> create_matrices(T* H = nullptr, std::size_t ldh=0, T* V1 = nullptr, Base<T>* ritzv = nullptr,
+  ChaseMpiMatrices<T> create_matrices(T* H = nullptr, std::size_t ldh=0, T* V1 = nullptr,  std::size_t ldv1 = 0, Base<T>* ritzv = nullptr,
                                       T* V2 = nullptr,
                                       Base<T>* resid = nullptr) const {
-     return ChaseMpiMatrices<T>(comm_, N_, m_, n_, max_block_, V1, ritzv, H, ldh, V2, resid);
+     return ChaseMpiMatrices<T>(comm_, N_, m_, n_, max_block_, V1, ldv1, ritzv, H, ldh, V2, resid);
   }
 
  private:

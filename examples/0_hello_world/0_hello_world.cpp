@@ -75,28 +75,23 @@ int main(int argc, char** argv)
   std::mt19937 gen(1337.0);
   std::normal_distribution<> d;
 
-  auto V = std::vector<T>(N * (nev + nex)); //eigevectors
-  auto Lambda = std::vector<Base<T>>(nev + nex); //eigenvalues
-
   /*construct eigenproblem to be solved*/
 #ifdef USE_BLOCK_CYCLIC
-  CHASE single(new ChaseMpiProperties<T>(N, NB, NB, nev, nex, dims[0], dims[1], (char *)"C", irsrc, icsrc, MPI_COMM_WORLD), 
-		    V.data(), Lambda.data());
+  auto props = new ChaseMpiProperties<T>(N, NB, NB, nev, nex, dims[0], dims[1], (char *)"C", irsrc, icsrc, MPI_COMM_WORLD);
 #elif defined(USE_GIVEN_DIST)
-  CHASE single(new ChaseMpiProperties<T>(N, nev, nex, m, n, dims[0], dims[1], (char *)"C", MPI_COMM_WORLD), V.data(),
-               Lambda.data());
+  auto props = new ChaseMpiProperties<T>(N, nev, nex, m, n, dims[0], dims[1], (char *)"C", MPI_COMM_WORLD);  
 #elif defined(NO_COPY_H)
   auto props = new ChaseMpiProperties<T>(N, nev, nex, MPI_COMM_WORLD, false);
 #else  
-  CHASE single(new ChaseMpiProperties<T>(N, nev, nex, MPI_COMM_WORLD), V.data(),
-               Lambda.data());
+  auto props = new ChaseMpiProperties<T>(N, nev, nex, MPI_COMM_WORLD);
 #endif
 
-  /*randomize V*/
-  for (std::size_t i = 0; i < N * (nev + nex); ++i) {
-    V[i] = T(d(gen), d(gen));
-  }
+  auto m_ = props->get_m();
 
+  auto V = std::vector<T>(m_ * (nev + nex)); //eigevectors
+  auto Lambda = std::vector<Base<T>>(nev + nex); //eigenvalues
+
+  std::size_t ldv1 = m_;
   std::vector<T> H(N * N, T(0.0));
 
   /*Generate Clement matrix*/
@@ -113,6 +108,8 @@ int main(int argc, char** argv)
   std::cout << std::setprecision(16);
 
 #ifdef USE_BLOCK_CYCLIC
+  CHASE single(props, V.data(), ldv1, Lambda.data());
+
   /*local block number = mblocks x nblocks*/
   std::size_t mblocks = single.get_mblocks();
   std::size_t nblocks = single.get_nblocks();
@@ -125,39 +122,16 @@ int main(int argc, char** argv)
   std::size_t *r_offs, *c_offs, *r_lens, *c_lens, *r_offs_l, *c_offs_l;
   single.get_offs_lens(r_offs, r_lens, r_offs_l, c_offs, c_lens, c_offs_l);
 
-#ifdef CHASE_OUTPUT
-/*  
-  //coordination of each MPI rank in 2D grid
-  int *coord = new int[2];
-
-  coord = single.get_coord();
-
-  //print the data layout information
-  for(std::size_t i = 0; i < mblocks; i++){
-      for(std::size_t j = 0; j < nblocks; j++){
-          std::cout << "[" << coord[0] << "," 
-	  << coord[1] << "]: ("
-	  << r_offs[i] << ":"
-          << r_offs_l[i] << ":"		      
-          << r_lens[i] << ","
-          << c_offs[j] << ":"
-          << c_offs_l[j] << ":"		     
-	  << c_lens[j] << "),"
-	  << std::endl;
-    }
-  }
-*/
-#endif
 
   /*distribute Clement matrix into block cyclic data layout */
   for(std::size_t j = 0; j < nblocks; j++){
-      for(std::size_t i = 0; i < mblocks; i++){
-          for(std::size_t q = 0; q < c_lens[j]; q++){
+    for(std::size_t i = 0; i < mblocks; i++){
+      for(std::size_t q = 0; q < c_lens[j]; q++){
 	      for(std::size_t p = 0; p < r_lens[i]; p++){
-		  single.GetMatrixPtr()[(q + c_offs_l[j]) * m + p + r_offs_l[i]] = H[(q + c_offs[j]) * N + p + r_offs[i]];
+		      single.GetMatrixPtr()[(q + c_offs_l[j]) * m + p + r_offs_l[i]] = H[(q + c_offs[j]) * N + p + r_offs[i]];
 	      }
-	  }
-      }
+	    }
+    }
   }
 
 #elif defined(NO_COPY_H)
@@ -171,9 +145,11 @@ int main(int argc, char** argv)
     }
   }
 
-  CHASE single(props, h_loc, ldh, V.data(), Lambda.data());  
+  CHASE single(props, h_loc, ldh, V.data(), ldv1, Lambda.data());  
 
 #else  
+  CHASE single(props, V.data(), ldv1, Lambda.data());
+
   std::size_t xoff, yoff, xlen, ylen;
 
   /*Get Offset and length of block of H on each node*/
@@ -187,6 +163,9 @@ int main(int argc, char** argv)
   }
 
 #endif
+
+  /*randomize V*/
+  single.initRndVecs(V.data());
 
   /*Setup configure for ChASE*/
   auto& config = single.GetConfig();

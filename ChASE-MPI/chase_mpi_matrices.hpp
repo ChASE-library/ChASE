@@ -78,13 +78,16 @@ class ChaseMpiMatrices {
     @param V2: a pointer to the buffer `V2_`.
     @param resid: a pointer to the buffer `resid_`. 
   */        
-  ChaseMpiMatrices(MPI_Comm comm, std::size_t N, std::size_t max_block,
-                   T* V1 = nullptr, Base<T>* ritzv = nullptr, T* V2 = nullptr,
+  ChaseMpiMatrices(MPI_Comm comm, std::size_t N, std::size_t m, std::size_t n, std::size_t max_block,
+                   T* V1 = nullptr, std::size_t ldv1 = 0, Base<T>* ritzv = nullptr, T* V2 = nullptr,
                    Base<T>* resid = nullptr)
       // if value is null then allocate otherwise don't
       : H__(nullptr),
-        V1__(V1 == nullptr ? new T[N * max_block] : nullptr),
-        //V2__(V2 == nullptr ? new T[N * max_block] : nullptr),
+        ldv1_(ldv1 == 0 ? m  : ldv1),
+        V1__(V1 == nullptr ? new T[std::max(ldv1, m) * max_block] : nullptr),
+#if !defined(HAS_SCALAPACK)        
+        V2__(V2 == nullptr ? new T[N * max_block] : nullptr),
+#endif
         ritzv__(ritzv == nullptr ? new Base<T>[max_block] : nullptr),
         resid__(resid == nullptr ? new Base<T>[max_block] : nullptr),
         //for this case, ldh_ should define in chasempiproperties
@@ -97,12 +100,15 @@ class ChaseMpiMatrices {
         resid_(resid == nullptr ? resid__.get() : resid) {}
 
   ChaseMpiMatrices(MPI_Comm comm, std::size_t N, std::size_t m, std::size_t n, std::size_t max_block, 
-                   T* V1 = nullptr, Base<T>* ritzv = nullptr, T* H = nullptr, std::size_t ldh = 0, T* V2 = nullptr,
-                   Base<T>* resid = nullptr)
+                   T* V1 = nullptr,  std::size_t ldv1 = 0, Base<T>* ritzv = nullptr, T* H = nullptr, 
+                   std::size_t ldh = 0, T* V2 = nullptr, Base<T>* resid = nullptr)
       // if value is null then allocate otherwise don't
       : H__(H == nullptr ? new T[m * n] : nullptr),
-        V1__(V1 == nullptr ? new T[N * max_block] : nullptr),
-        //V2__(V2 == nullptr ? new T[N * max_block] : nullptr),
+        ldv1_(ldv1 == 0 ? m  : ldv1),      
+        V1__(V1 == nullptr ? new T[std::max(ldv1, m) * max_block] : nullptr),
+#if !defined(HAS_SCALAPACK)                
+        V2__(V2 == nullptr ? new T[N * max_block] : nullptr),
+#endif        
         ritzv__(ritzv == nullptr ? new Base<T>[max_block] : nullptr),
         resid__(resid == nullptr ? new Base<T>[max_block] : nullptr),
         ldh_(ldh == 0 ? m : ldh),
@@ -161,6 +167,7 @@ class ChaseMpiMatrices {
   Base<T>* resid_;
 
   std::size_t ldh_;
+  std::size_t ldv1_;
 };
 }  // namespace mpi
 }  // namespace chase

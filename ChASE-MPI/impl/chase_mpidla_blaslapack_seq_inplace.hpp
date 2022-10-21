@@ -34,6 +34,9 @@ class ChaseMpiDLABlaslapackSeqInplace : public ChaseMpiDLAInterface<T> {
         H_(matrices.get_H()) {}
 
   ~ChaseMpiDLABlaslapackSeqInplace() {}
+  void initVecs(T *V) override{}  
+  void initRndVecs(T *V) override {}
+  void C2V(T *v1, T *v2, std::size_t block) override {}
 
   /*! - For ChaseMpiDLABlaslapackSeqInplace, the core of `preApplication` is implemented with `std::swap`, which swaps the buffer of `V1` and `V2`.
       - **Parallelism is NOT SUPPORT**
@@ -360,7 +363,8 @@ class ChaseMpiDLABlaslapackSeqInplace : public ChaseMpiDLAInterface<T> {
 
   void Swap(std::size_t i, std::size_t j)override{}
 
-  void lanczos(std::size_t mIters, int idx, Base<T> *d, Base<T> *e,  Base<T> *rbeta,  T *V_, T *workspace_)override{}
+  void lanczos(std::size_t mIters, int idx, Base<T> *d, Base<T> *e,  Base<T> *rbeta,  T *V_, std::size_t ldv1, T *workspace_)override{}
+  void cpyRtizVecs(T *V_, std::size_t ldv1) override {}
 
  private:
   std::size_t N_;

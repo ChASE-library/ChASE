@@ -125,16 +125,18 @@ class ChaseMpiDLAInterface {
     @param offset: an offset of number vectors which the `HEMM` starting from.
     @param block: number of non-converged eigenvectors, it indicates the number of vectors in `V1` and `V2` to perform `HEMM`.
   */
+  virtual void initVecs(T *V, std::size_t ldv1) = 0;
+  virtual void initRndVecs(T *V, std::size_t ldv1) = 0;
   virtual void apply(T alpha, T beta, std::size_t offset,
                      std::size_t block, std::size_t locked) = 0;
   virtual void asynCxHGatherC(T *V, std::size_t locked, std::size_t block) = 0;
   virtual void asynHxBGatherB(T *V, std::size_t locked, std::size_t block) = 0;
   virtual void B2C(T *v1, T *v2, std::size_t locked, std::size_t block) = 0;
   virtual void C2B(T *c, T *b, std::size_t locked, std::size_t block) = 0;
-
+  virtual void C2V(T *v1, T *v2, std::size_t block) = 0;
   virtual void Lock(T * workspace_, std::size_t new_converged) = 0;
   virtual void Swap(std::size_t i, std::size_t j) = 0;
-
+  virtual void cpyRtizVecs(T *V_, std::size_t ldv1) = 0;
   // Copies V2, the result of one or more results of apply() to V.
   // block number of vectors are copied.
   // The first locked ( as supplied to preApplication() ) vectors are skipped
@@ -383,7 +385,7 @@ class ChaseMpiDLAInterface {
   virtual void hhQR_dist(std::size_t m_, std::size_t nevex, std::size_t locked, T *approxV, std::size_t ldv) = 0;
   virtual void cholQR1(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv) = 0;
   virtual void cholQR1_dist(std::size_t m_, std::size_t nevex, std::size_t locked, T *approxV, std::size_t ldv) = 0;
-  virtual void lanczos(std::size_t mIters, int idx, Base<T> *d, Base<T> *e,  Base<T> *rbeta, T *V_, T *workspace_) = 0;
+  virtual void lanczos(std::size_t mIters, int idx, Base<T> *d, Base<T> *e,  Base<T> *rbeta, T *V_, std::size_t ldv1,T *workspace_) = 0;
 };
 }  // namespace matrixfree
 }  // namespace chase

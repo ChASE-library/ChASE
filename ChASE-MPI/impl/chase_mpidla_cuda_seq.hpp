@@ -101,6 +101,9 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
     if (d_work_) cudaFree(d_work_);	
 
   }
+  void initVecs(T *V, std::size_t ldv1) override{}  
+  void initRndVecs(T *V, std::size_t ldv1) override {}
+  void C2V(T *v1, T *v2, std::size_t block) override {}
 
   /*! - For ChaseMpiDLACudaSeq, the core of `preApplication` is implemented with `cudaMemcpyAsync, which copies `block` vectors from `V` on Host to `V1` on GPU device.
       - **Parallelism is NOT SUPPORT**
@@ -474,8 +477,10 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
 
   void Swap(std::size_t i, std::size_t j)override{}
 
-  void lanczos(std::size_t mIters, int idx, Base<T> *d, Base<T> *e,  Base<T> *rbeta,  T *V_, T *workspace_)override{}
-  
+  void lanczos(std::size_t mIters, int idx, Base<T> *d, Base<T> *e,  Base<T> *rbeta,  T *V_, std::size_t ldv1, T *workspace_)override{}
+    
+  void cpyRtizVecs(T *V_, std::size_t ldv1) override {}
+
  private:
   std::size_t n_;
   std::size_t locked_;

@@ -125,6 +125,9 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
 	std::cout << std::endl;
 #endif
   }
+  void initVecs(T *V, std::size_t ldv1) override{}    
+  void initRndVecs(T *V, std::size_t ldv1) override {}
+  void C2V(T *v1, T *v2, std::size_t block) override {}
 
   /*! - For ChaseMpiDLAMultiGPU, `preApplication` is implemented only with the operation of switching operation flags.
       - For the meaning of this function, please visit ChaseMpiDLAInterface.
@@ -473,7 +476,10 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
 
   void Swap(std::size_t i, std::size_t j)override{}
   
-  void lanczos(std::size_t mIters, int idx, Base<T> *d, Base<T> *e,  Base<T> *rbeta,  T *V_, T *workspace_)override{}
+  void lanczos(std::size_t mIters, int idx, Base<T> *d, Base<T> *e,  Base<T> *rbeta,  T *V_, std::size_t ldv1, T *workspace_)override{}
+
+  void cpyRtizVecs(T *V_, std::size_t ldv1) override {}
+
 
  private:
   enum NextOp { cAb, bAc };
