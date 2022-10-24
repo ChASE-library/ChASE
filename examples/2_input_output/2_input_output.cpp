@@ -375,12 +375,6 @@ int do_chase(ChASE_DriverProblemConfig& conf) {
   //----------------------------------------------------------------------------
   std::cout << std::setprecision(16);
 
-  auto V__ = std::unique_ptr<T[]>(new T[N * (nev + nex)]);
-  auto Lambda__ = std::unique_ptr<Base<T>[]>(new Base<T>[(nev + nex)]);
-
-  T* V = V__.get();
-  Base<T>* Lambda = Lambda__.get();
-
 #ifdef USE_MPI
     #ifdef DRIVER_BUILD_MGPU
         typedef ChaseMpi<ChaseMpiDLAMultiGPU, T> CHASE;
@@ -393,16 +387,35 @@ int do_chase(ChASE_DriverProblemConfig& conf) {
 
 #ifdef USE_MPI
 #ifdef USE_BLOCK_CYCLIC
-  CHASE single(new ChaseMpiProperties<T>(N, mbsize, nbsize, nev, nex, dim0, dim1, const_cast<char*>(major.c_str()), irsrc, icsrc, MPI_COMM_WORLD),
-                    V, Lambda);
+    auto props = new ChaseMpiProperties<T>(N, mbsize, nbsize, nev, nex, dim0, dim1, const_cast<char*>(major.c_str()), irsrc, icsrc, MPI_COMM_WORLD);
 #else
-  CHASE single(new ChaseMpiProperties<T>(N, nev, nex, MPI_COMM_WORLD), V,
-               Lambda);
+    auto props = new ChaseMpiProperties<T>(N, nev, nex, MPI_COMM_WORLD);
 #endif
-#else
-  CHASE single(N, nev, nex, V, Lambda);
 #endif
 
+#ifdef USE_MPI
+  auto m_ = props->get_m();
+#else
+  auto m_ = N;
+#endif
+
+  auto V__ = std::unique_ptr<T[]>(new T[m_ * (nev + nex)]);
+  auto Lambda__ = std::unique_ptr<Base<T>[]>(new Base<T>[(nev + nex)]);  
+
+  T* V = V__.get();
+  Base<T>* Lambda = Lambda__.get();
+
+  std::size_t ldv1 = m_;
+
+#if defined(USE_MPI)
+#ifdef USE_BLOCK_CYCLIC  
+  CHASE single(props, V, ldv1, Lambda);
+#else
+  CHASE single(props, V, ldv1, Lambda);  
+#endif
+#else
+  CHASE single(N, nev, nex, V,Lambda);
+#endif
   ChaseConfig<T>& config = single.GetConfig();
   config.SetTol(tol);
   config.SetDeg(deg);
@@ -429,12 +442,7 @@ int do_chase(ChASE_DriverProblemConfig& conf) {
         readMatrix(Lambda, path_eigp, spin, kpoint, i - 1, ".vls", (nev + nex),
                      legacy);
       }else{ 
-        for (std::size_t i = 0; i < N * (nev + nex); ++i) {
-          V[i] = getRandomT<T>([&]() { 
-			return d(gen);
-		     }
-                 );
-        }
+        single.initRndVecs(V);
 
         for (int j = 0; j < (nev + nex); j++) {
 	  Lambda[j] = 0.0;

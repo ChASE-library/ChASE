@@ -145,7 +145,7 @@ int main(int argc, char** argv)
     }
   }
 
-  CHASE single(props, h_loc, ldh, V.data(), ldv1, Lambda.data());  
+  CHASE single(props, h_loc, V.data(), ldh, ldv1, Lambda.data());  
 
 #else  
   CHASE single(props, V.data(), ldv1, Lambda.data());

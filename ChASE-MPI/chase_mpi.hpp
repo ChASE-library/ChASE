@@ -20,8 +20,6 @@
 
 #include "./impl/chase_mpidla.hpp"
 
-//#include <omp.h>
-
 namespace chase {
 namespace mpi {
 
@@ -157,7 +155,7 @@ class ChaseMpi : public chase::Chase<T> {
                   "MatrixFreeChASE Must be skewed");
   }
 
-  ChaseMpi(ChaseMpiProperties<T> *properties,  T *H = nullptr, std::size_t ldh=0, T *V1 = nullptr, std::size_t ldv1 = 0,
+  ChaseMpi(ChaseMpiProperties<T> *properties,  T *H = nullptr, T *V1 = nullptr, std::size_t ldh=0, std::size_t ldv1 = 0,
            Base<T> *ritzv = nullptr,T *V2 = nullptr, Base<T> *resid = nullptr)
       : N_(properties->get_N()),
         nev_(properties->GetNev()),

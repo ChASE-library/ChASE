@@ -56,17 +56,21 @@ int main(int argc, char** argv)
     std::cout << "ChASE example driver\n"
               << "Usage: ./driver \n";
 
-  auto V = std::vector<T>(N * (nev + nex)); //eigevectors
-  auto Lambda = std::vector<Base<T>>(nev + nex); //eigenvalues
 
   /*construct eigenproblem to be solved*/
 #ifdef USE_BLOCK_CYCLIC
-  CHASE single(new ChaseMpiProperties<T>(N, NB, NB, nev, nex, dims[0], dims[1], (char *)"C", irsrc, icsrc, MPI_COMM_WORLD),
-                    V.data(), Lambda.data());
+  auto props = new ChaseMpiProperties<T>(N, NB, NB, nev, nex, dims[0], dims[1], (char *)"C", irsrc, icsrc, MPI_COMM_WORLD);
 #else
-  CHASE single(new ChaseMpiProperties<T>(N, nev, nex, MPI_COMM_WORLD), V.data(),
-               Lambda.data());
+  auto props = new ChaseMpiProperties<T>(N, nev, nex, MPI_COMM_WORLD);
 #endif
+
+  auto m_ = props->get_m();
+  auto V = std::vector<T>(m_ * (nev + nex)); //eigevectors
+  auto Lambda = std::vector<Base<T>>(nev + nex); //eigenvalues
+
+  std::size_t ldv1 = m_;
+
+  CHASE single(props, V.data(), ldv1, Lambda.data());
 
   /*Setup configure for ChASE*/
   auto& config = single.GetConfig();
@@ -88,11 +92,6 @@ int main(int argc, char** argv)
 #endif
 	      << '\n'
               << config;
-
-  /*randomize V*/
-  for (std::size_t i = 0; i < N * (nev + nex); ++i) {
-    V[i] = T(d(gen), d(gen));
-  }
 
   std::vector<T> H(N * N, T(0.0));
 
@@ -121,6 +120,9 @@ int main(int argc, char** argv)
   single.GetOff(&xoff, &yoff, &xlen, &ylen);
 #endif
 
+  /*randomize V*/
+  single.initRndVecs(V.data());
+
   for (auto idx = 0; idx < idx_max; ++idx) {
     if (rank == 0) {
       std::cout << "Starting Problem #" << idx << "\n";
@@ -140,6 +142,7 @@ int main(int argc, char** argv)
             }
         }
     }
+
 #else    
     /*Load different blocks of H to each node*/
     for (std::size_t x = 0; x < xlen; x++) {

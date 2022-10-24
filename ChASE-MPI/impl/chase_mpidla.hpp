@@ -186,8 +186,9 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
 
   void initVecs(T *V, std::size_t ldv1) override{
     next_ = NextOp::bAc;
-    //std::memcpy(C_, V, m_ * (nev_ + nex_) * sizeof(T));
     t_lacpy('A', m_, nev_ + nex_, V, ldv1, C_ , m_);
+    t_lacpy('A', m_, nev_ + nex_, V, ldv1, C2_ , m_);
+
     dla_->preApplication(V, 0, nev_ + nex_);
   }
 
@@ -827,7 +828,7 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
     this->postApplication(workspace, nevex, 0);
     t_geqrf(LAPACK_COL_MAJOR, N_, nevex, workspace, N_, tau.get());
     t_gqr(LAPACK_COL_MAJOR, N_, nevex, nevex, workspace, N_, tau.get());
-    this->preApplication(workspace, 0, nevex);
+    this->preApplication(workspace, 0, nevex);    
     std::memcpy(C_, C2_, locked * m_ * sizeof(T));
     std::memcpy(C2_+locked * m_, C_ + locked * m_, (nevex - locked) * m_ * sizeof(T));    
 #endif	  
@@ -915,7 +916,7 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
     T *v1 = v1_;
 
     if(idx >= 0){
-      this->C2V(V_ + idx * ldv1, v1, 1);
+      this->C2V(C2_ + idx * ldv1, v1, 1);
     }else{
       std::mt19937 gen(2342.0);
       std::normal_distribution<> normal_distribution;
@@ -987,15 +988,15 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
            C_, m_,
            ritzVc, ldr,
            &beta,
-           approxV_, ldv1
+           C2_, ldv1
     );
+
+    std::memcpy(approxV_, C2_, m * m_ *sizeof(T));
   }
 
 
   void cpyRtizVecs(T *V_, std::size_t ldv1) override {
- //   std::memcpy(V_, C_, m_ * nev_ * sizeof(T));
-    t_lacpy('A', m_, nev_, C_, m_, V_ , ldv1);
-  
+    t_lacpy('A', m_, nev_, C_, m_, V_ , ldv1);  
   }
 
  private:

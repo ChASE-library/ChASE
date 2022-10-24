@@ -336,7 +336,8 @@ void Algorithm<T>::solve(Chase<T>* single) {
   deg = std::min(deg, config.GetMaxDeg());
   for (std::size_t i = 0; i < nevex; ++i) degrees[i] = deg;
 
-  //single->initVecs();
+  single->initVecs();
+
   // --------------------------------- LANCZOS ---------------------------------
   bool random = !config.UseApprox();
   std::size_t DoSVectors =
@@ -350,7 +351,6 @@ void Algorithm<T>::solve(Chase<T>* single) {
   lambda = *std::min_element(ritzv_, ritzv_ + nevex);
 
   single->initVecs();
-
   while (unconverged > nex && iteration < config.GetMaxIter()) {
     if (unconverged < nevex) {
       lambda = *std::min_element(ritzv_, ritzv_ + nevex);
