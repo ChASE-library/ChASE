@@ -65,8 +65,10 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
       ldh_ = matrix_properties->get_ldh();
     }
 
-    orig_B_ = matrix_properties->get_B();
-    orig_C_ = matrix_properties->get_C();
+    //orig_B_ = matrix_properties->get_B();
+    //orig_C_ = matrix_properties->get_C();
+    orig_B_ = matrices.get_V2();
+    orig_C_ = matrices.get_V1();
 
     off_ = matrix_properties->get_off();
 

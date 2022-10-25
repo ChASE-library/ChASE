@@ -289,8 +289,8 @@ class ChaseMpiProperties {
            H_.reset(new T[n_ * m_]());        
        }
 
-       B_.reset(new T[n_ * max_block_]());
-       C_.reset(new T[m_ * max_block_]());
+       //B_.reset(new T[n_ * max_block_]());
+       //C_.reset(new T[m_ * max_block_]());
        C2_.reset(new T[m_ * max_block_]());
        B2_.reset(new T[n_ * max_block_]());
 
@@ -363,8 +363,10 @@ class ChaseMpiProperties {
        std::size_t bsize = 32;
        std::size_t nx_b = std::min(bsize, nevex_);
        t_descinit(desc1D_Nxnevx_, &N_, &nevex_, &mb_, &nx_b, &irsrc_, &zero, &colcomm_ctxt_, &m_, &info);
-
+#else
+    V_.reset(new T[N_ * max_block_]());
 #endif
+  
     }
 
   //! A constructor of the class ChaseMpiProperties which distributes matrix `A` in `Block Distribution`.
@@ -519,8 +521,8 @@ class ChaseMpiProperties {
         if(H_preAlloc){
            H_.reset(new T[n_ * m_]());        
         }
-        B_.reset(new T[n_ * max_block_]());
-    	C_.reset(new T[m_ * max_block_]());
+        //B_.reset(new T[n_ * max_block_]());
+    	//C_.reset(new T[m_ * max_block_]());
         C2_.reset(new T[m_ * max_block_]());
         B2_.reset(new T[n_ * max_block_]());
 
@@ -587,7 +589,9 @@ class ChaseMpiProperties {
     std::size_t nx_b = std::min(bsize, nevex_);
     t_descinit(desc1D_Nxnevx_, &N_, &nevex_, &mb_, &nx_b, &zero, &zero, &colcomm_ctxt_, &m_, &info);
 
-#endif	
+#else
+    V_.reset(new T[N_ * max_block_]());
+#endif  
 
     }
 
@@ -709,8 +713,8 @@ class ChaseMpiProperties {
     if(H_preAlloc){
         H_.reset(new T[n_ * m_]());        
     }
-    B_.reset(new T[n_ * max_block_]());
-    C_.reset(new T[m_ * max_block_]());
+    //B_.reset(new T[n_ * max_block_]());
+    //C_.reset(new T[m_ * max_block_]());
     C2_.reset(new T[m_ * max_block_]());
     B2_.reset(new T[n_ * max_block_]());
 
@@ -773,7 +777,9 @@ class ChaseMpiProperties {
     std::size_t bsize = 32;
     std::size_t nx_b = std::min(bsize, nevex_);
     t_descinit(desc1D_Nxnevx_, &N_, &nevex_, &mb_, &nx_b, &zero, &zero, &colcomm_ctxt_, &m_, &info);
-#endif
+#else
+    V_.reset(new T[N_ * max_block_]());
+#endif    
 
   }
 
@@ -1000,16 +1006,20 @@ class ChaseMpiProperties {
   /*! 
     \return `B_`: the pointer to store local part of V for the MPI communication.
   */ 
-  T* get_B() { return B_.get(); }
+  //T* get_B() { return B_.get(); }
 
   /*! 
     \return `C_`: the pointer to store local part of W for the MPI communication.
   */   
-  T* get_C() { return C_.get(); }
+  //T* get_C() { return C_.get(); }
 
   T* get_C2() { return C2_.get(); }
 
   T* get_B2() { return B2_.get(); }
+
+#if !defined(HAS_SCALAPACK)
+  T *get_V() {return V_.get(); }
+#endif  
 
   /*! 
     \return `block_counts_`: 2D array which stores the block number of local matrix on each MPI node in each dimension.
@@ -1062,7 +1072,7 @@ class ChaseMpiProperties {
     return ChaseMpiMatrices<T>(comm_, N_, m_, n_, max_block_, V1, ldv1, ritzv, V2, resid);
   }
 
-  ChaseMpiMatrices<T> create_matrices(T* H = nullptr, std::size_t ldh=0, T* V1 = nullptr,  std::size_t ldv1 = 0, Base<T>* ritzv = nullptr,
+  ChaseMpiMatrices<T> create_matrices(T* H = nullptr,   std::size_t ldh=0, T* V1 = nullptr, std::size_t ldv1 = 0, Base<T>* ritzv = nullptr,
                                       T* V2 = nullptr,
                                       Base<T>* resid = nullptr) const {
      return ChaseMpiMatrices<T>(comm_, N_, m_, n_, max_block_, V1, ldv1, ritzv, H, ldh, V2, resid);
@@ -1304,14 +1314,14 @@ class ChaseMpiProperties {
       This variable is initialized during the construction of ChaseMpiProperties of
       size `n_ * max_block_`.
    */ 
-  std::unique_ptr<T[]> B_;
+  //std::unique_ptr<T[]> B_;
 
   //! A temporary memory allocated to store local part of W for the MPI collective communications for the MPI-based implementation of `HEMM`.
   /*!
       This variable is initialized during the construction of ChaseMpiProperties of
       size `m_ * max_block_`.
    */   
-  std::unique_ptr<T[]> C_;
+  //std::unique_ptr<T[]> C_;
 
   std::unique_ptr<T[]> C2_;  
 
@@ -1359,7 +1369,9 @@ class ChaseMpiProperties {
   //! ScaLAPACK context for each row communicator. This context is in 1D grid, with only 1 column
   int colcomm_ctxt_;
   std::size_t desc1D_Nxnevx_[9];
-#endif
+#else
+  std::unique_ptr<T[]> V_; 
+#endif  
 };
 }  // namespace mpi
 }  // namespace chase

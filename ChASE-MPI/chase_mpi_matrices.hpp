@@ -84,10 +84,8 @@ class ChaseMpiMatrices {
       // if value is null then allocate otherwise don't
       : H__(nullptr),
         ldv1_(ldv1 == 0 ? m  : ldv1),
-        V1__(V1 == nullptr ? new T[std::max(ldv1, m) * max_block] : nullptr),
-#if !defined(HAS_SCALAPACK)        
-        V2__(V2 == nullptr ? new T[N * max_block] : nullptr),
-#endif
+        V1__(V1 == nullptr ? new T[m * max_block] : nullptr),
+        V2__(V2 == nullptr ? new T[n * max_block] : nullptr),
         ritzv__(ritzv == nullptr ? new Base<T>[max_block] : nullptr),
         resid__(resid == nullptr ? new Base<T>[max_block] : nullptr),
         //for this case, ldh_ should define in chasempiproperties
@@ -105,10 +103,8 @@ class ChaseMpiMatrices {
       // if value is null then allocate otherwise don't
       : H__(H == nullptr ? new T[m * n] : nullptr),
         ldv1_(ldv1 == 0 ? m  : ldv1),      
-        V1__(V1 == nullptr ? new T[std::max(ldv1, m) * max_block] : nullptr),
-#if !defined(HAS_SCALAPACK)                
-        V2__(V2 == nullptr ? new T[N * max_block] : nullptr),
-#endif        
+        V1__(V1 == nullptr ? new T[m * max_block] : nullptr),
+        V2__(V2 == nullptr ? new T[n * max_block] : nullptr),
         ritzv__(ritzv == nullptr ? new Base<T>[max_block] : nullptr),
         resid__(resid == nullptr ? new Base<T>[max_block] : nullptr),
         ldh_(ldh == 0 ? m : ldh),

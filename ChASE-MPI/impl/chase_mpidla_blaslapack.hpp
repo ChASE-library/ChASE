@@ -39,8 +39,11 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
       ldh_ = matrix_properties->get_ldh();
     }
 
-    B_ = matrix_properties->get_B();
-    C_ = matrix_properties->get_C();
+//    B_ = matrix_properties->get_B();
+//    C_ = matrix_properties->get_C();
+    B_ = matrices.get_V2();
+    C_ = matrices.get_V1();
+
     C2_ = matrix_properties->get_C2();
 
     off_ = matrix_properties->get_off();

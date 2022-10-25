@@ -103,6 +103,7 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
   }
   void initVecs(T *V, std::size_t ldv1) override{}  
   void initRndVecs(T *V, std::size_t ldv1) override {}
+  
   void C2V(T *v1, T *v2, std::size_t block) override {}
 
   /*! - For ChaseMpiDLACudaSeq, the core of `preApplication` is implemented with `cudaMemcpyAsync, which copies `block` vectors from `V` on Host to `V1` on GPU device.

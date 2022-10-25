@@ -350,7 +350,6 @@ void Algorithm<T>::solve(Chase<T>* single) {
   lowerb = *std::max_element(ritzv, ritzv + unconverged);
   lambda = *std::min_element(ritzv_, ritzv_ + nevex);
 
-  single->initVecs();
   while (unconverged > nex && iteration < config.GetMaxIter()) {
     if (unconverged < nevex) {
       lambda = *std::min_element(ritzv_, ritzv_ + nevex);

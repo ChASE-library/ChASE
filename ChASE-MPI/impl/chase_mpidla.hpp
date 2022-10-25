@@ -27,7 +27,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
     @param matrix_properties: it is an object of ChaseMpiProperties, which defines the MPI environment and data distribution scheme in ChASE-MPI.
     @param dla: it is an object of ChaseMpiDLAInterface, which defines the implementation of in-node computation for ChASE-MPI. Currently, it can be one of ChaseMpiDLABlaslapack and ChaseMpiDLAMultiGPU. 
   */
-  ChaseMpiDLA(ChaseMpiProperties<T>* matrix_properties,
+  ChaseMpiDLA(ChaseMpiProperties<T>* matrix_properties, ChaseMpiMatrices<T>& matrices,
                ChaseMpiDLAInterface<T>* dla)
       : dla_(dla) {
     ldc_ = matrix_properties->get_ldc();
@@ -37,10 +37,16 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
     n_ = matrix_properties->get_n();
     m_ = matrix_properties->get_m();
 
-    B_ = matrix_properties->get_B();
-    C_ = matrix_properties->get_C();
+    //B_ = matrix_properties->get_B();
+    //C_ = matrix_properties->get_C();
+    
+    B_ = matrices.get_V2();
+    C_ = matrices.get_V1();
     C2_ = matrix_properties->get_C2();
     B2_ = matrix_properties->get_B2();
+#if !defined(HAS_SCALAPACK)
+    V_ = matrix_properties->get_V();
+#endif
 
     nev_ = matrix_properties->GetNev();
     nex_ = matrix_properties->GetNex();
@@ -74,6 +80,8 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
     }
 
     Buff_ = new T[sign * N_ *  max_block_];
+
+    istartOfFilter_ = true;
 
     MPI_Comm_size(row_comm_, &row_size_);
     MPI_Comm_rank(row_comm_, &row_rank_);
@@ -186,8 +194,8 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
 
   void initVecs(T *V, std::size_t ldv1) override{
     next_ = NextOp::bAc;
-    t_lacpy('A', m_, nev_ + nex_, V, ldv1, C_ , m_);
-    t_lacpy('A', m_, nev_ + nex_, V, ldv1, C2_ , m_);
+    //t_lacpy('A', m_, nev_ + nex_, V, ldv1, C_ , m_);
+    t_lacpy('A', m_, nev_ + nex_, C_, ldv1, C2_ , m_);
 
     dla_->preApplication(V, 0, nev_ + nex_);
   }
@@ -555,7 +563,13 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
     - For the meaning of this function, please visit ChaseMpiDLAInterface.    
   */
   void shiftMatrix(T c, bool isunshift = false) override {
-            dla_->shiftMatrix(c, isunshift);
+        if(istartOfFilter_){
+          next_ = NextOp::bAc;
+          T *V;
+          dla_->preApplication(V, 0, nev_ + nex_);
+        }
+        istartOfFilter_ = false;
+        dla_->shiftMatrix(c, isunshift);
   }
 
   /*!
@@ -825,10 +839,10 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
     int grank;
     MPI_Comm_rank(MPI_COMM_WORLD, &grank);
     if(grank == 0) std::cout << "ScaLAPACK is not available, use LAPACK Householder QR instead" << std::endl;
-    this->postApplication(workspace, nevex, 0);
-    t_geqrf(LAPACK_COL_MAJOR, N_, nevex, workspace, N_, tau.get());
-    t_gqr(LAPACK_COL_MAJOR, N_, nevex, nevex, workspace, N_, tau.get());
-    this->preApplication(workspace, 0, nevex);    
+    this->postApplication(V_, nevex, 0);
+    t_geqrf(LAPACK_COL_MAJOR, N_, nevex, V_, N_, tau.get());
+    t_gqr(LAPACK_COL_MAJOR, N_, nevex, nevex, V_, N_, tau.get());
+    this->preApplication(V_, 0, nevex);    
     std::memcpy(C_, C2_, locked * m_ * sizeof(T));
     std::memcpy(C2_+locked * m_, C_ + locked * m_, (nevex - locked) * m_ * sizeof(T));    
 #endif	  
@@ -991,12 +1005,12 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
            C2_, ldv1
     );
 
-    std::memcpy(approxV_, C2_, m * m_ *sizeof(T));
+    std::memcpy(C_, C2_, (nev_ + nex_) * m_ *sizeof(T));
   }
 
 
   void cpyRtizVecs(T *V_, std::size_t ldv1) override {
-    t_lacpy('A', m_, nev_, C_, m_, V_ , ldv1);  
+    //t_lacpy('A', m_, nev_, C_, m_, V_ , ldv1);  
   }
 
  private:
@@ -1015,6 +1029,10 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
   T *Buff_;
   T *C2_;
   T *B2_;
+
+#if !defined(HAS_SCALAPACK)
+  T *V_;
+#endif
 
   NextOp next_;
   MPI_Comm row_comm_, col_comm_;
@@ -1042,7 +1060,7 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
   std::vector<std::vector<int>> recv_offsets_;
 
   bool isSameDist_; //is the same distribution for the row/column communicator
-
+  bool istartOfFilter_; 
   std::vector<MPI_Request> reqsc2b_;
   std::vector<MPI_Datatype> c_sends_;
   std::vector<MPI_Datatype> b_recvs_;

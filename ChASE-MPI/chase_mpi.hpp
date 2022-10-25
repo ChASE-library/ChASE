@@ -135,8 +135,9 @@ class ChaseMpi : public chase::Chase<T> {
         properties_(properties),
         matrices_(std::move(
             properties_.get()->create_matrices(V1, ldv1, ritzv, V2, resid))),
-        dla_(new ChaseMpiDLA<T>(properties_.get(),
-                                  new MF<T>(properties_.get(),matrices_))) {
+        dla_(new ChaseMpiDLA<T>(properties_.get(), matrices_,
+                                  new MF<T>(properties_.get(),matrices_))) 
+        {
     int init;
     MPI_Initialized(&init);
     if (init) MPI_Comm_rank(MPI_COMM_WORLD, &rank_);
@@ -166,7 +167,7 @@ class ChaseMpi : public chase::Chase<T> {
         properties_(properties),
         matrices_(std::move(
             properties_.get()->create_matrices(H, ldh, V1, ldv1, ritzv, V2, resid))),
-        dla_(new ChaseMpiDLA<T>(properties_.get(),
+        dla_(new ChaseMpiDLA<T>(properties_.get(), matrices_,
                                   new MF<T>(properties_.get(),matrices_))) {
     int init;
     MPI_Initialized(&init);

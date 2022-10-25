@@ -126,6 +126,7 @@ class ChaseMpiDLAInterface {
     @param block: number of non-converged eigenvectors, it indicates the number of vectors in `V1` and `V2` to perform `HEMM`.
   */
   virtual void initVecs(T *V, std::size_t ldv1) = 0;
+
   virtual void initRndVecs(T *V, std::size_t ldv1) = 0;
   virtual void apply(T alpha, T beta, std::size_t offset,
                      std::size_t block, std::size_t locked) = 0;

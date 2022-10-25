@@ -36,6 +36,7 @@ class ChaseMpiDLABlaslapackSeqInplace : public ChaseMpiDLAInterface<T> {
   ~ChaseMpiDLABlaslapackSeqInplace() {}
   void initVecs(T *V) override{}  
   void initRndVecs(T *V) override {}
+  
   void C2V(T *v1, T *v2, std::size_t block) override {}
 
   /*! - For ChaseMpiDLABlaslapackSeqInplace, the core of `preApplication` is implemented with `std::swap`, which swaps the buffer of `V1` and `V2`.
