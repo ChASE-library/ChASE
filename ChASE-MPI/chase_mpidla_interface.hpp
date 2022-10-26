@@ -125,19 +125,16 @@ class ChaseMpiDLAInterface {
     @param offset: an offset of number vectors which the `HEMM` starting from.
     @param block: number of non-converged eigenvectors, it indicates the number of vectors in `V1` and `V2` to perform `HEMM`.
   */
-  virtual void initVecs(T *V, std::size_t ldv1) = 0;
+  virtual void initVecs(T *V) = 0;
 
-  virtual void initRndVecs(T *V, std::size_t ldv1) = 0;
+  virtual void initRndVecs(T *V) = 0;
   virtual void apply(T alpha, T beta, std::size_t offset,
                      std::size_t block, std::size_t locked) = 0;
   virtual void asynCxHGatherC(T *V, std::size_t locked, std::size_t block) = 0;
-  virtual void asynHxBGatherB(T *V, std::size_t locked, std::size_t block) = 0;
-  virtual void B2C(T *v1, T *v2, std::size_t locked, std::size_t block) = 0;
-  virtual void C2B(T *c, T *b, std::size_t locked, std::size_t block) = 0;
+
   virtual void C2V(T *v1, T *v2, std::size_t block) = 0;
   virtual void Lock(T * workspace_, std::size_t new_converged) = 0;
   virtual void Swap(std::size_t i, std::size_t j) = 0;
-  virtual void cpyRtizVecs(T *V_, std::size_t ldv1) = 0;
   // Copies V2, the result of one or more results of apply() to V.
   // block number of vectors are copied.
   // The first locked ( as supplied to preApplication() ) vectors are skipped
@@ -193,16 +190,7 @@ class ChaseMpiDLAInterface {
     \return the value of a required type of norm of given matrix.
   */
   virtual Base<T> lange(char norm, std::size_t m, std::size_t n, T* A, std::size_t lda) = 0;
-  // QR factorization and construct the unitary marix Q explicitly.
-  //! Perform a `QR` factorization and construct explicitly the unitary matrix `Q`.
-  /*!
-      The matrix to be factorized is given in `approxV_` and the final constructed unitary matrix `Q` is stored also in `approxV_` by overwritten previous values.
-      @param[in] N: the number of rows of the matrix `approxV_` to be factorized.
-      @param[in] nevex: the number of columns of the matrix `approxV_` to be factorized.
-      @param[in/out] approxV_: an array of type `T`, dimension `(LDA, nevex)`, the the `N` by `nevex` matrix `approxV_` is to be factorized.
-      @param[in] LDA: the leading dimension of the array `approxV_`.
-  */
-  virtual void gegqr(std::size_t N, std::size_t nevex, T * approxV_, std::size_t LDA) = 0;
+
   //! A `BLAS-like` function which performs a constant times a vector plus a vector.
   /*!
       @param[in] N: number of elements in input vector(s).
@@ -366,7 +354,7 @@ class ChaseMpiDLAInterface {
   */
   virtual void RR_kernel(std::size_t N, std::size_t block, T *approxV, std::size_t locked, T *workspace, T One, T Zero, Base<T> *ritzv) = 0;
 
-  virtual void LanczosDos(std::size_t N_, std::size_t idx, std::size_t m, T *workspace_, std::size_t ldw, T *ritzVc, std::size_t ldr, T* approxV_, std::size_t ldv) = 0;
+  virtual void LanczosDos(std::size_t N_, std::size_t idx, std::size_t m, T *workspace_, std::size_t ldw, T *ritzVc, std::size_t ldr, T* approxV_) = 0;
 
   virtual void syherk(char uplo, char trans, std::size_t n, std::size_t k, T* alpha, T* a, std::size_t lda, T* beta, T* c, std::size_t ldc) = 0;
 
@@ -380,13 +368,10 @@ class ChaseMpiDLAInterface {
                     T* a, std::size_t lda, Base<T>* w) = 0;
 
 
-  virtual void heevd2(std::size_t m_, std::size_t block, T* A, std::size_t lda, T *approxV, std::size_t ldv, T* workspace, std::size_t ldw, std::size_t offset, Base<T>* ritzv) = 0;
   virtual void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_t locked, std::size_t unconverged) = 0;
-  virtual void hhQR(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv) = 0;
-  virtual void hhQR_dist(std::size_t m_, std::size_t nevex, std::size_t locked, T *approxV, std::size_t ldv) = 0;
-  virtual void cholQR1(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv) = 0;
-  virtual void cholQR1_dist(std::size_t m_, std::size_t nevex, std::size_t locked, T *approxV, std::size_t ldv) = 0;
-  virtual void lanczos(std::size_t mIters, int idx, Base<T> *d, Base<T> *e,  Base<T> *rbeta, T *V_, std::size_t ldv1,T *workspace_) = 0;
+  virtual void hhQR(std::size_t m_, std::size_t nevex, std::size_t locked, T *approxV, std::size_t ldv) = 0;
+  virtual void cholQR(std::size_t m_, std::size_t nevex, std::size_t locked, T *approxV, std::size_t ldv) = 0;
+  virtual void lanczos(std::size_t mIters, int idx, Base<T> *d, Base<T> *e,  Base<T> *rbeta, T *V_, T *workspace_) = 0;
 };
 }  // namespace matrixfree
 }  // namespace chase

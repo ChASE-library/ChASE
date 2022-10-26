@@ -84,7 +84,6 @@ class ChaseMpi : public chase::Chase<T> {
         nex_(nex),
         rank_(0),
         locked_(0),
-        ldv1_(N),
         config_(N, nev, nex),
         matrices_(N_, nev_ + nex_, V1, ritzv, H, V2, resid),
         dla_(new MF<T>(matrices_, N_, nev_ + nex_)) {
@@ -124,17 +123,16 @@ class ChaseMpi : public chase::Chase<T> {
      @param V2: a pointer to anther rectangular matrix of size `N * (nev+nex)`.
      @param resid: a pointer to an array to store the residual of computed eigenpairs.
   */    
-  ChaseMpi(ChaseMpiProperties<T> *properties, T *V1 = nullptr, std::size_t ldv1 = 0,
+  ChaseMpi(ChaseMpiProperties<T> *properties, T *V1 = nullptr,
            Base<T> *ritzv = nullptr, T *V2 = nullptr,  Base<T> *resid = nullptr)
       : N_(properties->get_N()),
         nev_(properties->GetNev()),
         nex_(properties->GetNex()),
         locked_(0),
-        ldv1_(ldv1),
         config_(N_, nev_, nex_),
         properties_(properties),
         matrices_(std::move(
-            properties_.get()->create_matrices(V1, ldv1, ritzv, V2, resid))),
+            properties_.get()->create_matrices(V1, ritzv, V2, resid))),
         dla_(new ChaseMpiDLA<T>(properties_.get(), matrices_,
                                   new MF<T>(properties_.get(),matrices_))) 
         {
@@ -156,17 +154,16 @@ class ChaseMpi : public chase::Chase<T> {
                   "MatrixFreeChASE Must be skewed");
   }
 
-  ChaseMpi(ChaseMpiProperties<T> *properties,  T *H = nullptr, T *V1 = nullptr, std::size_t ldh=0, std::size_t ldv1 = 0,
+  ChaseMpi(ChaseMpiProperties<T> *properties,  T *H = nullptr, std::size_t ldh=0, T *V1 = nullptr, 
            Base<T> *ritzv = nullptr,T *V2 = nullptr, Base<T> *resid = nullptr)
       : N_(properties->get_N()),
         nev_(properties->GetNev()),
         nex_(properties->GetNex()),
         locked_(0),
-        ldv1_(ldv1),
         config_(N_, nev_, nex_),
         properties_(properties),
         matrices_(std::move(
-            properties_.get()->create_matrices(H, ldh, V1, ldv1, ritzv, V2, resid))),
+            properties_.get()->create_matrices(H, ldh, V1, ritzv, V2, resid))),
         dla_(new ChaseMpiDLA<T>(properties_.get(), matrices_,
                                   new MF<T>(properties_.get(),matrices_))) {
     int init;
@@ -220,8 +217,8 @@ class ChaseMpi : public chase::Chase<T> {
     locked_ = 0;
     dla_->Start();
   }
+
   void End() override {
-    dla_->cpyRtizVecs(approxV_, ldv1_);
   }
 
   //! \return `approxV_`: A pointer to the memory allocated to store a rectangular matrix `approxV_`, which will be right-multiplied to `A` during the process of ChASE. The eigenvectors obtained will also stored in `approxV_`.
@@ -241,11 +238,11 @@ class ChaseMpi : public chase::Chase<T> {
   
   void initVecs() override{
     //dla_->preApplication(approxV_, 0, nev_ + nex_);
-    dla_->initVecs(approxV_, ldv1_);
+    dla_->initVecs(approxV_);
   }
 
   void initRndVecs(T *V) override{
-    dla_->initRndVecs(V, ldv1_);
+    dla_->initRndVecs(V);
   }
 
   // todo this is wrong we want the END of V
@@ -277,8 +274,8 @@ class ChaseMpi : public chase::Chase<T> {
   //! @param fixednev: total number of converged eigenpairs before this time QR factorization.  
   void stabQR(std::size_t fixednev) override{
     std::size_t nevex = nev_ + nex_;
-    //dla_->cholQR1_dist(N_, nevex, locked_, approxV_, N_);
-    dla_->hhQR_dist(N_, nevex, locked_, approxV_, N_);
+    //dla_->cholQR_dist(N_, nevex, locked_, approxV_, N_);
+    dla_->hhQR(N_, nevex, locked_, approxV_, N_);
   }
   //! This member function implements the virtual one declared in Chase class.
   //! This member function performs a QR factorization with an explicit construction of the unitary matrix `Q`.
@@ -298,9 +295,9 @@ class ChaseMpi : public chase::Chase<T> {
 #ifdef CHASE_OUTPUT   
       if(grank == 0) std::cout << "CholQR is disabled, always use Householder QR. " << std::endl;
 #endif
-      dla_->hhQR_dist(N_, nevex, locked_, workspace_, N_);
+      dla_->hhQR(N_, nevex, locked_, workspace_, N_);
     }else{
-      dla_->cholQR1_dist(N_, nevex, locked_, approxV_, N_);
+      dla_->cholQR(N_, nevex, locked_, approxV_, N_);
     }
 
   }
@@ -355,7 +352,7 @@ class ChaseMpi : public chase::Chase<T> {
     int idx_ = -1;
     Base<T> real_beta;
 
-    dla_->lanczos(m, idx_, d, e, &real_beta, V_, ldv1_, workspace_);
+    dla_->lanczos(m, idx_, d, e, &real_beta, V_, workspace_);
 
     int notneeded_m;
     std::size_t vl, vu;
@@ -390,7 +387,7 @@ class ChaseMpi : public chase::Chase<T> {
     int idx_ = static_cast<int>(idx);
     Base<T> real_beta;
 
-    dla_->lanczos(m, idx_, d, e, &real_beta, V_, ldv1_, workspace_);
+    dla_->lanczos(m, idx_, d, e, &real_beta, V_, workspace_);
 
     int notneeded_m;
     std::size_t vl, vu;
@@ -424,7 +421,7 @@ class ChaseMpi : public chase::Chase<T> {
     T alpha = T(1.0);
     T beta = T(0.0);
 
-    dla_->LanczosDos(N_, idx, m, workspace_, N_, ritzVc, m, approxV_, ldv1_);
+    dla_->LanczosDos(N_, idx, m, workspace_, N_, ritzVc, m, approxV_);
 
   }
 
@@ -493,6 +490,13 @@ class ChaseMpi : public chase::Chase<T> {
   }
 #endif
 
+  //if distributed ChASE is used, collecting the distributed ritz vectors into V which is
+  //redundant across all MPI ranks.
+  //if non-distributed ChASE is used, copying Ritz vectors directly to V
+  void collectRitzVecs(T *V){
+    dla_->C2V(V_, V, nev_);
+  }
+
   //! \return `H_`: A pointer to the memory allocated to store (local part if applicable) of matrix `A`. 
   T *GetMatrixPtr() { return dla_->get_H(); }
 
@@ -539,7 +543,6 @@ class ChaseMpi : public chase::Chase<T> {
   }
  private:
 
-  const std::size_t ldv1_;
   //!Global size of the matrix A defining the eigenproblem.
   /*!
     - For the constructor of class ChaseMpi without MPI, 

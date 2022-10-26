@@ -36,7 +36,7 @@ class ChaseMpiDLABlaslapackSeqInplace : public ChaseMpiDLAInterface<T> {
   ~ChaseMpiDLABlaslapackSeqInplace() {}
   void initVecs(T *V) override{}  
   void initRndVecs(T *V) override {}
-  
+
   void C2V(T *v1, T *v2, std::size_t block) override {}
 
   /*! - For ChaseMpiDLABlaslapackSeqInplace, the core of `preApplication` is implemented with `std::swap`, which swaps the buffer of `V1` and `V2`.
@@ -100,9 +100,6 @@ class ChaseMpiDLABlaslapackSeqInplace : public ChaseMpiDLAInterface<T> {
   }
 
   void asynCxHGatherC(T *V, std::size_t locked, std::size_t block) override {}
-  void asynHxBGatherB(T *V, std::size_t locked, std::size_t block) override {}
-  void B2C(T *v1, T *v2, std::size_t locked, std::size_t block) override {}
-  void C2B(T *c, T *b, std::size_t locked, std::size_t block) override{}
 
   /*! - For ChaseMpiDLABlaslapackSeqInplace, `applyVec` is implemented with `GEMM` provided by `BLAS`.
       - **Parallelism is SUPPORT within node if multi-threading is actived**
@@ -171,21 +168,6 @@ class ChaseMpiDLABlaslapackSeqInplace : public ChaseMpiDLAInterface<T> {
       return t_lange(norm, m, n, A, lda);
   }  
 
-  /*!
-    - For ChaseMpiDLABlaslapackSeqInplace, `gegqr` is implemented using `LAPACK` routine `xGEQRF` and `xUMGQR`.
-    - **Parallelism is SUPPORT within node if multi-threading is actived**    
-    - For the meaning of this function, please visit ChaseMpiDLAInterface.
-  */
-  void gegqr(std::size_t N, std::size_t nevex, T * approxV, std::size_t LDA) override {
-      
-      this->postApplication(approxV, nevex - locked_);
-
-      auto tau = std::unique_ptr<T[]> {
-          new T[ nevex ]
-      };
-      t_geqrf(LAPACK_COL_MAJOR, N, nevex, approxV, LDA, tau.get());
-      t_gqr(LAPACK_COL_MAJOR, N, nevex, nevex, approxV, LDA, tau.get());
-  }
 
   /*!
     - For ChaseMpiDLABlaslapackSeqInplace, `axpy` is implemented using `BLAS` routine `xAXPY`.
@@ -340,32 +322,21 @@ class ChaseMpiDLABlaslapackSeqInplace : public ChaseMpiDLAInterface<T> {
                     T* a, std::size_t lda, Base<T>* w) override {
   }
 
-  void heevd2(std::size_t m_, std::size_t block, T* A, std::size_t lda, T *approxV, std::size_t ldv, T* workspace, std::size_t ldw, std::size_t offset, Base<T>* ritzv) override {
-  }
-
-
   void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_t locked, std::size_t unconverged) override{
 
   }
 
-  void hhQR(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv) override{
-
-  }
-
-  void hhQR_dist(std::size_t m_, std::size_t nevex,std::size_t locked, T *approxV, std::size_t ldv) override {
+  void hhQR(std::size_t m_, std::size_t nevex,std::size_t locked, T *approxV, std::size_t ldv) override {
  
   }
  
-  void cholQR1(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv) override{
-  }
-  void cholQR1_dist(std::size_t N, std::size_t nevex, std::size_t locked, T *approxV, std::size_t ldv) override{
+  void cholQR(std::size_t N, std::size_t nevex, std::size_t locked, T *approxV, std::size_t ldv) override{
   }
   void Lock(T * workspace_, std::size_t new_converged) override{}
 
   void Swap(std::size_t i, std::size_t j)override{}
 
   void lanczos(std::size_t mIters, int idx, Base<T> *d, Base<T> *e,  Base<T> *rbeta,  T *V_, std::size_t ldv1, T *workspace_)override{}
-  void cpyRtizVecs(T *V_, std::size_t ldv1) override {}
 
  private:
   std::size_t N_;

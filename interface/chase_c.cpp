@@ -369,7 +369,7 @@ void chase_setup(MPI_Fint* fcomm, int* N, int *nev, int *nex ){
 }
 
 template <typename T>
-void chase_solve(T* H, int *LDH, T* V, int* ldv, Base<T>* ritzv, int* deg, double* tol, char* mode,
+void chase_solve(T* H, int *LDH, T* V, Base<T>* ritzv, int* deg, double* tol, char* mode,
                  char* opt) {
   typedef ChaseMpi<ChaseMpiDLABlaslapack, T> CHASE;
 
@@ -384,9 +384,8 @@ void chase_solve(T* H, int *LDH, T* V, int* ldv, Base<T>* ritzv, int* deg, doubl
 
   int myRank = props->get_my_rank();
   int ldh = *LDH;
-  std::size_t ldv1 = *ldv; 
 
-  CHASE single(props, H, V, ldh, ldv1, ritzv);
+  CHASE single(props, H, ldh, V, ritzv);
 
   ChaseConfig<T>& config = single.GetConfig();
   auto N = config.GetN();
@@ -433,7 +432,7 @@ void chase_solve(T* H, int *LDH, T* V, int* ldv, Base<T>* ritzv, int* deg, doubl
 
 #ifdef HAS_GPU
 template <typename T>
-void chase_solve_mgpu(T* H, int *LDH, T* V, int *ldv, Base<T>* ritzv, int* deg, double* tol, char* mode,
+void chase_solve_mgpu(T* H, int *LDH, T* V, Base<T>* ritzv, int* deg, double* tol, char* mode,
                  char* opt) {
   
   typedef ChaseMpi<ChaseMpiDLAMultiGPU, T> CHASE;	
@@ -448,8 +447,7 @@ void chase_solve_mgpu(T* H, int *LDH, T* V, int *ldv, Base<T>* ritzv, int* deg, 
 
   int myRank = props->get_my_rank();
   int ldh = *LDH;
-  std::size_t ldv1 = *ldv; 
-  CHASE single(props, H, V, ldh, ldv1, ritzv);
+  CHASE single(props, H, ldh, V, ritzv);
 
   ChaseConfig<T>& config = single.GetConfig();
   auto N = config.GetN();

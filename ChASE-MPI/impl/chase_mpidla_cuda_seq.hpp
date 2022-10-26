@@ -101,9 +101,9 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
     if (d_work_) cudaFree(d_work_);	
 
   }
-  void initVecs(T *V, std::size_t ldv1) override{}  
-  void initRndVecs(T *V, std::size_t ldv1) override {}
-  
+  void initVecs(T *V) override{}  
+  void initRndVecs(T *V) override {}
+
   void C2V(T *v1, T *v2, std::size_t block) override {}
 
   /*! - For ChaseMpiDLACudaSeq, the core of `preApplication` is implemented with `cudaMemcpyAsync, which copies `block` vectors from `V` on Host to `V1` on GPU device.
@@ -172,9 +172,6 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
   }
 
   void asynCxHGatherC(T *V, std::size_t locked, std::size_t block) override {}
-  void asynHxBGatherB(T *V, std::size_t locked, std::size_t block) override {}
-  void B2C(T *v1, T *v2, std::size_t locked, std::size_t block) override {}
-  void C2B(T *c, T *b, std::size_t locked, std::size_t block) override{}
 
   /*! - For ChaseMpiDLACudaSeq, `applyVec` is implemented with `GEMM` provided by `BLAS`.
       - **Parallelism is SUPPORT within node if multi-threading is actived**
@@ -327,42 +324,6 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
       return t_stemr<float>(matrix_layout, jobz, range, n, d, e, vl, vu, il, iu, m, w, z, ldz, nzc, isuppz, tryrac);
   }
 
-  /*!
-    - For ChaseMpiDLACudaSeq, `gegqr` is implemented using `cuSOLVER` routines `cusolverDnXgeqrf` and `cusolverDnXumgqr`.
-    - **Parallelism is SUPPORT within one GPU card**
-    - For the meaning of this function, please visit ChaseMpiDLAInterface.
-  */
-  void gegqr(std::size_t N, std::size_t nevex, T * approxV, std::size_t LDA) override {
-
-      this->postApplication(approxV, nevex - locked_, locked_);
-
-	cudaSetDevice(0);
-	cuda_exec(cudaMemcpy(d_V_, approxV, sizeof(T)*N*nevex, cudaMemcpyHostToDevice));
-	cusolver_status_ = cusolverDnTgeqrf(
-            cusolverH_,
-            N,
-            nevex,
-            d_V_,
-            LDA,
-            d_return_,
-            d_work_,
-            lwork_,
-            devInfo_);
-        assert(CUSOLVER_STATUS_SUCCESS == cusolver_status_);
-	cusolver_status_ = cusolverDnTgqr(
-            cusolverH_,
-            N,
-            nevex,
-            nevex,
-            d_V_,
-            LDA,
-            d_return_,
-            d_work_,
-            lwork_,
-            devInfo_);
-        assert(CUSOLVER_STATUS_SUCCESS == cusolver_status_);
-	cuda_exec(cudaMemcpy(approxV, d_V_, sizeof(T)*N*nevex, cudaMemcpyDeviceToHost));
-  }
 
   /*!
       - For ChaseMpiDLACudaSeq, `RR_kernel` is implemented by `cublasXgemm` routine provided by `cuBLAS` and `(SY)HEEVD` routine provided by `LAPACK`.
@@ -426,7 +387,7 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
 	
   }
  
-  void LanczosDos(std::size_t N_, std::size_t idx, std::size_t m, T *workspace_, std::size_t ldw, T *ritzVc, std::size_t ldr, T* approxV_, std::size_t ldv) override{
+  void LanczosDos(std::size_t N_, std::size_t idx, std::size_t m, T *workspace_, std::size_t ldw, T *ritzVc, std::size_t ldr, T* approxV_) override{
     T alpha = T(1.0);
     T beta = T(0.0);
 
@@ -457,31 +418,21 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
 
   }
 
-  void heevd2(std::size_t m_, std::size_t block, T* A, std::size_t lda, T *approxV, std::size_t ldv, T* workspace, std::size_t ldw, std::size_t offset, Base<T>* ritzv) override {
-  }
-
   void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_t locked, std::size_t unconverged) override{
 
   }
 
-  void hhQR(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv) override{
-
+  void hhQR(std::size_t m_, std::size_t nevex,std::size_t locked, T *approxV, std::size_t ldv)override{
   }
 
-  void hhQR_dist(std::size_t m_, std::size_t nevex,std::size_t locked, T *approxV, std::size_t ldv)override{
-  }
-  void cholQR1(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv) override {
-  }
-  void cholQR1_dist(std::size_t N, std::size_t nevex, std::size_t locked, T *approxV, std::size_t ldv) override{
+  void cholQR(std::size_t N, std::size_t nevex, std::size_t locked, T *approxV, std::size_t ldv) override{
   }
   void Lock(T * workspace_, std::size_t new_converged) override{}
 
   void Swap(std::size_t i, std::size_t j)override{}
 
-  void lanczos(std::size_t mIters, int idx, Base<T> *d, Base<T> *e,  Base<T> *rbeta,  T *V_, std::size_t ldv1, T *workspace_)override{}
+  void lanczos(std::size_t mIters, int idx, Base<T> *d, Base<T> *e,  Base<T> *rbeta,  T *V_, T *workspace_)override{}
     
-  void cpyRtizVecs(T *V_, std::size_t ldv1) override {}
-
  private:
   std::size_t n_;
   std::size_t locked_;

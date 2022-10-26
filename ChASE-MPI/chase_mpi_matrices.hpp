@@ -79,11 +79,10 @@ class ChaseMpiMatrices {
     @param resid: a pointer to the buffer `resid_`. 
   */        
   ChaseMpiMatrices(MPI_Comm comm, std::size_t N, std::size_t m, std::size_t n, std::size_t max_block,
-                   T* V1 = nullptr, std::size_t ldv1 = 0, Base<T>* ritzv = nullptr, T* V2 = nullptr,
+                   T* V1 = nullptr, Base<T>* ritzv = nullptr, T* V2 = nullptr,
                    Base<T>* resid = nullptr)
       // if value is null then allocate otherwise don't
       : H__(nullptr),
-        ldv1_(ldv1 == 0 ? m  : ldv1),
         V1__(V1 == nullptr ? new T[m * max_block] : nullptr),
         V2__(V2 == nullptr ? new T[n * max_block] : nullptr),
         ritzv__(ritzv == nullptr ? new Base<T>[max_block] : nullptr),
@@ -98,11 +97,10 @@ class ChaseMpiMatrices {
         resid_(resid == nullptr ? resid__.get() : resid) {}
 
   ChaseMpiMatrices(MPI_Comm comm, std::size_t N, std::size_t m, std::size_t n, std::size_t max_block, 
-                   T* V1 = nullptr,  std::size_t ldv1 = 0, Base<T>* ritzv = nullptr, T* H = nullptr, 
+                   T* V1 = nullptr, Base<T>* ritzv = nullptr, T* H = nullptr, 
                    std::size_t ldh = 0, T* V2 = nullptr, Base<T>* resid = nullptr)
       // if value is null then allocate otherwise don't
       : H__(H == nullptr ? new T[m * n] : nullptr),
-        ldv1_(ldv1 == 0 ? m  : ldv1),      
         V1__(V1 == nullptr ? new T[m * max_block] : nullptr),
         V2__(V2 == nullptr ? new T[n * max_block] : nullptr),
         ritzv__(ritzv == nullptr ? new Base<T>[max_block] : nullptr),
@@ -163,7 +161,6 @@ class ChaseMpiMatrices {
   Base<T>* resid_;
 
   std::size_t ldh_;
-  std::size_t ldv1_;
 };
 }  // namespace mpi
 }  // namespace chase

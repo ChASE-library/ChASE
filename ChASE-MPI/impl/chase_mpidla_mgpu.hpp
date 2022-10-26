@@ -127,8 +127,8 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
 	std::cout << std::endl;
 #endif
   }
-  void initVecs(T *V, std::size_t ldv1) override{}    
-  void initRndVecs(T *V, std::size_t ldv1) override {}
+  void initVecs(T *V) override{}    
+  void initRndVecs(T *V) override {}
   void C2V(T *v1, T *v2, std::size_t block) override {}
 
   /*! - For ChaseMpiDLAMultiGPU, `preApplication` is implemented only with the operation of switching operation flags.
@@ -271,10 +271,6 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
 
 
   void asynCxHGatherC(T *V, std::size_t locked, std::size_t block) override {}
-  void asynHxBGatherB(T *V, std::size_t locked, std::size_t block) override {}
-  void B2C(T *v1, T *v2, std::size_t locked, std::size_t block) override {}
-  void C2B(T *c, T *b, std::size_t locked, std::size_t block) override{}
-
 
   /*!
     - For ChaseMpiDLAMultiGPU,  `applyVec` is implemented in ChaseMpiDLA.
@@ -329,13 +325,6 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
       return t_lange(norm, m, n, A, lda);
   }
 
-  /*!
-    - For ChaseMpiDLAMultiGPU, `gegqr` is implemented by calling `gegqr` function of class mgpu_cudaDLA, whose implementation is based on `cuSOLVER` routines `cusolverDnXgeqrf` and `cusolverDnXumgqr`.
-    - **Parallelism is SUPPORT within one GPU card**
-    - For the meaning of this function, please visit ChaseMpiDLAInterface.
-  */
-  void gegqr(std::size_t N, std::size_t nevex, T * approxV, std::size_t LDA) override {
-  }
 
   /*!
     - For ChaseMpiDLAMultiGPU, `axpy` is implemented in ChaseMpiDLA.
@@ -433,7 +422,7 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
   void RR_kernel(std::size_t N, std::size_t block, T *approxV, std::size_t locked, T *workspace, T One, T Zero, Base<T> *ritzv) override {
   }
 
-  void LanczosDos(std::size_t N_, std::size_t idx, std::size_t m, T *workspace_, std::size_t ldw, T *ritzVc, std::size_t ldr, T* approxV_, std::size_t ldv) override{
+  void LanczosDos(std::size_t N_, std::size_t idx, std::size_t m, T *workspace_, std::size_t ldw, T *ritzVc, std::size_t ldr, T* approxV_) override{
 
   }
 
@@ -455,33 +444,20 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
 	mgpuDLA->heevd(n, a, lda, w);
   }
 
-  void heevd2(std::size_t m_, std::size_t block, T* A, std::size_t lda, T *approxV, std::size_t ldv, T* workspace, std::size_t ldw, std::size_t offset, Base<T>* ritzv) override {
-   
-	mgpuDLA->heevd2(m_, block, A, lda, approxV, ldv, workspace, ldw, offset, ritzv); 
-  
-  }
 
   void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_t locked, std::size_t unconverged) override{}
 
-  void hhQR(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv) override{
-
+  void hhQR(std::size_t m_, std::size_t nevex, std::size_t locked,T *approxV, std::size_t ldv)override{
   }
 
-  void hhQR_dist(std::size_t m_, std::size_t nevex, std::size_t locked,T *approxV, std::size_t ldv)override{
-  }
-  void cholQR1(std::size_t m_, std::size_t nevex, T *approxV, std::size_t ldv )override{
-  }
-  void cholQR1_dist(std::size_t N, std::size_t nevex, std::size_t locked, T *approxV, std::size_t ldv) override{
+  void cholQR(std::size_t N, std::size_t nevex, std::size_t locked, T *approxV, std::size_t ldv) override{
   }
 
   void Lock(T * workspace_, std::size_t new_converged) override{}
 
   void Swap(std::size_t i, std::size_t j)override{}
   
-  void lanczos(std::size_t mIters, int idx, Base<T> *d, Base<T> *e,  Base<T> *rbeta,  T *V_, std::size_t ldv1, T *workspace_)override{}
-
-  void cpyRtizVecs(T *V_, std::size_t ldv1) override {}
-
+  void lanczos(std::size_t mIters, int idx, Base<T> *d, Base<T> *e,  Base<T> *rbeta,  T *V_, T *workspace_)override{}
 
  private:
   enum NextOp { cAb, bAc };

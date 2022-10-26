@@ -405,13 +405,11 @@ int do_chase(ChASE_DriverProblemConfig& conf) {
   T* V = V__.get();
   Base<T>* Lambda = Lambda__.get();
 
-  std::size_t ldv1 = m_;
-
 #if defined(USE_MPI)
 #ifdef USE_BLOCK_CYCLIC  
-  CHASE single(props, V, ldv1, Lambda);
+  CHASE single(props, V, Lambda);
 #else
-  CHASE single(props, V, ldv1, Lambda);  
+  CHASE single(props, V, Lambda);  
 #endif
 #else
   CHASE single(N, nev, nex, V,Lambda);

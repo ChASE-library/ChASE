@@ -68,9 +68,7 @@ int main(int argc, char** argv)
   auto V = std::vector<T>(m_ * (nev + nex)); //eigevectors
   auto Lambda = std::vector<Base<T>>(nev + nex); //eigenvalues
 
-  std::size_t ldv1 = m_;
-
-  CHASE single(props, V.data(), ldv1, Lambda.data());
+  CHASE single(props, V.data(), Lambda.data());
 
   /*Setup configure for ChASE*/
   auto& config = single.GetConfig();

@@ -91,7 +91,6 @@ int main(int argc, char** argv)
   auto V = std::vector<T>(m_ * (nev + nex)); //eigevectors
   auto Lambda = std::vector<Base<T>>(nev + nex); //eigenvalues
 
-  std::size_t ldv1 = m_;
   std::vector<T> H(N * N, T(0.0));
 
   /*Generate Clement matrix*/
@@ -108,7 +107,7 @@ int main(int argc, char** argv)
   std::cout << std::setprecision(16);
 
 #ifdef USE_BLOCK_CYCLIC
-  CHASE single(props, V.data(), ldv1, Lambda.data());
+  CHASE single(props, V.data(), Lambda.data());
 
   /*local block number = mblocks x nblocks*/
   std::size_t mblocks = single.get_mblocks();
@@ -145,10 +144,10 @@ int main(int argc, char** argv)
     }
   }
 
-  CHASE single(props, h_loc, V.data(), ldh, ldv1, Lambda.data());  
+  CHASE single(props, h_loc, ldh, V.data(), Lambda.data());  
 
 #else  
-  CHASE single(props, V.data(), ldv1, Lambda.data());
+  CHASE single(props, V.data(), Lambda.data());
 
   std::size_t xoff, yoff, xlen, ylen;
 

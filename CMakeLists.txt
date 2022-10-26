@@ -56,7 +56,7 @@ else()
   target_link_libraries(chase_driver chase_mpi)
 endif()
 
-add_subdirectory("interface")
+#add_subdirectory("interface")
 
 # Examples
 option(BUILD_WITH_EXAMPLES "Build the examples" OFF)
