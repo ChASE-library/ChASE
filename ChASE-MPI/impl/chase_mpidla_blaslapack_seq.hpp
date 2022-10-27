@@ -72,7 +72,7 @@ class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T> {
   void preApplication(T* V, std::size_t const locked,
                       std::size_t const block) override {
     locked_ = locked;
-    std::memcpy(get_V1(), V + locked * N_, N_ * block * sizeof(T));
+    std::memcpy(V12_, V + locked * N_, N_ * block * sizeof(T));
   }
 
   /*! - For ChaseMpiDLABlaslapackSeq, the core of `preApplication` is implemented with `std::memcpy`, which copies `block` vectors from `V2` to `V2_`.
@@ -81,7 +81,7 @@ class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T> {
   */
   void preApplication(T* V1, T* V2, std::size_t const locked,
                       std::size_t const block) override {
-    std::memcpy(get_V2(), V2 + locked * N_, N_ * block * sizeof(T));
+    std::memcpy(V22_, V2 + locked * N_, N_ * block * sizeof(T));
     this->preApplication(V1, locked, block);
   }
 
@@ -95,11 +95,13 @@ class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T> {
            N_, block, N_,                              //
            &alpha,                                     // V2 <-
            H_, N_,                                     //      alpha * H*V1
-           get_V1() +locked * N_ + offset * N_, N_,                 //      + beta * V2
+           V12_ +locked * N_ + offset * N_, N_,                 //      + beta * V2
            &beta,                                      //
-           get_V2() +locked * N_ + offset * N_, N_);
+           V22_ +locked * N_ + offset * N_, N_);
 
-    std::swap(V1_, V2_);
+    std::cout << "apply: " << get_V1()[0] << " " << get_V2()[0] << std::endl;
+
+    std::swap(V12_, V22_);
 
   }
   /*! - For ChaseMpiDLABlaslapackSeq, the core of `postApplication` is implemented with `std::memcpy`, which copies `block` vectors from `V1` to `V`.
@@ -107,7 +109,7 @@ class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T> {
       - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
   bool postApplication(T* V, std::size_t const block,  std::size_t locked) override {
-    std::memcpy(V + locked_ * N_, get_V1(), N_ * block * sizeof(T));
+    std::memcpy(V + locked_ * N_, V12_, N_ * block * sizeof(T));
     return false;
   }
 
@@ -129,11 +131,11 @@ class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T> {
            N_, block, N_,                              
            &alpha,                                     
            H_, N_,                                     
-           get_V1() + locked * N_, N_,                 
+           V12_ + locked * N_, N_,                 
            &beta,                                      
-           get_V2() + locked * N_, N_);
+           V22_ + locked * N_, N_);
 
-    std::memcpy(V22_ + locked * N_, V12_ + locked * N_, N_ * block * sizeof(T) );    
+    std::memcpy(get_V2() + locked * N_, get_V1() + locked * N_, N_ * block * sizeof(T) );    
   }
 
   /*! - For ChaseMpiDLABlaslapackSeq, `applyVec` is implemented with `GEMM` provided by `BLAS`.
@@ -149,10 +151,10 @@ class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T> {
            N_, 1, N_,                              //
            &One,                                     // V2 <-
            H_, N_,                                     //      alpha * H*V1
-           get_V1(), N_,                 //      + beta * V2
+           V12_, N_,                 //      + beta * V2
            &Zero,                                      //
-           get_V2(), N_);
-    std::memcpy(C, get_V2(), N_ * sizeof(T));    
+           V22_, N_);
+    std::memcpy(C, V22_, N_ * sizeof(T));    
   }
 
   void get_off(std::size_t* xoff, std::size_t* yoff, std::size_t* xlen,
@@ -319,8 +321,8 @@ class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T> {
     t_gemm(CblasColMajor, CblasConjTrans, CblasNoTrans,
              block, block, N,
              &One,
-             V22_ + locked * N, N,
              get_V2() + locked * N, N,
+             V22_ + locked * N, N,
              &Zero,
              A.get(), block
     );
@@ -330,13 +332,13 @@ class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T> {
     t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans,
            N, block, block,
            &One,
-           V12_ + locked * N, N,
+           get_V1() + locked * N, N,
            A.get(), block,
            &Zero,
-           get_V1() + locked * N, N
+           V12_ + locked * N, N
     );
 
-    std::memcpy(V12_+locked*N_, get_V1()+locked*N_, N_ * block * sizeof(T));
+    std::memcpy(get_V1() +locked*N_, V12_ +locked*N_, N_ * block * sizeof(T));
    
   }
 
@@ -364,25 +366,27 @@ class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T> {
     T beta = T(0.0); 
 
     this->asynCxHGatherC(approxV_, locked, unconverged);
+
     for (std::size_t i = 0; i < unconverged; ++i) {
       beta = T(-ritzv[i]);
       axpy(                                      
           N_,                                      
           &beta,                                   
-          (V22_ + locked * N_) + N_ * i, 1,   
-          (get_V2() + locked * N_) + N_ * i, 1  
+          (get_V2() + locked * N_) + N_ * i, 1,   
+          (V22_ + locked * N_) + N_ * i, 1  
       );
 
-      resid[i] = nrm2(N_, (get_V2() + locked * N_) + N_ * i, 1);
+      resid[i] = nrm2(N_, (V22_ + locked * N_) + N_ * i, 1);
     }
   }
 
   void hhQR(std::size_t m_, std::size_t nevex, std::size_t locked,T *approxV, std::size_t ldv) override {
     std::unique_ptr<T []> tau(new T[nevex]);
-    t_geqrf(LAPACK_COL_MAJOR, N_, nevex, get_V1(), N_, tau.get());
-    t_gqr(LAPACK_COL_MAJOR, N_, nevex, nevex,  get_V1(), N_, tau.get());
-    std::memcpy(get_V1(), V12_, locked * N_ * sizeof(T));
-    std::memcpy(V12_+locked * N_, get_V1() + locked * N_, (nevex - locked) * N_ * sizeof(T));  
+
+    t_geqrf(LAPACK_COL_MAJOR, N_, nevex, V12_, N_, tau.get());
+    t_gqr(LAPACK_COL_MAJOR, N_, nevex, nevex,  V12_, N_, tau.get());
+    std::memcpy(V12_, get_V1(), locked * N_ * sizeof(T));
+    std::memcpy(get_V1()+locked * N_, V12_ + locked * N_, (nevex - locked) * N_ * sizeof(T));  
   }
   
 
@@ -394,11 +398,11 @@ class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T> {
     T zero = T(0.0);
     int info = -1;
 
-    t_syherk('U', 'C', nevex, N_, &one, get_V1(), N_, &zero, A_.get(), nevex);
+    t_syherk('U', 'C', nevex, N_, &one, V12_, N_, &zero, A_.get(), nevex);
     info = t_potrf('U', nevex, A_.get(), nevex);
     
     if(info == 0){
-      t_trsm('R', 'U', 'N', 'N', N_, nevex, &one, A_.get(), nevex, get_V1(), N_);
+      t_trsm('R', 'U', 'N', 'N', N_, nevex, &one, A_.get(), nevex, V12_, N_);
 
       int choldeg = 2;
       char *choldegenv;
@@ -410,12 +414,12 @@ class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T> {
       std::cout << "choldegee: " << choldeg << std::endl;
 #endif
       for(auto i = 0; i < choldeg - 1; i++){
-        t_syherk('U', 'C', nevex, N_, &one, get_V1(), N_, &zero, A_.get(), nevex);
+        t_syherk('U', 'C', nevex, N_, &one, V12_, N_, &zero, A_.get(), nevex);
         t_potrf('U', nevex, A_.get(), nevex);
-        t_trsm('R', 'U', 'N', 'N', N_, nevex, &one, A_.get(), nevex, get_V1(), N_);
+        t_trsm('R', 'U', 'N', 'N', N_, nevex, &one, A_.get(), nevex, V12_, N_);
       }
-      std::memcpy(get_V1(), V12_, locked * N_ * sizeof(T));
-      std::memcpy(V12_+locked * N_, get_V1() + locked * N_, (nevex - locked) * N_ * sizeof(T));  
+      std::memcpy(V12_, get_V1(), locked * N_ * sizeof(T));
+      std::memcpy(get_V1()+locked * N_, V12_ + locked * N_, (nevex - locked) * N_ * sizeof(T));
     }else{
 #ifdef CHASE_OUTPUT         
       std::cout << "cholQR failed because of ill-conditioned vector, use Householder QR instead" << std::endl;
@@ -429,13 +433,13 @@ class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T> {
   void Swap(std::size_t i, std::size_t j)override{
     T *tmp = new T[N_];
 
-    memcpy(tmp, get_V1() + N_ * i, N_ * sizeof(T));
-    memcpy(get_V1() + N_ * i, get_V1() + N_ * j, N_ * sizeof(T));
-    memcpy(get_V1() + N_ * j, tmp, N_ * sizeof(T));
-
     memcpy(tmp, V12_ + N_ * i, N_ * sizeof(T));
     memcpy(V12_ + N_ * i, V12_ + N_ * j, N_ * sizeof(T));
     memcpy(V12_ + N_ * j, tmp, N_ * sizeof(T));
+
+    memcpy(tmp, get_V1() + N_ * i, N_ * sizeof(T));
+    memcpy(get_V1() + N_ * i, get_V1() + N_ * j, N_ * sizeof(T));
+    memcpy(get_V1() + N_ * j, tmp, N_ * sizeof(T));
 
     delete[] tmp;
 
@@ -461,7 +465,7 @@ class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T> {
     T *v1 = v1_;
 
     if(idx >= 0){
-      this->C2V(V12_ + idx * n, v1, 1);
+      this->C2V(get_V1() + idx * n, v1, 1);
     }else{
       std::mt19937 gen(2342.0);
       std::normal_distribution<> normal_distribution;
@@ -479,7 +483,7 @@ class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T> {
     Base<T> real_beta = 0.0;
 
     for (std::size_t k = 0; k < m; k = k + 1) {
-      std::memcpy(V1_.get() + k * n, v1, n * sizeof(T));
+      std::memcpy(V12_ + k * n, v1, n * sizeof(T));
  
       this->applyVec(v1, w);
 
@@ -524,13 +528,13 @@ class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T> {
     t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans,
            N_, idx, m,
            &alpha,
-           get_V1(), N_,
+           V12_, N_,
            ritzVc, ldr,
            &beta,
-           V12_, N_
+           get_V1(), N_
     );
 
-    std::memcpy(get_V1(),V12_, m * N_ *sizeof(T));
+    std::memcpy(V12_, get_V1(), m * N_ *sizeof(T));
   }
 
  private:

@@ -46,7 +46,6 @@ int main() {
 
   CHASE single(N, nev, nex, V.data(), Lambda.data());
 
-  single.initRndVecs(V.data());
   auto& config = single.GetConfig();
   config.SetTol(1e-10);
   config.SetDeg(20);
@@ -72,6 +71,8 @@ int main() {
     if (i != N - 1) H[i + 1 + N * i] = std::sqrt(i * (N + 1 - i));
     if (i != N - 1) H[i + N * (i + 1)] = std::sqrt(i * (N + 1 - i));
   }
+
+  single.initRndVecs(V.data());
 
   for (auto idx = 0; idx < idx_max; ++idx) {
     if (rank == 0) {

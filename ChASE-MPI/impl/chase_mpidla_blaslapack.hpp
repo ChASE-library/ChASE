@@ -104,7 +104,6 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
                 static_cast<std::size_t>(block), m_, &alpha, H_, ldh_,
                 C_ + offset * m_ + locked * m_, m_, &beta, B_ + locked * n_ + offset * n_, n_);
       next_ = NextOp::cAb;
-
     } else {
  
      if (mpi_row_rank != 0) {

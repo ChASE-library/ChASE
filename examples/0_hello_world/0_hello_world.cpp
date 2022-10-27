@@ -189,7 +189,49 @@ int main(int argc, char** argv)
   PerformanceDecoratorChase<T> performanceDecorator(&single);
   /*Solve the eigenproblem*/
   chase::Solve(&performanceDecorator);
-  /*Output*/
+  /*
+  //ortho
+  T one(1.0);
+  T zero(0.0);
+  // Check eigenvector orthogonality
+  auto unity = std::unique_ptr<T[]>(new T[nev * nev]);
+  T neg_one(-1.0);
+  for (int ttz = 0; ttz < nev; ttz++) {
+    for (int tty = 0; tty < nev; tty++) {
+      if (ttz == tty)
+        unity[nev * ttz + tty] = 1.0;
+      else
+        unity[nev * ttz + tty] = 0.0;
+    }
+  }
+
+  t_gemm(CblasColMajor, CblasConjTrans, CblasNoTrans, nev, nev, N, &one,
+           V.data(), N, V.data(), N, &neg_one, unity.get(), nev);
+  Base<T> norm = t_lange('M', nev, nev, unity.get(), nev);
+
+  std::cout << "Eigenvectors Orthogonality: " << norm << std::endl;
+
+  //residual
+  auto prod = std::unique_ptr<T[]>(new T[N * nev]);
+
+  t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, N, nev, N, &one, H.data(), N, V.data(), N, &neg_one, prod.get(), N);
+
+  auto normv = std::unique_ptr<Base<T>[]> {
+        new Base<T>[ nev ]
+  }; 
+
+  for(auto i =0; i < nev; i++){
+    T alpha = -Lambda[i];
+    t_axpy(N, &alpha, 
+               V.data() + i * N, 1, 
+               prod.get() + i * N, 1);
+
+    normv[i] = t_nrm2(N, prod.get() + i * N, 1);
+
+    std::cout << "norm " << i << " : " << normv[i] << "\n";
+  }
+*/
+   /*Output*/
   if (rank == 0) {
     performanceDecorator.GetPerfData().print();
     Base<T>* resid = single.GetResid();

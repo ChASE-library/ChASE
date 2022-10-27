@@ -274,8 +274,8 @@ class ChaseMpi : public chase::Chase<T> {
   //! @param fixednev: total number of converged eigenpairs before this time QR factorization.  
   void stabQR(std::size_t fixednev) override{
     std::size_t nevex = nev_ + nex_;
-    dla_->cholQR(N_, nevex, locked_, approxV_, N_);
-    //dla_->hhQR(N_, nevex, locked_, approxV_, N_);
+    //dla_->cholQR(N_, nevex, locked_, approxV_, N_);
+    dla_->hhQR(N_, nevex, locked_, approxV_, N_);
   }
   //! This member function implements the virtual one declared in Chase class.
   //! This member function performs a QR factorization with an explicit construction of the unitary matrix `Q`.
@@ -386,7 +386,6 @@ class ChaseMpi : public chase::Chase<T> {
 
     int idx_ = static_cast<int>(idx);
     Base<T> real_beta;
-
     dla_->lanczos(m, idx_, d, e, &real_beta, V_, workspace_);
 
     int notneeded_m;
@@ -420,9 +419,7 @@ class ChaseMpi : public chase::Chase<T> {
   void LanczosDos(std::size_t idx, std::size_t m, T *ritzVc) override {
     T alpha = T(1.0);
     T beta = T(0.0);
-
     dla_->LanczosDos(N_, idx, m, workspace_, N_, ritzVc, m, approxV_);
-
   }
 
   //! This function return the residual of computed eigenpairs.

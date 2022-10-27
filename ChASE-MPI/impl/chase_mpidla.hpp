@@ -195,9 +195,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
 
   void initVecs(T *V) override{
     next_ = NextOp::bAc;
-    //t_lacpy('A', m_, nev_ + nex_, V, ldv1, C_ , m_);
     t_lacpy('A', m_, nev_ + nex_, C_, m_, C2_ , m_);
-
     dla_->preApplication(V, 0, nev_ + nex_);
   }
 
@@ -260,7 +258,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
   void apply(T alpha, T beta, std::size_t offset, std::size_t block,  std::size_t locked) override {
     T One = T(1.0);
     T Zero = T(0.0);
-
+    
     std::size_t dim;
     if (next_ == NextOp::bAc) {
 
@@ -283,6 +281,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
 
       next_ = NextOp::bAc;
     }
+
   }
 
   //v1->v2
@@ -757,7 +756,6 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
 
       std::memcpy(C2_+locked*m_, C_+locked*m_, m_ * block * sizeof(T));
 
-
   }
 
 
@@ -788,6 +786,7 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
       for (std::size_t i = 0; i < unconverged; ++i) {
         resid[i] = std::sqrt(resid[i]); 
       }
+  
   }
 
   void syherk(char uplo, char trans, std::size_t n, std::size_t k, T* alpha, T* a, std::size_t lda, T* beta, T* c, std::size_t ldc) override {
@@ -812,6 +811,7 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
 
 
   void hhQR(std::size_t N_, std::size_t nevex,std::size_t locked, T *workspace, std::size_t ldv) override {
+
     std::unique_ptr<T []> tau(new T[nevex]);
 #if defined(HAS_SCALAPACK)
     int one = 1;
@@ -829,7 +829,8 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
     this->preApplication(V_, 0, nevex);    
     std::memcpy(C_, C2_, locked * m_ * sizeof(T));
     std::memcpy(C2_+locked * m_, C_ + locked * m_, (nevex - locked) * m_ * sizeof(T));    
-#endif	  
+#endif
+
   }
   
 
@@ -931,11 +932,12 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
     Base<T> real_beta = 0.0;
 
     for (std::size_t k = 0; k < m; k = k + 1) {
-
-      for(auto i = 0; i < mblocks_; i++){
-        std::memcpy(C_ + k * m_ + r_offs_l_[i], v1 + r_offs_[i], r_lens_[i] * sizeof(T));
+      if(idx >= 0){
+        for(auto i = 0; i < mblocks_; i++){
+          std::memcpy(C_ + k * m_ + r_offs_l_[i], v1 + r_offs_[i], r_lens_[i] * sizeof(T));
+        }
       }
-         
+             
       this->applyVec(v1, w);
 
       alpha = dla_->dot(n, v1, 1, w, 1);
@@ -968,6 +970,9 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
 
     *rbeta = real_beta;
 
+    next_ = NextOp::bAc;
+    this->preApplication(V_, 0, nev_+nex_);
+
     delete[] w_;
     delete[] v0_;
 
@@ -979,6 +984,7 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
     T alpha = 1.0;
     T beta = 0.0;
 
+
     dla_->gemm_large(CblasColMajor, CblasNoTrans, CblasNoTrans,
            m_, idx, m,
            &alpha,
@@ -989,6 +995,7 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
     );
 
     std::memcpy(C_, C2_, m * m_ *sizeof(T));
+
   }
 
 

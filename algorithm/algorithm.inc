@@ -342,7 +342,8 @@ void Algorithm<T>::solve(Chase<T>* single) {
   bool random = !config.UseApprox();
   std::size_t DoSVectors =
       lanczos(single, N, num_lanczos,
-              std::min(nevex, std::min(N / 2, config.GetLanczosIter())), nevex,
+              std::min(nevex, std::min(N / 2, config.GetLanczosIter()))
+              , nevex,
               &upperb, random, random ? ritzv : NULL);
 
   std::size_t locked = 0;     // Number of converged eigenpairs.
