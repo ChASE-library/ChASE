@@ -280,6 +280,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
 
       MPI_Allreduce(MPI_IN_PLACE, C_ +locked * m_ + offset * m_, dim, getMPI_Type<T>(),
                     MPI_SUM, row_comm_);
+
       next_ = NextOp::bAc;
     }
   }
@@ -921,6 +922,7 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
       }
     }
 
+
     // ENSURE that v1 has one norm
     Base<T> real_alpha = dla_->nrm2(n, v1, 1);
     alpha = T(1 / real_alpha);
@@ -986,7 +988,7 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
            C2_, m_
     );
 
-    std::memcpy(C_, C2_, (nev_ + nex_) * m_ *sizeof(T));
+    std::memcpy(C_, C2_, m * m_ *sizeof(T));
   }
 
 

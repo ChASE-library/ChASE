@@ -27,17 +27,30 @@ class ChaseMpiDLABlaslapackSeqInplace : public ChaseMpiDLAInterface<T> {
       @param maxBlock: maximum column number of matrix `V`, which equals to `nev+nex`.
   */  
   ChaseMpiDLABlaslapackSeqInplace(ChaseMpiMatrices<T>& matrices, std::size_t n,
-                             std::size_t maxBlock)
+                             std::size_t nev, std::size_t nex)
       : N_(n),
+        nex_(nex),
+        nev_(nev),
+        maxblock_(nev_+nex_),
         V1_(matrices.get_V1()),
         V2_(matrices.get_V2()),
         H_(matrices.get_H()) {}
 
   ~ChaseMpiDLABlaslapackSeqInplace() {}
-  void initVecs(T *V) override{}  
-  void initRndVecs(T *V) override {}
+  void initVecs(T *V) override{
+    t_lacpy('A', N_, nev_ + nex_, V1_, N_, V2_ , N_);
+  }  
+  void initRndVecs(T *V) override {
+     std::mt19937 gen(1337.0);
+     std::normal_distribution<> d;
+     for(auto j = 0; j < (nev_ + nex_) * N_; j++){
+        V[j] = getRandomT<T>([&]() { return d(gen);});         
+     }    
+  }
 
-  void C2V(T *v1, T *v2, std::size_t block) override {}
+  void C2V(T *v1, T *v2, std::size_t block) override {
+    std::memcpy(v2, v1, N_ * block *sizeof(T));
+  }
 
   /*! - For ChaseMpiDLABlaslapackSeqInplace, the core of `preApplication` is implemented with `std::swap`, which swaps the buffer of `V1` and `V2`.
       - **Parallelism is NOT SUPPORT**
@@ -292,18 +305,20 @@ class ChaseMpiDLABlaslapackSeqInplace : public ChaseMpiDLAInterface<T> {
       delete[] A;
   }
 
-  void LanczosDos(std::size_t N_, std::size_t idx, std::size_t m, T *workspace_, std::size_t ldw, T *ritzVc, std::size_t ldr, T* approxV_, std::size_t ldv) override{
+  void LanczosDos(std::size_t N_, std::size_t idx, std::size_t m, T *workspace_, std::size_t ldw, T *ritzVc, std::size_t ldr, T* approxV_) override{
     T alpha = T(1.0);
     T beta = T(0.0);
 
     t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans,
            N_, idx, m,
            &alpha,
-           workspace_, ldw,
+           V1_, N_,
            ritzVc, ldr,
            &beta,
-           approxV_, ldv
+           V2_, N_
     );
+
+    std::memcpy(V1_, V2_, m * N_ *sizeof(T));
   }
 
   void syherk(char uplo, char trans, std::size_t n, std::size_t k, T* alpha, T* a, std::size_t lda, T* beta, T* c, std::size_t ldc)  override  {
@@ -336,12 +351,89 @@ class ChaseMpiDLABlaslapackSeqInplace : public ChaseMpiDLAInterface<T> {
 
   void Swap(std::size_t i, std::size_t j)override{}
 
-  void lanczos(std::size_t mIters, int idx, Base<T> *d, Base<T> *e,  Base<T> *rbeta,  T *V_, std::size_t ldv1, T *workspace_)override{}
+  void lanczos(std::size_t mIters, int idx, Base<T> *d, Base<T> *e,  Base<T> *rbeta,  T *V_, T *workspace_)override{
+    std::size_t m = mIters;
+    std::size_t n = N_;
+
+    T *v0_ = new T[n]();
+    T *w_ = new T[n]();
+
+    T *v0 = v0_;
+    T *w = w_;
+
+    T alpha = T(1.0);
+    T beta = T(0.0);
+    T One = T(1.0);
+    T Zero = T(0.0);
+    
+    // V is filled with randomness
+    T *v1_ = new T[n]();
+    T *v1 = v1_;
+
+    if(idx >= 0){
+      this->C2V(V2_ + idx * n, v1, 1);
+    }else{
+      std::mt19937 gen(2342.0);
+      std::normal_distribution<> normal_distribution;
+
+      for (std::size_t k = 0; k < N_; ++k){
+        v1[k] = getRandomT<T>([&]() { return normal_distribution(gen); });
+      }
+    }
+
+    std::cout << v1[0] << std::endl;
+    // ENSURE that v1 has one norm
+    Base<T> real_alpha = t_nrm2(n, v1, 1);
+    alpha = T(1 / real_alpha);
+    t_scal(n, &alpha, v1, 1);
+
+    Base<T> real_beta = 0.0;
+
+    for (std::size_t k = 0; k < m; k = k + 1) {
+      std::memcpy(V1_ + k * n, v1, n * sizeof(T));
+ 
+      this->applyVec(v1, w);
+
+      alpha = t_dot(n, v1, 1, w, 1);
+      alpha = -alpha;
+      t_axpy(n, &alpha, v1, 1, w, 1);
+      alpha = -alpha;
+
+      d[k] = std::real(alpha);
+
+
+      if (k == m - 1) break;
+
+      beta = T(-real_beta);
+      t_axpy(n, &beta, v0, 1, w, 1);
+      beta = -beta;
+
+      real_beta = t_nrm2(n, w, 1); 
+
+      beta = T(1.0 / real_beta);
+
+      t_scal(n, &beta, w, 1);
+
+      e[k] = real_beta;
+
+      std::swap(v1, v0);
+      std::swap(v1, w); 
+                                
+    }
+
+    *rbeta = real_beta;
+
+    delete[] w_;
+    delete[] v0_;   
+
+  }
 
  private:
   std::size_t N_;
   std::size_t locked_;
-
+  std::size_t nev_;
+  std::size_t nex_;
+  std::size_t maxblock_;
   T* H_;
   T* V1_;
   T* V2_;

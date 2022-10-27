@@ -423,6 +423,7 @@ void Algorithm<T>::solve(Chase<T>* single) {
     std::size_t new_converged =
         locking(single, N, unconverged - nex, tol, ritzv, resid, residLast,
                 degrees, locked);
+
     // ---------------------------- Update pointers ----------------------------
     // Since we double buffer we need the entire locked portion in W and V
     single->Lock(new_converged);

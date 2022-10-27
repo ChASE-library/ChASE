@@ -42,7 +42,6 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
     B_ = matrices.get_V2();
     C_ = matrices.get_V1();
     C2_ = matrix_properties->get_C2();
-    B2_ = matrix_properties->get_B2();
 
     off_ = matrix_properties->get_off();
 
@@ -340,7 +339,8 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
            C_+ locked * N_, N_
       );
   }
-  void C2V(T *v1, T *v2, std::size_t block) override {}
+  void C2V(T *v1, T *v2, std::size_t block) override {
+  }
 
   void LanczosDos(std::size_t N_, std::size_t idx, std::size_t m, T *workspace_, std::size_t ldw, T *ritzVc, std::size_t ldr, T* approxV_) override{
 
@@ -361,52 +361,7 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
   }
 
   void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_t locked, std::size_t unconverged) override{
-      T one = T(1.0);
-      T neg_one = T(-1.0);
-      T beta = T(0.0);
 
-      t_gemm<T>(CblasColMajor, CblasConjTrans, CblasNoTrans, N_,
-                unconverged, N_, &one, H_, N_,
-                C_ + locked * N_, N_, &beta, B_ + locked * N_, N_);
-
-      auto ptr = std::unique_ptr<T[]> {
-        new T[ unconverged * unconverged ]
-      };
-
-      auto norm = std::unique_ptr<Base<T>[]> {
-        new Base<T>[ unconverged ]
-      };
-
-      for(std::size_t i = 0; i < unconverged; i++){
-        for(std::size_t j = 0; j < unconverged; j++){
-          if(i == j){
-            ptr[i * unconverged + j] = ritzv[i];
-          }
-          else{
-            ptr[i * unconverged + j] = T(0.0);
-          }
-        }
-      }
-
-
-      t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, N_, unconverged, unconverged, &one, 
-                    approxV_ + locked * N_, N_, //
-                    ptr.get(), unconverged, &neg_one, 
-                    B_ + locked * N_, N_);
-
-      for (std::size_t i = 0; i < unconverged; ++i) {
-        norm[i] = 0.0;
-        for(std::size_t j = 0; j < N_; j++){
-          norm[i] += t_sqrt_norm(B_[locked * N_ + i * N_ + j]);
-        }
-      }
-
-
-      std::memcpy(resid, norm.get(), unconverged * sizeof(Base<T>));
-
-      for (std::size_t i = 0; i < unconverged; ++i) {
-        resid[i] = std::sqrt(resid[i]); 
-      }
   }
 
   void heevd(int matrix_layout, char jobz, char uplo, std::size_t n,
@@ -427,7 +382,8 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
 
   void Swap(std::size_t i, std::size_t j)override{}
 
-  void lanczos(std::size_t mIters, int idx, Base<T> *d, Base<T> *e,  Base<T> *rbeta,  T *V_, T *workspace_)override{}
+  void lanczos(std::size_t mIters, int idx, Base<T> *d, Base<T> *e,  Base<T> *rbeta,  T *V_, T *workspace_)override{
+  }
 
  private:
   enum NextOp { cAb, bAc };

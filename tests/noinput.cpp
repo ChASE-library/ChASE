@@ -30,8 +30,8 @@ int main() {
 
   std::size_t N = 1001;
   std::size_t nev = 100;
-  std::size_t nex = 20;
-  std::size_t idx_max = 3;
+  std::size_t nex = 10;
+  std::size_t idx_max = 1;
   Base<T> perturb = 1e-4;
 
   std::mt19937 gen(1337.0);
@@ -46,6 +46,7 @@ int main() {
 
   CHASE single(N, nev, nex, V.data(), Lambda.data());
 
+  single.initRndVecs(V.data());
   auto& config = single.GetConfig();
   config.SetTol(1e-10);
   config.SetDeg(20);
@@ -57,11 +58,6 @@ int main() {
               << "x" << N << ") with element-wise random perturbation of "
               << perturb << '\n'
               << config;
-
-  // randomize V
-  for (std::size_t i = 0; i < N * (nev + nex); ++i) {
-      V[i] = T(d(gen));
-  }
 
   std::size_t xoff, yoff, xlen, ylen;
   xoff = 0;
