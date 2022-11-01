@@ -38,7 +38,6 @@ class ChaseMpiDLABlaslapackSeqInplace : public ChaseMpiDLAInterface<T> {
 
   ~ChaseMpiDLABlaslapackSeqInplace() {}
   void initVecs(T *V) override{
-    next_ = NextOp::bAc;
     t_lacpy('A', N_, nev_+nex_, V1_, N_, V2_ , N_);
   }  
   void initRndVecs(T *V) override {
@@ -60,7 +59,6 @@ class ChaseMpiDLABlaslapackSeqInplace : public ChaseMpiDLAInterface<T> {
       - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
   void preApplication(T* V, std::size_t locked, std::size_t block) override {
-    next_ = NextOp::bAc;
     locked_ = locked;
     std::memcpy(V1_, V + locked * N_, N_ * block * sizeof(T));
   }
@@ -79,33 +77,18 @@ class ChaseMpiDLABlaslapackSeqInplace : public ChaseMpiDLAInterface<T> {
       - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
   void apply(T alpha, T beta, std::size_t offset, std::size_t block,  std::size_t locked) override {
-
-    if (next_ == NextOp::bAc) {
-      t_gemm(CblasColMajor, CblasConjTrans, CblasNoTrans, N_,
-                static_cast<std::size_t>(block), N_, &alpha, H_, N_,
-                V1_ + offset * N_ + locked * N_, N_, &beta, V2_ + locked * N_ + offset * N_, N_);
-
-      next_ = NextOp::cAb;
-    }else{
       t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, N_,
-             static_cast<std::size_t>(block), N_, &alpha, H_, N_,
-             V2_ + offset * N_ + locked * N_, N_, &beta, V1_ + offset * N_ + locked * N_, N_);
-
-      next_ = NextOp::bAc;
-    }
-
+                static_cast<std::size_t>(block), N_, &alpha, H_, N_,
+                V1_ + offset * N_ + locked * N_, N_, &beta, V2_ + locked * N_ + offset * N_, N_);    
+  
+      std::swap(V1_, V2_);
   }
 
   /*! - For ChaseMpiDLABlaslapackSeqInplace, `postApplication` doesn't require explicit implementation here.
       - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
   bool postApplication(T* V, std::size_t block, std::size_t locked) override {
-    if (next_ == NextOp::bAc) {
-      std::memcpy(V + locked_ * N_, V1_, N_ * block * sizeof(T));
-    }else{
-      std::memcpy(V + locked_ * N_, V2_, N_ * block * sizeof(T));      
-    }
-    return true;
+    return false;
   }
 
   /*! - For ChaseMpiDLABlaslapackSeqInplace, `shiftMatrix` is implemented by a loop of length `N_`.
@@ -128,9 +111,15 @@ class ChaseMpiDLABlaslapackSeqInplace : public ChaseMpiDLAInterface<T> {
     T One = T(1.0);
     T Zero = T(0.0);
 
-    this->preApplication(B, 0, 1);
-    this->apply(One, Zero, 0, 1, 0);
-    this->postApplication(C, 1, 0);                                
+    t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans,  //
+           N_, 1, N_,                                  //
+           &One,                                     //
+           H_, N_,                                     //
+           B, N_,                                      //
+           &Zero,                                      //
+           C, N_);  
+
+    this->preApplication(B, 0, 1);    //in order to get exact the same results as ChASEMPI interface                     
   }
 
   T* get_H() const override { return H_; }
@@ -494,7 +483,6 @@ class ChaseMpiDLABlaslapackSeqInplace : public ChaseMpiDLAInterface<T> {
     }
     *rbeta = real_beta;
 
-    next_ = NextOp::bAc;
     delete[] w_;
     delete[] v0_;    
   }
@@ -515,13 +503,9 @@ class ChaseMpiDLABlaslapackSeqInplace : public ChaseMpiDLAInterface<T> {
     );
 
     std::memcpy(V1_, V2_, m * N_ *sizeof(T));
-
   }
 
  private:
-  enum NextOp { cAb, bAc };
-  NextOp next_;
-
   std::size_t N_;
   std::size_t locked_;
   std::size_t nev_;
