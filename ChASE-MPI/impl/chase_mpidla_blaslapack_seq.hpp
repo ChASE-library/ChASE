@@ -124,10 +124,7 @@ class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T> {
       - **Parallelism is NOT SUPPORT**
       - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
-  void shiftMatrix(T const c, bool isunshift = false) override {
-    if(istartOfFilter_){
-      next_ = NextOp::bAc;
-    }   
+  void shiftMatrix(T const c, bool isunshift = false) override { 
     for (std::size_t i = 0; i < N_; ++i) {
       H_[i + i * N_] += c;
     }
@@ -544,7 +541,6 @@ class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T> {
  private:
   enum NextOp { cAb, bAc };
   NextOp next_;
-  bool istartOfFilter_; 
 
   std::size_t N_;
   std::size_t locked_;

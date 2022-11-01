@@ -15,15 +15,15 @@
 #include "ChASE-MPI/chase_mpi.hpp"
 
 #include "ChASE-MPI/impl/chase_mpidla_blaslapack_seq.hpp"
-//#include "ChASE-MPI/impl/chase_mpidla_blaslapack_seq_inplace.hpp"
+#include "ChASE-MPI/impl/chase_mpidla_blaslapack_seq_inplace.hpp"
 
 using T = std::complex<double>;
 //using T = double;
 using namespace chase;
 using namespace chase::mpi;
 
-typedef ChaseMpi<ChaseMpiDLABlaslapackSeq, T> CHASE;
-//typedef ChaseMpi<ChaseMpiDLABlaslapackSeqInplace, T> CHASE;
+//typedef ChaseMpi<ChaseMpiDLABlaslapackSeq, T> CHASE;
+typedef ChaseMpi<ChaseMpiDLABlaslapackSeqInplace, T> CHASE;
 
 int main() {
   MPI_Init(NULL, NULL);
@@ -33,7 +33,7 @@ int main() {
   std::size_t N = 1001;
   std::size_t nev = 100;
   std::size_t nex = 10;
-  std::size_t idx_max = 1;
+  std::size_t idx_max = 5;
   Base<T> perturb = 1e-4;
 
   std::mt19937 gen(1337.0);
