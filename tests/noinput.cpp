@@ -15,13 +15,15 @@
 #include "ChASE-MPI/chase_mpi.hpp"
 
 #include "ChASE-MPI/impl/chase_mpidla_blaslapack_seq.hpp"
+#include "ChASE-MPI/impl/chase_mpidla_blaslapack_seq_inplace.hpp"
 
 using T = std::complex<double>;
 //using T = double;
 using namespace chase;
 using namespace chase::mpi;
 
-typedef ChaseMpi<ChaseMpiDLABlaslapackSeq, T> CHASE;
+//typedef ChaseMpi<ChaseMpiDLABlaslapackSeq, T> CHASE;
+typedef ChaseMpi<ChaseMpiDLABlaslapackSeqInplace, T> CHASE;
 
 int main() {
   MPI_Init(NULL, NULL);
@@ -116,9 +118,9 @@ int main() {
     // Perturb Full Clement matrix
     for (std::size_t i = 1; i < N; ++i) {
       for (std::size_t j = 1; j < i; ++j) {
-        T element_perturbation = T(d(gen)) * perturb;
+        T element_perturbation = T(d(gen), d(gen)) * perturb;
         H[j + N * i] += element_perturbation;
-        H[i + N * j] += element_perturbation;
+        H[i + N * j] += std::conj(element_perturbation);
       }
     }
 

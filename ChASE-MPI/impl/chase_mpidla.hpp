@@ -258,7 +258,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
   void apply(T alpha, T beta, std::size_t offset, std::size_t block,  std::size_t locked) override {
     T One = T(1.0);
     T Zero = T(0.0);
-    
+     
     std::size_t dim;
     if (next_ == NextOp::bAc) {
 
@@ -281,7 +281,6 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
 
       next_ = NextOp::bAc;
     }
-
   }
 
   //v1->v2
@@ -586,10 +585,11 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
 
     T One = T(1.0);
     T Zero = T(0.0);
-
-    this->preApplication(B, 0, 1);
-    this->apply(One, Zero, 0, 1, 0);
+    
+    this->preApplication(B, 0, 1);         
+    this->apply(One, Zero, 0, 1, 0);   
     this->postApplication(C, 1, 0);
+
   }
 
   void get_off(std::size_t* xoff, std::size_t* yoff, std::size_t* xlen,
@@ -753,7 +753,6 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
                    &Zero,
                    C_ + locked * m_, m_
                    );
-
       std::memcpy(C2_+locked*m_, C_+locked*m_, m_ * block * sizeof(T));
 
   }
@@ -811,8 +810,8 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
 
 
   void hhQR(std::size_t N_, std::size_t nevex,std::size_t locked, T *workspace, std::size_t ldv) override {
-
     std::unique_ptr<T []> tau(new T[nevex]);
+
 #if defined(HAS_SCALAPACK)
     int one = 1;
     t_pgeqrf(N_, nevex, C_, one, one, desc1D_Nxnevx_, tau.get() );
@@ -827,6 +826,7 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
     t_geqrf(LAPACK_COL_MAJOR, N_, nevex, V_, N_, tau.get());
     t_gqr(LAPACK_COL_MAJOR, N_, nevex, nevex, V_, N_, tau.get());
     this->preApplication(V_, 0, nevex);    
+
     std::memcpy(C_, C2_, locked * m_ * sizeof(T));
     std::memcpy(C2_+locked * m_, C_ + locked * m_, (nevex - locked) * m_ * sizeof(T));    
 #endif
@@ -923,7 +923,6 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
       }
     }
 
-
     // ENSURE that v1 has one norm
     Base<T> real_alpha = dla_->nrm2(n, v1, 1);
     alpha = T(1 / real_alpha);
@@ -937,7 +936,7 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
           std::memcpy(C_ + k * m_ + r_offs_l_[i], v1 + r_offs_[i], r_lens_[i] * sizeof(T));
         }
       }
-             
+            
       this->applyVec(v1, w);
 
       alpha = dla_->dot(n, v1, 1, w, 1);
