@@ -15,15 +15,15 @@
 #include "ChASE-MPI/chase_mpi.hpp"
 
 #include "ChASE-MPI/impl/chase_mpidla_blaslapack_seq.hpp"
-#include "ChASE-MPI/impl/chase_mpidla_blaslapack_seq_inplace.hpp"
+//#include "ChASE-MPI/impl/chase_mpidla_blaslapack_seq_inplace.hpp"
 
 using T = std::complex<double>;
 //using T = double;
 using namespace chase;
 using namespace chase::mpi;
 
-//typedef ChaseMpi<ChaseMpiDLABlaslapackSeq, T> CHASE;
-typedef ChaseMpi<ChaseMpiDLABlaslapackSeqInplace, T> CHASE;
+typedef ChaseMpi<ChaseMpiDLABlaslapackSeq, T> CHASE;
+//typedef ChaseMpi<ChaseMpiDLABlaslapackSeqInplace, T> CHASE;
 
 int main() {
   MPI_Init(NULL, NULL);
