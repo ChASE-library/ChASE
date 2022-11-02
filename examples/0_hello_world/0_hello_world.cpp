@@ -164,7 +164,7 @@ int main(int argc, char** argv)
 #endif
 
   /*randomize V*/
-  single.initRndVecs(V.data());
+  single.initRndVecs();
 
   /*Setup configure for ChASE*/
   auto& config = single.GetConfig();

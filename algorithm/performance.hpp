@@ -309,10 +309,6 @@ class PerformanceDecoratorChase : public chase::Chase<T> {
     chase_->initVecs();
   }
 
-  void initRndVecs(T *V){
-    chase_->initRndVecs(V);
-  }
-
   void Shift(T c, bool isunshift = false) {
     if (isunshift)
       perf_.end_clock(ChasePerfData::TimePtrs::Filter);
@@ -324,11 +320,6 @@ class PerformanceDecoratorChase : public chase::Chase<T> {
   void HEMM(std::size_t nev, T alpha, T beta, std::size_t offset) {
     chase_->HEMM(nev, alpha, beta, offset);
     perf_.add_filtered_vecs(nev);
-  }
-  void QR(std::size_t fixednev) {
-    perf_.start_clock(ChasePerfData::TimePtrs::Qr);
-    chase_->QR(fixednev);
-    perf_.end_clock(ChasePerfData::TimePtrs::Qr);
   }
 
   void stabQR(std::size_t fixednev) {

@@ -8,6 +8,7 @@
 #pragma once
 
 #include <cstdlib>
+#include <tuple>
 
 #include "algorithm/types.hpp"
 #include "chase_mpi_properties.hpp"
@@ -125,15 +126,15 @@ class ChaseMpiDLAInterface {
     @param offset: an offset of number vectors which the `HEMM` starting from.
     @param block: number of non-converged eigenvectors, it indicates the number of vectors in `V1` and `V2` to perform `HEMM`.
   */
-  virtual void initVecs(T *V) = 0;
-
-  virtual void initRndVecs(T *V) = 0;
+  virtual void initVecs() = 0;
+  virtual void initRndVecs() = 0;
   virtual void apply(T alpha, T beta, std::size_t offset,
                      std::size_t block, std::size_t locked) = 0;
-  virtual void asynCxHGatherC(T *V, std::size_t locked, std::size_t block) = 0;
+  virtual void asynCxHGatherC(std::size_t locked, std::size_t block) = 0;
 
-  virtual void C2V(T *v1, T *v2, std::size_t block) = 0;
-  virtual void Lock(T * workspace_, std::size_t new_converged) = 0;
+  virtual void C2V(T *v1, std::size_t off1, T *v2, std::size_t off2, std::size_t block) = 0;
+  virtual void V2C(T *v1, std::size_t off1, T *v2, std::size_t off2, std::size_t block) = 0;
+
   virtual void Swap(std::size_t i, std::size_t j) = 0;
   // Copies V2, the result of one or more results of apply() to V.
   // block number of vectors are copied.
@@ -252,39 +253,11 @@ class ChaseMpiDLAInterface {
      @param[in/out] `c`: an array of type `T`, dimension `( ldc, n )`.
      @param[in] ldc: it specifies the first dimension of `c`. It must be at least `max(1,m)`.
   */ 
-  virtual void gemm_small(CBLAS_LAYOUT Layout, CBLAS_TRANSPOSE transa,
+  virtual void gemm(CBLAS_LAYOUT Layout, CBLAS_TRANSPOSE transa,
             		 CBLAS_TRANSPOSE transb, std::size_t m,
             		 std::size_t n, std::size_t k, T* alpha,
             		 T* a, std::size_t lda, T* b,
             		 std::size_t ldb, T* beta, T* c, std::size_t ldc) = 0;
-
- //! A `BLAS-like` function which forms the Generalized Matrix-Matrix production operation (`GEMM`).
-  /*!
-    `gemm_large` performs one of the matrix-matrix operations `C := alpha*op( A )*op( B ) + beta*C`, where
-    `op(X)` is one of `op(X) = X` or `op(X) = X**T`. `alpha` and `beta` are scalars, and `A`, `B` and `C` are matrices, with `op(A)`
- an `m` by `k` matrix,  `op( B )`  a  `k` by `n` matrix and  `C` an `m` by `n` matrix. This function is
- implemented specifically for the matrices with relatively large `m`, `n` and `k`. In the current implementation of
- ChASE, this function performs a normal `gemm` without considering the sizes of matrices, but it will be improved in the later verison.
-     @param[in] Layout: layout of matrices, currently only column-major layout is supported in ChASE.
-     @param[in] transa: it specifies the form of `op( A )` to be used in the matrix multiplication. If its value is 1, the `op` is `conjugate transpose` operation, if its value is 2, the `op` is `transpose` operation and if its value is `3`, we have `op (A)=A`.
-     @param[in] transb: it specifies the form of `op( B )` to be used in the matrix multiplication. If its value is 1, the `op` is `conjugate transpose` operation, if its value is 2, the `op` is `transpose` operation and if its value is `3`, we have `op (B)=B`.
-     @param[in] m:  it  specifies  the number  of rows  of the  matrix `op( A )`  and of the  matrix  `C`.
-     @param[in] n: it specifies the number of columns of the matrix `op( B )` and the number of columns of the matrix `C`.
-     @param[in] k: it specifies  the number of columns of the matrix `op( A )` and the number of rows of the matrix `op( B )`
-     @param[in] alpha: it specifies the scalar `alpha`.
-     @param[in] a: an array of type `T`,  dimension `( lda, ka )`, where `ka` is `k`  when  `transa = 3`,  and is  `m`  otherwise. Before entry with  `transa = 3`,  the leading  `m` by `k` part of the array  `a`  must contain the matrix  `a`,  otherwise the leading  `k` by `m` part of the array  `a`  must contain  the matrix `a`.
-     @param[in] lda: it specifies the first dimension of `a`. When `transa=3`, it must be at least `max(1, m)`, otherwise it must be at least `(1, k)`.
-     @param[in] b: an array of type `T`, dimension `( ldb, kb )`, where `kb` is `n`  when  `transb=3`,  and is  `k`  otherwise. Before entry with  `transb=3`,  the leading  `k` by `n` part of the array  `b`  must contain the matrix  `b`,  otherwise the leading  `n` by `k`  part of the array  `b`  must contain  the matrix `b`. 
-     @param[in] ldb: it specifies the first dimension of `b`. When `transa=3`, it must be at least `max(1, k)`, otherwise it must be at least `(1, n)`.
-     @param[in] beta: it specifies the scalar `beta`.
-     @param[in/out] `c`: an array of type `T`, dimension `( ldc, n )`.
-     @param[in] ldc: it specifies the first dimension of `c`. It must be at least `max(1,m)`.
-  */ 
-  virtual void gemm_large(CBLAS_LAYOUT Layout, CBLAS_TRANSPOSE transa,
-                         CBLAS_TRANSPOSE transb, std::size_t m,
-                         std::size_t n, std::size_t k, T* alpha,
-                         T* a, std::size_t lda, T* b,
-                         std::size_t ldb, T* beta, T* c, std::size_t ldc) = 0;
 
   //! A `LAPACK-like` function which computes selected eigenvalues and eigenvectors of a real symmetric tridiagonal matrix of **DOUBLE PRECISION**.
   /*!
@@ -352,9 +325,7 @@ class ChaseMpiDLAInterface {
     @param[in] Zero: scalar `T(0)`.
     @param[out] ritzv: a real vector which stores the computed eigenvalues.
   */
-  virtual void RR_kernel(std::size_t N, std::size_t block, T *approxV, std::size_t locked, T *workspace, T One, T Zero, Base<T> *ritzv) = 0;
-
-  virtual void LanczosDos(std::size_t N_, std::size_t idx, std::size_t m, T *workspace_, std::size_t ldw, T *ritzVc, std::size_t ldr, T* approxV_) = 0;
+  virtual void RR(std::size_t block, std::size_t locked, Base<T> *ritzv) = 0;
 
   virtual void syherk(char uplo, char trans, std::size_t n, std::size_t k, T* alpha, T* a, std::size_t lda, T* beta, T* c, std::size_t ldc) = 0;
 
@@ -368,10 +339,10 @@ class ChaseMpiDLAInterface {
                     T* a, std::size_t lda, Base<T>* w) = 0;
 
 
-  virtual void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_t locked, std::size_t unconverged) = 0;
-  virtual void hhQR(std::size_t m_, std::size_t nevex, std::size_t locked, T *approxV, std::size_t ldv) = 0;
-  virtual void cholQR(std::size_t m_, std::size_t nevex, std::size_t locked, T *approxV, std::size_t ldv) = 0;
-  virtual void lanczos(std::size_t mIters, int idx, Base<T> *d, Base<T> *e,  Base<T> *rbeta, T *V_, T *workspace_) = 0;
+  virtual void Resd(Base<T> *ritzv, Base<T> *resid, std::size_t locked, std::size_t unconverged) = 0;
+  virtual void hhQR(std::size_t locked) = 0;
+  virtual void cholQR(std::size_t locked) = 0;
+  virtual void getLanczosBuffer(T **V1, T **V2, std::size_t *ld) = 0;
 };
 }  // namespace matrixfree
 }  // namespace chase

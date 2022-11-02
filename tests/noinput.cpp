@@ -22,8 +22,8 @@ using T = std::complex<double>;
 using namespace chase;
 using namespace chase::mpi;
 
-//typedef ChaseMpi<ChaseMpiDLABlaslapackSeq, T> CHASE;
-typedef ChaseMpi<ChaseMpiDLABlaslapackSeqInplace, T> CHASE;
+typedef ChaseMpi<ChaseMpiDLABlaslapackSeq, T> CHASE;
+//typedef ChaseMpi<ChaseMpiDLABlaslapackSeqInplace, T> CHASE;
 
 int main() {
   MPI_Init(NULL, NULL);
@@ -74,7 +74,7 @@ int main() {
     if (i != N - 1) H[i + N * (i + 1)] = std::sqrt(i * (N + 1 - i));
   }
 
-  single.initRndVecs(V.data());
+  single.initRndVecs();
 
   for (auto idx = 0; idx < idx_max; ++idx) {
     if (rank == 0) {

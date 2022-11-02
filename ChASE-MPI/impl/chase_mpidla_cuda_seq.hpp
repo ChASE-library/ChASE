@@ -101,10 +101,12 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
     if (d_work_) cudaFree(d_work_);	
 
   }
-  void initVecs(T *V) override{}  
-  void initRndVecs(T *V) override {}
+  void initVecs() override{}  
+  void initRndVecs() override {}
 
-  void C2V(T *v1, T *v2, std::size_t block) override {}
+  void V2C(T *v1, std::size_t off1, T *v2, std::size_t off2, std::size_t block) override {}
+
+  void C2V(T *v1, std::size_t off1, T *v2, std::size_t off2, std::size_t block) override {}
 
   /*! - For ChaseMpiDLACudaSeq, the core of `preApplication` is implemented with `cudaMemcpyAsync, which copies `block` vectors from `V` on Host to `V1` on GPU device.
       - **Parallelism is NOT SUPPORT**
@@ -171,7 +173,7 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
     chase_shift_matrix(H_, n_, std::real(c), &stream_);
   }
 
-  void asynCxHGatherC(T *V, std::size_t locked, std::size_t block) override {}
+  void asynCxHGatherC(std::size_t locked, std::size_t block) override {}
 
   /*! - For ChaseMpiDLACudaSeq, `applyVec` is implemented with `GEMM` provided by `BLAS`.
       - **Parallelism is SUPPORT within node if multi-threading is actived**
@@ -273,25 +275,11 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
   }
 
   /*!
-    - For ChaseMpiDLACudaSeq, `gemm_small` is implemented using `BLAS` routine `xGEMM`.
+    - For ChaseMpiDLACudaSeq, `gemm` is implemented using `BLAS` routine `xGEMM`.
     - **Parallelism is SUPPORT within node if multi-threading is actived**
     - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
-  void gemm_small(CBLAS_LAYOUT Layout, CBLAS_TRANSPOSE transa,
-                         CBLAS_TRANSPOSE transb, std::size_t m,
-                         std::size_t n, std::size_t k, T* alpha,
-                         T* a, std::size_t lda, T* b,
-                         std::size_t ldb, T* beta, T* c, std::size_t ldc) override 
-  {
-      t_gemm(Layout, transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
-  }
-
-  /*!
-    - For ChaseMpiDLACudaSeq, `gemm_small` is implemented using `BLAS` routine `xGEMM`.
-    - **Parallelism is SUPPORT within node if multi-threading is actived**
-    - For the meaning of this function, please visit ChaseMpiDLAInterface.
-  */
-  void gemm_large(CBLAS_LAYOUT Layout, CBLAS_TRANSPOSE transa,
+  void gemm(CBLAS_LAYOUT Layout, CBLAS_TRANSPOSE transa,
                          CBLAS_TRANSPOSE transb, std::size_t m,
                          std::size_t n, std::size_t k, T* alpha,
                          T* a, std::size_t lda, T* b,
@@ -326,7 +314,7 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
 
 
   /*!
-      - For ChaseMpiDLACudaSeq, `RR_kernel` is implemented by `cublasXgemm` routine provided by `cuBLAS` and `(SY)HEEVD` routine provided by `LAPACK`.
+      - For ChaseMpiDLACudaSeq, `RR` is implemented by `cublasXgemm` routine provided by `cuBLAS` and `(SY)HEEVD` routine provided by `LAPACK`.
         - The 1st operation `A <- W^T * V` is implemented by `cublasXgemm` from `cuBLAS`.
         - The 2nd operation which computes the eigenpairs of `A`, is implemented by `(SY)HEEVD` from `LAPACK`.
         - The 3rd operation which computes `W<-V*A` is implemented by `cublasXgemm` from `cuBLAS`.
@@ -335,7 +323,10 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
       - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */  
 
-  void RR_kernel(std::size_t N, std::size_t block, T *approxV, std::size_t locked, T *workspace, T One, T Zero, Base<T> *ritzv) override {
+  void RR(std::size_t block, std::size_t locked, Base<T> *ritzv) override {
+      T One = T(1.0);
+      T Zero = T(0.0);
+
         T *A = new T[block * block];
 
         T *d_A_ = NULL;
@@ -387,19 +378,7 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
 	
   }
  
-  void LanczosDos(std::size_t N_, std::size_t idx, std::size_t m, T *workspace_, std::size_t ldw, T *ritzVc, std::size_t ldr, T* approxV_) override{
-    T alpha = T(1.0);
-    T beta = T(0.0);
-
-    t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans,
-           N_, idx, m,
-           &alpha,
-           workspace_, ldw,
-           ritzVc, ldr,
-           &beta,
-           approxV_, ldv
-    );
-  }
+  void getLanczosBuffer(T **V1, T **V2, std::size_t *ld) override{}
 
   void syherk(char uplo, char trans, std::size_t n, std::size_t k, T* alpha, T* a, std::size_t lda, T* beta, T* c, std::size_t ldc)  override  {
   }
@@ -418,20 +397,17 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
 
   }
 
-  void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_t locked, std::size_t unconverged) override{
+  void Resd(Base<T> *ritzv, Base<T> *resid, std::size_t locked, std::size_t unconverged) override{
 
   }
 
-  void hhQR(std::size_t m_, std::size_t nevex,std::size_t locked, T *approxV, std::size_t ldv)override{
+  void hhQR(std::size_t locked)override{
   }
 
-  void cholQR(std::size_t N, std::size_t nevex, std::size_t locked, T *approxV, std::size_t ldv) override{
+  void cholQR(std::size_t locked) override{
   }
-  void Lock(T * workspace_, std::size_t new_converged) override{}
 
   void Swap(std::size_t i, std::size_t j)override{}
-
-  void lanczos(std::size_t mIters, int idx, Base<T> *d, Base<T> *e,  Base<T> *rbeta,  T *V_, T *workspace_)override{}
     
  private:
   std::size_t n_;

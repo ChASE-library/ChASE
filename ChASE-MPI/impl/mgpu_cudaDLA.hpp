@@ -693,7 +693,7 @@ namespace chase {
 					this->switch_pointers();
 				}
 
-				void gemm_small(std::size_t m,
+				void gemm(std::size_t m,
                          			std::size_t n, std::size_t k, T* alpha, T* a, std::size_t lda, T* b,
                          				std::size_t ldb, T* beta, T* c, std::size_t ldc){
 				   
@@ -727,26 +727,6 @@ namespace chase {
                                     assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
 				    cudaDeviceSynchronize();
 
-				}
-
-                                void gemm_large(std::size_t m,
-                                                std::size_t n, std::size_t k, T* alpha, T* a, std::size_t lda, T* b,
-                                                        std::size_t ldb, T* beta, T* c, std::size_t ldc){
-                                    cudaDeviceSynchronize();
-                                    cudaSetDevice(shmrank_*num_devices_per_rank);
-                                    cublas_status_ = cublasSetMatrixAsync(m, k, sizeof(T), a, lda, d_V1_, m_, stream_[0]);
-                                    assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
-                                    cublas_status_ = cublasSetMatrixAsync(k, n, sizeof(T), b, ldb, d_A_, (nev_+nex_), stream_[0]);
-                                    assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
-                                    cublas_status_ = cublasSetMatrixAsync(m, n, sizeof(T), c, ldc, d_V2_, m_, stream_[0]);
-                                    assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
-
-				    cublas_status_ = cublasTgemm(handle_[0],CUBLAS_OP_N, CUBLAS_OP_N, m, n, k, alpha, d_V1_, m_, 
-						    			d_A_, nev_+nex_, beta, d_V2_, m_);
-                                    assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
-				    cudaSetDevice(shmrank_*num_devices_per_rank);
-                                    cublas_status_ = cublasGetMatrixAsync(m, n, sizeof(T), d_V2_, m_, c, ldc, stream_[0]);
-                                    assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
 				}
 
 				int potrf(char uplo, std::size_t n, T* a, std::size_t lda){

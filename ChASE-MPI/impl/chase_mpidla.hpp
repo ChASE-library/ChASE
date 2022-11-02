@@ -189,17 +189,16 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
     }
 
   }
-  ~ChaseMpiDLA() {
-    //delete[] Buff_;
-  }
+  ~ChaseMpiDLA() {}
 
-  void initVecs(T *V) override{
+  void initVecs() override{
     next_ = NextOp::bAc;
     t_lacpy('A', m_, nev_ + nex_, C_, m_, C2_ , m_);
-    dla_->preApplication(V, 0, nev_ + nex_);
+    T *Vv;
+    dla_->preApplication(Vv, 0, 0);
   }
 
-  void initRndVecs(T *V) override {
+  void initRndVecs() override {
     std::mt19937 gen(1337.0);
     std::normal_distribution<> d;
     for(auto j = 0; j < nev_ + nex_; j++){
@@ -208,7 +207,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
         auto rnk = (i / mb_) % col_size_;
         auto rnd = getRandomT<T>([&]() { return d(gen);});
         if(col_rank_ == rnk){
-          V[cnt + j * m_] = rnd;
+          C_[cnt + j * m_] = rnd;
           cnt++;
         }
       }
@@ -282,9 +281,17 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
       next_ = NextOp::bAc;
     }
   }
+  //v1->v2
+  void V2C(T *v1, std::size_t off1, T *v2, std::size_t off2, std::size_t block) override {
+    for (auto j = 0; j < block; j++){
+      for(auto i = 0; i < mblocks_; i++){
+        std::memcpy(v2 + off2 * m_ + j * m_ + r_offs_l_[i], v1 + off1 * N_ + j * N_ + r_offs_[i], r_lens_[i] * sizeof(T));
+      } 
+    }
+  }
 
   //v1->v2
-  void C2V(T *v1, T *v2, std::size_t block) override {
+  void C2V(T *v1, std::size_t off1, T *v2, std::size_t off2, std::size_t block) override {
     std::size_t N = N_;
     std::size_t dimsIdx;
     std::size_t subsize;
@@ -293,11 +300,11 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
     T* buff;
     MPI_Comm comm;
     std::size_t *offs, *lens, *offs_l;  
-    T* targetBuf = v2;
+    T* targetBuf = v2 + off2 * N_;
       
     subsize = m_;
     blocksize = mb_;
-    buff = v1;
+    buff = v1 + off1 * m_;
     comm = col_comm_;
     dimsIdx = 0;
     offs = r_offs_;
@@ -523,7 +530,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
     return true;
   }
 
-  void asynCxHGatherC(T *V, std::size_t locked, std::size_t block) override {
+  void asynCxHGatherC(std::size_t locked, std::size_t block) override {
    
     std::size_t dim = n_ * block;
 
@@ -539,7 +546,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
     }
 
 
-    dla_->asynCxHGatherC(V, locked, block);
+    dla_->asynCxHGatherC(locked, block);
 
     for(auto i = 0; i < c_lens.size(); i++){
       if(row_rank_ == c_dests[i]){
@@ -664,34 +671,20 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
   }
  
    /*!
-   - For ChaseMpiDLA, `gemm_small` is implemented with `xGEMM` provided by `BLAS`.
+   - For ChaseMpiDLA, `gemm` is implemented with `xGEMM` provided by `BLAS`.
    - This implementation is the same for both with or w/o GPUs.
    - **Parallelism is SUPPORT within node if multi-threading is actived**    
    - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
-  void gemm_small(CBLAS_LAYOUT Layout, CBLAS_TRANSPOSE transa,
+  void gemm(CBLAS_LAYOUT Layout, CBLAS_TRANSPOSE transa,
                          CBLAS_TRANSPOSE transb, std::size_t m,
                          std::size_t n, std::size_t k, T* alpha,
                          T* a, std::size_t lda, T* b,
                          std::size_t ldb, T* beta, T* c, std::size_t ldc) override
   {
-      dla_->gemm_small(Layout, transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
+      dla_->gemm(Layout, transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
   }
 
-   /*!
-   - For ChaseMpiDLA, `gemm_large` is implemented with `xGEMM` provided by `BLAS`.
-   - This implementation is the same for both with or w/o GPUs.   
-   - **Parallelism is SUPPORT within node if multi-threading is actived**    
-   - For the meaning of this function, please visit ChaseMpiDLAInterface.
-  */
-  void gemm_large(CBLAS_LAYOUT Layout, CBLAS_TRANSPOSE transa,
-                         CBLAS_TRANSPOSE transb, std::size_t m,
-                         std::size_t n, std::size_t k, T* alpha,
-                         T* a, std::size_t lda, T* b,
-                         std::size_t ldb, T* beta, T* c, std::size_t ldc) override
-  {
-      dla_->gemm_large(Layout, transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
-  }
 
   /*!
     - For ChaseMpiDLA, `stemr` with real and double precision scalar, is implemented by calling the one in ChaseMpiDLABlaslapack and ChaseMpiDLAMultiGPU.
@@ -720,20 +713,21 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
   }
 
   /*!
-    - For ChaseMpiDLA, `RR_kernel` with real and double precision scalar, is implemented by calling the one in ChaseMpiDLABlaslapack and ChaseMpiDLAMultiGPU.
+    - For ChaseMpiDLA, `RR` with real and double precision scalar, is implemented by calling the one in ChaseMpiDLABlaslapack and ChaseMpiDLAMultiGPU.
     - This implementation is the same for both with or w/o GPUs.
     - **Parallelism is SUPPORT within node if multi-threading is actived**
     - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
-  void RR_kernel(std::size_t N, std::size_t block, T *approxV, std::size_t locked, T *workspace, T One, T Zero, Base<T> *ritzv) override {
-      
-      this->asynCxHGatherC(approxV, locked, block);
+  void RR(std::size_t block, std::size_t locked, Base<T> *ritzv) override {
+      T One = T(1.0);
+      T Zero = T(0.0);
+      this->asynCxHGatherC(locked, block);
 
       auto A_ = std::unique_ptr<T[]> {
         new T[ block * block ]
       };
 
-      dla_->gemm_small(CblasColMajor, CblasConjTrans, CblasNoTrans, 
+      dla_->gemm(CblasColMajor, CblasConjTrans, CblasNoTrans, 
                     block, block, n_, 
                     &One, 
                     B2_ + locked * n_, n_,
@@ -745,7 +739,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
 
       dla_->heevd(LAPACK_COL_MAJOR, 'V', 'L', block, A_.get(), block, ritzv);
 
-      dla_->gemm_small(CblasColMajor, CblasNoTrans, CblasNoTrans,
+      dla_->gemm(CblasColMajor, CblasNoTrans, CblasNoTrans,
                    m_, block, block, 
                    &One, 
                    C2_ + locked * m_, m_,
@@ -758,9 +752,9 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
   }
 
 
-void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_t locked, std::size_t unconverged) override{
+void Resd(Base<T> *ritzv, Base<T> *resid, std::size_t locked, std::size_t unconverged) override{
 
-      this->asynCxHGatherC(approxV_, locked, unconverged);
+      this->asynCxHGatherC(locked, unconverged);
 
       T one = T(1.0);
       T neg_one = T(-1.0);
@@ -809,7 +803,8 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
   }
 
 
-  void hhQR(std::size_t N_, std::size_t nevex,std::size_t locked, T *workspace, std::size_t ldv) override {
+  void hhQR(std::size_t locked) override {
+    auto nevex = nev_ + nex_;
     std::unique_ptr<T []> tau(new T[nevex]);
 
 #if defined(HAS_SCALAPACK)
@@ -834,7 +829,8 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
   }
   
 
-  void cholQR(std::size_t N, std::size_t nevex, std::size_t locked, T *approxV, std::size_t ldv) override{
+  void cholQR(std::size_t locked) override{
+    auto nevex = nev_ + nex_;    
     int grank;
     MPI_Comm_rank(MPI_COMM_WORLD, &grank);
     auto A_ = std::unique_ptr<T[]> {
@@ -872,11 +868,9 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
 #ifdef CHASE_OUTPUT         
       if(grank == 0) std::cout << "cholQR failed because of ill-conditioned vector, use Householder QR instead" << std::endl;
 #endif      
-      this->hhQR(N, nevex, locked, approxV, ldv);
+      this->hhQR(locked);
     }
   }
-
-  void Lock(T * workspace_, std::size_t new_converged) override{}
 
   void Swap(std::size_t i, std::size_t j)override{
     T *tmp = new T[m_];
@@ -892,109 +886,10 @@ void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_
     delete[] tmp;
   }
 
-  void lanczos(std::size_t mIters, int idx, Base<T> *d, Base<T> *e,  Base<T> *rbeta,  T *V_, T *workspace_)override{
- 
-    std::size_t m = mIters;
-    std::size_t n = N_;
-
-    T *v0_ = new T[n]();
-    T *w_ = new T[n]();
-
-    T *v0 = v0_;
-    T *w = w_;
-
-    T alpha = T(1.0);
-    T beta = T(0.0);
-    T One = T(1.0);
-    T Zero = T(0.0);
-    
-    // V is filled with randomness
-    T *v1_ = new T[n]();
-    T *v1 = v1_;
-
-    if(idx >= 0){
-      this->C2V(C2_ + idx * m_, v1, 1);
-    }else{
-      std::mt19937 gen(2342.0);
-      std::normal_distribution<> normal_distribution;
-
-      for (std::size_t k = 0; k < N_; ++k){
-        v1[k] = getRandomT<T>([&]() { return normal_distribution(gen); });
-      }
-    }
-
-    // ENSURE that v1 has one norm
-    Base<T> real_alpha = dla_->nrm2(n, v1, 1);
-    alpha = T(1 / real_alpha);
-    dla_->scal(n, &alpha, v1, 1);
-
-    Base<T> real_beta = 0.0;
-
-    for (std::size_t k = 0; k < m; k = k + 1) {
-      if(idx >= 0){
-        for(auto i = 0; i < mblocks_; i++){
-          std::memcpy(C_ + k * m_ + r_offs_l_[i], v1 + r_offs_[i], r_lens_[i] * sizeof(T));
-        }
-      }
-            
-      this->applyVec(v1, w);
-
-      alpha = dla_->dot(n, v1, 1, w, 1);
-
-      alpha = -alpha;
-      dla_->axpy(n, &alpha, v1, 1, w, 1);
-      alpha = -alpha;
-
-      d[k] = std::real(alpha);
-
-
-      if (k == m - 1) break;
-
-      beta = T(-real_beta);
-      dla_->axpy(n, &beta, v0, 1, w, 1);
-      beta = -beta;
-
-      real_beta = dla_->nrm2(n, w, 1); 
-
-      beta = T(1.0 / real_beta);
-
-      dla_->scal(n, &beta, w, 1);
-
-      e[k] = real_beta;
-
-      std::swap(v1, v0);
-      std::swap(v1, w); 
-                                
-    }
-
-    *rbeta = real_beta;
-
-    next_ = NextOp::bAc;
-    this->preApplication(V_, 0, nev_+nex_);
-
-    delete[] w_;
-    delete[] v0_;
-
-  }
-
-
-  void LanczosDos(std::size_t N_, std::size_t idx, std::size_t m, T *workspace_, std::size_t ldw, T *ritzVc, std::size_t ldr, T* approxV_) override{
-      
-    T alpha = 1.0;
-    T beta = 0.0;
-
-
-    dla_->gemm_large(CblasColMajor, CblasNoTrans, CblasNoTrans,
-           m_, idx, m,
-           &alpha,
-           C_, m_,
-           ritzVc, ldr,
-           &beta,
-           C2_, m_
-    );
-
-    std::memcpy(C_, C2_, m * m_ *sizeof(T));
-
+  void getLanczosBuffer(T **V1, T **V2, std::size_t *ld) override{
+    *V1 = C_;
+    *V2 = C2_;
+    *ld = m_;
   }
 
 

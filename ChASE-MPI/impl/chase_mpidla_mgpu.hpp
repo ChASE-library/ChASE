@@ -127,9 +127,10 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
 	std::cout << std::endl;
 #endif
   }
-  void initVecs(T *V) override{}    
-  void initRndVecs(T *V) override {}
-  void C2V(T *v1, T *v2, std::size_t block) override {}
+  void initVecs() override{}    
+  void initRndVecs() override {}
+  void V2C(T *v1, std::size_t off1, T *v2, std::size_t off2, std::size_t block) override {}  
+  void C2V(T *v1, std::size_t off1, T *v2, std::size_t off2, std::size_t block) override {}
 
   /*! - For ChaseMpiDLAMultiGPU, `preApplication` is implemented only with the operation of switching operation flags.
       - For the meaning of this function, please visit ChaseMpiDLAInterface.
@@ -270,7 +271,7 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
   }
 
 
-  void asynCxHGatherC(T *V, std::size_t locked, std::size_t block) override {}
+  void asynCxHGatherC(std::size_t locked, std::size_t block) override {}
 
   /*!
     - For ChaseMpiDLAMultiGPU,  `applyVec` is implemented in ChaseMpiDLA.
@@ -359,32 +360,19 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
   }
 
   /*!
-   - For ChaseMpiDLAMultiGPU, `gemm_small` is implemented in ChaseMpiDLA.
+   - For ChaseMpiDLAMultiGPU, `gemm` is implemented in ChaseMpiDLA.
    - **Parallelism is SUPPORT within node if multi-threading is enabled**    
    - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
-  void gemm_small(CBLAS_LAYOUT Layout, CBLAS_TRANSPOSE transa,
+  void gemm(CBLAS_LAYOUT Layout, CBLAS_TRANSPOSE transa,
                          CBLAS_TRANSPOSE transb, std::size_t m,
                          std::size_t n, std::size_t k, T* alpha,
                          T* a, std::size_t lda, T* b,
                          std::size_t ldb, T* beta, T* c, std::size_t ldc) override 
   {
-     mgpuDLA->gemm_small(m, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
+     mgpuDLA->gemm(m, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
   }
 
-  /*!
-   - For ChaseMpiDLAMultiGPU, `gemm_large` is implemented in ChaseMpiDLA.
-   - **Parallelism is SUPPORT within node if multi-threading is enabled**    
-   - For the meaning of this function, please visit ChaseMpiDLAInterface.
-  */
-  void gemm_large(CBLAS_LAYOUT Layout, CBLAS_TRANSPOSE transa,
-                         CBLAS_TRANSPOSE transb, std::size_t m,
-                         std::size_t n, std::size_t k, T* alpha,
-                         T* a, std::size_t lda, T* b,
-                         std::size_t ldb, T* beta, T* c, std::size_t ldc) override 
-  {
-     mgpuDLA->gemm_large(m, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
-  }
 
   /*!
    - For ChaseMpiDLAMultiGPU, `stemr` with scalar being real and double precision, is implemented using `LAPACK` routine `DSTEMR`.
@@ -411,7 +399,7 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
   }
 
   /*!
-    - For ChaseMpiDLAMultiGPU, `RR_kernel` is implemented by calling the `RR_kernel` function of class mgpu_cudaDLA, whose implementation is based on `cuBLAS` routine `cublasXgemm` and `LAPACK` routine `(SY)HEEVD`.
+    - For ChaseMpiDLAMultiGPU, `RR` is implemented by calling the `RR` function of class mgpu_cudaDLA, whose implementation is based on `cuBLAS` routine `cublasXgemm` and `LAPACK` routine `(SY)HEEVD`.
         - The 1st operation `A <- W^T * V` is implemented by `cublasXgemm` from `cuBLAS`.
         - The 2nd operation which computes the eigenpairs of `A`, is implemented by `(SY)HEEVD` from `LAPACK`.
         - The 3rd operation which computes `W<-V*A` is implemented by `cublasXgemm` from `cuBLAS`.
@@ -419,11 +407,9 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
     - **for cublasXgemm, parallelism is SUPPORT within one GPU card**
     - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
-  void RR_kernel(std::size_t N, std::size_t block, T *approxV, std::size_t locked, T *workspace, T One, T Zero, Base<T> *ritzv) override {
-  }
-
-  void LanczosDos(std::size_t N_, std::size_t idx, std::size_t m, T *workspace_, std::size_t ldw, T *ritzVc, std::size_t ldr, T* approxV_) override{
-
+  void RR(std::size_t block, std::size_t locked, Base<T> *ritzv) override {
+      T One = T(1.0);
+      T Zero = T(0.0);    
   }
 
   void syherk(char uplo, char trans, std::size_t n, std::size_t k, T* alpha, T* a, std::size_t lda, T* beta, T* c, std::size_t ldc) override {
@@ -447,17 +433,16 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
 
   void Resd(T *approxV_, T* workspace_, Base<T> *ritzv, Base<T> *resid, std::size_t locked, std::size_t unconverged) override{}
 
-  void hhQR(std::size_t m_, std::size_t nevex, std::size_t locked,T *approxV, std::size_t ldv)override{
+  void hhQR(std::size_t locked)override{
   }
 
-  void cholQR(std::size_t N, std::size_t nevex, std::size_t locked, T *approxV, std::size_t ldv) override{
+  void cholQR(std::size_t locked) override{
   }
-
-  void Lock(T * workspace_, std::size_t new_converged) override{}
 
   void Swap(std::size_t i, std::size_t j)override{}
   
-  void lanczos(std::size_t mIters, int idx, Base<T> *d, Base<T> *e,  Base<T> *rbeta,  T *V_, T *workspace_)override{}
+  void getLanczosBuffer(T **V1, T **V2, std::size_t *ld) override{}
+  
 
  private:
   enum NextOp { cAb, bAc };
