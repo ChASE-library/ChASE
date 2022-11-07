@@ -7,6 +7,12 @@
 
 #pragma once
 
+#include <cuComplex.h>
+#include <cublas_v2.h>
+#include <cuda.h>
+#include <cuda_runtime.h>
+#include <cuda_profiler_api.h>
+
 #include <assert.h>
 #include <complex>
 
@@ -34,13 +40,17 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
       @param n: size of matrix defining the eigenproblem.
       @param maxBlock: maximum column number of matrix `V`, which equals to `nev+nex`.
   */  
-  ChaseMpiDLACudaSeq(ChaseMpiMatrices<T>& matrices, std::size_t n,
-                      std::size_t maxBlock)
-      : n_(n), copied_(false), max_block_(maxBlock) {
-    cuda_exec(cudaMalloc(&(V1_), n_ * maxBlock * sizeof(T)));
-    cuda_exec(cudaMalloc(&(V2_), n_ * maxBlock * sizeof(T)));
-    cuda_exec(cudaMalloc(&(H_), n_ * n_ * sizeof(T)));
-
+  ChaseMpiDLACudaSeq(ChaseMpiMatrices<T>& matrices, std::size_t N,
+                      std::size_t nev, std::size_t nex )
+      : N_(N), copied_(false), nev_(nev), nex_(nex), max_block_(nev+nex) {
+    cuda_exec(cudaMalloc(&(d_V1_), N_ * (nev+nex) * sizeof(T)));
+    cuda_exec(cudaMalloc(&(d_V2_), N_ * (nev+nex) * sizeof(T)));
+    cuda_exec(cudaMalloc(&(d_H_),  N_ * N_ * sizeof(T)));
+	
+    H_ = matrices.get_H();
+    V1_ = matrices.get_V1();
+    V2_ = matrices.get_V2();
+    /*
     OrigH_ = matrices.get_H();
 
     std::size_t pitch_host = n_ * sizeof(T);
@@ -85,10 +95,12 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
     
     cuda_exec(cudaSetDevice(0));
     cuda_exec(cudaMalloc((void**)&d_work_, sizeof(T)*lwork_));
+  */
   }
 
+
   ~ChaseMpiDLACudaSeq() {
-    cudaFree(V1_);
+/*    cudaFree(V1_);
     cudaFree(V2_);
     cudaFree(H_);
     cudaStreamDestroy(stream_);
@@ -99,7 +111,7 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
     if (d_V_) cudaFree(d_V_);
     if (d_return_) cudaFree(d_return_);
     if (d_work_) cudaFree(d_work_);	
-
+*/
   }
   void initVecs() override{}  
   void initRndVecs() override {}
@@ -113,20 +125,22 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
       - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
   void preApplication(T* V, std::size_t locked, std::size_t block) override {
-    locked_ = locked;
+/*    locked_ = locked;
     cuda_exec(cudaMemcpyAsync(V1_, V + locked * n_, block * n_ * sizeof(T),
                               cudaMemcpyHostToDevice, stream_));
-  }
+*/
+			      }
 
   /*! - For ChaseMpiDLACudaSeq, the core of `preApplication` is implemented with `cudaMemcpyAsync, which copies `block` vectors from `V2` on Host to `V2_` on GPU device.
       - **Parallelism is NOT SUPPORT**
       - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
   void preApplication(T* V1, T* V2, std::size_t locked, std::size_t block) override {
-    cuda_exec(cudaMemcpyAsync(V2_, V2 + locked * n_, block * n_ * sizeof(T),
+/*    cuda_exec(cudaMemcpyAsync(V2_, V2 + locked * n_, block * n_ * sizeof(T),
                               cudaMemcpyHostToDevice, stream_));
 
     this->preApplication(V1, locked, block);
+*/
   }
 
   /*! - For ChaseMpiDLACudaSeq, `apply` is implemented with `cublasXgemm` provided by `cuBLAS`.
@@ -134,14 +148,14 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
       - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
   void apply(T alpha, T beta, std::size_t offset, std::size_t block,  std::size_t locked) override {
-    cublasTgemm(handle_, CUBLAS_OP_N, CUBLAS_OP_N,  //
+ /*   cublasTgemm(handle_, CUBLAS_OP_N, CUBLAS_OP_N,  //
                 n_, block, n_,                      //
                 &alpha,                             //
                 H_, n_,                             //
                 V1_ + offset * n_, n_,              //
                 &beta,                              //
                 V2_ + offset * n_, n_);             //
-    std::swap(V1_, V2_);
+    std::swap(V1_, V2_);*/
   }
 
   /*! - For ChaseMpiDLACudaSeq, the core of `postApplication` is implemented with `cudaMemcpyAsync, which copies `block` vectors from `V1_` on GPU device to `V` on Host.
@@ -149,9 +163,9 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
       - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
   bool postApplication(T* V, std::size_t block, std::size_t locked) override {
-    cuda_exec(cudaMemcpyAsync(V + locked_ * n_, V1_, block * n_ * sizeof(T),
-                              cudaMemcpyDeviceToHost, stream_));
-    cudaStreamSynchronize(stream_);
+  //  cuda_exec(cudaMemcpyAsync(V + locked_ * n_, V1_, block * n_ * sizeof(T),
+    //                          cudaMemcpyDeviceToHost, stream_));
+    //cudaStreamSynchronize(stream_);
     return false;
   }
 
@@ -163,14 +177,14 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
     // for (std::size_t i = 0; i < n_; ++i) {
     //   OrigH_[i + i * n_] += c;
     // }
-
+/*
     if (!copied_) {
       cuda_exec(cudaMemcpyAsync(H_, OrigH_, n_ * n_ * sizeof(T),
                                 cudaMemcpyHostToDevice, stream_));
       copied_ = true;
     }
 
-    chase_shift_matrix(H_, n_, std::real(c), &stream_);
+    chase_shift_matrix(H_, n_, std::real(c), &stream_);*/
   }
 
   void asynCxHGatherC(std::size_t locked, std::size_t block) override {}
@@ -180,12 +194,12 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
       - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
   void applyVec(T* B, T* C) override {
-    T alpha = T(1.0);
+/*    T alpha = T(1.0);
     T beta = T(0.0);
 
     t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, n_, 1, n_, &alpha, OrigH_,
            n_, B, n_, &beta, C, n_);
-
+*/
     // this->preApplication(B, 0, 1);
     // this->apply(alpha, beta, 0, 1);
     // this->postApplication(C, 1);
@@ -195,15 +209,15 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
                std::size_t* ylen) const override {
     *xoff = 0;
     *yoff = 0;
-    *xlen = n_;
-    *ylen = n_;
+    *xlen = N_;
+    *ylen = N_;
   }
 
-  T* get_H() const override { return OrigH_; }
+  T* get_H() const override { return H_; }
   std::size_t get_mblocks() const override {return 1;}
   std::size_t get_nblocks() const override {return 1;}
-  std::size_t get_n() const override {return n_;}
-  std::size_t get_m() const override {return n_;}
+  std::size_t get_n() const override {return N_;}
+  std::size_t get_m() const override {return N_;}
   int *get_coord() const override {
 	  int *coord = new int [2];
           coord[0] = 0; coord[1] = 0;
@@ -214,10 +228,10 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
                   std::size_t* &c_offs, std::size_t* &c_lens, std::size_t* &c_offs_l) const override{
 
           std::size_t r_offs_[1] = {0};
-          std::size_t r_lens_[1]; r_lens_[0] = n_;
+          std::size_t r_lens_[1]; r_lens_[0] = N_;
           std::size_t r_offs_l_[1] = {0};
           std::size_t c_offs_[1] = {0};
-          std::size_t c_lens_[1]; r_lens_[0] = n_;
+          std::size_t c_lens_[1]; r_lens_[0] = N_;
           std::size_t c_offs_l_[1] = {0};
 
           r_offs = r_offs_;
@@ -324,7 +338,7 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
   */  
 
   void RR(std::size_t block, std::size_t locked, Base<T> *ritzv) override {
-      T One = T(1.0);
+ /*     T One = T(1.0);
       T Zero = T(0.0);
 
         T *A = new T[block * block];
@@ -375,7 +389,7 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
 
       	if (d_A_) cudaFree(d_A_);
       	if (d_W_) cudaFree(d_W_);
-	
+*/	
   }
  
   void getLanczosBuffer(T **V1, T **V2, std::size_t *ld) override{}
@@ -410,9 +424,11 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
   void Swap(std::size_t i, std::size_t j)override{}
     
  private:
-  std::size_t n_;
+  std::size_t N_;
   std::size_t locked_;
   std::size_t max_block_;
+  std::size_t nev_;
+  std::size_t nex_;
 
   int *devInfo_ = NULL;
   T *d_V_ = NULL;	
@@ -423,10 +439,12 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
   cusolverStatus_t cusolver_status_ = CUSOLVER_STATUS_SUCCESS;
   cublasStatus_t cublas_status_ = CUBLAS_STATUS_SUCCESS;
 
+  T* d_V1_;
+  T* d_V2_;
+  T* d_H_;
+  T* H_;
   T* V1_;
   T* V2_;
-  T* H_;
-  T* OrigH_;
   cudaStream_t stream_, stream2_;
   cublasHandle_t handle_;
   cusolverDnHandle_t cusolverH_;

@@ -218,7 +218,7 @@ class ChasePerfData {
     // std::cout << "Filtered Vectors\t\t" << chase_filtered_vecs << "\n";
     // std::cout << "Iteration Count\t\t" << chase_iteration_count << "\n";
     if (N != 0) {
-      std::cout << " | GFLOPS | GFLOPS/s ";
+          std::cout << " | GFLOPS: All | GFLOPS: Filter ";
     }
 
     std::cout << " | Size  | Iterations | Vecs   |  All       | Lanczos    | "
@@ -234,10 +234,9 @@ class ChasePerfData {
     if (N != 0) {
       std::size_t flops = get_flops(N);
       std::size_t filter_flops = get_filter_flops(N);
-      std::cout << " | " << flops;
+      std::cout << " | " << static_cast<double>(flops) ;
       std::cout << " | "
-                << static_cast<double>(filter_flops) /
-                       timings[TimePtrs::Filter].count() / 1e9;
+                << static_cast<double>(filter_flops)  ;
     }
 
     std::cout << " | " << std::setw(5) << nprocs;

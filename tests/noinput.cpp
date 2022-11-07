@@ -16,14 +16,21 @@
 
 #include "ChASE-MPI/impl/chase_mpidla_blaslapack_seq.hpp"
 #include "ChASE-MPI/impl/chase_mpidla_blaslapack_seq_inplace.hpp"
+//#if defined(USE_GPU)
+//#include "ChASE-MPI/impl/chase_mpidla_cuda_seq.hpp"
+//#endif
 
 using T = std::complex<double>;
 //using T = double;
 using namespace chase;
 using namespace chase::mpi;
 
+//#if defined(USE_GPU)
+//typedef ChaseMpi<ChaseMpiDLACudaSeq, T> CHASE;
+//#else
 typedef ChaseMpi<ChaseMpiDLABlaslapackSeq, T> CHASE;
 //typedef ChaseMpi<ChaseMpiDLABlaslapackSeqInplace, T> CHASE;
+//#endif
 
 int main() {
   MPI_Init(NULL, NULL);
