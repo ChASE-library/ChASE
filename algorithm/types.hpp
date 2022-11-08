@@ -11,6 +11,8 @@
 #include <mpi.h>
 #include <complex>
 #include <functional>
+#include <fstream>
+#include <sys/stat.h>
 
 namespace chase {
 
@@ -29,6 +31,12 @@ struct Base_Class<std::complex<Q>> {
 template <typename Q>
 using Base = typename Base_Class<Q>::type;
 }  // namespace chase
+
+bool isPathExist(const std::string &s)
+{
+  struct stat buffer;
+  return (stat (s.c_str(), &buffer) == 0);
+}
 
 template <typename T>
 T getRandomT(std::function<double(void)> f);
@@ -52,4 +60,5 @@ template <>
 std::complex<float> getRandomT(std::function<double(void)> f) {
   return std::complex<float>(f(), f());
 }
+
 #endif

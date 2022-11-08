@@ -129,6 +129,9 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
   }
   void initVecs() override{}    
   void initRndVecs() override {}
+  void initRndVecsFromFile(std::string rnd_file) override {
+
+  }  
   void V2C(T *v1, std::size_t off1, T *v2, std::size_t off2, std::size_t block) override {}  
   void C2V(T *v1, std::size_t off1, T *v2, std::size_t off2, std::size_t block) override {}
 

@@ -49,7 +49,9 @@ class ChaseMpiDLABlaslapackSeqInplace : public ChaseMpiDLAInterface<T> {
         }           
      }  
   }
+  void initRndVecsFromFile(std::string rnd_file) override {
 
+  }
   void V2C(T *v1, std::size_t off1, T *v2, std::size_t off2, std::size_t block) override {    
     std::memcpy(v2 + off2 * N_, v1 + off1 * N_, N_ * block *sizeof(T));  
   }

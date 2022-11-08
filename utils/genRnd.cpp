@@ -121,7 +121,7 @@ void readMatFromBinary(T *H, std::string path_in, std::size_t size){
 
 int main (int argc, char *argv[]){
 
-    std::size_t N = 140000000;
+    std::size_t N = 1000000;
     std::string path_out;
     //parser
     std::string N_str = getCmdOption(argc, argv, "--N");

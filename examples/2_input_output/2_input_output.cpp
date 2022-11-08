@@ -440,7 +440,7 @@ int do_chase(ChASE_DriverProblemConfig& conf) {
         readMatrix(Lambda, path_eigp, spin, kpoint, i - 1, ".vls", (nev + nex),
                      legacy);
       }else{ 
-        single.initRndVecs();
+        single.initRndVecs(true);
 
         for (int j = 0; j < (nev + nex); j++) {
 	  Lambda[j] = 0.0;
