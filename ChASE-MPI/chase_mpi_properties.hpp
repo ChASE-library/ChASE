@@ -18,10 +18,6 @@
 namespace chase {
 namespace mpi {
 
-/*
- * Logic for an MPI parallel HEMM
- */
-
 template <typename T>
 MPI_Datatype getMPI_Type();
 

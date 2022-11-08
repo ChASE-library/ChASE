@@ -29,12 +29,6 @@
 using namespace chase;
 using namespace chase::mpi;
 
-bool IsPathExist(const std::string &s)
-{
-  struct stat buffer;
-  return (stat (s.c_str(), &buffer) == 0);
-}
-
 class ChASE_State {
  public:
   /* N: dimension of matrix
@@ -183,7 +177,7 @@ ChaseMpiProperties<double>* ChASE_State::constructProperties(std::size_t N,
                                                     std::size_t n,
                                                     int dim0,
                                                     int dim1,
-						    char *grid_major,
+						                                        char *grid_major,
                                                     MPI_Comm comm){
 
   double_prec = new ChaseMpiProperties<double>(N, nev, nex, m, n, dim0, dim1, grid_major, comm, false);
@@ -317,22 +311,16 @@ void chase_seq(T* H, int* N, T* V, Base<T>* ritzv, int* nev, int* nex,
 
   std::string rnd_file;
   if(sizeof(T) == 2 * sizeof(Base<T>)){
-      rnd_file = "rnd_z.bin";
+      rnd_file = "./tmp/rnd_z.bin";
   }else if(sizeof(T) == sizeof(Base<T>)){
-      rnd_file = "rnd_d.bin";
+      rnd_file = "./tmp/rnd_d.bin";
   }
 
   if (!config.UseApprox()){
-    if(IsPathExist(rnd_file)){
-        std::ostringstream problem(std::ostringstream::ate);
-        problem << rnd_file;
-        std::ifstream infile(problem.str().c_str(), std::ios::binary);
-        infile.read((char*)V, sizeof(T) * (*N) * (*nev + *nex));
-        std::cout << "ChASE loaded initial vector from local binary file: " <<  rnd_file << std::endl;
+    if(isPathExist(rnd_file)){
+      single.initRndVecs(true);
     }else{
-        for (std::size_t k = 0; k < (*N) * (*nev + *nex); ++k){
-            V[k] = getRandomT<T>([&]() { return d(gen);  });
-        }
+      single.initRndVecs(false);
     }
   }
 
@@ -394,24 +382,19 @@ void chase_solve(T* H, int *LDH, T* V, Base<T>* ritzv, int* deg, double* tol, ch
  
   std::string rnd_file;
   if(sizeof(T) == 2 * sizeof(Base<T>)){
-      rnd_file = "rnd_z.bin";
+      rnd_file = "./tmp/rnd_z.bin";
   }else if(sizeof(T) == sizeof(Base<T>)){
-      rnd_file = "rnd_d.bin";
+      rnd_file = "./tmp/rnd_d.bin";
   }
-  
+
   if (!config.UseApprox()){
-    if(IsPathExist(rnd_file)){
-  	std::ostringstream problem(std::ostringstream::ate);
-        problem << rnd_file;
-	std::ifstream infile(problem.str().c_str(), std::ios::binary);
-        infile.read((char*)V, sizeof(T) * N * (nev + nex));
-	if(myRank == 0) std::cout << "ChASE loaded initial vector from local binary file: " << 	rnd_file << std::endl;
+    if(isPathExist(rnd_file)){
+      single.initRndVecs(true);
     }else{
-        for (std::size_t k = 0; k < N * (nev + nex); ++k){
-            V[k] = getRandomT<T>([&]() { return d(gen);  });
-        }
+      single.initRndVecs(false);
     }
-  }  
+  }
+
   config.SetTol(*tol);
   config.SetDeg(*deg);
   config.SetOpt(*opt == 'S');
@@ -456,24 +439,19 @@ void chase_solve_mgpu(T* H, int *LDH, T* V, Base<T>* ritzv, int* deg, double* to
 
   std::string rnd_file;
   if(sizeof(T) == 2 * sizeof(Base<T>)){
-      rnd_file = "rnd_z.bin";
+      rnd_file = "./tmp/rnd_z.bin";
   }else if(sizeof(T) == sizeof(Base<T>)){
-      rnd_file = "rnd_d.bin";
+      rnd_file = "./tmp/rnd_d.bin";
   }
 
   if (!config.UseApprox()){
-    if(IsPathExist(rnd_file)){
-  	std::ostringstream problem(std::ostringstream::ate);
-        problem << rnd_file;
-        std::ifstream infile(problem.str().c_str(), std::ios::binary);
-        infile.read((char*)V, sizeof(T) * N * (nev + nex));
-        if(myRank == 0) std::cout << "ChASE loaded initial vector from local binary file: " <<  rnd_file << std::endl;
+    if(isPathExist(rnd_file)){
+      single.initRndVecs(true);
     }else{
-        for (std::size_t k = 0; k < N * (nev + nex); ++k){
-            V[k] = getRandomT<T>([&]() { return d(gen);  });
-        }
+      single.initRndVecs(false);
     }
   }
+
   config.SetTol(*tol);
   config.SetDeg(*deg);
   config.SetOpt(*opt == 'S');
@@ -689,43 +667,43 @@ void pschase_init_blockcyclic(MPI_Fint* fcomm, int* N, int *mbsize, int *nbsize,
 
 }
 
-void pzchase_(std::complex<double>* H, int *ldh, std::complex<double>* V, int *ldv,
+void pzchase_(std::complex<double>* H, int *ldh, std::complex<double>* V, 
                   double* ritzv, int* deg, double* tol, char* mode, char* opt) {
   chase_solve<std::complex<double>>(H, ldh, V, ritzv, deg, tol, mode, opt);
 }
 
-void pdchase_(double* H, int *ldh, double* V,  int *ldv, double* ritzv, int* deg, double* tol,
+void pdchase_(double* H, int *ldh, double* V,   double* ritzv, int* deg, double* tol,
                   char* mode, char* opt) {
   chase_solve<double>(H, ldh, V, ritzv, deg, tol, mode, opt);
 }
 
-void pcchase_(std::complex<float>* H, int *ldh, std::complex<float>* V,  int *ldv,
+void pcchase_(std::complex<float>* H, int *ldh, std::complex<float>* V,  
                   float* ritzv, int* deg, double* tol, char* mode, char* opt) {
   chase_solve<std::complex<float>>(H, ldh, V, ritzv, deg, tol, mode, opt);
 }
 
-void pschase_(float* H, int *ldh, float* V,  int *ldv, float* ritzv, int* deg, double* tol,
+void pschase_(float* H, int *ldh, float* V, float* ritzv, int* deg, double* tol,
                   char* mode, char* opt) {
   chase_solve<float>(H, ldh, V, ritzv, deg, tol, mode, opt);
 }
 
 #ifdef HAS_GPU
-void pzchase_mgpu_(std::complex<double>* H, int *ldh, std::complex<double>* V, int *ldv,
+void pzchase_mgpu_(std::complex<double>* H, int *ldh, std::complex<double>* V, 
                   double* ritzv, int* deg, double* tol, char* mode, char* opt) {
   chase_solve_mgpu<std::complex<double>>(H, ldh, V, ritzv, deg, tol, mode, opt);
 }
 
-void pdchase_mgpu_(double* H, int *ldh, double* V,  int *ldv, double* ritzv, int* deg, double* tol,
+void pdchase_mgpu_(double* H, int *ldh, double* V,   double* ritzv, int* deg, double* tol,
                   char* mode, char* opt) {
   chase_solve_mgpu<double>(H, ldh, V, ritzv, deg, tol, mode, opt);
 }
 
-void pcchase_mgpu_(std::complex<float>* H, int *ldh, std::complex<float>* V,  int *ldv,
+void pcchase_mgpu_(std::complex<float>* H, int *ldh, std::complex<float>* V,  
                   float* ritzv, int* deg, double* tol, char* mode, char* opt) {
   chase_solve_mgpu<std::complex<float>>(H, ldh, V, ritzv, deg, tol, mode, opt);
 }
 
-void pschase_mgpu_(float* H, int *ldh, float* V,  int *ldv, float* ritzv, int* deg, double* tol,
+void pschase_mgpu_(float* H, int *ldh, float* V,   float* ritzv, int* deg, double* tol,
                   char* mode, char* opt) {
   chase_solve_mgpu<float>(H, ldh, V, ritzv, deg, tol, mode, opt);
 }

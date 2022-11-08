@@ -119,7 +119,7 @@ int main(int argc, char** argv)
 #endif
 
   /*randomize V*/
-  single.initRndVecs();
+  single.initRndVecs(true);
 
   for (auto idx = 0; idx < idx_max; ++idx) {
     if (rank == 0) {

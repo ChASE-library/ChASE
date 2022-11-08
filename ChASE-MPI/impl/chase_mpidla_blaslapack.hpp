@@ -65,9 +65,8 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
   ~ChaseMpiDLABlaslapack() {}
   void initVecs() override{}  
   void initRndVecs() override {}
-  void initRndVecsFromFile(std::string rnd_file) override {
-
-  }
+  void initRndVecsFromFile(std::string rnd_file) override {}
+  
   /*! - For ChaseMpiDLABlaslapack, `preApplication` is implemented within ChaseMpiDLA.
       - **Parallelism on distributed-memory system SUPPORT**
       - For the meaning of this function, please visit ChaseMpiDLAInterface.
