@@ -513,8 +513,8 @@ int do_chase(ChASE_DriverProblemConfig& conf) {
 
     if (rank == 0) {
       std::cout << " ChASE timings: " << "\n";
-      performanceDecorator.GetPerfData().print(N);
-/*#ifdef PRINT_EIGENVALUES
+      performanceDecorator.GetPerfData().print();
+#ifdef PRINT_EIGENVALUES
       Base<T>* resid = single.GetResid();
       std::cout << "Finished Problem \n";
       std::cout << "Printing first 5 eigenvalues and residuals\n";
@@ -532,7 +532,7 @@ int do_chase(ChASE_DriverProblemConfig& conf) {
                   << "  |\n";
       std::cout << "\n\n\n";
 #endif 
-*/      
+      
     }    
   }
 

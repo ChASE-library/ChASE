@@ -558,7 +558,7 @@ class ChaseMpi : public chase::Chase<T> {
   //redundant across all MPI ranks.
   //if non-distributed ChASE is used, copying Ritz vectors directly to V
   void collectRitzVecs(T *V){
-    T *Vv = matrices_->get_V1();
+    T *Vv = matrices_.get_V1();
     dla_->C2V(Vv, 0, V, 0, nev_);    
   }
 

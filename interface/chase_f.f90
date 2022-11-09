@@ -334,7 +334,7 @@ MODULE chase_diag
   !> distributed CPU version ChASE for real scalar in double precision
   !> 
   INTERFACE
-     SUBROUTINE pdchase(h, ldh, v, ritzv, deg, tol, mode, opt ) BIND( c, name = 'pdchase_' )
+     SUBROUTINE pdchase(h, ldh, v, ldv, ritzv, deg, tol, mode, opt ) BIND( c, name = 'pdchase_' )
   !> Compute the first nev eigenpairs by ChASE
   !> This mechanism is built with user provided MPI grid shape and blocksize of block-cyclic distribution in row/column direction
   !> @param[in] h pointer to the local portion of the matrix to be diagonalized
@@ -347,7 +347,7 @@ MODULE chase_diag
   !> @param[int] opt determining if using internal optimization of Chebyshev polynomial degree. If `opt=S`, use, otherwise, no.    
        USE, INTRINSIC :: iso_c_binding
        REAL(c_double)        :: h(*), v(*)
-       INTEGER(c_int)                :: deg, ldh
+       INTEGER(c_int)                :: deg, ldh, ldv
        REAL(c_double)                :: ritzv(*), tol
        CHARACTER(len=1,kind=c_char)  :: mode, opt
      END SUBROUTINE pdchase
@@ -355,7 +355,7 @@ MODULE chase_diag
   !> distributed CPU version ChASE for complex scalar in double precision
   !> 
   INTERFACE
-     SUBROUTINE pzchase(h, ldh, v, ritzv, deg, tol, mode, opt ) BIND( c, name = 'pzchase_' )
+     SUBROUTINE pzchase(h, ldh, v, ldv, ritzv, deg, tol, mode, opt ) BIND( c, name = 'pzchase_' )
   !> Compute the first nev eigenpairs by ChASE
   !> This mechanism is built with user provided MPI grid shape and blocksize of block-cyclic distribution in row/column direction
   !> @param[in] h pointer to the local portion of the matrix to be diagonalized
@@ -368,7 +368,7 @@ MODULE chase_diag
   !> @param[int] opt determining if using internal optimization of Chebyshev polynomial degree. If `opt=S`, use, otherwise, no.    
        USE, INTRINSIC :: iso_c_binding
        COMPLEX(c_double_complex)     :: h(*), v(*)
-       INTEGER(c_int)                :: deg, ldh
+       INTEGER(c_int)                :: deg, ldh, ldv
        REAL(c_double)                :: ritzv(*), tol
        CHARACTER(len=1,kind=c_char)  :: mode, opt
      END SUBROUTINE pzchase
@@ -376,7 +376,7 @@ MODULE chase_diag
   !> distributed CPU version ChASE for real scalar in single precision
   !> 
   INTERFACE
-     SUBROUTINE pschase(h, ldh, v, ritzv, deg, tol, mode, opt ) BIND( c, name = 'pschase_' )
+     SUBROUTINE pschase(h, ldh, v, ldv, ritzv, deg, tol, mode, opt ) BIND( c, name = 'pschase_' )
   !> Compute the first nev eigenpairs by ChASE
   !> This mechanism is built with user provided MPI grid shape and blocksize of block-cyclic distribution in row/column direction
   !> @param[in] h pointer to the local portion of the matrix to be diagonalized
@@ -389,7 +389,7 @@ MODULE chase_diag
   !> @param[int] opt determining if using internal optimization of Chebyshev polynomial degree. If `opt=S`, use, otherwise, no.    
        USE, INTRINSIC :: iso_c_binding
        REAL(c_float)                 :: h(*), v(*)
-       INTEGER(c_int)                :: deg, ldh
+       INTEGER(c_int)                :: deg, ldh, ldv
        REAL(c_float)                 :: ritzv(*)
        REAL(c_double)                :: tol
        CHARACTER(len=1,kind=c_char)  :: mode, opt
@@ -398,7 +398,7 @@ MODULE chase_diag
   !> distributed CPU version ChASE for complex scalar in single precision
   !> 
   INTERFACE
-     SUBROUTINE pcchase(h, ldh, v, ritzv, deg, tol, mode, opt ) BIND( c, name = 'pcchase_' )
+     SUBROUTINE pcchase(h, ldh, v, ldv, ritzv, deg, tol, mode, opt ) BIND( c, name = 'pcchase_' )
   !> Compute the first nev eigenpairs by ChASE
   !> This mechanism is built with user provided MPI grid shape and blocksize of block-cyclic distribution in row/column direction
   !> @param[in] h pointer to the local portion of the matrix to be diagonalized
@@ -411,7 +411,7 @@ MODULE chase_diag
   !> @param[int] opt determining if using internal optimization of Chebyshev polynomial degree. If `opt=S`, use, otherwise, no.         
        USE, INTRINSIC :: iso_c_binding
        COMPLEX(c_float_complex)      :: h(*), v(*)
-       INTEGER(c_int)                :: deg, ldh
+       INTEGER(c_int)                :: deg, ldh, ldv
        REAL(c_float)                 :: ritzv(*)
        REAL(c_double)                :: tol
        CHARACTER(len=1,kind=c_char)  :: mode, opt
@@ -422,7 +422,7 @@ MODULE chase_diag
   !> distributed multi-GPU version ChASE for real scalar in double precision
   !> 
   INTERFACE
-     SUBROUTINE pdchase_mgpu(h, ldh, v, ritzv, deg, tol, mode, opt ) BIND( c, name = 'pdchase_mgpu_' )
+     SUBROUTINE pdchase_mgpu(h, ldh, v, ldv, ritzv, deg, tol, mode, opt ) BIND( c, name = 'pdchase_mgpu_' )
   !> Compute the first nev eigenpairs by ChASE
   !> This mechanism is built with user provided MPI grid shape and blocksize of block-cyclic distribution in row/column direction
   !> @param[in] h pointer to the local portion of the matrix to be diagonalized
@@ -435,7 +435,7 @@ MODULE chase_diag
   !> @param[int] opt determining if using internal optimization of Chebyshev polynomial degree. If `opt=S`, use, otherwise, no.         
        USE, INTRINSIC :: iso_c_binding
        REAL(c_double)        :: h(*), v(*)
-       INTEGER(c_int)                :: deg, ldh
+       INTEGER(c_int)                :: deg, ldh, ldv
        REAL(c_double)                :: ritzv(*), tol
        CHARACTER(len=1,kind=c_char)  :: mode, opt
      END SUBROUTINE pdchase_mgpu
@@ -443,7 +443,7 @@ MODULE chase_diag
   !> distributed multi-GPU version ChASE for complex scalar in double precision
   !> 
   INTERFACE
-     SUBROUTINE pzchase_mgpu(h, ldh, v, ritzv, deg, tol, mode, opt ) BIND( c, name = 'pzchase_mgpu_' )
+     SUBROUTINE pzchase_mgpu(h, ldh, v, ldv, ritzv, deg, tol, mode, opt ) BIND( c, name = 'pzchase_mgpu_' )
   !> Compute the first nev eigenpairs by ChASE
   !> This mechanism is built with user provided MPI grid shape and blocksize of block-cyclic distribution in row/column direction
   !> @param[in] h pointer to the local portion of the matrix to be diagonalized
@@ -456,7 +456,7 @@ MODULE chase_diag
   !> @param[int] opt determining if using internal optimization of Chebyshev polynomial degree. If `opt=S`, use, otherwise, no.         
        USE, INTRINSIC :: iso_c_binding
        COMPLEX(c_double_complex)     :: h(*), v(*)
-       INTEGER(c_int)                :: deg, ldh
+       INTEGER(c_int)                :: deg, ldh, ldv
        REAL(c_double)                :: ritzv(*), tol
        CHARACTER(len=1,kind=c_char)  :: mode, opt
      END SUBROUTINE pzchase_mgpu
@@ -464,7 +464,7 @@ MODULE chase_diag
   !> distributed multi-GPU version ChASE for real scalar in single precision
   !> 
   INTERFACE
-     SUBROUTINE pschase_mgpu(h, ldh, v, ritzv, deg, tol, mode, opt ) BIND( c, name = 'pschase_mgpu_' )
+     SUBROUTINE pschase_mgpu(h, ldh, v, ldv, ritzv, deg, tol, mode, opt ) BIND( c, name = 'pschase_mgpu_' )
   !> Compute the first nev eigenpairs by ChASE
   !> This mechanism is built with user provided MPI grid shape and blocksize of block-cyclic distribution in row/column direction
   !> @param[in] h pointer to the local portion of the matrix to be diagonalized
@@ -477,7 +477,7 @@ MODULE chase_diag
   !> @param[int] opt determining if using internal optimization of Chebyshev polynomial degree. If `opt=S`, use, otherwise, no.         
        USE, INTRINSIC :: iso_c_binding
        REAL(c_float)                 :: h(*), v(*)
-       INTEGER(c_int)                :: deg, ldh
+       INTEGER(c_int)                :: deg, ldh, ldv
        REAL(c_float)                 :: ritzv(*)
        REAL(c_double)                :: tol
        CHARACTER(len=1,kind=c_char)  :: mode, opt
@@ -486,7 +486,7 @@ MODULE chase_diag
   !> distributed multi-GPU version ChASE for complex scalar in single precision
   !> 
   INTERFACE
-     SUBROUTINE pcchase_mgpu(h, ldh, v, ritzv, deg, tol, mode, opt ) BIND( c, name = 'pcchase_mgpu_' )
+     SUBROUTINE pcchase_mgpu(h, ldh, v, ldv, ritzv, deg, tol, mode, opt ) BIND( c, name = 'pcchase_mgpu_' )
   !> Compute the first nev eigenpairs by ChASE
   !> This mechanism is built with user provided MPI grid shape and blocksize of block-cyclic distribution in row/column direction
   !> @param[in] h pointer to the local portion of the matrix to be diagonalized
@@ -499,7 +499,7 @@ MODULE chase_diag
   !> @param[int] opt determining if using internal optimization of Chebyshev polynomial degree. If `opt=S`, use, otherwise, no.         
        USE, INTRINSIC :: iso_c_binding
        COMPLEX(c_float_complex)      :: h(*), v(*)
-       INTEGER(c_int)                :: deg, ldh
+       INTEGER(c_int)                :: deg, ldh, ldv
        REAL(c_float)                 :: ritzv(*)
        REAL(c_double)                :: tol
        CHARACTER(len=1,kind=c_char)  :: mode, opt
