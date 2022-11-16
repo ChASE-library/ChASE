@@ -34,7 +34,12 @@ class ChaseMpiDLABlaslapackSeqInplace : public ChaseMpiDLAInterface<T> {
         maxblock_(nev_+nex_),
         V1_(matrices.get_V1()),
         V2_(matrices.get_V2()),
-        H_(matrices.get_H()) {}
+        H_(matrices.get_H()) {
+    
+	v0_.resize(N_);
+    	v1_.resize(N_);
+    	w_.resize(N_);	
+	}
 
   ~ChaseMpiDLABlaslapackSeqInplace() {}
   void initVecs() override{
@@ -411,10 +416,18 @@ class ChaseMpiDLABlaslapackSeqInplace : public ChaseMpiDLAInterface<T> {
     memcpy(V1_ + N_ * j, tmp, N_ * sizeof(T));
   }
 
-  void getLanczosBuffer(T **V1, T **V2, std::size_t *ld) override{
+  void getLanczosBuffer(T **V1, T **V2, std::size_t *ld, T **v0, T **v1, T **w) override{
     *V1 = V1_;
     *V2 = V2_;
     *ld = N_;
+
+    std::fill(v1_.begin(), v1_.end(), T(0));
+    std::fill(v0_.begin(), v0_.end(), T(0));
+    std::fill(w_.begin(), w_.end(), T(0));
+
+    *v0 = v0_.data();
+    *v1 = v1_.data();
+    *w = w_.data();     
   }
 
 
@@ -427,7 +440,9 @@ class ChaseMpiDLABlaslapackSeqInplace : public ChaseMpiDLAInterface<T> {
   T* H_;
   T* V1_;
   T* V2_;
-
+  std::vector<T> v0_;
+  std::vector<T> v1_;
+  std::vector<T> w_;
 };
 
 template <typename T>

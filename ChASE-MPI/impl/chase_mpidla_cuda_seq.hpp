@@ -50,6 +50,10 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
         V1_(matrices.get_V1()),
         V2_(matrices.get_V2()),
         H_(matrices.get_H()){
+    
+    v0_ = new T[N_];
+    v1_ = new T[N_];
+    w_  = new T[N_];
 
     cuda_exec(cudaSetDevice(0));
 
@@ -114,6 +118,8 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
   ~ChaseMpiDLACudaSeq() {
     if (d_V1_) cudaFree(d_V1_);
     if (d_V2_) cudaFree(d_V2_);
+    if (d_v1_) cudaFree(d_v1_);
+    if (d_v2_) cudaFree(d_v2_);    
     if (d_H_) cudaFree(d_H_);
     if (cublasH_) cublasDestroy(cublasH_);
     if (cusolverH_) cusolverDnDestroy(cusolverH_);
@@ -122,6 +128,9 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
     if (d_return_) cudaFree(d_return_);
     if (d_A_) cudaFree(d_A_);
     if (d_ritz_) cudaFree(d_ritz_);
+    delete[] v0_;
+    delete[] v1_;
+    delete[] w_;
   }
   void initVecs() override{
       t_lacpy('A', N_, nev_+nex_, V1_, N_, V2_ , N_);
@@ -436,15 +445,18 @@ std::memcpy(v2 + off2 * N_, v1 + off1 * N_, N_ * block *sizeof(T));
 
        std::swap(d_V1_, d_V2_);
   }
- 
-  void getLanczosBuffer(T **V1, T **V2, std::size_t *ld) override{
-      //*V1 = d_V1_;
-      //*V2 = d_V2_;
-      //*ld  = N_;
-      *V1 = V1_;
-      *V2 = V2_;
-      *ld = N_;
-  }
+
+  void getLanczosBuffer(T **V1, T **V2, std::size_t *ld, T **v0, T **v1, T **w) override{
+    *V1 = V1_;
+    *V2 = V2_;
+    *ld = N_;
+    memset(v0_, 0, sizeof(T) * N_);
+    memset(v1_, 0, sizeof(T) * N_);
+    memset(w_, 0, sizeof(T) * N_);
+    *v0 = v0_;
+    *v1 = v1_;
+    *w = w_;     
+  }  
 
   void syherk(char uplo, char trans, std::size_t n, std::size_t k, T* alpha, T* a, std::size_t lda, T* beta, T* c, std::size_t ldc)  override  {
   }
@@ -558,6 +570,9 @@ std::memcpy(v2 + off2 * N_, v1 + off1 * N_, N_ * block *sizeof(T));
   T* V2_;
   T* d_v1_;
   T* d_v2_;
+  T* v0_;
+  T* v1_;
+  T* w_;
   Base<T> *d_ritz_ = NULL;
   T* d_A_;
   cudaStream_t stream_, stream2_;

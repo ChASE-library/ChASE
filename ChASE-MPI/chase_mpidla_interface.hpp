@@ -344,7 +344,7 @@ class ChaseMpiDLAInterface {
   virtual void Resd(Base<T> *ritzv, Base<T> *resid, std::size_t locked, std::size_t unconverged) = 0;
   virtual void hhQR(std::size_t locked) = 0;
   virtual void cholQR(std::size_t locked) = 0;
-  virtual void getLanczosBuffer(T **V1, T **V2, std::size_t *ld) = 0;
+  virtual void getLanczosBuffer(T **V1, T **V2, std::size_t *ld, T **v0, T **v1, T **w) = 0;
 };
 }  // namespace matrixfree
 }  // namespace chase

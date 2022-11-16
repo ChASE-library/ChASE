@@ -42,6 +42,9 @@ class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T> {
 
         V12_ = matrices.get_V1();
         V22_ = matrices.get_V2();
+    	v0_.resize(N_);
+   	v1_.resize(N_);
+    	w_.resize(N_);
         }
 
   ChaseMpiDLABlaslapackSeq() = delete;
@@ -448,12 +451,19 @@ class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T> {
 
   }
 
-  void getLanczosBuffer(T **V1, T **V2, std::size_t *ld) override{
+  void getLanczosBuffer(T **V1, T **V2, std::size_t *ld, T **v0, T **v1, T **w) override{
     *V1 = V12_;
     *V2 = get_V1();
     *ld = N_;
-  }
 
+    std::fill(v1_.begin(), v1_.end(), T(0));
+    std::fill(v0_.begin(), v0_.end(), T(0));
+    std::fill(w_.begin(), w_.end(), T(0));
+
+    *v0 = v0_.data();
+    *v1 = v1_.data();
+    *w = w_.data();
+  }
 
  private:
   enum NextOp { cAb, bAc };
@@ -468,6 +478,9 @@ class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T> {
   std::unique_ptr<T> V1_; //C
   std::unique_ptr<T> V2_; //B
   std::unique_ptr<T> A_; //for CholeskyQR
+  std::vector<T> v0_;
+  std::vector<T> v1_;
+  std::vector<T> w_;
   T *V12_; //C1
   T *V22_; //B1
 };

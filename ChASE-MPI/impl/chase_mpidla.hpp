@@ -187,7 +187,9 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
         }
       }
     }
-
+    v0_.resize(N_);
+    v1_.resize(N_);
+    w_.resize(N_);
   }
   ~ChaseMpiDLA() {}
 
@@ -900,10 +902,18 @@ void Resd(Base<T> *ritzv, Base<T> *resid, std::size_t locked, std::size_t unconv
     delete[] tmp;
   }
 
-  void getLanczosBuffer(T **V1, T **V2, std::size_t *ld) override{
+  void getLanczosBuffer(T **V1, T **V2, std::size_t *ld, T **v0, T **v1, T **w) override{
     *V1 = C_;
     *V2 = C2_;
     *ld = m_;
+
+    std::fill(v1_.begin(), v1_.end(), T(0));
+    std::fill(v0_.begin(), v0_.end(), T(0));
+    std::fill(w_.begin(), w_.end(), T(0));
+
+    *v0 = v0_.data();
+    *v1 = v1_.data();
+    *w = w_.data();
   }
 
 
@@ -922,6 +932,9 @@ void Resd(Base<T> *ritzv, Base<T> *resid, std::size_t locked, std::size_t unconv
   T* C_;
   T *C2_;
   T *B2_;
+  std::vector<T> v0_;
+  std::vector<T> v1_;
+  std::vector<T> w_;
 
   std::vector<T> Buff_;
 #if !defined(HAS_SCALAPACK)

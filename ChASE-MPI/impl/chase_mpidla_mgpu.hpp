@@ -444,8 +444,7 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
 
   void Swap(std::size_t i, std::size_t j)override{}
   
-  void getLanczosBuffer(T **V1, T **V2, std::size_t *ld) override{}
-  
+ void getLanczosBuffer(T **V1, T **V2, std::size_t *ld, T **v0, T **v1, T **w) override{} 
 
  private:
   enum NextOp { cAb, bAc };
