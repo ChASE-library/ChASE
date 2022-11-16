@@ -50,24 +50,24 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
         V1_(matrices.get_V1()),
         V2_(matrices.get_V2()),
         H_(matrices.get_H()){
-    
-    v0_ = new T[N_];
-    v1_ = new T[N_];
-    w_  = new T[N_];
 
     cuda_exec(cudaSetDevice(0));
 
-    cuda_exec(cudaMalloc(&(d_V1_), N_ * (nev+nex) * sizeof(T)));
-    cuda_exec(cudaMalloc(&(d_V2_), N_ * (nev+nex) * sizeof(T)));
-    cuda_exec(cudaMalloc(&(d_H_),  N_ * N_ * sizeof(T)));
-    cuda_exec(cudaMalloc(&(d_v1_), N_ * sizeof(T)));
-    cuda_exec(cudaMalloc(&(d_v2_), N_ * sizeof(T)));
+    cuda_exec(cudaMalloc((void**)&(d_V1_), N_ * (nev_+nex_) * sizeof(T)));
+    cuda_exec(cudaMalloc((void**)&(d_V2_), N_ * (nev_+nex_) * sizeof(T)));
+    cuda_exec(cudaMalloc((void**)&(d_H_),  N_ * N_ * sizeof(T)));
     cuda_exec(cudaMalloc ((void**)&d_A_  , sizeof(T)*(nev_ + nex_)*(nev_ + nex_)));
     cuda_exec(cudaMalloc ((void**)&d_ritz_, sizeof(Base<T>) * (nev_ + nex_)));
+    cuda_exec(cudaMalloc((void**)&(v0_), N_ * sizeof(T)));
+    cuda_exec(cudaMalloc((void**)&(v1_), N_ * sizeof(T)));
+    cuda_exec(cudaMalloc((void**)&(w_), N_ * sizeof(T)));
 
     cublasCreate(&cublasH_);
     cusolverDnCreate(&cusolverH_);
     cuda_exec(cudaStreamCreate(&stream_));
+    cublasSetStream(cublasH_, stream_);
+    cusolverDnSetStream(cusolverH_, stream_);
+
     cuda_exec(cudaMalloc ((void**)&devInfo_, sizeof(int)));
     cuda_exec(cudaMalloc ((void**)&d_return_  , sizeof(T)*max_block_));
 
@@ -118,8 +118,6 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
   ~ChaseMpiDLACudaSeq() {
     if (d_V1_) cudaFree(d_V1_);
     if (d_V2_) cudaFree(d_V2_);
-    if (d_v1_) cudaFree(d_v1_);
-    if (d_v2_) cudaFree(d_v2_);    
     if (d_H_) cudaFree(d_H_);
     if (cublasH_) cublasDestroy(cublasH_);
     if (cusolverH_) cusolverDnDestroy(cusolverH_);
@@ -128,14 +126,14 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
     if (d_return_) cudaFree(d_return_);
     if (d_A_) cudaFree(d_A_);
     if (d_ritz_) cudaFree(d_ritz_);
-    delete[] v0_;
-    delete[] v1_;
-    delete[] w_;
+    if (v0_) cudaFree(v0_);
+    if (v1_) cudaFree(v1_);
+    if (w_) cudaFree(w_);
   }
   void initVecs() override{
-      t_lacpy('A', N_, nev_+nex_, V1_, N_, V2_ , N_);
+      //t_lacpy('A', N_, nev_+nex_, V1_, N_, V2_ , N_);
       cuda_exec(cudaMemcpy(d_V1_, V1_, (nev_ + nex_) * N_ * sizeof(T), cudaMemcpyHostToDevice));
-      cuda_exec(cudaMemcpy(d_V2_, V2_, (nev_ + nex_) * N_ * sizeof(T), cudaMemcpyHostToDevice));
+      cuda_exec(cudaMemcpy(d_V2_, d_V1_, (nev_ + nex_) * N_ * sizeof(T), cudaMemcpyDeviceToDevice));
       cuda_exec(cudaMemcpy(d_H_, H_, N_ * N_ * sizeof(T), cudaMemcpyHostToDevice));
   }  
   void initRndVecs() override {
@@ -156,13 +154,11 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
   }
   //host->device: v1 on host, v2 on device
   void V2C(T *v1, std::size_t off1, T *v2, std::size_t off2, std::size_t block) override {
-//      cuda_exec(cudaMemcpy(v2 + off2 * N_, v1 + off1 * N_, block * N_ * sizeof(T), cudaMemcpyHostToDevice));
-  std::memcpy(v2 + off2 * N_, v1 + off1 * N_, N_ * block *sizeof(T));  
+      cuda_exec(cudaMemcpy(v2 + off2 * N_, v1 + off1 * N_, block * N_ * sizeof(T), cudaMemcpyHostToDevice));
   }
   //device->host: v1 on device, v2 on host
   void C2V(T *v1, std::size_t off1, T *v2, std::size_t off2, std::size_t block) override {
-//      cuda_exec(cudaMemcpy(v2 + off2 * N_, v1 + off1 * N_, block * N_ * sizeof(T), cudaMemcpyDeviceToHost));
-std::memcpy(v2 + off2 * N_, v1 + off1 * N_, N_ * block *sizeof(T));
+      cuda_exec(cudaMemcpy(v2 + off2 * N_, v1 + off1 * N_, block * N_ * sizeof(T), cudaMemcpyDeviceToHost));
   }
 
   /*! - For ChaseMpiDLACudaSeq, the core of `preApplication` is implemented with `cudaMemcpyAsync, which copies `block` vectors from `V` on Host to `V1` on GPU device.
@@ -171,32 +167,21 @@ std::memcpy(v2 + off2 * N_, v1 + off1 * N_, N_ * block *sizeof(T));
   */
   void preApplication(T* V, std::size_t locked, std::size_t block) override {
     locked_ = locked;
-    std::memcpy(V1_, V + locked * N_, N_ * block * sizeof(T));
-    cuda_exec(cudaMemcpy(d_V1_, V + locked_ * N_, block * N_ * sizeof(T), cudaMemcpyHostToDevice));
-/*
-    cuda_exec(cudaMemcpyAsync(V1_, V + locked * n_, block * n_ * sizeof(T),
-                              cudaMemcpyHostToDevice, stream_));
-*/
-			      }
+    cuda_exec(cudaMemcpy(d_V1_, V + locked_ * N_, block * N_ * sizeof(T), cudaMemcpyDeviceToDevice));			      
+  }
 
   /*! - For ChaseMpiDLACudaSeq, the core of `preApplication` is implemented with `cudaMemcpyAsync, which copies `block` vectors from `V2` on Host to `V2_` on GPU device.
       - **Parallelism is NOT SUPPORT**
       - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
-  void preApplication(T* V1, T* V2, std::size_t locked, std::size_t block) override {
-/*    cuda_exec(cudaMemcpyAsync(V2_, V2 + locked * n_, block * n_ * sizeof(T),
-                              cudaMemcpyHostToDevice, stream_));
-
-    this->preApplication(V1, locked, block);
-*/
-  }
+  void preApplication(T* V1, T* V2, std::size_t locked, std::size_t block) override {}
 
   /*! - For ChaseMpiDLACudaSeq, `apply` is implemented with `cublasXgemm` provided by `cuBLAS`.
       - **Parallelism is SUPPORT within one GPU card**
       - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
   void apply(T alpha, T beta, std::size_t offset, std::size_t block,  std::size_t locked) override {
-      cublasTgemm(cublasH_, CUBLAS_OP_N, CUBLAS_OP_N,
+      cublas_status_ = cublasTgemm(cublasH_, CUBLAS_OP_N, CUBLAS_OP_N,
 		  N_, static_cast<std::size_t>(block), N_,
 		  &alpha,
 		  d_H_, N_,
@@ -204,6 +189,7 @@ std::memcpy(v2 + off2 * N_, v1 + off1 * N_, N_ * block *sizeof(T));
 		  &beta,
 		  d_V2_ + locked * N_ + offset * N_, N_ 
 		      );
+      assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
       std::swap(d_V1_, d_V2_);
   }
 
@@ -212,9 +198,6 @@ std::memcpy(v2 + off2 * N_, v1 + off1 * N_, N_ * block *sizeof(T));
       - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
   bool postApplication(T* V, std::size_t block, std::size_t locked) override {
-  //  cuda_exec(cudaMemcpyAsync(V + locked_ * n_, V1_, block * n_ * sizeof(T),
-    //                          cudaMemcpyDeviceToHost, stream_));
-    //cudaStreamSynchronize(stream_);
     return false;
   }
 
@@ -235,18 +218,15 @@ std::memcpy(v2 + off2 * N_, v1 + off1 * N_, N_ * block *sizeof(T));
   void applyVec(T* B, T* C) override {
       T One = T(1.0);
       T Zero = T(0.0);
-
-      cuda_exec(cudaMemcpy(d_v1_, B, N_ * sizeof(T), cudaMemcpyHostToDevice));
-      cuda_exec(cudaMemcpy(d_v2_, C, N_ * sizeof(T), cudaMemcpyHostToDevice));
-      cublasTgemm(cublasH_, CUBLAS_OP_N, CUBLAS_OP_N,
+      
+      cublas_status_ = cublasTgemm(cublasH_, CUBLAS_OP_N, CUBLAS_OP_N,
                   N_, 1, N_,
                   &One,
                   d_H_, N_,
-                  d_v1_, N_,
+                  B, N_,
                   &Zero,
-                  d_v2_, N_);
-
-      cuda_exec(cudaMemcpy(C, d_v2_, N_ * sizeof(T), cudaMemcpyDeviceToHost));
+                  C, N_);
+      assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
   }
 
   void get_off(std::size_t* xoff, std::size_t* yoff, std::size_t* xlen,
@@ -286,7 +266,11 @@ std::memcpy(v2 + off2 * N_, v1 + off1 * N_, N_ * block *sizeof(T));
           c_offs_l = c_offs_l_;
   }
 
-  void Start() override { copied_ = false; }
+  void Start() override {}
+  void End() override {
+      cuda_exec(cudaMemcpy(V1_, d_V1_, nev_ * N_ * sizeof(T), cudaMemcpyDeviceToHost));  
+  }
+
   /*!
     - For ChaseMpiDLACudaSeq, `lange` is implemented using `LAPACK` routine `xLANGE`.
     - **Parallelism is SUPPORT within node if multi-threading is actived**
@@ -302,7 +286,8 @@ std::memcpy(v2 + off2 * N_, v1 + off1 * N_, N_ * block *sizeof(T));
     - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
   void axpy(std::size_t N, T * alpha, T * x, std::size_t incx, T *y, std::size_t incy) override {
-      t_axpy(N, alpha, x, incx, y, incy);
+      cublas_status_ = cublasTaxpy(cublasH_, N, alpha, x, incx, y, incy);
+      assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
   }
 
   /*!
@@ -311,7 +296,8 @@ std::memcpy(v2 + off2 * N_, v1 + off1 * N_, N_ * block *sizeof(T));
     - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
   void scal(std::size_t N, T *a, T *x, std::size_t incx) override {
-      t_scal(N, a, x, incx);
+      cublas_status_ = cublasTscal(cublasH_, N, a, x, incx);
+      assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);      
   }
 
   /*!
@@ -320,7 +306,10 @@ std::memcpy(v2 + off2 * N_, v1 + off1 * N_, N_ * block *sizeof(T));
     - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
   Base<T> nrm2(std::size_t n, T *x, std::size_t incx) override {
-      return t_nrm2(n, x, incx);
+      Base<T> nrm;
+      cublas_status_ = cublasTnrm2(cublasH_, n, x, incx, &nrm);
+      assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
+      return nrm;
   }
 
   /*!
@@ -329,7 +318,10 @@ std::memcpy(v2 + off2 * N_, v1 + off1 * N_, N_ * block *sizeof(T));
     - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
   T dot(std::size_t n, T* x, std::size_t incx, T* y, std::size_t incy) override {
-      return t_dot(n, x, incx, y, incy);
+      T d;
+      cublas_status_ = cublasTdot(cublasH_, n, x, incx, y, incy, &d);
+      assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
+      return d;
   }
 
   /*!
@@ -342,9 +334,7 @@ std::memcpy(v2 + off2 * N_, v1 + off1 * N_, N_ * block *sizeof(T));
                          std::size_t n, std::size_t k, T* alpha,
                          T* a, std::size_t lda, T* b,
                          std::size_t ldb, T* beta, T* c, std::size_t ldc) override 
-  {
-      t_gemm(Layout, transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
-  }
+  {}
 
   /*!
    - For ChaseMpiDLACudaSeq, `stemr` with scalar being real and double precision, is implemented using `LAPACK` routine `DSTEMR`.
@@ -384,6 +374,7 @@ std::memcpy(v2 + off2 * N_, v1 + off1 * N_, N_ * block *sizeof(T));
   void RR(std::size_t block, std::size_t locked, Base<T> *ritzv) override {
       T One = T(1.0);
       T Zero = T(0.0);
+
       cublas_status_ = cublasTgemm(
           cublasH_,
           CUBLAS_OP_C,
@@ -413,7 +404,6 @@ std::memcpy(v2 + off2 * N_, v1 + off1 * N_, N_ * block *sizeof(T));
           d_A_,
           max_block_);
        assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
-       
        cusolver_status_ = cusolverDnTheevd(
 		       cusolverH_,
 		       CUSOLVER_EIG_MODE_VECTOR, 
@@ -447,16 +437,32 @@ std::memcpy(v2 + off2 * N_, v1 + off1 * N_, N_ * block *sizeof(T));
   }
 
   void getLanczosBuffer(T **V1, T **V2, std::size_t *ld, T **v0, T **v1, T **w) override{
-    *V1 = V1_;
-    *V2 = V2_;
+    *V1 = d_V1_;
+    *V2 = d_V2_;
     *ld = N_;
-    memset(v0_, 0, sizeof(T) * N_);
-    memset(v1_, 0, sizeof(T) * N_);
-    memset(w_, 0, sizeof(T) * N_);
+    cudaMemset(v0_, 0, sizeof(T) * N_);
+    cudaMemset(v1_, 0, sizeof(T) * N_);
+    cudaMemset(w_, 0, sizeof(T) * N_);
     *v0 = v0_;
     *v1 = v1_;
     *w = w_;     
   }  
+
+  void getLanczosBuffer2(T **v0, T **v1, T **w) override{
+    std::mt19937 gen(2342.0);
+    std::normal_distribution<> normal_distribution;
+    T *vtmp = new T[N_];
+    for (std::size_t k = 0; k < N_; ++k){
+      vtmp[k] = getRandomT<T>([&]() { return normal_distribution(gen); });
+    }
+    cuda_exec(cudaMemcpy(v1_, vtmp, N_ * sizeof(T), cudaMemcpyHostToDevice));
+    cudaMemset(v0_, 0, sizeof(T) * N_);
+    cudaMemset(w_, 0, sizeof(T) * N_);
+    *v0 = v0_;
+    *v1 = v1_;
+    *w = w_;
+    delete[] vtmp;
+  }
 
   void syherk(char uplo, char trans, std::size_t n, std::size_t k, T* alpha, T* a, std::size_t lda, T* beta, T* c, std::size_t ldc)  override  {
   }
@@ -495,13 +501,13 @@ std::memcpy(v2 + off2 * N_, v1 + off1 * N_, N_ * block *sizeof(T));
 
       for (std::size_t i = 0; i < unconverged; ++i) {
           beta = T(-ritzv[i]);
-      	  cublasTaxpy(cublasH_,                                      
+      	  cublas_status_ = cublasTaxpy(cublasH_,                                      
           	N_,                                      
          	&beta,                                   
           	(d_V1_ + locked * N_) + N_ * i, 1,   
           	(d_V2_ + locked * N_) + N_ * i, 1  
       );
-
+      assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
       cublas_status_ = cublasTnrm2(cublasH_, N_, (d_V2_ + locked * N_) + N_ * i, 1, &resid[i]);
       assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
     }
@@ -533,7 +539,6 @@ std::memcpy(v2 + off2 * N_, v1 + off1 * N_, N_ * block *sizeof(T));
             lwork_,
             devInfo_);
       assert(CUSOLVER_STATUS_SUCCESS == cusolver_status_);
-
       cuda_exec(cudaMemcpy(d_V1_, d_V2_, locked * N_ * sizeof(T), cudaMemcpyDeviceToDevice));
   }
 
@@ -542,11 +547,30 @@ std::memcpy(v2 + off2 * N_, v1 + off1 * N_, N_ * block *sizeof(T));
   }
 
   void Swap(std::size_t i, std::size_t j)override{
-      cuda_exec(cudaMemcpy(d_v1_, d_V1_ + N_ * i, N_ * sizeof(T), cudaMemcpyDeviceToDevice));
+      cuda_exec(cudaMemcpy(v1_, d_V1_ + N_ * i, N_ * sizeof(T), cudaMemcpyDeviceToDevice));
       cuda_exec(cudaMemcpy(d_V1_ + N_ * i, d_V1_ + N_ * j, N_ * sizeof(T), cudaMemcpyDeviceToDevice));
-      cuda_exec(cudaMemcpy(d_V1_ + N_ * j, d_v1_, N_ * sizeof(T), cudaMemcpyDeviceToDevice));
+      cuda_exec(cudaMemcpy(d_V1_ + N_ * j, v1_, N_ * sizeof(T), cudaMemcpyDeviceToDevice));
   }
-    
+
+  void LanczosDos(std::size_t idx, std::size_t m, T *ritzVc) override {
+      T alpha = T(1.0);
+      T beta = T(0.0);
+      cublasSetMatrix(m, idx, sizeof(T), ritzVc, m, d_A_, max_block_);
+      cublas_status_ = cublasTgemm(
+          cublasH_,
+          CUBLAS_OP_N,
+          CUBLAS_OP_N,
+          N_,
+          idx,
+          m,
+          &alpha,
+          d_V1_, N_,
+          d_A_, max_block_,
+          &beta,
+          d_V2_, N_);
+    assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
+    cuda_exec(cudaMemcpy(d_V1_, d_V2_, m * N_ * sizeof(T), cudaMemcpyDeviceToDevice));
+  } 
  private:
   std::size_t N_;
   std::size_t locked_;
@@ -568,8 +592,6 @@ std::memcpy(v2 + off2 * N_, v1 + off1 * N_, N_ * block *sizeof(T));
   T* H_;
   T* V1_;
   T* V2_;
-  T* d_v1_;
-  T* d_v2_;
   T* v0_;
   T* v1_;
   T* w_;

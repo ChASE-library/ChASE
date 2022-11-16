@@ -635,6 +635,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
   }
   int get_nprocs() const override {return matrix_properties_->get_nprocs();}
   void Start() override { dla_->Start(); }
+  void End() override { dla_->End(); }
 
   /*!
     - For ChaseMpiDLA, `lange` is implemented by calling the one in ChaseMpiDLABlaslapack and ChaseMpiDLAMultiGPU.
@@ -916,6 +917,36 @@ void Resd(Base<T> *ritzv, Base<T> *resid, std::size_t locked, std::size_t unconv
     *w = w_.data();
   }
 
+  void getLanczosBuffer2(T **v0, T **v1, T **w) override{
+    std::fill(v0_.begin(), v0_.end(), T(0));
+    std::fill(w_.begin(), w_.end(), T(0));
+    
+    std::mt19937 gen(2342.0);
+    std::normal_distribution<> normal_distribution;
+
+    for (std::size_t k = 0; k < N_; ++k){
+      v1_[k] = getRandomT<T>([&]() { return normal_distribution(gen); });
+    }
+
+    *v0 = v0_.data();
+    *v1 = v1_.data();
+    *w = w_.data();
+  }
+
+  void LanczosDos(std::size_t idx, std::size_t m, T *ritzVc) override {
+    T alpha = T(1.0);
+    T beta = T(0.0);
+    
+    this->gemm(CblasColMajor, CblasNoTrans, CblasNoTrans,
+           m_, idx, m,
+           &alpha,
+           C_, m_,
+           ritzVc, m,
+           &beta,
+           C2_, m_
+    );
+    std::memcpy(C_, C2_, m * m_ *sizeof(T));
+  }
 
  private:
   enum NextOp { cAb, bAc };

@@ -319,6 +319,7 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
   }
   int get_nprocs() const override {return matrix_properties_->get_nprocs();}
   void Start() override { copied_ = false; }
+  void End() override {}
 
   /*!
     - For ChaseMpiDLAMultiGPU, `lange` is implemented using `LAPACK` routine `xLANGE`.
@@ -444,7 +445,9 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
 
   void Swap(std::size_t i, std::size_t j)override{}
   
- void getLanczosBuffer(T **V1, T **V2, std::size_t *ld, T **v0, T **v1, T **w) override{} 
+  void getLanczosBuffer(T **V1, T **V2, std::size_t *ld, T **v0, T **v1, T **w) override{} 
+  void getLanczosBuffer2(T **v0, T **v1, T **w) override{}
+  void LanczosDos(std::size_t idx, std::size_t m, T *ritzVc) override {}
 
  private:
   enum NextOp { cAb, bAc };

@@ -37,10 +37,10 @@ int main() {
   int rank = 0;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-  std::size_t N = 11;
-  std::size_t nev = 5;
-  std::size_t nex = 2;
-  std::size_t idx_max = 1;
+  std::size_t N = 1001;
+  std::size_t nev = 100;
+  std::size_t nex = 10;
+  std::size_t idx_max = 5;
   Base<T> perturb = 1e-4;
 
   std::mt19937 gen(1337.0);
@@ -72,7 +72,7 @@ int main() {
   yoff = 0;
   xlen = N;
   ylen = N;
- 
+
   // Generate Clement matrix
   std::vector<T> H(N * N, T(0.0));
   for (auto i = 0; i < N; ++i) {

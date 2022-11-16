@@ -215,7 +215,7 @@ class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T> {
   }
 
   void Start() override {}
-
+  void End() override {}
   /*!
     - For ChaseMpiDLABlaslapackSeq, `lange` is implemented using `LAPACK` routine `xLANGE`.
     - **Parallelism is SUPPORT within node if multi-threading is actived**
@@ -464,6 +464,36 @@ class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T> {
     *v1 = v1_.data();
     *w = w_.data();
   }
+
+  void getLanczosBuffer2(T **v0, T **v1, T **w) override{
+    std::fill(v0_.begin(), v0_.end(), T(0));
+    std::fill(w_.begin(), w_.end(), T(0));
+    std::mt19937 gen(2342.0);
+    std::normal_distribution<> normal_distribution;
+
+    for (std::size_t k = 0; k < N_; ++k){
+      v1_[k] = getRandomT<T>([&]() { return normal_distribution(gen); });
+    }
+    *v0 = v0_.data();
+    *v1 = v1_.data();
+    *w = w_.data();
+  }
+
+  void LanczosDos(std::size_t idx, std::size_t m, T *ritzVc) override {
+    T alpha = T(1.0);
+    T beta = T(0.0);
+    
+    this->gemm(CblasColMajor, CblasNoTrans, CblasNoTrans,
+           N_, idx, m,
+           &alpha,
+           V12_, N_,
+           ritzVc, m,
+           &beta,
+           get_V1(), N_
+    );
+    std::memcpy(V12_, get_V1(), m * N_ *sizeof(T));
+  }
+
 
  private:
   enum NextOp { cAb, bAc };

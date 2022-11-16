@@ -181,6 +181,7 @@ class ChaseMpiDLAInterface {
 
   virtual int get_nprocs() const = 0;
   virtual void Start() = 0;
+  virtual void End() = 0;
 
   // other BLAS and LAPACK routines
   //! Perform a `LAPACK-like` function which returns the value of the 1-norm, Frobenius norm, infinity-norm, or the largest absolute value of any element of a general rectangular matrix `A` with scalar type `T`.
@@ -345,6 +346,8 @@ class ChaseMpiDLAInterface {
   virtual void hhQR(std::size_t locked) = 0;
   virtual void cholQR(std::size_t locked) = 0;
   virtual void getLanczosBuffer(T **V1, T **V2, std::size_t *ld, T **v0, T **v1, T **w) = 0;
+  virtual void getLanczosBuffer2(T **v0, T **v1, T **w) = 0;
+  virtual void LanczosDos(std::size_t idx, std::size_t m, T *ritzVc) = 0;
 };
 }  // namespace matrixfree
 }  // namespace chase
