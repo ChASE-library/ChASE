@@ -16,6 +16,9 @@ using BlasInt = int;
 using dcomplex = std::complex<double>;
 using scomplex = std::complex<float>;
 
+struct complex{ float r, i;}; //c complex
+struct zcomplex{ double r, i;}; //c complex
+
 extern "C" {
 
 ////////////
@@ -45,6 +48,23 @@ void FC_GLOBAL(caxpy, CAXPY)(const BlasInt* n, const scomplex* alpha,
 void FC_GLOBAL(zaxpy, ZAXPY)(const BlasInt* n, const dcomplex* alpha,
                              const dcomplex* x, const BlasInt* incx,
                              dcomplex* y, const BlasInt* incy);
+
+// xDOT
+float FC_GLOBAL(sdot, SDOT)(const BlasInt* n, const float* x,
+                            const BlasInt* incx, const float* y,
+                            const BlasInt* incy);
+
+double FC_GLOBAL(ddot, DDOT)(const BlasInt* n, const double* x,
+                            const BlasInt* incx, const double* y,
+                            const BlasInt* incy);
+
+complex FC_GLOBAL(cdotc, CDOTC)(const BlasInt* n, const scomplex* x,
+                            const BlasInt* incx, const scomplex* y,
+                            const BlasInt* incy);
+
+zcomplex FC_GLOBAL(zdotc, ZDOTC)(const BlasInt* n, const dcomplex* x,
+                            const BlasInt* incx, const dcomplex* y,
+                            const BlasInt* incy);
 
 // xDOT
 /*

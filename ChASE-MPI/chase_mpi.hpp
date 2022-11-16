@@ -366,7 +366,6 @@ class ChaseMpi : public chase::Chase<T> {
       dla_->applyVec(v1, w);
 
       alpha = dla_->dot(n, v1, 1, w, 1);
-
       alpha = -alpha;
       dla_->axpy(n, &alpha, v1, 1, w, 1);
       alpha = -alpha;
@@ -459,13 +458,10 @@ class ChaseMpi : public chase::Chase<T> {
     Base<T> real_alpha = dla_->nrm2(n, v1, 1);
     alpha = T(1 / real_alpha);
     dla_->scal(n, &alpha, v1, 1);
-
     for (std::size_t k = 0; k < m; k = k + 1) {
-      dla_->V2C(v1, 0, V1, k, 1);            
+      dla_->V2C(v1, 0, V1, k, 1);   
       dla_->applyVec(v1, w);
-
       alpha = dla_->dot(n, v1, 1, w, 1);
-
       alpha = -alpha;
       dla_->axpy(n, &alpha, v1, 1, w, 1);
       alpha = -alpha;
@@ -489,14 +485,12 @@ class ChaseMpi : public chase::Chase<T> {
 
       std::swap(v1, v0);
       std::swap(v1, w); 
-                                
     }
 
     dla_->preApplication(v1, 0, 1);
 
     delete[] w_;
     delete[] v0_;
-
 
     int notneeded_m;
     std::size_t vl, vu;
@@ -511,7 +505,6 @@ class ChaseMpi : public chase::Chase<T> {
     for (std::size_t k = 1; k < m; ++k) {
       Tau[k] = std::abs(ritzV[k * m]) * std::abs(ritzV[k * m]);
     }
-
     delete[] isuppz;
     delete[] d;
     delete[] e;
@@ -527,6 +520,7 @@ class ChaseMpi : public chase::Chase<T> {
   //! This member function implements the virtual one declared in Chase class.
   //! It estimates the spectral distribution of eigenvalues.
   void LanczosDos(std::size_t idx, std::size_t m, T *ritzVc) override {
+
     T alpha = T(1.0);
     T beta = T(0.0);
 

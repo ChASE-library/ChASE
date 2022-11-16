@@ -42,92 +42,129 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
   */  
   ChaseMpiDLACudaSeq(ChaseMpiMatrices<T>& matrices, std::size_t N,
                       std::size_t nev, std::size_t nex )
-      : N_(N), copied_(false), nev_(nev), nex_(nex), max_block_(nev+nex) {
+      : N_(N), 
+	copied_(false), 
+	nev_(nev), 
+	nex_(nex), 
+	max_block_(nev+nex), 
+        V1_(matrices.get_V1()),
+        V2_(matrices.get_V2()),
+        H_(matrices.get_H()){
+
+    cuda_exec(cudaSetDevice(0));
+
     cuda_exec(cudaMalloc(&(d_V1_), N_ * (nev+nex) * sizeof(T)));
     cuda_exec(cudaMalloc(&(d_V2_), N_ * (nev+nex) * sizeof(T)));
     cuda_exec(cudaMalloc(&(d_H_),  N_ * N_ * sizeof(T)));
-	
-    H_ = matrices.get_H();
-    V1_ = matrices.get_V1();
-    V2_ = matrices.get_V2();
-    /*
-    OrigH_ = matrices.get_H();
+    cuda_exec(cudaMalloc(&(d_v1_), N_ * sizeof(T)));
+    cuda_exec(cudaMalloc(&(d_v2_), N_ * sizeof(T)));
+    cuda_exec(cudaMalloc ((void**)&d_A_  , sizeof(T)*(nev_ + nex_)*(nev_ + nex_)));
+    cuda_exec(cudaMalloc ((void**)&d_ritz_, sizeof(Base<T>) * (nev_ + nex_)));
 
-    std::size_t pitch_host = n_ * sizeof(T);
-    std::size_t pitch_device = n_ * sizeof(T);
-
-    cuda_exec(cudaSetDevice(0));
-    cublasCreate(&handle_);
-    cuda_exec(cudaStreamCreate(&stream_));
-    cublasSetStream(handle_, stream_);
+    cublasCreate(&cublasH_);
     cusolverDnCreate(&cusolverH_);
-    cuda_exec(cudaStreamCreate(&stream2_));    
-    cusolverDnSetStream(cusolverH_, stream2_);
-    cuda_exec(cudaSetDevice(0));
+    cuda_exec(cudaStreamCreate(&stream_));
     cuda_exec(cudaMalloc ((void**)&devInfo_, sizeof(int)));
-    cuda_exec(cudaMalloc ((void**)&d_V_  , sizeof(T)*n_*max_block_));
     cuda_exec(cudaMalloc ((void**)&d_return_  , sizeof(T)*max_block_));
 
     int lwork_geqrf = 0;
     int lwork_orgqr = 0;
-    cuda_exec(cudaSetDevice(0));	
     cusolver_status_ = cusolverDnTgeqrf_bufferSize(
             cusolverH_,
-            n_,
+            N_,
 	    max_block_,
-            d_V_,
-            n_,
+            d_V1_,
+            N_,
             &lwork_geqrf);
     assert (cusolver_status_ == CUSOLVER_STATUS_SUCCESS);
     cuda_exec(cudaSetDevice(0));
     cusolver_status_ = cusolverDnTgqr_bufferSize(
             cusolverH_,
-            n_,
+            N_,
             max_block_,
             max_block_,
-            d_V_,
-            n_,
+            d_V1_,
+            N_,
             d_return_,
             &lwork_orgqr);
     assert (cusolver_status_ == CUSOLVER_STATUS_SUCCESS);
 
     lwork_ = (lwork_geqrf > lwork_orgqr)? lwork_geqrf : lwork_orgqr;
-    
-    cuda_exec(cudaSetDevice(0));
+   
+    int lwork_heevd = 0;
+    cusolver_status_ = cusolverDnTheevd_bufferSize(
+		    cusolverH_,
+		    CUSOLVER_EIG_MODE_VECTOR, 
+		    CUBLAS_FILL_MODE_LOWER, 
+		    max_block_, 
+		    d_A_, 
+		    max_block_, 
+		    d_ritz_, 
+		    &lwork_heevd);
+
+    if(lwork_heevd > lwork_){
+        lwork_ = lwork_heevd;
+    }
+
     cuda_exec(cudaMalloc((void**)&d_work_, sizeof(T)*lwork_));
-  */
+
   }
 
 
   ~ChaseMpiDLACudaSeq() {
-/*    cudaFree(V1_);
-    cudaFree(V2_);
-    cudaFree(H_);
-    cudaStreamDestroy(stream_);
-    cudaStreamDestroy(stream2_);
-    cublasDestroy(handle_);
-    cusolverDnDestroy(cusolverH_);
+    if (d_V1_) cudaFree(d_V1_);
+    if (d_V2_) cudaFree(d_V2_);
+    if (d_H_) cudaFree(d_H_);
+    if (cublasH_) cublasDestroy(cublasH_);
+    if (cusolverH_) cusolverDnDestroy(cusolverH_);
+    if (d_work_) cudaFree(d_work_);
     if (devInfo_) cudaFree(devInfo_);
-    if (d_V_) cudaFree(d_V_);
     if (d_return_) cudaFree(d_return_);
-    if (d_work_) cudaFree(d_work_);	
-*/
+    if (d_A_) cudaFree(d_A_);
+    if (d_ritz_) cudaFree(d_ritz_);
   }
-  void initVecs() override{}  
-  void initRndVecs() override {}
+  void initVecs() override{
+      t_lacpy('A', N_, nev_+nex_, V1_, N_, V2_ , N_);
+      cuda_exec(cudaMemcpy(d_V1_, V1_, (nev_ + nex_) * N_ * sizeof(T), cudaMemcpyHostToDevice));
+      cuda_exec(cudaMemcpy(d_V2_, V2_, (nev_ + nex_) * N_ * sizeof(T), cudaMemcpyHostToDevice));
+      cuda_exec(cudaMemcpy(d_H_, H_, N_ * N_ * sizeof(T), cudaMemcpyHostToDevice));
+  }  
+  void initRndVecs() override {
+      std::mt19937 gen(1337.0);
+      std::normal_distribution<> d;
+      for(auto j = 0; j < (nev_ + nex_); j++){
+          for(auto i = 0; i < N_; i++){
+              V1_[i + j * N_] = getRandomT<T>([&]() { return d(gen);});    
+          }           
+      }   
+  }
+
   void initRndVecsFromFile(std::string rnd_file) override {
-
+      std::ostringstream problem(std::ostringstream::ate);
+      problem << rnd_file;
+      std::ifstream infile(problem.str().c_str(), std::ios::binary);    
+      infile.read(reinterpret_cast<char*>(V1_), N_ * (nev_+nex_) * sizeof(T));
   }
-  void V2C(T *v1, std::size_t off1, T *v2, std::size_t off2, std::size_t block) override {}
-
-  void C2V(T *v1, std::size_t off1, T *v2, std::size_t off2, std::size_t block) override {}
+  //host->device: v1 on host, v2 on device
+  void V2C(T *v1, std::size_t off1, T *v2, std::size_t off2, std::size_t block) override {
+//      cuda_exec(cudaMemcpy(v2 + off2 * N_, v1 + off1 * N_, block * N_ * sizeof(T), cudaMemcpyHostToDevice));
+  std::memcpy(v2 + off2 * N_, v1 + off1 * N_, N_ * block *sizeof(T));  
+  }
+  //device->host: v1 on device, v2 on host
+  void C2V(T *v1, std::size_t off1, T *v2, std::size_t off2, std::size_t block) override {
+//      cuda_exec(cudaMemcpy(v2 + off2 * N_, v1 + off1 * N_, block * N_ * sizeof(T), cudaMemcpyDeviceToHost));
+std::memcpy(v2 + off2 * N_, v1 + off1 * N_, N_ * block *sizeof(T));
+  }
 
   /*! - For ChaseMpiDLACudaSeq, the core of `preApplication` is implemented with `cudaMemcpyAsync, which copies `block` vectors from `V` on Host to `V1` on GPU device.
       - **Parallelism is NOT SUPPORT**
       - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
   void preApplication(T* V, std::size_t locked, std::size_t block) override {
-/*    locked_ = locked;
+    locked_ = locked;
+    std::memcpy(V1_, V + locked * N_, N_ * block * sizeof(T));
+    cuda_exec(cudaMemcpy(d_V1_, V + locked_ * N_, block * N_ * sizeof(T), cudaMemcpyHostToDevice));
+/*
     cuda_exec(cudaMemcpyAsync(V1_, V + locked * n_, block * n_ * sizeof(T),
                               cudaMemcpyHostToDevice, stream_));
 */
@@ -150,14 +187,15 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
       - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
   void apply(T alpha, T beta, std::size_t offset, std::size_t block,  std::size_t locked) override {
- /*   cublasTgemm(handle_, CUBLAS_OP_N, CUBLAS_OP_N,  //
-                n_, block, n_,                      //
-                &alpha,                             //
-                H_, n_,                             //
-                V1_ + offset * n_, n_,              //
-                &beta,                              //
-                V2_ + offset * n_, n_);             //
-    std::swap(V1_, V2_);*/
+      cublasTgemm(cublasH_, CUBLAS_OP_N, CUBLAS_OP_N,
+		  N_, static_cast<std::size_t>(block), N_,
+		  &alpha,
+		  d_H_, N_,
+		  d_V1_ + offset * N_ + locked * N_, N_,
+		  &beta,
+		  d_V2_ + locked * N_ + offset * N_, N_ 
+		      );
+      std::swap(d_V1_, d_V2_);
   }
 
   /*! - For ChaseMpiDLACudaSeq, the core of `postApplication` is implemented with `cudaMemcpyAsync, which copies `block` vectors from `V1_` on GPU device to `V` on Host.
@@ -176,17 +214,7 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
       - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
   void shiftMatrix(T c, bool isunshift = false) override {
-    // for (std::size_t i = 0; i < n_; ++i) {
-    //   OrigH_[i + i * n_] += c;
-    // }
-/*
-    if (!copied_) {
-      cuda_exec(cudaMemcpyAsync(H_, OrigH_, n_ * n_ * sizeof(T),
-                                cudaMemcpyHostToDevice, stream_));
-      copied_ = true;
-    }
-
-    chase_shift_matrix(H_, n_, std::real(c), &stream_);*/
+    chase_shift_matrix(d_H_, N_, std::real(c), &stream_);
   }
 
   void asynCxHGatherC(std::size_t locked, std::size_t block) override {}
@@ -196,15 +224,20 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
       - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
   void applyVec(T* B, T* C) override {
-/*    T alpha = T(1.0);
-    T beta = T(0.0);
+      T One = T(1.0);
+      T Zero = T(0.0);
 
-    t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, n_, 1, n_, &alpha, OrigH_,
-           n_, B, n_, &beta, C, n_);
-*/
-    // this->preApplication(B, 0, 1);
-    // this->apply(alpha, beta, 0, 1);
-    // this->postApplication(C, 1);
+      cuda_exec(cudaMemcpy(d_v1_, B, N_ * sizeof(T), cudaMemcpyHostToDevice));
+      cuda_exec(cudaMemcpy(d_v2_, C, N_ * sizeof(T), cudaMemcpyHostToDevice));
+      cublasTgemm(cublasH_, CUBLAS_OP_N, CUBLAS_OP_N,
+                  N_, 1, N_,
+                  &One,
+                  d_H_, N_,
+                  d_v1_, N_,
+                  &Zero,
+                  d_v2_, N_);
+
+      cuda_exec(cudaMemcpy(C, d_v2_, N_ * sizeof(T), cudaMemcpyDeviceToHost));
   }
 
   void get_off(std::size_t* xoff, std::size_t* yoff, std::size_t* xlen,
@@ -340,61 +373,78 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
   */  
 
   void RR(std::size_t block, std::size_t locked, Base<T> *ritzv) override {
- /*     T One = T(1.0);
+      T One = T(1.0);
       T Zero = T(0.0);
-
-        T *A = new T[block * block];
-
-        T *d_A_ = NULL;
-        T *d_W_ = NULL;
-
-        cudaSetDevice(0);
-	cuda_exec(cudaMalloc ((void**)&d_W_, sizeof(T) * N * block));
-        cuda_exec(cudaMalloc ((void**)&d_A_, sizeof(T) * block * block));
-	cuda_exec(cudaMemcpy(d_V_, approxV + locked * N, sizeof(T)* N * block, cudaMemcpyHostToDevice));
-        cuda_exec(cudaMemcpy(d_W_, workspace + locked * N, sizeof(T)* N * block, cudaMemcpyHostToDevice));
-	cublas_status_ = cublasTgemm(
-	  handle_,
-	  CUBLAS_OP_C,
-	  CUBLAS_OP_N,
-	  block,
-	  block,
-	  N,
-	  &One,
-          d_V_, N,
-          d_W_, N,
+      cublas_status_ = cublasTgemm(
+          cublasH_,
+          CUBLAS_OP_C,
+          CUBLAS_OP_N,
+          N_,
+          block,
+          N_,
+          &One,
+          d_H_, N_,
+          d_V1_ + locked * N_, N_,
           &Zero,
-          d_A_, 
-	  block);
-        assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
+          d_V2_ + locked * N_, N_);
+	
+      assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
 
-        cuda_exec(cudaMemcpy(A, d_A_, sizeof(T)* block * block, cudaMemcpyDeviceToHost));	
-        t_heevd(LAPACK_COL_MAJOR, 'V', 'L', block, A, block, ritzv);
-        cuda_exec(cudaMemcpy(d_A_, A, sizeof(T)* block * block, cudaMemcpyHostToDevice));
+      cublas_status_ = cublasTgemm(
+          cublasH_,
+          CUBLAS_OP_C,
+          CUBLAS_OP_N,
+          block,
+          block,
+          N_,
+          &One,
+          d_V2_ + locked * N_, N_,
+          d_V1_ + locked * N_, N_,
+          &Zero,
+          d_A_,
+          max_block_);
+       assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
+       
+       cusolver_status_ = cusolverDnTheevd(
+		       cusolverH_,
+		       CUSOLVER_EIG_MODE_VECTOR, 
+		       CUBLAS_FILL_MODE_LOWER, 
+		       block, 
+		       d_A_, 
+		       max_block_, 
+		       d_ritz_, 
+		       d_work_, 
+		       lwork_, 
+		       devInfo_);
+       assert (cusolver_status_ == CUSOLVER_STATUS_SUCCESS);
 
-      	cublas_status_ = cublasTgemm(
-            handle_,
-            CUBLAS_OP_N,
-            CUBLAS_OP_N,
-            N,
-            block,
-            block,
-            &One,
-            d_V_, N,
-            d_A_, block,
-            &Zero,
-            d_W_,
-            N);
-      	assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
-  	cuda_exec(cudaMemcpy(approxV + locked * N, d_V_, sizeof(T)* N * block, cudaMemcpyDeviceToHost));
-      	cuda_exec(cudaMemcpy(workspace + locked * N, d_W_, sizeof(T)* N * block, cudaMemcpyDeviceToHost));
+      cuda_exec(cudaMemcpy(ritzv, d_ritz_, block * sizeof(Base<T>), cudaMemcpyDeviceToHost));
 
-      	if (d_A_) cudaFree(d_A_);
-      	if (d_W_) cudaFree(d_W_);
-*/	
+      cublas_status_ = cublasTgemm(
+	  cublasH_,
+          CUBLAS_OP_N,
+          CUBLAS_OP_N,
+          N_,
+          block,
+          block,
+          &One,
+          d_V1_ + locked * N_, N_,
+          d_A_, max_block_,
+          &Zero,
+          d_V2_ + locked * N_, N_);
+       assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
+
+       std::swap(d_V1_, d_V2_);
   }
  
-  void getLanczosBuffer(T **V1, T **V2, std::size_t *ld) override{}
+  void getLanczosBuffer(T **V1, T **V2, std::size_t *ld) override{
+      //*V1 = d_V1_;
+      //*V2 = d_V2_;
+      //*ld  = N_;
+      *V1 = V1_;
+      *V2 = V2_;
+      *ld = N_;
+  }
 
   void syherk(char uplo, char trans, std::size_t n, std::size_t k, T* alpha, T* a, std::size_t lda, T* beta, T* c, std::size_t ldc)  override  {
   }
@@ -414,16 +464,76 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
   }
 
   void Resd(Base<T> *ritzv, Base<T> *resid, std::size_t locked, std::size_t unconverged) override{
+      T alpha = T(1.0);
+      T beta = T(0.0);
 
+      cublas_status_ = cublasTgemm(
+          cublasH_,
+          CUBLAS_OP_C,
+          CUBLAS_OP_N,
+          N_,
+          unconverged,
+          N_,
+          &alpha,
+          d_H_, N_,
+          d_V1_ + locked * N_, N_,
+          &beta,
+          d_V2_ + locked * N_, N_);
+      assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);      
+
+      for (std::size_t i = 0; i < unconverged; ++i) {
+          beta = T(-ritzv[i]);
+      	  cublasTaxpy(cublasH_,                                      
+          	N_,                                      
+         	&beta,                                   
+          	(d_V1_ + locked * N_) + N_ * i, 1,   
+          	(d_V2_ + locked * N_) + N_ * i, 1  
+      );
+
+      cublas_status_ = cublasTnrm2(cublasH_, N_, (d_V2_ + locked * N_) + N_ * i, 1, &resid[i]);
+      assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
+    }
   }
 
   void hhQR(std::size_t locked)override{
+      auto nevex = nev_ + nex_;
+      cuda_exec(cudaMemcpy(d_V2_, d_V1_, locked * N_ * sizeof(T), cudaMemcpyDeviceToDevice));
+      cusolver_status_ = cusolverDnTgeqrf(
+            cusolverH_,
+            N_,
+            nevex,
+            d_V1_,
+            N_,
+            d_return_,
+            d_work_,
+            lwork_,
+            devInfo_);
+      assert(CUSOLVER_STATUS_SUCCESS == cusolver_status_);
+      cusolver_status_ = cusolverDnTgqr(
+            cusolverH_,
+            N_,
+            nevex,
+            nevex,
+            d_V1_,
+            N_,
+            d_return_,
+            d_work_,
+            lwork_,
+            devInfo_);
+      assert(CUSOLVER_STATUS_SUCCESS == cusolver_status_);
+
+      cuda_exec(cudaMemcpy(d_V1_, d_V2_, locked * N_ * sizeof(T), cudaMemcpyDeviceToDevice));
   }
 
   void cholQR(std::size_t locked) override{
+      this->hhQR(locked);
   }
 
-  void Swap(std::size_t i, std::size_t j)override{}
+  void Swap(std::size_t i, std::size_t j)override{
+      cuda_exec(cudaMemcpy(d_v1_, d_V1_ + N_ * i, N_ * sizeof(T), cudaMemcpyDeviceToDevice));
+      cuda_exec(cudaMemcpy(d_V1_ + N_ * i, d_V1_ + N_ * j, N_ * sizeof(T), cudaMemcpyDeviceToDevice));
+      cuda_exec(cudaMemcpy(d_V1_ + N_ * j, d_v1_, N_ * sizeof(T), cudaMemcpyDeviceToDevice));
+  }
     
  private:
   std::size_t N_;
@@ -437,7 +547,6 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
   T *d_return_ = NULL;
   T *d_work_ = NULL;
   int lwork_ = 0;
-  
   cusolverStatus_t cusolver_status_ = CUSOLVER_STATUS_SUCCESS;
   cublasStatus_t cublas_status_ = CUBLAS_STATUS_SUCCESS;
 
@@ -447,8 +556,12 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
   T* H_;
   T* V1_;
   T* V2_;
+  T* d_v1_;
+  T* d_v2_;
+  Base<T> *d_ritz_ = NULL;
+  T* d_A_;
   cudaStream_t stream_, stream2_;
-  cublasHandle_t handle_;
+  cublasHandle_t cublasH_;
   cusolverDnHandle_t cusolverH_;
   bool copied_;
 

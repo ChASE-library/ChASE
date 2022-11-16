@@ -621,6 +621,55 @@ cublasStatus_t cublasTaxpy(cublasHandle_t handle, int n,
                      reinterpret_cast<const cuDoubleComplex*>(x), incx,
                      reinterpret_cast<cuDoubleComplex*>(y), incy);
 }
+
+cublasStatus_t cublasTnrm2(cublasHandle_t handle, int n, const float* x, int incx, float *result){
+    return cublasSnrm2(handle, n, x, incx, result);
+}
+
+cublasStatus_t cublasTnrm2(cublasHandle_t handle, int n, const double* x, int incx, double *result){
+    return cublasDnrm2(handle, n, x, incx, result);
+}
+
+cublasStatus_t cublasTnrm2(cublasHandle_t handle, int n, const std::complex<float>* x, int incx, float *result){
+    return cublasScnrm2(handle, n, reinterpret_cast<const cuComplex*>(x), incx, result);
+}
+
+cublasStatus_t cublasTnrm2(cublasHandle_t handle, int n, const std::complex<double>* x, int incx, double *result){
+    return cublasDznrm2(handle, n, reinterpret_cast<const cuDoubleComplex*>(x), incx, result);
+}
+
+cublasStatus_t cublasTdot(cublasHandle_t handle, int n, const float* x, int incx,  const float* y, int incy, float *result){
+    return cublasSdot(handle, n, x, incx, y, incy, result);
+}
+
+cublasStatus_t cublasTdot(cublasHandle_t handle, int n, const double* x, int incx,  const double* y, int incy, double *result){
+    return cublasDdot(handle, n, x, incx, y, incy, result);
+}
+
+cublasStatus_t cublasTdot(cublasHandle_t handle, int n, const std::complex<float>* x, int incx,  const std::complex<float>* y, int incy, std::complex<float>*result){
+    return cublasCdotc(handle, n, reinterpret_cast<const cuComplex*>(x), incx, reinterpret_cast<const cuComplex*>(y), incy, reinterpret_cast<cuComplex*>(result));
+}
+
+cublasStatus_t cublasTdot(cublasHandle_t handle, int n, const std::complex<double>* x, int incx,  const std::complex<double>* y, int incy, std::complex<double>*result){
+    return cublasZdotc(handle, n, reinterpret_cast<const cuDoubleComplex*>(x), incx, reinterpret_cast<const cuDoubleComplex*>(y), incy, reinterpret_cast<cuDoubleComplex*>(result));
+}
+
+cublasStatus_t cublasTscal(cublasHandle_t handle, int n, const float *alpha, float *x, int incx){
+    return cublasSscal(handle, n, alpha, x, incx);
+}
+
+cublasStatus_t cublasTscal(cublasHandle_t handle, int n, const double *alpha, double *x, int incx){
+    return cublasDscal(handle, n, alpha, x, incx);
+}
+
+cublasStatus_t cublasTscal(cublasHandle_t handle, int n, const std::complex<float> *alpha, std::complex<float> *x, int incx){
+    return cublasCscal(handle, n, reinterpret_cast<const cuComplex*>(alpha), reinterpret_cast<cuComplex*>(x), incx);
+}
+
+cublasStatus_t cublasTscal(cublasHandle_t handle, int n, const std::complex<double> *alpha, std::complex<double> *x, int incx){
+    return cublasZscal(handle, n, reinterpret_cast<const cuDoubleComplex*>(alpha), reinterpret_cast<cuDoubleComplex*>(x), incx);
+}
+
 #endif
 /*
 void shiftMatrixGPU(float* A, int lda, int n, float shift, int offset,
