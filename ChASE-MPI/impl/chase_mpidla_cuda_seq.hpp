@@ -110,6 +110,19 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
         lwork_ = lwork_heevd;
     }
 
+    int lwork_potrf = 0;
+    cusolver_status_ = cusolverDnTpotrf_bufferSize(
+		    cusolverH_,
+		    CUBLAS_FILL_MODE_UPPER,
+		    nev_ + nex_,
+		    d_A_,
+		    nev_ + nex_,
+		    &lwork_potrf
+		    );
+
+    if(lwork_potrf > lwork_){
+        lwork_ = lwork_potrf;
+    }
     cuda_exec(cudaMalloc((void**)&d_work_, sizeof(T)*lwork_));
 
   }
@@ -268,7 +281,7 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
 
   void Start() override {}
   void End() override {
-      cuda_exec(cudaMemcpy(V1_, d_V1_, nev_ * N_ * sizeof(T), cudaMemcpyDeviceToHost));  
+      cuda_exec(cudaMemcpy(V1_, d_V1_, max_block_ * N_ * sizeof(T), cudaMemcpyDeviceToHost));  
   }
 
   /*!
@@ -543,7 +556,72 @@ class ChaseMpiDLACudaSeq : public ChaseMpiDLAInterface<T> {
   }
 
   void cholQR(std::size_t locked) override{
-      this->hhQR(locked);
+        this->hhQR(locked);
+/*
+  	auto nevex = nev_ + nex_;
+  	int info = -1;
+	T one = T(1.0);
+	T zero = T(0.0);
+	Base<T> One = Base<T>(1.0);
+	Base<T> Zero = Base<T>(0.0);
+	cuda_exec(cudaMemcpy(d_V2_, d_V1_, locked * N_ * sizeof(T), cudaMemcpyDeviceToDevice));
+	if(sizeof(T) == sizeof(Base<T>)){
+	    cublas_status_ = cublasTsyherk(cublasH_, CUBLAS_FILL_MODE_UPPER, CUBLAS_OP_T, nevex, N_, &One, 
+						d_V1_, N_, &Zero, d_A_, nev_ + nex_);
+	    assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
+	}
+	else{
+            cublas_status_ = cublasTsyherk(cublasH_, CUBLAS_FILL_MODE_UPPER, CUBLAS_OP_C, nevex, N_, &One,
+                                                d_V1_, N_, &Zero, d_A_, nev_ + nex_);
+            assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);	
+	}
+        
+	cusolverDnTpotrf(cusolverH_, CUBLAS_FILL_MODE_UPPER, nev_+nex_, d_A_,
+                                   	nev_+nex_, d_work_, lwork_, devInfo_);
+	assert(CUSOLVER_STATUS_SUCCESS == cusolver_status_);
+        cuda_exec(cudaMemcpy(&info, devInfo_, 1 * sizeof(int), cudaMemcpyDeviceToHost));
+	if(info == 0){
+	    cublas_status_ = cublasTtrsm(cublasH_, CUBLAS_SIDE_RIGHT, CUBLAS_FILL_MODE_UPPER,
+                                             CUBLAS_OP_N, CUBLAS_DIAG_NON_UNIT, N_, nevex, &one, d_A_,
+                                             nev_+nex_, d_V1_, N_);
+            assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
+      	    int choldeg = 2;
+      	    char *choldegenv;
+            choldegenv = getenv("CHASE_CHOLQR_DEGREE");
+            if(choldegenv){
+		choldeg = std::atoi(choldegenv);
+            }
+#ifdef CHASE_OUTPUT   
+      	    std::cout << "choldegee: " << choldeg << std::endl;
+#endif
+	    for(auto i = 0; i < choldeg - 1; i++){
+        	if(sizeof(T) == sizeof(Base<T>)){
+            	    cublas_status_ = cublasTsyherk(cublasH_, CUBLAS_FILL_MODE_UPPER, CUBLAS_OP_T, nevex, N_, &One,
+                                                d_V1_, N_, &Zero, d_A_, nev_ + nex_);
+                    assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
+        	}
+        	else{
+            	    cublas_status_ = cublasTsyherk(cublasH_, CUBLAS_FILL_MODE_UPPER, CUBLAS_OP_C, nevex, N_, &One,
+                                                d_V1_, N_, &Zero, d_A_, nev_ + nex_);
+                    assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
+                }
+		cusolverDnTpotrf(cusolverH_, CUBLAS_FILL_MODE_UPPER, nev_+nex_, d_A_,
+                                        nev_+nex_, d_work_, lwork_, devInfo_);
+      		assert(CUSOLVER_STATUS_SUCCESS == cusolver_status_);
+		
+		cublas_status_ = cublasTtrsm(cublasH_, CUBLAS_SIDE_RIGHT, CUBLAS_FILL_MODE_UPPER,
+                                             CUBLAS_OP_N, CUBLAS_DIAG_NON_UNIT, N_, nevex, &one, d_A_,
+                                             nev_+nex_, d_V1_, N_);
+            	assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
+	    }
+	    cuda_exec(cudaMemcpy(d_V1_, d_V2_, locked * N_ * sizeof(T), cudaMemcpyDeviceToDevice));
+	}else{
+#ifdef CHASE_OUTPUT  
+ 	std::cout << "cholQR failed because of ill-conditioned vector, use Householder QR instead" << std::endl;
+#endif
+	this->hhQR(locked);	
+	}
+*/	
   }
 
   void Swap(std::size_t i, std::size_t j)override{
