@@ -24,9 +24,6 @@ class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T> {
   //! @param matrix_properties: it is an object of ChaseMpiProperties, which defines the MPI environment and data distribution scheme in ChASE-MPI.
   ChaseMpiDLABlaslapack(ChaseMpiProperties<T>* matrix_properties, ChaseMpiMatrices<T>& matrices) {
     // TODO
-    // ldc_ = matrix_properties->get_ldc();
-    // ldb_ = matrix_properties->get_ldb();
-
     n_ = matrix_properties->get_n();
     m_ = matrix_properties->get_m();
     N_ = matrix_properties->get_N();

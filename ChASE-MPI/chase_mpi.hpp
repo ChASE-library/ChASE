@@ -212,7 +212,7 @@ class ChaseMpi : public chase::Chase<T> {
   };
   
   void initVecs() override{
-    dla_->initVecs();
+      dla_->initVecs();
   }
 
   void initRndVecs(bool isFileAvail = false) {
@@ -446,12 +446,10 @@ class ChaseMpi : public chase::Chase<T> {
     Base<T> real_alpha = dla_->nrm2(n, v1, 1);
     alpha = T(1 / real_alpha);
     dla_->scal(n, &alpha, v1, 1);
-
     for (std::size_t k = 0; k < m; k = k + 1) {
       dla_->V2C(v1, 0, V1, k, 1);            
       dla_->applyVec(v1, w);
       alpha = dla_->dot(n, v1, 1, w, 1);
-
       alpha = -alpha;
       dla_->axpy(n, &alpha, v1, 1, w, 1);
       alpha = -alpha;

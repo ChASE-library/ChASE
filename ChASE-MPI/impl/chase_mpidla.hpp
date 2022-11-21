@@ -30,6 +30,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
   ChaseMpiDLA(ChaseMpiProperties<T>* matrix_properties, ChaseMpiMatrices<T>& matrices,
                ChaseMpiDLAInterface<T>* dla)
       : dla_(dla) {
+
     ldc_ = matrix_properties->get_ldc();
     ldb_ = matrix_properties->get_ldb();
 
@@ -197,6 +198,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
     next_ = NextOp::bAc;
     t_lacpy('A', m_, nev_ + nex_, C_, m_, C2_ , m_);
     T *Vv;
+    dla_->initVecs();
     dla_->preApplication(Vv, 0, 0);
   }
 
@@ -738,6 +740,7 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T> {
   void RR(std::size_t block, std::size_t locked, Base<T> *ritzv) override {
       T One = T(1.0);
       T Zero = T(0.0);
+      
       this->asynCxHGatherC(locked, block);
 
       auto A_ = std::unique_ptr<T[]> {
@@ -823,7 +826,6 @@ void Resd(Base<T> *ritzv, Base<T> *resid, std::size_t locked, std::size_t unconv
   void hhQR(std::size_t locked) override {
     auto nevex = nev_ + nex_;
     std::unique_ptr<T []> tau(new T[nevex]);
-
 #if defined(HAS_SCALAPACK)
     int one = 1;
     t_pgeqrf(N_, nevex, C_, one, one, desc1D_Nxnevx_, tau.get() );

@@ -37,9 +37,9 @@ int main() {
   int rank = 0;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-  std::size_t N = 4001;
-  std::size_t nev = 500;
-  std::size_t nex = 100;
+  std::size_t N = 1001;
+  std::size_t nev = 100;
+  std::size_t nex = 10;
   std::size_t idx_max = 5;
   Base<T> perturb = 1e-4;
 

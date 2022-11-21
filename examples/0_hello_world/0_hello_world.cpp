@@ -17,14 +17,20 @@
 #include "ChASE-MPI/impl/chase_mpidla_blaslapack.hpp"
 #include "ChASE-MPI/impl/chase_mpidla_blaslapack_seq.hpp"
 #include "ChASE-MPI/impl/chase_mpidla_blaslapack_seq_inplace.hpp"
+#ifdef DRIVER_BUILD_MGPU
+#include "ChASE-MPI/impl/chase_mpidla_mgpu.hpp"
+#endif
 
 using T = std::complex<double>;
 using namespace chase;
 using namespace chase::mpi;
 
 /*use ChASE-MPI without GPU support*/
+#ifdef DRIVER_BUILD_MGPU
+typedef ChaseMpi<ChaseMpiDLAMultiGPU, T> CHASE;
+#else
 typedef ChaseMpi<ChaseMpiDLABlaslapack, T> CHASE;
-
+#endif
 int main(int argc, char** argv)
 {
   MPI_Init(&argc,&argv);
@@ -32,9 +38,9 @@ int main(int argc, char** argv)
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-  std::size_t N = 1001; //problem size
-  std::size_t nev = 100; //number of eigenpairs to be computed
-  std::size_t nex = 10; //extra searching space
+  std::size_t N = 11; //problem size
+  std::size_t nev = 5; //number of eigenpairs to be computed
+  std::size_t nex = 2; //extra searching space
   
   int dims[2];
   dims[0] = dims[1] = 0;
@@ -175,7 +181,6 @@ int main(int argc, char** argv)
   /*Optimi(S)e degree*/
   config.SetOpt(true);
   config.SetMaxIter(25);
-
   if (rank == 0)
     std::cout << "Solving a symmetrized Clement matrices (" << N
               << "x" << N << ")"

@@ -32,9 +32,9 @@ int main(int argc, char** argv)
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-  std::size_t N = 4001; //problem size
-  std::size_t nev = 500; //number of eigenpairs to be computed
-  std::size_t nex = 100; //extra searching space
+  std::size_t N = 1001; //problem size
+  std::size_t nev = 100; //number of eigenpairs to be computed
+  std::size_t nex = 10; //extra searching space
   std::size_t idx_max = 5; //number of eigenproblems to be solved in sequence
   Base<T> perturb = 1e-4; //perturbation of elements for the matrices in sequence
 

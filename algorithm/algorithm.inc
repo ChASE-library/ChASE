@@ -316,7 +316,6 @@ void Algorithm<T>::solve(Chase<T>* single) {
 
   std::vector<std::size_t> degrees_(nev + nex);
   std::vector<Base<T>> residLast_(nevex);
-
   // this will be copied into residLast
   for (auto i = 0; i < nevex; ++i) {
     residLast_[i] = std::numeric_limits<Base<T>>::max();
@@ -335,9 +334,7 @@ void Algorithm<T>::solve(Chase<T>* single) {
   assert(degrees != NULL);
   deg = std::min(deg, config.GetMaxDeg());
   for (std::size_t i = 0; i < nevex; ++i) degrees[i] = deg;
-
   single->initVecs();
-
   // --------------------------------- LANCZOS ---------------------------------
   bool random = !config.UseApprox();
   std::size_t DoSVectors =
