@@ -148,12 +148,10 @@ namespace chase {
 					ldWRK = std::max(dim_tile_m_, dim_tile_n_);
 					ldB = ldIMT = ldWRK;
 					ldH = dim_tile_m_;
-#ifdef MGPU_TIMER
 					std::cout << "[MGPU_HEMM] MPI rank global/local = " << globalrank_ << "/" << shmrank_ << std::endl;
 					std::cout << "[MGPU_HEMM] GPUs per rank   = " << num_devices_per_rank << std::endl;
 					std::cout << "[MGPU_HEMM] Number of tiles = "<<ntile_m_ << " x " << ntile_n_ << std::endl;
 					std::cout << "[MGPU_HEMM] Tile dimension  = "<<dim_tile_m_ << " x " << dim_tile_n_ << std::endl;
-#endif
 					int tile_x = 0;
 					int tile_y = 0;
 
@@ -360,7 +358,6 @@ namespace chase {
 						/* Next time the function is called, no need to distribute it again */
 						copied_ = true;
 					}
-					std::cout << "H HAS BEEN COPIED TO DEVICE\n";
 				}
 
 
@@ -617,7 +614,6 @@ namespace chase {
 							src_gpu = dev_x;
 							tile_x = get_tile_size_col(dev_x);
 							start_row = dev_x * dim_tile_n_;
-
 							cuda_exec(cudaSetDevice(shmrank_*num_devices_per_rank + src_gpu));
 							cublas_exec(cublasGetMatrixAsync(tile_x, block, sizeof(T), W[src_gpu], ldW, &buf_target[start_row], ldBuf, stream_[src_gpu]));
 						}

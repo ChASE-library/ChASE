@@ -93,8 +93,6 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
     
     std::size_t maxBlock = matrix_properties_->get_max_block();
 
-    cudaSetDevice(0);
-
     previous_offset_ = -1;
     
     std::cout << "[MGPU_HEMM] MPI rank " << mpi_rank_ << " found " << num_devices << " GPU devices" << std::endl;
@@ -104,22 +102,19 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
     cuda_exec(cudaHostRegister((void*)H_, m_*n_*sizeof(T), cudaHostRegisterDefault));
     cuda_exec(cudaHostRegister((void*)B_, n_*maxBlock*sizeof(T), cudaHostRegisterDefault));
     cuda_exec(cudaHostRegister((void*)C_, m_*maxBlock*sizeof(T), cudaHostRegisterDefault));
-    
-    cuda_exec(cudaMalloc((void**)&(d_H_),  m_ * n_ * sizeof(T)));
-    cuda_exec(cudaMalloc((void**)&(d_C_), m_ * (nev_+nex_) * sizeof(T)));
-    cuda_exec(cudaMalloc((void**)&(d_B_), n_ * (nev_+nex_) * sizeof(T)));
-
-    cublasCreate(&cublasH_);
+    /// Construct a new object for handling multi-GPU HEMM execution
+    mgpuDLA = new mgpu_cudaDLA<T>(matrix_properties, m_, n_, maxBlock);
   }
 
   ~ChaseMpiDLAMultiGPU() {
     cuda_exec(cudaHostUnregister(H_));
     cuda_exec(cudaHostUnregister(B_));
     cuda_exec(cudaHostUnregister(C_));
-    //delete mgpuDLA;  
+    delete mgpuDLA;  
   }
   void initVecs() override{
-	cuda_exec(cudaMemcpy(d_H_, H_, m_ * n_ * sizeof(T), cudaMemcpyHostToDevice));
+        mgpuDLA->distribute_H(H_, m_);
+	mgpuDLA->synchronizeAll();
   }  
   void initRndVecs() override {}
   void initRndVecsFromFile(std::string rnd_file) override {}
@@ -130,7 +125,8 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
   */
   void preApplication(T* V, std::size_t locked, std::size_t block) override {
     next_ = NextOp::bAc;
-    cuda_exec(cudaMemcpy(d_C_ + locked * m_, C_ + locked *m_, m_ * block * sizeof(T), cudaMemcpyHostToDevice));
+    mgpuDLA->set_operation(next_);
+    previous_offset_ = -1;
   }
 
   /*! - For ChaseMpiDLABlaslapack, `preApplication` is implemented within ChaseMpiDLA.
@@ -148,43 +144,60 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
       - For the meaning of this function, please visit ChaseMpiDLAInterface.
   */
   void apply(T alpha, T beta, std::size_t offset, std::size_t block,  std::size_t locked) override {
-    T Zero = T(0.0);
-    T *W;
-    if (next_ == NextOp::bAc) {
-      if (mpi_col_rank != 0) {
-        beta = Zero;
-      }
-      cuda_exec(cudaMemcpy(d_C_ + offset * m_ + locked * m_, C_ + offset * m_ + locked * m_, block * m_ * sizeof(T), cudaMemcpyHostToDevice));
-      cuda_exec(cudaMemcpy(d_B_ + locked * n_ + offset * n_, B_ + locked * n_ + offset * n_, block * n_ * sizeof(T), cudaMemcpyHostToDevice));
-      cublas_status_ = cublasTgemm(cublasH_, CUBLAS_OP_C, CUBLAS_OP_N,
-                  n_, block, m_,
-                  &alpha,
-                  d_H_, m_,
-                  d_C_ + locked * m_ + offset * m_, m_,
-                  &beta,
-                  d_B_ + locked * n_ + offset * n_, n_
-                      );
-      assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
-      cuda_exec(cudaMemcpy(B_ + locked * n_ + offset * n_, d_B_ + locked * n_ + offset * n_, block * n_ * sizeof(T), cudaMemcpyDeviceToHost));
-      next_ = NextOp::cAb;
-    } else {
-      if (mpi_row_rank != 0) {
-        beta = Zero;
-      }
-      cuda_exec(cudaMemcpy(d_C_+ locked * m_ + offset * m_, C_ + offset * m_ + locked * m_, block * m_ * sizeof(T), cudaMemcpyHostToDevice));
-      cuda_exec(cudaMemcpy(d_B_+ locked * n_ + offset * n_, B_ + locked * n_ + offset * n_, block * n_ * sizeof(T), cudaMemcpyHostToDevice));
-      cublas_status_ = cublasTgemm(cublasH_, CUBLAS_OP_N, CUBLAS_OP_N,
-                  m_, block, n_,
-                  &alpha,
-                  d_H_, m_,
-                  d_B_+ locked * n_ + offset * n_ , n_,
-                  &beta,
-                  d_C_+ locked * m_ + offset * m_ , m_
-                      );
-      assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
-      cuda_exec(cudaMemcpy(C_ + locked * m_ + offset * m_, d_C_+ locked * m_ + offset * m_, block * m_ * sizeof(T), cudaMemcpyDeviceToHost));
-      next_ = NextOp::bAc;
-    }
+
+	T Zero = T(0.0);
+        T* buf_init;
+    	T* buf_target;
+    	std::size_t m, n, k;
+    	cublasOperation_t transa;
+    	std::size_t leading_dim;
+	std::size_t ldBufInit;
+	std::size_t ldBufTarget;
+
+    	if (next_ == NextOp::bAc) {
+      	    buf_init = C_ + offset * m_ + locked * m_;
+	    buf_target = B_ + offset * n_ + locked * n_;
+	    m = n_;
+	    n = block;
+      	    k = m_;
+            ldBufInit = m_;
+	    ldBufTarget = n_; 
+            transa = CUBLAS_OP_C;
+            next_ = NextOp::cAb;
+	    if (mpi_col_rank != 0) {
+		beta = Zero;
+	    }
+    	} else {
+     	    buf_init = B_ + offset * n_ + locked * n_;
+      	    buf_target = C_ + offset * m_ + locked * m_;
+            m = m_;
+            n = block;
+            k = n_;
+	    ldBufInit = n_;
+      	    ldBufTarget = m_;
+            transa = CUBLAS_OP_N;
+            next_ = NextOp::bAc;
+	    if (mpi_row_rank != 0) {
+		beta = Zero;
+	    }
+        }
+	  
+    	std::size_t W_offset;
+	if(previous_offset_ == -1) {
+		W_offset = 0;
+	} else {
+		W_offset = offset - previous_offset_;
+	}
+
+	mgpuDLA->distribute_V(buf_init, ldBufInit, block);
+	mgpuDLA->synchronizeAll();
+	mgpuDLA->computeHemm(block, W_offset, alpha, beta);
+	mgpuDLA->synchronizeAll();
+	mgpuDLA->return_W(buf_target, ldBufTarget, block, W_offset);
+	mgpuDLA->synchronizeAll();
+
+	mgpuDLA->switch_operation();
+	previous_offset_ = offset; 
   }
   /*!
      - For ChaseMpiDLABlaslapack,  `postApplication` is implemented in ChaseMpiDLA, with asynchronously brocasting the final product of `HEMM` to each MPI rank. 
@@ -192,8 +205,9 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
      - For the meaning of this function, please visit ChaseMpiDLAInterface.  
   */
   bool postApplication(T* V, std::size_t block, std::size_t locked) override {
-    cuda_exec(cudaMemcpy(C_ + locked * m_, d_C_ + locked *m_, m_ * block * sizeof(T), cudaMemcpyDeviceToHost));
-    return false;
+      mgpuDLA->synchronizeAll();
+      previous_offset_ = -1;
+      return false;
   }
 
   /*!
@@ -202,19 +216,10 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
     - For the meaning of this function, please visit ChaseMpiDLAInterface.    
   */
   void shiftMatrix(T c, bool isunshift = false) override {
-    for(std::size_t j = 0; j < nblocks_; j++){
-        for(std::size_t i = 0; i < mblocks_; i++){
-            for(std::size_t q = 0; q < c_lens_[j]; q++){
-                for(std::size_t p = 0; p < r_lens_[i]; p++){
-                    if(q + c_offs_[j] == p + r_offs_[i]){
-                        H_[(q + c_offs_l_[j]) * ldh_ + p + r_offs_l_[i]] += c;
-                    }
-                }
-            }
-        }
-    }
-
-    cuda_exec(cudaMemcpy(d_H_, H_, m_ * n_ * sizeof(T), cudaMemcpyHostToDevice));
+    mgpuDLA->distribute_H(H_, m_);
+    mgpuDLA->shiftMatrix(c);
+    mgpuDLA->synchronizeAll();
+    	  
   }
 
   void asynCxHGatherC(std::size_t locked, std::size_t block) override {
@@ -418,14 +423,6 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
   int mpi_rank_;
   int previous_offset_;
   mgpu_cudaDLA<T> *mgpuDLA;
-  cublasHandle_t cublasH_;
-  cublasStatus_t cublas_status_ = CUBLAS_STATUS_SUCCESS;
-  cudaStream_t stream_;
-  T *d_H_;
-  T *d_C_;
-  T *d_C2_;
-  T *d_B_;
-  T *d_B2_;
 
   ChaseMpiProperties<T>* matrix_properties_;
 };
