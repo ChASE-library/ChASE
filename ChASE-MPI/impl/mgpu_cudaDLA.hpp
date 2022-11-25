@@ -33,30 +33,27 @@
 using namespace std::chrono;
 
 namespace chase {
-	namespace mpi {
-		//! A class to defines the multi-GPU implementation of DLA within node.
-		/*! This class mainly implements a multi-GPU for `HEMM`, which is able to be executed either with 1 MPI managing multi-GPUs or each GPU being bounded to one MPI rank.
-			This class mainly provides the basic functionality for a series of  a multi-GPU Hemm-s.
-			The core functionalies are to distribute H, V and W between the GPU devices and to
-			perform the Hemm operation in distributed manner among all GPU devices. 
-			The class supports two type of operations
-			  - W = alpha * H * V + beta * W (refered as 'cAb' operation)
-			  - V = alpha * H^C * W + beta * V (refered as 'bAc' operation)
+namespace mpi {
+    //! A class to defines the multi-GPU implementation of DLA within node.
+    /*! This class mainly implements a multi-GPU for `HEMM`, which is able to be executed either with 1 MPI managing multi-GPUs or each GPU being bounded to one MPI rank.
+    This class mainly provides the basic functionality for a series of  a multi-GPU Hemm-s.
+    The core functionalies are to distribute H, V and W between the GPU devices and to
+    perform the Hemm operation in distributed manner among all GPU devices. 
+    The class supports two type of operations
+        - W = alpha * H * V + beta * W (refered as 'cAb' operation)
+        - V = alpha * H^C * W + beta * V (refered as 'bAc' operation)
 
-			such that not additional redististribution of H is required between successive Hemm calls. 
+	such that not additional redististribution of H is required between successive Hemm calls. 
 			
-			This class also provides single-GPU implementation of `gegqr` and `RR_kernel`.
+    This class also provides single-GPU implementation of `gegqr` and `RR_kernel`.
 		  
 		*/
-		template <class T>
-		class mgpu_cudaDLA {
-
-			public:
-
-				typedef T value_type;
-
-				/* Constructor - sets GPUs, allocate device arrays, create cublas handles and streams */
-				mgpu_cudaDLA() {};
+template <class T>
+class mgpu_cudaDLA {
+  public:
+    typedef T value_type;
+    /* Constructor - sets GPUs, allocate device arrays, create cublas handles and streams */
+    mgpu_cudaDLA() {};
 
 				/* Constructor - sets GPUs, allocate device arrays, create cublas handles and streams */
 				//! A constructor of mgpu_cudaDLA which sets GPUs, allocate device arrays, create cublas and cusolver handles and streams.
@@ -71,7 +68,6 @@ namespace chase {
 					      std::size_t n, 
 					      std::size_t maxBlock) :
 					      m_(m), n_(n), maxBlock_(maxBlock) {
-			       std::cout << "mgpu_cudaDLA.hpp" << std::endl;	
 					N_ = matrix_properties->get_N();
         			nev_ = matrix_properties->GetNev();	
         			nex_ = matrix_properties->GetNex();	
@@ -148,10 +144,6 @@ namespace chase {
 					ldWRK = std::max(dim_tile_m_, dim_tile_n_);
 					ldB = ldIMT = ldWRK;
 					ldH = dim_tile_m_;
-					std::cout << "[MGPU_HEMM] MPI rank global/local = " << globalrank_ << "/" << shmrank_ << std::endl;
-					std::cout << "[MGPU_HEMM] GPUs per rank   = " << num_devices_per_rank << std::endl;
-					std::cout << "[MGPU_HEMM] Number of tiles = "<<ntile_m_ << " x " << ntile_n_ << std::endl;
-					std::cout << "[MGPU_HEMM] Tile dimension  = "<<dim_tile_m_ << " x " << dim_tile_n_ << std::endl;
 					int tile_x = 0;
 					int tile_y = 0;
 

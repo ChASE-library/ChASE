@@ -94,10 +94,6 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
     std::size_t maxBlock = matrix_properties_->get_max_block();
 
     previous_offset_ = -1;
-    
-    std::cout << "[MGPU_HEMM] MPI rank " << mpi_rank_ << " found " << num_devices << " GPU devices" << std::endl;
-    std::cout << "[MGPU_HEMM] MPI rank " << mpi_rank_ << " operating on: m = " <<  m_ << ", n = " << n_ << ", block = " << maxBlock << std::endl;
-
     /* Register H, B, C and IMT as pinned-memories on host */
     cuda_exec(cudaHostRegister((void*)H_, m_*n_*sizeof(T), cudaHostRegisterDefault));
     cuda_exec(cudaHostRegister((void*)B_, n_*maxBlock*sizeof(T), cudaHostRegisterDefault));
@@ -219,7 +215,9 @@ class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T> {
     mgpuDLA->distribute_H(H_, m_);
     mgpuDLA->shiftMatrix(c);
     mgpuDLA->synchronizeAll();
-    	  
+    if(!isunshift){
+        previous_offset_ = -1;
+    }
   }
 
   void asynCxHGatherC(std::size_t locked, std::size_t block) override {

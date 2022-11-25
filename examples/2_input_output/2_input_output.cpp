@@ -498,7 +498,7 @@ int do_chase(ChASE_DriverProblemConfig& conf) {
 
     elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
 
-    if(rank == 0) std::cout <<  "matrix are loaded in " << elapsed.count() << " secondsxxx" << std::endl;
+    if(rank == 0) std::cout <<  "matrix are loaded in " << elapsed.count() << " seconds" << std::endl;
     PerformanceDecoratorChase<T> performanceDecorator(&single);
 #ifdef USE_MPI
     MPI_Barrier(MPI_COMM_WORLD);
