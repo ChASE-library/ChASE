@@ -4,136 +4,153 @@
 // All rights reserved.
 // ChASE is licensed under the 3-clause BSD license (BSD 2.0).
 // https://github.com/ChASE-library/ChASE/
-#include <iostream>
-#include <fstream>
-#include <complex>
-#include <iomanip>
-#include <typeinfo>
-#include <vector>
 #include <chrono>
+#include <complex>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
 #include <random>
 #include <sys/stat.h>
+#include <typeinfo>
+#include <vector>
 
 #include "algorithm/types.hpp"
 
-bool IsPathExist(const std::string &s)
+bool IsPathExist(const std::string& s)
 {
-  struct stat buffer;
-  return (stat (s.c_str(), &buffer) == 0);
+    struct stat buffer;
+    return (stat(s.c_str(), &buffer) == 0);
 }
 
 std::string getCmdOption(int argc, char* argv[], const std::string& option)
 {
     std::string cmd;
-     for( int i = 0; i < argc; ++i)
-     {
-          std::string arg = argv[i];
-          if(0 == arg.find(option))
-          {
-	       cmd = argv[i + 1];
-               return cmd;
-          }
-     }
-     return cmd;
-}
-
-template<typename T>
-std::vector<T> generateRandomVec(std::size_t size){
-  std::chrono::high_resolution_clock::time_point start, end;
-  std::chrono::duration<double> elapsed;
-
-  start = std::chrono::high_resolution_clock::now();
-
-  std::vector<T> rnd(size);
-  std::mt19937 gen(1337.0);
-  std::normal_distribution<> d;
-
-  for (std::size_t k = 0; k < size; ++k){
-    rnd[k] = getRandomT<T>([&]() { return d(gen); });
-  }
-
-  end = std::chrono::high_resolution_clock::now();
-
-  elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
-
-  std::string scalartype;
-  std::string precision;
-
-  if(sizeof(chase::Base<T>) == 8){
-    precision = "double";
-  }else if(sizeof(chase::Base<T>) == 4){
-    precision = "single";
-  }
-
-  if(sizeof(T) / sizeof(chase::Base<T>) == 1){
-    scalartype = "real";
-  }else if(sizeof(T) / sizeof(chase::Base<T>) == 2){
-    scalartype = "complex";
-  }
-
-  std::cout << "] generating matrix of size " << size << " in " << scalartype << " " << precision << " in " << elapsed.count() << "s.\n";
-
-  return rnd;
+    for (int i = 0; i < argc; ++i)
+    {
+        std::string arg = argv[i];
+        if (0 == arg.find(option))
+        {
+            cmd = argv[i + 1];
+            return cmd;
+        }
+    }
+    return cmd;
 }
 
 template <typename T>
-void wrtMatIntoBinary(T *H, std::string path_out, std::size_t size){
-  std::chrono::high_resolution_clock::time_point start, end;
-  std::chrono::duration<double> elapsed;
+std::vector<T> generateRandomVec(std::size_t size)
+{
+    std::chrono::high_resolution_clock::time_point start, end;
+    std::chrono::duration<double> elapsed;
 
-  start = std::chrono::high_resolution_clock::now();
+    start = std::chrono::high_resolution_clock::now();
 
-  std::ostringstream problem(std::ostringstream::ate);
-  problem << path_out;
+    std::vector<T> rnd(size);
+    std::mt19937 gen(1337.0);
+    std::normal_distribution<> d;
 
-  std::cout << "]> writing matrix into ";
-  std::cout << problem.str();
-  std::cout << " of size = " << size;
+    for (std::size_t k = 0; k < size; ++k)
+    {
+        rnd[k] = getRandomT<T>([&]() { return d(gen); });
+    }
 
-  auto outfile = std::fstream(problem.str().c_str(), std::ios::out | std::ios::binary);
+    end = std::chrono::high_resolution_clock::now();
 
-  outfile.write((char*)&H[0], size * sizeof(T));
+    elapsed =
+        std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
 
-  end = std::chrono::high_resolution_clock::now();
+    std::string scalartype;
+    std::string precision;
 
-  elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
+    if (sizeof(chase::Base<T>) == 8)
+    {
+        precision = "double";
+    }
+    else if (sizeof(chase::Base<T>) == 4)
+    {
+        precision = "single";
+    }
 
-  std::cout << " in " << elapsed.count() << "s.\n";
-  outfile.close();
+    if (sizeof(T) / sizeof(chase::Base<T>) == 1)
+    {
+        scalartype = "real";
+    }
+    else if (sizeof(T) / sizeof(chase::Base<T>) == 2)
+    {
+        scalartype = "complex";
+    }
+
+    std::cout << "] generating matrix of size " << size << " in " << scalartype
+              << " " << precision << " in " << elapsed.count() << "s.\n";
+
+    return rnd;
 }
 
 template <typename T>
-void readMatFromBinary(T *H, std::string path_in, std::size_t size){
-  std::ostringstream problem(std::ostringstream::ate);
-  problem << path_in;
+void wrtMatIntoBinary(T* H, std::string path_out, std::size_t size)
+{
+    std::chrono::high_resolution_clock::time_point start, end;
+    std::chrono::duration<double> elapsed;
 
-  std::cout << "]> start reading matrix from binary file ";
-  std::cout << problem.str();
-  std::cout << " of size = " << size << std::endl;
+    start = std::chrono::high_resolution_clock::now();
 
-  std::ifstream infile(problem.str().c_str(), std::ios::binary);
+    std::ostringstream problem(std::ostringstream::ate);
+    problem << path_out;
 
-  infile.read((char*)H, sizeof(T) * size);
+    std::cout << "]> writing matrix into ";
+    std::cout << problem.str();
+    std::cout << " of size = " << size;
 
-  infile.close();
+    auto outfile =
+        std::fstream(problem.str().c_str(), std::ios::out | std::ios::binary);
+
+    outfile.write((char*)&H[0], size * sizeof(T));
+
+    end = std::chrono::high_resolution_clock::now();
+
+    elapsed =
+        std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
+
+    std::cout << " in " << elapsed.count() << "s.\n";
+    outfile.close();
 }
 
+template <typename T>
+void readMatFromBinary(T* H, std::string path_in, std::size_t size)
+{
+    std::ostringstream problem(std::ostringstream::ate);
+    problem << path_in;
 
-int main (int argc, char *argv[]){
+    std::cout << "]> start reading matrix from binary file ";
+    std::cout << problem.str();
+    std::cout << " of size = " << size << std::endl;
+
+    std::ifstream infile(problem.str().c_str(), std::ios::binary);
+
+    infile.read((char*)H, sizeof(T) * size);
+
+    infile.close();
+}
+
+int main(int argc, char* argv[])
+{
 
     std::size_t N = 1000000;
     std::string path_out;
-    //parser
+    // parser
     std::string N_str = getCmdOption(argc, argv, "--N");
-    if(!N_str.empty()){
-    	N = std::stoi(N_str);
+    if (!N_str.empty())
+    {
+        N = std::stoi(N_str);
     }
     path_out = getCmdOption(argc, argv, "--path_out");
-    if(path_out.empty()){
-    	path_out = "./tmp/";
+    if (path_out.empty())
+    {
+        path_out = "./tmp/";
     }
 
-    if(!IsPathExist(path_out)){
+    if (!IsPathExist(path_out))
+    {
         mkdir(path_out.c_str(), 0700);
     }
 
@@ -145,7 +162,7 @@ int main (int argc, char *argv[]){
 
     std::mt19937 gen(2342.0);
     std::normal_distribution<> d;
-    
+
     std::vector<double> dbuf = generateRandomVec<double>(N);
 
     wrtMatIntoBinary<double>(dbuf.data(), drnd_str.str(), N);
@@ -154,11 +171,13 @@ int main (int argc, char *argv[]){
 
     wrtMatIntoBinary<float>(sbuf.data(), srnd_str.str(), N);
     //
-    std::vector<std::complex<double>> zbuf = generateRandomVec<std::complex<double>>(N);
+    std::vector<std::complex<double>> zbuf =
+        generateRandomVec<std::complex<double>>(N);
 
     wrtMatIntoBinary<std::complex<double>>(zbuf.data(), zrnd_str.str(), N);
     //
-    std::vector<std::complex<float>> cbuf = generateRandomVec<std::complex<float>>(N);
+    std::vector<std::complex<float>> cbuf =
+        generateRandomVec<std::complex<float>>(N);
 
     wrtMatIntoBinary<std::complex<float>>(cbuf.data(), crnd_str.str(), N);
 
