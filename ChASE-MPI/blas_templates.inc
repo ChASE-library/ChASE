@@ -9,6 +9,7 @@
 
 #include <assert.h>
 #include <memory>
+#include <vector>
 
 #include "blas_fortran.hpp"
 #include "fortran_mangle.h"
