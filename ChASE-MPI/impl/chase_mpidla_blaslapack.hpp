@@ -48,6 +48,7 @@ public:
         C_ = matrices.get_V1();
         C2_ = matrix_properties->get_C2();
         B2_ = matrix_properties->get_B2();
+	A_ = matrix_properties->get_A();
 
         off_ = matrix_properties->get_off();
 
@@ -355,7 +356,14 @@ public:
         - **Parallelism is SUPPORT within node if multi-threading is enabled.**
         - For the meaning of this function, please visit ChaseMpiDLAInterface.
     */
-    void RR(std::size_t block, std::size_t locked, Base<T>* ritzv) override {}
+    void RR(std::size_t block, std::size_t locked, Base<T>* ritzv) override {
+        T One = T(1.0);
+        T Zero = T(0.0);
+
+    	this->gemm(CblasColMajor, CblasConjTrans, CblasNoTrans, block, block,
+                   n_, &One, B2_ + locked * n_, n_, B_ + locked * n_, n_, &Zero,
+                   A_, block);      
+    }
 
     void V2C(T* v1, std::size_t off1, T* v2, std::size_t off2,
              std::size_t block) override
@@ -402,8 +410,14 @@ public:
     void heevd(int matrix_layout, char jobz, char uplo, std::size_t n, T* a,
                std::size_t lda, Base<T>* w) override
     {
-
-        t_heevd(matrix_layout, jobz, uplo, n, a, lda, w);
+	T One = T(1.0);
+        T Zero = T(0.0);
+        std::size_t locked = nev_ + nex_ - n;	
+	    
+        t_heevd(matrix_layout, jobz, uplo, n, a, nev_ + nex_, w);
+        this->gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, m_, n, n,
+                   &One, C2_ + locked * m_, m_, A_, nev_ + nex_, &Zero,
+                   C_ + locked * m_, m_);
     }
 
     void hhQR(std::size_t locked) override {}
@@ -438,6 +452,7 @@ private:
     T* B2_;
     T* C_;
     T* C2_;
+    T* A_;
 
     std::size_t* off_;
     std::size_t* r_offs_;

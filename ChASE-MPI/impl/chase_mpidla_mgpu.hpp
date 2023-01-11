@@ -265,10 +265,21 @@ public:
     {
         T alpha = T(1.0);
         T beta = T(0.0);
-
+/*
         t_gemm<T>(CblasColMajor, CblasConjTrans, CblasNoTrans, n_,
                   static_cast<std::size_t>(block), m_, &alpha, H_, ldh_,
                   C_ + locked * m_, m_, &beta, B_ + locked * n_, n_);
+*/
+        T* buf_init = C_ + locked * m_;
+        T* buf_target = B_ + locked * n_;
+        
+        cublasOperation_t transa = CUBLAS_OP_C;
+        std::size_t ldBufInit = m_;
+        std::size_t ldBufTarget = n_;
+	next_ = NextOp::cAb;
+	mgpuDLA->distribute_V(buf_init, ldBufInit, block);
+	mgpuDLA->computeHemm(block, 0, alpha, beta);
+        mgpuDLA->return_W(buf_target, ldBufTarget, block, 0);	
     }
 
     /*!
