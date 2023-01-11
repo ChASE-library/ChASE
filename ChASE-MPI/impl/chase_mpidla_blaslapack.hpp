@@ -47,6 +47,7 @@ public:
         B_ = matrices.get_V2();
         C_ = matrices.get_V1();
         C2_ = matrix_properties->get_C2();
+        B2_ = matrix_properties->get_B2();
 
         off_ = matrix_properties->get_off();
 
@@ -179,7 +180,7 @@ public:
         }
     }
 
-    void asynCxHGatherC(std::size_t locked, std::size_t block) override
+    void asynCxHGatherC(std::size_t locked, std::size_t block, bool isCcopied = false) override
     {
         T alpha = T(1.0);
         T beta = T(0.0);
@@ -366,7 +367,8 @@ public:
     {
     }
     void syherk(char uplo, char trans, std::size_t n, std::size_t k, T* alpha,
-                T* a, std::size_t lda, T* beta, T* c, std::size_t ldc) override
+                T* a, std::size_t lda, T* beta, T* c, std::size_t ldc,
+		 bool first = true) override
     {
         t_syherk(uplo, trans, n, k, alpha, a, lda, beta, c, ldc);
     }
@@ -378,7 +380,7 @@ public:
 
     void trsm(char side, char uplo, char trans, char diag, std::size_t m,
               std::size_t n, T* alpha, T* a, std::size_t lda, T* b,
-              std::size_t ldb) override
+              std::size_t ldb,  bool first = false) override
     {
         t_trsm(side, uplo, trans, diag, m, n, alpha, a, lda, b, ldb);
     }
@@ -386,6 +388,15 @@ public:
     void Resd(Base<T>* ritzv, Base<T>* resid, std::size_t locked,
               std::size_t unconverged) override
     {
+        for (auto i = 0; i < unconverged; i++)
+        {
+            T alpha = -ritzv[i];
+            t_axpy(n_, &alpha, B2_ + locked * n_ + i * n_, 1,
+                   B_ + locked * n_ + i * n_, 1);
+
+            Base<T> tmp = t_nrm2(n_, B_ + locked * n_ + i * n_, 1);
+            resid[i] = std::pow(tmp, 2);
+        }	    
     }
 
     void heevd(int matrix_layout, char jobz, char uplo, std::size_t n, T* a,
@@ -424,6 +435,7 @@ private:
     std::size_t ldh_;
     T* H_;
     T* B_;
+    T* B2_;
     T* C_;
     T* C2_;
 

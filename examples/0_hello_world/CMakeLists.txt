@@ -13,7 +13,7 @@ if(TARGET chase_cuda )
       endforeach()
     endif()
     add_executable( "0_hello_world_mgpu" 0_hello_world.cpp )
-    target_link_libraries(0_hello_world_mgpu chase_mpi chase_cuda)
+    target_link_libraries(0_hello_world_mgpu chase_mpi chase_cuda ${CUDA_nvToolsExt_LIBRARY})
     target_compile_definitions( "0_hello_world_mgpu" PRIVATE DRIVER_BUILD_MGPU=1)
 
 endif()

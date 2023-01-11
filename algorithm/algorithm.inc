@@ -382,11 +382,12 @@ void Algorithm<T>::solve(Chase<T>* single)
     // --------------------------------- LANCZOS
     // ---------------------------------
     bool random = !config.UseApprox();
+    nvtxRangePushA("Lanczos");
     std::size_t DoSVectors =
         lanczos(single, N, num_lanczos,
                 std::min(nevex, std::min(N / 2, config.GetLanczosIter())),
                 nevex, &upperb, random, random ? ritzv : NULL);
-
+    nvtxRangePop();
     std::size_t locked = 0;    // Number of converged eigenpairs.
     std::size_t iteration = 0; // Current iteration.
     lowerb = *std::max_element(ritzv, ritzv + unconverged);
@@ -447,8 +448,11 @@ void Algorithm<T>::solve(Chase<T>* single)
 */
 #endif
         //------------------------------- FILTER -------------------------------
-        std::size_t Av = filter(single, N, unconverged, deg, degrees, lambda,
+        nvtxRangePushA("filter");
+	std::size_t Av = filter(single, N, unconverged, deg, degrees, lambda,
                                 lowerb, upperb);
+        nvtxRangePop();	
+        nvtxRangePushA("QR");	
         //----------------------------------- QR
         //-----------------------------------
         if (iteration == 0)
@@ -465,16 +469,19 @@ void Algorithm<T>::solve(Chase<T>* single)
             single->fastQR(locked);
             // std::cout << "#" << iteration << ", use fast QR" << std::endl;
         }
-
+        nvtxRangePop();
+	nvtxRangePushA("RR");
         // ----------------------------- RAYLEIGH  RITZ
         // ----------------------------
         single->RR(ritzv, unconverged);
+	nvtxRangePop();
         // --------------------------- RESIDUAL & LOCKING
         // --------------------------
+	nvtxRangePushA("Resid");
         for (auto i = 0; i < unconverged; ++i)
             residLast[i] = std::min(residLast[i], resid[i]);
         single->Resd(ritzv, resid, locked);
-
+        nvtxRangePop();
         std::size_t new_converged =
             locking(single, N, unconverged - nex, tol, ritzv, resid, residLast,
                     degrees, locked);

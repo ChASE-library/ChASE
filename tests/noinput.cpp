@@ -38,9 +38,9 @@ int main()
     int rank = 0;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    std::size_t N = 1001;
-    std::size_t nev = 100;
-    std::size_t nex = 10;
+    std::size_t N = 4001;
+    std::size_t nev = 200;
+    std::size_t nex = 80;
     std::size_t idx_max = 5;
     Base<T> perturb = 1e-4;
 
@@ -53,8 +53,13 @@ int main()
 
     auto V = std::vector<T>(N * (nev + nex));
     auto Lambda = std::vector<Base<T>>(nev + nex);
+    std::vector<T> H(N * N, T(0.0));
 
-    CHASE single(N, nev, nex, V.data(), Lambda.data());
+    nvtxRangePushA("test: ChASE initalization");
+
+    CHASE single(N, nev, nex, V.data(), Lambda.data(), H.data());
+
+    nvtxRangePop();
 
     auto& config = single.GetConfig();
     config.SetTol(1e-10);
@@ -75,8 +80,8 @@ int main()
     xlen = N;
     ylen = N;
 
+    nvtxRangePushA("test: initalization of H");
     // Generate Clement matrix
-    std::vector<T> H(N * N, T(0.0));
     for (auto i = 0; i < N; ++i)
     {
         H[i + N * i] = 0;
@@ -85,6 +90,8 @@ int main()
         if (i != N - 1)
             H[i + N * (i + 1)] = std::sqrt(i * (N + 1 - i));
     }
+
+    nvtxRangePop();
 
     single.initRndVecs(true);
 
@@ -98,17 +105,9 @@ int main()
                 std::cout << "Using approximate solution\n";
             }
         }
+        nvtxRangePushA("test: load H");
 
-        // Load matrix into distributed buffer
-        for (std::size_t x = 0; x < xlen; x++)
-        {
-            for (std::size_t y = 0; y < ylen; y++)
-            {
-                single.GetMatrixPtr()[x + xlen * y] =
-                    H.at((xoff + x) * N + (yoff + y));
-            }
-        }
-
+	nvtxRangePop();
         PerformanceDecoratorChase<T> performanceDecorator(&single);
         chase::Solve(&performanceDecorator);
 

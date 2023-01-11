@@ -41,6 +41,8 @@ public:
         : dla_(dla)
     {
 
+        nvtxRangePushA("ChASEMPIDLA: Init");
+
         ldc_ = matrix_properties->get_ldc();
         ldb_ = matrix_properties->get_ldb();
 
@@ -55,6 +57,8 @@ public:
         C_ = matrices.get_V1();
         C2_ = matrix_properties->get_C2();
         B2_ = matrix_properties->get_B2();
+	A_ = matrix_properties->get_A();
+
 #if !defined(HAS_SCALAPACK)
         V_ = matrix_properties->get_V();
 #endif
@@ -220,20 +224,26 @@ public:
         v0_.resize(N_);
         v1_.resize(N_);
         w_.resize(N_);
+
+	nvtxRangePop();
     }
     ~ChaseMpiDLA() {}
 
     void initVecs() override
     {
+        nvtxRangePushA("DLA: initVecs");
         next_ = NextOp::bAc;
         t_lacpy('A', m_, nev_ + nex_, C_, m_, C2_, m_);
         T* Vv;
         dla_->initVecs();
         dla_->preApplication(Vv, 0, 0);
+	nvtxRangePop();
     }
 
     void initRndVecs() override
     {
+        nvtxRangePushA("DLA: initRndVecs");
+
         std::mt19937 gen(1337.0);
         std::normal_distribution<> d;
         for (auto j = 0; j < nev_ + nex_; j++)
@@ -250,6 +260,7 @@ public:
                 }
             }
         }
+	nvtxRangePop();
     }
 
     void initRndVecsFromFile(std::string rnd_file) override
@@ -275,7 +286,8 @@ public:
     */
     void preApplication(T* V, std::size_t locked, std::size_t block) override
     {
-        next_ = NextOp::bAc;
+        nvtxRangePushA("DLA: PreApplication");
+	next_ = NextOp::bAc;
         locked_ = locked;
 
         for (auto j = 0; j < block; j++)
@@ -288,6 +300,7 @@ public:
             }
         }
         dla_->preApplication(V, locked, block);
+	nvtxRangePop();
     }
 
     /*! - For ChaseMpiDLA, `preApplication` is implemented within `std::memcpy`.
@@ -297,6 +310,7 @@ public:
     void preApplication(T* V1, T* V2, std::size_t locked,
                         std::size_t block) override
     {
+        nvtxRangePushA("DLA: PreApplication");
         for (auto j = 0; j < block; j++)
         {
             for (auto i = 0; i < nblocks_; i++)
@@ -310,6 +324,8 @@ public:
         dla_->preApplication(V1, V2, locked, block);
 
         this->preApplication(V1, locked, block);
+
+	nvtxRangePop();
     }
 
     /*!
@@ -328,6 +344,7 @@ public:
     void apply(T alpha, T beta, std::size_t offset, std::size_t block,
                std::size_t locked) override
     {
+        nvtxRangePushA("DLA: apply");	    
         T One = T(1.0);
         T Zero = T(0.0);
 
@@ -336,11 +353,13 @@ public:
         {
 
             dim = n_ * block;
-
+            nvtxRangePushA("DLA: apply(gemm)");
             dla_->apply(alpha, beta, offset, block, locked);
-
+	    nvtxRangePop();
+            nvtxRangePushA("DLA: allreduce");
             MPI_Allreduce(MPI_IN_PLACE, B_ + locked * n_ + offset * n_, dim,
                           getMPI_Type<T>(), MPI_SUM, col_comm_);
+	    nvtxRangePop();
 
             next_ = NextOp::cAb;
         }
@@ -348,20 +367,23 @@ public:
         { // cAb
 
             dim = m_ * block;
-
+            nvtxRangePushA("DLA: apply(gemm)");
             dla_->apply(alpha, beta, offset, block, locked);
-
+            nvtxRangePop();
+	    nvtxRangePushA("DLA: allreduce");
             MPI_Allreduce(MPI_IN_PLACE, C_ + locked * m_ + offset * m_, dim,
                           getMPI_Type<T>(), MPI_SUM, row_comm_);
-
+	    nvtxRangePop();
             next_ = NextOp::bAc;
         }
+	nvtxRangePop();
     }
     // v1->v2
     void V2C(T* v1, std::size_t off1, T* v2, std::size_t off2,
              std::size_t block) override
     {
-        for (auto j = 0; j < block; j++)
+        nvtxRangePushA("DLA: V2C");
+	for (auto j = 0; j < block; j++)
         {
             for (auto i = 0; i < mblocks_; i++)
             {
@@ -370,12 +392,15 @@ public:
                             r_lens_[i] * sizeof(T));
             }
         }
+	nvtxRangePop();
     }
 
     // v1->v2
     void C2V(T* v1, std::size_t off1, T* v2, std::size_t off2,
              std::size_t block) override
     {
+	nvtxRangePushA("DLA: C2V");
+
         std::size_t N = N_;
         std::size_t dimsIdx;
         std::size_t subsize;
@@ -509,6 +534,8 @@ public:
                 }
             }
         }
+
+	nvtxRangePop();
     }
     /*!
        - For ChaseMpiDLA,  `postApplication` operation brocasts asynchronously
@@ -518,6 +545,8 @@ public:
     */
     bool postApplication(T* V, std::size_t block, std::size_t locked) override
     {
+	nvtxRangePushA("DLA: postApplication");
+
         dla_->postApplication(V, block, locked);
 
         std::size_t N = N_;
@@ -671,11 +700,14 @@ public:
             }
         }
 
+	nvtxRangePop();
         return true;
     }
 
-    void asynCxHGatherC(std::size_t locked, std::size_t block) override
+    void asynCxHGatherC(std::size_t locked, std::size_t block, bool isCcopied = false) override
     {
+
+        nvtxRangePushA("DLA: asynCxHGatherC");
 
         std::size_t dim = n_ * block;
 
@@ -696,7 +728,7 @@ public:
             }
         }
 
-        dla_->asynCxHGatherC(locked, block);
+        dla_->asynCxHGatherC(locked, block, isCcopied);
 
         for (auto i = 0; i < c_lens.size(); i++)
         {
@@ -717,6 +749,7 @@ public:
                         m_, B2_ + locked * n_ + b_disps[i], n_);
             }
         }
+	nvtxRangePop();
     }
 
     /*!
@@ -727,6 +760,7 @@ public:
     */
     void shiftMatrix(T c, bool isunshift = false) override
     {
+	nvtxRangePushA("DLA: shift");    
         if (istartOfFilter_)
         {
             next_ = NextOp::bAc;
@@ -735,6 +769,7 @@ public:
         }
         istartOfFilter_ = false;
         dla_->shiftMatrix(c, isunshift);
+	nvtxRangePop();
     }
 
     /*!
@@ -912,23 +947,12 @@ public:
     {
         T One = T(1.0);
         T Zero = T(0.0);
-
-        this->asynCxHGatherC(locked, block);
-
-        auto A_ = std::unique_ptr<T[]>{new T[block * block]};
-
-        dla_->gemm(CblasColMajor, CblasConjTrans, CblasNoTrans, block, block,
-                   n_, &One, B2_ + locked * n_, n_, B_ + locked * n_, n_, &Zero,
-                   A_.get(), block);
-
-        MPI_Allreduce(MPI_IN_PLACE, A_.get(), block * block, getMPI_Type<T>(),
+        this->asynCxHGatherC(locked, block, !isHHqr);
+	dla_->RR(block, locked, ritzv);
+        MPI_Allreduce(MPI_IN_PLACE, A_, (nev_ + nex_) * block, getMPI_Type<T>(),
                       MPI_SUM, row_comm_);
 
-        dla_->heevd(LAPACK_COL_MAJOR, 'V', 'L', block, A_.get(), block, ritzv);
-
-        dla_->gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, m_, block, block,
-                   &One, C2_ + locked * m_, m_, A_.get(), block, &Zero,
-                   C_ + locked * m_, m_);
+        dla_->heevd(LAPACK_COL_MAJOR, 'V', 'L', block, A_, nev_ + nex_, ritzv);
         std::memcpy(C2_ + locked * m_, C_ + locked * m_,
                     m_ * block * sizeof(T));
     }
@@ -937,27 +961,15 @@ public:
               std::size_t unconverged) override
     {
 
-        this->asynCxHGatherC(locked, unconverged);
+        this->asynCxHGatherC(locked, unconverged, true);
 
         T one = T(1.0);
         T neg_one = T(-1.0);
         T beta = T(0.0);
 
-        auto norm = std::unique_ptr<Base<T>[]> { new Base<T>[ unconverged ] };
-
-        for (auto i = 0; i < unconverged; i++)
-        {
-            T alpha = -ritzv[i];
-            t_axpy(n_, &alpha, B2_ + locked * n_ + i * n_, 1,
-                   B_ + locked * n_ + i * n_, 1);
-
-            Base<T> tmp = dla_->nrm2(n_, B_ + locked * n_ + i * n_, 1);
-            norm[i] = std::pow(tmp, 2);
-        }
-
-        MPI_Allreduce(norm.get(), resid, unconverged, getMPI_Type<Base<T>>(),
-                      MPI_SUM, row_comm_);
-
+	dla_->Resd(ritzv, resid, locked, unconverged);
+        
+	MPI_Allreduce(MPI_IN_PLACE, resid, unconverged, getMPI_Type<Base<T>>(), MPI_SUM, row_comm_);
         for (std::size_t i = 0; i < unconverged; ++i)
         {
             resid[i] = std::sqrt(resid[i]);
@@ -965,7 +977,8 @@ public:
     }
 
     void syherk(char uplo, char trans, std::size_t n, std::size_t k, T* alpha,
-                T* a, std::size_t lda, T* beta, T* c, std::size_t ldc) override
+                T* a, std::size_t lda, T* beta, T* c, std::size_t ldc,  
+		bool first = true) override
     {
         dla_->syherk(uplo, trans, n, k, alpha, a, lda, beta, c, ldc);
     }
@@ -977,7 +990,7 @@ public:
 
     void trsm(char side, char uplo, char trans, char diag, std::size_t m,
               std::size_t n, T* alpha, T* a, std::size_t lda, T* b,
-              std::size_t ldb) override
+              std::size_t ldb,  bool first = false) override
     {
         dla_->trsm(side, uplo, trans, diag, m, n, alpha, a, lda, b, ldb);
     }
@@ -1016,28 +1029,30 @@ public:
         std::memcpy(C2_ + locked * m_, C_ + locked * m_,
                     (nevex - locked) * m_ * sizeof(T));
 #endif
+	isHHqr = true;
     }
 
     void cholQR(std::size_t locked) override
     {
         auto nevex = nev_ + nex_;
         int grank;
+	bool first_iter = true;
         MPI_Comm_rank(MPI_COMM_WORLD, &grank);
-        auto A_ = std::unique_ptr<T[]>{new T[nevex * nevex]};
         T one = T(1.0);
         T zero = T(0.0);
         int info = -1;
 
-        dla_->syherk('U', 'C', nevex, m_, &one, C_, m_, &zero, A_.get(), nevex);
-        MPI_Allreduce(MPI_IN_PLACE, A_.get(), nevex * nevex, getMPI_Type<T>(),
+	nvtxRangePushA("cholQR: syherk");
+        dla_->syherk('U', 'C', nevex, m_, &one, C_, m_, &zero, A_, nevex, first_iter);
+	nvtxRangePop();
+        MPI_Allreduce(MPI_IN_PLACE, A_, nevex * nevex, getMPI_Type<T>(),
                       MPI_SUM, col_comm_);
-        info = t_potrf('U', nevex, A_.get(), nevex);
+        nvtxRangePushA("cholQR: potrf");
+	info = dla_->potrf('U', nevex, A_, nevex);
+        nvtxRangePop();
 
         if (info == 0)
         {
-            dla_->trsm('R', 'U', 'N', 'N', m_, nevex, &one, A_.get(), nevex, C_,
-                       m_);
-
             int choldeg = 2;
             char* choldegenv;
             choldegenv = getenv("CHASE_CHOLQR_DEGREE");
@@ -1049,20 +1064,36 @@ public:
             if (grank == 0)
                 std::cout << "choldegee: " << choldeg << std::endl;
 #endif
+
+	    if(choldeg == 1){
+	        first_iter = false;
+	    }else if(choldeg > 1){
+	        first_iter = true;	    
+	    }
+
+            nvtxRangePushA("cholQR: trsm");		
+            dla_->trsm('R', 'U', 'N', 'N', m_, nevex, &one, A_, nevex, C_, m_, first_iter);
+	    nvtxRangePop();
+
             for (auto i = 0; i < choldeg - 1; i++)
             {
-                dla_->syherk('U', 'C', nevex, m_, &one, C_, m_, &zero, A_.get(),
-                             nevex);
-                MPI_Allreduce(MPI_IN_PLACE, A_.get(), nevex * nevex,
-                              getMPI_Type<T>(), MPI_SUM, col_comm_);
-                t_potrf('U', nevex, A_.get(), nevex);
-                dla_->trsm('R', 'U', 'N', 'N', m_, nevex, &one, A_.get(), nevex,
-                           C_, m_);
+                dla_->syherk('U', 'C', nevex, m_, &one, C_, m_, &zero, A_, nevex, false);
+                MPI_Allreduce(MPI_IN_PLACE, A_, nevex * nevex, getMPI_Type<T>(), 
+			      MPI_SUM, col_comm_);
+                info = dla_->potrf('U', nevex, A_, nevex);
+		if(i == choldeg - 2){
+		   first_iter = false;
+		}else{
+		   first_iter = true;
+		}
+		dla_->trsm('R', 'U', 'N', 'N', m_, nevex, &one, A_, nevex, C_, m_, first_iter);
             }
+	    
             std::memcpy(C_, C2_, locked * m_ * sizeof(T));
             std::memcpy(C2_ + locked * m_, C_ + locked * m_,
                         (nevex - locked) * m_ * sizeof(T));
-        }
+            isHHqr = false;
+	}
         else
         {
 #ifdef CHASE_OUTPUT
@@ -1153,6 +1184,7 @@ private:
     T* C_;
     T* C2_;
     T* B2_;
+    T* A_;
     std::vector<T> v0_;
     std::vector<T> v1_;
     std::vector<T> w_;
@@ -1209,6 +1241,7 @@ private:
     std::unique_ptr<ChaseMpiDLAInterface<T>> dla_;
     ChaseMpiProperties<T>* matrix_properties_;
 
+    bool isHHqr;
 #if defined(HAS_SCALAPACK)
     std::size_t* desc1D_Nxnevx_;
 #endif

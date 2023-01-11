@@ -13,6 +13,7 @@
 
 #include "mpi.h"
 #include <random>
+#include <omp.h>
 
 #include "algorithm/chase.hpp"
 
@@ -330,7 +331,29 @@ public:
     void stabQR(std::size_t fixednev) override
     {
         // dla_->cholQR(locked_);
-        dla_->hhQR(locked_);
+        //dla_->hhQR(locked_);
+        int grank;
+        MPI_Comm_rank(MPI_COMM_WORLD, &grank);
+        char* hhdisable;
+        hhdisable = getenv("CHASE_DISABLE_HHQR");
+        int diasable = 0;
+        if (hhdisable)
+        {
+            diasable = std::atoi(hhdisable);
+        }
+        if (diasable == 1)
+        {
+#ifdef CHASE_OUTPUT
+            if (grank == 0)
+                std::cout << "Househoulder QR is disabled, always use Cholesky QR. "
+                          << std::endl;
+#endif
+            dla_->cholQR(locked_);
+        }
+        else
+        {
+            dla_->hhQR(locked_);
+        }	
     }
     //! This member function implements the virtual one declared in Chase class.
     //! This member function performs a QR factorization with an explicit
@@ -438,7 +461,15 @@ public:
           v1[k] = getRandomT<T>([&]() { return normal_distribution(gen); });
         }
         */
-        // ENSURE that v1 has one norm
+        char* omp_threads;
+        omp_threads = getenv("OMP_NUM_THREADS");
+        int num_threads = 1;
+        if(omp_threads){
+            num_threads = std::atoi(omp_threads);
+        }
+        omp_set_num_threads(1);
+
+	// ENSURE that v1 has one norm
         Base<T> real_alpha = dla_->nrm2(n, v1, 1);
         alpha = T(1 / real_alpha);
         dla_->scal(n, &alpha, v1, 1);
@@ -489,6 +520,7 @@ public:
         *upperb = std::max(std::abs(ritzv[0]), std::abs(ritzv[m - 1])) +
                   std::abs(real_beta);
 
+	omp_set_num_threads(num_threads);
         delete[] ritzv;
         delete[] isuppz;
         delete[] d;
@@ -524,10 +556,16 @@ public:
         T* v0;
         T* v1;
         T* w;
-
         dla_->getLanczosBuffer(&V1, &V2, &ld, &v0, &v1, &w);
         dla_->C2V(V2, idx, v1, 0, 1);
 
+	char* omp_threads;
+        omp_threads = getenv("OMP_NUM_THREADS");
+        int num_threads = 1;
+	if(omp_threads){
+	    num_threads = std::atoi(omp_threads);	
+	}
+	omp_set_num_threads(1);
         // ENSURE that v1 has one norm
         Base<T> real_alpha = dla_->nrm2(n, v1, 1);
         alpha = T(1 / real_alpha);
@@ -564,6 +602,8 @@ public:
 
         dla_->preApplication(v1, 0, 1);
 
+	nvtxRangePushA("ChASE-MPI: stemr");
+
         int notneeded_m;
         std::size_t vl, vu;
         Base<T> ul, ll;
@@ -574,11 +614,14 @@ public:
         *upperb = std::max(std::abs(ritzv[0]), std::abs(ritzv[m - 1])) +
                   std::abs(real_beta);
 
+	nvtxRangePop();
+
         for (std::size_t k = 1; k < m; ++k)
         {
             Tau[k] = std::abs(ritzV[k * m]) * std::abs(ritzV[k * m]);
         }
 
+	omp_set_num_threads(num_threads);
         delete[] isuppz;
         delete[] d;
         delete[] e;

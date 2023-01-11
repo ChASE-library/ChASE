@@ -14,6 +14,7 @@
 #include <random>
 
 #include "interface.hpp"
+#include <nvToolsExt.h>
 
 namespace chase
 {

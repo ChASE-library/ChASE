@@ -25,6 +25,8 @@
 #include "ChASE-MPI/impl/chase_mpidla_blaslapack.hpp"
 #ifdef DRIVER_BUILD_MGPU
 #include "ChASE-MPI/impl/chase_mpidla_mgpu.hpp"
+#elif defined(DRIVER_BUILD_MGPU_2)
+#include "ChASE-MPI/impl/chase_mpidla_mgpu_2.hpp"
 #endif
 #endif
 
@@ -432,6 +434,8 @@ int do_chase(ChASE_DriverProblemConfig& conf)
 #ifdef USE_MPI
 #ifdef DRIVER_BUILD_MGPU
     typedef ChaseMpi<ChaseMpiDLAMultiGPU, T> CHASE;
+#elif defined(DRIVER_BUILD_MGPU_2)
+    typedef ChaseMpi<ChaseMpiDLAMultiGPU2, T> CHASE;
 #else
     typedef ChaseMpi<ChaseMpiDLABlaslapack, T> CHASE;
 #endif // CUDA or not

@@ -345,6 +345,7 @@ public:
         // C_.reset(new T[m_ * max_block_]());
         C2_.reset(new T[m_ * max_block_]());
         B2_.reset(new T[n_ * max_block_]());
+        A_.reset(new T[max_block_ * max_block_]());
 
         // for MPI communication
         block_counts_.resize(2);
@@ -628,6 +629,7 @@ public:
         // C_.reset(new T[m_ * max_block_]());
         C2_.reset(new T[m_ * max_block_]());
         B2_.reset(new T[n_ * max_block_]());
+        A_.reset(new T[max_block_ * max_block_]());
 
         block_counts_.resize(2);
         for (std::size_t dim_idx = 0; dim_idx < 2; dim_idx++)
@@ -856,7 +858,7 @@ public:
         // C_.reset(new T[m_ * max_block_]());
         C2_.reset(new T[m_ * max_block_]());
         B2_.reset(new T[n_ * max_block_]());
-
+        A_.reset(new T[max_block_ * max_block_]());
         block_counts_.resize(2);
         for (std::size_t dim_idx = 0; dim_idx < 2; dim_idx++)
         {
@@ -1209,6 +1211,8 @@ public:
     T* get_C2() { return C2_.get(); }
 
     T* get_B2() { return B2_.get(); }
+
+    T* get_A() { return A_.get(); }
 
 #if !defined(HAS_SCALAPACK)
     T* get_V() { return V_.get(); }
@@ -1607,6 +1611,8 @@ private:
     std::unique_ptr<T[]> C2_;
 
     std::unique_ptr<T[]> B2_;
+
+    std::unique_ptr<T[]> A_;
 
     //! The row communicator of the constructed 2D grid of MPI codes.
     /*!

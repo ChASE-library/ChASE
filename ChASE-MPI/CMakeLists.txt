@@ -173,6 +173,7 @@ if(CMAKE_CUDA_COMPILER)
   target_link_libraries( chase_cuda INTERFACE
     ${CUDA_CUBLAS_LIBRARIES}
     ${CUDA_cusolver_LIBRARY}
+    ${CUDA_nvToolsExt_LIBRARY}
     )
 
   install( TARGETS chase_cuda

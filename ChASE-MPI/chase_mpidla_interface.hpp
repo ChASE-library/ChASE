@@ -157,7 +157,7 @@ public:
 
     virtual void apply(T alpha, T beta, std::size_t offset, std::size_t block,
                        std::size_t locked) = 0;
-    virtual void asynCxHGatherC(std::size_t locked, std::size_t block) = 0;
+    virtual void asynCxHGatherC(std::size_t locked, std::size_t block, bool isCcopied = false) = 0;
 
     virtual void C2V(T* v1, std::size_t off1, T* v2, std::size_t off2,
                      std::size_t block) = 0;
@@ -491,13 +491,13 @@ public:
 
     virtual void syherk(char uplo, char trans, std::size_t n, std::size_t k,
                         T* alpha, T* a, std::size_t lda, T* beta, T* c,
-                        std::size_t ldc) = 0;
+                        std::size_t ldc, bool first = true) = 0;
 
     virtual int potrf(char uplo, std::size_t n, T* a, std::size_t lda) = 0;
 
     virtual void trsm(char side, char uplo, char trans, char diag,
                       std::size_t m, std::size_t n, T* alpha, T* a,
-                      std::size_t lda, T* b, std::size_t ldb) = 0;
+                      std::size_t lda, T* b, std::size_t ldb, bool first = false) = 0;
 
     virtual void heevd(int matrix_layout, char jobz, char uplo, std::size_t n,
                        T* a, std::size_t lda, Base<T>* w) = 0;
