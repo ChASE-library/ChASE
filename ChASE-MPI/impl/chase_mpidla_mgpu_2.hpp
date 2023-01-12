@@ -61,6 +61,9 @@ public:
         // TODO
         // ldc_ = matrix_properties->get_ldc();
         // ldb_ = matrix_properties->get_ldb();
+#ifdef USE_NSIGHT
+        nvtxRangePushA("ChaseMpiDLAMultiGPU2: Init");
+#endif	 
         n_ = matrix_properties->get_n();
         m_ = matrix_properties->get_m();
         N_ = matrix_properties->get_N();
@@ -178,6 +181,9 @@ public:
 	cudaMemcpy(d_off_n_, off_n.data(), diag_off_size_* sizeof(std::size_t), cudaMemcpyHostToDevice);
     	cuda_exec(cudaStreamCreate(&stream1_));
 	cuda_exec(cudaStreamCreate(&stream2_));
+#ifdef USE_NSIGHT
+        nvtxRangePop();
+#endif    
     }
 
     ~ChaseMpiDLAMultiGPU2()
@@ -221,7 +227,10 @@ public:
     {
         next_ = NextOp::bAc;
         //cuda_exec(cudaMemcpyAsync(d_C_ + locked * m_, C_ + locked *m_, m_ * block * sizeof(T), cudaMemcpyHostToDevice, stream1_));
-        cuda_exec(cudaMemcpy(d_C_ + locked * m_, C_ + locked *m_, m_ * block * sizeof(T), cudaMemcpyHostToDevice));
+        if(locked > 0)
+	{	
+	    cuda_exec(cudaMemcpy(d_C_ + locked * m_, C_ + locked *m_, m_ * block * sizeof(T), cudaMemcpyHostToDevice));
+        }
     }
 
     /*! - For ChaseMpiDLABlaslapack, `preApplication` is implemented within
@@ -543,10 +552,14 @@ public:
     {
         cublas_status_ = cublasSetMatrix(nev_ + nex_, nev_ + nex_, sizeof(T), a, lda, d_A_, nev_ + nex_ );
         assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
-
+#ifdef USE_NSIGHT
+        nvtxRangePushA("cusolverDnTpotrf");
+#endif
         cusolver_status_ = cusolverDnTpotrf(cusolverH_, CUBLAS_FILL_MODE_UPPER, nev_ + nex_,
         		   d_A_, nev_ + nex_, d_work_, lwork_, devInfo_);
-
+#ifdef USE_NSIGHT
+        nvtxRangePop();
+#endif
         assert(CUSOLVER_STATUS_SUCCESS == cusolver_status_);
 
 	int info;	
@@ -611,11 +624,17 @@ public:
 	T One = T(1.0);
         T Zero = T(0.0);
         std::size_t locked = nev_ + nex_ - n;	
-        cublasSetMatrix(n, n, sizeof(T), a, lda, d_A_, nev_ + nex_);	   
+        cublasSetMatrix(n, n, sizeof(T), a, lda, d_A_, nev_ + nex_);	 
+#ifdef USE_NSIGHT
+        nvtxRangePushA("cusolverDnTheevd");
+#endif      	
         cusolver_status_ = cusolverDnTheevd(
             cusolverH_, CUSOLVER_EIG_MODE_VECTOR, CUBLAS_FILL_MODE_LOWER, n,
             d_A_, nev_ + nex_, d_ritz_, d_work_, lwork_, devInfo_);
         assert(cusolver_status_ == CUSOLVER_STATUS_SUCCESS);
+#ifdef USE_NSIGHT
+        nvtxRangePop();
+#endif	
         cuda_exec(cudaMemcpy(w, d_ritz_, n * sizeof(Base<T>), cudaMemcpyDeviceToHost));
 	cublas_status_ = cublasSetMatrix(m_, n, sizeof(T), C2_ + locked * m_, m_, d_C2_ + locked * m_, m_ );
         assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);

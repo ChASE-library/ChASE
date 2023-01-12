@@ -154,7 +154,9 @@ public:
         : N_(N), mb_(mb), nb_(nb), nev_(nev), nex_(nex), max_block_(nev + nex),
           irsrc_(irsrc), icsrc_(icsrc), comm_(comm)
     {
-
+#ifdef USE_NSIGHT
+	nvtxRangePushA("ChaseMpiProperties(block-cyclic): Init");
+#endif	
         data_layout = "Block-Cyclic";
 
         std::size_t blocknb[2];
@@ -439,6 +441,9 @@ public:
 #else
         V_.reset(new T[N_ * max_block_]());
 #endif
+#ifdef USE_NSIGHT
+        nvtxRangePop();
+#endif	
     }
 
     //! A constructor of the class ChaseMpiProperties which distributes matrix
@@ -478,7 +483,9 @@ public:
         : N_(N), nev_(nev), nex_(nex), max_block_(nev + nex), m_(m), n_(n),
           comm_(comm)
     {
-
+#ifdef USE_NSIGHT
+        nvtxRangePushA("ChaseMpiProperties(Block-Block1): Init");
+#endif
         data_layout = "Block-Block";
 
         int tmp_dims_[2];
@@ -714,6 +721,9 @@ public:
 #else
         V_.reset(new T[N_ * max_block_]());
 #endif
+#ifdef USE_NSIGHT
+        nvtxRangePop();
+#endif	
     }
 
     //! A constructor of the class ChaseMpiProperties which distributes matrix
@@ -747,7 +757,9 @@ public:
                        MPI_Comm comm, bool H_preAlloc = true)
         : N_(N), nev_(nev), nex_(nex), max_block_(nev + nex), comm_(comm)
     {
-
+#ifdef USE_NSIGHT
+        nvtxRangePushA("ChaseMpiProperties(Block-Block2): Init");
+#endif
         data_layout = "Block-Block";
 
         int periodic[] = {0, 0};
@@ -934,6 +946,9 @@ public:
 #else
         V_.reset(new T[N_ * max_block_]());
 #endif
+#ifdef USE_NSIGHT
+        nvtxRangePop();
+#endif	
     }
 
 #if defined(HAS_SCALAPACK)

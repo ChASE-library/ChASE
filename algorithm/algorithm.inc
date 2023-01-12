@@ -382,12 +382,16 @@ void Algorithm<T>::solve(Chase<T>* single)
     // --------------------------------- LANCZOS
     // ---------------------------------
     bool random = !config.UseApprox();
+#ifdef USE_NSIGHT
     nvtxRangePushA("Lanczos");
+#endif    
     std::size_t DoSVectors =
         lanczos(single, N, num_lanczos,
                 std::min(nevex, std::min(N / 2, config.GetLanczosIter())),
                 nevex, &upperb, random, random ? ritzv : NULL);
+#ifdef USE_NSIGHT    
     nvtxRangePop();
+#endif    
     std::size_t locked = 0;    // Number of converged eigenpairs.
     std::size_t iteration = 0; // Current iteration.
     lowerb = *std::max_element(ritzv, ritzv + unconverged);
@@ -448,11 +452,15 @@ void Algorithm<T>::solve(Chase<T>* single)
 */
 #endif
         //------------------------------- FILTER -------------------------------
-        nvtxRangePushA("filter");
+#ifdef USE_NSIGHT        
+	nvtxRangePushA("Filter");
+#endif	
 	std::size_t Av = filter(single, N, unconverged, deg, degrees, lambda,
-                                lowerb, upperb);
+		lowerb, upperb);
+#ifdef USE_NSIGHT		
         nvtxRangePop();	
         nvtxRangePushA("QR");	
+#endif	
         //----------------------------------- QR
         //-----------------------------------
         if (iteration == 0)
@@ -469,19 +477,27 @@ void Algorithm<T>::solve(Chase<T>* single)
             single->fastQR(locked);
             // std::cout << "#" << iteration << ", use fast QR" << std::endl;
         }
+#ifdef USE_NSIGHT	
         nvtxRangePop();
 	nvtxRangePushA("RR");
+#endif	
         // ----------------------------- RAYLEIGH  RITZ
         // ----------------------------
         single->RR(ritzv, unconverged);
+#ifdef USE_NSIGHT	
 	nvtxRangePop();
+#endif	
         // --------------------------- RESIDUAL & LOCKING
         // --------------------------
+#ifdef USE_NSIGHT
 	nvtxRangePushA("Resid");
+#endif	
         for (auto i = 0; i < unconverged; ++i)
             residLast[i] = std::min(residLast[i], resid[i]);
         single->Resd(ritzv, resid, locked);
-        nvtxRangePop();
+#ifdef USE_NSIGHT
+	nvtxRangePop();
+#endif	
         std::size_t new_converged =
             locking(single, N, unconverged - nex, tol, ritzv, resid, residLast,
                     degrees, locked);
@@ -502,6 +518,9 @@ void Algorithm<T>::solve(Chase<T>* single)
         iteration++;
     } // while ( converged < nev && iteration < omp_maxiter )
 
+#ifdef USE_NSIGHT
+    nvtxRangePushA("Sort");
+#endif	
     //---------------------SORT-EIGENPAIRS-ACCORDING-TO-EIGENVALUES---------------
     for (auto i = 0; i < nev - 1; ++i)
         for (auto j = i + 1; j < nev; ++j)
@@ -512,7 +531,9 @@ void Algorithm<T>::solve(Chase<T>* single)
                 single->Swap(i, j);
             }
         }
-
+#ifdef USE_NSIGHT
+    nvtxRangePop();
+#endif	
     single->End();
 }
 } // namespace chase

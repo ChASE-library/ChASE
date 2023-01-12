@@ -252,6 +252,9 @@ public:
 
     void initRndVecs(bool isFileAvail = false)
     {
+#ifdef USE_NSIGHT
+        nvtxRangePushA("InitRndVecs");
+#endif	    
         if (isFileAvail)
         {
             std::string rnd_file;
@@ -298,6 +301,9 @@ public:
         {
             dla_->initRndVecs();
         }
+#ifdef USE_NSIGHT
+        nvtxRangePop();	
+#endif	
     }
 
     // todo this is wrong we want the END of V
@@ -316,7 +322,13 @@ public:
     */
     void HEMM(std::size_t block, T alpha, T beta, std::size_t offset) override
     {
+#ifdef USE_NSIGHT	 
+	nvtxRangePushA("HEMM");  
+#endif      	
         dla_->apply(alpha, beta, offset, block, locked_);
+#ifdef USE_NSIGHT
+	nvtxRangePop();
+#endif
     };
 
     void Hv(T alpha);
@@ -422,7 +434,15 @@ public:
     //! It swaps the two matrices of vectors used in the Chebyschev filter
     //! @param i&j: the column indexing `i` and `j` are swapped in both
     //! rectangular matrices `approxV_` and `workspace_`.
-    void Swap(std::size_t i, std::size_t j) override { dla_->Swap(i, j); };
+    void Swap(std::size_t i, std::size_t j) override { 
+#ifdef USE_NSIGHT
+	nvtxRangePushA("Swap"); 
+#endif     	
+    	dla_->Swap(i, j); 
+#ifdef USE_NSIGHT
+	nvtxRangePop();
+#endif    	
+    };
 
     //! This member function implements the virtual one declared in Chase class.
     //! It estimates the upper bound of user-interested spectrum by Lanczos
@@ -451,8 +471,13 @@ public:
         T* v0;
         T* v1;
         T* w;
-
+#ifdef USE_NSIGHT
+	nvtxRangePushA("getLanczosBuffer2");
+#endif	
         dla_->getLanczosBuffer2(&v0, &v1, &w);
+#ifdef USE_NSIGHT
+	nvtxRangePop();
+#endif	
         /*
         std::mt19937 gen(2342.0);
         std::normal_distribution<> normal_distribution;
@@ -468,7 +493,9 @@ public:
             num_threads = std::atoi(omp_threads);
         }
         omp_set_num_threads(1);
-
+#ifdef USE_NSIGHT
+	nvtxRangePushA("Lanczos: loop");
+#endif	
 	// ENSURE that v1 has one norm
         Base<T> real_alpha = dla_->nrm2(n, v1, 1);
         alpha = T(1 / real_alpha);
@@ -504,9 +531,13 @@ public:
             std::swap(v1, v0);
             std::swap(v1, w);
         }
-
+#ifdef USE_NSIGHT
+	nvtxRangePop();
+#endif	
         dla_->preApplication(v1, 0, 1);
-
+#ifdef USE_NSIGHT
+	nvtxRangePushA("Stemr");
+#endif	
         int notneeded_m;
         std::size_t vl, vu;
         Base<T> ul, ll;
@@ -519,7 +550,9 @@ public:
 
         *upperb = std::max(std::abs(ritzv[0]), std::abs(ritzv[m - 1])) +
                   std::abs(real_beta);
-
+#ifdef USE_NSIGHT
+	nvtxRangePop();
+#endif	
 	omp_set_num_threads(num_threads);
         delete[] ritzv;
         delete[] isuppz;
@@ -556,9 +589,18 @@ public:
         T* v0;
         T* v1;
         T* w;
+#ifdef USE_NSIGHT
+	nvtxRangePushA("getLanczosBuffer");
+#endif	
         dla_->getLanczosBuffer(&V1, &V2, &ld, &v0, &v1, &w);
-        dla_->C2V(V2, idx, v1, 0, 1);
-
+#ifdef USE_NSIGHT
+	nvtxRangePop();
+	nvtxRangePushA("C2V");	
+#endif
+	dla_->C2V(V2, idx, v1, 0, 1);
+#ifdef USE_NSIGHT
+	nvtxRangePop();
+#endif	
 	char* omp_threads;
         omp_threads = getenv("OMP_NUM_THREADS");
         int num_threads = 1;
@@ -567,6 +609,9 @@ public:
 	}
 	omp_set_num_threads(1);
         // ENSURE that v1 has one norm
+#ifdef USE_NSIGHT
+        nvtxRangePushA("Lanczos: loop");
+#endif	
         Base<T> real_alpha = dla_->nrm2(n, v1, 1);
         alpha = T(1 / real_alpha);
         dla_->scal(n, &alpha, v1, 1);
@@ -599,11 +644,13 @@ public:
             std::swap(v1, v0);
             std::swap(v1, w);
         }
-
+#ifdef USE_NSIGHT
+	nvtxRangePop();
+#endif	
         dla_->preApplication(v1, 0, 1);
-
-	nvtxRangePushA("ChASE-MPI: stemr");
-
+#ifdef USE_NSIGHT
+	nvtxRangePushA("Stemr");
+#endif
         int notneeded_m;
         std::size_t vl, vu;
         Base<T> ul, ll;
@@ -613,9 +660,9 @@ public:
                     &notneeded_m, ritzv, ritzV, m, m, isuppz, &tryrac);
         *upperb = std::max(std::abs(ritzv[0]), std::abs(ritzv[m - 1])) +
                   std::abs(real_beta);
-
+#ifdef USE_NSIGHT
 	nvtxRangePop();
-
+#endif
         for (std::size_t k = 1; k < m; ++k)
         {
             Tau[k] = std::abs(ritzV[k * m]) * std::abs(ritzV[k * m]);
@@ -654,8 +701,14 @@ public:
     // is used, copying Ritz vectors directly to V
     void collectRitzVecs(T* V)
     {
+#ifdef USE_NSIGHT
+	nvtxRangePushA("collectRitzVecs");    
+#endif	
         T* Vv = matrices_.get_V1();
         dla_->C2V(Vv, 0, V, 0, nev_);
+#ifdef USE_NSIGHT	
+	nvtxRangePop();
+#endif	
     }
 
     //! \return `H_`: A pointer to the memory allocated to store (local part if
