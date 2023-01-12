@@ -55,7 +55,6 @@ public:
         : N_(N), copied_(false), nev_(nev), nex_(nex), max_block_(nev + nex),
           V1_(matrices.get_V1()), V2_(matrices.get_V2()), H_(matrices.get_H())
     {
-        nvtxRangePushA("CUDA-SEQ: Init");
         cuda_exec(cudaSetDevice(0));
 
         cuda_exec(cudaMalloc((void**)&(d_V1_), N_ * (nev_ + nex_) * sizeof(T)));
@@ -71,10 +70,6 @@ public:
 
         cublasCreate(&cublasH_);
         cublasCreate(&cublasH2_);
-
-	for(auto i = 0; i < 32; i++){
-	    cuda_exec(cudaStreamCreate(&streamBatched_[i]));
-	}
 
         cusolverDnCreate(&cusolverH_);
         cuda_exec(cudaStreamCreate(&stream_));
@@ -122,8 +117,6 @@ public:
             lwork_ = lwork_potrf;
         }
         cuda_exec(cudaMalloc((void**)&d_work_, sizeof(T) * lwork_));
-	nvtxRangePop();
-
     }
 
     ~ChaseMpiDLACudaSeq()
@@ -157,20 +150,15 @@ public:
     }
     void initVecs() override
     {
-	nvtxRangePushA("CUDA-SEQ: initVecs");
-        // t_lacpy('A', N_, nev_+nex_, V1_, N_, V2_ , N_);
         cuda_exec(cudaMemcpy(d_V1_, V1_, (nev_ + nex_) * N_ * sizeof(T),
                              cudaMemcpyHostToDevice));
         cuda_exec(cudaMemcpy(d_V2_, d_V1_, (nev_ + nex_) * N_ * sizeof(T),
                              cudaMemcpyDeviceToDevice));
         cuda_exec(
             cudaMemcpy(d_H_, H_, N_ * N_ * sizeof(T), cudaMemcpyHostToDevice));
-
-	nvtxRangePop();
     }
     void initRndVecs() override
     {
-	nvtxRangePushA("CUDA-SEQ: initRndVecs");
         std::mt19937 gen(1337.0);
         std::normal_distribution<> d;
         for (auto j = 0; j < (nev_ + nex_); j++)
@@ -180,7 +168,6 @@ public:
                 V1_[i + j * N_] = getRandomT<T>([&]() { return d(gen); });
             }
         }
-	nvtxRangePop();
     }
 
     void initRndVecsFromFile(std::string rnd_file) override
@@ -195,19 +182,15 @@ public:
     void V2C(T* v1, std::size_t off1, T* v2, std::size_t off2,
              std::size_t block) override
     {
-	nvtxRangePushA("CUDA-SEQ: V2C");
         cuda_exec(cudaMemcpy(v2 + off2 * N_, v1 + off1 * N_,
                              block * N_ * sizeof(T), cudaMemcpyHostToDevice));
-	nvtxRangePop();
     }
     // device->host: v1 on device, v2 on host
     void C2V(T* v1, std::size_t off1, T* v2, std::size_t off2,
              std::size_t block) override
     {
-        nvtxRangePushA("CUDA-SEQ: C2V");	    
         cuda_exec(cudaMemcpy(v2 + off2 * N_, v1 + off1 * N_,
                              block * N_ * sizeof(T), cudaMemcpyDeviceToHost));
-        nvtxRangePop();
     }
 
     /*! - For ChaseMpiDLACudaSeq, the core of `preApplication` is implemented
@@ -218,11 +201,9 @@ public:
     */
     void preApplication(T* V, std::size_t locked, std::size_t block) override
     {
-        nvtxRangePushA("CUDA-SEQ: preApplication");
 	locked_ = locked;
         cuda_exec(cudaMemcpy(d_V1_, V + locked_ * N_, block * N_ * sizeof(T),
                              cudaMemcpyDeviceToDevice));
-	nvtxRangePop();
     }
 
     /*! - For ChaseMpiDLACudaSeq, the core of `preApplication` is implemented
@@ -244,7 +225,6 @@ public:
     void apply(T alpha, T beta, std::size_t offset, std::size_t block,
                std::size_t locked) override
     {
-	nvtxRangePushA("CUDA-SEQ: apply");
         cublas_status_ =
             cublasTgemm(cublasH_, CUBLAS_OP_N, CUBLAS_OP_N, N_,
                         static_cast<std::size_t>(block), N_, &alpha, d_H_, N_,
@@ -252,7 +232,6 @@ public:
                         d_V2_ + locked * N_ + offset * N_, N_);
         assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
         std::swap(d_V1_, d_V2_);
-	nvtxRangePop();
     }
 
     /*! - For ChaseMpiDLACudaSeq, the core of `postApplication` is implemented
@@ -273,9 +252,7 @@ public:
     */
     void shiftMatrix(T c, bool isunshift = false) override
     {
-	nvtxRangePushA("CUDA-SEQ: shift");
         chase_shift_matrix(d_H_, N_, std::real(c), &stream_);
-	nvtxRangePop();
     }
 
     void asynCxHGatherC(std::size_t locked, std::size_t block, bool isCcopied = false) override {}
@@ -287,14 +264,12 @@ public:
     */
     void applyVec(T* B, T* C) override
     {
-        nvtxRangePushA("CUDA-SEQ: applyVec");
 	T One = T(1.0);
         T Zero = T(0.0);
 
         cublas_status_ = cublasTgemm(cublasH_, CUBLAS_OP_N, CUBLAS_OP_N, N_, 1,
                                      N_, &One, d_H_, N_, B, N_, &Zero, C, N_);
         assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
-	nvtxRangePop();
     }
 
     void get_off(std::size_t* xoff, std::size_t* yoff, std::size_t* xlen,
@@ -345,10 +320,8 @@ public:
     void Start() override {}
     void End() override
     {
-        nvtxRangePushA("CUDA-SEQ: End");
         cuda_exec(cudaMemcpy(V1_, d_V1_, max_block_ * N_ * sizeof(T),
                              cudaMemcpyDeviceToHost));
-	nvtxRangePop();
     }
 
     /*!
@@ -479,7 +452,6 @@ public:
 
     void RR(std::size_t block, std::size_t locked, Base<T>* ritzv) override
     {
-	nvtxRangePushA("CUDA-SEQ: RR(GEMM)");    
         T One = T(1.0);
         T Zero = T(0.0);
 
@@ -494,8 +466,6 @@ public:
                         &One, d_V2_ + locked * N_, N_, d_V1_ + locked * N_, N_,
                         &Zero, d_A_, max_block_);
         assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
-        nvtxRangePop();
-	nvtxRangePushA("CUDA-SEQ: RR(HEEVD)");
     	cusolver_status_ = cusolverDnTheevd(
             cusolverH_, CUSOLVER_EIG_MODE_VECTOR, CUBLAS_FILL_MODE_LOWER, block,
             d_A_, max_block_, d_ritz_, d_work_, lwork_, devInfo_);
@@ -504,8 +474,6 @@ public:
         cuda_exec(cudaMemcpy(ritzv, d_ritz_, block * sizeof(Base<T>),
                              cudaMemcpyDeviceToHost));
 
-	nvtxRangePop();
-	nvtxRangePushA("CUDA-SEQ: RR(GEMM2)");
         cublas_status_ =
             cublasTgemm(cublasH_, CUBLAS_OP_N, CUBLAS_OP_N, N_, block, block,
                         &One, d_V1_ + locked * N_, N_, d_A_, max_block_, &Zero,
@@ -513,13 +481,11 @@ public:
         assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
 
         std::swap(d_V1_, d_V2_);
-	nvtxRangePop();
     }
 
     void getLanczosBuffer(T** V1, T** V2, std::size_t* ld, T** v0, T** v1,
                           T** w) override
     {
-	nvtxRangePushA("CUDA-SEQ: getLanczosBuffer1");
         *V1 = d_V1_;
         *V2 = d_V2_;
         *ld = N_;
@@ -529,12 +495,10 @@ public:
         *v0 = v0_;
         *v1 = v1_;
         *w = w_;
-	nvtxRangePop();
     }
 
     void getLanczosBuffer2(T** v0, T** v1, T** w) override
     {
-	nvtxRangePushA("CUDA-SEQ: getLanczosBuffer2");
         std::mt19937 gen(2342.0);
         std::normal_distribution<> normal_distribution;
         T* vtmp = new T[N_];
@@ -550,7 +514,6 @@ public:
         *v1 = v1_;
         *w = w_;
         delete[] vtmp;
-	nvtxRangePop();
     }
 
     void syherk(char uplo, char trans, std::size_t n, std::size_t k, T* alpha,
@@ -581,8 +544,6 @@ public:
         T alpha = T(1.0);
         T beta = T(0.0);
 
-	nvtxRangePushA("CUDA-SEQ: Resid");
-
         cublas_status_ = cublasTgemm(
             cublasH_, CUBLAS_OP_C, CUBLAS_OP_N, N_, unconverged, N_, &alpha,
             d_H_, N_, d_V1_ + locked * N_, N_, &beta, d_V2_ + locked * N_, N_);
@@ -603,13 +564,10 @@ public:
 
         cuda_exec(cudaMemcpy(resid, d_resids_, unconverged * sizeof(Base<T>),
                              cudaMemcpyDeviceToHost));	
-	
-	nvtxRangePop();
     }
 
     void hhQR(std::size_t locked) override
     {
-        nvtxRangePushA("CUDA-SEQ: QR");	    
         auto nevex = nev_ + nex_;
         cuda_exec(cudaMemcpy(d_V2_, d_V1_, locked * N_ * sizeof(T),
                              cudaMemcpyDeviceToDevice));
@@ -623,7 +581,6 @@ public:
         assert(CUSOLVER_STATUS_SUCCESS == cusolver_status_);
         cuda_exec(cudaMemcpy(d_V1_, d_V2_, locked * N_ * sizeof(T),
                              cudaMemcpyDeviceToDevice));
-	nvtxRangePop();
     }
 
     void cholQR(std::size_t locked) override
@@ -633,22 +590,16 @@ public:
 
     void Swap(std::size_t i, std::size_t j) override
     {
-        nvtxRangePushA("CUDA-SEQ: Swap");
-
 	cuda_exec(cudaMemcpy(v1_, d_V1_ + N_ * i, N_ * sizeof(T),
                              cudaMemcpyDeviceToDevice));
         cuda_exec(cudaMemcpy(d_V1_ + N_ * i, d_V1_ + N_ * j, N_ * sizeof(T),
                              cudaMemcpyDeviceToDevice));
         cuda_exec(cudaMemcpy(d_V1_ + N_ * j, v1_, N_ * sizeof(T),
                              cudaMemcpyDeviceToDevice));
-
-	nvtxRangePop();
     }
 
     void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc) override
     {
-        nvtxRangePushA("CUDA-SEQ: LanczosDos");
-
         T alpha = T(1.0);
         T beta = T(0.0);
         cublasSetMatrix(m, idx, sizeof(T), ritzVc, m, d_A_, max_block_);
@@ -658,8 +609,6 @@ public:
         assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
         cuda_exec(cudaMemcpy(d_V1_, d_V2_, m * N_ * sizeof(T),
                              cudaMemcpyDeviceToDevice));
-
-	nvtxRangePop();
     }
 
 private:

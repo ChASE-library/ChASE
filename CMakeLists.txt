@@ -20,7 +20,7 @@ if( CHASE_OUTPUT )
   target_compile_definitions( chase_algorithm  INTERFACE "-DCHASE_OUTPUT" )
 endif()
 
-option(ENABLE_NSIGHT "Enable profiling with Nvidia Nsight Systems" ON)
+option(ENABLE_NSIGHT "Enable profiling with Nvidia Nsight Systems" OFF)
 
 install( TARGETS chase_algorithm
   EXPORT chase-headers

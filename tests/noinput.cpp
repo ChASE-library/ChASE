@@ -55,11 +55,7 @@ int main()
     auto Lambda = std::vector<Base<T>>(nev + nex);
     std::vector<T> H(N * N, T(0.0));
 
-    nvtxRangePushA("test: ChASE initalization");
-
     CHASE single(N, nev, nex, V.data(), Lambda.data(), H.data());
-
-    nvtxRangePop();
 
     auto& config = single.GetConfig();
     config.SetTol(1e-10);
@@ -80,7 +76,6 @@ int main()
     xlen = N;
     ylen = N;
 
-    nvtxRangePushA("test: initalization of H");
     // Generate Clement matrix
     for (auto i = 0; i < N; ++i)
     {
@@ -90,8 +85,6 @@ int main()
         if (i != N - 1)
             H[i + N * (i + 1)] = std::sqrt(i * (N + 1 - i));
     }
-
-    nvtxRangePop();
 
     single.initRndVecs(true);
 
@@ -105,9 +98,7 @@ int main()
                 std::cout << "Using approximate solution\n";
             }
         }
-        nvtxRangePushA("test: load H");
 
-	nvtxRangePop();
         PerformanceDecoratorChase<T> performanceDecorator(&single);
         chase::Solve(&performanceDecorator);
 
