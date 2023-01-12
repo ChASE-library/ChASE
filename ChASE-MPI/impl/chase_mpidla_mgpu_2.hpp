@@ -596,7 +596,7 @@ public:
     void Resd(Base<T>* ritzv, Base<T>* resid, std::size_t locked,
               std::size_t unconverged) override
     {
-
+#ifdef HAS_OMP
         char* omp_threads;
         omp_threads = getenv("OMP_NUM_THREADS");
         int num_threads = 1;
@@ -604,7 +604,7 @@ public:
             num_threads = std::atoi(omp_threads);
         }
         omp_set_num_threads(1);
-
+#endif
         for (auto i = 0; i < unconverged; i++)
         {
             T alpha = -ritzv[i];
@@ -614,8 +614,9 @@ public:
             Base<T> tmp = t_nrm2(n_, B_ + locked * n_ + i * n_, 1);
             resid[i] = std::pow(tmp, 2);
         }	    
-
+#ifdef HAS_OMP
 	omp_set_num_threads(num_threads);
+#endif	
     }
 
     void heevd(int matrix_layout, char jobz, char uplo, std::size_t n, T* a,
