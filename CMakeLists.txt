@@ -49,15 +49,15 @@ add_subdirectory( "ChASE-MPI/")
 add_subdirectory( "ChASE-Elemental/")
 
 ## Tests
-#add_executable( "chase_driver" tests/noinput.cpp )
+add_executable( "chase_driver" tests/noinput.cpp )
 add_subdirectory( "tests/")
-#if(TARGET chase_cuda )
-#  enable_language(CUDA)
-#  target_link_libraries(chase_driver chase_mpi chase_cuda)
-#  target_compile_definitions(chase_driver PRIVATE USE_GPU=1)
-#else()
-#  target_link_libraries(chase_driver chase_mpi)
-#endif()
+if(TARGET chase_cuda )
+  enable_language(CUDA)
+  target_link_libraries(chase_driver chase_mpi chase_cuda)
+  target_compile_definitions(chase_driver PRIVATE USE_GPU=1)
+else()
+  target_link_libraries(chase_driver chase_mpi)
+endif()
 
 add_subdirectory("interface")
 
@@ -69,8 +69,9 @@ if(BUILD_WITH_EXAMPLES)
 endif()
 
 add_subdirectory("./utils")
+
 enable_testing()
-add_test( BASIC "./tests/chase_driver" )
+add_test( BASIC "chase_driver" )
 
 # Documentation
 option(BUILD_WITH_DOCS "Build the examples" OFF)
