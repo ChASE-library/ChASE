@@ -80,7 +80,6 @@ public:
             C_[j] = rnd;
         }    
     }
-    void initRndVecsFromFile(std::string rnd_file) override {}
 
     /*! - For ChaseMpiDLABlaslapack, `preApplication` is implemented within
        ChaseMpiDLA.

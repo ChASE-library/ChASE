@@ -170,14 +170,6 @@ public:
         }
     }
 
-    void initRndVecsFromFile(std::string rnd_file) override
-    {
-        std::ostringstream problem(std::ostringstream::ate);
-        problem << rnd_file;
-        std::ifstream infile(problem.str().c_str(), std::ios::binary);
-        infile.read(reinterpret_cast<char*>(V1_),
-                    N_ * (nev_ + nex_) * sizeof(T));
-    }
     // host->device: v1 on host, v2 on device
     void V2C(T* v1, std::size_t off1, T* v2, std::size_t off2,
              std::size_t block) override

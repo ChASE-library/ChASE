@@ -13,7 +13,10 @@
 
 #include "mpi.h"
 #include <random>
+
+#ifdef HAS_OMP
 #include <omp.h>
+#endif
 
 #include "algorithm/chase.hpp"
 
@@ -255,52 +258,7 @@ public:
 #ifdef USE_NSIGHT
         nvtxRangePushA("InitRndVecs");
 #endif	    
-        if (isFileAvail)
-        {
-            std::string rnd_file;
-            if (sizeof(Base<T>) == sizeof(T) && sizeof(Base<T>) == 4)
-            {
-                rnd_file = "./tmp/rnd_s.bin";
-            }
-            else if (sizeof(Base<T>) == sizeof(T) && sizeof(Base<T>) == 8)
-            {
-                rnd_file = "./tmp/rnd_d.bin";
-            }
-            else if (2 * sizeof(Base<T>) == sizeof(T) && sizeof(Base<T>) == 4)
-            {
-                rnd_file = "./tmp/rnd_c.bin";
-            }
-            else if (2 * sizeof(Base<T>) == sizeof(T) && sizeof(Base<T>) == 8)
-            {
-                rnd_file = "./tmp/rnd_z.bin";
-            }
-            if (isPathExist(rnd_file))
-            {
-                dla_->initRndVecsFromFile(rnd_file);
-
-                if (rank_ == 0)
-                    std::cout << "ChASE loaded initial vector from local "
-                                 "binary file: "
-                              << rnd_file << std::endl;
-            }
-            else
-            {
-                // throw std::invalid_argument("\n \tThe provided path of binary
-                // file containing random vectors are not available. \n\tPlease
-                // \n \t\t generated it with ./utils/genRnd.exe \n\tor\n\t\t set
-                // the argument of initRndVecs to false");
-                if (rank_ == 0)
-                    std::cout
-                        << "The provided path of binary file is unavailable, "
-                           "generating the random vectors on the fly"
-                        << std::endl;
-                dla_->initRndVecs();
-            }
-        }
-        else
-        {
-            dla_->initRndVecs();
-        }
+        dla_->initRndVecs();
 #ifdef USE_NSIGHT
         nvtxRangePop();	
 #endif	

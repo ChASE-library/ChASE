@@ -238,7 +238,6 @@ public:
 	chase_rand_normal(states_, d_C_, m_ * (nev_ + nex_), (cudaStream_t) 0);   
         cuda_exec(cudaMemcpy(C_, d_C_, m_ * (nev_ + nex_) * sizeof(T), cudaMemcpyDeviceToHost));        	    		    
     }
-    void initRndVecsFromFile(std::string rnd_file) override {}
 
     /*! - For ChaseMpiDLABlaslapack, `preApplication` is implemented within
        ChaseMpiDLA.

@@ -46,7 +46,6 @@ install(EXPORT chase-headers
 
 ## ChASE-MPI ##
 add_subdirectory( "ChASE-MPI/")
-add_subdirectory( "ChASE-Elemental/")
 
 ## Tests
 add_executable( "chase_driver" tests/noinput.cpp )
@@ -67,8 +66,6 @@ if(BUILD_WITH_EXAMPLES)
         message(STATUS "Building the examples of ChASE")
         add_subdirectory("./examples")
 endif()
-
-add_subdirectory("./utils")
 
 enable_testing()
 add_test( BASIC "chase_driver" )

@@ -302,29 +302,6 @@ public:
 #endif	
     }
 
-    void initRndVecsFromFile(std::string rnd_file) override
-    {
-#ifdef USE_NSIGHT
-        nvtxRangePushA("ChaseMpiDLA: initRndVecsFromFile");
-#endif	    
-        std::ostringstream problem(std::ostringstream::ate);
-        problem << rnd_file;
-        std::ifstream infile(problem.str().c_str(), std::ios::binary);
-
-        for (auto j = 0; j < nev_ + nex_; j++)
-        {
-            for (auto i = 0; i < mblocks_; i++)
-            {
-                infile.seekg((j * N_ + r_offs_[i]) * sizeof(T));
-                infile.read(reinterpret_cast<char*>(C_ + j * m_ + r_offs_l_[i]),
-                            r_lens_[i] * sizeof(T));
-            }
-        }
-#ifdef USE_NSIGHT
-        nvtxRangePop();
-#endif	
-    }
-
     /*! - For ChaseMpiDLA, `preApplication` is implemented within `std::memcpy`.
         - **Parallelism on distributed-memory system SUPPORT**
         - For the meaning of this function, please visit ChaseMpiDLAInterface.

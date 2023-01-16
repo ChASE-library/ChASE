@@ -153,7 +153,6 @@ public:
     */
     virtual void initVecs() = 0;
     virtual void initRndVecs() = 0;
-    virtual void initRndVecsFromFile(std::string rnd_file) = 0;
 
     virtual void apply(T alpha, T beta, std::size_t offset, std::size_t block,
                        std::size_t locked) = 0;
