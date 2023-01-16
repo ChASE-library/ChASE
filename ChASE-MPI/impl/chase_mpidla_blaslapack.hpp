@@ -71,7 +71,15 @@ public:
 
     ~ChaseMpiDLABlaslapack() {}
     void initVecs() override {}
-    void initRndVecs() override {}
+    void initRndVecs() override {
+        std::mt19937 gen(1337.0);
+        std::normal_distribution<> d;
+
+        for(auto j = 0; j < m_ * (nev_ + nex_); j++){
+            auto rnd = getRandomT<T>([&]() { return d(gen); });
+            C_[j] = rnd;
+        }    
+    }
     void initRndVecsFromFile(std::string rnd_file) override {}
 
     /*! - For ChaseMpiDLABlaslapack, `preApplication` is implemented within

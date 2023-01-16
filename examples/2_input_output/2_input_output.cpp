@@ -547,6 +547,10 @@ int do_chase(ChASE_DriverProblemConfig& conf)
 
         start = std::chrono::high_resolution_clock::now();
 
+#ifdef USE_NSIGHT
+        nvtxRangePushA("MatrixIO");
+#endif
+
         if (rank == 0)
             std::cout << "start reading matrix\n";
 #ifdef USE_BLOCK_CYCLIC
@@ -573,7 +577,7 @@ int do_chase(ChASE_DriverProblemConfig& conf)
         }
 #endif
 
-        MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Barrier(MPI_COMM_WORLD);
 
         end = std::chrono::high_resolution_clock::now();
 
@@ -583,6 +587,10 @@ int do_chase(ChASE_DriverProblemConfig& conf)
         if (rank == 0)
             std::cout << "matrix are loaded in " << elapsed.count()
                       << " seconds" << std::endl;
+
+#ifdef USE_NSIGHT
+        nvtxRangePop();
+#endif	
         PerformanceDecoratorChase<T> performanceDecorator(&single);
 #ifdef USE_MPI
         MPI_Barrier(MPI_COMM_WORLD);

@@ -148,7 +148,8 @@ if(CMAKE_CUDA_COMPILER)
   elseif(${CMAKE_VERSION} VERSION_GREATER "3.18.0")
     find_package(CUDAToolkit REQUIRED)	  
     set(CUDA_CUBLAS_LIBRARIES CUDA::cublas)
-    set(CUDA_cusolver_LIBRARY CUDA::cusolver)    
+    set(CUDA_cusolver_LIBRARY CUDA::cusolver)
+    set(CUDA_curand_LIBRARY CUDA::curand)    
   endif()
 
   enable_language(CUDA)
@@ -199,6 +200,7 @@ if(CMAKE_CUDA_COMPILER)
   target_link_libraries( chase_cuda INTERFACE
     ${CUDA_CUBLAS_LIBRARIES}
     ${CUDA_cusolver_LIBRARY}
+    ${CUDA_curand_LIBRARY}
     ${CUDA_nvToolsExt_LIBRARY}
     )
    

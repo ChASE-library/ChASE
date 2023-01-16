@@ -251,9 +251,10 @@ public:
 #ifdef USE_NSIGHT
         nvtxRangePushA("ChaseMpiDLA: initRndVecs");
 #endif	    
-        std::mt19937 gen(1337.0);
-        std::normal_distribution<> d;
-        for (auto j = 0; j < nev_ + nex_; j++)
+        //std::mt19937 gen(1337.0);
+	//std::normal_distribution<> d;
+        /*
+	for (auto j = 0; j < nev_ + nex_; j++)
         {
             std::size_t cnt = 0;
             for (auto i = 0; i < N_; i++)
@@ -267,7 +268,36 @@ public:
                 }
             }
         }
+	*/
+	auto nevex = nev_ + nex_;
+        T one = T(1.0);
+        T zero = T(0.0);
 #ifdef USE_NSIGHT
+        nvtxRangePushA("random generation");
+#endif	
+	dla_->initRndVecs();
+/*
+	std::mt19937 gen(1337.0);
+        std::normal_distribution<> d;
+
+        for(auto j = 0; j < m_ * nevex; j++){
+            auto rnd = getRandomT<T>([&]() { return d(gen); });
+            C_[j] = rnd;
+        }
+*/
+#ifdef USE_NSIGHT
+        nvtxRangePop();
+#endif
+#ifdef USE_NSIGHT
+        nvtxRangePushA("CholQR1");
+#endif	
+	dla_->syherk('U', 'C', nevex, m_, &one, C_, m_, &zero, A_, nevex, true);
+	MPI_Allreduce(MPI_IN_PLACE, A_, nevex * nevex, getMPI_Type<T>(),
+                      MPI_SUM, col_comm_);
+	dla_->potrf('U', nevex, A_, nevex);
+	dla_->trsm('R', 'U', 'N', 'N', m_, nevex, &one, A_, nevex, C_, m_, false);
+#ifdef USE_NSIGHT
+	nvtxRangePop();
 	nvtxRangePop();
 #endif	
     }

@@ -861,8 +861,8 @@ public:
         c_offs_[0] = off_[1];
         c_lens_[0] = n_;
         c_offs_l_[0] = 0;
-
-        if (H_preAlloc)
+        
+	if (H_preAlloc)
         {
             H_.reset(new T[n_ * m_]());
         }
@@ -871,7 +871,8 @@ public:
         C2_.reset(new T[m_ * max_block_]());
         B2_.reset(new T[n_ * max_block_]());
         A_.reset(new T[max_block_ * max_block_]());
-        block_counts_.resize(2);
+        
+	block_counts_.resize(2);
         for (std::size_t dim_idx = 0; dim_idx < 2; dim_idx++)
         {
             block_counts_[dim_idx].resize(dims_[dim_idx]);
@@ -919,7 +920,6 @@ public:
             g_offsets_[dim_idx].push_back(
                 block_displs_[dim_idx][dims_[dim_idx] - 1][0]);
         }
-
 #if defined(HAS_SCALAPACK)
         // test for SCALAPACK
         // Initialize BLACS

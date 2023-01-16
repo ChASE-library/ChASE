@@ -10,8 +10,74 @@
 #include <cuComplex.h>
 #include <cuda_runtime.h>
 #include <omp.h>
+#include <curand_kernel.h>
 
 #define BLOCKDIM 256
+#define GRIDDIM 32
+
+__global__ void s_normal_kernel(curandState *states, float *v, int n)
+{
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    curandState *state = states + tid;
+    curand_init(9384, tid, 0, state);   
+
+    int i;
+    int nthreads = gridDim.x * blockDim.x;
+
+    for (i = tid; i < n; i += nthreads)
+    {
+        v[i] = curand_normal(state);
+    }
+}       	
+
+__global__ void d_normal_kernel(curandState *states, double *v, int n)
+{
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    curandState *state = states + tid;
+    curand_init(9384, tid, 0, state);
+
+    int i;
+    int nthreads = gridDim.x * blockDim.x;
+
+    for (i = tid; i < n; i += nthreads)
+    {
+        v[i] = curand_normal_double(state);
+    }
+}
+
+__global__ void c_normal_kernel(curandState *states, cuComplex *v, int n)	
+{
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    curandState *state = states + tid;
+    curand_init(9384, tid, 0, state);
+
+    int i;
+    int nthreads = gridDim.x * blockDim.x;
+
+    for (i = tid; i < n; i += nthreads)
+    {
+	float rnd =  curand_normal(state);    
+        v[i].x = rnd;
+	v[i].y = rnd;
+    }
+}
+
+__global__ void z_normal_kernel(curandState *states, cuDoubleComplex *v, int n)
+{
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    curandState *state = states + tid;
+    curand_init(9384, tid, 0, state);
+
+    int i;
+    int nthreads = gridDim.x * blockDim.x;
+
+    for (i = tid; i < n; i += nthreads)
+    {
+        double rnd = curand_normal_double(state);
+        v[i].x = rnd;
+        v[i].y = rnd;	
+    }
+}
 
 __global__ void sshift_matrix(float* A, int n, float shift)
 {
@@ -91,6 +157,26 @@ __global__ void zshift_mgpu_matrix(cuDoubleComplex* A, std::size_t* off_m,
         ind = off_n[i] * ldH + off_m[i];
         A[ind].x += shift;
     }
+}
+
+void chase_rand_normal(curandState *states, float *v, int n, cudaStream_t stream_ )
+{
+     s_normal_kernel<<<GRIDDIM,BLOCKDIM,0,stream_>>>(states, v, n); 	
+}
+
+void chase_rand_normal(curandState *states, double *v, int n, cudaStream_t stream_ )
+{
+     d_normal_kernel<<<GRIDDIM,BLOCKDIM,0,stream_>>>(states, v, n);
+}
+
+void chase_rand_normal(curandState *states, std::complex<float> *v, int n, cudaStream_t stream_ )
+{
+     c_normal_kernel<<<GRIDDIM,BLOCKDIM,0,stream_>>>(states, reinterpret_cast<cuComplex*>(v), n);
+}
+
+void chase_rand_normal(curandState *states, std::complex<double> *v, int n, cudaStream_t stream_ )
+{
+     z_normal_kernel<<<GRIDDIM,BLOCKDIM,0,stream_>>>(states, reinterpret_cast<cuDoubleComplex*>(v), n);
 }
 
 void chase_shift_matrix(float* A, int n, float shift, cudaStream_t* stream_)
