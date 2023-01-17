@@ -20,8 +20,7 @@ class Chase
 public:
     virtual void Shift(T c, bool isunshift = false) = 0;
     virtual void HEMM(std::size_t nev, T alpha, T beta, std::size_t offset) = 0;
-    virtual void stabQR(std::size_t fixednev) = 0;
-    virtual void fastQR(std::size_t fixednev) = 0;
+    virtual void QR(std::size_t fixednev) = 0;
     virtual void RR(Base<T>* ritzv, std::size_t block) = 0;
     virtual void Resd(Base<T>* ritzv, Base<T>* resd, std::size_t fixednev) = 0;
     virtual void Lanczos(std::size_t m, Base<T>* upperb) = 0;
@@ -33,7 +32,7 @@ public:
     virtual void Lock(std::size_t new_converged) = 0;
     virtual void Start() = 0;
     virtual void End() = 0;
-    virtual void initVecs() = 0;
+    virtual void initVecs(bool random) = 0;
     virtual std::size_t GetN() const = 0;
     virtual std::size_t GetNev() = 0;
     virtual std::size_t GetNex() = 0;

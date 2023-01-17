@@ -123,9 +123,6 @@ int main(int argc, char** argv)
     single.GetOff(&xoff, &yoff, &xlen, &ylen);
 #endif
 
-    /*randomize V*/
-    single.initRndVecs(true);
-
     for (auto idx = 0; idx < idx_max; ++idx)
     {
         if (rank == 0)

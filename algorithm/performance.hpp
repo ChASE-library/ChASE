@@ -335,7 +335,7 @@ class PerformanceDecoratorChase : public chase::Chase<T>
 public:
     PerformanceDecoratorChase(Chase<T>* chase) : chase_(chase), perf_() {}
 
-    void initVecs() { chase_->initVecs(); }
+    void initVecs(bool random) { chase_->initVecs(random); }
 
     void Shift(T c, bool isunshift = false)
     {
@@ -352,17 +352,10 @@ public:
         perf_.add_filtered_vecs(nev);
     }
 
-    void stabQR(std::size_t fixednev)
+    void QR(std::size_t fixednev)
     {
         perf_.start_clock(ChasePerfData::TimePtrs::Qr);
-        chase_->stabQR(fixednev);
-        perf_.end_clock(ChasePerfData::TimePtrs::Qr);
-    }
-
-    void fastQR(std::size_t fixednev)
-    {
-        perf_.start_clock(ChasePerfData::TimePtrs::Qr);
-        chase_->fastQR(fixednev);
+        chase_->QR(fixednev);
         perf_.end_clock(ChasePerfData::TimePtrs::Qr);
     }
 

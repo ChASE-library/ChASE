@@ -193,9 +193,6 @@ int main(int argc, char** argv)
 
 #endif
 
-    /*randomize V*/
-    single.initRndVecs(true);
-
     /*Setup configure for ChASE*/
     auto& config = single.GetConfig();
     /*Tolerance for Eigenpair convergence*/

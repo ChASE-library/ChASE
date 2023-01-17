@@ -86,8 +86,6 @@ int main()
             H[i + N * (i + 1)] = std::sqrt(i * (N + 1 - i));
     }
 
-    single.initRndVecs(true);
-
     for (auto idx = 0; idx < idx_max; ++idx)
     {
         if (rank == 0)

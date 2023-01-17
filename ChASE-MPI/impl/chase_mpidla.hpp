@@ -251,24 +251,6 @@ public:
 #ifdef USE_NSIGHT
         nvtxRangePushA("ChaseMpiDLA: initRndVecs");
 #endif	    
-        //std::mt19937 gen(1337.0);
-	//std::normal_distribution<> d;
-        /*
-	for (auto j = 0; j < nev_ + nex_; j++)
-        {
-            std::size_t cnt = 0;
-            for (auto i = 0; i < N_; i++)
-            {
-                auto rnk = (i / mb_) % col_size_;
-                auto rnd = getRandomT<T>([&]() { return d(gen); });
-                if (col_rank_ == rnk)
-                {
-                    C_[cnt + j * m_] = rnd;
-                    cnt++;
-                }
-            }
-        }
-	*/
 	auto nevex = nev_ + nex_;
         T one = T(1.0);
         T zero = T(0.0);
@@ -276,15 +258,6 @@ public:
         nvtxRangePushA("random generation");
 #endif	
 	dla_->initRndVecs();
-/*
-	std::mt19937 gen(1337.0);
-        std::normal_distribution<> d;
-
-        for(auto j = 0; j < m_ * nevex; j++){
-            auto rnd = getRandomT<T>([&]() { return d(gen); });
-            C_[j] = rnd;
-        }
-*/
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif

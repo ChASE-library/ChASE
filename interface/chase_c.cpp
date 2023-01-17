@@ -268,28 +268,6 @@ void chase_seq(T* H, int* N, T* V, Base<T>* ritzv, int* nev, int* nex, int* deg,
     config.SetOpt(*opt == 'S');
     config.SetApprox(*mode == 'A');
 
-    std::string rnd_file;
-    if (sizeof(T) == 2 * sizeof(Base<T>))
-    {
-        rnd_file = "./tmp/rnd_z.bin";
-    }
-    else if (sizeof(T) == sizeof(Base<T>))
-    {
-        rnd_file = "./tmp/rnd_d.bin";
-    }
-
-    if (!config.UseApprox())
-    {
-        if (isPathExist(rnd_file))
-        {
-            single.initRndVecs(true);
-        }
-        else
-        {
-            single.initRndVecs(false);
-        }
-    }
-
     PerformanceDecoratorChase<T> performanceDecorator(&single);
     start_times[2] = std::chrono::high_resolution_clock::now();
     chase::Solve(&performanceDecorator);
@@ -357,28 +335,6 @@ void chase_solve(T* H, int* LDH, T* V, int* LDV, Base<T>* ritzv, int* deg,
     ChaseConfig<T>& config = single.GetConfig();
     auto N = config.GetN();
 
-    std::string rnd_file;
-    if (sizeof(T) == 2 * sizeof(Base<T>))
-    {
-        rnd_file = "./tmp/rnd_z.bin";
-    }
-    else if (sizeof(T) == sizeof(Base<T>))
-    {
-        rnd_file = "./tmp/rnd_d.bin";
-    }
-
-    if (!config.UseApprox())
-    {
-        if (isPathExist(rnd_file))
-        {
-            single.initRndVecs(true);
-        }
-        else
-        {
-            single.initRndVecs(false);
-        }
-    }
-
     config.SetTol(*tol);
     config.SetDeg(*deg);
     config.SetOpt(*opt == 'S');
@@ -432,29 +388,6 @@ void chase_solve_mgpu(T* H, int* LDH, T* V, int* LDV, Base<T>* ritzv, int* deg,
 
     ChaseConfig<T>& config = single.GetConfig();
     auto N = config.GetN();
-
-    std::string rnd_file;
-    if (sizeof(T) == 2 * sizeof(Base<T>))
-    {
-        rnd_file = "./tmp/rnd_z.bin";
-    }
-    else if (sizeof(T) == sizeof(Base<T>))
-    {
-        rnd_file = "./tmp/rnd_d.bin";
-    }
-
-    if (!config.UseApprox())
-    {
-        if (isPathExist(rnd_file))
-        {
-            single.initRndVecs(true);
-        }
-        else
-        {
-            single.initRndVecs(false);
-        }
-    }
-
     config.SetTol(*tol);
     config.SetDeg(*deg);
     config.SetOpt(*opt == 'S');

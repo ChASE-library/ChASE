@@ -378,10 +378,10 @@ void Algorithm<T>::solve(Chase<T>* single)
     deg = std::min(deg, config.GetMaxDeg());
     for (std::size_t i = 0; i < nevex; ++i)
         degrees[i] = deg;
-    single->initVecs();
+    bool random = !config.UseApprox();
+    single->initVecs(random);
     // --------------------------------- LANCZOS
     // ---------------------------------
-    bool random = !config.UseApprox();
 #ifdef USE_NSIGHT
     nvtxRangePushA("Lanczos");
 #endif    
@@ -463,20 +463,7 @@ void Algorithm<T>::solve(Chase<T>* single)
 #endif	
         //----------------------------------- QR
         //-----------------------------------
-        if (iteration == 0)
-        {
-            // first time QR uses the one with high numerical stability, e.g.,
-            // householder, tsqr, etc
-            single->stabQR(locked);
-            // std::cout << "#" << iteration << ", use stable QR" << std::endl;
-        }
-        else
-        {
-            // the rest QR use fast QR algorithm, such as choleskyQR2, block
-            // classic gram schmit, etc
-            single->fastQR(locked);
-            // std::cout << "#" << iteration << ", use fast QR" << std::endl;
-        }
+        single->QR(locked);
 #ifdef USE_NSIGHT	
         nvtxRangePop();
 	nvtxRangePushA("RR");

@@ -72,7 +72,9 @@ public:
     ~ChaseMpiDLABlaslapack() {}
     void initVecs() override {}
     void initRndVecs() override {
-        std::mt19937 gen(1337.0);
+	std::mt19937 gen(1337.0);
+	//std::mt19937_64 gen(1337.0);
+	//std::default_random_engine gen(1337);
         std::normal_distribution<> d;
 
         for(auto j = 0; j < m_ * (nev_ + nex_); j++){
@@ -369,7 +371,7 @@ public:
 
     	this->gemm(CblasColMajor, CblasConjTrans, CblasNoTrans, block, block,
                    n_, &One, B2_ + locked * n_, n_, B_ + locked * n_, n_, &Zero,
-                   A_, block);      
+                   A_, nev_ + nex_);      
     }
 
     void V2C(T* v1, std::size_t off1, T* v2, std::size_t off2,

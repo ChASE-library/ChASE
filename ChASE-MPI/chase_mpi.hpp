@@ -251,17 +251,17 @@ public:
         dla_->shiftMatrix(c, isunshift);
     };
 
-    void initVecs() override { dla_->initVecs(); }
-
-    void initRndVecs(bool isFileAvail = false)
-    {
+    void initVecs(bool random) override { 
+        if(random){
 #ifdef USE_NSIGHT
-        nvtxRangePushA("InitRndVecs");
+            nvtxRangePushA("InitRndVecs");
 #endif	    
-        dla_->initRndVecs();
+            dla_->initRndVecs();
 #ifdef USE_NSIGHT
-        nvtxRangePop();	
-#endif	
+            nvtxRangePop();	
+#endif		
+	}
+	dla_->initVecs(); 
     }
 
     // todo this is wrong we want the END of V
@@ -291,48 +291,13 @@ public:
 
     void Hv(T alpha);
 
-    //! This member function implements the virtual one declared in Chase class.
     //! This member function performs a QR factorization with an explicit
     //! construction of the unitary matrix `Q`. After the explicit construction
     //! of Q, its first `fixednev` number of vectors are overwritten by the
     //! converged eigenvectors stored in `workspace_`.
     //! @param fixednev: total number of converged eigenpairs before this time
     //! QR factorization.
-    void stabQR(std::size_t fixednev) override
-    {
-        // dla_->cholQR(locked_);
-        //dla_->hhQR(locked_);
-        int grank;
-        MPI_Comm_rank(MPI_COMM_WORLD, &grank);
-        char* hhdisable;
-        hhdisable = getenv("CHASE_DISABLE_HHQR");
-        int diasable = 0;
-        if (hhdisable)
-        {
-            diasable = std::atoi(hhdisable);
-        }
-        if (diasable == 1)
-        {
-#ifdef CHASE_OUTPUT
-            if (grank == 0)
-                std::cout << "Househoulder QR is disabled, always use Cholesky QR. "
-                          << std::endl;
-#endif
-            dla_->cholQR(locked_);
-        }
-        else
-        {
-            dla_->hhQR(locked_);
-        }	
-    }
-    //! This member function implements the virtual one declared in Chase class.
-    //! This member function performs a QR factorization with an explicit
-    //! construction of the unitary matrix `Q`. After the explicit construction
-    //! of Q, its first `fixednev` number of vectors are overwritten by the
-    //! converged eigenvectors stored in `workspace_`.
-    //! @param fixednev: total number of converged eigenpairs before this time
-    //! QR factorization.
-    void fastQR(std::size_t fixednev) override
+    void QR(std::size_t fixednev) override
     {
         int grank;
         MPI_Comm_rank(MPI_COMM_WORLD, &grank);

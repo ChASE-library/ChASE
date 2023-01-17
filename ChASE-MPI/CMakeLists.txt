@@ -71,20 +71,6 @@ target_compile_options( chase_seq INTERFACE
   ${MPI_CXX_COMPILE_FLAGS}  
   )
 
-install( TARGETS chase_seq
-  EXPORT chase-seq
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  )
-
-install(EXPORT chase-seq
-  NAMESPACE ChASE::
-  FILE chase-seq.cmake
-  EXPORT_LINK_INTERFACE_LIBRARIES
-  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
-  )
-
 target_include_directories( chase_mpi INTERFACE
   ${MPI_CXX_INCLUDE_PATH}
   )
@@ -114,30 +100,6 @@ if(OpenMP_FOUND)
             OpenMP::OpenMP_CXX
         )
 endif()
-
-install( TARGETS chase_mpi
-  EXPORT chase-mpi
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  )
-
-install(DIRECTORY . DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ChASE-MPI/
-  FILES_MATCHING
-    PATTERN "*.hpp"
-    PATTERN "*.inc"
-)
-
-install( FILES  ${CMAKE_BINARY_DIR}/fortran_mangle.h
-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-  )
-
-install(EXPORT chase-mpi
-  NAMESPACE ChASE::
-  FILE chase-mpi.cmake
-  EXPORT_LINK_INTERFACE_LIBRARIES
-  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
-  )
 
 include(CheckLanguage)
 check_language(CUDA)
@@ -203,6 +165,12 @@ if(CMAKE_CUDA_COMPILER)
     ${CUDA_curand_LIBRARY}
     ${CUDA_nvToolsExt_LIBRARY}
     )
+  target_link_libraries( chase_mpi INTERFACE
+    ${CUDA_nvToolsExt_LIBRARY}
+    )    
+  target_link_libraries( chase_seq INTERFACE
+    ${CUDA_nvToolsExt_LIBRARY}
+    )
    
   if(ENABLE_NSIGHT)
       target_compile_definitions(chase_cuda INTERFACE USE_NSIGHT)
@@ -232,4 +200,41 @@ else()
   endif()
 endif()
 
+install( TARGETS chase_seq
+  EXPORT chase-seq
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  )
+
+install(EXPORT chase-seq
+  NAMESPACE ChASE::
+  FILE chase-seq.cmake
+  EXPORT_LINK_INTERFACE_LIBRARIES
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
+  )
+
+install( TARGETS chase_mpi
+  EXPORT chase-mpi
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  )
+
+install(DIRECTORY . DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ChASE-MPI/
+  FILES_MATCHING
+    PATTERN "*.hpp"
+    PATTERN "*.inc"
+)
+
+install( FILES  ${CMAKE_BINARY_DIR}/fortran_mangle.h
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  )
+
+install(EXPORT chase-mpi
+  NAMESPACE ChASE::
+  FILE chase-mpi.cmake
+  EXPORT_LINK_INTERFACE_LIBRARIES
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
+  )
 
