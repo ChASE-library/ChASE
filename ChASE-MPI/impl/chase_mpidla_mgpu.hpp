@@ -22,13 +22,23 @@
 #include "ChASE-MPI/chase_mpi_properties.hpp"
 #include "ChASE-MPI/chase_mpidla_interface.hpp"
 
-void chase_rand_normal(curandState *states, float *v, int n, cudaStream_t stream_ );
+void chase_rand_normal(unsigned long long seed, curandState *states, float *v, int n, cudaStream_t stream_ );
 
-void chase_rand_normal(curandState *states, double *v, int n, cudaStream_t stream_ );
+void chase_rand_normal(unsigned long long seed, curandState *states, double *v, int n, cudaStream_t stream_ );
 
-void chase_rand_normal(curandState *states, std::complex<float> *v, int n, cudaStream_t stream_ );
+void chase_rand_normal(unsigned long long seed, curandState *states, std::complex<float> *v, int n, cudaStream_t stream_ );
 
-void chase_rand_normal(curandState *states, std::complex<double> *v, int n, cudaStream_t stream_ );
+void chase_rand_normal(unsigned long long seed, curandState *states, std::complex<double> *v, int n, cudaStream_t stream_ );
+
+void chase_shift_matrix(float* A, int n, float shift, cudaStream_t* stream_);
+
+void chase_shift_matrix(double* A, int n, double shift, cudaStream_t* stream_);
+
+void chase_shift_matrix(std::complex<float>* A, int n, float shift,
+                        cudaStream_t* stream_);
+
+void chase_shift_matrix(std::complex<double>* A, int n, double shift,
+                        cudaStream_t* stream_);
 
 void chase_shift_mgpu_matrix(float* A, std::size_t* off_m, std::size_t* off_n,
                              std::size_t offsize, std::size_t ldH, float shift,
@@ -227,16 +237,27 @@ public:
         cuda_exec(cudaMemcpy(d_H_, H_, m_ * n_ * sizeof(T), cudaMemcpyHostToDevice));
     }
     void initRndVecs() override {
-        /*std::mt19937 gen(1337.0);
+        MPI_Comm col_comm = matrix_properties_->get_col_comm();
+        int mpi_col_rank;
+        MPI_Comm_rank(col_comm, &mpi_col_rank);
+	unsigned long long seed = 1337 + mpi_col_rank;
+
+	chase_rand_normal(seed, states_, d_C_, m_ * (nev_ + nex_), (cudaStream_t) 0);   
+        cuda_exec(cudaMemcpy(C_, d_C_, m_ * (nev_ + nex_) * sizeof(T), cudaMemcpyDeviceToHost));        	    		    
+        /*
+        MPI_Comm col_comm = matrix_properties_->get_col_comm();
+	int mpi_col_rank;
+        MPI_Comm_rank(col_comm, &mpi_col_rank);
+
+	std::mt19937 gen(1337.0 + mpi_col_rank);
         std::normal_distribution<> d;
 
-        for(auto j = 0; j < m_ * (nev_ + nex_); j++){	
+        for(auto j = 0; j < m_ * (nev_ + nex_); j++){
             auto rnd = getRandomT<T>([&]() { return d(gen); });
             C_[j] = rnd;
-        }
-        */
-	chase_rand_normal(states_, d_C_, m_ * (nev_ + nex_), (cudaStream_t) 0);   
-        cuda_exec(cudaMemcpy(C_, d_C_, m_ * (nev_ + nex_) * sizeof(T), cudaMemcpyDeviceToHost));        	    		    
+	}
+	*/
+
     }
 
     /*! - For ChaseMpiDLABlaslapack, `preApplication` is implemented within

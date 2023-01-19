@@ -72,7 +72,7 @@ public:
     ~ChaseMpiDLABlaslapack() {}
     void initVecs() override {}
     void initRndVecs() override {
-	std::mt19937 gen(1337.0);
+	std::mt19937 gen(1337.0 + mpi_col_rank);
 	//std::mt19937_64 gen(1337.0);
 	//std::default_random_engine gen(1337);
         std::normal_distribution<> d;

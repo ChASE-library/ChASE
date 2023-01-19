@@ -65,17 +65,20 @@ int main(int argc, char* argv[])
     Base<T> cond;
     int len;
     int info;
+    int diff;
 
-    if(argc < 3){
+    if(argc < 4){
         if(rank == 0){
 	    std::cout << "Not enough command line arguments are provided.\n";
     	    std::cout << "Run with default matrix size..." << std::endl; 	    
 	}
 	M = 1000;
 	n = 500;
+	diff = 0;
     }else{
         M = atoi(argv[1]);
 	n = atoi(argv[2]);
+	diff=atoi(argv[3]);
     }
 
     if(M % size == 0){
@@ -90,8 +93,14 @@ int main(int argc, char* argv[])
         m = M - (size - 1) * len;
     }
 
+   
     //std::default_random_engine gen(1231.0 * rank);
-    std::mt19937 gen(1337.0);
+    std::mt19937 gen;
+    if(diff == 0){
+        gen = std::mt19937(1337.0);
+    }else{
+        gen = std::mt19937(1337.0 * rank);
+    }	
     //std::mt19937 gen(1337.0 * rank);
     std::normal_distribution<> d;
     
@@ -133,6 +142,11 @@ int main(int argc, char* argv[])
     cond = std::sqrt(ev[n-1]/ev[0]);
 
     if(rank == 0){
+	if(diff == 0){
+	   std::cout << "single seeded, ";
+	}else{
+	   std::cout << "multip seeded, ";
+	}    
         std::cout << "M: " << M << ", N: " << n << ", rcond: " << cond ;
     }
 
