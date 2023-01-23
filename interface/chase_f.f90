@@ -7,10 +7,11 @@ MODULE chase_diag
   INTERFACE
   !> shard-memory version of ChASE with real scalar in double precison
   !>  
-    SUBROUTINE dchase( h, n, v, ritzv, nev, nex, deg, tol, mode, opt ) bind( c, name = 'dchase_' )
+    SUBROUTINE dchase( n, h, ldh, v, ritzv, nev, nex, deg, tol, mode, opt ) bind( c, name = 'dchase_' )
   !>
+  !> @param[in] n global matrix size of the matrix to be diagonalized  
   !> @param[in] h pointer to the matrix to be diagonalized
-  !> @param[in] n global matrix size of the matrix to be diagonalized
+  !> @param[in] ldh leading dimension of h
   !> @param[inout] v `(Nxnev+nex)` matrix, input is the initial guess eigenvectors, and for output, the first `nev` columns are overwritten by the desired eigenvectors
   !> @param[out] ritzv an array of size `nev` which contains the desired eigenvalues
   !> @param[int] nev number of desired eigenpairs
@@ -21,7 +22,7 @@ MODULE chase_diag
   !> @param[int] opt determining if using internal optimization of Chebyshev polynomial degree. If `opt=S`, use, otherwise, no.    
       USE, INTRINSIC :: iso_c_binding
       REAL(c_double)        :: h(n,*), v(n,*)
-      INTEGER(c_int)                :: n, deg, nev, nex
+      INTEGER(c_int)                :: n, deg, nev, nex, ldh
       REAL(c_double)                :: ritzv(*), tol
       CHARACTER(len=1,kind=c_char)  :: mode, opt
     END SUBROUTINE dchase
@@ -31,9 +32,10 @@ MODULE chase_diag
   !> shard-memory version of ChASE with real scalar in single precison
   !>
 !>    
-    SUBROUTINE schase( h, n, v, ritzv, nev, nex, deg, tol, mode, opt ) bind( c, name = 'schase_' )
+    SUBROUTINE schase( n, h, ldh, v, ritzv, nev, nex, deg, tol, mode, opt ) bind( c, name = 'schase_' )
+  !> @param[in] n global matrix size of the matrix to be diagonalized  
   !> @param[in] h pointer to the matrix to be diagonalized
-  !> @param[in] n global matrix size of the matrix to be diagonalized
+  !> @param[in] ldh leading dimension of h  
   !> @param[inout] v `(Nxnev+nex)` matrix, input is the initial guess eigenvectors, and for output, the first `nev` columns are overwritten by the desired eigenvectors
   !> @param[out] ritzv an array of size `nev` which contains the desired eigenvalues
   !> @param[int] nev number of desired eigenpairs
@@ -44,7 +46,7 @@ MODULE chase_diag
   !> @param[int] opt determining if using internal optimization of Chebyshev polynomial degree. If `opt=S`, use, otherwise, no.    
       USE, INTRINSIC :: iso_c_binding
       REAL(c_float)        :: h(n,*), v(n,*)
-      INTEGER(c_int)                :: n, deg, nev, nex
+      INTEGER(c_int)                :: n, deg, nev, nex, ldh
       REAL(c_double)                :: ritzv(*), tol
       CHARACTER(len=1,kind=c_char)  :: mode, opt
     END SUBROUTINE schase
@@ -53,9 +55,10 @@ MODULE chase_diag
   !>
 !>  
   INTERFACE
-    SUBROUTINE cchase( h, n, v, ritzv, nev, nex, deg, tol, mode, opt ) bind( c, name = 'cchase_' )
-  !> @param[in] h pointer to the matrix to be diagonalized
+    SUBROUTINE cchase( n, h, ldh, v, ritzv, nev, nex, deg, tol, mode, opt ) bind( c, name = 'cchase_' )
   !> @param[in] n global matrix size of the matrix to be diagonalized
+  !> @param[in] h pointer to the matrix to be diagonalized
+  !> @param[in] ldh leading dimension of h  
   !> @param[inout] v `(Nxnev+nex)` matrix, input is the initial guess eigenvectors, and for output, the first `nev` columns are overwritten by the desired eigenvectors
   !> @param[out] ritzv an array of size `nev` which contains the desired eigenvalues
   !> @param[int] nev number of desired eigenpairs
@@ -66,7 +69,7 @@ MODULE chase_diag
   !> @param[int] opt determining if using internal optimization of Chebyshev polynomial degree. If `opt=S`, use, otherwise, no.    
       USE, INTRINSIC :: iso_c_binding
       COMPLEX(c_float_complex)     :: h(n,*), v(n,*)
-      INTEGER(c_int)                :: n, deg, nev, nex
+      INTEGER(c_int)                :: n, deg, nev, nex, ldh
       REAL(c_double)                :: ritzv(*), tol
       CHARACTER(len=1,kind=c_char)  :: mode, opt
     END SUBROUTINE cchase
@@ -75,9 +78,10 @@ MODULE chase_diag
   !>
 !>  
   INTERFACE
-    SUBROUTINE zchase( h, n, v, ritzv, nev, nex, deg, tol, mode, opt ) bind( c, name = 'zchase_' )
-  !> @param[in] h pointer to the matrix to be diagonalized
+    SUBROUTINE zchase( n, h, ldh, v, ritzv, nev, nex, deg, tol, mode, opt ) bind( c, name = 'zchase_' )
   !> @param[in] n global matrix size of the matrix to be diagonalized
+  !> @param[in] h pointer to the matrix to be diagonalized
+  !> @param[in] ldh leading dimension of h  
   !> @param[inout] v `(Nxnev+nex)` matrix, input is the initial guess eigenvectors, and for output, the first `nev` columns are overwritten by the desired eigenvectors
   !> @param[out] ritzv an array of size `nev` which contains the desired eigenvalues
   !> @param[int] nev number of desired eigenpairs
@@ -88,7 +92,7 @@ MODULE chase_diag
   !> @param[int] opt determining if using internal optimization of Chebyshev polynomial degree. If `opt=S`, use, otherwise, no.    
       USE, INTRINSIC :: iso_c_binding
       COMPLEX(c_double_complex)     :: h(n,*), v(n,*)
-      INTEGER(c_int)                :: n, deg, nev, nex
+      INTEGER(c_int)                :: n, deg, nev, nex, ldh
       REAL(c_double)                :: ritzv(*), tol
       CHARACTER(len=1,kind=c_char)  :: mode, opt
     END SUBROUTINE zchase
@@ -417,95 +421,6 @@ MODULE chase_diag
        CHARACTER(len=1,kind=c_char)  :: mode, opt
      END SUBROUTINE pcchase
   END INTERFACE
-
-#if defined(HAS_GPU)
-  !> distributed multi-GPU version ChASE for real scalar in double precision
-  !> 
-  INTERFACE
-     SUBROUTINE pdchase_mgpu(h, ldh, v, ritzv, deg, tol, mode, opt ) BIND( c, name = 'pdchase_mgpu_' )
-  !> Compute the first nev eigenpairs by ChASE
-  !> This mechanism is built with user provided MPI grid shape and blocksize of block-cyclic distribution in row/column direction
-  !> @param[in] h pointer to the local portion of the matrix to be diagonalized
-  !> @param[in] ldh leading dimension of `h`
-  !> @param[inout] v `(Nxnev+nex)` matrix, input is the initial guess eigenvectors, and for output, the first `nev` columns are overwritten by the desired eigenvectors
-  !> @param[out] ritzv an array of size `nev` which contains the desired eigenvalues
-  !> @param[int] deg initial degree of Cheyshev polynomial filter
-  !> @param[int] tol desired absolute tolerance of computed eigenpairs
-  !> @param[int] mode for sequences of eigenproblems, if reusing the eigenpairs obtained from last system. If `mode = A`, reuse, otherwise, not.
-  !> @param[int] opt determining if using internal optimization of Chebyshev polynomial degree. If `opt=S`, use, otherwise, no.         
-       USE, INTRINSIC :: iso_c_binding
-       REAL(c_double)        :: h(*), v(*)
-       INTEGER(c_int)                :: deg, ldh
-       REAL(c_double)                :: ritzv(*), tol
-       CHARACTER(len=1,kind=c_char)  :: mode, opt
-     END SUBROUTINE pdchase_mgpu
-  END INTERFACE
-  !> distributed multi-GPU version ChASE for complex scalar in double precision
-  !> 
-  INTERFACE
-     SUBROUTINE pzchase_mgpu(h, ldh, v, ritzv, deg, tol, mode, opt ) BIND( c, name = 'pzchase_mgpu_' )
-  !> Compute the first nev eigenpairs by ChASE
-  !> This mechanism is built with user provided MPI grid shape and blocksize of block-cyclic distribution in row/column direction
-  !> @param[in] h pointer to the local portion of the matrix to be diagonalized
-  !> @param[in] ldh leading dimension of `h`
-  !> @param[inout] v `(Nxnev+nex)` matrix, input is the initial guess eigenvectors, and for output, the first `nev` columns are overwritten by the desired eigenvectors
-  !> @param[out] ritzv an array of size `nev` which contains the desired eigenvalues
-  !> @param[int] deg initial degree of Cheyshev polynomial filter
-  !> @param[int] tol desired absolute tolerance of computed eigenpairs
-  !> @param[int] mode for sequences of eigenproblems, if reusing the eigenpairs obtained from last system. If `mode = A`, reuse, otherwise, not.
-  !> @param[int] opt determining if using internal optimization of Chebyshev polynomial degree. If `opt=S`, use, otherwise, no.         
-       USE, INTRINSIC :: iso_c_binding
-       COMPLEX(c_double_complex)     :: h(*), v(*)
-       INTEGER(c_int)                :: deg, ldh
-       REAL(c_double)                :: ritzv(*), tol
-       CHARACTER(len=1,kind=c_char)  :: mode, opt
-     END SUBROUTINE pzchase_mgpu
-  END INTERFACE
-  !> distributed multi-GPU version ChASE for real scalar in single precision
-  !> 
-  INTERFACE
-     SUBROUTINE pschase_mgpu(h, ldh, v, ritzv, deg, tol, mode, opt ) BIND( c, name = 'pschase_mgpu_' )
-  !> Compute the first nev eigenpairs by ChASE
-  !> This mechanism is built with user provided MPI grid shape and blocksize of block-cyclic distribution in row/column direction
-  !> @param[in] h pointer to the local portion of the matrix to be diagonalized
-  !> @param[in] ldh leading dimension of `h`
-  !> @param[inout] v `(Nxnev+nex)` matrix, input is the initial guess eigenvectors, and for output, the first `nev` columns are overwritten by the desired eigenvectors
-  !> @param[out] ritzv an array of size `nev` which contains the desired eigenvalues
-  !> @param[int] deg initial degree of Cheyshev polynomial filter
-  !> @param[int] tol desired absolute tolerance of computed eigenpairs
-  !> @param[int] mode for sequences of eigenproblems, if reusing the eigenpairs obtained from last system. If `mode = A`, reuse, otherwise, not.
-  !> @param[int] opt determining if using internal optimization of Chebyshev polynomial degree. If `opt=S`, use, otherwise, no.         
-       USE, INTRINSIC :: iso_c_binding
-       REAL(c_float)                 :: h(*), v(*)
-       INTEGER(c_int)                :: deg, ldh
-       REAL(c_float)                 :: ritzv(*)
-       REAL(c_double)                :: tol
-       CHARACTER(len=1,kind=c_char)  :: mode, opt
-     END SUBROUTINE pschase_mgpu
-  END INTERFACE
-  !> distributed multi-GPU version ChASE for complex scalar in single precision
-  !> 
-  INTERFACE
-     SUBROUTINE pcchase_mgpu(h, ldh, v, ritzv, deg, tol, mode, opt ) BIND( c, name = 'pcchase_mgpu_' )
-  !> Compute the first nev eigenpairs by ChASE
-  !> This mechanism is built with user provided MPI grid shape and blocksize of block-cyclic distribution in row/column direction
-  !> @param[in] h pointer to the local portion of the matrix to be diagonalized
-  !> @param[in] ldh leading dimension of `h`
-  !> @param[inout] v `(Nxnev+nex)` matrix, input is the initial guess eigenvectors, and for output, the first `nev` columns are overwritten by the desired eigenvectors
-  !> @param[out] ritzv an array of size `nev` which contains the desired eigenvalues
-  !> @param[int] deg initial degree of Cheyshev polynomial filter
-  !> @param[int] tol desired absolute tolerance of computed eigenpairs
-  !> @param[int] mode for sequences of eigenproblems, if reusing the eigenpairs obtained from last system. If `mode = A`, reuse, otherwise, not.
-  !> @param[int] opt determining if using internal optimization of Chebyshev polynomial degree. If `opt=S`, use, otherwise, no.         
-       USE, INTRINSIC :: iso_c_binding
-       COMPLEX(c_float_complex)      :: h(*), v(*)
-       INTEGER(c_int)                :: deg, ldh
-       REAL(c_float)                 :: ritzv(*)
-       REAL(c_double)                :: tol
-       CHARACTER(len=1,kind=c_char)  :: mode, opt
-     END SUBROUTINE pcchase_mgpu
-  END INTERFACE  
-#endif
 
 END MODULE chase_diag
 !> @} end of chasc-c

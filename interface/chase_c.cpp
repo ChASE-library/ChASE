@@ -23,6 +23,7 @@
 
 #ifdef HAS_GPU
   #include "ChASE-MPI/impl/chase_mpidla_mgpu.hpp"
+  #include "ChASE-MPI/impl/chase_mpidla_cuda_seq.hpp"
 #endif
 
 using namespace chase;
@@ -288,9 +289,13 @@ ChaseMpiProperties<std::complex<float>>* ChASE_State::getProperties() {
 }
 
 template <typename T>
-void chase_seq(T* H, int* N, T* V, Base<T>* ritzv, int* nev, int* nex,
+void chase_seq(int *N, T* H, int* ldh, T* V, Base<T>* ritzv, int* nev, int* nex,
                 int* deg, double* tol, char* mode, char* opt) {
+#ifdef HAS_GPU
+  typedef ChaseMpi<ChaseMpiDLACudaSeq, T> SEQ_CHASE;
+#else	
   typedef ChaseMpi<ChaseMpiDLABlaslapackSeq, T> SEQ_CHASE;
+#endif
 
   std::vector<std::chrono::duration<double>> timings(3);
   std::vector<std::chrono::time_point<std::chrono::high_resolution_clock>> start_times(3);
@@ -300,13 +305,17 @@ void chase_seq(T* H, int* N, T* V, Base<T>* ritzv, int* nev, int* nex,
   std::mt19937 gen(2342.0);
   std::normal_distribution<> d;
 
-  SEQ_CHASE single(*N, *nev, *nex, V, ritzv, H);
+  SEQ_CHASE single(*N, *nev, *nex, V, ritzv);
+
+  T* H_ = single.GetMatrixPtr();
 
   ChaseConfig<T>& config = single.GetConfig();
   config.SetTol(*tol);
   config.SetDeg(*deg);
   config.SetOpt(*opt == 'S');
   config.SetApprox(*mode == 'A');
+
+  t_lacpy('A', *N, *N, H, *ldh, H_, *N);
 
   if (!config.UseApprox())
     for (std::size_t k = 0; k < *N * (*nev + *nex); ++k)
@@ -317,9 +326,11 @@ void chase_seq(T* H, int* N, T* V, Base<T>* ritzv, int* nev, int* nex,
   chase::Solve(&performanceDecorator);
   timings[2] = std::chrono::high_resolution_clock::now() - start_times[2];
   timings[1] = std::chrono::high_resolution_clock::now() - start_times[1];
-  std::cout << "ChASE]> Seq-ChASE Solve done in: " << timings[2].count() << "\n";
-  performanceDecorator.GetPerfData().print();  
-  std::cout << "ChASE]> total time in ChASE: " << timings[1].count() << "\n";
+#ifdef CHASE_OUTPUT
+  std::cout << "    ChASE]> ChASE Solve done in: " << timings[2].count() << "\n";
+  performanceDecorator.GetPerfData().print();   
+  std::cout << "    ChASE]> total time in ChASE: " << timings[1].count() << "\n";
+#endif
 }
 
 template <typename T>
@@ -347,8 +358,11 @@ void chase_setup(MPI_Fint* fcomm, int* N, int *nev, int *nex ){
 template <typename T>
 void chase_solve(T* H, int *LDH, T* V, Base<T>* ritzv, int* deg, double* tol, char* mode,
                  char* opt) {
+#ifdef HAS_GPU  
+  typedef ChaseMpi<ChaseMpiDLAMultiGPU, T> CHASE;
+#else
   typedef ChaseMpi<ChaseMpiDLABlaslapack, T> CHASE;
-
+#endif
   std::vector<std::chrono::duration<double>> timings(3);
   std::vector<std::chrono::time_point<std::chrono::high_resolution_clock>> start_times(3);
 
@@ -371,26 +385,17 @@ void chase_solve(T* H, int *LDH, T* V, Base<T>* ritzv, int* deg, double* tol, ch
   auto N = config.GetN();
   auto nev = config.GetNev();
   auto nex = config.GetNex();
-
-  if (!config.UseApprox())
-    for (std::size_t k = 0; k < N * (nev + nex); ++k)
-      V[k] = getRandomT<T>([&]() { return d(gen); });
-/*
-  for(auto j = 0; j < n; j++ ){
-      for(auto i = 0; i < m; i++){
-          H_[m * j + i] = H[j * ldh + i];
-      }
-  }
-*/  
-
+ 
   t_lacpy('A', m, n, H, ldh, H_, m);
-
-  //std::cout << myRank << ": m = " << m << ", n = " << n << ", ldh = " << ldh << std::endl;  
   
   config.SetTol(*tol);
   config.SetDeg(*deg);
   config.SetOpt(*opt == 'S');
   config.SetApprox(*mode == 'A');
+
+  if (!config.UseApprox())
+    for (std::size_t k = 0; k < N * (nev + nex); ++k)
+      V[k] = getRandomT<T>([&]() { return d(gen); });
 
   PerformanceDecoratorChase<T> performanceDecorator(&single);
   start_times[2] = std::chrono::high_resolution_clock::now();
@@ -398,74 +403,14 @@ void chase_solve(T* H, int *LDH, T* V, Base<T>* ritzv, int* deg, double* tol, ch
 
   timings[2] = std::chrono::high_resolution_clock::now() - start_times[2];
   timings[1] = std::chrono::high_resolution_clock::now() - start_times[1];
+#ifdef CHASE_OUTPUT
   if(myRank == 0){
       std::cout << "ChASE-MPI]> ChASE Solve done in: " << timings[2].count() << "\n";
       performanceDecorator.GetPerfData().print();
       std::cout << "ChASE-MPI]> total time in ChASE: " << timings[1].count() << "\n";      
   }
+#endif  
 }
-
-#ifdef HAS_GPU
-template <typename T>
-void chase_solve_mgpu(T* H, int *LDH, T* V, Base<T>* ritzv, int* deg, double* tol, char* mode,
-                 char* opt) {
-  
-  typedef ChaseMpi<ChaseMpiDLAMultiGPU, T> CHASE;	
-  
-  int ldh = *LDH;
-  std::vector<std::chrono::duration<double>> timings(3);
-  std::vector<std::chrono::time_point<std::chrono::high_resolution_clock>> start_times(3);
-
-  std::mt19937 gen(2342.0);
-  std::normal_distribution<> d;
-  ChaseMpiProperties<T>* props = ChASE_State::getProperties<T>();
-
-  int myRank = props->get_my_rank();
-
-  CHASE single(props, V, ritzv);
-
-  T* H_ = single.GetMatrixPtr();
-  std::size_t m, n;
-  m = props->get_m();
-  n = props->get_n();
-
-  ChaseConfig<T>& config = single.GetConfig();
-  auto N = config.GetN();
-  auto nev = config.GetNev();
-  auto nex = config.GetNex();
-
-  if (!config.UseApprox())
-    for (std::size_t k = 0; k < N * (nev + nex); ++k)
-      V[k] = getRandomT<T>([&]() { return d(gen); });
-/*
-  for(auto j = 0; j < n; j++ ){
-      for(auto i = 0; i < m; i++){
-          H_[m * j + i] = H[j * ldh + i];
-      }
-  }
-*/
-  t_lacpy('A', m, n, H, ldh, H_, m);
-  config.SetTol(*tol);
-  config.SetDeg(*deg);
-  config.SetOpt(*opt == 'S');
-  config.SetApprox(*mode == 'A');
-
-  PerformanceDecoratorChase<T> performanceDecorator(&single);
-  start_times[2] = std::chrono::high_resolution_clock::now();
-  chase::Solve(&performanceDecorator);
-
-  timings[2] = std::chrono::high_resolution_clock::now() - start_times[2];
-  timings[1] = std::chrono::high_resolution_clock::now() - start_times[1];
-#ifdef INFO_PRINT
-  if(myRank == 0){
-      std::cout << "ChASE-MGPU]> ChASE Solve done in: " << timings[2].count() << "\n";
-      performanceDecorator.GetPerfData().print();
-      std::cout << "ChASE-MGPU]> total time in ChASE: " << timings[1].count() << "\n";
-  }
-#endif
-
-}
-#endif
 
 extern "C" {
 /** @defgroup chasc-c ChASE C Interface
@@ -486,10 +431,10 @@ extern "C" {
  * @param[int] mode for sequences of eigenproblems, if reusing the eigenpairs obtained from last system. If `mode = A`, reuse, otherwise, not.
  * @param[int] opt determining if using internal optimization of Chebyshev polynomial degree. If `opt=S`, use, otherwise, no.
  */  
-void zchase_(std::complex<double>* H, int* N, std::complex<double>* V,
+void zchase_(int *N, std::complex<double>* H, int* ldh, std::complex<double>* V,
              double* ritzv, int* nev, int* nex, int* deg, double* tol,
              char* mode, char* opt) {
-  chase_seq<std::complex<double>>(H, N, V, ritzv, nev, nex, deg, tol, mode,
+  chase_seq<std::complex<double>>(N, H, ldh, V, ritzv, nev, nex, deg, tol, mode,
                                    opt);
 }
 
@@ -506,9 +451,9 @@ void zchase_(std::complex<double>* H, int* N, std::complex<double>* V,
  * @param[int] mode for sequences of eigenproblems, if reusing the eigenpairs obtained from last system. If `mode = A`, reuse, otherwise, not.
  * @param[int] opt determining if using internal optimization of Chebyshev polynomial degree. If `opt=S`, use, otherwise, no.
  */  
-void dchase_(double* H, int* N, double* V, double* ritzv, int* nev, int* nex,
+void dchase_(int *N, double* H, int* ldh, double* V, double* ritzv, int* nev, int* nex,
              int* deg, double* tol, char* mode, char* opt) {
-  chase_seq<double>(H, N, V, ritzv, nev, nex, deg, tol, mode, opt);
+  chase_seq<double>(N, H, ldh, V, ritzv, nev, nex, deg, tol, mode, opt);
 }
 
 //! shard-memory version of ChASE with complex scalar in single precison
@@ -524,10 +469,10 @@ void dchase_(double* H, int* N, double* V, double* ritzv, int* nev, int* nex,
  * @param[int] mode for sequences of eigenproblems, if reusing the eigenpairs obtained from last system. If `mode = A`, reuse, otherwise, not.
  * @param[int] opt determining if using internal optimization of Chebyshev polynomial degree. If `opt=S`, use, otherwise, no.
  */  
-void cchase_(std::complex<float>* H, int* N, std::complex<float>* V,
+void cchase_(int *N, std::complex<float>* H, int *ldh, std::complex<float>* V,
              float* ritzv, int* nev, int* nex, int* deg, double* tol,
              char* mode, char* opt) {
-  chase_seq<std::complex<float>>(H, N, V, ritzv, nev, nex, deg, tol, mode,
+  chase_seq<std::complex<float>>(N, H, ldh, V, ritzv, nev, nex, deg, tol, mode,
                                    opt);
 }
 
@@ -544,9 +489,9 @@ void cchase_(std::complex<float>* H, int* N, std::complex<float>* V,
  * @param[int] mode for sequences of eigenproblems, if reusing the eigenpairs obtained from last system. If `mode = A`, reuse, otherwise, not.
  * @param[int] opt determining if using internal optimization of Chebyshev polynomial degree. If `opt=S`, use, otherwise, no.
  */  
-void schase_(float* H, int* N, float* V, float* ritzv, int* nev, int* nex,
+void schase_(int *N, float* H, int* ldh, float* V, float* ritzv, int* nev, int* nex,
              int* deg, double* tol, char* mode, char* opt) {
-  chase_seq<float>(H, N, V, ritzv, nev, nex, deg, tol, mode, opt);
+  chase_seq<float>(N, H, ldh, V, ritzv, nev, nex, deg, tol, mode, opt);
 }
 
 //! an initialisation of environment for distributed ChASE for complex scalar in double precision
@@ -683,27 +628,6 @@ void pschase_(float* H, int *ldh, float* V, float* ritzv, int* deg, double* tol,
   chase_solve<float>(H, ldh, V, ritzv, deg, tol, mode, opt);
 }
 
-#ifdef HAS_GPU
-void pzchase_mgpu_(std::complex<double>* H, int *ldh, std::complex<double>* V,
-                  double* ritzv, int* deg, double* tol, char* mode, char* opt) {
-  chase_solve_mgpu<std::complex<double>>(H, ldh, V, ritzv, deg, tol, mode, opt);
-}
-
-void pdchase_mgpu_(double* H, int *ldh, double* V, double* ritzv, int* deg, double* tol,
-                  char* mode, char* opt) {
-  chase_solve_mgpu<double>(H, ldh, V, ritzv, deg, tol, mode, opt);
-}
-
-void pcchase_mgpu_(std::complex<float>* H, int *ldh, std::complex<float>* V,
-                  float* ritzv, int* deg, double* tol, char* mode, char* opt) {
-  chase_solve_mgpu<std::complex<float>>(H, ldh, V, ritzv, deg, tol, mode, opt);
-}
-
-void pschase_mgpu_(float* H, int *ldh, float* V, float* ritzv, int* deg, double* tol,
-                  char* mode, char* opt) {
-  chase_solve_mgpu<float>(H, ldh, V, ritzv, deg, tol, mode, opt);
-}
-#endif
 /** @} */ // end of chasc-c
 
 }  // extern C 
