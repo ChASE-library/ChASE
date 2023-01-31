@@ -425,15 +425,16 @@ void Algorithm<T>::solve(Chase<T>* single)
 #ifdef CHASE_OUTPUT
         {
 	    //compute \rho_0 for the filter bound
-	    //Base<T> lb = ritzv[0];	
-	    //Base<T> cc = (upperb + lb) / 2;
-	    //Base<T> ee = (upperb - lb) / 2;
 	    Base<T> cc = (upperb + lowerb) / 2; // Center of the interval.
     	    Base<T> ee = (upperb - lowerb) / 2; // Half-length of the interval.
             Base<T> rho;
             Base<T> t = (ritzv[0] - cc) / ee;	
             rho = std::max(std::abs(t - std::sqrt(t * t - 1)),
                        std::abs(t + std::sqrt(t * t - 1)));
+            Base<T> rho2;
+	    Base<T> tt = (ritzv[unconverged] - cc) / ee;
+	    rho2 = std::max(std::abs(tt - std::sqrt(tt * tt - 1)),
+                       std::abs(tt + std::sqrt(tt * tt - 1)));
 
             std::ostringstream oss;
 
@@ -442,7 +443,10 @@ void Algorithm<T>::solve(Chase<T>* single)
                 << std::setprecision(6) << lowerb << "\t"
                 << std::setprecision(6) << upperb << "\t"
 	       	<< std::setprecision(6) << rho << "\t" 
-		<< std::setprecision(6) << std::pow(rho, 2 * deg) << "\t" << unconverged
+		<< std::setprecision(6) << std::pow(rho, 2 * deg) << "\t"
+	       	<< std::setprecision(6) << rho2 << "\t"
+		<< std::setprecision(6) << (std::pow(rho2, deg) + 1) / (std::pow(rho2, deg) - 1) << "\t"
+		<< unconverged
                 << std::endl;
 
             single->Output(oss.str());
