@@ -1175,7 +1175,7 @@ public:
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
-	if (info != 0){
+/*	if (info != 0){
 #ifdef USE_NSIGHT
             nvtxRangePushA("ChaseMpiDLA: syherk");
 #endif
@@ -1221,10 +1221,10 @@ public:
             nvtxRangePop();
 #endif
 	}
-
+*/
         if (info == 0)
         {
-            int choldeg = 1;
+            int choldeg = 2;
             char* choldegenv;
             choldegenv = getenv("CHASE_CHOLQR_DEGREE");
             if (choldegenv)

@@ -402,19 +402,47 @@ void Algorithm<T>::solve(Chase<T>* single)
         if (unconverged < nevex)
         {
             lambda = *std::min_element(ritzv_, ritzv_ + nevex);
-            auto tmp = *std::max_element(ritzv, ritzv + unconverged);
-            lowerb = (lowerb + tmp) / 2;
-            lowerb = tmp;
+	    //auto tmp = *std::max_element(ritzv, ritzv + unconverged);
+            /*for(auto i = 0; i < unconverged; i++){
+	        std::cout << i << " " << resid[i] << " " << ritzv[i] << "\n";	    
+	    }
+	    */
+            
+	    Base<T> tmp = lowerb;
+	    int cnt;
+	    for(cnt = 0; cnt < unconverged; cnt++){
+	       if(resid[cnt] > 5e-1){
+	           break;
+	       }
+	    }
+	    if(cnt == unconverged){
+		lowerb = ritzv[unconverged - 1];    
+	    }else{
+		lowerb = tmp;
+	    }
         }
 
 #ifdef CHASE_OUTPUT
         {
+	    //compute \rho_0 for the filter bound
+	    //Base<T> lb = ritzv[0];	
+	    //Base<T> cc = (upperb + lb) / 2;
+	    //Base<T> ee = (upperb - lb) / 2;
+	    Base<T> cc = (upperb + lowerb) / 2; // Center of the interval.
+    	    Base<T> ee = (upperb - lowerb) / 2; // Half-length of the interval.
+            Base<T> rho;
+            Base<T> t = (ritzv[0] - cc) / ee;	
+            rho = std::max(std::abs(t - std::sqrt(t * t - 1)),
+                       std::abs(t + std::sqrt(t * t - 1)));
+
             std::ostringstream oss;
 
             oss << std::scientific << "iteration: " << iteration << "\t"
                 << std::setprecision(6) << lambda << "\t"
                 << std::setprecision(6) << lowerb << "\t"
-                << std::setprecision(6) << upperb << "\t" << unconverged
+                << std::setprecision(6) << upperb << "\t"
+	       	<< std::setprecision(6) << rho << "\t" 
+		<< std::setprecision(6) << std::pow(rho, 2 * deg) << "\t" << unconverged
                 << std::endl;
 
             single->Output(oss.str());
