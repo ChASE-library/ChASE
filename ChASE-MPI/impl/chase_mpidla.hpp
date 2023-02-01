@@ -1175,53 +1175,6 @@ public:
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
-/*	if (info != 0){
-#ifdef USE_NSIGHT
-            nvtxRangePushA("ChaseMpiDLA: syherk");
-#endif
-            dla_->syherk('U', 'C', nevex, m_, &one, C_, m_, &zero, A_, nevex, first_iter);
-#ifdef USE_NSIGHT
-            nvtxRangePop();
-            nvtxRangePushA("allreduce");
-#endif
-            MPI_Allreduce(MPI_IN_PLACE, A_, nevex * nevex, getMPI_Type<T>(),
-                      MPI_SUM, col_comm_);
-#ifdef USE_NSIGHT
-            nvtxRangePop();
-#endif
-#ifdef USE_NSIGHT
-            nvtxRangePushA("ChaseMpiDLA: t_lange");
-#endif	    
-	    Base<T> nrmf = t_lange('F', m_, nevex, C_, m_);	    
-            nrmf = std::pow(nrmf, 2);
-#ifdef USE_NSIGHT
-            nvtxRangePop();
-            nvtxRangePushA("allreduce");
-#endif	    
-            MPI_Allreduce(MPI_IN_PLACE, &nrmf, 1, getMPI_Type<Base<T>>(), MPI_SUM, col_comm_);	     	     nrmf = std::sqrt(nrmf);
-            Base<T> shift = 11 * (N_ * nevex + nevex * nevex + nevex  ) * std::numeric_limits<Base<T>>::epsilon()* nrmf;
-#ifdef CHASE_OUTPUT
-            if (grank == 0)
-	        std::cout << "CholQR requires shift: " << shift << std::endl;
-#endif	    
-#ifdef USE_NSIGHT
-	    nvtxRangePop();
-            nvtxRangePushA("ChaseMpiDLA: shift in QR");
-#endif	    
-	    for(auto i = 0; i < nevex; i++){
-	        A_[i * nevex + i] += (T)shift;
-	    }
-
-#ifdef USE_NSIGHT
-            nvtxRangePop();
-            nvtxRangePushA("ChaseMpiDLA: potrf");
-#endif	    
-	    info = dla_->potrf('U', nevex, A_, nevex);
-#ifdef USE_NSIGHT
-            nvtxRangePop();
-#endif
-	}
-*/
         if (info == 0)
         {
             int choldeg = 2;

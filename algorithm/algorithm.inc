@@ -402,54 +402,30 @@ void Algorithm<T>::solve(Chase<T>* single)
         if (unconverged < nevex)
         {
             lambda = *std::min_element(ritzv_, ritzv_ + nevex);
-	    //auto tmp = *std::max_element(ritzv, ritzv + unconverged);
-            /*for(auto i = 0; i < unconverged; i++){
-	        std::cout << i << " " << resid[i] << " " << ritzv[i] << "\n";	    
-	    }
-	    */
             
-	    Base<T> tmp = lowerb;
-	    int cnt;
-	    for(cnt = 0; cnt < unconverged; cnt++){
-	       if(resid[cnt] > 5e-1){
-	           break;
+    	    int cnt;
+	        for(cnt = 0; cnt < unconverged; cnt++){
+	           if(resid[cnt] > 5e-1){
+	               break;
+	           }
 	       }
-	    }
-	    if(cnt == unconverged){
-		lowerb = ritzv[unconverged - 1];    
-	    }else{
-		lowerb = tmp;
-	    }
+	       if(cnt == unconverged){
+		      lowerb = ritzv[unconverged - 1];    
+	       }
+
         }
 
 #ifdef CHASE_OUTPUT
         {
-	    //compute \rho_0 for the filter bound
-	    Base<T> cc = (upperb + lowerb) / 2; // Center of the interval.
-    	    Base<T> ee = (upperb - lowerb) / 2; // Half-length of the interval.
-            Base<T> rho;
-            Base<T> t = (ritzv[0] - cc) / ee;	
-            rho = std::max(std::abs(t - std::sqrt(t * t - 1)),
-                       std::abs(t + std::sqrt(t * t - 1)));
-            Base<T> rho2;
-	    Base<T> tt = (ritzv[unconverged] - cc) / ee;
-	    rho2 = std::max(std::abs(tt - std::sqrt(tt * tt - 1)),
-                       std::abs(tt + std::sqrt(tt * tt - 1)));
+      std::ostringstream oss;
 
-            std::ostringstream oss;
+      oss << std::scientific << "iteration: " << iteration << "\t"
+          << std::setprecision(6) << lambda << "\t" << std::setprecision(6)
+          << lowerb << "\t" << std::setprecision(6) << upperb << "\t"
+          << unconverged << std::endl;
 
-            oss << std::scientific << "iteration: " << iteration << "\t"
-                << std::setprecision(6) << lambda << "\t"
-                << std::setprecision(6) << lowerb << "\t"
-                << std::setprecision(6) << upperb << "\t"
-	       	<< std::setprecision(6) << rho << "\t" 
-		<< std::setprecision(6) << std::pow(rho, 2 * deg) << "\t"
-	       	<< std::setprecision(6) << rho2 << "\t"
-		<< std::setprecision(6) << (std::pow(rho2, deg) + 1) / (std::pow(rho2, deg) - 1) << "\t"
-		<< unconverged
-                << std::endl;
+        single->Output(oss.str());
 
-            single->Output(oss.str());
         }
 #endif
         //    assert( lowerb < upperb );
@@ -468,6 +444,31 @@ void Algorithm<T>::solve(Chase<T>* single)
 #ifdef CHASE_OUTPUT
         {
             std::ostringstream oss;
+            Base<T> cc = (upperb + lowerb) / 2; // Center of the interval.
+            Base<T> ee = (upperb - lowerb) / 2; // Half-length of the interval.
+            Base<T> rho;
+            Base<T> t = (ritzv[0] - cc) / ee;   
+            rho = std::max(std::abs(t - std::sqrt(t * t - 1)),
+                       std::abs(t + std::sqrt(t * t - 1)));
+
+            double bound = std::pow(rho, 2 * (degrees[0]));
+            double threshold = 2e16;
+
+            oss << std::setprecision(6) << rho << "\t" 
+                << std::setprecision(6) << std::pow(rho, 2 * (degrees[0])) << "\t";
+
+            if(bound > threshold){
+                int sub = int(std::ceil(0.5 * log(std::pow(rho, 2 * degrees[0]) / threshold) / log(rho)));
+                if(sub % 2 != 0){
+                    sub = sub + 1;
+                }
+                for(auto i = 0; i < nevex; i++){
+                    degrees[i] = degrees[i] - sub;
+                }
+            }
+            
+            oss << std::setprecision(6) << std::pow(rho, 2 * (degrees[0])) << "\n";
+
             oss << "degrees\tresid\tresidLast\tritzv\n";
             for (std::size_t k = 0; k < std::min<std::size_t>(unconverged, 20);
                  ++k)
@@ -476,12 +477,7 @@ void Algorithm<T>::solve(Chase<T>* single)
 
             single->Output(oss.str());
         }
-/*
-        std::cout << "degrees\tresid\tritzv\n";
-        for (std::size_t k = 0; k < std::min<std::size_t>(unconverged, 20); ++k)
-            std::cout << degrees[k] << "\t" << resid[k] << "\t" << ritzv[k] <<
-   "\n";
-*/
+
 #endif
         //------------------------------- FILTER -------------------------------
 #ifdef USE_NSIGHT        

@@ -177,8 +177,8 @@ public:
                       "MatrixFreeChASE Must be skewed");
     }
 
-    ChaseMpi(ChaseMpiProperties<T>* properties, T* H = nullptr,
-             std::size_t ldh = 0, T* V1 = nullptr, Base<T>* ritzv = nullptr,
+    ChaseMpi(ChaseMpiProperties<T>* properties, T* H,
+             std::size_t ldh, T* V1, Base<T>* ritzv,
              T* V2 = nullptr, Base<T>* resid = nullptr)
         : N_(properties->get_N()), nev_(properties->GetNev()),
           nex_(properties->GetNex()), locked_(0), config_(N_, nev_, nex_),
