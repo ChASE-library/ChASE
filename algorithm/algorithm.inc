@@ -384,14 +384,14 @@ void Algorithm<T>::solve(Chase<T>* single)
     // ---------------------------------
 #ifdef USE_NSIGHT
     nvtxRangePushA("Lanczos");
-#endif    
+#endif
     std::size_t DoSVectors =
         lanczos(single, N, num_lanczos,
                 std::min(nevex, std::min(N / 2, config.GetLanczosIter())),
                 nevex, &upperb, random, random ? ritzv : NULL);
-#ifdef USE_NSIGHT    
+#ifdef USE_NSIGHT
     nvtxRangePop();
-#endif    
+#endif
     std::size_t locked = 0;    // Number of converged eigenpairs.
     std::size_t iteration = 0; // Current iteration.
     lowerb = *std::max_element(ritzv, ritzv + unconverged);
@@ -402,30 +402,32 @@ void Algorithm<T>::solve(Chase<T>* single)
         if (unconverged < nevex)
         {
             lambda = *std::min_element(ritzv_, ritzv_ + nevex);
-            
-    	    int cnt;
-	        for(cnt = 0; cnt < unconverged; cnt++){
-	           if(resid[cnt] > 5e-1){
-	               break;
-	           }
-	       }
-	       if(cnt == unconverged){
-		      lowerb = ritzv[unconverged - 1];    
-	       }
 
+            int cnt;
+            for (cnt = 0; cnt < unconverged; cnt++)
+            {
+                if (resid[cnt] > 5e-1)
+                {
+                    break;
+                }
+            }
+            if (cnt == unconverged)
+            {
+                lowerb = ritzv[unconverged - 1];
+            }
         }
 
 #ifdef CHASE_OUTPUT
         {
-      std::ostringstream oss;
+            std::ostringstream oss;
 
-      oss << std::scientific << "iteration: " << iteration << "\t"
-          << std::setprecision(6) << lambda << "\t" << std::setprecision(6)
-          << lowerb << "\t" << std::setprecision(6) << upperb << "\t"
-          << unconverged << std::endl;
+            oss << std::scientific << "iteration: " << iteration << "\t"
+                << std::setprecision(6) << lambda << "\t"
+                << std::setprecision(6) << lowerb << "\t"
+                << std::setprecision(6) << upperb << "\t" << unconverged
+                << std::endl;
 
-        single->Output(oss.str());
-
+            single->Output(oss.str());
         }
 #endif
         //    assert( lowerb < upperb );
@@ -447,27 +449,33 @@ void Algorithm<T>::solve(Chase<T>* single)
             Base<T> cc = (upperb + lowerb) / 2; // Center of the interval.
             Base<T> ee = (upperb - lowerb) / 2; // Half-length of the interval.
             Base<T> rho;
-            Base<T> t = (ritzv[0] - cc) / ee;   
+            Base<T> t = (ritzv[0] - cc) / ee;
             rho = std::max(std::abs(t - std::sqrt(t * t - 1)),
-                       std::abs(t + std::sqrt(t * t - 1)));
+                           std::abs(t + std::sqrt(t * t - 1)));
 
             double bound = std::pow(rho, 2 * (degrees[0]));
             double threshold = 2e16;
 
-            oss << std::setprecision(6) << rho << "\t" 
-                << std::setprecision(6) << std::pow(rho, 2 * (degrees[0])) << "\t";
+            oss << std::setprecision(6) << rho << "\t" << std::setprecision(6)
+                << std::pow(rho, 2 * (degrees[0])) << "\t";
 
-            if(bound > threshold){
-                int sub = int(std::ceil(0.5 * log(std::pow(rho, 2 * degrees[0]) / threshold) / log(rho)));
-                if(sub % 2 != 0){
+            if (bound > threshold)
+            {
+                int sub = int(std::ceil(
+                    0.5 * log(std::pow(rho, 2 * degrees[0]) / threshold) /
+                    log(rho)));
+                if (sub % 2 != 0)
+                {
                     sub = sub + 1;
                 }
-                for(auto i = 0; i < nevex; i++){
+                for (auto i = 0; i < nevex; i++)
+                {
                     degrees[i] = degrees[i] - sub;
                 }
             }
-            
-            oss << std::setprecision(6) << std::pow(rho, 2 * (degrees[0])) << "\n";
+
+            oss << std::setprecision(6) << std::pow(rho, 2 * (degrees[0]))
+                << "\n";
 
             oss << "degrees\tresid\tresidLast\tritzv\n";
             for (std::size_t k = 0; k < std::min<std::size_t>(unconverged, 20);
@@ -480,39 +488,39 @@ void Algorithm<T>::solve(Chase<T>* single)
 
 #endif
         //------------------------------- FILTER -------------------------------
-#ifdef USE_NSIGHT        
-	nvtxRangePushA("Filter");
-#endif	
-	std::size_t Av = filter(single, N, unconverged, deg, degrees, lambda,
-		lowerb, upperb);
-#ifdef USE_NSIGHT		
-        nvtxRangePop();	
-        nvtxRangePushA("QR");	
-#endif	
+#ifdef USE_NSIGHT
+        nvtxRangePushA("Filter");
+#endif
+        std::size_t Av = filter(single, N, unconverged, deg, degrees, lambda,
+                                lowerb, upperb);
+#ifdef USE_NSIGHT
+        nvtxRangePop();
+        nvtxRangePushA("QR");
+#endif
         //----------------------------------- QR
         //-----------------------------------
         single->QR(locked);
-#ifdef USE_NSIGHT	
+#ifdef USE_NSIGHT
         nvtxRangePop();
-	nvtxRangePushA("RR");
-#endif	
+        nvtxRangePushA("RR");
+#endif
         // ----------------------------- RAYLEIGH  RITZ
         // ----------------------------
         single->RR(ritzv, unconverged);
-#ifdef USE_NSIGHT	
-	nvtxRangePop();
-#endif	
+#ifdef USE_NSIGHT
+        nvtxRangePop();
+#endif
         // --------------------------- RESIDUAL & LOCKING
         // --------------------------
 #ifdef USE_NSIGHT
-	nvtxRangePushA("Resid");
-#endif	
+        nvtxRangePushA("Resid");
+#endif
         for (auto i = 0; i < unconverged; ++i)
             residLast[i] = std::min(residLast[i], resid[i]);
         single->Resd(ritzv, resid, locked);
 #ifdef USE_NSIGHT
-	nvtxRangePop();
-#endif	
+        nvtxRangePop();
+#endif
         std::size_t new_converged =
             locking(single, N, unconverged - nex, tol, ritzv, resid, residLast,
                     degrees, locked);
@@ -535,7 +543,7 @@ void Algorithm<T>::solve(Chase<T>* single)
 
 #ifdef USE_NSIGHT
     nvtxRangePushA("Sort");
-#endif	
+#endif
     //---------------------SORT-EIGENPAIRS-ACCORDING-TO-EIGENVALUES---------------
     for (auto i = 0; i < nev - 1; ++i)
         for (auto j = i + 1; j < nev; ++j)
@@ -548,7 +556,7 @@ void Algorithm<T>::solve(Chase<T>* single)
         }
 #ifdef USE_NSIGHT
     nvtxRangePop();
-#endif	
+#endif
     single->End();
 }
 } // namespace chase

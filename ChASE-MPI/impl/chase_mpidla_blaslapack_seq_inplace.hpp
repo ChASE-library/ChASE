@@ -136,7 +136,10 @@ public:
         }
     }
 
-    void asynCxHGatherC(std::size_t locked, std::size_t block, bool isCcopied = false) override {}
+    void asynCxHGatherC(std::size_t locked, std::size_t block,
+                        bool isCcopied = false) override
+    {
+    }
 
     /*! - For ChaseMpiDLABlaslapackSeqInplace, `applyVec` is implemented with
        `GEMM` provided by `BLAS`.
@@ -349,7 +352,7 @@ public:
 
     void syherk(char uplo, char trans, std::size_t n, std::size_t k, T* alpha,
                 T* a, std::size_t lda, T* beta, T* c, std::size_t ldc,
-		bool first = true) override
+                bool first = true) override
     {
     }
 

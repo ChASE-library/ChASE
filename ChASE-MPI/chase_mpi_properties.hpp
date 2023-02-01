@@ -155,8 +155,8 @@ public:
           irsrc_(irsrc), icsrc_(icsrc), comm_(comm)
     {
 #ifdef USE_NSIGHT
-	nvtxRangePushA("ChaseMpiProperties(block-cyclic): Init");
-#endif	
+        nvtxRangePushA("ChaseMpiProperties(block-cyclic): Init");
+#endif
         data_layout = "Block-Cyclic";
 
         std::size_t blocknb[2];
@@ -443,7 +443,7 @@ public:
 #endif
 #ifdef USE_NSIGHT
         nvtxRangePop();
-#endif	
+#endif
     }
 
     //! A constructor of the class ChaseMpiProperties which distributes matrix
@@ -723,7 +723,7 @@ public:
 #endif
 #ifdef USE_NSIGHT
         nvtxRangePop();
-#endif	
+#endif
     }
 
     //! A constructor of the class ChaseMpiProperties which distributes matrix
@@ -861,8 +861,8 @@ public:
         c_offs_[0] = off_[1];
         c_lens_[0] = n_;
         c_offs_l_[0] = 0;
-        
-	if (H_preAlloc)
+
+        if (H_preAlloc)
         {
             H_.reset(new T[n_ * m_]());
         }
@@ -871,8 +871,8 @@ public:
         C2_.reset(new T[m_ * max_block_]());
         B2_.reset(new T[n_ * max_block_]());
         A_.reset(new T[max_block_ * max_block_]());
-        
-	block_counts_.resize(2);
+
+        block_counts_.resize(2);
         for (std::size_t dim_idx = 0; dim_idx < 2; dim_idx++)
         {
             block_counts_[dim_idx].resize(dims_[dim_idx]);
@@ -948,7 +948,7 @@ public:
 #endif
 #ifdef USE_NSIGHT
         nvtxRangePop();
-#endif	
+#endif
     }
 
 #if defined(HAS_SCALAPACK)

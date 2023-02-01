@@ -79,7 +79,7 @@ public:
         cuda_exec(
             cudaMalloc((void**)&d_resids_, sizeof(Base<T>) * (nev_ + nex_)));
 
-	cusolverDnSetStream(cusolverH_, stream_);
+        cusolverDnSetStream(cusolverH_, stream_);
 
         cuda_exec(cudaMalloc((void**)&devInfo_, sizeof(int)));
         cuda_exec(cudaMalloc((void**)&d_return_, sizeof(T) * max_block_));
@@ -193,7 +193,7 @@ public:
     */
     void preApplication(T* V, std::size_t locked, std::size_t block) override
     {
-	locked_ = locked;
+        locked_ = locked;
         cuda_exec(cudaMemcpy(d_V1_, V + locked_ * N_, block * N_ * sizeof(T),
                              cudaMemcpyDeviceToDevice));
     }
@@ -247,7 +247,10 @@ public:
         chase_shift_matrix(d_H_, N_, std::real(c), &stream_);
     }
 
-    void asynCxHGatherC(std::size_t locked, std::size_t block, bool isCcopied = false) override {}
+    void asynCxHGatherC(std::size_t locked, std::size_t block,
+                        bool isCcopied = false) override
+    {
+    }
 
     /*! - For ChaseMpiDLACudaSeq, `applyVec` is implemented with `GEMM` provided
        by `BLAS`.
@@ -256,7 +259,7 @@ public:
     */
     void applyVec(T* B, T* C) override
     {
-	T One = T(1.0);
+        T One = T(1.0);
         T Zero = T(0.0);
 
         cublas_status_ = cublasTgemm(cublasH_, CUBLAS_OP_N, CUBLAS_OP_N, N_, 1,
@@ -336,7 +339,7 @@ public:
     */
     void axpy(std::size_t N, T* alpha, T* x, std::size_t incx, T* y,
               std::size_t incy) override
-    {    
+    {
         cublas_status_ = cublasTaxpy(cublasH_, N, alpha, x, incx, y, incy);
         assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
     }
@@ -452,13 +455,13 @@ public:
             d_V1_ + locked * N_, N_, &Zero, d_V2_ + locked * N_, N_);
 
         assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
-    
+
         cublas_status_ =
             cublasTgemm(cublasH_, CUBLAS_OP_C, CUBLAS_OP_N, block, block, N_,
                         &One, d_V2_ + locked * N_, N_, d_V1_ + locked * N_, N_,
                         &Zero, d_A_, max_block_);
         assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
-    	cusolver_status_ = cusolverDnTheevd(
+        cusolver_status_ = cusolverDnTheevd(
             cusolverH_, CUSOLVER_EIG_MODE_VECTOR, CUBLAS_FILL_MODE_LOWER, block,
             d_A_, max_block_, d_ritz_, d_work_, lwork_, devInfo_);
         assert(cusolver_status_ == CUSOLVER_STATUS_SUCCESS);
@@ -510,7 +513,7 @@ public:
 
     void syherk(char uplo, char trans, std::size_t n, std::size_t k, T* alpha,
                 T* a, std::size_t lda, T* beta, T* c, std::size_t ldc,
-		bool first = true) override
+                bool first = true) override
     {
     }
 
@@ -541,7 +544,6 @@ public:
             d_H_, N_, d_V1_ + locked * N_, N_, &beta, d_V2_ + locked * N_, N_);
         assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
 
-	
         for (std::size_t i = 0; i < unconverged; ++i)
         {
             beta = T(-ritzv[i]);
@@ -549,13 +551,14 @@ public:
                 cublasTaxpy(cublasH_, N_, &beta, (d_V1_ + locked * N_) + N_ * i,
                             1, (d_V2_ + locked * N_) + N_ * i, 1);
             assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
-            cublas_status_ = cublasTnrm2(
-                cublasH2_, N_, (d_V2_ + locked * N_) + N_ * i, 1, &d_resids_[i]);
+            cublas_status_ =
+                cublasTnrm2(cublasH2_, N_, (d_V2_ + locked * N_) + N_ * i, 1,
+                            &d_resids_[i]);
             assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
         }
 
         cuda_exec(cudaMemcpy(resid, d_resids_, unconverged * sizeof(Base<T>),
-                             cudaMemcpyDeviceToHost));	
+                             cudaMemcpyDeviceToHost));
     }
 
     void hhQR(std::size_t locked) override
@@ -575,14 +578,11 @@ public:
                              cudaMemcpyDeviceToDevice));
     }
 
-    void cholQR(std::size_t locked) override
-    {
-        this->hhQR(locked);
-    }
+    void cholQR(std::size_t locked) override { this->hhQR(locked); }
 
     void Swap(std::size_t i, std::size_t j) override
     {
-	cuda_exec(cudaMemcpy(v1_, d_V1_ + N_ * i, N_ * sizeof(T),
+        cuda_exec(cudaMemcpy(v1_, d_V1_ + N_ * i, N_ * sizeof(T),
                              cudaMemcpyDeviceToDevice));
         cuda_exec(cudaMemcpy(d_V1_ + N_ * i, d_V1_ + N_ * j, N_ * sizeof(T),
                              cudaMemcpyDeviceToDevice));

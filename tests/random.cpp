@@ -1,20 +1,20 @@
 /* -*- Mode: C++; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
 // This file is a part of ChASE.
-// Copyright (c) 2015-2021, Simulation and Data Laboratory Quantum Materials, 
+// Copyright (c) 2015-2021, Simulation and Data Laboratory Quantum Materials,
 //   Forschungszentrum Juelich GmbH, Germany. All rights reserved.
 // License is 3-clause BSD:
 // https://github.com/ChASE-library/ChASE
 
 #include <complex>
+#include <cstdlib>
+#include <iostream>
 #include <memory>
 #include <random>
-#include <vector>
-#include <iostream>
 #include <type_traits>
-#include <cstdlib>
+#include <vector>
 
-#include "algorithm/types.hpp"
 #include "ChASE-MPI/blas_templates.hpp"
+#include "algorithm/types.hpp"
 
 using T = std::complex<double>;
 
@@ -67,58 +67,70 @@ int main(int argc, char* argv[])
     int info;
     int diff;
 
-    if(argc < 4){
-        if(rank == 0){
-	    std::cout << "Not enough command line arguments are provided.\n";
-    	    std::cout << "Run with default matrix size..." << std::endl; 	    
-	}
-	M = 1000;
-	n = 500;
-	diff = 0;
-    }else{
+    if (argc < 4)
+    {
+        if (rank == 0)
+        {
+            std::cout << "Not enough command line arguments are provided.\n";
+            std::cout << "Run with default matrix size..." << std::endl;
+        }
+        M = 1000;
+        n = 500;
+        diff = 0;
+    }
+    else
+    {
         M = atoi(argv[1]);
-	n = atoi(argv[2]);
-	diff=atoi(argv[3]);
+        n = atoi(argv[2]);
+        diff = atoi(argv[3]);
     }
 
-    if(M % size == 0){
+    if (M % size == 0)
+    {
         len = M / size;
-    }else{
-    	len = std::min(M, M / size + 1);
+    }
+    else
+    {
+        len = std::min(M, M / size + 1);
     }
 
-    if(rank < size - 1){
+    if (rank < size - 1)
+    {
         m = len;
-    }else{
+    }
+    else
+    {
         m = M - (size - 1) * len;
     }
 
-   
-    //std::default_random_engine gen(1231.0 * rank);
+    // std::default_random_engine gen(1231.0 * rank);
     std::mt19937 gen;
-    if(diff == 0){
+    if (diff == 0)
+    {
         gen = std::mt19937(1337.0);
-    }else{
+    }
+    else
+    {
         gen = std::mt19937(1337.0 * rank);
-    }	
-    //std::mt19937 gen(1337.0 * rank);
+    }
+    // std::mt19937 gen(1337.0 * rank);
     std::normal_distribution<> d;
-    
+
     mb = m;
     if (rank == size - 1 && size != 1)
     {
         mb = (M - m) / (size - 1);
     }
-    
+
     auto V = std::vector<T>(m * n);
     auto A = std::vector<T>(n * n);
     auto A_b = std::vector<T>(n * n);
     auto ev = std::vector<Base<T>>(n);
-/*    for(auto j = 0; j < m * n; j++){
-	auto rnd = getRandomT<T>([&]() { return d(gen); });    
-        V[j] = rnd;
-    }    
- */   
+    /*    for(auto j = 0; j < m * n; j++){
+            auto rnd = getRandomT<T>([&]() { return d(gen); });
+            V[j] = rnd;
+        }
+     */
     for (auto j = 0; j < n; j++)
     {
         std::size_t cnt = 0;
@@ -134,39 +146,46 @@ int main(int argc, char* argv[])
         }
     }
 
-    //syherk: V' * V -> A
+    // syherk: V' * V -> A
     t_syherk('U', 'C', n, m, &one, V.data(), m, &zero, A.data(), n);
-    MPI_Allreduce(MPI_IN_PLACE, A.data(), n * n, getMPI_Type<T>(), MPI_SUM, MPI_COMM_WORLD);
-    A_b = A;
-    t_heevd(LAPACK_COL_MAJOR, 'N', 'L', n, A_b.data(), n, ev.data()); 
-    cond = std::sqrt(ev[n-1]/ev[0]);
-
-    if(rank == 0){
-	if(diff == 0){
-	   std::cout << "single seeded, ";
-	}else{
-	   std::cout << "multip seeded, ";
-	}    
-        std::cout << "M: " << M << ", N: " << n << ", rcond: " << cond ;
-    }
-
-    //Cholesky QR on V
-    info = t_potrf('U', n, A.data(), n);
-    if (info == 0){
-        t_trsm('R', 'U', 'N', 'N', m, n, &one, A.data(), n, V.data(), m);
-    }    
-
-    //syherk: V' * V -> A
-    t_syherk('U', 'C', n, m, &one, V.data(), m, &zero, A.data(), n);
-    MPI_Allreduce(MPI_IN_PLACE, A.data(), n * n, getMPI_Type<T>(), MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(MPI_IN_PLACE, A.data(), n * n, getMPI_Type<T>(), MPI_SUM,
+                  MPI_COMM_WORLD);
     A_b = A;
     t_heevd(LAPACK_COL_MAJOR, 'N', 'L', n, A_b.data(), n, ev.data());
-    cond = std::sqrt(ev[n-1]/ev[0]);
+    cond = std::sqrt(ev[n - 1] / ev[0]);
 
-    if(rank == 0){
+    if (rank == 0)
+    {
+        if (diff == 0)
+        {
+            std::cout << "single seeded, ";
+        }
+        else
+        {
+            std::cout << "multip seeded, ";
+        }
+        std::cout << "M: " << M << ", N: " << n << ", rcond: " << cond;
+    }
+
+    // Cholesky QR on V
+    info = t_potrf('U', n, A.data(), n);
+    if (info == 0)
+    {
+        t_trsm('R', 'U', 'N', 'N', m, n, &one, A.data(), n, V.data(), m);
+    }
+
+    // syherk: V' * V -> A
+    t_syherk('U', 'C', n, m, &one, V.data(), m, &zero, A.data(), n);
+    MPI_Allreduce(MPI_IN_PLACE, A.data(), n * n, getMPI_Type<T>(), MPI_SUM,
+                  MPI_COMM_WORLD);
+    A_b = A;
+    t_heevd(LAPACK_COL_MAJOR, 'N', 'L', n, A_b.data(), n, ev.data());
+    cond = std::sqrt(ev[n - 1] / ev[0]);
+
+    if (rank == 0)
+    {
         std::cout << ", cond: " << cond << std::endl;
     }
 
     MPI_Finalize();
 }
-

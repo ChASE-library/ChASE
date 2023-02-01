@@ -48,7 +48,7 @@ public:
         C_ = matrices.get_V1();
         C2_ = matrix_properties->get_C2();
         B2_ = matrix_properties->get_B2();
-	A_ = matrix_properties->get_A();
+        A_ = matrix_properties->get_A();
 
         off_ = matrix_properties->get_off();
 
@@ -71,16 +71,18 @@ public:
 
     ~ChaseMpiDLABlaslapack() {}
     void initVecs() override {}
-    void initRndVecs() override {
-	std::mt19937 gen(1337.0 + mpi_col_rank);
-	//std::mt19937_64 gen(1337.0);
-	//std::default_random_engine gen(1337);
+    void initRndVecs() override
+    {
+        std::mt19937 gen(1337.0 + mpi_col_rank);
+        // std::mt19937_64 gen(1337.0);
+        // std::default_random_engine gen(1337);
         std::normal_distribution<> d;
 
-        for(auto j = 0; j < m_ * (nev_ + nex_); j++){
+        for (auto j = 0; j < m_ * (nev_ + nex_); j++)
+        {
             auto rnd = getRandomT<T>([&]() { return d(gen); });
             C_[j] = rnd;
-        }    
+        }
     }
 
     /*! - For ChaseMpiDLABlaslapack, `preApplication` is implemented within
@@ -190,7 +192,8 @@ public:
         }
     }
 
-    void asynCxHGatherC(std::size_t locked, std::size_t block, bool isCcopied = false) override
+    void asynCxHGatherC(std::size_t locked, std::size_t block,
+                        bool isCcopied = false) override
     {
         T alpha = T(1.0);
         T beta = T(0.0);
@@ -365,13 +368,14 @@ public:
         - **Parallelism is SUPPORT within node if multi-threading is enabled.**
         - For the meaning of this function, please visit ChaseMpiDLAInterface.
     */
-    void RR(std::size_t block, std::size_t locked, Base<T>* ritzv) override {
+    void RR(std::size_t block, std::size_t locked, Base<T>* ritzv) override
+    {
         T One = T(1.0);
         T Zero = T(0.0);
 
-    	this->gemm(CblasColMajor, CblasConjTrans, CblasNoTrans, block, block,
+        this->gemm(CblasColMajor, CblasConjTrans, CblasNoTrans, block, block,
                    n_, &One, B2_ + locked * n_, n_, B_ + locked * n_, n_, &Zero,
-                   A_, nev_ + nex_);      
+                   A_, nev_ + nex_);
     }
 
     void V2C(T* v1, std::size_t off1, T* v2, std::size_t off2,
@@ -385,7 +389,7 @@ public:
     }
     void syherk(char uplo, char trans, std::size_t n, std::size_t k, T* alpha,
                 T* a, std::size_t lda, T* beta, T* c, std::size_t ldc,
-		 bool first = true) override
+                bool first = true) override
     {
         t_syherk(uplo, trans, n, k, alpha, a, lda, beta, c, ldc);
     }
@@ -397,7 +401,7 @@ public:
 
     void trsm(char side, char uplo, char trans, char diag, std::size_t m,
               std::size_t n, T* alpha, T* a, std::size_t lda, T* b,
-              std::size_t ldb,  bool first = false) override
+              std::size_t ldb, bool first = false) override
     {
         t_trsm(side, uplo, trans, diag, m, n, alpha, a, lda, b, ldb);
     }
@@ -413,19 +417,19 @@ public:
 
             Base<T> tmp = t_nrm2(n_, B_ + locked * n_ + i * n_, 1);
             resid[i] = std::pow(tmp, 2);
-        }	    
+        }
     }
 
     void heevd(int matrix_layout, char jobz, char uplo, std::size_t n, T* a,
                std::size_t lda, Base<T>* w) override
     {
-	T One = T(1.0);
+        T One = T(1.0);
         T Zero = T(0.0);
-        std::size_t locked = nev_ + nex_ - n;	
-	    
+        std::size_t locked = nev_ + nex_ - n;
+
         t_heevd(matrix_layout, jobz, uplo, n, a, nev_ + nex_, w);
-        this->gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, m_, n, n,
-                   &One, C2_ + locked * m_, m_, A_, nev_ + nex_, &Zero,
+        this->gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, m_, n, n, &One,
+                   C2_ + locked * m_, m_, A_, nev_ + nex_, &Zero,
                    C_ + locked * m_, m_);
     }
 

@@ -571,7 +571,7 @@ int do_chase(ChASE_DriverProblemConfig& conf)
         }
 #endif
 
-	MPI_Barrier(MPI_COMM_WORLD);
+        MPI_Barrier(MPI_COMM_WORLD);
 
         end = std::chrono::high_resolution_clock::now();
 
@@ -584,7 +584,7 @@ int do_chase(ChASE_DriverProblemConfig& conf)
 
 #ifdef USE_NSIGHT
         nvtxRangePop();
-#endif	
+#endif
         PerformanceDecoratorChase<T> performanceDecorator(&single);
 #ifdef USE_MPI
         MPI_Barrier(MPI_COMM_WORLD);
@@ -636,108 +636,107 @@ int main(int argc, char* argv[])
 
     po::options_description desc("ChASE Options");
 
-    desc
-        .add_options()(                                                       //
-            "help,h",                                                         //
-            "show this message"                                               //
-            )(                                                                //
-            "n", po::value<std::size_t>(&conf.N)->required(),                 //
-            "Size of the Input Matrix"                                        //
-            )(                                                                //
-            "double", po::value<bool>(&conf.isdouble)->default_value(true),   //
-            "Is matrix double valued, false indicates the single type"        //
-            )(                                                                //
-            "complex", po::value<bool>(&conf.iscomplex)->default_value(true), //
-            "Matrix is complex, false indicated the real matrix"              //
-            )(                                                                //
-            "nev", po::value<std::size_t>(&conf.nev)->required(),             //
-            "Wanted Number of Eigenpairs"                                     //
-            )(                                                                //
-            "nex", po::value<std::size_t>(&conf.nex)->default_value(25),      //
-            "Extra Search Dimensions"                                         //
-            )(                                                                //
-            "deg", po::value<std::size_t>(&conf.deg)->default_value(20),      //
-            "Initial filtering degree"                                        //
-            )("maxDeg",
-              po::value<std::size_t>(&conf.maxDeg)->default_value(36), //
-              "Sets the maximum value of the degree of the Chebyshev filter")(
-            "maxIter",
-            po::value<std::size_t>(&conf.maxIter)->default_value(25), //
-            "Sets the value of the maximum number of subspace iterations"
-            "within ChASE")(                                                  //
-            "bgn", po::value<std::size_t>(&conf.bgn)->default_value(2),       //
-            "Start ell"                                                       //
-            )(                                                                //
-            "end", po::value<std::size_t>(&conf.end)->default_value(2),       //
-            "End ell"                                                         //
-            )(                                                                //
-            "spin", po::value<std::string>(&conf.spin)->default_value("d"),   //
-            "spin"                                                            //
-            )(                                                                //
-            "kpoint", po::value<std::size_t>(&conf.kpoint)->default_value(0), //
-            "kpoint"                                                          //
-            )(                                                                //
-            "tol", po::value<double>(&conf.tol)->default_value(1e-10),        //
-            "Tolerance for Eigenpair convergence"                             //
-            )(                                                                //
-            "path_in", po::value<std::string>(&conf.path_in)->required(),     //
-            "Path to the input matrix/matrices"                               //
-            )(                                                                //
-            "mode", po::value<std::string>(&conf.mode)->default_value("A"),   //
-            "valid values are R(andom) or A(pproximate)"                      //
-            )(                                                                //
-            "opt", po::value<std::string>(&conf.opt)->default_value("S"),     //
-            "Optimi(S)e degree, or do (N)ot optimise"                         //
-            )(                                                                //
-            "path_eigp", po::value<std::string>(&conf.path_eigp),             //
-            "Path to approximate solutions, only required when mode"          //
-            "is Approximate, otherwise not used"                              //
-            )(                                                                //
-            "sequence",
-            po::value<bool>(&conf.sequence)->default_value(false),            //
-            "Treat as sequence of Problems. Previous ChASE solution is used," //
-            "when available"                                                  //
-            )("lanczosIter",
-              po::value<std::size_t>(&conf.lanczosIter)->default_value(25),
-              "Sets the number of Lanczos iterations executed by ChASE.")(
-            "numLanczos",
-            po::value<std::size_t>(&conf.numLanczos)->default_value(4),
-            " Sets the number of stochastic vectors used for the spectral "
-            "estimates"
-            "in Lanczos")
+    desc.add_options()(                                                   //
+        "help,h",                                                         //
+        "show this message"                                               //
+        )(                                                                //
+        "n", po::value<std::size_t>(&conf.N)->required(),                 //
+        "Size of the Input Matrix"                                        //
+        )(                                                                //
+        "double", po::value<bool>(&conf.isdouble)->default_value(true),   //
+        "Is matrix double valued, false indicates the single type"        //
+        )(                                                                //
+        "complex", po::value<bool>(&conf.iscomplex)->default_value(true), //
+        "Matrix is complex, false indicated the real matrix"              //
+        )(                                                                //
+        "nev", po::value<std::size_t>(&conf.nev)->required(),             //
+        "Wanted Number of Eigenpairs"                                     //
+        )(                                                                //
+        "nex", po::value<std::size_t>(&conf.nex)->default_value(25),      //
+        "Extra Search Dimensions"                                         //
+        )(                                                                //
+        "deg", po::value<std::size_t>(&conf.deg)->default_value(20),      //
+        "Initial filtering degree"                                        //
+        )("maxDeg",
+          po::value<std::size_t>(&conf.maxDeg)->default_value(36), //
+          "Sets the maximum value of the degree of the Chebyshev filter")(
+        "maxIter",
+        po::value<std::size_t>(&conf.maxIter)->default_value(25), //
+        "Sets the value of the maximum number of subspace iterations"
+        "within ChASE")(                                                  //
+        "bgn", po::value<std::size_t>(&conf.bgn)->default_value(2),       //
+        "Start ell"                                                       //
+        )(                                                                //
+        "end", po::value<std::size_t>(&conf.end)->default_value(2),       //
+        "End ell"                                                         //
+        )(                                                                //
+        "spin", po::value<std::string>(&conf.spin)->default_value("d"),   //
+        "spin"                                                            //
+        )(                                                                //
+        "kpoint", po::value<std::size_t>(&conf.kpoint)->default_value(0), //
+        "kpoint"                                                          //
+        )(                                                                //
+        "tol", po::value<double>(&conf.tol)->default_value(1e-10),        //
+        "Tolerance for Eigenpair convergence"                             //
+        )(                                                                //
+        "path_in", po::value<std::string>(&conf.path_in)->required(),     //
+        "Path to the input matrix/matrices"                               //
+        )(                                                                //
+        "mode", po::value<std::string>(&conf.mode)->default_value("A"),   //
+        "valid values are R(andom) or A(pproximate)"                      //
+        )(                                                                //
+        "opt", po::value<std::string>(&conf.opt)->default_value("S"),     //
+        "Optimi(S)e degree, or do (N)ot optimise"                         //
+        )(                                                                //
+        "path_eigp", po::value<std::string>(&conf.path_eigp),             //
+        "Path to approximate solutions, only required when mode"          //
+        "is Approximate, otherwise not used"                              //
+        )(                                                                //
+        "sequence",
+        po::value<bool>(&conf.sequence)->default_value(false),            //
+        "Treat as sequence of Problems. Previous ChASE solution is used," //
+        "when available"                                                  //
+        )("lanczosIter",
+          po::value<std::size_t>(&conf.lanczosIter)->default_value(25),
+          "Sets the number of Lanczos iterations executed by ChASE.")(
+        "numLanczos",
+        po::value<std::size_t>(&conf.numLanczos)->default_value(4),
+        " Sets the number of stochastic vectors used for the spectral "
+        "estimates"
+        "in Lanczos")
 #ifdef USE_BLOCK_CYCLIC
-            ( //
-                "mbsize",
-                po::value<std::size_t>(&conf.mbsize)->default_value(400), //
-                "block size for the row"                                  //
-                )(                                                        //
-                "nbsize",
-                po::value<std::size_t>(&conf.nbsize)->default_value(400), //
-                "block size for the column"                               //
-                )(                                                        //
-                "dim0", po::value<int>(&conf.dim0)->default_value(0),     //
-                "row number of MPI proc grid"                             //
-                )(                                                        //
-                "dim1", po::value<int>(&conf.dim1)->default_value(0),     //
-                "column number of MPI proc grid"                          //
-                )(                                                        //
-                "irsrc", po::value<int>(&conf.irsrc)->default_value(0),   //
-                "The process row over which the first row of matrix is"   //
-                "distributed."                                            //
-                )(                                                        //
-                "icsrc", po::value<int>(&conf.icsrc)->default_value(0),   //
-                "The process column over which the first column of the array A "
-                "is"           //
-                "distributed." //
-                )(             //
-                "major",
-                po::value<std::string>(&conf.mode)->default_value("C"),      //
-                "Major of MPI proc grid, valid values are R(ow) or C(olumn)" //
-                )
+        ( //
+            "mbsize",
+            po::value<std::size_t>(&conf.mbsize)->default_value(400), //
+            "block size for the row"                                  //
+            )(                                                        //
+            "nbsize",
+            po::value<std::size_t>(&conf.nbsize)->default_value(400), //
+            "block size for the column"                               //
+            )(                                                        //
+            "dim0", po::value<int>(&conf.dim0)->default_value(0),     //
+            "row number of MPI proc grid"                             //
+            )(                                                        //
+            "dim1", po::value<int>(&conf.dim1)->default_value(0),     //
+            "column number of MPI proc grid"                          //
+            )(                                                        //
+            "irsrc", po::value<int>(&conf.irsrc)->default_value(0),   //
+            "The process row over which the first row of matrix is"   //
+            "distributed."                                            //
+            )(                                                        //
+            "icsrc", po::value<int>(&conf.icsrc)->default_value(0),   //
+            "The process column over which the first column of the array A "
+            "is"           //
+            "distributed." //
+            )(             //
+            "major",
+            po::value<std::string>(&conf.mode)->default_value("C"),      //
+            "Major of MPI proc grid, valid values are R(ow) or C(olumn)" //
+            )
 #endif
-                ("legacy",
-                 po::value<bool>(&conf.legacy)->default_value(false), //
-                 "Use legacy naming scheme?");                        //
+            ("legacy",
+             po::value<bool>(&conf.legacy)->default_value(false), //
+             "Use legacy naming scheme?");                        //
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
