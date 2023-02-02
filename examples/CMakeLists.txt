@@ -3,6 +3,7 @@ set(subdirs
     1_sequence_eigenproblems
     2_input_output
     #    4_gev
+    5_c_interface
 )
 
 foreach(subdir ${subdirs})
