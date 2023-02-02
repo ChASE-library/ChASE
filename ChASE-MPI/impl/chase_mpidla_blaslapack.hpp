@@ -260,38 +260,6 @@ public:
     }    
 
     /*!
-     - For ChaseMpiDLABlaslapack, `stemr` with scalar being real and double
-     precision, is implemented using `LAPACK` routine `DSTEMR`.
-     - **Parallelism is SUPPORT within node if multi-threading is enabled.**
-     - For the meaning of this function, please visit ChaseMpiDLAInterface.
-    */
-    std::size_t stemr(int matrix_layout, char jobz, char range, std::size_t n,
-                      double* d, double* e, double vl, double vu,
-                      std::size_t il, std::size_t iu, int* m, double* w,
-                      double* z, std::size_t ldz, std::size_t nzc, int* isuppz,
-                      lapack_logical* tryrac) override
-    {
-        return t_stemr<double>(matrix_layout, jobz, range, n, d, e, vl, vu, il,
-                               iu, m, w, z, ldz, nzc, isuppz, tryrac);
-    }
-
-    /*!
-     - For ChaseMpiDLABlaslapack, `stemr` with scalar being real and single
-     precision, is implemented using `LAPACK` routine `SSTEMR`.
-     - **Parallelism is SUPPORT within node if multi-threading is enabled.**
-     - For the meaning of this function, please visit ChaseMpiDLAInterface.
-    */
-    std::size_t stemr(int matrix_layout, char jobz, char range, std::size_t n,
-                      float* d, float* e, float vl, float vu, std::size_t il,
-                      std::size_t iu, int* m, float* w, float* z,
-                      std::size_t ldz, std::size_t nzc, int* isuppz,
-                      lapack_logical* tryrac) override
-    {
-        return t_stemr<float>(matrix_layout, jobz, range, n, d, e, vl, vu, il,
-                              iu, m, w, z, ldz, nzc, isuppz, tryrac);
-    }
-
-    /*!
         - For ChaseMpiDLABlaslapack, `RR` is implemented by `GEMM` routine
        provided by `BLAS` and `(SY)HEEVD` routine provided by `LAPACK`.
           - The 1st operation `A <- W^T * V` is implemented by `GEMM` from

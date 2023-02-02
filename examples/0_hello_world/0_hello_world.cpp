@@ -15,8 +15,6 @@
 #include "algorithm/performance.hpp"
 
 #include "ChASE-MPI/impl/chase_mpidla_blaslapack.hpp"
-#include "ChASE-MPI/impl/chase_mpidla_blaslapack_seq.hpp"
-#include "ChASE-MPI/impl/chase_mpidla_blaslapack_seq_inplace.hpp"
 #ifdef DRIVER_BUILD_MGPU
 #include "ChASE-MPI/impl/chase_mpidla_mgpu.hpp"
 #endif
@@ -55,12 +53,6 @@ int main(int argc, char** argv)
 #endif
 
 #ifdef USE_GIVEN_DIST
-    // column major
-    /*int tmp;
-    tmp = dims[0];
-    dims[0] = dims[1];
-    dims[1] = tmp;
-    */
     std::size_t m, n;
     std::size_t len;
     int myrow = rank % dims[0];

@@ -473,7 +473,7 @@ public:
         int* isuppz = new int[2 * m];
         Base<T>* ritzv = new Base<T>[m];
 
-        dla_->stemr(LAPACK_COL_MAJOR, 'N', 'A', m, d, e, ul, ll, vl, vu,
+        t_stemr<Base<T>>(LAPACK_COL_MAJOR, 'N', 'A', m, d, e, ul, ll, vl, vu,
                     &notneeded_m, ritzv, NULL, m, m, isuppz, &tryrac);
 
         *upperb = std::max(std::abs(ritzv[0]), std::abs(ritzv[m - 1])) +
@@ -589,7 +589,7 @@ public:
         Base<T> ul, ll;
         int tryrac = 0;
         int* isuppz = new int[2 * m];
-        dla_->stemr(LAPACK_COL_MAJOR, 'V', 'A', m, d, e, ul, ll, vl, vu,
+        t_stemr(LAPACK_COL_MAJOR, 'V', 'A', m, d, e, ul, ll, vl, vu,
                     &notneeded_m, ritzv, ritzV, m, m, isuppz, &tryrac);
         *upperb = std::max(std::abs(ritzv[0]), std::abs(ritzv[m - 1])) +
                   std::abs(real_beta);
@@ -714,18 +714,6 @@ private:
       variable will increase with more and more eigenpairs computed.
     */
     std::size_t locked_;
-
-    //! A pointer to the memory allocated to store the (local part) matrix of A.
-    /*!
-      - For the constructor of class ChaseMpi without MPI,
-      the memory is allocated directly by ChaseMpiMatrices of size `N_ * N_`.
-      - For the constructor of class ChaseMpi with MPI, this variable is a
-      pointer to the local matrix of `A` on each MPI node. It is initalized
-      within the construction of ChaseMpiProperties.
-      - This variable is private, and it can be assessed through the member
-      function GetMatrixPtr().
-    */
-    T* H_;
 
     //! A pointer to the memory allocated to store the computed eigenvalues. The
     //! values inside are always real since the matrix of eigenproblem is

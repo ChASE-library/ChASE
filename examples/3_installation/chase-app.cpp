@@ -14,8 +14,6 @@
 #include "algorithm/performance.hpp"
 
 #include "ChASE-MPI/impl/chase_mpidla_blaslapack.hpp"
-#include "ChASE-MPI/impl/chase_mpidla_blaslapack_seq.hpp"
-#include "ChASE-MPI/impl/chase_mpidla_blaslapack_seq_inplace.hpp"
 
 #ifdef DRIVER_BUILD_MGPU
 #include "ChASE-MPI/impl/chase_mpidla_cuda_seq.hpp"

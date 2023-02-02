@@ -689,42 +689,6 @@ public:
     }
 
     /*!
-      - For ChaseMpiDLA, `stemr` with real and double precision scalar, is
-      implemented by calling the one in ChaseMpiDLABlaslapack and
-      ChaseMpiDLAMultiGPU.
-      - This implementation is the same for both with or w/o GPUs.
-      - **Parallelism is SUPPORT within node if multi-threading is actived**
-      - For the meaning of this function, please visit ChaseMpiDLAInterface.
-    */
-    std::size_t stemr(int matrix_layout, char jobz, char range, std::size_t n,
-                      double* d, double* e, double vl, double vu,
-                      std::size_t il, std::size_t iu, int* m, double* w,
-                      double* z, std::size_t ldz, std::size_t nzc, int* isuppz,
-                      lapack_logical* tryrac) override
-    {
-        return dla_->stemr(matrix_layout, jobz, range, n, d, e, vl, vu, il, iu,
-                           m, w, z, ldz, nzc, isuppz, tryrac);
-    }
-
-    /*!
-      - For ChaseMpiDLA, `stemr` with real and single precision scalar, is
-      implemented by calling the one in ChaseMpiDLABlaslapack and
-      ChaseMpiDLAMultiGPU.
-      - This implementation is the same for both with or w/o GPUs.
-      - **Parallelism is SUPPORT within node if multi-threading is actived**
-      - For the meaning of this function, please visit ChaseMpiDLAInterface.
-    */
-    std::size_t stemr(int matrix_layout, char jobz, char range, std::size_t n,
-                      float* d, float* e, float vl, float vu, std::size_t il,
-                      std::size_t iu, int* m, float* w, float* z,
-                      std::size_t ldz, std::size_t nzc, int* isuppz,
-                      lapack_logical* tryrac) override
-    {
-        return dla_->stemr(matrix_layout, jobz, range, n, d, e, vl, vu, il, iu,
-                           m, w, z, ldz, nzc, isuppz, tryrac);
-    }
-
-    /*!
       - For ChaseMpiDLA, `RR` with real and double precision scalar, is
       implemented by calling the one in ChaseMpiDLABlaslapack and
       ChaseMpiDLAMultiGPU.
