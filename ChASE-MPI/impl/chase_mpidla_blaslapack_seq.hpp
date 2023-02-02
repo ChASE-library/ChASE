@@ -100,19 +100,6 @@ public:
         std::memcpy(V12_, V + locked * N_, N_ * block * sizeof(T));
     }
 
-    /*! - For ChaseMpiDLABlaslapackSeq, the core of `preApplication` is
-       implemented with `std::memcpy`, which copies `block` vectors from `V2` to
-       `V2_`.
-        - **Parallelism is NOT SUPPORT**
-        - For the meaning of this function, please visit ChaseMpiDLAInterface.
-    */
-    void preApplication(T* V1, T* V2, std::size_t const locked,
-                        std::size_t const block) override
-    {
-        std::memcpy(V22_, V2 + locked * N_, N_ * block * sizeof(T));
-        this->preApplication(V1, locked, block);
-    }
-
     /*! - For ChaseMpiDLABlaslapackSeq, `apply` is implemented with `GEMM`
        provided by `BLAS`.
         - **Parallelism is SUPPORT within node if multi-threading is actived**

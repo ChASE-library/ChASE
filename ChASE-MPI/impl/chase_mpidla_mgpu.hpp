@@ -251,6 +251,7 @@ public:
         // cudaMemcpyHostToDevice, stream1_));
         cuda_exec(
             cudaMemcpy(d_H_, H_, m_ * n_ * sizeof(T), cudaMemcpyHostToDevice));
+        next_ = NextOp::bAc;
     }
     void initRndVecs() override
     {
@@ -296,16 +297,6 @@ public:
         }
     }
 
-    /*! - For ChaseMpiDLABlaslapack, `preApplication` is implemented within
-       ChaseMpiDLA.
-        - **Parallelism on distributed-memory system SUPPORT**
-        - For the meaning of this function, please visit ChaseMpiDLAInterface.
-    */
-    void preApplication(T* V1, T* V2, std::size_t locked,
-                        std::size_t block) override
-    {
-        this->preApplication(V1, locked, block);
-    }
     /*!
        - For ChaseMpiDLABlaslapack, the matrix-matrix multiplication of local
        matrices are implemented in with `GEMM` routine provided by `BLAS`.

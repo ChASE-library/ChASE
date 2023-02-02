@@ -73,6 +73,86 @@ std::pair<std::size_t, std::size_t> numroc(std::size_t n, std::size_t nb,
     return std::make_pair(numroc, nb_loc);
 }
 
+void create2DGrid(int row_dim, int col_dim, bool col_major, MPI_Comm comm, MPI_Comm *row_comm_, MPI_Comm *col_comm_, int *myrow, int *mycol){
+        int tmp_dims_[2];
+        int dims_[2];
+        int coord_[2];
+        dims_[0] = row_dim;
+        dims_[1] = col_dim;
+
+        if (col_major)
+        {
+            tmp_dims_[1] = row_dim;
+            tmp_dims_[0] = col_dim;
+        }
+        else
+        {
+            tmp_dims_[0] = row_dim;
+            tmp_dims_[1] = col_dim;
+        }
+
+
+        int periodic[] = {0, 0};
+        int reorder = 0;
+        int free_coords[2];
+        int row_procs, col_procs;
+        int tmp_coord[2];
+        int rank_, nprocs_;
+
+        MPI_Comm cartComm;
+        MPI_Cart_create(comm, 2, tmp_dims_, periodic, reorder, &cartComm);
+
+        MPI_Comm_size(cartComm, &nprocs_);
+        MPI_Comm_rank(cartComm, &rank_);
+        MPI_Cart_coords(cartComm, rank_, 2, tmp_coord);
+
+        if (col_major)
+        {
+            coord_[1] = tmp_coord[0];
+            coord_[0] = tmp_coord[1];
+        }
+        else
+        {
+            coord_[1] = tmp_coord[1];
+            coord_[0] = tmp_coord[0];
+        }
+
+        // row communicator
+        if (col_major)
+        {
+            free_coords[0] = 1;
+            free_coords[1] = 0;
+        }
+        else
+        {
+            free_coords[0] = 0;
+            free_coords[1] = 1;
+        }
+
+        MPI_Cart_sub(cartComm, free_coords, row_comm_);
+        MPI_Comm_size(*row_comm_, &row_procs);
+
+        // column communicator
+        if (col_major)
+        {
+            free_coords[0] = 0;
+            free_coords[1] = 1;
+        }
+        else
+        {
+            free_coords[0] = 1;
+            free_coords[1] = 0;
+        }
+
+        MPI_Cart_sub(cartComm, free_coords, col_comm_);
+        MPI_Comm_size(*col_comm_, &col_procs);
+
+        *myrow = coord_[0];
+        *mycol = coord_[1];
+}
+
+
+
 //! @brief A class to setup **MPI** properties and matrix distribution scheme
 //! for the implementation of ChASE on distributed-memory systems.
 /*! @details
@@ -159,6 +239,8 @@ public:
 #endif
         data_layout = "Block-Cyclic";
 
+        MPI_Comm_size(comm, &nprocs_);
+        MPI_Comm_rank(comm, &rank_);
         std::size_t blocknb[2];
         std::size_t N_loc[2];
         std::size_t blocksize[2];
@@ -176,81 +258,11 @@ public:
             col_major = true;
         }
 
-        if (col_major)
-        {
-            tmp_dims_[1] = row_dim;
-            tmp_dims_[0] = col_dim;
-        }
-        else
-        {
-            tmp_dims_[0] = row_dim;
-            tmp_dims_[1] = col_dim;
-        }
-
         int isrc[2];
         isrc[0] = irsrc;
         isrc[1] = icsrc;
 
-        int periodic[] = {0, 0};
-        int reorder = 0;
-        int free_coords[2];
-        int row_procs, col_procs;
-        int tmp_coord[2];
-
-        MPI_Comm cartComm;
-
-        MPI_Cart_create(comm, 2, tmp_dims_, periodic, reorder, &cartComm);
-
-        MPI_Comm_size(cartComm, &nprocs_);
-        MPI_Comm_rank(cartComm, &rank_);
-        MPI_Cart_coords(cartComm, rank_, 2, tmp_coord);
-
-        if (col_major)
-        {
-            coord_[1] = tmp_coord[0];
-            coord_[0] = tmp_coord[1];
-        }
-        else
-        {
-            coord_[1] = tmp_coord[1];
-            coord_[0] = tmp_coord[0];
-        }
-
-        if (nprocs_ > N_)
-            throw std::exception();
-
-        // row communicator
-        if (col_major)
-        {
-            free_coords[0] = 1;
-            free_coords[1] = 0;
-        }
-        else
-        {
-            free_coords[0] = 0;
-            free_coords[1] = 1;
-        }
-
-        MPI_Cart_sub(cartComm, free_coords, &row_comm_);
-        MPI_Comm_size(row_comm_, &row_procs);
-
-        // column communicator
-        if (col_major)
-        {
-            free_coords[0] = 0;
-            free_coords[1] = 1;
-        }
-        else
-        {
-            free_coords[0] = 1;
-            free_coords[1] = 0;
-        }
-
-        MPI_Cart_sub(cartComm, free_coords, &col_comm_);
-        MPI_Comm_size(col_comm_, &col_procs);
-
-        int myrow = coord_[0];
-        int mycol = coord_[1];
+        create2DGrid(dims_[0], dims_[1], col_major, comm, &row_comm_, &col_comm_, &coord_[0], &coord_[1]);
 
         for (std::size_t dim_idx = 0; dim_idx < 2; dim_idx++)
         {
@@ -265,15 +277,7 @@ public:
         n_ = N_loc[1];
 
         ldh_ = m_;
-        /*
-        #ifdef CHASE_OUTPUT
-                std::cout << grid_major << " " << dims_[0] <<"x"<< dims_[1] <<
-        ", " << "rank: " << rank_ << " (" << coord_[0] << ","
-                    << coord_[1] << "), row_comm_size = " << row_procs << ",
-        col_comm_size = " << col_procs << ", local matrix size = "
-                    << m_ << "x" << n_ << ", num of blocks in local = " <<
-        mblocks_ << "x" << nblocks_ << std::endl; #endif
-        */
+
         r_offs_.reset(new std::size_t[mblocks_]());
         r_lens_.reset(new std::size_t[mblocks_]());
         r_offs_l_.reset(new std::size_t[mblocks_]());
@@ -343,8 +347,6 @@ public:
             H_.reset(new T[n_ * m_]());
         }
 
-        // B_.reset(new T[n_ * max_block_]());
-        // C_.reset(new T[m_ * max_block_]());
         C2_.reset(new T[m_ * max_block_]());
         B2_.reset(new T[n_ * max_block_]());
         A_.reset(new T[max_block_ * max_block_]());
@@ -408,9 +410,6 @@ public:
             }
         }
 #if defined(HAS_SCALAPACK)
-        // test for SCALAPACK
-        // Initialize BLACS
-
         int zero = 0;
         int ictxt;
         blacs_get_(&zero, &zero, &ictxt);
@@ -488,7 +487,11 @@ public:
 #endif
         data_layout = "Block-Block";
 
+        MPI_Comm_size(comm, &nprocs_);
+        MPI_Comm_rank(comm, &rank_);
+
         int tmp_dims_[2];
+
         dims_[0] = npr;
         dims_[1] = npc;
 
@@ -499,77 +502,7 @@ public:
             col_major = true;
         }
 
-        if (col_major)
-        {
-            tmp_dims_[1] = npr;
-            tmp_dims_[0] = npc;
-        }
-        else
-        {
-            tmp_dims_[0] = npr;
-            tmp_dims_[1] = npc;
-        }
-
-        int periodic[] = {0, 0};
-        int reorder = 0;
-        int free_coords[2];
-        int row_procs, col_procs;
-        int tmp_coord[2];
-
-        MPI_Comm cartComm;
-
-        MPI_Cart_create(comm, 2, tmp_dims_, periodic, reorder, &cartComm);
-
-        MPI_Comm_size(cartComm, &nprocs_);
-        MPI_Comm_rank(cartComm, &rank_);
-        MPI_Cart_coords(cartComm, rank_, 2, tmp_coord);
-
-        if (col_major)
-        {
-            coord_[1] = tmp_coord[0];
-            coord_[0] = tmp_coord[1];
-        }
-        else
-        {
-            coord_[1] = tmp_coord[1];
-            coord_[0] = tmp_coord[0];
-        }
-
-        if (nprocs_ > N_)
-            throw std::exception();
-
-        // row communicator
-        if (col_major)
-        {
-            free_coords[0] = 1;
-            free_coords[1] = 0;
-        }
-        else
-        {
-            free_coords[0] = 0;
-            free_coords[1] = 1;
-        }
-
-        MPI_Cart_sub(cartComm, free_coords, &row_comm_);
-        MPI_Comm_size(row_comm_, &row_procs);
-
-        // column communicator
-        if (col_major)
-        {
-            free_coords[0] = 0;
-            free_coords[1] = 1;
-        }
-        else
-        {
-            free_coords[0] = 1;
-            free_coords[1] = 0;
-        }
-
-        MPI_Cart_sub(cartComm, free_coords, &col_comm_);
-        MPI_Comm_size(col_comm_, &col_procs);
-
-        int myrow = coord_[0];
-        int mycol = coord_[1];
+        create2DGrid(dims_[0], dims_[1], col_major, comm, &row_comm_, &col_comm_, &coord_[0], &coord_[1]);
 
         std::size_t len;
         len = m;
@@ -632,8 +565,6 @@ public:
         {
             H_.reset(new T[n_ * m_]());
         }
-        // B_.reset(new T[n_ * max_block_]());
-        // C_.reset(new T[m_ * max_block_]());
         C2_.reset(new T[m_ * max_block_]());
         B2_.reset(new T[n_ * max_block_]());
         A_.reset(new T[max_block_ * max_block_]());
@@ -688,7 +619,6 @@ public:
         }
 
 #if defined(HAS_SCALAPACK)
-        // test for SCALAPACK
         int zero = 0;
         int ictxt;
 
@@ -762,31 +692,12 @@ public:
 #endif
         data_layout = "Block-Block";
 
-        int periodic[] = {0, 0};
-        int reorder = 0;
-        int free_coords[2];
-        MPI_Comm cartComm;
-        // create cartesian communicator
         MPI_Comm_size(comm, &nprocs_);
+        MPI_Comm_rank(comm, &rank_);
         dims_[0] = dims_[1] = 0;
         MPI_Dims_create(nprocs_, 2, dims_);
-        MPI_Cart_create(comm, 2, dims_, periodic, reorder, &cartComm);
-        MPI_Comm_size(cartComm, &nprocs_);
-        MPI_Comm_rank(cartComm, &rank_);
-        MPI_Cart_coords(cartComm, rank_, 2, coord_);
 
-        if (nprocs_ > N_)
-            throw std::exception();
-
-        // row communicator
-        free_coords[0] = 0;
-        free_coords[1] = 1;
-        MPI_Cart_sub(cartComm, free_coords, &row_comm_);
-
-        // column communicator
-        free_coords[0] = 1;
-        free_coords[1] = 0;
-        MPI_Cart_sub(cartComm, free_coords, &col_comm_);
+        create2DGrid(dims_[0], dims_[1], false, comm, &row_comm_, &col_comm_, &coord_[0], &coord_[1]);
 
         // size of local part of H
         int len;
@@ -866,8 +777,7 @@ public:
         {
             H_.reset(new T[n_ * m_]());
         }
-        // B_.reset(new T[n_ * max_block_]());
-        // C_.reset(new T[m_ * max_block_]());
+
         C2_.reset(new T[m_ * max_block_]());
         B2_.reset(new T[n_ * max_block_]());
         A_.reset(new T[max_block_ * max_block_]());
@@ -921,9 +831,6 @@ public:
                 block_displs_[dim_idx][dims_[dim_idx] - 1][0]);
         }
 #if defined(HAS_SCALAPACK)
-        // test for SCALAPACK
-        // Initialize BLACS
-
         int zero = 0;
         int ictxt;
         blacs_get_(&zero, &zero, &ictxt);
@@ -1307,14 +1214,14 @@ public:
                                    resid);
     }
 
-    ChaseMpiMatrices<T> create_matrices(T* H = nullptr, std::size_t ldh = 0,
+    ChaseMpiMatrices<T> create_matrices(T* H, std::size_t ldh,
                                         T* V1 = nullptr,
                                         Base<T>* ritzv = nullptr,
                                         T* V2 = nullptr,
                                         Base<T>* resid = nullptr) const
     {
-        return ChaseMpiMatrices<T>(comm_, N_, m_, n_, max_block_, V1, ritzv, H,
-                                   ldh, V2, resid);
+        return ChaseMpiMatrices<T>(comm_, N_, m_, n_, max_block_, H, ldh, V1, ritzv, 
+                                   V2, resid);
     }
 
 private:
@@ -1613,7 +1520,6 @@ private:
         This variable is initialized during the construction of
        ChaseMpiProperties of size `n_ * max_block_`.
      */
-    // std::unique_ptr<T[]> B_;
 
     //! A temporary memory allocated to store local part of W for the MPI
     //! collective communications for the MPI-based implementation of `HEMM`.

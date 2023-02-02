@@ -198,17 +198,6 @@ public:
                              cudaMemcpyDeviceToDevice));
     }
 
-    /*! - For ChaseMpiDLACudaSeq, the core of `preApplication` is implemented
-       with `cudaMemcpyAsync, which copies `block` vectors from `V2` on Host to
-       `V2_` on GPU device.
-        - **Parallelism is NOT SUPPORT**
-        - For the meaning of this function, please visit ChaseMpiDLAInterface.
-    */
-    void preApplication(T* V1, T* V2, std::size_t locked,
-                        std::size_t block) override
-    {
-    }
-
     /*! - For ChaseMpiDLACudaSeq, `apply` is implemented with `cublasXgemm`
        provided by `cuBLAS`.
         - **Parallelism is SUPPORT within one GPU card**

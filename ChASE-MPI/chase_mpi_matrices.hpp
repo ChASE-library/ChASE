@@ -112,9 +112,9 @@ public:
     }
 
     ChaseMpiMatrices(MPI_Comm comm, std::size_t N, std::size_t m, std::size_t n,
-                     std::size_t max_block, T* V1 = nullptr,
-                     Base<T>* ritzv = nullptr, T* H = nullptr,
-                     std::size_t ldh = 0, T* V2 = nullptr,
+                     std::size_t max_block, T* H,
+                     std::size_t ldh, T* V1 = nullptr,
+                     Base<T>* ritzv = nullptr, T* V2 = nullptr,
                      Base<T>* resid = nullptr)
         // if value is null then allocate otherwise don't
         : H__(H == nullptr ? new T[m * n] : nullptr),

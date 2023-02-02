@@ -86,33 +86,6 @@ public:
       @param c: shift value
     */
     virtual void shiftMatrix(T c, bool isunshift = false) = 0;
-
-    // preApplication prepares internal state to perform the GEMM:
-    // V2 <- alpha * H*V1 + beta*V2
-    // The first locked number of vectors of V1 are not used in the GEMM.
-    //     In ChASE these are the locked vectors.
-    // Starting from locked, V1 contains block number of vectors.
-    /*!
-      `preApplication` prepares internal state to perform the `HEMM`: `V2 <-
-      alpha * H*V1 + beta*V2`. The first `locked` number of vectors of `V1` are
-      not used in the `HEMM`. In ChASE, these are the locked vectors, which are
-      already converged with acceptable tolerance. Starting from the column
-      `locked`, `V1` contains `block` number of vectors. This is a virtual
-      function, its implementation varies differently in different derived
-      classes.
-      @param V1: a `N * max_block_` rectangular matrix
-      @param V2: a `N * max_block_` rectangular matrix
-      @param locked: an integer indicating the number of locked (converged)
-      eigenvectors
-      @param block: an integer indicating the number of non-locked
-      (non-converged) eigenvectors
-    */
-    virtual void preApplication(T* V1, T* V2, std::size_t locked,
-                                std::size_t block) = 0;
-
-    // This function only populates V1.
-    // After a call to this function the state of V2 is undefined.
-
     /*!
       Compared to `preApplication` defined previously, this function only
       populates `V1`. After a call to this function the state of V2 is

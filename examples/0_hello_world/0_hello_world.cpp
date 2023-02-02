@@ -84,9 +84,6 @@ int main(int argc, char** argv)
 
 #endif
 
-    std::mt19937 gen(1337.0);
-    std::normal_distribution<> d;
-
     /*construct eigenproblem to be solved*/
 #ifdef USE_BLOCK_CYCLIC
     auto props =

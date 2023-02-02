@@ -47,29 +47,20 @@ public:
 
         ldc_ = matrix_properties->get_ldc();
         ldb_ = matrix_properties->get_ldb();
-
         N_ = matrix_properties->get_N();
         n_ = matrix_properties->get_n();
         m_ = matrix_properties->get_m();
-
-        // B_ = matrix_properties->get_B();
-        // C_ = matrix_properties->get_C();
-
         B_ = matrices.get_V2();
         C_ = matrices.get_V1();
         C2_ = matrix_properties->get_C2();
         B2_ = matrix_properties->get_B2();
         A_ = matrix_properties->get_A();
-
 #if !defined(HAS_SCALAPACK)
         V_ = matrix_properties->get_V();
 #endif
-
         nev_ = matrix_properties->GetNev();
         nex_ = matrix_properties->GetNex();
-
         std::size_t max_block_ = matrix_properties->get_max_block();
-
         matrix_properties_ = matrix_properties;
 
         row_comm_ = matrix_properties->get_row_comm();
@@ -98,7 +89,6 @@ public:
             sign = 1;
         }
 
-        // Buff_ = new T[sign * N_ *  max_block_];
         Buff_.resize(sign * N_);
 
         istartOfFilter_ = true;
@@ -108,33 +98,39 @@ public:
         MPI_Comm_size(col_comm_, &col_size_);
         MPI_Comm_rank(col_comm_, &col_rank_);
 
-        reqs_.resize(row_size_);
-        newType_.resize(row_size_);
-
         send_lens_ = matrix_properties_->get_sendlens();
-        recv_offsets_.resize(send_lens_.size());
-        for (auto i = 0; i < send_lens_.size(); i++)
-        {
-            recv_offsets_[i].resize(send_lens_[i].size());
-            recv_offsets_[i][0] = 0;
-            for (auto j = 1; j < recv_offsets_[i].size(); j++)
-            {
-                recv_offsets_[i][j] =
-                    recv_offsets_[i][j - 1] + send_lens_[i][j - 1];
+        block_counts_ = matrix_properties_->get_blockcounts();
+        blocklens_ = matrix_properties_->get_blocklens();
+        blockdispls_ = matrix_properties_->get_blockdispls();
+        g_offset_ = matrix_properties_->get_g_offsets();
+
+        for(auto dim = 0; dim < 2; dim++){
+            block_cyclic_displs_[dim].resize(dims_[dim]);
+            int displs_cnt = 0;
+            for (auto j = 0; j < dims_[dim]; ++j){
+                block_cyclic_displs_[dim][j].resize(block_counts_[dim][j]);
+                for (auto i = 0; i < block_counts_[dim][j]; ++i)
+                {
+                    block_cyclic_displs_[dim][j][i] = displs_cnt;
+                    displs_cnt += blocklens_[dim][j][i];
+                }
             }
         }
 
-        for (auto i = 0; i < row_size_; ++i)
-        {
-            int array_of_sizes[2] = {static_cast<int>(N_), 1};
-            int array_of_subsizes[2] = {send_lens_[1][i], 1};
-            int array_of_starts[2] = {recv_offsets_[1][i], 0};
+        for(auto dim = 0; dim < 2; dim++){
+            newType_[dim].resize(dims_[dim]);
+            for (auto j = 0; j < dims_[dim]; ++j)
+            {
+                int array_of_sizes[2] = {static_cast<int>(N_), 1};
+                int array_of_subsizes[2] = {static_cast<int>(send_lens_[dim][j]), 1};
+                int array_of_starts[2] = {block_cyclic_displs_[dim][j][0], 0};
 
-            MPI_Type_create_subarray(2, array_of_sizes, array_of_subsizes,
-                                     array_of_starts, MPI_ORDER_FORTRAN,
-                                     getMPI_Type<T>(), &(newType_[i]));
+                MPI_Type_create_subarray(2, array_of_sizes, array_of_subsizes,
+                                         array_of_starts, MPI_ORDER_FORTRAN,
+                                         getMPI_Type<T>(), &(newType_[dim][j]));
 
-            MPI_Type_commit(&(newType_[i]));
+                MPI_Type_commit(&(newType_[dim][j]));
+            }
         }
 
 #if defined(HAS_SCALAPACK)
@@ -239,9 +235,7 @@ public:
 #endif
         next_ = NextOp::bAc;
         t_lacpy('A', m_, nev_ + nex_, C_, m_, C2_, m_);
-        T* Vv;
         dla_->initVecs();
-        dla_->preApplication(Vv, 0, 0);
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
@@ -258,24 +252,6 @@ public:
 #ifdef USE_NSIGHT
         nvtxRangePushA("random generation");
 #endif
-        /*
-                std::mt19937 gen(1337.0);
-                std::normal_distribution<> d;
-                for (auto j = 0; j < nev_ + nex_; j++)
-                {
-                    std::size_t cnt = 0;
-                    for (auto i = 0; i < N_; i++)
-                    {
-                        auto rnk = (i / mb_) % col_size_;
-                        auto rnd = getRandomT<T>([&]() { return d(gen); });
-                        if (col_rank_ == rnk)
-                        {
-                            C_[cnt + j * m_] = rnd;
-                            cnt++;
-                        }
-                    }
-                }
-        */
         dla_->initRndVecs();
 #ifdef USE_NSIGHT
         nvtxRangePop();
@@ -307,44 +283,9 @@ public:
         next_ = NextOp::bAc;
         locked_ = locked;
 
-        for (auto j = 0; j < block; j++)
-        {
-            for (auto i = 0; i < mblocks_; i++)
-            {
-                std::memcpy(C_ + locked * m_ + j * m_ + r_offs_l_[i],
-                            V + j * N_ + locked * N_ + r_offs_[i],
-                            r_lens_[i] * sizeof(T));
-            }
-        }
+        this->V2C(V, locked_, C_, locked_, block);
+
         dla_->preApplication(V, locked, block);
-#ifdef USE_NSIGHT
-        nvtxRangePop();
-#endif
-    }
-
-    /*! - For ChaseMpiDLA, `preApplication` is implemented within `std::memcpy`.
-        - **Parallelism on distributed-memory system SUPPORT**
-        - For the meaning of this function, please visit ChaseMpiDLAInterface.
-    */
-    void preApplication(T* V1, T* V2, std::size_t locked,
-                        std::size_t block) override
-    {
-#ifdef USE_NSIGHT
-        nvtxRangePushA("ChaseMpiDLA: PreApplication");
-#endif
-        for (auto j = 0; j < block; j++)
-        {
-            for (auto i = 0; i < nblocks_; i++)
-            {
-                std::memcpy(B_ + locked * n_ + j * n_ + c_offs_l_[i],
-                            V2 + j * N_ + locked * N_ + c_offs_[i],
-                            c_lens_[i] * sizeof(T));
-            }
-        }
-
-        dla_->preApplication(V1, V2, locked, block);
-
-        this->preApplication(V1, locked, block);
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
@@ -436,72 +377,17 @@ public:
 #endif
     }
 
-    // v1->v2
-    void C2V(T* v1, std::size_t off1, T* v2, std::size_t off2,
-             std::size_t block) override
-    {
-#ifdef USE_NSIGHT
-        nvtxRangePushA("ChaseMpiDLA: C2V");
-#endif
-        std::size_t N = N_;
-        std::size_t dimsIdx;
-        std::size_t subsize;
-        std::size_t blocksize;
-        std::size_t nbblocks;
-        T* buff;
+    void collecRedundantVecs(T *buff, T *targetBuf, std::size_t dimsIdx, std::size_t block){
         MPI_Comm comm;
-        std::size_t *offs, *lens, *offs_l;
-        T* targetBuf = v2 + off2 * N_;
-
-        subsize = m_;
-        blocksize = mb_;
-        buff = v1 + off1 * m_;
-        comm = col_comm_;
-        dimsIdx = 0;
-        offs = r_offs_;
-        lens = r_lens_;
-        offs_l = r_offs_l_;
-        nbblocks = mblocks_;
-
-        int gsize, rank;
-        MPI_Comm_size(comm, &gsize);
-        MPI_Comm_rank(comm, &rank);
-
-        auto& blockcounts = matrix_properties_->get_blockcounts()[dimsIdx];
-        auto& blocklens = matrix_properties_->get_blocklens()[dimsIdx];
-        auto& blockdispls = matrix_properties_->get_blockdispls()[dimsIdx];
-        auto& sendlens = matrix_properties_->get_sendlens()[dimsIdx];
-        auto& g_offset = matrix_properties_->get_g_offsets()[dimsIdx];
-
-        std::vector<std::vector<int>> block_cyclic_displs;
-        block_cyclic_displs.resize(gsize);
-
-        int displs_cnt = 0;
-        for (auto j = 0; j < gsize; ++j)
-        {
-            block_cyclic_displs[j].resize(blockcounts[j]);
-            for (auto i = 0; i < blockcounts[j]; ++i)
-            {
-                block_cyclic_displs[j][i] = displs_cnt;
-                displs_cnt += blocklens[j][i];
-            }
+        if(dimsIdx == 0){
+            comm = col_comm_;
+        }else if(dimsIdx == 1){
+            comm = row_comm_;
         }
+        int rank;
+        MPI_Comm_rank(comm, &rank);        
 
-        std::vector<MPI_Request> reqs(gsize);
-        std::vector<MPI_Datatype> newType(gsize);
-
-        for (auto j = 0; j < gsize; ++j)
-        {
-            int array_of_sizes[2] = {static_cast<int>(N_), 1};
-            int array_of_subsizes[2] = {static_cast<int>(sendlens[j]), 1};
-            int array_of_starts[2] = {block_cyclic_displs[j][0], 0};
-
-            MPI_Type_create_subarray(2, array_of_sizes, array_of_subsizes,
-                                     array_of_starts, MPI_ORDER_FORTRAN,
-                                     getMPI_Type<T>(), &(newType[j]));
-
-            MPI_Type_commit(&(newType[j]));
-        }
+        std::vector<MPI_Request> reqs(dims_[dimsIdx]);
 
         if (data_layout.compare("Block-Cyclic") == 0)
         {
@@ -513,32 +399,32 @@ public:
 
         if (data_layout.compare("Block-Cyclic") == 0)
         {
-            for (auto i = 0; i < gsize; i++)
+            for (auto i = 0; i < dims_[dimsIdx]; i++)
             {
                 if (rank == i)
                 {
-                    MPI_Ibcast(buff, sendlens[i] * block, getMPI_Type<T>(), i,
+                    MPI_Ibcast(buff, send_lens_[dimsIdx][i] * block, getMPI_Type<T>(), i,
                                comm, &reqs[i]);
                 }
                 else
                 {
-                    MPI_Ibcast(Buff_.data(), block, newType[i], i, comm,
+                    MPI_Ibcast(Buff_.data(), block, newType_[dimsIdx][i], i, comm,
                                &reqs[i]);
                 }
             }
         }
         else
         {
-            for (auto i = 0; i < gsize; i++)
+            for (auto i = 0; i < dims_[dimsIdx]; i++)
             {
                 if (rank == i)
                 {
-                    MPI_Ibcast(buff, sendlens[i] * block, getMPI_Type<T>(), i,
+                    MPI_Ibcast(buff, send_lens_[dimsIdx][i] * block, getMPI_Type<T>(), i,
                                comm, &reqs[i]);
                 }
                 else
                 {
-                    MPI_Ibcast(targetBuf, block, newType[i], i, comm, &reqs[i]);
+                    MPI_Ibcast(targetBuf, block, newType_[dimsIdx][i], i, comm, &reqs[i]);
                 }
             }
         }
@@ -549,33 +435,48 @@ public:
         {
             for (auto j = 0; j < block; ++j)
             {
-                std::memcpy(Buff_.data() + j * N_ + block_cyclic_displs[i][0],
-                            buff + sendlens[i] * j, sendlens[i] * sizeof(T));
+                std::memcpy(Buff_.data() + j * N_ + block_cyclic_displs_[dimsIdx][i][0],
+                            buff + send_lens_[dimsIdx][i] * j, send_lens_[dimsIdx][i] * sizeof(T));
             }
         }
         else
         {
             for (auto j = 0; j < block; ++j)
             {
-                std::memcpy(targetBuf + j * N_ + block_cyclic_displs[i][0],
-                            buff + sendlens[i] * j, sendlens[i] * sizeof(T));
+                std::memcpy(targetBuf + j * N_ + block_cyclic_displs_[dimsIdx][i][0],
+                            buff + send_lens_[dimsIdx][i] * j, send_lens_[dimsIdx][i] * sizeof(T));
             }
         }
 
-        MPI_Waitall(gsize, reqs.data(), MPI_STATUSES_IGNORE);
+        MPI_Waitall(dims_[dimsIdx], reqs.data(), MPI_STATUSES_IGNORE);
 
         if (data_layout.compare("Block-Cyclic") == 0)
         {
-            for (auto j = 0; j < gsize; j++)
+            for (auto j = 0; j < dims_[dimsIdx]; j++)
             {
-                for (auto i = 0; i < blockcounts[j]; ++i)
+                for (auto i = 0; i < block_counts_[dimsIdx][j]; ++i)
                 {
-                    t_lacpy('A', blocklens[j][i], block,
-                            Buff_.data() + block_cyclic_displs[j][i], N_,
-                            targetBuf + blockdispls[j][i], N_);
+                    t_lacpy('A', blocklens_[dimsIdx][j][i], block,
+                            Buff_.data() + block_cyclic_displs_[dimsIdx][j][i], N_,
+                            targetBuf + blockdispls_[dimsIdx][j][i], N_);
                 }
             }
         }
+    }
+
+    // v1->v2
+    void C2V(T* v1, std::size_t off1, T* v2, std::size_t off2,
+             std::size_t block) override
+    {
+#ifdef USE_NSIGHT
+        nvtxRangePushA("ChaseMpiDLA: C2V");
+#endif
+        std::size_t dimsIdx = 0;
+        T* buff = v1 + off1 * m_;
+        T* targetBuf = v2 + off2 * N_;
+
+        this->collecRedundantVecs(buff, targetBuf, dimsIdx, block);
+
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
@@ -593,156 +494,24 @@ public:
 #endif
         dla_->postApplication(V, block, locked);
 
-        std::size_t N = N_;
         std::size_t dimsIdx;
-        std::size_t subsize;
-        std::size_t blocksize;
-        std::size_t nbblocks;
 
         T* buff;
-        MPI_Comm comm;
-        std::size_t *offs, *lens, *offs_l;
-
-        T* targetBuf = V + locked_ * N;
+        T* targetBuf = V + locked_ * N_;
 
         if (next_ == NextOp::bAc)
         {
-            subsize = m_;
-            blocksize = mb_;
             buff = C_ + locked * m_;
-            comm = col_comm_;
             dimsIdx = 0;
-            offs = r_offs_;
-            lens = r_lens_;
-            offs_l = r_offs_l_;
-            nbblocks = mblocks_;
         }
         else
         {
-            subsize = n_;
-            blocksize = nb_;
             buff = B_ + locked * n_;
-            comm = row_comm_;
             dimsIdx = 1;
-            offs = c_offs_;
-            lens = c_lens_;
-            offs_l = c_offs_l_;
-            nbblocks = nblocks_;
         }
 
-        int gsize, rank;
-        MPI_Comm_size(comm, &gsize);
-        MPI_Comm_rank(comm, &rank);
+        this->collecRedundantVecs(buff, targetBuf, dimsIdx, block);
 
-        auto& blockcounts = matrix_properties_->get_blockcounts()[dimsIdx];
-        auto& blocklens = matrix_properties_->get_blocklens()[dimsIdx];
-        auto& blockdispls = matrix_properties_->get_blockdispls()[dimsIdx];
-        auto& sendlens = matrix_properties_->get_sendlens()[dimsIdx];
-        auto& g_offset = matrix_properties_->get_g_offsets()[dimsIdx];
-
-        std::vector<std::vector<int>> block_cyclic_displs;
-        block_cyclic_displs.resize(gsize);
-
-        int displs_cnt = 0;
-        for (auto j = 0; j < gsize; ++j)
-        {
-            block_cyclic_displs[j].resize(blockcounts[j]);
-            for (auto i = 0; i < blockcounts[j]; ++i)
-            {
-                block_cyclic_displs[j][i] = displs_cnt;
-                displs_cnt += blocklens[j][i];
-            }
-        }
-
-        std::vector<MPI_Request> reqs(gsize);
-        std::vector<MPI_Datatype> newType(gsize);
-
-        for (auto j = 0; j < gsize; ++j)
-        {
-            int array_of_sizes[2] = {static_cast<int>(N_), 1};
-            int array_of_subsizes[2] = {static_cast<int>(sendlens[j]), 1};
-            int array_of_starts[2] = {block_cyclic_displs[j][0], 0};
-
-            MPI_Type_create_subarray(2, array_of_sizes, array_of_subsizes,
-                                     array_of_starts, MPI_ORDER_FORTRAN,
-                                     getMPI_Type<T>(), &(newType[j]));
-
-            MPI_Type_commit(&(newType[j]));
-        }
-
-        if (data_layout.compare("Block-Cyclic") == 0)
-        {
-            if (block > 1 && Buff_.size() != (nev_ + nex_) * N_)
-            {
-                Buff_.resize((nev_ + nex_) * N_);
-            }
-        }
-
-        if (data_layout.compare("Block-Cyclic") == 0)
-        {
-            for (auto i = 0; i < gsize; i++)
-            {
-                if (rank == i)
-                {
-                    MPI_Ibcast(buff, sendlens[i] * block, getMPI_Type<T>(), i,
-                               comm, &reqs[i]);
-                }
-                else
-                {
-                    MPI_Ibcast(Buff_.data(), block, newType[i], i, comm,
-                               &reqs[i]);
-                }
-            }
-        }
-        else
-        {
-            for (auto i = 0; i < gsize; i++)
-            {
-                if (rank == i)
-                {
-                    MPI_Ibcast(buff, sendlens[i] * block, getMPI_Type<T>(), i,
-                               comm, &reqs[i]);
-                }
-                else
-                {
-                    MPI_Ibcast(targetBuf, block, newType[i], i, comm, &reqs[i]);
-                }
-            }
-        }
-
-        int i = rank;
-
-        if (data_layout.compare("Block-Cyclic") == 0)
-        {
-            for (auto j = 0; j < block; ++j)
-            {
-                std::memcpy(Buff_.data() + j * N_ + block_cyclic_displs[i][0],
-                            buff + sendlens[i] * j, sendlens[i] * sizeof(T));
-            }
-        }
-        else
-        {
-            for (auto j = 0; j < block; ++j)
-            {
-                std::memcpy(targetBuf + j * N_ + block_cyclic_displs[i][0],
-                            buff + sendlens[i] * j, sendlens[i] * sizeof(T));
-            }
-        }
-
-        MPI_Waitall(gsize, reqs.data(), MPI_STATUSES_IGNORE);
-
-        if (data_layout.compare("Block-Cyclic") == 0)
-        {
-            for (auto j = 0; j < gsize; j++)
-            {
-                for (auto i = 0; i < blockcounts[j]; ++i)
-                {
-                    t_lacpy('A', blocklens[j][i], block,
-                            Buff_.data() + block_cyclic_displs[j][i], N_,
-                            targetBuf + blockdispls[j][i], N_);
-                }
-            }
-        }
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
@@ -851,7 +620,6 @@ public:
     */
     void applyVec(T* B, T* C) override
     {
-        // TODO
 #ifdef USE_NSIGHT
         nvtxRangePushA("ChaseMpiDLA: applyVec");
 #endif
@@ -1387,11 +1155,11 @@ private:
     std::size_t nev_;
     std::size_t nex_;
 
-    std::vector<MPI_Request> reqs_;
-    std::vector<MPI_Datatype> newType_;
-
     std::vector<std::vector<int>> send_lens_;
-    std::vector<std::vector<int>> recv_offsets_;
+    std::vector<std::vector<int>> block_counts_;
+    std::vector<std::vector<int>> g_offset_;
+    std::vector<std::vector<std::vector<int>>> blocklens_;
+    std::vector<std::vector<std::vector<int>>> blockdispls_;
 
     bool isSameDist_; // is the same distribution for the row/column
                       // communicator
@@ -1399,11 +1167,15 @@ private:
     std::vector<MPI_Request> reqsc2b_;
     std::vector<MPI_Datatype> c_sends_;
     std::vector<MPI_Datatype> b_recvs_;
+    std::vector<MPI_Datatype> newType_[2];
     std::vector<int> c_dests;
     std::vector<int> c_srcs;
     std::vector<int> c_lens;
     std::vector<int> b_disps;
     std::vector<int> c_disps;
+    std::vector<std::vector<int>> block_cyclic_displs;
+    std::vector<std::vector<int>> block_cyclic_displs_[2];
+
 
     int icsrc_;
     int irsrc_;

@@ -86,18 +86,6 @@ public:
         std::memcpy(V1_, V + locked * N_, N_ * block * sizeof(T));
     }
 
-    /*! - For ChaseMpiDLABlaslapackSeqInplace, the core of `preApplication` is
-       implemented with `std::swap`, which swaps the buffer of `V1` and `V2`.
-        - **Parallelism is NOT SUPPORT**
-        - For the meaning of this function, please visit ChaseMpiDLAInterface.
-    */
-    void preApplication(T* V1, T* V2, std::size_t locked,
-                        std::size_t block) override
-    {
-        std::memcpy(V2_, V2 + locked * N_, N_ * block * sizeof(T));
-        this->preApplication(V1, locked, block);
-    }
-
     /*! - For ChaseMpiDLABlaslapackSeqInplace, `apply` is implemented with
        `GEMM` provided by `BLAS`.
         - **Parallelism is SUPPORT within node if multi-threading is actived**

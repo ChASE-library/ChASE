@@ -70,7 +70,9 @@ public:
     }
 
     ~ChaseMpiDLABlaslapack() {}
-    void initVecs() override {}
+    void initVecs() override {
+        next_ = NextOp::bAc;
+    }
     void initRndVecs() override
     {
         std::mt19937 gen(1337.0 + mpi_col_rank);
@@ -93,19 +95,6 @@ public:
     void preApplication(T* V, std::size_t locked, std::size_t block) override
     {
         next_ = NextOp::bAc;
-        // std::memcpy(C_, V + locked_ * N_, N_ * block * sizeof(T));
-    }
-
-    /*! - For ChaseMpiDLABlaslapack, `preApplication` is implemented within
-       ChaseMpiDLA.
-        - **Parallelism on distributed-memory system SUPPORT**
-        - For the meaning of this function, please visit ChaseMpiDLAInterface.
-    */
-    void preApplication(T* V1, T* V2, std::size_t locked,
-                        std::size_t block) override
-    {
-        // std::memcpy(B_, V2 + locked * N_, N_ * block * sizeof(T));
-        this->preApplication(V1, locked, block);
     }
 
     /*!
