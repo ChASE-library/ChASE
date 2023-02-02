@@ -256,68 +256,12 @@ public:
         assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
     }
 
-    void get_off(std::size_t* xoff, std::size_t* yoff, std::size_t* xlen,
-                 std::size_t* ylen) const override
-    {
-        *xoff = 0;
-        *yoff = 0;
-        *xlen = N_;
-        *ylen = N_;
-    }
-
-    T* get_H() const override { return H_; }
-    std::size_t get_mblocks() const override { return 1; }
-    std::size_t get_nblocks() const override { return 1; }
-    std::size_t get_n() const override { return N_; }
-    std::size_t get_m() const override { return N_; }
-    int* get_coord() const override
-    {
-        int* coord = new int[2];
-        coord[0] = 0;
-        coord[1] = 0;
-        return coord;
-    }
     int get_nprocs() const override { return 1; }
-    void get_offs_lens(std::size_t*& r_offs, std::size_t*& r_lens,
-                       std::size_t*& r_offs_l, std::size_t*& c_offs,
-                       std::size_t*& c_lens,
-                       std::size_t*& c_offs_l) const override
-    {
-
-        std::size_t r_offs_[1] = {0};
-        std::size_t r_lens_[1];
-        r_lens_[0] = N_;
-        std::size_t r_offs_l_[1] = {0};
-        std::size_t c_offs_[1] = {0};
-        std::size_t c_lens_[1];
-        r_lens_[0] = N_;
-        std::size_t c_offs_l_[1] = {0};
-
-        r_offs = r_offs_;
-        r_lens = r_lens_;
-        r_offs_l = r_offs_l_;
-        c_offs = c_offs_;
-        c_lens = c_lens_;
-        c_offs_l = c_offs_l_;
-    }
-
     void Start() override {}
     void End() override
     {
         cuda_exec(cudaMemcpy(V1_, d_V1_, max_block_ * N_ * sizeof(T),
                              cudaMemcpyDeviceToHost));
-    }
-
-    /*!
-      - For ChaseMpiDLACudaSeq, `lange` is implemented using `LAPACK` routine
-      `xLANGE`.
-      - **Parallelism is SUPPORT within node if multi-threading is actived**
-      - For the meaning of this function, please visit ChaseMpiDLAInterface.
-    */
-    Base<T> lange(char norm, std::size_t m, std::size_t n, T* A,
-                  std::size_t lda) override
-    {
-        return t_lange(norm, m, n, A, lda);
     }
 
     /*!
@@ -372,19 +316,6 @@ public:
         cublas_status_ = cublasTdot(cublasH_, n, x, incx, y, incy, &d);
         assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
         return d;
-    }
-
-    /*!
-      - For ChaseMpiDLACudaSeq, `gemm` is implemented using `BLAS` routine
-      `xGEMM`.
-      - **Parallelism is SUPPORT within node if multi-threading is actived**
-      - For the meaning of this function, please visit ChaseMpiDLAInterface.
-    */
-    void gemm(CBLAS_LAYOUT Layout, CBLAS_TRANSPOSE transa,
-              CBLAS_TRANSPOSE transb, std::size_t m, std::size_t n,
-              std::size_t k, T* alpha, T* a, std::size_t lda, T* b,
-              std::size_t ldb, T* beta, T* c, std::size_t ldc) override
-    {
     }
 
     /*!

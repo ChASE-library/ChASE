@@ -230,7 +230,7 @@ public:
     ChaseMpiProperties(std::size_t N, std::size_t mb, std::size_t nb,
                        std::size_t nev, std::size_t nex, int row_dim,
                        int col_dim, char* grid_major, int irsrc, int icsrc,
-                       MPI_Comm comm, bool H_preAlloc = true)
+                       MPI_Comm comm)
         : N_(N), mb_(mb), nb_(nb), nev_(nev), nex_(nex), max_block_(nev + nex),
           irsrc_(irsrc), icsrc_(icsrc), comm_(comm)
     {
@@ -340,11 +340,6 @@ public:
         for (std::size_t j = 1; j < nblocks_; j++)
         {
             c_offs_l_[j] = c_offs_l_[j - 1] + c_lens_[j - 1];
-        }
-
-        if (H_preAlloc)
-        {
-            H_.reset(new T[n_ * m_]());
         }
 
         C2_.reset(new T[m_ * max_block_]());
@@ -478,7 +473,7 @@ public:
      */
     ChaseMpiProperties(std::size_t N, std::size_t nev, std::size_t nex,
                        std::size_t m, std::size_t n, int npr, int npc,
-                       char* grid_major, MPI_Comm comm, bool H_preAlloc = true)
+                       char* grid_major, MPI_Comm comm)
         : N_(N), nev_(nev), nex_(nex), max_block_(nev + nex), m_(m), n_(n),
           comm_(comm)
     {
@@ -561,10 +556,6 @@ public:
         c_lens_[0] = n_;
         c_offs_l_[0] = 0;
 
-        if (H_preAlloc)
-        {
-            H_.reset(new T[n_ * m_]());
-        }
         C2_.reset(new T[m_ * max_block_]());
         B2_.reset(new T[n_ * max_block_]());
         A_.reset(new T[max_block_ * max_block_]());
@@ -684,7 +675,7 @@ public:
        communicator for ChASE.
      */
     ChaseMpiProperties(std::size_t N, std::size_t nev, std::size_t nex,
-                       MPI_Comm comm, bool H_preAlloc = true)
+                       MPI_Comm comm)
         : N_(N), nev_(nev), nex_(nex), max_block_(nev + nex), comm_(comm)
     {
 #ifdef USE_NSIGHT
@@ -772,11 +763,6 @@ public:
         c_offs_[0] = off_[1];
         c_lens_[0] = n_;
         c_offs_l_[0] = 0;
-
-        if (H_preAlloc)
-        {
-            H_.reset(new T[n_ * m_]());
-        }
 
         C2_.reset(new T[m_ * max_block_]());
         B2_.reset(new T[n_ * max_block_]());

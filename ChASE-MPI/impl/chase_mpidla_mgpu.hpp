@@ -94,12 +94,6 @@ public:
         nex_ = matrix_properties->GetNex();
         H_ = matrices.get_H();
         ldh_ = matrices.get_ldh();
-        if (H_ == nullptr)
-        {
-            H_ = matrix_properties->get_H();
-            ldh_ = matrix_properties->get_ldh();
-        }
-
         B_ = matrices.get_V2();
         C_ = matrices.get_V1();
         C2_ = matrix_properties->get_C2();
@@ -247,8 +241,6 @@ public:
     }
     void initVecs() override
     {
-        // cuda_exec(cudaMemcpyAsync(d_H_, H_, m_ * n_ * sizeof(T),
-        // cudaMemcpyHostToDevice, stream1_));
         cuda_exec(
             cudaMemcpy(d_H_, H_, m_ * n_ * sizeof(T), cudaMemcpyHostToDevice));
         next_ = NextOp::bAc;
@@ -264,19 +256,6 @@ public:
                           (cudaStream_t)0);
         cuda_exec(cudaMemcpy(C_, d_C_, m_ * (nev_ + nex_) * sizeof(T),
                              cudaMemcpyDeviceToHost));
-        /*
-        MPI_Comm col_comm = matrix_properties_->get_col_comm();
-        int mpi_col_rank;
-        MPI_Comm_rank(col_comm, &mpi_col_rank);
-
-        std::mt19937 gen(1337.0 + mpi_col_rank);
-        std::normal_distribution<> d;
-
-        for(auto j = 0; j < m_ * (nev_ + nex_); j++){
-            auto rnd = getRandomT<T>([&]() { return d(gen); });
-            C_[j] = rnd;
-        }
-        */
     }
 
     /*! - For ChaseMpiDLABlaslapack, `preApplication` is implemented within
@@ -287,8 +266,6 @@ public:
     void preApplication(T* V, std::size_t locked, std::size_t block) override
     {
         next_ = NextOp::bAc;
-        // cuda_exec(cudaMemcpyAsync(d_C_ + locked * m_, C_ + locked *m_, m_ *
-        // block * sizeof(T), cudaMemcpyHostToDevice, stream1_));
         if (locked > 0)
         {
             cuda_exec(cudaMemcpy(d_C_ + locked * m_, C_ + locked * m_,
@@ -322,17 +299,11 @@ public:
                                  C_ + offset * m_ + locked * m_,
                                  block * m_ * sizeof(T),
                                  cudaMemcpyHostToDevice));
-            // cuda_exec(cudaMemcpyAsync(d_C_ + offset * m_ + locked * m_, C_ +
-            // offset * m_ + locked * m_, block * m_ * sizeof(T),
-            // cudaMemcpyHostToDevice, stream1_ ));
             cublas_status_ =
                 cublasTgemm(cublasH_, CUBLAS_OP_C, CUBLAS_OP_N, n_, block, m_,
                             &alpha, d_H_, m_, d_C_ + locked * m_ + offset * m_,
                             m_, &beta, d_B_ + locked * n_ + offset * n_, n_);
             assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
-            // cublas_status_ = cublasGetMatrixAsync(n_, block, sizeof(T), d_B_+
-            // locked * n_ + offset * n_, n_, B_+ locked * n_ + offset * n_, n_,
-            // stream1_ );
             cublas_status_ = cublasGetMatrix(
                 n_, block, sizeof(T), d_B_ + locked * n_ + offset * n_, n_,
                 B_ + locked * n_ + offset * n_, n_);
@@ -349,17 +320,12 @@ public:
                                  B_ + locked * n_ + offset * n_,
                                  block * n_ * sizeof(T),
                                  cudaMemcpyHostToDevice));
-            // cuda_exec(cudaMemcpyAsync(d_B_+ locked * n_ + offset * n_, B_ +
-            // locked * n_ + offset * n_, block * n_ * sizeof(T),
-            // cudaMemcpyHostToDevice, stream1_));
             cublas_status_ =
                 cublasTgemm(cublasH_, CUBLAS_OP_N, CUBLAS_OP_N, m_, block, n_,
                             &alpha, d_H_, m_, d_B_ + locked * n_ + offset * n_,
                             n_, &beta, d_C_ + locked * m_ + offset * m_, m_);
             assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
-            // cublas_status_ = cublasGetMatrixAsync(m_, block, sizeof(T), d_C_+
-            // locked * m_ + offset * m_, m_, C_+ locked * m_ + offset * m_, m_,
-            // stream1_ );
+
             cublas_status_ = cublasGetMatrix(
                 m_, block, sizeof(T), d_C_ + locked * m_ + offset * m_, m_,
                 C_ + locked * m_ + offset * m_, m_);
@@ -378,8 +344,6 @@ public:
     {
         cuda_exec(cudaMemcpy(C_ + locked * m_, d_C_ + locked * m_,
                              m_ * block * sizeof(T), cudaMemcpyDeviceToHost));
-        // cuda_exec(cudaMemcpyAsync(C_ + locked * m_, d_C_ + locked *m_, m_ *
-        // block * sizeof(T), cudaMemcpyDeviceToHost, stream1_));
         return false;
     }
 
@@ -406,14 +370,11 @@ public:
                                  block * m_ * sizeof(T),
                                  cudaMemcpyHostToDevice));
         }
-        // cuda_exec(cudaMemcpyAsync(d_C_ + locked * m_, C_ + locked * m_, block
-        // * m_ * sizeof(T), cudaMemcpyHostToDevice, stream1_));
+
         cublas_status_ = cublasTgemm(
             cublasH_, CUBLAS_OP_C, CUBLAS_OP_N, n_, block, m_, &alpha, d_H_, m_,
             d_C_ + locked * m_, m_, &beta, d_B_ + locked * n_, n_);
         assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
-        // cuda_exec(cudaMemcpyAsync(B_ + locked * n_, d_B_ + locked * n_, block
-        // * n_ * sizeof(T), cudaMemcpyDeviceToHost, stream1_));
         cuda_exec(cudaMemcpy(B_ + locked * n_, d_B_ + locked * n_,
                              block * n_ * sizeof(T), cudaMemcpyDeviceToHost));
     }
@@ -424,51 +385,9 @@ public:
       - For the meaning of this function, please visit ChaseMpiDLAInterface.
     */
     void applyVec(T* B, T* C) override {}
-
-    void get_off(std::size_t* xoff, std::size_t* yoff, std::size_t* xlen,
-                 std::size_t* ylen) const override
-    {
-        *xoff = 0;
-        *yoff = 0;
-        *xlen = static_cast<std::size_t>(N_);
-        *ylen = static_cast<std::size_t>(N_);
-    }
-
-    T* get_H() const override { return matrix_properties_->get_H(); }
-    std::size_t get_mblocks() const override
-    {
-        return matrix_properties_->get_mblocks();
-    }
-    std::size_t get_nblocks() const override
-    {
-        return matrix_properties_->get_nblocks();
-    }
-    std::size_t get_n() const override { return matrix_properties_->get_n(); }
-    std::size_t get_m() const override { return matrix_properties_->get_m(); }
-    int* get_coord() const override { return matrix_properties_->get_coord(); }
-    void get_offs_lens(std::size_t*& r_offs, std::size_t*& r_lens,
-                       std::size_t*& r_offs_l, std::size_t*& c_offs,
-                       std::size_t*& c_lens,
-                       std::size_t*& c_offs_l) const override
-    {
-        matrix_properties_->get_offs_lens(r_offs, r_lens, r_offs_l, c_offs,
-                                          c_lens, c_offs_l);
-    }
     int get_nprocs() const override { return matrix_properties_->get_nprocs(); }
     void Start() override {}
     void End() override {}
-
-    /*!
-      - For ChaseMpiDLABlaslapack, `lange` is implemented using `LAPACK` routine
-      `xLANGE`.
-      - **Parallelism is SUPPORT within node if multi-threading is enabled.**
-      - For the meaning of this function, please visit ChaseMpiDLAInterface.
-    */
-    Base<T> lange(char norm, std::size_t m, std::size_t n, T* A,
-                  std::size_t lda) override
-    {
-        return t_lange(norm, m, n, A, lda);
-    }
 
     /*!
       - For ChaseMpiDLABlaslapack, `axpy` is implemented in ChaseMpiDLA.
@@ -512,19 +431,6 @@ public:
           std::size_t incy) override
     {
         return t_dot(n, x, incx, y, incy);
-    }
-    /*!
-     - For ChaseMpiDLABlaslapack, `gemm` is implemented in ChaseMpiDLA.
-     - **Parallelism is SUPPORT within node if multi-threading is enabled.**
-     - For the meaning of this function, please visit ChaseMpiDLAInterface.
-    */
-    void gemm(CBLAS_LAYOUT Layout, CBLAS_TRANSPOSE transa,
-              CBLAS_TRANSPOSE transb, std::size_t m, std::size_t n,
-              std::size_t k, T* alpha, T* a, std::size_t lda, T* b,
-              std::size_t ldb, T* beta, T* c, std::size_t ldc) override
-    {
-        t_gemm(Layout, transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c,
-               ldc);
     }
 
     /*!

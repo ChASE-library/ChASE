@@ -38,11 +38,11 @@ public:
         nex_ = matrix_properties->GetNex();
         H_ = matrices.get_H();
         ldh_ = matrices.get_ldh();
-        if (H_ == nullptr)
-        {
-            H_ = matrix_properties->get_H();
-            ldh_ = matrix_properties->get_ldh();
-        }
+        //if (H_ == nullptr)
+        //{
+         //   H_ = matrix_properties->get_H();
+         //   ldh_ = matrix_properties->get_ldh();
+        //}
 
         B_ = matrices.get_V2();
         C_ = matrices.get_V1();
@@ -211,50 +211,9 @@ public:
                C, N_);                                    //
     }
 
-    void get_off(std::size_t* xoff, std::size_t* yoff, std::size_t* xlen,
-                 std::size_t* ylen) const override
-    {
-        *xoff = 0;
-        *yoff = 0;
-        *xlen = static_cast<std::size_t>(N_);
-        *ylen = static_cast<std::size_t>(N_);
-    }
-
-    T* get_H() const override { return matrix_properties_->get_H(); }
-    std::size_t get_mblocks() const override
-    {
-        return matrix_properties_->get_mblocks();
-    }
-    std::size_t get_nblocks() const override
-    {
-        return matrix_properties_->get_nblocks();
-    }
-    std::size_t get_n() const override { return matrix_properties_->get_n(); }
-    std::size_t get_m() const override { return matrix_properties_->get_m(); }
-    int* get_coord() const override { return matrix_properties_->get_coord(); }
-    void get_offs_lens(std::size_t*& r_offs, std::size_t*& r_lens,
-                       std::size_t*& r_offs_l, std::size_t*& c_offs,
-                       std::size_t*& c_lens,
-                       std::size_t*& c_offs_l) const override
-    {
-        matrix_properties_->get_offs_lens(r_offs, r_lens, r_offs_l, c_offs,
-                                          c_lens, c_offs_l);
-    }
     int get_nprocs() const override { return matrix_properties_->get_nprocs(); }
     void Start() override {}
     void End() override {}
-
-    /*!
-      - For ChaseMpiDLABlaslapack, `lange` is implemented using `LAPACK` routine
-      `xLANGE`.
-      - **Parallelism is SUPPORT within node if multi-threading is enabled.**
-      - For the meaning of this function, please visit ChaseMpiDLAInterface.
-    */
-    Base<T> lange(char norm, std::size_t m, std::size_t n, T* A,
-                  std::size_t lda) override
-    {
-        return t_lange(norm, m, n, A, lda);
-    }
 
     /*!
       - For ChaseMpiDLABlaslapack, `axpy` is implemented in ChaseMpiDLA.
@@ -298,20 +257,7 @@ public:
           std::size_t incy) override
     {
         return t_dot(n, x, incx, y, incy);
-    }
-    /*!
-     - For ChaseMpiDLABlaslapack, `gemm` is implemented in ChaseMpiDLA.
-     - **Parallelism is SUPPORT within node if multi-threading is enabled.**
-     - For the meaning of this function, please visit ChaseMpiDLAInterface.
-    */
-    void gemm(CBLAS_LAYOUT Layout, CBLAS_TRANSPOSE transa,
-              CBLAS_TRANSPOSE transb, std::size_t m, std::size_t n,
-              std::size_t k, T* alpha, T* a, std::size_t lda, T* b,
-              std::size_t ldb, T* beta, T* c, std::size_t ldc) override
-    {
-        t_gemm(Layout, transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c,
-               ldc);
-    }
+    }    
 
     /*!
      - For ChaseMpiDLABlaslapack, `stemr` with scalar being real and double
@@ -362,7 +308,7 @@ public:
         T One = T(1.0);
         T Zero = T(0.0);
 
-        this->gemm(CblasColMajor, CblasConjTrans, CblasNoTrans, block, block,
+        t_gemm(CblasColMajor, CblasConjTrans, CblasNoTrans, block, block,
                    n_, &One, B2_ + locked * n_, n_, B_ + locked * n_, n_, &Zero,
                    A_, nev_ + nex_);
     }
@@ -417,7 +363,7 @@ public:
         std::size_t locked = nev_ + nex_ - n;
 
         t_heevd(matrix_layout, jobz, uplo, n, a, nev_ + nex_, w);
-        this->gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, m_, n, n, &One,
+        t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, m_, n, n, &One,
                    C2_ + locked * m_, m_, A_, nev_ + nex_, &Zero,
                    C_ + locked * m_, m_);
     }

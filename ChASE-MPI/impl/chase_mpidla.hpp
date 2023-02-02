@@ -634,45 +634,9 @@ public:
 #endif
     }
 
-    void get_off(std::size_t* xoff, std::size_t* yoff, std::size_t* xlen,
-                 std::size_t* ylen) const override
-    {
-        *xoff = off_[0];
-        *yoff = off_[1];
-        *xlen = m_;
-        *ylen = n_;
-    }
-
-    T* get_H() const override { return matrix_properties_->get_H(); }
-    std::size_t get_mblocks() const override { return mblocks_; }
-    std::size_t get_nblocks() const override { return nblocks_; }
-    std::size_t get_n() const override { return n_; }
-    std::size_t get_m() const override { return m_; }
-    int* get_coord() const override { return matrix_properties_->get_coord(); }
-    void get_offs_lens(std::size_t*& r_offs, std::size_t*& r_lens,
-                       std::size_t*& r_offs_l, std::size_t*& c_offs,
-                       std::size_t*& c_lens,
-                       std::size_t*& c_offs_l) const override
-    {
-        matrix_properties_->get_offs_lens(r_offs, r_lens, r_offs_l, c_offs,
-                                          c_lens, c_offs_l);
-    }
     int get_nprocs() const override { return matrix_properties_->get_nprocs(); }
     void Start() override { dla_->Start(); }
     void End() override { dla_->End(); }
-
-    /*!
-      - For ChaseMpiDLA, `lange` is implemented by calling the one in
-      ChaseMpiDLABlaslapack and ChaseMpiDLAMultiGPU.
-      - This implementation is the same for both with or w/o GPUs.
-      - **Parallelism is SUPPORT within node if multi-threading is actived**
-      - For the meaning of this function, please visit ChaseMpiDLAInterface.
-    */
-    Base<T> lange(char norm, std::size_t m, std::size_t n, T* A,
-                  std::size_t lda) override
-    {
-        return dla_->lange(norm, m, n, A, lda);
-    }
 
     /*!
       - For ChaseMpiDLA, `axpy` is implemented by calling the one in
@@ -722,21 +686,6 @@ public:
           std::size_t incy) override
     {
         return dla_->dot(n, x, incx, y, incy);
-    }
-
-    /*!
-    - For ChaseMpiDLA, `gemm` is implemented with `xGEMM` provided by `BLAS`.
-    - This implementation is the same for both with or w/o GPUs.
-    - **Parallelism is SUPPORT within node if multi-threading is actived**
-    - For the meaning of this function, please visit ChaseMpiDLAInterface.
-   */
-    void gemm(CBLAS_LAYOUT Layout, CBLAS_TRANSPOSE transa,
-              CBLAS_TRANSPOSE transb, std::size_t m, std::size_t n,
-              std::size_t k, T* alpha, T* a, std::size_t lda, T* b,
-              std::size_t ldb, T* beta, T* c, std::size_t ldc) override
-    {
-        dla_->gemm(Layout, transa, transb, m, n, k, alpha, a, lda, b, ldb, beta,
-                   c, ldc);
     }
 
     /*!
@@ -1099,7 +1048,7 @@ public:
 #ifdef USE_NSIGHT
         nvtxRangePushA("ChaseMpiDLA: LanczosDOS");
 #endif
-        this->gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, m_, idx, m,
+        t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, m_, idx, m,
                    &alpha, C_, m_, ritzVc, m, &beta, C2_, m_);
         std::memcpy(C_, C2_, m * m_ * sizeof(T));
 #ifdef USE_NSIGHT

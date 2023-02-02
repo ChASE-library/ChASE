@@ -97,7 +97,7 @@ ChaseMpiProperties<double>* ChASE_State::constructProperties(
 {
     double_prec =
         new ChaseMpiProperties<double>(N, mbsize, nbsize, nev, nex, dim0, dim1,
-                                       grid_major, irsrc, icsrc, comm, false);
+                                       grid_major, irsrc, icsrc, comm);
     return double_prec;
 }
 
@@ -108,8 +108,7 @@ ChaseMpiProperties<std::complex<double>>* ChASE_State::constructProperties(
     MPI_Comm comm)
 {
     complex_double_prec = new ChaseMpiProperties<std::complex<double>>(
-        N, mbsize, nbsize, nev, nex, dim0, dim1, grid_major, irsrc, icsrc, comm,
-        false);
+        N, mbsize, nbsize, nev, nex, dim0, dim1, grid_major, irsrc, icsrc, comm);
     return complex_double_prec;
 }
 
@@ -121,7 +120,7 @@ ChaseMpiProperties<float>* ChASE_State::constructProperties(
 {
     single_prec =
         new ChaseMpiProperties<float>(N, mbsize, nbsize, nev, nex, dim0, dim1,
-                                      grid_major, irsrc, icsrc, comm, false);
+                                      grid_major, irsrc, icsrc, comm);
     return single_prec;
 }
 
@@ -132,8 +131,7 @@ ChaseMpiProperties<std::complex<float>>* ChASE_State::constructProperties(
     MPI_Comm comm)
 {
     complex_single_prec = new ChaseMpiProperties<std::complex<float>>(
-        N, mbsize, nbsize, nev, nex, dim0, dim1, grid_major, irsrc, icsrc, comm,
-        false);
+        N, mbsize, nbsize, nev, nex, dim0, dim1, grid_major, irsrc, icsrc, comm);
     return complex_single_prec;
 }
 
@@ -144,7 +142,7 @@ ChaseMpiProperties<double>* ChASE_State::constructProperties(
 {
 
     double_prec = new ChaseMpiProperties<double>(N, nev, nex, m, n, dim0, dim1,
-                                                 grid_major, comm, false);
+                                                 grid_major, comm);
     return double_prec;
 }
 
@@ -155,7 +153,7 @@ ChaseMpiProperties<float>* ChASE_State::constructProperties(
 {
 
     single_prec = new ChaseMpiProperties<float>(N, nev, nex, m, n, dim0, dim1,
-                                                grid_major, comm, false);
+                                                grid_major, comm);
     return single_prec;
 }
 
@@ -166,7 +164,7 @@ ChaseMpiProperties<std::complex<double>>* ChASE_State::constructProperties(
 {
 
     complex_double_prec = new ChaseMpiProperties<std::complex<double>>(
-        N, nev, nex, m, n, dim0, dim1, grid_major, comm, false);
+        N, nev, nex, m, n, dim0, dim1, grid_major, comm);
     return complex_double_prec;
 }
 
@@ -177,7 +175,7 @@ ChaseMpiProperties<std::complex<float>>* ChASE_State::constructProperties(
 {
 
     complex_single_prec = new ChaseMpiProperties<std::complex<float>>(
-        N, nev, nex, m, n, dim0, dim1, grid_major, comm, false);
+        N, nev, nex, m, n, dim0, dim1, grid_major, comm);
     return complex_single_prec;
 }
 
@@ -187,7 +185,7 @@ ChASE_State::constructProperties(std::size_t N, std::size_t nev,
                                  std::size_t nex, MPI_Comm comm)
 {
 
-    double_prec = new ChaseMpiProperties<double>(N, nev, nex, comm, false);
+    double_prec = new ChaseMpiProperties<double>(N, nev, nex, comm);
     return double_prec;
 }
 
@@ -197,7 +195,7 @@ ChASE_State::constructProperties(std::size_t N, std::size_t nev,
                                  std::size_t nex, MPI_Comm comm)
 {
 
-    single_prec = new ChaseMpiProperties<float>(N, nev, nex, comm, false);
+    single_prec = new ChaseMpiProperties<float>(N, nev, nex, comm);
     return single_prec;
 }
 
@@ -208,7 +206,7 @@ ChASE_State::constructProperties(std::size_t N, std::size_t nev,
 {
 
     complex_double_prec =
-        new ChaseMpiProperties<std::complex<double>>(N, nev, nex, comm, false);
+        new ChaseMpiProperties<std::complex<double>>(N, nev, nex, comm);
     return complex_double_prec;
 }
 
@@ -219,7 +217,7 @@ ChASE_State::constructProperties(std::size_t N, std::size_t nev,
 {
 
     complex_single_prec =
-        new ChaseMpiProperties<std::complex<float>>(N, nev, nex, comm, false);
+        new ChaseMpiProperties<std::complex<float>>(N, nev, nex, comm);
     return complex_single_prec;
 }
 

@@ -148,66 +148,9 @@ public:
                C, N_);
     }
 
-    T* get_H() const override { return H_; }
-
-    void get_off(std::size_t* xoff, std::size_t* yoff, std::size_t* xlen,
-                 std::size_t* ylen) const override
-    {
-        *xoff = 0;
-        *yoff = 0;
-        *xlen = N_;
-        *ylen = N_;
-    }
-
-    std::size_t get_mblocks() const override { return 1; }
-    std::size_t get_nblocks() const override { return 1; }
-    std::size_t get_n() const override { return N_; }
-    std::size_t get_m() const override { return N_; }
-    int* get_coord() const override
-    {
-        int* coord = new int[2];
-        coord[0] = 0;
-        coord[1] = 0;
-
-        return coord;
-    }
-    void get_offs_lens(std::size_t*& r_offs, std::size_t*& r_lens,
-                       std::size_t*& r_offs_l, std::size_t*& c_offs,
-                       std::size_t*& c_lens,
-                       std::size_t*& c_offs_l) const override
-    {
-
-        std::size_t r_offs_[1] = {0};
-        std::size_t r_lens_[1];
-        r_lens_[0] = N_;
-        std::size_t r_offs_l_[1] = {0};
-        std::size_t c_offs_[1] = {0};
-        std::size_t c_lens_[1];
-        r_lens_[0] = N_;
-        std::size_t c_offs_l_[1] = {0};
-
-        r_offs = r_offs_;
-        r_lens = r_lens_;
-        r_offs_l = r_offs_l_;
-        c_offs = c_offs_;
-        c_lens = c_lens_;
-        c_offs_l = c_offs_l_;
-    }
     int get_nprocs() const override { return 1; }
     void Start() override {}
     void End() override {}
-
-    /*!
-      - For ChaseMpiDLABlaslapackSeqInplace, `lange` is implemented using
-      `LAPACK` routine `xLANGE`.
-      - **Parallelism is SUPPORT within node if multi-threading is actived**
-      - For the meaning of this function, please visit ChaseMpiDLAInterface.
-    */
-    Base<T> lange(char norm, std::size_t m, std::size_t n, T* A,
-                  std::size_t lda) override
-    {
-        return t_lange(norm, m, n, A, lda);
-    }
 
     /*!
       - For ChaseMpiDLABlaslapackSeqInplace, `axpy` is implemented using `BLAS`
@@ -253,21 +196,6 @@ public:
           std::size_t incy) override
     {
         return t_dot(n, x, incx, y, incy);
-    }
-
-    /*!
-      - For ChaseMpiDLABlaslapackSeqInplace, `gemm` is implemented using `BLAS`
-      routine `xGEMM`.
-      - **Parallelism is SUPPORT within node if multi-threading is actived**
-      - For the meaning of this function, please visit ChaseMpiDLAInterface.
-    */
-    void gemm(CBLAS_LAYOUT Layout, CBLAS_TRANSPOSE transa,
-              CBLAS_TRANSPOSE transb, std::size_t m, std::size_t n,
-              std::size_t k, T* alpha, T* a, std::size_t lda, T* b,
-              std::size_t ldb, T* beta, T* c, std::size_t ldc) override
-    {
-        t_gemm(Layout, transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c,
-               ldc);
     }
 
     /*!
@@ -373,7 +301,7 @@ public:
         for (std::size_t i = 0; i < unconverged; ++i)
         {
             beta = T(-ritzv[i]);
-            axpy(N_, &beta, (V1_ + locked * N_) + N_ * i, 1,
+            t_axpy(N_, &beta, (V1_ + locked * N_) + N_ * i, 1,
                  (V2_ + locked * N_) + N_ * i, 1);
 
             resid[i] = nrm2(N_, (V2_ + locked * N_) + N_ * i, 1);
@@ -491,7 +419,7 @@ public:
         T alpha = T(1.0);
         T beta = T(0.0);
 
-        this->gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, N_, idx, m,
+        t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, N_, idx, m,
                    &alpha, V1_, N_, ritzVc, m, &beta, V2_, N_);
         std::memcpy(V1_, V2_, m * N_ * sizeof(T));
     }

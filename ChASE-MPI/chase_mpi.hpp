@@ -647,49 +647,7 @@ public:
 
     //! \return `H_`: A pointer to the memory allocated to store (local part if
     //! applicable) of matrix `A`.
-    T* GetMatrixPtr() { return dla_->get_H(); }
-
-    //! Returns the number of submatrices along the row direction in the local
-    //! matrix on each MPI node. This member function is usefull for the
-    //! construction of ChaseMpiProperties with `Block-Cyclic Distribution`.
-    std::size_t get_mblocks() { return dla_->get_mblocks(); }
-
-    //! Returns the number of submatrices along the column direction in the
-    //! local matrix on each MPI node. This member function is usefull for the
-    //! construction of ChaseMpiProperties with `Block-Cyclic Distribution`.
-    std::size_t get_nblocks() { return dla_->get_nblocks(); }
-
-    //! Returns Row number of the local matrix.
-    std::size_t get_m() { return dla_->get_m(); }
-
-    //! Returns Column number of the local matrix.
-    std::size_t get_n() { return dla_->get_n(); }
-
-    //! Returns the coordinates of each MPI rank in the cartesian communicator
-    //! grid.
-    int* get_coord() { return dla_->get_coord(); }
-
-    //! This member function only matters for the Block-Cyclic Distribution.
-    //! Returns the pointers to `r_offs_`, `r_lens_`, `r_offs_l_`, `c_offs_`,
-    //! `c_lens_` and `c_offs_l_` in single member function. For more details of
-    //! this member function, please visit `get_offs_lens` function within
-    //! ChaseMpiProperties.
-    void get_offs_lens(std::size_t*& r_offs, std::size_t*& r_lens,
-                       std::size_t*& r_offs_l, std::size_t*& c_offs,
-                       std::size_t*& c_lens, std::size_t*& c_offs_l)
-    {
-        dla_->get_offs_lens(r_offs, r_lens, r_offs_l, c_offs, c_lens, c_offs_l);
-    }
-
-    //! Returns the offset of row and column of the local matrix on each MPI
-    //! node regarding the global index of matrix `A`. For more details of this
-    //! member function, please visit `get_off` function within
-    //! ChaseMpiProperties.
-    void GetOff(std::size_t* xoff, std::size_t* yoff, std::size_t* xlen,
-                std::size_t* ylen)
-    {
-        dla_->get_off(xoff, yoff, xlen, ylen);
-    }
+    T* GetMatrixPtr() { return matrices_.get_H(); }
 
     //! This member function implements the virtual one declared in Chase class.
     //! \return `resid_`: a  pointer to the memory allocated to store the

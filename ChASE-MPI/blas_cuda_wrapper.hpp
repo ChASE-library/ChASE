@@ -599,17 +599,6 @@ cublasStatus_t cublasTscal(cublasHandle_t handle, int n,
 }
 
 #endif
-/*
-void shiftMatrixGPU(float* A, int lda, int n, float shift, int offset,
-                    cudaStream_t stream);
-void shiftMatrixGPU(double* A, int lda, int n, double shift, int offset,
-                    cudaStream_t stream);
-void shiftMatrixGPU(std::complex<float>* A, int lda, int n,
-                    std::complex<float> shift, int offset, cudaStream_t stream);
-void shiftMatrixGPU(std::complex<double>* A, int lda, int n,
-                    std::complex<double> shift, int offset,
-                    cudaStream_t stream);
-*/
 
 static const char* cublasGetErrorString(cublasStatus_t error)
 {

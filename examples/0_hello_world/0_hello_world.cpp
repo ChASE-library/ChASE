@@ -93,7 +93,7 @@ int main(int argc, char** argv)
     auto props = new ChaseMpiProperties<T>(N, nev, nex, m, n, dims[0], dims[1],
                                            (char*)"C", MPI_COMM_WORLD);
 #elif defined(NO_COPY_H)
-    auto props = new ChaseMpiProperties<T>(N, nev, nex, MPI_COMM_WORLD, false);
+    auto props = new ChaseMpiProperties<T>(N, nev, nex, MPI_COMM_WORLD);
 #else
     auto props = new ChaseMpiProperties<T>(N, nev, nex, MPI_COMM_WORLD);
 #endif
@@ -127,16 +127,16 @@ int main(int argc, char** argv)
     CHASE single(props, V.data(), Lambda.data());
 
     /*local block number = mblocks x nblocks*/
-    std::size_t mblocks = single.get_mblocks();
-    std::size_t nblocks = single.get_nblocks();
+    std::size_t mblocks = props->get_mblocks();
+    std::size_t nblocks = props->get_nblocks();
 
     /*local matrix size = m x n*/
-    std::size_t m = single.get_m();
-    std::size_t n = single.get_n();
+    std::size_t m = props->get_m();
+    std::size_t n = props->get_n();
 
     /*global and local offset/length of each block of block-cyclic data*/
     std::size_t *r_offs, *c_offs, *r_lens, *c_lens, *r_offs_l, *c_offs_l;
-    single.get_offs_lens(r_offs, r_lens, r_offs_l, c_offs, c_lens, c_offs_l);
+    props->get_offs_lens(r_offs, r_lens, r_offs_l, c_offs, c_lens, c_offs_l);
 
     /*distribute Clement matrix into block cyclic data layout */
     for (std::size_t j = 0; j < nblocks; j++)
@@ -176,7 +176,7 @@ int main(int argc, char** argv)
     std::size_t xoff, yoff, xlen, ylen;
 
     /*Get Offset and length of block of H on each node*/
-    single.GetOff(&xoff, &yoff, &xlen, &ylen);
+    props->get_off(&xoff, &yoff, &xlen, &ylen);
 
     /*Load different blocks of H to each node*/
     for (std::size_t x = 0; x < xlen; x++)

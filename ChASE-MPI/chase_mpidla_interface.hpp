@@ -165,44 +165,10 @@ public:
        @param C: the vector to store the product of `H` and `B`.
     */
     virtual void applyVec(T* B, T* C) = 0;
-
-    // The offsets and sizes of the block of the matrix H that the class uses.
-    // In a subclass that uses MPI parallelization of the HEMM offsets may be
-    // non-zero for some processes.
-    virtual void get_off(std::size_t* xoff, std::size_t* yoff,
-                         std::size_t* xlen, std::size_t* ylen) const = 0;
-
     // Returns ptr to H, which may be used to populate H.
-    virtual T* get_H() const = 0;
-    virtual std::size_t get_mblocks() const = 0;
-    virtual std::size_t get_nblocks() const = 0;
-    virtual std::size_t get_m() const = 0;
-    virtual std::size_t get_n() const = 0;
-    virtual int* get_coord() const = 0;
-    virtual void get_offs_lens(std::size_t*& r_offs, std::size_t*& r_lens,
-                               std::size_t*& r_offs_l, std::size_t*& c_offs,
-                               std::size_t*& c_lens,
-                               std::size_t*& c_offs_l) const = 0;
-
     virtual int get_nprocs() const = 0;
     virtual void Start() = 0;
     virtual void End() = 0;
-
-    // other BLAS and LAPACK routines
-    //! Perform a `LAPACK-like` function which returns the value of the 1-norm,
-    //! Frobenius norm, infinity-norm, or the largest absolute value of any
-    //! element of a general rectangular matrix `A` with scalar type `T`.
-    /*!
-      @param norm: specifies the value to be returned in `lange`.
-      @param m: the number of rows of the matrix A.
-      @param n: the number of columns of the matrix A.
-      @param A: A is an array of type `T`, dimension `(lda, n)`, the `m` by `n`
-      matrix `A`.
-      @param lda: the leading dimension of the array `A`.
-      \return the value of a required type of norm of given matrix.
-    */
-    virtual Base<T> lange(char norm, std::size_t m, std::size_t n, T* A,
-                          std::size_t lda) = 0;
 
     //! A `BLAS-like` function which performs a constant times a vector plus a
     //! vector.
@@ -251,58 +217,6 @@ public:
     */
     virtual T dot(std::size_t n, T* x, std::size_t incx, T* y,
                   std::size_t incy) = 0;
-
-    //! A `BLAS-like` function which forms the Generalized Matrix-Matrix
-    //! production operation (`GEMM`).
-    /*!
-      `gemm_small` performs one of the matrix-matrix operations `C := alpha*op(
-   A )*op( B ) + beta*C`, where `op(X)` is one of `op(X) = X` or `op(X) = X**T`.
-   `alpha` and `beta` are scalars, and `A`, `B` and `C` are matrices, with
-   `op(A)` an `m` by `k` matrix,  `op( B )`  a  `k` by `n` matrix and  `C` an
-   `m` by `n` matrix. This function is implemented specifically for the matrices
-   with relatively small `m`, `n` and `k`. In the current implementation of
-   ChASE, this function performs a normal `gemm` without considering the sizes
-   of matrices, but it will be improved in the later verison.
-       @param[in] Layout: layout of matrices, currently only column-major layout
-   is supported in ChASE.
-       @param[in] transa: it specifies the form of `op( A )` to be used in the
-   matrix multiplication. If its value is 1, the `op` is `conjugate transpose`
-   operation, if its value is 2, the `op` is `transpose` operation and if its
-   value is `3`, we have `op (A)=A`.
-       @param[in] transb: it specifies the form of `op( B )` to be used in the
-   matrix multiplication. If its value is 1, the `op` is `conjugate transpose`
-   operation, if its value is 2, the `op` is `transpose` operation and if its
-   value is `3`, we have `op (B)=B`.
-       @param[in] m:  it  specifies  the number  of rows  of the  matrix `op( A
-   )`  and of the  matrix  `C`.
-       @param[in] n: it specifies the number of columns of the matrix `op( B )`
-   and the number of columns of the matrix `C`.
-       @param[in] k: it specifies  the number of columns of the matrix `op( A )`
-   and the number of rows of the matrix `op( B )`
-       @param[in] alpha: it specifies the scalar `alpha`.
-       @param[in] a: an array of type `T`,  dimension `( lda, ka )`, where `ka`
-   is `k`  when  `transa = 3`,  and is  `m`  otherwise. Before entry with
-   `transa = 3`,  the leading  `m` by `k` part of the array  `a`  must contain
-   the matrix  `a`,  otherwise the leading  `k` by `m` part of the array  `a`
-   must contain  the matrix `a`.
-       @param[in] lda: it specifies the first dimension of `a`. When `transa=3`,
-   it must be at least `max(1, m)`, otherwise it must be at least `(1, k)`.
-       @param[in] b: an array of type `T`, dimension `( ldb, kb )`, where `kb`
-   is `n`  when  `transb=3`,  and is  `k`  otherwise. Before entry with
-   `transb=3`,  the leading  `k` by `n` part of the array  `b`  must contain the
-   matrix  `b`,  otherwise the leading  `n` by `k`  part of the array  `b`  must
-   contain  the matrix `b`.
-       @param[in] ldb: it specifies the first dimension of `b`. When `transa=3`,
-   it must be at least `max(1, k)`, otherwise it must be at least `(1, n)`.
-       @param[in] beta: it specifies the scalar `beta`.
-       @param[in/out] `c`: an array of type `T`, dimension `( ldc, n )`.
-       @param[in] ldc: it specifies the first dimension of `c`. It must be at
-   least `max(1,m)`.
-    */
-    virtual void gemm(CBLAS_LAYOUT Layout, CBLAS_TRANSPOSE transa,
-                      CBLAS_TRANSPOSE transb, std::size_t m, std::size_t n,
-                      std::size_t k, T* alpha, T* a, std::size_t lda, T* b,
-                      std::size_t ldb, T* beta, T* c, std::size_t ldc) = 0;
 
     //! A `LAPACK-like` function which computes selected eigenvalues and
     //! eigenvectors of a real symmetric tridiagonal matrix of **DOUBLE

@@ -513,19 +513,20 @@ int do_chase(ChASE_DriverProblemConfig& conf)
             config.SetApprox(true);
         }
 
+#ifdef USE_MPI
 #ifdef USE_BLOCK_CYCLIC
         /*local block number = mblocks x nblocks*/
-        std::size_t mblocks = single.get_mblocks();
-        std::size_t nblocks = single.get_nblocks();
+        std::size_t mblocks = props->get_mblocks();
+        std::size_t nblocks = props->get_nblocks();
 
         /*local matrix size = m x n*/
-        std::size_t m = single.get_m();
-        std::size_t n = single.get_n();
+        std::size_t m = props->get_m();
+        std::size_t n = props->get_n();
 
         /*global and local offset/length of each block of block-cyclic data*/
         std::size_t *r_offs, *c_offs, *r_lens, *c_lens, *r_offs_l, *c_offs_l;
 
-        single.get_offs_lens(r_offs, r_lens, r_offs_l, c_offs, c_lens,
+        props->get_offs_lens(r_offs, r_lens, r_offs_l, c_offs, c_lens,
                              c_offs_l);
 #else
         std::size_t xoff;
@@ -533,9 +534,16 @@ int do_chase(ChASE_DriverProblemConfig& conf)
         std::size_t xlen;
         std::size_t ylen;
 
-        single.GetOff(&xoff, &yoff, &xlen, &ylen);
+        props->get_off(&xoff, &yoff, &xlen, &ylen);
 #endif
 
+#else   
+        std::size_t xoff = 0;
+        std::size_t yoff = 0;
+        std::size_t xlen = N;
+        std::size_t ylen = N;
+
+#endif     
         std::chrono::high_resolution_clock::time_point start, end;
         std::chrono::duration<double> elapsed;
 
