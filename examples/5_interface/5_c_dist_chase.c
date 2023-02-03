@@ -9,18 +9,6 @@
 #define M_PI 3.14159265358979323846
 #endif
 
- /* uniform distribution, (0..1] */
-double drand()  
-{
-  return (rand()+1.0)/(RAND_MAX+1.0);
-}
-
- /* normal distribution, centered on 0, std dev 1 */
-double random_normal() 
-{
-  return sqrt(-2*log(drand())) * cos(2*M_PI*drand());
-}
-
 void pzchase_init_(int *N, int *nev, int *nex, int *m, int *n, double _Complex *H,  int *ldh, double _Complex *V, double *ritzv, int *dim0, int *dim1, char *grid_major, MPI_Comm *comm, int *init);
 void pzchase_finalize_(int *flag);
 void pzchase_(int* deg, double* tol, char* mode, char* opt);
@@ -96,6 +84,7 @@ int main(int argc, char** argv)
     }
 
     //distribute Hh to H
+    
     for (int x = 0; x < xlen; x++)
     {
       for (int y = 0; y < ylen; y++)

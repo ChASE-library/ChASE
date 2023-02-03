@@ -8,3 +8,6 @@ enable_language( Fortran )
 
 add_executable( "5_f_seial_chase.exe" 5_f_seial_chase.f90 )
 target_link_libraries(5_f_seial_chase.exe chase_c chase_f)
+
+add_executable( "5_f_dist_chase.exe" 5_f_dist_chase.f90 )
+target_link_libraries(5_f_dist_chase.exe chase_c chase_f)
