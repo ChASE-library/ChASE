@@ -20,7 +20,7 @@ double random_normal()
   return sqrt(-2*log(drand())) * cos(2*M_PI*drand());
 }
 
-int zchase_init_(int *N, int *nev, int *nex, double _Complex *H, double _Complex *V, double *ritzv);
+int zchase_init_(int *N, int *nev, int *nex, double _Complex *H, double _Complex *V, double *ritzv,  int *init);
 void zchase_finalize_();
 void zchase_(int* deg, double* tol, char* mode, char* opt);
 
@@ -51,7 +51,7 @@ int main(int argc, char** argv)
     double _Complex *H = (double _Complex *)malloc(sizeof(double _Complex) * N * N);
 
     int init = 0;
-    init = zchase_init_(&N, &nev, &nex, H, V, Lambda);
+    zchase_init_(&N, &nev, &nex, H, V, Lambda, &init);
 
     // Generate Clement matrix
     for (int i = 0; i < N; ++i)

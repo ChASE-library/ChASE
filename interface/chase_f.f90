@@ -5,9 +5,9 @@
 MODULE chase_diag
     ! non-MPI
     INTERFACE
-        SUBROUTINE dchase_init(n, nev, nex, h, v, ritzv) bind( c, name = 'dchase_init_' )
+        SUBROUTINE dchase_init(n, nev, nex, h, v, ritzv, init) bind( c, name = 'dchase_init_' )
             USE, INTRINSIC :: iso_c_binding
-            INTEGER(c_int)      :: n, nev, nex
+            INTEGER(c_int)      :: n, nev, nex, init
             REAL(c_double)      :: h(n, *), v(n, *)
             REAL(c_double)      :: ritzv(*)
 
@@ -33,9 +33,9 @@ MODULE chase_diag
 
 
     INTERFACE
-        SUBROUTINE schase_init(n, nev, nex, h, v, ritzv) bind( c, name = 'schase_init_' )
+        SUBROUTINE schase_init(n, nev, nex, h, v, ritzv, init) bind( c, name = 'schase_init_' )
             USE, INTRINSIC :: iso_c_binding
-            INTEGER(c_int)      :: n, nev, nex
+            INTEGER(c_int)      :: n, nev, nex, init
             REAL(c_float)      :: h(n, *), v(n, *)
             REAL(c_float)      :: ritzv(*)
 
@@ -60,9 +60,9 @@ MODULE chase_diag
     END INTERFACE
 
     INTERFACE
-        SUBROUTINE cchase_init(n, nev, nex, h, v, ritzv) bind( c, name = 'cchase_init_' )
+        SUBROUTINE cchase_init(n, nev, nex, h, v, ritzv, init) bind( c, name = 'cchase_init_' )
             USE, INTRINSIC :: iso_c_binding
-            INTEGER(c_int)      :: n, nev, nex
+            INTEGER(c_int)      :: n, nev, nex, init
             COMPLEX(c_float_complex)      :: h(n, *), v(n, *)
             REAL(c_float)      :: ritzv(*)
 
@@ -88,9 +88,9 @@ MODULE chase_diag
 
 
     INTERFACE
-        SUBROUTINE zchase_init(n, nev, nex, h, v, ritzv) bind( c, name = 'zchase_init_' )
+        SUBROUTINE zchase_init(n, nev, nex, h, v, ritzv, init) bind( c, name = 'zchase_init_' )
             USE, INTRINSIC :: iso_c_binding
-            INTEGER(c_int)      :: n, nev, nex
+            INTEGER(c_int)      :: n, nev, nex, init
             COMPLEX(c_double_complex)      :: h(n, *), v(n, *)
             REAL(c_double)      :: ritzv(*)
 

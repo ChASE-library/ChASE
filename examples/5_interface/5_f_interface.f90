@@ -37,7 +37,9 @@ allocate(h(N, N))
 allocate(v(N, nev+nex))
 allocate(lambda(nev+nex))
 
-call zchase_init(N, nev, nex, h, v, lambda)
+call zchase_init(N, nev, nex, h, v, lambda, init)
+
+print *, "init = ", init
 
 ! Generate Clement matrix
 do i = 1, N

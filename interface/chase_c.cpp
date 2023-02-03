@@ -180,17 +180,17 @@ void ChASE_SEQ_Solve(int* deg, Base<T>* tol, char* mode, char* opt){
 }
 
 extern "C" {
-    int dchase_init_(int *N, int *nev, int *nex, double *H, double *V, double *ritzv){
-        return ChASE_SEQ_Init<double>(*N, *nev, *nex, H, V, ritzv);
+    void dchase_init_(int *N, int *nev, int *nex, double *H, double *V, double *ritzv, int *init){
+        *init = ChASE_SEQ_Init<double>(*N, *nev, *nex, H, V, ritzv);
     } 
-    int schase_init_(int *N, int *nev, int *nex, float *H, float *V, float *ritzv){
-        return ChASE_SEQ_Init<float>(*N, *nev, *nex, H, V, ritzv);
+    void schase_init_(int *N, int *nev, int *nex, float *H, float *V, float *ritzv, int *init){
+        *init = ChASE_SEQ_Init<float>(*N, *nev, *nex, H, V, ritzv);
     } 
-    int cchase_init_(int *N, int *nev, int *nex, float _Complex *H, float _Complex *V, float *ritzv){
-        return ChASE_SEQ_Init<std::complex<float>>(*N, *nev, *nex, reinterpret_cast<std::complex<float> *>(H), reinterpret_cast<std::complex<float> *>(V), ritzv);
+    void cchase_init_(int *N, int *nev, int *nex, float _Complex *H, float _Complex *V, float *ritzv, int *init){
+        *init = ChASE_SEQ_Init<std::complex<float>>(*N, *nev, *nex, reinterpret_cast<std::complex<float> *>(H), reinterpret_cast<std::complex<float> *>(V), ritzv);
     } 
-    int zchase_init_(int *N, int *nev, int *nex, double _Complex *H, double _Complex *V, double *ritzv){
-        return ChASE_SEQ_Init<std::complex<double>>(*N, *nev, *nex, reinterpret_cast<std::complex<double> *>(H), reinterpret_cast<std::complex<double> *>(V), ritzv);
+    void zchase_init_(int *N, int *nev, int *nex, double _Complex *H, double _Complex *V, double *ritzv, int *init){
+        *init = ChASE_SEQ_Init<std::complex<double>>(*N, *nev, *nex, reinterpret_cast<std::complex<double> *>(H), reinterpret_cast<std::complex<double> *>(V), ritzv);
     } 
 
     int dchase_finalize_(){
