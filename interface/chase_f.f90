@@ -15,8 +15,9 @@ MODULE chase_diag
     END INTERFACE
 
     INTERFACE
-        SUBROUTINE dchase_finalize() bind( c, name = 'dchase_finalize_' )
+        SUBROUTINE dchase_finalize(flag) bind( c, name = 'dchase_finalize_' )
             USE, INTRINSIC :: iso_c_binding
+            INTEGER(c_int)      :: flag
 
         END SUBROUTINE dchase_finalize    
     END INTERFACE
@@ -43,8 +44,9 @@ MODULE chase_diag
     END INTERFACE
 
     INTERFACE
-        SUBROUTINE schase_finalize() bind( c, name = 'schase_finalize_' )
+        SUBROUTINE schase_finalize(flag) bind( c, name = 'schase_finalize_' )
             USE, INTRINSIC :: iso_c_binding
+            INTEGER(c_int)      :: flag
 
         END SUBROUTINE schase_finalize    
     END INTERFACE
@@ -70,8 +72,9 @@ MODULE chase_diag
     END INTERFACE
 
     INTERFACE
-        SUBROUTINE cchase_finalize() bind( c, name = 'cchase_finalize_' )
+        SUBROUTINE cchase_finalize(flag) bind( c, name = 'cchase_finalize_' )
             USE, INTRINSIC :: iso_c_binding
+            INTEGER(c_int)      :: flag
 
         END SUBROUTINE cchase_finalize    
     END INTERFACE
@@ -98,8 +101,9 @@ MODULE chase_diag
     END INTERFACE
 
     INTERFACE
-        SUBROUTINE zchase_finalize() bind( c, name = 'zchase_finalize_' )
+        SUBROUTINE zchase_finalize(flag) bind( c, name = 'zchase_finalize_' )
             USE, INTRINSIC :: iso_c_binding
+            INTEGER(c_int)      :: flag
 
         END SUBROUTINE zchase_finalize    
     END INTERFACE

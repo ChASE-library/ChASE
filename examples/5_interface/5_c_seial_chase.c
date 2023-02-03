@@ -9,13 +9,14 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-double drand()   /* uniform distribution, (0..1] */
+ /* uniform distribution, (0..1] */
+double drand()  
 {
   return (rand()+1.0)/(RAND_MAX+1.0);
 }
 
-double random_normal() 
  /* normal distribution, centered on 0, std dev 1 */
+double random_normal() 
 {
   return sqrt(-2*log(drand())) * cos(2*M_PI*drand());
 }
@@ -96,6 +97,6 @@ int main(int argc, char** argv)
         mode = 'A';
     }
 
-    zchase_finalize_();
+    zchase_finalize_(&init);
     MPI_Finalize();
 }   

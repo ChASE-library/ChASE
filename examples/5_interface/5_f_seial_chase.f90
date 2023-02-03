@@ -16,7 +16,6 @@ call mpi_init(ierr)
 call mpi_comm_size(MPI_COMM_WORLD, size, ierr)
 call mpi_comm_rank(MPI_COMM_WORLD, rank, ierr)
 
-print *, 'Hello World from process: ', rank, 'of ', ierr
 
 N = 1001
 nev = 100
@@ -38,8 +37,6 @@ allocate(v(N, nev+nex))
 allocate(lambda(nev+nex))
 
 call zchase_init(N, nev, nex, h, v, lambda, init)
-
-print *, "init = ", init
 
 ! Generate Clement matrix
 do i = 1, N
@@ -81,7 +78,7 @@ do idx = 1, idx_max
 end do
 
 
-call zchase_finalize()
+call zchase_finalize(init)
 call mpi_finalize(ierr)
 
 
