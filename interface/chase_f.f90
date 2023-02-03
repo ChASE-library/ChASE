@@ -63,7 +63,7 @@ MODULE chase_diag
         SUBROUTINE cchase_init(n, nev, nex, h, v, ritzv) bind( c, name = 'cchase_init_' )
             USE, INTRINSIC :: iso_c_binding
             INTEGER(c_int)      :: n, nev, nex
-            REAL(c_float_complex)      :: h(n, *), v(n, *)
+            COMPLEX(c_float_complex)      :: h(n, *), v(n, *)
             REAL(c_float)      :: ritzv(*)
 
         END SUBROUTINE cchase_init    
@@ -91,7 +91,7 @@ MODULE chase_diag
         SUBROUTINE zchase_init(n, nev, nex, h, v, ritzv) bind( c, name = 'zchase_init_' )
             USE, INTRINSIC :: iso_c_binding
             INTEGER(c_int)      :: n, nev, nex
-            REAL(c_double_complex)      :: h(n, *), v(n, *)
+            COMPLEX(c_double_complex)      :: h(n, *), v(n, *)
             REAL(c_double)      :: ritzv(*)
 
         END SUBROUTINE zchase_init    
