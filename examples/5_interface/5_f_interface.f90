@@ -2,15 +2,15 @@ PROGRAM main
 use mpi
 use chase_diag
 
-integer rank, size, ierr, init
+integer rank, size, ierr, init, i, j, k
 integer N, nev, nex, idx_max
-real(8) :: perturb, tmp
+real(8) :: perturb, tmp, PI
 real(8) :: tol
+complex(8) :: cv
 integer :: deg
 character        :: mode, opt
 complex(8),  allocatable :: h(:,:), v(:,:)
 real(8), allocatable :: lambda(:)
-
 
 call mpi_init(ierr)
 call mpi_comm_size(MPI_COMM_WORLD, size, ierr)
@@ -55,8 +55,47 @@ do i = 1, N
     end do
 end do
 
-call zchase(deg, tol, mode, opt)
+do idx = 1, idx_max
+	if(rank == 0) then 
+		print *, "Starting Problem #", idx
+		if(idx .ne. 0) then
+		    print *, "Using approximate solution"
+		end if
+	end if
+
+	call zchase(deg, tol, mode, opt)
+
+	do i = 2, N
+		do j = 2, i
+		    call random_normal(tmp)
+		    tmp = tmp * perturb
+		    cv = complex(tmp, tmp)
+		    h(j, i) = h(j,i) + cv
+		    h(i, j) = h(i, j) + conjg(cv)
+		end do 
+	end do
+
+	mode = 'A'
+end do
+
 
 call zchase_finalize()
 call mpi_finalize(ierr)
+
+
+contains
+
+subroutine random_normal(randn)
+	implicit none
+
+	real(8),   intent(out) ::randn
+	real(8) 			   ::rand, PI
+
+	PI = 3.14159265358979323846
+
+	call random_number(rand)
+	randn = sqrt(-2.0 * log(rand)) * cos(2 * PI * rand)
+
+end subroutine
+
 END PROGRAM
