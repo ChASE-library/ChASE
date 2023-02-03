@@ -49,7 +49,6 @@ add_subdirectory( "ChASE-MPI/")
 
 ## Tests
 add_executable( "chase_driver" tests/noinput.cpp )
-add_subdirectory( "tests/")
 if(TARGET chase_cuda )
   enable_language(CUDA)
   target_link_libraries(chase_driver chase_mpi chase_cuda)
