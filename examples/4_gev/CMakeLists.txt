@@ -1,15 +1,3 @@
-enable_language( Fortran )
-include( FortranCInterface )
-FortranCInterface_HEADER( ${CMAKE_BINARY_DIR}/fortran_mangle.h
-  MACRO_NAMESPACE "FC_"
-  SYMBOL_NAMESPACE "FC_"
-)
-
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake-modules")
-
-find_package( SCALAPACK)
-find_package( Boost COMPONENTS serialization program_options filesystem )
-
 if( ${Boost_FOUND} )
 
   if(SCALAPACK_FOUND)
@@ -43,8 +31,7 @@ if( ${Boost_FOUND} )
       add_executable( "4_gev_mgpu" 4_gev.cpp )
       target_link_libraries("4_gev_mgpu" chase_mpi chase_cuda SCALAPACK::SCALAPACK ${Boost_LIBRARIES})
       target_compile_definitions( "4_gev_mgpu" PRIVATE DRIVER_BUILD_MGPU=1)
-      install (TARGETS 4_gev_mgpu
-              RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+      install (TARGETS 4_gev_mgpu RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
     endif()
 

@@ -46,10 +46,11 @@ int main(int argc, char** argv)
         std::cout << "ChASE example driver\n"
                   << "Usage: ./driver \n";
 
-    auto V = std::vector<T>(N * (nev + nex));
+    auto props = new ChaseMpiProperties<T>(N, nev, nex, MPI_COMM_WORLD);
+    auto m = props->get_m();
+    auto V = std::vector<T>(m * (nev + nex));
     auto Lambda = std::vector<Base<T>>(nev + nex);
 
-    auto props = new ChaseMpiProperties<T>(N, nev, nex, MPI_COMM_WORLD);
     CHASE single(props, V.data(), Lambda.data());
 
     auto& config = single.GetConfig();

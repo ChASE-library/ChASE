@@ -1624,6 +1624,458 @@ void t_pgqr(std::size_t m, std::size_t n, std::size_t k, std::complex<float>* A,
     pcungqr_(&m_, &n_, &k_, A, &ia, &ja, desc_, tau, work, &lwork, &info);
     assert(info == 0);
 }
+
+template <>
+void t_geadd(const char trans, const std::size_t m, std::size_t n, float alpha,
+             float* a, const std::size_t ia, const std::size_t ja,
+             std::size_t* desc_a, float beta, float* c, const std::size_t ic,
+             const std::size_t jc, std::size_t* desc_c)
+{
+    BlasInt m_ = m;
+    BlasInt n_ = n;
+    BlasInt ia_ = ia;
+    BlasInt ja_ = ja;
+    BlasInt* desc_a_ = new BlasInt[9];
+    BlasInt ic_ = ic;
+    BlasInt jc_ = jc;
+    BlasInt* desc_c_ = new BlasInt[9];
+
+    for (int i = 0; i < 9; i++)
+    {
+        desc_a_[i] = static_cast<BlasInt>(desc_a[i]);
+        desc_c_[i] = static_cast<BlasInt>(desc_c[i]);
+    }
+
+    FC_GLOBAL(psgeadd, PSGEADD)
+    (&trans, &m_, &n_, &alpha, a, &ia_, &ja_, desc_a_, &beta, c, &ic_, &jc_,
+     desc_c_);
+}
+
+template <>
+void t_geadd(const char trans, const std::size_t m, std::size_t n, double alpha,
+             double* a, const std::size_t ia, const std::size_t ja,
+             std::size_t* desc_a, double beta, double* c, const std::size_t ic,
+             const std::size_t jc, std::size_t* desc_c)
+{
+    BlasInt m_ = m;
+    BlasInt n_ = n;
+    BlasInt ia_ = ia;
+    BlasInt ja_ = ja;
+    BlasInt* desc_a_ = new BlasInt[9];
+    BlasInt ic_ = ic;
+    BlasInt jc_ = jc;
+    BlasInt* desc_c_ = new BlasInt[9];
+
+    for (int i = 0; i < 9; i++)
+    {
+        desc_a_[i] = static_cast<BlasInt>(desc_a[i]);
+        desc_c_[i] = static_cast<BlasInt>(desc_c[i]);
+    }
+
+    FC_GLOBAL(pdgeadd, PDGEADD)
+    (&trans, &m_, &n_, &alpha, a, &ia_, &ja_, desc_a_, &beta, c, &ic_, &jc_,
+     desc_c_);
+}
+
+template <>
+void t_geadd(const char trans, const std::size_t m, std::size_t n,
+             std::complex<float> alpha, std::complex<float>* a,
+             const std::size_t ia, const std::size_t ja, std::size_t* desc_a,
+             std::complex<float> beta, std::complex<float>* c,
+             const std::size_t ic, const std::size_t jc, std::size_t* desc_c)
+{
+    BlasInt m_ = m;
+    BlasInt n_ = n;
+    BlasInt ia_ = ia;
+    BlasInt ja_ = ja;
+    BlasInt* desc_a_ = new BlasInt[9];
+    BlasInt ic_ = ic;
+    BlasInt jc_ = jc;
+    BlasInt* desc_c_ = new BlasInt[9];
+    char trans_;
+
+    if (trans == 'T')
+    {
+        trans_ = 'C';
+    }
+    else
+    {
+        trans_ = trans;
+    }
+
+    for (int i = 0; i < 9; i++)
+    {
+        desc_a_[i] = static_cast<BlasInt>(desc_a[i]);
+        desc_c_[i] = static_cast<BlasInt>(desc_c[i]);
+    }
+
+    FC_GLOBAL(pcgeadd, PCGEADD)
+    (&trans_, &m_, &n_, &alpha, a, &ia_, &ja_, desc_a_, &beta, c, &ic_, &jc_,
+     desc_c_);
+}
+
+template <>
+void t_geadd(const char trans, const std::size_t m, std::size_t n,
+             std::complex<double> alpha, std::complex<double>* a,
+             const std::size_t ia, const std::size_t ja, std::size_t* desc_a,
+             std::complex<double> beta, std::complex<double>* c,
+             const std::size_t ic, const std::size_t jc, std::size_t* desc_c)
+{
+    BlasInt m_ = m;
+    BlasInt n_ = n;
+    BlasInt ia_ = ia;
+    BlasInt ja_ = ja;
+    BlasInt* desc_a_ = new BlasInt[9];
+    BlasInt ic_ = ic;
+    BlasInt jc_ = jc;
+    BlasInt* desc_c_ = new BlasInt[9];
+    char trans_;
+
+    if (trans == 'T')
+    {
+        trans_ = 'C';
+    }
+    else
+    {
+        trans_ = trans;
+    }
+
+    for (int i = 0; i < 9; i++)
+    {
+        desc_a_[i] = static_cast<BlasInt>(desc_a[i]);
+        desc_c_[i] = static_cast<BlasInt>(desc_c[i]);
+    }
+
+    FC_GLOBAL(pzgeadd, PZGEADD)
+    (&trans_, &m_, &n_, &alpha, a, &ia_, &ja_, desc_a_, &beta, c, &ic_, &jc_,
+     desc_c_);
+}
+
+template <>
+void t_ppotrf(const char uplo, const std::size_t n, float* a,
+              const std::size_t ia, const std::size_t ja, std::size_t* desc_a)
+{
+    BlasInt n_ = n;
+    BlasInt ia_ = ia;
+    BlasInt ja_ = ja;
+    BlasInt* desc_a_ = new BlasInt[9];
+    BlasInt info_ = 0;
+    for (int i = 0; i < 9; i++)
+    {
+        desc_a_[i] = static_cast<BlasInt>(desc_a[i]);
+    }
+
+    FC_GLOBAL(pspotrf, PSPOTRF)
+    (&uplo, &n_, a, &ia_, &ja_, desc_a_, &info_);
+    assert(info_ == 0);
+}
+
+template <>
+void t_ppotrf(const char uplo, const std::size_t n, double* a,
+              const std::size_t ia, const std::size_t ja, std::size_t* desc_a)
+{
+    BlasInt n_ = n;
+    BlasInt ia_ = ia;
+    BlasInt ja_ = ja;
+    BlasInt* desc_a_ = new BlasInt[9];
+    BlasInt info_ = 0;
+    for (int i = 0; i < 9; i++)
+    {
+        desc_a_[i] = static_cast<BlasInt>(desc_a[i]);
+    }
+
+    FC_GLOBAL(pdpotrf, PDPOTRF)
+    (&uplo, &n_, a, &ia_, &ja_, desc_a_, &info_);
+    assert(info_ == 0);
+}
+
+template <>
+void t_ppotrf(const char uplo, const std::size_t n, std::complex<float>* a,
+              const std::size_t ia, const std::size_t ja, std::size_t* desc_a)
+{
+    BlasInt n_ = n;
+    BlasInt ia_ = ia;
+    BlasInt ja_ = ja;
+    BlasInt* desc_a_ = new BlasInt[9];
+    BlasInt info_ = 0;
+    for (int i = 0; i < 9; i++)
+    {
+        desc_a_[i] = static_cast<BlasInt>(desc_a[i]);
+    }
+
+    FC_GLOBAL(pcpotrf, PCPOTRF)
+    (&uplo, &n_, a, &ia_, &ja_, desc_a_, &info_);
+    assert(info_ == 0);
+}
+
+template <>
+void t_ppotrf(const char uplo, const std::size_t n, std::complex<double>* a,
+              const std::size_t ia, const std::size_t ja, std::size_t* desc_a)
+{
+    BlasInt n_ = n;
+    BlasInt ia_ = ia;
+    BlasInt ja_ = ja;
+    BlasInt* desc_a_ = new BlasInt[9];
+    BlasInt info_ = 0;
+    for (int i = 0; i < 9; i++)
+    {
+        desc_a_[i] = static_cast<BlasInt>(desc_a[i]);
+    }
+
+    FC_GLOBAL(pzpotrf, PZPOTRF)
+    (&uplo, &n_, a, &ia_, &ja_, desc_a_, &info_);
+    assert(info_ == 0);
+}
+
+template <>
+void t_psyhegst(const int ibtype, const char uplo, const std::size_t n,
+                float* a, const std::size_t ia, const std::size_t ja,
+                std::size_t* desc_a, const float* b, const std::size_t ib,
+                const std::size_t jb, std::size_t* desc_b, Base<float>* scale)
+{
+    BlasInt ibtype_ = ibtype;
+    BlasInt n_ = n;
+    BlasInt ia_ = ia;
+    BlasInt ja_ = ja;
+    BlasInt* desc_a_ = new BlasInt[9];
+    BlasInt ib_ = ib;
+    BlasInt jb_ = jb;
+    BlasInt* desc_b_ = new BlasInt[9];
+
+    for (int i = 0; i < 9; i++)
+    {
+        desc_a_[i] = static_cast<BlasInt>(desc_a[i]);
+        desc_b_[i] = static_cast<BlasInt>(desc_b[i]);
+    }
+
+    BlasInt info_ = 0;
+
+    FC_GLOBAL(pssygst, PSSYGST)
+    (&ibtype_, &uplo, &n_, a, &ia_, &ja_, desc_a_, b, &ib_, &jb_, desc_b_,
+     scale, &info_);
+
+    assert(info_ == 0);
+}
+
+template <>
+void t_psyhegst(const int ibtype, const char uplo, const std::size_t n,
+                double* a, const std::size_t ia, const std::size_t ja,
+                std::size_t* desc_a, const double* b, const std::size_t ib,
+                const std::size_t jb, std::size_t* desc_b, Base<double>* scale)
+{
+    BlasInt ibtype_ = ibtype;
+    BlasInt n_ = n;
+    BlasInt ia_ = ia;
+    BlasInt ja_ = ja;
+    BlasInt* desc_a_ = new BlasInt[9];
+    BlasInt ib_ = ib;
+    BlasInt jb_ = jb;
+    BlasInt* desc_b_ = new BlasInt[9];
+
+    for (int i = 0; i < 9; i++)
+    {
+        desc_a_[i] = static_cast<BlasInt>(desc_a[i]);
+        desc_b_[i] = static_cast<BlasInt>(desc_b[i]);
+    }
+
+    BlasInt info_ = 0;
+
+    FC_GLOBAL(pdsygst, PDSYGST)
+    (&ibtype_, &uplo, &n_, a, &ia_, &ja_, desc_a_, b, &ib_, &jb_, desc_b_,
+     scale, &info_);
+
+    assert(info_ == 0);
+}
+
+template <>
+void t_psyhegst(const int ibtype, const char uplo, const std::size_t n,
+                std::complex<float>* a, const std::size_t ia,
+                const std::size_t ja, std::size_t* desc_a,
+                const std::complex<float>* b, const std::size_t ib,
+                const std::size_t jb, std::size_t* desc_b,
+                Base<std::complex<float>>* scale)
+{
+    BlasInt ibtype_ = ibtype;
+    BlasInt n_ = n;
+    BlasInt ia_ = ia;
+    BlasInt ja_ = ja;
+    BlasInt* desc_a_ = new BlasInt[9];
+    BlasInt ib_ = ib;
+    BlasInt jb_ = jb;
+    BlasInt* desc_b_ = new BlasInt[9];
+
+    for (int i = 0; i < 9; i++)
+    {
+        desc_a_[i] = static_cast<BlasInt>(desc_a[i]);
+        desc_b_[i] = static_cast<BlasInt>(desc_b[i]);
+    }
+
+    BlasInt info_ = 0;
+
+    FC_GLOBAL(pchegst, PCHEGST)
+    (&ibtype_, &uplo, &n_, a, &ia_, &ja_, desc_a_, b, &ib_, &jb_, desc_b_,
+     scale, &info_);
+
+    assert(info_ == 0);
+}
+
+template <>
+void t_psyhegst(const int ibtype, const char uplo, const std::size_t n,
+                std::complex<double>* a, const std::size_t ia,
+                const std::size_t ja, std::size_t* desc_a,
+                const std::complex<double>* b, const std::size_t ib,
+                const std::size_t jb, std::size_t* desc_b,
+                Base<std::complex<double>>* scale)
+{
+    BlasInt ibtype_ = ibtype;
+    BlasInt n_ = n;
+    BlasInt ia_ = ia;
+    BlasInt ja_ = ja;
+    BlasInt* desc_a_ = new BlasInt[9];
+    BlasInt ib_ = ib;
+    BlasInt jb_ = jb;
+    BlasInt* desc_b_ = new BlasInt[9];
+
+    for (int i = 0; i < 9; i++)
+    {
+        desc_a_[i] = static_cast<BlasInt>(desc_a[i]);
+        desc_b_[i] = static_cast<BlasInt>(desc_b[i]);
+    }
+
+    BlasInt info_ = 0;
+
+    FC_GLOBAL(pzhegst, PZHEGST)
+    (&ibtype_, &uplo, &n_, a, &ia_, &ja_, desc_a_, b, &ib_, &jb_, desc_b_,
+     scale, &info_);
+
+    assert(info_ == 0);
+}
+
+template <>
+void t_ptrtrs(const char uplo, const char trans, const char diag,
+              const std::size_t n, const std::size_t nhs, float* a,
+              const std::size_t ia, const std::size_t ja, std::size_t* desc_a,
+              float* b, const std::size_t ib, const std::size_t jb,
+              std::size_t* desc_b)
+{
+    BlasInt n_ = n;
+    BlasInt nhs_ = nhs;
+    BlasInt ia_ = ia;
+    BlasInt ja_ = ja;
+    BlasInt* desc_a_ = new BlasInt[9];
+    BlasInt ib_ = ib;
+    BlasInt jb_ = jb;
+    BlasInt* desc_b_ = new BlasInt[9];
+
+    for (int i = 0; i < 9; i++)
+    {
+        desc_a_[i] = static_cast<BlasInt>(desc_a[i]);
+        desc_b_[i] = static_cast<BlasInt>(desc_b[i]);
+    }
+
+    BlasInt info_ = 0;
+
+    FC_GLOBAL(pstrtrs, PSTRTRS)
+    (&uplo, &trans, &diag, &n_, &nhs_, a, &ia_, &ja_, desc_a_, b, &ib_, &jb_,
+     desc_b_, &info_);
+
+    assert(info_ == 0);
+}
+
+template <>
+void t_ptrtrs(const char uplo, const char trans, const char diag,
+              const std::size_t n, const std::size_t nhs, double* a,
+              const std::size_t ia, const std::size_t ja, std::size_t* desc_a,
+              double* b, const std::size_t ib, const std::size_t jb,
+              std::size_t* desc_b)
+{
+    BlasInt n_ = n;
+    BlasInt nhs_ = nhs;
+    BlasInt ia_ = ia;
+    BlasInt ja_ = ja;
+    BlasInt* desc_a_ = new BlasInt[9];
+    BlasInt ib_ = ib;
+    BlasInt jb_ = jb;
+    BlasInt* desc_b_ = new BlasInt[9];
+
+    for (int i = 0; i < 9; i++)
+    {
+        desc_a_[i] = static_cast<BlasInt>(desc_a[i]);
+        desc_b_[i] = static_cast<BlasInt>(desc_b[i]);
+    }
+
+    BlasInt info_ = 0;
+
+    FC_GLOBAL(pdtrtrs, PDTRTRS)
+    (&uplo, &trans, &diag, &n_, &nhs_, a, &ia_, &ja_, desc_a_, b, &ib_, &jb_,
+     desc_b_, &info_);
+
+    assert(info_ == 0);
+}
+
+template <>
+void t_ptrtrs(const char uplo, const char trans, const char diag,
+              const std::size_t n, const std::size_t nhs,
+              std::complex<float>* a, const std::size_t ia,
+              const std::size_t ja, std::size_t* desc_a, std::complex<float>* b,
+              const std::size_t ib, const std::size_t jb, std::size_t* desc_b)
+{
+    BlasInt n_ = n;
+    BlasInt nhs_ = nhs;
+    BlasInt ia_ = ia;
+    BlasInt ja_ = ja;
+    BlasInt* desc_a_ = new BlasInt[9];
+    BlasInt ib_ = ib;
+    BlasInt jb_ = jb;
+    BlasInt* desc_b_ = new BlasInt[9];
+
+    for (int i = 0; i < 9; i++)
+    {
+        desc_a_[i] = static_cast<BlasInt>(desc_a[i]);
+        desc_b_[i] = static_cast<BlasInt>(desc_b[i]);
+    }
+
+    BlasInt info_ = 0;
+
+    FC_GLOBAL(pctrtrs, PCTRTRS)
+    (&uplo, &trans, &diag, &n_, &nhs_, a, &ia_, &ja_, desc_a_, b, &ib_, &jb_,
+     desc_b_, &info_);
+
+    assert(info_ == 0);
+}
+
+template <>
+void t_ptrtrs(const char uplo, const char trans, const char diag,
+              const std::size_t n, const std::size_t nhs,
+              std::complex<double>* a, const std::size_t ia,
+              const std::size_t ja, std::size_t* desc_a,
+              std::complex<double>* b, const std::size_t ib,
+              const std::size_t jb, std::size_t* desc_b)
+{
+    BlasInt n_ = n;
+    BlasInt nhs_ = nhs;
+    BlasInt ia_ = ia;
+    BlasInt ja_ = ja;
+    BlasInt* desc_a_ = new BlasInt[9];
+    BlasInt ib_ = ib;
+    BlasInt jb_ = jb;
+    BlasInt* desc_b_ = new BlasInt[9];
+
+    for (int i = 0; i < 9; i++)
+    {
+        desc_a_[i] = static_cast<BlasInt>(desc_a[i]);
+        desc_b_[i] = static_cast<BlasInt>(desc_b[i]);
+    }
+
+    BlasInt info_ = 0;
+
+    FC_GLOBAL(pztrtrs, PZTRTRS)
+    (&uplo, &trans, &diag, &n_, &nhs_, a, &ia_, &ja_, desc_a_, b, &ib_, &jb_,
+     desc_b_, &info_);
+
+    assert(info_ == 0);
+}
+
 #endif
 
 } // namespace mpi

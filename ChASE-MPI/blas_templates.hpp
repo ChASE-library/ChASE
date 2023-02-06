@@ -150,6 +150,26 @@ void t_pgeqrf(std::size_t m, std::size_t n, T* A, int ia, int ja,
 template <typename T>
 void t_pgqr(std::size_t m, std::size_t n, std::size_t k, T* A, int ia, int ja,
             std::size_t* desc_a, T* tau);
+template <typename T>
+void t_geadd(const char trans, const std::size_t m, std::size_t n, T alpha,
+             T* a, const std::size_t ia, const std::size_t ja,
+             std::size_t* desc_a, T beta, T* c, const std::size_t ic,
+             const std::size_t jc, std::size_t* desc_c);
+template <typename T>
+void t_ppotrf(const char uplo, const std::size_t n, T* a, const std::size_t ia,
+              const std::size_t ja, std::size_t* desc_a);
+
+template <typename T>
+void t_psyhegst(const int ibtype, const char uplo, const std::size_t n, T* a,
+                const std::size_t ia, const std::size_t ja, std::size_t* desc_a,
+                const T* b, const std::size_t ib, const std::size_t jb,
+                std::size_t* desc_b, Base<T>* scale);
+template <typename T>
+void t_ptrtrs(const char uplo, const char trans, const char diag,
+              const std::size_t n, const std::size_t nhs, T* a,
+              const std::size_t ia, const std::size_t ja, std::size_t* desc_a,
+              T* b, const std::size_t ib, const std::size_t jb,
+              std::size_t* desc_b);
 #endif
 
 } // namespace mpi
