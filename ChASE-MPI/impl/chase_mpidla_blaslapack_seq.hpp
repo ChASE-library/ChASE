@@ -244,7 +244,6 @@ public:
         return t_dot(n, x, incx, y, incy);
     }
 
-
     /*!
         - For ChaseMpiDLABlaslapackSeq, `RR` is implemented by `GEMM` routine
        provided by `BLAS` and `(SY)HEEVD` routine provided by `LAPACK`.
@@ -316,7 +315,7 @@ public:
         {
             beta = T(-ritzv[i]);
             t_axpy(N_, &beta, (get_V2() + locked * N_) + N_ * i, 1,
-                 (V22_ + locked * N_) + N_ * i, 1);
+                   (V22_ + locked * N_) + N_ * i, 1);
 
             resid[i] = nrm2(N_, (V22_ + locked * N_) + N_ * i, 1);
         }
@@ -438,8 +437,8 @@ public:
         T alpha = T(1.0);
         T beta = T(0.0);
 
-        t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, N_, idx, m,
-                   &alpha, V12_, N_, ritzVc, m, &beta, get_V1(), N_);
+        t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, N_, idx, m, &alpha,
+               V12_, N_, ritzVc, m, &beta, get_V1(), N_);
         std::memcpy(V12_, get_V1(), m * N_ * sizeof(T));
     }
 

@@ -73,85 +73,85 @@ std::pair<std::size_t, std::size_t> numroc(std::size_t n, std::size_t nb,
     return std::make_pair(numroc, nb_loc);
 }
 
-void create2DGrid(int row_dim, int col_dim, bool col_major, MPI_Comm comm, MPI_Comm *row_comm_, MPI_Comm *col_comm_, int *myrow, int *mycol){
-        int tmp_dims_[2];
-        int dims_[2];
-        int coord_[2];
-        dims_[0] = row_dim;
-        dims_[1] = col_dim;
+void create2DGrid(int row_dim, int col_dim, bool col_major, MPI_Comm comm,
+                  MPI_Comm* row_comm_, MPI_Comm* col_comm_, int* myrow,
+                  int* mycol)
+{
+    int tmp_dims_[2];
+    int dims_[2];
+    int coord_[2];
+    dims_[0] = row_dim;
+    dims_[1] = col_dim;
 
-        if (col_major)
-        {
-            tmp_dims_[1] = row_dim;
-            tmp_dims_[0] = col_dim;
-        }
-        else
-        {
-            tmp_dims_[0] = row_dim;
-            tmp_dims_[1] = col_dim;
-        }
+    if (col_major)
+    {
+        tmp_dims_[1] = row_dim;
+        tmp_dims_[0] = col_dim;
+    }
+    else
+    {
+        tmp_dims_[0] = row_dim;
+        tmp_dims_[1] = col_dim;
+    }
 
+    int periodic[] = {0, 0};
+    int reorder = 0;
+    int free_coords[2];
+    int row_procs, col_procs;
+    int tmp_coord[2];
+    int rank_, nprocs_;
 
-        int periodic[] = {0, 0};
-        int reorder = 0;
-        int free_coords[2];
-        int row_procs, col_procs;
-        int tmp_coord[2];
-        int rank_, nprocs_;
+    MPI_Comm cartComm;
+    MPI_Cart_create(comm, 2, tmp_dims_, periodic, reorder, &cartComm);
 
-        MPI_Comm cartComm;
-        MPI_Cart_create(comm, 2, tmp_dims_, periodic, reorder, &cartComm);
+    MPI_Comm_size(cartComm, &nprocs_);
+    MPI_Comm_rank(cartComm, &rank_);
+    MPI_Cart_coords(cartComm, rank_, 2, tmp_coord);
 
-        MPI_Comm_size(cartComm, &nprocs_);
-        MPI_Comm_rank(cartComm, &rank_);
-        MPI_Cart_coords(cartComm, rank_, 2, tmp_coord);
+    if (col_major)
+    {
+        coord_[1] = tmp_coord[0];
+        coord_[0] = tmp_coord[1];
+    }
+    else
+    {
+        coord_[1] = tmp_coord[1];
+        coord_[0] = tmp_coord[0];
+    }
 
-        if (col_major)
-        {
-            coord_[1] = tmp_coord[0];
-            coord_[0] = tmp_coord[1];
-        }
-        else
-        {
-            coord_[1] = tmp_coord[1];
-            coord_[0] = tmp_coord[0];
-        }
+    // row communicator
+    if (col_major)
+    {
+        free_coords[0] = 1;
+        free_coords[1] = 0;
+    }
+    else
+    {
+        free_coords[0] = 0;
+        free_coords[1] = 1;
+    }
 
-        // row communicator
-        if (col_major)
-        {
-            free_coords[0] = 1;
-            free_coords[1] = 0;
-        }
-        else
-        {
-            free_coords[0] = 0;
-            free_coords[1] = 1;
-        }
+    MPI_Cart_sub(cartComm, free_coords, row_comm_);
+    MPI_Comm_size(*row_comm_, &row_procs);
 
-        MPI_Cart_sub(cartComm, free_coords, row_comm_);
-        MPI_Comm_size(*row_comm_, &row_procs);
+    // column communicator
+    if (col_major)
+    {
+        free_coords[0] = 0;
+        free_coords[1] = 1;
+    }
+    else
+    {
+        free_coords[0] = 1;
+        free_coords[1] = 0;
+    }
 
-        // column communicator
-        if (col_major)
-        {
-            free_coords[0] = 0;
-            free_coords[1] = 1;
-        }
-        else
-        {
-            free_coords[0] = 1;
-            free_coords[1] = 0;
-        }
+    MPI_Cart_sub(cartComm, free_coords, col_comm_);
+    MPI_Comm_size(*col_comm_, &col_procs);
 
-        MPI_Cart_sub(cartComm, free_coords, col_comm_);
-        MPI_Comm_size(*col_comm_, &col_procs);
-
-        *myrow = coord_[0];
-        *mycol = coord_[1];
+    *myrow = coord_[0];
+    *mycol = coord_[1];
 }
-
-
 
 //! @brief A class to setup **MPI** properties and matrix distribution scheme
 //! for the implementation of ChASE on distributed-memory systems.
@@ -262,7 +262,8 @@ public:
         isrc[0] = irsrc;
         isrc[1] = icsrc;
 
-        create2DGrid(dims_[0], dims_[1], col_major, comm, &row_comm_, &col_comm_, &coord_[0], &coord_[1]);
+        create2DGrid(dims_[0], dims_[1], col_major, comm, &row_comm_,
+                     &col_comm_, &coord_[0], &coord_[1]);
 
         for (std::size_t dim_idx = 0; dim_idx < 2; dim_idx++)
         {
@@ -497,7 +498,8 @@ public:
             col_major = true;
         }
 
-        create2DGrid(dims_[0], dims_[1], col_major, comm, &row_comm_, &col_comm_, &coord_[0], &coord_[1]);
+        create2DGrid(dims_[0], dims_[1], col_major, comm, &row_comm_,
+                     &col_comm_, &coord_[0], &coord_[1]);
 
         std::size_t len;
         len = m;
@@ -688,7 +690,8 @@ public:
         dims_[0] = dims_[1] = 0;
         MPI_Dims_create(nprocs_, 2, dims_);
 
-        create2DGrid(dims_[0], dims_[1], false, comm, &row_comm_, &col_comm_, &coord_[0], &coord_[1]);
+        create2DGrid(dims_[0], dims_[1], false, comm, &row_comm_, &col_comm_,
+                     &coord_[0], &coord_[1]);
 
         // size of local part of H
         int len;
@@ -1200,14 +1203,13 @@ public:
                                    resid);
     }
 
-    ChaseMpiMatrices<T> create_matrices(T* H, std::size_t ldh,
-                                        T* V1 = nullptr,
+    ChaseMpiMatrices<T> create_matrices(T* H, std::size_t ldh, T* V1 = nullptr,
                                         Base<T>* ritzv = nullptr,
                                         T* V2 = nullptr,
                                         Base<T>* resid = nullptr) const
     {
-        return ChaseMpiMatrices<T>(comm_, N_, m_, n_, max_block_, H, ldh, V1, ritzv, 
-                                   V2, resid);
+        return ChaseMpiMatrices<T>(comm_, N_, m_, n_, max_block_, H, ldh, V1,
+                                   ritzv, V2, resid);
     }
 
 private:

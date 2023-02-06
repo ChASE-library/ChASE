@@ -38,10 +38,10 @@ public:
         nex_ = matrix_properties->GetNex();
         H_ = matrices.get_H();
         ldh_ = matrices.get_ldh();
-        //if (H_ == nullptr)
+        // if (H_ == nullptr)
         //{
-         //   H_ = matrix_properties->get_H();
-         //   ldh_ = matrix_properties->get_ldh();
+        //   H_ = matrix_properties->get_H();
+        //   ldh_ = matrix_properties->get_ldh();
         //}
 
         B_ = matrices.get_V2();
@@ -70,9 +70,7 @@ public:
     }
 
     ~ChaseMpiDLABlaslapack() {}
-    void initVecs() override {
-        next_ = NextOp::bAc;
-    }
+    void initVecs() override { next_ = NextOp::bAc; }
     void initRndVecs() override
     {
         std::mt19937 gen(1337.0 + mpi_col_rank);
@@ -257,7 +255,7 @@ public:
           std::size_t incy) override
     {
         return t_dot(n, x, incx, y, incy);
-    }    
+    }
 
     /*!
         - For ChaseMpiDLABlaslapack, `RR` is implemented by `GEMM` routine
@@ -276,9 +274,9 @@ public:
         T One = T(1.0);
         T Zero = T(0.0);
 
-        t_gemm(CblasColMajor, CblasConjTrans, CblasNoTrans, block, block,
-                   n_, &One, B2_ + locked * n_, n_, B_ + locked * n_, n_, &Zero,
-                   A_, nev_ + nex_);
+        t_gemm(CblasColMajor, CblasConjTrans, CblasNoTrans, block, block, n_,
+               &One, B2_ + locked * n_, n_, B_ + locked * n_, n_, &Zero, A_,
+               nev_ + nex_);
     }
 
     void V2C(T* v1, std::size_t off1, T* v2, std::size_t off2,
@@ -332,8 +330,8 @@ public:
 
         t_heevd(matrix_layout, jobz, uplo, n, a, nev_ + nex_, w);
         t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, m_, n, n, &One,
-                   C2_ + locked * m_, m_, A_, nev_ + nex_, &Zero,
-                   C_ + locked * m_, m_);
+               C2_ + locked * m_, m_, A_, nev_ + nex_, &Zero, C_ + locked * m_,
+               m_);
     }
 
     void hhQR(std::size_t locked) override {}

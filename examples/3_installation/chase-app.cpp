@@ -42,9 +42,6 @@ int main(int argc, char** argv)
     std::size_t idx_max = 3;
     Base<T> perturb = 1e-4;
 
-    std::mt19937 gen(1337.0);
-    std::normal_distribution<> d;
-
     if (rank == 0)
         std::cout << "ChASE example driver\n"
                   << "Usage: ./driver \n";
@@ -52,8 +49,8 @@ int main(int argc, char** argv)
     auto V = std::vector<T>(N * (nev + nex));
     auto Lambda = std::vector<Base<T>>(nev + nex);
 
-    CHASE single(new ChaseMpiProperties<T>(N, nev, nex, MPI_COMM_SELF),
-                 V.data(), Lambda.data());
+    auto props = new ChaseMpiProperties<T>(N, nev, nex, MPI_COMM_WORLD);
+    CHASE single(props, V.data(), Lambda.data());
 
     auto& config = single.GetConfig();
     config.SetTol(1e-10);
@@ -68,14 +65,9 @@ int main(int argc, char** argv)
                   << '\n'
                   << config;
 
-    for (std::size_t i = 0; i < N * (nev + nex); ++i)
-    {
-        V[i] = T(d(gen), d(gen));
-    }
-
     std::size_t xoff, yoff, xlen, ylen;
 
-    single.GetOff(&xoff, &yoff, &xlen, &ylen);
+    props->get_off(&xoff, &yoff, &xlen, &ylen);
 
     std::vector<T> H(N * N, T(0.0));
     for (auto i = 0; i < N; ++i)
@@ -87,63 +79,50 @@ int main(int argc, char** argv)
             H[i + N * (i + 1)] = std::sqrt(i * (N + 1 - i));
     }
 
-    for (auto idx = 0; idx < idx_max; ++idx)
+    if (rank == 0)
     {
-        if (rank == 0)
+        std::cout << "Starting Problem"
+                  << "\n";
+        if (config.UseApprox())
         {
-            std::cout << "Starting Problem #" << idx << "\n";
-            if (config.UseApprox())
-            {
-                std::cout << "Using approximate solution\n";
-            }
+            std::cout << "Using approximate solution\n";
         }
-
-        for (std::size_t x = 0; x < xlen; x++)
-        {
-            for (std::size_t y = 0; y < ylen; y++)
-            {
-                single.GetMatrixPtr()[x + xlen * y] =
-                    H.at((xoff + x) * N + (yoff + y));
-            }
-        }
-
-        PerformanceDecoratorChase<T> performanceDecorator(&single);
-        chase::Solve(&performanceDecorator);
-
-        if (rank == 0)
-        {
-            performanceDecorator.GetPerfData().print();
-            Base<T>* resid = single.GetResid();
-            std::cout << "Finished Problem #" << idx << "\n";
-            std::cout << "Printing first 5 eigenvalues and residuals\n";
-            std::cout
-                << "| Index |       Eigenvalue      |         Residual      |\n"
-                << "|-------|-----------------------|-----------------------|"
-                   "\n";
-            std::size_t width = 20;
-            std::cout << std::setprecision(12);
-            std::cout << std::setfill(' ');
-            std::cout << std::scientific;
-            std::cout << std::right;
-            for (auto i = 0; i < std::min(std::size_t(5), nev); ++i)
-                std::cout << "|  " << std::setw(4) << i + 1 << " | "
-                          << std::setw(width) << Lambda[i] << "  | "
-                          << std::setw(width) << resid[i] << "  |\n";
-            std::cout << "\n\n\n";
-        }
-
-        config.SetApprox(true);
-
-        for (std::size_t i = 1; i < N; ++i)
-        {
-            for (std::size_t j = 1; j < i; ++j)
-            {
-                T element_perturbation = T(d(gen), d(gen)) * perturb;
-                H[j + N * i] += element_perturbation;
-                H[i + N * j] += std::conj(element_perturbation);
-            }
-        }
-
-        MPI_Barrier(MPI_COMM_WORLD);
     }
+
+    for (std::size_t x = 0; x < xlen; x++)
+    {
+        for (std::size_t y = 0; y < ylen; y++)
+        {
+            single.GetMatrixPtr()[x + xlen * y] =
+                H.at((xoff + x) * N + (yoff + y));
+        }
+    }
+
+    PerformanceDecoratorChase<T> performanceDecorator(&single);
+    chase::Solve(&performanceDecorator);
+
+    if (rank == 0)
+    {
+        performanceDecorator.GetPerfData().print();
+        Base<T>* resid = single.GetResid();
+        std::cout << "Finished Problem"
+                  << "\n";
+        std::cout << "Printing first 5 eigenvalues and residuals\n";
+        std::cout
+            << "| Index |       Eigenvalue      |         Residual      |\n"
+            << "|-------|-----------------------|-----------------------|"
+               "\n";
+        std::size_t width = 20;
+        std::cout << std::setprecision(12);
+        std::cout << std::setfill(' ');
+        std::cout << std::scientific;
+        std::cout << std::right;
+        for (auto i = 0; i < std::min(std::size_t(5), nev); ++i)
+            std::cout << "|  " << std::setw(4) << i + 1 << " | "
+                      << std::setw(width) << Lambda[i] << "  | "
+                      << std::setw(width) << resid[i] << "  |\n";
+        std::cout << "\n\n\n";
+    }
+
+    MPI_Finalize();
 }

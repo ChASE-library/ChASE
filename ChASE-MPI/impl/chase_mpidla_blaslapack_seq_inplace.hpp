@@ -270,7 +270,7 @@ public:
         {
             beta = T(-ritzv[i]);
             t_axpy(N_, &beta, (V1_ + locked * N_) + N_ * i, 1,
-                 (V2_ + locked * N_) + N_ * i, 1);
+                   (V2_ + locked * N_) + N_ * i, 1);
 
             resid[i] = nrm2(N_, (V2_ + locked * N_) + N_ * i, 1);
         }
@@ -387,8 +387,8 @@ public:
         T alpha = T(1.0);
         T beta = T(0.0);
 
-        t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, N_, idx, m,
-                   &alpha, V1_, N_, ritzVc, m, &beta, V2_, N_);
+        t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, N_, idx, m, &alpha,
+               V1_, N_, ritzVc, m, &beta, V2_, N_);
         std::memcpy(V1_, V2_, m * N_ * sizeof(T));
     }
 

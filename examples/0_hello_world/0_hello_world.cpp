@@ -73,7 +73,6 @@ int main(int argc, char** argv)
     {
         n = std::min(N, N / dims[1] + 1);
     }
-
 #endif
 
     /*construct eigenproblem to be solved*/

@@ -3,10 +3,10 @@ use mpi
 use chase_diag
 
 integer rank, size, ierr, init, i, j, k, comm
-integer m, n, xoff, yoff, xlen, ylen, x, y
+integer m, n, xoff, yoff, xlen, ylen, x, y, x_g, y_g
 integer dims(2)
 integer nn, nev, nex, idx_max
-real(8) :: perturb, tmp, PI
+real(8) :: tmp, PI
 real(8) :: tol
 complex(8) :: cv
 integer :: deg
@@ -18,17 +18,10 @@ call mpi_init(ierr)
 call mpi_comm_size(MPI_COMM_WORLD, size, ierr)
 call mpi_comm_rank(MPI_COMM_WORLD, rank, ierr)
 
-if(size .ne. 2) then
-	print *, "This example is only desigend for MPI comm size = 2"
-
-	return
-end if
-
 nn = 1001
 nev = 100
 nex = 40
 idx_max = 5
-perturb = 1e-4
 
 comm = MPI_COMM_WORLD
 deg = 20
@@ -36,23 +29,28 @@ tol = 1e-10
 mode = 'R'
 opt = 'S'
 major = 'C'
-dims(1) = 2
-dims(2) = 1
 
-m = 501
-n = nn
+call mpi_dims_create(size, 2, dims, ierr) 
 
-if(rank == 0) then
-	xoff = 0
+if( mod(nn, dims(1)) == 0) then
+	m = nn /  dims(1);
 else
-	xoff = 501
+	m = min(nn, nn / dims(1) + 1);
 end if
 
-yoff = 0
+if( mod(nn, dims(2)) == 0) then
+	n = nn /  dims(2);
+else
+	n = min(nn, nn / dims(2) + 1);
+end if
 
-xlen = m
-ylen = n
+xoff = mod(rank, dims(1)) * m
+yoff = mod(rank, dims(2)) * n
 
+xlen = m;
+ylen = n;
+
+print *, xlen, ylen, xoff, yoff, rank
 if(rank == 0) then
 	print *, "ChASE Fortran example driver"
 end if
@@ -64,26 +62,19 @@ allocate(lambda(nev + nex))
 
 call pzchase_init(nn, nev, nex, m, n, h, m, v, lambda, dims(1), dims(2), major, comm, init)
 
-! Generate Clement matrix
-do i = 1, N
-	hh(i, i) = complex(0,0)
-    do j = 1, N
-    	if (i .ne. N - 1) then
-  			tmp = real(i * (N + 1 - i))
-    		hh(i+1, i) = complex(sqrt(tmp), 0)
-    	end if
-
-    	if (i .ne. N - 1) then
-  			tmp = real(i * (N + 1 - i))
-    		hh(i, i + 1) = complex(sqrt(tmp), 0)
-    	end if
-    end do
-end do
-
-
+!Generate Clement matrix in distributed manner
 do x = 1, xlen
 	do y = 1, ylen
-		h(x, y) = hh(xoff + x, yoff + y)
+	    x_g = xoff + x
+	    y_g = yoff + y
+	    if(x_g == y_g + 1) then
+	       tmp = real(y_g * (nn + 1 - y_g))
+	       h(x, y) = complex(sqrt(tmp), 0)
+	    end if
+	    if(y_g == x_g + 1) then
+	       tmp = real(x_g * (nn + 1 - x_g))
+	       h(x, y) = complex(sqrt(tmp), 0)
+	    end if
 	end do 
 end do
 

@@ -537,13 +537,13 @@ int do_chase(ChASE_DriverProblemConfig& conf)
         props->get_off(&xoff, &yoff, &xlen, &ylen);
 #endif
 
-#else   
+#else
         std::size_t xoff = 0;
         std::size_t yoff = 0;
         std::size_t xlen = N;
         std::size_t ylen = N;
 
-#endif     
+#endif
         std::chrono::high_resolution_clock::time_point start, end;
         std::chrono::duration<double> elapsed;
 

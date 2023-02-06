@@ -104,10 +104,12 @@ public:
         blockdispls_ = matrix_properties_->get_blockdispls();
         g_offset_ = matrix_properties_->get_g_offsets();
 
-        for(auto dim = 0; dim < 2; dim++){
+        for (auto dim = 0; dim < 2; dim++)
+        {
             block_cyclic_displs_[dim].resize(dims_[dim]);
             int displs_cnt = 0;
-            for (auto j = 0; j < dims_[dim]; ++j){
+            for (auto j = 0; j < dims_[dim]; ++j)
+            {
                 block_cyclic_displs_[dim][j].resize(block_counts_[dim][j]);
                 for (auto i = 0; i < block_counts_[dim][j]; ++i)
                 {
@@ -117,12 +119,14 @@ public:
             }
         }
 
-        for(auto dim = 0; dim < 2; dim++){
+        for (auto dim = 0; dim < 2; dim++)
+        {
             newType_[dim].resize(dims_[dim]);
             for (auto j = 0; j < dims_[dim]; ++j)
             {
                 int array_of_sizes[2] = {static_cast<int>(N_), 1};
-                int array_of_subsizes[2] = {static_cast<int>(send_lens_[dim][j]), 1};
+                int array_of_subsizes[2] = {
+                    static_cast<int>(send_lens_[dim][j]), 1};
                 int array_of_starts[2] = {block_cyclic_displs_[dim][j][0], 0};
 
                 MPI_Type_create_subarray(2, array_of_sizes, array_of_subsizes,
@@ -377,15 +381,20 @@ public:
 #endif
     }
 
-    void collecRedundantVecs(T *buff, T *targetBuf, std::size_t dimsIdx, std::size_t block){
+    void collecRedundantVecs(T* buff, T* targetBuf, std::size_t dimsIdx,
+                             std::size_t block)
+    {
         MPI_Comm comm;
-        if(dimsIdx == 0){
+        if (dimsIdx == 0)
+        {
             comm = col_comm_;
-        }else if(dimsIdx == 1){
+        }
+        else if (dimsIdx == 1)
+        {
             comm = row_comm_;
         }
         int rank;
-        MPI_Comm_rank(comm, &rank);        
+        MPI_Comm_rank(comm, &rank);
 
         std::vector<MPI_Request> reqs(dims_[dimsIdx]);
 
@@ -403,13 +412,13 @@ public:
             {
                 if (rank == i)
                 {
-                    MPI_Ibcast(buff, send_lens_[dimsIdx][i] * block, getMPI_Type<T>(), i,
-                               comm, &reqs[i]);
+                    MPI_Ibcast(buff, send_lens_[dimsIdx][i] * block,
+                               getMPI_Type<T>(), i, comm, &reqs[i]);
                 }
                 else
                 {
-                    MPI_Ibcast(Buff_.data(), block, newType_[dimsIdx][i], i, comm,
-                               &reqs[i]);
+                    MPI_Ibcast(Buff_.data(), block, newType_[dimsIdx][i], i,
+                               comm, &reqs[i]);
                 }
             }
         }
@@ -419,12 +428,13 @@ public:
             {
                 if (rank == i)
                 {
-                    MPI_Ibcast(buff, send_lens_[dimsIdx][i] * block, getMPI_Type<T>(), i,
-                               comm, &reqs[i]);
+                    MPI_Ibcast(buff, send_lens_[dimsIdx][i] * block,
+                               getMPI_Type<T>(), i, comm, &reqs[i]);
                 }
                 else
                 {
-                    MPI_Ibcast(targetBuf, block, newType_[dimsIdx][i], i, comm, &reqs[i]);
+                    MPI_Ibcast(targetBuf, block, newType_[dimsIdx][i], i, comm,
+                               &reqs[i]);
                 }
             }
         }
@@ -435,16 +445,20 @@ public:
         {
             for (auto j = 0; j < block; ++j)
             {
-                std::memcpy(Buff_.data() + j * N_ + block_cyclic_displs_[dimsIdx][i][0],
-                            buff + send_lens_[dimsIdx][i] * j, send_lens_[dimsIdx][i] * sizeof(T));
+                std::memcpy(Buff_.data() + j * N_ +
+                                block_cyclic_displs_[dimsIdx][i][0],
+                            buff + send_lens_[dimsIdx][i] * j,
+                            send_lens_[dimsIdx][i] * sizeof(T));
             }
         }
         else
         {
             for (auto j = 0; j < block; ++j)
             {
-                std::memcpy(targetBuf + j * N_ + block_cyclic_displs_[dimsIdx][i][0],
-                            buff + send_lens_[dimsIdx][i] * j, send_lens_[dimsIdx][i] * sizeof(T));
+                std::memcpy(targetBuf + j * N_ +
+                                block_cyclic_displs_[dimsIdx][i][0],
+                            buff + send_lens_[dimsIdx][i] * j,
+                            send_lens_[dimsIdx][i] * sizeof(T));
             }
         }
 
@@ -457,8 +471,8 @@ public:
                 for (auto i = 0; i < block_counts_[dimsIdx][j]; ++i)
                 {
                     t_lacpy('A', blocklens_[dimsIdx][j][i], block,
-                            Buff_.data() + block_cyclic_displs_[dimsIdx][j][i], N_,
-                            targetBuf + blockdispls_[dimsIdx][j][i], N_);
+                            Buff_.data() + block_cyclic_displs_[dimsIdx][j][i],
+                            N_, targetBuf + blockdispls_[dimsIdx][j][i], N_);
                 }
             }
         }
@@ -1012,8 +1026,8 @@ public:
 #ifdef USE_NSIGHT
         nvtxRangePushA("ChaseMpiDLA: LanczosDOS");
 #endif
-        t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, m_, idx, m,
-                   &alpha, C_, m_, ritzVc, m, &beta, C2_, m_);
+        t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, m_, idx, m, &alpha,
+               C_, m_, ritzVc, m, &beta, C2_, m_);
         std::memcpy(C_, C2_, m * m_ * sizeof(T));
 #ifdef USE_NSIGHT
         nvtxRangePop();
@@ -1088,7 +1102,6 @@ private:
     std::vector<int> c_disps;
     std::vector<std::vector<int>> block_cyclic_displs;
     std::vector<std::vector<int>> block_cyclic_displs_[2];
-
 
     int icsrc_;
     int irsrc_;

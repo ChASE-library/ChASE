@@ -97,8 +97,8 @@ public:
                      Base<T>* ritzv = nullptr, T* V2 = nullptr,
                      Base<T>* resid = nullptr)
         // if value is null then allocate otherwise don't
-        : //H__(nullptr),
-          H__(new T[m * n]), 
+        : // H__(nullptr),
+          H__(new T[m * n]),
           V1__(V1 == nullptr ? new T[m * max_block] : nullptr),
           V2__(V2 == nullptr ? new T[n * max_block] : nullptr),
           ritzv__(ritzv == nullptr ? new Base<T>[max_block] : nullptr),
@@ -114,20 +114,17 @@ public:
     }
 
     ChaseMpiMatrices(MPI_Comm comm, std::size_t N, std::size_t m, std::size_t n,
-                     std::size_t max_block, T* H,
-                     std::size_t ldh, T* V1 = nullptr,
-                     Base<T>* ritzv = nullptr, T* V2 = nullptr,
+                     std::size_t max_block, T* H, std::size_t ldh,
+                     T* V1 = nullptr, Base<T>* ritzv = nullptr, T* V2 = nullptr,
                      Base<T>* resid = nullptr)
         // if value is null then allocate otherwise don't
-        : H__(nullptr),
-          V1__(V1 == nullptr ? new T[m * max_block] : nullptr),
+        : H__(nullptr), V1__(V1 == nullptr ? new T[m * max_block] : nullptr),
           V2__(V2 == nullptr ? new T[n * max_block] : nullptr),
           ritzv__(ritzv == nullptr ? new Base<T>[max_block] : nullptr),
           resid__(resid == nullptr ? new Base<T>[max_block] : nullptr),
           ldh_(ldh),
           // if value is null we take allocated
-          H_(H),
-          V1_(V1 == nullptr ? V1__.get() : V1),
+          H_(H), V1_(V1 == nullptr ? V1__.get() : V1),
           V2_(V2 == nullptr ? V2__.get() : V2),
           ritzv_(ritzv == nullptr ? ritzv__.get() : ritzv),
           resid_(resid == nullptr ? resid__.get() : resid)
