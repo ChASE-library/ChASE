@@ -1,11 +1,12 @@
 add_library( "chase_c" "chase_c.cpp" )
 
-option(INTERFACE_WITH_MGPU "Build C and Fortran interface for multiGPU version" OFF)
+if(TARGET chase_cuda)
+    add_compile_definitions(HAS_GPU=1)
+endif()
 
-if(INTERFACE_WITH_MGPU)
+if(TARGET chase_cuda)
   enable_language(CUDA)
   target_link_libraries("chase_c" PUBLIC chase_mpi chase_cuda)
-  target_compile_definitions("chase_c" PRIVATE HAS_GPU=1)
 else()
   target_link_libraries("chase_c" PUBLIC chase_mpi)
 endif()
@@ -46,9 +47,6 @@ target_include_directories(
 )
 
 target_link_libraries("chase_f" PUBLIC chase_c)
-if(INTERFACE_WITH_MGPU)
-  target_compile_definitions("chase_f" PRIVATE HAS_GPU=1)
-endif()
 
 install( TARGETS chase_f
   EXPORT chase-f

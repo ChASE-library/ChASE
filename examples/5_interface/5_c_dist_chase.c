@@ -36,6 +36,7 @@ int main(int argc, char** argv)
     MPI_Comm comm = MPI_COMM_WORLD;
 
     int dims[2];
+    dims[0] = dims[1] = 0;
     // Create a grid as square as possible
     // if not able to be square, dims[0] > dim[1]
     MPI_Dims_create(size, 2, dims);
@@ -64,7 +65,7 @@ int main(int argc, char** argv)
     }
 
     xoff = (rank % dims[0]) * m;
-    yoff = (rank % dims[1]) * n;
+    yoff = (rank / dims[0]) * n;
 
     xlen = m;
     ylen = n;

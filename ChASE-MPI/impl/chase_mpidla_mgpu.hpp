@@ -96,7 +96,6 @@ public:
         C2_ = matrix_properties->get_C2();
         B2_ = matrix_properties->get_B2();
         A_ = matrix_properties->get_A();
-
         off_ = matrix_properties->get_off();
 
         matrix_properties->get_offs_lens(r_offs_, r_lens_, r_offs_l_, c_offs_,
@@ -123,7 +122,7 @@ public:
         std::size_t maxBlock = matrix_properties_->get_max_block();
 
         /* Register H, B, C as pinned-memories on host */
-        cuda_exec(cudaHostRegister((void*)H_, m_ * n_ * sizeof(T),
+        cuda_exec(cudaHostRegister((void*)H_, ldh_ * n_ * sizeof(T),
                                    cudaHostRegisterDefault));
         cuda_exec(cudaHostRegister((void*)B_, n_ * maxBlock * sizeof(T),
                                    cudaHostRegisterDefault));
@@ -238,9 +237,9 @@ public:
     }
     void initVecs() override
     {
-        cuda_exec(
-            cudaMemcpy(d_H_, H_, m_ * n_ * sizeof(T), cudaMemcpyHostToDevice));
-        next_ = NextOp::bAc;
+        cublas_status_ = cublasSetMatrix(m_, n_, sizeof(T), H_, ldh_, d_H_, m_);
+        assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);        
+	next_ = NextOp::bAc;
     }
     void initRndVecs() override
     {

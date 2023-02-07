@@ -149,7 +149,10 @@ if(CMAKE_CUDA_COMPILER)
   endif()	  
   add_library( chase_cuda "kernels/shift.cu" )
 
-  set_target_properties( chase_cuda PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+  set_target_properties( chase_cuda 
+	  		 PROPERTIES
+		  		CUDA_RESOLVE_DEVICE_SYMBOLS ON
+				CUDA_SEPARABLE_COMPILATION ON)
  
   target_include_directories(
       chase_cuda

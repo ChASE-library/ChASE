@@ -1646,8 +1646,7 @@ void t_geadd(const char trans, const std::size_t m, std::size_t n, float alpha,
         desc_c_[i] = static_cast<BlasInt>(desc_c[i]);
     }
 
-    FC_GLOBAL(psgeadd, PSGEADD)
-    (&trans, &m_, &n_, &alpha, a, &ia_, &ja_, desc_a_, &beta, c, &ic_, &jc_,
+    psgeadd_(&trans, &m_, &n_, &alpha, a, &ia_, &ja_, desc_a_, &beta, c, &ic_, &jc_,
      desc_c_);
 }
 
@@ -1672,8 +1671,7 @@ void t_geadd(const char trans, const std::size_t m, std::size_t n, double alpha,
         desc_c_[i] = static_cast<BlasInt>(desc_c[i]);
     }
 
-    FC_GLOBAL(pdgeadd, PDGEADD)
-    (&trans, &m_, &n_, &alpha, a, &ia_, &ja_, desc_a_, &beta, c, &ic_, &jc_,
+    pdgeadd_(&trans, &m_, &n_, &alpha, a, &ia_, &ja_, desc_a_, &beta, c, &ic_, &jc_,
      desc_c_);
 }
 
@@ -1709,8 +1707,7 @@ void t_geadd(const char trans, const std::size_t m, std::size_t n,
         desc_c_[i] = static_cast<BlasInt>(desc_c[i]);
     }
 
-    FC_GLOBAL(pcgeadd, PCGEADD)
-    (&trans_, &m_, &n_, &alpha, a, &ia_, &ja_, desc_a_, &beta, c, &ic_, &jc_,
+    pcgeadd_(&trans_, &m_, &n_, &alpha, a, &ia_, &ja_, desc_a_, &beta, c, &ic_, &jc_,
      desc_c_);
 }
 
@@ -1746,13 +1743,12 @@ void t_geadd(const char trans, const std::size_t m, std::size_t n,
         desc_c_[i] = static_cast<BlasInt>(desc_c[i]);
     }
 
-    FC_GLOBAL(pzgeadd, PZGEADD)
-    (&trans_, &m_, &n_, &alpha, a, &ia_, &ja_, desc_a_, &beta, c, &ic_, &jc_,
+    pzgeadd_(&trans_, &m_, &n_, &alpha, a, &ia_, &ja_, desc_a_, &beta, c, &ic_, &jc_,
      desc_c_);
 }
 
 template <>
-void t_ppotrf(const char uplo, const std::size_t n, float* a,
+int t_ppotrf(const char uplo, const std::size_t n, float* a,
               const std::size_t ia, const std::size_t ja, std::size_t* desc_a)
 {
     BlasInt n_ = n;
@@ -1765,13 +1761,13 @@ void t_ppotrf(const char uplo, const std::size_t n, float* a,
         desc_a_[i] = static_cast<BlasInt>(desc_a[i]);
     }
 
-    FC_GLOBAL(pspotrf, PSPOTRF)
-    (&uplo, &n_, a, &ia_, &ja_, desc_a_, &info_);
-    assert(info_ == 0);
+    pspotrf_(&uplo, &n_, a, &ia_, &ja_, desc_a_, &info_);
+
+    return info_;
 }
 
 template <>
-void t_ppotrf(const char uplo, const std::size_t n, double* a,
+int t_ppotrf(const char uplo, const std::size_t n, double* a,
               const std::size_t ia, const std::size_t ja, std::size_t* desc_a)
 {
     BlasInt n_ = n;
@@ -1784,13 +1780,13 @@ void t_ppotrf(const char uplo, const std::size_t n, double* a,
         desc_a_[i] = static_cast<BlasInt>(desc_a[i]);
     }
 
-    FC_GLOBAL(pdpotrf, PDPOTRF)
-    (&uplo, &n_, a, &ia_, &ja_, desc_a_, &info_);
-    assert(info_ == 0);
+    pdpotrf_(&uplo, &n_, a, &ia_, &ja_, desc_a_, &info_);
+
+    return info_;
 }
 
 template <>
-void t_ppotrf(const char uplo, const std::size_t n, std::complex<float>* a,
+int t_ppotrf(const char uplo, const std::size_t n, std::complex<float>* a,
               const std::size_t ia, const std::size_t ja, std::size_t* desc_a)
 {
     BlasInt n_ = n;
@@ -1803,13 +1799,13 @@ void t_ppotrf(const char uplo, const std::size_t n, std::complex<float>* a,
         desc_a_[i] = static_cast<BlasInt>(desc_a[i]);
     }
 
-    FC_GLOBAL(pcpotrf, PCPOTRF)
-    (&uplo, &n_, a, &ia_, &ja_, desc_a_, &info_);
-    assert(info_ == 0);
+    pcpotrf_(&uplo, &n_, a, &ia_, &ja_, desc_a_, &info_);
+
+    return info_;
 }
 
 template <>
-void t_ppotrf(const char uplo, const std::size_t n, std::complex<double>* a,
+int t_ppotrf(const char uplo, const std::size_t n, std::complex<double>* a,
               const std::size_t ia, const std::size_t ja, std::size_t* desc_a)
 {
     BlasInt n_ = n;
@@ -1822,15 +1818,15 @@ void t_ppotrf(const char uplo, const std::size_t n, std::complex<double>* a,
         desc_a_[i] = static_cast<BlasInt>(desc_a[i]);
     }
 
-    FC_GLOBAL(pzpotrf, PZPOTRF)
-    (&uplo, &n_, a, &ia_, &ja_, desc_a_, &info_);
-    assert(info_ == 0);
+    pzpotrf_(&uplo, &n_, a, &ia_, &ja_, desc_a_, &info_);
+
+    return info_;
 }
 
 template <>
-void t_psyhegst(const int ibtype, const char uplo, const std::size_t n,
+int t_psyhegst(const int ibtype, const char uplo, const std::size_t n,
                 float* a, const std::size_t ia, const std::size_t ja,
-                std::size_t* desc_a, const float* b, const std::size_t ib,
+                std::size_t* desc_a, float* b, const std::size_t ib,
                 const std::size_t jb, std::size_t* desc_b, Base<float>* scale)
 {
     BlasInt ibtype_ = ibtype;
@@ -1850,17 +1846,16 @@ void t_psyhegst(const int ibtype, const char uplo, const std::size_t n,
 
     BlasInt info_ = 0;
 
-    FC_GLOBAL(pssygst, PSSYGST)
-    (&ibtype_, &uplo, &n_, a, &ia_, &ja_, desc_a_, b, &ib_, &jb_, desc_b_,
+    pssygst_(&ibtype_, &uplo, &n_, a, &ia_, &ja_, desc_a_, b, &ib_, &jb_, desc_b_,
      scale, &info_);
 
-    assert(info_ == 0);
+    return info_;
 }
 
 template <>
-void t_psyhegst(const int ibtype, const char uplo, const std::size_t n,
+int t_psyhegst(const int ibtype, const char uplo, const std::size_t n,
                 double* a, const std::size_t ia, const std::size_t ja,
-                std::size_t* desc_a, const double* b, const std::size_t ib,
+                std::size_t* desc_a, double* b, const std::size_t ib,
                 const std::size_t jb, std::size_t* desc_b, Base<double>* scale)
 {
     BlasInt ibtype_ = ibtype;
@@ -1880,18 +1875,17 @@ void t_psyhegst(const int ibtype, const char uplo, const std::size_t n,
 
     BlasInt info_ = 0;
 
-    FC_GLOBAL(pdsygst, PDSYGST)
-    (&ibtype_, &uplo, &n_, a, &ia_, &ja_, desc_a_, b, &ib_, &jb_, desc_b_,
+    pdsygst_(&ibtype_, &uplo, &n_, a, &ia_, &ja_, desc_a_, b, &ib_, &jb_, desc_b_,
      scale, &info_);
 
-    assert(info_ == 0);
+    return info_;
 }
 
 template <>
-void t_psyhegst(const int ibtype, const char uplo, const std::size_t n,
+int t_psyhegst(const int ibtype, const char uplo, const std::size_t n,
                 std::complex<float>* a, const std::size_t ia,
                 const std::size_t ja, std::size_t* desc_a,
-                const std::complex<float>* b, const std::size_t ib,
+                std::complex<float>* b, const std::size_t ib,
                 const std::size_t jb, std::size_t* desc_b,
                 Base<std::complex<float>>* scale)
 {
@@ -1912,18 +1906,17 @@ void t_psyhegst(const int ibtype, const char uplo, const std::size_t n,
 
     BlasInt info_ = 0;
 
-    FC_GLOBAL(pchegst, PCHEGST)
-    (&ibtype_, &uplo, &n_, a, &ia_, &ja_, desc_a_, b, &ib_, &jb_, desc_b_,
+    pchegst_(&ibtype_, &uplo, &n_, a, &ia_, &ja_, desc_a_, b, &ib_, &jb_, desc_b_,
      scale, &info_);
 
-    assert(info_ == 0);
+    return info_;
 }
 
 template <>
-void t_psyhegst(const int ibtype, const char uplo, const std::size_t n,
+int t_psyhegst(const int ibtype, const char uplo, const std::size_t n,
                 std::complex<double>* a, const std::size_t ia,
                 const std::size_t ja, std::size_t* desc_a,
-                const std::complex<double>* b, const std::size_t ib,
+                std::complex<double>* b, const std::size_t ib,
                 const std::size_t jb, std::size_t* desc_b,
                 Base<std::complex<double>>* scale)
 {
@@ -1944,15 +1937,14 @@ void t_psyhegst(const int ibtype, const char uplo, const std::size_t n,
 
     BlasInt info_ = 0;
 
-    FC_GLOBAL(pzhegst, PZHEGST)
-    (&ibtype_, &uplo, &n_, a, &ia_, &ja_, desc_a_, b, &ib_, &jb_, desc_b_,
+    pzhegst_(&ibtype_, &uplo, &n_, a, &ia_, &ja_, desc_a_, b, &ib_, &jb_, desc_b_,
      scale, &info_);
 
-    assert(info_ == 0);
+    return info_;
 }
 
 template <>
-void t_ptrtrs(const char uplo, const char trans, const char diag,
+int t_ptrtrs(const char uplo, const char trans, const char diag,
               const std::size_t n, const std::size_t nhs, float* a,
               const std::size_t ia, const std::size_t ja, std::size_t* desc_a,
               float* b, const std::size_t ib, const std::size_t jb,
@@ -1975,15 +1967,14 @@ void t_ptrtrs(const char uplo, const char trans, const char diag,
 
     BlasInt info_ = 0;
 
-    FC_GLOBAL(pstrtrs, PSTRTRS)
-    (&uplo, &trans, &diag, &n_, &nhs_, a, &ia_, &ja_, desc_a_, b, &ib_, &jb_,
+    pstrtrs_(&uplo, &trans, &diag, &n_, &nhs_, a, &ia_, &ja_, desc_a_, b, &ib_, &jb_,
      desc_b_, &info_);
 
-    assert(info_ == 0);
+    return info_;
 }
 
 template <>
-void t_ptrtrs(const char uplo, const char trans, const char diag,
+int t_ptrtrs(const char uplo, const char trans, const char diag,
               const std::size_t n, const std::size_t nhs, double* a,
               const std::size_t ia, const std::size_t ja, std::size_t* desc_a,
               double* b, const std::size_t ib, const std::size_t jb,
@@ -2006,15 +1997,14 @@ void t_ptrtrs(const char uplo, const char trans, const char diag,
 
     BlasInt info_ = 0;
 
-    FC_GLOBAL(pdtrtrs, PDTRTRS)
-    (&uplo, &trans, &diag, &n_, &nhs_, a, &ia_, &ja_, desc_a_, b, &ib_, &jb_,
+    pdtrtrs_(&uplo, &trans, &diag, &n_, &nhs_, a, &ia_, &ja_, desc_a_, b, &ib_, &jb_,
      desc_b_, &info_);
 
-    assert(info_ == 0);
+    return info_;
 }
 
 template <>
-void t_ptrtrs(const char uplo, const char trans, const char diag,
+int t_ptrtrs(const char uplo, const char trans, const char diag,
               const std::size_t n, const std::size_t nhs,
               std::complex<float>* a, const std::size_t ia,
               const std::size_t ja, std::size_t* desc_a, std::complex<float>* b,
@@ -2037,15 +2027,14 @@ void t_ptrtrs(const char uplo, const char trans, const char diag,
 
     BlasInt info_ = 0;
 
-    FC_GLOBAL(pctrtrs, PCTRTRS)
-    (&uplo, &trans, &diag, &n_, &nhs_, a, &ia_, &ja_, desc_a_, b, &ib_, &jb_,
+    pctrtrs_(&uplo, &trans, &diag, &n_, &nhs_, a, &ia_, &ja_, desc_a_, b, &ib_, &jb_,
      desc_b_, &info_);
 
-    assert(info_ == 0);
+    return info_;
 }
 
 template <>
-void t_ptrtrs(const char uplo, const char trans, const char diag,
+int t_ptrtrs(const char uplo, const char trans, const char diag,
               const std::size_t n, const std::size_t nhs,
               std::complex<double>* a, const std::size_t ia,
               const std::size_t ja, std::size_t* desc_a,
@@ -2069,11 +2058,10 @@ void t_ptrtrs(const char uplo, const char trans, const char diag,
 
     BlasInt info_ = 0;
 
-    FC_GLOBAL(pztrtrs, PZTRTRS)
-    (&uplo, &trans, &diag, &n_, &nhs_, a, &ia_, &ja_, desc_a_, b, &ib_, &jb_,
+    pztrtrs_(&uplo, &trans, &diag, &n_, &nhs_, a, &ia_, &ja_, desc_a_, b, &ib_, &jb_,
      desc_b_, &info_);
 
-    assert(info_ == 0);
+    return info_;
 }
 
 #endif

@@ -24,7 +24,7 @@
 #include <random>
 #include <sys/stat.h>
 
-#ifdef INTERFACE_WITH_MGPU
+#ifdef HAS_GPU 
 #include "ChASE-MPI/impl/chase_mpidla_cuda_seq.hpp"
 #include "ChASE-MPI/impl/chase_mpidla_mgpu.hpp"
 #endif
@@ -32,8 +32,10 @@
 using namespace chase;
 using namespace chase::mpi;
 
-#ifdef INTERFACE_WITH_MGPU
+#ifdef HAS_GPU
+template <typename T>
 using dlaSeq = ChaseMpiDLACudaSeq<T>;
+template <typename T>
 using dlaDist = ChaseMpiDLAMultiGPU<T>;
 #else
 template <typename T>

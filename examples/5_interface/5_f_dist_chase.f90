@@ -30,6 +30,8 @@ mode = 'R'
 opt = 'S'
 major = 'C'
 
+dims(1) = 0
+dims(2) = 0
 call mpi_dims_create(size, 2, dims, ierr) 
 
 if( mod(nn, dims(1)) == 0) then
@@ -45,12 +47,11 @@ else
 end if
 
 xoff = mod(rank, dims(1)) * m
-yoff = mod(rank, dims(2)) * n
+yoff = (rank / dims(1)) * n
 
 xlen = m;
 ylen = n;
 
-print *, xlen, ylen, xoff, yoff, rank
 if(rank == 0) then
 	print *, "ChASE Fortran example driver"
 end if
