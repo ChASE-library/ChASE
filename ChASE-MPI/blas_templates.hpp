@@ -107,6 +107,12 @@ void t_trsm(const char side, const char uplo, const char trans, const char diag,
 
 // scalapack
 // BLACS
+void t_descinit(std::size_t* desc, std::size_t* m, std::size_t* n,
+                std::size_t* mb, std::size_t* nb, int* irsrc, int* icsrc,
+                int* ictxt, std::size_t* lld, int* info);
+
+#if defined(HAS_SCALAPACK)
+// ScaLAPACK
 extern "C" void blacs_get_(int*, int*, int*);
 extern "C" void blacs_pinfo_(int*, int*);
 extern "C" void blacs_gridinit_(int*, char*, int*, int*);
@@ -115,13 +121,8 @@ extern "C" void descinit_(int*, int*, int*, int*, int*, int*, int*, int*, int*,
                           int*);
 extern "C" void blacs_gridexit_(int*);
 extern "C" void blacs_gridmap_(int*, int*, int*, int*, int*);
+extern "C" int numroc_(std::size_t *, std::size_t *, int *, int *, int *);
 
-void t_descinit(std::size_t* desc, std::size_t* m, std::size_t* n,
-                std::size_t* mb, std::size_t* nb, int* irsrc, int* icsrc,
-                int* ictxt, std::size_t* lld, int* info);
-
-#if defined(HAS_SCALAPACK)
-// ScaLAPACK
 extern "C" void pdgeqrf_(int*, int*, double*, int*, int*, int*, double*,
                          double*, int*, int*);
 extern "C" void psgeqrf_(int*, int*, float*, int*, int*, int*, float*, float*,
