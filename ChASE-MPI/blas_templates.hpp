@@ -144,49 +144,12 @@ extern "C" void pzungqr_(int*, int*, int*, std::complex<double>*, int*, int*,
 extern "C" void pcungqr_(int*, int*, int*, std::complex<float>*, int*, int*,
                          int*, std::complex<float>*, std::complex<float>*, int*,
                          int*);
-extern "C" void pdgeadd_(const char *, int *, int *, double *, double *, int *, int *, int *, double *, double *, int *, int *, int *);
-extern "C" void psgeadd_(const char *, int *, int *, float *, float *, int *, int *, int *, float *, float *, int *, int *, int *);
-extern "C" void pzgeadd_(const char *, int *, int *, std::complex<double> *, std::complex<double>*, int *, int *, int *, std::complex<double> *, std::complex<double> *, int *, int *, int *);
-extern "C" void pcgeadd_(const char *, int *, int *, std::complex<float> *, std::complex<float>*, int *, int *, int *, std::complex<float> *, std::complex<float> *, int *, int *, int *);
-extern "C" void pdpotrf_(const char *, int *, double *, int *, int *, int *, int *);
-extern "C" void pspotrf_(const char *, int *, float *, int *, int *, int *, int *);
-extern "C" void pzpotrf_(const char *, int *, std::complex<double> *, int *, int *, int *, int *);
-extern "C" void pcpotrf_(const char *, int *, std::complex<float> *, int *, int *, int *, int *);
-extern "C" void pdsygst_(int *, const char *, int *, double *,  int *, int *, int *, double *, int *, int *, int *, double *, int *);
-extern "C" void pssygst_(int *, const char *, int *, float *,  int *, int *, int *, float *, int *, int *, int *, float *, int *);
-extern "C" void pzhegst_(int *, const char *, int *, std::complex<double> *,  int *, int *, int *, std::complex<double> *, int *, int *, int *, double *, int *);
-extern "C" void pchegst_(int *, const char *, int *, std::complex<float> *,  int *, int *, int *, std::complex<float> *, int *, int *, int *, float *, int *);
-extern "C" void pdtrtrs_(const char *, const char *, const char *, int *, int *, double *, int *, int *, int *, double *, int *, int *, int *, int *);
-extern "C" void pstrtrs_(const char *, const char *, const char *, int *, int *, float *, int *, int *, int *, float *, int *, int *, int *, int *);
-extern "C" void pctrtrs_(const char *, const char *, const char *, int *, int *, std::complex<float> *, int *, int *, int *, std::complex<float> *, int *, int *, int *, int *);
-extern "C" void pztrtrs_(const char *, const char *, const char *, int *, int *, std::complex<double> *, int *, int *, int *, std::complex<double> *, int *, int *, int *, int *);
-
 template <typename T>
 void t_pgeqrf(std::size_t m, std::size_t n, T* A, int ia, int ja,
               std::size_t* desc_a, T* tau);
 template <typename T>
 void t_pgqr(std::size_t m, std::size_t n, std::size_t k, T* A, int ia, int ja,
             std::size_t* desc_a, T* tau);
-template <typename T>
-void t_geadd(const char trans, const std::size_t m, std::size_t n, T alpha,
-             T* a, const std::size_t ia, const std::size_t ja,
-             std::size_t* desc_a, T beta, T* c, const std::size_t ic,
-             const std::size_t jc, std::size_t* desc_c);
-template <typename T>
-int t_ppotrf(const char uplo, const std::size_t n, T* a, const std::size_t ia,
-              const std::size_t ja, std::size_t* desc_a);
-
-template <typename T>
-int t_psyhegst(const int ibtype, const char uplo, const std::size_t n, T* a,
-                const std::size_t ia, const std::size_t ja, std::size_t* desc_a,
-                T* b, const std::size_t ib, const std::size_t jb,
-                std::size_t* desc_b, Base<T>* scale);
-template <typename T>
-int t_ptrtrs(const char uplo, const char trans, const char diag,
-              const std::size_t n, const std::size_t nhs, T* a,
-              const std::size_t ia, const std::size_t ja, std::size_t* desc_a,
-              T* b, const std::size_t ib, const std::size_t jb,
-              std::size_t* desc_b);
 #endif
 
 } // namespace mpi
