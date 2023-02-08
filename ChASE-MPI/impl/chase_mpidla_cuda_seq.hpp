@@ -18,17 +18,45 @@
 
 #include "ChASE-MPI/blas_cuda_wrapper.hpp"
 #include "ChASE-MPI/chase_mpidla_interface.hpp"
+/** @defgroup chase-cuda-utility Interface to the CUDA kernels functions used by ChASE
+ *  @brief This module provides the calling for CUDA:
+ *     1. generate random number in normal distribution on device
+ *     2. shift the diagonal of a matrix on single GPU.
+ *     3. shift the diagonal of a global matrix which has already distributed on multiGPUs (both block-block and block-cyclic distributions)
+ *  @{
+ */
 
+//! shift the diagonal of a `nxn` square matrix `A` in float real data type on a single GPU.
+//!    
+//! @param[in,out] A a pointer to the matrix to be shifted
+//! @param[in] n the row and column of matrix `A`
+//! @param[in] shift the value for shifting the diagonal of matrix `A` 
+//! @param[in] stream_ an asynchronous CUDA stream which allows to run this function asynchronously
 void chase_shift_matrix(float* A, int n, float shift, cudaStream_t* stream_);
-
+//! shift the diagonal of a `nxn` square matrix `A` in double real data type on a single GPU.
+//!    
+//! @param[in,out] A a pointer to the matrix to be shifted
+//! @param[in] n the row and column of matrix `A`
+//! @param[in] shift the value for shifting the diagonal of matrix `A` 
+//! @param[in] stream_ an asynchronous CUDA stream which allows to run this function asynchronously
 void chase_shift_matrix(double* A, int n, double shift, cudaStream_t* stream_);
-
+//! shift the diagonal of a `nxn` square matrix `A` in float complex data type on a single GPU.
+//!    
+//! @param[in,out] A a pointer to the matrix to be shifted
+//! @param[in] n the row and column of matrix `A`
+//! @param[in] shift the value for shifting the diagonal of matrix `A` 
+//! @param[in] stream_ an asynchronous CUDA stream which allows to run this function asynchronously
 void chase_shift_matrix(std::complex<float>* A, int n, float shift,
                         cudaStream_t* stream_);
-
+//! shift the diagonal of a `nxn` square matrix `A` in double complex data type on a single GPU.
+//!    
+//! @param[in,out] A a pointer to the matrix to be shifted
+//! @param[in] n the row and column of matrix `A`
+//! @param[in] shift the value for shifting the diagonal of matrix `A` 
+//! @param[in] stream_ an asynchronous CUDA stream which allows to run this function asynchronously
 void chase_shift_matrix(std::complex<double>* A, int n, double shift,
                         cudaStream_t* stream_);
-
+/** @} */ // end of chase-cuda-utility
 namespace chase
 {
 namespace mpi

@@ -22,45 +22,117 @@
 #include "ChASE-MPI/chase_mpi_properties.hpp"
 #include "ChASE-MPI/chase_mpidla_interface.hpp"
 
+/** @defgroup chase-cuda-utility Interface to the CUDA kernels functions used by ChASE
+ *  @brief This module provides the calling for CUDA:
+ *     1. generate random number in normal distribution on device
+ *     2. shift the diagonal of a matrix on single GPU.
+ *     3. shift the diagonal of a global matrix which has already distributed on multiGPUs (both block-block and block-cyclic distributions)
+ *  @{
+ */
+
+//! generate `n` random float numbers in normal distribution on each GPU device.
+//!    
+//! @param[in] seed the seed of random number generator
+//! @param[in] states the states of the sequence of random number generator
+//! @param[in,out] v a pointer to the device memory to store the random generated numbers 
+//! @param[in] stream_ an asynchronous CUDA stream which allows to run this function asynchronously
 void chase_rand_normal(unsigned long long seed, curandState* states, float* v,
                        int n, cudaStream_t stream_);
-
+//! generate `n` random double numbers in normal distribution on each GPU device.
+//!    
+//! @param[in] seed the seed of random number generator
+//! @param[in] states the states of the sequence of random number generator
+//! @param[in,out] v a pointer to the device memory to store the random generated numbers 
+//! @param[in] stream_ an asynchronous CUDA stream which allows to run this function asynchronously
 void chase_rand_normal(unsigned long long seed, curandState* states, double* v,
                        int n, cudaStream_t stream_);
-
+//! generate `n` random complex float numbers in normal distribution on each GPU device.
+//! The real part and the imaginary part of each individual random number are the same.
+//!    
+//! @param[in] seed the seed of random number generator
+//! @param[in] states the states of the sequence of random number generator
+//! @param[in,out] v a pointer to the device memory to store the random generated numbers 
+//! @param[in] stream_ an asynchronous CUDA stream which allows to run this function asynchronously
 void chase_rand_normal(unsigned long long seed, curandState* states,
                        std::complex<float>* v, int n, cudaStream_t stream_);
-
+//! generate `n` random complex double numbers in normal distribution on each GPU device.
+//! The real part and the imaginary part of each individual random number are the same.
+//!    
+//! @param[in] seed the seed of random number generator
+//! @param[in] states the states of the sequence of random number generator
+//! @param[in,out] v a pointer to the device memory to store the random generated numbers 
+//! @param[in] stream_ an asynchronous CUDA stream which allows to run this function asynchronously
 void chase_rand_normal(unsigned long long seed, curandState* states,
                        std::complex<double>* v, int n, cudaStream_t stream_);
 
-void chase_shift_matrix(float* A, int n, float shift, cudaStream_t* stream_);
-
-void chase_shift_matrix(double* A, int n, double shift, cudaStream_t* stream_);
-
-void chase_shift_matrix(std::complex<float>* A, int n, float shift,
-                        cudaStream_t* stream_);
-
-void chase_shift_matrix(std::complex<double>* A, int n, double shift,
-                        cudaStream_t* stream_);
-
+//! shift the diagonal of a `nxn` square matrix `A` in float real data type. which has been
+//! distributed on multi-GPUs in either block-block of block-cyclic faison.
+//! Each GPU may contains different number of diagonal part of the global matrix, espeically for the block-cyclic distribution
+//! On each GPU, it may contains multiple pieces of diagonal to be shifted, and each piece may be of different size.
+//! Hence each piece is determined by `off_m`, `off_n`, `offsize` within the local matrix on each GPU device.
+//!    
+//! @param[in,out] A a pointer to the local piece of matrix to be shifted on each GPU
+//! @param[in] off_m the offset of the row of the first element each piece of diagonal to be shifted within the local matrix `A`
+//! @param[in] off_n the offset of the column of the first element each piece of diagonal to be shifted within the local matrix `A`
+//! @param[in] offsize number of elements to be shifted on each piece
+//! @param[in,out] ldh the leading dimension of local matrix to be shifted
+//! @param[in] shift the value for shifting the diagonal 
+//! @param[in] stream_ an asynchronous CUDA stream which allows to run this function asynchronously
 void chase_shift_mgpu_matrix(float* A, std::size_t* off_m, std::size_t* off_n,
                              std::size_t offsize, std::size_t ldH, float shift,
                              cudaStream_t stream_);
-
+//! shift the diagonal of a `nxn` square matrix `A` in double real data type. which has been
+//! distributed on multi-GPUs in either block-block of block-cyclic faison.
+//! Each GPU may contains different number of diagonal part of the global matrix, espeically for the block-cyclic distribution
+//! On each GPU, it may contains multiple pieces of diagonal to be shifted, and each piece may be of different size.
+//! Hence each piece is determined by `off_m`, `off_n`, `offsize` within the local matrix on each GPU device.
+//!    
+//! @param[in,out] A a pointer to the local piece of matrix to be shifted on each GPU
+//! @param[in] off_m the offset of the row of the first element each piece of diagonal to be shifted within the local matrix `A`
+//! @param[in] off_n the offset of the column of the first element each piece of diagonal to be shifted within the local matrix `A`
+//! @param[in] offsize number of elements to be shifted on each piece
+//! @param[in,out] ldh the leading dimension of local matrix to be shifted
+//! @param[in] shift the value for shifting the diagonal 
+//! @param[in] stream_ an asynchronous CUDA stream which allows to run this function asynchronously
 void chase_shift_mgpu_matrix(double* A, std::size_t* off_m, std::size_t* off_n,
                              std::size_t offsize, std::size_t ldH, double shift,
                              cudaStream_t stream_);
-
+//! shift the diagonal of a `nxn` square matrix `A` in double complex data type. which has been
+//! distributed on multi-GPUs in either block-block of block-cyclic faison.
+//! Each GPU may contains different number of diagonal part of the global matrix, espeically for the block-cyclic distribution
+//! On each GPU, it may contains multiple pieces of diagonal to be shifted, and each piece may be of different size.
+//! Hence each piece is determined by `off_m`, `off_n`, `offsize` within the local matrix on each GPU device.
+//!    
+//! @param[in,out] A a pointer to the local piece of matrix to be shifted on each GPU
+//! @param[in] off_m the offset of the row of the first element each piece of diagonal to be shifted within the local matrix `A`
+//! @param[in] off_n the offset of the column of the first element each piece of diagonal to be shifted within the local matrix `A`
+//! @param[in] offsize number of elements to be shifted on each piece
+//! @param[in,out] ldh the leading dimension of local matrix to be shifted
+//! @param[in] shift the value for shifting the diagonal 
+//! @param[in] stream_ an asynchronous CUDA stream which allows to run this function asynchronously
 void chase_shift_mgpu_matrix(std::complex<double>* A, std::size_t* off_m,
                              std::size_t* off_n, std::size_t offsize,
                              std::size_t ldH, double shift,
                              cudaStream_t stream_);
-
+//! shift the diagonal of a `nxn` square matrix `A` in float complex data type. which has been
+//! distributed on multi-GPUs in either block-block of block-cyclic faison.
+//! Each GPU may contains different number of diagonal part of the global matrix, espeically for the block-cyclic distribution
+//! On each GPU, it may contains multiple pieces of diagonal to be shifted, and each piece may be of different size.
+//! Hence each piece is determined by `off_m`, `off_n`, `offsize` within the local matrix on each GPU device.
+//!    
+//! @param[in,out] A a pointer to the local piece of matrix to be shifted on each GPU
+//! @param[in] off_m the offset of the row of the first element each piece of diagonal to be shifted within the local matrix `A`
+//! @param[in] off_n the offset of the column of the first element each piece of diagonal to be shifted within the local matrix `A`
+//! @param[in] offsize number of elements to be shifted on each piece
+//! @param[in,out] ldh the leading dimension of local matrix to be shifted
+//! @param[in] shift the value for shifting the diagonal 
+//! @param[in] stream_ an asynchronous CUDA stream which allows to run this function asynchronously
 void chase_shift_mgpu_matrix(std::complex<float>* A, std::size_t* off_m,
                              std::size_t* off_n, std::size_t offsize,
                              std::size_t ldH, float shift,
                              cudaStream_t stream_);
+
+/** @} */ // end of chase-cuda-utility
 
 namespace chase
 {

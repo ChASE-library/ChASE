@@ -9,7 +9,7 @@
 #define CHASE_ALGORITHM_CONFIGURATION_HPP
 
 #include <complex>
-#include <cstring> //memcpy
+#include <cstring> 
 #include <iomanip>
 #include <random>
 

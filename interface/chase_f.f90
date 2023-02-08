@@ -78,7 +78,7 @@ MODULE chase_diag
 
     INTERFACE      
         SUBROUTINE schase_finalize(flag) bind( c, name = 'schase_finalize_' )
-      !> Finalize shared-memory ChASE with real scalar in double precison.
+      !> Finalize shared-memory ChASE with real scalar in single precison.
       !>    
       !>
       !> @param[in,out] flag A flag to indicate if ChASE has been cleared up         
@@ -129,7 +129,7 @@ MODULE chase_diag
 
     INTERFACE   
         SUBROUTINE cchase_finalize(flag) bind( c, name = 'cchase_finalize_' )
-      !> Finalize shared-memory ChASE with real scalar in double precison.
+      !> Finalize shared-memory ChASE with complex scalar in single precison.
       !>    
       !>
       !> @param[in,out] flag a flag to indicate if ChASE has been cleared up            
@@ -181,7 +181,7 @@ MODULE chase_diag
 
     INTERFACE       
         SUBROUTINE zchase_finalize(flag) bind( c, name = 'zchase_finalize_' )
-      !> Finalize shared-memory ChASE with real scalar in double precison.
+      !> Finalize shared-memory ChASE with complex scalar in double precison.
       !>    
       !>
       !> @param[in,out] flag a flag to indicate if ChASE has been cleared up        

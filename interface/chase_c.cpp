@@ -503,11 +503,31 @@ extern "C"
     {
         *init = ChASE_SEQ_Init<double>(*N, *nev, *nex, H, V, ritzv);
     }
+    //! Initialization of shared-memory ChASE with real scalar in single precison.
+    //! It is linked to single-GPU ChASE when CUDA is detected.
+    //!    
+    //! @param[in] n global matrix size of the matrix to be diagonalized  
+    //! @param[in] nev number of desired eigenpairs
+    //! @param[in] nex extra searching space size      
+    //! @param[in] h pointer to the matrix to be diagonalized
+    //! @param[in,out] v `(nx(nev+nex))` matrix, input is the initial guess eigenvectors, and for output, the first `nev` columns are overwritten by the desired eigenvectors
+    //! @param[in,out] ritzv an array of size `nev` which contains the desired eigenvalues
+    //! @param[in,out] init a flag to indicate if ChASE has been initialized   
     void schase_init_(int* N, int* nev, int* nex, float* H, float* V,
                       float* ritzv, int* init)
     {
         *init = ChASE_SEQ_Init<float>(*N, *nev, *nex, H, V, ritzv);
     }
+    //! Initialization of shared-memory ChASE with complex scalar in single precison.
+    //! It is linked to single-GPU ChASE when CUDA is detected.      
+    //!    
+    //! @param[in] n global matrix size of the matrix to be diagonalized  
+    //! @param[in] nev number of desired eigenpairs
+    //! @param[in] nex extra searching space size      
+    //! @param[in] h pointer to the matrix to be diagonalized
+    //! @param[in,out] v `(nx(nev+nex))` matrix, input is the initial guess eigenvectors, and for output, the first `nev` columns are overwritten by the desired eigenvectors
+    //! @param[in,out] ritzv an array of size `nev` which contains the desired eigenvalues
+    //! @param[in,out] init a flag to indicate if ChASE has been initialized  
     void cchase_init_(int* N, int* nev, int* nex, float _Complex* H,
                       float _Complex* V, float* ritzv, int* init)
     {
@@ -515,6 +535,16 @@ extern "C"
             *N, *nev, *nex, reinterpret_cast<std::complex<float>*>(H),
             reinterpret_cast<std::complex<float>*>(V), ritzv);
     }
+    //! Initialization of shard-memory ChASE with complex scalar in double precison.
+    //! It is linked to single-GPU ChASE when CUDA is detected.      
+    //!    
+    //! @param[in] n global matrix size of the matrix to be diagonalized  
+    //! @param[in] nev number of desired eigenpairs
+    //! @param[in] nex extra searching space size      
+    //! @param[in] h pointer to the matrix to be diagonalized
+    //! @param[in,out] v `(nx(nev+nex))` matrix, input is the initial guess eigenvectors, and for output, the first `nev` columns are overwritten by the desired eigenvectors
+    //! @param[in,out] ritzv an array of size `nev` which contains the desired eigenvalues
+    //! @param[in,out] init a flag to indicate if ChASE has been initialized 
     void zchase_init_(int* N, int* nev, int* nex, double _Complex* H,
                       double _Complex* V, double* ritzv, int* init)
     {
@@ -522,35 +552,90 @@ extern "C"
             *N, *nev, *nex, reinterpret_cast<std::complex<double>*>(H),
             reinterpret_cast<std::complex<double>*>(V), ritzv);
     }
-
+    //! Finalize shared-memory ChASE with real scalar in double precison.
+    //!    
+    //! @param[in,out] flag A flag to indicate if ChASE has been cleared up    
     void dchase_finalize_(int* flag) { *flag = ChASE_SEQ_Finalize<double>(); }
+    //! Finalize shared-memory ChASE with real scalar in single precison.
+    //!    
+    //! @param[in,out] flag A flag to indicate if ChASE has been cleared up 
     void schase_finalize_(int* flag) { *flag = ChASE_SEQ_Finalize<float>(); }
+    //!Finalize shared-memory ChASE with complex scalar in single precison.
+    //!   
+    //!@param[in,out] flag a flag to indicate if ChASE has been cleared up   
     void cchase_finalize_(int* flag)
     {
         *flag = ChASE_SEQ_Finalize<std::complex<float>>();
     }
+    //! Finalize shared-memory ChASE with complex scalar in double precison.
+    //!    
+    //! @param[in,out] flag a flag to indicate if ChASE has been cleared up  
     void zchase_finalize_(int* flag)
     {
         *flag = ChASE_SEQ_Finalize<std::complex<double>>();
     }
-
+    //! Solve the eigenvalue by the previously constructed shared-memory ChASE (real scalar in double precision).
+    //! The buffer of matrix to be diagonalized, of ritz pairs have provided during the initialization of solver.
+    //!    
+    //! @param[in] deg initial degree of Cheyshev polynomial filter
+    //! @param[in] tol desired absolute tolerance of computed eigenpairs
+    //! @param[in] mode for sequences of eigenproblems, if reusing the eigenpairs obtained from last system. If `mode = A`, reuse, otherwise, not.  
+    //! @param[in] opt determining if using internal optimization of Chebyshev polynomial degree. If `opt=S`, use, otherwise, no.         
     void dchase_(int* deg, double* tol, char* mode, char* opt)
     {
         ChASE_SEQ_Solve<double>(deg, tol, mode, opt);
     }
+    //! Solve the eigenvalue by the previously constructed shared-memory ChASE (real scalar in single precision).
+    //! The buffer of matrix to be diagonalized, of ritz pairs have provided during the initialization of solver.
+    //!    
+    //! @param[in] deg initial degree of Cheyshev polynomial filter
+    //! @param[in] tol desired absolute tolerance of computed eigenpairs
+    //! @param[in] mode for sequences of eigenproblems, if reusing the eigenpairs obtained from last system. If `mode = A`, reuse, otherwise, not.  
+    //! @param[in] opt determining if using internal optimization of Chebyshev polynomial degree. If `opt=S`, use, otherwise, no.             
     void schase_(int* deg, float* tol, char* mode, char* opt)
     {
         ChASE_SEQ_Solve<float>(deg, tol, mode, opt);
     }
+    //! Solve the eigenvalue by the previously constructed shared-memory ChASE (complex scalar in double precision).
+    //! The buffer of matrix to be diagonalized, of ritz pairs have provided during the initialization of solver.
+    //!    
+    //! @param[in] deg initial degree of Cheyshev polynomial filter
+    //! @param[in] tol desired absolute tolerance of computed eigenpairs
+    //! @param[in] mode for sequences of eigenproblems, if reusing the eigenpairs obtained from last system. If `mode = A`, reuse, otherwise, not.  
+    //! @param[in] opt determining if using internal optimization of Chebyshev polynomial degree. If `opt=S`, use, otherwise, no.              
     void zchase_(int* deg, double* tol, char* mode, char* opt)
     {
         ChASE_SEQ_Solve<std::complex<double>>(deg, tol, mode, opt);
     }
+    //! Solve the eigenvalue by the previously constructed shared-memory ChASE (complex scalar in single precision).
+    //! The buffer of matrix to be diagonalized, of ritz pairs have provided during the initialization of solver.
+    //!    
+    //! @param[in] deg initial degree of Cheyshev polynomial filter
+    //! @param[in] tol desired absolute tolerance of computed eigenpairs
+    //! @param[in] mode for sequences of eigenproblems, if reusing the eigenpairs obtained from last system. If `mode = A`, reuse, otherwise, not.  
+    //! @param[in] opt determining if using internal optimization of Chebyshev polynomial degree. If `opt=S`, use, otherwise, no.      
     void cchase_(int* deg, float* tol, char* mode, char* opt)
     {
         ChASE_SEQ_Solve<std::complex<float>>(deg, tol, mode, opt);
     }
-
+    //! Initialization of distributed-memory ChASE with real scalar in double precison.
+    //! The matrix to be diagonalized is already in block-block distribution.
+    //! It is linked to distributed multi-GPU ChASE when CUDA is detected.
+    //!    
+    //! @param[in] N global matrix size of the matrix to be diagonalized  
+    //! @param[in] nev number of desired eigenpairs
+    //! @param[in] nex extra searching space size      
+    //! @param[in] h pointer to the matrix to be diagonalized. `h` is a block-block distribution of global matrix of size `mxn`, its leading dimension is `ldh`
+    //! @param[in] ldh leading dimension of `h` on each MPI process
+    //! @param[in] m max row number of local matrix `h` on each MPI process
+    //! @param[in] n max column number of local matrix `h` on each MPI process
+    //! @param[in,out] v `(mx(nev+nex))` matrix, input is the initial guess eigenvectors, and for output, the first `nev` columns are overwritten by the desired eigenvectors. `v` is only partially distributed within column communicator. It is reduandant among different column communicator.
+    //! @param[in,out] ritzv an array of size `nev` which contains the desired eigenvalues
+    //! @param[in] dim0 row number of 2D MPI grid
+    //! @param[in] dim1 column number of 2D MPI grid      
+    //! @param[in] grid_major major of 2D MPI grid. Row major: `grid_major=R`, column major: `grid_major=C`
+    //! @param[in] comm the working MPI-C communicator      
+    //! @param[in,out] init a flag to indicate if ChASE has been initialized  
     void pdchase_init_(int* N, int* nev, int* nex, int* m, int* n, double* H,
                        int* ldh, double* V, double* ritzv, int* dim0, int* dim1,
                        char* grid_major, MPI_Comm* comm, int* init)
@@ -558,7 +643,25 @@ extern "C"
         *init = ChASE_DIST_Init<double>(*N, *nev, *nex, *m, *n, H, *ldh, V,
                                         ritzv, *dim0, *dim1, grid_major, *comm);
     }
-
+    //! Initialization of distributed-memory ChASE with real scalar in double precison.
+    //! The matrix to be diagonalized is already in block-block distribution.
+    //! It is linked to distributed multi-GPU ChASE when CUDA is detected.
+    //! **This function is only used for the ChASE-Fortran interface**. For the usage of C interface, please call \ref pdchase_init_.
+    //!    
+    //! @param[in] N global matrix size of the matrix to be diagonalized  
+    //! @param[in] nev number of desired eigenpairs
+    //! @param[in] nex extra searching space size      
+    //! @param[in] h pointer to the matrix to be diagonalized. `h` is a block-block distribution of global matrix of size `mxn`, its leading dimension is `ldh`
+    //! @param[in] ldh leading dimension of `h` on each MPI process
+    //! @param[in] m max row number of local matrix `h` on each MPI process
+    //! @param[in] n max column number of local matrix `h` on each MPI process
+    //! @param[in,out] v `(mx(nev+nex))` matrix, input is the initial guess eigenvectors, and for output, the first `nev` columns are overwritten by the desired eigenvectors. `v` is only partially distributed within column communicator. It is reduandant among different column communicator.
+    //! @param[in,out] ritzv an array of size `nev` which contains the desired eigenvalues
+    //! @param[in] dim0 row number of 2D MPI grid
+    //! @param[in] dim1 column number of 2D MPI grid      
+    //! @param[in] grid_major major of 2D MPI grid. Row major: `grid_major=R`, column major: `grid_major=C`
+    //! @param[in] fcomm the working MPI-Fortran communicator      
+    //! @param[in,out] init a flag to indicate if ChASE has been initialized 
     void pdchase_init_f_(int* N, int* nev, int* nex, int* m, int* n, double* H,
                          int* ldh, double* V, double* ritzv, int* dim0,
                          int* dim1, char* grid_major, MPI_Fint* fcomm,
@@ -568,7 +671,24 @@ extern "C"
         *init = ChASE_DIST_Init<double>(*N, *nev, *nex, *m, *n, H, *ldh, V,
                                         ritzv, *dim0, *dim1, grid_major, comm);
     }
-
+    //! Initialization of distributed-memory ChASE with real scalar in single precison.
+    //! The matrix to be diagonalized is already in block-block distribution.
+    //! It is linked to distributed multi-GPU ChASE when CUDA is detected.
+    //!    
+    //! @param[in] N global matrix size of the matrix to be diagonalized  
+    //! @param[in] nev number of desired eigenpairs
+    //! @param[in] nex extra searching space size      
+    //! @param[in] h pointer to the matrix to be diagonalized. `h` is a block-block distribution of global matrix of size `mxn`, its leading dimension is `ldh`
+    //! @param[in] ldh leading dimension of `h` on each MPI process
+    //! @param[in] m max row number of local matrix `h` on each MPI process
+    //! @param[in] n max column number of local matrix `h` on each MPI process
+    //! @param[in,out] v `(mx(nev+nex))` matrix, input is the initial guess eigenvectors, and for output, the first `nev` columns are overwritten by the desired eigenvectors. `v` is only partially distributed within column communicator. It is reduandant among different column communicator.
+    //! @param[in,out] ritzv an array of size `nev` which contains the desired eigenvalues
+    //! @param[in] dim0 row number of 2D MPI grid
+    //! @param[in] dim1 column number of 2D MPI grid      
+    //! @param[in] grid_major major of 2D MPI grid. Row major: `grid_major=R`, column major: `grid_major=C`
+    //! @param[in] comm the working MPI-C communicator      
+    //! @param[in,out] init a flag to indicate if ChASE has been initialized  
     void pschase_init_(int* N, int* nev, int* nex, int* m, int* n, float* H,
                        int* ldh, float* V, float* ritzv, int* dim0, int* dim1,
                        char* grid_major, MPI_Comm* comm, int* init)
@@ -576,7 +696,25 @@ extern "C"
         *init = ChASE_DIST_Init<float>(*N, *nev, *nex, *m, *n, H, *ldh, V,
                                        ritzv, *dim0, *dim1, grid_major, *comm);
     }
-
+    //! Initialization of distributed-memory ChASE with real scalar in single precison.
+    //! The matrix to be diagonalized is already in block-block distribution.
+    //! It is linked to distributed multi-GPU ChASE when CUDA is detected.
+    //! **This function is only used for the ChASE-Fortran interface**. For the usage of C interface, please call \ref pschase_init_.
+    //!    
+    //! @param[in] N global matrix size of the matrix to be diagonalized  
+    //! @param[in] nev number of desired eigenpairs
+    //! @param[in] nex extra searching space size      
+    //! @param[in] h pointer to the matrix to be diagonalized. `h` is a block-block distribution of global matrix of size `mxn`, its leading dimension is `ldh`
+    //! @param[in] ldh leading dimension of `h` on each MPI process
+    //! @param[in] m max row number of local matrix `h` on each MPI process
+    //! @param[in] n max column number of local matrix `h` on each MPI process
+    //! @param[in,out] v `(mx(nev+nex))` matrix, input is the initial guess eigenvectors, and for output, the first `nev` columns are overwritten by the desired eigenvectors. `v` is only partially distributed within column communicator. It is reduandant among different column communicator.
+    //! @param[in,out] ritzv an array of size `nev` which contains the desired eigenvalues
+    //! @param[in] dim0 row number of 2D MPI grid
+    //! @param[in] dim1 column number of 2D MPI grid      
+    //! @param[in] grid_major major of 2D MPI grid. Row major: `grid_major=R`, column major: `grid_major=C`
+    //! @param[in] fcomm the working MPI-Fortran communicator      
+    //! @param[in,out] init a flag to indicate if ChASE has been initialized 
     void pschase_init_f_(int* N, int* nev, int* nex, int* m, int* n, float* H,
                          int* ldh, float* V, float* ritzv, int* dim0, int* dim1,
                          char* grid_major, MPI_Fint* fcomm, int* init)
@@ -585,7 +723,24 @@ extern "C"
         *init = ChASE_DIST_Init<float>(*N, *nev, *nex, *m, *n, H, *ldh, V,
                                        ritzv, *dim0, *dim1, grid_major, comm);
     }
-
+    //! Initialization of distributed-memory ChASE with complex scalar in double precison.
+    //! The matrix to be diagonalized is already in block-block distribution.
+    //! It is linked to distributed multi-GPU ChASE when CUDA is detected.
+    //!    
+    //! @param[in] N global matrix size of the matrix to be diagonalized  
+    //! @param[in] nev number of desired eigenpairs
+    //! @param[in] nex extra searching space size      
+    //! @param[in] h pointer to the matrix to be diagonalized. `h` is a block-block distribution of global matrix of size `mxn`, its leading dimension is `ldh`
+    //! @param[in] ldh leading dimension of `h` on each MPI process
+    //! @param[in] m max row number of local matrix `h` on each MPI process
+    //! @param[in] n max column number of local matrix `h` on each MPI process
+    //! @param[in,out] v `(mx(nev+nex))` matrix, input is the initial guess eigenvectors, and for output, the first `nev` columns are overwritten by the desired eigenvectors. `v` is only partially distributed within column communicator. It is reduandant among different column communicator.
+    //! @param[in,out] ritzv an array of size `nev` which contains the desired eigenvalues
+    //! @param[in] dim0 row number of 2D MPI grid
+    //! @param[in] dim1 column number of 2D MPI grid      
+    //! @param[in] grid_major major of 2D MPI grid. Row major: `grid_major=R`, column major: `grid_major=C`
+    //! @param[in] comm the working MPI-C communicator      
+    //! @param[in,out] init a flag to indicate if ChASE has been initialized  
     void pzchase_init_(int* N, int* nev, int* nex, int* m, int* n,
                        double _Complex* H, int* ldh, double _Complex* V,
                        double* ritzv, int* dim0, int* dim1, char* grid_major,
@@ -596,7 +751,25 @@ extern "C"
             *ldh, reinterpret_cast<std::complex<double>*>(V), ritzv, *dim0,
             *dim1, grid_major, *comm);
     }
-
+    //! Initialization of distributed-memory ChASE with complex scalar in double precison.
+    //! The matrix to be diagonalized is already in block-block distribution.
+    //! It is linked to distributed multi-GPU ChASE when CUDA is detected.
+    //! **This function is only used for the ChASE-Fortran interface**. For the usage of C interface, please call \ref pzchase_init_.
+    //!    
+    //! @param[in] N global matrix size of the matrix to be diagonalized  
+    //! @param[in] nev number of desired eigenpairs
+    //! @param[in] nex extra searching space size      
+    //! @param[in] h pointer to the matrix to be diagonalized. `h` is a block-block distribution of global matrix of size `mxn`, its leading dimension is `ldh`
+    //! @param[in] ldh leading dimension of `h` on each MPI process
+    //! @param[in] m max row number of local matrix `h` on each MPI process
+    //! @param[in] n max column number of local matrix `h` on each MPI process
+    //! @param[in,out] v `(mx(nev+nex))` matrix, input is the initial guess eigenvectors, and for output, the first `nev` columns are overwritten by the desired eigenvectors. `v` is only partially distributed within column communicator. It is reduandant among different column communicator.
+    //! @param[in,out] ritzv an array of size `nev` which contains the desired eigenvalues
+    //! @param[in] dim0 row number of 2D MPI grid
+    //! @param[in] dim1 column number of 2D MPI grid      
+    //! @param[in] grid_major major of 2D MPI grid. Row major: `grid_major=R`, column major: `grid_major=C`
+    //! @param[in] fcomm the working MPI-Fortran communicator      
+    //! @param[in,out] init a flag to indicate if ChASE has been initialized 
     void pzchase_init_f_(int* N, int* nev, int* nex, int* m, int* n,
                          double _Complex* H, int* ldh, double _Complex* V,
                          double* ritzv, int* dim0, int* dim1, char* grid_major,
@@ -608,7 +781,24 @@ extern "C"
             *ldh, reinterpret_cast<std::complex<double>*>(V), ritzv, *dim0,
             *dim1, grid_major, comm);
     }
-
+    //! Initialization of distributed-memory ChASE with complex scalar in single precison.
+    //! The matrix to be diagonalized is already in block-block distribution.
+    //! It is linked to distributed multi-GPU ChASE when CUDA is detected.
+    //!    
+    //! @param[in] N global matrix size of the matrix to be diagonalized  
+    //! @param[in] nev number of desired eigenpairs
+    //! @param[in] nex extra searching space size      
+    //! @param[in] h pointer to the matrix to be diagonalized. `h` is a block-block distribution of global matrix of size `mxn`, its leading dimension is `ldh`
+    //! @param[in] ldh leading dimension of `h` on each MPI process
+    //! @param[in] m max row number of local matrix `h` on each MPI process
+    //! @param[in] n max column number of local matrix `h` on each MPI process
+    //! @param[in,out] v `(mx(nev+nex))` matrix, input is the initial guess eigenvectors, and for output, the first `nev` columns are overwritten by the desired eigenvectors. `v` is only partially distributed within column communicator. It is reduandant among different column communicator.
+    //! @param[in,out] ritzv an array of size `nev` which contains the desired eigenvalues
+    //! @param[in] dim0 row number of 2D MPI grid
+    //! @param[in] dim1 column number of 2D MPI grid      
+    //! @param[in] grid_major major of 2D MPI grid. Row major: `grid_major=R`, column major: `grid_major=C`
+    //! @param[in] comm the working MPI-C communicator      
+    //! @param[in,out] init a flag to indicate if ChASE has been initialized  
     void pcchase_init_(int* N, int* nev, int* nex, int* m, int* n,
                        float _Complex* H, int* ldh, float _Complex* V,
                        float* ritzv, int* dim0, int* dim1, char* grid_major,
@@ -619,7 +809,25 @@ extern "C"
             *ldh, reinterpret_cast<std::complex<float>*>(V), ritzv, *dim0,
             *dim1, grid_major, *comm);
     }
-
+    //! Initialization of distributed-memory ChASE with complex scalar in double precison.
+    //! The matrix to be diagonalized is already in block-block distribution.
+    //! It is linked to distributed multi-GPU ChASE when CUDA is detected.
+    //! **This function is only used for the ChASE-Fortran interface**. For the usage of C interface, please call \ref pcchase_init_.
+    //!    
+    //! @param[in] N global matrix size of the matrix to be diagonalized  
+    //! @param[in] nev number of desired eigenpairs
+    //! @param[in] nex extra searching space size      
+    //! @param[in] h pointer to the matrix to be diagonalized. `h` is a block-block distribution of global matrix of size `mxn`, its leading dimension is `ldh`
+    //! @param[in] ldh leading dimension of `h` on each MPI process
+    //! @param[in] m max row number of local matrix `h` on each MPI process
+    //! @param[in] n max column number of local matrix `h` on each MPI process
+    //! @param[in,out] v `(mx(nev+nex))` matrix, input is the initial guess eigenvectors, and for output, the first `nev` columns are overwritten by the desired eigenvectors. `v` is only partially distributed within column communicator. It is reduandant among different column communicator.
+    //! @param[in,out] ritzv an array of size `nev` which contains the desired eigenvalues
+    //! @param[in] dim0 row number of 2D MPI grid
+    //! @param[in] dim1 column number of 2D MPI grid      
+    //! @param[in] grid_major major of 2D MPI grid. Row major: `grid_major=R`, column major: `grid_major=C`
+    //! @param[in] fcomm the working MPI-Fortran communicator      
+    //! @param[in,out] init a flag to indicate if ChASE has been initialized 
     void pcchase_init_f_(int* N, int* nev, int* nex, int* m, int* n,
                          float _Complex* H, int* ldh, float _Complex* V,
                          float* ritzv, int* dim0, int* dim1, char* grid_major,
@@ -631,7 +839,26 @@ extern "C"
             *ldh, reinterpret_cast<std::complex<float>*>(V), ritzv, *dim0,
             *dim1, grid_major, comm);
     }
-
+    //! Initialization of distributed-memory ChASE with real scalar in double precison.
+    //! The matrix to be diagonalized is already in block-cyclic distribution.
+    //! It is linked to distributed multi-GPU ChASE when CUDA is detected.
+    //!    
+    //! @param[in] N global matrix size of the matrix to be diagonalized  
+    //! @param[in] nev number of desired eigenpairs
+    //! @param[in] nex extra searching space size   
+    //! @param[in] mbsize block size for the block-cyclic distribution for the rows of global matrix
+    //! @param[in] nbsize block size for the block-cyclic distribution for the cloumns of global matrix
+    //! @param[in] h pointer to the matrix to be diagonalized. `h` is a block-cyclic distribution of global matrix of size `mxn`, its leading dimension is `ldh`
+    //! @param[in] ldh leading dimension of `h` on each MPI process
+    //! @param[in,out] v `(mx(nev+nex))` matrix, input is the initial guess eigenvectors, and for output, the first `nev` columns are overwritten by the desired eigenvectors. `v` is only partially distributed within column communicator in 1D block-cyclic distribution with a same block factor `mbsize`. It is reduandant among different column communicator.
+    //! @param[in,out] ritzv an array of size `nev` which contains the desired eigenvalues
+    //! @param[in] dim0 row number of 2D MPI grid
+    //! @param[in] dim1 column number of 2D MPI grid      
+    //! @param[in] grid_major major of 2D MPI grid. Row major: `grid_major=R`, column major: `grid_major=C`
+    //! @param[in] irsrc process row over which the first row of the global matrix `h` is distributed.
+    //! @param[in] icsrc process column over which the first column of the global matrix `h` is distributed.      
+    //! @param[in] comm the working MPI-C communicator      
+    //! @param[in,out] init a flag to indicate if ChASE has been initialized    
     void pdchase_init_blockcyclic_(int* N, int* nev, int* nex, int* mbsize,
                                    int* nbsize, double* H, int* ldh, double* V,
                                    double* ritzv, int* dim0, int* dim1,
@@ -642,7 +869,27 @@ extern "C"
                                         *ldh, V, ritzv, *dim0, *dim1,
                                         grid_major, *irsrc, *icsrc, *comm);
     }
-
+    //! Initialization of distributed-memory ChASE with real scalar in double precison.
+    //! The matrix to be diagonalized is already in block-cyclic distribution.
+    //! It is linked to distributed multi-GPU ChASE when CUDA is detected.
+    //! **This function is only used for the ChASE-Fortran interface**. For the usage of C interface, please call \ref pdchase_init_blockcyclic_.    
+    //!    
+    //! @param[in] N global matrix size of the matrix to be diagonalized  
+    //! @param[in] nev number of desired eigenpairs
+    //! @param[in] nex extra searching space size   
+    //! @param[in] mbsize block size for the block-cyclic distribution for the rows of global matrix
+    //! @param[in] nbsize block size for the block-cyclic distribution for the cloumns of global matrix
+    //! @param[in] h pointer to the matrix to be diagonalized. `h` is a block-cyclic distribution of global matrix of size `mxn`, its leading dimension is `ldh`
+    //! @param[in] ldh leading dimension of `h` on each MPI process
+    //! @param[in,out] v `(mx(nev+nex))` matrix, input is the initial guess eigenvectors, and for output, the first `nev` columns are overwritten by the desired eigenvectors. `v` is only partially distributed within column communicator in 1D block-cyclic distribution with a same block factor `mbsize`. It is reduandant among different column communicator.
+    //! @param[in,out] ritzv an array of size `nev` which contains the desired eigenvalues
+    //! @param[in] dim0 row number of 2D MPI grid
+    //! @param[in] dim1 column number of 2D MPI grid      
+    //! @param[in] grid_major major of 2D MPI grid. Row major: `grid_major=R`, column major: `grid_major=C`
+    //! @param[in] irsrc process row over which the first row of the global matrix `h` is distributed.
+    //! @param[in] icsrc process column over which the first column of the global matrix `h` is distributed.      
+    //! @param[in] fcomm the working MPI-Fortran communicator      
+    //! @param[in,out] init a flag to indicate if ChASE has been initialized    
     void pdchase_init_blockcyclic_f_(int* N, int* nev, int* nex, int* mbsize,
                                      int* nbsize, double* H, int* ldh,
                                      double* V, double* ritzv, int* dim0,
@@ -654,7 +901,26 @@ extern "C"
                                         *ldh, V, ritzv, *dim0, *dim1,
                                         grid_major, *irsrc, *icsrc, comm);
     }
-
+    //! Initialization of distributed-memory ChASE with real scalar in single precison.
+    //! The matrix to be diagonalized is already in block-cyclic distribution.
+    //! It is linked to distributed multi-GPU ChASE when CUDA is detected.
+    //!    
+    //! @param[in] N global matrix size of the matrix to be diagonalized  
+    //! @param[in] nev number of desired eigenpairs
+    //! @param[in] nex extra searching space size   
+    //! @param[in] mbsize block size for the block-cyclic distribution for the rows of global matrix
+    //! @param[in] nbsize block size for the block-cyclic distribution for the cloumns of global matrix
+    //! @param[in] h pointer to the matrix to be diagonalized. `h` is a block-cyclic distribution of global matrix of size `mxn`, its leading dimension is `ldh`
+    //! @param[in] ldh leading dimension of `h` on each MPI process
+    //! @param[in,out] v `(mx(nev+nex))` matrix, input is the initial guess eigenvectors, and for output, the first `nev` columns are overwritten by the desired eigenvectors. `v` is only partially distributed within column communicator in 1D block-cyclic distribution with a same block factor `mbsize`. It is reduandant among different column communicator.
+    //! @param[in,out] ritzv an array of size `nev` which contains the desired eigenvalues
+    //! @param[in] dim0 row number of 2D MPI grid
+    //! @param[in] dim1 column number of 2D MPI grid      
+    //! @param[in] grid_major major of 2D MPI grid. Row major: `grid_major=R`, column major: `grid_major=C`
+    //! @param[in] irsrc process row over which the first row of the global matrix `h` is distributed.
+    //! @param[in] icsrc process column over which the first column of the global matrix `h` is distributed.      
+    //! @param[in] comm the working MPI-C communicator      
+    //! @param[in,out] init a flag to indicate if ChASE has been initialized  
     void pschase_init_blockcyclic_(int* N, int* nev, int* nex, int* mbsize,
                                    int* nbsize, float* H, int* ldh, float* V,
                                    float* ritzv, int* dim0, int* dim1,
@@ -665,7 +931,27 @@ extern "C"
                                        *ldh, V, ritzv, *dim0, *dim1, grid_major,
                                        *irsrc, *icsrc, *comm);
     }
-
+    //! Initialization of distributed-memory ChASE with real scalar in single precison.
+    //! The matrix to be diagonalized is already in block-cyclic distribution.
+    //! It is linked to distributed multi-GPU ChASE when CUDA is detected.
+    //! **This function is only used for the ChASE-Fortran interface**. For the usage of C interface, please call \ref pschase_init_blockcyclic_.    
+    //!    
+    //! @param[in] N global matrix size of the matrix to be diagonalized  
+    //! @param[in] nev number of desired eigenpairs
+    //! @param[in] nex extra searching space size   
+    //! @param[in] mbsize block size for the block-cyclic distribution for the rows of global matrix
+    //! @param[in] nbsize block size for the block-cyclic distribution for the cloumns of global matrix
+    //! @param[in] h pointer to the matrix to be diagonalized. `h` is a block-cyclic distribution of global matrix of size `mxn`, its leading dimension is `ldh`
+    //! @param[in] ldh leading dimension of `h` on each MPI process
+    //! @param[in,out] v `(mx(nev+nex))` matrix, input is the initial guess eigenvectors, and for output, the first `nev` columns are overwritten by the desired eigenvectors. `v` is only partially distributed within column communicator in 1D block-cyclic distribution with a same block factor `mbsize`. It is reduandant among different column communicator.
+    //! @param[in,out] ritzv an array of size `nev` which contains the desired eigenvalues
+    //! @param[in] dim0 row number of 2D MPI grid
+    //! @param[in] dim1 column number of 2D MPI grid      
+    //! @param[in] grid_major major of 2D MPI grid. Row major: `grid_major=R`, column major: `grid_major=C`
+    //! @param[in] irsrc process row over which the first row of the global matrix `h` is distributed.
+    //! @param[in] icsrc process column over which the first column of the global matrix `h` is distributed.      
+    //! @param[in] fcomm the working MPI-Fortran communicator      
+    //! @param[in,out] init a flag to indicate if ChASE has been initialized  
     void pschase_init_blockcyclic_f_(int* N, int* nev, int* nex, int* mbsize,
                                      int* nbsize, float* H, int* ldh, float* V,
                                      float* ritzv, int* dim0, int* dim1,
@@ -677,7 +963,26 @@ extern "C"
                                        *ldh, V, ritzv, *dim0, *dim1, grid_major,
                                        *irsrc, *icsrc, comm);
     }
-
+    //! Initialization of distributed-memory ChASE with complex scalar in single precison.
+    //! The matrix to be diagonalized is already in block-cyclic distribution.
+    //! It is linked to distributed multi-GPU ChASE when CUDA is detected.
+    //!    
+    //! @param[in] N global matrix size of the matrix to be diagonalized  
+    //! @param[in] nev number of desired eigenpairs
+    //! @param[in] nex extra searching space size   
+    //! @param[in] mbsize block size for the block-cyclic distribution for the rows of global matrix
+    //! @param[in] nbsize block size for the block-cyclic distribution for the cloumns of global matrix
+    //! @param[in] h pointer to the matrix to be diagonalized. `h` is a block-cyclic distribution of global matrix of size `mxn`, its leading dimension is `ldh`
+    //! @param[in] ldh leading dimension of `h` on each MPI process
+    //! @param[in,out] v `(mx(nev+nex))` matrix, input is the initial guess eigenvectors, and for output, the first `nev` columns are overwritten by the desired eigenvectors. `v` is only partially distributed within column communicator in 1D block-cyclic distribution with a same block factor `mbsize`. It is reduandant among different column communicator.
+    //! @param[in,out] ritzv an array of size `nev` which contains the desired eigenvalues
+    //! @param[in] dim0 row number of 2D MPI grid
+    //! @param[in] dim1 column number of 2D MPI grid      
+    //! @param[in] grid_major major of 2D MPI grid. Row major: `grid_major=R`, column major: `grid_major=C`
+    //! @param[in] irsrc process row over which the first row of the global matrix `h` is distributed.
+    //! @param[in] icsrc process column over which the first column of the global matrix `h` is distributed.      
+    //! @param[in] comm the working MPI-C communicator      
+    //! @param[in,out] init a flag to indicate if ChASE has been initialized  
     void pcchase_init_blockcyclic_(int* N, int* nev, int* nex, int* mbsize,
                                    int* nbsize, float _Complex* H, int* ldh,
                                    float _Complex* V, float* ritzv, int* dim0,
@@ -690,7 +995,27 @@ extern "C"
             reinterpret_cast<std::complex<float>*>(V), ritzv, *dim0, *dim1,
             grid_major, *irsrc, *icsrc, *comm);
     }
-
+    //! Initialization of distributed-memory ChASE with complex scalar in single precison.
+    //! The matrix to be diagonalized is already in block-cyclic distribution.
+    //! It is linked to distributed multi-GPU ChASE when CUDA is detected.
+    //! **This function is only used for the ChASE-Fortran interface**. For the usage of C interface, please call \ref pcchase_init_blockcyclic_.    
+    //!    
+    //! @param[in] N global matrix size of the matrix to be diagonalized  
+    //! @param[in] nev number of desired eigenpairs
+    //! @param[in] nex extra searching space size   
+    //! @param[in] mbsize block size for the block-cyclic distribution for the rows of global matrix
+    //! @param[in] nbsize block size for the block-cyclic distribution for the cloumns of global matrix
+    //! @param[in] h pointer to the matrix to be diagonalized. `h` is a block-cyclic distribution of global matrix of size `mxn`, its leading dimension is `ldh`
+    //! @param[in] ldh leading dimension of `h` on each MPI process
+    //! @param[in,out] v `(mx(nev+nex))` matrix, input is the initial guess eigenvectors, and for output, the first `nev` columns are overwritten by the desired eigenvectors. `v` is only partially distributed within column communicator in 1D block-cyclic distribution with a same block factor `mbsize`. It is reduandant among different column communicator.
+    //! @param[in,out] ritzv an array of size `nev` which contains the desired eigenvalues
+    //! @param[in] dim0 row number of 2D MPI grid
+    //! @param[in] dim1 column number of 2D MPI grid      
+    //! @param[in] grid_major major of 2D MPI grid. Row major: `grid_major=R`, column major: `grid_major=C`
+    //! @param[in] irsrc process row over which the first row of the global matrix `h` is distributed.
+    //! @param[in] icsrc process column over which the first column of the global matrix `h` is distributed.      
+    //! @param[in] fcomm the working MPI-Fortran communicator      
+    //! @param[in,out] init a flag to indicate if ChASE has been initialized  
     void pcchase_init_blockcyclic_f_(int* N, int* nev, int* nex, int* mbsize,
                                      int* nbsize, float _Complex* H, int* ldh,
                                      float _Complex* V, float* ritzv, int* dim0,
@@ -704,7 +1029,26 @@ extern "C"
             reinterpret_cast<std::complex<float>*>(V), ritzv, *dim0, *dim1,
             grid_major, *irsrc, *icsrc, comm);
     }
-
+    //! Initialization of distributed-memory ChASE with complex scalar in double precison.
+    //! The matrix to be diagonalized is already in block-cyclic distribution.
+    //! It is linked to distributed multi-GPU ChASE when CUDA is detected.
+    //!    
+    //! @param[in] N global matrix size of the matrix to be diagonalized  
+    //! @param[in] nev number of desired eigenpairs
+    //! @param[in] nex extra searching space size   
+    //! @param[in] mbsize block size for the block-cyclic distribution for the rows of global matrix
+    //! @param[in] nbsize block size for the block-cyclic distribution for the cloumns of global matrix
+    //! @param[in] h pointer to the matrix to be diagonalized. `h` is a block-cyclic distribution of global matrix of size `mxn`, its leading dimension is `ldh`
+    //! @param[in] ldh leading dimension of `h` on each MPI process
+    //! @param[in,out] v `(mx(nev+nex))` matrix, input is the initial guess eigenvectors, and for output, the first `nev` columns are overwritten by the desired eigenvectors. `v` is only partially distributed within column communicator in 1D block-cyclic distribution with a same block factor `mbsize`. It is reduandant among different column communicator.
+    //! @param[in,out] ritzv an array of size `nev` which contains the desired eigenvalues
+    //! @param[in] dim0 row number of 2D MPI grid
+    //! @param[in] dim1 column number of 2D MPI grid      
+    //! @param[in] grid_major major of 2D MPI grid. Row major: `grid_major=R`, column major: `grid_major=C`
+    //! @param[in] irsrc process row over which the first row of the global matrix `h` is distributed.
+    //! @param[in] icsrc process column over which the first column of the global matrix `h` is distributed.      
+    //! @param[in] comm the working MPI-C communicator      
+    //! @param[in,out] init a flag to indicate if ChASE has been initialized 
     void pzchase_init_blockcyclic_(int* N, int* nev, int* nex, int* mbsize,
                                    int* nbsize, double _Complex* H, int* ldh,
                                    double _Complex* V, double* ritzv, int* dim0,
@@ -717,7 +1061,27 @@ extern "C"
             reinterpret_cast<std::complex<double>*>(V), ritzv, *dim0, *dim1,
             grid_major, *irsrc, *icsrc, *comm);
     }
-
+    //! Initialization of distributed-memory ChASE with complex scalar in double precison.
+    //! The matrix to be diagonalized is already in block-cyclic distribution.
+    //! It is linked to distributed multi-GPU ChASE when CUDA is detected.
+    //! **This function is only used for the ChASE-Fortran interface**. For the usage of C interface, please call \ref pzchase_init_blockcyclic_.    
+    //!    
+    //! @param[in] N global matrix size of the matrix to be diagonalized  
+    //! @param[in] nev number of desired eigenpairs
+    //! @param[in] nex extra searching space size   
+    //! @param[in] mbsize block size for the block-cyclic distribution for the rows of global matrix
+    //! @param[in] nbsize block size for the block-cyclic distribution for the cloumns of global matrix
+    //! @param[in] h pointer to the matrix to be diagonalized. `h` is a block-cyclic distribution of global matrix of size `mxn`, its leading dimension is `ldh`
+    //! @param[in] ldh leading dimension of `h` on each MPI process
+    //! @param[in,out] v `(mx(nev+nex))` matrix, input is the initial guess eigenvectors, and for output, the first `nev` columns are overwritten by the desired eigenvectors. `v` is only partially distributed within column communicator in 1D block-cyclic distribution with a same block factor `mbsize`. It is reduandant among different column communicator.
+    //! @param[in,out] ritzv an array of size `nev` which contains the desired eigenvalues
+    //! @param[in] dim0 row number of 2D MPI grid
+    //! @param[in] dim1 column number of 2D MPI grid      
+    //! @param[in] grid_major major of 2D MPI grid. Row major: `grid_major=R`, column major: `grid_major=C`
+    //! @param[in] irsrc process row over which the first row of the global matrix `h` is distributed.
+    //! @param[in] icsrc process column over which the first column of the global matrix `h` is distributed.      
+    //! @param[in] fcomm the working MPI-Fortran communicator      
+    //! @param[in,out] init a flag to indicate if ChASE has been initialized  
     void pzchase_init_blockcyclic_f_(int* N, int* nev, int* nex, int* mbsize,
                                      int* nbsize, double _Complex* H, int* ldh,
                                      double _Complex* V, double* ritzv,
@@ -732,30 +1096,69 @@ extern "C"
             reinterpret_cast<std::complex<double>*>(V), ritzv, *dim0, *dim1,
             grid_major, *irsrc, *icsrc, comm);
     }
-
+    
+    //! Finalize distributed-memory ChASE with real scalar in double precison.
+    //!    
+    //! @param[in,out] flag A flag to indicate if ChASE has been cleared up
     void pdchase_finalize_(int* flag) { *flag = ChASE_DIST_Finalize<double>(); }
+    //! Finalize distributed-memory ChASE with real scalar in single precison.
+    //!    
+    //! @param[in,out] flag A flag to indicate if ChASE has been cleared up    
     void pschase_finalize_(int* flag) { *flag = ChASE_DIST_Finalize<float>(); }
+    //! Finalize distributed-memory ChASE with complex scalar in single precison.
+    //!    
+    //! @param[in,out] flag A flag to indicate if ChASE has been cleared up    
     void pcchase_finalize_(int* flag)
     {
         *flag = ChASE_DIST_Finalize<std::complex<float>>();
     }
+    //! Finalize distributed-memory ChASE with complex scalar in double precison.
+    //!    
+    //! @param[in,out] flag A flag to indicate if ChASE has been cleared up        
     void pzchase_finalize_(int* flag)
     {
         *flag = ChASE_DIST_Finalize<std::complex<double>>();
     }
-
+    //! Solve the eigenvalue by the previously constructed distributed-memory ChASE (real scalar in double precision).
+    //! The buffer of matrix to be diagonalized, of ritz pairs have provided during the initialization of solver.
+    //!    
+    //! @param[in] deg initial degree of Cheyshev polynomial filter
+    //! @param[in] tol desired absolute tolerance of computed eigenpairs
+    //! @param[in] mode for sequences of eigenproblems, if reusing the eigenpairs obtained from last system. If `mode = A`, reuse, otherwise, not.  
+    //! @param[in] opt determining if using internal optimization of Chebyshev polynomial degree. If `opt=S`, use, otherwise, no.           
     void pdchase_(int* deg, double* tol, char* mode, char* opt)
     {
         ChASE_DIST_Solve<double>(deg, tol, mode, opt);
     }
+    //! Solve the eigenvalue by the previously constructed distributed-memory ChASE (real scalar in single precision).
+    //! The buffer of matrix to be diagonalized, of ritz pairs have provided during the initialization of solver.
+    //!    
+    //! @param[in] deg initial degree of Cheyshev polynomial filter
+    //! @param[in] tol desired absolute tolerance of computed eigenpairs
+    //! @param[in] mode for sequences of eigenproblems, if reusing the eigenpairs obtained from last system. If `mode = A`, reuse, otherwise, not.  
+    //! @param[in] opt determining if using internal optimization of Chebyshev polynomial degree. If `opt=S`, use, otherwise, no.      
     void pschase_(int* deg, float* tol, char* mode, char* opt)
     {
         ChASE_DIST_Solve<float>(deg, tol, mode, opt);
     }
+    //! Solve the eigenvalue by the previously constructed distributed-memory ChASE (complex scalar in double precision).
+    //! The buffer of matrix to be diagonalized, of ritz pairs have provided during the initialization of solver.
+    //!    
+    //! @param[in] deg initial degree of Cheyshev polynomial filter
+    //! @param[in] tol desired absolute tolerance of computed eigenpairs
+    //! @param[in] mode for sequences of eigenproblems, if reusing the eigenpairs obtained from last system. If `mode = A`, reuse, otherwise, not.  
+    //! @param[in] opt determining if using internal optimization of Chebyshev polynomial degree. If `opt=S`, use, otherwise, no.      
     void pzchase_(int* deg, double* tol, char* mode, char* opt)
     {
         ChASE_DIST_Solve<std::complex<double>>(deg, tol, mode, opt);
     }
+    //! Solve the eigenvalue by the previously constructed distributed-memory ChASE (complex scalar in single precision).
+    //! The buffer of matrix to be diagonalized, of ritz pairs have provided during the initialization of solver.
+    //!    
+    //! @param[in] deg initial degree of Cheyshev polynomial filter
+    //! @param[in] tol desired absolute tolerance of computed eigenpairs
+    //! @param[in] mode for sequences of eigenproblems, if reusing the eigenpairs obtained from last system. If `mode = A`, reuse, otherwise, not.  
+    //! @param[in] opt determining if using internal optimization of Chebyshev polynomial degree. If `opt=S`, use, otherwise, no.      
     void pcchase_(int* deg, float* tol, char* mode, char* opt)
     {
         ChASE_DIST_Solve<std::complex<float>>(deg, tol, mode, opt);
