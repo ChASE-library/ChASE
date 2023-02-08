@@ -482,6 +482,22 @@ void ChASE_DIST_Solve(int* deg, Base<T>* tol, char* mode, char* opt)
 
 extern "C"
 {
+/** @defgroup chase-c ChASE C Interface
+ *  @brief This module provides a C interface of ChASE  
+ *  @{
+ */
+
+    //! Initialization of shared-memory ChASE with real scalar in double precison.
+    //! It is linked to single-GPU ChASE when CUDA is detected.
+    //!    
+    //!
+    //! @param[in] n global matrix size of the matrix to be diagonalized  
+    //! @param[in] nev number of desired eigenpairs
+    //! @param[in] nex extra searching space size      
+    //! @param[in] h pointer to the matrix to be diagonalized
+    //! @param[in,out] v `(nx(nev+nex))` matrix, input is the initial guess eigenvectors, and for output, the first `nev` columns are overwritten by the desired eigenvectors
+    //! @param[in,out] ritzv an array of size `nev` which contains the desired eigenvalues
+    //! @param[in,out] init a flag to indicate if ChASE has been initialized
     void dchase_init_(int* N, int* nev, int* nex, double* H, double* V,
                       double* ritzv, int* init)
     {
@@ -744,5 +760,5 @@ extern "C"
     {
         ChASE_DIST_Solve<std::complex<float>>(deg, tol, mode, opt);
     }
-
+/** @} */ // end of chase-c
 } // extern C
