@@ -470,6 +470,11 @@ public:
        on each MPI rank \param n column number of local matrix on each MPI rank
         \param npr row number of 2D MPI grid
         \param npc column number of 2D MPI grid
+        \param grid_major the type
+        of numbering of the MPI ranks within the constructed 2D grid.
+          - Row major numbering if `grid_major=="C"`.
+          - Column major numbering if `grid_major=="R"`.
+
         \param comm the working MPI communicator for ChASE.
      */
     ChaseMpiProperties(std::size_t N, std::size_t nev, std::size_t nex,
@@ -857,7 +862,10 @@ public:
         \return `N_`: the rank of matrix `A`.
      */
     std::size_t get_N() { return N_; };
-
+    //! Return leading dimension of local part of Symmetric/Hermtian matrix on each
+    //! MPI proc.
+    /*! \return `ldh_`, a private member of this class.
+     */
     std::size_t get_ldh() { return ldh_; };
 
     //! Returns column number of the local matrix on each MPI node.
@@ -1079,7 +1087,11 @@ public:
         c_lens = c_lens_.get();
         c_offs_l = c_offs_l_.get();
     }
-
+    // get the distribution layout of Hermtian/symmetric matrix 
+    /*!
+     *  - `Block-Block`
+     *  - `Block-Cyclic`
+     * */          
     std::string get_dataLayout() { return data_layout; }
 
     // coordinates in the cartesian communicator grid
@@ -1223,7 +1235,8 @@ private:
        access by the member function get_N().
      */
     std::size_t N_;
-
+    //! The leading dimension of local part of Symmetric/Hermtian matrix on each
+    //! MPI proc.
     std::size_t ldh_;
     //! Number of desired extremal eigenpairs
     /*!

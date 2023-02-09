@@ -453,29 +453,8 @@ void Algorithm<T>::solve(Chase<T>* single)
             rho = std::max(std::abs(t - std::sqrt(t * t - 1)),
                            std::abs(t + std::sqrt(t * t - 1)));
 
-            double bound = std::pow(rho, 2 * (degrees[0]));
-            double threshold = 2e16;
-
             oss << std::setprecision(6) << rho << "\t" << std::setprecision(6)
-                << std::pow(rho, 2 * (degrees[0])) << "\t";
-
-            if (bound > threshold)
-            {
-                int sub = int(std::ceil(
-                    0.5 * log(std::pow(rho, 2 * degrees[0]) / threshold) /
-                    log(rho)));
-                if (sub % 2 != 0)
-                {
-                    sub = sub + 1;
-                }
-                for (auto i = 0; i < nevex; i++)
-                {
-                    degrees[i] = degrees[i] - sub;
-                }
-            }
-
-            oss << std::setprecision(6) << std::pow(rho, 2 * (degrees[0]))
-                << "\n";
+                << std::pow(rho, (degrees[0])) << "\n";
 
             oss << "degrees\tresid\tresidLast\tritzv\n";
             for (std::size_t k = 0; k < std::min<std::size_t>(unconverged, 20);
