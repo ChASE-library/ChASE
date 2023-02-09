@@ -352,7 +352,7 @@ public:
         perf_.add_filtered_vecs(nev);
     }
 
-    void QR()
+    void QR(std::size_t fixednev)
     {
         perf_.start_clock(ChasePerfData::TimePtrs::Qr);
         chase_->QR(fixednev);
