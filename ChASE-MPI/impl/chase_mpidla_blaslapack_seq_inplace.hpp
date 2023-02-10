@@ -17,7 +17,7 @@ namespace chase
 namespace mpi
 {
 
-//! A derived class of ChaseMpiDLAInterface which implements ChASE targeting
+//! @brief A derived class of ChaseMpiDLAInterface which implements ChASE targeting
 //! shared-memory architectures with only CPUs available.
 /*! It implements in a inplace mode, in which the buffer of `V1` and `V2` are
  * swapped and reused, which reduces the required memory to be allocted.

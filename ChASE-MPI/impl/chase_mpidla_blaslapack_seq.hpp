@@ -18,11 +18,8 @@ namespace chase
 namespace mpi
 {
 
-// A very simple implementation of MatrixFreeInterface
-// We duplicate the two vector sets from ChASE_Blas and copy
-// into the duplicates before each GEMM call.
 
-//! A derived class of ChaseMpiDLAInterface which implements ChASE targeting
+//! @brief A derived class of ChaseMpiDLAInterface which implements ChASE targeting
 //! shared-memory architectures with only CPUs available.
 template <class T>
 class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T>

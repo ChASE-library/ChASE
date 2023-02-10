@@ -1115,29 +1115,22 @@ public:
     std::size_t get_ldc() { return m_; };
 
     /*!
-      \return `H_`: the pointer to the local matrix of A on each MPI node.
+      \return `C2_.get()`: the pointer to temporary buffer `C2_`.
     */
-    T* get_H() { return H_.get(); }
-
-    /*!
-      \return `B_`: the pointer to store local part of V for the MPI
-      communication.
-    */
-    // T* get_B() { return B_.get(); }
-
-    /*!
-      \return `C_`: the pointer to store local part of W for the MPI
-      communication.
-    */
-    // T* get_C() { return C_.get(); }
-
     T* get_C2() { return C2_.get(); }
-
+    /*!
+      \return `B2_.get()`: the pointer to temporary buffer `B2_`.
+    */
     T* get_B2() { return B2_.get(); }
-
+    /*!
+      \return `A_.get()`: the pointer to temporary buffer `A_`.
+    */
     T* get_A() { return A_.get(); }
 
 #if !defined(HAS_SCALAPACK)
+    /*!
+      \return `V_.get()`: the pointer to temporary buffer `V_`.
+    */    
     T* get_V() { return V_.get(); }
 #endif
 
@@ -1199,10 +1192,9 @@ public:
     //! Create a ChaseMpiMatrices object which stores the operating matrices and
     //! vectors for ChASE-MPI.
     /*!
-      @param V1 a `N * max_block_` rectangular matrix for the operation `A*V1`.
+      @param V1 a `m_ * max_block_` rectangular matrix.
       @param ritzv a `max_block_` vector which stores the computed Ritz values.
-      @param V2 a `N * max_block_` rectangular matrix for the operation
-      `V2^T*A`.
+      @param V2 a `n_ * max_block_` rectangular matrix.
       @param resid a `max_block_` vector which stores the residual of each
       computed Ritz value.
     */
@@ -1214,7 +1206,17 @@ public:
         return ChaseMpiMatrices<T>(comm_, N_, m_, n_, max_block_, V1, ritzv, V2,
                                    resid);
     }
-
+    //! Create a ChaseMpiMatrices object which stores the operating matrices and
+    //! vectors for ChASE-MPI.
+    /*!
+      @param H a `m_ * n_` rectangular matrix, with leading dimension `ldh`
+      @param ldh leading dimension of `H`, which should be `>=m_`
+      @param V1 a `m_ * max_block_` rectangular matrix.
+      @param ritzv a `max_block_` vector which stores the computed Ritz values.
+      @param V2 a `n_ * max_block_` rectangular matrix.
+      @param resid a `max_block_` vector which stores the residual of each
+      computed Ritz value.
+    */
     ChaseMpiMatrices<T> create_matrices(T* H, std::size_t ldh, T* V1 = nullptr,
                                         Base<T>* ritzv = nullptr,
                                         T* V2 = nullptr,
@@ -1231,18 +1233,21 @@ private:
 
     //! Global size of the matrix *A* defining the eigenproblem.
     /*!    This variable is initialized by the constructor using the value of
-       the first of its input parameter `N`. This variable is private, it can be
-       access by the member function get_N().
+       the first of its input parameter `N`. 
+
+       This variable is private, it can be
+       accessed by the member function get_N().
      */
     std::size_t N_;
     //! The leading dimension of local part of Symmetric/Hermtian matrix on each
-    //! MPI proc.
+    //! MPI proc. It should be `>= m_`.
     std::size_t ldh_;
     //! Number of desired extremal eigenpairs
     /*!
         This variable is initialized by the constructor using the value
         of its input parameter `nev`.
-        This variable is private, it can be access by the member function
+
+        This variable is private, it can be accessed by the member function
        GetNev().
      */
     std::size_t nev_;
@@ -1251,16 +1256,16 @@ private:
     /*!
         This variable is initialized by the constructor using the value
         of its input parameter `nex`.
-        This variable is private, it can be access by the member function
+
+        This variable is private, it can be accessed by the member function
        GetNex().
      */
     std::size_t nex_;
 
-    //! Maximum column number of matrix `V`
     /*!
         This variable is initialized by the constructor using the **sum**
         of its input parameter `nex` and `nev`. Thus we have
-       `max_block_=nev_+nex_`. This variable is private, it can be access by the
+       `max_block_=nev_+nex_`. This variable is private, it can be accessed by the
        member function get_max_block().
      */
     std::size_t max_block_;
@@ -1271,7 +1276,7 @@ private:
        global size of matrix `A` and dimension of the column of 2D MPI grid.
           - For *Block-Cyclic Distribution*, it is determined also by block size
           of submatrices `nb_`, etc.
-          This variable is private, it can be access by the member function
+          This variable is private, it can be accessed by the member function
        get_n().
      */
     std::size_t n_;
@@ -1282,7 +1287,7 @@ private:
        global size of matrix `A` and dimension of the column of 2D MPI grid.
           - For *Block-Cyclic Distribution*, it is determined also by block size
           of submatrices `mb_`, etc.
-          This variable is private, it can be access by the member function
+          This variable is private, it can be accessed by the member function
        get_m().
      */
     std::size_t m_;
@@ -1291,7 +1296,7 @@ private:
     /*!
           - For *Block Distribution*, this variable equals to the variable `n_`.
           - For *Block-Cyclic Distribution*, it is initialized by the parameter
-       of the constructor `nb`, This variable is private, it can be access by
+       of the constructor `nb`, This variable is private, it can be accessed by
        the member function get_nb().
      */
     std::size_t nb_;
@@ -1300,7 +1305,7 @@ private:
     /*!
           - For *Block Distribution*, this variable equals to the variable `m_`.
           - For *Block-Cyclic Distribution*, it is initialized by the parameter
-       of the constructor `mb`, This variable is private, it can be access by
+       of the constructor `mb`, This variable is private, it can be accessed by
        the member function get_mb().
      */
     std::size_t mb_;
@@ -1311,7 +1316,7 @@ private:
           - For *Block Distribution*, this variable equals to 1.
           - For *Block-Cyclic Distribution*, it is initialized during the
        construction of Block-Cyclic scheme, This variable is private, it can be
-       access by the member function get_nblocks().
+       accessed by the member function get_nblocks().
      */
     std::size_t nblocks_;
 
@@ -1321,7 +1326,7 @@ private:
           - For *Block Distribution*, this variable equals to 1.
           - For *Block-Cyclic Distribution*, it is initialized during the
        construction of Block-Cyclic scheme, This variable is private, it can be
-       access by the member function get_mblocks().
+       accessed by the member function get_mblocks().
      */
     std::size_t mblocks_;
 
@@ -1329,7 +1334,7 @@ private:
     //! distributed.
     /*! This variable matters only for the *Block-Cyclic Distribution*, it is
        initialized by the parameter irsrc of the constructor. This variable is
-       private, it can be access by the member function get_irsrc().
+       private, it can be accessed by the member function get_irsrc().
     */
     int irsrc_;
 
@@ -1337,7 +1342,7 @@ private:
     //! distributed.
     /*! This variable matters only for the *Block-Cyclic Distribution*, it is
        initialized by the parameter irsrc of the constructor. This variable is
-       private, it can be access by the member function get_icsrc().
+       private, it can be accessed by the member function get_icsrc().
     */
     int icsrc_;
 
@@ -1345,8 +1350,8 @@ private:
     //! along the row direction regarding the global indexing of matrix `A`.
     /*! This variable matters only for the *Block-Cyclic Distribution*, it is
        initialized during the setup of the *Block-Cyclic Distribution* scheme.
-       This variable is private, it can be access by the member function
-       get_row_offs() and get_offs_lens(). The size of this array is `mblocks_`.
+       This variable is private, it can be accessed by the member function
+       get_row_offs(). The size of this array is `mblocks_`.
     */
     std::unique_ptr<std::size_t[]> r_offs_;
 
@@ -1354,8 +1359,8 @@ private:
     //! along the row direction regarding the global indexing of matrix `A`.
     /*! This variable matters only for the *Block-Cyclic Distribution*, it is
        initialized during the setup of the *Block-Cyclic Distribution* scheme.
-       This variable is private, it can be access by the member function
-       get_row_lens() and get_offs_lens(). The size of this array is `mblocks_`.
+       This variable is private, it can be accessed by the member function
+       get_row_lens(). The size of this array is `mblocks_`.
     */
     std::unique_ptr<std::size_t[]> r_lens_;
 
@@ -1364,8 +1369,8 @@ private:
     //! MPI node.
     /*! This variable matters only for the *Block-Cyclic Distribution*, it is
        initialized during the setup of the *Block-Cyclic Distribution* scheme.
-       This variable is private, it can be access by the member function
-       get_row_offs_loc() and get_offs_lens(). The size of this array is
+       This variable is private, it can be accessed by the member function
+       get_row_offs_loc(). The size of this array is
        `mblocks_`.
     */
     std::unique_ptr<std::size_t[]> r_offs_l_;
@@ -1374,8 +1379,8 @@ private:
     //! along the column direction regarding the global indexing of matrix `A`.
     /*! This variable matters only for the *Block-Cyclic Distribution*, it is
        initialized during the setup of the *Block-Cyclic Distribution* scheme.
-       This variable is private, it can be access by the member function
-       get_col_offs() and get_offs_lens(). The size of this array is `nblocks_`.
+       This variable is private, it can be accessed by the member function
+       get_col_offs(). The size of this array is `nblocks_`.
     */
     std::unique_ptr<std::size_t[]> c_offs_;
 
@@ -1383,8 +1388,8 @@ private:
     //! along the column direction regarding the global indexing of matrix `A`.
     /*! This variable matters only for the *Block-Cyclic Distribution*, it is
        initialized during the setup of the *Block-Cyclic Distribution* scheme.
-       This variable is private, it can be access by the member function
-       get_col_lens() and get_offs_lens(). The size of this array is `nblocks_`.
+       This variable is private, it can be accessed by the member function
+       get_col_lens(). The size of this array is `nblocks_`.
     */
     std::unique_ptr<std::size_t[]> c_lens_;
 
@@ -1393,8 +1398,8 @@ private:
     //! each MPI node.
     /*! This variable matters only for the *Block-Cyclic Distribution*, it is
        initialized during the setup of the *Block-Cyclic Distribution* scheme.
-       This variable is private, it can be access by the member function
-       get_col_offs_loc() and get_offs_lens(). The size of this array is
+       This variable is private, it can be accessed by the member function
+       get_col_offs_loc(). The size of this array is
        `nblocks_`.
     */
     std::unique_ptr<std::size_t[]> c_offs_l_;
@@ -1413,7 +1418,7 @@ private:
        column dimension is `block_counts_[1][j]`. For *Block-Distribution*, all
        the values in this 2D array equal to **1**.
 
-        This variable is private, it can be access by the member function
+        This variable is private, it can be accessed by the member function
        get_blockcounts().
     */
     std::vector<std::vector<int>> block_counts_;
@@ -1432,7 +1437,7 @@ private:
        the block number within rank `j` (this rank is within col_comm_) along
        the column dimension is `block_lens_[1][j][k]`.
 
-        This variable is private, it can be access by the member function
+        This variable is private, it can be accessed by the member function
        get_blocklens().
     */
     std::vector<std::vector<std::vector<int>>> block_lens_;
@@ -1451,8 +1456,8 @@ private:
        the block number within rank `j` (this rank is within col_comm_) along
        the column dimension is `block_displs_[1][j][k]`.
 
-        This variable is private, it can be access by the member function
-       get_blocklens().
+        This variable is private, it can be accessed by the member function
+       get_blockdispls().
     */
     std::vector<std::vector<std::vector<int>>> block_displs_;
 
@@ -1469,7 +1474,7 @@ private:
        block number within rank `j` (this rank is within col_comm_) along the
        column dimension is `send_lens_[1][j]`.
 
-        This variable is private, it can be access by the member function
+        This variable is private, it can be accessed by the member function
        get_sendlens().
     */
     std::vector<std::vector<int>> send_lens_;
@@ -1488,7 +1493,7 @@ private:
        `g_offsets_[0][i]`, and the block number within rank `j` (this rank is
        within col_comm_) along the column dimension is `g_offsets_[1][j]`.
 
-        This variable is private, it can be access by the member function
+        This variable is private, it can be accessed by the member function
        get_g_offsets().
     */
     std::vector<std::vector<int>> g_offsets_;
@@ -1508,38 +1513,35 @@ private:
     //! working on.
     int rank_;
 
-    //! The memory allocated to store the local matrix of `A` on each MPI node.
-    /*!
-        This variable is initialized during the construction of
-       ChaseMpiProperties of size `n_ * m_`.
-     */
-    std::unique_ptr<T[]> H_;
-
-    //! A temporary memory allocated to store local part of V for the MPI
-    //! collective communications for the MPI-based implementation of `HEMM`.
-    /*!
-        This variable is initialized during the construction of
-       ChaseMpiProperties of size `n_ * max_block_`.
-     */
-
-    //! A temporary memory allocated to store local part of W for the MPI
-    //! collective communications for the MPI-based implementation of `HEMM`.
+    //! A temporary memory allocated for distributed ChASE
     /*!
         This variable is initialized during the construction of
        ChaseMpiProperties of size `m_ * max_block_`.
+
+       It can be accessed by the member function get_C2()
      */
-    // std::unique_ptr<T[]> C_;
-
     std::unique_ptr<T[]> C2_;
+    //! A temporary memory allocated for distributed ChASE
+    /*!
+        This variable is initialized during the construction of
+       ChaseMpiProperties of size `n_ * max_block_`.
 
+       It can be accessed by the member function get_B2()
+     */
     std::unique_ptr<T[]> B2_;
+    //! A temporary memory allocated for distributed ChASE
+    /*!
+        This variable is initialized during the construction of
+       ChaseMpiProperties of size `max_block_ * max_block_`.
 
+       It can be accessed by the member function get_A()
+     */
     std::unique_ptr<T[]> A_;
 
     //! The row communicator of the constructed 2D grid of MPI codes.
     /*!
         This variable is initialized in the constructor, after the construction
-       of MPI 2D grid. This variable is private, it can be access by the member
+       of MPI 2D grid. This variable is private, it can be accessed by the member
        function get_row_comm().
      */
     MPI_Comm row_comm_;
@@ -1547,7 +1549,7 @@ private:
     //! The column communicator of the constructed 2D grid of MPI codes.
     /*!
         This variable is initialized in the constructor, after the construction
-       of MPI 2D grid. This variable is private, it can be access by the member
+       of MPI 2D grid. This variable is private, it can be accessed by the member
        function get_col_comm().
      */
     MPI_Comm col_comm_;
@@ -1555,9 +1557,13 @@ private:
     //! The array with two elements determines the dimension of 2D grid of MPI
     //! nodes.
     /*!
-        - For *Block Distribution*, it is initialized by `MPI_Dims_create` which
-       creates a division of MPI ranks in a cartesian grid.
-        - For *Block-Cyclic Distribution*, it is initialized by the input
+        - For *Block Distribution*, 
+            1. it can be initialized by `MPI_Dims_create` which creates a division 
+            of MPI ranks in a cartesian grid.
+            2. it can be initialized by users with the input parameters, paramters 
+            `row_dim` and `col_dim`. More precise, we have `dims_[0] = row_dim` 
+            and `dims_[1] = col_dim`.
+        - For *Block-Cyclic Distribution*, it is always initialized by the input
        paramters `row_dim` and `col_dim`. More precise, we have `dims_[0] =
        row_dim` and `dims_[1] = col_dim`.
      */
@@ -1577,7 +1583,12 @@ private:
        the size of matrix and the scheme of distribution across the 2D grid.
      */
     std::size_t off_[2];
-
+    
+    // A std::string which indicates the data distribution scheme. 
+    /*!
+     *  - `Block-Block`
+     *  - `Block-Cyclic`
+     * */ 
     std::string data_layout;
 #if defined(HAS_SCALAPACK)
     //! ScaLAPACK context for each row communicator. This context is in 1D grid,
@@ -1585,6 +1596,8 @@ private:
     int colcomm_ctxt_;
     std::size_t desc1D_Nxnevx_[9];
 #else
+    //! A temporary buffer of size `N_ * max_block_`.
+    //! It is allocated only when no ScaLAPACK is detected.
     std::unique_ptr<T[]> V_;
 #endif
 };

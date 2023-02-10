@@ -141,8 +141,8 @@ namespace mpi
 //
 //  This Class is meant to be used with MatrixFreeMPI
 //
-//! A derived class of ChaseMpiDLAInterface which implements the inter-node
-//! computation for a pure-CPU MPI-based implementation of ChASE.
+//! @brief A derived class of ChaseMpiDLAInterface which implements the inter-node computation
+//!   for a multi-GPU MPI-based implementation of ChASE.
 template <class T>
 class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T>
 {

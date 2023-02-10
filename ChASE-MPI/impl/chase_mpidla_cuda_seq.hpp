@@ -62,7 +62,7 @@ namespace chase
 namespace mpi
 {
 
-//! A derived class of ChaseMpiDLAInterface which implements ChASE targeting
+//! @brief A derived class of ChaseMpiDLAInterface which implements ChASE targeting
 //! shared-memory architectures, some selected computation tasks are offloaded
 //! to one single GPU card.
 template <class T>

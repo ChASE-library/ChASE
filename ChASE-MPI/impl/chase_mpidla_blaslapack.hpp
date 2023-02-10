@@ -16,9 +16,8 @@ namespace chase
 namespace mpi
 {
 //
-//  This Class is meant to be used with MatrixFreeMPI
 //
-//! A derived class of ChaseMpiDLAInterface which implements the inter-node
+//! @brief A derived class of ChaseMpiDLAInterface which implements the inter-node
 //! computation for a pure-CPU MPI-based implementation of ChASE.
 template <class T>
 class ChaseMpiDLABlaslapack : public ChaseMpiDLAInterface<T>
@@ -355,36 +354,36 @@ private:
         bAc
     };
 
-    NextOp next_;
-    std::size_t N_;
+    NextOp next_;  //!< it is to manage the switch of operation from `V2=H*V1` to `V1=H'*V2` in filter
+    std::size_t N_; //!< global dimension of the symmetric/Hermtian matrix
 
-    std::size_t n_;
-    std::size_t m_;
-    std::size_t ldh_;
-    T* H_;
-    T* B_;
-    T* B2_;
-    T* C_;
-    T* C2_;
-    T* A_;
+    std::size_t n_; //!< number of columns of local matrix of the symmetric/Hermtian matrix
+    std::size_t m_; //!< number of rows of local matrix of the symmetric/Hermtian matrix
+    std::size_t ldh_; //!< leading dimension of local matrix on each MPI proc
+    T* H_; //!< a pointer to the local matrix on each MPI proc
+    T* B_; //!< a matrix of size `n_*(nev_+nex_)`, which is allocated in ChaseMpiMatrices
+    T* B2_; //!< a matrix of size `n_*(nev_+nex_)`, which is allocated in ChaseMpiProperties
+    T* C_; //!< a matrix of size `m_*(nev_+nex_)`, which is allocated in ChaseMpiMatrices
+    T* C2_; //!< a matrix of size `m_*(nev_+nex_)`, which is allocated in ChaseMpiProperties
+    T* A_; //!< a matrix of size `(nev_+nex_)*(nev_+nex_)`, which is allocated in ChaseMpiProperties
 
-    std::size_t* off_;
-    std::size_t* r_offs_;
-    std::size_t* r_lens_;
-    std::size_t* r_offs_l_;
-    std::size_t* c_offs_;
-    std::size_t* c_lens_;
-    std::size_t* c_offs_l_;
-    std::size_t nb_;
-    std::size_t mb_;
-    std::size_t nblocks_;
-    std::size_t mblocks_;
-    std::size_t nev_;
-    std::size_t nex_;
-    int mpi_row_rank;
-    int mpi_col_rank;
+    std::size_t* off_; //!< identical to ChaseMpiProperties::off_
+    std::size_t* r_offs_; //!< identical to ChaseMpiProperties::r_offs_
+    std::size_t* r_lens_; //!< identical to ChaseMpiProperties::r_lens_
+    std::size_t* r_offs_l_; //!< identical to ChaseMpiProperties::r_offs_l_
+    std::size_t* c_offs_;  //!< identical to ChaseMpiProperties::c_offs_
+    std::size_t* c_lens_; //!< identical to ChaseMpiProperties::c_lens_
+    std::size_t* c_offs_l_; //!< identical to ChaseMpiProperties::c_offs_l_
+    std::size_t nb_; //!< identical to ChaseMpiProperties::nb_
+    std::size_t mb_; //!< identical to ChaseMpiProperties::mb_
+    std::size_t nblocks_; //!< identical to ChaseMpiProperties::nblocks_
+    std::size_t mblocks_; //!< identical to ChaseMpiProperties::mblocks_
+    std::size_t nev_; //!< number of required eigenpairs
+    std::size_t nex_; //!< number of extral searching space
+    int mpi_row_rank; //!< rank within each row communicator
+    int mpi_col_rank; //!< rank within each column communicator
 
-    ChaseMpiProperties<T>* matrix_properties_;
+    ChaseMpiProperties<T>* matrix_properties_; //!< an object of class ChaseMpiProperties
 };
 
 template <typename T>
