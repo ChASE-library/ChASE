@@ -460,31 +460,30 @@ private:
     std::size_t nev_; //!< number of required eigenpairs
     std::size_t nex_;  //!< number of extral searching space
 
-    int* devInfo_ = NULL;
-    T* d_V_ = NULL;
-    T* d_return_ = NULL;
-    T* d_work_ = NULL;
-    int lwork_ = 0;
-    cusolverStatus_t cusolver_status_ = CUSOLVER_STATUS_SUCCESS;
-    cublasStatus_t cublas_status_ = CUBLAS_STATUS_SUCCESS;
+    int* devInfo_ = NULL; //!< for the return of information from any cuSOLVER routines
+    T* d_return_ = NULL; //!< a pointer to a local buffer of size `nev_+nex_`
+    T* d_work_ = NULL; //!< a pointer to a local buffer on GPU, which is reserved for the extra buffer required for any cuSOLVER routines
+    int lwork_ = 0; //!< size of required extra buffer by any cuSOLVER routines
+    cusolverStatus_t cusolver_status_ = CUSOLVER_STATUS_SUCCESS; //!< `cuSOLVER` status
+    cublasStatus_t cublas_status_ = CUBLAS_STATUS_SUCCESS; //!< `cuBLAS` status
 
-    T* d_V1_;
-    T* d_V2_;
-    T* d_H_;
+    T* d_V1_; //!< a pointer to a local buffer of size `N_*(nev_+nex_)` on GPU, which is mapped to `V1_`.
+    T* d_V2_; //!< a pointer to a local buffer of size `N_*(nev_+nex_)` on GPU, which is mapped to `V2_`.
+    T* d_H_; //!< a pointer to a local buffer of size `N_*N_` on GPU, which is mapped to `H_`.
     T* H_; //!< a pointer to the Symmetric/Hermtian matrix
     T* V1_; //!< a matrix of size `N_*(nev_+nex_)`
     T* V2_; //!< a matrix of size `N_*(nev_+nex_)`
     T* v0_; //!< a vector of size `N_`, which is allocated in this class for Lanczos
     T* v1_; //!< a vector of size `N_`, which is allocated in this class for Lanczos
     T* w_; //!< a vector of size `N_`, which is allocated in this class for Lanczos
-    Base<T>* d_ritz_ = NULL;
+    Base<T>* d_ritz_ = NULL; //!< a pointer to a local buffer of size `nev_+nex_` on GPU for storing computed ritz values
     T* d_A_; //!< a matrix of size `(nev_+nex_)*(nev_+nex_)`
-    Base<T>* d_resids_ = NULL;
-    cudaStream_t stream_;
-    cudaStream_t stream2_;
-    cublasHandle_t cublasH_;
-    cublasHandle_t cublasH2_;
-    cusolverDnHandle_t cusolverH_;
+    Base<T>* d_resids_ = NULL; //!< a pointer to a local buffer of size `nev_+nex_` on GPU for storing computed residuals
+    cudaStream_t stream_; //!< CUDA stream for asynchronous exectution of kernels
+    cudaStream_t stream2_; //!< CUDA stream for asynchronous exectution of kernels
+    cublasHandle_t cublasH_;  //!< `cuBLAS` handle
+    cublasHandle_t cublasH2_;  //!< `cuBLAS` handle
+    cusolverDnHandle_t cusolverH_; //!< `cuSOLVER` handle
     bool copied_; //!< a flag indicates if the matrix has already been copied to device
 };
 

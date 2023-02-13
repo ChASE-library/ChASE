@@ -141,7 +141,7 @@ namespace mpi
 //
 //  This Class is meant to be used with MatrixFreeMPI
 //
-//! A derived class of ChaseMpiDLAInterface which implements the inter-node
+//! @brief A derived class of ChaseMpiDLAInterface which implements the inter-node
 //! computation for a multi-GPUs MPI-based implementation of ChASE.    
 template <class T>
 class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T>
@@ -713,12 +713,12 @@ private:
     cudaStream_t stream2_; //!< CUDA stream for asynchronous exectution of kernels
     curandState* states_ = NULL; //!< a pointer of `curandState` for the cuRAND
     T* d_H_; //!< a pointer to a local buffer of size `m_*n_` on GPU, which is mapped to `H_`.
-    T* d_C_; //!< a pointer to a local buffer of size `m_*(nev_+nex_)` on GPU, which is mapped to `d_C_`.
-    T* d_C2_; //!< a pointer to a local buffer of size `m_*(nev_+nex_)` on GPU, which is mapped to `d_C2_`.
-    T* d_B_; //!< a pointer to a local buffer of size `n_*(nev_+nex_)` on GPU, which is mapped to `d_B_`.
-    T* d_B2_; //!< a pointer to a local buffer of size `n_*(nev_+nex_)` on GPU, which is mapped to `d_B2_`.
+    T* d_C_; //!< a pointer to a local buffer of size `m_*(nev_+nex_)` on GPU, which is mapped to `C_`.
+    T* d_C2_; //!< a pointer to a local buffer of size `m_*(nev_+nex_)` on GPU, which is mapped to `C2_`.
+    T* d_B_; //!< a pointer to a local buffer of size `n_*(nev_+nex_)` on GPU, which is mapped to `B_`.
+    T* d_B2_; //!< a pointer to a local buffer of size `n_*(nev_+nex_)` on GPU, which is mapped to `B2_`.
     Base<T>* d_ritz_ = NULL; //!< a pointer to a local buffer of size `nev_+nex_` on GPU for storing computed ritz values
-    T* d_A_; //!< a pointer to a local buffer of size `(nev_+nex_)*(nev_+nex_)` on GPU, which is mapped to `d_A_`.
+    T* d_A_; //!< a pointer to a local buffer of size `(nev_+nex_)*(nev_+nex_)` on GPU, which is mapped to `A_`.
     T* d_work_ = NULL; //!< a pointer to a local buffer on GPU, which is reserved for the extra buffer required for any cuSOLVER routines
     std::size_t pitchB; //!< pitch for `B_` and `d_B_`
     std::size_t pitchB2; //!< pitch for `B2_` and `d_B2_`
