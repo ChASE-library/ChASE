@@ -142,7 +142,7 @@ namespace mpi
 //  This Class is meant to be used with MatrixFreeMPI
 //
 //! A derived class of ChaseMpiDLAInterface which implements the inter-node
-//! computation for a pure-CPU MPI-based implementation of ChASE.
+//! computation for a multi-GPUs MPI-based implementation of ChASE.    
 template <class T>
 class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T>
 {
@@ -150,6 +150,8 @@ public:
     //! A constructor of ChaseMpiDLABlaslapack.
     //! @param matrix_properties: it is an object of ChaseMpiProperties, which
     //! defines the MPI environment and data distribution scheme in ChASE-MPI.
+    //! @param matrices: it is an instance of ChaseMpiMatrices, which
+    //!  allocates the required buffers in ChASE-MPI.         
     ChaseMpiDLAMultiGPU(ChaseMpiProperties<T>* matrix_properties,
                         ChaseMpiMatrices<T>& matrices)
     {
@@ -214,8 +216,6 @@ public:
                                   (nev_ + nex_) * sizeof(T), n_));
         cuda_exec(cudaMallocPitch((void**)&(d_B2_), &pitchB2,
                                   (nev_ + nex_) * sizeof(T), n_));
-        cuda_exec(
-            cudaMalloc((void**)&d_resid_, sizeof(Base<T>) * (nev_ + nex_)));
         cuda_exec(cudaMalloc((void**)&d_A_,
                              sizeof(T) * (nev_ + nex_) * (nev_ + nex_)));
         cuda_exec(
@@ -282,6 +282,7 @@ public:
 #endif
     }
 
+    //! Destructor.
     ~ChaseMpiDLAMultiGPU()
     {
         cudaStreamDestroy(stream1_);
@@ -304,15 +305,19 @@ public:
         cuda_exec(cudaFree(d_off_m_));
         cuda_exec(cudaFree(d_off_n_));
         cuda_exec(cudaFree(d_ritz_));
-        cuda_exec(cudaFree(d_resid_));
         cuda_exec(cudaFree(states_));
     }
+    //! - This function set initially the operation for apply() used in ChaseMpi::Lanczos()
+    //! - This function also copies the local block of Symmetric/Hermtian matrix to GPU 
     void initVecs() override
     {
         cublas_status_ = cublasSetMatrix(m_, n_, sizeof(T), H_, ldh_, d_H_, m_);
         assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);        
-	next_ = NextOp::bAc;
+	    next_ = NextOp::bAc;
     }
+    //! This function generates the random values for each MPI proc using device API of cuRAND
+    //!     - each MPI proc with a same MPI rank among different column communicator
+    //!       same a same seed of RNG    
     void initRndVecs() override
     {
         MPI_Comm col_comm = matrix_properties_->get_col_comm();
@@ -326,11 +331,8 @@ public:
                              cudaMemcpyDeviceToHost));
     }
 
-    /*! - For ChaseMpiDLABlaslapack, `preApplication` is implemented within
-       ChaseMpiDLA.
-        - **Parallelism on distributed-memory system SUPPORT**
-        - For the meaning of this function, please visit ChaseMpiDLAInterface.
-    */
+    //! - This function set initially the operation for apply() in filter
+    //! - it copies also `C_` to device buffer `d_C` 
     void preApplication(T* V, std::size_t locked, std::size_t block) override
     {
         next_ = NextOp::bAc;
@@ -342,16 +344,9 @@ public:
         }
     }
 
-    /*!
-       - For ChaseMpiDLABlaslapack, the matrix-matrix multiplication of local
-       matrices are implemented in with `GEMM` routine provided by `BLAS`.
-       - The collective communication based on MPI which **ALLREDUCE** the
-       product of local matrices either within the column communicator or row
-       communicator, is implemented within ChaseMpiDLA.
-       - **Parallelism on distributed-memory system SUPPORT**
-       - **Parallelism is SUPPORT within node if multi-threading is actived**
-       - For the meaning of this function, please visit ChaseMpiDLAInterface.
-   */
+
+    //! - This function performs the local computation of `GEMM` for ChaseMpiDLA::apply()
+    //! - It is implemented based on `cuBLAS`'s `cublasXgemm`.
     void apply(T alpha, T beta, std::size_t offset, std::size_t block,
                std::size_t locked) override
     {
@@ -401,13 +396,9 @@ public:
             next_ = NextOp::bAc;
         }
     }
-    /*!
-       - For ChaseMpiDLABlaslapack,  `postApplication` is implemented in
-       ChaseMpiDLA, with asynchronously brocasting the final product of `HEMM`
-       to each MPI rank.
-       - **Parallelism on distributed-memory system SUPPORT**
-       - For the meaning of this function, please visit ChaseMpiDLAInterface.
-    */
+    //! - This function copies a number of column of `d_C_` to `C_`.
+    //! - This memory copying is required for ChaseMpi::Lanczos in which `axpy`, etc
+    //! - are performed on CPUs.
     bool postApplication(T* V, std::size_t block, std::size_t locked) override
     {
         cuda_exec(cudaMemcpy(C_ + locked * m_, d_C_ + locked * m_,
@@ -415,17 +406,17 @@ public:
         return false;
     }
 
-    /*!
-      - For ChaseMpiDLABlaslapack,  `shiftMatrix` is implemented in ChaseMpiDLA.
-      - **Parallelism on distributed-memory system SUPPORT**
-      - For the meaning of this function, please visit ChaseMpiDLAInterface.
-    */
+    //! This function performs the shift of diagonal of a global matrix 
+    //! - This global is already distributed on GPUs, so the shifting operation takes place on the local
+    //!   block of global matrix on each GPU.
+    //! - This function is naturally in parallel among all MPI procs and also with each GPU. 
     void shiftMatrix(T c, bool isunshift = false) override
     {
         chase_shift_mgpu_matrix(d_H_, d_off_m_, d_off_n_, diag_off_size_, m_,
                                 std::real(c), (cudaStream_t)0);
     }
-
+    //! - This function performs the local computation of `GEMM` for ChaseMpiDLA::asynCxHGatherC()
+    //! - It is implemented based on `cuBLAS`'s `cublasXgemm`.
     void asynCxHGatherC(std::size_t locked, std::size_t block,
                         bool isCcopied) override
     {
@@ -447,72 +438,41 @@ public:
                              block * n_ * sizeof(T), cudaMemcpyDeviceToHost));
     }
 
-    /*!
-      - For ChaseMpiDLABlaslapack,  `applyVec` is implemented in ChaseMpiDLA.
-      - **Parallelism on distributed-memory system SUPPORT**
-      - For the meaning of this function, please visit ChaseMpiDLAInterface.
-    */
+    //! - All required operations for this function has been done in for ChaseMpiDLA::applyVec().
+    //! - This function contains nothing in this class.
     void applyVec(T* B, T* C) override {}
     int get_nprocs() const override { return matrix_properties_->get_nprocs(); }
     void Start() override {}
     void End() override {}
 
-    /*!
-      - For ChaseMpiDLABlaslapack, `axpy` is implemented in ChaseMpiDLA.
-     - **Parallelism is SUPPORT within node if multi-threading is enabled.**
-      - For the meaning of this function, please visit ChaseMpiDLAInterface.
-    */
+    //! It is an interface to BLAS `?axpy`.
     void axpy(std::size_t N, T* alpha, T* x, std::size_t incx, T* y,
               std::size_t incy) override
     {
         t_axpy(N, alpha, x, incx, y, incy);
     }
 
-    /*!
-      - For ChaseMpiDLABlaslapack, `scal` is implemented in ChaseMpiDLA
-      - **Parallelism is SUPPORT within node if multi-threading is enabled.**
-      - For the meaning of this function, please visit ChaseMpiDLAInterface.
-    */
+    //! It is an interface to BLAS `?scal`.
     void scal(std::size_t N, T* a, T* x, std::size_t incx) override
     {
         t_scal(N, a, x, incx);
     }
 
-    /*!
-      - For ChaseMpiDLABlaslapack, `nrm2` is implemented using `BLAS` routine
-      `xNRM2`.
-      - **Parallelism is SUPPORT within node if multi-threading is enabled.**
-      - For the meaning of this function, please visit ChaseMpiDLAInterface.
-    */
+    //! It is an interface to BLAS `?nrm2`.
     Base<T> nrm2(std::size_t n, T* x, std::size_t incx) override
     {
         return t_nrm2(n, x, incx);
     }
 
-    /*!
-      - For ChaseMpiDLABlaslapack, `dot` is implemented using `BLAS` routine
-      `xDOT`.
-      - **Parallelism is SUPPORT within node if multi-threading is enabled.**
-      - For the meaning of this function, please visit ChaseMpiDLAInterface.
-    */
+    //! It is an interface to BLAS `?dot`.
     T dot(std::size_t n, T* x, std::size_t incx, T* y,
           std::size_t incy) override
     {
         return t_dot(n, x, incx, y, incy);
     }
 
-    /*!
-        - For ChaseMpiDLABlaslapack, `RR` is implemented by `GEMM` routine
-       provided by `BLAS` and `(SY)HEEVD` routine provided by `LAPACK`.
-          - The 1st operation `A <- W^T * V` is implemented by `GEMM` from
-       `BLAS`.
-          - The 2nd operation which computes the eigenpairs of `A`, is
-       implemented by `(SY)HEEVD` from `LAPACK`.
-          - The 3rd operation which computes `W<-V*A` is implemented by `GEMM`
-       from `BLAS`.
-        - **Parallelism is SUPPORT within node if multi-threading is enabled.**
-        - For the meaning of this function, please visit ChaseMpiDLAInterface.
-    */
+    //! - This function performs the local computation of `GEMM` for ChaseMpiDLA::RR()
+    //! - It is implemented based on `cuBLAS`'s `cublasXgemm`.
     void RR(std::size_t block, std::size_t locked, Base<T>* ritzv) override
     {
         T One = T(1.0);
@@ -531,16 +491,19 @@ public:
                                          nev_ + nex_, A_, nev_ + nex_);
         assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
     }
-
+    //! - All required operations for this function has been done in for ChaseMpiDLA::V2C().
+    //! - This function contains nothing in this class.
     void V2C(T* v1, std::size_t off1, T* v2, std::size_t off2,
              std::size_t block) override
     {
     }
-
+    //! - All required operations for this function has been done in for ChaseMpiDLA::C2V().
+    //! - This function contains nothing in this class.
     void C2V(T* v1, std::size_t off1, T* v2, std::size_t off2,
              std::size_t block) override
     {
     }
+    //! It is an interface to cuBLAS `cublasXsy(he)rk`.        
     void syherk(char uplo, char trans, std::size_t n, std::size_t k, T* alpha,
                 T* a, std::size_t lda, T* beta, T* c, std::size_t ldc,
                 bool first) override
@@ -571,7 +534,7 @@ public:
                                          d_A_, nev_ + nex_, A_, nev_ + nex_);
         assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
     }
-
+    //! It is an interface to cuSOLVER `cusolverXpotrf`.    
     int potrf(char uplo, std::size_t n, T* a, std::size_t lda) override
     {
         cublas_status_ = cublasSetMatrix(nev_ + nex_, nev_ + nex_, sizeof(T), a,
@@ -595,6 +558,7 @@ public:
         return info;
     }
 
+    //! It is an interface to cuBLAS `cublasXtrsm`.    
     void trsm(char side, char uplo, char trans, char diag, std::size_t m,
               std::size_t n, T* alpha, T* a, std::size_t lda, T* b,
               std::size_t ldb, bool first) override
@@ -612,7 +576,11 @@ public:
         }
         assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
     }
-
+    //! - This function performs the local computation of residuals for ChaseMpiDLA::Resd()
+    //! - It is implemented based on `BLAS`'s `?axpy` and `?nrm2`.
+    //! - This function computes only the residuals of local part of vectors on each MPI proc.
+    //! - The final results are obtained in ChaseMpiDLA::Resd() with an MPI_Allreduce operation
+    //!      within the row communicator.
     void Resd(Base<T>* ritzv, Base<T>* resid, std::size_t locked,
               std::size_t unconverged) override
     {
@@ -639,7 +607,8 @@ public:
         omp_set_num_threads(num_threads);
 #endif
     }
-
+    //! - This function performs the local computation for ChaseMpiDLA::heevd()
+    //! - It is implemented based on `cuBLAS`'s `xgemm` and cuSOLVER's `cusolverXsy(he)evd`. 
     void heevd(int matrix_layout, char jobz, char uplo, std::size_t n, T* a,
                std::size_t lda, Base<T>* w) override
     {
@@ -672,19 +641,26 @@ public:
                                          m_, C_ + locked * m_, m_);
         assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
     }
-
+    //! - All required operations for this function has been done in for ChaseMpiDLA::hhQR().
+    //! - This function contains nothing in this class.
     void hhQR(std::size_t locked) override {}
-
+    //! - All required operations for this function has been done in for ChaseMpiDLA::cholQR().
+    //! - This function contains nothing in this class.
     void cholQR(std::size_t locked) override {}
-
+    //! - All required operations for this function has been done in for ChaseMpiDLA::Swap().
+    //! - This function contains nothing in this class.
     void Swap(std::size_t i, std::size_t j) override {}
-
+    //! - All required operations for this function has been done in for ChaseMpiDLA::getLanczosBuffer().
+    //! - This function contains nothing in this class.
     void getLanczosBuffer(T** V1, T** V2, std::size_t* ld, T** v0, T** v1,
                           T** w) override
     {
     }
+    //! - All required operations for this function has been done in for ChaseMpiDLA::getLanczosBuffer2().
+    //! - This function contains nothing in this class.      
     void getLanczosBuffer2(T** v0, T** v1, T** w) override {}
-
+    //! - All required operations for this function has been done in for ChaseMpiDLA::LanczosDos().
+    //! - This function contains nothing in this class.
     void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc) override {}
 
 private:
@@ -694,61 +670,64 @@ private:
         bAc
     };
 
-    NextOp next_;
-    std::size_t N_;
+    NextOp next_; //!< it is to manage the switch of operation from `V2=H*V1` to `V1=H'*V2` in filter
+    std::size_t N_; //!< global dimension of the symmetric/Hermtian matrix
 
-    std::size_t n_;
-    std::size_t m_;
-    std::size_t ldh_;
-    T* H_;
-    T* B_;
-    T* B2_;
-    T* C_;
-    T* C2_;
-    T* A_;
+    std::size_t n_; //!< number of columns of local matrix of the symmetric/Hermtian matrix
+    std::size_t m_; //!< number of rows of local matrix of the symmetric/Hermtian matrix
+    std::size_t ldh_; //!< leading dimension of local matrix on each MPI proc
+    T* H_; //!< a pointer to the local matrix on each MPI proc
+    T* B_; //!< a matrix of size `n_*(nev_+nex_)`, which is allocated in ChaseMpiMatrices
+    T* B2_; //!< a matrix of size `n_*(nev_+nex_)`, which is allocated in ChaseMpiProperties
+    T* C_; //!< a matrix of size `m_*(nev_+nex_)`, which is allocated in ChaseMpiMatrices
+    T* C2_; //!< a matrix of size `m_*(nev_+nex_)`, which is allocated in ChaseMpiProperties
+    T* A_; //!< a matrix of size `(nev_+nex_)*(nev_+nex_)`, which is allocated in ChaseMpiProperties
 
-    std::size_t* off_;
-    std::size_t* r_offs_;
-    std::size_t* r_lens_;
-    std::size_t* r_offs_l_;
-    std::size_t* c_offs_;
-    std::size_t* c_lens_;
-    std::size_t* c_offs_l_;
-    std::size_t nb_;
-    std::size_t mb_;
-    std::size_t nblocks_;
-    std::size_t mblocks_;
-    std::size_t nev_;
-    std::size_t nex_;
-    int mpi_row_rank;
-    int mpi_col_rank;
+    std::size_t* off_; //!< identical to ChaseMpiProperties::off_
+    std::size_t* r_offs_; //!< identical to ChaseMpiProperties::r_offs_
+    std::size_t* r_lens_; //!< identical to ChaseMpiProperties::r_lens_
+    std::size_t* r_offs_l_; //!< identical to ChaseMpiProperties::r_offs_l_
+    std::size_t* c_offs_; //!< identical to ChaseMpiProperties::c_offs_
+    std::size_t* c_lens_; //!< identical to ChaseMpiProperties::c_lens_
+    std::size_t* c_offs_l_; //!< identical to ChaseMpiProperties::c_offs_l_
+    std::size_t nb_; //!< identical to ChaseMpiProperties::nb_
+    std::size_t mb_; //!< identical to ChaseMpiProperties::mb_
+    std::size_t nblocks_; //!< identical to ChaseMpiProperties::nblocks_
+    std::size_t mblocks_; //!< identical to ChaseMpiProperties::mblocks_
+    std::size_t nev_; //!< number of required eigenpairs
+    std::size_t nex_;  //!< number of extral searching space
+    int mpi_row_rank; //!< rank within each row communicator
+    int mpi_col_rank; //!< rank within each column communicator
 
     // for shifting matrix H
-    std::size_t* d_off_m_;
-    std::size_t* d_off_n_;
-    std::size_t diag_off_size_;
+    std::size_t* d_off_m_; //!< the offset of the row of the first element each piece of diagonal to be shifted within the local matrix `A`
+    std::size_t* d_off_n_; //!< the offset of the column of the first element each piece of diagonal to be shifted within the local matrix `A`
+    std::size_t diag_off_size_; //!< number of elements to be shifted on each piece
 
-    int mpi_rank_;
-    cublasHandle_t cublasH_;
-    cusolverDnHandle_t cusolverH_;
-    cublasStatus_t cublas_status_ = CUBLAS_STATUS_SUCCESS;
-    cusolverStatus_t cusolver_status_ = CUSOLVER_STATUS_SUCCESS;
-    cudaStream_t stream1_, stream2_;
-    curandState* states_ = NULL;
-    T* d_H_;
-    T* d_C_;
-    T* d_C2_;
-    T* d_B_;
-    T* d_B2_;
-    Base<T>* d_ritz_ = NULL;
-    T* d_A_;
-    Base<T>* d_resid_ = NULL;
-    T* d_work_ = NULL;
-    std::size_t pitchB, pitchB2, pitchC, pitchC2;
-    int* devInfo_ = NULL;
+    int mpi_rank_; //!< the MPI rank within the working MPI communicator
+    cublasHandle_t cublasH_; //!< `cuBLAS` handle
+    cusolverDnHandle_t cusolverH_; //!< `cuSOLVER` handle
+    cublasStatus_t cublas_status_ = CUBLAS_STATUS_SUCCESS;  //!< `cuBLAS` status
+    cusolverStatus_t cusolver_status_ = CUSOLVER_STATUS_SUCCESS;  //!< `cuSOLVER` status
+    cudaStream_t stream1_; //!< CUDA stream for asynchronous exectution of kernels
+    cudaStream_t stream2_; //!< CUDA stream for asynchronous exectution of kernels
+    curandState* states_ = NULL; //!< a pointer of `curandState` for the cuRAND
+    T* d_H_; //!< a pointer to a local buffer of size `m_*n_` on GPU, which is mapped to `H_`.
+    T* d_C_; //!< a pointer to a local buffer of size `m_*(nev_+nex_)` on GPU, which is mapped to `d_C_`.
+    T* d_C2_; //!< a pointer to a local buffer of size `m_*(nev_+nex_)` on GPU, which is mapped to `d_C2_`.
+    T* d_B_; //!< a pointer to a local buffer of size `n_*(nev_+nex_)` on GPU, which is mapped to `d_B_`.
+    T* d_B2_; //!< a pointer to a local buffer of size `n_*(nev_+nex_)` on GPU, which is mapped to `d_B2_`.
+    Base<T>* d_ritz_ = NULL; //!< a pointer to a local buffer of size `nev_+nex_` on GPU for storing computed ritz values
+    T* d_A_; //!< a pointer to a local buffer of size `(nev_+nex_)*(nev_+nex_)` on GPU, which is mapped to `d_A_`.
+    T* d_work_ = NULL; //!< a pointer to a local buffer on GPU, which is reserved for the extra buffer required for any cuSOLVER routines
+    std::size_t pitchB; //!< pitch for `B_` and `d_B_`
+    std::size_t pitchB2; //!< pitch for `B2_` and `d_B2_`
+    std::size_t pitchC; //!< pitch for `C_` and `d_C_`
+    std::size_t pitchC2; //!< pitch for `C_` and `d_C2_`
+    int* devInfo_ = NULL; //!< for the return of information from any cuSOLVER routines
 
-    int lwork_ = 0;
-    ChaseMpiProperties<T>* matrix_properties_;
+    int lwork_ = 0; //!< size of required extra buffer by any cuSOLVER routines
+    ChaseMpiProperties<T>* matrix_properties_;  //!< an object of class ChaseMpiProperties
 };
 
 template <typename T>

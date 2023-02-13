@@ -213,12 +213,6 @@ public:
                              block * N_ * sizeof(T), cudaMemcpyDeviceToHost));
     }
 
-    /*! - For ChaseMpiDLACudaSeq, the core of `preApplication` is implemented
-       with `cudaMemcpyAsync, which copies `block` vectors from `V` on Host to
-       `V1` on GPU device.
-        - **Parallelism is NOT SUPPORT**
-        - For the meaning of this function, please visit ChaseMpiDLAInterface.
-    */
     void preApplication(T* V, std::size_t locked, std::size_t block) override
     {
         locked_ = locked;
@@ -226,11 +220,6 @@ public:
                              cudaMemcpyDeviceToDevice));
     }
 
-    /*! - For ChaseMpiDLACudaSeq, `apply` is implemented with `cublasXgemm`
-       provided by `cuBLAS`.
-        - **Parallelism is SUPPORT within one GPU card**
-        - For the meaning of this function, please visit ChaseMpiDLAInterface.
-    */
     void apply(T alpha, T beta, std::size_t offset, std::size_t block,
                std::size_t locked) override
     {
@@ -243,22 +232,11 @@ public:
         std::swap(d_V1_, d_V2_);
     }
 
-    /*! - For ChaseMpiDLACudaSeq, the core of `postApplication` is implemented
-       with `cudaMemcpyAsync, which copies `block` vectors from `V1_` on GPU
-       device to `V` on Host.
-        - **Parallelism is NOT SUPPORT**
-        - For the meaning of this function, please visit ChaseMpiDLAInterface.
-    */
     bool postApplication(T* V, std::size_t block, std::size_t locked) override
     {
         return false;
     }
 
-    /*! - For ChaseMpiDLACudaSeq, `shiftMatrix` is offloaded to GPU device and
-       implemented by `CUDA`.
-        - **Parallelism is SUPPORT within one GPU card**
-        - For the meaning of this function, please visit ChaseMpiDLAInterface.
-    */
     void shiftMatrix(T c, bool isunshift = false) override
     {
         chase_shift_matrix(d_H_, N_, std::real(c), &stream_);
@@ -269,11 +247,6 @@ public:
     {
     }
 
-    /*! - For ChaseMpiDLACudaSeq, `applyVec` is implemented with `GEMM` provided
-       by `BLAS`.
-        - **Parallelism is SUPPORT within node if multi-threading is actived**
-        - For the meaning of this function, please visit ChaseMpiDLAInterface.
-    */
     void applyVec(T* B, T* C) override
     {
         T One = T(1.0);
@@ -292,12 +265,6 @@ public:
                              cudaMemcpyDeviceToHost));
     }
 
-    /*!
-      - For ChaseMpiDLACudaSeq, `axpy` is implemented using `BLAS` routine
-      `xAXPY`.
-      - **Parallelism is SUPPORT within node if multi-threading is actived**
-      - For the meaning of this function, please visit ChaseMpiDLAInterface.
-    */
     void axpy(std::size_t N, T* alpha, T* x, std::size_t incx, T* y,
               std::size_t incy) override
     {
@@ -305,24 +272,12 @@ public:
         assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
     }
 
-    /*!
-      - For ChaseMpiDLACudaSeq, `scal` is implemented using `BLAS` routine
-      `xSCAL`.
-      - **Parallelism is SUPPORT within node if multi-threading is actived**
-      - For the meaning of this function, please visit ChaseMpiDLAInterface.
-    */
     void scal(std::size_t N, T* a, T* x, std::size_t incx) override
     {
         cublas_status_ = cublasTscal(cublasH_, N, a, x, incx);
         assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
     }
 
-    /*!
-      - For ChaseMpiDLACudaSeq, `nrm2` is implemented using `BLAS` routine
-      `xNRM2`.
-      - **Parallelism is SUPPORT within node if multi-threading is actived**
-      - For the meaning of this function, please visit ChaseMpiDLAInterface.
-    */
     Base<T> nrm2(std::size_t n, T* x, std::size_t incx) override
     {
         Base<T> nrm;
@@ -331,12 +286,6 @@ public:
         return nrm;
     }
 
-    /*!
-      - For ChaseMpiDLACudaSeq, `dot` is implemented using `BLAS` routine
-      `xDOT`.
-      - **Parallelism is SUPPORT within node if multi-threading is actived**
-      - For the meaning of this function, please visit ChaseMpiDLAInterface.
-    */
     T dot(std::size_t n, T* x, std::size_t incx, T* y,
           std::size_t incy) override
     {
@@ -345,21 +294,6 @@ public:
         assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
         return d;
     }
-
-    /*!
-        - For ChaseMpiDLACudaSeq, `RR` is implemented by `cublasXgemm` routine
-       provided by `cuBLAS` and `(SY)HEEVD` routine provided by `LAPACK`.
-          - The 1st operation `A <- W^T * V` is implemented by `cublasXgemm`
-       from `cuBLAS`.
-          - The 2nd operation which computes the eigenpairs of `A`, is
-       implemented by `(SY)HEEVD` from `LAPACK`.
-          - The 3rd operation which computes `W<-V*A` is implemented by
-       `cublasXgemm` from `cuBLAS`.
-        - **for (SY)HHEVD, parallelism is SUPPORT within node if multi-threading
-       is actived**
-        - **for cublasXgemm, parallelism is SUPPORT within one GPU card**
-        - For the meaning of this function, please visit ChaseMpiDLAInterface.
-    */
 
     void RR(std::size_t block, std::size_t locked, Base<T>* ritzv) override
     {
@@ -520,11 +454,11 @@ public:
     }
 
 private:
-    std::size_t N_;
-    std::size_t locked_;
-    std::size_t max_block_;
-    std::size_t nev_;
-    std::size_t nex_;
+    std::size_t N_;//!< global dimension of the symmetric/Hermtian matrix
+    std::size_t locked_; //!< the number of converged eigenpairs
+    std::size_t max_block_; //!< `maxBlock_=nev_ + nex_`
+    std::size_t nev_; //!< number of required eigenpairs
+    std::size_t nex_;  //!< number of extral searching space
 
     int* devInfo_ = NULL;
     T* d_V_ = NULL;
@@ -537,22 +471,21 @@ private:
     T* d_V1_;
     T* d_V2_;
     T* d_H_;
-    T* H_;
-    T* V1_;
-    T* V2_;
-    T* v0_;
-    T* v1_;
-    T* w_;
+    T* H_; //!< a pointer to the Symmetric/Hermtian matrix
+    T* V1_; //!< a matrix of size `N_*(nev_+nex_)`
+    T* V2_; //!< a matrix of size `N_*(nev_+nex_)`
+    T* v0_; //!< a vector of size `N_`, which is allocated in this class for Lanczos
+    T* v1_; //!< a vector of size `N_`, which is allocated in this class for Lanczos
+    T* w_; //!< a vector of size `N_`, which is allocated in this class for Lanczos
     Base<T>* d_ritz_ = NULL;
-    T* d_A_;
+    T* d_A_; //!< a matrix of size `(nev_+nex_)*(nev_+nex_)`
     Base<T>* d_resids_ = NULL;
-    cudaStream_t stream_, stream2_;
+    cudaStream_t stream_;
+    cudaStream_t stream2_;
     cublasHandle_t cublasH_;
     cublasHandle_t cublasH2_;
-    cublasHandle_t cublasBatched_[32];
-    cudaStream_t streamBatched_[32];
     cusolverDnHandle_t cusolverH_;
-    bool copied_;
+    bool copied_; //!< a flag indicates if the matrix has already been copied to device
 };
 
 template <typename T>

@@ -27,10 +27,10 @@ class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T>
 public:
     //! A constructor of ChaseMpiDLABlaslapackSeq.
     /*! @param matrices: it is an object of ChaseMpiMatrices, which allocates
-       the required buffer.
-        @param n: size of matrix defining the eigenproblem.
-        @param maxBlock: maximum column number of matrix `V`, which equals to
-       `nev+nex`.
+       the required buffer
+        @param n: size of matrix defining the eigenproblem
+        @param nev: number of eigenpairs to be computed
+        @param nex: size of extral searching space
     */
     explicit ChaseMpiDLABlaslapackSeq(ChaseMpiMatrices<T>& matrices,
                                       std::size_t n, std::size_t nex,
@@ -399,7 +399,7 @@ private:
     T* H_; //!< a pointer to the Symmetric/Hermtian matrix
     std::unique_ptr<T> V1_; //!< a matrix of size `N_*(nev_+nex_)`
     std::unique_ptr<T> V2_; //!< a matrix of size `N_*(nev_+nex_)`
-    std::unique_ptr<T> A_; //!< a matrix of size `(nev_+nex_)*(nev_+nex_)`, which is allocated in ChaseMpiProperties
+    std::unique_ptr<T> A_; //!< a matrix of size `(nev_+nex_)*(nev_+nex_)`
     std::vector<T> v0_; //!< a vector of size `N_`, which is allocated in this class for Lanczos
     std::vector<T> v1_; //!< a vector of size `N_`, which is allocated in this class for Lanczos
     std::vector<T> w_; //!< a vector of size `N_`, which is allocated in this class for Lanczos
