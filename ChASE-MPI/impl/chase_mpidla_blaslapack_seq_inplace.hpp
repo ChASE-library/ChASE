@@ -393,17 +393,17 @@ public:
     }
 
 private:
-    std::size_t N_;
-    std::size_t locked_;
-    std::size_t nev_;
-    std::size_t nex_;
-    std::size_t maxblock_;
-    T* H_;
-    T* V1_;
-    T* V2_;
-    std::vector<T> v0_;
-    std::vector<T> v1_;
-    std::vector<T> w_;
+    std::size_t N_; //!< global dimension of the symmetric/Hermtian matrix
+    std::size_t locked_; //!< number of converged eigenpairs
+    std::size_t nev_; //!< number of required eigenpairs
+    std::size_t nex_; //!< number of extral searching space
+    std::size_t maxblock_; //!< `maxBlock_=nev_ + nex_`
+    T* H_; //!< a pointer to the Symmetric/Hermtian matrix
+    T* V1_; //!< a matrix of size `N_*(nev_+nex_)`
+    T* V2_; //!< a matrix of size `N_*(nev_+nex_)`
+    std::vector<T> v0_;  //!< a vector of size `N_`, which is allocated in this class for Lanczos
+    std::vector<T> v1_;  //!< a vector of size `N_`, which is allocated in this class for Lanczos
+    std::vector<T> w_;  //!< a vector of size `N_`, which is allocated in this class for Lanczos
 };
 
 template <typename T>

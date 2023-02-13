@@ -48,6 +48,7 @@ public:
     }
 
     ChaseMpiDLABlaslapackSeq() = delete;
+    //! Destructor
     ChaseMpiDLABlaslapackSeq(ChaseMpiDLABlaslapackSeq const& rhs) = delete;
 
     ~ChaseMpiDLABlaslapackSeq() {}
@@ -83,12 +84,7 @@ public:
         std::memcpy(v2 + off2 * N_, v1 + off1 * N_, N_ * block * sizeof(T));
     }
 
-    /*! - For ChaseMpiDLABlaslapackSeq, the core of `preApplication` is
-       implemented with `std::memcpy`, which copies `block` vectors from `V` to
-       `V1`.
-        - **Parallelism is NOT SUPPORT**
-        - For the meaning of this function, please visit ChaseMpiDLAInterface.
-    */
+
     void preApplication(T* V, std::size_t const locked,
                         std::size_t const block) override
     {
@@ -97,11 +93,6 @@ public:
         std::memcpy(V12_, V + locked * N_, N_ * block * sizeof(T));
     }
 
-    /*! - For ChaseMpiDLABlaslapackSeq, `apply` is implemented with `GEMM`
-       provided by `BLAS`.
-        - **Parallelism is SUPPORT within node if multi-threading is actived**
-        - For the meaning of this function, please visit ChaseMpiDLAInterface.
-    */
     void apply(T alpha, T beta, std::size_t offset, std::size_t block,
                std::size_t locked) override
     {
@@ -125,12 +116,7 @@ public:
             next_ = NextOp::bAc;
         }
     }
-    /*! - For ChaseMpiDLABlaslapackSeq, the core of `postApplication` is
-       implemented with `std::memcpy`, which copies `block` vectors from `V1` to
-       `V`.
-        - **Parallelism is NOT SUPPORT**
-        - For the meaning of this function, please visit ChaseMpiDLAInterface.
-    */
+
     bool postApplication(T* V, std::size_t const block,
                          std::size_t locked) override
     {
@@ -145,11 +131,6 @@ public:
         return true;
     }
 
-    /*! - For ChaseMpiDLABlaslapackSeq, `shiftMatrix` is implemented by a loop
-       of length `N_`.
-        - **Parallelism is NOT SUPPORT**
-        - For the meaning of this function, please visit ChaseMpiDLAInterface.
-    */
     void shiftMatrix(T const c, bool isunshift = false) override
     {
         for (std::size_t i = 0; i < N_; ++i)
@@ -172,11 +153,7 @@ public:
                     N_ * block * sizeof(T));
     }
 
-    /*! - For ChaseMpiDLABlaslapackSeq, `applyVec` is implemented with `GEMM`
-       provided by `BLAS`.
-        - **Parallelism is SUPPORT within node if multi-threading is actived**
-        - For the meaning of this function, please visit ChaseMpiDLAInterface.
-    */
+
     void applyVec(T* B, T* C) override
     {
         T One = T(1.0);
@@ -187,7 +164,10 @@ public:
         this->postApplication(C, 1, 0);
     }
 
+    //! return of a pointer to a matrix of size `N_*(nev_+nex_)` allocated in this class
     T* get_V1() const { return V1_.get(); }
+
+    //! return of a pointer to a matrix of size `N_*(nev_+nex_)` allocated in this class
     T* get_V2() const { return V2_.get(); }
 
     int get_nprocs() const override { return 1; }
@@ -195,64 +175,28 @@ public:
     void Start() override {}
     void End() override {}
 
-    /*!
-      - For ChaseMpiDLABlaslapackSeq, `axpy` is implemented using `BLAS` routine
-     `xAXPY`.
-     - **Parallelism is SUPPORT within node if multi-threading is actived**
-      - For the meaning of this function, please visit ChaseMpiDLAInterface.
-    */
+
     void axpy(std::size_t N, T* alpha, T* x, std::size_t incx, T* y,
               std::size_t incy) override
     {
         t_axpy(N, alpha, x, incx, y, incy);
     }
 
-    /*!
-      - For ChaseMpiDLABlaslapackSeq, `scal` is implemented using `BLAS` routine
-      `xSCAL`.
-      - **Parallelism is SUPPORT within node if multi-threading is actived**
-      - For the meaning of this function, please visit ChaseMpiDLAInterface.
-    */
     void scal(std::size_t N, T* a, T* x, std::size_t incx) override
     {
         t_scal(N, a, x, incx);
     }
 
-    /*!
-      - For ChaseMpiDLABlaslapackSeq, `nrm2` is implemented using `BLAS` routine
-      `xNRM2`.
-      - **Parallelism is SUPPORT within node if multi-threading is actived**
-      - For the meaning of this function, please visit ChaseMpiDLAInterface.
-    */
     Base<T> nrm2(std::size_t n, T* x, std::size_t incx) override
     {
         return t_nrm2(n, x, incx);
     }
 
-    /*!
-      - For ChaseMpiDLABlaslapackSeq, `dot` is implemented using `BLAS` routine
-      `xDOT`.
-      - **Parallelism is SUPPORT within node if multi-threading is actived**
-      - For the meaning of this function, please visit ChaseMpiDLAInterface.
-    */
     T dot(std::size_t n, T* x, std::size_t incx, T* y,
           std::size_t incy) override
     {
         return t_dot(n, x, incx, y, incy);
     }
-
-    /*!
-        - For ChaseMpiDLABlaslapackSeq, `RR` is implemented by `GEMM` routine
-       provided by `BLAS` and `(SY)HEEVD` routine provided by `LAPACK`.
-          - The 1st operation `A <- W^T * V` is implemented by `GEMM` from
-       `BLAS`.
-          - The 2nd operation which computes the eigenpairs of `A`, is
-       implemented by `(SY)HEEVD` from `LAPACK`.
-          - The 3rd operation which computes `W<-V*A` is implemented by `GEMM`
-       from `BLAS`.
-        - **Parallelism is SUPPORT within node if multi-threading is actived**
-        - For the meaning of this function, please visit ChaseMpiDLAInterface.
-    */
 
     void RR(std::size_t block, std::size_t locked, Base<T>* ritzv) override
     {
@@ -445,22 +389,22 @@ private:
         cAb,
         bAc
     };
-    NextOp next_;
+    NextOp next_; //!< it is to manage the switch of operation from `V2=H*V1` to `V1=H'*V2` in filter
 
-    std::size_t N_;
-    std::size_t locked_;
-    std::size_t maxBlock_;
-    std::size_t nex_;
-    std::size_t nev_;
-    T* H_;
-    std::unique_ptr<T> V1_; // C
-    std::unique_ptr<T> V2_; // B
-    std::unique_ptr<T> A_;  // for CholeskyQR
-    std::vector<T> v0_;
-    std::vector<T> v1_;
-    std::vector<T> w_;
-    T* V12_; // C1
-    T* V22_; // B1
+    std::size_t N_; //!< global dimension of the symmetric/Hermtian matrix
+    std::size_t locked_;  //!< number of converged eigenpairs
+    std::size_t maxBlock_; //!< `maxBlock_=nev_ + nex_`
+    std::size_t nex_; //!< number of extral searching space
+    std::size_t nev_; //!< number of required eigenpairs
+    T* H_; //!< a pointer to the Symmetric/Hermtian matrix
+    std::unique_ptr<T> V1_; //!< a matrix of size `N_*(nev_+nex_)`
+    std::unique_ptr<T> V2_; //!< a matrix of size `N_*(nev_+nex_)`
+    std::unique_ptr<T> A_; //!< a matrix of size `(nev_+nex_)*(nev_+nex_)`, which is allocated in ChaseMpiProperties
+    std::vector<T> v0_; //!< a vector of size `N_`, which is allocated in this class for Lanczos
+    std::vector<T> v1_; //!< a vector of size `N_`, which is allocated in this class for Lanczos
+    std::vector<T> w_; //!< a vector of size `N_`, which is allocated in this class for Lanczos
+    T* V12_; //!< a pointer to a matrix of size `N_*(nev_+nex_)`
+    T* V22_; //!< a pointer to a matrix of size `N_*(nev_+nex_)`
 };
 
 template <typename T>

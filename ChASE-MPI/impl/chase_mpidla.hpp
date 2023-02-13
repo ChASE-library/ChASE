@@ -31,8 +31,10 @@ class ChaseMpiDLA : public ChaseMpiDLAInterface<T>
 public:
     //! A constructor of ChaseMpiDLA.
     /*!
-      @param matrix_properties: it is an object of ChaseMpiProperties, which
+      @param matrix_properties: it is an instance of ChaseMpiProperties, which
       defines the MPI environment and data distribution scheme in ChASE-MPI.
+      @param matrices: it is an instance of ChaseMpiMatrices, which
+      allocates the required buffers in ChASE-MPI.      
       @param dla: it is an object of ChaseMpiDLAInterface, which defines the
       implementation of in-node computation for ChASE-MPI. Currently, it can be
       one of ChaseMpiDLABlaslapack and ChaseMpiDLAMultiGPU.
@@ -232,6 +234,13 @@ public:
     }
     ~ChaseMpiDLA() {}
 
+    //! In ChaseMpiDLA, this function consists of operations
+    /*!
+     *   - backup of `C_` to `C2_`
+     *   - set the switch pointer of apply() to `bAc`
+     *   - set the switch pointer of ChaseMpiDLABlaslapack::apply()
+     *     and ChaseMpiDLABlaslapack::MultiGPU() to `bAc`
+     */ 
     void initVecs() override
     {
 #ifdef USE_NSIGHT
@@ -249,10 +258,12 @@ public:
     //!     - different MPI proc/GPUs generate parts of the required random numbers
     //!     - MPI proc/GPUs with the same rank within the same column communicator
     //!       share the same seed of RNG (random number generator)
-    //!     - in ChaseMpiDLABlaslapack, random numbers on each MPI rank is generated in
-    //!       sequence with C++ STL random generator
-    //!     - in ChaseMpiDLAMultiGPU, random numbers on each MPI rank is generated in parallel
-    //!       on related GPU based on the device API of <a href="https://docs.nvidia.com/c
+    //!     - the generation of random numbers taking place within ChaseMpiDLABlaslapack::initRndVecs()
+    //!       and ChaseMpiDLAMultiGPU::initRndVecs(), targetting different architectures     
+    //!         - in ChaseMpiDLABlaslapack, random numbers on each MPI rank is generated in
+    //!           sequence with C++ STL random generator
+    //!         - in ChaseMpiDLAMultiGPU, random numbers on each MPI rank is generated in parallel
+    //!           on related GPU based on the device API of <a href="https://docs.nvidia.com/c
     //!uda/curand/index.html">cuRAND</a>.
     void initRndVecs() override
     {
@@ -269,6 +280,7 @@ public:
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
+/*
 #ifdef USE_NSIGHT
         nvtxRangePushA("CholQR1");
 #endif
@@ -278,10 +290,11 @@ public:
         dla_->potrf('U', nevex, A_, nevex);
         dla_->trsm('R', 'U', 'N', 'N', m_, nevex, &one, A_, nevex, C_, m_,
                    false);
+*/
 #ifdef USE_NSIGHT
-        nvtxRangePop();
-        nvtxRangePop();
+        nvtxRangePop();        
 #endif
+//        nvtxRangePop();
     }
 
 
@@ -305,11 +318,22 @@ public:
        - In ChaseMpiDLA, collective communication of `HEMM` operation based on
        MPI which **ALLREDUCE** the product of local matrices either within the
        column communicator or row communicator.
+       - The workflow is:
+         - compute `B_ = H * C_` (local computation)
+         - `Allreduce`(B_, MPI_SUM) (communication within colum communicator)
+         - switch operation  
+         - compute `C_ = H**H * B_` (local computation)
+         - `Allreduce`(C_, MPI_SUM) (communication within row communicator)
+         - switch operation
+         - ...
+       - This function implements mainly the collective communications, while the local
+         computation is implemented in ChaseMpiDLABlaslapack and ChaseMpiDLAMultiGPU,
+         targetting different architectures
        - the computation of local `GEMM` invokes
           - BLAS `GEMM` for pure-CPU distributed-memory ChASE, and it is implemented
-            in ChaseMpiDLABlaslapack
+            in ChaseMpiDLABlaslapack::apply()
           - cuBLAS `GEMM` for multi-GPU distributed-memory ChASE, and it is implemented
-            in ChaseMpiDLABlaslapack             
+            in ChaseMpiDLAMultiGPU::apply()             
    */
     void apply(T alpha, T beta, std::size_t offset, std::size_t block,
                std::size_t locked) override
@@ -538,18 +562,24 @@ public:
         return true;
     }
     /*!
-       - In ChaseMpiDLA, collective communication of `HEMM` operation based on
-       MPI which **ALLREDUCE** the product of local matrices either within the
-       column communicator or row communicator.
-       - the computation of local `GEMM` invokes
-          - BLAS `GEMM` for pure-CPU distributed-memory ChASE, and it is implemented
-            in ChaseMpiDLABlaslapack
-          - cuBLAS `GEMM` for multi-GPU distributed-memory ChASE, and it is implemented
-            in ChaseMpiDLABlaslapack
-          - converting from `C2_`, which is distributed within column communicator, to
+     * - The objective of this function is to compute `H*C_`, which requires a local `GEMM`
+     *   at first, then a **ALLREDUCE** operation to summing up the product of local matrices
+     *  within the column communicator.
+     * - Another objective is to re-distribute the data in `C_` to `B_`, in which `C_` is partially
+     *   distributed in column communicator, and `B_` is partially distributed in row communicator.
+     * - The reason of combining these two ojectives in one function is to overlapping the local 
+     *   computation and the communication of re-distribution.
+     *    - In ChaseMpiDLA, `C2_` and `B2_` are often used to backup (part of) `C_` and `B_`.
+          - the computation of local `GEMM` using `C_` and `B_`, invokes
+              - BLAS `GEMM` for pure-CPU distributed-memory ChASE, and it is implemented
+                in ChaseMpiDLABlaslapack::asynCxHGatherC()
+              - cuBLAS `GEMM` for multi-GPU distributed-memory ChASE, and it is implemented
+                in ChaseMpiDLABlaslapack::asynCxHGatherC()
+          - re-distributing from `C2_`, which is distributed within column communicator, to
             `B2_`, which is distributed within row communicator is accomplished by
              multiple MPI asynchronous broadcasting operations, 
-             which is overlapped with the computation of local `GEMM`.            
+             which is overlapped with the computation of local `GEMM`.   
+          - the two operations can be invoked asynchronously with the help of **non-Blocking** MPI Bcast.            
    */
     void asynCxHGatherC(std::size_t locked, std::size_t block,
                         bool isCcopied = false) override
@@ -643,12 +673,13 @@ public:
     }
 
     /*!
-      - For ChaseMpiDLA,  `applyVec` is implemented by `preApplication`, `apply`
-      and `postApplication` implemented in this class.
-      - **Parallelism on distributed-memory system SUPPORT**
-      - **Parallelism within node for ChaseMpiDLABlaslapack if multi-threading
-      is enabled**
-      - **Parallelism within each GPU for ChaseMpiDLAMultiGPU**
+      - For ChaseMpiDLA,  `applyVec` is implemented as with the functions defined in this class.
+      - `applyVec` is used by ChaseMpi::Lanczos(), which requires the input arguments `B` and `C` to be
+         vectors of size `N_` which is redundantly distributed across all MPI procs.
+      - Here are the details:
+          - `ChaseMpiDLA::preApplication(B, 0, 1)`
+          - `ChaseMpiDLA::apply(One, Zero, 0, 1, 0)`
+          - `ChaseMpiDLA::postApplication(C, 1, 0)`
     */
     void applyVec(T* B, T* C) override
     {
@@ -700,14 +731,27 @@ public:
         return dla_->dot(n, x, incx, y, incy);
     }
 
-    /*!
-      - For ChaseMpiDLA, `RR` with real and double precision scalar, is
-      implemented by calling the one in ChaseMpiDLABlaslapack and
-      ChaseMpiDLAMultiGPU.
-      - This implementation is the same for both with or w/o GPUs.
-      - **Parallelism is SUPPORT within node if multi-threading is actived**
-      - For the meaning of this function, please visit ChaseMpiDLAInterface.
-    */
+    /*! Implementation of Rayleigh-Ritz (RR) in ChASE
+     * - The workflow of RR is 
+     *     - compute `B_= H*C_` and re-distribute from `C2_` to `B2_` (by asynCxHGatherC in this class) 
+     *     - compute `A_ = B2_**H*B_` (local `GEMM`) 
+     *     - `allreduce`(A_, MPI_SUM) (within row communicator)
+     *     - `(syhe)evd` to compute all eigenpairs of `A_`
+     *     - `gemm`: `C_=C2_*A_` (local computation)
+       - In ChaseMpiDLA, this function implements mainly the collective communications,
+         while the local computation (`sy(he)rk`, `(syhe)evd`, `trsm`) is implemented in 
+         ChaseMpiDLABlaslapack and ChaseMpiDLAMultiGPU, targetting different architectures
+
+       - the local computation of local `GEMM` invokes
+          - BLAS/LAPACK `gemm` and `(syhe)evd` for pure-CPU distributed-memory ChASE, 
+            - the operation `A_ = B2_**H*B_` is implemented in  ChaseMpiDLABlaslapack::syherk
+            - the operations `(syhe)evd` and `C_=C2_*A` is implemented in 
+              ChaseMpiDLABlaslapack::heevd, respectively
+          - cuBLAS/cuSOLVER `gemm` and `(syhe)evd` for multi-GPU distributed-memory ChASE, 
+            - the operation `A_ = B2_**H*B_` is implemented in  ChaseMpiDLAMultiGPU::syherk
+            - the operations `(syhe)evd` and `C_=C2_*A` is implemented in 
+              ChaseMpiDLAMultiGPU::heevd, respectively        
+   */
     void RR(std::size_t block, std::size_t locked, Base<T>* ritzv) override
     {
         T One = T(1.0);
@@ -847,6 +891,27 @@ public:
 #endif
     }
 
+    /*! Implementation of partially 1D distributed Cholesky QR within each column communicator.
+     * - The workflow of a 1D Cholesky QR is 
+     *     - `sy(he)rk`: `A_ = C_*C_` (local computation)
+     *     - `allreduce`(A, MPI_SUM) (within column communicator)
+     *     - `potrf(A)` (local computation, redundantly within column communicator)
+     *     - `trsm`: `C_=A*C_` (local computation)
+     *     - repeat previous step to impprove the accuracy of QR factorization
+       - In ChaseMpiDLA, this function implements mainly the collective communications,
+         while the local computation (`sy(he)rk`, `potrf`, `trsm`) is implemented in 
+         ChaseMpiDLABlaslapack and ChaseMpiDLAMultiGPU, targetting different architectures
+
+       - the local computation invokes
+          - BLAS/LAPACK `sy(he)rk`, `potrf`, `trsm` for pure-CPU distributed-memory ChASE, 
+            and it is implemented
+            in ChaseMpiDLABlaslapack::syherk, ChaseMpiDLABlaslapack::potrf and 
+            ChaseMpiDLABlaslapack::trsm, respectively
+          - cuBLAS/cuSOLVER `sy(he)rk`, `potrf`, `trsm` for multi-GPU distributed-memory ChASE, 
+            and it is implemented
+            in ChaseMpiDLAMultiGPU::syherk, ChaseMpiDLAMultiGPU::potrf and 
+            ChaseMpiDLAMultiGPU::trsm, respectively           
+   */
     void cholQR(std::size_t locked) override
     {
 #ifdef USE_NSIGHT
