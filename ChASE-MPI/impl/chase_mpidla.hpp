@@ -435,9 +435,9 @@ public:
 
         if (data_layout.compare("Block-Cyclic") == 0)
         {
-            if (block > 1 && Buff_.size() != (nev_ + nex_) * N_)
+            if (block > 1 && Buff_.size() != block * N_)
             {
-                Buff_.resize((nev_ + nex_) * N_);
+                Buff_.resize(block * N_);
             }
         }
 

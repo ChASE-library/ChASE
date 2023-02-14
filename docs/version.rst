@@ -2,11 +2,11 @@
 Versions of the library
 ************************
 
-The library comes in two main versions which are labelled ChASE-MPI
-and ChASE-Elemental. ChASE-MPI is the default version of the library
-and can be installed with the minimum amount of dependencies (BLAS,
-LAPACK, and MPI). ChASE-Elemental requires the additional installation
-of the `Elemental <https://github.com/elemental/Elemental>`__ library.
+Currently, the library consists of one major part, labelled ChASE-MPI, for
+solving dense eigenproblems. There will be the another major part to support
+sparse eigenproblems in short future. 
+ChASE-MPI can be installed with the minimum amount of dependencies (BLAS,
+LAPACK, and MPI).
 
 ChASE-MPI
 ==========
@@ -30,11 +30,7 @@ hardware resources.
 
    * **GPU build:** ChASE-MPI can be configured to take advantage of
      graphics card on heterogeneous computing clusters. Currently we
-     support the use of one or more GPU cards per computing node in
-     a number of flexible configurations: for instance on computing nodes
-     with 4 cards per node one can choose to compile and execute the
-     program with one, two or four GPU card per MPI rank.
-
+     support one GPU card per MPI rank.
 
 Matrix Distributions
 --------------------
@@ -103,16 +99,3 @@ In this example, the matrix `A` is split into 2D, with a series of submatrices :
 in a round-robin manner so that each MPI rank gets several non-adjacent blocks.
 For more details about **Block-Cyclic Distribution**,  
 please refer to `Netlib <https://www.netlib.org/scalapack/slug/node75.html>`_ website.
-
-
-ChASE-Elemental
-================
-
-ChASE-Elemental takes advantage of the `Elemental
-<http://libelemental.org/>`__ library routines to execute its tasks in
-parallel. The data is distributed using Elemental distribution
-classes. ChASE-Elemental is available in a **pure MPI build** and,
-while it is slightly less performant than ChASE-MPI, it ensure a
-better scalability since, contrary to ChASE-MPI, the QR factorization
-is also executed in parallel. For stability reason, ChASE uses
-Elemental version 0.84.

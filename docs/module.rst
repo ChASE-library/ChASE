@@ -98,17 +98,3 @@ of dense matrix operations on different computing architectures that are require
 
    module/chasempidla
 
-
-ChASE-Elemental
-================
-
-The namespace ``chase::elemental``, which is defined inside the namespace ``chase``,
-provides the parallel implementation of ChASE based on the Elemental library by re-implementing
-the numerical kernels as virtual functions calls within the abstract class. For the benefit of the user, only the constructor of this ChaseElemental
-class is provided here.
-
-.. toctree::
-   :maxdepth: 2
-
-   module/elemental
-

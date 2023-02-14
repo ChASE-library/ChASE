@@ -17,9 +17,10 @@ ChASE's Documentation
       
    quick-start
    installation
-   example
-   module
+   usage
    parameters
+   module
+   example
 ..   output
 
 .. toctree::

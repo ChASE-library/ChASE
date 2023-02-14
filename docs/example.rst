@@ -80,19 +80,3 @@ Boost); 2) the parallel I/O which loads the local matrices into the computing no
 ============================
 
 The fourth example `3_installation <https://github.com/ChASE-library/ChASE/tree/master/examples/3_installation>`_ shows the way to link ChASE to other applications, for more information, please visit :ref:`link_by_cmake`.
-
-
-4. Generalized Eigenproblem
-============================
-
-The fifth example `4_gev <https://github.com/ChASE-library/ChASE/tree/master/examples/4_gev>`_ shows an example
-to solve Generalized Eigenproblem of the form
-:math:`A\hat{x} = \lambda B \hat{x}`, with :math:`B` s.p.d. by the
-Cholesky Factorization provided by ScaLAPACK.
-
-
-.. toctree::
-   :maxdepth: 2
-
-   example/gev
-

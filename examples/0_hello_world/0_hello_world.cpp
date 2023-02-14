@@ -37,7 +37,7 @@ int main(int argc, char** argv)
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
     std::size_t N = 1001;  // problem size
-    std::size_t nev = 100; // number of eigenpairs to be computed
+    std::size_t nev = 40; // number of eigenpairs to be computed
     std::size_t nex = 20;  // extra searching space
 
     int dims[2];

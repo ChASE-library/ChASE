@@ -16,10 +16,10 @@ precision = { 'double': 8, 'float': 4, 'complex': 8, 'dcomplex': 16 }
 
 def get_mem_CPU(N, n_, m_, block_, float_type, data_layout):
 
-       tot_mem = float(n_*m_ + n_*block_ + m_*block_ + 2 * N * block_)
+       tot_mem = float(n_*m_ + 2 * n_*block_ + 2 * m_*block_ + block_ * block_)
 
        if data_layout == "block-cyclic":
-           tot_mem +=  N * block_
+           tot_mem +=  N * 1
 
        tot_mem *= precision[float_type]
        tot_mem /= pow(1024,3)
@@ -43,16 +43,8 @@ def get_workspace_qr(n, nb, float_type):
     '''
 
     # QR
-    lwork_qr = float(n * nb)
-    lwork_qr *= precision[float_type]
-    lwork_qr /= pow(1024,3)
-
-    # GQR - xORNQR
-    lwork_gqr = float(n * nb)
-    lwork_gqr *= precision[float_type]
-    lwork_gqr /= pow(1024,3)
-
-    return lwork_qr + lwork_gqr
+    # For cholesky QR, no additional workspace required
+    return 0
 
 def get_mpi_grid(n):
 
@@ -81,21 +73,17 @@ def get_mem_GPU(N, n_, m_, block_, float_type):
     max_dim = max(m_, n_)
 
     # HEMM memory
-    hemm_mem = float(3 * block_ * max_dim + m_ * n_)
+    hemm_mem = float(n_*m_ + 2 * n_*block_ + 2 * m_*block_ + block_ * block_ )
     hemm_mem *= precision[float_type]
     hemm_mem /= pow(1024,3)
 
-    # QR memory
-    qr_mem = float(N * block_)
-    qr_mem *= precision[float_type]
-    qr_mem /= pow(1024,3)
+    # heevd memory
+    lwork_heevd = float(1 + 5*block_ + 2*pow(block_,2))
+    lwork_heevd *= precision[float_type]
+    lwork_heevd /= pow(1024,3)
 
-    # RR memory
-    rr_mem = float(N * block_ + block_ * block_)
-    rr_mem *= precision[float_type]
-    rr_mem /= pow(1024,3)
 
-    return hemm_mem + qr_mem + rr_mem
+    return hemm_mem + lwork_heevd
 
 
 def main():
