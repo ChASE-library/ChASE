@@ -8,7 +8,7 @@ without the necessity of having access to a computing cluster. In the
 following, we provide simple step-by-step instructions on how to
 install ChASE on a laptop or a workstation equipped with a Linux or
 Unix OS. Because ChASE uses `CMake <http://www.cmake.org>`__ for
-autodecting dependencies and mananging configuration options across
+auto-detecting dependencies and managing configuration options across
 different platforms, it can be easily configured on any Linux and Unix
 based operating systems. Multiple examples are also provided, and
 user can utilize them to directly test ChASE on a matrix of his choice.
@@ -44,7 +44,7 @@ ready-to-use examples, it is also necessary to install the `Boost
 Installing dependencies on Linux
 --------------------------------
 
-The following instructions for the intallation of the prerequisite
+The following instructions for the installation of the prerequisite
 modules have been tested on the `Ubuntu <http://www.ubuntu.com/>`__
 operating system (e.g., version 18.10), but they should work as well
 with most modern Linux OS.
@@ -103,7 +103,7 @@ On any Apple computer running a Mac OS we warmly invite to use
 `Macports <https://www.macports.org/>`_ (`XCode
 <https://developer.apple.com/xcode/>`_ is required and can be
 downloaded directly using the Apple Store application) to install the
-required dependencies. The installation of Macports and any of the
+required dependencies. The installation of MacPorts and any of the
 supported *ports* requires administration privileges. 
 
 CMake
@@ -212,6 +212,9 @@ Accelerate, one could execute the following command:
 
     cmake -DCMAKE_CXX_COMPILER=g++ -DCMAKE_C_COMPILER=gcc -DCMAKE_Fortran_COMPILER=gfortran ..
 
+
+.. note::
+   If you want to try with ChASE or use ChASE as standalone eigensolver, the CMake flag ``-DCMAKE_INSTALL_PREFIX=${ChASEROOT}`` is not mandatory. 
 
 Quick Hands-on by Examples
 ------------------------------

@@ -14,7 +14,8 @@ ChASE's Documentation
 .. toctree::
    :maxdepth: 2
    :caption: USER DOCUMENTATION
-      
+   :numbered:
+
    quick-start
    installation
    usage
@@ -26,7 +27,8 @@ ChASE's Documentation
 .. toctree::
    :maxdepth: 2
    :caption: DEVELOPER DOCUMENTATION
-
+   :numbered:
+   
    algorithm
    abstract
    parallel

@@ -25,8 +25,8 @@ hardware resources.
 
    * **MPI+Threads build:** On multi-core homogeneous CPU clusters ChASE
      is best used in its pure MPI build. In this configuration, ChASE
-     is typically used with one MPI rank per computing node and as
-     many threads as number of available cores per node.
+     is typically used with one MPI rank per NUMA domain and as
+     many threads as number of available cores per NUMA domain.
 
    * **GPU build:** ChASE-MPI can be configured to take advantage of
      graphics card on heterogeneous computing clusters. Currently we
@@ -36,7 +36,7 @@ Matrix Distributions
 --------------------
 
 In ChASE-MPI, the MPI nodes are constructed as 2D grid, two data distributions
-are support to assigned sublocks of dense matrix **A** into different
+are support to assigned sub-blocks of dense matrix **A** into different
 MPI nodes.
 
 Block Distribution
@@ -63,7 +63,7 @@ offloading of the multiplication to accelerators such as GPUs.
 
 The figure above gives an example of ChASE which distributes a :math:`n \times n`
 dense matrix :math:`A` into a :math:`3 \times 3` grid of MPI nodes. In this example,
-the matrix `A` is split into 2D, with a series of submatrices :math:`A_{i,j}` in which
+the matrix `A` is split into 2D, with a series of sub-matrices :math:`A_{i,j}` in which
 :math:`i \in [0,2]` and :math:`j \in [0,2]`. Therefore, :math:`A_{0,0}` is distributed
 to MPI rank 1, :math:`A_{1,0}` is distributed to rank 2, :math:`A_{2,0}` is distributed to rank 3, :math:`A_{0,1}` is distributed to rank 4, :math:`A_{1,1}` is distributed to rank 5, and so on.
 
@@ -75,7 +75,7 @@ The second is called 2D **Block-Cyclic Distribution**. This distribution scheme 
 for the implementation of dense matrix computations on distributed-memory machines. Compared to
 the **Block Distribution**, the main advantage of the Block-Cyclic Distribution is improving
 the load balance of matrix computation if the amount of work differs for different entries of a matrix,
-e.g., QR and LU factorizations. A block distribution can lead to load imbalances.
+e.g., QR and LU factorization. A block distribution can lead to load imbalances.
 
 Even the load balance is not a problem for ChASE, in which the most important kernel **Hermitian Matrix-Matrix Multiplication**
 is well balanced with the **Block Distribution**, we still provide the **Block-Cyclic Distribution** as an option
@@ -94,8 +94,8 @@ The figure above show an example of ChASE which distributes a :math:`n \times n`
 dense matrix :math:`A` into a :math:`2 \times 2` grid of MPI nodes in a block-cyclic scheme.
 Denoting the 4 MPI nodes as :math:`P_{0,0}`, :math:`P_{0,1}`, :math:`P_{1,0}`, and :math:`P_{1,1}`,
 they are marked as green, red, blue and yellow, respectively on the figure above.
-In this example, the matrix `A` is split into 2D, with a series of submatrices :math:`A_{i,j}` in which
-:math:`i \in [0,3]` and :math:`j \in [0,3]`. Each submatrix is assigned to one MPI node
+In this example, the matrix `A` is split into 2D, with a series of sub-matrices :math:`A_{i,j}` in which
+:math:`i \in [0,3]` and :math:`j \in [0,3]`. Each sub-matrix is assigned to one MPI node
 in a round-robin manner so that each MPI rank gets several non-adjacent blocks.
 For more details about **Block-Cyclic Distribution**,  
 please refer to `Netlib <https://www.netlib.org/scalapack/slug/node75.html>`_ website.

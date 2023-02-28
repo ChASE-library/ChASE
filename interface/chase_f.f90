@@ -1,4 +1,4 @@
-!> @defgroup chasc-f ChASE Fortran Interface
+!> @defgroup chase-f ChASE Fortran Interface
 !>   @brief This module provides a Fortran interface of ChASE  
 !>  @{
 !>
@@ -25,12 +25,12 @@ MODULE chase_diag
         END SUBROUTINE dchase_init    
     END INTERFACE
 
-    INTERFACE        
-        SUBROUTINE dchase_finalize(flag) bind( c, name = 'dchase_finalize_' )
-            USE, INTRINSIC :: iso_c_binding
+    INTERFACE
       !> Finalize shared-memory ChASE with real scalar in double precison.
       !>    
-      !>
+      !>            
+        SUBROUTINE dchase_finalize(flag) bind( c, name = 'dchase_finalize_' )
+            USE, INTRINSIC :: iso_c_binding
       !> @param[in,out] flag A flag to indicate if ChASE has been cleared up              
             INTEGER(c_int)      :: flag
 
@@ -584,6 +584,6 @@ MODULE chase_diag
     END INTERFACE
 
 END MODULE chase_diag
-!> @} end of chasc-f
+!> @} end of chase-f
 
 
