@@ -285,7 +285,7 @@ public:
     void hhQR(std::size_t locked) override {}
     //! - All required operations for this function has been done in for ChaseMpiDLA::cholQR().
     //! - This function contains nothing in this class.
-    void cholQR(std::size_t locked) override {}
+    void cholQR(std::size_t locked, Base<T> cond) override {}
     //! - All required operations for this function has been done in for ChaseMpiDLA::Swap().
     //! - This function contains nothing in this class.
     void Swap(std::size_t i, std::size_t j) override {}

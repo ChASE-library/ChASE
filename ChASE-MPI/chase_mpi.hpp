@@ -396,7 +396,7 @@ public:
     //! When CholQR is disabled, ScaLAPACK Householder QR is used whenever possible,
     //! @param fixednev: total number of converged eigenpairs before this time
     //! QR factorization.
-    void QR(std::size_t fixednev) override
+    void QR(std::size_t fixednev, Base<T> cond) override
     {
         int grank;
         MPI_Comm_rank(MPI_COMM_WORLD, &grank);
@@ -418,7 +418,7 @@ public:
         }
         else
         {
-            dla_->cholQR(locked_);
+            dla_->cholQR(locked_, cond);
         }
     }
 

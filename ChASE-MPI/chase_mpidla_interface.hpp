@@ -344,7 +344,7 @@ public:
     virtual void hhQR(std::size_t locked) = 0;
     //! Cholesky QR factorization on the rectangular matrix `V1`.   
     //!  @param locked: number of converged eigenvectors.           
-    virtual void cholQR(std::size_t locked) = 0;
+    virtual void cholQR(std::size_t locked, Base<T> cond) = 0;
     //! Return the required buffers of Lanczos which are allocated within each individual
     //! implementation of DLA. This operation is required, since Lanczos algorithm is 
     //! implemented in ChaseMpi class, which has no direct access to these buffers.

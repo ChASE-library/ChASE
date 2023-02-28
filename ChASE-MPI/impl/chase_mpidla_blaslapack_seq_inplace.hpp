@@ -231,7 +231,7 @@ public:
         std::memcpy(V1_, V2_, locked * N_ * sizeof(T));
     }
 
-    void cholQR(std::size_t locked) override
+    void cholQR(std::size_t locked, Base<T> cond) override
     {
         auto nevex = nev_ + nex_;
 

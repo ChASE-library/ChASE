@@ -912,11 +912,19 @@ public:
             in ChaseMpiDLAMultiGPU::syherk, ChaseMpiDLAMultiGPU::potrf and 
             ChaseMpiDLAMultiGPU::trsm, respectively           
    */
-    void cholQR(std::size_t locked) override
+    void cholQR(std::size_t locked, Base<T> cond) override
     {
 #ifdef USE_NSIGHT
         nvtxRangePushA("ChaseMpiDLA: cholQR");
 #endif
+
+        Base<T> cond_threshold;
+        if(sizeof(Base<T>) == 8){
+            cond_threshold = 1e8;
+        }else{
+            cond_threshold = 1e5;
+        }
+
         auto nevex = nev_ + nex_;
         int grank;
         bool first_iter = true;
@@ -937,6 +945,38 @@ public:
                       MPI_SUM, col_comm_);
 #ifdef USE_NSIGHT
         nvtxRangePop();
+#endif
+
+        if(cond > cond_threshold){
+#ifdef USE_NSIGHT
+            nvtxRangePushA("ChaseMpiDLA: t_lange");
+#endif      
+            Base<T> nrmf = t_lange('F', m_, nevex, C_, m_);     
+            nrmf = std::pow(nrmf, 2);
+#ifdef USE_NSIGHT
+            nvtxRangePop();
+            nvtxRangePushA("allreduce");
+#endif     
+            MPI_Allreduce(MPI_IN_PLACE, &nrmf, 1, getMPI_Type<Base<T>>(), MPI_SUM, col_comm_);               nrmf = std::sqrt(nrmf);
+            Base<T> shift = 11 * (N_ * nevex + nevex * nevex + nevex  ) * std::numeric_limits<Base<T>>::epsilon()* nrmf;
+#ifdef CHASE_OUTPUT
+            if (grank == 0)
+            std::cout << "CholQR requires shift: " << shift << std::endl;
+#endif   
+#ifdef USE_NSIGHT
+            nvtxRangePop();
+            nvtxRangePushA("ChaseMpiDLA: shift in QR");
+#endif      
+        for(auto i = 0; i < nevex; i++){
+            A_[i * nevex + i] += (T)shift;
+        }
+
+#ifdef USE_NSIGHT
+            nvtxRangePop();
+#endif
+        }
+
+#ifdef USE_NSIGHT
         nvtxRangePushA("ChaseMpiDLA: potrf");
 #endif
         info = dla_->potrf('U', nevex, A_, nevex);

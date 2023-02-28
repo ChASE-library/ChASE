@@ -428,7 +428,7 @@ public:
                              cudaMemcpyDeviceToDevice));
     }
 
-    void cholQR(std::size_t locked) override { this->hhQR(locked); }
+    void cholQR(std::size_t locked, Base<T> cond) override { this->hhQR(locked); }
 
     void Swap(std::size_t i, std::size_t j) override
     {

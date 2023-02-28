@@ -41,7 +41,7 @@ public:
     //! CholQR is used in default. Optionally, user can decide to use Househoulder QR.
     //! @param fixednev: total number of converged eigenpairs before this time
     //! QR factorization.    
-    virtual void QR(std::size_t fixednev) = 0;
+    virtual void QR(std::size_t fixednev, Base<T> cond) = 0;
     /*! This function performs the Rayleigh-Ritz projection, which projects the
        eigenproblem to be a small one, then solves the small problem and
        reconstructs the eigenvectors.

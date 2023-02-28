@@ -355,6 +355,8 @@ void Algorithm<T>::solve(Chase<T>* single)
     // To store the approximations obtained from lanczos().
     Base<T> lowerb, upperb, lambda;
 
+    Base<T> cond;
+
     std::vector<std::size_t> degrees_(nev + nex);
     std::vector<Base<T>> residLast_(nevex);
     // this will be copied into residLast
@@ -446,16 +448,6 @@ void Algorithm<T>::solve(Chase<T>* single)
 #ifdef CHASE_OUTPUT
         {
             std::ostringstream oss;
-            Base<T> cc = (upperb + lowerb) / 2; // Center of the interval.
-            Base<T> ee = (upperb - lowerb) / 2; // Half-length of the interval.
-            Base<T> rho;
-            Base<T> t = (ritzv[0] - cc) / ee;
-            rho = std::max(std::abs(t - std::sqrt(t * t - 1)),
-                           std::abs(t + std::sqrt(t * t - 1)));
-
-            oss << std::setprecision(6) << rho << "\t" << std::setprecision(6)
-                << std::pow(rho, (degrees[0])) << "\n";
-
             oss << "degrees\tresid\tresidLast\tritzv\n";
             for (std::size_t k = 0; k < std::min<std::size_t>(unconverged, 20);
                  ++k)
@@ -478,7 +470,17 @@ void Algorithm<T>::solve(Chase<T>* single)
 #endif
         //----------------------------------- QR
         //-----------------------------------
-        single->QR(locked);
+        Base<T> cc = (upperb + lowerb) / 2; // Center of the interval.
+        Base<T> ee = (upperb - lowerb) / 2; // Half-length of the interval.
+        Base<T> rho;
+        Base<T> t = (ritzv[0] - cc) / ee;
+        rho = std::max(std::abs(t - std::sqrt(t * t - 1)),
+                           std::abs(t + std::sqrt(t * t - 1)));
+
+        cond = std::pow(rho, (degrees[0]));
+
+        std::cout << "cond: " << cond << std::endl;
+        single->QR(locked, cond);
 #ifdef USE_NSIGHT
         nvtxRangePop();
         nvtxRangePushA("RR");
