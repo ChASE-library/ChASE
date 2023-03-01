@@ -918,11 +918,27 @@ public:
         nvtxRangePushA("ChaseMpiDLA: cholQR");
 #endif
 
+        Base<T> shift;
+        int choldeg = 2;
+        int choldeg_env;
+        char* choldegenv;
+        choldegenv = getenv("CHASE_CHOLQR_DEGREE");
+        if (choldegenv)
+        {
+            choldeg_env = std::atoi(choldegenv);
+        }
+
+        //condition for using shifted CholQR
         Base<T> cond_threshold;
+        //condition for using CholQR1
+        Base<T> cond_threshold_2;
+
         if(sizeof(Base<T>) == 8){
             cond_threshold = 1e8;
+            cond_threshold_2 = 1e4;
         }else{
             cond_threshold = 1e5;
+            cond_threshold_2 = 1e2;
         }
 
         auto nevex = nev_ + nex_;
@@ -957,12 +973,10 @@ public:
             nvtxRangePop();
             nvtxRangePushA("allreduce");
 #endif     
-            MPI_Allreduce(MPI_IN_PLACE, &nrmf, 1, getMPI_Type<Base<T>>(), MPI_SUM, col_comm_);               nrmf = std::sqrt(nrmf);
-            Base<T> shift = 11 * (N_ * nevex + nevex * nevex + nevex  ) * std::numeric_limits<Base<T>>::epsilon()* nrmf;
-#ifdef CHASE_OUTPUT
-            if (grank == 0)
-            std::cout << "CholQR requires shift: " << shift << std::endl;
-#endif   
+            MPI_Allreduce(MPI_IN_PLACE, &nrmf, 1, getMPI_Type<Base<T>>(), MPI_SUM, col_comm_);               
+            nrmf = std::sqrt(nrmf);
+            shift = 11 * (N_ * nevex + nevex * nevex + nevex  ) 
+                               * std::numeric_limits<Base<T>>::epsilon()* nrmf;
 #ifdef USE_NSIGHT
             nvtxRangePop();
             nvtxRangePushA("ChaseMpiDLA: shift in QR");
@@ -984,17 +998,33 @@ public:
         nvtxRangePop();
 #endif
         if (info == 0)
-        {
-            int choldeg = 2;
-            char* choldegenv;
-            choldegenv = getenv("CHASE_CHOLQR_DEGREE");
-            if (choldegenv)
-            {
-                choldeg = std::atoi(choldegenv);
+        {            
+            //if condition number < 1e4, use cholQR1
+            if(cond < cond_threshold_2){
+                choldeg = 1;
             }
-#ifdef CHASE_OUTPUT
-            if (grank == 0)
-                std::cout << "choldegee: " << choldeg << std::endl;
+
+            if (choldegenv){
+                choldeg = choldeg_env;
+            }
+
+            //if condition number < 1e4, use shifted cholQR2
+            if(cond > cond_threshold && choldeg == 1){
+                choldeg = 2;
+            }
+#ifdef CHASE_OUTPUT            
+            if (grank == 0){
+                std::cout << std::setprecision(2) 
+                          << "cond(V): " << cond << ", choldegee: " << choldeg;
+
+                if(cond > cond_threshold)
+                {
+                    std::cout << ", shift: " << shift << std::endl;
+                }else
+                {
+                    std::cout << std::endl;
+                }          
+            }
 #endif
 
             if (choldeg == 1)
@@ -1005,6 +1035,7 @@ public:
             {
                 first_iter = true;
             }
+
 #ifdef USE_NSIGHT
             nvtxRangePushA("ChaseMpiDLA: trsm");
 #endif

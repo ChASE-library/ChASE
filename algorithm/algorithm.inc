@@ -479,7 +479,6 @@ void Algorithm<T>::solve(Chase<T>* single)
 
         cond = std::pow(rho, (degrees[0]));
 
-        std::cout << "cond: " << cond << std::endl;
         single->QR(locked, cond);
 #ifdef USE_NSIGHT
         nvtxRangePop();
