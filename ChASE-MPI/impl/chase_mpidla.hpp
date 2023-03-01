@@ -935,9 +935,9 @@ public:
 
         if(sizeof(Base<T>) == 8){
             cond_threshold = 1e8;
-            cond_threshold_2 = 1e4;
+            cond_threshold_2 = 1e2;
         }else{
-            cond_threshold = 1e5;
+            cond_threshold = 1e4;
             cond_threshold_2 = 1e2;
         }
 
