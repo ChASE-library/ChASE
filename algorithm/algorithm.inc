@@ -356,6 +356,7 @@ void Algorithm<T>::solve(Chase<T>* single)
     Base<T> lowerb, upperb, lambda;
 
     Base<T> cond;
+    std::size_t last_degree;
 
     std::vector<std::size_t> degrees_(nev + nex);
     std::vector<Base<T>> residLast_(nevex);
@@ -440,7 +441,8 @@ void Algorithm<T>::solve(Chase<T>* single)
         }
         //-------------------------------- DEGREES
         //--------------------------------
-        if (config.DoOptimization() && iteration != 0)
+        last_degree = degrees[0];
+	if (config.DoOptimization() && iteration != 0)
         {
             deg = calc_degrees(single, N, unconverged, nex, upperb, lowerb, tol,
                                ritzv, resid, residLast, degrees, locked);
@@ -477,7 +479,7 @@ void Algorithm<T>::solve(Chase<T>* single)
         rho = std::max(std::abs(t - std::sqrt(t * t - 1)),
                            std::abs(t + std::sqrt(t * t - 1)));
 
-        cond = std::pow(rho, (degrees[0]));
+	   cond = std::pow(rho, std::min(degrees[0], last_degree));
 
         single->QR(locked, cond);
 #ifdef USE_NSIGHT

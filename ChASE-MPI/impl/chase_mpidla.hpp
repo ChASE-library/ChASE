@@ -917,8 +917,8 @@ public:
 #ifdef USE_NSIGHT
         nvtxRangePushA("ChaseMpiDLA: cholQR");
 #endif
-
         Base<T> shift;
+	    bool isShiftQR = false;
         int choldeg = 2;
         int choldeg_env;
         char* choldegenv;
@@ -935,7 +935,7 @@ public:
 
         if(sizeof(Base<T>) == 8){
             cond_threshold = 1e8;
-            cond_threshold_2 = 1e2;
+            cond_threshold_2 = 1e1;
         }else{
             cond_threshold = 1e4;
             cond_threshold_2 = 1e2;
@@ -963,10 +963,19 @@ public:
         nvtxRangePop();
 #endif
 
-        if(cond > cond_threshold){
+#ifdef USE_NSIGHT
+        nvtxRangePushA("ChaseMpiDLA: potrf");
+#endif
+        info = dla_->potrf('U', nevex, A_, nevex);
+#ifdef USE_NSIGHT
+        nvtxRangePop();
+#endif
+
+        if(info != 0){
+            isShiftQR = true;		
 #ifdef USE_NSIGHT
             nvtxRangePushA("ChaseMpiDLA: t_lange");
-#endif      
+#endif  
             Base<T> nrmf = t_lange('F', m_, nevex, C_, m_);     
             nrmf = std::pow(nrmf, 2);
 #ifdef USE_NSIGHT
@@ -981,25 +990,23 @@ public:
             nvtxRangePop();
             nvtxRangePushA("ChaseMpiDLA: shift in QR");
 #endif      
-        for(auto i = 0; i < nevex; i++){
-            A_[i * nevex + i] += (T)shift;
-        }
-
+            for(auto i = 0; i < nevex; i++){
+               A_[i * nevex + i] += (T)shift;
+            }
+#ifdef USE_NSIGHT
+            nvtxRangePop();
+#endif
+#ifdef USE_NSIGHT
+            nvtxRangePushA("ChaseMpiDLA: potrf");
+#endif
+            info = dla_->potrf('U', nevex, A_, nevex);
 #ifdef USE_NSIGHT
             nvtxRangePop();
 #endif
         }
 
-#ifdef USE_NSIGHT
-        nvtxRangePushA("ChaseMpiDLA: potrf");
-#endif
-        info = dla_->potrf('U', nevex, A_, nevex);
-#ifdef USE_NSIGHT
-        nvtxRangePop();
-#endif
         if (info == 0)
         {            
-            //if condition number < 1e4, use cholQR1
             if(cond < cond_threshold_2){
                 choldeg = 1;
             }
@@ -1008,8 +1015,7 @@ public:
                 choldeg = choldeg_env;
             }
 
-            //if condition number < 1e4, use shifted cholQR2
-            if(cond > cond_threshold && choldeg == 1){
+            if(isShiftQR && choldeg == 1){
                 choldeg = 2;
             }
 #ifdef CHASE_OUTPUT            
@@ -1017,7 +1023,7 @@ public:
                 std::cout << std::setprecision(2) 
                           << "cond(V): " << cond << ", choldegee: " << choldeg;
 
-                if(cond > cond_threshold)
+                if(isShiftQR)
                 {
                     std::cout << ", shift: " << shift << std::endl;
                 }else
