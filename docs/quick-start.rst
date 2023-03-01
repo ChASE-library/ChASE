@@ -96,11 +96,11 @@ while `OpenMPI <http://www.open-mpi.org/>`_ can be installed by executing::
     sudo apt-get install libopenmpi-dev
 
 
-Installing dependencies on Mac OS
+Installing dependencies on macOS
 ---------------------------------
 
-On any Apple computer running a Mac OS we warmly invite to use
-`Macports <https://www.macports.org/>`_ (`XCode
+On any Apple computer running a macOS we warmly invite to use
+`MacPorts <https://www.macports.org/>`_ (`XCode
 <https://developer.apple.com/xcode/>`_ is required and can be
 downloaded directly using the Apple Store application) to install the
 required dependencies. The installation of MacPorts and any of the
@@ -159,7 +159,7 @@ while `OpenMPI <http://www.open-mpi.org/>`_ can be installed by executing::
 Quick Installation and Execution
 =================================
 
-Installing the ChASE library on Linux or Mac OS requires cloning the
+Installing the ChASE library on Linux or macOS requires cloning the
 source files from a public github repository and compile them in few
 steps. An example, provided with the source files, can be used to
 run ChASE on a single computing node for the solution of an isolated
@@ -192,7 +192,7 @@ compilers are available on the system. For instance, any ``C++``, ``C``, or
 ``Fortran`` compiler can be selected by setting the
 ``CMAKE_CXX_COMPILER``, ``CMAKE_C_COMPILER``, and
 ``CMAKE_Fortran_COMPILER`` variables, respectively. The following
-provide an illustration of such setting. ::
+provides an illustration of such setting. ::
 
     -D CMAKE_CXX_COMPILER=/usr/bin/g++ \
     -D CMAKE_C_COMPILER=/usr/bin/gcc   \

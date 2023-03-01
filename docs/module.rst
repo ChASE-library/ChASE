@@ -18,7 +18,7 @@ ChASE an unprecedented degree of flexibility that makes the integration of this 
 most application codes quite simple. ChASE efficiently uses available machine resources.
 
 We give an UML class diagram as follows. This diagram uses the implementation of 
-Chebyshev `Filter`, whose kernel is a series of Hermitian Matrix-Matrix Products (*HEMM*) 
+Chebyshev `Filter`, whose kernel is a series of Hermitian Matrix-Matrix Products (*HEMM*), as an example, 
 to show the scheme of implementing of ChASE and porting to different architectures. This section will
 give the user an insight on how to set up their eigenproblems and
 solve them by ChASE on different computing architectures.
@@ -93,7 +93,7 @@ The function ``chase::Solve`` provides the implementation of ChASE algorithm by 
 .. note::
    
    This class implements the ChASE algorithm by the virtual functions, it cannot run in practice
-   until the further implementations of these virtual functions.
+   until the further implementations of these virtual functions are provided.
 
 .. note::
 
@@ -103,8 +103,7 @@ The function ``chase::Solve`` provides the implementation of ChASE algorithm by 
 chase::ChaseConfig
 --------------------
 
-The class ``chase::Algorithm`` is aware of the class ``chase::ChaseConfig``.
-This class defines the functions to set different parameters of ChASE.
+The class ``chase::Algorithm`` is aware of the class ``chase::ChaseConfig``, which defines the functions to set different parameters of ChASE.
 
 Besides setting up the standard parameters such as size of the
 matrix defining the eigenproblem, number of wanted
@@ -273,7 +272,7 @@ into two layers:
 
 The local computations with or without GPUs are implemented in the classes ``chase::mpi::ChaseMpiDLABlaslapack`` and ``chase::mpi::ChaseMpiDLAMultiGPU``, respectively. 
 
-The collective communication layer is shared between the ChASE versions with or without GPUs, which is implemented in the class ``chase::mpi::chaseMpiDLA``. This class takes an instance of ``chase::mpi::ChaseMpiDLAInterface``, either ``chase::mpi::ChaseMpiDLABlaslapack`` or ``chase::mpi::ChaseMpiDLAMultiGPU`` as input. In this way, it is able to access to different implementations of local computation kernels.
+The collective communication layer is shared between the distributed memory ChASE with or without GPU support, which is implemented in the class ``chase::mpi::chaseMpiDLA``. This class takes an instance of ``chase::mpi::ChaseMpiDLAInterface``, either ``chase::mpi::ChaseMpiDLABlaslapack`` or ``chase::mpi::ChaseMpiDLAMultiGPU`` as input. In this way, it is able to access to different implementations of local computation kernels.
 
 .. note::
 

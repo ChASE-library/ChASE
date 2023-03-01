@@ -13,9 +13,7 @@ we give an introduction about these examples.
    1. All the first three examples are compiled if user installs ChASE with the option ``-DBUILD_WITH_EXAMPLES=ON``.
 
    2. In order to build the example `2_input_output
-      <https://github.com/ChASE-library/ChASE/tree/master/examples/2_input_output>`_ and
-      `4_gev
-      <https://github.com/ChASE-library/ChASE/tree/master/examples/4_gev>`_,
+      <https://github.com/ChASE-library/ChASE/tree/master/examples/2_input_output>`_,
       the module **Boost** should be uploaded from the software stack
       or installed by the user.
 

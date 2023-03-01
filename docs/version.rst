@@ -3,7 +3,7 @@ Versions of the library
 ************************
 
 Currently, the library consists of one major part, labelled ChASE-MPI, for
-solving dense eigenproblems. There will be the another major part to support
+solving dense eigenproblems. There will be another major part to support
 sparse eigenproblems in short future. 
 ChASE-MPI can be installed with the minimum amount of dependencies (BLAS,
 LAPACK, and MPI).

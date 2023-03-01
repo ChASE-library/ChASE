@@ -5,21 +5,21 @@ How to use ChASE
 Use ChASE as a standalone solver
 =====================================
 
-ChASE has multiple implementations for both shared-memory and distributed-memory
+ChASE has multiple versions for both shared-memory and distributed-memory
 systems, with or without GPU supports. This section helps users use ChASE to solve
-their own problem on preferred architectures by from scratch.
+their own problem on preferred architectures from scratch.
 
-.. note::
-  
-  For all versions of ChASE, they share a same interface for the solving step, parameter configuration and performance decoration.
-
-- In order to use ChASE, the first header should be included is ``ChASE-MPI/chase_mpi.hpp``, which is a common interface of ChASE solver. This header provides multiple constructors of
+In order to use ChASE, the first header file should be included is ``ChASE-MPI/chase_mpi.hpp``, which is a common interface of ChASE solver. This header provides multiple constructors of
 class ``ChaseMpi``, targeting different computing architectures.
 
 .. note:: 
 
-  It is named as ``ChASE-MPI``, but for current
-  version of ChASE, it should be included no matter shared-memory and distributed-memory versions of ChASE is supposed to be used. 
+  It is named as ``ChASE-MPI``, but for current release
+  version of ChASE, it should be included no matter shared-memory or distributed-memory versions of ChASE is selected to be used. 
+
+.. note::
+  
+  For all versions of ChASE, they share a same interface for the solving step, parameter configuration and performance decoration.
 
 Shared-Memory ChASE
 ----------------------------------
@@ -38,23 +38,26 @@ ChASE solver
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 A ChASE solver, which is in fact an instance of ``ChaseMpi`` should be constructed, before solving the eigenprolem. ``ChaseMpi`` is templated with 2 classes: ``template <typename> class MF`` and ``class T``. The ``T`` is to determine the scalar type that the user
-would like to work with. For shared-memory ChASE``template <typename> class MF`` should be
+would like to work with. For shared-memory ChASE ``template <typename> class MF`` should be
 either ``ChaseMpiDLACudaSeq<T>`` or ``ChaseMpiDLABlaslapackSeq<T>``.
 
 
 With the combination of the templates ``MF`` and ``T``, different instances of ``ChaseMpi`` 
 can be constructed targeting different architectures and scalar types.
 
-For examples, if the user want to use ChASE to solve an Hermitian matrix with double precision on GPU, an instance of ``ChaseMpi`` should be constructed as follows
+For examples, if the user wants to use ChASE to solve an Hermitian matrix with double precision on GPU, an instance of ``ChaseMpi`` should be constructed as follows
 
 .. code-block:: c++
 
+  //N: global size of matrix to be diagonalized
+  //nev: number of eigenpairs to be computed
+  //nex: external searching space size
   //buffer for storing eigevectors
   auto V = std::vector<std::complex<double>>(N * (nev + nex));
   //buffer for storing computed ritz values
   auto Lambda = std::vector<double>(nev + nex);
   //buffer for storing Hermitian matrix to be diagonalized
-  std::vector<std::complex<double>> H(N * N, T(0.0));
+  std::vector<std::complex<double>> H(N * N);
 
   ChaseMpi<ChaseMpiDLACudaSeq, std::complex<double>> solver(N, nev, nex, V.data(), Lambda.data(), H.data());
 
@@ -67,13 +70,12 @@ Distributed-Memory ChASE
 
 Include headers
 ^^^^^^^^^^^^^^^^^^^^^^^
-The distributed-memory version of ChASE can be built with or without the support of
-Nvidia GPU. If GPU support is enabled, it supports only 1 GPU per MPI rank.
+The distributed-memory version of ChASE can be built with or without the support for
+Nvidia GPUs. If GPU support is enabled, it supports only 1 GPU per MPI rank.
 
-- In order to use distributed-memory version of ChASE with only CPU support, it is also necessary to include header ``ChASE-MPI/impl/chase_mpidla_blaslapack.hpp``. This header file provides an implementation of the templated class ``ChaseMpiDLABlaslapack`` which provides the implementations of required dense linear algebra operations. Its template type determines the scalar type that the user would like to work with.
+- **CPU version**: it is also necessary to include header ``ChASE-MPI/impl/chase_mpidla_blaslapack.hpp``. This header file provides an implementation of a templated class ``ChaseMpiDLABlaslapack`` which provides the implementations of required dense linear algebra operations. Its template type determines the scalar type that the user would like to work with.
 
-- In order to use shared-memory version of ChASE with GPU support, another header file ``ChASE-MPI/impl/chase_mpidla_mgpu.hpp`` should be included. This header file provides an implementation of the templated class ``ChaseMpiDLAMultiGPU`` which provides the implementations of required dense linear algebra operations. Its template 
-type determines the scalar type that the user would like to work with.
+- **GPU version**: another header file ``ChASE-MPI/impl/chase_mpidla_mgpu.hpp`` should be included. This header file provides an implementation of a templated class ``ChaseMpiDLAMultiGPU`` which provides the implementations of required dense linear algebra operations. Its template type determines the scalar type that the user would like to work with.
 
 
 MPI working context
@@ -81,7 +83,7 @@ MPI working context
 
 Unlike shared-memory ChASE, for distributed-memory ChASE, it is necessary to initialize a
 working MPI communicator for it. A class ``ChaseMpiProperties`` is designed which is able
-to construct a 2D MPI grid environment based on the parameters by users. Multiple constructors of this class are available:
+to construct a 2D MPI grid environment based on user's configuration. Multiple constructors of this class are available:
 
 - a constructor for **Block Distribution** with user-customized 2D MPI grid
 
@@ -89,9 +91,11 @@ to construct a 2D MPI grid environment based on the parameters by users. Multipl
 
 - a constructor for **Block-Cyclic Distribution** with user-customized 2D MPI grid
 
-Apart from the setup 2D MPI grid, this class allocates also the temporary buffers for ChASE and provides some utilities for faciliating the communications.
+.. note::
+  
+  Apart from the setup of 2D MPI grid, this class allocates also the temporary buffers for ChASE and provides some utilities for facilitating the communications.
 
-An example for the constructor for **Block Distribution** with 2D MPI grid determined internally is as follows
+An example for the constructor for **Block Distribution** with 2D MPI grid determined internally is given as follows
 
 .. code-block:: c++
 
@@ -101,7 +105,7 @@ in which the input arguments are for: global matrix size, number of eigenpairs t
 external searching space size, and working MPI communicator, respectively. A 2D MPI grid will be
 internally by ChASE which is as square as possible.
 
-An example for the constructor for **Block Distribution** with user-customized 2D MPI grid is as follows
+An example for the constructor for **Block Distribution** with user-customized 2D MPI grid is given as follows
 
 .. code-block:: c++
   
@@ -109,10 +113,10 @@ An example for the constructor for **Block Distribution** with user-customized 2
 
  
 in which the input arguments are for: global matrix size, number of eigenpairs to compute,
-external searching space size, the row number of local block of matrix, the column number of local block of matrix, row number of 2D MPI grid, column number of 2D MPI grid, the grid major of 2D MPI grid ('C' refers to column major), and working MPI communicator, respectively. A 2D MPI grid will be internally by ChASE which is as square as possible.
+external searching space size, the row number of local block of matrix, the column number of local block of matrix, row number of 2D MPI grid, column number of 2D MPI grid, the grid major of 2D MPI grid ('C' refers to column major), and working MPI communicator, respectively.
 
 
-An example for the constructor for **Block-Cyclic Distribution** with user-customized 2D MPI grid is as follows
+An example for the constructor for **Block-Cyclic Distribution** with user-customized 2D MPI grid is given as follows
 
 .. code-block:: c++
   
@@ -120,7 +124,7 @@ An example for the constructor for **Block-Cyclic Distribution** with user-custo
 
  
 in which the input arguments are for: global matrix size, the block factor of block-cyclic distribution for the 1st and 2nd dimension of 2D MPI grid, number of eigenpairs to compute,
-external searching space size, the row number of local block of matrix, the column number of local block of matrix, row number of 2D MPI grid, column number of 2D MPI grid, the grid major of 2D MPI grid ('C' refers to column major), process row/column over which the first row of the global matrix is distributed, and working MPI communicator, respectively. A 2D MPI grid will be internally by ChASE which is as square as possible.
+external searching space size, the row number of local block of matrix, the column number of local block of matrix, row number of 2D MPI grid, column number of 2D MPI grid, the grid major of 2D MPI grid ('C' refers to column major), process row/column over which the first row/column of the global matrix is distributed, and working MPI communicator, respectively.
 
 ChASE solver
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -135,19 +139,25 @@ Same as for shared-memory version of ChASE, the class ``ChaseMpi`` provides also
   some historic reasons, this version exists, and we are considering to remove it in
   near future.
 
-- Unlike the constructor for shared-memory version of ChASE, the constructors of distributed-memory versions take an instance of ``ChaseMpiProperties`` as an input. This allows creating different ChASE solver with either **Block Distribution** or **Block-Cyclic Distribution**.  
+- Unlike the constructor for shared-memory version of ChASE, the constructors of distributed-memory versions take an instance of ``ChaseMpiProperties`` as an input. This allows creating different ChASE solver with either **Block Distribution** or **Block-Cyclic Distribution** and user customized MPI configuration.  
 
 
 ``ChaseMpi`` is templated with 2 classes: ``template <typename> class MF`` and ``class T``. The ``T`` is to determine the scalar type that the user
-would like to work with. For distributed-memory ChASE``template <typename> class MF`` should be
+would like to work with. For distributed-memory ChASE ``template <typename> class MF`` should be
 either ``ChaseMpiDLABlaslapack<T>`` or ``ChaseMpiDLAMultiGPU<T>``.
 
 With the combination of the templates ``MF`` and ``T``, different instances of ``ChaseMpi`` can be constructed targeting different architectures and scalar types.
 
-For examples, if the user want to use ChASE to solve an Hermitian matrix with double precision which is to distribute in a *Block-Cyclic* fashion onto multi-GPUs, an instance of ``ChaseMpi`` should be constructed as follows
+For examples, if users want to use ChASE to solve an Hermitian matrix with double precision which is to distribute in a *Block-Cyclic* fashion onto multi-GPUs, an instance of ``ChaseMpi`` should be constructed as follows
 
 .. code-block:: c++
 
+  //N: global size of matrix to be diagonalized
+  //nev: number of eigenpairs to be computed
+  //nex: external searching space size
+  //NB: block factor for block-cyclic distribution
+  //dims[0] x dims[1]: 2D MPI grid
+  //irsrc, icsrc: over which processor row/column the block-cyclic distribution starts from
   //construct MPI context with block-cyclic distribution
   auto props = new ChaseMpiProperties<std::complex<double>>(N, NB, NB, nev, nex, dims[0], dims[1], (char*)"C", irsrc, icsrc, MPI_COMM_WORLD);
   //buffer for storing eigevectors
@@ -156,7 +166,7 @@ For examples, if the user want to use ChASE to solve an Hermitian matrix with do
   auto Lambda = std::vector<double>(nev + nex);
   auto ldh =  props->get_m();  
   //buffer for storing Hermitian matrix to be diagonalized  
-  std::vector<T> H( ldh *  props->get_n(), (0.0));
+  std::vector<T> H( ldh *  props->get_n());
 
   ChaseMpi<ChaseMpiDLAMultiGPU, std::complex<double>> solver(props, H, ldh, V.data(), Lambda.data());
 
@@ -165,6 +175,9 @@ Another example with **Block Distribution** and without pre-allocated buffer for
 
 .. code-block:: c++
 
+  //N: global size of matrix to be diagonalized
+  //nev: number of eigenpairs to be computed
+  //nex: external searching space size
   //construct MPI context with block-cyclic distribution
   auto props = new ChaseMpiProperties<std::complex<double>>(N, nev, nex, MPI_COMM_WORLD);
   //buffer for storing eigevectors
@@ -199,13 +212,18 @@ the parameters for a constructed instance of ChASE solver ``solver``.
   /*Set max iteration steps*/
   config.SetMaxIter(25);
 
+.. note::
 
-For more details about the APIs of parameter configuration, please visit :ref:`configuration_object`. For the usage and recommendation of values of these 
+  For all the versions of ChASE targeting different computing architectures,
+  they share a uniform interface for the parameter configuration.
+
+For more details about the APIs of parameter configuration, please visit :ref:`
+configuration_object`. For the usage and recommendation of values of these 
 parameters, please visit :ref:`parameters_and_config`.
 
 Solve
 ----------
-For both shared-memory and distributed versions of ChASE, they share a unique interface
+For both shared-memory and distributed versions of ChASE, they share an uniform interface
 for the solving step.
 
 Assume that an instance of ``ChaseMpi`` has been constructed with pre-allocated buffers
@@ -220,7 +238,7 @@ When an isolated problem is to be solved, there would be three steps for solving
 
 - set the parameter `approx_` to be ``false``: ``config.setApprox(false)``
 
-- Solve the problem as: ``chase::Solve(&solver)``.
+- solve the problem as: ``chase::Solve(&solver)``.
 
 A sequence of problems
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -233,7 +251,7 @@ When a sequence of eigenproblems are to be solved one by one, the steps for solv
 
   - set the parameter `approx_` to be ``false``: ``config.setApprox(false)``
 
-  - Solve the problem as: ``chase::Solve(&solver)``.
+  - solve the problem as: ``chase::Solve(&solver)``.
 
 - for the rest of problems (2nd, 3rd...) 
 
@@ -241,22 +259,23 @@ When a sequence of eigenproblems are to be solved one by one, the steps for solv
 
   - set the parameter `approx_` to be ``true``: ``config.setApprox(true)``
 
-  - Solve the problems as: ``chase::Solve(&solver)``.
+  - solve the problems as: ``chase::Solve(&solver)``.
 
 
 .. note::
 
-  - When the parameter `approx_` is set to be ``false``, it means that the initial guess vectors are filled with random generated elements in normal distribution. It's ChASE responsibility to generate these random numbers, the users is required to provide a 
-  pre-allocated buffer for it.
+  - When the parameter `approx_` is set to be ``false``, it means that the initial guess vectors are filled with random numbers respecting to normal distribution. ChASE generate internally these numbers in parallel.
 
-  - For distributed-memory ChASE with multiGPUs, these random numbers are generated in parallel on each GPU.
+  - The buffer to the initial guess vectors should be allocated externally by users.
+
+  - For distributed-memory ChASE with GPUs, these random numbers are generated in parallel on GPUs.
 
 Performance Decorator
 -----------------------------
 
 A templated class ``PerformanceDecoratorChase<T>`` is also provided, which is
 able to record the performance of different numerical kernels in ChASE. 
-ChASE is a derived class of the class ``Chase<T>``. It
+This class is a derived class of the class ``Chase<T>``. It
 is quite simple to use it, and we give an example to show how to decorate 
 a constructed instance of ChASE solver ``solver`` as follows:
 
@@ -295,7 +314,7 @@ which represents respectively:
 
 - the total time (s), 
 
-- the time cost of Lanczos, Filter, QR, RR and Resid. 
+- the time cost of Lanczos, Filter, QR, RR and Residuals, respectively. 
 
 
 Extract the results
@@ -318,19 +337,20 @@ in which ``Base<T>`` represents a basic type of a scalar type, e.g., ``Base<doub
 
 
 I/O 
-^^^^^^^^^^^^^^^^^^^^^
+----
 
-ChASE itself doesn't provide any parallel I/O function to load a large 
+ChASE itself doesn't provide any parallel I/O functions to load a large 
 matrix from a binary file. The reason is that for the majority of applications of ChASE,
 the Hermitian matrix is supposed to be already well distributed by applications, it makes no
 sense to provide our own version of parallel I/O. This is also the motivation for us
-to provide multiple versions of ChASE which is able to deal with both **Block Distribution**
-and **Block-Cyclic Distribution**.
+to provide multiple versions of ChASE with the support of both **Block Distribution**
+and **Block-Cyclic Distribution**, to adapt all the possible requirements
+of applications.
 
 However, for the users who want to test ChASE as a standalone eigensolver, a parallel I/O
-might be necessary. Hence, in this section, we provide a hint to load matrix in parallel from local binary file by using built functions of ChASE. This parallel I/O is not tuned for
+might be necessary. Hence, in this section, we provide a hint to load matrix in parallel from local binary file by using built-in functions of ChASE. This parallel I/O is not tuned for
 optimal performance, and we encourage the user to develop their own one based on some mature
-parallel I/O library, such as `HDF5 <https://www.hdfgroup.org/solutions/hdf5>`_ 
+parallel I/O libraries, such as `HDF5 <https://www.hdfgroup.org/solutions/hdf5>`_ 
 and `sionlib <https://apps.fz-juelich.de/jsc/sionlib/docu/index.html>`_.
 
 
@@ -369,7 +389,7 @@ This is an example to load a matrix from local into block distribution data layo
   }
 
 For the parameters **xoff**, **yoff**, **xlen** and **ylen**, they can 
-be obtained by the member function ``GetOff`` of :ref:`ChaseMpi` class as follows.
+be obtained by the member function ``get_off`` of :ref:`ChaseMpiProperties` class as follows.
 
 
 .. code:: c++
@@ -379,7 +399,7 @@ be obtained by the member function ``GetOff`` of :ref:`ChaseMpi` class as follow
   std::size_t xlen;
   std::size_t ylen;
 
-  single.GetOff(&xoff, &yoff, &xlen, &ylen);
+  props.GetOff(&xoff, &yoff, &xlen, &ylen);
 
 
 Block-Cyclic Distribution
@@ -429,24 +449,23 @@ This is an example to load a matrix from local into block-cyclic distribution da
 For the parameters **m**, **mblocks**, **nblocks**, **r_offs**, **r_lens**, **r_offs_l**, 
 **c_offs**, **c_lens** and **c_offs_l**, 
 they can be obtained by the member functions ``get_mblocks``, ``get_nblocks``, 
-``get_m``, ``get_n``, and ``get_offs_lens``  of :ref:`ChaseMpi` class as follows.
+``get_m``, ``get_n``, and ``get_offs_lens``  of :ref:`ChaseMpiProperties` class as follows.
 
 
 .. code:: c++
 
   /*local block number = mblocks x nblocks*/
-  std::size_t mblocks = single.get_mblocks();
-  std::size_t nblocks = single.get_nblocks();
+  std::size_t mblocks = props.get_mblocks();
+  std::size_t nblocks = props.get_nblocks();
 
   /*local matrix size = m x n*/
-  std::size_t m = single.get_m();
-  std::size_t n = single.get_n();
+  std::size_t m = props.get_m();
+  std::size_t n = props.get_n();
 
   /*global and local offset/length of each block of block-cyclic data*/
   std::size_t *r_offs, *c_offs, *r_lens, *c_lens, *r_offs_l, *c_offs_l;
 
-  single.get_offs_lens(r_offs, r_lens, r_offs_l, c_offs, c_lens, c_offs_l);
-
+  props.get_offs_lens(r_offs, r_lens, r_offs_l, c_offs, c_lens, c_offs_l);
 
 
 Use ChASE from external applications
@@ -587,7 +606,7 @@ Both C and Fortran interfaces of ChASE provides 3 versions of utilization:
 .. note::
   The naming logic of the interface functions are as follows:
 
-    - For the names of all the functions for distributed memory ChASE, they starts with a prefix ``p``, which follows a same way of namings and ScaLAPACK.
+    - For the names of all the functions for distributed memory ChASE, they starts with a prefix ``p``, which follows a same way of naming in ScaLAPACK.
     - For the **Block** and **Block-Cyclic** data layouts:
 
       - they share a same interface for **Solving** and **Finalization** steps
@@ -596,7 +615,7 @@ Both C and Fortran interfaces of ChASE provides 3 versions of utilization:
 
     - The Fortran interfaces are implemented based on ``iso_c_binding``. It is standard intrinsic module which defines named constants, types, and procedures for the inter-operation with C functions. C and Fortran functions share the same names. Additionally, unlike the Fortran routines, C functions has a suffix `_`.
 
-Different scalar types are also supported in the interfaces of ChASE. We will use abbreviations ``<x>`` for the corresponding 
+Different scalar types are also supported by the interfaces of ChASE. We will use abbreviations ``<x>`` for the corresponding 
 short type to make a more concise and clear presentation of the implemented functions. 
 ``Base<x>`` is defined as the table below. Unless otherwise specified ``<x>`` has the following meanings:
 
@@ -632,7 +651,7 @@ Initialization Functions
 <x>chase_init
 ^^^^^^^^^^^^^^
 
-``<x>chase_init`` initialize the context for the shared-memory version of ChASE.
+``<x>chase_init`` initialize the context for the shared-memory ChASE.
 ChASE is initialized with the buffers ``h``, ``v``, ``ritzv``, which should be allocated 
 externally by users. These buffers will be re-used when a sequence of eigenproblems are
 to be solved.
@@ -679,7 +698,7 @@ The interfaces of C and Fortran share the same parameters as follows:
    * - ``v``
      - In, Out  
      - ``(nx(nev+nex))`` matrix, input is the initial guess eigenvectors,
-       input is the initial guess eigenvectors, and for output, the first ``nev`` columns 
+       and for output, the first ``nev`` columns 
        are overwritten by the desired eigenvectors        
    * - ``ritzv``
      - Out 
@@ -691,7 +710,7 @@ The interfaces of C and Fortran share the same parameters as follows:
 p<x>chase_init
 ^^^^^^^^^^^^^^
 
-``p<x>chase_init`` initialize the context for the distributed-memory version of ChASE with **Block Distribution**. ChASE is initialized with the buffers ``h``, ``v``, ``ritzv``, which should be allocated 
+``p<x>chase_init`` initialize the context for the distributed-memory ChASE with **Block Distribution**. ChASE is initialized with the buffers ``h``, ``v``, ``ritzv``, which should be allocated 
 externally by users. These buffers will be re-used when a sequence of eigenproblems are
 to be solved.
 
@@ -917,7 +936,7 @@ Solving Functions
      - desired absolute tolerance of computed eigenpairs
    * - ``mode``
      - In 
-     - for sequences of eigenproblems, if reusing the eigenpairs obtained from last system. If mode = 'A', reuse, otherwise, not.
+     - for sequences of eigenproblems, if reusing the eigenpairs obtained from last system. If mode = 'A', reuse, otherwise, no.
    * - ``opt``
      - In 
      - determining if using internal optimization of Chebyshev polynomial degree. If opt='S', use, otherwise, no.
@@ -963,7 +982,7 @@ The interfaces of C and Fortran share the same parameters as follows:
      - desired absolute tolerance of computed eigenpairs
    * - ``mode``
      - In 
-     - for sequences of eigenproblems, if reusing the eigenpairs obtained from last system. If mode = 'A', reuse, otherwise, not.
+     - for sequences of eigenproblems, if reusing the eigenpairs obtained from last system. If mode = 'A', reuse, otherwise, no.
    * - ``opt``
      - In 
      - determining if using internal optimization of Chebyshev polynomial degree. If opt='S', use, otherwise, no.
@@ -975,7 +994,7 @@ Finalization Functions
 <x>chase_finalize
 ^^^^^^^^^^^^^^^^^^
 
-``<x>chase_finalise`` cleans up the instances of shared-memory ChASE.
+``<x>chase_finalize`` cleans up the instances of shared-memory ChASE.
 
 The APIs for the C interfaces are as follows:
 
@@ -1012,7 +1031,11 @@ The interfaces of C and Fortran share the same parameters as follows:
 p<x>chase_finalize
 ^^^^^^^^^^^^^^^^^^^
 
-``p<x>chase_finalise`` cleans up the instances of distributed-memory ChASE.
+``p<x>chase_finalize`` cleans up the instances of distributed-memory ChASE.
+
+.. note::
+
+  For **Block Distribution** and **Block-Cyclic Distribution** versions of ChASE, they share an uniform interface for the finalization.
 
 The APIs for the C interfaces are as follows:
 
@@ -1046,7 +1069,8 @@ The interfaces of C and Fortran share the same parameters as follows:
      - A flag to indicate if ChASE has been cleared up. If ChASE has been cleaned up, ``flag=0``
 
 
-.. note::
+..
+ .. note::
   In order to use C interfaces, it is necessary to link to ``libchase_c.a``. In order to use Fortran interfaces, it is required to link to both ``libchase_c.a`` and ``libchase_f.a``
 
 

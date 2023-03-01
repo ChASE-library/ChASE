@@ -1,7 +1,7 @@
 References and Contributors
 ***************************
 
-The path that lead to the current implementation of ChASE using modern
+The path that leads to the current implementation of ChASE using modern
 ``C++`` design concepts started back in summer of 2012, when an
 initial Matlab prototype of the code was implemented in ``C`` and
 parallelized using OpenMP 3.0. Soon after a distributed version of the
@@ -22,21 +22,22 @@ Main developers
 
   * Xinzhe Wu -- Algorithm development, advanced parallel (MPI and GPU) implementation and optimization, developer documentation
 
-  * Davor Davidovic -- Advanced parallel GPU implementation and optimization
+  * Davor Davidović -- Advanced parallel GPU implementation and optimization
 
 
 Current Contributors
 =====================
+
+  * 
+  
+Past Contributors
+===================
 
   * Xiao Zhang -- Integration of ChASE into Jena BSE code
 
   * Miriam Hinzen, Daniel Wortmann -- Integration of ChASE into FLEUR code
 
   * Sebastian Achilles -- Library benchmarking on parallel platforms, documentation
-
-
-Past Contributors
-===================
 
   * Jan Winkelmann -- DoS algorithm development and advanced ``C++`` implementation
 

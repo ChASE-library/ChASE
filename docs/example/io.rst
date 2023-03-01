@@ -1,31 +1,8 @@
 ChASE Object and Configuration 
 ------------------------------
 
-ChASE parameters can be configured as follows:
-
-.. code:: c++
-  
-  typedef ChaseMpi<ChaseMpiDLABlaslapack, T> CHASE;
-  /* Construction of ChASE object */
-  CHASE single(new ChaseMpiProperties<T>(N, nev, nex, MPI_COMM_WORLD), V.data(),
-               Lambda.data());
-
-  /* Get the class of configuration from ChASE object */
-  auto& config = single.GetConfig();
-
-  /* Parameter configurations */
-  config.SetTol(conf.tol);
-  config.SetDeg(conf.deg);
-  config.SetOpt(true);
-  ...
-
-.. note::
-
-    For all the provided public funtions of ChASE configuration, please refer to :ref:`configuration_object`.
-
-
-Execution
-----------
+Executables
+------------
 
 This examples provides multiple implementation of ChASE targeting different computing architectures with different data distribution scheme:
 
@@ -50,7 +27,7 @@ flag:
 
 
 Solving single problem
-^^^^^^^^^^^^^^^^^^^^^^^^
+-------------------------
 
 Here we utilize ``2_input_output`` as an example to illustrate the way to use ChASE to solve single eigenproblem with loading external matrix.
 
@@ -62,7 +39,7 @@ The execution of this example through the command line is:
 
 
 Solving a sequence of problems
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+---------------------------------
 
 Here we also utilize ``2_input_output`` as an example to illustrate the way to use ChASE to solve a sequence of eigenproblems with loading external matrix.
 
@@ -78,8 +55,8 @@ searching the matrices conforming this naming policies in the directory ``${DIRE
 
 In the execution example above, the first matrix to be solved is ``gmat/ /1/ 2``, the the last matrix  to be solved is ``gmat/ /1/ 10``.
 
-Parameters of configuration
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Parser of command-line arguments
+---------------------------------
 
 ========================= ===================================================================================================
 Parameter (default value) Description

@@ -52,7 +52,7 @@ Installation
 
 This section has two main goals: First, it provides the instructions
 for the installation of ChASE on a given supercomputer
-with or w/o multi-GPUs supports. Second, it describe how the user can
+with or w/o multi-GPUs supports. Second, it describes how the user can
 take advantage of a number of ready-to-use examples to build a 
 simple driver and have a first try running ChASE on a cluster.
 
@@ -82,7 +82,7 @@ The following snippet shows how to install ChASE on the JUWELS cluster
 
   For the installation with the ``Intel Compiler``, two additional flags ``-DCMAKE_C_FLAGS=-no-multibyte-chars`` and ``-DCMAKE_CXX_FLAGS=-no-multibyte-chars`` might be required if
   the following error ``Catastrophic error: could not set locale "" to
-  allow processing of multibyte characters`` are encountered, which is produced by an internal
+  allow processing of multibyte characters`` are encountered, which are produced by an internal
   bug appearing in some versions of the Intel Compiler.
 
 Installation with GPU Support
@@ -111,7 +111,7 @@ support on JUWELS:
 
 
 .. note::
-  It is also recommended to build ChASE with the configuration of CUDA compute compatibility through ``CMAKE_CUDA_ARCHITECTURES``. If cuda compute compatibility of your GPU is 8.6 (e.g. RTX 3090) you should build with ``-DCMAKE_CUDA_ARCHITECTURES=86``. In the case you want to build code for more than one CUDA compute capability (e.g. 70, 75, 80 and 86) then build with ``-DCMAKE_CUDA_ARCHITECTURES="70;75;80;86"``.
+  It is also recommended to build ChASE with the configuration of CUDA compute compatibility through ``CMAKE_CUDA_ARCHITECTURES``. If CUDA compute compatibility of your GPU is 8.6 (e.g. RTX 3090) you should build with ``-DCMAKE_CUDA_ARCHITECTURES=86``. In the case you want to build code for more than one CUDA compute capability (e.g. 70, 75, 80 and 86) then build with ``-DCMAKE_CUDA_ARCHITECTURES="70;75;80;86"``.
 
   If ``CMAKE_VERSION < 3.18`` then CMake is not compliant with *CMAKE policy CMP0104* (introduced 
   in CMake 3.18) which defines that the variable ``CMAKE_CUDA_ARCHITECTURES`` has to be initialized. In that case, the code generation flag has to be set manually. 
