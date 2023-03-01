@@ -928,16 +928,12 @@ public:
             choldeg_env = std::atoi(choldegenv);
         }
 
-        //condition for using shifted CholQR
-        Base<T> cond_threshold;
         //condition for using CholQR1
         Base<T> cond_threshold_2;
 
         if(sizeof(Base<T>) == 8){
-            cond_threshold = 1e8;
             cond_threshold_2 = 1e1;
         }else{
-            cond_threshold = 1e4;
             cond_threshold_2 = 1e2;
         }
 
