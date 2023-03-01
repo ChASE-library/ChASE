@@ -15,7 +15,7 @@
 #define BLOCKDIM 256
 #define GRIDDIM 32
 
-// generate `n` random float numbers on GPU 
+// generate `n` random float numbers on GPU
 __global__ void s_normal_kernel(unsigned long long seed, curandState* states,
                                 float* v, int n)
 {
@@ -32,7 +32,7 @@ __global__ void s_normal_kernel(unsigned long long seed, curandState* states,
     }
 }
 
-// generate `n` random double numbers on GPU 
+// generate `n` random double numbers on GPU
 __global__ void d_normal_kernel(unsigned long long seed, curandState* states,
                                 double* v, int n)
 {
@@ -48,7 +48,7 @@ __global__ void d_normal_kernel(unsigned long long seed, curandState* states,
         v[i] = curand_normal_double(state);
     }
 }
-// generate `n` random complex single numbers on GPU 
+// generate `n` random complex single numbers on GPU
 __global__ void c_normal_kernel(unsigned long long seed, curandState* states,
                                 cuComplex* v, int n)
 {
@@ -67,7 +67,7 @@ __global__ void c_normal_kernel(unsigned long long seed, curandState* states,
     }
 }
 
-// generate `n` random complex double numbers on GPU 
+// generate `n` random complex double numbers on GPU
 __global__ void z_normal_kernel(unsigned long long seed, curandState* states,
                                 cuDoubleComplex* v, int n)
 {

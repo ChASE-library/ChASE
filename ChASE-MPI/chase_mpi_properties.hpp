@@ -862,8 +862,8 @@ public:
         \return `N_`: the rank of matrix `A`.
      */
     std::size_t get_N() { return N_; };
-    //! Return leading dimension of local part of Symmetric/Hermtian matrix on each
-    //! MPI proc.
+    //! Return leading dimension of local part of Symmetric/Hermtian matrix on
+    //! each MPI proc.
     /*! \return `ldh_`, a private member of this class.
      */
     std::size_t get_ldh() { return ldh_; };
@@ -1087,11 +1087,11 @@ public:
         c_lens = c_lens_.get();
         c_offs_l = c_offs_l_.get();
     }
-    // get the distribution layout of Hermtian/symmetric matrix 
+    // get the distribution layout of Hermtian/symmetric matrix
     /*!
      *  - `Block-Block`
      *  - `Block-Cyclic`
-     * */          
+     * */
     std::string get_dataLayout() { return data_layout; }
 
     // coordinates in the cartesian communicator grid
@@ -1130,7 +1130,7 @@ public:
 #if !defined(HAS_SCALAPACK)
     /*!
       \return `V_.get()`: the pointer to temporary buffer `V_`.
-    */    
+    */
     T* get_V() { return V_.get(); }
 #endif
 
@@ -1233,7 +1233,7 @@ private:
 
     //! Global size of the matrix *A* defining the eigenproblem.
     /*!    This variable is initialized by the constructor using the value of
-       the first of its input parameter `N`. 
+       the first of its input parameter `N`.
 
        This variable is private, it can be
        accessed by the member function get_N().
@@ -1265,8 +1265,8 @@ private:
     /*!
         This variable is initialized by the constructor using the **sum**
         of its input parameter `nex` and `nev`. Thus we have
-       `max_block_=nev_+nex_`. This variable is private, it can be accessed by the
-       member function get_max_block().
+       `max_block_=nev_+nex_`. This variable is private, it can be accessed by
+       the member function get_max_block().
      */
     std::size_t max_block_;
 
@@ -1541,28 +1541,28 @@ private:
     //! The row communicator of the constructed 2D grid of MPI codes.
     /*!
         This variable is initialized in the constructor, after the construction
-       of MPI 2D grid. This variable is private, it can be accessed by the member
-       function get_row_comm().
+       of MPI 2D grid. This variable is private, it can be accessed by the
+       member function get_row_comm().
      */
     MPI_Comm row_comm_;
 
     //! The column communicator of the constructed 2D grid of MPI codes.
     /*!
         This variable is initialized in the constructor, after the construction
-       of MPI 2D grid. This variable is private, it can be accessed by the member
-       function get_col_comm().
+       of MPI 2D grid. This variable is private, it can be accessed by the
+       member function get_col_comm().
      */
     MPI_Comm col_comm_;
 
     //! The array with two elements determines the dimension of 2D grid of MPI
     //! nodes.
     /*!
-        - For *Block Distribution*, 
-            1. it can be initialized by `MPI_Dims_create` which creates a division 
-            of MPI ranks in a cartesian grid.
-            2. it can be initialized by users with the input parameters, paramters 
-            `row_dim` and `col_dim`. More precise, we have `dims_[0] = row_dim` 
-            and `dims_[1] = col_dim`.
+        - For *Block Distribution*,
+            1. it can be initialized by `MPI_Dims_create` which creates a
+       division of MPI ranks in a cartesian grid.
+            2. it can be initialized by users with the input parameters,
+       paramters `row_dim` and `col_dim`. More precise, we have `dims_[0] =
+       row_dim` and `dims_[1] = col_dim`.
         - For *Block-Cyclic Distribution*, it is always initialized by the input
        paramters `row_dim` and `col_dim`. More precise, we have `dims_[0] =
        row_dim` and `dims_[1] = col_dim`.
@@ -1583,12 +1583,12 @@ private:
        the size of matrix and the scheme of distribution across the 2D grid.
      */
     std::size_t off_[2];
-    
-    // A std::string which indicates the data distribution scheme. 
+
+    // A std::string which indicates the data distribution scheme.
     /*!
      *  - `Block-Block`
      *  - `Block-Cyclic`
-     * */ 
+     * */
     std::string data_layout;
 #if defined(HAS_SCALAPACK)
     //! ScaLAPACK context for each row communicator. This context is in 1D grid,

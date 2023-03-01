@@ -13,7 +13,6 @@
 #include "algorithm/types.hpp"
 #include "chase_mpi_properties.hpp"
 
-
 namespace chase
 {
 namespace mpi
@@ -26,25 +25,26 @@ struct is_skewed_matrixfree
     static const bool value = false;
 };
 
-//! @brief A class to set up an interface to all the Dense Linear Algebra (`DLA`)
-//! operations required by ChASE.
+//! @brief A class to set up an interface to all the Dense Linear Algebra
+//! (`DLA`) operations required by ChASE.
 /*!
     In the class ChaseMpiDLAInterface, the `DLA` functions are only setup as a
    series of `virtual` functions without direct implementation. The
    implementation of these `DLA` will be laterly implemented by a set of derived
    classes targeting different computing architectures. Currently, in `ChASE`,
    we provide multiple derived classes
-   - chase::mpi::ChaseMpiDLABlaslapackSeq: implementing ChASE targeting shared-memory 
-   architectures with only CPUs available.
-   - chase::mpi::ChaseMpiDLABlaslapackSeqInplace: implementing ChASE targeting 
-   shared-memory architectures with only CPUs available, with a inplace mode, 
-   in which the buffer of rectangular matrices are swapped and reused. This 
+   - chase::mpi::ChaseMpiDLABlaslapackSeq: implementing ChASE targeting
+   shared-memory architectures with only CPUs available.
+   - chase::mpi::ChaseMpiDLABlaslapackSeqInplace: implementing ChASE targeting
+   shared-memory architectures with only CPUs available, with a inplace mode,
+   in which the buffer of rectangular matrices are swapped and reused. This
    reduces the required memory to be allocted.
-   - chase::mpi::ChaseMpiDLACudaSeq: implementing ChASE targeting shared-memory 
+   - chase::mpi::ChaseMpiDLACudaSeq: implementing ChASE targeting shared-memory
    architectures, most computation tasks are offloaded to one single GPU card.
-   - chase::mpi::ChaseMpiDLA: implementing mostly the MPI collective communications 
-   part of distributed-memory ChASE targeting the systems with or w/o GPUs.
-   - chase::mpi::ChaseMpiDLABlaslapack: implementing the inter-node computation 
+   - chase::mpi::ChaseMpiDLA: implementing mostly the MPI collective
+   communications part of distributed-memory ChASE targeting the systems with or
+   w/o GPUs.
+   - chase::mpi::ChaseMpiDLABlaslapack: implementing the inter-node computation
    for a pure-CPU MPI-based implementation of ChASE.
    - chase::mpi::ChaseMpiDLAMultiGPU: implementing the inter-node computation
    for a multi-GPU MPI-based implementation of ChASE.
@@ -65,15 +65,15 @@ public:
 
     /*!
       This function shifts the diagonal of global matrix with a constant value
-      `c`. 
+      `c`.
       @param c: shift value
     */
     virtual void shiftMatrix(T c, bool isunshift = false) = 0;
     /*!
       This function is for some pre-application steps for the distributed HEMM
       in ChASE. These steps may vary in different implementations targetting
-      different architectures. These steps can be backup of some buffers, 
-      copy data from CPU to GPU, etc. 
+      different architectures. These steps can be backup of some buffers,
+      copy data from CPU to GPU, etc.
       @param V1: a pointer to a matrix
       @param locked: an integer indicating the number of locked (converged)
       eigenvectors
@@ -96,7 +96,7 @@ public:
       The number of vectors performed in `V1` and `V2` is `block`
       In `MATLAB` notation, this operation performs:
 
-      `V2[:,start:end]<-alpha*V1[:,start:end]*H+beta*V2[:,start:end]`, 
+      `V2[:,start:end]<-alpha*V1[:,start:end]*H+beta*V2[:,start:end]`,
 
       in which
       `start=locked+offset` and `end=locked+offset+block`.
@@ -106,57 +106,62 @@ public:
       @param offset: an offset of number vectors which the `HEMM` starting from.
       @param block: number of non-converged eigenvectors, it indicates the
       number of vectors in `V1` and `V2` to perform `HEMM`.
-      @param locked: number of converged eigenvectors.      
+      @param locked: number of converged eigenvectors.
     */
     virtual void apply(T alpha, T beta, std::size_t offset, std::size_t block,
                        std::size_t locked) = 0;
-    
-    //! Performs \f$V_2<- V1H + V_2\f$ 
+
+    //! Performs \f$V_2<- V1H + V_2\f$
     /*!
       The number of vectors performed in `V1` and `V2` is `block`
       In `MATLAB` notation, this operation performs:
 
-      `V2[:,start:end]<-alpha*V1[:,start:end]*H+beta*V2[:,start:end]`, 
+      `V2[:,start:end]<-alpha*V1[:,start:end]*H+beta*V2[:,start:end]`,
 
       in which
       `start=locked` and `end=locked+block`.
 
-      @param locked: number of converged eigenvectors.      
+      @param locked: number of converged eigenvectors.
       @param block: number of non-converged eigenvectors, it indicates the
       number of vectors in `V1` and `V2` to perform `HEMM`.
       @param isCcopied: a flag indicates is a required buffer `C` has already
       been copied to GPU device. It matters only for ChaseMpiDLAMultiGPU.
-    */    
+    */
     virtual void asynCxHGatherC(std::size_t locked, std::size_t block,
                                 bool isCcopied = false) = 0;
 
     //! Copy from buffer rectangular matrix `v1` to `v2`.
-    //! For the implementation of distributed-memory ChASE, this operation performs
-    //! a `copy` from a matrix redundantly distributed across all MPI procs to
-    //! a matrix distributed within each column communicator and redundant among
-    //! different column communicators. This operation is reciprocal to V2C().
+    //! For the implementation of distributed-memory ChASE, this operation
+    //! performs a `copy` from a matrix redundantly distributed across all MPI
+    //! procs to a matrix distributed within each column communicator and
+    //! redundant among different column communicators. This operation is
+    //! reciprocal to V2C().
     /*!
      *  @param v1: the buffer to copy from
-     *  @param off1: the offset for the starting column index of `v1` to copy from
-     *  @param v2: the buffer to copy to 
-     *  @param off2: the offset for the starting column index of `v2` to copy to 
+     *  @param off1: the offset for the starting column index of `v1` to copy
+     * from
+     *  @param v2: the buffer to copy to
+     *  @param off2: the offset for the starting column index of `v2` to copy to
      *  @param block: number of columns to copy from `v1` to `v2`
      */
     virtual void C2V(T* v1, std::size_t off1, T* v2, std::size_t off2,
                      std::size_t block) = 0;
     //! Copy from buffer rectangular matrix `v1` to `v2`.
-    //! For the implementation of distributed-memory ChASE, this operation performs
-    //! a `copy` from a matrix distributed within each column communicator and redundant among
-    //! different column communicators to a matrix redundantly distributed across all MPI procs.
-    //! This operation is reciprocal to C2V(). It requires the `dim_[0]` MPI broadcasting 
-    //! operations, in which `dim_[0]` is the size of each MPI column communicatior.  
+    //! For the implementation of distributed-memory ChASE, this operation
+    //! performs a `copy` from a matrix distributed within each column
+    //! communicator and redundant among different column communicators to a
+    //! matrix redundantly distributed across all MPI procs. This operation is
+    //! reciprocal to C2V(). It requires the `dim_[0]` MPI broadcasting
+    //! operations, in which `dim_[0]` is the size of each MPI column
+    //! communicatior.
     /*!
      *  @param v1: the buffer to copy from
-     *  @param off1: the offset for the starting column index of `v1` to copy from
-     *  @param v2: the buffer to copy to 
-     *  @param off2: the offset for the starting column index of `v2` to copy to 
+     *  @param off1: the offset for the starting column index of `v1` to copy
+     * from
+     *  @param v2: the buffer to copy to
+     *  @param off2: the offset for the starting column index of `v2` to copy to
      *  @param block: number of columns to copy from `v1` to `v2`
-     */    
+     */
     virtual void V2C(T* v1, std::size_t off1, T* v2, std::size_t off2,
                      std::size_t block) = 0;
 
@@ -165,20 +170,21 @@ public:
     /*!
      *  @param i: index of one column to be swapped
      *  @param j: index of another column to be swapped
-     * 
-     */      
+     *
+     */
     virtual void Swap(std::size_t i, std::size_t j) = 0;
     //! Copy from buffer rectangular matrix `v1` to `v2`.
-    //! For the implementation of distributed-memory ChASE, this operation performs
-    //! a `copy` from a matrix distributed within each column communicator and redundant among
-    //! different column communicators to a matrix redundantly distributed across all MPI procs.
-    //! Then in the next iteration of ChASE-MPI, this operation takes places in the row
-    //! communicator... 
+    //! For the implementation of distributed-memory ChASE, this operation
+    //! performs a `copy` from a matrix distributed within each column
+    //! communicator and redundant among different column communicators to a
+    //! matrix redundantly distributed across all MPI procs. Then in the next
+    //! iteration of ChASE-MPI, this operation takes places in the row
+    //! communicator...
     /*!
      *  @param V: the target buff
      *  @param block: number of columns to copy from `v1` to `v2`
-     *  @param locked: number of converged eigenvectors.      
-     */ 
+     *  @param locked: number of converged eigenvectors.
+     */
     virtual bool postApplication(T* V, std::size_t block,
                                  std::size_t locked) = 0;
 
@@ -191,7 +197,8 @@ public:
     */
     virtual void applyVec(T* B, T* C) = 0;
     // Returns ptr to H, which may be used to populate H.
-    //! Return the total number of MPI procs within the working MPI communicator.
+    //! Return the total number of MPI procs within the working MPI
+    //! communicator.
     virtual int get_nprocs() const = 0;
     //! Starting point of solving an eigenproblem
     virtual void Start() = 0;
@@ -256,70 +263,88 @@ public:
     */
     virtual void RR(std::size_t block, std::size_t locked, Base<T>* ritzv) = 0;
 
-    //! A `LAPACK-like` function which forms one of the symetric/hermitian rank k operations
+    //! A `LAPACK-like` function which forms one of the symetric/hermitian rank
+    //! k operations
     //! - \f$c := alpha*a*a**H + beta*c,\f$
-    //! - \f$c := alpha*a**H*a + beta*c,\f$ 
+    //! - \f$c := alpha*a**H*a + beta*c,\f$
     /*!
-     *  where  alpha and beta  are  real scalars,  c is an  n by n  symetric/hermitian
-        matrix and  a  is an  n by k  matrix in the first case and a  k by n
-        matrix in the second case.
-        
-        The parameters of this function is the same as <a href="https://netlib.org/lapack/
+     *  where  alpha and beta  are  real scalars,  c is an  n by n
+     symetric/hermitian matrix and  a  is an  n by k  matrix in the first case
+     and a  k by n matrix in the second case.
+
+        The parameters of this function is the same as <a
+     href="https://netlib.org/lapack/
         explore-html/dc/d17/group__complex16__blas__level3_ga71e68893445a523b923411ebf4c22582.
-        html">zherk()</a>, <a href="https://netlib.org/lapack/explore-html/db/def/group__
-        complex__blas__level3_gade9f14cf41f0cefea7918d716f3e1c20.html">cherk()</a>, 
-        <a href="https://netlib.org/lapack/explore-html/d1/d54/group__double__blas_
-        _level3_gae0ba56279ae3fa27c75fefbc4cc73ddf.html">dsyrk()</a> and <a href="https://netlib
+        html">zherk()</a>, <a
+     href="https://netlib.org/lapack/explore-html/db/def/group__
+        complex__blas__level3_gade9f14cf41f0cefea7918d716f3e1c20.html">cherk()</a>,
+        <a
+     href="https://netlib.org/lapack/explore-html/d1/d54/group__double__blas_
+        _level3_gae0ba56279ae3fa27c75fefbc4cc73ddf.html">dsyrk()</a> and <a
+     href="https://netlib
         .org/lapack/explore-html/db/dc9/group__single__blas__level3_gae953a93420ca237670f
-        5c67bbde9d9ff.html">ssyrk()</a>, 
-    */ 
+        5c67bbde9d9ff.html">ssyrk()</a>,
+    */
     virtual void syherk(char uplo, char trans, std::size_t n, std::size_t k,
                         T* alpha, T* a, std::size_t lda, T* beta, T* c,
                         std::size_t ldc, bool first = true) = 0;
 
-    //! A `LAPACK-like` function which computes the Cholesky factorization of a symmetric/Hermitian
-    //! positive definite matrix `a`.
+    //! A `LAPACK-like` function which computes the Cholesky factorization of a
+    //! symmetric/Hermitian positive definite matrix `a`.
     /*!
-        The parameters of this function is the same as <a href="https://netlib.org/lapack/explore-html/d1
+        The parameters of this function is the same as <a
+       href="https://netlib.org/lapack/explore-html/d1
         /d7a/group__double_p_ocomputational_ga2f55f604a6003d03b5cd4a0adcfb74d6.html">dpotrf()</a>,
-        <a href="https://netlib.org/lapack/explore-html/d8/db2/group__real_p_ocomputational_gaaf
+        <a
+       href="https://netlib.org/lapack/explore-html/d8/db2/group__real_p_ocomputational_gaaf
         31db7ab15b4f4ba527a3d31a15a58e.html">spotrf()</a>,
-        <a href="https://netlib.org/lapack/explore-html/d6/df6/group__complex_p_ocomputational
+        <a
+       href="https://netlib.org/lapack/explore-html/d6/df6/group__complex_p_ocomputational
         _ga4e85f48dbd837ccbbf76aa077f33de19.html">cpotrf()</a>,
-        <a href="https://netlib.org/lapack/explore-html/d3/d8d/group__complex16_p_ocomputational_
-        ga93e22b682170873efb50df5a79c5e4eb.html">zpotrf()</a>        
+        <a
+       href="https://netlib.org/lapack/explore-html/d3/d8d/group__complex16_p_ocomputational_
+        ga93e22b682170873efb50df5a79c5e4eb.html">zpotrf()</a>
     */
     virtual int potrf(char uplo, std::size_t n, T* a, std::size_t lda) = 0;
 
     //! A `LAPACK-like` function which solves one of the matrix equations
     /*!
         \f$op( A )*X = alpha*B\f$ or \f$X*op( A ) = alpha*B\f$,
-         where alpha is a scalar, X and B are m by n matrices, A is a unit, or non-unit,  upper or lower 
-         triangular matrix  and  op( A )  is $A$ itself, the transpose or conjugate transpose of itself.
-         The parameters of this function is the same as <a href="https://netlib.org/lapack/explore-h
+         where alpha is a scalar, X and B are m by n matrices, A is a unit, or
+       non-unit,  upper or lower triangular matrix  and  op( A )  is $A$ itself,
+       the transpose or conjugate transpose of itself. The parameters of this
+       function is the same as <a href="https://netlib.org/lapack/explore-h
         tml/d1/d54/group__double__blas__level3_ga6a0a7704f4a747562c1bd9487e89795c.html">dtrsm()</a>,
-        <a href="https://netlib.org/lapack/explore-html/db/dc9/group__single__blas__level3_ga9893c
+        <a
+       href="https://netlib.org/lapack/explore-html/db/dc9/group__single__blas__level3_ga9893c
         ceb3ffc7ce400eee405970191b3.html">strsm()</a>,
-        <a href="https://netlib.org/lapack/explore-html/db/def/group__complex__blas__level3_
+        <a
+       href="https://netlib.org/lapack/explore-html/db/def/group__complex__blas__level3_
         gaf33844c7fd27e5434496d2ce0c1fc9d4.html">ctrsm()</a>,
-        <a href="https://netlib.org/lapack/explore-html/dc/d17/group__complex16__blas__level3
-        _gac571a0a6d43e969990456d0676edb786.html">ztrsm()</a> 
+        <a
+       href="https://netlib.org/lapack/explore-html/dc/d17/group__complex16__blas__level3
+        _gac571a0a6d43e969990456d0676edb786.html">ztrsm()</a>
     */
     virtual void trsm(char side, char uplo, char trans, char diag,
                       std::size_t m, std::size_t n, T* alpha, T* a,
                       std::size_t lda, T* b, std::size_t ldb,
                       bool first = false) = 0;
 
-    //! A `LAPACK-like` function which computes all eigenvalues and, optionally, all 
-    //! eigenvectors of a complex Hermitian/real symmetric matrix using divide and conquer algorithm.
+    //! A `LAPACK-like` function which computes all eigenvalues and, optionally,
+    //! all eigenvectors of a complex Hermitian/real symmetric matrix using
+    //! divide and conquer algorithm.
     /*！
-        The parameters of this function is the same as <a href="https://netlib.org/lapack/explore-html/d3/d88/gr
-        oup__real_s_yeigen_ga6b4d01c8952350ea557b90302ef9de4d.html">ssyevd()</a>, <a href="https://netlib.org/lapack/exp
-        lore-html/d2/d8a/group__double_s_yeigen_ga77dfa610458b6c9bd7db52533bfd53a1.html">dsyevd()</a>, <a href="https://
-        netlib.org/lapack/explore-html/d9/de3/group__complex_h_eeigen_ga6084b0819f9642f0db26257e8a3ebd42.html">cheevd()</a> 
-        and <a href="https://netlib.org/lapack/explore-html/df/d9a/group__complex16_h_eeigen_ga9b3e110476166e66f
+        The parameters of this function is the same as <a
+       href="https://netlib.org/lapack/explore-html/d3/d88/gr
+        oup__real_s_yeigen_ga6b4d01c8952350ea557b90302ef9de4d.html">ssyevd()</a>,
+       <a href="https://netlib.org/lapack/exp
+        lore-html/d2/d8a/group__double_s_yeigen_ga77dfa610458b6c9bd7db52533bfd53a1.html">dsyevd()</a>,
+       <a href="https://
+        netlib.org/lapack/explore-html/d9/de3/group__complex_h_eeigen_ga6084b0819f9642f0db26257e8a3ebd42.html">cheevd()</a>
+        and <a
+       href="https://netlib.org/lapack/explore-html/df/d9a/group__complex16_h_eeigen_ga9b3e110476166e66f
         2f62fa1fba6344a.html">zheevd()</a>.
-    */  
+    */
     virtual void heevd(int matrix_layout, char jobz, char uplo, std::size_t n,
                        T* a, std::size_t lda, Base<T>* w) = 0;
 
@@ -328,39 +353,40 @@ public:
     //! @param ritzv the ritz values
     //! @param resid the computed residuals
     //! @param locked the number of converged ritz values
-    //! @param unconverged the number of unconverged ritz values (`=nev_+nex-locked`) 
+    //! @param unconverged the number of unconverged ritz values
+    //! (`=nev_+nex-locked`)
     virtual void Resd(Base<T>* ritzv, Base<T>* resid, std::size_t locked,
                       std::size_t unconverged) = 0;
 
     //! Househoulder QR factorization on the rectangular matrix `V1`.
-    //! It can be geqrf from 
+    //! It can be geqrf from
     //!     - `LAPACK` ,
     //!     - `ScaLAPACK`,
-    //!     - `cuSolver`, 
+    //!     - `cuSolver`,
     //!
     //! which depends on
     //! the implementation and targeting architectures.
-    //!  @param locked: number of converged eigenvectors.      
+    //!  @param locked: number of converged eigenvectors.
     virtual void hhQR(std::size_t locked) = 0;
-    //! Cholesky QR factorization on the rectangular matrix `V1`.   
-    //!  @param locked: number of converged eigenvectors.           
+    //! Cholesky QR factorization on the rectangular matrix `V1`.
+    //!  @param locked: number of converged eigenvectors.
     virtual void cholQR(std::size_t locked, Base<T> cond) = 0;
-    //! Return the required buffers of Lanczos which are allocated within each individual
-    //! implementation of DLA. This operation is required, since Lanczos algorithm is 
-    //! implemented in ChaseMpi class, which has no direct access to these buffers.
-    //! Depending on the implementation and targeting architectures, these buffers can
-    //! be on CPU or GPUs.
-    //! **This function will be removed in short future in which all the buffers will be
-    //! allocated within ChaseMpiMatrices**.
+    //! Return the required buffers of Lanczos which are allocated within each
+    //! individual implementation of DLA. This operation is required, since
+    //! Lanczos algorithm is implemented in ChaseMpi class, which has no direct
+    //! access to these buffers. Depending on the implementation and targeting
+    //! architectures, these buffers can be on CPU or GPUs.
+    //! **This function will be removed in short future in which all the buffers
+    //! will be allocated within ChaseMpiMatrices**.
     virtual void getLanczosBuffer(T** V1, T** V2, std::size_t* ld, T** v0,
                                   T** v1, T** w) = 0;
-    //! Return the required buffers of Lanczos which are allocated within each individual
-    //! implementation of DLA. This operation is required, since Lanczos algorithm is 
-    //! implemented in ChaseMpi class, which has no direct access to these buffers.
-    //! Depending on the implementation and targeting architectures, these buffers can
-    //! be on CPU or GPUs.
-    //! **This function will be removed in short future in which all the buffers will be
-    //! allocated within ChaseMpiMatrices**.    
+    //! Return the required buffers of Lanczos which are allocated within each
+    //! individual implementation of DLA. This operation is required, since
+    //! Lanczos algorithm is implemented in ChaseMpi class, which has no direct
+    //! access to these buffers. Depending on the implementation and targeting
+    //! architectures, these buffers can be on CPU or GPUs.
+    //! **This function will be removed in short future in which all the buffers
+    //! will be allocated within ChaseMpiMatrices**.
     virtual void getLanczosBuffer2(T** v0, T** v1, T** w) = 0;
     //! Lanczos DOS to estimate the \mu_{nev+nex} for ChASE
     virtual void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc) = 0;

@@ -20,30 +20,33 @@
 
 namespace chase
 {
-//! @brief Implementation of ChASE solver using the abstract of interfaces of numerical
-//!        components defined in class chase::ChASE.  
-/*! 
+//! @brief Implementation of ChASE solver using the abstract of interfaces of
+//! numerical
+//!        components defined in class chase::ChASE.
+/*!
  *  It includes:
  *     - Implementation of Chebyshev filter
  *     - Degree optimization of filter
  *     - locking converged ritz pairs
  *     - Implementation of Lanczos to estimate the required bounds of spectrum
- *     - solving procedure using Chebyshev filter 
-*/
+ *     - solving procedure using Chebyshev filter
+ */
 template <class T>
 class Algorithm
 {
 public:
     //! Implementation of ChASE to solve eigenproblems
     static void solve(Chase<T>* single);
-    //! Optimization of Chebyshev polynomial degree based on the convergence behaviour of each ritz pair 
+    //! Optimization of Chebyshev polynomial degree based on the convergence
+    //! behaviour of each ritz pair
     static std::size_t calc_degrees(Chase<T>* kernel, std::size_t N,
                                     std::size_t unconverged, std::size_t nex,
                                     Base<T> upperb, Base<T> lowerb, Base<T> tol,
                                     Base<T>* ritzv, Base<T>* resid,
                                     Base<T>* residLast, std::size_t* degrees,
                                     std::size_t locked);
-    //! sorting the ritz values based on the residuals and locking the converged ones
+    //! sorting the ritz values based on the residuals and locking the converged
+    //! ones
     static std::size_t locking(Chase<T>* kernel, std::size_t N,
                                std::size_t unconverged, Base<T> tol,
                                Base<T>* ritzv, Base<T>* resid,

@@ -18,9 +18,8 @@ namespace chase
 namespace mpi
 {
 
-
-//! @brief A derived class of ChaseMpiDLAInterface which implements ChASE targeting
-//! shared-memory architectures with only CPUs available.
+//! @brief A derived class of ChaseMpiDLAInterface which implements ChASE
+//! targeting shared-memory architectures with only CPUs available.
 template <class T>
 class ChaseMpiDLABlaslapackSeq : public ChaseMpiDLAInterface<T>
 {
@@ -83,7 +82,6 @@ public:
     {
         std::memcpy(v2 + off2 * N_, v1 + off1 * N_, N_ * block * sizeof(T));
     }
-
 
     void preApplication(T* V, std::size_t const locked,
                         std::size_t const block) override
@@ -153,7 +151,6 @@ public:
                     N_ * block * sizeof(T));
     }
 
-
     void applyVec(T* B, T* C) override
     {
         T One = T(1.0);
@@ -164,17 +161,18 @@ public:
         this->postApplication(C, 1, 0);
     }
 
-    //! return of a pointer to a matrix of size `N_*(nev_+nex_)` allocated in this class
+    //! return of a pointer to a matrix of size `N_*(nev_+nex_)` allocated in
+    //! this class
     T* get_V1() const { return V1_.get(); }
 
-    //! return of a pointer to a matrix of size `N_*(nev_+nex_)` allocated in this class
+    //! return of a pointer to a matrix of size `N_*(nev_+nex_)` allocated in
+    //! this class
     T* get_V2() const { return V2_.get(); }
 
     int get_nprocs() const override { return 1; }
 
     void Start() override {}
     void End() override {}
-
 
     void axpy(std::size_t N, T* alpha, T* x, std::size_t incx, T* y,
               std::size_t incy) override
@@ -389,22 +387,26 @@ private:
         cAb,
         bAc
     };
-    NextOp next_; //!< it is to manage the switch of operation from `V2=H*V1` to `V1=H'*V2` in filter
+    NextOp next_; //!< it is to manage the switch of operation from `V2=H*V1` to
+                  //!< `V1=H'*V2` in filter
 
-    std::size_t N_; //!< global dimension of the symmetric/Hermtian matrix
-    std::size_t locked_;  //!< number of converged eigenpairs
-    std::size_t maxBlock_; //!< `maxBlock_=nev_ + nex_`
-    std::size_t nex_; //!< number of extral searching space
-    std::size_t nev_; //!< number of required eigenpairs
-    T* H_; //!< a pointer to the Symmetric/Hermtian matrix
+    std::size_t N_;      //!< global dimension of the symmetric/Hermtian matrix
+    std::size_t locked_; //!< number of converged eigenpairs
+    std::size_t maxBlock_;  //!< `maxBlock_=nev_ + nex_`
+    std::size_t nex_;       //!< number of extral searching space
+    std::size_t nev_;       //!< number of required eigenpairs
+    T* H_;                  //!< a pointer to the Symmetric/Hermtian matrix
     std::unique_ptr<T> V1_; //!< a matrix of size `N_*(nev_+nex_)`
     std::unique_ptr<T> V2_; //!< a matrix of size `N_*(nev_+nex_)`
-    std::unique_ptr<T> A_; //!< a matrix of size `(nev_+nex_)*(nev_+nex_)`
-    std::vector<T> v0_; //!< a vector of size `N_`, which is allocated in this class for Lanczos
-    std::vector<T> v1_; //!< a vector of size `N_`, which is allocated in this class for Lanczos
-    std::vector<T> w_; //!< a vector of size `N_`, which is allocated in this class for Lanczos
-    T* V12_; //!< a pointer to a matrix of size `N_*(nev_+nex_)`
-    T* V22_; //!< a pointer to a matrix of size `N_*(nev_+nex_)`
+    std::unique_ptr<T> A_;  //!< a matrix of size `(nev_+nex_)*(nev_+nex_)`
+    std::vector<T> v0_; //!< a vector of size `N_`, which is allocated in this
+                        //!< class for Lanczos
+    std::vector<T> v1_; //!< a vector of size `N_`, which is allocated in this
+                        //!< class for Lanczos
+    std::vector<T> w_;  //!< a vector of size `N_`, which is allocated in this
+                        //!< class for Lanczos
+    T* V12_;            //!< a pointer to a matrix of size `N_*(nev_+nex_)`
+    T* V22_;            //!< a pointer to a matrix of size `N_*(nev_+nex_)`
 };
 
 template <typename T>

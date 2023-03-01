@@ -18,9 +18,9 @@ namespace chase
 {
 namespace mpi
 {
-//! @brief A derived class of ChaseMpiDLAInterface which implements mostly the MPI
-//! collective communications part of ChASE-MPI targeting the distributed-memory
-//! systens with or w/o GPUs.
+//! @brief A derived class of ChaseMpiDLAInterface which implements mostly the
+//! MPI collective communications part of ChASE-MPI targeting the
+//! distributed-memory systens with or w/o GPUs.
 /*! The computation in node are mostly implemented in ChaseMpiDLABlaslapack and
    ChaseMpiDLAMultiGPU. It supports both `Block Distribution` and `Block-Cyclic
    Distribution` schemes.
@@ -34,7 +34,7 @@ public:
       @param matrix_properties: it is an instance of ChaseMpiProperties, which
       defines the MPI environment and data distribution scheme in ChASE-MPI.
       @param matrices: it is an instance of ChaseMpiMatrices, which
-      allocates the required buffers in ChASE-MPI.      
+      allocates the required buffers in ChASE-MPI.
       @param dla: it is an object of ChaseMpiDLAInterface, which defines the
       implementation of in-node computation for ChASE-MPI. Currently, it can be
       one of ChaseMpiDLABlaslapack and ChaseMpiDLAMultiGPU.
@@ -240,7 +240,7 @@ public:
      *   - set the switch pointer of apply() to `bAc`
      *   - set the switch pointer of ChaseMpiDLABlaslapack::apply()
      *     and ChaseMpiDLABlaslapack::MultiGPU() to `bAc`
-     */ 
+     */
     void initVecs() override
     {
 #ifdef USE_NSIGHT
@@ -255,16 +255,23 @@ public:
     }
 
     //! generating initial random vectors when it is necessary
-    //!     - different MPI proc/GPUs generate parts of the required random numbers
-    //!     - MPI proc/GPUs with the same rank within the same column communicator
+    //!     - different MPI proc/GPUs generate parts of the required random
+    //!     numbers
+    //!     - MPI proc/GPUs with the same rank within the same column
+    //!     communicator
     //!       share the same seed of RNG (random number generator)
-    //!     - the generation of random numbers taking place within ChaseMpiDLABlaslapack::initRndVecs()
-    //!       and ChaseMpiDLAMultiGPU::initRndVecs(), targetting different architectures     
-    //!         - in ChaseMpiDLABlaslapack, random numbers on each MPI rank is generated in
+    //!     - the generation of random numbers taking place within
+    //!     ChaseMpiDLABlaslapack::initRndVecs()
+    //!       and ChaseMpiDLAMultiGPU::initRndVecs(), targetting different
+    //!       architectures
+    //!         - in ChaseMpiDLABlaslapack, random numbers on each MPI rank is
+    //!         generated in
     //!           sequence with C++ STL random generator
-    //!         - in ChaseMpiDLAMultiGPU, random numbers on each MPI rank is generated in parallel
-    //!           on related GPU based on the device API of <a href="https://docs.nvidia.com/c
-    //!uda/curand/index.html">cuRAND</a>.
+    //!         - in ChaseMpiDLAMultiGPU, random numbers on each MPI rank is
+    //!         generated in parallel
+    //!           on related GPU based on the device API of <a
+    //!           href="https://docs.nvidia.com/c
+    //! uda/curand/index.html">cuRAND</a>.
     void initRndVecs() override
     {
 #ifdef USE_NSIGHT
@@ -292,11 +299,10 @@ public:
                    false);
 */
 #ifdef USE_NSIGHT
-        nvtxRangePop();        
+        nvtxRangePop();
 #endif
-//        nvtxRangePop();
+        //        nvtxRangePop();
     }
-
 
     void preApplication(T* V, std::size_t locked, std::size_t block) override
     {
@@ -321,19 +327,19 @@ public:
        - The workflow is:
          - compute `B_ = H * C_` (local computation)
          - `Allreduce`(B_, MPI_SUM) (communication within colum communicator)
-         - switch operation  
+         - switch operation
          - compute `C_ = H**H * B_` (local computation)
          - `Allreduce`(C_, MPI_SUM) (communication within row communicator)
          - switch operation
          - ...
-       - This function implements mainly the collective communications, while the local
-         computation is implemented in ChaseMpiDLABlaslapack and ChaseMpiDLAMultiGPU,
-         targetting different architectures
+       - This function implements mainly the collective communications, while
+       the local computation is implemented in ChaseMpiDLABlaslapack and
+       ChaseMpiDLAMultiGPU, targetting different architectures
        - the computation of local `GEMM` invokes
-          - BLAS `GEMM` for pure-CPU distributed-memory ChASE, and it is implemented
-            in ChaseMpiDLABlaslapack::apply()
-          - cuBLAS `GEMM` for multi-GPU distributed-memory ChASE, and it is implemented
-            in ChaseMpiDLAMultiGPU::apply()             
+          - BLAS `GEMM` for pure-CPU distributed-memory ChASE, and it is
+       implemented in ChaseMpiDLABlaslapack::apply()
+          - cuBLAS `GEMM` for multi-GPU distributed-memory ChASE, and it is
+       implemented in ChaseMpiDLAMultiGPU::apply()
    */
     void apply(T alpha, T beta, std::size_t offset, std::size_t block,
                std::size_t locked) override
@@ -414,7 +420,7 @@ public:
     //! @param dimsIdx the collecting direction, `0` indicates collecting
     //! within column communicator, and `1` indicates collecting within
     //! row communicator
-    //! @param block number of columns within sending/receiving buffers 
+    //! @param block number of columns within sending/receiving buffers
     //! to be collected
     void collecRedundantVecs(T* buff, T* targetBuf, std::size_t dimsIdx,
                              std::size_t block)
@@ -562,24 +568,31 @@ public:
         return true;
     }
     /*!
-     * - The objective of this function is to compute `H*C_`, which requires a local `GEMM`
-     *   at first, then a **ALLREDUCE** operation to summing up the product of local matrices
+     * - The objective of this function is to compute `H*C_`, which requires a
+     local `GEMM`
+     *   at first, then a **ALLREDUCE** operation to summing up the product of
+     local matrices
      *  within the column communicator.
-     * - Another objective is to re-distribute the data in `C_` to `B_`, in which `C_` is partially
-     *   distributed in column communicator, and `B_` is partially distributed in row communicator.
-     * - The reason of combining these two ojectives in one function is to overlapping the local 
+     * - Another objective is to re-distribute the data in `C_` to `B_`, in
+     which `C_` is partially
+     *   distributed in column communicator, and `B_` is partially distributed
+     in row communicator.
+     * - The reason of combining these two ojectives in one function is to
+     overlapping the local
      *   computation and the communication of re-distribution.
-     *    - In ChaseMpiDLA, `C2_` and `B2_` are often used to backup (part of) `C_` and `B_`.
+     *    - In ChaseMpiDLA, `C2_` and `B2_` are often used to backup (part of)
+     `C_` and `B_`.
           - the computation of local `GEMM` using `C_` and `B_`, invokes
-              - BLAS `GEMM` for pure-CPU distributed-memory ChASE, and it is implemented
-                in ChaseMpiDLABlaslapack::asynCxHGatherC()
-              - cuBLAS `GEMM` for multi-GPU distributed-memory ChASE, and it is implemented
-                in ChaseMpiDLABlaslapack::asynCxHGatherC()
-          - re-distributing from `C2_`, which is distributed within column communicator, to
-            `B2_`, which is distributed within row communicator is accomplished by
-             multiple MPI asynchronous broadcasting operations, 
-             which is overlapped with the computation of local `GEMM`.   
-          - the two operations can be invoked asynchronously with the help of **non-Blocking** MPI Bcast.            
+              - BLAS `GEMM` for pure-CPU distributed-memory ChASE, and it is
+     implemented in ChaseMpiDLABlaslapack::asynCxHGatherC()
+              - cuBLAS `GEMM` for multi-GPU distributed-memory ChASE, and it is
+     implemented in ChaseMpiDLABlaslapack::asynCxHGatherC()
+          - re-distributing from `C2_`, which is distributed within column
+     communicator, to `B2_`, which is distributed within row communicator is
+     accomplished by multiple MPI asynchronous broadcasting operations, which is
+     overlapped with the computation of local `GEMM`.
+          - the two operations can be invoked asynchronously with the help of
+     **non-Blocking** MPI Bcast.
    */
     void asynCxHGatherC(std::size_t locked, std::size_t block,
                         bool isCcopied = false) override
@@ -648,11 +661,11 @@ public:
     }
 
     /*!
-      - For ChaseMpiDLA,  `shiftMatrix` is 
-          - implemented in nested loop for pure-CPU distributed-memory ChASE, and it is 
-          implemented in ChaseMpiDLABlaslapack
-          - implemented on each GPU for multi-GPU distributed-memory ChASE, and it is 
-          implemented in ChaseMpiDLAMultiGPU 
+      - For ChaseMpiDLA,  `shiftMatrix` is
+          - implemented in nested loop for pure-CPU distributed-memory ChASE,
+      and it is implemented in ChaseMpiDLABlaslapack
+          - implemented on each GPU for multi-GPU distributed-memory ChASE, and
+      it is implemented in ChaseMpiDLAMultiGPU
     */
     void shiftMatrix(T c, bool isunshift = false) override
     {
@@ -673,9 +686,11 @@ public:
     }
 
     /*!
-      - For ChaseMpiDLA,  `applyVec` is implemented as with the functions defined in this class.
-      - `applyVec` is used by ChaseMpi::Lanczos(), which requires the input arguments `B` and `C` to be
-         vectors of size `N_` which is redundantly distributed across all MPI procs.
+      - For ChaseMpiDLA,  `applyVec` is implemented as with the functions
+      defined in this class.
+      - `applyVec` is used by ChaseMpi::Lanczos(), which requires the input
+      arguments `B` and `C` to be vectors of size `N_` which is redundantly
+      distributed across all MPI procs.
       - Here are the details:
           - `ChaseMpiDLA::preApplication(B, 0, 1)`
           - `ChaseMpiDLA::apply(One, Zero, 0, 1, 0)`
@@ -724,7 +739,6 @@ public:
         return dla_->nrm2(n, x, incx);
     }
 
-
     T dot(std::size_t n, T* x, std::size_t incx, T* y,
           std::size_t incy) override
     {
@@ -732,25 +746,31 @@ public:
     }
 
     /*! Implementation of Rayleigh-Ritz (RR) in ChASE
-     * - The workflow of RR is 
-     *     - compute `B_= H*C_` and re-distribute from `C2_` to `B2_` (by asynCxHGatherC in this class) 
-     *     - compute `A_ = B2_**H*B_` (local `GEMM`) 
+     * - The workflow of RR is
+     *     - compute `B_= H*C_` and re-distribute from `C2_` to `B2_` (by
+     asynCxHGatherC in this class)
+     *     - compute `A_ = B2_**H*B_` (local `GEMM`)
      *     - `allreduce`(A_, MPI_SUM) (within row communicator)
      *     - `(syhe)evd` to compute all eigenpairs of `A_`
      *     - `gemm`: `C_=C2_*A_` (local computation)
-       - In ChaseMpiDLA, this function implements mainly the collective communications,
-         while the local computation (`sy(he)rk`, `(syhe)evd`, `trsm`) is implemented in 
-         ChaseMpiDLABlaslapack and ChaseMpiDLAMultiGPU, targetting different architectures
+       - In ChaseMpiDLA, this function implements mainly the collective
+     communications, while the local computation (`sy(he)rk`, `(syhe)evd`,
+     `trsm`) is implemented in ChaseMpiDLABlaslapack and ChaseMpiDLAMultiGPU,
+     targetting different architectures
 
        - the local computation of local `GEMM` invokes
-          - BLAS/LAPACK `gemm` and `(syhe)evd` for pure-CPU distributed-memory ChASE, 
-            - the operation `A_ = B2_**H*B_` is implemented in  ChaseMpiDLABlaslapack::syherk
-            - the operations `(syhe)evd` and `C_=C2_*A` is implemented in 
+          - BLAS/LAPACK `gemm` and `(syhe)evd` for pure-CPU distributed-memory
+     ChASE,
+            - the operation `A_ = B2_**H*B_` is implemented in
+     ChaseMpiDLABlaslapack::syherk
+            - the operations `(syhe)evd` and `C_=C2_*A` is implemented in
               ChaseMpiDLABlaslapack::heevd, respectively
-          - cuBLAS/cuSOLVER `gemm` and `(syhe)evd` for multi-GPU distributed-memory ChASE, 
-            - the operation `A_ = B2_**H*B_` is implemented in  ChaseMpiDLAMultiGPU::syherk
-            - the operations `(syhe)evd` and `C_=C2_*A` is implemented in 
-              ChaseMpiDLAMultiGPU::heevd, respectively        
+          - cuBLAS/cuSOLVER `gemm` and `(syhe)evd` for multi-GPU
+     distributed-memory ChASE,
+            - the operation `A_ = B2_**H*B_` is implemented in
+     ChaseMpiDLAMultiGPU::syherk
+            - the operations `(syhe)evd` and `C_=C2_*A` is implemented in
+              ChaseMpiDLAMultiGPU::heevd, respectively
    */
     void RR(std::size_t block, std::size_t locked, Base<T>* ritzv) override
     {
@@ -818,13 +838,13 @@ public:
     {
         dla_->syherk(uplo, trans, n, k, alpha, a, lda, beta, c, ldc);
     }
-/*!
-    In ChaseMpiDLA, the computation of Cholesky factorization can be
-        - LAPACK `xpotrf` for pure-CPU distributed-memory ChASE, 
-            and it is implemented in ChaseMpiDLABlaslapack
-        - cuSOLVER zcusolverDnXpotrfz for multi-GPU distributed-memory ChASE, 
-            and it is implemented in ChaseMpiDLABlaslapack
-*/
+    /*!
+        In ChaseMpiDLA, the computation of Cholesky factorization can be
+            - LAPACK `xpotrf` for pure-CPU distributed-memory ChASE,
+                and it is implemented in ChaseMpiDLABlaslapack
+            - cuSOLVER zcusolverDnXpotrfz for multi-GPU distributed-memory
+       ChASE, and it is implemented in ChaseMpiDLABlaslapack
+    */
     int potrf(char uplo, std::size_t n, T* a, std::size_t lda) override
     {
         return dla_->potrf(uplo, n, a, lda);
@@ -891,26 +911,29 @@ public:
 #endif
     }
 
-    /*! Implementation of partially 1D distributed Cholesky QR within each column communicator.
-     * - The workflow of a 1D Cholesky QR is 
+    /*! Implementation of partially 1D distributed Cholesky QR within each
+     column communicator.
+     * - The workflow of a 1D Cholesky QR is
      *     - `sy(he)rk`: `A_ = C_*C_` (local computation)
      *     - `allreduce`(A, MPI_SUM) (within column communicator)
-     *     - `potrf(A)` (local computation, redundantly within column communicator)
+     *     - `potrf(A)` (local computation, redundantly within column
+     communicator)
      *     - `trsm`: `C_=A*C_` (local computation)
      *     - repeat previous step to impprove the accuracy of QR factorization
-       - In ChaseMpiDLA, this function implements mainly the collective communications,
-         while the local computation (`sy(he)rk`, `potrf`, `trsm`) is implemented in 
-         ChaseMpiDLABlaslapack and ChaseMpiDLAMultiGPU, targetting different architectures
+       - In ChaseMpiDLA, this function implements mainly the collective
+     communications, while the local computation (`sy(he)rk`, `potrf`, `trsm`)
+     is implemented in ChaseMpiDLABlaslapack and ChaseMpiDLAMultiGPU, targetting
+     different architectures
 
        - the local computation invokes
-          - BLAS/LAPACK `sy(he)rk`, `potrf`, `trsm` for pure-CPU distributed-memory ChASE, 
-            and it is implemented
-            in ChaseMpiDLABlaslapack::syherk, ChaseMpiDLABlaslapack::potrf and 
+          - BLAS/LAPACK `sy(he)rk`, `potrf`, `trsm` for pure-CPU
+     distributed-memory ChASE, and it is implemented in
+     ChaseMpiDLABlaslapack::syherk, ChaseMpiDLABlaslapack::potrf and
             ChaseMpiDLABlaslapack::trsm, respectively
-          - cuBLAS/cuSOLVER `sy(he)rk`, `potrf`, `trsm` for multi-GPU distributed-memory ChASE, 
-            and it is implemented
-            in ChaseMpiDLAMultiGPU::syherk, ChaseMpiDLAMultiGPU::potrf and 
-            ChaseMpiDLAMultiGPU::trsm, respectively           
+          - cuBLAS/cuSOLVER `sy(he)rk`, `potrf`, `trsm` for multi-GPU
+     distributed-memory ChASE, and it is implemented in
+     ChaseMpiDLAMultiGPU::syherk, ChaseMpiDLAMultiGPU::potrf and
+            ChaseMpiDLAMultiGPU::trsm, respectively
    */
     void cholQR(std::size_t locked, Base<T> cond) override
     {
@@ -918,7 +941,7 @@ public:
         nvtxRangePushA("ChaseMpiDLA: cholQR");
 #endif
         Base<T> shift;
-	    bool isShiftQR = false;
+        bool isShiftQR = false;
         int choldeg = 2;
         int choldeg_env;
         char* choldegenv;
@@ -928,12 +951,15 @@ public:
             choldeg_env = std::atoi(choldegenv);
         }
 
-        //condition for using CholQR1
+        // condition for using CholQR1
         Base<T> cond_threshold_2;
 
-        if(sizeof(Base<T>) == 8){
+        if (sizeof(Base<T>) == 8)
+        {
             cond_threshold_2 = 1e1;
-        }else{
+        }
+        else
+        {
             cond_threshold_2 = 1e2;
         }
 
@@ -967,27 +993,30 @@ public:
         nvtxRangePop();
 #endif
 
-        if(info != 0){
-            isShiftQR = true;		
+        if (info != 0)
+        {
+            isShiftQR = true;
 #ifdef USE_NSIGHT
             nvtxRangePushA("ChaseMpiDLA: t_lange");
-#endif  
-            Base<T> nrmf = t_lange('F', m_, nevex, C_, m_);     
+#endif
+            Base<T> nrmf = t_lange('F', m_, nevex, C_, m_);
             nrmf = std::pow(nrmf, 2);
 #ifdef USE_NSIGHT
             nvtxRangePop();
             nvtxRangePushA("allreduce");
-#endif     
-            MPI_Allreduce(MPI_IN_PLACE, &nrmf, 1, getMPI_Type<Base<T>>(), MPI_SUM, col_comm_);               
+#endif
+            MPI_Allreduce(MPI_IN_PLACE, &nrmf, 1, getMPI_Type<Base<T>>(),
+                          MPI_SUM, col_comm_);
             nrmf = std::sqrt(nrmf);
-            shift = 11 * (N_ * nevex + nevex * nevex + nevex  ) 
-                               * std::numeric_limits<Base<T>>::epsilon()* nrmf;
+            shift = 11 * (N_ * nevex + nevex * nevex + nevex) *
+                    std::numeric_limits<Base<T>>::epsilon() * nrmf;
 #ifdef USE_NSIGHT
             nvtxRangePop();
             nvtxRangePushA("ChaseMpiDLA: shift in QR");
-#endif      
-            for(auto i = 0; i < nevex; i++){
-               A_[i * nevex + i] += (T)shift;
+#endif
+            for (auto i = 0; i < nevex; i++)
+            {
+                A_[i * nevex + i] += (T)shift;
             }
 #ifdef USE_NSIGHT
             nvtxRangePop();
@@ -1002,30 +1031,35 @@ public:
         }
 
         if (info == 0)
-        {            
-            if(cond < cond_threshold_2){
+        {
+            if (cond < cond_threshold_2)
+            {
                 choldeg = 1;
             }
 
-            if (choldegenv){
+            if (choldegenv)
+            {
                 choldeg = choldeg_env;
             }
 
-            if(isShiftQR && choldeg == 1){
+            if (isShiftQR && choldeg == 1)
+            {
                 choldeg = 2;
             }
-#ifdef CHASE_OUTPUT            
-            if (grank == 0){
-                std::cout << std::setprecision(2) 
-                          << "cond(V): " << cond << ", choldegee: " << choldeg;
+#ifdef CHASE_OUTPUT
+            if (grank == 0)
+            {
+                std::cout << std::setprecision(2) << "cond(V): " << cond
+                          << ", choldegee: " << choldeg;
 
-                if(isShiftQR)
+                if (isShiftQR)
                 {
                     std::cout << ", shift: " << shift << std::endl;
-                }else
+                }
+                else
                 {
                     std::cout << std::endl;
-                }          
+                }
             }
 #endif
 
@@ -1183,78 +1217,121 @@ private:
         bAc
     };
 
-    std::size_t locked_; //!< number of converged eigenpairs, it is synchronized with ChaseMpi::locked_
-    std::size_t ldc_; //!< leading dimension of `C_` and `C2_`
-    std::size_t ldb_; //!< leading dimension of `B_` and `B2_`
-    std::size_t n_; //!< number of columns of local matrix of the symmetric/Hermtian matrix
-    std::size_t m_; //!< number of rows of local matrix of the symmetric/Hermtian matrix
+    std::size_t locked_; //!< number of converged eigenpairs, it is synchronized
+                         //!< with ChaseMpi::locked_
+    std::size_t ldc_;    //!< leading dimension of `C_` and `C2_`
+    std::size_t ldb_;    //!< leading dimension of `B_` and `B2_`
+    std::size_t n_;      //!< number of columns of local matrix of the
+                         //!< symmetric/Hermtian matrix
+    std::size_t
+        m_; //!< number of rows of local matrix of the symmetric/Hermtian matrix
     std::size_t N_; //!< global dimension of the symmetric/Hermtian matrix
 
-    T* B_; //!< a matrix of size `n_*(nev_+nex_)`, which is allocated in ChaseMpiMatrices
-    T* C_; //!< a matrix of size `m_*(nev_+nex_)`, which is allocated in ChaseMpiMatrices
-    T* C2_; //!< a matrix of size `m_*(nev_+nex_)`, which is allocated in ChaseMpiProperties
-    T* B2_; //!< a matrix of size `n_*(nev_+nex_)`, which is allocated in ChaseMpiProperties
-    T* A_;  //!< a matrix of size `(nev_+nex_)*(nev_+nex_)`, which is allocated in ChaseMpiProperties
-    std::vector<T> v0_; //!< a vector of size `N_`, which is allocated in this class for Lanczos
-    std::vector<T> v1_; //!< a vector of size `N_`, which is allocated in this class for Lanczos
-    std::vector<T> w_; //!< a vector of size `N_`, which is allocated in this class for Lanczos
+    T* B_;  //!< a matrix of size `n_*(nev_+nex_)`, which is allocated in
+            //!< ChaseMpiMatrices
+    T* C_;  //!< a matrix of size `m_*(nev_+nex_)`, which is allocated in
+            //!< ChaseMpiMatrices
+    T* C2_; //!< a matrix of size `m_*(nev_+nex_)`, which is allocated in
+            //!< ChaseMpiProperties
+    T* B2_; //!< a matrix of size `n_*(nev_+nex_)`, which is allocated in
+            //!< ChaseMpiProperties
+    T* A_;  //!< a matrix of size `(nev_+nex_)*(nev_+nex_)`, which is allocated
+            //!< in ChaseMpiProperties
+    std::vector<T> v0_; //!< a vector of size `N_`, which is allocated in this
+                        //!< class for Lanczos
+    std::vector<T> v1_; //!< a vector of size `N_`, which is allocated in this
+                        //!< class for Lanczos
+    std::vector<T> w_;  //!< a vector of size `N_`, which is allocated in this
+                        //!< class for Lanczos
 
-    std::vector<T> Buff_; //!< a vector of size `N_`, it is allocated only ChASE working with `Block-Cyclic`
+    std::vector<T> Buff_; //!< a vector of size `N_`, it is allocated only ChASE
+                          //!< working with `Block-Cyclic`
 #if !defined(HAS_SCALAPACK)
-    T* V_; //!< a matrix of size `N_*(nev_+nex_)`, only allocated when no ScaLAPACK is detected
+    T* V_; //!< a matrix of size `N_*(nev_+nex_)`, only allocated when no
+           //!< ScaLAPACK is detected
 #endif
 
-    NextOp next_; //!< it is to manage the switch of operation from `V2=H*V1` to `V1=H'*V2` in filter
-    MPI_Comm row_comm_; //!< row communicator of 2D MPI proc grid, which is setup in ChaseMpiProperties
-    MPI_Comm col_comm_; //!< row communicator of 2D MPI proc grid, which is setup in ChaseMpiProperties
-    int* dims_; //!< dimension of 2D MPI proc grid, which is setup in ChaseMpiProperties
-    int* coord_; //!< coordinates of each MPI rank within 2D MPI proc grid, which is setup in ChaseMpiProperties
-    std::size_t* off_; //!< identical to ChaseMpiProperties::off_
-    std::size_t* r_offs_; //!< identical to ChaseMpiProperties::r_offs_
-    std::size_t* r_lens_; //!< identical to ChaseMpiProperties::r_lens_
+    NextOp next_; //!< it is to manage the switch of operation from `V2=H*V1` to
+                  //!< `V1=H'*V2` in filter
+    MPI_Comm row_comm_; //!< row communicator of 2D MPI proc grid, which is
+                        //!< setup in ChaseMpiProperties
+    MPI_Comm col_comm_; //!< row communicator of 2D MPI proc grid, which is
+                        //!< setup in ChaseMpiProperties
+    int* dims_;         //!< dimension of 2D MPI proc grid, which is setup in
+                        //!< ChaseMpiProperties
+    int* coord_; //!< coordinates of each MPI rank within 2D MPI proc grid,
+                 //!< which is setup in ChaseMpiProperties
+    std::size_t* off_;      //!< identical to ChaseMpiProperties::off_
+    std::size_t* r_offs_;   //!< identical to ChaseMpiProperties::r_offs_
+    std::size_t* r_lens_;   //!< identical to ChaseMpiProperties::r_lens_
     std::size_t* r_offs_l_; //!< identical to ChaseMpiProperties::r_offs_l_
-    std::size_t* c_offs_; //!< identical to ChaseMpiProperties::c_offs_
-    std::size_t* c_lens_; //!< identical to ChaseMpiProperties::c_lens_
+    std::size_t* c_offs_;   //!< identical to ChaseMpiProperties::c_offs_
+    std::size_t* c_lens_;   //!< identical to ChaseMpiProperties::c_lens_
     std::size_t* c_offs_l_; //!< identical to ChaseMpiProperties::c_offs_l_
-    std::size_t nb_; //!< identical to ChaseMpiProperties::nb_
-    std::size_t mb_;//!< identical to ChaseMpiProperties::mb_
-    std::size_t nblocks_;//!< identical to ChaseMpiProperties::nblocks_
-    std::size_t mblocks_;//!< identical to ChaseMpiProperties::mblocks_
-    std::size_t nev_;//!< number of required eigenpairs
-    std::size_t nex_; //!< number of extral searching space
+    std::size_t nb_;        //!< identical to ChaseMpiProperties::nb_
+    std::size_t mb_;        //!< identical to ChaseMpiProperties::mb_
+    std::size_t nblocks_;   //!< identical to ChaseMpiProperties::nblocks_
+    std::size_t mblocks_;   //!< identical to ChaseMpiProperties::mblocks_
+    std::size_t nev_;       //!< number of required eigenpairs
+    std::size_t nex_;       //!< number of extral searching space
 
-    std::vector<std::vector<int>> send_lens_; //!< identical to ChaseMpiProperties::send_lens_
-    std::vector<std::vector<int>> block_counts_; //!< identical to ChaseMpiProperties::block_counts_
-    std::vector<std::vector<int>> g_offset_; //!< identical to ChaseMpiProperties::g_offsets_
-    std::vector<std::vector<std::vector<int>>> blocklens_; //!< identical to ChaseMpiProperties::blocklens_
-    std::vector<std::vector<std::vector<int>>> blockdispls_; //!< identical to ChaseMpiProperties::blockdispls_
+    std::vector<std::vector<int>>
+        send_lens_; //!< identical to ChaseMpiProperties::send_lens_
+    std::vector<std::vector<int>>
+        block_counts_; //!< identical to ChaseMpiProperties::block_counts_
+    std::vector<std::vector<int>>
+        g_offset_; //!< identical to ChaseMpiProperties::g_offsets_
+    std::vector<std::vector<std::vector<int>>>
+        blocklens_; //!< identical to ChaseMpiProperties::blocklens_
+    std::vector<std::vector<std::vector<int>>>
+        blockdispls_; //!< identical to ChaseMpiProperties::blockdispls_
 
-    bool isSameDist_; //!< a flag indicating if the row and column communicator has the same distribution scheme
-    bool istartOfFilter_; //!< a flag indicating if it is the starting pointer of apply Chebyshev filter
-    std::vector<MPI_Request> reqsc2b_; //!< a collection of MPI requests for asynchonous communication
-    std::vector<MPI_Datatype> c_sends_; //!< a collection of MPI new datatype for sending operations
-    std::vector<MPI_Datatype> b_recvs_; //!< a collection of MPI new datatype for receiving operations
-    std::vector<MPI_Datatype> newType_[2]; //!< a collection of MPI new datatype for collective communication
-    std::vector<int> c_dests; //!< destination for each continous part of `C_` which will send to `B_` within column communicator
-    std::vector<int> c_srcs; //!< source for each continous part of `C_` which will send to `B_` within column communicator
-    std::vector<int> c_lens; //!< length of each continous part of `C_` which will send to `B_` within column communicator
-    std::vector<int> b_disps; //!< displacement of row indices within `B_` for receiving each continous buffer from `C_`
-    std::vector<int> c_disps; //!< displacement of row indices within `C_` for sending each continous buffer to `B_`
-    std::vector<std::vector<int>> block_cyclic_displs_[2]; //!< dispacement (row/col_comm) of each block of block-cyclic distribution within local matrix
+    bool isSameDist_; //!< a flag indicating if the row and column communicator
+                      //!< has the same distribution scheme
+    bool istartOfFilter_; //!< a flag indicating if it is the starting pointer
+                          //!< of apply Chebyshev filter
+    std::vector<MPI_Request> reqsc2b_; //!< a collection of MPI requests for
+                                       //!< asynchonous communication
+    std::vector<MPI_Datatype>
+        c_sends_; //!< a collection of MPI new datatype for sending operations
+    std::vector<MPI_Datatype>
+        b_recvs_; //!< a collection of MPI new datatype for receiving operations
+    std::vector<MPI_Datatype> newType_[2]; //!< a collection of MPI new datatype
+                                           //!< for collective communication
+    std::vector<int>
+        c_dests; //!< destination for each continous part of `C_` which will
+                 //!< send to `B_` within column communicator
+    std::vector<int> c_srcs;  //!< source for each continous part of `C_` which
+                              //!< will send to `B_` within column communicator
+    std::vector<int> c_lens;  //!< length of each continous part of `C_` which
+                              //!< will send to `B_` within column communicator
+    std::vector<int> b_disps; //!< displacement of row indices within `B_` for
+                              //!< receiving each continous buffer from `C_`
+    std::vector<int> c_disps; //!< displacement of row indices within `C_` for
+                              //!< sending each continous buffer to `B_`
+    std::vector<std::vector<int>>
+        block_cyclic_displs_[2]; //!< dispacement (row/col_comm) of each block
+                                 //!< of block-cyclic distribution within local
+                                 //!< matrix
 
-    int icsrc_; //!< identical to ChaseMpiProperties::icsrc_
-    int irsrc_; //!< identical to ChaseMpiProperties::irsrc_
-    int row_size_; //!< row communicator size
-    int row_rank_; //!< rank within each row communicator
-    int col_size_; //!< column communicator size
-    int col_rank_; //!< rank within each column communicator
+    int icsrc_;              //!< identical to ChaseMpiProperties::icsrc_
+    int irsrc_;              //!< identical to ChaseMpiProperties::irsrc_
+    int row_size_;           //!< row communicator size
+    int row_rank_;           //!< rank within each row communicator
+    int col_size_;           //!< column communicator size
+    int col_rank_;           //!< rank within each column communicator
     std::string data_layout; //!< identical to ChaseMpiProperties::data_layout
-    std::unique_ptr<ChaseMpiDLAInterface<T>> dla_; //!< an object of class ChaseMpiDLABlaslapack or ChaseMpiDLAMultiGPU 
-    ChaseMpiProperties<T>* matrix_properties_; //!< an object of class ChaseMpiProperties
+    std::unique_ptr<ChaseMpiDLAInterface<T>>
+        dla_; //!< an object of class ChaseMpiDLABlaslapack or
+              //!< ChaseMpiDLAMultiGPU
+    ChaseMpiProperties<T>*
+        matrix_properties_; //!< an object of class ChaseMpiProperties
 
-    bool isHHqr; //!< a flag indicating if a Householder QR has been performed in last iteration
+    bool isHHqr; //!< a flag indicating if a Householder QR has been performed
+                 //!< in last iteration
 #if defined(HAS_SCALAPACK)
-    std::size_t* desc1D_Nxnevx_; //!< a ScaLAPACK descriptor for each column communicator
+    std::size_t*
+        desc1D_Nxnevx_; //!< a ScaLAPACK descriptor for each column communicator
 #endif
 };
 } // namespace mpi

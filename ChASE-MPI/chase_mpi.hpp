@@ -30,8 +30,8 @@ namespace chase
 namespace mpi
 {
 
-//! @brief A derived class of Chase to implement ChASE based on MPI and Dense Linear
-//! Algebra (**DLA**) routines.
+//! @brief A derived class of Chase to implement ChASE based on MPI and Dense
+//! Linear Algebra (**DLA**) routines.
 /*!
   This is a calls derived from the Chase class which plays the
     role of interface for the kernels used by the library.
@@ -96,20 +96,21 @@ public:
        @param V1: a pointer to a rectangular matrix of size `N * (nev+nex)`.
        If `V1` is not provided by the user, it will be internally allocated in
        ChaseMpiMatrices class.
-       After the solving step, the first `nev` columns of `V1` are overwritten by
-       the desired Ritz vectors.
+       After the solving step, the first `nev` columns of `V1` are overwritten
+       by the desired Ritz vectors.
        @param ritzv: a pointer to an array to store the computed Ritz values.
-       If `ritzv` is not provided by the user, it will be internally allocated in
-       ChaseMpiMatrices class. Its minimal size should be `nev+nex`.
+       If `ritzv` is not provided by the user, it will be internally allocated
+       in ChaseMpiMatrices class. Its minimal size should be `nev+nex`.
        @param H: a pointer to the memory which stores local part of matrix on
-       each MPI rank. If `H` is not provided by the user, it will be internally 
+       each MPI rank. If `H` is not provided by the user, it will be internally
        allocated in ChaseMpiMatrices class.
        @param V2: a pointer to anther rectangular matrix of size `N *
-       (nev+nex)`. f `V2` is not provided by the user, it will be internally 
+       (nev+nex)`. f `V2` is not provided by the user, it will be internally
        allocated in ChaseMpiMatrices class.
        @param resid: a pointer to an array to store the residual of computed
-       eigenpairs. If `resid` is not provided by the user, it will be internally 
-       allocated in ChaseMpiMatrices class. Its minimal size should be `nev+nex`.
+       eigenpairs. If `resid` is not provided by the user, it will be internally
+       allocated in ChaseMpiMatrices class. Its minimal size should be
+       `nev+nex`.
     */
     ChaseMpi(std::size_t N, std::size_t nev, std::size_t nex, T* V1 = nullptr,
              Base<T>* ritzv = nullptr, T* H = nullptr, T* V2 = nullptr,
@@ -127,7 +128,7 @@ public:
     // case 2: MPI
     //! A constructor of the ChaseMpi class which gives an implenentation of
     //! ChASE for distributed-memory architecture, with the support of MPI.
-    //! In this case, the buffer for matrix `H` is allocated internally. 
+    //! In this case, the buffer for matrix `H` is allocated internally.
     /*!
        The private members of this classes are initialized by the parameters of
        this constructor.
@@ -155,26 +156,26 @@ public:
        @param properties: an object of ChaseMpiProperties which setups the MPI
        environment and data distribution scheme for ChaseMpi targeting
        distributed-memory systems.
-       @param V1: a pointer to a rectangular matrix of size `m * (nev+nex)`. 
-       `m` can be obtained through ChaseMpiProperties::get_m(). `V1` is partially
-       distributed within each `column communicator` and is redundant among 
-       different `column communicator`. 
-       If `V1` is not provided by the user, it will be internally allocated in
-       ChaseMpiMatrices class.
-       After the solving step, the first `nev` columns of `V1` are overwritten by
-       the desired Ritz vectors.       
+       @param V1: a pointer to a rectangular matrix of size `m * (nev+nex)`.
+       `m` can be obtained through ChaseMpiProperties::get_m(). `V1` is
+       partially distributed within each `column communicator` and is redundant
+       among different `column communicator`. If `V1` is not provided by the
+       user, it will be internally allocated in ChaseMpiMatrices class. After
+       the solving step, the first `nev` columns of `V1` are overwritten by the
+       desired Ritz vectors.
        @param ritzv: a pointer to an array to store the computed Ritz values.
-       If `ritzv` is not provided by the user, it will be internally allocated in
-       ChaseMpiMatrices class. Its minimal size should be `nev+nex`.
+       If `ritzv` is not provided by the user, it will be internally allocated
+       in ChaseMpiMatrices class. Its minimal size should be `nev+nex`.
        @param V2: a pointer to anther rectangular matrix of size `n *
-       (nev+nex)`. If `V2` is not provided by the user, it will be internally 
-       allocated in ChaseMpiMatrices class. `n` can be obtained through 
+       (nev+nex)`. If `V2` is not provided by the user, it will be internally
+       allocated in ChaseMpiMatrices class. `n` can be obtained through
        ChaseMpiProperties::get_n(). `V2` is partially
-       distributed within each `row communicator` and is redundant among 
-       different `row communicator`. 
+       distributed within each `row communicator` and is redundant among
+       different `row communicator`.
        @param resid: a pointer to an array to store the residual of computed
-       eigenpairs. If `resid` is not provided by the user, it will be internally 
-       allocated in ChaseMpiMatrices class. Its minimal size should be `nev+nex`.
+       eigenpairs. If `resid` is not provided by the user, it will be internally
+       allocated in ChaseMpiMatrices class. Its minimal size should be
+       `nev+nex`.
     */
     ChaseMpi(ChaseMpiProperties<T>* properties, T* V1 = nullptr,
              Base<T>* ritzv = nullptr, T* V2 = nullptr,
@@ -203,7 +204,7 @@ public:
     //! A constructor of the ChaseMpi class which gives an implenentation of
     //! ChASE for distributed-memory architecture, with the support of MPI.
     //! In this case, the buffer for matrix `H` should be allocated externally
-    //! and provided by users. 
+    //! and provided by users.
     /*!
        The private members of this classes are initialized by the parameters of
        this constructor.
@@ -231,34 +232,36 @@ public:
        @param properties: an object of ChaseMpiProperties which setups the MPI
        environment and data distribution scheme for ChaseMpi targeting
        distributed-memory systems.
-       @param H: a pointer to a local matrix of the distributed Symmetric/Hermtitian
-       matrix to be diagonalised. It should be provided and allocated by users.
-       The minimal dimension is `mxn`, in which `m` and `n` can be obtained through
-       ChaseMpiProperties::get_m() and ChaseMpiProperties::get_n().
-       @param ldh: leading dimension of local matrix `H`, it should be `>=`    
+       @param H: a pointer to a local matrix of the distributed
+       Symmetric/Hermtitian matrix to be diagonalised. It should be provided and
+       allocated by users. The minimal dimension is `mxn`, in which `m` and `n`
+       can be obtained through ChaseMpiProperties::get_m() and
+       ChaseMpiProperties::get_n().
+       @param ldh: leading dimension of local matrix `H`, it should be `>=`
        ChaseMpiProperties::get_m()
-       @param V1: a pointer to a rectangular matrix of size `m * (nev+nex)`. 
+       @param V1: a pointer to a rectangular matrix of size `m * (nev+nex)`.
        `m` can be obtained through ChaseMpiProperties::get_m().
        `V1` is partially
-       distributed within each `column communicator` and is redundant among 
-       different `column communicator`. 
+       distributed within each `column communicator` and is redundant among
+       different `column communicator`.
        If `V1` is not provided by the user, it will be internally allocated in
        ChaseMpiMatrices class.
-       After the solving step, the first `nev` columns of `V1` are overwritten by
-       the desired Ritz vectors.       
+       After the solving step, the first `nev` columns of `V1` are overwritten
+       by the desired Ritz vectors.
        @param ritzv: a pointer to an array to store the computed Ritz values.
-       If `ritzv` is not provided by the user, it will be internally allocated in
-       ChaseMpiMatrices class. Its minimal size should be `nev+nex`.
+       If `ritzv` is not provided by the user, it will be internally allocated
+       in ChaseMpiMatrices class. Its minimal size should be `nev+nex`.
        @param V2: a pointer to anther rectangular matrix of size `n *
        (nev+nex)`. `V2` is partially
-       distributed within each `row communicator` and is redundant among 
-       different `row communicator`. 
-       If `V2` is not provided by the user, it will be internally 
-       allocated in ChaseMpiMatrices class. `m` can be obtained through 
+       distributed within each `row communicator` and is redundant among
+       different `row communicator`.
+       If `V2` is not provided by the user, it will be internally
+       allocated in ChaseMpiMatrices class. `m` can be obtained through
        ChaseMpiProperties::get_n().
        @param resid: a pointer to an array to store the residual of computed
-       eigenpairs. If `resid` is not provided by the user, it will be internally 
-       allocated in ChaseMpiMatrices class. Its minimal size should be `nev+nex`.
+       eigenpairs. If `resid` is not provided by the user, it will be internally
+       allocated in ChaseMpiMatrices class. Its minimal size should be
+       `nev+nex`.
     */
     ChaseMpi(ChaseMpiProperties<T>* properties, T* H, std::size_t ldh, T* V1,
              Base<T>* ritzv, T* V2 = nullptr, Base<T>* resid = nullptr)
@@ -339,12 +342,12 @@ public:
     //! This member function implements the virtual one declared in Chase class.
     //! This member function initializes randomly the vectors when necessary.
     /*!
-        @param random: a boolean variable indicates if randomness of initial vectors
-        is required. 
+        @param random: a boolean variable indicates if randomness of initial
+       vectors is required.
         - For solving a sequence of eigenvalue problems, this variable is
-        always `True` when solving the first problem. 
+        always `True` when solving the first problem.
         - It could be false when
-        the ritzv vectors from previous problem are recycled to speed up the 
+        the ritzv vectors from previous problem are recycled to speed up the
         convergence.
     */
     void initVecs(bool random) override
@@ -371,8 +374,9 @@ public:
         operation.
         @param alpha: a scalar of type `T` which scales `H*V1` or `H'*V2`.
 
-        @param beta: a scalar of type `T` which scales `V1` or `V2`, respectively.
-        
+        @param beta: a scalar of type `T` which scales `V1` or `V2`,
+       respectively.
+
         @param offset: the offset of column which the `HEMM` starts from.
     */
     void HEMM(std::size_t block, T alpha, T beta, std::size_t offset) override
@@ -391,9 +395,10 @@ public:
     //! of Q, its first `locked_` number of vectors are overwritten by the
     //! converged eigenvectors stored previously.
     //!
-    //! CholQR is used in default, and it can be disabled by adding a 
+    //! CholQR is used in default, and it can be disabled by adding a
     //! environment variable `CHASE_DISABLE_CHOLQR=1`.
-    //! When CholQR is disabled, ScaLAPACK Householder QR is used whenever possible,
+    //! When CholQR is disabled, ScaLAPACK Householder QR is used whenever
+    //! possible,
     //! @param fixednev: total number of converged eigenpairs before this time
     //! QR factorization.
     void QR(std::size_t fixednev, Base<T> cond) override
@@ -456,7 +461,7 @@ public:
     //! It swaps the two matrices of vectors used in the Chebyschev filter
     //! @param i: one of the column index to be swapped
     //! @param j: another of the column index to be swapped
-    //! rectangular matrices `approxV_` and `workspace_`.    
+    //! rectangular matrices `approxV_` and `workspace_`.
     void Swap(std::size_t i, std::size_t j) override
     {
 #ifdef USE_NSIGHT
@@ -732,9 +737,10 @@ public:
     // if distributed ChASE is used, collecting the distributed ritz vectors
     // into V which is redundant across all MPI ranks. if non-distributed ChASE
     // is used, copying Ritz vectors directly to V
-    //! When distributed ChASE is used, this member function collects the partially
-    //! distributed Ritz vectors into a redundant vectors `V` on all MPI procs.
-    //! @param V: the buffer of size `N_xnev_` which stores the collected 
+    //! When distributed ChASE is used, this member function collects the
+    //! partially distributed Ritz vectors into a redundant vectors `V` on all
+    //! MPI procs.
+    //! @param V: the buffer of size `N_xnev_` which stores the collected
     //! redundant Ritz vectors.
     void collectRitzVecs(T* V)
     {

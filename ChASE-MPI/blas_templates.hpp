@@ -121,7 +121,7 @@ extern "C" void descinit_(int*, int*, int*, int*, int*, int*, int*, int*, int*,
                           int*);
 extern "C" void blacs_gridexit_(int*);
 extern "C" void blacs_gridmap_(int*, int*, int*, int*, int*);
-extern "C" int numroc_(std::size_t *, std::size_t *, int *, int *, int *);
+extern "C" int numroc_(std::size_t*, std::size_t*, int*, int*, int*);
 
 extern "C" void pdgeqrf_(int*, int*, double*, int*, int*, int*, double*,
                          double*, int*, int*);

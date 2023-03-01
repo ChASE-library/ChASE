@@ -22,111 +22,148 @@
 #include "ChASE-MPI/chase_mpi_properties.hpp"
 #include "ChASE-MPI/chase_mpidla_interface.hpp"
 
-/** @defgroup chase-cuda-utility Interface to the CUDA kernels functions used by ChASE
+/** @defgroup chase-cuda-utility Interface to the CUDA kernels functions used by
+ * ChASE
  *  @brief This module provides the calling for CUDA:
  *     1. generate random number in normal distribution on device
  *     2. shift the diagonal of a matrix on single GPU.
- *     3. shift the diagonal of a global matrix which has already distributed on multiGPUs (both block-block and block-cyclic distributions)
+ *     3. shift the diagonal of a global matrix which has already distributed on
+ * multiGPUs (both block-block and block-cyclic distributions)
  *  @{
  */
 
 //! generate `n` random float numbers in normal distribution on each GPU device.
-//!    
+//!
 //! @param[in] seed the seed of random number generator
 //! @param[in] states the states of the sequence of random number generator
-//! @param[in,out] v a pointer to the device memory to store the random generated numbers 
-//! @param[in] stream_ an asynchronous CUDA stream which allows to run this function asynchronously
+//! @param[in,out] v a pointer to the device memory to store the random
+//! generated numbers
+//! @param[in] stream_ an asynchronous CUDA stream which allows to run this
+//! function asynchronously
 void chase_rand_normal(unsigned long long seed, curandState* states, float* v,
                        int n, cudaStream_t stream_);
-//! generate `n` random double numbers in normal distribution on each GPU device.
-//!    
+//! generate `n` random double numbers in normal distribution on each GPU
+//! device.
+//!
 //! @param[in] seed the seed of random number generator
 //! @param[in] states the states of the sequence of random number generator
-//! @param[in,out] v a pointer to the device memory to store the random generated numbers 
-//! @param[in] stream_ an asynchronous CUDA stream which allows to run this function asynchronously
+//! @param[in,out] v a pointer to the device memory to store the random
+//! generated numbers
+//! @param[in] stream_ an asynchronous CUDA stream which allows to run this
+//! function asynchronously
 void chase_rand_normal(unsigned long long seed, curandState* states, double* v,
                        int n, cudaStream_t stream_);
-//! generate `n` random complex float numbers in normal distribution on each GPU device.
-//! The real part and the imaginary part of each individual random number are the same.
-//!    
+//! generate `n` random complex float numbers in normal distribution on each GPU
+//! device. The real part and the imaginary part of each individual random
+//! number are the same.
+//!
 //! @param[in] seed the seed of random number generator
 //! @param[in] states the states of the sequence of random number generator
-//! @param[in,out] v a pointer to the device memory to store the random generated numbers 
-//! @param[in] stream_ an asynchronous CUDA stream which allows to run this function asynchronously
+//! @param[in,out] v a pointer to the device memory to store the random
+//! generated numbers
+//! @param[in] stream_ an asynchronous CUDA stream which allows to run this
+//! function asynchronously
 void chase_rand_normal(unsigned long long seed, curandState* states,
                        std::complex<float>* v, int n, cudaStream_t stream_);
-//! generate `n` random complex double numbers in normal distribution on each GPU device.
-//! The real part and the imaginary part of each individual random number are the same.
-//!    
+//! generate `n` random complex double numbers in normal distribution on each
+//! GPU device. The real part and the imaginary part of each individual random
+//! number are the same.
+//!
 //! @param[in] seed the seed of random number generator
 //! @param[in] states the states of the sequence of random number generator
-//! @param[in,out] v a pointer to the device memory to store the random generated numbers 
-//! @param[in] stream_ an asynchronous CUDA stream which allows to run this function asynchronously
+//! @param[in,out] v a pointer to the device memory to store the random
+//! generated numbers
+//! @param[in] stream_ an asynchronous CUDA stream which allows to run this
+//! function asynchronously
 void chase_rand_normal(unsigned long long seed, curandState* states,
                        std::complex<double>* v, int n, cudaStream_t stream_);
 
-//! shift the diagonal of a `nxn` square matrix `A` in float real data type. which has been
-//! distributed on multi-GPUs in either block-block of block-cyclic faison.
-//! Each GPU may contains different number of diagonal part of the global matrix, espeically for the block-cyclic distribution
-//! On each GPU, it may contains multiple pieces of diagonal to be shifted, and each piece may be of different size.
-//! Hence each piece is determined by `off_m`, `off_n`, `offsize` within the local matrix on each GPU device.
-//!    
-//! @param[in,out] A a pointer to the local piece of matrix to be shifted on each GPU
-//! @param[in] off_m the offset of the row of the first element each piece of diagonal to be shifted within the local matrix `A`
-//! @param[in] off_n the offset of the column of the first element each piece of diagonal to be shifted within the local matrix `A`
+//! shift the diagonal of a `nxn` square matrix `A` in float real data type.
+//! which has been distributed on multi-GPUs in either block-block of
+//! block-cyclic faison. Each GPU may contains different number of diagonal part
+//! of the global matrix, espeically for the block-cyclic distribution On each
+//! GPU, it may contains multiple pieces of diagonal to be shifted, and each
+//! piece may be of different size. Hence each piece is determined by `off_m`,
+//! `off_n`, `offsize` within the local matrix on each GPU device.
+//!
+//! @param[in,out] A a pointer to the local piece of matrix to be shifted on
+//! each GPU
+//! @param[in] off_m the offset of the row of the first element each piece of
+//! diagonal to be shifted within the local matrix `A`
+//! @param[in] off_n the offset of the column of the first element each piece of
+//! diagonal to be shifted within the local matrix `A`
 //! @param[in] offsize number of elements to be shifted on each piece
 //! @param[in,out] ldh the leading dimension of local matrix to be shifted
-//! @param[in] shift the value for shifting the diagonal 
-//! @param[in] stream_ an asynchronous CUDA stream which allows to run this function asynchronously
+//! @param[in] shift the value for shifting the diagonal
+//! @param[in] stream_ an asynchronous CUDA stream which allows to run this
+//! function asynchronously
 void chase_shift_mgpu_matrix(float* A, std::size_t* off_m, std::size_t* off_n,
                              std::size_t offsize, std::size_t ldH, float shift,
                              cudaStream_t stream_);
-//! shift the diagonal of a `nxn` square matrix `A` in double real data type. which has been
-//! distributed on multi-GPUs in either block-block of block-cyclic faison.
-//! Each GPU may contains different number of diagonal part of the global matrix, espeically for the block-cyclic distribution
-//! On each GPU, it may contains multiple pieces of diagonal to be shifted, and each piece may be of different size.
-//! Hence each piece is determined by `off_m`, `off_n`, `offsize` within the local matrix on each GPU device.
-//!    
-//! @param[in,out] A a pointer to the local piece of matrix to be shifted on each GPU
-//! @param[in] off_m the offset of the row of the first element each piece of diagonal to be shifted within the local matrix `A`
-//! @param[in] off_n the offset of the column of the first element each piece of diagonal to be shifted within the local matrix `A`
+//! shift the diagonal of a `nxn` square matrix `A` in double real data type.
+//! which has been distributed on multi-GPUs in either block-block of
+//! block-cyclic faison. Each GPU may contains different number of diagonal part
+//! of the global matrix, espeically for the block-cyclic distribution On each
+//! GPU, it may contains multiple pieces of diagonal to be shifted, and each
+//! piece may be of different size. Hence each piece is determined by `off_m`,
+//! `off_n`, `offsize` within the local matrix on each GPU device.
+//!
+//! @param[in,out] A a pointer to the local piece of matrix to be shifted on
+//! each GPU
+//! @param[in] off_m the offset of the row of the first element each piece of
+//! diagonal to be shifted within the local matrix `A`
+//! @param[in] off_n the offset of the column of the first element each piece of
+//! diagonal to be shifted within the local matrix `A`
 //! @param[in] offsize number of elements to be shifted on each piece
 //! @param[in,out] ldh the leading dimension of local matrix to be shifted
-//! @param[in] shift the value for shifting the diagonal 
-//! @param[in] stream_ an asynchronous CUDA stream which allows to run this function asynchronously
+//! @param[in] shift the value for shifting the diagonal
+//! @param[in] stream_ an asynchronous CUDA stream which allows to run this
+//! function asynchronously
 void chase_shift_mgpu_matrix(double* A, std::size_t* off_m, std::size_t* off_n,
                              std::size_t offsize, std::size_t ldH, double shift,
                              cudaStream_t stream_);
-//! shift the diagonal of a `nxn` square matrix `A` in double complex data type. which has been
-//! distributed on multi-GPUs in either block-block of block-cyclic faison.
-//! Each GPU may contains different number of diagonal part of the global matrix, espeically for the block-cyclic distribution
-//! On each GPU, it may contains multiple pieces of diagonal to be shifted, and each piece may be of different size.
-//! Hence each piece is determined by `off_m`, `off_n`, `offsize` within the local matrix on each GPU device.
-//!    
-//! @param[in,out] A a pointer to the local piece of matrix to be shifted on each GPU
-//! @param[in] off_m the offset of the row of the first element each piece of diagonal to be shifted within the local matrix `A`
-//! @param[in] off_n the offset of the column of the first element each piece of diagonal to be shifted within the local matrix `A`
+//! shift the diagonal of a `nxn` square matrix `A` in double complex data type.
+//! which has been distributed on multi-GPUs in either block-block of
+//! block-cyclic faison. Each GPU may contains different number of diagonal part
+//! of the global matrix, espeically for the block-cyclic distribution On each
+//! GPU, it may contains multiple pieces of diagonal to be shifted, and each
+//! piece may be of different size. Hence each piece is determined by `off_m`,
+//! `off_n`, `offsize` within the local matrix on each GPU device.
+//!
+//! @param[in,out] A a pointer to the local piece of matrix to be shifted on
+//! each GPU
+//! @param[in] off_m the offset of the row of the first element each piece of
+//! diagonal to be shifted within the local matrix `A`
+//! @param[in] off_n the offset of the column of the first element each piece of
+//! diagonal to be shifted within the local matrix `A`
 //! @param[in] offsize number of elements to be shifted on each piece
 //! @param[in,out] ldh the leading dimension of local matrix to be shifted
-//! @param[in] shift the value for shifting the diagonal 
-//! @param[in] stream_ an asynchronous CUDA stream which allows to run this function asynchronously
+//! @param[in] shift the value for shifting the diagonal
+//! @param[in] stream_ an asynchronous CUDA stream which allows to run this
+//! function asynchronously
 void chase_shift_mgpu_matrix(std::complex<double>* A, std::size_t* off_m,
                              std::size_t* off_n, std::size_t offsize,
                              std::size_t ldH, double shift,
                              cudaStream_t stream_);
-//! shift the diagonal of a `nxn` square matrix `A` in float complex data type. which has been
-//! distributed on multi-GPUs in either block-block of block-cyclic faison.
-//! Each GPU may contains different number of diagonal part of the global matrix, espeically for the block-cyclic distribution
-//! On each GPU, it may contains multiple pieces of diagonal to be shifted, and each piece may be of different size.
-//! Hence each piece is determined by `off_m`, `off_n`, `offsize` within the local matrix on each GPU device.
-//!    
-//! @param[in,out] A a pointer to the local piece of matrix to be shifted on each GPU
-//! @param[in] off_m the offset of the row of the first element each piece of diagonal to be shifted within the local matrix `A`
-//! @param[in] off_n the offset of the column of the first element each piece of diagonal to be shifted within the local matrix `A`
+//! shift the diagonal of a `nxn` square matrix `A` in float complex data type.
+//! which has been distributed on multi-GPUs in either block-block of
+//! block-cyclic faison. Each GPU may contains different number of diagonal part
+//! of the global matrix, espeically for the block-cyclic distribution On each
+//! GPU, it may contains multiple pieces of diagonal to be shifted, and each
+//! piece may be of different size. Hence each piece is determined by `off_m`,
+//! `off_n`, `offsize` within the local matrix on each GPU device.
+//!
+//! @param[in,out] A a pointer to the local piece of matrix to be shifted on
+//! each GPU
+//! @param[in] off_m the offset of the row of the first element each piece of
+//! diagonal to be shifted within the local matrix `A`
+//! @param[in] off_n the offset of the column of the first element each piece of
+//! diagonal to be shifted within the local matrix `A`
 //! @param[in] offsize number of elements to be shifted on each piece
 //! @param[in,out] ldh the leading dimension of local matrix to be shifted
-//! @param[in] shift the value for shifting the diagonal 
-//! @param[in] stream_ an asynchronous CUDA stream which allows to run this function asynchronously
+//! @param[in] shift the value for shifting the diagonal
+//! @param[in] stream_ an asynchronous CUDA stream which allows to run this
+//! function asynchronously
 void chase_shift_mgpu_matrix(std::complex<float>* A, std::size_t* off_m,
                              std::size_t* off_n, std::size_t offsize,
                              std::size_t ldH, float shift,
@@ -141,8 +178,8 @@ namespace mpi
 //
 //  This Class is meant to be used with MatrixFreeMPI
 //
-//! @brief A derived class of ChaseMpiDLAInterface which implements the inter-node
-//! computation for a multi-GPUs MPI-based implementation of ChASE.    
+//! @brief A derived class of ChaseMpiDLAInterface which implements the
+//! inter-node computation for a multi-GPUs MPI-based implementation of ChASE.
 template <class T>
 class ChaseMpiDLAMultiGPU : public ChaseMpiDLAInterface<T>
 {
@@ -151,7 +188,7 @@ public:
     //! @param matrix_properties: it is an object of ChaseMpiProperties, which
     //! defines the MPI environment and data distribution scheme in ChASE-MPI.
     //! @param matrices: it is an instance of ChaseMpiMatrices, which
-    //!  allocates the required buffers in ChASE-MPI.         
+    //!  allocates the required buffers in ChASE-MPI.
     ChaseMpiDLAMultiGPU(ChaseMpiProperties<T>* matrix_properties,
                         ChaseMpiMatrices<T>& matrices)
     {
@@ -307,17 +344,21 @@ public:
         cuda_exec(cudaFree(d_ritz_));
         cuda_exec(cudaFree(states_));
     }
-    //! - This function set initially the operation for apply() used in ChaseMpi::Lanczos()
-    //! - This function also copies the local block of Symmetric/Hermtian matrix to GPU 
+    //! - This function set initially the operation for apply() used in
+    //! ChaseMpi::Lanczos()
+    //! - This function also copies the local block of Symmetric/Hermtian matrix
+    //! to GPU
     void initVecs() override
     {
         cublas_status_ = cublasSetMatrix(m_, n_, sizeof(T), H_, ldh_, d_H_, m_);
-        assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);        
-	    next_ = NextOp::bAc;
+        assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
+        next_ = NextOp::bAc;
     }
-    //! This function generates the random values for each MPI proc using device API of cuRAND
-    //!     - each MPI proc with a same MPI rank among different column communicator
-    //!       same a same seed of RNG    
+    //! This function generates the random values for each MPI proc using device
+    //! API of cuRAND
+    //!     - each MPI proc with a same MPI rank among different column
+    //!     communicator
+    //!       same a same seed of RNG
     void initRndVecs() override
     {
         MPI_Comm col_comm = matrix_properties_->get_col_comm();
@@ -332,7 +373,7 @@ public:
     }
 
     //! - This function set initially the operation for apply() in filter
-    //! - it copies also `C_` to device buffer `d_C` 
+    //! - it copies also `C_` to device buffer `d_C`
     void preApplication(T* V, std::size_t locked, std::size_t block) override
     {
         next_ = NextOp::bAc;
@@ -344,8 +385,8 @@ public:
         }
     }
 
-
-    //! - This function performs the local computation of `GEMM` for ChaseMpiDLA::apply()
+    //! - This function performs the local computation of `GEMM` for
+    //! ChaseMpiDLA::apply()
     //! - It is implemented based on `cuBLAS`'s `cublasXgemm`.
     void apply(T alpha, T beta, std::size_t offset, std::size_t block,
                std::size_t locked) override
@@ -397,7 +438,8 @@ public:
         }
     }
     //! - This function copies a number of column of `d_C_` to `C_`.
-    //! - This memory copying is required for ChaseMpi::Lanczos in which `axpy`, etc
+    //! - This memory copying is required for ChaseMpi::Lanczos in which `axpy`,
+    //! etc
     //! - are performed on CPUs.
     bool postApplication(T* V, std::size_t block, std::size_t locked) override
     {
@@ -406,16 +448,19 @@ public:
         return false;
     }
 
-    //! This function performs the shift of diagonal of a global matrix 
-    //! - This global is already distributed on GPUs, so the shifting operation takes place on the local
+    //! This function performs the shift of diagonal of a global matrix
+    //! - This global is already distributed on GPUs, so the shifting operation
+    //! takes place on the local
     //!   block of global matrix on each GPU.
-    //! - This function is naturally in parallel among all MPI procs and also with each GPU. 
+    //! - This function is naturally in parallel among all MPI procs and also
+    //! with each GPU.
     void shiftMatrix(T c, bool isunshift = false) override
     {
         chase_shift_mgpu_matrix(d_H_, d_off_m_, d_off_n_, diag_off_size_, m_,
                                 std::real(c), (cudaStream_t)0);
     }
-    //! - This function performs the local computation of `GEMM` for ChaseMpiDLA::asynCxHGatherC()
+    //! - This function performs the local computation of `GEMM` for
+    //! ChaseMpiDLA::asynCxHGatherC()
     //! - It is implemented based on `cuBLAS`'s `cublasXgemm`.
     void asynCxHGatherC(std::size_t locked, std::size_t block,
                         bool isCcopied) override
@@ -438,7 +483,8 @@ public:
                              block * n_ * sizeof(T), cudaMemcpyDeviceToHost));
     }
 
-    //! - All required operations for this function has been done in for ChaseMpiDLA::applyVec().
+    //! - All required operations for this function has been done in for
+    //! ChaseMpiDLA::applyVec().
     //! - This function contains nothing in this class.
     void applyVec(T* B, T* C) override {}
     int get_nprocs() const override { return matrix_properties_->get_nprocs(); }
@@ -471,7 +517,8 @@ public:
         return t_dot(n, x, incx, y, incy);
     }
 
-    //! - This function performs the local computation of `GEMM` for ChaseMpiDLA::RR()
+    //! - This function performs the local computation of `GEMM` for
+    //! ChaseMpiDLA::RR()
     //! - It is implemented based on `cuBLAS`'s `cublasXgemm`.
     void RR(std::size_t block, std::size_t locked, Base<T>* ritzv) override
     {
@@ -491,19 +538,21 @@ public:
                                          nev_ + nex_, A_, nev_ + nex_);
         assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
     }
-    //! - All required operations for this function has been done in for ChaseMpiDLA::V2C().
+    //! - All required operations for this function has been done in for
+    //! ChaseMpiDLA::V2C().
     //! - This function contains nothing in this class.
     void V2C(T* v1, std::size_t off1, T* v2, std::size_t off2,
              std::size_t block) override
     {
     }
-    //! - All required operations for this function has been done in for ChaseMpiDLA::C2V().
+    //! - All required operations for this function has been done in for
+    //! ChaseMpiDLA::C2V().
     //! - This function contains nothing in this class.
     void C2V(T* v1, std::size_t off1, T* v2, std::size_t off2,
              std::size_t block) override
     {
     }
-    //! It is an interface to cuBLAS `cublasXsy(he)rk`.        
+    //! It is an interface to cuBLAS `cublasXsy(he)rk`.
     void syherk(char uplo, char trans, std::size_t n, std::size_t k, T* alpha,
                 T* a, std::size_t lda, T* beta, T* c, std::size_t ldc,
                 bool first) override
@@ -534,7 +583,7 @@ public:
                                          d_A_, nev_ + nex_, A_, nev_ + nex_);
         assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
     }
-    //! It is an interface to cuSOLVER `cusolverXpotrf`.    
+    //! It is an interface to cuSOLVER `cusolverXpotrf`.
     int potrf(char uplo, std::size_t n, T* a, std::size_t lda) override
     {
         cublas_status_ = cublasSetMatrix(nev_ + nex_, nev_ + nex_, sizeof(T), a,
@@ -558,7 +607,7 @@ public:
         return info;
     }
 
-    //! It is an interface to cuBLAS `cublasXtrsm`.    
+    //! It is an interface to cuBLAS `cublasXtrsm`.
     void trsm(char side, char uplo, char trans, char diag, std::size_t m,
               std::size_t n, T* alpha, T* a, std::size_t lda, T* b,
               std::size_t ldb, bool first) override
@@ -576,10 +625,13 @@ public:
         }
         assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
     }
-    //! - This function performs the local computation of residuals for ChaseMpiDLA::Resd()
+    //! - This function performs the local computation of residuals for
+    //! ChaseMpiDLA::Resd()
     //! - It is implemented based on `BLAS`'s `?axpy` and `?nrm2`.
-    //! - This function computes only the residuals of local part of vectors on each MPI proc.
-    //! - The final results are obtained in ChaseMpiDLA::Resd() with an MPI_Allreduce operation
+    //! - This function computes only the residuals of local part of vectors on
+    //! each MPI proc.
+    //! - The final results are obtained in ChaseMpiDLA::Resd() with an
+    //! MPI_Allreduce operation
     //!      within the row communicator.
     void Resd(Base<T>* ritzv, Base<T>* resid, std::size_t locked,
               std::size_t unconverged) override
@@ -608,7 +660,8 @@ public:
 #endif
     }
     //! - This function performs the local computation for ChaseMpiDLA::heevd()
-    //! - It is implemented based on `cuBLAS`'s `xgemm` and cuSOLVER's `cusolverXsy(he)evd`. 
+    //! - It is implemented based on `cuBLAS`'s `xgemm` and cuSOLVER's
+    //! `cusolverXsy(he)evd`.
     void heevd(int matrix_layout, char jobz, char uplo, std::size_t n, T* a,
                std::size_t lda, Base<T>* w) override
     {
@@ -641,25 +694,31 @@ public:
                                          m_, C_ + locked * m_, m_);
         assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
     }
-    //! - All required operations for this function has been done in for ChaseMpiDLA::hhQR().
+    //! - All required operations for this function has been done in for
+    //! ChaseMpiDLA::hhQR().
     //! - This function contains nothing in this class.
     void hhQR(std::size_t locked) override {}
-    //! - All required operations for this function has been done in for ChaseMpiDLA::cholQR().
+    //! - All required operations for this function has been done in for
+    //! ChaseMpiDLA::cholQR().
     //! - This function contains nothing in this class.
     void cholQR(std::size_t locked, Base<T> cond) override {}
-    //! - All required operations for this function has been done in for ChaseMpiDLA::Swap().
+    //! - All required operations for this function has been done in for
+    //! ChaseMpiDLA::Swap().
     //! - This function contains nothing in this class.
     void Swap(std::size_t i, std::size_t j) override {}
-    //! - All required operations for this function has been done in for ChaseMpiDLA::getLanczosBuffer().
+    //! - All required operations for this function has been done in for
+    //! ChaseMpiDLA::getLanczosBuffer().
     //! - This function contains nothing in this class.
     void getLanczosBuffer(T** V1, T** V2, std::size_t* ld, T** v0, T** v1,
                           T** w) override
     {
     }
-    //! - All required operations for this function has been done in for ChaseMpiDLA::getLanczosBuffer2().
-    //! - This function contains nothing in this class.      
+    //! - All required operations for this function has been done in for
+    //! ChaseMpiDLA::getLanczosBuffer2().
+    //! - This function contains nothing in this class.
     void getLanczosBuffer2(T** v0, T** v1, T** w) override {}
-    //! - All required operations for this function has been done in for ChaseMpiDLA::LanczosDos().
+    //! - All required operations for this function has been done in for
+    //! ChaseMpiDLA::LanczosDos().
     //! - This function contains nothing in this class.
     void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc) override {}
 
@@ -670,64 +729,92 @@ private:
         bAc
     };
 
-    NextOp next_; //!< it is to manage the switch of operation from `V2=H*V1` to `V1=H'*V2` in filter
+    NextOp next_; //!< it is to manage the switch of operation from `V2=H*V1` to
+                  //!< `V1=H'*V2` in filter
     std::size_t N_; //!< global dimension of the symmetric/Hermtian matrix
 
-    std::size_t n_; //!< number of columns of local matrix of the symmetric/Hermtian matrix
-    std::size_t m_; //!< number of rows of local matrix of the symmetric/Hermtian matrix
+    std::size_t n_; //!< number of columns of local matrix of the
+                    //!< symmetric/Hermtian matrix
+    std::size_t
+        m_; //!< number of rows of local matrix of the symmetric/Hermtian matrix
     std::size_t ldh_; //!< leading dimension of local matrix on each MPI proc
-    T* H_; //!< a pointer to the local matrix on each MPI proc
-    T* B_; //!< a matrix of size `n_*(nev_+nex_)`, which is allocated in ChaseMpiMatrices
-    T* B2_; //!< a matrix of size `n_*(nev_+nex_)`, which is allocated in ChaseMpiProperties
-    T* C_; //!< a matrix of size `m_*(nev_+nex_)`, which is allocated in ChaseMpiMatrices
-    T* C2_; //!< a matrix of size `m_*(nev_+nex_)`, which is allocated in ChaseMpiProperties
-    T* A_; //!< a matrix of size `(nev_+nex_)*(nev_+nex_)`, which is allocated in ChaseMpiProperties
+    T* H_;            //!< a pointer to the local matrix on each MPI proc
+    T* B_;  //!< a matrix of size `n_*(nev_+nex_)`, which is allocated in
+            //!< ChaseMpiMatrices
+    T* B2_; //!< a matrix of size `n_*(nev_+nex_)`, which is allocated in
+            //!< ChaseMpiProperties
+    T* C_;  //!< a matrix of size `m_*(nev_+nex_)`, which is allocated in
+            //!< ChaseMpiMatrices
+    T* C2_; //!< a matrix of size `m_*(nev_+nex_)`, which is allocated in
+            //!< ChaseMpiProperties
+    T* A_;  //!< a matrix of size `(nev_+nex_)*(nev_+nex_)`, which is allocated
+            //!< in ChaseMpiProperties
 
-    std::size_t* off_; //!< identical to ChaseMpiProperties::off_
-    std::size_t* r_offs_; //!< identical to ChaseMpiProperties::r_offs_
-    std::size_t* r_lens_; //!< identical to ChaseMpiProperties::r_lens_
+    std::size_t* off_;      //!< identical to ChaseMpiProperties::off_
+    std::size_t* r_offs_;   //!< identical to ChaseMpiProperties::r_offs_
+    std::size_t* r_lens_;   //!< identical to ChaseMpiProperties::r_lens_
     std::size_t* r_offs_l_; //!< identical to ChaseMpiProperties::r_offs_l_
-    std::size_t* c_offs_; //!< identical to ChaseMpiProperties::c_offs_
-    std::size_t* c_lens_; //!< identical to ChaseMpiProperties::c_lens_
+    std::size_t* c_offs_;   //!< identical to ChaseMpiProperties::c_offs_
+    std::size_t* c_lens_;   //!< identical to ChaseMpiProperties::c_lens_
     std::size_t* c_offs_l_; //!< identical to ChaseMpiProperties::c_offs_l_
-    std::size_t nb_; //!< identical to ChaseMpiProperties::nb_
-    std::size_t mb_; //!< identical to ChaseMpiProperties::mb_
-    std::size_t nblocks_; //!< identical to ChaseMpiProperties::nblocks_
-    std::size_t mblocks_; //!< identical to ChaseMpiProperties::mblocks_
-    std::size_t nev_; //!< number of required eigenpairs
-    std::size_t nex_;  //!< number of extral searching space
-    int mpi_row_rank; //!< rank within each row communicator
-    int mpi_col_rank; //!< rank within each column communicator
+    std::size_t nb_;        //!< identical to ChaseMpiProperties::nb_
+    std::size_t mb_;        //!< identical to ChaseMpiProperties::mb_
+    std::size_t nblocks_;   //!< identical to ChaseMpiProperties::nblocks_
+    std::size_t mblocks_;   //!< identical to ChaseMpiProperties::mblocks_
+    std::size_t nev_;       //!< number of required eigenpairs
+    std::size_t nex_;       //!< number of extral searching space
+    int mpi_row_rank;       //!< rank within each row communicator
+    int mpi_col_rank;       //!< rank within each column communicator
 
     // for shifting matrix H
-    std::size_t* d_off_m_; //!< the offset of the row of the first element each piece of diagonal to be shifted within the local matrix `A`
-    std::size_t* d_off_n_; //!< the offset of the column of the first element each piece of diagonal to be shifted within the local matrix `A`
-    std::size_t diag_off_size_; //!< number of elements to be shifted on each piece
+    std::size_t*
+        d_off_m_; //!< the offset of the row of the first element each piece of
+                  //!< diagonal to be shifted within the local matrix `A`
+    std::size_t*
+        d_off_n_; //!< the offset of the column of the first element each piece
+                  //!< of diagonal to be shifted within the local matrix `A`
+    std::size_t
+        diag_off_size_; //!< number of elements to be shifted on each piece
 
     int mpi_rank_; //!< the MPI rank within the working MPI communicator
-    cublasHandle_t cublasH_; //!< `cuBLAS` handle
+    cublasHandle_t cublasH_;       //!< `cuBLAS` handle
     cusolverDnHandle_t cusolverH_; //!< `cuSOLVER` handle
-    cublasStatus_t cublas_status_ = CUBLAS_STATUS_SUCCESS;  //!< `cuBLAS` status
-    cusolverStatus_t cusolver_status_ = CUSOLVER_STATUS_SUCCESS;  //!< `cuSOLVER` status
-    cudaStream_t stream1_; //!< CUDA stream for asynchronous exectution of kernels
-    cudaStream_t stream2_; //!< CUDA stream for asynchronous exectution of kernels
+    cublasStatus_t cublas_status_ = CUBLAS_STATUS_SUCCESS; //!< `cuBLAS` status
+    cusolverStatus_t cusolver_status_ =
+        CUSOLVER_STATUS_SUCCESS; //!< `cuSOLVER` status
+    cudaStream_t
+        stream1_; //!< CUDA stream for asynchronous exectution of kernels
+    cudaStream_t
+        stream2_; //!< CUDA stream for asynchronous exectution of kernels
     curandState* states_ = NULL; //!< a pointer of `curandState` for the cuRAND
-    T* d_H_; //!< a pointer to a local buffer of size `m_*n_` on GPU, which is mapped to `H_`.
-    T* d_C_; //!< a pointer to a local buffer of size `m_*(nev_+nex_)` on GPU, which is mapped to `C_`.
-    T* d_C2_; //!< a pointer to a local buffer of size `m_*(nev_+nex_)` on GPU, which is mapped to `C2_`.
-    T* d_B_; //!< a pointer to a local buffer of size `n_*(nev_+nex_)` on GPU, which is mapped to `B_`.
-    T* d_B2_; //!< a pointer to a local buffer of size `n_*(nev_+nex_)` on GPU, which is mapped to `B2_`.
-    Base<T>* d_ritz_ = NULL; //!< a pointer to a local buffer of size `nev_+nex_` on GPU for storing computed ritz values
-    T* d_A_; //!< a pointer to a local buffer of size `(nev_+nex_)*(nev_+nex_)` on GPU, which is mapped to `A_`.
-    T* d_work_ = NULL; //!< a pointer to a local buffer on GPU, which is reserved for the extra buffer required for any cuSOLVER routines
-    std::size_t pitchB; //!< pitch for `B_` and `d_B_`
+    T* d_H_;  //!< a pointer to a local buffer of size `m_*n_` on GPU, which is
+              //!< mapped to `H_`.
+    T* d_C_;  //!< a pointer to a local buffer of size `m_*(nev_+nex_)` on GPU,
+              //!< which is mapped to `C_`.
+    T* d_C2_; //!< a pointer to a local buffer of size `m_*(nev_+nex_)` on GPU,
+              //!< which is mapped to `C2_`.
+    T* d_B_;  //!< a pointer to a local buffer of size `n_*(nev_+nex_)` on GPU,
+              //!< which is mapped to `B_`.
+    T* d_B2_; //!< a pointer to a local buffer of size `n_*(nev_+nex_)` on GPU,
+              //!< which is mapped to `B2_`.
+    Base<T>* d_ritz_ =
+        NULL; //!< a pointer to a local buffer of size `nev_+nex_` on GPU for
+              //!< storing computed ritz values
+    T* d_A_;  //!< a pointer to a local buffer of size `(nev_+nex_)*(nev_+nex_)`
+              //!< on GPU, which is mapped to `A_`.
+    T* d_work_ =
+        NULL; //!< a pointer to a local buffer on GPU, which is reserved for the
+              //!< extra buffer required for any cuSOLVER routines
+    std::size_t pitchB;  //!< pitch for `B_` and `d_B_`
     std::size_t pitchB2; //!< pitch for `B2_` and `d_B2_`
-    std::size_t pitchC; //!< pitch for `C_` and `d_C_`
+    std::size_t pitchC;  //!< pitch for `C_` and `d_C_`
     std::size_t pitchC2; //!< pitch for `C_` and `d_C2_`
-    int* devInfo_ = NULL; //!< for the return of information from any cuSOLVER routines
+    int* devInfo_ =
+        NULL; //!< for the return of information from any cuSOLVER routines
 
     int lwork_ = 0; //!< size of required extra buffer by any cuSOLVER routines
-    ChaseMpiProperties<T>* matrix_properties_;  //!< an object of class ChaseMpiProperties
+    ChaseMpiProperties<T>*
+        matrix_properties_; //!< an object of class ChaseMpiProperties
 };
 
 template <typename T>

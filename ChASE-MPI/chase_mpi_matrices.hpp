@@ -20,8 +20,8 @@ namespace mpi
 /*
  *  Utility class for Buffers
  */
-//! @brief A class to setup the buffers of matrices and vectors which will be used by
-//! ChaseMpi.
+//! @brief A class to setup the buffers of matrices and vectors which will be
+//! used by ChaseMpi.
 /*!
   This class provides three constructors:
   - Allocating the buffers for ChaseMpi without MPI support.
@@ -83,7 +83,8 @@ public:
       this constructor.
       - For `V1__` and `V1_`, they are of size `m_ * max_block`.
       - For `V2__` and `V2_`, they are of size `n_ * max_block`.
-      - For `ritzv__`, `ritzv_`, `resid__` and `resid_`, they are of size `max_block`.
+      - For `ritzv__`, `ritzv_`, `resid__` and `resid_`, they are of size
+      `max_block`.
       - `H_` is allocated here of size `m_ * n_`
       - `m` and `n` can be obtained through ChaseMpiProperties::get_m() and
       ChaseMpiProperties::get_n(), respecitvely.
@@ -129,8 +130,10 @@ public:
       this constructor.
       - For `V1__` and `V1_`, they are of size `m_ * max_block`.
       - For `V2__` and `V2_`, they are of size `n_ * max_block`.
-      - For `ritzv__`, `ritzv_`, `resid__` and `resid_`, they are of size `max_block`.
-      - `H_` is allocated externally based the users, it is of size `ldh_ * n_` with `ldh_>=m_`.   
+      - For `ritzv__`, `ritzv_`, `resid__` and `resid_`, they are of size
+      `max_block`.
+      - `H_` is allocated externally based the users, it is of size `ldh_ * n_`
+      with `ldh_>=m_`.
       - `m` and `n` can be obtained through ChaseMpiProperties::get_m() and
       ChaseMpiProperties::get_n(), respecitvely.
       @param comm: the working MPI communicator of ChASE.
@@ -141,9 +144,10 @@ public:
        ChaseMpiProperties::get_n()
       @param max_block: Maximum column number of matrix `V1_` and `V2_`. It
       equals to `nev_ + nex_`.
-      @param H: the pointer to the user-provided buffer of matrix to be diagonalised.
-      @param ldh: The leading dimension of local part of Symmetric/Hermtian matrix 
-      on each MPI proc.
+      @param H: the pointer to the user-provided buffer of matrix to be
+      diagonalised.
+      @param ldh: The leading dimension of local part of Symmetric/Hermtian
+      matrix on each MPI proc.
       @param V1: a pointer to the buffer `V1_`.
       @param ritz: a pointer to the buffer `ritz_`.
       @param V2: a pointer to the buffer `V2_`.
@@ -189,8 +193,8 @@ public:
     /*! \return `resid_`, a private member of this class.
      */
     Base<T>* get_Resid() { return resid_; }
-    //! Return leading dimension of local part of Symmetric/Hermtian matrix on each
-    //! MPI proc.
+    //! Return leading dimension of local part of Symmetric/Hermtian matrix on
+    //! each MPI proc.
     /*! \return `ldh_`, a private member of this class.
      */
     std::size_t get_ldh() { return ldh_; }
