@@ -956,13 +956,19 @@ public:
 
         if (sizeof(Base<T>) == 8)
         {
-            cond_threshold_2 = 1e1;
+            cond_threshold_2 = 5e1;
         }
         else
         {
-            cond_threshold_2 = 1e2;
+            cond_threshold_2 = 1e1;
         }
 
+        char *chol1_threshold;
+        chol1_threshold = getenv("CHASE_CHOLQR1_THLD");
+        if(chol1_threshold)
+        {
+            cond_threshold_2 = std::atof(chol1_threshold);
+        }    
         auto nevex = nev_ + nex_;
         int grank;
         bool first_iter = true;

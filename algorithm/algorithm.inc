@@ -475,12 +475,13 @@ void Algorithm<T>::solve(Chase<T>* single)
         Base<T> cc = (upperb + lowerb) / 2; // Center of the interval.
         Base<T> ee = (upperb - lowerb) / 2; // Half-length of the interval.
         Base<T> rho;
-        Base<T> t = (ritzv[0] - cc) / ee;
-        rho = std::max(std::abs(t - std::sqrt(t * t - 1)),
+        //Base<T> t = (ritzv[0] - cc) / ee;
+        Base<T> t = (ritzv[locked] - cc) / ee;
+	rho = std::max(std::abs(t - std::sqrt(t * t - 1)),
                        std::abs(t + std::sqrt(t * t - 1)));
 
-        cond = std::pow(rho, std::min(degrees[0], last_degree));
-
+        //cond = std::pow(rho, std::min(degrees[0], last_degree));
+        cond = std::pow(rho, degrees[0]);
         single->QR(locked, cond);
 #ifdef USE_NSIGHT
         nvtxRangePop();
