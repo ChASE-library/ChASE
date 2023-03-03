@@ -1013,7 +1013,6 @@ public:
 #endif
             MPI_Allreduce(MPI_IN_PLACE, &nrmf, 1, getMPI_Type<Base<T>>(),
                           MPI_SUM, col_comm_);
-            nrmf = std::sqrt(nrmf);
             shift = 11 * (N_ * nevex + nevex * nevex + nevex) *
                     std::numeric_limits<Base<T>>::epsilon() * nrmf;
 #ifdef USE_NSIGHT
