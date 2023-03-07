@@ -22,13 +22,12 @@ Main developers
 
   * Xinzhe Wu -- Algorithm development, advanced parallel (MPI and GPU) implementation and optimization, developer documentation
 
-  * Davor Davidović -- Advanced parallel GPU implementation and optimization
-
-
 Current Contributors
 =====================
 
-  * 
+  * Davor Davidović -- Advanced parallel GPU implementation and optimization
+
+  * Nenad Mijić -- ARM-based implementation and optimization 
   
 Past Contributors
 ===================

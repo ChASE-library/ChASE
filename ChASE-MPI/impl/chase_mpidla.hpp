@@ -287,7 +287,7 @@ public:
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
-/*
+
 #ifdef USE_NSIGHT
         nvtxRangePushA("CholQR1");
 #endif
@@ -297,7 +297,7 @@ public:
         dla_->potrf('U', nevex, A_, nevex);
         dla_->trsm('R', 'U', 'N', 'N', m_, nevex, &one, A_, nevex, C_, m_,
                    false);
-*/
+
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
