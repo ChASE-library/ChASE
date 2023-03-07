@@ -289,19 +289,8 @@ public:
 #endif
 
 #ifdef USE_NSIGHT
-        nvtxRangePushA("CholQR1");
-#endif
-        dla_->syherk('U', 'C', nevex, m_, &one, C_, m_, &zero, A_, nevex, true);
-        MPI_Allreduce(MPI_IN_PLACE, A_, nevex * nevex, getMPI_Type<T>(),
-                      MPI_SUM, col_comm_);
-        dla_->potrf('U', nevex, A_, nevex);
-        dla_->trsm('R', 'U', 'N', 'N', m_, nevex, &one, A_, nevex, C_, m_,
-                   false);
-
-#ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
-        //        nvtxRangePop();
     }
 
     void preApplication(T* V, std::size_t locked, std::size_t block) override
