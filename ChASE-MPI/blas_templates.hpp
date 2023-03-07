@@ -33,6 +33,9 @@ template <typename T>
 Base<T> t_sqrt_norm(T x);
 
 template <typename T>
+Base<T> t_norm_p2(const std::size_t n, const T* x);
+
+template <typename T>
 Base<T> t_lange(char norm, std::size_t m, std::size_t n, T* A, std::size_t lda);
 
 template <typename T>

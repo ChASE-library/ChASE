@@ -652,8 +652,8 @@ public:
             t_axpy(n_, &alpha, B2_ + locked * n_ + i * n_, 1,
                    B_ + locked * n_ + i * n_, 1);
 
-            Base<T> tmp = t_nrm2(n_, B_ + locked * n_ + i * n_, 1);
-            resid[i] = std::pow(tmp, 2);
+            resid[i] = t_norm_p2(n_, B_ + locked * n_ + i * n_);
+
         }
 #ifdef HAS_OMP
         omp_set_num_threads(num_threads);

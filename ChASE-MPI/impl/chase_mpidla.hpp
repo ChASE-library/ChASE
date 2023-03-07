@@ -1007,6 +1007,7 @@ public:
 #endif
             Base<T> nrmf = t_lange('F', m_, nevex, C_, m_);
             nrmf = std::pow(nrmf, 2);
+            //Base<T> nrmf = t_norm_p2(m_ * nevex, C_);
 #ifdef USE_NSIGHT
             nvtxRangePop();
             nvtxRangePushA("allreduce");
@@ -1015,6 +1016,7 @@ public:
                           MPI_SUM, col_comm_);
             shift = 11 * (N_ * nevex + nevex * nevex + nevex) *
                     std::numeric_limits<Base<T>>::epsilon() * nrmf;
+
 #ifdef USE_NSIGHT
             nvtxRangePop();
             nvtxRangePushA("ChaseMpiDLA: shift in QR");
