@@ -5,6 +5,11 @@ cmake_minimum_required( VERSION 3.8 )
 
 # project( ChASE-MPI LANGUAGES C CXX CUDA )
 
+find_package(OpenMP)
+if(OpenMP_FOUND)
+  target_compile_definitions( chase_algorithm  INTERFACE "HAS_OMP" )
+endif()
+
 add_library( chase_seq INTERFACE )
 target_link_libraries(chase_seq INTERFACE chase_algorithm)
 target_compile_definitions(chase_seq INTERFACE NO_MPI=1 )
@@ -37,6 +42,8 @@ find_package( BLAS   REQUIRED )
 find_package( LAPACK REQUIRED )
 find_package( MPI    REQUIRED )
 
+find_package( SCALAPACK )
+
 target_include_directories( chase_seq INTERFACE
   ${MPI_CXX_INCLUDE_PATH}
   )
@@ -44,26 +51,24 @@ target_include_directories( chase_seq INTERFACE
 target_link_libraries( chase_seq INTERFACE
   ${BLAS_LIBRARIES}
   ${LAPACK_LIBRARIES}
-  ${MPI_CXX_LIBRARIES}  
+  ${MPI_CXX_LIBRARIES} 
   )
+
+if(SCALAPACK_FOUND)
+  target_link_libraries( chase_seq INTERFACE
+  	${SCALAPACK_LIBRARIES}
+  	)
+endif()
+
+if(OpenMP_FOUND)
+    target_link_libraries( chase_seq INTERFACE
+	    OpenMP::OpenMP_CXX
+        )
+endif()
 
 target_compile_options( chase_seq INTERFACE
   ${CMAKE_C_FLAGS}
   ${MPI_CXX_COMPILE_FLAGS}  
-  )
-
-install( TARGETS chase_seq
-  EXPORT chase-seq
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  )
-
-install(EXPORT chase-seq
-  NAMESPACE ChASE::
-  FILE chase-seq.cmake
-  EXPORT_LINK_INTERFACE_LIBRARIES
-  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
   )
 
 target_include_directories( chase_mpi INTERFACE
@@ -80,30 +85,21 @@ target_compile_options( chase_mpi INTERFACE
   ${CMAKE_C_FLAGS}
   ${MPI_CXX_COMPILE_FLAGS}
   )
+if(SCALAPACK_FOUND)
+  target_link_libraries( chase_mpi INTERFACE
+        ${SCALAPACK_LIBRARIES}
+        )
+  target_compile_definitions( chase_mpi INTERFACE 
+	  "-DHAS_SCALAPACK" 
+	)
+endif()
 
-install( TARGETS chase_mpi
-  EXPORT chase-mpi
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  )
 
-install(DIRECTORY . DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ChASE-MPI/
-  FILES_MATCHING
-    PATTERN "*.hpp"
-    PATTERN "*.inc"
-)
-
-install( FILES  ${CMAKE_BINARY_DIR}/fortran_mangle.h
-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-  )
-
-install(EXPORT chase-mpi
-  NAMESPACE ChASE::
-  FILE chase-mpi.cmake
-  EXPORT_LINK_INTERFACE_LIBRARIES
-  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
-  )
+if(OpenMP_FOUND)
+    target_link_libraries( chase_mpi INTERFACE
+            OpenMP::OpenMP_CXX
+        )
+endif()
 
 include(CheckLanguage)
 check_language(CUDA)
@@ -114,7 +110,8 @@ if(CMAKE_CUDA_COMPILER)
   elseif(${CMAKE_VERSION} VERSION_GREATER "3.18.0")
     find_package(CUDAToolkit REQUIRED)	  
     set(CUDA_CUBLAS_LIBRARIES CUDA::cublas)
-    set(CUDA_cusolver_LIBRARY CUDA::cusolver)    
+    set(CUDA_cusolver_LIBRARY CUDA::cusolver)
+    set(CUDA_curand_LIBRARY CUDA::curand)    
   endif()
 
   enable_language(CUDA)
@@ -143,9 +140,19 @@ if(CMAKE_CUDA_COMPILER)
 
   message("-- Configuring the build of CUDA with the compute capability of ${CMAKE_CUDA_ARCHITECTURES}")
 
+  if(NOT DEFINED CUDA_nvToolsExt_LIBRARY)
+    set (CUDA_nvToolsExt_LIBRARY "")
+    if(ENABLE_NSIGHT)
+      message(STATUS "No Nsight Profiling Tools detected")
+      set(ENABLE_NSIGHT OFF CACHE BOOL "" FORCE)
+    endif()
+  endif()	  
   add_library( chase_cuda "kernels/shift.cu" )
 
-  set_target_properties( chase_cuda PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+  set_target_properties( chase_cuda 
+	  		 PROPERTIES
+		  		CUDA_RESOLVE_DEVICE_SYMBOLS ON
+				CUDA_SEPARABLE_COMPILATION ON)
  
   target_include_directories(
       chase_cuda
@@ -158,7 +165,22 @@ if(CMAKE_CUDA_COMPILER)
   target_link_libraries( chase_cuda INTERFACE
     ${CUDA_CUBLAS_LIBRARIES}
     ${CUDA_cusolver_LIBRARY}
+    ${CUDA_curand_LIBRARY}
+    ${CUDA_nvToolsExt_LIBRARY}
     )
+  target_link_libraries( chase_mpi INTERFACE
+    ${CUDA_nvToolsExt_LIBRARY}
+    )    
+  target_link_libraries( chase_seq INTERFACE
+    ${CUDA_nvToolsExt_LIBRARY}
+    )
+   
+  if(ENABLE_NSIGHT)
+      target_compile_definitions(chase_cuda INTERFACE USE_NSIGHT)
+      target_compile_definitions(chase_seq  INTERFACE USE_NSIGHT)
+      target_compile_definitions(chase_mpi INTERFACE USE_NSIGHT)
+      target_compile_definitions(chase_algorithm INTERFACE USE_NSIGHT)
+  endif()	  
 
   install( TARGETS chase_cuda
     EXPORT chase-cuda
@@ -176,6 +198,46 @@ if(CMAKE_CUDA_COMPILER)
 
 else()
   message(STATUS "No CUDA support")
+  if(ENABLE_NSIGHT)
+      message(STATUS "No CUDA support for Nsight Profiling Tools")
+  endif()
 endif()
 
+install( TARGETS chase_seq
+  EXPORT chase-seq
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  )
+
+install(EXPORT chase-seq
+  NAMESPACE ChASE::
+  FILE chase-seq.cmake
+  EXPORT_LINK_INTERFACE_LIBRARIES
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
+  )
+
+install( TARGETS chase_mpi
+  EXPORT chase-mpi
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  )
+
+install(DIRECTORY . DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ChASE-MPI/
+  FILES_MATCHING
+    PATTERN "*.hpp"
+    PATTERN "*.inc"
+)
+
+install( FILES  ${CMAKE_BINARY_DIR}/fortran_mangle.h
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  )
+
+install(EXPORT chase-mpi
+  NAMESPACE ChASE::
+  FILE chase-mpi.cmake
+  EXPORT_LINK_INTERFACE_LIBRARIES
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
+  )
 

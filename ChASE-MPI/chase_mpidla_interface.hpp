@@ -1,6 +1,6 @@
 /* -*- Mode: C++; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
 // This file is a part of ChASE.
-// Copyright (c) 2015-2021, Simulation and Data Laboratory Quantum Materials, 
+// Copyright (c) 2015-2023, Simulation and Data Laboratory Quantum Materials,
 //   Forschungszentrum Juelich GmbH, Germany. All rights reserved.
 // License is 3-clause BSD:
 // https://github.com/ChASE-library/ChASE
@@ -8,354 +8,388 @@
 #pragma once
 
 #include <cstdlib>
+#include <tuple>
 
 #include "algorithm/types.hpp"
 #include "chase_mpi_properties.hpp"
-//
-//  MatrixFreeInterface provides the Matrix-Matrix multiplication for use in
-//  ChASE. The core functionality is apply(), which performs a HEMM.
 
-// ASSUMPTION: MatrixFreeInterface assumes that apply() is called an even number
-//             of times. This is always the case when used with ChASE_Algorithm.
-
-// ASSUMPTION: shiftMatrix must be called at least once before apply() is called
-//             (Some implementations may use shift() to transfer the matrix to
-//              the GPU)
-
-// The manner is which the Matrix H is loaded into the class is defined by the
-// subclass. Further, the size of the vectors V1 and V2 must be known to any
-// subclass.
-
-namespace chase {
-namespace mpi {
+namespace chase
+{
+namespace mpi
+{
 
 // Type Trait
 template <typename T>
-struct is_skewed_matrixfree {
-  static const bool value = false;
+struct is_skewed_matrixfree
+{
+    static const bool value = false;
 };
 
-  //! A class to set up an interface to all the Dense Linear Algebra (`DLA`) operations required by `ChASE.`
-  /*!
-      In the class ChaseMpiDLAInterface, the `DLA` functions are only setup as a series of `virtual` functions
-      without direct implementation. The implementation of these `DLA` will be laterly implemented by a set of 
-      derived classes targeting different computing architectures. Currently, in `ChASE`, we provide multiple derived
-      classes chase::mpi::ChaseMpiDLABlaslapack, chase::mpi::ChaseMpiDLABlaslapackSeq, chase::mpi::ChaseMpiDLABlaslapackSeqInplace,
-      chase::mpi::ChaseMpiDLACudaSeq and chase::mpi::ChaseMpiDLAMultiGPU.
-      
-      This **MatrixFreeInterface** provides the Matrix-Matrix multiplication for use in
-      ChASE. The core functionality is `apply()`, which performs a `HEMM`.
-      - **ASSUMPTION 1**: MatrixFreeInterface assumes that `apply()` is called an even number
-             of times. This is always the case when used with algorithm of ChASE.
-      - **ASSUMPTION 2**: `shiftMatrix` must be called at least once before `apply()` is called.
-      Some implementations may use `shift()` to transfer the matrix to the GPU).
-      - The manner in which the Matrix `H` is loaded into the class is defined by the 
-      subclass. Further, the size of the vectors `V1` and `V2` must be known to any subclass.
-      @tparam T: the scalar type used for the application. ChASE is templated
-      for real and complex numbers with both Single Precision and Double Precision,
-      thus `T` can be one of `float`, `double`, `std::complex<float>` and 
-      `std::complex<double>`.
-   */
+//! @brief A class to set up an interface to all the Dense Linear Algebra
+//! (`DLA`) operations required by ChASE.
+/*!
+    In the class ChaseMpiDLAInterface, the `DLA` functions are only setup as a
+   series of `virtual` functions without direct implementation. The
+   implementation of these `DLA` will be laterly implemented by a set of derived
+   classes targeting different computing architectures. Currently, in `ChASE`,
+   we provide multiple derived classes
+   - chase::mpi::ChaseMpiDLABlaslapackSeq: implementing ChASE targeting
+   shared-memory architectures with only CPUs available.
+   - chase::mpi::ChaseMpiDLABlaslapackSeqInplace: implementing ChASE targeting
+   shared-memory architectures with only CPUs available, with a inplace mode,
+   in which the buffer of rectangular matrices are swapped and reused. This
+   reduces the required memory to be allocted.
+   - chase::mpi::ChaseMpiDLACudaSeq: implementing ChASE targeting shared-memory
+   architectures, most computation tasks are offloaded to one single GPU card.
+   - chase::mpi::ChaseMpiDLA: implementing mostly the MPI collective
+   communications part of distributed-memory ChASE targeting the systems with or
+   w/o GPUs.
+   - chase::mpi::ChaseMpiDLABlaslapack: implementing the inter-node computation
+   for a pure-CPU MPI-based implementation of ChASE.
+   - chase::mpi::ChaseMpiDLAMultiGPU: implementing the inter-node computation
+   for a multi-GPU MPI-based implementation of ChASE.
+
+
+    @tparam T: the scalar type used for the application. ChASE is templated
+    for real and complex numbers with both Single Precision and Double
+   Precision, thus `T` can be one of `float`, `double`, `std::complex<float>`
+   and `std::complex<double>`.
+ */
 template <class T>
-class ChaseMpiDLAInterface {
- public:
-  typedef T value_type;
+class ChaseMpiDLAInterface
+{
+public:
+    typedef T value_type;
 
-  virtual ~ChaseMpiDLAInterface() {};
+    virtual ~ChaseMpiDLAInterface(){};
 
-  // After a call to shiftMatrix(T c) all subsequent calls to apply() and
-  //   applyVec() perform the multiplication with a shifted H
-  /*!
-    This function shift the diagonal of global matrix with a constant value `c`.
-    After a call to `shiftMatrix` all subsequent calls to `apply` and `applyVec` perform the multiplication with a shift `c`. 
-    This is a virtual function, its implementation varies differently in different derived classes.
-    @param c: shift value
-  */
-  virtual void shiftMatrix(T c,bool isunshift = false) = 0;
+    /*!
+      This function shifts the diagonal of global matrix with a constant value
+      `c`.
+      @param c: shift value
+    */
+    virtual void shiftMatrix(T c, bool isunshift = false) = 0;
+    /*!
+      This function is for some pre-application steps for the distributed HEMM
+      in ChASE. These steps may vary in different implementations targetting
+      different architectures. These steps can be backup of some buffers,
+      copy data from CPU to GPU, etc.
+      @param V1: a pointer to a matrix
+      @param locked: an integer indicating the number of locked (converged)
+      eigenvectors
+      @param block: an integer indicating the number of non-locked
+      (non-converged) eigenvectors
+    */
+    virtual void preApplication(T* V1, std::size_t locked,
+                                std::size_t block) = 0;
 
-  // preApplication prepares internal state to perform the GEMM:
-  // V2 <- alpha * H*V1 + beta*V2
-  // The first locked number of vectors of V1 are not used in the GEMM.
-  //     In ChASE these are the locked vectors.
-  // Starting from locked, V1 contains block number of vectors.
-  /*!
-    `preApplication` prepares internal state to perform the `HEMM`: `V2 <- alpha * H*V1 + beta*V2`.
-    The first `locked` number of vectors of `V1` are not used in the `HEMM`. In ChASE, these are the locked vectors, which are already converged
-    with acceptable tolerance. Starting from the column `locked`, `V1` contains `block` number of vectors.
-    This is a virtual function, its implementation varies differently in different derived classes.
-    @param V1: a `N * max_block_` rectangular matrix
-    @param V2: a `N * max_block_` rectangular matrix
-    @param locked: an integer indicating the number of locked (converged) eigenvectors 
-    @param block: an integer indicating the number of non-locked (non-converged) eigenvectors 
-  */  
-  virtual void preApplication(T* V1, T* V2, std::size_t locked,
-                              std::size_t block) = 0;
+    //! Initialise the vectors in ChASE. When solving a sequence of problems,
+    //! the solving first problem requires setting the initial vectors with
+    //! random numbers in normal distribution.
+    virtual void initVecs() = 0;
+    //! Fill the initial vectors with random numbers in normal distribution if
+    //! necessary.
+    virtual void initRndVecs() = 0;
+    //! Performs \f$V_2<- \alpha V1H + \beta V_2\f$ and `swap`\f$(V_1,V_2)\f$.
+    /*!
+      The first `offset` vectors of V1 and V2 are not part of the `HEMM`.
+      The number of vectors performed in `V1` and `V2` is `block`
+      In `MATLAB` notation, this operation performs:
 
-  // This function only populates V1.
-  // After a call to this function the state of V2 is undefined.
+      `V2[:,start:end]<-alpha*V1[:,start:end]*H+beta*V2[:,start:end]`,
 
-  /*!
-    Compared to `preApplication` defined previously, this function only populates `V1`.
-    After a call to this function the state of V2 is undefined.
-    This is a virtual function, its implementation varies differently in different derived classes.
-    @param V1: a `N * max_block_` rectangular matrix
-    @param locked: an integer indicating the number of locked (converged) eigenvectors 
-    @param block: an integer indicating the number of non-locked (non-converged) eigenvectors     
-  */  
-  virtual void preApplication(T* V1, std::size_t locked, std::size_t block) = 0;
+      in which
+      `start=locked+offset` and `end=locked+offset+block`.
 
-  // Performs V2<- alpha*V1*H + beta*V2 and swap(V1,V2).
-  // The first offset vectors of V1 and V2 are not part of the GEMM.
-  // The GEMM uses block vectors.
-  // block must be smaller or equal to the block passed in preApplication.
-  // Including the locked vectors passed into apply we perform, in MATLAB
-  // notation
-  // V2[:,locked+offset, locked+offset+block]
-  //       <- alpha* V1[:,locked+offset,locked+offset+block]*H
-  //          + beta*V2[:,locked+offset,locked+offset+block]
+      @param alpha: a scalar times on `V1*H` in `HEMM` operation.
+      @param beta: a scalar times on `V2` in `HEMM` operation.
+      @param offset: an offset of number vectors which the `HEMM` starting from.
+      @param block: number of non-converged eigenvectors, it indicates the
+      number of vectors in `V1` and `V2` to perform `HEMM`.
+      @param locked: number of converged eigenvectors.
+    */
+    virtual void apply(T alpha, T beta, std::size_t offset, std::size_t block,
+                       std::size_t locked) = 0;
 
-  //! Performs `V2<- alpha*V1*H + beta*V2` and `swap(V1,V2)`.
-  /*!
-    The first `offset` vectors of V1 and V2 are not part of the `HEMM`.
-    The `HEMM` uses block vectors. `block` must be smaller or equal to the block passed in `preApplication`.
-    Including the `locked` vectors passed into apply we perform, in `MATLAB` notation:
-    `V2[:,start:end]<-alpha*V1[:,start:end]*H+beta*V2[:,start:end]`, in which `start=locked+offset` and `end=locked+offset+block`.
-    @param alpha: a scalar times on `V1*H` in `HEMM` operation.
-    @param beta: a scalar times on `V2` in `HEMM` operation.
-    @param offset: an offset of number vectors which the `HEMM` starting from.
-    @param block: number of non-converged eigenvectors, it indicates the number of vectors in `V1` and `V2` to perform `HEMM`.
-  */
-  virtual void apply(T alpha, T beta, std::size_t offset,
+    //! Performs \f$V_2<- V1H + V_2\f$
+    /*!
+      The number of vectors performed in `V1` and `V2` is `block`
+      In `MATLAB` notation, this operation performs:
+
+      `V2[:,start:end]<-alpha*V1[:,start:end]*H+beta*V2[:,start:end]`,
+
+      in which
+      `start=locked` and `end=locked+block`.
+
+      @param locked: number of converged eigenvectors.
+      @param block: number of non-converged eigenvectors, it indicates the
+      number of vectors in `V1` and `V2` to perform `HEMM`.
+      @param isCcopied: a flag indicates is a required buffer `C` has already
+      been copied to GPU device. It matters only for ChaseMpiDLAMultiGPU.
+    */
+    virtual void asynCxHGatherC(std::size_t locked, std::size_t block,
+                                bool isCcopied = false) = 0;
+
+    //! Copy from buffer rectangular matrix `v1` to `v2`.
+    //! For the implementation of distributed-memory ChASE, this operation
+    //! performs a `copy` from a matrix redundantly distributed across all MPI
+    //! procs to a matrix distributed within each column communicator and
+    //! redundant among different column communicators. This operation is
+    //! reciprocal to V2C().
+    /*!
+     *  @param v1: the buffer to copy from
+     *  @param off1: the offset for the starting column index of `v1` to copy
+     * from
+     *  @param v2: the buffer to copy to
+     *  @param off2: the offset for the starting column index of `v2` to copy to
+     *  @param block: number of columns to copy from `v1` to `v2`
+     */
+    virtual void C2V(T* v1, std::size_t off1, T* v2, std::size_t off2,
+                     std::size_t block) = 0;
+    //! Copy from buffer rectangular matrix `v1` to `v2`.
+    //! For the implementation of distributed-memory ChASE, this operation
+    //! performs a `copy` from a matrix distributed within each column
+    //! communicator and redundant among different column communicators to a
+    //! matrix redundantly distributed across all MPI procs. This operation is
+    //! reciprocal to C2V(). It requires the `dim_[0]` MPI broadcasting
+    //! operations, in which `dim_[0]` is the size of each MPI column
+    //! communicatior.
+    /*!
+     *  @param v1: the buffer to copy from
+     *  @param off1: the offset for the starting column index of `v1` to copy
+     * from
+     *  @param v2: the buffer to copy to
+     *  @param off2: the offset for the starting column index of `v2` to copy to
+     *  @param block: number of columns to copy from `v1` to `v2`
+     */
+    virtual void V2C(T* v1, std::size_t off1, T* v2, std::size_t off2,
                      std::size_t block) = 0;
 
-  // Copies V2, the result of one or more results of apply() to V.
-  // block number of vectors are copied.
-  // The first locked ( as supplied to preApplication() ) vectors are skipped
-  //! Copies `V2`, the result of one or more results of `apply` to `V`.
-  /*! 
-     `block` number of vectors are copied. The first `locked` ( as supplied to `preApplication` ) vectors are skipped.
-    @param V: the vectors which `V2` are copied to.
-    @param block: number of vectors to be copied to `V` from `V2`.
-  */
-  virtual bool postApplication(T* V, std::size_t block) = 0;
+    //! Swap the columns indexing `i` and `j` in a rectangular matrix
+    //! The operated matrices maybe different in different implementations
+    /*!
+     *  @param i: index of one column to be swapped
+     *  @param j: index of another column to be swapped
+     *
+     */
+    virtual void Swap(std::size_t i, std::size_t j) = 0;
+    //! Copy from buffer rectangular matrix `v1` to `v2`.
+    //! For the implementation of distributed-memory ChASE, this operation
+    //! performs a `copy` from a matrix distributed within each column
+    //! communicator and redundant among different column communicators to a
+    //! matrix redundantly distributed across all MPI procs. Then in the next
+    //! iteration of ChASE-MPI, this operation takes places in the row
+    //! communicator...
+    /*!
+     *  @param V: the target buff
+     *  @param block: number of columns to copy from `v1` to `v2`
+     *  @param locked: number of converged eigenvectors.
+     */
+    virtual bool postApplication(T* V, std::size_t block,
+                                 std::size_t locked) = 0;
 
-  // Performs a GEMV with alpha=1.0 and beta=0.0
-  // Equivalent to calling:
-  //
-  // preApplication( B, 0, 1 );
-  // apply( T(1.0), T(0.0), 0, 1 );
-  // postApplication( C, 1 );
-  //! Performs a Generalized Matrix Vector Multiplication (`GEMV`) with `alpha=1.0` and `beta=0.0`.
-  /*!
-     The operation is `C=H*B`.
-     @param B: the vector to be multiplied on `H`.
-     @param C: the vector to store the product of `H` and `B`.
-  */
-  virtual void applyVec(T* B, T* C) = 0;
+    //! Performs a Generalized Matrix Vector Multiplication (`GEMV`) with
+    //! `alpha=1.0` and `beta=0.0`.
+    /*!
+       The operation is `C=H*B`.
+       @param B: the vector to be multiplied on `H`.
+       @param C: the vector to store the product of `H` and `B`.
+    */
+    virtual void applyVec(T* B, T* C) = 0;
+    // Returns ptr to H, which may be used to populate H.
+    //! Return the total number of MPI procs within the working MPI
+    //! communicator.
+    virtual int get_nprocs() const = 0;
+    //! Starting point of solving an eigenproblem
+    virtual void Start() = 0;
+    //! Ending point of solving an eigenproblem
+    virtual void End() = 0;
 
-  // The offsets and sizes of the block of the matrix H that the class uses.
-  // In a subclass that uses MPI parallelization of the HEMM offsets may be
-  // non-zero for some processes.
-  virtual void get_off(std::size_t* xoff, std::size_t* yoff, std::size_t* xlen,
-                       std::size_t* ylen) const = 0;
+    //! A `BLAS-like` function which performs a constant times a vector plus a
+    //! vector.
+    /*!
+        @param[in] N: number of elements in input vector(s).
+        @param[in] alpha: a scalar times on `x` in `AXPY` operation.
+        @param[in] x: an array of type `T`, dimension `( 1 + ( N - 1 )*abs( incx
+       )`.
+        @param[in] incx:  storage spacing between elements of `x`.
+        @param[in/out] y: an array of type `T`, dimension `( 1 + ( N - 1 )*abs(
+       incy )`.
+        @param[in] incy:  storage spacing between elements of `y`.
+    */
+    virtual void axpy(std::size_t N, T* alpha, T* x, std::size_t incx, T* y,
+                      std::size_t incy) = 0;
+    //! A `BLAS-like` function which scales a vector by a constant.
+    /*!
+        @param[in] N: number of elements in input vector(s).
+        @param[in] a: a scalar of type `T` times on vector `x`.
+        @param[in/out] x: an array of type `T`, dimension `( 1 + ( N - 1 )*abs(
+       incx )`.
+        @param[in] incx:  storage spacing between elements of `x`.
+    */
+    virtual void scal(std::size_t N, T* a, T* x, std::size_t incx) = 0;
 
-  // Returns ptr to H, which may be used to populate H.
-  virtual T* get_H() const = 0;
-  virtual std::size_t get_mblocks() const = 0;
-  virtual std::size_t get_nblocks() const = 0;
-  virtual std::size_t get_m() const = 0;
-  virtual std::size_t get_n() const = 0;
-  virtual int *get_coord() const = 0;
-  virtual void get_offs_lens(std::size_t* &r_offs, std::size_t* &r_lens, std::size_t* &r_offs_l,
-                  std::size_t* &c_offs, std::size_t* &c_lens, std::size_t* &c_offs_l) const = 0;
+    //! A `BLAS-like` function which returns the euclidean norm of a vector.
+    /*!
+        @param[in] N: number of elements in input vector(s).
+        @param[in] x: an array of type `T`, dimension `( 1 + ( N - 1 )*abs( incx
+       )`.
+        @param[in] incx:  storage spacing between elements of `x`.
+        \return the euclidean norm of vector `x`.
+    */
+    virtual Base<T> nrm2(std::size_t n, T* x, std::size_t incx) = 0;
 
-  virtual int get_nprocs() const = 0;
-  virtual void Start() = 0;
+    //! A `BLAS-like` function which forms the dot product of two vectors.
+    /*!
+        @param[in] N: number of elements in input vector(s).
+        @param[in] x: an array of type `T`, dimension `( 1 + ( N - 1 )*abs( incx
+       )`.
+        @param[in] incx:  storage spacing between elements of `x`.
+        @param[in] y: an array of type `T`, dimension `( 1 + ( N - 1 )*abs( incy
+       )`.
+        @param[in] incy:  storage spacing between elements of `y`.
+        \return the dot product of vectors `x` and `y`.
+    */
+    virtual T dot(std::size_t n, T* x, std::size_t incx, T* y,
+                  std::size_t incy) = 0;
 
-  // other BLAS and LAPACK routines
-  //! Perform a `LAPACK-like` function which returns the value of the 1-norm, Frobenius norm, infinity-norm, or the largest absolute value of any element of a general rectangular matrix `A` with scalar type `T`.
-  /*!
-    @param norm: specifies the value to be returned in `lange`.
-    @param m: the number of rows of the matrix A.
-    @param n: the number of columns of the matrix A.
-    @param A: A is an array of type `T`, dimension `(lda, n)`, the `m` by `n` matrix `A`.
-    @param lda: the leading dimension of the array `A`.
-    \return the value of a required type of norm of given matrix.
-  */
-  virtual Base<T> lange(char norm, std::size_t m, std::size_t n, T* A, std::size_t lda) = 0;
-  // QR factorization and construct the unitary marix Q explicitly.
-  //! Perform a `QR` factorization and construct explicitly the unitary matrix `Q`.
-  /*!
-      The matrix to be factorized is given in `approxV_` and the final constructed unitary matrix `Q` is stored also in `approxV_` by overwritten previous values.
-      @param[in] N: the number of rows of the matrix `approxV_` to be factorized.
-      @param[in] nevex: the number of columns of the matrix `approxV_` to be factorized.
-      @param[in/out] approxV_: an array of type `T`, dimension `(LDA, nevex)`, the the `N` by `nevex` matrix `approxV_` is to be factorized.
-      @param[in] LDA: the leading dimension of the array `approxV_`.
-  */
-  virtual void gegqr(std::size_t N, std::size_t nevex, T * approxV_, std::size_t LDA) = 0;
-  //! A `BLAS-like` function which performs a constant times a vector plus a vector.
-  /*!
-      @param[in] N: number of elements in input vector(s).
-      @param[in] alpha: a scalar times on `x` in `AXPY` operation.
-      @param[in] x: an array of type `T`, dimension `( 1 + ( N - 1 )*abs( incx )`.
-      @param[in] incx:  storage spacing between elements of `x`.
-      @param[in/out] y: an array of type `T`, dimension `( 1 + ( N - 1 )*abs( incy )`.
-      @param[in] incy:  storage spacing between elements of `y`.     
-  */
-  virtual void axpy(std::size_t N, T * alpha, T * x, std::size_t incx, T *y, std::size_t incy) = 0;
-  //! A `BLAS-like` function which scales a vector by a constant.
-  /*!
-      @param[in] N: number of elements in input vector(s).
-      @param[in] a: a scalar of type `T` times on vector `x`.
-      @param[in/out] x: an array of type `T`, dimension `( 1 + ( N - 1 )*abs( incx )`.
-      @param[in] incx:  storage spacing between elements of `x`.  
-  */
-  virtual void scal(std::size_t N, T *a, T *x, std::size_t incx) = 0;
+    //! This function implements the kernel of **Rayleigh-Ritz** (short as `RR`)
+    //! step of ChASE.
+    /*!
+      @param[in] block: the number of vectors are used for these operations
+      within `approxV^T` and `workspace`.
+      @param[in] locked: number of converged eigenvectors
+      @param[out] ritzv: a real vector which stores the computed eigenvalues.
+    */
+    virtual void RR(std::size_t block, std::size_t locked, Base<T>* ritzv) = 0;
 
-  //! A `BLAS-like` function which returns the euclidean norm of a vector.
-  /*!
-      @param[in] N: number of elements in input vector(s).
-      @param[in] x: an array of type `T`, dimension `( 1 + ( N - 1 )*abs( incx )`.
-      @param[in] incx:  storage spacing between elements of `x`.  
-      \return the euclidean norm of vector `x`.
-  */
-  virtual Base<T> nrm2(std::size_t n, T *x, std::size_t incx) = 0;
+    //! A `LAPACK-like` function which forms one of the symetric/hermitian rank
+    //! k operations
+    //! - \f$c := alpha*a*a**H + beta*c,\f$
+    //! - \f$c := alpha*a**H*a + beta*c,\f$
+    /*!
+     *  where  alpha and beta  are  real scalars,  c is an  n by n
+     symetric/hermitian matrix and  a  is an  n by k  matrix in the first case
+     and a  k by n matrix in the second case.
 
-  //! A `BLAS-like` function which forms the dot product of two vectors.
-  /*!
-      @param[in] N: number of elements in input vector(s).
-      @param[in] x: an array of type `T`, dimension `( 1 + ( N - 1 )*abs( incx )`.
-      @param[in] incx:  storage spacing between elements of `x`.
-      @param[in] y: an array of type `T`, dimension `( 1 + ( N - 1 )*abs( incy )`.
-      @param[in] incy:  storage spacing between elements of `y`.     
-      \return the dot product of vectors `x` and `y`.
-  */  
-  virtual T dot(std::size_t n, T* x, std::size_t incx, T* y, std::size_t incy) = 0;
+        The parameters of this function is the same as <a
+     href="https://netlib.org/lapack/
+        explore-html/dc/d17/group__complex16__blas__level3_ga71e68893445a523b923411ebf4c22582.
+        html">zherk()</a>, <a
+     href="https://netlib.org/lapack/explore-html/db/def/group__
+        complex__blas__level3_gade9f14cf41f0cefea7918d716f3e1c20.html">cherk()</a>,
+        <a
+     href="https://netlib.org/lapack/explore-html/d1/d54/group__double__blas_
+        _level3_gae0ba56279ae3fa27c75fefbc4cc73ddf.html">dsyrk()</a> and <a
+     href="https://netlib
+        .org/lapack/explore-html/db/dc9/group__single__blas__level3_gae953a93420ca237670f
+        5c67bbde9d9ff.html">ssyrk()</a>,
+    */
+    virtual void syherk(char uplo, char trans, std::size_t n, std::size_t k,
+                        T* alpha, T* a, std::size_t lda, T* beta, T* c,
+                        std::size_t ldc, bool first = true) = 0;
 
-  //! A `BLAS-like` function which forms the Generalized Matrix-Matrix production operation (`GEMM`).
-  /*!
-    `gemm_small` performs one of the matrix-matrix operations `C := alpha*op( A )*op( B ) + beta*C`, where
-    `op(X)` is one of `op(X) = X` or `op(X) = X**T`. `alpha` and `beta` are scalars, and `A`, `B` and `C` are matrices, with `op(A)`
- an `m` by `k` matrix,  `op( B )`  a  `k` by `n` matrix and  `C` an `m` by `n` matrix. This function is
- implemented specifically for the matrices with relatively small `m`, `n` and `k`. In the current implementation of
- ChASE, this function performs a normal `gemm` without considering the sizes of matrices, but it will be improved in the later verison.
-     @param[in] Layout: layout of matrices, currently only column-major layout is supported in ChASE.
-     @param[in] transa: it specifies the form of `op( A )` to be used in the matrix multiplication. If its value is 1, the `op` is `conjugate transpose` operation, if its value is 2, the `op` is `transpose` operation and if its value is `3`, we have `op (A)=A`.
-     @param[in] transb: it specifies the form of `op( B )` to be used in the matrix multiplication. If its value is 1, the `op` is `conjugate transpose` operation, if its value is 2, the `op` is `transpose` operation and if its value is `3`, we have `op (B)=B`.
-     @param[in] m:  it  specifies  the number  of rows  of the  matrix `op( A )`  and of the  matrix  `C`.
-     @param[in] n: it specifies the number of columns of the matrix `op( B )` and the number of columns of the matrix `C`.
-     @param[in] k: it specifies  the number of columns of the matrix `op( A )` and the number of rows of the matrix `op( B )`
-     @param[in] alpha: it specifies the scalar `alpha`.
-     @param[in] a: an array of type `T`,  dimension `( lda, ka )`, where `ka` is `k`  when  `transa = 3`,  and is  `m`  otherwise. Before entry with  `transa = 3`,  the leading  `m` by `k` part of the array  `a`  must contain the matrix  `a`,  otherwise the leading  `k` by `m` part of the array  `a`  must contain  the matrix `a`.
-     @param[in] lda: it specifies the first dimension of `a`. When `transa=3`, it must be at least `max(1, m)`, otherwise it must be at least `(1, k)`.
-     @param[in] b: an array of type `T`, dimension `( ldb, kb )`, where `kb` is `n`  when  `transb=3`,  and is  `k`  otherwise. Before entry with  `transb=3`,  the leading  `k` by `n` part of the array  `b`  must contain the matrix  `b`,  otherwise the leading  `n` by `k`  part of the array  `b`  must contain  the matrix `b`. 
-     @param[in] ldb: it specifies the first dimension of `b`. When `transa=3`, it must be at least `max(1, k)`, otherwise it must be at least `(1, n)`.
-     @param[in] beta: it specifies the scalar `beta`.
-     @param[in/out] `c`: an array of type `T`, dimension `( ldc, n )`.
-     @param[in] ldc: it specifies the first dimension of `c`. It must be at least `max(1,m)`.
-  */ 
-  virtual void gemm_small(CBLAS_LAYOUT Layout, CBLAS_TRANSPOSE transa,
-            		 CBLAS_TRANSPOSE transb, std::size_t m,
-            		 std::size_t n, std::size_t k, T* alpha,
-            		 T* a, std::size_t lda, T* b,
-            		 std::size_t ldb, T* beta, T* c, std::size_t ldc) = 0;
+    //! A `LAPACK-like` function which computes the Cholesky factorization of a
+    //! symmetric/Hermitian positive definite matrix `a`.
+    /*!
+        The parameters of this function is the same as <a
+       href="https://netlib.org/lapack/explore-html/d1
+        /d7a/group__double_p_ocomputational_ga2f55f604a6003d03b5cd4a0adcfb74d6.html">dpotrf()</a>,
+        <a
+       href="https://netlib.org/lapack/explore-html/d8/db2/group__real_p_ocomputational_gaaf
+        31db7ab15b4f4ba527a3d31a15a58e.html">spotrf()</a>,
+        <a
+       href="https://netlib.org/lapack/explore-html/d6/df6/group__complex_p_ocomputational
+        _ga4e85f48dbd837ccbbf76aa077f33de19.html">cpotrf()</a>,
+        <a
+       href="https://netlib.org/lapack/explore-html/d3/d8d/group__complex16_p_ocomputational_
+        ga93e22b682170873efb50df5a79c5e4eb.html">zpotrf()</a>
+    */
+    virtual int potrf(char uplo, std::size_t n, T* a, std::size_t lda) = 0;
 
- //! A `BLAS-like` function which forms the Generalized Matrix-Matrix production operation (`GEMM`).
-  /*!
-    `gemm_large` performs one of the matrix-matrix operations `C := alpha*op( A )*op( B ) + beta*C`, where
-    `op(X)` is one of `op(X) = X` or `op(X) = X**T`. `alpha` and `beta` are scalars, and `A`, `B` and `C` are matrices, with `op(A)`
- an `m` by `k` matrix,  `op( B )`  a  `k` by `n` matrix and  `C` an `m` by `n` matrix. This function is
- implemented specifically for the matrices with relatively large `m`, `n` and `k`. In the current implementation of
- ChASE, this function performs a normal `gemm` without considering the sizes of matrices, but it will be improved in the later verison.
-     @param[in] Layout: layout of matrices, currently only column-major layout is supported in ChASE.
-     @param[in] transa: it specifies the form of `op( A )` to be used in the matrix multiplication. If its value is 1, the `op` is `conjugate transpose` operation, if its value is 2, the `op` is `transpose` operation and if its value is `3`, we have `op (A)=A`.
-     @param[in] transb: it specifies the form of `op( B )` to be used in the matrix multiplication. If its value is 1, the `op` is `conjugate transpose` operation, if its value is 2, the `op` is `transpose` operation and if its value is `3`, we have `op (B)=B`.
-     @param[in] m:  it  specifies  the number  of rows  of the  matrix `op( A )`  and of the  matrix  `C`.
-     @param[in] n: it specifies the number of columns of the matrix `op( B )` and the number of columns of the matrix `C`.
-     @param[in] k: it specifies  the number of columns of the matrix `op( A )` and the number of rows of the matrix `op( B )`
-     @param[in] alpha: it specifies the scalar `alpha`.
-     @param[in] a: an array of type `T`,  dimension `( lda, ka )`, where `ka` is `k`  when  `transa = 3`,  and is  `m`  otherwise. Before entry with  `transa = 3`,  the leading  `m` by `k` part of the array  `a`  must contain the matrix  `a`,  otherwise the leading  `k` by `m` part of the array  `a`  must contain  the matrix `a`.
-     @param[in] lda: it specifies the first dimension of `a`. When `transa=3`, it must be at least `max(1, m)`, otherwise it must be at least `(1, k)`.
-     @param[in] b: an array of type `T`, dimension `( ldb, kb )`, where `kb` is `n`  when  `transb=3`,  and is  `k`  otherwise. Before entry with  `transb=3`,  the leading  `k` by `n` part of the array  `b`  must contain the matrix  `b`,  otherwise the leading  `n` by `k`  part of the array  `b`  must contain  the matrix `b`. 
-     @param[in] ldb: it specifies the first dimension of `b`. When `transa=3`, it must be at least `max(1, k)`, otherwise it must be at least `(1, n)`.
-     @param[in] beta: it specifies the scalar `beta`.
-     @param[in/out] `c`: an array of type `T`, dimension `( ldc, n )`.
-     @param[in] ldc: it specifies the first dimension of `c`. It must be at least `max(1,m)`.
-  */ 
-  virtual void gemm_large(CBLAS_LAYOUT Layout, CBLAS_TRANSPOSE transa,
-                         CBLAS_TRANSPOSE transb, std::size_t m,
-                         std::size_t n, std::size_t k, T* alpha,
-                         T* a, std::size_t lda, T* b,
-                         std::size_t ldb, T* beta, T* c, std::size_t ldc) = 0;
+    //! A `LAPACK-like` function which solves one of the matrix equations
+    /*!
+        \f$op( A )*X = alpha*B\f$ or \f$X*op( A ) = alpha*B\f$,
+         where alpha is a scalar, X and B are m by n matrices, A is a unit, or
+       non-unit,  upper or lower triangular matrix  and  op( A )  is $A$ itself,
+       the transpose or conjugate transpose of itself. The parameters of this
+       function is the same as <a href="https://netlib.org/lapack/explore-h
+        tml/d1/d54/group__double__blas__level3_ga6a0a7704f4a747562c1bd9487e89795c.html">dtrsm()</a>,
+        <a
+       href="https://netlib.org/lapack/explore-html/db/dc9/group__single__blas__level3_ga9893c
+        ceb3ffc7ce400eee405970191b3.html">strsm()</a>,
+        <a
+       href="https://netlib.org/lapack/explore-html/db/def/group__complex__blas__level3_
+        gaf33844c7fd27e5434496d2ce0c1fc9d4.html">ctrsm()</a>,
+        <a
+       href="https://netlib.org/lapack/explore-html/dc/d17/group__complex16__blas__level3
+        _gac571a0a6d43e969990456d0676edb786.html">ztrsm()</a>
+    */
+    virtual void trsm(char side, char uplo, char trans, char diag,
+                      std::size_t m, std::size_t n, T* alpha, T* a,
+                      std::size_t lda, T* b, std::size_t ldb,
+                      bool first = false) = 0;
 
-  //! A `LAPACK-like` function which computes selected eigenvalues and eigenvectors of a real symmetric tridiagonal matrix of **DOUBLE PRECISION**.
-  /*!
-    The routine computes selected eigenvalues and, optionally, eigenvectors of a real symmetric tridiagonal matrix `T`. 
-    Any such unreduced matrix has a well defined set of pairwise different real eigenvalues, the corresponding real eigenvectors are pairwise orthogonal.
-    The spectrum may be computed either completely or partially by specifying either an interval `(vl,vu]` or a range of indices `il:iu` for the desired eigenvalues.
-    @param[in] matrix_layout: layout of matrices, currently only column-major layout is supported in ChASE.
-    @param[in] jobz: Must be `N` or `V`. If `jobz = N`, then only eigenvalues are computed, else if `jobz = V`, then eigenvalues and eigenvectors are computed.
-    @param[in] range: Must be `A` or `V` or `I`. If `range = A`, the routine computes all eigenvalues. If `range = V`, the routine computes all eigenvalues in the half-open interval: `(vl, vu]`. If `range = I`, the routine computes eigenvalues with indices `il` to `iu`.
-    @param[in] n: The order of the matrix `T`.
-    @param[in/out] d: array, size `n`. It contains `n` diagonal elements of the tridiagonal matrix `T`. On exit, the array d is overwritten.
-    @param[in/out] e: array, size `n`. It Contains `(n-1)` off-diagonal elements of the tridiagonal matrix `T` in elements `0` to `n-2` of `e`. On exit, the array d is overwritten.
-    @param[in] vl&vu: If `range = V`, the lower and upper bounds of the interval to be searched for eigenvalues. Constraint: `vl<vu`.
-    @param[in] il&iu: If `range = I`, the indices in ascending order of the smallest and largest eigenvalues to be returned. Constraint: `1≤il≤iu≤n`, if `n>0`. If `range = A` or `V`, `il` and `iu` are not referenced.
-    @param[out] m: The total number of eigenvalues found, `0≤m≤n`. If `range = A`, then `m=n`, and if `range = I`, then `m=iu-il+1`.
-    @param[out] w: Array, size `n`. The first `m` elements contain the selected eigenvalues in ascending order.
-    @param[out] z: Array, size `max(1, ldz*m)` for column major layout. If `jobz = V`, and `info = 0`, then the first `m` columns of `z` contain the orthonormal eigenvectors of the matrix `T` corresponding to the selected eigenvalues, with the `i-th` column of `z` holding the eigenvector associated with `w(i)`. If `jobz = N`, then z is not referenced.
-    @param[in] ldz: The leading dimension of the output array `z`. If `jobz = V`, then `ldz ≥ max(1, n)` for column major layout; `ldz ≥ 1` otherwise.
-    @param[in] nzc: The number of eigenvectors to be held in the array `z`. If `range = A`, then `nzc≥max(1, n)`; If `range = V`, then `nzc` is greater than or equal to the number of eigenvalues in the half-open interval: `(vl, vu]`. If `range = I`, then `nzc≥iu-il+1`. If `nzc = -1`, then a workspace query is assumed; the routine calculates the number of columns of the array `z` that are needed to hold the eigenvectors.
-    @param[out] isuppz: Array, size `(2*max(1, m))`. The support of the eigenvectors in `z`, that is the indices indicating the nonzero elements in `z`. The `i-th` computed eigenvector is nonzero only in elements `isuppz[2*i - 2]` through `isuppz[2*i - 1]`. This is relevant in the case when the matrix is split. `isuppz` is only accessed when `jobz = V` and `n>0`.
-    @param[in/out] tryrac: On entry, If `tryrac` is `true`, it indicates that the code should check whether the tridiagonal matrix defines its eigenvalues to high relative accuracy. On exit, set to `true`. `tryrac` is set to `false` if the matrix does not define its eigenvalues to high relative accuracy.
-  */
-  virtual std::size_t stemr(int matrix_layout, char jobz, char range, std::size_t n,
-                    double* d, double* e, double vl, double vu, std::size_t il, std::size_t iu,
-                    int* m, double* w, double* z, std::size_t ldz, std::size_t nzc,
-                    int* isuppz, lapack_logical* tryrac) = 0;
+    //! A `LAPACK-like` function which computes all eigenvalues and, optionally,
+    //! all eigenvectors of a complex Hermitian/real symmetric matrix using
+    //! divide and conquer algorithm.
+    /*！
+        The parameters of this function is the same as <a
+       href="https://netlib.org/lapack/explore-html/d3/d88/gr
+        oup__real_s_yeigen_ga6b4d01c8952350ea557b90302ef9de4d.html">ssyevd()</a>,
+       <a href="https://netlib.org/lapack/exp
+        lore-html/d2/d8a/group__double_s_yeigen_ga77dfa610458b6c9bd7db52533bfd53a1.html">dsyevd()</a>,
+       <a href="https://
+        netlib.org/lapack/explore-html/d9/de3/group__complex_h_eeigen_ga6084b0819f9642f0db26257e8a3ebd42.html">cheevd()</a>
+        and <a
+       href="https://netlib.org/lapack/explore-html/df/d9a/group__complex16_h_eeigen_ga9b3e110476166e66f
+        2f62fa1fba6344a.html">zheevd()</a>.
+    */
+    virtual void heevd(int matrix_layout, char jobz, char uplo, std::size_t n,
+                       T* a, std::size_t lda, Base<T>* w) = 0;
 
-  //! A `LAPACK-like` function which computes selected eigenvalues and eigenvectors of a real symmetric tridiagonal matrix of **SINGLE PRECISION**.
-  /*!
-    The routine computes selected eigenvalues and, optionally, eigenvectors of a real symmetric tridiagonal matrix `T`. 
-    Any such unreduced matrix has a well defined set of pairwise different real eigenvalues, the corresponding real eigenvectors are pairwise orthogonal.
-    The spectrum may be computed either completely or partially by specifying either an interval `(vl,vu]` or a range of indices `il:iu` for the desired eigenvalues.
-    @param[in] matrix_layout: layout of matrices, currently only column-major layout is supported in ChASE.
-    @param[in] jobz: Must be `N` or `V`. If `jobz = N`, then only eigenvalues are computed, else if `jobz = V`, then eigenvalues and eigenvectors are computed.
-    @param[in] range: Must be `A` or `V` or `I`. If `range = A`, the routine computes all eigenvalues. If `range = V`, the routine computes all eigenvalues in the half-open interval: `(vl, vu]`. If `range = I`, the routine computes eigenvalues with indices `il` to `iu`.
-    @param[in] n: The order of the matrix `T`.
-    @param[in/out] d: array, size `n`. It contains `n` diagonal elements of the tridiagonal matrix `T`. On exit, the array d is overwritten.
-    @param[in/out] e: array, size `n`. It Contains `(n-1)` off-diagonal elements of the tridiagonal matrix `T` in elements `0` to `n-2` of `e`. On exit, the array d is overwritten.
-    @param[in] vl&vu: If `range = V`, the lower and upper bounds of the interval to be searched for eigenvalues. Constraint: `vl<vu`.
-    @param[in] il&iu: If `range = I`, the indices in ascending order of the smallest and largest eigenvalues to be returned. Constraint: `1≤il≤iu≤n`, if `n>0`. If `range = A` or `V`, `il` and `iu` are not referenced.
-    @param[out] m: The total number of eigenvalues found, `0≤m≤n`. If `range = A`, then `m=n`, and if `range = I`, then `m=iu-il+1`.
-    @param[out] w: Array, size `n`. The first `m` elements contain the selected eigenvalues in ascending order.
-    @param[out] z: Array, size `max(1, ldz*m)` for column major layout. If `jobz = V`, and `info = 0`, then the first `m` columns of `z` contain the orthonormal eigenvectors of the matrix `T` corresponding to the selected eigenvalues, with the `i-th` column of `z` holding the eigenvector associated with `w(i)`. If `jobz = N`, then z is not referenced.
-    @param[in] ldz: The leading dimension of the output array `z`. If `jobz = V`, then `ldz ≥ max(1, n)` for column major layout; `ldz ≥ 1` otherwise.
-    @param[in] nzc: The number of eigenvectors to be held in the array `z`. If `range = A`, then `nzc≥max(1, n)`; If `range = V`, then `nzc` is greater than or equal to the number of eigenvalues in the half-open interval: `(vl, vu]`. If `range = I`, then `nzc≥iu-il+1`. If `nzc = -1`, then a workspace query is assumed; the routine calculates the number of columns of the array `z` that are needed to hold the eigenvectors.
-    @param[out] isuppz: Array, size `(2*max(1, m))`. The support of the eigenvectors in `z`, that is the indices indicating the nonzero elements in `z`. The `i-th` computed eigenvector is nonzero only in elements `isuppz[2*i - 2]` through `isuppz[2*i - 1]`. This is relevant in the case when the matrix is split. `isuppz` is only accessed when `jobz = V` and `n>0`.
-    @param[in/out] tryrac: On entry, If `tryrac` is `true`, it indicates that the code should check whether the tridiagonal matrix defines its eigenvalues to high relative accuracy. On exit, set to `true`. `tryrac` is set to `false` if the matrix does not define its eigenvalues to high relative accuracy.
-  */
-  virtual std::size_t stemr(int matrix_layout, char jobz, char range, std::size_t n,
-                    float* d, float* e, float vl, float vu, std::size_t il, std::size_t iu,
-                    int* m, float* w, float* z, std::size_t ldz, std::size_t nzc,
-                    int* isuppz, lapack_logical* tryrac) = 0;
+    //! Compute the residuals of unconverged ritz pairs, the locked ones is
+    //! skipped.
+    //! @param ritzv the ritz values
+    //! @param resid the computed residuals
+    //! @param locked the number of converged ritz values
+    //! @param unconverged the number of unconverged ritz values
+    //! (`=nev_+nex-locked`)
+    virtual void Resd(Base<T>* ritzv, Base<T>* resid, std::size_t locked,
+                      std::size_t unconverged) = 0;
 
-  //! This function implements the kernel of **Rayleigh-Ritz** (short as `RR`) step of ChASE.
-  /*! 
-    1. It performs `A<-approxV^T * workspace`, for both `approxV^T` and `workspace`, this operation starts from its column of numbering `locked`. `A` is of size `block*block`.
-    2. It computes the eigenpairs of `A`, the eigenvalues are stored in `ritzv`, and the eigenvectors are overwritten into `A`.
-    3. It performs `workspace=A*approxV`, for both `approxV^T` and `workspace`, this operation starts from its column of numbering `locked`.
-    @param[in] N: the row number of `approxV^T` and `workspace`.
-    @param[in] block: the number of vectors are used for these operations within `approxV^T` and `workspace`.
-    @param[in] approxV: On entry, a `N*max_block_` rectangular matrix of type `T`.
-    @param[in] locked: number of converged eigenvectors, which are not considered for these operations. All the computation in the kernel related to `approxV^T` and `workspace` start from the offset `locked * N`.
-    @param[in/out] workspace: On entry, a `N*max_block_` rectangular matrix of type `T`. On exit, overwritten by `A*approxV`.
-    @param[in] One: scalar `T(1)`.
-    @param[in] Zero: scalar `T(0)`.
-    @param[out] ritzv: a real vector which stores the computed eigenvalues.
-  */
-  virtual void RR_kernel(std::size_t N, std::size_t block, T *approxV, std::size_t locked, T *workspace, T One, T Zero, Base<T> *ritzv) = 0;
-
+    //! Househoulder QR factorization on the rectangular matrix `V1`.
+    //! It can be geqrf from
+    //!     - `LAPACK` ,
+    //!     - `ScaLAPACK`,
+    //!     - `cuSolver`,
+    //!
+    //! which depends on
+    //! the implementation and targeting architectures.
+    //!  @param locked: number of converged eigenvectors.
+    virtual void hhQR(std::size_t locked) = 0;
+    //! Cholesky QR factorization on the rectangular matrix `V1`.
+    //!  @param locked: number of converged eigenvectors.
+    virtual void cholQR(std::size_t locked, Base<T> cond) = 0;
+    //! Return the required buffers of Lanczos which are allocated within each
+    //! individual implementation of DLA. This operation is required, since
+    //! Lanczos algorithm is implemented in ChaseMpi class, which has no direct
+    //! access to these buffers. Depending on the implementation and targeting
+    //! architectures, these buffers can be on CPU or GPUs.
+    //! **This function will be removed in short future in which all the buffers
+    //! will be allocated within ChaseMpiMatrices**.
+    virtual void getLanczosBuffer(T** V1, T** V2, std::size_t* ld, T** v0,
+                                  T** v1, T** w) = 0;
+    //! Return the required buffers of Lanczos which are allocated within each
+    //! individual implementation of DLA. This operation is required, since
+    //! Lanczos algorithm is implemented in ChaseMpi class, which has no direct
+    //! access to these buffers. Depending on the implementation and targeting
+    //! architectures, these buffers can be on CPU or GPUs.
+    //! **This function will be removed in short future in which all the buffers
+    //! will be allocated within ChaseMpiMatrices**.
+    virtual void getLanczosBuffer2(T** v0, T** v1, T** w) = 0;
+    //! Lanczos DOS to estimate the \mu_{nev+nex} for ChASE
+    virtual void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc) = 0;
 };
-}  // namespace matrixfree
-}  // namespace chase
+} // namespace mpi
+} // namespace chase

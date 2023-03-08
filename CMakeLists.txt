@@ -1,9 +1,10 @@
 # -*- Mode: cmake -*-
 cmake_minimum_required( VERSION 3.8 )
 
-project( ChASE LANGUAGES C CXX VERSION 0.91 )
-
+project( ChASE LANGUAGES C CXX VERSION 1.3.0 )
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 # ## algorithm ##
+
 add_library(chase_algorithm INTERFACE)
 
 include(GNUInstallDirs)
@@ -19,6 +20,8 @@ option( CHASE_OUTPUT "ChASE will provide output at each iteration")
 if( CHASE_OUTPUT )
   target_compile_definitions( chase_algorithm  INTERFACE "-DCHASE_OUTPUT" )
 endif()
+
+option(ENABLE_NSIGHT "Enable profiling with Nvidia Nsight Systems" OFF)
 
 install( TARGETS chase_algorithm
   EXPORT chase-headers
@@ -43,11 +46,9 @@ install(EXPORT chase-headers
 
 ## ChASE-MPI ##
 add_subdirectory( "ChASE-MPI/")
-add_subdirectory( "ChASE-Elemental/")
 
 ## Tests
 add_executable( "chase_driver" tests/noinput.cpp )
-
 if(TARGET chase_cuda )
   enable_language(CUDA)
   target_link_libraries(chase_driver chase_mpi chase_cuda)
@@ -63,13 +64,6 @@ option(BUILD_WITH_EXAMPLES "Build the examples" OFF)
 if(BUILD_WITH_EXAMPLES)
         message(STATUS "Building the examples of ChASE")
         add_subdirectory("./examples")
-endif()
-
-# Unit tests
-option(UNITTEST "Build unit tests" OFF)
-if(UNITTEST)
-	message(STATUS "Building unittests")
-	add_subdirectory("./unittests")
 endif()
 
 enable_testing()
