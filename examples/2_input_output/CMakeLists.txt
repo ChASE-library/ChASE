@@ -9,7 +9,7 @@ if( ${Boost_FOUND} )
   add_executable( "2_input_output_seq"
     "2_input_output.cpp"
     )
-  target_link_libraries( "2_input_output_seq" PRIVATE chase_seq ${Boost_LIBRARIES} ${CUDA_nvToolsExt_LIBRARY})
+  target_link_libraries( "2_input_output_seq" PRIVATE chase_seq ${Boost_LIBRARIES})
 
   ##############################################################################
   #           2_input_output: no GPU, MPI ($A$ distributed among MPI-ranks)
@@ -20,7 +20,7 @@ if( ${Boost_FOUND} )
   target_compile_definitions( "2_input_output" PRIVATE USE_MPI=1 PRINT_EIGENVALUES=1)
 
   add_executable( "2_input_output_block_cyclic" "2_input_output.cpp" )
-  target_link_libraries( "2_input_output_block_cyclic" chase_mpi ${Boost_LIBRARIES} ${CUDA_nvToolsExt_LIBRARY})
+  target_link_libraries( "2_input_output_block_cyclic" chase_mpi ${Boost_LIBRARIES} )
   target_compile_definitions( "2_input_output_block_cyclic" PRIVATE USE_MPI=1 USE_BLOCK_CYCLIC=1)  
 
   install (TARGETS 2_input_output_seq
