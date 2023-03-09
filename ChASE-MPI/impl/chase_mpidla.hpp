@@ -1006,24 +1006,30 @@ public:
             shift = 11 * (N_ * nevex + nevex * nevex + nevex) *
                     std::numeric_limits<Base<T>>::epsilon() * nrmf;
 
+            if(shift < 10){
 #ifdef USE_NSIGHT
-            nvtxRangePop();
-            nvtxRangePushA("ChaseMpiDLA: shift in QR");
+                nvtxRangePop();
+                nvtxRangePushA("ChaseMpiDLA: shift in QR");
 #endif
-            for (auto i = 0; i < nevex; i++)
+                for (auto i = 0; i < nevex; i++)
+                {
+                    A_[i * nevex + i] += (T)shift;
+                }
+#ifdef USE_NSIGHT
+                nvtxRangePop();
+#endif
+#ifdef USE_NSIGHT
+                nvtxRangePushA("ChaseMpiDLA: potrf");
+#endif
+                info = dla_->potrf('U', nevex, A_, nevex);
+#ifdef USE_NSIGHT
+                nvtxRangePop();
+#endif
+            } else
             {
-                A_[i * nevex + i] += (T)shift;
-            }
-#ifdef USE_NSIGHT
-            nvtxRangePop();
-#endif
-#ifdef USE_NSIGHT
-            nvtxRangePushA("ChaseMpiDLA: potrf");
-#endif
-            info = dla_->potrf('U', nevex, A_, nevex);
-#ifdef USE_NSIGHT
-            nvtxRangePop();
-#endif
+                info = -1;
+            }    
+
         }
 
         if (info == 0)
