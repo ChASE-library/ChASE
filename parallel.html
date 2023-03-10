@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Parallel implementations &mdash; ChASE v1.1.2 documentation</title>
+  <title>3. Parallel implementations &mdash; ChASE v1.3.0 documentation</title>
   
 
   
@@ -37,9 +37,9 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="ChASE v1.1.2 documentation" href="index.html"/>
-        <link rel="next" title="ChASE-Elemental" href="parallel/elemental.html"/>
-        <link rel="prev" title="Virtual Abstract of Numerical Kernels" href="abstract.html"/>
+    <link rel="top" title="ChASE v1.3.0 documentation" href="index.html"/>
+        <link rel="next" title="3.1. ChASE-MPI" href="parallel/mpi.html"/>
+        <link rel="prev" title="2. Virtual Abstract of Numerical Kernels" href="abstract.html"/>
     <link href="_static/theme_overrides.css" rel="stylesheet" type="text/css">
 
 
@@ -73,7 +73,7 @@
             
             
               <div class="version">
-                v1.1.2
+                v1.3.0
               </div>
             
           
@@ -103,19 +103,19 @@
 </ul>
 <p class="caption"><span class="caption-text">USER DOCUMENTATION</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="quick-start.html">Quick Start</a></li>
-<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation and Setup on a Cluster</a></li>
-<li class="toctree-l1"><a class="reference internal" href="example.html">Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module.html">Modules</a></li>
-<li class="toctree-l1"><a class="reference internal" href="parameters.html">Parameters and Configurations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quick-start.html">1. Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">2. Installation and Setup on a Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">3. How to use ChASE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parameters.html">4. Parameters and Configurations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="module.html">5. Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="example.html">6. Examples</a></li>
 </ul>
 <p class="caption"><span class="caption-text">DEVELOPER DOCUMENTATION</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="algorithm.html">General algorithm</a></li>
-<li class="toctree-l1"><a class="reference internal" href="abstract.html">Virtual Abstract of Numerical Kernels</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Parallel implementations</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="parallel/elemental.html">ChASE-Elemental</a></li>
-<li class="toctree-l2"><a class="reference internal" href="parallel/mpi.html">ChASE-MPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="algorithm.html">1. General algorithm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="abstract.html">2. Virtual Abstract of Numerical Kernels</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">3. Parallel implementations</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="parallel/mpi.html">3.1. ChASE-MPI</a></li>
 </ul>
 </li>
 </ul>
@@ -148,7 +148,7 @@
   <ul class="wy-breadcrumbs">
     <li><a href="index.html">Docs</a> &raquo;</li>
       
-    <li>Parallel implementations</li>
+    <li><span class="section-number">3. </span>Parallel implementations</li>
     <li class="wy-breadcrumbs-aside">
       
         
@@ -163,14 +163,13 @@
            <div itemprop="articleBody">
             
   <div class="section" id="parallel-implementations">
-<span id="id1"></span><h1>Parallel implementations<a class="headerlink" href="#parallel-implementations" title="Permalink to this headline">¶</a></h1>
+<span id="id1"></span><h1><span class="section-number">3. </span>Parallel implementations<a class="headerlink" href="#parallel-implementations" title="Permalink to this headline">¶</a></h1>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="parallel/elemental.html">ChASE-Elemental</a></li>
-<li class="toctree-l1"><a class="reference internal" href="parallel/mpi.html">ChASE-MPI</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="parallel/comm.html">Interface for ChASE-MPI</a></li>
-<li class="toctree-l2"><a class="reference internal" href="parallel/shm.html">Shared Memory Architecture</a></li>
-<li class="toctree-l2"><a class="reference internal" href="parallel/distm.html">Distributed-Memory Architecture</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parallel/mpi.html">3.1. ChASE-MPI</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="parallel/comm.html">3.1.1. Interface for ChASE-MPI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="parallel/shm.html">3.1.2. Shared Memory Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="parallel/distm.html">3.1.3. Distributed-Memory Architecture</a></li>
 </ul>
 </li>
 </ul>
@@ -184,10 +183,10 @@
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="parallel/elemental.html" class="btn btn-neutral float-right" title="ChASE-Elemental" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="parallel/mpi.html" class="btn btn-neutral float-right" title="3.1. ChASE-MPI" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="abstract.html" class="btn btn-neutral" title="Virtual Abstract of Numerical Kernels" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="abstract.html" class="btn btn-neutral" title="2. Virtual Abstract of Numerical Kernels" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -196,7 +195,7 @@
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2021, SimLab Quantum Materials.
+        &copy; Copyright 2023, SimLab Quantum Materials.
 
     </p>
   </div>
@@ -218,7 +217,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'v1.1.2',
+            VERSION:'v1.3.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Quick Start &mdash; ChASE v1.1.2 documentation</title>
+  <title>1. Quick Start &mdash; ChASE v1.3.0 documentation</title>
   
 
   
@@ -37,8 +37,8 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="ChASE v1.1.2 documentation" href="index.html"/>
-        <link rel="next" title="Installing dependencies on Linux" href="quick-start/ubuntu.html"/>
+    <link rel="top" title="ChASE v1.3.0 documentation" href="index.html"/>
+        <link rel="next" title="2. Installation and Setup on a Cluster" href="installation.html"/>
         <link rel="prev" title="References and Contributors" href="reference.html"/>
     <link href="_static/theme_overrides.css" rel="stylesheet" type="text/css">
 
@@ -73,7 +73,7 @@
             
             
               <div class="version">
-                v1.1.2
+                v1.3.0
               </div>
             
           
@@ -103,31 +103,43 @@
 </ul>
 <p class="caption"><span class="caption-text">USER DOCUMENTATION</span></p>
 <ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Quick Start</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#getting-chase">Getting ChASE</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#dependencies">Dependencies</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="quick-start/ubuntu.html">Installing dependencies on Linux</a></li>
-<li class="toctree-l3"><a class="reference internal" href="quick-start/macos.html">Installing dependencies on Mac OS</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">1. Quick Start</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#getting-chase">1.1. Getting ChASE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#dependencies">1.2. Dependencies</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#installing-dependencies-on-linux">1.2.1. Installing dependencies on Linux</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#cmake">1.2.1.1. CMake</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#gnu-compiler">1.2.1.2. GNU compiler</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#installing-blas-and-lapack">1.2.1.3. Installing BLAS and LAPACK</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#installing-mpi">1.2.1.4. Installing MPI</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#quick-installation-and-execution">Quick Installation and Execution</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="quick-start/quick-install.html">Cloning ChASE source code</a></li>
-<li class="toctree-l3"><a class="reference internal" href="quick-start/quick-install.html#building-and-installing-the-chase-library">Building and Installing the ChASE library</a></li>
-<li class="toctree-l3"><a class="reference internal" href="quick-start/quick-install.html#quick-hands-on-by-examples">Quick Hands-on by Examples</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#installing-dependencies-on-macos">1.2.2. Installing dependencies on macOS</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#id3">1.2.2.1. CMake</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id4">1.2.2.2. GNU compiler</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id5">1.2.2.3. Installing BLAS and LAPACK</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id6">1.2.2.4. Installing MPI</a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation and Setup on a Cluster</a></li>
-<li class="toctree-l1"><a class="reference internal" href="example.html">Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module.html">Modules</a></li>
-<li class="toctree-l1"><a class="reference internal" href="parameters.html">Parameters and Configurations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#quick-installation-and-execution">1.3. Quick Installation and Execution</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#building-and-installing-the-chase-library">1.3.1. Building and Installing the ChASE library</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#quick-hands-on-by-examples">1.3.2. Quick Hands-on by Examples</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">2. Installation and Setup on a Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">3. How to use ChASE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parameters.html">4. Parameters and Configurations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="module.html">5. Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="example.html">6. Examples</a></li>
 </ul>
 <p class="caption"><span class="caption-text">DEVELOPER DOCUMENTATION</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="algorithm.html">General algorithm</a></li>
-<li class="toctree-l1"><a class="reference internal" href="abstract.html">Virtual Abstract of Numerical Kernels</a></li>
-<li class="toctree-l1"><a class="reference internal" href="parallel.html">Parallel implementations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="algorithm.html">1. General algorithm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="abstract.html">2. Virtual Abstract of Numerical Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parallel.html">3. Parallel implementations</a></li>
 </ul>
 
             
@@ -158,7 +170,7 @@
   <ul class="wy-breadcrumbs">
     <li><a href="index.html">Docs</a> &raquo;</li>
       
-    <li>Quick Start</li>
+    <li><span class="section-number">1. </span>Quick Start</li>
     <li class="wy-breadcrumbs-aside">
       
         
@@ -173,66 +185,260 @@
            <div itemprop="articleBody">
             
   <div class="section" id="quick-start">
-<h1>Quick Start<a class="headerlink" href="#quick-start" title="Permalink to this headline">¶</a></h1>
+<h1><span class="section-number">1. </span>Quick Start<a class="headerlink" href="#quick-start" title="Permalink to this headline">¶</a></h1>
 <p>This section gives the opportunity to the prospective user to quickly
 set-up the necessary environment to install and test the ChASE library
 without the necessity of having access to a computing cluster. In the
 following, we provide simple step-by-step instructions on how to
 install ChASE on a laptop or a workstation equipped with a Linux or
 Unix OS. Because ChASE uses <a class="reference external" href="http://www.cmake.org">CMake</a> for
-autodecting dependencies and mananging configuration options across
+auto-detecting dependencies and managing configuration options across
 different platforms, it can be easily configured on any Linux and Unix
 based operating systems. Multiple examples are also provided, and
 user can utilize them to directly test ChASE on a matrix of his choice.</p>
 <div class="section" id="getting-chase">
-<h2>Getting ChASE<a class="headerlink" href="#getting-chase" title="Permalink to this headline">¶</a></h2>
+<h2><span class="section-number">1.1. </span>Getting ChASE<a class="headerlink" href="#getting-chase" title="Permalink to this headline">¶</a></h2>
 <p>ChASE can be easily obtained by cloning the repository directly using <code class="docutils literal notranslate"><span class="pre">git</span></code>:</p>
 <div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>git clone https://github.com/ChASE-library/ChASE
 </pre></div>
 </div>
 <p>It is also recommended that you check out the latest stable tag:</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>git checkout v1.0.0
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>git checkout v1.3.0
 </pre></div>
 </div>
 </div>
 <div class="section" id="dependencies">
-<h2>Dependencies<a class="headerlink" href="#dependencies" title="Permalink to this headline">¶</a></h2>
+<h2><span class="section-number">1.2. </span>Dependencies<a class="headerlink" href="#dependencies" title="Permalink to this headline">¶</a></h2>
 <p>In addition to a recent <code class="docutils literal notranslate"><span class="pre">C++</span></code> compiler ChASE’s external dependencies are
 <a class="reference external" href="http://www.cmake.org/">CMake</a> , <a class="reference external" href="http://en.wikipedia.org/wiki/Message_Passing_Interface">MPI</a> , <a class="reference external" href="http://netlib.org/blas">BLAS</a> ,
 <a class="reference external" href="http://netlib.org/lapack">LAPACK</a>. To enhance the usability of the
 ready-to-use examples, it is also necessary to install the <a class="reference external" href="https://www.boost.org/">Boost</a> library.</p>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="quick-start/ubuntu.html">Installing dependencies on Linux</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="quick-start/ubuntu.html#cmake">CMake</a></li>
-<li class="toctree-l2"><a class="reference internal" href="quick-start/ubuntu.html#gnu-compiler">GNU compiler</a></li>
-<li class="toctree-l2"><a class="reference internal" href="quick-start/ubuntu.html#installing-blas-and-lapack">Installing BLAS and LAPACK</a></li>
-<li class="toctree-l2"><a class="reference internal" href="quick-start/ubuntu.html#installing-mpi">Installing MPI</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="quick-start/macos.html">Installing dependencies on Mac OS</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="quick-start/macos.html#cmake">CMake</a></li>
-<li class="toctree-l2"><a class="reference internal" href="quick-start/macos.html#gnu-compiler">GNU compiler</a></li>
-<li class="toctree-l2"><a class="reference internal" href="quick-start/macos.html#installing-blas-and-lapack">Installing BLAS and LAPACK</a></li>
-<li class="toctree-l2"><a class="reference internal" href="quick-start/macos.html#installing-mpi">Installing MPI</a></li>
-</ul>
-</li>
-</ul>
+<div class="section" id="installing-dependencies-on-linux">
+<h3><span class="section-number">1.2.1. </span>Installing dependencies on Linux<a class="headerlink" href="#installing-dependencies-on-linux" title="Permalink to this headline">¶</a></h3>
+<p>The following instructions for the installation of the prerequisite
+modules have been tested on the <a class="reference external" href="http://www.ubuntu.com/">Ubuntu</a>
+operating system (e.g., version 18.10), but they should work as well
+with most modern Linux OS.</p>
+<div class="section" id="cmake">
+<h4><span class="section-number">1.2.1.1. </span>CMake<a class="headerlink" href="#cmake" title="Permalink to this headline">¶</a></h4>
+<p>Install CMake by executing the following command:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">apt</span><span class="o">-</span><span class="n">get</span> <span class="n">install</span> <span class="n">cmake</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="gnu-compiler">
+<h4><span class="section-number">1.2.1.2. </span>GNU compiler<a class="headerlink" href="#gnu-compiler" title="Permalink to this headline">¶</a></h4>
+<p>To install the GNU <code class="docutils literal notranslate"><span class="pre">C</span></code> compiler, GNU <code class="docutils literal notranslate"><span class="pre">C++</span></code> compiler, build utility for
+the compilation, and add some development tools execute the following command:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">apt</span><span class="o">-</span><span class="n">get</span> <span class="n">install</span> <span class="n">build</span><span class="o">-</span><span class="n">essential</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="installing-blas-and-lapack">
+<h4><span class="section-number">1.2.1.3. </span>Installing BLAS and LAPACK<a class="headerlink" href="#installing-blas-and-lapack" title="Permalink to this headline">¶</a></h4>
+<p>The Basic Linear Algebra Subprograms (BLAS) and Linear Algebra PACKage
+(LAPACK) are both used heavily within ChASE. On most installations of
+<a class="reference external" href="http://www.ubuntu.com">Ubuntu</a>, there are two optimized BLAS/LAPACK
+version available: <a class="reference external" href="http://www.openblas.net">OpenBLAS</a> and <a class="reference external" href="http://math-atlas.sourceforge.net/">ATLAS</a>. To install them use either of
+the following commands:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">apt</span><span class="o">-</span><span class="n">get</span> <span class="n">install</span> <span class="n">libopenblas</span><span class="o">-</span><span class="n">dev</span>
+<span class="n">or</span>
+<span class="n">sudo</span> <span class="n">apt</span><span class="o">-</span><span class="n">get</span> <span class="n">install</span> <span class="n">libatlas</span><span class="o">-</span><span class="n">dev</span> <span class="n">liblapack</span><span class="o">-</span><span class="n">dev</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="installing-mpi">
+<h4><span class="section-number">1.2.1.4. </span>Installing MPI<a class="headerlink" href="#installing-mpi" title="Permalink to this headline">¶</a></h4>
+<p>ChASE requires an implementation of the Message Passing Interface
+(MPI) communication protocol. The two most commonly used
+MPI implementations are <a class="reference external" href="https://www.mpich.org">MPICH</a>, and <a class="reference external" href="http://www.open-mpi.org/">OpenMPI</a>.</p>
+<p><a class="reference external" href="https://www.mpich.org">MPICH</a> can be installed by executing the
+following command:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">apt</span><span class="o">-</span><span class="n">get</span> <span class="n">install</span> <span class="n">libmpich2</span><span class="o">-</span><span class="n">dev</span>
+</pre></div>
+</div>
+<p>while <a class="reference external" href="http://www.open-mpi.org/">OpenMPI</a> can be installed by executing:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">apt</span><span class="o">-</span><span class="n">get</span> <span class="n">install</span> <span class="n">libopenmpi</span><span class="o">-</span><span class="n">dev</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="installing-dependencies-on-macos">
+<h3><span class="section-number">1.2.2. </span>Installing dependencies on macOS<a class="headerlink" href="#installing-dependencies-on-macos" title="Permalink to this headline">¶</a></h3>
+<p>On any Apple computer running a macOS we warmly invite to use
+<a class="reference external" href="https://www.macports.org/">MacPorts</a> (<a class="reference external" href="https://developer.apple.com/xcode/">XCode</a> is required and can be
+downloaded directly using the Apple Store application) to install the
+required dependencies. The installation of MacPorts and any of the
+supported <em>ports</em> requires administration privileges.</p>
+<div class="section" id="id3">
+<h4><span class="section-number">1.2.2.1. </span>CMake<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h4>
+<p>Install CMake by executing the following command:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">port</span> <span class="n">install</span> <span class="n">cmake</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="id4">
+<h4><span class="section-number">1.2.2.2. </span>GNU compiler<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h4>
+<p>To install the GNU <code class="docutils literal notranslate"><span class="pre">C</span></code> compiler, GNU <code class="docutils literal notranslate"><span class="pre">C++</span></code> compiler, and GNU
+<code class="docutils literal notranslate"><span class="pre">Fortran</span></code> compiler execute the following commands:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">port</span> <span class="n">install</span> <span class="n">gcc10</span>
+<span class="n">sudo</span> <span class="n">port</span> <span class="n">select</span> <span class="o">--</span><span class="n">set</span> <span class="n">gcc</span> <span class="n">mp</span><span class="o">-</span><span class="n">gcc10</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="id5">
+<h4><span class="section-number">1.2.2.3. </span>Installing BLAS and LAPACK<a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h4>
+<p>The Basic Linear Algebra Subprograms (BLAS) and Linear Algebra PACKage
+(LAPACK) are both used heavily within ChASE.  On an Apple computer one
+can either use the <a class="reference external" href="https://developer.apple.com/documentation/accelerate">Accelerate</a> framework,
+which is provided out of the box, or one could install <a class="reference external" href="https://www.openblas.net/">OpenBLAS</a> by executing the following command:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">port</span> <span class="n">install</span> <span class="n">OpenBLAS</span> <span class="o">+</span><span class="n">native</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="id6">
+<h4><span class="section-number">1.2.2.4. </span>Installing MPI<a class="headerlink" href="#id6" title="Permalink to this headline">¶</a></h4>
+<p>ChASE requires an implementation of the Message Passing Interface
+(MPI) communication protocol. The two most commonly used
+MPI implementations are <a class="reference external" href="https://www.mpich.org">MPICH</a>, and <a class="reference external" href="http://www.open-mpi.org/">OpenMPI</a>.</p>
+<p><a class="reference external" href="https://www.mpich.org">MPICH</a> can be installed by executing the
+following commands:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">port</span> <span class="n">install</span> <span class="n">mpich</span>
+<span class="n">sudo</span> <span class="n">port</span> <span class="n">select</span> <span class="o">--</span><span class="n">set</span> <span class="n">mpi</span> <span class="n">mpich</span><span class="o">-</span><span class="n">mp</span><span class="o">-</span><span class="n">fortran</span>
+</pre></div>
+</div>
+<p>while <a class="reference external" href="http://www.open-mpi.org/">OpenMPI</a> can be installed by executing:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">port</span> <span class="n">install</span> <span class="n">openmpi</span>
+<span class="n">sudo</span> <span class="n">port</span> <span class="n">select</span> <span class="o">--</span><span class="n">set</span> <span class="n">mpi</span> <span class="n">openmpi</span><span class="o">-</span><span class="n">mp</span><span class="o">-</span><span class="n">fortran</span>
+</pre></div>
+</div>
+</div>
 </div>
 </div>
 <div class="section" id="quick-installation-and-execution">
-<h2>Quick Installation and Execution<a class="headerlink" href="#quick-installation-and-execution" title="Permalink to this headline">¶</a></h2>
-<p>Installing the ChASE library on Linux or Mac OS requires cloning the
+<h2><span class="section-number">1.3. </span>Quick Installation and Execution<a class="headerlink" href="#quick-installation-and-execution" title="Permalink to this headline">¶</a></h2>
+<p>Installing the ChASE library on Linux or macOS requires cloning the
 source files from a public github repository and compile them in few
 steps. An example, provided with the source files, can be used to
 run ChASE on a single computing node for the solution of an isolated
 Hermitian standard eigenproblem.</p>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="quick-start/quick-install.html">Cloning ChASE source code</a></li>
-<li class="toctree-l1"><a class="reference internal" href="quick-start/quick-install.html#building-and-installing-the-chase-library">Building and Installing the ChASE library</a></li>
-<li class="toctree-l1"><a class="reference internal" href="quick-start/quick-install.html#quick-hands-on-by-examples">Quick Hands-on by Examples</a></li>
-</ul>
+<div class="section" id="building-and-installing-the-chase-library">
+<span id="build-label"></span><h3><span class="section-number">1.3.1. </span>Building and Installing the ChASE library<a class="headerlink" href="#building-and-installing-the-chase-library" title="Permalink to this headline">¶</a></h3>
+<p>On a Linux system with MPI and CMake installed in the standard
+locations, ChASE can be build by executing in order the
+following commands (after having cloned the repository):</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span> ChASE/
+mkdir build
+<span class="nb">cd</span> build/
+cmake .. -DCMAKE_INSTALL_PREFIX<span class="o">=</span><span class="si">${</span><span class="nv">ChASEROOT</span><span class="si">}</span>
+make install
+</pre></div>
+</div>
+<p>In the commands above, the variable <code class="docutils literal notranslate"><span class="pre">${CHASEROOT}</span></code> is the path to
+install ChASE on user’s laptops.
+CMake will auto-detect the dependencies and select the default
+installed modules. In order to select a specific module installation,
+one can manually specify several build options,
+especially when multiple versions of libraries or several different
+compilers are available on the system. For instance, any <code class="docutils literal notranslate"><span class="pre">C++</span></code>, <code class="docutils literal notranslate"><span class="pre">C</span></code>, or
+<code class="docutils literal notranslate"><span class="pre">Fortran</span></code> compiler can be selected by setting the
+<code class="docutils literal notranslate"><span class="pre">CMAKE_CXX_COMPILER</span></code>, <code class="docutils literal notranslate"><span class="pre">CMAKE_C_COMPILER</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">CMAKE_Fortran_COMPILER</span></code> variables, respectively. The following
+provides an illustration of such setting.</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="o">-</span><span class="n">D</span> <span class="n">CMAKE_CXX_COMPILER</span><span class="o">=/</span><span class="n">usr</span><span class="o">/</span><span class="n">bin</span><span class="o">/</span><span class="n">g</span><span class="o">++</span> \
+<span class="o">-</span><span class="n">D</span> <span class="n">CMAKE_C_COMPILER</span><span class="o">=/</span><span class="n">usr</span><span class="o">/</span><span class="n">bin</span><span class="o">/</span><span class="n">gcc</span>   \
+<span class="o">-</span><span class="n">D</span> <span class="n">CMAKE_Fortran_COMPILER</span><span class="o">=/</span><span class="n">usr</span><span class="o">/</span><span class="n">bin</span><span class="o">/</span><span class="n">gfortran</span>
+</pre></div>
+</div>
+<p>Analogously, it may be necessary to manually specify the paths to the
+MPI implementation by, for example, setting the following variables.</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="o">-</span><span class="n">D</span> <span class="n">MPI_CXX_COMPILER</span><span class="o">=/</span><span class="n">usr</span><span class="o">/</span><span class="n">bin</span><span class="o">/</span><span class="n">mpicxx</span> \
+<span class="o">-</span><span class="n">D</span> <span class="n">MPI_C_COMPILER</span><span class="o">=/</span><span class="n">usr</span><span class="o">/</span><span class="n">bin</span><span class="o">/</span><span class="n">mpicc</span> \
+<span class="o">-</span><span class="n">D</span> <span class="n">MPI_Fortran_COMPILER</span><span class="o">=/</span><span class="n">usr</span><span class="o">/</span><span class="n">bin</span><span class="o">/</span><span class="n">mpif90</span>
+</pre></div>
+</div>
+<p>For instance, installing ChASE on an Apple computer with gcc and
+Accelerate, one could execute the following command:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>cmake -DCMAKE_CXX_COMPILER<span class="o">=</span>g++ -DCMAKE_C_COMPILER<span class="o">=</span>gcc -DCMAKE_Fortran_COMPILER<span class="o">=</span>gfortran ..
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you want to try with ChASE or use ChASE as standalone eigensolver, the CMake flag <code class="docutils literal notranslate"><span class="pre">-DCMAKE_INSTALL_PREFIX=${ChASEROOT}</span></code> is not mandatory.</p>
+</div>
+</div>
+<div class="section" id="quick-hands-on-by-examples">
+<h3><span class="section-number">1.3.2. </span>Quick Hands-on by Examples<a class="headerlink" href="#quick-hands-on-by-examples" title="Permalink to this headline">¶</a></h3>
+<p>For a quick test and usage of the library, we provide various ready-to-use
+examples which use ChASE to solve eigenproblems. Some of these examples make
+the additional use of the
+<code class="docutils literal notranslate"><span class="pre">C++</span></code> library <code class="docutils literal notranslate"><span class="pre">Boost</span></code> for the parsing of command line values. Thus
+<code class="docutils literal notranslate"><span class="pre">Boost</span></code> should also be provided before the installation of ChASE if users
+would like to build ChASE with these examples.
+In order to build these examples together with ChASE
+the sequence of building commands should be slightly modified as
+below:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span> ChASE/
+mkdir build
+<span class="nb">cd</span> build/
+cmake .. -DCMAKE_INSTALL_PREFIX<span class="o">=</span><span class="si">${</span><span class="nv">ChASEROOT</span><span class="si">}</span> -DBUILD_WITH_EXAMPLES<span class="o">=</span>ON
+make install
+</pre></div>
+</div>
+<p>Executing ChASE using the ready-to-use examples is rather
+straightforward. For instance, <a class="reference internal" href="example.html#hello-world-chase"><span class="std std-ref">0. Hello World</span></a> is executed by simply typing
+the line below:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>./0_hello_world/0_hello_world
+</pre></div>
+</div>
+<p>In this example, a Clement matrix is generated and default values of parameters are used.</p>
+<p>To run this example with MPI, start the command with the mpi launcher of your choice, e.g. <cite>mpirun</cite> or <cite>srun</cite>.</p>
+<p>For sake of completeness we provide a complete list of parameters in this example below.</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 20%" />
+<col style="width: 80%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Parameter (default value)</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>N (=1001)</p></td>
+<td><p>Size of the Input Matrix</p></td>
+</tr>
+<tr class="row-odd"><td><p>nev (=40)</p></td>
+<td><p>Wanted Number of Eigenpairs</p></td>
+</tr>
+<tr class="row-even"><td><p>nex (=20)</p></td>
+<td><p>Extra Search Dimensions</p></td>
+</tr>
+<tr class="row-odd"><td><p>deg (=20)</p></td>
+<td><p>Initial filtering degree, value set by <code class="docutils literal notranslate"><span class="pre">config.SetDeg(20)</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>tol (=1e-10)</p></td>
+<td><p>Minimum tolerance required to declare eigenpairs converged, value set by <code class="docutils literal notranslate"><span class="pre">config.SetTol(1e-10)</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>opt (=true)</p></td>
+<td><p>If optimize the degree of filter internally by ChASE, value set by <code class="docutils literal notranslate"><span class="pre">config.SetOpt(true)</span></code></p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For the quick test and benchmark, user can modify some of parameters, e.g., to change the size of matrix <code class="docutils literal notranslate"><span class="pre">N</span></code> which will generate
+a clement matrix of different size, to change the number of wanted eigepairs <code class="docutils literal notranslate"><span class="pre">nev</span></code>, etc.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For the fine tuning of more parameters in ChASE, please visit <a class="reference internal" href="module/config.html#configuration-object"><span class="std std-ref">Configuration</span></a>, in which we provide a class
+to set up all the parameters of eigensolvers. For the suggestion of selecting values of parameters, please visit <a class="reference internal" href="parameters.html#parameters-and-config"><span class="std std-ref">Parameters and Configurations</span></a>.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For a complete explanation of all the examples, please visit <a class="reference internal" href="example.html#examples-chase"><span class="std std-ref">Examples</span></a>.</p>
+</div>
 </div>
 </div>
 </div>
@@ -244,7 +450,7 @@ Hermitian standard eigenproblem.</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="quick-start/ubuntu.html" class="btn btn-neutral float-right" title="Installing dependencies on Linux" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="installation.html" class="btn btn-neutral float-right" title="2. Installation and Setup on a Cluster" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="reference.html" class="btn btn-neutral" title="References and Contributors" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
@@ -256,7 +462,7 @@ Hermitian standard eigenproblem.</p>
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2021, SimLab Quantum Materials.
+        &copy; Copyright 2023, SimLab Quantum Materials.
 
     </p>
   </div>
@@ -278,7 +484,7 @@ Hermitian standard eigenproblem.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'v1.1.2',
+            VERSION:'v1.3.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

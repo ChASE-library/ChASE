@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Versions of the library &mdash; ChASE v1.1.2 documentation</title>
+  <title>Versions of the library &mdash; ChASE v1.3.0 documentation</title>
   
 
   
@@ -37,7 +37,7 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="ChASE v1.1.2 documentation" href="index.html"/>
+    <link rel="top" title="ChASE v1.3.0 documentation" href="index.html"/>
         <link rel="next" title="Licenses and Copyright" href="license.html"/>
         <link rel="prev" title="ChASE: an Iterative Solver for Dense Eigenproblems" href="chase.html"/>
     <link href="_static/theme_overrides.css" rel="stylesheet" type="text/css">
@@ -73,7 +73,7 @@
             
             
               <div class="version">
-                v1.1.2
+                v1.3.0
               </div>
             
           
@@ -107,7 +107,6 @@
 </li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#chase-elemental">ChASE-Elemental</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="license.html">Licenses and Copyright</a></li>
@@ -115,17 +114,18 @@
 </ul>
 <p class="caption"><span class="caption-text">USER DOCUMENTATION</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="quick-start.html">Quick Start</a></li>
-<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation and Setup on a Cluster</a></li>
-<li class="toctree-l1"><a class="reference internal" href="example.html">Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module.html">Modules</a></li>
-<li class="toctree-l1"><a class="reference internal" href="parameters.html">Parameters and Configurations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quick-start.html">1. Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">2. Installation and Setup on a Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">3. How to use ChASE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parameters.html">4. Parameters and Configurations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="module.html">5. Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="example.html">6. Examples</a></li>
 </ul>
 <p class="caption"><span class="caption-text">DEVELOPER DOCUMENTATION</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="algorithm.html">General algorithm</a></li>
-<li class="toctree-l1"><a class="reference internal" href="abstract.html">Virtual Abstract of Numerical Kernels</a></li>
-<li class="toctree-l1"><a class="reference internal" href="parallel.html">Parallel implementations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="algorithm.html">1. General algorithm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="abstract.html">2. Virtual Abstract of Numerical Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parallel.html">3. Parallel implementations</a></li>
 </ul>
 
             
@@ -172,11 +172,11 @@
             
   <div class="section" id="versions-of-the-library">
 <h1>Versions of the library<a class="headerlink" href="#versions-of-the-library" title="Permalink to this headline">¶</a></h1>
-<p>The library comes in two main versions which are labelled ChASE-MPI
-and ChASE-Elemental. ChASE-MPI is the default version of the library
-and can be installed with the minimum amount of dependencies (BLAS,
-LAPACK, and MPI). ChASE-Elemental requires the additional installation
-of the <a class="reference external" href="https://github.com/elemental/Elemental">Elemental</a> library.</p>
+<p>Currently, the library consists of one major part, labelled ChASE-MPI, for
+solving dense eigenproblems. There will be another major part to support
+sparse eigenproblems in short future.
+ChASE-MPI can be installed with the minimum amount of dependencies (BLAS,
+LAPACK, and MPI).</p>
 <div class="section" id="chase-mpi">
 <h2>ChASE-MPI<a class="headerlink" href="#chase-mpi" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="multi-configurations">
@@ -192,21 +192,18 @@ configuration resides in the way the Matrix-Matrix kernel is
 implemented with respect to the full MPI build.</p></li>
 <li><p><strong>MPI+Threads build:</strong> On multi-core homogeneous CPU clusters ChASE
 is best used in its pure MPI build. In this configuration, ChASE
-is typically used with one MPI rank per computing node and as
-many threads as number of available cores per node.</p></li>
+is typically used with one MPI rank per NUMA domain and as
+many threads as number of available cores per NUMA domain.</p></li>
 <li><p><strong>GPU build:</strong> ChASE-MPI can be configured to take advantage of
 graphics card on heterogeneous computing clusters. Currently we
-support the use of one or more GPU cards per computing node in
-a number of flexible configurations: for instance on computing nodes
-with 4 cards per node one can choose to compile and execute the
-program with one, two or four GPU card per MPI rank.</p></li>
+support one GPU card per MPI rank.</p></li>
 </ul>
 </div></blockquote>
 </div>
 <div class="section" id="matrix-distributions">
 <h3>Matrix Distributions<a class="headerlink" href="#matrix-distributions" title="Permalink to this headline">¶</a></h3>
 <p>In ChASE-MPI, the MPI nodes are constructed as 2D grid, two data distributions
-are support to assigned sublocks of dense matrix <strong>A</strong> into different
+are support to assigned sub-blocks of dense matrix <strong>A</strong> into different
 MPI nodes.</p>
 <div class="section" id="block-distribution">
 <h4>Block Distribution<a class="headerlink" href="#block-distribution" title="Permalink to this headline">¶</a></h4>
@@ -227,7 +224,7 @@ offloading of the multiplication to accelerators such as GPUs.</p>
 \end{array}\right)\end{split}\]</div>
 <p>The figure above gives an example of ChASE which distributes a <span class="math notranslate nohighlight">\(n \times n\)</span>
 dense matrix <span class="math notranslate nohighlight">\(A\)</span> into a <span class="math notranslate nohighlight">\(3 \times 3\)</span> grid of MPI nodes. In this example,
-the matrix <cite>A</cite> is split into 2D, with a series of submatrices <span class="math notranslate nohighlight">\(A_{i,j}\)</span> in which
+the matrix <cite>A</cite> is split into 2D, with a series of sub-matrices <span class="math notranslate nohighlight">\(A_{i,j}\)</span> in which
 <span class="math notranslate nohighlight">\(i \in [0,2]\)</span> and <span class="math notranslate nohighlight">\(j \in [0,2]\)</span>. Therefore, <span class="math notranslate nohighlight">\(A_{0,0}\)</span> is distributed
 to MPI rank 1, <span class="math notranslate nohighlight">\(A_{1,0}\)</span> is distributed to rank 2, <span class="math notranslate nohighlight">\(A_{2,0}\)</span> is distributed to rank 3, <span class="math notranslate nohighlight">\(A_{0,1}\)</span> is distributed to rank 4, <span class="math notranslate nohighlight">\(A_{1,1}\)</span> is distributed to rank 5, and so on.</p>
 </div>
@@ -237,7 +234,7 @@ to MPI rank 1, <span class="math notranslate nohighlight">\(A_{1,0}\)</span> is 
 for the implementation of dense matrix computations on distributed-memory machines. Compared to
 the <strong>Block Distribution</strong>, the main advantage of the Block-Cyclic Distribution is improving
 the load balance of matrix computation if the amount of work differs for different entries of a matrix,
-e.g., QR and LU factorizations. A block distribution can lead to load imbalances.</p>
+e.g., QR and LU factorization. A block distribution can lead to load imbalances.</p>
 <p>Even the load balance is not a problem for ChASE, in which the most important kernel <strong>Hermitian Matrix-Matrix Multiplication</strong>
 is well balanced with the <strong>Block Distribution</strong>, we still provide the <strong>Block-Cyclic Distribution</strong> as an option
 in ChASE to avoid the re-distribution between these two types of distributions, which might be
@@ -249,23 +246,13 @@ as the implementation with <strong>Block Distribution</strong>.</p>
 dense matrix <span class="math notranslate nohighlight">\(A\)</span> into a <span class="math notranslate nohighlight">\(2 \times 2\)</span> grid of MPI nodes in a block-cyclic scheme.
 Denoting the 4 MPI nodes as <span class="math notranslate nohighlight">\(P_{0,0}\)</span>, <span class="math notranslate nohighlight">\(P_{0,1}\)</span>, <span class="math notranslate nohighlight">\(P_{1,0}\)</span>, and <span class="math notranslate nohighlight">\(P_{1,1}\)</span>,
 they are marked as green, red, blue and yellow, respectively on the figure above.
-In this example, the matrix <cite>A</cite> is split into 2D, with a series of submatrices <span class="math notranslate nohighlight">\(A_{i,j}\)</span> in which
-<span class="math notranslate nohighlight">\(i \in [0,3]\)</span> and <span class="math notranslate nohighlight">\(j \in [0,3]\)</span>. Each submatrix is assigned to one MPI node
+In this example, the matrix <cite>A</cite> is split into 2D, with a series of sub-matrices <span class="math notranslate nohighlight">\(A_{i,j}\)</span> in which
+<span class="math notranslate nohighlight">\(i \in [0,3]\)</span> and <span class="math notranslate nohighlight">\(j \in [0,3]\)</span>. Each sub-matrix is assigned to one MPI node
 in a round-robin manner so that each MPI rank gets several non-adjacent blocks.
 For more details about <strong>Block-Cyclic Distribution</strong>,
 please refer to <a class="reference external" href="https://www.netlib.org/scalapack/slug/node75.html">Netlib</a> website.</p>
 </div>
 </div>
-</div>
-<div class="section" id="chase-elemental">
-<h2>ChASE-Elemental<a class="headerlink" href="#chase-elemental" title="Permalink to this headline">¶</a></h2>
-<p>ChASE-Elemental takes advantage of the <a class="reference external" href="http://libelemental.org/">Elemental</a> library routines to execute its tasks in
-parallel. The data is distributed using Elemental distribution
-classes. ChASE-Elemental is available in a <strong>pure MPI build</strong> and,
-while it is slightly less performant than ChASE-MPI, it ensure a
-better scalability since, contrary to ChASE-MPI, the QR factorization
-is also executed in parallel. For stability reason, ChASE uses
-Elemental version 0.84.</p>
 </div>
 </div>
 
@@ -288,7 +275,7 @@ Elemental version 0.84.</p>
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2021, SimLab Quantum Materials.
+        &copy; Copyright 2023, SimLab Quantum Materials.
 
     </p>
   </div>
@@ -310,7 +297,7 @@ Elemental version 0.84.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'v1.1.2',
+            VERSION:'v1.3.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

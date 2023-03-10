@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Configuration &mdash; ChASE v1.1.2 documentation</title>
+  <title>Configuration &mdash; ChASE v1.3.0 documentation</title>
   
 
   
@@ -37,10 +37,7 @@
         <link rel="index" title="Index"
               href="../genindex.html"/>
         <link rel="search" title="Search" href="../search.html"/>
-    <link rel="top" title="ChASE v1.1.2 documentation" href="../index.html"/>
-        <link rel="up" title="Modules" href="../module.html"/>
-        <link rel="next" title="Performance" href="perf.html"/>
-        <link rel="prev" title="Classes" href="namespace.html"/>
+    <link rel="top" title="ChASE v1.3.0 documentation" href="../index.html"/>
     <link href="../_static/theme_overrides.css" rel="stylesheet" type="text/css">
 
 
@@ -74,7 +71,7 @@
             
             
               <div class="version">
-                v1.1.2
+                v1.3.0
               </div>
             
           
@@ -103,33 +100,19 @@
 <li class="toctree-l1"><a class="reference internal" href="../reference.html">References and Contributors</a></li>
 </ul>
 <p class="caption"><span class="caption-text">USER DOCUMENTATION</span></p>
-<ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="../quick-start.html">Quick Start</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation and Setup on a Cluster</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../example.html">Examples</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="../module.html">Modules</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="../module.html#overview">Overview</a></li>
-<li class="toctree-l2 current"><a class="reference internal" href="../module.html#namespace-chase">Namespace: chase</a><ul class="current">
-<li class="toctree-l3"><a class="reference internal" href="namespace.html">Classes</a></li>
-<li class="toctree-l3"><a class="reference internal" href="namespace.html#functions">Functions</a></li>
-<li class="toctree-l3 current"><a class="reference internal" href="../module.html#selected-classes">Selected Classes</a><ul class="current">
-<li class="toctree-l4 current"><a class="current reference internal" href="#">Configuration</a></li>
-<li class="toctree-l4"><a class="reference internal" href="perf.html">Performance</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="../module.html#chase-mpi">ChASE-MPI</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../module.html#chase-elemental">ChASE-Elemental</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="../parameters.html">Parameters and Configurations</a></li>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../quick-start.html">1. Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">2. Installation and Setup on a Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage.html">3. How to use ChASE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../parameters.html">4. Parameters and Configurations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../module.html">5. Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../example.html">6. Examples</a></li>
 </ul>
 <p class="caption"><span class="caption-text">DEVELOPER DOCUMENTATION</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../algorithm.html">General algorithm</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../abstract.html">Virtual Abstract of Numerical Kernels</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../parallel.html">Parallel implementations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../algorithm.html">1. General algorithm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../abstract.html">2. Virtual Abstract of Numerical Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../parallel.html">3. Parallel implementations</a></li>
 </ul>
 
             
@@ -159,8 +142,6 @@
 <div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
     <li><a href="../index.html">Docs</a> &raquo;</li>
-      
-        <li><a href="../module.html">Modules</a> &raquo;</li>
       
     <li>Configuration</li>
     <li class="wy-breadcrumbs-aside">
@@ -300,7 +281,7 @@
 <dl class="cpp function">
 <dt id="_CPPv4NK5chase11ChaseConfig9GetMaxDegEv">
 <span id="_CPPv3NK5chase11ChaseConfig9GetMaxDegEv"></span><span id="_CPPv2NK5chase11ChaseConfig9GetMaxDegEv"></span><span id="chase::ChaseConfig::GetMaxDegC"></span><span class="target" id="classchase_1_1_chase_config_1abb1bfeb46e1e7a45a773531112073f3d"></span>std::size_t <code class="sig-name descname">GetMaxDeg</code><span class="sig-paren">(</span><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv4NK5chase11ChaseConfig9GetMaxDegEv" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Returns the integer value of the maximum degree used by the polynomial filter. </p>
+<dd><p>Returns the integer value of the maximum degree used by the polynomial filter.</p>
 <p>The value of <code class="docutils literal notranslate"><span class="pre">max_deg_</span></code> indicates the upper bound for the degree of the polynomial for any of the vectors filtered. Such bound is important to avoid potential numerical instabilities that may occur and impede the convergence of the eigenpairs, expecially the one close to the upper end of the desired subspace of the spectrum. <dl class="simple">
 <dt><strong>Return</strong></dt><dd><p>The value of the maximum degree of the Chebyshev filter. </p>
 </dd>
@@ -348,7 +329,7 @@
 <dl class="cpp function">
 <dt id="_CPPv4NK5chase11ChaseConfig10GetMaxIterEv">
 <span id="_CPPv3NK5chase11ChaseConfig10GetMaxIterEv"></span><span id="_CPPv2NK5chase11ChaseConfig10GetMaxIterEv"></span><span id="chase::ChaseConfig::GetMaxIterC"></span><span class="target" id="classchase_1_1_chase_config_1a5155fa45d39e3b8fe1f1a9ec6e0f9b37"></span>std::size_t <code class="sig-name descname">GetMaxIter</code><span class="sig-paren">(</span><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv4NK5chase11ChaseConfig10GetMaxIterEv" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Returns the value of the maximum number of subspace iterations allowed within ChASE. </p>
+<dd><p>Returns the value of the maximum number of subspace iterations allowed within ChASE.</p>
 <p>In order to avoid that the eigensolver would runoff unchecked, ChASE is given a upper bound on the number of subspace iteration it can execute. This is a normal safety mechanism when the algorithm fails to converge some eigenpairs whose residuals would continue to oscillate without above the tolerance threshold. <dl class="simple">
 <dt><strong>Return</strong></dt><dd><p>The value of the maximum number of subspace iterations allowed. </p>
 </dd>
@@ -359,7 +340,7 @@
 <dl class="cpp function">
 <dt id="_CPPv4N5chase11ChaseConfig10SetMaxIterENSt6size_tE">
 <span id="_CPPv3N5chase11ChaseConfig10SetMaxIterENSt6size_tE"></span><span id="_CPPv2N5chase11ChaseConfig10SetMaxIterENSt6size_tE"></span><span id="chase::ChaseConfig::SetMaxIter__std::s"></span><span class="target" id="classchase_1_1_chase_config_1a4b94459a924635d2774ae330b20014e5"></span>void <code class="sig-name descname">SetMaxIter</code><span class="sig-paren">(</span>std::size_t <em>maxIter</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase11ChaseConfig10SetMaxIterENSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Sets the value of the maximum number of subspace iterations within ChASE. </p>
+<dd><p>Sets the value of the maximum number of subspace iterations within ChASE.</p>
 <p>Typically ChASE requires a number of single digit iterations to converge. In extreme cases such number can grow up to <em>10</em> or <em>12</em>. An increasing number of iterations usually implies that the eigensolver is not used for the intended purpose or that the spectrum of eigenproblem tackled is particularly problematic. The default value of <code class="docutils literal notranslate"><span class="pre">maxIter</span></code> is set to <em>25</em>. <dl class="simple">
 <dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">maxIter</span></code>: Value of the maximum number of subspace iterations. </p></li>
@@ -396,7 +377,7 @@
 <dl class="cpp function">
 <dt id="_CPPv4NK5chase11ChaseConfig13GetNumLanczosEv">
 <span id="_CPPv3NK5chase11ChaseConfig13GetNumLanczosEv"></span><span id="_CPPv2NK5chase11ChaseConfig13GetNumLanczosEv"></span><span id="chase::ChaseConfig::GetNumLanczosC"></span><span class="target" id="classchase_1_1_chase_config_1a0f29e03ebe41263644c8951761b19726"></span>std::size_t <code class="sig-name descname">GetNumLanczos</code><span class="sig-paren">(</span><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv4NK5chase11ChaseConfig13GetNumLanczosEv" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Returns the number of stochastic vectors used for the spectral estimates. </p>
+<dd><p>Returns the number of stochastic vectors used for the spectral estimates.</p>
 <p>After having executed a number of Lanczos steps, ChASE uses a cheap and efficient estimator to calculate the value of the upper extremum of the search space. Such an estimator uses a small number of stochastic vectors. <dl class="simple">
 <dt><strong>Return</strong></dt><dd><p>Number of stochastic vectors used by ChASE for the spectral estimate. </p>
 </dd>
@@ -442,7 +423,7 @@
 <dl class="cpp function">
 <dt id="_CPPv4NK5chase11ChaseConfig6GetNexEv">
 <span id="_CPPv3NK5chase11ChaseConfig6GetNexEv"></span><span id="_CPPv2NK5chase11ChaseConfig6GetNexEv"></span><span id="chase::ChaseConfig::GetNexC"></span><span class="target" id="classchase_1_1_chase_config_1a17a16d864e6048084a2ddbadee9027bd"></span>std::size_t <code class="sig-name descname">GetNex</code><span class="sig-paren">(</span><span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv4NK5chase11ChaseConfig6GetNexEv" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Returns the number of extra eigenpairs that are used to augment the search subspace. </p>
+<dd><p>Returns the number of extra eigenpairs that are used to augment the search subspace.</p>
 <p>ChASE effectively uses an enlarged subspace to improve the convergence of the algorithm. With a very small value of <code class="docutils literal notranslate"><span class="pre">nex_</span></code>, the eigenpairs at the end of the desired interval may have hard time to converge. By including a small but substantial number of extra values (in most case no more than 20% of <code class="docutils literal notranslate"><span class="pre">nev_</span></code>), ensures that ChASE converges smoothly without stagnating. <dl class="simple">
 <dt><strong>Return</strong></dt><dd><p>Number of extra eigenpairs augmenting the search space. </p>
 </dd>
@@ -470,28 +451,28 @@
 <dl class="cpp var">
 <dt id="_CPPv4N5chase11ChaseConfig4nex_E">
 <span id="_CPPv3N5chase11ChaseConfig4nex_E"></span><span id="_CPPv2N5chase11ChaseConfig4nex_E"></span><span id="chase::ChaseConfig::nex___std::sC"></span><span class="target" id="classchase_1_1_chase_config_1a9490571337d522a2936e9dc80024db35"></span>std::size_t <em class="property">const</em> <code class="sig-name descname">nex_</code><a class="headerlink" href="#_CPPv4N5chase11ChaseConfig4nex_E" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Increment of the search subspace so that its total size is <code class="docutils literal notranslate"><span class="pre">_nev</span> <span class="pre">+</span> <span class="pre">_nex</span></code>. </p>
+<dd><p>Increment of the search subspace so that its total size is <code class="docutils literal notranslate"><span class="pre">_nev</span> <span class="pre">+</span> <span class="pre">_nex</span></code>.</p>
 <p>This variable is initialized by the constructor using the value of the third of its input parameters <code class="docutils literal notranslate"><span class="pre">_nex</span></code>. There is no default value. </p>
 </dd></dl>
 
 <dl class="cpp var">
 <dt id="_CPPv4N5chase11ChaseConfig7approx_E">
 <span id="_CPPv3N5chase11ChaseConfig7approx_E"></span><span id="_CPPv2N5chase11ChaseConfig7approx_E"></span><span id="chase::ChaseConfig::approx___b"></span><span class="target" id="classchase_1_1_chase_config_1acc161161a9964c1ea4de024ecac9f593"></span>bool <code class="sig-name descname">approx_</code><a class="headerlink" href="#_CPPv4N5chase11ChaseConfig7approx_E" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>An optional flag indicating if approximate eigenvectors are provided by the user. </p>
+<dd><p>An optional flag indicating if approximate eigenvectors are provided by the user.</p>
 <p>This variable is initialized by the constructor. Its default value is set to <code class="docutils literal notranslate"><span class="pre">false</span></code>. </p>
 </dd></dl>
 
 <dl class="cpp var">
 <dt id="_CPPv4N5chase11ChaseConfig9max_iter_E">
 <span id="_CPPv3N5chase11ChaseConfig9max_iter_E"></span><span id="_CPPv2N5chase11ChaseConfig9max_iter_E"></span><span id="chase::ChaseConfig::max_iter___std::s"></span><span class="target" id="classchase_1_1_chase_config_1aa2e8b110102b013b320b05f8f41dbecc"></span>std::size_t <code class="sig-name descname">max_iter_</code><a class="headerlink" href="#_CPPv4N5chase11ChaseConfig9max_iter_E" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>An optional parameters limiting the total number of internal while loops ChASE executes. </p>
-<p>This variable is initialized by the constructor. Its default value is <em>25</em> </p>
+<dd><p>An optional parameters limiting the total number of internal while loops ChASE executes.</p>
+<p>This variable is initialized by the constructor. Its default value is 25* </p>
 </dd></dl>
 
 <dl class="cpp var">
 <dt id="_CPPv4N5chase11ChaseConfig4tol_E">
 <span id="_CPPv3N5chase11ChaseConfig4tol_E"></span><span id="_CPPv2N5chase11ChaseConfig4tol_E"></span><span id="chase::ChaseConfig::tol___double"></span><span class="target" id="classchase_1_1_chase_config_1abfca0fe5160e5fee5724607a3e85d6ca"></span>double <code class="sig-name descname">tol_</code><a class="headerlink" href="#_CPPv4N5chase11ChaseConfig4tol_E" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>An optional parameters indicating the minimal value of the threshold below which the desired eigenpairs are declared converged. </p>
+<dd><p>An optional parameters indicating the minimal value of the threshold below which the desired eigenpairs are declared converged.</p>
 <p>This variable is initialized by the constructor. Its default value is set to <em>1e-10</em> and <em>1e-05</em> respectively in double and single precision. </p>
 </dd></dl>
 
@@ -505,35 +486,35 @@
 <dl class="cpp var">
 <dt id="_CPPv4N5chase11ChaseConfig13optimization_E">
 <span id="_CPPv3N5chase11ChaseConfig13optimization_E"></span><span id="_CPPv2N5chase11ChaseConfig13optimization_E"></span><span id="chase::ChaseConfig::optimization___b"></span><span class="target" id="classchase_1_1_chase_config_1af6e15438b7789ec5387ae14a326335ff"></span>bool <code class="sig-name descname">optimization_</code><a class="headerlink" href="#_CPPv4N5chase11ChaseConfig13optimization_E" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>An optional flag indicating if the filter uses a polynomial degree optimized for each single vector. </p>
+<dd><p>An optional flag indicating if the filter uses a polynomial degree optimized for each single vector.</p>
 <p>This variable is initialized by the constructor. Its default value is set to <code class="docutils literal notranslate"><span class="pre">true</span></code>. </p>
 </dd></dl>
 
 <dl class="cpp var">
 <dt id="_CPPv4N5chase11ChaseConfig8max_deg_E">
 <span id="_CPPv3N5chase11ChaseConfig8max_deg_E"></span><span id="_CPPv2N5chase11ChaseConfig8max_deg_E"></span><span id="chase::ChaseConfig::max_deg___std::s"></span><span class="target" id="classchase_1_1_chase_config_1a3b58af4212d86149b97505865c90ee0a"></span>std::size_t <code class="sig-name descname">max_deg_</code><a class="headerlink" href="#_CPPv4N5chase11ChaseConfig8max_deg_E" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>An optional parameter that limits from above the value of the allowed polynomial filter. </p>
+<dd><p>An optional parameter that limits from above the value of the allowed polynomial filter.</p>
 <p>When the flag <code class="docutils literal notranslate"><span class="pre">optimization_</span></code> is set to <code class="docutils literal notranslate"><span class="pre">true</span></code>, it avoids that a vector is filtered with a too high of a degree which may introduce numerical instabilities and slow or even impede convergence. This variable is initialized by the constructor. Its default value is set to <em>36</em> and <em>18</em> in double and single precision, respectively. </p>
 </dd></dl>
 
 <dl class="cpp var">
 <dt id="_CPPv4N5chase11ChaseConfig10deg_extra_E">
 <span id="_CPPv3N5chase11ChaseConfig10deg_extra_E"></span><span id="_CPPv2N5chase11ChaseConfig10deg_extra_E"></span><span id="chase::ChaseConfig::deg_extra___std::s"></span><span class="target" id="classchase_1_1_chase_config_1a5901464070ffb2e91521229575de7b42"></span>std::size_t <code class="sig-name descname">deg_extra_</code><a class="headerlink" href="#_CPPv4N5chase11ChaseConfig10deg_extra_E" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>An optional parameter augmenting of few units the polynomial degree automatic computed by ChASE. </p>
+<dd><p>An optional parameter augmenting of few units the polynomial degree automatic computed by ChASE.</p>
 <p>This parameter is exclusively used when the flag <code class="docutils literal notranslate"><span class="pre">optimization_</span></code> is set to <code class="docutils literal notranslate"><span class="pre">true</span></code> and should never be larger than a single digit. This variable is initialized by the constructor. Its default value is set to <em>2</em>. </p>
 </dd></dl>
 
 <dl class="cpp var">
 <dt id="_CPPv4N5chase11ChaseConfig13lanczos_iter_E">
 <span id="_CPPv3N5chase11ChaseConfig13lanczos_iter_E"></span><span id="_CPPv2N5chase11ChaseConfig13lanczos_iter_E"></span><span id="chase::ChaseConfig::lanczos_iter___std::s"></span><span class="target" id="classchase_1_1_chase_config_1ac58cb6c37faeaf110121d5291bc7759f"></span>std::size_t <code class="sig-name descname">lanczos_iter_</code><a class="headerlink" href="#_CPPv4N5chase11ChaseConfig13lanczos_iter_E" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Optional parameter indicating the total number of steps executed by the Lanczos DoS. </p>
+<dd><p>Optional parameter indicating the total number of steps executed by the Lanczos DoS.</p>
 <p>This variable is initialized by the constructor. Its default value is set to <em>25</em>. </p>
 </dd></dl>
 
 <dl class="cpp var">
 <dt id="_CPPv4N5chase11ChaseConfig12num_lanczos_E">
 <span id="_CPPv3N5chase11ChaseConfig12num_lanczos_E"></span><span id="_CPPv2N5chase11ChaseConfig12num_lanczos_E"></span><span id="chase::ChaseConfig::num_lanczos___std::s"></span><span class="target" id="classchase_1_1_chase_config_1a8558a7eefb3254df70ed8e4072148f8b"></span>std::size_t <code class="sig-name descname">num_lanczos_</code><a class="headerlink" href="#_CPPv4N5chase11ChaseConfig12num_lanczos_E" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Optional parameter indicating the total number of vectors used for the vector estimate in the Lanczos DoS. </p>
+<dd><p>Optional parameter indicating the total number of vectors used for the vector estimate in the Lanczos DoS.</p>
 <p>This variable is initialized by the constructor. Its default value is set to <em>4</em>. </p>
 </dd></dl>
 
@@ -547,21 +528,12 @@
           </div>
           <footer>
   
-    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-      
-        <a href="perf.html" class="btn btn-neutral float-right" title="Performance" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
-      
-      
-        <a href="namespace.html" class="btn btn-neutral" title="Classes" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
-      
-    </div>
-  
 
   <hr/>
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2021, SimLab Quantum Materials.
+        &copy; Copyright 2023, SimLab Quantum Materials.
 
     </p>
   </div>
@@ -583,7 +555,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'v1.1.2',
+            VERSION:'v1.3.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

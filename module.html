@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Modules &mdash; ChASE v1.1.2 documentation</title>
+  <title>5. Modules &mdash; ChASE v1.3.0 documentation</title>
   
 
   
@@ -37,9 +37,9 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="ChASE v1.1.2 documentation" href="index.html"/>
-        <link rel="next" title="Classes" href="module/namespace.html"/>
-        <link rel="prev" title="ScaLAPACK interface" href="example/gev.html"/>
+    <link rel="top" title="ChASE v1.3.0 documentation" href="index.html"/>
+        <link rel="next" title="5.3.4.1. ChaseMpiDLABlaslapackSeq" href="module/chasempidlaseq.html"/>
+        <link rel="prev" title="4. Parameters and Configurations" href="parameters.html"/>
     <link href="_static/theme_overrides.css" rel="stylesheet" type="text/css">
 
 
@@ -73,7 +73,7 @@
             
             
               <div class="version">
-                v1.1.2
+                v1.3.0
               </div>
             
           
@@ -103,41 +103,46 @@
 </ul>
 <p class="caption"><span class="caption-text">USER DOCUMENTATION</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="quick-start.html">Quick Start</a></li>
-<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation and Setup on a Cluster</a></li>
-<li class="toctree-l1"><a class="reference internal" href="example.html">Examples</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Modules</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#overview">Overview</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#namespace-chase">Namespace: chase</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="module/namespace.html">Classes</a></li>
-<li class="toctree-l3"><a class="reference internal" href="module/namespace.html#functions">Functions</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#selected-classes">Selected Classes</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="module/config.html">Configuration</a></li>
-<li class="toctree-l4"><a class="reference internal" href="module/perf.html">Performance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quick-start.html">1. Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">2. Installation and Setup on a Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">3. How to use ChASE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parameters.html">4. Parameters and Configurations</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">5. Modules</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#overview">5.1. Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#basic-classes">5.2. Basic Classes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#chase-chase">5.2.1. chase::Chase</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#chase-algorithm">5.2.2. chase::Algorithm</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#chase-chaseconfig">5.2.3. chase::ChaseConfig</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#chase-chaseperfdata">5.2.4. chase::ChasePerfData</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#chase-performancedecoratorchase">5.2.5. chase::PerformanceDecoratorChase</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#override-of-virtual-functions">5.3. Override of Virtual Functions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#chase-mpi-chasempimatrices">5.3.1. chase::mpi::ChaseMpiMatrices</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#chase-mpi-chasempiproperties">5.3.2. chase::mpi::ChaseMpiProperties</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#chase-mpi-chasempi">5.3.3. chase::mpi::ChaseMpi</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#dlas-for-shared-memory-architectures">5.3.4. DLAs for shared-memory architectures</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="module/chasempidlaseq.html">5.3.4.1. ChaseMpiDLABlaslapackSeq</a></li>
+<li class="toctree-l4"><a class="reference internal" href="module/chasempidlacudaseq.html">5.3.4.2. ChaseMpiDLACudaSeq</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#dlas-for-distributed-memory-architectures">5.3.5. DLAs for distributed-memory architectures</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="module/chasempidlaImpl.html">5.3.5.1. ChaseMpiDLA</a></li>
+<li class="toctree-l4"><a class="reference internal" href="module/chasempidlablaslapack.html">5.3.5.2. ChaseMpiDLABlaslapack</a></li>
+<li class="toctree-l4"><a class="reference internal" href="module/chasempidlamultigpu.html">5.3.5.3. ChaseMpiDLAMultiGPU</a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#chase-mpi">ChASE-MPI</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="module/chasempimatrices.html">ChaseMpiMatrices</a></li>
-<li class="toctree-l3"><a class="reference internal" href="module/chasempiproperties.html">ChaseMpiProperties</a></li>
-<li class="toctree-l3"><a class="reference internal" href="module/chasempi.html">ChaseMpi</a></li>
-<li class="toctree-l3"><a class="reference internal" href="module/chasempidla.html">ChaseMpiDLA</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#chase-elemental">ChASE-Elemental</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="module/elemental.html">Constructor of ChaseElemental</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="parameters.html">Parameters and Configurations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="example.html">6. Examples</a></li>
 </ul>
 <p class="caption"><span class="caption-text">DEVELOPER DOCUMENTATION</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="algorithm.html">General algorithm</a></li>
-<li class="toctree-l1"><a class="reference internal" href="abstract.html">Virtual Abstract of Numerical Kernels</a></li>
-<li class="toctree-l1"><a class="reference internal" href="parallel.html">Parallel implementations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="algorithm.html">1. General algorithm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="abstract.html">2. Virtual Abstract of Numerical Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parallel.html">3. Parallel implementations</a></li>
 </ul>
 
             
@@ -168,7 +173,7 @@
   <ul class="wy-breadcrumbs">
     <li><a href="index.html">Docs</a> &raquo;</li>
       
-    <li>Modules</li>
+    <li><span class="section-number">5. </span>Modules</li>
     <li class="wy-breadcrumbs-aside">
       
         
@@ -183,118 +188,253 @@
            <div itemprop="articleBody">
             
   <div class="section" id="modules">
-<h1>Modules<a class="headerlink" href="#modules" title="Permalink to this headline">¶</a></h1>
+<h1><span class="section-number">5. </span>Modules<a class="headerlink" href="#modules" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="overview">
-<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<h2><span class="section-number">5.1. </span>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
 <p>The implementation of ChASE provides a stand-alone high-performance
 parallel library based on our original design of the Chebyshev
 accelerated subspace iteration algorithm. The ChASE library promises the portability
-to heterogeneous architectures and the easy intergration ito existing codes. This goal is
-achieved by seperating the implementation of the ChASE algorithm from the required numerical
+to heterogeneous architectures and the easy integration into existing codes. This goal is
+achieved by separating the implementation of the ChASE algorithm from the required numerical
 kernels via an interface based on pure C++ abstract classes. Classes derived from this interface
 handle data distribution and (parallel) execution of each kernel. The required numerical kernels
 are based on Basic Linear Algebra Subprograms (BLAS)-3 compatible kernels, such as a (parallel)
 matrix-matrix multiplication and QR factorization. This modern “stand-alone” strategy grants
 ChASE an unprecedented degree of flexibility that makes the integration of this library in
 most application codes quite simple. ChASE efficiently uses available machine resources.</p>
-<p>In this section, we introduce some important modules with the aim of
-giving the user an insight on how to set up their eigenproblems and
+<p>We give an UML class diagram as follows. This diagram uses the implementation of
+Chebyshev <cite>Filter</cite>, whose kernel is a series of Hermitian Matrix-Matrix Products (<em>HEMM</em>), as an example,
+to show the scheme of implementing of ChASE and porting to different architectures. This section will
+give the user an insight on how to set up their eigenproblems and
 solve them by ChASE on different computing architectures.</p>
+<a class="reference internal image-reference" href="_images/ChASE_UML.jpg"><img alt="_images/ChASE_UML.jpg" class="align-center" src="_images/ChASE_UML.jpg" style="width: 7668.54px; height: 9272.34px;" /></a>
+<p>As shown in the diagram above, all the implementation of ChASE take place within a C++ namespace <code class="docutils literal notranslate"><span class="pre">chase</span></code>.</p>
 </div>
-<div class="section" id="namespace-chase">
-<h2>Namespace: chase<a class="headerlink" href="#namespace-chase" title="Permalink to this headline">¶</a></h2>
-<p>An overview of the namespaces and related important classes defined in
-ChASE is given in this section.
-The basic namespace of ChASE is <code class="docutils literal notranslate"><span class="pre">chase</span></code>, which includes (1) the abstract
-classes of numerical kernels with virtual functions; (2) the numerical algorithm of ChASE implemented by these virtual
-functions; (3) the module that sets the configuration of the parameter of ChASE; (4) the module
-that sets the profiling and timing of the numerical kernels of ChASE.</p>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="module/namespace.html">Classes</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="module/namespace.html#chase-chase">chase::Chase</a></li>
-<li class="toctree-l2"><a class="reference internal" href="module/namespace.html#chase-algorithm">chase::Algorithm</a></li>
-<li class="toctree-l2"><a class="reference internal" href="module/namespace.html#chase-chaseconfig">chase::ChaseConfig</a></li>
-<li class="toctree-l2"><a class="reference internal" href="module/namespace.html#chase-chaseperfdata">chase::ChasePerfData</a></li>
-<li class="toctree-l2"><a class="reference internal" href="module/namespace.html#chase-performancedecoratorchase">chase::PerformanceDecoratorChase</a></li>
+<div class="section" id="basic-classes">
+<h2><span class="section-number">5.2. </span>Basic Classes<a class="headerlink" href="#basic-classes" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="chase-chase">
+<h3><span class="section-number">5.2.1. </span>chase::Chase<a class="headerlink" href="#chase-chase" title="Permalink to this headline">¶</a></h3>
+<p>The numerical kernels required by ChASE algorithm are defined in class <code class="docutils literal notranslate"><span class="pre">chase::Chase</span></code>. All the
+functions are defined as virtual functions, and further implementations are required targeting different
+computing architectures. It includes the
+following functionalities:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">HEMM</span></code>: Hermitian Matrix-Matrix Multiplication</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">QR</span></code>: QR factorization</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">RR</span></code>: Rayleigh-Ritz projection and small problem solver</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Resd</span></code>: compute the eigenpair residuals</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Lanczos</span></code>: estimate the bounds of user-interested spectrum by Lanczos eigensolver</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">LanczosDos</span></code>: estimate the spectral distribution of eigenvalues</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Swap</span></code>: swap the two matrices of vectors used in the Chebyschev filter</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Locking</span></code>: locking the converged eigenpairs</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Shift</span></code>: shift the diagonal of matrix <code class="docutils literal notranslate"><span class="pre">A</span></code> used in the 3-terms
+recurrence relation implemented in the Chebyschev filter</p></li>
+<li><p>etc ..</p></li>
 </ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="module/namespace.html#functions">Functions</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="module/namespace.html#chase-solve">chase::Solve</a></li>
+</div></blockquote>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For more details on the virtual kernels,
+please refer to <a class="reference internal" href="abstract.html#virtual-abstrac-numerical-kernels"><span class="std std-ref">Virtual Abstract of Numerical Kernels</span></a>.
+Different parallel implementations of these virtual kernels
+can also be found <a class="reference internal" href="parallel.html#parallel-implementations"><span class="std std-ref">Parallel implementations</span></a>.</p>
+</div>
+</div>
+<div class="section" id="chase-algorithm">
+<h3><span class="section-number">5.2.2. </span>chase::Algorithm<a class="headerlink" href="#chase-algorithm" title="Permalink to this headline">¶</a></h3>
+<p>The class <code class="docutils literal notranslate"><span class="pre">chase::Algorithm</span></code> has the awareness of the class <code class="docutils literal notranslate"><span class="pre">chase::Chase</span></code>, and
+it defines algorithmic implementation of ChASE using the
+defined virtual kernels in <code class="docutils literal notranslate"><span class="pre">chase::Chase</span></code>. It includes the
+functionalities:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Chebyshev filter</p></li>
+<li><p>calculation of degree of the filter</p></li>
+<li><p>Lanczos solver to estimate the bound of spectra</p></li>
+<li><p>locking the converged Ritz pairs</p></li>
+<li><p>etc ..</p></li>
 </ul>
-</li>
+</div></blockquote>
+<p>The function <code class="docutils literal notranslate"><span class="pre">chase::Solve</span></code> provides the implementation of ChASE algorithm by assembling the algorithms and numerical kernels implemented in <code class="docutils literal notranslate"><span class="pre">chase::Chase</span></code> and <code class="docutils literal notranslate"><span class="pre">chase::Algorithm</span></code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This class implements the ChASE algorithm by the virtual functions, it cannot run in practice
+until the further implementations of these virtual functions are provided.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The details of this class are only provided in the developer documentation,
+please refer to <a class="reference internal" href="algorithm.html#algorithmic-structure"><span class="std std-ref">General algorithm</span></a>.</p>
+</div>
+</div>
+<div class="section" id="chase-chaseconfig">
+<h3><span class="section-number">5.2.3. </span>chase::ChaseConfig<a class="headerlink" href="#chase-chaseconfig" title="Permalink to this headline">¶</a></h3>
+<p>The class <code class="docutils literal notranslate"><span class="pre">chase::Algorithm</span></code> is aware of the class <code class="docutils literal notranslate"><span class="pre">chase::ChaseConfig</span></code>, which defines the functions to set different parameters of ChASE.</p>
+<p>Besides setting up the standard parameters such as size of the
+matrix defining the eigenproblem, number of wanted
+eigenvalues, the public functions of this class
+initialize all internal parameters and allow the experienced
+user to set up the values of parameters of core functionalities
+(e.g. lanczos DoS). The aim is to influence the behavior of the
+library in special cases when the default values of the
+parameters return a sub-optimal efficiency in terms of
+performance and/or accuracy.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For more details of all available functions, please refer to
+<a class="reference internal" href="module/config.html#configuration-object"><span class="std std-ref">Configuration</span></a>.</p>
+</div>
+</div>
+<div class="section" id="chase-chaseperfdata">
+<h3><span class="section-number">5.2.4. </span>chase::ChasePerfData<a class="headerlink" href="#chase-chaseperfdata" title="Permalink to this headline">¶</a></h3>
+<p>This class defines the performance data for different algorithm and numerical
+kernels of ChASE, e.g., the floating operations of ChASE for given size of matrix
+and a required number of eigenpairs to be computed.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">chase::ChasePerfData</span></code> class collects and handles information relative to the
+execution of the eigensolver. It collects information about</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Number of subspace iterations</p></li>
+<li><p>Number of filtered vectors</p></li>
+<li><p>Timings of each main algorithmic procedure (Lanczos, Filter, etc.)</p></li>
+<li><p>Number of FLOPs executed</p></li>
 </ul>
+</div></blockquote>
+<p>The number of iterations and filtered vectors can be used to
+monitor the behavior of the algorithm as it attempts to converge
+all the desired eigenpairs. The timings and number of FLOPs are
+use to measure performance, especially parallel performance. The
+timings are stored in a vector of objects derived by the class
+template <cite>std::chrono::duration</cite>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For more details of all available functions, please refer to
+<a class="reference internal" href="module/perf.html#performance"><span class="std std-ref">Performance</span></a>.</p>
 </div>
-<div class="section" id="selected-classes">
-<h3>Selected Classes<a class="headerlink" href="#selected-classes" title="Permalink to this headline">¶</a></h3>
-<p>Several important classes, implemented in the namespace <code class="docutils literal notranslate"><span class="pre">chase</span></code>, are
-illustrated in this section.
-which faciliate the user for the parameter configuration and performance profiling.</p>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="module/config.html">Configuration</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module/perf.html">Performance</a></li>
-</ul>
+</div>
+<div class="section" id="chase-performancedecoratorchase">
+<h3><span class="section-number">5.2.5. </span>chase::PerformanceDecoratorChase<a class="headerlink" href="#chase-performancedecoratorchase" title="Permalink to this headline">¶</a></h3>
+<p>This is a class derived from the <code class="docutils literal notranslate"><span class="pre">chase::Chase</span></code> which plays the
+role of interface for the kernels used by the library. All
+members of the <code class="docutils literal notranslate"><span class="pre">chase::Chase</span></code> class are virtual functions. These
+functions are re-implemented in the <code class="docutils literal notranslate"><span class="pre">chase::PerformanceDecoratorChase</span></code>
+class. All derived members that provide an interface to
+computational kernels are re-implemented by <em>decorating</em> the
+original function with time pointers which are members of the
+<code class="docutils literal notranslate"><span class="pre">chase::ChasePerfData</span></code> class. All derived members that provide an
+interface to input or output data are called without any
+specific decoration. In addition to the virtual member of the
+<code class="docutils literal notranslate"><span class="pre">chase::Chase</span></code> class, the <code class="docutils literal notranslate"><span class="pre">chase::PerformanceDecoratorChase</span></code> class has also among
+its public members a reference to an object of type
+<code class="docutils literal notranslate"><span class="pre">chase::ChasePerfData</span></code>. When using Chase to solve an eigenvalue problem,
+the members of the PerformanceDecoratorChase are called instead
+of the virtual functions members of the <code class="docutils literal notranslate"><span class="pre">chase::Chase</span></code> class. In this
+way, all parameters and counters are automatically invoked and
+returned in the correct order.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For more details of all available functions, please refer to
+<a class="reference internal" href="module/perf.html#performance"><span class="std std-ref">Performance</span></a>.</p>
 </div>
 </div>
 </div>
-<div class="section" id="chase-mpi">
-<h2>ChASE-MPI<a class="headerlink" href="#chase-mpi" title="Permalink to this headline">¶</a></h2>
-<p>The namespace <code class="docutils literal notranslate"><span class="pre">chase::mpi</span></code>, which is defined inside the namespace <code class="docutils literal notranslate"><span class="pre">chase</span></code> and in parallel with namespace <code class="docutils literal notranslate"><span class="pre">chase::elemental</span></code>,
-provides the parallel implementation of ChASE based on <code class="docutils literal notranslate"><span class="pre">MPI</span></code> (and <code class="docutils literal notranslate"><span class="pre">CUDA</span></code>) by re-implementing
-the numerical kernels as virtual functions within the abstraction targeting homogenous and hetergenous architectures (multi-GPUs).
-.. For the user documentation, we provides only the constructors of the related classes without
-.. the details of implementation.</p>
-<p>1. The class <code class="docutils literal notranslate"><span class="pre">chase::mpi::ChaseMpiMatrices</span></code> defines the allocation of buffers for matrices and vectors in ChASE library
-for both non-MPI mode and MPI mode d.</p>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="module/chasempimatrices.html">ChaseMpiMatrices</a></li>
-</ul>
+<div class="section" id="override-of-virtual-functions">
+<h2><span class="section-number">5.3. </span>Override of Virtual Functions<a class="headerlink" href="#override-of-virtual-functions" title="Permalink to this headline">¶</a></h2>
+<p>The exact implementation of numerical kernels used by ChASE are within the namespace <code class="docutils literal notranslate"><span class="pre">chase::mpi</span></code>.
+This namespace is defined inside the namespace <code class="docutils literal notranslate"><span class="pre">chase</span></code>, which provides the parallel implementation of ChASE based on <code class="docutils literal notranslate"><span class="pre">MPI</span></code> (and <code class="docutils literal notranslate"><span class="pre">CUDA</span></code>) by re-implementing
+the numerical kernels as virtual functions within the abstraction targeting homogeneous and heterogeneous architectures (multi-GPUs).</p>
+<div class="section" id="chase-mpi-chasempimatrices">
+<h3><span class="section-number">5.3.1. </span>chase::mpi::ChaseMpiMatrices<a class="headerlink" href="#chase-mpi-chasempimatrices" title="Permalink to this headline">¶</a></h3>
+<p>The class <code class="docutils literal notranslate"><span class="pre">chase::mpi::ChaseMpiMatrices</span></code> defines the allocation of buffers for matrices and vectors in ChASE library for both non-MPI mode and MPI mode.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For more details of all available functions, please refer to
+<a class="reference internal" href="module/chasempimatrices.html#chasempimatrices"><span class="std std-ref">ChaseMpiMatrices</span></a>.</p>
 </div>
-<p>2. The class <code class="docutils literal notranslate"><span class="pre">chase::mpi::ChaseMpiProperties</span></code> defines the construction of MPI environment and data distribution scheme (both <strong>Block
-Distribution</strong> and <strong>Block-Cyclic Distribution</strong>) for ChASE.</p>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="module/chasempiproperties.html">ChaseMpiProperties</a></li>
-</ul>
 </div>
-<p>3. <code class="docutils literal notranslate"><span class="pre">chase::mpi::ChaseMpi</span></code> is a derived class of <code class="docutils literal notranslate"><span class="pre">chase::Chase</span></code>. This class gives an implementation of the virtual functions of <cite>chase::Chase</cite> class
-which defines the essential numerical kernels of ChASE algorithm. It is an templated class with two types required:
-an implementation of <code class="docutils literal notranslate"><span class="pre">chase::mpi::ChaseMpiDLAInterface</span></code> and the scalar type to be used in the applications. Different objects of <code class="docutils literal notranslate"><span class="pre">chase::mpi::ChaseMpi</span></code>
+<div class="section" id="chase-mpi-chasempiproperties">
+<h3><span class="section-number">5.3.2. </span>chase::mpi::ChaseMpiProperties<a class="headerlink" href="#chase-mpi-chasempiproperties" title="Permalink to this headline">¶</a></h3>
+<p>The class <code class="docutils literal notranslate"><span class="pre">chase::mpi::ChaseMpiProperties</span></code> defines the construction of MPI environment and data distribution scheme (both <strong>Block Distribution</strong> and <strong>Block-Cyclic Distribution</strong>) for ChASE.
+This class has the awareness of the class <code class="docutils literal notranslate"><span class="pre">chase::mpi::ChaseMpiMatrices</span></code>. It will allocate the
+required buffer based on the configuration MPI environment and data distribution by using different
+constructors of <code class="docutils literal notranslate"><span class="pre">chase::mpi::ChaseMpiMatrices</span></code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For more details of all available functions, please refer to
+<a class="reference internal" href="module/chasempiproperties.html#chasempiproperties"><span class="std std-ref">ChaseMpiProperties</span></a>.</p>
+</div>
+</div>
+<div class="section" id="chase-mpi-chasempi">
+<h3><span class="section-number">5.3.3. </span>chase::mpi::ChaseMpi<a class="headerlink" href="#chase-mpi-chasempi" title="Permalink to this headline">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">chase::mpi::ChaseMpi</span></code> is a derived class of <code class="docutils literal notranslate"><span class="pre">chase::Chase</span></code>. This class gives an implementation of the virtual functions of <code class="docutils literal notranslate"><span class="pre">chase::Chase</span></code> class
+which defines the essential numerical kernels of ChASE algorithm. It is a templated class with two types required:
+an implementation of <code class="docutils literal notranslate"><span class="pre">chase::mpi::ChaseMpiDLAInterface</span></code> and the scalar type to be used in the applications. The numerical kernels defined in <code class="docutils literal notranslate"><span class="pre">chase::Chase</span></code> has further decoupled into Dense Linear
+Algebra operations (DLAs). Different objects of <code class="docutils literal notranslate"><span class="pre">chase::mpi::ChaseMpi</span></code>
 can be created targeting different computing platforms by selecting various derived classes of <code class="docutils literal notranslate"><span class="pre">chase::mpi::ChaseMpiDLAInterface</span></code>.</p>
-<div class="toctree-wrapper compound">
+<p>To be more precise, it is derived from the <code class="docutils literal notranslate"><span class="pre">chase::Chase</span></code> class
+which plays the role of interface for the kernels used by the library:</p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="module/chasempi.html">ChaseMpi</a></li>
+<li><p>All members of the <code class="docutils literal notranslate"><span class="pre">chase::Chase</span></code> class are virtual functions. These functions are re-implemented in the <code class="docutils literal notranslate"><span class="pre">chase::mpi::ChaseMpi</span></code> class.</p></li>
+<li><p>All the members functions of <code class="docutils literal notranslate"><span class="pre">chase::mpi::ChaseMpi</span></code>, which are the implementation of the virtual functions in class <code class="docutils literal notranslate"><span class="pre">chase::Chase</span></code>, are implemented using the <em>DLA</em> routines provided by the class <code class="docutils literal notranslate"><span class="pre">chase::mpi::ChaseMpiDLAInterface</span></code>.</p></li>
+<li><p>The DLA functions in <code class="docutils literal notranslate"><span class="pre">chase::mpi::ChaseMpiDLAInterface</span></code> are also virtual functions, which are differently implemented targeting different computing architectures (sequential/parallel, CPU/GPU, shared-memory/distributed-memory, etc). In the class <code class="docutils literal notranslate"><span class="pre">chase::mpi::ChaseMpi</span></code>, the calling of DLA functions are indeed calling their implementations from different derived classes. Thus this ChaseMpi class is able to have customized implementation for various architectures.</p></li>
+<li><p>The class <code class="docutils literal notranslate"><span class="pre">chase::mpi::ChaseMpi</span></code> has the awareness of the class <code class="docutils literal notranslate"><span class="pre">chase::mpi::ChaseMpiMatrices</span></code> and <code class="docutils literal notranslate"><span class="pre">chase::mpi::ChaseMpiProperties</span></code>.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>For the shared-memory implementation, the constructor of <code class="docutils literal notranslate"><span class="pre">chase::mpi::ChaseMpi</span></code> takes an instance of <code class="docutils literal notranslate"><span class="pre">chase::mpi::ChaseMpiMatrices</span></code> as input</p></li>
+<li><p>For the distributed-memory implementation of the class <code class="docutils literal notranslate"><span class="pre">chase::mpi::ChaseMpi</span></code>, the setup of MPI environment and communication scheme, and the distribution of data (matrix, vectors) across MPI nodes are following the <code class="docutils literal notranslate"><span class="pre">chase::mpi::ChaseMpiProperties</span></code> class, the distribution of matrix can be either <strong>Block</strong> or <strong>Block-Cyclic</strong> scheme. The required buffers are allocated during the construction of an object of <code class="docutils literal notranslate"><span class="pre">chase::mpi::ChaseMpiProperties</span></code>.</p></li>
 </ul>
-</div>
-<p>4. <code class="docutils literal notranslate"><span class="pre">chase::mpi::ChaseMpiDLA</span></code>, in which <strong>DLA</strong> is short for <strong>Dense Linear Algebra</strong>, provides multi-implementations
-of dense matrix operations on different computing architectures that are required by ChASE-MPI, e.g., Hermitian Matrix-Matrix Multiplication (HEMM), QR factorization, etc. These ‘s NO single class named <code class="docutils literal notranslate"><span class="pre">ChaseMpiDLA</span></code> in ChASE, we provide an interface class <code class="docutils literal notranslate"><span class="pre">chase::mpi::ChaseMpiDLAInterface</span></code> with virtual functions for these <strong>DLA</strong> operations, and multiple classes with different implementations derived from this interface class.</p>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="module/chasempidla.html">ChaseMpiDLA</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="module/chasempidlainterface.html">ChaseMpiDLAInterface</a></li>
-<li class="toctree-l2"><a class="reference internal" href="module/chasempidlaseq.html">ChaseMpiDLABlaslapackSeq</a></li>
-<li class="toctree-l2"><a class="reference internal" href="module/chasempidlaseqInplace.html">ChaseMpiDLABlaslapackSeqInplace</a></li>
-<li class="toctree-l2"><a class="reference internal" href="module/chasempidlacudaseq.html">ChaseMpiDLACudaSeq</a></li>
-<li class="toctree-l2"><a class="reference internal" href="module/chasempidlaImpl.html">ChaseMpiDLA</a></li>
-<li class="toctree-l2"><a class="reference internal" href="module/chasempidlablaslapack.html">ChaseMpiDLABlaslapack</a></li>
-<li class="toctree-l2"><a class="reference internal" href="module/chasempidlamultigpu.html">ChaseMpiDLAMultiGPU</a></li>
-</ul>
+</div></blockquote>
 </li>
 </ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For more details of all available functions, please refer to
+<a class="reference internal" href="module/chasempi.html#chasempi"><span class="std std-ref">ChaseMpi</span></a>.</p>
 </div>
 </div>
-<div class="section" id="chase-elemental">
-<h2>ChASE-Elemental<a class="headerlink" href="#chase-elemental" title="Permalink to this headline">¶</a></h2>
-<p>The namespace <code class="docutils literal notranslate"><span class="pre">chase::elemental</span></code>, which is defined inside the namespace <code class="docutils literal notranslate"><span class="pre">chase</span></code>,
-provides the parallel implementation of ChASE based on the Elemental library by re-implementing
-the numerical kernels as virtual functions calls within the abstract class. For the benefit of the user, only the constructor of this ChaseElemental
-class is provided here.</p>
+<div class="section" id="dlas-for-shared-memory-architectures">
+<h3><span class="section-number">5.3.4. </span>DLAs for shared-memory architectures<a class="headerlink" href="#dlas-for-shared-memory-architectures" title="Permalink to this headline">¶</a></h3>
+<p>The DLAs for shared-memory architectures with or without GPU are implemented in the classes <code class="docutils literal notranslate"><span class="pre">chase::mpi::ChaseMpiDLACudaSeq</span></code> and <code class="docutils literal notranslate"><span class="pre">chase::mpi::ChaseMpiDLABlaslapackSeq</span></code>, respectively.</p>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="module/elemental.html">Constructor of ChaseElemental</a></li>
+<li class="toctree-l1"><a class="reference internal" href="module/chasempidlaseq.html">5.3.4.1. ChaseMpiDLABlaslapackSeq</a></li>
+<li class="toctree-l1"><a class="reference internal" href="module/chasempidlacudaseq.html">5.3.4.2. ChaseMpiDLACudaSeq</a></li>
 </ul>
+</div>
+</div>
+<div class="section" id="dlas-for-distributed-memory-architectures">
+<h3><span class="section-number">5.3.5. </span>DLAs for distributed-memory architectures<a class="headerlink" href="#dlas-for-distributed-memory-architectures" title="Permalink to this headline">¶</a></h3>
+<p>For the implementation of DLAs for distributed-memory architectures, they have been further decoupled
+into two layers:</p>
+<blockquote>
+<div><ul>
+<li><p>the first layer is for the collective communication between different computing nodes</p></li>
+<li><p>the second layer is for the implementation of local computation within each node</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>for homogeneous systems with CPUs-only, the local computation takes place on each individual MPI processor, with potential parallelization of multi-threading, e.g., with OpenMP.</p></li>
+<li><p>for the heterogeneous systems with GPUs, some local computation takes place on each individual MPI processor, and more intensive computation are offloaded to each GPU bound to relevant MPI processor.</p></li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+</div></blockquote>
+<p>The local computations with or without GPUs are implemented in the classes <code class="docutils literal notranslate"><span class="pre">chase::mpi::ChaseMpiDLABlaslapack</span></code> and <code class="docutils literal notranslate"><span class="pre">chase::mpi::ChaseMpiDLAMultiGPU</span></code>, respectively.</p>
+<p>The collective communication layer is shared between the distributed memory ChASE with or without GPU support, which is implemented in the class <code class="docutils literal notranslate"><span class="pre">chase::mpi::chaseMpiDLA</span></code>. This class takes an instance of <code class="docutils literal notranslate"><span class="pre">chase::mpi::ChaseMpiDLAInterface</span></code>, either <code class="docutils literal notranslate"><span class="pre">chase::mpi::ChaseMpiDLABlaslapack</span></code> or <code class="docutils literal notranslate"><span class="pre">chase::mpi::ChaseMpiDLAMultiGPU</span></code> as input. In this way, it is able to access to different implementations of local computation kernels.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>When an instance of <code class="docutils literal notranslate"><span class="pre">chase::mpi::ChaseMpi</span></code> is constructed for distributed-memory systems, one of its template parameter should be provided either <code class="docutils literal notranslate"><span class="pre">chase::mpi::ChaseMpiDLABlaslapack</span></code> and <code class="docutils literal notranslate"><span class="pre">chase::mpi::ChaseMpiDLAMultiGPU</span></code>. Then a instance of the class <code class="docutils literal notranslate"><span class="pre">chase::mpi::ChaseMpiDLA</span></code> will the
+created with the selected implementations of local computations kernels. In this way, ChASE is able to
+be ported to different computation architectures.</p>
+</div>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="module/chasempidlaImpl.html">5.3.5.1. ChaseMpiDLA</a></li>
+<li class="toctree-l1"><a class="reference internal" href="module/chasempidlablaslapack.html">5.3.5.2. ChaseMpiDLABlaslapack</a></li>
+<li class="toctree-l1"><a class="reference internal" href="module/chasempidlamultigpu.html">5.3.5.3. ChaseMpiDLAMultiGPU</a></li>
+</ul>
+</div>
 </div>
 </div>
 </div>
@@ -306,10 +446,10 @@ class is provided here.</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="module/namespace.html" class="btn btn-neutral float-right" title="Classes" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="module/chasempidlaseq.html" class="btn btn-neutral float-right" title="5.3.4.1. ChaseMpiDLABlaslapackSeq" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="example/gev.html" class="btn btn-neutral" title="ScaLAPACK interface" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="parameters.html" class="btn btn-neutral" title="4. Parameters and Configurations" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -318,7 +458,7 @@ class is provided here.</p>
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2021, SimLab Quantum Materials.
+        &copy; Copyright 2023, SimLab Quantum Materials.
 
     </p>
   </div>
@@ -340,7 +480,7 @@ class is provided here.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'v1.1.2',
+            VERSION:'v1.3.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

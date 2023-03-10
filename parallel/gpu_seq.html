@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Single GPU &mdash; ChASE v1.1.2 documentation</title>
+  <title>3.1.2.3. Single GPU &mdash; ChASE v1.3.0 documentation</title>
   
 
   
@@ -37,10 +37,10 @@
         <link rel="index" title="Index"
               href="../genindex.html"/>
         <link rel="search" title="Search" href="../search.html"/>
-    <link rel="top" title="ChASE v1.1.2 documentation" href="../index.html"/>
-        <link rel="up" title="Shared Memory Architecture" href="shm.html"/>
-        <link rel="next" title="Distributed-Memory Architecture" href="distm.html"/>
-        <link rel="prev" title="Single node Inplace mode" href="seqinplace.html"/>
+    <link rel="top" title="ChASE v1.3.0 documentation" href="../index.html"/>
+        <link rel="up" title="3.1.2. Shared Memory Architecture" href="shm.html"/>
+        <link rel="next" title="3.1.3. Distributed-Memory Architecture" href="distm.html"/>
+        <link rel="prev" title="3.1.2.2. Single node Inplace mode" href="seqinplace.html"/>
     <link href="../_static/theme_overrides.css" rel="stylesheet" type="text/css">
 
 
@@ -74,7 +74,7 @@
             
             
               <div class="version">
-                v1.1.2
+                v1.3.0
               </div>
             
           
@@ -104,27 +104,27 @@
 </ul>
 <p class="caption"><span class="caption-text">USER DOCUMENTATION</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../quick-start.html">Quick Start</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation and Setup on a Cluster</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../example.html">Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../module.html">Modules</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../parameters.html">Parameters and Configurations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quick-start.html">1. Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">2. Installation and Setup on a Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage.html">3. How to use ChASE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../parameters.html">4. Parameters and Configurations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../module.html">5. Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../example.html">6. Examples</a></li>
 </ul>
 <p class="caption"><span class="caption-text">DEVELOPER DOCUMENTATION</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="../algorithm.html">General algorithm</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../abstract.html">Virtual Abstract of Numerical Kernels</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="../parallel.html">Parallel implementations</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="elemental.html">ChASE-Elemental</a></li>
-<li class="toctree-l2 current"><a class="reference internal" href="mpi.html">ChASE-MPI</a><ul class="current">
-<li class="toctree-l3"><a class="reference internal" href="comm.html">Interface for ChASE-MPI</a></li>
-<li class="toctree-l3 current"><a class="reference internal" href="shm.html">Shared Memory Architecture</a><ul class="current">
-<li class="toctree-l4"><a class="reference internal" href="seq.html">Single node with Pure CPUs</a></li>
-<li class="toctree-l4"><a class="reference internal" href="seqinplace.html">Single node Inplace mode</a></li>
-<li class="toctree-l4 current"><a class="current reference internal" href="#">Single GPU</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../algorithm.html">1. General algorithm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../abstract.html">2. Virtual Abstract of Numerical Kernels</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../parallel.html">3. Parallel implementations</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="mpi.html">3.1. ChASE-MPI</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="comm.html">3.1.1. Interface for ChASE-MPI</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="shm.html">3.1.2. Shared Memory Architecture</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="seq.html">3.1.2.1. Single node with Pure CPUs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="seqinplace.html">3.1.2.2. Single node Inplace mode</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">3.1.2.3. Single GPU</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="distm.html">Distributed-Memory Architecture</a></li>
+<li class="toctree-l3"><a class="reference internal" href="distm.html">3.1.3. Distributed-Memory Architecture</a></li>
 </ul>
 </li>
 </ul>
@@ -159,13 +159,13 @@
   <ul class="wy-breadcrumbs">
     <li><a href="../index.html">Docs</a> &raquo;</li>
       
-        <li><a href="../parallel.html">Parallel implementations</a> &raquo;</li>
+        <li><a href="../parallel.html"><span class="section-number">3. </span>Parallel implementations</a> &raquo;</li>
       
-        <li><a href="mpi.html">ChASE-MPI</a> &raquo;</li>
+        <li><a href="mpi.html"><span class="section-number">3.1. </span>ChASE-MPI</a> &raquo;</li>
       
-        <li><a href="shm.html">Shared Memory Architecture</a> &raquo;</li>
+        <li><a href="shm.html"><span class="section-number">3.1.2. </span>Shared Memory Architecture</a> &raquo;</li>
       
-    <li>Single GPU</li>
+    <li><span class="section-number">3.1.2.3. </span>Single GPU</li>
     <li class="wy-breadcrumbs-aside">
       
         
@@ -180,7 +180,7 @@
            <div itemprop="articleBody">
             
   <div class="section" id="single-gpu">
-<span id="chase-single-gpu"></span><h1>Single GPU<a class="headerlink" href="#single-gpu" title="Permalink to this headline">¶</a></h1>
+<span id="chase-single-gpu"></span><h1><span class="section-number">3.1.2.3. </span>Single GPU<a class="headerlink" href="#single-gpu" title="Permalink to this headline">¶</a></h1>
 <dl class="cpp class">
 <dt id="_CPPv4I0EN5chase3mpi18ChaseMpiDLACudaSeqE">
 <span id="_CPPv3I0EN5chase3mpi18ChaseMpiDLACudaSeqE"></span><span id="_CPPv2I0EN5chase3mpi18ChaseMpiDLACudaSeqE"></span>template&lt;class <code class="sig-name descname">T</code>&gt;<br /><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_cuda_seq"></span><em class="property">class </em><code class="sig-prename descclassname"><a class="reference internal" href="../.unused_material/reference/chase.html#_CPPv45chaseP13MKL_Complex16iP13MKL_Complex16P13MKL_Complex16PdiKiKiPCiKdK15CHASE_MODE_TYPEK14CHASE_OPT_TYPE" title="chase">chase</a>::mpi<code class="sig-prename descclassname">::</code></code><code class="sig-name descname">ChaseMpiDLACudaSeq</code> : <em class="property">public</em> <a class="reference internal" href="../.unused_material/reference/chase.html#_CPPv45chaseP13MKL_Complex16iP13MKL_Complex16P13MKL_Complex16PdiKiKiPCiKdK15CHASE_MODE_TYPEK14CHASE_OPT_TYPE" title="chase">chase</a>::mpi::<a class="reference internal" href="../module/chasempidlainterface.html#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface">ChaseMpiDLAInterface</a>&lt;<a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiDLACudaSeqE" title="chase::mpi::ChaseMpiDLACudaSeq::T">T</a>&gt;<a class="headerlink" href="#_CPPv4I0EN5chase3mpi18ChaseMpiDLACudaSeqE" title="Permalink to this definition">¶</a><br /></dt>
@@ -190,197 +190,145 @@
 <dl class="cpp function">
 <dt id="_CPPv4N5chase3mpi18ChaseMpiDLACudaSeq14preApplicationEP1TNSt6size_tENSt6size_tE">
 <span id="_CPPv3N5chase3mpi18ChaseMpiDLACudaSeq14preApplicationEP1TNSt6size_tENSt6size_tE"></span><span id="_CPPv2N5chase3mpi18ChaseMpiDLACudaSeq14preApplicationEP1TNSt6size_tENSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLACudaSeq::preApplication__TP.std::s.std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_cuda_seq_1a6d090d505a123114836ec03cbfc9f656"></span>void <code class="sig-name descname">preApplication</code><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiDLACudaSeqE" title="chase::mpi::ChaseMpiDLACudaSeq::T">T</a> *<em>V</em>, std::size_t <em>locked</em>, std::size_t <em>block</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiDLACudaSeq14preApplicationEP1TNSt6size_tENSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p><ul class="simple">
-<li><p>For <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_d_l_a_cuda_seq"><span class="std std-ref">ChaseMpiDLACudaSeq</span></a>, the core of <code class="docutils literal notranslate"><span class="pre">preApplication</span></code> is implemented with <code class="docutils literal notranslate"><span class="pre">cudaMemcpyAsync,</span> <span class="pre">which</span> <span class="pre">copies</span></code>block<code class="docutils literal notranslate"><span class="pre">vectors</span> <span class="pre">from</span></code>V<code class="docutils literal notranslate"><span class="pre">on</span> <span class="pre">Host</span> <span class="pre">to</span></code>V1` on GPU device.</p></li>
-<li><p><strong>Parallelism is NOT SUPPORT</strong></p></li>
-<li><p>For the meaning of this function, please visit <a class="reference internal" href="../module/chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>. </p></li>
+<dd><p>This function is for some pre-application steps for the distributed HEMM in ChASE. These steps may vary in different implementations targetting different architectures. These steps can be backup of some buffers, copy data from CPU to GPU, etc. <dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">V1</span></code>: a pointer to a matrix </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">locked</span></code>: an integer indicating the number of locked (converged) eigenvectors </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">block</span></code>: an integer indicating the number of non-locked (non-converged) eigenvectors </p></li>
 </ul>
+</dd>
+</dl>
 </p>
 </dd></dl>
 
 <dl class="cpp function">
-<dt id="_CPPv4N5chase3mpi18ChaseMpiDLACudaSeq14preApplicationEP1TP1TNSt6size_tENSt6size_tE">
-<span id="_CPPv3N5chase3mpi18ChaseMpiDLACudaSeq14preApplicationEP1TP1TNSt6size_tENSt6size_tE"></span><span id="_CPPv2N5chase3mpi18ChaseMpiDLACudaSeq14preApplicationEP1TP1TNSt6size_tENSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLACudaSeq::preApplication__TP.TP.std::s.std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_cuda_seq_1a510938baf6eac1082e109c855212529b"></span>void <code class="sig-name descname">preApplication</code><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiDLACudaSeqE" title="chase::mpi::ChaseMpiDLACudaSeq::T">T</a> *<em>V1</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiDLACudaSeqE" title="chase::mpi::ChaseMpiDLACudaSeq::T">T</a> *<em>V2</em>, std::size_t <em>locked</em>, std::size_t <em>block</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiDLACudaSeq14preApplicationEP1TP1TNSt6size_tENSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p><ul class="simple">
-<li><p>For <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_d_l_a_cuda_seq"><span class="std std-ref">ChaseMpiDLACudaSeq</span></a>, the core of <code class="docutils literal notranslate"><span class="pre">preApplication</span></code> is implemented with <code class="docutils literal notranslate"><span class="pre">cudaMemcpyAsync,</span> <span class="pre">which</span> <span class="pre">copies</span></code>block<code class="docutils literal notranslate"><span class="pre">vectors</span> <span class="pre">from</span></code>V2<code class="docutils literal notranslate"><span class="pre">on</span> <span class="pre">Host</span> <span class="pre">to</span></code>V2_` on GPU device.</p></li>
-<li><p><strong>Parallelism is NOT SUPPORT</strong></p></li>
-<li><p>For the meaning of this function, please visit <a class="reference internal" href="../module/chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>. </p></li>
+<dt id="_CPPv4N5chase3mpi18ChaseMpiDLACudaSeq5applyE1T1TNSt6size_tENSt6size_tENSt6size_tE">
+<span id="_CPPv3N5chase3mpi18ChaseMpiDLACudaSeq5applyE1T1TNSt6size_tENSt6size_tENSt6size_tE"></span><span id="_CPPv2N5chase3mpi18ChaseMpiDLACudaSeq5applyE1T1TNSt6size_tENSt6size_tENSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLACudaSeq::apply__T.T.std::s.std::s.std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_cuda_seq_1a97f2dc15a7e80ec0dac9eb3804cd1306"></span>void <code class="sig-name descname">apply</code><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiDLACudaSeqE" title="chase::mpi::ChaseMpiDLACudaSeq::T">T</a> <em>alpha</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiDLACudaSeqE" title="chase::mpi::ChaseMpiDLACudaSeq::T">T</a> <em>beta</em>, std::size_t <em>offset</em>, std::size_t <em>block</em>, std::size_t <em>locked</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiDLACudaSeq5applyE1T1TNSt6size_tENSt6size_tENSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Performs <span class="math notranslate nohighlight">\(V_2&lt;- \alpha V1H + \beta V_2\)</span> and <code class="docutils literal notranslate"><span class="pre">swap</span></code> <span class="math notranslate nohighlight">\((V_1,V_2)\)</span>. </p>
+<p>The first <code class="docutils literal notranslate"><span class="pre">offset</span></code> vectors of V1 and V2 are not part of the <code class="docutils literal notranslate"><span class="pre">HEMM</span></code>. The number of vectors performed in <code class="docutils literal notranslate"><span class="pre">V1</span></code> and <code class="docutils literal notranslate"><span class="pre">V2</span></code> is <code class="docutils literal notranslate"><span class="pre">block</span></code> In <code class="docutils literal notranslate"><span class="pre">MATLAB</span></code> notation, this operation performs:</p>
+<p><code class="docutils literal notranslate"><span class="pre">V2[:,start:end]&lt;-alpha*V1[:,start:end]*H+beta*V2[:,start:end]</span></code>,</p>
+<p>in which <code class="docutils literal notranslate"><span class="pre">start=locked+offset</span></code> and <code class="docutils literal notranslate"><span class="pre">end=locked+offset+block</span></code>.</p>
+<p><dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">alpha</span></code>: a scalar times on <code class="docutils literal notranslate"><span class="pre">V1*H</span></code> in <code class="docutils literal notranslate"><span class="pre">HEMM</span></code> operation. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">beta</span></code>: a scalar times on <code class="docutils literal notranslate"><span class="pre">V2</span></code> in <code class="docutils literal notranslate"><span class="pre">HEMM</span></code> operation. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">offset</span></code>: an offset of number vectors which the <code class="docutils literal notranslate"><span class="pre">HEMM</span></code> starting from. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">block</span></code>: number of non-converged eigenvectors, it indicates the number of vectors in <code class="docutils literal notranslate"><span class="pre">V1</span></code> and <code class="docutils literal notranslate"><span class="pre">V2</span></code> to perform <code class="docutils literal notranslate"><span class="pre">HEMM</span></code>. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">locked</span></code>: number of converged eigenvectors. </p></li>
 </ul>
+</dd>
+</dl>
 </p>
 </dd></dl>
 
 <dl class="cpp function">
-<dt id="_CPPv4N5chase3mpi18ChaseMpiDLACudaSeq5applyE1T1TNSt6size_tENSt6size_tE">
-<span id="_CPPv3N5chase3mpi18ChaseMpiDLACudaSeq5applyE1T1TNSt6size_tENSt6size_tE"></span><span id="_CPPv2N5chase3mpi18ChaseMpiDLACudaSeq5applyE1T1TNSt6size_tENSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLACudaSeq::apply__T.T.std::s.std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_cuda_seq_1aa6d60b0bf22e8e5032b5dd2853e9c771"></span>void <code class="sig-name descname">apply</code><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiDLACudaSeqE" title="chase::mpi::ChaseMpiDLACudaSeq::T">T</a> <em>alpha</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiDLACudaSeqE" title="chase::mpi::ChaseMpiDLACudaSeq::T">T</a> <em>beta</em>, std::size_t <em>offset</em>, std::size_t <em>block</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiDLACudaSeq5applyE1T1TNSt6size_tENSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p><ul class="simple">
-<li><p>For <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_d_l_a_cuda_seq"><span class="std std-ref">ChaseMpiDLACudaSeq</span></a>, <code class="docutils literal notranslate"><span class="pre">apply</span></code> is implemented with <code class="docutils literal notranslate"><span class="pre">cublasXgemm</span></code> provided by <code class="docutils literal notranslate"><span class="pre">cuBLAS</span></code>.</p></li>
-<li><p><strong>Parallelism is SUPPORT within one GPU card</strong></p></li>
-<li><p>For the meaning of this function, please visit <a class="reference internal" href="../module/chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>. </p></li>
+<dt id="_CPPv4N5chase3mpi18ChaseMpiDLACudaSeq15postApplicationEP1TNSt6size_tENSt6size_tE">
+<span id="_CPPv3N5chase3mpi18ChaseMpiDLACudaSeq15postApplicationEP1TNSt6size_tENSt6size_tE"></span><span id="_CPPv2N5chase3mpi18ChaseMpiDLACudaSeq15postApplicationEP1TNSt6size_tENSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLACudaSeq::postApplication__TP.std::s.std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_cuda_seq_1ac1ec69354a02a18da410a0c83e6d4725"></span>bool <code class="sig-name descname">postApplication</code><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiDLACudaSeqE" title="chase::mpi::ChaseMpiDLACudaSeq::T">T</a> *<em>V</em>, std::size_t <em>block</em>, std::size_t <em>locked</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiDLACudaSeq15postApplicationEP1TNSt6size_tENSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Copy from buffer rectangular matrix <code class="docutils literal notranslate"><span class="pre">v1</span></code> to <code class="docutils literal notranslate"><span class="pre">v2</span></code>. For the implementation of distributed-memory ChASE, this operation performs a <code class="docutils literal notranslate"><span class="pre">copy</span></code> from a matrix distributed within each column communicator and redundant among different column communicators to a matrix redundantly distributed across all MPI procs. Then in the next iteration of ChASE-MPI, this operation takes places in the row communicator…</p>
+<p><dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">V</span></code>: the target buff </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">block</span></code>: number of columns to copy from <code class="docutils literal notranslate"><span class="pre">v1</span></code> to <code class="docutils literal notranslate"><span class="pre">v2</span></code> </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">locked</span></code>: number of converged eigenvectors. </p></li>
 </ul>
-</p>
-</dd></dl>
-
-<dl class="cpp function">
-<dt id="_CPPv4N5chase3mpi18ChaseMpiDLACudaSeq15postApplicationEP1TNSt6size_tE">
-<span id="_CPPv3N5chase3mpi18ChaseMpiDLACudaSeq15postApplicationEP1TNSt6size_tE"></span><span id="_CPPv2N5chase3mpi18ChaseMpiDLACudaSeq15postApplicationEP1TNSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLACudaSeq::postApplication__TP.std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_cuda_seq_1a62edd6c4f082a0c0c5a287f5f517a78e"></span>bool <code class="sig-name descname">postApplication</code><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiDLACudaSeqE" title="chase::mpi::ChaseMpiDLACudaSeq::T">T</a> *<em>V</em>, std::size_t <em>block</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiDLACudaSeq15postApplicationEP1TNSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p><ul class="simple">
-<li><p>For <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_d_l_a_cuda_seq"><span class="std std-ref">ChaseMpiDLACudaSeq</span></a>, the core of <code class="docutils literal notranslate"><span class="pre">postApplication</span></code> is implemented with <code class="docutils literal notranslate"><span class="pre">cudaMemcpyAsync,</span> <span class="pre">which</span> <span class="pre">copies</span></code>block<code class="docutils literal notranslate"><span class="pre">vectors</span> <span class="pre">from</span></code>V1_<code class="docutils literal notranslate"><span class="pre">on</span> <span class="pre">GPU</span> <span class="pre">device</span> <span class="pre">to</span></code>V` on Host.</p></li>
-<li><p><strong>Parallelism is NOT SUPPORT</strong></p></li>
-<li><p>For the meaning of this function, please visit <a class="reference internal" href="../module/chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>. </p></li>
-</ul>
+</dd>
+</dl>
 </p>
 </dd></dl>
 
 <dl class="cpp function">
 <dt id="_CPPv4N5chase3mpi18ChaseMpiDLACudaSeq11shiftMatrixE1Tb">
 <span id="_CPPv3N5chase3mpi18ChaseMpiDLACudaSeq11shiftMatrixE1Tb"></span><span id="_CPPv2N5chase3mpi18ChaseMpiDLACudaSeq11shiftMatrixE1Tb"></span><span id="chase::mpi::ChaseMpiDLACudaSeq::shiftMatrix__T.b"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_cuda_seq_1a0a943e2f12babe6c8697ee615315e871"></span>void <code class="sig-name descname">shiftMatrix</code><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiDLACudaSeqE" title="chase::mpi::ChaseMpiDLACudaSeq::T">T</a> <em>c</em>, bool <em>isunshift</em> = false<span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiDLACudaSeq11shiftMatrixE1Tb" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p><ul class="simple">
-<li><p>For <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_d_l_a_cuda_seq"><span class="std std-ref">ChaseMpiDLACudaSeq</span></a>, <code class="docutils literal notranslate"><span class="pre">shiftMatrix</span></code> is offloaded to GPU device and implemented by <code class="docutils literal notranslate"><span class="pre">CUDA</span></code>.</p></li>
-<li><p><strong>Parallelism is SUPPORT within one GPU card</strong></p></li>
-<li><p>For the meaning of this function, please visit <a class="reference internal" href="../module/chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>. </p></li>
+<dd><p>This function shifts the diagonal of global matrix with a constant value <code class="docutils literal notranslate"><span class="pre">c</span></code>. <dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">c</span></code>: shift value </p></li>
 </ul>
+</dd>
+</dl>
 </p>
 </dd></dl>
 
 <dl class="cpp function">
 <dt id="_CPPv4N5chase3mpi18ChaseMpiDLACudaSeq8applyVecEP1TP1T">
 <span id="_CPPv3N5chase3mpi18ChaseMpiDLACudaSeq8applyVecEP1TP1T"></span><span id="_CPPv2N5chase3mpi18ChaseMpiDLACudaSeq8applyVecEP1TP1T"></span><span id="chase::mpi::ChaseMpiDLACudaSeq::applyVec__TP.TP"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_cuda_seq_1a5c7c8e0979add4683aacbc674ed52dce"></span>void <code class="sig-name descname">applyVec</code><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiDLACudaSeqE" title="chase::mpi::ChaseMpiDLACudaSeq::T">T</a> *<em>B</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiDLACudaSeqE" title="chase::mpi::ChaseMpiDLACudaSeq::T">T</a> *<em>C</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiDLACudaSeq8applyVecEP1TP1T" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p><ul class="simple">
-<li><p>For <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_d_l_a_cuda_seq"><span class="std std-ref">ChaseMpiDLACudaSeq</span></a>, <code class="docutils literal notranslate"><span class="pre">applyVec</span></code> is implemented with <code class="docutils literal notranslate"><span class="pre">GEMM</span></code> provided by <code class="docutils literal notranslate"><span class="pre">BLAS</span></code>.</p></li>
-<li><p><strong>Parallelism is SUPPORT within node if multi-threading is actived</strong></p></li>
-<li><p>For the meaning of this function, please visit <a class="reference internal" href="../module/chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>. </p></li>
+<dd><p>Performs a Generalized Matrix Vector Multiplication (<code class="docutils literal notranslate"><span class="pre">GEMV</span></code>) with <code class="docutils literal notranslate"><span class="pre">alpha=1.0</span></code> and <code class="docutils literal notranslate"><span class="pre">beta=0.0</span></code>.</p>
+<p>The operation is <code class="docutils literal notranslate"><span class="pre">C=H*B</span></code>. <dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">B</span></code>: the vector to be multiplied on <code class="docutils literal notranslate"><span class="pre">H</span></code>. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">C</span></code>: the vector to store the product of <code class="docutils literal notranslate"><span class="pre">H</span></code> and <code class="docutils literal notranslate"><span class="pre">B</span></code>. </p></li>
 </ul>
-</p>
-</dd></dl>
-
-<dl class="cpp function">
-<dt id="_CPPv4N5chase3mpi18ChaseMpiDLACudaSeq5langeEcNSt6size_tENSt6size_tEP1TNSt6size_tE">
-<span id="_CPPv3N5chase3mpi18ChaseMpiDLACudaSeq5langeEcNSt6size_tENSt6size_tEP1TNSt6size_tE"></span><span id="_CPPv2N5chase3mpi18ChaseMpiDLACudaSeq5langeEcNSt6size_tENSt6size_tEP1TNSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLACudaSeq::lange__c.std::s.std::s.TP.std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_cuda_seq_1ab03697dc59330bd6dd2b1e3fbb3e899b"></span>Base&lt;<a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiDLACudaSeqE" title="chase::mpi::ChaseMpiDLACudaSeq::T">T</a>&gt; <code class="sig-name descname">lange</code><span class="sig-paren">(</span>char <em>norm</em>, std::size_t <em>m</em>, std::size_t <em>n</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiDLACudaSeqE" title="chase::mpi::ChaseMpiDLACudaSeq::T">T</a> *<em>A</em>, std::size_t <em>lda</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiDLACudaSeq5langeEcNSt6size_tENSt6size_tEP1TNSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p><ul class="simple">
-<li><p>For <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_d_l_a_cuda_seq"><span class="std std-ref">ChaseMpiDLACudaSeq</span></a>, <code class="docutils literal notranslate"><span class="pre">lange</span></code> is implemented using <code class="docutils literal notranslate"><span class="pre">LAPACK</span></code> routine <code class="docutils literal notranslate"><span class="pre">xLANGE</span></code>.</p></li>
-<li><p><strong>Parallelism is SUPPORT within node if multi-threading is actived</strong></p></li>
-<li><p>For the meaning of this function, please visit <a class="reference internal" href="../module/chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>. </p></li>
-</ul>
+</dd>
+</dl>
 </p>
 </dd></dl>
 
 <dl class="cpp function">
 <dt id="_CPPv4N5chase3mpi18ChaseMpiDLACudaSeq4axpyENSt6size_tEP1TP1TNSt6size_tEP1TNSt6size_tE">
 <span id="_CPPv3N5chase3mpi18ChaseMpiDLACudaSeq4axpyENSt6size_tEP1TP1TNSt6size_tEP1TNSt6size_tE"></span><span id="_CPPv2N5chase3mpi18ChaseMpiDLACudaSeq4axpyENSt6size_tEP1TP1TNSt6size_tEP1TNSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLACudaSeq::axpy__std::s.TP.TP.std::s.TP.std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_cuda_seq_1a2c86dcddbb82113bfc4af5c7d22190a4"></span>void <code class="sig-name descname">axpy</code><span class="sig-paren">(</span>std::size_t <em>N</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiDLACudaSeqE" title="chase::mpi::ChaseMpiDLACudaSeq::T">T</a> *<em>alpha</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiDLACudaSeqE" title="chase::mpi::ChaseMpiDLACudaSeq::T">T</a> *<em>x</em>, std::size_t <em>incx</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiDLACudaSeqE" title="chase::mpi::ChaseMpiDLACudaSeq::T">T</a> *<em>y</em>, std::size_t <em>incy</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiDLACudaSeq4axpyENSt6size_tEP1TP1TNSt6size_tEP1TNSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p><ul class="simple">
-<li><p>For <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_d_l_a_cuda_seq"><span class="std std-ref">ChaseMpiDLACudaSeq</span></a>, <code class="docutils literal notranslate"><span class="pre">axpy</span></code> is implemented using <code class="docutils literal notranslate"><span class="pre">BLAS</span></code> routine <code class="docutils literal notranslate"><span class="pre">xAXPY</span></code>.</p></li>
-<li><p><strong>Parallelism is SUPPORT within node if multi-threading is actived</strong></p></li>
-<li><p>For the meaning of this function, please visit <a class="reference internal" href="../module/chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>. </p></li>
+<dd><p>A <code class="docutils literal notranslate"><span class="pre">BLAS-like</span></code> function which performs a constant times a vector plus a vector.</p>
+<p><dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">[in]</span> <span class="pre">N</span></code>: number of elements in input vector(s). </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">[in]</span> <span class="pre">alpha</span></code>: a scalar times on <code class="docutils literal notranslate"><span class="pre">x</span></code> in <code class="docutils literal notranslate"><span class="pre">AXPY</span></code> operation. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">[in]</span> <span class="pre">x</span></code>: an array of type <code class="docutils literal notranslate"><span class="pre">T</span></code>, dimension <code class="docutils literal notranslate"><span class="pre">(</span> <span class="pre">1</span> <span class="pre">+</span> <span class="pre">(</span> <span class="pre">N</span> <span class="pre">-</span> <span class="pre">1</span> <span class="pre">)*abs(</span> <span class="pre">incx</span> <span class="pre">)</span></code>. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">[in]</span> <span class="pre">incx</span></code>: storage spacing between elements of <code class="docutils literal notranslate"><span class="pre">x</span></code>. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">[in/out]</span></code>: y: an array of type <code class="docutils literal notranslate"><span class="pre">T</span></code>, dimension <code class="docutils literal notranslate"><span class="pre">(</span> <span class="pre">1</span> <span class="pre">+</span> <span class="pre">(</span> <span class="pre">N</span> <span class="pre">-</span> <span class="pre">1</span> <span class="pre">)*abs(</span> <span class="pre">incy</span> <span class="pre">)</span></code>. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">[in]</span> <span class="pre">incy</span></code>: storage spacing between elements of <code class="docutils literal notranslate"><span class="pre">y</span></code>. </p></li>
 </ul>
+</dd>
+</dl>
 </p>
 </dd></dl>
 
 <dl class="cpp function">
 <dt id="_CPPv4N5chase3mpi18ChaseMpiDLACudaSeq4scalENSt6size_tEP1TP1TNSt6size_tE">
 <span id="_CPPv3N5chase3mpi18ChaseMpiDLACudaSeq4scalENSt6size_tEP1TP1TNSt6size_tE"></span><span id="_CPPv2N5chase3mpi18ChaseMpiDLACudaSeq4scalENSt6size_tEP1TP1TNSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLACudaSeq::scal__std::s.TP.TP.std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_cuda_seq_1aa2c2357f88b506f66041548a5671d7b9"></span>void <code class="sig-name descname">scal</code><span class="sig-paren">(</span>std::size_t <em>N</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiDLACudaSeqE" title="chase::mpi::ChaseMpiDLACudaSeq::T">T</a> *<em>a</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiDLACudaSeqE" title="chase::mpi::ChaseMpiDLACudaSeq::T">T</a> *<em>x</em>, std::size_t <em>incx</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiDLACudaSeq4scalENSt6size_tEP1TP1TNSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p><ul class="simple">
-<li><p>For <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_d_l_a_cuda_seq"><span class="std std-ref">ChaseMpiDLACudaSeq</span></a>, <code class="docutils literal notranslate"><span class="pre">scal</span></code> is implemented using <code class="docutils literal notranslate"><span class="pre">BLAS</span></code> routine <code class="docutils literal notranslate"><span class="pre">xSCAL</span></code>.</p></li>
-<li><p><strong>Parallelism is SUPPORT within node if multi-threading is actived</strong></p></li>
-<li><p>For the meaning of this function, please visit <a class="reference internal" href="../module/chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>. </p></li>
+<dd><p>A <code class="docutils literal notranslate"><span class="pre">BLAS-like</span></code> function which scales a vector by a constant. </p>
+<p><dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">[in]</span> <span class="pre">N</span></code>: number of elements in input vector(s). </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">[in]</span> <span class="pre">a</span></code>: a scalar of type <code class="docutils literal notranslate"><span class="pre">T</span></code> times on vector <code class="docutils literal notranslate"><span class="pre">x</span></code>. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">[in/out]</span></code>: x: an array of type <code class="docutils literal notranslate"><span class="pre">T</span></code>, dimension <code class="docutils literal notranslate"><span class="pre">(</span> <span class="pre">1</span> <span class="pre">+</span> <span class="pre">(</span> <span class="pre">N</span> <span class="pre">-</span> <span class="pre">1</span> <span class="pre">)*abs(</span> <span class="pre">incx</span> <span class="pre">)</span></code>. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">[in]</span> <span class="pre">incx</span></code>: storage spacing between elements of <code class="docutils literal notranslate"><span class="pre">x</span></code>. </p></li>
 </ul>
+</dd>
+</dl>
 </p>
 </dd></dl>
 
 <dl class="cpp function">
 <dt id="_CPPv4N5chase3mpi18ChaseMpiDLACudaSeq4nrm2ENSt6size_tEP1TNSt6size_tE">
 <span id="_CPPv3N5chase3mpi18ChaseMpiDLACudaSeq4nrm2ENSt6size_tEP1TNSt6size_tE"></span><span id="_CPPv2N5chase3mpi18ChaseMpiDLACudaSeq4nrm2ENSt6size_tEP1TNSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLACudaSeq::nrm2__std::s.TP.std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_cuda_seq_1aedcc80011e5cc3994dcdc27fd8e9d2a3"></span>Base&lt;<a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiDLACudaSeqE" title="chase::mpi::ChaseMpiDLACudaSeq::T">T</a>&gt; <code class="sig-name descname">nrm2</code><span class="sig-paren">(</span>std::size_t <em>n</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiDLACudaSeqE" title="chase::mpi::ChaseMpiDLACudaSeq::T">T</a> *<em>x</em>, std::size_t <em>incx</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiDLACudaSeq4nrm2ENSt6size_tEP1TNSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p><ul class="simple">
-<li><p>For <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_d_l_a_cuda_seq"><span class="std std-ref">ChaseMpiDLACudaSeq</span></a>, <code class="docutils literal notranslate"><span class="pre">nrm2</span></code> is implemented using <code class="docutils literal notranslate"><span class="pre">BLAS</span></code> routine <code class="docutils literal notranslate"><span class="pre">xNRM2</span></code>.</p></li>
-<li><p><strong>Parallelism is SUPPORT within node if multi-threading is actived</strong></p></li>
-<li><p>For the meaning of this function, please visit <a class="reference internal" href="../module/chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>. </p></li>
+<dd><p>A <code class="docutils literal notranslate"><span class="pre">BLAS-like</span></code> function which returns the euclidean norm of a vector. </p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p>the euclidean norm of vector <code class="docutils literal notranslate"><span class="pre">x</span></code>. </p>
+</dd>
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">[in]</span> <span class="pre">N</span></code>: number of elements in input vector(s). </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">[in]</span> <span class="pre">x</span></code>: an array of type <code class="docutils literal notranslate"><span class="pre">T</span></code>, dimension <code class="docutils literal notranslate"><span class="pre">(</span> <span class="pre">1</span> <span class="pre">+</span> <span class="pre">(</span> <span class="pre">N</span> <span class="pre">-</span> <span class="pre">1</span> <span class="pre">)*abs(</span> <span class="pre">incx</span> <span class="pre">)</span></code>. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">[in]</span> <span class="pre">incx</span></code>: storage spacing between elements of <code class="docutils literal notranslate"><span class="pre">x</span></code>. </p></li>
 </ul>
+</dd>
+</dl>
 </p>
 </dd></dl>
 
 <dl class="cpp function">
 <dt id="_CPPv4N5chase3mpi18ChaseMpiDLACudaSeq3dotENSt6size_tEP1TNSt6size_tEP1TNSt6size_tE">
 <span id="_CPPv3N5chase3mpi18ChaseMpiDLACudaSeq3dotENSt6size_tEP1TNSt6size_tEP1TNSt6size_tE"></span><span id="_CPPv2N5chase3mpi18ChaseMpiDLACudaSeq3dotENSt6size_tEP1TNSt6size_tEP1TNSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLACudaSeq::dot__std::s.TP.std::s.TP.std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_cuda_seq_1ab19cbbcf8765fa12cb078172d4762c68"></span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiDLACudaSeqE" title="chase::mpi::ChaseMpiDLACudaSeq::T">T</a> <code class="sig-name descname">dot</code><span class="sig-paren">(</span>std::size_t <em>n</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiDLACudaSeqE" title="chase::mpi::ChaseMpiDLACudaSeq::T">T</a> *<em>x</em>, std::size_t <em>incx</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiDLACudaSeqE" title="chase::mpi::ChaseMpiDLACudaSeq::T">T</a> *<em>y</em>, std::size_t <em>incy</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiDLACudaSeq3dotENSt6size_tEP1TNSt6size_tEP1TNSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p><ul class="simple">
-<li><p>For <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_d_l_a_cuda_seq"><span class="std std-ref">ChaseMpiDLACudaSeq</span></a>, <code class="docutils literal notranslate"><span class="pre">dot</span></code> is implemented using <code class="docutils literal notranslate"><span class="pre">BLAS</span></code> routine <code class="docutils literal notranslate"><span class="pre">xDOT</span></code>.</p></li>
-<li><p><strong>Parallelism is SUPPORT within node if multi-threading is actived</strong></p></li>
-<li><p>For the meaning of this function, please visit <a class="reference internal" href="../module/chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>. </p></li>
+<dd><p>A <code class="docutils literal notranslate"><span class="pre">BLAS-like</span></code> function which forms the dot product of two vectors. </p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p>the dot product of vectors <code class="docutils literal notranslate"><span class="pre">x</span></code> and <code class="docutils literal notranslate"><span class="pre">y</span></code>. </p>
+</dd>
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">[in]</span> <span class="pre">N</span></code>: number of elements in input vector(s). </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">[in]</span> <span class="pre">x</span></code>: an array of type <code class="docutils literal notranslate"><span class="pre">T</span></code>, dimension <code class="docutils literal notranslate"><span class="pre">(</span> <span class="pre">1</span> <span class="pre">+</span> <span class="pre">(</span> <span class="pre">N</span> <span class="pre">-</span> <span class="pre">1</span> <span class="pre">)*abs(</span> <span class="pre">incx</span> <span class="pre">)</span></code>. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">[in]</span> <span class="pre">incx</span></code>: storage spacing between elements of <code class="docutils literal notranslate"><span class="pre">x</span></code>. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">[in]</span> <span class="pre">y</span></code>: an array of type <code class="docutils literal notranslate"><span class="pre">T</span></code>, dimension <code class="docutils literal notranslate"><span class="pre">(</span> <span class="pre">1</span> <span class="pre">+</span> <span class="pre">(</span> <span class="pre">N</span> <span class="pre">-</span> <span class="pre">1</span> <span class="pre">)*abs(</span> <span class="pre">incy</span> <span class="pre">)</span></code>. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">[in]</span> <span class="pre">incy</span></code>: storage spacing between elements of <code class="docutils literal notranslate"><span class="pre">y</span></code>. </p></li>
 </ul>
-</p>
-</dd></dl>
-
-<dl class="cpp function">
-<dt id="_CPPv4N5chase3mpi18ChaseMpiDLACudaSeq10gemm_smallE12CBLAS_LAYOUT15CBLAS_TRANSPOSE15CBLAS_TRANSPOSENSt6size_tENSt6size_tENSt6size_tEP1TP1TNSt6size_tEP1TNSt6size_tEP1TP1TNSt6size_tE">
-<span id="_CPPv3N5chase3mpi18ChaseMpiDLACudaSeq10gemm_smallE12CBLAS_LAYOUT15CBLAS_TRANSPOSE15CBLAS_TRANSPOSENSt6size_tENSt6size_tENSt6size_tEP1TP1TNSt6size_tEP1TNSt6size_tEP1TP1TNSt6size_tE"></span><span id="_CPPv2N5chase3mpi18ChaseMpiDLACudaSeq10gemm_smallE12CBLAS_LAYOUT15CBLAS_TRANSPOSE15CBLAS_TRANSPOSENSt6size_tENSt6size_tENSt6size_tEP1TP1TNSt6size_tEP1TNSt6size_tEP1TP1TNSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLACudaSeq::gemm_small__CBLAS_LAYOUT.CBLAS_TRANSPOSE.CBLAS_TRANSPOSE.std::s.std::s.std::s.TP.TP.std::s.TP.std::s.TP.TP.std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_cuda_seq_1aa518c1b0b0f1c51a17c12bb24b56e96e"></span>void <code class="sig-name descname">gemm_small</code><span class="sig-paren">(</span>CBLAS_LAYOUT <em>Layout</em>, CBLAS_TRANSPOSE <em>transa</em>, CBLAS_TRANSPOSE <em>transb</em>, std::size_t <em>m</em>, std::size_t <em>n</em>, std::size_t <em>k</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiDLACudaSeqE" title="chase::mpi::ChaseMpiDLACudaSeq::T">T</a> *<em>alpha</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiDLACudaSeqE" title="chase::mpi::ChaseMpiDLACudaSeq::T">T</a> *<em>a</em>, std::size_t <em>lda</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiDLACudaSeqE" title="chase::mpi::ChaseMpiDLACudaSeq::T">T</a> *<em>b</em>, std::size_t <em>ldb</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiDLACudaSeqE" title="chase::mpi::ChaseMpiDLACudaSeq::T">T</a> *<em>beta</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiDLACudaSeqE" title="chase::mpi::ChaseMpiDLACudaSeq::T">T</a> *<em>c</em>, std::size_t <em>ldc</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiDLACudaSeq10gemm_smallE12CBLAS_LAYOUT15CBLAS_TRANSPOSE15CBLAS_TRANSPOSENSt6size_tENSt6size_tENSt6size_tEP1TP1TNSt6size_tEP1TNSt6size_tEP1TP1TNSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p><ul class="simple">
-<li><p>For <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_d_l_a_cuda_seq"><span class="std std-ref">ChaseMpiDLACudaSeq</span></a>, <code class="docutils literal notranslate"><span class="pre">gemm_small</span></code> is implemented using <code class="docutils literal notranslate"><span class="pre">BLAS</span></code> routine <code class="docutils literal notranslate"><span class="pre">xGEMM</span></code>.</p></li>
-<li><p><strong>Parallelism is SUPPORT within node if multi-threading is actived</strong></p></li>
-<li><p>For the meaning of this function, please visit <a class="reference internal" href="../module/chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>. </p></li>
-</ul>
-</p>
-</dd></dl>
-
-<dl class="cpp function">
-<dt id="_CPPv4N5chase3mpi18ChaseMpiDLACudaSeq10gemm_largeE12CBLAS_LAYOUT15CBLAS_TRANSPOSE15CBLAS_TRANSPOSENSt6size_tENSt6size_tENSt6size_tEP1TP1TNSt6size_tEP1TNSt6size_tEP1TP1TNSt6size_tE">
-<span id="_CPPv3N5chase3mpi18ChaseMpiDLACudaSeq10gemm_largeE12CBLAS_LAYOUT15CBLAS_TRANSPOSE15CBLAS_TRANSPOSENSt6size_tENSt6size_tENSt6size_tEP1TP1TNSt6size_tEP1TNSt6size_tEP1TP1TNSt6size_tE"></span><span id="_CPPv2N5chase3mpi18ChaseMpiDLACudaSeq10gemm_largeE12CBLAS_LAYOUT15CBLAS_TRANSPOSE15CBLAS_TRANSPOSENSt6size_tENSt6size_tENSt6size_tEP1TP1TNSt6size_tEP1TNSt6size_tEP1TP1TNSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLACudaSeq::gemm_large__CBLAS_LAYOUT.CBLAS_TRANSPOSE.CBLAS_TRANSPOSE.std::s.std::s.std::s.TP.TP.std::s.TP.std::s.TP.TP.std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_cuda_seq_1aa00c072c3be61f4c95fa411e52f391e2"></span>void <code class="sig-name descname">gemm_large</code><span class="sig-paren">(</span>CBLAS_LAYOUT <em>Layout</em>, CBLAS_TRANSPOSE <em>transa</em>, CBLAS_TRANSPOSE <em>transb</em>, std::size_t <em>m</em>, std::size_t <em>n</em>, std::size_t <em>k</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiDLACudaSeqE" title="chase::mpi::ChaseMpiDLACudaSeq::T">T</a> *<em>alpha</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiDLACudaSeqE" title="chase::mpi::ChaseMpiDLACudaSeq::T">T</a> *<em>a</em>, std::size_t <em>lda</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiDLACudaSeqE" title="chase::mpi::ChaseMpiDLACudaSeq::T">T</a> *<em>b</em>, std::size_t <em>ldb</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiDLACudaSeqE" title="chase::mpi::ChaseMpiDLACudaSeq::T">T</a> *<em>beta</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiDLACudaSeqE" title="chase::mpi::ChaseMpiDLACudaSeq::T">T</a> *<em>c</em>, std::size_t <em>ldc</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiDLACudaSeq10gemm_largeE12CBLAS_LAYOUT15CBLAS_TRANSPOSE15CBLAS_TRANSPOSENSt6size_tENSt6size_tENSt6size_tEP1TP1TNSt6size_tEP1TNSt6size_tEP1TP1TNSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p><ul class="simple">
-<li><p>For <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_d_l_a_cuda_seq"><span class="std std-ref">ChaseMpiDLACudaSeq</span></a>, <code class="docutils literal notranslate"><span class="pre">gemm_small</span></code> is implemented using <code class="docutils literal notranslate"><span class="pre">BLAS</span></code> routine <code class="docutils literal notranslate"><span class="pre">xGEMM</span></code>.</p></li>
-<li><p><strong>Parallelism is SUPPORT within node if multi-threading is actived</strong></p></li>
-<li><p>For the meaning of this function, please visit <a class="reference internal" href="../module/chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>. </p></li>
-</ul>
-</p>
-</dd></dl>
-
-<dl class="cpp function">
-<dt id="_CPPv4N5chase3mpi18ChaseMpiDLACudaSeq5stemrEiccNSt6size_tEPdPdddNSt6size_tENSt6size_tEPiPdPdNSt6size_tENSt6size_tEPiP14lapack_logical">
-<span id="_CPPv3N5chase3mpi18ChaseMpiDLACudaSeq5stemrEiccNSt6size_tEPdPdddNSt6size_tENSt6size_tEPiPdPdNSt6size_tENSt6size_tEPiP14lapack_logical"></span><span id="_CPPv2N5chase3mpi18ChaseMpiDLACudaSeq5stemrEiccNSt6size_tEPdPdddNSt6size_tENSt6size_tEPiPdPdNSt6size_tENSt6size_tEPiP14lapack_logical"></span><span id="chase::mpi::ChaseMpiDLACudaSeq::stemr__i.c.c.std::s.doubleP.doubleP.double.double.std::s.std::s.iP.doubleP.doubleP.std::s.std::s.iP.lapack_logicalP"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_cuda_seq_1ace23312f29e155b213bda8bc39ffc045"></span>std::size_t <code class="sig-name descname">stemr</code><span class="sig-paren">(</span>int <em>matrix_layout</em>, char <em>jobz</em>, char <em>range</em>, std::size_t <em>n</em>, double *<em>d</em>, double *<em>e</em>, double <em>vl</em>, double <em>vu</em>, std::size_t <em>il</em>, std::size_t <em>iu</em>, int *<em>m</em>, double *<em>w</em>, double *<em>z</em>, std::size_t <em>ldz</em>, std::size_t <em>nzc</em>, int *<em>isuppz</em>, lapack_logical *<em>tryrac</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiDLACudaSeq5stemrEiccNSt6size_tEPdPdddNSt6size_tENSt6size_tEPiPdPdNSt6size_tENSt6size_tEPiP14lapack_logical" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p><ul class="simple">
-<li><p>For <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_d_l_a_cuda_seq"><span class="std std-ref">ChaseMpiDLACudaSeq</span></a>, <code class="docutils literal notranslate"><span class="pre">stemr</span></code> with scalar being real and double precision, is implemented using <code class="docutils literal notranslate"><span class="pre">LAPACK</span></code> routine <code class="docutils literal notranslate"><span class="pre">DSTEMR</span></code>.<ul>
-<li><p><strong>Parallelism is SUPPORT within node if multi-threading is actived</strong></p></li>
-</ul>
-</p></li>
-<li><p>For the meaning of this function, please visit <a class="reference internal" href="../module/chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>. </p></li>
-</ul>
-</p>
-</dd></dl>
-
-<dl class="cpp function">
-<dt id="_CPPv4N5chase3mpi18ChaseMpiDLACudaSeq5stemrEiccNSt6size_tEPfPfffNSt6size_tENSt6size_tEPiPfPfNSt6size_tENSt6size_tEPiP14lapack_logical">
-<span id="_CPPv3N5chase3mpi18ChaseMpiDLACudaSeq5stemrEiccNSt6size_tEPfPfffNSt6size_tENSt6size_tEPiPfPfNSt6size_tENSt6size_tEPiP14lapack_logical"></span><span id="_CPPv2N5chase3mpi18ChaseMpiDLACudaSeq5stemrEiccNSt6size_tEPfPfffNSt6size_tENSt6size_tEPiPfPfNSt6size_tENSt6size_tEPiP14lapack_logical"></span><span id="chase::mpi::ChaseMpiDLACudaSeq::stemr__i.c.c.std::s.floatP.floatP.float.float.std::s.std::s.iP.floatP.floatP.std::s.std::s.iP.lapack_logicalP"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_cuda_seq_1af00d7a36f9a929e3ac5871b54618f694"></span>std::size_t <code class="sig-name descname">stemr</code><span class="sig-paren">(</span>int <em>matrix_layout</em>, char <em>jobz</em>, char <em>range</em>, std::size_t <em>n</em>, float *<em>d</em>, float *<em>e</em>, float <em>vl</em>, float <em>vu</em>, std::size_t <em>il</em>, std::size_t <em>iu</em>, int *<em>m</em>, float *<em>w</em>, float *<em>z</em>, std::size_t <em>ldz</em>, std::size_t <em>nzc</em>, int *<em>isuppz</em>, lapack_logical *<em>tryrac</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiDLACudaSeq5stemrEiccNSt6size_tEPfPfffNSt6size_tENSt6size_tEPiPfPfNSt6size_tENSt6size_tEPiP14lapack_logical" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p><ul class="simple">
-<li><p>For <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_d_l_a_cuda_seq"><span class="std std-ref">ChaseMpiDLACudaSeq</span></a>, <code class="docutils literal notranslate"><span class="pre">stemr</span></code> with scalar being real and single precision, is implemented using <code class="docutils literal notranslate"><span class="pre">LAPACK</span></code> routine <code class="docutils literal notranslate"><span class="pre">SSTEMR</span></code>.<ul>
-<li><p><strong>Parallelism is SUPPORT within node if multi-threading is actived</strong></p></li>
-</ul>
-</p></li>
-<li><p>For the meaning of this function, please visit <a class="reference internal" href="../module/chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>. </p></li>
-</ul>
-</p>
-</dd></dl>
-
-<dl class="cpp function">
-<dt id="_CPPv4N5chase3mpi18ChaseMpiDLACudaSeq5gegqrENSt6size_tENSt6size_tEP1TNSt6size_tE">
-<span id="_CPPv3N5chase3mpi18ChaseMpiDLACudaSeq5gegqrENSt6size_tENSt6size_tEP1TNSt6size_tE"></span><span id="_CPPv2N5chase3mpi18ChaseMpiDLACudaSeq5gegqrENSt6size_tENSt6size_tEP1TNSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLACudaSeq::gegqr__std::s.std::s.TP.std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_cuda_seq_1ad95b294cf4ccdfed2c7d59caf505a7a6"></span>void <code class="sig-name descname">gegqr</code><span class="sig-paren">(</span>std::size_t <em>N</em>, std::size_t <em>nevex</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiDLACudaSeqE" title="chase::mpi::ChaseMpiDLACudaSeq::T">T</a> *<em>approxV</em>, std::size_t <em>LDA</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiDLACudaSeq5gegqrENSt6size_tENSt6size_tEP1TNSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p><ul class="simple">
-<li><p>For <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_d_l_a_cuda_seq"><span class="std std-ref">ChaseMpiDLACudaSeq</span></a>, <code class="docutils literal notranslate"><span class="pre">gegqr</span></code> is implemented using <code class="docutils literal notranslate"><span class="pre">cuSOLVER</span></code> routines <code class="docutils literal notranslate"><span class="pre">cusolverDnXgeqrf</span></code> and <code class="docutils literal notranslate"><span class="pre">cusolverDnXumgqr</span></code>.</p></li>
-<li><p><strong>Parallelism is SUPPORT within one GPU card</strong></p></li>
-<li><p>For the meaning of this function, please visit <a class="reference internal" href="../module/chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>. </p></li>
-</ul>
-</p>
-</dd></dl>
-
-<dl class="cpp function">
-<dt id="_CPPv4N5chase3mpi18ChaseMpiDLACudaSeq9RR_kernelENSt6size_tENSt6size_tEP1TNSt6size_tEP1T1T1TP4BaseI1TE">
-<span id="_CPPv3N5chase3mpi18ChaseMpiDLACudaSeq9RR_kernelENSt6size_tENSt6size_tEP1TNSt6size_tEP1T1T1TP4BaseI1TE"></span><span id="_CPPv2N5chase3mpi18ChaseMpiDLACudaSeq9RR_kernelENSt6size_tENSt6size_tEP1TNSt6size_tEP1T1T1TP4BaseI1TE"></span><span id="chase::mpi::ChaseMpiDLACudaSeq::RR_kernel__std::s.std::s.TP.std::s.TP.T.T.Base:T:P"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_cuda_seq_1af434e23e35f3846860d34f5a2dd8dbec"></span>void <code class="sig-name descname">RR_kernel</code><span class="sig-paren">(</span>std::size_t <em>N</em>, std::size_t <em>block</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiDLACudaSeqE" title="chase::mpi::ChaseMpiDLACudaSeq::T">T</a> *<em>approxV</em>, std::size_t <em>locked</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiDLACudaSeqE" title="chase::mpi::ChaseMpiDLACudaSeq::T">T</a> *<em>workspace</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiDLACudaSeqE" title="chase::mpi::ChaseMpiDLACudaSeq::T">T</a> <em>One</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiDLACudaSeqE" title="chase::mpi::ChaseMpiDLACudaSeq::T">T</a> <em>Zero</em>, Base&lt;<a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiDLACudaSeqE" title="chase::mpi::ChaseMpiDLACudaSeq::T">T</a>&gt; *<em>ritzv</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiDLACudaSeq9RR_kernelENSt6size_tENSt6size_tEP1TNSt6size_tEP1T1T1TP4BaseI1TE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p><ul class="simple">
-<li><p>For <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_d_l_a_cuda_seq"><span class="std std-ref">ChaseMpiDLACudaSeq</span></a>, <code class="docutils literal notranslate"><span class="pre">RR_kernel</span></code> is implemented by <code class="docutils literal notranslate"><span class="pre">cublasXgemm</span></code> routine provided by <code class="docutils literal notranslate"><span class="pre">cuBLAS</span></code> and <code class="docutils literal notranslate"><span class="pre">(SY)HEEVD</span></code> routine provided by <code class="docutils literal notranslate"><span class="pre">LAPACK</span></code>.<ul>
-<li><p>The 1st operation <code class="docutils literal notranslate"><span class="pre">A</span> <span class="pre">&lt;-</span> <span class="pre">W^T</span> <span class="pre">*</span> <span class="pre">V</span></code> is implemented by <code class="docutils literal notranslate"><span class="pre">cublasXgemm</span></code> from <code class="docutils literal notranslate"><span class="pre">cuBLAS</span></code>.</p></li>
-<li><p>The 2nd operation which computes the eigenpairs of <code class="docutils literal notranslate"><span class="pre">A</span></code>, is implemented by <code class="docutils literal notranslate"><span class="pre">(SY)HEEVD</span></code> from <code class="docutils literal notranslate"><span class="pre">LAPACK</span></code>.</p></li>
-<li><p>The 3rd operation which computes <code class="docutils literal notranslate"><span class="pre">W&lt;-V*A</span></code> is implemented by <code class="docutils literal notranslate"><span class="pre">cublasXgemm</span></code> from <code class="docutils literal notranslate"><span class="pre">cuBLAS</span></code>.</p></li>
-</ul>
-</p></li>
-<li><p><strong>for (SY)HHEVD, parallelism is SUPPORT within node if multi-threading is actived</strong></p></li>
-<li><p><strong>for cublasXgemm, parallelism is SUPPORT within one GPU card</strong></p></li>
-<li><p>For the meaning of this function, please visit <a class="reference internal" href="../module/chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>. </p></li>
-</ul>
+</dd>
+</dl>
 </p>
 </dd></dl>
 
@@ -396,10 +344,10 @@
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="distm.html" class="btn btn-neutral float-right" title="Distributed-Memory Architecture" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="distm.html" class="btn btn-neutral float-right" title="3.1.3. Distributed-Memory Architecture" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="seqinplace.html" class="btn btn-neutral" title="Single node Inplace mode" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="seqinplace.html" class="btn btn-neutral" title="3.1.2.2. Single node Inplace mode" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -408,7 +356,7 @@
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2021, SimLab Quantum Materials.
+        &copy; Copyright 2023, SimLab Quantum Materials.
 
     </p>
   </div>
@@ -430,7 +378,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'v1.1.2',
+            VERSION:'v1.3.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

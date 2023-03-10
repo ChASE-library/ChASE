@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>ChaseMpiDLAMultiGPU &mdash; ChASE v1.1.2 documentation</title>
+  <title>5.3.5.3. ChaseMpiDLAMultiGPU &mdash; ChASE v1.3.0 documentation</title>
   
 
   
@@ -37,10 +37,10 @@
         <link rel="index" title="Index"
               href="../genindex.html"/>
         <link rel="search" title="Search" href="../search.html"/>
-    <link rel="top" title="ChASE v1.1.2 documentation" href="../index.html"/>
-        <link rel="up" title="ChaseMpiDLA" href="chasempidla.html"/>
-        <link rel="next" title="Constructor of ChaseElemental" href="elemental.html"/>
-        <link rel="prev" title="ChaseMpiDLABlaslapack" href="chasempidlablaslapack.html"/>
+    <link rel="top" title="ChASE v1.3.0 documentation" href="../index.html"/>
+        <link rel="up" title="5. Modules" href="../module.html"/>
+        <link rel="next" title="6. Examples" href="../example.html"/>
+        <link rel="prev" title="5.3.5.2. ChaseMpiDLABlaslapack" href="chasempidlablaslapack.html"/>
     <link href="../_static/theme_overrides.css" rel="stylesheet" type="text/css">
 
 
@@ -74,7 +74,7 @@
             
             
               <div class="version">
-                v1.1.2
+                v1.3.0
               </div>
             
           
@@ -104,38 +104,35 @@
 </ul>
 <p class="caption"><span class="caption-text">USER DOCUMENTATION</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="../quick-start.html">Quick Start</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation and Setup on a Cluster</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../example.html">Examples</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="../module.html">Modules</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="../module.html#overview">Overview</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../module.html#namespace-chase">Namespace: chase</a></li>
-<li class="toctree-l2 current"><a class="reference internal" href="../module.html#chase-mpi">ChASE-MPI</a><ul class="current">
-<li class="toctree-l3"><a class="reference internal" href="chasempimatrices.html">ChaseMpiMatrices</a></li>
-<li class="toctree-l3"><a class="reference internal" href="chasempiproperties.html">ChaseMpiProperties</a></li>
-<li class="toctree-l3"><a class="reference internal" href="chasempi.html">ChaseMpi</a></li>
-<li class="toctree-l3 current"><a class="reference internal" href="chasempidla.html">ChaseMpiDLA</a><ul class="current">
-<li class="toctree-l4"><a class="reference internal" href="chasempidlainterface.html">ChaseMpiDLAInterface</a></li>
-<li class="toctree-l4"><a class="reference internal" href="chasempidlaseq.html">ChaseMpiDLABlaslapackSeq</a></li>
-<li class="toctree-l4"><a class="reference internal" href="chasempidlaseqInplace.html">ChaseMpiDLABlaslapackSeqInplace</a></li>
-<li class="toctree-l4"><a class="reference internal" href="chasempidlacudaseq.html">ChaseMpiDLACudaSeq</a></li>
-<li class="toctree-l4"><a class="reference internal" href="chasempidlaImpl.html">ChaseMpiDLA</a></li>
-<li class="toctree-l4"><a class="reference internal" href="chasempidlablaslapack.html">ChaseMpiDLABlaslapack</a></li>
-<li class="toctree-l4 current"><a class="current reference internal" href="#">ChaseMpiDLAMultiGPU</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quick-start.html">1. Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">2. Installation and Setup on a Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage.html">3. How to use ChASE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../parameters.html">4. Parameters and Configurations</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../module.html">5. Modules</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../module.html#overview">5.1. Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../module.html#basic-classes">5.2. Basic Classes</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../module.html#override-of-virtual-functions">5.3. Override of Virtual Functions</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../module.html#chase-mpi-chasempimatrices">5.3.1. chase::mpi::ChaseMpiMatrices</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../module.html#chase-mpi-chasempiproperties">5.3.2. chase::mpi::ChaseMpiProperties</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../module.html#chase-mpi-chasempi">5.3.3. chase::mpi::ChaseMpi</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../module.html#dlas-for-shared-memory-architectures">5.3.4. DLAs for shared-memory architectures</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="../module.html#dlas-for-distributed-memory-architectures">5.3.5. DLAs for distributed-memory architectures</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="chasempidlaImpl.html">5.3.5.1. ChaseMpiDLA</a></li>
+<li class="toctree-l4"><a class="reference internal" href="chasempidlablaslapack.html">5.3.5.2. ChaseMpiDLABlaslapack</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">5.3.5.3. ChaseMpiDLAMultiGPU</a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="../module.html#chase-elemental">ChASE-Elemental</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../parameters.html">Parameters and Configurations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../example.html">6. Examples</a></li>
 </ul>
 <p class="caption"><span class="caption-text">DEVELOPER DOCUMENTATION</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../algorithm.html">General algorithm</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../abstract.html">Virtual Abstract of Numerical Kernels</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../parallel.html">Parallel implementations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../algorithm.html">1. General algorithm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../abstract.html">2. Virtual Abstract of Numerical Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../parallel.html">3. Parallel implementations</a></li>
 </ul>
 
             
@@ -166,11 +163,9 @@
   <ul class="wy-breadcrumbs">
     <li><a href="../index.html">Docs</a> &raquo;</li>
       
-        <li><a href="../module.html">Modules</a> &raquo;</li>
+        <li><a href="../module.html"><span class="section-number">5. </span>Modules</a> &raquo;</li>
       
-        <li><a href="chasempidla.html">ChaseMpiDLA</a> &raquo;</li>
-      
-    <li>ChaseMpiDLAMultiGPU</li>
+    <li><span class="section-number">5.3.5.3. </span>ChaseMpiDLAMultiGPU</li>
     <li class="wy-breadcrumbs-aside">
       
         
@@ -185,7 +180,7 @@
            <div itemprop="articleBody">
             
   <div class="section" id="chasempidlamultigpu">
-<h1>ChaseMpiDLAMultiGPU<a class="headerlink" href="#chasempidlamultigpu" title="Permalink to this headline">¶</a></h1>
+<h1><span class="section-number">5.3.5.3. </span>ChaseMpiDLAMultiGPU<a class="headerlink" href="#chasempidlamultigpu" title="Permalink to this headline">¶</a></h1>
 <p><code class="docutils literal notranslate"><span class="pre">ChaseMpiDLAMultiGPU</span></code> defines the implementation of <code class="docutils literal notranslate"><span class="pre">ChaseMpiDLAInterface</span></code>
 for heterogeneous distributed-memory systems with multi-GPUs per node.</p>
 <div class="admonition note">
@@ -202,10 +197,10 @@ in the Developer Documentation.</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="elemental.html" class="btn btn-neutral float-right" title="Constructor of ChaseElemental" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="../example.html" class="btn btn-neutral float-right" title="6. Examples" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="chasempidlablaslapack.html" class="btn btn-neutral" title="ChaseMpiDLABlaslapack" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="chasempidlablaslapack.html" class="btn btn-neutral" title="5.3.5.2. ChaseMpiDLABlaslapack" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -214,7 +209,7 @@ in the Developer Documentation.</p>
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2021, SimLab Quantum Materials.
+        &copy; Copyright 2023, SimLab Quantum Materials.
 
     </p>
   </div>
@@ -236,7 +231,7 @@ in the Developer Documentation.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'v1.1.2',
+            VERSION:'v1.3.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

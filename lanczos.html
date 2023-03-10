@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>The modified Lanczos for bound estimates &mdash; ChASE v1.1.2 documentation</title>
+  <title>1.1. The modified Lanczos for bound estimates &mdash; ChASE v1.3.0 documentation</title>
   
 
   
@@ -37,10 +37,10 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="ChASE v1.1.2 documentation" href="index.html"/>
-        <link rel="up" title="General algorithm" href="algorithm.html"/>
-        <link rel="next" title="Orthogonalization and Rayleigh-Ritz" href="QR-RR.html"/>
-        <link rel="prev" title="General algorithm" href="algorithm.html"/>
+    <link rel="top" title="ChASE v1.3.0 documentation" href="index.html"/>
+        <link rel="up" title="1. General algorithm" href="algorithm.html"/>
+        <link rel="next" title="1.2. Orthogonalization and Rayleigh-Ritz" href="QR-RR.html"/>
+        <link rel="prev" title="1. General algorithm" href="algorithm.html"/>
     <link href="_static/theme_overrides.css" rel="stylesheet" type="text/css">
 
 
@@ -74,7 +74,7 @@
             
             
               <div class="version">
-                v1.1.2
+                v1.3.0
               </div>
             
           
@@ -104,23 +104,24 @@
 </ul>
 <p class="caption"><span class="caption-text">USER DOCUMENTATION</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="quick-start.html">Quick Start</a></li>
-<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation and Setup on a Cluster</a></li>
-<li class="toctree-l1"><a class="reference internal" href="example.html">Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module.html">Modules</a></li>
-<li class="toctree-l1"><a class="reference internal" href="parameters.html">Parameters and Configurations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quick-start.html">1. Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">2. Installation and Setup on a Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">3. How to use ChASE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parameters.html">4. Parameters and Configurations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="module.html">5. Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="example.html">6. Examples</a></li>
 </ul>
 <p class="caption"><span class="caption-text">DEVELOPER DOCUMENTATION</span></p>
 <ul class="current">
-<li class="toctree-l1 current"><a class="reference internal" href="algorithm.html">General algorithm</a><ul class="current">
-<li class="toctree-l2 current"><a class="current reference internal" href="#">The modified Lanczos for bound estimates</a></li>
-<li class="toctree-l2"><a class="reference internal" href="QR-RR.html">Orthogonalization and Rayleigh-Ritz</a></li>
-<li class="toctree-l2"><a class="reference internal" href="filter.html">The Chebyshev filter</a></li>
-<li class="toctree-l2"><a class="reference internal" href="optimizations.html">Algorithm optimizations</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="algorithm.html">1. General algorithm</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">1.1. The modified Lanczos for bound estimates</a></li>
+<li class="toctree-l2"><a class="reference internal" href="QR-RR.html">1.2. Orthogonalization and Rayleigh-Ritz</a></li>
+<li class="toctree-l2"><a class="reference internal" href="filter.html">1.3. The Chebyshev filter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="optimizations.html">1.4. Algorithm optimizations</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="abstract.html">Virtual Abstract of Numerical Kernels</a></li>
-<li class="toctree-l1"><a class="reference internal" href="parallel.html">Parallel implementations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="abstract.html">2. Virtual Abstract of Numerical Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parallel.html">3. Parallel implementations</a></li>
 </ul>
 
             
@@ -151,9 +152,9 @@
   <ul class="wy-breadcrumbs">
     <li><a href="index.html">Docs</a> &raquo;</li>
       
-        <li><a href="algorithm.html">General algorithm</a> &raquo;</li>
+        <li><a href="algorithm.html"><span class="section-number">1. </span>General algorithm</a> &raquo;</li>
       
-    <li>The modified Lanczos for bound estimates</li>
+    <li><span class="section-number">1.1. </span>The modified Lanczos for bound estimates</li>
     <li class="wy-breadcrumbs-aside">
       
         
@@ -168,11 +169,12 @@
            <div itemprop="articleBody">
             
   <div class="section" id="the-modified-lanczos-for-bound-estimates">
-<span id="lanczos-algorithm"></span><h1>The modified Lanczos for bound estimates<a class="headerlink" href="#the-modified-lanczos-for-bound-estimates" title="Permalink to this headline">¶</a></h1>
+<span id="lanczos-algorithm"></span><h1><span class="section-number">1.1. </span>The modified Lanczos for bound estimates<a class="headerlink" href="#the-modified-lanczos-for-bound-estimates" title="Permalink to this headline">¶</a></h1>
 <dl class="cpp function">
 <dt id="_CPPv4N5chase9Algorithm7lanczosEP5ChaseI1TEiiiiP4BaseI1TEbP4BaseI1TE">
 <span id="_CPPv3N5chase9Algorithm7lanczosEP5ChaseI1TEiiiiP4BaseI1TEbP4BaseI1TE"></span><span id="_CPPv2N5chase9Algorithm7lanczosEP5ChaseI1TEiiiiP4BaseI1TEbP4BaseI1TE"></span><span id="chase::Algorithm::lanczos__Chase:T:P.i.i.i.i.Base:T:P.b.Base:T:P"></span><span class="target" id="classchase_1_1_algorithm_1afbd10ed15e49fbb8e30f02d3e17c2dfe"></span>std::size_t <code class="sig-prename descclassname"><a class="reference internal" href=".unused_material/reference/chase.html#_CPPv45chaseP13MKL_Complex16iP13MKL_Complex16P13MKL_Complex16PdiKiKiPCiKdK15CHASE_MODE_TYPEK14CHASE_OPT_TYPE" title="chase">chase</a>::Algorithm<code class="sig-prename descclassname">::</code></code><code class="sig-name descname">lanczos</code><span class="sig-paren">(</span>Chase&lt;T&gt; *<em>kernel</em>, int <em>N</em>, int <em>numvec</em>, int <em>m</em>, int <em>nevex</em>, Base&lt;T&gt; *<em>upperb</em>, bool <em>mode</em>, Base&lt;T&gt; *<em>ritzv_</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase9Algorithm7lanczosEP5ChaseI1TEiiiiP4BaseI1TEbP4BaseI1TE" title="Permalink to this definition">¶</a><br /></dt>
-<dd></dd></dl>
+<dd><p>Implemenattion of lanczos to estimate the required bound in ChASE. </p>
+</dd></dl>
 
 </div>
 
@@ -183,10 +185,10 @@
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="QR-RR.html" class="btn btn-neutral float-right" title="Orthogonalization and Rayleigh-Ritz" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="QR-RR.html" class="btn btn-neutral float-right" title="1.2. Orthogonalization and Rayleigh-Ritz" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="algorithm.html" class="btn btn-neutral" title="General algorithm" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="algorithm.html" class="btn btn-neutral" title="1. General algorithm" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -195,7 +197,7 @@
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2021, SimLab Quantum Materials.
+        &copy; Copyright 2023, SimLab Quantum Materials.
 
     </p>
   </div>
@@ -217,7 +219,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'v1.1.2',
+            VERSION:'v1.3.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

@@ -2,11 +2,11 @@
 Versions of the library
 ************************
 
-The library comes in two main versions which are labelled ChASE-MPI
-and ChASE-Elemental. ChASE-MPI is the default version of the library
-and can be installed with the minimum amount of dependencies (BLAS,
-LAPACK, and MPI). ChASE-Elemental requires the additional installation
-of the `Elemental <https://github.com/elemental/Elemental>`__ library.
+Currently, the library consists of one major part, labelled ChASE-MPI, for
+solving dense eigenproblems. There will be another major part to support
+sparse eigenproblems in short future. 
+ChASE-MPI can be installed with the minimum amount of dependencies (BLAS,
+LAPACK, and MPI).
 
 ChASE-MPI
 ==========
@@ -25,22 +25,18 @@ hardware resources.
 
    * **MPI+Threads build:** On multi-core homogeneous CPU clusters ChASE
      is best used in its pure MPI build. In this configuration, ChASE
-     is typically used with one MPI rank per computing node and as
-     many threads as number of available cores per node.
+     is typically used with one MPI rank per NUMA domain and as
+     many threads as number of available cores per NUMA domain.
 
    * **GPU build:** ChASE-MPI can be configured to take advantage of
      graphics card on heterogeneous computing clusters. Currently we
-     support the use of one or more GPU cards per computing node in
-     a number of flexible configurations: for instance on computing nodes
-     with 4 cards per node one can choose to compile and execute the
-     program with one, two or four GPU card per MPI rank.
-
+     support one GPU card per MPI rank.
 
 Matrix Distributions
 --------------------
 
 In ChASE-MPI, the MPI nodes are constructed as 2D grid, two data distributions
-are support to assigned sublocks of dense matrix **A** into different
+are support to assigned sub-blocks of dense matrix **A** into different
 MPI nodes.
 
 Block Distribution
@@ -67,7 +63,7 @@ offloading of the multiplication to accelerators such as GPUs.
 
 The figure above gives an example of ChASE which distributes a :math:`n \times n`
 dense matrix :math:`A` into a :math:`3 \times 3` grid of MPI nodes. In this example,
-the matrix `A` is split into 2D, with a series of submatrices :math:`A_{i,j}` in which
+the matrix `A` is split into 2D, with a series of sub-matrices :math:`A_{i,j}` in which
 :math:`i \in [0,2]` and :math:`j \in [0,2]`. Therefore, :math:`A_{0,0}` is distributed
 to MPI rank 1, :math:`A_{1,0}` is distributed to rank 2, :math:`A_{2,0}` is distributed to rank 3, :math:`A_{0,1}` is distributed to rank 4, :math:`A_{1,1}` is distributed to rank 5, and so on.
 
@@ -79,7 +75,7 @@ The second is called 2D **Block-Cyclic Distribution**. This distribution scheme 
 for the implementation of dense matrix computations on distributed-memory machines. Compared to
 the **Block Distribution**, the main advantage of the Block-Cyclic Distribution is improving
 the load balance of matrix computation if the amount of work differs for different entries of a matrix,
-e.g., QR and LU factorizations. A block distribution can lead to load imbalances.
+e.g., QR and LU factorization. A block distribution can lead to load imbalances.
 
 Even the load balance is not a problem for ChASE, in which the most important kernel **Hermitian Matrix-Matrix Multiplication**
 is well balanced with the **Block Distribution**, we still provide the **Block-Cyclic Distribution** as an option
@@ -98,21 +94,8 @@ The figure above show an example of ChASE which distributes a :math:`n \times n`
 dense matrix :math:`A` into a :math:`2 \times 2` grid of MPI nodes in a block-cyclic scheme.
 Denoting the 4 MPI nodes as :math:`P_{0,0}`, :math:`P_{0,1}`, :math:`P_{1,0}`, and :math:`P_{1,1}`,
 they are marked as green, red, blue and yellow, respectively on the figure above.
-In this example, the matrix `A` is split into 2D, with a series of submatrices :math:`A_{i,j}` in which
-:math:`i \in [0,3]` and :math:`j \in [0,3]`. Each submatrix is assigned to one MPI node
+In this example, the matrix `A` is split into 2D, with a series of sub-matrices :math:`A_{i,j}` in which
+:math:`i \in [0,3]` and :math:`j \in [0,3]`. Each sub-matrix is assigned to one MPI node
 in a round-robin manner so that each MPI rank gets several non-adjacent blocks.
 For more details about **Block-Cyclic Distribution**,  
 please refer to `Netlib <https://www.netlib.org/scalapack/slug/node75.html>`_ website.
-
-
-ChASE-Elemental
-================
-
-ChASE-Elemental takes advantage of the `Elemental
-<http://libelemental.org/>`__ library routines to execute its tasks in
-parallel. The data is distributed using Elemental distribution
-classes. ChASE-Elemental is available in a **pure MPI build** and,
-while it is slightly less performant than ChASE-MPI, it ensure a
-better scalability since, contrary to ChASE-MPI, the QR factorization
-is also executed in parallel. For stability reason, ChASE uses
-Elemental version 0.84.

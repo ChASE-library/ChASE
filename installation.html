@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Installation and Setup on a Cluster &mdash; ChASE v1.1.2 documentation</title>
+  <title>2. Installation and Setup on a Cluster &mdash; ChASE v1.3.0 documentation</title>
   
 
   
@@ -37,9 +37,9 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="ChASE v1.1.2 documentation" href="index.html"/>
-        <link rel="next" title="Dependencies" href="installation/dependencies.html"/>
-        <link rel="prev" title="Cloning ChASE source code" href="quick-start/quick-install.html"/>
+    <link rel="top" title="ChASE v1.3.0 documentation" href="index.html"/>
+        <link rel="next" title="3. How to use ChASE" href="usage.html"/>
+        <link rel="prev" title="1. Quick Start" href="quick-start.html"/>
     <link href="_static/theme_overrides.css" rel="stylesheet" type="text/css">
 
 
@@ -73,7 +73,7 @@
             
             
               <div class="version">
-                v1.1.2
+                v1.3.0
               </div>
             
           
@@ -103,39 +103,44 @@
 </ul>
 <p class="caption"><span class="caption-text">USER DOCUMENTATION</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="quick-start.html">Quick Start</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Installation and Setup on a Cluster</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#library-dependencies">Library Dependencies</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="installation/dependencies.html">Dependencies</a></li>
-<li class="toctree-l3"><a class="reference internal" href="installation/dependencies.html#loading-modules-on-cluster">Loading Modules on Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quick-start.html">1. Quick Start</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">2. Installation and Setup on a Cluster</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#library-dependencies">2.1. Library Dependencies</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#dependencies">2.1.1. Dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#loading-modules-on-cluster">2.1.2. Loading Modules on Cluster</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#installation-on-cluster">Installation on Cluster</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="installation/installcluster.html">Installation on a CPU-only Cluster</a></li>
-<li class="toctree-l3"><a class="reference internal" href="installation/installcluster.html#installation-with-gpu-support">Installation with GPU Support</a></li>
-<li class="toctree-l3"><a class="reference internal" href="installation/installcluster.html#building-chase-with-examples">Building ChASE with Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#installation">2.2. Installation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#installation-on-a-cpu-only-cluster">2.2.1. Installation on a CPU-only Cluster</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#installation-with-gpu-support">2.2.2. Installation with GPU Support</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#building-chase-with-examples">2.2.3. Building ChASE with Examples</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#linking-chase">Linking ChASE</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="installation/link.html">Linking ChASE to other Application Software</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#recommendation-on-the-usage-of-computing-resources">2.3. Recommendation on the usage of Computing Resources</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#chase-with-mpi-openmp">2.3.1. ChASE with MPI+OpenMP</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#allocating-ressources-and-running-jobs-slurm">2.3.1.1. Allocating Ressources and Running jobs (SLURM)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#memory-requirement">2.3.1.2. Memory Requirement</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#recommendation-on-the-usage-of-computing-resources">Recommendation on the usage of Computing Resources</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="installation/suggestion.html">ChASE with MPI+OpenMP</a></li>
-<li class="toctree-l3"><a class="reference internal" href="installation/suggestion.html#chase-with-multi-gpus">ChASE with multi-GPUs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#chase-with-multi-gpus">2.3.2. ChASE with multi-GPUs</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#id1">2.3.2.1. Allocating Ressources and Running jobs (SLURM)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#estimating-memory-requirement">2.3.2.2. Estimating Memory Requirement</a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="example.html">Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module.html">Modules</a></li>
-<li class="toctree-l1"><a class="reference internal" href="parameters.html">Parameters and Configurations</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">3. How to use ChASE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parameters.html">4. Parameters and Configurations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="module.html">5. Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="example.html">6. Examples</a></li>
 </ul>
 <p class="caption"><span class="caption-text">DEVELOPER DOCUMENTATION</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="algorithm.html">General algorithm</a></li>
-<li class="toctree-l1"><a class="reference internal" href="abstract.html">Virtual Abstract of Numerical Kernels</a></li>
-<li class="toctree-l1"><a class="reference internal" href="parallel.html">Parallel implementations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="algorithm.html">1. General algorithm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="abstract.html">2. Virtual Abstract of Numerical Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parallel.html">3. Parallel implementations</a></li>
 </ul>
 
             
@@ -166,7 +171,7 @@
   <ul class="wy-breadcrumbs">
     <li><a href="index.html">Docs</a> &raquo;</li>
       
-    <li>Installation and Setup on a Cluster</li>
+    <li><span class="section-number">2. </span>Installation and Setup on a Cluster</li>
     <li class="wy-breadcrumbs-aside">
       
         
@@ -181,78 +186,248 @@
            <div itemprop="articleBody">
             
   <div class="section" id="installation-and-setup-on-a-cluster">
-<h1>Installation and Setup on a Cluster<a class="headerlink" href="#installation-and-setup-on-a-cluster" title="Permalink to this headline">¶</a></h1>
+<h1><span class="section-number">2. </span>Installation and Setup on a Cluster<a class="headerlink" href="#installation-and-setup-on-a-cluster" title="Permalink to this headline">¶</a></h1>
 <p>This section provides guidelines to install and setup the ChASE
 library on computing clusters.
 Each guideline is given as a step by step set of instructions to install ChASE on a
 cluster either with or w/o support for GPUs. After the setup of ChASE,
 users are provided with a description of how
-to link and integrate ChASE into their own codes. Such integration can
-be achieved either by using one of the
+to link and integrate ChASE into their own codes.
+ChASE provides the interfaces to both <code class="docutils literal notranslate"><span class="pre">C</span></code> and <code class="docutils literal notranslate"><span class="pre">Fortran</span></code> ,
+thus such integration can be achieved either by using one of the
 interfaces provided by the library, or by following our instructions
 to implement the user’s own interface.</p>
 <div class="section" id="library-dependencies">
-<h2>Library Dependencies<a class="headerlink" href="#library-dependencies" title="Permalink to this headline">¶</a></h2>
+<h2><span class="section-number">2.1. </span>Library Dependencies<a class="headerlink" href="#library-dependencies" title="Permalink to this headline">¶</a></h2>
 <p>This section gives a brief introduction to the ChASE library dependencies and
 on how to load the required libraries on a given supercomputer.</p>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="installation/dependencies.html">Dependencies</a></li>
-<li class="toctree-l1"><a class="reference internal" href="installation/dependencies.html#loading-modules-on-cluster">Loading Modules on Cluster</a></li>
+<div class="section" id="dependencies">
+<h3><span class="section-number">2.1.1. </span>Dependencies<a class="headerlink" href="#dependencies" title="Permalink to this headline">¶</a></h3>
+<p>In order to install the ChASE library on a general purpose computing cluster,
+one has to install or load the necessary dependencies. For the standard MPI
+version of the library these dependencies are the following:</p>
+<ul class="simple">
+<li><p>a <code class="docutils literal notranslate"><span class="pre">C++</span></code> Compiler;</p></li>
+<li><p>a Message Passing Interface (MPI) implementation;</p></li>
+<li><p>CMake (version 3.8 or higher);</p></li>
+<li><p>a Basic Linear Algebra Subprograms (BLAS) and Linear Algebra PACKage (LAPACK) library;</p></li>
+<li><p>a CUDA compiler (only for the GPU build of ChASE);</p></li>
+<li><p><strong>Optional</strong>: ScaLAPACK for using distributed Househoulder QR factorization</p></li>
 </ul>
 </div>
+<div class="section" id="loading-modules-on-cluster">
+<h3><span class="section-number">2.1.2. </span>Loading Modules on Cluster<a class="headerlink" href="#loading-modules-on-cluster" title="Permalink to this headline">¶</a></h3>
+<p>CMake builds ChASE by automatically detecting the location of the
+installed dependencies. On most supercomputers it is sufficient to
+just load the corresponding modules, e.g. <code class="docutils literal notranslate"><span class="pre">module</span> <span class="pre">load</span>
+<span class="pre">&lt;modulename&gt;</span></code>. If you have loaded/installed multiple versions for the
+necessary compilers and libraries, then you have to provide CMake with
+specific paths so that it may choose the correct package. For more
+details, see <a class="reference internal" href="quick-start/quick-install.html#build-label"><span class="std std-ref">Building and Installing the ChASE library</span></a>.</p>
 </div>
-<div class="section" id="installation-on-cluster">
-<h2>Installation on Cluster<a class="headerlink" href="#installation-on-cluster" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="installation">
+<h2><span class="section-number">2.2. </span>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
 <p>This section has two main goals: First, it provides the instructions
 for the installation of ChASE on a given supercomputer
-with or w/o multi-GPUs supports. Second, it describe how the user can
+with or w/o multi-GPUs supports. Second, it describes how the user can
 take advantage of a number of ready-to-use examples to build a
 simple driver and have a first try running ChASE on a cluster.</p>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="installation/installcluster.html">Installation on a CPU-only Cluster</a></li>
-<li class="toctree-l1"><a class="reference internal" href="installation/installcluster.html#installation-with-gpu-support">Installation with GPU Support</a></li>
-<li class="toctree-l1"><a class="reference internal" href="installation/installcluster.html#building-chase-with-examples">Building ChASE with Examples</a></li>
-</ul>
+<div class="section" id="installation-on-a-cpu-only-cluster">
+<h3><span class="section-number">2.2.1. </span>Installation on a CPU-only Cluster<a class="headerlink" href="#installation-on-a-cpu-only-cluster" title="Permalink to this headline">¶</a></h3>
+<p>The following snippet shows how to install ChASE on the JUWELS cluster
+(the main general purpose cluster at the Jülich Supercomputing Centre):</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">git clone https://github.com/ChASE-library/ChASE.git</span>
+<span class="go">cd ChASE/</span>
+<span class="go">mkdir build</span>
+<span class="go">cd build/</span>
+<span class="gp">#</span><span class="c1">##       GCC      ###</span>
+<span class="go">ml GCC/8.3.0  ParaStationMPI/5.4.4-1 imkl CMake</span>
+<span class="go">cmake .. -DCMAKE_INSTALL_PREFIX=${ChASEROOT}</span>
+<span class="go">make install</span>
+<span class="gp">#</span><span class="c1">## Intel Compiler ###</span>
+<span class="go">ml intel-para CMake</span>
+<span class="go">cmake .. -DCMAKE_INSTALL_PREFIX=${ChASEROOT} -DCMAKE_C_COMPILER=icc -DCMAKE_CXX_COMPILER=icpc</span>
+<span class="go">make install</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For the installation with the <code class="docutils literal notranslate"><span class="pre">Intel</span> <span class="pre">Compiler</span></code>, two additional flags <code class="docutils literal notranslate"><span class="pre">-DCMAKE_C_FLAGS=-no-multibyte-chars</span></code> and <code class="docutils literal notranslate"><span class="pre">-DCMAKE_CXX_FLAGS=-no-multibyte-chars</span></code> might be required if
+the following error <code class="docutils literal notranslate"><span class="pre">Catastrophic</span> <span class="pre">error:</span> <span class="pre">could</span> <span class="pre">not</span> <span class="pre">set</span> <span class="pre">locale</span> <span class="pre">&quot;&quot;</span> <span class="pre">to</span>
+<span class="pre">allow</span> <span class="pre">processing</span> <span class="pre">of</span> <span class="pre">multibyte</span> <span class="pre">characters</span></code> are encountered, which are produced by an internal
+bug appearing in some versions of the Intel Compiler.</p>
 </div>
 </div>
-<div class="section" id="linking-chase">
-<h2>Linking ChASE<a class="headerlink" href="#linking-chase" title="Permalink to this headline">¶</a></h2>
-<p>In order to embed the ChASE library in an application software, ChASE
-can be opportunely linked following the instructions in this section.</p>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="installation/link.html">Linking ChASE to other Application Software</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="installation/link.html#include-headers">Include headers</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation/link.html#linking-to-chase-by-using-cmake">Linking to ChASE by using CMake</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation/link.html#direct-linking">Direct linking</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation/link.html#linking-by-makefile">Linking by Makefile</a></li>
-</ul>
-</li>
-</ul>
+<div class="section" id="installation-with-gpu-support">
+<h3><span class="section-number">2.2.2. </span>Installation with GPU Support<a class="headerlink" href="#installation-with-gpu-support" title="Permalink to this headline">¶</a></h3>
+<p>In order to compile ChASE with GPU support one needs to have installed
+and loaded a CUDA compiler, which will also enable the use of
+<code class="docutils literal notranslate"><span class="pre">cuBLAS</span></code>, <code class="docutils literal notranslate"><span class="pre">cuSOLVER</span></code> and <code class="docutils literal notranslate"><span class="pre">cuRAND</span></code>. On the JUWELS cluster this can
+be achieved by loading the module CUDA in addition to the
+modules necessary to compile ChASE on a CPU-only cluster. Make sure, that
+ChASE is executed on a computer/node with at least one GPU device
+(e.g. check with <code class="docutils literal notranslate"><span class="pre">nvidia-smi</span></code>) and that the correct  CUDA
+compiler is loaded (e.g. check <code class="docutils literal notranslate"><span class="pre">which</span> <span class="pre">nvcc</span></code> or if you are using a module system
+look at <code class="docutils literal notranslate"><span class="pre">module</span> <span class="pre">list</span></code>). The following instruction snippet builds ChASE with CUDA
+support on JUWELS:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">git clone https://github.com/ChASE-library/ChASE.git</span>
+<span class="go">cd ChASE/</span>
+<span class="go">mkdir build</span>
+<span class="go">cd build/</span>
+<span class="go">ml GCC/8.3.0  ParaStationMPI/5.4.4-1 imkl CUDA CMake</span>
+<span class="go">cmake .. -DCMAKE_INSTALL_PREFIX=${ChASEROOT}</span>
+<span class="go">make install</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>It is also recommended to build ChASE with the configuration of CUDA compute compatibility through <code class="docutils literal notranslate"><span class="pre">CMAKE_CUDA_ARCHITECTURES</span></code>. If CUDA compute compatibility of your GPU is 8.6 (e.g. RTX 3090) you should build with <code class="docutils literal notranslate"><span class="pre">-DCMAKE_CUDA_ARCHITECTURES=86</span></code>. In the case you want to build code for more than one CUDA compute capability (e.g. 70, 75, 80 and 86) then build with <code class="docutils literal notranslate"><span class="pre">-DCMAKE_CUDA_ARCHITECTURES=&quot;70;75;80;86&quot;</span></code>.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">CMAKE_VERSION</span> <span class="pre">&lt;</span> <span class="pre">3.18</span></code> then CMake is not compliant with <em>CMAKE policy CMP0104</em> (introduced
+in CMake 3.18) which defines that the variable <code class="docutils literal notranslate"><span class="pre">CMAKE_CUDA_ARCHITECTURES</span></code> has to be initialized. In that case, the code generation flag has to be set manually.
+For simplicity and compatibility with newer (3.18+) CMake version, the <code class="docutils literal notranslate"><span class="pre">CMAKE_CUDA_ARCHITECTURES</span></code> variable has to be always set, not matter the cmake version.</p>
+</div>
+</div>
+<div class="section" id="building-chase-with-examples">
+<h3><span class="section-number">2.2.3. </span>Building ChASE with Examples<a class="headerlink" href="#building-chase-with-examples" title="Permalink to this headline">¶</a></h3>
+<p>To build and install ChASE with examples, the
+additional option to the cmake build process
+<code class="docutils literal notranslate"><span class="pre">-DBUILD_WITH_EXAMPLES=ON</span></code> has to be turned on. The following
+instruction snippet builds ChASE with
+examples on the JUWELS cluster:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">git clone https://github.com/ChASE-library/ChASE.git</span>
+<span class="go">cd ChASE/</span>
+<span class="go">mkdir build</span>
+<span class="go">cd build/</span>
+<span class="go">ml intel-para CMake Boost</span>
+<span class="gp">#</span><span class="c1">#### If you want to install ChASE with GPU supporting, make sure CUDA is loaded #####</span>
+<span class="go">ml load CUDA</span>
+<span class="go">cmake .. -DCMAKE_INSTALL_PREFIX=${ChASEROOT} -DBUILD_WITH_EXAMPLES=ON</span>
+<span class="go">make install</span>
+<span class="gp">#</span><span class="c1">## Run example #0 ###</span>
+<span class="go">./examples/0_hello_world/0_hello_world</span>
+</pre></div>
+</div>
+<p>An MPI launcher has to be used to run an example in parallel. For
+instance on the JUWELS cluster (or any other <code class="docutils literal notranslate"><span class="pre">SLRUM</span></code> based Cluster)
+the following command line runs the “<cite>hello world</cite>” example in parallel.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">srun -n 2 ./examples/0_hello_world/0_hello_world</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The output of intermediate convergence information and a simple performance report of
+different numerical kernels can be enabled when compiling ChASE with the flag <code class="docutils literal notranslate"><span class="pre">-DCHASE_OUTPUT=ON</span></code>.</p>
+</div>
 </div>
 </div>
 <div class="section" id="recommendation-on-the-usage-of-computing-resources">
-<h2>Recommendation on the usage of Computing Resources<a class="headerlink" href="#recommendation-on-the-usage-of-computing-resources" title="Permalink to this headline">¶</a></h2>
+<h2><span class="section-number">2.3. </span>Recommendation on the usage of Computing Resources<a class="headerlink" href="#recommendation-on-the-usage-of-computing-resources" title="Permalink to this headline">¶</a></h2>
 <p>Attaining the best performance with the available computing resources
 requires to understand the inner working of the ChASE library. Since
 the standard user is not expected to have such an understanding, this section
 supplies a number of simple recommendations for the submission and
 execution of jobs involving ChASE on a given computing cluster.</p>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="installation/suggestion.html">ChASE with MPI+OpenMP</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="installation/suggestion.html#allocating-ressources-and-running-jobs-slurm">Allocating Ressources and Running jobs (SLURM)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation/suggestion.html#estimating-memory-requirement">Estimating Memory Requirement</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="installation/suggestion.html#chase-with-multi-gpus">ChASE with multi-GPUs</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="installation/suggestion.html#id1">Allocating Ressources and Running jobs (SLURM)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation/suggestion.html#id2">Estimating Memory Requirement</a></li>
-</ul>
-</li>
-</ul>
+<div class="section" id="chase-with-mpi-openmp">
+<h3><span class="section-number">2.3.1. </span>ChASE with MPI+OpenMP<a class="headerlink" href="#chase-with-mpi-openmp" title="Permalink to this headline">¶</a></h3>
+<p>Modern homogeneous supercomputers are often equipped with hundreds of thousands of nodes which
+are connected with fast networks. Each node is of NUMA (Non-uniform memory access) types, which
+composes several NUMA domains. Each NUMA domain has its local memory, and is able to access the
+local memory of another NUMA domain within the same node. Within a
+NUMA domain, a processor can access
+its own local memory faster than any other non-local memory.</p>
+<p>When running ChASE on modern homogeneous clusters in the <code class="docutils literal notranslate"><span class="pre">MPI/OpenMP</span></code> hybrid mode, this <cite>NUMA effect</cite>
+should be considered. In order to attain good performance, we recommend:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>Ensure each NUMA domain having at least 1 MPI task.</p></li>
+<li><p>Bind the CPUs to the relevant MPI tasks.</p></li>
+</ol>
+</div></blockquote>
+<div class="section" id="allocating-ressources-and-running-jobs-slurm">
+<h4><span class="section-number">2.3.1.1. </span>Allocating Ressources and Running jobs (SLURM)<a class="headerlink" href="#allocating-ressources-and-running-jobs-slurm" title="Permalink to this headline">¶</a></h4>
+<p>The optimal use of resources is usually achieved by carefully
+designing the script code which is used for the job submission. An
+example of a job script for a  <code class="docutils literal notranslate"><span class="pre">SLURM</span></code> scheduler is given below:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># This is an example on JUWELS, in which each node is composed of 2 NUMA sockets.</span>
+<span class="c1"># This example allocates 4 nodes, 8 MPI tasks, each socket has 1 task,</span>
+<span class="c1"># and 24 CPUs are bound to each MPI tasks.</span>
+<span class="c1">#!/bin/bash -x</span>
+<span class="c1">#SBATCH --nodes=4</span>
+<span class="c1">#SBATCH --ntasks=8</span>
+<span class="c1">#SBATCH --ntasks-per-socket=1</span>
+<span class="c1">#SBATCH --cpus-per-task=24</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="memory-requirement">
+<h4><span class="section-number">2.3.1.2. </span>Memory Requirement<a class="headerlink" href="#memory-requirement" title="Permalink to this headline">¶</a></h4>
+<p>An important aspect of executing ChASE on a parallel cluster is the
+memory footprint of the library. It is important to avoid that such
+memory footprint per MPI task exceeds the amount of main memory
+available to the compiled code. To help the user to make the correct
+decision in terms of resources a simple formula for <strong>Block distribution</strong> of matrix can be used</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">sizeof</span><span class="p">(</span><span class="n">float_type</span><span class="p">)</span> <span class="o">*</span><span class="p">[</span><span class="n">n</span> <span class="o">*</span> <span class="n">m</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="n">m</span><span class="p">)</span> <span class="o">*</span> <span class="n">block</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">+</span> <span class="mi">5</span><span class="o">*</span><span class="n">block</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">pow</span><span class="p">(</span><span class="n">block</span><span class="p">,</span><span class="mi">2</span><span class="p">)]</span><span class="o">/</span><span class="p">(</span><span class="mi">1024</span><span class="o">^</span><span class="mi">3</span><span class="p">)</span> <span class="n">GigaByte</span>
+</pre></div>
+</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">n</span></code> and <code class="docutils literal notranslate"><span class="pre">m</span></code> are fractions of <code class="docutils literal notranslate"><span class="pre">N</span></code> which depend on the size
+of the MPI grid of processors. For instance in the job script above
+<code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">=</span> <span class="pre">N/nrows</span></code> and <code class="docutils literal notranslate"><span class="pre">m</span> <span class="pre">=</span> <span class="pre">N/ncols</span></code>, with the size of MPI grid <code class="docutils literal notranslate"><span class="pre">nrows*ncols</span></code>.
+Correspondingly <code class="docutils literal notranslate"><span class="pre">N</span></code> is
+the size of the eigenproblem and <code class="docutils literal notranslate"><span class="pre">block</span></code> is at most <code class="docutils literal notranslate"><span class="pre">nev</span> <span class="pre">+</span> <span class="pre">nex</span></code>.
+Note that the factor <code class="docutils literal notranslate"><span class="pre">sizeof(float_type)</span></code> is valid for single precision real,
+double precision real, single precision complex and double precision complex floating numbers.
+The value of this factor for these four types of floating numbers are respectively:
+<code class="docutils literal notranslate"><span class="pre">4</span></code>, <code class="docutils literal notranslate"><span class="pre">8</span></code>, <code class="docutils literal notranslate"><span class="pre">8</span></code>, <code class="docutils literal notranslate"><span class="pre">16</span></code>.</p>
+<p>For ChASE with <strong>Block-Cyclic distribution</strong> of matrix, additional memory of
+size <code class="docutils literal notranslate"><span class="pre">sizeof(float_type)</span> <span class="pre">*</span> <span class="pre">N</span></code> is required for managing the internal reshuffling
+for block-cyclic data layout. Thus the total memory required is:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">sizeof</span><span class="p">(</span><span class="n">float_type</span><span class="p">)</span> <span class="o">*</span><span class="p">[</span><span class="n">n</span> <span class="o">*</span> <span class="n">m</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="n">m</span><span class="p">)</span> <span class="o">*</span> <span class="n">block</span> <span class="o">+</span> <span class="n">N</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">+</span> <span class="mi">5</span><span class="o">*</span><span class="n">block</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">pow</span><span class="p">(</span><span class="n">block</span><span class="p">,</span><span class="mi">2</span><span class="p">)]</span><span class="o">/</span><span class="p">(</span><span class="mi">1024</span><span class="o">^</span><span class="mi">3</span><span class="p">)</span> <span class="n">GigaByte</span>
+</pre></div>
+</div>
+<p>Using such a formula one can verify if the allocation of
+resources is enough to solve for the problem at hand. For instance, if we use <strong>Block distribution</strong>
+for a <code class="docutils literal notranslate"><span class="pre">N</span> <span class="pre">=</span> <span class="pre">360,000</span></code> and a <code class="docutils literal notranslate"><span class="pre">block</span> <span class="pre">=</span> <span class="pre">nev</span> <span class="pre">+</span> <span class="pre">nex</span> <span class="pre">=</span> <span class="pre">3,000</span></code> with <code class="docutils literal notranslate"><span class="pre">1152</span></code> MPI ranks in 2D MPI grid of size <code class="docutils literal notranslate"><span class="pre">32x36</span></code>,
+the requirement memory per MPI rank is <code class="docutils literal notranslate"><span class="pre">1.989</span> <span class="pre">GB</span></code>. For ChASE with <strong>Block-Cyclic Distribution</strong>: the memory requirement per MPI-rank
+is 1.992 GB, a littler larger than the former case.</p>
+</div>
+</div>
+<div class="section" id="chase-with-multi-gpus">
+<h3><span class="section-number">2.3.2. </span>ChASE with multi-GPUs<a class="headerlink" href="#chase-with-multi-gpus" title="Permalink to this headline">¶</a></h3>
+<p>Currently, ChASE is able to offload almost all the intensive computations, e.g., Hermitian Matrix-Matrix
+Multiplications), QR factorization and Rayleigh-Ritz computation to GPUs.
+The multi-GPUs version of ChASE is able to use all available cards for
+each node. This multi-GPUs version supports 1 MPI task
+to manage only 1 bound GPU card. Some less intensive computation is also assigned to this MPI task and executed
+in multi-threading mode.</p>
+<div class="section" id="id1">
+<h4><span class="section-number">2.3.2.1. </span>Allocating Ressources and Running jobs (SLURM)<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h4>
+<p>Below is an example of a job script for a <code class="docutils literal notranslate"><span class="pre">SLURM</span></code> scheduler which allocates
+multi-GPUs per node and each GPU card bound to 1 MPI task:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># This is an example on the JUWELS GPU partition, in which each node has 4 V100 NVIDIA GPUs.</span>
+<span class="c1"># This example allocates 4 nodes, 16 MPI tasks, each node has 4 task,</span>
+<span class="c1"># and 4 GPUs per node, each GPU card is bound to 1 MPI task.</span>
+<span class="c1">#!/bin/bash -x</span>
+<span class="c1">#SBATCH --nodes=4</span>
+<span class="c1">#SBATCH --ntasks=16</span>
+<span class="c1">#SBATCH --ntasks-per-node=4</span>
+<span class="c1">#SBATCH --cpus-per-task=24</span>
+<span class="c1">#SBATCH --gres=gpu:4</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="estimating-memory-requirement">
+<h4><span class="section-number">2.3.2.2. </span>Estimating Memory Requirement<a class="headerlink" href="#estimating-memory-requirement" title="Permalink to this headline">¶</a></h4>
+<p>For ChASE with multi-GPUs using both <strong>Block distribution</strong> and <strong>Block-Cyclic distribution</strong>
+of matrix, the  memory requirement per GPU is always</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">sizeof</span><span class="p">(</span><span class="n">float_type</span><span class="p">)</span> <span class="o">*</span><span class="p">[</span><span class="n">n</span> <span class="o">*</span> <span class="n">m</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">n</span> <span class="o">+</span> <span class="n">m</span><span class="p">)</span> <span class="o">*</span> <span class="n">block</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">+</span> <span class="mi">5</span><span class="o">*</span><span class="n">block</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">pow</span><span class="p">(</span><span class="n">block</span><span class="p">,</span><span class="mi">2</span><span class="p">)]</span><span class="o">/</span><span class="p">(</span><span class="mi">1024</span><span class="o">^</span><span class="mi">3</span><span class="p">)</span> <span class="n">GigaByte</span>
+</pre></div>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The estimation of memory requirement is only based on the algorithmic aspects of ChASE. The buffer and memory requirement of libraries such as <code class="docutils literal notranslate"><span class="pre">MPI</span></code> has not been considered. So despite the provided formulas to calculate the memory consumption, some combination of MPI libraries (e.g., ParastationMPI) could lead to the crash of ChASE with <code class="docutils literal notranslate"><span class="pre">out</span> <span class="pre">of</span> <span class="pre">memory</span></code> even if the memory available is within the estimated bounds.</p>
+</div>
+</div>
 </div>
 </div>
 </div>
@@ -264,10 +439,10 @@ execution of jobs involving ChASE on a given computing cluster.</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="installation/dependencies.html" class="btn btn-neutral float-right" title="Dependencies" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="usage.html" class="btn btn-neutral float-right" title="3. How to use ChASE" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="quick-start/quick-install.html" class="btn btn-neutral" title="Cloning ChASE source code" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="quick-start.html" class="btn btn-neutral" title="1. Quick Start" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -276,7 +451,7 @@ execution of jobs involving ChASE on a given computing cluster.</p>
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2021, SimLab Quantum Materials.
+        &copy; Copyright 2023, SimLab Quantum Materials.
 
     </p>
   </div>
@@ -298,7 +473,7 @@ execution of jobs involving ChASE on a given computing cluster.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'v1.1.2',
+            VERSION:'v1.3.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

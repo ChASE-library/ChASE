@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>ChASE’s Documentation &mdash; ChASE v1.1.2 documentation</title>
+  <title>ChASE’s Documentation &mdash; ChASE v1.3.0 documentation</title>
   
 
   
@@ -37,7 +37,7 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="ChASE v1.1.2 documentation" href="#"/>
+    <link rel="top" title="ChASE v1.3.0 documentation" href="#"/>
         <link rel="next" title="ChASE: an Iterative Solver for Dense Eigenproblems" href="chase.html"/>
     <link href="_static/theme_overrides.css" rel="stylesheet" type="text/css">
 
@@ -72,7 +72,7 @@
             
             
               <div class="version">
-                v1.1.2
+                v1.3.0
               </div>
             
           
@@ -102,17 +102,18 @@
 </ul>
 <p class="caption"><span class="caption-text">USER DOCUMENTATION</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="quick-start.html">Quick Start</a></li>
-<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation and Setup on a Cluster</a></li>
-<li class="toctree-l1"><a class="reference internal" href="example.html">Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module.html">Modules</a></li>
-<li class="toctree-l1"><a class="reference internal" href="parameters.html">Parameters and Configurations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quick-start.html">1. Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">2. Installation and Setup on a Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">3. How to use ChASE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parameters.html">4. Parameters and Configurations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="module.html">5. Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="example.html">6. Examples</a></li>
 </ul>
 <p class="caption"><span class="caption-text">DEVELOPER DOCUMENTATION</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="algorithm.html">General algorithm</a></li>
-<li class="toctree-l1"><a class="reference internal" href="abstract.html">Virtual Abstract of Numerical Kernels</a></li>
-<li class="toctree-l1"><a class="reference internal" href="parallel.html">Parallel implementations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="algorithm.html">1. General algorithm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="abstract.html">2. Virtual Abstract of Numerical Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parallel.html">3. Parallel implementations</a></li>
 </ul>
 
             
@@ -170,7 +171,6 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="version.html">Versions of the library</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="version.html#chase-mpi">ChASE-MPI</a></li>
-<li class="toctree-l2"><a class="reference internal" href="version.html#chase-elemental">ChASE-Elemental</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="license.html">Licenses and Copyright</a></li>
@@ -186,38 +186,42 @@
 <div class="toctree-wrapper compound">
 <p class="caption"><span class="caption-text">USER DOCUMENTATION</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="quick-start.html">Quick Start</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="quick-start.html#getting-chase">Getting ChASE</a></li>
-<li class="toctree-l2"><a class="reference internal" href="quick-start.html#dependencies">Dependencies</a></li>
-<li class="toctree-l2"><a class="reference internal" href="quick-start.html#quick-installation-and-execution">Quick Installation and Execution</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quick-start.html">1. Quick Start</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="quick-start.html#getting-chase">1.1. Getting ChASE</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quick-start.html#dependencies">1.2. Dependencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quick-start.html#quick-installation-and-execution">1.3. Quick Installation and Execution</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation and Setup on a Cluster</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="installation.html#library-dependencies">Library Dependencies</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation.html#installation-on-cluster">Installation on Cluster</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation.html#linking-chase">Linking ChASE</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation.html#recommendation-on-the-usage-of-computing-resources">Recommendation on the usage of Computing Resources</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">2. Installation and Setup on a Cluster</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#library-dependencies">2.1. Library Dependencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#installation">2.2. Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#recommendation-on-the-usage-of-computing-resources">2.3. Recommendation on the usage of Computing Resources</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="example.html">Examples</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="example.html#hello-world">0. Hello World</a></li>
-<li class="toctree-l2"><a class="reference internal" href="example.html#sequence-of-eigenproblems">1. Sequence of Eigenproblems</a></li>
-<li class="toctree-l2"><a class="reference internal" href="example.html#parallel-i-o-and-configuration">2. Parallel I/O and Configuration</a></li>
-<li class="toctree-l2"><a class="reference internal" href="example.html#installation-and-linking">3. Installation and Linking</a></li>
-<li class="toctree-l2"><a class="reference internal" href="example.html#generalized-eigenproblem">4. Generalized Eigenproblem</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">3. How to use ChASE</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#use-chase-as-a-standalone-solver">3.1. Use ChASE as a standalone solver</a></li>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#use-chase-from-external-applications">3.2. Use ChASE from external applications</a></li>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#interface-to-c-fortran">3.3. Interface to C/Fortran</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="module.html">Modules</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="module.html#overview">Overview</a></li>
-<li class="toctree-l2"><a class="reference internal" href="module.html#namespace-chase">Namespace: chase</a></li>
-<li class="toctree-l2"><a class="reference internal" href="module.html#chase-mpi">ChASE-MPI</a></li>
-<li class="toctree-l2"><a class="reference internal" href="module.html#chase-elemental">ChASE-Elemental</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parameters.html">4. Parameters and Configurations</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="parameters.html#general-parameters">4.1. General Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="parameters.html#chebyshev-filter">4.2. Chebyshev Filter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="parameters.html#lanczos-dos-spectral-estimator">4.3. Lanczos DoS (Spectral Estimator)</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="parameters.html">Parameters and Configurations</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="parameters.html#general-parameters">General Parameters</a></li>
-<li class="toctree-l2"><a class="reference internal" href="parameters.html#chebyshev-filter">Chebyshev Filter</a></li>
-<li class="toctree-l2"><a class="reference internal" href="parameters.html#lanczos-dos-spectral-estimator">Lanczos DoS (Spectral Estimator)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="module.html">5. Modules</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="module.html#overview">5.1. Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="module.html#basic-classes">5.2. Basic Classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="module.html#override-of-virtual-functions">5.3. Override of Virtual Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="example.html">6. Examples</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="example.html#hello-world">6.1. 0. Hello World</a></li>
+<li class="toctree-l2"><a class="reference internal" href="example.html#sequence-of-eigenproblems">6.2. 1. Sequence of Eigenproblems</a></li>
+<li class="toctree-l2"><a class="reference internal" href="example.html#parallel-i-o-and-configuration">6.3. 2. Parallel I/O and Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="example.html#installation-and-linking">6.4. 3. Installation and Linking</a></li>
+<li class="toctree-l2"><a class="reference internal" href="example.html#c-fortran-interface">6.5. 4. C/Fortran interface</a></li>
 </ul>
 </li>
 </ul>
@@ -225,21 +229,20 @@
 <div class="toctree-wrapper compound">
 <p class="caption"><span class="caption-text">DEVELOPER DOCUMENTATION</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="algorithm.html">General algorithm</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="lanczos.html">The modified Lanczos for bound estimates</a></li>
-<li class="toctree-l2"><a class="reference internal" href="QR-RR.html">Orthogonalization and Rayleigh-Ritz</a></li>
-<li class="toctree-l2"><a class="reference internal" href="filter.html">The Chebyshev filter</a></li>
-<li class="toctree-l2"><a class="reference internal" href="optimizations.html">Algorithm optimizations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="algorithm.html">1. General algorithm</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="lanczos.html">1.1. The modified Lanczos for bound estimates</a></li>
+<li class="toctree-l2"><a class="reference internal" href="QR-RR.html">1.2. Orthogonalization and Rayleigh-Ritz</a></li>
+<li class="toctree-l2"><a class="reference internal" href="filter.html">1.3. The Chebyshev filter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="optimizations.html">1.4. Algorithm optimizations</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="abstract.html">Virtual Abstract of Numerical Kernels</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="abstract.html#benefits">Benefits</a></li>
-<li class="toctree-l2"><a class="reference internal" href="abstract.html#definition-of-interface">Definition of Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="abstract.html">2. Virtual Abstract of Numerical Kernels</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="abstract.html#benefits">2.1. Benefits</a></li>
+<li class="toctree-l2"><a class="reference internal" href="abstract.html#definition-of-interface">2.2. Definition of Interface</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="parallel.html">Parallel implementations</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="parallel/elemental.html">ChASE-Elemental</a></li>
-<li class="toctree-l2"><a class="reference internal" href="parallel/mpi.html">ChASE-MPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parallel.html">3. Parallel implementations</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="parallel/mpi.html">3.1. ChASE-MPI</a></li>
 </ul>
 </li>
 </ul>
@@ -269,7 +272,7 @@
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2021, SimLab Quantum Materials.
+        &copy; Copyright 2023, SimLab Quantum Materials.
 
     </p>
   </div>
@@ -291,7 +294,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'v1.1.2',
+            VERSION:'v1.3.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

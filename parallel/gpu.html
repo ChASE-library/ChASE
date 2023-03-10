@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>multi-GPUs in node &mdash; ChASE v1.1.2 documentation</title>
+  <title>3.1.3.3. multi-GPUs in node &mdash; ChASE v1.3.0 documentation</title>
   
 
   
@@ -37,9 +37,9 @@
         <link rel="index" title="Index"
               href="../genindex.html"/>
         <link rel="search" title="Search" href="../search.html"/>
-    <link rel="top" title="ChASE v1.1.2 documentation" href="../index.html"/>
-        <link rel="up" title="Distributed-Memory Architecture" href="distm.html"/>
-        <link rel="prev" title="CPUs in node" href="cpu.html"/>
+    <link rel="top" title="ChASE v1.3.0 documentation" href="../index.html"/>
+        <link rel="up" title="3.1.3. Distributed-Memory Architecture" href="distm.html"/>
+        <link rel="prev" title="3.1.3.2. CPUs in node" href="cpu.html"/>
     <link href="../_static/theme_overrides.css" rel="stylesheet" type="text/css">
 
 
@@ -73,7 +73,7 @@
             
             
               <div class="version">
-                v1.1.2
+                v1.3.0
               </div>
             
           
@@ -103,25 +103,25 @@
 </ul>
 <p class="caption"><span class="caption-text">USER DOCUMENTATION</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../quick-start.html">Quick Start</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation and Setup on a Cluster</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../example.html">Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../module.html">Modules</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../parameters.html">Parameters and Configurations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quick-start.html">1. Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">2. Installation and Setup on a Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage.html">3. How to use ChASE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../parameters.html">4. Parameters and Configurations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../module.html">5. Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../example.html">6. Examples</a></li>
 </ul>
 <p class="caption"><span class="caption-text">DEVELOPER DOCUMENTATION</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="../algorithm.html">General algorithm</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../abstract.html">Virtual Abstract of Numerical Kernels</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="../parallel.html">Parallel implementations</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="elemental.html">ChASE-Elemental</a></li>
-<li class="toctree-l2 current"><a class="reference internal" href="mpi.html">ChASE-MPI</a><ul class="current">
-<li class="toctree-l3"><a class="reference internal" href="comm.html">Interface for ChASE-MPI</a></li>
-<li class="toctree-l3"><a class="reference internal" href="shm.html">Shared Memory Architecture</a></li>
-<li class="toctree-l3 current"><a class="reference internal" href="distm.html">Distributed-Memory Architecture</a><ul class="current">
-<li class="toctree-l4"><a class="reference internal" href="mpi_dla.html">Inter-node Implementation</a></li>
-<li class="toctree-l4"><a class="reference internal" href="cpu.html">CPUs in node</a></li>
-<li class="toctree-l4 current"><a class="current reference internal" href="#">multi-GPUs in node</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../algorithm.html">1. General algorithm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../abstract.html">2. Virtual Abstract of Numerical Kernels</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../parallel.html">3. Parallel implementations</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="mpi.html">3.1. ChASE-MPI</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="comm.html">3.1.1. Interface for ChASE-MPI</a></li>
+<li class="toctree-l3"><a class="reference internal" href="shm.html">3.1.2. Shared Memory Architecture</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="distm.html">3.1.3. Distributed-Memory Architecture</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="mpi_dla.html">3.1.3.1. Inter-node Implementation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="cpu.html">3.1.3.2. CPUs in node</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">3.1.3.3. multi-GPUs in node</a></li>
 </ul>
 </li>
 </ul>
@@ -158,13 +158,13 @@
   <ul class="wy-breadcrumbs">
     <li><a href="../index.html">Docs</a> &raquo;</li>
       
-        <li><a href="../parallel.html">Parallel implementations</a> &raquo;</li>
+        <li><a href="../parallel.html"><span class="section-number">3. </span>Parallel implementations</a> &raquo;</li>
       
-        <li><a href="mpi.html">ChASE-MPI</a> &raquo;</li>
+        <li><a href="mpi.html"><span class="section-number">3.1. </span>ChASE-MPI</a> &raquo;</li>
       
-        <li><a href="distm.html">Distributed-Memory Architecture</a> &raquo;</li>
+        <li><a href="distm.html"><span class="section-number">3.1.3. </span>Distributed-Memory Architecture</a> &raquo;</li>
       
-    <li>multi-GPUs in node</li>
+    <li><span class="section-number">3.1.3.3. </span>multi-GPUs in node</li>
     <li class="wy-breadcrumbs-aside">
       
         
@@ -179,57 +179,40 @@
            <div itemprop="articleBody">
             
   <div class="section" id="multi-gpus-in-node">
-<span id="para-chase-mpi-gpu"></span><h1>multi-GPUs in node<a class="headerlink" href="#multi-gpus-in-node" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="implementation-of-chasempidlainterface-for-multi-gpu">
-<h2>Implementation of ChaseMpiDLAInterface for multi-GPU<a class="headerlink" href="#implementation-of-chasempidlainterface-for-multi-gpu" title="Permalink to this headline">¶</a></h2>
+<span id="para-chase-mpi-gpu"></span><h1><span class="section-number">3.1.3.3. </span>multi-GPUs in node<a class="headerlink" href="#multi-gpus-in-node" title="Permalink to this headline">¶</a></h1>
 <dl class="cpp class">
 <dt id="_CPPv4I0EN5chase3mpi19ChaseMpiDLAMultiGPUE">
 <span id="_CPPv3I0EN5chase3mpi19ChaseMpiDLAMultiGPUE"></span><span id="_CPPv2I0EN5chase3mpi19ChaseMpiDLAMultiGPUE"></span>template&lt;class <code class="sig-name descname">T</code>&gt;<br /><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u"></span><em class="property">class </em><code class="sig-prename descclassname"><a class="reference internal" href="../.unused_material/reference/chase.html#_CPPv45chaseP13MKL_Complex16iP13MKL_Complex16P13MKL_Complex16PdiKiKiPCiKdK15CHASE_MODE_TYPEK14CHASE_OPT_TYPE" title="chase">chase</a>::mpi<code class="sig-prename descclassname">::</code></code><code class="sig-name descname">ChaseMpiDLAMultiGPU</code> : <em class="property">public</em> <a class="reference internal" href="../.unused_material/reference/chase.html#_CPPv45chaseP13MKL_Complex16iP13MKL_Complex16P13MKL_Complex16PdiKiKiPCiKdK15CHASE_MODE_TYPEK14CHASE_OPT_TYPE" title="chase">chase</a>::mpi::<a class="reference internal" href="../module/chasempidlainterface.html#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface">ChaseMpiDLAInterface</a>&lt;<a class="reference internal" href="#_CPPv4I0EN5chase3mpi19ChaseMpiDLAMultiGPUE" title="chase::mpi::ChaseMpiDLAMultiGPU::T">T</a>&gt;<a class="headerlink" href="#_CPPv4I0EN5chase3mpi19ChaseMpiDLAMultiGPUE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>A derived class of <a class="reference internal" href="../module/chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a> which implements the inter-node computation for a MPI-based implementation with GPU supports of ChASE. </p>
-<p>This implementation supports to use all the GPU cards available on each node. The multi-GPU within node can be managed either with 1 MPI rank or each GPU be bounded to one MPI rank. </p>
+<dd><p>A derived class of <a class="reference internal" href="../module/chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a> which implements the inter-node computation for a multi-GPUs MPI-based implementation of ChASE. </p>
 <div class="breathe-sectiondef docutils container">
 <p class="breathe-sectiondef-title rubric">Public Functions</p>
 <dl class="cpp function">
 <dt id="_CPPv4N5chase3mpi19ChaseMpiDLAMultiGPU14preApplicationEP1TNSt6size_tENSt6size_tE">
 <span id="_CPPv3N5chase3mpi19ChaseMpiDLAMultiGPU14preApplicationEP1TNSt6size_tENSt6size_tE"></span><span id="_CPPv2N5chase3mpi19ChaseMpiDLAMultiGPU14preApplicationEP1TNSt6size_tENSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLAMultiGPU::preApplication__TP.std::s.std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u_1af57c38d3cd7dcea58bbbc9345af67294"></span>void <code class="sig-name descname">preApplication</code><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi19ChaseMpiDLAMultiGPUE" title="chase::mpi::ChaseMpiDLAMultiGPU::T">T</a> *<em>V</em>, std::size_t <em>locked</em>, std::size_t <em>block</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi19ChaseMpiDLAMultiGPU14preApplicationEP1TNSt6size_tENSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
 <dd><p><ul class="simple">
-<li><p>For <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u"><span class="std std-ref">ChaseMpiDLAMultiGPU</span></a>, <code class="docutils literal notranslate"><span class="pre">preApplication</span></code> is implemented only with the operation of switching operation flags.</p></li>
-<li><p>For the meaning of this function, please visit <a class="reference internal" href="../module/chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>. </p></li>
+<li><p>This function set initially the operation for <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u_1a86df9f212342893c06bd2cc1e7599836"><span class="std std-ref">apply()</span></a> in filter</p></li>
+<li><p>it copies also <code class="docutils literal notranslate"><span class="pre">C_</span></code> to device buffer <code class="docutils literal notranslate"><span class="pre">d_C</span></code> </p></li>
 </ul>
 </p>
 </dd></dl>
 
 <dl class="cpp function">
-<dt id="_CPPv4N5chase3mpi19ChaseMpiDLAMultiGPU14preApplicationEP1TP1TNSt6size_tENSt6size_tE">
-<span id="_CPPv3N5chase3mpi19ChaseMpiDLAMultiGPU14preApplicationEP1TP1TNSt6size_tENSt6size_tE"></span><span id="_CPPv2N5chase3mpi19ChaseMpiDLAMultiGPU14preApplicationEP1TP1TNSt6size_tENSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLAMultiGPU::preApplication__TP.TP.std::s.std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u_1a6cae875590b130dd35e932edda4ebccb"></span>void <code class="sig-name descname">preApplication</code><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi19ChaseMpiDLAMultiGPUE" title="chase::mpi::ChaseMpiDLAMultiGPU::T">T</a> *<em>V</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi19ChaseMpiDLAMultiGPUE" title="chase::mpi::ChaseMpiDLAMultiGPU::T">T</a> *<em>V2</em>, std::size_t <em>locked</em>, std::size_t <em>block</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi19ChaseMpiDLAMultiGPU14preApplicationEP1TP1TNSt6size_tENSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
+<dt id="_CPPv4N5chase3mpi19ChaseMpiDLAMultiGPU5applyE1T1TNSt6size_tENSt6size_tENSt6size_tE">
+<span id="_CPPv3N5chase3mpi19ChaseMpiDLAMultiGPU5applyE1T1TNSt6size_tENSt6size_tENSt6size_tE"></span><span id="_CPPv2N5chase3mpi19ChaseMpiDLAMultiGPU5applyE1T1TNSt6size_tENSt6size_tENSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLAMultiGPU::apply__T.T.std::s.std::s.std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u_1a86df9f212342893c06bd2cc1e7599836"></span>void <code class="sig-name descname">apply</code><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi19ChaseMpiDLAMultiGPUE" title="chase::mpi::ChaseMpiDLAMultiGPU::T">T</a> <em>alpha</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi19ChaseMpiDLAMultiGPUE" title="chase::mpi::ChaseMpiDLAMultiGPU::T">T</a> <em>beta</em>, std::size_t <em>offset</em>, std::size_t <em>block</em>, std::size_t <em>locked</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi19ChaseMpiDLAMultiGPU5applyE1T1TNSt6size_tENSt6size_tENSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
 <dd><p><ul class="simple">
-<li><p>For <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u"><span class="std std-ref">ChaseMpiDLAMultiGPU</span></a>, <code class="docutils literal notranslate"><span class="pre">preApplication</span></code> is implemented only with the operation of switching operation flags.</p></li>
-<li><p>For the meaning of this function, please visit <a class="reference internal" href="../module/chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>. </p></li>
+<li><p>This function performs the local computation of <code class="docutils literal notranslate"><span class="pre">GEMM</span></code> for <a class="reference internal" href="mpi_dla.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_1a583170f5870557c3ac40025ec99a7948"><span class="std std-ref">ChaseMpiDLA::apply()</span></a></p></li>
+<li><p>It is implemented based on <code class="docutils literal notranslate"><span class="pre">cuBLAS</span></code>’s <code class="docutils literal notranslate"><span class="pre">cublasXgemm</span></code>. </p></li>
 </ul>
 </p>
 </dd></dl>
 
 <dl class="cpp function">
-<dt id="_CPPv4N5chase3mpi19ChaseMpiDLAMultiGPU5applyE1T1TNSt6size_tENSt6size_tE">
-<span id="_CPPv3N5chase3mpi19ChaseMpiDLAMultiGPU5applyE1T1TNSt6size_tENSt6size_tE"></span><span id="_CPPv2N5chase3mpi19ChaseMpiDLAMultiGPU5applyE1T1TNSt6size_tENSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLAMultiGPU::apply__T.T.std::s.std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u_1a24d7a39533b8f084a6b601c7d7ae3dde"></span>void <code class="sig-name descname">apply</code><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi19ChaseMpiDLAMultiGPUE" title="chase::mpi::ChaseMpiDLAMultiGPU::T">T</a> <em>alpha</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi19ChaseMpiDLAMultiGPUE" title="chase::mpi::ChaseMpiDLAMultiGPU::T">T</a> <em>beta</em>, std::size_t <em>offset</em>, std::size_t <em>block</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi19ChaseMpiDLAMultiGPU5applyE1T1TNSt6size_tENSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
+<dt id="_CPPv4N5chase3mpi19ChaseMpiDLAMultiGPU15postApplicationEP1TNSt6size_tENSt6size_tE">
+<span id="_CPPv3N5chase3mpi19ChaseMpiDLAMultiGPU15postApplicationEP1TNSt6size_tENSt6size_tE"></span><span id="_CPPv2N5chase3mpi19ChaseMpiDLAMultiGPU15postApplicationEP1TNSt6size_tENSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLAMultiGPU::postApplication__TP.std::s.std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u_1a518a454bc7a69291a4d307a02cf23458"></span>bool <code class="sig-name descname">postApplication</code><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi19ChaseMpiDLAMultiGPUE" title="chase::mpi::ChaseMpiDLAMultiGPU::T">T</a> *<em>V</em>, std::size_t <em>block</em>, std::size_t <em>locked</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi19ChaseMpiDLAMultiGPU15postApplicationEP1TNSt6size_tENSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
 <dd><p><ul class="simple">
-<li><p>For <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u"><span class="std std-ref">ChaseMpiDLAMultiGPU</span></a>, the matrix-matrix multiplication of local matrices are offloaded to multi-GPUs available on the node. The collection of local product among multi-GPUs is done by MPI communication scheme. The computation on each GPU card is implemented with <code class="docutils literal notranslate"><span class="pre">cublasXgemm</span></code> provided by <code class="docutils literal notranslate"><span class="pre">cuBLAS</span></code>.</p></li>
-<li><p>The multi-GPU HEMM within each node is implemented in class <a class="reference internal" href="#classchase_1_1mpi_1_1mgpu__cuda_d_l_a"><span class="std std-ref">mgpu_cudaDLA</span></a>.</p></li>
-<li><p>The collective communication based on MPI which <strong>ALLREDUCE</strong> the product of local matrices either within the column communicator or row communicator, is implemented within <a class="reference internal" href="mpi_dla.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a"><span class="std std-ref">ChaseMpiDLA</span></a>.</p></li>
-<li><p><strong>Parallelism on distributed-memory system SUPPORT</strong></p></li>
-<li><p><strong>Parallelism within each node among multi-GPUs SUPPORT</strong></p></li>
-<li><p><strong>Parallelism within each GPU SUPPORT</strong> </p></li>
-<li><p>For the meaning of this function, please visit <a class="reference internal" href="../module/chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>. </p></li>
-</ul>
-</p>
-</dd></dl>
-
-<dl class="cpp function">
-<dt id="_CPPv4N5chase3mpi19ChaseMpiDLAMultiGPU15postApplicationEP1TNSt6size_tE">
-<span id="_CPPv3N5chase3mpi19ChaseMpiDLAMultiGPU15postApplicationEP1TNSt6size_tE"></span><span id="_CPPv2N5chase3mpi19ChaseMpiDLAMultiGPU15postApplicationEP1TNSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLAMultiGPU::postApplication__TP.std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u_1adddb1521f4247abbf6753ca1369f9397"></span>bool <code class="sig-name descname">postApplication</code><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi19ChaseMpiDLAMultiGPUE" title="chase::mpi::ChaseMpiDLAMultiGPU::T">T</a> *<em>V</em>, std::size_t <em>block</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi19ChaseMpiDLAMultiGPU15postApplicationEP1TNSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p><ul class="simple">
-<li><p>For <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u"><span class="std std-ref">ChaseMpiDLAMultiGPU</span></a>, <code class="docutils literal notranslate"><span class="pre">postApplication</span></code> is implemented for the synchronization among the GPUs bounded to a same MPI rank.</p></li>
-<li><p>For the meaning of this function, please visit <a class="reference internal" href="../module/chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>. </p></li>
+<li><p>This function copies a number of column of <code class="docutils literal notranslate"><span class="pre">d_C_</span></code> to <code class="docutils literal notranslate"><span class="pre">C_</span></code>.</p></li>
+<li><p>This memory copying is required for <a class="reference internal" href="../module/chasempi.html#classchase_1_1mpi_1_1_chase_mpi_1a4621ca0d3579601cac773f10919fb25d"><span class="std std-ref">ChaseMpi::Lanczos</span></a> in which <code class="docutils literal notranslate"><span class="pre">axpy</span></code>, etc</p></li>
+<li><p>are performed on CPUs. </p></li>
 </ul>
 </p>
 </dd></dl>
@@ -237,11 +220,9 @@
 <dl class="cpp function">
 <dt id="_CPPv4N5chase3mpi19ChaseMpiDLAMultiGPU11shiftMatrixE1Tb">
 <span id="_CPPv3N5chase3mpi19ChaseMpiDLAMultiGPU11shiftMatrixE1Tb"></span><span id="_CPPv2N5chase3mpi19ChaseMpiDLAMultiGPU11shiftMatrixE1Tb"></span><span id="chase::mpi::ChaseMpiDLAMultiGPU::shiftMatrix__T.b"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u_1a08e2f85f1ca2778ca75d77d138c2335b"></span>void <code class="sig-name descname">shiftMatrix</code><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi19ChaseMpiDLAMultiGPUE" title="chase::mpi::ChaseMpiDLAMultiGPU::T">T</a> <em>c</em>, bool <em>isunshift</em> = false<span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi19ChaseMpiDLAMultiGPU11shiftMatrixE1Tb" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p><ul class="simple">
-<li><p>For <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u"><span class="std std-ref">ChaseMpiDLAMultiGPU</span></a>, <code class="docutils literal notranslate"><span class="pre">shiftMatrix</span></code> is implemented in <a class="reference internal" href="mpi_dla.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a"><span class="std std-ref">ChaseMpiDLA</span></a> which is executed on CPUs.</p></li>
-<li><p><strong>Parallelism on distributed-memory system SUPPORT</strong></p></li>
-<li><p>The distribution of matrix <code class="docutils literal notranslate"><span class="pre">H</span></code> owned by each MPI rank to the GPUs bounded to it, it is called in this function. The implementation is within class <a class="reference internal" href="#classchase_1_1mpi_1_1mgpu__cuda_d_l_a"><span class="std std-ref">mgpu_cudaDLA</span></a>.</p></li>
-<li><p>For the meaning of this function, please visit <a class="reference internal" href="../module/chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>. </p></li>
+<dd><p>This function performs the shift of diagonal of a global matrix<ul class="simple">
+<li><p>This global is already distributed on GPUs, so the shifting operation takes place on the local block of global matrix on each GPU.</p></li>
+<li><p>This function is naturally in parallel among all MPI procs and also with each GPU. </p></li>
 </ul>
 </p>
 </dd></dl>
@@ -250,33 +231,8 @@
 <dt id="_CPPv4N5chase3mpi19ChaseMpiDLAMultiGPU8applyVecEP1TP1T">
 <span id="_CPPv3N5chase3mpi19ChaseMpiDLAMultiGPU8applyVecEP1TP1T"></span><span id="_CPPv2N5chase3mpi19ChaseMpiDLAMultiGPU8applyVecEP1TP1T"></span><span id="chase::mpi::ChaseMpiDLAMultiGPU::applyVec__TP.TP"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u_1ab45d9daa24d4739f57f33bbbac92dc7c"></span>void <code class="sig-name descname">applyVec</code><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi19ChaseMpiDLAMultiGPUE" title="chase::mpi::ChaseMpiDLAMultiGPU::T">T</a> *<em>B</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi19ChaseMpiDLAMultiGPUE" title="chase::mpi::ChaseMpiDLAMultiGPU::T">T</a> *<em>C</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi19ChaseMpiDLAMultiGPU8applyVecEP1TP1T" title="Permalink to this definition">¶</a><br /></dt>
 <dd><p><ul class="simple">
-<li><p>For <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u"><span class="std std-ref">ChaseMpiDLAMultiGPU</span></a>, <code class="docutils literal notranslate"><span class="pre">applyVec</span></code> is implemented in <a class="reference internal" href="mpi_dla.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a"><span class="std std-ref">ChaseMpiDLA</span></a>.</p></li>
-<li><p><strong>Parallelism on distributed-memory system SUPPORT</strong></p></li>
-<li><p><strong>Parallelism within each node among multi-GPUs SUPPORT</strong></p></li>
-<li><p><strong>Parallelism within each GPU SUPPORT</strong> </p></li>
-<li><p>For the meaning of this function, please visit <a class="reference internal" href="../module/chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>. </p></li>
-</ul>
-</p>
-</dd></dl>
-
-<dl class="cpp function">
-<dt id="_CPPv4N5chase3mpi19ChaseMpiDLAMultiGPU5langeEcNSt6size_tENSt6size_tEP1TNSt6size_tE">
-<span id="_CPPv3N5chase3mpi19ChaseMpiDLAMultiGPU5langeEcNSt6size_tENSt6size_tEP1TNSt6size_tE"></span><span id="_CPPv2N5chase3mpi19ChaseMpiDLAMultiGPU5langeEcNSt6size_tENSt6size_tEP1TNSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLAMultiGPU::lange__c.std::s.std::s.TP.std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u_1a0efb842c6a2a52e3b2d068f8b717342f"></span>Base&lt;<a class="reference internal" href="#_CPPv4I0EN5chase3mpi19ChaseMpiDLAMultiGPUE" title="chase::mpi::ChaseMpiDLAMultiGPU::T">T</a>&gt; <code class="sig-name descname">lange</code><span class="sig-paren">(</span>char <em>norm</em>, std::size_t <em>m</em>, std::size_t <em>n</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi19ChaseMpiDLAMultiGPUE" title="chase::mpi::ChaseMpiDLAMultiGPU::T">T</a> *<em>A</em>, std::size_t <em>lda</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi19ChaseMpiDLAMultiGPU5langeEcNSt6size_tENSt6size_tEP1TNSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p><ul class="simple">
-<li><p>For <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u"><span class="std std-ref">ChaseMpiDLAMultiGPU</span></a>, <code class="docutils literal notranslate"><span class="pre">lange</span></code> is implemented using <code class="docutils literal notranslate"><span class="pre">LAPACK</span></code> routine <code class="docutils literal notranslate"><span class="pre">xLANGE</span></code>.</p></li>
-<li><p><strong>Parallelism is SUPPORT within node if multi-threading is enabled</strong></p></li>
-<li><p>For the meaning of this function, please visit <a class="reference internal" href="../module/chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>. </p></li>
-</ul>
-</p>
-</dd></dl>
-
-<dl class="cpp function">
-<dt id="_CPPv4N5chase3mpi19ChaseMpiDLAMultiGPU5gegqrENSt6size_tENSt6size_tEP1TNSt6size_tE">
-<span id="_CPPv3N5chase3mpi19ChaseMpiDLAMultiGPU5gegqrENSt6size_tENSt6size_tEP1TNSt6size_tE"></span><span id="_CPPv2N5chase3mpi19ChaseMpiDLAMultiGPU5gegqrENSt6size_tENSt6size_tEP1TNSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLAMultiGPU::gegqr__std::s.std::s.TP.std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u_1abc814316db7fd9d4323455496a170344"></span>void <code class="sig-name descname">gegqr</code><span class="sig-paren">(</span>std::size_t <em>N</em>, std::size_t <em>nevex</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi19ChaseMpiDLAMultiGPUE" title="chase::mpi::ChaseMpiDLAMultiGPU::T">T</a> *<em>approxV</em>, std::size_t <em>LDA</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi19ChaseMpiDLAMultiGPU5gegqrENSt6size_tENSt6size_tEP1TNSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p><ul class="simple">
-<li><p>For <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u"><span class="std std-ref">ChaseMpiDLAMultiGPU</span></a>, <code class="docutils literal notranslate"><span class="pre">gegqr</span></code> is implemented by calling <code class="docutils literal notranslate"><span class="pre">gegqr</span></code> function of class <a class="reference internal" href="#classchase_1_1mpi_1_1mgpu__cuda_d_l_a"><span class="std std-ref">mgpu_cudaDLA</span></a>, whose implementation is based on <code class="docutils literal notranslate"><span class="pre">cuSOLVER</span></code> routines <code class="docutils literal notranslate"><span class="pre">cusolverDnXgeqrf</span></code> and <code class="docutils literal notranslate"><span class="pre">cusolverDnXumgqr</span></code>.</p></li>
-<li><p><strong>Parallelism is SUPPORT within one GPU card</strong></p></li>
-<li><p>For the meaning of this function, please visit <a class="reference internal" href="../module/chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>. </p></li>
+<li><p>All required operations for this function has been done in for <a class="reference internal" href="mpi_dla.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_1ab7c26306be02884107c72ba5d83b5566"><span class="std std-ref">ChaseMpiDLA::applyVec()</span></a>.</p></li>
+<li><p>This function contains nothing in this class. </p></li>
 </ul>
 </p>
 </dd></dl>
@@ -284,246 +240,30 @@
 <dl class="cpp function">
 <dt id="_CPPv4N5chase3mpi19ChaseMpiDLAMultiGPU4axpyENSt6size_tEP1TP1TNSt6size_tEP1TNSt6size_tE">
 <span id="_CPPv3N5chase3mpi19ChaseMpiDLAMultiGPU4axpyENSt6size_tEP1TP1TNSt6size_tEP1TNSt6size_tE"></span><span id="_CPPv2N5chase3mpi19ChaseMpiDLAMultiGPU4axpyENSt6size_tEP1TP1TNSt6size_tEP1TNSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLAMultiGPU::axpy__std::s.TP.TP.std::s.TP.std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u_1aadb2d7053a75aa51f76313471f781dca"></span>void <code class="sig-name descname">axpy</code><span class="sig-paren">(</span>std::size_t <em>N</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi19ChaseMpiDLAMultiGPUE" title="chase::mpi::ChaseMpiDLAMultiGPU::T">T</a> *<em>alpha</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi19ChaseMpiDLAMultiGPUE" title="chase::mpi::ChaseMpiDLAMultiGPU::T">T</a> *<em>x</em>, std::size_t <em>incx</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi19ChaseMpiDLAMultiGPUE" title="chase::mpi::ChaseMpiDLAMultiGPU::T">T</a> *<em>y</em>, std::size_t <em>incy</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi19ChaseMpiDLAMultiGPU4axpyENSt6size_tEP1TP1TNSt6size_tEP1TNSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p><ul class="simple">
-<li><p>For <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u"><span class="std std-ref">ChaseMpiDLAMultiGPU</span></a>, <code class="docutils literal notranslate"><span class="pre">axpy</span></code> is implemented in <a class="reference internal" href="mpi_dla.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a"><span class="std std-ref">ChaseMpiDLA</span></a>.</p></li>
-</ul>
-</p>
-<p><strong>Parallelism is SUPPORT within node if multi-threading is enabled</strong> <ul class="simple">
-<li><p>For the meaning of this function, please visit <a class="reference internal" href="../module/chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>. </p></li>
-</ul>
-</p>
+<dd><p>It is an interface to BLAS <code class="docutils literal notranslate"><span class="pre">?axpy</span></code>. </p>
 </dd></dl>
 
 <dl class="cpp function">
 <dt id="_CPPv4N5chase3mpi19ChaseMpiDLAMultiGPU4scalENSt6size_tEP1TP1TNSt6size_tE">
 <span id="_CPPv3N5chase3mpi19ChaseMpiDLAMultiGPU4scalENSt6size_tEP1TP1TNSt6size_tE"></span><span id="_CPPv2N5chase3mpi19ChaseMpiDLAMultiGPU4scalENSt6size_tEP1TP1TNSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLAMultiGPU::scal__std::s.TP.TP.std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u_1a34d0a1056a6fcbaf65f9ef0f54b02fa4"></span>void <code class="sig-name descname">scal</code><span class="sig-paren">(</span>std::size_t <em>N</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi19ChaseMpiDLAMultiGPUE" title="chase::mpi::ChaseMpiDLAMultiGPU::T">T</a> *<em>a</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi19ChaseMpiDLAMultiGPUE" title="chase::mpi::ChaseMpiDLAMultiGPU::T">T</a> *<em>x</em>, std::size_t <em>incx</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi19ChaseMpiDLAMultiGPU4scalENSt6size_tEP1TP1TNSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p><ul class="simple">
-<li><p>For <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u"><span class="std std-ref">ChaseMpiDLAMultiGPU</span></a>, <code class="docutils literal notranslate"><span class="pre">scal</span></code> is implemented in <a class="reference internal" href="mpi_dla.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a"><span class="std std-ref">ChaseMpiDLA</span></a></p></li>
-<li><p><strong>Parallelism is SUPPORT within node if multi-threading is enabled</strong> </p></li>
-<li><p>For the meaning of this function, please visit <a class="reference internal" href="../module/chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>. </p></li>
-</ul>
-</p>
+<dd><p>It is an interface to BLAS <code class="docutils literal notranslate"><span class="pre">?scal</span></code>. </p>
 </dd></dl>
 
 <dl class="cpp function">
 <dt id="_CPPv4N5chase3mpi19ChaseMpiDLAMultiGPU4nrm2ENSt6size_tEP1TNSt6size_tE">
 <span id="_CPPv3N5chase3mpi19ChaseMpiDLAMultiGPU4nrm2ENSt6size_tEP1TNSt6size_tE"></span><span id="_CPPv2N5chase3mpi19ChaseMpiDLAMultiGPU4nrm2ENSt6size_tEP1TNSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLAMultiGPU::nrm2__std::s.TP.std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u_1a201bbe0c1af5943dd794ba7db1e43ea5"></span>Base&lt;<a class="reference internal" href="#_CPPv4I0EN5chase3mpi19ChaseMpiDLAMultiGPUE" title="chase::mpi::ChaseMpiDLAMultiGPU::T">T</a>&gt; <code class="sig-name descname">nrm2</code><span class="sig-paren">(</span>std::size_t <em>n</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi19ChaseMpiDLAMultiGPUE" title="chase::mpi::ChaseMpiDLAMultiGPU::T">T</a> *<em>x</em>, std::size_t <em>incx</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi19ChaseMpiDLAMultiGPU4nrm2ENSt6size_tEP1TNSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p><ul class="simple">
-<li><p>For <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u"><span class="std std-ref">ChaseMpiDLAMultiGPU</span></a>, <code class="docutils literal notranslate"><span class="pre">nrm2</span></code> is implemented using <code class="docutils literal notranslate"><span class="pre">BLAS</span></code> routine <code class="docutils literal notranslate"><span class="pre">xNRM2</span></code>.</p></li>
-<li><p><strong>Parallelism is SUPPORT within node if multi-threading is enabled</strong> </p></li>
-<li><p>For the meaning of this function, please visit <a class="reference internal" href="../module/chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>. </p></li>
-</ul>
-</p>
+<dd><p>It is an interface to BLAS <code class="docutils literal notranslate"><span class="pre">?nrm2</span></code>. </p>
 </dd></dl>
 
 <dl class="cpp function">
 <dt id="_CPPv4N5chase3mpi19ChaseMpiDLAMultiGPU3dotENSt6size_tEP1TNSt6size_tEP1TNSt6size_tE">
 <span id="_CPPv3N5chase3mpi19ChaseMpiDLAMultiGPU3dotENSt6size_tEP1TNSt6size_tEP1TNSt6size_tE"></span><span id="_CPPv2N5chase3mpi19ChaseMpiDLAMultiGPU3dotENSt6size_tEP1TNSt6size_tEP1TNSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLAMultiGPU::dot__std::s.TP.std::s.TP.std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u_1a6d34344230616dbd0673d6c5bed98dd4"></span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi19ChaseMpiDLAMultiGPUE" title="chase::mpi::ChaseMpiDLAMultiGPU::T">T</a> <code class="sig-name descname">dot</code><span class="sig-paren">(</span>std::size_t <em>n</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi19ChaseMpiDLAMultiGPUE" title="chase::mpi::ChaseMpiDLAMultiGPU::T">T</a> *<em>x</em>, std::size_t <em>incx</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi19ChaseMpiDLAMultiGPUE" title="chase::mpi::ChaseMpiDLAMultiGPU::T">T</a> *<em>y</em>, std::size_t <em>incy</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi19ChaseMpiDLAMultiGPU3dotENSt6size_tEP1TNSt6size_tEP1TNSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p><ul class="simple">
-<li><p>For <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u"><span class="std std-ref">ChaseMpiDLAMultiGPU</span></a>, <code class="docutils literal notranslate"><span class="pre">dot</span></code> is implemented using <code class="docutils literal notranslate"><span class="pre">BLAS</span></code> routine <code class="docutils literal notranslate"><span class="pre">xDOT</span></code>.</p></li>
-<li><p><strong>Parallelism is SUPPORT within node if multi-threading is enabled</strong> </p></li>
-<li><p>For the meaning of this function, please visit <a class="reference internal" href="../module/chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>. </p></li>
-</ul>
-</p>
-</dd></dl>
-
-<dl class="cpp function">
-<dt id="_CPPv4N5chase3mpi19ChaseMpiDLAMultiGPU10gemm_smallE12CBLAS_LAYOUT15CBLAS_TRANSPOSE15CBLAS_TRANSPOSENSt6size_tENSt6size_tENSt6size_tEP1TP1TNSt6size_tEP1TNSt6size_tEP1TP1TNSt6size_tE">
-<span id="_CPPv3N5chase3mpi19ChaseMpiDLAMultiGPU10gemm_smallE12CBLAS_LAYOUT15CBLAS_TRANSPOSE15CBLAS_TRANSPOSENSt6size_tENSt6size_tENSt6size_tEP1TP1TNSt6size_tEP1TNSt6size_tEP1TP1TNSt6size_tE"></span><span id="_CPPv2N5chase3mpi19ChaseMpiDLAMultiGPU10gemm_smallE12CBLAS_LAYOUT15CBLAS_TRANSPOSE15CBLAS_TRANSPOSENSt6size_tENSt6size_tENSt6size_tEP1TP1TNSt6size_tEP1TNSt6size_tEP1TP1TNSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLAMultiGPU::gemm_small__CBLAS_LAYOUT.CBLAS_TRANSPOSE.CBLAS_TRANSPOSE.std::s.std::s.std::s.TP.TP.std::s.TP.std::s.TP.TP.std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u_1a4bc0828e49abe4944c0a1b829d947829"></span>void <code class="sig-name descname">gemm_small</code><span class="sig-paren">(</span>CBLAS_LAYOUT <em>Layout</em>, CBLAS_TRANSPOSE <em>transa</em>, CBLAS_TRANSPOSE <em>transb</em>, std::size_t <em>m</em>, std::size_t <em>n</em>, std::size_t <em>k</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi19ChaseMpiDLAMultiGPUE" title="chase::mpi::ChaseMpiDLAMultiGPU::T">T</a> *<em>alpha</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi19ChaseMpiDLAMultiGPUE" title="chase::mpi::ChaseMpiDLAMultiGPU::T">T</a> *<em>a</em>, std::size_t <em>lda</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi19ChaseMpiDLAMultiGPUE" title="chase::mpi::ChaseMpiDLAMultiGPU::T">T</a> *<em>b</em>, std::size_t <em>ldb</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi19ChaseMpiDLAMultiGPUE" title="chase::mpi::ChaseMpiDLAMultiGPU::T">T</a> *<em>beta</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi19ChaseMpiDLAMultiGPUE" title="chase::mpi::ChaseMpiDLAMultiGPU::T">T</a> *<em>c</em>, std::size_t <em>ldc</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi19ChaseMpiDLAMultiGPU10gemm_smallE12CBLAS_LAYOUT15CBLAS_TRANSPOSE15CBLAS_TRANSPOSENSt6size_tENSt6size_tENSt6size_tEP1TP1TNSt6size_tEP1TNSt6size_tEP1TP1TNSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p><ul class="simple">
-<li><p>For <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u"><span class="std std-ref">ChaseMpiDLAMultiGPU</span></a>, <code class="docutils literal notranslate"><span class="pre">gemm_small</span></code> is implemented in <a class="reference internal" href="mpi_dla.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a"><span class="std std-ref">ChaseMpiDLA</span></a>.</p></li>
-<li><p><strong>Parallelism is SUPPORT within node if multi-threading is enabled</strong> </p></li>
-<li><p>For the meaning of this function, please visit <a class="reference internal" href="../module/chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>. </p></li>
-</ul>
-</p>
-</dd></dl>
-
-<dl class="cpp function">
-<dt id="_CPPv4N5chase3mpi19ChaseMpiDLAMultiGPU10gemm_largeE12CBLAS_LAYOUT15CBLAS_TRANSPOSE15CBLAS_TRANSPOSENSt6size_tENSt6size_tENSt6size_tEP1TP1TNSt6size_tEP1TNSt6size_tEP1TP1TNSt6size_tE">
-<span id="_CPPv3N5chase3mpi19ChaseMpiDLAMultiGPU10gemm_largeE12CBLAS_LAYOUT15CBLAS_TRANSPOSE15CBLAS_TRANSPOSENSt6size_tENSt6size_tENSt6size_tEP1TP1TNSt6size_tEP1TNSt6size_tEP1TP1TNSt6size_tE"></span><span id="_CPPv2N5chase3mpi19ChaseMpiDLAMultiGPU10gemm_largeE12CBLAS_LAYOUT15CBLAS_TRANSPOSE15CBLAS_TRANSPOSENSt6size_tENSt6size_tENSt6size_tEP1TP1TNSt6size_tEP1TNSt6size_tEP1TP1TNSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLAMultiGPU::gemm_large__CBLAS_LAYOUT.CBLAS_TRANSPOSE.CBLAS_TRANSPOSE.std::s.std::s.std::s.TP.TP.std::s.TP.std::s.TP.TP.std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u_1ab3e5c149c78c07bfcc687497c6f8d0c7"></span>void <code class="sig-name descname">gemm_large</code><span class="sig-paren">(</span>CBLAS_LAYOUT <em>Layout</em>, CBLAS_TRANSPOSE <em>transa</em>, CBLAS_TRANSPOSE <em>transb</em>, std::size_t <em>m</em>, std::size_t <em>n</em>, std::size_t <em>k</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi19ChaseMpiDLAMultiGPUE" title="chase::mpi::ChaseMpiDLAMultiGPU::T">T</a> *<em>alpha</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi19ChaseMpiDLAMultiGPUE" title="chase::mpi::ChaseMpiDLAMultiGPU::T">T</a> *<em>a</em>, std::size_t <em>lda</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi19ChaseMpiDLAMultiGPUE" title="chase::mpi::ChaseMpiDLAMultiGPU::T">T</a> *<em>b</em>, std::size_t <em>ldb</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi19ChaseMpiDLAMultiGPUE" title="chase::mpi::ChaseMpiDLAMultiGPU::T">T</a> *<em>beta</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi19ChaseMpiDLAMultiGPUE" title="chase::mpi::ChaseMpiDLAMultiGPU::T">T</a> *<em>c</em>, std::size_t <em>ldc</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi19ChaseMpiDLAMultiGPU10gemm_largeE12CBLAS_LAYOUT15CBLAS_TRANSPOSE15CBLAS_TRANSPOSENSt6size_tENSt6size_tENSt6size_tEP1TP1TNSt6size_tEP1TNSt6size_tEP1TP1TNSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p><ul class="simple">
-<li><p>For <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u"><span class="std std-ref">ChaseMpiDLAMultiGPU</span></a>, <code class="docutils literal notranslate"><span class="pre">gemm_large</span></code> is implemented in <a class="reference internal" href="mpi_dla.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a"><span class="std std-ref">ChaseMpiDLA</span></a>.</p></li>
-<li><p><strong>Parallelism is SUPPORT within node if multi-threading is enabled</strong> </p></li>
-<li><p>For the meaning of this function, please visit <a class="reference internal" href="../module/chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>. </p></li>
-</ul>
-</p>
-</dd></dl>
-
-<dl class="cpp function">
-<dt id="_CPPv4N5chase3mpi19ChaseMpiDLAMultiGPU5stemrEiccNSt6size_tEPdPdddNSt6size_tENSt6size_tEPiPdPdNSt6size_tENSt6size_tEPiP14lapack_logical">
-<span id="_CPPv3N5chase3mpi19ChaseMpiDLAMultiGPU5stemrEiccNSt6size_tEPdPdddNSt6size_tENSt6size_tEPiPdPdNSt6size_tENSt6size_tEPiP14lapack_logical"></span><span id="_CPPv2N5chase3mpi19ChaseMpiDLAMultiGPU5stemrEiccNSt6size_tEPdPdddNSt6size_tENSt6size_tEPiPdPdNSt6size_tENSt6size_tEPiP14lapack_logical"></span><span id="chase::mpi::ChaseMpiDLAMultiGPU::stemr__i.c.c.std::s.doubleP.doubleP.double.double.std::s.std::s.iP.doubleP.doubleP.std::s.std::s.iP.lapack_logicalP"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u_1a104993c00cb5c9a9e93123b71871b075"></span>std::size_t <code class="sig-name descname">stemr</code><span class="sig-paren">(</span>int <em>matrix_layout</em>, char <em>jobz</em>, char <em>range</em>, std::size_t <em>n</em>, double *<em>d</em>, double *<em>e</em>, double <em>vl</em>, double <em>vu</em>, std::size_t <em>il</em>, std::size_t <em>iu</em>, int *<em>m</em>, double *<em>w</em>, double *<em>z</em>, std::size_t <em>ldz</em>, std::size_t <em>nzc</em>, int *<em>isuppz</em>, lapack_logical *<em>tryrac</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi19ChaseMpiDLAMultiGPU5stemrEiccNSt6size_tEPdPdddNSt6size_tENSt6size_tEPiPdPdNSt6size_tENSt6size_tEPiP14lapack_logical" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p><ul class="simple">
-<li><p>For <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u"><span class="std std-ref">ChaseMpiDLAMultiGPU</span></a>, <code class="docutils literal notranslate"><span class="pre">stemr</span></code> with scalar being real and double precision, is implemented using <code class="docutils literal notranslate"><span class="pre">LAPACK</span></code> routine <code class="docutils literal notranslate"><span class="pre">DSTEMR</span></code>.</p></li>
-<li><p><strong>Parallelism is SUPPORT within node if multi-threading is enabled</strong> </p></li>
-<li><p>For the meaning of this function, please visit <a class="reference internal" href="../module/chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>. </p></li>
-</ul>
-</p>
-</dd></dl>
-
-<dl class="cpp function">
-<dt id="_CPPv4N5chase3mpi19ChaseMpiDLAMultiGPU5stemrEiccNSt6size_tEPfPfffNSt6size_tENSt6size_tEPiPfPfNSt6size_tENSt6size_tEPiP14lapack_logical">
-<span id="_CPPv3N5chase3mpi19ChaseMpiDLAMultiGPU5stemrEiccNSt6size_tEPfPfffNSt6size_tENSt6size_tEPiPfPfNSt6size_tENSt6size_tEPiP14lapack_logical"></span><span id="_CPPv2N5chase3mpi19ChaseMpiDLAMultiGPU5stemrEiccNSt6size_tEPfPfffNSt6size_tENSt6size_tEPiPfPfNSt6size_tENSt6size_tEPiP14lapack_logical"></span><span id="chase::mpi::ChaseMpiDLAMultiGPU::stemr__i.c.c.std::s.floatP.floatP.float.float.std::s.std::s.iP.floatP.floatP.std::s.std::s.iP.lapack_logicalP"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u_1a22777e479ec7c4836b2441c4aee2ac03"></span>std::size_t <code class="sig-name descname">stemr</code><span class="sig-paren">(</span>int <em>matrix_layout</em>, char <em>jobz</em>, char <em>range</em>, std::size_t <em>n</em>, float *<em>d</em>, float *<em>e</em>, float <em>vl</em>, float <em>vu</em>, std::size_t <em>il</em>, std::size_t <em>iu</em>, int *<em>m</em>, float *<em>w</em>, float *<em>z</em>, std::size_t <em>ldz</em>, std::size_t <em>nzc</em>, int *<em>isuppz</em>, lapack_logical *<em>tryrac</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi19ChaseMpiDLAMultiGPU5stemrEiccNSt6size_tEPfPfffNSt6size_tENSt6size_tEPiPfPfNSt6size_tENSt6size_tEPiP14lapack_logical" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p><ul class="simple">
-<li><p>For <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u"><span class="std std-ref">ChaseMpiDLAMultiGPU</span></a>, <code class="docutils literal notranslate"><span class="pre">stemr</span></code> with scalar being real and single precision, is implemented using <code class="docutils literal notranslate"><span class="pre">LAPACK</span></code> routine <code class="docutils literal notranslate"><span class="pre">SSTEMR</span></code>.</p></li>
-<li><p><strong>Parallelism is SUPPORT within node if multi-threading is enabled</strong> </p></li>
-<li><p>For the meaning of this function, please visit <a class="reference internal" href="../module/chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>. </p></li>
-</ul>
-</p>
-</dd></dl>
-
-<dl class="cpp function">
-<dt id="_CPPv4N5chase3mpi19ChaseMpiDLAMultiGPU9RR_kernelENSt6size_tENSt6size_tEP1TNSt6size_tEP1T1T1TP4BaseI1TE">
-<span id="_CPPv3N5chase3mpi19ChaseMpiDLAMultiGPU9RR_kernelENSt6size_tENSt6size_tEP1TNSt6size_tEP1T1T1TP4BaseI1TE"></span><span id="_CPPv2N5chase3mpi19ChaseMpiDLAMultiGPU9RR_kernelENSt6size_tENSt6size_tEP1TNSt6size_tEP1T1T1TP4BaseI1TE"></span><span id="chase::mpi::ChaseMpiDLAMultiGPU::RR_kernel__std::s.std::s.TP.std::s.TP.T.T.Base:T:P"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u_1adf4ceb52465cab4bd903ad1f2b96f33e"></span>void <code class="sig-name descname">RR_kernel</code><span class="sig-paren">(</span>std::size_t <em>N</em>, std::size_t <em>block</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi19ChaseMpiDLAMultiGPUE" title="chase::mpi::ChaseMpiDLAMultiGPU::T">T</a> *<em>approxV</em>, std::size_t <em>locked</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi19ChaseMpiDLAMultiGPUE" title="chase::mpi::ChaseMpiDLAMultiGPU::T">T</a> *<em>workspace</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi19ChaseMpiDLAMultiGPUE" title="chase::mpi::ChaseMpiDLAMultiGPU::T">T</a> <em>One</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi19ChaseMpiDLAMultiGPUE" title="chase::mpi::ChaseMpiDLAMultiGPU::T">T</a> <em>Zero</em>, Base&lt;<a class="reference internal" href="#_CPPv4I0EN5chase3mpi19ChaseMpiDLAMultiGPUE" title="chase::mpi::ChaseMpiDLAMultiGPU::T">T</a>&gt; *<em>ritzv</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi19ChaseMpiDLAMultiGPU9RR_kernelENSt6size_tENSt6size_tEP1TNSt6size_tEP1T1T1TP4BaseI1TE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p><ul class="simple">
-<li><p>For <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u"><span class="std std-ref">ChaseMpiDLAMultiGPU</span></a>, <code class="docutils literal notranslate"><span class="pre">RR_kernel</span></code> is implemented by calling the <code class="docutils literal notranslate"><span class="pre">RR_kernel</span></code> function of class <a class="reference internal" href="#classchase_1_1mpi_1_1mgpu__cuda_d_l_a"><span class="std std-ref">mgpu_cudaDLA</span></a>, whose implementation is based on <code class="docutils literal notranslate"><span class="pre">cuBLAS</span></code> routine <code class="docutils literal notranslate"><span class="pre">cublasXgemm</span></code> and <code class="docutils literal notranslate"><span class="pre">LAPACK</span></code> routine <code class="docutils literal notranslate"><span class="pre">(SY)HEEVD</span></code>.<ul>
-<li><p>The 1st operation <code class="docutils literal notranslate"><span class="pre">A</span> <span class="pre">&lt;-</span> <span class="pre">W^T</span> <span class="pre">*</span> <span class="pre">V</span></code> is implemented by <code class="docutils literal notranslate"><span class="pre">cublasXgemm</span></code> from <code class="docutils literal notranslate"><span class="pre">cuBLAS</span></code>.</p></li>
-<li><p>The 2nd operation which computes the eigenpairs of <code class="docutils literal notranslate"><span class="pre">A</span></code>, is implemented by <code class="docutils literal notranslate"><span class="pre">(SY)HEEVD</span></code> from <code class="docutils literal notranslate"><span class="pre">LAPACK</span></code>.</p></li>
-<li><p>The 3rd operation which computes <code class="docutils literal notranslate"><span class="pre">W&lt;-V*A</span></code> is implemented by <code class="docutils literal notranslate"><span class="pre">cublasXgemm</span></code> from <code class="docutils literal notranslate"><span class="pre">cuBLAS</span></code>.</p></li>
-</ul>
-</p></li>
-<li><p><strong>for (SY)HHEVD, parallelism is SUPPORT within node if multi-threading is actived</strong></p></li>
-<li><p><strong>for cublasXgemm, parallelism is SUPPORT within one GPU card</strong></p></li>
-<li><p>For the meaning of this function, please visit <a class="reference internal" href="../module/chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>. </p></li>
-</ul>
-</p>
+<dd><p>It is an interface to BLAS <code class="docutils literal notranslate"><span class="pre">?dot</span></code>. </p>
 </dd></dl>
 
 </div>
 </dd></dl>
 
-</div>
-<div class="section" id="implementation-of-selected-dla-with-multi-gpus">
-<h2>Implementation of Selected DLA with multi-GPUs<a class="headerlink" href="#implementation-of-selected-dla-with-multi-gpus" title="Permalink to this headline">¶</a></h2>
-<dl class="cpp class">
-<dt id="_CPPv4I0EN5chase3mpi12mgpu_cudaDLAE">
-<span id="_CPPv3I0EN5chase3mpi12mgpu_cudaDLAE"></span><span id="_CPPv2I0EN5chase3mpi12mgpu_cudaDLAE"></span>template&lt;class <code class="sig-name descname">T</code>&gt;<br /><span class="target" id="classchase_1_1mpi_1_1mgpu__cuda_d_l_a"></span><em class="property">class </em><code class="sig-prename descclassname"><a class="reference internal" href="../.unused_material/reference/chase.html#_CPPv45chaseP13MKL_Complex16iP13MKL_Complex16P13MKL_Complex16PdiKiKiPCiKdK15CHASE_MODE_TYPEK14CHASE_OPT_TYPE" title="chase">chase</a>::mpi<code class="sig-prename descclassname">::</code></code><code class="sig-name descname">mgpu_cudaDLA</code><a class="headerlink" href="#_CPPv4I0EN5chase3mpi12mgpu_cudaDLAE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>A class to defines the multi-GPU implementation of DLA within node. </p>
-<p>This class mainly implements a multi-GPU for <code class="docutils literal notranslate"><span class="pre">HEMM</span></code>, which is able to be executed either with 1 MPI managing multi-GPUs or each GPU being bounded to one MPI rank. This class mainly provides the basic functionality for a series of a multi-GPU Hemm-s. The core functionalies are to distribute H, V and W between the GPU devices and to perform the Hemm operation in distributed manner among all GPU devices. The class supports two type of operations<ul class="simple">
-<li><p>W = alpha * H * V + beta * W (refered as ‘cAb’ operation)</p></li>
-<li><p>V = alpha * H^C * W + beta * V (refered as ‘bAc’ operation)</p></li>
-</ul>
-</p>
-<p>such that not additional redististribution of H is required between successive Hemm calls.</p>
-<p>This class also provides single-GPU implementation of <code class="docutils literal notranslate"><span class="pre">gegqr</span></code> and <code class="docutils literal notranslate"><span class="pre">RR_kernel</span></code>. </p>
-<div class="breathe-sectiondef docutils container">
-<p class="breathe-sectiondef-title rubric">Public Functions</p>
-<dl class="cpp function">
-<dt id="_CPPv4N5chase3mpi12mgpu_cudaDLA12mgpu_cudaDLAEv">
-<span id="_CPPv3N5chase3mpi12mgpu_cudaDLA12mgpu_cudaDLAEv"></span><span id="_CPPv2N5chase3mpi12mgpu_cudaDLA12mgpu_cudaDLAEv"></span><span id="chase::mpi::mgpu_cudaDLA::mgpu_cudaDLA"></span><span class="target" id="classchase_1_1mpi_1_1mgpu__cuda_d_l_a_1a53a995857f36d6d177bc94b6410af3b5"></span><code class="sig-name descname">mgpu_cudaDLA</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi12mgpu_cudaDLA12mgpu_cudaDLAEv" title="Permalink to this definition">¶</a><br /></dt>
-<dd></dd></dl>
-
-<dl class="cpp function">
-<dt id="_CPPv4N5chase3mpi12mgpu_cudaDLA12mgpu_cudaDLAEP18ChaseMpiPropertiesI1TENSt6size_tENSt6size_tENSt6size_tE">
-<span id="_CPPv3N5chase3mpi12mgpu_cudaDLA12mgpu_cudaDLAEP18ChaseMpiPropertiesI1TENSt6size_tENSt6size_tENSt6size_tE"></span><span id="_CPPv2N5chase3mpi12mgpu_cudaDLA12mgpu_cudaDLAEP18ChaseMpiPropertiesI1TENSt6size_tENSt6size_tENSt6size_tE"></span><span id="chase::mpi::mgpu_cudaDLA::mgpu_cudaDLA__ChaseMpiProperties:T:P.std::s.std::s.std::s"></span><span class="target" id="classchase_1_1mpi_1_1mgpu__cuda_d_l_a_1a9353e8f015d650259f0b2b83e4bdd90f"></span><code class="sig-name descname">mgpu_cudaDLA</code><span class="sig-paren">(</span><a class="reference internal" href="../module/chasempiproperties.html#_CPPv4I0EN5chase3mpi18ChaseMpiPropertiesE" title="chase::mpi::ChaseMpiProperties">ChaseMpiProperties</a>&lt;<a class="reference internal" href="#_CPPv4I0EN5chase3mpi12mgpu_cudaDLAE" title="chase::mpi::mgpu_cudaDLA::T">T</a>&gt; *<em>matrix_properties</em>, std::size_t <em>m</em>, std::size_t <em>n</em>, std::size_t <em>maxBlock</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi12mgpu_cudaDLA12mgpu_cudaDLAEP18ChaseMpiPropertiesI1TENSt6size_tENSt6size_tENSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>A constructor of <a class="reference internal" href="#classchase_1_1mpi_1_1mgpu__cuda_d_l_a"><span class="std std-ref">mgpu_cudaDLA</span></a> which sets GPUs, allocate device arrays, create cublas and cusolver handles and streams. </p>
-<p><dl class="simple">
-<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">matrix_properties</span></code>: it is an object of <a class="reference internal" href="../module/chasempiproperties.html#classchase_1_1mpi_1_1_chase_mpi_properties"><span class="std std-ref">ChaseMpiProperties</span></a>, which defines the MPI environment and data distribution scheme in ChASE-MPI. </p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">m</span></code>: row number of local matrix stored on each MPI rank. </p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">n</span></code>: column number of local matrix stored on each MPI rank. </p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">maxBlock</span></code>: maximum number of column of the rectangular matrix <code class="docutils literal notranslate"><span class="pre">V</span></code>, which equals to <code class="docutils literal notranslate"><span class="pre">nev+nex</span></code>. </p></li>
-</ul>
-</dd>
-</dl>
-</p>
-</dd></dl>
-
-<dl class="cpp function">
-<dt id="_CPPv4N5chase3mpi12mgpu_cudaDLA12distribute_HEP1TNSt6size_tE">
-<span id="_CPPv3N5chase3mpi12mgpu_cudaDLA12distribute_HEP1TNSt6size_tE"></span><span id="_CPPv2N5chase3mpi12mgpu_cudaDLA12distribute_HEP1TNSt6size_tE"></span><span id="chase::mpi::mgpu_cudaDLA::distribute_H__TP.std::s"></span><span class="target" id="classchase_1_1mpi_1_1mgpu__cuda_d_l_a_1a9eb19b5e9ccafdf800f2b93bf64c4927"></span>void <code class="sig-name descname">distribute_H</code><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi12mgpu_cudaDLAE" title="chase::mpi::mgpu_cudaDLA::T">T</a> *<em>orig_H</em>, std::size_t <em>ld_origH</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi12mgpu_cudaDLA12distribute_HEP1TNSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>This member functions Distribute given matrix <code class="docutils literal notranslate"><span class="pre">orig_H</span></code> among GPUs. </p>
-<p><dl class="simple">
-<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">orig_H</span></code>: original matrix to be distributed on Host </p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">ld_origH</span></code>: leading dimension of <code class="docutils literal notranslate"><span class="pre">orig_H</span></code>. </p></li>
-</ul>
-</dd>
-</dl>
-</p>
-</dd></dl>
-
-<dl class="cpp function">
-<dt id="_CPPv4N5chase3mpi12mgpu_cudaDLA12distribute_VEP1TNSt6size_tENSt6size_tE">
-<span id="_CPPv3N5chase3mpi12mgpu_cudaDLA12distribute_VEP1TNSt6size_tENSt6size_tE"></span><span id="_CPPv2N5chase3mpi12mgpu_cudaDLA12distribute_VEP1TNSt6size_tENSt6size_tE"></span><span id="chase::mpi::mgpu_cudaDLA::distribute_V__TP.std::s.std::s"></span><span class="target" id="classchase_1_1mpi_1_1mgpu__cuda_d_l_a_1aec1721f50f88185bf5cb45d58b00591a"></span>void <code class="sig-name descname">distribute_V</code><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi12mgpu_cudaDLAE" title="chase::mpi::mgpu_cudaDLA::T">T</a> *<em>buf_init</em>, std::size_t <em>ldBuf</em>, std::size_t <em>block</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi12mgpu_cudaDLA12distribute_VEP1TNSt6size_tENSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>This member function divides given matrix <code class="docutils literal notranslate"><span class="pre">buf_init</span></code> into panels and distributed among GPUs. </p>
-<p><dl class="simple">
-<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">buf_init</span></code>: the given matrix to be divided into panels and distributed among GPUs </p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">ldBuf</span></code>: the leading dimension of <code class="docutils literal notranslate"><span class="pre">buf_init</span></code> </p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">block</span></code>: number of non-converged eigenvectors, it indicates the number of columns in <code class="docutils literal notranslate"><span class="pre">V</span></code> which performs the <code class="docutils literal notranslate"><span class="pre">HEMM</span></code> operation. </p></li>
-</ul>
-</dd>
-</dl>
-</p>
-</dd></dl>
-
-<dl class="cpp function">
-<dt id="_CPPv4N5chase3mpi12mgpu_cudaDLA11computeHemmENSt6size_tENSt6size_tE1T1T">
-<span id="_CPPv3N5chase3mpi12mgpu_cudaDLA11computeHemmENSt6size_tENSt6size_tE1T1T"></span><span id="_CPPv2N5chase3mpi12mgpu_cudaDLA11computeHemmENSt6size_tENSt6size_tE1T1T"></span><span id="chase::mpi::mgpu_cudaDLA::computeHemm__std::s.std::s.T.T"></span><span class="target" id="classchase_1_1mpi_1_1mgpu__cuda_d_l_a_1ae741c679e96811d225c981f13890ab45"></span>void <code class="sig-name descname">computeHemm</code><span class="sig-paren">(</span>std::size_t <em>block</em>, std::size_t <em>offset</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi12mgpu_cudaDLAE" title="chase::mpi::mgpu_cudaDLA::T">T</a> <em>alpha</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi12mgpu_cudaDLAE" title="chase::mpi::mgpu_cudaDLA::T">T</a> <em>beta</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi12mgpu_cudaDLA11computeHemmENSt6size_tENSt6size_tE1T1T" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>This member function computes HEMM within each GPU card. </p>
-<p><dl class="simple">
-<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">block</span></code>: number of non-converged eigenvectors, it indicates the number of columns in <code class="docutils literal notranslate"><span class="pre">V</span></code> which performs the <code class="docutils literal notranslate"><span class="pre">HEMM</span></code> operation. </p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">alpha&amp;beta</span></code>: scalars of type <code class="docutils literal notranslate"><span class="pre">T</span></code> in <code class="docutils literal notranslate"><span class="pre">HEMM</span></code> functions. </p></li>
-</ul>
-</dd>
-</dl>
-</p>
-</dd></dl>
-
-<dl class="cpp function">
-<dt id="_CPPv4N5chase3mpi12mgpu_cudaDLA8return_WEP1TNSt6size_tENSt6size_tENSt6size_tE">
-<span id="_CPPv3N5chase3mpi12mgpu_cudaDLA8return_WEP1TNSt6size_tENSt6size_tENSt6size_tE"></span><span id="_CPPv2N5chase3mpi12mgpu_cudaDLA8return_WEP1TNSt6size_tENSt6size_tENSt6size_tE"></span><span id="chase::mpi::mgpu_cudaDLA::return_W__TP.std::s.std::s.std::s"></span><span class="target" id="classchase_1_1mpi_1_1mgpu__cuda_d_l_a_1a9a852ce4cdb3083d1794aad9ef754ab3"></span>void <code class="sig-name descname">return_W</code><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi12mgpu_cudaDLAE" title="chase::mpi::mgpu_cudaDLA::T">T</a> *<em>buf_target</em>, std::size_t <em>ldBuf</em>, std::size_t <em>block</em>, std::size_t <em>offset</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi12mgpu_cudaDLA8return_WEP1TNSt6size_tENSt6size_tENSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>This member function collects and returns the computed <code class="docutils literal notranslate"><span class="pre">W</span></code> from the GPUs to the host. </p>
-<p><dl class="simple">
-<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">buf_target</span></code>: the matrix host which the computed <code class="docutils literal notranslate"><span class="pre">W</span></code> should be copied to. </p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">ldBuf</span></code>: the leading dimension of <code class="docutils literal notranslate"><span class="pre">buf_target</span></code> </p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">block</span></code>: number of non-converged eigenvectors, it indicates the number of columns in <code class="docutils literal notranslate"><span class="pre">V</span></code> which performs the <code class="docutils literal notranslate"><span class="pre">HEMM</span></code> operation. </p></li>
-</ul>
-</dd>
-</dl>
-</p>
-</dd></dl>
-
-<dl class="cpp function">
-<dt id="_CPPv4N5chase3mpi12mgpu_cudaDLA14synchronizeAllEv">
-<span id="_CPPv3N5chase3mpi12mgpu_cudaDLA14synchronizeAllEv"></span><span id="_CPPv2N5chase3mpi12mgpu_cudaDLA14synchronizeAllEv"></span><span id="chase::mpi::mgpu_cudaDLA::synchronizeAll"></span><span class="target" id="classchase_1_1mpi_1_1mgpu__cuda_d_l_a_1a8879600672bf0c4c2448c365764262fc"></span>void <code class="sig-name descname">synchronizeAll</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi12mgpu_cudaDLA14synchronizeAllEv" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>This member function synchronizes all devices. </p>
-</dd></dl>
-
-<dl class="cpp function">
-<dt id="_CPPv4N5chase3mpi12mgpu_cudaDLA5gegqrENSt6size_tENSt6size_tEP1TNSt6size_tE">
-<span id="_CPPv3N5chase3mpi12mgpu_cudaDLA5gegqrENSt6size_tENSt6size_tEP1TNSt6size_tE"></span><span id="_CPPv2N5chase3mpi12mgpu_cudaDLA5gegqrENSt6size_tENSt6size_tEP1TNSt6size_tE"></span><span id="chase::mpi::mgpu_cudaDLA::gegqr__std::s.std::s.TP.std::s"></span><span class="target" id="classchase_1_1mpi_1_1mgpu__cuda_d_l_a_1a2b20106cd63e10fad8cd51de5588ad7a"></span>void <code class="sig-name descname">gegqr</code><span class="sig-paren">(</span>std::size_t <em>N</em>, std::size_t <em>nevex</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi12mgpu_cudaDLAE" title="chase::mpi::mgpu_cudaDLA::T">T</a> *<em>approxV</em>, std::size_t <em>LDA</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi12mgpu_cudaDLA5gegqrENSt6size_tENSt6size_tEP1TNSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p><ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">gegqr</span></code> is implemented using <code class="docutils literal notranslate"><span class="pre">cuSOLVER</span></code> routines <code class="docutils literal notranslate"><span class="pre">cusolverDnXgeqrf</span></code> and <code class="docutils literal notranslate"><span class="pre">cusolverDnXumgqr</span></code>.</p></li>
-<li><p><strong>Parallelism is SUPPORT within one GPU card</strong></p></li>
-<li><p>For the meaning of this function, please visit <a class="reference internal" href="../module/chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>. </p></li>
-</ul>
-</p>
-</dd></dl>
-
-<dl class="cpp function">
-<dt id="_CPPv4N5chase3mpi12mgpu_cudaDLA9RR_kernelENSt6size_tENSt6size_tEP1TNSt6size_tEP1T1T1TP4BaseI1TE">
-<span id="_CPPv3N5chase3mpi12mgpu_cudaDLA9RR_kernelENSt6size_tENSt6size_tEP1TNSt6size_tEP1T1T1TP4BaseI1TE"></span><span id="_CPPv2N5chase3mpi12mgpu_cudaDLA9RR_kernelENSt6size_tENSt6size_tEP1TNSt6size_tEP1T1T1TP4BaseI1TE"></span><span id="chase::mpi::mgpu_cudaDLA::RR_kernel__std::s.std::s.TP.std::s.TP.T.T.Base:T:P"></span><span class="target" id="classchase_1_1mpi_1_1mgpu__cuda_d_l_a_1abfb226957cc8dcfadb7bfb4e1e403599"></span>void <code class="sig-name descname">RR_kernel</code><span class="sig-paren">(</span>std::size_t <em>N</em>, std::size_t <em>block</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi12mgpu_cudaDLAE" title="chase::mpi::mgpu_cudaDLA::T">T</a> *<em>approxV</em>, std::size_t <em>locked</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi12mgpu_cudaDLAE" title="chase::mpi::mgpu_cudaDLA::T">T</a> *<em>workspace</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi12mgpu_cudaDLAE" title="chase::mpi::mgpu_cudaDLA::T">T</a> <em>One</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi12mgpu_cudaDLAE" title="chase::mpi::mgpu_cudaDLA::T">T</a> <em>Zero</em>, Base&lt;<a class="reference internal" href="#_CPPv4I0EN5chase3mpi12mgpu_cudaDLAE" title="chase::mpi::mgpu_cudaDLA::T">T</a>&gt; *<em>ritzv</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi12mgpu_cudaDLA9RR_kernelENSt6size_tENSt6size_tEP1TNSt6size_tEP1T1T1TP4BaseI1TE" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p><ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">RR_kernel</span></code> is implemented by <code class="docutils literal notranslate"><span class="pre">cublasXgemm</span></code> routine provided by <code class="docutils literal notranslate"><span class="pre">cuBLAS</span></code> and <code class="docutils literal notranslate"><span class="pre">(SY)HEEVD</span></code> routine provided by <code class="docutils literal notranslate"><span class="pre">LAPACK</span></code>.<ul>
-<li><p>The 1st operation <code class="docutils literal notranslate"><span class="pre">A</span> <span class="pre">&lt;-</span> <span class="pre">W^T</span> <span class="pre">*</span> <span class="pre">V</span></code> is implemented by <code class="docutils literal notranslate"><span class="pre">cublasXgemm</span></code> from <code class="docutils literal notranslate"><span class="pre">cuBLAS</span></code>.</p></li>
-<li><p>The 2nd operation which computes the eigenpairs of <code class="docutils literal notranslate"><span class="pre">A</span></code>, is implemented by <code class="docutils literal notranslate"><span class="pre">(SY)HEEVD</span></code> from <code class="docutils literal notranslate"><span class="pre">LAPACK</span></code>.</p></li>
-<li><p>The 3rd operation which computes <code class="docutils literal notranslate"><span class="pre">W&lt;-V*A</span></code> is implemented by <code class="docutils literal notranslate"><span class="pre">cublasXgemm</span></code> from <code class="docutils literal notranslate"><span class="pre">cuBLAS</span></code>.</p></li>
-</ul>
-</p></li>
-<li><p><strong>for (SY)HHEVD, parallelism is SUPPORT within node if multi-threading is actived</strong></p></li>
-<li><p><strong>for cublasXgemm, parallelism is SUPPORT within one GPU card</strong></p></li>
-<li><p>For the meaning of this function, please visit <a class="reference internal" href="../module/chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>. </p></li>
-</ul>
-</p>
-</dd></dl>
-
-</div>
-</dd></dl>
-
-</div>
 </div>
 
 
@@ -534,7 +274,7 @@
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
       
-        <a href="cpu.html" class="btn btn-neutral" title="CPUs in node" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="cpu.html" class="btn btn-neutral" title="3.1.3.2. CPUs in node" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -543,7 +283,7 @@
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2021, SimLab Quantum Materials.
+        &copy; Copyright 2023, SimLab Quantum Materials.
 
     </p>
   </div>
@@ -565,7 +305,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'v1.1.2',
+            VERSION:'v1.3.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

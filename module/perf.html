@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Performance &mdash; ChASE v1.1.2 documentation</title>
+  <title>Performance &mdash; ChASE v1.3.0 documentation</title>
   
 
   
@@ -37,10 +37,7 @@
         <link rel="index" title="Index"
               href="../genindex.html"/>
         <link rel="search" title="Search" href="../search.html"/>
-    <link rel="top" title="ChASE v1.1.2 documentation" href="../index.html"/>
-        <link rel="up" title="Modules" href="../module.html"/>
-        <link rel="next" title="ChaseMpiMatrices" href="chasempimatrices.html"/>
-        <link rel="prev" title="Configuration" href="config.html"/>
+    <link rel="top" title="ChASE v1.3.0 documentation" href="../index.html"/>
     <link href="../_static/theme_overrides.css" rel="stylesheet" type="text/css">
 
 
@@ -74,7 +71,7 @@
             
             
               <div class="version">
-                v1.1.2
+                v1.3.0
               </div>
             
           
@@ -103,33 +100,19 @@
 <li class="toctree-l1"><a class="reference internal" href="../reference.html">References and Contributors</a></li>
 </ul>
 <p class="caption"><span class="caption-text">USER DOCUMENTATION</span></p>
-<ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="../quick-start.html">Quick Start</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation and Setup on a Cluster</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../example.html">Examples</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="../module.html">Modules</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="../module.html#overview">Overview</a></li>
-<li class="toctree-l2 current"><a class="reference internal" href="../module.html#namespace-chase">Namespace: chase</a><ul class="current">
-<li class="toctree-l3"><a class="reference internal" href="namespace.html">Classes</a></li>
-<li class="toctree-l3"><a class="reference internal" href="namespace.html#functions">Functions</a></li>
-<li class="toctree-l3 current"><a class="reference internal" href="../module.html#selected-classes">Selected Classes</a><ul class="current">
-<li class="toctree-l4"><a class="reference internal" href="config.html">Configuration</a></li>
-<li class="toctree-l4 current"><a class="current reference internal" href="#">Performance</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="../module.html#chase-mpi">ChASE-MPI</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../module.html#chase-elemental">ChASE-Elemental</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="../parameters.html">Parameters and Configurations</a></li>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../quick-start.html">1. Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">2. Installation and Setup on a Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage.html">3. How to use ChASE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../parameters.html">4. Parameters and Configurations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../module.html">5. Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../example.html">6. Examples</a></li>
 </ul>
 <p class="caption"><span class="caption-text">DEVELOPER DOCUMENTATION</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../algorithm.html">General algorithm</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../abstract.html">Virtual Abstract of Numerical Kernels</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../parallel.html">Parallel implementations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../algorithm.html">1. General algorithm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../abstract.html">2. Virtual Abstract of Numerical Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../parallel.html">3. Parallel implementations</a></li>
 </ul>
 
             
@@ -159,8 +142,6 @@
 <div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
     <li><a href="../index.html">Docs</a> &raquo;</li>
-      
-        <li><a href="../module.html">Modules</a> &raquo;</li>
       
     <li>Performance</li>
     <li class="wy-breadcrumbs-aside">
@@ -206,7 +187,7 @@
 <dl class="cpp function">
 <dt id="_CPPv4N5chase13ChasePerfData17get_filtered_vecsEv">
 <span id="_CPPv3N5chase13ChasePerfData17get_filtered_vecsEv"></span><span id="_CPPv2N5chase13ChasePerfData17get_filtered_vecsEv"></span><span id="chase::ChasePerfData::get_filtered_vecs"></span><span class="target" id="classchase_1_1_chase_perf_data_1a814feacaf43102d7dd14fb9024df0882"></span>std::size_t <code class="sig-name descname">get_filtered_vecs</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase13ChasePerfData17get_filtered_vecsEv" title="Permalink to this definition">¶</a><br /></dt>
-<dd><p>Returns the cumulative number of times each column vector is filtered by one degree. </p>
+<dd><p>Returns the cumulative number of times each column vector is filtered by one degree.</p>
 <p>The most computationally expensive routine of ChASE is the Chebyshev filter. Within the filter a matrix of vectors <em>V</em> is filtered with a varying degree each time a subspace iteration is executed. This counter return the total number of times each vector in <em>V</em> goes through a filtering step. For instance, when the flag <code class="docutils literal notranslate"><span class="pre">optim_</span> <span class="pre">=</span> <span class="pre">false</span></code>, such a number roughly corresponds to rank(V) x degree x iter_count. When the <code class="docutils literal notranslate"><span class="pre">optim_</span></code> is set to <code class="docutils literal notranslate"><span class="pre">true</span></code> such a calculation is quite more complicated. Roughly speaking, this counter is useful to monitor the convergence ration of the filtered vectors and together with <code class="docutils literal notranslate"><span class="pre">get_iter_count</span></code> convey the effectiveness of the algorithm. <dl class="simple">
 <dt><strong>Return</strong></dt><dd><p>Cumulative number of filtered vectors. </p>
 </dd>
@@ -248,7 +229,7 @@
 <dt id="_CPPv4N5chase13ChasePerfData5printENSt6size_tE">
 <span id="_CPPv3N5chase13ChasePerfData5printENSt6size_tE"></span><span id="_CPPv2N5chase13ChasePerfData5printENSt6size_tE"></span><span id="chase::ChasePerfData::print__std::s"></span><span class="target" id="classchase_1_1_chase_perf_data_1ae7d551426d5ebbaa7f9d829dd7b89de1"></span>void <code class="sig-name descname">print</code><span class="sig-paren">(</span>std::size_t <em>N</em> = 0<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase13ChasePerfData5printENSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
 <dd><p>Print function outputting counters and timings for all routines. </p>
-<p>It prints by default ( for N = 0) in the order, <ul class="simple">
+<p>It prints by default ( for N = 0) in the order,<ul class="simple">
 <li><p>size of the eigenproblem</p></li>
 <li><p>total number of subspace iterations executed</p></li>
 <li><p>total number of filtered vectors</p></li>
@@ -289,7 +270,8 @@
 <dl class="cpp function">
 <dt id="_CPPv4N5chase25PerformanceDecoratorChase9GetConfigEv">
 <span id="_CPPv3N5chase25PerformanceDecoratorChase9GetConfigEv"></span><span id="_CPPv2N5chase25PerformanceDecoratorChase9GetConfigEv"></span><span id="chase::PerformanceDecoratorChase::GetConfig"></span><span class="target" id="classchase_1_1_performance_decorator_chase_1ac0b9df717b65d76658d0a54d3af5f7ee"></span><a class="reference internal" href="config.html#_CPPv4I0EN5chase11ChaseConfigE" title="chase::ChaseConfig">ChaseConfig</a>&lt;<a class="reference internal" href="#_CPPv4I0EN5chase25PerformanceDecoratorChaseE" title="chase::PerformanceDecoratorChase::T">T</a>&gt; &amp;<code class="sig-name descname">GetConfig</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase25PerformanceDecoratorChase9GetConfigEv" title="Permalink to this definition">¶</a><br /></dt>
-<dd></dd></dl>
+<dd><p>Return a class which contains the configuration parameters. </p>
+</dd></dl>
 
 <dl class="cpp function">
 <dt id="_CPPv4N5chase25PerformanceDecoratorChase11GetPerfDataEv">
@@ -306,21 +288,12 @@
           </div>
           <footer>
   
-    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-      
-        <a href="chasempimatrices.html" class="btn btn-neutral float-right" title="ChaseMpiMatrices" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
-      
-      
-        <a href="config.html" class="btn btn-neutral" title="Configuration" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
-      
-    </div>
-  
 
   <hr/>
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2021, SimLab Quantum Materials.
+        &copy; Copyright 2023, SimLab Quantum Materials.
 
     </p>
   </div>
@@ -342,7 +315,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'v1.1.2',
+            VERSION:'v1.3.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

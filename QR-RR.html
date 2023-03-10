@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Orthogonalization and Rayleigh-Ritz &mdash; ChASE v1.1.2 documentation</title>
+  <title>1.2. Orthogonalization and Rayleigh-Ritz &mdash; ChASE v1.3.0 documentation</title>
   
 
   
@@ -37,10 +37,10 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="ChASE v1.1.2 documentation" href="index.html"/>
-        <link rel="up" title="General algorithm" href="algorithm.html"/>
-        <link rel="next" title="The Chebyshev filter" href="filter.html"/>
-        <link rel="prev" title="The modified Lanczos for bound estimates" href="lanczos.html"/>
+    <link rel="top" title="ChASE v1.3.0 documentation" href="index.html"/>
+        <link rel="up" title="1. General algorithm" href="algorithm.html"/>
+        <link rel="next" title="1.3. The Chebyshev filter" href="filter.html"/>
+        <link rel="prev" title="1.1. The modified Lanczos for bound estimates" href="lanczos.html"/>
     <link href="_static/theme_overrides.css" rel="stylesheet" type="text/css">
 
 
@@ -74,7 +74,7 @@
             
             
               <div class="version">
-                v1.1.2
+                v1.3.0
               </div>
             
           
@@ -104,23 +104,24 @@
 </ul>
 <p class="caption"><span class="caption-text">USER DOCUMENTATION</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="quick-start.html">Quick Start</a></li>
-<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation and Setup on a Cluster</a></li>
-<li class="toctree-l1"><a class="reference internal" href="example.html">Examples</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module.html">Modules</a></li>
-<li class="toctree-l1"><a class="reference internal" href="parameters.html">Parameters and Configurations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quick-start.html">1. Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">2. Installation and Setup on a Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">3. How to use ChASE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parameters.html">4. Parameters and Configurations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="module.html">5. Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="example.html">6. Examples</a></li>
 </ul>
 <p class="caption"><span class="caption-text">DEVELOPER DOCUMENTATION</span></p>
 <ul class="current">
-<li class="toctree-l1 current"><a class="reference internal" href="algorithm.html">General algorithm</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="lanczos.html">The modified Lanczos for bound estimates</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Orthogonalization and Rayleigh-Ritz</a></li>
-<li class="toctree-l2"><a class="reference internal" href="filter.html">The Chebyshev filter</a></li>
-<li class="toctree-l2"><a class="reference internal" href="optimizations.html">Algorithm optimizations</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="algorithm.html">1. General algorithm</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="lanczos.html">1.1. The modified Lanczos for bound estimates</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">1.2. Orthogonalization and Rayleigh-Ritz</a></li>
+<li class="toctree-l2"><a class="reference internal" href="filter.html">1.3. The Chebyshev filter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="optimizations.html">1.4. Algorithm optimizations</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="abstract.html">Virtual Abstract of Numerical Kernels</a></li>
-<li class="toctree-l1"><a class="reference internal" href="parallel.html">Parallel implementations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="abstract.html">2. Virtual Abstract of Numerical Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parallel.html">3. Parallel implementations</a></li>
 </ul>
 
             
@@ -151,9 +152,9 @@
   <ul class="wy-breadcrumbs">
     <li><a href="index.html">Docs</a> &raquo;</li>
       
-        <li><a href="algorithm.html">General algorithm</a> &raquo;</li>
+        <li><a href="algorithm.html"><span class="section-number">1. </span>General algorithm</a> &raquo;</li>
       
-    <li>Orthogonalization and Rayleigh-Ritz</li>
+    <li><span class="section-number">1.2. </span>Orthogonalization and Rayleigh-Ritz</li>
     <li class="wy-breadcrumbs-aside">
       
         
@@ -168,16 +169,32 @@
            <div itemprop="articleBody">
             
   <div class="section" id="orthogonalization-and-rayleigh-ritz">
-<span id="qr-rr-algorithm"></span><h1>Orthogonalization and Rayleigh-Ritz<a class="headerlink" href="#orthogonalization-and-rayleigh-ritz" title="Permalink to this headline">¶</a></h1>
+<span id="qr-rr-algorithm"></span><h1><span class="section-number">1.2. </span>Orthogonalization and Rayleigh-Ritz<a class="headerlink" href="#orthogonalization-and-rayleigh-ritz" title="Permalink to this headline">¶</a></h1>
 <dl class="cpp function">
-<dt id="_CPPv4N5chase5Chase2QRENSt6size_tE">
-<span id="_CPPv3N5chase5Chase2QRENSt6size_tE"></span><span id="_CPPv2N5chase5Chase2QRENSt6size_tE"></span><span id="chase::Chase::QR__std::s"></span><span class="target" id="classchase_1_1_chase_1a2a4f55a4b765ba6b77ca01f85e23e36e"></span>void <code class="sig-prename descclassname"><a class="reference internal" href=".unused_material/reference/chase.html#_CPPv45chaseP13MKL_Complex16iP13MKL_Complex16P13MKL_Complex16PdiKiKiPCiKdK15CHASE_MODE_TYPEK14CHASE_OPT_TYPE" title="chase">chase</a>::Chase<code class="sig-prename descclassname">::</code></code><code class="sig-name descname">QR</code><span class="sig-paren">(</span>std::size_t <em>fixednev</em><span class="sig-paren">)</span> = 0<a class="headerlink" href="#_CPPv4N5chase5Chase2QRENSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
-<dd></dd></dl>
+<dt id="_CPPv4N5chase5Chase2QRENSt6size_tE4BaseI1TE">
+<span id="_CPPv3N5chase5Chase2QRENSt6size_tE4BaseI1TE"></span><span id="_CPPv2N5chase5Chase2QRENSt6size_tE4BaseI1TE"></span><span id="chase::Chase::QR__std::s.Base:T:"></span><span class="target" id="classchase_1_1_chase_1a81c7628094a98e76586e8d89f455f028"></span>void <code class="sig-prename descclassname"><a class="reference internal" href=".unused_material/reference/chase.html#_CPPv45chaseP13MKL_Complex16iP13MKL_Complex16P13MKL_Complex16PdiKiKiPCiKdK15CHASE_MODE_TYPEK14CHASE_OPT_TYPE" title="chase">chase</a>::Chase<code class="sig-prename descclassname">::</code></code><code class="sig-name descname">QR</code><span class="sig-paren">(</span>std::size_t <em>fixednev</em>, Base&lt;T&gt; <em>cond</em><span class="sig-paren">)</span> = 0<a class="headerlink" href="#_CPPv4N5chase5Chase2QRENSt6size_tE4BaseI1TE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>This member function performs a QR factorization with an explicit construction of the unitary matrix <code class="docutils literal notranslate"><span class="pre">Q</span></code>.</p>
+<p>CholQR is used in default. Optionally, user can decide to use Househoulder QR. <dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">fixednev</span></code>: total number of converged eigenpairs before this time QR factorization. </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
 
 <dl class="cpp function">
 <dt id="_CPPv4N5chase5Chase2RREP4BaseI1TENSt6size_tE">
 <span id="_CPPv3N5chase5Chase2RREP4BaseI1TENSt6size_tE"></span><span id="_CPPv2N5chase5Chase2RREP4BaseI1TENSt6size_tE"></span><span id="chase::Chase::RR__Base:T:P.std::s"></span><span class="target" id="classchase_1_1_chase_1a8f9468c6c02d9ad01e2d698d5a33fccc"></span>void <code class="sig-prename descclassname"><a class="reference internal" href=".unused_material/reference/chase.html#_CPPv45chaseP13MKL_Complex16iP13MKL_Complex16P13MKL_Complex16PdiKiKiPCiKdK15CHASE_MODE_TYPEK14CHASE_OPT_TYPE" title="chase">chase</a>::Chase<code class="sig-prename descclassname">::</code></code><code class="sig-name descname">RR</code><span class="sig-paren">(</span>Base&lt;T&gt; *<em>ritzv</em>, std::size_t <em>block</em><span class="sig-paren">)</span> = 0<a class="headerlink" href="#_CPPv4N5chase5Chase2RREP4BaseI1TENSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
-<dd></dd></dl>
+<dd><p>This function performs the Rayleigh-Ritz projection, which projects the eigenproblem to be a small one, then solves the small problem and reconstructs the eigenvectors. <dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ritzv</span></code>: a pointer to the array which stores the computed eigenvalues. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">block</span></code>: the number of non-converged eigenpairs, which determines the size of small eigenproblem. </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
 
 </div>
 
@@ -188,10 +205,10 @@
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="filter.html" class="btn btn-neutral float-right" title="The Chebyshev filter" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="filter.html" class="btn btn-neutral float-right" title="1.3. The Chebyshev filter" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="lanczos.html" class="btn btn-neutral" title="The modified Lanczos for bound estimates" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="lanczos.html" class="btn btn-neutral" title="1.1. The modified Lanczos for bound estimates" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -200,7 +217,7 @@
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2021, SimLab Quantum Materials.
+        &copy; Copyright 2023, SimLab Quantum Materials.
 
     </p>
   </div>
@@ -222,7 +239,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'v1.1.2',
+            VERSION:'v1.3.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

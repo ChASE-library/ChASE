@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Examples &mdash; ChASE v1.1.2 documentation</title>
+  <title>6. Examples &mdash; ChASE v1.3.0 documentation</title>
   
 
   
@@ -37,9 +37,9 @@
         <link rel="index" title="Index"
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="ChASE v1.1.2 documentation" href="index.html"/>
-        <link rel="next" title="C++ Code" href="example/helloworld.html"/>
-        <link rel="prev" title="ChASE with MPI+OpenMP" href="installation/suggestion.html"/>
+    <link rel="top" title="ChASE v1.3.0 documentation" href="index.html"/>
+        <link rel="next" title="6.3.1. ChASE Object and Configuration" href="example/io.html"/>
+        <link rel="prev" title="5.3.5.3. ChaseMpiDLAMultiGPU" href="module/chasempidlamultigpu.html"/>
     <link href="_static/theme_overrides.css" rel="stylesheet" type="text/css">
 
 
@@ -73,7 +73,7 @@
             
             
               <div class="version">
-                v1.1.2
+                v1.3.0
               </div>
             
           
@@ -103,43 +103,32 @@
 </ul>
 <p class="caption"><span class="caption-text">USER DOCUMENTATION</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="quick-start.html">Quick Start</a></li>
-<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation and Setup on a Cluster</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Examples</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#hello-world">0. Hello World</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="example/helloworld.html">C++ Code</a></li>
-<li class="toctree-l3"><a class="reference internal" href="example/helloworld.html#execution">Execution</a></li>
-<li class="toctree-l3"><a class="reference internal" href="example/helloworld.html#output">Output</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quick-start.html">1. Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">2. Installation and Setup on a Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">3. How to use ChASE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parameters.html">4. Parameters and Configurations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="module.html">5. Modules</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">6. Examples</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#hello-world">6.1. 0. Hello World</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#sequence-of-eigenproblems">6.2. 1. Sequence of Eigenproblems</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#parallel-i-o-and-configuration">6.3. 2. Parallel I/O and Configuration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="example/io.html">6.3.1. ChASE Object and Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="example/io.html#executables">6.3.2. Executables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="example/io.html#solving-single-problem">6.3.3. Solving single problem</a></li>
+<li class="toctree-l3"><a class="reference internal" href="example/io.html#solving-a-sequence-of-problems">6.3.4. Solving a sequence of problems</a></li>
+<li class="toctree-l3"><a class="reference internal" href="example/io.html#parser-of-command-line-arguments">6.3.5. Parser of command-line arguments</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#sequence-of-eigenproblems">1. Sequence of Eigenproblems</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="example/sequence.html">C++ Code</a></li>
-<li class="toctree-l3"><a class="reference internal" href="example/sequence.html#execution">Execution</a></li>
-<li class="toctree-l3"><a class="reference internal" href="example/sequence.html#output">Output</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#installation-and-linking">6.4. 3. Installation and Linking</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#c-fortran-interface">6.5. 4. C/Fortran interface</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#parallel-i-o-and-configuration">2. Parallel I/O and Configuration</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="example/io.html">ChASE Object and Configuration</a></li>
-<li class="toctree-l3"><a class="reference internal" href="example/io.html#parallel-io">Parallel IO</a></li>
-<li class="toctree-l3"><a class="reference internal" href="example/io.html#execution">Execution</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#installation-and-linking">3. Installation and Linking</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#generalized-eigenproblem">4. Generalized Eigenproblem</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="example/gev.html">ScaLAPACK interface</a></li>
-<li class="toctree-l3"><a class="reference internal" href="example/gev.html#choleksy-factorization-chase">Choleksy Factorization + ChASE</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="module.html">Modules</a></li>
-<li class="toctree-l1"><a class="reference internal" href="parameters.html">Parameters and Configurations</a></li>
 </ul>
 <p class="caption"><span class="caption-text">DEVELOPER DOCUMENTATION</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="algorithm.html">General algorithm</a></li>
-<li class="toctree-l1"><a class="reference internal" href="abstract.html">Virtual Abstract of Numerical Kernels</a></li>
-<li class="toctree-l1"><a class="reference internal" href="parallel.html">Parallel implementations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="algorithm.html">1. General algorithm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="abstract.html">2. Virtual Abstract of Numerical Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parallel.html">3. Parallel implementations</a></li>
 </ul>
 
             
@@ -170,7 +159,7 @@
   <ul class="wy-breadcrumbs">
     <li><a href="index.html">Docs</a> &raquo;</li>
       
-    <li>Examples</li>
+    <li><span class="section-number">6. </span>Examples</li>
     <li class="wy-breadcrumbs-aside">
       
         
@@ -185,7 +174,7 @@
            <div itemprop="articleBody">
             
   <div class="section" id="examples">
-<span id="examples-chase"></span><h1>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h1>
+<span id="examples-chase"></span><h1><span class="section-number">6. </span>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h1>
 <p>In ChASE, we provides multiple examples which will
 help the user to get familiar with the library. In this section,
 we give an introduction about these examples.</p>
@@ -193,8 +182,7 @@ we give an introduction about these examples.</p>
 <p class="admonition-title">Note</p>
 <ol class="arabic simple">
 <li><p>All the first three examples are compiled if user installs ChASE with the option <code class="docutils literal notranslate"><span class="pre">-DBUILD_WITH_EXAMPLES=ON</span></code>.</p></li>
-<li><p>In order to build the example <a class="reference external" href="https://github.com/ChASE-library/ChASE/tree/master/examples/2_input_output">2_input_output</a> and
-<a class="reference external" href="https://github.com/ChASE-library/ChASE/tree/master/examples/4_gev">4_gev</a>,
+<li><p>In order to build the example <a class="reference external" href="https://github.com/ChASE-library/ChASE/tree/master/examples/2_input_output">2_input_output</a>,
 the module <strong>Boost</strong> should be uploaded from the software stack
 or installed by the user.</p></li>
 <li><p>The example <a class="reference external" href="https://github.com/ChASE-library/ChASE/tree/master/examples/3_installation">3_installation</a>
@@ -205,20 +193,13 @@ compiled independently by the user.</p></li>
 </ol>
 </div>
 <div class="section" id="hello-world">
-<span id="hello-world-chase"></span><h2>0. Hello World<a class="headerlink" href="#hello-world" title="Permalink to this headline">¶</a></h2>
+<span id="hello-world-chase"></span><h2><span class="section-number">6.1. </span>0. Hello World<a class="headerlink" href="#hello-world" title="Permalink to this headline">¶</a></h2>
 <p>The first example in this section is
 <a class="reference external" href="https://github.com/ChASE-library/ChASE/tree/master/examples/0_hello_world">0_hello_world</a>. This example constructs a simple Clement matrix and find a given
 number of its eigenpairs.</p>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="example/helloworld.html">C++ Code</a></li>
-<li class="toctree-l1"><a class="reference internal" href="example/helloworld.html#execution">Execution</a></li>
-<li class="toctree-l1"><a class="reference internal" href="example/helloworld.html#output">Output</a></li>
-</ul>
-</div>
 </div>
 <div class="section" id="sequence-of-eigenproblems">
-<h2>1. Sequence of Eigenproblems<a class="headerlink" href="#sequence-of-eigenproblems" title="Permalink to this headline">¶</a></h2>
+<h2><span class="section-number">6.2. </span>1. Sequence of Eigenproblems<a class="headerlink" href="#sequence-of-eigenproblems" title="Permalink to this headline">¶</a></h2>
 <p>The second example in this section is
 <a class="reference external" href="https://github.com/ChASE-library/ChASE/tree/master/examples/1_sequence_eigenproblems">1_sequence_eigenproblems</a>. The purpose of this example is to illustrate how
 ChASE can be used to solve a sequence of eigenproblems. This example
@@ -228,53 +209,31 @@ new matrix is used to construct a new eigenproblem. This example can be
 used as template where the matrices in the sequences (of 2 or more
 eigenproblems) are read from disk instead of being generated by the
 code in the example.</p>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="example/sequence.html">C++ Code</a></li>
-<li class="toctree-l1"><a class="reference internal" href="example/sequence.html#execution">Execution</a></li>
-<li class="toctree-l1"><a class="reference internal" href="example/sequence.html#output">Output</a></li>
-</ul>
-</div>
 </div>
 <div class="section" id="parallel-i-o-and-configuration">
-<h2>2. Parallel I/O and Configuration<a class="headerlink" href="#parallel-i-o-and-configuration" title="Permalink to this headline">¶</a></h2>
+<h2><span class="section-number">6.3. </span>2. Parallel I/O and Configuration<a class="headerlink" href="#parallel-i-o-and-configuration" title="Permalink to this headline">¶</a></h2>
 <p>The third example in this section <a class="reference external" href="https://github.com/ChASE-library/ChASE/tree/master/examples/2_input_output">2_input_output</a>
 is quite similar to two previous ones. The differences are: 1) the
 configuration of parameters of ChASE from command line (supported by
 Boost); 2) the parallel I/O which loads the local matrices into the computing nodes in parallel.</p>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="example/io.html">ChASE Object and Configuration</a></li>
-<li class="toctree-l1"><a class="reference internal" href="example/io.html#parallel-io">Parallel IO</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="example/io.html#block-distribution">Block Distribution</a></li>
-<li class="toctree-l2"><a class="reference internal" href="example/io.html#block-cyclic-distribution">Block-Cyclic Distribution</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="example/io.html#execution">Execution</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="example/io.html#solving-single-problem">Solving single problem</a></li>
-<li class="toctree-l2"><a class="reference internal" href="example/io.html#solving-a-sequence-of-problems">Solving a sequence of problems</a></li>
-<li class="toctree-l2"><a class="reference internal" href="example/io.html#parameters-of-configuration">Parameters of configuration</a></li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="example/io.html">6.3.1. ChASE Object and Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="example/io.html#executables">6.3.2. Executables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="example/io.html#solving-single-problem">6.3.3. Solving single problem</a></li>
+<li class="toctree-l1"><a class="reference internal" href="example/io.html#solving-a-sequence-of-problems">6.3.4. Solving a sequence of problems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="example/io.html#parser-of-command-line-arguments">6.3.5. Parser of command-line arguments</a></li>
 </ul>
 </div>
 </div>
 <div class="section" id="installation-and-linking">
-<h2>3. Installation and Linking<a class="headerlink" href="#installation-and-linking" title="Permalink to this headline">¶</a></h2>
-<p>The fourth example <a class="reference external" href="https://github.com/ChASE-library/ChASE/tree/master/examples/3_installation">3_installation</a> shows the way to link ChASE to other applications, for more information, please visit <a class="reference internal" href="installation/link.html#link-by-cmake"><span class="std std-ref">Linking to ChASE by using CMake</span></a>.</p>
+<h2><span class="section-number">6.4. </span>3. Installation and Linking<a class="headerlink" href="#installation-and-linking" title="Permalink to this headline">¶</a></h2>
+<p>The fourth example <a class="reference external" href="https://github.com/ChASE-library/ChASE/tree/master/examples/3_installation">3_installation</a> shows the way to link ChASE to other applications, for more information, please visit <a class="reference internal" href="usage.html#link-by-cmake"><span class="std std-ref">Compiling with CMake</span></a>.</p>
 </div>
-<div class="section" id="generalized-eigenproblem">
-<h2>4. Generalized Eigenproblem<a class="headerlink" href="#generalized-eigenproblem" title="Permalink to this headline">¶</a></h2>
-<p>The fifth example <a class="reference external" href="https://github.com/ChASE-library/ChASE/tree/master/examples/4_gev">4_gev</a> shows an example
-to solve Generalized Eigenproblem of the form
-<span class="math notranslate nohighlight">\(A\hat{x} = \lambda B \hat{x}\)</span>, with <span class="math notranslate nohighlight">\(B\)</span> s.p.d. by the
-Cholesky Factorization provided by ScaLAPACK.</p>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="example/gev.html">ScaLAPACK interface</a></li>
-<li class="toctree-l1"><a class="reference internal" href="example/gev.html#choleksy-factorization-chase">Choleksy Factorization + ChASE</a></li>
-</ul>
-</div>
+<div class="section" id="c-fortran-interface">
+<h2><span class="section-number">6.5. </span>4. C/Fortran interface<a class="headerlink" href="#c-fortran-interface" title="Permalink to this headline">¶</a></h2>
+<p>The fourth example <a class="reference external" href="https://github.com/ChASE-library/ChASE/tree/master/examples/4_interface">4_interface</a> shows multiple examples to use C and Fortran interface. For more information
+about the C/Fortran interface, please visit <a class="reference internal" href="usage.html#c-fortran-interface"><span class="std std-ref">Interface to C/Fortran</span></a>.</p>
 </div>
 </div>
 
@@ -285,10 +244,10 @@ Cholesky Factorization provided by ScaLAPACK.</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="example/helloworld.html" class="btn btn-neutral float-right" title="C++ Code" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="example/io.html" class="btn btn-neutral float-right" title="6.3.1. ChASE Object and Configuration" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="installation/suggestion.html" class="btn btn-neutral" title="ChASE with MPI+OpenMP" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="module/chasempidlamultigpu.html" class="btn btn-neutral" title="5.3.5.3. ChaseMpiDLAMultiGPU" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -297,7 +256,7 @@ Cholesky Factorization provided by ScaLAPACK.</p>
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2021, SimLab Quantum Materials.
+        &copy; Copyright 2023, SimLab Quantum Materials.
 
     </p>
   </div>
@@ -319,7 +278,7 @@ Cholesky Factorization provided by ScaLAPACK.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'v1.1.2',
+            VERSION:'v1.3.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

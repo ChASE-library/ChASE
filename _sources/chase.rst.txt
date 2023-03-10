@@ -24,7 +24,8 @@ Algorithm
 ==========
 
 .. image:: /images/ChASE_flowchart.png
-
+   :scale: 60 %
+   :align: center
 
 .. table::
    :widths: 10,55
