@@ -18,7 +18,8 @@ ChASE is written in C++ using the modern software engineering concepts that favo
 
 ## Versions of the library
 
-The library comes in two main versions: 
+T
+Currently, the library comes in one main versions: 
 
 1. **ChASE-MPI**
 
@@ -26,17 +27,14 @@ The library comes in two main versions:
 
    - **Shared memory build:** This is the simplest configuration and should be exclusively selected when ChASE is used on only one computing node or on a single CPU. 
    - **MPI+Threads build:** On multi-core homogeneous CPU clusters, ChASE is best used in its pure MPI build. In this configuration, ChASE is typically used with one MPI rank per NUMA domain and as many threads as number of available cores per NUMA domain.
-   - **GPU build:** ChASE-MPI can be configured to take advantage of GPUs on heterogeneous computing clusters. Currently we support the use of one or more GPU cards per computing node in a number of flexible configurations: for instance on computing nodes with 4 cards per node one can choose to compile and execute the program with one, two or four GPU card per MPI rank.
+   - **GPU build:** ChASE-MPI can be configured to take advantage of GPUs on heterogeneous computing clusters. Currently we support the use of one GPU per MPI rank. Multiple-GPU per computing node can be used when MPI rank
+number per node equals to the GPU number per node.   
    
    ChASE-MPI support two types of data distribution of matrix `A` across 2D MPI grid:
 
    - **Block Distribution**:  each MPI rank of 2D grid is assigned a block of dense matrix **A**.
 
    - **Block-Cyclic Distribution**: an distribution scheme for implementation of dense matrix computations on distributed-memory machines, to improve the load balance of matrix computation if the amount of work differs for different entries of a matrix. For more details, please refer to [Netlib](https://www.netlib.org/scalapack/slug/node75.html) .
-
-2. **ChASE-Elemental**
-
-   ChASE-Elemental requires the additional installation of the [Elemental](https://github.com/elemental/Elemental) library.
 
 ## Quick Start
 
@@ -104,24 +102,26 @@ cmake .. -DBUILD_WITH_EXAMPLES=ON
 1. The example [1_sequence_eigenproblems](https://github.com/ChASE-library/ChASE/tree/master/examples/1_sequence_eigenproblems) illustrates how ChASE can be used to solve a sequence of eigenproblems.
 2. The example [2_input_output](https://github.com/ChASE-library/ChASE/tree/master/examples/2_input_output) provides the configuration of parameters of ChASE from command line (supported by Boost); the parallel I/O which loads the local matrices into the computing nodes in parallel.
 3. The example [3_installation](https://github.com/ChASE-library/ChASE/tree/master/examples/3_installation) shows the way to link ChASE to other applications.
-4. The example [4_gev](https://github.com/ChASE-library/ChASE/tree/master/examples/4_gev) shows an example to solve Generalized Eigenproblem via the Cholesky Factorization provided by ScaLAPACK.
+4. The example [4_interface](https://github.com/ChASE-library/ChASE/tree/master/examples/4_interface) shows examples to use the C and Fortran interfaces of ChASE.
 
 ## Developers
 
 ### Main developers
 
 - Edoardo Di Napoli – Algorithm design and development
-- Xinzhe Wu – Algorithm development, advanced parallel implementation, developer documentation
-- Davor Davidovic – Advanced parallel GPU implementation and optimization
+- Xinzhe Wu – Algorithm development, advanced parallel (MPI and GPU) implementation and optimization, developer documentation
 
 ### Current contributors
+
+- Davor Davidović – Advanced parallel GPU implementation and optimization
+- Nenad Mijić – ARM-based implementation and optimization
+
+
+### Past contributors
 
 - Xiao Zhang – Integration of ChASE into Jena BSE code
 - Miriam Hinzen, Daniel Wortmann – Integration of ChASE into FLEUR code
 - Sebastian Achilles – Library benchmarking on parallel platforms, documentation
-
-### Past contributors
-
 - Jan Winkelmann – DoS algorithm development and advanced `C++` implementation
 - Paul Springer – Advanced GPU implementation
 - Marija Kranjcevic – OpenMP `C++` implementation
@@ -140,6 +140,7 @@ The main reference of ChASE is [1] while [2] provides some early results on scal
 
 - [1] J. Winkelmann, P. Springer, and E. Di Napoli. *ChASE: a Chebyshev Accelerated Subspace iteration Eigensolver for sequences of Hermitian eigenvalue problems.* ACM Transaction on Mathematical Software, **45** Num.2, Art.21, (2019). [DOI:10.1145/3313828](https://doi.org/10.1145/3313828) , [[arXiv:1805.10121](https://arxiv.org/abs/1805.10121/) ]
 - [2] M. Berljafa, D. Wortmann, and E. Di Napoli. *An Optimized and Scalable Eigensolver for Sequences of Eigenvalue Problems.* Concurrency & Computation: Practice and Experience **27** (2015), pp. 905-922. [DOI:10.1002/cpe.3394](https://onlinelibrary.wiley.com/doi/pdf/10.1002/cpe.3394) , [[arXiv:1404.4161](https://arxiv.org/abs/1404.4161) ].
+- [3] X. Wu, D. Davidović, S. Achilles,E. Di Napoli. ChASE: a distributed hybrid CPU-GPU eigensolver for large-scale hermitian eigenvalue problems. Proceedings of the Platform for Advanced Scientific Computing Conference (PASC22). [DOI:10.1145/3539781.3539792](https://dl.acm.org/doi/10.1145/3539781.3539792) , [[arXiv:2205.02491](https://arxiv.org/pdf/2205.02491/) ].
 
 ## Copyright and License
 
