@@ -40,7 +40,7 @@
 //! generated numbers
 //! @param[in] stream_ an asynchronous CUDA stream which allows to run this
 //! function asynchronously
-void chase_rand_normal(unsigned long long seed, curandState* states, float* v,
+void chase_rand_normal(unsigned long long seed, curandStatePhilox4_32_10_t* states, float* v,
                        int n, cudaStream_t stream_);
 //! generate `n` random double numbers in normal distribution on each GPU
 //! device.
@@ -51,7 +51,7 @@ void chase_rand_normal(unsigned long long seed, curandState* states, float* v,
 //! generated numbers
 //! @param[in] stream_ an asynchronous CUDA stream which allows to run this
 //! function asynchronously
-void chase_rand_normal(unsigned long long seed, curandState* states, double* v,
+void chase_rand_normal(unsigned long long seed, curandStatePhilox4_32_10_t* states, double* v,
                        int n, cudaStream_t stream_);
 //! generate `n` random complex float numbers in normal distribution on each GPU
 //! device. The real part and the imaginary part of each individual random
@@ -63,7 +63,7 @@ void chase_rand_normal(unsigned long long seed, curandState* states, double* v,
 //! generated numbers
 //! @param[in] stream_ an asynchronous CUDA stream which allows to run this
 //! function asynchronously
-void chase_rand_normal(unsigned long long seed, curandState* states,
+void chase_rand_normal(unsigned long long seed, curandStatePhilox4_32_10_t* states,
                        std::complex<float>* v, int n, cudaStream_t stream_);
 //! generate `n` random complex double numbers in normal distribution on each
 //! GPU device. The real part and the imaginary part of each individual random
@@ -75,7 +75,7 @@ void chase_rand_normal(unsigned long long seed, curandState* states,
 //! generated numbers
 //! @param[in] stream_ an asynchronous CUDA stream which allows to run this
 //! function asynchronously
-void chase_rand_normal(unsigned long long seed, curandState* states,
+void chase_rand_normal(unsigned long long seed, curandStatePhilox4_32_10_t* states,
                        std::complex<double>* v, int n, cudaStream_t stream_);
 
 //! shift the diagonal of a `nxn` square matrix `A` in float real data type.
@@ -258,7 +258,7 @@ public:
         cuda_exec(
             cudaMalloc((void**)&d_ritz_, sizeof(Base<T>) * (nev_ + nex_)));
         cuda_exec(
-            cudaMalloc((void**)&states_, sizeof(curandState) * (256 * 32)));
+            cudaMalloc((void**)&states_, sizeof(curandStatePhilox4_32_10_t) * (256 * 32)));
 
         cublasCreate(&cublasH_);
         cusolverDnCreate(&cusolverH_);
@@ -786,7 +786,8 @@ private:
         stream1_; //!< CUDA stream for asynchronous exectution of kernels
     cudaStream_t
         stream2_; //!< CUDA stream for asynchronous exectution of kernels
-    curandState* states_ = NULL; //!< a pointer of `curandState` for the cuRAND
+    //curandState* states_ = NULL; //!< a pointer of `curandState` for the cuRAND
+    curandStatePhilox4_32_10_t *states_ = NULL;
     T* d_H_;  //!< a pointer to a local buffer of size `m_*n_` on GPU, which is
               //!< mapped to `H_`.
     T* d_C_;  //!< a pointer to a local buffer of size `m_*(nev_+nex_)` on GPU,

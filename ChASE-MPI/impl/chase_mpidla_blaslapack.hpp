@@ -275,7 +275,7 @@ public:
             num_threads = std::atoi(omp_threads);
         }
         omp_set_num_threads(1);
-#endif        
+#endif   	    
         for (auto i = 0; i < unconverged; i++)
         {
             T alpha = -ritzv[i];
@@ -286,7 +286,7 @@ public:
         }
 #ifdef HAS_OMP
         omp_set_num_threads(num_threads);
-#endif    
+#endif   	
     }
 
     //! - This function performs the local computation for ChaseMpiDLA::heevd()

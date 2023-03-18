@@ -94,7 +94,6 @@ if(SCALAPACK_FOUND)
 	)
 endif()
 
-
 if(OpenMP_FOUND)
     target_link_libraries( chase_mpi INTERFACE
             OpenMP::OpenMP_CXX

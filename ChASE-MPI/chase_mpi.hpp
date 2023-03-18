@@ -507,14 +507,6 @@ public:
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
-        /*
-        std::mt19937 gen(2342.0);
-        std::normal_distribution<> normal_distribution;
-
-        for (std::size_t k = 0; k < N_; ++k){
-          v1[k] = getRandomT<T>([&]() { return normal_distribution(gen); });
-        }
-        */
 #ifdef HAS_OMP
         char* omp_threads;
         omp_threads = getenv("OMP_NUM_THREADS");
@@ -587,7 +579,7 @@ public:
 #endif
 #ifdef HAS_OMP
         omp_set_num_threads(num_threads);
-#endif
+#endif	
         delete[] ritzv;
         delete[] isuppz;
         delete[] d;
@@ -644,7 +636,7 @@ public:
             num_threads = std::atoi(omp_threads);
         }
         omp_set_num_threads(1);
-#endif
+#endif	
         // ENSURE that v1 has one norm
 #ifdef USE_NSIGHT
         nvtxRangePushA("Lanczos: loop");
@@ -706,7 +698,7 @@ public:
         }
 #ifdef HAS_OMP
         omp_set_num_threads(num_threads);
-#endif
+#endif	
         delete[] isuppz;
         delete[] d;
         delete[] e;
