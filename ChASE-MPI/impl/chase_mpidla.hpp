@@ -926,6 +926,34 @@ public:
    */
     void cholQR(std::size_t locked, Base<T> cond) override
     {
+        int grank;
+        MPI_Comm_rank(MPI_COMM_WORLD, &grank);
+
+        char* display_bounds_env;
+        display_bounds_env = getenv("CHASE_DISPLAY_BOUNDS");
+        int display_bounds = 0;
+        if(display_bounds_env){
+            display_bounds = std::atoi(display_bounds_env);
+        }
+        if(display_bounds != 0){
+            std::vector<T> V2(N_ * (nev_+nex_));
+            this->collecRedundantVecs(C_, V2.data(), 0, nev_+nex_);
+            std::vector<Base<T>> S(nev_ + nex_ - locked);
+            T *U;
+            std::size_t ld = 1;
+            T *Vt ;
+            t_gesvd('N','N',N_, nev_ + nex_ - locked, V2.data() + N_ * locked, N_, S.data(), U, ld, Vt, ld);  
+            std::vector<Base<T>> norms(nev_+nex_-locked);
+            for(auto i = 0; i < nev_ + nex_-locked; i++){
+                norms[i] = std::sqrt(t_sqrt_norm(S[i]));
+            }
+            std::sort(norms.begin(),norms.end());
+            if(grank == 0){
+                std::cout << "estimate: " << cond << ", rcond: " << norms[nev_+nex_-locked-1] / norms[0] 
+                          << ", ratio: " << cond * norms[0] / norms[nev_+nex_-locked-1] << std::endl;
+            }
+        }
+
 #ifdef USE_NSIGHT
         nvtxRangePushA("ChaseMpiDLA: cholQR");
 #endif
@@ -941,14 +969,16 @@ public:
         }
 
         // condition for using CholQR1
-        Base<T> cond_threshold_2;
+        Base<T> cond_threshold_1, cond_threshold_2;
 
         if (sizeof(Base<T>) == 8)
         {
-            cond_threshold_2 = 5e1;
+            cond_threshold_1 = 1e8;
+            cond_threshold_2 = 2e1;
         }
         else
         {
+            cond_threshold_1 = 1e4;
             cond_threshold_2 = 1e1;
         }
 
@@ -959,9 +989,7 @@ public:
             cond_threshold_2 = std::atof(chol1_threshold);
         }    
         auto nevex = nev_ + nex_;
-        int grank;
         bool first_iter = true;
-        MPI_Comm_rank(MPI_COMM_WORLD, &grank);
         T one = T(1.0);
         T zero = T(0.0);
         int info = -1;
@@ -987,6 +1015,7 @@ public:
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
+        
 
         if (info != 0)
         {
