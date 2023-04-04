@@ -352,6 +352,9 @@ struct ChASE_DriverProblemConfig
     bool iscomplex;
     bool isdouble;
 
+    bool isMatGen;
+    double dmax;
+
     std::size_t lanczosIter;
     std::size_t numLanczos;
 
@@ -378,6 +381,9 @@ int do_chase(ChASE_DriverProblemConfig& conf)
     std::size_t end = conf.end;
     std::size_t maxDeg = conf.maxDeg;
     std::size_t maxIter = conf.maxIter;
+    double dmax = conf.dmax;
+
+    bool isMatGen = conf.isMatGen;
 
     double tol = conf.tol;
     bool sequence = conf.sequence;
@@ -479,9 +485,6 @@ int do_chase(ChASE_DriverProblemConfig& conf)
     config.SetMaxDeg(maxDeg);
     config.SetMaxIter(maxIter);
 
-    std::mt19937 gen(1337.0);
-    std::normal_distribution<> d;
-
     T* H = single.GetMatrixPtr();
 
     if (!sequence)
@@ -575,7 +578,21 @@ int do_chase(ChASE_DriverProblemConfig& conf)
         }
         else
         {
-            readMatrix(H, path_in, N * N, xoff, yoff, xlen, ylen);
+            if(isMatGen){
+                Base<T> epsilon = 1e-4;
+                Base<T>* eigenv = new Base<T>[N];
+                for (std::size_t i = 0; i < ylen; i++) {
+                    for (std::size_t j = 0; j < xlen; j++) {
+                        if (xoff + j == (i + yoff)) {
+                            H[i * xlen + j] =  dmax * (epsilon + (Base<T>)(xoff + j) * (1.0 - epsilon) / (Base<T>)N);
+                        }else{
+                            H[i * xlen + j] = T(0.0);
+                        }
+                    }
+                }
+            }else{
+                readMatrix(H, path_in, N * N, xoff, yoff, xlen, ylen);
+            }
         }
 #endif
 
@@ -711,7 +728,13 @@ int main(int argc, char* argv[])
         po::value<std::size_t>(&conf.numLanczos)->default_value(4),
         " Sets the number of stochastic vectors used for the spectral "
         "estimates"
-        "in Lanczos")
+        "in Lanczos")(
+        "isMatGen", po::value<bool>(&conf.isMatGen)->default_value(false), //
+        "generating a matrix in place"
+        )(
+        "dmax", po::value<double>(&conf.dmax)->default_value(100),        //
+        "for generating the spectrum"                             //
+        )                
 #ifdef USE_BLOCK_CYCLIC
         ( //
             "mbsize",
@@ -785,6 +808,10 @@ int main(int argc, char* argv[])
     {
         std::cout << "eigp is required when mode is " << conf.mode << std::endl;
         return -1;
+    }
+
+    if(conf.isMatGen){
+        conf.iscomplex = false;
     }
 
     if (conf.isdouble)

@@ -474,13 +474,17 @@ void Algorithm<T>::solve(Chase<T>* single)
         //-----------------------------------
         Base<T> cc = (upperb + lowerb) / 2; // Center of the interval.
         Base<T> ee = (upperb - lowerb) / 2; // Half-length of the interval.
-        Base<T> rho;
-        Base<T> t = (ritzv[0] - cc) / ee;
-	    rho = std::max(std::abs(t - std::sqrt(t * t - 1)),
-                       std::abs(t + std::sqrt(t * t - 1)));
+        Base<T> rho_1, rho_k;
+        Base<T> t_1, t_k;
+        t_1 = (single->GetRitzv()[0] - cc) / ee;
+        t_k = (ritzv[0] - cc) / ee;
+        rho_1 = std::max(std::abs(t_1 - std::sqrt(t_1 * t_1 - 1)),
+                       std::abs(t_1 + std::sqrt(t_1 * t_1 - 1)));
+        rho_k = std::max(std::abs(t_k - std::sqrt(t_k * t_k - 1)),
+                       std::abs(t_k + std::sqrt(t_k * t_k - 1)));
 
-        //cond = std::pow(rho, std::min(degrees[0], last_degree));
-        cond = std::pow(rho, degrees[0]);
+        cond = std::pow(rho_k, degrees[0]) * std::pow( rho_1 , (*std::max_element(degrees, degrees+nev+nex-locked) - degrees[0]) ) ;
+
         single->QR(locked, cond);
 #ifdef USE_NSIGHT
         nvtxRangePop();
