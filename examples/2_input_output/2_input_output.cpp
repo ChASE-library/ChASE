@@ -596,8 +596,9 @@ int do_chase(ChASE_DriverProblemConfig& conf)
         }
 #endif
 
+#ifdef USE_MPI
         MPI_Barrier(MPI_COMM_WORLD);
-
+#endif
         end = std::chrono::high_resolution_clock::now();
 
         elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(

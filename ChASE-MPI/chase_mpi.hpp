@@ -403,8 +403,10 @@ public:
     //! QR factorization.
     void QR(std::size_t fixednev, Base<T> cond) override
     {
-        int grank;
+        int grank = 0;
+#ifdef USE_MPI        
         MPI_Comm_rank(MPI_COMM_WORLD, &grank);
+#endif        
         char* cholddisable;
         cholddisable = getenv("CHASE_DISABLE_CHOLQR");
         int diasable = 0;
