@@ -38,10 +38,11 @@ int main()
     int rank = 0;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    std::size_t N = 1001;
+    std::size_t N = 1000;
+    std::size_t LDH = 1001;
     std::size_t nev = 100;
     std::size_t nex = 40;
-    std::size_t idx_max = 5;
+    std::size_t idx_max = 1;
     Base<T> perturb = 1e-4;
 
     std::mt19937 gen(1337.0);
@@ -53,9 +54,9 @@ int main()
 
     auto V = std::vector<T>(N * (nev + nex));
     auto Lambda = std::vector<Base<T>>(nev + nex);
-    std::vector<T> H(N * N, T(0.0));
+    std::vector<T> H(N * LDH, T(0.0));
 
-    CHASE single(N, nev, nex, V.data(), Lambda.data(), H.data());
+    CHASE single(N, nev, nex, H.data(), LDH, V.data(), Lambda.data());
 
     auto& config = single.GetConfig();
     config.SetTol(1e-10);
@@ -70,20 +71,14 @@ int main()
                   << '\n'
                   << config;
 
-    std::size_t xoff, yoff, xlen, ylen;
-    xoff = 0;
-    yoff = 0;
-    xlen = N;
-    ylen = N;
-
     // Generate Clement matrix
     for (auto i = 0; i < N; ++i)
     {
         H[i + N * i] = 0;
         if (i != N - 1)
-            H[i + 1 + N * i] = std::sqrt(i * (N + 1 - i));
+            H[i + 1 + LDH * i] = std::sqrt(i * (N + 1 - i));
         if (i != N - 1)
-            H[i + N * (i + 1)] = std::sqrt(i * (N + 1 - i));
+            H[i + LDH * (i + 1)] = std::sqrt(i * (N + 1 - i));
     }
 
     for (auto idx = 0; idx < idx_max; ++idx)
@@ -129,8 +124,8 @@ int main()
             for (std::size_t j = 1; j < i; ++j)
             {
                 T element_perturbation = T(d(gen), d(gen)) * perturb;
-                H[j + N * i] += element_perturbation;
-                H[i + N * j] += std::conj(element_perturbation);
+                H[j + LDH * i] += element_perturbation;
+                H[i + LDH * j] += std::conj(element_perturbation);
             }
         }
     }

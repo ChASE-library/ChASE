@@ -12,6 +12,7 @@
 #include <memory>
 
 #include "mpi.h"
+
 #include <random>
 
 #ifdef HAS_OMP
@@ -123,7 +124,24 @@ public:
 
         ritzv_ = matrices_.get_Ritzv();
         resid_ = matrices_.get_Resid();
+
     }
+
+
+    ChaseMpi(std::size_t N, std::size_t nev, std::size_t nex, T* H, 
+             std::size_t ldh, T *V1, Base<T>* ritzv, T* V2 = nullptr,
+             Base<T>* resid = nullptr)
+        : N_(N), nev_(nev), nex_(nex), rank_(0), locked_(0),
+          config_(N, nev, nex),
+          matrices_(N_, nev_ + nex_, H, ldh, V1, ritzv, V2, resid),
+          dla_(new MF<T>(matrices_, N_, nev_, nex_))
+    {
+
+        ritzv_ = matrices_.get_Ritzv();
+        resid_ = matrices_.get_Resid();
+
+    }
+
 
     // case 2: MPI
     //! A constructor of the ChaseMpi class which gives an implenentation of

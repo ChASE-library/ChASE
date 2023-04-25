@@ -37,7 +37,8 @@ public:
                                     std::size_t n, std::size_t nev,
                                     std::size_t nex)
         : N_(n), nex_(nex), nev_(nev), maxblock_(nev_ + nex_),
-          V1_(matrices.get_V1()), V2_(matrices.get_V2()), H_(matrices.get_H())
+          V1_(matrices.get_V1()), V2_(matrices.get_V2()), H_(matrices.get_H()),
+          ldh_(matrices.get_ldh())
     {
 
         v0_.resize(N_);
@@ -85,7 +86,7 @@ public:
                std::size_t locked) override
     {
         t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, N_,
-               static_cast<std::size_t>(block), N_, &alpha, H_, N_,
+               static_cast<std::size_t>(block), N_, &alpha, H_, ldh_,
                V1_ + offset * N_ + locked * N_, N_, &beta,
                V2_ + locked * N_ + offset * N_, N_);
 
@@ -101,7 +102,7 @@ public:
     {
         for (std::size_t i = 0; i < N_; ++i)
         {
-            H_[i + i * N_] += c;
+            H_[i + i * ldh_] += c;
         }
     }
 
@@ -118,7 +119,7 @@ public:
         t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, //
                N_, 1, N_,                                 //
                &One,                                      //
-               H_, N_,                                    //
+               H_, ldh_,                                    //
                B, N_,                                     //
                &Zero,                                     //
                C, N_);
@@ -156,7 +157,7 @@ public:
         T Zero = T(0.0);
 
         t_gemm(CblasColMajor, CblasConjTrans, CblasNoTrans, N_, block, N_, &One,
-               H_, N_, V1_ + locked * N_, N_, &Zero, V2_ + locked * N_, N_);
+               H_, ldh_, V1_ + locked * N_, N_, &Zero, V2_ + locked * N_, N_);
 
         auto A = std::unique_ptr<T[]>{new T[block * block]};
 
@@ -203,7 +204,7 @@ public:
         T beta = T(0.0);
 
         t_gemm(CblasColMajor, CblasConjTrans, CblasNoTrans, N_, unconverged, N_,
-               &alpha, H_, N_, V1_ + locked * N_, N_, &beta, V2_ + locked * N_,
+               &alpha, H_, ldh_, V1_ + locked * N_, N_, &beta, V2_ + locked * N_,
                N_);
 
         for (std::size_t i = 0; i < unconverged; ++i)
@@ -338,6 +339,7 @@ private:
     std::size_t nev_;    //!< number of required eigenpairs
     std::size_t nex_;    //!< number of extral searching space
     std::size_t maxblock_; //!< `maxBlock_=nev_ + nex_`
+    std::size_t ldh_; //!< leading dimension of Hermitian matrix
     T* H_;                 //!< a pointer to the Symmetric/Hermtian matrix
     T* V1_;                //!< a matrix of size `N_*(nev_+nex_)`
     T* V2_;                //!< a matrix of size `N_*(nev_+nex_)`
