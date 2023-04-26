@@ -12,6 +12,7 @@
 #include <cuda.h>
 #include <cuda_profiler_api.h>
 #include <cuda_runtime.h>
+#include <curand_kernel.h>
 
 #include <assert.h>
 #include <complex>
@@ -27,52 +28,6 @@
  * multiGPUs (both block-block and block-cyclic distributions)
  *  @{
  */
-
-//! generate `n` random float numbers in normal distribution on each GPU device.
-//!
-//! @param[in] seed the seed of random number generator
-//! @param[in] states the states of the sequence of random number generator
-//! @param[in,out] v a pointer to the device memory to store the random
-//! generated numbers
-//! @param[in] stream_ an asynchronous CUDA stream which allows to run this
-//! function asynchronously
-void chase_rand_normal(unsigned long long seed, curandStatePhilox4_32_10_t* states, float* v,
-                       int n, cudaStream_t stream_);
-//! generate `n` random double numbers in normal distribution on each GPU
-//! device.
-//!
-//! @param[in] seed the seed of random number generator
-//! @param[in] states the states of the sequence of random number generator
-//! @param[in,out] v a pointer to the device memory to store the random
-//! generated numbers
-//! @param[in] stream_ an asynchronous CUDA stream which allows to run this
-//! function asynchronously
-void chase_rand_normal(unsigned long long seed, curandStatePhilox4_32_10_t* states, double* v,
-                       int n, cudaStream_t stream_);
-//! generate `n` random complex float numbers in normal distribution on each GPU
-//! device. The real part and the imaginary part of each individual random
-//! number are the same.
-//!
-//! @param[in] seed the seed of random number generator
-//! @param[in] states the states of the sequence of random number generator
-//! @param[in,out] v a pointer to the device memory to store the random
-//! generated numbers
-//! @param[in] stream_ an asynchronous CUDA stream which allows to run this
-//! function asynchronously
-void chase_rand_normal(unsigned long long seed, curandStatePhilox4_32_10_t* states,
-                       std::complex<float>* v, int n, cudaStream_t stream_);
-//! generate `n` random complex double numbers in normal distribution on each
-//! GPU device. The real part and the imaginary part of each individual random
-//! number are the same.
-//!
-//! @param[in] seed the seed of random number generator
-//! @param[in] states the states of the sequence of random number generator
-//! @param[in,out] v a pointer to the device memory to store the random
-//! generated numbers
-//! @param[in] stream_ an asynchronous CUDA stream which allows to run this
-//! function asynchronously
-void chase_rand_normal(unsigned long long seed, curandStatePhilox4_32_10_t* states,
-                       std::complex<double>* v, int n, cudaStream_t stream_);
 
 //! shift the diagonal of a `nxn` square matrix `A` in float real data type on a
 //! single GPU.
@@ -250,7 +205,7 @@ public:
     }
     void initRndVecs() override
     {
-        /*
+        
         std::mt19937 gen(1337.0);
         std::normal_distribution<> d;
         for (auto j = 0; j < (nev_ + nex_); j++)
@@ -260,14 +215,6 @@ public:
                 V1_[i + j * N_] = getRandomT<T>([&]() { return d(gen); });
             }
         }
-        */
-        unsigned long long seed = 1337;
-
-        chase_rand_normal(seed, states_, d_V1_, N_ * (nev_ + nex_),
-                          (cudaStream_t)0);
-        cuda_exec(cudaMemcpy(V1_, d_V1_, N_ * (nev_ + nex_) * sizeof(T),
-                             cudaMemcpyDeviceToHost));
-
     }
 
     // host->device: v1 on host, v2 on device
