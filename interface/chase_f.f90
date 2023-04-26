@@ -11,7 +11,7 @@
 MODULE chase_diag
     ! non-MPI
     INTERFACE
-        SUBROUTINE dchase_init(n, nev, nex, h, v, ritzv, init) bind( c, name = 'dchase_init_' )
+        SUBROUTINE dchase_init(n, nev, nex, h, ldh, v, ritzv, init) bind( c, name = 'dchase_init_' )
       !> Initialization of shared-memory ChASE with real scalar in double precison.
       !> It is linked to single-GPU ChASE when CUDA is detected.
       !>    
@@ -24,7 +24,7 @@ MODULE chase_diag
       !> @param[in,out] ritzv an array of size `nev` which contains the desired eigenvalues
       !> @param[in,out] init a flag to indicate if ChASE has been initialized
             USE, INTRINSIC :: iso_c_binding
-            INTEGER(c_int)      :: n, nev, nex, init
+            INTEGER(c_int)      :: n, nev, nex, init, ldh
             REAL(c_double)      :: h(n, *), v(n, *)
             REAL(c_double)      :: ritzv(*)
 
@@ -62,7 +62,7 @@ MODULE chase_diag
     END INTERFACE
 
     INTERFACE
-        SUBROUTINE schase_init(n, nev, nex, h, v, ritzv, init) bind( c, name = 'schase_init_' )
+        SUBROUTINE schase_init(n, nev, nex, h, ldh, v, ritzv, init) bind( c, name = 'schase_init_' )
       !> Initialization of shared-memory ChASE with real scalar in single precison.
       !> It is linked to single-GPU ChASE when CUDA is detected.
       !>    
@@ -75,7 +75,7 @@ MODULE chase_diag
       !> @param[in,out] ritzv an array of size `nev` which contains the desired eigenvalues
       !> @param[in,out] init a flag to indicate if ChASE has been initialized            
             USE, INTRINSIC :: iso_c_binding
-            INTEGER(c_int)      :: n, nev, nex, init
+            INTEGER(c_int)      :: n, nev, nex, init, ldh
             REAL(c_float)      :: h(n, *), v(n, *)
             REAL(c_float)      :: ritzv(*)
 
@@ -113,7 +113,7 @@ MODULE chase_diag
     END INTERFACE
 
     INTERFACE
-        SUBROUTINE cchase_init(n, nev, nex, h, v, ritzv, init) bind( c, name = 'cchase_init_' )
+        SUBROUTINE cchase_init(n, nev, nex, h, ldh, v, ritzv, init) bind( c, name = 'cchase_init_' )
       !> Initialization of shared-memory ChASE with complex scalar in single precison.
       !> It is linked to single-GPU ChASE when CUDA is detected.      
       !>    
@@ -126,7 +126,7 @@ MODULE chase_diag
       !> @param[in,out] ritzv an array of size `nev` which contains the desired eigenvalues
       !> @param[in,out] init a flag to indicate if ChASE has been initialized            
             USE, INTRINSIC :: iso_c_binding
-            INTEGER(c_int)      :: n, nev, nex, init
+            INTEGER(c_int)      :: n, nev, nex, init, ldh
             COMPLEX(c_float_complex)      :: h(n, *), v(n, *)
             REAL(c_float)      :: ritzv(*)
 
@@ -165,7 +165,7 @@ MODULE chase_diag
 
 
     INTERFACE  
-        SUBROUTINE zchase_init(n, nev, nex, h, v, ritzv, init) bind( c, name = 'zchase_init_' )
+        SUBROUTINE zchase_init(n, nev, nex, h, ldh, v, ritzv, init) bind( c, name = 'zchase_init_' )
       !> Initialization of shard-memory ChASE with complex scalar in double precison.
       !> It is linked to single-GPU ChASE when CUDA is detected.      
       !>    
@@ -178,7 +178,7 @@ MODULE chase_diag
       !> @param[in,out] ritzv an array of size `nev` which contains the desired eigenvalues
       !> @param[in,out] init a flag to indicate if ChASE has been initialized         
             USE, INTRINSIC :: iso_c_binding
-            INTEGER(c_int)      :: n, nev, nex, init
+            INTEGER(c_int)      :: n, nev, nex, init, ldh
             COMPLEX(c_double_complex)      :: h(n, *), v(n, *)
             REAL(c_double)      :: ritzv(*)
 
