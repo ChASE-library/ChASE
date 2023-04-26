@@ -94,6 +94,10 @@ if(SCALAPACK_FOUND)
 	)
 endif()
 
+  target_compile_definitions( chase_mpi INTERFACE
+	  "-DUSE_MPI"
+        )
+
 if(OpenMP_FOUND)
     target_link_libraries( chase_mpi INTERFACE
             OpenMP::OpenMP_CXX
