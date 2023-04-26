@@ -28,6 +28,52 @@
  *  @{
  */
 
+//! generate `n` random float numbers in normal distribution on each GPU device.
+//!
+//! @param[in] seed the seed of random number generator
+//! @param[in] states the states of the sequence of random number generator
+//! @param[in,out] v a pointer to the device memory to store the random
+//! generated numbers
+//! @param[in] stream_ an asynchronous CUDA stream which allows to run this
+//! function asynchronously
+void chase_rand_normal(unsigned long long seed, curandStatePhilox4_32_10_t* states, float* v,
+                       int n, cudaStream_t stream_);
+//! generate `n` random double numbers in normal distribution on each GPU
+//! device.
+//!
+//! @param[in] seed the seed of random number generator
+//! @param[in] states the states of the sequence of random number generator
+//! @param[in,out] v a pointer to the device memory to store the random
+//! generated numbers
+//! @param[in] stream_ an asynchronous CUDA stream which allows to run this
+//! function asynchronously
+void chase_rand_normal(unsigned long long seed, curandStatePhilox4_32_10_t* states, double* v,
+                       int n, cudaStream_t stream_);
+//! generate `n` random complex float numbers in normal distribution on each GPU
+//! device. The real part and the imaginary part of each individual random
+//! number are the same.
+//!
+//! @param[in] seed the seed of random number generator
+//! @param[in] states the states of the sequence of random number generator
+//! @param[in,out] v a pointer to the device memory to store the random
+//! generated numbers
+//! @param[in] stream_ an asynchronous CUDA stream which allows to run this
+//! function asynchronously
+void chase_rand_normal(unsigned long long seed, curandStatePhilox4_32_10_t* states,
+                       std::complex<float>* v, int n, cudaStream_t stream_);
+//! generate `n` random complex double numbers in normal distribution on each
+//! GPU device. The real part and the imaginary part of each individual random
+//! number are the same.
+//!
+//! @param[in] seed the seed of random number generator
+//! @param[in] states the states of the sequence of random number generator
+//! @param[in,out] v a pointer to the device memory to store the random
+//! generated numbers
+//! @param[in] stream_ an asynchronous CUDA stream which allows to run this
+//! function asynchronously
+void chase_rand_normal(unsigned long long seed, curandStatePhilox4_32_10_t* states,
+                       std::complex<double>* v, int n, cudaStream_t stream_);
+
 //! shift the diagonal of a `nxn` square matrix `A` in float real data type on a
 //! single GPU.
 //!
@@ -91,7 +137,8 @@ public:
     ChaseMpiDLACudaSeq(ChaseMpiMatrices<T>& matrices, std::size_t N,
                        std::size_t nev, std::size_t nex)
         : N_(N), copied_(false), nev_(nev), nex_(nex), max_block_(nev + nex),
-          V1_(matrices.get_V1()), V2_(matrices.get_V2()), H_(matrices.get_H())
+          V1_(matrices.get_V1()), V2_(matrices.get_V2()), H_(matrices.get_H()),
+          ldh_(matrices.get_ldh())
     {
         cuda_exec(cudaSetDevice(0));
 
@@ -118,6 +165,8 @@ public:
             cudaMalloc((void**)&d_resids_, sizeof(Base<T>) * (nev_ + nex_)));
 
         cusolverDnSetStream(cusolverH_, stream_);
+        cuda_exec(
+            cudaMalloc((void**)&states_, sizeof(curandStatePhilox4_32_10_t) * (256 * 32)));
 
         cuda_exec(cudaMalloc((void**)&devInfo_, sizeof(int)));
         cuda_exec(cudaMalloc((void**)&d_return_, sizeof(T) * max_block_));
@@ -185,6 +234,9 @@ public:
             cudaFree(v1_);
         if (w_)
             cudaFree(w_);
+        if(states_)
+            cudaFree(states_);
+
     }
     void initVecs() override
     {
@@ -192,11 +244,13 @@ public:
                              cudaMemcpyHostToDevice));
         cuda_exec(cudaMemcpy(d_V2_, d_V1_, (nev_ + nex_) * N_ * sizeof(T),
                              cudaMemcpyDeviceToDevice));
-        cuda_exec(
-            cudaMemcpy(d_H_, H_, N_ * N_ * sizeof(T), cudaMemcpyHostToDevice));
+        //cuda_exec(
+        //    cudaMemcpy(d_H_, H_, N_ * N_ * sizeof(T), cudaMemcpyHostToDevice));
+        cublasSetMatrix(N_, N_, sizeof(T), H_, ldh_, d_H_, N_);    
     }
     void initRndVecs() override
     {
+        /*
         std::mt19937 gen(1337.0);
         std::normal_distribution<> d;
         for (auto j = 0; j < (nev_ + nex_); j++)
@@ -206,6 +260,14 @@ public:
                 V1_[i + j * N_] = getRandomT<T>([&]() { return d(gen); });
             }
         }
+        */
+        unsigned long long seed = 1337;
+
+        chase_rand_normal(seed, states_, d_V1_, N_ * (nev_ + nex_),
+                          (cudaStream_t)0);
+        cuda_exec(cudaMemcpy(V1_, d_V1_, N_ * (nev_ + nex_) * sizeof(T),
+                             cudaMemcpyDeviceToHost));
+
     }
 
     // host->device: v1 on host, v2 on device
@@ -491,6 +553,7 @@ private:
     T* d_H_;  //!< a pointer to a local buffer of size `N_*N_` on GPU, which is
               //!< mapped to `H_`.
     T* H_;    //!< a pointer to the Symmetric/Hermtian matrix
+    std::size_t ldh_; //!< leading dimension of Hermitian matrix    
     T* V1_;   //!< a matrix of size `N_*(nev_+nex_)`
     T* V2_;   //!< a matrix of size `N_*(nev_+nex_)`
     T* v0_;   //!< a vector of size `N_`, which is allocated in this class for
@@ -515,6 +578,7 @@ private:
     cusolverDnHandle_t cusolverH_; //!< `cuSOLVER` handle
     bool copied_; //!< a flag indicates if the matrix has already been copied to
                   //!< device
+    curandStatePhilox4_32_10_t *states_ = NULL;
 };
 
 template <typename T>
