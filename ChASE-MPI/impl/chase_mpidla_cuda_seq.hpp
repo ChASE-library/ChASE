@@ -12,6 +12,7 @@
 #include <cuda.h>
 #include <cuda_profiler_api.h>
 #include <cuda_runtime.h>
+#include <curand_kernel.h>
 
 #include <assert.h>
 #include <complex>
@@ -91,7 +92,8 @@ public:
     ChaseMpiDLACudaSeq(ChaseMpiMatrices<T>& matrices, std::size_t N,
                        std::size_t nev, std::size_t nex)
         : N_(N), copied_(false), nev_(nev), nex_(nex), max_block_(nev + nex),
-          V1_(matrices.get_V1()), V2_(matrices.get_V2()), H_(matrices.get_H())
+          V1_(matrices.get_V1()), V2_(matrices.get_V2()), H_(matrices.get_H()),
+          ldh_(matrices.get_ldh())
     {
         cuda_exec(cudaSetDevice(0));
 
@@ -118,6 +120,8 @@ public:
             cudaMalloc((void**)&d_resids_, sizeof(Base<T>) * (nev_ + nex_)));
 
         cusolverDnSetStream(cusolverH_, stream_);
+        cuda_exec(
+            cudaMalloc((void**)&states_, sizeof(curandStatePhilox4_32_10_t) * (256 * 32)));
 
         cuda_exec(cudaMalloc((void**)&devInfo_, sizeof(int)));
         cuda_exec(cudaMalloc((void**)&d_return_, sizeof(T) * max_block_));
@@ -185,6 +189,9 @@ public:
             cudaFree(v1_);
         if (w_)
             cudaFree(w_);
+        if(states_)
+            cudaFree(states_);
+
     }
     void initVecs() override
     {
@@ -192,11 +199,13 @@ public:
                              cudaMemcpyHostToDevice));
         cuda_exec(cudaMemcpy(d_V2_, d_V1_, (nev_ + nex_) * N_ * sizeof(T),
                              cudaMemcpyDeviceToDevice));
-        cuda_exec(
-            cudaMemcpy(d_H_, H_, N_ * N_ * sizeof(T), cudaMemcpyHostToDevice));
+        //cuda_exec(
+        //    cudaMemcpy(d_H_, H_, N_ * N_ * sizeof(T), cudaMemcpyHostToDevice));
+        cublasSetMatrix(N_, N_, sizeof(T), H_, ldh_, d_H_, N_);    
     }
     void initRndVecs() override
     {
+        
         std::mt19937 gen(1337.0);
         std::normal_distribution<> d;
         for (auto j = 0; j < (nev_ + nex_); j++)
@@ -491,6 +500,7 @@ private:
     T* d_H_;  //!< a pointer to a local buffer of size `N_*N_` on GPU, which is
               //!< mapped to `H_`.
     T* H_;    //!< a pointer to the Symmetric/Hermtian matrix
+    std::size_t ldh_; //!< leading dimension of Hermitian matrix    
     T* V1_;   //!< a matrix of size `N_*(nev_+nex_)`
     T* V2_;   //!< a matrix of size `N_*(nev_+nex_)`
     T* v0_;   //!< a vector of size `N_`, which is allocated in this class for
@@ -515,6 +525,7 @@ private:
     cusolverDnHandle_t cusolverH_; //!< `cuSOLVER` handle
     bool copied_; //!< a flag indicates if the matrix has already been copied to
                   //!< device
+    curandStatePhilox4_32_10_t *states_ = NULL;
 };
 
 template <typename T>

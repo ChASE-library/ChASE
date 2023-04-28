@@ -35,8 +35,10 @@ public:
                                       std::size_t n, std::size_t nex,
                                       std::size_t nev)
         : N_(n), nev_(nev), nex_(nex), maxBlock_(nex + nex),
-          H_(matrices.get_H()), V1_(new T[N_ * maxBlock_]),
-          V2_(new T[N_ * maxBlock_]), A_(new T[maxBlock_ * maxBlock_])
+          H_(matrices.get_H()), ldh_(matrices.get_ldh()),
+          V1_(new T[N_ * maxBlock_]),
+          V2_(new T[N_ * maxBlock_]), 
+          A_(new T[maxBlock_ * maxBlock_])
     {
 
         V12_ = matrices.get_V1();
@@ -98,7 +100,7 @@ public:
         if (next_ == NextOp::bAc)
         {
             t_gemm(CblasColMajor, CblasConjTrans, CblasNoTrans, N_,
-                   static_cast<std::size_t>(block), N_, &alpha, H_, N_,
+                   static_cast<std::size_t>(block), N_, &alpha, H_, ldh_,
                    V12_ + offset * N_ + locked * N_, N_, &beta,
                    V22_ + locked * N_ + offset * N_, N_);
 
@@ -107,7 +109,7 @@ public:
         else
         {
             t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, N_,
-                   static_cast<std::size_t>(block), N_, &alpha, H_, N_,
+                   static_cast<std::size_t>(block), N_, &alpha, H_, ldh_,
                    V22_ + offset * N_ + locked * N_, N_, &beta,
                    V12_ + offset * N_ + locked * N_, N_);
 
@@ -133,7 +135,7 @@ public:
     {
         for (std::size_t i = 0; i < N_; ++i)
         {
-            H_[i + i * N_] += c;
+            H_[i + i * ldh_] += c;
         }
     }
 
@@ -144,7 +146,7 @@ public:
         T const beta = T(0.0);
 
         t_gemm(CblasColMajor, CblasConjTrans, CblasNoTrans, N_, block, N_,
-               &alpha, H_, N_, V12_ + locked * N_, N_, &beta,
+               &alpha, H_, ldh_, V12_ + locked * N_, N_, &beta,
                V22_ + locked * N_, N_);
 
         std::memcpy(get_V2() + locked * N_, get_V1() + locked * N_,
@@ -396,6 +398,7 @@ private:
     std::size_t nex_;       //!< number of extral searching space
     std::size_t nev_;       //!< number of required eigenpairs
     T* H_;                  //!< a pointer to the Symmetric/Hermtian matrix
+    std::size_t ldh_; //!< leading dimension of Hermitian matrix    
     std::unique_ptr<T> V1_; //!< a matrix of size `N_*(nev_+nex_)`
     std::unique_ptr<T> V2_; //!< a matrix of size `N_*(nev_+nex_)`
     std::unique_ptr<T> A_;  //!< a matrix of size `(nev_+nex_)*(nev_+nex_)`

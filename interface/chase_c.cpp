@@ -45,7 +45,7 @@ class ChASE_SEQ
 {
 public:
     template <typename T>
-    static void Initialize(int N, int nev, int nex, T* H, T* V, Base<T>* ritzv);
+    static void Initialize(int N, int nev, int nex, T* H, int ldh, T* V, Base<T>* ritzv);
 
     template <typename T>
     static void Finalize();
@@ -65,33 +65,33 @@ ChaseMpi<dlaSeq, std::complex<double>>* ChASE_SEQ::zchaseSeq = nullptr;
 ChaseMpi<dlaSeq, std::complex<float>>* ChASE_SEQ::cchaseSeq = nullptr;
 
 template <>
-void ChASE_SEQ::Initialize(int N, int nev, int nex, double* H, double* V,
+void ChASE_SEQ::Initialize(int N, int nev, int nex, double* H, int ldh, double* V,
                            double* ritzv)
 {
-    dchaseSeq = new ChaseMpi<dlaSeq, double>(N, nev, nex, V, ritzv, H);
+    dchaseSeq = new ChaseMpi<dlaSeq, double>(N, nev, nex, H, ldh, V, ritzv);
 }
 
 template <>
-void ChASE_SEQ::Initialize(int N, int nev, int nex, float* H, float* V,
+void ChASE_SEQ::Initialize(int N, int nev, int nex, float* H, int ldh, float* V,
                            float* ritzv)
 {
-    schaseSeq = new ChaseMpi<dlaSeq, float>(N, nev, nex, V, ritzv, H);
+    schaseSeq = new ChaseMpi<dlaSeq, float>(N, nev, nex, H, ldh, V, ritzv);
 }
 
 template <>
-void ChASE_SEQ::Initialize(int N, int nev, int nex, std::complex<double>* H,
+void ChASE_SEQ::Initialize(int N, int nev, int nex, std::complex<double>* H, int ldh,
                            std::complex<double>* V, double* ritzv)
 {
     zchaseSeq =
-        new ChaseMpi<dlaSeq, std::complex<double>>(N, nev, nex, V, ritzv, H);
+        new ChaseMpi<dlaSeq, std::complex<double>>(N, nev, nex, H, ldh, V, ritzv);
 }
 
 template <>
-void ChASE_SEQ::Initialize(int N, int nev, int nex, std::complex<float>* H,
+void ChASE_SEQ::Initialize(int N, int nev, int nex, std::complex<float>* H, int ldh,
                            std::complex<float>* V, float* ritzv)
 {
     cchaseSeq =
-        new ChaseMpi<dlaSeq, std::complex<float>>(N, nev, nex, V, ritzv, H);
+        new ChaseMpi<dlaSeq, std::complex<float>>(N, nev, nex, H, ldh, V, ritzv);
 }
 
 template <>
@@ -143,9 +143,9 @@ ChaseMpi<dlaSeq, std::complex<double>>* ChASE_SEQ::getChase()
 }
 
 template <typename T>
-int ChASE_SEQ_Init(int N, int nev, int nex, T* H, T* V, Base<T>* ritzv)
+int ChASE_SEQ_Init(int N, int nev, int nex, T* H, int ldh, T* V, Base<T>* ritzv)
 {
-    ChASE_SEQ::Initialize<T>(N, nev, nex, H, V, ritzv);
+    ChASE_SEQ::Initialize<T>(N, nev, nex, H, ldh, V, ritzv);
     return 1;
 }
 
@@ -492,16 +492,17 @@ extern "C"
     //! @param[in] nev number of desired eigenpairs
     //! @param[in] nex extra searching space size
     //! @param[in] h pointer to the matrix to be diagonalized
+    //! @param[in] ldh a leading dimension of h
     //! @param[in,out] v `(nx(nev+nex))` matrix, input is the initial guess
     //! eigenvectors, and for output, the first `nev` columns are overwritten by
     //! the desired eigenvectors
     //! @param[in,out] ritzv an array of size `nev` which contains the desired
     //! eigenvalues
     //! @param[in,out] init a flag to indicate if ChASE has been initialized
-    void dchase_init_(int* N, int* nev, int* nex, double* H, double* V,
+    void dchase_init_(int* N, int* nev, int* nex, double* H, int *ldh, double* V,
                       double* ritzv, int* init)
     {
-        *init = ChASE_SEQ_Init<double>(*N, *nev, *nex, H, V, ritzv);
+        *init = ChASE_SEQ_Init<double>(*N, *nev, *nex, H, *ldh, V, ritzv);
     }
     //! Initialization of shared-memory ChASE with real scalar in single
     //! precison. It is linked to single-GPU ChASE when CUDA is detected.
@@ -510,16 +511,17 @@ extern "C"
     //! @param[in] nev number of desired eigenpairs
     //! @param[in] nex extra searching space size
     //! @param[in] h pointer to the matrix to be diagonalized
+    //! @param[in] ldh a leading dimension of h
     //! @param[in,out] v `(nx(nev+nex))` matrix, input is the initial guess
     //! eigenvectors, and for output, the first `nev` columns are overwritten by
     //! the desired eigenvectors
     //! @param[in,out] ritzv an array of size `nev` which contains the desired
     //! eigenvalues
     //! @param[in,out] init a flag to indicate if ChASE has been initialized
-    void schase_init_(int* N, int* nev, int* nex, float* H, float* V,
+    void schase_init_(int* N, int* nev, int* nex, float* H,  int *ldh, float* V,
                       float* ritzv, int* init)
     {
-        *init = ChASE_SEQ_Init<float>(*N, *nev, *nex, H, V, ritzv);
+        *init = ChASE_SEQ_Init<float>(*N, *nev, *nex, H, *ldh, V, ritzv);
     }
     //! Initialization of shared-memory ChASE with complex scalar in single
     //! precison. It is linked to single-GPU ChASE when CUDA is detected.
@@ -528,17 +530,18 @@ extern "C"
     //! @param[in] nev number of desired eigenpairs
     //! @param[in] nex extra searching space size
     //! @param[in] h pointer to the matrix to be diagonalized
+    //! @param[in] ldh a leading dimension of h    
     //! @param[in,out] v `(nx(nev+nex))` matrix, input is the initial guess
     //! eigenvectors, and for output, the first `nev` columns are overwritten by
     //! the desired eigenvectors
     //! @param[in,out] ritzv an array of size `nev` which contains the desired
     //! eigenvalues
     //! @param[in,out] init a flag to indicate if ChASE has been initialized
-    void cchase_init_(int* N, int* nev, int* nex, float _Complex* H,
+    void cchase_init_(int* N, int* nev, int* nex, float _Complex* H, int *ldh,
                       float _Complex* V, float* ritzv, int* init)
     {
         *init = ChASE_SEQ_Init<std::complex<float>>(
-            *N, *nev, *nex, reinterpret_cast<std::complex<float>*>(H),
+            *N, *nev, *nex, reinterpret_cast<std::complex<float>*>(H), *ldh,
             reinterpret_cast<std::complex<float>*>(V), ritzv);
     }
     //! Initialization of shard-memory ChASE with complex scalar in double
@@ -548,17 +551,18 @@ extern "C"
     //! @param[in] nev number of desired eigenpairs
     //! @param[in] nex extra searching space size
     //! @param[in] h pointer to the matrix to be diagonalized
+    //! @param[in] ldh a leading dimension of h    
     //! @param[in,out] v `(nx(nev+nex))` matrix, input is the initial guess
     //! eigenvectors, and for output, the first `nev` columns are overwritten by
     //! the desired eigenvectors
     //! @param[in,out] ritzv an array of size `nev` which contains the desired
     //! eigenvalues
     //! @param[in,out] init a flag to indicate if ChASE has been initialized
-    void zchase_init_(int* N, int* nev, int* nex, double _Complex* H,
+    void zchase_init_(int* N, int* nev, int* nex, double _Complex* H, int *ldh,
                       double _Complex* V, double* ritzv, int* init)
     {
         *init = ChASE_SEQ_Init<std::complex<double>>(
-            *N, *nev, *nex, reinterpret_cast<std::complex<double>*>(H),
+            *N, *nev, *nex, reinterpret_cast<std::complex<double>*>(H), *ldh,
             reinterpret_cast<std::complex<double>*>(V), ritzv);
     }
     //! Finalize shared-memory ChASE with real scalar in double precison.
