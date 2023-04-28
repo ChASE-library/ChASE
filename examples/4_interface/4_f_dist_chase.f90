@@ -16,7 +16,7 @@ real(8) :: tmp, PI
 real(8) :: tol
 complex(8) :: cv
 integer :: deg
-character        :: mode, opt, major
+character        :: mode, opt, major, qr
 complex(8),  allocatable :: h(:,:), v(:,:), hh(:, :)
 real(8), allocatable :: lambda(:)
 
@@ -35,6 +35,7 @@ tol = 1e-10
 mode = 'R'
 opt = 'S'
 major = 'C'
+qr = 'C'
 
 dims(1) = 0
 dims(2) = 0
@@ -85,7 +86,7 @@ do x = 1, xlen
 	end do 
 end do
 
-call pzchase(deg, tol, mode, opt)
+call pzchase(deg, tol, mode, opt, qr)
 
 call pzchase_finalize(init)
 

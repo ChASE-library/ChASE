@@ -427,6 +427,21 @@ public:
      */
     std::size_t GetNex() const { return nex_; }
 
+    //! Sets the `cholqr_` flag to either `true` or `false`.
+    /*! This function is used to change the value of `cholqr_` so
+        either flexible CholQR (`true`) or Househoulder QR (`false`)
+        will be used. 
+        \param flag A boolean parameter which admits either a `true` or `false`
+       value.
+     */
+    void SetCholQR(bool flag){
+        cholqr_ = flag;
+    }
+    //! Return the value of `cholqr_`
+    bool DoCholQR(){
+        return cholqr_;
+    }
+
 private:
     ///////////////////////////////////////////////////
     // General parameters of the eigensolver
@@ -542,6 +557,9 @@ private:
         default value is set to *4*.
      */
     std::size_t num_lanczos_;
+
+    //! Optional parameter indicating if CholeksyQR is disabled
+    bool cholqr_ = true;
 };
 
 template <typename T>

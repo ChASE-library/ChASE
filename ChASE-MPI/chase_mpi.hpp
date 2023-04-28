@@ -471,13 +471,23 @@ public:
 #ifdef USE_MPI        
         MPI_Comm_rank(MPI_COMM_WORLD, &grank);
 #endif        
+        int diasable = 0;
+
+        if(config_.DoCholQR())
+        {
+            diasable = 0;
+        }else
+        {
+            diasable = 1;
+        }
+
         char* cholddisable;
         cholddisable = getenv("CHASE_DISABLE_CHOLQR");
-        int diasable = 0;
         if (cholddisable)
         {
             diasable = std::atoi(cholddisable);
         }
+
         if (diasable == 1)
         {
 #ifdef CHASE_OUTPUT
