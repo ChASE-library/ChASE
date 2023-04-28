@@ -74,7 +74,25 @@ public:
           resid_(resid == nullptr ? resid__.get() : resid)
     {
     }
-
+    //! A constructor of ChaseMpiMatrices for **Non-MPI case** which allocates
+    //! everything required.
+    /*!
+      The **private members** of this class are initialized by the parameters of
+      this constructor.
+      - For `H__` and `H_`, they are of size `ldh * N`.
+      - For `V1__`, `V1_`, `V2__` and `V1_`, they are of size `N * max_block`.
+      - For `ritzv__`, `ritzv_`, `resid__` and `resid_`, they are of size
+      `max_block`.
+      @param N: size of the square matrix defining the eigenproblem.
+      @param max_block: Maximum column number of matrix `V1_` and `V2_`. It
+      equals to `nev_ + nex_`.
+      @param H: a pointer to the buffer `H_`.
+      @param ldh: the leading dimension of `H_`.
+      @param V1: a pointer to the buffer `V1_`.
+      @param ritz: a pointer to the buffer `ritz_`.
+      @param V2: a pointer to the buffer `V2_`.
+      @param resid: a pointer to the buffer `resid_`.
+    */
     ChaseMpiMatrices(std::size_t N, std::size_t max_block, T *H, std::size_t ldh, 
                      T* V1, Base<T>* ritzv, T* V2 = nullptr,
                      Base<T>* resid = nullptr)

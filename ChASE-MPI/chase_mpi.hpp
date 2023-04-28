@@ -127,7 +127,53 @@ public:
 
     }
 
+    //! A constructor of the ChaseMpi class which gives an implenentation of
+    //! ChASE for shared-memory architecture, without MPI.
+    /*!
+       The private members of this classes are initialized by the parameters of
+       this constructor.
+       - For the
+       variable `N_`, it is initialized by the first parameter of this
+       constructor `N`.
+       - The variables `nev_` and
+       and `nex_` are initialized by the parameters of this constructor `nev`
+       and `nex`, respectively.
+       - The variable `rank_` is set to be 0 since non MPI is supported. The
+       variable `locked_` is initially set to be 0.
+       - The variable `config_` is setup by the constructor of ChaseConfig which
+       takes the parameters `N`, `nev` and `nex`.
+       - The variable `matrices_` is setup directly by the constructor of
+       ChaseMpiMatrices which takes the paramter `H`, `ldh`, `N`, `nev`, `nex`, 
+       `V1`, `ritzv`, `V2` and `resid`.
+       - The variable `dla_` is initialized by `MF` which is a derived class
+       of ChaseMpiDLAInterface. In ChASE, the candidates of `MF` for non-MPI
+       case are the classes `ChaseMpiDLABlaslapackSeq`,
+       `ChaseMpiDLABlaslapackSeqInplace` and `ChaseMpiDLACudaSeq`.
 
+       @param N: size of the square matrix defining the eigenproblem.
+       @param nev: Number of desired extremal eigenvalues.
+       @param nex: Number of eigenvalues augmenting the search space. Usually a
+       relatively small fraction of `nev`.
+       @param H: a pointer to the memory which stores local part of matrix on
+       each MPI rank. If `H` is not provided by the user, it will be internally
+       allocated in ChaseMpiMatrices class.
+       @param ldh: leading dimension of `H`       
+       @param V1: a pointer to a rectangular matrix of size `N * (nev+nex)`.
+       If `V1` is not provided by the user, it will be internally allocated in
+       ChaseMpiMatrices class.
+       After the solving step, the first `nev` columns of `V1` are overwritten
+       by the desired Ritz vectors.
+       @param ritzv: a pointer to an array to store the computed Ritz values.
+       If `ritzv` is not provided by the user, it will be internally allocated
+       in ChaseMpiMatrices class. Its minimal size should be `nev+nex`.
+       @param V2: a pointer to anther rectangular matrix of size `N *
+       (nev+nex)`. f `V2` is not provided by the user, it will be internally
+       allocated in ChaseMpiMatrices class.
+       @param resid: a pointer to an array to store the residual of computed
+       eigenpairs. If `resid` is not provided by the user, it will be internally
+       allocated in ChaseMpiMatrices class. Its minimal size should be
+       `nev+nex`.
+    */
     ChaseMpi(std::size_t N, std::size_t nev, std::size_t nex, T* H, 
              std::size_t ldh, T *V1, Base<T>* ritzv, T* V2 = nullptr,
              Base<T>* resid = nullptr)

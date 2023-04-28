@@ -20,6 +20,7 @@ MODULE chase_diag
       !> @param[in] nev number of desired eigenpairs
       !> @param[in] nex extra searching space size      
       !> @param[in] h pointer to the matrix to be diagonalized
+      !> @param[in] ldh a leading dimension of h
       !> @param[in,out] v `(nx(nev+nex))` matrix, input is the initial guess eigenvectors, and for output, the first `nev` columns are overwritten by the desired eigenvectors
       !> @param[in,out] ritzv an array of size `nev` which contains the desired eigenvalues
       !> @param[in,out] init a flag to indicate if ChASE has been initialized
@@ -71,6 +72,7 @@ MODULE chase_diag
       !> @param[in] nev number of desired eigenpairs
       !> @param[in] nex extra searching space size      
       !> @param[in] h pointer to the matrix to be diagonalized
+      !> @param[in] ldh a leading dimension of h      
       !> @param[in,out] v `(nx(nev+nex))` matrix, input is the initial guess eigenvectors, and for output, the first `nev` columns are overwritten by the desired eigenvectors
       !> @param[in,out] ritzv an array of size `nev` which contains the desired eigenvalues
       !> @param[in,out] init a flag to indicate if ChASE has been initialized            
@@ -122,6 +124,7 @@ MODULE chase_diag
       !> @param[in] nev number of desired eigenpairs
       !> @param[in] nex extra searching space size      
       !> @param[in] h pointer to the matrix to be diagonalized
+      !> @param[in] ldh a leading dimension of h      
       !> @param[in,out] v `(nx(nev+nex))` matrix, input is the initial guess eigenvectors, and for output, the first `nev` columns are overwritten by the desired eigenvectors
       !> @param[in,out] ritzv an array of size `nev` which contains the desired eigenvalues
       !> @param[in,out] init a flag to indicate if ChASE has been initialized            
@@ -174,6 +177,7 @@ MODULE chase_diag
       !> @param[in] nev number of desired eigenpairs
       !> @param[in] nex extra searching space size      
       !> @param[in] h pointer to the matrix to be diagonalized
+      !> @param[in] ldh a leading dimension of h      
       !> @param[in,out] v `(nx(nev+nex))` matrix, input is the initial guess eigenvectors, and for output, the first `nev` columns are overwritten by the desired eigenvectors
       !> @param[in,out] ritzv an array of size `nev` which contains the desired eigenvalues
       !> @param[in,out] init a flag to indicate if ChASE has been initialized         
