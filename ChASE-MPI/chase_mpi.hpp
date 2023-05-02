@@ -15,10 +15,6 @@
 
 #include <random>
 
-#ifdef HAS_OMP
-#include <omp.h>
-#endif
-
 #include "algorithm/chase.hpp"
 
 #include "blas_templates.hpp"
@@ -583,16 +579,7 @@ public:
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
-#ifdef HAS_OMP
-        char* omp_threads;
-        omp_threads = getenv("OMP_NUM_THREADS");
-        int num_threads = 1;
-        if (omp_threads)
-        {
-            num_threads = std::atoi(omp_threads);
-        }
-        omp_set_num_threads(1);
-#endif
+
 #ifdef USE_NSIGHT
         nvtxRangePushA("Lanczos: loop");
 #endif
@@ -653,9 +640,7 @@ public:
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
-#ifdef HAS_OMP
-        omp_set_num_threads(num_threads);
-#endif	
+	
         delete[] ritzv;
         delete[] isuppz;
         delete[] d;
@@ -703,16 +688,6 @@ public:
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
-#ifdef HAS_OMP
-        char* omp_threads;
-        omp_threads = getenv("OMP_NUM_THREADS");
-        int num_threads = 1;
-        if (omp_threads)
-        {
-            num_threads = std::atoi(omp_threads);
-        }
-        omp_set_num_threads(1);
-#endif	
         // ENSURE that v1 has one norm
 #ifdef USE_NSIGHT
         nvtxRangePushA("Lanczos: loop");
@@ -772,9 +747,7 @@ public:
         {
             Tau[k] = std::abs(ritzV[k * m]) * std::abs(ritzV[k * m]);
         }
-#ifdef HAS_OMP
-        omp_set_num_threads(num_threads);
-#endif	
+
         delete[] isuppz;
         delete[] d;
         delete[] e;
