@@ -157,7 +157,7 @@ int ChASE_SEQ_Finalize()
 }
 
 template <typename T>
-void ChASE_SEQ_Solve(int* deg, Base<T>* tol, char* mode, char* opt)
+void ChASE_SEQ_Solve(int* deg, Base<T>* tol, char* mode, char* opt, char* qr )
 {
     ChaseMpi<dlaSeq, T>* single = ChASE_SEQ::getChase<T>();
 
@@ -166,6 +166,8 @@ void ChASE_SEQ_Solve(int* deg, Base<T>* tol, char* mode, char* opt)
     config.SetDeg(*deg);
     config.SetOpt(*opt == 'S');
     config.SetApprox(*mode == 'A');
+    config.SetCholQR(*qr == 'C');
+
     PerformanceDecoratorChase<T> performanceDecorator(single);
     chase::Solve(&performanceDecorator);
     int rank;
@@ -437,7 +439,7 @@ int ChASE_DIST_Finalize()
 }
 
 template <typename T>
-void ChASE_DIST_Solve(int* deg, Base<T>* tol, char* mode, char* opt)
+void ChASE_DIST_Solve(int* deg, Base<T>* tol, char* mode, char* opt, char *qr)
 {
     ChaseMpi<dlaDist, T>* single = ChASE_DIST::getChase<T>();
 
@@ -446,6 +448,8 @@ void ChASE_DIST_Solve(int* deg, Base<T>* tol, char* mode, char* opt)
     config.SetDeg(*deg);
     config.SetOpt(*opt == 'S');
     config.SetApprox(*mode == 'A');
+    config.SetCholQR(*qr == 'C');
+
     PerformanceDecoratorChase<T> performanceDecorator(single);
     chase::Solve(&performanceDecorator);
     int rank;
@@ -599,9 +603,11 @@ extern "C"
     //! not.
     //! @param[in] opt determining if using internal optimization of Chebyshev
     //! polynomial degree. If `opt=S`, use, otherwise, no.
-    void dchase_(int* deg, double* tol, char* mode, char* opt)
+    //! @param[in] qr determining if flexible CholeskyQR, if `qr=C` use, 
+    //! otherwise, no use.     
+    void dchase_(int* deg, double* tol, char* mode, char* opt, char *qr)
     {
-        ChASE_SEQ_Solve<double>(deg, tol, mode, opt);
+        ChASE_SEQ_Solve<double>(deg, tol, mode, opt, qr);
     }
     //! Solve the eigenvalue by the previously constructed shared-memory ChASE
     //! (real scalar in single precision). The buffer of matrix to be
@@ -615,9 +621,11 @@ extern "C"
     //! not.
     //! @param[in] opt determining if using internal optimization of Chebyshev
     //! polynomial degree. If `opt=S`, use, otherwise, no.
-    void schase_(int* deg, float* tol, char* mode, char* opt)
+    //! @param[in] qr determining if flexible CholeskyQR, if `qr=C` use, 
+    //! otherwise, no use.     
+    void schase_(int* deg, float* tol, char* mode, char* opt, char *qr)
     {
-        ChASE_SEQ_Solve<float>(deg, tol, mode, opt);
+        ChASE_SEQ_Solve<float>(deg, tol, mode, opt, qr);
     }
     //! Solve the eigenvalue by the previously constructed shared-memory ChASE
     //! (complex scalar in double precision). The buffer of matrix to be
@@ -631,9 +639,11 @@ extern "C"
     //! not.
     //! @param[in] opt determining if using internal optimization of Chebyshev
     //! polynomial degree. If `opt=S`, use, otherwise, no.
-    void zchase_(int* deg, double* tol, char* mode, char* opt)
+    //! @param[in] qr determining if flexible CholeskyQR, if `qr=C` use, 
+    //! otherwise, no use.     
+    void zchase_(int* deg, double* tol, char* mode, char* opt, char *qr)
     {
-        ChASE_SEQ_Solve<std::complex<double>>(deg, tol, mode, opt);
+        ChASE_SEQ_Solve<std::complex<double>>(deg, tol, mode, opt, qr);
     }
     //! Solve the eigenvalue by the previously constructed shared-memory ChASE
     //! (complex scalar in single precision). The buffer of matrix to be
@@ -647,9 +657,11 @@ extern "C"
     //! not.
     //! @param[in] opt determining if using internal optimization of Chebyshev
     //! polynomial degree. If `opt=S`, use, otherwise, no.
-    void cchase_(int* deg, float* tol, char* mode, char* opt)
+    //! @param[in] qr determining if flexible CholeskyQR, if `qr=C` use, 
+    //! otherwise, no use.     
+    void cchase_(int* deg, float* tol, char* mode, char* opt, char *qr)
     {
-        ChASE_SEQ_Solve<std::complex<float>>(deg, tol, mode, opt);
+        ChASE_SEQ_Solve<std::complex<float>>(deg, tol, mode, opt, qr);
     }
     //! Initialization of distributed-memory ChASE with real scalar in double
     //! precison. The matrix to be diagonalized is already in block-block
@@ -1350,9 +1362,11 @@ extern "C"
     //! not.
     //! @param[in] opt determining if using internal optimization of Chebyshev
     //! polynomial degree. If `opt=S`, use, otherwise, no.
-    void pdchase_(int* deg, double* tol, char* mode, char* opt)
+    //! @param[in] qr determining if flexible CholeskyQR, if `qr=C` use, 
+    //! otherwise, no use.     
+    void pdchase_(int* deg, double* tol, char* mode, char* opt, char *qr)
     {
-        ChASE_DIST_Solve<double>(deg, tol, mode, opt);
+        ChASE_DIST_Solve<double>(deg, tol, mode, opt, qr);
     }
     //! Solve the eigenvalue by the previously constructed distributed-memory
     //! ChASE (real scalar in single precision). The buffer of matrix to be
@@ -1366,9 +1380,11 @@ extern "C"
     //! not.
     //! @param[in] opt determining if using internal optimization of Chebyshev
     //! polynomial degree. If `opt=S`, use, otherwise, no.
-    void pschase_(int* deg, float* tol, char* mode, char* opt)
+    //! @param[in] qr determining if flexible CholeskyQR, if `qr=C` use, 
+    //! otherwise, no use.     
+    void pschase_(int* deg, float* tol, char* mode, char* opt, char *qr)
     {
-        ChASE_DIST_Solve<float>(deg, tol, mode, opt);
+        ChASE_DIST_Solve<float>(deg, tol, mode, opt, qr);
     }
     //! Solve the eigenvalue by the previously constructed distributed-memory
     //! ChASE (complex scalar in double precision). The buffer of matrix to be
@@ -1382,9 +1398,11 @@ extern "C"
     //! not.
     //! @param[in] opt determining if using internal optimization of Chebyshev
     //! polynomial degree. If `opt=S`, use, otherwise, no.
-    void pzchase_(int* deg, double* tol, char* mode, char* opt)
+    //! @param[in] qr determining if flexible CholeskyQR, if `qr=C` use, 
+    //! otherwise, no use.     
+    void pzchase_(int* deg, double* tol, char* mode, char* opt, char *qr)
     {
-        ChASE_DIST_Solve<std::complex<double>>(deg, tol, mode, opt);
+        ChASE_DIST_Solve<std::complex<double>>(deg, tol, mode, opt, qr);
     }
     //! Solve the eigenvalue by the previously constructed distributed-memory
     //! ChASE (complex scalar in single precision). The buffer of matrix to be
@@ -1398,9 +1416,11 @@ extern "C"
     //! not.
     //! @param[in] opt determining if using internal optimization of Chebyshev
     //! polynomial degree. If `opt=S`, use, otherwise, no.
-    void pcchase_(int* deg, float* tol, char* mode, char* opt)
+    //! @param[in] qr determining if flexible CholeskyQR, if `qr=C` use, 
+    //! otherwise, no use.     
+    void pcchase_(int* deg, float* tol, char* mode, char* opt, char *qr)
     {
-        ChASE_DIST_Solve<std::complex<float>>(deg, tol, mode, opt);
+        ChASE_DIST_Solve<std::complex<float>>(deg, tol, mode, opt, qr);
     }
     /** @} */ // end of chase-c
 } // extern C

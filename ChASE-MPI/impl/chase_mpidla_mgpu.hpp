@@ -636,16 +636,6 @@ public:
     void Resd(Base<T>* ritzv, Base<T>* resid, std::size_t locked,
               std::size_t unconverged) override
     {
-#ifdef HAS_OMP
-        char* omp_threads;
-        omp_threads = getenv("OMP_NUM_THREADS");
-        int num_threads = 1;
-        if (omp_threads)
-        {
-            num_threads = std::atoi(omp_threads);
-        }
-        omp_set_num_threads(1);
-#endif
         for (auto i = 0; i < unconverged; i++)
         {
             T alpha = -ritzv[i];
@@ -655,9 +645,6 @@ public:
             resid[i] = t_norm_p2(n_, B_ + locked * n_ + i * n_);
 
         }
-#ifdef HAS_OMP
-        omp_set_num_threads(num_threads);
-#endif
     }
     //! - This function performs the local computation for ChaseMpiDLA::heevd()
     //! - It is implemented based on `cuBLAS`'s `xgemm` and cuSOLVER's

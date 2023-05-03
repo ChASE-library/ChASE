@@ -5,11 +5,6 @@ cmake_minimum_required( VERSION 3.8 )
 
 # project( ChASE-MPI LANGUAGES C CXX CUDA )
 
-find_package(OpenMP)
-if(OpenMP_FOUND)
-  target_compile_definitions( chase_algorithm  INTERFACE "HAS_OMP" )
-endif()
-
 add_library( chase_seq INTERFACE )
 target_link_libraries(chase_seq INTERFACE chase_algorithm)
 target_compile_definitions(chase_seq INTERFACE NO_MPI=1 )
@@ -60,12 +55,6 @@ if(SCALAPACK_FOUND)
   	)
 endif()
 
-if(OpenMP_FOUND)
-    target_link_libraries( chase_seq INTERFACE
-	    OpenMP::OpenMP_CXX
-        )
-endif()
-
 target_compile_options( chase_seq INTERFACE
   ${CMAKE_C_FLAGS}
   ${MPI_CXX_COMPILE_FLAGS}  
@@ -94,15 +83,9 @@ if(SCALAPACK_FOUND)
 	)
 endif()
 
-  target_compile_definitions( chase_mpi INTERFACE
+target_compile_definitions( chase_mpi INTERFACE
 	  "-DUSE_MPI"
         )
-
-if(OpenMP_FOUND)
-    target_link_libraries( chase_mpi INTERFACE
-            OpenMP::OpenMP_CXX
-        )
-endif()
 
 include(CheckLanguage)
 check_language(CUDA)

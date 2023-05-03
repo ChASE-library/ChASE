@@ -23,7 +23,7 @@ void pzchase_init_(int* N, int* nev, int* nex, int* m, int* n,
                    double* ritzv, int* dim0, int* dim1, char* grid_major,
                    MPI_Comm* comm, int* init);
 void pzchase_finalize_(int* flag);
-void pzchase_(int* deg, double* tol, char* mode, char* opt);
+void pzchase_(int* deg, double* tol, char* mode, char* opt, char *qr);
 
 int main(int argc, char** argv)
 {
@@ -52,6 +52,7 @@ int main(int argc, char** argv)
     double tol = 1e-10;
     char mode = 'R';
     char opt = 'S';
+    char qr = 'C';
 
     if (N % dims[0] == 0)
     {
@@ -108,7 +109,7 @@ int main(int argc, char** argv)
         }
     }
 
-    pzchase_(&deg, &tol, &mode, &opt);
+    pzchase_(&deg, &tol, &mode, &opt, &qr);
 
     pzchase_finalize_(&init);
 

@@ -14,7 +14,7 @@ real(8) :: perturb, tmp, PI
 real(8) :: tol
 complex(8) :: cv
 integer :: deg
-character        :: mode, opt
+character        :: mode, opt, qr
 complex(8),  allocatable :: h(:,:), v(:,:)
 real(8), allocatable :: lambda(:)
 
@@ -33,6 +33,7 @@ deg = 20
 tol = 1e-10
 mode = 'R'
 opt = 'S'
+qr = 'C'
 
 if(rank == 0) then
 	print *, "ChASE Fortran example driver"
@@ -68,7 +69,7 @@ do idx = 1, idx_max
 		end if
 	end if
 
-	call zchase(deg, tol, mode, opt)
+	call zchase(deg, tol, mode, opt, qr)
 
 	do i = 2, N
 		do j = 2, i

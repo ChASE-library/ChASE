@@ -27,7 +27,7 @@ double random_normal()
 int zchase_init_(int* N, int* nev, int* nex, double _Complex* H, int *ldh,
                  double _Complex* V, double* ritzv, int* init);
 void zchase_finalize_();
-void zchase_(int* deg, double* tol, char* mode, char* opt);
+void zchase_(int* deg, double* tol, char* mode, char* opt, char *qr);
 
 int main(int argc, char** argv)
 {
@@ -47,6 +47,7 @@ int main(int argc, char** argv)
     double tol = 1e-10;
     char mode = 'R';
     char opt = 'S';
+    char qr = 'C';
 
     if (rank == 0)
         printf("ChASE C example driver\n");
@@ -88,7 +89,7 @@ int main(int argc, char** argv)
             }
         }
 
-        zchase_(&deg, &tol, &mode, &opt);
+        zchase_(&deg, &tol, &mode, &opt, &qr);
 
         // Perturb Full Clement matrix
         for (int i = 1; i < N; ++i)
