@@ -1484,6 +1484,9 @@ public:
 #endif
     }
 
+    void Lanczos(std::size_t M, int idx, Base<T>* d, Base<T>* e, Base<T> *r_beta) override
+    {}
+
 private:
     enum NextOp
     {

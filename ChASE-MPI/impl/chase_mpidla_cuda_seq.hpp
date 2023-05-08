@@ -474,7 +474,8 @@ public:
         cuda_exec(cudaMemcpy(d_V1_, d_V2_, m * N_ * sizeof(T),
                              cudaMemcpyDeviceToDevice));
     }
-
+    void Lanczos(std::size_t M, int idx, Base<T>* d, Base<T>* e, Base<T> *r_beta) override
+    {}
 private:
     std::size_t N_;      //!< global dimension of the symmetric/Hermtian matrix
     std::size_t locked_; //!< the number of converged eigenpairs

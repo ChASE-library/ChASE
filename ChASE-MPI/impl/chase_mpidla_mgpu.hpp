@@ -708,7 +708,8 @@ public:
     //! ChaseMpiDLA::LanczosDos().
     //! - This function contains nothing in this class.
     void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc) override {}
-
+    void Lanczos(std::size_t M, int idx, Base<T>* d, Base<T>* e, Base<T> *r_beta) override
+    {}
 private:
     enum NextOp
     {

@@ -332,7 +332,79 @@ public:
                V1_, N_, ritzVc, m, &beta, V2_, N_);
         std::memcpy(V1_, V2_, m * N_ * sizeof(T));
     }
+    void Lanczos(std::size_t M, int idx, Base<T>* d, Base<T>* e, Base<T> *r_beta) override
+    {
+        Base<T> real_beta;
 
+        T alpha = T(1.0);
+        T beta = T(0.0);
+
+        std::fill(v0_.begin(), v0_.end(), T(0));
+        std::fill(w_.begin(), w_.end(), T(0));
+
+#ifdef USE_NSIGHT
+        nvtxRangePushA("C2V");
+#endif
+        if(idx >= 0)
+        {
+            this->C2V(V2_, idx, v1_.data(), 0, 1);
+        }else
+        {
+            std::mt19937 gen(2342.0);
+            std::normal_distribution<> normal_distribution;
+
+            for (std::size_t k = 0; k < N_; ++k)
+            {
+                v1_[k] = getRandomT<T>([&]() { return normal_distribution(gen); });
+            }            
+        }
+#ifdef USE_NSIGHT
+        nvtxRangePop();
+#endif
+        // ENSURE that v1 has one norm
+#ifdef USE_NSIGHT
+        nvtxRangePushA("Lanczos: loop");
+#endif
+        Base<T> real_alpha = this->nrm2(N_, v1_.data(), 1);
+        alpha = T(1 / real_alpha);
+        this->scal(N_, &alpha, v1_.data(), 1);
+        for (std::size_t k = 0; k < M; k = k + 1)
+        {
+            if(idx >= 0){
+                this->V2C(v1_.data(), 0, V1_, k, 1);
+            }
+            this->applyVec(v1_.data(), w_.data());
+            alpha = this->dot(N_, v1_.data(), 1, w_.data(), 1);
+            alpha = -alpha;
+            this->axpy(N_, &alpha, v1_.data(), 1, w_.data(), 1);
+            alpha = -alpha;
+
+            d[k] = std::real(alpha);
+
+            if (k == M - 1)
+                break;
+
+            beta = T(-real_beta);
+            this->axpy(N_, &beta, v0_.data(), 1, w_.data(), 1);
+            beta = -beta;
+
+            real_beta = this->nrm2(N_, w_.data(), 1);
+
+            beta = T(1.0 / real_beta);
+
+            this->scal(N_, &beta, w_.data(), 1);
+
+            e[k] = real_beta;
+
+            v1_.swap(v0_);
+            v1_.swap(w_);
+        }
+#ifdef USE_NSIGHT
+        nvtxRangePop();
+#endif
+        *r_beta = real_beta;
+       this->preApplication(v1_.data(), 0, 1);                
+    }
 private:
     std::size_t N_;      //!< global dimension of the symmetric/Hermtian matrix
     std::size_t locked_; //!< number of converged eigenpairs
