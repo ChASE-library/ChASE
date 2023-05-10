@@ -179,7 +179,16 @@ public:
     //! - All required operations for this function has been done in for
     //! ChaseMpiDLA::applyVec().
     //! - This function contains nothing in this class.
-    void applyVec(T* B, T* C) override {}
+    void applyVec(T* v, T* w) override 
+    {
+        T alpha = T(1.0);
+        T beta = T(0.0);
+        std::size_t k = 1;
+
+        t_gemm<T>(CblasColMajor, CblasConjTrans, CblasNoTrans, n_,
+                  k, m_, &alpha, H_, ldh_,
+                  v, m_, &beta, w, n_);        
+    }
 
     int get_nprocs() const override { return matrix_properties_->get_nprocs(); }
     void Start() override {}

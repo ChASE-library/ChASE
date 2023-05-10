@@ -225,9 +225,94 @@ public:
                 }
             }
         }
-        v0_.resize(N_);
-        v1_.resize(N_);
-        w_.resize(N_);
+
+        if (isSameDist_)
+        {
+            for (auto i = 0; i < row_size_; i++)
+            {
+                b_dests.push_back(i);
+                b_srcs.push_back(i);
+                b_lens.push_back(send_lens_[1][i]);
+                c_disps_2.push_back(0);
+                b_disps_2.push_back(0);
+            }
+        }
+        else
+        {
+            int b_dest = irsrc_;
+            b_dests.push_back(b_dest);
+            int b_src = icsrc_;
+            b_srcs.push_back(b_src);
+            int b_len = 1;
+            int c_disp = 0;
+            int b_disp = 0;
+            c_disps_2.push_back(c_disp);
+            b_disps_2.push_back(b_disp);
+
+            for (auto i = 1; i < N_; i++)
+            {
+                auto src_tmp = (i / nb_) % row_size_;
+                auto dest_tmp = (i / mb_) % col_size_;
+                if (dest_tmp == b_dest && src_tmp == b_src)
+                {
+                    b_len += 1;
+                }
+                else
+                {
+                    b_lens.push_back(b_len);
+                    b_dest = (i / mb_) % col_size_;
+                    c_disp = i % mb_ + ((i / mb_) / col_size_) * mb_;
+                    b_disp = i % nb_ + ((i / nb_) / row_size_) * nb_;
+                    b_src = (i / nb_) % row_size_;
+                    b_srcs.push_back(b_src);
+                    b_dests.push_back(b_dest);
+                    c_disps_2.push_back(c_disp);
+                    b_disps_2.push_back(b_disp);
+                    b_len = 1;
+                }
+            }
+            b_lens.push_back(b_len);
+        }   
+
+        reqsb2c_.resize(b_lens.size());
+        b_sends_.resize(b_lens.size());
+        c_recvs_.resize(b_lens.size());
+
+        for (auto i = 0; i < b_lens.size(); i++)
+        {
+            if (col_rank_ == b_dests[i])
+            {
+                if (row_rank_ == b_srcs[i])
+                {
+                    int n1 = send_lens_[1][row_rank_];
+                    int array_of_sizes[2] = {n1, 1};
+                    int array_of_subsizes[2] = {b_lens[i], 1};
+                    int array_of_starts[2] = {b_disps_2[i], 0};
+
+                    MPI_Type_create_subarray(
+                        2, array_of_sizes, array_of_subsizes, array_of_starts,
+                        MPI_ORDER_FORTRAN, getMPI_Type<T>(), &(b_sends_[i]));
+                    MPI_Type_commit(&(b_sends_[i]));
+                }
+                else
+                {
+                    int array_of_sizes2[2] = {static_cast<int>(m_), 1};
+                    int array_of_starts2[2] = {c_disps_2[i], 0};
+                    int array_of_subsizes2[2] = {b_lens[i], 1};
+                    MPI_Type_create_subarray(
+                        2, array_of_sizes2, array_of_subsizes2,
+                        array_of_starts2, MPI_ORDER_FORTRAN, getMPI_Type<T>(),
+                        &(c_recvs_[i]));
+                    MPI_Type_commit(&(c_recvs_[i]));
+                }
+            }
+        }
+            
+        v0_ = (T*) malloc(m_ * sizeof(T));
+        v1_ = (T*) malloc(m_ * sizeof(T));
+        v2_ = (T*) malloc(m_ * sizeof(T));
+        w_ = (T*) malloc(n_ * sizeof(T));
+
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
@@ -685,7 +770,7 @@ public:
           - `ChaseMpiDLA::apply(One, Zero, 0, 1, 0)`
           - `ChaseMpiDLA::postApplication(C, 1, 0)`
     */
-    void applyVec(T* B, T* C) override
+    void applyVec(T* v, T* w) override
     {
 #ifdef USE_NSIGHT
         nvtxRangePushA("ChaseMpiDLA: applyVec");
@@ -693,9 +778,12 @@ public:
         T One = T(1.0);
         T Zero = T(0.0);
 
-        this->preApplication(B, 0, 1);
-        this->apply(One, Zero, 0, 1, 0);
-        this->postApplication(C, 1, 0);
+        dla_->applyVec(v, w);
+
+        MPI_Allreduce(MPI_IN_PLACE, w_, n_,
+                      getMPI_Type<T>(), MPI_SUM, col_comm_);
+
+
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
@@ -1437,37 +1525,10 @@ public:
 
     void getLanczosBuffer(T** V1, T** V2, std::size_t* ld, T** v0, T** v1,
                           T** w) override
-    {
-        *V1 = C_;
-        *V2 = C2_;
-        *ld = m_;
-
-        std::fill(v1_.begin(), v1_.end(), T(0));
-        std::fill(v0_.begin(), v0_.end(), T(0));
-        std::fill(w_.begin(), w_.end(), T(0));
-
-        *v0 = v0_.data();
-        *v1 = v1_.data();
-        *w = w_.data();
-    }
+    {}
 
     void getLanczosBuffer2(T** v0, T** v1, T** w) override
-    {
-        std::fill(v0_.begin(), v0_.end(), T(0));
-        std::fill(w_.begin(), w_.end(), T(0));
-
-        std::mt19937 gen(2342.0);
-        std::normal_distribution<> normal_distribution;
-
-        for (std::size_t k = 0; k < N_; ++k)
-        {
-            v1_[k] = getRandomT<T>([&]() { return normal_distribution(gen); });
-        }
-
-        *v0 = v0_.data();
-        *v1 = v1_.data();
-        *w = w_.data();
-    }
+    {}
 
     void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc) override
     {
@@ -1485,11 +1546,125 @@ public:
     }
 
     void Lanczos(std::size_t M, int idx, Base<T>* d, Base<T>* e, Base<T> *r_beta) override
-    {}
+    {
+        Base<T> real_beta;
+
+        T alpha = T(1.0);
+        T beta = T(0.0);
+
+        std::fill(v0_, v0_ + m_, T(0));
+
+#ifdef USE_NSIGHT
+        nvtxRangePushA("C2V");
+#endif
+        if(idx >= 0)
+        {
+            //v1_ = get_V1() + idx * N_;
+            this->C2V(C2_, idx, v1_, 0, 1);
+        }else
+        {
+            std::mt19937 gen(2342.0);
+            std::normal_distribution<> normal_distribution;
+            //v1_ = get_V1();
+            for (std::size_t k = 0; k < m_; ++k)
+            {
+                v1_[k] = getRandomT<T>([&]() { return normal_distribution(gen); });
+            }            
+        }
+#ifdef USE_NSIGHT
+        nvtxRangePop();
+#endif
+        // ENSURE that v1 has one norm
+#ifdef USE_NSIGHT
+        nvtxRangePushA("Lanczos: loop");
+#endif
+        Base<T> real_alpha = t_norm_p2(m_, v1_);
+        MPI_Allreduce(MPI_IN_PLACE, &real_alpha, 1, getMPI_Type<Base<T>>(),
+                    MPI_SUM, col_comm_);
+        real_alpha = std::sqrt(real_alpha);
+        alpha = T(1 / real_alpha);
+        t_scal(m_, &alpha, v1_, 1);
+        for (std::size_t k = 0; k < M; k = k + 1)
+        {
+            if(idx >= 0){
+                this->V2C(v1_, 0, C_, k, 1);
+            }
+            this->applyVec(v1_, w_);
+            this->B2C(w_, 0, v2_, 0, 1);
+            alpha = t_dot(m_, v1_, 1, v2_, 1);
+            MPI_Allreduce(MPI_IN_PLACE, &alpha, 1, getMPI_Type<T>(),
+                          MPI_SUM, col_comm_);
+            alpha = -alpha;
+            t_axpy(m_, &alpha, v1_, 1, v2_, 1);
+            alpha = -alpha;
+
+            d[k] = std::real(alpha);
+
+            if (k == M - 1)
+                break;
+
+            beta = T(-real_beta);
+            t_axpy(m_, &beta, v0_, 1, v2_, 1);
+            beta = -beta;
+
+            real_beta = t_norm_p2(m_, v2_);
+            MPI_Allreduce(MPI_IN_PLACE, &real_beta, 1, getMPI_Type<Base<T>>(),
+                          MPI_SUM, col_comm_);
+            real_beta = std::sqrt(real_beta);
+
+            beta = T(1.0 / real_beta);
+
+            t_scal(N_, &beta, v2_, 1);
+
+            e[k] = real_beta;
+
+            std::swap(v1_, v0_);
+            std::swap(v1_, v2_);
+        }
+#ifdef USE_NSIGHT
+        nvtxRangePop();
+#endif
+        *r_beta = real_beta;            
+    }
 
     void B2C(T* B, std::size_t off1, T* C, std::size_t off2, std::size_t block) override
-    {}
-    
+    {
+        for (auto i = 0; i < b_lens.size(); i++)
+        {
+            if (col_rank_ == b_dests[i])
+            {
+                if (row_rank_ == b_srcs[i])
+                {
+                    MPI_Ibcast(B + off1 * n_, block, b_sends_[i], b_srcs[i],
+                               row_comm_, &reqsb2c_[i]);
+                }
+                else
+                {
+                    MPI_Ibcast(C + off1 * m_, block, c_recvs_[i], b_srcs[i],
+                               row_comm_, &reqsb2c_[i]);
+                }
+            }
+        }
+
+        for (auto i = 0; i < b_lens.size(); i++)
+        {
+            if (col_rank_ == b_dests[i])
+            {
+                MPI_Wait(&reqsb2c_[i], MPI_STATUSES_IGNORE);
+            }
+        }
+
+        for (auto i = 0; i < b_lens.size(); i++)
+        {
+            if (col_rank_ == b_dests[i] && row_rank_ == b_srcs[i])
+            {
+                t_lacpy('A', b_lens[i], block, B + off1 * n_ + b_disps_2[i],
+                        n_, C + off1 * m_ + c_disps_2[i], m_);
+            }
+        }
+
+    }
+
 private:
     enum NextOp
     {
@@ -1517,12 +1692,13 @@ private:
             //!< ChaseMpiProperties
     T* A_;  //!< a matrix of size `(nev_+nex_)*(nev_+nex_)`, which is allocated
             //!< in ChaseMpiProperties
-    std::vector<T> v0_; //!< a vector of size `N_`, which is allocated in this
+    T* v0_; //!< a vector of size `N_`, which is allocated in this
                         //!< class for Lanczos
-    std::vector<T> v1_; //!< a vector of size `N_`, which is allocated in this
+    T* v1_; //!< a vector of size `N_`, which is allocated in this
                         //!< class for Lanczos
-    std::vector<T> w_;  //!< a vector of size `N_`, which is allocated in this
+    T* w_;  //!< a vector of size `N_`, which is allocated in this
                         //!< class for Lanczos
+    T* v2_;
 
     std::vector<T> Buff_; //!< a vector of size `N_`, it is allocated only ChASE
                           //!< working with `Block-Cyclic`
@@ -1593,6 +1769,14 @@ private:
         block_cyclic_displs_[2]; //!< dispacement (row/col_comm) of each block
                                  //!< of block-cyclic distribution within local
                                  //!< matrix
+    std::vector<int> b_dests;
+    std::vector<int> b_srcs;
+    std::vector<int> b_lens;
+    std::vector<MPI_Request> reqsb2c_;
+    std::vector<MPI_Datatype> b_sends_;   
+    std::vector<MPI_Datatype> c_recvs_;
+    std::vector<int> b_disps_2;
+    std::vector<int> c_disps_2;
 
     int icsrc_;              //!< identical to ChaseMpiProperties::icsrc_
     int irsrc_;              //!< identical to ChaseMpiProperties::irsrc_
