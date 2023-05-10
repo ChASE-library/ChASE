@@ -347,39 +347,6 @@ public:
         std::swap(d_V1_, d_V2_);
     }
 
-    void getLanczosBuffer(T** V1, T** V2, std::size_t* ld, T** v0, T** v1,
-                          T** w) override
-    {
-        *V1 = d_V1_;
-        *V2 = d_V2_;
-        *ld = N_;
-        cudaMemset(v0_, 0, sizeof(T) * N_);
-        cudaMemset(v1_, 0, sizeof(T) * N_);
-        cudaMemset(w_, 0, sizeof(T) * N_);
-        *v0 = v0_;
-        *v1 = v1_;
-        *w = w_;
-    }
-
-    void getLanczosBuffer2(T** v0, T** v1, T** w) override
-    {
-        std::mt19937 gen(2342.0);
-        std::normal_distribution<> normal_distribution;
-        T* vtmp = new T[N_];
-        for (std::size_t k = 0; k < N_; ++k)
-        {
-            vtmp[k] = getRandomT<T>([&]() { return normal_distribution(gen); });
-        }
-        cuda_exec(
-            cudaMemcpy(v1_, vtmp, N_ * sizeof(T), cudaMemcpyHostToDevice));
-        cudaMemset(v0_, 0, sizeof(T) * N_);
-        cudaMemset(w_, 0, sizeof(T) * N_);
-        *v0 = v0_;
-        *v1 = v1_;
-        *w = w_;
-        delete[] vtmp;
-    }
-
     void syherk(char uplo, char trans, std::size_t n, std::size_t k, T* alpha,
                 T* a, std::size_t lda, T* beta, T* c, std::size_t ldc,
                 bool first = true) override

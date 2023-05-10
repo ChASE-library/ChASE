@@ -694,23 +694,12 @@ public:
     //! - This function contains nothing in this class.
     void Swap(std::size_t i, std::size_t j) override {}
     //! - All required operations for this function has been done in for
-    //! ChaseMpiDLA::getLanczosBuffer().
-    //! - This function contains nothing in this class.
-    void getLanczosBuffer(T** V1, T** V2, std::size_t* ld, T** v0, T** v1,
-                          T** w) override
-    {
-    }
-    //! - All required operations for this function has been done in for
-    //! ChaseMpiDLA::getLanczosBuffer2().
-    //! - This function contains nothing in this class.
-    void getLanczosBuffer2(T** v0, T** v1, T** w) override {}
-    //! - All required operations for this function has been done in for
     //! ChaseMpiDLA::LanczosDos().
     //! - This function contains nothing in this class.
     void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc) override {}
     void Lanczos(std::size_t M, int idx, Base<T>* d, Base<T>* e, Base<T> *r_beta) override
     {}
-    
+
     void B2C(T* B, std::size_t off1, T* C, std::size_t off2, std::size_t block) override
     {}    
 private:

@@ -350,13 +350,6 @@ public:
         delete[] tmp;
     }
 
-    void getLanczosBuffer(T** V1, T** V2, std::size_t* ld, T** v0, T** v1,
-                          T** w) override
-    {}
-
-    void getLanczosBuffer2(T** v0, T** v1, T** w) override
-    {}
-
     void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc) override
     {
         T alpha = T(1.0);

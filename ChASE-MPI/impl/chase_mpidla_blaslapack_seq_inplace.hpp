@@ -293,13 +293,6 @@ public:
         memcpy(V1_ + N_ * j, tmp, N_ * sizeof(T));
     }
 
-    void getLanczosBuffer(T** V1, T** V2, std::size_t* ld, T** v0, T** v1,
-                          T** w) override
-    {}
-
-    void getLanczosBuffer2(T** v0, T** v1, T** w) override
-    {}
-
     void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc) override
     {
         T alpha = T(1.0);
@@ -371,7 +364,7 @@ public:
             this->scal(N_, &beta, w_, 1);
 
             e[k] = real_beta;
-            
+
             std::swap(v1_, v0_);
             std::swap(v1_, w_);
         }

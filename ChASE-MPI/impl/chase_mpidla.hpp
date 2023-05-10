@@ -780,7 +780,7 @@ public:
 
         dla_->applyVec(v, w);
 
-        MPI_Allreduce(MPI_IN_PLACE, w_, n_,
+        MPI_Allreduce(MPI_IN_PLACE, w, n_,
                       getMPI_Type<T>(), MPI_SUM, col_comm_);
 
 
@@ -1523,13 +1523,6 @@ public:
         delete[] tmp;
     }
 
-    void getLanczosBuffer(T** V1, T** V2, std::size_t* ld, T** v0, T** v1,
-                          T** w) override
-    {}
-
-    void getLanczosBuffer2(T** v0, T** v1, T** w) override
-    {}
-
     void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc) override
     {
         T alpha = T(1.0);
@@ -1559,7 +1552,6 @@ public:
 #endif
         if(idx >= 0)
         {
-            //v1_ = get_V1() + idx * N_;
             this->C2V(C2_, idx, v1_, 0, 1);
         }else
         {
