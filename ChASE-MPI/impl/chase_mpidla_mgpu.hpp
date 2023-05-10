@@ -710,6 +710,9 @@ public:
     void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc) override {}
     void Lanczos(std::size_t M, int idx, Base<T>* d, Base<T>* e, Base<T> *r_beta) override
     {}
+    
+    void B2C(T* B, std::size_t off1, T* C, std::size_t off2, std::size_t block) override
+    {}    
 private:
     enum NextOp
     {

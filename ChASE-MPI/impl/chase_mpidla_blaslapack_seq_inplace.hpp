@@ -40,13 +40,16 @@ public:
           V1_(matrices.get_V1()), V2_(matrices.get_V2()), H_(matrices.get_H()),
           ldh_(matrices.get_ldh())
     {
-
-        v0_.resize(N_);
-        v1_.resize(N_);
-        w_.resize(N_);
+        v0_ = (T*) malloc(N_ * sizeof(T));
+        v1_ = (T*) malloc(N_ * sizeof(T));
+        w_ = (T*) malloc(N_ * sizeof(T));        
     }
 
-    ~ChaseMpiDLABlaslapackSeqInplace() {}
+    ~ChaseMpiDLABlaslapackSeqInplace() {
+        free(v0_);
+        free(v1_);
+        free(w_);        
+    }
     void initVecs() override
     {
         t_lacpy('A', N_, nev_ + nex_, V1_, N_, V2_, N_);
@@ -292,36 +295,10 @@ public:
 
     void getLanczosBuffer(T** V1, T** V2, std::size_t* ld, T** v0, T** v1,
                           T** w) override
-    {
-        *V1 = V1_;
-        *V2 = V2_;
-        *ld = N_;
-
-        std::fill(v1_.begin(), v1_.end(), T(0));
-        std::fill(v0_.begin(), v0_.end(), T(0));
-        std::fill(w_.begin(), w_.end(), T(0));
-
-        *v0 = v0_.data();
-        *v1 = v1_.data();
-        *w = w_.data();
-    }
+    {}
 
     void getLanczosBuffer2(T** v0, T** v1, T** w) override
-    {
-        std::fill(v0_.begin(), v0_.end(), T(0));
-        std::fill(w_.begin(), w_.end(), T(0));
-        std::mt19937 gen(2342.0);
-        std::normal_distribution<> normal_distribution;
-
-        for (std::size_t k = 0; k < N_; ++k)
-        {
-            v1_[k] = getRandomT<T>([&]() { return normal_distribution(gen); });
-        }
-
-        *v0 = v0_.data();
-        *v1 = v1_.data();
-        *w = w_.data();
-    }
+    {}
 
     void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc) override
     {
@@ -339,15 +316,14 @@ public:
         T alpha = T(1.0);
         T beta = T(0.0);
 
-        std::fill(v0_.begin(), v0_.end(), T(0));
-        std::fill(w_.begin(), w_.end(), T(0));
+        std::fill(v0_, v0_ + N_, T(0));
 
 #ifdef USE_NSIGHT
         nvtxRangePushA("C2V");
 #endif
         if(idx >= 0)
         {
-            this->C2V(V2_, idx, v1_.data(), 0, 1);
+            this->C2V(V2_, idx, v1_, 0, 1);
         }else
         {
             std::mt19937 gen(2342.0);
@@ -365,18 +341,18 @@ public:
 #ifdef USE_NSIGHT
         nvtxRangePushA("Lanczos: loop");
 #endif
-        Base<T> real_alpha = this->nrm2(N_, v1_.data(), 1);
+        Base<T> real_alpha = this->nrm2(N_, v1_, 1);
         alpha = T(1 / real_alpha);
-        this->scal(N_, &alpha, v1_.data(), 1);
+        this->scal(N_, &alpha, v1_, 1);
         for (std::size_t k = 0; k < M; k = k + 1)
         {
             if(idx >= 0){
-                this->V2C(v1_.data(), 0, V1_, k, 1);
+                this->V2C(v1_, 0, V1_, k, 1);
             }
-            this->applyVec(v1_.data(), w_.data());
-            alpha = this->dot(N_, v1_.data(), 1, w_.data(), 1);
+            this->applyVec(v1_, w_);
+            alpha = this->dot(N_, v1_, 1, w_, 1);
             alpha = -alpha;
-            this->axpy(N_, &alpha, v1_.data(), 1, w_.data(), 1);
+            this->axpy(N_, &alpha, v1_, 1, w_, 1);
             alpha = -alpha;
 
             d[k] = std::real(alpha);
@@ -385,26 +361,28 @@ public:
                 break;
 
             beta = T(-real_beta);
-            this->axpy(N_, &beta, v0_.data(), 1, w_.data(), 1);
+            this->axpy(N_, &beta, v0_, 1, w_, 1);
             beta = -beta;
 
-            real_beta = this->nrm2(N_, w_.data(), 1);
+            real_beta = this->nrm2(N_, w_, 1);
 
             beta = T(1.0 / real_beta);
 
-            this->scal(N_, &beta, w_.data(), 1);
+            this->scal(N_, &beta, w_, 1);
 
             e[k] = real_beta;
-
-            v1_.swap(v0_);
-            v1_.swap(w_);
+            
+            std::swap(v1_, v0_);
+            std::swap(v1_, w_);
         }
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
         *r_beta = real_beta;
-       this->preApplication(v1_.data(), 0, 1);                
     }
+
+    void B2C(T* B, std::size_t off1, T* C, std::size_t off2, std::size_t block) override
+    {}    
 private:
     std::size_t N_;      //!< global dimension of the symmetric/Hermtian matrix
     std::size_t locked_; //!< number of converged eigenpairs
@@ -415,12 +393,11 @@ private:
     T* H_;                 //!< a pointer to the Symmetric/Hermtian matrix
     T* V1_;                //!< a matrix of size `N_*(nev_+nex_)`
     T* V2_;                //!< a matrix of size `N_*(nev_+nex_)`
-    std::vector<T> v0_; //!< a vector of size `N_`, which is allocated in this
+    T * v0_; //!< a vector of size `N_`, which is allocated in this
                         //!< class for Lanczos
-    std::vector<T> v1_; //!< a vector of size `N_`, which is allocated in this
+    T *v1_; //!< a vector of size `N_`, which is allocated in this
                         //!< class for Lanczos
-    std::vector<T> w_;  //!< a vector of size `N_`, which is allocated in this
-                        //!< class for Lanczos
+    T* w_;
 };
 
 template <typename T>
