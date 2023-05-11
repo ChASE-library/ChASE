@@ -308,16 +308,20 @@ public:
             }
         }
             
-        v0_ = (T*) malloc(m_ * sizeof(T));
-        v1_ = (T*) malloc(m_ * sizeof(T));
-        v2_ = (T*) malloc(m_ * sizeof(T));
-        w_ = (T*) malloc(n_ * sizeof(T));
-
+	v0_ = new T[m_];
+	v1_ = new T[m_];
+	v2_ = new T[m_];
+	w_ = new T[n_];
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
     }
-    ~ChaseMpiDLA() {}
+    ~ChaseMpiDLA() {
+        delete [] v0_;
+        delete [] v1_;
+        delete [] v2_;
+        delete [] w_;	
+    }
 
     //! In ChaseMpiDLA, this function consists of operations
     /*!
@@ -779,10 +783,8 @@ public:
         T Zero = T(0.0);
 
         dla_->applyVec(v, w);
-
         MPI_Allreduce(MPI_IN_PLACE, w, n_,
                       getMPI_Type<T>(), MPI_SUM, col_comm_);
-
 
 #ifdef USE_NSIGHT
         nvtxRangePop();
@@ -1552,8 +1554,9 @@ public:
 #endif
         if(idx >= 0)
         {
-            this->C2V(C2_, idx, v1_, 0, 1);
-        }else
+//            this->C2V(C2_, idx, v1_, 0, 1);
+	      std::memcpy(v1_, C2_ + idx * m_, m_ * sizeof(T) );
+	}else
         {
             std::mt19937 gen(2342.0);
             std::normal_distribution<> normal_distribution;
@@ -1578,8 +1581,8 @@ public:
         t_scal(m_, &alpha, v1_, 1);
         for (std::size_t k = 0; k < M; k = k + 1)
         {
-            if(idx >= 0){
-                this->V2C(v1_, 0, C_, k, 1);
+    	    if(idx >= 0){
+		std::memcpy(C_ + k * m_, v1_, m_ * sizeof(T) );
             }
             this->applyVec(v1_, w_);
             this->B2C(w_, 0, v2_, 0, 1);
@@ -1588,6 +1591,7 @@ public:
                           MPI_SUM, col_comm_);
             alpha = -alpha;
             t_axpy(m_, &alpha, v1_, 1, v2_, 1);
+
             alpha = -alpha;
 
             d[k] = std::real(alpha);
@@ -1606,12 +1610,13 @@ public:
 
             beta = T(1.0 / real_beta);
 
-            t_scal(N_, &beta, v2_, 1);
+            t_scal(m_, &beta, v2_, 1);
 
             e[k] = real_beta;
 
             std::swap(v1_, v0_);
             std::swap(v1_, v2_);
+	    
         }
 #ifdef USE_NSIGHT
         nvtxRangePop();
@@ -1654,7 +1659,6 @@ public:
                         n_, C + off1 * m_ + c_disps_2[i], m_);
             }
         }
-
     }
 
 private:
