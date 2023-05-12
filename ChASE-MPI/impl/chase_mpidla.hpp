@@ -1573,8 +1573,10 @@ public:
 #ifdef USE_NSIGHT
         nvtxRangePushA("Lanczos: loop");
 #endif
-        Base<T> real_alpha = t_norm_p2(m_, v1_);
-        MPI_Allreduce(MPI_IN_PLACE, &real_alpha, 1, getMPI_Type<Base<T>>(),
+        //Base<T> real_alpha = t_norm_p2(m_, v1_);
+        Base<T> real_alpha = t_nrm2(m_, v1_, 1);
+	real_alpha = std::pow(real_alpha,2);
+	MPI_Allreduce(MPI_IN_PLACE, &real_alpha, 1, getMPI_Type<Base<T>>(),
                     MPI_SUM, col_comm_);
         real_alpha = std::sqrt(real_alpha);
         alpha = T(1 / real_alpha);
@@ -1603,8 +1605,10 @@ public:
             t_axpy(m_, &beta, v0_, 1, v2_, 1);
             beta = -beta;
 
-            real_beta = t_norm_p2(m_, v2_);
-            MPI_Allreduce(MPI_IN_PLACE, &real_beta, 1, getMPI_Type<Base<T>>(),
+            //real_beta = t_norm_p2(m_, v2_);
+            real_beta = t_nrm2(m_, v2_, 1);
+	    real_beta = std::pow(real_beta, 2);
+	    MPI_Allreduce(MPI_IN_PLACE, &real_beta, 1, getMPI_Type<Base<T>>(),
                           MPI_SUM, col_comm_);
             real_beta = std::sqrt(real_beta);
 
