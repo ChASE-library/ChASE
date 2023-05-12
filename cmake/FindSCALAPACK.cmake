@@ -354,6 +354,24 @@ if(BLAS_FOUND
       )
     endif(NOT SCALAPACK_LIBRARIES)
   endif()
+  
+  #Fujitsu ScaLAPACK
+  if(BLA_VENDOR STREQUAL "Fujitsu_SSL2BLAMP" OR BLA_VENDOR STREQUAL "All")
+  message(STATUS "generic ")
+  if(NOT SCALAPACK_LIBRARIES)
+    check_scalapack_libraries(
+      SCALAPACK_LIBRARIES
+      SCALAPACK
+      pdgemm
+      "-Kopenmp"
+      "fjscalapack" # scalapack lib to look for
+      "${LAPACK_LIBRARIES};${BLAS_LIBRARIES}" # blas and lapack libs
+      "${MPI_Fortran_LIBRARIES}" # mpi libs
+      "" # threads libs
+    )
+  endif(NOT SCALAPACK_LIBRARIES)
+  endif()
+  
   # intel scalapack
   if(BLA_VENDOR MATCHES "Intel" OR BLA_VENDOR STREQUAL "All")
     if(UNIX AND NOT WIN32)
