@@ -72,21 +72,7 @@ public:
             }
         }
     }
-
-    // v1->v2
-    void V2C(T* v1, std::size_t off1, T* v2, std::size_t off2,
-             std::size_t block) override
-    {
-        std::memcpy(v2 + off2 * N_, v1 + off1 * N_, N_ * block * sizeof(T));
-    }
-
-    // v1->v2;
-    void C2V(T* v1, std::size_t off1, T* v2, std::size_t off2,
-             std::size_t block) override
-    {
-        std::memcpy(v2 + off2 * N_, v1 + off1 * N_, N_ * block * sizeof(T));
-    }
-
+    
     void preApplication(T* V, std::size_t const locked,
                         std::size_t const block) override
     {
@@ -369,7 +355,7 @@ public:
         std::fill(v0_, v0_ + N_, T(0));
 
 #ifdef USE_NSIGHT
-        nvtxRangePushA("C2V");
+        nvtxRangePushA("Lanczos Init vec");
 #endif
         if(idx >= 0)
         {
@@ -397,7 +383,7 @@ public:
         for (std::size_t k = 0; k < M; k = k + 1)
         {
             if(idx >= 0){
-                this->V2C(v1_, 0, V12_, k, 1);
+		std::memcpy(V12_ + k * N_, v1_, N_ * sizeof(T));
             }
             this->applyVec(v1_, get_V2());
             this->B2C(get_V2(), 0, v2_, 0, 1);

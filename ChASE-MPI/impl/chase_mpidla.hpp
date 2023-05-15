@@ -390,7 +390,11 @@ public:
         next_ = NextOp::bAc;
         locked_ = locked;
 
-        this->V2C(V, locked_, C_, locked_, block);
+    	for (auto j = 0; j < block; j++){
+   	    for(auto i = 0; i < mblocks_; i++){
+	        std::memcpy(C_ + j * m_ + r_offs_l_[i], V + j * N_ + locked * N_ + r_offs_[i], r_lens_[i] * sizeof(T));
+	    }   
+        }
 
         dla_->preApplication(V, locked, block);
 #ifdef USE_NSIGHT
@@ -466,26 +470,6 @@ public:
             nvtxRangePop();
 #endif
             next_ = NextOp::bAc;
-        }
-#ifdef USE_NSIGHT
-        nvtxRangePop();
-#endif
-    }
-    // v1->v2
-    void V2C(T* v1, std::size_t off1, T* v2, std::size_t off2,
-             std::size_t block) override
-    {
-#ifdef USE_NSIGHT
-        nvtxRangePushA("ChaseMpiDLA: V2C");
-#endif
-        for (auto j = 0; j < block; j++)
-        {
-            for (auto i = 0; i < mblocks_; i++)
-            {
-                std::memcpy(v2 + off2 * m_ + j * m_ + r_offs_l_[i],
-                            v1 + off1 * N_ + j * N_ + r_offs_[i],
-                            r_lens_[i] * sizeof(T));
-            }
         }
 #ifdef USE_NSIGHT
         nvtxRangePop();
@@ -595,24 +579,6 @@ public:
                 }
             }
         }
-    }
-
-    // v1->v2
-    void C2V(T* v1, std::size_t off1, T* v2, std::size_t off2,
-             std::size_t block) override
-    {
-#ifdef USE_NSIGHT
-        nvtxRangePushA("ChaseMpiDLA: C2V");
-#endif
-        std::size_t dimsIdx = 0;
-        T* buff = v1 + off1 * m_;
-        T* targetBuf = v2 + off2 * N_;
-
-        this->collecRedundantVecs(buff, targetBuf, dimsIdx, block);
-
-#ifdef USE_NSIGHT
-        nvtxRangePop();
-#endif
     }
 
     bool postApplication(T* V, std::size_t block, std::size_t locked) override
@@ -1549,12 +1515,8 @@ public:
 
         std::fill(v0_, v0_ + m_, T(0));
 
-#ifdef USE_NSIGHT
-        nvtxRangePushA("C2V");
-#endif
         if(idx >= 0)
         {
-//            this->C2V(C2_, idx, v1_, 0, 1);
 	      std::memcpy(v1_, C2_ + idx * m_, m_ * sizeof(T) );
 	}else
         {
@@ -1566,9 +1528,6 @@ public:
                 v1_[k] = getRandomT<T>([&]() { return normal_distribution(gen); });
             }            
         }
-#ifdef USE_NSIGHT
-        nvtxRangePop();
-#endif
         // ENSURE that v1 has one norm
 #ifdef USE_NSIGHT
         nvtxRangePushA("Lanczos: loop");

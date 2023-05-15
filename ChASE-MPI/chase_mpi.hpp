@@ -651,26 +651,6 @@ public:
     }
 #endif
 
-    // if distributed ChASE is used, collecting the distributed ritz vectors
-    // into V which is redundant across all MPI ranks. if non-distributed ChASE
-    // is used, copying Ritz vectors directly to V
-    //! When distributed ChASE is used, this member function collects the
-    //! partially distributed Ritz vectors into a redundant vectors `V` on all
-    //! MPI procs.
-    //! @param V: the buffer of size `N_xnev_` which stores the collected
-    //! redundant Ritz vectors.
-    void collectRitzVecs(T* V)
-    {
-#ifdef USE_NSIGHT
-        nvtxRangePushA("collectRitzVecs");
-#endif
-        T* Vv = matrices_.get_V1();
-        dla_->C2V(Vv, 0, V, 0, nev_);
-#ifdef USE_NSIGHT
-        nvtxRangePop();
-#endif
-    }
-
     //! \return `H_`: A pointer to the memory allocated to store (local part if
     //! applicable) of matrix `A`.
     T* GetMatrixPtr() { return matrices_.get_H(); }

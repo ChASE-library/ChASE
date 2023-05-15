@@ -251,19 +251,6 @@ public:
                           (cudaStream_t)0);
     }
 
-    void V2C(T* v1, std::size_t off1, T* v2, std::size_t off2,
-             std::size_t block) override
-    {
-        cuda_exec(cudaMemcpy(v2 + off2 * N_, v1 + off1 * N_,
-                             block * N_ * sizeof(T), cudaMemcpyDeviceToDevice));
-    }
-    void C2V(T* v1, std::size_t off1, T* v2, std::size_t off2,
-             std::size_t block) override
-    {
-        cuda_exec(cudaMemcpy(v2 + off2 * N_, v1 + off1 * N_,
-                             block * N_ * sizeof(T), cudaMemcpyDeviceToDevice));
-    }
-
     void preApplication(T* V, std::size_t locked, std::size_t block) override
     {
         locked_ = locked;
@@ -483,11 +470,12 @@ public:
        	cudaMemset(v0_, 0, sizeof(T) * N_);
 
 #ifdef USE_NSIGHT
-        nvtxRangePushA("C2V");
+        nvtxRangePushA("Lanczos Init Vec");
 #endif
         if(idx >= 0)
         {
-	    this->C2V(d_V2_, idx, v1_, 0, 1);
+	    cuda_exec(cudaMemcpy(v1_, d_V2_ + idx * N_, 
+                      N_ * sizeof(T), cudaMemcpyDeviceToDevice));
 	}else
         {
 	    unsigned long long seed = 2342;
@@ -507,8 +495,9 @@ public:
         for (std::size_t k = 0; k < M; k = k + 1)
         {
             if(idx >= 0){
-                this->V2C(v1_, 0, d_V1_, k, 1);
-            }
+                cuda_exec(cudaMemcpy(d_V1_ + k * N_, v1_,
+                             N_ * sizeof(T), cudaMemcpyDeviceToDevice));
+	    }
             this->applyVec(v1_, w_);
             alpha = this->dot(N_, v1_, 1, w_, 1);
             alpha = -alpha;

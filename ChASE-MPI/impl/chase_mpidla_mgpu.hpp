@@ -554,20 +554,6 @@ public:
                                          nev_ + nex_, A_, nev_ + nex_);
         assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
     }
-    //! - All required operations for this function has been done in for
-    //! ChaseMpiDLA::V2C().
-    //! - This function contains nothing in this class.
-    void V2C(T* v1, std::size_t off1, T* v2, std::size_t off2,
-             std::size_t block) override
-    {
-    }
-    //! - All required operations for this function has been done in for
-    //! ChaseMpiDLA::C2V().
-    //! - This function contains nothing in this class.
-    void C2V(T* v1, std::size_t off1, T* v2, std::size_t off2,
-             std::size_t block) override
-    {
-    }
     //! It is an interface to cuBLAS `cublasXsy(he)rk`.
     void syherk(char uplo, char trans, std::size_t n, std::size_t k, T* alpha,
                 T* a, std::size_t lda, T* beta, T* c, std::size_t ldc,
