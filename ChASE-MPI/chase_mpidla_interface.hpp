@@ -129,42 +129,7 @@ public:
     */
     virtual void asynCxHGatherC(std::size_t locked, std::size_t block,
                                 bool isCcopied = false) = 0;
-
-    //! Copy from buffer rectangular matrix `v1` to `v2`.
-    //! For the implementation of distributed-memory ChASE, this operation
-    //! performs a `copy` from a matrix redundantly distributed across all MPI
-    //! procs to a matrix distributed within each column communicator and
-    //! redundant among different column communicators. This operation is
-    //! reciprocal to V2C().
-    /*!
-     *  @param v1: the buffer to copy from
-     *  @param off1: the offset for the starting column index of `v1` to copy
-     * from
-     *  @param v2: the buffer to copy to
-     *  @param off2: the offset for the starting column index of `v2` to copy to
-     *  @param block: number of columns to copy from `v1` to `v2`
-     */
-    virtual void C2V(T* v1, std::size_t off1, T* v2, std::size_t off2,
-                     std::size_t block) = 0;
-    //! Copy from buffer rectangular matrix `v1` to `v2`.
-    //! For the implementation of distributed-memory ChASE, this operation
-    //! performs a `copy` from a matrix distributed within each column
-    //! communicator and redundant among different column communicators to a
-    //! matrix redundantly distributed across all MPI procs. This operation is
-    //! reciprocal to C2V(). It requires the `dim_[0]` MPI broadcasting
-    //! operations, in which `dim_[0]` is the size of each MPI column
-    //! communicatior.
-    /*!
-     *  @param v1: the buffer to copy from
-     *  @param off1: the offset for the starting column index of `v1` to copy
-     * from
-     *  @param v2: the buffer to copy to
-     *  @param off2: the offset for the starting column index of `v2` to copy to
-     *  @param block: number of columns to copy from `v1` to `v2`
-     */
-    virtual void V2C(T* v1, std::size_t off1, T* v2, std::size_t off2,
-                     std::size_t block) = 0;
-
+    
     //! Swap the columns indexing `i` and `j` in a rectangular matrix
     //! The operated matrices maybe different in different implementations
     /*!
@@ -371,25 +336,13 @@ public:
     //! Cholesky QR factorization on the rectangular matrix `V1`.
     //!  @param locked: number of converged eigenvectors.
     virtual void cholQR(std::size_t locked, Base<T> cond) = 0;
-    //! Return the required buffers of Lanczos which are allocated within each
-    //! individual implementation of DLA. This operation is required, since
-    //! Lanczos algorithm is implemented in ChaseMpi class, which has no direct
-    //! access to these buffers. Depending on the implementation and targeting
-    //! architectures, these buffers can be on CPU or GPUs.
-    //! **This function will be removed in short future in which all the buffers
-    //! will be allocated within ChaseMpiMatrices**.
-    virtual void getLanczosBuffer(T** V1, T** V2, std::size_t* ld, T** v0,
-                                  T** v1, T** w) = 0;
-    //! Return the required buffers of Lanczos which are allocated within each
-    //! individual implementation of DLA. This operation is required, since
-    //! Lanczos algorithm is implemented in ChaseMpi class, which has no direct
-    //! access to these buffers. Depending on the implementation and targeting
-    //! architectures, these buffers can be on CPU or GPUs.
-    //! **This function will be removed in short future in which all the buffers
-    //! will be allocated within ChaseMpiMatrices**.
-    virtual void getLanczosBuffer2(T** v0, T** v1, T** w) = 0;
     //! Lanczos DOS to estimate the \mu_{nev+nex} for ChASE
     virtual void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc) = 0;
+
+    virtual void Lanczos(std::size_t M, int idx, Base<T>* d, Base<T>* e, Base<T> *r_beta) = 0;
+
+    virtual void B2C(T* B, std::size_t off1, T* C, std::size_t off2, std::size_t block) = 0;
+
 };
 } // namespace mpi
 } // namespace chase

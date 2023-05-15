@@ -28,7 +28,7 @@ using namespace chase::mpi;
 #if defined(USE_GPU)
 typedef ChaseMpi<ChaseMpiDLACudaSeq, T> CHASE;
 #else
-// typedef ChaseMpi<ChaseMpiDLABlaslapackSeq, T> CHASE;
+//typedef ChaseMpi<ChaseMpiDLABlaslapackSeq, T> CHASE;
 typedef ChaseMpi<ChaseMpiDLABlaslapackSeqInplace, T> CHASE;
 #endif
 

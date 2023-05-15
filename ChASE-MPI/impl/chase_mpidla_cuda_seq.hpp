@@ -28,6 +28,52 @@
  * multiGPUs (both block-block and block-cyclic distributions)
  *  @{
  */
+//! generate `n` random float numbers in normal distribution on each GPU device.
+//!
+//! @param[in] seed the seed of random number generator
+//! @param[in] states the states of the sequence of random number generator
+//! @param[in,out] v a pointer to the device memory to store the random
+//! generated numbers
+//! @param[in] stream_ an asynchronous CUDA stream which allows to run this
+//! function asynchronously
+void chase_rand_normal(unsigned long long seed, curandStatePhilox4_32_10_t* states, float* v,
+                       int n, cudaStream_t stream_);
+//! generate `n` random double numbers in normal distribution on each GPU
+//! device.
+//!
+//! @param[in] seed the seed of random number generator
+//! @param[in] states the states of the sequence of random number generator
+//! @param[in,out] v a pointer to the device memory to store the random
+//! generated numbers
+//! @param[in] stream_ an asynchronous CUDA stream which allows to run this
+//! function asynchronously
+void chase_rand_normal(unsigned long long seed, curandStatePhilox4_32_10_t* states, double* v,
+                       int n, cudaStream_t stream_);
+//! generate `n` random complex float numbers in normal distribution on each GPU
+//! device. The real part and the imaginary part of each individual random
+//! number are the same.
+//!
+//! @param[in] seed the seed of random number generator
+//! @param[in] states the states of the sequence of random number generator
+//! @param[in,out] v a pointer to the device memory to store the random
+//! generated numbers
+//! @param[in] stream_ an asynchronous CUDA stream which allows to run this
+//! function asynchronously
+void chase_rand_normal(unsigned long long seed, curandStatePhilox4_32_10_t* states,
+                       std::complex<float>* v, int n, cudaStream_t stream_);
+//! generate `n` random complex double numbers in normal distribution on each
+//! GPU device. The real part and the imaginary part of each individual random
+//! number are the same.
+//!
+//! @param[in] seed the seed of random number generator
+//! @param[in] states the states of the sequence of random number generator
+//! @param[in,out] v a pointer to the device memory to store the random
+//! generated numbers
+//! @param[in] stream_ an asynchronous CUDA stream which allows to run this
+//! function asynchronously
+void chase_rand_normal(unsigned long long seed, curandStatePhilox4_32_10_t* states,
+                       std::complex<double>* v, int n, cudaStream_t stream_);
+
 
 //! shift the diagonal of a `nxn` square matrix `A` in float real data type on a
 //! single GPU.
@@ -96,7 +142,6 @@ public:
           ldh_(matrices.get_ldh())
     {
         cuda_exec(cudaSetDevice(0));
-
         cuda_exec(cudaMalloc((void**)&(d_V1_), N_ * (nev_ + nex_) * sizeof(T)));
         cuda_exec(cudaMalloc((void**)&(d_V2_), N_ * (nev_ + nex_) * sizeof(T)));
         cuda_exec(cudaMalloc((void**)&(d_H_), N_ * N_ * sizeof(T)));
@@ -195,41 +240,15 @@ public:
     }
     void initVecs() override
     {
-        cuda_exec(cudaMemcpy(d_V1_, V1_, (nev_ + nex_) * N_ * sizeof(T),
-                             cudaMemcpyHostToDevice));
-        cuda_exec(cudaMemcpy(d_V2_, d_V1_, (nev_ + nex_) * N_ * sizeof(T),
+	cuda_exec(cudaMemcpy(d_V2_, d_V1_, (nev_ + nex_) * N_ * sizeof(T),
                              cudaMemcpyDeviceToDevice));
-        //cuda_exec(
-        //    cudaMemcpy(d_H_, H_, N_ * N_ * sizeof(T), cudaMemcpyHostToDevice));
         cublasSetMatrix(N_, N_, sizeof(T), H_, ldh_, d_H_, N_);    
     }
     void initRndVecs() override
     {
-        
-        std::mt19937 gen(1337.0);
-        std::normal_distribution<> d;
-        for (auto j = 0; j < (nev_ + nex_); j++)
-        {
-            for (auto i = 0; i < N_; i++)
-            {
-                V1_[i + j * N_] = getRandomT<T>([&]() { return d(gen); });
-            }
-        }
-    }
-
-    // host->device: v1 on host, v2 on device
-    void V2C(T* v1, std::size_t off1, T* v2, std::size_t off2,
-             std::size_t block) override
-    {
-        cuda_exec(cudaMemcpy(v2 + off2 * N_, v1 + off1 * N_,
-                             block * N_ * sizeof(T), cudaMemcpyHostToDevice));
-    }
-    // device->host: v1 on device, v2 on host
-    void C2V(T* v1, std::size_t off1, T* v2, std::size_t off2,
-             std::size_t block) override
-    {
-        cuda_exec(cudaMemcpy(v2 + off2 * N_, v1 + off1 * N_,
-                             block * N_ * sizeof(T), cudaMemcpyDeviceToHost));
+	unsigned long long seed = 24141;
+        chase_rand_normal(seed, states_, d_V1_, N_ * (nev_ + nex_),
+                          (cudaStream_t)0);
     }
 
     void preApplication(T* V, std::size_t locked, std::size_t block) override
@@ -347,39 +366,6 @@ public:
         std::swap(d_V1_, d_V2_);
     }
 
-    void getLanczosBuffer(T** V1, T** V2, std::size_t* ld, T** v0, T** v1,
-                          T** w) override
-    {
-        *V1 = d_V1_;
-        *V2 = d_V2_;
-        *ld = N_;
-        cudaMemset(v0_, 0, sizeof(T) * N_);
-        cudaMemset(v1_, 0, sizeof(T) * N_);
-        cudaMemset(w_, 0, sizeof(T) * N_);
-        *v0 = v0_;
-        *v1 = v1_;
-        *w = w_;
-    }
-
-    void getLanczosBuffer2(T** v0, T** v1, T** w) override
-    {
-        std::mt19937 gen(2342.0);
-        std::normal_distribution<> normal_distribution;
-        T* vtmp = new T[N_];
-        for (std::size_t k = 0; k < N_; ++k)
-        {
-            vtmp[k] = getRandomT<T>([&]() { return normal_distribution(gen); });
-        }
-        cuda_exec(
-            cudaMemcpy(v1_, vtmp, N_ * sizeof(T), cudaMemcpyHostToDevice));
-        cudaMemset(v0_, 0, sizeof(T) * N_);
-        cudaMemset(w_, 0, sizeof(T) * N_);
-        *v0 = v0_;
-        *v1 = v1_;
-        *w = w_;
-        delete[] vtmp;
-    }
-
     void syherk(char uplo, char trans, std::size_t n, std::size_t k, T* alpha,
                 T* a, std::size_t lda, T* beta, T* c, std::size_t ldc,
                 bool first = true) override
@@ -474,7 +460,79 @@ public:
         cuda_exec(cudaMemcpy(d_V1_, d_V2_, m * N_ * sizeof(T),
                              cudaMemcpyDeviceToDevice));
     }
+    void Lanczos(std::size_t M, int idx, Base<T>* d, Base<T>* e, Base<T> *r_beta) override
+    {
+    	Base<T> real_beta;
 
+        T alpha = T(1.0);
+        T beta = T(0.0);
+
+       	cudaMemset(v0_, 0, sizeof(T) * N_);
+
+#ifdef USE_NSIGHT
+        nvtxRangePushA("Lanczos Init Vec");
+#endif
+        if(idx >= 0)
+        {
+	    cuda_exec(cudaMemcpy(v1_, d_V2_ + idx * N_, 
+                      N_ * sizeof(T), cudaMemcpyDeviceToDevice));
+	}else
+        {
+	    unsigned long long seed = 2342;
+            chase_rand_normal(seed, states_, v1_, N_, (cudaStream_t)0);
+	}
+
+#ifdef USE_NSIGHT
+        nvtxRangePop();
+#endif
+        // ENSURE that v1 has one norm
+#ifdef USE_NSIGHT
+        nvtxRangePushA("Lanczos: loop");
+#endif
+        Base<T> real_alpha = this->nrm2(N_, v1_, 1);
+        alpha = T(1 / real_alpha);
+        this->scal(N_, &alpha, v1_, 1);
+        for (std::size_t k = 0; k < M; k = k + 1)
+        {
+            if(idx >= 0){
+                cuda_exec(cudaMemcpy(d_V1_ + k * N_, v1_,
+                             N_ * sizeof(T), cudaMemcpyDeviceToDevice));
+	    }
+            this->applyVec(v1_, w_);
+            alpha = this->dot(N_, v1_, 1, w_, 1);
+            alpha = -alpha;
+            this->axpy(N_, &alpha, v1_, 1, w_, 1);
+            alpha = -alpha;
+
+            d[k] = std::real(alpha);
+
+            if (k == M - 1)
+                break;
+
+            beta = T(-real_beta);
+            this->axpy(N_, &beta, v0_, 1, w_, 1);
+            beta = -beta;
+
+            real_beta = this->nrm2(N_, w_, 1);
+
+            beta = T(1.0 / real_beta);
+
+            this->scal(N_, &beta, w_, 1);
+
+            e[k] = real_beta;
+
+            std::swap(v1_, v0_);
+            std::swap(v1_, w_);
+        }
+#ifdef USE_NSIGHT
+        nvtxRangePop();
+#endif
+        *r_beta = real_beta;
+
+    }
+
+    void B2C(T* B, std::size_t off1, T* C, std::size_t off2, std::size_t block) override
+    {}    
 private:
     std::size_t N_;      //!< global dimension of the symmetric/Hermtian matrix
     std::size_t locked_; //!< the number of converged eigenpairs

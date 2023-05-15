@@ -259,6 +259,8 @@ public:
             cudaMalloc((void**)&d_ritz_, sizeof(Base<T>) * (nev_ + nex_)));
         cuda_exec(
             cudaMalloc((void**)&states_, sizeof(curandStatePhilox4_32_10_t) * (256 * 32)));
+        cuda_exec(cudaMalloc((void**)&d_v_, sizeof(T) * m_));
+        cuda_exec(cudaMalloc((void**)&d_w_, sizeof(T) * n_));
 
         cublasCreate(&cublasH_);
         cusolverDnCreate(&cusolverH_);
@@ -486,7 +488,21 @@ public:
     //! - All required operations for this function has been done in for
     //! ChaseMpiDLA::applyVec().
     //! - This function contains nothing in this class.
-    void applyVec(T* B, T* C) override {}
+    void applyVec(T* v, T* w) override 
+    {
+        T alpha = T(1.0);
+        T beta = T(0.0);
+	    
+        cuda_exec(cudaMemcpy(d_v_, v, m_ * sizeof(T), cudaMemcpyHostToDevice));
+	std::size_t k = 1;
+	cublas_status_ = cublasTgemm(
+            cublasH_, CUBLAS_OP_C, CUBLAS_OP_N, n_, k, m_, &alpha, d_H_, m_,
+            d_v_, m_, &beta, d_w_, n_);
+        assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
+
+        cuda_exec(cudaMemcpy(w, d_w_, n_ * sizeof(T), cudaMemcpyDeviceToHost));
+
+    }
     int get_nprocs() const override { return matrix_properties_->get_nprocs(); }
     void Start() override {}
     void End() override {}
@@ -537,20 +553,6 @@ public:
         cublas_status_ = cublasGetMatrix(block, block, sizeof(T), d_A_,
                                          nev_ + nex_, A_, nev_ + nex_);
         assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
-    }
-    //! - All required operations for this function has been done in for
-    //! ChaseMpiDLA::V2C().
-    //! - This function contains nothing in this class.
-    void V2C(T* v1, std::size_t off1, T* v2, std::size_t off2,
-             std::size_t block) override
-    {
-    }
-    //! - All required operations for this function has been done in for
-    //! ChaseMpiDLA::C2V().
-    //! - This function contains nothing in this class.
-    void C2V(T* v1, std::size_t off1, T* v2, std::size_t off2,
-             std::size_t block) override
-    {
     }
     //! It is an interface to cuBLAS `cublasXsy(he)rk`.
     void syherk(char uplo, char trans, std::size_t n, std::size_t k, T* alpha,
@@ -694,21 +696,14 @@ public:
     //! - This function contains nothing in this class.
     void Swap(std::size_t i, std::size_t j) override {}
     //! - All required operations for this function has been done in for
-    //! ChaseMpiDLA::getLanczosBuffer().
-    //! - This function contains nothing in this class.
-    void getLanczosBuffer(T** V1, T** V2, std::size_t* ld, T** v0, T** v1,
-                          T** w) override
-    {
-    }
-    //! - All required operations for this function has been done in for
-    //! ChaseMpiDLA::getLanczosBuffer2().
-    //! - This function contains nothing in this class.
-    void getLanczosBuffer2(T** v0, T** v1, T** w) override {}
-    //! - All required operations for this function has been done in for
     //! ChaseMpiDLA::LanczosDos().
     //! - This function contains nothing in this class.
     void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc) override {}
+    void Lanczos(std::size_t M, int idx, Base<T>* d, Base<T>* e, Base<T> *r_beta) override
+    {}
 
+    void B2C(T* B, std::size_t off1, T* C, std::size_t off2, std::size_t block) override
+    {}    
 private:
     enum NextOp
     {
@@ -793,6 +788,9 @@ private:
     T* d_work_ =
         NULL; //!< a pointer to a local buffer on GPU, which is reserved for the
               //!< extra buffer required for any cuSOLVER routines
+    T *d_v_;
+    T *d_w_;
+
     std::size_t pitchB;  //!< pitch for `B_` and `d_B_`
     std::size_t pitchB2; //!< pitch for `B2_` and `d_B2_`
     std::size_t pitchC;  //!< pitch for `C_` and `d_C_`

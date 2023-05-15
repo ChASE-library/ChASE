@@ -179,7 +179,15 @@ public:
     //! - All required operations for this function has been done in for
     //! ChaseMpiDLA::applyVec().
     //! - This function contains nothing in this class.
-    void applyVec(T* B, T* C) override {}
+    void applyVec(T* v, T* w) override 
+    {
+        T alpha = T(1.0);
+        T beta = T(0.0);
+        std::size_t k = 1;
+        t_gemm<T>(CblasColMajor, CblasConjTrans, CblasNoTrans, n_,
+                  k, m_, &alpha, H_, ldh_,
+                  v, m_, &beta, w, n_);  
+    }
 
     int get_nprocs() const override { return matrix_properties_->get_nprocs(); }
     void Start() override {}
@@ -222,20 +230,7 @@ public:
                &One, B2_ + locked * n_, n_, B_ + locked * n_, n_, &Zero, A_,
                nev_ + nex_);
     }
-    //! - All required operations for this function has been done in for
-    //! ChaseMpiDLA::V2C().
-    //! - This function contains nothing in this class.
-    void V2C(T* v1, std::size_t off1, T* v2, std::size_t off2,
-             std::size_t block) override
-    {
-    }
-    //! - All required operations for this function has been done in for
-    //! ChaseMpiDLA::C2V().
-    //! - This function contains nothing in this class.
-    void C2V(T* v1, std::size_t off1, T* v2, std::size_t off2,
-             std::size_t block) override
-    {
-    }
+    
     //! It is an interface to BLAS `?sy(he)rk`.
     void syherk(char uplo, char trans, std::size_t n, std::size_t k, T* alpha,
                 T* a, std::size_t lda, T* beta, T* c, std::size_t ldc,
@@ -303,21 +298,13 @@ public:
     //! - This function contains nothing in this class.
     void Swap(std::size_t i, std::size_t j) override {}
     //! - All required operations for this function has been done in for
-    //! ChaseMpiDLA::getLanczosBuffer().
-    //! - This function contains nothing in this class.
-    void getLanczosBuffer(T** V1, T** V2, std::size_t* ld, T** v0, T** v1,
-                          T** w) override
-    {
-    }
-    //! - All required operations for this function has been done in for
-    //! ChaseMpiDLA::getLanczosBuffer2().
-    //! - This function contains nothing in this class.
-    void getLanczosBuffer2(T** v0, T** v1, T** w) override {}
-    //! - All required operations for this function has been done in for
     //! ChaseMpiDLA::LanczosDos().
     //! - This function contains nothing in this class.
     void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc) override {}
-
+    void Lanczos(std::size_t M, int idx, Base<T>* d, Base<T>* e, Base<T> *r_beta) override
+    {}
+    void B2C(T* B, std::size_t off1, T* C, std::size_t off2, std::size_t block) override
+    {}    
 private:
     enum NextOp
     {
