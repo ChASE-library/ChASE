@@ -91,23 +91,6 @@ target_compile_definitions( chase_mpi INTERFACE
 	  "-DUSE_MPI"
         )
 
-if(ENABLE_CUDA_AWARE)
-  target_compile_definitions( chase_mpi INTERFACE
-	  "-DCUDA_AWARE"
-        )
-  if(NCCL_FOUND)
-    target_link_libraries(chase_mpi INTERFACE
-	    ${NCCL_LIBRARIES}
-	    )
-    target_include_directories( chase_mpi INTERFACE
-  	    ${NCCL_INCLUDE_DIRS}
-  	    )  
-    target_compile_definitions( chase_mpi INTERFACE
-	    "-DHAS_NCCL"
-        )
-  endif()
-endif()
-
 include(CheckLanguage)
 check_language(CUDA)
 if(CMAKE_CUDA_COMPILER)
@@ -181,7 +164,24 @@ if(CMAKE_CUDA_COMPILER)
   target_link_libraries( chase_seq INTERFACE
     ${CUDA_nvToolsExt_LIBRARY}
     )
-   
+ 
+if(ENABLE_CUDA_AWARE)
+  target_compile_definitions( chase_cuda INTERFACE
+          "-DCUDA_AWARE"
+        )
+  if(NCCL_FOUND)
+    target_link_libraries(chase_cuda INTERFACE
+            ${NCCL_LIBRARIES}
+            )
+    target_include_directories( chase_cuda INTERFACE
+            ${NCCL_INCLUDE_DIRS}
+            )
+    target_compile_definitions( chase_cuda INTERFACE
+            "-DHAS_NCCL"
+        )
+  endif()
+endif()
+
   if(ENABLE_NSIGHT)
       target_compile_definitions(chase_cuda INTERFACE USE_NSIGHT)
       target_compile_definitions(chase_seq  INTERFACE USE_NSIGHT)

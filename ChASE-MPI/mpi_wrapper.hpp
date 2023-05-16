@@ -109,5 +109,21 @@ void AllReduce(int backend, T *data, int count, MPI_Datatype datatype, MPI_Op op
     }
 }
 
+void Memcpy(int mode, void* dst, const void* src, std::size_t count)
+{
+    switch(mode)
+    {
+	case 0:
+	    std::memcpy(dst, src, count);
+	    break;
+#if defined(CUDA_AWARE)
+        case 1:
+            cudaMemcpy(dst, src, count, cudaMemcpyDeviceToDevice);
+            break;
+#endif	    
+    }	    
+}
+
+
 } // namespace mpi
 } // namespace chase

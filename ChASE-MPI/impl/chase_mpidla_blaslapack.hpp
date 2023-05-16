@@ -305,10 +305,13 @@ public:
     {}
     void B2C(T* B, std::size_t off1, T* C, std::size_t off2, std::size_t block) override
     {}
-    void getMpiWorkSpace(T **C, T **B) override
+    void getMpiWorkSpace(T **C, T **B, T **A, T **C2, T **B2) override
     {
         *C = C_;
 	*B = B_;
+	*A = A_;
+	*C2 = C2_;
+	*B2 = B2_;
     }
     void getMpiCollectiveBackend(int *allreduce_backend, int *bcast_backend) override
     {

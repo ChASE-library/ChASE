@@ -584,17 +584,20 @@ public:
             cublasTsyherk(cublasH_, CUBLAS_FILL_MODE_UPPER, transa, nev_ + nex_,
                           m_, &One, d_C_, m_, &Zero, d_A_, nev_ + nex_);
         assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
-
+#if !defined(CUDA_AWARE)
         cublas_status_ = cublasGetMatrix(nev_ + nex_, nev_ + nex_, sizeof(T),
                                          d_A_, nev_ + nex_, A_, nev_ + nex_);
         assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
+#endif    
     }
     //! It is an interface to cuSOLVER `cusolverXpotrf`.
     int potrf(char uplo, std::size_t n, T* a, std::size_t lda) override
     {
+#if !defined(CUDA_AWARE)	    
         cublas_status_ = cublasSetMatrix(nev_ + nex_, nev_ + nex_, sizeof(T), a,
                                          lda, d_A_, nev_ + nex_);
         assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
+#endif
 #ifdef USE_NSIGHT
         nvtxRangePushA("cusolverDnTpotrf");
 #endif
@@ -713,25 +716,37 @@ public:
     void B2C(T* B, std::size_t off1, T* C, std::size_t off2, std::size_t block) override
     {} 
 
-    void getMpiWorkSpace(T **C, T **B) override
+    void getMpiWorkSpace(T **C, T **B, T **A, T **C2, T **B2) override
     {
 #if defined(CUDA_AWARE)
         *C = d_C_;
         *B = d_B_;
+	*A = d_A_;
+	*C2 = d_C2_;
+	*B2 = d_B2_;
 #else	    
         *C = C_;
-        *B = B_;    
+        *B = B_;  
+        *A = A_;
+	*C2 = C2_;
+	*B2 = B2_;	
 #endif
     }
     void getMpiCollectiveBackend(int *allreduce_backend, int *bcast_backend) override
     {
-#if defined(HAS_NCCL)	    
+#if defined(CUDA_AWARE)	    
+    #if defined(HAS_NCCL)	    
         *allreduce_backend = NCCL_BACKEND;
         *bcast_backend = MPI_BACKEND;   
-#else
+    #else
+        *allreduce_backend = MPI_BACKEND;
+        *bcast_backend = MPI_BACKEND;	
+    #endif
+#else	
         *allreduce_backend = MPI_BACKEND;
         *bcast_backend = MPI_BACKEND;
-#endif	
+#endif
+	
     }
 
     bool isCudaAware()

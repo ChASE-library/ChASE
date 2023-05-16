@@ -435,8 +435,8 @@ public:
         T One = T(1.0);
         T Zero = T(0.0);
 
-	T *C, *B;
-	dla_->getMpiWorkSpace(&C, &B);
+        T *C, *B, *A, *C2, *B2;
+        dla_->getMpiWorkSpace(&C, &B, &A, &C2, &B2);	
 	int allreduce_backend, bcast_backend;
         dla_->getMpiCollectiveBackend(&allreduce_backend, &bcast_backend);
         std::size_t dim;
@@ -1059,24 +1059,30 @@ public:
         auto nevex = nev_ + nex_;
         bool first_iter = !cuda_aware_;
 
+        T *C, *B, *A, *C2, *B2;
+        dla_->getMpiWorkSpace(&C, &B, &A, &C2, &B2);
+        int allreduce_backend, bcast_backend;
+        dla_->getMpiCollectiveBackend(&allreduce_backend, &bcast_backend);
+
         T one = T(1.0);
         T zero = T(0.0);
         int info = 1;
 #ifdef USE_NSIGHT
         nvtxRangePushA("ChaseMpiDLA: syherk");
 #endif
-        dla_->syherk('U', 'C', nevex, m_, &one, C_, m_, &zero, A_, nevex,
+        dla_->syherk('U', 'C', nevex, m_, &one, C, m_, &zero, A, nevex,
                      first_iter);
 #ifdef USE_NSIGHT
         nvtxRangePop();
         nvtxRangePushA("allreduce");
 #endif
-        MPI_Allreduce(MPI_IN_PLACE, A_, nevex * nevex, getMPI_Type<T>(),
-                      MPI_SUM, col_comm_);
+        AllReduce(allreduce_backend, A, nevex * nevex, getMPI_Type<T>(),
+                      MPI_SUM, col_comm_, mpi_wrapper_);
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
-
+	//remove shifting temporily for faciliating the impl with cuda-aware
+/*
         if(cond > cond_threshold_1){
             isShiftQR = true;
 #ifdef USE_NSIGHT
@@ -1111,12 +1117,12 @@ public:
                 info = -1;
             }
         }
-
+*/
         if(info != -1){
 #ifdef USE_NSIGHT
                 nvtxRangePushA("ChaseMpiDLA: potrf");
 #endif
-                info = dla_->potrf('U', nevex, A_, nevex);
+                info = dla_->potrf('U', nevex, A, nevex);
 #ifdef USE_NSIGHT
                 nvtxRangePop();
 #endif    
@@ -1167,7 +1173,7 @@ public:
 #ifdef USE_NSIGHT
             nvtxRangePushA("ChaseMpiDLA: trsm");
 #endif
-            dla_->trsm('R', 'U', 'N', 'N', m_, nevex, &one, A_, nevex, C_, m_,
+            dla_->trsm('R', 'U', 'N', 'N', m_, nevex, &one, A, nevex, C, m_,
                        first_iter);
 #ifdef USE_NSIGHT
             nvtxRangePop();
@@ -1177,19 +1183,19 @@ public:
 #ifdef USE_NSIGHT
                 nvtxRangePushA("ChaseMpiDLA: syherk");
 #endif
-                dla_->syherk('U', 'C', nevex, m_, &one, C_, m_, &zero, A_,
+                dla_->syherk('U', 'C', nevex, m_, &one, C, m_, &zero, A,
                              nevex, false);
 #ifdef USE_NSIGHT
                 nvtxRangePop();
                 nvtxRangePushA("allreduce");
 #endif
-                MPI_Allreduce(MPI_IN_PLACE, A_, nevex * nevex, getMPI_Type<T>(),
-                              MPI_SUM, col_comm_);
+                AllReduce(allreduce_backend, A, nevex * nevex, getMPI_Type<T>(),
+                              MPI_SUM, col_comm_, mpi_wrapper_);
 #ifdef USE_NSIGHT
                 nvtxRangePop();
                 nvtxRangePushA("ChaseMpiDLA: potrf");
 #endif
-                info = dla_->potrf('U', nevex, A_, nevex);
+                info = dla_->potrf('U', nevex, A, nevex);
 #ifdef USE_NSIGHT
                 nvtxRangePop();
 #endif
@@ -1204,7 +1210,7 @@ public:
 #ifdef USE_NSIGHT
                 nvtxRangePushA("ChaseMpiDLA: trsm");
 #endif
-                dla_->trsm('R', 'U', 'N', 'N', m_, nevex, &one, A_, nevex, C_,
+                dla_->trsm('R', 'U', 'N', 'N', m_, nevex, &one, A, nevex, C,
                            m_, first_iter);
 #ifdef USE_NSIGHT
                 nvtxRangePop();
@@ -1217,7 +1223,11 @@ public:
             std::memcpy(C_, C2_, locked * m_ * sizeof(T));
             std::memcpy(C2_ + locked * m_, C_ + locked * m_,
                         (nevex - locked) * m_ * sizeof(T));
-            isHHqr = false;
+            Memcpy(1, C, C2, locked * m_ * sizeof(T));
+            Memcpy(1, C2 + locked * m_, C + locked * m_,
+                        (nevex - locked) * m_ * sizeof(T));
+
+	    isHHqr = false;
 #ifdef USE_NSIGHT
             nvtxRangePop();
 #endif
@@ -1638,7 +1648,7 @@ public:
         }
     }
 
-    void getMpiWorkSpace(T **C, T **B) override
+    void getMpiWorkSpace(T **C, T **B, T **A, T **C2, T **B2) override
     {}
 
     void getMpiCollectiveBackend(int *allreduce_backend, int *bcast_backend) override

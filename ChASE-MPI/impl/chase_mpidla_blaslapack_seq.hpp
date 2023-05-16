@@ -424,7 +424,7 @@ public:
         std::memcpy(C + off2 * N_, B + off1 * N_, block * N_ * sizeof(T));
     }
 
-    void getMpiWorkSpace(T **C, T **B) override
+    void getMpiWorkSpace(T **C, T **B, T **A, T **C2, T **B2) override
     {}
 
     void getMpiCollectiveBackend(int *allreduce_backend, int *bcast_backend) override
