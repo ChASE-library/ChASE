@@ -365,6 +365,15 @@ public:
 
     void B2C(T* B, std::size_t off1, T* C, std::size_t off2, std::size_t block) override
     {}    
+    void getMpiWorkSpace(T **C, T **B) override
+    {}
+    void getMpiCollectiveBackend(int *allreduce_backend, int *bcast_backend) override
+    {}
+    bool isCudaAware()
+    {
+        return false;    
+    }
+
 private:
     std::size_t N_;      //!< global dimension of the symmetric/Hermtian matrix
     std::size_t locked_; //!< number of converged eigenpairs

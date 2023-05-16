@@ -312,6 +312,9 @@ public:
 	v1_ = new T[m_];
 	v2_ = new T[m_];
 	w_ = new T[n_];
+
+	mpi_wrapper_ = matrix_properties->get_mpi_wrapper();
+	cuda_aware_ = dla_->isCudaAware(); 
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
@@ -432,6 +435,10 @@ public:
         T One = T(1.0);
         T Zero = T(0.0);
 
+	T *C, *B;
+	dla_->getMpiWorkSpace(&C, &B);
+	int allreduce_backend, bcast_backend;
+        dla_->getMpiCollectiveBackend(&allreduce_backend, &bcast_backend);
         std::size_t dim;
         if (next_ == NextOp::bAc)
         {
@@ -445,8 +452,10 @@ public:
             nvtxRangePop();
             nvtxRangePushA("ChaseMpiDLA: allreduce");
 #endif
-            MPI_Allreduce(MPI_IN_PLACE, B_ + locked * n_ + offset * n_, dim,
-                          getMPI_Type<T>(), MPI_SUM, col_comm_);
+	    AllReduce(allreduce_backend, B + locked * n_ + offset * n_, dim, 
+			    getMPI_Type<T>(), MPI_SUM, col_comm_, mpi_wrapper_);
+//            MPI_Allreduce(MPI_IN_PLACE, B_ + locked * n_ + offset * n_, dim,
+//                          getMPI_Type<T>(), MPI_SUM, col_comm_);
 #ifdef USE_NSIGHT
             nvtxRangePop();
 #endif
@@ -464,8 +473,10 @@ public:
             nvtxRangePop();
             nvtxRangePushA("ChaseMpiDLA: allreduce");
 #endif
-            MPI_Allreduce(MPI_IN_PLACE, C_ + locked * m_ + offset * m_, dim,
-                          getMPI_Type<T>(), MPI_SUM, row_comm_);
+	    AllReduce(allreduce_backend, C + locked * m_ + offset * m_, dim,
+			    getMPI_Type<T>(), MPI_SUM, row_comm_, mpi_wrapper_);
+//            MPI_Allreduce(MPI_IN_PLACE, C_ + locked * m_ + offset * m_, dim,
+//                          getMPI_Type<T>(), MPI_SUM, row_comm_);
 #ifdef USE_NSIGHT
             nvtxRangePop();
 #endif
@@ -985,7 +996,7 @@ public:
     {
         int grank;
         MPI_Comm_rank(MPI_COMM_WORLD, &grank);
-
+/*
         char* display_bounds_env;
         display_bounds_env = getenv("CHASE_DISPLAY_BOUNDS");
         int display_bounds = 0;
@@ -1010,7 +1021,7 @@ public:
                           << ", ratio: " << cond * norms[0] / norms[nev_+nex_-locked-1] << std::endl;
             }
         }
-
+*/
 #ifdef USE_NSIGHT
         nvtxRangePushA("ChaseMpiDLA: cholQR");
 #endif
@@ -1046,7 +1057,8 @@ public:
             cond_threshold_2 = std::atof(chol1_threshold);
         }    
         auto nevex = nev_ + nex_;
-        bool first_iter = true;
+        bool first_iter = !cuda_aware_;
+
         T one = T(1.0);
         T zero = T(0.0);
         int info = 1;
@@ -1218,7 +1230,7 @@ public:
                              "use Householder QR instead"
                           << std::endl;
 #endif
-            this->hhQR(locked);
+            //this->hhQR(locked);
         }
 
 #ifdef USE_NSIGHT
@@ -1504,6 +1516,8 @@ public:
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
+	//tmp for cuda-aware development, will be removed later
+	dla_->LanczosDos(idx, m, ritzVc);
     }
 
     void Lanczos(std::size_t M, int idx, Base<T>* d, Base<T>* e, Base<T> *r_beta) override
@@ -1622,6 +1636,17 @@ public:
                         n_, C + off1 * m_ + c_disps_2[i], m_);
             }
         }
+    }
+
+    void getMpiWorkSpace(T **C, T **B) override
+    {}
+
+    void getMpiCollectiveBackend(int *allreduce_backend, int *bcast_backend) override
+    {}
+
+    bool isCudaAware() override
+    {
+        return cuda_aware_;
     }
 
 private:
@@ -1756,6 +1781,8 @@ private:
     std::size_t*
         desc1D_Nxnevx_; //!< a ScaLAPACK descriptor for each column communicator
 #endif
+    Comm_t mpi_wrapper_;
+    bool cuda_aware_;
 };
 } // namespace mpi
 } // namespace chase

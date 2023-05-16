@@ -422,7 +422,19 @@ public:
     void B2C(T* B, std::size_t off1, T* C, std::size_t off2, std::size_t block) override
     {
         std::memcpy(C + off2 * N_, B + off1 * N_, block * N_ * sizeof(T));
-    }    
+    }
+
+    void getMpiWorkSpace(T **C, T **B) override
+    {}
+
+    void getMpiCollectiveBackend(int *allreduce_backend, int *bcast_backend) override
+    {}
+
+    bool isCudaAware()
+    {
+        return false;    
+    }
+
 private:
     enum NextOp
     {

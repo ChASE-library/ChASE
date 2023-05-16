@@ -304,7 +304,23 @@ public:
     void Lanczos(std::size_t M, int idx, Base<T>* d, Base<T>* e, Base<T> *r_beta) override
     {}
     void B2C(T* B, std::size_t off1, T* C, std::size_t off2, std::size_t block) override
-    {}    
+    {}
+    void getMpiWorkSpace(T **C, T **B) override
+    {
+        *C = C_;
+	*B = B_;
+    }
+    void getMpiCollectiveBackend(int *allreduce_backend, int *bcast_backend) override
+    {
+        *allreduce_backend = MPI_BACKEND;
+	*bcast_backend = MPI_BACKEND;
+    }
+    
+    bool isCudaAware()
+    {
+    	return false;
+    }	    
+
 private:
     enum NextOp
     {

@@ -401,11 +401,13 @@ public:
             {
                 beta = Zero;
             }
+#if !defined(CUDA_AWARE)	    
             cuda_exec(cudaMemcpy(d_C_ + offset * m_ + locked * m_,
                                  C_ + offset * m_ + locked * m_,
                                  block * m_ * sizeof(T),
                                  cudaMemcpyHostToDevice));
-            cublas_status_ =
+#endif
+	    cublas_status_ =
                 cublasTgemm(cublasH_, CUBLAS_OP_C, CUBLAS_OP_N, n_, block, m_,
                             &alpha, d_H_, m_, d_C_ + locked * m_ + offset * m_,
                             m_, &beta, d_B_ + locked * n_ + offset * n_, n_);
@@ -422,11 +424,13 @@ public:
             {
                 beta = Zero;
             }
+#if !defined(CUDA_AWARE)	    
             cuda_exec(cudaMemcpy(d_B_ + locked * n_ + offset * n_,
                                  B_ + locked * n_ + offset * n_,
                                  block * n_ * sizeof(T),
                                  cudaMemcpyHostToDevice));
-            cublas_status_ =
+#endif
+	    cublas_status_ =
                 cublasTgemm(cublasH_, CUBLAS_OP_N, CUBLAS_OP_N, m_, block, n_,
                             &alpha, d_H_, m_, d_B_ + locked * n_ + offset * n_,
                             n_, &beta, d_C_ + locked * m_ + offset * m_, m_);
@@ -698,12 +702,46 @@ public:
     //! - All required operations for this function has been done in for
     //! ChaseMpiDLA::LanczosDos().
     //! - This function contains nothing in this class.
-    void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc) override {}
+    void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc) override {
+#if defined(CUDA_AWARE)
+        cuda_exec(cudaMemcpy(d_C_, C_, m_ * (nev_ + nex_) * sizeof(T), cudaMemcpyHostToDevice));    
+#endif    
+    }
     void Lanczos(std::size_t M, int idx, Base<T>* d, Base<T>* e, Base<T> *r_beta) override
     {}
 
     void B2C(T* B, std::size_t off1, T* C, std::size_t off2, std::size_t block) override
-    {}    
+    {} 
+
+    void getMpiWorkSpace(T **C, T **B) override
+    {
+#if defined(CUDA_AWARE)
+        *C = d_C_;
+        *B = d_B_;
+#else	    
+        *C = C_;
+        *B = B_;    
+#endif
+    }
+    void getMpiCollectiveBackend(int *allreduce_backend, int *bcast_backend) override
+    {
+#if defined(HAS_NCCL)	    
+        *allreduce_backend = NCCL_BACKEND;
+        *bcast_backend = MPI_BACKEND;   
+#else
+        *allreduce_backend = MPI_BACKEND;
+        *bcast_backend = MPI_BACKEND;
+#endif	
+    }
+
+    bool isCudaAware()
+    {
+#if defined(CUDA_AWARE)
+	return true;
+#else
+	return false;
+#endif    
+    }
 private:
     enum NextOp
     {

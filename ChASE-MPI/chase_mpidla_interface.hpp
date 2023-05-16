@@ -343,6 +343,9 @@ public:
 
     virtual void B2C(T* B, std::size_t off1, T* C, std::size_t off2, std::size_t block) = 0;
 
+    virtual void getMpiWorkSpace(T **C, T **B) = 0;
+    virtual void getMpiCollectiveBackend(int *allreduce_backend, int *bcast_backend) = 0;
+    virtual bool isCudaAware() = 0;
 };
 } // namespace mpi
 } // namespace chase
