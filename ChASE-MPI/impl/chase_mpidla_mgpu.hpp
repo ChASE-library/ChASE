@@ -580,9 +580,11 @@ public:
                         &One, d_B2_ + locked * n_, n_, d_B_ + locked * n_, n_,
                         &Zero, d_A_, nev_ + nex_);
         assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
-        cublas_status_ = cublasGetMatrix(block, block, sizeof(T), d_A_,
+#if !defined(CUDA_AWARE)
+	cublas_status_ = cublasGetMatrix(block, block, sizeof(T), d_A_,
                                          nev_ + nex_, A_, nev_ + nex_);
         assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
+#endif    
     }
     //! It is an interface to cuBLAS `cublasXsy(he)rk`.
     void syherk(char uplo, char trans, std::size_t n, std::size_t k, T* alpha,
@@ -672,9 +674,6 @@ public:
               std::size_t unconverged) override
     {
 #if defined(CUDA_AWARE)	    
-        //cuda_exec(cudaMemcpy(d_B2_ + locked * n_, B2_ + locked * n_,
-        //                     (nev_ + nex_ - locked) * n_ * sizeof(T), cudaMemcpyHostToDevice));
-
 	for (auto i = 0; i < unconverged; i++)
 	{
 	    T alpha = -ritzv[i];
@@ -715,7 +714,9 @@ public:
         T One = T(1.0);
         T Zero = T(0.0);
         std::size_t locked = nev_ + nex_ - n;
-        cublasSetMatrix(n, n, sizeof(T), a, lda, d_A_, nev_ + nex_);
+#if !defined(CUDA_AWARE)
+	cublasSetMatrix(n, n, sizeof(T), a, lda, d_A_, nev_ + nex_);
+#endif
 #ifdef USE_NSIGHT
         nvtxRangePushA("cusolverDnTheevd");
 #endif
@@ -728,18 +729,21 @@ public:
 #endif
         cuda_exec(cudaMemcpy(w, d_ritz_, n * sizeof(Base<T>),
                              cudaMemcpyDeviceToHost));
-        cublas_status_ = cublasSetMatrix(m_, n, sizeof(T), C2_ + locked * m_,
+#if !defined(CUDA_AWARE)
+	cublas_status_ = cublasSetMatrix(m_, n, sizeof(T), C2_ + locked * m_,
                                          m_, d_C2_ + locked * m_, m_);
         assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
-        cublas_status_ =
+#endif
+	cublas_status_ =
             cublasTgemm(cublasH_, CUBLAS_OP_N, CUBLAS_OP_N, m_, n, n, &One,
                         d_C2_ + locked * m_, m_, d_A_, nev_ + nex_, &Zero,
                         d_C_ + locked * m_, m_);
         assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
-
+#if !defined(CUDA_AWARE)
         cublas_status_ = cublasGetMatrix(m_, n, sizeof(T), d_C_ + locked * m_,
                                          m_, C_ + locked * m_, m_);
         assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
+#endif    
     }
     //! - All required operations for this function has been done in for
     //! ChaseMpiDLA::hhQR().

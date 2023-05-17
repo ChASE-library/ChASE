@@ -316,7 +316,15 @@ public:
 	mpi_wrapper_ = matrix_properties->get_mpi_wrapper();
 	cuda_aware_ = dla_->isCudaAware(); 
         dla_->getMpiWorkSpace(&C, &B, &A, &C2, &B2, &vv);
-        dla_->getMpiCollectiveBackend(&allreduce_backend, &bcast_backend);	
+        dla_->getMpiCollectiveBackend(&allreduce_backend, &bcast_backend);
+        if(cuda_aware_)
+	{
+	    memcpy_mode = CPY_D;	
+	}
+	else
+	{
+	    memcpy_mode = CPY_H;
+	}	
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
@@ -452,8 +460,6 @@ public:
 #endif
 	    AllReduce(allreduce_backend, B + locked * n_ + offset * n_, dim, 
 			    getMPI_Type<T>(), MPI_SUM, col_comm_, mpi_wrapper_);
-//            MPI_Allreduce(MPI_IN_PLACE, B_ + locked * n_ + offset * n_, dim,
-//                          getMPI_Type<T>(), MPI_SUM, col_comm_);
 #ifdef USE_NSIGHT
             nvtxRangePop();
 #endif
@@ -473,8 +479,6 @@ public:
 #endif
 	    AllReduce(allreduce_backend, C + locked * m_ + offset * m_, dim,
 			    getMPI_Type<T>(), MPI_SUM, row_comm_, mpi_wrapper_);
-//            MPI_Allreduce(MPI_IN_PLACE, C_ + locked * m_ + offset * m_, dim,
-//                          getMPI_Type<T>(), MPI_SUM, row_comm_);
 #ifdef USE_NSIGHT
             nvtxRangePop();
 #endif
@@ -841,8 +845,8 @@ public:
         nvtxRangePop();
         nvtxRangePushA("allreduce");
 #endif
-        MPI_Allreduce(MPI_IN_PLACE, A_, (nev_ + nex_) * block, getMPI_Type<T>(),
-                      MPI_SUM, row_comm_);
+        AllReduce(allreduce_backend, A, (nev_ + nex_) * block, getMPI_Type<T>(),
+                      MPI_SUM, row_comm_, mpi_wrapper_);
 
 #ifdef USE_NSIGHT
         nvtxRangePop();
@@ -853,9 +857,7 @@ public:
         nvtxRangePop();
         nvtxRangePushA("memcpy");
 #endif
-        std::memcpy(C2_ + locked * m_, C_ + locked * m_,
-                    m_ * block * sizeof(T));
-        Memcpy(1, C2 + locked * m_, C + locked * m_,
+        Memcpy(memcpy_mode, C2 + locked * m_, C + locked * m_,
                     m_ * block * sizeof(T));
 #ifdef USE_NSIGHT
         nvtxRangePop();
@@ -1217,11 +1219,11 @@ public:
 #ifdef USE_NSIGHT
             nvtxRangePushA("memcpy");
 #endif
-            std::memcpy(C_, C2_, locked * m_ * sizeof(T));
-            std::memcpy(C2_ + locked * m_, C_ + locked * m_,
-                        (nevex - locked) * m_ * sizeof(T));
-            Memcpy(1, C, C2, locked * m_ * sizeof(T));
-            Memcpy(1, C2 + locked * m_, C + locked * m_,
+            //std::memcpy(C_, C2_, locked * m_ * sizeof(T));
+            //std::memcpy(C2_ + locked * m_, C_ + locked * m_,
+            //            (nevex - locked) * m_ * sizeof(T));
+            Memcpy(memcpy_mode, C, C2, locked * m_ * sizeof(T));
+            Memcpy(memcpy_mode, C2 + locked * m_, C + locked * m_,
                         (nevex - locked) * m_ * sizeof(T));
 
 	    isHHqr = false;
@@ -1497,25 +1499,13 @@ public:
 
     void Swap(std::size_t i, std::size_t j) override
     {
-        memcpy(v1_, C_ + m_ * i, m_ * sizeof(T));
-        memcpy(C_ + m_ * i, C_ + m_ * j, m_ * sizeof(T));
-        memcpy(C_ + m_ * j, v1_, m_ * sizeof(T));
+        Memcpy(memcpy_mode, vv, C + m_ * i, m_ * sizeof(T));
+        Memcpy(memcpy_mode, C + m_ * i, C + m_ * j, m_ * sizeof(T));
+        Memcpy(memcpy_mode, C + m_ * j, vv, m_ * sizeof(T));
 
-        memcpy(v1_, C2_ + m_ * i, m_ * sizeof(T));
-        memcpy(C2_ + m_ * i, C2_ + m_ * j, m_ * sizeof(T));
-        memcpy(C2_ + m_ * j, v1_, m_ * sizeof(T));
-	
-	if(cuda_aware_)
-	{
-            Memcpy(1, vv, C + m_ * i, m_ * sizeof(T));
-            Memcpy(1, C + m_ * i, C + m_ * j, m_ * sizeof(T));
-            Memcpy(1, C + m_ * j, vv, m_ * sizeof(T));
-
-            Memcpy(1, vv, C + m_ * i, m_ * sizeof(T));
-            Memcpy(1, C + m_ * i, C + m_ * j, m_ * sizeof(T));
-            Memcpy(1, C + m_ * j, vv, m_ * sizeof(T));	
-	}	
-
+        Memcpy(memcpy_mode, vv, C + m_ * i, m_ * sizeof(T));
+        Memcpy(memcpy_mode, C + m_ * i, C + m_ * j, m_ * sizeof(T));
+        Memcpy(memcpy_mode, C + m_ * j, vv, m_ * sizeof(T));	
     }
 
     void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc) override
@@ -1803,6 +1793,7 @@ private:
     bool cuda_aware_;
     T *C, *B, *A, *C2, *B2, *vv;
     int allreduce_backend, bcast_backend;
+    int memcpy_mode;
 
 };
 } // namespace mpi
