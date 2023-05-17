@@ -376,6 +376,10 @@ public:
     void lacpy(char uplo, std::size_t m, std::size_t n,
              T* a, std::size_t lda, T* b, std::size_t ldb) override
     {}
+
+    void shiftMatrixForQR(T *A, std::size_t n, T shift) override
+    {}
+
 private:
     std::size_t N_;      //!< global dimension of the symmetric/Hermtian matrix
     std::size_t locked_; //!< number of converged eigenpairs

@@ -82,6 +82,44 @@ void chase_rand_normal(unsigned long long seed, curandStatePhilox4_32_10_t* stat
 void chase_rand_normal(unsigned long long seed, curandStatePhilox4_32_10_t* states,
                        std::complex<double>* v, int n, cudaStream_t stream_);
 
+//! shift the diagonal of a `nxn` square matrix `A` in float real data type on a
+//! single GPU.
+//!
+//! @param[in,out] A a pointer to the matrix to be shifted
+//! @param[in] n the row and column of matrix `A`
+//! @param[in] shift the value for shifting the diagonal of matrix `A`
+//! @param[in] stream_ an asynchronous CUDA stream which allows to run this
+//! function asynchronously
+void chase_shift_matrix(float* A, int n, float shift, cudaStream_t* stream_);
+//! shift the diagonal of a `nxn` square matrix `A` in double real data type on
+//! a single GPU.
+//!
+//! @param[in,out] A a pointer to the matrix to be shifted
+//! @param[in] n the row and column of matrix `A`
+//! @param[in] shift the value for shifting the diagonal of matrix `A`
+//! @param[in] stream_ an asynchronous CUDA stream which allows to run this
+//! function asynchronously
+void chase_shift_matrix(double* A, int n, double shift, cudaStream_t* stream_);
+//! shift the diagonal of a `nxn` square matrix `A` in float complex data type
+//! on a single GPU.
+//!
+//! @param[in,out] A a pointer to the matrix to be shifted
+//! @param[in] n the row and column of matrix `A`
+//! @param[in] shift the value for shifting the diagonal of matrix `A`
+//! @param[in] stream_ an asynchronous CUDA stream which allows to run this
+//! function asynchronously
+void chase_shift_matrix(std::complex<float>* A, int n, float shift,
+                        cudaStream_t* stream_);
+//! shift the diagonal of a `nxn` square matrix `A` in double complex data type
+//! on a single GPU.
+//!
+//! @param[in,out] A a pointer to the matrix to be shifted
+//! @param[in] n the row and column of matrix `A`
+//! @param[in] shift the value for shifting the diagonal of matrix `A`
+//! @param[in] stream_ an asynchronous CUDA stream which allows to run this
+//! function asynchronously
+void chase_shift_matrix(std::complex<double>* A, int n, double shift,
+                        cudaStream_t* stream_);
 //! shift the diagonal of a `nxn` square matrix `A` in float real data type.
 //! which has been distributed on multi-GPUs in either block-block of
 //! block-cyclic faison. Each GPU may contains different number of diagonal part
@@ -551,7 +589,14 @@ public:
     //! It is an interface to BLAS `?nrm2`.
     Base<T> nrm2(std::size_t n, T* x, std::size_t incx) override
     {
+#if defined(CUDA_AWARE)	   
+        Base<T> nrm;
+        cublas_status_ = cublasTnrm2(cublasH_, n, x, incx, &nrm);
+        assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
+        return nrm;	    
+#else	    
         return t_nrm2(n, x, incx);
+#endif
     }
 
     //! It is an interface to BLAS `?dot`.
@@ -591,7 +636,7 @@ public:
                 T* a, std::size_t lda, T* beta, T* c, std::size_t ldc,
                 bool first) override
     {
-        if (first)
+	if (first)
         {
             cuda_exec(cudaMemcpy(d_C_, C_, (nev_ + nex_) * m_ * sizeof(T),
                                  cudaMemcpyHostToDevice));
@@ -654,13 +699,14 @@ public:
                         CUBLAS_OP_N, CUBLAS_DIAG_NON_UNIT, m_, nev_ + nex_,
                         alpha, d_A_, nev_ + nex_, d_C_, m_);
         assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
-
+#if !defined(CUDA_AWARE)
         if (!first)
         {
             cublas_status_ =
                 cublasGetMatrix(m_, nev_ + nex_, sizeof(T), d_C_, m_, C_, m_);
         }
         assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
+#endif    
     }
     //! - This function performs the local computation of residuals for
     //! ChaseMpiDLA::Resd()
@@ -824,6 +870,18 @@ public:
         t_lacpy(uplo, m, n, a, lda, b, ldb);
 
 #endif    
+    }
+
+    void shiftMatrixForQR(T *A, std::size_t n, T shift) override
+    {
+#if defined(CUDA_AWARE)	    
+    	chase_shift_matrix(A, n, std::real(shift), &stream1_);
+#else
+        for (auto i = 0; i < n; i++)
+        {
+            A[i * n + i] += (T)shift;
+        }
+#endif	
     }
 
 private:

@@ -348,6 +348,7 @@ public:
     virtual bool isCudaAware() = 0;
     virtual void lacpy(char uplo, std::size_t m, std::size_t n,
              T* a, std::size_t lda, T* b, std::size_t ldb) = 0;
+    virtual void shiftMatrixForQR(T *A, std::size_t n, T shift) = 0;
 
 };
 } // namespace mpi

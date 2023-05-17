@@ -336,6 +336,14 @@ public:
         t_lacpy(uplo, m, n, a, lda, b, ldb);
     }
 
+    void shiftMatrixForQR(T *A, std::size_t n, T shift) override
+    {
+        for (auto i = 0; i < n; i++)
+        {
+            A[i * n + i] += (T)shift;
+        }    
+    }
+
 private:
     enum NextOp
     {

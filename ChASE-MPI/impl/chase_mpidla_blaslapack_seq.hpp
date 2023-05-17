@@ -439,6 +439,9 @@ public:
              T* a, std::size_t lda, T* b, std::size_t ldb) override
     {}
 
+    void shiftMatrixForQR(T *A, std::size_t n, T shift) override
+    {}
+
 private:
     enum NextOp
     {

@@ -1081,14 +1081,15 @@ public:
         nvtxRangePop();
 #endif
 	//remove shifting temporily for faciliating the impl with cuda-aware
-/*
+
         if(cond > cond_threshold_1){
             isShiftQR = true;
 #ifdef USE_NSIGHT
             nvtxRangePushA("ChaseMpiDLA: t_lange");
 #endif
-            Base<T> nrmf = t_lange('F', m_, nevex, C_, m_);
-            nrmf = std::pow(nrmf, 2);
+//            Base<T> nrmf = t_lange('F', m_, nevex, C_, m_);
+	    Base<T> nrmf = dla_->nrm2(m_ * nevex, C, 1);
+	    nrmf = std::pow(nrmf, 2);
             //Base<T> nrmf = t_norm_p2(m_ * nevex, C_);
 #ifdef USE_NSIGHT
             nvtxRangePop();
@@ -1104,10 +1105,7 @@ public:
                 nvtxRangePop();
                 nvtxRangePushA("ChaseMpiDLA: shift in QR");
 #endif
-                for (auto i = 0; i < nevex; i++)
-                {
-                    A_[i * nevex + i] += (T)shift;
-                }
+		dla_->shiftMatrixForQR(A, nevex, (T)shift);
 #ifdef USE_NSIGHT
                 nvtxRangePop();
 #endif
@@ -1116,7 +1114,7 @@ public:
                 info = -1;
             }
         }
-*/
+
         if(info != -1){
 #ifdef USE_NSIGHT
                 nvtxRangePushA("ChaseMpiDLA: potrf");
@@ -1219,9 +1217,6 @@ public:
 #ifdef USE_NSIGHT
             nvtxRangePushA("memcpy");
 #endif
-            //std::memcpy(C_, C2_, locked * m_ * sizeof(T));
-            //std::memcpy(C2_ + locked * m_, C_ + locked * m_,
-            //            (nevex - locked) * m_ * sizeof(T));
             Memcpy(memcpy_mode, C, C2, locked * m_ * sizeof(T));
             Memcpy(memcpy_mode, C2 + locked * m_, C + locked * m_,
                         (nevex - locked) * m_ * sizeof(T));
@@ -1657,6 +1652,10 @@ public:
     void lacpy(char uplo, std::size_t m, std::size_t n,
              T* a, std::size_t lda, T* b, std::size_t ldb) override
     {}
+
+    void shiftMatrixForQR(T *A, std::size_t n, T shift) override
+    {}
+
 private:
     enum NextOp
     {
