@@ -15,6 +15,147 @@
 #define BLOCKDIM 256
 #define GRIDDIM 32
 
+#define BLK_X 64
+#define BLK_Y BLK_X
+
+const int max_blocks = 65535;
+
+static __device__ void dlacpy_full_device(
+    int m, int n,
+    const double *dA, int ldda,
+    double       *dB, int lddb )
+{
+    int ind = blockIdx.x*BLK_X + threadIdx.x;
+    int iby = blockIdx.y*BLK_Y;
+    bool full = (iby + BLK_Y <= n);
+    if ( ind < m ) {
+        dA += ind + iby*ldda;
+        dB += ind + iby*lddb;
+        if ( full ) {
+            #pragma unroll
+            for( int j=0; j < BLK_Y; ++j ) {
+                dB[j*lddb] = dA[j*ldda];
+            }
+        }
+        else {
+            for( int j=0; j < BLK_Y && iby+j < n; ++j ) {
+                dB[j*lddb] = dA[j*ldda];
+            }
+        }
+    }
+}
+
+__global__ void dlacpy_full_kernel(
+    int m, int n,
+    const double *dA, int ldda,
+    double       *dB, int lddb )
+{
+    dlacpy_full_device(m, n, dA, ldda, dB, lddb);
+}
+
+
+static __device__ void slacpy_full_device(
+    int m, int n,
+    const float *dA, int ldda,
+    float       *dB, int lddb )
+{
+    int ind = blockIdx.x*BLK_X + threadIdx.x;
+    int iby = blockIdx.y*BLK_Y;
+    bool full = (iby + BLK_Y <= n);
+    if ( ind < m ) {
+        dA += ind + iby*ldda;
+        dB += ind + iby*lddb;
+        if ( full ) {
+            #pragma unroll
+            for( int j=0; j < BLK_Y; ++j ) {
+                dB[j*lddb] = dA[j*ldda];
+            }
+        }
+        else {
+            for( int j=0; j < BLK_Y && iby+j < n; ++j ) {
+                dB[j*lddb] = dA[j*ldda];
+            }
+        }
+    }
+}
+
+__global__ void slacpy_full_kernel(
+    int m, int n,
+    const float *dA, int ldda,
+    float       *dB, int lddb )
+{
+    slacpy_full_device(m, n, dA, ldda, dB, lddb);
+}
+
+
+static __device__ void zlacpy_full_device(
+    int m, int n,
+    const cuDoubleComplex *dA, int ldda,
+    cuDoubleComplex       *dB, int lddb )
+{
+    int ind = blockIdx.x*BLK_X + threadIdx.x;
+    int iby = blockIdx.y*BLK_Y;
+    bool full = (iby + BLK_Y <= n);
+    if ( ind < m ) {
+        dA += ind + iby*ldda;
+        dB += ind + iby*lddb;
+        if ( full ) {
+            #pragma unroll
+            for( int j=0; j < BLK_Y; ++j ) {
+                dB[j*lddb] = dA[j*ldda];
+            }
+        }
+        else {
+            for( int j=0; j < BLK_Y && iby+j < n; ++j ) {
+                dB[j*lddb] = dA[j*ldda];
+            }
+        }
+    }
+}
+
+__global__
+void zlacpy_full_kernel(
+    int m, int n,
+    const cuDoubleComplex *dA, int ldda,
+    cuDoubleComplex       *dB, int lddb )
+{
+    zlacpy_full_device(m, n, dA, ldda, dB, lddb);
+}
+
+static __device__ void clacpy_full_device(
+    int m, int n,
+    const cuComplex *dA, int ldda,
+    cuComplex       *dB, int lddb )
+{
+    int ind = blockIdx.x*BLK_X + threadIdx.x;
+    int iby = blockIdx.y*BLK_Y;
+    bool full = (iby + BLK_Y <= n);
+    if ( ind < m ) {
+        dA += ind + iby*ldda;
+        dB += ind + iby*lddb;
+        if ( full ) {
+            #pragma unroll
+            for( int j=0; j < BLK_Y; ++j ) {
+                dB[j*lddb] = dA[j*ldda];
+            }
+        }
+        else {
+            for( int j=0; j < BLK_Y && iby+j < n; ++j ) {
+                dB[j*lddb] = dA[j*ldda];
+            }
+        }
+    }
+}
+
+__global__ void clacpy_full_kernel(
+    int m, int n,
+    const cuComplex *dA, int ldda,
+    cuComplex       *dB, int lddb )
+{
+    clacpy_full_device(m, n, dA, ldda, dB, lddb);
+}
+
+
 // generate `n` random float numbers on GPU
 __global__ void s_normal_kernel(unsigned long long seed, curandStatePhilox4_32_10_t* states,
                                 float* v, int n)
@@ -163,6 +304,102 @@ __global__ void zshift_mgpu_matrix(cuDoubleComplex* A, std::size_t* off_m,
     {
         ind = off_n[i] * ldH + off_m[i];
         A[ind].x += shift;
+    }
+}
+//only full copy is support right now
+void t_lacpy_gpu(char uplo, int m, int n, float *dA, int ldda, float *dB, int lddb, cudaStream_t stream_ )
+{
+    #define dA(i_, j_) (dA + (i_) + (j_)*ldda)
+    #define dB(i_, j_) (dB + (i_) + (j_)*lddb)
+    int super_NB = max_blocks*BLK_X;
+    dim3 super_grid(  (m + super_NB - 1) / super_NB,  (n + super_NB - 1) / super_NB );
+
+    dim3 threads( BLK_X, 1 );
+    dim3 grid;
+
+    int mm, nn;
+    for( unsigned int i=0; i < super_grid.x; ++i ) {
+        mm = (i == super_grid.x-1 ? m % super_NB : super_NB);
+        grid.x = ( mm + BLK_X - 1) / BLK_X;
+        for( unsigned int j=0; j < super_grid.y; ++j ) {  // full row
+            nn = (j == super_grid.y-1 ? n % super_NB : super_NB);
+            grid.y = ( nn + BLK_X - 1) / BLK_Y;;
+            slacpy_full_kernel <<< grid, threads, 0, stream_ >>>
+                ( mm, nn, dA(i*super_NB, j*super_NB), ldda, dB(i*super_NB, j*super_NB), lddb );
+        }
+    }
+}
+
+void t_lacpy_gpu(char uplo, int m, int n, double *dA, int ldda, double *dB, int lddb, cudaStream_t stream_ )
+{
+    #define dA(i_, j_) (dA + (i_) + (j_)*ldda)
+    #define dB(i_, j_) (dB + (i_) + (j_)*lddb)	
+    int super_NB = max_blocks*BLK_X;
+    dim3 super_grid(  (m + super_NB - 1) / super_NB,  (n + super_NB - 1) / super_NB );     
+
+    dim3 threads( BLK_X, 1 );
+    dim3 grid;
+
+    int mm, nn;
+    for( unsigned int i=0; i < super_grid.x; ++i ) {
+        mm = (i == super_grid.x-1 ? m % super_NB : super_NB);
+        grid.x = ( mm + BLK_X - 1) / BLK_X;
+        for( unsigned int j=0; j < super_grid.y; ++j ) {  // full row
+            nn = (j == super_grid.y-1 ? n % super_NB : super_NB);
+            grid.y = ( nn + BLK_X - 1) / BLK_Y;;
+            dlacpy_full_kernel <<< grid, threads, 0, stream_ >>>
+                ( mm, nn, dA(i*super_NB, j*super_NB), ldda, dB(i*super_NB, j*super_NB), lddb );
+        }
+    }
+}	
+
+void t_lacpy_gpu(char uplo, int m, int n, std::complex<double> *ddA, int ldda, std::complex<double> *ddB, int lddb, cudaStream_t stream_ )
+{
+    cuDoubleComplex *dA = reinterpret_cast<cuDoubleComplex*>(ddA);
+    cuDoubleComplex *dB = reinterpret_cast<cuDoubleComplex*>(ddB);
+    #define dA(i_, j_) (dA + (i_) + (j_)*ldda)
+    #define dB(i_, j_) (dB + (i_) + (j_)*lddb)
+    int super_NB = max_blocks*BLK_X;
+    dim3 super_grid(  (m + super_NB - 1) / super_NB,  (n + super_NB - 1) / super_NB );
+
+    dim3 threads( BLK_X, 1 );
+    dim3 grid;
+
+    int mm, nn;
+    for( unsigned int i=0; i < super_grid.x; ++i ) {
+        mm = (i == super_grid.x-1 ? m % super_NB : super_NB);
+        grid.x = ( mm + BLK_X - 1) / BLK_X;
+        for( unsigned int j=0; j < super_grid.y; ++j ) {  // full row
+            nn = (j == super_grid.y-1 ? n % super_NB : super_NB);
+            grid.y = ( nn + BLK_X - 1) / BLK_Y;;
+            zlacpy_full_kernel <<< grid, threads, 0, stream_ >>>
+                ( mm, nn, dA(i*super_NB, j*super_NB), ldda, dB(i*super_NB, j*super_NB), lddb );
+        }
+    }
+}
+
+void t_lacpy_gpu(char uplo, int m, int n, std::complex<float> *ddA, int ldda, std::complex<float> *ddB, int lddb, cudaStream_t stream_ )
+{
+    cuComplex *dA = reinterpret_cast<cuComplex*>(ddA);
+    cuComplex *dB = reinterpret_cast<cuComplex*>(ddB);
+    #define dA(i_, j_) (dA + (i_) + (j_)*ldda)
+    #define dB(i_, j_) (dB + (i_) + (j_)*lddb)
+    int super_NB = max_blocks*BLK_X;
+    dim3 super_grid(  (m + super_NB - 1) / super_NB,  (n + super_NB - 1) / super_NB );
+
+    dim3 threads( BLK_X, 1 );
+    dim3 grid;
+
+    int mm, nn;
+    for( unsigned int i=0; i < super_grid.x; ++i ) {
+        mm = (i == super_grid.x-1 ? m % super_NB : super_NB);
+        grid.x = ( mm + BLK_X - 1) / BLK_X;
+        for( unsigned int j=0; j < super_grid.y; ++j ) {  // full row
+            nn = (j == super_grid.y-1 ? n % super_NB : super_NB);
+            grid.y = ( nn + BLK_X - 1) / BLK_Y;;
+            clacpy_full_kernel <<< grid, threads, 0, stream_ >>>
+                ( mm, nn, dA(i*super_NB, j*super_NB), ldda, dB(i*super_NB, j*super_NB), lddb );
+        }
     }
 }
 

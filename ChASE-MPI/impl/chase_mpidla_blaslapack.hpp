@@ -63,9 +63,14 @@ public:
 
         MPI_Comm_rank(row_comm, &mpi_row_rank);
         MPI_Comm_rank(col_comm, &mpi_col_rank);
+    
+	vv_ = new T[m_];
     }
 
-    ~ChaseMpiDLABlaslapack() {}
+    ~ChaseMpiDLABlaslapack() 
+    {
+	delete[] vv_;    
+    }
     //! This function set initially the operation for apply() used in
     //! ChaseMpi::Lanczos()
     void initVecs() override { next_ = NextOp::bAc; }
@@ -305,13 +310,14 @@ public:
     {}
     void B2C(T* B, std::size_t off1, T* C, std::size_t off2, std::size_t block) override
     {}
-    void getMpiWorkSpace(T **C, T **B, T **A, T **C2, T **B2) override
+    void getMpiWorkSpace(T **C, T **B, T **A, T **C2, T **B2, T **vv) override
     {
         *C = C_;
 	*B = B_;
 	*A = A_;
 	*C2 = C2_;
 	*B2 = B2_;
+	*vv = vv_;
     }
     void getMpiCollectiveBackend(int *allreduce_backend, int *bcast_backend) override
     {
@@ -323,6 +329,12 @@ public:
     {
     	return false;
     }	    
+
+    void lacpy(char uplo, std::size_t m, std::size_t n,
+             T* a, std::size_t lda, T* b, std::size_t ldb) override
+    {
+        t_lacpy(uplo, m, n, a, lda, b, ldb);
+    }
 
 private:
     enum NextOp
@@ -351,6 +363,16 @@ private:
             //!< ChaseMpiProperties
     T* A_;  //!< a matrix of size `(nev_+nex_)*(nev_+nex_)`, which is allocated
             //!< in ChaseMpiProperties
+
+    T* v0_; //!< a vector of size `N_`, which is allocated in this
+                        //!< class for Lanczos
+    T* v1_; //!< a vector of size `N_`, which is allocated in this
+                        //!< class for Lanczos
+    T* w_;  //!< a vector of size `N_`, which is allocated in this
+                        //!< class for Lanczos
+    T* v2_;    
+
+    T *vv_;
 
     std::size_t* off_;      //!< identical to ChaseMpiProperties::off_
     std::size_t* r_offs_;   //!< identical to ChaseMpiProperties::r_offs_

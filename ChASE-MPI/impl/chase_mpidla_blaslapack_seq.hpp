@@ -424,7 +424,7 @@ public:
         std::memcpy(C + off2 * N_, B + off1 * N_, block * N_ * sizeof(T));
     }
 
-    void getMpiWorkSpace(T **C, T **B, T **A, T **C2, T **B2) override
+    void getMpiWorkSpace(T **C, T **B, T **A, T **C2, T **B2, T **vv) override
     {}
 
     void getMpiCollectiveBackend(int *allreduce_backend, int *bcast_backend) override
@@ -434,6 +434,10 @@ public:
     {
         return false;    
     }
+
+    void lacpy(char uplo, std::size_t m, std::size_t n,
+             T* a, std::size_t lda, T* b, std::size_t ldb) override
+    {}
 
 private:
     enum NextOp

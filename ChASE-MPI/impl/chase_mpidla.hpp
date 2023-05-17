@@ -307,7 +307,7 @@ public:
                 }
             }
         }
-            
+
 	v0_ = new T[m_];
 	v1_ = new T[m_];
 	v2_ = new T[m_];
@@ -315,6 +315,8 @@ public:
 
 	mpi_wrapper_ = matrix_properties->get_mpi_wrapper();
 	cuda_aware_ = dla_->isCudaAware(); 
+        dla_->getMpiWorkSpace(&C, &B, &A, &C2, &B2, &vv);
+        dla_->getMpiCollectiveBackend(&allreduce_backend, &bcast_backend);	
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
@@ -435,10 +437,6 @@ public:
         T One = T(1.0);
         T Zero = T(0.0);
 
-        T *C, *B, *A, *C2, *B2;
-        dla_->getMpiWorkSpace(&C, &B, &A, &C2, &B2);	
-	int allreduce_backend, bcast_backend;
-        dla_->getMpiCollectiveBackend(&allreduce_backend, &bcast_backend);
         std::size_t dim;
         if (next_ == NextOp::bAc)
         {
@@ -665,12 +663,12 @@ public:
             {
                 if (col_rank_ == c_srcs[i])
                 {
-                    MPI_Ibcast(C2_ + locked * m_, block, c_sends_[i], c_srcs[i],
+                    MPI_Ibcast(C2 + locked * m_, block, c_sends_[i], c_srcs[i],
                                col_comm_, &reqsc2b_[i]);
                 }
                 else
                 {
-                    MPI_Ibcast(B2_ + locked * n_, block, b_recvs_[i], c_srcs[i],
+                    MPI_Ibcast(B2 + locked * n_, block, b_recvs_[i], c_srcs[i],
                                col_comm_, &reqsc2b_[i]);
                 }
             }
@@ -695,19 +693,21 @@ public:
         nvtxRangePop();
         nvtxRangePushA("allreduce");
 #endif
-        MPI_Allreduce(MPI_IN_PLACE, B_ + locked * n_, dim, getMPI_Type<T>(),
-                      MPI_SUM, col_comm_); // V' * H
+	AllReduce(allreduce_backend, B + locked * n_, dim, getMPI_Type<T>(),
+                      MPI_SUM, col_comm_, mpi_wrapper_);
+	
 #ifdef USE_NSIGHT
         nvtxRangePop();
         nvtxRangePushA("t_lacpy");
 #endif
+
         for (auto i = 0; i < c_lens.size(); i++)
         {
             if (row_rank_ == c_dests[i] && col_rank_ == c_srcs[i])
             {
-                t_lacpy('A', c_lens[i], block, C2_ + locked * m_ + c_disps[i],
-                        m_, B2_ + locked * n_ + b_disps[i], n_);
-            }
+            	dla_->lacpy('A', c_lens[i], block, C2 + locked * m_ + c_disps[i],
+                        m_, B2 + locked * n_ + b_disps[i], n_);
+	    }
         }
 #ifdef USE_NSIGHT
         nvtxRangePop();
@@ -854,6 +854,8 @@ public:
         nvtxRangePushA("memcpy");
 #endif
         std::memcpy(C2_ + locked * m_, C_ + locked * m_,
+                    m_ * block * sizeof(T));
+        Memcpy(1, C2 + locked * m_, C + locked * m_,
                     m_ * block * sizeof(T));
 #ifdef USE_NSIGHT
         nvtxRangePop();
@@ -1058,11 +1060,6 @@ public:
         }    
         auto nevex = nev_ + nex_;
         bool first_iter = !cuda_aware_;
-
-        T *C, *B, *A, *C2, *B2;
-        dla_->getMpiWorkSpace(&C, &B, &A, &C2, &B2);
-        int allreduce_backend, bcast_backend;
-        dla_->getMpiCollectiveBackend(&allreduce_backend, &bcast_backend);
 
         T one = T(1.0);
         T zero = T(0.0);
@@ -1500,17 +1497,25 @@ public:
 
     void Swap(std::size_t i, std::size_t j) override
     {
-        T* tmp = new T[m_];
-
-        memcpy(tmp, C_ + m_ * i, m_ * sizeof(T));
+        memcpy(v1_, C_ + m_ * i, m_ * sizeof(T));
         memcpy(C_ + m_ * i, C_ + m_ * j, m_ * sizeof(T));
-        memcpy(C_ + m_ * j, tmp, m_ * sizeof(T));
+        memcpy(C_ + m_ * j, v1_, m_ * sizeof(T));
 
-        memcpy(tmp, C2_ + m_ * i, m_ * sizeof(T));
+        memcpy(v1_, C2_ + m_ * i, m_ * sizeof(T));
         memcpy(C2_ + m_ * i, C2_ + m_ * j, m_ * sizeof(T));
-        memcpy(C2_ + m_ * j, tmp, m_ * sizeof(T));
+        memcpy(C2_ + m_ * j, v1_, m_ * sizeof(T));
+	
+	if(cuda_aware_)
+	{
+            Memcpy(1, vv, C + m_ * i, m_ * sizeof(T));
+            Memcpy(1, C + m_ * i, C + m_ * j, m_ * sizeof(T));
+            Memcpy(1, C + m_ * j, vv, m_ * sizeof(T));
 
-        delete[] tmp;
+            Memcpy(1, vv, C + m_ * i, m_ * sizeof(T));
+            Memcpy(1, C + m_ * i, C + m_ * j, m_ * sizeof(T));
+            Memcpy(1, C + m_ * j, vv, m_ * sizeof(T));	
+	}	
+
     }
 
     void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc) override
@@ -1648,7 +1653,7 @@ public:
         }
     }
 
-    void getMpiWorkSpace(T **C, T **B, T **A, T **C2, T **B2) override
+    void getMpiWorkSpace(T **C, T **B, T **A, T **C2, T **B2, T **vv) override
     {}
 
     void getMpiCollectiveBackend(int *allreduce_backend, int *bcast_backend) override
@@ -1659,6 +1664,9 @@ public:
         return cuda_aware_;
     }
 
+    void lacpy(char uplo, std::size_t m, std::size_t n,
+             T* a, std::size_t lda, T* b, std::size_t ldb) override
+    {}
 private:
     enum NextOp
     {
@@ -1793,6 +1801,9 @@ private:
 #endif
     Comm_t mpi_wrapper_;
     bool cuda_aware_;
+    T *C, *B, *A, *C2, *B2, *vv;
+    int allreduce_backend, bcast_backend;
+
 };
 } // namespace mpi
 } // namespace chase
