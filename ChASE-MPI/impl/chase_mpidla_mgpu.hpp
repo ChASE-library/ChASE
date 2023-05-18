@@ -529,14 +529,14 @@ public:
     {
         T alpha = T(1.0);
         T beta = T(0.0);
-
+#if !defined(CUDA_AWARE)
         if (!isCcopied)
         {
             cuda_exec(cudaMemcpy(d_C_ + locked * m_, C_ + locked * m_,
                                  block * m_ * sizeof(T),
                                  cudaMemcpyHostToDevice));
         }
-
+#endif
         cublas_status_ = cublasTgemm(
             cublasH_, CUBLAS_OP_C, CUBLAS_OP_N, n_, block, m_, &alpha, d_H_, m_,
             d_C_ + locked * m_, m_, &beta, d_B_ + locked * n_, n_);
@@ -882,6 +882,38 @@ public:
             A[i * n + i] += (T)shift;
         }
 #endif	
+    }
+
+    void retrieveC(T **C, std::size_t locked, std::size_t block, bool copy) override
+    {
+#if defined(CUDA_AWARE)
+	if(copy)    
+	{
+	    cuda_exec(cudaMemcpy(C_ + locked * m_, d_C_ + locked * m_, block * m_ * sizeof(T),
+                             cudaMemcpyDeviceToHost));        	    
+	}
+#endif
+	*C = C_;	
+    }
+
+    void retrieveB(T **B, std::size_t locked, std::size_t block, bool copy) override
+    {
+#if defined(CUDA_AWARE)
+	if(copy)
+	{
+            cuda_exec(cudaMemcpy(B_ + locked * n_, d_B_ + locked * n_, block * n_ *sizeof(T),
+                             cudaMemcpyDeviceToHost));
+	}
+#endif
+        *B = B_;    
+    }
+
+    void putC(T *C, std::size_t locked, std::size_t block) override
+    {
+#if defined(CUDA_AWARE)
+        cuda_exec(cudaMemcpy(d_C_ + locked * m_, C + locked * m_, block * m_ * sizeof(T),
+                             cudaMemcpyHostToDevice));
+#endif	    
     }
 
 private:

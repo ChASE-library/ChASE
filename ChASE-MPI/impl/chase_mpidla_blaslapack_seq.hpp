@@ -442,6 +442,14 @@ public:
     void shiftMatrixForQR(T *A, std::size_t n, T shift) override
     {}
 
+    void retrieveC(T **C, std::size_t locked, std::size_t block, bool copy) override
+    {}
+
+    void retrieveB(T **B, std::size_t locked, std::size_t block, bool copy) override
+    {}
+
+    void putC(T *C, std::size_t locked, std::size_t block) override
+    {}
 private:
     enum NextOp
     {

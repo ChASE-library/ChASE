@@ -344,6 +344,19 @@ public:
         }    
     }
 
+    void retrieveC(T **C, std::size_t locked, std::size_t block, bool copy) override
+    {
+    	*C = C_;
+    }
+
+    void retrieveB(T **B, std::size_t locked, std::size_t block, bool copy) override
+    {
+    	*B = B_;
+    }
+
+    void putC(T *C, std::size_t locked, std::size_t block) override
+    {}
+
 private:
     enum NextOp
     {

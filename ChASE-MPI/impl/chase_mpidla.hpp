@@ -403,12 +403,14 @@ public:
         next_ = NextOp::bAc;
         locked_ = locked;
 
+	T *C_host;
+	dla_->retrieveC(&C_host, locked, block, false);
     	for (auto j = 0; j < block; j++){
    	    for(auto i = 0; i < mblocks_; i++){
-	        std::memcpy(C_ + j * m_ + r_offs_l_[i], V + j * N_ + locked * N_ + r_offs_[i], r_lens_[i] * sizeof(T));
+	        std::memcpy(C_host + j * m_ + r_offs_l_[i] + locked * m_, V + j * N_ + locked * N_ + r_offs_[i], r_lens_[i] * sizeof(T));
 	    }   
         }
-
+	
         dla_->preApplication(V, locked, block);
 #ifdef USE_NSIGHT
         nvtxRangePop();
@@ -608,11 +610,16 @@ public:
 
         if (next_ == NextOp::bAc)
         {
-            buff = C_ + locked * m_;
+            T *C_host;
+            dla_->retrieveC(&C_host, locked, block, true);
+
+            buff = C_host + locked * m_;
             dimsIdx = 0;
         }
         else
         {
+            T *B_host;
+            dla_->retrieveB(&B_host, locked, block, true);		
             buff = B_ + locked * n_;
             dimsIdx = 1;
         }
@@ -937,15 +944,19 @@ public:
 #ifdef USE_NSIGHT
         nvtxRangePushA("pgeqrf+pgqr");
 #endif
-        t_pgeqrf(N_, nevex, C_, one, one, desc1D_Nxnevx_, tau.get());
-        t_pgqr(N_, nevex, nevex, C_, one, one, desc1D_Nxnevx_, tau.get());
+	T *C_host;
+	dla_->retrieveC(&C_host, 0, nevex, true);
+        t_pgeqrf(N_, nevex, C_host, one, one, desc1D_Nxnevx_, tau.get());
+        t_pgqr(N_, nevex, nevex, C_host, one, one, desc1D_Nxnevx_, tau.get());
+	dla_->putC(C_host, 0, nevex);
 #ifdef USE_NSIGHT
         nvtxRangePop();
         nvtxRangePushA("memcpy");
 #endif
-        std::memcpy(C_, C2_, locked * m_ * sizeof(T));
-        std::memcpy(C2_ + locked * m_, C_ + locked * m_,
-                    (nevex - locked) * m_ * sizeof(T));
+        Memcpy(memcpy_mode, C, C2, locked * m_ * sizeof(T));
+        Memcpy(memcpy_mode, C2 + locked * m_, C + locked * m_,
+                        (nevex - locked) * m_ * sizeof(T));
+	
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
@@ -960,10 +971,9 @@ public:
         t_geqrf(LAPACK_COL_MAJOR, N_, nevex, V_, N_, tau.get());
         t_gqr(LAPACK_COL_MAJOR, N_, nevex, nevex, V_, N_, tau.get());
         this->preApplication(V_, 0, nevex);
-
-        std::memcpy(C_, C2_, locked * m_ * sizeof(T));
-        std::memcpy(C2_ + locked * m_, C_ + locked * m_,
-                    (nevex - locked) * m_ * sizeof(T));
+        Memcpy(memcpy_mode, C, C2, locked * m_ * sizeof(T));
+        Memcpy(memcpy_mode, C2 + locked * m_, C + locked * m_,
+                        (nevex - locked) * m_ * sizeof(T));
 #endif
         isHHqr = true;
 #ifdef USE_NSIGHT
@@ -1000,7 +1010,7 @@ public:
     {
         int grank;
         MPI_Comm_rank(MPI_COMM_WORLD, &grank);
-/*
+
         char* display_bounds_env;
         display_bounds_env = getenv("CHASE_DISPLAY_BOUNDS");
         int display_bounds = 0;
@@ -1009,7 +1019,9 @@ public:
         }
         if(display_bounds != 0){
             std::vector<T> V2(N_ * (nev_+nex_));
-            this->collecRedundantVecs(C_, V2.data(), 0, nev_+nex_);
+            T *C_host;
+	    dla_->retrieveC(&C_host, 0, nev_ + nex_, true);
+	    this->collecRedundantVecs(C_host, V2.data(), 0, nev_+nex_);
             std::vector<Base<T>> S(nev_ + nex_ - locked);
             T *U;
             std::size_t ld = 1;
@@ -1025,7 +1037,7 @@ public:
                           << ", ratio: " << cond * norms[0] / norms[nev_+nex_-locked-1] << std::endl;
             }
         }
-*/
+
 #ifdef USE_NSIGHT
         nvtxRangePushA("ChaseMpiDLA: cholQR");
 #endif
@@ -1234,7 +1246,7 @@ public:
                              "use Householder QR instead"
                           << std::endl;
 #endif
-            //this->hhQR(locked);
+            this->hhQR(locked);
         }
 
 #ifdef USE_NSIGHT
@@ -1654,6 +1666,15 @@ public:
     {}
 
     void shiftMatrixForQR(T *A, std::size_t n, T shift) override
+    {}
+
+    void retrieveC(T **C, std::size_t locked, std::size_t block, bool copy) override
+    {}
+
+    void retrieveB(T **B, std::size_t locked, std::size_t block, bool copy) override
+    {}
+
+    void putC(T *C, std::size_t locked, std::size_t block) override
     {}
 
 private:

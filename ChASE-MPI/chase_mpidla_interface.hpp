@@ -349,7 +349,9 @@ public:
     virtual void lacpy(char uplo, std::size_t m, std::size_t n,
              T* a, std::size_t lda, T* b, std::size_t ldb) = 0;
     virtual void shiftMatrixForQR(T *A, std::size_t n, T shift) = 0;
-
+    virtual void retrieveC(T **C, std::size_t locked, std::size_t block, bool copy) = 0;
+    virtual void retrieveB(T **B, std::size_t locked, std::size_t block, bool copy) = 0;    
+    virtual void putC(T *C, std::size_t locked, std::size_t block) = 0;
 };
 } // namespace mpi
 } // namespace chase
