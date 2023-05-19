@@ -365,7 +365,7 @@ public:
 
     void B2C(T* B, std::size_t off1, T* C, std::size_t off2, std::size_t block) override
     {}    
-    void getMpiWorkSpace(T **C, T **B, T **A, T **C2, T **B2, T **vv) override
+    void getMpiWorkSpace(T **C, T **B, T **A, T **C2, T **B2, T **vv, Base<T> **rsd, T **w) override    
     {}
     void getMpiCollectiveBackend(int *allreduce_backend, int *bcast_backend) override
     {}
@@ -384,6 +384,9 @@ public:
     {}
 
     void retrieveB(T **B, std::size_t locked, std::size_t block, bool copy) override
+    {}
+
+    void retrieveResid(Base<T> **rsd, std::size_t locked, std::size_t block) override
     {}
 
     void putC(T *C, std::size_t locked, std::size_t block) override

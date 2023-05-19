@@ -260,7 +260,7 @@ public:
         B2_ = matrix_properties->get_B2();
         A_ = matrix_properties->get_A();
         off_ = matrix_properties->get_off();
-
+	resid = matrices.get_Resid();
         matrix_properties->get_offs_lens(r_offs_, r_lens_, r_offs_l_, c_offs_,
                                          c_lens_, c_offs_l_);
         mb_ = matrix_properties->get_mb();
@@ -376,7 +376,8 @@ public:
 	cudaMalloc((void**)&(vv_), m_ * sizeof(T));
 #else
 	vv_ = new T[m_];
-#endif	
+#endif
+	w_ = new T[n_];	
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
@@ -411,6 +412,7 @@ public:
 #else
 	delete[] vv_;
 #endif	
+	delete[] w_;
     }
     //! - This function set initially the operation for apply() used in
     //! ChaseMpi::Lanczos()
@@ -731,10 +733,7 @@ public:
     {
 #if defined(CUDA_AWARE)	    
 	residual_gpu(n_, unconverged, d_B_ + locked * n_, n_, d_B2_ + locked * n_,
-                     n_, d_ritz_, d_resids_, false, (cudaStream_t)0);
-
-        cuda_exec(cudaMemcpy(resid, d_resids_, unconverged * sizeof(Base<T>),
-                             cudaMemcpyDeviceToHost));
+                     n_, d_ritz_, d_resids_ + locked, false, (cudaStream_t)0);
 	
 #else
     	for (auto i = 0; i < unconverged; i++)
@@ -805,8 +804,10 @@ public:
     //! - This function contains nothing in this class.
     void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc) override {
 #if defined(CUDA_AWARE)
-        cuda_exec(cudaMemcpy(d_C_, C_, m_ * (nev_ + nex_) * sizeof(T), cudaMemcpyHostToDevice));    
-#endif    
+        cuda_exec(cudaMemcpy(d_C_, C2_, m_ * m * sizeof(T), cudaMemcpyHostToDevice));    
+#else
+	std::memcpy(C_, C2_, m * m_ * sizeof(T));
+#endif	
     }
     void Lanczos(std::size_t M, int idx, Base<T>* d, Base<T>* e, Base<T> *r_beta) override
     {}
@@ -814,7 +815,7 @@ public:
     void B2C(T* B, std::size_t off1, T* C, std::size_t off2, std::size_t block) override
     {} 
 
-    void getMpiWorkSpace(T **C, T **B, T **A, T **C2, T **B2, T **vv) override
+    void getMpiWorkSpace(T **C, T **B, T **A, T **C2, T **B2, T **vv, Base<T> **rsd, T **w) override    
     {
 #if defined(CUDA_AWARE)
         *C = d_C_;
@@ -823,6 +824,7 @@ public:
 	*C2 = d_C2_;
 	*B2 = d_B2_;
 	*vv = vv_;
+	*rsd = d_resids_;
 #else	    
         *C = C_;
         *B = B_;  
@@ -830,6 +832,7 @@ public:
 	*C2 = C2_;
 	*B2 = B2_;	
 	*vv = vv_;
+	*rsd = resid;
 #endif
     }
     void getMpiCollectiveBackend(int *allreduce_backend, int *bcast_backend) override
@@ -903,6 +906,15 @@ public:
 	}
 #endif
         *B = B_;    
+    }
+
+    void retrieveResid(Base<T> **rsd, std::size_t locked, std::size_t block) override
+    {
+#if defined(CUDA_AWARE)
+        cuda_exec(cudaMemcpy(resid + locked, d_resids_ + locked, (nev_ + nex_ - locked) * sizeof(Base<T>),
+                             cudaMemcpyDeviceToHost));
+#endif
+        *rsd = resid + locked;	
     }
 
     void putC(T *C, std::size_t locked, std::size_t block) override
@@ -1000,7 +1012,8 @@ private:
               //!< extra buffer required for any cuSOLVER routines
     T *d_v_;
     T *d_w_;
-
+    T *w_;
+    Base<T> *resid;
     Base<T> *d_resids_ = NULL;
     T *vv_;
     std::size_t pitchB;  //!< pitch for `B_` and `d_B_`

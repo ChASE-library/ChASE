@@ -45,7 +45,7 @@ public:
         C2_ = matrix_properties->get_C2();
         B2_ = matrix_properties->get_B2();
         A_ = matrix_properties->get_A();
-
+	resid = matrices.get_Resid();
         off_ = matrix_properties->get_off();
 
         matrix_properties->get_offs_lens(r_offs_, r_lens_, r_offs_l_, c_offs_,
@@ -65,11 +65,13 @@ public:
         MPI_Comm_rank(col_comm, &mpi_col_rank);
     
 	vv_ = new T[m_];
+	w_ = new T[n_];
     }
 
     ~ChaseMpiDLABlaslapack() 
     {
-	delete[] vv_;    
+	delete[] vv_; 
+	delete[] w_;
     }
     //! This function set initially the operation for apply() used in
     //! ChaseMpi::Lanczos()
@@ -305,12 +307,14 @@ public:
     //! - All required operations for this function has been done in for
     //! ChaseMpiDLA::LanczosDos().
     //! - This function contains nothing in this class.
-    void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc) override {}
+    void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc) override {
+        std::memcpy(C_, C2_, m * m_ * sizeof(T));    
+    }
     void Lanczos(std::size_t M, int idx, Base<T>* d, Base<T>* e, Base<T> *r_beta) override
     {}
     void B2C(T* B, std::size_t off1, T* C, std::size_t off2, std::size_t block) override
     {}
-    void getMpiWorkSpace(T **C, T **B, T **A, T **C2, T **B2, T **vv) override
+    void getMpiWorkSpace(T **C, T **B, T **A, T **C2, T **B2, T **vv, Base<T> **rsd, T **w) override    
     {
         *C = C_;
 	*B = B_;
@@ -318,6 +322,7 @@ public:
 	*C2 = C2_;
 	*B2 = B2_;
 	*vv = vv_;
+	*rsd = resid;
     }
     void getMpiCollectiveBackend(int *allreduce_backend, int *bcast_backend) override
     {
@@ -352,6 +357,11 @@ public:
     void retrieveB(T **B, std::size_t locked, std::size_t block, bool copy) override
     {
     	*B = B_;
+    }
+
+    void retrieveResid(Base<T> **rsd, std::size_t locked, std::size_t block) override
+    {
+        *rsd = resid + locked;	    
     }
 
     void putC(T *C, std::size_t locked, std::size_t block) override
@@ -395,6 +405,7 @@ private:
 
     T *vv_;
 
+    Base<T> *resid;
     std::size_t* off_;      //!< identical to ChaseMpiProperties::off_
     std::size_t* r_offs_;   //!< identical to ChaseMpiProperties::r_offs_
     std::size_t* r_lens_;   //!< identical to ChaseMpiProperties::r_lens_

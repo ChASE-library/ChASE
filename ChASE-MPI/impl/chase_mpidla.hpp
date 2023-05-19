@@ -312,10 +312,10 @@ public:
 	v1_ = new T[m_];
 	v2_ = new T[m_];
 	w_ = new T[n_];
-
+	T *ww;
 	mpi_wrapper_ = matrix_properties->get_mpi_wrapper();
 	cuda_aware_ = dla_->isCudaAware(); 
-        dla_->getMpiWorkSpace(&C, &B, &A, &C2, &B2, &vv);
+        dla_->getMpiWorkSpace(&C, &B, &A, &C2, &B2, &vv, &rsd, &ww);
         dla_->getMpiCollectiveBackend(&allreduce_backend, &bcast_backend);
         if(cuda_aware_)
 	{
@@ -333,7 +333,7 @@ public:
         delete [] v0_;
         delete [] v1_;
         delete [] v2_;
-        delete [] w_;	
+	delete [] w_;
     }
 
     //! In ChaseMpiDLA, this function consists of operations
@@ -888,14 +888,19 @@ public:
         nvtxRangePop();
         nvtxRangePushA("allreduce");
 #endif
-        MPI_Allreduce(MPI_IN_PLACE, resid, unconverged, getMPI_Type<Base<T>>(),
-                      MPI_SUM, row_comm_);
+        //MPI_Allreduce(MPI_IN_PLACE, resid, unconverged, getMPI_Type<Base<T>>(),
+        //              MPI_SUM, row_comm_);
+	AllReduce(allreduce_backend, rsd + locked, unconverged, getMPI_Type<Base<T>>(),
+                      MPI_SUM, row_comm_, mpi_wrapper_ );
+        Base<T> *resid_h;
+	dla_->retrieveResid(&resid_h, locked, unconverged);
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
+	
         for (std::size_t i = 0; i < unconverged; ++i)
         {
-            resid[i] = std::sqrt(resid[i]);
+            resid[i] = std::sqrt(resid_h[i]);
         }
     }
 
@@ -1524,11 +1529,9 @@ public:
 #endif
         t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, m_, idx, m, &alpha,
                C_, m_, ritzVc, m, &beta, C2_, m_);
-        std::memcpy(C_, C2_, m * m_ * sizeof(T));
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
-	//tmp for cuda-aware development, will be removed later
 	dla_->LanczosDos(idx, m, ritzVc);
     }
 
@@ -1650,7 +1653,7 @@ public:
         }
     }
 
-    void getMpiWorkSpace(T **C, T **B, T **A, T **C2, T **B2, T **vv) override
+    void getMpiWorkSpace(T **C, T **B, T **A, T **C2, T **B2, T **vv, Base<T> **rsd, T **w) override
     {}
 
     void getMpiCollectiveBackend(int *allreduce_backend, int *bcast_backend) override
@@ -1672,6 +1675,9 @@ public:
     {}
 
     void retrieveB(T **B, std::size_t locked, std::size_t block, bool copy) override
+    {}
+	
+    void retrieveResid(Base<T> **rsd, std::size_t locked, std::size_t block) override
     {}
 
     void putC(T *C, std::size_t locked, std::size_t block) override
@@ -1812,6 +1818,7 @@ private:
     Comm_t mpi_wrapper_;
     bool cuda_aware_;
     T *C, *B, *A, *C2, *B2, *vv;
+    Base<T> *rsd;
     int allreduce_backend, bcast_backend;
     int memcpy_mode;
 
