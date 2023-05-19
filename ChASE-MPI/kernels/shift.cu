@@ -17,8 +17,151 @@
 
 #define BLK_X 64
 #define BLK_Y BLK_X
+#define NB_X 64
 
 const int max_blocks = 65535;
+
+template< int n, typename T >
+__device__ void cuda_sum_reduce(int i, T* x )
+{
+    __syncthreads();
+    if ( n > 1024 ) { if ( i < 1024 && i + 1024 < n ) { x[i] += x[i+1024]; }  __syncthreads(); }
+    if ( n >  512 ) { if ( i <  512 && i +  512 < n ) { x[i] += x[i+ 512]; }  __syncthreads(); }
+    if ( n >  256 ) { if ( i <  256 && i +  256 < n ) { x[i] += x[i+ 256]; }  __syncthreads(); }
+    if ( n >  128 ) { if ( i <  128 && i +  128 < n ) { x[i] += x[i+ 128]; }  __syncthreads(); }
+    if ( n >   64 ) { if ( i <   64 && i +   64 < n ) { x[i] += x[i+  64]; }  __syncthreads(); }
+    if ( n >   32 ) { if ( i <   32 && i +   32 < n ) { x[i] += x[i+  32]; }  __syncthreads(); }
+    if ( n >   16 ) { if ( i <   16 && i +   16 < n ) { x[i] += x[i+  16]; }  __syncthreads(); }
+    if ( n >    8 ) { if ( i <    8 && i +    8 < n ) { x[i] += x[i+   8]; }  __syncthreads(); }
+    if ( n >    4 ) { if ( i <    4 && i +    4 < n ) { x[i] += x[i+   4]; }  __syncthreads(); }
+    if ( n >    2 ) { if ( i <    2 && i +    2 < n ) { x[i] += x[i+   2]; }  __syncthreads(); }
+    if ( n >    1 ) { if ( i <    1 && i +    1 < n ) { x[i] += x[i+   1]; }  __syncthreads(); }
+}
+
+__global__ void c_resids_kernel(int m, int n, const cuComplex *A, int lda, const cuComplex *B, 
+			 int ldb, float *ritzv, float *resids, bool is_sqrt )
+{
+    __shared__ float ssum[NB_X];
+    int tx = threadIdx.x;
+    A += blockIdx.x*lda;
+    B += blockIdx.x*lda;
+    
+    ssum[tx] = 0;
+    for(int i = tx; i < m; i += NB_X)
+    {
+        cuComplex alpha;
+       	alpha.x = ritzv[blockIdx.x];
+	alpha.y = 0.0;
+	cuComplex a = cuCmulf(alpha, B[i]);
+	cuComplex b = cuCsubf(A[i], a);
+    	float nrm = cuCabsf(b);
+	ssum[tx] += nrm * nrm;
+    }
+
+    cuda_sum_reduce<NB_X>(tx, ssum);
+    if ( tx == 0 ) {
+        if(is_sqrt)
+	{
+	    resids[ blockIdx.x ] = sqrtf(ssum[0]);	
+	}
+	else{
+	    resids[ blockIdx.x ] = ssum[0];
+    	}
+    }
+    
+}
+
+__global__ void z_resids_kernel(int m, int n, const cuDoubleComplex *A, int lda, const cuDoubleComplex *B,
+                         int ldb, double *ritzv, double *resids, bool is_sqrt )
+{
+    __shared__ double ssum[NB_X];
+    int tx = threadIdx.x;
+    A += blockIdx.x*lda;
+    B += blockIdx.x*lda;
+
+    ssum[tx] = 0;
+    for(int i = tx; i < m; i += NB_X)
+    {
+        cuDoubleComplex alpha;
+        alpha.x = ritzv[blockIdx.x];
+	alpha.y = 0.0;
+        cuDoubleComplex a = cuCmul(alpha, B[i]);
+        cuDoubleComplex b = cuCsub(A[i], a);
+        double nrm = cuCabs(b);
+	ssum[tx] += nrm * nrm;
+    }
+
+    cuda_sum_reduce<NB_X>(tx, ssum);
+    if ( tx == 0 ) {
+        if(is_sqrt)
+        {
+            resids[ blockIdx.x ] = sqrt(ssum[0]);
+        }
+        else{
+            resids[ blockIdx.x ] = ssum[0];
+        }
+    }
+}
+
+__global__ void d_resids_kernel(int m, int n, const double *A, int lda, const double *B,
+                         int ldb, double *ritzv, double *resids, bool is_sqrt )
+{
+    __shared__ double ssum[NB_X];
+    int tx = threadIdx.x;
+    A += blockIdx.x*lda;
+    B += blockIdx.x*lda;
+
+    ssum[tx] = 0;
+    for(int i = tx; i < m; i += NB_X)
+    {
+        double alpha;
+        alpha = ritzv[blockIdx.x];
+        double a = alpha * B[i];
+        double b = A[i] - a;
+        ssum[tx] += b * b;
+    }
+
+    cuda_sum_reduce<NB_X>(tx, ssum);
+    if ( tx == 0 ) {
+        if(is_sqrt)
+        {
+            resids[ blockIdx.x ] = sqrt(ssum[0]);
+        }
+        else{
+            resids[ blockIdx.x ] = ssum[0];
+        }
+    }
+}
+
+__global__ void s_resids_kernel(int m, int n, const float *A, int lda, const float *B,
+                         int ldb, float *ritzv, float *resids, bool is_sqrt )
+{
+    __shared__ float ssum[NB_X];
+    int tx = threadIdx.x;
+    A += blockIdx.x*lda;
+    B += blockIdx.x*lda;
+
+    ssum[tx] = 0;
+    for(int i = tx; i < m; i += NB_X)
+    {
+        float alpha;
+        alpha = ritzv[blockIdx.x];
+        float a = alpha * B[i];
+        float b = A[i] - a;
+        ssum[tx] += b * b;
+    }
+
+    cuda_sum_reduce<NB_X>(tx, ssum);
+    if ( tx == 0 ) {
+        if(is_sqrt)
+        {
+            resids[ blockIdx.x ] = sqrtf(ssum[0]);
+        }
+        else{
+            resids[ blockIdx.x ] = ssum[0];
+        }
+    }
+}
 
 static __device__ void dlacpy_full_device(
     int m, int n,
@@ -306,6 +449,39 @@ __global__ void zshift_mgpu_matrix(cuDoubleComplex* A, std::size_t* off_m,
         A[ind].x += shift;
     }
 }
+
+void residual_gpu(int m, int n, std::complex<double> *dA, int lda, std::complex<double> *dB,
+                         int ldb, double *d_ritzv, double *d_resids, bool is_sqrt, cudaStream_t stream_)
+{
+    dim3 threads( NB_X);	
+    dim3 grid( n );
+    z_resids_kernel<<< grid, threads, 0, stream_ >>>( m, n, reinterpret_cast<cuDoubleComplex*>(dA), lda, reinterpret_cast<cuDoubleComplex*>(dB), ldb, d_ritzv, d_resids,is_sqrt);
+}
+
+void residual_gpu(int m, int n, std::complex<float> *dA, int lda, std::complex<float> *dB,
+                         int ldb, float *d_ritzv, float *d_resids, bool is_sqrt, cudaStream_t stream_)
+{
+    dim3 threads( NB_X);
+    dim3 grid( n );
+    c_resids_kernel<<< grid, threads, 0, stream_ >>>( m, n, reinterpret_cast<cuComplex*>(dA), lda, reinterpret_cast<cuComplex*>(dB), ldb, d_ritzv, d_resids,is_sqrt);
+}
+
+void residual_gpu(int m, int n, double *dA, int lda, double *dB,
+                         int ldb, double *d_ritzv, double *d_resids, bool is_sqrt, cudaStream_t stream_)
+{
+    dim3 threads( NB_X);
+    dim3 grid( n );
+    d_resids_kernel<<< grid, threads, 0, stream_ >>>( m, n, dA, lda, dB, ldb, d_ritzv, d_resids,is_sqrt);
+}
+
+void residual_gpu(int m, int n, float *dA, int lda, float *dB,
+                         int ldb, float *d_ritzv, float *d_resids, bool is_sqrt, cudaStream_t stream_)
+{
+    dim3 threads( NB_X);
+    dim3 grid( n );
+    s_resids_kernel<<< grid, threads, 0, stream_ >>>( m, n, dA, lda, dB, ldb, d_ritzv, d_resids,is_sqrt);
+}
+
 //only full copy is support right now
 void t_lacpy_gpu(char uplo, int m, int n, float *dA, int ldda, float *dB, int lddb, cudaStream_t stream_ )
 {

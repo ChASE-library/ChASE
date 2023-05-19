@@ -620,7 +620,7 @@ public:
         {
             T *B_host;
             dla_->retrieveB(&B_host, locked, block, true);		
-            buff = B_ + locked * n_;
+            buff = B_host + locked * n_;
             dimsIdx = 1;
         }
 

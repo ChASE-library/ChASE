@@ -31,6 +31,16 @@
  * multiGPUs (both block-block and block-cyclic distributions)
  *  @{
  */
+
+void residual_gpu(int m, int n, std::complex<double> *dA, int lda, std::complex<double> *dB,
+                         int ldb, double *d_ritzv, double *d_resids, bool is_sqrt, cudaStream_t stream_);
+void residual_gpu(int m, int n, std::complex<float> *dA, int lda, std::complex<float> *dB,
+                         int ldb, float *d_ritzv, float *d_resids, bool is_sqrt, cudaStream_t stream_);
+void residual_gpu(int m, int n, double *dA, int lda,  double *dB,
+                         int ldb, double *d_ritzv, double *d_resids, bool is_sqrt, cudaStream_t stream_);
+void residual_gpu(int m, int n, float *dA, int lda, float *dB,
+                         int ldb, float *d_ritzv, float *d_resids, bool is_sqrt, cudaStream_t stream_);
+
 //currently, only full copy is support
 void t_lacpy_gpu(char uplo, int m, int n, float *dA, int ldda, float *dB, int lddb, cudaStream_t stream_ );
 void t_lacpy_gpu(char uplo, int m, int n, double *dA, int ldda, double *dB, int lddb, cudaStream_t stream_ );
@@ -720,25 +730,12 @@ public:
               std::size_t unconverged) override
     {
 #if defined(CUDA_AWARE)	    
-	for (auto i = 0; i < unconverged; i++)
-	{
-	    T alpha = -ritzv[i];
-	    cublas_status_ =
-                cublasTaxpy(cublasH_, n_, &alpha, d_B2_ + locked * n_ + i * n_, 1,
-                   d_B_ + locked * n_ + i * n_, 1);
-	
-	    assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
-            cublas_status_ =
-                cublasTnrm2(cublasH2_, n_, (d_B_ + locked * n_) + n_ * i, 1,
-                            &d_resids_[i]);
-            assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);	 
-	}
+	residual_gpu(n_, unconverged, d_B_ + locked * n_, n_, d_B2_ + locked * n_,
+                     n_, d_ritz_, d_resids_, false, (cudaStream_t)0);
+
         cuda_exec(cudaMemcpy(resid, d_resids_, unconverged * sizeof(Base<T>),
                              cudaMemcpyDeviceToHost));
-	for(auto i = 0; i < unconverged; i++)
-	{
-	    resid[i] = std::pow(resid[i], 2);
-	}	
+	
 #else
     	for (auto i = 0; i < unconverged; i++)
         {
