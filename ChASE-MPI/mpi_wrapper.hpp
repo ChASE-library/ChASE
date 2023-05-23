@@ -14,8 +14,10 @@ namespace mpi
 #define NCCL_BACKEND 1
 #endif
 
-#define CPY_H 0
-#define CPY_D 1
+#define CPY_H2H 0
+#define CPY_D2D 1
+#define CPY_D2H 2
+#define CPY_H2D 3	
 
 typedef MPI_Op Op_1;
 typedef MPI_Op Op_1;
@@ -132,12 +134,18 @@ void Memcpy(int mode, void* dst, const void* src, std::size_t count)
 {
     switch(mode)
     {
-	case CPY_H:
+	case CPY_H2H:
 	    std::memcpy(dst, src, count);
 	    break;
 #if defined(CUDA_AWARE)
-        case CPY_D:
+        case CPY_D2D:
             cudaMemcpy(dst, src, count, cudaMemcpyDeviceToDevice);
+            break;
+	case CPY_D2H:
+            cudaMemcpy(dst, src, count, cudaMemcpyDeviceToHost);	
+	    break;
+        case CPY_H2D:
+            cudaMemcpy(dst, src, count, cudaMemcpyHostToDevice);
             break;
 #endif	    
     }	    

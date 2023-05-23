@@ -52,11 +52,11 @@ public:
         N_ = matrix_properties->get_N();
         n_ = matrix_properties->get_n();
         m_ = matrix_properties->get_m();
-        B_ = matrices.get_V2();
-        C_ = matrices.get_V1();
-        C2_ = matrix_properties->get_C2();
-        B2_ = matrix_properties->get_B2();
-        A_ = matrix_properties->get_A();
+        //B_ = matrices.get_V2();
+//        C_ = matrices.get_V1();
+//        C2_ = matrix_properties->get_C2();
+        //B2_ = matrix_properties->get_B2();
+        //A_ = matrix_properties->get_A();
 #if !defined(HAS_SCALAPACK)
         V_ = matrix_properties->get_V();
 #endif
@@ -319,11 +319,15 @@ public:
         dla_->getMpiCollectiveBackend(&allreduce_backend, &bcast_backend);
         if(cuda_aware_)
 	{
-	    memcpy_mode = CPY_D;	
+	    memcpy_mode[0] = CPY_D2D;	
+	    memcpy_mode[1] = CPY_D2H;
+	    memcpy_mode[2] = CPY_H2D;
 	}
 	else
 	{
-	    memcpy_mode = CPY_H;
+	    memcpy_mode[0] = CPY_H2H;
+	    memcpy_mode[1] = CPY_H2H;
+	    memcpy_mode[2] = CPY_H2H;
 	}	
 #ifdef USE_NSIGHT
         nvtxRangePop();
@@ -349,7 +353,6 @@ public:
         nvtxRangePushA("ChaseMpiDLA: initVecs");
 #endif
         next_ = NextOp::bAc;
-        t_lacpy('A', m_, nev_ + nex_, C_, m_, C2_, m_);
         dla_->initVecs();
 #ifdef USE_NSIGHT
         nvtxRangePop();
@@ -862,12 +865,12 @@ public:
         nvtxRangePop();
         nvtxRangePushA("ChaseMpiDLA: heevd");
 #endif
-        dla_->heevd(LAPACK_COL_MAJOR, 'V', 'L', block, A_, nev_ + nex_, ritzv);
+        dla_->heevd(LAPACK_COL_MAJOR, 'V', 'L', block, A, nev_ + nex_, ritzv);
 #ifdef USE_NSIGHT
         nvtxRangePop();
         nvtxRangePushA("memcpy");
 #endif
-        Memcpy(memcpy_mode, C2 + locked * m_, C + locked * m_,
+        Memcpy(memcpy_mode[0], C2 + locked * m_, C + locked * m_,
                     m_ * block * sizeof(T));
 #ifdef USE_NSIGHT
         nvtxRangePop();
@@ -961,8 +964,8 @@ public:
         nvtxRangePop();
         nvtxRangePushA("memcpy");
 #endif
-        Memcpy(memcpy_mode, C, C2, locked * m_ * sizeof(T));
-        Memcpy(memcpy_mode, C2 + locked * m_, C + locked * m_,
+        Memcpy(memcpy_mode[0], C, C2, locked * m_ * sizeof(T));
+        Memcpy(memcpy_mode[0], C2 + locked * m_, C + locked * m_,
                         (nevex - locked) * m_ * sizeof(T));
 	
 #ifdef USE_NSIGHT
@@ -979,8 +982,8 @@ public:
         t_geqrf(LAPACK_COL_MAJOR, N_, nevex, V_, N_, tau.get());
         t_gqr(LAPACK_COL_MAJOR, N_, nevex, nevex, V_, N_, tau.get());
         this->preApplication(V_, 0, nevex);
-        Memcpy(memcpy_mode, C, C2, locked * m_ * sizeof(T));
-        Memcpy(memcpy_mode, C2 + locked * m_, C + locked * m_,
+        Memcpy(memcpy_mode[0], C, C2, locked * m_ * sizeof(T));
+        Memcpy(memcpy_mode[0], C2 + locked * m_, C + locked * m_,
                         (nevex - locked) * m_ * sizeof(T));
 #endif
         isHHqr = true;
@@ -1237,8 +1240,8 @@ public:
 #ifdef USE_NSIGHT
             nvtxRangePushA("memcpy");
 #endif
-            Memcpy(memcpy_mode, C, C2, locked * m_ * sizeof(T));
-            Memcpy(memcpy_mode, C2 + locked * m_, C + locked * m_,
+            Memcpy(memcpy_mode[0], C, C2, locked * m_ * sizeof(T));
+            Memcpy(memcpy_mode[1], C2 + locked * m_, C + locked * m_,
                         (nevex - locked) * m_ * sizeof(T));
 
 	    isHHqr = false;
@@ -1514,17 +1517,18 @@ public:
 
     void Swap(std::size_t i, std::size_t j) override
     {
-        Memcpy(memcpy_mode, vv, C + m_ * i, m_ * sizeof(T));
-        Memcpy(memcpy_mode, C + m_ * i, C + m_ * j, m_ * sizeof(T));
-        Memcpy(memcpy_mode, C + m_ * j, vv, m_ * sizeof(T));
+        Memcpy(memcpy_mode[0], vv, C + m_ * i, m_ * sizeof(T));
+        Memcpy(memcpy_mode[0], C + m_ * i, C + m_ * j, m_ * sizeof(T));
+        Memcpy(memcpy_mode[0], C + m_ * j, vv, m_ * sizeof(T));
 
-        Memcpy(memcpy_mode, vv, C + m_ * i, m_ * sizeof(T));
-        Memcpy(memcpy_mode, C + m_ * i, C + m_ * j, m_ * sizeof(T));
-        Memcpy(memcpy_mode, C + m_ * j, vv, m_ * sizeof(T));	
+        Memcpy(memcpy_mode[0], vv, C + m_ * i, m_ * sizeof(T));
+        Memcpy(memcpy_mode[0], C + m_ * i, C + m_ * j, m_ * sizeof(T));
+        Memcpy(memcpy_mode[0], C + m_ * j, vv, m_ * sizeof(T));	
     }
 
     void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc) override
     {
+/*	    
         T alpha = T(1.0);
         T beta = T(0.0);
 #ifdef USE_NSIGHT
@@ -1535,6 +1539,7 @@ public:
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
+*/	
 	dla_->LanczosDos(idx, m, ritzVc);
     }
 
@@ -1549,7 +1554,7 @@ public:
 
         if(idx >= 0)
         {
-	      std::memcpy(v1_, C2_ + idx * m_, m_ * sizeof(T) );
+	    Memcpy(memcpy_mode[1], v1_, C2 + idx * m_, m_ * sizeof(T));
 	}else
         {
             std::mt19937 gen(2342.0);
@@ -1575,8 +1580,9 @@ public:
         for (std::size_t k = 0; k < M; k = k + 1)
         {
     	    if(idx >= 0){
-		std::memcpy(C_ + k * m_, v1_, m_ * sizeof(T) );
-            }
+		//std::memcpy(C_ + k * m_, v1_, m_ * sizeof(T) );
+	    	Memcpy(memcpy_mode[2], C + k * m_, v1_, m_ * sizeof(T));
+	    }
             this->applyVec(v1_, w_);
             this->B2C(w_, 0, v2_, 0, 1);
             alpha = t_dot(m_, v1_, 1, v2_, 1);
@@ -1703,15 +1709,15 @@ private:
         m_; //!< number of rows of local matrix of the symmetric/Hermtian matrix
     std::size_t N_; //!< global dimension of the symmetric/Hermtian matrix
 
-    T* B_;  //!< a matrix of size `n_*(nev_+nex_)`, which is allocated in
+    //T* B_;  //!< a matrix of size `n_*(nev_+nex_)`, which is allocated in
             //!< ChaseMpiMatrices
-    T* C_;  //!< a matrix of size `m_*(nev_+nex_)`, which is allocated in
+    //T* C_;  //!< a matrix of size `m_*(nev_+nex_)`, which is allocated in
             //!< ChaseMpiMatrices
-    T* C2_; //!< a matrix of size `m_*(nev_+nex_)`, which is allocated in
+    //T* C2_; //!< a matrix of size `m_*(nev_+nex_)`, which is allocated in
             //!< ChaseMpiProperties
-    T* B2_; //!< a matrix of size `n_*(nev_+nex_)`, which is allocated in
+    //T* B2_; //!< a matrix of size `n_*(nev_+nex_)`, which is allocated in
             //!< ChaseMpiProperties
-    T* A_;  //!< a matrix of size `(nev_+nex_)*(nev_+nex_)`, which is allocated
+    //T* A_;  //!< a matrix of size `(nev_+nex_)*(nev_+nex_)`, which is allocated
             //!< in ChaseMpiProperties
     T* v0_; //!< a vector of size `N_`, which is allocated in this
                         //!< class for Lanczos
@@ -1823,7 +1829,7 @@ private:
     T *C, *B, *A, *C2, *B2, *vv;
     Base<T> *rsd;
     int allreduce_backend, bcast_backend;
-    int memcpy_mode;
+    int memcpy_mode[3];
 
 };
 } // namespace mpi

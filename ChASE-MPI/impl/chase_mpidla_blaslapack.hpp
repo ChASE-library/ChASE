@@ -75,7 +75,11 @@ public:
     }
     //! This function set initially the operation for apply() used in
     //! ChaseMpi::Lanczos()
-    void initVecs() override { next_ = NextOp::bAc; }
+    void initVecs() override
+    {
+        t_lacpy('A', m_, nev_ + nex_, C_, m_, C2_, m_);	    
+	next_ = NextOp::bAc;
+    }
     //! This function generates the random values for each MPI proc using C++
     //! STL
     //!     - each MPI proc with a same MPI rank among different column
@@ -308,7 +312,11 @@ public:
     //! ChaseMpiDLA::LanczosDos().
     //! - This function contains nothing in this class.
     void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc) override {
-        std::memcpy(C_, C2_, m * m_ * sizeof(T));    
+        T alpha = T(1.0);
+        T beta = T(0.0);
+        t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, m_, idx, m, &alpha,
+               C_, m_, ritzVc, m, &beta, C2_, m_);
+	std::memcpy(C_, C2_, m * m_ * sizeof(T));    
     }
     void Lanczos(std::size_t M, int idx, Base<T>* d, Base<T>* e, Base<T> *r_beta) override
     {}

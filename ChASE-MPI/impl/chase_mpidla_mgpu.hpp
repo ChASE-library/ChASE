@@ -407,6 +407,10 @@ public:
         cuda_exec(cudaFree(d_off_n_));
         cuda_exec(cudaFree(d_ritz_));
         cuda_exec(cudaFree(states_));
+	if(d_ritzVc_)
+	{
+            cuda_exec(cudaFree(d_ritzVc_));	
+	}
 #if defined(CUDA_AWARE)
         cuda_exec(cudaFree(vv_));	
 #else
@@ -420,6 +424,9 @@ public:
     //! to GPU
     void initVecs() override
     {
+        cuda_exec(cudaMemcpy(d_C2_, d_C_, m_ * (nev_ + nex_) * sizeof(T),
+                             cudaMemcpyDeviceToDevice));
+
         cublas_status_ = cublasSetMatrix(m_, n_, sizeof(T), H_, ldh_, d_H_, m_);
         assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
         next_ = NextOp::bAc;
@@ -438,8 +445,6 @@ public:
 
         chase_rand_normal(seed, states_, d_C_, m_ * (nev_ + nex_),
                           (cudaStream_t)0);
-        cuda_exec(cudaMemcpy(C_, d_C_, m_ * (nev_ + nex_) * sizeof(T),
-                             cudaMemcpyDeviceToHost));
     }
 
     //! - This function set initially the operation for apply() in filter
@@ -583,7 +588,11 @@ public:
     }
     int get_nprocs() const override { return matrix_properties_->get_nprocs(); }
     void Start() override {}
-    void End() override {}
+    void End() override 
+    {
+        cuda_exec(cudaMemcpy(C_, d_C_, m_ * (nev_) * sizeof(T),
+                             cudaMemcpyDeviceToHost));	
+    }
 
     //! It is an interface to BLAS `?axpy`.
     void axpy(std::size_t N, T* alpha, T* x, std::size_t incx, T* y,
@@ -803,9 +812,23 @@ public:
     //! ChaseMpiDLA::LanczosDos().
     //! - This function contains nothing in this class.
     void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc) override {
+        T alpha = T(1.0);
+        T beta = T(0.0);
 #if defined(CUDA_AWARE)
-        cuda_exec(cudaMemcpy(d_C_, C2_, m_ * m * sizeof(T), cudaMemcpyHostToDevice));    
+	if(d_ritzVc_ == nullptr){
+	    cuda_exec(cudaMalloc((void**)&(d_ritzVc_), m * idx * sizeof(T)));	
+	}
+	cuda_exec(cudaMemcpy(d_ritzVc_, ritzVc, m * idx * sizeof(T), cudaMemcpyHostToDevice));	    
+
+	cublas_status_ =
+            cublasTgemm(cublasH_, CUBLAS_OP_N, CUBLAS_OP_N, m_, idx, m, &alpha,
+                        d_C_, m_, d_ritzVc_, m, &beta,
+                        d_C2_, m_);
+        assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
+	cuda_exec(cudaMemcpy(d_C_, d_C2_, m_ * m * sizeof(T), cudaMemcpyDeviceToDevice));    
 #else
+        t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, m_, idx, m, &alpha,
+               C_, m_, ritzVc, m, &beta, C2_, m_);
 	std::memcpy(C_, C2_, m * m_ * sizeof(T));
 #endif	
     }
@@ -1026,6 +1049,9 @@ private:
     int lwork_ = 0; //!< size of required extra buffer by any cuSOLVER routines
     ChaseMpiProperties<T>*
         matrix_properties_; //!< an object of class ChaseMpiProperties
+
+    T *d_ritzVc_ = nullptr;
+
 };
 
 template <typename T>
