@@ -840,7 +840,7 @@ public:
 #if defined(CUDA_AWARE)	    
     #if defined(HAS_NCCL)	    
         *allreduce_backend = NCCL_BACKEND;
-        *bcast_backend = MPI_BACKEND;   
+        *bcast_backend = NCCL_BACKEND;   
     #else
         *allreduce_backend = MPI_BACKEND;
         *bcast_backend = MPI_BACKEND;	

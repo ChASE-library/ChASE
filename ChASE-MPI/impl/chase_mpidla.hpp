@@ -665,63 +665,66 @@ public:
         nvtxRangePushA("ChaseMpiDLA: asynCxHGatherC");
 #endif
         std::size_t dim = n_ * block;
-#ifdef USE_NSIGHT
-        nvtxRangePushA("MPI_Ibcast");
-#endif
-        for (auto i = 0; i < c_lens.size(); i++)
-        {
-            if (row_rank_ == c_dests[i])
-            {
-                if (col_rank_ == c_srcs[i])
-                {
-                    MPI_Ibcast(C2 + locked * m_, block, c_sends_[i], c_srcs[i],
-                               col_comm_, &reqsc2b_[i]);
-                }
-                else
-                {
-                    MPI_Ibcast(B2 + locked * n_, block, b_recvs_[i], c_srcs[i],
-                               col_comm_, &reqsc2b_[i]);
-                }
-            }
-        }
-#ifdef USE_NSIGHT
-        nvtxRangePop();
-        nvtxRangePushA("asynCxHGatherC");
-#endif
-        dla_->asynCxHGatherC(locked, block, isCcopied);
-#ifdef USE_NSIGHT
-        nvtxRangePop();
-        nvtxRangePushA("MPI_Wait");
-#endif
-        for (auto i = 0; i < c_lens.size(); i++)
-        {
-            if (row_rank_ == c_dests[i])
-            {
-                MPI_Wait(&reqsc2b_[i], MPI_STATUSES_IGNORE);
-            }
-        }
-#ifdef USE_NSIGHT
-        nvtxRangePop();
-        nvtxRangePushA("allreduce");
-#endif
-	AllReduce(allreduce_backend, B + locked * n_, dim, getMPI_Type<T>(),
-                      MPI_SUM, col_comm_, mpi_wrapper_);
 	
-#ifdef USE_NSIGHT
-        nvtxRangePop();
-        nvtxRangePushA("t_lacpy");
-#endif
-
-        for (auto i = 0; i < c_lens.size(); i++)
-        {
-            if (row_rank_ == c_dests[i] && col_rank_ == c_srcs[i])
-            {
-            	dla_->lacpy('A', c_lens[i], block, C2 + locked * m_ + c_disps[i],
-                        m_, B2 + locked * n_ + b_disps[i], n_);
+	if(isSameDist_ && cuda_aware_){
+	    for(auto i = 0; i < col_size_; i++){
+		if(row_rank_ == i){    
+	    	    if(col_rank_ == i){
+		        Bcast(bcast_backend, C2 + locked * m_, block * m_, getMPI_Type<T>(), i,
+                               col_comm_, mpi_wrapper_);
+		    }else{
+                        Bcast(bcast_backend, B2 + locked * n_, block * n_, getMPI_Type<T>(), i,
+                               col_comm_, mpi_wrapper_);		
+		    }
+		}
+            }
+	    for(auto i = 0; i < col_size_; i++){		    
+		if(row_rank_ == col_rank_){
+	            dla_->lacpy('A', m_, block, C2 + locked * m_,
+                        m_, B2 + locked * n_, n_);
+		}
 	    }
-        }
+            dla_->asynCxHGatherC(locked, block, isCcopied);
+            AllReduce(allreduce_backend, B + locked * n_, dim, getMPI_Type<T>(),
+                      MPI_SUM, col_comm_, mpi_wrapper_);
+	}else{
+            for (auto i = 0; i < c_lens.size(); i++)
+            {
+                if (row_rank_ == c_dests[i])
+                {
+                   if (col_rank_ == c_srcs[i])
+                   {
+                       MPI_Ibcast(C2 + locked * m_, block, c_sends_[i], c_srcs[i],
+                               col_comm_, &reqsc2b_[i]);
+                   }
+                   else
+                   {
+                       MPI_Ibcast(B2 + locked * n_, block, b_recvs_[i], c_srcs[i],
+                               col_comm_, &reqsc2b_[i]);
+                   }
+               }
+            }
+            dla_->asynCxHGatherC(locked, block, isCcopied);
+            for (auto i = 0; i < c_lens.size(); i++)
+            {
+                if (row_rank_ == c_dests[i])
+                {
+                    MPI_Wait(&reqsc2b_[i], MPI_STATUSES_IGNORE);
+                }
+            }
+	    AllReduce(allreduce_backend, B + locked * n_, dim, getMPI_Type<T>(),
+                      MPI_SUM, col_comm_, mpi_wrapper_);
+
+            for (auto i = 0; i < c_lens.size(); i++)
+            {
+                if (row_rank_ == c_dests[i] && col_rank_ == c_srcs[i])
+                {
+            	    dla_->lacpy('A', c_lens[i], block, C2 + locked * m_ + c_disps[i],
+                        m_, B2 + locked * n_ + b_disps[i], n_);
+	        }
+            }
+	}
 #ifdef USE_NSIGHT
-        nvtxRangePop();
         nvtxRangePop();
 #endif
     }

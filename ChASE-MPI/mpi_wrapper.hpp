@@ -112,6 +112,22 @@ void AllReduce(int backend, T *data, int count, MPI_Datatype datatype, MPI_Op op
     }
 }
 
+template<typename T>
+void Bcast(int backend, T *buff, int count, MPI_Datatype datatype, int root, MPI_Comm comm, Comm_t env)
+{
+    switch(backend)
+    {
+#if defined(HAS_NCCL)
+        case NCCL_BACKEND:
+            ncclBcast(buff, int(sizeof(T)/sizeof(Base<T>)) * count, env.get_datatype(datatype), root, env.get_comm(comm), NULL);
+            break;	
+#endif
+        case MPI_BACKEND:
+            MPI_Bcast(buff, count, datatype, root, comm);
+            break;	    
+    }	    
+}
+
 void Memcpy(int mode, void* dst, const void* src, std::size_t count)
 {
     switch(mode)
