@@ -195,9 +195,11 @@ public:
         T alpha = T(1.0);
         T beta = T(0.0);
         std::size_t k = 1;
-        t_gemm<T>(CblasColMajor, CblasConjTrans, CblasNoTrans, n_,
-                  k, m_, &alpha, H_, ldh_,
-                  v, m_, &beta, w, n_);  
+        //t_gemm<T>(CblasColMajor, CblasConjTrans, CblasNoTrans, n_,
+        //          k, m_, &alpha, H_, ldh_,
+        //          v, m_, &beta, w, n_);  
+        t_gemv<T>(CblasColMajor, CblasConjTrans, m_, n_, &alpha, H_, ldh_,
+		  v, 1, &beta, w, 1);     
     }
 
     int get_nprocs() const override { return matrix_properties_->get_nprocs(); }

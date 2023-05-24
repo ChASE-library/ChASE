@@ -578,10 +578,13 @@ public:
 	    
         cuda_exec(cudaMemcpy(d_v_, v, m_ * sizeof(T), cudaMemcpyHostToDevice));
 	std::size_t k = 1;
-	cublas_status_ = cublasTgemm(
-            cublasH_, CUBLAS_OP_C, CUBLAS_OP_N, n_, k, m_, &alpha, d_H_, m_,
-            d_v_, m_, &beta, d_w_, n_);
-        assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
+	//cublas_status_ = cublasTgemm(
+        //    cublasH_, CUBLAS_OP_C, CUBLAS_OP_N, n_, k, m_, &alpha, d_H_, m_,
+        //    d_v_, m_, &beta, d_w_, n_);
+        cublas_status_ = cublasTgemv(
+            cublasH_, CUBLAS_OP_C, m_, n_, &alpha, d_H_, m_,
+            d_v_, 1, &beta, d_w_, 1);
+	assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
 
         cuda_exec(cudaMemcpy(w, d_w_, n_ * sizeof(T), cudaMemcpyDeviceToHost));
 
