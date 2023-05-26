@@ -312,7 +312,6 @@ public:
 	v1_ = new T[m_];
 	v2_ = new T[m_];
 	w_ = new T[n_];
-	T *ww;
 	mpi_wrapper_ = matrix_properties->get_mpi_wrapper();
 	cuda_aware_ = dla_->isCudaAware(); 
         dla_->getMpiWorkSpace(&C, &B, &A, &C2, &B2, &vv, &rsd, &ww);
@@ -768,7 +767,7 @@ public:
           - `ChaseMpiDLA::apply(One, Zero, 0, 1, 0)`
           - `ChaseMpiDLA::postApplication(C, 1, 0)`
     */
-    void applyVec(T* v, T* w) override
+    void applyVec(T* v, T* v2) override
     {
 #ifdef USE_NSIGHT
         nvtxRangePushA("ChaseMpiDLA: applyVec");
@@ -776,10 +775,10 @@ public:
         T One = T(1.0);
         T Zero = T(0.0);
 
-        dla_->applyVec(v, w);
-        MPI_Allreduce(MPI_IN_PLACE, w, n_,
-                      getMPI_Type<T>(), MPI_SUM, col_comm_);
-
+        dla_->applyVec(v, ww);
+	AllReduce(allreduce_backend, ww, n_, getMPI_Type<T>(), MPI_SUM, col_comm_, mpi_wrapper_);
+	this->B2C(ww, 0, vv, 0, 1);
+	Memcpy(memcpy_mode[1], v2, vv, m_ * sizeof(T));
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
@@ -1583,9 +1582,10 @@ public:
 		//std::memcpy(C_ + k * m_, v1_, m_ * sizeof(T) );
 	    	Memcpy(memcpy_mode[2], C + k * m_, v1_, m_ * sizeof(T));
 	    }
-            this->applyVec(v1_, w_);
-            this->B2C(w_, 0, v2_, 0, 1);
-            alpha = t_dot(m_, v1_, 1, v2_, 1);
+            //this->applyVec(v1_, w_);
+            //this->B2C(w_, 0, v2_, 0, 1);
+            this->applyVec(v1_, v2_);
+	    alpha = t_dot(m_, v1_, 1, v2_, 1);
             MPI_Allreduce(MPI_IN_PLACE, &alpha, 1, getMPI_Type<T>(),
                           MPI_SUM, col_comm_);
             alpha = -alpha;
@@ -1627,39 +1627,61 @@ public:
 
     void B2C(T* B, std::size_t off1, T* C, std::size_t off2, std::size_t block) override
     {
-        for (auto i = 0; i < b_lens.size(); i++)
-        {
-            if (col_rank_ == b_dests[i])
+	if(isSameDist_ && cuda_aware_){	    
+	    for(auto i = 0; i < row_size_; i++){
+		if(col_rank_ == i){    
+	    	    if(row_rank_ == i){
+		        Bcast(bcast_backend, B + off1 * n_, block * n_, getMPI_Type<T>(), i,
+                               row_comm_, mpi_wrapper_);
+		    }else{
+                        Bcast(bcast_backend, C + off2 * m_, block * m_, getMPI_Type<T>(), i,
+                               row_comm_, mpi_wrapper_);		
+		    }
+		}
+            }
+	    for(auto i = 0; i < row_size_; i++){		    
+		if(row_rank_ == col_rank_){
+	            dla_->lacpy('A', m_, block, B + off1 * n_,
+                        n_, C + off2 * m_, m_);
+		}
+	    }
+	}
+	else{
+     	    for (auto i = 0; i < b_lens.size(); i++)
             {
-                if (row_rank_ == b_srcs[i])
+                if (col_rank_ == b_dests[i])
                 {
-                    MPI_Ibcast(B + off1 * n_, block, b_sends_[i], b_srcs[i],
+                    if (row_rank_ == b_srcs[i])
+                    {
+                        MPI_Ibcast(B + off1 * n_, block, b_sends_[i], b_srcs[i],
                                row_comm_, &reqsb2c_[i]);
-                }
-                else
-                {
-                    MPI_Ibcast(C + off1 * m_, block, c_recvs_[i], b_srcs[i],
+                    }
+                    else
+                    {
+                        MPI_Ibcast(C + off1 * m_, block, c_recvs_[i], b_srcs[i],
                                row_comm_, &reqsb2c_[i]);
+                    }
                 }
             }
-        }
 
-        for (auto i = 0; i < b_lens.size(); i++)
-        {
-            if (col_rank_ == b_dests[i])
+            for (auto i = 0; i < b_lens.size(); i++)
             {
-                MPI_Wait(&reqsb2c_[i], MPI_STATUSES_IGNORE);
+                if (col_rank_ == b_dests[i])
+                {
+                    MPI_Wait(&reqsb2c_[i], MPI_STATUSES_IGNORE);
+                }
             }
-        }
 
-        for (auto i = 0; i < b_lens.size(); i++)
-        {
-            if (col_rank_ == b_dests[i] && row_rank_ == b_srcs[i])
+            for (auto i = 0; i < b_lens.size(); i++)
             {
-                t_lacpy('A', b_lens[i], block, B + off1 * n_ + b_disps_2[i],
+                if (col_rank_ == b_dests[i] && row_rank_ == b_srcs[i])
+                {
+                    dla_->lacpy('A', b_lens[i], block, B + off1 * n_ + b_disps_2[i],
                         n_, C + off1 * m_ + c_disps_2[i], m_);
+                }
             }
-        }
+
+	}	
     }
 
     void getMpiWorkSpace(T **C, T **B, T **A, T **C2, T **B2, T **vv, Base<T> **rsd, T **w) override
@@ -1826,7 +1848,7 @@ private:
 #endif
     Comm_t mpi_wrapper_;
     bool cuda_aware_;
-    T *C, *B, *A, *C2, *B2, *vv;
+    T *C, *B, *A, *C2, *B2, *vv, *ww;
     Base<T> *rsd;
     int allreduce_backend, bcast_backend;
     int memcpy_mode[3];
