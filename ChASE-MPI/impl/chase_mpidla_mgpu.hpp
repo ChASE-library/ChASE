@@ -851,6 +851,7 @@ public:
 	*B2 = d_B2_;
 	*vv = vv_;
 	*rsd = d_resids_;
+	*w = w_;
 #else	    
         *C = C_;
         *B = B_;  
@@ -859,6 +860,7 @@ public:
 	*B2 = B2_;	
 	*vv = vv_;
 	*rsd = resid;
+	*w = w_;
 #endif
     }
     void getMpiCollectiveBackend(int *allreduce_backend, int *bcast_backend) override

@@ -333,6 +333,7 @@ public:
 	*B2 = B2_;
 	*vv = vv_;
 	*rsd = resid;
+	*w = w_;
     }
     void getMpiCollectiveBackend(int *allreduce_backend, int *bcast_backend) override
     {

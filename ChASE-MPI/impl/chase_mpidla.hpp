@@ -311,8 +311,6 @@ public:
 	v0_ = new T[m_];
 	v1_ = new T[m_];
 	v2_ = new T[m_];
-	w_ = new T[n_];
-	T *ww;
 	mpi_wrapper_ = matrix_properties->get_mpi_wrapper();
 	cuda_aware_ = dla_->isCudaAware(); 
         dla_->getMpiWorkSpace(&C, &B, &A, &C2, &B2, &vv, &rsd, &ww);
@@ -337,7 +335,6 @@ public:
         delete [] v0_;
         delete [] v1_;
         delete [] v2_;
-	delete [] w_;
     }
 
     //! In ChaseMpiDLA, this function consists of operations
@@ -768,7 +765,7 @@ public:
           - `ChaseMpiDLA::apply(One, Zero, 0, 1, 0)`
           - `ChaseMpiDLA::postApplication(C, 1, 0)`
     */
-    void applyVec(T* v, T* w) override
+    void applyVec(T* v, T* v2) override
     {
 #ifdef USE_NSIGHT
         nvtxRangePushA("ChaseMpiDLA: applyVec");
@@ -776,10 +773,11 @@ public:
         T One = T(1.0);
         T Zero = T(0.0);
 
-        dla_->applyVec(v, w);
-        MPI_Allreduce(MPI_IN_PLACE, w, n_,
+        dla_->applyVec(v, ww);
+        MPI_Allreduce(MPI_IN_PLACE, ww, n_,
                       getMPI_Type<T>(), MPI_SUM, col_comm_);
 
+	this->B2C(ww, 0, v2, 0, 1);
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
@@ -1569,7 +1567,6 @@ public:
 #ifdef USE_NSIGHT
         nvtxRangePushA("Lanczos: loop");
 #endif
-        //Base<T> real_alpha = t_norm_p2(m_, v1_);
         Base<T> real_alpha = t_nrm2(m_, v1_, 1);
 	real_alpha = std::pow(real_alpha,2);
 	MPI_Allreduce(MPI_IN_PLACE, &real_alpha, 1, getMPI_Type<Base<T>>(),
@@ -1580,11 +1577,9 @@ public:
         for (std::size_t k = 0; k < M; k = k + 1)
         {
     	    if(idx >= 0){
-		//std::memcpy(C_ + k * m_, v1_, m_ * sizeof(T) );
 	    	Memcpy(memcpy_mode[2], C + k * m_, v1_, m_ * sizeof(T));
 	    }
-            this->applyVec(v1_, w_);
-            this->B2C(w_, 0, v2_, 0, 1);
+            this->applyVec(v1_, v2_);
             alpha = t_dot(m_, v1_, 1, v2_, 1);
             MPI_Allreduce(MPI_IN_PLACE, &alpha, 1, getMPI_Type<T>(),
                           MPI_SUM, col_comm_);
@@ -1826,7 +1821,7 @@ private:
 #endif
     Comm_t mpi_wrapper_;
     bool cuda_aware_;
-    T *C, *B, *A, *C2, *B2, *vv;
+    T *C, *B, *A, *C2, *B2, *vv, *ww;
     Base<T> *rsd;
     int allreduce_backend, bcast_backend;
     int memcpy_mode[3];
