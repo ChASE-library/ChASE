@@ -66,7 +66,6 @@ public:
     
 	vv_ = new T[m_];
 	w_ = new T[n_];
-	ww_ = new T[n_];
     }
 
     ~ChaseMpiDLABlaslapack() 
@@ -334,7 +333,6 @@ public:
 	*B2 = B2_;
 	*vv = vv_;
 	*rsd = resid;
-	*w = ww_;
     }
     void getMpiCollectiveBackend(int *allreduce_backend, int *bcast_backend) override
     {
@@ -417,7 +415,6 @@ private:
 
     T *vv_;
 
-    T *ww_;
     Base<T> *resid;
     std::size_t* off_;      //!< identical to ChaseMpiProperties::off_
     std::size_t* r_offs_;   //!< identical to ChaseMpiProperties::r_offs_
