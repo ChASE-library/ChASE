@@ -137,7 +137,7 @@ if(CMAKE_CUDA_COMPILER)
       set(ENABLE_NSIGHT OFF CACHE BOOL "" FORCE)
     endif()
   endif()	  
-  add_library( chase_cuda "kernels/kernels.cu" )
+  add_library( chase_cuda "kernels/shift.cu" )
 
   set_target_properties( chase_cuda 
 	  		 PROPERTIES

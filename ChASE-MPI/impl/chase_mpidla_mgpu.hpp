@@ -427,12 +427,9 @@ public:
     //! to GPU
     void initVecs() override
     {
-#if defined(CUDA_AWARE)
-    	cuda_exec(cudaMemcpy(d_C2_, d_C_, m_ * (nev_ + nex_) * sizeof(T),
+        cuda_exec(cudaMemcpy(d_C2_, d_C_, m_ * (nev_ + nex_) * sizeof(T),
                              cudaMemcpyDeviceToDevice));
-#else
-        t_lacpy('A', m_, nev_ + nex_, C_, m_, C2_, m_);
-#endif	
+
         cublas_status_ = cublasSetMatrix(m_, n_, sizeof(T), H_, ldh_, d_H_, m_);
         assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
         next_ = NextOp::bAc;
@@ -451,10 +448,6 @@ public:
 
         chase_rand_normal(seed, states_, d_C_, m_ * (nev_ + nex_),
                           (cudaStream_t)0);
-#if !defined(CUDA_AWARE)
-        cuda_exec(cudaMemcpy(C_, d_C_, m_ * (nev_ + nex_) * sizeof(T),
-                             cudaMemcpyDeviceToHost));
-#endif	
     }
 
     //! - This function set initially the operation for apply() in filter
@@ -599,10 +592,8 @@ public:
     void Start() override {}
     void End() override 
     {
-#if defined(CUDA_AWARE)	    
         cuda_exec(cudaMemcpy(C_, d_C_, m_ * (nev_) * sizeof(T),
                              cudaMemcpyDeviceToHost));	
-#endif
     }
 
     //! It is an interface to BLAS `?axpy`.
