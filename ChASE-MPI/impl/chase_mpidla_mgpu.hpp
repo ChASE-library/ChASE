@@ -374,13 +374,10 @@ public:
         cuda_exec(cudaStreamCreate(&stream2_));
 #if defined(CUDA_AWARE)
 	cudaMalloc((void**)&(vv_), m_ * sizeof(T));
-        cudaMalloc((void**)&(ww_), n_ * sizeof(T));
 #else
 	vv_ = new T[m_];
-        ww_ = new T[n_];
 #endif
-	w_ = new T[n_];
-	//ww_ = new T[n_];	
+	w_ = new T[n_];	
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
@@ -580,13 +577,17 @@ public:
         T beta = T(0.0);
 	    
         cuda_exec(cudaMemcpy(d_v_, v, m_ * sizeof(T), cudaMemcpyHostToDevice));
+	std::size_t k = 1;
+	//cublas_status_ = cublasTgemm(
+        //    cublasH_, CUBLAS_OP_C, CUBLAS_OP_N, n_, k, m_, &alpha, d_H_, m_,
+        //    d_v_, m_, &beta, d_w_, n_);
         cublas_status_ = cublasTgemv(
             cublasH_, CUBLAS_OP_C, m_, n_, &alpha, d_H_, m_,
             d_v_, 1, &beta, d_w_, 1);
 	assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
-#if !defined(CUDA_AWARE)
+
         cuda_exec(cudaMemcpy(w, d_w_, n_ * sizeof(T), cudaMemcpyDeviceToHost));
-#endif	
+
     }
     int get_nprocs() const override { return matrix_properties_->get_nprocs(); }
     void Start() override {}
@@ -850,7 +851,6 @@ public:
 	*B2 = d_B2_;
 	*vv = vv_;
 	*rsd = d_resids_;
-	*w = d_w_;
 #else	    
         *C = C_;
         *B = B_;  
@@ -859,7 +859,6 @@ public:
 	*B2 = B2_;	
 	*vv = vv_;
 	*rsd = resid;
-	*w = ww_;
 #endif
     }
     void getMpiCollectiveBackend(int *allreduce_backend, int *bcast_backend) override
@@ -1040,7 +1039,6 @@ private:
     T *d_v_;
     T *d_w_;
     T *w_;
-    T *ww_;
     Base<T> *resid;
     Base<T> *d_resids_ = NULL;
     T *vv_;
