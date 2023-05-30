@@ -93,28 +93,12 @@ public:
       @param V2: a pointer to the buffer `V2_`.
       @param resid: a pointer to the buffer `resid_`.
     */
-    ChaseMpiMatrices(std::size_t N, std::size_t max_block, T *H, std::size_t ldh, 
-                     T* V1, Base<T>* ritzv, T* V2 = nullptr,
+    ChaseMpiMatrices(std::size_t N, std::size_t max_block, T* H,
+                     std::size_t ldh, T* V1, Base<T>* ritzv, T* V2 = nullptr,
                      Base<T>* resid = nullptr)
         // if value is null then allocate otherwise don't
-        : H__(nullptr),
-          V1__(V1 == nullptr ? new T[N * max_block] : nullptr),
+        : H__(nullptr), V1__(V1 == nullptr ? new T[N * max_block] : nullptr),
           V2__(V2 == nullptr ? new T[N * max_block] : nullptr),
-          ritzv__(ritzv == nullptr ? new Base<T>[max_block] : nullptr),
-          resid__(resid == nullptr ? new Base<T>[max_block] : nullptr), 
-          ldh_(ldh),
-          // if value is null we take allocated
-          H_(H),
-          V1_(V1 == nullptr ? V1__.get() : V1),
-          V2_(V2 == nullptr ? V2__.get() : V2),
-          ritzv_(ritzv == nullptr ? ritzv__.get() : ritzv),
-          resid_(resid == nullptr ? resid__.get() : resid)
-    {
-    }    
-
-/*
-        : H__(nullptr), V1__(V1 == nullptr ? new T[m * max_block] : nullptr),
-          V2__(V2 == nullptr ? new T[n * max_block] : nullptr),
           ritzv__(ritzv == nullptr ? new Base<T>[max_block] : nullptr),
           resid__(resid == nullptr ? new Base<T>[max_block] : nullptr),
           ldh_(ldh),
@@ -123,8 +107,22 @@ public:
           V2_(V2 == nullptr ? V2__.get() : V2),
           ritzv_(ritzv == nullptr ? ritzv__.get() : ritzv),
           resid_(resid == nullptr ? resid__.get() : resid)
+    {
+    }
 
-*/
+    /*
+            : H__(nullptr), V1__(V1 == nullptr ? new T[m * max_block] :
+       nullptr), V2__(V2 == nullptr ? new T[n * max_block] : nullptr),
+              ritzv__(ritzv == nullptr ? new Base<T>[max_block] : nullptr),
+              resid__(resid == nullptr ? new Base<T>[max_block] : nullptr),
+              ldh_(ldh),
+              // if value is null we take allocated
+              H_(H), V1_(V1 == nullptr ? V1__.get() : V1),
+              V2_(V2 == nullptr ? V2__.get() : V2),
+              ritzv_(ritzv == nullptr ? ritzv__.get() : ritzv),
+              resid_(resid == nullptr ? resid__.get() : resid)
+
+    */
     // MPI case: we allocate H here
     //! A constructor of ChaseMpiMatrices for **MPI case** which allocates
     //! everything necessary except `H_`.

@@ -36,8 +36,9 @@
 //! generated numbers
 //! @param[in] stream_ an asynchronous CUDA stream which allows to run this
 //! function asynchronously
-void chase_rand_normal(unsigned long long seed, curandStatePhilox4_32_10_t* states, float* v,
-                       int n, cudaStream_t stream_);
+void chase_rand_normal(unsigned long long seed,
+                       curandStatePhilox4_32_10_t* states, float* v, int n,
+                       cudaStream_t stream_);
 //! generate `n` random double numbers in normal distribution on each GPU
 //! device.
 //!
@@ -47,8 +48,9 @@ void chase_rand_normal(unsigned long long seed, curandStatePhilox4_32_10_t* stat
 //! generated numbers
 //! @param[in] stream_ an asynchronous CUDA stream which allows to run this
 //! function asynchronously
-void chase_rand_normal(unsigned long long seed, curandStatePhilox4_32_10_t* states, double* v,
-                       int n, cudaStream_t stream_);
+void chase_rand_normal(unsigned long long seed,
+                       curandStatePhilox4_32_10_t* states, double* v, int n,
+                       cudaStream_t stream_);
 //! generate `n` random complex float numbers in normal distribution on each GPU
 //! device. The real part and the imaginary part of each individual random
 //! number are the same.
@@ -59,7 +61,8 @@ void chase_rand_normal(unsigned long long seed, curandStatePhilox4_32_10_t* stat
 //! generated numbers
 //! @param[in] stream_ an asynchronous CUDA stream which allows to run this
 //! function asynchronously
-void chase_rand_normal(unsigned long long seed, curandStatePhilox4_32_10_t* states,
+void chase_rand_normal(unsigned long long seed,
+                       curandStatePhilox4_32_10_t* states,
                        std::complex<float>* v, int n, cudaStream_t stream_);
 //! generate `n` random complex double numbers in normal distribution on each
 //! GPU device. The real part and the imaginary part of each individual random
@@ -71,9 +74,9 @@ void chase_rand_normal(unsigned long long seed, curandStatePhilox4_32_10_t* stat
 //! generated numbers
 //! @param[in] stream_ an asynchronous CUDA stream which allows to run this
 //! function asynchronously
-void chase_rand_normal(unsigned long long seed, curandStatePhilox4_32_10_t* states,
+void chase_rand_normal(unsigned long long seed,
+                       curandStatePhilox4_32_10_t* states,
                        std::complex<double>* v, int n, cudaStream_t stream_);
-
 
 //! shift the diagonal of a `nxn` square matrix `A` in float real data type on a
 //! single GPU.
@@ -165,8 +168,8 @@ public:
             cudaMalloc((void**)&d_resids_, sizeof(Base<T>) * (nev_ + nex_)));
 
         cusolverDnSetStream(cusolverH_, stream_);
-        cuda_exec(
-            cudaMalloc((void**)&states_, sizeof(curandStatePhilox4_32_10_t) * (256 * 32)));
+        cuda_exec(cudaMalloc((void**)&states_,
+                             sizeof(curandStatePhilox4_32_10_t) * (256 * 32)));
 
         cuda_exec(cudaMalloc((void**)&devInfo_, sizeof(int)));
         cuda_exec(cudaMalloc((void**)&d_return_, sizeof(T) * max_block_));
@@ -234,19 +237,18 @@ public:
             cudaFree(v1_);
         if (w_)
             cudaFree(w_);
-        if(states_)
+        if (states_)
             cudaFree(states_);
-
     }
     void initVecs() override
     {
-	cuda_exec(cudaMemcpy(d_V2_, d_V1_, (nev_ + nex_) * N_ * sizeof(T),
+        cuda_exec(cudaMemcpy(d_V2_, d_V1_, (nev_ + nex_) * N_ * sizeof(T),
                              cudaMemcpyDeviceToDevice));
-        cublasSetMatrix(N_, N_, sizeof(T), H_, ldh_, d_H_, N_);    
+        cublasSetMatrix(N_, N_, sizeof(T), H_, ldh_, d_H_, N_);
     }
     void initRndVecs() override
     {
-	unsigned long long seed = 24141;
+        unsigned long long seed = 24141;
         chase_rand_normal(seed, states_, d_V1_, N_ * (nev_ + nex_),
                           (cudaStream_t)0);
     }
@@ -460,27 +462,29 @@ public:
         cuda_exec(cudaMemcpy(d_V1_, d_V2_, m * N_ * sizeof(T),
                              cudaMemcpyDeviceToDevice));
     }
-    void Lanczos(std::size_t M, int idx, Base<T>* d, Base<T>* e, Base<T> *r_beta) override
+    void Lanczos(std::size_t M, int idx, Base<T>* d, Base<T>* e,
+                 Base<T>* r_beta) override
     {
-    	Base<T> real_beta;
+        Base<T> real_beta;
 
         T alpha = T(1.0);
         T beta = T(0.0);
 
-       	cudaMemset(v0_, 0, sizeof(T) * N_);
+        cudaMemset(v0_, 0, sizeof(T) * N_);
 
 #ifdef USE_NSIGHT
         nvtxRangePushA("Lanczos Init Vec");
 #endif
-        if(idx >= 0)
+        if (idx >= 0)
         {
-	    cuda_exec(cudaMemcpy(v1_, d_V2_ + idx * N_, 
-                      N_ * sizeof(T), cudaMemcpyDeviceToDevice));
-	}else
+            cuda_exec(cudaMemcpy(v1_, d_V2_ + idx * N_, N_ * sizeof(T),
+                                 cudaMemcpyDeviceToDevice));
+        }
+        else
         {
-	    unsigned long long seed = 2342;
+            unsigned long long seed = 2342;
             chase_rand_normal(seed, states_, v1_, N_, (cudaStream_t)0);
-	}
+        }
 
 #ifdef USE_NSIGHT
         nvtxRangePop();
@@ -494,10 +498,11 @@ public:
         this->scal(N_, &alpha, v1_, 1);
         for (std::size_t k = 0; k < M; k = k + 1)
         {
-            if(idx >= 0){
-                cuda_exec(cudaMemcpy(d_V1_ + k * N_, v1_,
-                             N_ * sizeof(T), cudaMemcpyDeviceToDevice));
-	    }
+            if (idx >= 0)
+            {
+                cuda_exec(cudaMemcpy(d_V1_ + k * N_, v1_, N_ * sizeof(T),
+                                     cudaMemcpyDeviceToDevice));
+            }
             this->applyVec(v1_, w_);
             alpha = this->dot(N_, v1_, 1, w_, 1);
             alpha = -alpha;
@@ -528,40 +533,12 @@ public:
         nvtxRangePop();
 #endif
         *r_beta = real_beta;
-
     }
 
-    void B2C(T* B, std::size_t off1, T* C, std::size_t off2, std::size_t block) override
-    {}
-
-    void getMpiWorkSpace(T **C, T **B, T **A, T **C2, T **B2, T **vv,  Base<T> **rsd, T **w) override    	    
-    {}
-
-    void getMpiCollectiveBackend(int *allreduce_backend, int *bcast_backend) override
-    {}
-
-    bool isCudaAware()
+    void B2C(T* B, std::size_t off1, T* C, std::size_t off2,
+             std::size_t block) override
     {
-        return false;
     }
-    void lacpy(char uplo, std::size_t m, std::size_t n,
-             T* a, std::size_t lda, T* b, std::size_t ldb) override
-    {}
-
-    void shiftMatrixForQR(T *A, std::size_t n, T shift) override
-    {}
-
-    void retrieveC(T **C, std::size_t locked, std::size_t block, bool copy) override
-    {}
-
-    void retrieveB(T **B, std::size_t locked, std::size_t block, bool copy) override
-    {}
-
-    void retrieveResid(Base<T> **rsd, std::size_t locked, std::size_t block) override
-    {}
-
-    void putC(T *C, std::size_t locked, std::size_t block) override
-    {}
 
 private:
     std::size_t N_;      //!< global dimension of the symmetric/Hermtian matrix
@@ -588,15 +565,15 @@ private:
     T* d_H_;  //!< a pointer to a local buffer of size `N_*N_` on GPU, which is
               //!< mapped to `H_`.
     T* H_;    //!< a pointer to the Symmetric/Hermtian matrix
-    std::size_t ldh_; //!< leading dimension of Hermitian matrix    
-    T* V1_;   //!< a matrix of size `N_*(nev_+nex_)`
-    T* V2_;   //!< a matrix of size `N_*(nev_+nex_)`
-    T* v0_;   //!< a vector of size `N_`, which is allocated in this class for
-              //!< Lanczos
-    T* v1_;   //!< a vector of size `N_`, which is allocated in this class for
-              //!< Lanczos
-    T* w_;    //!< a vector of size `N_`, which is allocated in this class for
-              //!< Lanczos
+    std::size_t ldh_; //!< leading dimension of Hermitian matrix
+    T* V1_;           //!< a matrix of size `N_*(nev_+nex_)`
+    T* V2_;           //!< a matrix of size `N_*(nev_+nex_)`
+    T* v0_; //!< a vector of size `N_`, which is allocated in this class for
+            //!< Lanczos
+    T* v1_; //!< a vector of size `N_`, which is allocated in this class for
+            //!< Lanczos
+    T* w_;  //!< a vector of size `N_`, which is allocated in this class for
+            //!< Lanczos
     Base<T>* d_ritz_ =
         NULL; //!< a pointer to a local buffer of size `nev_+nex_` on GPU for
               //!< storing computed ritz values
@@ -613,7 +590,7 @@ private:
     cusolverDnHandle_t cusolverH_; //!< `cuSOLVER` handle
     bool copied_; //!< a flag indicates if the matrix has already been copied to
                   //!< device
-    curandStatePhilox4_32_10_t *states_ = NULL;
+    curandStatePhilox4_32_10_t* states_ = NULL;
 };
 
 template <typename T>

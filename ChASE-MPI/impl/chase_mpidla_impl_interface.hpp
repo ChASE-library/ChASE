@@ -11,57 +11,19 @@
 #include <tuple>
 
 #include "algorithm/types.hpp"
-#include "chase_mpi_properties.hpp"
 
 namespace chase
 {
 namespace mpi
 {
 
-// Type Trait
-template <typename T>
-struct is_skewed_matrixfree
-{
-    static const bool value = false;
-};
-
-//! @brief A class to set up an interface to all the Dense Linear Algebra
-//! (`DLA`) operations required by ChASE.
-/*!
-    In the class ChaseMpiDLAInterface, the `DLA` functions are only setup as a
-   series of `virtual` functions without direct implementation. The
-   implementation of these `DLA` will be laterly implemented by a set of derived
-   classes targeting different computing architectures. Currently, in `ChASE`,
-   we provide multiple derived classes
-   - chase::mpi::ChaseMpiDLABlaslapackSeq: implementing ChASE targeting
-   shared-memory architectures with only CPUs available.
-   - chase::mpi::ChaseMpiDLABlaslapackSeqInplace: implementing ChASE targeting
-   shared-memory architectures with only CPUs available, with a inplace mode,
-   in which the buffer of rectangular matrices are swapped and reused. This
-   reduces the required memory to be allocted.
-   - chase::mpi::ChaseMpiDLACudaSeq: implementing ChASE targeting shared-memory
-   architectures, most computation tasks are offloaded to one single GPU card.
-   - chase::mpi::ChaseMpiDLA: implementing mostly the MPI collective
-   communications part of distributed-memory ChASE targeting the systems with or
-   w/o GPUs.
-   - chase::mpi::ChaseMpiDLABlaslapack: implementing the inter-node computation
-   for a pure-CPU MPI-based implementation of ChASE.
-   - chase::mpi::ChaseMpiDLAMultiGPU: implementing the inter-node computation
-   for a multi-GPU MPI-based implementation of ChASE.
-
-
-    @tparam T: the scalar type used for the application. ChASE is templated
-    for real and complex numbers with both Single Precision and Double
-   Precision, thus `T` can be one of `float`, `double`, `std::complex<float>`
-   and `std::complex<double>`.
- */
 template <class T>
-class ChaseMpiDLAInterface
+class ChaseMpiDLAImplInterface
 {
 public:
     typedef T value_type;
 
-    virtual ~ChaseMpiDLAInterface(){};
+    virtual ~ChaseMpiDLAImplInterface(){};
 
     /*!
       This function shifts the diagonal of global matrix with a constant value
@@ -130,14 +92,6 @@ public:
     virtual void asynCxHGatherC(std::size_t locked, std::size_t block,
                                 bool isCcopied = false) = 0;
 
-    //! Swap the columns indexing `i` and `j` in a rectangular matrix
-    //! The operated matrices maybe different in different implementations
-    /*!
-     *  @param i: index of one column to be swapped
-     *  @param j: index of another column to be swapped
-     *
-     */
-    virtual void Swap(std::size_t i, std::size_t j) = 0;
     //! Copy from buffer rectangular matrix `v1` to `v2`.
     //! For the implementation of distributed-memory ChASE, this operation
     //! performs a `copy` from a matrix distributed within each column
@@ -161,10 +115,6 @@ public:
        @param C: the vector to store the product of `H` and `B`.
     */
     virtual void applyVec(T* B, T* C) = 0;
-    // Returns ptr to H, which may be used to populate H.
-    //! Return the total number of MPI procs within the working MPI
-    //! communicator.
-    virtual int get_nprocs() const = 0;
     //! Starting point of solving an eigenproblem
     virtual void Start() = 0;
     //! Ending point of solving an eigenproblem
@@ -323,27 +273,24 @@ public:
     virtual void Resd(Base<T>* ritzv, Base<T>* resid, std::size_t locked,
                       std::size_t unconverged) = 0;
 
-    //! Househoulder QR factorization on the rectangular matrix `V1`.
-    //! It can be geqrf from
-    //!     - `LAPACK` ,
-    //!     - `ScaLAPACK`,
-    //!     - `cuSolver`,
-    //!
-    //! which depends on
-    //! the implementation and targeting architectures.
-    //!  @param locked: number of converged eigenvectors.
-    virtual void hhQR(std::size_t locked) = 0;
-    //! Cholesky QR factorization on the rectangular matrix `V1`.
-    //!  @param locked: number of converged eigenvectors.
-    virtual void cholQR(std::size_t locked, Base<T> cond) = 0;
     //! Lanczos DOS to estimate the \mu_{nev+nex} for ChASE
     virtual void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc) = 0;
 
-    virtual void Lanczos(std::size_t M, int idx, Base<T>* d, Base<T>* e,
-                         Base<T>* r_beta) = 0;
-
-    virtual void B2C(T* B, std::size_t off1, T* C, std::size_t off2,
-                     std::size_t block) = 0;
+    virtual void getMpiWorkSpace(T** C, T** B, T** A, T** C2, T** B2, T** vv,
+                                 Base<T>** rsd, T** w) = 0;
+    virtual void getMpiCollectiveBackend(int* allreduce_backend,
+                                         int* bcast_backend) = 0;
+    virtual bool isCudaAware() = 0;
+    virtual void lacpy(char uplo, std::size_t m, std::size_t n, T* a,
+                       std::size_t lda, T* b, std::size_t ldb) = 0;
+    virtual void shiftMatrixForQR(T* A, std::size_t n, T shift) = 0;
+    virtual void retrieveC(T** C, std::size_t locked, std::size_t block,
+                           bool copy) = 0;
+    virtual void retrieveB(T** B, std::size_t locked, std::size_t block,
+                           bool copy) = 0;
+    virtual void retrieveResid(Base<T>** rsd, std::size_t locked,
+                               std::size_t block) = 0;
+    virtual void putC(T* C, std::size_t locked, std::size_t block) = 0;
 };
 } // namespace mpi
 } // namespace chase

@@ -9,6 +9,7 @@
 
 #include "ChASE-MPI/chase_mpi_properties.hpp"
 #include "ChASE-MPI/chase_mpidla_interface.hpp"
+#include "ChASE-MPI/impl/chase_mpidla_impl_interface.hpp"
 #include <iterator>
 #include <map>
 #include <mpi.h>
@@ -25,7 +26,7 @@ namespace mpi
    ChaseMpiDLAMultiGPU. It supports both `Block Distribution` and `Block-Cyclic
    Distribution` schemes.
 */
-template <class T>
+template <template <typename> class MF, class T>
 class ChaseMpiDLA : public ChaseMpiDLAInterface<T>
 {
 public:
@@ -40,8 +41,8 @@ public:
       one of ChaseMpiDLABlaslapack and ChaseMpiDLAMultiGPU.
     */
     ChaseMpiDLA(ChaseMpiProperties<T>* matrix_properties,
-                ChaseMpiMatrices<T>& matrices, ChaseMpiDLAInterface<T>* dla)
-        : dla_(dla)
+                ChaseMpiMatrices<T>& matrices)
+        : dla_(new MF<T>(matrix_properties, matrices))
     {
 #ifdef USE_NSIGHT
         nvtxRangePushA("ChaseMpiDLA: Init");
@@ -52,11 +53,6 @@ public:
         N_ = matrix_properties->get_N();
         n_ = matrix_properties->get_n();
         m_ = matrix_properties->get_m();
-        //B_ = matrices.get_V2();
-//        C_ = matrices.get_V1();
-//        C2_ = matrix_properties->get_C2();
-        //B2_ = matrix_properties->get_B2();
-        //A_ = matrix_properties->get_A();
 #if !defined(HAS_SCALAPACK)
         V_ = matrix_properties->get_V();
 #endif
@@ -272,7 +268,7 @@ public:
                 }
             }
             b_lens.push_back(b_len);
-        }   
+        }
 
         reqsb2c_.resize(b_lens.size());
         b_sends_.resize(b_lens.size());
@@ -308,33 +304,34 @@ public:
             }
         }
 
-	v0_ = new T[m_];
-	v1_ = new T[m_];
-	v2_ = new T[m_];
-	mpi_wrapper_ = matrix_properties->get_mpi_wrapper();
-	cuda_aware_ = dla_->isCudaAware(); 
+        v0_ = new T[m_];
+        v1_ = new T[m_];
+        v2_ = new T[m_];
+        mpi_wrapper_ = matrix_properties->get_mpi_wrapper();
+        cuda_aware_ = dla_->isCudaAware();
         dla_->getMpiWorkSpace(&C, &B, &A, &C2, &B2, &vv, &rsd, &ww);
         dla_->getMpiCollectiveBackend(&allreduce_backend, &bcast_backend);
-        if(cuda_aware_)
-	{
-	    memcpy_mode[0] = CPY_D2D;	
-	    memcpy_mode[1] = CPY_D2H;
-	    memcpy_mode[2] = CPY_H2D;
-	}
-	else
-	{
-	    memcpy_mode[0] = CPY_H2H;
-	    memcpy_mode[1] = CPY_H2H;
-	    memcpy_mode[2] = CPY_H2H;
-	}	
+        if (cuda_aware_)
+        {
+            memcpy_mode[0] = CPY_D2D;
+            memcpy_mode[1] = CPY_D2H;
+            memcpy_mode[2] = CPY_H2D;
+        }
+        else
+        {
+            memcpy_mode[0] = CPY_H2H;
+            memcpy_mode[1] = CPY_H2H;
+            memcpy_mode[2] = CPY_H2H;
+        }
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
     }
-    ~ChaseMpiDLA() {
-        delete [] v0_;
-        delete [] v1_;
-        delete [] v2_;
+    ~ChaseMpiDLA()
+    {
+        delete[] v0_;
+        delete[] v1_;
+        delete[] v2_;
     }
 
     //! In ChaseMpiDLA, this function consists of operations
@@ -403,14 +400,18 @@ public:
         next_ = NextOp::bAc;
         locked_ = locked;
 
-	T *C_host;
-	dla_->retrieveC(&C_host, locked, block, false);
-    	for (auto j = 0; j < block; j++){
-   	    for(auto i = 0; i < mblocks_; i++){
-	        std::memcpy(C_host + j * m_ + r_offs_l_[i] + locked * m_, V + j * N_ + locked * N_ + r_offs_[i], r_lens_[i] * sizeof(T));
-	    }   
+        T* C_host;
+        dla_->retrieveC(&C_host, locked, block, false);
+        for (auto j = 0; j < block; j++)
+        {
+            for (auto i = 0; i < mblocks_; i++)
+            {
+                std::memcpy(C_host + j * m_ + r_offs_l_[i] + locked * m_,
+                            V + j * N_ + locked * N_ + r_offs_[i],
+                            r_lens_[i] * sizeof(T));
+            }
         }
-	
+
         dla_->preApplication(V, locked, block);
 #ifdef USE_NSIGHT
         nvtxRangePop();
@@ -460,8 +461,8 @@ public:
             nvtxRangePop();
             nvtxRangePushA("ChaseMpiDLA: allreduce");
 #endif
-	    AllReduce(allreduce_backend, B + locked * n_ + offset * n_, dim, 
-			    getMPI_Type<T>(), MPI_SUM, col_comm_, mpi_wrapper_);
+            AllReduce(allreduce_backend, B + locked * n_ + offset * n_, dim,
+                      getMPI_Type<T>(), MPI_SUM, col_comm_, mpi_wrapper_);
 #ifdef USE_NSIGHT
             nvtxRangePop();
 #endif
@@ -479,8 +480,8 @@ public:
             nvtxRangePop();
             nvtxRangePushA("ChaseMpiDLA: allreduce");
 #endif
-	    AllReduce(allreduce_backend, C + locked * m_ + offset * m_, dim,
-			    getMPI_Type<T>(), MPI_SUM, row_comm_, mpi_wrapper_);
+            AllReduce(allreduce_backend, C + locked * m_ + offset * m_, dim,
+                      getMPI_Type<T>(), MPI_SUM, row_comm_, mpi_wrapper_);
 #ifdef USE_NSIGHT
             nvtxRangePop();
 #endif
@@ -610,7 +611,7 @@ public:
 
         if (next_ == NextOp::bAc)
         {
-            T *C_host;
+            T* C_host;
             dla_->retrieveC(&C_host, locked, block, true);
 
             buff = C_host + locked * m_;
@@ -618,8 +619,8 @@ public:
         }
         else
         {
-            T *B_host;
-            dla_->retrieveB(&B_host, locked, block, true);		
+            T* B_host;
+            dla_->retrieveB(&B_host, locked, block, true);
             buff = B_host + locked * n_;
             dimsIdx = 1;
         }
@@ -665,44 +666,54 @@ public:
         nvtxRangePushA("ChaseMpiDLA: asynCxHGatherC");
 #endif
         std::size_t dim = n_ * block;
-	
-	if(isSameDist_ && cuda_aware_){
-	    for(auto i = 0; i < col_size_; i++){
-		if(row_rank_ == i){    
-	    	    if(col_rank_ == i){
-		        Bcast(bcast_backend, C2 + locked * m_, block * m_, getMPI_Type<T>(), i,
-                               col_comm_, mpi_wrapper_);
-		    }else{
-                        Bcast(bcast_backend, B2 + locked * n_, block * n_, getMPI_Type<T>(), i,
-                               col_comm_, mpi_wrapper_);		
-		    }
-		}
+
+        if (isSameDist_ && cuda_aware_)
+        {
+            for (auto i = 0; i < col_size_; i++)
+            {
+                if (row_rank_ == i)
+                {
+                    if (col_rank_ == i)
+                    {
+                        Bcast(bcast_backend, C2 + locked * m_, block * m_,
+                              getMPI_Type<T>(), i, col_comm_, mpi_wrapper_);
+                    }
+                    else
+                    {
+                        Bcast(bcast_backend, B2 + locked * n_, block * n_,
+                              getMPI_Type<T>(), i, col_comm_, mpi_wrapper_);
+                    }
+                }
             }
-	    for(auto i = 0; i < col_size_; i++){		    
-		if(row_rank_ == col_rank_){
-	            dla_->lacpy('A', m_, block, C2 + locked * m_,
-                        m_, B2 + locked * n_, n_);
-		}
-	    }
+            for (auto i = 0; i < col_size_; i++)
+            {
+                if (row_rank_ == col_rank_)
+                {
+                    dla_->lacpy('A', m_, block, C2 + locked * m_, m_,
+                                B2 + locked * n_, n_);
+                }
+            }
             dla_->asynCxHGatherC(locked, block, isCcopied);
             AllReduce(allreduce_backend, B + locked * n_, dim, getMPI_Type<T>(),
                       MPI_SUM, col_comm_, mpi_wrapper_);
-	}else{
+        }
+        else
+        {
             for (auto i = 0; i < c_lens.size(); i++)
             {
                 if (row_rank_ == c_dests[i])
                 {
-                   if (col_rank_ == c_srcs[i])
-                   {
-                       MPI_Ibcast(C2 + locked * m_, block, c_sends_[i], c_srcs[i],
-                               col_comm_, &reqsc2b_[i]);
-                   }
-                   else
-                   {
-                       MPI_Ibcast(B2 + locked * n_, block, b_recvs_[i], c_srcs[i],
-                               col_comm_, &reqsc2b_[i]);
-                   }
-               }
+                    if (col_rank_ == c_srcs[i])
+                    {
+                        MPI_Ibcast(C2 + locked * m_, block, c_sends_[i],
+                                   c_srcs[i], col_comm_, &reqsc2b_[i]);
+                    }
+                    else
+                    {
+                        MPI_Ibcast(B2 + locked * n_, block, b_recvs_[i],
+                                   c_srcs[i], col_comm_, &reqsc2b_[i]);
+                    }
+                }
             }
             dla_->asynCxHGatherC(locked, block, isCcopied);
             for (auto i = 0; i < c_lens.size(); i++)
@@ -712,18 +723,19 @@ public:
                     MPI_Wait(&reqsc2b_[i], MPI_STATUSES_IGNORE);
                 }
             }
-	    AllReduce(allreduce_backend, B + locked * n_, dim, getMPI_Type<T>(),
+            AllReduce(allreduce_backend, B + locked * n_, dim, getMPI_Type<T>(),
                       MPI_SUM, col_comm_, mpi_wrapper_);
 
             for (auto i = 0; i < c_lens.size(); i++)
             {
                 if (row_rank_ == c_dests[i] && col_rank_ == c_srcs[i])
                 {
-            	    dla_->lacpy('A', c_lens[i], block, C2 + locked * m_ + c_disps[i],
-                        m_, B2 + locked * n_ + b_disps[i], n_);
-	        }
+                    dla_->lacpy('A', c_lens[i], block,
+                                C2 + locked * m_ + c_disps[i], m_,
+                                B2 + locked * n_ + b_disps[i], n_);
+                }
             }
-	}
+        }
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
@@ -774,10 +786,10 @@ public:
         T Zero = T(0.0);
 
         dla_->applyVec(v, ww);
-        MPI_Allreduce(MPI_IN_PLACE, ww, n_,
-                      getMPI_Type<T>(), MPI_SUM, col_comm_);
+        MPI_Allreduce(MPI_IN_PLACE, ww, n_, getMPI_Type<T>(), MPI_SUM,
+                      col_comm_);
 
-	this->B2C(ww, 0, v2, 0, 1);
+        this->B2C(ww, 0, v2, 0, 1);
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
@@ -857,7 +869,7 @@ public:
         nvtxRangePushA("allreduce");
 #endif
         AllReduce(allreduce_backend, A, (nev_ + nex_) * block, getMPI_Type<T>(),
-                      MPI_SUM, row_comm_, mpi_wrapper_);
+                  MPI_SUM, row_comm_, mpi_wrapper_);
 
 #ifdef USE_NSIGHT
         nvtxRangePop();
@@ -869,7 +881,7 @@ public:
         nvtxRangePushA("memcpy");
 #endif
         Memcpy(memcpy_mode[0], C2 + locked * m_, C + locked * m_,
-                    m_ * block * sizeof(T));
+               m_ * block * sizeof(T));
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
@@ -892,16 +904,17 @@ public:
         nvtxRangePop();
         nvtxRangePushA("allreduce");
 #endif
-        //MPI_Allreduce(MPI_IN_PLACE, resid, unconverged, getMPI_Type<Base<T>>(),
+        // MPI_Allreduce(MPI_IN_PLACE, resid, unconverged,
+        // getMPI_Type<Base<T>>(),
         //              MPI_SUM, row_comm_);
-	AllReduce(allreduce_backend, rsd + locked, unconverged, getMPI_Type<Base<T>>(),
-                      MPI_SUM, row_comm_, mpi_wrapper_ );
-        Base<T> *resid_h;
-	dla_->retrieveResid(&resid_h, locked, unconverged);
+        AllReduce(allreduce_backend, rsd + locked, unconverged,
+                  getMPI_Type<Base<T>>(), MPI_SUM, row_comm_, mpi_wrapper_);
+        Base<T>* resid_h;
+        dla_->retrieveResid(&resid_h, locked, unconverged);
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
-	
+
         for (std::size_t i = 0; i < unconverged; ++i)
         {
             resid[i] = std::sqrt(resid_h[i]);
@@ -953,19 +966,19 @@ public:
 #ifdef USE_NSIGHT
         nvtxRangePushA("pgeqrf+pgqr");
 #endif
-	T *C_host;
-	dla_->retrieveC(&C_host, 0, nevex, true);
+        T* C_host;
+        dla_->retrieveC(&C_host, 0, nevex, true);
         t_pgeqrf(N_, nevex, C_host, one, one, desc1D_Nxnevx_, tau.get());
         t_pgqr(N_, nevex, nevex, C_host, one, one, desc1D_Nxnevx_, tau.get());
-	dla_->putC(C_host, 0, nevex);
+        dla_->putC(C_host, 0, nevex);
 #ifdef USE_NSIGHT
         nvtxRangePop();
         nvtxRangePushA("memcpy");
 #endif
         Memcpy(memcpy_mode[0], C, C2, locked * m_ * sizeof(T));
         Memcpy(memcpy_mode[0], C2 + locked * m_, C + locked * m_,
-                        (nevex - locked) * m_ * sizeof(T));
-	
+               (nevex - locked) * m_ * sizeof(T));
+
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
@@ -982,7 +995,7 @@ public:
         this->preApplication(V_, 0, nevex);
         Memcpy(memcpy_mode[0], C, C2, locked * m_ * sizeof(T));
         Memcpy(memcpy_mode[0], C2 + locked * m_, C + locked * m_,
-                        (nevex - locked) * m_ * sizeof(T));
+               (nevex - locked) * m_ * sizeof(T));
 #endif
         isHHqr = true;
 #ifdef USE_NSIGHT
@@ -1014,7 +1027,7 @@ public:
      ChaseMpiDLAMultiGPU::syherk, ChaseMpiDLAMultiGPU::potrf and
             ChaseMpiDLAMultiGPU::trsm, respectively
    */
-    
+
     void cholQR(std::size_t locked, Base<T> cond) override
     {
         int grank;
@@ -1023,27 +1036,35 @@ public:
         char* display_bounds_env;
         display_bounds_env = getenv("CHASE_DISPLAY_BOUNDS");
         int display_bounds = 0;
-        if(display_bounds_env){
+        if (display_bounds_env)
+        {
             display_bounds = std::atoi(display_bounds_env);
         }
-        if(display_bounds != 0){
-            std::vector<T> V2(N_ * (nev_+nex_));
-            T *C_host;
-	    dla_->retrieveC(&C_host, 0, nev_ + nex_, true);
-	    this->collecRedundantVecs(C_host, V2.data(), 0, nev_+nex_);
+        if (display_bounds != 0)
+        {
+            std::vector<T> V2(N_ * (nev_ + nex_));
+            T* C_host;
+            dla_->retrieveC(&C_host, 0, nev_ + nex_, true);
+            this->collecRedundantVecs(C_host, V2.data(), 0, nev_ + nex_);
             std::vector<Base<T>> S(nev_ + nex_ - locked);
-            T *U;
+            T* U;
             std::size_t ld = 1;
-            T *Vt ;
-            t_gesvd('N','N',N_, nev_ + nex_ - locked, V2.data() + N_ * locked, N_, S.data(), U, ld, Vt, ld);  
-            std::vector<Base<T>> norms(nev_+nex_-locked);
-            for(auto i = 0; i < nev_ + nex_-locked; i++){
+            T* Vt;
+            t_gesvd('N', 'N', N_, nev_ + nex_ - locked, V2.data() + N_ * locked,
+                    N_, S.data(), U, ld, Vt, ld);
+            std::vector<Base<T>> norms(nev_ + nex_ - locked);
+            for (auto i = 0; i < nev_ + nex_ - locked; i++)
+            {
                 norms[i] = std::sqrt(t_sqrt_norm(S[i]));
             }
-            std::sort(norms.begin(),norms.end());
-            if(grank == 0){
-                std::cout << "estimate: " << cond << ", rcond: " << norms[nev_+nex_-locked-1] / norms[0] 
-                          << ", ratio: " << cond * norms[0] / norms[nev_+nex_-locked-1] << std::endl;
+            std::sort(norms.begin(), norms.end());
+            if (grank == 0)
+            {
+                std::cout << "estimate: " << cond << ", rcond: "
+                          << norms[nev_ + nex_ - locked - 1] / norms[0]
+                          << ", ratio: "
+                          << cond * norms[0] / norms[nev_ + nex_ - locked - 1]
+                          << std::endl;
             }
         }
 
@@ -1075,12 +1096,12 @@ public:
             cond_threshold_2 = 1e1;
         }
 
-        char *chol1_threshold;
+        char* chol1_threshold;
         chol1_threshold = getenv("CHASE_CHOLQR1_THLD");
-        if(chol1_threshold)
+        if (chol1_threshold)
         {
             cond_threshold_2 = std::atof(chol1_threshold);
-        }    
+        }
         auto nevex = nev_ + nex_;
         bool first_iter = !cuda_aware_;
 
@@ -1097,21 +1118,22 @@ public:
         nvtxRangePushA("allreduce");
 #endif
         AllReduce(allreduce_backend, A, nevex * nevex, getMPI_Type<T>(),
-                      MPI_SUM, col_comm_, mpi_wrapper_);
+                  MPI_SUM, col_comm_, mpi_wrapper_);
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
-	//remove shifting temporily for faciliating the impl with cuda-aware
+        // remove shifting temporily for faciliating the impl with cuda-aware
 
-        if(cond > cond_threshold_1){
+        if (cond > cond_threshold_1)
+        {
             isShiftQR = true;
 #ifdef USE_NSIGHT
             nvtxRangePushA("ChaseMpiDLA: t_lange");
 #endif
-//            Base<T> nrmf = t_lange('F', m_, nevex, C_, m_);
-	    Base<T> nrmf = dla_->nrm2(m_ * nevex, C, 1);
-	    nrmf = std::pow(nrmf, 2);
-            //Base<T> nrmf = t_norm_p2(m_ * nevex, C_);
+            //            Base<T> nrmf = t_lange('F', m_, nevex, C_, m_);
+            Base<T> nrmf = dla_->nrm2(m_ * nevex, C, 1);
+            nrmf = std::pow(nrmf, 2);
+            // Base<T> nrmf = t_norm_p2(m_ * nevex, C_);
 #ifdef USE_NSIGHT
             nvtxRangePop();
             nvtxRangePushA("allreduce");
@@ -1121,29 +1143,32 @@ public:
             shift = 11 * (N_ * nevex + nevex * nevex + nevex) *
                     std::numeric_limits<Base<T>>::epsilon() * nrmf;
 
-            if(shift < 10){
+            if (shift < 10)
+            {
 #ifdef USE_NSIGHT
                 nvtxRangePop();
                 nvtxRangePushA("ChaseMpiDLA: shift in QR");
 #endif
-		dla_->shiftMatrixForQR(A, nevex, (T)shift);
+                dla_->shiftMatrixForQR(A, nevex, (T)shift);
 #ifdef USE_NSIGHT
                 nvtxRangePop();
 #endif
-            } else
+            }
+            else
             {
                 info = -1;
             }
         }
 
-        if(info != -1){
+        if (info != -1)
+        {
 #ifdef USE_NSIGHT
-                nvtxRangePushA("ChaseMpiDLA: potrf");
+            nvtxRangePushA("ChaseMpiDLA: potrf");
 #endif
-                info = dla_->potrf('U', nevex, A, nevex);
+            info = dla_->potrf('U', nevex, A, nevex);
 #ifdef USE_NSIGHT
-                nvtxRangePop();
-#endif    
+            nvtxRangePop();
+#endif
         }
 
         if (info == 0)
@@ -1201,14 +1226,14 @@ public:
 #ifdef USE_NSIGHT
                 nvtxRangePushA("ChaseMpiDLA: syherk");
 #endif
-                dla_->syherk('U', 'C', nevex, m_, &one, C, m_, &zero, A,
-                             nevex, false);
+                dla_->syherk('U', 'C', nevex, m_, &one, C, m_, &zero, A, nevex,
+                             false);
 #ifdef USE_NSIGHT
                 nvtxRangePop();
                 nvtxRangePushA("allreduce");
 #endif
                 AllReduce(allreduce_backend, A, nevex * nevex, getMPI_Type<T>(),
-                              MPI_SUM, col_comm_, mpi_wrapper_);
+                          MPI_SUM, col_comm_, mpi_wrapper_);
 #ifdef USE_NSIGHT
                 nvtxRangePop();
                 nvtxRangePushA("ChaseMpiDLA: potrf");
@@ -1228,8 +1253,8 @@ public:
 #ifdef USE_NSIGHT
                 nvtxRangePushA("ChaseMpiDLA: trsm");
 #endif
-                dla_->trsm('R', 'U', 'N', 'N', m_, nevex, &one, A, nevex, C,
-                           m_, first_iter);
+                dla_->trsm('R', 'U', 'N', 'N', m_, nevex, &one, A, nevex, C, m_,
+                           first_iter);
 #ifdef USE_NSIGHT
                 nvtxRangePop();
 #endif
@@ -1240,257 +1265,8 @@ public:
 #endif
             Memcpy(memcpy_mode[0], C, C2, locked * m_ * sizeof(T));
             Memcpy(memcpy_mode[1], C2 + locked * m_, C + locked * m_,
-                        (nevex - locked) * m_ * sizeof(T));
+                   (nevex - locked) * m_ * sizeof(T));
 
-	    isHHqr = false;
-#ifdef USE_NSIGHT
-            nvtxRangePop();
-#endif
-        }
-        else
-        {
-#ifdef CHASE_OUTPUT
-            if (grank == 0)
-                std::cout << "cholQR failed because of ill-conditioned vector, "
-                             "use Householder QR instead"
-                          << std::endl;
-#endif
-            this->hhQR(locked);
-        }
-
-#ifdef USE_NSIGHT
-        nvtxRangePop();
-#endif
-    }
-/*
-    void cholQR(std::size_t locked, Base<T> cond) override
-    {
-        int grank;
-        MPI_Comm_rank(MPI_COMM_WORLD, &grank);
-
-        char* display_bounds_env;
-        display_bounds_env = getenv("CHASE_DISPLAY_BOUNDS");
-        int display_bounds = 0;
-        if(display_bounds_env){
-            display_bounds = std::atoi(display_bounds_env);
-        }
-        if(display_bounds != 0){
-            std::vector<T> V2(N_ * (nev_+nex_));
-            this->collecRedundantVecs(C_, V2.data(), 0, nev_+nex_);
-            std::vector<Base<T>> S(nev_ + nex_ - locked);
-            T *U;
-            std::size_t ld = 1;
-            T *Vt ;
-            t_gesvd('N','N',N_, nev_ + nex_ - locked, V2.data() + N_ * locked, N_, S.data(), U, ld, Vt, ld);  
-            std::vector<Base<T>> norms(nev_+nex_-locked);
-            for(auto i = 0; i < nev_ + nex_-locked; i++){
-                norms[i] = std::sqrt(t_sqrt_norm(S[i]));
-            }
-            std::sort(norms.begin(),norms.end());
-            if(grank == 0){
-                std::cout << "estimate: " << cond << ", rcond: " << norms[nev_+nex_-locked-1] / norms[0] 
-                          << ", ratio: " << cond * norms[0] / norms[nev_+nex_-locked-1] << std::endl;
-            }
-        }        
-#ifdef USE_NSIGHT
-        nvtxRangePushA("ChaseMpiDLA: cholQR");
-#endif
-        Base<T> shift;
-        bool isShiftQR = false;
-        int choldeg = 2;
-        int choldeg_env;
-        char* choldegenv;
-        choldegenv = getenv("CHASE_CHOLQR_DEGREE");
-        if (choldegenv)
-        {
-            choldeg_env = std::atoi(choldegenv);
-        }
-
-        // condition for using CholQR1
-        Base<T> cond_threshold_2;
-
-        if (sizeof(Base<T>) == 8)
-        {
-            cond_threshold_2 = 5e1;
-        }
-        else
-        {
-            cond_threshold_2 = 1e1;
-        }
-
-        char *chol1_threshold;
-        chol1_threshold = getenv("CHASE_CHOLQR1_THLD");
-        if(chol1_threshold)
-        {
-            cond_threshold_2 = std::atof(chol1_threshold);
-        }    
-        auto nevex = nev_ + nex_;
-        bool first_iter = true;
-        T one = T(1.0);
-        T zero = T(0.0);
-        int info = -1;
-#ifdef USE_NSIGHT
-        nvtxRangePushA("ChaseMpiDLA: syherk");
-#endif
-        dla_->syherk('U', 'C', nevex, m_, &one, C_, m_, &zero, A_, nevex,
-                     first_iter);
-#ifdef USE_NSIGHT
-        nvtxRangePop();
-        nvtxRangePushA("allreduce");
-#endif
-        MPI_Allreduce(MPI_IN_PLACE, A_, nevex * nevex, getMPI_Type<T>(),
-                      MPI_SUM, col_comm_);
-#ifdef USE_NSIGHT
-        nvtxRangePop();
-#endif
-
-#ifdef USE_NSIGHT
-        nvtxRangePushA("ChaseMpiDLA: potrf");
-#endif
-        info = dla_->potrf('U', nevex, A_, nevex);
-#ifdef USE_NSIGHT
-        nvtxRangePop();
-#endif
-
-        if (info != 0)
-        {
-            isShiftQR = true;
-#ifdef USE_NSIGHT
-            nvtxRangePushA("ChaseMpiDLA: t_lange");
-#endif
-            Base<T> nrmf = t_lange('F', m_, nevex, C_, m_);
-            nrmf = std::pow(nrmf, 2);
-            //Base<T> nrmf = t_norm_p2(m_ * nevex, C_);
-#ifdef USE_NSIGHT
-            nvtxRangePop();
-            nvtxRangePushA("allreduce");
-#endif
-            MPI_Allreduce(MPI_IN_PLACE, &nrmf, 1, getMPI_Type<Base<T>>(),
-                          MPI_SUM, col_comm_);
-            shift = 11 * (N_ * nevex + nevex * nevex + nevex) *
-                    std::numeric_limits<Base<T>>::epsilon() * nrmf;
-
-            if(shift < 10){
-#ifdef USE_NSIGHT
-                nvtxRangePop();
-                nvtxRangePushA("ChaseMpiDLA: shift in QR");
-#endif
-                for (auto i = 0; i < nevex; i++)
-                {
-                    A_[i * nevex + i] += (T)shift;
-                }
-#ifdef USE_NSIGHT
-                nvtxRangePop();
-#endif
-#ifdef USE_NSIGHT
-                nvtxRangePushA("ChaseMpiDLA: potrf");
-#endif
-                info = dla_->potrf('U', nevex, A_, nevex);
-#ifdef USE_NSIGHT
-                nvtxRangePop();
-#endif
-            } else
-            {
-                info = -1;
-            }    
-
-        }
-
-        if (info == 0)
-        {
-            if (cond < cond_threshold_2)
-            {
-                choldeg = 1;
-            }
-
-            if (choldegenv)
-            {
-                choldeg = choldeg_env;
-            }
-
-            if (isShiftQR && choldeg == 1)
-            {
-                choldeg = 2;
-            }
-#ifdef CHASE_OUTPUT
-            if (grank == 0)
-            {
-                std::cout << std::setprecision(2) << "cond(V): " << cond
-                          << ", choldegee: " << choldeg;
-
-                if (isShiftQR)
-                {
-                    std::cout << ", shift: " << shift << std::endl;
-                }
-                else
-                {
-                    std::cout << std::endl;
-                }
-            }
-#endif
-
-            if (choldeg == 1)
-            {
-                first_iter = false;
-            }
-            else if (choldeg > 1)
-            {
-                first_iter = true;
-            }
-
-#ifdef USE_NSIGHT
-            nvtxRangePushA("ChaseMpiDLA: trsm");
-#endif
-            dla_->trsm('R', 'U', 'N', 'N', m_, nevex, &one, A_, nevex, C_, m_,
-                       first_iter);
-#ifdef USE_NSIGHT
-            nvtxRangePop();
-#endif
-            for (auto i = 0; i < choldeg - 1; i++)
-            {
-#ifdef USE_NSIGHT
-                nvtxRangePushA("ChaseMpiDLA: syherk");
-#endif
-                dla_->syherk('U', 'C', nevex, m_, &one, C_, m_, &zero, A_,
-                             nevex, false);
-#ifdef USE_NSIGHT
-                nvtxRangePop();
-                nvtxRangePushA("allreduce");
-#endif
-                MPI_Allreduce(MPI_IN_PLACE, A_, nevex * nevex, getMPI_Type<T>(),
-                              MPI_SUM, col_comm_);
-#ifdef USE_NSIGHT
-                nvtxRangePop();
-                nvtxRangePushA("ChaseMpiDLA: potrf");
-#endif
-                info = dla_->potrf('U', nevex, A_, nevex);
-#ifdef USE_NSIGHT
-                nvtxRangePop();
-#endif
-                if (i == choldeg - 2)
-                {
-                    first_iter = false;
-                }
-                else
-                {
-                    first_iter = true;
-                }
-#ifdef USE_NSIGHT
-                nvtxRangePushA("ChaseMpiDLA: trsm");
-#endif
-                dla_->trsm('R', 'U', 'N', 'N', m_, nevex, &one, A_, nevex, C_,
-                           m_, first_iter);
-#ifdef USE_NSIGHT
-                nvtxRangePop();
-#endif
-            }
-
-#ifdef USE_NSIGHT
-            nvtxRangePushA("memcpy");
-#endif
-            std::memcpy(C_, C2_, locked * m_ * sizeof(T));
-            std::memcpy(C2_ + locked * m_, C_ + locked * m_,
-                        (nevex - locked) * m_ * sizeof(T));
             isHHqr = false;
 #ifdef USE_NSIGHT
             nvtxRangePop();
@@ -1511,7 +1287,6 @@ public:
         nvtxRangePop();
 #endif
     }
-*/
 
     void Swap(std::size_t i, std::size_t j) override
     {
@@ -1521,27 +1296,16 @@ public:
 
         Memcpy(memcpy_mode[0], vv, C + m_ * i, m_ * sizeof(T));
         Memcpy(memcpy_mode[0], C + m_ * i, C + m_ * j, m_ * sizeof(T));
-        Memcpy(memcpy_mode[0], C + m_ * j, vv, m_ * sizeof(T));	
+        Memcpy(memcpy_mode[0], C + m_ * j, vv, m_ * sizeof(T));
     }
 
     void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc) override
     {
-/*	    
-        T alpha = T(1.0);
-        T beta = T(0.0);
-#ifdef USE_NSIGHT
-        nvtxRangePushA("ChaseMpiDLA: LanczosDOS");
-#endif
-        t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, m_, idx, m, &alpha,
-               C_, m_, ritzVc, m, &beta, C2_, m_);
-#ifdef USE_NSIGHT
-        nvtxRangePop();
-#endif
-*/	
-	dla_->LanczosDos(idx, m, ritzVc);
+        dla_->LanczosDos(idx, m, ritzVc);
     }
 
-    void Lanczos(std::size_t M, int idx, Base<T>* d, Base<T>* e, Base<T> *r_beta) override
+    void Lanczos(std::size_t M, int idx, Base<T>* d, Base<T>* e,
+                 Base<T>* r_beta) override
     {
         Base<T> real_beta;
 
@@ -1550,39 +1314,42 @@ public:
 
         std::fill(v0_, v0_ + m_, T(0));
 
-        if(idx >= 0)
+        if (idx >= 0)
         {
-	    Memcpy(memcpy_mode[1], v1_, C2 + idx * m_, m_ * sizeof(T));
-	}else
+            Memcpy(memcpy_mode[1], v1_, C2 + idx * m_, m_ * sizeof(T));
+        }
+        else
         {
             std::mt19937 gen(2342.0);
             std::normal_distribution<> normal_distribution;
-            //v1_ = get_V1();
+            // v1_ = get_V1();
             for (std::size_t k = 0; k < m_; ++k)
             {
-                v1_[k] = getRandomT<T>([&]() { return normal_distribution(gen); });
-            }            
+                v1_[k] =
+                    getRandomT<T>([&]() { return normal_distribution(gen); });
+            }
         }
         // ENSURE that v1 has one norm
 #ifdef USE_NSIGHT
         nvtxRangePushA("Lanczos: loop");
 #endif
         Base<T> real_alpha = t_nrm2(m_, v1_, 1);
-	real_alpha = std::pow(real_alpha,2);
-	MPI_Allreduce(MPI_IN_PLACE, &real_alpha, 1, getMPI_Type<Base<T>>(),
-                    MPI_SUM, col_comm_);
+        real_alpha = std::pow(real_alpha, 2);
+        MPI_Allreduce(MPI_IN_PLACE, &real_alpha, 1, getMPI_Type<Base<T>>(),
+                      MPI_SUM, col_comm_);
         real_alpha = std::sqrt(real_alpha);
         alpha = T(1 / real_alpha);
         t_scal(m_, &alpha, v1_, 1);
         for (std::size_t k = 0; k < M; k = k + 1)
         {
-    	    if(idx >= 0){
-	    	Memcpy(memcpy_mode[2], C + k * m_, v1_, m_ * sizeof(T));
-	    }
+            if (idx >= 0)
+            {
+                Memcpy(memcpy_mode[2], C + k * m_, v1_, m_ * sizeof(T));
+            }
             this->applyVec(v1_, v2_);
             alpha = t_dot(m_, v1_, 1, v2_, 1);
-            MPI_Allreduce(MPI_IN_PLACE, &alpha, 1, getMPI_Type<T>(),
-                          MPI_SUM, col_comm_);
+            MPI_Allreduce(MPI_IN_PLACE, &alpha, 1, getMPI_Type<T>(), MPI_SUM,
+                          col_comm_);
             alpha = -alpha;
             t_axpy(m_, &alpha, v1_, 1, v2_, 1);
 
@@ -1597,10 +1364,10 @@ public:
             t_axpy(m_, &beta, v0_, 1, v2_, 1);
             beta = -beta;
 
-            //real_beta = t_norm_p2(m_, v2_);
+            // real_beta = t_norm_p2(m_, v2_);
             real_beta = t_nrm2(m_, v2_, 1);
-	    real_beta = std::pow(real_beta, 2);
-	    MPI_Allreduce(MPI_IN_PLACE, &real_beta, 1, getMPI_Type<Base<T>>(),
+            real_beta = std::pow(real_beta, 2);
+            MPI_Allreduce(MPI_IN_PLACE, &real_beta, 1, getMPI_Type<Base<T>>(),
                           MPI_SUM, col_comm_);
             real_beta = std::sqrt(real_beta);
 
@@ -1612,15 +1379,15 @@ public:
 
             std::swap(v1_, v0_);
             std::swap(v1_, v2_);
-	    
         }
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
-        *r_beta = real_beta;            
+        *r_beta = real_beta;
     }
 
-    void B2C(T* B, std::size_t off1, T* C, std::size_t off2, std::size_t block) override
+    void B2C(T* B, std::size_t off1, T* C, std::size_t off2,
+             std::size_t block) override
     {
         for (auto i = 0; i < b_lens.size(); i++)
         {
@@ -1651,41 +1418,11 @@ public:
         {
             if (col_rank_ == b_dests[i] && row_rank_ == b_srcs[i])
             {
-                t_lacpy('A', b_lens[i], block, B + off1 * n_ + b_disps_2[i],
-                        n_, C + off1 * m_ + c_disps_2[i], m_);
+                t_lacpy('A', b_lens[i], block, B + off1 * n_ + b_disps_2[i], n_,
+                        C + off1 * m_ + c_disps_2[i], m_);
             }
         }
     }
-
-    void getMpiWorkSpace(T **C, T **B, T **A, T **C2, T **B2, T **vv, Base<T> **rsd, T **w) override
-    {}
-
-    void getMpiCollectiveBackend(int *allreduce_backend, int *bcast_backend) override
-    {}
-
-    bool isCudaAware() override
-    {
-        return cuda_aware_;
-    }
-
-    void lacpy(char uplo, std::size_t m, std::size_t n,
-             T* a, std::size_t lda, T* b, std::size_t ldb) override
-    {}
-
-    void shiftMatrixForQR(T *A, std::size_t n, T shift) override
-    {}
-
-    void retrieveC(T **C, std::size_t locked, std::size_t block, bool copy) override
-    {}
-
-    void retrieveB(T **B, std::size_t locked, std::size_t block, bool copy) override
-    {}
-	
-    void retrieveResid(Base<T> **rsd, std::size_t locked, std::size_t block) override
-    {}
-
-    void putC(T *C, std::size_t locked, std::size_t block) override
-    {}
 
 private:
     enum NextOp
@@ -1704,22 +1441,23 @@ private:
         m_; //!< number of rows of local matrix of the symmetric/Hermtian matrix
     std::size_t N_; //!< global dimension of the symmetric/Hermtian matrix
 
-    //T* B_;  //!< a matrix of size `n_*(nev_+nex_)`, which is allocated in
-            //!< ChaseMpiMatrices
-    //T* C_;  //!< a matrix of size `m_*(nev_+nex_)`, which is allocated in
-            //!< ChaseMpiMatrices
-    //T* C2_; //!< a matrix of size `m_*(nev_+nex_)`, which is allocated in
-            //!< ChaseMpiProperties
-    //T* B2_; //!< a matrix of size `n_*(nev_+nex_)`, which is allocated in
-            //!< ChaseMpiProperties
-    //T* A_;  //!< a matrix of size `(nev_+nex_)*(nev_+nex_)`, which is allocated
-            //!< in ChaseMpiProperties
+    // T* B_;  //!< a matrix of size `n_*(nev_+nex_)`, which is allocated in
+    //!< ChaseMpiMatrices
+    // T* C_;  //!< a matrix of size `m_*(nev_+nex_)`, which is allocated in
+    //!< ChaseMpiMatrices
+    // T* C2_; //!< a matrix of size `m_*(nev_+nex_)`, which is allocated in
+    //!< ChaseMpiProperties
+    // T* B2_; //!< a matrix of size `n_*(nev_+nex_)`, which is allocated in
+    //!< ChaseMpiProperties
+    // T* A_;  //!< a matrix of size `(nev_+nex_)*(nev_+nex_)`, which is
+    // allocated
+    //!< in ChaseMpiProperties
     T* v0_; //!< a vector of size `N_`, which is allocated in this
-                        //!< class for Lanczos
+            //!< class for Lanczos
     T* v1_; //!< a vector of size `N_`, which is allocated in this
-                        //!< class for Lanczos
+            //!< class for Lanczos
     T* w_;  //!< a vector of size `N_`, which is allocated in this
-                        //!< class for Lanczos
+            //!< class for Lanczos
     T* v2_;
 
     std::vector<T> Buff_; //!< a vector of size `N_`, it is allocated only ChASE
@@ -1795,7 +1533,7 @@ private:
     std::vector<int> b_srcs;
     std::vector<int> b_lens;
     std::vector<MPI_Request> reqsb2c_;
-    std::vector<MPI_Datatype> b_sends_;   
+    std::vector<MPI_Datatype> b_sends_;
     std::vector<MPI_Datatype> c_recvs_;
     std::vector<int> b_disps_2;
     std::vector<int> c_disps_2;
@@ -1807,7 +1545,7 @@ private:
     int col_size_;           //!< column communicator size
     int col_rank_;           //!< rank within each column communicator
     std::string data_layout; //!< identical to ChaseMpiProperties::data_layout
-    std::unique_ptr<ChaseMpiDLAInterface<T>>
+    std::unique_ptr<ChaseMpiDLAImplInterface<T>>
         dla_; //!< an object of class ChaseMpiDLABlaslapack or
               //!< ChaseMpiDLAMultiGPU
     ChaseMpiProperties<T>*
@@ -1822,10 +1560,9 @@ private:
     Comm_t mpi_wrapper_;
     bool cuda_aware_;
     T *C, *B, *A, *C2, *B2, *vv, *ww;
-    Base<T> *rsd;
+    Base<T>* rsd;
     int allreduce_backend, bcast_backend;
     int memcpy_mode[3];
-
 };
 } // namespace mpi
 } // namespace chase

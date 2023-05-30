@@ -120,7 +120,6 @@ public:
 
         ritzv_ = matrices_.get_Ritzv();
         resid_ = matrices_.get_Resid();
-
     }
 
     //! A constructor of the ChaseMpi class which gives an implenentation of
@@ -139,7 +138,7 @@ public:
        - The variable `config_` is setup by the constructor of ChaseConfig which
        takes the parameters `N`, `nev` and `nex`.
        - The variable `matrices_` is setup directly by the constructor of
-       ChaseMpiMatrices which takes the paramter `H`, `ldh`, `N`, `nev`, `nex`, 
+       ChaseMpiMatrices which takes the paramter `H`, `ldh`, `N`, `nev`, `nex`,
        `V1`, `ritzv`, `V2` and `resid`.
        - The variable `dla_` is initialized by `MF` which is a derived class
        of ChaseMpiDLAInterface. In ChASE, the candidates of `MF` for non-MPI
@@ -153,7 +152,7 @@ public:
        @param H: a pointer to the memory which stores local part of matrix on
        each MPI rank. If `H` is not provided by the user, it will be internally
        allocated in ChaseMpiMatrices class.
-       @param ldh: leading dimension of `H`       
+       @param ldh: leading dimension of `H`
        @param V1: a pointer to a rectangular matrix of size `N * (nev+nex)`.
        If `V1` is not provided by the user, it will be internally allocated in
        ChaseMpiMatrices class.
@@ -170,8 +169,8 @@ public:
        allocated in ChaseMpiMatrices class. Its minimal size should be
        `nev+nex`.
     */
-    ChaseMpi(std::size_t N, std::size_t nev, std::size_t nex, T* H, 
-             std::size_t ldh, T *V1, Base<T>* ritzv, T* V2 = nullptr,
+    ChaseMpi(std::size_t N, std::size_t nev, std::size_t nex, T* H,
+             std::size_t ldh, T* V1, Base<T>* ritzv, T* V2 = nullptr,
              Base<T>* resid = nullptr)
         : N_(N), nev_(nev), nex_(nex), rank_(0), locked_(0),
           config_(N, nev, nex),
@@ -181,9 +180,7 @@ public:
 
         ritzv_ = matrices_.get_Ritzv();
         resid_ = matrices_.get_Resid();
-
     }
-
 
     // case 2: MPI
     //! A constructor of the ChaseMpi class which gives an implenentation of
@@ -245,8 +242,7 @@ public:
           properties_(properties),
           matrices_(std::move(
               properties_.get()->create_matrices(V1, ritzv, V2, resid))),
-          dla_(new ChaseMpiDLA<T>(properties_.get(), matrices_,
-                                  new MF<T>(properties_.get(), matrices_)))
+          dla_(new ChaseMpiDLA<MF, T>(properties_.get(), matrices_))
     {
         int init;
         MPI_Initialized(&init);
@@ -330,8 +326,7 @@ public:
           properties_(properties),
           matrices_(std::move(properties_.get()->create_matrices(
               H, ldh, V1, ritzv, V2, resid))),
-          dla_(new ChaseMpiDLA<T>(properties_.get(), matrices_,
-                                  new MF<T>(properties_.get(), matrices_)))
+          dla_(new ChaseMpiDLA<MF, T>(properties_.get(), matrices_))
     {
         int init;
         MPI_Initialized(&init);
@@ -464,15 +459,16 @@ public:
     void QR(std::size_t fixednev, Base<T> cond) override
     {
         int grank = 0;
-#ifdef USE_MPI        
+#ifdef USE_MPI
         MPI_Comm_rank(MPI_COMM_WORLD, &grank);
-#endif        
+#endif
         int diasable = 0;
 
-        if(config_.DoCholQR())
+        if (config_.DoCholQR())
         {
             diasable = 0;
-        }else
+        }
+        else
         {
             diasable = 1;
         }
@@ -579,7 +575,7 @@ public:
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
-	
+
         delete[] ritzv;
         delete[] isuppz;
         delete[] d;
@@ -614,7 +610,7 @@ public:
         int* isuppz = new int[2 * m];
         t_stemr(LAPACK_COL_MAJOR, 'V', 'A', m, d, e, ul, ll, vl, vu,
                 &notneeded_m, ritzv, ritzV, m, m, isuppz, &tryrac);
-        *upperb = std::max(std::abs(ritzv[0]), std::abs(ritzv[m - 1])) + 
+        *upperb = std::max(std::abs(ritzv[0]), std::abs(ritzv[m - 1])) +
                   std::abs(real_beta);
 #ifdef USE_NSIGHT
         nvtxRangePop();

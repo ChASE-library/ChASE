@@ -352,28 +352,34 @@ extern "C"
                                  const BlasInt* lda, const dcomplex* b,
                                  const BlasInt* ldb);
 
-    void FC_GLOBAL(sgesvd, SGESVD)(const char *jobu, const char *jobvt, 
+    void FC_GLOBAL(sgesvd, SGESVD)(const char* jobu, const char* jobvt,
+                                   const BlasInt* m, const BlasInt* n, float* A,
+                                   const BlasInt* lda, float* S, float* U,
+                                   const BlasInt* ldu, float* Vt,
+                                   const BlasInt* ldvt, float* work,
+                                   const BlasInt* lwork, float* rwork,
+                                   BlasInt* info);
+    void FC_GLOBAL(dgesvd, DGESVD)(const char* jobu, const char* jobvt,
                                    const BlasInt* m, const BlasInt* n,
-                                   float *A, const BlasInt* lda, float *S, 
-                                   float *U, const BlasInt *ldu, float *Vt,
-                                   const BlasInt *ldvt, float *work, 
-                                   const BlasInt *lwork, float *rwork, BlasInt *info );
-    void FC_GLOBAL(dgesvd, DGESVD)(const char *jobu, const char *jobvt, 
+                                   double* A, const BlasInt* lda, double* S,
+                                   double* U, const BlasInt* ldu, double* Vt,
+                                   const BlasInt* ldvt, double* work,
+                                   const BlasInt* lwork, double* rwork,
+                                   BlasInt* info);
+    void FC_GLOBAL(cgesvd, CGESVD)(const char* jobu, const char* jobvt,
                                    const BlasInt* m, const BlasInt* n,
-                                   double *A, const BlasInt* lda, double *S,
-                                   double *U, const BlasInt *ldu, double *Vt,
-                                   const BlasInt *ldvt, double *work, 
-                                   const BlasInt *lwork, double *rwork, BlasInt *info );
-    void FC_GLOBAL(cgesvd, CGESVD)(const char *jobu, const char *jobvt, const BlasInt* m,
-                                   const BlasInt* n, scomplex *A, const BlasInt* lda, 
-                                   float *S, scomplex *U, const BlasInt *ldu, scomplex *Vt,
-                                   const BlasInt *ldvt, scomplex *work, const BlasInt *lwork, 
-                                   float *rwork, BlasInt *info );
-    void FC_GLOBAL(zgesvd, ZGESVD)(const char *jobu, const char *jobvt, const BlasInt* m, 
-                                   const BlasInt* n, dcomplex *A, const BlasInt* lda, double *S, 
-                                   dcomplex *U, const BlasInt *ldu, dcomplex *Vt,
-                                   const BlasInt *ldvt, dcomplex *work, const BlasInt *lwork, 
-                                   double *rwork, BlasInt *info );
+                                   scomplex* A, const BlasInt* lda, float* S,
+                                   scomplex* U, const BlasInt* ldu,
+                                   scomplex* Vt, const BlasInt* ldvt,
+                                   scomplex* work, const BlasInt* lwork,
+                                   float* rwork, BlasInt* info);
+    void FC_GLOBAL(zgesvd, ZGESVD)(const char* jobu, const char* jobvt,
+                                   const BlasInt* m, const BlasInt* n,
+                                   dcomplex* A, const BlasInt* lda, double* S,
+                                   dcomplex* U, const BlasInt* ldu,
+                                   dcomplex* Vt, const BlasInt* ldvt,
+                                   dcomplex* work, const BlasInt* lwork,
+                                   double* rwork, BlasInt* info);
 } // extern "C"
 } // namespace mpi
 } // namespace chase

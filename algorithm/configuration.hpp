@@ -430,17 +430,13 @@ public:
     //! Sets the `cholqr_` flag to either `true` or `false`.
     /*! This function is used to change the value of `cholqr_` so
         either flexible CholQR (`true`) or Househoulder QR (`false`)
-        will be used. 
+        will be used.
         \param flag A boolean parameter which admits either a `true` or `false`
        value.
      */
-    void SetCholQR(bool flag){
-        cholqr_ = flag;
-    }
+    void SetCholQR(bool flag) { cholqr_ = flag; }
     //! Return the value of `cholqr_`
-    bool DoCholQR(){
-        return cholqr_;
-    }
+    bool DoCholQR() { return cholqr_; }
 
 private:
     ///////////////////////////////////////////////////
