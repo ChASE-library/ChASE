@@ -285,7 +285,7 @@ public:
         std::size_t maxBlock = matrix_properties_->get_max_block();
 
         /* Register H, B, C as pinned-memories on host */
-        cuda_exec(cudaHostRegister((void*)H_, ldh_ * n_ * sizeof(T),
+	cuda_exec(cudaHostRegister((void*)H_, ldh_ * n_ * sizeof(T),
                                    cudaHostRegisterDefault));
         cuda_exec(cudaHostRegister((void*)B_, n_ * maxBlock * sizeof(T),
                                    cudaHostRegisterDefault));
@@ -295,8 +295,7 @@ public:
                                    cudaHostRegisterDefault));
         cuda_exec(cudaHostRegister((void*)C2_, m_ * maxBlock * sizeof(T),
                                    cudaHostRegisterDefault));
-
-        cuda_exec(cudaMalloc((void**)&(d_H_), m_ * n_ * sizeof(T)));
+	cuda_exec(cudaMalloc((void**)&(d_H_), m_ * n_ * sizeof(T)));
         cuda_exec(cudaMallocPitch((void**)&(d_C_), &pitchC,
                                   (nev_ + nex_) * sizeof(T), m_));
         cuda_exec(cudaMallocPitch((void**)&(d_C2_), &pitchC2,
@@ -390,7 +389,7 @@ public:
         cudaStreamDestroy(stream2_);
         cublasDestroy(cublasH_);
         cusolverDnDestroy(cusolverH_);
-        cuda_exec(cudaHostUnregister(H_));
+	cuda_exec(cudaHostUnregister(H_));
         cuda_exec(cudaHostUnregister(B_));
         cuda_exec(cudaHostUnregister(C_));
         cuda_exec(cudaHostUnregister(C2_));
