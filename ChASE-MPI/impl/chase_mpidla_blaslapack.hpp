@@ -341,7 +341,7 @@ public:
 	*bcast_backend = MPI_BACKEND;
     }
     
-    bool isCudaAware()
+    bool isCudaAware() override
     {
     	return false;
     }	    

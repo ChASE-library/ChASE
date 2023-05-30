@@ -369,7 +369,7 @@ public:
     {}
     void getMpiCollectiveBackend(int *allreduce_backend, int *bcast_backend) override
     {}
-    bool isCudaAware()
+    bool isCudaAware() override
     {
         return false;    
     }
