@@ -343,6 +343,16 @@ public:
 
     virtual void B2C(T* B, std::size_t off1, T* C, std::size_t off2, std::size_t block) = 0;
 
+    virtual void getMpiWorkSpace(T **C, T **B, T **A, T **C2, T **B2, T **vv, Base<T> **rsd, T **w) = 0;
+    virtual void getMpiCollectiveBackend(int *allreduce_backend, int *bcast_backend) = 0;
+    virtual bool isCudaAware() = 0;
+    virtual void lacpy(char uplo, std::size_t m, std::size_t n,
+             T* a, std::size_t lda, T* b, std::size_t ldb) = 0;
+    virtual void shiftMatrixForQR(T *A, std::size_t n, T shift) = 0;
+    virtual void retrieveC(T **C, std::size_t locked, std::size_t block, bool copy) = 0;
+    virtual void retrieveB(T **B, std::size_t locked, std::size_t block, bool copy) = 0;
+    virtual void retrieveResid(Base<T> **rsd, std::size_t locked, std::size_t block) = 0;
+    virtual void putC(T *C, std::size_t locked, std::size_t block) = 0;
 };
 } // namespace mpi
 } // namespace chase

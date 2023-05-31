@@ -13,6 +13,58 @@
 #include <cuda_runtime.h>
 #include <cusolverDn.h>
 
+cublasStatus_t cublasTgemv(cublasHandle_t handle, cublasOperation_t transa,
+                           int m, int n,
+                           const float* alpha, const float* A, int lda,
+                           const float* x, int incx, const float* beta, float* y,
+                           int incy)
+{
+    return cublasSgemv(handle, transa, m, n, alpha, A, lda, x, incx,
+                       beta, y, incy);
+}
+
+cublasStatus_t cublasTgemv(cublasHandle_t handle, cublasOperation_t transa,
+                           int m, int n,
+                           const double* alpha, const double* A, int lda,
+                           const double* x, int incx, const double* beta,
+                           double* y, int incy)
+{
+    return cublasDgemv(handle, transa, m, n, alpha, A, lda, x, incx,
+                       beta, y, incy);
+}
+
+cublasStatus_t cublasTgemv(cublasHandle_t handle, cublasOperation_t transa,
+                           int m, int n,
+                           const std::complex<float>* alpha,
+                           const std::complex<float>* A, int lda,
+                           const std::complex<float>* x, int incx,
+                           const std::complex<float>* beta,
+                           std::complex<float>* y, int incy)
+{
+    return cublasCgemv(handle, transa, m, n,
+                       reinterpret_cast<const cuComplex*>(alpha),
+                       reinterpret_cast<const cuComplex*>(A), lda,
+                       reinterpret_cast<const cuComplex*>(x), incx,
+                       reinterpret_cast<const cuComplex*>(beta),
+                       reinterpret_cast<cuComplex*>(y), incy);
+}
+
+cublasStatus_t cublasTgemv(cublasHandle_t handle, cublasOperation_t transa,
+                           int m, int n,
+                           const std::complex<double>* alpha,
+                           const std::complex<double>* A, int lda,
+                           const std::complex<double>* x, int incx,
+                           const std::complex<double>* beta,
+                           std::complex<double>* y, int incy)
+{
+    return cublasZgemv(handle, transa, m, n,
+                       reinterpret_cast<const cuDoubleComplex*>(alpha),
+                       reinterpret_cast<const cuDoubleComplex*>(A), lda,
+                       reinterpret_cast<const cuDoubleComplex*>(x), incx,
+                       reinterpret_cast<const cuDoubleComplex*>(beta),
+                       reinterpret_cast<cuDoubleComplex*>(y), incy);
+}
+
 cublasStatus_t cublasTgemm(cublasHandle_t handle, cublasOperation_t transa,
                            cublasOperation_t transb, int m, int n, int k,
                            const float* alpha, const float* A, int lda,

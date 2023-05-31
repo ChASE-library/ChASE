@@ -1036,7 +1036,7 @@ std::size_t t_heevd(int matrix_layout, char jobz, char uplo, std::size_t n,
 }
 
 // Overload of ?gemv functions
-/*
+
 template <>
 void
 t_gemv(const CBLAS_LAYOUT Layout, const CBLAS_TRANSPOSE trans,
@@ -1059,7 +1059,7 @@ t_gemv(const CBLAS_LAYOUT Layout, const CBLAS_TRANSPOSE trans,
   BlasInt incx_ = incx;
   BlasInt incy_ = incy;
 
-  FC_GLOBAL(cgemv, CGEMV)
+  FC_GLOBAL(dgemv, DGEMV)
   (&TA, &m_, &n_, alpha, a, &lda_, x, &incx_, beta, y, &incy_);
 }
 template <>
@@ -1138,7 +1138,7 @@ void t_gemv(const CBLAS_LAYOUT Layout, const CBLAS_TRANSPOSE trans,
   FC_GLOBAL(cgemv, CGEMV)
   (&TA, &m_, &n_, alpha, a, &lda_, x, &incx_, beta, y, &incy_);
 }
-*/
+
 // Overload of ?stemr functions
 
 template <>
