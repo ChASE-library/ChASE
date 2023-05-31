@@ -17,7 +17,7 @@ namespace mpi
 #define CPY_H2H 0
 #define CPY_D2D 1
 #define CPY_D2H 2
-#define CPY_H2D 3
+#define CPY_H2D 3	
 
 typedef MPI_Op Op_1;
 typedef MPI_Op Op_1;
@@ -33,67 +33,64 @@ typedef MPI_Datatype datatype_2;
 typedef MPI_Comm comm_2;
 #endif
 
-class Comm
-{
-public:
-    Comm()
-    {
+
+class Comm{
+        public:
+                Comm(){
 #if defined(HAS_NCCL)
-        opt_map_[MPI_MAX] = ncclMax;
-        opt_map_[MPI_MIN] = ncclMin;
-        opt_map_[MPI_SUM] = ncclSum;
-        opt_map_[MPI_PROD] = ncclProd;
-        datatype_map_[MPI_DOUBLE] = ncclDouble;
-        datatype_map_[MPI_FLOAT] = ncclFloat;
-        datatype_map_[MPI_COMPLEX] = ncclFloat;
-        datatype_map_[MPI_DOUBLE_COMPLEX] = ncclDouble;
+                    opt_map_[MPI_MAX] = ncclMax;
+                    opt_map_[MPI_MIN] = ncclMin;
+                    opt_map_[MPI_SUM] = ncclSum;
+                    opt_map_[MPI_PROD] = ncclProd;
+                    datatype_map_[MPI_DOUBLE] = ncclDouble;
+                    datatype_map_[MPI_FLOAT] = ncclFloat;
+                    datatype_map_[MPI_COMPLEX] = ncclFloat;
+                    datatype_map_[MPI_DOUBLE_COMPLEX] = ncclDouble;
 #else
-        opt_map_[MPI_MAX] = MPI_MAX;
-        opt_map_[MPI_MIN] = MPI_MIN;
-        opt_map_[MPI_SUM] = MPI_SUM;
-        opt_map_[MPI_PROD] = MPI_PROD;
-        datatype_map_[MPI_DOUBLE] = MPI_DOUBLE;
-        datatype_map_[MPI_FLOAT] = MPI_FLOAT;
-        datatype_map_[MPI_COMPLEX] = MPI_COMPLEX;
-        datatype_map_[MPI_DOUBLE_COMPLEX] = MPI_DOUBLE_COMPLEX;
+                    opt_map_[MPI_MAX] = MPI_MAX;
+                    opt_map_[MPI_MIN] = MPI_MIN;
+                    opt_map_[MPI_SUM] = MPI_SUM;
+                    opt_map_[MPI_PROD] = MPI_PROD;
+                    datatype_map_[MPI_DOUBLE] = MPI_DOUBLE;
+                    datatype_map_[MPI_FLOAT] = MPI_FLOAT;
+                    datatype_map_[MPI_COMPLEX] = MPI_COMPLEX;
+                    datatype_map_[MPI_DOUBLE_COMPLEX] = MPI_DOUBLE_COMPLEX;
 #endif
-    }
+                }
 
-    ~Comm() {}
-    void add(comm_1 mpi_comm, comm_2 nccl_comm)
-    {
-        comm_map_[mpi_comm] = nccl_comm;
-    }
+                ~Comm(){}
+                void add(comm_1 mpi_comm, comm_2 nccl_comm)
+                {
+                   comm_map_[mpi_comm] = nccl_comm;
+                }
 
-    comm_2 get_comm(comm_1 key) { return comm_map_.at(key); }
+                comm_2 get_comm(comm_1 key){
+                    return comm_map_.at(key);
+                }
 
-    Op_2 get_Op(MPI_Op op) { return opt_map_.at(op); }
+                Op_2 get_Op(MPI_Op op){
+                    return opt_map_.at(op);
+                }
 
-    datatype_2 get_datatype(MPI_Datatype type)
-    {
-        return datatype_map_.at(type);
-    }
+                datatype_2 get_datatype(MPI_Datatype type){
+                    return datatype_map_.at(type);
+                }
+        private:
+                std::map<comm_1, comm_2> comm_map_;
+                std::map<Op_1, Op_2> opt_map_;
+                std::map<datatype_1, datatype_2> datatype_map_;
 
-private:
-    std::map<comm_1, comm_2> comm_map_;
-    std::map<Op_1, Op_2> opt_map_;
-    std::map<datatype_1, datatype_2> datatype_map_;
 };
 
 typedef Comm Comm_t;
 
-template <typename T>
-void AllReduce(int backend, T* send_data, T* recv_data, int count,
-               MPI_Datatype datatype, MPI_Op op, MPI_Comm comm, Comm_t env)
-{
-    switch (backend)
+template<typename T>
+void AllReduce(int backend, T *send_data, T *recv_data, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm, Comm_t env){
+    switch(backend)
     {
 #if defined(HAS_NCCL)
         case NCCL_BACKEND:
-            ncclAllReduce(send_data, recv_data,
-                          int(sizeof(T) / sizeof(Base<T>)) * count,
-                          env.get_datatype(datatype), env.get_Op(op),
-                          env.get_comm(comm), NULL);
+            ncclAllReduce(send_data, recv_data, int(sizeof(T)/sizeof(Base<T>)) * count, env.get_datatype(datatype), env.get_Op(op), env.get_comm(comm), NULL);
             break;
 #endif
         case MPI_BACKEND:
@@ -102,17 +99,13 @@ void AllReduce(int backend, T* send_data, T* recv_data, int count,
     }
 }
 
-template <typename T>
-void AllReduce(int backend, T* data, int count, MPI_Datatype datatype,
-               MPI_Op op, MPI_Comm comm, Comm_t env)
-{
-    switch (backend)
+template<typename T>
+void AllReduce(int backend, T *data, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm, Comm_t env){
+    switch(backend)
     {
 #if defined(HAS_NCCL)
         case NCCL_BACKEND:
-            ncclAllReduce(data, data, int(sizeof(T) / sizeof(Base<T>)) * count,
-                          env.get_datatype(datatype), env.get_Op(op),
-                          env.get_comm(comm), NULL);
+            ncclAllReduce(data, data, int(sizeof(T)/sizeof(Base<T>)) * count, env.get_datatype(datatype), env.get_Op(op), env.get_comm(comm), NULL);
             break;
 #endif
         case MPI_BACKEND:
@@ -121,45 +114,43 @@ void AllReduce(int backend, T* data, int count, MPI_Datatype datatype,
     }
 }
 
-template <typename T>
-void Bcast(int backend, T* buff, int count, MPI_Datatype datatype, int root,
-           MPI_Comm comm, Comm_t env)
+template<typename T>
+void Bcast(int backend, T *buff, int count, MPI_Datatype datatype, int root, MPI_Comm comm, Comm_t env)
 {
-    switch (backend)
+    switch(backend)
     {
 #if defined(HAS_NCCL)
         case NCCL_BACKEND:
-            ncclBcast(buff, int(sizeof(T) / sizeof(Base<T>)) * count,
-                      env.get_datatype(datatype), root, env.get_comm(comm),
-                      NULL);
-            break;
+            ncclBcast(buff, int(sizeof(T)/sizeof(Base<T>)) * count, env.get_datatype(datatype), root, env.get_comm(comm), NULL);
+            break;	
 #endif
         case MPI_BACKEND:
             MPI_Bcast(buff, count, datatype, root, comm);
-            break;
-    }
+            break;	    
+    }	    
 }
 
 void Memcpy(int mode, void* dst, const void* src, std::size_t count)
 {
-    switch (mode)
+    switch(mode)
     {
-        case CPY_H2H:
-            std::memcpy(dst, src, count);
-            break;
+	case CPY_H2H:
+	    std::memcpy(dst, src, count);
+	    break;
 #if defined(CUDA_AWARE)
         case CPY_D2D:
             cudaMemcpy(dst, src, count, cudaMemcpyDeviceToDevice);
             break;
-        case CPY_D2H:
-            cudaMemcpy(dst, src, count, cudaMemcpyDeviceToHost);
-            break;
+	case CPY_D2H:
+            cudaMemcpy(dst, src, count, cudaMemcpyDeviceToHost);	
+	    break;
         case CPY_H2D:
             cudaMemcpy(dst, src, count, cudaMemcpyHostToDevice);
             break;
-#endif
-    }
+#endif	    
+    }	    
 }
+
 
 } // namespace mpi
 } // namespace chase
