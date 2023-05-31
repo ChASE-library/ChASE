@@ -14,25 +14,28 @@
 #include <cusolverDn.h>
 
 cublasStatus_t cublasTgemv(cublasHandle_t handle, cublasOperation_t transa,
-                           int m, int n, const float* alpha, const float* A,
-                           int lda, const float* x, int incx, const float* beta,
-                           float* y, int incy)
+                           int m, int n,
+                           const float* alpha, const float* A, int lda,
+                           const float* x, int incx, const float* beta, float* y,
+                           int incy)
 {
-    return cublasSgemv(handle, transa, m, n, alpha, A, lda, x, incx, beta, y,
-                       incy);
+    return cublasSgemv(handle, transa, m, n, alpha, A, lda, x, incx,
+                       beta, y, incy);
 }
 
 cublasStatus_t cublasTgemv(cublasHandle_t handle, cublasOperation_t transa,
-                           int m, int n, const double* alpha, const double* A,
-                           int lda, const double* x, int incx,
-                           const double* beta, double* y, int incy)
+                           int m, int n,
+                           const double* alpha, const double* A, int lda,
+                           const double* x, int incx, const double* beta,
+                           double* y, int incy)
 {
-    return cublasDgemv(handle, transa, m, n, alpha, A, lda, x, incx, beta, y,
-                       incy);
+    return cublasDgemv(handle, transa, m, n, alpha, A, lda, x, incx,
+                       beta, y, incy);
 }
 
 cublasStatus_t cublasTgemv(cublasHandle_t handle, cublasOperation_t transa,
-                           int m, int n, const std::complex<float>* alpha,
+                           int m, int n,
+                           const std::complex<float>* alpha,
                            const std::complex<float>* A, int lda,
                            const std::complex<float>* x, int incx,
                            const std::complex<float>* beta,
@@ -47,7 +50,8 @@ cublasStatus_t cublasTgemv(cublasHandle_t handle, cublasOperation_t transa,
 }
 
 cublasStatus_t cublasTgemv(cublasHandle_t handle, cublasOperation_t transa,
-                           int m, int n, const std::complex<double>* alpha,
+                           int m, int n,
+                           const std::complex<double>* alpha,
                            const std::complex<double>* A, int lda,
                            const std::complex<double>* x, int incx,
                            const std::complex<double>* beta,

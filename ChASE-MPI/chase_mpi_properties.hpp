@@ -438,35 +438,31 @@ public:
         V_.reset(new T[N_ * max_block_]());
 #endif
 
-        comm_2 row_comm_dup;
+	comm_2 row_comm_dup;
         comm_2 col_comm_dup;
 #if defined(HAS_NCCL)
         ncclUniqueId nccl_id, nccl_ids[nprocs_];
         ncclGetUniqueId(&nccl_id);
-        MPI_Allgather(&nccl_id, sizeof(ncclUniqueId), MPI_UINT8_T, &nccl_ids[0],
-                      sizeof(ncclUniqueId), MPI_UINT8_T, comm);
+        MPI_Allgather(&nccl_id, sizeof(ncclUniqueId), MPI_UINT8_T,
+                        &nccl_ids[0], sizeof(ncclUniqueId), MPI_UINT8_T, comm);
 
-        for (auto i = 0; i < dims_[0]; i++)
-        {
-            if (coord_[0] == i)
-            {
-                ncclCommInitRank(&row_comm_dup, dims_[1], nccl_ids[i],
-                                 coord_[1]);
+
+        for(auto i = 0; i < dims_[0]; i++){
+            if(coord_[0] == i){
+                ncclCommInitRank(&row_comm_dup, dims_[1], nccl_ids[i], coord_[1]);
             }
         }
 
-        // col_comm
+        //col_comm
         ncclUniqueId nccl_id_2, nccl_ids_2[nprocs_];
         ncclGetUniqueId(&nccl_id_2);
         MPI_Allgather(&nccl_id_2, sizeof(ncclUniqueId), MPI_UINT8_T,
-                      &nccl_ids_2[0], sizeof(ncclUniqueId), MPI_UINT8_T, comm);
+                        &nccl_ids_2[0], sizeof(ncclUniqueId), MPI_UINT8_T, comm);
 
-        for (auto i = 0; i < dims_[1]; i++)
-        {
-            if (coord_[1] == i)
-            {
-                ncclCommInitRank(&col_comm_dup, dims_[0],
-                                 nccl_ids_2[i * dims_[0]], coord_[0]);
+
+        for(auto i = 0; i < dims_[1]; i++){
+            if(coord_[1] == i){
+                ncclCommInitRank(&col_comm_dup, dims_[0], nccl_ids_2[i * dims_[0]], coord_[0]);
             }
         }
 #else
@@ -695,30 +691,26 @@ public:
 #if defined(HAS_NCCL)
         ncclUniqueId nccl_id, nccl_ids[nprocs_];
         ncclGetUniqueId(&nccl_id);
-        MPI_Allgather(&nccl_id, sizeof(ncclUniqueId), MPI_UINT8_T, &nccl_ids[0],
-                      sizeof(ncclUniqueId), MPI_UINT8_T, comm);
+        MPI_Allgather(&nccl_id, sizeof(ncclUniqueId), MPI_UINT8_T,
+                        &nccl_ids[0], sizeof(ncclUniqueId), MPI_UINT8_T, comm);
 
-        for (auto i = 0; i < dims_[0]; i++)
-        {
-            if (coord_[0] == i)
-            {
-                ncclCommInitRank(&row_comm_dup, dims_[1], nccl_ids[i],
-                                 coord_[1]);
+
+        for(auto i = 0; i < dims_[0]; i++){
+            if(coord_[0] == i){
+                ncclCommInitRank(&row_comm_dup, dims_[1], nccl_ids[i], coord_[1]);
             }
         }
 
-        // col_comm
+        //col_comm
         ncclUniqueId nccl_id_2, nccl_ids_2[nprocs_];
         ncclGetUniqueId(&nccl_id_2);
         MPI_Allgather(&nccl_id_2, sizeof(ncclUniqueId), MPI_UINT8_T,
-                      &nccl_ids_2[0], sizeof(ncclUniqueId), MPI_UINT8_T, comm);
+                        &nccl_ids_2[0], sizeof(ncclUniqueId), MPI_UINT8_T, comm);
 
-        for (auto i = 0; i < dims_[1]; i++)
-        {
-            if (coord_[1] == i)
-            {
-                ncclCommInitRank(&col_comm_dup, dims_[0],
-                                 nccl_ids_2[i * dims_[0]], coord_[0]);
+
+        for(auto i = 0; i < dims_[1]; i++){
+            if(coord_[1] == i){
+                ncclCommInitRank(&col_comm_dup, dims_[0], nccl_ids_2[i * dims_[0]], coord_[0]);
             }
         }
 #else
@@ -927,41 +919,37 @@ public:
         V_.reset(new T[N_ * max_block_]());
 #endif
 
-        comm_2 row_comm_dup;
+	comm_2 row_comm_dup;
         comm_2 col_comm_dup;
 #if defined(HAS_NCCL)
-        ncclUniqueId nccl_id, nccl_ids[nprocs_];
+        ncclUniqueId nccl_id, nccl_ids[nprocs_];  
         ncclGetUniqueId(&nccl_id);
-        MPI_Allgather(&nccl_id, sizeof(ncclUniqueId), MPI_UINT8_T, &nccl_ids[0],
-                      sizeof(ncclUniqueId), MPI_UINT8_T, comm);
+        MPI_Allgather(&nccl_id, sizeof(ncclUniqueId), MPI_UINT8_T,
+                        &nccl_ids[0], sizeof(ncclUniqueId), MPI_UINT8_T, comm);   
 
-        for (auto i = 0; i < dims_[0]; i++)
-        {
-            if (coord_[0] == i)
-            {
-                ncclCommInitRank(&row_comm_dup, dims_[1], nccl_ids[i],
-                                 coord_[1]);
+       
+        for(auto i = 0; i < dims_[0]; i++){
+            if(coord_[0] == i){
+                ncclCommInitRank(&row_comm_dup, dims_[1], nccl_ids[i], coord_[1]);
             }
         }
 
-        // col_comm
+        //col_comm
         ncclUniqueId nccl_id_2, nccl_ids_2[nprocs_];
         ncclGetUniqueId(&nccl_id_2);
         MPI_Allgather(&nccl_id_2, sizeof(ncclUniqueId), MPI_UINT8_T,
-                      &nccl_ids_2[0], sizeof(ncclUniqueId), MPI_UINT8_T, comm);
-
-        for (auto i = 0; i < dims_[1]; i++)
-        {
-            if (coord_[1] == i)
-            {
-                ncclCommInitRank(&col_comm_dup, dims_[0],
-                                 nccl_ids_2[i * dims_[0]], coord_[0]);
+                        &nccl_ids_2[0], sizeof(ncclUniqueId), MPI_UINT8_T, comm);   
+       
+      
+        for(auto i = 0; i < dims_[1]; i++){
+            if(coord_[1] == i){
+                ncclCommInitRank(&col_comm_dup, dims_[0], nccl_ids_2[i * dims_[0]], coord_[0]);
             }
         }
 #else
         MPI_Comm_dup(row_comm_, &row_comm_dup);
-        MPI_Comm_dup(col_comm_, &col_comm_dup);
-#endif
+        MPI_Comm_dup(col_comm_, &col_comm_dup);       
+#endif      
         mpi_wrapper_.add(row_comm_, row_comm_dup);
         mpi_wrapper_.add(col_comm_, col_comm_dup);
 
@@ -970,7 +958,7 @@ public:
 #endif
     }
 
-    Comm_t get_mpi_wrapper() { return mpi_wrapper_; }
+    Comm_t get_mpi_wrapper() { return mpi_wrapper_;}
 #if defined(HAS_SCALAPACK)
     int get_colcomm_ctxt() { return colcomm_ctxt_; }
 

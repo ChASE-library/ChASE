@@ -36,22 +36,22 @@ public:
                                       std::size_t nev)
         : N_(n), nev_(nev), nex_(nex), maxBlock_(nex + nex),
           H_(matrices.get_H()), ldh_(matrices.get_ldh()),
-          V1_(new T[N_ * maxBlock_]), V2_(new T[N_ * maxBlock_]),
+          V1_(new T[N_ * maxBlock_]),
+          V2_(new T[N_ * maxBlock_]), 
           A_(new T[maxBlock_ * maxBlock_])
     {
 
         V12_ = matrices.get_V1();
         V22_ = matrices.get_V2();
-        v0_ = (T*)malloc(N_ * sizeof(T));
-        v2_ = (T*)malloc(N_ * sizeof(T));
+        v0_ = (T*) malloc(N_ * sizeof(T));
+        v2_ = (T*) malloc(N_ * sizeof(T));
     }
 
     ChaseMpiDLABlaslapackSeq() = delete;
     //! Destructor
     ChaseMpiDLABlaslapackSeq(ChaseMpiDLABlaslapackSeq const& rhs) = delete;
 
-    ~ChaseMpiDLABlaslapackSeq()
-    {
+    ~ChaseMpiDLABlaslapackSeq() {
         free(v0_);
         free(v2_);
     }
@@ -72,7 +72,7 @@ public:
             }
         }
     }
-
+    
     void preApplication(T* V, std::size_t const locked,
                         std::size_t const block) override
     {
@@ -149,12 +149,13 @@ public:
         t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, //
                N_, 1, N_,                                 //
                &One,                                      //
-               H_, ldh_,                                  //
+               H_, ldh_,                                    //
                v, N_,                                     //
                &Zero,                                     //
                w, N_);
 
-        // B2C
+        //B2C
+                   
     }
 
     //! return of a pointer to a matrix of size `N_*(nev_+nex_)` allocated in
@@ -344,8 +345,7 @@ public:
                V12_, N_, ritzVc, m, &beta, get_V1(), N_);
         std::memcpy(V12_, get_V1(), m * N_ * sizeof(T));
     }
-    void Lanczos(std::size_t M, int idx, Base<T>* d, Base<T>* e,
-                 Base<T>* r_beta) override
+    void Lanczos(std::size_t M, int idx, Base<T>* d, Base<T>* e, Base<T> *r_beta) override
     {
         Base<T> real_beta;
 
@@ -357,20 +357,18 @@ public:
 #ifdef USE_NSIGHT
         nvtxRangePushA("Lanczos Init vec");
 #endif
-        if (idx >= 0)
+        if(idx >= 0)
         {
             v1_ = get_V1() + idx * N_;
-        }
-        else
+        }else
         {
             std::mt19937 gen(2342.0);
             std::normal_distribution<> normal_distribution;
             v1_ = get_V1();
             for (std::size_t k = 0; k < N_; ++k)
             {
-                v1_[k] =
-                    getRandomT<T>([&]() { return normal_distribution(gen); });
-            }
+                v1_[k] = getRandomT<T>([&]() { return normal_distribution(gen); });
+            }            
         }
 #ifdef USE_NSIGHT
         nvtxRangePop();
@@ -384,13 +382,12 @@ public:
         this->scal(N_, &alpha, v1_, 1);
         for (std::size_t k = 0; k < M; k = k + 1)
         {
-            if (idx >= 0)
-            {
-                std::memcpy(V12_ + k * N_, v1_, N_ * sizeof(T));
+            if(idx >= 0){
+		std::memcpy(V12_ + k * N_, v1_, N_ * sizeof(T));
             }
             this->applyVec(v1_, get_V2());
             this->B2C(get_V2(), 0, v2_, 0, 1);
-            // B2C
+            //B2C
             alpha = this->dot(N_, v1_, 1, v2_, 1);
             alpha = -alpha;
             this->axpy(N_, &alpha, v1_, 1, v2_, 1);
@@ -419,15 +416,43 @@ public:
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
-        *r_beta = real_beta;
+        *r_beta = real_beta;       
     }
 
-    void B2C(T* B, std::size_t off1, T* C, std::size_t off2,
-             std::size_t block) override
+    void B2C(T* B, std::size_t off1, T* C, std::size_t off2, std::size_t block) override
     {
         std::memcpy(C + off2 * N_, B + off1 * N_, block * N_ * sizeof(T));
     }
 
+    void getMpiWorkSpace(T **C, T **B, T **A, T **C2, T **B2, T **vv, Base<T> **rsd, T **w) override    
+    {}
+
+    void getMpiCollectiveBackend(int *allreduce_backend, int *bcast_backend) override
+    {}
+
+    bool isCudaAware() override
+    {
+        return false;    
+    }
+
+    void lacpy(char uplo, std::size_t m, std::size_t n,
+             T* a, std::size_t lda, T* b, std::size_t ldb) override
+    {}
+
+    void shiftMatrixForQR(T *A, std::size_t n, T shift) override
+    {}
+
+    void retrieveC(T **C, std::size_t locked, std::size_t block, bool copy) override
+    {}
+
+    void retrieveB(T **B, std::size_t locked, std::size_t block, bool copy) override
+    {}
+
+    void retrieveResid(Base<T> **rsd, std::size_t locked, std::size_t block) override
+    {}
+
+    void putC(T *C, std::size_t locked, std::size_t block) override
+    {}
 private:
     enum NextOp
     {
@@ -443,16 +468,16 @@ private:
     std::size_t nex_;       //!< number of extral searching space
     std::size_t nev_;       //!< number of required eigenpairs
     T* H_;                  //!< a pointer to the Symmetric/Hermtian matrix
-    std::size_t ldh_;       //!< leading dimension of Hermitian matrix
+    std::size_t ldh_; //!< leading dimension of Hermitian matrix    
     std::unique_ptr<T> V1_; //!< a matrix of size `N_*(nev_+nex_)`
     std::unique_ptr<T> V2_; //!< a matrix of size `N_*(nev_+nex_)`
     std::unique_ptr<T> A_;  //!< a matrix of size `(nev_+nex_)*(nev_+nex_)`
-    T* v0_; //!< a vector of size `N_`, which is allocated in this
-            //!< class for Lanczos
-    T* v1_;
+    T *v0_; //!< a vector of size `N_`, which is allocated in this
+                        //!< class for Lanczos
+    T *v1_;
     T* v2_;
-    T* V12_; //!< a pointer to a matrix of size `N_*(nev_+nex_)`
-    T* V22_; //!< a pointer to a matrix of size `N_*(nev_+nex_)`
+    T* V12_;            //!< a pointer to a matrix of size `N_*(nev_+nex_)`
+    T* V22_;            //!< a pointer to a matrix of size `N_*(nev_+nex_)`
 };
 
 template <typename T>
