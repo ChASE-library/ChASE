@@ -3,7 +3,8 @@
 # Specify the minimum version for CMake
 cmake_minimum_required( VERSION 3.8 )
 
-option(ENABLE_CUDA_AWARE "Enable CUDA aware MPI for collective communications" OFF)
+option(ENABLE_CUDA_AWARE_MPI "Enable CUDA aware MPI for collective communications" ON)
+option(ENABLE_NCCL "Enable Nvidia NCCL for collective communications" ON)
 
 add_library( chase_seq INTERFACE )
 target_link_libraries(chase_seq INTERFACE chase_algorithm)
@@ -38,10 +39,6 @@ find_package( LAPACK REQUIRED )
 find_package( MPI    REQUIRED )
 
 find_package( SCALAPACK )
-
-if(ENABLE_CUDA_AWARE)
-    find_package( NCCL )
-endif()
 
 target_include_directories( chase_seq INTERFACE
   ${MPI_CXX_INCLUDE_PATH}
@@ -165,10 +162,15 @@ if(CMAKE_CUDA_COMPILER)
     ${CUDA_nvToolsExt_LIBRARY}
     )
  
-if(ENABLE_CUDA_AWARE)
+if(ENABLE_CUDA_AWARE_MPI)
   target_compile_definitions( chase_cuda INTERFACE
           "-DCUDA_AWARE"
         )
+
+  if(ENABLE_NCCL)
+	find_package( NCCL REQUIRED )
+  endif()
+
   if(NCCL_FOUND)
     target_link_libraries(chase_cuda INTERFACE
             ${NCCL_LIBRARIES}
