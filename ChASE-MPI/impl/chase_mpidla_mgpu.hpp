@@ -491,7 +491,9 @@ public:
                 n_, block, sizeof(T), d_B_ + locked * n_ + offset * n_, n_,
                 B_ + locked * n_ + offset * n_, n_);
             assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
-#endif            
+#else
+	    cudaDeviceSynchronize();
+#endif	    
             next_ = NextOp::cAb;
         }
         else
@@ -516,7 +518,9 @@ public:
                 m_, block, sizeof(T), d_C_ + locked * m_ + offset * m_, m_,
                 C_ + locked * m_ + offset * m_, m_);
             assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
-#endif            
+#else
+	    cudaDeviceSynchronize();
+#endif	    
             next_ = NextOp::bAc;
         }
     }
@@ -600,8 +604,12 @@ public:
         cuda_exec(cudaMemcpy(C_, d_C_, m_ * (nev_) * sizeof(T),
                              cudaMemcpyDeviceToHost));	
     }
-    Base<T> *get_Resids() override{}
-    Base<T> *get_Ritzv() override{}
+    Base<T> *get_Resids() override{
+    	return matrices_.get_Resid(); 
+    }
+    Base<T> *get_Ritzv() override{
+	return matrices_.get_Ritzv();
+    }
 
     //! It is an interface to BLAS `?axpy`.
     void axpy(std::size_t N, T* alpha, T* x, std::size_t incx, T* y,

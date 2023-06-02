@@ -306,8 +306,13 @@ public:
         cuda_exec(cudaMemcpy(V1_, d_V1_, max_block_ * N_ * sizeof(T),
                              cudaMemcpyDeviceToHost));
     }
-    Base<T> *get_Resids() override{}
-    Base<T> *get_Ritzv() override{}
+    Base<T> *get_Resids() override{
+	return matrices_.get_Resid();   
+    }
+
+    Base<T> *get_Ritzv() override{
+        return matrices_.get_Ritzv();
+    }
     void axpy(std::size_t N, T* alpha, T* x, std::size_t incx, T* y,
               std::size_t incy) override
     {
