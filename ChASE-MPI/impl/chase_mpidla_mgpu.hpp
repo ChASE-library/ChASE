@@ -486,10 +486,12 @@ public:
                             &alpha, d_H_, m_, d_C_ + locked * m_ + offset * m_,
                             m_, &beta, d_B_ + locked * n_ + offset * n_, n_);
             assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
+#if !defined(CUDA_AWARE)            
             cublas_status_ = cublasGetMatrix(
                 n_, block, sizeof(T), d_B_ + locked * n_ + offset * n_, n_,
                 B_ + locked * n_ + offset * n_, n_);
             assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
+#endif            
             next_ = NextOp::cAb;
         }
         else
@@ -509,11 +511,12 @@ public:
                             &alpha, d_H_, m_, d_B_ + locked * n_ + offset * n_,
                             n_, &beta, d_C_ + locked * m_ + offset * m_, m_);
             assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
-
+#if !defined(CUDA_AWARE)
             cublas_status_ = cublasGetMatrix(
                 m_, block, sizeof(T), d_C_ + locked * m_ + offset * m_, m_,
                 C_ + locked * m_ + offset * m_, m_);
             assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
+#endif            
             next_ = NextOp::bAc;
         }
     }
