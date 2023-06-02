@@ -165,6 +165,9 @@ public:
     //! Return the total number of MPI procs within the working MPI
     //! communicator.
     virtual int get_nprocs() const = 0;
+    virtual Base<T> *get_Resids() = 0;
+    virtual Base<T> *get_Ritzv() = 0;
+
     //! Starting point of solving an eigenproblem
     virtual void Start() = 0;
     //! Ending point of solving an eigenproblem

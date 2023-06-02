@@ -60,69 +60,7 @@ namespace mpi
 template <template <typename> class MF, class T>
 class ChaseMpi : public chase::Chase<T>
 {
-public:
-    // case 1:
-    // todo? take all arguments of matrices and entirely wrap it?
-    //! A constructor of the ChaseMpi class which gives an implenentation of
-    //! ChASE for shared-memory architecture, without MPI.
-    /*!
-       The private members of this classes are initialized by the parameters of
-       this constructor.
-       - For the
-       variable `N_`, it is initialized by the first parameter of this
-       constructor `N`.
-       - The variables `nev_` and
-       and `nex_` are initialized by the parameters of this constructor `nev`
-       and `nex`, respectively.
-       - The variable `rank_` is set to be 0 since non MPI is supported. The
-       variable `locked_` is initially set to be 0.
-       - The variable `config_` is setup by the constructor of ChaseConfig which
-       takes the parameters `N`, `nev` and `nex`.
-       - The variable `matrices_` is setup directly by the constructor of
-       ChaseMpiMatrices which takes the paramter `H`, `N`, `nev`, `nex`, `V1`,
-       `ritzv`, `V2` and `resid`.
-       - The variable `dla_` is initialized by `MF` which is a derived class
-       of ChaseMpiDLAInterface. In ChASE, the candidates of `MF` for non-MPI
-       case are the classes `ChaseMpiDLABlaslapackSeq`,
-       `ChaseMpiDLABlaslapackSeqInplace` and `ChaseMpiDLACudaSeq`.
-
-       @param N: size of the square matrix defining the eigenproblem.
-       @param nev: Number of desired extremal eigenvalues.
-       @param nex: Number of eigenvalues augmenting the search space. Usually a
-       relatively small fraction of `nev`.
-       @param V1: a pointer to a rectangular matrix of size `N * (nev+nex)`.
-       If `V1` is not provided by the user, it will be internally allocated in
-       ChaseMpiMatrices class.
-       After the solving step, the first `nev` columns of `V1` are overwritten
-       by the desired Ritz vectors.
-       @param ritzv: a pointer to an array to store the computed Ritz values.
-       If `ritzv` is not provided by the user, it will be internally allocated
-       in ChaseMpiMatrices class. Its minimal size should be `nev+nex`.
-       @param H: a pointer to the memory which stores local part of matrix on
-       each MPI rank. If `H` is not provided by the user, it will be internally
-       allocated in ChaseMpiMatrices class.
-       @param V2: a pointer to anther rectangular matrix of size `N *
-       (nev+nex)`. f `V2` is not provided by the user, it will be internally
-       allocated in ChaseMpiMatrices class.
-       @param resid: a pointer to an array to store the residual of computed
-       eigenpairs. If `resid` is not provided by the user, it will be internally
-       allocated in ChaseMpiMatrices class. Its minimal size should be
-       `nev+nex`.
-    */
-    ChaseMpi(std::size_t N, std::size_t nev, std::size_t nex, T* V1 = nullptr,
-             Base<T>* ritzv = nullptr, T* H = nullptr, T* V2 = nullptr,
-             Base<T>* resid = nullptr)
-        : N_(N), nev_(nev), nex_(nex), rank_(0), locked_(0),
-          config_(N, nev, nex),
-          matrices_(N_, nev_ + nex_, V1, ritzv, H, V2, resid),
-          dla_(new MF<T>(matrices_, N_, nev_, nex_))
-    {
-
-        ritzv_ = matrices_.get_Ritzv();
-        resid_ = matrices_.get_Resid();
-
-    }
-
+public:    
     //! A constructor of the ChaseMpi class which gives an implenentation of
     //! ChASE for shared-memory architecture, without MPI.
     /*!
@@ -175,92 +113,16 @@ public:
              Base<T>* resid = nullptr)
         : N_(N), nev_(nev), nex_(nex), rank_(0), locked_(0),
           config_(N, nev, nex),
-          matrices_(N_, nev_ + nex_, H, ldh, V1, ritzv, V2, resid),
-          dla_(new MF<T>(matrices_, N_, nev_, nex_))
+          dla_(new MF<T>( H, ldh, V1, ritzv, N_, nev_, nex_))
     {
 
-        ritzv_ = matrices_.get_Ritzv();
-        resid_ = matrices_.get_Resid();
+        ritzv_ = dla_->get_Ritzv();
+        resid_ = dla_->get_Resids();
 
     }
 
 
     // case 2: MPI
-    //! A constructor of the ChaseMpi class which gives an implenentation of
-    //! ChASE for distributed-memory architecture, with the support of MPI.
-    //! In this case, the buffer for matrix `H` is allocated internally.
-    /*!
-       The private members of this classes are initialized by the parameters of
-       this constructor.
-       - For the
-       variable `N_`, `nev_` and `nex_` are initialized by the first parameter
-       of this constructor `properties_`.
-       - The variable `rank_` is initialized by `MPI_Comm_rank`. The variable
-       `locked_` is initially set to be 0.
-       - The variable `config_` is setup by the constructor of ChaseConfig which
-       takes the parameters `N`, `nev` and `nex`.
-       - The variable `matrices_` is constructed by the `create_matrices`
-       function defined in ChaseMpiProperties.
-       - The variable `dla_` for the distributed-memory is initialized by the
-       constructor of ChaseMpiDLA which takes both `properties_` and `MF`. In
-       MPI case, the implementation of are split into two classses:
-          - the class ChaseMpiDLA implements mainly the MPI collective
-       communication part of ChASE with MPI support.
-          - The local computation tasks within each MPI is implemented by
-       another two classes derived also from the class ChaseMpiDLAInterface:
-       ChaseMpiDLABlaslapack for pure-CPUs version and ChaseMpiDLAMultiGPU
-       for multi-GPUs version.
-          - Thus, for this constructor, a combination of ChaseMpiDLA and one of
-       ChaseMpiDLABlaslapack and ChaseMpiDLAMultiGPU is required.
-
-       @param properties: an object of ChaseMpiProperties which setups the MPI
-       environment and data distribution scheme for ChaseMpi targeting
-       distributed-memory systems.
-       @param V1: a pointer to a rectangular matrix of size `m * (nev+nex)`.
-       `m` can be obtained through ChaseMpiProperties::get_m(). `V1` is
-       partially distributed within each `column communicator` and is redundant
-       among different `column communicator`. If `V1` is not provided by the
-       user, it will be internally allocated in ChaseMpiMatrices class. After
-       the solving step, the first `nev` columns of `V1` are overwritten by the
-       desired Ritz vectors.
-       @param ritzv: a pointer to an array to store the computed Ritz values.
-       If `ritzv` is not provided by the user, it will be internally allocated
-       in ChaseMpiMatrices class. Its minimal size should be `nev+nex`.
-       @param V2: a pointer to anther rectangular matrix of size `n *
-       (nev+nex)`. If `V2` is not provided by the user, it will be internally
-       allocated in ChaseMpiMatrices class. `n` can be obtained through
-       ChaseMpiProperties::get_n(). `V2` is partially
-       distributed within each `row communicator` and is redundant among
-       different `row communicator`.
-       @param resid: a pointer to an array to store the residual of computed
-       eigenpairs. If `resid` is not provided by the user, it will be internally
-       allocated in ChaseMpiMatrices class. Its minimal size should be
-       `nev+nex`.
-    */
-    ChaseMpi(ChaseMpiProperties<T>* properties, T* V1 = nullptr,
-             Base<T>* ritzv = nullptr, T* V2 = nullptr,
-             Base<T>* resid = nullptr)
-        : N_(properties->get_N()), nev_(properties->GetNev()),
-          nex_(properties->GetNex()), locked_(0), config_(N_, nev_, nex_),
-          properties_(properties),
-          matrices_(std::move(
-              properties_.get()->create_matrices(V1, ritzv, V2, resid))),
-          dla_(new ChaseMpiDLA<T>(properties_.get(), matrices_,
-                                  new MF<T>(properties_.get(), matrices_)))
-    {
-        int init;
-        MPI_Initialized(&init);
-        if (init)
-            MPI_Comm_rank(MPI_COMM_WORLD, &rank_);
-
-        ritzv_ = matrices_.get_Ritzv();
-        resid_ = matrices_.get_Resid();
-
-        static_assert(is_skewed_matrixfree<MF<T>>::value,
-                      "MatrixFreeChASE Must be skewed");
-    }
-
-    // case 3: MPI
     //! A constructor of the ChaseMpi class which gives an implenentation of
     //! ChASE for distributed-memory architecture, with the support of MPI.
     //! In this case, the buffer for matrix `H` should be allocated externally
@@ -323,27 +185,26 @@ public:
        allocated in ChaseMpiMatrices class. Its minimal size should be
        `nev+nex`.
     */
+    
     ChaseMpi(ChaseMpiProperties<T>* properties, T* H, std::size_t ldh, T* V1,
              Base<T>* ritzv, T* V2 = nullptr, Base<T>* resid = nullptr)
         : N_(properties->get_N()), nev_(properties->GetNev()),
           nex_(properties->GetNex()), locked_(0), config_(N_, nev_, nex_),
           properties_(properties),
-          matrices_(std::move(properties_.get()->create_matrices(
-              H, ldh, V1, ritzv, V2, resid))),
-          dla_(new ChaseMpiDLA<T>(properties_.get(), matrices_,
-                                  new MF<T>(properties_.get(), matrices_)))
+          dla_(new ChaseMpiDLA<T>(properties_.get(), new MF<T>(properties_.get(), H, ldh, V1, ritzv)))
     {
         int init;
         MPI_Initialized(&init);
         if (init)
             MPI_Comm_rank(MPI_COMM_WORLD, &rank_);
 
-        ritzv_ = matrices_.get_Ritzv();
-        resid_ = matrices_.get_Resid();
+        ritzv_ = dla_->get_Ritzv();
+        resid_ = dla_->get_Resids();
 
         static_assert(is_skewed_matrixfree<MF<T>>::value,
                       "MatrixFreeChASE Must be skewed");
     }
+    
     //! It prevents the copy operation of the constructor of ChaseMpi.
     ChaseMpi(const ChaseMpi&) = delete;
 
@@ -653,7 +514,7 @@ public:
 
     //! \return `H_`: A pointer to the memory allocated to store (local part if
     //! applicable) of matrix `A`.
-    T* GetMatrixPtr() { return matrices_.get_H(); }
+    //T* GetMatrixPtr() { return matrices_.get_H(); }
 
     //! This member function implements the virtual one declared in Chase class.
     //! \return `resid_`: a  pointer to the memory allocated to store the
@@ -759,7 +620,7 @@ private:
 
     //! An object of ChaseMpiMatrices to setup the matrices and vectors used by
     //! ChaseMpi class.
-    ChaseMpiMatrices<T> matrices_;
+    //ChaseMpiMatrices<T> matrices_;
 
     //! A smart pointer to an object of ChaseMpiDLAInterface class which is used
     //! by ChaseMpi class.

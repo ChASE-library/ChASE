@@ -39,8 +39,7 @@ public:
       implementation of in-node computation for ChASE-MPI. Currently, it can be
       one of ChaseMpiDLABlaslapack and ChaseMpiDLAMultiGPU.
     */
-    ChaseMpiDLA(ChaseMpiProperties<T>* matrix_properties,
-                ChaseMpiMatrices<T>& matrices, ChaseMpiDLAInterface<T>* dla)
+    ChaseMpiDLA(ChaseMpiProperties<T>* matrix_properties, ChaseMpiDLAInterface<T>* dla)
         : dla_(dla)
     {
 #ifdef USE_NSIGHT
@@ -52,11 +51,6 @@ public:
         N_ = matrix_properties->get_N();
         n_ = matrix_properties->get_n();
         m_ = matrix_properties->get_m();
-        //B_ = matrices.get_V2();
-//        C_ = matrices.get_V1();
-//        C2_ = matrix_properties->get_C2();
-        //B2_ = matrix_properties->get_B2();
-        //A_ = matrix_properties->get_A();
 #if !defined(HAS_SCALAPACK)
         V_ = matrix_properties->get_V();
 #endif
@@ -786,6 +780,12 @@ public:
     int get_nprocs() const override { return matrix_properties_->get_nprocs(); }
     void Start() override { dla_->Start(); }
     void End() override { dla_->End(); }
+    Base<T> *get_Resids() override{
+        return dla_->get_Resids();
+    }
+    Base<T> *get_Ritzv() override{
+        return dla_->get_Ritzv();
+    }
 
     void axpy(std::size_t N, T* alpha, T* x, std::size_t incx, T* y,
               std::size_t incy) override

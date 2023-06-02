@@ -33,16 +33,21 @@ public:
         @param maxBlock: maximum column number of matrix `V`, which equals to
        `nev+nex`.
     */
-    ChaseMpiDLABlaslapackSeqInplace(ChaseMpiMatrices<T>& matrices,
+    ChaseMpiDLABlaslapackSeqInplace(T *H, std::size_t ldh, T *V1, Base<T> *ritzv,
                                     std::size_t n, std::size_t nev,
                                     std::size_t nex)
         : N_(n), nex_(nex), nev_(nev), maxblock_(nev_ + nex_),
-          V1_(matrices.get_V1()), V2_(matrices.get_V2()), H_(matrices.get_H()),
-          ldh_(matrices.get_ldh())
+          matrices_(N_, nev_ + nex_, H, ldh, V1, ritzv)
     {
-        v0_ = (T*) malloc(N_ * sizeof(T));
-        v1_ = (T*) malloc(N_ * sizeof(T));
-        w_ = (T*) malloc(N_ * sizeof(T));        
+
+          V1_ = matrices_.get_V1(); 
+          V2_ = matrices_.get_V2();
+          H_ = matrices_.get_H();
+          ldh_= matrices_.get_ldh();
+
+          v0_ = (T*) malloc(N_ * sizeof(T));
+          v1_ = (T*) malloc(N_ * sizeof(T));
+          w_ = (T*) malloc(N_ * sizeof(T));        
     }
 
     ~ChaseMpiDLABlaslapackSeqInplace() {
@@ -119,6 +124,13 @@ public:
     int get_nprocs() const override { return 1; }
     void Start() override {}
     void End() override {}
+    Base<T> *get_Resids() override{
+        return matrices_.get_Resid();
+
+    }
+    Base<T> *get_Ritzv() override{
+        return matrices_.get_Ritzv();
+    }
 
     void axpy(std::size_t N, T* alpha, T* x, std::size_t incx, T* y,
               std::size_t incy) override
@@ -407,6 +419,8 @@ private:
     T *v1_; //!< a vector of size `N_`, which is allocated in this
                         //!< class for Lanczos
     T* w_;
+    ChaseMpiMatrices<T> matrices_;
+
 };
 
 template <typename T>

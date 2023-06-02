@@ -29,7 +29,9 @@ public:
     //! @param matrices: it is an instance of ChaseMpiMatrices, which
     //!  allocates the required buffers in ChASE-MPI.
     ChaseMpiDLABlaslapack(ChaseMpiProperties<T>* matrix_properties,
-                          ChaseMpiMatrices<T>& matrices)
+                          T *H, std::size_t ldh, T *V1, Base<T> *ritzv)
+    :matrices_(std::move(matrix_properties->create_matrices(
+               H, ldh, V1, ritzv)))
     {
         // TODO
         n_ = matrix_properties->get_n();
@@ -37,15 +39,15 @@ public:
         N_ = matrix_properties->get_N();
         nev_ = matrix_properties->GetNev();
         nex_ = matrix_properties->GetNex();
-        H_ = matrices.get_H();
-        ldh_ = matrices.get_ldh();
+        H_ = matrices_.get_H();
+        ldh_ = matrices_.get_ldh();
 
-        B_ = matrices.get_V2();
-        C_ = matrices.get_V1();
+        B_ = matrices_.get_V2();
+        C_ = matrices_.get_V1();
         C2_ = matrix_properties->get_C2();
         B2_ = matrix_properties->get_B2();
         A_ = matrix_properties->get_A();
-	resid = matrices.get_Resid();
+	resid = matrices_.get_Resid();
         off_ = matrix_properties->get_off();
 
         matrix_properties->get_offs_lens(r_offs_, r_lens_, r_offs_l_, c_offs_,
@@ -205,7 +207,12 @@ public:
     int get_nprocs() const override { return matrix_properties_->get_nprocs(); }
     void Start() override {}
     void End() override {}
-
+    Base<T> *get_Resids() override{
+        return matrices_.get_Resid();        
+    }
+    Base<T> *get_Ritzv() override{
+        return matrices_.get_Ritzv();
+    }
     //! It is an interface to BLAS `?axpy`.
     void axpy(std::size_t N, T* alpha, T* x, std::size_t incx, T* y,
               std::size_t incy) override
@@ -435,6 +442,8 @@ private:
 
     ChaseMpiProperties<T>*
         matrix_properties_; //!< an object of class ChaseMpiProperties
+    ChaseMpiMatrices<T> matrices_;    
+
 };
 
 template <typename T>

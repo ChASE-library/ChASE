@@ -31,18 +31,19 @@ public:
         @param nev: number of eigenpairs to be computed
         @param nex: size of extral searching space
     */
-    explicit ChaseMpiDLABlaslapackSeq(ChaseMpiMatrices<T>& matrices,
+    explicit ChaseMpiDLABlaslapackSeq(T *H, std::size_t ldh, T *V1, Base<T> *ritzv,
                                       std::size_t n, std::size_t nex,
                                       std::size_t nev)
         : N_(n), nev_(nev), nex_(nex), maxBlock_(nex + nex),
-          H_(matrices.get_H()), ldh_(matrices.get_ldh()),
+          matrices_(N_, nev_ + nex_, H, ldh, V1, ritzv),
           V1_(new T[N_ * maxBlock_]),
           V2_(new T[N_ * maxBlock_]), 
           A_(new T[maxBlock_ * maxBlock_])
     {
-
-        V12_ = matrices.get_V1();
-        V22_ = matrices.get_V2();
+        H_ = matrices_.get_H();
+        ldh_ = matrices_.get_ldh();
+        V12_ = matrices_.get_V1();
+        V22_ = matrices_.get_V2();
         v0_ = (T*) malloc(N_ * sizeof(T));
         v2_ = (T*) malloc(N_ * sizeof(T));
     }
@@ -152,10 +153,7 @@ public:
                H_, ldh_,                                    //
                v, N_,                                     //
                &Zero,                                     //
-               w, N_);
-
-        //B2C
-                   
+               w, N_);                   
     }
 
     //! return of a pointer to a matrix of size `N_*(nev_+nex_)` allocated in
@@ -170,6 +168,12 @@ public:
 
     void Start() override {}
     void End() override {}
+    Base<T> *get_Resids() override{
+        return matrices_.get_Resid();
+    }
+    Base<T> *get_Ritzv() override{
+        return matrices_.get_Ritzv();
+    }
 
     void axpy(std::size_t N, T* alpha, T* x, std::size_t incx, T* y,
               std::size_t incy) override
@@ -478,6 +482,7 @@ private:
     T* v2_;
     T* V12_;            //!< a pointer to a matrix of size `N_*(nev_+nex_)`
     T* V22_;            //!< a pointer to a matrix of size `N_*(nev_+nex_)`
+    ChaseMpiMatrices<T> matrices_;    
 };
 
 template <typename T>

@@ -242,7 +242,9 @@ public:
     //! @param matrices: it is an instance of ChaseMpiMatrices, which
     //!  allocates the required buffers in ChASE-MPI.
     ChaseMpiDLAMultiGPU(ChaseMpiProperties<T>* matrix_properties,
-                        ChaseMpiMatrices<T>& matrices)
+                          T *H, std::size_t ldh, T *V1, Base<T> *ritzv)
+    :matrices_(std::move(matrix_properties->create_matrices(
+               H, ldh, V1, ritzv)))
     {
 #ifdef USE_NSIGHT
         nvtxRangePushA("ChaseMpiDLAMultiGPU: Init");
@@ -252,15 +254,15 @@ public:
         N_ = matrix_properties->get_N();
         nev_ = matrix_properties->GetNev();
         nex_ = matrix_properties->GetNex();
-        H_ = matrices.get_H();
-        ldh_ = matrices.get_ldh();
-        B_ = matrices.get_V2();
-        C_ = matrices.get_V1();
+        H_ = matrices_.get_H();
+        ldh_ = matrices_.get_ldh();
+        B_ = matrices_.get_V2();
+        C_ = matrices_.get_V1();
         C2_ = matrix_properties->get_C2();
         B2_ = matrix_properties->get_B2();
         A_ = matrix_properties->get_A();
         off_ = matrix_properties->get_off();
-	resid = matrices.get_Resid();
+	    resid = matrices_.get_Resid();
         matrix_properties->get_offs_lens(r_offs_, r_lens_, r_offs_l_, c_offs_,
                                          c_lens_, c_offs_l_);
         mb_ = matrix_properties->get_mb();
@@ -595,6 +597,8 @@ public:
         cuda_exec(cudaMemcpy(C_, d_C_, m_ * (nev_) * sizeof(T),
                              cudaMemcpyDeviceToHost));	
     }
+    Base<T> *get_Resids() override{}
+    Base<T> *get_Ritzv() override{}
 
     //! It is an interface to BLAS `?axpy`.
     void axpy(std::size_t N, T* alpha, T* x, std::size_t incx, T* y,
@@ -1053,6 +1057,7 @@ private:
     int lwork_ = 0; //!< size of required extra buffer by any cuSOLVER routines
     ChaseMpiProperties<T>*
         matrix_properties_; //!< an object of class ChaseMpiProperties
+    ChaseMpiMatrices<T> matrices_;    
 
     T *d_ritzVc_ = nullptr;
 

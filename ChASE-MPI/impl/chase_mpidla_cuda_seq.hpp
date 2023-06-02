@@ -135,12 +135,16 @@ public:
         @param maxBlock: maximum column number of matrix `V`, which equals to
        `nev+nex`.
     */
-    ChaseMpiDLACudaSeq(ChaseMpiMatrices<T>& matrices, std::size_t N,
+    ChaseMpiDLACudaSeq(T *H, std::size_t ldh, T *V1, Base<T> *ritzv, std::size_t N,
                        std::size_t nev, std::size_t nex)
         : N_(N), copied_(false), nev_(nev), nex_(nex), max_block_(nev + nex),
-          V1_(matrices.get_V1()), V2_(matrices.get_V2()), H_(matrices.get_H()),
-          ldh_(matrices.get_ldh())
+          matrices_(N_, nev_ + nex_, H, ldh, V1, ritzv)
     {
+        V1_ = matrices_.get_V1();
+        V2_ = matrices_.get_V2();
+        H_  = matrices_.get_H();
+        ldh_ = matrices_.get_ldh();
+
         cuda_exec(cudaSetDevice(0));
         cuda_exec(cudaMalloc((void**)&(d_V1_), N_ * (nev_ + nex_) * sizeof(T)));
         cuda_exec(cudaMalloc((void**)&(d_V2_), N_ * (nev_ + nex_) * sizeof(T)));
@@ -302,7 +306,8 @@ public:
         cuda_exec(cudaMemcpy(V1_, d_V1_, max_block_ * N_ * sizeof(T),
                              cudaMemcpyDeviceToHost));
     }
-
+    Base<T> *get_Resids() override{}
+    Base<T> *get_Ritzv() override{}
     void axpy(std::size_t N, T* alpha, T* x, std::size_t incx, T* y,
               std::size_t incy) override
     {
@@ -614,6 +619,9 @@ private:
     bool copied_; //!< a flag indicates if the matrix has already been copied to
                   //!< device
     curandStatePhilox4_32_10_t *states_ = NULL;
+
+    ChaseMpiMatrices<T> matrices_;
+
 };
 
 template <typename T>

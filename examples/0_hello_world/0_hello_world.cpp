@@ -83,27 +83,30 @@ int main(int argc, char** argv)
 #elif defined(USE_GIVEN_DIST)
     auto props = new ChaseMpiProperties<T>(N, nev, nex, m, n, dims[0], dims[1],
                                            (char*)"C", MPI_COMM_WORLD);
-#elif defined(NO_COPY_H)
-    auto props = new ChaseMpiProperties<T>(N, nev, nex, MPI_COMM_WORLD);
 #else
     auto props = new ChaseMpiProperties<T>(N, nev, nex, MPI_COMM_WORLD);
 #endif
 
     auto m_ = props->get_m();
+    auto n_ = props->get_n();
+    auto ldh_ = props->get_ldh();
 
     auto V = std::vector<T>(m_ * (nev + nex));     // eigevectors
     auto Lambda = std::vector<Base<T>>(nev + nex); // eigenvalues
+    auto H = std::vector<T>(ldh_ * n_);
 
-    std::vector<T> H(N * N, T(0.0));
+    CHASE single(props, H.data(), ldh_, V.data(), Lambda.data());
+
+    std::vector<T> Clement(N * N, T(0.0));
 
     /*Generate Clement matrix*/
     for (auto i = 0; i < N; ++i)
     {
         H[i + N * i] = 0;
         if (i != N - 1)
-            H[i + 1 + N * i] = std::sqrt(i * (N + 1 - i));
+            Clement[i + 1 + N * i] = std::sqrt(i * (N + 1 - i));
         if (i != N - 1)
-            H[i + N * (i + 1)] = std::sqrt(i * (N + 1 - i));
+            Clement[i + N * (i + 1)] = std::sqrt(i * (N + 1 - i));
     }
 
     if (rank == 0)
@@ -115,8 +118,6 @@ int main(int argc, char** argv)
     std::cout << std::setprecision(16);
 
 #ifdef USE_BLOCK_CYCLIC
-    CHASE single(props, V.data(), Lambda.data());
-
     /*local block number = mblocks x nblocks*/
     std::size_t mblocks = props->get_mblocks();
     std::size_t nblocks = props->get_nblocks();
@@ -138,31 +139,14 @@ int main(int argc, char** argv)
             {
                 for (std::size_t p = 0; p < r_lens[i]; p++)
                 {
-                    single.GetMatrixPtr()[(q + c_offs_l[j]) * m + p +
+                    H[(q + c_offs_l[j]) * m + p +
                                           r_offs_l[i]] =
-                        H[(q + c_offs[j]) * N + p + r_offs[i]];
+                        Clement[(q + c_offs[j]) * N + p + r_offs[i]];
                 }
             }
         }
     }
-
-#elif defined(NO_COPY_H)
-    std::size_t xoff, yoff, xlen, ylen, ldh;
-    props->get_off(&xoff, &yoff, &xlen, &ylen);
-    ldh = N / dims[0] + 1;
-    T* h_loc = new T[ldh * ylen];
-    for (std::size_t x = 0; x < xlen; x++)
-    {
-        for (std::size_t y = 0; y < ylen; y++)
-        {
-            h_loc[x + ldh * y] = H[(xoff + x) * N + (yoff + y)];
-        }
-    }
-
-    CHASE single(props, h_loc, ldh, V.data(), Lambda.data());
-
 #else
-    CHASE single(props, V.data(), Lambda.data());
 
     std::size_t xoff, yoff, xlen, ylen;
 
@@ -174,8 +158,8 @@ int main(int argc, char** argv)
     {
         for (std::size_t y = 0; y < ylen; y++)
         {
-            single.GetMatrixPtr()[x + xlen * y] =
-                H.at((xoff + x) * N + (yoff + y));
+            H[x + xlen * y] =
+                Clement[(xoff + x) * N + (yoff + y)];
         }
     }
 

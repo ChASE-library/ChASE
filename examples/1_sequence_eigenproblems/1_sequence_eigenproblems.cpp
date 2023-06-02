@@ -39,7 +39,7 @@ int main(int argc, char** argv)
 
 #ifdef USE_BLOCK_CYCLIC
     /*parameters of block-cyclic data layout*/
-    std::size_t NB = 50; // block size for block-cyclic data layout
+    std::size_t NB = 32; // block size for block-cyclic data layout
     int dims[2];
     dims[0] = dims[1] = 0;
     // MPI proc grid = dims[0] x dims[1]
@@ -65,10 +65,13 @@ int main(int argc, char** argv)
 #endif
 
     auto m_ = props->get_m();
+    auto n_ = props->get_n();
     auto V = std::vector<T>(m_ * (nev + nex));     // eigevectors
     auto Lambda = std::vector<Base<T>>(nev + nex); // eigenvalues
+    auto ldh_ = props->get_ldh();
+    auto H = std::vector<T>(ldh_ * n_);     // eigevectors
 
-    CHASE single(props, V.data(), Lambda.data());
+    CHASE single(props, H.data(), ldh_, V.data(), Lambda.data());
 
     /*Setup configure for ChASE*/
     auto& config = single.GetConfig();
@@ -91,16 +94,16 @@ int main(int argc, char** argv)
                   << '\n'
                   << config;
 
-    std::vector<T> H(N * N, T(0.0));
+    std::vector<T> Clement(N * N, T(0.0));
 
     /*Generate Clement matrix*/
     for (auto i = 0; i < N; ++i)
     {
-        H[i + N * i] = 0;
+        Clement[i + N * i] = 0;
         if (i != N - 1)
-            H[i + 1 + N * i] = std::sqrt(i * (N + 1 - i));
+            Clement[i + 1 + N * i] = std::sqrt(i * (N + 1 - i));
         if (i != N - 1)
-            H[i + N * (i + 1)] = std::sqrt(i * (N + 1 - i));
+            Clement[i + N * (i + 1)] = std::sqrt(i * (N + 1 - i));
     }
 
 #ifdef USE_BLOCK_CYCLIC
@@ -142,9 +145,9 @@ int main(int argc, char** argv)
                 {
                     for (std::size_t p = 0; p < r_lens[i]; p++)
                     {
-                        single.GetMatrixPtr()[(q + c_offs_l[j]) * m + p +
+                        H[(q + c_offs_l[j]) * m + p +
                                               r_offs_l[i]] =
-                            H[(q + c_offs[j]) * N + p + r_offs[i]];
+                            Clement[(q + c_offs[j]) * N + p + r_offs[i]];
                     }
                 }
             }
@@ -156,8 +159,8 @@ int main(int argc, char** argv)
         {
             for (std::size_t y = 0; y < ylen; y++)
             {
-                single.GetMatrixPtr()[x + xlen * y] =
-                    H.at((xoff + x) * N + (yoff + y));
+                H[x + xlen * y] =
+                    Clement.at((xoff + x) * N + (yoff + y));
             }
         }
 #endif
@@ -198,8 +201,8 @@ int main(int argc, char** argv)
             for (std::size_t j = 1; j < i; ++j)
             {
                 T element_perturbation = T(d(gen), d(gen)) * perturb;
-                H[j + N * i] += element_perturbation;
-                H[i + N * j] += std::conj(element_perturbation);
+                Clement[j + N * i] += element_perturbation;
+                Clement[i + N * j] += std::conj(element_perturbation);
             }
         }
 
