@@ -5,6 +5,8 @@ project( ChASE LANGUAGES C CXX VERSION 1.3.0 )
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 # ## algorithm ##
 
+set(CMAKE_CXX_STANDARD 14)
+
 add_library(chase_algorithm INTERFACE)
 
 include(GNUInstallDirs)

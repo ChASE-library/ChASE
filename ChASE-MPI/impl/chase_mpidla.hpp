@@ -305,8 +305,10 @@ public:
 	v0_ = new T[m_];
 	v1_ = new T[m_];
 	v2_ = new T[m_];
+    w_ = new T[n_];
 	mpi_wrapper_ = matrix_properties->get_mpi_wrapper();
 	cuda_aware_ = dla_->isCudaAware(); 
+    T *ww;
         dla_->getMpiWorkSpace(&C, &B, &A, &C2, &B2, &vv, &rsd, &ww);
         dla_->getMpiCollectiveBackend(&allreduce_backend, &bcast_backend);
         if(cuda_aware_)
@@ -329,6 +331,7 @@ public:
         delete [] v0_;
         delete [] v1_;
         delete [] v2_;
+        delete [] w_;
     }
 
     //! In ChaseMpiDLA, this function consists of operations
@@ -767,11 +770,11 @@ public:
         T One = T(1.0);
         T Zero = T(0.0);
 
-        dla_->applyVec(v, ww);
-        MPI_Allreduce(MPI_IN_PLACE, ww, n_,
+        dla_->applyVec(v, w_);
+        MPI_Allreduce(MPI_IN_PLACE, w_, n_,
                       getMPI_Type<T>(), MPI_SUM, col_comm_);
 
-	this->B2C(ww, 0, v2, 0, 1);
+	this->B2C(w_, 0, v2, 0, 1);
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
@@ -1820,7 +1823,7 @@ private:
 #endif
     Comm_t mpi_wrapper_;
     bool cuda_aware_;
-    T *C, *B, *A, *C2, *B2, *vv, *ww;
+    T *C, *B, *A, *C2, *B2, *vv;
     Base<T> *rsd;
     int allreduce_backend, bcast_backend;
     int memcpy_mode[3];

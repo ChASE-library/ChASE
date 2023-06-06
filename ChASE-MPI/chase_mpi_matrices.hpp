@@ -213,6 +213,18 @@ class Matrix
        cublasSetMatrix(nrows, ncols, sizeof(T), this->host() + offset * this->h_ld(),
 		       this->h_ld(), this->device() + offset * this->d_ld(), this->d_ld());
     }
+
+
+    void D2H()
+    {
+        cublasGetMatrix(m_, n_, sizeof(T), this->device(), this->d_ld(), this->host(), this->h_ld());
+    }
+
+    void D2H(std::size_t nrows, std::size_t ncols, std::size_t offset = 0)
+    {
+       cublasGetMatrix(nrows, ncols, sizeof(T), this->device() + offset * this->d_ld()
+               this->d_ld(), this->host() + offset * this->h_ld(), this->h_ld());
+    }    
 #endif     
     
     private:
@@ -321,7 +333,9 @@ public:
                      std::size_t max_block, T* H, std::size_t ldh,
                      T* V1,  Base<T>* ritzv)
         // if value is null then allocate otherwise don't
-        : ritzv__(ritzv == nullptr ? new Base<T>[max_block] : nullptr),
+        : V1__(V1 == nullptr ? new T[m * max_block] : nullptr),
+          V2__(new T[n * max_block]),
+          ritzv__(ritzv == nullptr ? new Base<T>[max_block] : nullptr),
           resid__(new Base<T>[max_block] ),
           ldh_(ldh),
           // if value is null we take allocated
@@ -342,9 +356,14 @@ public:
             isGPU = 1;
             isCUDA_Aware = 2;	
 	}	
-	H___ = std::make_unique<Matrix<T>>(isGPU, m, n, H, ldh);
-	C___ = std::make_unique<Matrix<T>>(isCUDA_Aware, m, max_block, V1, m);
-        C2___ = std::make_unique<Matrix<T>>(isCUDA_Aware, m, max_block);	
+	    H___ = std::make_unique<Matrix<T>>(isGPU, m, n, H, ldh);
+	    C___ = std::make_unique<Matrix<T>>(isCUDA_Aware, m, max_block, V1, m);
+        C2___ = std::make_unique<Matrix<T>>(isCUDA_Aware, m, max_block);
+        B___ = std::make_unique<Matrix<T>>(isCUDA_Aware, n, max_block);	
+        B2___ = std::make_unique<Matrix<T>>(isCUDA_Aware, n, max_block); 
+        A___ = std::make_unique<Matrix<T>>(isCUDA_Aware, max_block, max_block); 
+        Ritzv___ = std::make_unique<Matrix<Base<T>>>(isCUDA_Aware, max_block, 1, ritzv, max_block);
+        Resid___ = std::make_unique<Matrix<Base<T>>>(isCUDA_Aware, max_block, 1);
     }
 
     //! Return buffer stores the (local part if applicable) matrix A.
@@ -378,6 +397,11 @@ public:
     Matrix<T> H() {return *H___.get();}
     Matrix<T> C() {return *C___.get();}
     Matrix<T> C2() {return *C2___.get();}
+    Matrix<T> A() {return *A___.get();}
+    Matrix<T> B() {return *B___.get();}
+    Matrix<T> B2() {return *B2___.get();}
+    Matrix<Base<T>> Resid() {return *Resid___.get();}
+    Matrix<Base<T>> Ritzv() {return *Ritzv___.get();}
 
 private:
     //! A smart pointer which manages the buffer of `H_` which stores (local
@@ -416,6 +440,12 @@ private:
     std::unique_ptr<Matrix<T>> H___;
     std::unique_ptr<Matrix<T>> C___;
     std::unique_ptr<Matrix<T>> C2___;
+    std::unique_ptr<Matrix<T>> B___;
+    std::unique_ptr<Matrix<T>> B2___;
+    std::unique_ptr<Matrix<T>> A___;
+    std::unique_ptr<Matrix<Base<T>>> Resid___;
+    std::unique_ptr<Matrix<Base<T>>> Ritzv___;
+
 };
 } // namespace mpi
 } // namespace chase
