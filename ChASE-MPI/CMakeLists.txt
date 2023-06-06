@@ -161,7 +161,11 @@ if(CMAKE_CUDA_COMPILER)
   target_link_libraries( chase_seq INTERFACE
     ${CUDA_nvToolsExt_LIBRARY}
     )
- 
+
+  target_compile_definitions( chase_cuda INTERFACE
+	  "-DHAS_CUDA"
+        )
+
 if(ENABLE_CUDA_AWARE_MPI)
   target_compile_definitions( chase_cuda INTERFACE
           "-DCUDA_AWARE"

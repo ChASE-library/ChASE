@@ -243,8 +243,13 @@ public:
     //!  allocates the required buffers in ChASE-MPI.
     ChaseMpiDLAMultiGPU(ChaseMpiProperties<T>* matrix_properties,
                           T *H, std::size_t ldh, T *V1, Base<T> *ritzv)
+#if defined(CUDA_AWARE) 
     :matrices_(std::move(matrix_properties->create_matrices(
-               H, ldh, V1, ritzv)))
+               2, H, ldh, V1, ritzv)))
+#else	    
+    :matrices_(std::move(matrix_properties->create_matrices(
+               1, H, ldh, V1, ritzv)))    
+#endif    
     {
 #ifdef USE_NSIGHT
         nvtxRangePushA("ChaseMpiDLAMultiGPU: Init");
@@ -254,11 +259,10 @@ public:
         N_ = matrix_properties->get_N();
         nev_ = matrix_properties->GetNev();
         nex_ = matrix_properties->GetNex();
-        H_ = matrices_.get_H();
-        ldh_ = matrices_.get_ldh();
-        B_ = matrices_.get_V2();
-        C_ = matrices_.get_V1();
-        C2_ = matrix_properties->get_C2();
+        H__ = matrices_.H();
+	C__ = matrices_.C();
+	C2__ = matrices_.C2();
+	B_ = matrices_.get_V2();
         B2_ = matrix_properties->get_B2();
         A_ = matrix_properties->get_A();
         off_ = matrix_properties->get_off();
@@ -287,21 +291,6 @@ public:
         std::size_t maxBlock = matrix_properties_->get_max_block();
 
         /* Register H, B, C as pinned-memories on host */
-	cuda_exec(cudaHostRegister((void*)H_, ldh_ * n_ * sizeof(T),
-                                   cudaHostRegisterDefault));
-        cuda_exec(cudaHostRegister((void*)B_, n_ * maxBlock * sizeof(T),
-                                   cudaHostRegisterDefault));
-        cuda_exec(cudaHostRegister((void*)C_, m_ * maxBlock * sizeof(T),
-                                   cudaHostRegisterDefault));
-        cuda_exec(cudaHostRegister((void*)B2_, n_ * maxBlock * sizeof(T),
-                                   cudaHostRegisterDefault));
-        cuda_exec(cudaHostRegister((void*)C2_, m_ * maxBlock * sizeof(T),
-                                   cudaHostRegisterDefault));
-	cuda_exec(cudaMalloc((void**)&(d_H_), m_ * n_ * sizeof(T)));
-        cuda_exec(cudaMallocPitch((void**)&(d_C_), &pitchC,
-                                  (nev_ + nex_) * sizeof(T), m_));
-        cuda_exec(cudaMallocPitch((void**)&(d_C2_), &pitchC2,
-                                  (nev_ + nex_) * sizeof(T), m_));
         cuda_exec(cudaMallocPitch((void**)&(d_B_), &pitchB,
                                   (nev_ + nex_) * sizeof(T), n_));
         cuda_exec(cudaMallocPitch((void**)&(d_B2_), &pitchB2,
@@ -391,16 +380,8 @@ public:
         cudaStreamDestroy(stream2_);
         cublasDestroy(cublasH_);
         cusolverDnDestroy(cusolverH_);
-	cuda_exec(cudaHostUnregister(H_));
-        cuda_exec(cudaHostUnregister(B_));
-        cuda_exec(cudaHostUnregister(C_));
-        cuda_exec(cudaHostUnregister(C2_));
-        cuda_exec(cudaHostUnregister(B2_));
-        cuda_exec(cudaFree(d_H_));
-        cuda_exec(cudaFree(d_C_));
         cuda_exec(cudaFree(d_B_));
         cuda_exec(cudaFree(d_A_));
-        cuda_exec(cudaFree(d_C2_));
         cuda_exec(cudaFree(d_B2_));
         cuda_exec(cudaFree(d_work_));
         cuda_exec(cudaFree(devInfo_));
@@ -425,12 +406,11 @@ public:
     //! to GPU
     void initVecs() override
     {
-        cuda_exec(cudaMemcpy(d_C2_, d_C_, m_ * (nev_ + nex_) * sizeof(T),
+        cuda_exec(cudaMemcpy(C2__.device(), C__.device(), m_ * (nev_ + nex_) * sizeof(T),
                              cudaMemcpyDeviceToDevice));
 
-        cublas_status_ = cublasSetMatrix(m_, n_, sizeof(T), H_, ldh_, d_H_, m_);
-        assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
-        next_ = NextOp::bAc;
+        H__.H2D();
+	next_ = NextOp::bAc;
     }
     //! This function generates the random values for each MPI proc using device
     //! API of cuRAND
@@ -444,7 +424,7 @@ public:
         MPI_Comm_rank(col_comm, &mpi_col_rank);
         unsigned long long seed = 1337 + mpi_col_rank;
 
-        chase_rand_normal(seed, states_, d_C_, m_ * (nev_ + nex_),
+        chase_rand_normal(seed, states_, C__.device(), m_ * (nev_ + nex_),
                           (cudaStream_t)0);
     }
 
@@ -455,10 +435,8 @@ public:
         next_ = NextOp::bAc;
         if (locked > 0)
         {
-            cuda_exec(cudaMemcpy(d_C_ + locked * m_, C_ + locked * m_,
-                                 m_ * block * sizeof(T),
-                                 cudaMemcpyHostToDevice));
-        }
+            C__.H2D(m_, block, locked);
+	}
     }
 
     //! - This function performs the local computation of `GEMM` for
@@ -476,14 +454,11 @@ public:
                 beta = Zero;
             }
 #if !defined(CUDA_AWARE)	    
-            cuda_exec(cudaMemcpy(d_C_ + offset * m_ + locked * m_,
-                                 C_ + offset * m_ + locked * m_,
-                                 block * m_ * sizeof(T),
-                                 cudaMemcpyHostToDevice));
+	    C__.H2D(m_, block, offset);
 #endif
 	    cublas_status_ =
                 cublasTgemm(cublasH_, CUBLAS_OP_C, CUBLAS_OP_N, n_, block, m_,
-                            &alpha, d_H_, m_, d_C_ + locked * m_ + offset * m_,
+                            &alpha, H__.device(), H__.d_ld(), C__.device() + locked * m_ + offset * m_,
                             m_, &beta, d_B_ + locked * n_ + offset * n_, n_);
             assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
 #if !defined(CUDA_AWARE)            
@@ -510,13 +485,13 @@ public:
 #endif
 	    cublas_status_ =
                 cublasTgemm(cublasH_, CUBLAS_OP_N, CUBLAS_OP_N, m_, block, n_,
-                            &alpha, d_H_, m_, d_B_ + locked * n_ + offset * n_,
-                            n_, &beta, d_C_ + locked * m_ + offset * m_, m_);
+                            &alpha, H__.device(), H__.d_ld(), d_B_ + locked * n_ + offset * n_,
+                            n_, &beta, C__.device() + locked * m_ + offset * m_, m_);
             assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
 #if !defined(CUDA_AWARE)
             cublas_status_ = cublasGetMatrix(
-                m_, block, sizeof(T), d_C_ + locked * m_ + offset * m_, m_,
-                C_ + locked * m_ + offset * m_, m_);
+                m_, block, sizeof(T), C__.device() + locked * m_ + offset * m_, m_,
+                C__.host() + locked * m_ + offset * m_, m_);
             assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
 #else
 	    cudaDeviceSynchronize();
@@ -530,7 +505,7 @@ public:
     //! - are performed on CPUs.
     bool postApplication(T* V, std::size_t block, std::size_t locked) override
     {
-        cuda_exec(cudaMemcpy(C_ + locked * m_, d_C_ + locked * m_,
+        cuda_exec(cudaMemcpy(C__.host() + locked * m_, C__.device() + locked * m_,
                              m_ * block * sizeof(T), cudaMemcpyDeviceToHost));
         return false;
     }
@@ -543,7 +518,7 @@ public:
     //! with each GPU.
     void shiftMatrix(T c, bool isunshift = false) override
     {
-        chase_shift_mgpu_matrix(d_H_, d_off_m_, d_off_n_, diag_off_size_, m_,
+        chase_shift_mgpu_matrix(H__.device(), d_off_m_, d_off_n_, diag_off_size_, m_,
                                 std::real(c), (cudaStream_t)0);
     }
     //! - This function performs the local computation of `GEMM` for
@@ -557,14 +532,16 @@ public:
 #if !defined(CUDA_AWARE)
         if (!isCcopied)
         {
-            cuda_exec(cudaMemcpy(d_C_ + locked * m_, C_ + locked * m_,
-                                 block * m_ * sizeof(T),
-                                 cudaMemcpyHostToDevice));
-        }
+            //cuda_exec(cudaMemcpy(d_C_ + locked * m_, C_ + locked * m_,
+            //                     block * m_ * sizeof(T),
+            //                     cudaMemcpyHostToDevice));
+        
+	    C__.H2D(m_, block, locked);
+	}
 #endif
         cublas_status_ = cublasTgemm(
-            cublasH_, CUBLAS_OP_C, CUBLAS_OP_N, n_, block, m_, &alpha, d_H_, m_,
-            d_C_ + locked * m_, m_, &beta, d_B_ + locked * n_, n_);
+            cublasH_, CUBLAS_OP_C, CUBLAS_OP_N, n_, block, m_, &alpha, H__.device(), H__.d_ld(),
+            C__.device() + locked * m_, m_, &beta, d_B_ + locked * n_, n_);
         assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
 #if !defined(CUDA_AWARE)
 	cuda_exec(cudaMemcpy(B_ + locked * n_, d_B_ + locked * n_,
@@ -585,12 +562,8 @@ public:
         T beta = T(0.0);
 	    
         cuda_exec(cudaMemcpy(d_v_, v, m_ * sizeof(T), cudaMemcpyHostToDevice));
-	std::size_t k = 1;
-	//cublas_status_ = cublasTgemm(
-        //    cublasH_, CUBLAS_OP_C, CUBLAS_OP_N, n_, k, m_, &alpha, d_H_, m_,
-        //    d_v_, m_, &beta, d_w_, n_);
         cublas_status_ = cublasTgemv(
-            cublasH_, CUBLAS_OP_C, m_, n_, &alpha, d_H_, m_,
+            cublasH_, CUBLAS_OP_C, m_, n_, &alpha, H__.device(), H__.d_ld(),
             d_v_, 1, &beta, d_w_, 1);
 	assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
 
@@ -601,12 +574,12 @@ public:
     void Start() override {}
     void End() override 
     {
-        cuda_exec(cudaMemcpy(C_, d_C_, m_ * (nev_) * sizeof(T),
+        cuda_exec(cudaMemcpy(C__.host(), C__.device(), m_ * (nev_) * sizeof(T),
                              cudaMemcpyDeviceToHost));	
     }
     Base<T> *get_Resids() override{
     	return matrices_.get_Resid(); 
-    }
+    } 
     Base<T> *get_Ritzv() override{
 	return matrices_.get_Ritzv();
     }
@@ -676,9 +649,11 @@ public:
     {
 	if (first)
         {
-            cuda_exec(cudaMemcpy(d_C_, C_, (nev_ + nex_) * m_ * sizeof(T),
-                                 cudaMemcpyHostToDevice));
-        }
+            //cuda_exec(cudaMemcpy(d_C_, C_, (nev_ + nex_) * m_ * sizeof(T),
+            //                     cudaMemcpyHostToDevice));
+        
+	    C__.H2D();
+	}
         Base<T> One = Base<T>(1.0);
         Base<T> Zero = Base<T>(0.0);
         cublasOperation_t transa;
@@ -693,7 +668,7 @@ public:
 
         cublas_status_ =
             cublasTsyherk(cublasH_, CUBLAS_FILL_MODE_UPPER, transa, nev_ + nex_,
-                          m_, &One, d_C_, m_, &Zero, d_A_, nev_ + nex_);
+                          m_, &One, C__.device(), m_, &Zero, d_A_, nev_ + nex_);
         assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
 #if !defined(CUDA_AWARE)
         cublas_status_ = cublasGetMatrix(nev_ + nex_, nev_ + nex_, sizeof(T),
@@ -735,13 +710,13 @@ public:
         cublas_status_ =
             cublasTtrsm(cublasH_, CUBLAS_SIDE_RIGHT, CUBLAS_FILL_MODE_UPPER,
                         CUBLAS_OP_N, CUBLAS_DIAG_NON_UNIT, m_, nev_ + nex_,
-                        alpha, d_A_, nev_ + nex_, d_C_, m_);
+                        alpha, d_A_, nev_ + nex_, C__.device(), m_);
         assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
 #if !defined(CUDA_AWARE)
         if (!first)
         {
             cublas_status_ =
-                cublasGetMatrix(m_, nev_ + nex_, sizeof(T), d_C_, m_, C_, m_);
+                cublasGetMatrix(m_, nev_ + nex_, sizeof(T), C__.device(), m_, C__.host(), m_);
         }
         assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
 #endif    
@@ -798,18 +773,19 @@ public:
         cuda_exec(cudaMemcpy(w, d_ritz_, n * sizeof(Base<T>),
                              cudaMemcpyDeviceToHost));
 #if !defined(CUDA_AWARE)
-	cublas_status_ = cublasSetMatrix(m_, n, sizeof(T), C2_ + locked * m_,
-                                         m_, d_C2_ + locked * m_, m_);
-        assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
+	//cublas_status_ = cublasSetMatrix(m_, n, sizeof(T), C2__ + locked * m_,
+        //                                 m_, d_C2_ + locked * m_, m_);
+        //assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
+	C2__.H2D(m_, n. locked);
 #endif
 	cublas_status_ =
             cublasTgemm(cublasH_, CUBLAS_OP_N, CUBLAS_OP_N, m_, n, n, &One,
-                        d_C2_ + locked * m_, m_, d_A_, nev_ + nex_, &Zero,
-                        d_C_ + locked * m_, m_);
+                        C2__.device() + locked * m_, m_, d_A_, nev_ + nex_, &Zero,
+                        C__.device() + locked * m_, m_);
         assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
 #if !defined(CUDA_AWARE)
-        cublas_status_ = cublasGetMatrix(m_, n, sizeof(T), d_C_ + locked * m_,
-                                         m_, C_ + locked * m_, m_);
+        cublas_status_ = cublasGetMatrix(m_, n, sizeof(T), C__.device() + locked * m_,
+                                         m_, C__.host() + locked * m_, m_);
         assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
 #endif    
     }
@@ -839,14 +815,14 @@ public:
 
 	cublas_status_ =
             cublasTgemm(cublasH_, CUBLAS_OP_N, CUBLAS_OP_N, m_, idx, m, &alpha,
-                        d_C_, m_, d_ritzVc_, m, &beta,
-                        d_C2_, m_);
+                        C__.device(), m_, d_ritzVc_, m, &beta,
+                        C2__.device(), m_);
         assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
-	cuda_exec(cudaMemcpy(d_C_, d_C2_, m_ * m * sizeof(T), cudaMemcpyDeviceToDevice));    
+	cuda_exec(cudaMemcpy(C__.device(), C2__.device(), m_ * m * sizeof(T), cudaMemcpyDeviceToDevice));    
 #else
         t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, m_, idx, m, &alpha,
-               C_, m_, ritzVc, m, &beta, C2_, m_);
-	std::memcpy(C_, C2_, m * m_ * sizeof(T));
+               C__.host(), m_, ritzVc, m, &beta, C2__.host(), m_);
+	std::memcpy(C__.host(), C2__.host(), m * m_ * sizeof(T));
 #endif	
     }
     void Lanczos(std::size_t M, int idx, Base<T>* d, Base<T>* e, Base<T> *r_beta) override
@@ -858,19 +834,19 @@ public:
     void getMpiWorkSpace(T **C, T **B, T **A, T **C2, T **B2, T **vv, Base<T> **rsd, T **w) override    
     {
 #if defined(CUDA_AWARE)
-        *C = d_C_;
+        *C = C__.device();
         *B = d_B_;
 	*A = d_A_;
-	*C2 = d_C2_;
+	*C2 = C2__.device();
 	*B2 = d_B2_;
 	*vv = vv_;
 	*rsd = d_resids_;
 	*w = w_;
 #else	    
-        *C = C_;
+        *C = C__.host();
         *B = B_;  
         *A = A_;
-	*C2 = C2_;
+	*C2 = C2__.host();
 	*B2 = B2_;	
 	*vv = vv_;
 	*rsd = resid;
@@ -931,11 +907,11 @@ public:
 #if defined(CUDA_AWARE)
 	if(copy)    
 	{
-	    cuda_exec(cudaMemcpy(C_ + locked * m_, d_C_ + locked * m_, block * m_ * sizeof(T),
+	    cuda_exec(cudaMemcpy(C__.host() + locked * m_, C__.device() + locked * m_, block * m_ * sizeof(T),
                              cudaMemcpyDeviceToHost));        	    
 	}
 #endif
-	*C = C_;	
+	*C = C__.host();	
     }
 
     void retrieveB(T **B, std::size_t locked, std::size_t block, bool copy) override
@@ -962,8 +938,9 @@ public:
     void putC(T *C, std::size_t locked, std::size_t block) override
     {
 #if defined(CUDA_AWARE)
-        cuda_exec(cudaMemcpy(d_C_ + locked * m_, C + locked * m_, block * m_ * sizeof(T),
-                             cudaMemcpyHostToDevice));
+        //cuda_exec(cudaMemcpy(d_C_ + locked * m_, C + locked * m_, block * m_ * sizeof(T),
+        //                     cudaMemcpyHostToDevice));
+	C__.H2D(m_, block, locked);
 #endif	    
     }
 
@@ -982,15 +959,9 @@ private:
                     //!< symmetric/Hermtian matrix
     std::size_t
         m_; //!< number of rows of local matrix of the symmetric/Hermtian matrix
-    std::size_t ldh_; //!< leading dimension of local matrix on each MPI proc
-    T* H_;            //!< a pointer to the local matrix on each MPI proc
     T* B_;  //!< a matrix of size `n_*(nev_+nex_)`, which is allocated in
             //!< ChaseMpiMatrices
     T* B2_; //!< a matrix of size `n_*(nev_+nex_)`, which is allocated in
-            //!< ChaseMpiProperties
-    T* C_;  //!< a matrix of size `m_*(nev_+nex_)`, which is allocated in
-            //!< ChaseMpiMatrices
-    T* C2_; //!< a matrix of size `m_*(nev_+nex_)`, which is allocated in
             //!< ChaseMpiProperties
     T* A_;  //!< a matrix of size `(nev_+nex_)*(nev_+nex_)`, which is allocated
             //!< in ChaseMpiProperties
@@ -1034,12 +1005,6 @@ private:
         stream2_; //!< CUDA stream for asynchronous exectution of kernels
     //curandState* states_ = NULL; //!< a pointer of `curandState` for the cuRAND
     curandStatePhilox4_32_10_t *states_ = NULL;
-    T* d_H_;  //!< a pointer to a local buffer of size `m_*n_` on GPU, which is
-              //!< mapped to `H_`.
-    T* d_C_;  //!< a pointer to a local buffer of size `m_*(nev_+nex_)` on GPU,
-              //!< which is mapped to `C_`.
-    T* d_C2_; //!< a pointer to a local buffer of size `m_*(nev_+nex_)` on GPU,
-              //!< which is mapped to `C2_`.
     T* d_B_;  //!< a pointer to a local buffer of size `n_*(nev_+nex_)` on GPU,
               //!< which is mapped to `B_`.
     T* d_B2_; //!< a pointer to a local buffer of size `n_*(nev_+nex_)` on GPU,
@@ -1069,7 +1034,9 @@ private:
     ChaseMpiProperties<T>*
         matrix_properties_; //!< an object of class ChaseMpiProperties
     ChaseMpiMatrices<T> matrices_;    
-
+    Matrix<T> H__;
+    Matrix<T> C__;
+    Matrix<T> C2__;
     T *d_ritzVc_ = nullptr;
 
 };

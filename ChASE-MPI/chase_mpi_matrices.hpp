@@ -9,7 +9,12 @@
 
 #include <cstddef>
 #include <memory>
-
+#if defined(HAS_CUDA)
+#include <cuda.h>
+#include <cuda_profiler_api.h>
+#include <cuda_runtime.h>
+#include <cublas_v2.h>
+#endif
 #include "algorithm/types.hpp"
 
 namespace chase
@@ -17,6 +22,211 @@ namespace chase
 namespace mpi
 {
 
+template<class T>
+class CpuMem
+{
+    public:
+
+      CpuMem():size_(0), ptr_(nullptr), allocated_(false){}	      
+      CpuMem(std::size_t size)
+	: size_(size), allocated_(true), type_("CPU") {
+#if defined(HAS_CUDA)
+	  cudaMallocHost(&ptr_, size_ * sizeof(T));
+#else		
+          ptr_=std::allocator<T>().allocate(size_);
+#endif
+      }
+
+      CpuMem(T* ptr, std::size_t size) : size_(size), ptr_(ptr), allocated_(false), type_("CPU") {}
+
+      ~CpuMem() {
+	if (allocated_) {
+#if defined(HAS_CUDA)
+	    cudaFreeHost(ptr_);
+#else		
+	    std::allocator<T>().deallocate(ptr_,size_);
+#endif
+	}
+      }
+      
+      T *ptr () 
+      {
+          return ptr_;
+      }
+
+      bool isAlloc () 
+      {
+          return allocated_;
+      }
+
+      std::string type() 
+      {
+          return type_;
+      }
+    private:
+      std::size_t size_;
+      T* ptr_;
+      bool allocated_;
+      std::string type_;	    
+};
+
+#if defined(HAS_CUDA)
+template<class T>
+class GpuMem
+{
+    public:
+      GpuMem():size_(0), ptr_(nullptr), allocated_(false){}
+
+      GpuMem(std::size_t size)
+        : size_(size), allocated_(true), type_("GPU") {
+        cudaMalloc(&ptr_, size_ * sizeof(T));
+      }
+
+      GpuMem(T* ptr, std::size_t size) : size_(size), ptr_(ptr), allocated_(false), type_("GPU") {}
+
+      ~GpuMem() {
+        if (allocated_) {
+          cudaFree(ptr_);
+        }
+      }
+
+      T *ptr () 
+      {
+          return ptr_;
+      }
+
+      bool isAlloc ()
+      {
+          return allocated_;
+      }
+
+      std::string type()
+      {
+          return type_;
+      }
+
+    private:
+      std::size_t size_;
+      T* ptr_;
+      bool allocated_;
+      std::string type_;
+
+};
+#endif
+
+template<class T>
+class Matrix
+{
+    public:
+      using ElementType = T;
+
+      Matrix():m_(0), n_(0), ld_(0){}
+      //mode: 0: CPU, 1: traditional GPU, 2: CUDA-Aware
+      Matrix(int mode, std::size_t m, std::size_t n)
+      :m_(m), n_(n), ld_(m), mode_(mode)
+      {
+	switch(mode)
+	{
+	    case 0:
+		Host_ = std::make_shared<CpuMem<T>>(m * n);
+		isHostAlloc_ = true;
+		isDeviceAlloc_ = false;
+		break;
+#if defined(HAS_CUDA)		
+	    case 1:
+                Host_ = std::make_shared<CpuMem<T>>(m * n);
+		Device_ = std::make_shared<GpuMem<T>>(m * n);
+                isHostAlloc_ = true;
+                isDeviceAlloc_ = true;		
+		break;
+	    case 2:
+    		Device_ = std::make_shared<GpuMem<T>>(m * n);		
+                isHostAlloc_ = false;
+                isDeviceAlloc_ = true;		
+		break;
+#endif	
+	}
+      }     
+  
+      Matrix(int mode, std::size_t m, std::size_t n, T *ptr, std::size_t ld)
+      :m_(m), n_(n), ld_(ld), mode_(mode)
+      {
+        switch(mode)
+        {
+            case 0:
+                Host_ = std::make_shared<CpuMem<T>>(ptr, ld * n);
+                isHostAlloc_ = false;
+                isDeviceAlloc_ = false;
+                break;
+#if defined(HAS_CUDA)
+            case 1:
+                Host_ = std::make_shared<CpuMem<T>>(ptr, ld * n);
+                Device_ = std::make_shared<GpuMem<T>>(m * n);
+                isHostAlloc_ = false;
+                isDeviceAlloc_ = true;
+                break;
+            case 2:
+                Device_ = std::make_shared<GpuMem<T>>(m * n);
+                Host_ = std::make_shared<CpuMem<T>>(ptr, ld * n);		
+                isHostAlloc_ = false;
+                isDeviceAlloc_ = true;
+                break;
+#endif
+		
+        }
+      }
+
+     T *host(){
+         return Host_.get()->ptr();
+     }  
+
+     T *ptr(){
+         return Host_.get()->ptr();
+     }
+     
+#if defined(HAS_CUDA)
+     T *device(){
+         return Device_.get()->ptr();
+     }
+#endif
+     std::size_t ld(){
+         return ld_;
+     }
+
+     std::size_t h_ld(){
+         return ld_;
+     }
+#if defined(HAS_CUDA)     
+     std::size_t d_ld(){
+         return m_;
+     }
+#endif    
+
+#if defined(HAS_CUDA)
+    void H2D()
+    {
+       cublasSetMatrix(m_, n_, sizeof(T), this->host(), this->h_ld(), this->device(), this->d_ld());
+    }	    
+
+    void H2D(std::size_t nrows, std::size_t ncols, std::size_t offset = 0)
+    {
+       cublasSetMatrix(nrows, ncols, sizeof(T), this->host() + offset * this->h_ld(),
+		       this->h_ld(), this->device() + offset * this->d_ld(), this->d_ld());
+    }
+#endif     
+    
+    private:
+      std::size_t m_;
+      std::size_t n_;
+      std::size_t ld_;
+      std::shared_ptr<CpuMem<T>> Host_;
+#if defined(HAS_CUDA)
+      std::shared_ptr<GpuMem<T>> Device_;
+#endif      
+      bool isHostAlloc_;
+      bool isDeviceAlloc_;
+      bool mode_;
+};
 /*
  *  Utility class for Buffers
  */
@@ -76,6 +286,7 @@ public:
     {
     }    
 
+
     //! A constructor of ChaseMpiMatrices for **MPI case** which allocates
     //! everything necessary except `H_`.
     /*!
@@ -106,22 +317,34 @@ public:
       @param V2: a pointer to the buffer `V2_`.
       @param resid: a pointer to the buffer `resid_`.
     */
-    ChaseMpiMatrices(MPI_Comm comm, std::size_t N, std::size_t m, std::size_t n,
+    ChaseMpiMatrices(int mode, MPI_Comm comm, std::size_t N, std::size_t m, std::size_t n,
                      std::size_t max_block, T* H, std::size_t ldh,
-                     T* V1 = nullptr, Base<T>* ritzv = nullptr, T* V2 = nullptr,
-                     Base<T>* resid = nullptr)
+                     T* V1,  Base<T>* ritzv)
         // if value is null then allocate otherwise don't
-        : H__(nullptr), V1__(V1 == nullptr ? new T[m * max_block] : nullptr),
-          V2__(V2 == nullptr ? new T[n * max_block] : nullptr),
-          ritzv__(ritzv == nullptr ? new Base<T>[max_block] : nullptr),
-          resid__(resid == nullptr ? new Base<T>[max_block] : nullptr),
+        : ritzv__(ritzv == nullptr ? new Base<T>[max_block] : nullptr),
+          resid__(new Base<T>[max_block] ),
           ldh_(ldh),
           // if value is null we take allocated
           H_(H), V1_(V1 == nullptr ? V1__.get() : V1),
-          V2_(V2 == nullptr ? V2__.get() : V2),
+          V2_(V2__.get()),
           ritzv_(ritzv == nullptr ? ritzv__.get() : ritzv),
-          resid_(resid == nullptr ? resid__.get() : resid)
-    {
+          resid_(resid__.get())
+    {    
+	int isGPU;
+    	int isCUDA_Aware;
+	if(mode == 0){
+	    isGPU = 0;
+	    isCUDA_Aware = 0;
+	}else if(mode == 1){
+	    isGPU = 1;
+	    isCUDA_Aware = 1;
+	}else{
+            isGPU = 1;
+            isCUDA_Aware = 2;	
+	}	
+	H___ = std::make_unique<Matrix<T>>(isGPU, m, n, H, ldh);
+	C___ = std::make_unique<Matrix<T>>(isCUDA_Aware, m, max_block, V1, m);
+        C2___ = std::make_unique<Matrix<T>>(isCUDA_Aware, m, max_block);	
     }
 
     //! Return buffer stores the (local part if applicable) matrix A.
@@ -151,6 +374,10 @@ public:
     /*! \return `ldh_`, a private member of this class.
      */
     std::size_t get_ldh() { return ldh_; }
+
+    Matrix<T> H() {return *H___.get();}
+    Matrix<T> C() {return *C___.get();}
+    Matrix<T> C2() {return *C2___.get();}
 
 private:
     //! A smart pointer which manages the buffer of `H_` which stores (local
@@ -185,6 +412,11 @@ private:
     //! The leading dimension of local part of Symmetric/Hermtian matrix on each
     //! MPI proc.
     std::size_t ldh_;
+
+    std::unique_ptr<Matrix<T>> H___;
+    std::unique_ptr<Matrix<T>> C___;
+    std::unique_ptr<Matrix<T>> C2___;
 };
 } // namespace mpi
 } // namespace chase
+

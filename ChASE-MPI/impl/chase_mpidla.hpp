@@ -1241,7 +1241,6 @@ public:
             Memcpy(memcpy_mode[0], C, C2, locked * m_ * sizeof(T));
             Memcpy(memcpy_mode[1], C2 + locked * m_, C + locked * m_,
                         (nevex - locked) * m_ * sizeof(T));
-
 	    isHHqr = false;
 #ifdef USE_NSIGHT
             nvtxRangePop();

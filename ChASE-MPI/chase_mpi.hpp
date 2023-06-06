@@ -187,7 +187,7 @@ public:
     */
     
     ChaseMpi(ChaseMpiProperties<T>* properties, T* H, std::size_t ldh, T* V1,
-             Base<T>* ritzv, T* V2 = nullptr, Base<T>* resid = nullptr)
+             Base<T>* ritzv )
         : N_(properties->get_N()), nev_(properties->GetNev()),
           nex_(properties->GetNex()), locked_(0), config_(N_, nev_, nex_),
           properties_(properties),

@@ -1299,23 +1299,6 @@ public:
     //! Create a ChaseMpiMatrices object which stores the operating matrices and
     //! vectors for ChASE-MPI.
     /*!
-      @param V1 a `m_ * max_block_` rectangular matrix.
-      @param ritzv a `max_block_` vector which stores the computed Ritz values.
-      @param V2 a `n_ * max_block_` rectangular matrix.
-      @param resid a `max_block_` vector which stores the residual of each
-      computed Ritz value.
-    */
-    ChaseMpiMatrices<T> create_matrices(T* V1 = nullptr,
-                                        Base<T>* ritzv = nullptr,
-                                        T* V2 = nullptr,
-                                        Base<T>* resid = nullptr) const
-    {
-        return ChaseMpiMatrices<T>(comm_, N_, m_, n_, max_block_, V1, ritzv, V2,
-                                   resid);
-    }
-    //! Create a ChaseMpiMatrices object which stores the operating matrices and
-    //! vectors for ChASE-MPI.
-    /*!
       @param H a `m_ * n_` rectangular matrix, with leading dimension `ldh`
       @param ldh leading dimension of `H`, which should be `>=m_`
       @param V1 a `m_ * max_block_` rectangular matrix.
@@ -1324,13 +1307,11 @@ public:
       @param resid a `max_block_` vector which stores the residual of each
       computed Ritz value.
     */
-    ChaseMpiMatrices<T> create_matrices(T* H, std::size_t ldh, T* V1 = nullptr,
-                                        Base<T>* ritzv = nullptr,
-                                        T* V2 = nullptr,
-                                        Base<T>* resid = nullptr) const
+    ChaseMpiMatrices<T> create_matrices(int mode, T* H, std::size_t ldh, T* V1 = nullptr,
+                                        Base<T>* ritzv = nullptr) const
     {
-        return ChaseMpiMatrices<T>(comm_, N_, m_, n_, max_block_, H, ldh, V1,
-                                   ritzv, V2, resid);
+        return ChaseMpiMatrices<T>(mode, comm_, N_, m_, n_, max_block_, H, ldh, V1,
+                                   ritzv);
     }
 
 private:

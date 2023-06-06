@@ -31,7 +31,7 @@ public:
     ChaseMpiDLABlaslapack(ChaseMpiProperties<T>* matrix_properties,
                           T *H, std::size_t ldh, T *V1, Base<T> *ritzv)
     :matrices_(std::move(matrix_properties->create_matrices(
-               H, ldh, V1, ritzv)))
+               0, H, ldh, V1, ritzv)))
     {
         // TODO
         n_ = matrix_properties->get_n();
@@ -39,12 +39,10 @@ public:
         N_ = matrix_properties->get_N();
         nev_ = matrix_properties->GetNev();
         nex_ = matrix_properties->GetNex();
-        H_ = matrices_.get_H();
-        ldh_ = matrices_.get_ldh();
-
-        B_ = matrices_.get_V2();
-        C_ = matrices_.get_V1();
-        C2_ = matrix_properties->get_C2();
+	H__ = matrices_.H();
+	C__ = matrices_.C();
+	C2__ = matrices_.C2();
+	B_ = matrices_.get_V2();
         B2_ = matrix_properties->get_B2();
         A_ = matrix_properties->get_A();
 	resid = matrices_.get_Resid();
@@ -79,7 +77,7 @@ public:
     //! ChaseMpi::Lanczos()
     void initVecs() override
     {
-        t_lacpy('A', m_, nev_ + nex_, C_, m_, C2_, m_);	    
+        t_lacpy('A', m_, nev_ + nex_, C__.ptr(), C__.ld(), C2__.ptr(), C2__.ld());	    
 	next_ = NextOp::bAc;
     }
     //! This function generates the random values for each MPI proc using C++
@@ -95,7 +93,7 @@ public:
         for (auto j = 0; j < m_ * (nev_ + nex_); j++)
         {
             auto rnd = getRandomT<T>([&]() { return d(gen); });
-            C_[j] = rnd;
+            C__.ptr()[j] = rnd;
         }
     }
     //! This function set initially the operation for apply() in filter
@@ -115,16 +113,17 @@ public:
 
         if (next_ == NextOp::bAc)
         {
-
+            std::cout << "apply 1" << std::endl;
             if (mpi_col_rank != 0)
             {
                 beta = Zero;
             }
             t_gemm<T>(CblasColMajor, CblasConjTrans, CblasNoTrans, n_,
-                      static_cast<std::size_t>(block), m_, &alpha, H_, ldh_,
-                      C_ + offset * m_ + locked * m_, m_, &beta,
+                      static_cast<std::size_t>(block), m_, &alpha, H__.host(), H__.h_ld(),
+                      C__.ptr() + offset * m_ + locked * m_, m_, &beta,
                       B_ + locked * n_ + offset * n_, n_);
             next_ = NextOp::cAb;
+	                        std::cout << "apply 2" << std::endl;
         }
         else
         {
@@ -134,9 +133,9 @@ public:
                 beta = Zero;
             }
             t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, m_,
-                   static_cast<std::size_t>(block), n_, &alpha, H_, ldh_,
+                   static_cast<std::size_t>(block), n_, &alpha, H__.host(), H__.h_ld(), 
                    B_ + offset * n_ + locked * n_, n_, &beta,
-                   C_ + offset * m_ + locked * m_, m_);
+                   C__.ptr() + offset * m_ + locked * m_, m_);
             next_ = NextOp::bAc;
         }
     }
@@ -167,7 +166,7 @@ public:
                     {
                         if (q + c_offs_[j] == p + r_offs_[i])
                         {
-                            H_[(q + c_offs_l_[j]) * ldh_ + p + r_offs_l_[i]] +=
+                            H__.host()[(q + c_offs_l_[j]) * H__.h_ld() + p + r_offs_l_[i]] +=
                                 c;
                         }
                     }
@@ -185,8 +184,8 @@ public:
         T beta = T(0.0);
 
         t_gemm<T>(CblasColMajor, CblasConjTrans, CblasNoTrans, n_,
-                  static_cast<std::size_t>(block), m_, &alpha, H_, ldh_,
-                  C_ + locked * m_, m_, &beta, B_ + locked * n_, n_);
+                  static_cast<std::size_t>(block), m_, &alpha, H__.host(), H__.h_ld(),
+                  C__.ptr() + locked * m_, m_, &beta, B_ + locked * n_, n_);
     }
 
     //! - All required operations for this function has been done in for
@@ -200,7 +199,7 @@ public:
         //t_gemm<T>(CblasColMajor, CblasConjTrans, CblasNoTrans, n_,
         //          k, m_, &alpha, H_, ldh_,
         //          v, m_, &beta, w, n_);  
-        t_gemv<T>(CblasColMajor, CblasConjTrans, m_, n_, &alpha, H_, ldh_,
+        t_gemv<T>(CblasColMajor, CblasConjTrans, m_, n_, &alpha, H__.host(), H__.h_ld(),
 		  v, 1, &beta, w, 1);     
     }
 
@@ -302,7 +301,7 @@ public:
 
         t_heevd(matrix_layout, jobz, uplo, n, a, nev_ + nex_, w);
         t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, m_, n, n, &One,
-               C2_ + locked * m_, m_, A_, nev_ + nex_, &Zero, C_ + locked * m_,
+               C2__.ptr() + locked * m_, m_, A_, nev_ + nex_, &Zero, C__.ptr() + locked * m_,
                m_);
     }
     //! - All required operations for this function has been done in for
@@ -324,8 +323,8 @@ public:
         T alpha = T(1.0);
         T beta = T(0.0);
         t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, m_, idx, m, &alpha,
-               C_, m_, ritzVc, m, &beta, C2_, m_);
-	std::memcpy(C_, C2_, m * m_ * sizeof(T));    
+               C__.ptr(), m_, ritzVc, m, &beta, C2__.ptr(), m_);
+	std::memcpy(C__.ptr(), C2__.ptr(), m * m_ * sizeof(T));    
     }
     void Lanczos(std::size_t M, int idx, Base<T>* d, Base<T>* e, Base<T> *r_beta) override
     {}
@@ -333,10 +332,10 @@ public:
     {}
     void getMpiWorkSpace(T **C, T **B, T **A, T **C2, T **B2, T **vv, Base<T> **rsd, T **w) override    
     {
-        *C = C_;
+        *C = C__.ptr();
 	*B = B_;
 	*A = A_;
-	*C2 = C2_;
+	*C2 = C2__.ptr();
 	*B2 = B2_;
 	*vv = vv_;
 	*rsd = resid;
@@ -369,7 +368,7 @@ public:
 
     void retrieveC(T **C, std::size_t locked, std::size_t block, bool copy) override
     {
-    	*C = C_;
+    	*C = C__.ptr();
     }
 
     void retrieveB(T **B, std::size_t locked, std::size_t block, bool copy) override
@@ -400,15 +399,9 @@ private:
                     //!< symmetric/Hermtian matrix
     std::size_t
         m_; //!< number of rows of local matrix of the symmetric/Hermtian matrix
-    std::size_t ldh_; //!< leading dimension of local matrix on each MPI proc
-    T* H_;            //!< a pointer to the local matrix on each MPI proc
     T* B_;  //!< a matrix of size `n_*(nev_+nex_)`, which is allocated in
             //!< ChaseMpiMatrices
     T* B2_; //!< a matrix of size `n_*(nev_+nex_)`, which is allocated in
-            //!< ChaseMpiProperties
-    T* C_;  //!< a matrix of size `m_*(nev_+nex_)`, which is allocated in
-            //!< ChaseMpiMatrices
-    T* C2_; //!< a matrix of size `m_*(nev_+nex_)`, which is allocated in
             //!< ChaseMpiProperties
     T* A_;  //!< a matrix of size `(nev_+nex_)*(nev_+nex_)`, which is allocated
             //!< in ChaseMpiProperties
@@ -444,6 +437,9 @@ private:
         matrix_properties_; //!< an object of class ChaseMpiProperties
     ChaseMpiMatrices<T> matrices_;    
 
+    Matrix<T> H__;
+    Matrix<T> C__;
+    Matrix<T> C2__;
 };
 
 template <typename T>
