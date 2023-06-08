@@ -908,7 +908,7 @@ public:
         for (std::size_t i = 0; i < unconverged; ++i)
         {
             resid[i] = std::sqrt(resid_h[i]);
-        }
+	}
     }
 
     void syherk(char uplo, char trans, std::size_t n, std::size_t k, T* alpha,
@@ -1264,256 +1264,6 @@ public:
         nvtxRangePop();
 #endif
     }
-/*
-    void cholQR(std::size_t locked, Base<T> cond) override
-    {
-        int grank;
-        MPI_Comm_rank(MPI_COMM_WORLD, &grank);
-
-        char* display_bounds_env;
-        display_bounds_env = getenv("CHASE_DISPLAY_BOUNDS");
-        int display_bounds = 0;
-        if(display_bounds_env){
-            display_bounds = std::atoi(display_bounds_env);
-        }
-        if(display_bounds != 0){
-            std::vector<T> V2(N_ * (nev_+nex_));
-            this->collecRedundantVecs(C_, V2.data(), 0, nev_+nex_);
-            std::vector<Base<T>> S(nev_ + nex_ - locked);
-            T *U;
-            std::size_t ld = 1;
-            T *Vt ;
-            t_gesvd('N','N',N_, nev_ + nex_ - locked, V2.data() + N_ * locked, N_, S.data(), U, ld, Vt, ld);  
-            std::vector<Base<T>> norms(nev_+nex_-locked);
-            for(auto i = 0; i < nev_ + nex_-locked; i++){
-                norms[i] = std::sqrt(t_sqrt_norm(S[i]));
-            }
-            std::sort(norms.begin(),norms.end());
-            if(grank == 0){
-                std::cout << "estimate: " << cond << ", rcond: " << norms[nev_+nex_-locked-1] / norms[0] 
-                          << ", ratio: " << cond * norms[0] / norms[nev_+nex_-locked-1] << std::endl;
-            }
-        }        
-#ifdef USE_NSIGHT
-        nvtxRangePushA("ChaseMpiDLA: cholQR");
-#endif
-        Base<T> shift;
-        bool isShiftQR = false;
-        int choldeg = 2;
-        int choldeg_env;
-        char* choldegenv;
-        choldegenv = getenv("CHASE_CHOLQR_DEGREE");
-        if (choldegenv)
-        {
-            choldeg_env = std::atoi(choldegenv);
-        }
-
-        // condition for using CholQR1
-        Base<T> cond_threshold_2;
-
-        if (sizeof(Base<T>) == 8)
-        {
-            cond_threshold_2 = 5e1;
-        }
-        else
-        {
-            cond_threshold_2 = 1e1;
-        }
-
-        char *chol1_threshold;
-        chol1_threshold = getenv("CHASE_CHOLQR1_THLD");
-        if(chol1_threshold)
-        {
-            cond_threshold_2 = std::atof(chol1_threshold);
-        }    
-        auto nevex = nev_ + nex_;
-        bool first_iter = true;
-        T one = T(1.0);
-        T zero = T(0.0);
-        int info = -1;
-#ifdef USE_NSIGHT
-        nvtxRangePushA("ChaseMpiDLA: syherk");
-#endif
-        dla_->syherk('U', 'C', nevex, m_, &one, C_, m_, &zero, A_, nevex,
-                     first_iter);
-#ifdef USE_NSIGHT
-        nvtxRangePop();
-        nvtxRangePushA("allreduce");
-#endif
-        MPI_Allreduce(MPI_IN_PLACE, A_, nevex * nevex, getMPI_Type<T>(),
-                      MPI_SUM, col_comm_);
-#ifdef USE_NSIGHT
-        nvtxRangePop();
-#endif
-
-#ifdef USE_NSIGHT
-        nvtxRangePushA("ChaseMpiDLA: potrf");
-#endif
-        info = dla_->potrf('U', nevex, A_, nevex);
-#ifdef USE_NSIGHT
-        nvtxRangePop();
-#endif
-
-        if (info != 0)
-        {
-            isShiftQR = true;
-#ifdef USE_NSIGHT
-            nvtxRangePushA("ChaseMpiDLA: t_lange");
-#endif
-            Base<T> nrmf = t_lange('F', m_, nevex, C_, m_);
-            nrmf = std::pow(nrmf, 2);
-            //Base<T> nrmf = t_norm_p2(m_ * nevex, C_);
-#ifdef USE_NSIGHT
-            nvtxRangePop();
-            nvtxRangePushA("allreduce");
-#endif
-            MPI_Allreduce(MPI_IN_PLACE, &nrmf, 1, getMPI_Type<Base<T>>(),
-                          MPI_SUM, col_comm_);
-            shift = 11 * (N_ * nevex + nevex * nevex + nevex) *
-                    std::numeric_limits<Base<T>>::epsilon() * nrmf;
-
-            if(shift < 10){
-#ifdef USE_NSIGHT
-                nvtxRangePop();
-                nvtxRangePushA("ChaseMpiDLA: shift in QR");
-#endif
-                for (auto i = 0; i < nevex; i++)
-                {
-                    A_[i * nevex + i] += (T)shift;
-                }
-#ifdef USE_NSIGHT
-                nvtxRangePop();
-#endif
-#ifdef USE_NSIGHT
-                nvtxRangePushA("ChaseMpiDLA: potrf");
-#endif
-                info = dla_->potrf('U', nevex, A_, nevex);
-#ifdef USE_NSIGHT
-                nvtxRangePop();
-#endif
-            } else
-            {
-                info = -1;
-            }    
-
-        }
-
-        if (info == 0)
-        {
-            if (cond < cond_threshold_2)
-            {
-                choldeg = 1;
-            }
-
-            if (choldegenv)
-            {
-                choldeg = choldeg_env;
-            }
-
-            if (isShiftQR && choldeg == 1)
-            {
-                choldeg = 2;
-            }
-#ifdef CHASE_OUTPUT
-            if (grank == 0)
-            {
-                std::cout << std::setprecision(2) << "cond(V): " << cond
-                          << ", choldegee: " << choldeg;
-
-                if (isShiftQR)
-                {
-                    std::cout << ", shift: " << shift << std::endl;
-                }
-                else
-                {
-                    std::cout << std::endl;
-                }
-            }
-#endif
-
-            if (choldeg == 1)
-            {
-                first_iter = false;
-            }
-            else if (choldeg > 1)
-            {
-                first_iter = true;
-            }
-
-#ifdef USE_NSIGHT
-            nvtxRangePushA("ChaseMpiDLA: trsm");
-#endif
-            dla_->trsm('R', 'U', 'N', 'N', m_, nevex, &one, A_, nevex, C_, m_,
-                       first_iter);
-#ifdef USE_NSIGHT
-            nvtxRangePop();
-#endif
-            for (auto i = 0; i < choldeg - 1; i++)
-            {
-#ifdef USE_NSIGHT
-                nvtxRangePushA("ChaseMpiDLA: syherk");
-#endif
-                dla_->syherk('U', 'C', nevex, m_, &one, C_, m_, &zero, A_,
-                             nevex, false);
-#ifdef USE_NSIGHT
-                nvtxRangePop();
-                nvtxRangePushA("allreduce");
-#endif
-                MPI_Allreduce(MPI_IN_PLACE, A_, nevex * nevex, getMPI_Type<T>(),
-                              MPI_SUM, col_comm_);
-#ifdef USE_NSIGHT
-                nvtxRangePop();
-                nvtxRangePushA("ChaseMpiDLA: potrf");
-#endif
-                info = dla_->potrf('U', nevex, A_, nevex);
-#ifdef USE_NSIGHT
-                nvtxRangePop();
-#endif
-                if (i == choldeg - 2)
-                {
-                    first_iter = false;
-                }
-                else
-                {
-                    first_iter = true;
-                }
-#ifdef USE_NSIGHT
-                nvtxRangePushA("ChaseMpiDLA: trsm");
-#endif
-                dla_->trsm('R', 'U', 'N', 'N', m_, nevex, &one, A_, nevex, C_,
-                           m_, first_iter);
-#ifdef USE_NSIGHT
-                nvtxRangePop();
-#endif
-            }
-
-#ifdef USE_NSIGHT
-            nvtxRangePushA("memcpy");
-#endif
-            std::memcpy(C_, C2_, locked * m_ * sizeof(T));
-            std::memcpy(C2_ + locked * m_, C_ + locked * m_,
-                        (nevex - locked) * m_ * sizeof(T));
-            isHHqr = false;
-#ifdef USE_NSIGHT
-            nvtxRangePop();
-#endif
-        }
-        else
-        {
-#ifdef CHASE_OUTPUT
-            if (grank == 0)
-                std::cout << "cholQR failed because of ill-conditioned vector, "
-                             "use Householder QR instead"
-                          << std::endl;
-#endif
-            this->hhQR(locked);
-        }
-
-#ifdef USE_NSIGHT
-        nvtxRangePop();
-#endif
-    }
-*/
 
     void Swap(std::size_t i, std::size_t j) override
     {
@@ -1565,6 +1315,7 @@ public:
                 v1_[k] = getRandomT<T>([&]() { return normal_distribution(gen); });
             }            
         }
+
         // ENSURE that v1 has one norm
 #ifdef USE_NSIGHT
         nvtxRangePushA("Lanczos: loop");
@@ -1582,10 +1333,11 @@ public:
 	    	Memcpy(memcpy_mode[2], C + k * m_, v1_, m_ * sizeof(T));
 	    }
             this->applyVec(v1_, v2_);
-            alpha = t_dot(m_, v1_, 1, v2_, 1);
-            MPI_Allreduce(MPI_IN_PLACE, &alpha, 1, getMPI_Type<T>(),
+	    alpha = t_dot(m_, v1_, 1, v2_, 1);
+
+	    MPI_Allreduce(MPI_IN_PLACE, &alpha, 1, getMPI_Type<T>(),
                           MPI_SUM, col_comm_);
-            alpha = -alpha;
+	    alpha = -alpha;
             t_axpy(m_, &alpha, v1_, 1, v2_, 1);
 
             alpha = -alpha;

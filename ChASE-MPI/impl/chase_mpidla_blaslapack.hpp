@@ -66,12 +66,11 @@ public:
         MPI_Comm_rank(row_comm, &mpi_row_rank);
         MPI_Comm_rank(col_comm, &mpi_col_rank);
     
-    vv_ = new T[m_];
+        vv_ = matrices_.vv().ptr();
     }
 
     ~ChaseMpiDLABlaslapack() 
     {
-    delete[] vv_; 
     }
     //! This function set initially the operation for apply() used in
     //! ChaseMpi::Lanczos()

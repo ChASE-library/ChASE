@@ -222,7 +222,7 @@ class Matrix
 
     void D2H(std::size_t nrows, std::size_t ncols, std::size_t offset = 0)
     {
-       cublasGetMatrix(nrows, ncols, sizeof(T), this->device() + offset * this->d_ld()
+       cublasGetMatrix(nrows, ncols, sizeof(T), this->device() + offset * this->d_ld(),
                this->d_ld(), this->host() + offset * this->h_ld(), this->h_ld());
     }    
 #endif     
@@ -356,14 +356,15 @@ public:
             isGPU = 1;
             isCUDA_Aware = 2;	
 	}	
-	    H___ = std::make_unique<Matrix<T>>(isGPU, m, n, H, ldh);
-	    C___ = std::make_unique<Matrix<T>>(isCUDA_Aware, m, max_block, V1, m);
+	H___ = std::make_unique<Matrix<T>>(isGPU, m, n, H, ldh);
+	C___ = std::make_unique<Matrix<T>>(isCUDA_Aware, m, max_block, V1, m);
         C2___ = std::make_unique<Matrix<T>>(isCUDA_Aware, m, max_block);
         B___ = std::make_unique<Matrix<T>>(isCUDA_Aware, n, max_block);	
         B2___ = std::make_unique<Matrix<T>>(isCUDA_Aware, n, max_block); 
         A___ = std::make_unique<Matrix<T>>(isCUDA_Aware, max_block, max_block); 
-        Ritzv___ = std::make_unique<Matrix<Base<T>>>(isCUDA_Aware, max_block, 1, ritzv, max_block);
-        Resid___ = std::make_unique<Matrix<Base<T>>>(isCUDA_Aware, max_block, 1);
+        Ritzv___ = std::make_unique<Matrix<Base<T>>>(isGPU, max_block, 1, ritzv, max_block);
+        Resid___ = std::make_unique<Matrix<Base<T>>>(isGPU, max_block, 1);
+    	vv___ = std::make_unique<Matrix<T>>(isGPU, m, 1);
     }
 
     //! Return buffer stores the (local part if applicable) matrix A.
@@ -402,6 +403,7 @@ public:
     Matrix<T> B2() {return *B2___.get();}
     Matrix<Base<T>> Resid() {return *Resid___.get();}
     Matrix<Base<T>> Ritzv() {return *Ritzv___.get();}
+    Matrix<T> vv() {return *vv___.get();}
 
 private:
     //! A smart pointer which manages the buffer of `H_` which stores (local
@@ -445,7 +447,7 @@ private:
     std::unique_ptr<Matrix<T>> A___;
     std::unique_ptr<Matrix<Base<T>>> Resid___;
     std::unique_ptr<Matrix<Base<T>>> Ritzv___;
-
+    std::unique_ptr<Matrix<T>> vv___;
 };
 } // namespace mpi
 } // namespace chase
