@@ -418,10 +418,12 @@ public:
     void preApplication(T* V, std::size_t locked, std::size_t block) override
     {
         next_ = NextOp::bAc;
-        if (locked > 0)
+#if !defined(CUDA_AWARE)        
+	if (locked > 0)
         {
             C__.H2D(m_, block, locked);
 	}
+#endif	
     }
 
     //! - This function performs the local computation of `GEMM` for
@@ -829,54 +831,6 @@ public:
     void B2C(T* B, std::size_t off1, T* C, std::size_t off2, std::size_t block) override
     {} 
 
-    void getMpiWorkSpace(T **C, T **B, T **A, T **C2, T **B2, T **vv, Base<T> **rsd, T **w) override    
-    {
-#if defined(CUDA_AWARE)
-        *C = C__.device();
-        *B = B__.device();
-	*A = A__.device();
-	*C2 = C2__.device();
-	*B2 = B2__.device();
-	*vv = vv__.device();
-	*rsd = Resid__.device();
-	*w = vv__.device();
-#else	    
-        *C = C__.host();
-        *B = B__.host();  
-        *A = A__.host();
-	*C2 = C2__.host();
-	*B2 = B2__.host();	
-	*vv = vv__.host();
-	*rsd = Resid__.host();
-	*w = vv__.host();
-#endif
-    }
-    void getMpiCollectiveBackend(int *allreduce_backend, int *bcast_backend) override
-    {
-#if defined(CUDA_AWARE)	    
-    #if defined(HAS_NCCL)	    
-        *allreduce_backend = NCCL_BACKEND;
-        *bcast_backend = NCCL_BACKEND;   
-    #else
-        *allreduce_backend = MPI_BACKEND;
-        *bcast_backend = MPI_BACKEND;	
-    #endif
-#else	
-        *allreduce_backend = MPI_BACKEND;
-        *bcast_backend = MPI_BACKEND;
-#endif
-	
-    }
-
-    bool isCudaAware()
-    {
-#if defined(CUDA_AWARE)
-	return true;
-#else
-	return false;
-#endif    
-    }
-
     void lacpy(char uplo, std::size_t m, std::size_t n,
              T* a, std::size_t lda, T* b, std::size_t ldb) override
     {
@@ -900,50 +854,11 @@ public:
 #endif	
     }
 
-    void retrieveC(T **C, std::size_t locked, std::size_t block, bool copy) override
+    ChaseMpiMatrices<T> *getChaseMatrices() override
     {
-#if defined(CUDA_AWARE)
-	if(copy)    
-	{
-//	    cuda_exec(cudaMemcpy(C__.host() + locked * m_, C__.device() + locked * m_, block * m_ * sizeof(T),
-//                             cudaMemcpyDeviceToHost));        	    
-	    C__.D2H(m_, block, locked);
-	}
-#endif
-	*C = C__.host();	
+	return &matrices_;    
     }
-
-    void retrieveB(T **B, std::size_t locked, std::size_t block, bool copy) override
-    {
-#if defined(CUDA_AWARE)
-	if(copy)
-	{
-//            cuda_exec(cudaMemcpy(B_ + locked * n_, d_B_ + locked * n_, block * n_ *sizeof(T),
-//                             cudaMemcpyDeviceToHost));
-	    B__.D2H(n_, block, locked);
-	}
-#endif
-        *B = B__.host();    
-    }
-
-    void retrieveResid(Base<T> **rsd, std::size_t locked, std::size_t block) override
-    {
-#if defined(CUDA_AWARE)
-        cuda_exec(cudaMemcpy(Resid__.host() + locked, Resid__.device() + locked, (nev_ + nex_ - locked) * sizeof(Base<T>),
-                             cudaMemcpyDeviceToHost));
-#endif
-        *rsd = Resid__.host() + locked;	
-    }
-
-    void putC(T *C, std::size_t locked, std::size_t block) override
-    {
-#if defined(CUDA_AWARE)
-        //cuda_exec(cudaMemcpy(d_C_ + locked * m_, C + locked * m_, block * m_ * sizeof(T),
-        //                     cudaMemcpyHostToDevice));
-	C__.H2D(m_, block, locked);
-#endif	    
-    }
-
+    
 private:
     enum NextOp
     {

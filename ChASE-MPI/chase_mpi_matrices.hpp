@@ -155,24 +155,23 @@ class Matrix
         {
             case 0:
                 Host_ = std::make_shared<CpuMem<T>>(ptr, ld * n);
-                isHostAlloc_ = false;
+                isHostAlloc_ = true;
                 isDeviceAlloc_ = false;
                 break;
 #if defined(HAS_CUDA)
             case 1:
                 Host_ = std::make_shared<CpuMem<T>>(ptr, ld * n);
                 Device_ = std::make_shared<GpuMem<T>>(m * n);
-                isHostAlloc_ = false;
+                isHostAlloc_ = true;
                 isDeviceAlloc_ = true;
                 break;
             case 2:
                 Device_ = std::make_shared<GpuMem<T>>(m * n);
                 Host_ = std::make_shared<CpuMem<T>>(ptr, ld * n);		
-                isHostAlloc_ = false;
+                isHostAlloc_ = true;
                 isDeviceAlloc_ = true;
                 break;
-#endif
-		
+#endif		
         }
       }
 
@@ -183,7 +182,7 @@ class Matrix
      T *ptr(){
          return Host_.get()->ptr();
      }
-     
+
 #if defined(HAS_CUDA)
      T *device(){
          return Device_.get()->ptr();
@@ -226,7 +225,39 @@ class Matrix
                this->d_ld(), this->host() + offset * this->h_ld(), this->h_ld());
     }    
 #endif     
-    
+
+    void sync2Ptr(std::size_t nrows, std::size_t ncols, std::size_t offset = 0)
+    {
+#if defined(HAS_CUDA)
+       cublasGetMatrix(nrows, ncols, sizeof(T), this->device() + offset * this->d_ld(),
+               this->d_ld(), this->host() + offset * this->h_ld(), this->h_ld());	
+#endif	    
+    }
+
+    void sync2Ptr()
+    {
+#if defined(HAS_CUDA)
+       cublasGetMatrix(this->m_, this->n_, sizeof(T), this->device(),
+               this->d_ld(), this->host(), this->h_ld());
+#endif
+    }
+
+    void syncFromPtr(std::size_t nrows, std::size_t ncols, std::size_t offset = 0)
+    {
+#if defined(HAS_CUDA)
+       cublasSetMatrix(nrows, ncols, sizeof(T), this->host() + offset * this->h_ld(),
+                       this->h_ld(), this->device() + offset * this->d_ld(), this->d_ld());
+#endif
+    }
+
+    void syncFromPtr()
+    {
+#if defined(HAS_CUDA)
+       cublasSetMatrix(this->m_, this->n_, sizeof(T), this->host(),
+                       this->h_ld(), this->device(), this->d_ld());
+#endif
+    }
+
     private:
       std::size_t m_;
       std::size_t n_;
@@ -338,6 +369,7 @@ public:
           ritzv__(ritzv == nullptr ? new Base<T>[max_block] : nullptr),
           resid__(new Base<T>[max_block] ),
           ldh_(ldh),
+	  mode_(mode),
           // if value is null we take allocated
           H_(H), V1_(V1 == nullptr ? V1__.get() : V1),
           V2_(V2__.get()),
@@ -362,11 +394,12 @@ public:
         B___ = std::make_unique<Matrix<T>>(isCUDA_Aware, n, max_block);	
         B2___ = std::make_unique<Matrix<T>>(isCUDA_Aware, n, max_block); 
         A___ = std::make_unique<Matrix<T>>(isCUDA_Aware, max_block, max_block); 
-        Ritzv___ = std::make_unique<Matrix<Base<T>>>(isGPU, max_block, 1, ritzv, max_block);
-        Resid___ = std::make_unique<Matrix<Base<T>>>(isGPU, max_block, 1);
+        Ritzv___ = std::make_unique<Matrix<Base<T>>>(isGPU, 1, max_block, ritzv, max_block);
+        Resid___ = std::make_unique<Matrix<Base<T>>>(isGPU, 1, max_block);
     	vv___ = std::make_unique<Matrix<T>>(isGPU, m, 1);
     }
 
+    int get_Mode(){return mode_;}
     //! Return buffer stores the (local part if applicable) matrix A.
     /*! \return `H_`, a private member of this class.
      */
@@ -404,6 +437,110 @@ public:
     Matrix<Base<T>> Resid() {return *Resid___.get();}
     Matrix<Base<T>> Ritzv() {return *Ritzv___.get();}
     Matrix<T> vv() {return *vv___.get();}
+    T *C_comm() {
+	T *C;    
+    	switch(mode_){
+	    case 0:
+		  C = this->C().host(); break;
+#if defined(HAS_CUDA)
+            case 1:
+                  C = this->C().host(); break;
+            case 2:
+                  C = this->C().device(); break;
+#endif		  
+	}
+	return C;
+    }
+
+    T *C2_comm() {
+	T *C2;    
+        switch(mode_){
+            case 0:
+                  C2 = this->C2().host(); break;
+#if defined(HAS_CUDA)
+            case 1:
+                  C2 = this->C2().host(); break;
+            case 2:
+                  C2 = this->C2().device(); break;
+#endif
+        }
+	return C2;
+    }
+
+    T *B_comm() {
+	T *B;    
+        switch(mode_){
+            case 0:
+                  B = this->B().host(); break;
+#if defined(HAS_CUDA)
+            case 1:
+                  B = this->B().host(); break;
+            case 2:
+                  B = this->B().device(); break;
+#endif
+        }
+	return B;
+    }
+
+    T *B2_comm() {
+	T *B2;    
+        switch(mode_){
+            case 0:
+                  B2 = this->B2().host(); break;
+#if defined(HAS_CUDA)
+            case 1:
+                  B2 = this->B2().host(); break;
+            case 2:
+                  B2 = this->B2().device(); break;
+#endif
+        }
+	return B2;
+    }
+
+    T *A_comm() {
+	T *a;    
+        switch(mode_){
+            case 0:
+                  a = this->A().host(); break;
+#if defined(HAS_CUDA)
+            case 1:
+                  a = this->A().host(); break;
+            case 2:
+                  a = this->A().device(); break;
+#endif
+        }
+	return a;
+    }
+
+    Base<T> *Resid_comm() {
+	Base<T> *rsd;    
+        switch(mode_){
+            case 0:
+                  rsd = this->Resid().host(); break;
+#if defined(HAS_CUDA)
+            case 1:
+                  rsd = this->Resid().host(); break;
+            case 2:
+                  rsd = this->Resid().device(); break;
+#endif
+        }
+	return rsd;
+    }
+
+    T *vv_comm() {
+	T *v;    
+        switch(mode_){
+            case 0:
+                  v = this->vv().host(); break;
+#if defined(HAS_CUDA)
+            case 1:
+                  v = this->vv().host(); break;
+            case 2:
+                  v = this->vv().device(); break;
+#endif
+        }
+	return v;
+    }
 
 private:
     //! A smart pointer which manages the buffer of `H_` which stores (local
@@ -438,6 +575,7 @@ private:
     //! The leading dimension of local part of Symmetric/Hermtian matrix on each
     //! MPI proc.
     std::size_t ldh_;
+    int mode_;
 
     std::unique_ptr<Matrix<T>> H___;
     std::unique_ptr<Matrix<T>> C___;

@@ -9,6 +9,7 @@
 
 #include "ChASE-MPI/chase_mpi_properties.hpp"
 #include "ChASE-MPI/chase_mpidla_interface.hpp"
+#include "ChASE-MPI/chase_mpi_matrices.hpp"
 #include <iterator>
 #include <map>
 #include <mpi.h>
@@ -305,28 +306,53 @@ public:
 	v0_ = new T[m_];
 	v1_ = new T[m_];
 	v2_ = new T[m_];
-    w_ = new T[n_];
+        w_ = new T[n_];
 	mpi_wrapper_ = matrix_properties->get_mpi_wrapper();
-	cuda_aware_ = dla_->isCudaAware(); 
-    T *ww;
-        dla_->getMpiWorkSpace(&C, &B, &A, &C2, &B2, &vv, &rsd, &ww);
-        dla_->getMpiCollectiveBackend(&allreduce_backend, &bcast_backend);
-        if(cuda_aware_)
+	//cuda_aware_ = dla_->isCudaAware(); 
+        matrices_ = dla_->getChaseMatrices();
+        C = matrices_->C_comm();
+        B = matrices_->B_comm();
+        A = matrices_->A_comm();	
+        C2 = matrices_->C2_comm();	
+        B2 = matrices_->B2_comm();	
+        vv = matrices_->vv_comm();	
+        rsd = matrices_->Resid_comm();
+	
+	if(matrices_->get_Mode() == 2)
+	{
+	    cuda_aware_ = true;
+	}
+	else
+	{
+	    cuda_aware_ = false;
+	}
+
+	if(cuda_aware_)
 	{
 	    memcpy_mode[0] = CPY_D2D;	
 	    memcpy_mode[1] = CPY_D2H;
 	    memcpy_mode[2] = CPY_H2D;
+#if defined(HAS_NCCL)
+	    allreduce_backend = NCCL_BACKEND;
+	    bcast_backend = NCCL_BACKEND;
+#else
+	    allreduce_backend = MPI_BACKEND;
+	    bcast_backend = MPI_BACKEND;
+#endif	    
 	}
 	else
 	{
 	    memcpy_mode[0] = CPY_H2H;
 	    memcpy_mode[1] = CPY_H2H;
 	    memcpy_mode[2] = CPY_H2H;
+            allreduce_backend = MPI_BACKEND;
+            bcast_backend = MPI_BACKEND;	    
 	}	
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
     }
+
     ~ChaseMpiDLA() {
         delete [] v0_;
         delete [] v1_;
@@ -400,11 +426,11 @@ public:
         next_ = NextOp::bAc;
         locked_ = locked;
 
-	T *C_host;
-	dla_->retrieveC(&C_host, locked, block, false);
+	//T *C_host;
+	//dla_->retrieveC(&C_host, locked, block, false);
     	for (auto j = 0; j < block; j++){
    	    for(auto i = 0; i < mblocks_; i++){
-	        std::memcpy(C_host + j * m_ + r_offs_l_[i] + locked * m_, V + j * N_ + locked * N_ + r_offs_[i], r_lens_[i] * sizeof(T));
+	        std::memcpy(matrices_->C().ptr() + j * m_ + r_offs_l_[i] + locked * m_, V + j * N_ + locked * N_ + r_offs_[i], r_lens_[i] * sizeof(T));
 	    }   
         }
 	
@@ -595,7 +621,7 @@ public:
 
     bool postApplication(T* V, std::size_t block, std::size_t locked) override
     {
-#ifdef USE_NSIGHT
+/*#ifdef USE_NSIGHT
         nvtxRangePushA("ChaseMpiDLA: postApplication");
 #endif
         dla_->postApplication(V, block, locked);
@@ -626,6 +652,7 @@ public:
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
+*/	
         return true;
     }
     /*!
@@ -895,19 +922,22 @@ public:
         nvtxRangePop();
         nvtxRangePushA("allreduce");
 #endif
-        //MPI_Allreduce(MPI_IN_PLACE, resid, unconverged, getMPI_Type<Base<T>>(),
-        //              MPI_SUM, row_comm_);
 	AllReduce(allreduce_backend, rsd + locked, unconverged, getMPI_Type<Base<T>>(),
                       MPI_SUM, row_comm_, mpi_wrapper_ );
-        Base<T> *resid_h;
-	dla_->retrieveResid(&resid_h, locked, unconverged);
+      //  Base<T> *resid_h;
+	//dla_->retrieveResid(&resid_h, locked, unconverged);
+	if(rsd != matrices_->Resid().ptr()){
+	//	std::cout << "rsd != Resid().ptr()" << std::endl;
+	    matrices_->Resid().sync2Ptr(1, unconverged, locked);
+	}
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
 	
-        for (std::size_t i = 0; i < unconverged; ++i)
+        for (std::size_t i = 0; i < unconverged ; ++i)
         {
-            resid[i] = std::sqrt(resid_h[i]);
+        //    resid[i] = std::sqrt(resid_h[i]);
+	      resid[i] = std::sqrt(matrices_->Resid().ptr()[i + locked]);
 	}
     }
 
@@ -956,11 +986,14 @@ public:
 #ifdef USE_NSIGHT
         nvtxRangePushA("pgeqrf+pgqr");
 #endif
-	T *C_host;
-	dla_->retrieveC(&C_host, 0, nevex, true);
-        t_pgeqrf(N_, nevex, C_host, one, one, desc1D_Nxnevx_, tau.get());
-        t_pgqr(N_, nevex, nevex, C_host, one, one, desc1D_Nxnevx_, tau.get());
-	dla_->putC(C_host, 0, nevex);
+	if(C != matrices_->C().ptr()){
+	    matrices_->C().sync2Ptr();
+	}
+	t_pgeqrf(N_, nevex, matrices_->C().ptr(), one, one, desc1D_Nxnevx_, tau.get());
+	t_pgqr(N_, nevex, nevex, matrices_->C().ptr(), one, one, desc1D_Nxnevx_, tau.get());
+        if(C != matrices_->C().ptr()){
+            matrices_->C().syncFromPtr();
+        }	
 #ifdef USE_NSIGHT
         nvtxRangePop();
         nvtxRangePushA("memcpy");
@@ -979,7 +1012,13 @@ public:
             std::cout << "ScaLAPACK is not available, use LAPACK Householder "
                          "QR instead"
                       << std::endl;
-        this->postApplication(V_, nevex, 0);
+        if(C != matrices_->C().ptr())
+	{
+	    matrices_->C().sync2Ptr();
+	}
+
+	this->collecRedundantVecs(matrices_->C().ptr() + locked * m_, V_ + locked_ * N_, 0, nevex);
+	//this->postApplication(V_, nevex, 0);
         t_geqrf(LAPACK_COL_MAJOR, N_, nevex, V_, N_, tau.get());
         t_gqr(LAPACK_COL_MAJOR, N_, nevex, nevex, V_, N_, tau.get());
         this->preApplication(V_, 0, nevex);
@@ -1031,10 +1070,14 @@ public:
         }
         if(display_bounds != 0){
             std::vector<T> V2(N_ * (nev_+nex_));
-            T *C_host;
-	    dla_->retrieveC(&C_host, 0, nev_ + nex_, true);
-	    this->collecRedundantVecs(C_host, V2.data(), 0, nev_+nex_);
-            std::vector<Base<T>> S(nev_ + nex_ - locked);
+//            T *C_host;
+//	    dla_->retrieveC(&C_host, 0, nev_ + nex_, true);
+//	    this->collecRedundantVecs(C_host, V2.data(), 0, nev_+nex_);
+	    if(C != matrices_->C().ptr()){
+                matrices_->C().sync2Ptr();
+            }
+	    this->collecRedundantVecs(matrices_->C().ptr(), V2.data(), 0, nev_+nex_);
+	    std::vector<Base<T>> S(nev_ + nex_ - locked);
             T *U;
             std::size_t ld = 1;
             T *Vt ;
@@ -1411,16 +1454,6 @@ public:
         }
     }
 
-    void getMpiWorkSpace(T **C, T **B, T **A, T **C2, T **B2, T **vv, Base<T> **rsd, T **w) override
-    {}
-
-    void getMpiCollectiveBackend(int *allreduce_backend, int *bcast_backend) override
-    {}
-
-    bool isCudaAware() override
-    {
-        return cuda_aware_;
-    }
 
     void lacpy(char uplo, std::size_t m, std::size_t n,
              T* a, std::size_t lda, T* b, std::size_t ldb) override
@@ -1429,17 +1462,10 @@ public:
     void shiftMatrixForQR(T *A, std::size_t n, T shift) override
     {}
 
-    void retrieveC(T **C, std::size_t locked, std::size_t block, bool copy) override
-    {}
-
-    void retrieveB(T **B, std::size_t locked, std::size_t block, bool copy) override
-    {}
-	
-    void retrieveResid(Base<T> **rsd, std::size_t locked, std::size_t block) override
-    {}
-
-    void putC(T *C, std::size_t locked, std::size_t block) override
-    {}
+    ChaseMpiMatrices<T> *getChaseMatrices() override	    
+    {
+        return matrices_;       
+    }
 
 private:
     enum NextOp
@@ -1458,16 +1484,6 @@ private:
         m_; //!< number of rows of local matrix of the symmetric/Hermtian matrix
     std::size_t N_; //!< global dimension of the symmetric/Hermtian matrix
 
-    //T* B_;  //!< a matrix of size `n_*(nev_+nex_)`, which is allocated in
-            //!< ChaseMpiMatrices
-    //T* C_;  //!< a matrix of size `m_*(nev_+nex_)`, which is allocated in
-            //!< ChaseMpiMatrices
-    //T* C2_; //!< a matrix of size `m_*(nev_+nex_)`, which is allocated in
-            //!< ChaseMpiProperties
-    //T* B2_; //!< a matrix of size `n_*(nev_+nex_)`, which is allocated in
-            //!< ChaseMpiProperties
-    //T* A_;  //!< a matrix of size `(nev_+nex_)*(nev_+nex_)`, which is allocated
-            //!< in ChaseMpiProperties
     T* v0_; //!< a vector of size `N_`, which is allocated in this
                         //!< class for Lanczos
     T* v1_; //!< a vector of size `N_`, which is allocated in this
@@ -1579,6 +1595,9 @@ private:
     Base<T> *rsd;
     int allreduce_backend, bcast_backend;
     int memcpy_mode[3];
+
+    ChaseMpiMatrices<T> *matrices_;
+    
 
 };
 } // namespace mpi

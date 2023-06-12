@@ -328,27 +328,6 @@ public:
     {}
     void B2C(T* B, std::size_t off1, T* C, std::size_t off2, std::size_t block) override
     {}
-    void getMpiWorkSpace(T **C, T **B, T **A, T **C2, T **B2, T **vv, Base<T> **rsd, T **w) override    
-    {
-        *C = C_;
-    *B = B_;
-    *A = A_;
-    *C2 = C2_;
-    *B2 = B2_;
-    *vv = vv_;
-    *rsd = resid_;
-    *w = w_;
-    }
-    void getMpiCollectiveBackend(int *allreduce_backend, int *bcast_backend) override
-    {
-        *allreduce_backend = MPI_BACKEND;
-    *bcast_backend = MPI_BACKEND;
-    }
-    
-    bool isCudaAware() override
-    {
-        return false;
-    }       
 
     void lacpy(char uplo, std::size_t m, std::size_t n,
              T* a, std::size_t lda, T* b, std::size_t ldb) override
@@ -364,23 +343,10 @@ public:
         }    
     }
 
-    void retrieveC(T **C, std::size_t locked, std::size_t block, bool copy) override
+    ChaseMpiMatrices<T> *getChaseMatrices() override
     {
-        *C = C_;
+        return &matrices_;    
     }
-
-    void retrieveB(T **B, std::size_t locked, std::size_t block, bool copy) override
-    {
-        *B = B_;
-    }
-
-    void retrieveResid(Base<T> **rsd, std::size_t locked, std::size_t block) override
-    {
-        *rsd = resid_ + locked;      
-    }
-
-    void putC(T *C, std::size_t locked, std::size_t block) override
-    {}
 
 private:
     enum NextOp
