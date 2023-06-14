@@ -10,10 +10,10 @@
 #include <cstddef>
 #include <memory>
 #if defined(HAS_CUDA)
+#include <cublas_v2.h>
 #include <cuda.h>
 #include <cuda_profiler_api.h>
 #include <cuda_runtime.h>
-#include <cublas_v2.h>
 #endif
 #include "algorithm/types.hpp"
 
@@ -22,136 +22,127 @@ namespace chase
 namespace mpi
 {
 
-template<class T>
+template <class T>
 class CpuMem
 {
-    public:
-
-      CpuMem():size_(0), ptr_(nullptr), allocated_(false){}	      
-      CpuMem(std::size_t size)
-	: size_(size), allocated_(true), type_("CPU") {
+public:
+    CpuMem() : size_(0), ptr_(nullptr), allocated_(false) {}
+    CpuMem(std::size_t size) : size_(size), allocated_(true), type_("CPU")
+    {
 #if defined(HAS_CUDA)
-	  cudaMallocHost(&ptr_, size_ * sizeof(T));
-#else		
-          ptr_=std::allocator<T>().allocate(size_);
+        cudaMallocHost(&ptr_, size_ * sizeof(T));
+#else
+        ptr_ = std::allocator<T>().allocate(size_);
 #endif
-      }
+    }
 
-      CpuMem(T* ptr, std::size_t size) : size_(size), ptr_(ptr), allocated_(false), type_("CPU") {}
+    CpuMem(T* ptr, std::size_t size)
+        : size_(size), ptr_(ptr), allocated_(false), type_("CPU")
+    {
+    }
 
-      ~CpuMem() {
-	if (allocated_) {
+    ~CpuMem()
+    {
+        if (allocated_)
+        {
 #if defined(HAS_CUDA)
-	    cudaFreeHost(ptr_);
-#else		
-	    std::allocator<T>().deallocate(ptr_,size_);
+            cudaFreeHost(ptr_);
+#else
+            std::allocator<T>().deallocate(ptr_, size_);
 #endif
-	}
-      }
-      
-      T *ptr () 
-      {
-          return ptr_;
-      }
+        }
+    }
 
-      bool isAlloc () 
-      {
-          return allocated_;
-      }
+    T* ptr() { return ptr_; }
 
-      std::string type() 
-      {
-          return type_;
-      }
-    private:
-      std::size_t size_;
-      T* ptr_;
-      bool allocated_;
-      std::string type_;	    
+    bool isAlloc() { return allocated_; }
+
+    std::string type() { return type_; }
+
+private:
+    std::size_t size_;
+    T* ptr_;
+    bool allocated_;
+    std::string type_;
 };
 
 #if defined(HAS_CUDA)
-template<class T>
+template <class T>
 class GpuMem
 {
-    public:
-      GpuMem():size_(0), ptr_(nullptr), allocated_(false){}
+public:
+    GpuMem() : size_(0), ptr_(nullptr), allocated_(false) {}
 
-      GpuMem(std::size_t size)
-        : size_(size), allocated_(true), type_("GPU") {
+    GpuMem(std::size_t size) : size_(size), allocated_(true), type_("GPU")
+    {
         cudaMalloc(&ptr_, size_ * sizeof(T));
-      }
+    }
 
-      GpuMem(T* ptr, std::size_t size) : size_(size), ptr_(ptr), allocated_(false), type_("GPU") {}
+    GpuMem(T* ptr, std::size_t size)
+        : size_(size), ptr_(ptr), allocated_(false), type_("GPU")
+    {
+    }
 
-      ~GpuMem() {
-        if (allocated_) {
-          cudaFree(ptr_);
+    ~GpuMem()
+    {
+        if (allocated_)
+        {
+            cudaFree(ptr_);
         }
-      }
+    }
 
-      T *ptr () 
-      {
-          return ptr_;
-      }
+    T* ptr() { return ptr_; }
 
-      bool isAlloc ()
-      {
-          return allocated_;
-      }
+    bool isAlloc() { return allocated_; }
 
-      std::string type()
-      {
-          return type_;
-      }
+    std::string type() { return type_; }
 
-    private:
-      std::size_t size_;
-      T* ptr_;
-      bool allocated_;
-      std::string type_;
-
+private:
+    std::size_t size_;
+    T* ptr_;
+    bool allocated_;
+    std::string type_;
 };
 #endif
 
-template<class T>
+template <class T>
 class Matrix
 {
-    public:
-      using ElementType = T;
+public:
+    using ElementType = T;
 
-      Matrix():m_(0), n_(0), ld_(0){}
-      //mode: 0: CPU, 1: traditional GPU, 2: CUDA-Aware
-      Matrix(int mode, std::size_t m, std::size_t n)
-      :m_(m), n_(n), ld_(m), mode_(mode)
-      {
-	switch(mode)
-	{
-	    case 0:
-		Host_ = std::make_shared<CpuMem<T>>(m * n);
-		isHostAlloc_ = true;
-		isDeviceAlloc_ = false;
-		break;
-#if defined(HAS_CUDA)		
-	    case 1:
+    Matrix() : m_(0), n_(0), ld_(0), isHostAlloc_(false) {}
+    // mode: 0: CPU, 1: traditional GPU, 2: CUDA-Aware
+    Matrix(int mode, std::size_t m, std::size_t n)
+        : m_(m), n_(n), ld_(m), mode_(mode)
+    {
+        switch (mode)
+        {
+            case 0:
                 Host_ = std::make_shared<CpuMem<T>>(m * n);
-		Device_ = std::make_shared<GpuMem<T>>(m * n);
                 isHostAlloc_ = true;
-                isDeviceAlloc_ = true;		
-		break;
-	    case 2:
-    		Device_ = std::make_shared<GpuMem<T>>(m * n);		
+                isDeviceAlloc_ = false;
+                break;
+#if defined(HAS_CUDA)
+            case 1:
+                Host_ = std::make_shared<CpuMem<T>>(m * n);
+                Device_ = std::make_shared<GpuMem<T>>(m * n);
+                isHostAlloc_ = true;
+                isDeviceAlloc_ = true;
+                break;
+            case 2:
+                Device_ = std::make_shared<GpuMem<T>>(m * n);
                 isHostAlloc_ = false;
-                isDeviceAlloc_ = true;		
-		break;
-#endif	
-	}
-      }     
-  
-      Matrix(int mode, std::size_t m, std::size_t n, T *ptr, std::size_t ld)
-      :m_(m), n_(n), ld_(ld), mode_(mode)
-      {
-        switch(mode)
+                isDeviceAlloc_ = true;
+                break;
+#endif
+        }
+    }
+
+    Matrix(int mode, std::size_t m, std::size_t n, T* ptr, std::size_t ld)
+        : m_(m), n_(n), ld_(ld), mode_(mode)
+    {
+        switch (mode)
         {
             case 0:
                 Host_ = std::make_shared<CpuMem<T>>(ptr, ld * n);
@@ -167,108 +158,103 @@ class Matrix
                 break;
             case 2:
                 Device_ = std::make_shared<GpuMem<T>>(m * n);
-                Host_ = std::make_shared<CpuMem<T>>(ptr, ld * n);		
+                Host_ = std::make_shared<CpuMem<T>>(ptr, ld * n);
                 isHostAlloc_ = true;
                 isDeviceAlloc_ = true;
                 break;
-#endif		
+#endif
         }
-      }
+    }
 
-     T *host(){
-         return Host_.get()->ptr();
-     }  
+    bool isHostAlloc() { return false; }
+    T* host() { return Host_.get()->ptr(); }
 
-     T *ptr(){
-         return Host_.get()->ptr();
-     }
+    T* ptr() { return Host_.get()->ptr(); }
 
 #if defined(HAS_CUDA)
-     T *device(){
-         return Device_.get()->ptr();
-     }
+    T* device() { return Device_.get()->ptr(); }
 #endif
-     std::size_t ld(){
-         return ld_;
-     }
+    std::size_t ld() { return ld_; }
 
-     std::size_t h_ld(){
-         return ld_;
-     }
-#if defined(HAS_CUDA)     
-     std::size_t d_ld(){
-         return m_;
-     }
-#endif    
+    std::size_t h_ld() { return ld_; }
+#if defined(HAS_CUDA)
+    std::size_t d_ld() { return m_; }
+#endif
 
 #if defined(HAS_CUDA)
     void H2D()
     {
-       cublasSetMatrix(m_, n_, sizeof(T), this->host(), this->h_ld(), this->device(), this->d_ld());
-    }	    
+        cublasSetMatrix(m_, n_, sizeof(T), this->host(), this->h_ld(),
+                        this->device(), this->d_ld());
+    }
 
     void H2D(std::size_t nrows, std::size_t ncols, std::size_t offset = 0)
     {
-       cublasSetMatrix(nrows, ncols, sizeof(T), this->host() + offset * this->h_ld(),
-		       this->h_ld(), this->device() + offset * this->d_ld(), this->d_ld());
+        cublasSetMatrix(nrows, ncols, sizeof(T),
+                        this->host() + offset * this->h_ld(), this->h_ld(),
+                        this->device() + offset * this->d_ld(), this->d_ld());
     }
-
 
     void D2H()
     {
-        cublasGetMatrix(m_, n_, sizeof(T), this->device(), this->d_ld(), this->host(), this->h_ld());
+        cublasGetMatrix(m_, n_, sizeof(T), this->device(), this->d_ld(),
+                        this->host(), this->h_ld());
     }
 
     void D2H(std::size_t nrows, std::size_t ncols, std::size_t offset = 0)
     {
-       cublasGetMatrix(nrows, ncols, sizeof(T), this->device() + offset * this->d_ld(),
-               this->d_ld(), this->host() + offset * this->h_ld(), this->h_ld());
-    }    
-#endif     
+        cublasGetMatrix(nrows, ncols, sizeof(T),
+                        this->device() + offset * this->d_ld(), this->d_ld(),
+                        this->host() + offset * this->h_ld(), this->h_ld());
+    }
+#endif
 
     void sync2Ptr(std::size_t nrows, std::size_t ncols, std::size_t offset = 0)
     {
 #if defined(HAS_CUDA)
-       cublasGetMatrix(nrows, ncols, sizeof(T), this->device() + offset * this->d_ld(),
-               this->d_ld(), this->host() + offset * this->h_ld(), this->h_ld());	
-#endif	    
+        cublasGetMatrix(nrows, ncols, sizeof(T),
+                        this->device() + offset * this->d_ld(), this->d_ld(),
+                        this->host() + offset * this->h_ld(), this->h_ld());
+#endif
     }
 
     void sync2Ptr()
     {
 #if defined(HAS_CUDA)
-       cublasGetMatrix(this->m_, this->n_, sizeof(T), this->device(),
-               this->d_ld(), this->host(), this->h_ld());
+        cublasGetMatrix(this->m_, this->n_, sizeof(T), this->device(),
+                        this->d_ld(), this->host(), this->h_ld());
 #endif
     }
 
-    void syncFromPtr(std::size_t nrows, std::size_t ncols, std::size_t offset = 0)
+    void syncFromPtr(std::size_t nrows, std::size_t ncols,
+                     std::size_t offset = 0)
     {
 #if defined(HAS_CUDA)
-       cublasSetMatrix(nrows, ncols, sizeof(T), this->host() + offset * this->h_ld(),
-                       this->h_ld(), this->device() + offset * this->d_ld(), this->d_ld());
+        cublasSetMatrix(nrows, ncols, sizeof(T),
+                        this->host() + offset * this->h_ld(), this->h_ld(),
+                        this->device() + offset * this->d_ld(), this->d_ld());
 #endif
     }
 
     void syncFromPtr()
     {
 #if defined(HAS_CUDA)
-       cublasSetMatrix(this->m_, this->n_, sizeof(T), this->host(),
-                       this->h_ld(), this->device(), this->d_ld());
+        cublasSetMatrix(this->m_, this->n_, sizeof(T), this->host(),
+                        this->h_ld(), this->device(), this->d_ld());
 #endif
     }
 
-    private:
-      std::size_t m_;
-      std::size_t n_;
-      std::size_t ld_;
-      std::shared_ptr<CpuMem<T>> Host_;
+private:
+    std::size_t m_;
+    std::size_t n_;
+    std::size_t ld_;
+    std::shared_ptr<CpuMem<T>> Host_;
 #if defined(HAS_CUDA)
-      std::shared_ptr<GpuMem<T>> Device_;
-#endif      
-      bool isHostAlloc_;
-      bool isDeviceAlloc_;
-      bool mode_;
+    std::shared_ptr<GpuMem<T>> Device_;
+#endif
+    bool isHostAlloc_ = false;
+    bool isDeviceAlloc_ = false;
+    bool mode_;
 };
 /*
  *  Utility class for Buffers
@@ -310,25 +296,47 @@ public:
       @param V2: a pointer to the buffer `V2_`.
       @param resid: a pointer to the buffer `resid_`.
     */
-    ChaseMpiMatrices(std::size_t N, std::size_t max_block, T *H, std::size_t ldh, 
-                     T* V1, Base<T>* ritzv, T* V2 = nullptr,
+    ChaseMpiMatrices(int mode, std::size_t N, std::size_t max_block, T* H,
+                     std::size_t ldh, T* V1, Base<T>* ritzv, T* V2 = nullptr,
                      Base<T>* resid = nullptr)
         // if value is null then allocate otherwise don't
-        : H__(nullptr),
-          V1__(V1 == nullptr ? new T[N * max_block] : nullptr),
+        : H__(nullptr), V1__(V1 == nullptr ? new T[N * max_block] : nullptr),
           V2__(V2 == nullptr ? new T[N * max_block] : nullptr),
           ritzv__(ritzv == nullptr ? new Base<T>[max_block] : nullptr),
-          resid__(resid == nullptr ? new Base<T>[max_block] : nullptr), 
+          resid__(resid == nullptr ? new Base<T>[max_block] : nullptr),
           ldh_(ldh),
           // if value is null we take allocated
-          H_(H),
-          V1_(V1 == nullptr ? V1__.get() : V1),
+          mode_(mode), H_(H), V1_(V1 == nullptr ? V1__.get() : V1),
           V2_(V2 == nullptr ? V2__.get() : V2),
           ritzv_(ritzv == nullptr ? ritzv__.get() : ritzv),
           resid_(resid == nullptr ? resid__.get() : resid)
     {
-    }    
+        int isGPU = 0;
+        if (mode == 2)
+        {
+            isGPU = 1;
+        }
+        int onlyGPU = 0;
+        if (isGPU)
+        {
+            onlyGPU = 2;
+        }
 
+        H___ = std::make_unique<Matrix<T>>(isGPU, N, N, H, ldh);
+        C___ = std::make_unique<Matrix<T>>(isGPU, N, max_block, V1, N);
+        B___ = std::make_unique<Matrix<T>>(onlyGPU, N, max_block);
+        A___ = std::make_unique<Matrix<T>>(onlyGPU, max_block, max_block);
+
+        if (mode == 1)
+        {
+            C2___ = std::make_unique<Matrix<T>>(0, N, max_block);
+            B2___ = std::make_unique<Matrix<T>>(0, N, max_block);
+        }
+
+        Ritzv___ = std::make_unique<Matrix<Base<T>>>(isGPU, 1, max_block, ritzv,
+                                                     max_block);
+        Resid___ = std::make_unique<Matrix<Base<T>>>(isGPU, 1, max_block);
+    }
 
     //! A constructor of ChaseMpiMatrices for **MPI case** which allocates
     //! everything necessary except `H_`.
@@ -360,46 +368,49 @@ public:
       @param V2: a pointer to the buffer `V2_`.
       @param resid: a pointer to the buffer `resid_`.
     */
-    ChaseMpiMatrices(int mode, MPI_Comm comm, std::size_t N, std::size_t m, std::size_t n,
-                     std::size_t max_block, T* H, std::size_t ldh,
-                     T* V1,  Base<T>* ritzv)
+    ChaseMpiMatrices(int mode, MPI_Comm comm, std::size_t N, std::size_t m,
+                     std::size_t n, std::size_t max_block, T* H,
+                     std::size_t ldh, T* V1, Base<T>* ritzv)
         // if value is null then allocate otherwise don't
         : V1__(V1 == nullptr ? new T[m * max_block] : nullptr),
           V2__(new T[n * max_block]),
           ritzv__(ritzv == nullptr ? new Base<T>[max_block] : nullptr),
-          resid__(new Base<T>[max_block] ),
-          ldh_(ldh),
-	  mode_(mode),
+          resid__(new Base<T>[max_block]), ldh_(ldh), mode_(mode),
           // if value is null we take allocated
-          H_(H), V1_(V1 == nullptr ? V1__.get() : V1),
-          V2_(V2__.get()),
+          H_(H), V1_(V1 == nullptr ? V1__.get() : V1), V2_(V2__.get()),
           ritzv_(ritzv == nullptr ? ritzv__.get() : ritzv),
           resid_(resid__.get())
-    {    
-	int isGPU;
-    	int isCUDA_Aware;
-	if(mode == 0){
-	    isGPU = 0;
-	    isCUDA_Aware = 0;
-	}else if(mode == 1){
-	    isGPU = 1;
-	    isCUDA_Aware = 1;
-	}else{
+    {
+        int isGPU;
+        int isCUDA_Aware;
+        if (mode == 0)
+        {
+            isGPU = 0;
+            isCUDA_Aware = 0;
+        }
+        else if (mode == 1)
+        {
             isGPU = 1;
-            isCUDA_Aware = 2;	
-	}	
-	H___ = std::make_unique<Matrix<T>>(isGPU, m, n, H, ldh);
-	C___ = std::make_unique<Matrix<T>>(isCUDA_Aware, m, max_block, V1, m);
+            isCUDA_Aware = 1;
+        }
+        else
+        {
+            isGPU = 1;
+            isCUDA_Aware = 2;
+        }
+        H___ = std::make_unique<Matrix<T>>(isGPU, m, n, H, ldh);
+        C___ = std::make_unique<Matrix<T>>(isCUDA_Aware, m, max_block, V1, m);
         C2___ = std::make_unique<Matrix<T>>(isCUDA_Aware, m, max_block);
-        B___ = std::make_unique<Matrix<T>>(isCUDA_Aware, n, max_block);	
-        B2___ = std::make_unique<Matrix<T>>(isCUDA_Aware, n, max_block); 
-        A___ = std::make_unique<Matrix<T>>(isCUDA_Aware, max_block, max_block); 
-        Ritzv___ = std::make_unique<Matrix<Base<T>>>(isGPU, 1, max_block, ritzv, max_block);
+        B___ = std::make_unique<Matrix<T>>(isCUDA_Aware, n, max_block);
+        B2___ = std::make_unique<Matrix<T>>(isCUDA_Aware, n, max_block);
+        A___ = std::make_unique<Matrix<T>>(isCUDA_Aware, max_block, max_block);
+        Ritzv___ = std::make_unique<Matrix<Base<T>>>(isGPU, 1, max_block, ritzv,
+                                                     max_block);
         Resid___ = std::make_unique<Matrix<Base<T>>>(isGPU, 1, max_block);
-    	vv___ = std::make_unique<Matrix<T>>(isGPU, m, 1);
+        vv___ = std::make_unique<Matrix<T>>(isGPU, m, 1);
     }
 
-    int get_Mode(){return mode_;}
+    int get_Mode() { return mode_; }
     //! Return buffer stores the (local part if applicable) matrix A.
     /*! \return `H_`, a private member of this class.
      */
@@ -428,118 +439,153 @@ public:
      */
     std::size_t get_ldh() { return ldh_; }
 
-    Matrix<T> H() {return *H___.get();}
-    Matrix<T> C() {return *C___.get();}
-    Matrix<T> C2() {return *C2___.get();}
-    Matrix<T> A() {return *A___.get();}
-    Matrix<T> B() {return *B___.get();}
-    Matrix<T> B2() {return *B2___.get();}
-    Matrix<Base<T>> Resid() {return *Resid___.get();}
-    Matrix<Base<T>> Ritzv() {return *Ritzv___.get();}
-    Matrix<T> vv() {return *vv___.get();}
-    T *C_comm() {
-	T *C;    
-    	switch(mode_){
-	    case 0:
-		  C = this->C().host(); break;
-#if defined(HAS_CUDA)
-            case 1:
-                  C = this->C().host(); break;
-            case 2:
-                  C = this->C().device(); break;
-#endif		  
-	}
-	return C;
-    }
-
-    T *C2_comm() {
-	T *C2;    
-        switch(mode_){
+    Matrix<T> H() { return *H___.get(); }
+    Matrix<T> C() { return *C___.get(); }
+    Matrix<T> C2() { return *C2___.get(); }
+    Matrix<T> A() { return *A___.get(); }
+    Matrix<T> B() { return *B___.get(); }
+    Matrix<T> B2() { return *B2___.get(); }
+    Matrix<Base<T>> Resid() { return *Resid___.get(); }
+    Matrix<Base<T>> Ritzv() { return *Ritzv___.get(); }
+    Matrix<T> vv() { return *vv___.get(); }
+    T* C_comm()
+    {
+        T* C;
+        switch (mode_)
+        {
             case 0:
-                  C2 = this->C2().host(); break;
+                C = this->C().host();
+                break;
 #if defined(HAS_CUDA)
             case 1:
-                  C2 = this->C2().host(); break;
+                C = this->C().host();
+                break;
             case 2:
-                  C2 = this->C2().device(); break;
+                C = this->C().device();
+                break;
 #endif
         }
-	return C2;
+        return C;
     }
 
-    T *B_comm() {
-	T *B;    
-        switch(mode_){
+    T* C2_comm()
+    {
+        T* C2;
+        switch (mode_)
+        {
             case 0:
-                  B = this->B().host(); break;
+                C2 = this->C2().host();
+                break;
 #if defined(HAS_CUDA)
             case 1:
-                  B = this->B().host(); break;
+                C2 = this->C2().host();
+                break;
             case 2:
-                  B = this->B().device(); break;
+                C2 = this->C2().device();
+                break;
 #endif
         }
-	return B;
+        return C2;
     }
 
-    T *B2_comm() {
-	T *B2;    
-        switch(mode_){
+    T* B_comm()
+    {
+        T* B;
+        switch (mode_)
+        {
             case 0:
-                  B2 = this->B2().host(); break;
+                B = this->B().host();
+                break;
 #if defined(HAS_CUDA)
             case 1:
-                  B2 = this->B2().host(); break;
+                B = this->B().host();
+                break;
             case 2:
-                  B2 = this->B2().device(); break;
+                B = this->B().device();
+                break;
 #endif
         }
-	return B2;
+        return B;
     }
 
-    T *A_comm() {
-	T *a;    
-        switch(mode_){
+    T* B2_comm()
+    {
+        T* B2;
+        switch (mode_)
+        {
             case 0:
-                  a = this->A().host(); break;
+                B2 = this->B2().host();
+                break;
 #if defined(HAS_CUDA)
             case 1:
-                  a = this->A().host(); break;
+                B2 = this->B2().host();
+                break;
             case 2:
-                  a = this->A().device(); break;
+                B2 = this->B2().device();
+                break;
 #endif
         }
-	return a;
+        return B2;
     }
 
-    Base<T> *Resid_comm() {
-	Base<T> *rsd;    
-        switch(mode_){
+    T* A_comm()
+    {
+        T* a;
+        switch (mode_)
+        {
             case 0:
-                  rsd = this->Resid().host(); break;
+                a = this->A().host();
+                break;
 #if defined(HAS_CUDA)
             case 1:
-                  rsd = this->Resid().host(); break;
+                a = this->A().host();
+                break;
             case 2:
-                  rsd = this->Resid().device(); break;
+                a = this->A().device();
+                break;
 #endif
         }
-	return rsd;
+        return a;
     }
 
-    T *vv_comm() {
-	T *v;    
-        switch(mode_){
+    Base<T>* Resid_comm()
+    {
+        Base<T>* rsd;
+        switch (mode_)
+        {
             case 0:
-                  v = this->vv().host(); break;
+                rsd = this->Resid().host();
+                break;
 #if defined(HAS_CUDA)
             case 1:
-                  v = this->vv().host(); break;
+                rsd = this->Resid().host();
+                break;
             case 2:
-                  v = this->vv().device(); break;
+                rsd = this->Resid().device();
+                break;
 #endif
         }
-	return v;
+        return rsd;
+    }
+
+    T* vv_comm()
+    {
+        T* v;
+        switch (mode_)
+        {
+            case 0:
+                v = this->vv().host();
+                break;
+#if defined(HAS_CUDA)
+            case 1:
+                v = this->vv().host();
+                break;
+            case 2:
+                v = this->vv().device();
+                break;
+#endif
+        }
+        return v;
     }
 
 private:
@@ -589,4 +635,3 @@ private:
 };
 } // namespace mpi
 } // namespace chase
-

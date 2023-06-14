@@ -335,9 +335,10 @@ class PerformanceDecoratorChase : public chase::Chase<T>
 public:
     PerformanceDecoratorChase(Chase<T>* chase) : chase_(chase), perf_() {}
 
-    void initVecs(bool random) { 
-	chase_->initVecs(random);
-    	perf_.start_clock(ChasePerfData::TimePtrs::Lanczos);
+    void initVecs(bool random)
+    {
+        chase_->initVecs(random);
+        perf_.start_clock(ChasePerfData::TimePtrs::Lanczos);
     }
 
     void Shift(T c, bool isunshift = false)
@@ -383,7 +384,7 @@ public:
     }
     void Lanczos(std::size_t M, std::size_t idx, Base<T>* upperb,
                  Base<T>* ritzv, Base<T>* Tau, Base<T>* ritzV)
-    {	    
+    {
         chase_->Lanczos(M, idx, upperb, ritzv, Tau, ritzV);
     }
     void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc)
