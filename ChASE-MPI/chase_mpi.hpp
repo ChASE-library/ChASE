@@ -476,7 +476,7 @@ public:
         int* isuppz = new int[2 * m];
         t_stemr(LAPACK_COL_MAJOR, 'V', 'A', m, d, e, ul, ll, vl, vu,
                 &notneeded_m, ritzv, ritzV, m, m, isuppz, &tryrac);
-        *upperb = std::max(std::abs(ritzv[0]), std::abs(ritzv[m - 1])) +
+	*upperb = std::max(std::abs(ritzv[0]), std::abs(ritzv[m - 1])) +
                   std::abs(real_beta);
 #ifdef USE_NSIGHT
         nvtxRangePop();

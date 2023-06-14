@@ -296,20 +296,11 @@ public:
       @param V2: a pointer to the buffer `V2_`.
       @param resid: a pointer to the buffer `resid_`.
     */
+
     ChaseMpiMatrices(int mode, std::size_t N, std::size_t max_block, T* H,
                      std::size_t ldh, T* V1, Base<T>* ritzv, T* V2 = nullptr,
                      Base<T>* resid = nullptr)
-        // if value is null then allocate otherwise don't
-        : H__(nullptr), V1__(V1 == nullptr ? new T[N * max_block] : nullptr),
-          V2__(V2 == nullptr ? new T[N * max_block] : nullptr),
-          ritzv__(ritzv == nullptr ? new Base<T>[max_block] : nullptr),
-          resid__(resid == nullptr ? new Base<T>[max_block] : nullptr),
-          ldh_(ldh),
-          // if value is null we take allocated
-          mode_(mode), H_(H), V1_(V1 == nullptr ? V1__.get() : V1),
-          V2_(V2 == nullptr ? V2__.get() : V2),
-          ritzv_(ritzv == nullptr ? ritzv__.get() : ritzv),
-          resid_(resid == nullptr ? resid__.get() : resid)
+    : mode_(mode), ldh_(ldh)	    
     {
         int isGPU = 0;
         if (mode == 2)
@@ -371,15 +362,7 @@ public:
     ChaseMpiMatrices(int mode, MPI_Comm comm, std::size_t N, std::size_t m,
                      std::size_t n, std::size_t max_block, T* H,
                      std::size_t ldh, T* V1, Base<T>* ritzv)
-        // if value is null then allocate otherwise don't
-        : V1__(V1 == nullptr ? new T[m * max_block] : nullptr),
-          V2__(new T[n * max_block]),
-          ritzv__(ritzv == nullptr ? new Base<T>[max_block] : nullptr),
-          resid__(new Base<T>[max_block]), ldh_(ldh), mode_(mode),
-          // if value is null we take allocated
-          H_(H), V1_(V1 == nullptr ? V1__.get() : V1), V2_(V2__.get()),
-          ritzv_(ritzv == nullptr ? ritzv__.get() : ritzv),
-          resid_(resid__.get())
+    : mode_(mode), ldh_(ldh)	    
     {
         int isGPU;
         int isCUDA_Aware;
@@ -411,28 +394,6 @@ public:
     }
 
     int get_Mode() { return mode_; }
-    //! Return buffer stores the (local part if applicable) matrix A.
-    /*! \return `H_`, a private member of this class.
-     */
-    T* get_H() { return H_; }
-    //! Return the buffer `V1_`  which will be right-multiplied to `A` during
-    //! the process of ChASE.
-    /*! \return `V1_`, a private member of this class.
-     */
-    T* get_V1() { return V1_; }
-    //! Return the buffer `V2_` whose conjugate transpose will be
-    //! left-multiplied to `A` during the process of ChASE.
-    /*! \return `V2_`, a private member of this class.
-     */
-    T* get_V2() { return V2_; }
-    //! Return the buffer which stores the computed Ritz values.
-    /*! \return `ritzv_`, a private member of this class.
-     */
-    Base<T>* get_Ritzv() { return ritzv_; }
-    //! Return the buffer which stores the residual of computed Ritz pairs.
-    /*! \return `resid_`, a private member of this class.
-     */
-    Base<T>* get_Resid() { return resid_; }
     //! Return leading dimension of local part of Symmetric/Hermtian matrix on
     //! each MPI proc.
     /*! \return `ldh_`, a private member of this class.
@@ -589,37 +550,6 @@ public:
     }
 
 private:
-    //! A smart pointer which manages the buffer of `H_` which stores (local
-    //! part if applicable) matrix `A`.
-    std::unique_ptr<T[]> H__;
-    //! A smart pointer which manages the buffer of `V1_` which will be
-    //! right-multiplied to `A` during the process of ChASE. The eigenvectors
-    //! obtained will also stored in `V1_`.
-    std::unique_ptr<T[]> V1__;
-    //! A smart pointer which manages the buffer of `V2_` whose conjugate
-    //! transpose will be left-multiplied to `A` during the process of ChASE.
-    std::unique_ptr<T[]> V2__;
-    //! A smart pointer which manages the buffer which stores the computed Ritz
-    //! values.
-    std::unique_ptr<Base<T>[]> ritzv__;
-    //! A smart pointer which manages the buffer which stores the residual of
-    //! computed Ritz pairs.
-    std::unique_ptr<Base<T>[]> resid__;
-
-    //! The buffer stores (local part if applicable) matrix `A`.
-    T* H_;
-    //! The buffer of `V1_`  which will be right-multiplied to `A` during the
-    //! process of ChASE. The eigenvectors obtained will also be stored in `V_`.
-    T* V1_;
-    //! The buffer of `V2_` whose conjugate transpose will be left-multiplied to
-    //! `A` during the process of ChASE.
-    T* V2_;
-    //! The buffer which stores the computed Ritz values.
-    Base<T>* ritzv_;
-    //! The buffer which stores the residual of computed Ritz pairs.
-    Base<T>* resid_;
-    //! The leading dimension of local part of Symmetric/Hermtian matrix on each
-    //! MPI proc.
     std::size_t ldh_;
     int mode_;
 
