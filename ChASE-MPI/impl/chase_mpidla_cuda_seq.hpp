@@ -163,18 +163,17 @@ public:
 	d_resids_ = matrices_.Resid().device();
 
         cuda_exec(cudaSetDevice(0));
-        cuda_exec(cudaMalloc((void**)&(v0_), N_ * sizeof(T)));
-        cuda_exec(cudaMalloc((void**)&(v1_), N_ * sizeof(T)));
-        cuda_exec(cudaMalloc((void**)&(w_), N_ * sizeof(T)));
+        cuda_exec(cudaMalloc((void**)&(d_v1_), N_ * sizeof(T)));
+        cuda_exec(cudaMalloc((void**)&(d_w_), N_ * sizeof(T)));
+	
+        cudaMallocHost(&v0_, N_ * sizeof(T));
+        cudaMallocHost(&v1_, N_ * sizeof(T));
+        cudaMallocHost(&w_, N_ * sizeof(T));
 
         cublasCreate(&cublasH_);
-        cublasCreate(&cublasH2_);
-
         cusolverDnCreate(&cusolverH_);
         cuda_exec(cudaStreamCreate(&stream_));
         cublasSetStream(cublasH_, stream_);
-        cublasSetStream(cublasH2_, stream_);
-        cublasSetPointerMode(cublasH2_, CUBLAS_POINTER_MODE_DEVICE);
 
         cusolverDnSetStream(cusolverH_, stream_);
         cuda_exec(
@@ -230,14 +229,15 @@ public:
             cudaFree(devInfo_);
         if (d_return_)
             cudaFree(d_return_);
-        if (v0_)
-            cudaFree(v0_);
-        if (v1_)
-            cudaFree(v1_);
-        if (w_)
-            cudaFree(w_);
+        if (d_v1_)
+            cudaFree(d_v1_);
+        if (d_w_)
+            cudaFree(d_w_);
         if(states_)
             cudaFree(states_);
+	cudaFreeHost(v0_);
+	cudaFreeHost(v1_);
+	cudaFreeHost(w_);
 
     }
     void initVecs() override
@@ -434,11 +434,11 @@ public:
 
     void Swap(std::size_t i, std::size_t j) override
     {
-        cuda_exec(cudaMemcpy(v1_, d_V1_ + N_ * i, N_ * sizeof(T),
+        cuda_exec(cudaMemcpy(d_v1_, d_V1_ + N_ * i, N_ * sizeof(T),
                              cudaMemcpyDeviceToDevice));
         cuda_exec(cudaMemcpy(d_V1_ + N_ * i, d_V1_ + N_ * j, N_ * sizeof(T),
                              cudaMemcpyDeviceToDevice));
-        cuda_exec(cudaMemcpy(d_V1_ + N_ * j, v1_, N_ * sizeof(T),
+        cuda_exec(cudaMemcpy(d_V1_ + N_ * j, d_v1_, N_ * sizeof(T),
                              cudaMemcpyDeviceToDevice));
     }
 
@@ -454,6 +454,7 @@ public:
         cuda_exec(cudaMemcpy(d_V1_, d_V2_, m * N_ * sizeof(T),
                              cudaMemcpyDeviceToDevice));
     }
+
     void Lanczos(std::size_t M, int idx, Base<T>* d, Base<T>* e, Base<T> *r_beta) override
     {
     	Base<T> real_beta;
@@ -461,20 +462,21 @@ public:
         T alpha = T(1.0);
         T beta = T(0.0);
 
-       	cudaMemset(v0_, 0, sizeof(T) * N_);
-
+	std::fill(v0_, v0_ + N_, T(0));
 #ifdef USE_NSIGHT
         nvtxRangePushA("Lanczos Init Vec");
 #endif
         if(idx >= 0)
         {
-	    cuda_exec(cudaMemcpy(v1_, d_V2_ + idx * N_, 
+	    cuda_exec(cudaMemcpy(d_v1_, d_V2_ + idx * N_, 
                       N_ * sizeof(T), cudaMemcpyDeviceToDevice));
 	}else
         {
 	    unsigned long long seed = 2342;
-            chase_rand_normal(seed, states_, v1_, N_, (cudaStream_t)0);
+            chase_rand_normal(seed, states_, d_v1_, N_, (cudaStream_t)0);
 	}
+
+	cudaMemcpy(v1_, d_v1_, N_ * sizeof(T), cudaMemcpyDeviceToHost);
 
 #ifdef USE_NSIGHT
         nvtxRangePop();
@@ -483,19 +485,22 @@ public:
 #ifdef USE_NSIGHT
         nvtxRangePushA("Lanczos: loop");
 #endif
-        Base<T> real_alpha = this->nrm2(N_, v1_, 1);
+        Base<T> real_alpha = t_nrm2(N_, v1_, 1);
         alpha = T(1 / real_alpha);
-        this->scal(N_, &alpha, v1_, 1);
+        t_scal(N_, &alpha, v1_, 1);
         for (std::size_t k = 0; k < M; k = k + 1)
         {
-            if(idx >= 0){
-                cuda_exec(cudaMemcpy(d_V1_ + k * N_, v1_,
+	    cudaMemcpy(d_v1_, v1_, N_ * sizeof(T), cudaMemcpyHostToDevice);		
+
+	    if(idx >= 0){
+                cuda_exec(cudaMemcpy(d_V1_ + k * N_, d_v1_,
                              N_ * sizeof(T), cudaMemcpyDeviceToDevice));
 	    }
-            this->applyVec(v1_, w_);
-            alpha = this->dot(N_, v1_, 1, w_, 1);
+            this->applyVec(d_v1_, d_w_);
+	    cudaMemcpy(w_, d_w_, N_ * sizeof(T), cudaMemcpyDeviceToHost);
+            alpha = t_dot(N_, v1_, 1, w_, 1);
             alpha = -alpha;
-            this->axpy(N_, &alpha, v1_, 1, w_, 1);
+            t_axpy(N_, &alpha, v1_, 1, w_, 1);
             alpha = -alpha;
 
             d[k] = std::real(alpha);
@@ -504,14 +509,14 @@ public:
                 break;
 
             beta = T(-real_beta);
-            this->axpy(N_, &beta, v0_, 1, w_, 1);
+            t_axpy(N_, &beta, v0_, 1, w_, 1);
             beta = -beta;
 
-            real_beta = this->nrm2(N_, w_, 1);
+            real_beta = t_nrm2(N_, w_, 1);
 
             beta = T(1.0 / real_beta);
 
-            this->scal(N_, &beta, w_, 1);
+            t_scal(N_, &beta, w_, 1);
 
             e[k] = real_beta;
 
@@ -523,7 +528,7 @@ public:
 #endif
         *r_beta = real_beta;
     }
-
+    
     void B2C(T* B, std::size_t off1, T* C, std::size_t off2, std::size_t block) override
     {}
 
@@ -573,6 +578,9 @@ private:
               //!< Lanczos
     T* w_;    //!< a vector of size `N_`, which is allocated in this class for
               //!< Lanczos
+    T* d_v1_;
+    T* d_w_;
+
     Base<T>* d_ritz_ =
         NULL; //!< a pointer to a local buffer of size `nev_+nex_` on GPU for
               //!< storing computed ritz values
@@ -582,10 +590,7 @@ private:
               //!< storing computed residuals
     cudaStream_t
         stream_; //!< CUDA stream for asynchronous exectution of kernels
-    cudaStream_t
-        stream2_; //!< CUDA stream for asynchronous exectution of kernels
     cublasHandle_t cublasH_;       //!< `cuBLAS` handle
-    cublasHandle_t cublasH2_;      //!< `cuBLAS` handle
     cusolverDnHandle_t cusolverH_; //!< `cuSOLVER` handle
     bool copied_; //!< a flag indicates if the matrix has already been copied to
                   //!< device
