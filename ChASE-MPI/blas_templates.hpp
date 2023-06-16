@@ -108,10 +108,10 @@ void t_trsm(const char side, const char uplo, const char trans, const char diag,
             const T* a, const std::size_t lda, const T* b,
             const std::size_t ldb);
 
-template<typename T>
-void t_gesvd(const char jobu, const char jobvt, const std::size_t m, const std::size_t n, 
-             T *A, const std::size_t lda, Base<T> *S, T *U, const std::size_t ldu, T *Vt, 
-             const std::size_t ldvt);
+template <typename T>
+void t_gesvd(const char jobu, const char jobvt, const std::size_t m,
+             const std::size_t n, T* A, const std::size_t lda, Base<T>* S, T* U,
+             const std::size_t ldu, T* Vt, const std::size_t ldvt);
 // scalapack
 // BLACS
 void t_descinit(std::size_t* desc, std::size_t* m, std::size_t* n,

@@ -344,10 +344,6 @@ public:
             c_offs_l_[j] = c_offs_l_[j - 1] + c_lens_[j - 1];
         }
 
-        C2_.reset(new T[m_ * max_block_]());
-        B2_.reset(new T[n_ * max_block_]());
-        A_.reset(new T[max_block_ * max_block_]());
-
         // for MPI communication
         block_counts_.resize(2);
         send_lens_.resize(2);
@@ -434,35 +430,37 @@ public:
         std::size_t nx_b = std::min(bsize, nevex_);
         t_descinit(desc1D_Nxnevx_, &N_, &nevex_, &mb_, &nx_b, &irsrc_, &zero,
                    &colcomm_ctxt_, &m_, &info);
-#else
-        V_.reset(new T[N_ * max_block_]());
 #endif
 
-	comm_2 row_comm_dup;
+        comm_2 row_comm_dup;
         comm_2 col_comm_dup;
 #if defined(HAS_NCCL)
         ncclUniqueId nccl_id, nccl_ids[nprocs_];
         ncclGetUniqueId(&nccl_id);
-        MPI_Allgather(&nccl_id, sizeof(ncclUniqueId), MPI_UINT8_T,
-                        &nccl_ids[0], sizeof(ncclUniqueId), MPI_UINT8_T, comm);
+        MPI_Allgather(&nccl_id, sizeof(ncclUniqueId), MPI_UINT8_T, &nccl_ids[0],
+                      sizeof(ncclUniqueId), MPI_UINT8_T, comm);
 
-
-        for(auto i = 0; i < dims_[0]; i++){
-            if(coord_[0] == i){
-                ncclCommInitRank(&row_comm_dup, dims_[1], nccl_ids[i], coord_[1]);
+        for (auto i = 0; i < dims_[0]; i++)
+        {
+            if (coord_[0] == i)
+            {
+                ncclCommInitRank(&row_comm_dup, dims_[1], nccl_ids[i],
+                                 coord_[1]);
             }
         }
 
-        //col_comm
+        // col_comm
         ncclUniqueId nccl_id_2, nccl_ids_2[nprocs_];
         ncclGetUniqueId(&nccl_id_2);
         MPI_Allgather(&nccl_id_2, sizeof(ncclUniqueId), MPI_UINT8_T,
-                        &nccl_ids_2[0], sizeof(ncclUniqueId), MPI_UINT8_T, comm);
+                      &nccl_ids_2[0], sizeof(ncclUniqueId), MPI_UINT8_T, comm);
 
-
-        for(auto i = 0; i < dims_[1]; i++){
-            if(coord_[1] == i){
-                ncclCommInitRank(&col_comm_dup, dims_[0], nccl_ids_2[i * dims_[0]], coord_[0]);
+        for (auto i = 0; i < dims_[1]; i++)
+        {
+            if (coord_[1] == i)
+            {
+                ncclCommInitRank(&col_comm_dup, dims_[0],
+                                 nccl_ids_2[i * dims_[0]], coord_[0]);
             }
         }
 #else
@@ -599,10 +597,6 @@ public:
         c_lens_[0] = n_;
         c_offs_l_[0] = 0;
 
-        C2_.reset(new T[m_ * max_block_]());
-        B2_.reset(new T[n_ * max_block_]());
-        A_.reset(new T[max_block_ * max_block_]());
-
         block_counts_.resize(2);
         for (std::size_t dim_idx = 0; dim_idx < 2; dim_idx++)
         {
@@ -681,9 +675,6 @@ public:
         std::size_t nx_b = std::min(bsize, nevex_);
         t_descinit(desc1D_Nxnevx_, &N_, &nevex_, &mb_, &nx_b, &zero, &zero,
                    &colcomm_ctxt_, &m_, &info);
-
-#else
-        V_.reset(new T[N_ * max_block_]());
 #endif
 
         comm_2 row_comm_dup;
@@ -691,26 +682,30 @@ public:
 #if defined(HAS_NCCL)
         ncclUniqueId nccl_id, nccl_ids[nprocs_];
         ncclGetUniqueId(&nccl_id);
-        MPI_Allgather(&nccl_id, sizeof(ncclUniqueId), MPI_UINT8_T,
-                        &nccl_ids[0], sizeof(ncclUniqueId), MPI_UINT8_T, comm);
+        MPI_Allgather(&nccl_id, sizeof(ncclUniqueId), MPI_UINT8_T, &nccl_ids[0],
+                      sizeof(ncclUniqueId), MPI_UINT8_T, comm);
 
-
-        for(auto i = 0; i < dims_[0]; i++){
-            if(coord_[0] == i){
-                ncclCommInitRank(&row_comm_dup, dims_[1], nccl_ids[i], coord_[1]);
+        for (auto i = 0; i < dims_[0]; i++)
+        {
+            if (coord_[0] == i)
+            {
+                ncclCommInitRank(&row_comm_dup, dims_[1], nccl_ids[i],
+                                 coord_[1]);
             }
         }
 
-        //col_comm
+        // col_comm
         ncclUniqueId nccl_id_2, nccl_ids_2[nprocs_];
         ncclGetUniqueId(&nccl_id_2);
         MPI_Allgather(&nccl_id_2, sizeof(ncclUniqueId), MPI_UINT8_T,
-                        &nccl_ids_2[0], sizeof(ncclUniqueId), MPI_UINT8_T, comm);
+                      &nccl_ids_2[0], sizeof(ncclUniqueId), MPI_UINT8_T, comm);
 
-
-        for(auto i = 0; i < dims_[1]; i++){
-            if(coord_[1] == i){
-                ncclCommInitRank(&col_comm_dup, dims_[0], nccl_ids_2[i * dims_[0]], coord_[0]);
+        for (auto i = 0; i < dims_[1]; i++)
+        {
+            if (coord_[1] == i)
+            {
+                ncclCommInitRank(&col_comm_dup, dims_[0],
+                                 nccl_ids_2[i * dims_[0]], coord_[0]);
             }
         }
 #else
@@ -843,10 +838,6 @@ public:
         c_lens_[0] = n_;
         c_offs_l_[0] = 0;
 
-        C2_.reset(new T[m_ * max_block_]());
-        B2_.reset(new T[n_ * max_block_]());
-        A_.reset(new T[max_block_ * max_block_]());
-
         block_counts_.resize(2);
         for (std::size_t dim_idx = 0; dim_idx < 2; dim_idx++)
         {
@@ -915,41 +906,43 @@ public:
         std::size_t nx_b = std::min(bsize, nevex_);
         t_descinit(desc1D_Nxnevx_, &N_, &nevex_, &mb_, &nx_b, &zero, &zero,
                    &colcomm_ctxt_, &m_, &info);
-#else
-        V_.reset(new T[N_ * max_block_]());
 #endif
 
-	comm_2 row_comm_dup;
+        comm_2 row_comm_dup;
         comm_2 col_comm_dup;
 #if defined(HAS_NCCL)
-        ncclUniqueId nccl_id, nccl_ids[nprocs_];  
+        ncclUniqueId nccl_id, nccl_ids[nprocs_];
         ncclGetUniqueId(&nccl_id);
-        MPI_Allgather(&nccl_id, sizeof(ncclUniqueId), MPI_UINT8_T,
-                        &nccl_ids[0], sizeof(ncclUniqueId), MPI_UINT8_T, comm);   
+        MPI_Allgather(&nccl_id, sizeof(ncclUniqueId), MPI_UINT8_T, &nccl_ids[0],
+                      sizeof(ncclUniqueId), MPI_UINT8_T, comm);
 
-       
-        for(auto i = 0; i < dims_[0]; i++){
-            if(coord_[0] == i){
-                ncclCommInitRank(&row_comm_dup, dims_[1], nccl_ids[i], coord_[1]);
+        for (auto i = 0; i < dims_[0]; i++)
+        {
+            if (coord_[0] == i)
+            {
+                ncclCommInitRank(&row_comm_dup, dims_[1], nccl_ids[i],
+                                 coord_[1]);
             }
         }
 
-        //col_comm
+        // col_comm
         ncclUniqueId nccl_id_2, nccl_ids_2[nprocs_];
         ncclGetUniqueId(&nccl_id_2);
         MPI_Allgather(&nccl_id_2, sizeof(ncclUniqueId), MPI_UINT8_T,
-                        &nccl_ids_2[0], sizeof(ncclUniqueId), MPI_UINT8_T, comm);   
-       
-      
-        for(auto i = 0; i < dims_[1]; i++){
-            if(coord_[1] == i){
-                ncclCommInitRank(&col_comm_dup, dims_[0], nccl_ids_2[i * dims_[0]], coord_[0]);
+                      &nccl_ids_2[0], sizeof(ncclUniqueId), MPI_UINT8_T, comm);
+
+        for (auto i = 0; i < dims_[1]; i++)
+        {
+            if (coord_[1] == i)
+            {
+                ncclCommInitRank(&col_comm_dup, dims_[0],
+                                 nccl_ids_2[i * dims_[0]], coord_[0]);
             }
         }
 #else
         MPI_Comm_dup(row_comm_, &row_comm_dup);
-        MPI_Comm_dup(col_comm_, &col_comm_dup);       
-#endif      
+        MPI_Comm_dup(col_comm_, &col_comm_dup);
+#endif
         mpi_wrapper_.add(row_comm_, row_comm_dup);
         mpi_wrapper_.add(col_comm_, col_comm_dup);
 
@@ -958,7 +951,7 @@ public:
 #endif
     }
 
-    Comm_t get_mpi_wrapper() { return mpi_wrapper_;}
+    Comm_t get_mpi_wrapper() { return mpi_wrapper_; }
 #if defined(HAS_SCALAPACK)
     int get_colcomm_ctxt() { return colcomm_ctxt_; }
 
@@ -1222,26 +1215,6 @@ public:
     std::size_t get_ldc() { return m_; };
 
     /*!
-      \return `C2_.get()`: the pointer to temporary buffer `C2_`.
-    */
-    T* get_C2() { return C2_.get(); }
-    /*!
-      \return `B2_.get()`: the pointer to temporary buffer `B2_`.
-    */
-    T* get_B2() { return B2_.get(); }
-    /*!
-      \return `A_.get()`: the pointer to temporary buffer `A_`.
-    */
-    T* get_A() { return A_.get(); }
-
-#if !defined(HAS_SCALAPACK)
-    /*!
-      \return `V_.get()`: the pointer to temporary buffer `V_`.
-    */
-    T* get_V() { return V_.get(); }
-#endif
-
-    /*!
       \return `block_counts_`: 2D array which stores the block number of local
       matrix on each MPI node in each dimension.
     */
@@ -1299,23 +1272,6 @@ public:
     //! Create a ChaseMpiMatrices object which stores the operating matrices and
     //! vectors for ChASE-MPI.
     /*!
-      @param V1 a `m_ * max_block_` rectangular matrix.
-      @param ritzv a `max_block_` vector which stores the computed Ritz values.
-      @param V2 a `n_ * max_block_` rectangular matrix.
-      @param resid a `max_block_` vector which stores the residual of each
-      computed Ritz value.
-    */
-    ChaseMpiMatrices<T> create_matrices(T* V1 = nullptr,
-                                        Base<T>* ritzv = nullptr,
-                                        T* V2 = nullptr,
-                                        Base<T>* resid = nullptr) const
-    {
-        return ChaseMpiMatrices<T>(comm_, N_, m_, n_, max_block_, V1, ritzv, V2,
-                                   resid);
-    }
-    //! Create a ChaseMpiMatrices object which stores the operating matrices and
-    //! vectors for ChASE-MPI.
-    /*!
       @param H a `m_ * n_` rectangular matrix, with leading dimension `ldh`
       @param ldh leading dimension of `H`, which should be `>=m_`
       @param V1 a `m_ * max_block_` rectangular matrix.
@@ -1324,13 +1280,12 @@ public:
       @param resid a `max_block_` vector which stores the residual of each
       computed Ritz value.
     */
-    ChaseMpiMatrices<T> create_matrices(T* H, std::size_t ldh, T* V1 = nullptr,
-                                        Base<T>* ritzv = nullptr,
-                                        T* V2 = nullptr,
-                                        Base<T>* resid = nullptr) const
+    ChaseMpiMatrices<T> create_matrices(int mode, T* H, std::size_t ldh,
+                                        T* V1 = nullptr,
+                                        Base<T>* ritzv = nullptr) const
     {
-        return ChaseMpiMatrices<T>(comm_, N_, m_, n_, max_block_, H, ldh, V1,
-                                   ritzv, V2, resid);
+        return ChaseMpiMatrices<T>(mode, comm_, N_, m_, n_, max_block_, H, ldh,
+                                   V1, ritzv);
     }
 
 private:
@@ -1620,31 +1575,6 @@ private:
     //! working on.
     int rank_;
 
-    //! A temporary memory allocated for distributed ChASE
-    /*!
-        This variable is initialized during the construction of
-       ChaseMpiProperties of size `m_ * max_block_`.
-
-       It can be accessed by the member function get_C2()
-     */
-    std::unique_ptr<T[]> C2_;
-    //! A temporary memory allocated for distributed ChASE
-    /*!
-        This variable is initialized during the construction of
-       ChaseMpiProperties of size `n_ * max_block_`.
-
-       It can be accessed by the member function get_B2()
-     */
-    std::unique_ptr<T[]> B2_;
-    //! A temporary memory allocated for distributed ChASE
-    /*!
-        This variable is initialized during the construction of
-       ChaseMpiProperties of size `max_block_ * max_block_`.
-
-       It can be accessed by the member function get_A()
-     */
-    std::unique_ptr<T[]> A_;
-
     //! The row communicator of the constructed 2D grid of MPI codes.
     /*!
         This variable is initialized in the constructor, after the construction
@@ -1702,10 +1632,6 @@ private:
     //! with only 1 column
     int colcomm_ctxt_;
     std::size_t desc1D_Nxnevx_[9];
-#else
-    //! A temporary buffer of size `N_ * max_block_`.
-    //! It is allocated only when no ScaLAPACK is detected.
-    std::unique_ptr<T[]> V_;
 #endif
 
     Comm_t mpi_wrapper_;

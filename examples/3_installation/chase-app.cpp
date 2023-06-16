@@ -32,87 +32,94 @@ typedef ChaseMpi<ChaseMpiDLABlaslapack, T> CHASE;
 
 int main(int argc, char** argv)
 {
-    MPI_Init(NULL, NULL);
-    int rank = 0;
+    MPI_Init(&argc, &argv);
+    int rank = 0, size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-    std::size_t N = 1001;
-    std::size_t nev = 100;
-    std::size_t nex = 20;
-    std::size_t idx_max = 3;
-    Base<T> perturb = 1e-4;
+    std::size_t N = 1001; // problem size
+    std::size_t nev = 100; // number of eigenpairs to be computed
+    std::size_t nex = 40; // extra searching space
 
-    if (rank == 0)
-        std::cout << "ChASE example driver\n"
-                  << "Usage: ./driver \n";
 
     auto props = new ChaseMpiProperties<T>(N, nev, nex, MPI_COMM_WORLD);
-    auto m = props->get_m();
-    auto V = std::vector<T>(m * (nev + nex));
-    auto Lambda = std::vector<Base<T>>(nev + nex);
 
-    CHASE single(props, V.data(), Lambda.data());
+    auto m_ = props->get_m();
+    auto n_ = props->get_n();
+    auto ldh_ = props->get_ldh();
 
-    auto& config = single.GetConfig();
-    config.SetTol(1e-10);
-    config.SetDeg(20);
-    config.SetOpt(true);
-    config.SetApprox(false);
+    auto V = std::vector<T>(m_ * (nev + nex));     // eigevectors
+    auto Lambda = std::vector<Base<T>>(nev + nex); // eigenvalues
+    auto H = std::vector<T>(ldh_ * n_);
 
-    if (rank == 0)
-        std::cout << "Solving " << idx_max << " symmetrized Clement matrices ("
-                  << N << "x" << N
-                  << ") with element-wise random perturbation of " << perturb
-                  << '\n'
-                  << config;
+    CHASE single(props, H.data(), ldh_, V.data(), Lambda.data());
 
-    std::size_t xoff, yoff, xlen, ylen;
+    std::vector<T> Clement(N * N, T(0.0));
 
-    props->get_off(&xoff, &yoff, &xlen, &ylen);
-
-    std::vector<T> H(N * N, T(0.0));
+    /*Generate Clement matrix*/
     for (auto i = 0; i < N; ++i)
     {
         H[i + N * i] = 0;
         if (i != N - 1)
-            H[i + 1 + N * i] = std::sqrt(i * (N + 1 - i));
+            Clement[i + 1 + N * i] = std::sqrt(i * (N + 1 - i));
         if (i != N - 1)
-            H[i + N * (i + 1)] = std::sqrt(i * (N + 1 - i));
+            Clement[i + N * (i + 1)] = std::sqrt(i * (N + 1 - i));
     }
 
     if (rank == 0)
     {
-        std::cout << "Starting Problem"
+        std::cout << "Starting Problem #1"
                   << "\n";
-        if (config.UseApprox())
-        {
-            std::cout << "Using approximate solution\n";
-        }
     }
 
+    std::cout << std::setprecision(16);
+
+    std::size_t xoff, yoff, xlen, ylen;
+
+    /*Get Offset and length of block of H on each node*/
+    props->get_off(&xoff, &yoff, &xlen, &ylen);
+
+    /*Load different blocks of H to each node*/
     for (std::size_t x = 0; x < xlen; x++)
     {
         for (std::size_t y = 0; y < ylen; y++)
         {
-            single.GetMatrixPtr()[x + xlen * y] =
-                H.at((xoff + x) * N + (yoff + y));
+            H[x + xlen * y] =
+                Clement[(xoff + x) * N + (yoff + y)];
         }
     }
 
+    /*Setup configure for ChASE*/
+    auto& config = single.GetConfig();
+    /*Tolerance for Eigenpair convergence*/
+    config.SetTol(1e-10);
+    /*Initial filtering degree*/
+    config.SetDeg(20);
+    /*Optimi(S)e degree*/
+    config.SetOpt(true);
+    config.SetMaxIter(25);
+    if (rank == 0)
+        std::cout << "Solving a symmetrized Clement matrices (" << N << "x" << N
+                  << ")"
+                  << '\n'
+                  << config;
+
+    /*Performance Decorator to meaure the performance of kernels of ChASE*/
     PerformanceDecoratorChase<T> performanceDecorator(&single);
+    /*Solve the eigenproblem*/
     chase::Solve(&performanceDecorator);
 
+    /*Output*/
     if (rank == 0)
     {
         performanceDecorator.GetPerfData().print();
         Base<T>* resid = single.GetResid();
-        std::cout << "Finished Problem"
+        std::cout << "Finished Problem #1"
                   << "\n";
         std::cout << "Printing first 5 eigenvalues and residuals\n";
         std::cout
             << "| Index |       Eigenvalue      |         Residual      |\n"
-            << "|-------|-----------------------|-----------------------|"
-               "\n";
+            << "|-------|-----------------------|-----------------------|\n";
         std::size_t width = 20;
         std::cout << std::setprecision(12);
         std::cout << std::setfill(' ');

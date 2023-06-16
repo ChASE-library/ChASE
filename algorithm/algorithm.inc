@@ -479,11 +479,15 @@ void Algorithm<T>::solve(Chase<T>* single)
         t_1 = (single->GetRitzv()[0] - cc) / ee;
         t_k = (ritzv[0] - cc) / ee;
         rho_1 = std::max(std::abs(t_1 - std::sqrt(t_1 * t_1 - 1)),
-                       std::abs(t_1 + std::sqrt(t_1 * t_1 - 1)));
+                         std::abs(t_1 + std::sqrt(t_1 * t_1 - 1)));
         rho_k = std::max(std::abs(t_k - std::sqrt(t_k * t_k - 1)),
-                       std::abs(t_k + std::sqrt(t_k * t_k - 1)));
+                         std::abs(t_k + std::sqrt(t_k * t_k - 1)));
 
-        cond = std::pow(rho_k, degrees[0]) * std::pow( rho_1 , (*std::max_element(degrees, degrees+nev+nex-locked) - degrees[0]) ) ;
+        cond =
+            std::pow(rho_k, degrees[0]) *
+            std::pow(rho_1,
+                     (*std::max_element(degrees, degrees + nev + nex - locked) -
+                      degrees[0]));
 
         single->QR(locked, cond);
 #ifdef USE_NSIGHT

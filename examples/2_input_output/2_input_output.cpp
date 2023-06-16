@@ -457,24 +457,30 @@ int do_chase(ChASE_DriverProblemConfig& conf)
 
 #ifdef USE_MPI
     auto m_ = props->get_m();
+    auto n_ = props->get_n();
+    auto ldh_ = props->get_ldh();
 #else
     auto m_ = N;
+    auto n_ = N;
+    auto ldh_ = N;
 #endif
 
     auto V__ = std::unique_ptr<T[]>(new T[m_ * (nev + nex)]);
     auto Lambda__ = std::unique_ptr<Base<T>[]>(new Base<T>[(nev + nex)]);
+    auto H__ = std::unique_ptr<T[]>(new T[ldh_ * n_]);
 
     T* V = V__.get();
     Base<T>* Lambda = Lambda__.get();
+    T *H = H__.get();
 
 #if defined(USE_MPI)
 #ifdef USE_BLOCK_CYCLIC
-    CHASE single(props, V, Lambda);
+    CHASE single(props, H, ldh_, V, Lambda);
 #else
-    CHASE single(props, V, Lambda);
+    CHASE single(props, H, ldh_, V, Lambda);
 #endif
 #else
-    CHASE single(N, nev, nex, V, Lambda);
+    CHASE single(N, nev, nex, H, ldh_, V, Lambda);
 #endif
     ChaseConfig<T>& config = single.GetConfig();
     config.SetTol(tol);
@@ -485,7 +491,6 @@ int do_chase(ChASE_DriverProblemConfig& conf)
     config.SetMaxDeg(maxDeg);
     config.SetMaxIter(maxIter);
 
-    T* H = single.GetMatrixPtr();
 
     if (!sequence)
     {
@@ -496,20 +501,11 @@ int do_chase(ChASE_DriverProblemConfig& conf)
     {
         if (i == bgn || !sequence)
         {
-            if (mode[0] == 'A')
+            for (int j = 0; j < (nev + nex); j++)
             {
-                readMatrix(V, path_eigp, spin, kpoint, i - 1, ".vct",
-                           N * (nev + nex), legacy);
-                readMatrix(Lambda, path_eigp, spin, kpoint, i - 1, ".vls",
-                           (nev + nex), legacy);
+                Lambda[j] = 0.0;
             }
-            else
-            {
-                for (int j = 0; j < (nev + nex); j++)
-                {
-                    Lambda[j] = 0.0;
-                };
-            }
+            
         }
         else
         {
@@ -625,7 +621,7 @@ int do_chase(ChASE_DriverProblemConfig& conf)
         {
             std::cout << " ChASE timings: "
                       << "\n";
-            performanceDecorator.GetPerfData().print();
+            performanceDecorator.GetPerfData().print(N);
 #ifdef PRINT_EIGENVALUES
             Base<T>* resid = single.GetResid();
             std::cout << "Finished Problem \n";

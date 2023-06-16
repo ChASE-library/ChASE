@@ -28,8 +28,10 @@ public:
     //! defines the MPI environment and data distribution scheme in ChASE-MPI.
     //! @param matrices: it is an instance of ChaseMpiMatrices, which
     //!  allocates the required buffers in ChASE-MPI.
-    ChaseMpiDLABlaslapack(ChaseMpiProperties<T>* matrix_properties,
-                          ChaseMpiMatrices<T>& matrices)
+    ChaseMpiDLABlaslapack(ChaseMpiProperties<T>* matrix_properties, T* H,
+                          std::size_t ldh, T* V1, Base<T>* ritzv)
+        : matrices_(std::move(
+              matrix_properties->create_matrices(0, H, ldh, V1, ritzv)))
     {
         // TODO
         n_ = matrix_properties->get_n();
@@ -37,15 +39,15 @@ public:
         N_ = matrix_properties->get_N();
         nev_ = matrix_properties->GetNev();
         nex_ = matrix_properties->GetNex();
-        H_ = matrices.get_H();
-        ldh_ = matrices.get_ldh();
-
-        B_ = matrices.get_V2();
-        C_ = matrices.get_V1();
-        C2_ = matrix_properties->get_C2();
-        B2_ = matrix_properties->get_B2();
-        A_ = matrix_properties->get_A();
-	resid = matrices.get_Resid();
+        ldh_ = matrices_.get_ldh();
+        H_ = matrices_.H().ptr();
+        C_ = matrices_.C().ptr();
+        C2_ = matrices_.C2().ptr();
+        B_ = matrices_.B().ptr();
+        B2_ = matrices_.B2().ptr();
+        A_ = matrices_.A().ptr();
+        resid_ = matrices_.Resid().ptr();
+        ritzv_ = matrices_.Ritzv().ptr();
         off_ = matrix_properties->get_off();
 
         matrix_properties->get_offs_lens(r_offs_, r_lens_, r_offs_l_, c_offs_,
@@ -63,22 +65,17 @@ public:
 
         MPI_Comm_rank(row_comm, &mpi_row_rank);
         MPI_Comm_rank(col_comm, &mpi_col_rank);
-    
-	vv_ = new T[m_];
-	w_ = new T[n_];
+
+        vv_ = matrices_.vv().ptr();
     }
 
-    ~ChaseMpiDLABlaslapack() 
-    {
-	delete[] vv_; 
-	delete[] w_;
-    }
+    ~ChaseMpiDLABlaslapack() {}
     //! This function set initially the operation for apply() used in
     //! ChaseMpi::Lanczos()
     void initVecs() override
     {
-        t_lacpy('A', m_, nev_ + nex_, C_, m_, C2_, m_);	    
-	next_ = NextOp::bAc;
+        t_lacpy('A', m_, nev_ + nex_, C_, m_, C2_, m_);
+        next_ = NextOp::bAc;
     }
     //! This function generates the random values for each MPI proc using C++
     //! STL
@@ -139,14 +136,6 @@ public:
         }
     }
 
-    //! - All required operations for this function has been done in for
-    //! ChaseMpiDLA::postApplication().
-    //! - This function contains nothing in this class.
-    bool postApplication(T* V, std::size_t block, std::size_t locked) override
-    {
-        return false;
-    }
-
     //! This function performs the shift of diagonal of a global matrix
     //! - This global is already distributed, so the shifting operation takes
     //! place on the local
@@ -190,22 +179,23 @@ public:
     //! - All required operations for this function has been done in for
     //! ChaseMpiDLA::applyVec().
     //! - This function contains nothing in this class.
-    void applyVec(T* v, T* w) override 
+    void applyVec(T* v, T* w) override
     {
         T alpha = T(1.0);
         T beta = T(0.0);
         std::size_t k = 1;
-        //t_gemm<T>(CblasColMajor, CblasConjTrans, CblasNoTrans, n_,
+        // t_gemm<T>(CblasColMajor, CblasConjTrans, CblasNoTrans, n_,
         //          k, m_, &alpha, H_, ldh_,
-        //          v, m_, &beta, w, n_);  
-        t_gemv<T>(CblasColMajor, CblasConjTrans, m_, n_, &alpha, H_, ldh_,
-		  v, 1, &beta, w, 1);     
+        //          v, m_, &beta, w, n_);
+        t_gemv<T>(CblasColMajor, CblasConjTrans, m_, n_, &alpha, H_, ldh_, v, 1,
+                  &beta, w, 1);
     }
 
     int get_nprocs() const override { return matrix_properties_->get_nprocs(); }
     void Start() override {}
     void End() override {}
-
+    Base<T>* get_Resids() override { return resid_; }
+    Base<T>* get_Ritzv() override { return ritzv_; }
     //! It is an interface to BLAS `?axpy`.
     void axpy(std::size_t N, T* alpha, T* x, std::size_t incx, T* y,
               std::size_t incy) override
@@ -243,7 +233,7 @@ public:
                &One, B2_ + locked * n_, n_, B_ + locked * n_, n_, &Zero, A_,
                nev_ + nex_);
     }
-    
+
     //! It is an interface to BLAS `?sy(he)rk`.
     void syherk(char uplo, char trans, std::size_t n, std::size_t k, T* alpha,
                 T* a, std::size_t lda, T* beta, T* c, std::size_t ldc,
@@ -273,7 +263,7 @@ public:
     //!      within the row communicator.
     void Resd(Base<T>* ritzv, Base<T>* resid, std::size_t locked,
               std::size_t unconverged) override
-    { 	    
+    {
         for (auto i = 0; i < unconverged; i++)
         {
             T alpha = -ritzv[i];
@@ -281,7 +271,7 @@ public:
                    B_ + locked * n_ + i * n_, 1);
 
             resid[i] = t_norm_p2(n_, B_ + locked * n_ + i * n_);
-        } 	
+        }
     }
 
     //! - This function performs the local computation for ChaseMpiDLA::heevd()
@@ -313,70 +303,38 @@ public:
     //! - All required operations for this function has been done in for
     //! ChaseMpiDLA::LanczosDos().
     //! - This function contains nothing in this class.
-    void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc) override {
+    void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc) override
+    {
         T alpha = T(1.0);
         T beta = T(0.0);
         t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, m_, idx, m, &alpha,
                C_, m_, ritzVc, m, &beta, C2_, m_);
-	std::memcpy(C_, C2_, m * m_ * sizeof(T));    
+        std::memcpy(C_, C2_, m * m_ * sizeof(T));
     }
-    void Lanczos(std::size_t M, int idx, Base<T>* d, Base<T>* e, Base<T> *r_beta) override
-    {}
-    void B2C(T* B, std::size_t off1, T* C, std::size_t off2, std::size_t block) override
-    {}
-    void getMpiWorkSpace(T **C, T **B, T **A, T **C2, T **B2, T **vv, Base<T> **rsd, T **w) override    
+    void Lanczos(std::size_t M, int idx, Base<T>* d, Base<T>* e,
+                 Base<T>* r_beta) override
     {
-        *C = C_;
-	*B = B_;
-	*A = A_;
-	*C2 = C2_;
-	*B2 = B2_;
-	*vv = vv_;
-	*rsd = resid;
-	*w = w_;
     }
-    void getMpiCollectiveBackend(int *allreduce_backend, int *bcast_backend) override
+    void B2C(T* B, std::size_t off1, T* C, std::size_t off2,
+             std::size_t block) override
     {
-        *allreduce_backend = MPI_BACKEND;
-	*bcast_backend = MPI_BACKEND;
     }
-    
-    bool isCudaAware() override
-    {
-    	return false;
-    }	    
 
-    void lacpy(char uplo, std::size_t m, std::size_t n,
-             T* a, std::size_t lda, T* b, std::size_t ldb) override
+    void lacpy(char uplo, std::size_t m, std::size_t n, T* a, std::size_t lda,
+               T* b, std::size_t ldb) override
     {
         t_lacpy(uplo, m, n, a, lda, b, ldb);
     }
 
-    void shiftMatrixForQR(T *A, std::size_t n, T shift) override
+    void shiftMatrixForQR(T* A, std::size_t n, T shift) override
     {
         for (auto i = 0; i < n; i++)
         {
             A[i * n + i] += (T)shift;
-        }    
+        }
     }
 
-    void retrieveC(T **C, std::size_t locked, std::size_t block, bool copy) override
-    {
-    	*C = C_;
-    }
-
-    void retrieveB(T **B, std::size_t locked, std::size_t block, bool copy) override
-    {
-    	*B = B_;
-    }
-
-    void retrieveResid(Base<T> **rsd, std::size_t locked, std::size_t block) override
-    {
-        *rsd = resid + locked;	    
-    }
-
-    void putC(T *C, std::size_t locked, std::size_t block) override
-    {}
+    ChaseMpiMatrices<T>* getChaseMatrices() override { return &matrices_; }
 
 private:
     enum NextOp
@@ -405,18 +363,15 @@ private:
             //!< ChaseMpiProperties
     T* A_;  //!< a matrix of size `(nev_+nex_)*(nev_+nex_)`, which is allocated
             //!< in ChaseMpiProperties
-
-    T* v0_; //!< a vector of size `N_`, which is allocated in this
-                        //!< class for Lanczos
-    T* v1_; //!< a vector of size `N_`, which is allocated in this
-                        //!< class for Lanczos
     T* w_;  //!< a vector of size `N_`, which is allocated in this
-                        //!< class for Lanczos
-    T* v2_;    
+            //!< class for Lanczos
 
-    T *vv_;
+    T* vv_;
 
-    Base<T> *resid;
+    Base<T>* resid_;
+
+    Base<T>* ritzv_;
+
     std::size_t* off_;      //!< identical to ChaseMpiProperties::off_
     std::size_t* r_offs_;   //!< identical to ChaseMpiProperties::r_offs_
     std::size_t* r_lens_;   //!< identical to ChaseMpiProperties::r_lens_
@@ -435,6 +390,7 @@ private:
 
     ChaseMpiProperties<T>*
         matrix_properties_; //!< an object of class ChaseMpiProperties
+    ChaseMpiMatrices<T> matrices_;
 };
 
 template <typename T>

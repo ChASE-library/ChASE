@@ -11,6 +11,7 @@
 #include <tuple>
 
 #include "algorithm/types.hpp"
+#include "chase_mpi_matrices.hpp"
 #include "chase_mpi_properties.hpp"
 
 namespace chase
@@ -129,7 +130,7 @@ public:
     */
     virtual void asynCxHGatherC(std::size_t locked, std::size_t block,
                                 bool isCcopied = false) = 0;
-    
+
     //! Swap the columns indexing `i` and `j` in a rectangular matrix
     //! The operated matrices maybe different in different implementations
     /*!
@@ -138,20 +139,6 @@ public:
      *
      */
     virtual void Swap(std::size_t i, std::size_t j) = 0;
-    //! Copy from buffer rectangular matrix `v1` to `v2`.
-    //! For the implementation of distributed-memory ChASE, this operation
-    //! performs a `copy` from a matrix distributed within each column
-    //! communicator and redundant among different column communicators to a
-    //! matrix redundantly distributed across all MPI procs. Then in the next
-    //! iteration of ChASE-MPI, this operation takes places in the row
-    //! communicator...
-    /*!
-     *  @param V: the target buff
-     *  @param block: number of columns to copy from `v1` to `v2`
-     *  @param locked: number of converged eigenvectors.
-     */
-    virtual bool postApplication(T* V, std::size_t block,
-                                 std::size_t locked) = 0;
 
     //! Performs a Generalized Matrix Vector Multiplication (`GEMV`) with
     //! `alpha=1.0` and `beta=0.0`.
@@ -165,6 +152,9 @@ public:
     //! Return the total number of MPI procs within the working MPI
     //! communicator.
     virtual int get_nprocs() const = 0;
+    virtual Base<T>* get_Resids() = 0;
+    virtual Base<T>* get_Ritzv() = 0;
+
     //! Starting point of solving an eigenproblem
     virtual void Start() = 0;
     //! Ending point of solving an eigenproblem
@@ -339,20 +329,16 @@ public:
     //! Lanczos DOS to estimate the \mu_{nev+nex} for ChASE
     virtual void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc) = 0;
 
-    virtual void Lanczos(std::size_t M, int idx, Base<T>* d, Base<T>* e, Base<T> *r_beta) = 0;
+    virtual void Lanczos(std::size_t M, int idx, Base<T>* d, Base<T>* e,
+                         Base<T>* r_beta) = 0;
 
-    virtual void B2C(T* B, std::size_t off1, T* C, std::size_t off2, std::size_t block) = 0;
+    virtual void B2C(T* B, std::size_t off1, T* C, std::size_t off2,
+                     std::size_t block) = 0;
 
-    virtual void getMpiWorkSpace(T **C, T **B, T **A, T **C2, T **B2, T **vv, Base<T> **rsd, T **w) = 0;
-    virtual void getMpiCollectiveBackend(int *allreduce_backend, int *bcast_backend) = 0;
-    virtual bool isCudaAware() = 0;
-    virtual void lacpy(char uplo, std::size_t m, std::size_t n,
-             T* a, std::size_t lda, T* b, std::size_t ldb) = 0;
-    virtual void shiftMatrixForQR(T *A, std::size_t n, T shift) = 0;
-    virtual void retrieveC(T **C, std::size_t locked, std::size_t block, bool copy) = 0;
-    virtual void retrieveB(T **B, std::size_t locked, std::size_t block, bool copy) = 0;
-    virtual void retrieveResid(Base<T> **rsd, std::size_t locked, std::size_t block) = 0;
-    virtual void putC(T *C, std::size_t locked, std::size_t block) = 0;
+    virtual void lacpy(char uplo, std::size_t m, std::size_t n, T* a,
+                       std::size_t lda, T* b, std::size_t ldb) = 0;
+    virtual void shiftMatrixForQR(T* A, std::size_t n, T shift) = 0;
+    virtual ChaseMpiMatrices<T>* getChaseMatrices() = 0;
 };
 } // namespace mpi
 } // namespace chase
