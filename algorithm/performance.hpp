@@ -36,6 +36,7 @@ namespace chase
     timings are stored in a vector of objects derived by the class
     template `std::chrono::duration`.
  */
+template <class T>
 class ChasePerfData
 {
 public:
@@ -114,61 +115,58 @@ public:
     std::size_t get_flops(std::size_t N)
     {
         std::size_t flop_count = 0;
+	int factor = std::pow(4, int(sizeof(T) / sizeof(Base<T>)) - 1) ;
         for (auto block : chase_iter_blocksizes)
         {
             // QR //
-
-            // https://software.intel.com/en-us/mkl-developer-reference-fortran-2018-beta-geqrf
-            // QR m=N n=block
-            //(2/3)n^2(3m-n) *4
-            flop_count += (8. / 3.) *
-                          static_cast<double>(block * block * (3 * N - block));
-
-            // https://software.intel.com/en-us/mkl-developer-reference-c-2018-beta-ungqr
-            // m = N, n=k=block
-            // (8/3)*n^2*(3m - n)
-            flop_count += (8. / 3.) * static_cast<double>(block * block *
-                                                          (3 * N - block) * 4);
-
-            // RR //
+	    // assume always to use cholqr-2
+	    // syrk
+	    flop_count += 2. * N * block * block;
+	    //cholesky factorizatin
+	    flop_count += 2. * block * block * block;
+	    // dtrsm
+	    flop_count += 2. * N * block * block;
+            
+	    // RR //
 
             // W = H*V
             // https://software.intel.com/en-us/mkl-developer-reference-fortran-2018-beta-gemm
             // 8MNK + 18MN
             // m = N, k = N, n = block
-            flop_count += 8 * N * block * N + 18 * N * block;
+            flop_count += 2 * N * block * N;
 
             // A = W' * W
             // 8MNK + 18MN
             // m = block, k = N, n = block
-            flop_count += 8 * block * block * N + 18 * block * block;
+            flop_count += 2 * block * block * N;
 
-            // reduction to tridiagonal
-            // https://software.intel.com/en-us/mkl-developer-reference-fortran-2018-beta-hetrd
-            // (16/3)n^3
-            flop_count += 16. / 3. * static_cast<double>(block * block * block);
+	    // https://en.wikipedia.org/wiki/Divide-and-conquer_eigenvalue_algorithm
+	    // 4M^3
+	    flop_count += 4 * block * block * block;
 
             // W = V*Z
-            // 8MNK + 18MN
-            flop_count += 8 * N * block * block + 18 * N * block;
+            // 2MNK
+            flop_count += 2 * N * block * block;
 
             // resid //
             // W = H*V
-            flop_count += 8 * N * block * N + 18 * N * block;
+            flop_count += 2 * N * block * N;
 
             // V[:,i] - lambda W[:,i]
             // 3*block
             flop_count += 3 * block * N;
 
             // ||V[:,i]||
-            // 4*N
-            flop_count += 4 * N * block;
+            // N
+            flop_count += N * block;
         }
 
         // filter
         // 8MNK + 18MN
         flop_count +=
-            8 * N * chase_filtered_vecs * N + 16 * N * chase_filtered_vecs;
+            2 * N * chase_filtered_vecs * N;
+
+	flop_count *= factor;
 
         return flop_count / 1e9;
     }
@@ -190,8 +188,9 @@ public:
      */
     std::size_t get_filter_flops(std::size_t N)
     {
-        return (8 * N * chase_filtered_vecs * N +
-                16 * N * chase_filtered_vecs) /
+        int factor = std::pow(4, int(sizeof(T) / sizeof(Base<T>)) - 1) ;
+
+        return 2 * factor * N * chase_filtered_vecs * N /
                1e9;
     }
 
@@ -261,8 +260,8 @@ public:
         {
             std::size_t flops = get_flops(N);
             std::size_t filter_flops = get_filter_flops(N);
-            std::cout << " | " << static_cast<double>(flops);
-            std::cout << " | " << static_cast<double>(filter_flops);
+            std::cout << " | " << std::setw(11) << static_cast<double>(flops);
+            std::cout << " | " << std::setw(15) << static_cast<double>(filter_flops);
         }
 
         std::cout << " | " << std::setw(5) << nprocs;
@@ -338,15 +337,15 @@ public:
     void initVecs(bool random)
     {
         chase_->initVecs(random);
-        perf_.start_clock(ChasePerfData::TimePtrs::Lanczos);
+        perf_.start_clock(ChasePerfData<T>::TimePtrs::Lanczos);
     }
 
     void Shift(T c, bool isunshift = false)
     {
         if (isunshift)
-            perf_.end_clock(ChasePerfData::TimePtrs::Filter);
+            perf_.end_clock(ChasePerfData<T>::TimePtrs::Filter);
         else
-            perf_.start_clock(ChasePerfData::TimePtrs::Filter);
+            perf_.start_clock(ChasePerfData<T>::TimePtrs::Filter);
 
         chase_->Shift(c, isunshift);
     }
@@ -358,29 +357,29 @@ public:
 
     void QR(std::size_t fixednev, Base<T> cond)
     {
-        perf_.start_clock(ChasePerfData::TimePtrs::Qr);
+        perf_.start_clock(ChasePerfData<T>::TimePtrs::Qr);
         chase_->QR(fixednev, cond);
-        perf_.end_clock(ChasePerfData::TimePtrs::Qr);
+        perf_.end_clock(ChasePerfData<T>::TimePtrs::Qr);
     }
 
     void RR(Base<T>* ritzv, std::size_t block)
     {
-        perf_.start_clock(ChasePerfData::TimePtrs::Rr);
+        perf_.start_clock(ChasePerfData<T>::TimePtrs::Rr);
         chase_->RR(ritzv, block);
         perf_.add_iter_blocksize(block);
-        perf_.end_clock(ChasePerfData::TimePtrs::Rr);
+        perf_.end_clock(ChasePerfData<T>::TimePtrs::Rr);
     }
     void Resd(Base<T>* ritzv, Base<T>* resd, std::size_t fixednev)
     {
-        perf_.start_clock(ChasePerfData::TimePtrs::Resids_Locking);
+        perf_.start_clock(ChasePerfData<T>::TimePtrs::Resids_Locking);
         chase_->Resd(ritzv, resd, fixednev);
         // We end with ->chase_->Lock()
     }
     void Lanczos(std::size_t m, Base<T>* upperb)
     {
-        perf_.start_clock(ChasePerfData::TimePtrs::Lanczos);
+        perf_.start_clock(ChasePerfData<T>::TimePtrs::Lanczos);
         chase_->Lanczos(m, upperb);
-        perf_.end_clock(ChasePerfData::TimePtrs::Lanczos);
+        perf_.end_clock(ChasePerfData<T>::TimePtrs::Lanczos);
     }
     void Lanczos(std::size_t M, std::size_t idx, Base<T>* upperb,
                  Base<T>* ritzv, Base<T>* Tau, Base<T>* ritzV)
@@ -390,21 +389,21 @@ public:
     void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc)
     {
         chase_->LanczosDos(idx, m, ritzVc);
-        perf_.end_clock(ChasePerfData::TimePtrs::Lanczos);
+        perf_.end_clock(ChasePerfData<T>::TimePtrs::Lanczos);
     }
 
     void Swap(std::size_t i, std::size_t j) { chase_->Swap(i, j); }
     void Lock(std::size_t new_converged)
     {
         chase_->Lock(new_converged);
-        perf_.end_clock(ChasePerfData::TimePtrs::Resids_Locking);
+        perf_.end_clock(ChasePerfData<T>::TimePtrs::Resids_Locking);
         perf_.add_iter_count(1);
     }
     void Start()
     {
         chase_->Start();
         perf_.Reset();
-        perf_.start_clock(ChasePerfData::TimePtrs::All);
+        perf_.start_clock(ChasePerfData<T>::TimePtrs::All);
         perf_.set_nprocs(chase_->get_nprocs());
     }
 
@@ -413,7 +412,7 @@ public:
     void End()
     {
         chase_->End();
-        perf_.end_clock(ChasePerfData::TimePtrs::All);
+        perf_.end_clock(ChasePerfData<T>::TimePtrs::All);
     }
 
     std::size_t GetN() const { return chase_->GetN(); }
@@ -422,7 +421,7 @@ public:
     Base<T>* GetRitzv() { return chase_->GetRitzv(); }
     Base<T>* GetResid() { return chase_->GetResid(); }
     ChaseConfig<T>& GetConfig() { return chase_->GetConfig(); }
-    ChasePerfData& GetPerfData() { return perf_; }
+    ChasePerfData<T>& GetPerfData() { return perf_; }
 
 #ifdef CHASE_OUTPUT
     void Output(std::string str) { chase_->Output(str); }
@@ -430,7 +429,7 @@ public:
 
 private:
     Chase<T>* chase_;
-    ChasePerfData perf_;
+    ChasePerfData<T> perf_;
 };
 
 } // namespace chase

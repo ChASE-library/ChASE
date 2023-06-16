@@ -621,7 +621,7 @@ int do_chase(ChASE_DriverProblemConfig& conf)
         {
             std::cout << " ChASE timings: "
                       << "\n";
-            performanceDecorator.GetPerfData().print();
+            performanceDecorator.GetPerfData().print(N);
 #ifdef PRINT_EIGENVALUES
             Base<T>* resid = single.GetResid();
             std::cout << "Finished Problem \n";
