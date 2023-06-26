@@ -1335,7 +1335,6 @@ public:
                 nvtxRangePop();
         #endif
         */
-        std::cout << C[0] << " " << ritzVc[0] << std::endl;
         dla_->LanczosDos(idx, m, ritzVc);
     }
 
