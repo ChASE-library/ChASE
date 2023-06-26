@@ -897,6 +897,7 @@ public:
         nvtxRangePop();
         nvtxRangePushA("allreduce");
 #endif
+
         AllReduce(allreduce_backend, rsd + locked, unconverged,
                   getMPI_Type<Base<T>>(), MPI_SUM, row_comm_, mpi_wrapper_);
         //  Base<T> *resid_h;
@@ -1334,6 +1335,7 @@ public:
                 nvtxRangePop();
         #endif
         */
+        std::cout << C[0] << " " << ritzVc[0] << std::endl;
         dla_->LanczosDos(idx, m, ritzVc);
     }
 
@@ -1415,6 +1417,9 @@ public:
             std::swap(v1_, v0_);
             std::swap(v1_, v2_);
         }
+
+        Memcpy(memcpy_mode[2], C, v1_, m_ * sizeof(T));
+
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif

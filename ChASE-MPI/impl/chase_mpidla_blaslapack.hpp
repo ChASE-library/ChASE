@@ -310,6 +310,7 @@ public:
         t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, m_, idx, m, &alpha,
                C_, m_, ritzVc, m, &beta, C2_, m_);
         std::memcpy(C_, C2_, m * m_ * sizeof(T));
+
     }
     void Lanczos(std::size_t M, int idx, Base<T>* d, Base<T>* e,
                  Base<T>* r_beta) override
