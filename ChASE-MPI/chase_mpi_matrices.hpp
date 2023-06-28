@@ -169,7 +169,18 @@ public:
     bool isHostAlloc() { return false; }
     T* host() { return Host_.get()->ptr(); }
 
-    T* ptr() { return Host_.get()->ptr(); }
+    T* ptr() {
+        T *ptr; 
+        if(isHostAlloc_){
+            ptr =  Host_.get()->ptr(); 
+        }
+#if defined(HAS_CUDA)
+        else if(isDeviceAlloc_){
+            ptr = Device_.get()->ptr();
+        }
+#endif
+        return ptr;
+    }
 
 #if defined(HAS_CUDA)
     T* device() { return Device_.get()->ptr(); }
