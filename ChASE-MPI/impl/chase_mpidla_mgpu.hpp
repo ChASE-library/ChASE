@@ -300,8 +300,29 @@ public:
 
         int num_devices;
         mpi_rank_ = matrix_properties_->get_my_rank();
+        mpi_shm_rank = matrix_properties_->get_my_shm_rank();
+        mpi_shm_size = matrix_properties_->get_shm_nprocs(); 
 
         cuda_exec(cudaGetDeviceCount(&num_devices));
+
+        // Check the number of MPI ranks per node and the number of available GPUs
+        if(num_devices < mpi_shm_size) {
+            std::cerr << "Error! The number of MPI ranks per node ( " << mpi_shm_size 
+                     << " ) is larger than the number of available GPU devices ( " 
+                     << num_devices << " )!" << std::endl;
+            std::cerr << "The ChASE will terminate. Please, re-run ChASE with the number of " 
+                     << "MPI ranks per node not larger than the number of available GPU devices."
+                     << std::endl;
+        } else if (num_devices > mpi_shm_size) {
+            cuda_exec(cudaSetDevice(mpi_shm_rank));
+            std::cout << "Warning! The number of MPI ranks ( " << mpi_shm_size 
+                      << " ) is less than the number of available GPUs ( " << num_devices << " )! " << std::endl;
+            std::cout << "The resources will not be used optimally. " 
+                      << "The number of MPI ranks should be equal to the number of available GPU devices to exploit all computational resources!" 
+                      << std::endl;
+        } else { // num_devices == mpi_shm_size
+            cuda_exec(cudaSetDevice(mpi_shm_rank));
+        }
 
         std::size_t maxBlock = matrix_properties_->get_max_block();
 
@@ -858,6 +879,8 @@ private:
         diag_off_size_; //!< number of elements to be shifted on each piece
 
     int mpi_rank_; //!< the MPI rank within the working MPI communicator
+    int mpi_shm_rank;  //!< the MPI rank within the shared-memory MPI communicator
+    int mpi_shm_size;  //!< the size of the shared-memory MPI communicator
     cublasHandle_t cublasH_;       //!< `cuBLAS` handle
     cublasHandle_t cublasH2_;      //!< `cuBLAS` handle
     cusolverDnHandle_t cusolverH_; //!< `cuSOLVER` handle
