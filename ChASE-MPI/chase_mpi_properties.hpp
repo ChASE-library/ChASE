@@ -248,6 +248,29 @@ public:
         MPI_Comm_size(shm_comm_, &shm_nprocs_);
         MPI_Comm_rank(shm_comm_, &shm_rank_);
 
+#ifdef HAS_CUDA
+        int num_devices = -1;
+        cudaGetDeviceCount(&num_devices);
+
+        // Check the number of MPI ranks per node and the number of available GPUs
+        if(num_devices < shm_nprocs_) {
+            std::cerr << "Error! The number of MPI ranks per node ( " << shm_nprocs_ 
+                     << " ) is larger than the number of available GPU devices ( " 
+                     << num_devices << " )!" << std::endl;
+            std::cerr << "The ChASE will terminate. Please, re-run ChASE with the number of " 
+                     << "MPI ranks per node not larger than the number of available GPU devices."
+                     << std::endl;
+        } else if (num_devices > shm_nprocs_) {
+            cudaSetDevice(shm_rank_);
+            std::cout << "Warning! The number of MPI ranks ( " << shm_nprocs_ 
+                      << " ) is less than the number of available GPUs ( " << num_devices << " )! " << std::endl;
+            std::cout << "The resources will not be used optimally. " 
+                      << "The number of MPI ranks should be equal to the number of available GPU devices to exploit all computational resources!" 
+                      << std::endl;
+        } else { // num_devices mpi_shm_rankmpi_shm_size
+            cudaSetDevice(shm_rank_);
+        }
+#endif
         std::size_t blocknb[2];
         std::size_t N_loc[2];
         std::size_t blocksize[2];

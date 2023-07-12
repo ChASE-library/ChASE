@@ -297,6 +297,8 @@ public:
       @param resid: a pointer to the buffer `resid_`.
     */
 
+    ChaseMpiMatrices() {}
+    
     ChaseMpiMatrices(int mode, std::size_t N, std::size_t max_block, T* H,
                      std::size_t ldh, T* V1, Base<T>* ritzv, T* V2 = nullptr,
                      Base<T>* resid = nullptr)
