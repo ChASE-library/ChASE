@@ -300,8 +300,6 @@ public:
 
         int num_devices;
         mpi_rank_ = matrix_properties_->get_my_rank();
-        //mpi_shm_rank = matrix_properties_->get_my_shm_rank();
-        //mpi_shm_size = matrix_properties_->get_shm_nprocs(); 
 
         cuda_exec(cudaGetDeviceCount(&num_devices));
         std::size_t maxBlock = matrix_properties_->get_max_block();
@@ -859,8 +857,6 @@ private:
         diag_off_size_; //!< number of elements to be shifted on each piece
 
     int mpi_rank_; //!< the MPI rank within the working MPI communicator
-    //int mpi_shm_rank;  //!< the MPI rank within the shared-memory MPI communicator
-    //int mpi_shm_size;  //!< the size of the shared-memory MPI communicator
     cublasHandle_t cublasH_;       //!< `cuBLAS` handle
     cublasHandle_t cublasH2_;      //!< `cuBLAS` handle
     cusolverDnHandle_t cusolverH_; //!< `cuSOLVER` handle
