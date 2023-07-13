@@ -1,7 +1,7 @@
 #!/bin/bash
 
-folder="build-new"
-NCCL_FLAG=OFF
+folder="build-nccl"
+NCCL_FLAG=ON
 
 if [ -d "$folder" ]
 then
