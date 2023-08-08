@@ -887,7 +887,7 @@ public:
             - cuSOLVER zcusolverDnXpotrfz for multi-GPU distributed-memory
        ChASE, and it is implemented in ChaseMpiDLABlaslapack
     */
-    int potrf(char uplo, std::size_t n, T* a, std::size_t lda) override
+    int potrf(char uplo, std::size_t n, T* a, std::size_t lda, bool isinfo = true) override    
     {
         return dla_->potrf(uplo, n, a, lda);
     }
@@ -1145,7 +1145,7 @@ public:
 #ifdef USE_NSIGHT
             nvtxRangePushA("ChaseMpiDLA: potrf");
 #endif
-            info = dla_->potrf('U', nevex, A, nevex);
+            info = dla_->potrf('U', nevex, A, nevex, isShiftQR);
 #ifdef USE_NSIGHT
             nvtxRangePop();
 #endif
@@ -1218,7 +1218,7 @@ public:
                 nvtxRangePop();
                 nvtxRangePushA("ChaseMpiDLA: potrf");
 #endif
-                info = dla_->potrf('U', nevex, A, nevex);
+                info = dla_->potrf('U', nevex, A, nevex, false);
 #ifdef USE_NSIGHT
                 nvtxRangePop();
 #endif

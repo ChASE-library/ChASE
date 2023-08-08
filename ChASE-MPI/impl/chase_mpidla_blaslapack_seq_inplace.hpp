@@ -175,7 +175,7 @@ public:
     {
     }
 
-    int potrf(char uplo, std::size_t n, T* a, std::size_t lda) override
+    int potrf(char uplo, std::size_t n, T* a, std::size_t lda, bool isinfo = true) override
     {
         return 0;
     }

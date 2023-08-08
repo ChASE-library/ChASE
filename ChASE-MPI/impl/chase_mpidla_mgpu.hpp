@@ -637,7 +637,7 @@ public:
 #endif
     }
     //! It is an interface to cuSOLVER `cusolverXpotrf`.
-    int potrf(char uplo, std::size_t n, T* a, std::size_t lda) override
+    int potrf(char uplo, std::size_t n, T* a, std::size_t lda, bool isinfo = true) override    
     {
 #if !defined(CUDA_AWARE)
         A__.H2D(nev_ + nex_, nev_ + nex_);
@@ -653,10 +653,12 @@ public:
 #endif
         assert(CUSOLVER_STATUS_SUCCESS == cusolver_status_);
 
-        int info;
-        cuda_exec(cudaMemcpy(&info, devInfo_, 1 * sizeof(int),
-                             cudaMemcpyDeviceToHost));
-
+        int info = 0;
+	if(isinfo)
+	{
+            cuda_exec(cudaMemcpy(&info, devInfo_, 1 * sizeof(int),
+                                 cudaMemcpyDeviceToHost));
+	}
         return info;
     }
 
