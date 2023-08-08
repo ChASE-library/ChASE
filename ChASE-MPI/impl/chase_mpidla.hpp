@@ -322,6 +322,7 @@ public:
                 buff__ = std::make_unique<Matrix<T>>(0, max_c_len, nex_ + nev_);                
             }
         }
+
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
@@ -634,7 +635,7 @@ public:
 #endif
         std::size_t dim = n_ * block;
 
-        if (isSameDist_ && cuda_aware_)
+        if (isSameDist_)
         {
             for (auto i = 0; i < col_size_; i++)
             {
@@ -660,18 +661,13 @@ public:
                                 B2 + locked * n_, n_);
                 }
             }
-            dla_->asynCxHGatherC(locked, block, isCcopied);
-            AllReduce(allreduce_backend, B + locked * n_, dim, getMPI_Type<T>(),
-                      MPI_SUM, col_comm_, mpi_wrapper_);
         }
         else
         {
             for(auto i = 0; i < c_lens.size(); i++){
-                std::vector<T> buff_;
-                buff_.resize(c_lens[i] * (nev_+nex_));
                 if (row_rank_ == c_dests[i]){
                     //pack
-                    dla_->lacpy('A', c_lens[i], block, C2 + c_disps[i] + locked * m_, send_lens_[0][col_rank_],
+                    dla_->lacpy('A', c_lens[i], block, C2 + c_disps[i] + locked * send_lens_[0][col_rank_], send_lens_[0][col_rank_],
                                 buff__.get()->ptr(), c_lens[i]);
 
                     Bcast(bcast_backend, buff__.get()->ptr(), c_lens[i] * block, getMPI_Type<T>(), c_srcs[i], col_comm_, mpi_wrapper_);
@@ -680,12 +676,13 @@ public:
                     dla_->lacpy('A', c_lens[i], block, buff__.get()->ptr(), c_lens[i], B2 + b_disps[i] + locked * n_, n_);
                 }
             }
-
-            dla_->asynCxHGatherC(locked, block, isCcopied);
-
-            AllReduce(allreduce_backend, B + locked * n_, dim, getMPI_Type<T>(),
-                      MPI_SUM, col_comm_, mpi_wrapper_);
         }
+            
+	dla_->asynCxHGatherC(locked, block, isCcopied);
+
+        AllReduce(allreduce_backend, B + locked * n_, dim, getMPI_Type<T>(),
+                   MPI_SUM, col_comm_, mpi_wrapper_);
+
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
@@ -1560,7 +1557,7 @@ private:
 
     //buff
     std::unique_ptr<Matrix<T>> buff__;
-
+    
 #if !defined(HAS_SCALAPACK)
     std::unique_ptr<Matrix<T>> V___;
     bool alloc_ = false;
