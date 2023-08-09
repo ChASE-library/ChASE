@@ -242,6 +242,39 @@ public:
 
         MPI_Comm_size(comm, &nprocs_);
         MPI_Comm_rank(comm, &rank_);
+
+        /* Set sharem memory communicator and ranks */
+        MPI_Comm_split_type(comm, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, &shm_comm_);
+        MPI_Comm_size(shm_comm_, &shm_nprocs_);
+        MPI_Comm_rank(shm_comm_, &shm_rank_);
+
+#ifdef HAS_CUDA
+        int num_devices = -1;
+        cudaGetDeviceCount(&num_devices);
+
+        // Check the number of MPI ranks per node and the number of available GPUs
+        if(num_devices < shm_nprocs_) {
+            if (!rank_) {
+                std::cerr << "Error! The number of MPI ranks per node ( " << shm_nprocs_ 
+                        << " ) is larger than the number of available GPU devices ( " 
+                        << num_devices << " )!" << std::endl;
+                std::cerr << "The ChASE will terminate. Please, re-run ChASE with the number of " 
+                        << "MPI ranks per node not larger than the number of available GPU devices."
+                        << std::endl;
+            }
+        } else if (num_devices > shm_nprocs_) {
+            cudaSetDevice(shm_rank_);
+            if (!rank_) {
+                std::cout << "Warning! The number of MPI ranks ( " << shm_nprocs_ 
+                        << " ) is less than the number of available GPUs ( " << num_devices << " )! " << std::endl;
+                std::cout << "The resources will not be used optimally. " 
+                        << "The number of MPI ranks should be equal to the number of available GPU devices to exploit all computational resources!" 
+                        << std::endl;
+            }
+        } else { // num_devices mpi_shm_rankmpi_shm_size
+            cudaSetDevice(shm_rank_);
+        }
+#endif
         std::size_t blocknb[2];
         std::size_t N_loc[2];
         std::size_t blocksize[2];
@@ -525,6 +558,39 @@ public:
         MPI_Comm_size(comm, &nprocs_);
         MPI_Comm_rank(comm, &rank_);
 
+        /* Set sharem memory communicator and ranks */
+        MPI_Comm_split_type(comm, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, &shm_comm_);
+        MPI_Comm_size(shm_comm_, &shm_nprocs_);
+        MPI_Comm_rank(shm_comm_, &shm_rank_);
+        
+#ifdef HAS_CUDA
+        int num_devices = -1;
+        cudaGetDeviceCount(&num_devices);
+
+        // Check the number of MPI ranks per node and the number of available GPUs
+       if(num_devices < shm_nprocs_) {
+            if (!rank_) {
+                std::cerr << "Error! The number of MPI ranks per node ( " << shm_nprocs_ 
+                        << " ) is larger than the number of available GPU devices ( " 
+                        << num_devices << " )!" << std::endl;
+                std::cerr << "The ChASE will terminate. Please, re-run ChASE with the number of " 
+                        << "MPI ranks per node not larger than the number of available GPU devices."
+                        << std::endl;
+            }
+        } else if (num_devices > shm_nprocs_) {
+            cudaSetDevice(shm_rank_);
+            if (!rank_) {
+                std::cout << "Warning! The number of MPI ranks ( " << shm_nprocs_ 
+                        << " ) is less than the number of available GPUs ( " << num_devices << " )! " << std::endl;
+                std::cout << "The resources will not be used optimally. " 
+                        << "The number of MPI ranks should be equal to the number of available GPU devices to exploit all computational resources!" 
+                        << std::endl;
+            }
+        } else { // num_devices mpi_shm_rankmpi_shm_size
+            cudaSetDevice(shm_rank_);
+        }
+#endif
+
         int tmp_dims_[2];
 
         dims_[0] = npr;
@@ -760,6 +826,40 @@ public:
         MPI_Comm_rank(comm, &rank_);
         dims_[0] = dims_[1] = 0;
         MPI_Dims_create(nprocs_, 2, dims_);
+
+        /* Set sharem memory communicator and ranks */
+        MPI_Comm_split_type(comm, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, &shm_comm_);
+        MPI_Comm_size(shm_comm_, &shm_nprocs_);
+        MPI_Comm_rank(shm_comm_, &shm_rank_);
+
+#ifdef HAS_CUDA
+
+        int num_devices = -1;
+        cudaGetDeviceCount(&num_devices);
+
+        // Check the number of MPI ranks per node and the number of available GPUs
+        if(num_devices < shm_nprocs_) {
+            if (!rank_) {
+                std::cerr << "Error! The number of MPI ranks per node ( " << shm_nprocs_ 
+                        << " ) is larger than the number of available GPU devices ( " 
+                        << num_devices << " )!" << std::endl;
+                std::cerr << "The ChASE will terminate. Please, re-run ChASE with the number of " 
+                        << "MPI ranks per node not larger than the number of available GPU devices."
+                        << std::endl;
+            }
+        } else if (num_devices > shm_nprocs_) {
+            cudaSetDevice(shm_rank_);
+            if (!rank_) {
+                std::cout << "Warning! The number of MPI ranks ( " << shm_nprocs_ 
+                        << " ) is less than the number of available GPUs ( " << num_devices << " )! " << std::endl;
+                std::cout << "The resources will not be used optimally. " 
+                        << "The number of MPI ranks should be equal to the number of available GPU devices to exploit all computational resources!" 
+                        << std::endl;
+            }
+        } else { // num_devices mpi_shm_rankmpi_shm_size
+            cudaSetDevice(shm_rank_);
+        }
+#endif
 
         create2DGrid(dims_[0], dims_[1], false, comm, &row_comm_, &col_comm_,
                      &coord_[0], &coord_[1]);
@@ -1264,11 +1364,24 @@ public:
      */
     int get_nprocs() { return nprocs_; }
 
+    //! Returns the total number of MPI nodes within the shared-memory communicator.
+    /*!
+        \return `shm_nprocs_`: the total number of MPI nodes within the shared-memory communicator.
+     */
+    int get_shm_nprocs() { return shm_nprocs_; }
+
     //! Returns the rank of MPI node within 2D grid.
     /*!
         \return `rank_`: the rank of MPI node within 2D grid.
      */
     int get_my_rank() { return rank_; }
+
+    //! Returns the rank of MPI node within the shared-memory communicator.
+    /*!
+        \return `shm_rank_`: the rank of MPI node within the shared-memory communicator.
+     */
+    int get_my_shm_rank() { return shm_rank_; }
+
     //! Create a ChaseMpiMatrices object which stores the operating matrices and
     //! vectors for ChASE-MPI.
     /*!
@@ -1567,13 +1680,26 @@ private:
      */
     MPI_Comm comm_;
 
+    //! The shared-memory MPI communicator which ChASE is working on.
+    /*!
+        This variable is initialized by the constructor using the value
+        of its input parameters `shm_comm`.
+     */
+    MPI_Comm shm_comm_;
+
     //! Total number of MPI nodes in the MPI communicator which ChASE is working
     //! on.
     int nprocs_;
 
+    //! Total number of MPI ranks in the shared-memory communicator (ie. #mpi ranks per node).
+    int shm_nprocs_;
+
     //! The rank of each MPI node within the MPI communicator which ChASE is
     //! working on.
     int rank_;
+
+    //! The rank of each MPI within the shared-memory MPI communicator.
+    int shm_rank_;
 
     //! The row communicator of the constructed 2D grid of MPI codes.
     /*!

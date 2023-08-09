@@ -302,7 +302,6 @@ public:
         mpi_rank_ = matrix_properties_->get_my_rank();
 
         cuda_exec(cudaGetDeviceCount(&num_devices));
-
         std::size_t maxBlock = matrix_properties_->get_max_block();
 
         cuda_exec(cudaMalloc((void**)&states_,
