@@ -260,7 +260,7 @@ public:
        href="https://netlib.org/lapack/explore-html/d3/d8d/group__complex16_p_ocomputational_
         ga93e22b682170873efb50df5a79c5e4eb.html">zpotrf()</a>
     */
-    virtual int potrf(char uplo, std::size_t n, T* a, std::size_t lda) = 0;
+    virtual int potrf(char uplo, std::size_t n, T* a, std::size_t lda, bool isInfo = true) = 0;
 
     //! A `LAPACK-like` function which solves one of the matrix equations
     /*!

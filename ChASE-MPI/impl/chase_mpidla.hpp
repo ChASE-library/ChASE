@@ -186,39 +186,6 @@ public:
             c_lens.push_back(c_len);
         }
 
-        reqsc2b_.resize(c_lens.size());
-        c_sends_.resize(c_lens.size());
-        b_recvs_.resize(c_lens.size());
-
-        for (auto i = 0; i < c_lens.size(); i++)
-        {
-            if (row_rank_ == c_dests[i])
-            {
-                if (col_rank_ == c_srcs[i])
-                {
-                    int m1 = send_lens_[0][col_rank_];
-                    int array_of_sizes[2] = {m1, 1};
-                    int array_of_subsizes[2] = {c_lens[i], 1};
-                    int array_of_starts[2] = {c_disps[i], 0};
-
-                    MPI_Type_create_subarray(
-                        2, array_of_sizes, array_of_subsizes, array_of_starts,
-                        MPI_ORDER_FORTRAN, getMPI_Type<T>(), &(c_sends_[i]));
-                    MPI_Type_commit(&(c_sends_[i]));
-                }
-                else
-                {
-                    int array_of_sizes2[2] = {static_cast<int>(n_), 1};
-                    int array_of_starts2[2] = {b_disps[i], 0};
-                    int array_of_subsizes2[2] = {c_lens[i], 1};
-                    MPI_Type_create_subarray(
-                        2, array_of_sizes2, array_of_subsizes2,
-                        array_of_starts2, MPI_ORDER_FORTRAN, getMPI_Type<T>(),
-                        &(b_recvs_[i]));
-                    MPI_Type_commit(&(b_recvs_[i]));
-                }
-            }
-        }
 
         if (isSameDist_)
         {
@@ -346,6 +313,16 @@ public:
             allreduce_backend = MPI_BACKEND;
             bcast_backend = MPI_BACKEND;
         }
+
+        if(!isSameDist_){
+            auto max_c_len = *max_element(c_lens.begin(), c_lens.end());
+            if(cuda_aware_){
+                buff__ = std::make_unique<Matrix<T>>(2, max_c_len, nex_ + nev_);
+            }else{
+                buff__ = std::make_unique<Matrix<T>>(0, max_c_len, nex_ + nev_);                
+            }
+        }
+
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
@@ -658,7 +635,7 @@ public:
 #endif
         std::size_t dim = n_ * block;
 
-        if (isSameDist_ && cuda_aware_)
+        if (isSameDist_)
         {
             for (auto i = 0; i < col_size_; i++)
             {
@@ -684,49 +661,28 @@ public:
                                 B2 + locked * n_, n_);
                 }
             }
-            dla_->asynCxHGatherC(locked, block, isCcopied);
-            AllReduce(allreduce_backend, B + locked * n_, dim, getMPI_Type<T>(),
-                      MPI_SUM, col_comm_, mpi_wrapper_);
         }
         else
         {
-            for (auto i = 0; i < c_lens.size(); i++)
-            {
-                if (row_rank_ == c_dests[i])
-                {
-                    if (col_rank_ == c_srcs[i])
-                    {
-                        MPI_Ibcast(C2 + locked * m_, block, c_sends_[i],
-                                   c_srcs[i], col_comm_, &reqsc2b_[i]);
-                    }
-                    else
-                    {
-                        MPI_Ibcast(B2 + locked * n_, block, b_recvs_[i],
-                                   c_srcs[i], col_comm_, &reqsc2b_[i]);
-                    }
-                }
-            }
-            dla_->asynCxHGatherC(locked, block, isCcopied);
-            for (auto i = 0; i < c_lens.size(); i++)
-            {
-                if (row_rank_ == c_dests[i])
-                {
-                    MPI_Wait(&reqsc2b_[i], MPI_STATUSES_IGNORE);
-                }
-            }
-            AllReduce(allreduce_backend, B + locked * n_, dim, getMPI_Type<T>(),
-                      MPI_SUM, col_comm_, mpi_wrapper_);
+            for(auto i = 0; i < c_lens.size(); i++){
+                if (row_rank_ == c_dests[i]){
+                    //pack
+                    dla_->lacpy('A', c_lens[i], block, C2 + c_disps[i] + locked * send_lens_[0][col_rank_], send_lens_[0][col_rank_],
+                                buff__.get()->ptr(), c_lens[i]);
 
-            for (auto i = 0; i < c_lens.size(); i++)
-            {
-                if (row_rank_ == c_dests[i] && col_rank_ == c_srcs[i])
-                {
-                    dla_->lacpy('A', c_lens[i], block,
-                                C2 + locked * m_ + c_disps[i], m_,
-                                B2 + locked * n_ + b_disps[i], n_);
+                    Bcast(bcast_backend, buff__.get()->ptr(), c_lens[i] * block, getMPI_Type<T>(), c_srcs[i], col_comm_, mpi_wrapper_);
+
+                    //unpack
+                    dla_->lacpy('A', c_lens[i], block, buff__.get()->ptr(), c_lens[i], B2 + b_disps[i] + locked * n_, n_);
                 }
             }
         }
+            
+	dla_->asynCxHGatherC(locked, block, isCcopied);
+
+        AllReduce(allreduce_backend, B + locked * n_, dim, getMPI_Type<T>(),
+                   MPI_SUM, col_comm_, mpi_wrapper_);
+
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
@@ -931,7 +887,7 @@ public:
             - cuSOLVER zcusolverDnXpotrfz for multi-GPU distributed-memory
        ChASE, and it is implemented in ChaseMpiDLABlaslapack
     */
-    int potrf(char uplo, std::size_t n, T* a, std::size_t lda) override
+    int potrf(char uplo, std::size_t n, T* a, std::size_t lda, bool isinfo = true) override    
     {
         return dla_->potrf(uplo, n, a, lda);
     }
@@ -1189,7 +1145,7 @@ public:
 #ifdef USE_NSIGHT
             nvtxRangePushA("ChaseMpiDLA: potrf");
 #endif
-            info = dla_->potrf('U', nevex, A, nevex);
+            info = dla_->potrf('U', nevex, A, nevex, isShiftQR);
 #ifdef USE_NSIGHT
             nvtxRangePop();
 #endif
@@ -1262,7 +1218,7 @@ public:
                 nvtxRangePop();
                 nvtxRangePushA("ChaseMpiDLA: potrf");
 #endif
-                info = dla_->potrf('U', nevex, A, nevex);
+                info = dla_->potrf('U', nevex, A, nevex, false);
 #ifdef USE_NSIGHT
                 nvtxRangePop();
 #endif
@@ -1599,6 +1555,9 @@ private:
 
     ChaseMpiMatrices<T>* matrices_;
 
+    //buff
+    std::unique_ptr<Matrix<T>> buff__;
+    
 #if !defined(HAS_SCALAPACK)
     std::unique_ptr<Matrix<T>> V___;
     bool alloc_ = false;
