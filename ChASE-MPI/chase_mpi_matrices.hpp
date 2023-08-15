@@ -22,6 +22,11 @@ namespace chase
 namespace mpi
 {
 
+template<typename T, typename... Args>
+std::unique_ptr<T> make_unique(Args&&... args) {
+    return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+}
+
 template <class T>
 class CpuMem
 {
@@ -326,20 +331,20 @@ public:
             onlyGPU = 2;
         }
 
-        H___ = std::make_unique<Matrix<T>>(isGPU, N, N, H, ldh);
-        C___ = std::make_unique<Matrix<T>>(isGPU, N, max_block, V1, N);
-        B___ = std::make_unique<Matrix<T>>(onlyGPU, N, max_block);
-        A___ = std::make_unique<Matrix<T>>(onlyGPU, max_block, max_block);
+        H___ = make_unique<Matrix<T>>(isGPU, N, N, H, ldh);
+        C___ = make_unique<Matrix<T>>(isGPU, N, max_block, V1, N);
+        B___ = make_unique<Matrix<T>>(onlyGPU, N, max_block);
+        A___ = make_unique<Matrix<T>>(onlyGPU, max_block, max_block);
 
         if (mode == 1)
         {
-            C2___ = std::make_unique<Matrix<T>>(0, N, max_block);
-            B2___ = std::make_unique<Matrix<T>>(0, N, max_block);
+            C2___ = make_unique<Matrix<T>>(0, N, max_block);
+            B2___ = make_unique<Matrix<T>>(0, N, max_block);
         }
 
-        Ritzv___ = std::make_unique<Matrix<Base<T>>>(isGPU, 1, max_block, ritzv,
+        Ritzv___ = make_unique<Matrix<Base<T>>>(isGPU, 1, max_block, ritzv,
                                                      max_block);
-        Resid___ = std::make_unique<Matrix<Base<T>>>(isGPU, 1, max_block);
+        Resid___ = make_unique<Matrix<Base<T>>>(isGPU, 1, max_block);
     }
 
     //! A constructor of ChaseMpiMatrices for **MPI case** which allocates
@@ -394,16 +399,16 @@ public:
             isGPU = 1;
             isCUDA_Aware = 2;
         }
-        H___ = std::make_unique<Matrix<T>>(isGPU, m, n, H, ldh);
-        C___ = std::make_unique<Matrix<T>>(isCUDA_Aware, m, max_block, V1, m);
-        C2___ = std::make_unique<Matrix<T>>(isCUDA_Aware, m, max_block);
-        B___ = std::make_unique<Matrix<T>>(isCUDA_Aware, n, max_block);
-        B2___ = std::make_unique<Matrix<T>>(isCUDA_Aware, n, max_block);
-        A___ = std::make_unique<Matrix<T>>(isCUDA_Aware, max_block, max_block);
-        Ritzv___ = std::make_unique<Matrix<Base<T>>>(isGPU, 1, max_block, ritzv,
+        H___ = make_unique<Matrix<T>>(isGPU, m, n, H, ldh);
+        C___ = make_unique<Matrix<T>>(isCUDA_Aware, m, max_block, V1, m);
+        C2___ = make_unique<Matrix<T>>(isCUDA_Aware, m, max_block);
+        B___ =  make_unique<Matrix<T>>(isCUDA_Aware, n, max_block);
+        B2___ = make_unique<Matrix<T>>(isCUDA_Aware, n, max_block);
+        A___ = make_unique<Matrix<T>>(isCUDA_Aware, max_block, max_block);
+        Ritzv___ = make_unique<Matrix<Base<T>>>(isGPU, 1, max_block, ritzv,
                                                      max_block);
-        Resid___ = std::make_unique<Matrix<Base<T>>>(isGPU, 1, max_block);
-        vv___ = std::make_unique<Matrix<T>>(isGPU, m, 1);
+        Resid___ = make_unique<Matrix<Base<T>>>(isGPU, 1, max_block);
+        vv___ = make_unique<Matrix<T>>(isGPU, m, 1);
     }
 
     int get_Mode() { return mode_; }
