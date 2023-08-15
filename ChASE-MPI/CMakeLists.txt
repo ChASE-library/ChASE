@@ -57,7 +57,6 @@ if(SCALAPACK_FOUND)
 endif()
 
 target_compile_options( chase_seq INTERFACE
-  ${CMAKE_C_FLAGS}
   ${MPI_CXX_COMPILE_FLAGS}  
   )
 
@@ -72,7 +71,6 @@ target_link_libraries( chase_mpi INTERFACE
   )
 
 target_compile_options( chase_mpi INTERFACE
-  ${CMAKE_C_FLAGS}
   ${MPI_CXX_COMPILE_FLAGS}
   )
 if(SCALAPACK_FOUND)
