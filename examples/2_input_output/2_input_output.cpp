@@ -5,7 +5,6 @@
 // License is 3-clause BSD:
 // https://github.com/ChASE-library/ChASE
 
-#include <boost/filesystem.hpp>
 #include <boost/program_options.hpp>
 #include <chrono>
 #include <fstream>
@@ -14,6 +13,8 @@
 #include <memory>
 #include <random>
 #include <vector>
+
+#include <sys/stat.h>
 
 #include "ChASE-MPI/chase_mpi.hpp"
 #include "algorithm/performance.hpp"
@@ -32,7 +33,17 @@ using namespace chase;
 using namespace chase::mpi;
 
 namespace po = boost::program_options;
-namespace bf = boost::filesystem;
+
+std::size_t GetFileSize(std::string path_in)
+{
+    struct stat64 fileStat;
+    if (stat64(path_in.c_str(), &fileStat) == 0)
+    {
+        return fileStat.st_size;
+    }
+    else 
+        return 0;
+}   
 
 template <typename T>
 void readMatrix(T* H, std::string path_in, std::string spin, std::size_t kpoint,
@@ -50,8 +61,10 @@ void readMatrix(T* H, std::string path_in, std::string spin, std::size_t kpoint,
     std::cout << problem.str() << std::endl;
     std::ifstream input(problem.str().c_str(), std::ios::binary);
 
+    std::size_t file_size = GetFileSize(problem.str());
+
     std::cout << problem.str().c_str() << " "
-              << "---" << bf::file_size(problem.str().c_str()) << '\n';
+              << "---" << file_size << '\n';
 
     if (input.is_open())
     {
@@ -94,7 +107,7 @@ void readMatrix(T* H, std::string path_in, std::string spin, std::size_t kpoint,
     if (rank == 0)
         std::cout << problem.str() << std::endl;
 
-    std::size_t file_size = bf::file_size(problem.str().c_str());
+    std::size_t file_size = GetFileSize(problem.str());
 
     try
     {
@@ -162,7 +175,7 @@ void readMatrix(T* H, std::string path_in, std::string spin, std::size_t kpoint,
     if (rank == 0)
         std::cout << problem.str() << std::endl;
 
-    std::size_t file_size = bf::file_size(problem.str().c_str());
+    std::size_t file_size = GetFileSize(problem.str());
 
     try
     {
@@ -222,7 +235,7 @@ void readMatrix(T* H, std::string path_in, std::size_t size, std::size_t xoff,
     if (rank == 0)
         std::cout << problem.str() << std::endl;
 
-    std::size_t file_size = bf::file_size(problem.str().c_str());
+    std::size_t file_size = GetFileSize(problem.str());
 
     try
     {
@@ -280,7 +293,7 @@ void readMatrix(T* H, std::string path_in, std::size_t size, std::size_t m,
     if (rank == 0)
         std::cout << problem.str() << std::endl;
 
-    std::size_t file_size = bf::file_size(problem.str().c_str());
+    std::size_t file_size = GetFileSize(problem.str());
 
     try
     {
