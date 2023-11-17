@@ -33,8 +33,8 @@ std::size_t Algorithm<T>::calc_degrees(Chase<T>* single, std::size_t N,
     for (std::size_t i = 0; i < unconverged - nex; ++i)
     {
         Base<T> t = (ritzv[i] - c) / e;
-        rho = std::max(std::abs(t - std::sqrt(t * t - 1)),
-                       std::abs(t + std::sqrt(t * t - 1)));
+        rho = std::max(std::abs(t - std::sqrt(std::abs(t * t - 1))),
+                       std::abs(t + std::sqrt(std::abs(t * t - 1))));
 
         degrees[i] =
             std::ceil(std::abs(std::log(resid[i] / tol) / std::log(rho)));
