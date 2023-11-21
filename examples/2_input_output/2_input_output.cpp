@@ -5,8 +5,6 @@
 // License is 3-clause BSD:
 // https://github.com/ChASE-library/ChASE
 
-#include <boost/filesystem.hpp>
-#include <boost/program_options.hpp>
 #include <chrono>
 #include <fstream>
 #include <iostream>
@@ -14,6 +12,8 @@
 #include <memory>
 #include <random>
 #include <vector>
+
+#include "popl.hpp"
 
 #include "ChASE-MPI/chase_mpi.hpp"
 #include "algorithm/performance.hpp"
@@ -31,8 +31,13 @@
 using namespace chase;
 using namespace chase::mpi;
 
-namespace po = boost::program_options;
-namespace bf = boost::filesystem;
+using namespace popl;
+
+std::size_t GetFileSize(std::string path_in)
+{
+    std::ifstream file(path_in, std::ios::binary | std::ios::ate);
+    return file.tellg();
+}   
 
 template <typename T>
 void readMatrix(T* H, std::string path_in, std::string spin, std::size_t kpoint,
@@ -50,8 +55,10 @@ void readMatrix(T* H, std::string path_in, std::string spin, std::size_t kpoint,
     std::cout << problem.str() << std::endl;
     std::ifstream input(problem.str().c_str(), std::ios::binary);
 
+    std::size_t file_size = GetFileSize(problem.str());
+
     std::cout << problem.str().c_str() << " "
-              << "---" << bf::file_size(problem.str().c_str()) << '\n';
+              << "---" << file_size << '\n';
 
     if (input.is_open())
     {
@@ -94,7 +101,7 @@ void readMatrix(T* H, std::string path_in, std::string spin, std::size_t kpoint,
     if (rank == 0)
         std::cout << problem.str() << std::endl;
 
-    std::size_t file_size = bf::file_size(problem.str().c_str());
+    std::size_t file_size = GetFileSize(problem.str());
 
     try
     {
@@ -162,7 +169,7 @@ void readMatrix(T* H, std::string path_in, std::string spin, std::size_t kpoint,
     if (rank == 0)
         std::cout << problem.str() << std::endl;
 
-    std::size_t file_size = bf::file_size(problem.str().c_str());
+    std::size_t file_size = GetFileSize(problem.str());
 
     try
     {
@@ -222,7 +229,7 @@ void readMatrix(T* H, std::string path_in, std::size_t size, std::size_t xoff,
     if (rank == 0)
         std::cout << problem.str() << std::endl;
 
-    std::size_t file_size = bf::file_size(problem.str().c_str());
+    std::size_t file_size = GetFileSize(problem.str());
 
     try
     {
@@ -280,7 +287,7 @@ void readMatrix(T* H, std::string path_in, std::size_t size, std::size_t m,
     if (rank == 0)
         std::cout << problem.str() << std::endl;
 
-    std::size_t file_size = bf::file_size(problem.str().c_str());
+    std::size_t file_size = GetFileSize(problem.str());
 
     try
     {
@@ -656,127 +663,94 @@ int main(int argc, char* argv[])
 
     ChASE_DriverProblemConfig conf;
 
-    po::options_description desc("ChASE Options");
-
-    desc.add_options()(                                                   //
-        "help,h",                                                         //
-        "show this message"                                               //
-        )(                                                                //
-        "n", po::value<std::size_t>(&conf.N)->required(),                 //
-        "Size of the Input Matrix"                                        //
-        )(                                                                //
-        "double", po::value<bool>(&conf.isdouble)->default_value(true),   //
-        "Is matrix double valued, false indicates the single type"        //
-        )(                                                                //
-        "complex", po::value<bool>(&conf.iscomplex)->default_value(true), //
-        "Matrix is complex, false indicated the real matrix"              //
-        )(                                                                //
-        "nev", po::value<std::size_t>(&conf.nev)->required(),             //
-        "Wanted Number of Eigenpairs"                                     //
-        )(                                                                //
-        "nex", po::value<std::size_t>(&conf.nex)->default_value(25),      //
-        "Extra Search Dimensions"                                         //
-        )(                                                                //
-        "deg", po::value<std::size_t>(&conf.deg)->default_value(20),      //
-        "Initial filtering degree"                                        //
-        )("maxDeg",
-          po::value<std::size_t>(&conf.maxDeg)->default_value(36), //
-          "Sets the maximum value of the degree of the Chebyshev filter")(
-        "maxIter",
-        po::value<std::size_t>(&conf.maxIter)->default_value(25), //
-        "Sets the value of the maximum number of subspace iterations"
-        "within ChASE")(                                                  //
-        "bgn", po::value<std::size_t>(&conf.bgn)->default_value(2),       //
-        "Start ell"                                                       //
-        )(                                                                //
-        "end", po::value<std::size_t>(&conf.end)->default_value(2),       //
-        "End ell"                                                         //
-        )(                                                                //
-        "spin", po::value<std::string>(&conf.spin)->default_value("d"),   //
-        "spin"                                                            //
-        )(                                                                //
-        "kpoint", po::value<std::size_t>(&conf.kpoint)->default_value(0), //
-        "kpoint"                                                          //
-        )(                                                                //
-        "tol", po::value<double>(&conf.tol)->default_value(1e-10),        //
-        "Tolerance for Eigenpair convergence"                             //
-        )(                                                                //
-        "path_in", po::value<std::string>(&conf.path_in)->required(),     //
-        "Path to the input matrix/matrices"                               //
-        )(                                                                //
-        "mode", po::value<std::string>(&conf.mode)->default_value("A"),   //
-        "valid values are R(andom) or A(pproximate)"                      //
-        )(                                                                //
-        "opt", po::value<std::string>(&conf.opt)->default_value("S"),     //
-        "Optimi(S)e degree, or do (N)ot optimise"                         //
-        )(                                                                //
-        "path_eigp", po::value<std::string>(&conf.path_eigp),             //
-        "Path to approximate solutions, only required when mode"          //
-        "is Approximate, otherwise not used"                              //
-        )(                                                                //
-        "sequence",
-        po::value<bool>(&conf.sequence)->default_value(false),            //
-        "Treat as sequence of Problems. Previous ChASE solution is used," //
-        "when available"                                                  //
-        )("lanczosIter",
-          po::value<std::size_t>(&conf.lanczosIter)->default_value(25),
-          "Sets the number of Lanczos iterations executed by ChASE.")(
-        "numLanczos",
-        po::value<std::size_t>(&conf.numLanczos)->default_value(4),
-        " Sets the number of stochastic vectors used for the spectral "
-        "estimates"
-        "in Lanczos")(
-        "isMatGen", po::value<bool>(&conf.isMatGen)->default_value(false), //
-        "generating a matrix in place"
-        )(
-        "dmax", po::value<double>(&conf.dmax)->default_value(100),        //
-        "for generating the spectrum"                             //
-        )                
+    popl::OptionParser desc("ChASE options");
+    auto help_option = desc.add<Switch>("h", "help", "show this message");
+    desc.add<Value<std::size_t>, Attribute::required>("", "n", "Size of the Input Matrix", 0, &conf.N);
+    desc.add<Value<bool>>("", "double", "Is matrix double valued, false indicates the single type", true, &conf.isdouble);
+    desc.add<Value<bool>>("", "complex", "Matrix is complex, false indicated the real matrix", true, &conf.iscomplex);
+    desc.add<Value<std::size_t>, Attribute::required>("", "nev", "Wanted Number of Eigenpairs", 0, &conf.nev);
+    desc.add<Value<std::size_t>>("", "nex", "Extra Search Dimensions", 25, &conf.nex);
+    desc.add<Value<std::size_t>>("", "deg", "Initial filtering degree", 20, &conf.deg);
+    desc.add<Value<std::size_t>>("", "maxDeg", "Sets the maximum value of the degree of the Chebyshev filter", 36, &conf.maxDeg);
+    desc.add<Value<std::size_t>>("", "maxIter", "Sets the value of the maximum number of subspace iterations\nwithin ChASE", 25, &conf.maxIter);
+    desc.add<Value<std::size_t>>("", "bgn", "Start ell", 2, &conf.bgn);
+    desc.add<Value<std::size_t>>("", "end", "End ell", 2, &conf.end);
+	desc.add<Value<std::string>>("", "spin", "spin", "d", &conf.spin);
+    desc.add<Value<std::size_t>>("", "kpoint", "kpoint", 0, &conf.kpoint);
+    desc.add<Value<double>>("", "tol", "Tolerance for Eigenpair convergence", 1e-10, &conf.tol);
+    auto path_in_options = desc.add<Value<std::string>, Attribute::required>("", "path_in", "Path to the input matrix/matrices", "d", &conf.path_in);
+    desc.add<Value<std::string>>("", "mode", "valid values are R(andom) or A(pproximate)", "A", &conf.mode);
+    desc.add<Value<std::string>>("", "opt", "Optimi(S)e degree, or do (N)ot optimise", "S", &conf.opt);
+    desc.add<Value<std::string>>("", "path_eigp", "Path to approximate solutions, only required when mode\nis Approximate, otherwise not used" , "", &conf.path_eigp);
+    desc.add<Value<bool>>("", "sequence", "Treat as sequence of Problems. Previous ChASE solution is used, when available", false, &conf.sequence);
+    desc.add<Value<std::size_t>>("", "lanczosIter", "Sets the number of Lanczos iterations executed by ChASE.", 25, &conf.lanczosIter);
+    desc.add<Value<std::size_t>>("", "numLanczos", "Sets the number of stochastic vectors used for the spectral estimates in Lanczos", 4, &conf.numLanczos);
+    auto isMatGen_options = desc.add<Value<bool>>("", "isMatGen", "generating a matrix in place", false, &conf.isMatGen);
+    desc.add<Value<double>>("", "dmax", "Tolerance for Eigenpair convergence", 100, &conf.dmax);
 #ifdef USE_BLOCK_CYCLIC
-        ( //
-            "mbsize",
-            po::value<std::size_t>(&conf.mbsize)->default_value(400), //
-            "block size for the row"                                  //
-            )(                                                        //
-            "nbsize",
-            po::value<std::size_t>(&conf.nbsize)->default_value(400), //
-            "block size for the column"                               //
-            )(                                                        //
-            "dim0", po::value<int>(&conf.dim0)->default_value(0),     //
-            "row number of MPI proc grid"                             //
-            )(                                                        //
-            "dim1", po::value<int>(&conf.dim1)->default_value(0),     //
-            "column number of MPI proc grid"                          //
-            )(                                                        //
-            "irsrc", po::value<int>(&conf.irsrc)->default_value(0),   //
-            "The process row over which the first row of matrix is"   //
-            "distributed."                                            //
-            )(                                                        //
-            "icsrc", po::value<int>(&conf.icsrc)->default_value(0),   //
-            "The process column over which the first column of the array A "
-            "is"           //
-            "distributed." //
-            )(             //
-            "major",
-            po::value<std::string>(&conf.mode)->default_value("C"),      //
-            "Major of MPI proc grid, valid values are R(ow) or C(olumn)" //
-            )
+        desc.add<Value<std::size_t>>("", "mbsize", "block size for the row", 400, &conf.mbsize);
+        desc.add<Value<std::size_t>>("", "nbsize", "block size for the column", 400, &conf.nbsize);
+        desc.add<Value<int>>("", "dim0", "row number of MPI proc grid", 0, &conf.dim0);
+        desc.add<Value<int>>("", "dim1", "column number of MPI proc grid", 0, &conf.dim1);
+        desc.add<Value<int>>("", "irsrc", "The process row over which the first row of matrix is distributed.", 0, &conf.irsrc);
+        desc.add<Value<int>>("", "icsrc", "The process column over which the first column of the array A\nis\n distributed." , 0, &conf.icsrc);
+        desc.add<Value<std::string>>("", "major", "Major of MPI proc grid, valid values are R(ow) or C(olumn)" , "C", &conf.mode);
 #endif
-            ("legacy",
-             po::value<bool>(&conf.legacy)->default_value(false), //
-             "Use legacy naming scheme?");                        //
+    desc.add<Value<bool>>("", "legacy", "Use legacy naming scheme?", false, &conf.legacy);
 
-    po::variables_map vm;
-    po::store(po::parse_command_line(argc, argv, desc), vm);
+    try
+	{   
+		desc.parse(argc, argv);
 
-    // print help
-    if (vm.count("help"))
-    {
-        std::cout << desc << std::endl;
-        return 1;
+		if (help_option->count() == 1)
+            {
+			std::cout << desc << "\n";
+            return 0;
+            }
     }
+	catch (const popl::invalid_option& e)
+	{
+        if (help_option->count() == 1)
+        {
+			std::cout << desc << "\n";
+            return 0;
+        }
+		std::cerr << "Invalid Option Exception: " << e.what() << "\n";
+		std::cerr << "error:  ";
+		if (e.error() == invalid_option::Error::missing_argument)
+			std::cerr << "missing_argument\n";
+		else if (e.error() == invalid_option::Error::invalid_argument)
+			std::cerr << "invalid_argument\n";
+		else if (e.error() == invalid_option::Error::too_many_arguments)
+			std::cerr << "too_many_arguments\n";
+		else if (e.error() == invalid_option::Error::missing_option)
+			std::cerr << "missing_option\n";
 
-    po::notify(vm);
+		if (e.error() == invalid_option::Error::missing_option)
+		{
+			std::string option_name(e.option()->name(OptionName::short_name, true));
+			if (option_name.empty())
+				option_name = e.option()->name(OptionName::long_name, true);
+			std::cerr << "option: " << option_name << "\n";
+		}
+		else
+		{
+			std::cerr << "option: " << e.option()->name(e.what_name()) << "\n";
+			std::cerr << "value:  " << e.value() << "\n";
+		}
+		return EXIT_FAILURE;
+	}
+	catch (const std::exception& e)
+	{
+        if (help_option->count() == 1)
+        {
+			std::cout << desc << "\n";
+            return 0;
+        }
+		std::cerr << "Exception: " << e.what() << "\n";
+		return EXIT_FAILURE;
+	}
+
     conf.mode = toupper(conf.mode.at(0));
     conf.opt = toupper(conf.opt.at(0));
 
