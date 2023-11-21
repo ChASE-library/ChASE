@@ -13,8 +13,6 @@
 #include <random>
 #include <vector>
 
-#include <sys/stat.h>
-
 #include "popl.hpp"
 
 #include "ChASE-MPI/chase_mpi.hpp"
@@ -37,13 +35,8 @@ using namespace popl;
 
 std::size_t GetFileSize(std::string path_in)
 {
-    struct stat64 fileStat;
-    if (stat64(path_in.c_str(), &fileStat) == 0)
-    {
-        return fileStat.st_size;
-    }
-    else 
-        return 0;
+    std::ifstream file(path_in, std::ios::binary | std::ios::ate);
+    return file.tellg();
 }   
 
 template <typename T>
