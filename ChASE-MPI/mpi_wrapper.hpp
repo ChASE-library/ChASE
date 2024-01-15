@@ -150,7 +150,7 @@ void Memcpy(int mode, void* dst, const void* src, std::size_t count)
 #if defined(CUDA_AWARE)
         case CPY_D2D:
             cudaMemcpy(dst, src, count, cudaMemcpyDeviceToDevice);
-            cudaDeviceSynchronize();
+            //cudaDeviceSynchronize();
             break;
         case CPY_D2H:
             cudaMemcpy(dst, src, count, cudaMemcpyDeviceToHost);

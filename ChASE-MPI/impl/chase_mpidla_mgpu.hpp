@@ -461,8 +461,6 @@ public:
             assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
 #if !defined(CUDA_AWARE)
             B__.D2H(n_, block, locked + offset);
-#else
-            cudaDeviceSynchronize();
 #endif
             next_ = NextOp::cAb;
         }
@@ -483,8 +481,6 @@ public:
             assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
 #if !defined(CUDA_AWARE)
             C__.D2H(m_, block, offset + locked);
-#else
-            cudaDeviceSynchronize();
 #endif
             next_ = NextOp::bAc;
         }

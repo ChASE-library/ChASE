@@ -39,10 +39,16 @@ namespace chase
 template <class T>
 class ChasePerfData
 {
+#ifdef HAS_CUDA
+    using TimePointType = cudaEvent_t;
+#else
+    using TimePointType = std::chrono::time_point<std::chrono::high_resolution_clock>;
+#endif
+
 public:
     ChasePerfData()
         : chase_iteration_count(0), chase_filtered_vecs(0), timings(6),
-          start_times(6), chase_iter_blocksizes(0)
+           start_points(6), end_points(6), chase_iter_blocksizes(0)
     {
     }
 
@@ -61,9 +67,12 @@ public:
         chase_iteration_count = 0;
         chase_filtered_vecs = 0;
         chase_iter_blocksizes.clear();
-        auto val =
-            std::chrono::time_point<std::chrono::high_resolution_clock>();
-        std::fill(start_times.begin(), start_times.end(), val);
+        for(size_t i=0; i<start_points.size(); ++i)
+        {
+            start_points[i].erase(start_points[i].begin(), start_points[i].end());
+            end_points[i].erase(end_points[i].begin(), end_points[i].end());
+        }
+
         std::fill(timings.begin(), timings.end(),
                   std::chrono::duration<double>());
     }
@@ -207,13 +216,24 @@ public:
 
     void start_clock(TimePtrs t)
     {
-        start_times[t] = std::chrono::high_resolution_clock::now();
+        start_points[t].push_back(getTimePoint());
     }
 
     void end_clock(TimePtrs t)
     {
-        timings[t] +=
-            std::chrono::high_resolution_clock::now() - start_times[t];
+        end_points[t].push_back(getTimePoint());
+    }
+
+    inline auto getTimePoint() -> TimePointType
+    {
+#ifdef HAS_CUDA
+        cudaEvent_t event;
+        cudaEventCreate(&event);
+        cudaEventRecord(event);
+    return event;
+#else
+    return std::chrono::high_resolution_clock::now();
+#endif
     }
 
     //! Print function outputting counters and timings for all routines
@@ -268,10 +288,37 @@ public:
         std::cout << " | " << std::setw(10) << chase_iteration_count << " | "
                   << std::setw(6) << chase_filtered_vecs;
 
+        this->calculateTimings();
         this->print_timings();
     }
 
 private:
+    inline std::chrono::duration<double> calculatePointTiming(TimePointType &start, TimePointType &stop) 
+    {
+#ifdef HAS_CUDA
+        float tmp_milisec = 0;
+        cudaEventElapsedTime(&tmp_milisec, start, stop);
+        return  std::chrono::duration<double>(tmp_milisec) /1000.0;
+#else
+        return stop - start;
+#endif
+    }
+
+    void calculateTimings()
+    {
+#ifdef HAS_CUDA
+        cudaDeviceSynchronize();
+#endif
+        for(size_t it=0; it<start_points.size(); ++it)
+        {
+            size_t vec_size = start_points[it].size();
+            for(size_t vecit = 0; vecit < vec_size; ++vecit)
+            {
+                timings[it] += calculatePointTiming(start_points[it][vecit], end_points[it][vecit]);
+            }
+        }
+    }
+
     void print_timings()
     {
         // std::cout << "All\t\t" << timings[TimePtrs::All] << std::endl
@@ -304,8 +351,8 @@ private:
     std::vector<std::size_t> chase_iter_blocksizes;
 
     std::vector<std::chrono::duration<double>> timings;
-    std::vector<std::chrono::time_point<std::chrono::high_resolution_clock>>
-        start_times;
+    std::vector<std::vector<TimePointType>> start_points;
+    std::vector<std::vector<TimePointType>> end_points;
     int nprocs;
 };
 //! A derived class used to extract performance and configuration data.
