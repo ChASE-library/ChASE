@@ -265,6 +265,169 @@ void readMatrix(T* H, std::string path_in, std::size_t size, std::size_t xoff,
     }
 }
 
+#ifdef USE_MPI
+template <typename T>
+void redmatrix_L0(T* H, std::string path_in, std::size_t size, 
+                             std::size_t xoff, std::size_t yoff,
+                             std::size_t xlen, std::size_t ylen,
+                             int* proc_coords)
+{
+    std::size_t N = std::sqrt(size);
+
+    MPI_File fileHandle;
+    MPI_Status status;
+    int access_mode = MPI_MODE_RDONLY;
+
+    if(MPI_File_open(MPI_COMM_WORLD, path_in.data(), access_mode, MPI_INFO_NULL, &fileHandle) != MPI_SUCCESS)
+    {
+        std::cout << "Can't open input matrix - " << path_in << std::endl;
+        MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+    }
+
+    MPI_Datatype contig_type;
+    MPI_Type_contiguous(xlen, chase::mpi::getMPI_Type<T>(), &contig_type);
+    MPI_Type_commit(&contig_type);
+
+    MPI_File_seek(fileHandle, ((xoff) + N * (yoff)) * sizeof(T), MPI_SEEK_SET);
+    
+    for (std::size_t y = 0; y < ylen; y++)
+    {
+        //MPI_File_seek(fileHandle, ((xoff) + N * (yoff + y)) * sizeof(T), MPI_SEEK_SET);
+        MPI_File_read(fileHandle, H + xlen * y, 1, contig_type, &status);
+        // file_read moves file pointer to postition of last read data
+        // move pointer to next begining of contigious data
+        MPI_File_seek(fileHandle, (N-xlen)*sizeof(T), MPI_SEEK_CUR);
+    }
+
+
+    MPI_Type_free(&contig_type);
+
+    if (MPI_File_close(&fileHandle) != MPI_SUCCESS)
+    {
+        MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+}
+
+template <typename T>
+void redmatrix_L1(T* H, std::string path_in, std::size_t size, 
+                             std::size_t xoff, std::size_t yoff,
+                             std::size_t xlen, std::size_t ylen,
+                             int* proc_coords)
+{
+    std::size_t N = std::sqrt(size);
+
+    MPI_File fileHandle;
+    MPI_Status status;
+    int access_mode = MPI_MODE_RDONLY;
+
+    if(MPI_File_open(MPI_COMM_WORLD, path_in.data(), access_mode, MPI_INFO_NULL, &fileHandle) != MPI_SUCCESS)
+    {
+        std::cout << "Can't open input matrix - " << path_in << std::endl;
+        MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+    }
+
+    MPI_Datatype contig_type;
+    MPI_Type_contiguous(xlen, chase::mpi::getMPI_Type<T>(), &contig_type);
+    MPI_Type_commit(&contig_type);
+
+    for (std::size_t y = 0; y < ylen; y++)
+    {
+        MPI_File_seek(fileHandle, ((xoff) + N * (yoff + y)) * sizeof(T), MPI_SEEK_SET);
+        MPI_File_read_all(fileHandle, H + xlen * y, 1, contig_type, &status);
+    }
+
+
+    MPI_Type_free(&contig_type);
+
+    if (MPI_File_close(&fileHandle) != MPI_SUCCESS)
+    {
+        MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+}
+
+template <typename T>
+void redmatrix_L2(T* H, std::string path_in, std::size_t size, 
+                  std::size_t xoff, std::size_t yoff,
+                  std::size_t xlen, std::size_t ylen,
+                  int* proc_coords)
+{
+    std::size_t N = std::sqrt(size);
+    
+    MPI_File fileHandle;
+    MPI_Status status;
+    int access_mode = MPI_MODE_RDONLY;
+
+
+    if(MPI_File_open(MPI_COMM_WORLD, path_in.data(), access_mode, MPI_INFO_NULL, &fileHandle) != MPI_SUCCESS)
+    {
+        std::cout << "Can't open input matrix - " << path_in << std::endl;
+        MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+    }
+    MPI_Count count_read = xlen * ylen;
+
+    MPI_Datatype subarray;
+    int global_matrix_size[] = {(int)N, (int)N};
+    int local_matrix_size[] = {(int)xlen,(int)ylen};
+    int offsets[] = {(int)xoff, (int)yoff};
+
+    MPI_Type_create_subarray(2, global_matrix_size, local_matrix_size, offsets, MPI_ORDER_FORTRAN, chase::mpi::getMPI_Type<T>(), &subarray);
+    MPI_Type_commit(&subarray);
+
+    MPI_File_set_view(fileHandle, 0, chase::mpi::getMPI_Type<T>(), subarray, "native", MPI_INFO_NULL);
+    MPI_File_read(fileHandle, H, count_read, chase::mpi::getMPI_Type<T>(), &status);
+
+    MPI_Type_free(&subarray);
+
+    if (MPI_File_close(&fileHandle) != MPI_SUCCESS)
+    {
+        MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+}
+
+template <typename T>
+void redmatrix_L3(T* H, std::string path_in, std::size_t size, 
+                  std::size_t xoff, std::size_t yoff,
+                  std::size_t xlen, std::size_t ylen,
+                  int* proc_coords)
+{
+    std::size_t N = std::sqrt(size);
+    
+    MPI_File fileHandle;
+    MPI_Status status;
+    int access_mode = MPI_MODE_RDONLY;
+
+
+    if(MPI_File_open(MPI_COMM_WORLD, path_in.data(), access_mode, MPI_INFO_NULL, &fileHandle) != MPI_SUCCESS)
+    {
+        std::cout << "Can't open input matrix - " << path_in << std::endl;
+        MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+    }
+    MPI_Count count_read = xlen * ylen;
+
+    MPI_Datatype subarray;
+    int global_matrix_size[] = {(int)N, (int)N};
+    int local_matrix_size[] = {(int)xlen,(int)ylen};
+    int offsets[] = {(int)xoff, (int)yoff};
+
+    MPI_Type_create_subarray(2, global_matrix_size, local_matrix_size, offsets, MPI_ORDER_FORTRAN, chase::mpi::getMPI_Type<T>(), &subarray);
+    MPI_Type_commit(&subarray);
+
+    MPI_File_set_view(fileHandle, 0, chase::mpi::getMPI_Type<T>(), subarray, "native", MPI_INFO_NULL);
+    MPI_File_read_all(fileHandle, H, count_read, chase::mpi::getMPI_Type<T>(), &status);
+
+    MPI_Type_free(&subarray);
+
+    if (MPI_File_close(&fileHandle) != MPI_SUCCESS)
+    {
+        MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+}
+#endif
+
 template <typename T>
 void readMatrix(T* H, std::string path_in, std::size_t size, std::size_t m,
                 std::size_t mblocks, std::size_t nblocks, std::size_t* r_offs,
@@ -593,8 +756,53 @@ int do_chase(ChASE_DriverProblemConfig& conf)
                         }
                     }
                 }
-            }else{
+            }
+            else{
+#ifdef USE_MPI
+                const char* env_var = std::getenv("MPIIO_LVL");
+                if (env_var != nullptr) {
+                    int mpiio_lvl = std::atoi(env_var);
+
+                    if (mpiio_lvl == 0)
+                    {
+                        if(rank==0)
+                            std::cout <<"L0\n";
+                        redmatrix_L0(H, path_in, N *N, xoff, yoff, xlen, ylen, props->get_coord());
+                    } 
+                    else if (mpiio_lvl == 1) 
+                    {
+                        if(rank==0)
+                            std::cout <<"L1\n";
+                        redmatrix_L1(H, path_in, N *N, xoff, yoff, xlen, ylen, props->get_coord());
+                    } 
+                    else if (mpiio_lvl == 2) 
+                    {
+                        if(rank==0)
+                            std::cout <<"L2\n";
+                        redmatrix_L2(H, path_in, N *N, xoff, yoff, xlen, ylen, props->get_coord());
+                    } 
+                    else if (mpiio_lvl == 3) 
+                    {
+                        if(rank==0)
+                            std::cout <<"L3\n";
+                        redmatrix_L3(H, path_in, N *N, xoff, yoff, xlen, ylen, props->get_coord());
+                    } 
+                    else
+                    {
+                        if(rank==0)
+                            std::cout <<"default\n";
+                        readMatrix(H, path_in, N * N, xoff, yoff, xlen, ylen);
+                    }
+                } 
+                else
+                {
+                    std::cout <<"default\n";
+                    readMatrix(H, path_in, N * N, xoff, yoff, xlen, ylen);
+                }
+                MPI_Barrier(MPI_COMM_WORLD);
+#else
                 readMatrix(H, path_in, N * N, xoff, yoff, xlen, ylen);
+#endif
             }
         }
 #endif
