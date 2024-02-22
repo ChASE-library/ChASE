@@ -147,7 +147,7 @@ public:
        @param B: the vector to be multiplied on `H`.
        @param C: the vector to store the product of `H` and `B`.
     */
-    virtual void applyVec(T* B, T* C) = 0;
+    virtual void applyVec(T* B, T* C, std::size_t n) = 0;
     // Returns ptr to H, which may be used to populate H.
     //! Return the total number of MPI procs within the working MPI
     //! communicator.
@@ -329,7 +329,9 @@ public:
     //! Lanczos DOS to estimate the \mu_{nev+nex} for ChASE
     virtual void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc) = 0;
 
-    virtual void Lanczos(std::size_t M, int idx, Base<T>* d, Base<T>* e,
+    virtual void Lanczos(std::size_t M, Base<T>* d, Base<T>* e,
+                         Base<T>* r_beta) = 0;
+    virtual void mLanczos(std::size_t M, int numvec, Base<T>* d, Base<T>* e,
                          Base<T>* r_beta) = 0;
 
     virtual void B2C(T* B, std::size_t off1, T* C, std::size_t off2,

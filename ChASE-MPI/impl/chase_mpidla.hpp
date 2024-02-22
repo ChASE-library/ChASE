@@ -724,7 +724,7 @@ public:
           - `ChaseMpiDLA::apply(One, Zero, 0, 1, 0)`
           - `ChaseMpiDLA::postApplication(C, 1, 0)`
     */
-    void applyVec(T* v, T* v2) override
+    void applyVec(T* v, T* v2, std::size_t n) override
     {
 #ifdef USE_NSIGHT
         nvtxRangePushA("ChaseMpiDLA: applyVec");
@@ -732,11 +732,18 @@ public:
         T One = T(1.0);
         T Zero = T(0.0);
 
-        dla_->applyVec(v, w_);
+        dla_->applyVec(v, w_, 1);
         MPI_Allreduce(MPI_IN_PLACE, w_, n_, getMPI_Type<T>(), MPI_SUM,
                       col_comm_);
 
         this->B2C(w_, 0, v2, 0, 1);
+
+
+//        dla_->applyVec(v, w_, n);
+//        MPI_Allreduce(MPI_IN_PLACE, w_, n_ * n, getMPI_Type<T>(), MPI_SUM,
+ //                     col_comm_);
+///
+   //     this->B2C(w_, 0, v2, 0, n);
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
@@ -1280,21 +1287,10 @@ public:
 
     void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc) override
     {
-        /*
-                T alpha = T(1.0);
-                T beta = T(0.0);
-        #ifdef USE_NSIGHT
-                nvtxRangePushA("ChaseMpiDLA: LanczosDOS");
-        #endif
-                t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, m_, idx, m,
-        &alpha, C_, m_, ritzVc, m, &beta, C2_, m_); #ifdef USE_NSIGHT
-                nvtxRangePop();
-        #endif
-        */
         dla_->LanczosDos(idx, m, ritzVc);
     }
 
-    void Lanczos(std::size_t M, int idx, Base<T>* d, Base<T>* e,
+    void Lanczos(std::size_t M, Base<T>* d, Base<T>* e,
                  Base<T>* r_beta) override
     {
         Base<T> real_beta;
@@ -1304,22 +1300,15 @@ public:
 
         std::fill(v0_, v0_ + m_, T(0));
 
-        if (idx >= 0)
-        {
-            Memcpy(memcpy_mode[1], v1_, C2 + idx * m_, m_ * sizeof(T));
-        }
-        else
-        {
-            std::mt19937 gen(2342.0);
-            std::normal_distribution<> normal_distribution;
+        std::mt19937 gen(2342.0);
+        std::normal_distribution<> normal_distribution;
             // v1_ = get_V1();
-            for (std::size_t k = 0; k < m_; ++k)
-            {
-                v1_[k] =
-                    getRandomT<T>([&]() { return normal_distribution(gen); });
-            }
+        for (std::size_t k = 0; k < m_; ++k)
+        {
+            v1_[k] =
+                getRandomT<T>([&]() { return normal_distribution(gen); });
         }
-
+        
         // ENSURE that v1 has one norm
 #ifdef USE_NSIGHT
         nvtxRangePushA("Lanczos: loop");
@@ -1333,11 +1322,11 @@ public:
         t_scal(m_, &alpha, v1_, 1);
         for (std::size_t k = 0; k < M; k = k + 1)
         {
-            if (idx >= 0)
-            {
-                Memcpy(memcpy_mode[2], C + k * m_, v1_, m_ * sizeof(T));
-            }
-            this->applyVec(v1_, v2_);
+            dla_->applyVec(v1_, w_, 1);
+            MPI_Allreduce(MPI_IN_PLACE, w_, n_ * 1, getMPI_Type<T>(), MPI_SUM,
+                      col_comm_);
+            this->B2C(w_, 0, v2_, 0, 1);
+
             alpha = t_dot(m_, v1_, 1, v2_, 1);
 
             MPI_Allreduce(MPI_IN_PLACE, &alpha, 1, getMPI_Type<T>(), MPI_SUM,
@@ -1379,6 +1368,138 @@ public:
         nvtxRangePop();
 #endif
         *r_beta = real_beta;
+    }
+
+    void mLanczos(std::size_t M, int numvec, Base<T>* d, Base<T>* e,
+                 Base<T>* r_beta) override
+    {
+        Base<T>* real_alpha = new Base<T>[numvec]();
+        Base<T>* real_beta = new Base<T>[numvec]();
+        std::vector<T> alpha(numvec, T(1.0));
+        std::vector<T> beta(numvec, T(0.0));
+        
+        T *v1 = (T*)malloc(m_ * numvec * sizeof(T));
+        T *v0 = (T*)malloc(m_ * numvec * sizeof(T)) ;
+        T *v2 = (T*)malloc(m_ * numvec * sizeof(T)) ;
+        T *w = (T*)malloc(n_ * numvec * sizeof(T)) ;
+
+        std::fill(v0, v0 + m_ * numvec, T(0));
+        Memcpy(memcpy_mode[1], v1, C2, m_ * numvec * sizeof(T));
+        
+        for(auto i = 0; i < numvec; i++)
+        {
+            real_alpha[i] = t_nrm2(m_,v1 + i * m_, 1);
+            real_alpha[i] = std::pow(real_alpha[i], 2);
+        }
+
+        MPI_Allreduce(MPI_IN_PLACE, real_alpha, numvec, getMPI_Type<Base<T>>(),
+                      MPI_SUM, col_comm_);
+
+        for(auto i = 0; i < numvec; i++)
+        {
+            real_alpha[i] = std::sqrt(real_alpha[i]);
+            alpha[i] = T(1 / real_alpha[i]);
+        }
+
+        for(auto i = 0; i < numvec; i++)
+        {
+            t_scal(m_, &alpha[i], v1 + i * m_, 1);
+        }
+
+        for (std::size_t k = 0; k < M; k = k + 1)
+        {
+            for(auto i = 0; i < numvec; i++){
+                Memcpy(memcpy_mode[2], C + k * m_, v1 + i * m_, m_ * sizeof(T));
+            }
+
+            dla_->applyVec(v1, w, numvec);
+            MPI_Allreduce(MPI_IN_PLACE, w, n_ * numvec, getMPI_Type<T>(), MPI_SUM,
+                      col_comm_);
+            this->B2C(w, 0, v2, 0, numvec);          
+
+            for(auto i = 0; i < numvec; i++)
+            {
+                alpha[i] = t_dot(m_, v1 + i * m_, 1, v2 + i * m_, 1);
+                alpha[i] = -alpha[i];
+            }
+
+            MPI_Allreduce(MPI_IN_PLACE, alpha.data(), numvec, getMPI_Type<T>(), MPI_SUM,
+                          col_comm_);
+                          
+            for(auto i = 0; i < numvec; i++)
+            {
+                t_axpy(m_, &alpha[i], v1 + i * m_, 1, v2 + i * m_, 1);
+                alpha[i] = -alpha[i];
+            }
+
+            for(auto i = 0; i < numvec; i++)
+            {
+                d[k + M * i] = std::real(alpha[i]);
+            }
+
+            if (k == M - 1)
+                break;
+
+            for(auto i = 0; i < numvec; i++)
+            {
+                beta[i] = T(-real_beta[i]);
+            }
+
+            for(auto i = 0; i < numvec; i++)
+            {
+                t_axpy(m_, &beta[i], v0 + i * m_ , 1, v2 + i * m_, 1);
+            }
+            
+            for(auto i = 0; i < numvec; i++)
+            {
+                beta[i] = -beta[i];
+            }
+
+            for(auto i = 0; i < numvec; i++)
+            {
+                real_beta[i] = t_nrm2(m_,v2 + i * m_, 1);
+                real_beta[i] = std::pow(real_beta[i], 2);
+            }
+
+            MPI_Allreduce(MPI_IN_PLACE, real_beta, numvec, getMPI_Type<Base<T>>(),
+                          MPI_SUM, col_comm_);
+
+            for(auto i = 0; i < numvec; i++)
+            {
+                real_beta[i] = std::sqrt(real_beta[i]);
+                beta[i] = T(1 / real_beta[i]);
+            }
+
+            for(auto i = 0; i < numvec; i++)
+            {
+                t_scal(m_, &beta[i], v2 + i * m_, 1);   
+            }
+
+            for(auto i = 0; i < numvec; i++)
+            {
+                e[k + M * i] = real_beta[i];
+            }
+
+            std::swap(v1, v0);
+            std::swap(v1, v2);
+        }
+
+        for(auto i = 0; i < numvec; i++)
+        {
+            Memcpy(memcpy_mode[2], C, v1 + i * m_, m_ * sizeof(T));
+        }
+
+        for(auto i = 0; i < numvec; i++)
+        {
+            r_beta[i] = real_beta[i];
+        }
+        
+        delete[] real_beta;
+        delete[] real_alpha;
+        delete[] v0;
+        delete[] v1;
+        delete[] v2;
+        delete[] w;
     }
 
     void B2C(T* B, std::size_t off1, T* C, std::size_t off2,

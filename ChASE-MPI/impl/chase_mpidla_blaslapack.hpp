@@ -179,16 +179,18 @@ public:
     //! - All required operations for this function has been done in for
     //! ChaseMpiDLA::applyVec().
     //! - This function contains nothing in this class.
-    void applyVec(T* v, T* w) override
+    void applyVec(T* v, T* w, std::size_t n) override
     {
         T alpha = T(1.0);
         T beta = T(0.0);
-        std::size_t k = 1;
+        std::size_t k = n;
         // t_gemm<T>(CblasColMajor, CblasConjTrans, CblasNoTrans, n_,
         //          k, m_, &alpha, H_, ldh_,
         //          v, m_, &beta, w, n_);
-        t_gemv<T>(CblasColMajor, CblasConjTrans, m_, n_, &alpha, H_, ldh_, v, 1,
-                  &beta, w, 1);
+        t_gemm<T>(CblasColMajor, CblasConjTrans, CblasNoTrans, n_,
+                  k, m_, &alpha, H_, ldh_,
+                  v, m_, &beta, w, n_);
+
     }
 
     int get_nprocs() const override { return matrix_properties_->get_nprocs(); }
@@ -312,10 +314,15 @@ public:
         std::memcpy(C_, C2_, m * m_ * sizeof(T));
 
     }
-    void Lanczos(std::size_t M, int idx, Base<T>* d, Base<T>* e,
+    void Lanczos(std::size_t M, Base<T>* d, Base<T>* e,
                  Base<T>* r_beta) override
     {
     }
+    void mLanczos(std::size_t M, int numvec, Base<T>* d, Base<T>* e,
+                 Base<T>* r_beta) override
+    {
+    }
+
     void B2C(T* B, std::size_t off1, T* C, std::size_t off2,
              std::size_t block) override
     {

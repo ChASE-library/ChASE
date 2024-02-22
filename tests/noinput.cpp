@@ -28,8 +28,8 @@ using namespace chase::mpi;
 #if defined(USE_GPU)
 typedef ChaseMpi<ChaseMpiDLACudaSeq, T> CHASE;
 #else
-//typedef ChaseMpi<ChaseMpiDLABlaslapackSeq, T> CHASE;
-typedef ChaseMpi<ChaseMpiDLABlaslapackSeqInplace, T> CHASE;
+typedef ChaseMpi<ChaseMpiDLABlaslapackSeq, T> CHASE;
+//typedef ChaseMpi<ChaseMpiDLABlaslapackSeqInplace, T> CHASE;
 #endif
 
 int main()
@@ -42,7 +42,7 @@ int main()
     std::size_t LDH = 1001;
     std::size_t nev = 100;
     std::size_t nex = 40;
-    std::size_t idx_max = 5;
+    std::size_t idx_max = 1;
     Base<T> perturb = 1e-4;
 
     std::mt19937 gen(1337.0);

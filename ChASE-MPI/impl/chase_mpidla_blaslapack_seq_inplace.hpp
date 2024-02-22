@@ -105,13 +105,13 @@ public:
     {
     }
 
-    void applyVec(T* B, T* C) override
+    void applyVec(T* B, T* C, std::size_t n) override
     {
         T One = T(1.0);
         T Zero = T(0.0);
 
         t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, //
-               N_, 1, N_,                                 //
+               N_, n, N_,                                 //
                &One,                                      //
                H_, ldh_,                                  //
                B, N_,                                     //
@@ -289,9 +289,10 @@ public:
                V1_, N_, ritzVc, m, &beta, V2_, N_);
         std::memcpy(V1_, V2_, m * N_ * sizeof(T));
     }
-    void Lanczos(std::size_t M, int idx, Base<T>* d, Base<T>* e,
+    void Lanczos(std::size_t M, Base<T>* d, Base<T>* e,
                  Base<T>* r_beta) override
     {
+        
         Base<T> real_beta;
 
         T alpha = T(1.0);
@@ -302,21 +303,16 @@ public:
 #ifdef USE_NSIGHT
         nvtxRangePushA("Lanczos Init vec");
 #endif
-        if (idx >= 0)
-        {
-            std::memcpy(v1_, V2_ + idx * N_, N_ * sizeof(T));
-        }
-        else
-        {
-            std::mt19937 gen(2342.0);
-            std::normal_distribution<> normal_distribution;
 
-            for (std::size_t k = 0; k < N_; ++k)
-            {
-                v1_[k] =
-                    getRandomT<T>([&]() { return normal_distribution(gen); });
-            }
+        std::mt19937 gen(2342.0);
+        std::normal_distribution<> normal_distribution;
+
+        for (std::size_t k = 0; k < N_; ++k)
+        {
+            v1_[k] =
+                getRandomT<T>([&]() { return normal_distribution(gen); });
         }
+        
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
@@ -329,11 +325,7 @@ public:
         this->scal(N_, &alpha, v1_, 1);
         for (std::size_t k = 0; k < M; k = k + 1)
         {
-            if (idx >= 0)
-            {
-                std::memcpy(V1_ + k * N_, v1_, N_ * sizeof(T));
-            }
-            this->applyVec(v1_, w_);
+            this->applyVec(v1_, w_, 1);
             alpha = this->dot(N_, v1_, 1, w_, 1);
             alpha = -alpha;
             this->axpy(N_, &alpha, v1_, 1, w_, 1);
@@ -362,7 +354,117 @@ public:
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
-        *r_beta = real_beta;
+        *r_beta = real_beta;        
+    }
+
+    void mLanczos(std::size_t M, int numvec, Base<T>* d, Base<T>* e,
+                 Base<T>* r_beta) override
+    {
+        Base<T>* real_alpha = new Base<T>[numvec]();
+        Base<T>* real_beta = new Base<T>[numvec]();
+        std::vector<T> alpha(numvec, T(1.0));
+        std::vector<T> beta(numvec, T(0.0));
+
+        std::vector<T> v0(N_ * numvec);
+        std::vector<T> v1(N_ * numvec);
+        std::vector<T> w(N_ * numvec);
+
+        std::fill(v0.begin(), v0.end(), T(0));
+
+        for(auto i = 0; i < numvec; i++)
+        {
+            std::memcpy(v1.data() + i * N_, V2_ + i * N_, N_ * sizeof(T));
+        }
+
+        for(auto i = 0; i < numvec; i++)
+        {
+            real_alpha[i] = this->nrm2(N_,V2_ + i * N_, 1);
+            alpha[i] = T(1 / real_alpha[i]);
+        }
+
+        for(auto i = 0; i < numvec; i++)
+        {
+            this->scal(N_, &alpha[i], v1.data() + i * N_, 1);
+        }
+
+        for (std::size_t k = 0; k < M; k = k + 1)
+        {
+            for(auto i = 0; i < numvec; i++)
+            {
+                std::memcpy(V1_ + k * N_, v1.data() + i * N_, N_ * sizeof(T));
+            }
+            
+            //std::chrono::high_resolution_clock::time_point t1, t2;
+            //std::chrono::duration<double> elapsed;
+
+            //t1 = std::chrono::high_resolution_clock::now();
+
+            this->applyVec(v1.data(), w.data(), numvec);
+
+            //t2 = std::chrono::high_resolution_clock::now();
+
+            //elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1);
+
+            //std::cout << "applyvec: " << elapsed.count() << std::endl;
+
+            for(auto i = 0; i < numvec; i++)
+            {
+                alpha[i] = this->dot(N_, v1.data() + i * N_, 1, w.data() + i * N_, 1);
+                alpha[i] = -alpha[i];
+            }
+            for(auto i = 0; i < numvec; i++)
+            {
+                this->axpy(N_, &alpha[i], v1.data() + i * N_, 1, w.data() + i * N_, 1);
+                alpha[i] = -alpha[i];
+            }
+            
+            for(auto i = 0; i < numvec; i++)
+            {
+                d[k + M * i] = std::real(alpha[i]);
+            }            
+
+            if (k == M - 1)
+                break;
+
+            for(auto i = 0; i < numvec; i++)
+            {
+                beta[i] = T(-real_beta[i]);
+            }
+
+            for(auto i = 0; i < numvec; i++)
+            {
+                this->axpy(N_, &beta[i], v0.data() + i * N_, 1, w.data() + i * N_, 1);
+                beta[i] = -beta[i];
+            }
+
+            for(auto i = 0; i < numvec; i++)
+            {
+                real_beta[i] = this->nrm2(N_, w.data() + i * N_, 1);
+                beta[i] = T(1.0 / real_beta[i]);
+            }
+
+            for(auto i = 0; i < numvec; i++)
+            {
+                this->scal(N_, &beta[i], w.data() + i * N_, 1);
+            }
+
+            for(auto i = 0; i < numvec; i++)
+            {
+                e[k + M * i] = real_beta[i];
+            }
+
+            v1.swap(v0);
+            v1.swap(w);
+        }    
+
+        for(auto i = 0; i < numvec; i++)
+        {
+            r_beta[i] = real_beta[i];
+        }
+
+        delete[] real_beta;
+        delete[] real_alpha;
+
     }
 
     void B2C(T* B, std::size_t off1, T* C, std::size_t off2,
