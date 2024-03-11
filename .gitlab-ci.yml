@@ -16,6 +16,7 @@ build:
     - build/Makefile
     - build/chase_driver
     - build/CTestTestfile.cmake
+    - build/tests
 test:
   stage: test
   script:
