@@ -8,7 +8,7 @@ build:
   script:
   - mkdir -p build
   - cd build
-  - FC=gfortran CC=gcc CXX=g++ cmake ..
+  - FC=gfortran CC=gcc CXX=g++ cmake -DENABLE_TESTS=ON ..
   - make VERBOSE=1
   artifacts:
     paths:
