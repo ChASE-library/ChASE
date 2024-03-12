@@ -9,7 +9,7 @@ build:
   - cmake --version
   - mkdir -p build
   - cd build
-  - FC=gfortran CC=gcc CXX=g++ cmake -DENABLE_TESTS=ON ..
+  - FC=gfortran CC=gcc CXX=g++ cmake -DENABLE_TESTS=ON -DMPI_RUN="mpirun --allow-run-as-root" ..
   - make VERBOSE=1
   artifacts:
     paths:
