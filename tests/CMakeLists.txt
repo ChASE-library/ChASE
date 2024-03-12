@@ -12,4 +12,4 @@ target_link_libraries(FirstTest
   )
 
 add_test( BASIC ${CMAKE_BINARY_DIR}/chase_driver )
-add_test(NAME FirstTest COMMAND ${MPI_RUN} -n 1 $<TARGET_FILE:FirstTest> --gtest_output=xml:unittest_reports/FirstTest_report.xml : -n 3 $<TARGET_FILE:FirstTest>)
+add_test(NAME FirstTest COMMAND ${MPI_RUN} ${MPI_RUN_ARGS} -n 1 $<TARGET_FILE:FirstTest> --gtest_output=xml:unittest_reports/FirstTest_report.xml : -n 3 $<TARGET_FILE:FirstTest>)

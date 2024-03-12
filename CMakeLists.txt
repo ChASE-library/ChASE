@@ -69,6 +69,7 @@ if(BUILD_WITH_EXAMPLES)
 endif()
 
 set(MPI_RUN mpirun CACHE STRING "MPI runner (mpirun/srun)")
+set(MPI_RUN_ARGS  CACHE STRING "")
 option(ENABLE_TESTS "Enable unit tests." OFF)
 if(ENABLE_TESTS)
     MESSAGE("Test enabled. Finding GoogleTests.")
