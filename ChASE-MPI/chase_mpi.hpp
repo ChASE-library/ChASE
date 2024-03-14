@@ -339,6 +339,7 @@ public:
             diasable = 1;
         }
 
+        //indicate if cholqr is enabled or not
         char* cholddisable;
         cholddisable = getenv("CHASE_DISABLE_CHOLQR");
         if (cholddisable)
@@ -346,19 +347,95 @@ public:
             diasable = std::atoi(cholddisable);
         }
 
+        int choldeg = 2;
+        int choldeg_env;
+        char* choldegenv;
+        choldegenv = getenv("CHASE_CHOLQR_DEGREE");
+        if (choldegenv)
+        {
+            choldeg_env = std::atoi(choldegenv);
+        }
+
+        choldeg = choldeg_env;
+
+        // condition for using CholQR1, CholQR2 or shifted CholQR2
+        Base<T> cond_threshold_1, cond_threshold_2;
+
+        if (sizeof(Base<T>) == 8)
+        {
+            cond_threshold_1 = 1e8;
+            cond_threshold_2 = 2e1;
+        }
+        else
+        {
+            cond_threshold_1 = 1e4;
+            cond_threshold_2 = 1e1;
+        }
+
+        char* chol1_threshold;
+        chol1_threshold = getenv("CHASE_CHOLQR1_THLD");
+        if (chol1_threshold)
+        {
+            cond_threshold_2 = std::atof(chol1_threshold);
+        }
+
+        //if comparing the estimated condition numbers vs the real cond of filtered vectors
+        char* display_bounds_env;
+        display_bounds_env = getenv("CHASE_DISPLAY_BOUNDS");
+        int display_bounds = 0;
+        if (display_bounds_env)
+        {
+            display_bounds = std::atoi(display_bounds_env);
+        }
+        
         if (diasable == 1)
         {
-#ifdef CHASE_OUTPUT
-            if (grank == 0)
-                std::cout << "CholQR is disabled, always use Householder QR. "
-                          << std::endl;
-#endif
             dla_->hhQR(locked_);
         }
         else
         {
-            dla_->cholQR(locked_, cond);
+#ifdef CHASE_OUTPUT
+            if (grank == 0)
+            {
+                std::cout << std::setprecision(2) << "cond(V): " << cond << std::endl;
+            }
+#endif
+            if (display_bounds != 0)
+            {
+              dla_->estimated_cond_evaluator(locked_, cond);
+            }
+
+            int info = 1;
+
+            if (cond > cond_threshold_1)
+            {
+                info = dla_->shiftedcholQR2(locked_);
+            }
+            else if(cond < cond_threshold_2)
+            {
+                if(choldegenv && choldeg == 2)
+                {
+                    info = dla_->cholQR1(locked_);
+                }else
+                {
+                    info = dla_->cholQR2(locked_);
+                }
+            }
+            else
+            {
+                if(choldegenv && choldeg == 1)
+                {
+                    info = dla_->cholQR1(locked_);
+                }else
+                {
+                    info = dla_->cholQR2(locked_);
+                }            
+            }
+
         }
+
+        dla_->lockVectorCopyAndOrthoConcatswap(locked_, false);
+
     }
 
     //! This member function implements the virtual one declared in Chase class.

@@ -225,51 +225,29 @@ public:
         std::memcpy(V1_, V2_, locked * N_ * sizeof(T));
     }
 
-    void cholQR(std::size_t locked, Base<T> cond) override
+    int cholQR1(std::size_t locked) override
     {
-        auto nevex = nev_ + nex_;
-
-        T one = T(1.0);
-        T zero = T(0.0);
-        int info = -1;
-
-        std::memcpy(V2_, V1_, locked * N_ * sizeof(T));
-
-        t_syherk('U', 'C', nevex, N_, &one, V1_, N_, &zero, A_, nevex);
-        info = t_potrf('U', nevex, A_, nevex);
-
-        if (info == 0)
-        {
-            t_trsm('R', 'U', 'N', 'N', N_, nevex, &one, A_, nevex, V1_, N_);
-
-            int choldeg = 2;
-            char* choldegenv;
-            choldegenv = getenv("CHASE_CHOLQR_DEGREE");
-            if (choldegenv)
-            {
-                choldeg = std::atoi(choldegenv);
-            }
-#ifdef CHASE_OUTPUT
-            std::cout << "choldegee: " << choldeg << std::endl;
-#endif
-            for (auto i = 0; i < choldeg - 1; i++)
-            {
-                t_syherk('U', 'C', nevex, N_, &one, V1_, N_, &zero, A_, nevex);
-                t_potrf('U', nevex, A_, nevex);
-                t_trsm('R', 'U', 'N', 'N', N_, nevex, &one, A_, nevex, V1_, N_);
-            }
-            std::memcpy(V1_, V2_, locked * N_ * sizeof(T));
-        }
-        else
-        {
-#ifdef CHASE_OUTPUT
-            std::cout << "cholQR failed because of ill-conditioned vector, use "
-                         "Householder QR instead"
-                      << std::endl;
-#endif
-            this->hhQR(locked);
-        }
+        this->hhQR(locked);
+        return 0;
     }
+
+    int cholQR2(std::size_t locked) override
+    {
+        this->hhQR(locked);
+        return 0;
+    }
+
+    int shiftedcholQR2(std::size_t locked) override
+    {
+        this->hhQR(locked);
+        return 0;
+    }
+
+    void estimated_cond_evaluator(std::size_t locked, Base<T> cond)
+    {}
+
+    void lockVectorCopyAndOrthoConcatswap(std::size_t locked, bool isHHqr)
+    {}     
 
     void Swap(std::size_t i, std::size_t j) override
     {

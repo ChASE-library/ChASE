@@ -325,7 +325,12 @@ public:
     virtual void hhQR(std::size_t locked) = 0;
     //! Cholesky QR factorization on the rectangular matrix `V1`.
     //!  @param locked: number of converged eigenvectors.
-    virtual void cholQR(std::size_t locked, Base<T> cond) = 0;
+    virtual int cholQR1(std::size_t locked) = 0;
+    virtual int cholQR2(std::size_t locked) = 0;
+    virtual int shiftedcholQR2(std::size_t locked) = 0;
+    virtual void estimated_cond_evaluator(std::size_t locked, Base<T> cond) = 0; 
+    virtual void lockVectorCopyAndOrthoConcatswap(std::size_t locked, bool isHHqr) = 0;
+
     //! Lanczos DOS to estimate the \mu_{nev+nex} for ChASE
     virtual void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc) = 0;
 
