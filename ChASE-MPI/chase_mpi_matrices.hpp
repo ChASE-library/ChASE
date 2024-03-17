@@ -399,8 +399,8 @@ public:
             isGPU = 1;
             isCUDA_Aware = 2;
         }
-        H___ = make_unique<Matrix<T>>(isGPU, m, n, H, ldh);
-        C___ = make_unique<Matrix<T>>(isCUDA_Aware, m, max_block, V1, m);
+        H___ = chase::mpi::make_unique<Matrix<T>>(isGPU, m, n, H, ldh);
+        C___ = chase::mpi::make_unique<Matrix<T>>(isCUDA_Aware, m, max_block, V1, m);
         C2___ = make_unique<Matrix<T>>(isCUDA_Aware, m, max_block);
         B___ =  make_unique<Matrix<T>>(isCUDA_Aware, n, max_block);
         B2___ = make_unique<Matrix<T>>(isCUDA_Aware, n, max_block);
