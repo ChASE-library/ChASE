@@ -328,63 +328,30 @@ public:
 #ifdef USE_MPI
         MPI_Comm_rank(MPI_COMM_WORLD, &grank);
 #endif
-        int diasable = 0;
 
-        if (config_.DoCholQR())
-        {
-            diasable = 0;
-        }
-        else
-        {
-            diasable = 1;
-        }
-
-        //indicate if cholqr is enabled or not
-        bool isHHqr = false;
-	char* cholddisable;
-        cholddisable = getenv("CHASE_DISABLE_CHOLQR");
-        if (cholddisable)
-        {
-            diasable = std::atoi(cholddisable);
-	    isHHqr = true;
+        int disable = config_.DoCholQR() ? 0 : 1;
+        char* cholddisable = getenv("CHASE_DISABLE_CHOLQR");
+        if (cholddisable) {
+            disable = std::atoi(cholddisable);
         }
 
         int choldeg = 2;
-        int choldeg_env;
-        char* choldegenv;
-        choldegenv = getenv("CHASE_CHOLQR_DEGREE");
+        char* choldegenv = getenv("CHASE_CHOLQR_DEGREE");
         if (choldegenv)
         {
-            choldeg_env = std::atoi(choldegenv);
+            choldeg = std::atoi(choldegenv);
         }
+        Base<T> cond_threshold_1 = (sizeof(Base<T>) == 8) ? 1e8 : 1e4;
+        Base<T> cond_threshold_2 = (sizeof(Base<T>) == 8) ? 2e1 : 1e1;
 
-        choldeg = choldeg_env;
-
-        // condition for using CholQR1, CholQR2 or shifted CholQR2
-        Base<T> cond_threshold_1, cond_threshold_2;
-
-        if (sizeof(Base<T>) == 8)
-        {
-            cond_threshold_1 = 1e8;
-            cond_threshold_2 = 2e1;
-        }
-        else
-        {
-            cond_threshold_1 = 1e4;
-            cond_threshold_2 = 1e1;
-        }
-
-        char* chol1_threshold;
-        chol1_threshold = getenv("CHASE_CHOLQR1_THLD");
+        char* chol1_threshold = getenv("CHASE_CHOLQR1_THLD");
         if (chol1_threshold)
         {
             cond_threshold_2 = std::atof(chol1_threshold);
         }
 
-        //if comparing the estimated condition numbers vs the real cond of filtered vectors
-        char* display_bounds_env;
-        display_bounds_env = getenv("CHASE_DISPLAY_BOUNDS");
         int display_bounds = 0;
+        char* display_bounds_env = getenv("CHASE_DISPLAY_BOUNDS");
         if (display_bounds_env)
         {
             display_bounds = std::atoi(display_bounds_env);
