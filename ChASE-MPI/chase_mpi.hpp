@@ -335,12 +335,6 @@ public:
             disable = std::atoi(cholddisable);
         }
 
-        int choldeg = 2;
-        char* choldegenv = getenv("CHASE_CHOLQR_DEGREE");
-        if (choldegenv)
-        {
-            choldeg = std::atoi(choldegenv);
-        }
         Base<T> cond_threshold_1 = (sizeof(Base<T>) == 8) ? 1e8 : 1e4;
         Base<T> cond_threshold_2 = (sizeof(Base<T>) == 8) ? 2e1 : 1e1;
 
@@ -357,7 +351,7 @@ public:
             display_bounds = std::atoi(display_bounds_env);
         }
         
-        if (diasable == 1)
+        if (disable == 1)
         {
             dla_->hhQR(locked_);
             isHHqr = true;
@@ -383,37 +377,24 @@ public:
             }
             else if(cond < cond_threshold_2)
             {
-                if(choldegenv && choldeg == 2)
-                {
-                    info = dla_->cholQR1(locked_);
-                }else
-                {
-                    info = dla_->cholQR2(locked_);
-                }
+                info = dla_->cholQR1(locked_);
             }
             else
             {
-                if(choldegenv && choldeg == 1)
-                {
-                    info = dla_->cholQR1(locked_);
-                }else
-                {
-                    info = dla_->cholQR2(locked_);
-                }            
+                info = dla_->cholQR2(locked_);                         
             }
 
             if (info != 0)
             {
-                dla_->hhQR(locked_);
-                isHHqr = true;
 #ifdef CHASE_OUTPUT
                 if(grank == 0)
                 {
                     std::cout << "CholeskyQR doesn't work, Househoulder QR will be used." << std::endl;
                 }
-#endif
+#endif                
+                dla_->hhQR(locked_);
+                isHHqr = true;
             }
-
         }
 
         dla_->lockVectorCopyAndOrthoConcatswap(locked_, isHHqr);
