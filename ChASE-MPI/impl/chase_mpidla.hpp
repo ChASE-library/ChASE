@@ -1111,52 +1111,47 @@ public:
         dla_->shiftMatrixForQR(A, nevex, (T)shift);
         
         info = dla_->potrf('U', nevex, A, nevex, true);        
-	if(info != 0)
-	{
-	    return info;
-	}
+	
+        if(info != 0)
+	    {
+	        return info;
+	    }
 
-        if (info == 0)
-        {
-            dla_->trsm('R', 'U', 'N', 'N', m_, nevex, &one, A, nevex, C, m_,
-                       true);
+        
+        dla_->trsm('R', 'U', 'N', 'N', m_, nevex, &one, A, nevex, C, m_,
+                    true);
             
-            dla_->syherk('U', 'C', nevex, m_, &one, C, m_, &zero, A, nevex,
-                     false);
+        dla_->syherk('U', 'C', nevex, m_, &one, C, m_, &zero, A, nevex,
+                    false);
 
-            AllReduce(allreduce_backend, A, nevex * nevex, getMPI_Type<T>(),
-                  MPI_SUM, col_comm_, mpi_wrapper_);
+        AllReduce(allreduce_backend, A, nevex * nevex, getMPI_Type<T>(),
+                MPI_SUM, col_comm_, mpi_wrapper_);
         
-            //check info after this step
-            info = dla_->potrf('U', nevex, A, nevex, true); 
+        //check info after this step
+        dla_->potrf('U', nevex, A, nevex, false); 
 
-            dla_->trsm('R', 'U', 'N', 'N', m_, nevex, &one, A, nevex, C, m_,
-                       true);
+        dla_->trsm('R', 'U', 'N', 'N', m_, nevex, &one, A, nevex, C, m_,
+                    true);
 
-            dla_->syherk('U', 'C', nevex, m_, &one, C, m_, &zero, A, nevex,
-                     false);
+        dla_->syherk('U', 'C', nevex, m_, &one, C, m_, &zero, A, nevex,
+                    false);
 
-            AllReduce(allreduce_backend, A, nevex * nevex, getMPI_Type<T>(),
-                  MPI_SUM, col_comm_, mpi_wrapper_);
-        
-            info = dla_->potrf('U', nevex, A, nevex, false); 
+        AllReduce(allreduce_backend, A, nevex * nevex, getMPI_Type<T>(),
+                MPI_SUM, col_comm_, mpi_wrapper_);
+    
+        dla_->potrf('U', nevex, A, nevex, false); 
 
-            dla_->trsm('R', 'U', 'N', 'N', m_, nevex, &one, A, nevex, C, m_,
-                       false);
+        dla_->trsm('R', 'U', 'N', 'N', m_, nevex, &one, A, nevex, C, m_,
+                    false);
 
 #ifdef CHASE_OUTPUT
-            if (grank == 0)
-            {
-                std::cout << std::setprecision(2) << "choldegree: 2, shift = " << shift << std::endl;
-            }
+        if (grank == 0)
+        {
+            std::cout << std::setprecision(2) << "choldegree: 2, shift = " << shift << std::endl;
+        }
 #endif 
 
-            return info;
-        }
-        else
-        {
-            return info;
-        }
+        return info;
     }
 
     void estimated_cond_evaluator(std::size_t locked, Base<T> cond)
