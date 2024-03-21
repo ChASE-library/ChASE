@@ -935,9 +935,6 @@ public:
         nvtxRangePop();
         nvtxRangePushA("memcpy");
 #endif
-//        Memcpy(memcpy_mode[0], C, C2, locked * m_ * sizeof(T));
-//        Memcpy(memcpy_mode[0], C2 + locked * m_, C + locked * m_,
-//               (nevex - locked) * m_ * sizeof(T));
 
 #ifdef USE_NSIGHT
         nvtxRangePop();
