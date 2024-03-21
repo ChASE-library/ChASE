@@ -246,57 +246,35 @@ public:
 
         t_geqrf(LAPACK_COL_MAJOR, N_, nevex, C_, N_, tau.get());
         t_gqr(LAPACK_COL_MAJOR, N_, nevex, nevex, C_, N_, tau.get());
+    }
 
+    int cholQR1(std::size_t locked) override
+    {
+        this->hhQR(locked);
+        return 0;
+    }
+
+    int cholQR2(std::size_t locked) override
+    {
+        this->hhQR(locked);
+        return 0;
+    }
+
+    int shiftedcholQR2(std::size_t locked) override
+    {
+        this->hhQR(locked);
+        return 0;
+    }
+
+    void estimated_cond_evaluator(std::size_t locked, Base<T> cond)
+    {}
+    
+    void lockVectorCopyAndOrthoConcatswap(std::size_t locked, bool isHHqr)
+    {
         std::memcpy(C_, C2_, locked * N_ * sizeof(T));
         std::memcpy(C2_ + locked * N_, C_ + locked * N_,
-                    (nevex - locked) * N_ * sizeof(T));
-    }
-
-    void cholQR(std::size_t locked, Base<T> cond) override
-    {
-        auto nevex = nev_ + nex_;
-
-        T one = T(1.0);
-        T zero = T(0.0);
-        int info = -1;
-
-        t_syherk('U', 'C', nevex, N_, &one, C_, N_, &zero, A_, nevex);
-        info = t_potrf('U', nevex, A_, nevex);
-
-        if (info == 0)
-        {
-            t_trsm('R', 'U', 'N', 'N', N_, nevex, &one, A_, nevex, C_, N_);
-
-            int choldeg = 2;
-            char* choldegenv;
-            choldegenv = getenv("CHASE_CHOLQR_DEGREE");
-            if (choldegenv)
-            {
-                choldeg = std::atoi(choldegenv);
-            }
-#ifdef CHASE_OUTPUT
-            std::cout << "choldegee: " << choldeg << std::endl;
-#endif
-            for (auto i = 0; i < choldeg - 1; i++)
-            {
-                t_syherk('U', 'C', nevex, N_, &one, C_, N_, &zero, A_, nevex);
-                t_potrf('U', nevex, A_, nevex);
-                t_trsm('R', 'U', 'N', 'N', N_, nevex, &one, A_, nevex, C_, N_);
-            }
-            std::memcpy(C_, C2_, locked * N_ * sizeof(T));
-            std::memcpy(C2_ + locked * N_, C_ + locked * N_,
-                        (nevex - locked) * N_ * sizeof(T));
-        }
-        else
-        {
-#ifdef CHASE_OUTPUT
-            std::cout << "cholQR failed because of ill-conditioned vector, use "
-                         "Householder QR instead"
-                      << std::endl;
-#endif
-            this->hhQR(locked);
-        }
-    }
+                    (nev_ + nex_ - locked) * N_ * sizeof(T));        
+    } 
 
     void Swap(std::size_t i, std::size_t j) override
     {

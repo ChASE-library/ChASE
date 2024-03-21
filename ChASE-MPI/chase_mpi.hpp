@@ -328,37 +328,76 @@ public:
 #ifdef USE_MPI
         MPI_Comm_rank(MPI_COMM_WORLD, &grank);
 #endif
-        int diasable = 0;
+        bool isHHqr = false;
+        int disable = config_.DoCholQR() ? 0 : 1;
+        char* cholddisable = getenv("CHASE_DISABLE_CHOLQR");
+        if (cholddisable) {
+            disable = std::atoi(cholddisable);
+        }
 
-        if (config_.DoCholQR())
+        Base<T> cond_threshold_1 = (sizeof(Base<T>) == 8) ? 1e8 : 1e4;
+        Base<T> cond_threshold_2 = (sizeof(Base<T>) == 8) ? 2e1 : 1e1;
+
+        char* chol1_threshold = getenv("CHASE_CHOLQR1_THLD");
+        if (chol1_threshold)
         {
-            diasable = 0;
+            cond_threshold_2 = std::atof(chol1_threshold);
+        }
+
+        int display_bounds = 0;
+        char* display_bounds_env = getenv("CHASE_DISPLAY_BOUNDS");
+        if (display_bounds_env)
+        {
+            display_bounds = std::atoi(display_bounds_env);
+        }
+        
+        if (disable == 1)
+        {
+            dla_->hhQR(locked_);
+            isHHqr = true;
         }
         else
-        {
-            diasable = 1;
-        }
-
-        char* cholddisable;
-        cholddisable = getenv("CHASE_DISABLE_CHOLQR");
-        if (cholddisable)
-        {
-            diasable = std::atoi(cholddisable);
-        }
-
-        if (diasable == 1)
         {
 #ifdef CHASE_OUTPUT
             if (grank == 0)
-                std::cout << "CholQR is disabled, always use Householder QR. "
-                          << std::endl;
+            {
+                std::cout << std::setprecision(2) << "cond(V): " << cond << std::endl;
+            }
 #endif
-            dla_->hhQR(locked_);
+            if (display_bounds != 0)
+            {
+              dla_->estimated_cond_evaluator(locked_, cond);
+            }
+
+            int info = 1;
+
+            if (cond > cond_threshold_1)
+            {
+                info = dla_->shiftedcholQR2(locked_);
+            }
+            else if(cond < cond_threshold_2)
+            {
+                info = dla_->cholQR1(locked_);
+            }
+            else
+            {
+                info = dla_->cholQR2(locked_);                         
+            }
+
+            if (info != 0)
+            {
+#ifdef CHASE_OUTPUT
+                if(grank == 0)
+                {
+                    std::cout << "CholeskyQR doesn't work, Househoulder QR will be used." << std::endl;
+                }
+#endif                
+                dla_->hhQR(locked_);
+                isHHqr = true;
+            }
         }
-        else
-        {
-            dla_->cholQR(locked_, cond);
-        }
+
+        dla_->lockVectorCopyAndOrthoConcatswap(locked_, isHHqr);
     }
 
     //! This member function implements the virtual one declared in Chase class.
