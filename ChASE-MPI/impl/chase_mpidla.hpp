@@ -1111,17 +1111,13 @@ public:
         shift = 11 * (N_ * nevex + nevex * nevex + nevex) *
                 std::numeric_limits<Base<T>>::epsilon() * nrmf;
 
-        if (shift < 10)
-        {
-            dla_->shiftMatrixForQR(A, nevex, (T)shift);
-        }
-        else
-        {
-            info = -1;
-            return info;
-        }
-
+        dla_->shiftMatrixForQR(A, nevex, (T)shift);
+        
         info = dla_->potrf('U', nevex, A, nevex, true);        
+	if(info != 0)
+	{
+	    return info;
+	}
 
         if (info == 0)
         {

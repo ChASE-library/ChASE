@@ -340,11 +340,13 @@ public:
         }
 
         //indicate if cholqr is enabled or not
-        char* cholddisable;
+        bool isHHqr = false;
+	char* cholddisable;
         cholddisable = getenv("CHASE_DISABLE_CHOLQR");
         if (cholddisable)
         {
             diasable = std::atoi(cholddisable);
+	    isHHqr = true;
         }
 
         int choldeg = 2;
@@ -432,10 +434,15 @@ public:
                 }            
             }
 
+	    if (info != 0)
+	    {
+	        dla_->hhQR(locked_);
+		isHHqr = true;
+	    }
+
         }
 
-        dla_->lockVectorCopyAndOrthoConcatswap(locked_, false);
-
+        dla_->lockVectorCopyAndOrthoConcatswap(locked_, isHHqr);
     }
 
     //! This member function implements the virtual one declared in Chase class.
