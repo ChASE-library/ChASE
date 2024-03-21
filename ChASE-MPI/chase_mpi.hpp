@@ -328,7 +328,7 @@ public:
 #ifdef USE_MPI
         MPI_Comm_rank(MPI_COMM_WORLD, &grank);
 #endif
-
+        bool isHHqr = false;
         int disable = config_.DoCholQR() ? 0 : 1;
         char* cholddisable = getenv("CHASE_DISABLE_CHOLQR");
         if (cholddisable) {
@@ -360,6 +360,7 @@ public:
         if (diasable == 1)
         {
             dla_->hhQR(locked_);
+            isHHqr = true;
         }
         else
         {
@@ -401,11 +402,17 @@ public:
                 }            
             }
 
-	    if (info != 0)
-	    {
-	        dla_->hhQR(locked_);
-		isHHqr = true;
-	    }
+            if (info != 0)
+            {
+                dla_->hhQR(locked_);
+                isHHqr = true;
+#ifdef CHASE_OUTPUT
+                if(grank == 0)
+                {
+                    std::cout << "CholeskyQR doesn't work, Househoulder QR will be used." << std::endl;
+                }
+#endif
+            }
 
         }
 
