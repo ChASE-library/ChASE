@@ -289,11 +289,98 @@ public:
                V1_, N_, ritzVc, m, &beta, V2_, N_);
         std::memcpy(V1_, V2_, m * N_ * sizeof(T));
     }
-    void Lanczos(std::size_t M, Base<T>* d, Base<T>* e,
+    void Lanczos(std::size_t M,
                  Base<T>* r_beta) override
     {
+        std::vector<Base<T>> ritzv_(M);
+#ifdef USE_BLANCZOS  
+        std::cout << "calling Block Lanczos..." << std::endl;
+
+        std::size_t block_size = 4;
+        std::size_t div = std::floor(static_cast<double>(M) / block_size);
+
+        M = (div * block_size + 1 == M) ? M : block_size * (div + 1) + 1;
+
+        T One = T(1.0);
+        T Zero = T(0.0);
+        T NegOne = T(-1.0);
+
+        std::vector<Base<T>> real_alpha(block_size * block_size, Base<T>(0));
+        std::vector<T> alpha(block_size * block_size, T(0));
+        std::vector<T> beta(block_size * block_size, T(0));
+
+        std::vector<T> submatrix(M * M);
+
+        std::vector<T> v0_(N_ * block_size, T(0));
+        std::vector<T> v1_(N_ * block_size);
+        std::vector<T> w_(N_ * block_size);
+
+        std::mt19937 gen(2342.0);
+        std::normal_distribution<> normal_distribution;
+
+        for (std::size_t k = 0; k < N_ * block_size; ++k)
+        {
+            v1_[k] =
+                getRandomT<T>([&]() { return normal_distribution(gen); });
+        }
+        std::unique_ptr<T[]> tau(new T[block_size]);
+
+        t_geqrf(LAPACK_COL_MAJOR, N_, block_size, v1_.data(), N_, tau.get());
+        t_gqr(LAPACK_COL_MAJOR, N_, block_size, block_size, v1_.data(), N_, tau.get());
+
+        for(auto k = 0; k < M; k = k + block_size)
+        {
+            auto nb = std::min(block_size, M - k);
+            this->applyVec(v1_.data(), w_.data(), nb);
+            //alpha = v1^T * w
+            t_gemm(CblasColMajor, CblasConjTrans,  CblasNoTrans, 
+                    nb, nb, N_,
+                    &One, v1_.data(), N_, w_.data(), N_, 
+                    &Zero, alpha.data(), block_size 
+            );
+
+            //w = - v * alpha + w
+            t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, 
+                    N_, nb, nb, 
+                    &NegOne, v1_.data(), N_, alpha.data(), block_size,
+                    &One, w_.data(), N_ 
+            );
+
+            //save alpha onto the block diag
+            t_lacpy('A', nb, nb, alpha.data(), block_size, submatrix.data() + k + k * M, M);
+
+            if (k == M - 1)
+                break;
+
+            //w = - v0 * beta + w
+            t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, 
+                    N_, nb, nb, 
+                    &NegOne, v0_.data(), N_, beta.data(), block_size,
+                    &One, w_.data(), N_ 
+            );
+
+            t_geqrf(LAPACK_COL_MAJOR, N_, block_size, w_.data(), N_, tau.get());
+            t_lacpy('U', nb, nb, w_.data(), N_, beta.data(), block_size);            
+            t_gqr(LAPACK_COL_MAJOR, N_, block_size, block_size, w_.data(), N_, tau.get());
+
+            //save beta to the off-diagonal
+            if(k > 0)
+            {
+                t_lacpy('U', nb, nb, beta.data(), block_size, submatrix.data() + k * M + (k - 1), M);
+            }
+
+            v1_.swap(v0_);
+            v1_.swap(w_);                
+        }
+
+        t_heevd(LAPACK_COL_MAJOR, 'N', 'U', M, submatrix.data(), M, ritzv_.data());
         
+        *r_beta = *std::max_element(ritzv_.begin(), ritzv_.end()) + std::abs(beta[0]);
+#else
+        std::cout << "calling Lanczos..." << std::endl;
         Base<T> real_beta;
+        std::vector<Base<T>> d(M);
+        std::vector<Base<T>> e(M);
 
         T alpha = T(1.0);
         T beta = T(0.0);
@@ -354,7 +441,19 @@ public:
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
-        *r_beta = real_beta;        
+        int notneeded_m;
+        std::size_t vl, vu;
+        Base<T> ul, ll;
+        int tryrac = 0;
+        std::vector<int> isuppz(2 * M);
+
+        t_stemr<Base<T>>(LAPACK_COL_MAJOR, 'N', 'A', M, d.data(), e.data(), ul, ll, vl, vu,
+                         &notneeded_m, ritzv_.data(), NULL, M, M, isuppz.data(), &tryrac);
+
+        *r_beta = std::max(std::abs(ritzv_[0]), std::abs(ritzv_[M - 1])) +
+                  std::abs(real_beta);
+
+#endif    
     }
 
     void mLanczos(std::size_t M, int numvec, Base<T>* d, Base<T>* e,

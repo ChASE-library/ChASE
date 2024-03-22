@@ -1290,10 +1290,13 @@ public:
         dla_->LanczosDos(idx, m, ritzVc);
     }
 
-    void Lanczos(std::size_t M, Base<T>* d, Base<T>* e,
+    void Lanczos(std::size_t M,
                  Base<T>* r_beta) override
     {
         Base<T> real_beta;
+        Base<T>* d = new Base<T>[M]();
+        Base<T>* e = new Base<T>[M]();
+        std::vector<Base<T>> ritzv_(M);
 
         T alpha = T(1.0);
         T beta = T(0.0);
@@ -1367,7 +1370,19 @@ public:
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
-        *r_beta = real_beta;
+        int notneeded_m;
+        std::size_t vl, vu;
+        Base<T> ul, ll;
+        int tryrac = 0;
+        std::vector<int> isuppz(2 * M);
+
+        t_stemr<Base<T>>(LAPACK_COL_MAJOR, 'N', 'A', M, d, e, ul, ll, vl, vu,
+                         &notneeded_m, ritzv_.data(), NULL, M, M, isuppz.data(), &tryrac);
+
+        *r_beta = std::max(std::abs(ritzv_[0]), std::abs(ritzv_[M - 1])) +
+                  std::abs(real_beta);
+        delete[] d;
+        delete[] e;
     }
 
     void mLanczos(std::size_t M, int numvec, Base<T>* d, Base<T>* e,

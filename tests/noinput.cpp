@@ -28,8 +28,8 @@ using namespace chase::mpi;
 #if defined(USE_GPU)
 typedef ChaseMpi<ChaseMpiDLACudaSeq, T> CHASE;
 #else
-typedef ChaseMpi<ChaseMpiDLABlaslapackSeq, T> CHASE;
-//typedef ChaseMpi<ChaseMpiDLABlaslapackSeqInplace, T> CHASE;
+//typedef ChaseMpi<ChaseMpiDLABlaslapackSeq, T> CHASE;
+typedef ChaseMpi<ChaseMpiDLABlaslapackSeqInplace, T> CHASE;
 #endif
 
 int main()
@@ -38,11 +38,11 @@ int main()
     int rank = 0;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    std::size_t N = 1000;
+    std::size_t N = 1001;
     std::size_t LDH = 1001;
-    std::size_t nev = 100;
-    std::size_t nex = 40;
-    std::size_t idx_max = 1;
+    std::size_t nev = 80;
+    std::size_t nex = 20;
+    std::size_t idx_max = 2;
     Base<T> perturb = 1e-4;
 
     std::mt19937 gen(1337.0);
@@ -128,5 +128,10 @@ int main()
                 H[i + LDH * j] += std::conj(element_perturbation);
             }
         }
+        std::vector<T> H_2(N * N);
+        std::memcpy(H_2.data(), H.data(), N * N * sizeof(T));
+        std::vector<Base<T>> ritzv(N);
+        t_heevd(LAPACK_COL_MAJOR, 'N', 'U', N, H_2.data(), N, ritzv.data());
+        std::cout << "real max rtizv = " << *std::max_element(ritzv.begin(), ritzv.end()) << std::endl;;
     }
 }

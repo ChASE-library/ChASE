@@ -314,7 +314,7 @@ public:
         std::memcpy(C_, C2_, m * m_ * sizeof(T));
 
     }
-    void Lanczos(std::size_t M, Base<T>* d, Base<T>* e,
+    void Lanczos(std::size_t M,
                  Base<T>* r_beta) override
     {
     }

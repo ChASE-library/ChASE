@@ -415,36 +415,7 @@ public:
     //! eigensolver.
     void Lanczos(std::size_t m, Base<T>* upperb) override
     {
-        // todo
-        Base<T>* d = new Base<T>[m]();
-        Base<T>* e = new Base<T>[m]();
-
-        Base<T> real_beta;
-        dla_->Lanczos(m, d, e, &real_beta);
-
-#ifdef USE_NSIGHT
-        nvtxRangePushA("Stemr");
-#endif
-        int notneeded_m;
-        std::size_t vl, vu;
-        Base<T> ul, ll;
-        int tryrac = 0;
-        int* isuppz = new int[2 * m];
-        Base<T>* ritzv = new Base<T>[m];
-
-        t_stemr<Base<T>>(LAPACK_COL_MAJOR, 'N', 'A', m, d, e, ul, ll, vl, vu,
-                         &notneeded_m, ritzv, NULL, m, m, isuppz, &tryrac);
-
-        *upperb = std::max(std::abs(ritzv[0]), std::abs(ritzv[m - 1])) +
-                  std::abs(real_beta);
-#ifdef USE_NSIGHT
-        nvtxRangePop();
-#endif
-
-        delete[] ritzv;
-        delete[] isuppz;
-        delete[] d;
-        delete[] e;
+        dla_->Lanczos(m, upperb);
     };
 
     // we need to be careful how we deal with memory here

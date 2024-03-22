@@ -329,7 +329,7 @@ public:
     //! Lanczos DOS to estimate the \mu_{nev+nex} for ChASE
     virtual void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc) = 0;
 
-    virtual void Lanczos(std::size_t M, Base<T>* d, Base<T>* e,
+    virtual void Lanczos(std::size_t M,
                          Base<T>* r_beta) = 0;
     virtual void mLanczos(std::size_t M, int numvec, Base<T>* d, Base<T>* e,
                          Base<T>* r_beta) = 0;
