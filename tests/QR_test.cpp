@@ -134,7 +134,9 @@ TYPED_TEST(QRfixture, cholQR1)
     auto machineEpsilon = MachineEpsilon<T2>::value();
 
     read_vectors(this->V1.data(), GetFileName<T2>() + "cond_10.bin", this->xoff, this->xlen, this->N, this->nev + this->nex, this->column_rank);
-    this->DLA->cholQR1(0);
+    int info = this->DLA->cholQR1(0);
+    ASSERT_EQ(info, 0);
+
     auto orth = orthogonality<T2>(this->m, this->nev + this->nex, this->V1.data(), this->column_comm);
     ASSERT_NEAR(orth, machineEpsilon, machineEpsilon * 10);
 }
@@ -145,7 +147,9 @@ TYPED_TEST(QRfixture, cholQR1BadlyCond)
     auto machineEpsilon = MachineEpsilon<T2>::value();
 
     read_vectors(this->V1.data(), GetFileName<T2>() + "cond_1e4.bin", this->xoff, this->xlen, this->N, this->nev+this->nex, this->column_rank);
-    this->DLA->cholQR1(0);
+    int info = this->DLA->cholQR1(0);
+    ASSERT_EQ(info, 0);
+
     auto orth = orthogonality<T2>(this->m, this->nev+this->nex, this->V1.data(), this->column_comm);
     EXPECT_GT(orth, machineEpsilon );
     EXPECT_LT(orth, 1.0);
@@ -166,7 +170,9 @@ TYPED_TEST(QRfixture, cholQR2)
     auto machineEpsilon = MachineEpsilon<T2>::value();
 
     read_vectors(this->V1.data(), GetFileName<T2>() + "cond_1e4.bin", this->xoff, this->xlen, this->N, this->nev+this->nex, this->column_rank);
-    this->DLA->cholQR2(0);
+    int info = this->DLA->cholQR2(0);
+    ASSERT_EQ(info, 0);
+
     auto orth = orthogonality<T2>(this->m, this->nev + this->nex, this->V1.data(), this->column_comm);
     ASSERT_NEAR(orth, machineEpsilon, machineEpsilon *10);
 }
@@ -185,8 +191,10 @@ TYPED_TEST(QRfixture, scholQR)
     using T2 = typename TestFixture::T2;
     auto machineEpsilon = MachineEpsilon<T2>::value();
 
-    read_vectors(this->V1.data(), GetFileName<T2>() + "cond_1e8.bin", this->xoff, this->xlen, this->N, this->nev+this->nex, this->column_rank);
+    read_vectors(this->V1.data(), GetFileName<T2>() + "cond_ill.bin", this->xoff, this->xlen, this->N, this->nev+this->nex, this->column_rank);
     int info = this->DLA->shiftedcholQR2(0);
+    ASSERT_EQ(info, 0);
+
     auto orth = orthogonality<T2>(this->m, this->nev + this->nex, this->V1.data(), this->column_comm);
     ASSERT_NEAR(orth, machineEpsilon, machineEpsilon * 10);
 }
