@@ -8,8 +8,11 @@
 #include "ChASE-MPI/impl/chase_mpidla_blaslapack_seq.hpp"
 #include "ChASE-MPI/impl/chase_mpidla_blaslapack_seq_inplace.hpp"
 
+#ifdef HAS_CUDA
+#include "ChASE-MPI/impl/chase_mpidla_mgpu.hpp"
+#elif defined USE_MPI
 #include "ChASE-MPI/impl/chase_mpidla_blaslapack.hpp"
-//#include "ChASE-MPI/impl/chase_mpidla_mgpu.hpp"
+#endif
 
 
 #include "util.h"
@@ -17,14 +20,17 @@
 using namespace chase::mpi;
 
 typedef ::testing::Types<
+#ifdef HAS_CUDA
+    std::tuple<ChaseMpiDLAMultiGPU<float>, float>,
+    std::tuple<ChaseMpiDLAMultiGPU<double>, double>,
+    std::tuple<ChaseMpiDLAMultiGPU<std::complex<float>>, std::complex<float>>,
+    std::tuple<ChaseMpiDLAMultiGPU<std::complex<double>>, std::complex<double>>
+#elif defined(USE_MPI)
     std::tuple<ChaseMpiDLABlaslapack<float>, float>,
     std::tuple<ChaseMpiDLABlaslapack<double>, double>,
     std::tuple<ChaseMpiDLABlaslapack<std::complex<float>>, std::complex<float>>,
     std::tuple<ChaseMpiDLABlaslapack<std::complex<double>>, std::complex<double>>
-    //std::tuple<ChaseMpiDLAMultiGPU<float>, float>,
-    //std::tuple<ChaseMpiDLAMultiGPU<double>, double>,
-    //std::tuple<ChaseMpiDLAMultiGPU<std::complex<float>>, std::complex<float>>,
-    //std::tuple<ChaseMpiDLAMultiGPU<std::complex<double>>, std::complex<double>>
+#endif
     //std::tuple<MF2, T21>,
     //std::tuple<MF2, T22>,
     //std::tuple<MF2, T23>,
