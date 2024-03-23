@@ -72,7 +72,7 @@ TYPED_TEST_SUITE(QRfixture, MyTypes);
 
 TYPED_TEST(QRfixture, NumberOfProcs)
 {
-    ASSERT_EQ(this->chasempi->get_nprocs(), 4);    
+    ASSERT_EQ(this->chasempi->get_nprocs(), MPI_NUM_PROCS);    
 }
 
 TYPED_TEST(QRfixture, firsttest)
