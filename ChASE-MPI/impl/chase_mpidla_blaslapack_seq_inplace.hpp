@@ -305,7 +305,6 @@ public:
         T Zero = T(0.0);
         T NegOne = T(-1.0);
 
-        std::vector<Base<T>> real_alpha(block_size * block_size, Base<T>(0));
         std::vector<T> alpha(block_size * block_size, T(0));
         std::vector<T> beta(block_size * block_size, T(0));
 
@@ -323,10 +322,19 @@ public:
             v1_[k] =
                 getRandomT<T>([&]() { return normal_distribution(gen); });
         }
-        std::unique_ptr<T[]> tau(new T[block_size]);
 
-        t_geqrf(LAPACK_COL_MAJOR, N_, block_size, v1_.data(), N_, tau.get());
-        t_gqr(LAPACK_COL_MAJOR, N_, block_size, block_size, v1_.data(), N_, tau.get());
+        //CholQR
+        int info = -1;
+        std::vector<T> A_(2 * block_size * block_size);
+        t_syherk('U', 'C', block_size, N_, &One, v1_.data(), N_, &Zero, A_.data(), block_size);
+        info = t_potrf('U', block_size, A_.data(), block_size);
+        if(info == 0){
+            t_trsm('R', 'U', 'N', 'N', N_, block_size, &One, A_.data(), block_size, v1_.data(), N_);
+        }else
+        {
+            t_geqrf(LAPACK_COL_MAJOR, N_, block_size, v1_.data(), N_, A_.data());
+            t_gqr(LAPACK_COL_MAJOR, N_, block_size, block_size, v1_.data(), N_, A_.data());
+        }
 
         for(auto k = 0; k < M; k = k + block_size)
         {
@@ -358,11 +366,33 @@ public:
                     &NegOne, v0_.data(), N_, beta.data(), block_size,
                     &One, w_.data(), N_ 
             );
-
-            t_geqrf(LAPACK_COL_MAJOR, N_, block_size, w_.data(), N_, tau.get());
-            t_lacpy('U', nb, nb, w_.data(), N_, beta.data(), block_size);            
-            t_gqr(LAPACK_COL_MAJOR, N_, block_size, block_size, w_.data(), N_, tau.get());
-
+            //CholeskyQR2
+            // A = V^T * V
+            t_syherk('U', 'C', nb, N_, &One, w_.data(), N_, &Zero, A_.data(), block_size);
+            // A = Chol(A)
+            info = t_potrf('U', nb, A_.data(), block_size);
+            if(info == 0){
+                // w = W * A^(-1)
+                t_trsm('R', 'U', 'N', 'N', N_, nb, &One, A_.data(), block_size, w_.data(), N_);
+                // A' = V^T * V
+                t_syherk('U', 'C', nb, N_, &One, w_.data(), N_, &Zero, A_.data() + block_size * block_size, block_size);
+                // A' = Chol(A)
+                info = t_potrf('U', nb, A_.data() + block_size * block_size, block_size);
+                // w = W * A'^(-1)
+                t_trsm('R', 'U', 'N', 'N', N_, nb, &One, A_.data() + block_size * block_size, block_size, w_.data(), N_);
+                // beta = A'*A
+                t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, 
+                    nb, nb, nb, 
+                    &One, A_.data() + block_size * block_size, block_size, A_.data(), block_size,
+                    &Zero, beta.data(), block_size 
+                );
+            }else
+            {
+                t_geqrf(LAPACK_COL_MAJOR, N_, block_size, w_.data(), N_, A_.data());
+                t_lacpy('U', nb, nb, w_.data(), N_, beta.data(), block_size);
+                t_gqr(LAPACK_COL_MAJOR, N_, block_size, block_size, w_.data(), N_, A_.data());
+            }
+            
             //save beta to the off-diagonal
             if(k > 0)
             {
@@ -452,7 +482,6 @@ public:
 
         *r_beta = std::max(std::abs(ritzv_[0]), std::abs(ritzv_[M - 1])) +
                   std::abs(real_beta);
-
 #endif    
     }
 
