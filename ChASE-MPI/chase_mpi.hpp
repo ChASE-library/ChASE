@@ -216,6 +216,9 @@ public:
         MPI_Initialized(&init);
         if (init)
             MPI_Comm_rank(MPI_COMM_WORLD, &rank_);
+
+        ritzv_ = dla_->get_Ritzv();
+        resid_ = dla_->get_Resids();
     }
 
     //! It prevents the copy operation of the constructor of ChaseMpi.
