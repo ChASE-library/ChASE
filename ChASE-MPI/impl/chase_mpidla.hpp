@@ -1330,15 +1330,11 @@ public:
         t_syherk('U', 'C', block_size, m_, &One, v1_.data(), m_, &Zero, A_.data(), block_size);
         MPI_Allreduce(MPI_IN_PLACE, A_.data(), block_size * block_size, getMPI_Type<T>(), MPI_SUM, col_comm_);
         info = t_potrf('U', block_size, A_.data(), block_size);
-        if(info == 0){
-            t_trsm('R', 'U', 'N', 'N', m_, block_size, &One, A_.data(), block_size, v1_.data(), m_);
-        }else
-        {
-            //calling ScaLAPACK HHQR
-        }
-
+        t_trsm('R', 'U', 'N', 'N', m_, block_size, &One, A_.data(), block_size, v1_.data(), m_);
+  
         for(auto k = 0; k < M; k = k + block_size)
         {
+            //T *vv  = C2 or B2;
             auto nb = std::min(block_size, M - k);
             dla_->applyVec(v1_.data(), B2, nb);
             MPI_Allreduce(MPI_IN_PLACE, B2, n_ * nb, getMPI_Type<T>(), MPI_SUM,
@@ -1349,57 +1345,52 @@ public:
             t_gemm(CblasColMajor, CblasConjTrans,  CblasNoTrans, 
                     nb, nb, m_,
                     &One, v1_.data(), m_, w_.data(), m_, 
-                    &Zero, alpha.data(), block_size 
-            );
+                    &Zero, alpha.data(), block_size);
 
             MPI_Allreduce(MPI_IN_PLACE, alpha.data(), block_size * block_size, getMPI_Type<T>(), MPI_SUM, col_comm_);
 
-            //w = - v * alpha + w
+            //w = -v * alpha + w
             t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, 
                     m_, nb, nb, 
                     &NegOne, v1_.data(), m_, alpha.data(), block_size,
-                    &One, w_.data(), m_ 
-            );
+                    &One, w_.data(), m_);
 
             //save alpha onto the block diag
             t_lacpy('A', nb, nb, alpha.data(), block_size, submatrix.data() + k + k * M, M);
 
-            if (k == M - 1)
-                break;
-
             //w = - v0 * beta + w
-            t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, 
-                    m_, nb, nb, 
-                    &NegOne, v0_.data(), m_, beta.data(), block_size,
-                    &One, w_.data(), m_ 
-            );
+            if(k > 0){
+                t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, 
+                        m_, nb, nb, 
+                        &NegOne, v0_.data(), m_, beta.data(), block_size,
+                        &One, w_.data(), m_);
+            }
+
             //CholeskyQR2
             // A = V^T * V
             t_syherk('U', 'C', nb, m_, &One, w_.data(), m_, &Zero, A_.data(), block_size);
             MPI_Allreduce(MPI_IN_PLACE, A_.data(), block_size * block_size, getMPI_Type<T>(), MPI_SUM, col_comm_);
             // A = Chol(A)
             info = t_potrf('U', nb, A_.data(), block_size);
-            if(info == 0){
-                // w = W * A^(-1)
-                t_trsm('R', 'U', 'N', 'N', m_, nb, &One, A_.data(), block_size, w_.data(), m_);
-                // A' = V^T * V
-                t_syherk('U', 'C', nb, m_, &One, w_.data(), m_, &Zero, A_.data() + block_size * block_size, block_size);
-                MPI_Allreduce(MPI_IN_PLACE, A_.data() + block_size * block_size, block_size * block_size, getMPI_Type<T>(), MPI_SUM, col_comm_);
-                // A' = Chol(A)
-                info = t_potrf('U', nb, A_.data() + block_size * block_size, block_size);
-                // w = W * A'^(-1)
-                t_trsm('R', 'U', 'N', 'N', m_, nb, &One, A_.data() + block_size * block_size, block_size, w_.data(), m_);
-                // beta = A'*A
-                t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, 
-                    nb, nb, nb, 
-                    &One, A_.data() + block_size * block_size, block_size, A_.data(), block_size,
-                    &Zero, beta.data(), block_size 
-                );
-            }else
-            {
-                //calling ScaLAPACK HHQR
-            }
-            
+            // w = W * A^(-1)
+            t_trsm('R', 'U', 'N', 'N', m_, nb, &One, A_.data(), block_size, w_.data(), m_);
+            // A' = V^T * V
+            t_syherk('U', 'C', nb, m_, &One, w_.data(), m_, &Zero, A_.data() + block_size * block_size, block_size);
+            MPI_Allreduce(MPI_IN_PLACE, A_.data() + block_size * block_size, block_size * block_size, getMPI_Type<T>(), MPI_SUM, col_comm_);
+            // A' = Chol(A)
+            info = t_potrf('U', nb, A_.data() + block_size * block_size, block_size);
+            // w = W * A'^(-1)
+            t_trsm('R', 'U', 'N', 'N', m_, nb, &One, A_.data() + block_size * block_size, block_size, w_.data(), m_);
+            // beta = A'*A
+            t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, 
+                nb, nb, nb, 
+                &One, A_.data() + block_size * block_size, block_size, A_.data(), block_size,
+                &Zero, beta.data(), block_size 
+            );
+  
+            if (k == M - 1)
+                break;
+
             //save beta to the off-diagonal
             if(k > 0)
             {
@@ -1465,9 +1456,6 @@ public:
 
             d[k] = std::real(alpha);
 
-            if (k == M - 1)
-                break;
-
             beta = T(-real_beta);
             t_axpy(m_, &beta, v0_, 1, v2_, 1);
             beta = -beta;
@@ -1481,6 +1469,9 @@ public:
 
             beta = T(1.0 / real_beta);
 
+            if (k == M - 1)
+                break;
+                
             t_scal(m_, &beta, v2_, 1);
 
             e[k] = real_beta;

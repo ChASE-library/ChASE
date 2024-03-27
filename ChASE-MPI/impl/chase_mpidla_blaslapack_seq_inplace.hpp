@@ -344,28 +344,25 @@ public:
             t_gemm(CblasColMajor, CblasConjTrans,  CblasNoTrans, 
                     nb, nb, N_,
                     &One, v1_.data(), N_, w_.data(), N_, 
-                    &Zero, alpha.data(), block_size 
-            );
+                    &Zero, alpha.data(), block_size);
 
             //w = - v * alpha + w
             t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, 
                     N_, nb, nb, 
                     &NegOne, v1_.data(), N_, alpha.data(), block_size,
-                    &One, w_.data(), N_ 
-            );
+                    &One, w_.data(), N_);
 
             //save alpha onto the block diag
             t_lacpy('A', nb, nb, alpha.data(), block_size, submatrix.data() + k + k * M, M);
 
-            if (k == M - 1)
-                break;
-
             //w = - v0 * beta + w
-            t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, 
-                    N_, nb, nb, 
-                    &NegOne, v0_.data(), N_, beta.data(), block_size,
-                    &One, w_.data(), N_ 
-            );
+            if(k > 0){
+                t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, 
+                        N_, nb, nb, 
+                        &NegOne, v0_.data(), N_, beta.data(), block_size,
+                        &One, w_.data(), N_);
+            }
+
             //CholeskyQR2
             // A = V^T * V
             t_syherk('U', 'C', nb, N_, &One, w_.data(), N_, &Zero, A_.data(), block_size);
@@ -384,8 +381,7 @@ public:
                 t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, 
                     nb, nb, nb, 
                     &One, A_.data() + block_size * block_size, block_size, A_.data(), block_size,
-                    &Zero, beta.data(), block_size 
-                );
+                    &Zero, beta.data(), block_size);
             }else
             {
                 t_geqrf(LAPACK_COL_MAJOR, N_, block_size, w_.data(), N_, A_.data());
@@ -393,6 +389,9 @@ public:
                 t_gqr(LAPACK_COL_MAJOR, N_, block_size, block_size, w_.data(), N_, A_.data());
             }
             
+            if (k == M - 1)
+                break;
+
             //save beta to the off-diagonal
             if(k > 0)
             {
@@ -450,9 +449,6 @@ public:
 
             d[k] = std::real(alpha);
 
-            if (k == M - 1)
-                break;
-
             beta = T(-real_beta);
             this->axpy(N_, &beta, v0_, 1, w_, 1);
             beta = -beta;
@@ -461,6 +457,9 @@ public:
 
             beta = T(1.0 / real_beta);
 
+            if (k == M - 1)
+                break;
+                
             this->scal(N_, &beta, w_, 1);
 
             e[k] = real_beta;
