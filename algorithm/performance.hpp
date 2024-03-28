@@ -47,14 +47,15 @@ class ChasePerfData
 
 public:
     ChasePerfData()
-        : chase_iteration_count(0), chase_filtered_vecs(0), timings(6),
-           start_points(6), end_points(6), chase_iter_blocksizes(0)
+        : chase_iteration_count(0), chase_filtered_vecs(0), timings(7),
+           start_points(7), end_points(7), chase_iter_blocksizes(0)
     {
     }
 
     enum TimePtrs
     {
         All,
+        InitVecs,
         Lanczos,
         Filter,
         Qr,
@@ -257,39 +258,41 @@ public:
      */
     void print(std::size_t N = 0)
     {
-        // std::cout << "resd: " << norm << "\torth:" << norm2 << std::endl;
-        // std::cout << "Filtered Vectors\t\t" << chase_filtered_vecs << "\n";
-        // std::cout << "Iteration Count\t\t" << chase_iteration_count << "\n";
-        if (N != 0)
+        this->calculateTimings();
+
+
+        std::vector<std::string> output_names = {"MPI procs", "Iterations", "Vecs", "All", "Init Vecs", 
+                                                 "Lanczos",   "Filter",     "QR",   "RR",  "Resid"};
+
+        std::vector<std::string> all_values = {std::to_string(nprocs), 
+                                               std::to_string(chase_iteration_count), 
+                                               std::to_string(chase_filtered_vecs)};
+        
+        for (const auto& t : timings)
         {
-            std::cout << " | GFLOPS: All | GFLOPS: Filter ";
+            std::ostringstream stream;
+            stream << std::scientific << std::setprecision(3) << t.count();
+            all_values.push_back(stream.str());
         }
-
-        std::cout
-            << " | Size  | Iterations | Vecs   |  All       | Lanczos    | "
-               "Filter     | QR         | RR         | Resid      | "
-            << std::endl;
-
-        std::size_t width = 20;
-        std::cout << std::setprecision(8);
-        std::cout << std::setfill(' ');
-        //     std::cout << std::scientific;
-        std::cout << std::right;
 
         if (N != 0)
         {
             std::size_t flops = get_flops(N);
             std::size_t filter_flops = get_filter_flops(N);
-            std::cout << " | " << std::setw(11) << static_cast<double>(flops);
-            std::cout << " | " << std::setw(15) << static_cast<double>(filter_flops);
+
+            output_names.push_back("GFLOPS: All");
+            output_names.push_back("GFLOPS: Filter");
+
+            std::ostringstream stream;
+            stream << std::scientific << std::setprecision(3) << static_cast<double>(flops);
+            all_values.push_back(stream.str());
+            stream.str("");
+            stream << std::scientific << std::setprecision(3) << static_cast<double>(filter_flops);
+            all_values.push_back(stream.str());
         }
 
-        std::cout << " | " << std::setw(5) << nprocs;
-        std::cout << " | " << std::setw(10) << chase_iteration_count << " | "
-                  << std::setw(6) << chase_filtered_vecs;
-
-        this->calculateTimings();
-        this->print_timings();
+        printTable(output_names, 
+                   all_values);
     }
 
 private:
@@ -319,32 +322,24 @@ private:
         }
     }
 
-    void print_timings()
+    void printTable(const std::vector<std::string>& output_names, 
+                    const std::vector<std::string>& all_values)
     {
-        // std::cout << "All\t\t" << timings[TimePtrs::All] << std::endl
-        //           << "Lanczos\t\t" << timings[TimePtrs::Lanczos] << std::endl
-        //           << "Filter\t\t" << timings[TimePtrs::Filter] << std::endl
-        //           << "QR\t\t" << timings[TimePtrs::Qr] << std::endl
-        //           << "RR\t\t" << timings[TimePtrs::Rr] << std::endl
-        //           << "Resid+Locking\t" << timings[TimePtrs::Resids_Locking]
-        //           << std::endl;
+        // Print table header and values
+        std::cout << "| ";
+        for (size_t i = 0; i < output_names.size(); ++i) {
+            int max_width = std::max(output_names[i].size(), all_values[i].size());
+            std::cout << std::setw(max_width) << output_names[i] << " | ";
+        }
+        std::cout << '\n';
 
-        std::size_t width = 10;
-        std::cout << std::setprecision(6);
-        std::cout << std::setfill(' ');
-        //     std::cout << std::scientific;
-        std::cout << std::right;
-
-        std::cout << " | " << std::setw(width) << timings[TimePtrs::All].count()
-                  << " | " << std::setw(width)
-                  << timings[TimePtrs::Lanczos].count() << " | "
-                  << std::setw(width) << timings[TimePtrs::Filter].count()
-                  << " | " << std::setw(width) << timings[TimePtrs::Qr].count()
-                  << " | " << std::setw(width) << timings[TimePtrs::Rr].count()
-                  << " | " << std::setw(width)
-                  << timings[TimePtrs::Resids_Locking].count() << " | "
-                  << std::endl;
-    }
+        std::cout << "| ";
+        for (size_t i = 0; i < all_values.size(); ++i) {
+            int max_width = std::max(output_names[i].size(), all_values[i].size());
+            std::cout << std::setw(max_width) << all_values[i] << " | ";
+        }
+        std::cout << '\n';
+}
 
     std::size_t chase_iteration_count;
     std::size_t chase_filtered_vecs;
@@ -382,9 +377,10 @@ public:
     PerformanceDecoratorChase(Chase<T>* chase) : chase_(chase), perf_() {}
 
     void initVecs(bool random)
-    {
+    {   
+        perf_.start_clock(ChasePerfData<T>::TimePtrs::InitVecs);
         chase_->initVecs(random);
-        perf_.start_clock(ChasePerfData<T>::TimePtrs::Lanczos);
+        perf_.end_clock(ChasePerfData<T>::TimePtrs::InitVecs);
     }
 
     void Shift(T c, bool isunshift = false)
@@ -431,10 +427,14 @@ public:
     void Lanczos(std::size_t M, std::size_t idx, Base<T>* upperb,
                  Base<T>* ritzv, Base<T>* Tau, Base<T>* ritzV)
     {
+        perf_.start_clock(ChasePerfData<T>::TimePtrs::Lanczos);
         chase_->Lanczos(M, idx, upperb, ritzv, Tau, ritzV);
+        perf_.end_clock(ChasePerfData<T>::TimePtrs::Lanczos);
+
     }
     void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc)
     {
+        perf_.start_clock(ChasePerfData<T>::TimePtrs::Lanczos);
         chase_->LanczosDos(idx, m, ritzVc);
         perf_.end_clock(ChasePerfData<T>::TimePtrs::Lanczos);
     }
