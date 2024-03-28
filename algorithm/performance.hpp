@@ -55,7 +55,7 @@ public:
     enum TimePtrs
     {
         All,
-        Rng,
+        InitVecs,
         Lanczos,
         Filter,
         Qr,
@@ -326,12 +326,14 @@ private:
                     const std::vector<std::string>& all_values)
     {
         // Print table header and values
+        std::cout << "| ";
         for (size_t i = 0; i < output_names.size(); ++i) {
             int max_width = std::max(output_names[i].size(), all_values[i].size());
             std::cout << std::setw(max_width) << output_names[i] << " | ";
         }
         std::cout << '\n';
 
+        std::cout << "| ";
         for (size_t i = 0; i < all_values.size(); ++i) {
             int max_width = std::max(output_names[i].size(), all_values[i].size());
             std::cout << std::setw(max_width) << all_values[i] << " | ";
@@ -376,9 +378,9 @@ public:
 
     void initVecs(bool random)
     {   
-        perf_.start_clock(ChasePerfData<T>::TimePtrs::Rng);
+        perf_.start_clock(ChasePerfData<T>::TimePtrs::InitVecs);
         chase_->initVecs(random);
-        perf_.end_clock(ChasePerfData<T>::TimePtrs::Rng);
+        perf_.end_clock(ChasePerfData<T>::TimePtrs::InitVecs);
     }
 
     void Shift(T c, bool isunshift = false)
