@@ -39,6 +39,7 @@ public:
 #else
         ptr_ = std::allocator<T>().allocate(size_);
 #endif
+        std::fill_n(ptr_, size_, T(0.0));
     }
 
     CpuMem(T* ptr, std::size_t size)
@@ -63,7 +64,7 @@ public:
     bool isAlloc() { return allocated_; }
 
     std::string type() { return type_; }
-
+    
 private:
     std::size_t size_;
     T* ptr_;
@@ -81,6 +82,7 @@ public:
     GpuMem(std::size_t size) : size_(size), allocated_(true), type_("GPU")
     {
         cudaMalloc(&ptr_, size_ * sizeof(T));
+        cudaMemset(ptr_, 0, size_ * sizeof(T));
     }
 
     GpuMem(T* ptr, std::size_t size)
@@ -185,6 +187,11 @@ public:
         }
 #endif
         return ptr;
+    }
+
+    void swap(Matrix<T> &swapping_obj)
+    {
+        std::swap(Host_, swapping_obj.Host_);
     }
 
 #if defined(HAS_CUDA)

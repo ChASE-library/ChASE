@@ -1293,11 +1293,10 @@ public:
     void Lanczos(std::size_t M,
                  Base<T>* r_beta) override
     {
-        std::vector<Base<T>> ritzv_(M);
 #ifdef USE_BLANCZOS  
-       std::cout << "calling Block Lanczos..." << std::endl;
-
-        std::size_t block_size = 4;
+        std::cout << "calling Block Lanczos..." << std::endl;
+        std::size_t default_block_size = 4;
+        std::size_t block_size = default_block_size; //std::min(default_block_size, nev_ + nex_);
         std::size_t div = std::floor(static_cast<double>(M) / block_size);
 
         M = (div * block_size + 1 == M) ? M : block_size * (div + 1) + 1;
@@ -1306,109 +1305,119 @@ public:
         T Zero = T(0.0);
         T NegOne = T(-1.0);
 
-        std::vector<T> alpha(block_size * block_size, T(0));
-        std::vector<T> beta(block_size * block_size, T(0));
-
-        std::vector<T> submatrix(M * M);
-
-        std::vector<T> v0_(m_ * block_size, T(0));
-        std::vector<T> v1_(m_ * block_size);
-        std::vector<T> w_(m_ * block_size);
+        //std::vector<T> alpha(block_size * block_size, T(0));
+        Matrix<T> alpha(0, block_size, block_size);
+        Matrix<T> beta(0, block_size, block_size);
+        Matrix<T> submatrix(0, M, M);
+        Matrix<T> v0_(0, m_, block_size);
+        Matrix<T> v1_(0, m_, block_size);
+        Matrix<T> w_(0, m_, block_size);
+        Matrix<T> A_(0,  block_size, 2 * block_size);
+        Matrix<Base<T>> ritzv_(0, M, 1);
 
         std::mt19937 gen(2342.0);
         std::normal_distribution<> normal_distribution;
 
+        //curand
         for (std::size_t k = 0; k < m_ * block_size; ++k)
         {
-            v1_[k] =
+            *(v1_.ptr() + k) =
                 getRandomT<T>([&]() { return normal_distribution(gen); });
         }
 
         //CholQR
         int info = -1;
-        std::vector<T> A_(2 * block_size * block_size);
-        t_syherk('U', 'C', block_size, m_, &One, v1_.data(), m_, &Zero, A_.data(), block_size);
-        MPI_Allreduce(MPI_IN_PLACE, A_.data(), block_size * block_size, getMPI_Type<T>(), MPI_SUM, col_comm_);
-        info = t_potrf('U', block_size, A_.data(), block_size);
-        t_trsm('R', 'U', 'N', 'N', m_, block_size, &One, A_.data(), block_size, v1_.data(), m_);
+        t_syherk('U', 'C', block_size, m_, &One, v1_.ptr(), m_, &Zero, A_.ptr(), block_size);
+        //allreduce with wrapper
+        MPI_Allreduce(MPI_IN_PLACE, A_.ptr(), block_size * block_size, getMPI_Type<T>(), MPI_SUM, col_comm_);
+        info = t_potrf('U', block_size, A_.ptr(), block_size);
+        t_trsm('R', 'U', 'N', 'N', m_, block_size, &One, A_.ptr(), block_size, v1_.ptr(), m_);
   
         for(auto k = 0; k < M; k = k + block_size)
         {
-            //T *vv  = C2 or B2;
             auto nb = std::min(block_size, M - k);
-            dla_->applyVec(v1_.data(), B2, nb);
+            //dla_->applyVec should be cuda-aware
+            dla_->applyVec(v1_.ptr(), B2, nb);
+            //allreduce with wrapper
             MPI_Allreduce(MPI_IN_PLACE, B2, n_ * nb, getMPI_Type<T>(), MPI_SUM,
                       col_comm_);
-            this->B2C(B2, 0, w_.data(), 0, nb);
+            //this->B2C to be cuda-aware
+            this->B2C(B2, 0, w_.ptr(), 0, nb);
 
             //alpha = v1^T * w
+            // dla_->gemm need to be implemented
+            //cuda-aware
             t_gemm(CblasColMajor, CblasConjTrans,  CblasNoTrans, 
                     nb, nb, m_,
-                    &One, v1_.data(), m_, w_.data(), m_, 
-                    &Zero, alpha.data(), block_size);
-
-            MPI_Allreduce(MPI_IN_PLACE, alpha.data(), block_size * block_size, getMPI_Type<T>(), MPI_SUM, col_comm_);
+                    &One, v1_.ptr(), m_, w_.ptr(), m_, 
+                    &Zero, alpha.ptr(), block_size);
+            //alpha.syndFromDevice();
+            //allreduce wrapper
+            MPI_Allreduce(MPI_IN_PLACE, alpha.ptr(), block_size * block_size, getMPI_Type<T>(), MPI_SUM, col_comm_);
 
             //w = -v * alpha + w
+            //alpha.synd2Device();
             t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, 
                     m_, nb, nb, 
-                    &NegOne, v1_.data(), m_, alpha.data(), block_size,
-                    &One, w_.data(), m_);
+                    &NegOne, v1_.ptr(), m_, alpha.ptr(), block_size,
+                    &One, w_.ptr(), m_);
 
             //save alpha onto the block diag
-            t_lacpy('A', nb, nb, alpha.data(), block_size, submatrix.data() + k + k * M, M);
+            //dla_->lacpy
+            t_lacpy('A', nb, nb, alpha.ptr(), block_size, submatrix.ptr() + k + k * M, M);
 
             //w = - v0 * beta + w
             if(k > 0){
                 t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, 
                         m_, nb, nb, 
-                        &NegOne, v0_.data(), m_, beta.data(), block_size,
-                        &One, w_.data(), m_);
+                        &NegOne, v0_.ptr(), m_, beta.ptr(), block_size,
+                        &One, w_.ptr(), m_);
             }
 
             //CholeskyQR2
             // A = V^T * V
-            t_syherk('U', 'C', nb, m_, &One, w_.data(), m_, &Zero, A_.data(), block_size);
-            MPI_Allreduce(MPI_IN_PLACE, A_.data(), block_size * block_size, getMPI_Type<T>(), MPI_SUM, col_comm_);
+            t_syherk('U', 'C', nb, m_, &One, w_.ptr(), m_, &Zero, A_.ptr(), block_size);
+
+            MPI_Allreduce(MPI_IN_PLACE, A_.ptr(), block_size * block_size, getMPI_Type<T>(), MPI_SUM, col_comm_);
             // A = Chol(A)
-            info = t_potrf('U', nb, A_.data(), block_size);
+            info = t_potrf('U', nb, A_.ptr(), block_size);
             // w = W * A^(-1)
-            t_trsm('R', 'U', 'N', 'N', m_, nb, &One, A_.data(), block_size, w_.data(), m_);
+            t_trsm('R', 'U', 'N', 'N', m_, nb, &One, A_.ptr(), block_size, w_.ptr(), m_);
             // A' = V^T * V
-            t_syherk('U', 'C', nb, m_, &One, w_.data(), m_, &Zero, A_.data() + block_size * block_size, block_size);
-            MPI_Allreduce(MPI_IN_PLACE, A_.data() + block_size * block_size, block_size * block_size, getMPI_Type<T>(), MPI_SUM, col_comm_);
+            t_syherk('U', 'C', nb, m_, &One, w_.ptr(), m_, &Zero, A_.ptr() + block_size * block_size, block_size);
+            MPI_Allreduce(MPI_IN_PLACE, A_.ptr() + block_size * block_size, block_size * block_size, getMPI_Type<T>(), MPI_SUM, col_comm_);
             // A' = Chol(A)
-            info = t_potrf('U', nb, A_.data() + block_size * block_size, block_size);
+            info = t_potrf('U', nb, A_.ptr() + block_size * block_size, block_size);
+
             // w = W * A'^(-1)
-            t_trsm('R', 'U', 'N', 'N', m_, nb, &One, A_.data() + block_size * block_size, block_size, w_.data(), m_);
+            t_trsm('R', 'U', 'N', 'N', m_, nb, &One, A_.ptr() + block_size * block_size, block_size, w_.ptr(), m_);
             // beta = A'*A
             t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, 
                 nb, nb, nb, 
-                &One, A_.data() + block_size * block_size, block_size, A_.data(), block_size,
-                &Zero, beta.data(), block_size 
+                &One, A_.ptr() + block_size * block_size, block_size, A_.ptr(), block_size,
+                &Zero, beta.ptr(), block_size 
             );
-  
+
             if (k == M - 1)
                 break;
 
             //save beta to the off-diagonal
             if(k > 0)
             {
-                t_lacpy('U', nb, nb, beta.data(), block_size, submatrix.data() + k * M + (k - 1), M);
-            }
+                t_lacpy('U', nb, nb, beta.ptr(), block_size, submatrix.ptr() + k * M + (k - 1), M);
+            }            
 
             v1_.swap(v0_);
-            v1_.swap(w_);                
+            v1_.swap(w_);
         }
 
-        //Memcpy(memcpy_mode[2], C, v1_.data(), m_ * block_size * sizeof(T));
-
-        t_heevd(LAPACK_COL_MAJOR, 'N', 'U', M, submatrix.data(), M, ritzv_.data());
+        t_heevd(LAPACK_COL_MAJOR, 'N', 'U', M, submatrix.ptr(), M, ritzv_.ptr());
         
-        *r_beta = *std::max_element(ritzv_.begin(), ritzv_.end()) + std::abs(beta[0]);
+        *r_beta = *std::max_element(ritzv_.ptr(), ritzv_.ptr() + M) + std::abs(beta.ptr()[0]);
+
 #else
         std::cout << "calling Lanczos..." << std::endl;        
-
+        std::vector<Base<T>> ritzv_(M);
         Base<T> real_beta;
         Base<T>* d = new Base<T>[M]();
         Base<T>* e = new Base<T>[M]();
