@@ -1401,6 +1401,91 @@ public:
                                    V1, ritzv);
     }
 
+    //! Reads data from an input file and distributes it in a block-cyclic manner.
+    /*! 
+      @param filename The name of the input file.
+      @param H Pointer to memory allocated for Hamiltonian matrix.
+    */
+    void readHamiltonianBlockCyclicDist(const std::string& filename, T* H)
+    {
+        int blockx = send_lens_[0][dims_[0]-1];
+        int blocky = send_lens_[1][dims_[1]-1];
+
+        int gsizes[2] = {(int)N_, (int)N_};
+        int distribs[2] = {MPI_DISTRIBUTE_CYCLIC, MPI_DISTRIBUTE_CYCLIC};
+        int dargs[2] = {blockx, blocky};
+        int psizes[2] = {dims_[0], dims_[1]};
+        int order = MPI_ORDER_FORTRAN;
+
+        MPI_Datatype darray;
+        MPI_Type_create_darray(nprocs_, rank_, 2, gsizes, distribs, dargs, psizes, order, getMPI_Type<T>(), &darray);
+        MPI_Type_commit(&darray);
+
+        MPI_File file;
+        MPI_Status status;
+
+        if(MPI_File_open(MPI_COMM_WORLD, filename.data(), MPI_MODE_RDONLY, MPI_INFO_NULL, &file) != MPI_SUCCESS)
+        {
+            std::cout << "Can't open input matrix - " << filename << std::endl;
+            MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+        }
+
+        for(auto i=0; i<nprocs_; ++i)
+        {
+            if(rank_ == i)
+            {
+                std::cout << "rank: " << rank_ << "\n";
+                std::cout << "m_: " << m_ << " n_ " << n_ << "\n";
+                std::cout << "send_lens_[0][0]: " << send_lens_[0][dims_[0]-1] << " send_lens_[1][0]: " << send_lens_[1][dims_[1]-1] << "\n";
+                std::cout << "dims_[1]: " << dims_[1] << " dims_[0]: " << dims_[0] << "\n";
+
+            }
+            MPI_Barrier(MPI_COMM_WORLD);
+        }
+
+        MPI_Count count_read = m_ * n_;
+        MPI_File_set_view(file, 0, getMPI_Type<T>(), darray, "native", MPI_INFO_NULL);
+        MPI_File_read_all(file, H, count_read, getMPI_Type<T>(), &status);
+
+        MPI_Type_free(&darray);
+    }
+
+    //! Write data of distributes Hamiltonian matrix in a block-cyclic manner to an output file.
+    /*! 
+      @param filename The name of the output file.
+      @param H Pointer to memory allocated for Hamiltonian matrix.
+    */
+    void writeHamiltonianBlockCyclicDist(const std::string& filename, T* H)
+    {
+        int blockx = send_lens_[0][dims_[0]-1];
+        int blocky = send_lens_[1][dims_[1]-1];
+
+        int gsizes[2] = {(int)N_, (int)N_};
+        int distribs[2] = {MPI_DISTRIBUTE_CYCLIC, MPI_DISTRIBUTE_CYCLIC};
+        int dargs[2] = {blockx, blocky};
+        int psizes[2] = {dims_[0], dims_[1]};
+        int order = MPI_ORDER_FORTRAN;
+
+        MPI_Datatype darray;
+        MPI_Type_create_darray(nprocs_, rank_, 2, gsizes, distribs, dargs, psizes, order, getMPI_Type<T>(), &darray);
+        MPI_Type_commit(&darray);
+
+        MPI_File file;
+        MPI_Status status;
+
+        if(MPI_File_open(MPI_COMM_WORLD, filename.data(), MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &file) != MPI_SUCCESS)
+        {
+            std::cout << "Can't open output file - " << filename << std::endl;
+            MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+        }
+
+        MPI_Count count_write = m_ * n_;
+        MPI_File_set_view(file, 0, getMPI_Type<T>(), darray, "native", MPI_INFO_NULL);
+        MPI_File_write_all(file, H, count_write, getMPI_Type<T>(), &status);
+
+        MPI_Type_free(&darray);
+    }
+
 private:
     ///////////////////////////////////////////////////
     // General parameters of the eigenproblem
