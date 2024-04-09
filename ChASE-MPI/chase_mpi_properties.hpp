@@ -1408,13 +1408,10 @@ public:
     */
     void readHamiltonianBlockCyclicDist(const std::string& filename, T* H)
     {
-        int blockx = send_lens_[0][dims_[0]-1];
-        int blocky = send_lens_[1][dims_[1]-1];
-
         int gsizes[2] = {(int)N_, (int)N_};
         int distribs[2] = {MPI_DISTRIBUTE_CYCLIC, MPI_DISTRIBUTE_CYCLIC};
-        int dargs[2] = {blockx, blocky};
-        int psizes[2] = {dims_[0], dims_[1]};
+        int dargs[2] = {(int)mb_,(int)nb_};
+	int psizes[2] = {dims_[0], dims_[1]};
         int order = MPI_ORDER_FORTRAN;
 
         MPI_Datatype darray;
@@ -1428,19 +1425,6 @@ public:
         {
             std::cout << "Can't open input matrix - " << filename << std::endl;
             MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
-        }
-
-        for(auto i=0; i<nprocs_; ++i)
-        {
-            if(rank_ == i)
-            {
-                std::cout << "rank: " << rank_ << "\n";
-                std::cout << "m_: " << m_ << " n_ " << n_ << "\n";
-                std::cout << "send_lens_[0][0]: " << send_lens_[0][dims_[0]-1] << " send_lens_[1][0]: " << send_lens_[1][dims_[1]-1] << "\n";
-                std::cout << "dims_[1]: " << dims_[1] << " dims_[0]: " << dims_[0] << "\n";
-
-            }
-            MPI_Barrier(MPI_COMM_WORLD);
         }
 
         MPI_Count count_read = m_ * n_;
@@ -1457,13 +1441,10 @@ public:
     */
     void writeHamiltonianBlockCyclicDist(const std::string& filename, T* H)
     {
-        int blockx = send_lens_[0][dims_[0]-1];
-        int blocky = send_lens_[1][dims_[1]-1];
-
         int gsizes[2] = {(int)N_, (int)N_};
         int distribs[2] = {MPI_DISTRIBUTE_CYCLIC, MPI_DISTRIBUTE_CYCLIC};
-        int dargs[2] = {blockx, blocky};
-        int psizes[2] = {dims_[0], dims_[1]};
+	int dargs[2] = {(int)mb_,(int)nb_};
+	int psizes[2] = {dims_[0], dims_[1]};
         int order = MPI_ORDER_FORTRAN;
 
         MPI_Datatype darray;
