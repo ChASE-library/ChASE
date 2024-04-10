@@ -1421,10 +1421,10 @@ public:
         MPI_File file;
         MPI_Status status;
 
-        if(MPI_File_open(MPI_COMM_WORLD, filename.data(), MPI_MODE_RDONLY, MPI_INFO_NULL, &file) != MPI_SUCCESS)
+        if(MPI_File_open(comm_, filename.data(), MPI_MODE_RDONLY, MPI_INFO_NULL, &file) != MPI_SUCCESS)
         {
             std::cout << "Can't open input matrix - " << filename << std::endl;
-            MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+            MPI_Abort(comm_, EXIT_FAILURE);
         }
 
         MPI_Count count_read = m_ * n_;
@@ -1454,10 +1454,10 @@ public:
         MPI_File file;
         MPI_Status status;
 
-        if(MPI_File_open(MPI_COMM_WORLD, filename.data(), MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &file) != MPI_SUCCESS)
+        if(MPI_File_open(comm_, filename.data(), MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &file) != MPI_SUCCESS)
         {
             std::cout << "Can't open output file - " << filename << std::endl;
-            MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+            MPI_Abort(comm_, EXIT_FAILURE);
         }
 
         MPI_Count count_write = m_ * n_;
