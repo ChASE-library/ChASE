@@ -221,33 +221,127 @@ public:
 
         t_geqrf(LAPACK_COL_MAJOR, N_, nevex, V1_, N_, tau.get());
         t_gqr(LAPACK_COL_MAJOR, N_, nevex, nevex, V1_, N_, tau.get());
-
-        std::memcpy(V1_, V2_, locked * N_ * sizeof(T));
     }
 
     int cholQR1(std::size_t locked) override
     {
-        this->hhQR(locked);
-        return 0;
+        auto nevex = nev_ + nex_;
+        T one = T(1.0);
+        T zero = T(0.0);
+        int info = 1;
+
+        t_syherk('U', 'C', nevex, N_, &one, V1_, N_, &zero, A_, nevex);
+        info = t_potrf('U', nevex, A_, nevex); 
+
+        if(info != 0)
+        {
+            return info;
+        }else
+        {
+            t_trsm('R', 'U', 'N', 'N', N_, nevex, &one, A_, nevex, V1_, N_);
+#ifdef CHASE_OUTPUT
+            std::cout << std::setprecision(2) << "choldegree: 1" << std::endl;
+#endif                    
+            return info;  
+        } 
     }
 
     int cholQR2(std::size_t locked) override
     {
-        this->hhQR(locked);
-        return 0;
+        auto nevex = nev_ + nex_;
+        T one = T(1.0);
+        T zero = T(0.0);
+        int info = 1;
+
+        t_syherk('U', 'C', nevex, N_, &one, V1_, N_, &zero, A_, nevex);
+        info = t_potrf('U', nevex, A_, nevex); 
+
+        if(info != 0)
+        {
+            return info;
+        }else
+        {
+            t_trsm('R', 'U', 'N', 'N', N_, nevex, &one, A_, nevex, V1_, N_);
+            t_syherk('U', 'C', nevex, N_, &one, V1_, N_, &zero, A_, nevex);
+            info = t_potrf('U', nevex, A_, nevex);
+            t_trsm('R', 'U', 'N', 'N', N_, nevex, &one, A_, nevex, V1_, N_); 
+
+#ifdef CHASE_OUTPUT
+            std::cout << std::setprecision(2) << "choldegree: 2" << std::endl;
+#endif                    
+            return info;  
+        }        
     }
 
     int shiftedcholQR2(std::size_t locked) override
     {
-        this->hhQR(locked);
-        return 0;
+        Base<T> shift;
+        auto nevex = nev_ + nex_; 
+        T one = T(1.0);
+        T zero = T(0.0);
+        int info = 1;
+        t_syherk('U', 'C', nevex, N_, &one, V1_, N_, &zero, A_, nevex);
+        Base<T> nrmf = 0.0;
+        for(auto i=0; i < nevex * nevex; i+= nevex +1){
+            nrmf += std::abs(A_[i]);
+        }
+        
+        shift = 11 * (N_ * nevex + nevex * nevex + nevex) *
+                std::numeric_limits<Base<T>>::epsilon() * nrmf;
+        
+        this->shiftMatrixForQR(A_, nevex, (T)shift);
+        info = t_potrf('U', nevex, A_, nevex); 
+
+        if(info != 0)
+	    {
+	        return info;
+	    }
+
+        t_trsm('R', 'U', 'N', 'N', N_, nevex, &one, A_, nevex, V1_, N_);
+        t_syherk('U', 'C', nevex, N_, &one, V1_, N_, &zero, A_, nevex);
+        info = t_potrf('U', nevex, A_, nevex);
+        t_trsm('R', 'U', 'N', 'N', N_, nevex, &one, A_, nevex, V1_, N_); 
+        t_syherk('U', 'C', nevex, N_, &one, V1_, N_, &zero, A_, nevex);
+        info = t_potrf('U', nevex, A_, nevex);
+        t_trsm('R', 'U', 'N', 'N', N_, nevex, &one, A_, nevex, V1_, N_); 
+
+#ifdef CHASE_OUTPUT
+        std::cout << std::setprecision(2) << "choldegree: 2, shift = " << shift << std::endl;
+#endif 
+        return info;
     }
 
     void estimated_cond_evaluator(std::size_t locked, Base<T> cond)
-    {}
+    {
+        auto nevex = nev_ + nex_;
+        std::vector<Base<T>> S(nevex - locked);
+        std::vector<Base<T>> norms(nevex - locked);
+        std::vector<T> V2(N_ * (nevex));
+        V2.assign(V1_, V1_ + N_ * nevex);
+        T* U;
+        std::size_t ld = 1;
+        T* Vt;
+        t_gesvd('N', 'N', N_, nevex - locked, V2.data() + N_ * locked,
+                N_, S.data(), U, ld, Vt, ld);
+        
+        for (auto i = 0; i < nevex - locked; i++)
+        {
+            norms[i] = std::sqrt(t_sqrt_norm(S[i]));
+        }
+        
+        std::sort(norms.begin(), norms.end());
+
+        std::cout << "estimate: " << cond << ", rcond: "
+                    << norms[nev_ + nex_ - locked - 1] / norms[0]
+                    << ", ratio: "
+                    << cond * norms[0] / norms[nev_ + nex_ - locked - 1]
+                    << std::endl;
+    }
 
     void lockVectorCopyAndOrthoConcatswap(std::size_t locked, bool isHHqr)
-    {}     
+    {
+        std::memcpy(V1_, V2_, locked * N_ * sizeof(T));
+    }     
 
     void Swap(std::size_t i, std::size_t j) override
     {
@@ -352,7 +446,13 @@ public:
     {
     }
 
-    void shiftMatrixForQR(T* A, std::size_t n, T shift) override {}
+    void shiftMatrixForQR(T* A, std::size_t n, T shift) override 
+    {
+        for (auto i = 0; i < n; i++)
+        {
+            A[i * n + i] += (T)shift;
+        }
+    }
 
     ChaseMpiMatrices<T>* getChaseMatrices() override { return &matrices_; }
 
