@@ -1443,8 +1443,8 @@ public:
     {
         int gsizes[2] = {(int)N_, (int)N_};
         int distribs[2] = {MPI_DISTRIBUTE_CYCLIC, MPI_DISTRIBUTE_CYCLIC};
-	    int dargs[2] = {(int)mb_,(int)nb_};
-	    int psizes[2] = {dims_[0], dims_[1]};
+	int dargs[2] = {(int)mb_,(int)nb_};
+	int psizes[2] = {dims_[0], dims_[1]};
         int order = MPI_ORDER_FORTRAN;
 
         MPI_Datatype darray;
