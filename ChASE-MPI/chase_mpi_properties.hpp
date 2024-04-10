@@ -1401,6 +1401,72 @@ public:
                                    V1, ritzv);
     }
 
+    //! Reads data from an input file and distributes it in a block-cyclic manner.
+    /*! 
+      @param filename The name of the input file.
+      @param H Pointer to memory allocated for Hamiltonian matrix.
+    */
+    void readHamiltonianBlockCyclicDist(const std::string& filename, T* H)
+    {
+        int gsizes[2] = {(int)N_, (int)N_};
+        int distribs[2] = {MPI_DISTRIBUTE_CYCLIC, MPI_DISTRIBUTE_CYCLIC};
+        int dargs[2] = {(int)mb_,(int)nb_};
+	int psizes[2] = {dims_[0], dims_[1]};
+        int order = MPI_ORDER_FORTRAN;
+
+        MPI_Datatype darray;
+        MPI_Type_create_darray(nprocs_, rank_, 2, gsizes, distribs, dargs, psizes, order, getMPI_Type<T>(), &darray);
+        MPI_Type_commit(&darray);
+
+        MPI_File file;
+        MPI_Status status;
+
+        if(MPI_File_open(comm_, filename.data(), MPI_MODE_RDONLY, MPI_INFO_NULL, &file) != MPI_SUCCESS)
+        {
+            std::cout << "Can't open input matrix - " << filename << std::endl;
+            MPI_Abort(comm_, EXIT_FAILURE);
+        }
+
+        MPI_Count count_read = m_ * n_;
+        MPI_File_set_view(file, 0, getMPI_Type<T>(), darray, "native", MPI_INFO_NULL);
+        MPI_File_read_all(file, H, count_read, getMPI_Type<T>(), &status);
+
+        MPI_Type_free(&darray);
+    }
+
+    //! Write data of distributes Hamiltonian matrix in a block-cyclic manner to an output file.
+    /*! 
+      @param filename The name of the output file.
+      @param H Pointer to memory allocated for Hamiltonian matrix.
+    */
+    void writeHamiltonianBlockCyclicDist(const std::string& filename, T* H)
+    {
+        int gsizes[2] = {(int)N_, (int)N_};
+        int distribs[2] = {MPI_DISTRIBUTE_CYCLIC, MPI_DISTRIBUTE_CYCLIC};
+	int dargs[2] = {(int)mb_,(int)nb_};
+	int psizes[2] = {dims_[0], dims_[1]};
+        int order = MPI_ORDER_FORTRAN;
+
+        MPI_Datatype darray;
+        MPI_Type_create_darray(nprocs_, rank_, 2, gsizes, distribs, dargs, psizes, order, getMPI_Type<T>(), &darray);
+        MPI_Type_commit(&darray);
+
+        MPI_File file;
+        MPI_Status status;
+
+        if(MPI_File_open(comm_, filename.data(), MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &file) != MPI_SUCCESS)
+        {
+            std::cout << "Can't open output file - " << filename << std::endl;
+            MPI_Abort(comm_, EXIT_FAILURE);
+        }
+
+        MPI_Count count_write = m_ * n_;
+        MPI_File_set_view(file, 0, getMPI_Type<T>(), darray, "native", MPI_INFO_NULL);
+        MPI_File_write_all(file, H, count_write, getMPI_Type<T>(), &status);
+
+        MPI_Type_free(&darray);
+    }
+
 private:
     ///////////////////////////////////////////////////
     // General parameters of the eigenproblem

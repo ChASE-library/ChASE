@@ -481,6 +481,21 @@ void ChASE_DIST_Solve(int* deg, Base<T>* tol, char* mode, char* opt, char *qr)
 #endif
 }
 
+template<typename T>
+void ChASE_DIST_WrtBlockCyclicHam(const std::string& filename, T* H)
+{
+    ChaseMpiProperties<T> *props = ChASE_DIST::getProperties<T>();
+    props->writeHamiltonianBlockCyclicDist(filename, H);
+}
+
+template<typename T>
+void ChASE_DIST_ReadBlockCyclicHam(const std::string& filename, T* H)
+{
+    ChaseMpiProperties<T> *props = ChASE_DIST::getProperties<T>();
+    props->readHamiltonianBlockCyclicDist(filename, H);
+}
+
+
 extern "C"
 {
     /** @defgroup chase-c ChASE C Interface
@@ -1422,5 +1437,82 @@ extern "C"
     {
         ChASE_DIST_Solve<std::complex<float>>(deg, tol, mode, opt, qr);
     }
+    //! Write the block-cyclic distributed Hamiltonian matrix into an output file
+    //!
+    //! @param[in] filename the name of output filename
+    //! @param[in] H the pointer to the Hamitoninan matrix to be saved  
+    void pschase_wrtHam_blockcyclic_(const char* filename, float* H)
+    {
+        std::string filename_str(filename);
+        ChASE_DIST_WrtBlockCyclicHam<float>(filename_str, H);
+    }
+    //! Write the block-cyclic distributed Hamiltonian matrix into an output file
+    //!
+    //! @param[in] filename the name of output filename
+    //! @param[in] H the pointer to the Hamitoninan matrix to be saved  
+    void pdchase_wrtHam_blockcyclic_(const char* filename, double* H)
+    {
+        std::string filename_str(filename);
+        ChASE_DIST_WrtBlockCyclicHam<double>(filename_str, H);
+    }
+
+    //! Write the block-cyclic distributed Hamiltonian matrix into an output file
+    //!
+    //! @param[in] filename the name of output filename
+    //! @param[in] H the pointer to the Hamitoninan matrix to be saved  
+    void pcchase_wrtHam_blockcyclic_(const char* filename, float _Complex* H)
+    {
+        std::string filename_str(filename);
+        ChASE_DIST_WrtBlockCyclicHam<std::complex<float>>(filename_str, reinterpret_cast<std::complex<float>*>(H));
+    }
+
+    //! Write the block-cyclic distributed Hamiltonian matrix into an output file
+    //!
+    //! @param[in] filename the name of output filename
+    //! @param[in] H the pointer to the Hamitoninan matrix to be saved  
+    void pzchase_wrtHam_blockcyclic_(const char* filename, double _Complex* H)
+    {
+        std::string filename_str(filename);
+        ChASE_DIST_WrtBlockCyclicHam<std::complex<double>>(filename_str, reinterpret_cast<std::complex<double>*>(H));
+    }
+    //! Read the block-cyclic distributed Hamiltonian matrix from an input file
+    //!
+    //! @param[in] filename the name of input filename
+    //! @param[in] H the pointer to the Hamitoninan matrix to be saved  
+    void pschase_readHam_blockcyclic_(const char* filename, float* H)
+    {
+        std::string filename_str(filename);
+        ChASE_DIST_ReadBlockCyclicHam<float>(filename_str, H);
+    }
+    //! Read the block-cyclic distributed Hamiltonian matrix from an input file
+    //!
+    //! @param[in] filename the name of input filename
+    //! @param[in] H the pointer to the Hamitoninan matrix to be saved  
+    void pdchase_readHam_blockcyclic_(const char* filename, double* H)
+    {
+        std::string filename_str(filename);
+        ChASE_DIST_ReadBlockCyclicHam<double>(filename_str, H);
+    }
+
+    //! Read the block-cyclic distributed Hamiltonian matrix from an input file
+    //!
+    //! @param[in] filename the name of input filename
+    //! @param[in] H the pointer to the Hamitoninan matrix to be saved  
+    void pcchase_readHam_blockcyclic_(const char* filename, float _Complex* H)
+    {
+        std::string filename_str(filename);
+        ChASE_DIST_ReadBlockCyclicHam<std::complex<float>>(filename_str, reinterpret_cast<std::complex<float>*>(H));
+    }
+
+    //! Read the block-cyclic distributed Hamiltonian matrix from an input file
+    //!
+    //! @param[in] filename the name of input filename
+    //! @param[in] H the pointer to the Hamitoninan matrix to be saved  
+    void pzchase_readHam_blockcyclic_(const char* filename, double _Complex* H)
+    {
+        std::string filename_str(filename);
+        ChASE_DIST_ReadBlockCyclicHam<std::complex<double>>(filename_str, reinterpret_cast<std::complex<double>*>(H));
+    }
+
     /** @} */ // end of chase-c
 } // extern C
