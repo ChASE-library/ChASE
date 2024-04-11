@@ -1105,8 +1105,8 @@ public:
         nrmf = std::pow(nrmf, 2);
         MPI_Allreduce(MPI_IN_PLACE, &nrmf, 1, getMPI_Type<Base<T>>(),
                         MPI_SUM, col_comm_);
-        shift = 11 * (N_ * nevex + nevex * nevex + nevex) *
-                std::numeric_limits<Base<T>>::epsilon() * nrmf;
+
+        shift = std::sqrt(N_) * nrmf * std::numeric_limits<Base<T>>::epsilon();
 
         dla_->shiftMatrixForQR(A, nevex, (T)shift);
         

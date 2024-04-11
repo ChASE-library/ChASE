@@ -311,8 +311,7 @@ public:
             nrmf += std::abs(A_[i]);
         }
         
-        shift = 11 * (N_ * nevex + nevex * nevex + nevex) *
-                std::numeric_limits<Base<T>>::epsilon() * nrmf;
+        shift = std::sqrt(N_) * nrmf * std::numeric_limits<Base<T>>::epsilon();
         
         this->shiftMatrixForQR(A_, nevex, (T)shift);
         info = t_potrf('U', nevex, A_, nevex); 
