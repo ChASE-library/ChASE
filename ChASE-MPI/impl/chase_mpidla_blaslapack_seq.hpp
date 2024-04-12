@@ -265,7 +265,7 @@ public:
         {
             t_trsm('R', 'U', 'N', 'N', N_, nevex, &one, A_, nevex, C_, N_);
 #ifdef CHASE_OUTPUT
-            std::cout << std::setprecision(2) << "choldegree: 1" << std::endl;
+            std::cout << "choldegree: 1" << std::endl;
 #endif                    
             return info;  
         }
@@ -329,7 +329,7 @@ public:
         t_trsm('R', 'U', 'N', 'N', N_, nevex, &one, A_, nevex, C_, N_); 
 
 #ifdef CHASE_OUTPUT
-        std::cout << std::setprecision(2) << "choldegree: 2, shift = " << shift << std::endl;
+        std::cout << "choldegree: 2, shift = " << shift << std::endl;
 #endif 
         return info;
     }

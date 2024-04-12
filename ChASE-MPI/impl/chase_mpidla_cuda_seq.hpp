@@ -607,6 +607,14 @@ public:
             cusolverH_, CUBLAS_FILL_MODE_UPPER, nev_ + nex_, d_A_,
             nev_ + nex_, d_work_, lwork_, devInfo_);
 
+        cuda_exec(cudaMemcpy(&info, devInfo_, 1 * sizeof(int),
+                                cudaMemcpyDeviceToHost));
+        
+        if(info != 0)
+        {
+            return info;
+        }
+        
         cublas_status_ =
             cublasTtrsm(cublasH_, CUBLAS_SIDE_RIGHT, CUBLAS_FILL_MODE_UPPER,
                         CUBLAS_OP_N, CUBLAS_DIAG_NON_UNIT, N_, nev_ + nex_,
