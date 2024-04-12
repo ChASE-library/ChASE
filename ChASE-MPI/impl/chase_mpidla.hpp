@@ -1100,11 +1100,13 @@ public:
 
         AllReduce(allreduce_backend, A, nevex * nevex, getMPI_Type<T>(),
                   MPI_SUM, col_comm_, mpi_wrapper_);
-
-        Base<T> nrmf = dla_->nrm2(m_ * nevex, C, 1);
-        nrmf = std::pow(nrmf, 2);
-        MPI_Allreduce(MPI_IN_PLACE, &nrmf, 1, getMPI_Type<Base<T>>(),
-                        MPI_SUM, col_comm_);
+        
+        Base<T> nrmf = 0.0;
+        dla_->computeDiagonalAbsSum(A, &nrmf, nevex, nevex);
+        //Base<T> nrmf = dla_->nrm2(m_ * nevex, C, 1);
+        //nrmf = std::pow(nrmf, 2);
+        //MPI_Allreduce(MPI_IN_PLACE, &nrmf, 1, getMPI_Type<Base<T>>(),
+        //                MPI_SUM, col_comm_);
 
         shift = std::sqrt(N_) * nrmf * std::numeric_limits<Base<T>>::epsilon();
 
@@ -1353,7 +1355,7 @@ public:
     }
 
     void shiftMatrixForQR(T* A, std::size_t n, T shift) override {}
-
+    void computeDiagonalAbsSum(T *A, Base<T> *sum, std::size_t n, std::size_t ld){}
     ChaseMpiMatrices<T>* getChaseMatrices() override { return matrices_; }
 
 private:

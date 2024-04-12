@@ -38,6 +38,46 @@ __device__ void cuda_sum_reduce(int i, T* x )
     if ( n >    1 ) { if ( i <    1 && i +    1 < n ) { x[i] += x[i+   1]; }  __syncthreads(); }
 }
 
+__global__ void s_absTraceKernel(float* d_matrix, float* d_trace, int n, int ld) {
+    __shared__ float partial_trace[NB_X];
+    int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    partial_trace[threadIdx.x] = (idx < n) ? fabs(d_matrix[idx * ld + idx]) : 0.0f;
+    cuda_sum_reduce<NB_X>(threadIdx.x, partial_trace);
+    if (threadIdx.x == 0) {
+        atomicAdd(d_trace, partial_trace[0]);
+    }
+}
+
+__global__ void d_absTraceKernel(double* d_matrix, double* d_trace, int n, int ld) {
+    __shared__ double partial_trace[NB_X];
+    int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    partial_trace[threadIdx.x] = (idx < n) ? fabs(d_matrix[idx * ld + idx]) : 0.0;
+    cuda_sum_reduce<NB_X>(threadIdx.x, partial_trace);
+    if (threadIdx.x == 0) {
+        atomicAdd(d_trace, partial_trace[0]);
+    }
+}
+
+__global__ void c_absTraceKernel(cuComplex* d_matrix, float* d_trace, int n, int ld) {
+    __shared__ float partial_trace[NB_X];
+    int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    partial_trace[threadIdx.x] = (idx < n) ? cuCabsf(d_matrix[idx * ld + idx]) : 0.0f;
+    cuda_sum_reduce<NB_X>(threadIdx.x, partial_trace);
+    if (threadIdx.x == 0) {
+        atomicAdd(d_trace, partial_trace[0]);
+    }
+}
+
+__global__ void z_absTraceKernel(cuDoubleComplex* d_matrix, double* d_trace, int n, int ld) {
+    __shared__ double partial_trace[NB_X];
+    int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    partial_trace[threadIdx.x] = (idx < n) ? cuCabs(d_matrix[idx * ld + idx]) : 0.0;
+    cuda_sum_reduce<NB_X>(threadIdx.x, partial_trace);
+    if (threadIdx.x == 0) {
+        atomicAdd(d_trace, partial_trace[0]);
+    }
+}
+
 __global__ void c_resids_kernel(int m, int n, const cuComplex *A, int lda, const cuComplex *B, 
 			 int ldb, float *ritzv, float *resids, bool is_sqrt )
 {
@@ -448,6 +488,42 @@ __global__ void zshift_mgpu_matrix(cuDoubleComplex* A, std::size_t* off_m,
         ind = off_n[i] * ldH + off_m[i];
         A[ind].x += shift;
     }
+}
+
+void absTrace_gpu(float* d_matrix, float* d_trace, int n, int ld, cudaStream_t stream_)
+{
+    dim3 threads( NB_X);
+    int gridSize = (n + NB_X - 1) / NB_X;
+    dim3 grid( gridSize );
+
+    s_absTraceKernel<<< grid, threads, 0, stream_ >>>(d_matrix, d_trace, n, ld);
+}
+
+void absTrace_gpu(double* d_matrix, double* d_trace, int n, int ld, cudaStream_t stream_)
+{
+    dim3 threads( NB_X);
+    int gridSize = (n + NB_X - 1) / NB_X;
+    dim3 grid( gridSize );
+
+    d_absTraceKernel<<< grid, threads, 0, stream_ >>>(d_matrix, d_trace, n, ld);
+}
+
+void absTrace_gpu(std::complex<float>* d_matrix, float* d_trace, int n, int ld, cudaStream_t stream_)
+{
+    dim3 threads( NB_X);
+    int gridSize = (n + NB_X - 1) / NB_X;
+    dim3 grid( gridSize );
+
+    c_absTraceKernel<<< grid, threads, 0, stream_ >>>(reinterpret_cast<cuComplex*>(d_matrix), d_trace, n, ld);
+}
+
+void absTrace_gpu(std::complex<double>* d_matrix, double* d_trace, int n, int ld, cudaStream_t stream_)
+{
+    dim3 threads( NB_X);
+    int gridSize = (n + NB_X - 1) / NB_X;
+    dim3 grid( gridSize );
+
+    z_absTraceKernel<<< grid, threads, 0, stream_ >>>(reinterpret_cast<cuDoubleComplex*>(d_matrix), d_trace, n, ld);
 }
 
 void residual_gpu(int m, int n, std::complex<double> *dA, int lda, std::complex<double> *dB,

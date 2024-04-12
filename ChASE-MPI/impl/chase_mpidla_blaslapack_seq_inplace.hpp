@@ -230,6 +230,8 @@ public:
         T zero = T(0.0);
         int info = 1;
 
+        std::memcpy(V2_, V1_, locked * N_ * sizeof(T));
+
         t_syherk('U', 'C', nevex, N_, &one, V1_, N_, &zero, A_, nevex);
         info = t_potrf('U', nevex, A_, nevex); 
 
@@ -252,6 +254,8 @@ public:
         T one = T(1.0);
         T zero = T(0.0);
         int info = 1;
+
+        std::memcpy(V2_, V1_, locked * N_ * sizeof(T));
 
         t_syherk('U', 'C', nevex, N_, &one, V1_, N_, &zero, A_, nevex);
         info = t_potrf('U', nevex, A_, nevex); 
@@ -280,12 +284,14 @@ public:
         T one = T(1.0);
         T zero = T(0.0);
         int info = 1;
+
+        std::memcpy(V2_, V1_, locked * N_ * sizeof(T));
+
         t_syherk('U', 'C', nevex, N_, &one, V1_, N_, &zero, A_, nevex);
         Base<T> nrmf = 0.0;
-        for(auto i=0; i < nevex * nevex; i+= nevex +1){
-            nrmf += std::abs(A_[i]);
-        }
-        
+    
+        this->computeDiagonalAbsSum(A_, &nrmf, nevex, nevex);
+                
         shift = std::sqrt(N_) * nrmf * std::numeric_limits<Base<T>>::epsilon();
         
         this->shiftMatrixForQR(A_, nevex, (T)shift);
@@ -450,6 +456,16 @@ public:
         for (auto i = 0; i < n; i++)
         {
             A[i * n + i] += (T)shift;
+        }
+    }
+
+    void computeDiagonalAbsSum(T *A, Base<T> *sum, std::size_t n, std::size_t ld)
+    {
+        *sum = 0.0;
+        
+        for(auto i = 0; i < n; i++)
+        {
+            *sum += std::abs(A[i * ld + i]);
         }
     }
 
