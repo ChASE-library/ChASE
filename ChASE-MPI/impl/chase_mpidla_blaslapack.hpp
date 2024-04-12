@@ -292,10 +292,27 @@ public:
     //! ChaseMpiDLA::hhQR().
     //! - This function contains nothing in this class.
     void hhQR(std::size_t locked) override {}
-    //! - All required operations for this function has been done in for
-    //! ChaseMpiDLA::cholQR().
-    //! - This function contains nothing in this class.
-    void cholQR(std::size_t locked, Base<T> cond) override {}
+    int cholQR1(std::size_t locked) override
+    {
+        return 0;
+    }
+
+    int cholQR2(std::size_t locked) override
+    {
+        return 0;
+    } 
+
+    int shiftedcholQR2(std::size_t locked) override
+    {
+        return 0;
+    }  
+
+    void estimated_cond_evaluator(std::size_t locked, Base<T> cond)
+    {}
+    
+    void lockVectorCopyAndOrthoConcatswap(std::size_t locked, bool isHHqr)
+    {} 
+        
     //! - All required operations for this function has been done in for
     //! ChaseMpiDLA::Swap().
     //! - This function contains nothing in this class.
@@ -335,6 +352,15 @@ public:
         }
     }
 
+    void computeDiagonalAbsSum(T *A, Base<T> *sum, std::size_t n, std::size_t ld)
+    {
+        *sum = 0.0;
+        
+        for(auto i = 0; i < n; i++)
+        {
+            *sum += std::abs(A[i * ld + i]);
+        }        
+    }
     ChaseMpiMatrices<T>* getChaseMatrices() override { return &matrices_; }
 
 private:

@@ -125,6 +125,13 @@ void chase_shift_matrix(std::complex<float>* A, int n, float shift,
 //! function asynchronously
 void chase_shift_matrix(std::complex<double>* A, int n, double shift,
                         cudaStream_t* stream_);
+
+
+void absTrace_gpu(float* d_matrix, float* d_trace, int n, int ld, cudaStream_t stream_);
+void absTrace_gpu(double* d_matrix, double* d_trace, int n, int ld, cudaStream_t stream_);
+void absTrace_gpu(std::complex<float>* d_matrix, float* d_trace, int n, int ld, cudaStream_t stream_);
+void absTrace_gpu(std::complex<double>* d_matrix, double* d_trace, int n, int ld, cudaStream_t stream_);
+
 /** @} */ // end of chase-cuda-utility
 namespace chase
 {
@@ -423,14 +430,250 @@ public:
             cusolverDnTgqr(cusolverH_, N_, nevex, nevex, d_V1_, N_, d_return_,
                            d_work_, lwork_, devInfo_);
         assert(CUSOLVER_STATUS_SUCCESS == cusolver_status_);
-        cuda_exec(cudaMemcpy(d_V1_, d_V2_, locked * N_ * sizeof(T),
-                             cudaMemcpyDeviceToDevice));
+
     }
 
-    void cholQR(std::size_t locked, Base<T> cond) override
+    int cholQR1(std::size_t locked) override
     {
-        this->hhQR(locked);
+        T one = T(1.0);
+        T zero = T(0.0);
+
+        Base<T> One = Base<T>(1.0);
+        Base<T> Zero = Base<T>(0.0);
+        cublasOperation_t transa;
+        if (sizeof(T) == sizeof(Base<T>))
+        {
+            transa = CUBLAS_OP_T;
+        }
+        else
+        {
+            transa = CUBLAS_OP_C;
+        }
+
+        int info = 1;
+
+        cuda_exec(cudaMemcpy(d_V2_, d_V1_, locked * N_ * sizeof(T),
+                             cudaMemcpyDeviceToDevice));
+        assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
+
+        cublas_status_ = cublasTsyherk(cublasH_, CUBLAS_FILL_MODE_UPPER, transa,
+                                       nev_ + nex_, N_, &One, d_V1_, N_,
+                                       &Zero, d_A_, nev_ + nex_);
+        assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
+
+        cusolver_status_ = cusolverDnTpotrf(
+            cusolverH_, CUBLAS_FILL_MODE_UPPER, nev_ + nex_, d_A_,
+            nev_ + nex_, d_work_, lwork_, devInfo_);
+
+        cuda_exec(cudaMemcpy(&info, devInfo_, 1 * sizeof(int),
+                                cudaMemcpyDeviceToHost));
+        if(info != 0)
+        {
+            return info;
+        }else
+        {
+            cublas_status_ =
+                cublasTtrsm(cublasH_, CUBLAS_SIDE_RIGHT, CUBLAS_FILL_MODE_UPPER,
+                            CUBLAS_OP_N, CUBLAS_DIAG_NON_UNIT, N_, nev_ + nex_,
+                            &one, d_A_, nev_ + nex_, d_V1_, N_);
+#ifdef CHASE_OUTPUT
+            std::cout << std::setprecision(2) << "choldegree: 1" << std::endl;
+#endif                    
+            return info;  
+        }         
     }
+
+    int cholQR2(std::size_t locked) override
+    {
+        T one = T(1.0);
+        T zero = T(0.0);
+
+        Base<T> One = Base<T>(1.0);
+        Base<T> Zero = Base<T>(0.0);
+        cublasOperation_t transa;
+        if (sizeof(T) == sizeof(Base<T>))
+        {
+            transa = CUBLAS_OP_T;
+        }
+        else
+        {
+            transa = CUBLAS_OP_C;
+        }
+
+        int info = 1;
+
+        cuda_exec(cudaMemcpy(d_V2_, d_V1_, locked * N_ * sizeof(T),
+                             cudaMemcpyDeviceToDevice));
+
+        cublas_status_ = cublasTsyherk(cublasH_, CUBLAS_FILL_MODE_UPPER, transa,
+                                       nev_ + nex_, N_, &One, d_V1_, N_,
+                                       &Zero, d_A_, nev_ + nex_);
+        assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
+
+        cusolver_status_ = cusolverDnTpotrf(
+            cusolverH_, CUBLAS_FILL_MODE_UPPER, nev_ + nex_, d_A_,
+            nev_ + nex_, d_work_, lwork_, devInfo_);
+
+        cuda_exec(cudaMemcpy(&info, devInfo_, 1 * sizeof(int),
+                                cudaMemcpyDeviceToHost));
+        
+        if(info != 0)
+        {
+            return info;
+        }else
+        {
+            cublas_status_ =
+                cublasTtrsm(cublasH_, CUBLAS_SIDE_RIGHT, CUBLAS_FILL_MODE_UPPER,
+                            CUBLAS_OP_N, CUBLAS_DIAG_NON_UNIT, N_, nev_ + nex_,
+                            &one, d_A_, nev_ + nex_, d_V1_, N_);
+
+            cublas_status_ = cublasTsyherk(cublasH_, CUBLAS_FILL_MODE_UPPER, transa,
+                                        nev_ + nex_, N_, &One, d_V1_, N_,
+                                        &Zero, d_A_, nev_ + nex_);
+            assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
+
+            cusolver_status_ = cusolverDnTpotrf(
+                cusolverH_, CUBLAS_FILL_MODE_UPPER, nev_ + nex_, d_A_,
+                nev_ + nex_, d_work_, lwork_, devInfo_);
+
+            cublas_status_ =
+                cublasTtrsm(cublasH_, CUBLAS_SIDE_RIGHT, CUBLAS_FILL_MODE_UPPER,
+                            CUBLAS_OP_N, CUBLAS_DIAG_NON_UNIT, N_, nev_ + nex_,
+                            &one, d_A_, nev_ + nex_, d_V1_, N_);                
+#ifdef CHASE_OUTPUT
+            std::cout << std::setprecision(2) << "choldegree: 2" << std::endl;
+#endif                    
+            return info;  
+        } 
+    }   
+
+    int shiftedcholQR2(std::size_t locked) override
+    {
+        T one = T(1.0);
+        T zero = T(0.0);
+
+        Base<T> One = Base<T>(1.0);
+        Base<T> Zero = Base<T>(0.0);
+        Base<T> shift;
+        cublasOperation_t transa;
+        if (sizeof(T) == sizeof(Base<T>))
+        {
+            transa = CUBLAS_OP_T;
+        }
+        else
+        {
+            transa = CUBLAS_OP_C;
+        }
+
+        int info = 1;
+
+        cuda_exec(cudaMemcpy(d_V2_, d_V1_, locked * N_ * sizeof(T),
+                             cudaMemcpyDeviceToDevice));
+
+        cublas_status_ = cublasTsyherk(cublasH_, CUBLAS_FILL_MODE_UPPER, transa,
+                                       nev_ + nex_, N_, &One, d_V1_, N_,
+                                       &Zero, d_A_, nev_ + nex_);
+        assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
+
+        Base<T> nrmf = 0.0;
+        this->computeDiagonalAbsSum(d_A_, &nrmf, nev_ + nex_, nev_ + nex_);
+
+        shift = std::sqrt(N_) * nrmf * std::numeric_limits<Base<T>>::epsilon();
+        this->shiftMatrixForQR(d_A_, nev_ + nex_, (T)shift);      
+
+        cusolver_status_ = cusolverDnTpotrf(
+            cusolverH_, CUBLAS_FILL_MODE_UPPER, nev_ + nex_, d_A_,
+            nev_ + nex_, d_work_, lwork_, devInfo_);
+
+        cuda_exec(cudaMemcpy(&info, devInfo_, 1 * sizeof(int),
+                                cudaMemcpyDeviceToHost));
+        
+        if(info != 0)
+        {
+            return info;
+        }
+
+        cublas_status_ =
+        cublasTtrsm(cublasH_, CUBLAS_SIDE_RIGHT, CUBLAS_FILL_MODE_UPPER,
+                    CUBLAS_OP_N, CUBLAS_DIAG_NON_UNIT, N_, nev_ + nex_,
+                    &one, d_A_, nev_ + nex_, d_V1_, N_);
+
+        cublas_status_ = cublasTsyherk(cublasH_, CUBLAS_FILL_MODE_UPPER, transa,
+                                    nev_ + nex_, N_, &One, d_V1_, N_,
+                                    &Zero, d_A_, nev_ + nex_);
+        assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
+
+        cusolver_status_ = cusolverDnTpotrf(
+            cusolverH_, CUBLAS_FILL_MODE_UPPER, nev_ + nex_, d_A_,
+            nev_ + nex_, d_work_, lwork_, devInfo_);
+
+        cuda_exec(cudaMemcpy(&info, devInfo_, 1 * sizeof(int),
+                                cudaMemcpyDeviceToHost));
+        
+        if(info != 0)
+        {
+            return info;
+        }
+        
+        cublas_status_ =
+            cublasTtrsm(cublasH_, CUBLAS_SIDE_RIGHT, CUBLAS_FILL_MODE_UPPER,
+                        CUBLAS_OP_N, CUBLAS_DIAG_NON_UNIT, N_, nev_ + nex_,
+                        &one, d_A_, nev_ + nex_, d_V1_, N_);                                            
+
+        cublas_status_ = cublasTsyherk(cublasH_, CUBLAS_FILL_MODE_UPPER, transa,
+                                    nev_ + nex_, N_, &One, d_V1_, N_,
+                                    &Zero, d_A_, nev_ + nex_);
+        assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
+
+        cusolver_status_ = cusolverDnTpotrf(
+            cusolverH_, CUBLAS_FILL_MODE_UPPER, nev_ + nex_, d_A_,
+            nev_ + nex_, d_work_, lwork_, devInfo_);
+
+        cublas_status_ =
+            cublasTtrsm(cublasH_, CUBLAS_SIDE_RIGHT, CUBLAS_FILL_MODE_UPPER,
+                        CUBLAS_OP_N, CUBLAS_DIAG_NON_UNIT, N_, nev_ + nex_,
+                        &one, d_A_, nev_ + nex_, d_V1_, N_);    
+#ifdef CHASE_OUTPUT
+        std::cout << std::setprecision(2) << "choldegree: 2, shift = " << shift << std::endl;
+#endif 
+        return info;
+    }
+
+    void estimated_cond_evaluator(std::size_t locked, Base<T> cond)
+    {
+        auto nevex = nev_ + nex_;
+        std::vector<Base<T>> S(nevex - locked);
+        std::vector<Base<T>> norms(nevex - locked);
+        std::vector<T> V2(N_ * (nevex));
+
+        cuda_exec(cudaMemcpy(V2.data(), d_V1_, N_ * nevex * sizeof(T),
+                                cudaMemcpyDeviceToHost));
+        T* U;
+        std::size_t ld = 1;
+        T* Vt;
+        t_gesvd('N', 'N', N_, nevex - locked, V2.data() + N_ * locked,
+                N_, S.data(), U, ld, Vt, ld);
+        
+        for (auto i = 0; i < nevex - locked; i++)
+        {
+            norms[i] = std::sqrt(t_sqrt_norm(S[i]));
+        }
+        
+        std::sort(norms.begin(), norms.end());
+
+        std::cout << "estimate: " << cond << ", rcond: "
+                    << norms[nev_ + nex_ - locked - 1] / norms[0]
+                    << ", ratio: "
+                    << cond * norms[0] / norms[nev_ + nex_ - locked - 1]
+                    << std::endl;
+
+    }
+
+    void lockVectorCopyAndOrthoConcatswap(std::size_t locked, bool isHHqr)
+    {
+        cuda_exec(cudaMemcpy(d_V1_, d_V2_, locked * N_ * sizeof(T),
+                             cudaMemcpyDeviceToDevice));        
+    } 
 
     void Swap(std::size_t i, std::size_t j) override
     {
@@ -537,7 +780,17 @@ public:
     {}
 
     void shiftMatrixForQR(T *A, std::size_t n, T shift) override
-    {}
+    {
+        chase_shift_matrix(A, n, std::real(shift), &stream_);
+    }
+
+    void computeDiagonalAbsSum(T *A, Base<T> *sum, std::size_t n, std::size_t ld)
+    {
+        Base<T> *d_sum;
+        cudaMalloc((void**)&d_sum, sizeof(Base<T>));
+        absTrace_gpu(A, d_sum, n, ld, (cudaStream_t)0);
+        cudaMemcpy(sum, d_sum, sizeof(Base<T>), cudaMemcpyDeviceToHost);
+    }
 
     ChaseMpiMatrices<T> *getChaseMatrices() override
     {

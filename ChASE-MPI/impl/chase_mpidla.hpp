@@ -935,9 +935,6 @@ public:
         nvtxRangePop();
         nvtxRangePushA("memcpy");
 #endif
-        Memcpy(memcpy_mode[0], C, C2, locked * m_ * sizeof(T));
-        Memcpy(memcpy_mode[0], C2 + locked * m_, C + locked * m_,
-               (nevex - locked) * m_ * sizeof(T));
 
 #ifdef USE_NSIGHT
         nvtxRangePop();
@@ -967,11 +964,9 @@ public:
               tau.get());
         this->preApplication(V___.get()->ptr(), 0, nevex);
 
-        Memcpy(memcpy_mode[0], C, C2, locked * m_ * sizeof(T));
-        Memcpy(memcpy_mode[0], C2 + locked * m_, C + locked * m_,
-               (nevex - locked) * m_ * sizeof(T));
-#endif
         isHHqr = true;
+
+#endif
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
@@ -1002,269 +997,219 @@ public:
             ChaseMpiDLAMultiGPU::trsm, respectively
    */
 
-    void cholQR(std::size_t locked, Base<T> cond) override
+    int cholQR1(std::size_t locked) override
     {
+        isHHqr = false;
+
         int grank;
         MPI_Comm_rank(MPI_COMM_WORLD, &grank);
 
-        char* display_bounds_env;
-        display_bounds_env = getenv("CHASE_DISPLAY_BOUNDS");
-        int display_bounds = 0;
-        if (display_bounds_env)
-        {
-            display_bounds = std::atoi(display_bounds_env);
-        }
-        if (display_bounds != 0)
-        {
-            std::vector<T> V2(N_ * (nev_ + nex_));
-            //            T *C_host;
-            //	    dla_->retrieveC(&C_host, 0, nev_ + nex_, true);
-            //	    this->collecRedundantVecs(C_host, V2.data(), 0, nev_+nex_);
-            if (C != matrices_->C().ptr())
-            {
-                matrices_->C().sync2Ptr();
-            }
-            this->collecRedundantVecs(matrices_->C().ptr(), V2.data(), 0,
-                                      nev_ + nex_);
-            std::vector<Base<T>> S(nev_ + nex_ - locked);
-            T* U;
-            std::size_t ld = 1;
-            T* Vt;
-            t_gesvd('N', 'N', N_, nev_ + nex_ - locked, V2.data() + N_ * locked,
-                    N_, S.data(), U, ld, Vt, ld);
-            std::vector<Base<T>> norms(nev_ + nex_ - locked);
-            for (auto i = 0; i < nev_ + nex_ - locked; i++)
-            {
-                norms[i] = std::sqrt(t_sqrt_norm(S[i]));
-            }
-            std::sort(norms.begin(), norms.end());
-            if (grank == 0)
-            {
-                std::cout << "estimate: " << cond << ", rcond: "
-                          << norms[nev_ + nex_ - locked - 1] / norms[0]
-                          << ", ratio: "
-                          << cond * norms[0] / norms[nev_ + nex_ - locked - 1]
-                          << std::endl;
-            }
-        }
-
-#ifdef USE_NSIGHT
-        nvtxRangePushA("ChaseMpiDLA: cholQR");
-#endif
-        Base<T> shift;
-        bool isShiftQR = false;
-        int choldeg = 2;
-        int choldeg_env;
-        char* choldegenv;
-        choldegenv = getenv("CHASE_CHOLQR_DEGREE");
-        if (choldegenv)
-        {
-            choldeg_env = std::atoi(choldegenv);
-        }
-
-        // condition for using CholQR1
-        Base<T> cond_threshold_1, cond_threshold_2;
-
-        if (sizeof(Base<T>) == 8)
-        {
-            cond_threshold_1 = 1e8;
-            cond_threshold_2 = 2e1;
-        }
-        else
-        {
-            cond_threshold_1 = 1e4;
-            cond_threshold_2 = 1e1;
-        }
-
-        char* chol1_threshold;
-        chol1_threshold = getenv("CHASE_CHOLQR1_THLD");
-        if (chol1_threshold)
-        {
-            cond_threshold_2 = std::atof(chol1_threshold);
-        }
         auto nevex = nev_ + nex_;
-        bool first_iter = !cuda_aware_;
-
+        bool first_iter = !cuda_aware_;        
         T one = T(1.0);
         T zero = T(0.0);
         int info = 1;
-#ifdef USE_NSIGHT
-        nvtxRangePushA("ChaseMpiDLA: syherk");
-#endif
+
         dla_->syherk('U', 'C', nevex, m_, &one, C, m_, &zero, A, nevex,
                      first_iter);
-#ifdef USE_NSIGHT
-        nvtxRangePop();
-        nvtxRangePushA("allreduce");
-#endif
         AllReduce(allreduce_backend, A, nevex * nevex, getMPI_Type<T>(),
                   MPI_SUM, col_comm_, mpi_wrapper_);
-#ifdef USE_NSIGHT
-        nvtxRangePop();
-#endif
-        // remove shifting temporily for faciliating the impl with cuda-aware
+        info = dla_->potrf('U', nevex, A, nevex, true); 
 
-        if (cond > cond_threshold_1)
+        if(info != 0)
         {
-            isShiftQR = true;
-#ifdef USE_NSIGHT
-            nvtxRangePushA("ChaseMpiDLA: t_lange");
-#endif
-            //            Base<T> nrmf = t_lange('F', m_, nevex, C_, m_);
-            Base<T> nrmf = dla_->nrm2(m_ * nevex, C, 1);
-            nrmf = std::pow(nrmf, 2);
-            // Base<T> nrmf = t_norm_p2(m_ * nevex, C_);
-#ifdef USE_NSIGHT
-            nvtxRangePop();
-            nvtxRangePushA("allreduce");
-#endif
-            MPI_Allreduce(MPI_IN_PLACE, &nrmf, 1, getMPI_Type<Base<T>>(),
-                          MPI_SUM, col_comm_);
-            shift = 11 * (N_ * nevex + nevex * nevex + nevex) *
-                    std::numeric_limits<Base<T>>::epsilon() * nrmf;
-
-            if (shift < 10)
-            {
-#ifdef USE_NSIGHT
-                nvtxRangePop();
-                nvtxRangePushA("ChaseMpiDLA: shift in QR");
-#endif
-                dla_->shiftMatrixForQR(A, nevex, (T)shift);
-#ifdef USE_NSIGHT
-                nvtxRangePop();
-#endif
-            }
-            else
-            {
-                info = -1;
-            }
-        }
-
-        if (info != -1)
+            return info;
+        }else
         {
-#ifdef USE_NSIGHT
-            nvtxRangePushA("ChaseMpiDLA: potrf");
-#endif
-            info = dla_->potrf('U', nevex, A, nevex, isShiftQR);
-#ifdef USE_NSIGHT
-            nvtxRangePop();
-#endif
-        }
-
-        if (info == 0)
-        {
-            if (cond < cond_threshold_2)
-            {
-                choldeg = 1;
-            }
-
-            if (choldegenv)
-            {
-                choldeg = choldeg_env;
-            }
-
-            if (isShiftQR && choldeg == 1)
-            {
-                choldeg = 2;
-            }
+            dla_->trsm('R', 'U', 'N', 'N', m_, nevex, &one, A, nevex, C, m_,
+                    false);
 #ifdef CHASE_OUTPUT
             if (grank == 0)
             {
-                std::cout << std::setprecision(2) << "cond(V): " << cond
-                          << ", choldegee: " << choldeg;
-
-                if (isShiftQR)
-                {
-                    std::cout << ", shift: " << shift << std::endl;
-                }
-                else
-                {
-                    std::cout << std::endl;
-                }
+                std::cout << std::setprecision(2) << "choldegree: 1" << std::endl;
             }
-#endif
+#endif                    
+            return info;  
+        }                 
+    }
 
-            if (choldeg == 1)
-            {
-                first_iter = false;
-            }
-            else if (choldeg > 1)
-            {
-                first_iter = true;
-            }
+    int cholQR2(std::size_t locked) override
+    {
+        isHHqr = false;
 
-#ifdef USE_NSIGHT
-            nvtxRangePushA("ChaseMpiDLA: trsm");
-#endif
+        int grank;
+        MPI_Comm_rank(MPI_COMM_WORLD, &grank);
+
+        auto nevex = nev_ + nex_; 
+        bool first_iter = !cuda_aware_;        
+        T one = T(1.0);
+        T zero = T(0.0);
+        int info = 1;
+
+        dla_->syherk('U', 'C', nevex, m_, &one, C, m_, &zero, A, nevex,
+                     first_iter);
+
+        AllReduce(allreduce_backend, A, nevex * nevex, getMPI_Type<T>(),
+                  MPI_SUM, col_comm_, mpi_wrapper_);
+        info = dla_->potrf('U', nevex, A, nevex, true); 
+
+        if(info != 0)
+        {
+            return info;
+        }else
+        {
             dla_->trsm('R', 'U', 'N', 'N', m_, nevex, &one, A, nevex, C, m_,
-                       first_iter);
-#ifdef USE_NSIGHT
-            nvtxRangePop();
-#endif
-            for (auto i = 0; i < choldeg - 1; i++)
-            {
-#ifdef USE_NSIGHT
-                nvtxRangePushA("ChaseMpiDLA: syherk");
-#endif
-                dla_->syherk('U', 'C', nevex, m_, &one, C, m_, &zero, A, nevex,
-                             false);
-#ifdef USE_NSIGHT
-                nvtxRangePop();
-                nvtxRangePushA("allreduce");
-#endif
-                AllReduce(allreduce_backend, A, nevex * nevex, getMPI_Type<T>(),
-                          MPI_SUM, col_comm_, mpi_wrapper_);
-#ifdef USE_NSIGHT
-                nvtxRangePop();
-                nvtxRangePushA("ChaseMpiDLA: potrf");
-#endif
-                info = dla_->potrf('U', nevex, A, nevex, false);
-#ifdef USE_NSIGHT
-                nvtxRangePop();
-#endif
-                if (i == choldeg - 2)
-                {
-                    first_iter = false;
-                }
-                else
-                {
-                    first_iter = true;
-                }
-#ifdef USE_NSIGHT
-                nvtxRangePushA("ChaseMpiDLA: trsm");
-#endif
-                dla_->trsm('R', 'U', 'N', 'N', m_, nevex, &one, A, nevex, C, m_,
-                           first_iter);
-#ifdef USE_NSIGHT
-                nvtxRangePop();
-#endif
-            }
+                    true);
 
-#ifdef USE_NSIGHT
-            nvtxRangePushA("memcpy");
-#endif
-            Memcpy(memcpy_mode[0], C, C2, locked * m_ * sizeof(T));
-            Memcpy(memcpy_mode[1], C2 + locked * m_, C + locked * m_,
-                   (nevex - locked) * m_ * sizeof(T));
-            isHHqr = false;
-#ifdef USE_NSIGHT
-            nvtxRangePop();
-#endif
+            dla_->syherk('U', 'C', nevex, m_, &one, C, m_, &zero, A, nevex,
+                    false);                    
+
+            AllReduce(allreduce_backend, A, nevex * nevex, getMPI_Type<T>(),
+                  MPI_SUM, col_comm_, mpi_wrapper_);
+            
+            info = dla_->potrf('U', nevex, A, nevex, false); 
+
+            dla_->trsm('R', 'U', 'N', 'N', m_, nevex, &one, A, nevex, C, m_,
+                    false);
+#ifdef CHASE_OUTPUT
+            if (grank == 0)
+            {
+                std::cout << std::setprecision(2) << "choldegree: 2" << std::endl;
+            }
+#endif 
+            return info;  
+        }
+    }    
+
+    int shiftedcholQR2(std::size_t locked) override
+    {
+        isHHqr = false;
+    
+        int grank;
+        MPI_Comm_rank(MPI_COMM_WORLD, &grank);
+
+        Base<T> shift;
+        auto nevex = nev_ + nex_; 
+        bool first_iter = !cuda_aware_;        
+        T one = T(1.0);
+        T zero = T(0.0);
+        int info = 1;
+
+        dla_->syherk('U', 'C', nevex, m_, &one, C, m_, &zero, A, nevex,
+                     first_iter);
+
+        AllReduce(allreduce_backend, A, nevex * nevex, getMPI_Type<T>(),
+                  MPI_SUM, col_comm_, mpi_wrapper_);
+        
+        Base<T> nrmf = 0.0;
+        dla_->computeDiagonalAbsSum(A, &nrmf, nevex, nevex);
+        //Base<T> nrmf = dla_->nrm2(m_ * nevex, C, 1);
+        //nrmf = std::pow(nrmf, 2);
+        //MPI_Allreduce(MPI_IN_PLACE, &nrmf, 1, getMPI_Type<Base<T>>(),
+        //                MPI_SUM, col_comm_);
+
+        shift = std::sqrt(N_) * nrmf * std::numeric_limits<Base<T>>::epsilon();
+
+        dla_->shiftMatrixForQR(A, nevex, (T)shift);
+        
+        info = dla_->potrf('U', nevex, A, nevex, true);        
+	
+        if(info != 0)
+	    {
+	        return info;
+	    }
+
+        
+        dla_->trsm('R', 'U', 'N', 'N', m_, nevex, &one, A, nevex, C, m_,
+                    true);
+            
+        dla_->syherk('U', 'C', nevex, m_, &one, C, m_, &zero, A, nevex,
+                    false);
+
+        AllReduce(allreduce_backend, A, nevex * nevex, getMPI_Type<T>(),
+                MPI_SUM, col_comm_, mpi_wrapper_);
+        
+        //check info after this step
+        info = dla_->potrf('U', nevex, A, nevex, true);
+        if(info != 0)
+	{
+	    return info;
+	}
+
+        dla_->trsm('R', 'U', 'N', 'N', m_, nevex, &one, A, nevex, C, m_,
+                    true);
+
+        dla_->syherk('U', 'C', nevex, m_, &one, C, m_, &zero, A, nevex,
+                    false);
+
+        AllReduce(allreduce_backend, A, nevex * nevex, getMPI_Type<T>(),
+                MPI_SUM, col_comm_, mpi_wrapper_);
+    
+        dla_->potrf('U', nevex, A, nevex, false); 
+
+        dla_->trsm('R', 'U', 'N', 'N', m_, nevex, &one, A, nevex, C, m_,
+                    false);
+
+#ifdef CHASE_OUTPUT
+        if (grank == 0)
+        {
+            std::cout << std::setprecision(2) << "choldegree: 2, shift = " << shift << std::endl;
+        }
+#endif 
+
+        return info;
+    }
+
+    void estimated_cond_evaluator(std::size_t locked, Base<T> cond)
+    {
+        int grank;
+        MPI_Comm_rank(MPI_COMM_WORLD, &grank);
+        auto nevex = nev_ + nex_;
+
+        std::vector<T> V2(N_ * (nev_ + nex_));
+        if (C != matrices_->C().ptr())
+        {
+            matrices_->C().sync2Ptr();
+        }
+            
+        this->collecRedundantVecs(matrices_->C().ptr(), V2.data(), 0,
+                                    nev_ + nex_);
+        std::vector<Base<T>> S(nev_ + nex_ - locked);
+        T* U;
+        std::size_t ld = 1;
+        T* Vt;
+        t_gesvd('N', 'N', N_, nev_ + nex_ - locked, V2.data() + N_ * locked,
+                N_, S.data(), U, ld, Vt, ld);
+        std::vector<Base<T>> norms(nev_ + nex_ - locked);
+        for (auto i = 0; i < nev_ + nex_ - locked; i++)
+        {
+            norms[i] = std::sqrt(t_sqrt_norm(S[i]));
+        }
+        std::sort(norms.begin(), norms.end());
+        if (grank == 0)
+        {
+            std::cout << "estimate: " << cond << ", rcond: "
+                      << norms[nev_ + nex_ - locked - 1] / norms[0]
+                      << ", ratio: "
+                      << cond * norms[0] / norms[nev_ + nex_ - locked - 1]
+                      << std::endl;
+        }
+    }
+
+    void lockVectorCopyAndOrthoConcatswap(std::size_t locked, bool isHHqr)
+    {
+        Memcpy(memcpy_mode[0], C, C2, locked * m_ * sizeof(T));
+
+        if(isHHqr)
+        {
+            Memcpy(memcpy_mode[0], C2 + locked * m_, C + locked * m_,
+                   (nev_ + nex_ - locked) * m_ * sizeof(T));
         }
         else
         {
-#ifdef CHASE_OUTPUT
-            if (grank == 0)
-                std::cout << "cholQR failed because of ill-conditioned vector, "
-                             "use Householder QR instead"
-                          << std::endl;
-#endif
-            this->hhQR(locked);
+            Memcpy(memcpy_mode[1], C2 + locked * m_, C + locked * m_,
+                   (nev_ + nex_ - locked) * m_ * sizeof(T));
         }
-
-#ifdef USE_NSIGHT
-        nvtxRangePop();
-#endif
     }
 
     void Swap(std::size_t i, std::size_t j) override
@@ -1280,17 +1225,6 @@ public:
 
     void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc) override
     {
-        /*
-                T alpha = T(1.0);
-                T beta = T(0.0);
-        #ifdef USE_NSIGHT
-                nvtxRangePushA("ChaseMpiDLA: LanczosDOS");
-        #endif
-                t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, m_, idx, m,
-        &alpha, C_, m_, ritzVc, m, &beta, C2_, m_); #ifdef USE_NSIGHT
-                nvtxRangePop();
-        #endif
-        */
         dla_->LanczosDos(idx, m, ritzVc);
     }
 
@@ -1425,7 +1359,7 @@ public:
     }
 
     void shiftMatrixForQR(T* A, std::size_t n, T shift) override {}
-
+    void computeDiagonalAbsSum(T *A, Base<T> *sum, std::size_t n, std::size_t ld){}
     ChaseMpiMatrices<T>* getChaseMatrices() override { return matrices_; }
 
 private:
