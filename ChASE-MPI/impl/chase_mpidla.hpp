@@ -1130,7 +1130,11 @@ public:
                 MPI_SUM, col_comm_, mpi_wrapper_);
         
         //check info after this step
-        dla_->potrf('U', nevex, A, nevex, false); 
+        info = dla_->potrf('U', nevex, A, nevex, true);
+        if(info != 0)
+	{
+	    return info;
+	}
 
         dla_->trsm('R', 'U', 'N', 'N', m_, nevex, &one, A, nevex, C, m_,
                     true);
