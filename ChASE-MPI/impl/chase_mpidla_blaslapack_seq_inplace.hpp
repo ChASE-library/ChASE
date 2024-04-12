@@ -305,6 +305,10 @@ public:
         t_trsm('R', 'U', 'N', 'N', N_, nevex, &one, A_, nevex, V1_, N_);
         t_syherk('U', 'C', nevex, N_, &one, V1_, N_, &zero, A_, nevex);
         info = t_potrf('U', nevex, A_, nevex);
+        if(info != 0)
+	{
+	    return info;
+	}
         t_trsm('R', 'U', 'N', 'N', N_, nevex, &one, A_, nevex, V1_, N_); 
         t_syherk('U', 'C', nevex, N_, &one, V1_, N_, &zero, A_, nevex);
         info = t_potrf('U', nevex, A_, nevex);
