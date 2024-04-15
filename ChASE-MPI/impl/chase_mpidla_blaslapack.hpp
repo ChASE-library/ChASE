@@ -352,6 +352,15 @@ public:
         }
     }
 
+    void computeDiagonalAbsSum(T *A, Base<T> *sum, std::size_t n, std::size_t ld)
+    {
+        *sum = 0.0;
+        
+        for(auto i = 0; i < n; i++)
+        {
+            *sum += std::abs(A[i * ld + i]);
+        }        
+    }
     ChaseMpiMatrices<T>* getChaseMatrices() override { return &matrices_; }
 
 private:

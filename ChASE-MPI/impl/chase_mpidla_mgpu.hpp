@@ -233,6 +233,11 @@ void chase_shift_mgpu_matrix(std::complex<float>* A, std::size_t* off_m,
                              std::size_t ldH, float shift,
                              cudaStream_t stream_);
 
+void absTrace_gpu(float* d_matrix, float* d_trace, int n, int ld, cudaStream_t stream_);
+void absTrace_gpu(double* d_matrix, double* d_trace, int n, int ld, cudaStream_t stream_);
+void absTrace_gpu(std::complex<float>* d_matrix, float* d_trace, int n, int ld, cudaStream_t stream_);
+void absTrace_gpu(std::complex<double>* d_matrix, double* d_trace, int n, int ld, cudaStream_t stream_);
+
 /** @} */ // end of chase-cuda-utility
 
 namespace chase
@@ -366,6 +371,9 @@ public:
                    cudaMemcpyHostToDevice);
         cuda_exec(cudaStreamCreate(&stream1_));
         cuda_exec(cudaStreamCreate(&stream2_));
+
+        cudaMalloc((void**)&d_sum_, sizeof(Base<T>));
+
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
@@ -383,6 +391,8 @@ public:
         cuda_exec(cudaFree(d_off_m_));
         cuda_exec(cudaFree(d_off_n_));
         cuda_exec(cudaFree(states_));
+        cuda_exec(cudaFree(d_sum_));
+
         if (d_ritzVc_)
         {
             cuda_exec(cudaFree(d_ritzVc_));
@@ -831,6 +841,21 @@ public:
 #endif
     }
 
+    void computeDiagonalAbsSum(T *A, Base<T> *sum, std::size_t n, std::size_t ld)
+    {
+#if defined(CUDA_AWARE)
+        absTrace_gpu(A, d_sum_, n, ld, (cudaStream_t)0);
+        cudaMemcpy(sum, d_sum_, sizeof(Base<T>), cudaMemcpyDeviceToHost);
+#else
+        *sum = 0.0;
+        
+        for(auto i = 0; i < n; i++)
+        {
+            *sum += std::abs(A[i * ld + i]);
+        }   
+#endif
+    }
+
     ChaseMpiMatrices<T>* getChaseMatrices() override { return &matrices_; }
 
 private:
@@ -912,6 +937,7 @@ private:
     Matrix<T> vv__;
 
     T* d_ritzVc_ = nullptr;
+    Base<T> *d_sum_;
 };
 
 template <typename T>
