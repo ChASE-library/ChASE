@@ -65,6 +65,7 @@ public:
     MOCK_METHOD(void, lacpy, (char, std::size_t, std::size_t, T*, std::size_t, T*, std::size_t), (override));
     MOCK_METHOD(void, shiftMatrixForQR, (T*, std::size_t, T), (override));
     MOCK_METHOD(chase::mpi::ChaseMpiMatrices<T>*, getChaseMatrices, (), (override));
+    MOCK_METHOD(void, computeDiagonalAbsSum, (T *, chase::Base<T> *, std::size_t, std::size_t), (override));
 };
 
 template <typename T>
