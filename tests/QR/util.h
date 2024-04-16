@@ -53,6 +53,7 @@ void read_vectors(T* Vec, std::string path_in,
 
     if (!file) {
         std::cerr << "Unable to open file "<< path_in.data() << std::endl;
+        return;
     }
     std::cout << "READING MATRIX: " << path_in << "\n";
     int i,j;

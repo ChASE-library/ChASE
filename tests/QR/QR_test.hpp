@@ -15,7 +15,6 @@
 #include "ChASE-MPI/impl/chase_mpidla_blaslapack_seq_inplace.hpp"
 #endif
 #elif defined(HAS_CUDA)
-#include "ChASE-MPI/impl/chase_mpidla_cuda_seq.hpp"
 #include "ChASE-MPI/impl/chase_mpidla_mgpu.hpp"
 #elif defined(USE_MPI)
 #include "ChASE-MPI/impl/chase_mpidla_blaslapack.hpp"
@@ -99,11 +98,11 @@ class QRfixture : public testing::Test {
         column_comm = MPI_COMM_SELF;
         MPI_Comm_rank(column_comm, &column_rank);
         
-        H.resize(n*m);
         V1.resize(m*(nev+nex));
         ritzv.resize(nev+nex);
 
         DLA = new MF(H.data(), N, V1.data(), ritzv.data(), N, nev, nex);
+        Matrices = DLA->getChaseMatrices();
 #else    
         properties = new ChaseMpiProperties<T2>(N, nev, nex, MPI_COMM_WORLD);
         n = properties->get_n();
@@ -114,12 +113,12 @@ class QRfixture : public testing::Test {
         
         MPI_Comm_rank(column_comm, &column_rank);
 
-        H.resize(n*m);
         V1.resize(m*(nev+nex));
         ritzv.resize(nev+nex);
 
         DLAblaslapack = new MF(properties, H.data(), m, V1.data(), ritzv.data());
         DLA = new ChaseMpiDLA<T2>(properties, DLAblaslapack);
+        Matrices = DLAblaslapack->getChaseMatrices();
 #endif
     }
 
@@ -135,6 +134,7 @@ class QRfixture : public testing::Test {
     ChaseMpiDLAInterface<T2>* DLAblaslapack;
 #endif
     ChaseMpiDLAInterface<T2>* DLA;
+    ChaseMpiMatrices<T2>* Matrices;
 
     // I need ChaseMpiProperties class for constructor of chase_
     std::size_t N   = 100;
