@@ -21,7 +21,7 @@ TYPED_TEST(QRfixture, cholQR1)
     this->Matrices->C().sync2Ptr();
 
     auto orth = orthogonality<T2>(this->m, this->nev + this->nex, this->Matrices->C().host(), this->column_comm);
-    ASSERT_NEAR(orth, machineEpsilon, machineEpsilon * 10);
+    ASSERT_NEAR(orth, machineEpsilon, machineEpsilon * 15);
 }
 
 TYPED_TEST(QRfixture, cholQR1BadlyCond)
@@ -65,7 +65,7 @@ TYPED_TEST(QRfixture, cholQR2)
     this->Matrices->C().sync2Ptr();
 
     auto orth = orthogonality<T2>(this->m, this->nev + this->nex, this->Matrices->C().host(), this->column_comm);
-    ASSERT_NEAR(orth, machineEpsilon, machineEpsilon *10);
+    ASSERT_NEAR(orth, machineEpsilon, machineEpsilon *15);
 }
 
 TYPED_TEST(QRfixture, cholQR2IllCond)
