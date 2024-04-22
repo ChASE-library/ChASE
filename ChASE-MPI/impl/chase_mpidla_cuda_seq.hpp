@@ -157,7 +157,7 @@ public:
     ChaseMpiDLACudaSeq(T *H, std::size_t ldh, T *V1, Base<T> *ritzv, std::size_t N,
                        std::size_t nev, std::size_t nex)
         : N_(N), copied_(false), nev_(nev), nex_(nex), max_block_(nev + nex),
-          matrices_(2, N_, nev_ + nex_, H, ldh, V1, ritzv)
+          matrices_(1, N_, nev_ + nex_, H, ldh, V1, ritzv)
     {
         H_  = matrices_.H().host();
         ldh_ = matrices_.get_ldh();

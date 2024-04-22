@@ -192,6 +192,9 @@ public:
     void swap(Matrix<T> &swapping_obj)
     {
         std::swap(Host_, swapping_obj.Host_);
+#if defined(HAS_CUDA)
+        std::swap(Device_, swapping_obj.Device_);
+#endif        
     }
 
 #if defined(HAS_CUDA)
@@ -328,7 +331,7 @@ public:
     : mode_(mode), ldh_(ldh)	    
     {
         int isGPU = 0;
-        if (mode == 2)
+        if (mode == 1)
         {
             isGPU = 1;
         }
@@ -342,12 +345,6 @@ public:
         C___ = make_unique<Matrix<T>>(isGPU, N, max_block, V1, N);
         B___ = make_unique<Matrix<T>>(onlyGPU, N, max_block);
         A___ = make_unique<Matrix<T>>(onlyGPU, max_block, max_block);
-
-        if (mode == 1)
-        {
-            C2___ = make_unique<Matrix<T>>(0, N, max_block);
-            B2___ = make_unique<Matrix<T>>(0, N, max_block);
-        }
 
         Ritzv___ = make_unique<Matrix<Base<T>>>(isGPU, 1, max_block, ritzv,
                                                      max_block);
