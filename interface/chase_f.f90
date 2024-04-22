@@ -601,6 +601,110 @@ MODULE chase_diag
         END SUBROUTINE pcchase    
     END INTERFACE
 
+    INTERFACE
+        SUBROUTINE pschase_wrtHam_blockcyclic(filename, h) bind( c, name = 'pschase_wrtHam_blockcyclic_')
+        !> Write the block-cyclic distributed Hamiltonian matrix into an output file
+        !>
+        !> @param[in] filename the name of output filename
+        !> @param[in] h the pointer to the Hamitoninan matrix to be saved          
+            USE, INTRINSIC :: iso_c_binding
+            CHARACTER(kind=c_char, len=1), dimension(*), intent(in) :: filename
+            REAL(c_float)      :: h(*)
+        
+        END SUBROUTINE    
+    END INTERFACE
+
+    INTERFACE
+        SUBROUTINE pdchase_wrtHam_blockcyclic(filename, h) bind( c, name = 'pdchase_wrtHam_blockcyclic_')
+        !> Write the block-cyclic distributed Hamiltonian matrix into an output file
+        !>
+        !> @param[in] filename the name of output filename
+        !> @param[in] h the pointer to the Hamitoninan matrix to be saved          
+            USE, INTRINSIC :: iso_c_binding
+            CHARACTER(kind=c_char, len=1), dimension(*), intent(in) :: filename
+            REAL(c_double)      :: h(*)
+        
+        END SUBROUTINE    
+    END INTERFACE
+
+    INTERFACE
+        SUBROUTINE pcchase_wrtHam_blockcyclic(filename, h) bind( c, name = 'pcchase_wrtHam_blockcyclic_')
+        !> Write the block-cyclic distributed Hamiltonian matrix into an output file
+        !>
+        !> @param[in] filename the name of output filename
+        !> @param[in] h the pointer to the Hamitoninan matrix to be saved          
+            USE, INTRINSIC :: iso_c_binding
+            CHARACTER(kind=c_char, len=1), dimension(*), intent(in) :: filename
+            REAL(c_float_complex)      :: h(*)
+        
+        END SUBROUTINE    
+    END INTERFACE
+
+    INTERFACE
+        SUBROUTINE pzchase_wrtHam_blockcyclic(filename, h) bind( c, name = 'pzchase_wrtHam_blockcyclic_')
+        !> Write the block-cyclic distributed Hamiltonian matrix into an output file
+        !>
+        !> @param[in] filename the name of output filename
+        !> @param[in] h the pointer to the Hamitoninan matrix to be saved          
+            USE, INTRINSIC :: iso_c_binding
+            CHARACTER(kind=c_char, len=1), dimension(*), intent(in) :: filename
+            REAL(c_double_complex)      :: h(*)
+        
+        END SUBROUTINE    
+    END INTERFACE
+
+    INTERFACE
+        SUBROUTINE pschase_readHam_blockcyclic(filename, h) bind( c, name = 'pschase_readHam_blockcyclic_')
+        !> Read the block-cyclic distributed Hamiltonian matrix from an input file
+        !>
+        !> @param[in] filename the name of input filename
+        !> @param[in] h the pointer to the Hamitoninan matrix to be read into          
+            USE, INTRINSIC :: iso_c_binding
+            CHARACTER(kind=c_char, len=1), dimension(*), intent(in) :: filename
+            REAL(c_float)      :: h(*)
+        
+        END SUBROUTINE    
+    END INTERFACE
+
+    INTERFACE
+        SUBROUTINE pdchase_readHam_blockcyclic(filename, h) bind( c, name = 'pdchase_readHam_blockcyclic_')
+        !> Read the block-cyclic distributed Hamiltonian matrix from an input file
+        !>
+        !> @param[in] filename the name of input filename
+        !> @param[in] h the pointer to the Hamitoninan matrix to be read into          
+            USE, INTRINSIC :: iso_c_binding
+            CHARACTER(kind=c_char, len=1), dimension(*), intent(in) :: filename
+            REAL(c_double)      :: h(*)
+        
+        END SUBROUTINE    
+    END INTERFACE
+
+    INTERFACE
+        SUBROUTINE pcchase_readHam_blockcyclic(filename, h) bind( c, name = 'pcchase_readHam_blockcyclic_')
+        !> Read the block-cyclic distributed Hamiltonian matrix from an input file
+        !>
+        !> @param[in] filename the name of input filename
+        !> @param[in] h the pointer to the Hamitoninan matrix to be read into          
+            USE, INTRINSIC :: iso_c_binding
+            CHARACTER(kind=c_char, len=1), dimension(*), intent(in) :: filename
+            REAL(c_float_complex)      :: h(*)
+        
+        END SUBROUTINE    
+    END INTERFACE
+
+    INTERFACE
+        SUBROUTINE pzchase_readHam_blockcyclic(filename, h) bind( c, name = 'pzchase_readHam_blockcyclic_')
+        !> Read the block-cyclic distributed Hamiltonian matrix from an input file
+        !>
+        !> @param[in] filename the name of input filename
+        !> @param[in] h the pointer to the Hamitoninan matrix to be read into          
+            USE, INTRINSIC :: iso_c_binding
+            CHARACTER(kind=c_char, len=1), dimension(*), intent(in) :: filename
+            REAL(c_double_complex)      :: h(*)
+        
+        END SUBROUTINE    
+    END INTERFACE
+
 END MODULE chase_diag
 !> @} end of chase-f
 
