@@ -1432,6 +1432,11 @@ public:
         MPI_File_read_all(fileHandle, H, count_read, chase::mpi::getMPI_Type<T>(), &status);
 
         MPI_Type_free(&subarray);
+    
+        if (MPI_File_close(&fileHandle) != MPI_SUCCESS)
+        {
+            MPI_Abort(comm_, EXIT_FAILURE);
+        }	
     }
 
     //! Write data of distributes Hamiltonian matrix in a block-block manner to an output file.
@@ -1464,6 +1469,11 @@ public:
         MPI_File_write_all(fileHandle, H, count_write, chase::mpi::getMPI_Type<T>(), &status);
 
         MPI_Type_free(&subarray);
+
+    	if (MPI_File_close(&fileHandle) != MPI_SUCCESS)
+    	{
+            MPI_Abort(comm_, EXIT_FAILURE);
+        }
     }
 
     //! Reads data from an input file and distributes it in a block-cyclic manner.
@@ -1497,6 +1507,11 @@ public:
         MPI_File_read_all(file, H, count_read, getMPI_Type<T>(), &status);
 
         MPI_Type_free(&darray);
+
+        if (MPI_File_close(&file) != MPI_SUCCESS)
+        {
+            MPI_Abort(comm_, EXIT_FAILURE);
+        }	
     }
 
     //! Write data of distributes Hamiltonian matrix in a block-cyclic manner to an output file.
@@ -1530,6 +1545,11 @@ public:
         MPI_File_write_all(file, H, count_write, getMPI_Type<T>(), &status);
 
         MPI_Type_free(&darray);
+
+        if (MPI_File_close(&file) != MPI_SUCCESS)
+        {
+            MPI_Abort(comm_, EXIT_FAILURE);
+        }	
     }
 
 private:
