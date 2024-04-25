@@ -275,13 +275,13 @@ int do_chase(ChASE_DriverProblemConfig& conf)
         if(sequence){
             if(legacy)
             {
-                problem << path_in << "gmat  1 " << std::setw(2) << i << "bin";
+                problem << path_in << "gmat  1 " << std::setw(2) << i << ".bin";
             }
             else
             {
                 problem << path_in << "mat_" << spin << "_" << std::setfill('0')
                         << std::setw(2) << kpoint << "_" << std::setfill('0')
-                        << std::setw(2) << i << "bin";
+                        << std::setw(2) << i << ".bin";
             }
         }
         else
