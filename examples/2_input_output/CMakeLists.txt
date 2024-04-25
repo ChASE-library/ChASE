@@ -23,7 +23,7 @@ if(POPL_FOUND)
   add_executable( "2_input_output_block_cyclic" "2_input_output.cpp" )
   target_link_libraries( "2_input_output_block_cyclic" chase_mpi )
   target_include_directories( "2_input_output_block_cyclic" PRIVATE ${POPL_INCLUDE_DIR})
-  target_compile_definitions( "2_input_output_block_cyclic" PRIVATE USE_MPI=1 USE_BLOCK_CYCLIC=1)  
+  target_compile_definitions( "2_input_output_block_cyclic" PRIVATE USE_MPI=1 USE_BLOCK_CYCLIC=1 PRINT_EIGENVALUES=1)  
 
   install (TARGETS 2_input_output_seq
             RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})  
@@ -57,7 +57,7 @@ if(POPL_FOUND)
     add_executable( 2_input_output_mgpu_block_cyclic "2_input_output.cpp" )
     target_link_libraries( 2_input_output_mgpu_block_cyclic chase_mpi chase_cuda )
     target_include_directories( 2_input_output_mgpu_block_cyclic PRIVATE ${POPL_INCLUDE_DIR})
-    target_compile_definitions( "2_input_output_mgpu_block_cyclic" PRIVATE DRIVER_BUILD_MGPU=1 USE_MPI=1 USE_BLOCK_CYCLIC=1)
+    target_compile_definitions( "2_input_output_mgpu_block_cyclic" PRIVATE DRIVER_BUILD_MGPU=1 USE_MPI=1 USE_BLOCK_CYCLIC=1 PRINT_EIGENVALUES=1)
 
     install (TARGETS 2_input_output_mgpu
              RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
