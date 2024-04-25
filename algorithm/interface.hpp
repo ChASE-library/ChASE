@@ -85,6 +85,8 @@ public:
     //! @param new_converged: number of newly converged eigenpairs in the
     //! present iterative step.
     virtual void Lock(std::size_t new_converged) = 0;
+    virtual bool checkSymmetryEasy() = 0;
+    virtual void symOrHermMatrix(char uplo) = 0;
     //! It indicates the starting point to solve a (new) eigenproblem.
     virtual void Start() = 0;
     //! It indicates the ending point of solving an eigenproblem

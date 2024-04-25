@@ -446,6 +446,17 @@ public:
         perf_.end_clock(ChasePerfData<T>::TimePtrs::Resids_Locking);
         perf_.add_iter_count(1);
     }
+
+    bool checkSymmetryEasy()
+    {
+        return chase_->checkSymmetryEasy();
+    }
+
+    void symOrHermMatrix(char uplo)
+    {
+        chase_->symOrHermMatrix(uplo);
+    }
+
     void Start()
     {
         chase_->Start();

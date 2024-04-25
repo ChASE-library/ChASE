@@ -463,6 +463,19 @@ public:
         std::size_t nx_b = std::min(bsize, nevex_);
         t_descinit(desc1D_Nxnevx_, &N_, &nevex_, &mb_, &nx_b, &irsrc_, &zero,
                    &colcomm_ctxt_, &m_, &info);
+
+        int ictxt_2;
+        blacs_get_(&zero, &zero, &ictxt_2);
+        comm2d_ctxt_ = ictxt_2;
+        if (col_major == false){
+            char major = 'R';
+            blacs_gridinit_(&comm2d_ctxt_, &major, &dims_[0], &dims_[1]);
+        }else
+        {
+            char major = 'C';
+            blacs_gridinit_(&comm2d_ctxt_, &major, &dims_[0], &dims_[1]);          
+        }
+
 #endif
 
         comm_2 row_comm_dup;
@@ -741,6 +754,20 @@ public:
         std::size_t nx_b = std::min(bsize, nevex_);
         t_descinit(desc1D_Nxnevx_, &N_, &nevex_, &mb_, &nx_b, &zero, &zero,
                    &colcomm_ctxt_, &m_, &info);
+                   
+        int ictxt_2;
+        blacs_get_(&zero, &zero, &ictxt_2);
+        comm2d_ctxt_ = ictxt_2;
+        if (col_major == false){
+            char major = 'R';
+            blacs_gridinit_(&comm2d_ctxt_, &major, &dims_[0], &dims_[1]); 
+        }else
+        {
+            char major = 'C';
+            blacs_gridinit_(&comm2d_ctxt_, &major, &dims_[0], &dims_[1]);           
+        }
+
+
 #endif
 
         comm_2 row_comm_dup;
@@ -1006,6 +1033,13 @@ public:
         std::size_t nx_b = std::min(bsize, nevex_);
         t_descinit(desc1D_Nxnevx_, &N_, &nevex_, &mb_, &nx_b, &zero, &zero,
                    &colcomm_ctxt_, &m_, &info);
+
+        int ictxt_2;
+        blacs_get_(&zero, &zero, &ictxt_2);
+        comm2d_ctxt_ = ictxt_2;
+        char major = 'R';
+        blacs_gridinit_(&comm2d_ctxt_, &major, &dims_[0], &dims_[1]);
+
 #endif
 
         comm_2 row_comm_dup;
@@ -1054,7 +1088,7 @@ public:
     Comm_t get_mpi_wrapper() { return mpi_wrapper_; }
 #if defined(HAS_SCALAPACK)
     int get_colcomm_ctxt() { return colcomm_ctxt_; }
-
+    int get_comm2D_ctxt() { return comm2d_ctxt_; }
     std::size_t* get_desc1D_Nxnevx() { return desc1D_Nxnevx_; }
 #endif
     //! Returns the rank of matrix `A` which is distributed within 2D MPI grid.
@@ -1823,7 +1857,9 @@ private:
     //! ScaLAPACK context for each row communicator. This context is in 1D grid,
     //! with only 1 column
     int colcomm_ctxt_;
+    int comm2d_ctxt_;
     std::size_t desc1D_Nxnevx_[9];
+    std::size_t desc_H_[9];
 #endif
 
     Comm_t mpi_wrapper_;

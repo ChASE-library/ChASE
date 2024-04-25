@@ -68,4 +68,15 @@ std::complex<float> getRandomT(std::function<double(void)> f)
     return std::complex<float>(f(), f());
 }
 
+template<typename T>
+T conjugate(const T& scalar) {
+    static_assert(std::is_arithmetic<T>::value || std::is_same<T, std::complex<float>>::value || std::is_same<T, std::complex<double>>::value,
+                  "Type must be float, double, std::complex<float> or std::complex<double>");    
+    if constexpr (std::is_arithmetic<T>::value) {
+        return scalar; // For complex scalars, use std::conj
+    } else {
+        return std::conj(scalar); // For real scalars, conjugate is the same as the original value
+    }
+}
+
 #endif
