@@ -1401,6 +1401,71 @@ public:
                                    V1, ritzv);
     }
 
+    //! Reads data from an input file and distributes it in a block-block manner.
+    /*! 
+      @param filename The name of the input file.
+      @param H Pointer to memory allocated for Hamiltonian matrix.
+    */
+    void readHamiltonianBlockDist(const std::string& filename, T* H)
+    {
+        MPI_File fileHandle;
+        MPI_Status status;
+        int access_mode = MPI_MODE_RDONLY;
+
+        if(MPI_File_open(comm_, filename.data(), access_mode, MPI_INFO_NULL, &fileHandle) != MPI_SUCCESS)
+        {
+            std::cout << "Can't open input matrix - " << filename << std::endl;
+            MPI_Abort(comm_, EXIT_FAILURE);
+        }
+
+        MPI_Count count_read = m_ * n_;
+
+        MPI_Datatype subarray;
+        int global_matrix_size[] = {(int)N_, (int)N_};
+        int local_matrix_size[] = {(int)m_,(int)n_};
+        int offsets[] = {(int)off_[0], (int)off_[1]};
+
+        MPI_Type_create_subarray(2, global_matrix_size, local_matrix_size, offsets, MPI_ORDER_FORTRAN, chase::mpi::getMPI_Type<T>(), &subarray);
+        MPI_Type_commit(&subarray);
+
+        MPI_File_set_view(fileHandle, 0, chase::mpi::getMPI_Type<T>(), subarray, "native", MPI_INFO_NULL);
+        MPI_File_read_all(fileHandle, H, count_read, chase::mpi::getMPI_Type<T>(), &status);
+
+        MPI_Type_free(&subarray);
+    }
+
+    //! Write data of distributes Hamiltonian matrix in a block-block manner to an output file.
+    /*! 
+      @param filename The name of the output file.
+      @param H Pointer to memory allocated for Hamiltonian matrix.
+    */
+    void writeHamiltonianBlockDist(const std::string& filename, T* H)
+    {
+        MPI_File fileHandle;
+        MPI_Status status;
+
+        if(MPI_File_open(comm_, filename.data(), MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &fileHandle) != MPI_SUCCESS)
+        {
+            std::cout << "Can't open input matrix - " << filename << std::endl;
+            MPI_Abort(comm_, EXIT_FAILURE);
+        }
+
+        MPI_Count count_write = m_ * n_;
+
+        MPI_Datatype subarray;
+        int global_matrix_size[] = {(int)N_, (int)N_};
+        int local_matrix_size[] = {(int)m_,(int)n_};
+        int offsets[] = {(int)off_[0], (int)off_[1]};
+
+        MPI_Type_create_subarray(2, global_matrix_size, local_matrix_size, offsets, MPI_ORDER_FORTRAN, chase::mpi::getMPI_Type<T>(), &subarray);
+        MPI_Type_commit(&subarray);
+
+        MPI_File_set_view(fileHandle, 0, chase::mpi::getMPI_Type<T>(), subarray, "native", MPI_INFO_NULL);
+        MPI_File_write_all(fileHandle, H, count_write, chase::mpi::getMPI_Type<T>(), &status);
+
+        MPI_Type_free(&subarray);
+    }
+
     //! Reads data from an input file and distributes it in a block-cyclic manner.
     /*! 
       @param filename The name of the input file.
