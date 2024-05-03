@@ -74,7 +74,7 @@ T conjugate(const T& scalar) {
                   "Type must be float, double, std::complex<float> or std::complex<double>");    
     if constexpr (std::is_arithmetic<T>::value) {
         return scalar; // For real scalars, conjugate is the same as the
-original value
+// original value
     } else {
         return std::conj(scalar); // For complex scalars, use std::conj
     }
