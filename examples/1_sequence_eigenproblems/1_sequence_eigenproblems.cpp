@@ -208,7 +208,7 @@ int main(int argc, char** argv)
             for (std::size_t j = 1; j < i; ++j)
             {
                 T element_perturbation = T(d(gen), d(gen)) * perturb;
-                Clement[j + N * i] += element_perturbation + T(1.0);
+                Clement[j + N * i] += element_perturbation;
                 Clement[i + N * j] += std::conj(element_perturbation);
             }
         }
