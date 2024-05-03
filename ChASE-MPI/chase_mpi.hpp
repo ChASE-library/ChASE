@@ -205,6 +205,22 @@ public:
                       "MatrixFreeChASE Must be skewed");
     }
 
+    ChaseMpi(ChaseMpiProperties<T>* properties, T* H, std::size_t ldh, T* V1,
+             Base<T>* ritzv, ChaseMpiDLAInterface<T>* dla_input)
+        : N_(properties->get_N()), nev_(properties->GetNev()),
+          nex_(properties->GetNex()), locked_(0), config_(N_, nev_, nex_),
+          properties_(properties),
+          dla_(std::unique_ptr<ChaseMpiDLAInterface<T>>(dla_input))
+    {
+        int init;
+        MPI_Initialized(&init);
+        if (init)
+            MPI_Comm_rank(MPI_COMM_WORLD, &rank_);
+
+        ritzv_ = dla_->get_Ritzv();
+        resid_ = dla_->get_Resids();
+    }
+
     //! It prevents the copy operation of the constructor of ChaseMpi.
     ChaseMpi(const ChaseMpi&) = delete;
 
@@ -341,13 +357,13 @@ public:
             disable = std::atoi(cholddisable);
         }
 
-        Base<T> cond_threshold_1 = (sizeof(Base<T>) == 8) ? 1e8 : 1e4;
-        Base<T> cond_threshold_2 = (sizeof(Base<T>) == 8) ? 2e1 : 1e1;
+        Base<T> cond_threshold_upper = (sizeof(Base<T>) == 8) ? 1e8 : 1e4;
+        Base<T> cond_threshold_lower = (sizeof(Base<T>) == 8) ? 2e1 : 1e1;
 
-        char* chol1_threshold = getenv("CHASE_CHOLQR1_THLD");
-        if (chol1_threshold)
+        char* chol_threshold = getenv("CHASE_CHOLQR1_THLD");
+        if (chol_threshold)
         {
-            cond_threshold_2 = std::atof(chol1_threshold);
+            cond_threshold_lower = std::atof(chol_threshold);
         }
 
         int display_bounds = 0;
@@ -377,11 +393,11 @@ public:
 
             int info = 1;
 
-            if (cond > cond_threshold_1)
+            if (cond > cond_threshold_upper)
             {
                 info = dla_->shiftedcholQR2(locked_);
             }
-            else if(cond < cond_threshold_2)
+            else if(cond < cond_threshold_lower)
             {
                 info = dla_->cholQR1(locked_);
             }
@@ -397,7 +413,7 @@ public:
                 {
                     std::cout << "CholeskyQR doesn't work, Househoulder QR will be used." << std::endl;
                 }
-#endif                
+#endif
                 dla_->hhQR(locked_);
                 isHHqr = true;
             }
@@ -569,7 +585,7 @@ public:
 
     //! This member function return the number of MPI processes used by ChASE
     //! \return the number of MPI ranks in the communicator used by ChASE
-    int get_nprocs() override { return dla_->get_nprocs(); }
+    int get_nprocs() override { return properties_.get()->get_nprocs(); }
 
 private:
     //! Global size of the matrix A defining the eigenproblem.

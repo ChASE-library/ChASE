@@ -70,8 +70,18 @@ if(BUILD_WITH_EXAMPLES)
         add_subdirectory("./examples")
 endif()
 
-enable_testing()
-add_test( BASIC "chase_driver" )
+
+option(ENABLE_TESTS "Enable unit tests." OFF)
+if(ENABLE_TESTS)
+    MESSAGE("Test enabled. Finding GoogleTests.")
+    include(${CMAKE_SOURCE_DIR}/cmake/external/Gtest/FetchGtest.cmake)
+    include(CTest)
+
+    set(MPI_RUN mpirun CACHE STRING "MPI runner (mpirun/srun)")
+    set(MPI_RUN_ARGS  CACHE STRING "")
+    set(MPI_TEST ON CACHE BOOL "Run test with mpi")
+    add_subdirectory(tests)
+endif()
 
 # Documentation
 option(BUILD_WITH_DOCS "Build the examples" OFF)

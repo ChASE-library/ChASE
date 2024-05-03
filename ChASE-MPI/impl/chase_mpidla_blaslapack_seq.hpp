@@ -549,7 +549,13 @@ public:
     {
     }
 
-    void shiftMatrixForQR(T* A, std::size_t n, T shift) override {}
+    void shiftMatrixForQR(T* A, std::size_t n, T shift) override 
+    {
+        for (auto i = 0; i < n; i++)
+        {
+            A[i * n + i] += (T)shift;
+        }
+    }
 
     void computeDiagonalAbsSum(T *A, Base<T> *sum, std::size_t n, std::size_t ld)
     {
