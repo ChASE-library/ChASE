@@ -331,20 +331,20 @@ public:
             onlyGPU = 2;
         }
 
-        H___ = make_unique<Matrix<T>>(isGPU, N, N, H, ldh);
-        C___ = make_unique<Matrix<T>>(isGPU, N, max_block, V1, N);
-        B___ = make_unique<Matrix<T>>(onlyGPU, N, max_block);
-        A___ = make_unique<Matrix<T>>(onlyGPU, max_block, max_block);
+        H___ = chase::mpi::make_unique<Matrix<T>>(isGPU, N, N, H, ldh);
+        C___ = chase::mpi::make_unique<Matrix<T>>(isGPU, N, max_block, V1, N);
+        B___ = chase::mpi::make_unique<Matrix<T>>(onlyGPU, N, max_block);
+        A___ = chase::mpi::make_unique<Matrix<T>>(onlyGPU, max_block, max_block);
 
         if (mode == 1)
         {
-            C2___ = make_unique<Matrix<T>>(0, N, max_block);
-            B2___ = make_unique<Matrix<T>>(0, N, max_block);
+            C2___ = chase::mpi::make_unique<Matrix<T>>(0, N, max_block);
+            B2___ = chase::mpi::make_unique<Matrix<T>>(0, N, max_block);
         }
 
-        Ritzv___ = make_unique<Matrix<Base<T>>>(isGPU, 1, max_block, ritzv,
+        Ritzv___ = chase::mpi::make_unique<Matrix<Base<T>>>(isGPU, 1, max_block, ritzv,
                                                      max_block);
-        Resid___ = make_unique<Matrix<Base<T>>>(isGPU, 1, max_block);
+        Resid___ = chase::mpi::make_unique<Matrix<Base<T>>>(isGPU, 1, max_block);
     }
 
     //! A constructor of ChaseMpiMatrices for **MPI case** which allocates
@@ -399,16 +399,16 @@ public:
             isGPU = 1;
             isCUDA_Aware = 2;
         }
-        H___ = make_unique<Matrix<T>>(isGPU, m, n, H, ldh);
-        C___ = make_unique<Matrix<T>>(isCUDA_Aware, m, max_block, V1, m);
-        C2___ = make_unique<Matrix<T>>(isCUDA_Aware, m, max_block);
-        B___ =  make_unique<Matrix<T>>(isCUDA_Aware, n, max_block);
-        B2___ = make_unique<Matrix<T>>(isCUDA_Aware, n, max_block);
-        A___ = make_unique<Matrix<T>>(isCUDA_Aware, max_block, max_block);
-        Ritzv___ = make_unique<Matrix<Base<T>>>(isGPU, 1, max_block, ritzv,
+        H___ = chase::mpi::make_unique<Matrix<T>>(isGPU, m, n, H, ldh);
+        C___ = chase::mpi::make_unique<Matrix<T>>(isCUDA_Aware, m, max_block, V1, m);
+        C2___ = chase::mpi::make_unique<Matrix<T>>(isCUDA_Aware, m, max_block);
+        B___ =  chase::mpi::make_unique<Matrix<T>>(isCUDA_Aware, n, max_block);
+        B2___ = chase::mpi::make_unique<Matrix<T>>(isCUDA_Aware, n, max_block);
+        A___ = chase::mpi::make_unique<Matrix<T>>(isCUDA_Aware, max_block, max_block);
+        Ritzv___ = chase::mpi::make_unique<Matrix<Base<T>>>(isGPU, 1, max_block, ritzv,
                                                      max_block);
-        Resid___ = make_unique<Matrix<Base<T>>>(isGPU, 1, max_block);
-        vv___ = make_unique<Matrix<T>>(isGPU, m, 1);
+        Resid___ = chase::mpi::make_unique<Matrix<Base<T>>>(isGPU, 1, max_block);
+        vv___ = chase::mpi::make_unique<Matrix<T>>(isGPU, m, 1);
     }
 
     int get_Mode() { return mode_; }
