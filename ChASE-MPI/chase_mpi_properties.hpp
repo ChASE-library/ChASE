@@ -1409,7 +1409,6 @@ public:
     void readHamiltonianBlockDist(const std::string& filename, T* H)
     {
 #ifdef USE_MPI_IO	    
-	std::cout << "using MPI IO" << std::endl; 
 	MPI_File fileHandle;
         MPI_Status status;
         int access_mode = MPI_MODE_RDONLY;
