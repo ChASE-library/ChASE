@@ -43,6 +43,8 @@ public:
     MOCK_METHOD(chase::Base<T>*, get_Ritzv, (), (override));
     MOCK_METHOD(void, Start, (), (override));
     MOCK_METHOD(void, End, (), (override));
+    MOCK_METHOD(bool, checkSymmetryEasy, (), (override));
+    MOCK_METHOD(void, symOrHermMatrix, (char), (override));
     MOCK_METHOD(void, axpy, (std::size_t, T*, T*, std::size_t, T*, std::size_t), (override));
     MOCK_METHOD(void, scal, (std::size_t, T*, T*, std::size_t), (override));
     MOCK_METHOD(chase::Base<T>, nrm2, (std::size_t, T*, std::size_t), (override));
