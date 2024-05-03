@@ -5,6 +5,7 @@ cmake_minimum_required( VERSION 3.8 )
 
 option(ENABLE_CUDA_AWARE_MPI "Enable CUDA aware MPI for collective communications" ON)
 option(ENABLE_NCCL "Enable Nvidia NCCL for collective communications" ON)
+option(ENABLE_MPI_IO "Enable MPI IO to read Hamiltonian matrix from local" ON)
 
 add_library( chase_seq INTERFACE )
 target_link_libraries(chase_seq INTERFACE chase_algorithm)
@@ -85,6 +86,12 @@ endif()
 target_compile_definitions( chase_mpi INTERFACE
 	  "-DUSE_MPI"
         )
+
+if(ENABLE_MPI_IO)
+    target_compile_definitions( chase_mpi INTERFACE
+	    "-DUSE_MPI_IO"
+	)
+endif()
 
 include(CheckLanguage)
 check_language(CUDA)
