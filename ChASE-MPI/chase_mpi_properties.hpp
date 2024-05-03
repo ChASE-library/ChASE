@@ -1500,7 +1500,6 @@ public:
     void readHamiltonianBlockCyclicDist(const std::string& filename, T* H)
     {
 #ifdef USE_MPI_IO
-        std::cout << "using MPI IO" << std::endl;
         int gsizes[2] = {(int)N_, (int)N_};
         int distribs[2] = {MPI_DISTRIBUTE_CYCLIC, MPI_DISTRIBUTE_CYCLIC};
         int dargs[2] = {(int)mb_,(int)nb_};
