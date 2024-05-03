@@ -1408,7 +1408,9 @@ public:
     */
     void readHamiltonianBlockDist(const std::string& filename, T* H)
     {
-        MPI_File fileHandle;
+#ifdef USE_MPI_IO	    
+	std::cout << "using MPI IO" << std::endl; 
+	MPI_File fileHandle;
         MPI_Status status;
         int access_mode = MPI_MODE_RDONLY;
 
@@ -1424,8 +1426,7 @@ public:
         int global_matrix_size[] = {(int)N_, (int)N_};
         int local_matrix_size[] = {(int)m_,(int)n_};
         int offsets[] = {(int)off_[0], (int)off_[1]};
-
-        MPI_Type_create_subarray(2, global_matrix_size, local_matrix_size, offsets, MPI_ORDER_FORTRAN, chase::mpi::getMPI_Type<T>(), &subarray);
+	MPI_Type_create_subarray(2, global_matrix_size, local_matrix_size, offsets, MPI_ORDER_FORTRAN, chase::mpi::getMPI_Type<T>(), &subarray);
         MPI_Type_commit(&subarray);
 
         MPI_File_set_view(fileHandle, 0, chase::mpi::getMPI_Type<T>(), subarray, "native", MPI_INFO_NULL);
@@ -1436,7 +1437,23 @@ public:
         if (MPI_File_close(&fileHandle) != MPI_SUCCESS)
         {
             MPI_Abort(comm_, EXIT_FAILURE);
-        }	
+        }
+#else
+	std::ifstream input(filename.data(), std::ios::binary);	
+        if (!input.is_open())
+        {
+            throw new std::logic_error(std::string("error reading file: ") +
+                                       filename.data());
+        }
+
+    	for (std::size_t y = 0; y < n_; y++)
+    	{
+            input.seekg(((off_[0]) + N_ * (off_[1] + y)) * sizeof(T));
+            input.read(reinterpret_cast<char*>(H + m_ * y), m_ * sizeof(T));
+    	}
+	
+	input.close();
+#endif	
     }
 
     //! Write data of distributes Hamiltonian matrix in a block-block manner to an output file.
@@ -1483,6 +1500,8 @@ public:
     */
     void readHamiltonianBlockCyclicDist(const std::string& filename, T* H)
     {
+#ifdef USE_MPI_IO
+        std::cout << "using MPI IO" << std::endl;
         int gsizes[2] = {(int)N_, (int)N_};
         int distribs[2] = {MPI_DISTRIBUTE_CYCLIC, MPI_DISTRIBUTE_CYCLIC};
         int dargs[2] = {(int)mb_,(int)nb_};
@@ -1511,7 +1530,31 @@ public:
         if (MPI_File_close(&file) != MPI_SUCCESS)
         {
             MPI_Abort(comm_, EXIT_FAILURE);
-        }	
+        }
+#else
+        std::ifstream input(filename.data(), std::ios::binary);
+        if (!input.is_open())
+        {
+            throw new std::logic_error(std::string("error reading file: ") +
+                                       filename.data());
+        }
+
+	for (std::size_t j = 0; j < nblocks_; j++)
+	{
+            for (std::size_t i = 0; i < mblocks_; i++)
+            {
+                for (std::size_t q = 0; q < c_lens_[j]; q++)
+                {
+                    input.seekg(((q + c_offs_[j]) * N_ + r_offs_[i]) * sizeof(T));
+                    input.read(reinterpret_cast<char*>(H + (q + c_offs_l_[j]) * m_ +
+                                                       r_offs_l_[i]),
+                               r_lens_[i] * sizeof(T));
+                }
+            }
+        }
+
+        input.close();
+#endif	
     }
 
     //! Write data of distributes Hamiltonian matrix in a block-cyclic manner to an output file.
