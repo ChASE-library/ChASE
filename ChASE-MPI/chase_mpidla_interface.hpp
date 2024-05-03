@@ -159,6 +159,8 @@ public:
     virtual void Start() = 0;
     //! Ending point of solving an eigenproblem
     virtual void End() = 0;
+    virtual bool checkSymmetryEasy() = 0;
+    virtual void symOrHermMatrix(char uplo) = 0;
 
     //! A `BLAS-like` function which performs a constant times a vector plus a
     //! vector.

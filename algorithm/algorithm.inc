@@ -335,9 +335,37 @@ std::size_t Algorithm<T>::lanczos(Chase<T>* single, int N, int numvec, int m,
 template <class T>
 void Algorithm<T>::solve(Chase<T>* single)
 {
-    single->Start();
-
     ChaseConfig<T>& config = single->GetConfig();
+
+    if(config.DoSymCheck())
+    {
+        if(single->checkSymmetryEasy())
+        {
+#ifdef CHASE_OUTPUT
+            {
+                std::ostringstream oss;
+
+                oss << "The input matrix is explicitly symmetric/Hermtian, ChASE can continue to proceed\n";
+
+                single->Output(oss.str());
+            }
+#endif
+        }else
+        {
+#ifdef CHASE_OUTPUT
+            {
+                std::ostringstream oss;
+
+                oss << "!!! The input matrix is NOT explicitly symmetric/Hermtian, ChASE cannot continue to proceed\n";
+                oss << "Plase consider to use function symmetrizeOrHermitianizeMatrix() to symmetrize/Hermitianize at first\n";
+
+                single->Output(oss.str());
+            }
+#endif
+            return;
+        }
+    }
+    single->Start();
 
     std::size_t N = config.GetN();
     std::size_t nev = config.GetNev();

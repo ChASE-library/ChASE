@@ -63,7 +63,7 @@ int main()
     config.SetDeg(20);
     config.SetOpt(true);
     config.SetApprox(false);
-
+    
     if (rank == 0)
         std::cout << "Solving " << idx_max << " symmetrized Clement matrices ("
                   << N << "x" << N
@@ -80,7 +80,7 @@ int main()
         if (i != N - 1)
             H[i + LDH * (i + 1)] = std::sqrt(i * (N + 1 - i));
     }
-
+    
     for (auto idx = 0; idx < idx_max; ++idx)
     {
         if (rank == 0)

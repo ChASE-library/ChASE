@@ -269,6 +269,40 @@ public:
             }
         }
 
+        reqsc2b_.resize(c_lens.size());
+        c_sends_.resize(c_lens.size());
+        b_recvs_.resize(c_lens.size());
+
+        for (auto i = 0; i < c_lens.size(); i++)
+        {
+            if (row_rank_ == c_dests[i])
+            {
+                if (col_rank_ == c_srcs[i])
+                {
+                    int n1 = send_lens_[0][col_rank_];
+                    int array_of_sizes[2] = {n1, 1};
+                    int array_of_subsizes[2] = {c_lens[i], 1};
+                    int array_of_starts[2] = {c_disps_2[i], 0};
+
+                    MPI_Type_create_subarray(
+                        2, array_of_sizes, array_of_subsizes, array_of_starts,
+                        MPI_ORDER_FORTRAN, getMPI_Type<T>(), &(c_sends_[i]));
+                    MPI_Type_commit(&(c_sends_[i]));
+                }
+                else
+                {
+                    int array_of_sizes2[2] = {static_cast<int>(n_), 1};
+                    int array_of_starts2[2] = {b_disps_2[i], 0};
+                    int array_of_subsizes2[2] = {c_lens[i], 1};
+                    MPI_Type_create_subarray(
+                        2, array_of_sizes2, array_of_subsizes2,
+                        array_of_starts2, MPI_ORDER_FORTRAN, getMPI_Type<T>(),
+                        &(b_recvs_[i]));
+                    MPI_Type_commit(&(b_recvs_[i]));
+                }
+            }
+        }
+
         v0_ = new T[m_];
         v1_ = new T[m_];
         v2_ = new T[m_];
@@ -317,9 +351,9 @@ public:
         if(!isSameDist_){
             auto max_c_len = *max_element(c_lens.begin(), c_lens.end());
             if(cuda_aware_){
-                buff__ = make_unique<Matrix<T>>(2, max_c_len, nex_ + nev_);
+                buff__ = std::make_unique<Matrix<T>>(2, max_c_len, nex_ + nev_);
             }else{
-                buff__ = make_unique<Matrix<T>>(0, max_c_len, nex_ + nev_);                
+                buff__ = std::make_unique<Matrix<T>>(0, max_c_len, nex_ + nev_);                
             }
         }
 
@@ -742,6 +776,139 @@ public:
 #endif
     }
 
+    bool checkSymmetryEasy() override 
+    {
+        std::vector<T> v(m_, T(0.0));
+        std::vector<T> u(n_, T(0.0));
+        std::vector<T> uT(m_, T(0.0));
+        std::vector<T> v_2(n_, T(0.0));
+
+        int mpi_col_rank;
+        MPI_Comm_rank(col_comm_, &mpi_col_rank);
+
+        std::mt19937 gen(1337.0 + mpi_col_rank);
+        std::normal_distribution<> d;
+        
+        for (auto i = 0; i < m_; i++)
+        {
+            v[i] = getRandomT<T>([&]() { return d(gen); });
+        }
+
+        this->C2B(v.data(), 0, v_2.data(), 0, 1);
+        
+        T One = T(1.0);
+        T Zero = T(0.0);
+
+        t_gemm(CblasColMajor, CblasConjTrans, CblasNoTrans, //
+               n_, 1, m_,                                 //
+               &One,                                      //
+               matrices_->H().host(), matrices_->H().h_ld(),                                  //
+               v.data(), m_,                             //
+               &Zero,                                     //
+               u.data(), n_);
+
+        MPI_Allreduce(MPI_IN_PLACE, u.data(), n_,
+                      getMPI_Type<T>(), MPI_SUM, col_comm_);  
+
+        t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, //
+               m_, 1, n_,                                 //
+               &One,                                      //
+               matrices_->H().host(), matrices_->H().h_ld(),                                  //
+               v_2.data(), n_,                             //
+               &Zero,                                     //
+               uT.data(), m_);
+
+        MPI_Allreduce(MPI_IN_PLACE, uT.data(), m_,
+                      getMPI_Type<T>(), MPI_SUM, row_comm_);  
+
+        this->B2C(u.data(), 0, v.data(), 0, 1);
+
+        bool is_sym = true;
+
+        for(auto i = 0; i < m_; i++)
+        {
+            //std::cout << "std::abs(v[i] - uT[i]) = " << std::abs(v[i] - uT[i]) << "\n";
+            //if(std::abs(v[i] - uT[i]) > std::numeric_limits<Base<T>>::epsilon())
+            if(std::abs(v[i] - uT[i]) > 1e-10)
+            {
+                 is_sym = false;
+                break;
+            }
+        }
+
+        MPI_Allreduce(MPI_IN_PLACE, &is_sym, 1, MPI_CXX_BOOL, MPI_LAND, col_comm_);
+
+        return is_sym;
+    }
+
+    void symOrHermMatrix(char uplo) override
+    {
+#if defined(HAS_SCALAPACK)    
+        auto ctxt = matrix_properties_->get_comm2D_ctxt();
+        std::size_t desc_H[9];
+        int info;
+        int zero = 0;
+        int one = 1;
+        auto ldh = matrices_->H().h_ld();
+        auto H = matrices_->H().host();
+
+        t_descinit(desc_H, &N_, &N_, &mb_, &nb_, &zero, &zero, &ctxt, &ldh, &info);  
+
+        if(uplo == 'U')
+        {
+            for(std::size_t j = 0; j < nblocks_; j++){
+                for(std::size_t i = 0; i < mblocks_; i++){
+                    for(std::size_t q = 0; q < c_lens_[j]; q++){
+                        for(std::size_t p = 0; p < r_lens_[i]; p++){
+                            if(q + c_offs_[j] == p + r_offs_[i]){
+                                H[(q + c_offs_l_[j]) * ldh + p + r_offs_l_[i]] *= T(0.5);
+                            }
+                            else if(q + c_offs_[j] < p + r_offs_[i])
+                            {
+                                H[(q + c_offs_l_[j]) * ldh + p + r_offs_l_[i]] = T(0.0);
+                            }
+                        }
+                    }
+                }
+            }
+
+        }else
+        {
+            for(std::size_t j = 0; j < nblocks_; j++){
+                for(std::size_t i = 0; i < mblocks_; i++){
+                    for(std::size_t q = 0; q < c_lens_[j]; q++){
+                        for(std::size_t p = 0; p < r_lens_[i]; p++){
+                            if(q + c_offs_[j] == p + r_offs_[i]){
+                                H[(q + c_offs_l_[j]) * ldh + p + r_offs_l_[i]] *= T(0.5);
+                            }
+                            else if(q + c_offs_[j] > p + r_offs_[i])
+                            {
+                                H[(q + c_offs_l_[j]) * ldh + p + r_offs_l_[i]] = T(0.0);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        T One = T(1.0);
+        T Zero = T(0.0);
+        std::vector<T> tmp(m_ * (n_+2*nb_));
+        t_ptranc(N_, N_, One, H, one, one, desc_H, Zero, tmp.data(), one, one, desc_H);
+
+        for(auto i = 0; i < m_; i++)
+        {
+            for(auto j = 0; j < n_; j++)
+            {
+                H[i + j * ldh] += tmp[i + j * m_];
+            }
+        }
+        
+    #else
+        std::cout << "!!! symmetrizeOrHermitianizeMatrix failed, it requires ScaLAPACK, which is not detected\n";
+        return;
+    #endif        
+    }
+
     int get_nprocs() const override { return matrix_properties_->get_nprocs(); }
     void Start() override { dla_->Start(); }
     void End() override { dla_->End(); }
@@ -953,7 +1120,7 @@ public:
 
         if (!alloc_)
         {
-            V___ = make_unique<Matrix<T>>(0, N_, nevex);
+            V___ = std::make_unique<Matrix<T>>(0, N_, nevex);
             alloc_ = true;
         }
 
@@ -1351,6 +1518,45 @@ public:
                         C + off1 * m_ + c_disps_2[i], m_);
             }
         }
+    }
+
+    void C2B(T* C, std::size_t off1, T* B, std::size_t off2,
+             std::size_t block)
+    {
+        for (auto i = 0; i < c_lens.size(); i++)
+        {
+            if (row_rank_ == c_dests[i])
+            {
+                if (col_rank_ == c_srcs[i])
+                {
+                    MPI_Ibcast(C + off1 * m_, block, c_sends_[i], c_srcs[i],
+                               col_comm_, &reqsc2b_[i]);
+                }
+                else
+                {
+                    MPI_Ibcast(B + off1 * n_, block, b_recvs_[i], c_srcs[i],
+                               col_comm_, &reqsc2b_[i]);
+                }
+            }
+        }
+
+        for (auto i = 0; i < c_lens.size(); i++)
+        {
+            if (row_rank_ == c_dests[i])
+            {
+                MPI_Wait(&reqsc2b_[i], MPI_STATUSES_IGNORE);
+            }
+        }
+
+        for (auto i = 0; i < c_lens.size(); i++)
+        {
+            if (row_rank_ == c_dests[i] && col_rank_ == c_srcs[i])
+            {
+                t_lacpy('A', c_lens[i], block, C + off1 * m_ + c_disps_2[i], m_,
+                        B + off1 * n_ + b_disps_2[i], n_);
+            }
+        }
+        
     }
 
     void lacpy(char uplo, std::size_t m, std::size_t n, T* a, std::size_t lda,

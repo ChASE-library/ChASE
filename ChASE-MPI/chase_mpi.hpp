@@ -263,6 +263,12 @@ public:
     //! It indicates the finalisation of solving a single eigenproblem.
     void End() override { dla_->End(); }
 
+    bool checkSymmetryEasy() override { is_sym_ = dla_->checkSymmetryEasy(); return is_sym_; }
+
+    bool isSym() {return is_sym_;}
+
+    void symOrHermMatrix(char uplo) override { dla_->symOrHermMatrix(uplo); }
+
     //! This member function implements the virtual one declared in Chase class.
     //! This member function shifts the diagonal of matrix `A` with a shift
     //! value `c`. It is implemented by calling the different implementation in
@@ -695,6 +701,8 @@ private:
     //! class by using `N`, `nev` and `nex`, which are the parameters of the
     //! constructors of ChaseMpi.
     ChaseConfig<T> config_;
+
+    bool is_sym_;
 };
 
 } // namespace mpi

@@ -438,6 +438,9 @@ public:
     //! Return the value of `cholqr_`
     bool DoCholQR() { return cholqr_; }
 
+    void EnableSymCheck(bool flag) { sym_check_ = flag; }
+    bool DoSymCheck() { return sym_check_; }
+
 private:
     ///////////////////////////////////////////////////
     // General parameters of the eigensolver
@@ -556,6 +559,8 @@ private:
 
     //! Optional parameter indicating if CholeksyQR is disabled
     bool cholqr_ = true;
+
+    bool sym_check_ = true;
 };
 
 template <typename T>
