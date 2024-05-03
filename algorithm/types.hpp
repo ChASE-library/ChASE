@@ -73,7 +73,8 @@ T conjugate(const T& scalar) {
     static_assert(std::is_arithmetic<T>::value || std::is_same<T, std::complex<float>>::value || std::is_same<T, std::complex<double>>::value,
                   "Type must be float, double, std::complex<float> or std::complex<double>");    
     if constexpr (std::is_arithmetic<T>::value) {
-        return scalar; // For complex scalars, use std::conj
+        return scalar; // For real scalars, conjugate is the same as the
+original value
     } else {
         return std::conj(scalar); // For real scalars, conjugate is the same as the original value
     }
