@@ -76,7 +76,7 @@ T conjugate(const T& scalar) {
         return scalar; // For real scalars, conjugate is the same as the
 original value
     } else {
-        return std::conj(scalar); // For real scalars, conjugate is the same as the original value
+        return std::conj(scalar); // For complex scalars, use std::conj
     }
 }
 
