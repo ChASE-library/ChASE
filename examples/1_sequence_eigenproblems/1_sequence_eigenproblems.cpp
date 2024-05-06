@@ -15,13 +15,20 @@
 #include "algorithm/performance.hpp"
 
 #include "ChASE-MPI/impl/chase_mpidla_blaslapack.hpp"
+#ifdef DRIVER_BUILD_MGPU
+#include "ChASE-MPI/impl/chase_mpidla_mgpu.hpp"
+#endif
 
 using T = std::complex<double>;
 using namespace chase;
 using namespace chase::mpi;
 
 /*use ChASE-MPI without GPU support*/
+#ifdef DRIVER_BUILD_MGPU
+typedef ChaseMpi<ChaseMpiDLAMultiGPU, T> CHASE;
+#else
 typedef ChaseMpi<ChaseMpiDLABlaslapack, T> CHASE;
+#endif
 
 int main(int argc, char** argv)
 {

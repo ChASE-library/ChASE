@@ -613,9 +613,6 @@ public:
                 d[k + M * i] = std::real(alpha[i]);
             }            
 
-            if (k == M - 1)
-                break;
-
             for(auto i = 0; i < numvec; i++)
             {
                 beta[i] = T(-real_beta[i]);
@@ -632,6 +629,9 @@ public:
                 real_beta[i] = this->nrm2(N_, w.data() + i * N_, 1);
                 beta[i] = T(1.0 / real_beta[i]);
             }
+
+            if (k == M - 1)
+                break;
 
             for(auto i = 0; i < numvec; i++)
             {

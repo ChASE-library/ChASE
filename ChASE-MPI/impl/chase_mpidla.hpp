@@ -1468,6 +1468,7 @@ public:
         T *v2 = (T*)malloc(m_ * numvec * sizeof(T)) ;
         T *w = (T*)malloc(n_ * numvec * sizeof(T)) ;
 
+        /*
         std::fill(v0, v0 + m_ * numvec, T(0));
         Memcpy(memcpy_mode[1], v1, C2, m_ * numvec * sizeof(T));
         
@@ -1522,9 +1523,6 @@ public:
                 d[k + M * i] = std::real(alpha[i]);
             }
 
-            if (k == M - 1)
-                break;
-
             for(auto i = 0; i < numvec; i++)
             {
                 beta[i] = T(-real_beta[i]);
@@ -1555,6 +1553,9 @@ public:
                 beta[i] = T(1 / real_beta[i]);
             }
 
+            if (k == M - 1)
+                break;
+            
             for(auto i = 0; i < numvec; i++)
             {
                 t_scal(m_, &beta[i], v2 + i * m_, 1);   
@@ -1578,7 +1579,7 @@ public:
         {
             r_beta[i] = real_beta[i];
         }
-        
+        */
         delete[] real_beta;
         delete[] real_alpha;
         delete[] v0;

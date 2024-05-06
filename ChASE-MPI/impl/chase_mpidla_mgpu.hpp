@@ -535,18 +535,21 @@ public:
     //! - All required operations for this function has been done in for
     //! ChaseMpiDLA::applyVec().
     //! - This function contains nothing in this class.
-    void applyVec(T* v, T* w) override
+    void applyVec(T* v, T* w, std::size_t n) override
     {
         T alpha = T(1.0);
         T beta = T(0.0);
-
-        cuda_exec(cudaMemcpy(d_v_, v, m_ * sizeof(T), cudaMemcpyHostToDevice));
+        ////
+        cuda_exec(cudaMemcpy(d_v_, v, m_ * n * sizeof(T), cudaMemcpyHostToDevice));
         cublas_status_ =
-            cublasTgemv(cublasH_, CUBLAS_OP_C, m_, n_, &alpha, H__.device(),
-                        H__.d_ld(), d_v_, 1, &beta, d_w_, 1);
+            cublasTgemm(cublasH_, CUBLAS_OP_C, CUBLAS_OP_N, n_, n, m_,
+                        &alpha, H__.device(), H__.d_ld(),
+                        d_v_, m_, &beta,
+                        d_w_, n_);
+
         assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
 
-        cuda_exec(cudaMemcpy(w, d_w_, n_ * sizeof(T), cudaMemcpyDeviceToHost));
+        cuda_exec(cudaMemcpy(w, d_w_, n * n_ * sizeof(T), cudaMemcpyDeviceToHost));
     }
     int get_nprocs() const override { return matrix_properties_->get_nprocs(); }
     void Start() override {}
@@ -808,10 +811,12 @@ public:
         std::memcpy(C__.host(), C2__.host(), m * m_ * sizeof(T));
 #endif
     }
-    void Lanczos(std::size_t M, int idx, Base<T>* d, Base<T>* e,
-                 Base<T>* r_beta) override
-    {
-    }
+    void Lanczos(std::size_t M,
+                         Base<T>* r_beta) override
+    {}
+    void mLanczos(std::size_t M, int numvec, Base<T>* d, Base<T>* e,
+                         Base<T>* r_beta) override
+    {}
 
     void B2C(T* B, std::size_t off1, T* C, std::size_t off2,
              std::size_t block) override
