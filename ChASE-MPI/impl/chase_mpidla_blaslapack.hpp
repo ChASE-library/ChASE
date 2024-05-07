@@ -193,6 +193,13 @@ public:
 
     }
 
+    bool checkSymmetryEasy() override 
+    {
+        return false;
+    }
+
+    void symOrHermMatrix(char uplo) override {}
+
     int get_nprocs() const override { return matrix_properties_->get_nprocs(); }
     void Start() override {}
     void End() override {}

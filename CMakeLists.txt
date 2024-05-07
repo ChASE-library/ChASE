@@ -5,7 +5,9 @@ project( ChASE LANGUAGES C CXX VERSION 1.3.0 )
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 # ## algorithm ##
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_library(chase_algorithm INTERFACE)
 
@@ -68,8 +70,18 @@ if(BUILD_WITH_EXAMPLES)
         add_subdirectory("./examples")
 endif()
 
-enable_testing()
-add_test( BASIC "chase_driver" )
+
+option(ENABLE_TESTS "Enable unit tests." OFF)
+if(ENABLE_TESTS)
+    MESSAGE("Test enabled. Finding GoogleTests.")
+    include(${CMAKE_SOURCE_DIR}/cmake/external/Gtest/FetchGtest.cmake)
+    include(CTest)
+
+    set(MPI_RUN mpirun CACHE STRING "MPI runner (mpirun/srun)")
+    set(MPI_RUN_ARGS  CACHE STRING "")
+    set(MPI_TEST ON CACHE BOOL "Run test with mpi")
+    add_subdirectory(tests)
+endif()
 
 # Documentation
 option(BUILD_WITH_DOCS "Build the examples" OFF)

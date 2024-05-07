@@ -1738,6 +1738,78 @@ void t_pgqr(std::size_t m, std::size_t n, std::size_t k, std::complex<float>* A,
 }
 
 
+template <>
+void t_ptranc(std::size_t m, std::size_t n, float alpha, float *A, int ia, int ja,
+            std::size_t* desc_a, float beta, float *C, int ic, int jc, std::size_t* desc_c)
+{
+    BlasInt* desc_a_ = new BlasInt[9];
+    BlasInt* desc_c_ = new BlasInt[9];
+
+    for (int i = 0; i < 9; i++)
+    {
+        desc_a_[i] = static_cast<std::size_t>(desc_a[i]);
+        desc_c_[i] = static_cast<std::size_t>(desc_c[i]);
+    }
+    BlasInt m_ = m;
+    BlasInt n_ = n;   
+
+    pstran_(&m_, &n_, &alpha, A, &ia, &ja, desc_a_, &beta, C, &ic, &jc, desc_c_); 
+}
+
+template <>
+void t_ptranc(std::size_t m, std::size_t n, double alpha, double *A, int ia, int ja,
+            std::size_t* desc_a, double beta, double *C, int ic, int jc, std::size_t* desc_c)
+{
+    BlasInt* desc_a_ = new BlasInt[9];
+    BlasInt* desc_c_ = new BlasInt[9];
+
+    for (int i = 0; i < 9; i++)
+    {
+        desc_a_[i] = static_cast<std::size_t>(desc_a[i]);
+        desc_c_[i] = static_cast<std::size_t>(desc_c[i]);
+    }
+    BlasInt m_ = m;
+    BlasInt n_ = n;   
+
+    pdtran_(&m_, &n_, &alpha, A, &ia, &ja, desc_a_, &beta, C, &ic, &jc, desc_c_); 
+}
+
+template <>
+void t_ptranc(std::size_t m, std::size_t n, std::complex<float> alpha, std::complex<float> *A, int ia, int ja,
+            std::size_t* desc_a, std::complex<float> beta, std::complex<float> *C, int ic, int jc, std::size_t* desc_c)
+{
+    BlasInt* desc_a_ = new BlasInt[9];
+    BlasInt* desc_c_ = new BlasInt[9];
+
+    for (int i = 0; i < 9; i++)
+    {
+        desc_a_[i] = static_cast<std::size_t>(desc_a[i]);
+        desc_c_[i] = static_cast<std::size_t>(desc_c[i]);
+    }
+    BlasInt m_ = m;
+    BlasInt n_ = n;   
+
+    pctranc_(&m_, &n_, &alpha, A, &ia, &ja, desc_a_, &beta, C, &ic, &jc, desc_c_); 
+}
+
+template <>
+void t_ptranc(std::size_t m, std::size_t n, std::complex<double> alpha, std::complex<double> *A, int ia, int ja,
+            std::size_t* desc_a, std::complex<double> beta, std::complex<double> *C, int ic, int jc, std::size_t* desc_c)
+{
+    BlasInt* desc_a_ = new BlasInt[9];
+    BlasInt* desc_c_ = new BlasInt[9];
+
+    for (int i = 0; i < 9; i++)
+    {
+        desc_a_[i] = static_cast<std::size_t>(desc_a[i]);
+        desc_c_[i] = static_cast<std::size_t>(desc_c[i]);
+    }
+    BlasInt m_ = m;
+    BlasInt n_ = n;   
+
+    pztranc_(&m_, &n_, &alpha, A, &ia, &ja, desc_a_, &beta, C, &ic, &jc, desc_c_); 
+}
+
 #endif
 
 } // namespace mpi

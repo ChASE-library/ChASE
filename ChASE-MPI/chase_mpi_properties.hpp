@@ -463,6 +463,19 @@ public:
         std::size_t nx_b = std::min(bsize, nevex_);
         t_descinit(desc1D_Nxnevx_, &N_, &nevex_, &mb_, &nx_b, &irsrc_, &zero,
                    &colcomm_ctxt_, &m_, &info);
+
+        int ictxt_2;
+        blacs_get_(&zero, &zero, &ictxt_2);
+        comm2d_ctxt_ = ictxt_2;
+        if (col_major == false){
+            char major = 'R';
+            blacs_gridinit_(&comm2d_ctxt_, &major, &dims_[0], &dims_[1]);
+        }else
+        {
+            char major = 'C';
+            blacs_gridinit_(&comm2d_ctxt_, &major, &dims_[0], &dims_[1]);          
+        }
+
 #endif
 
         comm_2 row_comm_dup;
@@ -741,6 +754,20 @@ public:
         std::size_t nx_b = std::min(bsize, nevex_);
         t_descinit(desc1D_Nxnevx_, &N_, &nevex_, &mb_, &nx_b, &zero, &zero,
                    &colcomm_ctxt_, &m_, &info);
+                   
+        int ictxt_2;
+        blacs_get_(&zero, &zero, &ictxt_2);
+        comm2d_ctxt_ = ictxt_2;
+        if (col_major == false){
+            char major = 'R';
+            blacs_gridinit_(&comm2d_ctxt_, &major, &dims_[0], &dims_[1]); 
+        }else
+        {
+            char major = 'C';
+            blacs_gridinit_(&comm2d_ctxt_, &major, &dims_[0], &dims_[1]);           
+        }
+
+
 #endif
 
         comm_2 row_comm_dup;
@@ -1006,6 +1033,13 @@ public:
         std::size_t nx_b = std::min(bsize, nevex_);
         t_descinit(desc1D_Nxnevx_, &N_, &nevex_, &mb_, &nx_b, &zero, &zero,
                    &colcomm_ctxt_, &m_, &info);
+
+        int ictxt_2;
+        blacs_get_(&zero, &zero, &ictxt_2);
+        comm2d_ctxt_ = ictxt_2;
+        char major = 'R';
+        blacs_gridinit_(&comm2d_ctxt_, &major, &dims_[0], &dims_[1]);
+
 #endif
 
         comm_2 row_comm_dup;
@@ -1054,7 +1088,7 @@ public:
     Comm_t get_mpi_wrapper() { return mpi_wrapper_; }
 #if defined(HAS_SCALAPACK)
     int get_colcomm_ctxt() { return colcomm_ctxt_; }
-
+    int get_comm2D_ctxt() { return comm2d_ctxt_; }
     std::size_t* get_desc1D_Nxnevx() { return desc1D_Nxnevx_; }
 #endif
     //! Returns the rank of matrix `A` which is distributed within 2D MPI grid.
@@ -1401,6 +1435,97 @@ public:
                                    V1, ritzv);
     }
 
+    //! Reads data from an input file and distributes it in a block-block manner.
+    /*! 
+      @param filename The name of the input file.
+      @param H Pointer to memory allocated for Hamiltonian matrix.
+    */
+    void readHamiltonianBlockDist(const std::string& filename, T* H)
+    {
+#ifdef USE_MPI_IO	    
+	MPI_File fileHandle;
+        MPI_Status status;
+        int access_mode = MPI_MODE_RDONLY;
+
+        if(MPI_File_open(comm_, filename.data(), access_mode, MPI_INFO_NULL, &fileHandle) != MPI_SUCCESS)
+        {
+            std::cout << "Can't open input matrix - " << filename << std::endl;
+            MPI_Abort(comm_, EXIT_FAILURE);
+        }
+
+        MPI_Count count_read = m_ * n_;
+
+        MPI_Datatype subarray;
+        int global_matrix_size[] = {(int)N_, (int)N_};
+        int local_matrix_size[] = {(int)m_,(int)n_};
+        int offsets[] = {(int)off_[0], (int)off_[1]};
+	MPI_Type_create_subarray(2, global_matrix_size, local_matrix_size, offsets, MPI_ORDER_FORTRAN, chase::mpi::getMPI_Type<T>(), &subarray);
+        MPI_Type_commit(&subarray);
+
+        MPI_File_set_view(fileHandle, 0, chase::mpi::getMPI_Type<T>(), subarray, "native", MPI_INFO_NULL);
+        MPI_File_read_all(fileHandle, H, count_read, chase::mpi::getMPI_Type<T>(), &status);
+
+        MPI_Type_free(&subarray);
+    
+        if (MPI_File_close(&fileHandle) != MPI_SUCCESS)
+        {
+            MPI_Abort(comm_, EXIT_FAILURE);
+        }
+#else
+	std::ifstream input(filename.data(), std::ios::binary);	
+        if (!input.is_open())
+        {
+            throw new std::logic_error(std::string("error reading file: ") +
+                                       filename.data());
+        }
+
+    	for (std::size_t y = 0; y < n_; y++)
+    	{
+            input.seekg(((off_[0]) + N_ * (off_[1] + y)) * sizeof(T));
+            input.read(reinterpret_cast<char*>(H + m_ * y), m_ * sizeof(T));
+    	}
+	
+	input.close();
+#endif	
+    }
+
+    //! Write data of distributes Hamiltonian matrix in a block-block manner to an output file.
+    /*! 
+      @param filename The name of the output file.
+      @param H Pointer to memory allocated for Hamiltonian matrix.
+    */
+    void writeHamiltonianBlockDist(const std::string& filename, T* H)
+    {
+        MPI_File fileHandle;
+        MPI_Status status;
+
+        if(MPI_File_open(comm_, filename.data(), MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &fileHandle) != MPI_SUCCESS)
+        {
+            std::cout << "Can't open input matrix - " << filename << std::endl;
+            MPI_Abort(comm_, EXIT_FAILURE);
+        }
+
+        MPI_Count count_write = m_ * n_;
+
+        MPI_Datatype subarray;
+        int global_matrix_size[] = {(int)N_, (int)N_};
+        int local_matrix_size[] = {(int)m_,(int)n_};
+        int offsets[] = {(int)off_[0], (int)off_[1]};
+
+        MPI_Type_create_subarray(2, global_matrix_size, local_matrix_size, offsets, MPI_ORDER_FORTRAN, chase::mpi::getMPI_Type<T>(), &subarray);
+        MPI_Type_commit(&subarray);
+
+        MPI_File_set_view(fileHandle, 0, chase::mpi::getMPI_Type<T>(), subarray, "native", MPI_INFO_NULL);
+        MPI_File_write_all(fileHandle, H, count_write, chase::mpi::getMPI_Type<T>(), &status);
+
+        MPI_Type_free(&subarray);
+
+    	if (MPI_File_close(&fileHandle) != MPI_SUCCESS)
+    	{
+            MPI_Abort(comm_, EXIT_FAILURE);
+        }
+    }
+
     //! Reads data from an input file and distributes it in a block-cyclic manner.
     /*! 
       @param filename The name of the input file.
@@ -1408,6 +1533,7 @@ public:
     */
     void readHamiltonianBlockCyclicDist(const std::string& filename, T* H)
     {
+#ifdef USE_MPI_IO
         int gsizes[2] = {(int)N_, (int)N_};
         int distribs[2] = {MPI_DISTRIBUTE_CYCLIC, MPI_DISTRIBUTE_CYCLIC};
         int dargs[2] = {(int)mb_,(int)nb_};
@@ -1432,6 +1558,35 @@ public:
         MPI_File_read_all(file, H, count_read, getMPI_Type<T>(), &status);
 
         MPI_Type_free(&darray);
+
+        if (MPI_File_close(&file) != MPI_SUCCESS)
+        {
+            MPI_Abort(comm_, EXIT_FAILURE);
+        }
+#else
+        std::ifstream input(filename.data(), std::ios::binary);
+        if (!input.is_open())
+        {
+            throw new std::logic_error(std::string("error reading file: ") +
+                                       filename.data());
+        }
+
+	for (std::size_t j = 0; j < nblocks_; j++)
+	{
+            for (std::size_t i = 0; i < mblocks_; i++)
+            {
+                for (std::size_t q = 0; q < c_lens_[j]; q++)
+                {
+                    input.seekg(((q + c_offs_[j]) * N_ + r_offs_[i]) * sizeof(T));
+                    input.read(reinterpret_cast<char*>(H + (q + c_offs_l_[j]) * m_ +
+                                                       r_offs_l_[i]),
+                               r_lens_[i] * sizeof(T));
+                }
+            }
+        }
+
+        input.close();
+#endif	
     }
 
     //! Write data of distributes Hamiltonian matrix in a block-cyclic manner to an output file.
@@ -1465,6 +1620,11 @@ public:
         MPI_File_write_all(file, H, count_write, getMPI_Type<T>(), &status);
 
         MPI_Type_free(&darray);
+
+        if (MPI_File_close(&file) != MPI_SUCCESS)
+        {
+            MPI_Abort(comm_, EXIT_FAILURE);
+        }	
     }
 
 private:
@@ -1823,7 +1983,9 @@ private:
     //! ScaLAPACK context for each row communicator. This context is in 1D grid,
     //! with only 1 column
     int colcomm_ctxt_;
+    int comm2d_ctxt_;
     std::size_t desc1D_Nxnevx_[9];
+    std::size_t desc_H_[9];
 #endif
 
     Comm_t mpi_wrapper_;

@@ -119,6 +119,74 @@ public:
                C, N_);
     }
 
+    bool checkSymmetryEasy() override 
+    {
+        std::vector<T> v(N_);
+        std::vector<T> u(N_);
+        std::vector<T> uT(N_);
+
+        std::mt19937 gen(1337.0);
+        std::normal_distribution<> d;
+        for (auto i = 0; i < N_; i++)
+        {
+            v[i] = getRandomT<T>([&]() { return d(gen); });
+        }
+        
+        T One = T(1.0);
+        T Zero = T(0.0);
+
+        t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, //
+               N_, 1, N_,                                 //
+               &One,                                      //
+               H_, ldh_,                                  //
+               v.data(), N_,                             //
+               &Zero,                                     //
+               u.data(), N_);
+
+        t_gemm(CblasColMajor, CblasConjTrans, CblasNoTrans, //
+               N_, 1, N_,                                 //
+               &One,                                      //
+               H_, ldh_,                                  //
+               v.data(), N_,                             //
+               &Zero,                                     //
+               uT.data(), N_);
+
+        bool is_sym = true;
+        for(auto i = 0; i < N_; i++)
+        {
+            if(!(u[i] == uT[i]))
+            {
+                is_sym = false;
+                return is_sym;
+            }
+        }
+
+        return is_sym;
+    }
+
+    void symOrHermMatrix(char uplo) override 
+    {
+        if(uplo == 'U')
+        {
+            for(auto j = 0; j < N_; j++)
+            {
+                for(auto i = 0; i < j; i++)
+                {
+                    H_[j + i * ldh_]= conjugate(H_[i + j * ldh_]);
+                }
+            }
+        }else
+        {
+            for(auto i = 0; i < N_; i++)
+            {
+                for(auto j = 0; j < i; j++)
+                {
+                    H_[j + i * ldh_]= conjugate(H_[i + j * ldh_]);
+                }
+            }
+        }
+    }
+
     int get_nprocs() const override { return 1; }
     void Start() override {}
     void End() override {}

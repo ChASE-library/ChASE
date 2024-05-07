@@ -151,12 +151,28 @@ extern "C" void pzungqr_(int*, int*, int*, std::complex<double>*, int*, int*,
 extern "C" void pcungqr_(int*, int*, int*, std::complex<float>*, int*, int*,
                          int*, std::complex<float>*, std::complex<float>*, int*,
                          int*);
+
+extern "C" void pstran_(int *, int *, float *, float *, int*, int*, int*, 
+                        float *, float *, int*, int*, int*);  
+extern "C" void pdtran_(int *, int *, double *, double *, int*, int*, int*, 
+                        double *, double *, int*, int*, int*);  
+extern "C" void pctranc_(int *, int *, std::complex<float> *, std::complex<float> *, int*, int*, int*, 
+                        std::complex<float> *, std::complex<float> *, int*, int*, int*);  
+extern "C" void pztranc_(int *, int *, std::complex<double> *, std::complex<double> *, int*, int*, int*, 
+                        std::complex<double> *, std::complex<double> *, int*, int*, int*);  
+
 template <typename T>
 void t_pgeqrf(std::size_t m, std::size_t n, T* A, int ia, int ja,
               std::size_t* desc_a, T* tau);
 template <typename T>
 void t_pgqr(std::size_t m, std::size_t n, std::size_t k, T* A, int ia, int ja,
             std::size_t* desc_a, T* tau);
+            
+template <typename T>
+void t_ptranc(std::size_t m, std::size_t n, T alpha, T *A, int ia, int ja,
+            std::size_t* desc_a, T beta, T *C, int ic, int jc, std::size_t* desc_c);
+
+
 #endif
 
 } // namespace mpi

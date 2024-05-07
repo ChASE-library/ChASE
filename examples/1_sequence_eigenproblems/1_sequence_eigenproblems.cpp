@@ -90,7 +90,9 @@ int main(int argc, char** argv)
     config.SetOpt(true);
     /*If solving the problem with approximated eigenpairs*/
     config.SetApprox(false);
-
+    /*Enable checking the symmetricity of matrices*/
+    config.EnableSymCheck(true);
+    
     if (rank == 0)
         std::cout << "Solving " << idx_max << " symmetrized Clement matrices ("
                   << N << "x" << N
@@ -111,7 +113,7 @@ int main(int argc, char** argv)
             Clement[i + 1 + N * i] = std::sqrt(i * (N + 1 - i));
         if (i != N - 1)
             Clement[i + N * (i + 1)] = std::sqrt(i * (N + 1 - i));
-    }
+    }   
 
 #ifdef USE_BLOCK_CYCLIC
     /*local block number = mblocks x nblocks*/
@@ -167,10 +169,15 @@ int main(int argc, char** argv)
             for (std::size_t y = 0; y < ylen; y++)
             {
                 H[x + xlen * y] =
-                    Clement.at((xoff + x) * N + (yoff + y));
+                    Clement.at((xoff + x) + (yoff + y) * N);
             }
         }
 #endif
+
+        if(!single.checkSymmetryEasy())
+        {
+            single.symOrHermMatrix('L');
+        }
 
         /*Performance Decorator to meaure the performance of kernels of ChASE*/
         PerformanceDecoratorChase<T> performanceDecorator(&single);

@@ -39,297 +39,6 @@ std::size_t GetFileSize(std::string path_in)
     return file.tellg();
 }   
 
-template <typename T>
-void readMatrix(T* H, std::string path_in, std::string spin, std::size_t kpoint,
-                std::size_t index, std::string suffix, std::size_t size,
-                bool legacy)
-{
-    std::ostringstream problem(std::ostringstream::ate);
-    if (legacy)
-        problem << path_in << "gmat  1 " << std::setw(2) << index << suffix;
-    else
-        problem << path_in << "mat_" << spin << "_" << std::setfill('0')
-                << std::setw(2) << kpoint << "_" << std::setfill('0')
-                << std::setw(2) << index << suffix;
-
-    std::cout << problem.str() << std::endl;
-    std::ifstream input(problem.str().c_str(), std::ios::binary);
-
-    std::size_t file_size = GetFileSize(problem.str());
-
-    std::cout << problem.str().c_str() << " "
-              << "---" << file_size << '\n';
-
-    if (input.is_open())
-    {
-        input.read((char*)H, sizeof(T) * size);
-    }
-    else
-    {
-        throw std::string("error reading file: ") + problem.str();
-    }
-}
-
-template <typename T>
-void readMatrix(T* H, std::string path_in, std::string spin, std::size_t kpoint,
-                std::size_t index, std::string suffix, std::size_t size,
-                bool legacy, std::size_t xoff, std::size_t yoff,
-                std::size_t xlen, std::size_t ylen)
-{
-    std::size_t N = std::sqrt(size);
-    std::ostringstream problem(std::ostringstream::ate);
-
-    int rank;
-
-#ifdef USE_MPI
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#else
-    rank = 0;
-#endif
-
-    if (legacy)
-    {
-        problem << path_in << "gmat  1 " << std::setw(2) << index << suffix;
-    }
-    else
-    {
-        problem << path_in << "mat_" << spin << "_" << std::setfill('0')
-                << std::setw(2) << kpoint << "_" << std::setfill('0')
-                << std::setw(2) << index << suffix;
-    }
-
-    if (rank == 0)
-        std::cout << problem.str() << std::endl;
-
-    std::size_t file_size = GetFileSize(problem.str());
-
-    try
-    {
-        if (size * sizeof(T) != file_size)
-        {
-            throw std::logic_error(
-                std::string("The given file : ") + problem.str() +
-                std::string(" of size ") + std::to_string(file_size) +
-                std::string(
-                    " doesn't equals to the required size of matrix of size ") +
-                std::to_string(size * sizeof(T)));
-        }
-    }
-    catch (std::exception& e)
-    {
-        std::cerr << "Caught " << typeid(e).name() << " : " << e.what()
-                  << std::endl;
-        return;
-    }
-
-    std::ifstream input(problem.str().c_str(), std::ios::binary);
-    if (!input.is_open())
-    {
-        throw new std::logic_error(std::string("error reading file: ") +
-                                   problem.str());
-    }
-
-    for (std::size_t y = 0; y < ylen; y++)
-    {
-        input.seekg(((xoff) + N * (yoff + y)) * sizeof(T));
-        input.read(reinterpret_cast<char*>(H + xlen * y), xlen * sizeof(T));
-    }
-}
-
-template <typename T>
-void readMatrix(T* H, std::string path_in, std::string spin, std::size_t kpoint,
-                std::size_t index, std::string suffix, std::size_t size,
-                bool legacy, std::size_t m, std::size_t mblocks,
-                std::size_t nblocks, std::size_t* r_offs, std::size_t* r_lens,
-                std::size_t* r_offs_l, std::size_t* c_offs, std::size_t* c_lens,
-                std::size_t* c_offs_l)
-{
-    std::size_t N = std::sqrt(size);
-    std::ostringstream problem(std::ostringstream::ate);
-
-    int rank;
-
-#ifdef USE_MPI
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#else
-    rank = 0;
-#endif
-
-    if (legacy)
-    {
-        problem << path_in << "gmat  1 " << std::setw(2) << index << suffix;
-    }
-    else
-    {
-        problem << path_in << "mat_" << spin << "_" << std::setfill('0')
-                << std::setw(2) << kpoint << "_" << std::setfill('0')
-                << std::setw(2) << index << suffix;
-    }
-
-    if (rank == 0)
-        std::cout << problem.str() << std::endl;
-
-    std::size_t file_size = GetFileSize(problem.str());
-
-    try
-    {
-        if (size * sizeof(T) != file_size)
-        {
-            throw std::logic_error(
-                std::string("The given file : ") + problem.str() +
-                std::string(" of size ") + std::to_string(file_size) +
-                std::string(
-                    " doesn't equals to the required size of matrix of size ") +
-                std::to_string(size * sizeof(T)));
-        }
-    }
-    catch (std::exception& e)
-    {
-        std::cerr << "Caught " << typeid(e).name() << " : " << e.what()
-                  << std::endl;
-        return;
-    }
-
-    std::ifstream input(problem.str().c_str(), std::ios::binary);
-    if (!input.is_open())
-    {
-        throw new std::logic_error(std::string("error reading file: ") +
-                                   problem.str());
-    }
-
-    for (std::size_t j = 0; j < nblocks; j++)
-    {
-        for (std::size_t i = 0; i < mblocks; i++)
-        {
-            for (std::size_t q = 0; q < c_lens[j]; q++)
-            {
-                input.seekg(((q + c_offs[j]) * N + r_offs[i]) * sizeof(T));
-                input.read(reinterpret_cast<char*>(H + (q + c_offs_l[j]) * m +
-                                                   r_offs_l[i]),
-                           r_lens[i] * sizeof(T));
-            }
-        }
-    }
-}
-
-template <typename T>
-void readMatrix(T* H, std::string path_in, std::size_t size, std::size_t xoff,
-                std::size_t yoff, std::size_t xlen, std::size_t ylen)
-{
-    std::size_t N = std::sqrt(size);
-    std::ostringstream problem(std::ostringstream::ate);
-    problem << path_in;
-    int rank;
-#ifdef USE_MPI
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#else
-    rank = 0;
-#endif
-
-    if (rank == 0)
-        std::cout << problem.str() << std::endl;
-
-    std::size_t file_size = GetFileSize(problem.str());
-
-    try
-    {
-        if (size * sizeof(T) != file_size)
-        {
-            throw std::logic_error(
-                std::string("The given file : ") + problem.str() +
-                std::string(" of size ") + std::to_string(file_size) +
-                std::string(
-                    " doesn't equals to the required size of matrix of size ") +
-                std::to_string(size * sizeof(T)));
-        }
-    }
-    catch (std::exception& e)
-    {
-        std::cerr << "Caught " << typeid(e).name() << " : " << e.what()
-                  << std::endl;
-        return;
-    }
-
-    std::ifstream input(problem.str().c_str(), std::ios::binary);
-
-    if (!input.is_open())
-    {
-        throw new std::logic_error(std::string("error reading file: ") +
-                                   problem.str());
-    }
-
-    for (std::size_t y = 0; y < ylen; y++)
-    {
-        input.seekg(((xoff) + N * (yoff + y)) * sizeof(T));
-        input.read(reinterpret_cast<char*>(H + xlen * y), xlen * sizeof(T));
-    }
-}
-
-template <typename T>
-void readMatrix(T* H, std::string path_in, std::size_t size, std::size_t m,
-                std::size_t mblocks, std::size_t nblocks, std::size_t* r_offs,
-                std::size_t* r_lens, std::size_t* r_offs_l, std::size_t* c_offs,
-                std::size_t* c_lens, std::size_t* c_offs_l)
-{
-
-    std::size_t N = std::sqrt(size);
-    std::ostringstream problem(std::ostringstream::ate);
-    problem << path_in;
-
-    int rank;
-
-#ifdef USE_MPI
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#else
-    rank = 0;
-#endif
-
-    if (rank == 0)
-        std::cout << problem.str() << std::endl;
-
-    std::size_t file_size = GetFileSize(problem.str());
-
-    try
-    {
-        if (size * sizeof(T) != file_size)
-        {
-            throw std::logic_error(
-                std::string("The given file : ") + problem.str() +
-                std::string(" of size ") + std::to_string(file_size) +
-                std::string(
-                    " doesn't equals to the required size of matrix of size ") +
-                std::to_string(size * sizeof(T)));
-        }
-    }
-    catch (std::exception& e)
-    {
-        std::cerr << "Caught " << typeid(e).name() << " : " << e.what()
-                  << std::endl;
-        return;
-    }
-
-    std::ifstream input(problem.str().c_str(), std::ios::binary);
-    if (!input.is_open())
-    {
-        throw new std::logic_error(std::string("error reading file: ") +
-                                   problem.str());
-    }
-
-    for (std::size_t j = 0; j < nblocks; j++)
-    {
-        for (std::size_t i = 0; i < mblocks; i++)
-        {
-            for (std::size_t q = 0; q < c_lens[j]; q++)
-            {
-                input.seekg(((q + c_offs[j]) * N + r_offs[i]) * sizeof(T));
-                input.read(reinterpret_cast<char*>(H + (q + c_offs_l[j]) * m +
-                                                   r_offs_l[i]),
-                           r_lens[i] * sizeof(T));
-            }
-        }
-    }
-}
-
 struct ChASE_DriverProblemConfig
 {
     std::size_t N;   // Size of the Matrix
@@ -561,41 +270,82 @@ int do_chase(ChASE_DriverProblemConfig& conf)
 
         if (rank == 0)
             std::cout << "start reading matrix\n";
+
+        std::ostringstream problem(std::ostringstream::ate);
+        if(sequence){
+            if(legacy)
+            {
+                problem << path_in << "gmat  1 " << std::setw(2) << i << ".bin";
+            }
+            else
+            {
+                problem << path_in << "mat_" << spin << "_" << std::setfill('0')
+                        << std::setw(2) << kpoint << "_" << std::setfill('0')
+                        << std::setw(2) << i << ".bin";
+            }
+        }
+        else
+        {
+            problem << path_in;
+        }
+
+        if (rank == 0)
+            std::cout << "Reading matrix: "<< problem.str() << std::endl;
+
+        std::size_t file_size = GetFileSize(problem.str());
+
+        //check the input file size
+        try
+        {
+            if (N * N * sizeof(T) != file_size)
+            {
+                throw std::logic_error(
+                    std::string("The given file : ") + problem.str() +
+                    std::string(" of size ") + std::to_string(file_size) +
+                    std::string(
+                        " doesn't equals to the required size of matrix of size ") +
+                    std::to_string(size * sizeof(T)));
+            }
+        }
+        catch (std::exception& e)
+        {
+            std::cerr << "Caught " << typeid(e).name() << " : " << e.what()
+                    << std::endl;
+            return 1;
+        }
+
+#ifdef USE_MPI
 #ifdef USE_BLOCK_CYCLIC
-        if (sequence)
-        {
-            readMatrix(H, path_in, spin, kpoint, i, ".bin", N * N, legacy, m,
-                       mblocks, nblocks, r_offs, r_lens, r_offs_l, c_offs,
-                       c_lens, c_offs_l);
-        }
-        else
-        {
-            readMatrix(H, path_in, N * N, m, mblocks, nblocks, r_offs, r_lens,
-                       r_offs_l, c_offs, c_lens, c_offs_l);
-        }
+        props->readHamiltonianBlockCyclicDist(problem.str(), H);
 #else
-        if (sequence)
+        if(isMatGen)
         {
-            readMatrix(H, path_in, spin, kpoint, i, ".bin", N * N, legacy, xoff,
-                       yoff, xlen, ylen);
-        }
-        else
-        {
-            if(isMatGen){
-                Base<T> epsilon = 1e-4;
-                Base<T>* eigenv = new Base<T>[N];
-                for (std::size_t i = 0; i < ylen; i++) {
-                    for (std::size_t j = 0; j < xlen; j++) {
-                        if (xoff + j == (i + yoff)) {
-                            H[i * xlen + j] =  dmax * (epsilon + (Base<T>)(xoff + j) * (1.0 - epsilon) / (Base<T>)N);
-                        }else{
-                            H[i * xlen + j] = T(0.0);
-                        }
+            Base<T> epsilon = 1e-4;
+            Base<T>* eigenv = new Base<T>[N];
+            for (std::size_t i = 0; i < ylen; i++) {
+                for (std::size_t j = 0; j < xlen; j++) {
+                    if (xoff + j == (i + yoff)) {
+                        H[i * xlen + j] =  dmax * (epsilon + (Base<T>)(xoff + j) * (1.0 - epsilon) / (Base<T>)N);
+                    }else{
+                        H[i * xlen + j] = T(0.0);
                     }
                 }
-            }else{
-                readMatrix(H, path_in, N * N, xoff, yoff, xlen, ylen);
             }
+        }
+        else
+        {
+            props->readHamiltonianBlockDist(problem.str(), H);
+        }
+#endif
+#else
+        std::ifstream input(problem.str().c_str(), std::ios::binary);
+        if (input.is_open())
+        {
+            input.read((char*)H, sizeof(T) * N * N);
+        }
+        else
+        {
+            throw std::string("error reading file: ") + problem.str();
         }
 #endif
 
