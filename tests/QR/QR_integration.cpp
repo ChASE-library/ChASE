@@ -62,7 +62,7 @@ public:
     MOCK_METHOD(void, estimated_cond_evaluator, (std::size_t, chase::Base<T>), (override));
     MOCK_METHOD(void, lockVectorCopyAndOrthoConcatswap, (std::size_t, bool), (override));
     MOCK_METHOD(void, LanczosDos, (std::size_t, std::size_t, T*), (override));
-    MOCK_METHOD(void, Lanczos, (std::size_t, Base<T>*), (override));
+    MOCK_METHOD(void, Lanczos, (std::size_t, chase::Base<T>*), (override));
     MOCK_METHOD(void, mLanczos, (std::size_t, int, chase::Base<T>*, chase::Base<T>*, chase::Base<T>*), (override));
     MOCK_METHOD(void, B2C, (T*, std::size_t, T*, std::size_t, std::size_t), (override));
     MOCK_METHOD(void, lacpy, (char, std::size_t, std::size_t, T*, std::size_t, T*, std::size_t), (override));
