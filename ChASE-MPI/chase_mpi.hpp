@@ -118,6 +118,7 @@ public:
 
 	ritzv_ = dla_->get_Ritzv();
         resid_ = dla_->get_Resids();
+        nprocs_ = 1;
     }
 
     // case 2: MPI
@@ -201,6 +202,7 @@ public:
         ritzv_ = dla_->get_Ritzv();
         resid_ = dla_->get_Resids();
 
+        nprocs_ = properties_->get_nprocs();        
         static_assert(is_skewed_matrixfree<MF<T>>::value,
                       "MatrixFreeChASE Must be skewed");
     }
@@ -219,6 +221,8 @@ public:
 
         ritzv_ = dla_->get_Ritzv();
         resid_ = dla_->get_Resids();
+
+        nprocs_ = properties_->get_nprocs();
     }
 
     //! It prevents the copy operation of the constructor of ChaseMpi.
@@ -561,7 +565,8 @@ public:
     //! \return the number of MPI ranks in the communicator used by ChASE
     int get_nprocs() override 
     {
-      return dla_->get_nprocs();
+      //return dla_->get_nprocs();
+      return nprocs_;
     }
 
 private:
@@ -608,6 +613,7 @@ private:
       through MPI function `MPI_Comm_rank`.
     */
     int rank_;
+    int nprocs_;
 
     //! The number of eigenvectors to be locked, which indicates the number of
     //! eigenpairs converged into acceptable tolerance.
