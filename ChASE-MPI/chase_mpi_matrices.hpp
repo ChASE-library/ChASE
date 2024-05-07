@@ -32,7 +32,7 @@ class CpuMem
 {
 public:
     CpuMem() : size_(0), ptr_(nullptr), allocated_(false) {}
-    CpuMem(std::size_t size, bool useGPU = false) : size_(size), allocated_(true), type_("CPU")
+    CpuMem(std::size_t size, bool useGPU = false) : size_(size), allocated_(true), useGPU_(useGPU), type_("CPU")
     {
         if(!useGPU)
         {
@@ -56,10 +56,14 @@ public:
     {
         if (allocated_)
         {
+            if(!useGPU_)
+            {
+                std::allocator<T>().deallocate(ptr_, size_);
+            }        
 #if defined(HAS_CUDA)
-            cudaFreeHost(ptr_);
-#else
-            std::allocator<T>().deallocate(ptr_, size_);
+            else{
+                cudaFreeHost(ptr_);
+            }
 #endif
         }
     }
@@ -75,6 +79,7 @@ private:
     T* ptr_;
     bool allocated_;
     std::string type_;
+    bool useGPU_;
 };
 
 #if defined(HAS_CUDA)

@@ -39,14 +39,12 @@ public:
     {
         C2vec = make_unique<Matrix<T>>(0, N_, maxBlock_);
         B2vec = make_unique<Matrix<T>>(0, N_, maxBlock_);        
-  
         H_ =  matrices_.H().ptr();
         C_ =  matrices_.C().ptr();
         B_ = matrices_.B().ptr();
         C2_ = C2vec.get()->ptr();
         B2_ = B2vec.get()->ptr();
         A_ = matrices_.A().ptr();
-
         v0_ = (T*)malloc(N_ * sizeof(T));
         v2_ = (T*)malloc(N_ * sizeof(T));
     }

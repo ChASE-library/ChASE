@@ -116,7 +116,7 @@ public:
           dla_(new MF<T>(H, ldh, V1, ritzv, N_, nev_, nex_))
     {
 
-        ritzv_ = dla_->get_Ritzv();
+	ritzv_ = dla_->get_Ritzv();
         resid_ = dla_->get_Resids();
     }
 
