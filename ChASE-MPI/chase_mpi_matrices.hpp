@@ -32,14 +32,19 @@ class CpuMem
 {
 public:
     CpuMem() : size_(0), ptr_(nullptr), allocated_(false) {}
-    CpuMem(std::size_t size) : size_(size), allocated_(true), type_("CPU")
+    CpuMem(std::size_t size, bool useGPU = false) : size_(size), allocated_(true), type_("CPU")
     {
+        if(!useGPU)
+        {
+            ptr_ = std::allocator<T>().allocate(size_);
+        }
 #if defined(HAS_CUDA)
-        cudaMallocHost(&ptr_, size_ * sizeof(T));
-#else
-        ptr_ = std::allocator<T>().allocate(size_);
+        else
+        {
+            cudaMallocHost(&ptr_, size_ * sizeof(T));   
+        }
 #endif
-        std::fill_n(ptr_, size_, T(0.0));
+        std::fill_n(ptr_, size_, T(0.0));	    
     }
 
     CpuMem(T* ptr, std::size_t size)
@@ -127,12 +132,12 @@ public:
         {
             case 0:
                 Host_ = std::make_shared<CpuMem<T>>(m * n);
-                isHostAlloc_ = true;
+		isHostAlloc_ = true;
                 isDeviceAlloc_ = false;
                 break;
 #if defined(HAS_CUDA)
             case 1:
-                Host_ = std::make_shared<CpuMem<T>>(m * n);
+                Host_ = std::make_shared<CpuMem<T>>(m * n, true);
                 Device_ = std::make_shared<GpuMem<T>>(m * n);
                 isHostAlloc_ = true;
                 isDeviceAlloc_ = true;
@@ -342,13 +347,12 @@ public:
         }
 
         H___ = make_unique<Matrix<T>>(isGPU, N, N, H, ldh);
-        C___ = make_unique<Matrix<T>>(isGPU, N, max_block, V1, N);
-        B___ = make_unique<Matrix<T>>(onlyGPU, N, max_block);
-        A___ = make_unique<Matrix<T>>(onlyGPU, max_block, max_block);
-
+	C___ = make_unique<Matrix<T>>(isGPU, N, max_block, V1, N);
+	B___ = make_unique<Matrix<T>>(onlyGPU, N, max_block);
+	A___ = make_unique<Matrix<T>>(onlyGPU, max_block, max_block);
         Ritzv___ = make_unique<Matrix<Base<T>>>(isGPU, 1, max_block, ritzv,
                                                      max_block);
-        Resid___ = make_unique<Matrix<Base<T>>>(isGPU, 1, max_block);
+	Resid___ = make_unique<Matrix<Base<T>>>(isGPU, 1, max_block);
     }
 
     //! A constructor of ChaseMpiMatrices for **MPI case** which allocates
