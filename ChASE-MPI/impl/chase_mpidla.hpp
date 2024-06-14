@@ -357,6 +357,8 @@ public:
             }
         }
 
+        //std::cout << "numbvecs = " << config_->GetNumLanczos() << std::endl;
+
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
@@ -1405,11 +1407,14 @@ public:
     void Lanczos(std::size_t M,
                  Base<T>* r_beta) override
     {
+        
 #ifdef USE_BLANCZOS  
         std::cout << "calling Block Lanczos..." << std::endl;
         std::size_t default_block_size = 4;
         std::size_t block_size = default_block_size; //std::min(default_block_size, nev_ + nex_);
         std::size_t div = std::floor(static_cast<double>(M) / block_size);
+        
+        int numvecs = 1;
 
         M = (div * block_size + 1 == M) ? M : block_size * (div + 1) + 1;
 
@@ -1417,98 +1422,73 @@ public:
         T Zero = T(0.0);
         T NegOne = T(-1.0);
 
-        //std::vector<T> alpha(block_size * block_size, T(0));
-        Matrix<T> alpha(0, block_size, block_size);
-        Matrix<T> beta(0, block_size, block_size);
-        Matrix<T> submatrix(0, M, M);
-        Matrix<T> v0_(0, m_, block_size);
-        Matrix<T> v1_(0, m_, block_size);
-        Matrix<T> w_(0, m_, block_size);
-        Matrix<T> A_(0,  block_size, 2 * block_size);
-        Matrix<Base<T>> ritzv_(0, M, 1);
+        Matrix<T> alpha(0, block_size, block_size * numvecs);
+        Matrix<T> beta(0, block_size, block_size * numvecs);
+        Matrix<T> submatrix(0, M, M * numvecs);
+        Matrix<T> v0_(0, m_, block_size * numvecs);
+        Matrix<T> v1_(0, m_, block_size * numvecs);
+        Matrix<T> v2_(0, n_, block_size * numvecs);
+        Matrix<T> w_(0, m_, block_size * numvecs);
+        Matrix<T> A1_(0,  block_size, block_size * numvecs);
+        Matrix<T> A2_(0,  block_size, block_size * numvecs);
+       
+        Matrix<Base<T>> ritzv_(0, M, numvecs);
 
-        std::mt19937 gen(2342.0);
-        std::normal_distribution<> normal_distribution;
-
-        //curand
-        for (std::size_t k = 0; k < m_ * block_size; ++k)
-        {
-            *(v1_.ptr() + k) =
-                getRandomT<T>([&]() { return normal_distribution(gen); });
-        }
-
-        //CholQR
+        dla_->lacpy('A', m_, block_size * numvecs, C, m_, v1_.ptr(), m_);
         int info = -1;
-        t_syherk('U', 'C', block_size, m_, &One, v1_.ptr(), m_, &Zero, A_.ptr(), block_size);
-        //allreduce with wrapper
-        MPI_Allreduce(MPI_IN_PLACE, A_.ptr(), block_size * block_size, getMPI_Type<T>(), MPI_SUM, col_comm_);
-        info = t_potrf('U', block_size, A_.ptr(), block_size);
-        t_trsm('R', 'U', 'N', 'N', m_, block_size, &One, A_.ptr(), block_size, v1_.ptr(), m_);
-  
+
         for(auto k = 0; k < M; k = k + block_size)
         {
             auto nb = std::min(block_size, M - k);
-            //dla_->applyVec should be cuda-aware
-            dla_->applyVec(v1_.ptr(), B2, nb);
-            //allreduce with wrapper
-            MPI_Allreduce(MPI_IN_PLACE, B2, n_ * nb, getMPI_Type<T>(), MPI_SUM,
-                      col_comm_);
-            //this->B2C to be cuda-aware
-            this->B2C(B2, 0, w_.ptr(), 0, nb);
+            dla_->applyVec(&v1_, &v2_, nb * numvecs);
+            MPI_Allreduce(MPI_IN_PLACE, v2_.ptr(), n_ * nb * numvecs, getMPI_Type<T>(), MPI_SUM,
+                      col_comm_);            
+            this->B2C(v2_.ptr(), 0, w_.ptr(), 0, nb * numvecs);  
 
-            //alpha = v1^T * w
-            // dla_->gemm need to be implemented
-            //cuda-aware
-            t_gemm(CblasColMajor, CblasConjTrans,  CblasNoTrans, 
-                    nb, nb, m_,
-                    &One, v1_.ptr(), m_, w_.ptr(), m_, 
-                    &Zero, alpha.ptr(), block_size);
-            //alpha.syndFromDevice();
-            //allreduce wrapper
-            MPI_Allreduce(MPI_IN_PLACE, alpha.ptr(), block_size * block_size, getMPI_Type<T>(), MPI_SUM, col_comm_);
+            dla_->gemmStrideBatch(CblasConjTrans, CblasNoTrans, 
+                                nb, nb, m_, 
+                                &One, &v1_, m_ * block_size, &w_,  m_ * block_size, &Zero, &alpha,  block_size * block_size, numvecs);            
 
-            //w = -v * alpha + w
-            //alpha.synd2Device();
-            t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, 
-                    m_, nb, nb, 
-                    &NegOne, v1_.ptr(), m_, alpha.ptr(), block_size,
-                    &One, w_.ptr(), m_);
+            MPI_Allreduce(MPI_IN_PLACE, alpha.ptr(), block_size * block_size * numvecs, getMPI_Type<T>(), MPI_SUM, col_comm_);
 
-            //save alpha onto the block diag
-            //dla_->lacpy
-            t_lacpy('A', nb, nb, alpha.ptr(), block_size, submatrix.ptr() + k + k * M, M);
+            dla_->gemmStrideBatch(CblasNoTrans, CblasNoTrans, 
+                                m_, nb, nb, 
+                                &NegOne, &v1_, m_ * block_size, &alpha,  block_size * block_size, &One, &w_,  m_ * block_size, numvecs);  
+
+            for(auto i = 0; i < numvecs; i++)
+            {
+                dla_->lacpy('A', nb, nb, alpha.ptr() + i * block_size, block_size, submatrix.ptr() + k + (k + i) * M, M);
+            }
 
             //w = - v0 * beta + w
             if(k > 0){
-                t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, 
-                        m_, nb, nb, 
-                        &NegOne, v0_.ptr(), m_, beta.ptr(), block_size,
-                        &One, w_.ptr(), m_);
+                dla_->gemmStrideBatch(CblasNoTrans, CblasNoTrans, 
+                                    m_, nb, nb, 
+                                    &NegOne, &v0_, m_ * block_size, &beta,  block_size * block_size, &One, &w_,  m_ * block_size, numvecs); 
             }
 
             //CholeskyQR2
             // A = V^T * V
-            t_syherk('U', 'C', nb, m_, &One, w_.ptr(), m_, &Zero, A_.ptr(), block_size);
+            dla_->syherkStrideBatch('U', 'C', nb, m_, &One, &w_, m_ * block_size, &Zero, &A1_, block_size * block_size, numvecs);
 
-            MPI_Allreduce(MPI_IN_PLACE, A_.ptr(), block_size * block_size, getMPI_Type<T>(), MPI_SUM, col_comm_);
+            MPI_Allreduce(MPI_IN_PLACE, A1_.ptr(), block_size * block_size * numvecs, getMPI_Type<T>(), MPI_SUM, col_comm_);
+
             // A = Chol(A)
-            info = t_potrf('U', nb, A_.ptr(), block_size);
+            dla_->potrfStrideBatch('U', nb, &A1_, block_size * block_size, numvecs);
             // w = W * A^(-1)
-            t_trsm('R', 'U', 'N', 'N', m_, nb, &One, A_.ptr(), block_size, w_.ptr(), m_);
+            dla_->trsmStrideBatch('R', 'U', 'N', 'N', m_, nb, &One, &A1_, block_size * block_size, &w_, m_ * block_size, numvecs);
             // A' = V^T * V
-            t_syherk('U', 'C', nb, m_, &One, w_.ptr(), m_, &Zero, A_.ptr() + block_size * block_size, block_size);
-            MPI_Allreduce(MPI_IN_PLACE, A_.ptr() + block_size * block_size, block_size * block_size, getMPI_Type<T>(), MPI_SUM, col_comm_);
-            // A' = Chol(A)
-            info = t_potrf('U', nb, A_.ptr() + block_size * block_size, block_size);
+            dla_->syherkStrideBatch('U', 'C', nb, m_, &One, &w_, m_ * block_size, &Zero, &A2_, block_size * block_size, numvecs);
 
+            MPI_Allreduce(MPI_IN_PLACE, A2_.ptr(), block_size * block_size * numvecs, getMPI_Type<T>(), MPI_SUM, col_comm_);
+            // A' = Chol(A)
+            dla_->potrfStrideBatch('U', nb, &A2_, block_size * block_size, numvecs);
             // w = W * A'^(-1)
-            t_trsm('R', 'U', 'N', 'N', m_, nb, &One, A_.ptr() + block_size * block_size, block_size, w_.ptr(), m_);
+            dla_->trsmStrideBatch('R', 'U', 'N', 'N', m_, nb, &One, &A2_, block_size * block_size, &w_, m_ * block_size, numvecs);
             // beta = A'*A
-            t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, 
-                nb, nb, nb, 
-                &One, A_.ptr() + block_size * block_size, block_size, A_.ptr(), block_size,
-                &Zero, beta.ptr(), block_size 
-            );
+            dla_->gemmStrideBatch(CblasNoTrans, CblasNoTrans, 
+                                nb, nb, nb, 
+                                &One, &A2_, block_size * block_size, &A1_,  block_size * block_size, &Zero, &beta,  block_size * block_size, numvecs);  
 
             if (k == M - 1)
                 break;
@@ -1516,92 +1496,105 @@ public:
             //save beta to the off-diagonal
             if(k > 0)
             {
-                t_lacpy('U', nb, nb, beta.ptr(), block_size, submatrix.ptr() + k * M + (k - 1), M);
+                //t_lacpy('U', nb, nb, beta.ptr(), block_size, submatrix.ptr() + k * M + (k - 1), M);
+                for(auto i = 0; i < numvecs; i++)
+                {
+                    dla_->lacpy('U', nb, nb, beta.ptr() + i * block_size, block_size, submatrix.ptr() + (k + i) * M + (k - 1), M);
+                }                
             }            
 
             v1_.swap(v0_);
             v1_.swap(w_);
         }
 
-        t_heevd(LAPACK_COL_MAJOR, 'N', 'U', M, submatrix.ptr(), M, ritzv_.ptr());
-        
-        *r_beta = *std::max_element(ritzv_.ptr(), ritzv_.ptr() + M) + std::abs(beta.ptr()[0]);
+        for(auto i = 0; i < numvecs; i++)
+        {
+            t_heevd(LAPACK_COL_MAJOR, 'N', 'U', M, submatrix.ptr() + M * M * i, M, ritzv_.ptr() + i * M);
+        }
+
+        Base<T> max;
+        //*r_beta = *std::max_element(ritzv_.ptr(), ritzv_.ptr() + M) + std::abs(beta.ptr()[0]);
+        *r_beta = std::max(std::abs(ritzv_.ptr()[0]), std::abs(ritzv_.ptr()[M-1])) + std::abs(beta.ptr()[0]);
+
+        for(auto i = 1; i < numvecs; i++)
+        {
+          max = std::max(std::abs(ritzv_.ptr()[i * M]), std::abs(ritzv_.ptr()[(i + 1) * M - 1])) +
+                  std::abs(beta.ptr()[i]);
+          *r_beta = std::max(max, *r_beta);        
+        }
 
 #else
         std::cout << "calling Lanczos..." << std::endl;        
         std::vector<Base<T>> ritzv_(M);
-        Base<T> real_beta;
-        Base<T>* d = new Base<T>[M]();
-        Base<T>* e = new Base<T>[M]();
+        Base<T> real_alpha, real_beta;
+        std::vector<Base<T>> d(M);
+        std::vector<Base<T>> e(M);
 
         T alpha = T(1.0);
         T beta = T(0.0);
 
-        std::fill(v0_, v0_ + m_, T(0));
-
-        std::mt19937 gen(2342.0);
-        std::normal_distribution<> normal_distribution;
-            // v1_ = get_V1();
-        for (std::size_t k = 0; k < m_; ++k)
-        {
-            v1_[k] =
-                getRandomT<T>([&]() { return normal_distribution(gen); });
-        }
+        std::fill(v_0->ptr(), v_0->ptr() + m_, T(0));
         
-        // ENSURE that v1 has one norm
-#ifdef USE_NSIGHT
-        nvtxRangePushA("Lanczos: loop");
-#endif
-        Base<T> real_alpha = t_nrm2(m_, v1_, 1);
+        Memcpy(memcpy_mode[1], v_1->ptr(), C, m_ * 1 * sizeof(T));
+
+        dla_->nrm2_batch(m_, v_1, 1, 1, &real_alpha);         
+
         real_alpha = std::pow(real_alpha, 2);
+        
         MPI_Allreduce(MPI_IN_PLACE, &real_alpha, 1, getMPI_Type<Base<T>>(),
                       MPI_SUM, col_comm_);
+
         real_alpha = std::sqrt(real_alpha);
         alpha = T(1 / real_alpha);
-        t_scal(m_, &alpha, v1_, 1);
+        
+        dla_->scal_batch(m_, &alpha, v_1, 1, 1);
+        
         for (std::size_t k = 0; k < M; k = k + 1)
         {
-            dla_->applyVec(v1_, w_, 1);
-            MPI_Allreduce(MPI_IN_PLACE, w_, n_ * 1, getMPI_Type<T>(), MPI_SUM,
-                      col_comm_);
-            this->B2C(w_, 0, v2_, 0, 1);
+            dla_->applyVec(v_1, v_w, 1);
+            MPI_Allreduce(MPI_IN_PLACE, v_w->ptr(), n_ * 1, getMPI_Type<T>(), MPI_SUM,
+                      col_comm_);            
+            this->B2C(v_w->ptr(), 0, v_2->ptr(), 0, 1);   
 
-            alpha = t_dot(m_, v1_, 1, v2_, 1);
+            dla_->dot_batch(m_, v_1, 1, v_2, 1, &alpha, 1);
 
+            alpha = -alpha;
+            
             MPI_Allreduce(MPI_IN_PLACE, &alpha, 1, getMPI_Type<T>(), MPI_SUM,
                           col_comm_);
-            alpha = -alpha;
-            t_axpy(m_, &alpha, v1_, 1, v2_, 1);
+
+            dla_->axpy_batch(m_, &alpha, v_1, 1, v_2, 1, 1);
 
             alpha = -alpha;
 
             d[k] = std::real(alpha);
 
             beta = T(-real_beta);
-            t_axpy(m_, &beta, v0_, 1, v2_, 1);
+            
+            dla_->axpy_batch(m_, &beta, v_0, 1, v_2, 1, 1);
+            
             beta = -beta;
+            
+            dla_->nrm2_batch(m_, v_2, 1, 1, &real_beta);
 
-            // real_beta = t_norm_p2(m_, v2_);
-            real_beta = t_nrm2(m_, v2_, 1);
             real_beta = std::pow(real_beta, 2);
+            
             MPI_Allreduce(MPI_IN_PLACE, &real_beta, 1, getMPI_Type<Base<T>>(),
                           MPI_SUM, col_comm_);
+
             real_beta = std::sqrt(real_beta);
-
-            beta = T(1.0 / real_beta);
-
+            beta = T(1 / real_beta);
+            
             if (k == M - 1)
                 break;
-                
-            t_scal(m_, &beta, v2_, 1);
+            
+            dla_->scal_batch(m_, &beta, v_2, 1, 1);
 
             e[k] = real_beta;
-
-            std::swap(v1_, v0_);
-            std::swap(v1_, v2_);
+            
+            v_1->swap(*v_0);
+            v_1->swap(*v_2);
         }
-
-        //Memcpy(memcpy_mode[2], C, v1_, m_ * sizeof(T));
 
 #ifdef USE_NSIGHT
         nvtxRangePop();
@@ -1612,39 +1605,40 @@ public:
         int tryrac = 0;
         std::vector<int> isuppz(2 * M);
 
-        t_stemr<Base<T>>(LAPACK_COL_MAJOR, 'N', 'A', M, d, e, ul, ll, vl, vu,
+        t_stemr<Base<T>>(LAPACK_COL_MAJOR, 'N', 'A', M, d.data(), e.data(), ul, ll, vl, vu,
                          &notneeded_m, ritzv_.data(), NULL, M, M, isuppz.data(), &tryrac);
 
         *r_beta = std::max(std::abs(ritzv_[0]), std::abs(ritzv_[M - 1])) +
                   std::abs(real_beta);
-        delete[] d;
-        delete[] e;
-#endif        
+#endif 
+       
     }
 
     void mLanczos(std::size_t M, int numvec, Base<T>* d, Base<T>* e,
                  Base<T>* r_beta) override
     {
-        Base<T>* real_alpha = new Base<T>[numvec]();
-        Base<T>* real_beta = new Base<T>[numvec]();
+/*        
+        std::vector<Base<T>> real_alpha(numvec);
+        std::vector<Base<T>> real_beta(numvec);
+
         std::vector<T> alpha(numvec, T(1.0));
         std::vector<T> beta(numvec, T(0.0));
-        
-        T *v1 = (T*)malloc(m_ * numvec * sizeof(T));
-        T *v0 = (T*)malloc(m_ * numvec * sizeof(T)) ;
-        T *v2 = (T*)malloc(m_ * numvec * sizeof(T)) ;
-        T *w = (T*)malloc(n_ * numvec * sizeof(T)) ;
 
-        std::fill(v0, v0 + m_ * numvec, T(0));
-        Memcpy(memcpy_mode[1], v1, C2, m_ * numvec * sizeof(T));
+        v_0 = new Matrix<T>(0, m_, numvec);
+        v_1 = new Matrix<T>(0, m_, numvec);
+        v_2 = new Matrix<T>(0, m_, numvec);
+        v_w = new Matrix<T>(0, n_, numvec);
+
+        Memcpy(memcpy_mode[1], v_1->ptr(), C2, m_ * numvec * sizeof(T));
         
+        dla_->nrm2_batch(m_, v_1, 1, numvec, real_alpha.data());
+
         for(auto i = 0; i < numvec; i++)
         {
-            real_alpha[i] = t_nrm2(m_,v1 + i * m_, 1);
             real_alpha[i] = std::pow(real_alpha[i], 2);
         }
 
-        MPI_Allreduce(MPI_IN_PLACE, real_alpha, numvec, getMPI_Type<Base<T>>(),
+        MPI_Allreduce(MPI_IN_PLACE, real_alpha.data(), numvec, getMPI_Type<Base<T>>(),
                       MPI_SUM, col_comm_);
 
         for(auto i = 0; i < numvec; i++)
@@ -1653,34 +1647,30 @@ public:
             alpha[i] = T(1 / real_alpha[i]);
         }
 
-        for(auto i = 0; i < numvec; i++)
-        {
-            t_scal(m_, &alpha[i], v1 + i * m_, 1);
-        }
+        dla_->scal_batch(m_, alpha.data(), v_1, 1, numvec);
 
         for (std::size_t k = 0; k < M; k = k + 1)
         {
             for(auto i = 0; i < numvec; i++){
-                Memcpy(memcpy_mode[2], C + k * m_, v1 + i * m_, m_ * sizeof(T));
+                Memcpy(memcpy_mode[2], C + k * m_, v_1->ptr() + i * m_, m_ * sizeof(T));
             }
+            dla_->applyVec(v_1, v_w, numvec);
+            MPI_Allreduce(MPI_IN_PLACE, v_w->ptr(), n_ * numvec, getMPI_Type<T>(), MPI_SUM,
+                      col_comm_);            
+            this->B2C(v_w->ptr(), 0, v_2->ptr(), 0, numvec);   
 
-            dla_->applyVec(v1, w, numvec);
-            MPI_Allreduce(MPI_IN_PLACE, w, n_ * numvec, getMPI_Type<T>(), MPI_SUM,
-                      col_comm_);
-            this->B2C(w, 0, v2, 0, numvec);          
-
+            dla_->dot_batch(m_, v_1, 1, v_2, 1, alpha.data(), numvec);
             for(auto i = 0; i < numvec; i++)
             {
-                alpha[i] = t_dot(m_, v1 + i * m_, 1, v2 + i * m_, 1);
                 alpha[i] = -alpha[i];
             }
 
             MPI_Allreduce(MPI_IN_PLACE, alpha.data(), numvec, getMPI_Type<T>(), MPI_SUM,
                           col_comm_);
-                          
+
+            dla_->axpy_batch(m_, alpha.data(), v_1, 1, v_2, 1, numvec);
             for(auto i = 0; i < numvec; i++)
             {
-                t_axpy(m_, &alpha[i], v1 + i * m_, 1, v2 + i * m_, 1);
                 alpha[i] = -alpha[i];
             }
 
@@ -1694,23 +1684,21 @@ public:
                 beta[i] = T(-real_beta[i]);
             }
 
-            for(auto i = 0; i < numvec; i++)
-            {
-                t_axpy(m_, &beta[i], v0 + i * m_ , 1, v2 + i * m_, 1);
-            }
+            dla_->axpy_batch(m_, beta.data(), v_0, 1, v_2, 1, numvec);
             
             for(auto i = 0; i < numvec; i++)
             {
                 beta[i] = -beta[i];
             }
 
+            dla_->nrm2_batch(m_, v_2, 1, numvec, real_beta.data());
+
             for(auto i = 0; i < numvec; i++)
             {
-                real_beta[i] = t_nrm2(m_,v2 + i * m_, 1);
                 real_beta[i] = std::pow(real_beta[i], 2);
             }
 
-            MPI_Allreduce(MPI_IN_PLACE, real_beta, numvec, getMPI_Type<Base<T>>(),
+            MPI_Allreduce(MPI_IN_PLACE, real_beta.data(), numvec, getMPI_Type<Base<T>>(),
                           MPI_SUM, col_comm_);
 
             for(auto i = 0; i < numvec; i++)
@@ -1722,36 +1710,23 @@ public:
             if (k == M - 1)
                 break;
             
-            for(auto i = 0; i < numvec; i++)
-            {
-                t_scal(m_, &beta[i], v2 + i * m_, 1);   
-            }
+            dla_->scal_batch(m_, beta.data(), v_2, 1, numvec);
 
             for(auto i = 0; i < numvec; i++)
             {
                 e[k + M * i] = real_beta[i];
             }
-
-            std::swap(v1, v0);
-            std::swap(v1, v2);
+            v_1->swap(*v_0);
+            v_1->swap(*v_2);
         }
 
-        for(auto i = 0; i < numvec; i++)
-        {
-            Memcpy(memcpy_mode[2], C, v1 + i * m_, m_ * sizeof(T));
-        }
-
+        Memcpy(memcpy_mode[2], C, v_1->ptr(), m_ * numvec * sizeof(T));
+        
         for(auto i = 0; i < numvec; i++)
         {
             r_beta[i] = real_beta[i];
         }
-        
-        delete[] real_beta;
-        delete[] real_alpha;
-        delete[] v0;
-        delete[] v1;
-        delete[] v2;
-        delete[] w;
+    */                   
     }
 
     void B2C(T* B, std::size_t off1, T* C, std::size_t off2,
@@ -1789,7 +1764,8 @@ public:
                 t_lacpy('A', b_lens[i], block, B + off1 * n_ + b_disps_2[i], n_,
                         C + off1 * m_ + c_disps_2[i], m_);
             }
-        }
+        }        
+    
     }
 
     void C2B(T* C, std::size_t off1, T* B, std::size_t off2,
@@ -1831,6 +1807,289 @@ public:
         
     }
 
+    void mLanczos(std::size_t M, int numvec, Base<T>* upperb,
+                 Base<T>* ritzv, Base<T>* Tau, Base<T>* ritzV) override
+    {
+#ifdef USE_BLANCZOS
+
+        std::cout << "calling Block Lanczos..." << std::endl;
+        std::size_t default_block_size = 4;
+        std::size_t block_size = default_block_size; //std::min(default_block_size, nev_ + nex_);
+        std::size_t div = std::floor(static_cast<double>(M) / block_size);
+        numvec = 2;
+
+        M = (div * block_size + 1 == M) ? M : block_size * (div + 1) + 1;
+
+        T One = T(1.0);
+        T Zero = T(0.0);
+        T NegOne = T(-1.0);
+
+        Matrix<T> alpha(0, block_size, block_size * numvec);
+        Matrix<T> beta(0, block_size, block_size * numvec);
+        Matrix<T> submatrix(0, M, M * numvec);
+        Matrix<T> v0_(0, m_, block_size * numvec);
+        Matrix<T> v1_(0, m_, block_size * numvec);
+        Matrix<T> v2_(0, n_, block_size * numvec);
+        Matrix<T> w_(0, m_, block_size * numvec);
+        Matrix<T> A1_(0,  block_size, block_size * numvec);
+        Matrix<T> A2_(0,  block_size, block_size * numvec);
+
+        Matrix<Base<T>> ritzv_(0, M, numvec);
+
+        //dla_->lacpy('A', m_, block_size * numvec, C, m_, v1_.ptr(), m_);
+        Memcpy(memcpy_mode[1], v1_.ptr(), C2, m_ * block_size * numvec * sizeof(T));
+
+        int info = -1;
+
+        dla_->syherkStrideBatch('U', 'C', block_size, m_, &One, &v1_, m_ * block_size, &Zero, &A1_, block_size * block_size, numvec);
+
+        MPI_Allreduce(MPI_IN_PLACE, A1_.ptr(), block_size * block_size * numvec, getMPI_Type<T>(), MPI_SUM, col_comm_);
+
+        // A = Chol(A)
+        dla_->potrfStrideBatch('U', block_size, &A1_, block_size * block_size, numvec);
+        // w = W * A^(-1)
+        dla_->trsmStrideBatch('R', 'U', 'N', 'N', m_, block_size, &One, &A1_, block_size * block_size, &v1_, m_ * block_size, numvec);
+
+        for(auto k = 0; k < M; k = k + block_size)
+        {
+            auto nb = std::min(block_size, M - k);
+            dla_->applyVec(&v1_, &v2_, nb * numvec);
+            MPI_Allreduce(MPI_IN_PLACE, v2_.ptr(), n_ * nb * numvec, getMPI_Type<T>(), MPI_SUM,
+                      col_comm_);            
+            this->B2C(v2_.ptr(), 0, w_.ptr(), 0, nb * numvec);  
+            dla_->gemmStrideBatch(CblasConjTrans, CblasNoTrans, 
+                                nb, nb, m_, 
+                                &One, &v1_, m_ * block_size, &w_,  m_ * block_size, &Zero, &alpha,  block_size * block_size, numvec);                 
+            MPI_Allreduce(MPI_IN_PLACE, alpha.ptr(), block_size * block_size * numvec, getMPI_Type<T>(), MPI_SUM, col_comm_);
+            dla_->gemmStrideBatch(CblasNoTrans, CblasNoTrans, 
+                                m_, nb, nb, 
+                                &NegOne, &v1_, m_ * block_size, &alpha,  block_size * block_size, &One, &w_,  m_ * block_size, numvec); 
+            for(auto i = 0; i < numvec; i++)
+            {
+                dla_->lacpy('A', nb, nb, alpha.ptr() + i * block_size * block_size, block_size, submatrix.ptr() + k + k * M + i * M * M, M);
+            }                                 
+
+            //w = - v0 * beta + w
+            if(k > 0){
+                dla_->gemmStrideBatch(CblasNoTrans, CblasNoTrans, 
+                                    m_, nb, nb, 
+                                    &NegOne, &v0_, m_ * block_size, &beta,  block_size * block_size, &One, &w_,  m_ * block_size, numvec); 
+            }
+
+            //CholeskyQR2
+            // A = V^T * V
+            dla_->syherkStrideBatch('U', 'C', nb, m_, &One, &w_, m_ * block_size, &Zero, &A1_, block_size * block_size, numvec);
+
+            MPI_Allreduce(MPI_IN_PLACE, A1_.ptr(), block_size * block_size * numvec, getMPI_Type<T>(), MPI_SUM, col_comm_);
+
+            // A = Chol(A)
+            dla_->potrfStrideBatch('U', nb, &A1_, block_size * block_size, numvec);
+            // w = W * A^(-1)
+            dla_->trsmStrideBatch('R', 'U', 'N', 'N', m_, nb, &One, &A1_, block_size * block_size, &w_, m_ * block_size, numvec);
+            // A' = V^T * V
+            dla_->syherkStrideBatch('U', 'C', nb, m_, &One, &w_, m_ * block_size, &Zero, &A2_, block_size * block_size, numvec);
+
+            MPI_Allreduce(MPI_IN_PLACE, A2_.ptr(), block_size * block_size * numvec, getMPI_Type<T>(), MPI_SUM, col_comm_);
+            // A' = Chol(A)
+            dla_->potrfStrideBatch('U', nb, &A2_, block_size * block_size, numvec);
+            // w = W * A'^(-1)
+            dla_->trsmStrideBatch('R', 'U', 'N', 'N', m_, nb, &One, &A2_, block_size * block_size, &w_, m_ * block_size, numvec);
+            // beta = A'*A
+            dla_->gemmStrideBatch(CblasNoTrans, CblasNoTrans, 
+                                nb, nb, nb, 
+                                &One, &A2_, block_size * block_size, &A1_,  block_size * block_size, &Zero, &beta,  block_size * block_size, numvec);  
+
+            if (k == M - 1)
+                break;
+
+            //save beta to the off-diagonal
+            if(k > 0)
+            {
+                for(auto i = 0; i < numvec; i++)
+                {
+                    dla_->lacpy('U', nb, nb, beta.ptr() + i * block_size * block_size, block_size, submatrix.ptr() + k * M + (k - 1) + M * M * i, M);
+                }                
+            }            
+
+            v1_.swap(v0_);
+            v1_.swap(w_);
+        }
+
+        Memcpy(memcpy_mode[2], C, v1_.ptr(), m_ * numvec * sizeof(T));
+        
+        for(auto i = 0; i < numvec; i++)
+        {
+            t_heevd(LAPACK_COL_MAJOR, 'V', 'U', M, submatrix.ptr() + M * M * i, M, ritzv + M * i);
+            std::cout << ritzv[M * i] << std::endl;
+            for (std::size_t k = 1; k < M; ++k)
+            {
+                Tau[k + i * M] = std::abs(submatrix.ptr()[k * M + M * M * i]) * std::abs(submatrix.ptr()[k * M + M * M * i]);
+            }
+        }
+
+        std::memcpy(ritzV, submatrix.ptr() + M * M * (numvec - 1), sizeof(T) * M * M);
+        for(auto i = 0; i < 5; i++)
+        {
+            std::cout <<  submatrix.ptr()[M * M * (numvec-1) + i] << std::endl;
+        }
+
+        Base<T> max;
+        *upperb = std::max(std::abs(ritzv[0]), std::abs(ritzv[M - 1])) +
+                  std::abs(beta.ptr()[0]);
+
+        for(auto i = 1; i < numvec; i++)
+        {
+          max = std::max(std::abs(ritzv[i * M]), std::abs(ritzv[ (i + 1) * M - 1])) +
+                  std::abs(beta.ptr()[i]);
+          *upperb = std::max(max, *upperb);        
+        }
+
+#else
+        std::vector<Base<T>> real_alpha(numvec);
+        std::vector<Base<T>> real_beta(numvec);
+
+        std::vector<T> alpha(numvec, T(1.0));
+        std::vector<T> beta(numvec, T(0.0));
+
+        std::vector<Base<T>> d(M * numvec);
+        std::vector<Base<T>> e(M * numvec);
+        std::vector<Base<T>> r_beta(numvec);
+
+        v_0 = new Matrix<T>(0, m_, numvec);
+        v_1 = new Matrix<T>(0, m_, numvec);
+        v_2 = new Matrix<T>(0, m_, numvec);
+        v_w = new Matrix<T>(0, n_, numvec);
+
+        Memcpy(memcpy_mode[1], v_1->ptr(), C2, m_ * numvec * sizeof(T));
+        
+        dla_->nrm2_batch(m_, v_1, 1, numvec, real_alpha.data());
+
+        for(auto i = 0; i < numvec; i++)
+        {
+            real_alpha[i] = std::pow(real_alpha[i], 2);
+        }
+
+        MPI_Allreduce(MPI_IN_PLACE, real_alpha.data(), numvec, getMPI_Type<Base<T>>(),
+                      MPI_SUM, col_comm_);
+
+        for(auto i = 0; i < numvec; i++)
+        {
+            real_alpha[i] = std::sqrt(real_alpha[i]);
+            alpha[i] = T(1 / real_alpha[i]);
+        }
+
+        dla_->scal_batch(m_, alpha.data(), v_1, 1, numvec);
+
+        for (std::size_t k = 0; k < M; k = k + 1)
+        {
+            for(auto i = 0; i < numvec; i++){
+                Memcpy(memcpy_mode[2], C + k * m_, v_1->ptr() + i * m_, m_ * sizeof(T));
+            }
+            dla_->applyVec(v_1, v_w, numvec);
+            MPI_Allreduce(MPI_IN_PLACE, v_w->ptr(), n_ * numvec, getMPI_Type<T>(), MPI_SUM,
+                      col_comm_);            
+            this->B2C(v_w->ptr(), 0, v_2->ptr(), 0, numvec);   
+
+            dla_->dot_batch(m_, v_1, 1, v_2, 1, alpha.data(), numvec);
+            for(auto i = 0; i < numvec; i++)
+            {
+                alpha[i] = -alpha[i];
+            }
+
+            MPI_Allreduce(MPI_IN_PLACE, alpha.data(), numvec, getMPI_Type<T>(), MPI_SUM,
+                          col_comm_);
+
+            dla_->axpy_batch(m_, alpha.data(), v_1, 1, v_2, 1, numvec);
+            for(auto i = 0; i < numvec; i++)
+            {
+                alpha[i] = -alpha[i];
+            }
+
+            for(auto i = 0; i < numvec; i++)
+            {
+                d[k + M * i] = std::real(alpha[i]);
+            }
+
+            for(auto i = 0; i < numvec; i++)
+            {
+                beta[i] = T(-real_beta[i]);
+            }
+
+            dla_->axpy_batch(m_, beta.data(), v_0, 1, v_2, 1, numvec);
+            
+            for(auto i = 0; i < numvec; i++)
+            {
+                beta[i] = -beta[i];
+            }
+
+            dla_->nrm2_batch(m_, v_2, 1, numvec, real_beta.data());
+
+            for(auto i = 0; i < numvec; i++)
+            {
+                real_beta[i] = std::pow(real_beta[i], 2);
+            }
+
+            MPI_Allreduce(MPI_IN_PLACE, real_beta.data(), numvec, getMPI_Type<Base<T>>(),
+                          MPI_SUM, col_comm_);
+
+            for(auto i = 0; i < numvec; i++)
+            {
+                real_beta[i] = std::sqrt(real_beta[i]);
+                beta[i] = T(1 / real_beta[i]);
+            }
+
+            if (k == M - 1)
+                break;
+            
+            dla_->scal_batch(m_, beta.data(), v_2, 1, numvec);
+
+            for(auto i = 0; i < numvec; i++)
+            {
+                e[k + M * i] = real_beta[i];
+            }
+            v_1->swap(*v_0);
+            v_1->swap(*v_2);
+        }
+
+        Memcpy(memcpy_mode[2], C, v_1->ptr(), m_ * numvec * sizeof(T));
+        
+        for(auto i = 0; i < numvec; i++)
+        {
+            r_beta[i] = real_beta[i];
+        }
+
+        int notneeded_m;
+        std::size_t vl, vu;
+        Base<T> ul, ll;
+        int tryrac = 0;
+        int* isuppz = new int[2 * M];
+
+        for(auto i = 0; i < numvec; i++)
+        {
+          t_stemr(LAPACK_COL_MAJOR, 'V', 'A', M, d.data() + i * M, e.data() + i * M, ul, ll, vl, vu,
+                &notneeded_m, ritzv + M * i, ritzV, M, M, isuppz, &tryrac);
+            
+          std::cout << ritzv[M * i] << std::endl;
+      
+          for (std::size_t k = 1; k < M; ++k)
+          {
+            Tau[k + i * M] = std::abs(ritzV[k * M]) * std::abs(ritzV[k * M]);
+          }
+        }
+
+        Base<T> max;
+        *upperb = std::max(std::abs(ritzv[0]), std::abs(ritzv[M - 1])) +
+                  std::abs(r_beta[0]);
+
+        for(auto i = 1; i < numvec; i++)
+        {
+          max = std::max(std::abs(ritzv[i * M]), std::abs(ritzv[ (i + 1) * M - 1])) +
+                  std::abs(r_beta[i]);
+          *upperb = std::max(max, *upperb);        
+        }
+#endif        
+    }
+
     void lacpy(char uplo, std::size_t m, std::size_t n, T* a, std::size_t lda,
                T* b, std::size_t ldb) override
     {
@@ -1839,6 +2098,34 @@ public:
     void shiftMatrixForQR(T* A, std::size_t n, T shift) override {}
     void computeDiagonalAbsSum(T *A, Base<T> *sum, std::size_t n, std::size_t ld){}
     ChaseMpiMatrices<T>* getChaseMatrices() override { return matrices_; }
+
+    void nrm2_batch(std::size_t n, Matrix<T>* x, std::size_t incx, int count, Base<T> *nrms) override
+    {}
+    void scal_batch(std::size_t N, T* a, Matrix<T>* x, std::size_t incx, int count) override
+    {}  
+    void applyVec(Matrix<T>* v, Matrix<T>* w, std::size_t n) override
+    {}  
+    void dot_batch(std::size_t n, Matrix<T>* x, std::size_t incx, Matrix<T>* y,
+          std::size_t incy, T *products, int count) override
+    {}
+    void axpy_batch(std::size_t N, T* alpha, Matrix<T>* x, std::size_t incx, Matrix<T>* y,
+              std::size_t incy, int count) override
+    {}
+    void gemmStrideBatch(char transa, char transb, 
+              std::size_t m, std::size_t n, std::size_t k,
+              T* alpha, Matrix<T>* A, std::size_t strideA, 
+              Matrix<T>* B, std::size_t strideB,
+              T* beta, Matrix<T>* C, std::size_t strideC, int batchCount) override
+    {}
+    void syherkStrideBatch(char uplo, char trans, std::size_t n, std::size_t k, T* alpha,
+                Matrix<T>* a, std::size_t strideA, T* beta, Matrix<T>* c, std::size_t strideC, int batchCount,
+                bool first = true) override
+    {}  
+    int *potrfStrideBatch(char uplo, std::size_t n, Matrix<T>* a, std::size_t strideA, int batchCount, bool isinfo = true) override {int *info; return info;}    
+
+    void trsmStrideBatch(char side, char uplo, char trans, char diag, std::size_t m,
+              std::size_t n, T* alpha, Matrix<T>* a, std::size_t strideA, Matrix<T>* b,
+              std::size_t strideB, int batchCount, bool first = false) override {}
 
 private:
     enum NextOp
@@ -1961,6 +2248,7 @@ private:
     Comm_t mpi_wrapper_;
     bool cuda_aware_;
     T *C, *B, *A, *C2, *B2, *vv;
+    Matrix<T> *v_0, *v_1, *v_2, *v_w;
     Base<T>* rsd;
     int allreduce_backend, bcast_backend;
     int memcpy_mode[3];

@@ -340,6 +340,8 @@ public:
                          Base<T>* r_beta) = 0;
     virtual void mLanczos(std::size_t M, int numvec, Base<T>* d, Base<T>* e,
                          Base<T>* r_beta) = 0;
+    virtual void mLanczos(std::size_t M, int numvec, Base<T>* upperb,
+                 Base<T>* ritzv, Base<T>* Tau, Base<T>* ritzV) = 0;
 
     virtual void B2C(T* B, std::size_t off1, T* C, std::size_t off2,
                      std::size_t block) = 0;
@@ -349,6 +351,27 @@ public:
     virtual void shiftMatrixForQR(T* A, std::size_t n, T shift) = 0;
     virtual void computeDiagonalAbsSum(T *A, Base<T> *sum, std::size_t n, std::size_t ld) = 0;
     virtual ChaseMpiMatrices<T>* getChaseMatrices() = 0;
+    
+    virtual void nrm2_batch(std::size_t n, Matrix<T>* x, std::size_t incx, int count, Base<T> *nrms) = 0;
+    virtual void scal_batch(std::size_t N, T* a, Matrix<T>* x, std::size_t incx, int count) = 0;
+    virtual void applyVec(Matrix<T>* v, Matrix<T>* w, std::size_t n) = 0;
+    virtual void dot_batch(std::size_t n, Matrix<T>* x, std::size_t incx, Matrix<T>* y,
+          std::size_t incy, T *products, int count) = 0;
+    virtual void axpy_batch(std::size_t N, T* alpha, Matrix<T>* x, std::size_t incx, Matrix<T>* y,
+              std::size_t incy, int count) = 0;
+    virtual void gemmStrideBatch(char transa, char transb, 
+              std::size_t m, std::size_t n, std::size_t k,
+              T* alpha, Matrix<T>* A, std::size_t strideA, 
+              Matrix<T>* B, std::size_t strideB,
+              T* beta, Matrix<T>* C, std::size_t strideC, int batchCount) = 0;
+    virtual void syherkStrideBatch(char uplo, char trans, std::size_t n, std::size_t k, T* alpha,
+                Matrix<T>* a, std::size_t strideA, T* beta, Matrix<T>* c, std::size_t strideC, int batchCount,
+                bool first = true) = 0;       
+    virtual int *potrfStrideBatch(char uplo, std::size_t n, Matrix<T>* a, std::size_t strideA, int batchCount, bool isinfo = true) = 0;
+    virtual void trsmStrideBatch(char side, char uplo, char trans, char diag, std::size_t m,
+              std::size_t n, T* alpha, Matrix<T>* a, std::size_t strideA, Matrix<T>* b,
+              std::size_t strideB, int batchCount, bool first = false) = 0;
+              
 };
 } // namespace mpi
 } // namespace chase

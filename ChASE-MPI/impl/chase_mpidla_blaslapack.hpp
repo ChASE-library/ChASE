@@ -346,7 +346,9 @@ public:
                  Base<T>* r_beta) override
     {
     }
-
+    void mLanczos(std::size_t M, int numvec, Base<T>* upperb,
+                 Base<T>* ritzv, Base<T>* Tau, Base<T>* ritzV) override
+    {}
     void B2C(T* B, std::size_t off1, T* C, std::size_t off2,
              std::size_t block) override
     {
@@ -376,6 +378,101 @@ public:
         }        
     }
     ChaseMpiMatrices<T>* getChaseMatrices() override { return &matrices_; }
+  
+    void nrm2_batch(std::size_t n, Matrix<T>* x, std::size_t incx, int count, Base<T> *nrms) override
+    {
+        for(auto i = 0; i < count; i++ )
+        {
+            nrms[i] = t_nrm2(n, x->ptr() + i *  n, incx);
+        }
+    }
+    
+    void scal_batch(std::size_t N, T* a, Matrix<T>* x, std::size_t incx, int count) override
+    {
+        //t_scal(N, a, x, incx);
+        for(auto i = 0; i < count; i++)
+        {
+            t_scal(N, &a[i], x->ptr() + i * x->ld(), incx);
+        }
+    }
+
+    void applyVec(Matrix<T>* v, Matrix<T>* w, std::size_t n) override
+    {
+        T alpha = T(1.0);
+        T beta = T(0.0);
+        std::size_t k = n;
+        t_gemm<T>(CblasColMajor, CblasConjTrans, CblasNoTrans, n_,
+                  k, m_, &alpha, H_, ldh_,
+                  v->ptr(), v->ld(), &beta, w->ptr(), w->ld());
+
+    }
+
+    void dot_batch(std::size_t n, Matrix<T>* x, std::size_t incx, Matrix<T>* y,
+          std::size_t incy, T *products, int count) override
+    {
+        //return t_dot(n, x, incx, y, incy);
+        for(auto i = 0; i < count; i++)
+        {
+            products[i] = t_dot(n, x->ptr() + i * x->ld(), incx, y->ptr() + i * y->ld(), incy);
+        }
+    }
+
+    void axpy_batch(std::size_t N, T* alpha, Matrix<T>* x, std::size_t incx, Matrix<T>* y,
+              std::size_t incy, int count) override
+    {
+        //t_axpy(N, alpha, x, incx, y, incy);
+        for(auto i = 0; i < count; i++)
+        {
+            t_axpy(N, &alpha[i], x->ptr() + i * x->ld(), incx, y->ptr() + i * y->ld(), incy);
+        }
+    }    
+
+
+    void gemmStrideBatch(char transa, char transb, 
+              std::size_t m, std::size_t n, std::size_t k,
+              T* alpha, Matrix<T>* A, std::size_t strideA, 
+              Matrix<T>* B, std::size_t strideB,
+              T* beta, Matrix<T>* C, std::size_t strideC, int batchCount) override
+    {
+        for(auto i = 0; i < batchCount; i++)
+        {
+            t_gemm<T>(CblasColMajor, transa, transb, m,
+                  n, k, alpha, A->ptr() + i * strideA, A->h_ld(),
+                  B->ptr() + i * strideB, B->h_ld(), beta, C->ptr() + i * strideC, C->h_ld());               
+        }
+    }  
+
+    void syherkStrideBatch(char uplo, char trans, std::size_t n, std::size_t k, T* alpha,
+                Matrix<T>* a, std::size_t strideA, T* beta, Matrix<T>* c, std::size_t strideC, int batchCount,
+                bool first = true) override
+    {
+        for(auto i = 0; i < batchCount; i++)
+        {
+            t_syherk(uplo, trans, n, k, alpha, a->ptr() + i * strideA, a->h_ld(), beta, c->ptr() + i * strideC, c->h_ld());
+        }        
+    }
+
+    //! It is an interface to LAPACK `?potrf`.
+    int *potrfStrideBatch(char uplo, std::size_t n, Matrix<T>* a, std::size_t strideA, int batchCount, bool isinfo = true) override    
+    {
+        //return t_potrf(uplo, n, a, lda);
+        std::vector<int> infos(batchCount); 
+        for(auto i = 0; i < batchCount; i++)
+        {
+            infos[i] = t_potrf(uplo, n, a->ptr() + i * strideA, a->h_ld());
+        }
+        return infos.data();        
+    }
+
+    void trsmStrideBatch(char side, char uplo, char trans, char diag, std::size_t m,
+              std::size_t n, T* alpha, Matrix<T>* a, std::size_t strideA, Matrix<T>* b,
+              std::size_t strideB, int batchCount, bool first = false) override
+    {
+        for(auto i = 0; i < batchCount; i++)
+        {
+            t_trsm(side, uplo, trans, diag, m, n, alpha, a->ptr() + i * strideA, a->h_ld(), b->ptr() + i * strideB, b->h_ld());
+        }
+    }
 
 private:
     enum NextOp

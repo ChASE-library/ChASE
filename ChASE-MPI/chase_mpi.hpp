@@ -491,43 +491,7 @@ public:
     void Lanczos(std::size_t M, std::size_t numvec, Base<T>* upperb,
                  Base<T>* ritzv, Base<T>* Tau, Base<T>* ritzV) override
     {
-        std::size_t m = M;
-        Base<T> *d = new Base<T>[m * numvec]();      
-        Base<T> *e = new Base<T>[m * numvec]();      
-        Base<T> *real_beta = new Base<T>[m]();    
-        dla_->mLanczos(m, numvec, d, e, real_beta);
-
-        int notneeded_m;
-        std::size_t vl, vu;
-        Base<T> ul, ll;
-        int tryrac = 0;
-        int* isuppz = new int[2 * m];
-
-        for(auto i = 0; i < numvec; i++)
-        {
-          t_stemr(LAPACK_COL_MAJOR, 'V', 'A', m, d + i * m, e + i * m, ul, ll, vl, vu,
-                &notneeded_m, ritzv + m * i, ritzV, m, m, isuppz, &tryrac);
-          for (std::size_t k = 1; k < m; ++k)
-          {
-            Tau[k + i * m] = std::abs(ritzV[k * m]) * std::abs(ritzV[k * m]);
-          }
-        }
-
-        Base<T> max;
-        *upperb = std::max(std::abs(ritzv[0]), std::abs(ritzv[m - 1])) +
-                  std::abs(real_beta[0]);
-
-        for(auto i = 1; i < numvec; i++)
-        {
-          max = std::max(std::abs(ritzv[i * m]), std::abs(ritzv[ (i + 1) * m - 1])) +
-                  std::abs(real_beta[i]);
-          *upperb = std::max(max, *upperb);        
-        }
-
-        delete[] real_beta;
-        delete[] isuppz;
-        delete[] d;
-        delete[] e;
+        dla_->mLanczos(M, numvec, upperb, ritzv, Tau, ritzV);
     };
 
     //! This member function implements the virtual one declared in Chase class.
