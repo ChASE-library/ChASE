@@ -887,21 +887,6 @@ public:
     void axpy_batch(std::size_t N, T* alpha, Matrix<T>* x, std::size_t incx, Matrix<T>* y,
               std::size_t incy, int count) override
     {} 
-    void gemmStrideBatch(char transa, char transb, 
-              std::size_t m, std::size_t n, std::size_t k,
-              T* alpha, Matrix<T>* A, std::size_t strideA, 
-              Matrix<T>* B, std::size_t strideB,
-              T* beta, Matrix<T>* C, std::size_t strideC, int batchCount) override
-    {} 
-    void syherkStrideBatch(char uplo, char trans, std::size_t n, std::size_t k, T* alpha,
-                Matrix<T>* a, std::size_t strideA, T* beta, Matrix<T>* c, std::size_t strideC, int batchCount,
-                bool first = true) override
-    {}
-    int *potrfStrideBatch(char uplo, std::size_t n, Matrix<T>* a, std::size_t strideA, int batchCount, bool isinfo = true) override {int *info; return info;}   
-
-    void trsmStrideBatch(char side, char uplo, char trans, char diag, std::size_t m,
-              std::size_t n, T* alpha, Matrix<T>* a, std::size_t strideA, Matrix<T>* b,
-              std::size_t strideB, int batchCount, bool first = false) override {}     
                                     
 private:
     enum NextOp

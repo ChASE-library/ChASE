@@ -427,53 +427,6 @@ public:
         }
     }    
 
-
-    void gemmStrideBatch(char transa, char transb, 
-              std::size_t m, std::size_t n, std::size_t k,
-              T* alpha, Matrix<T>* A, std::size_t strideA, 
-              Matrix<T>* B, std::size_t strideB,
-              T* beta, Matrix<T>* C, std::size_t strideC, int batchCount) override
-    {
-        for(auto i = 0; i < batchCount; i++)
-        {
-            t_gemm<T>(CblasColMajor, transa, transb, m,
-                  n, k, alpha, A->ptr() + i * strideA, A->h_ld(),
-                  B->ptr() + i * strideB, B->h_ld(), beta, C->ptr() + i * strideC, C->h_ld());               
-        }
-    }  
-
-    void syherkStrideBatch(char uplo, char trans, std::size_t n, std::size_t k, T* alpha,
-                Matrix<T>* a, std::size_t strideA, T* beta, Matrix<T>* c, std::size_t strideC, int batchCount,
-                bool first = true) override
-    {
-        for(auto i = 0; i < batchCount; i++)
-        {
-            t_syherk(uplo, trans, n, k, alpha, a->ptr() + i * strideA, a->h_ld(), beta, c->ptr() + i * strideC, c->h_ld());
-        }        
-    }
-
-    //! It is an interface to LAPACK `?potrf`.
-    int *potrfStrideBatch(char uplo, std::size_t n, Matrix<T>* a, std::size_t strideA, int batchCount, bool isinfo = true) override    
-    {
-        //return t_potrf(uplo, n, a, lda);
-        std::vector<int> infos(batchCount); 
-        for(auto i = 0; i < batchCount; i++)
-        {
-            infos[i] = t_potrf(uplo, n, a->ptr() + i * strideA, a->h_ld());
-        }
-        return infos.data();        
-    }
-
-    void trsmStrideBatch(char side, char uplo, char trans, char diag, std::size_t m,
-              std::size_t n, T* alpha, Matrix<T>* a, std::size_t strideA, Matrix<T>* b,
-              std::size_t strideB, int batchCount, bool first = false) override
-    {
-        for(auto i = 0; i < batchCount; i++)
-        {
-            t_trsm(side, uplo, trans, diag, m, n, alpha, a->ptr() + i * strideA, a->h_ld(), b->ptr() + i * strideB, b->h_ld());
-        }
-    }
-
 private:
     enum NextOp
     {

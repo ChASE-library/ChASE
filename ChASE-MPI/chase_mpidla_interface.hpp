@@ -359,18 +359,6 @@ public:
           std::size_t incy, T *products, int count) = 0;
     virtual void axpy_batch(std::size_t N, T* alpha, Matrix<T>* x, std::size_t incx, Matrix<T>* y,
               std::size_t incy, int count) = 0;
-    virtual void gemmStrideBatch(char transa, char transb, 
-              std::size_t m, std::size_t n, std::size_t k,
-              T* alpha, Matrix<T>* A, std::size_t strideA, 
-              Matrix<T>* B, std::size_t strideB,
-              T* beta, Matrix<T>* C, std::size_t strideC, int batchCount) = 0;
-    virtual void syherkStrideBatch(char uplo, char trans, std::size_t n, std::size_t k, T* alpha,
-                Matrix<T>* a, std::size_t strideA, T* beta, Matrix<T>* c, std::size_t strideC, int batchCount,
-                bool first = true) = 0;       
-    virtual int *potrfStrideBatch(char uplo, std::size_t n, Matrix<T>* a, std::size_t strideA, int batchCount, bool isinfo = true) = 0;
-    virtual void trsmStrideBatch(char side, char uplo, char trans, char diag, std::size_t m,
-              std::size_t n, T* alpha, Matrix<T>* a, std::size_t strideA, Matrix<T>* b,
-              std::size_t strideB, int batchCount, bool first = false) = 0;
               
 };
 } // namespace mpi

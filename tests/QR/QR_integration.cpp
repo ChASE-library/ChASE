@@ -74,19 +74,6 @@ public:
     MOCK_METHOD(void, applyVec, (chase::mpi::Matrix<T>* v, chase::mpi::Matrix<T>* w, std::size_t n), (override));   
     MOCK_METHOD(void, dot_batch, ( std::size_t n, chase::mpi::Matrix<T>* x, std::size_t incx, chase::mpi::Matrix<T>* y, std::size_t incy, T *products, int count), (override));   
     MOCK_METHOD(void, axpy_batch, (std::size_t N, T* alpha, chase::mpi::Matrix<T>* x, std::size_t incx, chase::mpi::Matrix<T>* y, std::size_t incy, int count), (override));
-    MOCK_METHOD(void, gemmStrideBatch, (char transa, char transb, 
-              std::size_t m, std::size_t n, std::size_t k,
-              T* alpha, chase::mpi::Matrix<T>* A, std::size_t strideA, 
-              chase::mpi::Matrix<T>* B, std::size_t strideB,
-              T* beta, chase::mpi::Matrix<T>* C, std::size_t strideC, int batchCount) , (override)); 
-    MOCK_METHOD(void, syherkStrideBatch, (char uplo, char trans, std::size_t n, std::size_t k, T* alpha,
-                chase::mpi::Matrix<T>* a, std::size_t strideA, T* beta, chase::mpi::Matrix<T>* c, std::size_t strideC, int batchCount,
-                bool first), (override));
-    MOCK_METHOD(int *, potrfStrideBatch, (char uplo, std::size_t n, Matrix<T>* a, std::size_t strideA, int batchCount, bool isinfo), (override));
-    MOCK_METHOD(void, trsmStrideBatch, (char side, char uplo, char trans, char diag, std::size_t m,
-              std::size_t n, T* alpha, Matrix<T>* a, std::size_t strideA, Matrix<T>* b,
-              std::size_t strideB, int batchCount, bool first), (override));
-            
     MOCK_METHOD(void, mLanczos, (std::size_t M, int numvec, chase::Base<T>* upperb,
                  chase::Base<T>* ritzv, chase::Base<T>* Tau, chase::Base<T>* ritzV), (override));
 

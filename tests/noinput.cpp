@@ -28,8 +28,8 @@ using namespace chase::mpi;
 #if defined(USE_GPU)
 typedef ChaseMpi<ChaseMpiDLACudaSeq, T> CHASE;
 #else
-typedef ChaseMpi<ChaseMpiDLABlaslapackSeq, T> CHASE;
-//typedef ChaseMpi<ChaseMpiDLABlaslapackSeqInplace, T> CHASE;
+//typedef ChaseMpi<ChaseMpiDLABlaslapackSeq, T> CHASE;
+typedef ChaseMpi<ChaseMpiDLABlaslapackSeqInplace, T> CHASE;
 #endif
 
 int main()
@@ -128,10 +128,5 @@ int main()
                 H[i + LDH * j] += std::conj(element_perturbation);
             }
         }
-        std::vector<T> H_2(N * N);
-        std::memcpy(H_2.data(), H.data(), N * N * sizeof(T));
-        std::vector<Base<T>> ritzv(N);
-        t_heevd(LAPACK_COL_MAJOR, 'N', 'U', N, H_2.data(), N, ritzv.data());
-        std::cout << "real max rtizv = " << *std::max_element(ritzv.begin(), ritzv.end()) << std::endl;;
     }
 }

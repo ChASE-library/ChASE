@@ -478,9 +478,26 @@ public:
     //! @param m: the iterative steps for Lanczos eigensolver.
     //! @param upperb: a pointer to the upper bound estimated by Lanczos
     //! eigensolver.
-    void Lanczos(std::size_t m, Base<T>* upperb) override
+    void Lanczos(std::size_t M, Base<T>* upperb) override
     {
-        dla_->Lanczos(m, upperb);
+        //dla_->Lanczos(m, upperb);
+        std::vector<Base<T>> d(M);
+        std::vector<Base<T>> e(M);
+        Base<T> real_beta;
+        dla_->mLanczos(M, -1, d.data(), e.data(), &real_beta);
+        int notneeded_m;
+        std::size_t vl, vu;
+        Base<T> ul, ll;
+        int tryrac = 0;
+        std::vector<int> isuppz(2 * M);
+        std::vector<Base<T>> ritzv(M);
+
+        t_stemr<Base<T>>(LAPACK_COL_MAJOR, 'N', 'A', M, d.data(), e.data(), ul, ll, vl, vu,
+                         &notneeded_m, ritzv.data(), NULL, M, M, isuppz.data(), &tryrac);
+
+        *upperb = std::max(std::abs(ritzv[0]), std::abs(ritzv[M - 1])) +
+                  std::abs(real_beta);
+
     };
 
     // we need to be careful how we deal with memory here
@@ -491,7 +508,40 @@ public:
     void Lanczos(std::size_t M, std::size_t numvec, Base<T>* upperb,
                  Base<T>* ritzv, Base<T>* Tau, Base<T>* ritzV) override
     {
-        dla_->mLanczos(M, numvec, upperb, ritzv, Tau, ritzV);
+        std::vector<Base<T>> d(M * numvec);
+        std::vector<Base<T>> e(M * numvec);
+        std::vector<Base<T>> real_beta(numvec);
+        int numvec_ = static_cast<int>(numvec);
+
+        dla_->mLanczos(M, numvec, d.data(), e.data(), real_beta.data());
+
+        int notneeded_m;
+        std::size_t vl, vu;
+        Base<T> ul, ll;
+        int tryrac = 0;
+        std::vector<int> isuppz(2 * M);
+
+        for(auto i = 0; i < numvec; i++)
+        {
+          t_stemr(LAPACK_COL_MAJOR, 'V', 'A', M, d.data() + i * M, e.data() + i * M, ul, ll, vl, vu,
+                &notneeded_m, ritzv + M * i, ritzV, M, M, isuppz.data(), &tryrac);
+          for (std::size_t k = 1; k < M; ++k)
+          {
+            Tau[k + i * M] = std::abs(ritzV[k * M]) * std::abs(ritzV[k * M]);
+          }
+        }
+
+        Base<T> max;
+        *upperb = std::max(std::abs(ritzv[0]), std::abs(ritzv[M - 1])) +
+                  std::abs(real_beta[0]);
+
+        for(auto i = 1; i < numvec; i++)
+        {
+          max = std::max(std::abs(ritzv[i * M]), std::abs(ritzv[ (i + 1) * M - 1])) +
+                  std::abs(real_beta[i]);
+          *upperb = std::max(max, *upperb);        
+        }
+
     };
 
     //! This member function implements the virtual one declared in Chase class.
