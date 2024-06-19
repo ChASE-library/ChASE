@@ -62,9 +62,9 @@ public:
     MOCK_METHOD(void, estimated_cond_evaluator, (std::size_t, chase::Base<T>), (override));
     MOCK_METHOD(void, lockVectorCopyAndOrthoConcatswap, (std::size_t, bool), (override));
     MOCK_METHOD(void, LanczosDos, (std::size_t, std::size_t, T*), (override));
-    MOCK_METHOD(void, Lanczos, (std::size_t, chase::Base<T>*), (override));
     MOCK_METHOD(void, mLanczos, (std::size_t, int, chase::Base<T>*, chase::Base<T>*, chase::Base<T>*), (override));
     MOCK_METHOD(void, B2C, (T*, std::size_t, T*, std::size_t, std::size_t), (override));
+    MOCK_METHOD(void, B2C, (chase::mpi::Matrix<T>* B, std::size_t off1, chase::mpi::Matrix<T>* C, std::size_t off2, std::size_t block), (override));
     MOCK_METHOD(void, lacpy, (char, std::size_t, std::size_t, T*, std::size_t, T*, std::size_t), (override));
     MOCK_METHOD(void, shiftMatrixForQR, (T*, std::size_t, T), (override));
     MOCK_METHOD(chase::mpi::ChaseMpiMatrices<T>*, getChaseMatrices, (), (override));
@@ -74,9 +74,6 @@ public:
     MOCK_METHOD(void, applyVec, (chase::mpi::Matrix<T>* v, chase::mpi::Matrix<T>* w, std::size_t n), (override));   
     MOCK_METHOD(void, dot_batch, ( std::size_t n, chase::mpi::Matrix<T>* x, std::size_t incx, chase::mpi::Matrix<T>* y, std::size_t incy, T *products, int count), (override));   
     MOCK_METHOD(void, axpy_batch, (std::size_t N, T* alpha, chase::mpi::Matrix<T>* x, std::size_t incx, chase::mpi::Matrix<T>* y, std::size_t incy, int count), (override));
-    MOCK_METHOD(void, mLanczos, (std::size_t M, int numvec, chase::Base<T>* upperb,
-                 chase::Base<T>* ritzv, chase::Base<T>* Tau, chase::Base<T>* ritzV), (override));
-
 };
 
 template <typename T>

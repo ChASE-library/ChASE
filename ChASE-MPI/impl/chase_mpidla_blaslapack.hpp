@@ -338,22 +338,21 @@ public:
         std::memcpy(C_, C2_, m * m_ * sizeof(T));
 
     }
-    void Lanczos(std::size_t M,
-                 Base<T>* r_beta) override
-    {
-    }
+    
     void mLanczos(std::size_t M, int numvec, Base<T>* d, Base<T>* e,
                  Base<T>* r_beta) override
     {
     }
-    void mLanczos(std::size_t M, int numvec, Base<T>* upperb,
-                 Base<T>* ritzv, Base<T>* Tau, Base<T>* ritzV) override
-    {}
+
     void B2C(T* B, std::size_t off1, T* C, std::size_t off2,
              std::size_t block) override
     {
     }
 
+    void B2C(Matrix<T>* B, std::size_t off1, Matrix<T>* C, std::size_t off2,
+                        std::size_t block) override
+    {}
+    
     void lacpy(char uplo, std::size_t m, std::size_t n, T* a, std::size_t lda,
                T* b, std::size_t ldb) override
     {

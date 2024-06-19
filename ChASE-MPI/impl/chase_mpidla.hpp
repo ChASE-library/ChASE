@@ -1373,11 +1373,6 @@ public:
         dla_->LanczosDos(idx, m, ritzVc);
     }
 
-    void Lanczos(std::size_t M,
-                 Base<T>* r_beta) override
-    {   
-    }
-
     void mLanczos(std::size_t M, int numvec, Base<T>* d, Base<T>* e,
                  Base<T>* r_beta) override
     {
@@ -1391,14 +1386,15 @@ public:
         std::vector<Base<T>> real_alpha(numvec);
         std::vector<T> alpha(numvec, T(1.0));
         std::vector<T> beta(numvec, T(0.0));
+                
+        v_0 = new Matrix<T>(matrices_->get_Mode(), m_, numvec);
+        v_1 = new Matrix<T>(matrices_->get_Mode(), m_, numvec);
+        v_2 = new Matrix<T>(matrices_->get_Mode(), m_, numvec);
+        v_w = new Matrix<T>(matrices_->get_Mode(), n_, numvec);
 
-        v_0 = new Matrix<T>(0, m_, numvec);
-        v_1 = new Matrix<T>(0, m_, numvec);
-        v_2 = new Matrix<T>(0, m_, numvec);
-        v_w = new Matrix<T>(0, n_, numvec);
-
+        //Memcpy(memcpy_mode[1], v_1->ptr(), C, m_ * numvec * sizeof(T));
         Memcpy(memcpy_mode[1], v_1->ptr(), C, m_ * numvec * sizeof(T));
-          
+
         dla_->nrm2_batch(m_, v_1, 1, numvec, real_alpha.data());
 
         for(auto i = 0; i < numvec; i++)
@@ -1427,9 +1423,12 @@ public:
             }
 
             dla_->applyVec(v_1, v_w, numvec);
-            MPI_Allreduce(MPI_IN_PLACE, v_w->ptr(), n_ * numvec, getMPI_Type<T>(), MPI_SUM,
-                      col_comm_);            
-            this->B2C(v_w->ptr(), 0, v_2->ptr(), 0, numvec);   
+            //MPI_Allreduce(MPI_IN_PLACE, v_w->ptr(), n_ * numvec, getMPI_Type<T>(), MPI_SUM,
+            //          col_comm_);            
+            AllReduce(allreduce_backend, v_w->ptr(), n_ * numvec,
+                      getMPI_Type<T>(), MPI_SUM, col_comm_, mpi_wrapper_);
+            //this->B2C(v_w->ptr(), 0, v_2->ptr(), 0, numvec);   
+            this->B2C(v_w, 0, v_2, 0, numvec);   
 
             dla_->dot_batch(m_, v_1, 1, v_2, 1, alpha.data(), numvec);
             for(auto i = 0; i < numvec; i++)
@@ -1538,6 +1537,54 @@ public:
     
     }
 
+    void B2C(Matrix<T>* B, std::size_t off1, Matrix<T>* C, std::size_t off2,
+                        std::size_t block) override
+    {
+        if (isSameDist_)
+        {
+            for (auto i = 0; i < row_size_; i++)
+            {
+                if (col_rank_ == i)
+                {
+                    if (row_rank_ == i)
+                    {
+                        Bcast(bcast_backend, B->ptr() + off1 * n_, block * n_,
+                              getMPI_Type<T>(), i, row_comm_, mpi_wrapper_);
+
+                    }else
+                    {
+                        Bcast(bcast_backend, C->ptr() + off1 * m_, block * m_,
+                              getMPI_Type<T>(), i, row_comm_, mpi_wrapper_);
+
+                    }    
+                }
+            }
+
+            for (auto i = 0; i < row_size_; i++)
+            {
+                if (row_rank_ == col_rank_)
+                {
+                    dla_->lacpy('A', n_, block, B->ptr() + off1 * n_, n_,
+                                C->ptr() + off1 * m_, m_);
+                }
+            }
+        }else
+        {
+            for(auto i = 0; i < b_lens.size(); i++){
+                if (col_rank_ == b_dests[i]){
+                    //pack
+                    dla_->lacpy('A', b_lens[i], block, B->ptr() + b_disps[i] + off1 * send_lens_[1][row_rank_], send_lens_[1][row_rank_],
+                                buff__.get()->ptr(), b_lens[i]);
+
+                    Bcast(bcast_backend, buff__.get()->ptr(), b_lens[i] * block, getMPI_Type<T>(), b_srcs[i], row_comm_, mpi_wrapper_);
+
+                    //unpack
+                    dla_->lacpy('A', b_lens[i], block, buff__.get()->ptr(), b_lens[i], C->ptr() + c_disps[i] + off1 * m_, m_);
+                }
+            }
+        }           
+    }
+
     void C2B(T* C, std::size_t off1, T* B, std::size_t off2,
              std::size_t block)
     {
@@ -1575,11 +1622,6 @@ public:
             }
         }
         
-    }
-
-    void mLanczos(std::size_t M, int numvec, Base<T>* upperb,
-                 Base<T>* ritzv, Base<T>* Tau, Base<T>* ritzV) override
-    {   
     }
 
     void lacpy(char uplo, std::size_t m, std::size_t n, T* a, std::size_t lda,

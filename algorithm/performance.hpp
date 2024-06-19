@@ -420,14 +420,9 @@ public:
     }
     void Lanczos(std::size_t m, Base<T>* upperb)
     {
-        std::chrono::high_resolution_clock::time_point t1, t2;
         std::chrono::duration<double> elapsed;
-        t1 = std::chrono::high_resolution_clock::now();
         perf_.start_clock(ChasePerfData<T>::TimePtrs::Lanczos);
         chase_->Lanczos(m, upperb);
-        t2 = std::chrono::high_resolution_clock::now();
-        elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1);
-        std::cout << "Lanczos timing = " << elapsed.count() << std::endl;
         perf_.end_clock(ChasePerfData<T>::TimePtrs::Lanczos);
     }
     void Lanczos(std::size_t M, std::size_t idx, Base<T>* upperb,

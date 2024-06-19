@@ -142,26 +142,6 @@ void t_lacpy_gpu(char uplo, int m, int n, std::complex<double>* ddA, int ldda,
 void t_lacpy_gpu(char uplo, int m, int n, std::complex<float>* ddA, int ldda,
                  std::complex<float>* ddB, int lddb, cudaStream_t stream_);
 
-void find_max_and_add_abs_scalar_gpu(float *array, int size, float *scalar, float *max, cudaStream_t stream_);
-void find_max_and_add_abs_scalar_gpu(double *array, int size, double *scalar, double *max, cudaStream_t stream_);
-void find_max_and_add_abs_scalar_gpu(float *array, int size, std::complex<float> *scalar, float *max, cudaStream_t stream_);
-void find_max_and_add_abs_scalar_gpu(double *array, int size, std::complex<double> *scalar, double *max, cudaStream_t stream_);
-void computeNegative_gpu(float *d, float *neg, cudaStream_t stream_);
-void computeNegative_gpu(double *d, double *neg, cudaStream_t stream_);
-void computeNegative_gpu(std::complex<float> *d, std::complex<float> *neg, cudaStream_t stream_);
-void computeNegative_gpu(std::complex<double> *d, std::complex<double> *neg, cudaStream_t stream_);
-void InverseAndConvert_gpu(float *d, float *inv, cudaStream_t stream_);
-void InverseAndConvert_gpu(double *d, double *inv, cudaStream_t stream_);
-void InverseAndConvert_gpu(float *d, std::complex<float> *inv, cudaStream_t stream_);
-void InverseAndConvert_gpu(double *d, std::complex<double> *inv, cudaStream_t stream_);
-void convert2Real_gpu(float *a, float *b,  cudaStream_t stream_);
-void convert2Real_gpu(double *a, double *b,  cudaStream_t stream_);
-void convert2Real_gpu(std::complex<float> *a, float *b,  cudaStream_t stream_);
-void convert2Real_gpu(std::complex<double> *a, double *b,  cudaStream_t stream_);
-void convert2Complex_gpu(float *a, float *b,  cudaStream_t stream_);
-void convert2Complex_gpu(double *a, double *b,  cudaStream_t stream_);
-void convert2Complex_gpu(float *a, std::complex<float> *b,  cudaStream_t stream_);
-void convert2Complex_gpu(double *a, std::complex<double> *b,  cudaStream_t stream_);
 /** @} */ // end of chase-cuda-utility
 namespace chase
 {
@@ -819,148 +799,116 @@ public:
                              cudaMemcpyDeviceToDevice));
     }
 
-    void Lanczos(std::size_t M, Base<T> *r_beta) override 
-    {
-        std::vector<Base<T>> ritzv_(M);
-
-        Base<T> real_beta;
-        std::vector<Base<T>> d(M);
-        std::vector<Base<T>> e(M);
-
-        T alpha = T(1.0);
-        T beta = T(0.0);
-
-        cuda_exec(cudaMemcpy(d_v1, d_V1_, 
-                    1 * N_ * sizeof(T), cudaMemcpyDeviceToDevice));  
-
-        Base<T> real_alpha = this->nrm2(N_,d_V2_, 1);
-        alpha = T(1 / real_alpha);
-        this->scal(N_, &alpha, d_v1, 1);    
-
-        for (std::size_t k = 0; k < M; k = k + 1)
-        {
-            this->applyVec(d_v1, d_w, 1);
-
-            alpha = this->dot(N_, d_v1, 1, d_w, 1);
-            alpha = -alpha;
-            this->axpy(N_, &alpha, d_v1, 1, d_w, 1);
-            alpha = -alpha;
-            d[k] = std::real(alpha);                
-        
-            if(k > 0){
-                beta = T(-real_beta);
-                this->axpy(N_, &beta, d_v0, 1, d_w, 1);
-                beta = -beta; 
-            }
-
-            real_beta = this->nrm2(N_, d_w, 1);
-            beta = T(1.0 / real_beta); 
-        
-            if (k == M - 1)
-                break;
-           
-            this->scal(N_, &beta, d_w, 1);
-            e[k] = real_beta;
-            
-            std::swap(d_v1,d_v0);
-            std::swap(d_v1, d_w);            
-        }            
-        int notneeded_m;
-        std::size_t vl, vu;
-        Base<T> ul, ll;
-        int tryrac = 0;
-        std::vector<int> isuppz(2 * M);
-
-        t_stemr<Base<T>>(LAPACK_COL_MAJOR, 'N', 'A', M, d.data(), e.data(), ul, ll, vl, vu,
-                         &notneeded_m, ritzv_.data(), NULL, M, M, isuppz.data(), &tryrac);
-
-        *r_beta = std::max(std::abs(ritzv_[0]), std::abs(ritzv_[M - 1])) +
-                  std::abs(real_beta);
-                                      
-    }
     void mLanczos(std::size_t M, int numvec, Base<T>* d, Base<T>* e, Base<T> *r_beta) override
     {
-        std::vector<T> alpha(numvec, T(1.0));
-        std::vector<T> beta(numvec, T(0.0));     
+        bool is_second_system = false;
+
+        if(numvec == -1)
+        {
+            numvec = 1;
+            is_second_system = true;
+        }
+
         std::vector<Base<T>> real_alpha(numvec);
-        std::vector<Base<T>> real_beta(numvec);  
+        std::vector<T> alpha(numvec, T(1.0));
+        std::vector<T> beta(numvec, T(0.0));
 
-        T *d_v0, *d_v1, *d_w;
-        cuda_exec(cudaMalloc((void**)&(d_v0), numvec * N_ * sizeof(T))); 
-        cuda_exec(cudaMalloc((void**)&(d_v1), numvec * N_ * sizeof(T))); 
-        cuda_exec(cudaMalloc((void**)&(d_w), numvec * N_ * sizeof(T))); 
+        v_0 = new Matrix<T>(2, N_, numvec);
+        v_1 = new Matrix<T>(2, N_, numvec);
+        v_2 = new Matrix<T>(2, N_, numvec);
 
-        cuda_exec(cudaMemset(d_v0, 0, numvec * N_ * sizeof(T)));
+        //std::memcpy(v_1->ptr(), V1_, N_ * numvec * sizeof(T));
+    
+        cuda_exec(cudaMemcpy(v_1->ptr(), d_V1_, N_ * numvec * sizeof(T),
+                                cudaMemcpyDeviceToDevice));
 
-        cuda_exec(cudaMemcpy(d_v1, d_V2_, 
-                        numvec * N_ * sizeof(T), cudaMemcpyDeviceToDevice));  
+        this->nrm2_batch(N_, v_1, 1, numvec, real_alpha.data());
         
         for(auto i = 0; i < numvec; i++)
-        {             
-            real_alpha[i] = this->nrm2(N_,d_V2_ + i * N_, 1);
+        {
             alpha[i] = T(1 / real_alpha[i]);
-            this->scal(N_, &alpha[i], d_v1 + i * N_, 1);
         }
+
+        this->scal_batch(N_, alpha.data(), v_1, 1, numvec);
 
         for (std::size_t k = 0; k < M; k = k + 1)
         {
-            cuda_exec(cudaMemcpy(d_V1_, d_v1, 
-                        numvec * N_ * sizeof(T), cudaMemcpyDeviceToDevice));  
-
-            this->applyVec(d_v1, d_w, numvec);
-
-            for(auto i = 0; i < numvec; i++)
+            if(!is_second_system)
             {
-                alpha[i] = this->dot(N_, d_v1 + i * N_, 1, d_w + i * N_, 1);
-                alpha[i] = -alpha[i];
-                this->axpy(N_, &alpha[i], d_v1 + i * N_, 1, d_w + i * N_, 1);
-                alpha[i] = -alpha[i];
-                d[k + M * i] = std::real(alpha[i]);                
+                for(auto i = 0; i < numvec; i++){
+                    //std::memcpy(V1_ + k * N_, v_1->ptr() + i * N_, N_ * sizeof(T));
+                    cuda_exec(cudaMemcpy(d_V1_ + k * N_, v_1->ptr() + i * N_, 
+                              N_ * sizeof(T), cudaMemcpyDeviceToDevice));  
+                }
             }
-       
+
+            this->applyVec(v_1, v_2, numvec);
+
+            this->dot_batch(N_, v_1, 1, v_2, 1, alpha.data(), numvec);
             for(auto i = 0; i < numvec; i++)
             {
-                beta[i] = T(-real_beta[i]);
-                this->axpy(N_, &beta[i], d_v0 + i * N_, 1, d_w + i * N_, 1);
-                beta[i] = -beta[i]; 
-                real_beta[i] = this->nrm2(N_, d_w + i * N_, 1);
-                beta[i] = T(1.0 / real_beta[i]); 
+                alpha[i] = -alpha[i];
+            }
+
+            this->axpy_batch(N_, alpha.data(), v_1, 1, v_2, 1, numvec);
+            for(auto i = 0; i < numvec; i++)
+            {
+                alpha[i] = -alpha[i];
+            }
+
+            for(auto i = 0; i < numvec; i++)
+            {
+                d[k + M * i] = std::real(alpha[i]);
+            }
+
+            if(k > 0){
+                for(auto i = 0; i < numvec; i++)
+                {
+                    beta[i] = T(-r_beta[i]);
+                }
+                this->axpy_batch(N_, beta.data(), v_0, 1, v_2, 1, numvec);
+            }
+
+            for(auto i = 0; i < numvec; i++)
+            {
+                beta[i] = -beta[i];
+            }
+
+            this->nrm2_batch(N_, v_2, 1, numvec, r_beta);
+
+
+            for(auto i = 0; i < numvec; i++)
+            {
+                beta[i] = T(1 / r_beta[i]);
             }
 
             if (k == M - 1)
                 break;
-
-            for(auto i = 0; i < numvec; i++)
-            {             
-                this->scal(N_, &beta[i], d_w + i * N_, 1);
-            }
+            
+            this->scal_batch(N_, beta.data(), v_2, 1, numvec);
 
             for(auto i = 0; i < numvec; i++)
             {
-                e[k + M * i] = real_beta[i];
+                e[k + M * i] = r_beta[i];
             }
-            
-            std::swap(d_v1,d_v0);
-            std::swap(d_v1, d_w);            
+            v_1->swap(*v_0);
+            v_1->swap(*v_2);
         }
-
-        for(auto i = 0; i < numvec; i++)
+        
+        if(!is_second_system)
         {
-            r_beta[i] = real_beta[i];
-        }
-
-        if (d_v0)
-            cudaFree(d_v0);
-        if (d_v1)
-            cudaFree(d_v1);
-        if (d_w)
-            cudaFree(d_w);    
-              
+            cuda_exec(cudaMemcpy(d_V1_, v_1->ptr() , 
+                              N_ * numvec * sizeof(T), cudaMemcpyDeviceToDevice)); 
+        }            
     }
     
     void B2C(T* B, std::size_t off1, T* C, std::size_t off2, std::size_t block) override
     {}
 
+    void B2C(Matrix<T>* B, std::size_t off1, Matrix<T>* C, std::size_t off2,
+                        std::size_t block) override
+    {}
+    
     void lacpy(char uplo, std::size_t m, std::size_t n,
              T* a, std::size_t lda, T* b, std::size_t ldb) override
     {}
@@ -982,22 +930,53 @@ public:
     {
         return &matrices_;    
     }
-    void mLanczos(std::size_t M, int numvec, Base<T>* upperb,
-                 Base<T>* ritzv, Base<T>* Tau, Base<T>* ritzV) override
-    {}
 
     void nrm2_batch(std::size_t n, Matrix<T>* x, std::size_t incx, int count, Base<T> *nrms) override
-    {}
+    {
+        for(auto i = 0; i < count; i++ )
+        {
+            cublas_status_ = cublasTnrm2(cublasH_, n, x->device() + i * n, incx, &nrms[i]);
+            assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
+        }        
+    }
     void scal_batch(std::size_t N, T* a, Matrix<T>* x, std::size_t incx, int count) override
-    {} 
+    {
+        for(auto i = 0; i < count; i++)
+        {
+            cublas_status_ = cublasTscal(cublasH_, N, &a[i], x->device() + i * x->d_ld(), incx);
+            assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
+        }        
+    } 
     void applyVec(Matrix<T>* v, Matrix<T>* w, std::size_t n) override
-    {}  
+    {
+        T alpha = T(1.0);
+        T beta = T(0.0);
+        std::size_t k = n;
+
+        cublas_status_ = cublasTgemm(cublasH_, CUBLAS_OP_N, CUBLAS_OP_N, N_, k,
+                                    N_, &alpha, d_H_, N_, v->device(), v->d_ld(), &beta, w->device(), w->d_ld());
+    
+        assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
+
+    }  
     void dot_batch(std::size_t n, Matrix<T>* x, std::size_t incx, Matrix<T>* y,
           std::size_t incy, T *products, int count) override
-    {}
+    {
+        for(auto i = 0; i < count; i++)
+        {
+            cublas_status_ = cublasTdot(cublasH_, n, x->device() + i * x->d_ld(), incx, y->device() + i * y->d_ld(), incy, &products[i]);
+            assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
+        }        
+    }
     void axpy_batch(std::size_t N, T* alpha, Matrix<T>* x, std::size_t incx, Matrix<T>* y,
               std::size_t incy, int count) override
-    {}  
+    {
+        for(auto i = 0; i < count; i++)
+        {
+            cublas_status_ = cublasTaxpy(cublasH_, N, alpha, x->device() + i * x->d_ld(), incx, y->device() + i * y->d_ld(), incy);
+            assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
+        }        
+    }  
 
 private:
     std::size_t N_;      //!< global dimension of the symmetric/Hermtian matrix
@@ -1056,6 +1035,8 @@ private:
     ChaseMpiMatrices<T> matrices_;
 
     T *d_v0, *d_v1, *d_w;
+    Matrix<T> *v_0, *v_1, *v_2;
+
 };
 
 template <typename T>
