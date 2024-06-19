@@ -147,7 +147,7 @@ public:
        @param B: the vector to be multiplied on `H`.
        @param C: the vector to store the product of `H` and `B`.
     */
-    virtual void applyVec(T* B, T* C) = 0;
+    virtual void applyVec(T* B, T* C, std::size_t n) = 0;
     // Returns ptr to H, which may be used to populate H.
     //! Return the total number of MPI procs within the working MPI
     //! communicator.
@@ -336,10 +336,12 @@ public:
     //! Lanczos DOS to estimate the \mu_{nev+nex} for ChASE
     virtual void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc) = 0;
 
-    virtual void Lanczos(std::size_t M, int idx, Base<T>* d, Base<T>* e,
+    virtual void mLanczos(std::size_t M, int numvec, Base<T>* d, Base<T>* e,
                          Base<T>* r_beta) = 0;
 
     virtual void B2C(T* B, std::size_t off1, T* C, std::size_t off2,
+                     std::size_t block) = 0;
+    virtual void B2C(Matrix<T>* B, std::size_t off1, Matrix<T>* C, std::size_t off2,
                      std::size_t block) = 0;
 
     virtual void lacpy(char uplo, std::size_t m, std::size_t n, T* a,
@@ -347,6 +349,15 @@ public:
     virtual void shiftMatrixForQR(T* A, std::size_t n, T shift) = 0;
     virtual void computeDiagonalAbsSum(T *A, Base<T> *sum, std::size_t n, std::size_t ld) = 0;
     virtual ChaseMpiMatrices<T>* getChaseMatrices() = 0;
+    
+    virtual void nrm2_batch(std::size_t n, Matrix<T>* x, std::size_t incx, int count, Base<T> *nrms) = 0;
+    virtual void scal_batch(std::size_t N, T* a, Matrix<T>* x, std::size_t incx, int count) = 0;
+    virtual void applyVec(Matrix<T>* v, Matrix<T>* w, std::size_t n) = 0;
+    virtual void dot_batch(std::size_t n, Matrix<T>* x, std::size_t incx, Matrix<T>* y,
+          std::size_t incy, T *products, int count) = 0;
+    virtual void axpy_batch(std::size_t N, T* alpha, Matrix<T>* x, std::size_t incx, Matrix<T>* y,
+              std::size_t incy, int count) = 0;
+              
 };
 } // namespace mpi
 } // namespace chase

@@ -34,20 +34,17 @@ public:
     explicit ChaseMpiDLABlaslapackSeq(T* H, std::size_t ldh, T* V1,
                                       Base<T>* ritzv, std::size_t n,
                                       std::size_t nex, std::size_t nev)
-        : N_(n), nev_(nev), nex_(nex), maxBlock_(nex + nex),
-          matrices_(1, N_, nev_ + nex_, H, ldh, V1, ritzv)
-    // A_(new T[maxBlock_ * maxBlock_])
+        : N_(n), nev_(nev), nex_(nex), maxBlock_(nex + nex), ldh_(ldh),
+         matrices_(0, N_, nev_ + nex_, H, ldh, V1, ritzv)
     {
-        H_ = matrices_.H().ptr();
-        ldh_ = matrices_.get_ldh();
-        C_ = matrices_.C().ptr();
+        C2vec = std::make_unique<Matrix<T>>(0, N_, maxBlock_);
+        B2vec = std::make_unique<Matrix<T>>(0, N_, maxBlock_);        
+        H_ =  matrices_.H().ptr();
+        C_ =  matrices_.C().ptr();
         B_ = matrices_.B().ptr();
-        C2_ = matrices_.C2().ptr();
-        B2_ = matrices_.B2().ptr();
+        C2_ = C2vec.get()->ptr();
+        B2_ = B2vec.get()->ptr();
         A_ = matrices_.A().ptr();
-
-        v0_ = (T*)malloc(N_ * sizeof(T));
-        v2_ = (T*)malloc(N_ * sizeof(T));
     }
 
     ChaseMpiDLABlaslapackSeq() = delete;
@@ -56,8 +53,6 @@ public:
 
     ~ChaseMpiDLABlaslapackSeq()
     {
-        free(v0_);
-        free(v2_);
     }
     void initVecs() override
     {
@@ -131,13 +126,13 @@ public:
                     N_ * block * sizeof(T));
     }
 
-    void applyVec(T* v, T* w) override
+    void applyVec(T* v, T* w, std::size_t n) override
     {
         T One = T(1.0);
         T Zero = T(0.0);
 
         t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, //
-               N_, 1, N_,                                 //
+               N_, n, N_,                                 //
                &One,                                      //
                H_, ldh_,                                  //
                v, N_,                                     //
@@ -347,6 +342,7 @@ public:
         int info = 1;
 
         t_syherk('U', 'C', nevex, N_, &one, C_, N_, &zero, A_, nevex);
+
         info = t_potrf('U', nevex, A_, nevex); 
 
         if(info != 0)
@@ -460,82 +456,102 @@ public:
                C_, N_, ritzVc, m, &beta, C2_, N_);
         std::memcpy(C_, C2_, m * N_ * sizeof(T));
     }
-    void Lanczos(std::size_t M, int idx, Base<T>* d, Base<T>* e,
+
+    void mLanczos(std::size_t M, int numvec, Base<T>* d, Base<T>* e,
                  Base<T>* r_beta) override
     {
-        Base<T> real_beta;
+        bool is_second_system = false;
 
-        T alpha = T(1.0);
-        T beta = T(0.0);
-
-        std::fill(v0_, v0_ + N_, T(0));
-
-#ifdef USE_NSIGHT
-        nvtxRangePushA("Lanczos Init vec");
-#endif
-        if (idx >= 0)
+        if(numvec == -1)
         {
-            v1_ = C2_ + idx * N_;
+            numvec = 1;
+            is_second_system = true;
         }
-        else
+
+        std::vector<Base<T>> real_alpha(numvec);
+        std::vector<T> alpha(numvec, T(1.0));
+        std::vector<T> beta(numvec, T(0.0));
+
+        v_0 = new Matrix<T>(0, N_, numvec);
+        v_1 = new Matrix<T>(0, N_, numvec);
+        v_2 = new Matrix<T>(0, N_, numvec);
+
+        std::memcpy(v_1->ptr(), C_, N_ * numvec * sizeof(T));
+        this->nrm2_batch(N_, v_1, 1, numvec, real_alpha.data());
+        
+        for(auto i = 0; i < numvec; i++)
         {
-            std::mt19937 gen(2342.0);
-            std::normal_distribution<> normal_distribution;
-            v1_ = C2_;
-            for (std::size_t k = 0; k < N_; ++k)
-            {
-                v1_[k] =
-                    getRandomT<T>([&]() { return normal_distribution(gen); });
-            }
+            alpha[i] = T(1 / real_alpha[i]);
         }
-#ifdef USE_NSIGHT
-        nvtxRangePop();
-#endif
-        // ENSURE that v1 has one norm
-#ifdef USE_NSIGHT
-        nvtxRangePushA("Lanczos: loop");
-#endif
-        Base<T> real_alpha = this->nrm2(N_, v1_, 1);
-        alpha = T(1 / real_alpha);
-        this->scal(N_, &alpha, v1_, 1);
+
+        this->scal_batch(N_, alpha.data(), v_1, 1, numvec);
+
         for (std::size_t k = 0; k < M; k = k + 1)
         {
-            if (idx >= 0)
+            if(!is_second_system)
             {
-                std::memcpy(C_ + k * N_, v1_, N_ * sizeof(T));
+                for(auto i = 0; i < numvec; i++){
+                    std::memcpy(C_ + k * N_, v_1->ptr() + i * N_, N_ * sizeof(T));
+                }
             }
-            this->applyVec(v1_, B2_);
-            this->B2C(B2_, 0, v2_, 0, 1);
-            // B2C
-            alpha = this->dot(N_, v1_, 1, v2_, 1);
-            alpha = -alpha;
-            this->axpy(N_, &alpha, v1_, 1, v2_, 1);
-            alpha = -alpha;
 
-            d[k] = std::real(alpha);
+            this->applyVec(v_1, v_2, numvec);
+
+            this->dot_batch(N_, v_1, 1, v_2, 1, alpha.data(), numvec);
+            for(auto i = 0; i < numvec; i++)
+            {
+                alpha[i] = -alpha[i];
+            }
+
+            this->axpy_batch(N_, alpha.data(), v_1, 1, v_2, 1, numvec);
+            for(auto i = 0; i < numvec; i++)
+            {
+                alpha[i] = -alpha[i];
+            }
+
+            for(auto i = 0; i < numvec; i++)
+            {
+                d[k + M * i] = std::real(alpha[i]);
+            }
+
+            if(k > 0){
+                for(auto i = 0; i < numvec; i++)
+                {
+                    beta[i] = T(-r_beta[i]);
+                }
+                this->axpy_batch(N_, beta.data(), v_0, 1, v_2, 1, numvec);
+            }
+
+            for(auto i = 0; i < numvec; i++)
+            {
+                beta[i] = -beta[i];
+            }
+
+            this->nrm2_batch(N_, v_2, 1, numvec, r_beta);
+
+
+            for(auto i = 0; i < numvec; i++)
+            {
+                beta[i] = T(1 / r_beta[i]);
+            }
 
             if (k == M - 1)
                 break;
+            
+            this->scal_batch(N_, beta.data(), v_2, 1, numvec);
 
-            beta = T(-real_beta);
-            this->axpy(N_, &beta, v0_, 1, v2_, 1);
-            beta = -beta;
-
-            real_beta = this->nrm2(N_, v2_, 1);
-
-            beta = T(1.0 / real_beta);
-
-            this->scal(N_, &beta, v2_, 1);
-
-            e[k] = real_beta;
-
-            std::swap(v1_, v0_);
-            std::swap(v1_, v2_);
+            for(auto i = 0; i < numvec; i++)
+            {
+                e[k + M * i] = r_beta[i];
+            }
+            v_1->swap(*v_0);
+            v_1->swap(*v_2);
         }
-#ifdef USE_NSIGHT
-        nvtxRangePop();
-#endif
-        *r_beta = real_beta;
+
+        if(!is_second_system)
+        {
+            std::memcpy(C_, v_1->ptr(), N_ * numvec * sizeof(T));  
+        }
     }
 
     void B2C(T* B, std::size_t off1, T* C, std::size_t off2,
@@ -543,6 +559,10 @@ public:
     {
         std::memcpy(C + off2 * N_, B + off1 * N_, block * N_ * sizeof(T));
     }
+
+    void B2C(Matrix<T>* B, std::size_t off1, Matrix<T>* C, std::size_t off2,
+                        std::size_t block) override
+    {}    
 
     void lacpy(char uplo, std::size_t m, std::size_t n, T* a, std::size_t lda,
                T* b, std::size_t ldb) override
@@ -569,6 +589,55 @@ public:
 
     ChaseMpiMatrices<T>* getChaseMatrices() override { return &matrices_; }
 
+    void nrm2_batch(std::size_t n, Matrix<T>* x, std::size_t incx, int count, Base<T> *nrms) override
+    {
+        for(auto i = 0; i < count; i++ )
+        {
+            nrms[i] = t_nrm2(n, x->ptr() + i *  n, incx);
+        }
+    }
+    
+    void scal_batch(std::size_t N, T* a, Matrix<T>* x, std::size_t incx, int count) override
+    {
+        //t_scal(N, a, x, incx);
+        for(auto i = 0; i < count; i++)
+        {
+            t_scal(N, &a[i], x->ptr() + i * x->ld(), incx);
+        }
+    }
+
+    void applyVec(Matrix<T>* v, Matrix<T>* w, std::size_t n) override
+    {
+        T alpha = T(1.0);
+        T beta = T(0.0);
+        std::size_t k = n;
+        t_gemm<T>(CblasColMajor, CblasConjTrans, CblasNoTrans, N_,
+                  k, N_, &alpha, H_, ldh_,
+                  v->ptr(), v->ld(), &beta, w->ptr(), w->ld());
+
+    }
+
+    void dot_batch(std::size_t n, Matrix<T>* x, std::size_t incx, Matrix<T>* y,
+          std::size_t incy, T *products, int count) override
+    {
+        //return t_dot(n, x, incx, y, incy);
+        for(auto i = 0; i < count; i++)
+        {
+            products[i] = t_dot(n, x->ptr() + i * x->ld(), incx, y->ptr() + i * y->ld(), incy);
+        }
+    }
+
+    void axpy_batch(std::size_t N, T* alpha, Matrix<T>* x, std::size_t incx, Matrix<T>* y,
+              std::size_t incy, int count) override
+    {
+        //t_axpy(N, alpha, x, incx, y, incy);
+        for(auto i = 0; i < count; i++)
+        {
+            t_axpy(N, &alpha[i], x->ptr() + i * x->ld(), incx, y->ptr() + i * y->ld(), incy);
+        }
+    }    
+
+
 private:
     enum NextOp
     {
@@ -587,16 +656,16 @@ private:
     std::size_t ldh_;       //!< leading dimension of Hermitian matrix
     std::unique_ptr<T> V1_; //!< a matrix of size `N_*(nev_+nex_)`
     std::unique_ptr<T> V2_; //!< a matrix of size `N_*(nev_+nex_)`
-    T* v0_; //!< a vector of size `N_`, which is allocated in this
-            //!< class for Lanczos
-    T* v1_;
-    T* v2_;
+    std::unique_ptr<Matrix<T>> C2vec;
+    std::unique_ptr<Matrix<T>> B2vec; 
     T* C_; //!< a pointer to a matrix of size `N_*(nev_+nex_)`
     T* B_; //!< a pointer to a matrix of size `N_*(nev_+nex_)`
     T* C2_;
     T* B2_;
     T* A_;
+    Matrix<T> *v_0, *v_1, *v_2;
     ChaseMpiMatrices<T> matrices_;
+
 };
 
 template <typename T>

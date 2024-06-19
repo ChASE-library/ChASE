@@ -179,16 +179,18 @@ public:
     //! - All required operations for this function has been done in for
     //! ChaseMpiDLA::applyVec().
     //! - This function contains nothing in this class.
-    void applyVec(T* v, T* w) override
+    void applyVec(T* v, T* w, std::size_t n) override
     {
         T alpha = T(1.0);
         T beta = T(0.0);
-        std::size_t k = 1;
+        std::size_t k = n;
         // t_gemm<T>(CblasColMajor, CblasConjTrans, CblasNoTrans, n_,
         //          k, m_, &alpha, H_, ldh_,
         //          v, m_, &beta, w, n_);
-        t_gemv<T>(CblasColMajor, CblasConjTrans, m_, n_, &alpha, H_, ldh_, v, 1,
-                  &beta, w, 1);
+        t_gemm<T>(CblasColMajor, CblasConjTrans, CblasNoTrans, n_,
+                  k, m_, &alpha, H_, ldh_,
+                  v, m_, &beta, w, n_);
+
     }
 
     bool checkSymmetryEasy() override 
@@ -336,15 +338,21 @@ public:
         std::memcpy(C_, C2_, m * m_ * sizeof(T));
 
     }
-    void Lanczos(std::size_t M, int idx, Base<T>* d, Base<T>* e,
+    
+    void mLanczos(std::size_t M, int numvec, Base<T>* d, Base<T>* e,
                  Base<T>* r_beta) override
     {
     }
+
     void B2C(T* B, std::size_t off1, T* C, std::size_t off2,
              std::size_t block) override
     {
     }
 
+    void B2C(Matrix<T>* B, std::size_t off1, Matrix<T>* C, std::size_t off2,
+                        std::size_t block) override
+    {}
+    
     void lacpy(char uplo, std::size_t m, std::size_t n, T* a, std::size_t lda,
                T* b, std::size_t ldb) override
     {
@@ -369,6 +377,54 @@ public:
         }        
     }
     ChaseMpiMatrices<T>* getChaseMatrices() override { return &matrices_; }
+  
+    void nrm2_batch(std::size_t n, Matrix<T>* x, std::size_t incx, int count, Base<T> *nrms) override
+    {
+        for(auto i = 0; i < count; i++ )
+        {
+            nrms[i] = t_nrm2(n, x->ptr() + i *  n, incx);
+        }
+    }
+    
+    void scal_batch(std::size_t N, T* a, Matrix<T>* x, std::size_t incx, int count) override
+    {
+        //t_scal(N, a, x, incx);
+        for(auto i = 0; i < count; i++)
+        {
+            t_scal(N, &a[i], x->ptr() + i * x->ld(), incx);
+        }
+    }
+
+    void applyVec(Matrix<T>* v, Matrix<T>* w, std::size_t n) override
+    {
+        T alpha = T(1.0);
+        T beta = T(0.0);
+        std::size_t k = n;
+        t_gemm<T>(CblasColMajor, CblasConjTrans, CblasNoTrans, n_,
+                  k, m_, &alpha, H_, ldh_,
+                  v->ptr(), v->ld(), &beta, w->ptr(), w->ld());
+
+    }
+
+    void dot_batch(std::size_t n, Matrix<T>* x, std::size_t incx, Matrix<T>* y,
+          std::size_t incy, T *products, int count) override
+    {
+        //return t_dot(n, x, incx, y, incy);
+        for(auto i = 0; i < count; i++)
+        {
+            products[i] = t_dot(n, x->ptr() + i * x->ld(), incx, y->ptr() + i * y->ld(), incy);
+        }
+    }
+
+    void axpy_batch(std::size_t N, T* alpha, Matrix<T>* x, std::size_t incx, Matrix<T>* y,
+              std::size_t incy, int count) override
+    {
+        //t_axpy(N, alpha, x, incx, y, incy);
+        for(auto i = 0; i < count; i++)
+        {
+            t_axpy(N, &alpha[i], x->ptr() + i * x->ld(), incx, y->ptr() + i * y->ld(), incy);
+        }
+    }    
 
 private:
     enum NextOp

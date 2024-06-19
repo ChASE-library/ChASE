@@ -116,8 +116,9 @@ public:
           dla_(new MF<T>(H, ldh, V1, ritzv, N_, nev_, nex_))
     {
 
-        ritzv_ = dla_->get_Ritzv();
+	ritzv_ = dla_->get_Ritzv();
         resid_ = dla_->get_Resids();
+        nprocs_ = 1;
     }
 
     // case 2: MPI
@@ -201,6 +202,7 @@ public:
         ritzv_ = dla_->get_Ritzv();
         resid_ = dla_->get_Resids();
 
+        nprocs_ = properties_->get_nprocs();        
         static_assert(is_skewed_matrixfree<MF<T>>::value,
                       "MatrixFreeChASE Must be skewed");
     }
@@ -219,6 +221,8 @@ public:
 
         ritzv_ = dla_->get_Ritzv();
         resid_ = dla_->get_Resids();
+
+        nprocs_ = properties_->get_nprocs();
     }
 
     //! It prevents the copy operation of the constructor of ChaseMpi.
@@ -474,39 +478,26 @@ public:
     //! @param m: the iterative steps for Lanczos eigensolver.
     //! @param upperb: a pointer to the upper bound estimated by Lanczos
     //! eigensolver.
-    void Lanczos(std::size_t m, Base<T>* upperb) override
+    void Lanczos(std::size_t M, Base<T>* upperb) override
     {
-        // todo
-        Base<T>* d = new Base<T>[m]();
-        Base<T>* e = new Base<T>[m]();
-
-        int idx_ = -1;
+        //dla_->Lanczos(m, upperb);
+        std::vector<Base<T>> d(M);
+        std::vector<Base<T>> e(M);
         Base<T> real_beta;
-        dla_->Lanczos(m, idx_, d, e, &real_beta);
-
-#ifdef USE_NSIGHT
-        nvtxRangePushA("Stemr");
-#endif
+        dla_->mLanczos(M, -1, d.data(), e.data(), &real_beta);
         int notneeded_m;
         std::size_t vl, vu;
         Base<T> ul, ll;
         int tryrac = 0;
-        int* isuppz = new int[2 * m];
-        Base<T>* ritzv = new Base<T>[m];
+        std::vector<int> isuppz(2 * M);
+        std::vector<Base<T>> ritzv(M);
 
-        t_stemr<Base<T>>(LAPACK_COL_MAJOR, 'N', 'A', m, d, e, ul, ll, vl, vu,
-                         &notneeded_m, ritzv, NULL, m, m, isuppz, &tryrac);
+        t_stemr<Base<T>>(LAPACK_COL_MAJOR, 'N', 'A', M, d.data(), e.data(), ul, ll, vl, vu,
+                         &notneeded_m, ritzv.data(), NULL, M, M, isuppz.data(), &tryrac);
 
-        *upperb = std::max(std::abs(ritzv[0]), std::abs(ritzv[m - 1])) +
+        *upperb = std::max(std::abs(ritzv[0]), std::abs(ritzv[M - 1])) +
                   std::abs(real_beta);
-#ifdef USE_NSIGHT
-        nvtxRangePop();
-#endif
 
-        delete[] ritzv;
-        delete[] isuppz;
-        delete[] d;
-        delete[] e;
     };
 
     // we need to be careful how we deal with memory here
@@ -514,42 +505,43 @@ public:
     //! This member function implements the virtual one declared in Chase class.
     //! It estimates the upper bound of user-interested spectrum by Lanczos
     //! eigensolver
-    void Lanczos(std::size_t M, std::size_t idx, Base<T>* upperb,
+    void Lanczos(std::size_t M, std::size_t numvec, Base<T>* upperb,
                  Base<T>* ritzv, Base<T>* Tau, Base<T>* ritzV) override
     {
-        // todo
-        std::size_t m = M;
-        Base<T>* d = new Base<T>[m]();
-        Base<T>* e = new Base<T>[m]();
+        std::vector<Base<T>> d(M * numvec);
+        std::vector<Base<T>> e(M * numvec);
+        std::vector<Base<T>> real_beta(numvec);
+        int numvec_ = static_cast<int>(numvec);
 
-        int idx_ = static_cast<int>(idx);
-        Base<T> real_beta;
+        dla_->mLanczos(M, numvec, d.data(), e.data(), real_beta.data());
 
-        dla_->Lanczos(m, idx_, d, e, &real_beta);
-
-#ifdef USE_NSIGHT
-        nvtxRangePushA("Stemr");
-#endif
         int notneeded_m;
         std::size_t vl, vu;
         Base<T> ul, ll;
         int tryrac = 0;
-        int* isuppz = new int[2 * m];
-        t_stemr(LAPACK_COL_MAJOR, 'V', 'A', m, d, e, ul, ll, vl, vu,
-                &notneeded_m, ritzv, ritzV, m, m, isuppz, &tryrac);
-	*upperb = std::max(std::abs(ritzv[0]), std::abs(ritzv[m - 1])) +
-                  std::abs(real_beta);
-#ifdef USE_NSIGHT
-        nvtxRangePop();
-#endif
-        for (std::size_t k = 1; k < m; ++k)
+        std::vector<int> isuppz(2 * M);
+
+        for(auto i = 0; i < numvec; i++)
         {
-            Tau[k] = std::abs(ritzV[k * m]) * std::abs(ritzV[k * m]);
+          t_stemr(LAPACK_COL_MAJOR, 'V', 'A', M, d.data() + i * M, e.data() + i * M, ul, ll, vl, vu,
+                &notneeded_m, ritzv + M * i, ritzV, M, M, isuppz.data(), &tryrac);
+          for (std::size_t k = 1; k < M; ++k)
+          {
+            Tau[k + i * M] = std::abs(ritzV[k * M]) * std::abs(ritzV[k * M]);
+          }
         }
 
-        delete[] isuppz;
-        delete[] d;
-        delete[] e;
+        Base<T> max;
+        *upperb = std::max(std::abs(ritzv[0]), std::abs(ritzv[M - 1])) +
+                  std::abs(real_beta[0]);
+
+        for(auto i = 1; i < numvec; i++)
+        {
+          max = std::max(std::abs(ritzv[i * M]), std::abs(ritzv[ (i + 1) * M - 1])) +
+                  std::abs(real_beta[i]);
+          *upperb = std::max(max, *upperb);        
+        }
+
     };
 
     //! This member function implements the virtual one declared in Chase class.
@@ -585,7 +577,11 @@ public:
 
     //! This member function return the number of MPI processes used by ChASE
     //! \return the number of MPI ranks in the communicator used by ChASE
-    int get_nprocs() override { return properties_.get()->get_nprocs(); }
+    int get_nprocs() override 
+    {
+      //return dla_->get_nprocs();
+      return nprocs_;
+    }
 
 private:
     //! Global size of the matrix A defining the eigenproblem.
@@ -631,6 +627,7 @@ private:
       through MPI function `MPI_Comm_rank`.
     */
     int rank_;
+    int nprocs_;
 
     //! The number of eigenvectors to be locked, which indicates the number of
     //! eigenpairs converged into acceptable tolerance.

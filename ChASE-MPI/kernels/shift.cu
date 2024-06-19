@@ -5,6 +5,7 @@
 // License is 3-clause BSD:
 // https://github.com/ChASE-library/ChASE
 
+#include <cfloat>
 #include "cublas_v2.h"
 #include <complex>
 #include <cuComplex.h>
@@ -17,7 +18,7 @@
 
 #define BLK_X 64
 #define BLK_Y BLK_X
-#define NB_X 64
+#define NB_X 256
 
 const int max_blocks = 65535;
 
@@ -36,6 +37,22 @@ __device__ void cuda_sum_reduce(int i, T* x )
     if ( n >    4 ) { if ( i <    4 && i +    4 < n ) { x[i] += x[i+   4]; }  __syncthreads(); }
     if ( n >    2 ) { if ( i <    2 && i +    2 < n ) { x[i] += x[i+   2]; }  __syncthreads(); }
     if ( n >    1 ) { if ( i <    1 && i +    1 < n ) { x[i] += x[i+   1]; }  __syncthreads(); }
+}
+
+template<int n, typename T>
+__device__ void cuda_max_reduce(int i, T* x) {
+    __syncthreads();
+    if (n > 1024) { if (i < 1024 && i + 1024 < n) { x[i] = max(x[i], x[i + 1024]); } __syncthreads(); }
+    if (n >  512) { if (i <  512 && i +  512 < n) { x[i] = max(x[i], x[i +  512]); } __syncthreads(); }
+    if (n >  256) { if (i <  256 && i +  256 < n) { x[i] = max(x[i], x[i +  256]); } __syncthreads(); }
+    if (n >  128) { if (i <  128 && i +  128 < n) { x[i] = max(x[i], x[i +  128]); } __syncthreads(); }
+    if (n >   64) { if (i <   64 && i +   64 < n) { x[i] = max(x[i], x[i +   64]); } __syncthreads(); }
+    if (n >   32) { if (i <   32 && i +   32 < n) { x[i] = max(x[i], x[i +   32]); } __syncthreads(); }
+    if (n >   16) { if (i <   16 && i +   16 < n) { x[i] = max(x[i], x[i +   16]); } __syncthreads(); }
+    if (n >    8) { if (i <    8 && i +    8 < n) { x[i] = max(x[i], x[i +    8]); } __syncthreads(); }
+    if (n >    4) { if (i <    4 && i +    4 < n) { x[i] = max(x[i], x[i +    4]); } __syncthreads(); }
+    if (n >    2) { if (i <    2 && i +    2 < n) { x[i] = max(x[i], x[i +    2]); } __syncthreads(); }
+    if (n >    1) { if (i <    1 && i +    1 < n) { x[i] = max(x[i], x[i +    1]); } __syncthreads(); }
 }
 
 __global__ void s_absTraceKernel(float* d_matrix, float* d_trace, int n, int ld) {
@@ -338,6 +355,278 @@ __global__ void clacpy_full_kernel(
     clacpy_full_device(m, n, dA, ldda, dB, lddb);
 }
 
+static __device__ void dlacpy_upper_device(
+    int m, int n,
+    const double *dA, int ldda,
+    double       *dB, int lddb )
+{
+    int ind = blockIdx.x*BLK_X + threadIdx.x;
+    int iby = blockIdx.y*BLK_Y;
+    bool full = (iby + BLK_Y <= n);
+    if ( ind < m ) {
+        dA += ind + iby*ldda;
+        dB += ind + iby*lddb;
+        int copyLimit = min(ind - iby + 1, BLK_Y);
+        if ( full ) {
+            #pragma unroll
+            for( int j=0; j < BLK_Y; ++j ) {
+                dB[j*lddb] = (j < copyLimit) ?  dA[j*ldda] : 0.0;
+            }
+        }
+        else {
+            for( int j=0; j < BLK_Y && iby+j < n; ++j ) {
+                dB[j*lddb] =  (j < copyLimit) ?  dA[j*ldda] : 0.0;
+            }
+        }
+    }
+}
+
+__global__ void dlacpy_upper_kernel(
+    int m, int n,
+    const double *dA, int ldda,
+    double       *dB, int lddb )
+{
+    dlacpy_upper_device(m, n, dA, ldda, dB, lddb);
+}
+
+static __device__ void slacpy_upper_device(
+    int m, int n,
+    const float *dA, int ldda,
+    float       *dB, int lddb )
+{
+    int ind = blockIdx.x*BLK_X + threadIdx.x;
+    int iby = blockIdx.y*BLK_Y;
+    bool full = (iby + BLK_Y <= n);
+    if ( ind < m ) {
+        dA += ind + iby*ldda;
+        dB += ind + iby*lddb;
+        int copyLimit = min(ind - iby + 1, BLK_Y);
+        if ( full ) {
+            #pragma unroll
+            for( int j=0; j < BLK_Y; ++j ) {
+                dB[j*lddb] = (j < copyLimit) ?  dA[j*ldda] : 0.0;
+            }
+        }
+        else {
+            for( int j=0; j < BLK_Y && iby+j < n; ++j ) {
+                dB[j*lddb] =  (j < copyLimit) ?  dA[j*ldda] : 0.0;
+            }
+        }
+    }
+}
+
+__global__ void slacpy_upper_kernel(
+    int m, int n,
+    const float *dA, int ldda,
+    float       *dB, int lddb )
+{
+    slacpy_upper_device(m, n, dA, ldda, dB, lddb);
+}
+
+static __device__ void clacpy_upper_device(
+    int m, int n,
+    const cuComplex *dA, int ldda,
+    cuComplex       *dB, int lddb )
+{
+    int ind = blockIdx.x*BLK_X + threadIdx.x;
+    int iby = blockIdx.y*BLK_Y;
+    bool full = (iby + BLK_Y <= n);
+    if ( ind < m ) {
+        dA += ind + iby*ldda;
+        dB += ind + iby*lddb;
+        int copyLimit = min(ind - iby + 1, BLK_Y);
+        if ( full ) {
+            #pragma unroll
+            for( int j=0; j < BLK_Y; ++j ) {
+                dB[j*lddb] = (j < copyLimit) ?  dA[j*ldda] : make_cuFloatComplex(0.0f, 0.0f);
+            }
+        }
+        else {
+            for( int j=0; j < BLK_Y && iby+j < n; ++j ) {
+                dB[j*lddb] =  (j < copyLimit) ?  dA[j*ldda] : make_cuFloatComplex(0.0f, 0.0f);
+            }
+        }
+    }
+}
+
+__global__ void clacpy_upper_kernel(
+    int m, int n,
+    const cuComplex *dA, int ldda,
+    cuComplex       *dB, int lddb )
+{
+    clacpy_upper_device(m, n, dA, ldda, dB, lddb);
+}
+
+static __device__ void zlacpy_upper_device(
+    int m, int n,
+    const cuDoubleComplex *dA, int ldda,
+    cuDoubleComplex       *dB, int lddb )
+{
+    int ind = blockIdx.x*BLK_X + threadIdx.x;
+    int iby = blockIdx.y*BLK_Y;
+    bool full = (iby + BLK_Y <= n);
+    if ( ind < m ) {
+        dA += ind + iby*ldda;
+        dB += ind + iby*lddb;
+        int copyLimit = min(ind - iby + 1, BLK_Y);
+        if ( full ) {
+            #pragma unroll
+            for( int j=0; j < BLK_Y; ++j ) {
+                dB[j*lddb] = (j < copyLimit) ?  dA[j*ldda] : make_cuDoubleComplex(0.0, 0.0);
+            }
+        }
+        else {
+            for( int j=0; j < BLK_Y && iby+j < n; ++j ) {
+                dB[j*lddb] =  (j < copyLimit) ?  dA[j*ldda] : make_cuDoubleComplex(0.0, 0.0);
+            }
+        }
+    }
+}
+
+__global__ void zlacpy_upper_kernel(
+    int m, int n,
+    const cuDoubleComplex *dA, int ldda,
+    cuDoubleComplex       *dB, int lddb )
+{
+    zlacpy_upper_device(m, n, dA, ldda, dB, lddb);
+}
+
+
+static __device__ void dlacpy_lower_device(
+    int m, int n,
+    const double *dA, int ldda,
+    double       *dB, int lddb )
+{
+    int ind = blockIdx.x*BLK_X + threadIdx.x;
+    int iby = blockIdx.y*BLK_Y;
+    bool full = (iby + BLK_Y <= n);
+    if ( ind < m ) {
+        dA += ind + iby*ldda;
+        dB += ind + iby*lddb;
+        int copyStart = max(ind - iby, 0);
+        if ( full ) {
+            #pragma unroll
+            for( int j=0; j < BLK_Y; ++j ) {
+                dB[j*lddb] = (j >= copyStart) ?  dA[j*ldda] : 0.0;
+            }
+        }
+        else {
+            for( int j=0; j < BLK_Y && iby+j < n; ++j ) {
+                dB[j*lddb] =  (j >= copyStart) ?  dA[j*ldda] : 0.0;
+            }
+        }
+    }
+}
+
+__global__ void dlacpy_lower_kernel(
+    int m, int n,
+    const double *dA, int ldda,
+    double       *dB, int lddb )
+{
+    dlacpy_lower_device(m, n, dA, ldda, dB, lddb);
+}
+
+static __device__ void slacpy_lower_device(
+    int m, int n,
+    const float *dA, int ldda,
+    float       *dB, int lddb )
+{
+    int ind = blockIdx.x*BLK_X + threadIdx.x;
+    int iby = blockIdx.y*BLK_Y;
+    bool full = (iby + BLK_Y <= n);
+    if ( ind < m ) {
+        dA += ind + iby*ldda;
+        dB += ind + iby*lddb;
+        int copyStart = max(ind - iby, 0);
+        if ( full ) {
+            #pragma unroll
+            for( int j=0; j < BLK_Y; ++j ) {
+                dB[j*lddb] = (j >= copyStart) ?  dA[j*ldda] : 0.0;
+            }
+        }
+        else {
+            for( int j=0; j < BLK_Y && iby+j < n; ++j ) {
+                dB[j*lddb] =  (j >= copyStart) ?  dA[j*ldda] : 0.0;
+            }
+        }
+    }
+}
+
+__global__ void slacpy_lower_kernel(
+    int m, int n,
+    const float *dA, int ldda,
+    float       *dB, int lddb )
+{
+    slacpy_lower_device(m, n, dA, ldda, dB, lddb);
+}
+
+static __device__ void clacpy_lower_device(
+    int m, int n,
+    const cuComplex *dA, int ldda,
+    cuComplex       *dB, int lddb )
+{
+    int ind = blockIdx.x*BLK_X + threadIdx.x;
+    int iby = blockIdx.y*BLK_Y;
+    bool full = (iby + BLK_Y <= n);
+    if ( ind < m ) {
+        dA += ind + iby*ldda;
+        dB += ind + iby*lddb;
+        int copyStart = max(ind - iby, 0);
+        if ( full ) {
+            #pragma unroll
+            for( int j=0; j < BLK_Y; ++j ) {
+                dB[j*lddb] = (j >= copyStart) ?  dA[j*ldda] : make_cuFloatComplex(0.0f, 0.0f);
+            }
+        }
+        else {
+            for( int j=0; j < BLK_Y && iby+j < n; ++j ) {
+                dB[j*lddb] =  (j >= copyStart) ?  dA[j*ldda] : make_cuFloatComplex(0.0f, 0.0f);
+            }
+        }
+    }
+}
+
+__global__ void clacpy_lower_kernel(
+    int m, int n,
+    const cuComplex *dA, int ldda,
+    cuComplex       *dB, int lddb )
+{
+    clacpy_lower_device(m, n, dA, ldda, dB, lddb);
+}
+
+static __device__ void zlacpy_lower_device(
+    int m, int n,
+    const cuDoubleComplex *dA, int ldda,
+    cuDoubleComplex       *dB, int lddb )
+{
+    int ind = blockIdx.x*BLK_X + threadIdx.x;
+    int iby = blockIdx.y*BLK_Y;
+    bool full = (iby + BLK_Y <= n);
+    if ( ind < m ) {
+        dA += ind + iby*ldda;
+        dB += ind + iby*lddb;
+        int copyStart = max(ind - iby, 0);
+        if ( full ) {
+            #pragma unroll
+            for( int j=0; j < BLK_Y; ++j ) {
+                dB[j*lddb] = (j >= copyStart) ?  dA[j*ldda] : make_cuDoubleComplex(0.0, 0.0);
+            }
+        }
+        else {
+            for( int j=0; j < BLK_Y && iby+j < n; ++j ) {
+                dB[j*lddb] =  (j >= copyStart) ?  dA[j*ldda] : make_cuDoubleComplex(0.0, 0.0);
+            }
+        }
+    }
+}
+
+__global__ void zlacpy_lower_kernel(
+    int m, int n,
+    const cuDoubleComplex *dA, int ldda,
+    cuDoubleComplex       *dB, int lddb )
+{
+    zlacpy_lower_device(m, n, dA, ldda, dB, lddb);
+}
 
 // generate `n` random float numbers on GPU
 __global__ void s_normal_kernel(unsigned long long seed, curandStatePhilox4_32_10_t* states,
@@ -570,14 +859,57 @@ void t_lacpy_gpu(char uplo, int m, int n, float *dA, int ldda, float *dB, int ld
     dim3 grid;
 
     int mm, nn;
-    for( unsigned int i=0; i < super_grid.x; ++i ) {
-        mm = (i == super_grid.x-1 ? m % super_NB : super_NB);
-        grid.x = ( mm + BLK_X - 1) / BLK_X;
-        for( unsigned int j=0; j < super_grid.y; ++j ) {  // full row
-            nn = (j == super_grid.y-1 ? n % super_NB : super_NB);
-            grid.y = ( nn + BLK_X - 1) / BLK_Y;;
-            slacpy_full_kernel <<< grid, threads, 0, stream_ >>>
-                ( mm, nn, dA(i*super_NB, j*super_NB), ldda, dB(i*super_NB, j*super_NB), lddb );
+    if ( uplo == 'U' ) 
+    {
+        for( unsigned int i=0; i < super_grid.x; ++i ) {
+            mm = (i == super_grid.x-1 ? m % super_NB : super_NB);
+            grid.x = ( mm + BLK_X - 1) / BLK_X;
+            for( unsigned int j=0; j < super_grid.y; ++j ) {  // full row
+                nn = (j == super_grid.y-1 ? n % super_NB : super_NB);
+                grid.y = ( nn + BLK_X - 1) / BLK_Y;
+                if ( i == j ) {  // diagonal super block
+                    slacpy_upper_kernel <<< grid, threads, 0, stream_ >>>
+                        ( mm, nn, dA(i*super_NB, j*super_NB), ldda, dB(i*super_NB, j*super_NB), lddb );
+                }
+                else // off diagonal super block
+                {   
+                    slacpy_full_kernel <<< grid, threads, 0, stream_ >>>
+                        ( mm, nn, dA(i*super_NB, j*super_NB), ldda, dB(i*super_NB, j*super_NB), lddb );
+                }
+            }
+        }    
+    }
+    else if(uplo == 'L')
+    {
+        for( unsigned int i=0; i < super_grid.x; ++i ) {
+            mm = (i == super_grid.x-1 ? m % super_NB : super_NB);
+            grid.x = ( mm + BLK_X - 1) / BLK_X;
+            for( unsigned int j=0; j < super_grid.y; ++j ) {  // full row
+                nn = (j == super_grid.y-1 ? n % super_NB : super_NB);
+                grid.y = ( nn + BLK_X - 1) / BLK_Y;
+                if ( i == j ) {  // diagonal super block
+                    slacpy_lower_kernel <<< grid, threads, 0, stream_ >>>
+                        ( mm, nn, dA(i*super_NB, j*super_NB), ldda, dB(i*super_NB, j*super_NB), lddb );
+                }
+                else // off diagonal super block
+                {   
+                    slacpy_full_kernel <<< grid, threads, 0, stream_ >>>
+                        ( mm, nn, dA(i*super_NB, j*super_NB), ldda, dB(i*super_NB, j*super_NB), lddb );
+                }
+            }
+        }
+    }
+    else
+    {
+        for( unsigned int i=0; i < super_grid.x; ++i ) {
+            mm = (i == super_grid.x-1 ? m % super_NB : super_NB);
+            grid.x = ( mm + BLK_X - 1) / BLK_X;
+            for( unsigned int j=0; j < super_grid.y; ++j ) {  // full row
+                nn = (j == super_grid.y-1 ? n % super_NB : super_NB);
+                grid.y = ( nn + BLK_X - 1) / BLK_Y;
+                slacpy_full_kernel <<< grid, threads, 0, stream_ >>>
+                    ( mm, nn, dA(i*super_NB, j*super_NB), ldda, dB(i*super_NB, j*super_NB), lddb );
+            }
         }
     }
 }
@@ -593,14 +925,57 @@ void t_lacpy_gpu(char uplo, int m, int n, double *dA, int ldda, double *dB, int 
     dim3 grid;
 
     int mm, nn;
-    for( unsigned int i=0; i < super_grid.x; ++i ) {
-        mm = (i == super_grid.x-1 ? m % super_NB : super_NB);
-        grid.x = ( mm + BLK_X - 1) / BLK_X;
-        for( unsigned int j=0; j < super_grid.y; ++j ) {  // full row
-            nn = (j == super_grid.y-1 ? n % super_NB : super_NB);
-            grid.y = ( nn + BLK_X - 1) / BLK_Y;;
-            dlacpy_full_kernel <<< grid, threads, 0, stream_ >>>
-                ( mm, nn, dA(i*super_NB, j*super_NB), ldda, dB(i*super_NB, j*super_NB), lddb );
+    if ( uplo == 'U' ) 
+    {
+        for( unsigned int i=0; i < super_grid.x; ++i ) {
+            mm = (i == super_grid.x-1 ? m % super_NB : super_NB);
+            grid.x = ( mm + BLK_X - 1) / BLK_X;
+            for( unsigned int j=0; j < super_grid.y; ++j ) {  // full row
+                nn = (j == super_grid.y-1 ? n % super_NB : super_NB);
+                grid.y = ( nn + BLK_X - 1) / BLK_Y;
+                if ( i == j ) {  // diagonal super block
+                    dlacpy_upper_kernel <<< grid, threads, 0, stream_ >>>
+                        ( mm, nn, dA(i*super_NB, j*super_NB), ldda, dB(i*super_NB, j*super_NB), lddb );
+                }
+                else // off diagonal super block
+                {   
+                    dlacpy_full_kernel <<< grid, threads, 0, stream_ >>>
+                        ( mm, nn, dA(i*super_NB, j*super_NB), ldda, dB(i*super_NB, j*super_NB), lddb );
+                }
+            }
+        }    
+    }
+    else if(uplo == 'L')
+    {
+        for( unsigned int i=0; i < super_grid.x; ++i ) {
+            mm = (i == super_grid.x-1 ? m % super_NB : super_NB);
+            grid.x = ( mm + BLK_X - 1) / BLK_X;
+            for( unsigned int j=0; j < super_grid.y; ++j ) {  // full row
+                nn = (j == super_grid.y-1 ? n % super_NB : super_NB);
+                grid.y = ( nn + BLK_X - 1) / BLK_Y;
+                if ( i == j ) {  // diagonal super block
+                    dlacpy_lower_kernel <<< grid, threads, 0, stream_ >>>
+                        ( mm, nn, dA(i*super_NB, j*super_NB), ldda, dB(i*super_NB, j*super_NB), lddb );
+                }
+                else // off diagonal super block
+                {   
+                    dlacpy_full_kernel <<< grid, threads, 0, stream_ >>>
+                        ( mm, nn, dA(i*super_NB, j*super_NB), ldda, dB(i*super_NB, j*super_NB), lddb );
+                }
+            }
+        }
+    }
+    else
+    {
+        for( unsigned int i=0; i < super_grid.x; ++i ) {
+            mm = (i == super_grid.x-1 ? m % super_NB : super_NB);
+            grid.x = ( mm + BLK_X - 1) / BLK_X;
+            for( unsigned int j=0; j < super_grid.y; ++j ) {  // full row
+                nn = (j == super_grid.y-1 ? n % super_NB : super_NB);
+                grid.y = ( nn + BLK_X - 1) / BLK_Y;
+                dlacpy_full_kernel <<< grid, threads, 0, stream_ >>>
+                    ( mm, nn, dA(i*super_NB, j*super_NB), ldda, dB(i*super_NB, j*super_NB), lddb );
+            }
         }
     }
 }	
@@ -618,14 +993,57 @@ void t_lacpy_gpu(char uplo, int m, int n, std::complex<double> *ddA, int ldda, s
     dim3 grid;
 
     int mm, nn;
-    for( unsigned int i=0; i < super_grid.x; ++i ) {
-        mm = (i == super_grid.x-1 ? m % super_NB : super_NB);
-        grid.x = ( mm + BLK_X - 1) / BLK_X;
-        for( unsigned int j=0; j < super_grid.y; ++j ) {  // full row
-            nn = (j == super_grid.y-1 ? n % super_NB : super_NB);
-            grid.y = ( nn + BLK_X - 1) / BLK_Y;;
-            zlacpy_full_kernel <<< grid, threads, 0, stream_ >>>
-                ( mm, nn, dA(i*super_NB, j*super_NB), ldda, dB(i*super_NB, j*super_NB), lddb );
+    if ( uplo == 'U' ) 
+    {
+        for( unsigned int i=0; i < super_grid.x; ++i ) {
+            mm = (i == super_grid.x-1 ? m % super_NB : super_NB);
+            grid.x = ( mm + BLK_X - 1) / BLK_X;
+            for( unsigned int j=0; j < super_grid.y; ++j ) {  // full row
+                nn = (j == super_grid.y-1 ? n % super_NB : super_NB);
+                grid.y = ( nn + BLK_X - 1) / BLK_Y;
+                if ( i == j ) {  // diagonal super block
+                    zlacpy_upper_kernel <<< grid, threads, 0, stream_ >>>
+                        ( mm, nn, dA(i*super_NB, j*super_NB), ldda, dB(i*super_NB, j*super_NB), lddb );
+                }
+                else // off diagonal super block
+                {   
+                    zlacpy_full_kernel <<< grid, threads, 0, stream_ >>>
+                        ( mm, nn, dA(i*super_NB, j*super_NB), ldda, dB(i*super_NB, j*super_NB), lddb );
+                }
+            }
+        }    
+    }
+    else if(uplo == 'L')
+    {
+        for( unsigned int i=0; i < super_grid.x; ++i ) {
+            mm = (i == super_grid.x-1 ? m % super_NB : super_NB);
+            grid.x = ( mm + BLK_X - 1) / BLK_X;
+            for( unsigned int j=0; j < super_grid.y; ++j ) {  // full row
+                nn = (j == super_grid.y-1 ? n % super_NB : super_NB);
+                grid.y = ( nn + BLK_X - 1) / BLK_Y;
+                if ( i == j ) {  // diagonal super block
+                    zlacpy_lower_kernel <<< grid, threads, 0, stream_ >>>
+                        ( mm, nn, dA(i*super_NB, j*super_NB), ldda, dB(i*super_NB, j*super_NB), lddb );
+                }
+                else // off diagonal super block
+                {   
+                    zlacpy_full_kernel <<< grid, threads, 0, stream_ >>>
+                        ( mm, nn, dA(i*super_NB, j*super_NB), ldda, dB(i*super_NB, j*super_NB), lddb );
+                }
+            }
+        }
+    }
+    else
+    {
+        for( unsigned int i=0; i < super_grid.x; ++i ) {
+            mm = (i == super_grid.x-1 ? m % super_NB : super_NB);
+            grid.x = ( mm + BLK_X - 1) / BLK_X;
+            for( unsigned int j=0; j < super_grid.y; ++j ) {  // full row
+                nn = (j == super_grid.y-1 ? n % super_NB : super_NB);
+                grid.y = ( nn + BLK_X - 1) / BLK_Y;
+                zlacpy_full_kernel <<< grid, threads, 0, stream_ >>>
+                    ( mm, nn, dA(i*super_NB, j*super_NB), ldda, dB(i*super_NB, j*super_NB), lddb );
+            }
         }
     }
 }
@@ -643,14 +1061,57 @@ void t_lacpy_gpu(char uplo, int m, int n, std::complex<float> *ddA, int ldda, st
     dim3 grid;
 
     int mm, nn;
-    for( unsigned int i=0; i < super_grid.x; ++i ) {
-        mm = (i == super_grid.x-1 ? m % super_NB : super_NB);
-        grid.x = ( mm + BLK_X - 1) / BLK_X;
-        for( unsigned int j=0; j < super_grid.y; ++j ) {  // full row
-            nn = (j == super_grid.y-1 ? n % super_NB : super_NB);
-            grid.y = ( nn + BLK_X - 1) / BLK_Y;;
-            clacpy_full_kernel <<< grid, threads, 0, stream_ >>>
-                ( mm, nn, dA(i*super_NB, j*super_NB), ldda, dB(i*super_NB, j*super_NB), lddb );
+    if ( uplo == 'U' ) 
+    {
+        for( unsigned int i=0; i < super_grid.x; ++i ) {
+            mm = (i == super_grid.x-1 ? m % super_NB : super_NB);
+            grid.x = ( mm + BLK_X - 1) / BLK_X;
+            for( unsigned int j=0; j < super_grid.y; ++j ) {  // full row
+                nn = (j == super_grid.y-1 ? n % super_NB : super_NB);
+                grid.y = ( nn + BLK_X - 1) / BLK_Y;
+                if ( i == j ) {  // diagonal super block
+                    clacpy_upper_kernel <<< grid, threads, 0, stream_ >>>
+                        ( mm, nn, dA(i*super_NB, j*super_NB), ldda, dB(i*super_NB, j*super_NB), lddb );
+                }
+                else // off diagonal super block
+                {   
+                    clacpy_full_kernel <<< grid, threads, 0, stream_ >>>
+                        ( mm, nn, dA(i*super_NB, j*super_NB), ldda, dB(i*super_NB, j*super_NB), lddb );
+                }
+            }
+        }    
+    }
+    else if(uplo == 'L')
+    {
+        for( unsigned int i=0; i < super_grid.x; ++i ) {
+            mm = (i == super_grid.x-1 ? m % super_NB : super_NB);
+            grid.x = ( mm + BLK_X - 1) / BLK_X;
+            for( unsigned int j=0; j < super_grid.y; ++j ) {  // full row
+                nn = (j == super_grid.y-1 ? n % super_NB : super_NB);
+                grid.y = ( nn + BLK_X - 1) / BLK_Y;
+                if ( i == j ) {  // diagonal super block
+                    clacpy_lower_kernel <<< grid, threads, 0, stream_ >>>
+                        ( mm, nn, dA(i*super_NB, j*super_NB), ldda, dB(i*super_NB, j*super_NB), lddb );
+                }
+                else // off diagonal super block
+                {   
+                    clacpy_full_kernel <<< grid, threads, 0, stream_ >>>
+                        ( mm, nn, dA(i*super_NB, j*super_NB), ldda, dB(i*super_NB, j*super_NB), lddb );
+                }
+            }
+        }
+    }
+    else
+    {
+        for( unsigned int i=0; i < super_grid.x; ++i ) {
+            mm = (i == super_grid.x-1 ? m % super_NB : super_NB);
+            grid.x = ( mm + BLK_X - 1) / BLK_X;
+            for( unsigned int j=0; j < super_grid.y; ++j ) {  // full row
+                nn = (j == super_grid.y-1 ? n % super_NB : super_NB);
+                grid.y = ( nn + BLK_X - 1) / BLK_Y;
+                clacpy_full_kernel <<< grid, threads, 0, stream_ >>>
+                    ( mm, nn, dA(i*super_NB, j*super_NB), ldda, dB(i*super_NB, j*super_NB), lddb );
+            }
         }
     }
 }

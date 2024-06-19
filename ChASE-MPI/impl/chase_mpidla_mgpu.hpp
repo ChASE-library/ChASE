@@ -535,18 +535,21 @@ public:
     //! - All required operations for this function has been done in for
     //! ChaseMpiDLA::applyVec().
     //! - This function contains nothing in this class.
-    void applyVec(T* v, T* w) override
+    void applyVec(T* v, T* w, std::size_t n) override
     {
         T alpha = T(1.0);
         T beta = T(0.0);
-
-        cuda_exec(cudaMemcpy(d_v_, v, m_ * sizeof(T), cudaMemcpyHostToDevice));
+        ////
+        cuda_exec(cudaMemcpy(d_v_, v, m_ * n * sizeof(T), cudaMemcpyHostToDevice));
         cublas_status_ =
-            cublasTgemv(cublasH_, CUBLAS_OP_C, m_, n_, &alpha, H__.device(),
-                        H__.d_ld(), d_v_, 1, &beta, d_w_, 1);
+            cublasTgemm(cublasH_, CUBLAS_OP_C, CUBLAS_OP_N, n_, n, m_,
+                        &alpha, H__.device(), H__.d_ld(),
+                        d_v_, m_, &beta,
+                        d_w_, n_);
+
         assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
 
-        cuda_exec(cudaMemcpy(w, d_w_, n_ * sizeof(T), cudaMemcpyDeviceToHost));
+        cuda_exec(cudaMemcpy(w, d_w_, n * n_ * sizeof(T), cudaMemcpyDeviceToHost));
     }
 
     bool checkSymmetryEasy() override 
@@ -816,15 +819,19 @@ public:
         std::memcpy(C__.host(), C2__.host(), m * m_ * sizeof(T));
 #endif
     }
-    void Lanczos(std::size_t M, int idx, Base<T>* d, Base<T>* e,
-                 Base<T>* r_beta) override
-    {
-    }
+
+    void mLanczos(std::size_t M, int numvec, Base<T>* d, Base<T>* e,
+                         Base<T>* r_beta) override
+    {}
 
     void B2C(T* B, std::size_t off1, T* C, std::size_t off2,
              std::size_t block) override
     {
     }
+
+    void B2C(Matrix<T>* B, std::size_t off1, Matrix<T>* C, std::size_t off2,
+                        std::size_t block) override
+    {}
 
     void lacpy(char uplo, std::size_t m, std::size_t n, T* a, std::size_t lda,
                T* b, std::size_t ldb) override
@@ -866,6 +873,86 @@ public:
 
     ChaseMpiMatrices<T>* getChaseMatrices() override { return &matrices_; }
 
+    void nrm2_batch(std::size_t n, Matrix<T>* x, std::size_t incx, int count, Base<T> *nrms) override
+    {
+#if defined(CUDA_AWARE)
+        for(auto i = 0; i < count; i++ )
+        {
+            cublas_status_ = cublasTnrm2(cublasH_, n, x->device() + i * n, incx, &nrms[i]);
+            assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
+        }
+#else
+        for(auto i = 0; i < count; i++ )
+        {
+            nrms[i] = t_nrm2(n, x->ptr() + i *  n, incx);
+        }
+#endif
+    }
+    void scal_batch(std::size_t n, T* a, Matrix<T>* x, std::size_t incx, int count) override
+    {
+#if defined(CUDA_AWARE)
+        for(auto i = 0; i < count; i++)
+        {
+            cublas_status_ = cublasTscal(cublasH_, n, &a[i], x->device() + i * x->d_ld(), incx);
+            assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
+        }
+#else
+        for(auto i = 0; i < count; i++)
+        {
+            t_scal(n, &a[i], x->ptr() + i * x->ld(), incx);
+        }
+#endif
+    } 
+    void applyVec(Matrix<T>* v, Matrix<T>* w, std::size_t n) override
+    {
+        T alpha = T(1.0);
+        T beta = T(0.0);
+        std::size_t k = n;
+#if !defined(CUDA_AWARE)
+        v->syncFromPtr(m_, k, 0);
+#endif
+        cublas_status_ = cublasTgemm(cublasH_, CUBLAS_OP_C, CUBLAS_OP_N, n_, k,
+                                    m_, &alpha, H__.device(), H__.d_ld(), v->device(), v->d_ld(), &beta, w->device(), w->d_ld());
+
+        assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
+
+#if !defined(CUDA_AWARE)
+        w->sync2Ptr(n_, k, 0);
+#endif
+    }  
+    void dot_batch(std::size_t n, Matrix<T>* x, std::size_t incx, Matrix<T>* y,
+          std::size_t incy, T *products, int count) override
+    {
+#if defined(CUDA_AWARE)        
+        for(auto i = 0; i < count; i++)
+        {
+            cublas_status_ = cublasTdot(cublasH_, n, x->device() + i * x->d_ld(), incx, y->device() + i * y->d_ld(), incy, &products[i]);
+            assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
+        }  
+#else
+        for(auto i = 0; i < count; i++)
+        {
+            products[i] = t_dot(n, x->ptr() + i * x->ld(), incx, y->ptr() + i * y->ld(), incy);
+        }
+#endif
+    }
+    void axpy_batch(std::size_t N, T* alpha, Matrix<T>* x, std::size_t incx, Matrix<T>* y,
+              std::size_t incy, int count) override
+    {
+#if defined(CUDA_AWARE)        
+        for(auto i = 0; i < count; i++)
+        {
+            cublas_status_ = cublasTaxpy(cublasH_, N, alpha, x->device() + i * x->d_ld(), incx, y->device() + i * y->d_ld(), incy);
+            assert(cublas_status_ == CUBLAS_STATUS_SUCCESS);
+        }
+#else
+        for(auto i = 0; i < count; i++)
+        {
+            t_axpy(N, &alpha[i], x->ptr() + i * x->ld(), incx, y->ptr() + i * y->ld(), incy);
+        }
+#endif                
+    }  
+                                    
 private:
     enum NextOp
     {

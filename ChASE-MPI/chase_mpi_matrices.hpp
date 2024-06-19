@@ -27,13 +27,19 @@ class CpuMem
 {
 public:
     CpuMem() : size_(0), ptr_(nullptr), allocated_(false) {}
-    CpuMem(std::size_t size) : size_(size), allocated_(true), type_("CPU")
+    CpuMem(std::size_t size, bool useGPU = false) : size_(size), allocated_(true), useGPU_(useGPU), type_("CPU")
     {
+        if(!useGPU)
+        {
+            ptr_ = std::allocator<T>().allocate(size_);
+        }
 #if defined(HAS_CUDA)
-        cudaMallocHost(&ptr_, size_ * sizeof(T));
-#else
-        ptr_ = std::allocator<T>().allocate(size_);
+        else
+        {
+            cudaMallocHost(&ptr_, size_ * sizeof(T));   
+        }
 #endif
+        std::fill_n(ptr_, size_, T(0.0));	    
     }
 
     CpuMem(T* ptr, std::size_t size)
@@ -45,10 +51,14 @@ public:
     {
         if (allocated_)
         {
+            if(!useGPU_)
+            {
+                std::allocator<T>().deallocate(ptr_, size_);
+            }        
 #if defined(HAS_CUDA)
-            cudaFreeHost(ptr_);
-#else
-            std::allocator<T>().deallocate(ptr_, size_);
+            else{
+                cudaFreeHost(ptr_);
+            }
 #endif
         }
     }
@@ -58,12 +68,13 @@ public:
     bool isAlloc() { return allocated_; }
 
     std::string type() { return type_; }
-
+    
 private:
     std::size_t size_;
     T* ptr_;
     bool allocated_;
     std::string type_;
+    bool useGPU_;
 };
 
 #if defined(HAS_CUDA)
@@ -76,6 +87,7 @@ public:
     GpuMem(std::size_t size) : size_(size), allocated_(true), type_("GPU")
     {
         cudaMalloc(&ptr_, size_ * sizeof(T));
+        cudaMemset(ptr_, 0, size_ * sizeof(T));
     }
 
     GpuMem(T* ptr, std::size_t size)
@@ -120,12 +132,12 @@ public:
         {
             case 0:
                 Host_ = std::make_shared<CpuMem<T>>(m * n);
-                isHostAlloc_ = true;
+		isHostAlloc_ = true;
                 isDeviceAlloc_ = false;
                 break;
 #if defined(HAS_CUDA)
             case 1:
-                Host_ = std::make_shared<CpuMem<T>>(m * n);
+                Host_ = std::make_shared<CpuMem<T>>(m * n, true);
                 Device_ = std::make_shared<GpuMem<T>>(m * n);
                 isHostAlloc_ = true;
                 isDeviceAlloc_ = true;
@@ -180,6 +192,14 @@ public:
         }
 #endif
         return ptr;
+    }
+
+    void swap(Matrix<T> &swapping_obj)
+    {
+        std::swap(Host_, swapping_obj.Host_);
+#if defined(HAS_CUDA)
+        std::swap(Device_, swapping_obj.Device_);
+#endif        
     }
 
 #if defined(HAS_CUDA)
@@ -316,7 +336,7 @@ public:
     : mode_(mode), ldh_(ldh)	    
     {
         int isGPU = 0;
-        if (mode == 2)
+        if (mode == 1)
         {
             isGPU = 1;
         }
@@ -330,12 +350,6 @@ public:
         C___ = std::make_unique<Matrix<T>>(isGPU, N, max_block, V1, N);
         B___ = std::make_unique<Matrix<T>>(onlyGPU, N, max_block);
         A___ = std::make_unique<Matrix<T>>(onlyGPU, max_block, max_block);
-
-        if (mode == 1)
-        {
-            C2___ = std::make_unique<Matrix<T>>(0, N, max_block);
-            B2___ = std::make_unique<Matrix<T>>(0, N, max_block);
-        }
 
         Ritzv___ = std::make_unique<Matrix<Base<T>>>(isGPU, 1, max_block, ritzv,
                                                      max_block);

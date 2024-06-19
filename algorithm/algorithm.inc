@@ -209,19 +209,8 @@ std::size_t Algorithm<T>::lanczos(Chase<T>* single, int N, int numvec, int m,
     Base<T>* ritzV = new Base<T>[m * m]();
     Base<T> upperb_;
     Base<T> lowerb, lambda;
-    single->Lanczos(m, 0, &upperb_, Theta + m * 0, Tau + m * 0, ritzV);
-    *upperb = upperb_;
 
-    for (std::size_t i = 1; i < numvec; ++i)
-    {
-        // Generate random vector
-        /* for( std::size_t k=0; k < N; ++k) */
-        /*   { */
-        /*     V_[k] = T( d(gen), d(gen) ); */
-        /*   } */
-        single->Lanczos(m, i, &upperb_, Theta + m * i, Tau + m * i, ritzV);
-        *upperb = std::max(upperb_, *upperb);
-    }
+    single->Lanczos(m, numvec, upperb, Theta, Tau, ritzV);
 
 #ifdef CHASE_OUTPUT
     /*

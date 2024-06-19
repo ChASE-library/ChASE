@@ -72,8 +72,9 @@ public:
     //! This member function implements the virtual one declared in Chase class.
     //! It estimates the upper bound of user-interested spectrum by Lanczos
     //! eigensolver
-    virtual void Lanczos(std::size_t M, std::size_t idx, Base<T>* upperb,
+    virtual void Lanczos(std::size_t M, std::size_t numvec, Base<T>* upperb,
                          Base<T>* ritzv, Base<T>* Tau, Base<T>* ritzV) = 0;
+
     virtual void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc) = 0;
     //! This function swaps the two columns in a matrix used in the Chebyschev
     //! filter

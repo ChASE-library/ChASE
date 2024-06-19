@@ -420,6 +420,7 @@ public:
     }
     void Lanczos(std::size_t m, Base<T>* upperb)
     {
+        std::chrono::duration<double> elapsed;
         perf_.start_clock(ChasePerfData<T>::TimePtrs::Lanczos);
         chase_->Lanczos(m, upperb);
         perf_.end_clock(ChasePerfData<T>::TimePtrs::Lanczos);

@@ -15,13 +15,20 @@
 #include "algorithm/performance.hpp"
 
 #include "ChASE-MPI/impl/chase_mpidla_blaslapack.hpp"
+#ifdef DRIVER_BUILD_MGPU
+#include "ChASE-MPI/impl/chase_mpidla_mgpu.hpp"
+#endif
 
 using T = std::complex<double>;
 using namespace chase;
 using namespace chase::mpi;
 
 /*use ChASE-MPI without GPU support*/
+#ifdef DRIVER_BUILD_MGPU
+typedef ChaseMpi<ChaseMpiDLAMultiGPU, T> CHASE;
+#else
 typedef ChaseMpi<ChaseMpiDLABlaslapack, T> CHASE;
+#endif
 
 int main(int argc, char** argv)
 {
@@ -31,9 +38,9 @@ int main(int argc, char** argv)
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
     std::size_t N = 1001;    // problem size
-    std::size_t nev = 100;   // number of eigenpairs to be computed
+    std::size_t nev = 120;   // number of eigenpairs to be computed
     std::size_t nex = 40;    // extra searching space
-    std::size_t idx_max = 5; // number of eigenproblems to be solved in sequence
+    std::size_t idx_max = 3; // number of eigenproblems to be solved in sequence
     Base<T> perturb =
         1e-4; // perturbation of elements for the matrices in sequence
 
