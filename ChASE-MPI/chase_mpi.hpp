@@ -525,7 +525,7 @@ public:
         {
           t_stemr(LAPACK_COL_MAJOR, 'V', 'A', M, d.data() + i * M, e.data() + i * M, ul, ll, vl, vu,
                 &notneeded_m, ritzv + M * i, ritzV, M, M, isuppz.data(), &tryrac);
-          for (std::size_t k = 1; k < M; ++k)
+          for (std::size_t k = 0; k < M; ++k)
           {
             Tau[k + i * M] = std::abs(ritzV[k * M]) * std::abs(ritzV[k * M]);
           }

@@ -1386,11 +1386,16 @@ public:
         std::vector<Base<T>> real_alpha(numvec);
         std::vector<T> alpha(numvec, T(1.0));
         std::vector<T> beta(numvec, T(0.0));
-                
-        v_0 = new Matrix<T>(matrices_->get_Mode(), m_, numvec);
-        v_1 = new Matrix<T>(matrices_->get_Mode(), m_, numvec);
-        v_2 = new Matrix<T>(matrices_->get_Mode(), m_, numvec);
-        v_w = new Matrix<T>(matrices_->get_Mode(), n_, numvec);
+    
+	int matrix_mode = matrices_->get_Mode();
+	if(matrices_->get_Mode() == 2)
+	{
+	    matrix_mode = 1;
+	}	
+        v_0 = new Matrix<T>(matrix_mode, m_, numvec);
+        v_1 = new Matrix<T>(matrix_mode, m_, numvec);
+        v_2 = new Matrix<T>(matrix_mode, m_, numvec);
+        v_w = new Matrix<T>(matrix_mode, n_, numvec);
 
         //Memcpy(memcpy_mode[1], v_1->ptr(), C, m_ * numvec * sizeof(T));
         Memcpy(memcpy_mode[1], v_1->ptr(), C, m_ * numvec * sizeof(T));
@@ -1422,13 +1427,14 @@ public:
                 }
             }
 
+            //dla_->applyVec(v_1->ptr(), v_w->ptr(), numvec);
             dla_->applyVec(v_1, v_w, numvec);
-            //MPI_Allreduce(MPI_IN_PLACE, v_w->ptr(), n_ * numvec, getMPI_Type<T>(), MPI_SUM,
-            //          col_comm_);            
-            AllReduce(allreduce_backend, v_w->ptr(), n_ * numvec,
-                      getMPI_Type<T>(), MPI_SUM, col_comm_, mpi_wrapper_);
+	    MPI_Allreduce(MPI_IN_PLACE, v_w->ptr(), n_ * numvec, getMPI_Type<T>(), MPI_SUM,
+                      col_comm_);            
+            //AllReduce(allreduce_backend, v_w->ptr(), n_ * numvec,
+            //          getMPI_Type<T>(), MPI_SUM, col_comm_, mpi_wrapper_);
             //this->B2C(v_w->ptr(), 0, v_2->ptr(), 0, numvec);   
-            this->B2C(v_w, 0, v_2, 0, numvec);   
+            this->B2C(v_w->ptr(), 0, v_2->ptr(), 0, numvec);   
 
             dla_->dot_batch(m_, v_1, 1, v_2, 1, alpha.data(), numvec);
             for(auto i = 0; i < numvec; i++)
