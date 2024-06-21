@@ -400,6 +400,10 @@ void Algorithm<T>::solve(Chase<T>* single)
         degrees[i] = deg;
     bool random = !config.UseApprox();
     single->initVecs(random);
+    if(random)
+    {   
+         single->QR(0, 1.0);
+    }
     // --------------------------------- LANCZOS
     // ---------------------------------
 #ifdef USE_NSIGHT
