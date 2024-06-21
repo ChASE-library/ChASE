@@ -21,10 +21,14 @@ function(setup_test name)
   
   if(MPI_TEST)
     target_compile_definitions(${name} PRIVATE MPI_NUM_PROCS=4)
-    add_test(NAME ${name} COMMAND ${MPI_RUN} ${MPI_RUN_ARGS} -n 1 $<TARGET_FILE:${name}> --gtest_output=xml:unittest_reports/${name}_report.xml : -n 3 $<TARGET_FILE:${name}>)
+    if(${MPI_RUN} STREQUAL "srun")
+      add_test(NAME ${name} COMMAND ${MPI_RUN} ${MPI_RUN_ARGS} -n 4 $<TARGET_FILE:${name}>)
+    else()#mpirun
+      add_test(NAME ${name} COMMAND ${MPI_RUN} ${MPI_RUN_ARGS} -n 1 $<TARGET_FILE:${name}> --gtest_output=xml:unittest_reports/${name}_report.xml : -n 3 $<TARGET_FILE:${name}>)
+    endif()
   else()
     target_compile_definitions(${name} PRIVATE MPI_NUM_PROCS=1)
-    add_test(NAME ${name} COMMAND $<TARGET_FILE:${name}> --gtest_output=xml:unittest_reports/${name}_report.xml)
+    add_test(NAME ${name} COMMAND ${MPI_RUN} ${MPI_RUN_ARGS} -n 1 $<TARGET_FILE:${name}> --gtest_output=xml:unittest_reports/${name}_report.xml)
   endif()
 endfunction()
 
@@ -47,7 +51,8 @@ function(setup_test_serial name)
   target_link_libraries(${name} ${libraries} ${MPI_CXX_LIBRARIES} GTest::gtest_main)
 
   target_compile_definitions(${name} PRIVATE MPI_NUM_PROCS=1 SERIAL_TEST=1)
-  add_test(NAME ${name} COMMAND $<TARGET_FILE:${name}> --gtest_output=xml:unittest_reports/${name}_report.xml)
+  add_test(NAME ${name} COMMAND ${MPI_RUN} ${MPI_RUN_ARGS} -n 1 $<TARGET_FILE:${name}> --gtest_output=xml:unittest_reports/${name}_report.xml)
 endfunction()
 
 add_subdirectory(QR)
+
