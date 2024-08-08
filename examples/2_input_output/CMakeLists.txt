@@ -10,6 +10,7 @@ if(POPL_FOUND)
     )
   target_link_libraries( "2_input_output_seq" PRIVATE chase_seq )
   target_include_directories( "2_input_output_seq" PRIVATE ${POPL_INCLUDE_DIR})
+  target_compile_definitions( "2_input_output_seq" PRIVATE PRINT_EIGENVALUES=1)
 
   ##############################################################################
   #           2_input_output: no GPU, MPI ($A$ distributed among MPI-ranks)
