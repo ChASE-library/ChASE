@@ -268,59 +268,83 @@ int do_chase(ChASE_DriverProblemConfig& conf)
         nvtxRangePushA("MatrixIO");
 #endif
 
-        if (rank == 0)
-            std::cout << "start reading matrix\n";
+	if(!isMatGen)
+	{
+            if (rank == 0)
+            	std::cout << "start reading matrix\n";
 
-        std::ostringstream problem(std::ostringstream::ate);
-        if(sequence){
-            if(legacy)
-            {
-                problem << path_in << "gmat  1 " << std::setw(2) << i << ".bin";
+            std::ostringstream problem(std::ostringstream::ate);
+            if(sequence){
+            	if(legacy)
+            	{
+                    problem << path_in << "gmat  1 " << std::setw(2) << i << ".bin";
+            	}
+            	else
+            	{
+                	problem << path_in << "mat_" << spin << "_" << std::setfill('0')
+                        	<< std::setw(2) << kpoint << "_" << std::setfill('0')
+                        	<< std::setw(2) << i << ".bin";
+            	}
             }
             else
             {
-                problem << path_in << "mat_" << spin << "_" << std::setfill('0')
-                        << std::setw(2) << kpoint << "_" << std::setfill('0')
-                        << std::setw(2) << i << ".bin";
+            	problem << path_in;
             }
-        }
-        else
-        {
-            problem << path_in;
-        }
 
-        if (rank == 0)
-            std::cout << "Reading matrix: "<< problem.str() << std::endl;
+            if (rank == 0)
+            	std::cout << "Reading matrix: "<< problem.str() << std::endl;
 
-        std::size_t file_size = GetFileSize(problem.str());
 
-        //check the input file size
-        try
-        {
-            if (N * N * sizeof(T) != file_size)
+	    std::size_t file_size = GetFileSize(problem.str());
+
+            //check the input file size
+            try
             {
-                throw std::logic_error(
-                    std::string("The given file : ") + problem.str() +
-                    std::string(" of size ") + std::to_string(file_size) +
-                    std::string(
-                        " doesn't equals to the required size of matrix of size ") +
-                    std::to_string(size * sizeof(T)));
-            }
-        }
-        catch (std::exception& e)
-        {
-            std::cerr << "Caught " << typeid(e).name() << " : " << e.what()
+                if (N * N * sizeof(T) != file_size)
+                {
+                    throw std::logic_error(
+                        std::string("The given file : ") + problem.str() +
+                        std::string(" of size ") + std::to_string(file_size) +
+                        std::string(
+                        	" doesn't equals to the required size of matrix of size ") +
+                    std::to_string(N * N * sizeof(T)));
+            	}
+           }
+           catch (std::exception& e)
+           {
+           	 std::cerr << "Caught " << typeid(e).name() << " : " << e.what()
                     << std::endl;
-            return 1;
-        }
-
+            	return 1;
+           }
 #ifdef USE_MPI
 #ifdef USE_BLOCK_CYCLIC
-        props->readHamiltonianBlockCyclicDist(problem.str(), H);
+	   props->readHamiltonianBlockCyclicDist(problem.str(), H);
 #else
-        if(isMatGen)
-        {
-            Base<T> epsilon = 1e-4;
+	   props->readHamiltonianBlockDist(problem.str(), H);	   
+#endif		
+#else
+           std::ifstream input(problem.str().c_str(), std::ios::binary);
+           if (input.is_open())
+           {
+                input.read((char*)H, sizeof(T) * N * N);
+           }
+           else
+           {
+                throw std::string("error reading file: ") + problem.str();
+           }
+#endif		
+	}
+	else
+	{
+#ifdef USE_BLOCK_CYCLIC
+	    std::cerr << 
+		"Generating test matrix on the fly is not supported for block-cyclic distribution implementation" 
+	    	<< std::endl;
+#else		
+            if (rank == 0)
+                std::cout << "start generating matrix\n";
+
+	    Base<T> epsilon = 1e-4;
             Base<T>* eigenv = new Base<T>[N];
             for (std::size_t i = 0; i < ylen; i++) {
                 for (std::size_t j = 0; j < xlen; j++) {
@@ -331,23 +355,8 @@ int do_chase(ChASE_DriverProblemConfig& conf)
                     }
                 }
             }
-        }
-        else
-        {
-            props->readHamiltonianBlockDist(problem.str(), H);
-        }
-#endif
-#else
-        std::ifstream input(problem.str().c_str(), std::ios::binary);
-        if (input.is_open())
-        {
-            input.read((char*)H, sizeof(T) * N * N);
-        }
-        else
-        {
-            throw std::string("error reading file: ") + problem.str();
-        }
-#endif
+#endif    	    
+	}
 
 #ifdef USE_MPI
         MPI_Barrier(MPI_COMM_WORLD);
