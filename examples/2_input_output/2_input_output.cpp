@@ -307,7 +307,7 @@ int do_chase(ChASE_DriverProblemConfig& conf)
                         std::string(" of size ") + std::to_string(file_size) +
                         std::string(
                         	" doesn't equals to the required size of matrix of size ") +
-                    	std::to_string(N * N * sizeof(T)));
+                    std::to_string(N * N * sizeof(T)));
             	}
            }
            catch (std::exception& e)
