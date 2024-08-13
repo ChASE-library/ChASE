@@ -370,6 +370,12 @@ int do_chase(ChASE_DriverProblemConfig& conf)
             std::cout << "matrix are loaded in " << elapsed.count()
                       << " seconds" << std::endl;
 
+
+        if(!single.checkSymmetryEasy())
+        {
+            single.symOrHermMatrix('L');
+        }
+        
 #ifdef USE_NSIGHT
         nvtxRangePop();
 #endif
@@ -377,6 +383,7 @@ int do_chase(ChASE_DriverProblemConfig& conf)
 #ifdef USE_MPI
         MPI_Barrier(MPI_COMM_WORLD);
 #endif
+
         chase::Solve(&performanceDecorator);
         // chase::Solve(&single);
 #ifdef USE_MPI
