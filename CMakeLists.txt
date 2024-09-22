@@ -21,9 +21,45 @@ target_include_directories( chase_algorithm INTERFACE
 target_compile_features(chase_algorithm INTERFACE cxx_auto_type)
 
 option( CHASE_OUTPUT "ChASE will provide output at each iteration")
+# Add an option to enable/disable OpenMP support
+option(CHASE_ENABLE_OPENMP "Enable OpenMP support" ON)
+option(CHASE_ENABLE_MIXED_PRECISION "Enable mixed precision support" OFF)
+
 if( CHASE_OUTPUT )
   target_compile_definitions( chase_algorithm  INTERFACE "-DCHASE_OUTPUT" )
 endif()
+# Find OpenMP package if the option is enabled
+# Find OpenMP package if the option is enabled
+if(ENABLE_OPENMP)
+    find_package(OpenMP REQUIRED)
+    if(OpenMP_CXX_FOUND)
+        message(STATUS "OpenMP found, enabling OpenMP support")
+        
+        # Add OpenMP compiler flags globally
+        add_compile_options(${OpenMP_CXX_FLAGS})
+        
+        # Link OpenMP libraries globally
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+    else()
+        message(WARNING "OpenMP not found, building without OpenMP support")
+    endif()
+endif()
+
+# Add the flag to the preprocessor if the option is enabled
+if (ENABLE_MIXED_PRECISION)
+    add_definitions(-DENABLE_MIXED_PRECISION)
+    message(STATUS "Mixed precision support enabled.")
+else()
+    message(STATUS "Mixed precision support disabled.")
+endif()
+
+add_subdirectory(linalg)
+add_subdirectory(Impl)
+
+add_executable( "chase_driver" tests/noinput.cpp )
+target_link_libraries(chase_driver chase_cpu)
+target_include_directories(chase_driver PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 option(ENABLE_NSIGHT "Enable profiling with Nvidia Nsight Systems" OFF)
 
@@ -33,7 +69,6 @@ install( TARGETS chase_algorithm
   INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
   )
-
 
 install(DIRECTORY algorithm DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
   FILES_MATCHING
@@ -48,29 +83,6 @@ install(EXPORT chase-headers
   DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
   )
 
-## ChASE-MPI ##
-add_subdirectory( "ChASE-MPI/")
-
-## Tests
-add_executable( "chase_driver" tests/noinput.cpp )
-if(TARGET chase_cuda )
-  enable_language(CUDA)
-  target_link_libraries(chase_driver chase_mpi chase_cuda)
-  target_compile_definitions(chase_driver PRIVATE USE_GPU=1)
-else()
-  target_link_libraries(chase_driver chase_mpi)
-endif()
-
-add_subdirectory("interface")
-
-# Examples
-option(BUILD_WITH_EXAMPLES "Build the examples" OFF)
-if(BUILD_WITH_EXAMPLES)
-        message(STATUS "Building the examples of ChASE")
-        add_subdirectory("./examples")
-endif()
-
-
 option(ENABLE_TESTS "Enable unit tests." OFF)
 if(ENABLE_TESTS)
     MESSAGE("Test enabled. Finding GoogleTests.")
@@ -81,35 +93,4 @@ if(ENABLE_TESTS)
     set(MPI_RUN_ARGS  CACHE STRING "")
     set(MPI_TEST ON CACHE BOOL "Run test with mpi")
     add_subdirectory(tests)
-endif()
-
-# Documentation
-option(BUILD_WITH_DOCS "Build the examples" OFF)
-if(BUILD_WITH_DOCS)
-    message(STATUS "Building Documentation of ChASE")
-    add_subdirectory("./docs")
-endif()
-
-# Install ChASE as a CMake package
-include(CMakePackageConfigHelpers)
-
-if(TARGET chase_cuda )
-configure_package_config_file(
-    "cmake/Config_CUDA.cmake.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/chase-config.cmake"
-    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
-)
-
-else()
-configure_package_config_file(
-    "cmake/Config.cmake.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/chase-config.cmake"
-    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
-)
-
-endif()
-
-install( FILES
-  "${CMAKE_CURRENT_BINARY_DIR}/chase-config.cmake"
-  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
-  )
+endif() 

@@ -5,71 +5,54 @@
 // License is 3-clause BSD:
 // https://github.com/ChASE-library/ChASE
 
+#include <iostream>
+#include <vector>
 #include <complex>
 #include <memory>
 #include <random>
 #include <type_traits>
 #include <vector>
 
-#include "ChASE-MPI/chase_mpi.hpp"
 #include "algorithm/performance.hpp"
-
-#include "ChASE-MPI/impl/chase_mpidla_blaslapack_seq.hpp"
-#include "ChASE-MPI/impl/chase_mpidla_blaslapack_seq_inplace.hpp"
-#if defined(USE_GPU)
-#include "ChASE-MPI/impl/chase_mpidla_cuda_seq.hpp"
-#endif
+#include "Impl/chase_seq_cpu.hpp"
 
 using T = std::complex<double>;
-// using T = double;
 using namespace chase;
-using namespace chase::mpi;
 
-#if defined(USE_GPU)
-typedef ChaseMpi<ChaseMpiDLACudaSeq, T> CHASE;
-#else
-//typedef ChaseMpi<ChaseMpiDLABlaslapackSeq, T> CHASE;
-typedef ChaseMpi<ChaseMpiDLABlaslapackSeqInplace, T> CHASE;
-#endif
+//typedef chase::Impl::ChaseCPUSeq<T> CHASE;
 
 int main()
 {
-    MPI_Init(NULL, NULL);
-    int rank = 0;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
     std::size_t N = 1001;
     std::size_t LDH = 1001;
     std::size_t nev = 80;
     std::size_t nex = 60;
-    std::size_t idx_max = 2;
+    std::size_t idx_max = 3;
     Base<T> perturb = 1e-4;
-
+    
     std::mt19937 gen(1337.0);
     std::normal_distribution<> d;
-
-    if (rank == 0)
-        std::cout << "ChASE example driver\n"
-                  << "Usage: ./driver \n";
+   
+    std::cout << "ChASE example driver\n"
+            << "Usage: ./driver \n";
 
     auto V = std::vector<T>(N * (nev + nex));
     auto Lambda = std::vector<Base<T>>(nev + nex);
     std::vector<T> H(N * LDH, T(0.0));
 
-    CHASE single(N, nev, nex, H.data(), LDH, V.data(), Lambda.data());
+    chase::Impl::ChaseCPUSeq<T> single(N, nev, nex, H.data(), LDH, V.data(), N, Lambda.data());
 
     auto& config = single.GetConfig();
     config.SetTol(1e-10);
     config.SetDeg(20);
     config.SetOpt(true);
     config.SetApprox(false);
-    
-    if (rank == 0)
-        std::cout << "Solving " << idx_max << " symmetrized Clement matrices ("
-                  << N << "x" << N
-                  << ") with element-wise random perturbation of " << perturb
-                  << '\n'
-                  << config;
+
+    std::cout << "Solving " << idx_max << " symmetrized Clement matrices ("
+                << N << "x" << N
+                << ") with element-wise random perturbation of " << perturb
+                << '\n'
+                << config;    
 
     // Generate Clement matrix
     for (auto i = 0; i < N; ++i)
@@ -80,43 +63,38 @@ int main()
         if (i != N - 1)
             H[i + LDH * (i + 1)] = std::sqrt(i * (N + 1 - i));
     }
-    
+
     for (auto idx = 0; idx < idx_max; ++idx)
     {
-        if (rank == 0)
-        {
-            std::cout << "Starting Problem #" << idx << "\n";
-            if (config.UseApprox())
-            {
-                std::cout << "Using approximate solution\n";
-            }
-        }
 
+        std::cout << "Starting Problem #" << idx << "\n";
+        if (config.UseApprox())
+        {
+            std::cout << "Using approximate solution\n";
+        }
+    
         PerformanceDecoratorChase<T> performanceDecorator(&single);
         chase::Solve(&performanceDecorator);
 
-        if (rank == 0)
-        {
-            performanceDecorator.GetPerfData().print();
-            Base<T>* resid = single.GetResid();
-            std::cout << "Finished Problem #" << idx << "\n";
-            std::cout << "Printing first 5 eigenvalues and residuals\n";
-            std::cout
-                << "| Index |       Eigenvalue      |         Residual      |\n"
-                << "|-------|-----------------------|-----------------------|"
-                   "\n";
-            std::size_t width = 20;
-            std::cout << std::setprecision(12);
-            std::cout << std::setfill(' ');
-            std::cout << std::scientific;
-            std::cout << std::right;
-            for (auto i = 0; i < std::min(std::size_t(5), nev); ++i)
-                std::cout << "|  " << std::setw(4) << i + 1 << " | "
-                          << std::setw(width) << Lambda[i] << "  | "
-                          << std::setw(width) << resid[i] << "  |\n";
-            std::cout << "\n\n\n";
-        }
-
+        performanceDecorator.GetPerfData().print();
+        Base<T>* resid = single.GetResid();
+        std::cout << "Finished Problem #" << idx << "\n";
+        std::cout << "Printing first 5 eigenvalues and residuals\n";
+        std::cout
+            << "| Index |       Eigenvalue      |         Residual      |\n"
+            << "|-------|-----------------------|-----------------------|"
+                "\n";
+        std::size_t width = 20;
+        std::cout << std::setprecision(12);
+        std::cout << std::setfill(' ');
+        std::cout << std::scientific;
+        std::cout << std::right;
+        for (auto i = 0; i < std::min(std::size_t(5), nev); ++i)
+            std::cout << "|  " << std::setw(4) << i + 1 << " | "
+                        << std::setw(width) << Lambda[i] << "  | "
+                        << std::setw(width) << resid[i] << "  |\n";
+        std::cout << "\n\n\n";
+        
         config.SetApprox(true);
         // Perturb Full Clement matrix
         for (std::size_t i = 1; i < N; ++i)
@@ -130,3 +108,5 @@ int main()
         }
     }
 }
+
+

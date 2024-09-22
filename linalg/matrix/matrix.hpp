@@ -1,0 +1,251 @@
+#pragma once
+
+#include <memory>       // std::unique_ptr, std::allocator
+#include <functional>   // std::function
+#include <stdexcept>    // std::runtime_error
+#include <type_traits>  // std::enable_if, std::is_same
+#include <cstddef>      // std::size_t
+#include <complex>      // std::complex (if you're using complex types)
+#include "algorithm/types.hpp"
+#include "linalg/lapackpp/lapackpp.hpp"
+#include <omp.h>
+
+namespace chase {
+namespace matrix {
+
+template <typename T, typename Allocator = std::allocator<T>>
+class MatrixCPU {
+private:
+    std::unique_ptr<T[], std::function<void(T*)>> data_;
+    T* external_data_;
+    std::size_t rows_;
+    std::size_t cols_;
+    std::size_t ld_;
+    bool owns_mem_;
+    Allocator allocator_;
+#ifdef ENABLE_MIXED_PRECISION
+    using singlePrecisionT = typename chase::ToSinglePrecisionTrait<T>::Type;
+    //singlePrecisionT* single_precision_data_;  // Low precision data (raw pointer)
+    std::unique_ptr<MatrixCPU<singlePrecisionT>> single_precision_data_;
+    bool single_precision_enabled_;  // Flag to track if low precision is enabled
+#endif
+public:
+    // Default constructor
+    MatrixCPU()
+        : data_(nullptr, [](T*){}), external_data_(nullptr), rows_(0), cols_(0), ld_(0), 
+          owns_mem_(false)
+#ifdef ENABLE_MIXED_PRECISION
+          , single_precision_data_(nullptr), single_precision_enabled_(false) 
+#endif          
+          {}
+
+    // Constructor with default allocator
+    MatrixCPU(std::size_t rows, std::size_t cols)
+        : rows_(rows), cols_(cols), ld_(rows), owns_mem_(true)
+#ifdef ENABLE_MIXED_PRECISION
+        , single_precision_data_(nullptr), single_precision_enabled_(false) 
+#endif        
+    {
+        // Allocate memory using the allocator
+        T* raw_data = allocator_.allocate(rows_ * cols_);
+        data_ = std::unique_ptr<T[], std::function<void(T*)>>(
+            raw_data,
+            [this](T* ptr) { allocator_.deallocate(ptr, rows_ * cols_); }
+        );
+        external_data_ = nullptr; 
+    }
+
+    // Constructor wrapping up user-provided pointers
+    MatrixCPU(std::size_t rows, std::size_t cols, std::size_t ld, T *data)
+        : data_(nullptr, [](T*){}), rows_(rows), cols_(cols), ld_(ld), external_data_(data), owns_mem_(false)
+#ifdef ENABLE_MIXED_PRECISION
+        , single_precision_data_(nullptr), single_precision_enabled_(false) 
+#endif        
+        {}
+
+    // Destructor
+    ~MatrixCPU() {
+    }
+
+    // Move constructor
+    MatrixCPU(MatrixCPU&& other) noexcept
+        : data_(std::move(other.data_)), rows_(other.rows_), cols_(other.cols_), 
+          ld_(other.ld_), allocator_(std::move(other.allocator_)), owns_mem_(other.owns_mem_)
+#ifdef ENABLE_MIXED_PRECISION
+          ,single_precision_data_(std::move(other.single_precision_data_)),
+          single_precision_enabled_(other.single_precision_enabled_) 
+#endif          
+    {
+        other.owns_mem_ = false;  // Make sure the moved-from object no longer owns the memory
+    }
+
+    // Move assignment operator
+    MatrixCPU& operator=(MatrixCPU&& other) noexcept {
+        if (this != &other) {
+            if (owns_mem_) {
+                allocator_.deallocate(data_.get(), rows_ * cols_);  // Free existing memory
+            }
+
+            data_ = std::move(other.data_);  // Transfer ownership of memory
+            external_data_ = other.external_data_;
+            rows_ = other.rows_;
+            cols_ = other.cols_;
+            ld_ = other.ld_;
+            allocator_ = std::move(other.allocator_);
+            owns_mem_ = other.owns_mem_;
+#ifdef ENABLE_MIXED_PRECISION
+            single_precision_data_ = std::move(other.single_precision_data_);
+            single_precision_enabled_ = other.single_precision_enabled_;
+            other.single_precision_data_ = nullptr;  // Transfer ownership of low precision data
+#endif            
+            other.owns_mem_ = false;  // The moved-from object should no longer own the memory
+
+        }
+        return *this;
+    }
+
+    // Swap function to exchange data between two matrices
+    void swap(MatrixCPU<T, Allocator>& other) {
+        std::swap(data_, other.data_);
+        std::swap(external_data_, other.external_data_);
+        std::swap(rows_, other.rows_);
+        std::swap(cols_, other.cols_);
+        std::swap(ld_, other.ld_);
+        std::swap(owns_mem_, other.owns_mem_);
+        std::swap(allocator_, other.allocator_);
+#ifdef ENABLE_MIXED_PRECISION
+        std::swap(single_precision_enabled_, other.single_precision_enabled_);
+        std::swap(single_precision_data_, other.single_precision_data_);
+#endif        
+    }
+
+    void saveToBinaryFile(const std::string& filename) {
+        std::ofstream file(filename, std::ios::binary);
+        if (!file.is_open()) {
+            throw std::runtime_error("[MatrixCPU]: Failed to open file for writing.");
+        }
+        
+        if (this->data() == nullptr) {
+            throw std::runtime_error("[MatrixCPU]: Original data is not initialized.");
+        }
+
+        std::size_t dataSize = rows_ * cols_ * sizeof(T);
+        if (ld_ > rows_) {
+            std::vector<T> buffer(rows_ * cols_);
+            chase::linalg::lapackpp::t_lacpy('A', rows_, cols_, this->data(), ld_, buffer.data(), rows_);
+            file.write(reinterpret_cast<const char*>(buffer.data()), dataSize);
+        } else {
+            file.write(reinterpret_cast<const char*>(this->data()), dataSize);
+        }
+    }
+
+    // Read matrix data from a binary file
+    void readFromBinaryFile(const std::string& filename) {
+        std::ifstream file(filename, std::ios::binary | std::ios::in);
+        if (!file.is_open()) {
+            throw std::runtime_error("[MatrixCPU]: Failed to open file for reading.");
+        }
+        
+        if (this->data() == nullptr) {
+            throw std::runtime_error("[MatrixCPU]: Original data is not initialized.");
+        }
+
+        // Check file size
+        file.seekg(0, std::ios::end);
+        std::streamsize fileSize = file.tellg();
+        file.seekg(0, std::ios::beg);
+
+        std::streamsize requiredSize = rows_ * cols_ * sizeof(T);
+        if (fileSize < requiredSize) {
+            throw std::runtime_error("[MatrixCPU]: File size is smaller than the required matrix size.");
+        }
+
+        if (ld_ > rows_) {
+            std::vector<T> buffer(rows_ * cols_);
+            file.read(reinterpret_cast<char*>(buffer.data()), requiredSize);
+            chase::linalg::lapackpp::t_lacpy('A', rows_, cols_, buffer.data(), rows_, this->data(), ld_);
+        } else {
+            file.read(reinterpret_cast<char*>(this->data()), requiredSize);
+        }
+    }
+#ifdef ENABLE_MIXED_PRECISION
+    // Enable low precision: only enabled if T is double or std::complex<double>
+    template<typename U = T, typename std::enable_if<
+        std::is_same<U, double>::value || std::is_same<U, std::complex<double>>::value, int>::type = 0>
+    void enableSinglePrecision() {
+        if (single_precision_enabled_) {
+            throw std::runtime_error("Single precision already enabled.");
+        }
+
+        if (this->data() == nullptr) {
+            throw std::runtime_error("Original data is not initialized.");
+        }
+
+        //single_precision_data_ = new singlePrecisionT[ld_ * cols_];
+        single_precision_data_ = std::make_unique<MatrixCPU<singlePrecisionT>>(rows_, cols_);
+        // Convert original data to single precision
+        #pragma omp parallel for        
+        for (std::size_t j = 0; j < cols_; ++j) {
+            for (std::size_t i = 0; i < rows_; ++i) {
+                single_precision_data_->data()[j * rows_ + i] = static_cast<singlePrecisionT>(this->data()[j * ld_ + i]);
+            }
+        }
+        single_precision_enabled_ = true;
+    }
+
+    // Disable low precision: only enabled if T is double or std::complex<double>
+    template<typename U = T, typename std::enable_if<
+        std::is_same<U, double>::value || std::is_same<U, std::complex<double>>::value, int>::type = 0>
+    void disableSinglePrecision(bool copyback = false) {
+        if (!single_precision_enabled_) {
+            throw std::runtime_error("Single precision is not enabled.");
+        }
+
+        if (single_precision_data_ == nullptr) {
+            throw std::runtime_error("Original SP data is not initialized.");
+        }
+
+        if(copyback){
+        // Convert single-precision data back to original precision
+            #pragma omp parallel for        
+            for (std::size_t j = 0; j < cols_; ++j) {
+                for (std::size_t i = 0; i < rows_; ++i) {
+                    this->data()[j * ld_ + i] = static_cast<T>(single_precision_data_->data()[j * ld_ + i]);
+                }
+            }     
+        }
+   
+        single_precision_data_.reset();
+        single_precision_enabled_ = false;     
+    }
+#endif
+    // Accessor methods
+    T* data() { return owns_mem_ ? data_.get() : external_data_; }
+#ifdef ENABLE_MIXED_PRECISION
+    MatrixCPU<singlePrecisionT>* matrix_sp() { return single_precision_data_.get(); }
+#endif    
+    std::size_t rows() const { return rows_; }
+    std::size_t cols() const { return cols_; }
+    std::size_t ld() const { return ld_; }
+#ifdef ENABLE_MIXED_PRECISION
+    bool isSinglePrecisionEnabled() const { return single_precision_enabled_; }
+
+    // Disabled methods when T is not double or complex<double>
+    template<typename U = T, typename std::enable_if<
+        !(std::is_same<U, double>::value || std::is_same<U, std::complex<double>>::value), int>::type = 0>
+    void enableSinglePrecision() {
+        throw std::runtime_error("Single precision operations are only supported for double or complex<double>.");
+    }
+
+    template<typename U = T, typename std::enable_if<
+        !(std::is_same<U, double>::value || std::is_same<U, std::complex<double>>::value), int>::type = 0>
+    void disableSinglePrecision(bool copyback = false) {
+        throw std::runtime_error("Single precision operations are only supported for double or complex<double>.");
+    }
+#endif    
+};
+
+}  // namespace matrix
+}  // namespace chase
+
+
