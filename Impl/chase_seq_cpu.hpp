@@ -65,6 +65,12 @@ public:
     chase::Base<T>* GetResid() override {return resid_.data(); }
     ChaseConfig<T>& GetConfig() override {return config_; }
     int get_nprocs() override {return 1;}
+
+    void loadProblemFromFile(std::string filename)
+    {
+        Hmat_.readFromBinaryFile(filename);
+    }
+
 #ifdef CHASE_OUTPUT
     //! Print some intermediate infos during the solving procedure
     void Output(std::string str) override
@@ -184,6 +190,7 @@ public:
         if constexpr (std::is_same<T, double>::value || std::is_same<T, std::complex<double>>::value)
         {
             auto min = *std::min_element(resid_.data() + locked_, resid_.data() + nev_);
+            
             if(min > 1e-3)
             {
                 if(isunshift)
@@ -400,7 +407,7 @@ public:
     {
 
         std::size_t locked = (nev_ + nex_) - block;
-
+     
         chase::linalg::internal::cpu::rayleighRitz(Hmat_.rows(),
                                                    Hmat_.data(),
                                                    Hmat_.ld(),
@@ -409,7 +416,7 @@ public:
                                                    Vec1_.ld(),
                                                    Vec2_.data() + locked_ * N_,
                                                    Vec2_.ld(),
-                                                   ritzv,
+                                                   ritzvs_.data() + locked_,
                                                    A_.data()
                                                   );
 

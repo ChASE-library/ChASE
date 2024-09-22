@@ -47,7 +47,7 @@ if(ENABLE_OPENMP)
 endif()
 
 # Add the flag to the preprocessor if the option is enabled
-if (ENABLE_MIXED_PRECISION)
+if (CHASE_ENABLE_MIXED_PRECISION)
     add_definitions(-DENABLE_MIXED_PRECISION)
     message(STATUS "Mixed precision support enabled.")
 else()
@@ -56,6 +56,7 @@ endif()
 
 add_subdirectory(linalg)
 add_subdirectory(Impl)
+add_subdirectory(examples)
 
 add_executable( "chase_driver" tests/noinput.cpp )
 target_link_libraries(chase_driver chase_cpu)
