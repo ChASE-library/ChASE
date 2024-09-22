@@ -371,10 +371,10 @@ private:
     \see Chase
  */
 template <class T>
-class PerformanceDecoratorChase : public chase::Chase<T>
+class PerformanceDecoratorChase : public chase::ChaseBase<T>
 {
 public:
-    PerformanceDecoratorChase(Chase<T>* chase) : chase_(chase), perf_() {}
+    PerformanceDecoratorChase(ChaseBase<T>* chase) : chase_(chase), perf_() {}
 
     void initVecs(bool random)
     {   
@@ -487,7 +487,7 @@ public:
 #endif
 
 private:
-    Chase<T>* chase_;
+    ChaseBase<T>* chase_;
     ChasePerfData<T> perf_;
 };
 

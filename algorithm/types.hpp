@@ -11,7 +11,6 @@
 #include <complex>
 #include <fstream>
 #include <functional>
-#include <mpi.h>
 #include <sys/stat.h>
 
 namespace chase
@@ -19,6 +18,40 @@ namespace chase
 
 // Base< std::complex< Base<T> > > -> Base<T>
 // Base<               Base<T>   > -> Base<T>
+template<typename T>
+struct ToSinglePrecisionTrait {
+    using Type = T;  // By default, the type remains unchanged
+};
+
+// Specialization for double
+template<>
+struct ToSinglePrecisionTrait<double> {
+    using Type = float;  // Single precision equivalent of double
+};
+
+// Specialization for std::complex<double>
+template<>
+struct ToSinglePrecisionTrait<std::complex<double>> {
+    using Type = std::complex<float>;  // Single precision equivalent of std::complex<double>
+};
+
+// Trait for converting a type to its double precision equivalent
+template<typename T>
+struct ToDoublePrecisionTrait {
+    using Type = T;  // By default, the type remains unchanged
+};
+
+// Specialization for float
+template<>
+struct ToDoublePrecisionTrait<float> {
+    using Type = double;  // Double precision equivalent of float
+};
+
+// Specialization for std::complex<float>
+template<>
+struct ToDoublePrecisionTrait<std::complex<float>> {
+    using Type = std::complex<double>;  // Double precision equivalent of std::complex<float>
+};
 template <class Q>
 struct Base_Class
 {
@@ -33,6 +66,26 @@ struct Base_Class<std::complex<Q>>
 
 template <typename Q>
 using Base = typename Base_Class<Q>::type;
+
+
+// Primary template (default case)
+template<typename T>
+struct PrecisionTrait {
+    using Type = T;  // By default, the type remains unchanged
+};
+
+// Specialization for double
+template<>
+struct PrecisionTrait<double> {
+    using Type = float;  // Single precision equivalent of double
+};
+
+// Specialization for std::complex<double>
+template<>
+struct PrecisionTrait<std::complex<double>> {
+    using Type = std::complex<float>;  // Single precision equivalent of std::complex<double>
+};
+
 } // namespace chase
 
 bool isPathExist(const std::string& s)

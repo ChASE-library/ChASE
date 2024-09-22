@@ -17,7 +17,7 @@ void swap_kj(std::size_t k, std::size_t j, T* array)
 }
 
 template <class T>
-std::size_t Algorithm<T>::calc_degrees(Chase<T>* single, std::size_t N,
+std::size_t Algorithm<T>::calc_degrees(ChaseBase<T>* single, std::size_t N,
                                        std::size_t unconverged, std::size_t nex,
                                        Base<T> upperb, Base<T> lowerb,
                                        Base<T> tol, Base<T>* ritzv,
@@ -68,7 +68,7 @@ std::size_t Algorithm<T>::calc_degrees(Chase<T>* single, std::size_t N,
 }
 
 template <class T>
-std::size_t Algorithm<T>::locking(Chase<T>* single, std::size_t N,
+std::size_t Algorithm<T>::locking(ChaseBase<T>* single, std::size_t N,
                                   std::size_t unconverged, Base<T> tol,
                                   Base<T>* Lritzv, Base<T>* resid,
                                   Base<T>* residLast, std::size_t* degrees,
@@ -118,7 +118,7 @@ std::size_t Algorithm<T>::locking(Chase<T>* single, std::size_t N,
 }
 
 template <class T>
-std::size_t Algorithm<T>::filter(Chase<T>* single, std::size_t n,
+std::size_t Algorithm<T>::filter(ChaseBase<T>* single, std::size_t n,
                                  std::size_t unprocessed, std::size_t deg,
                                  std::size_t* degrees, Base<T> lambda_1,
                                  Base<T> lower, Base<T> upper)
@@ -184,7 +184,7 @@ std::size_t Algorithm<T>::filter(Chase<T>* single, std::size_t n,
 }
 
 template <class T>
-std::size_t Algorithm<T>::lanczos(Chase<T>* single, int N, int numvec, int m,
+std::size_t Algorithm<T>::lanczos(ChaseBase<T>* single, int N, int numvec, int m,
                                   int nevex, Base<T>* upperb, bool mode,
                                   Base<T>* ritzv_)
 {
@@ -322,7 +322,7 @@ std::size_t Algorithm<T>::lanczos(Chase<T>* single, int N, int numvec, int m,
 }
 
 template <class T>
-void Algorithm<T>::solve(Chase<T>* single)
+void Algorithm<T>::solve(ChaseBase<T>* single)
 {
     ChaseConfig<T>& config = single->GetConfig();
 

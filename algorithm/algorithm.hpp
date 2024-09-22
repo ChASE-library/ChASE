@@ -36,10 +36,10 @@ class Algorithm
 {
 public:
     //! Implementation of ChASE to solve eigenproblems
-    static void solve(Chase<T>* single);
+    static void solve(ChaseBase<T>* single);
     //! Optimization of Chebyshev polynomial degree based on the convergence
     //! behaviour of each ritz pair
-    static std::size_t calc_degrees(Chase<T>* kernel, std::size_t N,
+    static std::size_t calc_degrees(ChaseBase<T>* kernel, std::size_t N,
                                     std::size_t unconverged, std::size_t nex,
                                     Base<T> upperb, Base<T> lowerb, Base<T> tol,
                                     Base<T>* ritzv, Base<T>* resid,
@@ -47,24 +47,24 @@ public:
                                     std::size_t locked);
     //! sorting the ritz values based on the residuals and locking the converged
     //! ones
-    static std::size_t locking(Chase<T>* kernel, std::size_t N,
+    static std::size_t locking(ChaseBase<T>* kernel, std::size_t N,
                                std::size_t unconverged, Base<T> tol,
                                Base<T>* ritzv, Base<T>* resid,
                                Base<T>* residLast, std::size_t* degrees,
                                std::size_t locked);
     //! Implementation of Chebyshev filter
-    static std::size_t filter(Chase<T>* kernel, std::size_t n,
+    static std::size_t filter(ChaseBase<T>* kernel, std::size_t n,
                               std::size_t unprocessed, std::size_t deg,
                               std::size_t* degrees, Base<T> lambda_1,
                               Base<T> lower, Base<T> upper);
     //! Implemenattion of lanczos to estimate the required bound in ChASE
-    static std::size_t lanczos(Chase<T>* kernel, int N, int numvec, int m,
+    static std::size_t lanczos(ChaseBase<T>* kernel, int N, int numvec, int m,
                                int nevex, Base<T>* upperb, bool mode,
                                Base<T>* ritzv_);
 };
 
 template <typename T>
-void Solve(Chase<T>* single)
+void Solve(ChaseBase<T>* single)
 {
     Algorithm<T>::solve(single);
 }

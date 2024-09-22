@@ -15,7 +15,7 @@ namespace chase
 {
 
 template <class T>
-class Chase
+class ChaseBase
 {
 public:
     //! This member function shifts the diagonal of matrix `A` with a shift

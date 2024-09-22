@@ -15,7 +15,7 @@ function(setup_test name)
     endif()
   endforeach()
 
-  add_executable(${name} ${sources} ../main.cpp)
+  add_executable(${name} ${sources} ${CMAKE_SOURCE_DIR}/tests/main.cpp)
   target_include_directories(${name} PRIVATE ${MPI_CXX_INCLUDE_PATH})
   target_link_libraries(${name} ${libraries} ${MPI_CXX_LIBRARIES} GTest::gtest_main)
   
@@ -46,7 +46,7 @@ function(setup_test_serial name)
     endif()
   endforeach()
 
-  add_executable(${name} ${sources} ../main.cpp)
+  add_executable(${name} ${sources} ${CMAKE_SOURCE_DIR}/tests/main.cpp)
   target_include_directories(${name} PRIVATE ${MPI_CXX_INCLUDE_PATH})
   target_link_libraries(${name} ${libraries} ${MPI_CXX_LIBRARIES} GTest::gtest_main)
 
@@ -54,5 +54,5 @@ function(setup_test_serial name)
   add_test(NAME ${name} COMMAND ${MPI_RUN} ${MPI_RUN_ARGS} -n 1 $<TARGET_FILE:${name}> --gtest_output=xml:unittest_reports/${name}_report.xml)
 endfunction()
 
-add_subdirectory(QR)
-
+add_subdirectory(linalg)
+add_subdirectory(matrix)
