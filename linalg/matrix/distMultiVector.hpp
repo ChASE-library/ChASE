@@ -28,6 +28,20 @@ enum class CommunicatorType{
     all
 };
 
+// Type trait to map enum CommunicatorType to its opposite
+template <CommunicatorType>
+struct OutputCommType;
+
+template <>
+struct OutputCommType<CommunicatorType::row> {
+    static constexpr CommunicatorType value = CommunicatorType::column;  // Map 'row' to 'column'
+};
+
+template <>
+struct OutputCommType<CommunicatorType::column> {
+    static constexpr CommunicatorType value = CommunicatorType::row;  // Map 'column' to 'row'
+};
+
 template<typename T, CommunicatorType comm_type>
 class Block1DMatrix;
 
