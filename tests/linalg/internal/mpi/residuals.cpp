@@ -4,14 +4,14 @@
 #include <random>
 #include <cstring>
 #include "linalg/internal/mpi/hemm.hpp"
-#include "linalg/internal/mpi/rayleighRitz.hpp"
+#include "linalg/internal/mpi/residuals.hpp"
 #include "tests/linalg/internal/utils.hpp"
 #include "Impl/mpi/mpiGrid2D.hpp"
 #include "linalg/matrix/distMatrix.hpp"
 #include "linalg/matrix/distMultiVector.hpp"
 
 template <typename T>
-class RRCPUDistTest : public ::testing::Test {
+class ResidCPUDistTest : public ::testing::Test {
 protected:
     void SetUp() override {
         MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
@@ -28,9 +28,9 @@ protected:
 };
 
 using TestTypes = ::testing::Types<float, double, std::complex<float>, std::complex<double>>;
-TYPED_TEST_SUITE(RRCPUDistTest, TestTypes);
+TYPED_TEST_SUITE(ResidCPUDistTest, TestTypes);
 
-TYPED_TEST(RRCPUDistTest, RRCorrectness) {
+TYPED_TEST(ResidCPUDistTest, ResidCorrectness) {
     using T = TypeParam;  // Get the current type
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
     auto machineEpsilon = MachineEpsilon<T>::value();
@@ -43,7 +43,7 @@ TYPED_TEST(RRCPUDistTest, RRCorrectness) {
     std::vector<T> H(this->N * this->N);
     std::vector<T> H2(this->N * this->N);
     std::vector<chase::Base<T>> evals(this->N);
-    std::vector<chase::Base<T>> ritzv(this->n);
+    std::vector<chase::Base<T>> resids(this->n);
 
     for (int i = 0; i < this->N; ++i) {
         H[i * this->N + i] = T(0.1 * i + 0.1);
@@ -104,11 +104,11 @@ TYPED_TEST(RRCPUDistTest, RRCorrectness) {
         }
     }
 
-    chase::linalg::internal::mpi::rayleighRitz(H_, V_, V2_, W_, W2_, ritzv.data(), offset, subSize);
+    chase::linalg::internal::mpi::residuals(H_, V_, V2_, W_, W2_, evals.data(), resids.data(), offset, subSize);
 
     for(auto i = offset; i < offset + subSize; i++)
     {
-        EXPECT_NEAR(ritzv[i], evals[i], 100 * machineEpsilon);
+        EXPECT_NEAR(resids[i], machineEpsilon, 100 * machineEpsilon);
     }
 
 }

@@ -24,6 +24,12 @@ namespace blaspp
 #define CblasLower 1
 
 template <typename T>
+Base<T> t_sqrt_norm(T x);
+
+template <typename T>
+Base<T> t_norm_p2(const std::size_t n, const T* x);
+
+template <typename T>
 Base<T> t_nrm2(const std::size_t n, const T* x, const std::size_t incx);
 
 template <typename T>

@@ -14,6 +14,71 @@ namespace linalg
 namespace blaspp
 {
 
+template <>
+float t_sqrt_norm(float x)
+{
+    return x * x;
+}
+
+template <>
+double t_sqrt_norm(double x)
+{
+    return x * x;
+}
+
+template <>
+float t_sqrt_norm(std::complex<float> x)
+{
+    return std::norm(x);
+}
+
+template <>
+double t_sqrt_norm(std::complex<double> x)
+{
+    return std::norm(x);
+}
+
+template <>
+double t_norm_p2(const std::size_t n, const double* x)
+{
+    double norm = 0;
+    for(int i = 0; i < n; i++){
+        norm += t_sqrt_norm(x[i]);
+    }
+
+    return norm;
+}
+template <>
+float t_norm_p2(const std::size_t n, const float* x)
+{
+    float norm = 0;
+    for(int i = 0; i < n; i++){
+        norm += t_sqrt_norm(x[i]);
+    }
+
+    return norm;
+}
+template <>
+double t_norm_p2(const std::size_t n, const std::complex<double>* x)
+{
+    double norm = 0;
+    for(int i = 0; i < n; i++){
+        norm += t_sqrt_norm(x[i]);
+    }
+
+    return norm;
+}
+template <>
+float t_norm_p2(const std::size_t n, const std::complex<float>* x)
+{
+    float norm = 0;
+    for(int i = 0; i < n; i++){
+        norm += t_sqrt_norm(x[i]);
+    }
+
+    return norm;
+}
+
 // xNRM2
 template <>
 double t_nrm2(const std::size_t n, const double* x, const std::size_t incx)
