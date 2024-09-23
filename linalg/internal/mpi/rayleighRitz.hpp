@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cassert>  // For assertions
 #include "mpi.h"
 #include "Impl/mpi/mpiTypes.hpp"
 #include "linalg/blaspp/blaspp.hpp"
