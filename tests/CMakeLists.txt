@@ -56,3 +56,4 @@ endfunction()
 
 add_subdirectory(linalg)
 add_subdirectory(matrix)
+add_subdirectory(mpi)
