@@ -43,6 +43,31 @@ public:
         create2DGrid();
     }
 
+    // Implement equality operator
+    bool operator==(const MpiGrid2D<MajorOrder>& other) const {
+        // Compare communicators
+        int result;
+        MPI_Comm_compare(comm_, other.comm_, &result);
+        if (result != MPI_IDENT) return false;
+
+        // Compare row and column communicators
+        MPI_Comm_compare(row_comm_, other.row_comm_, &result);
+        if (result != MPI_IDENT) return false;
+        MPI_Comm_compare(col_comm_, other.col_comm_, &result);
+        if (result != MPI_IDENT) return false;
+
+        // Compare grid dimensions and coordinates
+        return (dims_[0] == other.dims_[0] &&
+                dims_[1] == other.dims_[1] &&
+                coords_[0] == other.coords_[0] &&
+                coords_[1] == other.coords_[1]);
+    }
+
+    // Implement inequality operator
+    bool operator!=(const MpiGrid2D<MajorOrder>& other) const {
+        return !(*this == other);
+    }
+    
     MPI_Comm get_row_comm() const override { return row_comm_; }
     MPI_Comm get_col_comm() const override { return col_comm_; }
     MPI_Comm get_comm() const override { return comm_; }

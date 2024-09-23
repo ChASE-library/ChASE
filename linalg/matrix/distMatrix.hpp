@@ -77,6 +77,7 @@ public:
     void enableSinglePrecision() {
         if (!single_precision_matrix_) {
             single_precision_matrix_ = std::make_unique<SinglePrecisionDerived>(this->g_rows(), this->g_cols(), this->getMpiGrid_shared_ptr());
+            #pragma omp parallel for
             for (std::size_t j = 0; j < this->l_cols(); ++j) {
                 for (std::size_t i = 0; i < this->l_rows(); ++i) {
                     single_precision_matrix_->l_data()[j * single_precision_matrix_.get()->l_ld() + i] 
@@ -96,7 +97,7 @@ public:
         if(copyback)
         {
             if (single_precision_matrix_) {
-#pragma omp parallel for
+                #pragma omp parallel for
                 for (std::size_t j = 0; j < this->l_cols(); ++j) {
                     for (std::size_t i = 0; i < this->l_rows(); ++i) {
                         this->l_data()[j * this->l_ld() + i] = 

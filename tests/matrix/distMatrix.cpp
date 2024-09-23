@@ -46,7 +46,7 @@ TYPED_TEST(MatrixCPUDistTest, RedundantInternalMemoryAllocation) {
 
     EXPECT_NE(redundant_matrix_.l_data(), nullptr);    
 }
-/*
+
 TYPED_TEST(MatrixCPUDistTest, BlockBlockInternalMemoryAllocation) {
     using T = TypeParam;  // Get the current type
     //using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type;
@@ -71,7 +71,6 @@ TYPED_TEST(MatrixCPUDistTest, BlockBlockInternalMemoryAllocation) {
 
     EXPECT_NE(blockblockmatrix_.l_data(), nullptr);    
 }
-*/
 
 TYPED_TEST(MatrixCPUDistTest, RedundantExternalMemoryAllocation) {
     using T = TypeParam;  // Get the current type
