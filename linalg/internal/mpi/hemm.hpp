@@ -58,7 +58,7 @@ namespace mpi
         int *coords = input_multiVector.getMpiGrid()->get_coords();
         T beta_tmp;
         
-        if constexpr (InputCommType == chase::distMultiVector::CommunicatorType::row)
+        if constexpr (InputCommType == chase::distMultiVector::CommunicatorType::column)
         {
             if (coords[0] != 0)
             {
@@ -216,7 +216,7 @@ namespace mpi
         T One = T(1.0);
         T Zero = T(0.0);
         
-        if constexpr (InputCommType == chase::distMultiVector::CommunicatorType::row)
+        if constexpr (InputCommType == chase::distMultiVector::CommunicatorType::column)
         {
             // Perform the matrix multiplication using BLAS
             chase::linalg::blaspp::t_gemm(CblasColMajor, 
