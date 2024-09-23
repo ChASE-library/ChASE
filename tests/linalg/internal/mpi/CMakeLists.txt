@@ -1,0 +1,1 @@
+setup_test(HEMMCPUDistTest hemm.cpp LIBRARIES chase_mpi)
