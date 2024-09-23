@@ -52,6 +52,17 @@ template<>
 struct ToDoublePrecisionTrait<std::complex<float>> {
     using Type = std::complex<double>;  // Double precision equivalent of std::complex<float>
 };
+
+template<typename T>
+typename ToSinglePrecisionTrait<T>::Type convertToSinglePrecision(const T& val) {
+    return static_cast<typename ToSinglePrecisionTrait<T>::Type>(val);
+}
+
+template<typename T>
+typename ToDoublePrecisionTrait<T>::Type convertToDoublePrecision(const T& val) {
+    return static_cast<typename ToDoublePrecisionTrait<T>::Type>(val);
+}
+
 template <class Q>
 struct Base_Class
 {
