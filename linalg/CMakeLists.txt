@@ -1,7 +1,3 @@
-#add_subdirectory(blaspp)
-#add_subdirectory(lapackpp)
-#add_subdirectory(internal/cpu)
-
 find_package(BLAS REQUIRED)
 find_package(LAPACK REQUIRED)
 
@@ -22,3 +18,5 @@ target_link_libraries(lapackpp INTERFACE LAPACK::LAPACK)
 
 add_library(linalg_internal_cpu INTERFACE)
 target_include_directories(linalg_internal_cpu INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/internal/cpu)
+
+find_package(SCALAPACK)

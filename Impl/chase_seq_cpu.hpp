@@ -50,7 +50,6 @@ public:
         A_ = chase::matrix::MatrixCPU<T>(nevex_, nevex_);
     }
 
-    //! It prevents the copy operation of the constructor of ChaseMpi.
     ChaseCPUSeq(const ChaseCPUSeq&) = delete;
 
     ~ChaseCPUSeq() {}
@@ -307,7 +306,6 @@ public:
     void QR(std::size_t fixednev, chase::Base<T> cond) override
     {
         
-
         chase::linalg::lapackpp::t_lacpy('A', 
                                           Vec2_.rows(), 
                                           locked_, 

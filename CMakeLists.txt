@@ -59,7 +59,8 @@ add_subdirectory(Impl)
 add_subdirectory(examples)
 
 add_executable( "chase_driver" tests/noinput.cpp )
-target_link_libraries(chase_driver chase_cpu)
+#target_link_libraries(chase_driver chase_cpu)
+target_link_libraries(chase_driver chase_mpi)
 target_include_directories(chase_driver PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 option(ENABLE_NSIGHT "Enable profiling with Nvidia Nsight Systems" OFF)

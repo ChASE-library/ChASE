@@ -1,10 +1,3 @@
-/* -*- Mode: C++; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
-// This file is a part of ChASE.
-// Copyright (c) 2015-2023, Simulation and Data Laboratory Quantum Materials,
-//   Forschungszentrum Juelich GmbH, Germany. All rights reserved.
-// License is 3-clause BSD:
-// https://github.com/ChASE-library/ChASE
-
 #include <iostream>
 #include <vector>
 #include <complex>
@@ -19,12 +12,10 @@
 using T = std::complex<double>;
 using namespace chase;
 
-//typedef chase::Impl::ChaseCPUSeq<T> CHASE;
-
 int main()
 {
-    std::size_t N = 1001;
-    std::size_t LDH = 1001;
+    std::size_t N = 1200;
+    std::size_t LDH = 1200;
     std::size_t nev = 80;
     std::size_t nex = 60;
     std::size_t idx_max = 3;
@@ -108,5 +99,4 @@ int main()
         }
     }
 }
-
 

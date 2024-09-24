@@ -45,6 +45,21 @@ struct MatrixTypeTrait<BlockBlockMatrix<T>> {
     static constexpr MatrixType value = MatrixType::BlockBlock;
 };
 
+template <MatrixType matrix_type, typename T>
+struct MatrixConstructorTrait;
+
+// Specialization for RedundantMatrix
+template <typename T>
+struct MatrixConstructorTrait<MatrixType::Redundant, T> {
+    using type = RedundantMatrix<T>;
+};
+
+// Specialization for BlockBlockMatrix
+template <typename T>
+struct MatrixConstructorTrait<MatrixType::BlockBlock, T> {
+    using type = BlockBlockMatrix<T>;
+};
+
 
 template <typename T, template <typename> class Derived>
 class AbstractDistMatrix {
@@ -145,14 +160,6 @@ public:
 template<typename T> 
 class RedundantMatrix : public AbstractDistMatrix<T, RedundantMatrix>
 {
-private:
-    std::size_t M_;
-    std::size_t N_;
-    std::size_t m_;
-    std::size_t n_;
-    std::size_t ld_;
-    chase::matrix::MatrixCPU<T> local_matrix_;
-    std::shared_ptr<chase::Impl::mpi::MpiGrid2DBase> mpi_grid_;
 
 public:
     ~RedundantMatrix() override {};
@@ -194,6 +201,53 @@ public:
         return mpi_grid_;
     }
 
+    template<MatrixType TargetType>
+    void redistributeImpl(typename MatrixConstructorTrait<TargetType, T>::type* targetMatrix)//,
+                            //std::size_t offset, std::size_t subsetSize)
+    {
+        if(M_ != targetMatrix->g_rows() || N_ != targetMatrix->g_cols() )
+        {
+            std::runtime_error("[RedundantMatrix]: redistribution requires original and target matrices have same global size");
+        }
+
+        if constexpr (TargetType == MatrixType::BlockBlock)
+        {
+            redistributeToBlockBlock(targetMatrix);
+        }else if constexpr (TargetType == MatrixType::Redundant)
+        {
+            std::runtime_error("[RedundantMatrix]: no need to redistribute from redundant to redundant");
+        }else if constexpr (TargetType == MatrixType::BlockCyclic)
+        {
+            std::runtime_error("[RedundantMatrix]: no support for redistribution from redundant to block-cyclic yet");
+        }
+    }
+
+private:
+    std::size_t M_;
+    std::size_t N_;
+    std::size_t m_;
+    std::size_t n_;
+    std::size_t ld_;
+
+    chase::matrix::MatrixCPU<T> local_matrix_;
+    std::shared_ptr<chase::Impl::mpi::MpiGrid2DBase> mpi_grid_;    
+
+    void redistributeToBlockBlock(BlockBlockMatrix<T>* targetMatrix)
+    {
+        std::size_t *g_offs = targetMatrix->g_offs();
+        std::size_t l_cols = targetMatrix->l_cols();
+        std::size_t l_rows = targetMatrix->l_rows();
+        #pragma omp parallel for
+        for (auto y = 0; y < l_cols; y++)
+        {
+            for (auto x = 0; x < l_rows; x++)
+            {
+                targetMatrix->l_data()[x + targetMatrix->l_ld() * y] =
+                    this->l_data()[(g_offs[1] + y) * this->l_ld() + (g_offs[0] + x)];
+            }
+        }
+        
+    }
 };
 
 
@@ -206,6 +260,8 @@ private:
     std::size_t m_;
     std::size_t n_;
     std::size_t ld_;
+    std::size_t g_offs_[2];
+
     chase::matrix::MatrixCPU<T> local_matrix_;
     std::shared_ptr<chase::Impl::mpi::MpiGrid2DBase> mpi_grid_;
 
@@ -229,6 +285,8 @@ public:
             len = std::min(M_, M_ / dims_[0] + 1);
         }
 
+        g_offs_[0] = coord_[0] * len;
+
         if (coord_[0] < dims_[0] - 1)
         {
             m_ = len;
@@ -247,6 +305,8 @@ public:
         {
             len = std::min(N_, N_ / dims_[1] + 1);
         }
+
+        g_offs_[1] = coord_[1] * len;
 
         if (coord_[1] < dims_[1] - 1)
         {
@@ -276,14 +336,40 @@ public:
         N_ = static_cast<std::size_t>(res);
 
         local_matrix_ = chase::matrix::MatrixCPU<T>(m_, n_, ld_, data);
+
+        int *coord_ = mpi_grid_.get()->get_coords();
+        int *dims_ = mpi_grid_.get()->get_dims();
+        std::size_t len;
+        if (M_ % dims_[0] == 0)
+        {
+            len = M_ / dims_[0];
+        }
+        else
+        {
+            len = std::min(M_, M_ / dims_[0] + 1);
+        }
+
+        g_offs_[0] = coord_[0] * len;
+
+        if (N_ % dims_[1] == 0)
+        {
+            len = N_ / dims_[1];
+        }
+        else
+        {
+            len = std::min(N_, N_ / dims_[1] + 1);
+        }
+
+        g_offs_[1] = coord_[1] * len;
     }
 
     std::size_t g_rows() const override { return M_;}
     std::size_t g_cols() const override { return N_;}
+    std::size_t l_ld() const override { return ld_;}
     std::size_t l_rows() const override { return m_;}
     std::size_t l_cols() const override { return n_;}
-    std::size_t l_ld() const override { return ld_;}
     T *         l_data() override { return local_matrix_.data();}
+    std::size_t *g_offs() { return g_offs_;}
 
     chase::matrix::MatrixCPU<T> loc_matrix() { return local_matrix_;}
 
@@ -296,7 +382,6 @@ public:
     {
         return mpi_grid_;
     }
-
 };
 
 

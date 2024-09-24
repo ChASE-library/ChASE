@@ -72,16 +72,9 @@ TYPED_TEST(LanczosCPUDistTest, mlanczos){
     ylen = this->N / 2;
     xoff = coords[0] * xlen;
     yoff = coords[1] * ylen;
-    
-    //distribute Clement matrix
-    for (auto x = 0; x < xlen; x++)
-    {
-        for (auto y = 0; y < ylen; y++)
-        {
-            H_.l_data()[x + xlen * y] =
-                this->Clement.data()[(xoff + x) * this->N + (yoff + y)];
-        }
-    }
+
+    auto Clement_ = chase::distMatrix::RedundantMatrix<T>(this->N, this->N, this->N, this->Clement.data(), mpi_grid);
+    Clement_.template redistributeImpl<chase::distMatrix::MatrixTypeTrait<decltype(H_)>::value>(&H_);
 
     chase::Base<T> upperb;
 
@@ -100,6 +93,7 @@ TYPED_TEST(LanczosCPUDistTest, mlanczos){
         EXPECT_GT(this->ritzv[i * this->M], 1.0 - chase::Base<T>(this->N));
         EXPECT_LT(this->ritzv[(i + 1) * this->M-1], chase::Base<T>(this->N - 1));
     }
+
     EXPECT_GT(upperb, chase::Base<T>(this->N - 1) ); //the computed upper bound should larger than the max eigenvalues
     EXPECT_LT(upperb, chase::Base<T>(5 * (this->N - 1) ) );   
 }
@@ -131,15 +125,8 @@ TYPED_TEST(LanczosCPUDistTest, lanczos) {
     xoff = coords[0] * xlen;
     yoff = coords[1] * ylen;
     
-    //distribute Clement matrix
-    for (auto x = 0; x < xlen; x++)
-    {
-        for (auto y = 0; y < ylen; y++)
-        {
-            H_.l_data()[x + xlen * y] =
-                this->Clement.data()[(xoff + x) * this->N + (yoff + y)];
-        }
-    }
+    auto Clement_ = chase::distMatrix::RedundantMatrix<T>(this->N, this->N, this->N, this->Clement.data(), mpi_grid);
+    Clement_.template redistributeImpl<chase::distMatrix::MatrixTypeTrait<decltype(H_)>::value>(&H_);
 
     chase::Base<T> upperb;
     
