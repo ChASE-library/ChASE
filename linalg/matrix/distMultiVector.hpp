@@ -237,6 +237,57 @@ public:
         return mpi_grid_;
     }
 
+    template <CommunicatorType OtherCommType>
+    void swap(DistMultiVector1D<T, OtherCommType>& other) 
+    {
+        // Check if the communicator types are the same
+        if constexpr (comm_type != OtherCommType) {
+            throw std::runtime_error("Cannot swap: Communicator types do not match.");
+        }
+
+        // Ensure both objects have the same MPI grid
+        if (mpi_grid_.get() != other.mpi_grid_.get()) {
+            throw std::runtime_error("Cannot swap: MPI grids do not match.");
+        }
+
+        std::swap(M_, other.M_);
+        std::swap(N_, other.N_);
+        std::swap(m_, other.m_);
+        std::swap(n_, other.n_);
+        std::swap(ld_, other.ld_);
+        local_matrix_.swap(other.local_matrix_);
+#ifdef ENABLE_MIXED_PRECISION
+        std::swap(this->is_single_precision_enabled_, other.is_single_precision_enabled_);
+        std::swap(this->single_precision_multivec_, other.single_precision_multivec_);
+#endif
+    }
+    //swap column i with j
+    void swap_ij(std::size_t i, std::size_t j)
+    {
+        std::vector<T> tmp(m_);
+        chase::linalg::lapackpp::t_lacpy('A',
+                                         m_,
+                                         1,
+                                         this->l_data() + i * ld_,
+                                         1,
+                                         tmp.data(),
+                                         1);
+        chase::linalg::lapackpp::t_lacpy('A',
+                                         m_,
+                                         1,
+                                         this->l_data() + j * ld_,
+                                         1,
+                                         this->l_data() + i * ld_,
+                                         1);    
+        chase::linalg::lapackpp::t_lacpy('A',
+                                         m_,
+                                         1,
+                                         tmp.data(),
+                                         1,
+                                         this->l_data() + i * ld_,
+                                         1);      
+    }
+
     template<CommunicatorType target_comm_type>
     void redistributeImpl(DistMultiVector1D<T, target_comm_type>* targetMultiVector,
                             std::size_t offset, std::size_t subsetSize) {

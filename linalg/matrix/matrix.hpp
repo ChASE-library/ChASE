@@ -48,10 +48,13 @@ public:
     {
         // Allocate memory using the allocator
         T* raw_data = allocator_.allocate(rows_ * cols_);
+        std::fill_n(raw_data, rows_ * cols_, T(0.0));
+
         data_ = std::unique_ptr<T[], std::function<void(T*)>>(
             raw_data,
             [this](T* ptr) { allocator_.deallocate(ptr, rows_ * cols_); }
         );
+
         external_data_ = nullptr; 
     }
 
