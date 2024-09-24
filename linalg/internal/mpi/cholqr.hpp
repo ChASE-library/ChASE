@@ -73,7 +73,12 @@ namespace mpi
                            V, 
                            ldv); 
 #ifdef CHASE_OUTPUT
-            std::cout << "choldegree: 1" << std::endl;
+            int grank;
+            MPI_Comm_rank(MPI_COMM_WORLD, &grank);
+            if(grank == 0)
+            {
+                std::cout << "choldegree: 1" << std::endl;
+            }
 #endif      
             return info;        
         }
@@ -167,7 +172,12 @@ namespace mpi
                            V, 
                            ldv); 
 #ifdef CHASE_OUTPUT
-            std::cout << "choldegree: 2" << std::endl;
+            int grank;
+            MPI_Comm_rank(MPI_COMM_WORLD, &grank);
+            if(grank == 0)
+            {
+                std::cout << "choldegree: 2" << std::endl;
+            }
 #endif                    
             return info;              
         }
@@ -294,7 +304,12 @@ namespace mpi
                            ldv);  
 
 #ifdef CHASE_OUTPUT
-            std::cout << "choldegree: 2, shift = " << shift << std::endl;
+            int grank;
+            MPI_Comm_rank(MPI_COMM_WORLD, &grank);
+            if(grank == 0)
+            {
+                std::cout << "choldegree: 2, shift = " << shift << std::endl;
+            }
 #endif
             return info;                        
         }

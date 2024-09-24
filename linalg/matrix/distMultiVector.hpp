@@ -28,6 +28,7 @@ enum class CommunicatorType{
     all
 };
 
+
 // Type trait to map enum CommunicatorType to its opposite
 template <CommunicatorType>
 struct OutputCommType;
@@ -42,8 +43,16 @@ struct OutputCommType<CommunicatorType::column> {
     static constexpr CommunicatorType value = CommunicatorType::row;  // Map 'column' to 'row'
 };
 
-template<typename T, CommunicatorType comm_type>
-class Block1DMatrix;
+template<typename T, CommunicatorType comm_type> 
+class DistMultiVector1D;
+
+template<typename T>
+struct ExtractFirstTemplateParameter;
+
+template<typename T, chase::distMultiVector::CommunicatorType CommType>
+struct ExtractFirstTemplateParameter<chase::distMultiVector::DistMultiVector1D<T, CommType>> {
+    using type = T;  // Extracts the first template parameter (T)
+};
 
 template <typename T, CommunicatorType comm_type, template <typename, CommunicatorType> class Derived>
 class AbstractDistMultiVector {
