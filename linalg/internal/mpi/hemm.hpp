@@ -27,7 +27,7 @@ namespace mpi
         if (input_multiVector.l_rows() != (InputCommType == chase::distMultiVector::CommunicatorType::row 
                                             ? blockMatrix.l_cols() 
                                             : blockMatrix.l_rows())) {
-            throw std::runtime_error("Dimension mismatch: Result multiVector rows must match blockMatrix rows or columns.");
+            throw std::runtime_error("Dimension mismatch: Input multiVector rows must match blockMatrix rows or columns.");
         }
 
 
