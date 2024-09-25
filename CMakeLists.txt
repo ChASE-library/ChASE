@@ -24,6 +24,7 @@ option( CHASE_OUTPUT "ChASE will provide output at each iteration")
 # Add an option to enable/disable OpenMP support
 option(CHASE_ENABLE_OPENMP "Enable OpenMP support" ON)
 option(CHASE_ENABLE_MIXED_PRECISION "Enable mixed precision support" OFF)
+option(CHASE_ENABLE_MPI_IO "Enable MPI IO to read Hamiltonian matrix from local" ON)
 
 if( CHASE_OUTPUT )
   target_compile_definitions( chase_algorithm  INTERFACE "-DCHASE_OUTPUT" )
