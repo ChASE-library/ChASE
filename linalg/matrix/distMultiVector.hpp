@@ -63,6 +63,8 @@ protected:
     using SinglePrecisionDerived = Derived<SinglePrecisionType, comm_type>;
     std::unique_ptr<SinglePrecisionDerived> single_precision_multivec_;
     bool is_single_precision_enabled_ = false; 
+    std::chrono::high_resolution_clock::time_point start, end;
+    std::chrono::duration<double> elapsed;    
 #endif    
 public:
     virtual ~AbstractDistMultiVector() = default;
@@ -76,22 +78,33 @@ public:
     virtual std::size_t l_cols() const = 0;
     virtual std::size_t l_ld() const = 0;
     virtual T *         l_data() = 0;
-
+    int grank()
+    {
+        int grank = 0;
+        MPI_Comm_rank(this->getMpiGrid()->get_comm(), &grank);
+        return grank;
+    }
 #ifdef ENABLE_MIXED_PRECISION       
     // Enable single precision for double types (and complex<double>)
     template <typename U = T, typename std::enable_if<std::is_same<U, double>::value || std::is_same<U, std::complex<double>>::value, int>::type = 0>
     void enableSinglePrecision() {
         if (!single_precision_multivec_) {
+            start = std::chrono::high_resolution_clock::now();
             single_precision_multivec_ = std::make_unique<SinglePrecisionDerived>(this->g_rows(), this->g_cols(), this->getMpiGrid_shared_ptr());
-            #pragma omp parallel for
+            #pragma omp parallel for collapse(2) schedule(static, 16)
             for (std::size_t j = 0; j < this->l_cols(); ++j) {
                 for (std::size_t i = 0; i < this->l_rows(); ++i) {
                     single_precision_multivec_->l_data()[j * single_precision_multivec_.get()->l_ld() + i] 
                                         = chase::convertToSinglePrecision(this->l_data()[j * this->l_ld() + i]);
                 }
             }
+    
             is_single_precision_enabled_ = true;
-            std::cout << "Single precision matrix enabled in AbstractDistMatrix.\n";
+            end = std::chrono::high_resolution_clock::now();
+            elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
+
+            if(this->grank() == 0)
+                std::cout << "Single precision matrix enabled in AbstractDistMultiVector in " << elapsed.count() << " s\n";
         } else {
             throw std::runtime_error("Single precision already enabled.");
         }
@@ -100,23 +113,30 @@ public:
     // Disable single precision for double types
     template <typename U = T, typename std::enable_if<std::is_same<U, double>::value || std::is_same<U, std::complex<double>>::value, int>::type = 0>
     void disableSinglePrecision(bool copyback = false) {
+        start = std::chrono::high_resolution_clock::now();
         if(copyback)
         {
             if (single_precision_multivec_) {
-                #pragma omp parallel for
+                #pragma omp parallel for collapse(2) schedule(static, 16)
                 for (std::size_t j = 0; j < this->l_cols(); ++j) {
                     for (std::size_t i = 0; i < this->l_rows(); ++i) {
                         this->l_data()[j * this->l_ld() + i] = 
                                 chase::convertToDoublePrecision<T>(single_precision_multivec_->l_data()[j * single_precision_multivec_.get()->l_ld() + i]);
                     }
                 }
-                single_precision_multivec_.reset();  // Free the single precision memory
-                is_single_precision_enabled_ = false;
-                std::cout << "Single precision matrix disabled in AbstractDistMatrix.\n";
             } else {
                 throw std::runtime_error("Single precision is not enabled.");
             }
         }
+
+        end = std::chrono::high_resolution_clock::now();
+        elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
+
+        if(this->grank() == 0)
+            std::cout << "Single precision matrix disabled in AbstractDistMultiVector in " << elapsed.count() << " s\n"; 
+               
+        single_precision_multivec_.reset();  // Free the single precision memory
+        is_single_precision_enabled_ = false;
     }
 
     // Check if single precision is enabled

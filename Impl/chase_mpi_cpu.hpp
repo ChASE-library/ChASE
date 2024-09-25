@@ -191,33 +191,129 @@ public:
             next_ = NextOp::bAc;
         }
         chase::linalg::internal::mpi::shiftDiagonal(*Hmat_, c);
+
+#ifdef ENABLE_MIXED_PRECISION
+        if constexpr (std::is_same<T, double>::value || std::is_same<T, std::complex<double>>::value)
+        {
+            auto min = *std::min_element(resid_->l_data() + locked_, resid_->l_data() + nev_);
+            bool shouldEnableSP = (min > 1e-3 && !isunshift);
+            auto updatePrecision = [&](auto& mat, bool copyback = false) {
+                if (shouldEnableSP) {
+                    mat->enableSinglePrecision();
+                } else if (mat->isSinglePrecisionEnabled()) {
+                    mat->disableSinglePrecision(copyback);
+                }
+            };
+
+            // Update precision for all matrices
+            updatePrecision(Hmat_);
+            updatePrecision(V1_, true);  // Special case for V1_
+            updatePrecision(W1_);
+
+            // Message on enabling single precision
+            if (shouldEnableSP && my_rank_ == 0 && !isunshift) {
+                std::cout << "Enable Single Precision in Filter" << std::endl;
+            }
+            
+        }
+#endif        
     }
 
     void HEMM(std::size_t block, T alpha, T beta, std::size_t offset) override 
     {
-        if (next_ == NextOp::bAc)
+#ifdef ENABLE_MIXED_PRECISION
+        if constexpr (std::is_same<T, double>::value || std::is_same<T, std::complex<double>>::value)
         {
-            chase::linalg::internal::mpi::BlockBlockMultiplyMultiVectors(&alpha, 
-                                                                         *Hmat_, 
-                                                                         *V1_, 
-                                                                         &beta, 
-                                                                         *W1_, 
-                                                                         offset + locked_, 
-                                                                         block);
-            next_ = NextOp::cAb;
-        }
-        else
-        {
-            chase::linalg::internal::mpi::BlockBlockMultiplyMultiVectors(&alpha, 
-                                                                         *Hmat_, 
-                                                                         *W1_, 
-                                                                         &beta, 
-                                                                         *V1_, 
-                                                                         offset + locked_, 
-                                                                         block);            
-            next_ = NextOp::bAc;
+            using singlePrecisionT = typename chase::ToSinglePrecisionTrait<T>::Type;
+            auto min = *std::min_element(resid_->l_data() + locked_, resid_->l_data() + nev_);
+            
+            if(min > 1e-3)
+            {
+                auto Hmat_sp = Hmat_->getSinglePrecisionMatrix();
+                auto V1_sp = V1_->getSinglePrecisionMatrix();
+                auto W1_sp = W1_->getSinglePrecisionMatrix();
+                singlePrecisionT alpha_sp = static_cast<singlePrecisionT>(alpha);
+                singlePrecisionT beta_sp = static_cast<singlePrecisionT>(beta);  
 
-        }
+                if (next_ == NextOp::bAc)
+                {
+                    chase::linalg::internal::mpi::BlockBlockMultiplyMultiVectors<singlePrecisionT>(&alpha_sp, 
+                                                                                *Hmat_sp, 
+                                                                                *V1_sp, 
+                                                                                &beta_sp, 
+                                                                                *W1_sp, 
+                                                                                offset + locked_, 
+                                                                                block);
+                    next_ = NextOp::cAb;
+                }
+                else
+                {
+                    chase::linalg::internal::mpi::BlockBlockMultiplyMultiVectors<singlePrecisionT>(&alpha_sp, 
+                                                                                *Hmat_sp, 
+                                                                                *W1_sp, 
+                                                                                &beta_sp, 
+                                                                                *V1_sp, 
+                                                                                offset + locked_, 
+                                                                                block);            
+                    next_ = NextOp::bAc;
+
+                }                              
+            }
+            else
+            {
+                if (next_ == NextOp::bAc)
+                {
+                    chase::linalg::internal::mpi::BlockBlockMultiplyMultiVectors(&alpha, 
+                                                                                *Hmat_, 
+                                                                                *V1_, 
+                                                                                &beta, 
+                                                                                *W1_, 
+                                                                                offset + locked_, 
+                                                                                block);
+                    next_ = NextOp::cAb;
+                }
+                else
+                {
+                    chase::linalg::internal::mpi::BlockBlockMultiplyMultiVectors(&alpha, 
+                                                                                *Hmat_, 
+                                                                                *W1_, 
+                                                                                &beta, 
+                                                                                *V1_, 
+                                                                                offset + locked_, 
+                                                                                block);            
+                    next_ = NextOp::bAc;
+
+                }                
+            }
+        }        
+        else
+#endif
+        {
+            if (next_ == NextOp::bAc)
+            {
+                chase::linalg::internal::mpi::BlockBlockMultiplyMultiVectors(&alpha, 
+                                                                            *Hmat_, 
+                                                                            *V1_, 
+                                                                            &beta, 
+                                                                            *W1_, 
+                                                                            offset + locked_, 
+                                                                            block);
+                next_ = NextOp::cAb;
+            }
+            else
+            {
+                chase::linalg::internal::mpi::BlockBlockMultiplyMultiVectors(&alpha, 
+                                                                            *Hmat_, 
+                                                                            *W1_, 
+                                                                            &beta, 
+                                                                            *V1_, 
+                                                                            offset + locked_, 
+                                                                            block);            
+                next_ = NextOp::bAc;
+
+            }                
+                    
+        }    
     }
 
     void QR(std::size_t fixednev, chase::Base<T> cond) override 

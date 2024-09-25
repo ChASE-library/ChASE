@@ -6,6 +6,7 @@
 #include <stdexcept>               // For throwing runtime errors
 #include <omp.h>                   // For OpenMP parallelization
 #include <mpi.h>
+#include <chrono>
 
 #include "algorithm/types.hpp"
 #include "linalg/matrix/matrix.hpp"
@@ -72,6 +73,8 @@ protected:
     using SinglePrecisionDerived = Derived<SinglePrecisionType>;
     std::unique_ptr<SinglePrecisionDerived> single_precision_matrix_;
     bool is_single_precision_enabled_ = false; 
+    std::chrono::high_resolution_clock::time_point start, end;
+    std::chrono::duration<double> elapsed;
 #endif
 
 public:
@@ -88,11 +91,18 @@ public:
     virtual std::size_t l_cols() const = 0;
     virtual std::size_t l_ld() const = 0;
     virtual T *         l_data() = 0;
+    int grank()
+    {
+        int grank = 0;
+        MPI_Comm_rank(this->getMpiGrid()->get_comm(), &grank);
+        return grank;
+    }
 #ifdef ENABLE_MIXED_PRECISION       
     // Enable single precision for double types (and complex<double>)
     template <typename U = T, typename std::enable_if<std::is_same<U, double>::value || std::is_same<U, std::complex<double>>::value, int>::type = 0>
     void enableSinglePrecision() {
         if (!single_precision_matrix_) {
+            start = std::chrono::high_resolution_clock::now();
             single_precision_matrix_ = std::make_unique<SinglePrecisionDerived>(this->g_rows(), this->g_cols(), this->getMpiGrid_shared_ptr());
             #pragma omp parallel for
             for (std::size_t j = 0; j < this->l_cols(); ++j) {
@@ -102,7 +112,11 @@ public:
                 }
             }
             is_single_precision_enabled_ = true;
-            std::cout << "Single precision matrix enabled in AbstractDistMatrix.\n";
+            end = std::chrono::high_resolution_clock::now();
+            elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
+
+            if(this->grank() == 0)
+                std::cout << "Single precision matrix enabled in AbstractDistMatrix in " << elapsed.count() << " s\n";
         } else {
             throw std::runtime_error("Single precision already enabled.");
         }
@@ -111,6 +125,7 @@ public:
     // Disable single precision for double types
     template <typename U = T, typename std::enable_if<std::is_same<U, double>::value || std::is_same<U, std::complex<double>>::value, int>::type = 0>
     void disableSinglePrecision(bool copyback = false) {
+        start = std::chrono::high_resolution_clock::now();
         if(copyback)
         {
             if (single_precision_matrix_) {
@@ -121,13 +136,18 @@ public:
                                 chase::convertToDoublePrecision<T>(single_precision_matrix_->l_data()[j * single_precision_matrix_.get()->l_ld() + i]);
                     }
                 }
-                single_precision_matrix_.reset();  // Free the single precision memory
-                is_single_precision_enabled_ = false;
-                std::cout << "Single precision matrix disabled in AbstractDistMatrix.\n";
             } else {
                 throw std::runtime_error("Single precision is not enabled.");
             }
         }
+        end = std::chrono::high_resolution_clock::now();
+        elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
+
+        if(this->grank() == 0)
+            std::cout << "Single precision matrix disabled in AbstractDistMatrix in " << elapsed.count() << " s\n";
+        single_precision_matrix_.reset();  // Free the single precision memory
+        is_single_precision_enabled_ = false;
+
     }
 
     // Check if single precision is enabled
@@ -387,7 +407,8 @@ public:
 
         if(MPI_File_open(this->mpi_grid_.get()->get_comm(), filename.data(), MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &fileHandle) != MPI_SUCCESS)
         {
-            std::cout << "Can't open input matrix - " << filename << std::endl;
+            if(this->grank() == 0)
+                std::cout << "Can't open input matrix - " << filename << std::endl;
             MPI_Abort(this->mpi_grid_.get()->get_comm(), EXIT_FAILURE);
         }
 
@@ -426,7 +447,8 @@ public:
 
         if(MPI_File_open(this->mpi_grid_.get()->get_comm(), filename.data(), access_mode, MPI_INFO_NULL, &fileHandle) != MPI_SUCCESS)
         {
-            std::cout << "Can't open input matrix - " << filename << std::endl;
+            if(this->grank() == 0)
+                std::cout << "Can't open input matrix - " << filename << std::endl;
             MPI_Abort(this->mpi_grid_.get()->get_comm(), EXIT_FAILURE);
         }
 
@@ -454,12 +476,12 @@ public:
             MPI_Abort(this->mpi_grid_.get()->get_comm(), EXIT_FAILURE);
         }
 #else
-        std::ifstream file(filename, std::ios::binary | std::ios::in);
-        if (!file.is_open()) {
+	    std::ifstream input(filename.data(), std::ios::binary);	
+        if (!input.is_open()) {
             throw std::runtime_error("[BlockBlockMatrix]: Failed to open file for reading.");
         }
         
-        if (this->data() == nullptr) {
+        if (this->l_data() == nullptr) {
             throw std::runtime_error("[BlockBlockMatrix]: Original data is not initialized.");
         }
 
