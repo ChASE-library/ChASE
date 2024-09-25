@@ -23,6 +23,12 @@ target_include_directories( chase_mpi INTERFACE
 target_include_directories(chase_mpi INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_definitions(chase_mpi INTERFACE NO_MPI=0 )
 
+if(CHASE_ENABLE_MIXED_PRECISION)
+    target_compile_definitions( chase_mpi INTERFACE
+	    "-DUSE_MPI_IO"
+	)
+endif()
+
 target_link_libraries(chase_mpi INTERFACE MPI::MPI_CXX)
 if(TARGET scalapackpp)
   message("ScaLAPACK is enabled in ChASE-MPI")

@@ -186,7 +186,7 @@ namespace mpi
     }
 
     template<typename T>
-    int shiftedcholQR2(std::size_t m, std::size_t n, T *V, int ldv, MPI_Comm comm, T *A = nullptr)
+    int shiftedcholQR2(std::size_t N, std::size_t m, std::size_t n, T *V, int ldv, MPI_Comm comm, T *A = nullptr)
     { 
         Base<T> shift;
         T one = T(1.0);
@@ -219,7 +219,7 @@ namespace mpi
                       comm);           
         Base<T> nrmf = 0.0;
         chase::linalg::internal::cpu::computeDiagonalAbsSum(n, n, A, n, &nrmf);
-        shift = std::sqrt(m) * nrmf * std::numeric_limits<Base<T>>::epsilon();
+        shift = std::sqrt(N) * nrmf * std::numeric_limits<Base<T>>::epsilon();
         chase::linalg::internal::cpu::shiftMatrixDiagonal(n, n, A, n, (T)shift);
         info = lapackpp::t_potrf('U', 
                                  n, 

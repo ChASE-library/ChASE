@@ -11,6 +11,7 @@
 #include "linalg/matrix/matrix.hpp"
 #include "linalg/scalapackpp/scalapackpp.hpp"
 #include "Impl/mpi/mpiGrid2D.hpp"
+#include "Impl/mpi/mpiTypes.hpp"
 
 namespace chase {
 namespace distMatrix {
@@ -208,7 +209,7 @@ public:
     {
         if(M_ != targetMatrix->g_rows() || N_ != targetMatrix->g_cols() )
         {
-            std::runtime_error("[RedundantMatrix]: redistribution requires original and target matrices have same global size");
+            throw std::runtime_error("[RedundantMatrix]: redistribution requires original and target matrices have same global size");
         }
 
         if constexpr (TargetType == MatrixType::BlockBlock)
@@ -216,10 +217,10 @@ public:
             redistributeToBlockBlock(targetMatrix);
         }else if constexpr (TargetType == MatrixType::Redundant)
         {
-            std::runtime_error("[RedundantMatrix]: no need to redistribute from redundant to redundant");
+            throw std::runtime_error("[RedundantMatrix]: no need to redistribute from redundant to redundant");
         }else if constexpr (TargetType == MatrixType::BlockCyclic)
         {
-            std::runtime_error("[RedundantMatrix]: no support for redistribution from redundant to block-cyclic yet");
+            throw std::runtime_error("[RedundantMatrix]: no support for redistribution from redundant to block-cyclic yet");
         }
     }
 
@@ -379,6 +380,99 @@ public:
     {
         return mpi_grid_;
     }
+
+    void saveToBinaryFile(const std::string& filename) {
+    	MPI_File fileHandle;
+        MPI_Status status;
+
+        if(MPI_File_open(this->mpi_grid_.get()->get_comm(), filename.data(), MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &fileHandle) != MPI_SUCCESS)
+        {
+            std::cout << "Can't open input matrix - " << filename << std::endl;
+            MPI_Abort(this->mpi_grid_.get()->get_comm(), EXIT_FAILURE);
+        }
+
+
+        if (this->l_data() == nullptr) {
+            throw std::runtime_error("[BlockBlockMatrix]: Original data is not initialized.");
+        }
+
+        MPI_Count count_write = m_ * n_;
+
+        MPI_Datatype subarray;
+        int global_matrix_size[] = {(int)M_, (int)N_};
+        int local_matrix_size[] = {(int)m_,(int)n_};
+        int offsets[] = {(int)g_offs_[0], (int)g_offs_[1]};
+
+        MPI_Type_create_subarray(2, global_matrix_size, local_matrix_size, offsets, MPI_ORDER_FORTRAN, chase::mpi::getMPI_Type<T>(), &subarray);
+        MPI_Type_commit(&subarray);
+
+        MPI_File_set_view(fileHandle, 0, chase::mpi::getMPI_Type<T>(), subarray, "native", MPI_INFO_NULL);
+        MPI_File_write_all(fileHandle, this->l_data(), count_write, chase::mpi::getMPI_Type<T>(), &status);
+
+        MPI_Type_free(&subarray);
+
+    	if (MPI_File_close(&fileHandle) != MPI_SUCCESS)
+    	{
+            MPI_Abort(this->mpi_grid_.get()->get_comm(), EXIT_FAILURE);
+        }
+    }
+
+    // Read matrix data from a binary file
+    void readFromBinaryFile(const std::string& filename) {
+#ifdef USE_MPI_IO	    
+	    MPI_File fileHandle;
+        MPI_Status status;
+        int access_mode = MPI_MODE_RDONLY;
+
+        if(MPI_File_open(this->mpi_grid_.get()->get_comm(), filename.data(), access_mode, MPI_INFO_NULL, &fileHandle) != MPI_SUCCESS)
+        {
+            std::cout << "Can't open input matrix - " << filename << std::endl;
+            MPI_Abort(this->mpi_grid_.get()->get_comm(), EXIT_FAILURE);
+        }
+
+        if (this->l_data() == nullptr) {
+            throw std::runtime_error("[BlockBlockMatrix]: Original data is not initialized.");
+        }
+
+        MPI_Count count_read = m_ * n_;
+
+        MPI_Datatype subarray;
+        int global_matrix_size[] = {(int)M_, (int)N_};
+        int local_matrix_size[] = {(int)m_,(int)n_};
+        int offsets[] = {(int)g_offs_[0], (int)g_offs_[1]};
+
+	    MPI_Type_create_subarray(2, global_matrix_size, local_matrix_size, offsets, MPI_ORDER_FORTRAN, chase::mpi::getMPI_Type<T>(), &subarray);
+        MPI_Type_commit(&subarray);
+
+        MPI_File_set_view(fileHandle, 0, chase::mpi::getMPI_Type<T>(), subarray, "native", MPI_INFO_NULL);
+        MPI_File_read_all(fileHandle, this->l_data(), count_read, chase::mpi::getMPI_Type<T>(), &status);
+
+        MPI_Type_free(&subarray);
+    
+        if (MPI_File_close(&fileHandle) != MPI_SUCCESS)
+        {
+            MPI_Abort(this->mpi_grid_.get()->get_comm(), EXIT_FAILURE);
+        }
+#else
+        std::ifstream file(filename, std::ios::binary | std::ios::in);
+        if (!file.is_open()) {
+            throw std::runtime_error("[BlockBlockMatrix]: Failed to open file for reading.");
+        }
+        
+        if (this->data() == nullptr) {
+            throw std::runtime_error("[BlockBlockMatrix]: Original data is not initialized.");
+        }
+
+        for (std::size_t y = 0; y < n_; y++)
+        {
+            input.seekg(((g_offs_[0]) + M_ * (g_offs_[1] + y)) * sizeof(T));
+            input.read(reinterpret_cast<char*>(this->l_data() + ld_ * y), m_ * sizeof(T));
+        }
+        
+        input.close();
+#endif
+    }
+
 #ifdef HAS_SCALAPACK
     std::size_t *get_scalapack_desc(){ return desc_; }
 #endif

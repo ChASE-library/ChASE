@@ -119,7 +119,7 @@ TYPED_TEST(CHOLQRCPUDistTest, scholQR) {
 
     auto machineEpsilon = MachineEpsilon<T>::value();
     read_vectors(V.data(), GetQRFileName<T>() + "cond_ill.bin", xoff, xlen, this->N, this->n, 0);
-    int info = chase::linalg::internal::mpi::shiftedcholQR2<T>(xlen, this->n, V.data(), xlen, MPI_COMM_WORLD);
+    int info = chase::linalg::internal::mpi::shiftedcholQR2<T>(this->N, xlen, this->n, V.data(), xlen, MPI_COMM_WORLD);
     ASSERT_EQ(info, 0);
     auto orth = orthogonality<T>(xlen, this->n, V.data(), xlen, MPI_COMM_WORLD);
     ASSERT_NEAR(orth, machineEpsilon, machineEpsilon * 10);

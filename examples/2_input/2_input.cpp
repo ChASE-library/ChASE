@@ -8,7 +8,11 @@
 #include "popl.hpp"
 
 #include "algorithm/performance.hpp"
+#ifdef USE_MPI
+#include "Impl/chase_mpi_cpu.hpp"
+#else
 #include "Impl/chase_seq_cpu.hpp"
+#endif
 
 using namespace popl;
 
@@ -82,16 +86,27 @@ int do_chase(ChASE_DriverProblemConfig& conf)
     std::string spin = conf.spin;
 
     std::cout << std::setprecision(16);
-
-    auto V__ = std::unique_ptr<T[]>(new T[N * (nev + nex)]);
     auto Lambda__ = std::unique_ptr<chase::Base<T>[]>(new chase::Base<T>[(nev + nex)]);
+    chase::Base<T>* Lambda = Lambda__.get();
+    int grank = 0;
+#ifdef USE_MPI
+    MPI_Comm_rank(MPI_COMM_WORLD, &grank);
+    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
+        = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(MPI_COMM_WORLD);
+
+    auto Hmat = chase::distMatrix::BlockBlockMatrix<T>(N, N, mpi_grid);
+    auto Vec = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column>(N, nev + nex, mpi_grid);
+    T *H = Hmat.l_data();   
+    chase::Impl::ChaseMPICPU<T> single(nev, nex, &Hmat, &Vec, Lambda);
+#else
+    auto V__ = std::unique_ptr<T[]>(new T[N * (nev + nex)]);
     auto H__ = std::unique_ptr<T[]>(new T[N * N]);
 
     T* V = V__.get();
-    chase::Base<T>* Lambda = Lambda__.get();
-    T *H = H__.get();
+    T *H = H__.get();   
 
     chase::Impl::ChaseCPUSeq<T> single(N, nev, nex, H, N, V, N, Lambda);
+#endif
 
     chase::ChaseConfig<T>& config = single.GetConfig();
     config.SetTol(tol);
@@ -129,7 +144,8 @@ int do_chase(ChASE_DriverProblemConfig& conf)
 
         if(!isMatGen)
         {
-            std::cout << "start reading matrix\n";
+            if(grank == 0)
+                std::cout << "start reading matrix\n";
 
             std::ostringstream problem(std::ostringstream::ate);
                 
@@ -149,26 +165,44 @@ int do_chase(ChASE_DriverProblemConfig& conf)
             {
                 problem << path_in;
             }
-
-            std::cout << "Reading matrix: "<< problem.str() << std::endl;
+            
+            if(grank == 0)
+                std::cout << "Reading matrix: "<< problem.str() << std::endl;
+            
             single.loadProblemFromFile(problem.str());
         }
         else
         {
- 	
-            std::cout << "start generating matrix\n";
+ 	        if(grank == 0)
+                std::cout << "start generating matrix\n";
 
+            std::size_t xoff, yoff, xlen, ylen, ld;
+
+#ifdef USE_MPI
+            std::size_t *g_offs = Hmat.g_offs();
+            xoff = g_offs[0];
+            yoff = g_offs[1];
+            xlen = Hmat.l_rows();
+            ylen = Hmat.l_cols();
+            ld = Hmat.l_ld();
+#else
+            xoff = 0;
+            yoff = 0;
+            xlen = N;
+            ylen = N;
+            ld = N;
+#endif
             chase::Base<T> epsilon = 1e-4;
             chase::Base<T>* eigenv = new chase::Base<T>[N];
-            for (std::size_t i = 0; i < N; i++) {
-                for (std::size_t j = 0; j < N; j++) {
-                    if (i == j) {
-                        H[i * N + j] =  dmax * (epsilon + (chase::Base<T>)(j) * (1.0 - epsilon) / (chase::Base<T>)N);
+            for (std::size_t i = 0; i < ylen; i++) {
+                for (std::size_t j = 0; j < xlen; j++) {
+                    if (xoff + j == (i + yoff)) {
+                        H[i * ld + j] =  dmax * (epsilon + (chase::Base<T>)(xoff + j) * (1.0 - epsilon) / (chase::Base<T>)N);
                     }else{
-                        H[i * N + j] = T(0.0);
+                        H[i * ld + j] = T(0.0);
                     }
                 }
-            }    	    
+            }   	    
         }
 
         end = std::chrono::high_resolution_clock::now();
@@ -176,8 +210,11 @@ int do_chase(ChASE_DriverProblemConfig& conf)
         elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(
             end - start);
 
-        std::cout << "matrix are loaded in " << elapsed.count()
-                << " seconds" << std::endl;
+        if(grank == 0)
+        {
+            std::cout << "matrix are loaded in " << elapsed.count()
+                    << " seconds" << std::endl;
+        }
 
         if(!single.checkSymmetryEasy())
         {
@@ -187,35 +224,43 @@ int do_chase(ChASE_DriverProblemConfig& conf)
         chase::PerformanceDecoratorChase<T> performanceDecorator(&single);
 
         chase::Solve(&performanceDecorator);
-
-        std::cout << " ChASE timings: "
-                    << "\n";
-        performanceDecorator.GetPerfData().print(N);
+        
+        if(grank == 0)
+        {        
+            std::cout << " ChASE timings: "
+                        << "\n";
+            performanceDecorator.GetPerfData().print(N);
 #ifdef PRINT_EIGENVALUES
-        chase::Base<T>* resid = single.GetResid();
-        std::cout << "Finished Problem \n";
-        std::cout << "Printing first 5 eigenvalues and residuals\n";
-        std::cout
-            << "| Index |       Eigenvalue      |         Residual      |\n"
-            << "|-------|-----------------------|-----------------------|"
-                "\n";
-        std::size_t width = 20;
-        std::cout << std::setprecision(12);
-        std::cout << std::setfill(' ');
-        std::cout << std::scientific;
-        std::cout << std::right;
-        for (auto i = 0; i < std::min(std::size_t(5), nev); ++i)
-            std::cout << "|  " << std::setw(4) << i + 1 << " | "
-                        << std::setw(width) << Lambda[i] << "  | "
-                        << std::setw(width) << resid[i] << "  |\n";
-        std::cout << "\n\n\n";
+            chase::Base<T>* resid = single.GetResid();
+            std::cout << "Finished Problem \n";
+            std::cout << "Printing first 5 eigenvalues and residuals\n";
+            std::cout
+                << "| Index |       Eigenvalue      |         Residual      |\n"
+                << "|-------|-----------------------|-----------------------|"
+                    "\n";
+            std::size_t width = 20;
+            std::cout << std::setprecision(12);
+            std::cout << std::setfill(' ');
+            std::cout << std::scientific;
+            std::cout << std::right;
+            for (auto i = 0; i < std::min(std::size_t(5), nev); ++i)
+                std::cout << "|  " << std::setw(4) << i + 1 << " | "
+                            << std::setw(width) << Lambda[i] << "  | "
+                            << std::setw(width) << resid[i] << "  |\n";
+            std::cout << "\n\n\n";
 #endif
+        }
     }
+
     return 0;
 }
 
 int main(int argc, char* argv[])
 {
+#ifdef USE_MPI
+    MPI_Init(&argc, &argv);
+#endif
+
     ChASE_DriverProblemConfig conf;
 
     popl::OptionParser desc("ChASE options");
@@ -346,6 +391,10 @@ int main(int argc, char* argv[])
     {
         std::cout << "single not implemented\n";
     }
+
+#ifdef USE_MPI
+    MPI_Finalize();
+#endif
 
     return 0;
 }

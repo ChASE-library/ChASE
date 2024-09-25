@@ -78,7 +78,9 @@ public:
     int get_nprocs() override { return nprocs_; }
 
     void loadProblemFromFile(std::string filename)
-    {}
+    {
+        Hmat_->readFromBinaryFile(filename);
+    }
 
 #ifdef CHASE_OUTPUT
     //! Print some intermediate infos during the solving procedure
@@ -266,7 +268,8 @@ public:
 
             if (cond > cond_threshold_upper)
             {
-                info = chase::linalg::internal::mpi::shiftedcholQR2(V1_->l_rows(), 
+                info = chase::linalg::internal::mpi::shiftedcholQR2(V1_->g_rows(),
+                                                                    V1_->l_rows(), 
                                                                     V1_->l_cols(), 
                                                                     V1_->l_data(),  
                                                                     V1_->l_ld(), 
@@ -279,8 +282,7 @@ public:
                                                              V1_->l_cols(), 
                                                              V1_->l_data(),  
                                                              V1_->l_ld(), 
-                                                             V1_->getMpiGrid()->get_col_comm(),
-                                                             A_->l_data());
+                                                             V1_->getMpiGrid()->get_col_comm());
             }
             else
             {
