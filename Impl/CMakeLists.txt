@@ -28,5 +28,4 @@ if(TARGET scalapackpp)
   message("ScaLAPACK is enabled in ChASE-MPI")
   target_link_libraries(chase_mpi INTERFACE scalapackpp)
   target_compile_definitions(chase_mpi INTERFACE HAS_SCALAPACK=1 )
-
 endif()
