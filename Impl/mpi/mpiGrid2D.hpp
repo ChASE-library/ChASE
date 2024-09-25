@@ -21,9 +21,11 @@ public:
     virtual int* get_coords() = 0;
     virtual int* get_dims() = 0;
     virtual GridMajor getGridMajor() const = 0;
+#ifdef HAS_SCALAPACK
     virtual int get_blacs_colcomm_ctxt() = 0;
     virtual int get_blacs_rowcomm_ctxt() = 0;
-    virtual int get_blacs_comm2D_ctxt() = 0;    
+    virtual int get_blacs_comm2D_ctxt() = 0;  
+#endif      
 };
 
 // Templated MpiGrid2D class
