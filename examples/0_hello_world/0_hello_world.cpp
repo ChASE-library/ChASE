@@ -22,7 +22,7 @@ int main(int argc, char** argv)
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);  
 
     std::size_t N = 1200;
-    std::size_t nev = 120;
+    std::size_t nev = 80;
     std::size_t nex = 60;
     std::size_t idx_max = 3;
     Base<T> perturb = 1e-4;

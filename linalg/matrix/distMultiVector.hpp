@@ -198,6 +198,9 @@ public:
         ld_ = m_;
 
         local_matrix_ = chase::matrix::MatrixCPU<T>(m_, n_);
+#ifdef HAS_SCALAPACK
+        scalapack_descriptor_init();
+#endif          
     }
 
     DistMultiVector1D(std::size_t m, std::size_t n, std::size_t ld, T *data,
@@ -226,6 +229,9 @@ public:
         M_ = static_cast<std::size_t>(res);
 
         local_matrix_ = chase::matrix::MatrixCPU<T>(m_, n_, ld_, data);
+#ifdef HAS_SCALAPACK
+        scalapack_descriptor_init();
+#endif        
     }    
 
     DistributionType getMultiVectorDistributionType() const override {
@@ -330,6 +336,9 @@ public:
     std::size_t l_ld() const override { return ld_;}
     T *         l_data() override { return local_matrix_.data();}
     chase::matrix::MatrixCPU<T> loc_matrix() { return local_matrix_;}
+#ifdef HAS_SCALAPACK
+    std::size_t *get_scalapack_desc(){ return desc_; }
+#endif    
 
 private:
     std::size_t M_;
@@ -339,7 +348,47 @@ private:
     std::size_t ld_;
     chase::matrix::MatrixCPU<T> local_matrix_;
     std::shared_ptr<chase::Impl::mpi::MpiGrid2DBase> mpi_grid_;
+#ifdef HAS_SCALAPACK
+    std::size_t desc_[9];
+    
+    void scalapack_descriptor_init()
+    {
+        if constexpr (comm_type ==  CommunicatorType::column)
+        {
+            std::size_t mb = m_;
+            int *coords = mpi_grid_.get()->get_coords();
+            int *dims = mpi_grid_.get()->get_dims();
 
+            if (coords[0] == dims[0] - 1 && dims[0] != 1)
+            {
+                mb = (M_ - m_) / (dims[0] - 1);
+            }
+
+            std::size_t default_blocksize = 64;
+            std::size_t nb = std::min(n_, default_blocksize);
+            int zero = 0;
+            int one = 1;
+            int info;
+            int colcomm1D_ctxt = mpi_grid_.get()->get_blacs_colcomm_ctxt();
+            chase::linalg::scalapackpp::t_descinit(desc_, 
+                                                  &M_, 
+                                                  &N_, 
+                                                  &mb, 
+                                                  &nb, 
+                                                  &zero, 
+                                                  &zero,
+                                                  &colcomm1D_ctxt, 
+                                                  &ld_, 
+                                                  &info);
+
+
+        }else
+        {
+            //row based will be implemented later
+        }
+    }
+
+#endif
     void redistributeRowToColumn(DistMultiVector1D<T, CommunicatorType::column>* targetMultiVector,
                                     std::size_t offset, std::size_t subsetSize) {
         // Ensure the dimensions are compatible

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "mpi.h"
-
+#include "linalg/scalapackpp/scalapackpp.hpp"
 namespace chase {
 namespace Impl {
 namespace mpi {
@@ -21,6 +21,9 @@ public:
     virtual int* get_coords() = 0;
     virtual int* get_dims() = 0;
     virtual GridMajor getGridMajor() const = 0;
+    virtual int get_blacs_colcomm_ctxt() = 0;
+    virtual int get_blacs_rowcomm_ctxt() = 0;
+    virtual int get_blacs_comm2D_ctxt() = 0;    
 };
 
 // Templated MpiGrid2D class
@@ -33,6 +36,8 @@ public:
         dims_[0] = row_dim;
         dims_[1] = col_dim;
         MPI_Comm_size(comm_, &nprocs_);
+        MPI_Comm_rank(comm_, &myrank_);
+
         create2DGrid();
     }
 
@@ -40,6 +45,8 @@ public:
         : comm_(comm) {
         MPI_Comm_size(comm_, &nprocs_);
         MPI_Dims_create(nprocs_, 2, dims_);
+        MPI_Comm_rank(comm_, &myrank_);
+       
         create2DGrid();
     }
 
@@ -74,6 +81,12 @@ public:
     int* get_coords() override { return coords_; }
     int* get_dims() override { return dims_; }
     GridMajor getGridMajor() const override { return MajorOrder; }
+
+#ifdef HAS_SCALAPACK
+    int get_blacs_colcomm_ctxt() override { return colComm1D_ctxt_; }
+    int get_blacs_rowcomm_ctxt() override { return rowComm1D_ctxt_; }
+    int get_blacs_comm2D_ctxt() override { return comm2D_ctxt_; }
+#endif
 
 private:
     void create2DGrid() {
@@ -117,6 +130,44 @@ private:
         MPI_Comm_size(col_comm_, &col_procs_);
 
         MPI_Comm_free(&cartComm);
+
+#ifdef HAS_SCALAPACK
+        int zero = 0;
+        int one = 1;
+        int ictxt;
+        chase::linalg::scalapackpp::blacs_get_(&zero, &zero, &ictxt);
+        colComm1D_ctxt_ = ictxt;
+        int userMap[dims_[0]];
+        if(MajorOrder == GridMajor::ColMajor)
+        {
+            for (int i = 0; i < dims_[0]; i++)
+            {
+                userMap[i] = (myrank_ / dims_[0]) * dims_[0] + i;
+            }
+
+        }else
+        {
+            for (int i = 0; i < dims_[0]; i++)
+            {
+                userMap[i] = (myrank_ % dims_[1]) + dims_[1] * i;
+            }
+        }
+
+        chase::linalg::scalapackpp::blacs_gridmap_(&colComm1D_ctxt_, userMap, &dims_[0], &dims_[0], &one);
+
+        int ictxt_2;
+        chase::linalg::scalapackpp::blacs_get_(&zero, &zero, &ictxt_2);
+        comm2D_ctxt_ = ictxt_2;
+        if (MajorOrder == GridMajor::RowMajor){
+            char major = 'R';
+            chase::linalg::scalapackpp::blacs_gridinit_(&comm2D_ctxt_, &major, &dims_[0], &dims_[1]);
+        }else
+        {
+            char major = 'C';
+            chase::linalg::scalapackpp::blacs_gridinit_(&comm2D_ctxt_, &major, &dims_[0], &dims_[1]);          
+        }
+#endif
+
     }
 
     MPI_Comm comm_;
@@ -127,6 +178,13 @@ private:
     int row_procs_;
     int col_procs_;
     int nprocs_;
+    int myrank_;
+#ifdef HAS_SCALAPACK
+    int comm2D_ctxt_;
+    int colComm1D_ctxt_;
+    int rowComm1D_ctxt_; //impl to be added later
+#endif
+
 };
 
 } // namespace mpi

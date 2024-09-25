@@ -9,6 +9,7 @@
 
 #include "algorithm/types.hpp"
 #include "linalg/matrix/matrix.hpp"
+#include "linalg/scalapackpp/scalapackpp.hpp"
 #include "Impl/mpi/mpiGrid2D.hpp"
 
 namespace chase {
@@ -254,16 +255,6 @@ private:
 template<typename T> 
 class BlockBlockMatrix : public AbstractDistMatrix<T, BlockBlockMatrix>
 {
-private:
-    std::size_t M_;
-    std::size_t N_;
-    std::size_t m_;
-    std::size_t n_;
-    std::size_t ld_;
-    std::size_t g_offs_[2];
-
-    chase::matrix::MatrixCPU<T> local_matrix_;
-    std::shared_ptr<chase::Impl::mpi::MpiGrid2DBase> mpi_grid_;
 
 public:
     ~BlockBlockMatrix() override {};
@@ -319,6 +310,9 @@ public:
 
         ld_ = m_;
         local_matrix_ = chase::matrix::MatrixCPU<T>(m_, n_);
+#ifdef HAS_SCALAPACK        
+        scalapack_descriptor_init();
+#endif        
     }
 
     BlockBlockMatrix(std::size_t m, std::size_t n, std::size_t ld, T *data,
@@ -361,6 +355,9 @@ public:
         }
 
         g_offs_[1] = coord_[1] * len;
+#ifdef HAS_SCALAPACK               
+        scalapack_descriptor_init();
+#endif       
     }
 
     std::size_t g_rows() const override { return M_;}
@@ -382,6 +379,58 @@ public:
     {
         return mpi_grid_;
     }
+#ifdef HAS_SCALAPACK
+    std::size_t *get_scalapack_desc(){ return desc_; }
+#endif
+
+private:
+    std::size_t M_;
+    std::size_t N_;
+    std::size_t m_;
+    std::size_t n_;
+    std::size_t ld_;
+    std::size_t g_offs_[2];
+
+    chase::matrix::MatrixCPU<T> local_matrix_;
+    std::shared_ptr<chase::Impl::mpi::MpiGrid2DBase> mpi_grid_;
+#ifdef HAS_SCALAPACK
+    std::size_t desc_[9];
+
+    void scalapack_descriptor_init()
+    {
+        std::size_t mb = m_;
+        std::size_t nb = n_;
+        int *coords = mpi_grid_.get()->get_coords();
+        int *dims = mpi_grid_.get()->get_dims();
+
+        if (coords[1] == dims[1] - 1 && dims[1] != 1)
+        {
+            nb = (N_ - n_) / (dims[1] - 1);
+        }
+
+        if (coords[0] == dims[0] - 1 && dims[0] != 1)
+        {
+            mb = (M_ - m_) / (dims[0] - 1);
+        }
+        int zero = 0;
+        int one = 1;
+        int info;
+        int comm2D_ctxt = mpi_grid_.get()->get_blacs_comm2D_ctxt();
+        chase::linalg::scalapackpp::t_descinit(desc_, 
+                                               &M_, 
+                                               &N_, 
+                                               &mb, 
+                                               &nb, 
+                                               &zero, 
+                                               &zero, 
+                                               &comm2D_ctxt, 
+                                               &ld_, 
+                                               &info);  
+
+
+    }
+#endif
+
 };
 
 

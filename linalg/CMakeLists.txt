@@ -19,4 +19,15 @@ target_link_libraries(lapackpp INTERFACE LAPACK::LAPACK)
 add_library(linalg_internal_cpu INTERFACE)
 target_include_directories(linalg_internal_cpu INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/internal/cpu)
 
+add_library(scalapackpp INTERFACE)
+target_include_directories(scalapackpp INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/scalapackpp)
+
 find_package(SCALAPACK)
+if(SCALAPACK_FOUND)
+    add_definitions(-DHAS_SCALAPACK)
+    target_link_libraries(scalapackpp INTERFACE ${SCALAPACK_LIBRARIES})
+    message(STATUS "ScaLAPACK support enabled.")
+else()
+    message(STATUS "No ScaLAPACK is detected.")
+endif()
+

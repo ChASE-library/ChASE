@@ -5,6 +5,8 @@
 #include "linalg/blaspp/blaspp.hpp"
 #include "linalg/lapackpp/lapackpp.hpp"
 #include "linalg/internal/cpu/utils.hpp"
+#include "linalg/matrix/distMatrix.hpp"
+#include "linalg/matrix/distMultiVector.hpp"
 
 using namespace chase::linalg::blaspp;
 using namespace chase::linalg::lapackpp;
@@ -316,6 +318,35 @@ namespace mpi
 
     }
 
+    template<typename T, chase::distMultiVector::CommunicatorType InputCommType>
+    void houseHoulderQR(chase::distMultiVector::DistMultiVector1D<T, InputCommType>& V)
+    {
+#ifdef HAS_SCALAPACK
+        std::size_t *desc = V.get_scalapack_desc();
+        int one = 1;
+        std::vector<T> tau(V.l_cols());
+
+        chase::linalg::scalapackpp::t_pgeqrf(V.g_rows(), 
+                                             V.g_cols(), 
+                                             V.l_data(), 
+                                             one, 
+                                             one, 
+                                             desc,
+                                             tau.data());
+
+        chase::linalg::scalapackpp::t_pgqr(V.g_rows(), 
+                                           V.g_cols(), 
+                                           V.g_cols(), 
+                                           V.l_data(), 
+                                           one, 
+                                           one, 
+                                           desc, 
+                                           tau.data());
+
+#else
+        std::runtime_error("For ChASE-MPI, distributed Householder QR requires ScaLAPACK, which is not detected\n");
+#endif
+    }
 
 }
 }
