@@ -42,14 +42,14 @@ TYPED_TEST(SymOrHermCPUDistTest, UpperTriangularMatrix) {
     auto R = chase::distMatrix::RedundantMatrix<T>(N, N, N, U, mpi_grid);
     auto H = chase::distMatrix::BlockBlockMatrix<T>(N, N, mpi_grid);
     R.template redistributeImpl<chase::distMatrix::MatrixTypeTrait<decltype(H)>::value>(&H);
-
     bool is_sym = chase::linalg::internal::mpi::checkSymmetryEasy(H); 
     EXPECT_FALSE(is_sym);
-
+#ifdef HAS_SCALAPACK
     chase::linalg::internal::mpi::symOrHermMatrix('U', H);
 
     is_sym = chase::linalg::internal::mpi::checkSymmetryEasy(H);    
     EXPECT_TRUE(is_sym);
+#endif    
 }
 
 TYPED_TEST(SymOrHermCPUDistTest, LowerTriangularMatrix) {
@@ -72,9 +72,10 @@ TYPED_TEST(SymOrHermCPUDistTest, LowerTriangularMatrix) {
 
     bool is_sym = chase::linalg::internal::mpi::checkSymmetryEasy(H); 
     EXPECT_FALSE(is_sym);
-
+#ifdef HAS_SCALAPACK
     chase::linalg::internal::mpi::symOrHermMatrix('L', H);
 
     is_sym = chase::linalg::internal::mpi::checkSymmetryEasy(H);    
     EXPECT_TRUE(is_sym);
+#endif    
 }
