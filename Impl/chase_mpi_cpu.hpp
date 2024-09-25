@@ -15,8 +15,8 @@
 #include "linalg/internal/mpi/residuals.hpp"
 #include "linalg/internal/mpi/rayleighRitz.hpp"
 #include "linalg/internal/mpi/shiftDiagonal.hpp"
-
-//#include "linalg/internal/cpu/symOrHerm.hpp"
+#include "linalg/scalapackpp/scalapackpp.hpp"
+#include "linalg/internal/mpi/symOrHerm.hpp"
 #include "algorithm/types.hpp"
 
 using namespace chase::linalg;
@@ -92,13 +92,16 @@ public:
 #endif
     bool checkSymmetryEasy() override
     {
+        is_sym_ = chase::linalg::internal::mpi::checkSymmetryEasy(*Hmat_);  
         return true;
     }
 
-    bool isSym() { return true; }
+    bool isSym() { return is_sym_; }
 
     void symOrHermMatrix(char uplo) override
-    {}
+    {
+        chase::linalg::internal::mpi::symOrHermMatrix(uplo, *Hmat_);   
+    }
 
     void Start() override
     {
@@ -242,7 +245,11 @@ public:
 
         if (disable == 1)
         {
-            //need implement scalapackpp
+#ifdef HAS_SCALAPACK
+            chase::linalg::internal::mpi::houseHoulderQR(*V1_);
+#else
+        std::runtime_error("For ChASE-MPI, distributed Householder QR requires ScaLAPACK, which is not detected\n");
+#endif
         }
         else
         {
@@ -287,12 +294,16 @@ public:
 
             if (info != 0)
             {
+#ifdef HAS_SCALAPACK
 #ifdef CHASE_OUTPUT
                 if(my_rank_ == 0){
                     std::cout << "CholeskyQR doesn't work, Househoulder QR will be used." << std::endl;
                 }
 #endif
-                //need implmenet scalapackpp
+                chase::linalg::internal::mpi::houseHoulderQR(*V1_);
+#else
+                std::runtime_error("For ChASE-MPI, distributed Householder QR requires ScaLAPACK, which is not detected\n");
+#endif
             }
         }
 

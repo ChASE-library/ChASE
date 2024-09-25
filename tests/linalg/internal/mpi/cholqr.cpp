@@ -5,6 +5,7 @@
 #include "linalg/internal/mpi/cholqr.hpp"
 #include "tests/linalg/internal/mpi/TestConditions.hpp"
 #include "tests/linalg/internal/utils.hpp"
+#include "Impl/mpi/mpiGrid2D.hpp"
 
 template <typename T>
 class CHOLQRCPUDistTest : public ::testing::Test {
@@ -123,3 +124,23 @@ TYPED_TEST(CHOLQRCPUDistTest, scholQR) {
     auto orth = orthogonality<T>(xlen, this->n, V.data(), xlen, MPI_COMM_WORLD);
     ASSERT_NEAR(orth, machineEpsilon, machineEpsilon * 10);
 }
+
+#ifdef HAS_SCALAPACK 
+TYPED_TEST(CHOLQRCPUDistTest, scalapackHHQR) {
+    using T = TypeParam;  // Get the current type
+    assert(this->world_size == 4);
+    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(4, 1, MPI_COMM_WORLD);
+
+    auto V_ = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column>(this->N, this->n, mpi_grid);
+
+    std::size_t xlen = this->N / this->world_size;
+    std::size_t xoff = this->world_rank * 25;
+
+    auto machineEpsilon = MachineEpsilon<T>::value();
+    read_vectors(V_.l_data(), GetQRFileName<T>() + "cond_ill.bin", xoff, xlen, this->N, this->n, 0);
+    chase::linalg::internal::mpi::houseHoulderQR(V_);
+    auto orth = orthogonality<T>(xlen, this->n, V_.l_data(), xlen, MPI_COMM_WORLD);
+    ASSERT_NEAR(orth, machineEpsilon, machineEpsilon * 10);
+}
+#endif

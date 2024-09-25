@@ -1,0 +1,71 @@
+#include <gtest/gtest.h>
+#include <complex>
+#include <cmath>
+#include <cstring>
+#include "linalg/internal/mpi/shiftDiagonal.hpp"
+#include "Impl/mpi/mpiGrid2D.hpp"
+#include "linalg/matrix/distMatrix.hpp"
+#include "linalg/matrix/distMultiVector.hpp"
+
+template <typename T>
+class shiftDiagonalCPUDistTest : public ::testing::Test {
+protected:
+    void SetUp() override {
+        MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+        MPI_Comm_size(MPI_COMM_WORLD, &world_size);        
+    }
+
+    void TearDown() override {}
+
+    int world_rank;
+    int world_size;    
+};
+
+using TestTypes = ::testing::Types<float, double, std::complex<float>, std::complex<double>>;
+TYPED_TEST_SUITE(shiftDiagonalCPUDistTest, TestTypes);
+
+TYPED_TEST(shiftDiagonalCPUDistTest, ShiftDistCorrectness) {
+    using T = TypeParam;  // Get the current type
+
+    std::size_t N = 10;
+    std::size_t n = 4;
+    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
+    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(2, 2, MPI_COMM_WORLD);
+
+    auto R = chase::distMatrix::RedundantMatrix<T>(N, N, mpi_grid);
+    
+    for(auto i = 0; i < std::min(R.g_cols(), R.g_rows()); i++)
+    {
+        R.l_data()[i + i * R.l_ld()] = T(1.0);
+    }
+
+    auto H = chase::distMatrix::BlockBlockMatrix<T>(N, N, mpi_grid);
+    R.template redistributeImpl<chase::distMatrix::MatrixTypeTrait<decltype(H)>::value>(&H);
+    chase::linalg::internal::mpi::shiftDiagonal(H, T(-5.0));
+
+    if(this->world_rank == 0 || this->world_rank == 3){
+        for(auto i = 0; i < H.l_rows(); i++)
+        {
+            for(auto j = 0; j < H.l_cols(); j++)
+            {
+                //assume is squared grid
+                if(i == j)
+                {
+                    EXPECT_EQ(H.l_data()[i + i * H.l_ld()], T(-4.0));
+                }else
+                {
+                    EXPECT_EQ(H.l_data()[i + j * H.l_ld()], T(0.0));
+                }
+            }
+
+        }
+    }
+    else
+    {
+        for(auto i = 0; i < H.l_ld() * H.l_cols(); i++)
+        {
+            EXPECT_EQ(H.l_data()[i], T(0.0));
+        }
+    }   
+}
