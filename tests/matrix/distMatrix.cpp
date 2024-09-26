@@ -159,6 +159,156 @@ TYPED_TEST(MatrixCPUDistTest, BlockBlockExternalMemoryAllocation) {
     }          
 }
 
+TYPED_TEST(MatrixCPUDistTest, BlockBlockRedistributionToRedundantDivisibleSize) {
+    using T = TypeParam;  // Get the current type
+    //using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type;
+    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
+    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(2, 2, MPI_COMM_WORLD);
+
+    std::size_t g_rows = 4;
+    std::size_t g_cols = 4;
+
+    auto blockblockmatrix_ = chase::distMatrix::BlockBlockMatrix<T>(g_rows, g_cols, mpi_grid);
+    auto redundantmatrix_ = chase::distMatrix::RedundantMatrix<T>(g_rows, g_cols, mpi_grid);
+
+    if(this->world_rank == 0)
+    {
+        blockblockmatrix_.l_data()[0] = 0;
+        blockblockmatrix_.l_data()[1] = 1;
+        blockblockmatrix_.l_data()[2] = 4;
+        blockblockmatrix_.l_data()[3] = 5;
+    }
+    else if(this->world_rank == 1)
+    {
+        blockblockmatrix_.l_data()[0] = 2;
+        blockblockmatrix_.l_data()[1] = 3;
+        blockblockmatrix_.l_data()[2] = 6;
+        blockblockmatrix_.l_data()[3] = 7;                
+    }
+    else if(this->world_rank == 2)
+    {
+        blockblockmatrix_.l_data()[0] = 8;
+        blockblockmatrix_.l_data()[1] = 9;
+        blockblockmatrix_.l_data()[2] = 12;
+        blockblockmatrix_.l_data()[3] = 13;                
+    }
+    else
+    {
+        blockblockmatrix_.l_data()[0] = 10;
+        blockblockmatrix_.l_data()[1] = 11;
+        blockblockmatrix_.l_data()[2] = 14;
+        blockblockmatrix_.l_data()[3] = 15;                
+    }
+    
+    blockblockmatrix_.template redistributeImpl<chase::distMatrix::MatrixTypeTrait<decltype(redundantmatrix_)>::value>(&redundantmatrix_);
+
+    for(auto i = 0; i < redundantmatrix_.l_rows(); i++)
+    {
+        for(auto j = 0; j < redundantmatrix_.l_cols(); j++)
+        {
+            EXPECT_EQ(redundantmatrix_.l_data()[i + j * redundantmatrix_.l_ld()], T(i + j * redundantmatrix_.l_ld()));
+        }
+    }
+    //test also from redundant to blockblock
+    auto blockblockmatrix_2 = chase::distMatrix::BlockBlockMatrix<T>(g_rows, g_cols, mpi_grid);
+    redundantmatrix_.template redistributeImpl<chase::distMatrix::MatrixTypeTrait<decltype(blockblockmatrix_2)>::value>(&blockblockmatrix_2);
+
+    for(auto i = 0; i < blockblockmatrix_2.l_rows(); i++)
+    {
+        for(auto j = 0; j < blockblockmatrix_2.l_cols(); j++)
+        {
+            EXPECT_EQ(blockblockmatrix_2.l_data()[i + j * blockblockmatrix_2.l_ld()], blockblockmatrix_.l_data()[i + j * blockblockmatrix_.l_ld()]);
+        }
+    }
+}
+
+TYPED_TEST(MatrixCPUDistTest, BlockBlockRedistributionToRedundantIndivisibleSize) {
+    using T = TypeParam;  // Get the current type
+    //using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type;
+    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
+    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(2, 2, MPI_COMM_WORLD);
+
+    std::size_t g_rows = 5;
+    std::size_t g_cols = 5;
+
+    auto blockblockmatrix_ = chase::distMatrix::BlockBlockMatrix<T>(g_rows, g_cols, mpi_grid);
+    auto redundantmatrix_ = chase::distMatrix::RedundantMatrix<T>(g_rows, g_cols, mpi_grid);
+
+    if(this->world_rank == 0) //3x3
+    {
+        blockblockmatrix_.l_data()[0] = 0;
+        blockblockmatrix_.l_data()[1] = 1;
+        blockblockmatrix_.l_data()[2] = 2;
+        blockblockmatrix_.l_data()[3] = 5;
+        blockblockmatrix_.l_data()[4] = 6;
+        blockblockmatrix_.l_data()[5] = 7;
+        blockblockmatrix_.l_data()[6] = 10;
+        blockblockmatrix_.l_data()[7] = 11;
+        blockblockmatrix_.l_data()[8] = 12;        
+    }
+    else if(this->world_rank == 1)
+    {
+        blockblockmatrix_.l_data()[0] = 3;
+        blockblockmatrix_.l_data()[1] = 4;
+        blockblockmatrix_.l_data()[2] = 8;
+        blockblockmatrix_.l_data()[3] = 9;
+        blockblockmatrix_.l_data()[4] = 13;
+        blockblockmatrix_.l_data()[5] = 14;              
+    }
+    else if(this->world_rank == 2)
+    {
+        blockblockmatrix_.l_data()[0] = 15;
+        blockblockmatrix_.l_data()[1] = 16;
+        blockblockmatrix_.l_data()[2] = 17;
+        blockblockmatrix_.l_data()[3] = 20;
+        blockblockmatrix_.l_data()[4] = 21;
+        blockblockmatrix_.l_data()[5] = 22;                 
+    }
+    else
+    {
+        blockblockmatrix_.l_data()[0] = 18;
+        blockblockmatrix_.l_data()[1] = 19;
+        blockblockmatrix_.l_data()[2] = 23;
+        blockblockmatrix_.l_data()[3] = 24;                
+    }
+    
+    blockblockmatrix_.template redistributeImpl<chase::distMatrix::MatrixTypeTrait<decltype(redundantmatrix_)>::value>(&redundantmatrix_);
+
+    for(auto i = 0; i < redundantmatrix_.l_rows(); i++)
+    {
+        for(auto j = 0; j < redundantmatrix_.l_cols(); j++)
+        {
+            EXPECT_EQ(redundantmatrix_.l_data()[i + j * redundantmatrix_.l_ld()], T(i + j * redundantmatrix_.l_ld()));
+        }
+    }
+    
+    //test also from redundant to blockblock
+    auto blockblockmatrix_2 = chase::distMatrix::BlockBlockMatrix<T>(g_rows, g_cols, mpi_grid);
+    std::size_t startRow, subRows, startCol, subCols;
+    startRow = 2; subRows = 2; startCol = 3; subCols = 1;
+    redundantmatrix_.template redistributeImpl<chase::distMatrix::MatrixTypeTrait<decltype(blockblockmatrix_2)>::value>(&blockblockmatrix_2, startRow, subRows, startCol, subCols);
+
+    std::size_t *g_offs = blockblockmatrix_2.g_offs();
+    for(auto i = 0; i < blockblockmatrix_2.l_rows(); i++)
+    {
+        for(auto j = 0; j < blockblockmatrix_2.l_cols(); j++)
+        {
+            std::size_t x_g_off = g_offs[0] + i;
+            std::size_t y_g_off = g_offs[1] + j;
+            if(x_g_off >= startRow && x_g_off < startRow + subRows && y_g_off >= startCol && y_g_off < startCol + subCols )
+            {
+                EXPECT_EQ(blockblockmatrix_2.l_data()[i + j * blockblockmatrix_2.l_ld()], blockblockmatrix_.l_data()[i + j * blockblockmatrix_.l_ld()]);
+            }
+            else
+            {
+                EXPECT_EQ(blockblockmatrix_2.l_data()[i + j * blockblockmatrix_2.l_ld()], T(0));
+            }            
+        }
+    }  
+}
+
 #ifdef ENABLE_MIXED_PRECISION
 TYPED_TEST(MatrixCPUDistTest, RedundantMixedPrecison) {
     using T = TypeParam;  // Get the current type
