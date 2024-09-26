@@ -48,6 +48,17 @@ struct MatrixTypeTrait<BlockBlockMatrix<T>> {
     static constexpr MatrixType value = MatrixType::BlockBlock;
 };
 
+template <typename T>
+struct MatrixTypeTrait<RedundantMatrix<T> *> {
+    static constexpr MatrixType value = MatrixType::Redundant;
+};
+
+// Specialize for BlockBlockMatrix
+template <typename T>
+struct MatrixTypeTrait<BlockBlockMatrix<T> *> {
+    static constexpr MatrixType value = MatrixType::BlockBlock;
+};
+
 template <MatrixType matrix_type, typename T>
 struct MatrixConstructorTrait;
 
@@ -223,9 +234,10 @@ public:
         return mpi_grid_;
     }
 
+    //here the startrow/col indices should be the global indices
     template<MatrixType TargetType>
-    void redistributeImpl(typename MatrixConstructorTrait<TargetType, T>::type* targetMatrix)//,
-                            //std::size_t offset, std::size_t subsetSize)
+    void redistributeImpl(typename MatrixConstructorTrait<TargetType, T>::type* targetMatrix,
+                            std::size_t startRow, std::size_t subRows, std::size_t startCol, std::size_t subCols)
     {
         if(M_ != targetMatrix->g_rows() || N_ != targetMatrix->g_cols() )
         {
@@ -234,7 +246,7 @@ public:
 
         if constexpr (TargetType == MatrixType::BlockBlock)
         {
-            redistributeToBlockBlock(targetMatrix);
+            redistributeToBlockBlock(targetMatrix, startRow, subRows, startCol, subCols);
         }else if constexpr (TargetType == MatrixType::Redundant)
         {
             throw std::runtime_error("[RedundantMatrix]: no need to redistribute from redundant to redundant");
@@ -243,6 +255,13 @@ public:
             throw std::runtime_error("[RedundantMatrix]: no support for redistribution from redundant to block-cyclic yet");
         }
     }
+
+    template<MatrixType TargetType>
+    void redistributeImpl(typename MatrixConstructorTrait<TargetType, T>::type* targetMatrix)
+    {
+        using type = typename std::remove_pointer<typename std::remove_reference<decltype(*targetMatrix)>::type>::type;
+        this->template redistributeImpl<chase::distMatrix::MatrixTypeTrait<type>::value>(targetMatrix, 0, this->g_rows(), 0, this->g_cols());
+    }   
 
 private:
     std::size_t M_;
@@ -254,22 +273,28 @@ private:
     chase::matrix::MatrixCPU<T> local_matrix_;
     std::shared_ptr<chase::Impl::mpi::MpiGrid2DBase> mpi_grid_;    
 
-    void redistributeToBlockBlock(BlockBlockMatrix<T>* targetMatrix)
+    void redistributeToBlockBlock(BlockBlockMatrix<T>* targetMatrix,
+                                   std::size_t startRow, std::size_t subRows, std::size_t startCol, std::size_t subCols)
     {
         std::size_t *g_offs = targetMatrix->g_offs();
         std::size_t l_cols = targetMatrix->l_cols();
         std::size_t l_rows = targetMatrix->l_rows();
         #pragma omp parallel for
-        for (auto y = 0; y < l_cols; y++)
+        for(auto y = 0; y < l_cols; y++)
         {
-            for (auto x = 0; x < l_rows; x++)
+            for(auto x = 0; x < l_rows; x++)
             {
-                targetMatrix->l_data()[x + targetMatrix->l_ld() * y] =
-                    this->l_data()[(g_offs[1] + y) * this->l_ld() + (g_offs[0] + x)];
+                std::size_t x_g_off = g_offs[0] + x;
+                std::size_t y_g_off = g_offs[1] + y;
+                if(x_g_off >= startRow && x_g_off < startRow + subRows && y_g_off >= startCol && y_g_off < startCol + subCols )
+                {
+                    targetMatrix->l_data()[x + targetMatrix->l_ld() * y] = this->l_data()[(g_offs[1] + y) * this->l_ld() + (g_offs[0] + x)];
+                }
+
             }
-        }
-        
+        }     
     }
+
 };
 
 
@@ -499,6 +524,27 @@ public:
     std::size_t *get_scalapack_desc(){ return desc_; }
 #endif
 
+    template<MatrixType TargetType>
+    void redistributeImpl(typename MatrixConstructorTrait<TargetType, T>::type* targetMatrix)//,
+                            //std::size_t offset, std::size_t subsetSize)
+    {
+        if(M_ != targetMatrix->g_rows() || N_ != targetMatrix->g_cols() )
+        {
+            throw std::runtime_error("[BlockBlockMatrix]: redistribution requires original and target matrices have same global size");
+        }
+
+        if constexpr (TargetType == MatrixType::Redundant)
+        {
+            redistributeToRedundant(targetMatrix);
+        }else if constexpr (TargetType == MatrixType::BlockBlock)
+        {
+            throw std::runtime_error("[BlockBlockMatrix]: no need to redistribute from BlockBlock to BlockBlock");
+        }else if constexpr (TargetType == MatrixType::BlockCyclic)
+        {
+            throw std::runtime_error("[BlockBlockMatrix]: no support for redistribution from redundant to block-cyclic yet");
+        }
+    }
+
 private:
     std::size_t M_;
     std::size_t N_;
@@ -509,6 +555,185 @@ private:
 
     chase::matrix::MatrixCPU<T> local_matrix_;
     std::shared_ptr<chase::Impl::mpi::MpiGrid2DBase> mpi_grid_;
+
+    void redistributeToRedundant(RedundantMatrix<T>* targetMatrix)
+    {
+        //redistribute either thing in column communicator
+        //packing uppacking data maunally rather than using MPI new types, 
+        //for helping later implementation with nccl, and which is not supported new types
+        int *dims = mpi_grid_.get()->get_dims();
+        int *coords = mpi_grid_.get()->get_coords();
+        MPI_Comm row_comm = mpi_grid_.get()->get_row_comm();
+        MPI_Comm col_comm = mpi_grid_.get()->get_col_comm();
+
+        std::size_t row_sendrecv_lens_ = m_;
+        std::size_t row_block_size = m_; //global offset will be coord[0] * row_block_size_
+        std::size_t column_sendrecv_lens_ = n_;
+        std::size_t column_block_size = n_; //global offset will be coord[1] * column_block_size_   
+
+        //ensure good size of the case M/N is not divisible by dims[0]/dims[1]
+        //the block size is always m_ for the rank from 0 to dims[0]-2
+        //for rank dims[0]-1 with potential smaller m_, if M is not divisible by dims[0]
+        //row_block_size is computed as follows
+        if(coords[0] == dims[0] - 1) //last rank in the column communicator
+        {
+            row_block_size = (M_ - m_) / (dims[0] - 1);
+        }
+        //same also for row_block_size in row communicator
+        if(coords[1] == dims[1] - 1) //last rank in the row communicator
+        {
+            column_block_size = (N_ - n_) / (dims[1] - 1);
+        }
+        std::vector<T> buff(M_ * column_block_size);
+
+        //if bcast one by one from the root as 0 to dims[0]-2, the
+        //sendrecv length is always the same row_block_size for all ranks
+        //we perform these bcast in a loop
+        //std::vector<T> buff(row_block_size * n_);
+
+        for(auto i = 0; i < dims[0] - 1; i++)
+        {
+            //packing
+            if(coords[0] == i)
+            {
+                chase::linalg::lapackpp::t_lacpy('A',
+                                                row_block_size,
+                                                n_,
+                                                this->l_data(),
+                                                this->l_ld(),
+                                                buff.data(),
+                                                row_block_size);                
+            }
+
+            MPI_Bcast(buff.data(), 
+                      row_block_size * n_, 
+                      chase::mpi::getMPI_Type<T>(), 
+                      i, 
+                      col_comm);                
+            
+            //unpacking
+            chase::linalg::lapackpp::t_lacpy('A',
+                                              row_block_size,
+                                              n_,
+                                              buff.data(),
+                                              row_block_size,
+                                              targetMatrix->l_data() + i * row_block_size + coords[1] * column_block_size * targetMatrix->l_ld(),
+                                              targetMatrix->l_ld());            
+        }
+
+        //for last rank in the column communicator
+        row_sendrecv_lens_ = m_;
+        //if not last rank
+        if(coords[0] != dims[0] - 1)
+        {
+            row_sendrecv_lens_ = M_ - (dims[0] - 1) * m_;
+        }
+
+        //for last rank, as row_sendrecv_lens_ <= row_block_size,
+        //no need to reallocate buff.
+        //packing
+        if(coords[0] == dims[0] - 1)
+        {
+            chase::linalg::lapackpp::t_lacpy('A',
+                                            row_sendrecv_lens_,
+                                            n_,
+                                            this->l_data(),
+                                            this->l_ld(),
+                                            buff.data(),
+                                            row_sendrecv_lens_);                
+        }
+
+        MPI_Bcast(buff.data(), 
+                    row_sendrecv_lens_ * n_, 
+                    chase::mpi::getMPI_Type<T>(), 
+                    dims[0] - 1, 
+                    col_comm);                
+        
+        //unpacking
+        chase::linalg::lapackpp::t_lacpy('A',
+                                            row_sendrecv_lens_,
+                                            n_,
+                                            buff.data(),
+                                            row_sendrecv_lens_,
+                                            targetMatrix->l_data() + (dims[0] - 1) * row_block_size + coords[1] * column_block_size * targetMatrix->l_ld(),
+                                            targetMatrix->l_ld());
+
+        //now the collected data should be bcast within row communicator
+        //it should follow the same scheme, but the data size is ~ M_ * n
+        //since data is column major, so 1 unpacking operation is enough.      
+        //same as for column comm, start with the first dims[1]-1 ranks
+        //buff.resize(column_block_size * M_);
+
+        for(auto i = 0; i < dims[1] - 1; i++)
+        {
+            //packing
+            if(coords[1] == i)
+            {
+                chase::linalg::lapackpp::t_lacpy('A',
+                                                M_,
+                                                column_block_size,
+                                                targetMatrix->l_data() + i * column_block_size * targetMatrix->l_ld(),
+                                                targetMatrix->l_ld(),
+                                                buff.data(),
+                                                M_);                
+            }
+
+            MPI_Bcast(buff.data(), 
+                      column_block_size * M_, 
+                      chase::mpi::getMPI_Type<T>(), 
+                      i, 
+                      row_comm);                
+            
+            //unpacking
+            chase::linalg::lapackpp::t_lacpy('A',
+                                              M_,
+                                              column_block_size,
+                                              buff.data(),
+                                              M_,
+                                              targetMatrix->l_data() + i * column_block_size * targetMatrix->l_ld(),
+                                              targetMatrix->l_ld());
+            
+        }
+
+        //for last rank in the row communicator
+        column_sendrecv_lens_ = n_;
+        //if not last rank
+        if(coords[1] != dims[1] - 1)
+        {
+            column_sendrecv_lens_ = N_ - (dims[1] - 1) * n_;
+        }
+
+        //packing
+        if(coords[1] == dims[1] - 1)
+        {
+            chase::linalg::lapackpp::t_lacpy('A',
+                                            M_,
+                                            column_sendrecv_lens_,
+                                            targetMatrix->l_data() + (dims[1] - 1) * column_block_size * targetMatrix->l_ld(),
+                                            targetMatrix->l_ld(),
+                                            buff.data(),
+                                            M_);                
+        }
+
+        MPI_Bcast(buff.data(), 
+                    column_sendrecv_lens_ * M_, 
+                    chase::mpi::getMPI_Type<T>(), 
+                    dims[1] - 1, 
+                    row_comm);                
+        
+        //unpacking
+        chase::linalg::lapackpp::t_lacpy('A',
+                                            M_,
+                                            column_sendrecv_lens_,
+                                            buff.data(),
+                                            M_,
+                                            targetMatrix->l_data() + (dims[1] - 1) * column_block_size * targetMatrix->l_ld(),
+                                            targetMatrix->l_ld());
+
+                                            
+
+    }
+
 #ifdef HAS_SCALAPACK
     std::size_t desc_[9];
 
