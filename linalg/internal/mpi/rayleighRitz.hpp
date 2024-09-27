@@ -7,6 +7,7 @@
 #include "linalg/matrix/distMatrix.hpp"
 #include "linalg/matrix/distMultiVector.hpp"
 #include "linalg/internal/mpi/hemm.hpp"
+#include "linalg/scalapackpp/scalapackpp.hpp"
 
 namespace chase
 {

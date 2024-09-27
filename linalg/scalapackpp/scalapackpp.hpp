@@ -53,6 +53,11 @@ extern "C" void pctranc_(int *, int *, std::complex<float> *, std::complex<float
 extern "C" void pztranc_(int *, int *, std::complex<double> *, std::complex<double> *, int*, int*, int*, 
                         std::complex<double> *, std::complex<double> *, int*, int*, int*);  
 
+extern "C" void pssyevd_(char *, char*, int *, float *, int *, int *, int *, float *, float *, int *, int *, int *, float *, int *, int *, int *, int *);                        
+extern "C" void pdsyevd_(char *, char*, int *, double *, int *, int *, int *, double *, double *, int *, int *, int *, double *, int *, int *, int *, int *);                        
+extern "C" void pcheevd_(char *, char*, int *, std::complex<float> *, int *, int *, int *, float *, std::complex<float> *, int *, int *, int *, std::complex<float> *, int *, float *, int *, int *, int *, int *);                        
+extern "C" void pzheevd_(char *, char*, int *, std::complex<double> *, int *, int *, int *, double *, std::complex<double> *, int *, int *, int *, std::complex<double> *, int *, double *, int *, int *, int *, int *);                        
+
 template <typename T>
 void t_pgeqrf(std::size_t m, std::size_t n, T* A, int ia, int ja,
               std::size_t* desc_a, T* tau);
@@ -63,6 +68,10 @@ void t_pgqr(std::size_t m, std::size_t n, std::size_t k, T* A, int ia, int ja,
 template <typename T>
 void t_ptranc(std::size_t m, std::size_t n, T alpha, T *A, int ia, int ja,
             std::size_t* desc_a, T beta, T *C, int ic, int jc, std::size_t* desc_c);
+
+template <typename T>
+void t_pheevd(char jobz, char uplo, std::size_t N, T *A, std::size_t *desc_a,
+                                       chase::Base<T>* W, T *Z, std::size_t *desc_z, int *info);
 
 }
 }

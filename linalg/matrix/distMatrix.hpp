@@ -234,6 +234,11 @@ public:
         return mpi_grid_;
     }
 
+    void mapToNewMpiGrid(std::shared_ptr<chase::Impl::mpi::MpiGrid2DBase> new_mpi_grid)
+    {
+        mpi_grid_ = new_mpi_grid;
+    }
+
     //here the startrow/col indices should be the global indices
     template<MatrixType TargetType>
     void redistributeImpl(typename MatrixConstructorTrait<TargetType, T>::type* targetMatrix,
@@ -757,6 +762,10 @@ private:
         int one = 1;
         int info;
         int comm2D_ctxt = mpi_grid_.get()->get_blacs_comm2D_ctxt();
+        int grank;
+        MPI_Comm_rank(MPI_COMM_WORLD, &grank);
+        //std::cout << "grank = " << grank << ", " <<  M_ << "x" << N_ << " " << mb << "x" << nb << " " << ld_ << std::endl;
+        //std::cout << "comm2D_ctxt: = " << comm2D_ctxt << std::endl;
         chase::linalg::scalapackpp::t_descinit(desc_, 
                                                &M_, 
                                                &N_, 
