@@ -1,24 +1,111 @@
-default:
-  tags: [ public-docker ]
-  image:
-    name: gitlab.version.fz-juelich.de:5555/sharedrunner/opensuse
+variables:
+  SCHEDULER_PARAMETERS: '-Aslai -N1'
 
-build:
-  stage: build
+stages:
+  - build
+  - test
+  - coverage
+
+build_cpu:
+  stage: build 
+  tags: [ docker-proton ]
+  image:
+    name: opensuse:jsc-gcc12
+
   script:
-  - cmake --version
-  - mkdir -p build
-  - cd build
-  - FC=gfortran CC=gcc CXX=g++ cmake -DENABLE_TESTS=ON -DMPI_RUN_ARGS="--allow-run-as-root" ..
-  - make VERBOSE=1
+    - cmake --version
+    - mkdir -p build_cpu
+    - cd build_cpu
+    - export CFLAGS='-Wextra -Wall -pedantic'
+    - export CXXFLAGS='-Wextra -Wall -pedantic'
+    - export FFLAGS='-Wextra -Wall -pedantic'
+    - env CFLAGS="$CFLAGS --coverage" CXXFLAGS="$CXXFLAGS --coverage" FFLAGS="$FFLAGS --coverage" FC=gfortran CC=gcc CXX=g++ cmake -DENABLE_TESTS=ON -DMPI_RUN_ARGS="--allow-run-as-root" .. -DCMAKE_EXE_LINKER_FLAGS="--coverage"
+    - make VERBOSE=1
   artifacts:
     paths:
-    - build/Makefile
-    - build/chase_driver
-    - build/CTestTestfile.cmake
-    - build/tests
-test:
+    - build_cpu/Makefile
+    - build_cpu/CTestTestfile.cmake
+    - build_cpu/tests
+    expire_in: 1 week
+
+test_cpu:
   stage: test
+  dependencies:
+    - build_cpu
+  tags: [ docker-proton ]
+  image:
+    name: opensuse:jsc-gcc12
   script:
-  - cd build
-  - CTEST_OUTPUT_ON_FAILURE=1 make test
+    - cd build_cpu
+    - CTEST_OUTPUT_ON_FAILURE=1 make test
+    - rm -rf _deps
+  artifacts:
+    paths:
+      - build_cpu/*    
+    expire_in: 1 week
+      
+build_gpu:
+  stage: build   
+  tags: 
+    - juwels_booster
+    - jacamar
+    - login
+    - shell
+  id_tokens:
+    SITE_ID_TOKEN:
+      aud: https://gitlab.jsc.fz-juelich.de    
+  script:
+    - echo $SYSTEMNAME
+    - module load Stages/2024 GCC/12.3.0 OpenMPI imkl CMake CUDA
+    - cmake --version
+    - mkdir -p build_gpu
+    - cd build_gpu
+    - export CFLAGS='-Wextra -Wall -pedantic'
+    - export CXXFLAGS='-Wextra -Wall -pedantic'
+    - export FFLAGS='-Wextra -Wall -pedantic'
+    - env CFLAGS="$CFLAGS --coverage" CXXFLAGS="$CXXFLAGS --coverage" FFLAGS="$FFLAGS --coverage" cmake -DENABLE_TESTS=ON -DMPI_RUN="srun" .. -DCMAKE_EXE_LINKER_FLAGS="--coverage"
+    - make VERBOSE=1
+  artifacts:
+    paths:
+    - build_gpu/Makefile
+    - build_gpu/CTestTestfile.cmake
+    - build_gpu/tests
+
+test_gpu:
+  stage: test
+  dependencies:
+    - build_gpu  
+  tags: 
+    - juwels_booster
+    - jacamar
+    - compute
+    - slurm
+  id_tokens:
+    SITE_ID_TOKEN:
+      aud: https://gitlab.jsc.fz-juelich.de    
+  script:
+    - echo $SYSTEMNAME
+    - module load Stages/2024 GCC/12.3.0 OpenMPI imkl CMake CUDA
+    - export CUDA_VISIBLE_DEVICES=0,1,2,3  
+    - cd build_gpu
+    - CTEST_OUTPUT_ON_FAILURE=1 make test     
+    - rm -rf _deps
+  artifacts:
+    paths:
+      - build_gpu/*
+
+coverage:
+  stage: coverage   
+  coverage: '/lines......: (\d+[.]\d+)/'
+  dependencies:
+    - test_cpu
+    - test_gpu
+  tags: [ docker-proton ]
+  image:
+    name: opensuse:jsc-gcc12
+  script:
+  # Merge the two coverage files
+    - lcov --capture --directory ./build_cpu --output-file coverage_cpu.info
+    - lcov --capture --directory ./build_gpu --output-file coverage_gpu.info
+    - lcov --add-tracefile coverage_cpu.info --add-tracefile coverage_gpu.info --output-file coverage.info
+    - lcov --summary coverage.info
