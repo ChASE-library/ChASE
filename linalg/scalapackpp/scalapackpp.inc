@@ -353,6 +353,217 @@ void t_ptranc(std::size_t m, std::size_t n, std::complex<double> alpha, std::com
     pztranc_(&m_, &n_, &alpha, A, &ia, &ja, desc_a_, &beta, C, &ic, &jc, desc_c_); 
 }
 
+template <>
+void t_pheevd(char jobz, char uplo, std::size_t N, float *A, std::size_t *desc_a,
+                                       float* W, float *Z, std::size_t *desc_z, int *info)//if seems that if jobz='N', return parameter error, need to check later
+{
+    int* desc_a_ = new int[9];
+    int* desc_z_ = new int[9];
+
+    for (int i = 0; i < 9; i++)
+    {
+        desc_a_[i] = static_cast<std::size_t>(desc_a[i]);
+        desc_z_[i] = static_cast<std::size_t>(desc_z[i]);
+    }    
+
+    int N_ = N;
+
+    float *work;
+    float work_q;
+    int lwork = -1;
+
+    int *iwork;
+    int iwork_size;
+    int liwork = 1;
+
+    int one = 1;
+
+    pssyevd_(&jobz, &uplo, &N_, A, &one, &one, desc_a_, W, Z, &one, &one, desc_z_, &work_q, &lwork, &iwork_size, &liwork, info);
+    
+    int work_size = int(work_q);
+    int size = 1.5 * work_size; //queried buffer size seems not large enough, don't know why. for now, amplified by a factor 1.5
+    auto wptr_ = std::unique_ptr<float[]> {
+        new float[ size ]
+    };
+
+    work = wptr_.get();
+
+    auto iwptr_ = std::unique_ptr<int[]> {
+        new int[ iwork_size ]
+    };
+
+    iwork = iwptr_.get();
+
+    pssyevd_(&jobz, &uplo, &N_, A, &one, &one, desc_a_, W, Z, &one, &one, desc_z_, work, &size, iwork, &iwork_size, info);
+
+    assert(*info == 0);
+    
+}
+
+template <>
+void t_pheevd(char jobz, char uplo, std::size_t N, double *A, std::size_t *desc_a,
+                                       double* W, double *Z, std::size_t *desc_z, int *info)
+{
+    int* desc_a_ = new int[9];
+    int* desc_z_ = new int[9];
+
+    for (int i = 0; i < 9; i++)
+    {
+        desc_a_[i] = static_cast<std::size_t>(desc_a[i]);
+        desc_z_[i] = static_cast<std::size_t>(desc_z[i]);
+    }    
+
+    int N_ = N;
+
+    double *work;
+    double work_q;
+    int lwork = -1;
+
+    int *iwork;
+    int iwork_size;
+    int liwork = -1;
+
+    int one = 1;
+
+    pdsyevd_(&jobz, &uplo, &N_, A, &one, &one, desc_a_, W, Z, &one, &one, desc_z_, &work_q, &lwork, &iwork_size, &liwork, info);
+    
+    int work_size = int(work_q);
+    work_size = 1.5 * work_size;
+    auto wptr_ = std::unique_ptr<double[]> {
+        new double[ work_size ]
+    };
+
+    work = wptr_.get();
+
+    auto iwptr_ = std::unique_ptr<int[]> {
+        new int[ iwork_size ]
+    };
+
+    iwork = iwptr_.get();
+
+    pdsyevd_(&jobz, &uplo, &N_, A, &one, &one, desc_a_, W, Z, &one, &one, desc_z_, work, &work_size, iwork, &iwork_size, info);
+
+    assert(*info == 0);
+
+}
+
+template <>
+void t_pheevd(char jobz, char uplo, std::size_t N, std::complex<float> *A, std::size_t *desc_a,
+                                       float* W, std::complex<float> *Z, std::size_t *desc_z, int *info)
+{
+    int* desc_a_ = new int[9];
+    int* desc_z_ = new int[9];
+
+    for (int i = 0; i < 9; i++)
+    {
+        desc_a_[i] = static_cast<std::size_t>(desc_a[i]);
+        desc_z_[i] = static_cast<std::size_t>(desc_z[i]);
+    }    
+
+    int N_ = N;
+
+    std::complex<float> *work;
+    std::complex<float> work_q;
+    int lwork = -1;
+
+    float *rwork;
+    float rwork_q;
+    int lrwork = -1;
+
+    int *iwork;
+    int iwork_size;
+    int liwork = -1;
+
+    int one = 1;
+
+    pcheevd_(&jobz, &uplo, &N_, A, &one, &one, desc_a_, W, Z, &one, &one, desc_z_, &work_q, &lwork, &rwork_q, &lrwork, &iwork_size, &liwork, info);
+    
+    int work_size = 1.5 * (int)real(work_q);
+
+    int rwork_size = int(rwork_q);
+
+    auto wptr_ = std::unique_ptr<std::complex<float>[]> {
+        new std::complex<float>[ work_size ]
+    };
+
+    work = wptr_.get();
+
+    auto rwptr_ = std::unique_ptr<float[]> {
+        new float[ rwork_size ]
+    };
+
+    rwork = rwptr_.get();
+
+    auto iwptr_ = std::unique_ptr<int[]> {
+        new int[ iwork_size ]
+    };
+
+    iwork = iwptr_.get();
+
+    pcheevd_(&jobz, &uplo, &N_, A, &one, &one, desc_a_, W, Z, &one, &one, desc_z_, work, &work_size, rwork, &rwork_size,iwork, &iwork_size, info);
+
+    assert(*info == 0);
+}
+
+template <>
+void t_pheevd(char jobz, char uplo, std::size_t N, std::complex<double> *A, std::size_t *desc_a,
+                                       double* W, std::complex<double> *Z, std::size_t *desc_z, int *info)
+{
+    int* desc_a_ = new int[9];
+    int* desc_z_ = new int[9];
+
+    for (int i = 0; i < 9; i++)
+    {
+        desc_a_[i] = static_cast<std::size_t>(desc_a[i]);
+        desc_z_[i] = static_cast<std::size_t>(desc_z[i]);
+    }    
+
+    int N_ = N;
+
+    std::complex<double> *work;
+    std::complex<double> work_q;
+    int lwork = -1;
+
+    double *rwork;
+    double rwork_q;
+    int lrwork = -1;
+
+    int *iwork;
+    int iwork_size;
+    int liwork = -1;
+
+    int one = 1;
+
+    pzheevd_(&jobz, &uplo, &N_, A, &one, &one, desc_a_, W, Z, &one, &one, desc_z_, &work_q, &lwork, &rwork_q, &lrwork, &iwork_size, &liwork, info);
+    
+    int work_size = 1.5 * (int)real(work_q);
+    int rwork_size = int(rwork_q);
+
+    auto wptr_ = std::unique_ptr<std::complex<double>[]> {
+        new std::complex<double>[ work_size ]
+    };
+
+    work = wptr_.get();
+
+    auto rwptr_ = std::unique_ptr<double[]> {
+        new double[ rwork_size ]
+    };
+
+    rwork = rwptr_.get();
+
+    auto iwptr_ = std::unique_ptr<int[]> {
+        new int[ iwork_size ]
+    };
+
+    iwork = iwptr_.get();
+
+    pzheevd_(&jobz, &uplo, &N_, A, &one, &one, desc_a_, W, Z, &one, &one, desc_z_, work, &work_size, rwork, &rwork_size,iwork, &iwork_size, info);
+
+    assert(*info == 0);
+
+}
+
+
 }
 }
 }

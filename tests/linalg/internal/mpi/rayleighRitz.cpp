@@ -5,6 +5,8 @@
 #include <cstring>
 #include "linalg/internal/mpi/hemm.hpp"
 #include "linalg/internal/mpi/rayleighRitz.hpp"
+#include "linalg/internal/mpi/residuals.hpp"
+#include "linalg/scalapackpp/scalapackpp.hpp"
 #include "tests/linalg/internal/utils.hpp"
 #include "Impl/mpi/mpiGrid2D.hpp"
 #include "linalg/matrix/distMatrix.hpp"
@@ -24,7 +26,7 @@ protected:
     int world_size;  
 
     std::size_t N = 50;
-    std::size_t n = 10;     
+    std::size_t n = 8;     
 };
 
 using TestTypes = ::testing::Types<float, double, std::complex<float>, std::complex<double>>;
@@ -110,5 +112,4 @@ TYPED_TEST(RRCPUDistTest, RRCorrectness) {
     {
         EXPECT_NEAR(ritzv[i], evals[i], 100 * machineEpsilon);
     }
-
 }
