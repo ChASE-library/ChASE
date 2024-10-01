@@ -63,12 +63,6 @@ add_executable( "chase_driver" tests/noinput.cpp )
 target_link_libraries(chase_driver chase_cpu)
 target_include_directories(chase_driver PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
-if(HAS_GPU_SUPPORT)
-add_executable( "chase_driver_gpu" tests/noinput.cpp )
-target_link_libraries(chase_driver_gpu chase_cpu chase_gpu)
-target_include_directories(chase_driver_gpu PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-endif()
-
 option(ENABLE_TESTS "Enable unit tests." OFF)
 if(ENABLE_TESTS)
     MESSAGE("Test enabled. Finding GoogleTests.")
