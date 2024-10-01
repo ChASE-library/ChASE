@@ -6,6 +6,11 @@ if(POPL_FOUND)
   target_include_directories( "2_input_seq.exe" PRIVATE ${POPL_INCLUDE_DIR})
   target_compile_definitions( "2_input_seq.exe" PRIVATE PRINT_EIGENVALUES=1)
 
+  add_executable( "2_input_gpu_seq.exe" "2_input.cpp")
+  target_link_libraries( "2_input_gpu_seq.exe" PRIVATE chase_cpu chase_gpu)
+  target_include_directories( "2_input_gpu_seq.exe" PRIVATE ${POPL_INCLUDE_DIR})
+  target_compile_definitions( "2_input_gpu_seq.exe" PRIVATE PRINT_EIGENVALUES=1)
+
   add_executable( "2_input.exe" "2_input.cpp")
   target_link_libraries( "2_input.exe" PRIVATE chase_mpi )
   target_include_directories( "2_input.exe" PRIVATE ${POPL_INCLUDE_DIR})

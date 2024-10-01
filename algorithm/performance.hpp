@@ -16,6 +16,10 @@
 #include <iostream>
 #include <vector>
 
+#ifdef HAS_CUDA
+#include <cuda_runtime.h>
+#endif
+
 #include "interface.hpp"
 #include "types.hpp"
 

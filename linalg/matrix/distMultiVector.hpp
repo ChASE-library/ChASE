@@ -319,7 +319,7 @@ public:
                                          1,
                                          tmp.data(),
                                          1,
-                                         this->l_data() + i * ld_,
+                                         this->l_data() + j * ld_,
                                          1);      
     }
 

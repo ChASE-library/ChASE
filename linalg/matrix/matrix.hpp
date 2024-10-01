@@ -9,7 +9,13 @@
 #include "algorithm/types.hpp"
 #include "linalg/lapackpp/lapackpp.hpp"
 #include <omp.h>
+#ifdef HAS_CUDA
+#include <cuda_runtime.h>
+#include "Impl/cuda/cuda_utils.hpp"
+#include "linalg/cublaspp/cublaspp.hpp"
+#include "linalg/internal/cuda/precision_conversion.cuh"
 
+#endif
 namespace chase {
 namespace matrix {
 
@@ -248,6 +254,262 @@ public:
 #endif    
 };
 
+
+#ifdef HAS_CUDA
+template <typename T>
+class MatrixGPU {
+private:
+    T *gpu_data_ = nullptr;
+    T *cpu_data_ = nullptr;
+    std::size_t rows_;
+    std::size_t cols_;
+    std::size_t gpu_ld_;
+    std::size_t cpu_ld_;
+    bool owns_cpu_mem_;
+#ifdef ENABLE_MIXED_PRECISION
+    using singlePrecisionT = typename chase::ToSinglePrecisionTrait<T>::Type;
+    //singlePrecisionT* single_precision_data_;  // Low precision data (raw pointer)
+    std::unique_ptr<MatrixGPU<singlePrecisionT>> single_precision_data_ = nullptr;
+    bool single_precision_enabled_ = false;  // Flag to track if low precision is enabled
+#endif
+
+public:
+    // Default constructor
+    MatrixGPU()
+        : cpu_data_(nullptr), gpu_data_(nullptr), rows_(0), cols_(0), gpu_ld_(0),
+          cpu_ld_(0), owns_cpu_mem_(false)
+        {}
+
+    MatrixGPU(std::size_t rows, std::size_t cols)
+        : rows_(rows), cols_(cols), cpu_ld_(0), gpu_ld_(rows), owns_cpu_mem_(false)
+    {
+        CHECK_CUDA_ERROR(cudaMalloc(&gpu_data_, rows * cols * sizeof(T)));      // Allocate GPU buffer
+        CHECK_CUDA_ERROR(cudaMemset(gpu_data_, 0, rows * cols * sizeof(T)));
+    }
+
+    MatrixGPU(std::size_t rows, std::size_t cols, std::size_t ld, T *cpu_data)
+        : rows_(rows), cols_(cols), cpu_ld_(ld), gpu_ld_(rows), cpu_data_(cpu_data), owns_cpu_mem_(true)
+    {
+        CHECK_CUDA_ERROR(cudaMalloc(&gpu_data_, rows * cols * sizeof(T)));      // Allocate GPU buffer
+        CHECK_CUBLAS_ERROR(cublasSetMatrix(rows_, cols_, sizeof(T), cpu_data_, cpu_ld_,
+                        gpu_data_, gpu_ld_));
+    }
+
+    // Move constructor
+    MatrixGPU(MatrixGPU&& other) noexcept
+        : gpu_data_(other.gpu_data_), cpu_data_(other.cpu_data_), rows_(other.rows_),
+          cols_(other.cols_), gpu_ld_(other.gpu_ld_), cpu_ld_(other.cpu_ld_),
+          owns_cpu_mem_(other.owns_cpu_mem_)
+#ifdef ENABLE_MIXED_PRECISION
+          ,single_precision_data_(std::move(other.single_precision_data_)),
+          single_precision_enabled_(other.single_precision_enabled_) 
+#endif     
+    {
+        other.gpu_data_ = nullptr; // The moved-from object no longer owns the GPU data
+        other.cpu_data_ = nullptr; // The moved-from object no longer owns the CPU data
+        other.owns_cpu_mem_ = false; // No longer owns the memory
+    }
+
+    // Move assignment operator
+    MatrixGPU& operator=(MatrixGPU&& other) noexcept {
+        if (this != &other) {
+            // Free existing GPU memory if it owns it
+            cudaFree(gpu_data_);
+            if (owns_cpu_mem_ && cpu_data_ != nullptr) {
+                cudaFreeHost(cpu_data_);
+            }
+
+            // Transfer ownership
+            gpu_data_ = other.gpu_data_;
+            cpu_data_ = other.cpu_data_;
+            rows_ = other.rows_;
+            cols_ = other.cols_;
+            gpu_ld_ = other.gpu_ld_;
+            cpu_ld_ = other.cpu_ld_;
+            owns_cpu_mem_ = other.owns_cpu_mem_;
+#ifdef ENABLE_MIXED_PRECISION
+            single_precision_data_ = std::move(other.single_precision_data_);
+            single_precision_enabled_ = other.single_precision_enabled_;
+            other.single_precision_data_ = nullptr;  // Transfer ownership of low precision data
+#endif  
+
+            // Nullify the other
+            other.gpu_data_ = nullptr;
+            other.cpu_data_ = nullptr;
+            other.owns_cpu_mem_ = false;
+        }
+        return *this;
+    }
+
+    // Swap function to exchange data between two matrices
+    void swap(MatrixGPU& other) noexcept {
+        std::swap(gpu_data_, other.gpu_data_);
+        std::swap(cpu_data_, other.cpu_data_);
+        std::swap(rows_, other.rows_);
+        std::swap(cols_, other.cols_);
+        std::swap(gpu_ld_, other.gpu_ld_);
+        std::swap(cpu_ld_, other.cpu_ld_);
+        std::swap(owns_cpu_mem_, other.owns_cpu_mem_);
+#ifdef ENABLE_MIXED_PRECISION
+        std::swap(single_precision_enabled_, other.single_precision_enabled_);
+        std::swap(single_precision_data_, other.single_precision_data_);
+#endif    
+    }
+
+    ~MatrixGPU() {
+        cudaFree(gpu_data_);
+        if(owns_cpu_mem_ && cpu_data_!= nullptr)
+        {
+            cudaFreeHost(cpu_data_);
+        }        
+    }
+
+    void allocate_cpu_data()
+    {
+        if(!owns_cpu_mem_ || cpu_data_ == nullptr)
+        {
+            CHECK_CUDA_ERROR(cudaMallocHost(&cpu_data_, rows_ * cols_ * sizeof(T))); // Allocate pinned CPU buffer
+            memset(cpu_data_, 0, rows_ * cols_ * sizeof(T));            
+            owns_cpu_mem_ = true;
+            cpu_ld_ = rows_;
+        }else
+        {
+            std::cerr << "[MatrixGPU]: Warning> CPU data is already allocated" << std::endl;
+        }
+    }
+
+    T* cpu_data() 
+    {       
+        if(!owns_cpu_mem_ || cpu_data_ == nullptr)
+        {
+            std::cerr << "[MatrixGPU]: Warning> CPU data is not allocated yet, nullptr is returned" << std::endl;
+        }  
+        return cpu_data_; 
+    }
+
+    void H2D()
+    {
+        T *src_data = this->cpu_data();
+        CHECK_CUBLAS_ERROR(cublasSetMatrix(rows_, cols_, sizeof(T), src_data, cpu_ld_,
+                        this->gpu_data(), gpu_ld_));        
+    }
+
+    void D2H()
+    {
+        if(cpu_data_ == nullptr)
+        {
+            this->allocate_cpu_data();
+        }
+        T *dest_data = this->cpu_data();
+        CHECK_CUBLAS_ERROR(cublasGetMatrix(rows_, cols_, sizeof(T), this->gpu_data(), gpu_ld_,
+                        dest_data, this->cpu_ld()));        
+    }
+
+    void saveToBinaryFile(const std::string& filename) {
+        std::ofstream file(filename, std::ios::binary);
+        if (!file.is_open()) {
+            throw std::runtime_error("[MatrixGPU]: Failed to open file for writing.");
+        }
+
+        std::size_t dataSize = rows_ * cols_ * sizeof(T);
+        if (cpu_ld_ > rows_) {
+            std::vector<T> buffer(rows_ * cols_);
+            chase::linalg::lapackpp::t_lacpy('A', rows_, cols_, this->cpu_data(), cpu_ld_, buffer.data(), rows_);
+            file.write(reinterpret_cast<const char*>(buffer.data()), dataSize);
+        } else {
+            file.write(reinterpret_cast<const char*>(this->cpu_data()), dataSize);
+        }
+    }
+
+    // Read matrix data from a binary file
+    void readFromBinaryFile(const std::string& filename) {
+        std::ifstream file(filename, std::ios::binary | std::ios::in);
+        if (!file.is_open()) {
+            throw std::runtime_error("[MatrixGPU]: Failed to open file for reading.");
+        }
+        
+        // Check file size
+        file.seekg(0, std::ios::end);
+        std::streamsize fileSize = file.tellg();
+        file.seekg(0, std::ios::beg);
+
+        std::streamsize requiredSize = rows_ * cols_ * sizeof(T);
+        if (fileSize < requiredSize) {
+            throw std::runtime_error("[MatrixCPU]: File size is smaller than the required matrix size.");
+        }
+
+        if (cpu_ld_ > rows_) {
+            std::vector<T> buffer(rows_ * cols_);
+            file.read(reinterpret_cast<char*>(buffer.data()), requiredSize);
+            chase::linalg::lapackpp::t_lacpy('A', rows_, cols_, buffer.data(), rows_, this->cpu_data(), cpu_ld_);
+        } else {
+            file.read(reinterpret_cast<char*>(this->cpu_data()), requiredSize);
+        }
+    }
+
+#ifdef ENABLE_MIXED_PRECISION
+    // Enable low precision: only enabled if T is double or std::complex<double>
+    template<typename U = T, typename std::enable_if<
+        std::is_same<U, double>::value || std::is_same<U, std::complex<double>>::value, int>::type = 0>
+    void enableSinglePrecision() {
+        if (single_precision_enabled_) {
+            throw std::runtime_error("Single precision already enabled.");
+        }
+
+        single_precision_data_ = std::make_unique<MatrixGPU<singlePrecisionT>>(rows_, cols_);
+        chase::linalg::internal::cuda::convert_DP_TO_SP_GPU(this->gpu_data(), single_precision_data_->gpu_data(), rows_ * cols_);
+        //std::cout << this->gpu_data() << " vs " << single_precision_data_->gpu_data() << std::endl;
+        single_precision_enabled_ = true;
+    }
+
+    // Disable low precision: only enabled if T is double or std::complex<double>
+    template<typename U = T, typename std::enable_if<
+        std::is_same<U, double>::value || std::is_same<U, std::complex<double>>::value, int>::type = 0>
+    void disableSinglePrecision(bool copyback = false) {
+        if (!single_precision_enabled_) {
+            throw std::runtime_error("Single precision is not enabled.");
+        }
+
+        if (single_precision_data_ == nullptr) {
+            throw std::runtime_error("Original SP data is not initialized.");
+        }
+
+        if(copyback){
+            chase::linalg::internal::cuda::convert_SP_TO_DP_GPU(single_precision_data_->gpu_data(), this->gpu_data(), rows_ * cols_);
+        }
+   
+        single_precision_data_.reset();
+        single_precision_enabled_ = false;     
+    }
+#endif
+
+    T* gpu_data() { return gpu_data_; }
+    std::size_t rows() const { return rows_; }
+    std::size_t cols() const { return cols_; }
+    std::size_t gpu_ld() const { return gpu_ld_; }
+    std::size_t cpu_ld() const { return cpu_ld_; }
+#ifdef ENABLE_MIXED_PRECISION
+    MatrixGPU<singlePrecisionT>* matrix_sp() { return single_precision_data_.get(); }
+    bool isSinglePrecisionEnabled() const { return single_precision_enabled_; }    
+
+    // Disabled methods when T is not double or complex<double>
+    template<typename U = T, typename std::enable_if<
+        !(std::is_same<U, double>::value || std::is_same<U, std::complex<double>>::value), int>::type = 0>
+    void enableSinglePrecision() {
+        throw std::runtime_error("Single precision operations are only supported for double or complex<double>.");
+    }
+
+    template<typename U = T, typename std::enable_if<
+        !(std::is_same<U, double>::value || std::is_same<U, std::complex<double>>::value), int>::type = 0>
+    void disableSinglePrecision(bool copyback = false) {
+        throw std::runtime_error("Single precision operations are only supported for double or complex<double>.");
+    }
+#endif    
+
+
+};
+
+#endif
 }  // namespace matrix
 }  // namespace chase
 

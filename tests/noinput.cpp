@@ -7,6 +7,9 @@
 #include <vector>
 
 #include "algorithm/performance.hpp"
+#ifdef HAS_CUDA
+#include "Impl/chase_seq_gpu.hpp"
+#endif
 #include "Impl/chase_seq_cpu.hpp"
 
 using T = std::complex<double>;
@@ -16,8 +19,8 @@ int main()
 {
     std::size_t N = 1200;
     std::size_t LDH = 1200;
-    std::size_t nev = 80;
-    std::size_t nex = 60;
+    std::size_t nev = 360;
+    std::size_t nex = 80;
     std::size_t idx_max = 3;
     Base<T> perturb = 1e-4;
     
@@ -30,9 +33,12 @@ int main()
     auto V = std::vector<T>(N * (nev + nex));
     auto Lambda = std::vector<Base<T>>(nev + nex);
     std::vector<T> H(N * LDH, T(0.0));
-
+#ifdef HAS_CUDA
+    std::cout << "USE GPU" << std::endl;
+    chase::Impl::ChaseGPUSeq<T> single(N, nev, nex, H.data(), LDH, V.data(), N, Lambda.data());
+#else
     chase::Impl::ChaseCPUSeq<T> single(N, nev, nex, H.data(), LDH, V.data(), N, Lambda.data());
-
+#endif
     auto& config = single.GetConfig();
     config.SetTol(1e-10);
     config.SetDeg(20);
@@ -57,7 +63,6 @@ int main()
 
     for (auto idx = 0; idx < idx_max; ++idx)
     {
-
         std::cout << "Starting Problem #" << idx << "\n";
         if (config.UseApprox())
         {
@@ -98,5 +103,5 @@ int main()
             }
         }
     }
+    
 }
-

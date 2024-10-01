@@ -24,8 +24,8 @@ class ChaseCPUSeq : public ChaseBase<T>
 {
 public:
     ChaseCPUSeq(std::size_t N, 
-                std::size_t nex, 
                 std::size_t nev, 
+                std::size_t nex, 
                 T* H, 
                 std::size_t ldh, 
                 T* V1, 
