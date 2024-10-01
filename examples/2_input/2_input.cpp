@@ -12,6 +12,9 @@
 #include "Impl/chase_mpi_cpu.hpp"
 #else
 #include "Impl/chase_seq_cpu.hpp"
+#ifdef HAS_CUDA
+#include "Impl/chase_seq_gpu.hpp"
+#endif
 #endif
 
 using namespace popl;
@@ -104,8 +107,11 @@ int do_chase(ChASE_DriverProblemConfig& conf)
 
     T* V = V__.get();
     T *H = H__.get();   
-
+#ifdef HAS_CUDA
+    chase::Impl::ChaseGPUSeq<T> single(N, nev, nex, H, N, V, N, Lambda);
+#else
     chase::Impl::ChaseCPUSeq<T> single(N, nev, nex, H, N, V, N, Lambda);
+#endif    
 #endif
 
     chase::ChaseConfig<T>& config = single.GetConfig();

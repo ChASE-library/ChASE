@@ -35,3 +35,18 @@ if(TARGET scalapackpp)
   target_link_libraries(chase_mpi INTERFACE scalapackpp)
   target_compile_definitions(chase_mpi INTERFACE HAS_SCALAPACK=1 )
 endif()
+
+if(HAS_GPU_SUPPORT)
+add_library(chase_gpu INTERFACE)
+# Link against linalg libraries
+target_link_libraries(chase_gpu INTERFACE chase_algorithm blaspp linalg_internal_cpu cublaspp cusolverpp chase_cuda_kernels)
+
+list(APPEND includePath ${CMAKE_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories( chase_gpu INTERFACE
+  "$<BUILD_INTERFACE:${includePath}>"
+  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>  # <prefix>/include/ChASE-MPI
+)
+
+target_include_directories(chase_gpu INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
+target_compile_definitions(chase_gpu INTERFACE NO_MPI=1 HAS_CUDA=1)
+endif()
