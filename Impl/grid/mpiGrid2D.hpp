@@ -4,6 +4,11 @@
 #ifdef HAS_SCALAPACK
 #include "linalg/scalapackpp/scalapackpp.hpp"
 #endif
+#ifdef HAS_NCCL
+#include <nccl.h>
+#include "Impl/grid/nccl_utils.hpp"
+#endif
+
 namespace chase {
 namespace Impl {
 namespace mpi {
@@ -23,6 +28,11 @@ public:
     virtual int* get_coords() = 0;
     virtual int* get_dims() = 0;
     virtual GridMajor getGridMajor() const = 0;
+#ifdef HAS_NCCL
+    virtual ncclComm_t get_nccl_comm() const = 0;
+    virtual ncclComm_t get_nccl_row_comm() const = 0;
+    virtual ncclComm_t get_nccl_col_comm() const = 0;
+#endif
 #ifdef HAS_SCALAPACK
     virtual int get_blacs_colcomm_ctxt() = 0;
     virtual int get_blacs_rowcomm_ctxt() = 0;
@@ -53,6 +63,12 @@ public:
        
         create2DGrid();
     }
+
+    ~MpiGrid2D()
+    {
+        CHECK_NCCL_ERROR(ncclCommDestroy(nccl_row_comm_));
+        CHECK_NCCL_ERROR(ncclCommDestroy(nccl_col_comm_));
+    } 
 
     // Implement equality operator
     bool operator==(const MpiGrid2D<MajorOrder>& other) const {
@@ -85,6 +101,12 @@ public:
     int* get_coords() override { return coords_; }
     int* get_dims() override { return dims_; }
     GridMajor getGridMajor() const override { return MajorOrder; }
+
+#ifdef HAS_NCCL
+    virtual ncclComm_t get_nccl_comm() const override { return nccl_comm_; };
+    virtual ncclComm_t get_nccl_row_comm() const override { return nccl_row_comm_; };
+    virtual ncclComm_t get_nccl_col_comm() const override { return nccl_col_comm_; };
+#endif
 
 #ifdef HAS_SCALAPACK
     int get_blacs_colcomm_ctxt() override { return colComm1D_ctxt_; }
@@ -134,6 +156,44 @@ private:
         MPI_Comm_size(col_comm_, &col_procs_);
 
         MPI_Comm_free(&cartComm);
+#ifdef HAS_NCCL
+        ncclUniqueId id;
+        if (myrank_ == 0) {
+            CHECK_NCCL_ERROR(ncclGetUniqueId(&id));
+        }
+        MPI_Bcast((void *) &id, sizeof(id), MPI_BYTE, 0, comm_);
+        CHECK_NCCL_ERROR(ncclCommInitRank(&nccl_comm_, nprocs_, id, myrank_));
+
+        ncclUniqueId nccl_id, nccl_ids[nprocs_];
+        CHECK_NCCL_ERROR(ncclGetUniqueId(&nccl_id));
+        MPI_Allgather(&nccl_id, sizeof(ncclUniqueId), MPI_UINT8_T, &nccl_ids[0],
+                      sizeof(ncclUniqueId), MPI_UINT8_T, comm_);
+        //nccl row comm
+        for (auto i = 0; i < dims_[0]; i++)
+        {
+            if (coords_[0] == i)
+            {
+                CHECK_NCCL_ERROR(ncclCommInitRank(&nccl_row_comm_, dims_[1], nccl_ids[i],
+                                 coords_[1]));
+            }
+        }
+
+        //nccl column comm
+        ncclUniqueId nccl_id_2, nccl_ids_2[nprocs_];
+        CHECK_NCCL_ERROR(ncclGetUniqueId(&nccl_id_2));
+        MPI_Allgather(&nccl_id_2, sizeof(ncclUniqueId), MPI_UINT8_T,
+                      &nccl_ids_2[0], sizeof(ncclUniqueId), MPI_UINT8_T, comm_);
+
+        for (auto i = 0; i < dims_[1]; i++)
+        {
+            if (coords_[1] == i)
+            {
+                CHECK_NCCL_ERROR(ncclCommInitRank(&nccl_col_comm_, dims_[0],
+                                 nccl_ids_2[i * dims_[0]], coords_[0]));
+            }
+        }
+
+#endif
 
 #ifdef HAS_SCALAPACK
         int zero = 0;
@@ -183,6 +243,11 @@ private:
     int col_procs_;
     int nprocs_;
     int myrank_;
+#ifdef HAS_NCCL
+    ncclComm_t nccl_comm_;
+    ncclComm_t nccl_row_comm_;
+    ncclComm_t nccl_col_comm_;
+#endif
 #ifdef HAS_SCALAPACK
     int comm2D_ctxt_;
     int colComm1D_ctxt_;
