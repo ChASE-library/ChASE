@@ -66,8 +66,11 @@ public:
 
     ~MpiGrid2D()
     {
+#ifdef HAS_NCCL
+        CHECK_NCCL_ERROR(ncclCommDestroy(nccl_comm_));
         CHECK_NCCL_ERROR(ncclCommDestroy(nccl_row_comm_));
         CHECK_NCCL_ERROR(ncclCommDestroy(nccl_col_comm_));
+#endif        
     } 
 
     // Implement equality operator
