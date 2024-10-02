@@ -3,9 +3,9 @@
 #include <cmath>
 #include <cstring>
 #include "linalg/internal/mpi/shiftDiagonal.hpp"
-#include "Impl/mpi/mpiGrid2D.hpp"
-#include "linalg/matrix/distMatrix.hpp"
-#include "linalg/matrix/distMultiVector.hpp"
+#include "Impl/grid/mpiGrid2D.hpp"
+#include "linalg/distMatrix/distMatrix.hpp"
+#include "linalg/distMatrix/distMultiVector.hpp"
 #include "linalg/internal/mpi/symOrHerm.hpp"
 
 template <typename T>

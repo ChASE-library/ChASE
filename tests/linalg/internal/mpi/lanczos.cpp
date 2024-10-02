@@ -4,9 +4,9 @@
 #include <cstring>
 #include <random>
 #include "linalg/internal/mpi/lanczos.hpp"
-#include "Impl/mpi/mpiGrid2D.hpp"
-#include "linalg/matrix/distMatrix.hpp"
-#include "linalg/matrix/distMultiVector.hpp"
+#include "Impl/grid/mpiGrid2D.hpp"
+#include "linalg/distMatrix/distMatrix.hpp"
+#include "linalg/distMatrix/distMultiVector.hpp"
 
 template <typename T>
 class LanczosCPUDistTest : public ::testing::Test {

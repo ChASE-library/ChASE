@@ -5,7 +5,7 @@
 #include "linalg/internal/mpi/cholqr.hpp"
 #include "tests/linalg/internal/mpi/TestConditions.hpp"
 #include "tests/linalg/internal/utils.hpp"
-#include "Impl/mpi/mpiGrid2D.hpp"
+#include "Impl/grid/mpiGrid2D.hpp"
 
 template <typename T>
 class CHOLQRCPUDistTest : public ::testing::Test {

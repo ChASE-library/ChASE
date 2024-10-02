@@ -6,9 +6,9 @@
 #include "linalg/internal/mpi/hemm.hpp"
 #include "linalg/internal/mpi/residuals.hpp"
 #include "tests/linalg/internal/utils.hpp"
-#include "Impl/mpi/mpiGrid2D.hpp"
-#include "linalg/matrix/distMatrix.hpp"
-#include "linalg/matrix/distMultiVector.hpp"
+#include "Impl/grid/mpiGrid2D.hpp"
+#include "linalg/distMatrix/distMatrix.hpp"
+#include "linalg/distMatrix/distMultiVector.hpp"
 
 template <typename T>
 class ResidCPUDistTest : public ::testing::Test {

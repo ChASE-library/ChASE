@@ -2,8 +2,8 @@
 #include <complex>
 #include <cmath>
 #include <cstring>
-#include "linalg/matrix/distMultiVector.hpp"
-#include "Impl/mpi/mpiGrid2D.hpp"
+#include "linalg/distMatrix/distMultiVector.hpp"
+#include "Impl/grid/mpiGrid2D.hpp"
 
 template <typename T>
 class MultiVectorCPUDistTest : public ::testing::Test {

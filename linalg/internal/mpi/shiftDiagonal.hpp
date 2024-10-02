@@ -1,7 +1,7 @@
 #pragma once
 
 #include <omp.h>
-#include "linalg/matrix/distMatrix.hpp"
+#include "linalg/distMatrix/distMatrix.hpp"
 
 namespace chase
 {

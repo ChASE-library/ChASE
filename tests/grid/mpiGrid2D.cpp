@@ -2,7 +2,7 @@
 #include <cmath>
 #include <cstring>
 #include <mpi.h>
-#include "Impl/mpi/mpiGrid2D.hpp"
+#include "Impl/grid/mpiGrid2D.hpp"
 
 class MpiGrid2DTest : public ::testing::Test {
 protected:

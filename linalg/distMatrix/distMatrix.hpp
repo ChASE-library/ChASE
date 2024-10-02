@@ -11,8 +11,8 @@
 #include "algorithm/types.hpp"
 #include "linalg/matrix/matrix.hpp"
 #include "linalg/scalapackpp/scalapackpp.hpp"
-#include "Impl/mpi/mpiGrid2D.hpp"
-#include "Impl/mpi/mpiTypes.hpp"
+#include "Impl/grid/mpiGrid2D.hpp"
+#include "Impl/grid/mpiTypes.hpp"
 
 namespace chase {
 namespace distMatrix {
