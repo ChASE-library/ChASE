@@ -1,3 +1,10 @@
 add_library(mpi_grid INTERFACE)
 target_link_libraries(mpi_grid INTERFACE linalg_internal_mpi)
 target_include_directories(mpi_grid INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
+
+find_package(NCCL)
+if(NCCL_FOUND)
+    target_link_libraries(mpi_grid INTERFACE ${NCCL_LIBRARIES})
+    target_include_directories( mpi_grid INTERFACE ${NCCL_INCLUDE_DIRS})
+    target_compile_definitions( mpi_grid INTERFACE "-DHAS_NCCL")
+endif()
