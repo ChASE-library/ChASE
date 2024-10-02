@@ -2,8 +2,8 @@
 #include <complex>
 #include <cmath>
 #include <cstring>
-#include "linalg/matrix/distMatrix.hpp"
-#include "Impl/mpi/mpiGrid2D.hpp"
+#include "linalg/distMatrix/distMatrix.hpp"
+#include "Impl/grid/mpiGrid2D.hpp"
 
 template <typename T>
 class MatrixCPUDistTest : public ::testing::Test {

@@ -1,4 +1,3 @@
-if(HAS_GPU_SUPPORT)
 setup_test_serial(shiftDiagonalGPUTest shiftDiagonal.cpp LIBRARIES chase_gpu chase_cpu)
 setup_test_serial(absTraceGPUTest absTrace.cpp LIBRARIES chase_gpu chase_cpu)
 setup_test_serial(lacpyGPUTest lacpy.cpp LIBRARIES chase_gpu chase_cpu)
@@ -6,5 +5,3 @@ setup_test_serial(ResidGPUTest residuals.cpp LIBRARIES chase_gpu chase_cpu)
 setup_test_serial(RayleighRitzGPUTest rayleighRitz.cpp LIBRARIES chase_gpu chase_cpu)
 setup_test_serial(CholQRGPUTest cholqr.cpp LIBRARIES chase_gpu chase_cpu)
 setup_test_serial(lanczosGPUTest lanczos.cpp LIBRARIES chase_gpu chase_cpu)
-
-endif()

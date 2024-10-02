@@ -3,8 +3,8 @@
 #include <mpi.h>
 #include "linalg/blaspp/blaspp.hpp"
 #include "linalg/lapackpp/lapackpp.hpp"
-#include "linalg/matrix/distMatrix.hpp"
-#include "linalg/matrix/distMultiVector.hpp"
+#include "linalg/distMatrix/distMatrix.hpp"
+#include "linalg/distMatrix/distMultiVector.hpp"
 
 namespace chase
 {

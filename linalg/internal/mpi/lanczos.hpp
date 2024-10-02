@@ -4,9 +4,9 @@
 #include "linalg/blaspp/blaspp.hpp"
 #include "linalg/lapackpp/lapackpp.hpp"
 #include "linalg/internal/cpu/utils.hpp"
-#include "linalg/matrix/distMatrix.hpp"
-#include "linalg/matrix/distMultiVector.hpp"
-#include "Impl/mpi/mpiTypes.hpp"
+#include "linalg/distMatrix/distMatrix.hpp"
+#include "linalg/distMatrix/distMultiVector.hpp"
+#include "Impl/grid/mpiTypes.hpp"
 #include "linalg/internal/mpi/hemm.hpp"
 
 namespace chase

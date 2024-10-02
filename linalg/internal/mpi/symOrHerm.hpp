@@ -5,8 +5,8 @@
 #include "algorithm/types.hpp"
 #include "linalg/blaspp/blaspp.hpp"
 #include "linalg/lapackpp/lapackpp.hpp"
-#include "linalg/matrix/distMatrix.hpp"
-#include "linalg/matrix/distMultiVector.hpp"
+#include "linalg/distMatrix/distMatrix.hpp"
+#include "linalg/distMatrix/distMultiVector.hpp"
 #include "linalg/internal/mpi/hemm.hpp"
 
 namespace chase

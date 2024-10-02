@@ -9,8 +9,8 @@
 
 #include "algorithm/types.hpp"
 #include "linalg/matrix/matrix.hpp"
-#include "Impl/mpi/mpiGrid2D.hpp"
-#include "Impl/mpi/mpiTypes.hpp"
+#include "Impl/grid/mpiGrid2D.hpp"
+#include "Impl/grid/mpiTypes.hpp"
 #include "linalg/lapackpp/lapackpp.hpp"
 
 namespace chase
