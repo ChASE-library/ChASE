@@ -8,9 +8,9 @@
 
 #include "algorithm/performance.hpp"
 #ifdef HAS_CUDA
-#include "Impl/chase_seq_gpu.hpp"
+#include "Impl/cuda/chase_seq_gpu.hpp"
 #endif
-#include "Impl/chase_seq_cpu.hpp"
+#include "Impl/cpu/chase_seq_cpu.hpp"
 
 using T = std::complex<double>;
 using namespace chase;

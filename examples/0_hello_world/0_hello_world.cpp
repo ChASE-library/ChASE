@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "algorithm/performance.hpp"
-#include "Impl/chase_mpi_cpu.hpp"
+#include "Impl/mpi/chase_mpi_cpu.hpp"
 
 using T = std::complex<double>;
 using namespace chase;
