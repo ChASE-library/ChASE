@@ -15,7 +15,9 @@
 #include "linalg/internal/mpi/residuals.hpp"
 #include "linalg/internal/mpi/rayleighRitz.hpp"
 #include "linalg/internal/mpi/shiftDiagonal.hpp"
+#ifdef HAS_SCALAPACK
 #include "linalg/scalapackpp/scalapackpp.hpp"
+#endif
 #include "linalg/internal/mpi/symOrHerm.hpp"
 #include "algorithm/types.hpp"
 

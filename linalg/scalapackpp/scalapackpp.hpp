@@ -4,6 +4,7 @@
 
 #include "algorithm/types.hpp"
 
+#ifdef HAS_SCALAPACK
 namespace chase
 {
 namespace linalg
@@ -76,3 +77,4 @@ void t_pheevd(char jobz, char uplo, std::size_t N, T *A, std::size_t *desc_a,
 }
 
 #include "scalapackpp.inc"
+#endif

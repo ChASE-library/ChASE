@@ -1,7 +1,9 @@
 #pragma once
 
 #include "mpi.h"
+#ifdef HAS_SCALAPACK
 #include "linalg/scalapackpp/scalapackpp.hpp"
+#endif
 namespace chase {
 namespace Impl {
 namespace mpi {
