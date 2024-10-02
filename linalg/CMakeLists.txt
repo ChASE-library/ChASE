@@ -8,29 +8,51 @@ FortranCInterface_HEADER( ${CMAKE_BINARY_DIR}/fortran_mangle.h
   SYMBOL_NAMESPACE "FC_"
   )
 
+list(APPEND includePath ${CMAKE_BINARY_DIR})
+
 add_library(blaspp INTERFACE)
 target_include_directories(blaspp INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/blaspp)
+target_include_directories( blaspp INTERFACE
+  "$<BUILD_INTERFACE:${includePath}>"
+)
 target_link_libraries(blaspp INTERFACE BLAS::BLAS)
 
 add_library(lapackpp INTERFACE)
 target_include_directories(lapackpp INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/lapackpp)
+target_include_directories( lapackpp INTERFACE
+  "$<BUILD_INTERFACE:${includePath}>"
+)
 target_link_libraries(lapackpp INTERFACE LAPACK::LAPACK)
 
 add_library(linalg_internal_cpu INTERFACE)
 target_include_directories(linalg_internal_cpu INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/internal/cpu)
 
+add_library(matrix INTERFACE)
+target_include_directories(matrix INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/matrix)
+target_link_libraries(matrix INTERFACE blaspp lapackpp linalg_internal_cpu)
+
+add_library(distMatrix INTERFACE)
+find_package(MPI)
+if(MPI_FOUND)
+add_library(linalg_internal_mpi INTERFACE)
+target_include_directories(linalg_internal_mpi INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/internal/mpi)
+target_link_libraries(linalg_internal_mpi INTERFACE MPI::MPI_CXX)
+target_include_directories(distMatrix INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/distMatrix)
+target_link_libraries(distMatrix INTERFACE linalg_internal_mpi)
+endif()
+
 find_package(SCALAPACK)
 if(SCALAPACK_FOUND)
   add_library(scalapackpp INTERFACE)
   target_include_directories(scalapackpp INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/scalapackpp)
-  add_definitions(-DHAS_SCALAPACK)
+  target_compile_definitions(scalapackpp INTERFACE HAS_SCALAPACK=1)
   target_link_libraries(scalapackpp INTERFACE ${SCALAPACK_LIBRARIES})
   message(STATUS "ScaLAPACK support enabled.")
+  target_link_libraries(distMatrix INTERFACE scalapackpp)
 else()
     message(STATUS "No ScaLAPACK is detected.")
 endif()
 
-set(HAS_GPU_SUPPORT OFF BOOL "HAS_CUDA" PARENT_SCOPE)
 include(CheckLanguage)
 check_language(CUDA)
 if(CMAKE_CUDA_COMPILER)
@@ -45,8 +67,6 @@ if(CMAKE_CUDA_COMPILER)
   endif()
 
   enable_language(CUDA)
-  add_definitions(-DHAS_CUDA)
-  set(HAS_GPU_SUPPORT TRUE PARENT_SCOPE)
 
   # If variable not defined, set it to default value in order to comply with CMake Policy CMP0104
   if (NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
@@ -99,7 +119,16 @@ if(CMAKE_CUDA_COMPILER)
 
   target_link_libraries(chase_cuda_kernels INTERFACE CUDA::cudart CUDA::curand)
 
+  add_library(linalg_internal_cuda INTERFACE)
+  target_include_directories(linalg_internal_cuda INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/internal/cuda)
+  target_link_libraries(linalg_internal_cuda INTERFACE chase_cuda_kernels)
+
+  add_library(matrix_gpu INTERFACE)
+  target_include_directories(matrix_gpu INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/matrix)
+  target_link_libraries(matrix_gpu INTERFACE blaspp lapackpp linalg_internal_cpu)
+
+  target_link_libraries(matrix_gpu INTERFACE cublaspp cusolverpp linalg_internal_cuda)
+  target_compile_definitions(matrix_gpu INTERFACE HAS_CUDA=1)
   else()
   message(STATUS "No CUDA support")
 endif()
- 

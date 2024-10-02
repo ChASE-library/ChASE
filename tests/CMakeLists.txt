@@ -56,4 +56,6 @@ endfunction()
 
 add_subdirectory(linalg)
 add_subdirectory(matrix)
-add_subdirectory(mpi)
+if(TARGET mpi_grid)
+add_subdirectory(grid)
+endif()
