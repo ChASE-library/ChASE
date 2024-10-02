@@ -1,5 +1,5 @@
 if(TARGET chase_gpu)
     setup_test(MpiGrid2DTest mpiGrid2D.cpp LIBRARIES mpi_grid chase_gpu)
 else()
-    setup_test(MpiGrid2DTest mpiGrid2D.cpp LIBRARIES mpi_grid)
+    setup_test(MpiGrid2DTest mpiGrid2D.cpp LIBRARIES mpi_grid chase_mpi)
 endif()
