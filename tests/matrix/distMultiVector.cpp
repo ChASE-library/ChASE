@@ -6,7 +6,7 @@
 #include "Impl/grid/mpiGrid2D.hpp"
 
 template <typename T>
-class MultiVectorCPUDistTest : public ::testing::Test {
+class MultiVectorDistTest : public ::testing::Test {
 protected:
     void SetUp() override {
         MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
@@ -20,9 +20,9 @@ protected:
 };
 
 using TestTypes = ::testing::Types<float, double, std::complex<float>, std::complex<double>>;
-TYPED_TEST_SUITE(MultiVectorCPUDistTest, TestTypes);
+TYPED_TEST_SUITE(MultiVectorDistTest, TestTypes);
 
-TYPED_TEST(MultiVectorCPUDistTest, RowCommInternalMemoryAllocation) {
+TYPED_TEST(MultiVectorDistTest, RowCommInternalMemoryAllocation) {
     using T = TypeParam;  // Get the current type
     //using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type;
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
@@ -47,7 +47,8 @@ TYPED_TEST(MultiVectorCPUDistTest, RowCommInternalMemoryAllocation) {
     EXPECT_NE(multivector_.l_data(), nullptr);   
 }
 
-TYPED_TEST(MultiVectorCPUDistTest, ColumnCommInternalMemoryAllocation) {
+
+TYPED_TEST(MultiVectorDistTest, ColumnCommInternalMemoryAllocation) {
     using T = TypeParam;  // Get the current type
     //using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type;
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
@@ -72,7 +73,7 @@ TYPED_TEST(MultiVectorCPUDistTest, ColumnCommInternalMemoryAllocation) {
     EXPECT_NE(multivector_.l_data(), nullptr);   
 }
 
-TYPED_TEST(MultiVectorCPUDistTest, RowCommExternalMemoryAllocation) {
+TYPED_TEST(MultiVectorDistTest, RowCommExternalMemoryAllocation) {
     using T = TypeParam;  // Get the current type
     //using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type;
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
@@ -102,7 +103,7 @@ TYPED_TEST(MultiVectorCPUDistTest, RowCommExternalMemoryAllocation) {
 
 }
 
-TYPED_TEST(MultiVectorCPUDistTest, ColumnCommExternalMemoryAllocation) {
+TYPED_TEST(MultiVectorDistTest, ColumnCommExternalMemoryAllocation) {
     using T = TypeParam;  // Get the current type
     //using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type;
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
@@ -131,7 +132,7 @@ TYPED_TEST(MultiVectorCPUDistTest, ColumnCommExternalMemoryAllocation) {
     EXPECT_EQ(multivector_.l_data(), buffer.data());   
 }
 
-TYPED_TEST(MultiVectorCPUDistTest, RedistributionFromColumnToRowCommunicator) {
+TYPED_TEST(MultiVectorDistTest, RedistributionFromColumnToRowCommunicator) {
     using T = TypeParam;  // Get the current type
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
     std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
@@ -179,7 +180,8 @@ TYPED_TEST(MultiVectorCPUDistTest, RedistributionFromColumnToRowCommunicator) {
     }
 }
 
-TYPED_TEST(MultiVectorCPUDistTest, RedistributionFromRowToColumnCommunicator) {
+
+TYPED_TEST(MultiVectorDistTest, RedistributionFromRowToColumnCommunicator) {
     using T = TypeParam;  // Get the current type
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
     std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
@@ -227,7 +229,7 @@ TYPED_TEST(MultiVectorCPUDistTest, RedistributionFromRowToColumnCommunicator) {
     }
 }
 
-TYPED_TEST(MultiVectorCPUDistTest, RedistributionFromSameCommunicatorExpectFail) {
+TYPED_TEST(MultiVectorDistTest, RedistributionFromSameCommunicatorExpectFail) {
     using T = TypeParam;  // Get the current type
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
     std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
@@ -250,7 +252,7 @@ TYPED_TEST(MultiVectorCPUDistTest, RedistributionFromSameCommunicatorExpectFail)
 }
 
 #ifdef ENABLE_MIXED_PRECISION
-TYPED_TEST(MultiVectorCPUDistTest, Block1DMixedPrecison) {
+TYPED_TEST(MultiVectorDistTest, Block1DMixedPrecison) {
     using T = TypeParam;  // Get the current type
     using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type;
 
@@ -298,6 +300,150 @@ TYPED_TEST(MultiVectorCPUDistTest, Block1DMixedPrecison) {
     }else
     {
         EXPECT_THROW({block1Dmultivector_.enableSinglePrecision();}, std::runtime_error);
+    }
+}
+
+#endif
+
+#ifdef HAS_CUDA
+
+TYPED_TEST(MultiVectorDistTest, RowCommExternalMemoryAllocationGPU) {
+    using T = TypeParam;  // Get the current type
+    //using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type;
+    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
+    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(MPI_COMM_WORLD);
+
+    std::size_t lrows = 3;
+    std::size_t lcols = 2;
+    std::size_t lld = 4;
+    std::vector<T> buffer(lld * lcols);
+
+    auto multivector_ = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::GPU>(lrows, lcols, lld, buffer.data(), mpi_grid);
+
+    // Check that the global matrix dimensions are correct
+    EXPECT_EQ(multivector_.g_rows(), lrows * 2);
+    EXPECT_EQ(multivector_.g_cols(), lcols);
+
+    // Check that the local dimensions are also correct
+    EXPECT_EQ(multivector_.l_rows(), lrows);
+    EXPECT_EQ(multivector_.l_cols(), lcols);
+
+    // Check that the leading dimension matches local row size
+    EXPECT_EQ(multivector_.l_ld(), lrows);  
+    EXPECT_EQ(multivector_.cpu_ld(), lld);  
+    EXPECT_EQ(multivector_.cpu_data(),  buffer.data());  
+
+    EXPECT_NE(multivector_.l_data(), nullptr);   
+}
+
+TYPED_TEST(MultiVectorDistTest, RedistributionFromColumnToRowCommunicatorGPUCUDAAwareMPI) {
+    using T = TypeParam;  // Get the current type
+    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
+    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(MPI_COMM_WORLD);
+
+    std::size_t M = 8;
+    std::size_t N = 4;
+    std::size_t offset = 1;
+    std::size_t subSize = 2;
+    std::size_t lrows = 4;
+    std::vector<T> src_data(lrows * N);
+    std::vector<T> dest_data(lrows * N);
+
+    int *coords = mpi_grid.get()->get_coords();
+
+    for(auto i = 0; i < N; i++)
+    {
+        for(auto j = 0; j < lrows; j++)
+        {
+            src_data[i *  lrows + j] = T(coords[0] + i + j);
+        }
+    }
+
+    for(auto i = 0; i < N; i++)
+    {
+        for(auto j = 0; j < lrows; j++)
+        {
+            dest_data[i *  lrows + j] = T(-1);
+        }
+    }
+
+    auto multivector_ = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(lrows, N, lrows, src_data.data(), mpi_grid);
+    auto target_ = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::GPU>(lrows, N, lrows, dest_data.data(), mpi_grid);
+    
+    multivector_.redistributeImpl(&target_, offset, subSize);
+
+    target_.D2H();
+
+    for(auto i = 0; i < target_.l_cols(); i++)
+    {
+        for(auto j = 0; j < target_.l_rows(); j++)
+        {
+            if(i >= offset && i < offset + subSize )
+            {
+                EXPECT_EQ(target_.cpu_data()[i *  target_.cpu_ld() + j], T(coords[1] + i + j));
+            }
+            else
+            {
+                EXPECT_EQ(target_.cpu_data()[i *  target_.cpu_ld() + j], T(-1));
+            }
+            
+        }
+    }
+}
+
+TYPED_TEST(MultiVectorDistTest, RedistributionFromRowToColumnCommunicatorGPUCUDAAwareMPI) {
+    using T = TypeParam;  // Get the current type
+    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
+    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(MPI_COMM_WORLD);
+
+    std::size_t M = 8;
+    std::size_t N = 4;
+    std::size_t lrows = 4;
+    std::size_t offset = 1;
+    std::size_t subSize = 2;
+    std::vector<T> src_data(lrows * N);
+    std::vector<T> dest_data(lrows * N);
+
+    int *coords = mpi_grid.get()->get_coords();
+
+    for(auto i = 0; i < N; i++)
+    {
+        for(auto j = 0; j < lrows; j++)
+        {
+            src_data[i *  lrows + j] = T(coords[1] + i + j);
+        }
+    }
+
+    for(auto i = 0; i < N; i++)
+    {
+        for(auto j = 0; j < lrows; j++)
+        {
+            dest_data[i *  lrows + j] = T(-1);
+        }
+    }
+
+    auto multivector_ = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::GPU>(lrows, N, lrows, src_data.data(), mpi_grid);
+    auto target_ = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(lrows, N, lrows, dest_data.data(), mpi_grid);
+    
+    multivector_.redistributeImpl(&target_, offset, subSize);
+    target_.D2H();
+
+    for(auto i = 0; i < target_.l_cols(); i++)
+    {
+        for(auto j = 0; j < target_.l_rows(); j++)
+        {
+            if(i >= offset && i < offset + subSize )
+            {
+                EXPECT_EQ(target_.cpu_data()[i *  target_.cpu_ld() + j], T(coords[0] + i + j));
+            }
+            else
+            {
+                EXPECT_EQ(target_.cpu_data()[i *  target_.cpu_ld() + j], T(-1));
+            }
+        }
     }
 }
 

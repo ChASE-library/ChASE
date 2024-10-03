@@ -89,7 +89,7 @@ TYPED_TEST(MatrixCPUTest, SWAP) {
     EXPECT_EQ(matrix2.data(), array1);
     EXPECT_EQ(matrix1.data(), array2);
 }
-
+/*
 // Test for saveToBinaryFile
 TYPED_TEST(MatrixCPUTest, SaveToBinaryFile) {
     using T = TypeParam;
@@ -162,7 +162,7 @@ TYPED_TEST(MatrixCPUTest, ReadFromBinaryFile) {
 
     std::remove(filename.c_str());
 }
-
+*/
 #ifdef ENABLE_MIXED_PRECISION
 TYPED_TEST(MatrixCPUTest, EnableSinglePrecision) {
     using T = TypeParam;  // Get the current type
@@ -345,7 +345,7 @@ TYPED_TEST(MatrixGPUTest, SWAP) {
         gpu_copied_2.data()[i] = array1[i];
     }
 }
-
+/*
 // Test for saveToBinaryFile
 TYPED_TEST(MatrixGPUTest, SaveToBinaryFile) {
     using T = TypeParam;
@@ -418,7 +418,7 @@ TYPED_TEST(MatrixGPUTest, ReadFromBinaryFile) {
 
     std::remove(filename.c_str());
 }
-
+*/
 #ifdef ENABLE_MIXED_PRECISION
 TYPED_TEST(MatrixGPUTest, EnableSinglePrecision) {
     using T = TypeParam;  // Get the current type

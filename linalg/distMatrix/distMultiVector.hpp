@@ -13,6 +13,14 @@
 #include "Impl/grid/mpiTypes.hpp"
 #include "linalg/lapackpp/lapackpp.hpp"
 
+#ifdef HAS_CUDA
+#include <cuda_runtime.h>
+#include "Impl/cuda/cuda_utils.hpp"
+#include "linalg/internal/cuda/lacpy.hpp"
+#include "linalg/cublaspp/cublaspp.hpp"
+#include "linalg/internal/cuda/precision_conversion.cuh"
+#endif
+
 namespace chase
 {
 namespace distMultiVector
@@ -28,6 +36,23 @@ enum class CommunicatorType{
     all
 };
 
+// Type trait to select the appropriate matrix class
+template<typename T, typename Platform>
+struct MultiVectorType;
+
+// Specialization for CPU
+template<typename T>
+struct MultiVectorType<T, chase::platform::CPU> {
+    using type = chase::matrix::MatrixCPU<T>;
+};
+
+#ifdef HAS_CUDA
+// Specialization for GPU
+template<typename T>
+struct MultiVectorType<T, chase::platform::GPU> {
+    using type = chase::matrix::MatrixGPU<T>;
+};
+#endif
 
 // Type trait to map enum CommunicatorType to its opposite
 template <CommunicatorType>
@@ -43,24 +68,17 @@ struct OutputCommType<CommunicatorType::column> {
     static constexpr CommunicatorType value = CommunicatorType::row;  // Map 'column' to 'row'
 };
 
-template<typename T, CommunicatorType comm_type> 
+template<typename T, CommunicatorType comm_type, typename Platform> 
 class DistMultiVector1D;
 
-template<typename T>
-struct ExtractFirstTemplateParameter;
 
-template<typename T, chase::distMultiVector::CommunicatorType CommType>
-struct ExtractFirstTemplateParameter<chase::distMultiVector::DistMultiVector1D<T, CommType>> {
-    using type = T;  // Extracts the first template parameter (T)
-};
-
-template <typename T, CommunicatorType comm_type, template <typename, CommunicatorType> class Derived>
+template <typename T, CommunicatorType comm_type, template <typename, CommunicatorType, typename> class Derived, typename Platform = chase::platform::CPU>
 class AbstractDistMultiVector {
 protected:
     // Single precision matrix
 #ifdef ENABLE_MIXED_PRECISION       
     using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type;
-    using SinglePrecisionDerived = Derived<SinglePrecisionType, comm_type>;
+    using SinglePrecisionDerived = Derived<SinglePrecisionType, comm_type, Platform>;
     std::unique_ptr<SinglePrecisionDerived> single_precision_multivec_;
     bool is_single_precision_enabled_ = false; 
     std::chrono::high_resolution_clock::time_point start, end;
@@ -91,14 +109,25 @@ public:
         if (!single_precision_multivec_) {
             start = std::chrono::high_resolution_clock::now();
             single_precision_multivec_ = std::make_unique<SinglePrecisionDerived>(this->g_rows(), this->g_cols(), this->getMpiGrid_shared_ptr());
-            #pragma omp parallel for collapse(2) schedule(static, 16)
-            for (std::size_t j = 0; j < this->l_cols(); ++j) {
-                for (std::size_t i = 0; i < this->l_rows(); ++i) {
-                    single_precision_multivec_->l_data()[j * single_precision_multivec_.get()->l_ld() + i] 
-                                        = chase::convertToSinglePrecision(this->l_data()[j * this->l_ld() + i]);
+            if constexpr (std::is_same<Platform, chase::platform::CPU>::value) {
+                #pragma omp parallel for collapse(2) schedule(static, 16)
+                for (std::size_t j = 0; j < this->l_cols(); ++j) {
+                    for (std::size_t i = 0; i < this->l_rows(); ++i) {
+                        single_precision_multivec_->l_data()[j * single_precision_multivec_.get()->l_ld() + i] 
+                                            = chase::convertToSinglePrecision(this->l_data()[j * this->l_ld() + i]);
+                    }
                 }
+            }else
+#ifdef HAS_CUDA            
+            {
+
+                chase::linalg::internal::cuda::convert_DP_TO_SP_GPU(this->l_data(), single_precision_multivec_->l_data(), this->l_cols() * this->l_rows());
             }
-    
+#else
+            {
+                throw std::runtime_error("GPU is not supported in AbstractDistMultiVector");
+            }
+#endif
             is_single_precision_enabled_ = true;
             end = std::chrono::high_resolution_clock::now();
             elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
@@ -117,13 +146,27 @@ public:
         if(copyback)
         {
             if (single_precision_multivec_) {
-                #pragma omp parallel for collapse(2) schedule(static, 16)
-                for (std::size_t j = 0; j < this->l_cols(); ++j) {
-                    for (std::size_t i = 0; i < this->l_rows(); ++i) {
-                        this->l_data()[j * this->l_ld() + i] = 
-                                chase::convertToDoublePrecision<T>(single_precision_multivec_->l_data()[j * single_precision_multivec_.get()->l_ld() + i]);
+                if constexpr (std::is_same<Platform, chase::platform::CPU>::value) {
+
+                    #pragma omp parallel for collapse(2) schedule(static, 16)
+                    for (std::size_t j = 0; j < this->l_cols(); ++j) {
+                        for (std::size_t i = 0; i < this->l_rows(); ++i) {
+                            this->l_data()[j * this->l_ld() + i] = 
+                                    chase::convertToDoublePrecision<T>(single_precision_multivec_->l_data()[j * single_precision_multivec_.get()->l_ld() + i]);
+                        }
                     }
+                }else
+    #ifdef HAS_CUDA            
+                {
+
+                    chase::linalg::internal::cuda::convert_SP_TO_DP_GPU(this->l_data(), single_precision_multivec_->l_data(), this->l_cols() * this->l_rows());
                 }
+    #else
+                {
+                    throw std::runtime_error("GPU is not supported in AbstractDistMultiVector");
+                }
+    #endif
+
             } else {
                 throw std::runtime_error("Single precision is not enabled.");
             }
@@ -168,8 +211,8 @@ public:
 #endif    
 };
 
-template<typename T, CommunicatorType comm_type> 
-class DistMultiVector1D : public AbstractDistMultiVector<T, comm_type, DistMultiVector1D> //distribute either within row or column communicator of 2D MPI grid
+template<typename T, CommunicatorType comm_type, typename Platform = chase::platform::CPU> 
+class DistMultiVector1D : public AbstractDistMultiVector<T, comm_type, DistMultiVector1D, Platform> //distribute either within row or column communicator of 2D MPI grid
 {
 public:
     ~DistMultiVector1D() override {};
@@ -217,7 +260,7 @@ public:
         
         ld_ = m_;
 
-        local_matrix_ = chase::matrix::MatrixCPU<T>(m_, n_);
+        local_matrix_ =  typename MultiVectorType<T, Platform>::type(m_, n_);
 #ifdef HAS_SCALAPACK
         scalapack_descriptor_init();
 #endif          
@@ -248,7 +291,13 @@ public:
         MPI_Allreduce(&lv, &res, 1, MPI_UINT64_T, MPI_SUM, comm);
         M_ = static_cast<std::size_t>(res);
 
-        local_matrix_ = chase::matrix::MatrixCPU<T>(m_, n_, ld_, data);
+        local_matrix_ = typename MultiVectorType<T, Platform>::type(m_, n_, ld_, data);
+
+        if constexpr (std::is_same<Platform, chase::platform::GPU>::value)
+        {
+            ld_ = local_matrix_.gpu_ld();
+        }
+
 #ifdef HAS_SCALAPACK
         scalapack_descriptor_init();
 #endif        
@@ -272,14 +321,17 @@ public:
         return mpi_grid_;
     }
 
-    template <CommunicatorType OtherCommType>
-    void swap(DistMultiVector1D<T, OtherCommType>& other) 
+    template <CommunicatorType OtherCommType, typename OtherPlatform>
+    void swap(DistMultiVector1D<T, OtherCommType, OtherPlatform>& other) 
     {
         // Check if the communicator types are the same
         if constexpr (comm_type != OtherCommType) {
             throw std::runtime_error("Cannot swap: Communicator types do not match.");
         }
 
+        if constexpr (!std::is_same<Platform, OtherPlatform>::value) {
+            throw std::runtime_error("Cannot swap: Platform types do not match.");
+        }
         // Ensure both objects have the same MPI grid
         if (mpi_grid_.get() != other.mpi_grid_.get()) {
             throw std::runtime_error("Cannot swap: MPI grids do not match.");
@@ -299,52 +351,132 @@ public:
     //swap column i with j
     void swap_ij(std::size_t i, std::size_t j)
     {
-        std::vector<T> tmp(m_);
-        chase::linalg::lapackpp::t_lacpy('A',
-                                         m_,
-                                         1,
-                                         this->l_data() + i * ld_,
-                                         1,
-                                         tmp.data(),
-                                         1);
-        chase::linalg::lapackpp::t_lacpy('A',
-                                         m_,
-                                         1,
-                                         this->l_data() + j * ld_,
-                                         1,
-                                         this->l_data() + i * ld_,
-                                         1);    
-        chase::linalg::lapackpp::t_lacpy('A',
-                                         m_,
-                                         1,
-                                         tmp.data(),
-                                         1,
-                                         this->l_data() + j * ld_,
-                                         1);      
+        if constexpr (std::is_same<Platform, chase::platform::CPU>::value){
+            std::vector<T> tmp(m_);
+            chase::linalg::lapackpp::t_lacpy('A',
+                                            m_,
+                                            1,
+                                            this->l_data() + i * ld_,
+                                            1,
+                                            tmp.data(),
+                                            1);
+            chase::linalg::lapackpp::t_lacpy('A',
+                                            m_,
+                                            1,
+                                            this->l_data() + j * ld_,
+                                            1,
+                                            this->l_data() + i * ld_,
+                                            1);    
+            chase::linalg::lapackpp::t_lacpy('A',
+                                            m_,
+                                            1,
+                                            tmp.data(),
+                                            1,
+                                            this->l_data() + j * ld_,
+                                            1);   
+        }
+#ifdef HAS_CUDA        
+        else
+        {
+            T *tmp;
+            CHECK_CUDA_ERROR(cudaMalloc(&tmp, m_ * sizeof(T)));
+            chase::linalg::internal::cuda::t_lacpy('A',
+                                            m_,
+                                            1,
+                                            this->l_data() + i * ld_,
+                                            1,
+                                            tmp,
+                                            1);
+            chase::linalg::internal::cuda::t_lacpy('A',
+                                            m_,
+                                            1,
+                                            this->l_data() + j * ld_,
+                                            1,
+                                            this->l_data() + i * ld_,
+                                            1);    
+            chase::linalg::internal::cuda::t_lacpy('A',
+                                            m_,
+                                            1,
+                                            tmp,
+                                            1,
+                                            this->l_data() + j * ld_,
+                                            1);   
+            cudaFree(tmp);
+        }
+#endif        
     }
 
-    template<CommunicatorType target_comm_type>
-    void redistributeImpl(DistMultiVector1D<T, target_comm_type>* targetMultiVector,
+#ifdef HAS_CUDA
+    void D2H()
+    {
+        if constexpr (std::is_same<Platform, chase::platform::GPU>::value)
+        {
+            local_matrix_.D2H();
+        }else
+        {
+            throw std::runtime_error("[DistMultiVector]: CPU type of matrix do not support D2H operation");
+        }
+    }
+
+    void H2D()
+    {
+        if constexpr (std::is_same<Platform, chase::platform::GPU>::value)
+        {
+            local_matrix_.H2D();
+        }else
+        {
+            throw std::runtime_error("[DistMultiVector]: CPU type of matrix do not support H2D operation");
+        }
+    }
+
+    T *cpu_data()
+    {
+        if constexpr (std::is_same<Platform, chase::platform::GPU>::value)
+        {
+            return local_matrix_.cpu_data();
+        }else
+        {
+            return local_matrix_.data();
+        }        
+    }
+
+    std::size_t cpu_ld()
+    {
+        if constexpr (std::is_same<Platform, chase::platform::GPU>::value)
+        {
+            return local_matrix_.cpu_ld();
+        }else
+        {
+            return local_matrix_.ld();
+        }           
+    }
+#endif
+    template<CommunicatorType target_comm_type, typename OtherPlatform>
+    void redistributeImpl(DistMultiVector1D<T, target_comm_type, OtherPlatform>* targetMultiVector,
                             std::size_t offset, std::size_t subsetSize) {
         // Validate the subset range
         if (offset + subsetSize > this->g_cols() || subsetSize > targetMultiVector->g_cols()) {
             throw std::invalid_argument("Invalid subset range");
         }   
+
+        if constexpr (!std::is_same<Platform, OtherPlatform>::value) {
+            throw std::runtime_error("Cannot redistribute: Platform types do not match.");
+        }
+
         // Check if the target matrix's communicator type matches the allowed types
         if constexpr (comm_type == CommunicatorType::row && target_comm_type == CommunicatorType::column) {
             // Implement redistribution from row to column
-            redistributeRowToColumn(targetMultiVector, offset, subsetSize);
+            redistributeRowToColumn<OtherPlatform>(targetMultiVector, offset, subsetSize);
         } else if constexpr (comm_type == CommunicatorType::column && target_comm_type == CommunicatorType::row) {
             // Implement redistribution from column to row
-            redistributeColumnToRow(targetMultiVector, offset, subsetSize);
+            redistributeColumnToRow<OtherPlatform>(targetMultiVector, offset, subsetSize);
         } else {
             throw std::runtime_error("Invalid redistribution between matrix types");
         }
-        
     }
 
-    template<CommunicatorType target_comm_type>
-    void redistributeImpl(DistMultiVector1D<T, target_comm_type>* targetMultiVector) 
+    template<CommunicatorType target_comm_type, typename OtherPlatform>
+    void redistributeImpl(DistMultiVector1D<T, target_comm_type, OtherPlatform>* targetMultiVector) 
     {
         this->redistributeImpl(targetMultiVector, 0, this->n_);
     }
@@ -354,8 +486,19 @@ public:
     std::size_t l_rows() const override { return m_;}
     std::size_t l_cols() const override { return n_;}
     std::size_t l_ld() const override { return ld_;}
-    T *         l_data() override { return local_matrix_.data();}
-    chase::matrix::MatrixCPU<T> loc_matrix() { return local_matrix_;}
+    T *         l_data() override { 
+        if constexpr (std::is_same<Platform, chase::platform::CPU>::value)
+        {
+            return local_matrix_.data();
+        }
+#ifdef HAS_CUDA        
+        else
+        {
+            return local_matrix_.gpu_data();
+        }
+#endif        
+    }
+    typename MultiVectorType<T, Platform>::type& loc_matrix() { return local_matrix_;}
 #ifdef HAS_SCALAPACK
     std::size_t *get_scalapack_desc(){ return desc_; }
 #endif    
@@ -366,7 +509,7 @@ private:
     std::size_t m_;
     std::size_t n_;
     std::size_t ld_;
-    chase::matrix::MatrixCPU<T> local_matrix_;
+    typename MultiVectorType<T, Platform>::type local_matrix_;
     std::shared_ptr<chase::Impl::mpi::MpiGrid2DBase> mpi_grid_;
 #ifdef HAS_SCALAPACK
     std::size_t desc_[9];
@@ -409,7 +552,8 @@ private:
     }
 
 #endif
-    void redistributeRowToColumn(DistMultiVector1D<T, CommunicatorType::column>* targetMultiVector,
+    template<typename OtherPlatform>
+    void redistributeRowToColumn(DistMultiVector1D<T, CommunicatorType::column, OtherPlatform>* targetMultiVector,
                                     std::size_t offset, std::size_t subsetSize) {
         // Ensure the dimensions are compatible
         if (this->M_ != targetMultiVector->g_rows() || this->N_ != targetMultiVector->g_cols()) {
@@ -445,14 +589,25 @@ private:
             {
                 if(coords[0] == coords[1])
                 {
-                    chase::linalg::lapackpp::t_lacpy('A', this->m_, subsetSize, this->l_data() + offset * this->ld_, this->ld_, 
-                                                        targetMultiVector->l_data() + offset * targetMultiVector->l_ld(), targetMultiVector->l_ld());
+                    if constexpr (std::is_same<Platform, chase::platform::CPU>::value)
+                    {                    
+                        chase::linalg::lapackpp::t_lacpy('A', this->m_, subsetSize, this->l_data() + offset * this->ld_, this->ld_, 
+                                                            targetMultiVector->l_data() + offset * targetMultiVector->l_ld(), targetMultiVector->l_ld());
+                    }
+#ifdef HAS_CUDA
+                    else
+                    {
+                        chase::linalg::internal::cuda::t_lacpy('A', this->m_, subsetSize, this->l_data() + offset * this->ld_, this->ld_, 
+                                                            targetMultiVector->l_data() + offset * targetMultiVector->l_ld(), targetMultiVector->l_ld());   
+                    }
+#endif
                 }
             }
         }
     }
 
-    void redistributeColumnToRow(DistMultiVector1D<T, CommunicatorType::row>* targetMultiVector,
+    template<typename OtherPlatform>
+    void redistributeColumnToRow(DistMultiVector1D<T, CommunicatorType::row, OtherPlatform>* targetMultiVector,
                                     std::size_t offset, std::size_t subsetSize) {
         // Ensure the dimensions are compatible
         if (this->M_ != targetMultiVector->g_rows() || this->N_ != targetMultiVector->g_cols()) {
@@ -488,12 +643,22 @@ private:
             {
                 if(coords[0] == coords[1])
                 {
-                    chase::linalg::lapackpp::t_lacpy('A', this->m_, subsetSize, this->l_data() + offset * this->ld_, this->ld_, 
-                                                        targetMultiVector->l_data() + offset * targetMultiVector->l_ld(), targetMultiVector->l_ld());
+                    if constexpr (std::is_same<Platform, chase::platform::CPU>::value)
+                    {
+                        chase::linalg::lapackpp::t_lacpy('A', this->m_, subsetSize, this->l_data() + offset * this->ld_, this->ld_, 
+                                                            targetMultiVector->l_data() + offset * targetMultiVector->l_ld(), targetMultiVector->l_ld());                        
+                    }
+    #ifdef HAS_CUDA                
+                    else
+                    {
+                        chase::linalg::internal::cuda::t_lacpy('A', this->m_, subsetSize, this->l_data() + offset * this->ld_, this->ld_, 
+                                                            targetMultiVector->l_data() + offset * targetMultiVector->l_ld(), targetMultiVector->l_ld());                         
+                    }
+    #endif                                    
+
                 }
             }
         }
-
     }
 };
 

@@ -38,7 +38,7 @@ add_library(linalg_internal_mpi INTERFACE)
 target_include_directories(linalg_internal_mpi INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/internal/mpi)
 target_link_libraries(linalg_internal_mpi INTERFACE MPI::MPI_CXX)
 target_include_directories(distMatrix INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/distMatrix)
-target_link_libraries(distMatrix INTERFACE linalg_internal_mpi)
+target_link_libraries(distMatrix INTERFACE blaspp lapackpp linalg_internal_mpi)
 endif()
 
 find_package(SCALAPACK)
@@ -129,6 +129,13 @@ if(CMAKE_CUDA_COMPILER)
 
   target_link_libraries(matrix_gpu INTERFACE cublaspp cusolverpp linalg_internal_cuda)
   target_compile_definitions(matrix_gpu INTERFACE HAS_CUDA=1)
+
+  add_library(distMatrix_gpu INTERFACE)
+  target_include_directories(distMatrix_gpu INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/distMatrix)
+  target_link_libraries(distMatrix_gpu INTERFACE blaspp lapackpp  linalg_internal_mpi)
+  target_link_libraries(distMatrix_gpu INTERFACE cublaspp cusolverpp linalg_internal_cuda)
+  target_compile_definitions(distMatrix_gpu INTERFACE HAS_CUDA=1)
+
   else()
   message(STATUS "No CUDA support")
 endif()
