@@ -14,8 +14,16 @@
 #include "Impl/cuda/cuda_utils.hpp"
 #include "linalg/cublaspp/cublaspp.hpp"
 #include "linalg/internal/cuda/precision_conversion.cuh"
-
 #endif
+
+namespace chase
+{
+namespace platform
+{
+struct CPU {};  // Represents CPU platform
+struct GPU {};  // Represents GPU platform    
+}    
+}
 namespace chase {
 namespace matrix {
 
