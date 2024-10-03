@@ -398,7 +398,7 @@ TYPED_TEST(MultiVectorDistTest, RedistributionFromRowToColumnCommunicatorGPUCUDA
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
     std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
             = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(MPI_COMM_WORLD);
-
+      
     std::size_t M = 8;
     std::size_t N = 4;
     std::size_t lrows = 4;
@@ -447,4 +447,115 @@ TYPED_TEST(MultiVectorDistTest, RedistributionFromRowToColumnCommunicatorGPUCUDA
     }
 }
 
+#ifdef HAS_NCCL
+TYPED_TEST(MultiVectorDistTest, RedistributionFromColumnToRowCommunicatorGPUNCCL) {
+    using T = TypeParam;  // Get the current type
+    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
+    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(MPI_COMM_WORLD);
+
+    std::size_t M = 8;
+    std::size_t N = 4;
+    std::size_t offset = 1;
+    std::size_t subSize = 2;
+    std::size_t lrows = 4;
+    std::vector<T> src_data(lrows * N);
+    std::vector<T> dest_data(lrows * N);
+
+    int *coords = mpi_grid.get()->get_coords();
+
+    for(auto i = 0; i < N; i++)
+    {
+        for(auto j = 0; j < lrows; j++)
+        {
+            src_data[i *  lrows + j] = T(coords[0] + i + j);
+        }
+    }
+
+    for(auto i = 0; i < N; i++)
+    {
+        for(auto j = 0; j < lrows; j++)
+        {
+            dest_data[i *  lrows + j] = T(-1);
+        }
+    }
+
+    auto multivector_ = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(lrows, N, lrows, src_data.data(), mpi_grid);
+    auto target_ = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::GPU>(lrows, N, lrows, dest_data.data(), mpi_grid);
+    
+    multivector_.redistributeImplAsync(&target_, offset, subSize);
+
+    target_.D2H();
+
+    for(auto i = 0; i < target_.l_cols(); i++)
+    {
+        for(auto j = 0; j < target_.l_rows(); j++)
+        {
+            if(i >= offset && i < offset + subSize )
+            {
+                EXPECT_EQ(target_.cpu_data()[i *  target_.cpu_ld() + j], T(coords[1] + i + j));
+            }
+            else
+            {
+                EXPECT_EQ(target_.cpu_data()[i *  target_.cpu_ld() + j], T(-1));
+            }
+            
+        }
+    }
+}
+
+TYPED_TEST(MultiVectorDistTest, RedistributionAsyncFromRowToColumnCommunicatorGPUNCCL) {
+    using T = TypeParam;  // Get the current type
+    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
+    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(MPI_COMM_WORLD);
+      
+    std::size_t M = 8;
+    std::size_t N = 4;
+    std::size_t lrows = 4;
+    std::size_t offset = 1;
+    std::size_t subSize = 2;
+    std::vector<T> src_data(lrows * N);
+    std::vector<T> dest_data(lrows * N);
+
+    int *coords = mpi_grid.get()->get_coords();
+
+    for(auto i = 0; i < N; i++)
+    {
+        for(auto j = 0; j < lrows; j++)
+        {
+            src_data[i *  lrows + j] = T(coords[1] + i + j);
+        }
+    }
+
+    for(auto i = 0; i < N; i++)
+    {
+        for(auto j = 0; j < lrows; j++)
+        {
+            dest_data[i *  lrows + j] = T(-1);
+        }
+    }
+
+    auto multivector_ = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::GPU>(lrows, N, lrows, src_data.data(), mpi_grid);
+    auto target_ = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(lrows, N, lrows, dest_data.data(), mpi_grid);
+    
+    multivector_.redistributeImplAsync(&target_, offset, subSize);
+    target_.D2H();
+
+    for(auto i = 0; i < target_.l_cols(); i++)
+    {
+        for(auto j = 0; j < target_.l_rows(); j++)
+        {
+            if(i >= offset && i < offset + subSize )
+            {
+                EXPECT_EQ(target_.cpu_data()[i *  target_.cpu_ld() + j], T(coords[0] + i + j));
+            }
+            else
+            {
+                EXPECT_EQ(target_.cpu_data()[i *  target_.cpu_ld() + j], T(-1));
+            }
+        }
+    }
+}
+#endif
 #endif

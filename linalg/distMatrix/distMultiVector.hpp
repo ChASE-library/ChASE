@@ -481,6 +481,41 @@ public:
         this->redistributeImpl(targetMultiVector, 0, this->n_);
     }
 
+#ifdef HAS_NCCL
+    template<CommunicatorType target_comm_type>
+    void redistributeImplAsync(DistMultiVector1D<T, target_comm_type, chase::platform::GPU>* targetMultiVector,
+                            std::size_t offset, std::size_t subsetSize, cudaStream_t* stream_ = nullptr) {
+        
+        cudaStream_t usedStream = (stream_ == nullptr) ? 0 : *stream_;
+
+        // Validate the subset range
+        if (offset + subsetSize > this->g_cols() || subsetSize > targetMultiVector->g_cols()) {
+            throw std::invalid_argument("Invalid subset range");
+        }   
+
+        if constexpr (!std::is_same<Platform, chase::platform::GPU>::value) {
+            throw std::runtime_error("NCCL based redistribution support only GPU.");
+        }
+
+        // Check if the target matrix's communicator type matches the allowed types
+        if constexpr (comm_type == CommunicatorType::row && target_comm_type == CommunicatorType::column) {
+            // Implement redistribution from row to column
+            redistributeRowToColumnAsync(targetMultiVector, offset, subsetSize, usedStream);
+        } else if constexpr (comm_type == CommunicatorType::column && target_comm_type == CommunicatorType::row) {
+            // Implement redistribution from column to row
+            redistributeColumnToRowAsync(targetMultiVector, offset, subsetSize, usedStream);
+        } else {
+            throw std::runtime_error("Invalid redistribution between matrix types");
+        }
+    }
+
+    template<CommunicatorType target_comm_type>
+    void redistributeImplAsync(DistMultiVector1D<T, target_comm_type,  chase::platform::GPU>* targetMultiVector, cudaStream_t* stream_ = nullptr) 
+    {
+        this->redistributeImplAsync(targetMultiVector, 0, this->n_, stream_);
+    }
+
+#endif
     std::size_t g_rows() const override { return M_;}
     std::size_t g_cols() const override { return N_;}
     std::size_t l_rows() const override { return m_;}
@@ -660,6 +695,115 @@ private:
             }
         }
     }
+#ifdef HAS_CUDA
+#ifdef HAS_NCCL
+    void redistributeRowToColumnAsync(DistMultiVector1D<T, CommunicatorType::column, chase::platform::GPU>* targetMultiVector,
+                                    std::size_t offset, std::size_t subsetSize, cudaStream_t stream) {
+        // Ensure the dimensions are compatible
+        if (this->M_ != targetMultiVector->g_rows() || this->N_ != targetMultiVector->g_cols()) {
+            throw std::runtime_error("Dimension mismatch during redistribution");
+        }
+        
+        if(this->mpi_grid_.get() != targetMultiVector->getMpiGrid())
+        {
+            throw std::runtime_error("MPI Grid mismatch during redistribution");
+        }
+        
+        int* dims = this->mpi_grid_->get_dims();
+        int* coords = this->mpi_grid_->get_coords();
+        if(dims[0] == dims[1]) //squared grid
+        {
+            for(auto i = 0; i < dims[1]; i++)
+            {
+                if(coords[0] == i)
+                {
+                    if(coords[1] == i)
+                    {
+                        CHECK_NCCL_ERROR(chase::Impl::nccl::ncclBcastWrapper(this->l_data() + offset * this->ld_, 
+                                                                             this->m_ * subsetSize, 
+                                                                             i, 
+                                                                             this->mpi_grid_->get_nccl_row_comm(), 
+                                                                             &stream));
+                    }
+                    else
+                    {
+                        CHECK_NCCL_ERROR(chase::Impl::nccl::ncclBcastWrapper(targetMultiVector->l_data() + offset * targetMultiVector->l_ld(), 
+                                                                             targetMultiVector->l_rows() * subsetSize, 
+                                                                             i, 
+                                                                             this->mpi_grid_->get_nccl_row_comm(), 
+                                                                             &stream));                        
+                    }
+                }
+            }
+
+            for(auto i = 0; i < dims[1]; i++)
+            {
+                if(coords[0] == coords[1])
+                {
+
+                    chase::linalg::internal::cuda::t_lacpy('A', this->m_, subsetSize, this->l_data() + offset * this->ld_, this->ld_, 
+                                                        targetMultiVector->l_data() + offset * targetMultiVector->l_ld(), targetMultiVector->l_ld());   
+                    
+                }
+            }
+        }
+        
+    }
+
+    void redistributeColumnToRowAsync(DistMultiVector1D<T, CommunicatorType::row, chase::platform::GPU>* targetMultiVector,
+                                    std::size_t offset, std::size_t subsetSize, cudaStream_t stream) {
+        // Ensure the dimensions are compatible
+        if (this->M_ != targetMultiVector->g_rows() || this->N_ != targetMultiVector->g_cols()) {
+            throw std::runtime_error("Dimension mismatch during redistribution");
+        }
+
+        if(this->mpi_grid_.get() != targetMultiVector->getMpiGrid())
+        {
+            throw std::runtime_error("MPI Grid mismatch during redistribution");
+        }
+
+        int* dims = this->mpi_grid_->get_dims();
+        int* coords = this->mpi_grid_->get_coords();
+        if(dims[0] == dims[1]) //squared grid
+        {
+            for(auto i = 0; i < dims[0]; i++)
+            {
+                if(coords[1] == i)
+                {
+                    if(coords[0] == i)
+                    {
+                        CHECK_NCCL_ERROR(chase::Impl::nccl::ncclBcastWrapper(this->l_data() + offset * this->ld_, 
+                                                                             this->m_ * subsetSize, 
+                                                                             i, 
+                                                                             this->mpi_grid_->get_nccl_col_comm(), 
+                                                                             &stream));
+                    }
+                    else
+                    {
+                        CHECK_NCCL_ERROR(chase::Impl::nccl::ncclBcastWrapper(targetMultiVector->l_data() + offset * targetMultiVector->l_ld(), 
+                                                                             targetMultiVector->l_rows() * subsetSize, 
+                                                                             i, 
+                                                                             this->mpi_grid_->get_nccl_col_comm(), 
+                                                                             &stream));     
+                    }
+                }
+            }
+
+            for(auto i = 0; i < dims[0]; i++)
+            {
+                if(coords[0] == coords[1])
+                {
+                    chase::linalg::internal::cuda::t_lacpy('A', this->m_, subsetSize, this->l_data() + offset * this->ld_, this->ld_, 
+                                                        targetMultiVector->l_data() + offset * targetMultiVector->l_ld(), targetMultiVector->l_ld());                         
+                }
+            }
+        }
+        
+    }
+    
+#endif
+#endif
+
 };
 
 
