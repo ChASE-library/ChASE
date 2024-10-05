@@ -12,7 +12,7 @@ namespace internal
 namespace mpi
 {
     template<typename T>
-    void shiftDiagonal(chase::distMatrix::BlockBlockMatrix<T>& H, T shift)
+    void shiftDiagonal(chase::distMatrix::BlockBlockMatrix<T, chase::platform::CPU>& H, T shift)
     {
         std::size_t xlen = H.l_rows();
         std::size_t ylen = H.l_cols();
@@ -24,6 +24,7 @@ namespace mpi
         {
             for(auto i = 0; i < xlen; i++)
             {
+
                 if(g_offs[0] + i == g_offs[1] + j)
                 {
                     H.l_data()[i + j * h_ld ] += shift;
@@ -31,6 +32,7 @@ namespace mpi
             }
         }
     }
+
 }
 }
 }

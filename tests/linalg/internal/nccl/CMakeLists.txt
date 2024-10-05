@@ -1,0 +1,6 @@
+setup_test(HEMMGPUNCCLDistTest hemm.cpp LIBRARIES chase_nccl)
+setup_test(CholQRGPUNCCLDistTest cholqr.cpp LIBRARIES chase_nccl)
+setup_test(RayleighRitzGPUNCCLDistTest rayleighRitz.cpp LIBRARIES chase_nccl)
+setup_test(ResidualsGPUNCCLDistTest residuals.cpp LIBRARIES chase_nccl)
+setup_test(LanczosGPUNCCLDistTest lanczos.cpp LIBRARIES chase_nccl)
+setup_test(shiftDiagonalGPUNCCLDistTest shiftDiagonal.cpp LIBRARIES chase_nccl)

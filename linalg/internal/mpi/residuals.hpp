@@ -17,11 +17,11 @@ namespace internal
 namespace mpi
 {
     template<typename T>
-    void residuals(chase::distMatrix::BlockBlockMatrix<T>& H,
-                   chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column>& V1,
-                   chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column>& V2,
-                   chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row>& W1,
-                   chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row>& W2,
+    void residuals(chase::distMatrix::BlockBlockMatrix<T, chase::platform::CPU>& H,
+                   chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::CPU>& V1,
+                   chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::CPU>& V2,
+                   chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::CPU>& W1,
+                   chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::CPU>& W2,
                    chase::Base<T>* ritzv,
                    chase::Base<T>* resids,
                    std::size_t offset,

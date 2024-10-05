@@ -92,7 +92,7 @@ namespace cuda
 
     void absTrace_gpu(std::complex<float>* d_matrix, float* d_trace, std::size_t n, std::size_t ld, cudaStream_t stream_)
     {
-        cudaMemset(d_trace, 0, sizeof(std::complex<float>));
+        cudaMemset(d_trace, 0, sizeof(float));
         dim3 threads( NB_X);
         std::size_t gridSize = (n + NB_X - 1) / NB_X;
         dim3 grid( gridSize );
@@ -102,7 +102,7 @@ namespace cuda
 
     void absTrace_gpu(std::complex<double>* d_matrix, double* d_trace, std::size_t n, std::size_t ld, cudaStream_t stream_)
     {
-        cudaMemset(d_trace, 0, sizeof(std::complex<double>));
+        cudaMemset(d_trace, 0, sizeof(double));
         dim3 threads( NB_X);
         std::size_t gridSize = (n + NB_X - 1) / NB_X;
         dim3 grid( gridSize );

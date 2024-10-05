@@ -1,5 +1,7 @@
 #pragma once
 
+#include <limits>
+#include <iomanip>
 #include "mpi.h"
 #include "Impl/grid/mpiTypes.hpp"
 #include "linalg/blaspp/blaspp.hpp"
@@ -322,7 +324,7 @@ namespace mpi
     void houseHoulderQR(chase::distMultiVector::DistMultiVector1D<T, InputCommType>& V)
     {
 #ifdef HAS_SCALAPACK
-        std::size_t *desc = V.get_scalapack_desc();
+        std::size_t *desc = V.scalapack_descriptor_init();
         int one = 1;
         std::vector<T> tau(V.l_cols());
 

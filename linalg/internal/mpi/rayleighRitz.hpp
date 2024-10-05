@@ -18,25 +18,25 @@ namespace internal
 namespace mpi
 {
     template<typename T>
-    void rayleighRitz(chase::distMatrix::BlockBlockMatrix<T>& H,
-                    chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column>& V1,
-                    chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column>& V2,
-                    chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row>& W1,
-                    chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row>& W2,
+    void rayleighRitz(chase::distMatrix::BlockBlockMatrix<T, chase::platform::CPU>& H,
+                    chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::CPU>& V1,
+                    chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::CPU>& V2,
+                    chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::CPU>& W1,
+                    chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::CPU>& W2,
                     chase::Base<T>* ritzv,
                     std::size_t offset,
                     std::size_t subSize,
-                    chase::distMatrix::RedundantMatrix<T>* A = nullptr)
+                    chase::distMatrix::RedundantMatrix<T, chase::platform::CPU>* A = nullptr)
     {
         if (ritzv == nullptr) {
             throw std::invalid_argument("ritzv cannot be a nullptr.");
         }
 
-        std::unique_ptr<chase::distMatrix::RedundantMatrix<T>> A_ptr;
+        std::unique_ptr<chase::distMatrix::RedundantMatrix<T, chase::platform::CPU>> A_ptr;
 
         if (A == nullptr) {
             // Allocate A if not provided
-            A_ptr = std::make_unique<chase::distMatrix::RedundantMatrix<T>>(subSize, subSize, V1.getMpiGrid_shared_ptr());
+            A_ptr = std::make_unique<chase::distMatrix::RedundantMatrix<T, chase::platform::CPU>>(subSize, subSize, V1.getMpiGrid_shared_ptr());
             A = A_ptr.get();
         }
 

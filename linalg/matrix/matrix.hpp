@@ -16,14 +16,6 @@
 #include "linalg/internal/cuda/precision_conversion.cuh"
 #endif
 
-namespace chase
-{
-namespace platform
-{
-struct CPU {};  // Represents CPU platform
-struct GPU {};  // Represents GPU platform    
-}    
-}
 namespace chase {
 namespace matrix {
 
@@ -290,8 +282,8 @@ public:
 
     MatrixGPU(std::size_t rows, std::size_t cols)
         : rows_(rows), cols_(cols), cpu_ld_(0), gpu_ld_(rows), owns_cpu_mem_(false)
-    {
-        CHECK_CUDA_ERROR(cudaMalloc(&gpu_data_, rows * cols * sizeof(T)));      // Allocate GPU buffer
+    {        
+        CHECK_CUDA_ERROR(cudaMalloc(reinterpret_cast<void **>(&gpu_data_), rows * cols * sizeof(T)));      // Allocate GPU buffer
         CHECK_CUDA_ERROR(cudaMemset(gpu_data_, 0, rows * cols * sizeof(T)));
     }
 
@@ -361,7 +353,7 @@ public:
 #ifdef ENABLE_MIXED_PRECISION
         std::swap(single_precision_enabled_, other.single_precision_enabled_);
         std::swap(single_precision_data_, other.single_precision_data_);
-#endif    
+#endif 
     }
 
     ~MatrixGPU() {
@@ -521,4 +513,32 @@ public:
 }  // namespace matrix
 }  // namespace chase
 
+
+
+namespace chase
+{
+namespace platform
+{
+struct CPU {};  // Represents CPU platform
+struct GPU {};  // Represents GPU platform
+
+// Type trait to select the appropriate matrix class
+template<typename T, typename Platform>
+struct MatrixTypePlatform;
+
+// Specialization for CPU
+template<typename T>
+struct MatrixTypePlatform<T, chase::platform::CPU> {
+    using type = chase::matrix::MatrixCPU<T>;
+};
+
+#ifdef HAS_CUDA
+// Specialization for GPU
+template<typename T>
+struct MatrixTypePlatform<T, chase::platform::GPU> {
+    using type = chase::matrix::MatrixGPU<T>;
+};
+#endif
+}    
+}
 

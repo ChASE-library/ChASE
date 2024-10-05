@@ -41,7 +41,7 @@ TYPED_TEST(shiftDiagonalCPUDistTest, ShiftDistCorrectness) {
     }
 
     auto H = chase::distMatrix::BlockBlockMatrix<T>(N, N, mpi_grid);
-    R.template redistributeImpl<chase::distMatrix::MatrixTypeTrait<decltype(H)>::value>(&H);
+    R.redistributeImpl(&H);
     chase::linalg::internal::mpi::shiftDiagonal(H, T(-5.0));
 
     if(this->world_rank == 0 || this->world_rank == 3){

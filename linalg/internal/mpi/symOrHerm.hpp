@@ -82,7 +82,7 @@ namespace mpi
     void symOrHermMatrix(char uplo, chase::distMatrix::BlockBlockMatrix<T>& H) 
     {
 #ifdef HAS_SCALAPACK
-        std::size_t *desc = H.get_scalapack_desc();
+        std::size_t *desc = H.scalapack_descriptor_init();
 
         std::size_t xlen = H.l_rows();
         std::size_t ylen = H.l_cols();

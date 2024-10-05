@@ -15,3 +15,22 @@ void check(cudaError_t err, const char* const func, const char* const file,
          std::exit(EXIT_FAILURE);
     }
 }
+
+namespace chase
+{
+namespace cuda
+{
+namespace utils
+{
+// Custom deleter for GPU memory
+    struct CudaDeleter {
+        template <typename T>
+        void operator()(T* ptr) const {
+            cudaFree(static_cast<void*>(ptr));  // Cast to void* for cudaFree
+            //std::cout << "cuda buffer managed by unique_ptr is freed" << std::endl;
+        }
+    };
+
+}
+}
+}

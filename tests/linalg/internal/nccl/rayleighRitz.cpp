@@ -3,9 +3,8 @@
 #include <cmath>
 #include <random>
 #include <cstring>
-#include "linalg/internal/mpi/hemm.hpp"
-#include "linalg/internal/mpi/rayleighRitz.hpp"
-#include "linalg/internal/mpi/residuals.hpp"
+#include "linalg/internal/nccl/hemm.hpp"
+#include "linalg/internal/nccl/rayleighRitz.hpp"
 #include "linalg/scalapackpp/scalapackpp.hpp"
 #include "tests/linalg/internal/utils.hpp"
 #include "Impl/grid/mpiGrid2D.hpp"
@@ -13,14 +12,21 @@
 #include "linalg/distMatrix/distMultiVector.hpp"
 
 template <typename T>
-class RRCPUDistTest : public ::testing::Test {
+class RRGPUNCCLDistTest : public ::testing::Test {
 protected:
     void SetUp() override {
         MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
         MPI_Comm_size(MPI_COMM_WORLD, &world_size); 
+        CHECK_CUBLAS_ERROR(cublasCreate(&cublasH_));   
+        CHECK_CUDA_ERROR(cudaStreamCreate(&stream_));
+        CHECK_CUSOLVER_ERROR(cusolverDnCreate(&cusolverH_));
     }
 
     void TearDown() override {
+        if (cublasH_)
+            CHECK_CUBLAS_ERROR(cublasDestroy(cublasH_));
+        if (cusolverH_)
+            CHECK_CUSOLVER_ERROR(cusolverDnDestroy(cusolverH_)); 
     }
 
     int world_rank;
@@ -28,17 +34,19 @@ protected:
 
     std::size_t N = 50;
     std::size_t n = 8;   
+    cublasHandle_t cublasH_;
+    cusolverDnHandle_t cusolverH_;
+    cudaStream_t stream_;
 };
 
 using TestTypes = ::testing::Types<float, double, std::complex<float>, std::complex<double>>;
-TYPED_TEST_SUITE(RRCPUDistTest, TestTypes);
+TYPED_TEST_SUITE(RRGPUNCCLDistTest, TestTypes);
 
-
-TYPED_TEST(RRCPUDistTest, RRCorrectness) {
+TYPED_TEST(RRGPUNCCLDistTest, RRCorrectnessGPU) {
     using T = TypeParam;  // Get the current type
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
     auto machineEpsilon = MachineEpsilon<T>::value();
-
+    
     std::size_t offset = 1;
     std::size_t subSize = 2;
 
@@ -80,21 +88,29 @@ TYPED_TEST(RRCPUDistTest, RRCorrectness) {
 
     int *coords = mpi_grid.get()->get_coords();
 
-    auto H_ = chase::distMatrix::BlockBlockMatrix<T>(this->N, this->N, mpi_grid);
-    auto V_ = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column>(this->N, this->n, mpi_grid);
-    auto V2_ = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column>(this->N, this->n, mpi_grid);
-    auto W_ = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row>(this->N, this->n, mpi_grid);  
-    auto W2_ = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row>(this->N, this->n, mpi_grid);
+    auto H_ = chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU>(this->N, this->N, mpi_grid);
+    auto V_ = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(this->N, this->n, mpi_grid);
+    auto V2_ = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(this->N, this->n, mpi_grid);
+    auto W_ = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::GPU>(this->N, this->n, mpi_grid);  
+    auto W2_ = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::GPU>(this->N, this->n, mpi_grid);
+    auto ritzv_ = chase::distMatrix::RedundantMatrix<chase::Base<T>, chase::platform::GPU>(this->n, 1, mpi_grid);
+    H_.allocate_cpu_data();
+    V_.allocate_cpu_data();
+    W_.allocate_cpu_data();
+    V2_.allocate_cpu_data();
+    W2_.allocate_cpu_data();
+    ritzv_.allocate_cpu_data();
 
     //distribute H_ to BlockBlockMatrix
     for(auto i = 0; i < H_.l_cols(); i++)
     {
         for(auto j = 0; j < H_.l_rows(); j++)
         {
-            H_.l_data()[i * H_.l_ld() + j] = H[j + coords[0] * 25 + (i + coords[1] * 25) * this->N];
+            H_.cpu_data()[i * H_.cpu_ld() + j] = H[j + coords[0] * 25 + (i + coords[1] * 25) * this->N];
         }
     }
 
+    H_.H2D();
     chase::linalg::lapackpp::t_heevd(CblasColMajor, 'V', 'U', this->N,
                     H.data(), this->N, evals.data()); //H contains evecs
 
@@ -103,15 +119,31 @@ TYPED_TEST(RRCPUDistTest, RRCorrectness) {
     {
         for(auto j = 0; j < V_.l_rows(); j++)
         {
-            V_.l_data()[i * V_.l_ld() + j] = H[j + coords[0] * 25 + i * this->N];
-            V2_.l_data()[i * V_.l_ld() + j] = H[j + coords[0] * 25 + i * this->N];
+            V_.cpu_data()[i * V_.cpu_ld() + j] = H[j + coords[0] * 25 + i * this->N];
+            V2_.cpu_data()[i * V2_.cpu_ld() + j] = H[j + coords[0] * 25 + i * this->N];
         }
     }
+    V_.H2D();
+    V2_.H2D();
 
-    chase::linalg::internal::mpi::rayleighRitz(H_, V_, V2_, W_, W2_, ritzv.data(), offset, subSize);
+    int* devInfo;
+    CHECK_CUDA_ERROR(cudaMalloc((void**)&devInfo, sizeof(int)));    
+
+    chase::linalg::internal::nccl::rayleighRitz(this->cublasH_, 
+                                               this->cusolverH_, 
+                                               H_, 
+                                               V_, 
+                                               V2_, 
+                                               W_, 
+                                               W2_, 
+                                               ritzv_, 
+                                               offset, 
+                                               subSize,
+                                               devInfo);
 
     for(auto i = offset; i < offset + subSize; i++)
     {
-        EXPECT_NEAR(ritzv[i], evals[i], 100 * machineEpsilon);
+        EXPECT_NEAR(ritzv_.cpu_data()[i], evals[i], 100 * machineEpsilon);
     }
+    
 }

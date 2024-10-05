@@ -36,24 +36,6 @@ enum class CommunicatorType{
     all
 };
 
-// Type trait to select the appropriate matrix class
-template<typename T, typename Platform>
-struct MultiVectorType;
-
-// Specialization for CPU
-template<typename T>
-struct MultiVectorType<T, chase::platform::CPU> {
-    using type = chase::matrix::MatrixCPU<T>;
-};
-
-#ifdef HAS_CUDA
-// Specialization for GPU
-template<typename T>
-struct MultiVectorType<T, chase::platform::GPU> {
-    using type = chase::matrix::MatrixGPU<T>;
-};
-#endif
-
 // Type trait to map enum CommunicatorType to its opposite
 template <CommunicatorType>
 struct OutputCommType;
@@ -96,12 +78,20 @@ public:
     virtual std::size_t l_cols() const = 0;
     virtual std::size_t l_ld() const = 0;
     virtual T *         l_data() = 0;
+    virtual typename chase::platform::MatrixTypePlatform<T, Platform>::type& loc_matrix() = 0;
+
     int grank()
     {
         int grank = 0;
         MPI_Comm_rank(this->getMpiGrid()->get_comm(), &grank);
         return grank;
     }
+
+    void allocate_cpu_data()
+    {
+        auto& loc_matrix = this->loc_matrix();
+        loc_matrix.allocate_cpu_data();   
+    }    
 #ifdef ENABLE_MIXED_PRECISION       
     // Enable single precision for double types (and complex<double>)
     template <typename U = T, typename std::enable_if<std::is_same<U, double>::value || std::is_same<U, std::complex<double>>::value, int>::type = 0>
@@ -159,7 +149,7 @@ public:
     #ifdef HAS_CUDA            
                 {
 
-                    chase::linalg::internal::cuda::convert_SP_TO_DP_GPU(this->l_data(), single_precision_multivec_->l_data(), this->l_cols() * this->l_rows());
+                    chase::linalg::internal::cuda::convert_SP_TO_DP_GPU(single_precision_multivec_->l_data(), this->l_data(), this->l_cols() * this->l_rows());
                 }
     #else
                 {
@@ -260,10 +250,7 @@ public:
         
         ld_ = m_;
 
-        local_matrix_ =  typename MultiVectorType<T, Platform>::type(m_, n_);
-#ifdef HAS_SCALAPACK
-        scalapack_descriptor_init();
-#endif          
+        local_matrix_ =  typename chase::platform::MatrixTypePlatform<T, Platform>::type(m_, n_);       
     }
 
     DistMultiVector1D(std::size_t m, std::size_t n, std::size_t ld, T *data,
@@ -291,16 +278,12 @@ public:
         MPI_Allreduce(&lv, &res, 1, MPI_UINT64_T, MPI_SUM, comm);
         M_ = static_cast<std::size_t>(res);
 
-        local_matrix_ = typename MultiVectorType<T, Platform>::type(m_, n_, ld_, data);
+        local_matrix_ = typename chase::platform::MatrixTypePlatform<T, Platform>::type(m_, n_, ld_, data);
 
         if constexpr (std::is_same<Platform, chase::platform::GPU>::value)
         {
             ld_ = local_matrix_.gpu_ld();
-        }
-
-#ifdef HAS_SCALAPACK
-        scalapack_descriptor_init();
-#endif        
+        }       
     }    
 
     DistributionType getMultiVectorDistributionType() const override {
@@ -428,7 +411,7 @@ public:
             throw std::runtime_error("[DistMultiVector]: CPU type of matrix do not support H2D operation");
         }
     }
-
+#endif
     T *cpu_data()
     {
         if constexpr (std::is_same<Platform, chase::platform::GPU>::value)
@@ -450,7 +433,7 @@ public:
             return local_matrix_.ld();
         }           
     }
-#endif
+
     template<CommunicatorType target_comm_type, typename OtherPlatform>
     void redistributeImpl(DistMultiVector1D<T, target_comm_type, OtherPlatform>* targetMultiVector,
                             std::size_t offset, std::size_t subsetSize) {
@@ -511,7 +494,7 @@ public:
 
     template<CommunicatorType target_comm_type>
     void redistributeImplAsync(DistMultiVector1D<T, target_comm_type,  chase::platform::GPU>* targetMultiVector, cudaStream_t* stream_ = nullptr) 
-    {
+    {        
         this->redistributeImplAsync(targetMultiVector, 0, this->n_, stream_);
     }
 
@@ -533,24 +516,22 @@ public:
         }
 #endif        
     }
-    typename MultiVectorType<T, Platform>::type& loc_matrix() { return local_matrix_;}
+    typename chase::platform::MatrixTypePlatform<T, Platform>::type& loc_matrix() override { return local_matrix_;}
 #ifdef HAS_SCALAPACK
     std::size_t *get_scalapack_desc(){ return desc_; }
-#endif    
 
-private:
-    std::size_t M_;
-    std::size_t N_;
-    std::size_t m_;
-    std::size_t n_;
-    std::size_t ld_;
-    typename MultiVectorType<T, Platform>::type local_matrix_;
-    std::shared_ptr<chase::Impl::mpi::MpiGrid2DBase> mpi_grid_;
-#ifdef HAS_SCALAPACK
-    std::size_t desc_[9];
-    
-    void scalapack_descriptor_init()
+    std::size_t * scalapack_descriptor_init()
     {
+        if constexpr (std::is_same<Platform, chase::platform::GPU>::value)
+        {
+            if(local_matrix_.cpu_data() == nullptr)
+            {
+                local_matrix_.allocate_cpu_data();
+            }
+        }
+
+        std::size_t ldd = this->cpu_ld();
+     
         if constexpr (comm_type ==  CommunicatorType::column)
         {
             std::size_t mb = m_;
@@ -576,7 +557,7 @@ private:
                                                   &zero, 
                                                   &zero,
                                                   &colcomm1D_ctxt, 
-                                                  &ld_, 
+                                                  &ldd, 
                                                   &info);
 
 
@@ -584,8 +565,22 @@ private:
         {
             //row based will be implemented later
         }
-    }
 
+        return desc_;
+    }
+#endif    
+
+
+private:
+    std::size_t M_;
+    std::size_t N_;
+    std::size_t m_;
+    std::size_t n_;
+    std::size_t ld_;
+    typename chase::platform::MatrixTypePlatform<T, Platform>::type local_matrix_;
+    std::shared_ptr<chase::Impl::mpi::MpiGrid2DBase> mpi_grid_;
+#ifdef HAS_SCALAPACK
+    std::size_t desc_[9];
 #endif
     template<typename OtherPlatform>
     void redistributeRowToColumn(DistMultiVector1D<T, CommunicatorType::column, OtherPlatform>* targetMultiVector,
