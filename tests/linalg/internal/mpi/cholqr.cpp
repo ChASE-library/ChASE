@@ -12,20 +12,20 @@ class CHOLQRCPUDistTest : public ::testing::Test {
 protected:
     void SetUp() override {
         MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
-        MPI_Comm_size(MPI_COMM_WORLD, &world_size);        
+        MPI_Comm_size(MPI_COMM_WORLD, &world_size);             
     }
 
-    void TearDown() override {}
+    void TearDown() override {      }
 
     int world_rank;
     int world_size;    
     std::size_t N = 100;
     std::size_t n = 50;
-
 };
 
 using TestTypes = ::testing::Types<float, double, std::complex<float>, std::complex<double>>;
 TYPED_TEST_SUITE(CHOLQRCPUDistTest, TestTypes);
+
 
 TYPED_TEST(CHOLQRCPUDistTest, cholQR1) {
     using T = TypeParam;  // Get the current type

@@ -8,3 +8,7 @@ endif()
 if(TARGET linalg_internal_cuda)
 add_subdirectory(cuda)
 endif()
+
+if(TARGET mpi_grid_nccl)
+add_subdirectory(nccl)
+endif()

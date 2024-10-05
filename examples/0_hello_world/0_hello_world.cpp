@@ -118,7 +118,7 @@ int main(int argc, char** argv)
     for (auto idx = 0; idx < idx_max; ++idx)
     {
 
-        Clement.redistributeImpl<chase::distMatrix::MatrixTypeTrait<decltype(Hmat)>::value>(&Hmat);
+        Clement.redistributeImpl(&Hmat);
 
         if (world_rank == 0)
         {

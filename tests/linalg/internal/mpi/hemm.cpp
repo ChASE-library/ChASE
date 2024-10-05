@@ -12,17 +12,19 @@ class HEMMCPUDistTest : public ::testing::Test {
 protected:
     void SetUp() override {
         MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
-        MPI_Comm_size(MPI_COMM_WORLD, &world_size);        
+        MPI_Comm_size(MPI_COMM_WORLD, &world_size);          
     }
 
-    void TearDown() override {}
+    void TearDown() override {              
+    }
 
     int world_rank;
-    int world_size;    
+    int world_size;
 };
 
 using TestTypes = ::testing::Types<float, double, std::complex<float>, std::complex<double>>;
 TYPED_TEST_SUITE(HEMMCPUDistTest, TestTypes);
+
 
 TYPED_TEST(HEMMCPUDistTest, HEMMDistCorrectness) {
     using T = TypeParam;  // Get the current type

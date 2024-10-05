@@ -152,7 +152,6 @@ namespace cuda
         }
     }
 
-
     void residual_gpu(std::size_t m, std::size_t n, std::complex<double> *dA, std::size_t lda, std::complex<double> *dB,
                             std::size_t ldb, double *d_ritzv, double *d_resids, bool is_sqrt, cudaStream_t stream_)
     {

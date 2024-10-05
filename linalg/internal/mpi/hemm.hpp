@@ -16,11 +16,12 @@ namespace mpi
 {
     template <typename T, chase::distMultiVector::CommunicatorType InputCommType>
     void BlockBlockMultiplyMultiVectors(T *alpha,
-                                        chase::distMatrix::BlockBlockMatrix<T>& blockMatrix, 
-                                        chase::distMultiVector::DistMultiVector1D<T, InputCommType>& input_multiVector, 
+                                        chase::distMatrix::BlockBlockMatrix<T, chase::platform::CPU>& blockMatrix, 
+                                        chase::distMultiVector::DistMultiVector1D<T, InputCommType, chase::platform::CPU>& input_multiVector, 
                                         T *beta,
                                         chase::distMultiVector::DistMultiVector1D<T, 
-                                                                                  chase::distMultiVector::OutputCommType<InputCommType>::value>& result_multiVector,
+                                                                                  chase::distMultiVector::OutputCommType<InputCommType>::value,
+                                                                                  chase::platform::CPU>& result_multiVector,
                                         std::size_t offset,
                                         std::size_t subSize) 
     {
@@ -133,11 +134,12 @@ namespace mpi
 
     template <typename T, chase::distMultiVector::CommunicatorType InputCommType>
     void BlockBlockMultiplyMultiVectors(T *alpha,
-                                        chase::distMatrix::BlockBlockMatrix<T>& blockMatrix, 
-                                        chase::distMultiVector::DistMultiVector1D<T, InputCommType>& input_multiVector, 
+                                        chase::distMatrix::BlockBlockMatrix<T, chase::platform::CPU>& blockMatrix, 
+                                        chase::distMultiVector::DistMultiVector1D<T, InputCommType, chase::platform::CPU>& input_multiVector, 
                                         T *beta,
                                         chase::distMultiVector::DistMultiVector1D<T, 
-                                                                                  chase::distMultiVector::OutputCommType<InputCommType>::value>& result_multiVector) 
+                                                                                  chase::distMultiVector::OutputCommType<InputCommType>::value,
+                                                                                  chase::platform::CPU>& result_multiVector) 
     {
         BlockBlockMultiplyMultiVectors(alpha,
                                        blockMatrix, 
@@ -151,13 +153,15 @@ namespace mpi
     //this operation do: W1<-1.0 * H * V1, while redistribute V2 to W2
     template <typename T, chase::distMultiVector::CommunicatorType InputCommType>
     void BlockBlockMultiplyMultiVectorsAndRedistributeAsync(
-                                        chase::distMatrix::BlockBlockMatrix<T>& blockMatrix, 
-                                        chase::distMultiVector::DistMultiVector1D<T, InputCommType>& input_multiVector, 
+                                        chase::distMatrix::BlockBlockMatrix<T, chase::platform::CPU>& blockMatrix, 
+                                        chase::distMultiVector::DistMultiVector1D<T, InputCommType, chase::platform::CPU>& input_multiVector, 
                                         chase::distMultiVector::DistMultiVector1D<T, 
-                                                                                  chase::distMultiVector::OutputCommType<InputCommType>::value>& result_multiVector,
-                                        chase::distMultiVector::DistMultiVector1D<T, InputCommType>& src_multiVector,   
+                                                                                  chase::distMultiVector::OutputCommType<InputCommType>::value,
+                                                                                  chase::platform::CPU>& result_multiVector,
+                                        chase::distMultiVector::DistMultiVector1D<T, InputCommType, chase::platform::CPU>& src_multiVector,   
                                         chase::distMultiVector::DistMultiVector1D<T, 
-                                                                                  chase::distMultiVector::OutputCommType<InputCommType>::value>& target_multiVector,                                                                               
+                                                                                  chase::distMultiVector::OutputCommType<InputCommType>::value,
+                                                                                  chase::platform::CPU>& target_multiVector,                                                                               
                                         std::size_t offset,
                                         std::size_t subSize)                                                                                   
 
@@ -275,13 +279,15 @@ namespace mpi
 
     template <typename T, chase::distMultiVector::CommunicatorType InputCommType>
     void BlockBlockMultiplyMultiVectorsAndRedistributeAsync(
-                                        chase::distMatrix::BlockBlockMatrix<T>& blockMatrix, 
-                                        chase::distMultiVector::DistMultiVector1D<T, InputCommType>& input_multiVector, 
+                                        chase::distMatrix::BlockBlockMatrix<T, chase::platform::CPU>& blockMatrix, 
+                                        chase::distMultiVector::DistMultiVector1D<T, InputCommType, chase::platform::CPU>& input_multiVector, 
                                         chase::distMultiVector::DistMultiVector1D<T, 
-                                                                                  chase::distMultiVector::OutputCommType<InputCommType>::value>& result_multiVector,
-                                        chase::distMultiVector::DistMultiVector1D<T, InputCommType>& src_multiVector,   
+                                                                                  chase::distMultiVector::OutputCommType<InputCommType>::value,
+                                                                                  chase::platform::CPU>& result_multiVector,
+                                        chase::distMultiVector::DistMultiVector1D<T, InputCommType, chase::platform::CPU>& src_multiVector,   
                                         chase::distMultiVector::DistMultiVector1D<T, 
-                                                                                  chase::distMultiVector::OutputCommType<InputCommType>::value>& target_multiVector)
+                                                                                  chase::distMultiVector::OutputCommType<InputCommType>::value,
+                                                                                  chase::platform::CPU>& target_multiVector)
     {
         BlockBlockMultiplyMultiVectorsAndRedistributeAsync(blockMatrix, 
                                                            input_multiVector, 
@@ -290,7 +296,8 @@ namespace mpi
                                                            target_multiVector,
                                                            0,
                                                            input_multiVector.l_cols());
-    }            
+    }
+
 }
 }
 }

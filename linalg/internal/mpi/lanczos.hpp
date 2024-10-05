@@ -20,9 +20,10 @@ namespace mpi
     template<typename T>
     void lanczos(std::size_t M, 
                  std::size_t numvec, 
-                 chase::distMatrix::BlockBlockMatrix<T>& H, 
+                 chase::distMatrix::BlockBlockMatrix<T, chase::platform::CPU>& H, 
                  chase::distMultiVector::DistMultiVector1D<T, 
-                                                           chase::distMultiVector::CommunicatorType::column>& V,
+                                                           chase::distMultiVector::CommunicatorType::column,
+                                                           chase::platform::CPU>& V,
                 chase::Base<T>* upperb, 
                 chase::Base<T>* ritzv, 
                 chase::Base<T>* Tau, 
@@ -56,10 +57,10 @@ namespace mpi
         
         std::size_t N = H.g_rows();
 
-        auto v_0 = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column>(N, numvec, H.getMpiGrid_shared_ptr());
-        auto v_1 = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column>(N, numvec, H.getMpiGrid_shared_ptr());
-        auto v_2 = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column>(N, numvec, H.getMpiGrid_shared_ptr());
-        auto v_w = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row>(N, numvec, H.getMpiGrid_shared_ptr());
+        auto v_0 = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::CPU>(N, numvec, H.getMpiGrid_shared_ptr());
+        auto v_1 = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::CPU>(N, numvec, H.getMpiGrid_shared_ptr());
+        auto v_2 = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::CPU>(N, numvec, H.getMpiGrid_shared_ptr());
+        auto v_w = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::CPU>(N, numvec, H.getMpiGrid_shared_ptr());
 
         chase::linalg::lapackpp::t_lacpy('A', v_1.l_rows(), numvec, V.l_data(), V.l_ld(), v_1.l_data(), v_1.l_ld());
 
@@ -233,9 +234,10 @@ namespace mpi
 
     template<typename T>
     void lanczos(std::size_t M, 
-                 chase::distMatrix::BlockBlockMatrix<T>& H, 
+                 chase::distMatrix::BlockBlockMatrix<T, chase::platform::CPU>& H, 
                  chase::distMultiVector::DistMultiVector1D<T, 
-                                                           chase::distMultiVector::CommunicatorType::column>& V,
+                                                           chase::distMultiVector::CommunicatorType::column,
+                                                           chase::platform::CPU>& V,
                  Base<T>* upperb)
     {
         if(H.g_cols() != H.g_rows())
@@ -266,10 +268,10 @@ namespace mpi
         
         std::size_t N = H.g_rows();
 
-        auto v_0 = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column>(N, 1, H.getMpiGrid_shared_ptr());
-        auto v_1 = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column>(N, 1, H.getMpiGrid_shared_ptr());
-        auto v_2 = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column>(N, 1, H.getMpiGrid_shared_ptr());
-        auto v_w = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row>(N, 1, H.getMpiGrid_shared_ptr());
+        auto v_0 = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::CPU>(N, 1, H.getMpiGrid_shared_ptr());
+        auto v_1 = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::CPU>(N, 1, H.getMpiGrid_shared_ptr());
+        auto v_2 = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::CPU>(N, 1, H.getMpiGrid_shared_ptr());
+        auto v_w = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::CPU>(N, 1, H.getMpiGrid_shared_ptr());
 
         chase::linalg::lapackpp::t_lacpy('A', v_1.l_rows(), 1, V.l_data(), V.l_ld(), v_1.l_data(), v_1.l_ld());
 

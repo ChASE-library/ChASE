@@ -6,7 +6,7 @@
 #include "Impl/grid/mpiGrid2D.hpp"
 
 template <typename T>
-class MatrixCPUDistTest : public ::testing::Test {
+class MatrixDistTest : public ::testing::Test {
 protected:
     void SetUp() override {
         MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
@@ -20,9 +20,9 @@ protected:
 };
 
 using TestTypes = ::testing::Types<float, double, std::complex<float>, std::complex<double>>;
-TYPED_TEST_SUITE(MatrixCPUDistTest, TestTypes);
+TYPED_TEST_SUITE(MatrixDistTest, TestTypes);
 
-TYPED_TEST(MatrixCPUDistTest, RedundantInternalMemoryAllocation) {
+TYPED_TEST(MatrixDistTest, RedundantInternalMemoryAllocation) {
     using T = TypeParam;  // Get the current type
     //using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type;
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
@@ -47,32 +47,7 @@ TYPED_TEST(MatrixCPUDistTest, RedundantInternalMemoryAllocation) {
     EXPECT_NE(redundant_matrix_.l_data(), nullptr);    
 }
 
-TYPED_TEST(MatrixCPUDistTest, BlockBlockInternalMemoryAllocation) {
-    using T = TypeParam;  // Get the current type
-    //using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type;
-    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
-    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
-            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(2, 2, MPI_COMM_WORLD);
-
-    std::size_t M = 6;
-    std::size_t N = 6;
-    auto blockblockmatrix_ = chase::distMatrix::BlockBlockMatrix<T>(M, N, mpi_grid);
-
-    // Check that the global matrix dimensions are correct
-    EXPECT_EQ(blockblockmatrix_.g_rows(), M);
-    EXPECT_EQ(blockblockmatrix_.g_cols(), N);
-
-    // Check that the local dimensions are also correct
-    EXPECT_EQ(blockblockmatrix_.l_rows(), M / 2);
-    EXPECT_EQ(blockblockmatrix_.l_cols(), N / 2);
-
-    // Check that the leading dimension matches local row size
-    EXPECT_EQ(blockblockmatrix_.l_ld(), M/2);  
-
-    EXPECT_NE(blockblockmatrix_.l_data(), nullptr);    
-}
-
-TYPED_TEST(MatrixCPUDistTest, RedundantExternalMemoryAllocation) {
+TYPED_TEST(MatrixDistTest, RedundantExternalMemoryAllocation) {
     using T = TypeParam;  // Get the current type
     //using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type;
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
@@ -114,7 +89,32 @@ TYPED_TEST(MatrixCPUDistTest, RedundantExternalMemoryAllocation) {
     }      
 }
 
-TYPED_TEST(MatrixCPUDistTest, BlockBlockExternalMemoryAllocation) {
+TYPED_TEST(MatrixDistTest, BlockBlockInternalMemoryAllocation) {
+    using T = TypeParam;  // Get the current type
+    //using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type;
+    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
+    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(2, 2, MPI_COMM_WORLD);
+
+    std::size_t M = 6;
+    std::size_t N = 6;
+    auto blockblockmatrix_ = chase::distMatrix::BlockBlockMatrix<T>(M, N, mpi_grid);
+
+    // Check that the global matrix dimensions are correct
+    EXPECT_EQ(blockblockmatrix_.g_rows(), M);
+    EXPECT_EQ(blockblockmatrix_.g_cols(), N);
+
+    // Check that the local dimensions are also correct
+    EXPECT_EQ(blockblockmatrix_.l_rows(), M / 2);
+    EXPECT_EQ(blockblockmatrix_.l_cols(), N / 2);
+
+    // Check that the leading dimension matches local row size
+    EXPECT_EQ(blockblockmatrix_.l_ld(), M/2);  
+
+    EXPECT_NE(blockblockmatrix_.l_data(), nullptr);    
+}
+
+TYPED_TEST(MatrixDistTest, BlockBlockExternalMemoryAllocation) {
     using T = TypeParam;  // Get the current type
     //using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type;
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
@@ -159,7 +159,7 @@ TYPED_TEST(MatrixCPUDistTest, BlockBlockExternalMemoryAllocation) {
     }          
 }
 
-TYPED_TEST(MatrixCPUDistTest, BlockBlockRedistributionToRedundantDivisibleSize) {
+TYPED_TEST(MatrixDistTest, BlockBlockRedistributionToRedundantDivisibleSize) {
     using T = TypeParam;  // Get the current type
     //using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type;
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
@@ -201,7 +201,7 @@ TYPED_TEST(MatrixCPUDistTest, BlockBlockRedistributionToRedundantDivisibleSize) 
         blockblockmatrix_.l_data()[3] = 15;                
     }
     
-    blockblockmatrix_.template redistributeImpl<chase::distMatrix::MatrixTypeTrait<decltype(redundantmatrix_)>::value>(&redundantmatrix_);
+    blockblockmatrix_.redistributeImpl(&redundantmatrix_);
 
     for(auto i = 0; i < redundantmatrix_.l_rows(); i++)
     {
@@ -212,7 +212,7 @@ TYPED_TEST(MatrixCPUDistTest, BlockBlockRedistributionToRedundantDivisibleSize) 
     }
     //test also from redundant to blockblock
     auto blockblockmatrix_2 = chase::distMatrix::BlockBlockMatrix<T>(g_rows, g_cols, mpi_grid);
-    redundantmatrix_.template redistributeImpl<chase::distMatrix::MatrixTypeTrait<decltype(blockblockmatrix_2)>::value>(&blockblockmatrix_2);
+    redundantmatrix_.redistributeImpl(&blockblockmatrix_2);
 
     for(auto i = 0; i < blockblockmatrix_2.l_rows(); i++)
     {
@@ -223,7 +223,7 @@ TYPED_TEST(MatrixCPUDistTest, BlockBlockRedistributionToRedundantDivisibleSize) 
     }
 }
 
-TYPED_TEST(MatrixCPUDistTest, BlockBlockRedistributionToRedundantIndivisibleSize) {
+TYPED_TEST(MatrixDistTest, BlockBlockRedistributionToRedundantIndivisibleSize) {
     using T = TypeParam;  // Get the current type
     //using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type;
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
@@ -274,7 +274,7 @@ TYPED_TEST(MatrixCPUDistTest, BlockBlockRedistributionToRedundantIndivisibleSize
         blockblockmatrix_.l_data()[3] = 24;                
     }
     
-    blockblockmatrix_.template redistributeImpl<chase::distMatrix::MatrixTypeTrait<decltype(redundantmatrix_)>::value>(&redundantmatrix_);
+    blockblockmatrix_.redistributeImpl(&redundantmatrix_);
 
     for(auto i = 0; i < redundantmatrix_.l_rows(); i++)
     {
@@ -288,7 +288,7 @@ TYPED_TEST(MatrixCPUDistTest, BlockBlockRedistributionToRedundantIndivisibleSize
     auto blockblockmatrix_2 = chase::distMatrix::BlockBlockMatrix<T>(g_rows, g_cols, mpi_grid);
     std::size_t startRow, subRows, startCol, subCols;
     startRow = 2; subRows = 2; startCol = 3; subCols = 1;
-    redundantmatrix_.template redistributeImpl<chase::distMatrix::MatrixTypeTrait<decltype(blockblockmatrix_2)>::value>(&blockblockmatrix_2, startRow, subRows, startCol, subCols);
+    redundantmatrix_.redistributeImpl(&blockblockmatrix_2, startRow, subRows, startCol, subCols);
 
     std::size_t *g_offs = blockblockmatrix_2.g_offs();
     for(auto i = 0; i < blockblockmatrix_2.l_rows(); i++)
@@ -309,11 +309,37 @@ TYPED_TEST(MatrixCPUDistTest, BlockBlockRedistributionToRedundantIndivisibleSize
     }  
 }
 
-#ifdef ENABLE_MIXED_PRECISION
-TYPED_TEST(MatrixCPUDistTest, RedundantMixedPrecison) {
+#ifdef HAS_CUDA
+TYPED_TEST(MatrixDistTest, RedundantInternalMemoryAllocationGPU) {
     using T = TypeParam;  // Get the current type
-    using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type;
+    //using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type;
+    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
+    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(MPI_COMM_WORLD);
 
+    std::size_t M = 5;
+    std::size_t N = 4;
+    auto redundant_matrix_ = chase::distMatrix::RedundantMatrix<T, chase::platform::GPU>(M, N, mpi_grid);
+    
+    // Check that the global matrix dimensions are correct
+    EXPECT_EQ(redundant_matrix_.g_rows(), M);
+    EXPECT_EQ(redundant_matrix_.g_cols(), N);
+
+    // Check that the local dimensions are also correct
+    EXPECT_EQ(redundant_matrix_.l_rows(), M);
+    EXPECT_EQ(redundant_matrix_.l_cols(), N);
+
+    // Check that the leading dimension matches local row size
+    EXPECT_EQ(redundant_matrix_.l_ld(), M);  
+
+    EXPECT_NE(redundant_matrix_.l_data(), nullptr);   
+    EXPECT_EQ(redundant_matrix_.cpu_data(), nullptr);    
+    EXPECT_EQ(redundant_matrix_.cpu_ld(), 0);  
+}
+
+TYPED_TEST(MatrixDistTest, RedundantExternalMemoryAllocationGPU) {
+    using T = TypeParam;  // Get the current type
+    //using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type;
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
     std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
             = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(MPI_COMM_WORLD);
@@ -322,98 +348,79 @@ TYPED_TEST(MatrixCPUDistTest, RedundantMixedPrecison) {
     std::size_t N = 4;
     std::size_t ld = 6;
     std::vector<T> buffer(ld * N);
-    for(auto i = 0; i < N; i++)
-    {
-        for(auto j = 0; j < M; j++)
-        {
-            buffer[i * ld + j] = T(i + j);
-        }
-    }
-    auto redundant_matrix_ = chase::distMatrix::RedundantMatrix<T>(M, N, ld, buffer.data(), mpi_grid);
-    
-    if constexpr (std::is_same<T, double>::value || std::is_same<T, std::complex<double>>::value){
-        redundant_matrix_.enableSinglePrecision();
-        EXPECT_TRUE(redundant_matrix_.isSinglePrecisionEnabled());
-        auto* single_precision_matrix = redundant_matrix_.getSinglePrecisionMatrix();
-        ASSERT_NE(single_precision_matrix, nullptr);
-        for(auto i = 0; i < single_precision_matrix->l_cols(); i++)
-        {
-            for(auto j = 0; j < single_precision_matrix->l_rows(); j++)
-            {
-                EXPECT_EQ(single_precision_matrix->l_data()[i * single_precision_matrix->l_ld() + j], SinglePrecisionType(i + j) );
-                single_precision_matrix->l_data()[i * single_precision_matrix->l_ld() + j] += SinglePrecisionType(0.5);
-            }
-        }
 
-        redundant_matrix_.disableSinglePrecision(true);
-        for(auto i = 0; i < redundant_matrix_.l_cols(); i++)
-        {
-            for(auto j = 0; j < redundant_matrix_.l_rows(); j++)
-            {
-                EXPECT_EQ(redundant_matrix_.l_data()[i * redundant_matrix_.l_ld() + j], T(i + j + 0.5) );
-            }
-        }
+    auto redundant_matrix_ = chase::distMatrix::RedundantMatrix<T, chase::platform::GPU>(M, N, ld, buffer.data(), mpi_grid);
 
-        EXPECT_FALSE(redundant_matrix_.isSinglePrecisionEnabled());
-        EXPECT_NE(single_precision_matrix, nullptr);
-    }else
-    {
-        EXPECT_THROW({redundant_matrix_.enableSinglePrecision();}, std::runtime_error);
-    }
+    // Check that the global matrix dimensions are correct
+    EXPECT_EQ(redundant_matrix_.g_rows(), M);
+    EXPECT_EQ(redundant_matrix_.g_cols(), N);
+
+    // Check that the local dimensions are also correct
+    EXPECT_EQ(redundant_matrix_.l_rows(), M);
+    EXPECT_EQ(redundant_matrix_.l_cols(), N);
+
+    // Check that the leading dimension matches local row size
+    EXPECT_EQ(redundant_matrix_.l_ld(), M);  
+    EXPECT_EQ(redundant_matrix_.cpu_ld(), ld);  
+
+    EXPECT_NE(redundant_matrix_.l_data(), nullptr);  
+    EXPECT_EQ(redundant_matrix_.cpu_data(), buffer.data());  
 }
 
-TYPED_TEST(MatrixCPUDistTest, BlockBlockMixedPrecison) {
+TYPED_TEST(MatrixDistTest, BlockBlockInternalMemoryAllocationGPU) {
     using T = TypeParam;  // Get the current type
-    using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type;
-
+    //using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type;
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
     std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
-            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(MPI_COMM_WORLD);
+            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(2, 2, MPI_COMM_WORLD);
 
-    std::size_t grows = 6;
-    std::size_t gcols = 6;
-    std::size_t lrows = 3;
-    std::size_t lcols = 3;
-    std::vector<T> buffer(lcols * lrows);
-    auto blockblockmatrix_ = chase::distMatrix::BlockBlockMatrix<T>(lrows, lcols, lrows, buffer.data(), mpi_grid);
+    std::size_t M = 6;
+    std::size_t N = 6;
+    auto blockblockmatrix_ = chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU>(M, N, mpi_grid);
 
-    for(auto i = 0; i < blockblockmatrix_.l_cols(); i++)
-    {
-        for(auto j = 0; j < blockblockmatrix_.l_rows(); j++)
-        {
-            blockblockmatrix_.l_data()[i * blockblockmatrix_.l_ld() + j] = T(i + j);
-        }
-    }
-    
-    if constexpr (std::is_same<T, double>::value || std::is_same<T, std::complex<double>>::value){
-        blockblockmatrix_.enableSinglePrecision();
-        EXPECT_TRUE(blockblockmatrix_.isSinglePrecisionEnabled());
-        auto* single_precision_matrix = blockblockmatrix_.getSinglePrecisionMatrix();
-        ASSERT_NE(single_precision_matrix, nullptr);
-        for(auto i = 0; i < single_precision_matrix->l_cols(); i++)
-        {
-            for(auto j = 0; j < single_precision_matrix->l_rows(); j++)
-            {
-                EXPECT_EQ(single_precision_matrix->l_data()[i * single_precision_matrix->l_ld() + j], SinglePrecisionType(i + j) );
-                single_precision_matrix->l_data()[i * single_precision_matrix->l_ld() + j] += SinglePrecisionType(0.5);
-            }
-        }
+    // Check that the global matrix dimensions are correct
+    EXPECT_EQ(blockblockmatrix_.g_rows(), M);
+    EXPECT_EQ(blockblockmatrix_.g_cols(), N);
 
-        blockblockmatrix_.disableSinglePrecision(true);
-        for(auto i = 0; i < blockblockmatrix_.l_cols(); i++)
-        {
-            for(auto j = 0; j < blockblockmatrix_.l_rows(); j++)
-            {
-                EXPECT_EQ(blockblockmatrix_.l_data()[i * blockblockmatrix_.l_ld() + j], T(i + j + 0.5) );
-            }
-        }
+    // Check that the local dimensions are also correct
+    EXPECT_EQ(blockblockmatrix_.l_rows(), M / 2);
+    EXPECT_EQ(blockblockmatrix_.l_cols(), N / 2);
 
-        EXPECT_FALSE(blockblockmatrix_.isSinglePrecisionEnabled());
-        EXPECT_NE(single_precision_matrix, nullptr);
-    }else
-    {
-        EXPECT_THROW({blockblockmatrix_.enableSinglePrecision();}, std::runtime_error);
-    }
+    // Check that the leading dimension matches local row size
+    EXPECT_EQ(blockblockmatrix_.l_ld(), M/2);  
+    EXPECT_EQ(blockblockmatrix_.cpu_ld(), 0);  
+    EXPECT_EQ(blockblockmatrix_.cpu_data(), nullptr);    
+    EXPECT_NE(blockblockmatrix_.l_data(), nullptr);    
 }
 
+TYPED_TEST(MatrixDistTest, BlockBlockExternalMemoryAllocationGPU) {
+    using T = TypeParam;  // Get the current type
+    //using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type;
+    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
+    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(2, 2, MPI_COMM_WORLD);
+
+    std::size_t l_rows = 3;
+    std::size_t l_cols = 4;
+    std::size_t l_ld = 4;
+    std::vector<T> buffer(l_cols * l_ld);
+
+    std::size_t g_rows = 6;
+    std::size_t g_cols = 8;
+
+    auto blockblockmatrix_ = chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU>(l_rows, l_cols, l_ld, buffer.data(), mpi_grid);
+
+    // Check that the global matrix dimensions are correct
+    EXPECT_EQ(blockblockmatrix_.g_rows(), g_rows);
+    EXPECT_EQ(blockblockmatrix_.g_cols(), g_cols);
+
+    // Check that the local dimensions are also correct
+    EXPECT_EQ(blockblockmatrix_.l_rows(), l_rows);
+    EXPECT_EQ(blockblockmatrix_.l_cols(), l_cols);
+
+    EXPECT_EQ(blockblockmatrix_.l_ld(), l_rows); 
+    EXPECT_EQ(blockblockmatrix_.cpu_ld(), l_ld); 
+    EXPECT_EQ(blockblockmatrix_.cpu_data(), buffer.data());  
+    EXPECT_NE(blockblockmatrix_.l_data(), nullptr);          
+}
 #endif
