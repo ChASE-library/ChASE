@@ -7,10 +7,22 @@
 #include <vector>
 
 #include "algorithm/performance.hpp"
+#ifdef HAS_CUDA
+#include "Impl/nccl/chase_nccl_gpu.hpp"
+#else
 #include "Impl/mpi/chase_mpi_cpu.hpp"
+#endif
 
 using T = std::complex<double>;
 using namespace chase;
+
+#ifdef HAS_CUDA
+using ARCH = chase::platform::GPU;
+typedef chase::Impl::ChaseNCCLGPU<T> ChaseImpl;
+#else
+using ARCH = chase::platform::CPU;
+typedef chase::Impl::ChaseMPICPU<T> ChaseImpl;
+#endif
 
 int main(int argc, char** argv)
 {
@@ -78,27 +90,47 @@ int main(int argc, char** argv)
                 << "Usage: ./driver \n";
     }
 
-    auto Clement = chase::distMatrix::RedundantMatrix<T>(N, N, mpi_grid);
     std::vector<T> H(m * n);
     auto V = std::vector<T>(m * (nev + nex));
     auto Lambda = std::vector<chase::Base<T>>(nev + nex);
 
-    //Generate Clement matrix
+    auto Hmat = chase::distMatrix::BlockBlockMatrix<T, ARCH>(m, n, m, H.data(), mpi_grid);    
+    auto Vec = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, ARCH>(m, nev + nex, m, V.data(), mpi_grid);
+    //redistribute Clement matrix into block-block distribution
+    std::size_t *g_offs = Hmat.g_offs();
+
     for (auto i = 0; i < N; ++i)
     {
-        Clement.l_data()[i + N * i] = 0;
         if (i != N - 1)
-            Clement.l_data()[i + 1 + N * i] = std::sqrt(i * (N + 1 - i));
+        {
+            auto x = i + 1 - g_offs[0];
+            auto y = i - g_offs[1];
+            if(x >= 0 && y >= 0 && x < m && y < n)
+            {
+                H[x + y * m] = std::sqrt(i * (N + 1 - i));
+            }
+        }
         if (i != N - 1)
-            Clement.l_data()[i + N * (i + 1)] = std::sqrt(i * (N + 1 - i));
-    }
+        {
+            auto x = i - g_offs[0];
+            auto y = i + 1 - g_offs[1];
+            if(x >= 0 && y >= 0 && x < m && y < n)
+            {
+                H[x + y * m] = std::sqrt(i * (N + 1 - i));
+            }            
+        }
+    }   
 
-    auto Hmat = chase::distMatrix::BlockBlockMatrix<T>(m, n, m, H.data(), mpi_grid);
-    auto Vec = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column>(m, nev + nex, m, V.data(), mpi_grid);
-    //redistribute Clement matrix into block-block distribution
+#ifdef HAS_CUDA
+        Hmat.H2D();
+#endif    
+    ChaseImpl single(nev, nex, &Hmat, &Vec, Lambda.data());
 
-    chase::Impl::ChaseMPICPU<T> single(nev, nex, &Hmat, &Vec, Lambda.data());
-
+//#ifdef HAS_CUDA
+//    chase::Impl::ChaseNCCLGPU<T> single(nev, nex, &Hmat, &Vec, Lambda.data());
+//#else
+//    chase::Impl::ChaseMPICPU<T> single(nev, nex, &Hmat, &Vec, Lambda.data());
+//#endif
     //Setup configure for ChASE
     auto& config = single.GetConfig();
     //Tolerance for Eigenpair convergence
@@ -117,9 +149,6 @@ int main(int argc, char** argv)
 
     for (auto idx = 0; idx < idx_max; ++idx)
     {
-
-        Clement.redistributeImpl(&Hmat);
-
         if (world_rank == 0)
         {
             std::cout << "Starting Problem #" << idx << "\n";
@@ -163,11 +192,29 @@ int main(int argc, char** argv)
         {
             for (std::size_t j = 1; j < i; ++j)
             {
-                T element_perturbation = T(d(gen), d(gen)) * perturb;
-                Clement.l_data()[j + N * i] += element_perturbation;
-                Clement.l_data()[i + N * j] += std::conj(element_perturbation);
+                T element_perturbation = T(d(gen), d(gen)) * perturb;                
+                auto x = i - g_offs[0];
+                auto y = j - g_offs[1];
+                auto y_2 = i - g_offs[1];
+                auto x_2 = j - g_offs[0];
+
+                if(x >= 0 && y >= 0 && x < m && y < n)
+                {
+                    H[x + y * m] += element_perturbation;
+
+                }
+
+                if(x_2 >= 0 && y_2 >= 0 && x_2 < m && y_2 < n)
+                {
+                    H[x_2 + y_2 * m] += std::conj(element_perturbation);
+
+                }
             }
-        }        
+        }
+#ifdef HAS_CUDA        
+        Hmat.H2D();
+#endif        
     }
+    
     MPI_Finalize();   
 }

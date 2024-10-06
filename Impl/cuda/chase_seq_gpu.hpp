@@ -166,7 +166,7 @@ public:
     bool checkSymmetryEasy() override
     {
         is_sym_ = chase::linalg::internal::cpu::checkSymmetryEasy(N_, Hmat_.cpu_data(), Hmat_.cpu_ld());  
-        return is_sym_ = true;
+        return is_sym_;
     }
 
     bool isSym() { return is_sym_; }

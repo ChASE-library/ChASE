@@ -19,8 +19,8 @@ int main()
 {
     std::size_t N = 1200;
     std::size_t LDH = 1200;
-    std::size_t nev = 360;
-    std::size_t nex = 80;
+    std::size_t nev = 80;
+    std::size_t nex = 60;
     std::size_t idx_max = 3;
     Base<T> perturb = 1e-4;
     

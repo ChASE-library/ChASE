@@ -59,7 +59,7 @@ namespace nccl
                                                                     ncclSum, 
                                                                     V1.getMpiGrid()->get_nccl_row_comm()));
 
-        resids.D2H();
+        CHECK_CUDA_ERROR(cudaMemcpy(resids.cpu_data() + offset, resids.gpu_data() + offset, subSize * sizeof(chase::Base<T>), cudaMemcpyDeviceToHost ));
 
         for (auto i = 0; i < subSize; ++i)
         {

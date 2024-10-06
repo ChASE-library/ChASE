@@ -355,6 +355,7 @@ private:
     void redistributeToBlockBlock(BlockBlockMatrix<T, Platform>* targetMatrix,
                                    std::size_t startRow, std::size_t subRows, std::size_t startCol, std::size_t subCols)
     {
+        //attention for submatrix should be check later, seems not fully correct
         if constexpr (std::is_same<Platform, chase::platform::CPU>::value) {
             std::size_t *g_offs = targetMatrix->g_offs();
             std::size_t l_cols = targetMatrix->l_cols();
@@ -373,10 +374,13 @@ private:
 
                 }
             }     
-        }else
+        }
+#ifdef HAS_CUDA
+        else if constexpr (std::is_same<Platform, chase::platform::GPU>::value)
         {
             throw std::runtime_error("[RedundantMatrix]: redistribution for GPU data from redundant to BlockBlock is not supported yet.");
         }
+#endif        
     }
 };
 

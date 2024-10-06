@@ -109,6 +109,7 @@ namespace nccl
    
         if(info != 0)
         {
+            CHECK_CUDA_ERROR(cudaFree(devInfo));
             return info;
         }
         else
@@ -126,11 +127,18 @@ namespace nccl
                                                                     V, 
                                                                     ldv));
 #ifdef CHASE_OUTPUT
-            std::cout << "choldegree: 1" << std::endl;
-#endif                
+
+            int grank;
+            MPI_Comm_rank(MPI_COMM_WORLD, &grank);
+            if(grank == 0)
+            {
+                std::cout << "choldegree: 1" << std::endl;
+            }
+#endif
+            CHECK_CUDA_ERROR(cudaFree(devInfo));
             return info;
         }   
-        CHECK_CUDA_ERROR(cudaFree(devInfo));
+        
     }
 
 
@@ -216,6 +224,7 @@ namespace nccl
    
         if(info != 0)
         {
+            CHECK_CUDA_ERROR(cudaFree(devInfo));
             return info;
         }
         else
@@ -268,12 +277,17 @@ namespace nccl
                                                                     n, 
                                                                     V, 
                                                                     ldv));
-#ifdef CHASE_OUTPUT
-            std::cout << "choldegree: 2" << std::endl;
-#endif                
+#ifdef CHASE_OUTPUT            
+            int grank;
+            MPI_Comm_rank(MPI_COMM_WORLD, &grank);
+            if(grank == 0)
+            {
+                std::cout << "choldegree: 2" << std::endl;
+            }   
+#endif                        
+            CHECK_CUDA_ERROR(cudaFree(devInfo));
             return info;
         }   
-        CHECK_CUDA_ERROR(cudaFree(devInfo));
     }
 
     template<typename T>
@@ -369,7 +383,6 @@ namespace nccl
    
         if(info != 0)
         {
-            std::cout << "1" << std::endl;
             return info;
         }
     
@@ -456,8 +469,14 @@ namespace nccl
                                                                 n, 
                                                                 V, 
                                                                 ldv));
+
 #ifdef CHASE_OUTPUT
-        std::cout << std::setprecision(2) << "choldegree: 2, shift = " << shift << std::endl;
+        int grank;
+        MPI_Comm_rank(MPI_COMM_WORLD, &grank);
+        if(grank == 0)
+        {
+            std::cout << std::setprecision(2) << "choldegree: 2, shift = " << shift << std::endl;
+        }
 #endif                        
         CHECK_CUDA_ERROR(cudaFree(devInfo));
         
@@ -466,6 +485,40 @@ namespace nccl
         return info;
        
     }
+
+    template<typename T, chase::distMultiVector::CommunicatorType InputCommType>
+    void houseHoulderQR(chase::distMultiVector::DistMultiVector1D<T, InputCommType, chase::platform::GPU>& V)
+    {
+#ifdef HAS_SCALAPACK
+        V.allocate_cpu_data();
+        V.D2H();
+        std::size_t *desc = V.scalapack_descriptor_init();
+        int one = 1;
+        std::vector<T> tau(V.l_cols());
+
+        chase::linalg::scalapackpp::t_pgeqrf(V.g_rows(), 
+                                             V.g_cols(), 
+                                             V.cpu_data(), 
+                                             one, 
+                                             one, 
+                                             desc,
+                                             tau.data());
+
+        chase::linalg::scalapackpp::t_pgqr(V.g_rows(), 
+                                           V.g_cols(), 
+                                           V.g_cols(), 
+                                           V.cpu_data(), 
+                                           one, 
+                                           one, 
+                                           desc, 
+                                           tau.data());
+        V.H2D();
+
+#else
+        std::runtime_error("For ChASE-MPI, distributed Householder QR requires ScaLAPACK, which is not detected\n");
+#endif
+    }
+
 
 }
 }

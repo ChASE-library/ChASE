@@ -97,7 +97,7 @@ public:
     bool checkSymmetryEasy() override
     {
         is_sym_ = chase::linalg::internal::mpi::checkSymmetryEasy(*Hmat_);  
-        return true;
+        return is_sym_;
     }
 
     bool isSym() { return is_sym_; }
