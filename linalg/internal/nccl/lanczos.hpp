@@ -64,7 +64,6 @@ namespace nccl
         auto v_w = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::GPU>(N, numvec, H.getMpiGrid_shared_ptr());
 
         chase::linalg::internal::cuda::t_lacpy('A', v_1.l_rows(), numvec, V.l_data(), V.l_ld(), v_1.l_data(), v_1.l_ld());
-
         for(auto i = 0; i < numvec; i++)
         {
             CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTnrm2(cublas_handle, 
@@ -109,7 +108,6 @@ namespace nccl
                                                                          v_1,
                                                                          &Zero,
                                                                          v_w);
-
             v_w.redistributeImplAsync(&v_2);  
 
             for(auto i = 0; i < numvec; i++)
@@ -131,7 +129,7 @@ namespace nccl
                           chase::mpi::getMPI_Type<T>(), 
                           MPI_SUM,
                           H.getMpiGrid()->get_col_comm());
-            
+
             for(auto i = 0; i < numvec; i++)
             {
                 CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTaxpy(cublas_handle, 
@@ -148,7 +146,6 @@ namespace nccl
             {
                 d[k + M * i] = std::real(alpha[i]);
             }
-
             if(k > 0){
                 for(auto i = 0; i < numvec; i++)
                 {
@@ -166,7 +163,6 @@ namespace nccl
                 }                                
             }            
             
-
             for(auto i = 0; i < numvec; i++)
             {
                 beta[i] = -beta[i];
@@ -182,14 +178,14 @@ namespace nccl
             
                 r_beta[i] = std::pow(r_beta[i], 2);
             }
-            
+
             MPI_Allreduce(MPI_IN_PLACE, 
                         r_beta.data(), 
                         numvec, 
                         chase::mpi::getMPI_Type<chase::Base<T>>(),
                         MPI_SUM, 
                         H.getMpiGrid()->get_col_comm());
-                        
+
             for(auto i = 0; i < numvec; i++)
             {   
                 r_beta[i] = std::sqrt(r_beta[i]);
@@ -201,8 +197,10 @@ namespace nccl
             }
 
             if (k == M - 1)
+            {
                 break;
-
+            }
+                
             for(auto i = 0; i < numvec; i++)
             {
                 CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTscal(cublas_handle, 
@@ -216,10 +214,9 @@ namespace nccl
             {
                 e[k + M * i] = r_beta[i];
             }
+
             v_1.swap(v_0);
             v_1.swap(v_2); 
-             
-                        
         }
     
         chase::linalg::internal::cuda::t_lacpy('A', 

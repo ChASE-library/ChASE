@@ -292,7 +292,7 @@ public:
     {
         CHECK_CUDA_ERROR(cudaMalloc(&gpu_data_, rows * cols * sizeof(T)));      // Allocate GPU buffer
         CHECK_CUBLAS_ERROR(cublasSetMatrix(rows_, cols_, sizeof(T), cpu_data_, cpu_ld_,
-                        gpu_data_, gpu_ld_));
+                        gpu_data_, gpu_ld_)); 
     }
 
     // Move constructor
@@ -374,7 +374,7 @@ public:
             cpu_ld_ = rows_;
         }else
         {
-            std::cerr << "[MatrixGPU]: Warning> CPU data is already allocated" << std::endl;
+            //std::cerr << "[MatrixGPU]: Warning> CPU data is already allocated" << std::endl;
         }
     }
 
@@ -382,7 +382,7 @@ public:
     {       
         if(!owns_cpu_mem_ || cpu_data_ == nullptr)
         {
-            std::cerr << "[MatrixGPU]: Warning> CPU data is not allocated yet, nullptr is returned" << std::endl;
+            //std::cerr << "[MatrixGPU]: Warning> CPU data is not allocated yet, nullptr is returned" << std::endl;
         }  
         return cpu_data_; 
     }

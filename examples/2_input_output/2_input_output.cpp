@@ -8,8 +8,13 @@
 #include "popl.hpp"
 
 #include "algorithm/performance.hpp"
-#ifdef USE_MPI
+
+#ifdef HAS_NCCL
+#include "Impl/nccl/chase_nccl_gpu.hpp"
+using ARCH = chase::platform::GPU;
+#elif defined(USE_MPI)
 #include "Impl/mpi/chase_mpi_cpu.hpp"
+using ARCH = chase::platform::CPU;
 #else
 #include "Impl/cpu/chase_seq_cpu.hpp"
 #ifdef HAS_CUDA
@@ -92,15 +97,25 @@ int do_chase(ChASE_DriverProblemConfig& conf)
     auto Lambda__ = std::unique_ptr<chase::Base<T>[]>(new chase::Base<T>[(nev + nex)]);
     chase::Base<T>* Lambda = Lambda__.get();
     int grank = 0;
-#ifdef USE_MPI
+
+#if defined(USE_MPI) || defined(HAS_NCCL)
     MPI_Comm_rank(MPI_COMM_WORLD, &grank);
     std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
         = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(MPI_COMM_WORLD);
 
-    auto Hmat = chase::distMatrix::BlockBlockMatrix<T>(N, N, mpi_grid);
-    auto Vec = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column>(N, nev + nex, mpi_grid);
-    T *H = Hmat.l_data();   
+    auto Hmat = chase::distMatrix::BlockBlockMatrix<T, ARCH>(N, N, mpi_grid);
+    auto Vec = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, ARCH>(N, nev + nex, mpi_grid);
+    T *H;
+#if defined(HAS_NCCL)
+    H = Hmat.cpu_data();
+#elif USE_MPI
+    H = Hmat.l_data();
+#endif
+#ifdef USE_MPI
     chase::Impl::ChaseMPICPU<T> single(nev, nex, &Hmat, &Vec, Lambda);
+#elif HAS_NCCL
+    chase::Impl::ChaseNCCLGPU<T> single(nev, nex, &Hmat, &Vec, Lambda);
+#endif
 #else
     auto V__ = std::unique_ptr<T[]>(new T[N * (nev + nex)]);
     auto H__ = std::unique_ptr<T[]>(new T[N * N]);
@@ -108,7 +123,6 @@ int do_chase(ChASE_DriverProblemConfig& conf)
     T* V = V__.get();
     T *H = H__.get();   
 #ifdef HAS_CUDA
-    std::cout << "use GPU" << std::endl;
     chase::Impl::ChaseGPUSeq<T> single(N, nev, nex, H, N, V, N, Lambda);
 #else
     chase::Impl::ChaseCPUSeq<T> single(N, nev, nex, H, N, V, N, Lambda);
@@ -185,7 +199,7 @@ int do_chase(ChASE_DriverProblemConfig& conf)
 
             std::size_t xoff, yoff, xlen, ylen, ld;
 
-#ifdef USE_MPI
+#if defined(USE_MPI) || defined(HAS_NCCL) 
             std::size_t *g_offs = Hmat.g_offs();
             xoff = g_offs[0];
             yoff = g_offs[1];
@@ -264,7 +278,7 @@ int do_chase(ChASE_DriverProblemConfig& conf)
 
 int main(int argc, char* argv[])
 {
-#ifdef USE_MPI
+#if defined(USE_MPI) || defined (HAS_NCCL)
     MPI_Init(&argc, &argv);
 #endif
 
@@ -399,7 +413,7 @@ int main(int argc, char* argv[])
         std::cout << "single not implemented\n";
     }
 
-#ifdef USE_MPI
+#if defined(USE_MPI) || defined (HAS_NCCL)
     MPI_Finalize();
 #endif
 
