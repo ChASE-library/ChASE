@@ -22,6 +22,8 @@
 #include "linalg/internal/nccl/symOrHerm.hpp"
 #include "algorithm/types.hpp"
 
+#include "Impl/cuda/nvtx.hpp"
+
 using namespace chase::linalg;
 
 namespace chase
@@ -38,6 +40,8 @@ public:
                  chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU> *V,
                  chase::Base<T> *ritzv): nev_(nev), nex_(nex), nevex_(nev + nex), config_(H->g_rows(), nev, nex), N_(H->g_rows())
     {
+        SCOPED_NVTX_RANGE();
+
         if(H->g_rows() != H->g_cols())
         {
             std::runtime_error("ChASE requires the matrix solved to be squared");
@@ -160,6 +164,8 @@ public:
 
     ~ChaseNCCLGPU() 
     {
+        SCOPED_NVTX_RANGE();
+        
         if (cublasH_)
             CHECK_CUBLAS_ERROR(cublasDestroy(cublasH_));
         if (cusolverH_)
@@ -187,6 +193,7 @@ public:
 
     void loadProblemFromFile(std::string filename)
     {
+       SCOPED_NVTX_RANGE();
        Hmat_->readFromBinaryFile(filename);
     }
 
@@ -202,6 +209,8 @@ public:
 #endif
     bool checkSymmetryEasy() override
     {
+        SCOPED_NVTX_RANGE();
+
         is_sym_ = chase::linalg::internal::nccl::checkSymmetryEasy(cublasH_, *Hmat_);  
         return is_sym_;
     }
@@ -210,6 +219,8 @@ public:
 
     void symOrHermMatrix(char uplo) override
     {
+        SCOPED_NVTX_RANGE();
+
         chase::linalg::internal::nccl::symOrHermMatrix(uplo, *Hmat_);   
     }
 
@@ -220,6 +231,8 @@ public:
 
     void initVecs(bool random) override
     {
+        SCOPED_NVTX_RANGE();
+
         if (random)
         {
             int mpi_col_rank;
@@ -243,7 +256,9 @@ public:
     }
 
     void Lanczos(std::size_t m, chase::Base<T>* upperb) override 
-    {       
+    {   
+        SCOPED_NVTX_RANGE();
+
         chase::linalg::internal::nccl::lanczos(cublasH_,
                                               m, 
                                               *Hmat_, 
@@ -254,6 +269,8 @@ public:
     void Lanczos(std::size_t M, std::size_t numvec, chase::Base<T>* upperb,
                          chase::Base<T>* ritzv, chase::Base<T>* Tau, chase::Base<T>* ritzV) override
     {
+        SCOPED_NVTX_RANGE();
+
         chase::linalg::internal::nccl::lanczos(cublasH_,
                                               M, 
                                               numvec, 
@@ -267,6 +284,8 @@ public:
 
     void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc) override
     {
+        SCOPED_NVTX_RANGE();
+
         T One = T(1.0);
         T Zero = T(0.0);
 
@@ -303,15 +322,116 @@ public:
 
     void Shift(T c, bool isunshift = false) override 
     {
+        SCOPED_NVTX_RANGE();
+
         if(isunshift)
         {
             next_ = NextOp::bAc;
         }        
         chase::linalg::internal::nccl::shiftDiagonal(*Hmat_, d_diag_xoffs, d_diag_yoffs, diag_cnt, std::real(c));
+
+#ifdef ENABLE_MIXED_PRECISION
+        if constexpr (std::is_same<T, double>::value || std::is_same<T, std::complex<double>>::value)
+        {
+            auto min = *std::min_element(resid_->cpu_data() + locked_, resid_->cpu_data() + nev_);
+            bool shouldEnableSP = (min > 1e-3 && !isunshift);
+            auto updatePrecision = [&](auto& mat, bool copyback = false) {
+                if (shouldEnableSP) {
+                    mat->enableSinglePrecision();
+                } else if (mat->isSinglePrecisionEnabled()) {
+                    mat->disableSinglePrecision(copyback);
+                }
+            };
+
+            // Update precision for all matrices
+            updatePrecision(Hmat_);
+            updatePrecision(V1_, true);  // Special case for V1_
+            updatePrecision(W1_);
+
+            // Message on enabling single precision
+            if (shouldEnableSP && my_rank_ == 0 && !isunshift) {
+                std::cout << "Enable Single Precision in Filter" << std::endl;
+            }
+            
+        }
+#endif
+         
     }
 
     void HEMM(std::size_t block, T alpha, T beta, std::size_t offset) override 
     {
+#ifdef ENABLE_MIXED_PRECISION
+        if constexpr (std::is_same<T, double>::value || std::is_same<T, std::complex<double>>::value)
+        {
+            using singlePrecisionT = typename chase::ToSinglePrecisionTrait<T>::Type;
+            auto min = *std::min_element(resid_->cpu_data() + locked_, resid_->cpu_data() + nev_);
+            
+            if(min > 1e-3)
+            {
+                auto Hmat_sp = Hmat_->getSinglePrecisionMatrix();
+                auto V1_sp = V1_->getSinglePrecisionMatrix();
+                auto W1_sp = W1_->getSinglePrecisionMatrix();
+                singlePrecisionT alpha_sp = static_cast<singlePrecisionT>(alpha);
+                singlePrecisionT beta_sp = static_cast<singlePrecisionT>(beta);  
+
+                if (next_ == NextOp::bAc)
+                {
+                    chase::linalg::internal::nccl::BlockBlockMultiplyMultiVectors<singlePrecisionT>(cublasH_,
+                                                                                &alpha_sp, 
+                                                                                *Hmat_sp, 
+                                                                                *V1_sp, 
+                                                                                &beta_sp, 
+                                                                                *W1_sp, 
+                                                                                offset + locked_, 
+                                                                                block);
+                    next_ = NextOp::cAb;
+                }
+                else
+                {
+                    chase::linalg::internal::nccl::BlockBlockMultiplyMultiVectors<singlePrecisionT>(cublasH_,
+                                                                                &alpha_sp, 
+                                                                                *Hmat_sp, 
+                                                                                *W1_sp, 
+                                                                                &beta_sp, 
+                                                                                *V1_sp, 
+                                                                                offset + locked_, 
+                                                                                block);            
+                    next_ = NextOp::bAc;
+
+                }                              
+            }
+            else
+            {
+                if (next_ == NextOp::bAc)
+                {
+                    chase::linalg::internal::nccl::BlockBlockMultiplyMultiVectors(cublasH_,
+                                                                                &alpha, 
+                                                                                *Hmat_, 
+                                                                                *V1_, 
+                                                                                &beta, 
+                                                                                *W1_, 
+                                                                                offset + locked_, 
+                                                                                block);
+                    next_ = NextOp::cAb;
+                }
+                else
+                {
+                    chase::linalg::internal::nccl::BlockBlockMultiplyMultiVectors(cublasH_,
+                                                                                    &alpha, 
+                                                                                    *Hmat_, 
+                                                                                    *W1_, 
+                                                                                    &beta, 
+                                                                                    *V1_, 
+                                                                                    offset + locked_, 
+                                                                                    block);              
+                    next_ = NextOp::bAc;
+
+                }                
+            }
+        }        
+        else
+#endif
+        
         {
             if (next_ == NextOp::bAc)
             {
@@ -343,6 +463,8 @@ public:
 
     void QR(std::size_t fixednev, chase::Base<T> cond) override 
     {
+        SCOPED_NVTX_RANGE();
+
         int disable = config_.DoCholQR() ? 0 : 1;
         char* cholddisable = getenv("CHASE_DISABLE_CHOLQR");
         if (cholddisable) {
@@ -412,10 +534,24 @@ public:
                                                                 d_work_,
                                                                 lwork_,
                                                                 A_->l_data());  
+                  
+                //info = chase::linalg::internal::nccl::cholQR1(cublasH_,
+                //                                              cusolverH_,
+                //                                              *V1_,
+                //                                              d_work_,
+                //                                              lwork_,
+                //                                              A_->l_data());                                              
             }
             else
             {
                 info = chase::linalg::internal::nccl::cholQR2(cublasH_,
+                                                              cusolverH_,
+                                                              *V1_,
+                                                              d_work_,
+                                                              lwork_,
+                                                              A_->l_data()); 
+
+                /*info = chase::linalg::internal::nccl::cholQR2(cublasH_,
                                                                 cusolverH_,
                                                                 V1_->l_rows(), 
                                                                 V1_->l_cols(), 
@@ -424,7 +560,7 @@ public:
                                                                 V1_->getMpiGrid()->get_nccl_col_comm(),
                                                                 d_work_,
                                                                 lwork_,
-                                                                A_->l_data());  
+                                                                A_->l_data()); */
             }
 
             if (info != 0)
@@ -461,6 +597,8 @@ public:
 
     void RR(chase::Base<T>* ritzv, std::size_t block) override 
     {
+        SCOPED_NVTX_RANGE();
+
         chase::linalg::internal::nccl::rayleighRitz(cublasH_,
                                                    cusolverH_,
                                                    *Hmat_, 
@@ -487,6 +625,8 @@ public:
 
     void Resd(chase::Base<T>* ritzv, chase::Base<T>* resd, std::size_t fixednev) override 
     {
+        SCOPED_NVTX_RANGE();
+
         chase::linalg::internal::nccl::residuals(cublasH_,
                                                 *Hmat_,
                                                 *V1_,
@@ -507,10 +647,15 @@ public:
 
     void Lock(std::size_t new_converged) override 
     {
+        SCOPED_NVTX_RANGE();
+
         locked_ += new_converged;
     }
 
-    void End() override { V1_->D2H(); }
+    void End() override {         
+        SCOPED_NVTX_RANGE();
+        V1_->D2H(); 
+    }
 
 private:
     enum NextOp
