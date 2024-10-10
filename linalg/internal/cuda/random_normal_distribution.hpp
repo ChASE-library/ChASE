@@ -1,4 +1,5 @@
 #include "random_normal_distribution.cuh"
+#include "Impl/cuda/nvtx.hpp"
 
 namespace chase
 {
@@ -11,6 +12,8 @@ namespace cuda
     template<typename T>
     void init_random_vectors(T *v, std::size_t n, cudaStream_t *stream_ = nullptr)
     {
+        SCOPED_NVTX_RANGE();
+
         cudaStream_t usedStream = (stream_ == nullptr) ? 0 : *stream_;
         curandStatePhilox4_32_10_t* states_ = NULL;
         cudaMalloc((void**)&states_, sizeof(curandStatePhilox4_32_10_t) * (256 * 32));

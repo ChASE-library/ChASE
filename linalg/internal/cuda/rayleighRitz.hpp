@@ -4,6 +4,7 @@
 #include "linalg/cusolverpp/cusolverpp.hpp"
 #include "Impl/cuda/cuda_utils.hpp"
 #include "linalg/matrix/matrix.hpp"
+#include "Impl/cuda/nvtx.hpp"
 
 using namespace chase::linalg;
 
@@ -29,6 +30,8 @@ namespace cuda
                       int lwork_heevd = 0,
                       chase::matrix::MatrixGPU<T> *A = nullptr)
     {
+        SCOPED_NVTX_RANGE();
+
         if(A == nullptr)
         {
             A = new chase::matrix::MatrixGPU<T>(subSize, subSize);

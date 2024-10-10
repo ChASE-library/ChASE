@@ -7,7 +7,7 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <cusolverDn.h>
-
+#include "Impl/cuda/nvtx.hpp"
 // Macro to check for cuSOLVER errors
 #define CHECK_CUSOLVER_ERROR(val) checkCusolver((val), #val, __FILE__, __LINE__)
 
@@ -58,7 +58,7 @@ cusolverStatus_t cusolverDnTgeqrf_bufferSize(cusolverDnHandle_t handle, std::siz
                                              std::size_t n, float* A, std::size_t lda,
                                              int* Lwork)
 {
-
+    SCOPED_NVTX_RANGE();
     return cusolverDnSgeqrf_bufferSize(handle, m, n, A, lda, Lwork);
 }
 
@@ -66,7 +66,7 @@ cusolverStatus_t cusolverDnTgeqrf_bufferSize(cusolverDnHandle_t handle, std::siz
                                              std::size_t n, double* A, std::size_t lda,
                                              int* Lwork)
 {
-
+    SCOPED_NVTX_RANGE();
     return cusolverDnDgeqrf_bufferSize(handle, m, n, A, lda, Lwork);
 }
 
@@ -74,7 +74,7 @@ cusolverStatus_t cusolverDnTgeqrf_bufferSize(cusolverDnHandle_t handle, std::siz
                                              std::size_t n, std::complex<float>* A,
                                              std::size_t lda, int* Lwork)
 {
-
+    SCOPED_NVTX_RANGE();
     return cusolverDnCgeqrf_bufferSize(
         handle, m, n, reinterpret_cast<cuComplex*>(A), lda, Lwork);
 }
@@ -83,7 +83,7 @@ cusolverStatus_t cusolverDnTgeqrf_bufferSize(cusolverDnHandle_t handle, std::siz
                                              std::size_t n, std::complex<double>* A,
                                              std::size_t lda, int* Lwork)
 {
-
+    SCOPED_NVTX_RANGE();
     return cusolverDnZgeqrf_bufferSize(
         handle, m, n, reinterpret_cast<cuDoubleComplex*>(A), lda, Lwork);
 }
@@ -92,6 +92,7 @@ cusolverStatus_t cusolverDnTgeqrf(cusolverDnHandle_t handle, std::size_t m, std:
                                   float* A, std::size_t lda, float* TAU,
                                   float* Workspace, std::size_t Lwork, int* devInfo)
 {
+    SCOPED_NVTX_RANGE();
     return cusolverDnSgeqrf(handle, m, n, A, lda, TAU, Workspace, Lwork,
                             devInfo);
 }
@@ -100,6 +101,7 @@ cusolverStatus_t cusolverDnTgeqrf(cusolverDnHandle_t handle, std::size_t m, std:
                                   double* A, std::size_t lda, double* TAU,
                                   double* Workspace, std::size_t Lwork, int* devInfo)
 {
+    SCOPED_NVTX_RANGE();
     return cusolverDnDgeqrf(handle, m, n, A, lda, TAU, Workspace, Lwork,
                             devInfo);
 }
@@ -110,6 +112,7 @@ cusolverStatus_t cusolverDnTgeqrf(cusolverDnHandle_t handle, std::size_t m, std:
                                   std::complex<float>* Workspace, std::size_t Lwork,
                                   int* devInfo)
 {
+    SCOPED_NVTX_RANGE();
     return cusolverDnCgeqrf(handle, m, n, reinterpret_cast<cuComplex*>(A), lda,
                             reinterpret_cast<cuComplex*>(TAU),
                             reinterpret_cast<cuComplex*>(Workspace), Lwork,
@@ -122,6 +125,7 @@ cusolverStatus_t cusolverDnTgeqrf(cusolverDnHandle_t handle, std::size_t m, std:
                                   std::complex<double>* Workspace, std::size_t Lwork,
                                   int* devInfo)
 {
+    SCOPED_NVTX_RANGE();
     return cusolverDnZgeqrf(handle, m, n, reinterpret_cast<cuDoubleComplex*>(A),
                             lda, reinterpret_cast<cuDoubleComplex*>(TAU),
                             reinterpret_cast<cuDoubleComplex*>(Workspace),
@@ -132,7 +136,7 @@ cusolverStatus_t cusolverDnTgqr_bufferSize(cusolverDnHandle_t handle, std::size_
                                            std::size_t n, std::size_t k, float* A, std::size_t lda,
                                            float* tau, int* lwork)
 {
-
+    SCOPED_NVTX_RANGE();
     return cusolverDnSorgqr_bufferSize(handle, m, n, k, A, lda, tau, lwork);
 }
 
@@ -140,7 +144,7 @@ cusolverStatus_t cusolverDnTgqr_bufferSize(cusolverDnHandle_t handle, std::size_
                                            std::size_t n, std::size_t k, double* A, std::size_t lda,
                                            double* tau, int* lwork)
 {
-
+    SCOPED_NVTX_RANGE();
     return cusolverDnDorgqr_bufferSize(handle, m, n, k, A, lda, tau, lwork);
 }
 
@@ -149,7 +153,7 @@ cusolverStatus_t cusolverDnTgqr_bufferSize(cusolverDnHandle_t handle, std::size_
                                            std::size_t lda, std::complex<float>* tau,
                                            int* lwork)
 {
-
+    SCOPED_NVTX_RANGE();
     return cusolverDnCungqr_bufferSize(
         handle, m, n, k, reinterpret_cast<cuComplex*>(A), lda,
         reinterpret_cast<cuComplex*>(tau), lwork);
@@ -161,7 +165,7 @@ cusolverStatus_t cusolverDnTgqr_bufferSize(cusolverDnHandle_t handle, std::size_
                                            std::complex<double>* tau,
                                            int* lwork)
 {
-
+    SCOPED_NVTX_RANGE();
     return cusolverDnZungqr_bufferSize(
         handle, m, n, k, reinterpret_cast<cuDoubleComplex*>(A), lda,
         reinterpret_cast<cuDoubleComplex*>(tau), lwork);
@@ -171,7 +175,7 @@ cusolverStatus_t cusolverDnTgqr(cusolverDnHandle_t handle, std::size_t m, std::s
                                 float* A, std::size_t lda, float* tau, float* work,
                                 std::size_t lwork, int* devInfo)
 {
-
+    SCOPED_NVTX_RANGE();
     return cusolverDnSorgqr(handle, m, n, k, A, lda, tau, work, lwork, devInfo);
 }
 
@@ -179,7 +183,7 @@ cusolverStatus_t cusolverDnTgqr(cusolverDnHandle_t handle, std::size_t m, std::s
                                 double* A, std::size_t lda, double* tau, double* work,
                                 std::size_t lwork, int* devInfo)
 {
-
+    SCOPED_NVTX_RANGE();
     return cusolverDnDorgqr(handle, m, n, k, A, lda, tau, work, lwork, devInfo);
 }
 
@@ -189,7 +193,7 @@ cusolverStatus_t cusolverDnTgqr(cusolverDnHandle_t handle, std::size_t m, std::s
                                 std::complex<float>* work, std::size_t lwork,
                                 int* devInfo)
 {
-
+    SCOPED_NVTX_RANGE();
     return cusolverDnCungqr(handle, m, n, k, reinterpret_cast<cuComplex*>(A),
                             lda, reinterpret_cast<cuComplex*>(tau),
                             reinterpret_cast<cuComplex*>(work), lwork, devInfo);
@@ -201,7 +205,7 @@ cusolverStatus_t cusolverDnTgqr(cusolverDnHandle_t handle, std::size_t m, std::s
                                 std::complex<double>* work, std::size_t lwork,
                                 int* devInfo)
 {
-
+    SCOPED_NVTX_RANGE();
     return cusolverDnZungqr(
         handle, m, n, k, reinterpret_cast<cuDoubleComplex*>(A), lda,
         reinterpret_cast<cuDoubleComplex*>(tau),
@@ -214,7 +218,7 @@ cusolverStatus_t cusolverDnTheevd_bufferSize(cusolverDnHandle_t handle,
                                              float* A, std::size_t lda, float* W,
                                              int* lwork)
 {
-
+    SCOPED_NVTX_RANGE();
     return cusolverDnSsyevd_bufferSize(handle, jobz, uplo, n, A, lda, W, lwork);
 }
 
@@ -224,7 +228,7 @@ cusolverStatus_t cusolverDnTheevd_bufferSize(cusolverDnHandle_t handle,
                                              double* A, std::size_t lda, double* W,
                                              int* lwork)
 {
-
+    SCOPED_NVTX_RANGE();
     return cusolverDnDsyevd_bufferSize(handle, jobz, uplo, n, A, lda, W, lwork);
 }
 
@@ -234,7 +238,7 @@ cusolverStatus_t cusolverDnTheevd_bufferSize(cusolverDnHandle_t handle,
                                              std::complex<float>* A, std::size_t lda,
                                              float* W, int* lwork)
 {
-
+    SCOPED_NVTX_RANGE();
     return cusolverDnCheevd_bufferSize(
         handle, jobz, uplo, n, reinterpret_cast<cuComplex*>(A), lda, W, lwork);
 }
@@ -245,7 +249,7 @@ cusolverStatus_t cusolverDnTheevd_bufferSize(cusolverDnHandle_t handle,
                                              std::complex<double>* A, std::size_t lda,
                                              double* W, int* lwork)
 {
-
+    SCOPED_NVTX_RANGE();
     return cusolverDnZheevd_bufferSize(handle, jobz, uplo, n,
                                        reinterpret_cast<cuDoubleComplex*>(A),
                                        lda, W, lwork);
@@ -256,7 +260,7 @@ cusolverStatus_t cusolverDnTheevd(cusolverDnHandle_t handle,
                                   std::size_t n, float* A, std::size_t lda, float* W,
                                   float* work, std::size_t lwork, int* devInfo)
 {
-
+    SCOPED_NVTX_RANGE();
     return cusolverDnSsyevd(handle, jobz, uplo, n, A, lda, W, work, lwork,
                             devInfo);
 }
@@ -266,6 +270,7 @@ cusolverStatus_t cusolverDnTheevd(cusolverDnHandle_t handle,
                                   std::size_t n, double* A, std::size_t lda, double* W,
                                   double* work, std::size_t lwork, int* devInfo)
 {
+    SCOPED_NVTX_RANGE();
     return cusolverDnDsyevd(handle, jobz, uplo, n, A, lda, W, work, lwork,
                             devInfo);
 }
@@ -276,6 +281,7 @@ cusolverStatus_t cusolverDnTheevd(cusolverDnHandle_t handle,
                                   float* W, std::complex<float>* work,
                                   std::size_t lwork, int* devInfo)
 {
+    SCOPED_NVTX_RANGE();
     return cusolverDnCheevd(handle, jobz, uplo, n,
                             reinterpret_cast<cuComplex*>(A), lda, W,
                             reinterpret_cast<cuComplex*>(work), lwork, devInfo);
@@ -287,6 +293,7 @@ cusolverStatus_t cusolverDnTheevd(cusolverDnHandle_t handle,
                                   double* W, std::complex<double>* work,
                                   std::size_t lwork, int* devInfo)
 {
+    SCOPED_NVTX_RANGE();
     return cusolverDnZheevd(
         handle, jobz, uplo, n, reinterpret_cast<cuDoubleComplex*>(A), lda, W,
         reinterpret_cast<cuDoubleComplex*>(work), lwork, devInfo);
@@ -296,7 +303,7 @@ cusolverStatus_t cusolverDnTpotrf_bufferSize(cusolverDnHandle_t handle,
                                              cublasFillMode_t uplo, std::size_t n,
                                              float* A, std::size_t lda, int* Lwork)
 {
-
+    SCOPED_NVTX_RANGE();
     return cusolverDnSpotrf_bufferSize(handle, uplo, n, A, lda, Lwork);
 }
 
@@ -304,7 +311,7 @@ cusolverStatus_t cusolverDnTpotrf_bufferSize(cusolverDnHandle_t handle,
                                              cublasFillMode_t uplo, std::size_t n,
                                              double* A, std::size_t lda, int* Lwork)
 {
-
+    SCOPED_NVTX_RANGE();
     return cusolverDnDpotrf_bufferSize(handle, uplo, n, A, lda, Lwork);
 }
 
@@ -313,7 +320,7 @@ cusolverStatus_t cusolverDnTpotrf_bufferSize(cusolverDnHandle_t handle,
                                              std::complex<float>* A, std::size_t lda,
                                              int* Lwork)
 {
-
+    SCOPED_NVTX_RANGE();
     return cusolverDnCpotrf_bufferSize(
         handle, uplo, n, reinterpret_cast<cuComplex*>(A), lda, Lwork);
 }
@@ -323,7 +330,7 @@ cusolverStatus_t cusolverDnTpotrf_bufferSize(cusolverDnHandle_t handle,
                                              std::complex<double>* A, std::size_t lda,
                                              int* Lwork)
 {
-
+    SCOPED_NVTX_RANGE();
     return cusolverDnZpotrf_bufferSize(
         handle, uplo, n, reinterpret_cast<cuDoubleComplex*>(A), lda, Lwork);
 }
@@ -333,7 +340,7 @@ cusolverStatus_t cusolverDnTpotrf(cusolverDnHandle_t handle,
                                   std::size_t lda, float* Workspace, std::size_t Lwork,
                                   int* devInfo)
 {
-
+    SCOPED_NVTX_RANGE();
     return cusolverDnSpotrf(handle, uplo, n, A, lda, Workspace, Lwork, devInfo);
 }
 
@@ -342,7 +349,7 @@ cusolverStatus_t cusolverDnTpotrf(cusolverDnHandle_t handle,
                                   std::size_t lda, double* Workspace, std::size_t Lwork,
                                   int* devInfo)
 {
-
+    SCOPED_NVTX_RANGE();
     return cusolverDnDpotrf(handle, uplo, n, A, lda, Workspace, Lwork, devInfo);
 }
 
@@ -352,7 +359,7 @@ cusolverStatus_t cusolverDnTpotrf(cusolverDnHandle_t handle,
                                   std::complex<float>* Workspace, std::size_t Lwork,
                                   int* devInfo)
 {
-
+    SCOPED_NVTX_RANGE();
     return cusolverDnCpotrf(handle, uplo, n, reinterpret_cast<cuComplex*>(A),
                             lda, reinterpret_cast<cuComplex*>(Workspace), Lwork,
                             devInfo);
@@ -364,7 +371,7 @@ cusolverStatus_t cusolverDnTpotrf(cusolverDnHandle_t handle,
                                   std::complex<double>* Workspace, std::size_t Lwork,
                                   int* devInfo)
 {
-
+    SCOPED_NVTX_RANGE();
     return cusolverDnZpotrf(
         handle, uplo, n, reinterpret_cast<cuDoubleComplex*>(A), lda,
         reinterpret_cast<cuDoubleComplex*>(Workspace), Lwork, devInfo);

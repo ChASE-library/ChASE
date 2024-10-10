@@ -8,6 +8,7 @@
 #include "linalg/matrix/matrix.hpp"
 #include "linalg/internal/cuda/absTrace.hpp"
 #include "linalg/internal/cuda/shiftDiagonal.hpp"
+#include "Impl/cuda/nvtx.hpp"
 
 namespace chase
 {
@@ -25,6 +26,8 @@ namespace cuda
                 int lwork = 0,
                 chase::matrix::MatrixGPU<T> *A = nullptr)
     {
+        SCOPED_NVTX_RANGE();
+
         T one = T(1.0);
         T zero = T(0.0);
         chase::Base<T> One = Base<T>(1.0);
@@ -117,6 +120,8 @@ namespace cuda
                 int lwork = 0,
                 chase::matrix::MatrixGPU<T> *A = nullptr)
     {
+        SCOPED_NVTX_RANGE();
+
         T one = T(1.0);
         T zero = T(0.0);
         chase::Base<T> One = Base<T>(1.0);
@@ -242,6 +247,8 @@ namespace cuda
                 int lwork = 0,
                 chase::matrix::MatrixGPU<T> *A = nullptr)
     {
+        SCOPED_NVTX_RANGE();
+
         T one = T(1.0);
         T zero = T(0.0);
 
@@ -421,6 +428,8 @@ namespace cuda
                         T *workspace = nullptr,
                         int lwork = 0)
     {
+        SCOPED_NVTX_RANGE();
+
         if(workspace == nullptr)
         {
             int lwork_geqrf = 0;

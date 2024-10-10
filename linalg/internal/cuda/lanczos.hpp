@@ -5,6 +5,7 @@
 #include "Impl/cuda/cuda_utils.hpp"
 #include "linalg/matrix/matrix.hpp"
 #include "linalg/internal/cuda/lacpy.hpp"
+#include "Impl/cuda/nvtx.hpp"
 
 using namespace chase::linalg;
 
@@ -27,6 +28,8 @@ namespace cuda
                  chase::Base<T>* Tau, 
                  chase::Base<T>* ritzV)
     {
+        SCOPED_NVTX_RANGE();
+
         T One = T(1.0);
         T Zero = T(0.0);
         std::size_t N = H.rows();
@@ -238,6 +241,8 @@ namespace cuda
                  chase::matrix::MatrixGPU<T>& V, 
                  chase::Base<T>* upperb)
     {
+        SCOPED_NVTX_RANGE();
+
         T One = T(1.0);
         T Zero = T(0.0);
         chase::Base<T> r_beta;

@@ -4,6 +4,7 @@
 #include "linalg/cublaspp/cublaspp.hpp"
 #include "linalg/matrix/matrix.hpp"
 #include "Impl/cuda/cuda_utils.hpp"
+#include "Impl/cuda/nvtx.hpp"
 
 namespace chase
 {
@@ -23,6 +24,7 @@ namespace cuda
                    std::size_t subSize,                   
                    chase::matrix::MatrixGPU<T>* V2 = nullptr)
     {
+        SCOPED_NVTX_RANGE();
 
         if (V2 == nullptr)
         {

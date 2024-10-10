@@ -5,12 +5,16 @@
 #include <random>
 #include <type_traits>
 #include <vector>
+#include <omp.h>
 
 #include "algorithm/performance.hpp"
 #ifdef HAS_CUDA
 #include "Impl/cuda/chase_seq_gpu.hpp"
 #endif
 #include "Impl/cpu/chase_seq_cpu.hpp"
+#ifdef USE_NVTX
+#include "Impl/cuda/nvtx.hpp"
+#endif
 
 using T = std::complex<double>;
 using namespace chase;
@@ -21,7 +25,7 @@ int main()
     std::size_t LDH = 1200;
     std::size_t nev = 80;
     std::size_t nex = 60;
-    std::size_t idx_max = 3;
+    std::size_t idx_max = 1;
     Base<T> perturb = 1e-4;
     
     std::mt19937 gen(1337.0);
@@ -34,7 +38,6 @@ int main()
     auto Lambda = std::vector<Base<T>>(nev + nex);
     std::vector<T> H(N * LDH, T(0.0));
 #ifdef HAS_CUDA
-    std::cout << "USE GPU" << std::endl;
     chase::Impl::ChaseGPUSeq<T> single(N, nev, nex, H.data(), LDH, V.data(), N, Lambda.data());
 #else
     chase::Impl::ChaseCPUSeq<T> single(N, nev, nex, H.data(), LDH, V.data(), N, Lambda.data());
@@ -52,6 +55,10 @@ int main()
                 << config;    
 
     // Generate Clement matrix
+#ifdef USE_NVTX
+    nvtxRangePushA("Generate Clement Matrix");
+#endif
+    #pragma omp parallel for
     for (auto i = 0; i < N; ++i)
     {
         H[i + N * i] = 0;
@@ -60,6 +67,11 @@ int main()
         if (i != N - 1)
             H[i + LDH * (i + 1)] = std::sqrt(i * (N + 1 - i));
     }
+
+#ifdef USE_NVTX
+    std::cout << "USE NVTX!!!!!!!!" << std::endl;
+    nvtxRangePop();
+#endif
 
     for (auto idx = 0; idx < idx_max; ++idx)
     {
@@ -70,8 +82,13 @@ int main()
         }
     
         PerformanceDecoratorChase<T> performanceDecorator(&single);
+#ifdef USE_NVTX
+    nvtxRangePushA("ChASE solve");
+#endif        
         chase::Solve(&performanceDecorator);
-
+#ifdef USE_NVTX
+    nvtxRangePop();
+#endif
         performanceDecorator.GetPerfData().print();
         Base<T>* resid = single.GetResid();
         std::cout << "Finished Problem #" << idx << "\n";
@@ -93,6 +110,10 @@ int main()
         
         config.SetApprox(true);
         // Perturb Full Clement matrix
+#ifdef USE_NVTX
+    nvtxRangePushA("Perturb Full Clement matrix");
+#endif       
+        #pragma omp parallel for
         for (std::size_t i = 1; i < N; ++i)
         {
             for (std::size_t j = 1; j < i; ++j)
@@ -102,6 +123,9 @@ int main()
                 H[i + LDH * j] += std::conj(element_perturbation);
             }
         }
+#ifdef USE_NVTX
+    nvtxRangePop();
+#endif        
     }
     
 }

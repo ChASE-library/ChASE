@@ -14,9 +14,7 @@
 #include <random>
 
 #include "interface.hpp"
-#ifdef USE_NSIGHT
-#include <nvToolsExt.h>
-#endif
+#include "Impl/cuda/nvtx.hpp"
 
 namespace chase
 {
