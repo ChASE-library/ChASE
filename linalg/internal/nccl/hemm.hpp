@@ -60,7 +60,166 @@ namespace nccl
                 
         int *coords = input_multiVector.getMpiGrid()->get_coords();
         T beta_tmp;
-        
+//from here, for overlappings
+/*        cudaStream_t stream_compute_1, stream_compute_2;
+        cudaStream_t stream_comm_1, stream_comm_2; 
+        cublasHandle_t cublasH_task1, cublasH_task2; 
+        CHECK_CUBLAS_ERROR(cublasCreate(&cublasH_task1));
+        CHECK_CUBLAS_ERROR(cublasCreate(&cublasH_task2));
+
+        CHECK_CUDA_ERROR(cudaStreamCreate(&stream_compute_1));
+        CHECK_CUDA_ERROR(cudaStreamCreate(&stream_compute_2));
+        CHECK_CUDA_ERROR(cudaStreamCreate(&stream_comm_1));
+        CHECK_CUDA_ERROR(cudaStreamCreate(&stream_comm_2));
+
+        CHECK_CUBLAS_ERROR(cublasSetStream(cublasH_task1, stream_compute_1));
+        CHECK_CUBLAS_ERROR(cublasSetStream(cublasH_task2, stream_compute_2));
+
+
+        std::size_t subSize_firstPart = subSize / 2;
+        std::size_t subSize_secondPart = subSize_firstPart + (subSize % 2);
+        std::size_t offset_firstPart = offset;
+        std::size_t offset_secondPart = subSize_firstPart + offset;
+
+        cudaEvent_t computeDoneEvent1, computeDoneEvent2;
+        CHECK_CUDA_ERROR(cudaEventCreate(&computeDoneEvent1));
+        CHECK_CUDA_ERROR(cudaEventCreate(&computeDoneEvent2));
+
+        if constexpr (InputCommType == chase::distMultiVector::CommunicatorType::column)
+        {
+            if (coords[0] != 0)
+            {
+                beta_tmp = T(0.0); // If not the first row, set beta_tmp to 0
+            }
+            else
+            {
+                beta_tmp = *beta; // If the first row, use the provided beta value
+            }
+
+            // Perform the matrix multiplication using BLAS
+            
+            CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(cublasH_task1,
+                                                                    CUBLAS_OP_C,
+                                                                    CUBLAS_OP_N,
+                                                                    blockMatrix.l_cols(),
+                                                                    subSize_firstPart,
+                                                                    blockMatrix.l_rows(), 
+                                                                    alpha,
+                                                                    blockMatrix.l_data(),
+                                                                    blockMatrix.l_ld(),
+                                                                    input_multiVector.l_data() + offset_firstPart * input_multiVector.l_ld(),
+                                                                    input_multiVector.l_ld(),
+                                                                    &beta_tmp,
+                                                                    result_multiVector.l_data() + offset_firstPart * result_multiVector.l_ld(),
+                                                                    result_multiVector.l_ld()));            
+
+            CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(cublasH_task2,
+                                                                    CUBLAS_OP_C,
+                                                                    CUBLAS_OP_N,
+                                                                    blockMatrix.l_cols(),
+                                                                    subSize_secondPart,
+                                                                    blockMatrix.l_rows(), 
+                                                                    alpha,
+                                                                    blockMatrix.l_data(),
+                                                                    blockMatrix.l_ld(),
+                                                                    input_multiVector.l_data() + offset_secondPart * input_multiVector.l_ld(),
+                                                                    input_multiVector.l_ld(),
+                                                                    &beta_tmp,
+                                                                    result_multiVector.l_data() + offset_secondPart * result_multiVector.l_ld(),
+                                                                    result_multiVector.l_ld()));            
+
+            CHECK_CUDA_ERROR(cudaEventRecord(computeDoneEvent1, stream_compute_1));
+            CHECK_CUDA_ERROR(cudaEventRecord(computeDoneEvent2, stream_compute_2));
+
+            CHECK_CUDA_ERROR(cudaStreamWaitEvent(stream_comm_1, computeDoneEvent1, 0));
+            // Perform reduction across the column communicator
+            CHECK_NCCL_ERROR(chase::Impl::nccl::ncclAllReduceWrapper<T>(result_multiVector.l_data() + offset_firstPart * result_multiVector.l_ld(),  
+                                                                        result_multiVector.l_data() + offset_firstPart * result_multiVector.l_ld(),  
+                                                                        result_multiVector.l_ld() * subSize_firstPart, 
+                                                                        ncclSum, 
+                                                                        input_multiVector.getMpiGrid()->get_nccl_col_comm(), &stream_comm_1));   
+
+            // Perform reduction across the column communicator
+            CHECK_CUDA_ERROR(cudaStreamWaitEvent(stream_comm_2, computeDoneEvent2, 0));
+            CHECK_NCCL_ERROR(chase::Impl::nccl::ncclAllReduceWrapper<T>(result_multiVector.l_data() + offset_secondPart * result_multiVector.l_ld(),  
+                                                                        result_multiVector.l_data() + offset_secondPart * result_multiVector.l_ld(),  
+                                                                        result_multiVector.l_ld() * subSize_secondPart, 
+                                                                        ncclSum, 
+                                                                        input_multiVector.getMpiGrid()->get_nccl_col_comm(), &stream_comm_2));   
+
+
+            CHECK_CUDA_ERROR(cudaStreamSynchronize(stream_comm_1));
+            CHECK_CUDA_ERROR(cudaStreamSynchronize(stream_comm_2));
+                                                                                        
+        }
+        else // InputCommType is CommunicatorType::column
+        {
+            if (coords[1] != 0)
+            {
+                beta_tmp = T(0.0); // If not the first column, set beta_tmp to 0
+            }
+            else
+            {
+                beta_tmp = *beta; // If the first column, use the provided beta value
+            }
+            
+            // Perform the matrix multiplication using BLAS
+            CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(cublasH_task1,
+                                                                    CUBLAS_OP_N,
+                                                                    CUBLAS_OP_N,
+                                                                    blockMatrix.l_rows(),
+                                                                    subSize_firstPart,
+                                                                    blockMatrix.l_cols(), 
+                                                                    alpha,
+                                                                    blockMatrix.l_data(),
+                                                                    blockMatrix.l_ld(),
+                                                                    input_multiVector.l_data() + offset_firstPart * input_multiVector.l_ld(), 
+                                                                    input_multiVector.l_ld(),
+                                                                    &beta_tmp,
+                                                                    result_multiVector.l_data() + offset_firstPart * result_multiVector.l_ld(),
+                                                                    result_multiVector.l_ld()));               
+
+
+            CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(cublasH_task2,
+                                                                    CUBLAS_OP_N,
+                                                                    CUBLAS_OP_N,
+                                                                    blockMatrix.l_rows(),
+                                                                    subSize_secondPart,
+                                                                    blockMatrix.l_cols(), 
+                                                                    alpha,
+                                                                    blockMatrix.l_data(),
+                                                                    blockMatrix.l_ld(),
+                                                                    input_multiVector.l_data() + offset_secondPart * input_multiVector.l_ld(), 
+                                                                    input_multiVector.l_ld(),
+                                                                    &beta_tmp,
+                                                                    result_multiVector.l_data() + offset_secondPart * result_multiVector.l_ld(),
+                                                                    result_multiVector.l_ld()));               
+
+            CHECK_CUDA_ERROR(cudaEventRecord(computeDoneEvent1, stream_compute_1));
+            CHECK_CUDA_ERROR(cudaEventRecord(computeDoneEvent2, stream_compute_2));
+
+            CHECK_CUDA_ERROR(cudaStreamWaitEvent(stream_comm_1, computeDoneEvent1, 0));
+
+            // Perform reduction across the row communicator
+            CHECK_NCCL_ERROR(chase::Impl::nccl::ncclAllReduceWrapper<T>(result_multiVector.l_data() + offset_firstPart * result_multiVector.l_ld(),  
+                                                                        result_multiVector.l_data() + offset_firstPart * result_multiVector.l_ld(),  
+                                                                        result_multiVector.l_ld() * subSize_firstPart, 
+                                                                        ncclSum, 
+                                                                        input_multiVector.getMpiGrid()->get_nccl_row_comm(), &stream_comm_1));
+            
+            CHECK_CUDA_ERROR(cudaStreamWaitEvent(stream_comm_2, computeDoneEvent2, 0));            
+            // Perform reduction across the row communicator
+            CHECK_NCCL_ERROR(chase::Impl::nccl::ncclAllReduceWrapper<T>(result_multiVector.l_data() + offset_secondPart * result_multiVector.l_ld(),  
+                                                                        result_multiVector.l_data() + offset_secondPart * result_multiVector.l_ld(),  
+                                                                        result_multiVector.l_ld() * subSize_secondPart, 
+                                                                        ncclSum, 
+                                                                        input_multiVector.getMpiGrid()->get_nccl_row_comm(), &stream_comm_2));
+
+            CHECK_CUDA_ERROR(cudaStreamSynchronize(stream_comm_1));
+            CHECK_CUDA_ERROR(cudaStreamSynchronize(stream_comm_2));
+        }        
+*/
+                
         if constexpr (InputCommType == chase::distMultiVector::CommunicatorType::column)
         {
             if (coords[0] != 0)

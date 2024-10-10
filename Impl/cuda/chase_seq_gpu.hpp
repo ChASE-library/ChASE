@@ -17,6 +17,8 @@
 
 #include "algorithm/types.hpp"
 
+#include "Impl/cuda/nvtx.hpp"
+
 using namespace chase::linalg;
 
 namespace chase
@@ -47,6 +49,8 @@ public:
                   config_(N, nev, nex)                  
 
     {
+        SCOPED_NVTX_RANGE();
+
         Hmat_ = chase::matrix::MatrixGPU<T>(N_, N_, ldh_, H_);
         Vec1_ = chase::matrix::MatrixGPU<T>(N_, nevex_, ldv_, V1_);
         Vec2_ = chase::matrix::MatrixGPU<T>(N_, nevex_);
@@ -117,13 +121,14 @@ public:
             lwork_ = lwork_potrf;
         }
         CHECK_CUDA_ERROR(cudaMalloc((void**)&d_work_, sizeof(T) * lwork_));
-
     }
 
     ChaseGPUSeq(const ChaseGPUSeq&) = delete;
 
     ~ChaseGPUSeq() 
     {
+        SCOPED_NVTX_RANGE();
+
         if (cublasH_)
             CHECK_CUBLAS_ERROR(cublasDestroy(cublasH_));
         if (cusolverH_)
@@ -152,6 +157,7 @@ public:
 
     void loadProblemFromFile(std::string filename)
     {
+        SCOPED_NVTX_RANGE();
         Hmat_.readFromBinaryFile(filename);
     }
 
@@ -165,6 +171,7 @@ public:
 
     bool checkSymmetryEasy() override
     {
+        SCOPED_NVTX_RANGE();
         is_sym_ = chase::linalg::internal::cpu::checkSymmetryEasy(N_, Hmat_.cpu_data(), Hmat_.cpu_ld());  
         return is_sym_;
     }
@@ -173,6 +180,7 @@ public:
 
     void symOrHermMatrix(char uplo) override
     {
+        SCOPED_NVTX_RANGE();
         chase::linalg::internal::cpu::symOrHermMatrix(uplo, N_, Hmat_.cpu_data(), Hmat_.cpu_ld());
     }
 
@@ -182,7 +190,9 @@ public:
     }
 
     void initVecs(bool random) override
-    {         
+    {
+        SCOPED_NVTX_RANGE();
+
         if (random)
         {
             chase::linalg::internal::cuda::init_random_vectors(Vec1_.gpu_data(), Vec1_.gpu_ld() * Vec1_.cols());
@@ -201,6 +211,7 @@ public:
 
     void Lanczos(std::size_t M, chase::Base<T>* upperb) override
     {
+        SCOPED_NVTX_RANGE();
         chase::linalg::internal::cuda::lanczos(cublasH_,
                                                M, 
                                                Hmat_,
@@ -211,6 +222,7 @@ public:
     void Lanczos(std::size_t M, std::size_t numvec, chase::Base<T>* upperb,
                          chase::Base<T>* ritzv, chase::Base<T>* Tau, chase::Base<T>* ritzV) override
     {    
+        SCOPED_NVTX_RANGE();
         chase::linalg::internal::cuda::lanczos(cublasH_,
                                                M, 
                                                numvec,
@@ -224,6 +236,7 @@ public:
 
     void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc) override
     {
+        SCOPED_NVTX_RANGE();
         T alpha = T(1.0);
         T beta = T(0.0);
         
@@ -261,33 +274,136 @@ public:
     }
 
     void Shift(T c, bool isunshift = false) override
-    {          
+    {   
+        SCOPED_NVTX_RANGE();
         chase::linalg::internal::cuda::shiftDiagonal(Hmat_, std::real(c));
-
+/*
+#ifdef ENABLE_MIXED_PRECISION
+        //mixed precision
+        if constexpr (std::is_same<T, double>::value || std::is_same<T, std::complex<double>>::value)
+        {
+            auto min = *std::min_element(resid_.cpu_data() + locked_, resid_.cpu_data() + nev_);
+            
+            if(min > 1e-3)
+            {
+                if(isunshift)
+                {
+                    if(Hmat_.isSinglePrecisionEnabled())
+                    {
+                        Hmat_.disableSinglePrecision();
+                    }
+                    if(Vec1_.isSinglePrecisionEnabled())
+                    {
+                        Vec1_.disableSinglePrecision(true);
+                    }   
+                    if(Vec2_.isSinglePrecisionEnabled())
+                    {
+                        Vec2_.disableSinglePrecision();
+                    }                                       
+                }else
+                {
+                    std::cout << "Enable Single Precision in Filter" << std::endl;
+                    Hmat_.enableSinglePrecision();
+                    Vec1_.enableSinglePrecision();
+                    Vec2_.enableSinglePrecision();  
+                }
+  
+            }else
+            {
+                if(Hmat_.isSinglePrecisionEnabled())
+                {
+                    Hmat_.disableSinglePrecision();
+                }
+                if(Vec1_.isSinglePrecisionEnabled())
+                {
+                    Vec1_.disableSinglePrecision(true);
+                }   
+                if(Vec2_.isSinglePrecisionEnabled())
+                {
+                    Vec2_.disableSinglePrecision();
+                }  
+            }
+        }
+#endif
+*/
     }
     
     void HEMM(std::size_t block, T alpha, T beta, std::size_t offset) override
-    {
-        CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(cublasH_,
-                                                                CUBLAS_OP_N,
-                                                                CUBLAS_OP_N,
-                                                                Hmat_.rows(),
-                                                                block,
-                                                                Hmat_.cols(),
-                                                                &alpha,
-                                                                Hmat_.gpu_data(),
-                                                                Hmat_.gpu_ld(),
-                                                                Vec1_.gpu_data() + offset * Vec1_.gpu_ld() + locked_ * Vec1_.gpu_ld(),
-                                                                Vec1_.gpu_ld(),
-                                                                &beta,
-                                                                Vec2_.gpu_data() + offset * Vec2_.gpu_ld() + locked_ * Vec2_.gpu_ld(),
-                                                                Vec2_.gpu_ld()));
+    {     
+        SCOPED_NVTX_RANGE();
+/*#ifdef ENABLE_MIXED_PRECISION
+        if constexpr (std::is_same<T, double>::value || std::is_same<T, std::complex<double>>::value)
+        {
+            using singlePrecisionT = typename chase::ToSinglePrecisionTrait<T>::Type;
+            auto min = *std::min_element(resid_.cpu_data() + locked_, resid_.cpu_data() + nev_);
+            if(min > 1e-3)
+            {
+                auto Hmat_sp = Hmat_.matrix_sp();
+                auto Vec1_sp = Vec1_.matrix_sp();
+                auto Vec2_sp = Vec2_.matrix_sp();
+                singlePrecisionT alpha_sp = static_cast<singlePrecisionT>(alpha);
+                singlePrecisionT beta_sp = static_cast<singlePrecisionT>(beta);
+
+                CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(cublasH_,
+                                                                        CUBLAS_OP_N,
+                                                                        CUBLAS_OP_N,
+                                                                        Hmat_sp->rows(),
+                                                                        block,
+                                                                        Hmat_sp->cols(),
+                                                                        &alpha_sp,
+                                                                        Hmat_sp->gpu_data(),
+                                                                        Hmat_sp->gpu_ld(),
+                                                                        Vec1_sp->gpu_data() + offset * Vec1_sp->gpu_ld() + locked_ * Vec1_sp->gpu_ld(),
+                                                                        Vec1_sp->gpu_ld(),
+                                                                        &beta_sp,
+                                                                        Vec2_sp->gpu_data() + offset * Vec2_sp->gpu_ld() + locked_ * Vec2_sp->gpu_ld(),
+                                                                        Vec2_sp->gpu_ld()));
+            }
+            else
+            {
+                CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(cublasH_,
+                                                                        CUBLAS_OP_N,
+                                                                        CUBLAS_OP_N,
+                                                                        Hmat_.rows(),
+                                                                        block,
+                                                                        Hmat_.cols(),
+                                                                        &alpha,
+                                                                        Hmat_.gpu_data(),
+                                                                        Hmat_.gpu_ld(),
+                                                                        Vec1_.gpu_data() + offset * Vec1_.gpu_ld() + locked_ * Vec1_.gpu_ld(),
+                                                                        Vec1_.gpu_ld(),
+                                                                        &beta,
+                                                                        Vec2_.gpu_data() + offset * Vec2_.gpu_ld() + locked_ * Vec2_.gpu_ld(),
+                                                                        Vec2_.gpu_ld()));
+            }
+            
+        }
+        else
+#endif
+*/   
+        {
+            CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(cublasH_,
+                                                                    CUBLAS_OP_N,
+                                                                    CUBLAS_OP_N,
+                                                                    Hmat_.rows(),
+                                                                    block,
+                                                                    Hmat_.cols(),
+                                                                    &alpha,
+                                                                    Hmat_.gpu_data(),
+                                                                    Hmat_.gpu_ld(),
+                                                                    Vec1_.gpu_data() + offset * Vec1_.gpu_ld() + locked_ * Vec1_.gpu_ld(),
+                                                                    Vec1_.gpu_ld(),
+                                                                    &beta,
+                                                                    Vec2_.gpu_data() + offset * Vec2_.gpu_ld() + locked_ * Vec2_.gpu_ld(),
+                                                                    Vec2_.gpu_ld()));
+        }
 
         Vec1_.swap(Vec2_);
     }
 
     void QR(std::size_t fixednev, chase::Base<T> cond) override
     {
+        SCOPED_NVTX_RANGE();
         chase::linalg::internal::cuda::t_lacpy('A', 
                                                 Vec2_.rows(), 
                                                 locked_, 
@@ -393,6 +509,7 @@ public:
 
     void RR(chase::Base<T>* ritzv, std::size_t block) override
     {
+        SCOPED_NVTX_RANGE();
         std::size_t locked = (nev_ + nex_) - block;
         chase::linalg::internal::cuda::rayleighRitz(cublasH_,
                                                     cusolverH_,
@@ -406,11 +523,13 @@ public:
                                                     d_work_,
                                                     lwork_,
                                                     &A_);
+ 
         Vec1_.swap(Vec2_);
     }
 
     void Resd(chase::Base<T>* ritzv, chase::Base<T>* resd, std::size_t fixednev) override
     {
+        SCOPED_NVTX_RANGE();
         std::size_t unconverged = (nev_ + nex_) - fixednev;
         chase::linalg::internal::cuda::residuals(cublasH_,
                                                  Hmat_,
@@ -428,6 +547,7 @@ public:
 
     void Swap(std::size_t i, std::size_t j) override
     {
+        SCOPED_NVTX_RANGE();
         chase::linalg::internal::cuda::t_lacpy('A',
                                                Vec1_.rows(),
                                                1,
@@ -458,6 +578,7 @@ public:
  
     void End() override 
     {
+        SCOPED_NVTX_RANGE();
         Vec1_.D2H();
     }
         

@@ -21,6 +21,8 @@
 #include "linalg/internal/cuda/precision_conversion.cuh"
 #endif
 
+#include "Impl/cuda/nvtx.hpp"
+
 namespace chase
 {
 namespace distMultiVector
@@ -307,6 +309,9 @@ public:
     template <CommunicatorType OtherCommType, typename OtherPlatform>
     void swap(DistMultiVector1D<T, OtherCommType, OtherPlatform>& other) 
     {
+
+        SCOPED_NVTX_RANGE();
+
         // Check if the communicator types are the same
         if constexpr (comm_type != OtherCommType) {
             throw std::runtime_error("Cannot swap: Communicator types do not match.");

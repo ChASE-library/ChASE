@@ -25,6 +25,7 @@ option( CHASE_OUTPUT "ChASE will provide output at each iteration")
 option(CHASE_ENABLE_OPENMP "Enable OpenMP support" ON)
 option(CHASE_ENABLE_MIXED_PRECISION "Enable mixed precision support" OFF)
 option(CHASE_ENABLE_MPI_IO "Enable MPI IO to read Hamiltonian matrix from local" OFF)
+option(CHASE_USE_NVTX "Enable NVTX for profiling" OFF)
 
 if( CHASE_OUTPUT )
   target_compile_definitions( chase_algorithm  INTERFACE "-DCHASE_OUTPUT" )
@@ -53,6 +54,10 @@ if (CHASE_ENABLE_MIXED_PRECISION)
     message(STATUS "Mixed precision support enabled.")
 else()
     message(STATUS "Mixed precision support disabled.")
+endif()
+
+if(CHASE_USE_NVTX)
+  target_compile_definitions( chase_algorithm  INTERFACE "-DUSE_NVTX" )
 endif()
 
 add_subdirectory(linalg)

@@ -6,6 +6,7 @@
 #include <type_traits>
 #include <vector>
 #include "popl.hpp"
+#include <omp.h>
 
 #include "algorithm/performance.hpp"
 
@@ -20,6 +21,10 @@ using ARCH = chase::platform::CPU;
 #ifdef HAS_CUDA
 #include "Impl/cuda/chase_seq_gpu.hpp"
 #endif
+#endif
+
+#ifdef USE_NVTX
+#include "Impl/cuda/nvtx.hpp"
 #endif
 
 using namespace popl;
@@ -102,11 +107,21 @@ int do_chase(ChASE_DriverProblemConfig& conf)
     MPI_Comm_rank(MPI_COMM_WORLD, &grank);
     std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
         = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(MPI_COMM_WORLD);
-
+#ifdef USE_NVTX
+    nvtxRangePushA("Hmat allocate");
+#endif
     auto Hmat = chase::distMatrix::BlockBlockMatrix<T, ARCH>(N, N, mpi_grid);
+#ifdef USE_NVTX
+    nvtxRangePop();
+    nvtxRangePushA("Vec allocate");
+#endif   
     auto Vec = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, ARCH>(N, nev + nex, mpi_grid);
+#ifdef USE_NVTX
+    nvtxRangePop();
+#endif      
     T *H;
 #if defined(HAS_NCCL)
+    Hmat.allocate_cpu_data();
     H = Hmat.cpu_data();
 #elif USE_MPI
     H = Hmat.l_data();
@@ -163,6 +178,9 @@ int do_chase(ChASE_DriverProblemConfig& conf)
 
         start = std::chrono::high_resolution_clock::now();
 
+#ifdef USE_NVTX
+    nvtxRangePushA("IO or matrix generation");
+#endif   
         if(!isMatGen)
         {
             if(grank == 0)
@@ -215,6 +233,7 @@ int do_chase(ChASE_DriverProblemConfig& conf)
 #endif
             chase::Base<T> epsilon = 1e-4;
             chase::Base<T>* eigenv = new chase::Base<T>[N];
+            
             for (std::size_t i = 0; i < ylen; i++) {
                 for (std::size_t j = 0; j < xlen; j++) {
                     if (xoff + j == (i + yoff)) {
@@ -231,6 +250,10 @@ int do_chase(ChASE_DriverProblemConfig& conf)
         elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(
             end - start);
 
+#ifdef USE_NVTX
+    nvtxRangePop();
+#endif 
+
         if(grank == 0)
         {
             std::cout << "matrix are loaded in " << elapsed.count()
@@ -243,9 +266,13 @@ int do_chase(ChASE_DriverProblemConfig& conf)
         }
 
         chase::PerformanceDecoratorChase<T> performanceDecorator(&single);
-
+#ifdef USE_NVTX
+    nvtxRangePushA("ChASE Solve");
+#endif 
         chase::Solve(&performanceDecorator);
-        
+#ifdef USE_NVTX
+    nvtxRangePop();
+#endif         
         if(grank == 0)
         {        
             std::cout << " ChASE timings: "
