@@ -22,6 +22,8 @@
 #include "linalg/internal/nccl/symOrHerm.hpp"
 #include "algorithm/types.hpp"
 
+#include "Impl/config/config.hpp"
+
 #include "Impl/cuda/nvtx.hpp"
 
 using namespace chase::linalg;
@@ -471,21 +473,7 @@ public:
             disable = std::atoi(cholddisable);
         }
 
-        Base<T> cond_threshold_upper = (sizeof(Base<T>) == 8) ? 1e8 : 1e4;
-        Base<T> cond_threshold_lower = (sizeof(Base<T>) == 8) ? 2e1 : 1e1;
-
-        char* chol_threshold = getenv("CHASE_CHOLQR1_THLD");
-        if (chol_threshold)
-        {
-            cond_threshold_lower = std::atof(chol_threshold);
-        }
-
-        //int display_bounds = 0;
-        //char* display_bounds_env = getenv("CHASE_DISPLAY_BOUNDS");
-        //if (display_bounds_env)
-        //{
-        //    display_bounds = std::atoi(display_bounds_env);
-        //}
+        int info = 1;
 
         if (disable == 1)
         {
@@ -494,18 +482,84 @@ public:
 #else
         std::runtime_error("For ChASE-MPI, distributed Householder QR requires ScaLAPACK, which is not detected\n");
 #endif
-        }
-        else
+        }else if(nevex_ >= MINIMAL_N_INVOKE_MODIFIED_GRAM_SCHMIDT_QR_GPU_NCCL)
         {
+            info = chase::linalg::internal::nccl::modifiedGramSchmidtCholQR(cublasH_,
+                                                            cusolverH_,
+                                                            V1_->l_rows(), 
+                                                            V1_->l_cols(), 
+                                                            locked_,
+                                                            V1_->l_data(),  
+                                                            V1_->l_ld(), 
+                                                            V1_->getMpiGrid()->get_nccl_col_comm(),
+                                                            d_work_,
+                                                            lwork_,
+                                                            A_->l_data());
+
 #ifdef CHASE_OUTPUT
-        if(my_rank_ == 0){
-            std::cout << std::setprecision(2) << "cond(V): " << cond << std::endl;
-        }
+            if(my_rank_ == 0){
+                std::cout << "NEV+NEX is larger than: " << MINIMAL_N_INVOKE_MODIFIED_GRAM_SCHMIDT_QR_GPU_NCCL << ", use modifiedGramSchmidtCholQR" << std::endl;
+            }
 #endif
-            //if (display_bounds != 0)
-            //{
-            //  dla_->estimated_cond_evaluator(locked_, cond);
-            //}
+            if(info != 0)
+            {
+                chase::linalg::internal::cuda::t_lacpy('A',
+                                                V2_->l_rows(),
+                                                V2_->l_cols(),
+                                                V2_->l_data(),
+                                                V2_->l_ld(),
+                                                V1_->l_data(),
+                                                V1_->l_ld()); 
+
+                if(my_rank_ == 0){
+                    std::cout << "modifiedGramSchmidtCholQR doesn't work, try with shiftedcholQR2." << std::endl;
+                }
+
+
+                info = chase::linalg::internal::nccl::shiftedcholQR2(cublasH_,
+                                                                cusolverH_,
+                                                                V1_->g_rows(),
+                                                                V1_->l_rows(), 
+                                                                V1_->l_cols(), 
+                                                                V1_->l_data(),  
+                                                                V1_->l_ld(), 
+                                                                V1_->getMpiGrid()->get_nccl_col_comm(),
+                                                                d_work_,
+                                                                lwork_,
+                                                                A_->l_data());   
+
+                if(info != 0)
+                {
+#ifdef HAS_SCALAPACK
+#ifdef CHASE_OUTPUT
+                    if(my_rank_ == 0){
+                        std::cout << "CholeskyQR doesn't work, Househoulder QR will be used." << std::endl;
+                    }
+#endif
+                    chase::linalg::internal::nccl::houseHoulderQR(*V1_);
+#else
+                    std::runtime_error("For ChASE-MPI, distributed Householder QR requires ScaLAPACK, which is not detected\n");
+#endif      
+                }                                          
+                                                               
+            }
+        }else
+        {
+            Base<T> cond_threshold_upper = (sizeof(Base<T>) == 8) ? 1e8 : 1e4;
+            Base<T> cond_threshold_lower = (sizeof(Base<T>) == 8) ? 2e1 : 1e1;
+
+            char* chol_threshold = getenv("CHASE_CHOLQR1_THLD");
+            if (chol_threshold)
+            {
+                cond_threshold_lower = std::atof(chol_threshold);
+            }
+
+#ifdef CHASE_OUTPUT
+            if(my_rank_ == 0){
+                std::cout << std::setprecision(2) << "cond(V): " << cond << std::endl;
+            }
+#endif
+
             int info = 1;
 
             if (cond > cond_threshold_upper)
@@ -520,7 +574,7 @@ public:
                                                                 V1_->getMpiGrid()->get_nccl_col_comm(),
                                                                 d_work_,
                                                                 lwork_,
-                                                                A_->l_data());  
+                                                                A_->l_data());                                                
             }
             else if(cond < cond_threshold_lower)
             {
@@ -534,24 +588,11 @@ public:
                                                                 d_work_,
                                                                 lwork_,
                                                                 A_->l_data());  
-                  
-                //info = chase::linalg::internal::nccl::cholQR1(cublasH_,
-                //                                              cusolverH_,
-                //                                              *V1_,
-                //                                              d_work_,
-                //                                              lwork_,
-                //                                              A_->l_data());                                              
+                                                            
             }
             else
-            {
+            {                
                 info = chase::linalg::internal::nccl::cholQR2(cublasH_,
-                                                              cusolverH_,
-                                                              *V1_,
-                                                              d_work_,
-                                                              lwork_,
-                                                              A_->l_data()); 
-
-                /*info = chase::linalg::internal::nccl::cholQR2(cublasH_,
                                                                 cusolverH_,
                                                                 V1_->l_rows(), 
                                                                 V1_->l_cols(), 
@@ -560,7 +601,7 @@ public:
                                                                 V1_->getMpiGrid()->get_nccl_col_comm(),
                                                                 d_work_,
                                                                 lwork_,
-                                                                A_->l_data()); */
+                                                                A_->l_data()); 
             }
 
             if (info != 0)
@@ -576,8 +617,9 @@ public:
                 std::runtime_error("For ChASE-MPI, distributed Householder QR requires ScaLAPACK, which is not detected\n");
 #endif
             }
-        }        
 
+        }
+        
         chase::linalg::internal::cuda::t_lacpy('A',
                                          V2_->l_rows(),
                                          locked_,

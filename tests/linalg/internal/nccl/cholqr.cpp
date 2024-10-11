@@ -167,3 +167,25 @@ TYPED_TEST(CHOLQRNCCLDistTest, scholQRGPU) {
     ASSERT_NEAR(orth, machineEpsilon, machineEpsilon * 15);
     cudaFree(d_V);
 }
+
+TYPED_TEST(CHOLQRNCCLDistTest, modifiedGramSchmidtCholQRGPU) {
+    using T = TypeParam;  // Get the current type
+    assert(this->world_size == 4);
+    auto machineEpsilon = MachineEpsilon<T>::value();
+    std::size_t xlen = this->N / this->world_size;
+    std::size_t xoff = this->world_rank * 25 ;
+    T *d_V;
+    std::vector<T> V(xlen * this->n);
+    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(4, 1, MPI_COMM_WORLD);
+
+    CHECK_CUDA_ERROR(cudaMalloc((void**)&d_V, sizeof(T) * xlen * this->n));
+    read_vectors(V.data(), GetQRFileName<T>() + "cond_ill.bin", xoff, xlen, this->N, this->n, 0);
+    CHECK_CUDA_ERROR(cudaMemcpy(d_V, V.data(), sizeof(T) * xlen * this->n, cudaMemcpyHostToDevice));
+    int info = chase::linalg::internal::nccl::modifiedGramSchmidtCholQR<T>(this->cublasH_, this->cusolverH_, xlen, this->n, 0, d_V, xlen, mpi_grid.get()->get_nccl_comm());
+    ASSERT_EQ(info, 0);
+    CHECK_CUDA_ERROR(cudaMemcpy(V.data(), d_V, sizeof(T) * xlen * this->n, cudaMemcpyDeviceToHost));
+    auto orth = orthogonality<T>(xlen, this->n, V.data(), xlen, MPI_COMM_WORLD);
+    ASSERT_NEAR(orth, machineEpsilon, machineEpsilon * 15);
+    cudaFree(d_V);
+}
