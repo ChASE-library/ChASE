@@ -43,14 +43,14 @@ namespace nccl
 
         v.redistributeImpl(&v_2);
 
-        BlockBlockMultiplyMultiVectors(cublas_handle,
+        MatrixMultiplyMultiVectors(cublas_handle,
                                        &One, 
                                        H,
                                        v,
                                        &Zero,
                                        u);
 
-        BlockBlockMultiplyMultiVectors(cublas_handle,
+        MatrixMultiplyMultiVectors(cublas_handle,
                                        &One, 
                                        H,
                                        v_2,

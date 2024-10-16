@@ -78,7 +78,7 @@ TYPED_TEST(HEMMCPUDistTest, HEMMDistCorrectnessCUDAAwareGPU) {
     V_.H2D();
     W_.H2D();
 
-    chase::linalg::internal::nccl::BlockBlockMultiplyMultiVectors(this->cublasH_, &alpha, H_, V_, &beta, W_, offset, subSize);
+    chase::linalg::internal::nccl::MatrixMultiplyMultiVectors(this->cublasH_, &alpha, H_, V_, &beta, W_, offset, subSize);
     W_.D2H();
 
     for(auto i = 0; i < W_.l_cols(); i++)
@@ -96,7 +96,7 @@ TYPED_TEST(HEMMCPUDistTest, HEMMDistCorrectnessCUDAAwareGPU) {
         }
     }
 
-    chase::linalg::internal::nccl::BlockBlockMultiplyMultiVectors(this->cublasH_, &alpha, H_, W_, &beta, V_, offset, subSize);
+    chase::linalg::internal::nccl::MatrixMultiplyMultiVectors(this->cublasH_, &alpha, H_, W_, &beta, V_, offset, subSize);
 
     V_.D2H();
 
@@ -172,7 +172,7 @@ TYPED_TEST(HEMMCPUDistTest, HEMMRedistribeAsyncDistCorrectness) {
     V2_.H2D();
     W2_.H2D();    
     
-    chase::linalg::internal::nccl::BlockBlockMultiplyMultiVectorsAndRedistributeAsync(this->cublasH_, H_, V_, W_, V2_, W2_, offset, subSize);
+    chase::linalg::internal::nccl::MatrixMultiplyMultiVectorsAndRedistributeAsync(this->cublasH_, H_, V_, W_, V2_, W2_, offset, subSize);
 
     W_.D2H();
     W2_.D2H();  
@@ -209,7 +209,7 @@ TYPED_TEST(HEMMCPUDistTest, HEMMRedistribeAsyncDistCorrectness) {
         }
     }
     W2_.H2D();
-    chase::linalg::internal::nccl::BlockBlockMultiplyMultiVectorsAndRedistributeAsync(this->cublasH_, H_, W_, V_, W2_, V2_, offset, subSize);
+    chase::linalg::internal::nccl::MatrixMultiplyMultiVectorsAndRedistributeAsync(this->cublasH_, H_, W_, V_, W2_, V2_, offset, subSize);
     
     V_.D2H();
     V2_.D2H();  

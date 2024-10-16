@@ -42,13 +42,13 @@ namespace mpi
 
         v.redistributeImpl(&v_2);
 
-        BlockBlockMultiplyMultiVectors(&One, 
+        MatrixMultiplyMultiVectors(&One, 
                                        H,
                                        v,
                                        &Zero,
                                        u);
 
-        BlockBlockMultiplyMultiVectors(&One, 
+        MatrixMultiplyMultiVectors(&One, 
                                        H,
                                        v_2,
                                        &Zero,

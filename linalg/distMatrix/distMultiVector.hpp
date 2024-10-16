@@ -208,6 +208,9 @@ template<typename T, CommunicatorType comm_type, typename Platform = chase::plat
 class DistMultiVector1D : public AbstractDistMultiVector<T, comm_type, DistMultiVector1D, Platform> //distribute either within row or column communicator of 2D MPI grid
 {
 public:
+    using platform_type = Platform;
+    using value_type = T;  // Alias for element type
+
     ~DistMultiVector1D() override {};
     DistMultiVector1D();    
     DistMultiVector1D(std::size_t M, std::size_t N,
@@ -811,6 +814,9 @@ template<typename T, CommunicatorType comm_type, typename Platform = chase::plat
 class DistMultiVectorBlockCyclic1D : public AbstractDistMultiVector<T, comm_type, DistMultiVector1D, Platform> //distribute either within row or column communicator of 2D MPI grid
 {
 public:
+    using platform_type = Platform;
+    using value_type = T;  // Alias for element type
+
     ~DistMultiVectorBlockCyclic1D() override {};
     DistMultiVectorBlockCyclic1D(); 
 
@@ -858,7 +864,7 @@ public:
         }
 
         std::tie(m_, mblocks_) = numroc(M_, mb_, coord, dim);      
-          
+
         if(m_ != m)
         {
             throw std::runtime_error("the local row number of input matrix is not correctly matching the given block-cyclic distribution");

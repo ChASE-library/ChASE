@@ -378,7 +378,7 @@ public:
 
                 if (next_ == NextOp::bAc)
                 {
-                    chase::linalg::internal::nccl::BlockBlockMultiplyMultiVectors<singlePrecisionT>(cublasH_,
+                    chase::linalg::internal::nccl::MatrixMultiplyMultiVectors<singlePrecisionT>(cublasH_,
                                                                                 &alpha_sp, 
                                                                                 *Hmat_sp, 
                                                                                 *V1_sp, 
@@ -390,7 +390,7 @@ public:
                 }
                 else
                 {
-                    chase::linalg::internal::nccl::BlockBlockMultiplyMultiVectors<singlePrecisionT>(cublasH_,
+                    chase::linalg::internal::nccl::MatrixMultiplyMultiVectors<singlePrecisionT>(cublasH_,
                                                                                 &alpha_sp, 
                                                                                 *Hmat_sp, 
                                                                                 *W1_sp, 
@@ -406,7 +406,7 @@ public:
             {
                 if (next_ == NextOp::bAc)
                 {
-                    chase::linalg::internal::nccl::BlockBlockMultiplyMultiVectors(cublasH_,
+                    chase::linalg::internal::nccl::MatrixMultiplyMultiVectors(cublasH_,
                                                                                 &alpha, 
                                                                                 *Hmat_, 
                                                                                 *V1_, 
@@ -418,7 +418,7 @@ public:
                 }
                 else
                 {
-                    chase::linalg::internal::nccl::BlockBlockMultiplyMultiVectors(cublasH_,
+                    chase::linalg::internal::nccl::MatrixMultiplyMultiVectors(cublasH_,
                                                                                     &alpha, 
                                                                                     *Hmat_, 
                                                                                     *W1_, 
@@ -437,7 +437,7 @@ public:
         {
             if (next_ == NextOp::bAc)
             {
-                chase::linalg::internal::nccl::BlockBlockMultiplyMultiVectors(cublasH_,
+                chase::linalg::internal::nccl::MatrixMultiplyMultiVectors(cublasH_,
                                                                             &alpha, 
                                                                             *Hmat_, 
                                                                             *V1_, 
@@ -449,7 +449,7 @@ public:
             }
             else
             {
-                chase::linalg::internal::nccl::BlockBlockMultiplyMultiVectors(cublasH_,
+                chase::linalg::internal::nccl::MatrixMultiplyMultiVectors(cublasH_,
                                                                             &alpha, 
                                                                             *Hmat_, 
                                                                             *W1_, 
