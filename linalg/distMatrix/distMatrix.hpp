@@ -23,6 +23,32 @@
 #endif
 
 namespace chase {
+
+    std::pair<std::size_t, std::size_t> numroc(std::size_t n, std::size_t nb,
+                                            int iproc, int nprocs)
+    {
+
+        std::size_t numroc;
+        std::size_t extrablks, mydist, nblocks;
+        mydist = (nprocs + iproc) % nprocs;
+        nblocks = n / nb;
+        numroc = (nblocks / nprocs) * nb;
+        extrablks = nblocks % nprocs;
+
+        if (mydist < extrablks)
+            numroc = numroc + nb;
+        else if (mydist == extrablks)
+            numroc = numroc + n % nb;
+
+        std::size_t nb_loc = numroc / nb;
+
+        if (numroc % nb != 0)
+        {
+            nb_loc += 1;
+        }
+        return std::make_pair(numroc, nb_loc);
+    }
+    
 namespace distMatrix {
 
 enum class MatrixType {
@@ -1199,31 +1225,6 @@ private:
 
     typename chase::platform::MatrixTypePlatform<T, Platform>::type local_matrix_;
     std::shared_ptr<chase::Impl::mpi::MpiGrid2DBase> mpi_grid_;
-
-    std::pair<std::size_t, std::size_t> numroc(std::size_t n, std::size_t nb,
-                                            int iproc, int nprocs)
-    {
-
-        std::size_t numroc;
-        std::size_t extrablks, mydist, nblocks;
-        mydist = (nprocs + iproc) % nprocs;
-        nblocks = n / nb;
-        numroc = (nblocks / nprocs) * nb;
-        extrablks = nblocks % nprocs;
-
-        if (mydist < extrablks)
-            numroc = numroc + nb;
-        else if (mydist == extrablks)
-            numroc = numroc + n % nb;
-
-        std::size_t nb_loc = numroc / nb;
-
-        if (numroc % nb != 0)
-        {
-            nb_loc += 1;
-        }
-        return std::make_pair(numroc, nb_loc);
-    }
 
     void redistributeToRedundant(RedundantMatrix<T, Platform>* targetMatrix)
     {}

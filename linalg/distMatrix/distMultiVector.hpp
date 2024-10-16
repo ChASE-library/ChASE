@@ -12,6 +12,7 @@
 #include "Impl/grid/mpiGrid2D.hpp"
 #include "Impl/grid/mpiTypes.hpp"
 #include "linalg/lapackpp/lapackpp.hpp"
+#include "linalg/distMatrix/distMatrix.hpp"
 
 #ifdef HAS_CUDA
 #include <cuda_runtime.h>
@@ -29,7 +30,7 @@ namespace distMultiVector
 {
 enum class DistributionType {
     Block,
-    BlockCylic
+    BlockCyclic
 };
 
 enum class CommunicatorType{
@@ -803,6 +804,618 @@ private:
     
 #endif
 #endif
+
+};
+
+template<typename T, CommunicatorType comm_type, typename Platform = chase::platform::CPU> 
+class DistMultiVectorBlockCyclic1D : public AbstractDistMultiVector<T, comm_type, DistMultiVector1D, Platform> //distribute either within row or column communicator of 2D MPI grid
+{
+public:
+    ~DistMultiVectorBlockCyclic1D() override {};
+    DistMultiVectorBlockCyclic1D(); 
+
+    DistMultiVectorBlockCyclic1D(std::size_t M, std::size_t N, std::size_t mb,
+                    std::shared_ptr<chase::Impl::mpi::MpiGrid2DBase> mpi_grid)
+                    :M_(M), N_(N), mpi_grid_(mpi_grid), mb_(mb)
+    {
+        int *dims_ = mpi_grid_.get()->get_dims();
+        int *coord_ = mpi_grid_.get()->get_coords();
+        int dim, coord;
+        if constexpr (comm_type == CommunicatorType::column) 
+        {
+            dim = dims_[0];
+            coord = coord_[0];
+        }else
+        {
+            dim = dims_[1];
+            coord = coord_[1];
+        }
+
+        std::tie(m_, mblocks_) = numroc(M_, mb_, coord, dim);
+        n_ = N_;
+        ld_ = m_;
+        local_matrix_ = typename chase::platform::MatrixTypePlatform<T, Platform>::type(m_, n_);  
+    }
+
+    DistMultiVectorBlockCyclic1D(std::size_t M, std::size_t m, 
+                                 std::size_t n, std::size_t mb, 
+                                 std::size_t ld, T *data,
+                                 std::shared_ptr<chase::Impl::mpi::MpiGrid2DBase> mpi_grid)
+                                 : M_(M), N_(n), n_(n), mb_(mb), mpi_grid_(mpi_grid), ld_(ld)
+    {
+        int *dims_ = mpi_grid_.get()->get_dims();
+        int *coord_ = mpi_grid_.get()->get_coords();
+
+        int dim, coord;
+        if constexpr (comm_type == CommunicatorType::column) 
+        {
+            dim = dims_[0];
+            coord = coord_[0];
+        }else
+        {
+            dim = dims_[1];
+            coord = coord_[1];
+        }
+
+        std::tie(m_, mblocks_) = numroc(M_, mb_, coord, dim);      
+          
+        if(m_ != m)
+        {
+            throw std::runtime_error("the local row number of input matrix is not correctly matching the given block-cyclic distribution");
+        }
+
+        if(ld_ < m_)
+        {
+            throw std::runtime_error("the leading dimension of local matrix is not correctly matching the given block-cyclic distribution");
+        }
+
+        local_matrix_ = typename chase::platform::MatrixTypePlatform<T, Platform>::type(m_, n_, ld_, data);        
+
+        if constexpr (std::is_same<Platform, chase::platform::GPU>::value)
+        {
+            ld_ = local_matrix_.gpu_ld();
+        }   
+    }
+
+
+    DistributionType getMultiVectorDistributionType() const override {
+        return DistributionType::BlockCyclic;
+    }
+    
+    CommunicatorType getMultiVectorCommunicatorType() const override {
+        return comm_type;
+    }
+
+    // Accessors for MPI grid
+    chase::Impl::mpi::MpiGrid2DBase* getMpiGrid() const override {
+        return mpi_grid_.get();
+    }
+
+    std::shared_ptr<chase::Impl::mpi::MpiGrid2DBase> getMpiGrid_shared_ptr() const override
+    {
+        return mpi_grid_;
+    }
+
+
+    template <CommunicatorType OtherCommType, typename OtherPlatform>
+    void swap(DistMultiVectorBlockCyclic1D<T, OtherCommType, OtherPlatform>& other) 
+    {
+        // Check if the communicator types are the same
+        if constexpr (comm_type != OtherCommType) {
+            throw std::runtime_error("Cannot swap: Communicator types do not match.");
+        }
+
+        if constexpr (!std::is_same<Platform, OtherPlatform>::value) {
+            throw std::runtime_error("Cannot swap: Platform types do not match.");
+        }
+        // Ensure both objects have the same MPI grid
+        if (mpi_grid_.get() != other.mpi_grid_.get()) {
+            throw std::runtime_error("Cannot swap: MPI grids do not match.");
+        }
+
+        std::swap(M_, other.M_);
+        std::swap(N_, other.N_);
+        std::swap(m_, other.m_);
+        std::swap(mb_, other.mb_);
+        std::swap(n_, other.n_);
+        std::swap(ld_, other.ld_);
+        std::swap(mblocks_, other.mblocks_);
+        local_matrix_.swap(other.local_matrix_);
+#ifdef ENABLE_MIXED_PRECISION
+        std::swap(this->is_single_precision_enabled_, other.is_single_precision_enabled_);
+        std::swap(this->single_precision_multivec_, other.single_precision_multivec_);
+#endif
+    }
+
+    //swap column i with j
+    void swap_ij(std::size_t i, std::size_t j)
+    {
+        if constexpr (std::is_same<Platform, chase::platform::CPU>::value){
+            std::vector<T> tmp(m_);
+            chase::linalg::lapackpp::t_lacpy('A',
+                                            m_,
+                                            1,
+                                            this->l_data() + i * ld_,
+                                            1,
+                                            tmp.data(),
+                                            1);
+            chase::linalg::lapackpp::t_lacpy('A',
+                                            m_,
+                                            1,
+                                            this->l_data() + j * ld_,
+                                            1,
+                                            this->l_data() + i * ld_,
+                                            1);    
+            chase::linalg::lapackpp::t_lacpy('A',
+                                            m_,
+                                            1,
+                                            tmp.data(),
+                                            1,
+                                            this->l_data() + j * ld_,
+                                            1);   
+        }
+#ifdef HAS_CUDA        
+        else
+        {
+            T *tmp;
+            CHECK_CUDA_ERROR(cudaMalloc(&tmp, m_ * sizeof(T)));
+            chase::linalg::internal::cuda::t_lacpy('A',
+                                            m_,
+                                            1,
+                                            this->l_data() + i * ld_,
+                                            1,
+                                            tmp,
+                                            1);
+            chase::linalg::internal::cuda::t_lacpy('A',
+                                            m_,
+                                            1,
+                                            this->l_data() + j * ld_,
+                                            1,
+                                            this->l_data() + i * ld_,
+                                            1);    
+            chase::linalg::internal::cuda::t_lacpy('A',
+                                            m_,
+                                            1,
+                                            tmp,
+                                            1,
+                                            this->l_data() + j * ld_,
+                                            1);   
+            cudaFree(tmp);
+        }
+#endif        
+    }
+
+#ifdef HAS_CUDA
+    void D2H()
+    {
+        if constexpr (std::is_same<Platform, chase::platform::GPU>::value)
+        {
+            local_matrix_.D2H();
+        }else
+        {
+            throw std::runtime_error("[DistMultiVector]: CPU type of matrix do not support D2H operation");
+        }
+    }
+
+    void H2D()
+    {
+        if constexpr (std::is_same<Platform, chase::platform::GPU>::value)
+        {
+            local_matrix_.H2D();
+        }else
+        {
+            throw std::runtime_error("[DistMultiVector]: CPU type of matrix do not support H2D operation");
+        }
+    }
+#endif
+    T *cpu_data()
+    {
+        if constexpr (std::is_same<Platform, chase::platform::GPU>::value)
+        {
+            return local_matrix_.cpu_data();
+        }else
+        {
+            return local_matrix_.data();
+        }        
+    }
+
+    std::size_t cpu_ld()
+    {
+        if constexpr (std::is_same<Platform, chase::platform::GPU>::value)
+        {
+            return local_matrix_.cpu_ld();
+        }else
+        {
+            return local_matrix_.ld();
+        }           
+    }
+
+    template<CommunicatorType target_comm_type, typename OtherPlatform>
+    void redistributeImpl(DistMultiVectorBlockCyclic1D<T, target_comm_type, OtherPlatform>* targetMultiVector,
+                            std::size_t offset, std::size_t subsetSize) {
+        // Validate the subset range
+        if (offset + subsetSize > this->g_cols() || subsetSize > targetMultiVector->g_cols()) {
+            throw std::invalid_argument("Invalid subset range");
+        }   
+
+        if constexpr (!std::is_same<Platform, OtherPlatform>::value) {
+            throw std::runtime_error("Cannot redistribute: Platform types do not match.");
+        }
+
+        // Check if the target matrix's communicator type matches the allowed types
+        if constexpr (comm_type == CommunicatorType::row && target_comm_type == CommunicatorType::column) {
+            // Implement redistribution from row to column
+            redistributeRowToColumn<OtherPlatform>(targetMultiVector, offset, subsetSize);
+        } else if constexpr (comm_type == CommunicatorType::column && target_comm_type == CommunicatorType::row) {
+            // Implement redistribution from column to row
+            redistributeColumnToRow<OtherPlatform>(targetMultiVector, offset, subsetSize);
+        } else {
+            throw std::runtime_error("Invalid redistribution between matrix types");
+        }
+    }
+
+    template<CommunicatorType target_comm_type, typename OtherPlatform>
+    void redistributeImpl(DistMultiVectorBlockCyclic1D<T, target_comm_type, OtherPlatform>* targetMultiVector) 
+    {
+        this->redistributeImpl(targetMultiVector, 0, this->n_);
+    }
+
+#ifdef HAS_NCCL
+    template<CommunicatorType target_comm_type>
+    void redistributeImplAsync(DistMultiVectorBlockCyclic1D<T, target_comm_type, chase::platform::GPU>* targetMultiVector,
+                            std::size_t offset, std::size_t subsetSize, cudaStream_t* stream_ = nullptr) {
+        
+        cudaStream_t usedStream = (stream_ == nullptr) ? 0 : *stream_;
+
+        // Validate the subset range
+        if (offset + subsetSize > this->g_cols() || subsetSize > targetMultiVector->g_cols()) {
+            throw std::invalid_argument("Invalid subset range");
+        }   
+
+        if constexpr (!std::is_same<Platform, chase::platform::GPU>::value) {
+            throw std::runtime_error("NCCL based redistribution support only GPU.");
+        }
+
+        // Check if the target matrix's communicator type matches the allowed types
+        if constexpr (comm_type == CommunicatorType::row && target_comm_type == CommunicatorType::column) {
+            // Implement redistribution from row to column
+            redistributeRowToColumnAsync(targetMultiVector, offset, subsetSize, usedStream);
+        } else if constexpr (comm_type == CommunicatorType::column && target_comm_type == CommunicatorType::row) {
+            // Implement redistribution from column to row
+            redistributeColumnToRowAsync(targetMultiVector, offset, subsetSize, usedStream);
+        } else {
+            throw std::runtime_error("Invalid redistribution between matrix types");
+        }
+    }
+
+    template<CommunicatorType target_comm_type>
+    void redistributeImplAsync(DistMultiVectorBlockCyclic1D<T, target_comm_type,  chase::platform::GPU>* targetMultiVector, cudaStream_t* stream_ = nullptr) 
+    {        
+        this->redistributeImplAsync(targetMultiVector, 0, this->n_, stream_);
+    }
+#endif
+    std::size_t g_rows() const override { return M_;}
+    std::size_t g_cols() const override { return N_;}
+    std::size_t l_rows() const override { return m_;}
+    std::size_t l_cols() const override { return n_;}
+    std::size_t l_ld() const override { return ld_;}
+    std::size_t mb() const { return mb_;}    
+    T *         l_data() override { 
+        if constexpr (std::is_same<Platform, chase::platform::CPU>::value)
+        {
+            return local_matrix_.data();
+        }
+#ifdef HAS_CUDA        
+        else
+        {
+            return local_matrix_.gpu_data();
+        }
+#endif        
+    }
+
+    typename chase::platform::MatrixTypePlatform<T, Platform>::type& loc_matrix() override { return local_matrix_;}
+
+#ifdef HAS_SCALAPACK
+    std::size_t *get_scalapack_desc(){ return desc_; }
+
+    std::size_t * scalapack_descriptor_init()
+    {
+        if constexpr (std::is_same<Platform, chase::platform::GPU>::value)
+        {
+            if(local_matrix_.cpu_data() == nullptr)
+            {
+                local_matrix_.allocate_cpu_data();
+            }
+        }
+
+        std::size_t ldd = this->cpu_ld();
+     
+        if constexpr (comm_type ==  CommunicatorType::column)
+        {
+            int *coords = mpi_grid_.get()->get_coords();
+            int *dims = mpi_grid_.get()->get_dims();
+
+            std::size_t default_blocksize = 64;
+            std::size_t nb = std::min(n_, default_blocksize);
+            int zero = 0;
+            int one = 1;
+            int info;
+            int colcomm1D_ctxt = mpi_grid_.get()->get_blacs_colcomm_ctxt();
+            chase::linalg::scalapackpp::t_descinit(desc_, 
+                                                  &M_, 
+                                                  &N_, 
+                                                  &mb_, 
+                                                  &nb, 
+                                                  &zero, 
+                                                  &zero,
+                                                  &colcomm1D_ctxt, 
+                                                  &ldd, 
+                                                  &info);
+
+
+        }else
+        {
+            //row based will be implemented later
+        }
+
+        return desc_;
+    }
+#endif    
+
+private:
+    std::size_t M_;
+    std::size_t N_;
+    std::size_t m_;
+    std::size_t n_;
+    std::size_t ld_;
+    std::size_t mb_;
+    std::size_t mblocks_;
+    typename chase::platform::MatrixTypePlatform<T, Platform>::type local_matrix_;
+    std::shared_ptr<chase::Impl::mpi::MpiGrid2DBase> mpi_grid_;
+#ifdef HAS_SCALAPACK
+    std::size_t desc_[9];
+#endif
+
+    template<typename OtherPlatform>
+    void redistributeRowToColumn(DistMultiVectorBlockCyclic1D<T, CommunicatorType::column, OtherPlatform>* targetMultiVector,
+                                    std::size_t offset, std::size_t subsetSize) {
+        // Ensure the dimensions are compatible
+        if (this->M_ != targetMultiVector->g_rows() || this->N_ != targetMultiVector->g_cols()) {
+            throw std::runtime_error("Dimension mismatch during redistribution");
+        }
+        
+        if(this->mpi_grid_.get() != targetMultiVector->getMpiGrid())
+        {
+            throw std::runtime_error("MPI Grid mismatch during redistribution");
+        }
+
+        if(this->mb_ != targetMultiVector->mb())
+        {
+            throw std::runtime_error("Blocksize of the original and target matrices mismatch during redistribution");
+        }        
+
+        int* dims = this->mpi_grid_->get_dims();
+        int* coords = this->mpi_grid_->get_coords();
+        if(dims[0] == dims[1]) //squared grid
+        {
+            for(auto i = 0; i < dims[1]; i++)
+            {
+                if(coords[0] == i)
+                {
+                    if(coords[1] == i)
+                    {
+                        MPI_Bcast(this->l_data() + offset * this->ld_, this->m_ * subsetSize, chase::mpi::getMPI_Type<T>(), i, this->mpi_grid_->get_row_comm());
+                    }
+                    else
+                    {
+                        MPI_Bcast(targetMultiVector->l_data() + offset * targetMultiVector->l_ld(), targetMultiVector->l_rows() * subsetSize, 
+                                        chase::mpi::getMPI_Type<T>(), i, this->mpi_grid_->get_row_comm());
+                    }
+                }
+            }
+
+            for(auto i = 0; i < dims[1]; i++)
+            {
+                if(coords[0] == coords[1])
+                {
+                    if constexpr (std::is_same<Platform, chase::platform::CPU>::value)
+                    {                    
+                        chase::linalg::lapackpp::t_lacpy('A', this->m_, subsetSize, this->l_data() + offset * this->ld_, this->ld_, 
+                                                            targetMultiVector->l_data() + offset * targetMultiVector->l_ld(), targetMultiVector->l_ld());
+                    }
+#ifdef HAS_CUDA
+                    else
+                    {
+                        chase::linalg::internal::cuda::t_lacpy('A', this->m_, subsetSize, this->l_data() + offset * this->ld_, this->ld_, 
+                                                            targetMultiVector->l_data() + offset * targetMultiVector->l_ld(), targetMultiVector->l_ld());   
+                    }
+#endif
+                }
+            }
+        }
+    }
+
+
+    template<typename OtherPlatform>
+    void redistributeColumnToRow(DistMultiVectorBlockCyclic1D<T, CommunicatorType::row, OtherPlatform>* targetMultiVector,
+                                    std::size_t offset, std::size_t subsetSize) {
+        // Ensure the dimensions are compatible
+        if (this->M_ != targetMultiVector->g_rows() || this->N_ != targetMultiVector->g_cols()) {
+            throw std::runtime_error("Dimension mismatch during redistribution");
+        }
+
+        if(this->mpi_grid_.get() != targetMultiVector->getMpiGrid())
+        {
+            throw std::runtime_error("MPI Grid mismatch during redistribution");
+        }
+
+        if(this->mb_ != targetMultiVector->mb())
+        {
+            throw std::runtime_error("Blocksize of the original and target matrices mismatch during redistribution");
+        }        
+
+        int* dims = this->mpi_grid_->get_dims();
+        int* coords = this->mpi_grid_->get_coords();
+        if(dims[0] == dims[1]) //squared grid
+        {
+            for(auto i = 0; i < dims[0]; i++)
+            {
+                if(coords[1] == i)
+                {
+                    if(coords[0] == i)
+                    {
+                        MPI_Bcast(this->l_data() + offset * this->ld_, this->m_ * subsetSize, chase::mpi::getMPI_Type<T>(), i, this->mpi_grid_->get_col_comm());
+                    }
+                    else
+                    {
+                        MPI_Bcast(targetMultiVector->l_data() + offset * targetMultiVector->l_ld(), targetMultiVector->l_rows() * subsetSize, 
+                                        chase::mpi::getMPI_Type<T>(), i, this->mpi_grid_->get_col_comm());
+                    }
+                }
+            }
+
+            for(auto i = 0; i < dims[0]; i++)
+            {
+                if(coords[0] == coords[1])
+                {
+                    if constexpr (std::is_same<Platform, chase::platform::CPU>::value)
+                    {
+                        chase::linalg::lapackpp::t_lacpy('A', this->m_, subsetSize, this->l_data() + offset * this->ld_, this->ld_, 
+                                                            targetMultiVector->l_data() + offset * targetMultiVector->l_ld(), targetMultiVector->l_ld());                        
+                    }
+    #ifdef HAS_CUDA                
+                    else
+                    {
+                        chase::linalg::internal::cuda::t_lacpy('A', this->m_, subsetSize, this->l_data() + offset * this->ld_, this->ld_, 
+                                                            targetMultiVector->l_data() + offset * targetMultiVector->l_ld(), targetMultiVector->l_ld());                         
+                    }
+    #endif                                    
+
+                }
+            }
+        }
+    }
+
+
+#ifdef HAS_CUDA
+#ifdef HAS_NCCL
+    void redistributeRowToColumnAsync(DistMultiVectorBlockCyclic1D<T, CommunicatorType::column, chase::platform::GPU>* targetMultiVector,
+                                    std::size_t offset, std::size_t subsetSize, cudaStream_t stream) {
+        // Ensure the dimensions are compatible
+        if (this->M_ != targetMultiVector->g_rows() || this->N_ != targetMultiVector->g_cols()) {
+            throw std::runtime_error("Dimension mismatch during redistribution");
+        }
+        
+        if(this->mpi_grid_.get() != targetMultiVector->getMpiGrid())
+        {
+            throw std::runtime_error("MPI Grid mismatch during redistribution");
+        }
+        
+        if(this->mb_ != targetMultiVector->mb())
+        {
+            throw std::runtime_error("Blocksize of the original and target matrices mismatch during redistribution");
+        }   
+
+        int* dims = this->mpi_grid_->get_dims();
+        int* coords = this->mpi_grid_->get_coords();
+        if(dims[0] == dims[1]) //squared grid
+        {
+            for(auto i = 0; i < dims[1]; i++)
+            {
+                if(coords[0] == i)
+                {
+                    if(coords[1] == i)
+                    {
+                        CHECK_NCCL_ERROR(chase::Impl::nccl::ncclBcastWrapper(this->l_data() + offset * this->ld_, 
+                                                                             this->m_ * subsetSize, 
+                                                                             i, 
+                                                                             this->mpi_grid_->get_nccl_row_comm(), 
+                                                                             &stream));
+                    }
+                    else
+                    {
+                        CHECK_NCCL_ERROR(chase::Impl::nccl::ncclBcastWrapper(targetMultiVector->l_data() + offset * targetMultiVector->l_ld(), 
+                                                                             targetMultiVector->l_rows() * subsetSize, 
+                                                                             i, 
+                                                                             this->mpi_grid_->get_nccl_row_comm(), 
+                                                                             &stream));                        
+                    }
+                }
+            }
+
+            for(auto i = 0; i < dims[1]; i++)
+            {
+                if(coords[0] == coords[1])
+                {
+
+                    chase::linalg::internal::cuda::t_lacpy('A', this->m_, subsetSize, this->l_data() + offset * this->ld_, this->ld_, 
+                                                        targetMultiVector->l_data() + offset * targetMultiVector->l_ld(), targetMultiVector->l_ld());   
+                    
+                }
+            }
+        }
+        
+    }
+
+    void redistributeColumnToRowAsync(DistMultiVectorBlockCyclic1D<T, CommunicatorType::row, chase::platform::GPU>* targetMultiVector,
+                                    std::size_t offset, std::size_t subsetSize, cudaStream_t stream) {
+        // Ensure the dimensions are compatible
+        if (this->M_ != targetMultiVector->g_rows() || this->N_ != targetMultiVector->g_cols()) {
+            throw std::runtime_error("Dimension mismatch during redistribution");
+        }
+
+        if(this->mpi_grid_.get() != targetMultiVector->getMpiGrid())
+        {
+            throw std::runtime_error("MPI Grid mismatch during redistribution");
+        }
+
+        if(this->mb_ != targetMultiVector->mb())
+        {
+            throw std::runtime_error("Blocksize of the original and target matrices mismatch during redistribution");
+        }   
+
+        int* dims = this->mpi_grid_->get_dims();
+        int* coords = this->mpi_grid_->get_coords();
+        if(dims[0] == dims[1]) //squared grid
+        {
+            for(auto i = 0; i < dims[0]; i++)
+            {
+                if(coords[1] == i)
+                {
+                    if(coords[0] == i)
+                    {
+                        CHECK_NCCL_ERROR(chase::Impl::nccl::ncclBcastWrapper(this->l_data() + offset * this->ld_, 
+                                                                             this->m_ * subsetSize, 
+                                                                             i, 
+                                                                             this->mpi_grid_->get_nccl_col_comm(), 
+                                                                             &stream));
+                    }
+                    else
+                    {
+                        CHECK_NCCL_ERROR(chase::Impl::nccl::ncclBcastWrapper(targetMultiVector->l_data() + offset * targetMultiVector->l_ld(), 
+                                                                             targetMultiVector->l_rows() * subsetSize, 
+                                                                             i, 
+                                                                             this->mpi_grid_->get_nccl_col_comm(), 
+                                                                             &stream));     
+                    }
+                }
+            }
+
+            for(auto i = 0; i < dims[0]; i++)
+            {
+                if(coords[0] == coords[1])
+                {
+                    chase::linalg::internal::cuda::t_lacpy('A', this->m_, subsetSize, this->l_data() + offset * this->ld_, this->ld_, 
+                                                        targetMultiVector->l_data() + offset * targetMultiVector->l_ld(), targetMultiVector->l_ld());                         
+                }
+            }
+        }
+        
+    }
+    
+#endif
+#endif
+
 
 };
 
