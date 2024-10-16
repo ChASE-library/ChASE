@@ -180,7 +180,6 @@ TYPED_TEST(MultiVectorDistTest, RedistributionFromColumnToRowCommunicator) {
     }
 }
 
-
 TYPED_TEST(MultiVectorDistTest, RedistributionFromRowToColumnCommunicator) {
     using T = TypeParam;  // Get the current type
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
@@ -249,6 +248,221 @@ TYPED_TEST(MultiVectorDistTest, RedistributionFromSameCommunicatorExpectFail) {
 
     EXPECT_THROW({multivector_.redistributeImpl(&target_2, 10, 10);}, std::invalid_argument);
     EXPECT_THROW({multivector_2.redistributeImpl(&target_, 10, 10);}, std::invalid_argument);
+}
+
+TYPED_TEST(MultiVectorDistTest, BlockCyclicRowCommInternalMemoryAllocation) {
+    using T = TypeParam;  // Get the current type
+    //using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type;
+    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
+    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(MPI_COMM_WORLD);
+
+    std::size_t M = 6;
+    std::size_t N = 4;
+    std::size_t mb = 2;
+    auto multivector_ = chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, chase::distMultiVector::CommunicatorType::row>(M, N, mb, mpi_grid);
+
+    // Check that the global matrix dimensions are correct
+    EXPECT_EQ(multivector_.g_rows(), M);
+    EXPECT_EQ(multivector_.g_cols(), N);
+    if(this->world_rank == 0 || this->world_rank == 1)
+    {
+        EXPECT_EQ(multivector_.l_rows(), 4);
+        EXPECT_EQ(multivector_.l_ld(), 4);
+    }else
+    {
+        EXPECT_EQ(multivector_.l_rows(), 2);
+        EXPECT_EQ(multivector_.l_ld(), 2);
+    }
+
+    EXPECT_EQ(multivector_.l_cols(), N);
+    EXPECT_NE(multivector_.l_data(), nullptr);   
+}
+
+
+TYPED_TEST(MultiVectorDistTest, BlockCyclicColumnCommInternalMemoryAllocation) {
+    using T = TypeParam;  // Get the current type
+    //using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type;
+    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
+    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(MPI_COMM_WORLD);
+
+    std::size_t M = 6;
+    std::size_t N = 4;
+    std::size_t mb = 2;
+    auto multivector_ = chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, chase::distMultiVector::CommunicatorType::column>(M, N, mb, mpi_grid);
+
+    if(this->world_rank == 0 || this->world_rank == 2)
+    {
+        EXPECT_EQ(multivector_.l_rows(), 4);
+        EXPECT_EQ(multivector_.l_ld(), 4);
+    }else
+    {
+        EXPECT_EQ(multivector_.l_rows(), 2);
+        EXPECT_EQ(multivector_.l_ld(), 2);
+    }
+
+    EXPECT_EQ(multivector_.l_cols(), N);
+    EXPECT_NE(multivector_.l_data(), nullptr);   
+}
+
+TYPED_TEST(MultiVectorDistTest, BlockCyclicRowCommExternalMemoryAllocation) {
+    using T = TypeParam;  // Get the current type
+    //using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type;
+    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
+    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(MPI_COMM_WORLD);
+
+    std::size_t M = 6;
+    std::size_t N = 4;
+    std::size_t mb = 2;
+    std::size_t lld = 4;
+    std::vector<T> buffer(lld * N);
+    std::size_t m;
+    if(this->world_rank == 0 || this->world_rank == 1)
+    {
+        m = 4;
+    }else
+    {
+        m = 2;
+    }
+    auto multivector_ = chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, chase::distMultiVector::CommunicatorType::row>(M, m, N, mb, lld, buffer.data(), mpi_grid);
+
+    EXPECT_EQ(multivector_.g_rows(), M);
+    EXPECT_EQ(multivector_.g_cols(), N);
+    EXPECT_EQ(multivector_.l_rows(), m);
+    EXPECT_EQ(multivector_.l_cols(), N);    
+    EXPECT_EQ(multivector_.l_ld(), lld);  
+    EXPECT_EQ(multivector_.l_data(), buffer.data());   
+}
+
+TYPED_TEST(MultiVectorDistTest, BlockCyclicColumnCommExternalMemoryAllocation) {
+    using T = TypeParam;  // Get the current type
+    //using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type;
+    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
+    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(MPI_COMM_WORLD);
+
+    std::size_t M = 6;
+    std::size_t N = 4;
+    std::size_t mb = 2;
+    std::size_t lld = 4;
+    std::vector<T> buffer(lld * N);
+    std::size_t m;
+    if(this->world_rank == 0 || this->world_rank == 2)
+    {
+        m = 4;
+    }else
+    {
+        m = 2;
+    }
+
+    auto multivector_ = chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, chase::distMultiVector::CommunicatorType::column>(M, m, N, mb, lld, buffer.data(), mpi_grid);
+
+    EXPECT_EQ(multivector_.g_rows(), M);
+    EXPECT_EQ(multivector_.g_cols(), N);
+    EXPECT_EQ(multivector_.l_rows(), m);
+    EXPECT_EQ(multivector_.l_cols(), N);    
+    EXPECT_EQ(multivector_.l_ld(), lld);  
+    EXPECT_EQ(multivector_.l_data(), buffer.data()); 
+}
+
+TYPED_TEST(MultiVectorDistTest, BlockCyclicRedistributionFromColumnToRowCommunicator) {
+    using T = TypeParam;  // Get the current type
+    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
+    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(MPI_COMM_WORLD);
+
+    std::size_t M = 6;
+    std::size_t N = 4;
+    std::size_t mb = 2;
+    std::size_t offset = 1;
+    std::size_t subSize = 2;
+    auto multivector_ = chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, chase::distMultiVector::CommunicatorType::column>(M, N, mb, mpi_grid);
+    auto target_ = chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, chase::distMultiVector::CommunicatorType::row>(M, N, mb, mpi_grid);
+    int *coords = mpi_grid.get()->get_coords();
+
+    for(auto i = 0; i < multivector_.l_cols(); i++)
+    {
+        for(auto j = 0; j < multivector_.l_rows(); j++)
+        {
+            multivector_.l_data()[i *  multivector_.l_ld() + j] = T(coords[0] + i + j);
+        }
+    }
+
+    for(auto i = 0; i < target_.l_cols(); i++)
+    {
+        for(auto j = 0; j < target_.l_rows(); j++)
+        {
+            target_.l_data()[i *  target_.l_ld() + j] = T(-1);
+        }
+    }
+    multivector_.redistributeImpl(&target_, offset, subSize);
+
+    for(auto i = 0; i < target_.l_cols(); i++)
+    {
+        for(auto j = 0; j < target_.l_rows(); j++)
+        {
+            if(i >= offset && i < offset + subSize )
+            {
+                EXPECT_EQ(target_.l_data()[i *  target_.l_ld() + j], T(coords[1] + i + j));
+            }
+            else
+            {
+                EXPECT_EQ(target_.l_data()[i *  target_.l_ld() + j], T(-1));
+            }
+            
+        }
+    }
+}
+
+TYPED_TEST(MultiVectorDistTest, BlockCyclicRedistributionFromRowToColumnCommunicator) {
+    using T = TypeParam;  // Get the current type
+    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
+    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(MPI_COMM_WORLD);
+
+    std::size_t M = 6;
+    std::size_t N = 4;
+    std::size_t mb = 2;
+    std::size_t offset = 1;
+    std::size_t subSize = 2;
+
+    auto multivector_ = chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, chase::distMultiVector::CommunicatorType::row>(M, N, mb, mpi_grid);
+    auto target_ = chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, chase::distMultiVector::CommunicatorType::column>(M, N, mb, mpi_grid);
+    int *coords = mpi_grid.get()->get_coords();
+
+    for(auto i = 0; i < multivector_.l_cols(); i++)
+    {
+        for(auto j = 0; j < multivector_.l_rows(); j++)
+        {
+            multivector_.l_data()[i *  multivector_.l_ld() + j] = T(coords[1] + i + j);
+        }
+    }
+
+    for(auto i = 0; i < target_.l_cols(); i++)
+    {
+        for(auto j = 0; j < target_.l_rows(); j++)
+        {
+            target_.l_data()[i *  target_.l_ld() + j] = T(-1);
+        }
+    }
+    multivector_.redistributeImpl(&target_, offset, subSize);
+
+    for(auto i = 0; i < target_.l_cols(); i++)
+    {
+        for(auto j = 0; j < target_.l_rows(); j++)
+        {
+            if(i >= offset && i < offset + subSize )
+            {
+                EXPECT_EQ(target_.l_data()[i *  target_.l_ld() + j], T(coords[0] + i + j));
+            }
+            else
+            {
+                EXPECT_EQ(target_.l_data()[i *  target_.l_ld() + j], T(-1));
+            }
+        }
+    }
 }
 
 #ifdef ENABLE_MIXED_PRECISION
@@ -557,5 +771,235 @@ TYPED_TEST(MultiVectorDistTest, RedistributionAsyncFromRowToColumnCommunicatorGP
         }
     }
 }
+
+TYPED_TEST(MultiVectorDistTest, BlockCyclicRowCommInternalMemoryAllocationGPU) {
+    using T = TypeParam;  // Get the current type
+    //using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type;
+    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
+    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(MPI_COMM_WORLD);
+
+    std::size_t M = 6;
+    std::size_t N = 4;
+    std::size_t mb = 2;
+    auto multivector_ = chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::GPU>(M, N, mb, mpi_grid);
+
+    // Check that the global matrix dimensions are correct
+    EXPECT_EQ(multivector_.g_rows(), M);
+    EXPECT_EQ(multivector_.g_cols(), N);
+    if(this->world_rank == 0 || this->world_rank == 1)
+    {
+        EXPECT_EQ(multivector_.l_rows(), 4);
+        EXPECT_EQ(multivector_.l_ld(), 4);
+    }else
+    {
+        EXPECT_EQ(multivector_.l_rows(), 2);
+        EXPECT_EQ(multivector_.l_ld(), 2);
+    }
+
+    EXPECT_EQ(multivector_.l_cols(), N);
+    EXPECT_NE(multivector_.l_data(), nullptr);   
+}
+
+
+TYPED_TEST(MultiVectorDistTest, BlockCyclicColumnCommInternalMemoryAllocationGPU) {
+    using T = TypeParam;  // Get the current type
+    //using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type;
+    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
+    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(MPI_COMM_WORLD);
+
+    std::size_t M = 6;
+    std::size_t N = 4;
+    std::size_t mb = 2;
+    auto multivector_ = chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(M, N, mb, mpi_grid);
+
+    if(this->world_rank == 0 || this->world_rank == 2)
+    {
+        EXPECT_EQ(multivector_.l_rows(), 4);
+        EXPECT_EQ(multivector_.l_ld(), 4);
+    }else
+    {
+        EXPECT_EQ(multivector_.l_rows(), 2);
+        EXPECT_EQ(multivector_.l_ld(), 2);
+    }
+
+    EXPECT_EQ(multivector_.l_cols(), N);
+    EXPECT_NE(multivector_.l_data(), nullptr);   
+}
+
+
+TYPED_TEST(MultiVectorDistTest, BlockCyclicRowCommExternalMemoryAllocationGPU) {
+    using T = TypeParam;  // Get the current type
+    //using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type;
+    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
+    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(MPI_COMM_WORLD);
+
+    std::size_t M = 6;
+    std::size_t N = 4;
+    std::size_t mb = 2;
+    std::size_t lld = 4;
+    std::vector<T> buffer(lld * N);
+    std::size_t m;
+    if(this->world_rank == 0 || this->world_rank == 1)
+    {
+        m = 4;
+    }else
+    {
+        m = 2;
+    }
+    auto multivector_ = chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::GPU>(M, m, N, mb, lld, buffer.data(), mpi_grid);
+
+    EXPECT_EQ(multivector_.g_rows(), M);
+    EXPECT_EQ(multivector_.g_cols(), N);
+    EXPECT_EQ(multivector_.l_rows(), m);
+    EXPECT_EQ(multivector_.l_cols(), N);    
+    EXPECT_EQ(multivector_.l_ld(), m);  
+    EXPECT_NE(multivector_.l_data(), nullptr);   
+}
+
+TYPED_TEST(MultiVectorDistTest, BlockCyclicColumnCommExternalMemoryAllocationGPU) {
+    using T = TypeParam;  // Get the current type
+    //using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type;
+    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
+    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(MPI_COMM_WORLD);
+
+    std::size_t M = 6;
+    std::size_t N = 4;
+    std::size_t mb = 2;
+    std::size_t lld = 4;
+    std::vector<T> buffer(lld * N);
+    std::size_t m;
+    if(this->world_rank == 0 || this->world_rank == 2)
+    {
+        m = 4;
+    }else
+    {
+        m = 2;
+    }
+
+    auto multivector_ = chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(M, m, N, mb, lld, buffer.data(), mpi_grid);
+
+    EXPECT_EQ(multivector_.g_rows(), M);
+    EXPECT_EQ(multivector_.g_cols(), N);
+    EXPECT_EQ(multivector_.l_rows(), m);
+    EXPECT_EQ(multivector_.l_cols(), N);    
+    EXPECT_EQ(multivector_.l_ld(), m);  
+    EXPECT_NE(multivector_.l_data(), nullptr); 
+}
+
+TYPED_TEST(MultiVectorDistTest, BlockCyclicRedistributionFromColumnToRowCommunicatorGPUNCCL) {
+    using T = TypeParam;  // Get the current type
+    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
+    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(MPI_COMM_WORLD);
+
+    std::size_t M = 6;
+    std::size_t N = 4;
+    std::size_t mb = 2;
+    std::size_t offset = 1;
+    std::size_t subSize = 2;
+    auto multivector_ = chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(M, N, mb, mpi_grid);
+    auto target_ = chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::GPU>(M, N, mb, mpi_grid);
+    int *coords = mpi_grid.get()->get_coords();
+    multivector_.allocate_cpu_data();
+    target_.allocate_cpu_data();
+    for(auto i = 0; i < multivector_.l_cols(); i++)
+    {
+        for(auto j = 0; j < multivector_.l_rows(); j++)
+        {
+            multivector_.cpu_data()[i *  multivector_.cpu_ld() + j] = T(coords[0] + i + j);
+        }
+    }
+
+    for(auto i = 0; i < target_.l_cols(); i++)
+    {
+        for(auto j = 0; j < target_.l_rows(); j++)
+        {
+            target_.cpu_data()[i *  target_.cpu_ld() + j] = T(-1);
+        }
+    }
+
+    multivector_.H2D();
+    target_.H2D();
+    multivector_.redistributeImplAsync(&target_, offset, subSize);
+    target_.D2H();
+
+    for(auto i = 0; i < target_.l_cols(); i++)
+    {
+        for(auto j = 0; j < target_.l_rows(); j++)
+        {
+            if(i >= offset && i < offset + subSize )
+            {
+                EXPECT_EQ(target_.cpu_data()[i *  target_.cpu_ld() + j], T(coords[1] + i + j));
+            }
+            else
+            {
+                EXPECT_EQ(target_.cpu_data()[i *  target_.cpu_ld() + j], T(-1));
+            }
+            
+        }
+    }
+}
+
+TYPED_TEST(MultiVectorDistTest, BlockCyclicRedistributionFromRowToColumnCommunicatorGPUNCCL) {
+    using T = TypeParam;  // Get the current type
+    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
+    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(MPI_COMM_WORLD);
+
+    std::size_t M = 6;
+    std::size_t N = 4;
+    std::size_t mb = 2;
+    std::size_t offset = 1;
+    std::size_t subSize = 2;
+
+    auto multivector_ = chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::GPU>(M, N, mb, mpi_grid);
+    auto target_ = chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(M, N, mb, mpi_grid);
+    int *coords = mpi_grid.get()->get_coords();
+    multivector_.allocate_cpu_data();
+    target_.allocate_cpu_data();
+
+    for(auto i = 0; i < multivector_.l_cols(); i++)
+    {
+        for(auto j = 0; j < multivector_.l_rows(); j++)
+        {
+            multivector_.cpu_data()[i *  multivector_.cpu_ld() + j] = T(coords[1] + i + j);
+        }
+    }
+
+    for(auto i = 0; i < target_.l_cols(); i++)
+    {
+        for(auto j = 0; j < target_.l_rows(); j++)
+        {
+            target_.cpu_data()[i *  target_.cpu_ld() + j] = T(-1);
+        }
+    }
+
+    multivector_.H2D();
+    target_.H2D();
+    
+    multivector_.redistributeImpl(&target_, offset, subSize);
+
+    target_.D2H();
+
+    for(auto i = 0; i < target_.l_cols(); i++)
+    {
+        for(auto j = 0; j < target_.l_rows(); j++)
+        {
+            if(i >= offset && i < offset + subSize )
+            {
+                EXPECT_EQ(target_.cpu_data()[i *  target_.cpu_ld() + j], T(coords[0] + i + j));
+            }
+            else
+            {
+                EXPECT_EQ(target_.cpu_data()[i *  target_.cpu_ld() + j], T(-1));
+            }
+        }
+    }
+}
+
 #endif
 #endif
