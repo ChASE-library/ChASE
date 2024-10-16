@@ -36,7 +36,7 @@ namespace mpi
         }
 
         // Perform the distributed matrix-matrix multiplication
-        chase::linalg::internal::mpi::BlockBlockMultiplyMultiVectorsAndRedistributeAsync<T>(
+        chase::linalg::internal::mpi::MatrixMultiplyMultiVectorsAndRedistributeAsync(
                         H, 
                         V1, 
                         W1, 

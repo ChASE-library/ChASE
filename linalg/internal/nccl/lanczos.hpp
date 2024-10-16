@@ -102,7 +102,7 @@ namespace nccl
                 cudaMemcpy(V.l_data() + k * V.l_ld(), v_1.l_data() + i * v_1.l_ld(), v_1.l_rows() * sizeof(T), cudaMemcpyDeviceToDevice);
             }
 
-            chase::linalg::internal::nccl::BlockBlockMultiplyMultiVectors(cublas_handle,
+            chase::linalg::internal::nccl::MatrixMultiplyMultiVectors(cublas_handle,
                                                                          &One, 
                                                                          H,
                                                                          v_1,
@@ -324,7 +324,7 @@ namespace nccl
                                                                       1));  
         for (std::size_t k = 0; k < M; k = k + 1)
         {
-            chase::linalg::internal::nccl::BlockBlockMultiplyMultiVectors(cublas_handle,
+            chase::linalg::internal::nccl::MatrixMultiplyMultiVectors(cublas_handle,
                                                                          &One, 
                                                                          H,
                                                                          v_1,

@@ -61,7 +61,7 @@ namespace nccl
             workspace = work_ptr.get();            
         }
         // Perform the distributed matrix-matrix multiplication
-        chase::linalg::internal::nccl::BlockBlockMultiplyMultiVectorsAndRedistributeAsync<T>(
+        chase::linalg::internal::nccl::MatrixMultiplyMultiVectorsAndRedistributeAsync(
                         cublas_handle,
                         H, 
                         V1, 

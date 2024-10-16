@@ -95,7 +95,7 @@ namespace mpi
                 std::memcpy(V.l_data() + k * V.l_ld(), v_1.l_data() + i * v_1.l_ld(), v_1.l_rows() * sizeof(T));
             }
 
-            chase::linalg::internal::mpi::BlockBlockMultiplyMultiVectors(&One, 
+            chase::linalg::internal::mpi::MatrixMultiplyMultiVectors(&One, 
                                                                          H,
                                                                          v_1,
                                                                          &Zero,
@@ -291,7 +291,7 @@ namespace mpi
 
         for (std::size_t k = 0; k < M; k = k + 1)
         {
-            chase::linalg::internal::mpi::BlockBlockMultiplyMultiVectors(&One, 
+            chase::linalg::internal::mpi::MatrixMultiplyMultiVectors(&One, 
                                                                          H,
                                                                          v_1,
                                                                          &Zero,

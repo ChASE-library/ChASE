@@ -5,6 +5,7 @@
 #include "linalg/lapackpp/lapackpp.hpp"
 #include "linalg/distMatrix/distMatrix.hpp"
 #include "linalg/distMatrix/distMultiVector.hpp"
+#include "../typeTraits.hpp"
 
 namespace chase
 {
@@ -14,25 +15,31 @@ namespace internal
 {
 namespace mpi
 {
-    template <typename T, chase::distMultiVector::CommunicatorType InputCommType>
-    void BlockBlockMultiplyMultiVectors(T *alpha,
-                                        chase::distMatrix::BlockBlockMatrix<T, chase::platform::CPU>& blockMatrix, 
-                                        chase::distMultiVector::DistMultiVector1D<T, InputCommType, chase::platform::CPU>& input_multiVector, 
-                                        T *beta,
-                                        chase::distMultiVector::DistMultiVector1D<T, 
-                                                                                  chase::distMultiVector::OutputCommType<InputCommType>::value,
-                                                                                  chase::platform::CPU>& result_multiVector,
+
+    template <typename T, typename MatrixType, typename InputMultiVectorType>
+    void MatrixMultiplyMultiVectors(T* alpha,
+                                        MatrixType& blockMatrix,
+                                        InputMultiVectorType& input_multiVector,
+                                        T* beta,
+                                        typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type& result_multiVector,
                                         std::size_t offset,
                                         std::size_t subSize) 
     {
-        if (input_multiVector.l_rows() != (InputCommType == chase::distMultiVector::CommunicatorType::row 
+        // Ensure the platform type is chase::platform::CPU
+        static_assert(std::is_same<typename MatrixType::platform_type, chase::platform::CPU>::value,
+                    "Matrix type must be chase::platform::CPU");
+
+        static_assert(std::is_same<typename InputMultiVectorType::platform_type, chase::platform::CPU>::value,
+                    "Multivector type must be chase::platform::CPU");
+
+        if (input_multiVector.l_rows() != (ExtractCommType<InputMultiVectorType>::value == chase::distMultiVector::CommunicatorType::row 
                                             ? blockMatrix.l_cols() 
                                             : blockMatrix.l_rows())) {
             throw std::runtime_error("Dimension mismatch: Input multiVector rows must match blockMatrix rows or columns.");
         }
 
 
-        if (result_multiVector.l_rows() != (InputCommType == chase::distMultiVector::CommunicatorType::row 
+        if (result_multiVector.l_rows() != (ExtractCommType<InputMultiVectorType>::value == chase::distMultiVector::CommunicatorType::row 
                                             ? blockMatrix.l_rows() 
                                             : blockMatrix.l_cols())) {
             throw std::runtime_error("Dimension mismatch: Result multiVector rows must match blockMatrix rows or columns.");
@@ -59,7 +66,7 @@ namespace mpi
         int *coords = input_multiVector.getMpiGrid()->get_coords();
         T beta_tmp;
         
-        if constexpr (InputCommType == chase::distMultiVector::CommunicatorType::column)
+        if constexpr (ExtractCommType<InputMultiVectorType>::value == chase::distMultiVector::CommunicatorType::column)
         {
             if (coords[0] != 0)
             {
@@ -128,20 +135,17 @@ namespace mpi
                           chase::mpi::getMPI_Type<T>(), 
                           MPI_SUM, 
                           input_multiVector.getMpiGrid()->get_row_comm());
-        }
-       
+        }         
     }
 
-    template <typename T, chase::distMultiVector::CommunicatorType InputCommType>
-    void BlockBlockMultiplyMultiVectors(T *alpha,
-                                        chase::distMatrix::BlockBlockMatrix<T, chase::platform::CPU>& blockMatrix, 
-                                        chase::distMultiVector::DistMultiVector1D<T, InputCommType, chase::platform::CPU>& input_multiVector, 
-                                        T *beta,
-                                        chase::distMultiVector::DistMultiVector1D<T, 
-                                                                                  chase::distMultiVector::OutputCommType<InputCommType>::value,
-                                                                                  chase::platform::CPU>& result_multiVector) 
+    template <typename T, typename MatrixType, typename InputMultiVectorType>
+    void MatrixMultiplyMultiVectors(T* alpha,
+                                        MatrixType& blockMatrix,
+                                        InputMultiVectorType& input_multiVector,
+                                        T* beta,
+                                        typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type& result_multiVector) 
     {
-        BlockBlockMultiplyMultiVectors(alpha,
+        MatrixMultiplyMultiVectors(alpha,
                                        blockMatrix, 
                                        input_multiVector, 
                                        beta,
@@ -150,43 +154,45 @@ namespace mpi
                                        input_multiVector.l_cols());
     }
 
-    //this operation do: W1<-1.0 * H * V1, while redistribute V2 to W2
-    template <typename T, chase::distMultiVector::CommunicatorType InputCommType>
-    void BlockBlockMultiplyMultiVectorsAndRedistributeAsync(
-                                        chase::distMatrix::BlockBlockMatrix<T, chase::platform::CPU>& blockMatrix, 
-                                        chase::distMultiVector::DistMultiVector1D<T, InputCommType, chase::platform::CPU>& input_multiVector, 
-                                        chase::distMultiVector::DistMultiVector1D<T, 
-                                                                                  chase::distMultiVector::OutputCommType<InputCommType>::value,
-                                                                                  chase::platform::CPU>& result_multiVector,
-                                        chase::distMultiVector::DistMultiVector1D<T, InputCommType, chase::platform::CPU>& src_multiVector,   
-                                        chase::distMultiVector::DistMultiVector1D<T, 
-                                                                                  chase::distMultiVector::OutputCommType<InputCommType>::value,
-                                                                                  chase::platform::CPU>& target_multiVector,                                                                               
+    template <typename MatrixType, typename InputMultiVectorType>    
+    void MatrixMultiplyMultiVectorsAndRedistributeAsync(
+                                        MatrixType& blockMatrix, 
+                                        InputMultiVectorType& input_multiVector, 
+                                        typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type& result_multiVector,
+                                        InputMultiVectorType& src_multiVector,   
+                                        typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type& target_multiVector,                                                                               
                                         std::size_t offset,
-                                        std::size_t subSize)                                                                                   
-
+                                        std::size_t subSize) 
     {
-        if (input_multiVector.l_rows() != (InputCommType == chase::distMultiVector::CommunicatorType::row 
+        using T = typename MatrixType::value_type;
+        // Ensure the platform type is chase::platform::CPU
+        static_assert(std::is_same<typename MatrixType::platform_type, chase::platform::CPU>::value,
+                    "Matrix type must be chase::platform::CPU");
+
+        static_assert(std::is_same<typename InputMultiVectorType::platform_type, chase::platform::CPU>::value,
+                    "Multivector type must be chase::platform::CPU");
+
+        if (input_multiVector.l_rows() != (ExtractCommType<InputMultiVectorType>::value == chase::distMultiVector::CommunicatorType::row 
                                             ? blockMatrix.l_cols() 
                                             : blockMatrix.l_rows())) {
             throw std::runtime_error("Dimension mismatch: Result multiVector rows must match blockMatrix rows or columns.");
         }
 
 
-        if (result_multiVector.l_rows() != (InputCommType == chase::distMultiVector::CommunicatorType::row 
+        if (result_multiVector.l_rows() != (ExtractCommType<InputMultiVectorType>::value == chase::distMultiVector::CommunicatorType::row 
                                             ? blockMatrix.l_rows() 
                                             : blockMatrix.l_cols())) {
             throw std::runtime_error("Dimension mismatch: Result multiVector rows must match blockMatrix rows or columns.");
         }
 
-        if (src_multiVector.l_rows() != (InputCommType == chase::distMultiVector::CommunicatorType::row 
+        if (src_multiVector.l_rows() != (ExtractCommType<InputMultiVectorType>::value == chase::distMultiVector::CommunicatorType::row 
                                             ? blockMatrix.l_cols() 
                                             : blockMatrix.l_rows())) {
             throw std::runtime_error("Dimension mismatch: Result multiVector rows must match blockMatrix rows or columns.");
         }
 
 
-        if (target_multiVector.l_rows() != (InputCommType == chase::distMultiVector::CommunicatorType::row 
+        if (target_multiVector.l_rows() != (ExtractCommType<InputMultiVectorType>::value == chase::distMultiVector::CommunicatorType::row 
                                             ? blockMatrix.l_rows() 
                                             : blockMatrix.l_cols())) {
             throw std::runtime_error("Dimension mismatch: Result multiVector rows must match blockMatrix rows or columns.");
@@ -220,7 +226,7 @@ namespace mpi
         T One = T(1.0);
         T Zero = T(0.0);
         
-        if constexpr (InputCommType == chase::distMultiVector::CommunicatorType::column)
+        if constexpr (ExtractCommType<InputMultiVectorType>::value == chase::distMultiVector::CommunicatorType::column)
         {
             // Perform the matrix multiplication using BLAS
             chase::linalg::blaspp::t_gemm(CblasColMajor, 
@@ -274,28 +280,24 @@ namespace mpi
         }
 
         src_multiVector.redistributeImpl(&target_multiVector, offset, subSize); //computation of gemm, and redistribute can be overlapped, wiil do later
-
+    
     }
 
-    template <typename T, chase::distMultiVector::CommunicatorType InputCommType>
-    void BlockBlockMultiplyMultiVectorsAndRedistributeAsync(
-                                        chase::distMatrix::BlockBlockMatrix<T, chase::platform::CPU>& blockMatrix, 
-                                        chase::distMultiVector::DistMultiVector1D<T, InputCommType, chase::platform::CPU>& input_multiVector, 
-                                        chase::distMultiVector::DistMultiVector1D<T, 
-                                                                                  chase::distMultiVector::OutputCommType<InputCommType>::value,
-                                                                                  chase::platform::CPU>& result_multiVector,
-                                        chase::distMultiVector::DistMultiVector1D<T, InputCommType, chase::platform::CPU>& src_multiVector,   
-                                        chase::distMultiVector::DistMultiVector1D<T, 
-                                                                                  chase::distMultiVector::OutputCommType<InputCommType>::value,
-                                                                                  chase::platform::CPU>& target_multiVector)
+    template <typename MatrixType, typename InputMultiVectorType>    
+    void MatrixMultiplyMultiVectorsAndRedistributeAsync(
+                                        MatrixType& blockMatrix, 
+                                        InputMultiVectorType& input_multiVector, 
+                                        typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type& result_multiVector,
+                                        InputMultiVectorType& src_multiVector,   
+                                        typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type& target_multiVector)                                                                          
     {
-        BlockBlockMultiplyMultiVectorsAndRedistributeAsync(blockMatrix, 
+        MatrixMultiplyMultiVectorsAndRedistributeAsync(blockMatrix, 
                                                            input_multiVector, 
                                                            result_multiVector,
                                                            src_multiVector,
                                                            target_multiVector,
                                                            0,
-                                                           input_multiVector.l_cols());
+                                                           input_multiVector.l_cols());        
     }
 
 }

@@ -48,7 +48,7 @@ namespace chase {
         }
         return std::make_pair(numroc, nb_loc);
     }
-    
+
 namespace distMatrix {
 
 enum class MatrixType {
@@ -281,6 +281,9 @@ class RedundantMatrix : public AbstractDistMatrix<T, RedundantMatrix, Platform>
 {
 
 public:
+    using platform_type = Platform;
+    using value_type = T;  // Alias for element type
+
     ~RedundantMatrix() override {};
     RedundantMatrix();
     RedundantMatrix(std::size_t m, std::size_t n,
@@ -417,6 +420,9 @@ class BlockBlockMatrix : public AbstractDistMatrix<T, BlockBlockMatrix, Platform
 {
 
 public:
+    using platform_type = Platform;
+    using value_type = T;  // Alias for element type
+
     ~BlockBlockMatrix() override {};
     BlockBlockMatrix();
     BlockBlockMatrix(std::size_t M, std::size_t N,
@@ -947,6 +953,9 @@ class BlockCyclicMatrix : public AbstractDistMatrix<T, BlockCyclicMatrix, Platfo
 {
 
 public:
+    using platform_type = Platform;
+    using value_type = T;  // Alias for element type
+    
     ~BlockCyclicMatrix() override {};
     BlockCyclicMatrix();
     BlockCyclicMatrix(std::size_t M, std::size_t N, std::size_t mb, std::size_t nb,

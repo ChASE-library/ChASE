@@ -239,7 +239,7 @@ public:
 
                 if (next_ == NextOp::bAc)
                 {
-                    chase::linalg::internal::mpi::BlockBlockMultiplyMultiVectors<singlePrecisionT>(&alpha_sp, 
+                    chase::linalg::internal::mpi::MatrixMultiplyMultiVectors<singlePrecisionT>(&alpha_sp, 
                                                                                 *Hmat_sp, 
                                                                                 *V1_sp, 
                                                                                 &beta_sp, 
@@ -250,7 +250,7 @@ public:
                 }
                 else
                 {
-                    chase::linalg::internal::mpi::BlockBlockMultiplyMultiVectors<singlePrecisionT>(&alpha_sp, 
+                    chase::linalg::internal::mpi::MatrixMultiplyMultiVectors<singlePrecisionT>(&alpha_sp, 
                                                                                 *Hmat_sp, 
                                                                                 *W1_sp, 
                                                                                 &beta_sp, 
@@ -265,7 +265,7 @@ public:
             {
                 if (next_ == NextOp::bAc)
                 {
-                    chase::linalg::internal::mpi::BlockBlockMultiplyMultiVectors(&alpha, 
+                    chase::linalg::internal::mpi::MatrixMultiplyMultiVectors(&alpha, 
                                                                                 *Hmat_, 
                                                                                 *V1_, 
                                                                                 &beta, 
@@ -276,7 +276,7 @@ public:
                 }
                 else
                 {
-                    chase::linalg::internal::mpi::BlockBlockMultiplyMultiVectors(&alpha, 
+                    chase::linalg::internal::mpi::MatrixMultiplyMultiVectors(&alpha, 
                                                                                 *Hmat_, 
                                                                                 *W1_, 
                                                                                 &beta, 
@@ -293,7 +293,7 @@ public:
         {
             if (next_ == NextOp::bAc)
             {
-                chase::linalg::internal::mpi::BlockBlockMultiplyMultiVectors(&alpha, 
+                chase::linalg::internal::mpi::MatrixMultiplyMultiVectors(&alpha, 
                                                                             *Hmat_, 
                                                                             *V1_, 
                                                                             &beta, 
@@ -304,7 +304,7 @@ public:
             }
             else
             {
-                chase::linalg::internal::mpi::BlockBlockMultiplyMultiVectors(&alpha, 
+                chase::linalg::internal::mpi::MatrixMultiplyMultiVectors(&alpha, 
                                                                             *Hmat_, 
                                                                             *W1_, 
                                                                             &beta, 
