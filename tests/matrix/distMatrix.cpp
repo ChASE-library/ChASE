@@ -309,6 +309,114 @@ TYPED_TEST(MatrixDistTest, BlockBlockRedistributionToRedundantIndivisibleSize) {
     }  
 }
 
+TYPED_TEST(MatrixDistTest, BlockCyclicInternalMemoryAllocationCPU) {
+    using T = TypeParam;  // Get the current type
+    //using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type;
+    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
+    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(2, 2, MPI_COMM_WORLD);
+
+    std::size_t M = 11;
+    std::size_t N = 11;
+    std::size_t mb = 2;
+    std::size_t nb = 2;
+
+    auto blockcyclicmatrix_ = chase::distMatrix::BlockCyclicMatrix<T, chase::platform::CPU>(M, N, mb, nb, mpi_grid);
+    // Check that the global matrix dimensions are correct
+    EXPECT_EQ(blockcyclicmatrix_.g_rows(), M);
+    EXPECT_EQ(blockcyclicmatrix_.g_cols(), N);
+
+    if(this->world_rank == 0)
+    {
+        EXPECT_EQ(blockcyclicmatrix_.l_rows(), 6);
+        EXPECT_EQ(blockcyclicmatrix_.l_cols(), 6); 
+        EXPECT_EQ(blockcyclicmatrix_.l_ld(), 6);         
+    }else if(this->world_rank == 1)
+    {
+        EXPECT_EQ(blockcyclicmatrix_.l_rows(), 5);
+        EXPECT_EQ(blockcyclicmatrix_.l_cols(), 6);   
+        EXPECT_EQ(blockcyclicmatrix_.l_ld(), 5);         
+    }else if(this->world_rank == 2)
+    {
+        EXPECT_EQ(blockcyclicmatrix_.l_rows(), 6);
+        EXPECT_EQ(blockcyclicmatrix_.l_cols(), 5);    
+        EXPECT_EQ(blockcyclicmatrix_.l_ld(), 6);         
+    }else
+    {
+        EXPECT_EQ(blockcyclicmatrix_.l_rows(), 5);
+        EXPECT_EQ(blockcyclicmatrix_.l_cols(), 5);  
+        EXPECT_EQ(blockcyclicmatrix_.l_ld(), 5);         
+    }
+
+    EXPECT_NE(blockcyclicmatrix_.l_data(), nullptr);    
+}
+
+TYPED_TEST(MatrixDistTest, BlockCyclicExternalMemoryAllocationCPU) {
+    using T = TypeParam;  // Get the current type
+    //using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type;
+    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
+    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(2, 2, MPI_COMM_WORLD);
+
+    std::size_t M = 11;
+    std::size_t N = 11;
+    std::size_t mb = 2;
+    std::size_t nb = 2;
+    std::size_t m, n;
+    if(this->world_rank == 0)
+    {
+        m = 6;
+        n = 6;
+    }else if(this->world_rank == 1)
+    {
+        m = 5;
+        n = 6;
+    }   
+    else if(this->world_rank == 2)
+    {
+        m = 6;
+        n = 5;
+    }else
+    {
+        m = 5;
+        n = 5;
+    } 
+
+    std::size_t ld = 6;
+
+    std::vector<T> data(ld * n);
+
+    auto blockcyclicmatrix_ = chase::distMatrix::BlockCyclicMatrix<T, chase::platform::CPU>(M, N, m, n, mb, nb, ld, data.data(), mpi_grid);
+
+    EXPECT_EQ(blockcyclicmatrix_.g_rows(), M);
+    EXPECT_EQ(blockcyclicmatrix_.g_cols(), N);
+
+    if(this->world_rank == 0)
+    {
+        EXPECT_EQ(blockcyclicmatrix_.l_rows(), 6);
+        EXPECT_EQ(blockcyclicmatrix_.l_cols(), 6); 
+        EXPECT_EQ(blockcyclicmatrix_.l_ld(), 6);         
+    }else if(this->world_rank == 1)
+    {
+        EXPECT_EQ(blockcyclicmatrix_.l_rows(), 5);
+        EXPECT_EQ(blockcyclicmatrix_.l_cols(), 6);   
+        EXPECT_EQ(blockcyclicmatrix_.l_ld(), 6);         
+    }else if(this->world_rank == 2)
+    {
+        EXPECT_EQ(blockcyclicmatrix_.l_rows(), 6);
+        EXPECT_EQ(blockcyclicmatrix_.l_cols(), 5);    
+        EXPECT_EQ(blockcyclicmatrix_.l_ld(), 6);         
+    }else
+    {
+        EXPECT_EQ(blockcyclicmatrix_.l_rows(), 5);
+        EXPECT_EQ(blockcyclicmatrix_.l_cols(), 5);  
+        EXPECT_EQ(blockcyclicmatrix_.l_ld(), 6);         
+    }
+
+    EXPECT_EQ(blockcyclicmatrix_.l_data(), data.data());    
+}
+
+
 #ifdef HAS_CUDA
 TYPED_TEST(MatrixDistTest, RedundantInternalMemoryAllocationGPU) {
     using T = TypeParam;  // Get the current type
@@ -423,4 +531,114 @@ TYPED_TEST(MatrixDistTest, BlockBlockExternalMemoryAllocationGPU) {
     EXPECT_EQ(blockblockmatrix_.cpu_data(), buffer.data());  
     EXPECT_NE(blockblockmatrix_.l_data(), nullptr);          
 }
+
+TYPED_TEST(MatrixDistTest, BlockCyclicInternalMemoryAllocationGPU) {
+    using T = TypeParam;  // Get the current type
+    //using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type;
+    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
+    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(2, 2, MPI_COMM_WORLD);
+
+    std::size_t M = 11;
+    std::size_t N = 11;
+    std::size_t mb = 2;
+    std::size_t nb = 2;
+
+    auto blockcyclicmatrix_ = chase::distMatrix::BlockCyclicMatrix<T, chase::platform::GPU>(M, N, mb, nb, mpi_grid);
+    // Check that the global matrix dimensions are correct
+    EXPECT_EQ(blockcyclicmatrix_.g_rows(), M);
+    EXPECT_EQ(blockcyclicmatrix_.g_cols(), N);
+
+    if(this->world_rank == 0)
+    {
+        EXPECT_EQ(blockcyclicmatrix_.l_rows(), 6);
+        EXPECT_EQ(blockcyclicmatrix_.l_cols(), 6); 
+        EXPECT_EQ(blockcyclicmatrix_.l_ld(), 6);         
+    }else if(this->world_rank == 1)
+    {
+        EXPECT_EQ(blockcyclicmatrix_.l_rows(), 5);
+        EXPECT_EQ(blockcyclicmatrix_.l_cols(), 6);   
+        EXPECT_EQ(blockcyclicmatrix_.l_ld(), 5);         
+    }else if(this->world_rank == 2)
+    {
+        EXPECT_EQ(blockcyclicmatrix_.l_rows(), 6);
+        EXPECT_EQ(blockcyclicmatrix_.l_cols(), 5);    
+        EXPECT_EQ(blockcyclicmatrix_.l_ld(), 6);         
+    }else
+    {
+        EXPECT_EQ(blockcyclicmatrix_.l_rows(), 5);
+        EXPECT_EQ(blockcyclicmatrix_.l_cols(), 5);  
+        EXPECT_EQ(blockcyclicmatrix_.l_ld(), 5);         
+    }
+
+    EXPECT_NE(blockcyclicmatrix_.l_data(), nullptr);    
+}
+
+TYPED_TEST(MatrixDistTest, BlockCyclicExternalMemoryAllocationGPU) {
+    using T = TypeParam;  // Get the current type
+    //using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type;
+    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
+    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(2, 2, MPI_COMM_WORLD);
+
+    std::size_t M = 11;
+    std::size_t N = 11;
+    std::size_t mb = 2;
+    std::size_t nb = 2;
+    std::size_t m, n;
+    if(this->world_rank == 0)
+    {
+        m = 6;
+        n = 6;
+    }else if(this->world_rank == 1)
+    {
+        m = 5;
+        n = 6;
+    }   
+    else if(this->world_rank == 2)
+    {
+        m = 6;
+        n = 5;
+    }else
+    {
+        m = 5;
+        n = 5;
+    } 
+
+    std::size_t ld = 6;
+
+    std::vector<T> data(ld * n);
+
+    auto blockcyclicmatrix_ = chase::distMatrix::BlockCyclicMatrix<T, chase::platform::GPU>(M, N, m, n, mb, nb, ld, data.data(), mpi_grid);
+
+    EXPECT_EQ(blockcyclicmatrix_.g_rows(), M);
+    EXPECT_EQ(blockcyclicmatrix_.g_cols(), N);
+
+    if(this->world_rank == 0)
+    {
+        EXPECT_EQ(blockcyclicmatrix_.l_rows(), 6);
+        EXPECT_EQ(blockcyclicmatrix_.l_cols(), 6); 
+        EXPECT_EQ(blockcyclicmatrix_.l_ld(), 6);         
+    }else if(this->world_rank == 1)
+    {
+        EXPECT_EQ(blockcyclicmatrix_.l_rows(), 5);
+        EXPECT_EQ(blockcyclicmatrix_.l_cols(), 6);   
+        EXPECT_EQ(blockcyclicmatrix_.l_ld(), 5);         
+    }else if(this->world_rank == 2)
+    {
+        EXPECT_EQ(blockcyclicmatrix_.l_rows(), 6);
+        EXPECT_EQ(blockcyclicmatrix_.l_cols(), 5);    
+        EXPECT_EQ(blockcyclicmatrix_.l_ld(), 6);         
+    }else
+    {
+        EXPECT_EQ(blockcyclicmatrix_.l_rows(), 5);
+        EXPECT_EQ(blockcyclicmatrix_.l_cols(), 5);  
+        EXPECT_EQ(blockcyclicmatrix_.l_ld(), 5);         
+    }
+
+    EXPECT_NE(blockcyclicmatrix_.l_data(), nullptr);    
+    EXPECT_EQ(blockcyclicmatrix_.cpu_data(), data.data());    
+
+}
+
 #endif

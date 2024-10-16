@@ -33,6 +33,7 @@ enum class MatrixType {
 
 struct BlockBlock {}; 
 struct Redundant {}; 
+struct BlockCyclic {}; 
 
 template<typename T, typename Platform>
 class RedundantMatrix;
@@ -915,11 +916,321 @@ private:
 };
 
 
-//template<typename T> 
-//class BlockCyclicMatrix : public AbstractDistMatrix<T, BlockCyclicMatrix>
-//{
-    //impl later
-//};
+template<typename T, typename Platform = chase::platform::CPU> 
+class BlockCyclicMatrix : public AbstractDistMatrix<T, BlockCyclicMatrix, Platform>
+{
+
+public:
+    ~BlockCyclicMatrix() override {};
+    BlockCyclicMatrix();
+    BlockCyclicMatrix(std::size_t M, std::size_t N, std::size_t mb, std::size_t nb,
+                    std::shared_ptr<chase::Impl::mpi::MpiGrid2DBase> mpi_grid)
+                    :M_(M), N_(N), mpi_grid_(mpi_grid), mb_(mb), nb_(nb)
+    {
+        int *dims_ = mpi_grid_.get()->get_dims();
+        int *coord_ = mpi_grid_.get()->get_coords();
+        std::tie(m_, mblocks_) = numroc(M_, mb_, coord_[0], dims_[0]);
+        std::tie(n_, nblocks_) = numroc(N_, nb_, coord_[1], dims_[1]);   
+        ld_ = m_;
+        local_matrix_ = typename chase::platform::MatrixTypePlatform<T, Platform>::type(m_, n_);      
+    }
+
+    BlockCyclicMatrix(std::size_t M, std::size_t N, 
+                      std::size_t m, std::size_t n,
+                      std::size_t mb, std::size_t nb,
+                      std::size_t ld, T *data,
+                      std::shared_ptr<chase::Impl::mpi::MpiGrid2DBase> mpi_grid)
+                      : M_(M), N_(N), mpi_grid_(mpi_grid), mb_(mb), nb_(nb), ld_(ld)
+    {
+        int *dims_ = mpi_grid_.get()->get_dims();
+        int *coord_ = mpi_grid_.get()->get_coords();
+
+        std::tie(m_, mblocks_) = numroc(M_, mb_, coord_[0], dims_[0]);
+        std::tie(n_, nblocks_) = numroc(N_, nb_, coord_[1], dims_[1]); 
+        if(m_ != m)
+        {
+            throw std::runtime_error("the local row number of input matrix is not correctly matching the given block-cyclic distribution");
+        }
+
+        if(n_ != n)
+        {
+            throw std::runtime_error("the local column number of input matrix is not correctly matching the given block-cyclic distribution");
+        }
+
+        if(ld_ < m_)
+        {
+            throw std::runtime_error("the leading dimension of local matrix is not correctly matching the given block-cyclic distribution");
+        }
+
+        local_matrix_ = typename chase::platform::MatrixTypePlatform<T, Platform>::type(m_, n_, ld_, data);        
+
+        if constexpr (std::is_same<Platform, chase::platform::GPU>::value)
+        {
+            ld_ = local_matrix_.gpu_ld();
+        }   
+    }
+
+    std::size_t g_rows() const override { return M_; }
+    std::size_t g_cols() const override { return N_; }
+    std::size_t l_ld() const override { return ld_; }
+    std::size_t l_rows() const override { return m_; }
+    std::size_t l_cols() const override { return n_;}
+    std::size_t mb() const { return mb_;}
+    std::size_t nb() const { return nb_;}
+
+    //std::size_t *g_offs() {}
+    T *         l_data() override { 
+        if constexpr (std::is_same<Platform, chase::platform::CPU>::value)
+        {
+            return local_matrix_.data();
+        }
+#ifdef HAS_CUDA        
+        else
+        {
+            return local_matrix_.gpu_data();
+        }
+#endif 
+
+    }
+    
+    typename chase::platform::MatrixTypePlatform<T, Platform>::type& loc_matrix() override { return local_matrix_;}
+
+    // Accessors for MPI grid
+    chase::Impl::mpi::MpiGrid2DBase* getMpiGrid() const override {
+        return mpi_grid_.get();
+    }
+
+    std::shared_ptr<chase::Impl::mpi::MpiGrid2DBase> getMpiGrid_shared_ptr() const override
+    {
+        return mpi_grid_;
+    }
+    //only save from CPU buffer
+    //for saving GPU data, need to copy to CPU by D2H()
+    void saveToBinaryFile(const std::string& filename) {
+    	MPI_File fileHandle;
+        MPI_Status status;
+        T *buff;
+        std::size_t cpu_ld;
+
+        if constexpr (std::is_same<Platform, chase::platform::GPU>::value)
+        {
+            if(local_matrix_.cpu_data() == nullptr)
+            {
+               throw std::runtime_error("[BlockBlockMatrix]: only can save data from CPU buffer");
+            }
+            buff = local_matrix_.cpu_data();
+            cpu_ld = local_matrix_.cpu_ld();
+        }else
+        {
+            buff = local_matrix_.data();
+            cpu_ld = local_matrix_.ld();
+        }
+
+        if(MPI_File_open(this->mpi_grid_.get()->get_comm(), filename.data(), MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &fileHandle) != MPI_SUCCESS)
+        {
+            if(this->grank() == 0)
+                std::cout << "Can't open input matrix - " << filename << std::endl;
+            MPI_Abort(this->mpi_grid_.get()->get_comm(), EXIT_FAILURE);
+        }
+
+        if (this->l_data() == nullptr) {
+            throw std::runtime_error("[BlockBlockMatrix]: Original data is not initialized.");
+        }
+
+        std::vector<T> tmp;
+        if(cpu_ld > m_)
+        {
+            tmp.resize(m_ * n_);
+            chase::linalg::lapackpp::t_lacpy('A', m_, n_, buff, cpu_ld, tmp.data(), m_);
+            buff = tmp.data();
+        }
+
+        int *dims_ = mpi_grid_.get()->get_dims();
+
+        int gsizes[2] = {(int)M_, (int)N_};
+        int distribs[2] = {MPI_DISTRIBUTE_CYCLIC, MPI_DISTRIBUTE_CYCLIC};
+    	int dargs[2] = {(int)mb_,(int)nb_};
+	    int psizes[2] = {dims_[0], dims_[1]};
+        int order = MPI_ORDER_FORTRAN;
+
+        MPI_Datatype darray;
+        MPI_Type_create_darray(this->mpi_grid_.get()->get_nprocs(), this->mpi_grid_.get()->get_myRank(), 2, gsizes, distribs, dargs, psizes, order, chase::mpi::getMPI_Type<T>(), &darray);
+        MPI_Type_commit(&darray);
+
+        MPI_Count count_write = m_ * n_;
+        MPI_File_set_view(fileHandle, 0, chase::mpi::getMPI_Type<T>(), darray, "native", MPI_INFO_NULL);
+
+        MPI_File_write_all(fileHandle, buff, count_write, chase::mpi::getMPI_Type<T>(), &status);
+
+        MPI_Type_free(&darray);
+
+        if (MPI_File_close(&fileHandle) != MPI_SUCCESS)
+        {
+            MPI_Abort(this->mpi_grid_.get()->get_comm(), EXIT_FAILURE);
+        }
+    }
+
+    // Read matrix data from a binary file
+    void readFromBinaryFile(const std::string& filename) 
+    {
+        T *buff;
+        std::size_t cpu_ld;
+        if constexpr (std::is_same<Platform, chase::platform::GPU>::value)
+        {
+            if(local_matrix_.cpu_data() == nullptr)
+            {
+               local_matrix_.allocate_cpu_data();
+            }
+            buff = local_matrix_.cpu_data();
+            cpu_ld = local_matrix_.cpu_ld();
+        }else
+        {
+            buff = local_matrix_.data();
+            cpu_ld = local_matrix_.ld();
+        }
+#ifdef USE_MPI_IO
+        int *dims_ = mpi_grid_.get()->get_dims();
+        int gsizes[2] = {(int)M_, (int)N_};
+        int distribs[2] = {MPI_DISTRIBUTE_CYCLIC, MPI_DISTRIBUTE_CYCLIC};
+        int dargs[2] = {(int)mb_,(int)nb_};
+	    int psizes[2] = {dims_[0], dims_[1]};
+        int order = MPI_ORDER_FORTRAN;
+
+        MPI_Datatype darray;
+        MPI_Type_create_darray(this->mpi_grid_.get()->get_nprocs(), this->mpi_grid_.get()->get_myRank(), 2, gsizes, distribs, dargs, psizes, order, chase::mpi::getMPI_Type<T>(), &darray);
+        MPI_Type_commit(&darray);
+
+    	MPI_File fileHandle;
+        MPI_Status status;
+        int access_mode = MPI_MODE_RDONLY;
+
+        if(MPI_File_open(this->mpi_grid_.get()->get_comm(), filename.data(), access_mode, MPI_INFO_NULL, &fileHandle) != MPI_SUCCESS)
+        {
+            if(this->grank() == 0)
+                std::cout << "Can't open input matrix - " << filename << std::endl;
+            MPI_Abort(this->mpi_grid_.get()->get_comm(), EXIT_FAILURE);
+        }
+
+        if (this->l_data() == nullptr) {
+            throw std::runtime_error("[BlockBlockMatrix]: Original data is not initialized.");
+        }
+        std::vector<T> tmp;
+        if(cpu_ld > m_)
+        {
+            tmp.resize(m_ * n_);
+        }
+
+        MPI_Count count_read = m_ * n_;
+        MPI_File_set_view(fileHandle, 0, chase::mpi::getMPI_Type<T>(), darray, "native", MPI_INFO_NULL);
+        if(cpu_ld > m_)
+        {
+            MPI_File_read_all(fileHandle, tmp.data(), count_read, chase::mpi::getMPI_Type<T>(), &status);
+            chase::linalg::lapackpp::t_lacpy('A', m_, n_, tmp.data(), m_, buff, cpu_ld);
+        }else
+        {
+            MPI_File_read_all(fileHandle, buff, count_read, chase::mpi::getMPI_Type<T>(), &status);
+        }
+        MPI_Type_free(&darray);
+
+        if (MPI_File_close(&fileHandle) != MPI_SUCCESS)
+        {
+            MPI_Abort(this->mpi_grid_.get()->get_comm(), EXIT_FAILURE);
+        }
+#else
+
+#endif
+
+    }
+
+#ifdef HAS_SCALAPACK
+    std::size_t *get_scalapack_desc(){ return desc_; }
+#endif
+
+#ifdef HAS_SCALAPACK
+    std::size_t *scalapack_descriptor_init()
+    {
+        int comm2D_ctxt = mpi_grid_.get()->get_blacs_comm2D_ctxt();
+        int zero = 0;
+        int one = 1;
+        int info;
+
+        if constexpr (std::is_same<Platform, chase::platform::GPU>::value)
+        {
+            if(local_matrix_.cpu_data() == nullptr)
+            {
+                local_matrix_.allocate_cpu_data();
+            }
+        }
+
+        std::size_t ldd = this->cpu_ld();
+
+        chase::linalg::scalapackpp::t_descinit(desc_, 
+                                               &M_, 
+                                               &N_, 
+                                               &mb_, 
+                                               &nb_, 
+                                               &zero, 
+                                               &zero, 
+                                               &comm2D_ctxt, 
+                                               &ldd, 
+                                               &info); 
+
+
+        return desc_;
+    }
+#endif
+
+    template<template <typename, typename> class targetType>
+    void redistributeImpl(targetType<T, Platform>* targetMatrix)//,
+                            //std::size_t offset, std::size_t subsetSize)
+    {}
+
+private:
+    std::size_t M_;
+    std::size_t N_;
+    std::size_t m_;
+    std::size_t n_;
+    std::size_t ld_;
+    std::size_t mb_;
+    std::size_t nb_;
+    std::size_t mblocks_;
+    std::size_t nblocks_;    
+    //std::size_t g_offs_[2];
+
+    typename chase::platform::MatrixTypePlatform<T, Platform>::type local_matrix_;
+    std::shared_ptr<chase::Impl::mpi::MpiGrid2DBase> mpi_grid_;
+
+    std::pair<std::size_t, std::size_t> numroc(std::size_t n, std::size_t nb,
+                                            int iproc, int nprocs)
+    {
+
+        std::size_t numroc;
+        std::size_t extrablks, mydist, nblocks;
+        mydist = (nprocs + iproc) % nprocs;
+        nblocks = n / nb;
+        numroc = (nblocks / nprocs) * nb;
+        extrablks = nblocks % nprocs;
+
+        if (mydist < extrablks)
+            numroc = numroc + nb;
+        else if (mydist == extrablks)
+            numroc = numroc + n % nb;
+
+        std::size_t nb_loc = numroc / nb;
+
+        if (numroc % nb != 0)
+        {
+            nb_loc += 1;
+        }
+        return std::make_pair(numroc, nb_loc);
+    }
+
+    void redistributeToRedundant(RedundantMatrix<T, Platform>* targetMatrix)
+    {}
+#ifdef HAS_SCALAPACK
+    std::size_t desc_[9];
+#endif
+};
 
 
 }
