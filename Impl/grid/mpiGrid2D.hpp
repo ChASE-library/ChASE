@@ -27,6 +27,8 @@ public:
     virtual MPI_Comm get_comm() const = 0;
     virtual int* get_coords() = 0;
     virtual int* get_dims() = 0;
+    virtual int get_nprocs() const = 0;
+    virtual int get_myRank() const = 0;
     virtual GridMajor getGridMajor() const = 0;
 #ifdef HAS_NCCL
     virtual ncclComm_t get_nccl_comm() const = 0;
@@ -101,14 +103,17 @@ public:
     MPI_Comm get_row_comm() const override { return row_comm_; }
     MPI_Comm get_col_comm() const override { return col_comm_; }
     MPI_Comm get_comm() const override { return comm_; }
+    int get_nprocs() const override { return nprocs_; }
+    int get_myRank() const override { return myrank_; } 
+
     int* get_coords() override { return coords_; }
     int* get_dims() override { return dims_; }
     GridMajor getGridMajor() const override { return MajorOrder; }
 
 #ifdef HAS_NCCL
-    virtual ncclComm_t get_nccl_comm() const override { return nccl_comm_; };
-    virtual ncclComm_t get_nccl_row_comm() const override { return nccl_row_comm_; };
-    virtual ncclComm_t get_nccl_col_comm() const override { return nccl_col_comm_; };
+    ncclComm_t get_nccl_comm() const override { return nccl_comm_; };
+    ncclComm_t get_nccl_row_comm() const override { return nccl_row_comm_; };
+    ncclComm_t get_nccl_col_comm() const override { return nccl_col_comm_; };
 #endif
 
 #ifdef HAS_SCALAPACK
