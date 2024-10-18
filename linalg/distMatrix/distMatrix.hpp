@@ -67,6 +67,9 @@ class RedundantMatrix;
 template<typename T, typename Platform>
 class BlockBlockMatrix;
 
+template<typename T, typename Platform>
+class BlockCyclicMatrix;
+
 template<typename Type, typename T, typename Platform>
 struct distMatrixTypeTrait;
 
@@ -78,6 +81,11 @@ struct distMatrixTypeTrait<Redundant, T, Platform> {
 template<typename T, typename Platform>
 struct distMatrixTypeTrait<BlockBlock, T, Platform> {
     using type = chase::distMatrix::BlockBlockMatrix<T, Platform>;
+};
+
+template<typename T, typename Platform>
+struct distMatrixTypeTrait<BlockCyclic, T, Platform> {
+    using type = chase::distMatrix::BlockCyclicMatrix<T, Platform>;
 };
 
 template <typename T, template <typename, typename> class Derived, typename Platform = chase::platform::CPU>
@@ -358,6 +366,10 @@ public:
         {
             redistributeToBlockBlock(targetMatrix, startRow, subRows, startCol, subCols);
         }
+        else if constexpr (std::is_same<typename distMatrixTypeTrait<BlockCyclic, T, Platform>::type, targetType<T, Platform>>::value) 
+        {
+            redistributeToBlockCyclic(targetMatrix, startRow, subRows, startCol, subCols);
+        }        
         else if constexpr (std::is_same<typename distMatrixTypeTrait<Redundant, T, Platform>::type, targetType<T, Platform>>::value) 
         {
             throw std::runtime_error("[RedundantMatrix]: no need to redistribute from redundant to redundant");
@@ -412,6 +424,50 @@ private:
         }
 #endif        
     }
+
+    void redistributeToBlockCyclic(BlockCyclicMatrix<T, Platform>* targetMatrix,
+                                   std::size_t startRow, std::size_t subRows, std::size_t startCol, std::size_t subCols)
+    {
+        //attention for submatrix should be check later, seems not fully correct
+        if constexpr (std::is_same<Platform, chase::platform::CPU>::value) {
+            auto m_contiguous_global_offs = targetMatrix->m_contiguous_global_offs();
+            auto n_contiguous_global_offs = targetMatrix->n_contiguous_global_offs();
+            auto m_contiguous_local_offs = targetMatrix->m_contiguous_local_offs();
+            auto n_contiguous_local_offs = targetMatrix->n_contiguous_local_offs();
+            auto m_contiguous_lens = targetMatrix->m_contiguous_lens();
+            auto n_contiguous_lens = targetMatrix->n_contiguous_lens();
+            auto mblocks = targetMatrix->mblocks();
+            auto nblocks = targetMatrix->nblocks();
+            
+            for(std::size_t j = 0; j < nblocks; j++)
+            {
+                for(std::size_t i = 0; i < mblocks; i++)
+                {
+                    for(std::size_t q = 0; q < n_contiguous_lens[j]; q++)
+                    {
+                        for(std::size_t p = 0; p < m_contiguous_lens[i]; p++)
+                        {
+                            std::size_t x_g_off = p + m_contiguous_local_offs[i];
+                            std::size_t y_g_off = q + n_contiguous_local_offs[j];
+                            
+                            if(x_g_off >= startRow && x_g_off < startRow + subRows && y_g_off >= startCol && y_g_off < startCol + subCols )
+                            {
+                                targetMatrix->l_data()[(q + n_contiguous_local_offs[j]) * targetMatrix->l_ld() + p + m_contiguous_local_offs[i]]
+                                    = this->l_data()[(q + n_contiguous_global_offs[j]) * this->l_ld() + p + m_contiguous_global_offs[i]];
+                            }
+                        }
+                    }
+                }
+            }   
+        }
+#ifdef HAS_CUDA
+        else if constexpr (std::is_same<Platform, chase::platform::GPU>::value)
+        {
+            throw std::runtime_error("[RedundantMatrix]: redistribution for GPU data from redundant to BlockCyclic is not supported yet.");
+        }
+#endif        
+    }
+
 };
 
 
@@ -555,6 +611,18 @@ public:
     {
         return mpi_grid_;
     }
+
+    template<typename CloneVectorType>
+    CloneVectorType cloneMultiVector(std::size_t g_M, std::size_t g_N)
+    {
+        static_assert(
+            std::is_same_v<T, typename CloneVectorType::value_type>,
+            "Cloned type must have the same value_type"
+        );
+        ///using NewCommType = typename CloneType::communicator_type;
+        return CloneVectorType(g_M, g_N, mpi_grid_);        
+    }
+
     //only save from CPU buffer
     //for saving GPU data, need to copy to CPU by D2H()
     void saveToBinaryFile(const std::string& filename) {
@@ -968,6 +1036,9 @@ public:
         std::tie(n_, nblocks_) = numroc(N_, nb_, coord_[1], dims_[1]);   
         ld_ = m_;
         local_matrix_ = typename chase::platform::MatrixTypePlatform<T, Platform>::type(m_, n_);      
+
+        init_contiguous_buffer_info();
+
     }
 
     BlockCyclicMatrix(std::size_t M, std::size_t N, 
@@ -1002,7 +1073,10 @@ public:
         if constexpr (std::is_same<Platform, chase::platform::GPU>::value)
         {
             ld_ = local_matrix_.gpu_ld();
-        }   
+        }
+        
+        init_contiguous_buffer_info();
+           
     }
 
     std::size_t g_rows() const override { return M_; }
@@ -1012,7 +1086,15 @@ public:
     std::size_t l_cols() const override { return n_;}
     std::size_t mb() const { return mb_;}
     std::size_t nb() const { return nb_;}
-
+    std::size_t mblocks() {return mblocks_; }
+    std::size_t nblocks() {return nblocks_; }
+    std::vector<std::size_t> m_contiguous_global_offs() { return m_contiguous_global_offs_; }
+    std::vector<std::size_t> n_contiguous_global_offs() { return n_contiguous_global_offs_; }
+    std::vector<std::size_t> m_contiguous_local_offs() { return m_contiguous_local_offs_; }
+    std::vector<std::size_t> n_contiguous_local_offs() { return n_contiguous_local_offs_; }
+    std::vector<std::size_t> m_contiguous_lens() { return m_contiguous_lens_; }
+    std::vector<std::size_t> n_contiguous_lens() {return n_contiguous_lens_; }
+    
     //std::size_t *g_offs() {}
     T *         l_data() override { 
         if constexpr (std::is_same<Platform, chase::platform::CPU>::value)
@@ -1039,6 +1121,18 @@ public:
     {
         return mpi_grid_;
     }
+
+    template<typename CloneVectorType>
+    CloneVectorType cloneMultiVector(std::size_t g_M, std::size_t g_N)
+    {
+        static_assert(
+            std::is_same_v<T, typename CloneVectorType::value_type>,
+            "Cloned type must have the same value_type"
+        );
+        ///using NewCommType = typename CloneType::communicator_type;
+        return CloneVectorType(g_M, g_N, mb, mpi_grid_);        
+    }
+
     //only save from CPU buffer
     //for saving GPU data, need to copy to CPU by D2H()
     void saveToBinaryFile(const std::string& filename) {
@@ -1218,7 +1312,24 @@ public:
     template<template <typename, typename> class targetType>
     void redistributeImpl(targetType<T, Platform>* targetMatrix)//,
                             //std::size_t offset, std::size_t subsetSize)
-    {}
+    {
+        if(M_ != targetMatrix->g_rows() || N_ != targetMatrix->g_cols() )
+        {
+            throw std::runtime_error("[BlockCyclicMatrix]: redistribution requires original and target matrices have same global size");
+        }
+
+        if constexpr (std::is_same<typename distMatrixTypeTrait<Redundant, T, Platform>::type, targetType<T, Platform>>::value) 
+        {
+            //redistributeToRedundant(targetMatrix);
+        }
+        else if constexpr (std::is_same<typename distMatrixTypeTrait<BlockCyclic, T, Platform>::type, targetType<T, Platform>>::value) 
+        {
+            throw std::runtime_error("[BlockCyclicMatrix]: no need to redistribute from BlockBlock to BlockBlock");
+        }else
+        {
+            throw std::runtime_error("[BlockCyclicMatrix]:  no support for redistribution from redundant to othertypes yet");
+        }        
+    }
 
 private:
     std::size_t M_;
@@ -1230,10 +1341,72 @@ private:
     std::size_t nb_;
     std::size_t mblocks_;
     std::size_t nblocks_;    
-    //std::size_t g_offs_[2];
+    std::vector<std::size_t> m_contiguous_global_offs_;
+    std::vector<std::size_t> n_contiguous_global_offs_;
+    std::vector<std::size_t> m_contiguous_local_offs_;
+    std::vector<std::size_t> n_contiguous_local_offs_;
+    std::vector<std::size_t> m_contiguous_lens_;
+    std::vector<std::size_t> n_contiguous_lens_;
 
     typename chase::platform::MatrixTypePlatform<T, Platform>::type local_matrix_;
     std::shared_ptr<chase::Impl::mpi::MpiGrid2DBase> mpi_grid_;
+
+    void init_contiguous_buffer_info()
+    {
+        int *coords =  mpi_grid_.get()->get_coords();
+        int *dims = mpi_grid_.get()->get_dims();
+
+        std::size_t nr, nc;
+        int sendr = 0;
+        int sendc = 0;
+        for (std::size_t r = 0; r < M_; r += mb_, sendr = (sendr + 1) % dims[0])
+        {
+            nr = mb_;
+            if(M_ - r < mb_)
+            {
+                nr = M_ - r;
+            }
+
+            if(coords[0] == sendr)
+            {
+                m_contiguous_global_offs_.push_back(r);
+                m_contiguous_lens_.push_back(nr);
+            }
+        }
+
+        for (std::size_t c = 0; c < N_; c += nb_, sendc = (sendc + 1) % dims[1])
+        {
+            nc = nb_;
+            if(N_ - c < nb_)
+            {
+                nc = N_ - c;
+            }
+
+            if(coords[1] == sendc)
+            {
+                n_contiguous_global_offs_.push_back(c);
+                n_contiguous_lens_.push_back(nc);
+            }
+        }
+
+        m_contiguous_local_offs_.resize(mblocks_);
+        n_contiguous_local_offs_.resize(nblocks_);
+
+        m_contiguous_local_offs_[0] = 0;
+        n_contiguous_local_offs_[0] = 0;
+
+        for (std::size_t i = 1; i < mblocks_; i++)
+        {
+            m_contiguous_local_offs_[i] = m_contiguous_local_offs_[i - 1] 
+                                          + m_contiguous_lens_[i - 1];
+        }
+
+        for (std::size_t j = 1; j < nblocks_; j++)
+        {
+            n_contiguous_local_offs_[j] = n_contiguous_local_offs_[j - 1] 
+                                          + n_contiguous_lens_[j - 1];
+        }
+    }
 
     void redistributeToRedundant(RedundantMatrix<T, Platform>* targetMatrix)
     {}

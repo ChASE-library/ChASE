@@ -310,6 +310,28 @@ public:
         return mpi_grid_;
     }
 
+    template<typename CloneType>
+    CloneType clone()
+    {
+        static_assert(
+            std::is_same_v<T, typename CloneType::value_type>,
+            "Cloned type must have the same value_type"
+        );
+        ///using NewCommType = typename CloneType::communicator_type;
+        return CloneType(M_, N_, mpi_grid_);        
+    }
+
+    template<typename CloneType>
+    CloneType clone(std::size_t g_M, std::size_t g_N)
+    {
+        static_assert(
+            std::is_same_v<T, typename CloneType::value_type>,
+            "Cloned type must have the same value_type"
+        );
+        ///using NewCommType = typename CloneType::communicator_type;
+        return CloneType(g_M, g_N, mpi_grid_);        
+    }
+
     template <CommunicatorType OtherCommType, typename OtherPlatform>
     void swap(DistMultiVector1D<T, OtherCommType, OtherPlatform>& other) 
     {
@@ -902,6 +924,28 @@ public:
         return mpi_grid_;
     }
 
+
+    template<typename CloneType>
+    CloneType clone()
+    {
+        static_assert(
+            std::is_same_v<T, typename CloneType::value_type>,
+            "Cloned type must have the same value_type"
+        );
+        ///using NewCommType = typename CloneType::communicator_type;
+        return CloneType(M_, N_, mb_, mpi_grid_);        
+    }
+
+    template<typename CloneType>
+    CloneType clone(std::size_t g_M, std::size_t g_N)
+    {
+        static_assert(
+            std::is_same_v<T, typename CloneType::value_type>,
+            "Cloned type must have the same value_type"
+        );
+        ///using NewCommType = typename CloneType::communicator_type;
+        return CloneType(g_M, g_N, mb_, mpi_grid_);        
+    }
 
     template <CommunicatorType OtherCommType, typename OtherPlatform>
     void swap(DistMultiVectorBlockCyclic1D<T, OtherCommType, OtherPlatform>& other) 

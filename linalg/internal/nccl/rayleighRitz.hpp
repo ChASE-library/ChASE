@@ -19,22 +19,26 @@ namespace internal
 {
 namespace nccl
 {
-    template<typename T>
+
+    template <typename MatrixType, typename InputMultiVectorType>
     void rayleighRitz(cublasHandle_t cublas_handle, 
-                    cusolverDnHandle_t cusolver_handle,
-                    chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU>& H,
-                    chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>& V1,
-                    chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>& V2,
-                    chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::GPU>& W1,
-                    chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::GPU>& W2,
-                    chase::distMatrix::RedundantMatrix<chase::Base<T>, chase::platform::GPU>& ritzv,
-                    std::size_t offset,
-                    std::size_t subSize,
-                    int* devInfo,
-                    T *workspace = nullptr,
-                    int lwork_heevd = 0,
-                    chase::distMatrix::RedundantMatrix<T, chase::platform::GPU>* A = nullptr)
+                      cusolverDnHandle_t cusolver_handle,
+                      MatrixType& H,
+                      InputMultiVectorType& V1,
+                      InputMultiVectorType& V2,
+                      typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type& W1,
+                      typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type& W2,  
+                      chase::distMatrix::RedundantMatrix<chase::Base<typename MatrixType::value_type>, chase::platform::GPU>& ritzv, 
+                      std::size_t offset,
+                      std::size_t subSize,
+                      int* devInfo,
+                      typename MatrixType::value_type *workspace = nullptr,
+                      int lwork_heevd = 0,
+                      chase::distMatrix::RedundantMatrix<typename MatrixType::value_type, chase::platform::GPU>* A = nullptr                                         
+                    )                
     {
+        using T = typename MatrixType::value_type;
+
         std::unique_ptr<chase::distMatrix::RedundantMatrix<T, chase::platform::GPU>> A_ptr;
 
         if (A == nullptr) {
@@ -94,14 +98,6 @@ namespace nccl
                                                                      subSize * subSize, 
                                                                      ncclSum, 
                                                                      A->getMpiGrid()->get_nccl_row_comm()));
-        // Perform the MPI_Allreduce to sum up the results
-        /*MPI_Allreduce(MPI_IN_PLACE, 
-                    A->l_data(), 
-                    subSize * subSize, 
-                    chase::mpi::getMPI_Type<T>(), 
-                    MPI_SUM, 
-                    A->getMpiGrid()->get_row_comm());
-                    */
 
         CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTheevd(
                                        cusolver_handle, 

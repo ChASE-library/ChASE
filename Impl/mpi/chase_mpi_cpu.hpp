@@ -20,6 +20,7 @@
 #endif
 #include "linalg/internal/mpi/symOrHerm.hpp"
 #include "algorithm/types.hpp"
+#include "../../linalg/internal/typeTraits.hpp"
 
 using namespace chase::linalg;
 
@@ -27,13 +28,13 @@ namespace chase
 {
 namespace Impl
 {
-template <class T>
+template <class T, typename MatrixType>
 class ChaseMPICPU : public ChaseBase<T>
 {
 public:
     ChaseMPICPU(std::size_t nev,
                 std::size_t nex,
-                chase::distMatrix::BlockBlockMatrix<T> *H,
+                MatrixType *H,
                 chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column> *V,
                 chase::Base<T> *ritzv
                 ): nev_(nev), nex_(nex), nevex_(nev + nex), config_(H->g_rows(), nev, nex), N_(H->g_rows())
