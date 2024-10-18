@@ -416,6 +416,64 @@ TYPED_TEST(MatrixDistTest, BlockCyclicExternalMemoryAllocationCPU) {
     EXPECT_EQ(blockcyclicmatrix_.l_data(), data.data());    
 }
 
+TYPED_TEST(MatrixDistTest, RedundantRedistributionToBlockCyclic) {
+    using T = TypeParam;  // Get the current type
+    //using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type;
+    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
+    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(2, 2, MPI_COMM_WORLD);
+
+    std::size_t M = 5;
+    std::size_t N = 5;
+    std::size_t blocksize = 1;
+
+    auto redundantmatrix_ = chase::distMatrix::RedundantMatrix<T, chase::platform::CPU>(M, N, mpi_grid);
+    auto blockcyclicmatrix_ = chase::distMatrix::BlockCyclicMatrix<T, chase::platform::CPU>(M, N, blocksize, blocksize, mpi_grid);
+
+    for(auto i = 0; i < redundantmatrix_.l_rows() * redundantmatrix_.l_cols(); i++)
+    {
+        redundantmatrix_.l_data()[i] = T(i);
+    }
+
+    redundantmatrix_.redistributeImpl(&blockcyclicmatrix_);
+
+    if(this->world_rank == 0)
+    {
+        EXPECT_EQ(blockcyclicmatrix_.l_data()[0], T(0));
+        EXPECT_EQ(blockcyclicmatrix_.l_data()[1], T(2));
+        EXPECT_EQ(blockcyclicmatrix_.l_data()[2], T(4));
+        EXPECT_EQ(blockcyclicmatrix_.l_data()[3], T(10));
+        EXPECT_EQ(blockcyclicmatrix_.l_data()[4], T(12));
+        EXPECT_EQ(blockcyclicmatrix_.l_data()[5], T(14));
+        EXPECT_EQ(blockcyclicmatrix_.l_data()[6], T(20));
+        EXPECT_EQ(blockcyclicmatrix_.l_data()[7], T(22));
+        EXPECT_EQ(blockcyclicmatrix_.l_data()[8], T(24));
+
+    }else if(this->world_rank == 1)
+    {
+        EXPECT_EQ(blockcyclicmatrix_.l_data()[0], T(1));
+        EXPECT_EQ(blockcyclicmatrix_.l_data()[1], T(3));
+        EXPECT_EQ(blockcyclicmatrix_.l_data()[2], T(11));
+        EXPECT_EQ(blockcyclicmatrix_.l_data()[3], T(13));
+        EXPECT_EQ(blockcyclicmatrix_.l_data()[4], T(21));
+        EXPECT_EQ(blockcyclicmatrix_.l_data()[5], T(23));        
+    }else if(this->world_rank == 2)
+    {
+        EXPECT_EQ(blockcyclicmatrix_.l_data()[0], T(5));
+        EXPECT_EQ(blockcyclicmatrix_.l_data()[1], T(7));
+        EXPECT_EQ(blockcyclicmatrix_.l_data()[2], T(9));
+        EXPECT_EQ(blockcyclicmatrix_.l_data()[3], T(15));
+        EXPECT_EQ(blockcyclicmatrix_.l_data()[4], T(17));
+        EXPECT_EQ(blockcyclicmatrix_.l_data()[5], T(19));          
+    }else
+    {
+        EXPECT_EQ(blockcyclicmatrix_.l_data()[0], T(6));
+        EXPECT_EQ(blockcyclicmatrix_.l_data()[1], T(8));
+        EXPECT_EQ(blockcyclicmatrix_.l_data()[2], T(16));
+        EXPECT_EQ(blockcyclicmatrix_.l_data()[3], T(18));        
+    }
+}
+
 
 #ifdef HAS_CUDA
 TYPED_TEST(MatrixDistTest, RedundantInternalMemoryAllocationGPU) {
@@ -638,7 +696,6 @@ TYPED_TEST(MatrixDistTest, BlockCyclicExternalMemoryAllocationGPU) {
 
     EXPECT_NE(blockcyclicmatrix_.l_data(), nullptr);    
     EXPECT_EQ(blockcyclicmatrix_.cpu_data(), data.data());    
-
 }
 
 #endif

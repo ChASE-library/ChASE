@@ -320,9 +320,11 @@ namespace mpi
 
     }
 
-    template<typename T, chase::distMultiVector::CommunicatorType InputCommType>
-    void houseHoulderQR(chase::distMultiVector::DistMultiVector1D<T, InputCommType>& V)
+    template<typename InputMultiVectorType>
+    void houseHoulderQR(InputMultiVectorType& V)
     {
+        using T = typename InputMultiVectorType::value_type;
+
 #ifdef HAS_SCALAPACK
         std::size_t *desc = V.scalapack_descriptor_init();
         int one = 1;

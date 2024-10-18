@@ -7,6 +7,7 @@
 #include "linalg/distMatrix/distMatrix.hpp"
 #include "linalg/distMatrix/distMultiVector.hpp"
 #include "linalg/internal/mpi/hemm.hpp"
+#include "../typeTraits.hpp"
 
 namespace chase
 {
@@ -16,17 +17,19 @@ namespace internal
 {
 namespace mpi
 {
-    template<typename T>
-    void residuals(chase::distMatrix::BlockBlockMatrix<T, chase::platform::CPU>& H,
-                   chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::CPU>& V1,
-                   chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::CPU>& V2,
-                   chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::CPU>& W1,
-                   chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::CPU>& W2,
-                   chase::Base<T>* ritzv,
-                   chase::Base<T>* resids,
+    template <typename MatrixType, typename InputMultiVectorType>
+    void residuals(MatrixType& H,
+                   InputMultiVectorType& V1,
+                   InputMultiVectorType& V2,
+                   typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type& W1,
+                   typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type& W2,
+                   chase::Base<typename MatrixType::value_type>* ritzv,
+                   chase::Base<typename MatrixType::value_type>* resids,
                    std::size_t offset,
-                   std::size_t subSize)
+                   std::size_t subSize)           
     {
+        using T = typename MatrixType::value_type;
+
         if (ritzv == nullptr) {
             throw std::invalid_argument("ritzv cannot be a nullptr.");
         }

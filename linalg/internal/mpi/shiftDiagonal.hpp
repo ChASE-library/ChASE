@@ -33,6 +33,38 @@ namespace mpi
         }
     }
 
+    template<typename T>
+    void shiftDiagonal(chase::distMatrix::BlockCyclicMatrix<T, chase::platform::CPU>& H, T shift)
+    {
+        auto m_contiguous_global_offs = H.m_contiguous_global_offs();
+        auto n_contiguous_global_offs = H.n_contiguous_global_offs();
+        auto m_contiguous_local_offs = H.m_contiguous_local_offs();
+        auto n_contiguous_local_offs = H.n_contiguous_local_offs();
+        auto m_contiguous_lens = H.m_contiguous_lens();
+        auto n_contiguous_lens = H.n_contiguous_lens();
+        auto mblocks = H.mblocks();
+        auto nblocks = H.nblocks();
+
+        for (std::size_t j = 0; j < nblocks; j++)
+        {
+            for (std::size_t i = 0; i < mblocks; i++)
+            {
+                for (std::size_t q = 0; q < n_contiguous_lens[j]; q++)
+                {
+                    for (std::size_t p = 0; p < m_contiguous_lens[i]; p++)
+                    {
+                        if (q + n_contiguous_global_offs[j] == p + m_contiguous_global_offs[i])
+                        {
+                             H.l_data()[(q + n_contiguous_local_offs[j]) * H.l_ld() + p + m_contiguous_local_offs[i]] +=
+                                shift;
+                        }
+                    }
+                }
+            }
+        }
+
+    }    
+
 }
 }
 }

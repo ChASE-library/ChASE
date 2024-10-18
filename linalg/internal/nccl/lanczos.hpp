@@ -8,6 +8,7 @@
 #include "linalg/distMatrix/distMultiVector.hpp"
 #include "Impl/grid/mpiTypes.hpp"
 #include "linalg/internal/nccl/hemm.hpp"
+#include "../typeTraits.hpp"
 
 namespace chase
 {
@@ -17,19 +18,20 @@ namespace internal
 {
 namespace nccl
 {
-    template<typename T>
+    template <typename MatrixType, typename InputMultiVectorType>
     void lanczos(cublasHandle_t cublas_handle,
                  std::size_t M, 
-                 std::size_t numvec, 
-                 chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU>& H, 
-                 chase::distMultiVector::DistMultiVector1D<T, 
-                                                           chase::distMultiVector::CommunicatorType::column,
-                                                           chase::platform::GPU>& V,
-                chase::Base<T>* upperb, 
-                chase::Base<T>* ritzv, 
-                chase::Base<T>* Tau, 
-                chase::Base<T>* ritzV)
+                 std::size_t numvec,
+                 MatrixType& H,
+                 InputMultiVectorType& V,
+                 chase::Base<typename MatrixType::value_type> *upperb,
+                 chase::Base<typename MatrixType::value_type> *ritzv,
+                 chase::Base<typename MatrixType::value_type> *Tau,
+                 chase::Base<typename MatrixType::value_type> *ritzV)                  
     {
+        using T = typename MatrixType::value_type;
+        using ResultMultiVectorType = typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type;
+
         if(H.g_cols() != H.g_rows())
         {
             std::runtime_error("Lanczos requires matrix to be squared");
@@ -58,10 +60,10 @@ namespace nccl
         
         std::size_t N = H.g_rows();
 
-        auto v_0 = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(N, numvec, H.getMpiGrid_shared_ptr());
-        auto v_1 = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(N, numvec, H.getMpiGrid_shared_ptr());
-        auto v_2 = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(N, numvec, H.getMpiGrid_shared_ptr());
-        auto v_w = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::GPU>(N, numvec, H.getMpiGrid_shared_ptr());
+        auto v_0 = V.template clone<InputMultiVectorType>(N, numvec);
+        auto v_1 = v_0.template clone<InputMultiVectorType>();
+        auto v_2 = v_0.template clone<InputMultiVectorType>();
+        auto v_w = V.template clone<ResultMultiVectorType>(N, numvec);
 
         chase::linalg::internal::cuda::t_lacpy('A', v_1.l_rows(), numvec, V.l_data(), V.l_ld(), v_1.l_data(), v_1.l_ld());
         for(auto i = 0; i < numvec; i++)
@@ -255,15 +257,16 @@ namespace nccl
         }      
     }
 
-    template<typename T>
+    template <typename MatrixType, typename InputMultiVectorType>
     void lanczos(cublasHandle_t cublas_handle,
-                 std::size_t M, 
-                 chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU>& H, 
-                 chase::distMultiVector::DistMultiVector1D<T, 
-                                                           chase::distMultiVector::CommunicatorType::column,
-                                                           chase::platform::GPU>& V,
-                 Base<T>* upperb)
+                 std::size_t M,
+                 MatrixType& H,
+                 InputMultiVectorType& V,
+                 chase::Base<typename MatrixType::value_type> *upperb)             
     {
+        using T = typename MatrixType::value_type;
+        using ResultMultiVectorType = typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type;
+
         if(H.g_cols() != H.g_rows())
         {
             std::runtime_error("Lanczos requires matrix to be squared");
@@ -292,10 +295,10 @@ namespace nccl
         
         std::size_t N = H.g_rows();
 
-        auto v_0 = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(N, 1, H.getMpiGrid_shared_ptr());
-        auto v_1 = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(N, 1, H.getMpiGrid_shared_ptr());
-        auto v_2 = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(N, 1, H.getMpiGrid_shared_ptr());
-        auto v_w = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::GPU>(N, 1, H.getMpiGrid_shared_ptr());
+        auto v_0 = V.template clone<InputMultiVectorType>(N, 1);
+        auto v_1 = v_0.template clone<InputMultiVectorType>();
+        auto v_2 = v_0.template clone<InputMultiVectorType>();
+        auto v_w = V.template clone<ResultMultiVectorType>(N, 1);
 
         chase::linalg::internal::cuda::t_lacpy('A', v_1.l_rows(), 1, V.l_data(), V.l_ld(), v_1.l_data(), v_1.l_ld());
 

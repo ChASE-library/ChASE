@@ -9,6 +9,7 @@
 #include "linalg/distMatrix/distMultiVector.hpp"
 #include "linalg/internal/nccl/hemm.hpp"
 #include "linalg/internal/cuda/random_normal_distribution.cuh"
+#include "../typeTraits.hpp"
 
 namespace chase
 {
@@ -19,17 +20,22 @@ namespace internal
 namespace nccl
 {
     //this function now assumes the hermitian matrix is provided on CPU
-    template<typename T>
-    bool checkSymmetryEasy(cublasHandle_t cublas_handle, chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU>& H) 
+    template<typename MatrixType>
+    bool checkSymmetryEasy(cublasHandle_t cublas_handle, MatrixType& H) 
     {
+        using T = typename MatrixType::value_type;
+        using ColumnMultiVectorType = typename ColumnMultiVectorType<MatrixType>::type;
+        using RowMultiVectorType = typename RowMultiVectorType<MatrixType>::type;
+
         T One = T(1.0);
         T Zero = T(0.0);
 
         std::size_t N = H.g_rows();
-        auto v = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(N, 1, H.getMpiGrid_shared_ptr());
-        auto u = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::GPU>(N, 1, H.getMpiGrid_shared_ptr());
-        auto uT = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(N, 1, H.getMpiGrid_shared_ptr());
-        auto v_2 = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::GPU>(N, 1, H.getMpiGrid_shared_ptr());
+
+        auto v = H.template cloneMultiVector<ColumnMultiVectorType>(N, 1);
+        auto u = H.template cloneMultiVector<RowMultiVectorType>(N, 1);
+        auto uT = H.template cloneMultiVector<ColumnMultiVectorType>(N, 1);
+        auto v_2 = H.template cloneMultiVector<RowMultiVectorType>(N, 1);
 
         int *coords = H.getMpiGrid()->get_coords();
         unsigned long long seed = 1337 + coords[0];
@@ -160,6 +166,85 @@ namespace nccl
         std::runtime_error("For ChASE-MPI, symOrHermMatrix requires ScaLAPACK, which is not detected\n");
 #endif
     }
+
+    template<typename T>
+    void symOrHermMatrix(char uplo, chase::distMatrix::BlockCyclicMatrix<T, chase::platform::GPU>& H) 
+    {
+#ifdef HAS_SCALAPACK
+        std::size_t *desc = H.scalapack_descriptor_init();
+
+        auto m_contiguous_global_offs = H.m_contiguous_global_offs();
+        auto n_contiguous_global_offs = H.n_contiguous_global_offs();
+        auto m_contiguous_local_offs = H.m_contiguous_local_offs();
+        auto n_contiguous_local_offs = H.n_contiguous_local_offs();
+        auto m_contiguous_lens = H.m_contiguous_lens();
+        auto n_contiguous_lens = H.n_contiguous_lens();
+        auto mblocks = H.mblocks();
+        auto nblocks = H.nblocks();
+
+        if(uplo == 'U')
+        {
+            for(std::size_t j = 0; j < nblocks; j++){
+                for(std::size_t i = 0; i < mblocks; i++){
+                    for(std::size_t q = 0; q < n_contiguous_lens[j]; q++){
+                        for(std::size_t p = 0; p < m_contiguous_lens[i]; p++){
+                            if(q + n_contiguous_global_offs[j] == p + m_contiguous_global_offs[i]){
+                                H.cpu_data()[(q + n_contiguous_local_offs[j]) * H.cpu_ld() + p + m_contiguous_local_offs[i]] *= T(0.5);
+                            }
+                            else if(q + n_contiguous_global_offs[j] < p + m_contiguous_global_offs[i])
+                            {
+                                H.cpu_data()[(q + n_contiguous_local_offs[j]) * H.cpu_ld()  + p + m_contiguous_local_offs[i]] = T(0.0);
+                            }
+                        }
+                    }
+                }
+            }
+
+        }else
+        {
+            for(std::size_t j = 0; j < nblocks; j++){
+                for(std::size_t i = 0; i < mblocks; i++){
+                    for(std::size_t q = 0; q < n_contiguous_lens[j]; q++){
+                        for(std::size_t p = 0; p < m_contiguous_lens[i]; p++){
+                            if(q + n_contiguous_global_offs[j] == p + m_contiguous_global_offs[i]){
+                                H.cpu_data()[(q + n_contiguous_local_offs[j]) * H.cpu_ld()  + p + m_contiguous_global_offs[i]] *= T(0.5);
+                            }
+                            else if(q + n_contiguous_global_offs[j] > p + m_contiguous_global_offs[i])
+                            {
+                                H.cpu_data()[(q + n_contiguous_local_offs[j]) * H.cpu_ld()  + p + m_contiguous_local_offs[i]] = T(0.0);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        
+        T One = T(1.0);
+        T Zero = T(0.0);
+        int zero = 0;
+        int one = 1;
+        std::vector<T> tmp(H.l_rows() * (H.l_cols() + 2*H.nb()));
+        chase::linalg::scalapackpp::t_ptranc(H.g_rows(), 
+                                             H.g_cols(), 
+                                             One, 
+                                             H.l_data(), 
+                                             one, one, desc, Zero, tmp.data(), one, one, desc);
+        #pragma omp parallel for
+        for(auto j = 0; j < H.l_cols(); j++)
+        {
+            for(auto i = 0; i < H.l_rows(); i++)
+            {
+                H.l_data()[i + j * H.l_ld()] += tmp[i + j * H.l_rows()];
+            }
+        }
+              
+#else
+        std::runtime_error("For ChASE-MPI, symOrHermMatrix requires ScaLAPACK, which is not detected\n");
+#endif
+    }
+
+
 
 }
 }

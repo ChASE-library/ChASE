@@ -51,3 +51,38 @@
         // Flip the communicator type and deduce result multi-vector type
         using type = chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, FlipCommType<CommType>::value, Platform>;
     };
+
+    template <typename MatrixType>
+    struct ColumnMultiVectorType;
+
+    // Specialization for BlockBlockMatrix
+    template <typename T, typename Platform>    
+    struct ColumnMultiVectorType<chase::distMatrix::BlockBlockMatrix<T, Platform>>
+    {
+        using type = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, Platform>;
+    };
+
+    // Specialization for BlockCyclicMatrix
+    template <typename T, typename Platform>    
+    struct ColumnMultiVectorType<chase::distMatrix::BlockCyclicMatrix<T, Platform>>
+    {
+        using type = chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, chase::distMultiVector::CommunicatorType::column, Platform>;
+    };
+
+    template <typename MatrixType>
+    struct RowMultiVectorType;
+
+    // Specialization for BlockBlockMatrix
+    template <typename T, typename Platform>    
+    struct RowMultiVectorType<chase::distMatrix::BlockBlockMatrix<T, Platform>>
+    {
+        using type = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row, Platform>;
+    };
+
+    // Specialization for BlockCyclicMatrix
+    template <typename T, typename Platform>    
+    struct RowMultiVectorType<chase::distMatrix::BlockCyclicMatrix<T, Platform>>
+    {
+        using type = chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, chase::distMultiVector::CommunicatorType::row, Platform>;
+    };
+

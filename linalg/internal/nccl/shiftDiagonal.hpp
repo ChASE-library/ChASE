@@ -12,12 +12,12 @@ namespace internal
 namespace nccl
 {
     
-    template<typename T>
-    void shiftDiagonal(chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU>& H, 
+    template<typename MatrixType>
+    void shiftDiagonal(MatrixType& H, 
                        std::size_t* d_off_m, 
                        std::size_t* d_off_n, 
                        std::size_t offsize, 
-                       chase::Base<T> shift)
+                       chase::Base<typename MatrixType::value_type> shift)
     {
         chase::linalg::internal::cuda::chase_shift_mgpu_matrix(H.l_data(), 
                                                                d_off_m, 

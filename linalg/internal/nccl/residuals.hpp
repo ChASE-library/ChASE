@@ -8,6 +8,7 @@
 #include "linalg/distMatrix/distMultiVector.hpp"
 #include "linalg/internal/nccl/hemm.hpp"
 #include "linalg/internal/cuda/residuals.cuh"
+#include "../typeTraits.hpp"
 
 
 namespace chase
@@ -19,18 +20,20 @@ namespace internal
 namespace nccl
 {
 
-    template<typename T>
+    template <typename MatrixType, typename InputMultiVectorType>
     void residuals(cublasHandle_t cublas_handle,
-                   chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU>& H,
-                   chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>& V1,
-                   chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>& V2,
-                   chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::GPU>& W1,
-                   chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::GPU>& W2,
-                   chase::matrix::MatrixGPU<chase::Base<T>>& ritzv, 
-                   chase::matrix::MatrixGPU<chase::Base<T>>& resids, 
+                   MatrixType& H,
+                   InputMultiVectorType& V1,
+                   InputMultiVectorType& V2,
+                   typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type& W1,
+                   typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type& W2,
+                   chase::matrix::MatrixGPU<chase::Base<typename MatrixType::value_type>>& ritzv,
+                   chase::matrix::MatrixGPU<chase::Base<typename MatrixType::value_type>>& resids,
                    std::size_t offset,
-                   std::size_t subSize)
+                   std::size_t subSize)     
     {
+
+        using T = typename MatrixType::value_type;
 
         // Perform the distributed matrix-matrix multiplication
         chase::linalg::internal::nccl::MatrixMultiplyMultiVectorsAndRedistributeAsync(

@@ -142,14 +142,16 @@ namespace nccl
     }
 
 
-    template<typename T>
+    template<typename InputMultiVectorType>
     int cholQR1(cublasHandle_t cublas_handle,
                 cusolverDnHandle_t cusolver_handle,
-                chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>& V, 
-                T *workspace = nullptr,
+                InputMultiVectorType& V, 
+                typename InputMultiVectorType::value_type *workspace = nullptr,
                 int lwork = 0,                
-                T *A = nullptr)
+                typename InputMultiVectorType::value_type *A = nullptr)
     {
+        using T = typename InputMultiVectorType::value_type;
+
         T one = T(1.0);
         T zero = T(0.0);
         chase::Base<T> One = Base<T>(1.0);
@@ -401,14 +403,16 @@ namespace nccl
     }
 
 
-    template<typename T>
+    template<typename InputMultiVectorType>
     int cholQR2(cublasHandle_t cublas_handle,
                 cusolverDnHandle_t cusolver_handle,
-                chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>& V, 
-                T *workspace = nullptr,
+                InputMultiVectorType& V, 
+                typename InputMultiVectorType::value_type *workspace = nullptr,
                 int lwork = 0,                
-                T *A = nullptr)
+                typename InputMultiVectorType::value_type *A = nullptr)
     {
+        using T = typename InputMultiVectorType::value_type;
+
         T one = T(1.0);
         T zero = T(0.0);
         chase::Base<T> One = Base<T>(1.0);
@@ -882,9 +886,11 @@ namespace nccl
 
     }
 
-    template<typename T, chase::distMultiVector::CommunicatorType InputCommType>
-    void houseHoulderQR(chase::distMultiVector::DistMultiVector1D<T, InputCommType, chase::platform::GPU>& V)
+    template<typename InputMultiVectorType>
+    void houseHoulderQR(InputMultiVectorType& V)
     {
+        using T = typename InputMultiVectorType::value_type;
+
 #ifdef HAS_SCALAPACK
         V.allocate_cpu_data();
         V.D2H();

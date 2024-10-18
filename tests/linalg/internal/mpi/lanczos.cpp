@@ -140,3 +140,84 @@ TYPED_TEST(LanczosCPUDistTest, lanczos) {
     EXPECT_GT(upperb, chase::Base<T>(this->N - 1) ); //the computed upper bound should larger than the max eigenvalues
     EXPECT_LT(upperb, chase::Base<T>(5 * (this->N - 1) ) );    
 }
+
+TYPED_TEST(LanczosCPUDistTest, mlanczosBlockCyclic){
+    using T = TypeParam;  // Get the current type
+
+    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
+    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(2, 2, MPI_COMM_WORLD);
+
+    int *coords = mpi_grid.get()->get_coords();
+    std::size_t blocksize = 16;
+    auto H_ = chase::distMatrix::BlockCyclicMatrix<T>(this->N, this->N, blocksize, blocksize, mpi_grid);
+    auto V_ = chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, chase::distMultiVector::CommunicatorType::column>(this->N, this->M, blocksize, mpi_grid);
+
+    std::mt19937 gen(1337.0 + coords[0]);
+    std::normal_distribution<> d;
+
+    for (auto j = 0; j < V_.l_rows() * V_.l_cols(); j++)
+    {
+        auto rnd = getRandomT<T>([&]() { return d(gen); });
+        V_.l_data()[j] = rnd;
+    }
+
+    auto Clement_ = chase::distMatrix::RedundantMatrix<T>(this->N, this->N, this->N, this->Clement.data(), mpi_grid);
+    Clement_.redistributeImpl(&H_);
+
+    chase::Base<T> upperb;
+
+    chase::linalg::internal::mpi::lanczos(this->M,
+                                          this->numvec,
+                                          H_,
+                                          V_,
+                                          &upperb,
+                                          this->ritzv.data(),
+                                          this->Tau.data(),
+                                          this->ritzV.data());
+
+
+    for(auto i = 0; i < this->numvec; i++)
+    {
+        EXPECT_GT(this->ritzv[i * this->M], 1.0 - chase::Base<T>(this->N));
+        EXPECT_LT(this->ritzv[(i + 1) * this->M-1], chase::Base<T>(this->N - 1));
+    }
+
+    EXPECT_GT(upperb, chase::Base<T>(this->N - 1) ); //the computed upper bound should larger than the max eigenvalues
+    EXPECT_LT(upperb, chase::Base<T>(5 * (this->N - 1) ) );   
+}
+
+TYPED_TEST(LanczosCPUDistTest, lanczosBlockCyclic) {
+    using T = TypeParam;  // Get the current type
+
+    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
+    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(2, 2, MPI_COMM_WORLD);
+
+    int *coords = mpi_grid.get()->get_coords();
+    std::size_t blocksize = 16;
+    auto H_ = chase::distMatrix::BlockCyclicMatrix<T>(this->N, this->N, blocksize, blocksize, mpi_grid);
+    auto V_ = chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, chase::distMultiVector::CommunicatorType::column>(this->N, 1, blocksize, mpi_grid);
+
+    std::mt19937 gen(1337.0 + coords[0]);
+    std::normal_distribution<> d;
+
+    for (auto j = 0; j < V_.l_rows() * V_.l_cols(); j++)
+    {
+        auto rnd = getRandomT<T>([&]() { return d(gen); });
+        V_.l_data()[j] = rnd;
+    }
+    
+    auto Clement_ = chase::distMatrix::RedundantMatrix<T>(this->N, this->N, this->N, this->Clement.data(), mpi_grid);
+    Clement_.redistributeImpl(&H_);
+
+    chase::Base<T> upperb;
+    
+    chase::linalg::internal::mpi::lanczos(this->M,
+                                          H_,
+                                          V_,
+                                          &upperb);
+    
+    EXPECT_GT(upperb, chase::Base<T>(this->N - 1) ); //the computed upper bound should larger than the max eigenvalues
+    EXPECT_LT(upperb, chase::Base<T>(5 * (this->N - 1) ) );    
+}

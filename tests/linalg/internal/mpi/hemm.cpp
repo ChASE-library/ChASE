@@ -318,7 +318,6 @@ TYPED_TEST(HEMMCPUDistTest, HEMMDistCorrectnessBlockCyclic) {
         }
     }
 
-    //chase::linalg::internal::mpi::BlockBlockMultiplyMultiVectors(&alpha, H_, V_, &beta, W_, offset, subSize);
     chase::linalg::internal::mpi::MatrixMultiplyMultiVectors(&alpha, H_, V_, &beta, W_, offset, subSize);
 
     for(auto i = 0; i < W_.l_cols(); i++)
