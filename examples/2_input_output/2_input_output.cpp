@@ -23,10 +23,6 @@ using ARCH = chase::platform::CPU;
 #endif
 #endif
 
-#ifdef USE_NVTX
-#include "Impl/cuda/nvtx.hpp"
-#endif
-
 using namespace popl;
 
 struct ChASE_DriverProblemConfig
@@ -107,18 +103,16 @@ int do_chase(ChASE_DriverProblemConfig& conf)
     MPI_Comm_rank(MPI_COMM_WORLD, &grank);
     std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
         = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(MPI_COMM_WORLD);
-#ifdef USE_NVTX
-    nvtxRangePushA("Hmat allocate");
+
+#ifdef USE_BLOCKCYCLIC
+    std::size_t blocksize = 64;
+    auto Hmat = chase::distMatrix::BlockCyclicMatrix<T, ARCH>(N, N, blocksize, blocksize, mpi_grid);  
+    auto Vec = chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, chase::distMultiVector::CommunicatorType::column, ARCH>(N, nev + nex, blocksize, mpi_grid);     
+#else
+    auto Hmat = chase::distMatrix::BlockBlockMatrix<T, ARCH>(N, N, mpi_grid);  
+    auto Vec = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, ARCH>(N, nev + nex, mpi_grid);  
 #endif
-    auto Hmat = chase::distMatrix::BlockBlockMatrix<T, ARCH>(N, N, mpi_grid);
-#ifdef USE_NVTX
-    nvtxRangePop();
-    nvtxRangePushA("Vec allocate");
-#endif   
-    auto Vec = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, ARCH>(N, nev + nex, mpi_grid);
-#ifdef USE_NVTX
-    nvtxRangePop();
-#endif      
+
     T *H;
 #if defined(HAS_NCCL)
     Hmat.allocate_cpu_data();
@@ -127,9 +121,9 @@ int do_chase(ChASE_DriverProblemConfig& conf)
     H = Hmat.l_data();
 #endif
 #ifdef USE_MPI
-    chase::Impl::ChaseMPICPU<T> single(nev, nex, &Hmat, &Vec, Lambda);
+    auto single = chase::Impl::ChaseMPICPU(nev, nex, &Hmat, &Vec, Lambda);
 #elif HAS_NCCL
-    chase::Impl::ChaseNCCLGPU<T> single(nev, nex, &Hmat, &Vec, Lambda);
+    auto single = chase::Impl::ChaseNCCLGPU(nev, nex, &Hmat, &Vec, Lambda);
 #endif
 #else
     auto V__ = std::unique_ptr<T[]>(new T[N * (nev + nex)]);
@@ -138,9 +132,9 @@ int do_chase(ChASE_DriverProblemConfig& conf)
     T* V = V__.get();
     T *H = H__.get();   
 #ifdef HAS_CUDA
-    chase::Impl::ChaseGPUSeq<T> single(N, nev, nex, H, N, V, N, Lambda);
+    auto single = chase::Impl::ChaseGPUSeq(N, nev, nex, H, N, V, N, Lambda);
 #else
-    chase::Impl::ChaseCPUSeq<T> single(N, nev, nex, H, N, V, N, Lambda);
+    auto single = chase::Impl::ChaseCPUSeq(N, nev, nex, H, N, V, N, Lambda);
 #endif    
 #endif
 
@@ -177,10 +171,7 @@ int do_chase(ChASE_DriverProblemConfig& conf)
         std::chrono::duration<double> elapsed;
 
         start = std::chrono::high_resolution_clock::now();
-
-#ifdef USE_NVTX
-    nvtxRangePushA("IO or matrix generation");
-#endif   
+  
         if(!isMatGen)
         {
             if(grank == 0)
@@ -217,13 +208,17 @@ int do_chase(ChASE_DriverProblemConfig& conf)
 
             std::size_t xoff, yoff, xlen, ylen, ld;
 
-#if defined(USE_MPI) || defined(HAS_NCCL) 
+#if defined(USE_MPI) || defined(HAS_NCCL)
+#ifdef USE_BLOCKCYCLIC
+            throw std::runtime_error("Matrix Generation mode is not supported for block cyclic matrix");
+#else 
             std::size_t *g_offs = Hmat.g_offs();
             xoff = g_offs[0];
             yoff = g_offs[1];
             xlen = Hmat.l_rows();
             ylen = Hmat.l_cols();
             ld = Hmat.l_ld();
+#endif            
 #else
             xoff = 0;
             yoff = 0;
@@ -250,9 +245,6 @@ int do_chase(ChASE_DriverProblemConfig& conf)
         elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(
             end - start);
 
-#ifdef USE_NVTX
-    nvtxRangePop();
-#endif 
 
         if(grank == 0)
         {
@@ -266,13 +258,9 @@ int do_chase(ChASE_DriverProblemConfig& conf)
         }
 
         chase::PerformanceDecoratorChase<T> performanceDecorator(&single);
-#ifdef USE_NVTX
-    nvtxRangePushA("ChASE Solve");
-#endif 
+
         chase::Solve(&performanceDecorator);
-#ifdef USE_NVTX
-    nvtxRangePop();
-#endif         
+        
         if(grank == 0)
         {        
             std::cout << " ChASE timings: "

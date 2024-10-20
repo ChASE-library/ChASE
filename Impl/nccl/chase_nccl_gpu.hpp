@@ -23,8 +23,9 @@
 #include "algorithm/types.hpp"
 
 #include "Impl/config/config.hpp"
-
 #include "Impl/cuda/nvtx.hpp"
+
+#include "../../linalg/internal/typeTraits.hpp"
 
 using namespace chase::linalg;
 
@@ -32,14 +33,17 @@ namespace chase
 {
 namespace Impl
 {
-template <class T>
-class ChaseNCCLGPU : public ChaseBase<T>
+template <typename MatrixType, typename InputMultiVectorType>
+class ChaseNCCLGPU : public ChaseBase<typename MatrixType::value_type>
 {
+    using T = typename MatrixType::value_type;
+    using ResultMultiVectorType = typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type;
+
 public:
     ChaseNCCLGPU(std::size_t nev,
                  std::size_t nex,
-                 chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU> *H,
-                 chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU> *V,
+                 MatrixType *H,
+                 InputMultiVectorType *V,
                  chase::Base<T> *ritzv): nev_(nev), nex_(nex), nevex_(nev + nex), config_(H->g_rows(), nev, nex), N_(H->g_rows())
     {
         SCOPED_NVTX_RANGE();
@@ -57,13 +61,14 @@ public:
         N_ = H->g_rows();
         Hmat_ = H;
         V1_ = V;
-        V2_ = new chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(Hmat_->g_rows(), nevex_, Hmat_->getMpiGrid_shared_ptr());
-        W1_ = new chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::GPU>(Hmat_->g_rows(), nevex_, Hmat_->getMpiGrid_shared_ptr());
-        W2_ = new chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::GPU>(Hmat_->g_rows(), nevex_, Hmat_->getMpiGrid_shared_ptr());
-        ritzv_ = new chase::distMatrix::RedundantMatrix<chase::Base<T>, chase::platform::GPU>(nevex_, 1, nevex_, ritzv, Hmat_->getMpiGrid_shared_ptr());
-        resid_ = new chase::distMatrix::RedundantMatrix<chase::Base<T>, chase::platform::GPU>(nevex_, 1, Hmat_->getMpiGrid_shared_ptr());
-        A_ = new chase::distMatrix::RedundantMatrix<T, chase::platform::GPU>(nevex_, nevex_, Hmat_->getMpiGrid_shared_ptr());
-    
+        V2_ = V1_->template clone2<InputMultiVectorType>();
+        W1_ = V1_->template clone2<ResultMultiVectorType>();
+        W2_ = V1_->template clone2<ResultMultiVectorType>();
+
+        ritzv_ = std::make_unique<chase::distMatrix::RedundantMatrix<chase::Base<T>, chase::platform::GPU>>(nevex_, 1, nevex_, ritzv, Hmat_->getMpiGrid_shared_ptr());
+        resid_ = std::make_unique<chase::distMatrix::RedundantMatrix<chase::Base<T>, chase::platform::GPU>>(nevex_, 1, Hmat_->getMpiGrid_shared_ptr());
+        A_ = std::make_unique<chase::distMatrix::RedundantMatrix<T, chase::platform::GPU>>(nevex_, nevex_, Hmat_->getMpiGrid_shared_ptr());
+
         MPI_Comm_rank(Hmat_->getMpiGrid()->get_comm(), &my_rank_);
         MPI_Comm_size(Hmat_->getMpiGrid()->get_comm(), &nprocs_);
         coords_ = Hmat_->getMpiGrid()->get_coords();
@@ -138,20 +143,55 @@ public:
 
         std::vector<std::size_t> diag_xoffs, diag_yoffs;
 
-        std::size_t *g_offs = Hmat_->g_offs();
-
-        for(auto j = 0; j < Hmat_->l_cols(); j++)
+        if constexpr(std::is_same<MatrixType, chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU>>::value)
         {
-            for(auto i = 0; i < Hmat_->l_rows(); i++)
+            std::size_t *g_offs = Hmat_->g_offs();
+
+            for(auto j = 0; j < Hmat_->l_cols(); j++)
             {
-                if(g_offs[0] + i == g_offs[1] + j)
+                for(auto i = 0; i < Hmat_->l_rows(); i++)
                 {
-                    diag_xoffs.push_back(i);
-                    diag_yoffs.push_back(j);
+                    if(g_offs[0] + i == g_offs[1] + j)
+                    {
+                        diag_xoffs.push_back(i);
+                        diag_yoffs.push_back(j);
+                    }
                 }
             }
-        }
+        }else if constexpr(std::is_same<MatrixType, chase::distMatrix::BlockCyclicMatrix<T, chase::platform::GPU>>::value)
+        {
+            auto m_contiguous_global_offs = Hmat_->m_contiguous_global_offs();
+            auto n_contiguous_global_offs = Hmat_->n_contiguous_global_offs();
+            auto m_contiguous_local_offs = Hmat_->m_contiguous_local_offs();
+            auto n_contiguous_local_offs = Hmat_->n_contiguous_local_offs();
+            auto m_contiguous_lens = Hmat_->m_contiguous_lens();
+            auto n_contiguous_lens = Hmat_->n_contiguous_lens();
+            auto mblocks = Hmat_->mblocks();
+            auto nblocks = Hmat_->nblocks();
 
+            for (std::size_t j = 0; j < nblocks; j++)
+            {
+                for (std::size_t i = 0; i < mblocks; i++)
+                {
+                    for (std::size_t q = 0; q < n_contiguous_lens[j]; q++)
+                    {
+                        for (std::size_t p = 0; p < m_contiguous_lens[i]; p++)
+                        {
+                            if (q + n_contiguous_global_offs[j] == p + m_contiguous_global_offs[i])
+                            {
+                                diag_xoffs.push_back(p + m_contiguous_local_offs[i]);
+                                diag_yoffs.push_back(q + n_contiguous_local_offs[j]);
+
+                            }
+                        }
+                    }
+                }
+            }
+        }else
+        {
+            throw std::runtime_error("Matrix type is not supported");
+        }
+        
         diag_cnt = diag_xoffs.size();
 
         CHECK_CUDA_ERROR(cudaMalloc((void**)&d_diag_xoffs, sizeof(std::size_t) * diag_cnt));    
@@ -159,7 +199,7 @@ public:
 
         CHECK_CUDA_ERROR(cudaMemcpy(d_diag_xoffs, diag_xoffs.data(), sizeof(std::size_t) * diag_cnt , cudaMemcpyHostToDevice));
         CHECK_CUDA_ERROR(cudaMemcpy(d_diag_yoffs, diag_yoffs.data(), sizeof(std::size_t) * diag_cnt , cudaMemcpyHostToDevice));
-        
+       
     }
 
     ChaseNCCLGPU(const ChaseNCCLGPU&) = delete;
@@ -265,7 +305,7 @@ public:
                                               m, 
                                               *Hmat_, 
                                               *V1_, 
-                                              upperb);    
+                                              upperb);   
     }
 
     void Lanczos(std::size_t M, std::size_t numvec, chase::Base<T>* upperb,
@@ -356,8 +396,7 @@ public:
             }
             
         }
-#endif
-         
+#endif         
     }
 
     void HEMM(std::size_t block, T alpha, T beta, std::size_t offset) override 
@@ -460,7 +499,7 @@ public:
                 next_ = NextOp::bAc;
 
             }                                    
-        }            
+        }           
     }
 
     void QR(std::size_t fixednev, chase::Base<T> cond) override 
@@ -634,7 +673,7 @@ public:
                                          V1_->l_data() + V1_->l_ld() * locked_,
                                          V1_->l_ld(),
                                          V2_->l_data() + V2_->l_ld() * locked_,
-                                         V2_->l_ld());                                                                                                           
+                                         V2_->l_ld());                                                                                                      
     }
 
     void RR(chase::Base<T>* ritzv, std::size_t block) override 
@@ -654,7 +693,7 @@ public:
                                                    devInfo_,
                                                    d_work_,
                                                    lwork_,
-                                                   A_);
+                                                   A_.get());
 
         chase::linalg::internal::cuda::t_lacpy('A',
                                          V2_->l_rows(),
@@ -662,13 +701,13 @@ public:
                                          V1_->l_data() + locked_ * V1_->l_ld(),
                                          V1_->l_ld(),
                                          V2_->l_data() + locked_ * V2_->l_ld(),
-                                         V2_->l_ld());           
+                                         V2_->l_ld());       
     }
 
     void Resd(chase::Base<T>* ritzv, chase::Base<T>* resd, std::size_t fixednev) override 
     {
         SCOPED_NVTX_RANGE();
-
+        
         chase::linalg::internal::nccl::residuals(cublasH_,
                                                 *Hmat_,
                                                 *V1_,
@@ -678,7 +717,7 @@ public:
                                                 ritzv_->loc_matrix(),
                                                 resid_->loc_matrix(),
                                                 locked_,
-                                                nevex_ - locked_);         
+                                                nevex_ - locked_);       
     }
 
     void Swap(std::size_t i, std::size_t j) override 
@@ -720,15 +759,15 @@ private:
     int *coords_;
     int *dims_;
 
-    chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU> *Hmat_;
-    chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU> *V1_;
-    chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU> *V2_;
-    chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::GPU> *W1_;
-    chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::GPU> *W2_;
+    MatrixType *Hmat_;
+    InputMultiVectorType *V1_;
+    std::unique_ptr<InputMultiVectorType> V2_;
+    std::unique_ptr<ResultMultiVectorType> W1_;
+    std::unique_ptr<ResultMultiVectorType> W2_;
 
-    chase::distMatrix::RedundantMatrix<chase::Base<T>, chase::platform::GPU> *ritzv_;
-    chase::distMatrix::RedundantMatrix<chase::Base<T>, chase::platform::GPU> *resid_;
-    chase::distMatrix::RedundantMatrix<T, chase::platform::GPU> *A_;
+    std::unique_ptr<chase::distMatrix::RedundantMatrix<chase::Base<T>, chase::platform::GPU>> ritzv_;
+    std::unique_ptr<chase::distMatrix::RedundantMatrix<chase::Base<T>, chase::platform::GPU>> resid_;
+    std::unique_ptr<chase::distMatrix::RedundantMatrix<T, chase::platform::GPU>> A_;
 
     cudaStream_t stream_; 
     cublasHandle_t cublasH_;      
