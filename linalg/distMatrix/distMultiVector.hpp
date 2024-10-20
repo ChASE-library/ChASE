@@ -56,6 +56,8 @@ struct OutputCommType<CommunicatorType::column> {
 template<typename T, CommunicatorType comm_type, typename Platform> 
 class DistMultiVector1D;
 
+template<typename T, CommunicatorType comm_type, typename Platform> 
+class DistMultiVectorBlockCyclic1D;
 
 template <typename T, CommunicatorType comm_type, template <typename, CommunicatorType, typename> class Derived, typename Platform = chase::platform::CPU>
 class AbstractDistMultiVector {
@@ -81,6 +83,8 @@ public:
     virtual std::size_t l_cols() const = 0;
     virtual std::size_t l_ld() const = 0;
     virtual T *         l_data() = 0;
+    virtual std::size_t mb() const = 0;  
+
     virtual typename chase::platform::MatrixTypePlatform<T, Platform>::type& loc_matrix() = 0;
 
     int grank()
@@ -101,7 +105,14 @@ public:
     void enableSinglePrecision() {
         if (!single_precision_multivec_) {
             start = std::chrono::high_resolution_clock::now();
-            single_precision_multivec_ = std::make_unique<SinglePrecisionDerived>(this->g_rows(), this->g_cols(), this->getMpiGrid_shared_ptr());
+            if constexpr(std::is_same<Derived<T, comm_type, Platform>, chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, comm_type, Platform>>::value)
+            {
+                single_precision_multivec_ = std::make_unique<SinglePrecisionDerived>(this->g_rows(), this->g_cols(), this->mb(), this->getMpiGrid_shared_ptr());
+            }else
+            {
+                single_precision_multivec_ = std::make_unique<SinglePrecisionDerived>(this->g_rows(), this->g_cols(), this->getMpiGrid_shared_ptr());
+            }
+            //
             if constexpr (std::is_same<Platform, chase::platform::CPU>::value) {
                 #pragma omp parallel for collapse(2) schedule(static, 16)
                 for (std::size_t j = 0; j < this->l_cols(); ++j) {
@@ -332,6 +343,28 @@ public:
         return CloneType(g_M, g_N, mpi_grid_);        
     }
 
+    template<typename CloneType>
+    std::unique_ptr<CloneType> clone2()
+    {
+        static_assert(
+            std::is_same_v<T, typename CloneType::value_type>,
+            "Cloned type must have the same value_type"
+        );
+        ///using NewCommType = typename CloneType::communicator_type;
+        return std::make_unique<CloneType>(M_, N_, mpi_grid_);        
+    }
+
+    template<typename CloneType>
+    std::unique_ptr<CloneType> clone2(std::size_t g_M, std::size_t g_N)
+    {
+        static_assert(
+            std::is_same_v<T, typename CloneType::value_type>,
+            "Cloned type must have the same value_type"
+        );
+        ///using NewCommType = typename CloneType::communicator_type;
+        return std::make_unique<CloneType>(g_M, g_N, mpi_grid_);        
+    }
+
     template <CommunicatorType OtherCommType, typename OtherPlatform>
     void swap(DistMultiVector1D<T, OtherCommType, OtherPlatform>& other) 
     {
@@ -535,6 +568,8 @@ public:
     std::size_t l_rows() const override { return m_;}
     std::size_t l_cols() const override { return n_;}
     std::size_t l_ld() const override { return ld_;}
+    std::size_t mb() const override { return -1;}    
+
     T *         l_data() override { 
         if constexpr (std::is_same<Platform, chase::platform::CPU>::value)
         {
@@ -833,7 +868,7 @@ private:
 };
 
 template<typename T, CommunicatorType comm_type, typename Platform = chase::platform::CPU> 
-class DistMultiVectorBlockCyclic1D : public AbstractDistMultiVector<T, comm_type, DistMultiVector1D, Platform> //distribute either within row or column communicator of 2D MPI grid
+class DistMultiVectorBlockCyclic1D : public AbstractDistMultiVector<T, comm_type, DistMultiVectorBlockCyclic1D, Platform> //distribute either within row or column communicator of 2D MPI grid
 {
 public:
     using platform_type = Platform;
@@ -945,6 +980,28 @@ public:
         );
         ///using NewCommType = typename CloneType::communicator_type;
         return CloneType(g_M, g_N, mb_, mpi_grid_);        
+    }
+
+    template<typename CloneType>
+    std::unique_ptr<CloneType> clone2()
+    {
+        static_assert(
+            std::is_same_v<T, typename CloneType::value_type>,
+            "Cloned type must have the same value_type"
+        );
+        ///using NewCommType = typename CloneType::communicator_type;
+        return std::make_unique<CloneType>(M_, N_, mb_, mpi_grid_);        
+    }
+
+    template<typename CloneType>
+    std::unique_ptr<CloneType> clone2(std::size_t g_M, std::size_t g_N)
+    {
+        static_assert(
+            std::is_same_v<T, typename CloneType::value_type>,
+            "Cloned type must have the same value_type"
+        );
+        ///using NewCommType = typename CloneType::communicator_type;
+        return std::make_unique<CloneType>(g_M, g_N, mb_, mpi_grid_);        
     }
 
     template <CommunicatorType OtherCommType, typename OtherPlatform>
@@ -1149,7 +1206,7 @@ public:
     std::size_t l_rows() const override { return m_;}
     std::size_t l_cols() const override { return n_;}
     std::size_t l_ld() const override { return ld_;}
-    std::size_t mb() const { return mb_;}    
+    std::size_t mb() const override { return mb_;}    
     T *         l_data() override { 
         if constexpr (std::is_same<Platform, chase::platform::CPU>::value)
         {

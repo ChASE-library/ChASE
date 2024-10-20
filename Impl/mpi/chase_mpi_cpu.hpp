@@ -28,17 +28,20 @@ namespace chase
 {
 namespace Impl
 {
-template <class T, typename MatrixType>
-class ChaseMPICPU : public ChaseBase<T>
+template <typename MatrixType, typename InputMultiVectorType>
+class ChaseMPICPU : public ChaseBase<typename MatrixType::value_type>
 {
+    using T = typename MatrixType::value_type;
+    using ResultMultiVectorType = typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type;
+
 public:
     ChaseMPICPU(std::size_t nev,
                 std::size_t nex,
                 MatrixType *H,
-                chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column> *V,
+                InputMultiVectorType *V,
                 chase::Base<T> *ritzv
                 ): nev_(nev), nex_(nex), nevex_(nev + nex), config_(H->g_rows(), nev, nex), N_(H->g_rows())
-    {
+    { 
         if(H->g_rows() != H->g_cols())
         {
             std::runtime_error("ChASE requires the matrix solved to be squared");
@@ -51,12 +54,15 @@ public:
 
         Hmat_ = H;
         V1_ = V;
-        V2_ = new chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column>(Hmat_->g_rows(), nevex_, Hmat_->getMpiGrid_shared_ptr());
-        W1_ = new chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row>(Hmat_->g_rows(), nevex_, Hmat_->getMpiGrid_shared_ptr());
-        W2_ = new chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row>(Hmat_->g_rows(), nevex_, Hmat_->getMpiGrid_shared_ptr());
-        ritzv_ = new chase::distMatrix::RedundantMatrix<chase::Base<T>>(nevex_, 1, nevex_, ritzv, Hmat_->getMpiGrid_shared_ptr());
-        resid_ = new chase::distMatrix::RedundantMatrix<chase::Base<T>>(nevex_, 1, Hmat_->getMpiGrid_shared_ptr());
-        A_ = new chase::distMatrix::RedundantMatrix<T>(nevex_, nevex_, Hmat_->getMpiGrid_shared_ptr());
+        
+        //V2_ = new InputMultiVectorType(Hmat_->g_rows(), nevex_, Hmat_->getMpiGrid_shared_ptr());
+        V2_ = V1_->template clone2<InputMultiVectorType>();
+        W1_ = V1_->template clone2<ResultMultiVectorType>();
+        W2_ = V1_->template clone2<ResultMultiVectorType>();
+
+        ritzv_ = std::make_unique<chase::distMatrix::RedundantMatrix<chase::Base<T>>>(nevex_, 1, nevex_, ritzv, Hmat_->getMpiGrid_shared_ptr());
+        resid_ = std::make_unique<chase::distMatrix::RedundantMatrix<chase::Base<T>>>(nevex_, 1, Hmat_->getMpiGrid_shared_ptr());
+        A_ = std::make_unique<chase::distMatrix::RedundantMatrix<T>>(nevex_, nevex_, Hmat_->getMpiGrid_shared_ptr());
 
         MPI_Comm_rank(Hmat_->getMpiGrid()->get_comm(), &my_rank_);
         MPI_Comm_size(Hmat_->getMpiGrid()->get_comm(), &nprocs_);
@@ -219,7 +225,8 @@ public:
             }
             
         }
-#endif        
+#endif
+        
     }
 
     void HEMM(std::size_t block, T alpha, T beta, std::size_t offset) override 
@@ -237,10 +244,11 @@ public:
                 auto W1_sp = W1_->getSinglePrecisionMatrix();
                 singlePrecisionT alpha_sp = static_cast<singlePrecisionT>(alpha);
                 singlePrecisionT beta_sp = static_cast<singlePrecisionT>(beta);  
+                //static_assert(std::is_same_v<std::remove_pointer_t<decltype(V1_sp)>, chase::distMultiVector::DistMultiVectorBlockCyclic1D<std::complex<float>, chase::distMultiVector::CommunicatorType::column, chase::platform::CPU>>, "Type mismatch in singlePrecisionT");
 
                 if (next_ == NextOp::bAc)
                 {
-                    chase::linalg::internal::mpi::MatrixMultiplyMultiVectors<singlePrecisionT>(&alpha_sp, 
+                    chase::linalg::internal::mpi::MatrixMultiplyMultiVectors(&alpha_sp, 
                                                                                 *Hmat_sp, 
                                                                                 *V1_sp, 
                                                                                 &beta_sp, 
@@ -257,7 +265,7 @@ public:
                                                                                 &beta_sp, 
                                                                                 *V1_sp, 
                                                                                 offset + locked_, 
-                                                                                block);            
+                                                                                block);          
                     next_ = NextOp::bAc;
 
                 }                              
@@ -435,7 +443,7 @@ public:
                                                    ritzv_->l_data(), 
                                                    locked_, 
                                                    block,
-                                                   A_);
+                                                   A_.get());
 
         chase::linalg::lapackpp::t_lacpy('A',
                                          V2_->l_rows(),
@@ -444,9 +452,6 @@ public:
                                          V1_->l_ld(),
                                          V2_->l_data() + locked_ * V2_->l_ld(),
                                          V2_->l_ld());   
-
-
-
     }
 
     void Resd(chase::Base<T>* ritzv, chase::Base<T>* resd, std::size_t fixednev) override 
@@ -496,15 +501,15 @@ private:
     int *coords_;
     int *dims_;
 
-    chase::distMatrix::BlockBlockMatrix<T> *Hmat_;
-    chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column> *V1_;
-    chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column> *V2_;
-    chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row> *W1_;
-    chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row> *W2_;
+    MatrixType *Hmat_;
+    InputMultiVectorType *V1_;
+    std::unique_ptr<InputMultiVectorType> V2_;
+    std::unique_ptr<ResultMultiVectorType> W1_;
+    std::unique_ptr<ResultMultiVectorType> W2_;
 
-    chase::distMatrix::RedundantMatrix<chase::Base<T>> *ritzv_;
-    chase::distMatrix::RedundantMatrix<chase::Base<T>> *resid_;
-    chase::distMatrix::RedundantMatrix<T> *A_;
+    std::unique_ptr<chase::distMatrix::RedundantMatrix<chase::Base<T>>> ritzv_;
+    std::unique_ptr<chase::distMatrix::RedundantMatrix<chase::Base<T>>> resid_;
+    std::unique_ptr<chase::distMatrix::RedundantMatrix<T>> A_;
 
     chase::ChaseConfig<T> config_;
 };

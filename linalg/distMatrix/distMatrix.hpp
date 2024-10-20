@@ -112,6 +112,9 @@ public:
     virtual std::size_t l_ld() const = 0;
     virtual T *         l_data() = 0;
     virtual typename chase::platform::MatrixTypePlatform<T, Platform>::type& loc_matrix() = 0;
+    virtual std::size_t mb() const = 0;
+    virtual std::size_t nb() const = 0;  
+    //virtual std::unique_ptr<SinglePrecisionDerived> createSinglePrecisionMatrix() = 0;
     int grank()
     {
         int grank = 0;
@@ -181,7 +184,14 @@ public:
     void enableSinglePrecision() {
         if (!single_precision_matrix_) {
             start = std::chrono::high_resolution_clock::now();
-            single_precision_matrix_ = std::make_unique<SinglePrecisionDerived>(this->g_rows(), this->g_cols(), this->getMpiGrid_shared_ptr());
+
+            if constexpr(std::is_same<Derived<T, Platform>, chase::distMatrix::BlockCyclicMatrix<T, Platform>>::value)
+            {
+                single_precision_matrix_ = std::make_unique<SinglePrecisionDerived>(this->g_rows(), this->g_cols(), this->mb(), this->nb(), this->getMpiGrid_shared_ptr());
+            }else
+            {
+                single_precision_matrix_ = std::make_unique<SinglePrecisionDerived>(this->g_rows(), this->g_cols(), this->getMpiGrid_shared_ptr());
+            }
             
             if constexpr (std::is_same<Platform, chase::platform::CPU>::value) 
             {
@@ -322,6 +332,9 @@ public:
     std::size_t l_rows() const override { return m_;}
     std::size_t l_cols() const override { return n_;}
     std::size_t l_ld() const override { return ld_;}
+    std::size_t mb() const override { return -1;}
+    std::size_t nb() const override { return -1;} 
+
     T *         l_data() override { 
         if constexpr (std::is_same<Platform, chase::platform::CPU>::value)
         {
@@ -402,7 +415,6 @@ private:
             std::size_t *g_offs = targetMatrix->g_offs();
             std::size_t l_cols = targetMatrix->l_cols();
             std::size_t l_rows = targetMatrix->l_rows();
-            #pragma omp parallel for
             for(auto y = 0; y < l_cols; y++)
             {
                 for(auto x = 0; x < l_rows; x++)
@@ -420,7 +432,24 @@ private:
 #ifdef HAS_CUDA
         else if constexpr (std::is_same<Platform, chase::platform::GPU>::value)
         {
-            throw std::runtime_error("[RedundantMatrix]: redistribution for GPU data from redundant to BlockBlock is not supported yet.");
+            std::size_t *g_offs = targetMatrix->g_offs();
+            std::size_t l_cols = targetMatrix->l_cols();
+            std::size_t l_rows = targetMatrix->l_rows();
+            for(auto y = 0; y < l_cols; y++)
+            {
+                for(auto x = 0; x < l_rows; x++)
+                {
+                    std::size_t x_g_off = g_offs[0] + x;
+                    std::size_t y_g_off = g_offs[1] + y;
+                    if(x_g_off >= startRow && x_g_off < startRow + subRows && y_g_off >= startCol && y_g_off < startCol + subCols )
+                    {
+                        targetMatrix->cpu_data()[x + targetMatrix->cpu_ld() * y] = this->cpu_data()[(g_offs[1] + y) * this->cpu_ld() + (g_offs[0] + x)];
+                    }
+
+                }
+            }
+            //targetMatrix->H2D();              
+            //throw std::runtime_error("[RedundantMatrix]: redistribution for GPU data from redundant to BlockBlock is not supported yet.");
         }
 #endif        
     }
@@ -463,7 +492,37 @@ private:
 #ifdef HAS_CUDA
         else if constexpr (std::is_same<Platform, chase::platform::GPU>::value)
         {
-            throw std::runtime_error("[RedundantMatrix]: redistribution for GPU data from redundant to BlockCyclic is not supported yet.");
+            auto m_contiguous_global_offs = targetMatrix->m_contiguous_global_offs();
+            auto n_contiguous_global_offs = targetMatrix->n_contiguous_global_offs();
+            auto m_contiguous_local_offs = targetMatrix->m_contiguous_local_offs();
+            auto n_contiguous_local_offs = targetMatrix->n_contiguous_local_offs();
+            auto m_contiguous_lens = targetMatrix->m_contiguous_lens();
+            auto n_contiguous_lens = targetMatrix->n_contiguous_lens();
+            auto mblocks = targetMatrix->mblocks();
+            auto nblocks = targetMatrix->nblocks();
+            
+            for(std::size_t j = 0; j < nblocks; j++)
+            {
+                for(std::size_t i = 0; i < mblocks; i++)
+                {
+                    for(std::size_t q = 0; q < n_contiguous_lens[j]; q++)
+                    {
+                        for(std::size_t p = 0; p < m_contiguous_lens[i]; p++)
+                        {
+                            std::size_t x_g_off = p + m_contiguous_local_offs[i];
+                            std::size_t y_g_off = q + n_contiguous_local_offs[j];
+                            
+                            if(x_g_off >= startRow && x_g_off < startRow + subRows && y_g_off >= startCol && y_g_off < startCol + subCols )
+                            {
+                                targetMatrix->cpu_data()[(q + n_contiguous_local_offs[j]) * targetMatrix->cpu_ld() + p + m_contiguous_local_offs[i]]
+                                    = this->cpu_data()[(q + n_contiguous_global_offs[j]) * this->cpu_ld() + p + m_contiguous_global_offs[i]];
+                            }
+                        }
+                    }
+                }
+            }
+            //targetMatrix->H2D();            
+            //throw std::runtime_error("[RedundantMatrix]: redistribution for GPU data from redundant to BlockCyclic is not supported yet.");
         }
 #endif        
     }
@@ -588,6 +647,8 @@ public:
     std::size_t l_rows() const override { return m_;}
     std::size_t l_cols() const override { return n_;}
     std::size_t *g_offs() { return g_offs_;}
+    std::size_t mb() const override { return -1;}
+    std::size_t nb() const override { return -1;}    
     T *         l_data() override { 
         if constexpr (std::is_same<Platform, chase::platform::CPU>::value)
         {
@@ -1084,8 +1145,8 @@ public:
     std::size_t l_ld() const override { return ld_; }
     std::size_t l_rows() const override { return m_; }
     std::size_t l_cols() const override { return n_;}
-    std::size_t mb() const { return mb_;}
-    std::size_t nb() const { return nb_;}
+    std::size_t mb() const override { return mb_;}
+    std::size_t nb() const override { return nb_;}
     std::size_t mblocks() {return mblocks_; }
     std::size_t nblocks() {return nblocks_; }
     std::vector<std::size_t> m_contiguous_global_offs() { return m_contiguous_global_offs_; }
@@ -1130,7 +1191,7 @@ public:
             "Cloned type must have the same value_type"
         );
         ///using NewCommType = typename CloneType::communicator_type;
-        return CloneVectorType(g_M, g_N, mb, mpi_grid_);        
+        return CloneVectorType(g_M, g_N, mb_, mpi_grid_);        
     }
 
     //only save from CPU buffer
@@ -1266,6 +1327,29 @@ public:
             MPI_Abort(this->mpi_grid_.get()->get_comm(), EXIT_FAILURE);
         }
 #else
+	    std::ifstream input(filename.data(), std::ios::binary);	
+        if (!input.is_open()) {
+            throw std::runtime_error("[BlockCyclicMatrix]: Failed to open file for reading.");
+        }
+        
+        if (this->l_data() == nullptr) {
+            throw std::runtime_error("[BlockCyclicMatrix]: Original data is not initialized.");
+        }
+	
+        for (std::size_t j = 0; j < nblocks_; j++)
+	    {
+            for (std::size_t i = 0; i < mblocks_; i++)
+            {
+                for (std::size_t q = 0; q < n_contiguous_lens_[j]; q++)
+                {
+                    input.seekg(((q + n_contiguous_global_offs_[j]) * M_ + m_contiguous_global_offs_[i]) * sizeof(T));
+                    input.read(reinterpret_cast<char*>(buff + (q + n_contiguous_local_offs_[j]) * this->cpu_ld() +
+                                                       m_contiguous_local_offs_[i]),
+                               m_contiguous_lens_[i] * sizeof(T));
+                }
+            }
+        }
+        input.close();
 
 #endif
 
