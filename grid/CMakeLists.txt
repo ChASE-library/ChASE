@@ -1,6 +1,10 @@
+find_package(MPI)
+
+if(MPI_FOUND)
 add_library(mpi_grid INTERFACE)
 target_link_libraries(mpi_grid INTERFACE linalg_internal_mpi)
 target_include_directories(mpi_grid INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
+endif()
 
 find_package(NCCL)
 if(NCCL_FOUND)

@@ -6,7 +6,7 @@
 #include "linalg/internal/nccl/hemm.hpp"
 #include "linalg/internal/nccl/residuals.hpp"
 #include "tests/linalg/internal/utils.hpp"
-#include "Impl/grid/mpiGrid2D.hpp"
+#include "grid/mpiGrid2D.hpp"
 #include "linalg/distMatrix/distMatrix.hpp"
 #include "linalg/distMatrix/distMultiVector.hpp"
 
@@ -76,8 +76,8 @@ TYPED_TEST(ResidGPUNCCLDistTest, ResidCorrectnessGPU) {
                &One, V.data(), this->N, H2.data(), this->N, &Zero,
                H.data(), this->N);
 
-    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
-            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(2, 2, MPI_COMM_WORLD);
+    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(2, 2, MPI_COMM_WORLD);
 
     int *coords = mpi_grid.get()->get_coords();
 

@@ -2,8 +2,8 @@
 
 #include "mpi.h"
 #include "algorithm/types.hpp"
-#include "linalg/blaspp/blaspp.hpp"
-#include "Impl/grid/mpiTypes.hpp"
+#include "external/blaspp/blaspp.hpp"
+#include "grid/mpiTypes.hpp"
 
 using namespace chase::linalg;
 

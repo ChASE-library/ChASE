@@ -5,7 +5,7 @@
 #include "linalg/internal/nccl/cholqr.hpp"
 #include "tests/linalg/internal/mpi/TestConditions.hpp"
 #include "tests/linalg/internal/utils.hpp"
-#include "Impl/grid/mpiGrid2D.hpp"
+#include "grid/mpiGrid2D.hpp"
 
 template <typename T>
 class CHOLQRNCCLDistTest : public ::testing::Test {
@@ -49,8 +49,8 @@ TYPED_TEST(CHOLQRNCCLDistTest, cholQR1GPU) {
     std::size_t xoff = this->world_rank * 25 ;
     T *d_V;
     std::vector<T> V(xlen * this->n);
-    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
-            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(4, 1, MPI_COMM_WORLD);
+    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(4, 1, MPI_COMM_WORLD);
 
     CHECK_CUDA_ERROR(cudaMalloc((void**)&d_V, sizeof(T) * xlen * this->n));
     read_vectors(V.data(), GetQRFileName<T>() + "cond_10.bin", xoff, xlen, this->N, this->n, 0);
@@ -71,8 +71,8 @@ TYPED_TEST(CHOLQRNCCLDistTest, cholQR1BadlyCondGPU) {
     std::size_t xoff = this->world_rank * 25 ;
     T *d_V;
     std::vector<T> V(xlen * this->n);
-    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
-            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(4, 1, MPI_COMM_WORLD);
+    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(4, 1, MPI_COMM_WORLD);
 
     CHECK_CUDA_ERROR(cudaMalloc((void**)&d_V, sizeof(T) * xlen * this->n));
     read_vectors(V.data(), GetQRFileName<T>() + "cond_1e4.bin", xoff, xlen, this->N, this->n, 0);
@@ -94,8 +94,8 @@ TYPED_TEST(CHOLQRNCCLDistTest, cholQR1illCondGPU) {
     std::size_t xoff = this->world_rank * 25 ;
     T *d_V;
     std::vector<T> V(xlen * this->n);
-    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
-            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(4, 1, MPI_COMM_WORLD);
+    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(4, 1, MPI_COMM_WORLD);
 
     CHECK_CUDA_ERROR(cudaMalloc((void**)&d_V, sizeof(T) * xlen * this->n));
     read_vectors(V.data(), GetQRFileName<T>() + "cond_ill.bin", xoff, xlen, this->N, this->n, 0);
@@ -113,8 +113,8 @@ TYPED_TEST(CHOLQRNCCLDistTest, cholQR2GPU) {
     std::size_t xoff = this->world_rank * 25 ;
     T *d_V;
     std::vector<T> V(xlen * this->n);
-    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
-            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(4, 1, MPI_COMM_WORLD);
+    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(4, 1, MPI_COMM_WORLD);
 
     CHECK_CUDA_ERROR(cudaMalloc((void**)&d_V, sizeof(T) * xlen * this->n));
     read_vectors(V.data(), GetQRFileName<T>() + "cond_1e4.bin", xoff, xlen, this->N, this->n, 0);
@@ -135,8 +135,8 @@ TYPED_TEST(CHOLQRNCCLDistTest, cholQR2IllCondGPU) {
     std::size_t xoff = this->world_rank * 25 ;
     T *d_V;
     std::vector<T> V(xlen * this->n);
-    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
-            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(4, 1, MPI_COMM_WORLD);
+    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(4, 1, MPI_COMM_WORLD);
 
     CHECK_CUDA_ERROR(cudaMalloc((void**)&d_V, sizeof(T) * xlen * this->n));
     read_vectors(V.data(), GetQRFileName<T>() + "cond_ill.bin", xoff, xlen, this->N, this->n, 0);
@@ -154,8 +154,8 @@ TYPED_TEST(CHOLQRNCCLDistTest, scholQRGPU) {
     std::size_t xoff = this->world_rank * 25 ;
     T *d_V;
     std::vector<T> V(xlen * this->n);
-    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
-            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(4, 1, MPI_COMM_WORLD);
+    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(4, 1, MPI_COMM_WORLD);
 
     CHECK_CUDA_ERROR(cudaMalloc((void**)&d_V, sizeof(T) * xlen * this->n));
     read_vectors(V.data(), GetQRFileName<T>() + "cond_ill.bin", xoff, xlen, this->N, this->n, 0);
@@ -177,8 +177,8 @@ TYPED_TEST(CHOLQRNCCLDistTest, modifiedGramSchmidtCholQRGPU) {
     std::size_t xoff = this->world_rank * 25 ;
     T *d_V;
     std::vector<T> V(xlen * this->n);
-    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
-            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(4, 1, MPI_COMM_WORLD);
+    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(4, 1, MPI_COMM_WORLD);
 
     CHECK_CUDA_ERROR(cudaMalloc((void**)&d_V, sizeof(T) * xlen * this->n));
     read_vectors(V.data(), GetQRFileName<T>() + "cond_ill.bin", xoff, xlen, this->N, this->n, 0);

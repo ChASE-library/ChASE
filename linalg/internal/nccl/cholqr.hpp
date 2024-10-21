@@ -3,15 +3,15 @@
 #include <limits>
 #include <iomanip>
 #include "mpi.h"
-#include "Impl/grid/mpiTypes.hpp"
-#include "linalg/blaspp/blaspp.hpp"
-#include "linalg/lapackpp/lapackpp.hpp"
+#include "grid/mpiTypes.hpp"
+#include "external/blaspp/blaspp.hpp"
+#include "external/lapackpp/lapackpp.hpp"
 #include "linalg/internal/cpu/utils.hpp"
 #include "linalg/distMatrix/distMatrix.hpp"
 #include "linalg/distMatrix/distMultiVector.hpp"
 
-#include "linalg/cublaspp/cublaspp.hpp"
-#include "linalg/cusolverpp/cusolverpp.hpp"
+#include "external/cublaspp/cublaspp.hpp"
+#include "external/cusolverpp/cusolverpp.hpp"
 #include "linalg/internal/cuda/absTrace.cuh"
 #include "linalg/internal/cuda/shiftDiagonal.cuh"
 
@@ -92,7 +92,7 @@ namespace nccl
                                                                   A, 
                                                                   n));
 
-        CHECK_NCCL_ERROR(chase::Impl::nccl::ncclAllReduceWrapper<T>(A, A, n * n, ncclSum, comm));
+        CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(A, A, n * n, ncclSum, comm));
 
         int* devInfo;
         CHECK_CUDA_ERROR(cudaMalloc((void**)&devInfo, sizeof(int)));
@@ -205,7 +205,7 @@ namespace nccl
                                                                   A, 
                                                                   V.l_cols()));
 
-        CHECK_NCCL_ERROR(chase::Impl::nccl::ncclAllReduceWrapper<T>(A, A, V.l_cols() * V.l_cols(), ncclSum, V.getMpiGrid()->get_nccl_col_comm()));
+        CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(A, A, V.l_cols() * V.l_cols(), ncclSum, V.getMpiGrid()->get_nccl_col_comm()));
 
         int* devInfo;
         CHECK_CUDA_ERROR(cudaMalloc((void**)&devInfo, sizeof(int)));
@@ -319,7 +319,7 @@ namespace nccl
                                                                   A, 
                                                                   n));
 
-        CHECK_NCCL_ERROR(chase::Impl::nccl::ncclAllReduceWrapper<T>(A, A, n * n, ncclSum, comm));
+        CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(A, A, n * n, ncclSum, comm));
 
         int* devInfo;
         CHECK_CUDA_ERROR(cudaMalloc((void**)&devInfo, sizeof(int)));
@@ -366,7 +366,7 @@ namespace nccl
                                                                     A, 
                                                                     n));
 
-            CHECK_NCCL_ERROR(chase::Impl::nccl::ncclAllReduceWrapper<T>(A, A, n * n, ncclSum, comm));
+            CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(A, A, n * n, ncclSum, comm));
 
             CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTpotrf(cusolver_handle, 
                                                                             CUBLAS_FILL_MODE_UPPER, 
@@ -537,7 +537,7 @@ namespace nccl
                                                                   A, 
                                                                   n));
 
-        CHECK_NCCL_ERROR(chase::Impl::nccl::ncclAllReduceWrapper<T>(A, A, n * n, ncclSum, comm));
+        CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(A, A, n * n, ncclSum, comm));
         
         chase::Base<T> nrmf = 0.0;
         chase::Base<T> *d_nrmf;
@@ -591,7 +591,7 @@ namespace nccl
                                                                 A, 
                                                                 n));
 
-        CHECK_NCCL_ERROR(chase::Impl::nccl::ncclAllReduceWrapper<T>(A, A, n * n, ncclSum, comm));
+        CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(A, A, n * n, ncclSum, comm));
 
         CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTpotrf(cusolver_handle, 
                                                                         CUBLAS_FILL_MODE_UPPER, 
@@ -626,7 +626,7 @@ namespace nccl
                                                                     A, 
                                                                     n));
 
-        CHECK_NCCL_ERROR(chase::Impl::nccl::ncclAllReduceWrapper<T>(A, A, n * n, ncclSum, comm));
+        CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(A, A, n * n, ncclSum, comm));
 
         CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTpotrf(cusolver_handle, 
                                                                         CUBLAS_FILL_MODE_UPPER, 
@@ -768,7 +768,7 @@ namespace nccl
                                         A,
                                         panel_size_rest));
 
-            CHECK_NCCL_ERROR(chase::Impl::nccl::ncclAllReduceWrapper<T>(A, A, (n - j * panel_size) * panel_size_rest, ncclSum, comm));
+            CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(A, A, (n - j * panel_size) * panel_size_rest, ncclSum, comm));
 
 
             CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(cublas_handle, 
@@ -798,7 +798,7 @@ namespace nccl
                                                                         A, 
                                                                         panel_size_rest));     
 
-            CHECK_NCCL_ERROR(chase::Impl::nccl::ncclAllReduceWrapper<T>(A, A, panel_size_rest * panel_size_rest, ncclSum, comm));
+            CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(A, A, panel_size_rest * panel_size_rest, ncclSum, comm));
 
             CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTpotrf(cusolver_handle, 
                                                                             CUBLAS_FILL_MODE_UPPER, 
@@ -844,7 +844,7 @@ namespace nccl
                                         A,
                                         j * panel_size));
 
-            CHECK_NCCL_ERROR(chase::Impl::nccl::ncclAllReduceWrapper<T>(A, A, (j * panel_size) * panel_size_rest, ncclSum, comm));
+            CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(A, A, (j * panel_size) * panel_size_rest, ncclSum, comm));
 
 
             CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(cublas_handle, 
@@ -892,7 +892,7 @@ namespace nccl
         using T = typename InputMultiVectorType::value_type;
 
 #ifdef HAS_SCALAPACK
-        V.allocate_cpu_data();
+        V.allocate_cpu_data();//if not allocated
         V.D2H();
         std::size_t *desc = V.scalapack_descriptor_init();
         int one = 1;

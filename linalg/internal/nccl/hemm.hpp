@@ -1,11 +1,11 @@
 #pragma once
 
 #include <mpi.h>
-#include "linalg/blaspp/blaspp.hpp"
-#include "linalg/lapackpp/lapackpp.hpp"
+#include "external/blaspp/blaspp.hpp"
+#include "external/lapackpp/lapackpp.hpp"
 #include "linalg/distMatrix/distMatrix.hpp"
 #include "linalg/distMatrix/distMultiVector.hpp"
-#include "linalg/cublaspp/cublaspp.hpp"
+#include "external/cublaspp/cublaspp.hpp"
 #include "../typeTraits.hpp"
 
 namespace chase
@@ -138,7 +138,7 @@ namespace nccl
 
             CHECK_CUDA_ERROR(cudaStreamWaitEvent(stream_comm_1, computeDoneEvent1, 0));
             // Perform reduction across the column communicator
-            CHECK_NCCL_ERROR(chase::Impl::nccl::ncclAllReduceWrapper<T>(result_multiVector.l_data() + offset_firstPart * result_multiVector.l_ld(),  
+            CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(result_multiVector.l_data() + offset_firstPart * result_multiVector.l_ld(),  
                                                                         result_multiVector.l_data() + offset_firstPart * result_multiVector.l_ld(),  
                                                                         result_multiVector.l_ld() * subSize_firstPart, 
                                                                         ncclSum, 
@@ -146,7 +146,7 @@ namespace nccl
 
             // Perform reduction across the column communicator
             CHECK_CUDA_ERROR(cudaStreamWaitEvent(stream_comm_2, computeDoneEvent2, 0));
-            CHECK_NCCL_ERROR(chase::Impl::nccl::ncclAllReduceWrapper<T>(result_multiVector.l_data() + offset_secondPart * result_multiVector.l_ld(),  
+            CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(result_multiVector.l_data() + offset_secondPart * result_multiVector.l_ld(),  
                                                                         result_multiVector.l_data() + offset_secondPart * result_multiVector.l_ld(),  
                                                                         result_multiVector.l_ld() * subSize_secondPart, 
                                                                         ncclSum, 
@@ -206,7 +206,7 @@ namespace nccl
             CHECK_CUDA_ERROR(cudaStreamWaitEvent(stream_comm_1, computeDoneEvent1, 0));
 
             // Perform reduction across the row communicator
-            CHECK_NCCL_ERROR(chase::Impl::nccl::ncclAllReduceWrapper<T>(result_multiVector.l_data() + offset_firstPart * result_multiVector.l_ld(),  
+            CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(result_multiVector.l_data() + offset_firstPart * result_multiVector.l_ld(),  
                                                                         result_multiVector.l_data() + offset_firstPart * result_multiVector.l_ld(),  
                                                                         result_multiVector.l_ld() * subSize_firstPart, 
                                                                         ncclSum, 
@@ -214,7 +214,7 @@ namespace nccl
             
             CHECK_CUDA_ERROR(cudaStreamWaitEvent(stream_comm_2, computeDoneEvent2, 0));            
             // Perform reduction across the row communicator
-            CHECK_NCCL_ERROR(chase::Impl::nccl::ncclAllReduceWrapper<T>(result_multiVector.l_data() + offset_secondPart * result_multiVector.l_ld(),  
+            CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(result_multiVector.l_data() + offset_secondPart * result_multiVector.l_ld(),  
                                                                         result_multiVector.l_data() + offset_secondPart * result_multiVector.l_ld(),  
                                                                         result_multiVector.l_ld() * subSize_secondPart, 
                                                                         ncclSum, 
@@ -254,7 +254,7 @@ namespace nccl
                                                                     result_multiVector.l_ld()));            
 
             // Perform reduction across the column communicator
-            CHECK_NCCL_ERROR(chase::Impl::nccl::ncclAllReduceWrapper<T>(result_multiVector.l_data() + offset * result_multiVector.l_ld(),  
+            CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(result_multiVector.l_data() + offset * result_multiVector.l_ld(),  
                                                                         result_multiVector.l_data() + offset * result_multiVector.l_ld(),  
                                                                         result_multiVector.l_ld() * subSize, 
                                                                         ncclSum, 
@@ -288,7 +288,7 @@ namespace nccl
                                                                     result_multiVector.l_ld()));               
 
             // Perform reduction across the row communicator
-            CHECK_NCCL_ERROR(chase::Impl::nccl::ncclAllReduceWrapper<T>(result_multiVector.l_data() + offset * result_multiVector.l_ld(),  
+            CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(result_multiVector.l_data() + offset * result_multiVector.l_ld(),  
                                                                         result_multiVector.l_data() + offset * result_multiVector.l_ld(),  
                                                                         result_multiVector.l_ld() * subSize, 
                                                                         ncclSum, 
@@ -408,7 +408,7 @@ namespace nccl
                                                                     result_multiVector.l_ld()));              
 
             // Perform reduction across the column communicator
-            CHECK_NCCL_ERROR(chase::Impl::nccl::ncclAllReduceWrapper<T>(result_multiVector.l_data() + offset * result_multiVector.l_ld(),  
+            CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(result_multiVector.l_data() + offset * result_multiVector.l_ld(),  
                                                                         result_multiVector.l_data() + offset * result_multiVector.l_ld(),  
                                                                         result_multiVector.l_ld() * subSize, 
                                                                         ncclSum, 
@@ -433,7 +433,7 @@ namespace nccl
                                                                     result_multiVector.l_data() + offset * result_multiVector.l_ld(),
                                                                     result_multiVector.l_ld()));             
             // Perform reduction across the row communicator
-            CHECK_NCCL_ERROR(chase::Impl::nccl::ncclAllReduceWrapper<T>(result_multiVector.l_data() + offset * result_multiVector.l_ld(),  
+            CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(result_multiVector.l_data() + offset * result_multiVector.l_ld(),  
                                                                         result_multiVector.l_data() + offset * result_multiVector.l_ld(),  
                                                                         result_multiVector.l_ld() * subSize, 
                                                                         ncclSum, 

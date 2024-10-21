@@ -1,15 +1,14 @@
 #pragma once
 
 #include "mpi.h"
-#include "Impl/grid/mpiTypes.hpp"
-#include "linalg/blaspp/blaspp.hpp"
-#include "linalg/lapackpp/lapackpp.hpp"
+#include "grid/mpiTypes.hpp"
+#include "external/blaspp/blaspp.hpp"
+#include "external/lapackpp/lapackpp.hpp"
 #include "linalg/distMatrix/distMatrix.hpp"
 #include "linalg/distMatrix/distMultiVector.hpp"
 #include "linalg/internal/nccl/hemm.hpp"
-#include "linalg/scalapackpp/scalapackpp.hpp"
-#include "linalg/cublaspp/cublaspp.hpp"
-#include "linalg/cusolverpp/cusolverpp.hpp"
+#include "external/cublaspp/cublaspp.hpp"
+#include "external/cusolverpp/cusolverpp.hpp"
 
 namespace chase
 {
@@ -93,7 +92,7 @@ namespace nccl
                                        A->l_data(),
                                        subSize));
 
-         CHECK_NCCL_ERROR(chase::Impl::nccl::ncclAllReduceWrapper<T>(A->l_data(), 
+         CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(A->l_data(), 
                                                                      A->l_data(), 
                                                                      subSize * subSize, 
                                                                      ncclSum, 

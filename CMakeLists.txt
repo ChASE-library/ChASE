@@ -60,6 +60,8 @@ if(CHASE_USE_NVTX)
   target_compile_definitions( chase_algorithm  INTERFACE "-DUSE_NVTX" )
 endif()
 
+add_subdirectory(grid)
+add_subdirectory(external)
 add_subdirectory(linalg)
 add_subdirectory(Impl)
 add_subdirectory(examples)

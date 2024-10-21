@@ -10,15 +10,15 @@
 
 #include "algorithm/types.hpp"
 #include "linalg/matrix/matrix.hpp"
-#include "linalg/scalapackpp/scalapackpp.hpp"
-#include "Impl/grid/mpiGrid2D.hpp"
-#include "Impl/grid/mpiTypes.hpp"
+#include "external/scalapackpp/scalapackpp.hpp"
+#include "grid/mpiGrid2D.hpp"
+#include "grid/mpiTypes.hpp"
 
 #ifdef HAS_CUDA
 #include <cuda_runtime.h>
 #include "Impl/cuda/cuda_utils.hpp"
 #include "linalg/internal/cuda/lacpy.hpp"
-#include "linalg/cublaspp/cublaspp.hpp"
+#include "external/cublaspp/cublaspp.hpp"
 #include "linalg/internal/cuda/precision_conversion.cuh"
 #endif
 
@@ -103,8 +103,8 @@ protected:
 
 public:
     virtual ~AbstractDistMatrix() = default;
-    virtual chase::Impl::mpi::MpiGrid2DBase* getMpiGrid() const = 0;   
-    virtual std::shared_ptr<chase::Impl::mpi::MpiGrid2DBase> getMpiGrid_shared_ptr() const = 0;
+    virtual chase::grid::MpiGrid2DBase* getMpiGrid() const = 0;   
+    virtual std::shared_ptr<chase::grid::MpiGrid2DBase> getMpiGrid_shared_ptr() const = 0;
     virtual std::size_t g_rows() const = 0;
     virtual std::size_t g_cols() const = 0;
     virtual std::size_t l_rows() const = 0;
@@ -305,7 +305,7 @@ public:
     ~RedundantMatrix() override {};
     RedundantMatrix();
     RedundantMatrix(std::size_t m, std::size_t n,
-                    std::shared_ptr<chase::Impl::mpi::MpiGrid2DBase> mpi_grid)
+                    std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid)
                     :m_(m), n_(n), ld_(m_), mpi_grid_(mpi_grid)
     {
         M_ = m_;
@@ -314,7 +314,7 @@ public:
     }
 
     RedundantMatrix(std::size_t m, std::size_t n, std::size_t ld, T *data, 
-                    std::shared_ptr<chase::Impl::mpi::MpiGrid2DBase> mpi_grid)
+                    std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid)
                     :m_(m), n_(n), ld_(ld), mpi_grid_(mpi_grid)
     {
         M_ = m_;
@@ -351,16 +351,16 @@ public:
 
 
     // Accessors for MPI grid
-    chase::Impl::mpi::MpiGrid2DBase* getMpiGrid() const override {
+    chase::grid::MpiGrid2DBase* getMpiGrid() const override {
         return mpi_grid_.get();
     }
 
-    std::shared_ptr<chase::Impl::mpi::MpiGrid2DBase> getMpiGrid_shared_ptr() const override
+    std::shared_ptr<chase::grid::MpiGrid2DBase> getMpiGrid_shared_ptr() const override
     {
         return mpi_grid_;
     }
 
-    void mapToNewMpiGrid(std::shared_ptr<chase::Impl::mpi::MpiGrid2DBase> new_mpi_grid)
+    void mapToNewMpiGrid(std::shared_ptr<chase::grid::MpiGrid2DBase> new_mpi_grid)
     {
         mpi_grid_ = new_mpi_grid;
     }
@@ -405,7 +405,7 @@ private:
     std::size_t ld_;
 
     typename chase::platform::MatrixTypePlatform<T, Platform>::type local_matrix_;
-    std::shared_ptr<chase::Impl::mpi::MpiGrid2DBase> mpi_grid_;    
+    std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid_;    
 
     void redistributeToBlockBlock(BlockBlockMatrix<T, Platform>* targetMatrix,
                                    std::size_t startRow, std::size_t subRows, std::size_t startCol, std::size_t subCols)
@@ -541,7 +541,7 @@ public:
     ~BlockBlockMatrix() override {};
     BlockBlockMatrix();
     BlockBlockMatrix(std::size_t M, std::size_t N,
-                    std::shared_ptr<chase::Impl::mpi::MpiGrid2DBase> mpi_grid)
+                    std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid)
                     :M_(M), N_(N), mpi_grid_(mpi_grid)
     {
         int *dims_ = mpi_grid_.get()->get_dims();
@@ -594,7 +594,7 @@ public:
     }
 
     BlockBlockMatrix(std::size_t m, std::size_t n, std::size_t ld, T *data,
-                    std::shared_ptr<chase::Impl::mpi::MpiGrid2DBase> mpi_grid)
+                    std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid)
                     :m_(m), n_(n), ld_(ld), mpi_grid_(mpi_grid)
     {
         uint64_t lv = static_cast<uint64_t>(m_);
@@ -664,11 +664,11 @@ public:
     typename chase::platform::MatrixTypePlatform<T, Platform>::type& loc_matrix() override { return local_matrix_;}
 
     // Accessors for MPI grid
-    chase::Impl::mpi::MpiGrid2DBase* getMpiGrid() const override {
+    chase::grid::MpiGrid2DBase* getMpiGrid() const override {
         return mpi_grid_.get();
     }
 
-    std::shared_ptr<chase::Impl::mpi::MpiGrid2DBase> getMpiGrid_shared_ptr() const override
+    std::shared_ptr<chase::grid::MpiGrid2DBase> getMpiGrid_shared_ptr() const override
     {
         return mpi_grid_;
     }
@@ -888,7 +888,7 @@ private:
     std::size_t g_offs_[2];
 
     typename chase::platform::MatrixTypePlatform<T, Platform>::type local_matrix_;
-    std::shared_ptr<chase::Impl::mpi::MpiGrid2DBase> mpi_grid_;
+    std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid_;
 
     void redistributeToRedundant(RedundantMatrix<T, Platform>* targetMatrix)
     {
@@ -1088,7 +1088,7 @@ public:
     ~BlockCyclicMatrix() override {};
     BlockCyclicMatrix();
     BlockCyclicMatrix(std::size_t M, std::size_t N, std::size_t mb, std::size_t nb,
-                    std::shared_ptr<chase::Impl::mpi::MpiGrid2DBase> mpi_grid)
+                    std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid)
                     :M_(M), N_(N), mpi_grid_(mpi_grid), mb_(mb), nb_(nb)
     {
         int *dims_ = mpi_grid_.get()->get_dims();
@@ -1106,7 +1106,7 @@ public:
                       std::size_t m, std::size_t n,
                       std::size_t mb, std::size_t nb,
                       std::size_t ld, T *data,
-                      std::shared_ptr<chase::Impl::mpi::MpiGrid2DBase> mpi_grid)
+                      std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid)
                       : M_(M), N_(N), mpi_grid_(mpi_grid), mb_(mb), nb_(nb), ld_(ld)
     {
         int *dims_ = mpi_grid_.get()->get_dims();
@@ -1174,11 +1174,11 @@ public:
     typename chase::platform::MatrixTypePlatform<T, Platform>::type& loc_matrix() override { return local_matrix_;}
 
     // Accessors for MPI grid
-    chase::Impl::mpi::MpiGrid2DBase* getMpiGrid() const override {
+    chase::grid::MpiGrid2DBase* getMpiGrid() const override {
         return mpi_grid_.get();
     }
 
-    std::shared_ptr<chase::Impl::mpi::MpiGrid2DBase> getMpiGrid_shared_ptr() const override
+    std::shared_ptr<chase::grid::MpiGrid2DBase> getMpiGrid_shared_ptr() const override
     {
         return mpi_grid_;
     }
@@ -1433,7 +1433,7 @@ private:
     std::vector<std::size_t> n_contiguous_lens_;
 
     typename chase::platform::MatrixTypePlatform<T, Platform>::type local_matrix_;
-    std::shared_ptr<chase::Impl::mpi::MpiGrid2DBase> mpi_grid_;
+    std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid_;
 
     void init_contiguous_buffer_info()
     {

@@ -6,10 +6,10 @@
 #include <vector>
 #include "algorithm/chaseBase.hpp"
 #include "linalg/matrix/matrix.hpp"
-#include "linalg/lapackpp/lapackpp.hpp"
+#include "external/lapackpp/lapackpp.hpp"
 #include "linalg/distMatrix/distMatrix.hpp"
 #include "linalg/distMatrix/distMultiVector.hpp"
-#include "Impl/grid/mpiGrid2D.hpp"
+#include "grid/mpiGrid2D.hpp"
 #include "linalg/internal/nccl/cholqr.hpp"
 #include "linalg/internal/nccl/lanczos.hpp"
 #include "linalg/internal/nccl/residuals.hpp"
@@ -17,7 +17,7 @@
 #include "linalg/internal/nccl/shiftDiagonal.hpp"
 #include "linalg/internal/cuda/random_normal_distribution.cuh"
 #ifdef HAS_SCALAPACK
-#include "linalg/scalapackpp/scalapackpp.hpp"
+#include "external/scalapackpp/scalapackpp.hpp"
 #endif
 #include "linalg/internal/nccl/symOrHerm.hpp"
 #include "algorithm/types.hpp"

@@ -101,8 +101,8 @@ int do_chase(ChASE_DriverProblemConfig& conf)
 
 #if defined(USE_MPI) || defined(HAS_NCCL)
     MPI_Comm_rank(MPI_COMM_WORLD, &grank);
-    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
-        = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(MPI_COMM_WORLD);
+    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid 
+        = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(MPI_COMM_WORLD);
 
 #ifdef USE_BLOCKCYCLIC
     std::size_t blocksize = 64;

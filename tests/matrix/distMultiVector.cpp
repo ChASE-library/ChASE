@@ -3,7 +3,7 @@
 #include <cmath>
 #include <cstring>
 #include "linalg/distMatrix/distMultiVector.hpp"
-#include "Impl/grid/mpiGrid2D.hpp"
+#include "grid/mpiGrid2D.hpp"
 
 template <typename T>
 class MultiVectorDistTest : public ::testing::Test {
@@ -26,8 +26,8 @@ TYPED_TEST(MultiVectorDistTest, RowCommInternalMemoryAllocation) {
     using T = TypeParam;  // Get the current type
     //using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type;
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
-    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
-            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(MPI_COMM_WORLD);
+    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(MPI_COMM_WORLD);
 
     std::size_t M = 6;
     std::size_t N = 4;
@@ -52,8 +52,8 @@ TYPED_TEST(MultiVectorDistTest, ColumnCommInternalMemoryAllocation) {
     using T = TypeParam;  // Get the current type
     //using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type;
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
-    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
-            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(MPI_COMM_WORLD);
+    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(MPI_COMM_WORLD);
 
     std::size_t M = 6;
     std::size_t N = 4;
@@ -77,8 +77,8 @@ TYPED_TEST(MultiVectorDistTest, RowCommExternalMemoryAllocation) {
     using T = TypeParam;  // Get the current type
     //using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type;
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
-    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
-            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(MPI_COMM_WORLD);
+    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(MPI_COMM_WORLD);
 
     std::size_t lrows = 3;
     std::size_t lcols = 2;
@@ -107,8 +107,8 @@ TYPED_TEST(MultiVectorDistTest, ColumnCommExternalMemoryAllocation) {
     using T = TypeParam;  // Get the current type
     //using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type;
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
-    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
-            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(MPI_COMM_WORLD);
+    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(MPI_COMM_WORLD);
 
     std::size_t lrows = 3;
     std::size_t lcols = 2;
@@ -135,8 +135,8 @@ TYPED_TEST(MultiVectorDistTest, ColumnCommExternalMemoryAllocation) {
 TYPED_TEST(MultiVectorDistTest, RedistributionFromColumnToRowCommunicator) {
     using T = TypeParam;  // Get the current type
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
-    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
-            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(MPI_COMM_WORLD);
+    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(MPI_COMM_WORLD);
 
     std::size_t M = 8;
     std::size_t N = 4;
@@ -183,8 +183,8 @@ TYPED_TEST(MultiVectorDistTest, RedistributionFromColumnToRowCommunicator) {
 TYPED_TEST(MultiVectorDistTest, RedistributionFromRowToColumnCommunicator) {
     using T = TypeParam;  // Get the current type
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
-    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
-            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(MPI_COMM_WORLD);
+    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(MPI_COMM_WORLD);
 
     std::size_t M = 8;
     std::size_t N = 4;
@@ -231,8 +231,8 @@ TYPED_TEST(MultiVectorDistTest, RedistributionFromRowToColumnCommunicator) {
 TYPED_TEST(MultiVectorDistTest, RedistributionFromSameCommunicatorExpectFail) {
     using T = TypeParam;  // Get the current type
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
-    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
-            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(MPI_COMM_WORLD);
+    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(MPI_COMM_WORLD);
 
     std::size_t M = 8;
     std::size_t N = 4;
@@ -254,8 +254,8 @@ TYPED_TEST(MultiVectorDistTest, BlockCyclicRowCommInternalMemoryAllocation) {
     using T = TypeParam;  // Get the current type
     //using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type;
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
-    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
-            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(MPI_COMM_WORLD);
+    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(MPI_COMM_WORLD);
 
     std::size_t M = 6;
     std::size_t N = 4;
@@ -284,8 +284,8 @@ TYPED_TEST(MultiVectorDistTest, BlockCyclicColumnCommInternalMemoryAllocation) {
     using T = TypeParam;  // Get the current type
     //using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type;
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
-    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
-            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(MPI_COMM_WORLD);
+    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(MPI_COMM_WORLD);
 
     std::size_t M = 6;
     std::size_t N = 4;
@@ -310,8 +310,8 @@ TYPED_TEST(MultiVectorDistTest, BlockCyclicRowCommExternalMemoryAllocation) {
     using T = TypeParam;  // Get the current type
     //using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type;
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
-    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
-            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(MPI_COMM_WORLD);
+    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(MPI_COMM_WORLD);
 
     std::size_t M = 6;
     std::size_t N = 4;
@@ -340,8 +340,8 @@ TYPED_TEST(MultiVectorDistTest, BlockCyclicColumnCommExternalMemoryAllocation) {
     using T = TypeParam;  // Get the current type
     //using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type;
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
-    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
-            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(MPI_COMM_WORLD);
+    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(MPI_COMM_WORLD);
 
     std::size_t M = 6;
     std::size_t N = 4;
@@ -370,8 +370,8 @@ TYPED_TEST(MultiVectorDistTest, BlockCyclicColumnCommExternalMemoryAllocation) {
 TYPED_TEST(MultiVectorDistTest, BlockCyclicRedistributionFromColumnToRowCommunicator) {
     using T = TypeParam;  // Get the current type
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
-    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
-            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(MPI_COMM_WORLD);
+    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(MPI_COMM_WORLD);
 
     std::size_t M = 6;
     std::size_t N = 4;
@@ -419,8 +419,8 @@ TYPED_TEST(MultiVectorDistTest, BlockCyclicRedistributionFromColumnToRowCommunic
 TYPED_TEST(MultiVectorDistTest, BlockCyclicRedistributionFromRowToColumnCommunicator) {
     using T = TypeParam;  // Get the current type
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
-    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
-            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(MPI_COMM_WORLD);
+    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(MPI_COMM_WORLD);
 
     std::size_t M = 6;
     std::size_t N = 4;
@@ -471,8 +471,8 @@ TYPED_TEST(MultiVectorDistTest, Block1DMixedPrecison) {
     using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type;
 
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
-    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
-            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(MPI_COMM_WORLD);
+    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(MPI_COMM_WORLD);
 
     std::size_t grows = 6;
     std::size_t gcols = 4;
@@ -525,8 +525,8 @@ TYPED_TEST(MultiVectorDistTest, RowCommExternalMemoryAllocationGPU) {
     using T = TypeParam;  // Get the current type
     //using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type;
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
-    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
-            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(MPI_COMM_WORLD);
+    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(MPI_COMM_WORLD);
 
     std::size_t lrows = 3;
     std::size_t lcols = 2;
@@ -554,8 +554,8 @@ TYPED_TEST(MultiVectorDistTest, RowCommExternalMemoryAllocationGPU) {
 TYPED_TEST(MultiVectorDistTest, RedistributionFromColumnToRowCommunicatorGPUCUDAAwareMPI) {
     using T = TypeParam;  // Get the current type
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
-    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
-            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(MPI_COMM_WORLD);
+    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(MPI_COMM_WORLD);
 
     std::size_t M = 8;
     std::size_t N = 4;
@@ -610,8 +610,8 @@ TYPED_TEST(MultiVectorDistTest, RedistributionFromColumnToRowCommunicatorGPUCUDA
 TYPED_TEST(MultiVectorDistTest, RedistributionFromRowToColumnCommunicatorGPUCUDAAwareMPI) {
     using T = TypeParam;  // Get the current type
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
-    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
-            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(MPI_COMM_WORLD);
+    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(MPI_COMM_WORLD);
       
     std::size_t M = 8;
     std::size_t N = 4;
@@ -665,8 +665,8 @@ TYPED_TEST(MultiVectorDistTest, RedistributionFromRowToColumnCommunicatorGPUCUDA
 TYPED_TEST(MultiVectorDistTest, RedistributionFromColumnToRowCommunicatorGPUNCCL) {
     using T = TypeParam;  // Get the current type
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
-    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
-            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(MPI_COMM_WORLD);
+    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(MPI_COMM_WORLD);
 
     std::size_t M = 8;
     std::size_t N = 4;
@@ -721,8 +721,8 @@ TYPED_TEST(MultiVectorDistTest, RedistributionFromColumnToRowCommunicatorGPUNCCL
 TYPED_TEST(MultiVectorDistTest, RedistributionAsyncFromRowToColumnCommunicatorGPUNCCL) {
     using T = TypeParam;  // Get the current type
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
-    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
-            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(MPI_COMM_WORLD);
+    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(MPI_COMM_WORLD);
       
     std::size_t M = 8;
     std::size_t N = 4;
@@ -776,8 +776,8 @@ TYPED_TEST(MultiVectorDistTest, BlockCyclicRowCommInternalMemoryAllocationGPU) {
     using T = TypeParam;  // Get the current type
     //using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type;
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
-    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
-            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(MPI_COMM_WORLD);
+    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(MPI_COMM_WORLD);
 
     std::size_t M = 6;
     std::size_t N = 4;
@@ -806,8 +806,8 @@ TYPED_TEST(MultiVectorDistTest, BlockCyclicColumnCommInternalMemoryAllocationGPU
     using T = TypeParam;  // Get the current type
     //using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type;
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
-    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
-            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(MPI_COMM_WORLD);
+    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(MPI_COMM_WORLD);
 
     std::size_t M = 6;
     std::size_t N = 4;
@@ -833,8 +833,8 @@ TYPED_TEST(MultiVectorDistTest, BlockCyclicRowCommExternalMemoryAllocationGPU) {
     using T = TypeParam;  // Get the current type
     //using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type;
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
-    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
-            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(MPI_COMM_WORLD);
+    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(MPI_COMM_WORLD);
 
     std::size_t M = 6;
     std::size_t N = 4;
@@ -863,8 +863,8 @@ TYPED_TEST(MultiVectorDistTest, BlockCyclicColumnCommExternalMemoryAllocationGPU
     using T = TypeParam;  // Get the current type
     //using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type;
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
-    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
-            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(MPI_COMM_WORLD);
+    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(MPI_COMM_WORLD);
 
     std::size_t M = 6;
     std::size_t N = 4;
@@ -893,8 +893,8 @@ TYPED_TEST(MultiVectorDistTest, BlockCyclicColumnCommExternalMemoryAllocationGPU
 TYPED_TEST(MultiVectorDistTest, BlockCyclicRedistributionFromColumnToRowCommunicatorGPUNCCL) {
     using T = TypeParam;  // Get the current type
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
-    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
-            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(MPI_COMM_WORLD);
+    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(MPI_COMM_WORLD);
 
     std::size_t M = 6;
     std::size_t N = 4;
@@ -947,8 +947,8 @@ TYPED_TEST(MultiVectorDistTest, BlockCyclicRedistributionFromColumnToRowCommunic
 TYPED_TEST(MultiVectorDistTest, BlockCyclicRedistributionFromRowToColumnCommunicatorGPUNCCL) {
     using T = TypeParam;  // Get the current type
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
-    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
-            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(MPI_COMM_WORLD);
+    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(MPI_COMM_WORLD);
 
     std::size_t M = 6;
     std::size_t N = 4;

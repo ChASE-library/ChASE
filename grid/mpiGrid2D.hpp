@@ -2,16 +2,15 @@
 
 #include "mpi.h"
 #ifdef HAS_SCALAPACK
-#include "linalg/scalapackpp/scalapackpp.hpp"
+#include "external/scalapackpp/scalapackpp.hpp"
 #endif
 #ifdef HAS_NCCL
 #include <nccl.h>
-#include "Impl/grid/nccl_utils.hpp"
+#include "grid/nccl_utils.hpp"
 #endif
 
 namespace chase {
-namespace Impl {
-namespace mpi {
+namespace grid {
 
 enum class GridMajor {
     RowMajor,
@@ -264,6 +263,5 @@ private:
 
 };
 
-} // namespace mpi
-} // namespace Impl
+} // namespace grid
 } // namespace chase

@@ -4,7 +4,7 @@
 #include <memory>
 #include <vector>
 
-#include "linalg/blaspp/blas_fortran.hpp"
+#include "external/blaspp/blas_fortran.hpp"
 #include "fortran_mangle.h"
 
 namespace chase

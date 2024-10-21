@@ -18,10 +18,8 @@ using namespace chase;
 
 #ifdef HAS_CUDA
 using ARCH = chase::platform::GPU;
-//typedef chase::Impl::ChaseNCCLGPU<T> ChaseImpl;
 #else
 using ARCH = chase::platform::CPU;
-//typedef chase::Impl::ChaseMPICPU<T> ChaseImpl;
 #endif
 
 int main(int argc, char** argv)
@@ -47,8 +45,8 @@ int main(int argc, char** argv)
     // MPI proc grid = dims[0] x dims[1]
     MPI_Dims_create(world_size, 2, dims_);
 
-    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
-        = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(dims_[0], dims_[1], MPI_COMM_WORLD);
+    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid 
+        = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(dims_[0], dims_[1], MPI_COMM_WORLD);
 
     int *dims = mpi_grid.get()->get_dims();
     int *coords = mpi_grid.get()->get_coords();

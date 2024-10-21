@@ -9,16 +9,16 @@
 
 #include "algorithm/types.hpp"
 #include "linalg/matrix/matrix.hpp"
-#include "Impl/grid/mpiGrid2D.hpp"
-#include "Impl/grid/mpiTypes.hpp"
-#include "linalg/lapackpp/lapackpp.hpp"
+#include "grid/mpiGrid2D.hpp"
+#include "grid/mpiTypes.hpp"
+#include "external/lapackpp/lapackpp.hpp"
 #include "linalg/distMatrix/distMatrix.hpp"
 
 #ifdef HAS_CUDA
 #include <cuda_runtime.h>
 #include "Impl/cuda/cuda_utils.hpp"
 #include "linalg/internal/cuda/lacpy.hpp"
-#include "linalg/cublaspp/cublaspp.hpp"
+#include "external/cublaspp/cublaspp.hpp"
 #include "linalg/internal/cuda/precision_conversion.cuh"
 #endif
 
@@ -75,8 +75,8 @@ public:
     virtual ~AbstractDistMultiVector() = default;
     virtual DistributionType getMultiVectorDistributionType() const = 0;
     virtual CommunicatorType getMultiVectorCommunicatorType() const = 0;
-    virtual chase::Impl::mpi::MpiGrid2DBase* getMpiGrid() const = 0;   
-    virtual std::shared_ptr<chase::Impl::mpi::MpiGrid2DBase> getMpiGrid_shared_ptr() const = 0;    
+    virtual chase::grid::MpiGrid2DBase* getMpiGrid() const = 0;   
+    virtual std::shared_ptr<chase::grid::MpiGrid2DBase> getMpiGrid_shared_ptr() const = 0;    
     virtual std::size_t g_rows() const = 0;
     virtual std::size_t g_cols() const = 0;
     virtual std::size_t l_rows() const = 0;
@@ -225,7 +225,7 @@ public:
     ~DistMultiVector1D() override {};
     DistMultiVector1D();    
     DistMultiVector1D(std::size_t M, std::size_t N,
-                    std::shared_ptr<chase::Impl::mpi::MpiGrid2DBase> mpi_grid)
+                    std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid)
                     :M_(M), N_(N), mpi_grid_(mpi_grid)
     {
         int *dims_ = mpi_grid_.get()->get_dims();
@@ -271,7 +271,7 @@ public:
     }
 
     DistMultiVector1D(std::size_t m, std::size_t n, std::size_t ld, T *data,
-                    std::shared_ptr<chase::Impl::mpi::MpiGrid2DBase> mpi_grid)
+                    std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid)
                     :m_(m), n_(n),ld_(ld), mpi_grid_(mpi_grid)
     {
         N_ = n_;
@@ -312,11 +312,11 @@ public:
     }
 
     // Accessors for MPI grid
-    chase::Impl::mpi::MpiGrid2DBase* getMpiGrid() const override {
+    chase::grid::MpiGrid2DBase* getMpiGrid() const override {
         return mpi_grid_.get();
     }
 
-    std::shared_ptr<chase::Impl::mpi::MpiGrid2DBase> getMpiGrid_shared_ptr() const override
+    std::shared_ptr<chase::grid::MpiGrid2DBase> getMpiGrid_shared_ptr() const override
     {
         return mpi_grid_;
     }
@@ -644,7 +644,7 @@ private:
     std::size_t n_;
     std::size_t ld_;
     typename chase::platform::MatrixTypePlatform<T, Platform>::type local_matrix_;
-    std::shared_ptr<chase::Impl::mpi::MpiGrid2DBase> mpi_grid_;
+    std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid_;
 #ifdef HAS_SCALAPACK
     std::size_t desc_[9];
 #endif
@@ -780,7 +780,7 @@ private:
                 {
                     if(coords[1] == i)
                     {
-                        CHECK_NCCL_ERROR(chase::Impl::nccl::ncclBcastWrapper(this->l_data() + offset * this->ld_, 
+                        CHECK_NCCL_ERROR(chase::nccl::ncclBcastWrapper(this->l_data() + offset * this->ld_, 
                                                                              this->m_ * subsetSize, 
                                                                              i, 
                                                                              this->mpi_grid_->get_nccl_row_comm(), 
@@ -788,7 +788,7 @@ private:
                     }
                     else
                     {
-                        CHECK_NCCL_ERROR(chase::Impl::nccl::ncclBcastWrapper(targetMultiVector->l_data() + offset * targetMultiVector->l_ld(), 
+                        CHECK_NCCL_ERROR(chase::nccl::ncclBcastWrapper(targetMultiVector->l_data() + offset * targetMultiVector->l_ld(), 
                                                                              targetMultiVector->l_rows() * subsetSize, 
                                                                              i, 
                                                                              this->mpi_grid_->get_nccl_row_comm(), 
@@ -833,7 +833,7 @@ private:
                 {
                     if(coords[0] == i)
                     {
-                        CHECK_NCCL_ERROR(chase::Impl::nccl::ncclBcastWrapper(this->l_data() + offset * this->ld_, 
+                        CHECK_NCCL_ERROR(chase::nccl::ncclBcastWrapper(this->l_data() + offset * this->ld_, 
                                                                              this->m_ * subsetSize, 
                                                                              i, 
                                                                              this->mpi_grid_->get_nccl_col_comm(), 
@@ -841,7 +841,7 @@ private:
                     }
                     else
                     {
-                        CHECK_NCCL_ERROR(chase::Impl::nccl::ncclBcastWrapper(targetMultiVector->l_data() + offset * targetMultiVector->l_ld(), 
+                        CHECK_NCCL_ERROR(chase::nccl::ncclBcastWrapper(targetMultiVector->l_data() + offset * targetMultiVector->l_ld(), 
                                                                              targetMultiVector->l_rows() * subsetSize, 
                                                                              i, 
                                                                              this->mpi_grid_->get_nccl_col_comm(), 
@@ -878,7 +878,7 @@ public:
     DistMultiVectorBlockCyclic1D(); 
 
     DistMultiVectorBlockCyclic1D(std::size_t M, std::size_t N, std::size_t mb,
-                    std::shared_ptr<chase::Impl::mpi::MpiGrid2DBase> mpi_grid)
+                    std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid)
                     :M_(M), N_(N), mpi_grid_(mpi_grid), mb_(mb)
     {
         int *dims_ = mpi_grid_.get()->get_dims();
@@ -903,7 +903,7 @@ public:
     DistMultiVectorBlockCyclic1D(std::size_t M, std::size_t m, 
                                  std::size_t n, std::size_t mb, 
                                  std::size_t ld, T *data,
-                                 std::shared_ptr<chase::Impl::mpi::MpiGrid2DBase> mpi_grid)
+                                 std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid)
                                  : M_(M), N_(n), n_(n), mb_(mb), mpi_grid_(mpi_grid), ld_(ld)
     {
         int *dims_ = mpi_grid_.get()->get_dims();
@@ -950,11 +950,11 @@ public:
     }
 
     // Accessors for MPI grid
-    chase::Impl::mpi::MpiGrid2DBase* getMpiGrid() const override {
+    chase::grid::MpiGrid2DBase* getMpiGrid() const override {
         return mpi_grid_.get();
     }
 
-    std::shared_ptr<chase::Impl::mpi::MpiGrid2DBase> getMpiGrid_shared_ptr() const override
+    std::shared_ptr<chase::grid::MpiGrid2DBase> getMpiGrid_shared_ptr() const override
     {
         return mpi_grid_;
     }
@@ -1278,7 +1278,7 @@ private:
     std::size_t mb_;
     std::size_t mblocks_;
     typename chase::platform::MatrixTypePlatform<T, Platform>::type local_matrix_;
-    std::shared_ptr<chase::Impl::mpi::MpiGrid2DBase> mpi_grid_;
+    std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid_;
 #ifdef HAS_SCALAPACK
     std::size_t desc_[9];
 #endif
@@ -1433,7 +1433,7 @@ private:
                 {
                     if(coords[1] == i)
                     {
-                        CHECK_NCCL_ERROR(chase::Impl::nccl::ncclBcastWrapper(this->l_data() + offset * this->ld_, 
+                        CHECK_NCCL_ERROR(chase::nccl::ncclBcastWrapper(this->l_data() + offset * this->ld_, 
                                                                              this->m_ * subsetSize, 
                                                                              i, 
                                                                              this->mpi_grid_->get_nccl_row_comm(), 
@@ -1441,7 +1441,7 @@ private:
                     }
                     else
                     {
-                        CHECK_NCCL_ERROR(chase::Impl::nccl::ncclBcastWrapper(targetMultiVector->l_data() + offset * targetMultiVector->l_ld(), 
+                        CHECK_NCCL_ERROR(chase::nccl::ncclBcastWrapper(targetMultiVector->l_data() + offset * targetMultiVector->l_ld(), 
                                                                              targetMultiVector->l_rows() * subsetSize, 
                                                                              i, 
                                                                              this->mpi_grid_->get_nccl_row_comm(), 
@@ -1491,7 +1491,7 @@ private:
                 {
                     if(coords[0] == i)
                     {
-                        CHECK_NCCL_ERROR(chase::Impl::nccl::ncclBcastWrapper(this->l_data() + offset * this->ld_, 
+                        CHECK_NCCL_ERROR(chase::nccl::ncclBcastWrapper(this->l_data() + offset * this->ld_, 
                                                                              this->m_ * subsetSize, 
                                                                              i, 
                                                                              this->mpi_grid_->get_nccl_col_comm(), 
@@ -1499,7 +1499,7 @@ private:
                     }
                     else
                     {
-                        CHECK_NCCL_ERROR(chase::Impl::nccl::ncclBcastWrapper(targetMultiVector->l_data() + offset * targetMultiVector->l_ld(), 
+                        CHECK_NCCL_ERROR(chase::nccl::ncclBcastWrapper(targetMultiVector->l_data() + offset * targetMultiVector->l_ld(), 
                                                                              targetMultiVector->l_rows() * subsetSize, 
                                                                              i, 
                                                                              this->mpi_grid_->get_nccl_col_comm(), 

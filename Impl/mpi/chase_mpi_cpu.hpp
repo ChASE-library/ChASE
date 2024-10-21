@@ -6,17 +6,17 @@
 #include <vector>
 #include "algorithm/chaseBase.hpp"
 #include "linalg/matrix/matrix.hpp"
-#include "linalg/lapackpp/lapackpp.hpp"
+#include "external/lapackpp/lapackpp.hpp"
 #include "linalg/distMatrix/distMatrix.hpp"
 #include "linalg/distMatrix/distMultiVector.hpp"
-#include "Impl/grid/mpiGrid2D.hpp"
+#include "grid/mpiGrid2D.hpp"
 #include "linalg/internal/mpi/cholqr.hpp"
 #include "linalg/internal/mpi/lanczos.hpp"
 #include "linalg/internal/mpi/residuals.hpp"
 #include "linalg/internal/mpi/rayleighRitz.hpp"
 #include "linalg/internal/mpi/shiftDiagonal.hpp"
 #ifdef HAS_SCALAPACK
-#include "linalg/scalapackpp/scalapackpp.hpp"
+#include "external/scalapackpp/scalapackpp.hpp"
 #endif
 #include "linalg/internal/mpi/symOrHerm.hpp"
 #include "algorithm/types.hpp"
