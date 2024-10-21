@@ -1,7 +1,7 @@
 #pragma once
 
 #include "residuals.cuh"
-#include "linalg/cublaspp/cublaspp.hpp"
+#include "external/cublaspp/cublaspp.hpp"
 #include "linalg/matrix/matrix.hpp"
 #include "Impl/cuda/cuda_utils.hpp"
 #include "Impl/cuda/nvtx.hpp"

@@ -3,7 +3,7 @@
 #include <cmath>
 #include <cstring>
 #include "linalg/internal/mpi/shiftDiagonal.hpp"
-#include "Impl/grid/mpiGrid2D.hpp"
+#include "grid/mpiGrid2D.hpp"
 #include "linalg/distMatrix/distMatrix.hpp"
 #include "linalg/distMatrix/distMultiVector.hpp"
 #include "linalg/internal/mpi/symOrHerm.hpp"
@@ -30,8 +30,8 @@ TYPED_TEST(SymOrHermCPUDistTest, UpperTriangularMatrix) {
 
     std::size_t N = 5;
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
-    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
-            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(2, 2, MPI_COMM_WORLD);
+    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(2, 2, MPI_COMM_WORLD);
     
     T U[N * N] = {1, 2, 3,  4,  5,
                   0, 6, 7,  8,  9,
@@ -57,8 +57,8 @@ TYPED_TEST(SymOrHermCPUDistTest, LowerTriangularMatrix) {
 
     std::size_t N = 5;
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
-    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
-            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(2, 2, MPI_COMM_WORLD);
+    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(2, 2, MPI_COMM_WORLD);
     
     T U[N * N] = {1, 0, 0,  0,  0,
                   2, 6, 0,  0,  0,

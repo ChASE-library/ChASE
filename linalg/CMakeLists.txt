@@ -1,29 +1,3 @@
-find_package(BLAS REQUIRED)
-find_package(LAPACK REQUIRED)
-
-enable_language( Fortran )
-include( FortranCInterface )
-FortranCInterface_HEADER( ${CMAKE_BINARY_DIR}/fortran_mangle.h
-  MACRO_NAMESPACE "FC_"
-  SYMBOL_NAMESPACE "FC_"
-  )
-
-list(APPEND includePath ${CMAKE_BINARY_DIR})
-
-add_library(blaspp INTERFACE)
-target_include_directories(blaspp INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/blaspp)
-target_include_directories( blaspp INTERFACE
-  "$<BUILD_INTERFACE:${includePath}>"
-)
-target_link_libraries(blaspp INTERFACE BLAS::BLAS)
-
-add_library(lapackpp INTERFACE)
-target_include_directories(lapackpp INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/lapackpp)
-target_include_directories( lapackpp INTERFACE
-  "$<BUILD_INTERFACE:${includePath}>"
-)
-target_link_libraries(lapackpp INTERFACE LAPACK::LAPACK)
-
 add_library(linalg_internal_cpu INTERFACE)
 target_include_directories(linalg_internal_cpu INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/internal/cpu)
 
@@ -32,25 +6,16 @@ target_include_directories(matrix INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/matrix)
 target_link_libraries(matrix INTERFACE blaspp lapackpp linalg_internal_cpu)
 
 add_library(distMatrix INTERFACE)
-find_package(MPI)
-if(MPI_FOUND)
+if(TARGET mpi_grid)
 add_library(linalg_internal_mpi INTERFACE)
 target_include_directories(linalg_internal_mpi INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/internal/mpi)
-target_link_libraries(linalg_internal_mpi INTERFACE MPI::MPI_CXX)
+target_link_libraries(linalg_internal_mpi INTERFACE mpi_grid)
 target_include_directories(distMatrix INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/distMatrix)
 target_link_libraries(distMatrix INTERFACE blaspp lapackpp linalg_internal_mpi)
 endif()
 
-find_package(SCALAPACK)
-if(SCALAPACK_FOUND)
-  add_library(scalapackpp INTERFACE)
-  target_include_directories(scalapackpp INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/scalapackpp)
-  target_compile_definitions(scalapackpp INTERFACE HAS_SCALAPACK=1)
-  target_link_libraries(scalapackpp INTERFACE ${SCALAPACK_LIBRARIES})
-  message(STATUS "ScaLAPACK support enabled.")
+if(TARGET scalapackpp)
   target_link_libraries(distMatrix INTERFACE scalapackpp)
-else()
-    message(STATUS "No ScaLAPACK is detected.")
 endif()
 
 include(CheckLanguage)
@@ -81,20 +46,6 @@ if(CMAKE_CUDA_COMPILER)
   endif()
 
   message("-- Configuring the build of CUDA with the compute capability of ${CMAKE_CUDA_ARCHITECTURES}")
-
-  add_library(cublaspp INTERFACE)
-  target_include_directories(cublaspp INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/cublaspp)
-  target_link_libraries(cublaspp INTERFACE ${CUDA_CUBLAS_LIBRARIES} CUDA::cudart)
-  target_include_directories( cublaspp INTERFACE
-    ${CUDA_INCLUDE_DIRS}
-    )
-
-  add_library(cusolverpp INTERFACE)
-  target_include_directories(cusolverpp INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/cusolverpp)
-  target_link_libraries(cusolverpp INTERFACE ${CUDA_cusolver_LIBRARY} CUDA::cudart)
-  target_include_directories( cusolverpp INTERFACE
-    ${CUDA_INCLUDE_DIRS}
-    )
     
   # Specify the CUDA source files
   set(CUDA_SOURCES
@@ -136,8 +87,7 @@ if(CMAKE_CUDA_COMPILER)
   target_link_libraries(distMatrix_gpu INTERFACE cublaspp cusolverpp linalg_internal_cuda)
   target_compile_definitions(distMatrix_gpu INTERFACE HAS_CUDA=1)
 
-  find_package(NCCL)
-  if(NCCL_FOUND)
+  if(TARGET mpi_grid_nccl)
     add_library(linalg_internal_nccl INTERFACE)
     target_include_directories(linalg_internal_nccl INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/internal/nccl)
     target_link_libraries(linalg_internal_nccl INTERFACE mpi_grid_nccl linalg_internal_cuda)

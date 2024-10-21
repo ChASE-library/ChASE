@@ -1,9 +1,9 @@
 #pragma once
 
 #include "mpi.h"
-#include "Impl/grid/mpiTypes.hpp"
-#include "linalg/blaspp/blaspp.hpp"
-#include "linalg/lapackpp/lapackpp.hpp"
+#include "grid/mpiTypes.hpp"
+#include "external/blaspp/blaspp.hpp"
+#include "external/lapackpp/lapackpp.hpp"
 #include "linalg/distMatrix/distMatrix.hpp"
 #include "linalg/distMatrix/distMultiVector.hpp"
 #include "linalg/internal/mpi/hemm.hpp"

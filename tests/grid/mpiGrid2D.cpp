@@ -2,9 +2,9 @@
 #include <cmath>
 #include <cstring>
 #include <mpi.h>
-#include "Impl/grid/mpiGrid2D.hpp"
+#include "grid/mpiGrid2D.hpp"
 #ifdef HAS_NCCL
-#include "Impl/cuda/cuda_utils.hpp"
+#include "cuda/cuda_utils.hpp"
 #endif
 
 class MpiGrid2DTest : public ::testing::Test {
@@ -27,7 +27,7 @@ TEST_F(MpiGrid2DTest, RowMajorGridCreation)
 {
     // Assuming we want a 2x2 grid for testing (when world_size is 4)
     ASSERT_EQ(world_size, 4);  // Ensure we're running with 4 processes
-    chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::RowMajor> grid(2, 2, MPI_COMM_WORLD);
+    chase::grid::MpiGrid2D<chase::grid::GridMajor::RowMajor> grid(2, 2, MPI_COMM_WORLD);
 
     // Test that row communicator and column communicator are created
     MPI_Comm row_comm = grid.get_row_comm();
@@ -42,7 +42,7 @@ TEST_F(MpiGrid2DTest, RowMajorGridCreation)
     EXPECT_EQ(dims[1], 2);
 
     // Test grid major
-    EXPECT_EQ(grid.getGridMajor(), chase::Impl::mpi::GridMajor::RowMajor);
+    EXPECT_EQ(grid.getGridMajor(), chase::grid::GridMajor::RowMajor);
 
     // Test grid coordinates
     int* coords = grid.get_coords();
@@ -86,7 +86,7 @@ TEST_F(MpiGrid2DTest, ColMajorGridCreation) {
     // Assuming we want a 2x2 grid for testing (when world_size is 4)
     ASSERT_EQ(world_size, 4);  // Ensure we're running with 4 processes
 
-    chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor> grid(2, 2, MPI_COMM_WORLD);
+    chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor> grid(2, 2, MPI_COMM_WORLD);
 
     // Test that row communicator and column communicator are created
     MPI_Comm row_comm = grid.get_row_comm();
@@ -101,7 +101,7 @@ TEST_F(MpiGrid2DTest, ColMajorGridCreation) {
     EXPECT_EQ(dims[1], 2);
 
     // Test grid major
-    EXPECT_EQ(grid.getGridMajor(), chase::Impl::mpi::GridMajor::ColMajor);
+    EXPECT_EQ(grid.getGridMajor(), chase::grid::GridMajor::ColMajor);
 
     // Test grid coordinates
     int* coords = grid.get_coords();
@@ -144,7 +144,7 @@ TEST_F(MpiGrid2DTest, ColMajorGridCreation) {
 // Test for auto dimensions creation using MPI_Dims_create
 TEST_F(MpiGrid2DTest, AutoGridDimensionCreation) {
     // Automatically create dimensions based on available processes
-    chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::RowMajor> grid(MPI_COMM_WORLD);
+    chase::grid::MpiGrid2D<chase::grid::GridMajor::RowMajor> grid(MPI_COMM_WORLD);
 
     // Test grid dimensions were automatically created
     int* dims = grid.get_dims();
@@ -163,7 +163,7 @@ TEST_F(MpiGrid2DTest, RowMajorGridCreationNCCLSquaredGrid)
 {
     // Assuming we want a 2x2 grid for testing (when world_size is 4)
     ASSERT_EQ(world_size, 4);  // Ensure we're running with 4 processes
-    chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::RowMajor> grid(2, 2, MPI_COMM_WORLD);
+    chase::grid::MpiGrid2D<chase::grid::GridMajor::RowMajor> grid(2, 2, MPI_COMM_WORLD);
 
     // Test that row communicator and column communicator are created
     ncclComm_t nccl_row_comm = grid.get_nccl_row_comm();
@@ -216,7 +216,7 @@ TEST_F(MpiGrid2DTest, ColMajorGridCreationNCCLSquaredGrid)
 {
     // Assuming we want a 2x2 grid for testing (when world_size is 4)
     ASSERT_EQ(world_size, 4);  // Ensure we're running with 4 processes
-    chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor> grid(2, 2, MPI_COMM_WORLD);
+    chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor> grid(2, 2, MPI_COMM_WORLD);
 
     // Test that row communicator and column communicator are created
     ncclComm_t nccl_row_comm = grid.get_nccl_row_comm();
@@ -269,7 +269,7 @@ TEST_F(MpiGrid2DTest, ColMajorGridCreationNCCLNonSquaredGrid)
 {
     // Assuming we want a 2x2 grid for testing (when world_size is 4)
     ASSERT_EQ(world_size, 4);  // Ensure we're running with 4 processes
-    chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor> grid(4, 1, MPI_COMM_WORLD);
+    chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor> grid(4, 1, MPI_COMM_WORLD);
 
     // Test that row communicator and column communicator are created
     ncclComm_t nccl_row_comm = grid.get_nccl_row_comm();
@@ -304,7 +304,7 @@ TEST_F(MpiGrid2DTest, NCCLAllreduceWrapper)
 {
     // Assuming we want a 2x2 grid for testing (when world_size is 4)
     ASSERT_EQ(world_size, 4);  // Ensure we're running with 4 processes
-    chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::RowMajor> grid(2, 2, MPI_COMM_WORLD);
+    chase::grid::MpiGrid2D<chase::grid::GridMajor::RowMajor> grid(2, 2, MPI_COMM_WORLD);
 
     // Test that row communicator and column communicator are created
     ncclComm_t nccl_row_comm = grid.get_nccl_row_comm();
@@ -391,7 +391,7 @@ TEST_F(MpiGrid2DTest, NCCLBcasteWrapper)
 {
     // Assuming we want a 2x2 grid for testing (when world_size is 4)
     ASSERT_EQ(world_size, 4);  // Ensure we're running with 4 processes
-    chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::RowMajor> grid(2, 2, MPI_COMM_WORLD);
+    chase::grid::MpiGrid2D<chase::grid::GridMajor::RowMajor> grid(2, 2, MPI_COMM_WORLD);
 
     // Test that row communicator and column communicator are created
     ncclComm_t nccl_row_comm = grid.get_nccl_row_comm();

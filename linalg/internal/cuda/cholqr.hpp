@@ -2,8 +2,8 @@
 
 #include <limits>
 #include <iomanip>
-#include "linalg/cublaspp/cublaspp.hpp"
-#include "linalg/cusolverpp/cusolverpp.hpp"
+#include "external/cublaspp/cublaspp.hpp"
+#include "external/cusolverpp/cusolverpp.hpp"
 #include "Impl/cuda/cuda_utils.hpp"
 #include "linalg/matrix/matrix.hpp"
 #include "linalg/internal/cuda/absTrace.hpp"

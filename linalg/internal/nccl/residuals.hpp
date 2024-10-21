@@ -1,9 +1,9 @@
 #pragma once
 
 #include "mpi.h"
-#include "Impl/grid/mpiTypes.hpp"
-#include "linalg/blaspp/blaspp.hpp"
-#include "linalg/lapackpp/lapackpp.hpp"
+#include "grid/mpiTypes.hpp"
+#include "external/blaspp/blaspp.hpp"
+#include "external/lapackpp/lapackpp.hpp"
 #include "linalg/distMatrix/distMatrix.hpp"
 #include "linalg/distMatrix/distMultiVector.hpp"
 #include "linalg/internal/nccl/hemm.hpp"
@@ -56,7 +56,7 @@ namespace nccl
                                                     resids.gpu_data() + offset,
                                                     false, (cudaStream_t)0);  
         
-        CHECK_NCCL_ERROR(chase::Impl::nccl::ncclAllReduceWrapper<chase::Base<T>>(resids.gpu_data() + offset,
+        CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<chase::Base<T>>(resids.gpu_data() + offset,
                                                                     resids.gpu_data() + offset,
                                                                     subSize, 
                                                                     ncclSum, 

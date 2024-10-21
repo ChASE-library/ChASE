@@ -5,7 +5,7 @@
 #include "linalg/internal/mpi/cholqr.hpp"
 #include "tests/linalg/internal/mpi/TestConditions.hpp"
 #include "tests/linalg/internal/utils.hpp"
-#include "Impl/grid/mpiGrid2D.hpp"
+#include "grid/mpiGrid2D.hpp"
 
 template <typename T>
 class CHOLQRCPUDistTest : public ::testing::Test {
@@ -129,8 +129,8 @@ TYPED_TEST(CHOLQRCPUDistTest, scholQR) {
 TYPED_TEST(CHOLQRCPUDistTest, scalapackHHQR) {
     using T = TypeParam;  // Get the current type
     assert(this->world_size == 4);
-    std::shared_ptr<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>> mpi_grid 
-            = std::make_shared<chase::Impl::mpi::MpiGrid2D<chase::Impl::mpi::GridMajor::ColMajor>>(4, 1, MPI_COMM_WORLD);
+    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(4, 1, MPI_COMM_WORLD);
 
     auto V_ = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column>(this->N, this->n, mpi_grid);
 

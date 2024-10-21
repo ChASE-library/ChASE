@@ -2,7 +2,7 @@
 
 #include <complex>
 #include <fortran_mangle.h>
-#include "linalg/blaspp/blas_fortran.hpp"
+#include "external/blaspp/blas_fortran.hpp"
 
 namespace chase
 {

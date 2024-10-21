@@ -7,12 +7,12 @@
 #include <cstddef>      // std::size_t
 #include <complex>      // std::complex (if you're using complex types)
 #include "algorithm/types.hpp"
-#include "linalg/lapackpp/lapackpp.hpp"
+#include "external/lapackpp/lapackpp.hpp"
 #include <omp.h>
 #ifdef HAS_CUDA
 #include <cuda_runtime.h>
 #include "Impl/cuda/cuda_utils.hpp"
-#include "linalg/cublaspp/cublaspp.hpp"
+#include "external/cublaspp/cublaspp.hpp"
 #include "linalg/internal/cuda/precision_conversion.cuh"
 #endif
 

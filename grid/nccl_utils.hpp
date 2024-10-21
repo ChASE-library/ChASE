@@ -19,7 +19,6 @@ void checkNccl(ncclResult_t err, const char* const func, const char* const file,
 #endif
 
 namespace chase{
-namespace Impl{
 namespace nccl{
 
 template <typename T>
@@ -87,6 +86,5 @@ ncclResult_t ncclBcastWrapper(T* buffer, std::size_t count, int root, ncclComm_t
     return status;
 }
 
-}
 }
 }

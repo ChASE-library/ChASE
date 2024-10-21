@@ -2,7 +2,7 @@
 
 #include <complex>
 #include "algorithm/types.hpp"
-#include "linalg/blaspp/blaspp.hpp"
+#include "external/blaspp/blaspp.hpp"
 
 namespace chase
 {

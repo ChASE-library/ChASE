@@ -1,8 +1,8 @@
 #pragma once
 
 #include <cstring>
-#include "linalg/blaspp/blaspp.hpp"
-#include "linalg/lapackpp/lapackpp.hpp"
+#include "external/blaspp/blaspp.hpp"
+#include "external/lapackpp/lapackpp.hpp"
 #include "linalg/internal/cpu/utils.hpp"
 
 using namespace chase::linalg;

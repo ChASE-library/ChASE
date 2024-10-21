@@ -1,7 +1,7 @@
 #pragma once
 
 #include "algorithm/types.hpp"
-#include "linalg/blaspp/blaspp.hpp"
+#include "external/blaspp/blaspp.hpp"
 
 using namespace chase::linalg;
 
