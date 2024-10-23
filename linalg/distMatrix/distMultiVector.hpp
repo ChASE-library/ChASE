@@ -267,7 +267,14 @@ public:
         
         ld_ = m_;
 
-        local_matrix_ =  typename chase::platform::MatrixTypePlatform<T, Platform>::type(m_, n_);       
+        local_matrix_ =  typename chase::platform::MatrixTypePlatform<T, Platform>::type(m_, n_);  
+
+        mb_ = m_;
+
+        if (coord == dim - 1 && dim != 1)
+        {
+            mb_ = (M_ - m_) / (dim - 1);
+        }    
     }
 
     DistMultiVector1D(std::size_t m, std::size_t n, std::size_t ld, T *data,
@@ -300,7 +307,33 @@ public:
         if constexpr (std::is_same<Platform, chase::platform::GPU>::value)
         {
             ld_ = local_matrix_.gpu_ld();
-        }       
+        }
+
+        int *dims_ = mpi_grid_.get()->get_dims();
+        int *coord_ = mpi_grid_.get()->get_coords();
+
+        int dim, coord;
+
+        if constexpr (comm_type == chase::distMultiVector::CommunicatorType::row) //distributed within row communicator
+        {
+            dim = dims_[1];
+            coord = coord_[1];
+        } else if constexpr (comm_type == chase::distMultiVector::CommunicatorType::column)
+        {
+            dim = dims_[0];
+            coord = coord_[0];
+        }else
+        {
+            std::runtime_error("no CommunicatorType supported");
+        }
+
+        mb_ = m_;
+
+        if (coord == dim - 1 && dim != 1)
+        {
+            mb_ = (M_ - m_) / (dim - 1);
+        }
+        
     }    
 
     DistributionType getMultiVectorDistributionType() const override {
@@ -389,6 +422,7 @@ public:
         std::swap(m_, other.m_);
         std::swap(n_, other.n_);
         std::swap(ld_, other.ld_);
+        std::swap(mb_, other.mb_);
         local_matrix_.swap(other.local_matrix_);
 #ifdef ENABLE_MIXED_PRECISION
         std::swap(this->is_single_precision_enabled_, other.is_single_precision_enabled_);
@@ -568,7 +602,7 @@ public:
     std::size_t l_rows() const override { return m_;}
     std::size_t l_cols() const override { return n_;}
     std::size_t l_ld() const override { return ld_;}
-    std::size_t mb() const override { return -1;}    
+    std::size_t mb() const override { return mb_;}    
 
     T *         l_data() override { 
         if constexpr (std::is_same<Platform, chase::platform::CPU>::value)
@@ -643,11 +677,77 @@ private:
     std::size_t m_;
     std::size_t n_;
     std::size_t ld_;
+    std::size_t mb_;
     typename chase::platform::MatrixTypePlatform<T, Platform>::type local_matrix_;
-    std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid_;
+    std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid_;    
 #ifdef HAS_SCALAPACK
     std::size_t desc_[9];
 #endif
+    //data for redistribution
+    std::vector<std::size_t> orig_dests;
+    std::vector<std::size_t> orig_srcs;
+    std::vector<std::size_t> orig_lens;
+    std::vector<std::size_t> target_disps;
+    std::vector<std::size_t> orig_disps;
+
+    template<typename OtherPlatform, chase::distMultiVector::CommunicatorType OtherCommType>
+    void init_redistribution(DistMultiVector1D<T, OtherCommType, OtherPlatform>* targetMultiVector)
+    {
+        orig_dests = std::vector<std::size_t>();
+        orig_srcs = std::vector<std::size_t>();
+        orig_lens = std::vector<std::size_t>();
+        target_disps = std::vector<std::size_t>();
+        orig_disps = std::vector<std::size_t>();
+
+        std::size_t orig_dest = 0;
+        std::size_t orig_src = 0;
+        orig_dests.push_back(orig_dest);
+        orig_srcs.push_back(orig_src);
+        std::size_t len = 1;
+        std::size_t orig_disp = 0;
+        std::size_t target_disp = 0;
+        orig_disps.push_back(orig_disp);
+        target_disps.push_back(target_disp);
+
+        std::size_t mb = this->mb();
+        std::size_t nb = targetMultiVector->mb();
+        int *coords = mpi_grid_.get()->get_coords();
+        int *dims = mpi_grid_.get()->get_dims();
+        int dim0, dim1;
+        if constexpr (comm_type == chase::distMultiVector::CommunicatorType::column)
+        {
+            dim0 = dims[0];
+            dim1 = dims[1];
+        }else if constexpr (comm_type == chase::distMultiVector::CommunicatorType::row)
+        {
+            dim0 = dims[1];
+            dim1 = dims[0];            
+        }
+
+        for(auto i = 1; i < M_; i++)
+        {
+            auto src_tmp = (i / mb) % dim0;
+            auto dest_tmp = (i / nb) % dim1;
+            if (dest_tmp == orig_dest && src_tmp == orig_src)
+            {
+                len += 1;
+            }else
+            {
+                orig_lens.push_back(len);  
+                orig_dest = (i / nb) % dim1;
+                target_disp = i % nb + ((i / nb) / dim1) * nb;
+                orig_disp = i % mb + ((i / mb) / dim0) * mb;
+                orig_src = (i / mb) % dim0;
+                orig_srcs.push_back(orig_src);
+                orig_dests.push_back(orig_dest);
+                target_disps.push_back(target_disp);
+                orig_disps.push_back(orig_disp);
+                len = 1;
+            }   
+        }
+        orig_lens.push_back(len);
+    }
+
     template<typename OtherPlatform>
     void redistributeRowToColumn(DistMultiVector1D<T, CommunicatorType::column, OtherPlatform>* targetMultiVector,
                                     std::size_t offset, std::size_t subsetSize) {
@@ -698,6 +798,42 @@ private:
                     }
 #endif
                 }
+            }
+        }else
+        {
+            init_redistribution<OtherPlatform, chase::distMultiVector::CommunicatorType::column>(targetMultiVector);
+
+            for(auto i = 0; i < orig_lens.size(); i++)
+            {
+                if(coords[0] == orig_dests[i])
+                {
+                    if constexpr (std::is_same<Platform, chase::platform::CPU>::value)
+                    {
+                        auto max_c_len = *max_element(orig_lens.begin(), orig_lens.end());
+                        std::unique_ptr<chase::matrix::MatrixCPU<T>> buff = std::make_unique<chase::matrix::MatrixCPU<T>>(max_c_len, subsetSize);
+                        chase::linalg::lapackpp::t_lacpy('A', orig_lens[i], subsetSize, this->l_data() + offset * this->ld_ + orig_disps[i], this->ld_, 
+                                                           buff->data(), orig_lens[i]);    
+
+                        MPI_Bcast(buff->data(), orig_lens[i] * subsetSize, chase::mpi::getMPI_Type<T>(), orig_srcs[i], this->mpi_grid_->get_row_comm());
+                        chase::linalg::lapackpp::t_lacpy('A', orig_lens[i], subsetSize, buff->data(), orig_lens[i], 
+                                                           targetMultiVector->l_data() + target_disps[i] + offset * targetMultiVector->l_ld(), targetMultiVector->l_ld());   
+
+                    }
+#ifdef HAS_CUDA                                    
+                    else
+                    {
+                        auto max_c_len = *max_element(orig_lens.begin(), orig_lens.end());
+                        std::unique_ptr<chase::matrix::MatrixGPU<T>> buff = std::make_unique<chase::matrix::MatrixGPU<T>>(max_c_len, subsetSize);
+                        chase::linalg::internal::cuda::t_lacpy('A', orig_lens[i], subsetSize, this->l_data() + offset * this->ld_ + orig_disps[i], this->ld_, 
+                                                           buff->gpu_data(), orig_lens[i]);    
+
+                        MPI_Bcast(buff->gpu_data(), orig_lens[i] * subsetSize, chase::mpi::getMPI_Type<T>(), orig_srcs[i], this->mpi_grid_->get_row_comm());
+                        chase::linalg::internal::cuda::t_lacpy('A', orig_lens[i], subsetSize, buff->gpu_data(), orig_lens[i], 
+                                                           targetMultiVector->l_data() + target_disps[i] + offset * targetMultiVector->l_ld(), targetMultiVector->l_ld());                         
+                    }
+#endif                    
+                }
+                
             }
         }
     }
@@ -754,6 +890,42 @@ private:
 
                 }
             }
+        }else
+        {
+            init_redistribution<OtherPlatform, chase::distMultiVector::CommunicatorType::row>(targetMultiVector);
+
+            for(auto i = 0; i < orig_lens.size(); i++)
+            {
+                if(coords[1] == orig_dests[i])
+                {
+                    if constexpr (std::is_same<Platform, chase::platform::CPU>::value)
+                    {
+                        auto max_c_len = *max_element(orig_lens.begin(), orig_lens.end());
+                        std::unique_ptr<chase::matrix::MatrixCPU<T>> buff = std::make_unique<chase::matrix::MatrixCPU<T>>(max_c_len, subsetSize);
+                        chase::linalg::lapackpp::t_lacpy('A', orig_lens[i], subsetSize, this->l_data() + offset * this->ld_ + orig_disps[i], this->ld_, 
+                                                           buff->data(), orig_lens[i]);    
+
+                        MPI_Bcast(buff->data(), orig_lens[i] * subsetSize, chase::mpi::getMPI_Type<T>(), orig_srcs[i], this->mpi_grid_->get_col_comm());
+                        chase::linalg::lapackpp::t_lacpy('A', orig_lens[i], subsetSize, buff->data(), orig_lens[i], 
+                                                           targetMultiVector->l_data() + target_disps[i] + offset * targetMultiVector->l_ld(), targetMultiVector->l_ld());   
+
+                    }
+#ifdef HAS_CUDA                                    
+                    else
+                    {
+                        auto max_c_len = *max_element(orig_lens.begin(), orig_lens.end());
+                        std::unique_ptr<chase::matrix::MatrixGPU<T>> buff = std::make_unique<chase::matrix::MatrixGPU<T>>(max_c_len, subsetSize);
+                        chase::linalg::internal::cuda::t_lacpy('A', orig_lens[i], subsetSize, this->l_data() + offset * this->ld_ + orig_disps[i], this->ld_, 
+                                                           buff->gpu_data(), orig_lens[i]);    
+
+                        MPI_Bcast(buff->gpu_data(), orig_lens[i] * subsetSize, chase::mpi::getMPI_Type<T>(), orig_srcs[i], this->mpi_grid_->get_col_comm());
+                        chase::linalg::internal::cuda::t_lacpy('A', orig_lens[i], subsetSize, buff->gpu_data(), orig_lens[i], 
+                                                           targetMultiVector->l_data() + target_disps[i] + offset * targetMultiVector->l_ld(), targetMultiVector->l_ld());                         
+                    }
+#endif                    
+                }
+                
+            }
         }
     }
 #ifdef HAS_CUDA
@@ -807,8 +979,31 @@ private:
                     
                 }
             }
-        }
-        
+        }else
+        {
+            init_redistribution<chase::platform::GPU, chase::distMultiVector::CommunicatorType::column>(targetMultiVector);
+
+            for(auto i = 0; i < orig_lens.size(); i++)
+            {
+                if(coords[0] == orig_dests[i])
+                {
+                    auto max_c_len = *max_element(orig_lens.begin(), orig_lens.end());
+                    std::unique_ptr<chase::matrix::MatrixGPU<T>> buff = std::make_unique<chase::matrix::MatrixGPU<T>>(max_c_len, subsetSize);
+                    chase::linalg::internal::cuda::t_lacpy('A', orig_lens[i], subsetSize, this->l_data() + offset * this->ld_ + orig_disps[i], this->ld_, 
+                                                        buff->gpu_data(), orig_lens[i]);    
+
+                    CHECK_NCCL_ERROR(chase::nccl::ncclBcastWrapper(buff->gpu_data(), 
+                                                        orig_lens[i] * subsetSize, 
+                                                        orig_srcs[i], 
+                                                        this->mpi_grid_->get_nccl_row_comm(), 
+                                                        &stream));
+                                                        
+                    chase::linalg::internal::cuda::t_lacpy('A', orig_lens[i], subsetSize, buff->gpu_data(), orig_lens[i], 
+                                                        targetMultiVector->l_data() + target_disps[i] + offset * targetMultiVector->l_ld(), targetMultiVector->l_ld());   
+                                     
+                }   
+            }
+        }        
     }
 
     void redistributeColumnToRowAsync(DistMultiVector1D<T, CommunicatorType::row, chase::platform::GPU>* targetMultiVector,
@@ -858,8 +1053,31 @@ private:
                                                         targetMultiVector->l_data() + offset * targetMultiVector->l_ld(), targetMultiVector->l_ld());                         
                 }
             }
+        }else
+        {
+            init_redistribution<chase::platform::GPU, chase::distMultiVector::CommunicatorType::row>(targetMultiVector);
+
+            for(auto i = 0; i < orig_lens.size(); i++)
+            {
+                if(coords[1] == orig_dests[i])
+                {
+                    auto max_c_len = *max_element(orig_lens.begin(), orig_lens.end());
+                    std::unique_ptr<chase::matrix::MatrixGPU<T>> buff = std::make_unique<chase::matrix::MatrixGPU<T>>(max_c_len, subsetSize);
+                    chase::linalg::internal::cuda::t_lacpy('A', orig_lens[i], subsetSize, this->l_data() + offset * this->ld_ + orig_disps[i], this->ld_, 
+                                                        buff->gpu_data(), orig_lens[i]);    
+
+                    CHECK_NCCL_ERROR(chase::nccl::ncclBcastWrapper(buff->gpu_data(), 
+                                                        orig_lens[i] * subsetSize, 
+                                                        orig_srcs[i], 
+                                                        this->mpi_grid_->get_nccl_col_comm(), 
+                                                        &stream));
+                                                        
+                    chase::linalg::internal::cuda::t_lacpy('A', orig_lens[i], subsetSize, buff->gpu_data(), orig_lens[i], 
+                                                        targetMultiVector->l_data() + target_disps[i] + offset * targetMultiVector->l_ld(), targetMultiVector->l_ld());   
+                                     
+                }   
+            }
         }
-        
     }
     
 #endif
@@ -1282,6 +1500,70 @@ private:
 #ifdef HAS_SCALAPACK
     std::size_t desc_[9];
 #endif
+    //data for redistribution
+    std::vector<std::size_t> orig_dests;
+    std::vector<std::size_t> orig_srcs;
+    std::vector<std::size_t> orig_lens;
+    std::vector<std::size_t> target_disps;
+    std::vector<std::size_t> orig_disps;
+
+    template<typename OtherPlatform, chase::distMultiVector::CommunicatorType OtherCommType>
+    void init_redistribution(DistMultiVectorBlockCyclic1D<T, OtherCommType, OtherPlatform>* targetMultiVector)
+    {
+        orig_dests = std::vector<std::size_t>();
+        orig_srcs = std::vector<std::size_t>();
+        orig_lens = std::vector<std::size_t>();
+        target_disps = std::vector<std::size_t>();
+        orig_disps = std::vector<std::size_t>();
+
+        std::size_t orig_dest = 0;
+        std::size_t orig_src = 0;
+        orig_dests.push_back(orig_dest);
+        orig_srcs.push_back(orig_src);
+        std::size_t len = 1;
+        std::size_t orig_disp = 0;
+        std::size_t target_disp = 0;
+        orig_disps.push_back(orig_disp);
+        target_disps.push_back(target_disp);
+
+        std::size_t mb = this->mb();
+        std::size_t nb = targetMultiVector->mb();
+        int *coords = mpi_grid_.get()->get_coords();
+        int *dims = mpi_grid_.get()->get_dims();
+        int dim0, dim1;
+        if constexpr (comm_type == chase::distMultiVector::CommunicatorType::column)
+        {
+            dim0 = dims[0];
+            dim1 = dims[1];
+        }else if constexpr (comm_type == chase::distMultiVector::CommunicatorType::row)
+        {
+            dim0 = dims[1];
+            dim1 = dims[0];            
+        }
+
+        for(auto i = 1; i < M_; i++)
+        {
+            auto src_tmp = (i / mb) % dim0;
+            auto dest_tmp = (i / nb) % dim1;
+            if (dest_tmp == orig_dest && src_tmp == orig_src)
+            {
+                len += 1;
+            }else
+            {
+                orig_lens.push_back(len);  
+                orig_dest = (i / nb) % dim1;
+                target_disp = i % nb + ((i / nb) / dim1) * nb;
+                orig_disp = i % mb + ((i / mb) / dim0) * mb;
+                orig_src = (i / mb) % dim0;
+                orig_srcs.push_back(orig_src);
+                orig_dests.push_back(orig_dest);
+                target_disps.push_back(target_disp);
+                orig_disps.push_back(orig_disp);
+                len = 1;
+            }   
+        }
+        orig_lens.push_back(len);
+    }
 
     template<typename OtherPlatform>
     void redistributeRowToColumn(DistMultiVectorBlockCyclic1D<T, CommunicatorType::column, OtherPlatform>* targetMultiVector,
@@ -1338,6 +1620,42 @@ private:
                     }
 #endif
                 }
+            }
+        }else
+        {
+            init_redistribution<OtherPlatform, chase::distMultiVector::CommunicatorType::column>(targetMultiVector);
+
+            for(auto i = 0; i < orig_lens.size(); i++)
+            {
+                if(coords[0] == orig_dests[i])
+                {
+                    if constexpr (std::is_same<Platform, chase::platform::CPU>::value)
+                    {
+                        auto max_c_len = *max_element(orig_lens.begin(), orig_lens.end());
+                        std::unique_ptr<chase::matrix::MatrixCPU<T>> buff = std::make_unique<chase::matrix::MatrixCPU<T>>(max_c_len, subsetSize);
+                        chase::linalg::lapackpp::t_lacpy('A', orig_lens[i], subsetSize, this->l_data() + offset * this->ld_ + orig_disps[i], this->ld_, 
+                                                           buff->data(), orig_lens[i]);    
+
+                        MPI_Bcast(buff->data(), orig_lens[i] * subsetSize, chase::mpi::getMPI_Type<T>(), orig_srcs[i], this->mpi_grid_->get_row_comm());
+                        chase::linalg::lapackpp::t_lacpy('A', orig_lens[i], subsetSize, buff->data(), orig_lens[i], 
+                                                           targetMultiVector->l_data() + target_disps[i] + offset * targetMultiVector->l_ld(), targetMultiVector->l_ld());   
+
+                    }
+#ifdef HAS_CUDA                                    
+                    else
+                    {
+                        auto max_c_len = *max_element(orig_lens.begin(), orig_lens.end());
+                        std::unique_ptr<chase::matrix::MatrixGPU<T>> buff = std::make_unique<chase::matrix::MatrixGPU<T>>(max_c_len, subsetSize);
+                        chase::linalg::internal::cuda::t_lacpy('A', orig_lens[i], subsetSize, this->l_data() + offset * this->ld_ + orig_disps[i], this->ld_, 
+                                                           buff->gpu_data(), orig_lens[i]);    
+
+                        MPI_Bcast(buff->gpu_data(), orig_lens[i] * subsetSize, chase::mpi::getMPI_Type<T>(), orig_srcs[i], this->mpi_grid_->get_row_comm());
+                        chase::linalg::internal::cuda::t_lacpy('A', orig_lens[i], subsetSize, buff->gpu_data(), orig_lens[i], 
+                                                           targetMultiVector->l_data() + target_disps[i] + offset * targetMultiVector->l_ld(), targetMultiVector->l_ld());                         
+                    }
+#endif                    
+                }
+                
             }
         }
     }
@@ -1401,6 +1719,44 @@ private:
                 }
             }
         }
+        else
+        {
+            init_redistribution<OtherPlatform, chase::distMultiVector::CommunicatorType::row>(targetMultiVector);
+
+            for(auto i = 0; i < orig_lens.size(); i++)
+            {
+                if(coords[1] == orig_dests[i])
+                {
+                    if constexpr (std::is_same<Platform, chase::platform::CPU>::value)
+                    {
+                        auto max_c_len = *max_element(orig_lens.begin(), orig_lens.end());
+                        std::unique_ptr<chase::matrix::MatrixCPU<T>> buff = std::make_unique<chase::matrix::MatrixCPU<T>>(max_c_len, subsetSize);
+                        chase::linalg::lapackpp::t_lacpy('A', orig_lens[i], subsetSize, this->l_data() + offset * this->ld_ + orig_disps[i], this->ld_, 
+                                                           buff->data(), orig_lens[i]);    
+
+                        MPI_Bcast(buff->data(), orig_lens[i] * subsetSize, chase::mpi::getMPI_Type<T>(), orig_srcs[i], this->mpi_grid_->get_col_comm());
+                        chase::linalg::lapackpp::t_lacpy('A', orig_lens[i], subsetSize, buff->data(), orig_lens[i], 
+                                                           targetMultiVector->l_data() + target_disps[i] + offset * targetMultiVector->l_ld(), targetMultiVector->l_ld());   
+
+                    }
+#ifdef HAS_CUDA                                    
+                    else
+                    {
+                        auto max_c_len = *max_element(orig_lens.begin(), orig_lens.end());
+                        std::unique_ptr<chase::matrix::MatrixGPU<T>> buff = std::make_unique<chase::matrix::MatrixGPU<T>>(max_c_len, subsetSize);
+                        chase::linalg::internal::cuda::t_lacpy('A', orig_lens[i], subsetSize, this->l_data() + offset * this->ld_ + orig_disps[i], this->ld_, 
+                                                           buff->gpu_data(), orig_lens[i]);    
+
+                        MPI_Bcast(buff->gpu_data(), orig_lens[i] * subsetSize, chase::mpi::getMPI_Type<T>(), orig_srcs[i], this->mpi_grid_->get_col_comm());
+                        chase::linalg::internal::cuda::t_lacpy('A', orig_lens[i], subsetSize, buff->gpu_data(), orig_lens[i], 
+                                                           targetMultiVector->l_data() + target_disps[i] + offset * targetMultiVector->l_ld(), targetMultiVector->l_ld());                         
+                    }
+#endif                    
+                }
+                
+            }
+        }
+
     }
 
 
@@ -1460,8 +1816,31 @@ private:
                     
                 }
             }
-        }
-        
+        }else
+        {
+            init_redistribution<chase::platform::GPU, chase::distMultiVector::CommunicatorType::column>(targetMultiVector);
+
+            for(auto i = 0; i < orig_lens.size(); i++)
+            {
+                if(coords[0] == orig_dests[i])
+                {
+                    auto max_c_len = *max_element(orig_lens.begin(), orig_lens.end());
+                    std::unique_ptr<chase::matrix::MatrixGPU<T>> buff = std::make_unique<chase::matrix::MatrixGPU<T>>(max_c_len, subsetSize);
+                    chase::linalg::internal::cuda::t_lacpy('A', orig_lens[i], subsetSize, this->l_data() + offset * this->ld_ + orig_disps[i], this->ld_, 
+                                                        buff->gpu_data(), orig_lens[i]);    
+
+                    CHECK_NCCL_ERROR(chase::nccl::ncclBcastWrapper(buff->gpu_data(), 
+                                                        orig_lens[i] * subsetSize, 
+                                                        orig_srcs[i], 
+                                                        this->mpi_grid_->get_nccl_row_comm(), 
+                                                        &stream));
+                                                        
+                    chase::linalg::internal::cuda::t_lacpy('A', orig_lens[i], subsetSize, buff->gpu_data(), orig_lens[i], 
+                                                        targetMultiVector->l_data() + target_disps[i] + offset * targetMultiVector->l_ld(), targetMultiVector->l_ld());   
+                                     
+                }   
+            }
+        }  
     }
 
     void redistributeColumnToRowAsync(DistMultiVectorBlockCyclic1D<T, CommunicatorType::row, chase::platform::GPU>* targetMultiVector,
@@ -1516,8 +1895,31 @@ private:
                                                         targetMultiVector->l_data() + offset * targetMultiVector->l_ld(), targetMultiVector->l_ld());                         
                 }
             }
+        }else
+        {
+            init_redistribution<chase::platform::GPU, chase::distMultiVector::CommunicatorType::row>(targetMultiVector);
+
+            for(auto i = 0; i < orig_lens.size(); i++)
+            {
+                if(coords[1] == orig_dests[i])
+                {
+                    auto max_c_len = *max_element(orig_lens.begin(), orig_lens.end());
+                    std::unique_ptr<chase::matrix::MatrixGPU<T>> buff = std::make_unique<chase::matrix::MatrixGPU<T>>(max_c_len, subsetSize);
+                    chase::linalg::internal::cuda::t_lacpy('A', orig_lens[i], subsetSize, this->l_data() + offset * this->ld_ + orig_disps[i], this->ld_, 
+                                                        buff->gpu_data(), orig_lens[i]);    
+
+                    CHECK_NCCL_ERROR(chase::nccl::ncclBcastWrapper(buff->gpu_data(), 
+                                                        orig_lens[i] * subsetSize, 
+                                                        orig_srcs[i], 
+                                                        this->mpi_grid_->get_nccl_col_comm(), 
+                                                        &stream));
+                                                        
+                    chase::linalg::internal::cuda::t_lacpy('A', orig_lens[i], subsetSize, buff->gpu_data(), orig_lens[i], 
+                                                        targetMultiVector->l_data() + target_disps[i] + offset * targetMultiVector->l_ld(), targetMultiVector->l_ld());   
+                                     
+                }   
+            }
         }
-        
     }
     
 #endif
