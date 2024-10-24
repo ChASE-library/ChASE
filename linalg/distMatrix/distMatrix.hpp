@@ -1404,7 +1404,7 @@ public:
 
         if constexpr (std::is_same<typename distMatrixTypeTrait<Redundant, T, Platform>::type, targetType<T, Platform>>::value) 
         {
-            //redistributeToRedundant(targetMatrix);
+            redistributeToRedundant(targetMatrix);
         }
         else if constexpr (std::is_same<typename distMatrixTypeTrait<BlockCyclic, T, Platform>::type, targetType<T, Platform>>::value) 
         {
@@ -1415,6 +1415,31 @@ public:
         }        
     }
 
+#ifdef HAS_NCCL
+    template<template <typename, typename> class targetType>
+    void redistributeImplAsync(targetType<T, Platform>* targetMatrix, cudaStream_t* stream_ = nullptr)//,
+                            //std::size_t offset, std::size_t subsetSize)
+    {
+        cudaStream_t usedStream = (stream_ == nullptr) ? 0 : *stream_;
+
+        if(M_ != targetMatrix->g_rows() || N_ != targetMatrix->g_cols() )
+        {
+            throw std::runtime_error("[BlockCyclicMatrix]: redistribution requires original and target matrices have same global size");
+        }
+
+        if constexpr (std::is_same<typename distMatrixTypeTrait<Redundant, T, Platform>::type, targetType<T, Platform>>::value) 
+        {
+            redistributeToRedundantAsync(targetMatrix, usedStream);
+        }
+        else if constexpr (std::is_same<typename distMatrixTypeTrait<BlockCyclic, T, Platform>::type, targetType<T, Platform>>::value) 
+        {
+            throw std::runtime_error("[BlockCyclicMatrix]: no need to redistribute from BlockBlock to BlockBlock");
+        }else
+        {
+            throw std::runtime_error("[BlockCyclicMatrix]:  no support for redistribution from redundant to othertypes yet");
+        }        
+    }
+#endif
 private:
     std::size_t M_;
     std::size_t N_;
@@ -1493,7 +1518,314 @@ private:
     }
 
     void redistributeToRedundant(RedundantMatrix<T, Platform>* targetMatrix)
-    {}
+    {
+        int *coords =  mpi_grid_.get()->get_coords();
+        int *dims = mpi_grid_.get()->get_dims();  
+
+        std::vector<std::size_t> m_locs;
+        std::vector<std::size_t> n_locs;
+
+        for(auto i = 0; i < dims[0]; i++)
+        {
+            std::size_t l;
+            std::tie(l, std::ignore) = numroc(M_, mb_, i, dims[0]);
+            m_locs.push_back(l);
+        }
+
+        for(auto i = 0; i < dims[1]; i++)
+        {
+            std::size_t l;
+            std::tie(l, std::ignore) = numroc(N_, nb_, i, dims[1]);
+            n_locs.push_back(l);
+        }
+
+        std::vector<std::vector<std::vector<std::size_t>>> m_contiguous_global_offs_2;
+        std::vector<std::vector<std::vector<std::size_t>>> n_contiguous_global_offs_2;
+        std::vector<std::vector<std::vector<std::size_t>>> m_contiguous_lens_2;
+        std::vector<std::vector<std::vector<std::size_t>>> n_contiguous_lens_2;
+      
+        m_contiguous_global_offs_2.resize(dims[0]);
+        n_contiguous_global_offs_2.resize(dims[0]);
+        m_contiguous_lens_2.resize(dims[0]);
+        n_contiguous_lens_2.resize(dims[0]);
+        for(auto i = 0; i < dims[0]; i++)
+        {
+            m_contiguous_global_offs_2[i].resize(dims[1]);
+            n_contiguous_global_offs_2[i].resize(dims[1]);
+            m_contiguous_lens_2[i].resize(dims[1]);
+            n_contiguous_lens_2[i].resize(dims[1]);
+        }
+
+        std::size_t nr, nc;
+        int sendr = 0;
+        int sendc = 0;
+        for (std::size_t r = 0; r < M_; r += mb_, sendr = (sendr + 1) % dims[0])
+        {
+            nr = mb_;
+            if(M_ - r < mb_)
+            {
+                nr = M_ - r;
+            }
+            for(auto i = 0; i < dims[1]; i++)
+            {
+                m_contiguous_global_offs_2[sendr][i].push_back(r);
+                m_contiguous_lens_2[sendr][i].push_back(nr);
+            }
+        }
+
+        for (std::size_t c = 0; c < N_; c += nb_, sendc = (sendc + 1) % dims[1])
+        {
+            nc = nb_;
+            if(N_ - c < nb_)
+            {
+                nc = N_ - c;
+            }
+
+            for(auto i = 0; i < dims[0]; i++)
+            {
+                n_contiguous_global_offs_2[i][sendc].push_back(c);
+                n_contiguous_lens_2[i][sendc].push_back(nc);
+            }
+        }
+
+        std::size_t max_lcols = *std::max_element(n_locs.begin(), n_locs.end());
+        std::size_t max_lrows = *std::max_element(m_locs.begin(), m_locs.end());
+
+        std::unique_ptr<chase::distMatrix::RedundantMatrix<T, Platform>> buff = std::make_unique<chase::distMatrix::RedundantMatrix<T, Platform>>(M_, max_lcols, mpi_grid_);
+
+        T *buff_data = buff->l_data();
+
+        //first bcast within column
+        for(auto src = 0; src < dims[0]; src++)
+        {
+            if(coords[0] == src){
+                if constexpr (std::is_same<Platform, chase::platform::CPU>::value){
+                    chase::linalg::lapackpp::t_lacpy('A', this->l_rows(), this->l_cols(), this->l_data(), this->l_ld(), buff_data, m_locs[coords[0]]);
+                }
+#ifdef HAS_CUDA
+                else
+                {
+                    chase::linalg::internal::cuda::t_lacpy('A', this->l_rows(), this->l_cols(), this->l_data(), this->l_ld(), buff_data, m_locs[coords[0]]);
+                }
+#endif
+            }
+
+            MPI_Bcast(buff_data, n_locs[coords[1]] *  m_locs[src], chase::mpi::getMPI_Type<T>(), src, mpi_grid_.get()->get_col_comm());
+
+            for(auto p = 0; p < m_contiguous_global_offs_2[src][coords[1]].size(); p++)
+            {
+                for(auto q = 0; q < n_contiguous_global_offs_2[src][coords[1]].size(); q++)
+                {
+                    if constexpr (std::is_same<Platform, chase::platform::CPU>::value){
+                        chase::linalg::lapackpp::t_lacpy('A', 
+                                            m_contiguous_lens_2[src][coords[1]][p], 
+                                            n_contiguous_lens_2[src][coords[1]][q], 
+                                            buff_data + this->mb() * p + this->nb() * q *  m_locs[src], 
+                                            m_locs[src], 
+                                            targetMatrix->l_data() + m_contiguous_global_offs_2[src][coords[1]][p] + targetMatrix->l_ld() * n_contiguous_global_offs_2[src][coords[1]][q], 
+                                            targetMatrix->l_ld());
+                    }
+#ifdef HAS_CUDA
+                    else
+                    {
+                        chase::linalg::internal::cuda::t_lacpy('A', 
+                                            m_contiguous_lens_2[src][coords[1]][p], 
+                                            n_contiguous_lens_2[src][coords[1]][q], 
+                                            buff_data + this->mb() * p + this->nb() * q *  m_locs[src], 
+                                            m_locs[src], 
+                                            targetMatrix->l_data() + m_contiguous_global_offs_2[src][coords[1]][p] + targetMatrix->l_ld() * n_contiguous_global_offs_2[src][coords[1]][q], 
+                                            targetMatrix->l_ld());                        
+                    }
+#endif
+
+                                        
+                }   
+            }        
+        }
+        //bcast within row
+        for(auto src = 0; src < dims[1]; src++)
+        {
+            for(auto q = 0; q < n_contiguous_global_offs_2[coords[0]][src].size(); q++)
+            {
+                if(coords[1] == src)
+                {
+                    if constexpr (std::is_same<Platform, chase::platform::CPU>::value){
+                        chase::linalg::lapackpp::t_lacpy('A', M_, n_contiguous_lens_2[coords[0]][src][q], targetMatrix->l_data() + n_contiguous_global_offs_2[coords[0]][src][q] * targetMatrix->l_ld(), targetMatrix->l_ld(), buff_data, M_);
+                    }
+#ifdef HAS_CUDA
+                    else
+                    {
+                        chase::linalg::internal::cuda::t_lacpy('A', M_, n_contiguous_lens_2[coords[0]][src][q], targetMatrix->l_data() + n_contiguous_global_offs_2[coords[0]][src][q] * targetMatrix->l_ld(), targetMatrix->l_ld(), buff_data, M_);
+                    }
+#endif
+                }
+
+                MPI_Bcast(buff_data, M_ * n_contiguous_lens_2[coords[0]][src][q], chase::mpi::getMPI_Type<T>(), src, mpi_grid_.get()->get_row_comm());
+   
+                if constexpr (std::is_same<Platform, chase::platform::CPU>::value){
+                    chase::linalg::lapackpp::t_lacpy('A', 
+                                        M_, 
+                                        n_contiguous_lens_2[coords[0]][src][q], 
+                                        buff_data, 
+                                        M_, 
+                                        targetMatrix->l_data() + targetMatrix->l_ld() * n_contiguous_global_offs_2[coords[0]][src][q], 
+                                        targetMatrix->l_ld()); 
+                }
+#ifdef HAS_CUDA
+                else
+                {
+                    chase::linalg::internal::cuda::t_lacpy('A', 
+                                        M_, 
+                                        n_contiguous_lens_2[coords[0]][src][q], 
+                                        buff_data, 
+                                        M_, 
+                                        targetMatrix->l_data() + targetMatrix->l_ld() * n_contiguous_global_offs_2[coords[0]][src][q], 
+                                        targetMatrix->l_ld());                     
+                }
+#endif
+ 
+                                        
+            }
+        }
+    }
+
+#ifdef HAS_NCCL
+    void redistributeToRedundantAsync(RedundantMatrix<T, chase::platform::GPU>* targetMatrix, cudaStream_t stream)
+    {
+        int *coords =  mpi_grid_.get()->get_coords();
+        int *dims = mpi_grid_.get()->get_dims();  
+
+        std::vector<std::size_t> m_locs;
+        std::vector<std::size_t> n_locs;
+
+        for(auto i = 0; i < dims[0]; i++)
+        {
+            std::size_t l;
+            std::tie(l, std::ignore) = numroc(M_, mb_, i, dims[0]);
+            m_locs.push_back(l);
+        }
+
+        for(auto i = 0; i < dims[1]; i++)
+        {
+            std::size_t l;
+            std::tie(l, std::ignore) = numroc(N_, nb_, i, dims[1]);
+            n_locs.push_back(l);
+        }
+        
+        std::vector<std::vector<std::vector<std::size_t>>> m_contiguous_global_offs_2;
+        std::vector<std::vector<std::vector<std::size_t>>> n_contiguous_global_offs_2;
+        std::vector<std::vector<std::vector<std::size_t>>> m_contiguous_lens_2;
+        std::vector<std::vector<std::vector<std::size_t>>> n_contiguous_lens_2;
+      
+        m_contiguous_global_offs_2.resize(dims[0]);
+        n_contiguous_global_offs_2.resize(dims[0]);
+        m_contiguous_lens_2.resize(dims[0]);
+        n_contiguous_lens_2.resize(dims[0]);
+        for(auto i = 0; i < dims[0]; i++)
+        {
+            m_contiguous_global_offs_2[i].resize(dims[1]);
+            n_contiguous_global_offs_2[i].resize(dims[1]);
+            m_contiguous_lens_2[i].resize(dims[1]);
+            n_contiguous_lens_2[i].resize(dims[1]);
+        }
+
+        std::size_t nr, nc;
+        int sendr = 0;
+        int sendc = 0;
+        for (std::size_t r = 0; r < M_; r += mb_, sendr = (sendr + 1) % dims[0])
+        {
+            nr = mb_;
+            if(M_ - r < mb_)
+            {
+                nr = M_ - r;
+            }
+            for(auto i = 0; i < dims[1]; i++)
+            {
+                m_contiguous_global_offs_2[sendr][i].push_back(r);
+                m_contiguous_lens_2[sendr][i].push_back(nr);
+            }
+        }
+
+        for (std::size_t c = 0; c < N_; c += nb_, sendc = (sendc + 1) % dims[1])
+        {
+            nc = nb_;
+            if(N_ - c < nb_)
+            {
+                nc = N_ - c;
+            }
+
+            for(auto i = 0; i < dims[0]; i++)
+            {
+                n_contiguous_global_offs_2[i][sendc].push_back(c);
+                n_contiguous_lens_2[i][sendc].push_back(nc);
+            }
+        }
+
+        std::size_t max_lcols = *std::max_element(n_locs.begin(), n_locs.end());
+        std::size_t max_lrows = *std::max_element(m_locs.begin(), m_locs.end());
+
+        std::unique_ptr<chase::distMatrix::RedundantMatrix<T, chase::platform::GPU>> buff = std::make_unique<chase::distMatrix::RedundantMatrix<T, chase::platform::GPU>>(M_, max_lcols, mpi_grid_);
+
+        T *buff_data = buff->l_data();
+
+        //first bcast within column
+        for(auto src = 0; src < dims[0]; src++)
+        {
+            if(coords[0] == src){
+               chase::linalg::internal::cuda::t_lacpy('A', this->l_rows(), this->l_cols(), this->l_data(), this->l_ld(), buff_data, m_locs[coords[0]]);
+            }
+
+            CHECK_NCCL_ERROR(chase::nccl::ncclBcastWrapper(buff_data, 
+                                                        n_locs[coords[1]] *  m_locs[src], 
+                                                        src, 
+                                                        this->mpi_grid_->get_nccl_col_comm(), 
+                                                        &stream));
+
+            for(auto p = 0; p < m_contiguous_global_offs_2[src][coords[1]].size(); p++)
+            {
+                for(auto q = 0; q < n_contiguous_global_offs_2[src][coords[1]].size(); q++)
+                {
+                    chase::linalg::internal::cuda::t_lacpy('A', 
+                                        m_contiguous_lens_2[src][coords[1]][p], 
+                                        n_contiguous_lens_2[src][coords[1]][q], 
+                                        buff_data + this->mb() * p + this->nb() * q *  m_locs[src], 
+                                        m_locs[src], 
+                                        targetMatrix->l_data() + m_contiguous_global_offs_2[src][coords[1]][p] + targetMatrix->l_ld() * n_contiguous_global_offs_2[src][coords[1]][q], 
+                                        targetMatrix->l_ld());
+                                        
+                }   
+            }        
+        }
+        //bcast within row
+        for(auto src = 0; src < dims[1]; src++)
+        {
+            for(auto q = 0; q < n_contiguous_global_offs_2[coords[0]][src].size(); q++)
+            {
+                if(coords[1] == src)
+                {
+                    chase::linalg::internal::cuda::t_lacpy('A', M_, n_contiguous_lens_2[coords[0]][src][q], targetMatrix->l_data() + n_contiguous_global_offs_2[coords[0]][src][q] * targetMatrix->l_ld(), targetMatrix->l_ld(), buff_data, M_);
+                }
+
+                CHECK_NCCL_ERROR(chase::nccl::ncclBcastWrapper(buff_data, 
+                                                               M_ * n_contiguous_lens_2[coords[0]][src][q], 
+                                                               src, 
+                                                               this->mpi_grid_->get_nccl_row_comm(), 
+                                                               &stream));
+   
+                chase::linalg::internal::cuda::t_lacpy('A', 
+                                    M_, 
+                                    n_contiguous_lens_2[coords[0]][src][q], 
+                                    buff_data, 
+                                    M_, 
+                                    targetMatrix->l_data() + targetMatrix->l_ld() * n_contiguous_global_offs_2[coords[0]][src][q], 
+                                    targetMatrix->l_ld());  
+                                        
+            }
+        }
+        
+    }
+#endif
+
 #ifdef HAS_SCALAPACK
     std::size_t desc_[9];
 #endif
