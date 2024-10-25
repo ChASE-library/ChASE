@@ -29,15 +29,15 @@ TYPED_TEST(lacpyGPUTest, fullCopy) {
         buffer[i] = i + 1;
     }
 
-    chase::matrix::MatrixGPU<T> src_matrix(rows, cols, ld, buffer.data());
-    chase::matrix::MatrixGPU<T> target_matrix(rows, cols);
+    chase::matrix::Matrix<T, chase::platform::GPU> src_matrix(rows, cols, ld, buffer.data());
+    chase::matrix::Matrix<T, chase::platform::GPU> target_matrix(rows, cols);
     chase::linalg::internal::cuda::t_lacpy('A', 
                                            rows, 
                                            cols, 
-                                           src_matrix.gpu_data(), 
-                                           src_matrix.gpu_ld(), 
-                                           target_matrix.gpu_data(), 
-                                           target_matrix.gpu_ld());
+                                           src_matrix.data(), 
+                                           src_matrix.ld(), 
+                                           target_matrix.data(), 
+                                           target_matrix.ld());
     target_matrix.D2H();
 
     for(auto j = 0; j < cols; j++)
@@ -65,15 +65,15 @@ TYPED_TEST(lacpyGPUTest, upperCopy) {
         buffer2[i] = -(i + 1);
     }
 
-    chase::matrix::MatrixGPU<T> src_matrix(rows, cols, rows, buffer.data());
-    chase::matrix::MatrixGPU<T> target_matrix(rows, cols, rows, buffer2.data());
+    chase::matrix::Matrix<T, chase::platform::GPU> src_matrix(rows, cols, rows, buffer.data());
+    chase::matrix::Matrix<T, chase::platform::GPU> target_matrix(rows, cols, rows, buffer2.data());
     chase::linalg::internal::cuda::t_lacpy('U', 
                                            rows, 
                                            cols, 
-                                           src_matrix.gpu_data(), 
-                                           src_matrix.gpu_ld(), 
-                                           target_matrix.gpu_data(), 
-                                           target_matrix.gpu_ld());
+                                           src_matrix.data(), 
+                                           src_matrix.ld(), 
+                                           target_matrix.data(), 
+                                           target_matrix.ld());
     target_matrix.D2H();
 
     for(auto j = 0; j < cols; j++)
@@ -107,15 +107,15 @@ TYPED_TEST(lacpyGPUTest, lowerCopy) {
         buffer2[i] = -(i + 1);
     }
 
-    chase::matrix::MatrixGPU<T> src_matrix(rows, cols, rows, buffer.data());
-    chase::matrix::MatrixGPU<T> target_matrix(rows, cols, rows, buffer2.data());
+    chase::matrix::Matrix<T, chase::platform::GPU> src_matrix(rows, cols, rows, buffer.data());
+    chase::matrix::Matrix<T, chase::platform::GPU> target_matrix(rows, cols, rows, buffer2.data());
     chase::linalg::internal::cuda::t_lacpy('L', 
                                            rows, 
                                            cols, 
-                                           src_matrix.gpu_data(), 
-                                           src_matrix.gpu_ld(), 
-                                           target_matrix.gpu_data(), 
-                                           target_matrix.gpu_ld());
+                                           src_matrix.data(), 
+                                           src_matrix.ld(), 
+                                           target_matrix.data(), 
+                                           target_matrix.ld());
     target_matrix.D2H();
 
     for(auto j = 0; j < cols; j++)

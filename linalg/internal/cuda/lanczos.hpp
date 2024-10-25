@@ -21,8 +21,8 @@ namespace cuda
     void lanczos(cublasHandle_t cublas_handle, 
                  std::size_t M, 
                  std::size_t numvec,
-                 chase::matrix::MatrixGPU<T>& H, 
-                 chase::matrix::MatrixGPU<T>& V, 
+                 chase::matrix::Matrix<T, chase::platform::GPU>& H, 
+                 chase::matrix::Matrix<T, chase::platform::GPU>& V, 
                  chase::Base<T>* upperb, 
                  chase::Base<T>* ritzv, 
                  chase::Base<T>* Tau, 
@@ -42,22 +42,22 @@ namespace cuda
         std::vector<T> alpha(numvec, T(1.0));
         std::vector<T> beta(numvec, T(0.0));
 
-        auto v_0 = chase::matrix::MatrixGPU<T>(N, numvec);
-        auto v_1 = chase::matrix::MatrixGPU<T>(N, numvec);
-        auto v_2 = chase::matrix::MatrixGPU<T>(N, numvec);
+        auto v_0 = chase::matrix::Matrix<T, chase::platform::GPU>(N, numvec);
+        auto v_1 = chase::matrix::Matrix<T, chase::platform::GPU>(N, numvec);
+        auto v_2 = chase::matrix::Matrix<T, chase::platform::GPU>(N, numvec);
         chase::linalg::internal::cuda::t_lacpy('A', 
                                                 N, 
                                                 numvec, 
-                                                V.gpu_data(), 
-                                                V.gpu_ld(), 
-                                                v_1.gpu_data(), 
-                                                v_1.gpu_ld());
+                                                V.data(), 
+                                                V.ld(), 
+                                                v_1.data(), 
+                                                v_1.ld());
 
         for(auto i = 0; i < numvec; i++)
         {
             CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTnrm2(cublas_handle, 
                                                                     v_1.rows(), 
-                                                                    v_1.gpu_data() + i * v_1.gpu_ld(),
+                                                                    v_1.data() + i * v_1.ld(),
                                                                     1, 
                                                                     &real_alpha[i]));
         }
@@ -72,15 +72,15 @@ namespace cuda
               CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTscal(cublas_handle, 
                                                                       v_1.rows(), 
                                                                       &alpha[i], 
-                                                                      v_1.gpu_data() + i * v_1.gpu_ld(),
+                                                                      v_1.data() + i * v_1.ld(),
                                                                       1));  
         }
 
         for (std::size_t k = 0; k < M; k = k + 1)
         {
             for(auto i = 0; i < numvec; i++){
-                CHECK_CUDA_ERROR( cudaMemcpy(V.gpu_data() + k * V.gpu_ld(), 
-                                             v_1.gpu_data() + i * v_1.gpu_ld(), 
+                CHECK_CUDA_ERROR( cudaMemcpy(V.data() + k * V.ld(), 
+                                             v_1.data() + i * v_1.ld(), 
                                              v_1.rows() * sizeof(T),
                                              cudaMemcpyDeviceToDevice ));
             }
@@ -92,22 +92,22 @@ namespace cuda
                                                                           numvec,
                                                                           H.cols(),
                                                                           &One,
-                                                                          H.gpu_data(),
-                                                                          H.gpu_ld(),
-                                                                          v_1.gpu_data(),
-                                                                          v_1.gpu_ld(),
+                                                                          H.data(),
+                                                                          H.ld(),
+                                                                          v_1.data(),
+                                                                          v_1.ld(),
                                                                           &Zero,
-                                                                          v_2.gpu_data(),
-                                                                          v_2.gpu_ld()));
+                                                                          v_2.data(),
+                                                                          v_2.ld()));
 
 
             for(auto i = 0; i < numvec; i++)
             {
                 CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTdot(cublas_handle, 
                                                                              v_1.rows(), 
-                                                                             v_1.gpu_data() + i * v_1.gpu_ld(), 
+                                                                             v_1.data() + i * v_1.ld(), 
                                                                              1, 
-                                                                             v_2.gpu_data() + i * v_2.gpu_ld(), 
+                                                                             v_2.data() + i * v_2.ld(), 
                                                                              1, 
                                                                              &alpha[i])); 
 
@@ -123,9 +123,9 @@ namespace cuda
                 CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTaxpy(cublas_handle, 
                                                                               v_1.rows(), 
                                                                               &alpha[i], 
-                                                                              v_1.gpu_data() + i * v_1.gpu_ld(), 
+                                                                              v_1.data() + i * v_1.ld(), 
                                                                               1, 
-                                                                              v_2.gpu_data() + i * v_2.gpu_ld(), 
+                                                                              v_2.data() + i * v_2.ld(), 
                                                                               1));
             }
             
@@ -149,9 +149,9 @@ namespace cuda
                     CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTaxpy(cublas_handle, 
                                                                                 v_0.rows(), 
                                                                                 &beta[i], 
-                                                                                v_0.gpu_data() + i * v_0.gpu_ld(), 
+                                                                                v_0.data() + i * v_0.ld(), 
                                                                                 1, 
-                                                                                v_2.gpu_data() + i * v_2.gpu_ld(), 
+                                                                                v_2.data() + i * v_2.ld(), 
                                                                                 1));                    
                 }                                
             }
@@ -165,7 +165,7 @@ namespace cuda
             {
                 CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTnrm2(cublas_handle, 
                                                                         v_2.rows(), 
-                                                                        v_2.gpu_data() + i * v_2.gpu_ld(),
+                                                                        v_2.data() + i * v_2.ld(),
                                                                         1, 
                                                                         &r_beta[i]));                
             }
@@ -183,7 +183,7 @@ namespace cuda
                 CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTscal(cublas_handle, 
                                                                         v_2.rows(), 
                                                                         &beta[i], 
-                                                                        v_2.gpu_data() + i * v_2.gpu_ld(),
+                                                                        v_2.data() + i * v_2.ld(),
                                                                         1));              
             }
 
@@ -200,10 +200,10 @@ namespace cuda
         chase::linalg::internal::cuda::t_lacpy('A', 
                                                 N, 
                                                 numvec, 
-                                                v_1.gpu_data(),
-                                                v_1.gpu_ld(),
-                                                V.gpu_data(), 
-                                                V.gpu_ld());                
+                                                v_1.data(),
+                                                v_1.ld(),
+                                                V.data(), 
+                                                V.ld());                
 
         int notneeded_m;
         std::size_t vl, vu;
@@ -237,8 +237,8 @@ namespace cuda
     template<typename T>
     void lanczos(cublasHandle_t cublas_handle,
                  std::size_t M, 
-                 chase::matrix::MatrixGPU<T>& H,
-                 chase::matrix::MatrixGPU<T>& V, 
+                 chase::matrix::Matrix<T, chase::platform::GPU>& H,
+                 chase::matrix::Matrix<T, chase::platform::GPU>& V, 
                  chase::Base<T>* upperb)
     {
         SCOPED_NVTX_RANGE();
@@ -255,21 +255,21 @@ namespace cuda
         T alpha = T(1.0);
         T beta = T(0.0);
 
-        auto v_0 = chase::matrix::MatrixGPU<T>(N, 1);
-        auto v_1 = chase::matrix::MatrixGPU<T>(N, 1);
-        auto v_2 = chase::matrix::MatrixGPU<T>(N, 1);
+        auto v_0 = chase::matrix::Matrix<T, chase::platform::GPU>(N, 1);
+        auto v_1 = chase::matrix::Matrix<T, chase::platform::GPU>(N, 1);
+        auto v_2 = chase::matrix::Matrix<T, chase::platform::GPU>(N, 1);
 
         chase::linalg::internal::cuda::t_lacpy('A', 
                                                 N, 
                                                 1, 
-                                                V.gpu_data(), 
-                                                V.gpu_ld(), 
-                                                v_1.gpu_data(), 
-                                                v_1.gpu_ld());
+                                                V.data(), 
+                                                V.ld(), 
+                                                v_1.data(), 
+                                                v_1.ld());
 
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTnrm2(cublas_handle, 
                                                                 v_1.rows(), 
-                                                                v_1.gpu_data(),
+                                                                v_1.data(),
                                                                 1, 
                                                                 &real_alpha));        
         alpha = T(1 / real_alpha);
@@ -277,7 +277,7 @@ namespace cuda
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTscal(cublas_handle, 
                                                                 v_1.rows(), 
                                                                 &alpha, 
-                                                                v_1.gpu_data(),
+                                                                v_1.data(),
                                                                 1));          
         for (std::size_t k = 0; k < M; k = k + 1)
         {
@@ -288,19 +288,19 @@ namespace cuda
                                                                           1,
                                                                           H.cols(),
                                                                           &One,
-                                                                          H.gpu_data(),
-                                                                          H.gpu_ld(),
-                                                                          v_1.gpu_data(),
-                                                                          v_1.gpu_ld(),
+                                                                          H.data(),
+                                                                          H.ld(),
+                                                                          v_1.data(),
+                                                                          v_1.ld(),
                                                                           &Zero,
-                                                                          v_2.gpu_data(),
-                                                                          v_2.gpu_ld()));
+                                                                          v_2.data(),
+                                                                          v_2.ld()));
 
             CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTdot(cublas_handle, 
                                                                             v_1.rows(), 
-                                                                            v_1.gpu_data(), 
+                                                                            v_1.data(), 
                                                                             1, 
-                                                                            v_2.gpu_data(), 
+                                                                            v_2.data(), 
                                                                             1, 
                                                                             &alpha)); 
             alpha = -alpha;
@@ -308,9 +308,9 @@ namespace cuda
             CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTaxpy(cublas_handle, 
                                                                             v_1.rows(), 
                                                                             &alpha, 
-                                                                            v_1.gpu_data(), 
+                                                                            v_1.data(), 
                                                                             1, 
-                                                                            v_2.gpu_data(), 
+                                                                            v_2.data(), 
                                                                             1));
             alpha = -alpha;
 
@@ -321,9 +321,9 @@ namespace cuda
                 CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTaxpy(cublas_handle, 
                                                                             v_0.rows(), 
                                                                             &beta, 
-                                                                            v_0.gpu_data(), 
+                                                                            v_0.data(), 
                                                                             1, 
-                                                                            v_2.gpu_data(), 
+                                                                            v_2.data(), 
                                                                             1));                                              
             }
 
@@ -331,7 +331,7 @@ namespace cuda
 
             CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTnrm2(cublas_handle, 
                                                                     v_2.rows(), 
-                                                                    v_2.gpu_data(),
+                                                                    v_2.data(),
                                                                     1, 
                                                                     &r_beta));  
             beta = T(1 / r_beta);
@@ -342,7 +342,7 @@ namespace cuda
             CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTscal(cublas_handle, 
                                                                     v_2.rows(), 
                                                                     &beta, 
-                                                                    v_2.gpu_data(),
+                                                                    v_2.data(),
                                                                     1));  
             e[k] = r_beta;
 

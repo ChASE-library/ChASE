@@ -84,14 +84,14 @@ TYPED_TEST(rayleighRitzGPUTest, eigenpairs) {
     chase::linalg::lapackpp::t_heevd(CblasColMajor, 'V', 'U', this->N,
                     this->H.data(), this->N, this->evals.data());
     
-    chase::matrix::MatrixGPU<T> Hmat(this->N, this->N, this->N, H2.data());
-    chase::matrix::MatrixGPU<T> V1(this->N, this->n);
-    chase::matrix::MatrixGPU<T> V2(this->N, this->n);
+    chase::matrix::Matrix<T, chase::platform::GPU> Hmat(this->N, this->N, this->N, H2.data());
+    chase::matrix::Matrix<T, chase::platform::GPU> V1(this->N, this->n);
+    chase::matrix::Matrix<T, chase::platform::GPU> V2(this->N, this->n);
     std::vector<chase::Base<T>> ritzv_data(this->n);
-    chase::matrix::MatrixGPU<chase::Base<T>> ritzv(this->n, 1, this->n, ritzv_data.data());
+    chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU> ritzv(this->n, 1, this->n, ritzv_data.data());
 
-    CHECK_CUDA_ERROR(cudaMemcpy(V1.gpu_data(), this->H.data(), this->N * this->n * sizeof(T), cudaMemcpyHostToDevice));
-    CHECK_CUDA_ERROR(cudaMemcpy(ritzv.gpu_data(), this->evals.data(), this->n * sizeof(chase::Base<T>), cudaMemcpyHostToDevice));
+    CHECK_CUDA_ERROR(cudaMemcpy(V1.ata(), this->H.data(), this->N * this->n * sizeof(T), cudaMemcpyHostToDevice));
+    CHECK_CUDA_ERROR(cudaMemcpy(ritzv.data(), this->evals.data(), this->n * sizeof(chase::Base<T>), cudaMemcpyHostToDevice));
     
     int* devInfo;
     CHECK_CUDA_ERROR(cudaMalloc((void**)&devInfo, sizeof(int)));

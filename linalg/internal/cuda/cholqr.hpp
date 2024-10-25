@@ -21,10 +21,10 @@ namespace cuda
     template<typename T>
     int cholQR1(cublasHandle_t cublas_handle,
                 cusolverDnHandle_t cusolver_handle,
-                chase::matrix::MatrixGPU<T>& V,
+                chase::matrix::Matrix<T, chase::platform::GPU>& V,
                 T *workspace = nullptr,
                 int lwork = 0,
-                chase::matrix::MatrixGPU<T> *A = nullptr)
+                chase::matrix::Matrix<T, chase::platform::GPU> *A = nullptr)
     {
         SCOPED_NVTX_RANGE();
 
@@ -37,7 +37,7 @@ namespace cuda
         
         if(A == nullptr)
         {
-            A = new chase::matrix::MatrixGPU<T>(V.cols(), V.cols());
+            A = new chase::matrix::Matrix<T, chase::platform::GPU>(V.cols(), V.cols());
         }
 
         if(workspace == nullptr)
@@ -47,8 +47,8 @@ namespace cuda
                                                                 cusolver_handle, 
                                                                 CUBLAS_FILL_MODE_UPPER, 
                                                                 V.cols(), 
-                                                                A->gpu_data(), 
-                                                                A->gpu_ld(),
+                                                                A->data(), 
+                                                                A->ld(),
                                                                 &lwork));
             CHECK_CUDA_ERROR(cudaMalloc((void**)&workspace, sizeof(T) * lwork));
         }
@@ -69,18 +69,18 @@ namespace cuda
                                                                   V.cols(), 
                                                                   V.rows(), 
                                                                   &One, 
-                                                                  V.gpu_data(), 
-                                                                  V.gpu_ld(), 
+                                                                  V.data(), 
+                                                                  V.ld(), 
                                                                   &Zero, 
-                                                                  A->gpu_data(), 
-                                                                  A->gpu_ld()));
+                                                                  A->data(), 
+                                                                  A->ld()));
         int* devInfo;
         CHECK_CUDA_ERROR(cudaMalloc((void**)&devInfo, sizeof(int)));
 
         CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTpotrf(cusolver_handle, 
                                                                          CUBLAS_FILL_MODE_UPPER, 
                                                                          V.cols(),
-                                                                         A->gpu_data(),
+                                                                         A->data(),
                                                                          V.cols(), 
                                                                          workspace, 
                                                                          lwork, 
@@ -100,10 +100,10 @@ namespace cuda
                                                                     V.rows(), 
                                                                     V.cols(),
                                                                     &one, 
-                                                                    A->gpu_data(), 
-                                                                    A->gpu_ld(), 
-                                                                    V.gpu_data(), 
-                                                                    V.gpu_ld()));
+                                                                    A->data(), 
+                                                                    A->ld(), 
+                                                                    V.data(), 
+                                                                    V.ld()));
 #ifdef CHASE_OUTPUT
             std::cout << "choldegree: 1" << std::endl;
 #endif                
@@ -115,10 +115,10 @@ namespace cuda
     template<typename T>
     int cholQR2(cublasHandle_t cublas_handle,
                 cusolverDnHandle_t cusolver_handle,
-                chase::matrix::MatrixGPU<T>& V,
+                chase::matrix::Matrix<T, chase::platform::GPU>& V,
                 T *workspace = nullptr,
                 int lwork = 0,
-                chase::matrix::MatrixGPU<T> *A = nullptr)
+                chase::matrix::Matrix<T, chase::platform::GPU> *A = nullptr)
     {
         SCOPED_NVTX_RANGE();
 
@@ -131,7 +131,7 @@ namespace cuda
         
         if(A == nullptr)
         {
-            A = new chase::matrix::MatrixGPU<T>(V.cols(), V.cols());
+            A = new chase::matrix::Matrix<T, chase::platform::GPU>(V.cols(), V.cols());
         }
 
         if(workspace == nullptr)
@@ -141,8 +141,8 @@ namespace cuda
                                                                 cusolver_handle, 
                                                                 CUBLAS_FILL_MODE_UPPER, 
                                                                 V.cols(), 
-                                                                A->gpu_data(), 
-                                                                A->gpu_ld(),
+                                                                A->data(), 
+                                                                A->ld(),
                                                                 &lwork));
             CHECK_CUDA_ERROR(cudaMalloc((void**)&workspace, sizeof(T) * lwork));
         }
@@ -163,18 +163,18 @@ namespace cuda
                                                                   V.cols(), 
                                                                   V.rows(), 
                                                                   &One, 
-                                                                  V.gpu_data(), 
-                                                                  V.gpu_ld(), 
+                                                                  V.data(), 
+                                                                  V.ld(), 
                                                                   &Zero, 
-                                                                  A->gpu_data(), 
-                                                                  A->gpu_ld()));
+                                                                  A->data(), 
+                                                                  A->ld()));
         int* devInfo;
         CHECK_CUDA_ERROR(cudaMalloc((void**)&devInfo, sizeof(int)));
 
         CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTpotrf(cusolver_handle, 
                                                                          CUBLAS_FILL_MODE_UPPER, 
                                                                          V.cols(),
-                                                                         A->gpu_data(),
+                                                                         A->data(),
                                                                          V.cols(), 
                                                                          workspace, 
                                                                          lwork, 
@@ -194,10 +194,10 @@ namespace cuda
                                                                     V.rows(), 
                                                                     V.cols(),
                                                                     &one, 
-                                                                    A->gpu_data(), 
-                                                                    A->gpu_ld(), 
-                                                                    V.gpu_data(), 
-                                                                    V.gpu_ld()));
+                                                                    A->data(), 
+                                                                    A->ld(), 
+                                                                    V.data(), 
+                                                                    V.ld()));
 
             CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTsyherk(cublas_handle, 
                                                                     CUBLAS_FILL_MODE_UPPER, 
@@ -205,16 +205,16 @@ namespace cuda
                                                                     V.cols(), 
                                                                     V.rows(), 
                                                                     &One, 
-                                                                    V.gpu_data(), 
-                                                                    V.gpu_ld(), 
+                                                                    V.data(), 
+                                                                    V.ld(), 
                                                                     &Zero, 
-                                                                    A->gpu_data(), 
-                                                                    A->gpu_ld()));  
+                                                                    A->data(), 
+                                                                    A->ld()));  
 
             CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTpotrf(cusolver_handle, 
                                                                             CUBLAS_FILL_MODE_UPPER, 
                                                                             V.cols(),
-                                                                            A->gpu_data(),
+                                                                            A->data(),
                                                                             V.cols(), 
                                                                             workspace, 
                                                                             lwork, 
@@ -228,10 +228,10 @@ namespace cuda
                                                                     V.rows(), 
                                                                     V.cols(),
                                                                     &one, 
-                                                                    A->gpu_data(), 
-                                                                    A->gpu_ld(), 
-                                                                    V.gpu_data(), 
-                                                                    V.gpu_ld()));                                                                         
+                                                                    A->data(), 
+                                                                    A->ld(), 
+                                                                    V.data(), 
+                                                                    V.ld()));                                                                         
 #ifdef CHASE_OUTPUT
             std::cout << "choldegree: 2" << std::endl;
 #endif                
@@ -242,10 +242,10 @@ namespace cuda
     template<typename T>
     int shiftedcholQR2(cublasHandle_t cublas_handle,
                 cusolverDnHandle_t cusolver_handle,
-                chase::matrix::MatrixGPU<T>& V,
+                chase::matrix::Matrix<T, chase::platform::GPU>& V,
                 T *workspace = nullptr,
                 int lwork = 0,
-                chase::matrix::MatrixGPU<T> *A = nullptr)
+                chase::matrix::Matrix<T, chase::platform::GPU> *A = nullptr)
     {
         SCOPED_NVTX_RANGE();
 
@@ -258,7 +258,7 @@ namespace cuda
 
         if(A == nullptr)
         {
-            A = new chase::matrix::MatrixGPU<T>(V.cols(), V.cols());
+            A = new chase::matrix::Matrix<T, chase::platform::GPU>(V.cols(), V.cols());
         }
 
         if(workspace == nullptr)
@@ -268,8 +268,8 @@ namespace cuda
                                                                 cusolver_handle, 
                                                                 CUBLAS_FILL_MODE_UPPER, 
                                                                 V.cols(), 
-                                                                A->gpu_data(), 
-                                                                A->gpu_ld(),
+                                                                A->data(), 
+                                                                A->ld(),
                                                                 &lwork));
             CHECK_CUDA_ERROR(cudaMalloc((void**)&workspace, sizeof(T) * lwork));
         }
@@ -292,11 +292,11 @@ namespace cuda
                                                                   V.cols(), 
                                                                   V.rows(), 
                                                                   &One, 
-                                                                  V.gpu_data(), 
-                                                                  V.gpu_ld(), 
+                                                                  V.data(), 
+                                                                  V.ld(), 
                                                                   &Zero, 
-                                                                  A->gpu_data(), 
-                                                                  A->gpu_ld()));
+                                                                  A->data(), 
+                                                                  A->ld()));
 
         chase::Base<T> nrmf = 0.0;
         chase::Base<T> *d_nrmf;
@@ -313,7 +313,7 @@ namespace cuda
         CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTpotrf(cusolver_handle, 
                                                                          CUBLAS_FILL_MODE_UPPER, 
                                                                          V.cols(),
-                                                                         A->gpu_data(),
+                                                                         A->data(),
                                                                          V.cols(), 
                                                                          workspace, 
                                                                          lwork, 
@@ -334,10 +334,10 @@ namespace cuda
                                                                 V.rows(), 
                                                                 V.cols(),
                                                                 &one, 
-                                                                A->gpu_data(), 
-                                                                A->gpu_ld(), 
-                                                                V.gpu_data(), 
-                                                                V.gpu_ld()));
+                                                                A->data(), 
+                                                                A->ld(), 
+                                                                V.data(), 
+                                                                V.ld()));
 
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTsyherk(cublas_handle, 
                                                                 CUBLAS_FILL_MODE_UPPER, 
@@ -345,16 +345,16 @@ namespace cuda
                                                                 V.cols(), 
                                                                 V.rows(), 
                                                                 &One, 
-                                                                V.gpu_data(), 
-                                                                V.gpu_ld(), 
+                                                                V.data(), 
+                                                                V.ld(), 
                                                                 &Zero, 
-                                                                A->gpu_data(), 
-                                                                A->gpu_ld()));  
+                                                                A->data(), 
+                                                                A->ld()));  
 
         CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTpotrf(cusolver_handle, 
                                                                         CUBLAS_FILL_MODE_UPPER, 
                                                                         V.cols(),
-                                                                        A->gpu_data(),
+                                                                        A->data(),
                                                                         V.cols(), 
                                                                         workspace, 
                                                                         lwork, 
@@ -375,10 +375,10 @@ namespace cuda
                                                                 V.rows(), 
                                                                 V.cols(),
                                                                 &one, 
-                                                                A->gpu_data(), 
-                                                                A->gpu_ld(), 
-                                                                V.gpu_data(), 
-                                                                V.gpu_ld()));
+                                                                A->data(), 
+                                                                A->ld(), 
+                                                                V.data(), 
+                                                                V.ld()));
 
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTsyherk(cublas_handle, 
                                                                 CUBLAS_FILL_MODE_UPPER, 
@@ -386,16 +386,16 @@ namespace cuda
                                                                 V.cols(), 
                                                                 V.rows(), 
                                                                 &One, 
-                                                                V.gpu_data(), 
-                                                                V.gpu_ld(), 
+                                                                V.data(), 
+                                                                V.ld(), 
                                                                 &Zero, 
-                                                                A->gpu_data(), 
-                                                                A->gpu_ld()));  
+                                                                A->data(), 
+                                                                A->ld()));  
 
         CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTpotrf(cusolver_handle, 
                                                                         CUBLAS_FILL_MODE_UPPER, 
                                                                         V.cols(),
-                                                                        A->gpu_data(),
+                                                                        A->data(),
                                                                         V.cols(), 
                                                                         workspace, 
                                                                         lwork, 
@@ -409,10 +409,10 @@ namespace cuda
                                                                 V.rows(), 
                                                                 V.cols(),
                                                                 &one, 
-                                                                A->gpu_data(), 
-                                                                A->gpu_ld(), 
-                                                                V.gpu_data(), 
-                                                                V.gpu_ld()));    
+                                                                A->data(), 
+                                                                A->ld(), 
+                                                                V.data(), 
+                                                                V.ld()));    
 
 #ifdef CHASE_OUTPUT
         std::cout << std::setprecision(2) << "choldegree: 2, shift = " << shift << std::endl;
@@ -422,7 +422,7 @@ namespace cuda
 
     template<typename T>
     void houseHoulderQR(cusolverDnHandle_t cusolver_handle,
-                        chase::matrix::MatrixGPU<T>& V,
+                        chase::matrix::Matrix<T, chase::platform::GPU>& V,
                         T *d_tau,
                         int* devInfo,
                         T *workspace = nullptr,
@@ -438,8 +438,8 @@ namespace cuda
                                     cusolver_handle, 
                                     V.rows(),
                                     V.cols(),
-                                    V.gpu_data(),
-                                    V.gpu_ld(),  
+                                    V.data(),
+                                    V.ld(),  
                                     &lwork_geqrf));
 
             CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTgqr_bufferSize(
@@ -447,8 +447,8 @@ namespace cuda
                                     V.rows(),
                                     V.cols(),
                                     V.cols(),
-                                    V.gpu_data(),
-                                    V.gpu_ld(),
+                                    V.data(),
+                                    V.ld(),
                                     d_tau,  
                                     &lwork_orgqr));
 
@@ -459,8 +459,8 @@ namespace cuda
         CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTgeqrf(cusolver_handle, 
                                                                          V.rows(), 
                                                                          V.cols(), 
-                                                                         V.gpu_data(), 
-                                                                         V.gpu_ld(), 
+                                                                         V.data(), 
+                                                                         V.ld(), 
                                                                          d_tau,
                                                                          workspace, 
                                                                          lwork, 
@@ -470,8 +470,8 @@ namespace cuda
                                                                        V.rows(), 
                                                                        V.cols(), 
                                                                        V.cols(), 
-                                                                       V.gpu_data(), 
-                                                                       V.gpu_ld(),
+                                                                       V.data(), 
+                                                                       V.ld(),
                                                                        d_tau, 
                                                                        workspace, 
                                                                        lwork, 

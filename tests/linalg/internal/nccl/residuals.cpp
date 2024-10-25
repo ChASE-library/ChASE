@@ -120,8 +120,8 @@ TYPED_TEST(ResidGPUNCCLDistTest, ResidCorrectnessGPU) {
     V_.H2D();
     V2_.H2D();
 
-    chase::matrix::MatrixGPU<chase::Base<T>> resids_(this->n, 1);
-    chase::matrix::MatrixGPU<chase::Base<T>> ritzv_(this->n, 1, this->n, evals.data());
+    chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU> resids_(this->n, 1);
+    chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU> ritzv_(this->n, 1, this->n, evals.data());
     resids_.allocate_cpu_data();
     chase::linalg::internal::nccl::residuals(this->cublasH_, H_, V_, V2_, W_, W2_, ritzv_, resids_, offset, subSize);
 

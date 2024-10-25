@@ -85,7 +85,8 @@ public:
     virtual T *         l_data() = 0;
     virtual std::size_t mb() const = 0;  
 
-    virtual typename chase::platform::MatrixTypePlatform<T, Platform>::type& loc_matrix() = 0;
+    //virtual typename chase::platform::MatrixTypePlatform<T, Platform>::type& loc_matrix() = 0;
+    virtual chase::matrix::Matrix<T, Platform>& loc_matrix() = 0;
 
     int grank()
     {
@@ -267,8 +268,8 @@ public:
         
         ld_ = m_;
 
-        local_matrix_ =  typename chase::platform::MatrixTypePlatform<T, Platform>::type(m_, n_);  
-
+        //local_matrix_ =  typename chase::platform::MatrixTypePlatform<T, Platform>::type(m_, n_);  
+        local_matrix_ =  chase::matrix::Matrix<T, Platform>(m_, n_); 
         mb_ = m_;
 
         if (coord == dim - 1 && dim != 1)
@@ -302,11 +303,12 @@ public:
         MPI_Allreduce(&lv, &res, 1, MPI_UINT64_T, MPI_SUM, comm);
         M_ = static_cast<std::size_t>(res);
 
-        local_matrix_ = typename chase::platform::MatrixTypePlatform<T, Platform>::type(m_, n_, ld_, data);
+        //local_matrix_ = typename chase::platform::MatrixTypePlatform<T, Platform>::type(m_, n_, ld_, data);
+        local_matrix_ =  chase::matrix::Matrix<T, Platform>(m_, n_, ld_, data); 
 
         if constexpr (std::is_same<Platform, chase::platform::GPU>::value)
         {
-            ld_ = local_matrix_.gpu_ld();
+            ld_ = local_matrix_.ld();
         }
 
         int *dims_ = mpi_grid_.get()->get_dims();
@@ -512,24 +514,12 @@ public:
 #endif
     T *cpu_data()
     {
-        if constexpr (std::is_same<Platform, chase::platform::GPU>::value)
-        {
-            return local_matrix_.cpu_data();
-        }else
-        {
-            return local_matrix_.data();
-        }        
+        return local_matrix_.cpu_data(); 
     }
 
     std::size_t cpu_ld()
     {
-        if constexpr (std::is_same<Platform, chase::platform::GPU>::value)
-        {
-            return local_matrix_.cpu_ld();
-        }else
-        {
-            return local_matrix_.ld();
-        }           
+        return local_matrix_.cpu_ld();         
     }
 
     template<CommunicatorType target_comm_type, typename OtherPlatform>
@@ -605,18 +595,11 @@ public:
     std::size_t mb() const override { return mb_;}    
 
     T *         l_data() override { 
-        if constexpr (std::is_same<Platform, chase::platform::CPU>::value)
-        {
-            return local_matrix_.data();
-        }
-#ifdef HAS_CUDA        
-        else
-        {
-            return local_matrix_.gpu_data();
-        }
-#endif        
+        return local_matrix_.data();
     }
-    typename chase::platform::MatrixTypePlatform<T, Platform>::type& loc_matrix() override { return local_matrix_;}
+    
+    //typename chase::platform::MatrixTypePlatform<T, Platform>::type& loc_matrix() override { return local_matrix_;}
+    chase::matrix::Matrix<T, Platform>& loc_matrix() override { return local_matrix_;}
 #ifdef HAS_SCALAPACK
     std::size_t *get_scalapack_desc(){ return desc_; }
 
@@ -678,7 +661,8 @@ private:
     std::size_t n_;
     std::size_t ld_;
     std::size_t mb_;
-    typename chase::platform::MatrixTypePlatform<T, Platform>::type local_matrix_;
+    //typename chase::platform::MatrixTypePlatform<T, Platform>::type local_matrix_;
+    chase::matrix::Matrix<T, Platform> local_matrix_;
     std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid_;    
 #ifdef HAS_SCALAPACK
     std::size_t desc_[9];
@@ -810,7 +794,7 @@ private:
                     if constexpr (std::is_same<Platform, chase::platform::CPU>::value)
                     {
                         auto max_c_len = *max_element(orig_lens.begin(), orig_lens.end());
-                        std::unique_ptr<chase::matrix::MatrixCPU<T>> buff = std::make_unique<chase::matrix::MatrixCPU<T>>(max_c_len, subsetSize);
+                        std::unique_ptr<chase::matrix::Matrix<T>> buff = std::make_unique<chase::matrix::Matrix<T>>(max_c_len, subsetSize);
                         chase::linalg::lapackpp::t_lacpy('A', orig_lens[i], subsetSize, this->l_data() + offset * this->ld_ + orig_disps[i], this->ld_, 
                                                            buff->data(), orig_lens[i]);    
 
@@ -823,12 +807,12 @@ private:
                     else
                     {
                         auto max_c_len = *max_element(orig_lens.begin(), orig_lens.end());
-                        std::unique_ptr<chase::matrix::MatrixGPU<T>> buff = std::make_unique<chase::matrix::MatrixGPU<T>>(max_c_len, subsetSize);
+                        std::unique_ptr<chase::matrix::Matrix<T, chase::platform::GPU>> buff = std::make_unique<chase::matrix::Matrix<T, chase::platform::GPU>>(max_c_len, subsetSize);
                         chase::linalg::internal::cuda::t_lacpy('A', orig_lens[i], subsetSize, this->l_data() + offset * this->ld_ + orig_disps[i], this->ld_, 
-                                                           buff->gpu_data(), orig_lens[i]);    
+                                                           buff->data(), orig_lens[i]);    
 
-                        MPI_Bcast(buff->gpu_data(), orig_lens[i] * subsetSize, chase::mpi::getMPI_Type<T>(), orig_srcs[i], this->mpi_grid_->get_row_comm());
-                        chase::linalg::internal::cuda::t_lacpy('A', orig_lens[i], subsetSize, buff->gpu_data(), orig_lens[i], 
+                        MPI_Bcast(buff->data(), orig_lens[i] * subsetSize, chase::mpi::getMPI_Type<T>(), orig_srcs[i], this->mpi_grid_->get_row_comm());
+                        chase::linalg::internal::cuda::t_lacpy('A', orig_lens[i], subsetSize, buff->data(), orig_lens[i], 
                                                            targetMultiVector->l_data() + target_disps[i] + offset * targetMultiVector->l_ld(), targetMultiVector->l_ld());                         
                     }
 #endif                    
@@ -901,7 +885,7 @@ private:
                     if constexpr (std::is_same<Platform, chase::platform::CPU>::value)
                     {
                         auto max_c_len = *max_element(orig_lens.begin(), orig_lens.end());
-                        std::unique_ptr<chase::matrix::MatrixCPU<T>> buff = std::make_unique<chase::matrix::MatrixCPU<T>>(max_c_len, subsetSize);
+                        std::unique_ptr<chase::matrix::Matrix<T>> buff = std::make_unique<chase::matrix::Matrix<T>>(max_c_len, subsetSize);
                         chase::linalg::lapackpp::t_lacpy('A', orig_lens[i], subsetSize, this->l_data() + offset * this->ld_ + orig_disps[i], this->ld_, 
                                                            buff->data(), orig_lens[i]);    
 
@@ -914,12 +898,12 @@ private:
                     else
                     {
                         auto max_c_len = *max_element(orig_lens.begin(), orig_lens.end());
-                        std::unique_ptr<chase::matrix::MatrixGPU<T>> buff = std::make_unique<chase::matrix::MatrixGPU<T>>(max_c_len, subsetSize);
+                        std::unique_ptr<chase::matrix::Matrix<T, chase::platform::GPU>> buff = std::make_unique<chase::matrix::Matrix<T, chase::platform::GPU>>(max_c_len, subsetSize);
                         chase::linalg::internal::cuda::t_lacpy('A', orig_lens[i], subsetSize, this->l_data() + offset * this->ld_ + orig_disps[i], this->ld_, 
-                                                           buff->gpu_data(), orig_lens[i]);    
+                                                           buff->data(), orig_lens[i]);    
 
-                        MPI_Bcast(buff->gpu_data(), orig_lens[i] * subsetSize, chase::mpi::getMPI_Type<T>(), orig_srcs[i], this->mpi_grid_->get_col_comm());
-                        chase::linalg::internal::cuda::t_lacpy('A', orig_lens[i], subsetSize, buff->gpu_data(), orig_lens[i], 
+                        MPI_Bcast(buff->data(), orig_lens[i] * subsetSize, chase::mpi::getMPI_Type<T>(), orig_srcs[i], this->mpi_grid_->get_col_comm());
+                        chase::linalg::internal::cuda::t_lacpy('A', orig_lens[i], subsetSize, buff->data(), orig_lens[i], 
                                                            targetMultiVector->l_data() + target_disps[i] + offset * targetMultiVector->l_ld(), targetMultiVector->l_ld());                         
                     }
 #endif                    
@@ -988,17 +972,17 @@ private:
                 if(coords[0] == orig_dests[i])
                 {
                     auto max_c_len = *max_element(orig_lens.begin(), orig_lens.end());
-                    std::unique_ptr<chase::matrix::MatrixGPU<T>> buff = std::make_unique<chase::matrix::MatrixGPU<T>>(max_c_len, subsetSize);
+                    std::unique_ptr<chase::matrix::Matrix<T, chase::platform::GPU>> buff = std::make_unique<chase::matrix::Matrix<T, chase::platform::GPU>>(max_c_len, subsetSize);
                     chase::linalg::internal::cuda::t_lacpy('A', orig_lens[i], subsetSize, this->l_data() + offset * this->ld_ + orig_disps[i], this->ld_, 
-                                                        buff->gpu_data(), orig_lens[i]);    
+                                                        buff->data(), orig_lens[i]);    
 
-                    CHECK_NCCL_ERROR(chase::nccl::ncclBcastWrapper(buff->gpu_data(), 
+                    CHECK_NCCL_ERROR(chase::nccl::ncclBcastWrapper(buff->data(), 
                                                         orig_lens[i] * subsetSize, 
                                                         orig_srcs[i], 
                                                         this->mpi_grid_->get_nccl_row_comm(), 
                                                         &stream));
                                                         
-                    chase::linalg::internal::cuda::t_lacpy('A', orig_lens[i], subsetSize, buff->gpu_data(), orig_lens[i], 
+                    chase::linalg::internal::cuda::t_lacpy('A', orig_lens[i], subsetSize, buff->data(), orig_lens[i], 
                                                         targetMultiVector->l_data() + target_disps[i] + offset * targetMultiVector->l_ld(), targetMultiVector->l_ld());   
                                      
                 }   
@@ -1062,17 +1046,17 @@ private:
                 if(coords[1] == orig_dests[i])
                 {
                     auto max_c_len = *max_element(orig_lens.begin(), orig_lens.end());
-                    std::unique_ptr<chase::matrix::MatrixGPU<T>> buff = std::make_unique<chase::matrix::MatrixGPU<T>>(max_c_len, subsetSize);
+                    std::unique_ptr<chase::matrix::Matrix<T, chase::platform::GPU>> buff = std::make_unique<chase::matrix::Matrix<T, chase::platform::GPU>>(max_c_len, subsetSize);
                     chase::linalg::internal::cuda::t_lacpy('A', orig_lens[i], subsetSize, this->l_data() + offset * this->ld_ + orig_disps[i], this->ld_, 
-                                                        buff->gpu_data(), orig_lens[i]);    
+                                                        buff->data(), orig_lens[i]);    
 
-                    CHECK_NCCL_ERROR(chase::nccl::ncclBcastWrapper(buff->gpu_data(), 
+                    CHECK_NCCL_ERROR(chase::nccl::ncclBcastWrapper(buff->data(), 
                                                         orig_lens[i] * subsetSize, 
                                                         orig_srcs[i], 
                                                         this->mpi_grid_->get_nccl_col_comm(), 
                                                         &stream));
                                                         
-                    chase::linalg::internal::cuda::t_lacpy('A', orig_lens[i], subsetSize, buff->gpu_data(), orig_lens[i], 
+                    chase::linalg::internal::cuda::t_lacpy('A', orig_lens[i], subsetSize, buff->data(), orig_lens[i], 
                                                         targetMultiVector->l_data() + target_disps[i] + offset * targetMultiVector->l_ld(), targetMultiVector->l_ld());   
                                      
                 }   
@@ -1115,7 +1099,8 @@ public:
         std::tie(m_, mblocks_) = numroc(M_, mb_, coord, dim);
         n_ = N_;
         ld_ = m_;
-        local_matrix_ = typename chase::platform::MatrixTypePlatform<T, Platform>::type(m_, n_);  
+        //local_matrix_ = typename chase::platform::MatrixTypePlatform<T, Platform>::type(m_, n_);  
+        local_matrix_ = chase::matrix::Matrix<T, Platform>(m_, n_);
     }
 
     DistMultiVectorBlockCyclic1D(std::size_t M, std::size_t m, 
@@ -1150,11 +1135,11 @@ public:
             throw std::runtime_error("the leading dimension of local matrix is not correctly matching the given block-cyclic distribution");
         }
 
-        local_matrix_ = typename chase::platform::MatrixTypePlatform<T, Platform>::type(m_, n_, ld_, data);        
-
+        //local_matrix_ = typename chase::platform::MatrixTypePlatform<T, Platform>::type(m_, n_, ld_, data);        
+        local_matrix_ = chase::matrix::Matrix<T, Platform>(m_, n_, ld_, data);
         if constexpr (std::is_same<Platform, chase::platform::GPU>::value)
         {
-            ld_ = local_matrix_.gpu_ld();
+            ld_ = local_matrix_.ld();
         }   
     }
 
@@ -1335,24 +1320,12 @@ public:
 #endif
     T *cpu_data()
     {
-        if constexpr (std::is_same<Platform, chase::platform::GPU>::value)
-        {
-            return local_matrix_.cpu_data();
-        }else
-        {
-            return local_matrix_.data();
-        }        
+        return local_matrix_.cpu_data();
     }
 
     std::size_t cpu_ld()
     {
-        if constexpr (std::is_same<Platform, chase::platform::GPU>::value)
-        {
-            return local_matrix_.cpu_ld();
-        }else
-        {
-            return local_matrix_.ld();
-        }           
+        return local_matrix_.cpu_ld();          
     }
 
     template<CommunicatorType target_comm_type, typename OtherPlatform>
@@ -1426,19 +1399,11 @@ public:
     std::size_t l_ld() const override { return ld_;}
     std::size_t mb() const override { return mb_;}    
     T *         l_data() override { 
-        if constexpr (std::is_same<Platform, chase::platform::CPU>::value)
-        {
-            return local_matrix_.data();
-        }
-#ifdef HAS_CUDA        
-        else
-        {
-            return local_matrix_.gpu_data();
-        }
-#endif        
+        return local_matrix_.data();      
     }
 
-    typename chase::platform::MatrixTypePlatform<T, Platform>::type& loc_matrix() override { return local_matrix_;}
+    //typename chase::platform::MatrixTypePlatform<T, Platform>::type& loc_matrix() override { return local_matrix_;}
+    chase::matrix::Matrix<T, Platform>& loc_matrix() override { return local_matrix_;}
 
 #ifdef HAS_SCALAPACK
     std::size_t *get_scalapack_desc(){ return desc_; }
@@ -1495,7 +1460,8 @@ private:
     std::size_t ld_;
     std::size_t mb_;
     std::size_t mblocks_;
-    typename chase::platform::MatrixTypePlatform<T, Platform>::type local_matrix_;
+    //typename chase::platform::MatrixTypePlatform<T, Platform>::type local_matrix_;
+    chase::matrix::Matrix<T, Platform> local_matrix_;
     std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid_;
 #ifdef HAS_SCALAPACK
     std::size_t desc_[9];
@@ -1632,7 +1598,7 @@ private:
                     if constexpr (std::is_same<Platform, chase::platform::CPU>::value)
                     {
                         auto max_c_len = *max_element(orig_lens.begin(), orig_lens.end());
-                        std::unique_ptr<chase::matrix::MatrixCPU<T>> buff = std::make_unique<chase::matrix::MatrixCPU<T>>(max_c_len, subsetSize);
+                        std::unique_ptr<chase::matrix::Matrix<T>> buff = std::make_unique<chase::matrix::Matrix<T>>(max_c_len, subsetSize);
                         chase::linalg::lapackpp::t_lacpy('A', orig_lens[i], subsetSize, this->l_data() + offset * this->ld_ + orig_disps[i], this->ld_, 
                                                            buff->data(), orig_lens[i]);    
 
@@ -1645,12 +1611,12 @@ private:
                     else
                     {
                         auto max_c_len = *max_element(orig_lens.begin(), orig_lens.end());
-                        std::unique_ptr<chase::matrix::MatrixGPU<T>> buff = std::make_unique<chase::matrix::MatrixGPU<T>>(max_c_len, subsetSize);
+                        std::unique_ptr<chase::matrix::Matrix<T, chase::platform::GPU>> buff = std::make_unique<chase::matrix::Matrix<T, chase::platform::GPU>>(max_c_len, subsetSize);
                         chase::linalg::internal::cuda::t_lacpy('A', orig_lens[i], subsetSize, this->l_data() + offset * this->ld_ + orig_disps[i], this->ld_, 
-                                                           buff->gpu_data(), orig_lens[i]);    
+                                                           buff->data(), orig_lens[i]);    
 
-                        MPI_Bcast(buff->gpu_data(), orig_lens[i] * subsetSize, chase::mpi::getMPI_Type<T>(), orig_srcs[i], this->mpi_grid_->get_row_comm());
-                        chase::linalg::internal::cuda::t_lacpy('A', orig_lens[i], subsetSize, buff->gpu_data(), orig_lens[i], 
+                        MPI_Bcast(buff->data(), orig_lens[i] * subsetSize, chase::mpi::getMPI_Type<T>(), orig_srcs[i], this->mpi_grid_->get_row_comm());
+                        chase::linalg::internal::cuda::t_lacpy('A', orig_lens[i], subsetSize, buff->data(), orig_lens[i], 
                                                            targetMultiVector->l_data() + target_disps[i] + offset * targetMultiVector->l_ld(), targetMultiVector->l_ld());                         
                     }
 #endif                    
@@ -1730,7 +1696,7 @@ private:
                     if constexpr (std::is_same<Platform, chase::platform::CPU>::value)
                     {
                         auto max_c_len = *max_element(orig_lens.begin(), orig_lens.end());
-                        std::unique_ptr<chase::matrix::MatrixCPU<T>> buff = std::make_unique<chase::matrix::MatrixCPU<T>>(max_c_len, subsetSize);
+                        std::unique_ptr<chase::matrix::Matrix<T>> buff = std::make_unique<chase::matrix::Matrix<T>>(max_c_len, subsetSize);
                         chase::linalg::lapackpp::t_lacpy('A', orig_lens[i], subsetSize, this->l_data() + offset * this->ld_ + orig_disps[i], this->ld_, 
                                                            buff->data(), orig_lens[i]);    
 
@@ -1743,12 +1709,12 @@ private:
                     else
                     {
                         auto max_c_len = *max_element(orig_lens.begin(), orig_lens.end());
-                        std::unique_ptr<chase::matrix::MatrixGPU<T>> buff = std::make_unique<chase::matrix::MatrixGPU<T>>(max_c_len, subsetSize);
+                        std::unique_ptr<chase::matrix::Matrix<T, chase::platform::GPU>> buff = std::make_unique<chase::matrix::Matrix<T, chase::platform::GPU>>(max_c_len, subsetSize);
                         chase::linalg::internal::cuda::t_lacpy('A', orig_lens[i], subsetSize, this->l_data() + offset * this->ld_ + orig_disps[i], this->ld_, 
-                                                           buff->gpu_data(), orig_lens[i]);    
+                                                           buff->data(), orig_lens[i]);    
 
-                        MPI_Bcast(buff->gpu_data(), orig_lens[i] * subsetSize, chase::mpi::getMPI_Type<T>(), orig_srcs[i], this->mpi_grid_->get_col_comm());
-                        chase::linalg::internal::cuda::t_lacpy('A', orig_lens[i], subsetSize, buff->gpu_data(), orig_lens[i], 
+                        MPI_Bcast(buff->data(), orig_lens[i] * subsetSize, chase::mpi::getMPI_Type<T>(), orig_srcs[i], this->mpi_grid_->get_col_comm());
+                        chase::linalg::internal::cuda::t_lacpy('A', orig_lens[i], subsetSize, buff->data(), orig_lens[i], 
                                                            targetMultiVector->l_data() + target_disps[i] + offset * targetMultiVector->l_ld(), targetMultiVector->l_ld());                         
                     }
 #endif                    
@@ -1825,17 +1791,17 @@ private:
                 if(coords[0] == orig_dests[i])
                 {
                     auto max_c_len = *max_element(orig_lens.begin(), orig_lens.end());
-                    std::unique_ptr<chase::matrix::MatrixGPU<T>> buff = std::make_unique<chase::matrix::MatrixGPU<T>>(max_c_len, subsetSize);
+                    std::unique_ptr<chase::matrix::Matrix<T, chase::platform::GPU>> buff = std::make_unique<chase::matrix::Matrix<T, chase::platform::GPU>>(max_c_len, subsetSize);
                     chase::linalg::internal::cuda::t_lacpy('A', orig_lens[i], subsetSize, this->l_data() + offset * this->ld_ + orig_disps[i], this->ld_, 
-                                                        buff->gpu_data(), orig_lens[i]);    
+                                                        buff->data(), orig_lens[i]);    
 
-                    CHECK_NCCL_ERROR(chase::nccl::ncclBcastWrapper(buff->gpu_data(), 
+                    CHECK_NCCL_ERROR(chase::nccl::ncclBcastWrapper(buff->data(), 
                                                         orig_lens[i] * subsetSize, 
                                                         orig_srcs[i], 
                                                         this->mpi_grid_->get_nccl_row_comm(), 
                                                         &stream));
                                                         
-                    chase::linalg::internal::cuda::t_lacpy('A', orig_lens[i], subsetSize, buff->gpu_data(), orig_lens[i], 
+                    chase::linalg::internal::cuda::t_lacpy('A', orig_lens[i], subsetSize, buff->data(), orig_lens[i], 
                                                         targetMultiVector->l_data() + target_disps[i] + offset * targetMultiVector->l_ld(), targetMultiVector->l_ld());   
                                      
                 }   
@@ -1904,17 +1870,17 @@ private:
                 if(coords[1] == orig_dests[i])
                 {
                     auto max_c_len = *max_element(orig_lens.begin(), orig_lens.end());
-                    std::unique_ptr<chase::matrix::MatrixGPU<T>> buff = std::make_unique<chase::matrix::MatrixGPU<T>>(max_c_len, subsetSize);
+                    std::unique_ptr<chase::matrix::Matrix<T, chase::platform::GPU>> buff = std::make_unique<chase::matrix::Matrix<T, chase::platform::GPU>>(max_c_len, subsetSize);
                     chase::linalg::internal::cuda::t_lacpy('A', orig_lens[i], subsetSize, this->l_data() + offset * this->ld_ + orig_disps[i], this->ld_, 
-                                                        buff->gpu_data(), orig_lens[i]);    
+                                                        buff->data(), orig_lens[i]);    
 
-                    CHECK_NCCL_ERROR(chase::nccl::ncclBcastWrapper(buff->gpu_data(), 
+                    CHECK_NCCL_ERROR(chase::nccl::ncclBcastWrapper(buff->data(), 
                                                         orig_lens[i] * subsetSize, 
                                                         orig_srcs[i], 
                                                         this->mpi_grid_->get_nccl_col_comm(), 
                                                         &stream));
                                                         
-                    chase::linalg::internal::cuda::t_lacpy('A', orig_lens[i], subsetSize, buff->gpu_data(), orig_lens[i], 
+                    chase::linalg::internal::cuda::t_lacpy('A', orig_lens[i], subsetSize, buff->data(), orig_lens[i], 
                                                         targetMultiVector->l_data() + target_disps[i] + offset * targetMultiVector->l_ld(), targetMultiVector->l_ld());   
                                      
                 }   

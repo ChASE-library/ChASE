@@ -36,7 +36,7 @@ TYPED_TEST(shiftMatrixGPUTest, ShiftMatrix) {
         buffer[i] = i + 1;
     }
 
-    chase::matrix::MatrixGPU<T> matrix(rows, cols, ld, buffer.data());
+    chase::matrix::Matrix<T, chase::platform::GPU> matrix(rows, cols, ld, buffer.data());
     T expected[12] = {-1, 2, 3, 4, 5, 4, 7, 8, 9, 10, 9, 12};
 
     chase::linalg::internal::cuda::shiftDiagonal(matrix, shift);

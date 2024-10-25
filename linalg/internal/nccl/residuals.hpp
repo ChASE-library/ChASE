@@ -27,8 +27,8 @@ namespace nccl
                    InputMultiVectorType& V2,
                    typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type& W1,
                    typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type& W2,
-                   chase::matrix::MatrixGPU<chase::Base<typename MatrixType::value_type>>& ritzv,
-                   chase::matrix::MatrixGPU<chase::Base<typename MatrixType::value_type>>& resids,
+                   chase::matrix::Matrix<chase::Base<typename MatrixType::value_type>, typename MatrixType::platform_type>& ritzv,
+                   chase::matrix::Matrix<chase::Base<typename MatrixType::value_type>, typename MatrixType::platform_type>& resids,
                    std::size_t offset,
                    std::size_t subSize)     
     {
@@ -52,17 +52,17 @@ namespace nccl
                                                     W1.l_ld(),
                                                     W2.l_data() + offset * W2.l_ld(),
                                                     W2.l_ld(), 
-                                                    ritzv.gpu_data() + offset,
-                                                    resids.gpu_data() + offset,
+                                                    ritzv.data() + offset,
+                                                    resids.data() + offset,
                                                     false, (cudaStream_t)0);  
         
-        CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<chase::Base<T>>(resids.gpu_data() + offset,
-                                                                    resids.gpu_data() + offset,
+        CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<chase::Base<T>>(resids.data() + offset,
+                                                                    resids.data() + offset,
                                                                     subSize, 
                                                                     ncclSum, 
                                                                     V1.getMpiGrid()->get_nccl_row_comm()));
 
-        CHECK_CUDA_ERROR(cudaMemcpy(resids.cpu_data() + offset, resids.gpu_data() + offset, subSize * sizeof(chase::Base<T>), cudaMemcpyDeviceToHost ));
+        CHECK_CUDA_ERROR(cudaMemcpy(resids.cpu_data() + offset, resids.data() + offset, subSize * sizeof(chase::Base<T>), cudaMemcpyDeviceToHost ));
 
         for (auto i = 0; i < subSize; ++i)
         {

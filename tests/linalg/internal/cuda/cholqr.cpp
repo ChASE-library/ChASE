@@ -40,7 +40,7 @@ TYPED_TEST(CholQRGPUTest, cholQR1) {
 
     auto machineEpsilon = MachineEpsilon<T>::value();
     read_vectors(this->V.data(), GetQRFileName<T>() + "cond_10.bin", 0, this->m, this->m, this->n, 0);
-    chase::matrix::MatrixGPU<T> Vec(this->m, this->n, this->m, this->V.data());
+    chase::matrix::Matrix<T, chase::platform::GPU> Vec(this->m, this->n, this->m, this->V.data());
     int info = chase::linalg::internal::cuda::cholQR1<T>(this->cublasH_, this->cusolverH_, Vec);
     ASSERT_EQ(info, 0);
     Vec.D2H();
@@ -53,7 +53,7 @@ TYPED_TEST(CholQRGPUTest, cholQR1BadlyCond) {
 
     auto machineEpsilon = MachineEpsilon<T>::value();
     read_vectors(this->V.data(), GetQRFileName<T>() + "cond_1e4.bin", 0, this->m, this->m, this->n, 0);
-    chase::matrix::MatrixGPU<T> Vec(this->m, this->n, this->m, this->V.data());
+    chase::matrix::Matrix<T, chase::platform::GPU> Vec(this->m, this->n, this->m, this->V.data());
     int info = chase::linalg::internal::cuda::cholQR1<T>(this->cublasH_, this->cusolverH_, Vec);
     ASSERT_EQ(info, 0);
     Vec.D2H();
@@ -67,7 +67,7 @@ TYPED_TEST(CholQRGPUTest, cholQR1IllCond) {
 
     auto machineEpsilon = MachineEpsilon<T>::value();
     read_vectors(this->V.data(), GetQRFileName<T>() + "cond_ill.bin", 0, this->m, this->m, this->n, 0);
-    chase::matrix::MatrixGPU<T> Vec(this->m, this->n, this->m, this->V.data());
+    chase::matrix::Matrix<T, chase::platform::GPU> Vec(this->m, this->n, this->m, this->V.data());
     int info = chase::linalg::internal::cuda::cholQR1<T>(this->cublasH_, this->cusolverH_, Vec);
     EXPECT_GT(info, 0);
     EXPECT_LE(info, this->n);
@@ -78,7 +78,7 @@ TYPED_TEST(CholQRGPUTest, cholQR2) {
 
     auto machineEpsilon = MachineEpsilon<T>::value();
     read_vectors(this->V.data(), GetQRFileName<T>() + "cond_1e4.bin", 0, this->m, this->m, this->n, 0);
-    chase::matrix::MatrixGPU<T> Vec(this->m, this->n, this->m, this->V.data());
+    chase::matrix::Matrix<T, chase::platform::GPU> Vec(this->m, this->n, this->m, this->V.data());
     int info = chase::linalg::internal::cuda::cholQR2<T>(this->cublasH_, this->cusolverH_, Vec);
     ASSERT_EQ(info, 0);
     Vec.D2H();
@@ -91,7 +91,7 @@ TYPED_TEST(CholQRGPUTest, cholQR2IllCond) {
 
     auto machineEpsilon = MachineEpsilon<T>::value();
     read_vectors(this->V.data(), GetQRFileName<T>() + "cond_ill.bin", 0, this->m, this->m, this->n, 0);
-    chase::matrix::MatrixGPU<T> Vec(this->m, this->n, this->m, this->V.data());
+    chase::matrix::Matrix<T, chase::platform::GPU> Vec(this->m, this->n, this->m, this->V.data());
     int info = chase::linalg::internal::cuda::cholQR2<T>(this->cublasH_, this->cusolverH_, Vec);
     EXPECT_GT(info, 0);
     EXPECT_LE(info, this->n);
@@ -102,7 +102,7 @@ TYPED_TEST(CholQRGPUTest, scholQR) {
 
     auto machineEpsilon = MachineEpsilon<T>::value();
     read_vectors(this->V.data(), GetQRFileName<T>() + "cond_ill.bin", 0, this->m, this->m, this->n, 0);
-    chase::matrix::MatrixGPU<T> Vec(this->m, this->n, this->m, this->V.data());
+    chase::matrix::Matrix<T, chase::platform::GPU> Vec(this->m, this->n, this->m, this->V.data());
     int info = chase::linalg::internal::cuda::shiftedcholQR2<T>(this->cublasH_, this->cusolverH_, Vec);
     ASSERT_EQ(info, 0);
     Vec.D2H();
@@ -117,7 +117,7 @@ TYPED_TEST(CholQRGPUTest, householderQR) {
 
     read_vectors(this->V.data(), GetQRFileName<T>() + "cond_ill.bin", 0, this->m, this->m, this->n, 0);
 
-    chase::matrix::MatrixGPU<T> Vec(this->m, this->n, this->m, this->V.data());
+    chase::matrix::Matrix<T, chase::platform::GPU> Vec(this->m, this->n, this->m, this->V.data());
 
     T* d_tau;
     int* devInfo;

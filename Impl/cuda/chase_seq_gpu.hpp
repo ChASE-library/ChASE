@@ -51,12 +51,12 @@ public:
     {
         SCOPED_NVTX_RANGE();
 
-        Hmat_ = chase::matrix::MatrixGPU<T>(N_, N_, ldh_, H_);
-        Vec1_ = chase::matrix::MatrixGPU<T>(N_, nevex_, ldv_, V1_);
-        Vec2_ = chase::matrix::MatrixGPU<T>(N_, nevex_);
-        resid_ = chase::matrix::MatrixGPU<chase::Base<T>>(nevex_, 1);
-        ritzvs_ = chase::matrix::MatrixGPU<chase::Base<T>>(nevex_, 1, nevex_, ritzv_);
-        A_ = chase::matrix::MatrixGPU<T>(nevex_, nevex_);
+        Hmat_ = chase::matrix::Matrix<T, chase::platform::GPU>(N_, N_, ldh_, H_);
+        Vec1_ = chase::matrix::Matrix<T, chase::platform::GPU>(N_, nevex_, ldv_, V1_);
+        Vec2_ = chase::matrix::Matrix<T, chase::platform::GPU>(N_, nevex_);
+        resid_ = chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU>(nevex_, 1);
+        ritzvs_ = chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU>(nevex_, 1, nevex_, ritzv_);
+        A_ = chase::matrix::Matrix<T, chase::platform::GPU>(nevex_, nevex_);
 
         CHECK_CUBLAS_ERROR(cublasCreate(&cublasH_));
         CHECK_CUSOLVER_ERROR(cusolverDnCreate(&cusolverH_));
@@ -75,8 +75,8 @@ public:
                                                             cusolverH_, 
                                                             N_, 
                                                             nevex_, 
-                                                            Vec1_.gpu_data(), 
-                                                            Vec1_.gpu_ld(), 
+                                                            Vec1_.data(), 
+                                                            Vec1_.ld(), 
                                                             &lwork_geqrf));
 
         CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTgqr_bufferSize(
@@ -84,8 +84,8 @@ public:
                                                             N_, 
                                                             nevex_, 
                                                             nevex_,
-                                                            Vec1_.gpu_data(), 
-                                                            Vec1_.gpu_ld(),  
+                                                            Vec1_.data(), 
+                                                            Vec1_.ld(),  
                                                             d_return_, 
                                                             &lwork_orgqr));
 
@@ -98,9 +98,9 @@ public:
                                                             CUSOLVER_EIG_MODE_VECTOR, 
                                                             CUBLAS_FILL_MODE_LOWER,
                                                             nevex_, 
-                                                            A_.gpu_data(), 
-                                                            A_.gpu_ld(), 
-                                                            ritzvs_.gpu_data(), 
+                                                            A_.data(), 
+                                                            A_.ld(), 
+                                                            ritzvs_.data(), 
                                                             &lwork_heevd));
         if (lwork_heevd > lwork_)
         {
@@ -113,8 +113,8 @@ public:
                                                             cusolverH_, 
                                                             CUBLAS_FILL_MODE_UPPER, 
                                                             nevex_, 
-                                                            A_.gpu_data(), 
-                                                            A_.gpu_ld(),
+                                                            A_.data(), 
+                                                            A_.ld(),
                                                             &lwork_potrf));
         if (lwork_potrf > lwork_)
         {
@@ -195,16 +195,16 @@ public:
 
         if (random)
         {
-            chase::linalg::internal::cuda::init_random_vectors(Vec1_.gpu_data(), Vec1_.gpu_ld() * Vec1_.cols());
+            chase::linalg::internal::cuda::init_random_vectors(Vec1_.data(), Vec1_.ld() * Vec1_.cols());
         }
 
         chase::linalg::internal::cuda::t_lacpy('A', 
                                           Vec1_.rows(), 
                                           Vec1_.cols(), 
-                                          Vec1_.gpu_data(), 
-                                          Vec1_.gpu_ld(),
-                                          Vec2_.gpu_data(), 
-                                          Vec2_.gpu_ld());  
+                                          Vec1_.data(), 
+                                          Vec1_.ld(),
+                                          Vec2_.data(), 
+                                          Vec2_.ld());  
         
         Hmat_.H2D();
     }
@@ -245,8 +245,8 @@ public:
                                         sizeof(T), 
                                         ritzVc, 
                                         m, 
-                                        A_.gpu_data(), 
-                                        A_.gpu_ld()));
+                                        A_.data(), 
+                                        A_.ld()));
 
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(cublasH_, 
                                                                 CUBLAS_OP_N, 
@@ -255,21 +255,21 @@ public:
                                                                 idx, 
                                                                 m, 
                                                                 &alpha,
-                                                                Vec1_.gpu_data(), 
-                                                                Vec1_.gpu_ld(), 
-                                                                A_.gpu_data(), 
-                                                                A_.gpu_ld(), 
+                                                                Vec1_.data(), 
+                                                                Vec1_.ld(), 
+                                                                A_.data(), 
+                                                                A_.ld(), 
                                                                 &beta, 
-                                                                Vec2_.gpu_data(), 
-                                                                Vec2_.gpu_ld()));
+                                                                Vec2_.data(), 
+                                                                Vec2_.ld()));
         
         chase::linalg::internal::cuda::t_lacpy('A', 
                                     Vec2_.rows(), 
                                     m, 
-                                    Vec2_.gpu_data(), 
-                                    Vec2_.gpu_ld(),
-                                    Vec1_.gpu_data(), 
-                                    Vec1_.gpu_ld());  
+                                    Vec2_.data(), 
+                                    Vec2_.ld(),
+                                    Vec1_.data(), 
+                                    Vec1_.ld());  
 
     }
 
@@ -351,13 +351,13 @@ public:
                                                                         block,
                                                                         Hmat_sp->cols(),
                                                                         &alpha_sp,
-                                                                        Hmat_sp->gpu_data(),
-                                                                        Hmat_sp->gpu_ld(),
-                                                                        Vec1_sp->gpu_data() + offset * Vec1_sp->gpu_ld() + locked_ * Vec1_sp->gpu_ld(),
-                                                                        Vec1_sp->gpu_ld(),
+                                                                        Hmat_sp->data(),
+                                                                        Hmat_sp->ld(),
+                                                                        Vec1_sp->data() + offset * Vec1_sp->ld() + locked_ * Vec1_sp->ld(),
+                                                                        Vec1_sp->ld(),
                                                                         &beta_sp,
-                                                                        Vec2_sp->gpu_data() + offset * Vec2_sp->gpu_ld() + locked_ * Vec2_sp->gpu_ld(),
-                                                                        Vec2_sp->gpu_ld()));
+                                                                        Vec2_sp->data() + offset * Vec2_sp->ld() + locked_ * Vec2_sp->ld(),
+                                                                        Vec2_sp->ld()));
             }
             else
             {
@@ -368,13 +368,13 @@ public:
                                                                         block,
                                                                         Hmat_.cols(),
                                                                         &alpha,
-                                                                        Hmat_.gpu_data(),
-                                                                        Hmat_.gpu_ld(),
-                                                                        Vec1_.gpu_data() + offset * Vec1_.gpu_ld() + locked_ * Vec1_.gpu_ld(),
-                                                                        Vec1_.gpu_ld(),
+                                                                        Hmat_.data(),
+                                                                        Hmat_.ld(),
+                                                                        Vec1_.data() + offset * Vec1_.ld() + locked_ * Vec1_.ld(),
+                                                                        Vec1_.ld(),
                                                                         &beta,
-                                                                        Vec2_.gpu_data() + offset * Vec2_.gpu_ld() + locked_ * Vec2_.gpu_ld(),
-                                                                        Vec2_.gpu_ld()));
+                                                                        Vec2_.data() + offset * Vec2_.ld() + locked_ * Vec2_.ld(),
+                                                                        Vec2_.ld()));
             }
             
         }
@@ -389,13 +389,13 @@ public:
                                                                     block,
                                                                     Hmat_.cols(),
                                                                     &alpha,
-                                                                    Hmat_.gpu_data(),
-                                                                    Hmat_.gpu_ld(),
-                                                                    Vec1_.gpu_data() + offset * Vec1_.gpu_ld() + locked_ * Vec1_.gpu_ld(),
-                                                                    Vec1_.gpu_ld(),
+                                                                    Hmat_.data(),
+                                                                    Hmat_.ld(),
+                                                                    Vec1_.data() + offset * Vec1_.ld() + locked_ * Vec1_.ld(),
+                                                                    Vec1_.ld(),
                                                                     &beta,
-                                                                    Vec2_.gpu_data() + offset * Vec2_.gpu_ld() + locked_ * Vec2_.gpu_ld(),
-                                                                    Vec2_.gpu_ld()));
+                                                                    Vec2_.data() + offset * Vec2_.ld() + locked_ * Vec2_.ld(),
+                                                                    Vec2_.ld()));
         }
 
         Vec1_.swap(Vec2_);
@@ -407,10 +407,10 @@ public:
         chase::linalg::internal::cuda::t_lacpy('A', 
                                                 Vec2_.rows(), 
                                                 locked_, 
-                                                Vec1_.gpu_data(), 
-                                                Vec1_.gpu_ld(),
-                                                Vec2_.gpu_data(), 
-                                                Vec2_.gpu_ld());   
+                                                Vec1_.data(), 
+                                                Vec1_.ld(),
+                                                Vec2_.data(), 
+                                                Vec2_.ld());   
 
         int disable = config_.DoCholQR() ? 0 : 1;
         char* cholddisable = getenv("CHASE_DISABLE_CHOLQR");
@@ -501,10 +501,10 @@ public:
         chase::linalg::internal::cuda::t_lacpy('A', 
                                                 Vec1_.rows(), 
                                                 locked_, 
-                                                Vec2_.gpu_data(), 
-                                                Vec2_.gpu_ld(),
-                                                Vec1_.gpu_data(), 
-                                                Vec1_.gpu_ld());    
+                                                Vec2_.data(), 
+                                                Vec2_.ld(),
+                                                Vec1_.data(), 
+                                                Vec1_.ld());    
     }
 
     void RR(chase::Base<T>* ritzv, std::size_t block) override
@@ -534,13 +534,13 @@ public:
         chase::linalg::internal::cuda::residuals(cublasH_,
                                                  Hmat_,
                                                  Vec1_,
-                                                 ritzvs_.gpu_data(),
-                                                 resid_.gpu_data(),
+                                                 ritzvs_.data(),
+                                                 resid_.data(),
                                                  fixednev,
                                                  unconverged,
                                                  &Vec2_);
         CHECK_CUDA_ERROR(cudaMemcpy(resd, 
-                                    resid_.gpu_data() + fixednev, 
+                                    resid_.data() + fixednev, 
                                     unconverged * sizeof(chase::Base<T>),
                                     cudaMemcpyDeviceToHost));      
     }
@@ -551,24 +551,24 @@ public:
         chase::linalg::internal::cuda::t_lacpy('A',
                                                Vec1_.rows(),
                                                1,
-                                               Vec1_.gpu_data() + i * Vec1_.gpu_ld(),
-                                               Vec1_.gpu_ld(),
+                                               Vec1_.data() + i * Vec1_.ld(),
+                                               Vec1_.ld(),
                                                tmp_,
                                                N_);
         chase::linalg::internal::cuda::t_lacpy('A',
                                                Vec1_.rows(),
                                                1,
-                                               Vec1_.gpu_data() + j * Vec1_.gpu_ld(),
-                                               Vec1_.gpu_ld(),
-                                               Vec1_.gpu_data() + i * Vec1_.gpu_ld(),
-                                               Vec1_.gpu_ld());
+                                               Vec1_.data() + j * Vec1_.ld(),
+                                               Vec1_.ld(),
+                                               Vec1_.data() + i * Vec1_.ld(),
+                                               Vec1_.ld());
         chase::linalg::internal::cuda::t_lacpy('A',
                                                Vec1_.rows(),
                                                1,
                                                tmp_,
                                                N_,
-                                               Vec1_.gpu_data() + j * Vec1_.gpu_ld(),
-                                               Vec1_.gpu_ld());                                       
+                                               Vec1_.data() + j * Vec1_.ld(),
+                                               Vec1_.ld());                                       
     }
 
     void Lock(std::size_t new_converged) override
@@ -598,12 +598,12 @@ private:
     chase::Base<T> *ritzv_;
     T *tmp_;
 
-    chase::matrix::MatrixGPU<T> Hmat_;
-    chase::matrix::MatrixGPU<T> Vec1_;
-    chase::matrix::MatrixGPU<T> Vec2_;
-    chase::matrix::MatrixGPU<T> A_;
-    chase::matrix::MatrixGPU<chase::Base<T>> ritzvs_;
-    chase::matrix::MatrixGPU<chase::Base<T>> resid_;
+    chase::matrix::Matrix<T, chase::platform::GPU> Hmat_;
+    chase::matrix::Matrix<T, chase::platform::GPU> Vec1_;
+    chase::matrix::Matrix<T, chase::platform::GPU> Vec2_;
+    chase::matrix::Matrix<T, chase::platform::GPU> A_;
+    chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU> ritzvs_;
+    chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU> resid_;
     chase::ChaseConfig<T> config_;
 
     cudaStream_t stream_; 
