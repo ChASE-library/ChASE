@@ -42,12 +42,12 @@ public:
                   nevex_(nev+nex),
                   config_(N, nev, nex)
     {
-        Hmat_ = chase::matrix::MatrixCPU<T>(N_, N_, ldh_, H_);
-        Vec1_ = chase::matrix::MatrixCPU<T>(N_, nevex_, ldv_, V1_);
-        Vec2_ = chase::matrix::MatrixCPU<T>(N_, nevex_);
-        resid_ = chase::matrix::MatrixCPU<chase::Base<T>>(nevex_, 1);
-        ritzvs_ = chase::matrix::MatrixCPU<chase::Base<T>>(nevex_, 1, nevex_, ritzv_);
-        A_ = chase::matrix::MatrixCPU<T>(nevex_, nevex_);
+        Hmat_ = chase::matrix::Matrix<T>(N_, N_, ldh_, H_);
+        Vec1_ = chase::matrix::Matrix<T>(N_, nevex_, ldv_, V1_);
+        Vec2_ = chase::matrix::Matrix<T>(N_, nevex_);
+        resid_ = chase::matrix::Matrix<chase::Base<T>>(nevex_, 1);
+        ritzvs_ = chase::matrix::Matrix<chase::Base<T>>(nevex_, 1, nevex_, ritzv_);
+        A_ = chase::matrix::Matrix<T>(nevex_, nevex_);
     }
 
     ChaseCPUSeq(const ChaseCPUSeq&) = delete;
@@ -467,12 +467,12 @@ private:
     T *V1_;
     chase::Base<T> *ritzv_;
 
-    chase::matrix::MatrixCPU<T> Hmat_;
-    chase::matrix::MatrixCPU<T> Vec1_;
-    chase::matrix::MatrixCPU<T> Vec2_;
-    chase::matrix::MatrixCPU<T> A_;
-    chase::matrix::MatrixCPU<chase::Base<T>> ritzvs_;
-    chase::matrix::MatrixCPU<chase::Base<T>> resid_;
+    chase::matrix::Matrix<T> Hmat_;
+    chase::matrix::Matrix<T> Vec1_;
+    chase::matrix::Matrix<T> Vec2_;
+    chase::matrix::Matrix<T> A_;
+    chase::matrix::Matrix<chase::Base<T>> ritzvs_;
+    chase::matrix::Matrix<chase::Base<T>> resid_;
     chase::ChaseConfig<T> config_;
 
 }; 

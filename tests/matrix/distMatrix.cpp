@@ -560,7 +560,7 @@ TYPED_TEST(MatrixDistTest, RedundantInternalMemoryAllocationGPU) {
     EXPECT_EQ(redundant_matrix_.l_ld(), M);  
 
     EXPECT_NE(redundant_matrix_.l_data(), nullptr);   
-    EXPECT_EQ(redundant_matrix_.cpu_data(), nullptr);    
+    EXPECT_THROW(redundant_matrix_.cpu_data(), std::runtime_error);    
     EXPECT_EQ(redundant_matrix_.cpu_ld(), 0);  
 }
 
@@ -616,7 +616,7 @@ TYPED_TEST(MatrixDistTest, BlockBlockInternalMemoryAllocationGPU) {
     // Check that the leading dimension matches local row size
     EXPECT_EQ(blockblockmatrix_.l_ld(), M/2);  
     EXPECT_EQ(blockblockmatrix_.cpu_ld(), 0);  
-    EXPECT_EQ(blockblockmatrix_.cpu_data(), nullptr);    
+    EXPECT_THROW(blockblockmatrix_.cpu_data(), std::runtime_error);    
     EXPECT_NE(blockblockmatrix_.l_data(), nullptr);    
 }
 

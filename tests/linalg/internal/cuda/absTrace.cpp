@@ -33,7 +33,7 @@ TYPED_TEST(absTraceGPUTest, absTrace) {
 
     buffer[5] = chase::Base<T>(-4);
 
-    chase::matrix::MatrixGPU<T> matrix(rows, cols, ld, buffer.data());
+    chase::matrix::Matrix<T, chase::platform::GPU> matrix(rows, cols, ld, buffer.data());
     chase::Base<T> expect_value = chase::Base<T>(16.0);
 
     chase::linalg::internal::cuda::absTrace(matrix, d_abstrace);

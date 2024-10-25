@@ -19,22 +19,22 @@ namespace cuda
     template<typename T>
     void rayleighRitz(cublasHandle_t cublas_handle, 
                       cusolverDnHandle_t cusolver_handle,
-                      chase::matrix::MatrixGPU<T>& H,
-                      chase::matrix::MatrixGPU<T>& V1,
-                      chase::matrix::MatrixGPU<T>& V2,
-                      chase::matrix::MatrixGPU<chase::Base<T>>& ritzv,
+                      chase::matrix::Matrix<T, chase::platform::GPU>& H,
+                      chase::matrix::Matrix<T, chase::platform::GPU>& V1,
+                      chase::matrix::Matrix<T, chase::platform::GPU>& V2,
+                      chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU>& ritzv,
                       std::size_t offset,
                       std::size_t subSize,
                       int* devInfo,
                       T *workspace = nullptr,
                       int lwork_heevd = 0,
-                      chase::matrix::MatrixGPU<T> *A = nullptr)
+                      chase::matrix::Matrix<T, chase::platform::GPU> *A = nullptr)
     {
         SCOPED_NVTX_RANGE();
 
         if(A == nullptr)
         {
-            A = new chase::matrix::MatrixGPU<T>(subSize, subSize);
+            A = new chase::matrix::Matrix<T, chase::platform::GPU>(subSize, subSize);
         }
 
         if(workspace == nullptr)
@@ -45,9 +45,9 @@ namespace cuda
                                     CUSOLVER_EIG_MODE_VECTOR, 
                                     CUBLAS_FILL_MODE_LOWER, 
                                     subSize, 
-                                    A->gpu_data(), 
+                                    A->data(), 
                                     subSize, 
-                                    ritzv.gpu_data(), 
+                                    ritzv.data(), 
                                     &lwork_heevd));
             CHECK_CUDA_ERROR(cudaMalloc((void**)&workspace, sizeof(T) * lwork_heevd));
         }
@@ -62,13 +62,13 @@ namespace cuda
                                        subSize, 
                                        H.cols(), 
                                        &One, 
-                                       H.gpu_data(),
-                                       H.gpu_ld(),
-                                       V1.gpu_data() + offset * V1.gpu_ld(),
-                                       V1.gpu_ld(),
+                                       H.data(),
+                                       H.ld(),
+                                       V1.data() + offset * V1.ld(),
+                                       V1.ld(),
                                        &Zero,
-                                       V2.gpu_data() + offset * V2.gpu_ld(),
-                                       V2.gpu_ld()));
+                                       V2.data() + offset * V2.ld(),
+                                       V2.ld()));
 
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(cublas_handle, 
                                        CUBLAS_OP_C, 
@@ -77,12 +77,12 @@ namespace cuda
                                        subSize, 
                                        V2.rows(),
                                        &One, 
-                                       V2.gpu_data() + offset * V2.gpu_ld(),
-                                       V2.gpu_ld(), 
-                                       V1.gpu_data() + offset * V1.gpu_ld(),
-                                       V1.gpu_ld(),
+                                       V2.data() + offset * V2.ld(),
+                                       V2.ld(), 
+                                       V1.data() + offset * V1.ld(),
+                                       V1.ld(),
                                        &Zero, 
-                                       A->gpu_data(),
+                                       A->data(),
                                        subSize));
         
         CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTheevd(
@@ -90,9 +90,9 @@ namespace cuda
                                        CUSOLVER_EIG_MODE_VECTOR, 
                                        CUBLAS_FILL_MODE_LOWER, 
                                        subSize,
-                                       A->gpu_data(),
+                                       A->data(),
                                        subSize,
-                                       ritzv.gpu_data() + offset,
+                                       ritzv.data() + offset,
                                        workspace, lwork_heevd, devInfo           
         ));
 
@@ -108,7 +108,7 @@ namespace cuda
         }        
 
         CHECK_CUDA_ERROR(cudaMemcpy(ritzv.cpu_data() + offset, 
-                                    ritzv.gpu_data() + offset, 
+                                    ritzv.data() + offset, 
                                     subSize * sizeof(chase::Base<T>),
                                     cudaMemcpyDeviceToHost));
 
@@ -119,13 +119,13 @@ namespace cuda
                                        subSize, 
                                        subSize,
                                        &One, 
-                                       V1.gpu_data() + offset * V1.gpu_ld(),
-                                       V1.gpu_ld(), 
-                                       A->gpu_data(),
+                                       V1.data() + offset * V1.ld(),
+                                       V1.ld(), 
+                                       A->data(),
                                        subSize, 
                                        &Zero,
-                                       V2.gpu_data() + offset * V2.gpu_ld(),
-                                       V2.gpu_ld()));
+                                       V2.data() + offset * V2.ld(),
+                                       V2.ld()));
 
 
     }    

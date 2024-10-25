@@ -111,7 +111,7 @@ public:
     virtual std::size_t l_cols() const = 0;
     virtual std::size_t l_ld() const = 0;
     virtual T *         l_data() = 0;
-    virtual typename chase::platform::MatrixTypePlatform<T, Platform>::type& loc_matrix() = 0;
+    virtual chase::matrix::Matrix<T, Platform>& loc_matrix() = 0;
     virtual std::size_t mb() const = 0;
     virtual std::size_t nb() const = 0;  
     //virtual std::unique_ptr<SinglePrecisionDerived> createSinglePrecisionMatrix() = 0;
@@ -157,25 +157,13 @@ public:
     T *cpu_data()
     {
         auto& loc_matrix = this->loc_matrix();
-        if constexpr (std::is_same<Platform, chase::platform::GPU>::value)
-        {
-            return loc_matrix.cpu_data();
-        }else
-        {
-            return loc_matrix.data();
-        }        
+        return loc_matrix.cpu_data();      
     }
 
     std::size_t cpu_ld()
     {
         auto& loc_matrix = this->loc_matrix();
-        if constexpr (std::is_same<Platform, chase::platform::GPU>::value)
-        {
-            return loc_matrix.cpu_ld();
-        }else
-        {
-            return loc_matrix.ld();
-        }           
+        return loc_matrix.cpu_ld();          
     }
 
 #ifdef ENABLE_MIXED_PRECISION       
@@ -310,7 +298,7 @@ public:
     {
         M_ = m_;
         N_ = n_;
-        local_matrix_ = typename chase::platform::MatrixTypePlatform<T, Platform>::type(m_, n_); 
+        local_matrix_ = chase::matrix::Matrix<T, Platform>(m_, n_); 
     }
 
     RedundantMatrix(std::size_t m, std::size_t n, std::size_t ld, T *data, 
@@ -319,11 +307,11 @@ public:
     {
         M_ = m_;
         N_ = n_;        
-        local_matrix_ = typename chase::platform::MatrixTypePlatform<T, Platform>::type(m_, n_, ld_, data);
+        local_matrix_ = chase::matrix::Matrix<T, Platform>(m_, n_, ld_, data);
         
         if constexpr (std::is_same<Platform, chase::platform::GPU>::value)
         {
-            ld_ = local_matrix_.gpu_ld();
+            ld_ = local_matrix_.ld();
         }    
     }
 
@@ -336,18 +324,9 @@ public:
     std::size_t nb() const override { return -1;} 
 
     T *         l_data() override { 
-        if constexpr (std::is_same<Platform, chase::platform::CPU>::value)
-        {
-            return local_matrix_.data();
-        }
-#ifdef HAS_CUDA        
-        else
-        {
-            return local_matrix_.gpu_data();
-        }
-#endif        
+        return local_matrix_.data();       
     }
-    typename chase::platform::MatrixTypePlatform<T, Platform>::type& loc_matrix() override { return local_matrix_;}
+    chase::matrix::Matrix<T, Platform>& loc_matrix() override { return local_matrix_;}
 
 
     // Accessors for MPI grid
@@ -404,7 +383,7 @@ private:
     std::size_t n_;
     std::size_t ld_;
 
-    typename chase::platform::MatrixTypePlatform<T, Platform>::type local_matrix_;
+    chase::matrix::Matrix<T, Platform> local_matrix_;
     std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid_;    
 
     void redistributeToBlockBlock(BlockBlockMatrix<T, Platform>* targetMatrix,
@@ -590,7 +569,7 @@ public:
         }
 
         ld_ = m_;
-        local_matrix_ = typename chase::platform::MatrixTypePlatform<T, Platform>::type(m_, n_);     
+        local_matrix_ = chase::matrix::Matrix<T, Platform>(m_, n_);     
     }
 
     BlockBlockMatrix(std::size_t m, std::size_t n, std::size_t ld, T *data,
@@ -607,11 +586,11 @@ public:
         MPI_Allreduce(&lv, &res, 1, MPI_UINT64_T, MPI_SUM, mpi_grid_.get()->get_row_comm());
         N_ = static_cast<std::size_t>(res);
 
-        local_matrix_ = typename chase::platform::MatrixTypePlatform<T, Platform>::type(m_, n_, ld_, data);
+        local_matrix_ = chase::matrix::Matrix<T, Platform>(m_, n_, ld_, data);
 
         if constexpr (std::is_same<Platform, chase::platform::GPU>::value)
         {
-            ld_ = local_matrix_.gpu_ld();
+            ld_ = local_matrix_.ld();
         }   
 
         int *coord_ = mpi_grid_.get()->get_coords();
@@ -650,18 +629,9 @@ public:
     std::size_t mb() const override { return -1;}
     std::size_t nb() const override { return -1;}    
     T *         l_data() override { 
-        if constexpr (std::is_same<Platform, chase::platform::CPU>::value)
-        {
-            return local_matrix_.data();
-        }
-#ifdef HAS_CUDA        
-        else
-        {
-            return local_matrix_.gpu_data();
-        }
-#endif        
+        return local_matrix_.data();       
     }
-    typename chase::platform::MatrixTypePlatform<T, Platform>::type& loc_matrix() override { return local_matrix_;}
+    chase::matrix::Matrix<T, Platform>& loc_matrix() override { return local_matrix_;}
 
     // Accessors for MPI grid
     chase::grid::MpiGrid2DBase* getMpiGrid() const override {
@@ -887,7 +857,7 @@ private:
     std::size_t ld_;
     std::size_t g_offs_[2];
 
-    typename chase::platform::MatrixTypePlatform<T, Platform>::type local_matrix_;
+    chase::matrix::Matrix<T, Platform> local_matrix_;
     std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid_;
 
     void redistributeToRedundant(RedundantMatrix<T, Platform>* targetMatrix)
@@ -1096,7 +1066,7 @@ public:
         std::tie(m_, mblocks_) = numroc(M_, mb_, coord_[0], dims_[0]);
         std::tie(n_, nblocks_) = numroc(N_, nb_, coord_[1], dims_[1]);   
         ld_ = m_;
-        local_matrix_ = typename chase::platform::MatrixTypePlatform<T, Platform>::type(m_, n_);      
+        local_matrix_ = chase::matrix::Matrix<T, Platform>(m_, n_);      
 
         init_contiguous_buffer_info();
 
@@ -1129,11 +1099,11 @@ public:
             throw std::runtime_error("the leading dimension of local matrix is not correctly matching the given block-cyclic distribution");
         }
 
-        local_matrix_ = typename chase::platform::MatrixTypePlatform<T, Platform>::type(m_, n_, ld_, data);        
+        local_matrix_ = chase::matrix::Matrix<T, Platform>(m_, n_, ld_, data);        
 
         if constexpr (std::is_same<Platform, chase::platform::GPU>::value)
         {
-            ld_ = local_matrix_.gpu_ld();
+            ld_ = local_matrix_.ld();
         }
         
         init_contiguous_buffer_info();
@@ -1158,20 +1128,10 @@ public:
     
     //std::size_t *g_offs() {}
     T *         l_data() override { 
-        if constexpr (std::is_same<Platform, chase::platform::CPU>::value)
-        {
-            return local_matrix_.data();
-        }
-#ifdef HAS_CUDA        
-        else
-        {
-            return local_matrix_.gpu_data();
-        }
-#endif 
-
+        return local_matrix_.data();
     }
     
-    typename chase::platform::MatrixTypePlatform<T, Platform>::type& loc_matrix() override { return local_matrix_;}
+    chase::matrix::Matrix<T, Platform>& loc_matrix() override { return local_matrix_;}
 
     // Accessors for MPI grid
     chase::grid::MpiGrid2DBase* getMpiGrid() const override {
@@ -1457,7 +1417,7 @@ private:
     std::vector<std::size_t> m_contiguous_lens_;
     std::vector<std::size_t> n_contiguous_lens_;
 
-    typename chase::platform::MatrixTypePlatform<T, Platform>::type local_matrix_;
+    chase::matrix::Matrix<T, Platform> local_matrix_;
     std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid_;
 
     void init_contiguous_buffer_info()

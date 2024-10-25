@@ -16,19 +16,19 @@ namespace cuda
 {
     template<typename T>
     void residuals(cublasHandle_t cublas_handle, 
-                   chase::matrix::MatrixGPU<T>& H,
-                   chase::matrix::MatrixGPU<T>& V1,
+                   chase::matrix::Matrix<T, chase::platform::GPU>& H,
+                   chase::matrix::Matrix<T, chase::platform::GPU>& V1,
                    chase::Base<T> *d_ritzv, 
                    chase::Base<T> *d_resids, 
                    std::size_t offset,
                    std::size_t subSize,                   
-                   chase::matrix::MatrixGPU<T>* V2 = nullptr)
+                   chase::matrix::Matrix<T, chase::platform::GPU>* V2 = nullptr)
     {
         SCOPED_NVTX_RANGE();
 
         if (V2 == nullptr)
         {
-            V2 = new chase::matrix::MatrixGPU<T>(V1.rows(), V1.cols());
+            V2 = new chase::matrix::Matrix<T, chase::platform::GPU>(V1.rows(), V1.cols());
         }
 
         T alpha = T(1.0);
@@ -42,23 +42,23 @@ namespace cuda
                                                                 subSize, 
                                                                 H.cols(), 
                                                                 &alpha,
-                                                                H.gpu_data(), 
-                                                                H.gpu_ld(), 
-                                                                V1.gpu_data() + offset * V1.gpu_ld(), 
-                                                                V1.gpu_ld(), 
+                                                                H.data(), 
+                                                                H.ld(), 
+                                                                V1.data() + offset * V1.ld(), 
+                                                                V1.ld(), 
                                                                 &beta, 
-                                                                V2->gpu_data() + offset * V2->gpu_ld(),
-                                                                V2->gpu_ld()));
+                                                                V2->data() + offset * V2->ld(),
+                                                                V2->ld()));
 
         cudaStream_t usedStream;
         CHECK_CUBLAS_ERROR(cublasGetStream(cublas_handle, &usedStream));
 
         residual_gpu(V2->rows(), 
                      subSize, 
-                     V2->gpu_data() +  offset * V2->gpu_ld(), 
-                     V2->gpu_ld(),
-                     V1.gpu_data() + offset * V1.gpu_ld(),
-                     V1.gpu_ld(), 
+                     V2->data() +  offset * V2->ld(), 
+                     V2->ld(),
+                     V1.data() + offset * V1.ld(),
+                     V1.ld(), 
                      d_ritzv + offset,
                      d_resids + offset, 
                      true, usedStream);        
