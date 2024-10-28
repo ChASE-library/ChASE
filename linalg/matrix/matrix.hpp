@@ -488,11 +488,17 @@ public:
         {
             T* raw_data;
             CHECK_CUDA_ERROR(cudaMallocHost(&raw_data, rows_ * cols_ * sizeof(T))); // Allocate pinned CPU buffer
+            //raw_data = (T *)malloc(rows_ * cols_ * sizeof(T));
             memset(raw_data, 0, rows_ * cols_ * sizeof(T));            
+            //cudaHostUnregister(raw_data);
 
             cpu_data_ = std::unique_ptr<T[], std::function<void(T*)>>(
                 raw_data,
-                [this](T* ptr) { cudaFreeHost(ptr);; }
+                [this](T* ptr) 
+                { 
+                    cudaFreeHost(ptr); 
+                    //free(ptr);
+                }
             );
 
             owns_cpu_mem_ = true;
