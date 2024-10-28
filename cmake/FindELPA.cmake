@@ -22,7 +22,7 @@ endif()
 set(ENV{PKG_CONFIG_PATH} "$ENV{PKG_CONFIG_PATH}:${ELPA_LIB_DIR}/pkgconfig")
 
 # Check for the specified ELPA package using pkg-config
-pkg_check_modules(ELPA REQUIRED ${ELPA_PACKAGE_NAME})
+pkg_check_modules(ELPA ${ELPA_PACKAGE_NAME})
 
 # Make sure ELPA's include directories and libraries are visible in the cache
 # Store the include and library paths
