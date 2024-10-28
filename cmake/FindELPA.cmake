@@ -52,5 +52,5 @@ if(ELPA_FOUND)
 
     message(STATUS "Found ELPA (${ELPA_PACKAGE_NAME}) via pkg-config")
 else()
-    message(FATAL_ERROR "ELPA package '${ELPA_PACKAGE_NAME}' not found.")
+    message(STATUS "ELPA package '${ELPA_PACKAGE_NAME}' not found.")
 endif()
