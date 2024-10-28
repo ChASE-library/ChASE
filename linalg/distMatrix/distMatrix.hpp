@@ -353,6 +353,42 @@ public:
     {
         this->redistributeImpl(targetMatrix, 0, this->g_rows(), 0, this->g_cols());
     }
+
+    template <typename TargetMatrixType>
+    void redistributeImpl_2(TargetMatrixType* targetMatrix,
+                        std::size_t startRow, std::size_t subRows, std::size_t startCol, std::size_t subCols)
+    {
+        // Check if global sizes match
+        if (M_ != targetMatrix->g_rows() || N_ != targetMatrix->g_cols())
+        {
+            throw std::runtime_error("[RedundantMatrix]: Redistribution requires both matrices to have the same global size.");
+        }
+
+        // Dispatch based on matrix type using TargetMatrixType's `matrix_type` alias
+        if constexpr (std::is_same<typename TargetMatrixType::matrix_type, BlockBlock>::value)
+        {
+            redistributeToBlockBlock_2(targetMatrix, startRow, subRows, startCol, subCols);
+        }
+        else if constexpr (std::is_same<typename TargetMatrixType::matrix_type, BlockCyclic>::value) 
+        {
+            redistributeToBlockCyclic_2(targetMatrix, startRow, subRows, startCol, subCols);
+        }
+        else if constexpr (std::is_same<typename TargetMatrixType::matrix_type, Redundant>::value) 
+        {
+            throw std::runtime_error("[RedundantMatrix]: No need to redistribute from redundant to redundant.");
+        }
+        else
+        {
+            throw std::runtime_error("[RedundantMatrix]: Unsupported redistribution target type.");
+        }
+    }
+
+    template <typename TargetMatrixType>
+    void redistributeImpl_2(TargetMatrixType* targetMatrix)
+    {
+        this->redistributeImpl_2(targetMatrix, 0, this->g_rows(), 0, this->g_cols());
+    }
+
 private:
     std::size_t M_;
     std::size_t N_;
@@ -379,7 +415,7 @@ private:
                     std::size_t y_g_off = g_offs[1] + y;
                     if(x_g_off >= startRow && x_g_off < startRow + subRows && y_g_off >= startCol && y_g_off < startCol + subCols )
                     {
-                        targetMatrix->l_data()[x + targetMatrix->l_ld() * y] = this->l_data()[(g_offs[1] + y) * this->l_ld() + (g_offs[0] + x)];
+                        targetMatrix->cpu_data()[x + targetMatrix->cpu_ld() * y] = this->cpu_data()[(g_offs[1] + y) * this->cpu_ld() + (g_offs[0] + x)];
                     }
 
                 }
@@ -410,6 +446,31 @@ private:
 #endif        
     }
 
+    template <typename TargetMatrixType>
+    void redistributeToBlockBlock_2(TargetMatrixType* targetMatrix,
+                                   std::size_t startRow, std::size_t subRows, std::size_t startCol, std::size_t subCols)
+    {
+        using TargetPlatform = typename TargetMatrixType::platform_type; // Extract platform type from TargetMatrixType
+        //later should check, if this->platform and otherplatform = GPU, copy from GPU to GPU
+        std::size_t *g_offs = targetMatrix->g_offs();
+        std::size_t l_cols = targetMatrix->l_cols();
+        std::size_t l_rows = targetMatrix->l_rows();
+        for(auto y = 0; y < l_cols; y++)
+        {
+            for(auto x = 0; x < l_rows; x++)
+            {
+                std::size_t x_g_off = g_offs[0] + x;
+                std::size_t y_g_off = g_offs[1] + y;
+                if(x_g_off >= startRow && x_g_off < startRow + subRows && y_g_off >= startCol && y_g_off < startCol + subCols )
+                {
+                    targetMatrix->cpu_data()[x + targetMatrix->cpu_ld() * y] = this->cpu_data()[(g_offs[1] + y) * this->cpu_ld() + (g_offs[0] + x)];
+                }
+
+            }
+        }     
+              
+    }
+
     void redistributeToBlockCyclic(BlockCyclicMatrix<T, Platform>* targetMatrix,
                                    std::size_t startRow, std::size_t subRows, std::size_t startCol, std::size_t subCols)
     {
@@ -437,8 +498,8 @@ private:
                             
                             if(x_g_off >= startRow && x_g_off < startRow + subRows && y_g_off >= startCol && y_g_off < startCol + subCols )
                             {
-                                targetMatrix->l_data()[(q + n_contiguous_local_offs[j]) * targetMatrix->l_ld() + p + m_contiguous_local_offs[i]]
-                                    = this->l_data()[(q + n_contiguous_global_offs[j]) * this->l_ld() + p + m_contiguous_global_offs[i]];
+                                targetMatrix->cpu_data()[(q + n_contiguous_local_offs[j]) * targetMatrix->cpu_ld() + p + m_contiguous_local_offs[i]]
+                                    = this->cpu_data()[(q + n_contiguous_global_offs[j]) * this->cpu_ld() + p + m_contiguous_global_offs[i]];
                             }
                         }
                     }
@@ -477,11 +538,46 @@ private:
                     }
                 }
             }
-            //targetMatrix->H2D();            
-            //throw std::runtime_error("[RedundantMatrix]: redistribution for GPU data from redundant to BlockCyclic is not supported yet.");
         }
 #endif        
     }
+
+    template <typename TargetMatrixType>
+    void redistributeToBlockCyclic_2(TargetMatrixType* targetMatrix,
+                                   std::size_t startRow, std::size_t subRows, std::size_t startCol, std::size_t subCols)
+    {
+        using TargetPlatform = typename TargetMatrixType::platform_type; // Extract platform type from TargetMatrixType
+
+        auto m_contiguous_global_offs = targetMatrix->m_contiguous_global_offs();
+        auto n_contiguous_global_offs = targetMatrix->n_contiguous_global_offs();
+        auto m_contiguous_local_offs = targetMatrix->m_contiguous_local_offs();
+        auto n_contiguous_local_offs = targetMatrix->n_contiguous_local_offs();
+        auto m_contiguous_lens = targetMatrix->m_contiguous_lens();
+        auto n_contiguous_lens = targetMatrix->n_contiguous_lens();
+        auto mblocks = targetMatrix->mblocks();
+        auto nblocks = targetMatrix->nblocks();
+        
+        for(std::size_t j = 0; j < nblocks; j++)
+        {
+            for(std::size_t i = 0; i < mblocks; i++)
+            {
+                for(std::size_t q = 0; q < n_contiguous_lens[j]; q++)
+                {
+                    for(std::size_t p = 0; p < m_contiguous_lens[i]; p++)
+                    {
+                        std::size_t x_g_off = p + m_contiguous_local_offs[i];
+                        std::size_t y_g_off = q + n_contiguous_local_offs[j];
+                        
+                        if(x_g_off >= startRow && x_g_off < startRow + subRows && y_g_off >= startCol && y_g_off < startCol + subCols )
+                        {
+                            targetMatrix->cpu_data()[(q + n_contiguous_local_offs[j]) * targetMatrix->cpu_ld() + p + m_contiguous_local_offs[i]]
+                                = this->cpu_data()[(q + n_contiguous_global_offs[j]) * this->cpu_ld() + p + m_contiguous_global_offs[i]];
+                        }
+                    }
+                }
+            }
+        }
+    }   
 
 };
 

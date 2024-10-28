@@ -52,7 +52,16 @@ public:
         dims_[1] = col_dim;
         MPI_Comm_size(comm_, &nprocs_);
         MPI_Comm_rank(comm_, &myrank_);
-
+#ifdef HAS_NCCL
+        MPI_Comm shm_comm_;
+        MPI_Comm_split_type(comm_, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, &shm_comm_);
+        int shm_rank_;
+        MPI_Comm_rank(shm_comm_, &shm_rank_);  
+        int num_devices = -1;
+        cudaGetDeviceCount(&num_devices);
+        //std::cout << "visible cuda devices = " << num_devices << std::endl;
+        cudaSetDevice(shm_rank_);
+#endif
         create2DGrid();
     }
 
@@ -61,8 +70,19 @@ public:
         MPI_Comm_size(comm_, &nprocs_);
         MPI_Dims_create(nprocs_, 2, dims_);
         MPI_Comm_rank(comm_, &myrank_);
-       
+
+#ifdef HAS_NCCL
+        MPI_Comm shm_comm_;
+        MPI_Comm_split_type(comm_, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL, &shm_comm_);
+        int shm_rank_;
+        MPI_Comm_rank(shm_comm_, &shm_rank_);  
+        int num_devices = -1;
+        cudaGetDeviceCount(&num_devices);
+        //std::cout << "visible cuda devices = " << num_devices << std::endl;
+        cudaSetDevice(shm_rank_);
+#endif         
         create2DGrid();
+  
     }
 
     ~MpiGrid2D()

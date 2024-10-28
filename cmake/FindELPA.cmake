@@ -19,7 +19,6 @@ endif()
 
 
 # Set PKG_CONFIG_PATH to include lib and lib64 paths
-set(ENV{PKG_CONFIG_PATH} "${ELPA_LIB_DIR}:$ENV{PKG_CONFIG_PATH}")
 set(ENV{PKG_CONFIG_PATH} "$ENV{PKG_CONFIG_PATH}:${ELPA_LIB_DIR}/pkgconfig")
 
 # Check for the specified ELPA package using pkg-config
@@ -28,6 +27,8 @@ pkg_check_modules(ELPA REQUIRED ${ELPA_PACKAGE_NAME})
 # Make sure ELPA's include directories and libraries are visible in the cache
 # Store the include and library paths
 include_directories(${ELPA_INCLUDE_DIR})
+link_directories(${ELPA_LIB_DIR})
+
 set(ELPA_LIBRARY ${ELPA_LIBRARIES})
 set(ELPA_INCLUDE_DIRS ${ELPA_INCLUDE_DIR})
 
@@ -36,7 +37,7 @@ if(ELPA_LIB_DIR)
     set(ELPA_LIBRARY "${ELPA_LIBRARY};-L${ELPA_LIB_DIR}")
 endif()
 
-message("--   FOUND ELPA_INCLUDE_DIR = ${ELPA_INCLUDE_DIR}")
+message("--   FOUND ELPA_INCLUDE_DIR = ${ELPA_INCLUDE_DIRS}")
 message("--   FOUND ELPA_LIBRARY = ${ELPA_LIBRARY}")
 
 # Create an imported target for ELPA if pkg-config succeeded
