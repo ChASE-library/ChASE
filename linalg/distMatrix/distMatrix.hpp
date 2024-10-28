@@ -51,12 +51,6 @@ namespace chase {
 
 namespace distMatrix {
 
-enum class MatrixType {
-    BlockBlock,
-    BlockCyclic,
-    Redundant
-};
-
 struct BlockBlock {}; 
 struct Redundant {}; 
 struct BlockCyclic {}; 
