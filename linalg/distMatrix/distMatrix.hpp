@@ -70,24 +70,6 @@ class BlockBlockMatrix;
 template<typename T, typename Platform>
 class BlockCyclicMatrix;
 
-template<typename Type, typename T, typename Platform>
-struct distMatrixTypeTrait;
-
-template<typename T, typename Platform>
-struct distMatrixTypeTrait<Redundant, T, Platform> {
-    using type = chase::distMatrix::RedundantMatrix<T, Platform>;
-};
-
-template<typename T, typename Platform>
-struct distMatrixTypeTrait<BlockBlock, T, Platform> {
-    using type = chase::distMatrix::BlockBlockMatrix<T, Platform>;
-};
-
-template<typename T, typename Platform>
-struct distMatrixTypeTrait<BlockCyclic, T, Platform> {
-    using type = chase::distMatrix::BlockCyclicMatrix<T, Platform>;
-};
-
 template <typename T, template <typename, typename> class Derived, typename Platform = chase::platform::CPU>
 class AbstractDistMatrix {
 protected:
@@ -289,6 +271,7 @@ class RedundantMatrix : public AbstractDistMatrix<T, RedundantMatrix, Platform>
 public:
     using platform_type = Platform;
     using value_type = T;  // Alias for element type
+    using matrix_type = Redundant;
 
     ~RedundantMatrix() override {};
     RedundantMatrix();
@@ -354,15 +337,15 @@ public:
             throw std::runtime_error("[RedundantMatrix]: redistribution requires original and target matrices have same global size");
         }
 
-        else if constexpr (std::is_same<typename distMatrixTypeTrait<BlockBlock, T, Platform>::type, targetType<T, Platform>>::value) 
+        else if constexpr (std::is_same<typename targetType<T, Platform>::matrix_type, BlockBlock>::value)
         {
             redistributeToBlockBlock(targetMatrix, startRow, subRows, startCol, subCols);
         }
-        else if constexpr (std::is_same<typename distMatrixTypeTrait<BlockCyclic, T, Platform>::type, targetType<T, Platform>>::value) 
+        else if constexpr (std::is_same<typename targetType<T, Platform>::matrix_type, BlockCyclic>::value) 
         {
             redistributeToBlockCyclic(targetMatrix, startRow, subRows, startCol, subCols);
         }        
-        else if constexpr (std::is_same<typename distMatrixTypeTrait<Redundant, T, Platform>::type, targetType<T, Platform>>::value) 
+        else if constexpr (std::is_same<typename targetType<T, Platform>::matrix_type, Redundant>::value) 
         {
             throw std::runtime_error("[RedundantMatrix]: no need to redistribute from redundant to redundant");
         }else
@@ -516,6 +499,7 @@ class BlockBlockMatrix : public AbstractDistMatrix<T, BlockBlockMatrix, Platform
 public:
     using platform_type = Platform;
     using value_type = T;  // Alias for element type
+    using matrix_type = BlockBlock;
 
     ~BlockBlockMatrix() override {};
     BlockBlockMatrix();
@@ -836,11 +820,11 @@ public:
             throw std::runtime_error("[BlockBlockMatrix]: redistribution requires original and target matrices have same global size");
         }
 
-        if constexpr (std::is_same<typename distMatrixTypeTrait<Redundant, T, Platform>::type, targetType<T, Platform>>::value) 
+        if constexpr (std::is_same<typename targetType<T, Platform>::matrix_type, Redundant>::value) 
         {
             redistributeToRedundant(targetMatrix);
         }
-        else if constexpr (std::is_same<typename distMatrixTypeTrait<BlockBlock, T, Platform>::type, targetType<T, Platform>>::value) 
+        else if constexpr (std::is_same<typename targetType<T, Platform>::matrix_type, BlockBlock>::value) 
         {
             throw std::runtime_error("[BlockBlockMatrix]: no need to redistribute from BlockBlock to BlockBlock");
         }else
@@ -1054,6 +1038,7 @@ class BlockCyclicMatrix : public AbstractDistMatrix<T, BlockCyclicMatrix, Platfo
 public:
     using platform_type = Platform;
     using value_type = T;  // Alias for element type
+    using matrix_type = BlockCyclic;
     
     ~BlockCyclicMatrix() override {};
     BlockCyclicMatrix();
@@ -1362,13 +1347,13 @@ public:
             throw std::runtime_error("[BlockCyclicMatrix]: redistribution requires original and target matrices have same global size");
         }
 
-        if constexpr (std::is_same<typename distMatrixTypeTrait<Redundant, T, Platform>::type, targetType<T, Platform>>::value) 
+        if constexpr (std::is_same<typename targetType<T, Platform>::matrix_type, Redundant>::value) 
         {
             redistributeToRedundant(targetMatrix);
         }
-        else if constexpr (std::is_same<typename distMatrixTypeTrait<BlockCyclic, T, Platform>::type, targetType<T, Platform>>::value) 
+        else if constexpr (std::is_same<typename targetType<T, Platform>::matrix_type, BlockCyclic>::value) 
         {
-            throw std::runtime_error("[BlockCyclicMatrix]: no need to redistribute from BlockBlock to BlockBlock");
+            throw std::runtime_error("[BlockCyclicMatrix]: no need to redistribute from BlockCyclic to BlockCyclic");
         }else
         {
             throw std::runtime_error("[BlockCyclicMatrix]:  no support for redistribution from redundant to othertypes yet");
@@ -1387,13 +1372,13 @@ public:
             throw std::runtime_error("[BlockCyclicMatrix]: redistribution requires original and target matrices have same global size");
         }
 
-        if constexpr (std::is_same<typename distMatrixTypeTrait<Redundant, T, Platform>::type, targetType<T, Platform>>::value) 
+        if constexpr (std::is_same<typename targetType<T, Platform>::matrix_type, Redundant>::value) 
         {
             redistributeToRedundantAsync(targetMatrix, usedStream);
         }
-        else if constexpr (std::is_same<typename distMatrixTypeTrait<BlockCyclic, T, Platform>::type, targetType<T, Platform>>::value) 
+        else if constexpr (std::is_same<typename targetType<T, Platform>::matrix_type, BlockCyclic>::value) 
         {
-            throw std::runtime_error("[BlockCyclicMatrix]: no need to redistribute from BlockBlock to BlockBlock");
+            throw std::runtime_error("[BlockCyclicMatrix]: no need to redistribute from BlockCyclic to BlockCyclic");
         }else
         {
             throw std::runtime_error("[BlockCyclicMatrix]:  no support for redistribution from redundant to othertypes yet");
