@@ -91,12 +91,15 @@ int main(int argc, char** argv)
     assert_elpa_ok(error_elpa);
 
     elpa_set(handle, "process_row", (int) coords[0], &error_elpa);
+    //elpa_set(handle, "mpi_comm_rows", (int) (MPI_Comm_c2f(mpi_grid->get_col_comm())), &error_elpa);    
     assert_elpa_ok(error_elpa);
 
     elpa_set(handle, "process_col", (int) coords[1], &error_elpa);
+    //elpa_set(handle, "mpi_comm_cols", (int) (MPI_Comm_c2f(mpi_grid->get_row_comm())), &error_elpa);    
     assert_elpa_ok(error_elpa);
 
-    assert_elpa_ok(elpa_setup(handle));
+    error_elpa = elpa_setup(handle);
+    assert_elpa_ok(error_elpa);
 
     elpa_set(handle, "solver", ELPA_SOLVER_2STAGE, &error_elpa);
     assert_elpa_ok(error_elpa);
@@ -107,19 +110,23 @@ int main(int argc, char** argv)
     elpa_set(handle, "real_kernel", ELPA_2STAGE_REAL_NVIDIA_SM80_GPU, &error_elpa);
     assert_elpa_ok(error_elpa);
 
-    assert_elpa_ok(elpa_setup_gpu(handle));
+    error_elpa = elpa_setup_gpu(handle);
+    assert_elpa_ok(error_elpa);
 
     elpa_get(handle, "solver", &value, &error_elpa);
     assert_elpa_ok(error_elpa);
 
+    int process_row = -1;
+    elpa_get(handle, "process_row", &process_row, &error_elpa);
+    int process_col = -1;
+    elpa_get(handle, "process_col", &process_col, &error_elpa);
+
     int num_devices = -1;
     cudaGetDeviceCount(&num_devices);
-    //std::cout << "number of devices: " << num_devices << std::endl;
     int shm_rank;
     MPI_Comm_rank(shm_comm, &shm_rank);
     cudaSetDevice(shm_rank);
 
-    //std::cout << "shm_rank: " << shm_rank << ", myrank: " << mpi_grid->get_myRank() << " nprocs: " << mpi_grid->get_nprocs() << std::endl ;
     end = std::chrono::high_resolution_clock::now();
 
     elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(
