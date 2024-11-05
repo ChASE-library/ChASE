@@ -142,6 +142,27 @@ void t_lacpy_gpu(char uplo, std::size_t m, std::size_t n, double *dA, std::size_
 void t_lacpy_gpu(char uplo, std::size_t m, std::size_t n, std::complex<double> *ddA, std::size_t ldda, std::complex<double> *ddB, std::size_t lddb, cudaStream_t stream_ );
 void t_lacpy_gpu(char uplo, std::size_t m, std::size_t n, std::complex<float> *ddA, std::size_t ldda, std::complex<float> *ddB, std::size_t lddb, cudaStream_t stream_ );
 
+__global__ void d_extractUpperTriangularKernel(const double* matrix, std::size_t ld, double* upperTriangular, std::size_t n);
+__global__ void s_extractUpperTriangularKernel(const float* matrix, std::size_t ld, float* upperTriangular, std::size_t n);
+__global__ void c_extractUpperTriangularKernel(const cuComplex* matrix, std::size_t ld, cuComplex* upperTriangular, std::size_t n);
+__global__ void z_extractUpperTriangularKernel(const cuDoubleComplex* matrix, std::size_t ld, cuDoubleComplex* upperTriangular, std::size_t n);
+
+void extractUpperTriangular(float* d_matrix, std::size_t ld, float* d_upperTriangular, std::size_t n, cudaStream_t stream_);
+void extractUpperTriangular(double* d_matrix, std::size_t ld, double* d_upperTriangular, std::size_t n, cudaStream_t stream_);
+void extractUpperTriangular(std::complex<double>* d_matrix, std::size_t ld, std::complex<double>* d_upperTriangular, std::size_t n, cudaStream_t stream_);
+void extractUpperTriangular(std::complex<float>* d_matrix, std::size_t ld, std::complex<float>* d_upperTriangular, std::size_t n, cudaStream_t stream_);
+
+__global__ void s_unpackUpperTriangularKernel(const float* upperTriangular, std::size_t ld, float* matrix, std::size_t n);
+__global__ void d_unpackUpperTriangularKernel(const double* upperTriangular, std::size_t ld, double* matrix, std::size_t n);
+__global__ void c_unpackUpperTriangularKernel(const cuComplex* upperTriangular, std::size_t ld, cuComplex* matrix, std::size_t n);
+__global__ void z_unpackUpperTriangularKernel(const cuDoubleComplex* upperTriangular, std::size_t ld, cuDoubleComplex* matrix, std::size_t n);
+
+void unpackUpperTriangular(float* d_matrix, std::size_t ld, float* d_upperTriangular, std::size_t n, cudaStream_t stream_);
+void unpackUpperTriangular(double* d_matrix, std::size_t ld, double* d_upperTriangular, std::size_t n, cudaStream_t stream_);
+void unpackUpperTriangular(std::complex<double>* d_matrix, std::size_t ld, std::complex<double>* d_upperTriangular, std::size_t n, cudaStream_t stream_);
+void unpackUpperTriangular(std::complex<float>* d_matrix, std::size_t ld, std::complex<float>* d_upperTriangular, std::size_t n, cudaStream_t stream_);
+
+
 }
 }
 }

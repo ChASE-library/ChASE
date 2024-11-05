@@ -706,6 +706,173 @@ void t_lacpy_gpu(char uplo, std::size_t m, std::size_t n, std::complex<float> *d
 }
 
 
+__global__ void d_extractUpperTriangularKernel(const double* matrix, std::size_t ld, double* upperTriangular, std::size_t n)
+{
+    std::size_t row = blockIdx.y * blockDim.y + threadIdx.y;
+    std::size_t col = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (row < n && col < n && row <= col) {
+        std::size_t linearIndex = row + col * ld;  // Column-major indexing
+        std::size_t upperTriIndex = (row * (2 * n - row + 1)) / 2 + (col - row);  // Packed index
+        upperTriangular[upperTriIndex] = matrix[linearIndex];
+    }
+}
+
+__global__ void s_extractUpperTriangularKernel(const float* matrix, std::size_t ld, float* upperTriangular, std::size_t n)
+{
+    std::size_t row = blockIdx.y * blockDim.y + threadIdx.y;
+    std::size_t col = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (row < n && col < n && row <= col) {
+        std::size_t linearIndex = row + col * ld;  // Column-major indexing
+        std::size_t upperTriIndex = (row * (2 * n - row + 1)) / 2 + (col - row);  // Packed index
+        upperTriangular[upperTriIndex] = matrix[linearIndex];
+    }    
+}
+
+__global__ void c_extractUpperTriangularKernel(const cuComplex* matrix, std::size_t ld, cuComplex* upperTriangular, std::size_t n)
+{
+    std::size_t row = blockIdx.y * blockDim.y + threadIdx.y;
+    std::size_t col = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (row < n && col < n && row <= col) {
+        std::size_t linearIndex = row + col * ld;  // Column-major indexing
+        std::size_t upperTriIndex = (row * (2 * n - row + 1)) / 2 + (col - row);  // Packed index
+        upperTriangular[upperTriIndex] = matrix[linearIndex];
+    }
+}
+
+__global__ void z_extractUpperTriangularKernel(const cuDoubleComplex* matrix, std::size_t ld, cuDoubleComplex* upperTriangular, std::size_t n)
+{
+    std::size_t row = blockIdx.y * blockDim.y + threadIdx.y;
+    std::size_t col = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (row < n && col < n && row <= col) {
+        std::size_t linearIndex = row + col * ld;  // Column-major indexing
+        std::size_t upperTriIndex = (row * (2 * n - row + 1)) / 2 + (col - row);  // Packed index
+        upperTriangular[upperTriIndex] = matrix[linearIndex];
+    }    
+}
+
+void extractUpperTriangular(float* d_matrix, std::size_t ld, float* d_upperTriangular, std::size_t n, cudaStream_t stream_)
+{
+    dim3 threads(16, 16);
+    dim3 blocks((n + threads.x - 1) / threads.x, (n + threads.y - 1) / threads.y);
+    s_extractUpperTriangularKernel<<<blocks, threads, 0, stream_>>>(d_matrix, ld, d_upperTriangular, n);    
+}
+/*
+*/
+void extractUpperTriangular(double* d_matrix, std::size_t ld, double* d_upperTriangular, std::size_t n, cudaStream_t stream_)
+{
+    dim3 threads(16, 16);
+    dim3 blocks((n + threads.x - 1) / threads.x, (n + threads.y - 1) / threads.y);
+    d_extractUpperTriangularKernel<<<blocks, threads, 0, stream_>>>(d_matrix, ld, d_upperTriangular, n);      
+}
+void extractUpperTriangular(std::complex<double>* d_matrix, std::size_t ld, std::complex<double>* d_upperTriangular, std::size_t n, cudaStream_t stream_)
+{
+    cuDoubleComplex *dd_matrix = reinterpret_cast<cuDoubleComplex*>(d_matrix);
+    cuDoubleComplex *dd_upperTriangular = reinterpret_cast<cuDoubleComplex*>(d_upperTriangular);
+
+    dim3 threads(16, 16);
+    dim3 blocks((n + threads.x - 1) / threads.x, (n + threads.y - 1) / threads.y);
+    z_extractUpperTriangularKernel<<<blocks, threads, 0, stream_>>>(dd_matrix, ld, dd_upperTriangular, n);      
+}
+void extractUpperTriangular(std::complex<float>* d_matrix, std::size_t ld, std::complex<float>* d_upperTriangular, std::size_t n, cudaStream_t stream_)
+{
+    cuComplex *dd_matrix = reinterpret_cast<cuComplex*>(d_matrix);
+    cuComplex *dd_upperTriangular = reinterpret_cast<cuComplex*>(d_upperTriangular);
+
+    dim3 threads(16, 16);
+    dim3 blocks((n + threads.x - 1) / threads.x, (n + threads.y - 1) / threads.y);
+    c_extractUpperTriangularKernel<<<blocks, threads, 0, stream_>>>(dd_matrix, ld, dd_upperTriangular, n);          
+}
+
+__global__ void s_unpackUpperTriangularKernel(const float* upperTriangular, std::size_t ld, float* matrix, std::size_t n)
+{
+    std::size_t row = blockIdx.y * blockDim.y + threadIdx.y;
+    std::size_t col = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (row < n && col < n) {
+        if (row <= col) {
+            std::size_t index = (row * (2 * n - row + 1)) / 2 + (col - row);  // Packed index for upper triangular
+            matrix[row + col * ld] = upperTriangular[index];  // Column-major indexing with leading dimension
+        }
+    }
+}
+
+__global__ void d_unpackUpperTriangularKernel(const double* upperTriangular, std::size_t ld, double* matrix, std::size_t n)
+{
+    std::size_t row = blockIdx.y * blockDim.y + threadIdx.y;
+    std::size_t col = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (row < n && col < n) {
+        if (row <= col) {
+            std::size_t index = (row * (2 * n - row + 1)) / 2 + (col - row);  // Packed index for upper triangular
+            matrix[row + col * ld] = upperTriangular[index];  // Column-major indexing with leading dimension
+        }
+    }
+}    
+
+__global__ void c_unpackUpperTriangularKernel(const cuComplex* upperTriangular, std::size_t ld, cuComplex* matrix, std::size_t n)
+{
+    std::size_t row = blockIdx.y * blockDim.y + threadIdx.y;
+    std::size_t col = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (row < n && col < n) {
+        if (row <= col) {
+            std::size_t index = (row * (2 * n - row + 1)) / 2 + (col - row);  // Packed index for upper triangular
+            matrix[row + col * ld] = upperTriangular[index];  // Column-major indexing with leading dimension
+        }
+    }
+}
+
+__global__ void z_unpackUpperTriangularKernel(const cuDoubleComplex* upperTriangular, std::size_t ld, cuDoubleComplex* matrix, std::size_t n)
+{
+    std::size_t row = blockIdx.y * blockDim.y + threadIdx.y;
+    std::size_t col = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (row < n && col < n) {
+        if (row <= col) {
+            std::size_t index = (row * (2 * n - row + 1)) / 2 + (col - row);  // Packed index for upper triangular
+            matrix[row + col * ld] = upperTriangular[index];  // Column-major indexing with leading dimension
+        }
+    }
+}
+
+void unpackUpperTriangular(float* d_matrix, std::size_t ld, float* d_upperTriangular, std::size_t n, cudaStream_t stream_)
+{
+    dim3 threads(16, 16);
+    dim3 blocks((n + threads.x - 1) / threads.x, (n + threads.y - 1) / threads.y);
+    s_unpackUpperTriangularKernel<<<blocks, threads, 0, stream_>>>(d_upperTriangular, ld, d_matrix, n);
+}
+
+void unpackUpperTriangular(double* d_matrix, std::size_t ld, double* d_upperTriangular, std::size_t n, cudaStream_t stream_)
+{
+    dim3 threads(16, 16);
+    dim3 blocks((n + threads.x - 1) / threads.x, (n + threads.y - 1) / threads.y);
+    d_unpackUpperTriangularKernel<<<blocks, threads, 0, stream_>>>(d_upperTriangular, ld, d_matrix, n);
+}    
+
+void unpackUpperTriangular(std::complex<double>* d_matrix, std::size_t ld, std::complex<double>* d_upperTriangular, std::size_t n, cudaStream_t stream_)
+{
+    cuDoubleComplex *dd_matrix = reinterpret_cast<cuDoubleComplex*>(d_matrix);
+    cuDoubleComplex *dd_upperTriangular = reinterpret_cast<cuDoubleComplex*>(d_upperTriangular);
+
+    dim3 threads(16, 16);
+    dim3 blocks((n + threads.x - 1) / threads.x, (n + threads.y - 1) / threads.y);
+    z_unpackUpperTriangularKernel<<<blocks, threads, 0, stream_>>>(dd_upperTriangular, ld, dd_matrix, n);
+}
+void unpackUpperTriangular(std::complex<float>* d_matrix, std::size_t ld, std::complex<float>* d_upperTriangular, std::size_t n, cudaStream_t stream_)
+{
+    cuComplex *dd_matrix = reinterpret_cast<cuComplex*>(d_matrix);
+    cuComplex *dd_upperTriangular = reinterpret_cast<cuComplex*>(d_upperTriangular);
+
+    dim3 threads(16, 16);
+    dim3 blocks((n + threads.x - 1) / threads.x, (n + threads.y - 1) / threads.y);
+    c_unpackUpperTriangularKernel<<<blocks, threads, 0, stream_>>>(dd_upperTriangular, ld, dd_matrix, n);
+}
+
+
 }
 }
 }

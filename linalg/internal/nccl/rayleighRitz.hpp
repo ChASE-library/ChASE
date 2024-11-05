@@ -39,6 +39,7 @@ namespace nccl
         using T = typename MatrixType::value_type;
 
         std::unique_ptr<chase::distMatrix::RedundantMatrix<T, chase::platform::GPU>> A_ptr;
+        std::size_t upperTriangularSize = std::size_t(subSize * (subSize + 1) / 2);
 
         if (A == nullptr) {
             // Allocate A if not provided
@@ -59,6 +60,12 @@ namespace nccl
                                     subSize, 
                                     ritzv.l_data(), 
                                     &lwork_heevd));
+
+            if(upperTriangularSize > lwork_heevd)
+            {
+                lwork_heevd = upperTriangularSize;
+            }      
+
             CHECK_CUDA_ERROR(cudaMalloc((void**)&workspace, sizeof(T) * lwork_heevd));
             work_ptr.reset(workspace);
             workspace = work_ptr.get();            
@@ -92,16 +99,21 @@ namespace nccl
                                        A->l_data(),
                                        subSize));
 
-         CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(A->l_data(), 
-                                                                     A->l_data(), 
-                                                                     subSize * subSize, 
-                                                                     ncclSum, 
-                                                                     A->getMpiGrid()->get_nccl_row_comm()));
+
+        chase::linalg::internal::cuda::extractUpperTriangular(A->l_data(), subSize, workspace, subSize);
+        CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(workspace, workspace, upperTriangularSize, ncclSum, A->getMpiGrid()->get_nccl_row_comm()));
+        chase::linalg::internal::cuda::unpackUpperTriangular(workspace, subSize, A->l_data(), subSize);
+
+         //CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(A->l_data(), 
+         //                                                            A->l_data(), 
+         //                                                            subSize * subSize, 
+         //                                                            ncclSum, 
+         //                                                            A->getMpiGrid()->get_nccl_row_comm()));
 
         CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTheevd(
                                        cusolver_handle, 
                                        CUSOLVER_EIG_MODE_VECTOR, 
-                                       CUBLAS_FILL_MODE_LOWER, 
+                                       CUBLAS_FILL_MODE_UPPER, 
                                        subSize,
                                        A->l_data(),
                                        subSize,

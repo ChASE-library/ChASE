@@ -45,6 +45,7 @@ namespace nccl
         chase::Base<T> Zero = Base<T>(0.0);
 
         int info = 1;
+        std::size_t upperTriangularSize = std::size_t(n * (n + 1) / 2);
 
         std::unique_ptr<T, chase::cuda::utils::CudaDeleter> A_ptr = nullptr;
         if(A == nullptr)
@@ -65,6 +66,11 @@ namespace nccl
                                                                 A, 
                                                                 n,
                                                                 &lwork));
+            if(upperTriangularSize > lwork)
+            {
+                lwork = upperTriangularSize;
+            }
+
             CHECK_CUDA_ERROR(cudaMalloc((void**)&workspace, sizeof(T) * lwork));
             work_ptr.reset(workspace);
             workspace = work_ptr.get();
@@ -92,7 +98,10 @@ namespace nccl
                                                                   A, 
                                                                   n));
 
-        CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(A, A, n * n, ncclSum, comm));
+        chase::linalg::internal::cuda::extractUpperTriangular(A, n, workspace, n);
+        //CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(A, A, n * n, ncclSum, comm));
+        CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(workspace, workspace, upperTriangularSize, ncclSum, comm));
+        chase::linalg::internal::cuda::unpackUpperTriangular(workspace, n, A, n);
 
         int* devInfo;
         CHECK_CUDA_ERROR(cudaMalloc((void**)&devInfo, sizeof(int)));
@@ -272,6 +281,7 @@ namespace nccl
         chase::Base<T> Zero = Base<T>(0.0);
 
         int info = 0;
+        std::size_t upperTriangularSize = std::size_t(n * (n + 1) / 2);
 
         std::unique_ptr<T, chase::cuda::utils::CudaDeleter> A_ptr = nullptr;
         if(A == nullptr)
@@ -292,6 +302,10 @@ namespace nccl
                                                                 A, 
                                                                 n,
                                                                 &lwork));
+            if(upperTriangularSize > lwork)
+            {
+                lwork = upperTriangularSize;
+            }
             CHECK_CUDA_ERROR(cudaMalloc((void**)&workspace, sizeof(T) * lwork));
             work_ptr.reset(workspace);
             workspace = work_ptr.get();
@@ -319,7 +333,9 @@ namespace nccl
                                                                   A, 
                                                                   n));
 
-        CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(A, A, n * n, ncclSum, comm));
+        chase::linalg::internal::cuda::extractUpperTriangular(A, n, workspace, n);
+        CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(workspace, workspace, upperTriangularSize, ncclSum, comm));
+        chase::linalg::internal::cuda::unpackUpperTriangular(workspace, n, A, n);
 
         int* devInfo;
         CHECK_CUDA_ERROR(cudaMalloc((void**)&devInfo, sizeof(int)));
@@ -366,8 +382,10 @@ namespace nccl
                                                                     A, 
                                                                     n));
 
-            CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(A, A, n * n, ncclSum, comm));
-
+            chase::linalg::internal::cuda::extractUpperTriangular(A, n, workspace, n);
+            CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(workspace, workspace, upperTriangularSize, ncclSum, comm));
+            chase::linalg::internal::cuda::unpackUpperTriangular(workspace, n, A, n);
+            
             CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTpotrf(cusolver_handle, 
                                                                             CUBLAS_FILL_MODE_UPPER, 
                                                                             n,
@@ -490,6 +508,7 @@ namespace nccl
         chase::Base<T> shift;
 
         int info = 1;
+        std::size_t upperTriangularSize = std::size_t(n * (n + 1) / 2);
 
         std::unique_ptr<T, chase::cuda::utils::CudaDeleter> A_ptr = nullptr;
         if(A == nullptr)
@@ -510,6 +529,11 @@ namespace nccl
                                                                 A, 
                                                                 n,
                                                                 &lwork));
+            if(upperTriangularSize > lwork)
+            {
+                lwork = upperTriangularSize;
+            }
+
             CHECK_CUDA_ERROR(cudaMalloc((void**)&workspace, sizeof(T) * lwork));
             work_ptr.reset(workspace);
             workspace = work_ptr.get();
@@ -537,8 +561,10 @@ namespace nccl
                                                                   A, 
                                                                   n));
 
-        CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(A, A, n * n, ncclSum, comm));
-        
+        chase::linalg::internal::cuda::extractUpperTriangular(A, n, workspace, n);
+        CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(workspace, workspace, upperTriangularSize, ncclSum, comm));
+        chase::linalg::internal::cuda::unpackUpperTriangular(workspace, n, A, n);
+                
         chase::Base<T> nrmf = 0.0;
         chase::Base<T> *d_nrmf;
         CHECK_CUDA_ERROR(cudaMalloc((void**)&d_nrmf, sizeof(chase::Base<T>)));
@@ -591,7 +617,10 @@ namespace nccl
                                                                 A, 
                                                                 n));
 
-        CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(A, A, n * n, ncclSum, comm));
+        //CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(A, A, n * n, ncclSum, comm));
+        chase::linalg::internal::cuda::extractUpperTriangular(A, n, workspace, n);
+        CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(workspace, workspace, upperTriangularSize, ncclSum, comm));
+        chase::linalg::internal::cuda::unpackUpperTriangular(workspace, n, A, n);
 
         CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTpotrf(cusolver_handle, 
                                                                         CUBLAS_FILL_MODE_UPPER, 
@@ -626,7 +655,10 @@ namespace nccl
                                                                     A, 
                                                                     n));
 
-        CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(A, A, n * n, ncclSum, comm));
+        //CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(A, A, n * n, ncclSum, comm));
+        chase::linalg::internal::cuda::extractUpperTriangular(A, n, workspace, n);
+        CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(workspace, workspace, upperTriangularSize, ncclSum, comm));
+        chase::linalg::internal::cuda::unpackUpperTriangular(workspace, n, A, n);
 
         CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTpotrf(cusolver_handle, 
                                                                         CUBLAS_FILL_MODE_UPPER, 
@@ -686,9 +718,10 @@ namespace nccl
         chase::Base<T> Zero = Base<T>(0.0);        
         int info = 1;
 
-        int number_of_panels = 4;
+        int number_of_panels = 6;
         size_t panel_size = ceil((double)n / number_of_panels);
         size_t panel_size_rest;
+        std::size_t upperTriangularSize = std::size_t(n * (n + 1) / 2);
 
         int* devInfo;
         CHECK_CUDA_ERROR(cudaMalloc((void**)&devInfo, sizeof(int)));
@@ -722,6 +755,11 @@ namespace nccl
                                                                 A, 
                                                                 n,
                                                                 &lwork));
+            if(upperTriangularSize > lwork)
+            {
+                lwork = upperTriangularSize;
+            }
+
             CHECK_CUDA_ERROR(cudaMalloc((void**)&workspace, sizeof(T) * lwork));
             work_ptr.reset(workspace);
             workspace = work_ptr.get();
@@ -798,8 +836,11 @@ namespace nccl
                                                                         A, 
                                                                         panel_size_rest));     
 
-            CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(A, A, panel_size_rest * panel_size_rest, ncclSum, comm));
-
+            std::size_t upperTriangularSize = std::size_t(panel_size_rest * (panel_size_rest + 1) / 2);
+            chase::linalg::internal::cuda::extractUpperTriangular(A, panel_size_rest, workspace, panel_size_rest);
+            CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(workspace, workspace, upperTriangularSize, ncclSum, comm));
+            chase::linalg::internal::cuda::unpackUpperTriangular(workspace, panel_size_rest, A, panel_size_rest);
+            
             CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTpotrf(cusolver_handle, 
                                                                             CUBLAS_FILL_MODE_UPPER, 
                                                                             panel_size_rest,

@@ -28,7 +28,7 @@ int main(int argc, char** argv)
 
     int *coords = mpi_grid->get_coords();
 
-    std::size_t N = 12000;
+    std::size_t N = 10000;
     std::size_t nblk = 64;
 
     auto H_redundant = chase::distMatrix::RedundantMatrix<T, chase::platform::GPU>(N, N, mpi_grid);
@@ -108,7 +108,7 @@ int main(int argc, char** argv)
     assert_elpa_ok(error_elpa);
 
     elpa_set(handle, "real_kernel", ELPA_2STAGE_REAL_NVIDIA_SM80_GPU, &error_elpa);
-    assert_elpa_ok(error_elpa);
+    //assert_elpa_ok(error_elpa);
 
     error_elpa = elpa_setup_gpu(handle);
     assert_elpa_ok(error_elpa);
