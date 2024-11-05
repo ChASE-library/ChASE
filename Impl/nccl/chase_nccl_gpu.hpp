@@ -135,6 +135,11 @@ public:
         {
             lwork_ = lwork_potrf;
         }
+
+        if(nevex_ * (nevex_ + 1) / 2 > lwork_)
+        {
+            lwork_ = nevex_ * (nevex_ + 1) / 2;
+        }
         CHECK_CUDA_ERROR(cudaMalloc((void**)&d_work_, sizeof(T) * lwork_));    
 
         CHECK_CUDA_ERROR(cudaMalloc((void**)&states_,

@@ -20,6 +20,23 @@ namespace cuda
         cudaStream_t usedStream = (stream_ == nullptr) ? 0 : *stream_;
         t_lacpy_gpu(uplo, m, n, dA, ldda, dB, lddb, usedStream);
     }
+
+    template<typename T>
+    void extractUpperTriangular(T* d_matrix, std::size_t ld, T* d_upperTriangular, std::size_t n, cudaStream_t *stream_ = nullptr )
+    {
+        cudaStream_t usedStream = (stream_ == nullptr) ? 0 : *stream_;
+        extractUpperTriangular(d_matrix, ld, d_upperTriangular, n, usedStream);
+    }
+
+    template<typename T>
+    void unpackUpperTriangular(T* d_upperTriangular, std::size_t n, T* d_matrix, std::size_t ld, cudaStream_t *stream_ = nullptr )
+    {
+        cudaStream_t usedStream = (stream_ == nullptr) ? 0 : *stream_;
+        unpackUpperTriangular(d_matrix, ld, d_upperTriangular, n, usedStream);
+    }
+
+
+
 }
 }
 }
