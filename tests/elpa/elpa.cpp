@@ -138,7 +138,7 @@ int main(int argc, char** argv)
 
     start = std::chrono::high_resolution_clock::now();
 
-    elpa_eigenvectors(handle, H.cpu_data(), evals.cpu_data(), evecs.cpu_data(), &error_elpa);
+    //elpa_eigenvectors(handle, H.cpu_data(), evals.cpu_data(), evecs.cpu_data(), &error_elpa);
     assert_elpa_ok(error_elpa);
 
     end = std::chrono::high_resolution_clock::now();
