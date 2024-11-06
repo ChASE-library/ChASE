@@ -563,6 +563,29 @@ void t_pheevd(char jobz, char uplo, std::size_t N, std::complex<double> *A, std:
 
 }
 
+template <typename T>
+void t_pgemr2d(std::size_t m, std::size_t n, T* A, int ia, int ja, std::size_t* desc_a,
+               T* B, int ib, int jb, std::size_t* desc_b, int ictxt) {
+    // Convert std::size_t to int for ScaLAPACK
+    int im = static_cast<int>(m);
+    int in = static_cast<int>(n);
+    int *int_desc_a = reinterpret_cast<int*>(desc_a);
+    int *int_desc_b = reinterpret_cast<int*>(desc_b);
+
+    if constexpr (std::is_same_v<T, float>) {
+        psgemr2d_(&im, &in, A, &ia, &ja, int_desc_a, B, &ib, &jb, int_desc_b, &ictxt);
+    } else if constexpr (std::is_same_v<T, double>) {
+        pdgemr2d_(&im, &in, A, &ia, &ja, int_desc_a, B, &ib, &jb, int_desc_b, &ictxt);
+    } else if constexpr (std::is_same_v<T, std::complex<float>>) {
+        pcgemr2d_(&im, &in, A, &ia, &ja, int_desc_a, B, &ib, &jb, int_desc_b, &ictxt);
+    } else if constexpr (std::is_same_v<T, std::complex<double>>) {
+        pzgemr2d_(&im, &in, A, &ia, &ja, int_desc_a, B, &ib, &jb, int_desc_b, &ictxt);
+    } else {
+        static_assert(std::is_same_v<T, float> || std::is_same_v<T, double> ||
+                      std::is_same_v<T, std::complex<float>> || std::is_same_v<T, std::complex<double>>,
+                      "Unsupported type for t_pgemr2d");
+    }
+}
 
 }
 }
