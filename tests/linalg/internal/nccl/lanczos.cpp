@@ -14,6 +14,10 @@ protected:
     void SetUp() override {
         MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
         MPI_Comm_size(MPI_COMM_WORLD, &world_size);  
+        ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
+
+        mpi_grid = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(2, 2, MPI_COMM_WORLD);
+
         Clement.resize(N * N);
 
         for (auto i = 0; i < N; ++i)
@@ -27,6 +31,7 @@ protected:
         ritzv.resize(M * numvec);
         ritzV.resize(M * M);
         Tau.resize(M * M * numvec);
+
         CHECK_CUBLAS_ERROR(cublasCreate(&cublasH_));   
     }
 
@@ -44,7 +49,8 @@ protected:
     std::vector<T> Clement;
     std::vector<chase::Base<T>> ritzv;
     std::vector<chase::Base<T>> ritzV;
-    std::vector<chase::Base<T>> Tau;   
+    std::vector<chase::Base<T>> Tau;
+    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid;
     cublasHandle_t cublasH_;
 };
 
@@ -55,15 +61,11 @@ TYPED_TEST_SUITE(LanczosNCCLDistTest, TestTypes);
 TYPED_TEST(LanczosNCCLDistTest, mlanczosGPU){
     using T = TypeParam;  // Get the current type
 
-    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
-    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid 
-            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(2, 2, MPI_COMM_WORLD);
+    int *coords = this->mpi_grid.get()->get_coords();
 
-    int *coords = mpi_grid.get()->get_coords();
-
-    auto H_ = chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU>(this->N, this->N, mpi_grid);
-    auto V_ = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(this->N, this->M, mpi_grid);
-    auto H2_ = chase::distMatrix::BlockBlockMatrix<T, chase::platform::CPU>(this->N, this->N, mpi_grid);
+    auto H_ = chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU>(this->N, this->N, this->mpi_grid);
+    auto V_ = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(this->N, this->M, this->mpi_grid);
+    auto H2_ = chase::distMatrix::BlockBlockMatrix<T, chase::platform::CPU>(this->N, this->N, this->mpi_grid);
 
     V_.allocate_cpu_data();
     std::mt19937 gen(1337.0 + coords[0]);
@@ -77,7 +79,7 @@ TYPED_TEST(LanczosNCCLDistTest, mlanczosGPU){
 
     V_.H2D();
 
-    auto Clement_ = chase::distMatrix::RedundantMatrix<T, chase::platform::CPU>(this->N, this->N, this->N, this->Clement.data(), mpi_grid);
+    auto Clement_ = chase::distMatrix::RedundantMatrix<T, chase::platform::CPU>(this->N, this->N, this->N, this->Clement.data(), this->mpi_grid);
     Clement_.redistributeImpl(&H2_);
     CHECK_CUDA_ERROR(cudaMemcpy(H_.l_data(), H2_.l_data(), sizeof(T) * H2_.l_rows() * H2_.l_cols(), cudaMemcpyHostToDevice));
 
@@ -107,15 +109,11 @@ TYPED_TEST(LanczosNCCLDistTest, mlanczosGPU){
 TYPED_TEST(LanczosNCCLDistTest, lanczosGPU) {
     using T = TypeParam;  // Get the current type
 
-    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
-    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid 
-            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(2, 2, MPI_COMM_WORLD);
+    int *coords = this->mpi_grid.get()->get_coords();
 
-    int *coords = mpi_grid.get()->get_coords();
-
-    auto H_ = chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU>(this->N, this->N, mpi_grid);
-    auto V_ = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(this->N, 1, mpi_grid);
-    auto H2_ = chase::distMatrix::BlockBlockMatrix<T, chase::platform::CPU>(this->N, this->N, mpi_grid);
+    auto H_ = chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU>(this->N, this->N, this->mpi_grid);
+    auto V_ = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(this->N, 1, this->mpi_grid);
+    auto H2_ = chase::distMatrix::BlockBlockMatrix<T, chase::platform::CPU>(this->N, this->N, this->mpi_grid);
 
     V_.allocate_cpu_data();
 
@@ -130,7 +128,7 @@ TYPED_TEST(LanczosNCCLDistTest, lanczosGPU) {
 
     V_.H2D();
     
-    auto Clement_ = chase::distMatrix::RedundantMatrix<T>(this->N, this->N, this->N, this->Clement.data(), mpi_grid);
+    auto Clement_ = chase::distMatrix::RedundantMatrix<T>(this->N, this->N, this->N, this->Clement.data(), this->mpi_grid);
     Clement_.redistributeImpl(&H2_);
     CHECK_CUDA_ERROR(cudaMemcpy(H_.l_data(), H2_.l_data(), sizeof(T) * H2_.l_rows() * H2_.l_cols(), cudaMemcpyHostToDevice));
 
@@ -149,16 +147,12 @@ TYPED_TEST(LanczosNCCLDistTest, lanczosGPU) {
 TYPED_TEST(LanczosNCCLDistTest, mlanczosGPUBlockCyclic){
     using T = TypeParam;  // Get the current type
 
-    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
-    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid 
-            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(2, 2, MPI_COMM_WORLD);
-
-    int *coords = mpi_grid.get()->get_coords();
+    int *coords = this->mpi_grid.get()->get_coords();
     std::size_t blocksize = 16;
 
-    auto H_ = chase::distMatrix::BlockCyclicMatrix<T, chase::platform::GPU>(this->N, this->N, blocksize, blocksize, mpi_grid);
-    auto V_ = chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(this->N, this->M, blocksize, mpi_grid);
-    auto H2_ = chase::distMatrix::BlockCyclicMatrix<T, chase::platform::CPU>(this->N, this->N, blocksize, blocksize, mpi_grid);
+    auto H_ = chase::distMatrix::BlockCyclicMatrix<T, chase::platform::GPU>(this->N, this->N, blocksize, blocksize, this->mpi_grid);
+    auto V_ = chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(this->N, this->M, blocksize, this->mpi_grid);
+    auto H2_ = chase::distMatrix::BlockCyclicMatrix<T, chase::platform::CPU>(this->N, this->N, blocksize, blocksize, this->mpi_grid);
 
     V_.allocate_cpu_data();
     std::mt19937 gen(1337.0 + coords[0]);
@@ -172,7 +166,7 @@ TYPED_TEST(LanczosNCCLDistTest, mlanczosGPUBlockCyclic){
 
     V_.H2D();
 
-    auto Clement_ = chase::distMatrix::RedundantMatrix<T, chase::platform::CPU>(this->N, this->N, this->N, this->Clement.data(), mpi_grid);
+    auto Clement_ = chase::distMatrix::RedundantMatrix<T, chase::platform::CPU>(this->N, this->N, this->N, this->Clement.data(), this->mpi_grid);
     Clement_.redistributeImpl(&H2_);
     CHECK_CUDA_ERROR(cudaMemcpy(H_.l_data(), H2_.l_data(), sizeof(T) * H2_.l_rows() * H2_.l_cols(), cudaMemcpyHostToDevice));
 
@@ -202,16 +196,12 @@ TYPED_TEST(LanczosNCCLDistTest, mlanczosGPUBlockCyclic){
 TYPED_TEST(LanczosNCCLDistTest, lanczosGPUBlockCyclic) {
     using T = TypeParam;  // Get the current type
 
-    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
-    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid 
-            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(2, 2, MPI_COMM_WORLD);
-
-    int *coords = mpi_grid.get()->get_coords();
+    int *coords = this->mpi_grid.get()->get_coords();
     std::size_t blocksize = 16;
 
-    auto H_ = chase::distMatrix::BlockCyclicMatrix<T, chase::platform::GPU>(this->N, this->N, blocksize, blocksize, mpi_grid);
-    auto V_ = chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(this->N, 1, blocksize, mpi_grid);
-    auto H2_ = chase::distMatrix::BlockCyclicMatrix<T, chase::platform::CPU>(this->N, this->N, blocksize, blocksize, mpi_grid);
+    auto H_ = chase::distMatrix::BlockCyclicMatrix<T, chase::platform::GPU>(this->N, this->N, blocksize, blocksize, this->mpi_grid);
+    auto V_ = chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(this->N, 1, blocksize, this->mpi_grid);
+    auto H2_ = chase::distMatrix::BlockCyclicMatrix<T, chase::platform::CPU>(this->N, this->N, blocksize, blocksize, this->mpi_grid);
 
     V_.allocate_cpu_data();
 
@@ -226,7 +216,7 @@ TYPED_TEST(LanczosNCCLDistTest, lanczosGPUBlockCyclic) {
 
     V_.H2D();
     
-    auto Clement_ = chase::distMatrix::RedundantMatrix<T>(this->N, this->N, this->N, this->Clement.data(), mpi_grid);
+    auto Clement_ = chase::distMatrix::RedundantMatrix<T>(this->N, this->N, this->N, this->Clement.data(), this->mpi_grid);
     Clement_.redistributeImpl(&H2_);
     CHECK_CUDA_ERROR(cudaMemcpy(H_.l_data(), H2_.l_data(), sizeof(T) * H2_.l_rows() * H2_.l_cols(), cudaMemcpyHostToDevice));
 
