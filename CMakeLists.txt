@@ -26,7 +26,7 @@ option(CHASE_ENABLE_OPENMP "Enable OpenMP support" ON)
 option(CHASE_ENABLE_MIXED_PRECISION "Enable mixed precision support" OFF)
 option(CHASE_ENABLE_MPI_IO "Enable MPI IO to read Hamiltonian matrix from local" OFF)
 option(CHASE_USE_NVTX "Enable NVTX for profiling" OFF)
-option(CHASE_BUILD_WITH_DOCS "Build the examples" OFF)
+option(CHASE_BUILD_WITH_DOCS "Build the examples" ON)
 
 if( CHASE_OUTPUT )
   target_compile_definitions( chase_algorithm  INTERFACE "-DCHASE_OUTPUT" )
