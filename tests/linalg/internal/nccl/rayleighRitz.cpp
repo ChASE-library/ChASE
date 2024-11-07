@@ -16,6 +16,7 @@ protected:
     void SetUp() override {
         MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
         MPI_Comm_size(MPI_COMM_WORLD, &world_size); 
+        mpi_grid = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(2, 2, MPI_COMM_WORLD);
         CHECK_CUBLAS_ERROR(cublasCreate(&cublasH_));   
         CHECK_CUDA_ERROR(cudaStreamCreate(&stream_));
         CHECK_CUSOLVER_ERROR(cusolverDnCreate(&cusolverH_));
@@ -33,6 +34,7 @@ protected:
 
     std::size_t N = 50;
     std::size_t n = 8;   
+    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid;
     cublasHandle_t cublasH_;
     cusolverDnHandle_t cusolverH_;
     cudaStream_t stream_;
@@ -82,17 +84,14 @@ TYPED_TEST(RRGPUNCCLDistTest, RRCorrectnessGPU) {
                &One, V.data(), this->N, H2.data(), this->N, &Zero,
                H.data(), this->N);
 
-    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid 
-            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(2, 2, MPI_COMM_WORLD);
+    int *coords = this->mpi_grid.get()->get_coords();
 
-    int *coords = mpi_grid.get()->get_coords();
-
-    auto H_ = chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU>(this->N, this->N, mpi_grid);
-    auto V_ = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(this->N, this->n, mpi_grid);
-    auto V2_ = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(this->N, this->n, mpi_grid);
-    auto W_ = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::GPU>(this->N, this->n, mpi_grid);  
-    auto W2_ = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::GPU>(this->N, this->n, mpi_grid);
-    auto ritzv_ = chase::distMatrix::RedundantMatrix<chase::Base<T>, chase::platform::GPU>(this->n, 1, mpi_grid);
+    auto H_ = chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU>(this->N, this->N, this->mpi_grid);
+    auto V_ = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(this->N, this->n, this->mpi_grid);
+    auto V2_ = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(this->N, this->n, this->mpi_grid);
+    auto W_ = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::GPU>(this->N, this->n, this->mpi_grid);  
+    auto W2_ = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::GPU>(this->N, this->n, this->mpi_grid);
+    auto ritzv_ = chase::distMatrix::RedundantMatrix<chase::Base<T>, chase::platform::GPU>(this->n, 1, this->mpi_grid);
     H_.allocate_cpu_data();
     V_.allocate_cpu_data();
     W_.allocate_cpu_data();
