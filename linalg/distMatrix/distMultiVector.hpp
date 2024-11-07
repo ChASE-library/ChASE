@@ -24,19 +24,40 @@
 
 #include "Impl/cuda/nvtx.hpp"
 
+/**
+ * @page chase_distMultiVector_namespace chase::distMultiVector Namespace
+ * The chase::distMultiVector namespace contains classes, structures, and utilities for distributed block-vectors,
+ * including support for distributed multi-vector computations and precision conversion traits.
+ */
+
 namespace chase
 {
+/**
+ * @defgroup distMultiVector Distributed Multi-Vector Operations
+ * @brief Classes and utilities for distributed multi-vector operations.
+ * @{
+ */    
 namespace distMultiVector
 {
+/**
+ * @brief Enumeration for distribution types.
+ * 
+ * Specifies the type of distribution for multi-vector data.
+ */    
 enum class DistributionType {
-    Block,
-    BlockCyclic
+    Block,           /**< Block distribution */
+    BlockCyclic      /**< Block cyclic distribution */
 };
 
+/**
+ * @brief Enumeration for communicator types.
+ * 
+ * Specifies the type of communicator to be used for distributed operations.
+ */
 enum class CommunicatorType{
-    row,
-    column,
-    all
+    row,             /**< Row communicator */
+    column,          /**< Column communicator */
+    all              /**< All communicators */
 };
 
 /*
@@ -44,48 +65,124 @@ struct row_comm {};
 struct col_comm {}; 
 */
 
+/**
+ * @brief Distributed multi-vector with 1D distribution.
+ * 
+ * This class template represents a distributed multi-vector with 1D data distribution,
+ * templated by type, communicator type, and platform.
+ */
 template<typename T, CommunicatorType comm_type, typename Platform> 
 class DistMultiVector1D;
 
+/**
+ * @brief Distributed multi-vector with block-cyclic 1D distribution.
+ * 
+ * This class template represents a distributed multi-vector with 1D block-cyclic data distribution,
+ * templated by type, communicator type, and platform.
+ */
 template<typename T, CommunicatorType comm_type, typename Platform> 
 class DistMultiVectorBlockCyclic1D;
 
+/**
+ * @brief Abstract base class for distributed multi-vectors.
+ * 
+ * The AbstractDistMultiVector class defines an interface for distributed multi-vectors,
+ * providing methods for querying distribution, communicator type, and other vector properties.
+ * 
+ * @tparam T           Data type (e.g., double, std::complex<double>)
+ * @tparam comm_type   Communicator type (row, column, or all)
+ * @tparam Derived     Derived class template implementing specific multi-vector functionality
+ * @tparam Platform    Platform type (default: chase::platform::CPU)
+ */
 template <typename T, CommunicatorType comm_type, template <typename, CommunicatorType, typename> class Derived, typename Platform = chase::platform::CPU>
 class AbstractDistMultiVector {
 protected:
     // Single precision matrix
 #ifdef ENABLE_MIXED_PRECISION       
-    using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type;
-    using SinglePrecisionDerived = Derived<SinglePrecisionType, comm_type, Platform>;
-    std::unique_ptr<SinglePrecisionDerived> single_precision_multivec_;
-    bool is_single_precision_enabled_ = false; 
-    std::chrono::high_resolution_clock::time_point start, end;
-    std::chrono::duration<double> elapsed;    
+    using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type;       /**< Single precision type */
+    using SinglePrecisionDerived = Derived<SinglePrecisionType, comm_type, Platform>;  /**< Derived class in single precision */
+    std::unique_ptr<SinglePrecisionDerived> single_precision_multivec_;                /**< Pointer to single precision multi-vector */
+    bool is_single_precision_enabled_ = false;                                         /**< Flag indicating if single precision is enabled */
+    std::chrono::high_resolution_clock::time_point start, end;                         /**< Timing points for performance measurement */
+    std::chrono::duration<double> elapsed;                                             /**< Duration for single precision operations */
 #endif    
 public:
     virtual ~AbstractDistMultiVector() = default;
+    /**
+     * @brief Get the distribution type of the multi-vector.
+     * @return DistributionType Enum value representing the distribution type.
+     */    
     virtual DistributionType getMultiVectorDistributionType() const = 0;
+    /**
+     * @brief Get the communicator type of the multi-vector.
+     * @return CommunicatorType Enum value representing the communicator type.
+     */    
     virtual CommunicatorType getMultiVectorCommunicatorType() const = 0;
+    /**
+     * @brief Get the MPI grid object.
+     * @return Pointer to MpiGrid2DBase representing the MPI grid.
+     */    
     virtual chase::grid::MpiGrid2DBase* getMpiGrid() const = 0;   
+    /**
+     * @brief Get the MPI grid object as a shared pointer.
+     * @return Shared pointer to MpiGrid2DBase representing the MPI grid.
+     */    
     virtual std::shared_ptr<chase::grid::MpiGrid2DBase> getMpiGrid_shared_ptr() const = 0;    
+    /**
+     * @brief Get the global row count.
+     * @return The number of rows in the multi-vector.
+     */    
     virtual std::size_t g_rows() const = 0;
+    /**
+     * @brief Get the global column count.
+     * @return The number of columns in the multi-vector.
+     */    
     virtual std::size_t g_cols() const = 0;
+    /**
+     * @brief Get the local row count.
+     * @return The number of local rows in the multi-vector.
+     */    
     virtual std::size_t l_rows() const = 0;
+    /**
+     * @brief Get the local column count.
+     * @return The number of local columns in the multi-vector.
+     */    
     virtual std::size_t l_cols() const = 0;
+    /**
+     * @brief Get the leading dimension for local storage.
+     * @return The leading dimension size.
+     */    
     virtual std::size_t l_ld() const = 0;
+    /**
+     * @brief Get the pointer to local data.
+     * @return Pointer to local data in the multi-vector.
+     */
     virtual T *         l_data() = 0;
+    /**
+     * @brief Get the block size for block-cyclic distribution.
+     * @return Block size for distribution.
+     */    
     virtual std::size_t mb() const = 0;  
 
     //virtual typename chase::platform::MatrixTypePlatform<T, Platform>::type& loc_matrix() = 0;
+    /**
+     * @brief Get the local matrix object.
+     * @return Reference to Matrix object representing local matrix data.
+     */    
     virtual chase::matrix::Matrix<T, Platform>& loc_matrix() = 0;
-
+    /**
+     * @brief Get the global rank in the MPI communicator.
+     * @return The rank of the process within the global MPI communicator.
+     */
     int grank()
     {
         int grank = 0;
         MPI_Comm_rank(this->getMpiGrid()->get_comm(), &grank);
         return grank;
     }
-
+    /**
+     * @brief Allocate memory for local data on the CPU.
+     */
     void allocate_cpu_data()
     {
         auto& loc_matrix = this->loc_matrix();
@@ -93,6 +190,9 @@ public:
     }    
 #ifdef ENABLE_MIXED_PRECISION       
     // Enable single precision for double types (and complex<double>)
+    /**
+     * @brief Enable single precision for double types.
+     */    
     template <typename U = T, typename std::enable_if<std::is_same<U, double>::value || std::is_same<U, std::complex<double>>::value, int>::type = 0>
     void enableSinglePrecision() {
         if (!single_precision_multivec_) {
@@ -136,6 +236,10 @@ public:
     }
 
     // Disable single precision for double types
+    /**
+     * @brief Disable single precision and optionally copy data back.
+     * @param copyback Whether to copy data back to double precision.
+     */    
     template <typename U = T, typename std::enable_if<std::is_same<U, double>::value || std::is_same<U, std::complex<double>>::value, int>::type = 0>
     void disableSinglePrecision(bool copyback = false) {
         start = std::chrono::high_resolution_clock::now();
@@ -179,12 +283,20 @@ public:
     }
 
     // Check if single precision is enabled
+    /**
+     * @brief Check if single precision is enabled.
+     * @return True if single precision is enabled, false otherwise.
+     */    
     template <typename U = T, typename std::enable_if<std::is_same<U, double>::value || std::is_same<U, std::complex<double>>::value, int>::type = 0>
     bool isSinglePrecisionEnabled() const {
         return is_single_precision_enabled_;
     }
 
     // Get the single precision matrix itself
+    /**
+     * @brief Get the single precision multi-vector.
+     * @return Pointer to the single precision multi-vector.
+     */
     template <typename U = T, typename std::enable_if<std::is_same<U, double>::value || std::is_same<U, std::complex<double>>::value, int>::type = 0>
     SinglePrecisionDerived* getSinglePrecisionMatrix() {
         if (is_single_precision_enabled_) {
@@ -207,6 +319,7 @@ public:
 #endif    
 };
 
+/** @} */ // End of distMultiVector group
 template<typename T, CommunicatorType comm_type, typename Platform = chase::platform::CPU> 
 class DistMultiVector1D : public AbstractDistMultiVector<T, comm_type, DistMultiVector1D, Platform> //distribute either within row or column communicator of 2D MPI grid
 {
