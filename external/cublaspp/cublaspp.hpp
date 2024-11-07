@@ -42,6 +42,23 @@ void checkCublas(cublasStatus_t status, const char* const func,
         std::exit(EXIT_FAILURE);
     }
 }
+
+/**
+ * @page cublaspp_namespace chase::linalg::cublaspp Namespace
+ * @brief A templated C++ interface to the cuBLAS library.
+ *
+ * This namespace contains templated functions that interface with the cuBLAS library to provide efficient linear algebra routines on GPU.
+ * The functions are templated to work with different data types such as `float`, `double`, and `std::complex`.
+ * These functions allow for easy and efficient numerical computations in scientific computing.
+ */
+
+/**
+ * @defgroup cuBlasFunctions cuBLAS Routines
+ * @brief Template functions that interface with cuBLAS routines.
+ * 
+ * These functions provide common linear algebra operations such as vector norms, dot products, matrix multiplications, etc.
+ * They allow for operations on both real and complex numbers.
+ */
    
 namespace chase
 {
@@ -49,18 +66,52 @@ namespace linalg
 {
 namespace cublaspp
 {
+/**
+ * @ingroup cuBlasFunctions
+ * @brief Performs the AXPY operation: y = alpha * x + y.
+ * @param handle cuBLAS handle.
+ * @param n Number of elements in vectors x and y.
+ * @param alpha Scaling factor.
+ * @param x Pointer to input vector x.
+ * @param incx Increment for x elements.
+ * @param y Pointer to input/output vector y.
+ * @param incy Increment for y elements.
+ * @return Status of the operation.
+ */    
 cublasStatus_t cublasTaxpy(cublasHandle_t handle, std::size_t n, const float* alpha,
                            const float* x, std::size_t incx, float* y, std::size_t incy)
 {
     return cublasSaxpy(handle, n, alpha, x, incx, y, incy);
 }
-
+/**
+ * @ingroup cuBlasFunctions
+ * @brief Performs the AXPY operation: y = alpha * x + y.
+ * @param handle cuBLAS handle.
+ * @param n Number of elements in vectors x and y.
+ * @param alpha Scaling factor.
+ * @param x Pointer to input vector x.
+ * @param incx Increment for x elements.
+ * @param y Pointer to input/output vector y.
+ * @param incy Increment for y elements.
+ * @return Status of the operation.
+ */
 cublasStatus_t cublasTaxpy(cublasHandle_t handle, std::size_t n, const double* alpha,
                            const double* x, std::size_t incx, double* y, std::size_t incy)
 {
     return cublasDaxpy(handle, n, alpha, x, incx, y, incy);
 }
-
+/**
+ * @ingroup cuBlasFunctions
+ * @brief Performs the AXPY operation: y = alpha * x + y.
+ * @param handle cuBLAS handle.
+ * @param n Number of elements in vectors x and y.
+ * @param alpha Scaling factor.
+ * @param x Pointer to input vector x.
+ * @param incx Increment for x elements.
+ * @param y Pointer to input/output vector y.
+ * @param incy Increment for y elements.
+ * @return Status of the operation.
+ */
 cublasStatus_t cublasTaxpy(cublasHandle_t handle, std::size_t n,
                            const std::complex<float>* alpha,
                            const std::complex<float>* x, std::size_t incx,
@@ -70,7 +121,18 @@ cublasStatus_t cublasTaxpy(cublasHandle_t handle, std::size_t n,
                        reinterpret_cast<const cuComplex*>(x), incx,
                        reinterpret_cast<cuComplex*>(y), incy);
 }
-
+/**
+ * @ingroup cuBlasFunctions
+ * @brief Performs the AXPY operation: y = alpha * x + y.
+ * @param handle cuBLAS handle.
+ * @param n Number of elements in vectors x and y.
+ * @param alpha Scaling factor.
+ * @param x Pointer to input vector x.
+ * @param incx Increment for x elements.
+ * @param y Pointer to input/output vector y.
+ * @param incy Increment for y elements.
+ * @return Status of the operation.
+ */
 cublasStatus_t cublasTaxpy(cublasHandle_t handle, std::size_t n,
                            const std::complex<double>* alpha,
                            const std::complex<double>* x, std::size_t incx,
@@ -81,19 +143,46 @@ cublasStatus_t cublasTaxpy(cublasHandle_t handle, std::size_t n,
                        reinterpret_cast<const cuDoubleComplex*>(x), incx,
                        reinterpret_cast<cuDoubleComplex*>(y), incy);
 }
-
+/**
+ * @ingroup cuBlasFunctions
+ * @brief Computes the Euclidean norm of a vector.
+ * @param handle cuBLAS handle.
+ * @param n Number of elements in vector x.
+ * @param x Pointer to input vector x.
+ * @param incx Increment for x elements.
+ * @param result Pointer to the result norm.
+ * @return Status of the operation.
+ */
 cublasStatus_t cublasTnrm2(cublasHandle_t handle, std::size_t n, const float* x,
                            std::size_t incx, float* result)
 {
     return cublasSnrm2(handle, n, x, incx, result);
 }
-
+/**
+ * @ingroup cuBlasFunctions
+ * @brief Computes the Euclidean norm of a vector.
+ * @param handle cuBLAS handle.
+ * @param n Number of elements in vector x.
+ * @param x Pointer to input vector x.
+ * @param incx Increment for x elements.
+ * @param result Pointer to the result norm.
+ * @return Status of the operation.
+ */
 cublasStatus_t cublasTnrm2(cublasHandle_t handle, std::size_t n, const double* x,
                            std::size_t incx, double* result)
 {
     return cublasDnrm2(handle, n, x, incx, result);
 }
-
+/**
+ * @ingroup cuBlasFunctions
+ * @brief Computes the Euclidean norm of a vector.
+ * @param handle cuBLAS handle.
+ * @param n Number of elements in vector x.
+ * @param x Pointer to input vector x.
+ * @param incx Increment for x elements.
+ * @param result Pointer to the result norm.
+ * @return Status of the operation.
+ */
 cublasStatus_t cublasTnrm2(cublasHandle_t handle, std::size_t n,
                            const std::complex<float>* x, std::size_t incx,
                            float* result)
@@ -101,7 +190,16 @@ cublasStatus_t cublasTnrm2(cublasHandle_t handle, std::size_t n,
     return cublasScnrm2(handle, n, reinterpret_cast<const cuComplex*>(x), incx,
                         result);
 }
-
+/**
+ * @ingroup cuBlasFunctions
+ * @brief Computes the Euclidean norm of a vector.
+ * @param handle cuBLAS handle.
+ * @param n Number of elements in vector x.
+ * @param x Pointer to input vector x.
+ * @param incx Increment for x elements.
+ * @param result Pointer to the result norm.
+ * @return Status of the operation.
+ */
 cublasStatus_t cublasTnrm2(cublasHandle_t handle, std::size_t n,
                            const std::complex<double>* x, std::size_t incx,
                            double* result)
@@ -109,19 +207,52 @@ cublasStatus_t cublasTnrm2(cublasHandle_t handle, std::size_t n,
     return cublasDznrm2(handle, n, reinterpret_cast<const cuDoubleComplex*>(x),
                         incx, result);
 }
-
+/**
+ * @ingroup cuBlasFunctions
+ * @brief Computes the dot product of two vectors.
+ * @param handle cuBLAS handle.
+ * @param n Number of elements in vectors x and y.
+ * @param x Pointer to input vector x.
+ * @param incx Increment for x elements.
+ * @param y Pointer to input vector y.
+ * @param incy Increment for y elements.
+ * @param result Pointer to the result dot product.
+ * @return Status of the operation.
+ */
 cublasStatus_t cublasTdot(cublasHandle_t handle, std::size_t n, const float* x,
                           std::size_t incx, const float* y, std::size_t incy, float* result)
 {
     return cublasSdot(handle, n, x, incx, y, incy, result);
 }
-
+/**
+ * @ingroup cuBlasFunctions
+ * @brief Computes the dot product of two vectors.
+ * @param handle cuBLAS handle.
+ * @param n Number of elements in vectors x and y.
+ * @param x Pointer to input vector x.
+ * @param incx Increment for x elements.
+ * @param y Pointer to input vector y.
+ * @param incy Increment for y elements.
+ * @param result Pointer to the result dot product.
+ * @return Status of the operation.
+ */
 cublasStatus_t cublasTdot(cublasHandle_t handle, std::size_t n, const double* x,
                           std::size_t incx, const double* y, std::size_t incy, double* result)
 {
     return cublasDdot(handle, n, x, incx, y, incy, result);
 }
-
+/**
+ * @ingroup cuBlasFunctions
+ * @brief Computes the dot product of two vectors.
+ * @param handle cuBLAS handle.
+ * @param n Number of elements in vectors x and y.
+ * @param x Pointer to input vector x.
+ * @param incx Increment for x elements.
+ * @param y Pointer to input vector y.
+ * @param incy Increment for y elements.
+ * @param result Pointer to the result dot product.
+ * @return Status of the operation.
+ */
 cublasStatus_t cublasTdot(cublasHandle_t handle, std::size_t n,
                           const std::complex<float>* x, std::size_t incx,
                           const std::complex<float>* y, std::size_t incy,
@@ -131,7 +262,18 @@ cublasStatus_t cublasTdot(cublasHandle_t handle, std::size_t n,
                        reinterpret_cast<const cuComplex*>(y), incy,
                        reinterpret_cast<cuComplex*>(result));
 }
-
+/**
+ * @ingroup cuBlasFunctions
+ * @brief Computes the dot product of two vectors.
+ * @param handle cuBLAS handle.
+ * @param n Number of elements in vectors x and y.
+ * @param x Pointer to input vector x.
+ * @param incx Increment for x elements.
+ * @param y Pointer to input vector y.
+ * @param incy Increment for y elements.
+ * @param result Pointer to the result dot product.
+ * @return Status of the operation.
+ */
 cublasStatus_t cublasTdot(cublasHandle_t handle, std::size_t n,
                           const std::complex<double>* x, std::size_t incx,
                           const std::complex<double>* y, std::size_t incy,
@@ -141,19 +283,46 @@ cublasStatus_t cublasTdot(cublasHandle_t handle, std::size_t n,
                        incx, reinterpret_cast<const cuDoubleComplex*>(y), incy,
                        reinterpret_cast<cuDoubleComplex*>(result));
 }
-
+/**
+ * @ingroup cuBlasFunctions
+ * @brief Scales a vector by a scalar.
+ * @param handle cuBLAS handle.
+ * @param n Number of elements in vector x.
+ * @param alpha Scaling factor.
+ * @param x Pointer to input/output vector x.
+ * @param incx Increment for x elements.
+ * @return Status of the operation.
+ */
 cublasStatus_t cublasTscal(cublasHandle_t handle, std::size_t n, const float* alpha,
                            float* x, std::size_t incx)
 {
     return cublasSscal(handle, n, alpha, x, incx);
 }
-
+/**
+ * @ingroup cuBlasFunctions
+ * @brief Scales a vector by a scalar.
+ * @param handle cuBLAS handle.
+ * @param n Number of elements in vector x.
+ * @param alpha Scaling factor.
+ * @param x Pointer to input/output vector x.
+ * @param incx Increment for x elements.
+ * @return Status of the operation.
+ */
 cublasStatus_t cublasTscal(cublasHandle_t handle, std::size_t n, const double* alpha,
                            double* x, std::size_t incx)
 {
     return cublasDscal(handle, n, alpha, x, incx);
 }
-
+/**
+ * @ingroup cuBlasFunctions
+ * @brief Scales a vector by a scalar.
+ * @param handle cuBLAS handle.
+ * @param n Number of elements in vector x.
+ * @param alpha Scaling factor.
+ * @param x Pointer to input/output vector x.
+ * @param incx Increment for x elements.
+ * @return Status of the operation.
+ */
 cublasStatus_t cublasTscal(cublasHandle_t handle, std::size_t n,
                            const std::complex<float>* alpha,
                            std::complex<float>* x, std::size_t incx)
@@ -161,7 +330,16 @@ cublasStatus_t cublasTscal(cublasHandle_t handle, std::size_t n,
     return cublasCscal(handle, n, reinterpret_cast<const cuComplex*>(alpha),
                        reinterpret_cast<cuComplex*>(x), incx);
 }
-
+/**
+ * @ingroup cuBlasFunctions
+ * @brief Scales a vector by a scalar.
+ * @param handle cuBLAS handle.
+ * @param n Number of elements in vector x.
+ * @param alpha Scaling factor.
+ * @param x Pointer to input/output vector x.
+ * @param incx Increment for x elements.
+ * @return Status of the operation.
+ */
 cublasStatus_t cublasTscal(cublasHandle_t handle, std::size_t n,
                            const std::complex<double>* alpha,
                            std::complex<double>* x, std::size_t incx)
@@ -170,7 +348,23 @@ cublasStatus_t cublasTscal(cublasHandle_t handle, std::size_t n,
                        reinterpret_cast<const cuDoubleComplex*>(alpha),
                        reinterpret_cast<cuDoubleComplex*>(x), incx);
 }
-
+/**
+ * @ingroup cuBlasFunctions
+ * @brief Performs a matrix-vector product: y = alpha * A * x + beta * y.
+ * @param handle cuBLAS handle.
+ * @param transa Operation on matrix A.
+ * @param m Number of rows in matrix A.
+ * @param n Number of columns in matrix A.
+ * @param alpha Scaling factor for A*x.
+ * @param A Pointer to matrix A.
+ * @param lda Leading dimension of A.
+ * @param x Pointer to input vector x.
+ * @param incx Increment for x elements.
+ * @param beta Scaling factor for y.
+ * @param y Pointer to input/output vector y.
+ * @param incy Increment for y elements.
+ * @return Status of the operation.
+ */
 cublasStatus_t cublasTgemv(cublasHandle_t handle, cublasOperation_t transa,
                            std::size_t m, std::size_t n, const float* alpha, const float* A,
                            std::size_t lda, const float* x, std::size_t incx, const float* beta,
@@ -179,7 +373,23 @@ cublasStatus_t cublasTgemv(cublasHandle_t handle, cublasOperation_t transa,
     return cublasSgemv(handle, transa, m, n, alpha, A, lda, x, incx, beta, y,
                        incy);
 }
-
+/**
+ * @ingroup cuBlasFunctions
+ * @brief Performs a matrix-vector product: y = alpha * A * x + beta * y.
+ * @param handle cuBLAS handle.
+ * @param transa Operation on matrix A.
+ * @param m Number of rows in matrix A.
+ * @param n Number of columns in matrix A.
+ * @param alpha Scaling factor for A*x.
+ * @param A Pointer to matrix A.
+ * @param lda Leading dimension of A.
+ * @param x Pointer to input vector x.
+ * @param incx Increment for x elements.
+ * @param beta Scaling factor for y.
+ * @param y Pointer to input/output vector y.
+ * @param incy Increment for y elements.
+ * @return Status of the operation.
+ */
 cublasStatus_t cublasTgemv(cublasHandle_t handle, cublasOperation_t transa,
                            std::size_t m, std::size_t n, const double* alpha, const double* A,
                            std::size_t lda, const double* x, std::size_t incx,
@@ -188,7 +398,23 @@ cublasStatus_t cublasTgemv(cublasHandle_t handle, cublasOperation_t transa,
     return cublasDgemv(handle, transa, m, n, alpha, A, lda, x, incx, beta, y,
                        incy);
 }
-
+/**
+ * @ingroup cuBlasFunctions
+ * @brief Performs a matrix-vector product: y = alpha * A * x + beta * y.
+ * @param handle cuBLAS handle.
+ * @param transa Operation on matrix A.
+ * @param m Number of rows in matrix A.
+ * @param n Number of columns in matrix A.
+ * @param alpha Scaling factor for A*x.
+ * @param A Pointer to matrix A.
+ * @param lda Leading dimension of A.
+ * @param x Pointer to input vector x.
+ * @param incx Increment for x elements.
+ * @param beta Scaling factor for y.
+ * @param y Pointer to input/output vector y.
+ * @param incy Increment for y elements.
+ * @return Status of the operation.
+ */
 cublasStatus_t cublasTgemv(cublasHandle_t handle, cublasOperation_t transa,
                            std::size_t m, std::size_t n, const std::complex<float>* alpha,
                            const std::complex<float>* A, std::size_t lda,
@@ -203,7 +429,23 @@ cublasStatus_t cublasTgemv(cublasHandle_t handle, cublasOperation_t transa,
                        reinterpret_cast<const cuComplex*>(beta),
                        reinterpret_cast<cuComplex*>(y), incy);
 }
-
+/**
+ * @ingroup cuBlasFunctions
+ * @brief Performs a matrix-vector product: y = alpha * A * x + beta * y.
+ * @param handle cuBLAS handle.
+ * @param transa Operation on matrix A.
+ * @param m Number of rows in matrix A.
+ * @param n Number of columns in matrix A.
+ * @param alpha Scaling factor for A*x.
+ * @param A Pointer to matrix A.
+ * @param lda Leading dimension of A.
+ * @param x Pointer to input vector x.
+ * @param incx Increment for x elements.
+ * @param beta Scaling factor for y.
+ * @param y Pointer to input/output vector y.
+ * @param incy Increment for y elements.
+ * @return Status of the operation.
+ */
 cublasStatus_t cublasTgemv(cublasHandle_t handle, cublasOperation_t transa,
                            std::size_t m, std::size_t n, const std::complex<double>* alpha,
                            const std::complex<double>* A, std::size_t lda,
@@ -218,7 +460,25 @@ cublasStatus_t cublasTgemv(cublasHandle_t handle, cublasOperation_t transa,
                        reinterpret_cast<const cuDoubleComplex*>(beta),
                        reinterpret_cast<cuDoubleComplex*>(y), incy);
 }
-
+/**
+ * @ingroup cuBlasFunctions
+ * @brief Performs a matrix-matrix product: C = alpha * A * B + beta * C.
+ * @param handle cuBLAS handle.
+ * @param transa Operation on matrix A.
+ * @param transb Operation on matrix B.
+ * @param m Number of rows in matrix A.
+ * @param n Number of columns in matrix B.
+ * @param k Number of columns in A and rows in B.
+ * @param alpha Scaling factor for A*B.
+ * @param A Pointer to matrix A.
+ * @param lda Leading dimension of A.
+ * @param B Pointer to matrix B.
+ * @param ldb Leading dimension of B.
+ * @param beta Scaling factor for C.
+ * @param C Pointer to input/output matrix C.
+ * @param ldc Leading dimension of C.
+ * @return Status of the operation.
+ */
 cublasStatus_t cublasTgemm(cublasHandle_t handle, cublasOperation_t transa,
                            cublasOperation_t transb, std::size_t m, std::size_t n, std::size_t k,
                            const float* alpha, const float* A, std::size_t lda,
@@ -228,7 +488,25 @@ cublasStatus_t cublasTgemm(cublasHandle_t handle, cublasOperation_t transa,
     return cublasSgemm(handle, transa, transb, m, n, k, alpha, A, lda, B, ldb,
                        beta, C, ldc);
 }
-
+/**
+ * @ingroup cuBlasFunctions
+ * @brief Performs a matrix-matrix product: C = alpha * A * B + beta * C.
+ * @param handle cuBLAS handle.
+ * @param transa Operation on matrix A.
+ * @param transb Operation on matrix B.
+ * @param m Number of rows in matrix A.
+ * @param n Number of columns in matrix B.
+ * @param k Number of columns in A and rows in B.
+ * @param alpha Scaling factor for A*B.
+ * @param A Pointer to matrix A.
+ * @param lda Leading dimension of A.
+ * @param B Pointer to matrix B.
+ * @param ldb Leading dimension of B.
+ * @param beta Scaling factor for C.
+ * @param C Pointer to input/output matrix C.
+ * @param ldc Leading dimension of C.
+ * @return Status of the operation.
+ */
 cublasStatus_t cublasTgemm(cublasHandle_t handle, cublasOperation_t transa,
                            cublasOperation_t transb, std::size_t m, std::size_t n, std::size_t k,
                            const double* alpha, const double* A, std::size_t lda,
@@ -238,7 +516,25 @@ cublasStatus_t cublasTgemm(cublasHandle_t handle, cublasOperation_t transa,
     return cublasDgemm(handle, transa, transb, m, n, k, alpha, A, lda, B, ldb,
                        beta, C, ldc);
 }
-
+/**
+ * @ingroup cuBlasFunctions
+ * @brief Performs a matrix-matrix product: C = alpha * A * B + beta * C.
+ * @param handle cuBLAS handle.
+ * @param transa Operation on matrix A.
+ * @param transb Operation on matrix B.
+ * @param m Number of rows in matrix A.
+ * @param n Number of columns in matrix B.
+ * @param k Number of columns in A and rows in B.
+ * @param alpha Scaling factor for A*B.
+ * @param A Pointer to matrix A.
+ * @param lda Leading dimension of A.
+ * @param B Pointer to matrix B.
+ * @param ldb Leading dimension of B.
+ * @param beta Scaling factor for C.
+ * @param C Pointer to input/output matrix C.
+ * @param ldc Leading dimension of C.
+ * @return Status of the operation.
+ */
 cublasStatus_t cublasTgemm(cublasHandle_t handle, cublasOperation_t transa,
                            cublasOperation_t transb, std::size_t m, std::size_t n, std::size_t k,
                            const std::complex<float>* alpha,
@@ -254,7 +550,25 @@ cublasStatus_t cublasTgemm(cublasHandle_t handle, cublasOperation_t transa,
                        reinterpret_cast<const cuComplex*>(beta),
                        reinterpret_cast<cuComplex*>(C), ldc);
 }
-
+/**
+ * @ingroup cuBlasFunctions
+ * @brief Performs a matrix-matrix product: C = alpha * A * B + beta * C.
+ * @param handle cuBLAS handle.
+ * @param transa Operation on matrix A.
+ * @param transb Operation on matrix B.
+ * @param m Number of rows in matrix A.
+ * @param n Number of columns in matrix B.
+ * @param k Number of columns in A and rows in B.
+ * @param alpha Scaling factor for A*B.
+ * @param A Pointer to matrix A.
+ * @param lda Leading dimension of A.
+ * @param B Pointer to matrix B.
+ * @param ldb Leading dimension of B.
+ * @param beta Scaling factor for C.
+ * @param C Pointer to input/output matrix C.
+ * @param ldc Leading dimension of C.
+ * @return Status of the operation.
+ */
 cublasStatus_t cublasTgemm(cublasHandle_t handle, cublasOperation_t transa,
                            cublasOperation_t transb, std::size_t m, std::size_t n, std::size_t k,
                            const std::complex<double>* alpha,
@@ -270,7 +584,22 @@ cublasStatus_t cublasTgemm(cublasHandle_t handle, cublasOperation_t transa,
                        reinterpret_cast<const cuDoubleComplex*>(beta),
                        reinterpret_cast<cuDoubleComplex*>(C), ldc);
 }
-
+/**
+ * @ingroup cuBlasFunctions
+ * @brief Performs a Hermitian rank-k update: C = alpha * A * A^H + beta * C.
+ * @param handle cuBLAS handle.
+ * @param uplo Specifies whether the upper or lower triangular part of C is used.
+ * @param trans Operation on matrix A.
+ * @param n Number of rows and columns in matrix C.
+ * @param k Number of columns of A if trans is non-transpose, rows otherwise.
+ * @param alpha Scaling factor for A * A^H.
+ * @param A Pointer to matrix A.
+ * @param lda Leading dimension of A.
+ * @param beta Scaling factor for C.
+ * @param C Pointer to input/output Hermitian matrix C.
+ * @param ldc Leading dimension of C.
+ * @return Status of the operation.
+ */
 cublasStatus_t cublasTsyherk(cublasHandle_t handle, cublasFillMode_t uplo,
                              cublasOperation_t trans, std::size_t n, std::size_t k,
                              const float* alpha, const float* A, std::size_t lda,
@@ -279,7 +608,22 @@ cublasStatus_t cublasTsyherk(cublasHandle_t handle, cublasFillMode_t uplo,
 
     return cublasSsyrk(handle, uplo, trans, n, k, alpha, A, lda, beta, C, ldc);
 }
-
+/**
+ * @ingroup cuBlasFunctions
+ * @brief Performs a Hermitian rank-k update: C = alpha * A * A^H + beta * C.
+ * @param handle cuBLAS handle.
+ * @param uplo Specifies whether the upper or lower triangular part of C is used.
+ * @param trans Operation on matrix A.
+ * @param n Number of rows and columns in matrix C.
+ * @param k Number of columns of A if trans is non-transpose, rows otherwise.
+ * @param alpha Scaling factor for A * A^H.
+ * @param A Pointer to matrix A.
+ * @param lda Leading dimension of A.
+ * @param beta Scaling factor for C.
+ * @param C Pointer to input/output Hermitian matrix C.
+ * @param ldc Leading dimension of C.
+ * @return Status of the operation.
+ */
 cublasStatus_t cublasTsyherk(cublasHandle_t handle, cublasFillMode_t uplo,
                              cublasOperation_t trans, std::size_t n, std::size_t k,
                              const double* alpha, const double* A, std::size_t lda,
@@ -288,7 +632,22 @@ cublasStatus_t cublasTsyherk(cublasHandle_t handle, cublasFillMode_t uplo,
 
     return cublasDsyrk(handle, uplo, trans, n, k, alpha, A, lda, beta, C, ldc);
 }
-
+/**
+ * @ingroup cuBlasFunctions
+ * @brief Performs a Hermitian rank-k update: C = alpha * A * A^H + beta * C.
+ * @param handle cuBLAS handle.
+ * @param uplo Specifies whether the upper or lower triangular part of C is used.
+ * @param trans Operation on matrix A.
+ * @param n Number of rows and columns in matrix C.
+ * @param k Number of columns of A if trans is non-transpose, rows otherwise.
+ * @param alpha Scaling factor for A * A^H.
+ * @param A Pointer to matrix A.
+ * @param lda Leading dimension of A.
+ * @param beta Scaling factor for C.
+ * @param C Pointer to input/output Hermitian matrix C.
+ * @param ldc Leading dimension of C.
+ * @return Status of the operation.
+ */
 cublasStatus_t cublasTsyherk(cublasHandle_t handle, cublasFillMode_t uplo,
                              cublasOperation_t trans, std::size_t n, std::size_t k,
                              const float* alpha, const std::complex<float>* A,
@@ -300,7 +659,22 @@ cublasStatus_t cublasTsyherk(cublasHandle_t handle, cublasFillMode_t uplo,
                        reinterpret_cast<const cuComplex*>(A), lda, beta,
                        reinterpret_cast<cuComplex*>(C), ldc);
 }
-
+/**
+ * @ingroup cuBlasFunctions
+ * @brief Performs a Hermitian rank-k update: C = alpha * A * A^H + beta * C.
+ * @param handle cuBLAS handle.
+ * @param uplo Specifies whether the upper or lower triangular part of C is used.
+ * @param trans Operation on matrix A.
+ * @param n Number of rows and columns in matrix C.
+ * @param k Number of columns of A if trans is non-transpose, rows otherwise.
+ * @param alpha Scaling factor for A * A^H.
+ * @param A Pointer to matrix A.
+ * @param lda Leading dimension of A.
+ * @param beta Scaling factor for C.
+ * @param C Pointer to input/output Hermitian matrix C.
+ * @param ldc Leading dimension of C.
+ * @return Status of the operation.
+ */
 cublasStatus_t cublasTsyherk(cublasHandle_t handle, cublasFillMode_t uplo,
                              cublasOperation_t trans, std::size_t n, std::size_t k,
                              const double* alpha, const std::complex<double>* A,
@@ -313,7 +687,43 @@ cublasStatus_t cublasTsyherk(cublasHandle_t handle, cublasFillMode_t uplo,
                        reinterpret_cast<cuDoubleComplex*>(C), ldc);
 }
 
-/////
+/**
+ * @ingroup cuBlasFunctions
+ * @brief Solves a triangular matrix equation using cuBLAS for single precision.
+ *
+ * This function performs a triangular solve (TRSM) operation, solving for matrix X
+ * in one of the following matrix equations:
+ * - `op(A) * X = alpha * B`
+ * - `X * op(A) = alpha * B`
+ * where `op(A)` is either `A`, `A^T` (transpose of A), or `A^H` (conjugate transpose of A).
+ *
+ * @param handle    The cuBLAS library handle, used to manage the cuBLAS context.
+ * @param side      Specifies whether A appears on the left or right side of X.
+ *                  Use `CUBLAS_SIDE_LEFT` to solve `op(A) * X = alpha * B` or
+ *                  `CUBLAS_SIDE_RIGHT` to solve `X * op(A) = alpha * B`.
+ * @param uplo      Specifies whether the matrix A is lower or upper triangular.
+ *                  Use `CUBLAS_FILL_MODE_LOWER` if A is lower triangular, or
+ *                  `CUBLAS_FILL_MODE_UPPER` if A is upper triangular.
+ * @param trans     Indicates the operation to perform on A. Possible values are:
+ *                  - `CUBLAS_OP_N`: No transpose
+ *                  - `CUBLAS_OP_T`: Transpose
+ *                  - `CUBLAS_OP_C`: Conjugate transpose
+ * @param diag      Specifies whether the diagonal elements of A are assumed to be
+ *                  unit (1) or not. Use `CUBLAS_DIAG_UNIT` if A has a unit diagonal,
+ *                  or `CUBLAS_DIAG_NON_UNIT` if it does not.
+ * @param m         Number of rows of matrix B.
+ * @param n         Number of columns of matrix B.
+ * @param alpha     Pointer to a scalar value that multiplies B.
+ * @param A         Pointer to the triangular matrix A. If `side` is set to
+ *                  `CUBLAS_SIDE_LEFT`, the dimensions of A are `lda x m`.
+ *                  If `side` is set to `CUBLAS_SIDE_RIGHT`, the dimensions of A
+ *                  are `lda x n`.
+ * @param lda       Leading dimension of matrix A.
+ * @param B         Pointer to matrix B, which will be overwritten with the solution matrix X.
+ * @param ldb       Leading dimension of matrix B.
+ * 
+ * @return          Returns `cublasStatus_t`, indicating success or the type of error encountered.
+ */
 cublasStatus_t cublasTtrsm(cublasHandle_t handle, cublasSideMode_t side,
                            cublasFillMode_t uplo, cublasOperation_t trans,
                            cublasDiagType_t diag, std::size_t m, std::size_t n,
@@ -324,7 +734,43 @@ cublasStatus_t cublasTtrsm(cublasHandle_t handle, cublasSideMode_t side,
     return cublasStrsm(handle, side, uplo, trans, diag, m, n, alpha, A, lda, B,
                        ldb);
 }
-
+/**
+ * @ingroup cuBlasFunctions
+ * @brief Solves a triangular matrix equation using cuBLAS for single precision.
+ *
+ * This function performs a triangular solve (TRSM) operation, solving for matrix X
+ * in one of the following matrix equations:
+ * - `op(A) * X = alpha * B`
+ * - `X * op(A) = alpha * B`
+ * where `op(A)` is either `A`, `A^T` (transpose of A), or `A^H` (conjugate transpose of A).
+ *
+ * @param handle    The cuBLAS library handle, used to manage the cuBLAS context.
+ * @param side      Specifies whether A appears on the left or right side of X.
+ *                  Use `CUBLAS_SIDE_LEFT` to solve `op(A) * X = alpha * B` or
+ *                  `CUBLAS_SIDE_RIGHT` to solve `X * op(A) = alpha * B`.
+ * @param uplo      Specifies whether the matrix A is lower or upper triangular.
+ *                  Use `CUBLAS_FILL_MODE_LOWER` if A is lower triangular, or
+ *                  `CUBLAS_FILL_MODE_UPPER` if A is upper triangular.
+ * @param trans     Indicates the operation to perform on A. Possible values are:
+ *                  - `CUBLAS_OP_N`: No transpose
+ *                  - `CUBLAS_OP_T`: Transpose
+ *                  - `CUBLAS_OP_C`: Conjugate transpose
+ * @param diag      Specifies whether the diagonal elements of A are assumed to be
+ *                  unit (1) or not. Use `CUBLAS_DIAG_UNIT` if A has a unit diagonal,
+ *                  or `CUBLAS_DIAG_NON_UNIT` if it does not.
+ * @param m         Number of rows of matrix B.
+ * @param n         Number of columns of matrix B.
+ * @param alpha     Pointer to a scalar value that multiplies B.
+ * @param A         Pointer to the triangular matrix A. If `side` is set to
+ *                  `CUBLAS_SIDE_LEFT`, the dimensions of A are `lda x m`.
+ *                  If `side` is set to `CUBLAS_SIDE_RIGHT`, the dimensions of A
+ *                  are `lda x n`.
+ * @param lda       Leading dimension of matrix A.
+ * @param B         Pointer to matrix B, which will be overwritten with the solution matrix X.
+ * @param ldb       Leading dimension of matrix B.
+ * 
+ * @return          Returns `cublasStatus_t`, indicating success or the type of error encountered.
+ */
 cublasStatus_t cublasTtrsm(cublasHandle_t handle, cublasSideMode_t side,
                            cublasFillMode_t uplo, cublasOperation_t trans,
                            cublasDiagType_t diag, std::size_t m, std::size_t n,
@@ -335,7 +781,43 @@ cublasStatus_t cublasTtrsm(cublasHandle_t handle, cublasSideMode_t side,
     return cublasDtrsm(handle, side, uplo, trans, diag, m, n, alpha, A, lda, B,
                        ldb);
 }
-
+/**
+ * @ingroup cuBlasFunctions
+ * @brief Solves a triangular matrix equation using cuBLAS for single precision.
+ *
+ * This function performs a triangular solve (TRSM) operation, solving for matrix X
+ * in one of the following matrix equations:
+ * - `op(A) * X = alpha * B`
+ * - `X * op(A) = alpha * B`
+ * where `op(A)` is either `A`, `A^T` (transpose of A), or `A^H` (conjugate transpose of A).
+ *
+ * @param handle    The cuBLAS library handle, used to manage the cuBLAS context.
+ * @param side      Specifies whether A appears on the left or right side of X.
+ *                  Use `CUBLAS_SIDE_LEFT` to solve `op(A) * X = alpha * B` or
+ *                  `CUBLAS_SIDE_RIGHT` to solve `X * op(A) = alpha * B`.
+ * @param uplo      Specifies whether the matrix A is lower or upper triangular.
+ *                  Use `CUBLAS_FILL_MODE_LOWER` if A is lower triangular, or
+ *                  `CUBLAS_FILL_MODE_UPPER` if A is upper triangular.
+ * @param trans     Indicates the operation to perform on A. Possible values are:
+ *                  - `CUBLAS_OP_N`: No transpose
+ *                  - `CUBLAS_OP_T`: Transpose
+ *                  - `CUBLAS_OP_C`: Conjugate transpose
+ * @param diag      Specifies whether the diagonal elements of A are assumed to be
+ *                  unit (1) or not. Use `CUBLAS_DIAG_UNIT` if A has a unit diagonal,
+ *                  or `CUBLAS_DIAG_NON_UNIT` if it does not.
+ * @param m         Number of rows of matrix B.
+ * @param n         Number of columns of matrix B.
+ * @param alpha     Pointer to a scalar value that multiplies B.
+ * @param A         Pointer to the triangular matrix A. If `side` is set to
+ *                  `CUBLAS_SIDE_LEFT`, the dimensions of A are `lda x m`.
+ *                  If `side` is set to `CUBLAS_SIDE_RIGHT`, the dimensions of A
+ *                  are `lda x n`.
+ * @param lda       Leading dimension of matrix A.
+ * @param B         Pointer to matrix B, which will be overwritten with the solution matrix X.
+ * @param ldb       Leading dimension of matrix B.
+ * 
+ * @return          Returns `cublasStatus_t`, indicating success or the type of error encountered.
+ */
 cublasStatus_t cublasTtrsm(cublasHandle_t handle, cublasSideMode_t side,
                            cublasFillMode_t uplo, cublasOperation_t trans,
                            cublasDiagType_t diag, std::size_t m, std::size_t n,
@@ -349,7 +831,43 @@ cublasStatus_t cublasTtrsm(cublasHandle_t handle, cublasSideMode_t side,
                        reinterpret_cast<const cuComplex*>(A), lda,
                        reinterpret_cast<cuComplex*>(B), ldb);
 }
-
+/**
+ * @ingroup cuBlasFunctions
+ * @brief Solves a triangular matrix equation using cuBLAS for single precision.
+ *
+ * This function performs a triangular solve (TRSM) operation, solving for matrix X
+ * in one of the following matrix equations:
+ * - `op(A) * X = alpha * B`
+ * - `X * op(A) = alpha * B`
+ * where `op(A)` is either `A`, `A^T` (transpose of A), or `A^H` (conjugate transpose of A).
+ *
+ * @param handle    The cuBLAS library handle, used to manage the cuBLAS context.
+ * @param side      Specifies whether A appears on the left or right side of X.
+ *                  Use `CUBLAS_SIDE_LEFT` to solve `op(A) * X = alpha * B` or
+ *                  `CUBLAS_SIDE_RIGHT` to solve `X * op(A) = alpha * B`.
+ * @param uplo      Specifies whether the matrix A is lower or upper triangular.
+ *                  Use `CUBLAS_FILL_MODE_LOWER` if A is lower triangular, or
+ *                  `CUBLAS_FILL_MODE_UPPER` if A is upper triangular.
+ * @param trans     Indicates the operation to perform on A. Possible values are:
+ *                  - `CUBLAS_OP_N`: No transpose
+ *                  - `CUBLAS_OP_T`: Transpose
+ *                  - `CUBLAS_OP_C`: Conjugate transpose
+ * @param diag      Specifies whether the diagonal elements of A are assumed to be
+ *                  unit (1) or not. Use `CUBLAS_DIAG_UNIT` if A has a unit diagonal,
+ *                  or `CUBLAS_DIAG_NON_UNIT` if it does not.
+ * @param m         Number of rows of matrix B.
+ * @param n         Number of columns of matrix B.
+ * @param alpha     Pointer to a scalar value that multiplies B.
+ * @param A         Pointer to the triangular matrix A. If `side` is set to
+ *                  `CUBLAS_SIDE_LEFT`, the dimensions of A are `lda x m`.
+ *                  If `side` is set to `CUBLAS_SIDE_RIGHT`, the dimensions of A
+ *                  are `lda x n`.
+ * @param lda       Leading dimension of matrix A.
+ * @param B         Pointer to matrix B, which will be overwritten with the solution matrix X.
+ * @param ldb       Leading dimension of matrix B.
+ * 
+ * @return          Returns `cublasStatus_t`, indicating success or the type of error encountered.
+ */
 cublasStatus_t cublasTtrsm(cublasHandle_t handle, cublasSideMode_t side,
                            cublasFillMode_t uplo, cublasOperation_t trans,
                            cublasDiagType_t diag, std::size_t m, std::size_t n,
