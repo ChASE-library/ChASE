@@ -13,6 +13,21 @@ namespace internal
 {
 namespace cuda
 {
+    /**
+     * @brief Shifts the diagonal elements of a matrix by a specified value.
+     * 
+     * This function adds a scalar `shift` to the diagonal elements of the matrix `H` on the GPU. 
+     * The operation is performed asynchronously using the provided CUDA stream, or the default stream if none is provided.
+     * 
+     * @tparam T The data type of the matrix elements (e.g., `float`, `double`).
+     * 
+     * @param H The matrix on which the diagonal elements will be shifted. It is a matrix on the GPU.
+     * @param shift The value to be added to the diagonal elements of the matrix.
+     * @param stream_ Optional CUDA stream for asynchronous execution. If `nullptr`, the default stream is used.
+     * 
+     * @note The function modifies the matrix `H` in-place. The number of diagonal elements processed is determined 
+     *       by the minimum of the number of rows and columns of `H`.
+     */    
     template<typename T>
     void shiftDiagonal(chase::matrix::Matrix<T, chase::platform::GPU>& H, chase::Base<T> shift, cudaStream_t* stream_ = nullptr)
     {

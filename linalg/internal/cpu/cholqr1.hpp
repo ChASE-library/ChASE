@@ -14,6 +14,19 @@ namespace internal
 {
 namespace cpu
 {
+    /**
+     * \brief Performs Cholesky QR factorization (degree 1).
+     * 
+     * This function performs Cholesky QR factorization on the matrix V.
+     * It computes \( A = V^T V \) and then solves \( A X = V \).
+     * 
+     * \param m The number of rows of matrix V.
+     * \param n The number of columns of matrix V.
+     * \param V The matrix on which the factorization is performed.
+     * \param ldv The leading dimension of V.
+     * \param A The output matrix that stores the result of the Cholesky factorization (optional, will be allocated if null).
+     * \return 0 if successful, non-zero value otherwise.
+     */    
     template<typename T>
     int cholQR1(std::size_t m, std::size_t n, T *V, int ldv, T *A = nullptr)
     {
@@ -46,6 +59,19 @@ namespace cpu
         }
     }
 
+    /**
+     * \brief Performs Cholesky QR factorization (degree 2).
+     * 
+     * This function performs Cholesky QR factorization on the matrix V.
+     * It applies two iterations of Cholesky QR factorization.
+     * 
+     * \param m The number of rows of matrix V.
+     * \param n The number of columns of matrix V.
+     * \param V The matrix on which the factorization is performed.
+     * \param ldv The leading dimension of V.
+     * \param A The output matrix that stores the result of the Cholesky factorization (optional, will be allocated if null).
+     * \return 0 if successful, non-zero value otherwise.
+     */
     template<typename T>
     int cholQR2(std::size_t m, std::size_t n, T *V, int ldv, T *A = nullptr)
     {
@@ -80,6 +106,19 @@ namespace cpu
         }
     }
 
+    /**
+     * \brief Performs Cholesky QR factorization with shifting (degree 2).
+     * 
+     * This function performs Cholesky QR factorization on the matrix V, with a shift applied to the matrix diagonal.
+     * It applies two iterations of Cholesky QR factorization with a diagonal shift.
+     * 
+     * \param m The number of rows of matrix V.
+     * \param n The number of columns of matrix V.
+     * \param V The matrix on which the factorization is performed.
+     * \param ldv The leading dimension of V.
+     * \param A The output matrix that stores the result of the Cholesky factorization (optional, will be allocated if null).
+     * \return 0 if successful, non-zero value otherwise.
+     */
     template<typename T>
     int shiftedcholQR2(std::size_t m, std::size_t n, T *V, int ldv, T *A = nullptr)
     { 
@@ -124,6 +163,16 @@ namespace cpu
 
     }
 
+    /**
+     * \brief Performs Householder QR factorization.
+     * 
+     * This function computes the QR factorization of matrix V using the Householder transformation.
+     * 
+     * \param m The number of rows of matrix V.
+     * \param n The number of columns of matrix V.
+     * \param V The matrix on which the factorization is performed.
+     * \param ldv The leading dimension of V.
+     */
     template<typename T>
     void houseHoulderQR(std::size_t m, std::size_t n, T *V, std::size_t ldv)
     {

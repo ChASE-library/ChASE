@@ -22,6 +22,12 @@
 #include "linalg/internal/cuda/precision_conversion.cuh"
 #endif
 
+/**
+ * @page chase_dist_matrix_namespace chase::distMatrix Namespace
+ * The chase::distMatrix namespace contains a set of matrix types designed for distributed memory environments. 
+ * These matrices are meant to support different data distributions across multiple MPI processes.
+ */
+
 namespace chase {
 
 std::pair<std::size_t, std::size_t> numroc(std::size_t n, std::size_t nb,
@@ -49,10 +55,31 @@ std::pair<std::size_t, std::size_t> numroc(std::size_t n, std::size_t nb,
     return std::make_pair(numroc, nb_loc);
 }
 
+/**
+ * @defgroup dist_matrix_classes Distributed Matrix Classes
+ * @brief Classes and utilities for distributed matrix operations.
+
+ * The `distMatrix` module provides several matrix types that are distributed across MPI ranks. These matrix types are:
+ * - `RedundantMatrix`: A matrix where all elements are replicated across MPI processes.
+ * - `BlockBlockMatrix`: A matrix distributed in block-wise fashion.
+ * - `BlockCyclicMatrix`: A matrix distributed cyclically in blocks.
+ * 
+ * These matrix classes are templated on the element type (`T`) and the platform (`Platform`), where `Platform` is typically `chase::platform::CPU` or `chase::platform::GPU`. 
+ * @{
+ */   
 namespace distMatrix {
 
+/**
+* @brief Represents the BlockBlock Matrix.
+*/
 struct BlockBlock {}; 
+/**
+* @brief Represents the Redundant Matrix.
+*/
 struct Redundant {}; 
+/**
+* @brief Represents the BlockCyclic Matrix.
+*/
 struct BlockCyclic {}; 
 
 template<typename T, typename Platform>
@@ -64,33 +91,98 @@ class BlockBlockMatrix;
 template<typename T, typename Platform>
 class BlockCyclicMatrix;
 
+/**
+ * @class AbstractDistMatrix
+ * @brief Abstract base class for distributed matrices
+ * 
+ * `AbstractDistMatrix` is the base class for all distributed matrix types, providing basic functionality for matrix distribution and communication.
+ * It provides methods for enabling and disabling single precision matrices, as well as memory management for both CPU and GPU platforms.
+ * 
+ * @tparam T Element type of the matrix.
+ * @tparam Derived Derived matrix type (RedundantMatrix, BlockBlockMatrix, etc.).
+ * @tparam Platform Platform type (CPU, GPU).
+ */
 template <typename T, template <typename, typename> class Derived, typename Platform = chase::platform::CPU>
 class AbstractDistMatrix {
 protected:
     // Single precision matrix
 #ifdef ENABLE_MIXED_PRECISION       
-    using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type;
-    using SinglePrecisionDerived = Derived<SinglePrecisionType, Platform>;
-    std::unique_ptr<SinglePrecisionDerived> single_precision_matrix_;
-    bool is_single_precision_enabled_ = false; 
-    std::chrono::high_resolution_clock::time_point start, end;
-    std::chrono::duration<double> elapsed;
+    using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type; /**< Single precision type */
+    using SinglePrecisionDerived = Derived<SinglePrecisionType, Platform>; /**< Derived class in single precision */
+    std::unique_ptr<SinglePrecisionDerived> single_precision_matrix_; /**< Pointer to single precision distMatrix */
+    bool is_single_precision_enabled_ = false;  /**< Flag indicating if single precision is enabled */
+    std::chrono::high_resolution_clock::time_point start, end; /**< Timing points for performance measurement */
+    std::chrono::duration<double> elapsed; /**< Duration for single precision operations */
 #endif
 
 public:
+    /**
+     * @brief Virtual destructor
+     */
     virtual ~AbstractDistMatrix() = default;
+    /**
+     * @brief Get the 2D MPI grid associated with the matrix.
+     * 
+     * @return Pointer to the MPI grid object.
+     */    
     virtual chase::grid::MpiGrid2DBase* getMpiGrid() const = 0;   
+    /**
+     * @brief Get a shared pointer to the 2D MPI grid.
+     * 
+     * @return Shared pointer to the MPI grid object.
+     */    
     virtual std::shared_ptr<chase::grid::MpiGrid2DBase> getMpiGrid_shared_ptr() const = 0;
+    /**
+     * @brief Get the global row count.
+     * @return The number of rows in the multi-vector.
+     */     
     virtual std::size_t g_rows() const = 0;
+    /**
+     * @brief Get the global column count.
+     * @return The number of columns in the multi-vector.
+     */      
     virtual std::size_t g_cols() const = 0;
+    /**
+     * @brief Get the local row count.
+     * @return The number of local rows in the multi-vector.
+     */     
     virtual std::size_t l_rows() const = 0;
+    /**
+     * @brief Get the local column count.
+     * @return The number of local columns in the multi-vector.
+     */      
     virtual std::size_t l_cols() const = 0;
+    /**
+     * @brief Get the leading dimension for local storage.
+     * @return The leading dimension size.
+     */       
     virtual std::size_t l_ld() const = 0;
+    /**
+     * @brief Get the pointer to local data.
+     * @return Pointer to local data in the multi-vector.
+     */    
     virtual T *         l_data() = 0;
+    //virtual typename chase::platform::MatrixTypePlatform<T, Platform>::type& loc_matrix() = 0;
+    /**
+     * @brief Get the local matrix object.
+     * @return Reference to Matrix object representing local matrix data.
+     */     
     virtual chase::matrix::Matrix<T, Platform>& loc_matrix() = 0;
+    /**
+     * @brief Get the block size for block-cyclic distribution.
+     * @return Block size for distribution.
+     */     
     virtual std::size_t mb() const = 0;
+    /**
+     * @brief Get the block size for block-cyclic distribution.
+     * @return Block size for distribution.
+     */     
     virtual std::size_t nb() const = 0;  
     //virtual std::unique_ptr<SinglePrecisionDerived> createSinglePrecisionMatrix() = 0;
+    /**
+     * @brief Get the global rank in the MPI communicator.
+     * @return The rank of the process within the global MPI communicator.
+     */    
     int grank()
     {
         int grank = 0;
@@ -99,6 +191,13 @@ public:
     }
 
 #ifdef HAS_CUDA
+    /**
+     * @brief Transfers data from device to host.
+     *
+     * This operation is only supported on GPU platforms.
+     *
+     * @throws std::runtime_error if executed on a CPU platform.
+     */
     void D2H()
     {
         auto& loc_matrix = this->loc_matrix();
@@ -110,7 +209,13 @@ public:
             throw std::runtime_error("[DistMatrix]: CPU type of matrix do not support D2H operation");
         }
     }
-
+    /**
+     * @brief Transfers data from host to device.
+     *
+     * This operation is only supported on GPU platforms.
+     *
+     * @throws std::runtime_error if executed on a CPU platform.
+     */
     void H2D()
     {
         auto& loc_matrix = this->loc_matrix();
@@ -122,20 +227,31 @@ public:
             throw std::runtime_error("[DistMatrix]: CPU type of matrix do not support H2D operation");
         }
     }
-
+    /**
+     * @brief Allocate memory for local data on the CPU.
+     */
     void allocate_cpu_data()
     {
         auto& loc_matrix = this->loc_matrix();
         loc_matrix.allocate_cpu_data();   
     }
 #endif
-
+    /**
+     * @brief Provides a pointer to the CPU data.
+     * 
+     * @return Pointer to the CPU data.
+     */
     T *cpu_data()
     {
         auto& loc_matrix = this->loc_matrix();
         return loc_matrix.cpu_data();      
     }
 
+    /**
+     * @brief Retrieves the leading dimension for the CPU data.
+     * 
+     * @return Leading dimension of the CPU data.
+     */
     std::size_t cpu_ld()
     {
         auto& loc_matrix = this->loc_matrix();
@@ -144,6 +260,9 @@ public:
 
 #ifdef ENABLE_MIXED_PRECISION       
     // Enable single precision for double types (and complex<double>)
+    /**
+     * @brief Enable single precision for double types.
+     */      
     template <typename U = T, typename std::enable_if<std::is_same<U, double>::value || std::is_same<U, std::complex<double>>::value, int>::type = 0>
     void enableSinglePrecision() {
         if (!single_precision_matrix_) {
@@ -190,6 +309,10 @@ public:
 
 
     // Disable single precision for double types
+    /**
+     * @brief Disable single precision and optionally copy data back.
+     * @param copyback Whether to copy data back to double precision.
+     */      
     template <typename U = T, typename std::enable_if<std::is_same<U, double>::value || std::is_same<U, std::complex<double>>::value, int>::type = 0>
     void disableSinglePrecision(bool copyback = false) {
         start = std::chrono::high_resolution_clock::now();
@@ -230,12 +353,20 @@ public:
     }
 
     // Check if single precision is enabled
+    /**
+     * @brief Check if single precision is enabled.
+     * @return True if single precision is enabled, false otherwise.
+     */   
     template <typename U = T, typename std::enable_if<std::is_same<U, double>::value || std::is_same<U, std::complex<double>>::value, int>::type = 0>
     bool isSinglePrecisionEnabled() const {
         return is_single_precision_enabled_;
     }
 
     // Get the single precision matrix itself
+    /**
+     * @brief Get the single precision multi-vector.
+     * @return Pointer to the single precision multi-vector.
+     */
     template <typename U = T, typename std::enable_if<std::is_same<U, double>::value || std::is_same<U, std::complex<double>>::value, int>::type = 0>
     SinglePrecisionDerived* getSinglePrecisionMatrix() {
         if (is_single_precision_enabled_) {
@@ -258,17 +389,42 @@ public:
 #endif
 };
 
+/**
+ * @class RedundantMatrix
+ * @brief A class representing a distributed matrix with redundant storage.
+ *
+ * This class inherits from `AbstractDistMatrix` and represents a matrix
+ * that is distributed across an MPI 2D grid. It supports operations like
+ * redistribution to other matrix types (BlockBlock, BlockCyclic), and provides
+ * access to the matrix's local data and MPI grid.
+ *
+ * @tparam T The element type of the matrix.
+ * @tparam Platform The platform on which the matrix is hosted (defaults to CPU).
+ */
 template<typename T, typename Platform = chase::platform::CPU> 
 class RedundantMatrix : public AbstractDistMatrix<T, RedundantMatrix, Platform>
 {
 
 public:
-    using platform_type = Platform;
-    using value_type = T;  // Alias for element type
-    using matrix_type = Redundant;
-
+    using platform_type = Platform; ///< Alias for the platform type
+    using value_type = T;  ///< Alias for the element type of the matrix
+    using matrix_type = Redundant; ///< Alias for the matrix type (Redundant)
+    /**
+     * @brief Destructor for RedundantMatrix.
+     *
+     */
     ~RedundantMatrix() override {};
+    /**
+     * @brief Default constructor for RedundantMatrix.
+     */    
     RedundantMatrix();
+    /**
+     * @brief Constructor initializing a RedundantMatrix with given dimensions and MPI grid.
+     *
+     * @param m Number of rows for the local matrix.
+     * @param n Number of columns for the local matrix.
+     * @param mpi_grid A shared pointer to the MPI grid for the distribution.
+     */    
     RedundantMatrix(std::size_t m, std::size_t n,
                     std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid)
                     :m_(m), n_(n), ld_(m_), mpi_grid_(mpi_grid)
@@ -277,7 +433,15 @@ public:
         N_ = n_;
         local_matrix_ = chase::matrix::Matrix<T, Platform>(m_, n_); 
     }
-
+    /**
+     * @brief Constructor initializing a RedundantMatrix with given data, dimensions, and MPI grid.
+     *
+     * @param m Number of rows for the local matrix.
+     * @param n Number of columns for the local matrix.
+     * @param ld Leading dimension of the local matrix.
+     * @param data Pointer to the data for initializing the matrix.
+     * @param mpi_grid A shared pointer to the MPI grid for the distribution.
+     */
     RedundantMatrix(std::size_t m, std::size_t n, std::size_t ld, T *data, 
                     std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid)
                     :m_(m), n_(n), ld_(ld), mpi_grid_(mpi_grid)
@@ -291,37 +455,109 @@ public:
             ld_ = local_matrix_.ld();
         }    
     }
-
+    /**
+     * @brief Get the global number of rows.
+     * 
+     * @return Global number of rows in the matrix.
+     */
     std::size_t g_rows() const override { return M_;}
+    /**
+     * @brief Get the global number of columns.
+     * 
+     * @return Global number of columns in the matrix.
+     */    
     std::size_t g_cols() const override { return N_;}
+    /**
+     * @brief Get the local number of rows.
+     * 
+     * @return Local number of rows in the matrix.
+     */    
     std::size_t l_rows() const override { return m_;}
+    /**
+     * @brief Get the local number of columns.
+     * 
+     * @return Local number of columns in the matrix.
+     */    
     std::size_t l_cols() const override { return n_;}
+    /**
+     * @brief Get the local leading dimension (stride).
+     * 
+     * @return Local leading dimension of the matrix.
+     */    
     std::size_t l_ld() const override { return ld_;}
+    /**
+     * @brief Get the block size in the row direction (unused for redundant matrices).
+     * 
+     * @return -1 as the block size is not applicable.
+     */    
     std::size_t mb() const override { return -1;}
+    /**
+     * @brief Get the block size in the column direction (unused for redundant matrices).
+     * 
+     * @return -1 as the block size is not applicable.
+     */    
     std::size_t nb() const override { return -1;} 
-
+    /**
+     * @brief Get the pointer to the local matrix data.
+     *
+     * @return A pointer to the local matrix data.
+     */
     T *         l_data() override { 
         return local_matrix_.data();       
     }
+    /**
+     * @brief Get a reference to the local matrix.
+     * 
+     * @return A reference to the local matrix object.
+     */    
     chase::matrix::Matrix<T, Platform>& loc_matrix() override { return local_matrix_;}
 
 
     // Accessors for MPI grid
+    /**
+     * @brief Get the MPI grid associated with this matrix.
+     *
+     * @return A raw pointer to the MPI grid.
+     */    
     chase::grid::MpiGrid2DBase* getMpiGrid() const override {
         return mpi_grid_.get();
     }
-
+    /**
+     * @brief Get the shared pointer to the MPI grid.
+     *
+     * @return A shared pointer to the MPI grid.
+     */
     std::shared_ptr<chase::grid::MpiGrid2DBase> getMpiGrid_shared_ptr() const override
     {
         return mpi_grid_;
     }
-
+    /**
+     * @brief Map the matrix to a new MPI grid.
+     * 
+     * This method updates the MPI grid of the matrix to a new one.
+     * 
+     * @param new_mpi_grid A shared pointer to the new MPI grid.
+     */
     void mapToNewMpiGrid(std::shared_ptr<chase::grid::MpiGrid2DBase> new_mpi_grid)
     {
         mpi_grid_ = new_mpi_grid;
     }
 
     //here the startrow/col indices should be the global indices
+    /**
+     * @brief Redistribute the matrix to another matrix type.
+     * 
+     * This method supports redistribution to BlockBlock, BlockCyclic, or other supported types.
+     * 
+     * @tparam targetType The target matrix type to redistribute to.
+     * @param targetMatrix A pointer to the target matrix to redistribute the data to.
+     * @param startRow Starting row index for the redistribution (global index).
+     * @param subRows Number of rows to redistribute.
+     * @param startCol Starting column index for the redistribution (global index).
+     * @param subCols Number of columns to redistribute.
+     * 
+     * @throws std::runtime_error If the global dimensions do not match between matrices.
+     */    
     template<template <typename, typename> class targetType>
     void redistributeImpl(targetType<T, Platform>* targetMatrix,
                           std::size_t startRow, std::size_t subRows, std::size_t startCol, std::size_t subCols)
@@ -347,13 +583,34 @@ public:
             throw std::runtime_error("[RedundantMatrix]: no support for redistribution from redundant to othertypes yet");
         }      
     }   
-
+    /**
+     * @brief Redistribute the matrix to another matrix type with full global dimensions.
+     * 
+     * This method redistributes the entire matrix without specifying a sub-region.
+     * 
+     * @tparam targetType The target matrix type to redistribute to.
+     * @param targetMatrix A pointer to the target matrix to redistribute the data to.
+     */
     template<template <typename, typename> class targetType>
     void redistributeImpl(targetType<T, Platform>* targetMatrix)
     {
         this->redistributeImpl(targetMatrix, 0, this->g_rows(), 0, this->g_cols());
     }
-
+    /**
+     * @brief Redistribute the matrix to another matrix type with extended logic.
+     * 
+     * Similar to `redistributeImpl`, but includes additional logic to handle
+     * more complex cases.
+     *
+     * @tparam TargetMatrixType The target matrix type to redistribute to.
+     * @param targetMatrix A pointer to the target matrix.
+     * @param startRow Starting row index (global index).
+     * @param subRows Number of rows to redistribute.
+     * @param startCol Starting column index (global index).
+     * @param subCols Number of columns to redistribute.
+     * 
+     * @throws std::runtime_error If global dimensions do not match.
+     */
     template <typename TargetMatrixType>
     void redistributeImpl_2(TargetMatrixType* targetMatrix,
                         std::size_t startRow, std::size_t subRows, std::size_t startCol, std::size_t subCols)
@@ -382,7 +639,14 @@ public:
             throw std::runtime_error("[RedundantMatrix]: Unsupported redistribution target type.");
         }
     }
-
+    /**
+     * @brief Redistribute the matrix to another matrix type with full global dimensions.
+     *
+     * Similar to `redistributeImpl_2`, but without specifying a sub-region.
+     *
+     * @tparam TargetMatrixType The target matrix type to redistribute to.
+     * @param targetMatrix A pointer to the target matrix.
+     */
     template <typename TargetMatrixType>
     void redistributeImpl_2(TargetMatrixType* targetMatrix)
     {
@@ -390,14 +654,14 @@ public:
     }
 
 private:
-    std::size_t M_;
-    std::size_t N_;
-    std::size_t m_;
-    std::size_t n_;
-    std::size_t ld_;
+    std::size_t M_; ///< Global number of rows in the matrix
+    std::size_t N_; ///< Global number of columns in the matrix
+    std::size_t m_; ///< Local number of rows in the matrix
+    std::size_t n_; ///< Local number of columns in the matrix
+    std::size_t ld_; ///< Local leading dimension (stride)
 
-    chase::matrix::Matrix<T, Platform> local_matrix_;
-    std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid_;    
+    chase::matrix::Matrix<T, Platform> local_matrix_; ///< Local matrix holding the data
+    std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid_; ///< Shared pointer to the MPI grid   
 
     void redistributeToBlockBlock(BlockBlockMatrix<T, Platform>* targetMatrix,
                                    std::size_t startRow, std::size_t subRows, std::size_t startCol, std::size_t subCols)
@@ -581,18 +845,42 @@ private:
 
 };
 
-
+/**
+ * @brief Class representing a distributed block-block matrix.
+ *
+ * This class implements a matrix that is distributed across 2D MPI grids. It inherits from
+ * `AbstractDistMatrix` and provides methods for handling matrix data in distributed memory 
+ * environments, including matrix manipulation, serialization, and redistribution.
+ *
+ * @tparam T The element type of the matrix (e.g., float, double).
+ * @tparam Platform The platform on which the matrix will be operated (e.g., CPU or GPU).
+ */
 template<typename T, typename Platform = chase::platform::CPU> 
 class BlockBlockMatrix : public AbstractDistMatrix<T, BlockBlockMatrix, Platform>
 {
 
 public:
-    using platform_type = Platform;
-    using value_type = T;  // Alias for element type
-    using matrix_type = BlockBlock;
-
+    using platform_type = Platform; ///< Platform type (e.g., CPU or GPU).
+    using value_type = T;           ///< Alias for the element type.
+    using matrix_type = BlockBlock; ///< Alias for the matrix type.
+    /**
+     * @brief Destructor for BlockBlockMatrix.
+     */
     ~BlockBlockMatrix() override {};
+    /**
+     * @brief Default constructor for BlockBlockMatrix.
+     */    
     BlockBlockMatrix();
+    /**
+     * @brief Constructor for BlockBlockMatrix with given dimensions and MPI grid.
+     *
+     * Initializes the matrix with global dimensions M and N and sets up MPI communication grid.
+     * Calculates the local matrix dimensions based on the MPI grid configuration.
+     *
+     * @param M Global number of rows of the matrix.
+     * @param N Global number of columns of the matrix.
+     * @param mpi_grid Shared pointer to the MPI grid configuration.
+     */    
     BlockBlockMatrix(std::size_t M, std::size_t N,
                     std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid)
                     :M_(M), N_(N), mpi_grid_(mpi_grid)
@@ -645,7 +933,18 @@ public:
         ld_ = m_;
         local_matrix_ = chase::matrix::Matrix<T, Platform>(m_, n_);     
     }
-
+    /**
+     * @brief Constructor for BlockBlockMatrix with local data.
+     *
+     * Initializes the matrix with local dimensions m and n, and loads the matrix data.
+     * Also sets up the global matrix size using MPI operations.
+     *
+     * @param m Local number of rows of the matrix.
+     * @param n Local number of columns of the matrix.
+     * @param ld Leading dimension of the matrix.
+     * @param data Pointer to the data buffer holding the matrix data.
+     * @param mpi_grid Shared pointer to the MPI grid configuration.
+     */
     BlockBlockMatrix(std::size_t m, std::size_t n, std::size_t ld, T *data,
                     std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid)
                     :m_(m), n_(n), ld_(ld), mpi_grid_(mpi_grid)
@@ -693,30 +992,95 @@ public:
         g_offs_[1] = coord_[1] * len;
      
     }
-
+    /**
+     * @brief Get the global number of rows in the matrix.
+     *
+     * @return Global number of rows.
+     */
     std::size_t g_rows() const override { return M_;}
+    /**
+     * @brief Get the global number of columns in the matrix.
+     *
+     * @return Global number of columns.
+     */    
     std::size_t g_cols() const override { return N_;}
+    /**
+     * @brief Get the leading dimension of the local matrix.
+     *
+     * @return Leading dimension of the local matrix.
+     */    
     std::size_t l_ld() const override { return ld_;}
+    /**
+     * @brief Get the number of rows in the local matrix.
+     *
+     * @return Number of rows in the local matrix.
+     */    
     std::size_t l_rows() const override { return m_;}
+    /**
+     * @brief Get the number of columns in the local matrix.
+     *
+     * @return Number of columns in the local matrix.
+     */    
     std::size_t l_cols() const override { return n_;}
+    /**
+     * @brief Get the global offsets for this matrix.
+     *
+     * @return Pointer to the array holding global offsets for the matrix.
+     */    
     std::size_t *g_offs() { return g_offs_;}
+    /**
+     * @brief Get the block size in the row direction (not implemented).
+     *
+     * @return Always returns -1.
+     */    
     std::size_t mb() const override { return -1;}
+    /**
+     * @brief Get the block size in the column direction (not implemented).
+     *
+     * @return Always returns -1.
+     */    
     std::size_t nb() const override { return -1;}    
+    /**
+     * @brief Get the local data pointer for the matrix.
+     *
+     * @return Pointer to the local data of the matrix.
+     */    
     T *         l_data() override { 
         return local_matrix_.data();       
     }
+    /**
+     * @brief Get the local matrix object.
+     *
+     * @return Reference to the local matrix.
+     */    
     chase::matrix::Matrix<T, Platform>& loc_matrix() override { return local_matrix_;}
 
     // Accessors for MPI grid
+    /**
+     * @brief Get the MPI grid configuration.
+     *
+     * @return Pointer to the MPI grid configuration.
+     */    
     chase::grid::MpiGrid2DBase* getMpiGrid() const override {
         return mpi_grid_.get();
     }
-
+    /**
+     * @brief Get the shared pointer to the MPI grid configuration.
+     *
+     * @return Shared pointer to the MPI grid configuration.
+     */
     std::shared_ptr<chase::grid::MpiGrid2DBase> getMpiGrid_shared_ptr() const override
     {
         return mpi_grid_;
     }
-
+    /**
+     * @brief Clone the matrix as a multi-vector of a different type.
+     *
+     * @tparam CloneVectorType Type of the vector to be cloned.
+     * @param g_M Global number of rows in the cloned vector.
+     * @param g_N Global number of columns in the cloned vector.
+     * @return The cloned vector of the given type.
+     */
     template<typename CloneVectorType>
     CloneVectorType cloneMultiVector(std::size_t g_M, std::size_t g_N)
     {
@@ -730,6 +1094,15 @@ public:
 
     //only save from CPU buffer
     //for saving GPU data, need to copy to CPU by D2H()
+    /**
+     * @brief Save the matrix data to a binary file.
+     *
+     * Saves the matrix data to a binary file, with special handling for CPU and GPU platforms.
+     * Only CPU buffer data is saved, and GPU data is transferred to CPU before saving.
+     *
+     * @param filename Name of the file where the matrix data is saved.
+     * @throws std::runtime_error If the matrix data is not initialized.
+     */    
     void saveToBinaryFile(const std::string& filename) {
     	MPI_File fileHandle;
         MPI_Status status;
@@ -780,6 +1153,15 @@ public:
     }
 
     // Read matrix data from a binary file
+    /**
+     * @brief Read matrix data from a binary file.
+     *
+     * Reads the matrix data from a binary file. If the matrix is on a GPU, data is transferred to
+     * the CPU first before reading. For MPI I/O, MPI is used to read the matrix.
+     *
+     * @param filename Name of the file from which to read the matrix data.
+     * @throws std::runtime_error If the matrix data is not initialized or if the file cannot be opened.
+     */    
     void readFromBinaryFile(const std::string& filename) {
         T *buff;
         if constexpr (std::is_same<Platform, chase::platform::GPU>::value)
@@ -850,10 +1232,22 @@ public:
     }
 
 #ifdef HAS_SCALAPACK
+    /**
+     * @brief Get the ScaLAPACK descriptor for the matrix.
+     *
+     * @return Pointer to the ScaLAPACK descriptor.
+     */
     std::size_t *get_scalapack_desc(){ return desc_; }
 #endif
 
 #ifdef HAS_SCALAPACK
+    /**
+     * @brief Initialize the ScaLAPACK descriptor for the matrix.
+     *
+     * Initializes the ScaLAPACK descriptor based on the matrix dimensions and MPI grid configuration.
+     *
+     * @return Pointer to the initialized ScaLAPACK descriptor.
+     */
     std::size_t *scalapack_descriptor_init()
     {
         std::size_t mb = m_;
@@ -900,7 +1294,15 @@ public:
         return desc_;
     }
 #endif
-
+    /**
+     * @brief Redistribute the matrix to another type of matrix.
+     *
+     * Redistributes the matrix data to another matrix of a different type (e.g., from BlockBlockMatrix
+     * to another matrix type).
+     *
+     * @tparam targetType Type of the target matrix to redistribute data to.
+     * @param targetMatrix Pointer to the target matrix.
+     */
     template<template <typename, typename> class targetType>
     void redistributeImpl(targetType<T, Platform>* targetMatrix)//,
                             //std::size_t offset, std::size_t subsetSize)
@@ -924,15 +1326,15 @@ public:
     }
 
 private:
-    std::size_t M_;
-    std::size_t N_;
-    std::size_t m_;
-    std::size_t n_;
-    std::size_t ld_;
+    std::size_t M_; ///< Global number of rows in the matrix
+    std::size_t N_; ///< Global number of columns in the matrix
+    std::size_t m_; ///< Local number of rows in the matrix
+    std::size_t n_; ///< Local number of columns in the matrix
+    std::size_t ld_; ///< Local leading dimension (stride)
     std::size_t g_offs_[2];
 
-    chase::matrix::Matrix<T, Platform> local_matrix_;
-    std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid_;
+    chase::matrix::Matrix<T, Platform> local_matrix_;  ///< Local matrix holding the data
+    std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid_; ///< Shared pointer to the MPI grid  
 
     void redistributeToRedundant(RedundantMatrix<T, Platform>* targetMatrix)
     {
@@ -1120,18 +1522,46 @@ private:
 #endif
 };
 
-
+/**
+ * @brief A class representing a block-cyclic distributed matrix.
+ *
+ * This class inherits from `AbstractDistMatrix` and provides functionality for a block-cyclic
+ * distributed matrix, which is partitioned into blocks that are distributed across multiple MPI processes.
+ * The matrix is represented locally on each process, and global matrix properties are derived from the
+ * local data and distribution.
+ *
+ * @tparam T The data type of the matrix elements (e.g., `float`, `double`).
+ * @tparam Platform The platform type (e.g., CPU, GPU) specifying the hardware on which the matrix is stored.
+ */
 template<typename T, typename Platform = chase::platform::CPU> 
 class BlockCyclicMatrix : public AbstractDistMatrix<T, BlockCyclicMatrix, Platform>
 {
 
 public:
-    using platform_type = Platform;
-    using value_type = T;  // Alias for element type
-    using matrix_type = BlockCyclic;
+    using platform_type = Platform; ///< Alias for platform type.
+    using value_type = T;  ///< Alias for element type.
+    using matrix_type = BlockCyclic; ///< Alias for matrix type.
     
+    /**
+     * @brief Destructor for `BlockCyclicMatrix`.
+     */    
     ~BlockCyclicMatrix() override {};
+    /**
+     * @brief Default constructor for `BlockCyclicMatrix`.
+     */    
     BlockCyclicMatrix();
+    /**
+     * @brief Constructor for `BlockCyclicMatrix` given global matrix dimensions, block sizes, and MPI grid.
+     *
+     * This constructor initializes the matrix with the given global dimensions, block sizes, and MPI grid
+     * for the 2D block-cyclic distribution.
+     *
+     * @param M The global number of rows in the matrix.
+     * @param N The global number of columns in the matrix.
+     * @param mb The block size for rows.
+     * @param nb The block size for columns.
+     * @param mpi_grid A shared pointer to the `MpiGrid2DBase` object representing the MPI grid for the distribution.
+     */    
     BlockCyclicMatrix(std::size_t M, std::size_t N, std::size_t mb, std::size_t nb,
                     std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid)
                     :M_(M), N_(N), mpi_grid_(mpi_grid), mb_(mb), nb_(nb)
@@ -1146,7 +1576,22 @@ public:
         init_contiguous_buffer_info();
 
     }
-
+    /**
+     * @brief Constructor for `BlockCyclicMatrix` with pre-allocated data.
+     *
+     * This constructor initializes the matrix with pre-allocated data and validates that the local matrix
+     * dimensions match the block-cyclic distribution.
+     *
+     * @param M The global number of rows in the matrix.
+     * @param N The global number of columns in the matrix.
+     * @param m The local number of rows on this process.
+     * @param n The local number of columns on this process.
+     * @param mb The block size for rows.
+     * @param nb The block size for columns.
+     * @param ld The leading dimension of the local matrix.
+     * @param data Pointer to the pre-allocated data for the local matrix.
+     * @param mpi_grid A shared pointer to the `MpiGrid2DBase` object representing the MPI grid for the distribution.
+     */
     BlockCyclicMatrix(std::size_t M, std::size_t N, 
                       std::size_t m, std::size_t n,
                       std::size_t mb, std::size_t nb,
@@ -1184,15 +1629,59 @@ public:
         init_contiguous_buffer_info();
            
     }
-
+    /** 
+     * @brief Returns the global number of rows in the matrix.
+     * 
+     * @return The global number of rows.
+     */
     std::size_t g_rows() const override { return M_; }
+    /** 
+     * @brief Returns the global number of columns in the matrix.
+     * 
+     * @return The global number of columns.
+     */    
     std::size_t g_cols() const override { return N_; }
+    /** 
+     * @brief Returns the local leading dimension.
+     * 
+     * @return The local leading dimension.
+     */    
     std::size_t l_ld() const override { return ld_; }
+    /** 
+     * @brief Returns the local number of rows.
+     * 
+     * @return The local number of rows.
+     */    
     std::size_t l_rows() const override { return m_; }
+    /** 
+     * @brief Returns the local number of columns.
+     * 
+     * @return The local number of columns.
+     */    
     std::size_t l_cols() const override { return n_;}
+    /** 
+     * @brief Returns the block size for rows.
+     * 
+     * @return The block size for rows.
+     */    
     std::size_t mb() const override { return mb_;}
+    /** 
+     * @brief Returns the block size for columns.
+     * 
+     * @return The block size for columns.
+     */    
     std::size_t nb() const override { return nb_;}
+     /** 
+     * @brief Returns the number of row blocks.
+     * 
+     * @return The number of row blocks.
+     */   
     std::size_t mblocks() {return mblocks_; }
+    /** 
+     * @brief Returns the number of column blocks.
+     * 
+     * @return The number of column blocks.
+     */    
     std::size_t nblocks() {return nblocks_; }
     std::vector<std::size_t> m_contiguous_global_offs() { return m_contiguous_global_offs_; }
     std::vector<std::size_t> n_contiguous_global_offs() { return n_contiguous_global_offs_; }
@@ -1201,23 +1690,47 @@ public:
     std::vector<std::size_t> m_contiguous_lens() { return m_contiguous_lens_; }
     std::vector<std::size_t> n_contiguous_lens() {return n_contiguous_lens_; }
     
-    //std::size_t *g_offs() {}
+    /** 
+     * @brief Returns a pointer to the local matrix data.
+     * 
+     * @return A pointer to the local matrix data.
+     */
     T *         l_data() override { 
         return local_matrix_.data();
     }
-    
+    /** 
+     * @brief Returns the local matrix object.
+     * 
+     * @return A reference to the local matrix.
+     */    
     chase::matrix::Matrix<T, Platform>& loc_matrix() override { return local_matrix_;}
 
     // Accessors for MPI grid
+    /** 
+     * @brief Returns a pointer to the MPI grid.
+     * 
+     * @return A pointer to the MPI grid.
+     */    
     chase::grid::MpiGrid2DBase* getMpiGrid() const override {
         return mpi_grid_.get();
     }
-
+    /** 
+     * @brief Returns a shared pointer to the MPI grid.
+     * 
+     * @return A shared pointer to the MPI grid.
+     */
     std::shared_ptr<chase::grid::MpiGrid2DBase> getMpiGrid_shared_ptr() const override
     {
         return mpi_grid_;
     }
-
+    /** 
+     * @brief Clones a multi-vector for the given global dimensions.
+     * 
+     * @tparam CloneVectorType The type of the vector to clone.
+     * @param g_M The global number of rows for the clone.
+     * @param g_N The global number of columns for the clone.
+     * @return A new multi-vector of the given type.
+     */
     template<typename CloneVectorType>
     CloneVectorType cloneMultiVector(std::size_t g_M, std::size_t g_N)
     {
@@ -1231,6 +1744,15 @@ public:
 
     //only save from CPU buffer
     //for saving GPU data, need to copy to CPU by D2H()
+    /** 
+     * @brief Saves the matrix data to a binary file.
+     *
+     * This method saves the matrix data from the CPU buffer to a binary file using MPI I/O.
+     * For GPU data, it must first be copied to the CPU.
+     *
+     * @param filename The name of the file to save the matrix data.
+     * @throws std::runtime_error If the data cannot be saved.
+     */    
     void saveToBinaryFile(const std::string& filename) {
     	MPI_File fileHandle;
         MPI_Status status;
@@ -1296,6 +1818,15 @@ public:
     }
 
     // Read matrix data from a binary file
+    /** 
+     * @brief Reads matrix data from a binary file.
+     *
+     * This method reads the matrix data from a binary file using MPI I/O.
+     * For GPU data, it will copy the data to the CPU buffer first.
+     *
+     * @param filename The name of the file to read the matrix data.
+     * @throws std::runtime_error If the data cannot be read.
+     */    
     void readFromBinaryFile(const std::string& filename) 
     {
         T *buff;
@@ -1391,10 +1922,22 @@ public:
     }
 
 #ifdef HAS_SCALAPACK
+    /** 
+     * @brief Returns the Scalapack descriptor for the matrix.
+     * 
+     * @return A pointer to the Scalapack descriptor.
+     */
     std::size_t *get_scalapack_desc(){ return desc_; }
 #endif
 
 #ifdef HAS_SCALAPACK
+    /**
+     * @brief Initialize the ScaLAPACK descriptor for the matrix.
+     *
+     * Initializes the ScaLAPACK descriptor based on the matrix dimensions and MPI grid configuration.
+     *
+     * @return Pointer to the initialized ScaLAPACK descriptor.
+     */
     std::size_t *scalapack_descriptor_init()
     {
         int comm2D_ctxt = mpi_grid_.get()->get_blacs_comm2D_ctxt();
@@ -1427,7 +1970,15 @@ public:
         return desc_;
     }
 #endif
-
+    /**
+     * @brief Redistribute the matrix to another type of matrix.
+     *
+     * Redistributes the matrix data to another matrix of a different type (e.g., from BlockCyclicMatrix
+     * to another matrix type).
+     *
+     * @tparam targetType Type of the target matrix to redistribute data to.
+     * @param targetMatrix Pointer to the target matrix.
+     */
     template<template <typename, typename> class targetType>
     void redistributeImpl(targetType<T, Platform>* targetMatrix)//,
                             //std::size_t offset, std::size_t subsetSize)
@@ -1476,13 +2027,13 @@ public:
     }
 #endif
 private:
-    std::size_t M_;
-    std::size_t N_;
-    std::size_t m_;
-    std::size_t n_;
-    std::size_t ld_;
-    std::size_t mb_;
-    std::size_t nb_;
+    std::size_t M_; ///< Global number of rows in the matrix
+    std::size_t N_; ///< Global number of columns in the matrix
+    std::size_t m_; ///< Local number of rows in the matrix
+    std::size_t n_; ///< Local number of columns in the matrix
+    std::size_t ld_; ///< Local leading dimension (stride)
+    std::size_t mb_; ///< Block size for the row partitioning in the block-cyclic distribution
+    std::size_t nb_; ///< Block size for the column partitioning in the block-cyclic distribution
     std::size_t mblocks_;
     std::size_t nblocks_;    
     std::vector<std::size_t> m_contiguous_global_offs_;
@@ -1492,8 +2043,8 @@ private:
     std::vector<std::size_t> m_contiguous_lens_;
     std::vector<std::size_t> n_contiguous_lens_;
 
-    chase::matrix::Matrix<T, Platform> local_matrix_;
-    std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid_;
+    chase::matrix::Matrix<T, Platform> local_matrix_;  ///< Local matrix holding the data
+    std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid_; ///< Shared pointer to the MPI grid  
 
     void init_contiguous_buffer_info()
     {
@@ -1866,6 +2417,7 @@ private:
 #endif
 };
 
+/** @} */  // End of dist_matrix_classes group
 
 }
 }
