@@ -17,6 +17,24 @@ namespace internal
 {
 namespace cuda
 {
+    /**
+     * @brief Performs the Lanczos algorithm for eigenvalue computation on a GPU using cuBLAS and CUDA.
+     * 
+     * This function performs the Lanczos algorithm on a matrix `H` (of size `M`), 
+     * computing an orthonormal basis `V` and the tridiagonal matrix `T` for the eigenvalue 
+     * problem. It also computes Ritz values and estimates of the upper bounds for the eigenvalues.
+     * 
+     * @tparam T The data type of the matrix elements (e.g., float or double).
+     * @param cublas_handle The cuBLAS handle to perform linear algebra operations on the GPU.
+     * @param M The number of Lanczos iterations.
+     * @param numvec The number of runs of Lanczos.
+     * @param H The matrix of size `M x M` that is the input for the Lanczos algorithm.
+     * @param V The matrix of size `M x numvec` that holds the orthonormal basis vectors.
+     * @param upperb Output parameter that will hold the upper bound for the Ritz values.
+     * @param ritzv Output array to hold the Ritz values computed during the Lanczos algorithm.
+     * @param Tau Output array to store the Tau values from the eigenvalue decomposition.
+     * @param ritzV Output array for storing the Ritz vectors.
+     */    
     template<typename T>
     void lanczos(cublasHandle_t cublas_handle, 
                  std::size_t M, 
@@ -233,7 +251,26 @@ namespace cuda
         }               
     }
 
-
+    /**
+    * @brief Performs the Lanczos algorithm on matrix H to compute the tridiagonal matrix and eigenvalues.
+    * 
+     * This version of the Lanczos algorithm is a simplified version that computes
+     * only the upper bound of the eigenvalue spectrum and does not compute
+     * eigenvectors. It operates similarly to the full Lanczos algorithm but
+     * omits the eigenvector computation step.
+    *
+    * @tparam T The data type of the matrix elements (e.g., float, double).
+    * 
+    * @param cublas_handle cuBLAS handle used to perform matrix operations.
+    * @param M Number of Lanczos iterations.
+    * @param H The input matrix \( H \) (square matrix).
+    * @param V The input matrix \( V \) (Lanczos starting vector).
+    * @param upperb Pointer to store the upper bound of the computed eigenvalues.
+    * 
+    * @note The function modifies the input matrices `H` and `V` during the computation.
+    *       It computes the tridiagonal matrix and updates the eigenvalues in `ritzv`, then stores
+    *       the upper bound of the eigenvalues in the `upperb` pointer.
+    */
     template<typename T>
     void lanczos(cublasHandle_t cublas_handle,
                  std::size_t M, 

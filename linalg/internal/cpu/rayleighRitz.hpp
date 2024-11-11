@@ -14,6 +14,32 @@ namespace internal
 {
 namespace cpu
 {
+    /**
+    * @brief Perform the Rayleigh-Ritz procedure to compute eigenvalues and eigenvectors of a matrix.
+    *
+    * The Rayleigh-Ritz method computes an approximation to the eigenvalues and eigenvectors of a matrix
+    * by projecting the matrix onto a subspace defined by a set of vectors (Q) and solving the eigenvalue
+    * problem for the reduced matrix. The computed Ritz values are stored in the `ritzv` array, and the 
+    * resulting eigenvectors are stored in `W`.
+    *
+    * @tparam T Data type for the matrix (e.g., float, double, etc.).
+    * @param[in] N The number of rows of the matrix H.
+    * @param[in] H The input matrix (N x N).
+    * @param[in] ldh The leading dimension of the matrix H.
+    * @param[in] n The number of vectors in Q (subspace size).
+    * @param[in] Q The input matrix of size (N x n), whose columns are the basis vectors for the subspace.
+    * @param[in] ldq The leading dimension of the matrix Q.
+    * @param[out] W The output matrix (N x n), which will store the result of the projection.
+    * @param[in] ldw The leading dimension of the matrix W.
+    * @param[out] ritzv The array of Ritz values, which contains the eigenvalue approximations.
+    * @param[in] A A temporary matrix used in intermediate calculations. If not provided, it is allocated internally.
+    *
+    * The procedure performs the following steps:
+    * 1. Computes the matrix-vector multiplication: W = H * Q.
+    * 2. Computes A = W' * Q, where W' is the conjugate transpose of W.
+    * 3. Solves the eigenvalue problem for A using LAPACK's `heevd` function, computing the Ritz values in `ritzv`.
+    * 4. Computes the final approximation to the eigenvectors by multiplying Q with the computed eigenvectors.
+    */    
     template<typename T>
     void rayleighRitz(std::size_t N, T *H, std::size_t ldh, std::size_t n, T *Q, std::size_t ldq, 
                     T * W, std::size_t ldw, Base<T> *ritzv, T *A = nullptr)

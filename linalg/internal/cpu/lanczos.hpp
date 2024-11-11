@@ -15,6 +15,29 @@ namespace internal
 {
 namespace cpu
 {
+    /**
+     * @brief Lanczos algorithm for eigenvalue computation.
+     *
+     * This function performs the Lanczos algorithm, which is used to estimate
+     * the upper bound of spectra of symmetric/Hermitian matrix.
+     * The algorithm is iteratively applied to the matrix H, where the input
+     * matrix `H` is a square matrix of size `N x N`. The Lanczos algorithm
+     * builds an orthonormal basis of the Krylov subspace, and the resulting 
+     * tridiagonal matrix is diagonalized using the `t_stemr` function.
+     *
+     * @tparam T The data type for the matrix elements (e.g., float, double).
+     * @param M The number of Lanczos iterations.
+     * @param numvec The number of runs of Lanczos.
+     * @param N The size of the input matrix `H`.
+     * @param H The input matrix for the Lanczos algorithm (of size `N x N`).
+     * @param ldh The leading dimension of `H` (number of rows).
+     * @param V The input matrix used for storing vectors (of size `N x numvec`).
+     * @param ldv The leading dimension of `V` (number of rows).
+     * @param upperb A pointer to the upper bound of the eigenvalue spectrum.
+     * @param ritzv A pointer to store the Ritz eigenvalues.
+     * @param Tau A pointer to store the computed Tau values.
+     * @param ritzV A pointer to store the Ritz eigenvectors.
+     */    
     template<typename T>
     void lanczos(std::size_t M, std::size_t numvec, std::size_t N, T *H, std::size_t ldh, T *V, std::size_t ldv, 
                 Base<T>* upperb, Base<T>* ritzv, Base<T>* Tau, Base<T>* ritzV)
@@ -159,6 +182,23 @@ namespace cpu
         }               
     }
 
+    /**
+     * @brief Lanczos algorithm for eigenvalue computation (simplified version).
+     *
+     * This version of the Lanczos algorithm is a simplified version that computes
+     * only the upper bound of the eigenvalue spectrum and does not compute
+     * eigenvectors. It operates similarly to the full Lanczos algorithm but
+     * omits the eigenvector computation step.
+     *
+     * @tparam T The data type for the matrix elements (e.g., float, double).
+     * @param M The number of Lanczos iterations.
+     * @param N The size of the input matrix `H`.
+     * @param H The input matrix for the Lanczos algorithm (of size `N x N`).
+     * @param ldh The leading dimension of `H` (number of rows).
+     * @param V The input matrix used for storing vectors (of size `N x 1`).
+     * @param ldv The leading dimension of `V` (number of rows).
+     * @param upperb A pointer to the upper bound of the eigenvalue spectrum.
+     */
     template<typename T>
     void lanczos(std::size_t M, std::size_t N, T *H, std::size_t ldh, T *V, std::size_t ldv, 
                 Base<T>* upperb)

@@ -18,6 +18,23 @@ namespace internal
 {
 namespace cuda
 {
+    /**
+    * @brief Performs a Cholesky-based QR factorization with a degree of 1.
+    * 
+    * This function computes the Cholesky decomposition of the matrix \( A \), 
+    * and uses it for a QR factorization of a given matrix \( V \) on a GPU. 
+    * The process involves matrix operations using cuBLAS and cuSolver.
+    * 
+    * @tparam T The data type of the matrix elements (e.g., float, double, or complex types).
+    * @param cublas_handle The cuBLAS handle for managing operations.
+    * @param cusolver_handle The cuSolver handle for solving linear systems and decompositions.
+    * @param V The input/output matrix \( V \) to be factored (on GPU).
+    * @param workspace Pointer to a workspace for cuSolver (default: nullptr).
+    * @param lwork The size of the workspace (default: 0).
+    * @param A Optional output matrix for the Cholesky factor (default: nullptr). 
+    *           If not provided, a new matrix is allocated.
+    * @return int An error code (0 indicates success, non-zero indicates failure).
+    */    
     template<typename T>
     int cholQR1(cublasHandle_t cublas_handle,
                 cusolverDnHandle_t cusolver_handle,
@@ -111,7 +128,23 @@ namespace cuda
         }
     }
 
-
+    /**
+    * @brief Performs a Cholesky-based QR factorization with a degree of 2.
+    * 
+    * This function computes the Cholesky decomposition of the matrix \( A \), 
+    * and uses it for a QR factorization of a given matrix \( V \) on a GPU.
+    * It involves several matrix operations using cuBLAS and cuSolver to perform the QR factorization.
+    * 
+    * @tparam T The data type of the matrix elements (e.g., float, double, or complex types).
+    * @param cublas_handle The cuBLAS handle for managing operations.
+    * @param cusolver_handle The cuSolver handle for solving linear systems and decompositions.
+    * @param V The input/output matrix \( V \) to be factored (on GPU).
+    * @param workspace Pointer to a workspace for cuSolver (default: nullptr).
+    * @param lwork The size of the workspace (default: 0).
+    * @param A Optional output matrix for the Cholesky factor (default: nullptr). 
+    *           If not provided, a new matrix is allocated.
+    * @return int An error code (0 indicates success, non-zero indicates failure).
+    */
     template<typename T>
     int cholQR2(cublasHandle_t cublas_handle,
                 cusolverDnHandle_t cusolver_handle,
@@ -238,7 +271,23 @@ namespace cuda
             return info;
         }
     }
-
+    /**
+    * @brief Performs a shifted Cholesky-based QR factorization with a degree of 2.
+    * 
+    * This function computes the shifted Cholesky decomposition for the matrix \( A \), 
+    * and uses it to perform a QR factorization of the given matrix \( V \) on a GPU.
+    * The function performs additional operations with shifted matrix values to enhance stability.
+    * 
+    * @tparam T The data type of the matrix elements (e.g., float, double, or complex types).
+    * @param cublas_handle The cuBLAS handle for managing operations.
+    * @param cusolver_handle The cuSolver handle for solving linear systems and decompositions.
+    * @param V The input/output matrix \( V \) to be factored (on GPU).
+    * @param workspace Pointer to a workspace for cuSolver (default: nullptr).
+    * @param lwork The size of the workspace (default: 0).
+    * @param A Optional output matrix for the Cholesky factor (default: nullptr). 
+    *           If not provided, a new matrix is allocated.
+    * @return int An error code (0 indicates success, non-zero indicates failure).
+    */
     template<typename T>
     int shiftedcholQR2(cublasHandle_t cublas_handle,
                 cusolverDnHandle_t cusolver_handle,
@@ -420,6 +469,20 @@ namespace cuda
         return info;
     }
 
+    /**
+    * @brief Performs the Householder QR decomposition on a matrix \( V \) using cuSolver and cuBLAS.
+    * 
+    * This function computes the QR decomposition of a matrix \( V \) using the Householder transformation. 
+    * It performs the required operations using cuSolver and cuBLAS on the GPU.
+    * 
+    * @tparam T The data type of the matrix elements (e.g., float, double, or complex types).
+    * @param cusolver_handle The cuSolver handle for solving linear systems and decompositions.
+    * @param V The input matrix \( V \) to be factored (on GPU).
+    * @param d_tau Pointer to the array storing Householder reflectors (on GPU).
+    * @param devInfo Pointer to an integer storing the result of the computation (on GPU).
+    * @param workspace Pointer to a workspace for cuSolver (default: nullptr).
+    * @param lwork The size of the workspace (default: 0).
+    */
     template<typename T>
     void houseHoulderQR(cusolverDnHandle_t cusolver_handle,
                         chase::matrix::Matrix<T, chase::platform::GPU>& V,

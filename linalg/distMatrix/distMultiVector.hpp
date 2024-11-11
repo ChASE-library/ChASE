@@ -33,7 +33,7 @@
 namespace chase
 {
 /**
- * @defgroup distMultiVector Distributed Multi-Vector Operations
+ * @defgroup distMultiVector Distributed Multi-Vector class
  * @brief Classes and utilities for distributed multi-vector operations.
  * @{
  */    
@@ -319,17 +319,41 @@ public:
 #endif    
 };
 
-/** @} */ // End of distMultiVector group
+/**
+ * @brief Distributed MultiVector class for 1D block distribution within either row or column communicator of a 2D MPI grid.
+ *
+ * This class represents a distributed matrix structure where data can be split across either the row or column communicators
+ * in a 2D MPI grid setup. The implementation is platform-specific, allowing for both CPU and GPU usage.
+ *
+ * @tparam T Element type.
+ * @tparam comm_type Specifies the communicator type (row or column) for 1D distribution within the 2D MPI grid.
+ * @tparam Platform Specifies the computational platform, with a default to chase::platform::CPU.
+ */
 template<typename T, CommunicatorType comm_type, typename Platform = chase::platform::CPU> 
 class DistMultiVector1D : public AbstractDistMultiVector<T, comm_type, DistMultiVector1D, Platform> //distribute either within row or column communicator of 2D MPI grid
 {
 public:
-    using platform_type = Platform;
-    using value_type = T;  // Alias for element type
+    using platform_type = Platform; /**< Alias for the computational platform type. */
+    using value_type = T;  /**< Alias for the element type. */
     //using communicator_type = comm_type;
 
+    /**
+     * @brief Default destructor.
+     */
     ~DistMultiVector1D() override {};
+    /**
+     * @brief Default constructor.
+     */    
     DistMultiVector1D();    
+    /**
+     * @brief Constructs a distributed multivector with specified global dimensions and MPI grid.
+     *
+     * Initializes the 1D distribution according to the specified communicator type, handling dimensions and block sizes.
+     *
+     * @param M Global number of rows.
+     * @param N Global number of columns.
+     * @param mpi_grid Shared pointer to the 2D MPI grid for distribution.
+     */    
     DistMultiVector1D(std::size_t M, std::size_t N,
                     std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid)
                     :M_(M), N_(N), mpi_grid_(mpi_grid)
@@ -382,7 +406,15 @@ public:
             mb_ = (M_ - m_) / (dim - 1);
         }    
     }
-
+    /**
+     * @brief Constructs a distributed multivector with specified local dimensions, leading dimension, and data pointer.
+     *
+     * @param m Local number of rows.
+     * @param n Local number of columns.
+     * @param ld Leading dimension of the data pointer.
+     * @param data Pointer to the data array.
+     * @param mpi_grid Shared pointer to the 2D MPI grid.
+     */
     DistMultiVector1D(std::size_t m, std::size_t n, std::size_t ld, T *data,
                     std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid)
                     :m_(m), n_(n),ld_(ld), mpi_grid_(mpi_grid)
@@ -442,25 +474,46 @@ public:
         }
         
     }    
-
+    /**
+     * @brief Retrieves the distribution type of the multi-vector.
+     * 
+     * @return Returns the distribution type as Block.
+     */
     DistributionType getMultiVectorDistributionType() const override {
         return DistributionType::Block;
     }
-    
+    /**
+     * @brief Retrieves the communicator type for distribution.
+     * 
+     * @return Returns the specified communicator type (row or column).
+     */    
     CommunicatorType getMultiVectorCommunicatorType() const override {
         return comm_type;
     }
 
-    // Accessors for MPI grid
+    /**
+     * @brief Provides a raw pointer to the MPI grid used for distribution.
+     * 
+     * @return Raw pointer to the MPI grid object.
+     */
     chase::grid::MpiGrid2DBase* getMpiGrid() const override {
         return mpi_grid_.get();
     }
-
+    /**
+     * @brief Provides a shared pointer to the MPI grid used for distribution.
+     * 
+     * @return Shared pointer to the MPI grid object.
+     */
     std::shared_ptr<chase::grid::MpiGrid2DBase> getMpiGrid_shared_ptr() const override
     {
         return mpi_grid_;
     }
-
+    /**
+     * @brief Clones the distributed multivector to a specified type with the same global dimensions and MPI grid.
+     *
+     * @tparam CloneType The type of the cloned object.
+     * @return Cloned object of specified type.
+     */
     template<typename CloneType>
     CloneType clone()
     {
@@ -471,7 +524,14 @@ public:
         ///using NewCommType = typename CloneType::communicator_type;
         return CloneType(M_, N_, mpi_grid_);        
     }
-
+    /**
+     * @brief Clones the distributed multivector to a specified type with new global dimensions.
+     *
+     * @tparam CloneType The type of the cloned object.
+     * @param g_M New global row dimension.
+     * @param g_N New global column dimension.
+     * @return Cloned object of specified type with new dimensions.
+     */
     template<typename CloneType>
     CloneType clone(std::size_t g_M, std::size_t g_N)
     {
@@ -482,7 +542,12 @@ public:
         ///using NewCommType = typename CloneType::communicator_type;
         return CloneType(g_M, g_N, mpi_grid_);        
     }
-
+    /**
+     * @brief Creates a unique pointer to a clone of the distributed multivector with the same dimensions.
+     *
+     * @tparam CloneType The type of the cloned object.
+     * @return Unique pointer to the cloned object.
+     */
     template<typename CloneType>
     std::unique_ptr<CloneType> clone2()
     {
@@ -493,7 +558,14 @@ public:
         ///using NewCommType = typename CloneType::communicator_type;
         return std::make_unique<CloneType>(M_, N_, mpi_grid_);        
     }
-
+    /**
+     * @brief Creates a unique pointer to a clone of the distributed multivector with new global dimensions.
+     *
+     * @tparam CloneType The type of the cloned object.
+     * @param g_M New global row dimension.
+     * @param g_N New global column dimension.
+     * @return Unique pointer to the cloned object with new dimensions.
+     */
     template<typename CloneType>
     std::unique_ptr<CloneType> clone2(std::size_t g_M, std::size_t g_N)
     {
@@ -505,6 +577,15 @@ public:
         return std::make_unique<CloneType>(g_M, g_N, mpi_grid_);        
     }
 
+    /**
+     * @brief Swaps data and metadata with another distributed multivector with compatible types.
+     *
+     * @tparam OtherCommType Communicator type of the other multivector.
+     * @tparam OtherPlatform Platform type of the other multivector.
+     * @param other The other multivector to swap with.
+     *
+     * @throws std::runtime_error if communicator types or platforms do not match.
+     */
     template <CommunicatorType OtherCommType, typename OtherPlatform>
     void swap(DistMultiVector1D<T, OtherCommType, OtherPlatform>& other) 
     {
@@ -536,7 +617,12 @@ public:
         std::swap(this->single_precision_multivec_, other.single_precision_multivec_);
 #endif
     }
-    //swap column i with j
+    /**
+     * @brief Swaps columns i and j in the distributed multivector.
+     *
+     * @param i Index of the first column.
+     * @param j Index of the second column.
+     */
     void swap_ij(std::size_t i, std::size_t j)
     {
         if constexpr (std::is_same<Platform, chase::platform::CPU>::value){
@@ -595,6 +681,13 @@ public:
     }
 
 #ifdef HAS_CUDA
+    /**
+     * @brief Transfers data from device to host.
+     *
+     * This operation is only supported on GPU platforms.
+     *
+     * @throws std::runtime_error if executed on a CPU platform.
+     */
     void D2H()
     {
         if constexpr (std::is_same<Platform, chase::platform::GPU>::value)
@@ -605,7 +698,13 @@ public:
             throw std::runtime_error("[DistMultiVector]: CPU type of matrix do not support D2H operation");
         }
     }
-
+    /**
+     * @brief Transfers data from host to device.
+     *
+     * This operation is only supported on GPU platforms.
+     *
+     * @throws std::runtime_error if executed on a CPU platform.
+     */
     void H2D()
     {
         if constexpr (std::is_same<Platform, chase::platform::GPU>::value)
@@ -617,16 +716,38 @@ public:
         }
     }
 #endif
+    /**
+     * @brief Provides a pointer to the CPU data.
+     * 
+     * @return Pointer to the CPU data.
+     */
     T *cpu_data()
     {
         return local_matrix_.cpu_data(); 
     }
 
+    /**
+     * @brief Retrieves the leading dimension for the CPU data.
+     * 
+     * @return Leading dimension of the CPU data.
+     */
     std::size_t cpu_ld()
     {
         return local_matrix_.cpu_ld();         
     }
 
+    /**
+     * @brief Redistributes data to another distributed multivector with a specified communicator type.
+     *
+     * @tparam target_comm_type Communicator type of the target multivector.
+     * @tparam OtherPlatform Platform type of the target multivector.
+     * @param targetMultiVector Target multivector for redistribution.
+     * @param offset Column offset for redistribution.
+     * @param subsetSize Number of columns to redistribute.
+     *
+     * @throws std::runtime_error if platforms or communicator types do not match.
+     * @throws std::invalid_argument if subset range is invalid.
+     */
     template<CommunicatorType target_comm_type, typename OtherPlatform>
     void redistributeImpl(DistMultiVector1D<T, target_comm_type, OtherPlatform>* targetMultiVector,
                             std::size_t offset, std::size_t subsetSize) {
@@ -650,7 +771,13 @@ public:
             throw std::runtime_error("Invalid redistribution between matrix types");
         }
     }
-
+    /**
+     * @brief Redistributes the full data range to another distributed multivector.
+     *
+     * @tparam target_comm_type Communicator type of the target multivector.
+     * @tparam OtherPlatform Platform type of the target multivector.
+     * @param targetMultiVector Target multivector for redistribution.
+     */
     template<CommunicatorType target_comm_type, typename OtherPlatform>
     void redistributeImpl(DistMultiVector1D<T, target_comm_type, OtherPlatform>* targetMultiVector) 
     {
@@ -658,6 +785,15 @@ public:
     }
 
 #ifdef HAS_NCCL
+    /**
+     * @brief Asynchronous redistribution of data to another distributed multivector on GPU with specified communicator type.
+     *
+     * @tparam target_comm_type Communicator type of the target multivector.
+     * @param targetMultiVector Target multivector for redistribution.
+     * @param offset Column offset for redistribution.
+     * @param subsetSize Number of columns to redistribute.
+     * @param stream_ CUDA stream for asynchronous operation (optional).
+     */
     template<CommunicatorType target_comm_type>
     void redistributeImplAsync(DistMultiVector1D<T, target_comm_type, chase::platform::GPU>* targetMultiVector,
                             std::size_t offset, std::size_t subsetSize, cudaStream_t* stream_ = nullptr) {
@@ -684,7 +820,13 @@ public:
             throw std::runtime_error("Invalid redistribution between matrix types");
         }
     }
-
+    /**
+     * @brief Redistributes the full data on GPU with range to another distributed multivector.
+     *
+     * @tparam target_comm_type Communicator type of the target multivector.
+     * @tparam OtherPlatform Platform type of the target multivector.
+     * @param targetMultiVector Target multivector for redistribution.
+     */
     template<CommunicatorType target_comm_type>
     void redistributeImplAsync(DistMultiVector1D<T, target_comm_type,  chase::platform::GPU>* targetMultiVector, cudaStream_t* stream_ = nullptr) 
     {        
@@ -692,22 +834,75 @@ public:
     }
 
 #endif
+    /**
+    * @brief Get the number of rows in the global matrix.
+    * 
+    * @return The global row count.
+    */
     std::size_t g_rows() const override { return M_;}
+    /**
+    * @brief Get the number of columns in the global matrix.
+    * 
+    * @return The global column count.
+    */    
     std::size_t g_cols() const override { return N_;}
+    /**
+    * @brief Get the number of rows in the local matrix (i.e., rows stored on this process).
+    * 
+    * @return The local row count.
+    */    
     std::size_t l_rows() const override { return m_;}
+    /**
+    * @brief Get the number of columns in the local matrix (i.e., columns stored on this process).
+    * 
+    * @return The local column count.
+    */    
     std::size_t l_cols() const override { return n_;}
+    /**
+    * @brief Get the leading dimension of the local matrix storage.
+    * 
+    * @return The leading dimension for the local matrix.
+    */    
     std::size_t l_ld() const override { return ld_;}
+    /**
+    * @brief Get the block size used in the distributed matrix layout.
+    * 
+    * @return The matrix block size.
+    */    
     std::size_t mb() const override { return mb_;}    
-
+    /**
+    * @brief Access the raw pointer to the local matrix data.
+    * 
+    * @return Pointer to the local matrix data.
+    */
     T *         l_data() override { 
         return local_matrix_.data();
     }
     
     //typename chase::platform::MatrixTypePlatform<T, Platform>::type& loc_matrix() override { return local_matrix_;}
+    /**
+    * @brief Access the local matrix object.
+    * 
+    * @return Reference to the local matrix of type chase::matrix::Matrix.
+    */
     chase::matrix::Matrix<T, Platform>& loc_matrix() override { return local_matrix_;}
 #ifdef HAS_SCALAPACK
+    /**
+    * @brief Get the ScaLAPACK descriptor for the matrix.
+    * 
+    * @return Pointer to the ScaLAPACK descriptor array.
+    */
     std::size_t *get_scalapack_desc(){ return desc_; }
-
+    /**
+    * @brief Initialize the ScaLAPACK descriptor for the matrix.
+    * 
+    * Initializes the ScaLAPACK descriptor array with parameters based on the 
+    * MPI grid and matrix layout.
+    * 
+    * If the platform is GPU, CPU data is allocated if it is not already allocated.
+    * 
+    * @return Pointer to the initialized ScaLAPACK descriptor.
+    */
     std::size_t * scalapack_descriptor_init()
     {
         if constexpr (std::is_same<Platform, chase::platform::GPU>::value)
@@ -760,16 +955,45 @@ public:
 
 
 private:
+    /**
+     * @brief The total number of rows in the global matrix.
+     */
     std::size_t M_;
+    /**
+     * @brief The total number of columns in the global matrix.
+     */    
     std::size_t N_;
+    /**
+     * @brief The number of rows in the local matrix, stored on the current process.
+     */    
     std::size_t m_;
+    /**
+     * @brief The number of columns in the local matrix, stored on the current process.
+     */    
     std::size_t n_;
+    /**
+     * @brief The leading dimension for the local matrix, used for efficient memory access.
+     */    
     std::size_t ld_;
+    /**
+     * @brief The block size used in the distributed matrix layout.
+     */    
     std::size_t mb_;
     //typename chase::platform::MatrixTypePlatform<T, Platform>::type local_matrix_;
+    /**
+     * @brief The matrix object that holds the local matrix data, stored based on the specified platform.
+     */    
     chase::matrix::Matrix<T, Platform> local_matrix_;
+    /**
+     * @brief Shared pointer to the MPI grid object that manages the 2D process grid configuration.
+     */    
     std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid_;    
 #ifdef HAS_SCALAPACK
+    /**
+     * @brief ScaLAPACK descriptor array for the matrix, used to manage distributed matrix layout and storage.
+     * 
+     * Contains 9 elements, where each element holds specific metadata required for ScaLAPACK operations.
+     */
     std::size_t desc_[9];
 #endif
     //data for redistribution
@@ -1174,16 +1398,41 @@ private:
 
 };
 
+/**
+ * @brief A distributed block-cyclic 1D matrix, used to distribute a multi-vector
+ * either within the row or column communicator of a 2D MPI grid.
+ * 
+ * This class is designed to manage a block-cyclic 1D distribution of a matrix in a parallelized 
+ * setting, supporting both CPU and GPU platforms. The matrix data is distributed in a way that 
+ * each process stores a subset of the data. It can handle redistribution between different communicator types (row/column).
+ * 
+ * @tparam T The data type of the matrix elements.
+ * @tparam comm_type The type of communicator (either row or column).
+ * @tparam Platform The platform type, defaulting to CPU.
+ */
 template<typename T, CommunicatorType comm_type, typename Platform = chase::platform::CPU> 
 class DistMultiVectorBlockCyclic1D : public AbstractDistMultiVector<T, comm_type, DistMultiVectorBlockCyclic1D, Platform> //distribute either within row or column communicator of 2D MPI grid
 {
 public:
-    using platform_type = Platform;
-    using value_type = T;  // Alias for element type
+    using platform_type = Platform; ///< Alias for platform type.
+    using value_type = T;  ///< Alias for element type.
 
+    /** 
+     * @brief Destructor for the DistMultiVectorBlockCyclic1D class.
+     */
     ~DistMultiVectorBlockCyclic1D() override {};
+    /**
+     * @brief Default constructor.
+     */    
     DistMultiVectorBlockCyclic1D(); 
-
+    /**
+     * @brief Constructs a block-cyclic 1D distributed multi-vector.
+     * 
+     * @param M Total number of rows in the matrix.
+     * @param N Total number of columns in the matrix.
+     * @param mb The block size for distribution.
+     * @param mpi_grid A shared pointer to the 2D MPI grid used for distribution.
+     */
     DistMultiVectorBlockCyclic1D(std::size_t M, std::size_t N, std::size_t mb,
                     std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid)
                     :M_(M), N_(N), mpi_grid_(mpi_grid), mb_(mb)
@@ -1208,6 +1457,17 @@ public:
         local_matrix_ = chase::matrix::Matrix<T, Platform>(m_, n_);
     }
 
+    /**
+     * @brief Constructs a block-cyclic 1D distributed multi-vector with pre-allocated data.
+     * 
+     * @param M Total number of rows in the matrix.
+     * @param m The local number of rows in this process.
+     * @param n The number of columns.
+     * @param mb The block size for distribution.
+     * @param ld The leading dimension of the local matrix.
+     * @param data Pointer to the pre-allocated data for the matrix.
+     * @param mpi_grid A shared pointer to the 2D MPI grid used for distribution.
+     */
     DistMultiVectorBlockCyclic1D(std::size_t M, std::size_t m, 
                                  std::size_t n, std::size_t mb, 
                                  std::size_t ld, T *data,
@@ -1248,26 +1508,49 @@ public:
         }   
     }
 
-
+    /** 
+     * @brief Gets the distribution type of the multi-vector.
+     * 
+     * @return The distribution type, which is always BlockCyclic.
+     */
     DistributionType getMultiVectorDistributionType() const override {
         return DistributionType::BlockCyclic;
     }
-    
+
+    /**
+     * @brief Gets the communicator type used for distribution.
+     * 
+     * @return The communicator type, either row or column.
+     */    
     CommunicatorType getMultiVectorCommunicatorType() const override {
         return comm_type;
     }
 
-    // Accessors for MPI grid
+    /**
+     * @brief Retrieves the 2D MPI grid.
+     * 
+     * @return A pointer to the MPI grid.
+     */
     chase::grid::MpiGrid2DBase* getMpiGrid() const override {
         return mpi_grid_.get();
     }
 
+    /**
+     * @brief Retrieves the 2D MPI grid as a shared pointer.
+     * 
+     * @return A shared pointer to the MPI grid.
+     */
     std::shared_ptr<chase::grid::MpiGrid2DBase> getMpiGrid_shared_ptr() const override
     {
         return mpi_grid_;
     }
 
-
+    /**
+     * @brief Clones the current object into another instance of a different type.
+     * 
+     * @tparam CloneType The type of the clone.
+     * @return A cloned instance of the current object.
+     */
     template<typename CloneType>
     CloneType clone()
     {
@@ -1279,6 +1562,14 @@ public:
         return CloneType(M_, N_, mb_, mpi_grid_);        
     }
 
+    /**
+     * @brief Clones the current object with new global dimensions.
+     * 
+     * @tparam CloneType The type of the clone.
+     * @param g_M New global row size.
+     * @param g_N New global column size.
+     * @return A cloned instance with the updated global dimensions.
+     */
     template<typename CloneType>
     CloneType clone(std::size_t g_M, std::size_t g_N)
     {
@@ -1290,6 +1581,12 @@ public:
         return CloneType(g_M, g_N, mb_, mpi_grid_);        
     }
 
+    /**
+     * @brief Clones the current object into a new instance of a different type, returned as a unique pointer.
+     * 
+     * @tparam CloneType The type of the clone.
+     * @return A unique pointer to a cloned instance of the current object.
+     */
     template<typename CloneType>
     std::unique_ptr<CloneType> clone2()
     {
@@ -1300,7 +1597,14 @@ public:
         ///using NewCommType = typename CloneType::communicator_type;
         return std::make_unique<CloneType>(M_, N_, mb_, mpi_grid_);        
     }
-
+    /**
+     * @brief Clones the current object with new global dimensions, returned as a unique pointer.
+     * 
+     * @tparam CloneType The type of the clone.
+     * @param g_M New global row size.
+     * @param g_N New global column size.
+     * @return A unique pointer to a cloned instance with the updated global dimensions.
+     */
     template<typename CloneType>
     std::unique_ptr<CloneType> clone2(std::size_t g_M, std::size_t g_N)
     {
@@ -1311,7 +1615,13 @@ public:
         ///using NewCommType = typename CloneType::communicator_type;
         return std::make_unique<CloneType>(g_M, g_N, mb_, mpi_grid_);        
     }
-
+    /**
+     * @brief Swaps the contents of this matrix with another matrix of a compatible type.
+     * 
+     * @tparam OtherCommType The communicator type of the other matrix.
+     * @tparam OtherPlatform The platform type of the other matrix.
+     * @param other The other matrix to swap with.
+     */
     template <CommunicatorType OtherCommType, typename OtherPlatform>
     void swap(DistMultiVectorBlockCyclic1D<T, OtherCommType, OtherPlatform>& other) 
     {
@@ -1342,7 +1652,12 @@ public:
 #endif
     }
 
-    //swap column i with j
+    /**
+     * @brief Swaps columns i and j in the local matrix.
+     * 
+     * @param i The first column index to swap.
+     * @param j The second column index to swap.
+     */
     void swap_ij(std::size_t i, std::size_t j)
     {
         if constexpr (std::is_same<Platform, chase::platform::CPU>::value){
@@ -1401,6 +1716,9 @@ public:
     }
 
 #ifdef HAS_CUDA
+    /**
+     * @brief Transfers data from the device (GPU) to the host (CPU).
+     */
     void D2H()
     {
         if constexpr (std::is_same<Platform, chase::platform::GPU>::value)
@@ -1411,7 +1729,9 @@ public:
             throw std::runtime_error("[DistMultiVector]: CPU type of matrix do not support D2H operation");
         }
     }
-
+    /**
+     * @brief Transfers data from the host (CPU) to the device (GPU).
+     */
     void H2D()
     {
         if constexpr (std::is_same<Platform, chase::platform::GPU>::value)
@@ -1423,16 +1743,34 @@ public:
         }
     }
 #endif
+    /**
+     * @brief Retrieves a pointer to the data on the CPU.
+     * 
+     * @return A pointer to the local matrix data on the CPU.
+     */
     T *cpu_data()
     {
         return local_matrix_.cpu_data();
     }
-
+    /**
+     * @brief Retrieves the leading dimension of the data on the CPU.
+     * 
+     * @return The leading dimension of the local matrix on the CPU.
+     */
     std::size_t cpu_ld()
     {
         return local_matrix_.cpu_ld();          
     }
 
+    /**
+     * @brief Redistributes the multi-vector data between two matrices with different communicator types.
+     * 
+     * @tparam target_comm_type The target communicator type (row or column).
+     * @tparam OtherPlatform The target platform type.
+     * @param targetMultiVector The target multi-vector to redistribute data to.
+     * @param offset The starting offset for redistribution.
+     * @param subsetSize The number of elements to redistribute.
+     */
     template<CommunicatorType target_comm_type, typename OtherPlatform>
     void redistributeImpl(DistMultiVectorBlockCyclic1D<T, target_comm_type, OtherPlatform>* targetMultiVector,
                             std::size_t offset, std::size_t subsetSize) {
@@ -1457,6 +1795,13 @@ public:
         }
     }
 
+    /**
+     * @brief Redistributes the multi-vector data between two matrices with different communicator types.
+     * 
+     * @tparam target_comm_type The target communicator type (row or column).
+     * @tparam OtherPlatform The target platform type.
+     * @param targetMultiVector The target multi-vector to redistribute data to.
+     */
     template<CommunicatorType target_comm_type, typename OtherPlatform>
     void redistributeImpl(DistMultiVectorBlockCyclic1D<T, target_comm_type, OtherPlatform>* targetMultiVector) 
     {
@@ -1464,6 +1809,15 @@ public:
     }
 
 #ifdef HAS_NCCL
+    /**
+     * @brief Asynchronously redistributes the multi-vector data between two matrices with different communicator types using NCCL.
+     * 
+     * @tparam target_comm_type The target communicator type (row or column).
+     * @param targetMultiVector The target multi-vector to redistribute data to.
+     * @param offset The starting offset for redistribution.
+     * @param subsetSize The number of elements to redistribute.
+     * @param stream_ Optional CUDA stream for asynchronous operation.
+     */
     template<CommunicatorType target_comm_type>
     void redistributeImplAsync(DistMultiVectorBlockCyclic1D<T, target_comm_type, chase::platform::GPU>* targetMultiVector,
                             std::size_t offset, std::size_t subsetSize, cudaStream_t* stream_ = nullptr) {
@@ -1490,20 +1844,68 @@ public:
             throw std::runtime_error("Invalid redistribution between matrix types");
         }
     }
-
+    /**
+     * @brief Asynchronously redistributes the multi-vector data between two matrices with different communicator types using NCCL.
+     * 
+     * @tparam target_comm_type The target communicator type (row or column).
+     * @param targetMultiVector The target multi-vector to redistribute data to.
+     * @param stream_ Optional CUDA stream for asynchronous operation.
+     */
     template<CommunicatorType target_comm_type>
     void redistributeImplAsync(DistMultiVectorBlockCyclic1D<T, target_comm_type,  chase::platform::GPU>* targetMultiVector, cudaStream_t* stream_ = nullptr) 
     {        
         this->redistributeImplAsync(targetMultiVector, 0, this->n_, stream_);
     }
 #endif
-    std::size_t g_rows() const override { return M_;}
-    std::size_t g_cols() const override { return N_;}
-    std::size_t l_rows() const override { return m_;}
-    std::size_t l_cols() const override { return n_;}
-    std::size_t l_ld() const override { return ld_;}
-    std::size_t mb() const override { return mb_;}    
-    T *         l_data() override { 
+
+    /**
+     * @brief Get the global number of rows in the matrix.
+     * 
+     * @return The global number of rows in the matrix across all processes.
+     */
+    std::size_t g_rows() const override { return M_; }
+
+    /**
+     * @brief Get the global number of columns in the matrix.
+     * 
+     * @return The global number of columns in the matrix across all processes.
+     */
+    std::size_t g_cols() const override { return N_; }
+
+    /**
+     * @brief Get the local number of rows in this process.
+     * 
+     * @return The local number of rows assigned to the current process.
+     */
+    std::size_t l_rows() const override { return m_; }
+
+    /**
+     * @brief Get the local number of columns in this process.
+     * 
+     * @return The local number of columns assigned to the current process.
+     */
+    std::size_t l_cols() const override { return n_; }
+
+    /**
+     * @brief Get the leading dimension of the local matrix.
+     * 
+     * @return The leading dimension (stride) of the local matrix.
+     */
+    std::size_t l_ld() const override { return ld_; }
+
+    /**
+     * @brief Get the block size for block-cyclic distribution.
+     * 
+     * @return The block size used when distributing the matrix across processes.
+     */
+    std::size_t mb() const override { return mb_; }
+
+    /**
+     * @brief Get the pointer to the local matrix data.
+     * 
+     * @return A pointer to the local matrix data stored in the current process.
+     */
+    T * l_data() override { 
         return local_matrix_.data();      
     }
 
@@ -1558,17 +1960,75 @@ public:
 #endif    
 
 private:
+    /**
+     * @brief The global number of rows in the matrix.
+     * 
+     * This represents the total number of rows in the matrix across all processes.
+     */
     std::size_t M_;
+
+    /**
+     * @brief The global number of columns in the matrix.
+     * 
+     * This represents the total number of columns in the matrix across all processes.
+     */
     std::size_t N_;
+
+    /**
+     * @brief The local number of rows in this process.
+     * 
+     * This is the number of rows that are assigned to the current process in a distributed setting.
+     */
     std::size_t m_;
+
+    /**
+     * @brief The local number of columns in this process.
+     * 
+     * This is the number of columns that are assigned to the current process in a distributed setting.
+     */
     std::size_t n_;
+
+    /**
+     * @brief The leading dimension of the local matrix.
+     * 
+     * This is the stride (or padding) between consecutive rows of the local matrix in memory.
+     */
     std::size_t ld_;
+
+    /**
+     * @brief The block size for block-cyclic distribution.
+     * 
+     * This specifies the block size used when distributing the matrix across different processes.
+     */
     std::size_t mb_;
+
+    /**
+     * @brief The number of blocks along the row dimension.
+     * 
+     * This is used to determine how the matrix is divided into smaller blocks for distributed computation.
+     */
     std::size_t mblocks_;
-    //typename chase::platform::MatrixTypePlatform<T, Platform>::type local_matrix_;
+
+    /**
+     * @brief The local matrix stored in the current process.
+     * 
+     * This matrix holds the local portion of the matrix assigned to the current process.
+     * The type of this matrix is determined by the platform (CPU or GPU).
+     */
     chase::matrix::Matrix<T, Platform> local_matrix_;
+
+    /**
+     * @brief A shared pointer to the 2D MPI grid.
+     * 
+     * This grid is used for distributing the matrix across processes in a 2D decomposition.
+     */
     std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid_;
 #ifdef HAS_SCALAPACK
+    /**
+     * @brief ScaLAPACK descriptor array for the matrix, used to manage distributed matrix layout and storage.
+     * 
+     * Contains 9 elements, where each element holds specific metadata required for ScaLAPACK operations.
+     */
     std::size_t desc_[9];
 #endif
     //data for redistribution
@@ -1998,6 +2458,7 @@ private:
 
 
 };
+/** @} */ // End of distMultiVector group
 
 
 }    
