@@ -17,6 +17,30 @@ namespace internal
 {
 namespace mpi
 {
+    /**
+    * @brief Executes the Lanczos algorithm to generate a tridiagonal matrix representation.
+    * 
+     * This function performs the Lanczos algorithm, which is used to estimate
+     * the upper bound of spectra of symmetric/Hermitian matrix.
+     * The algorithm is iteratively applied to the matrix H, where the input
+     * matrix `H` is a square matrix of size `N x N`. The Lanczos algorithm
+     * builds an orthonormal basis of the Krylov subspace, and the resulting 
+     * tridiagonal matrix is diagonalized using the `t_stemr` function.
+    * 
+    * @tparam MatrixType Type of the input matrix, defining the value type and matrix operations.
+    * @tparam InputMultiVectorType Type of the multi-vector for initial Lanczos basis vectors.
+    * 
+    * @param M Number of Lanczos iterations.
+    * @param numvec The number of runs of Lanczos.
+    * @param H The input matrix representing the system for which eigenvalues are sought.
+    * @param V Initial Lanczos vectors; will be overwritten with orthonormalized basis vectors.
+    * @param upperb Pointer to a variable that stores the computed upper bound for the largest eigenvalue.
+    * @param ritzv Array storing the resulting Ritz values (eigenvalues).
+    * @param Tau Array of values representing convergence estimates.
+    * @param ritzV Vector storing the Ritz vectors associated with computed eigenvalues.
+    * 
+    * @throws std::runtime_error if the matrix `H` is not square or if `H` and `V` are not in the same MPI grid.
+    */    
     template <typename MatrixType, typename InputMultiVectorType>
     void lanczos(std::size_t M, 
                  std::size_t numvec,
@@ -233,6 +257,24 @@ namespace mpi
         }       
     }
 
+    /**
+    * @brief Lanczos algorithm for eigenvalue computation (simplified version).
+    * 
+    * This version of the Lanczos algorithm is a simplified version that computes
+    * only the upper bound of the eigenvalue spectrum and does not compute
+    * eigenvectors. It operates similarly to the full Lanczos algorithm but
+    * omits the eigenvector computation step.
+    *
+    * @tparam MatrixType Type of the input matrix, defining the value type and matrix operations.
+    * @tparam InputMultiVectorType Type of the multi-vector for initial Lanczos basis vectors.
+    * 
+    * @param M Number of Lanczos iterations.
+    * @param H The input matrix representing the system for which eigenvalues are sought.
+    * @param V Initial Lanczos vector; will be overwritten with orthonormalized basis vectors.
+    * @param upperb Pointer to a variable that stores the computed upper bound for the largest eigenvalue.
+    * 
+    * @throws std::runtime_error if the matrix `H` is not square or if `H` and `V` are not in the same MPI grid.
+    */
     template <typename MatrixType, typename InputMultiVectorType>
     void lanczos(std::size_t M, 
                  MatrixType& H,

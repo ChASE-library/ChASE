@@ -10,15 +10,10 @@
 #include "linalg/distMatrix/distMatrix.hpp"
 #include "linalg/distMatrix/distMultiVector.hpp"
 #include "grid/mpiGrid2D.hpp"
-#include "linalg/internal/mpi/cholqr.hpp"
-#include "linalg/internal/mpi/lanczos.hpp"
-#include "linalg/internal/mpi/residuals.hpp"
-#include "linalg/internal/mpi/rayleighRitz.hpp"
-#include "linalg/internal/mpi/shiftDiagonal.hpp"
+#include "linalg/internal/mpi/mpi_kernels.hpp"
 #ifdef HAS_SCALAPACK
 #include "external/scalapackpp/scalapackpp.hpp"
 #endif
-#include "linalg/internal/mpi/symOrHerm.hpp"
 #include "algorithm/types.hpp"
 #include "../../linalg/internal/typeTraits.hpp"
 
@@ -28,6 +23,36 @@ namespace chase
 {
 namespace Impl
 {
+/**
+ * @page ChaseMPICPU
+ * 
+ * @section intro_sec Introduction
+ * This class implements the CPU-based parallel version of the Chase algorithm using MPI. 
+ * It inherits from `ChaseBase` and provides methods for solving generalized eigenvalue problems 
+ * with MPI-based parallelism. The class operates on matrix and multi-vector data types, leveraging MPI 
+ * for communication across different processes in a distributed computing environment.
+ * 
+ * @section constructor_sec Constructors and Destructor
+ * The constructor and destructor for the `ChaseMPICPU` class manage the initialization of the matrix 
+ * data, multi-vectors, and MPI communication. The constructor also ensures that the matrix is square 
+ * and that the matrix and eigenvectors are mapped to the same MPI grid.
+ * 
+ * @section members_sec Private Members
+ * Private members include matrix data, multi-vectors, configuration settings, and MPI-specific 
+ * information such as rank, size, coordinates, and dimensions. These members are initialized 
+ * during construction.
+ */
+
+/**
+ * @brief CPU-based parallel Chase algorithm with MPI.
+ * 
+ * This class solves generalized eigenvalue problems using a parallel implementation of the Chase 
+ * algorithm. It leverages MPI for parallel processing and works with matrix and multi-vector data 
+ * types.
+ * 
+ * @tparam MatrixType The matrix type, such as `chase::distMatrix::RedundantMatrix`.
+ * @tparam InputMultiVectorType The input multi-vector type, typically used for eigenvectors.
+ */
 template <typename MatrixType, typename InputMultiVectorType>
 class ChaseMPICPU : public ChaseBase<typename MatrixType::value_type>
 {
@@ -35,6 +60,19 @@ class ChaseMPICPU : public ChaseBase<typename MatrixType::value_type>
     using ResultMultiVectorType = typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type;
 
 public:
+    /**
+     * @brief Constructor for the ChaseMPICPU class.
+     * 
+     * Initializes the Chase algorithm with the given matrix, eigenvector, and Ritz values. The matrix 
+     * and eigenvectors must be mapped to the same MPI grid. The constructor also verifies that the 
+     * matrix is square and sets up the necessary data structures for the algorithm.
+     * 
+     * @param nev The number of eigenvalues to compute.
+     * @param nex The number of additional eigenvalues.
+     * @param H Pointer to the matrix to solve.
+     * @param V Pointer to the input multi-vector of eigenvectors.
+     * @param ritzv Pointer to the Ritz values used in the algorithm.
+     */
     ChaseMPICPU(std::size_t nev,
                 std::size_t nex,
                 MatrixType *H,
@@ -70,9 +108,19 @@ public:
         dims_ = Hmat_->getMpiGrid()->get_dims();
 
     }
-
+    /**
+     * @brief Deleted copy constructor.
+     * 
+     * The copy constructor is deleted to prevent copying of this class, as it manages
+     * unique resources such as MPI communication.
+     */
     ChaseMPICPU(const ChaseMPICPU&) = delete;
-
+    /**
+     * @brief Destructor for the ChaseMPICPU class.
+     * 
+     * Cleans up any resources allocated by the constructor, including matrix data and MPI-specific 
+     * information.
+     */
     ~ChaseMPICPU() {}
 
     std::size_t GetN() const override { return N_; }
@@ -481,36 +529,159 @@ public:
     void End() override { }
 
 private:
+    /**
+    * @brief Enum to represent the next operation to be performed.
+    * 
+    * This enum specifies the two possible operations in the Chase algorithm: `cAb` and `bAc`.
+    */
     enum NextOp
     {
-        cAb,
-        bAc
+        cAb, /**< Operation cAb: specific matrix-vector multiplication. */
+        bAc  /**< Operation bAc: another specific matrix-vector multiplication. */
     };
+
+    /**
+    * @brief The current operation to be performed.
+    * 
+    * This member stores the next operation to be executed based on the algorithm's current step.
+    * It can be set to either `cAb` or `bAc`, depending on the context of the computation.
+    */
     NextOp next_; 
 
-    bool is_sym_;
-    std::size_t nev_;
-    std::size_t nex_;
-    std::size_t nevex_;
-    std::size_t locked_;
+    /**
+    * @brief Flag indicating if the matrix is symmetric.
+    * 
+    * This boolean value is used to track whether the matrix being processed is symmetric.
+    * It influences certain algorithmic steps to optimize performance or correctness.
+    */
+    bool is_sym_; 
 
-    std::size_t N_;
+    /**
+    * @brief The number of eigenvalues to compute.
+    * 
+    * This member holds the number of eigenvalues (nev_) that the algorithm will compute.
+    */
+    std::size_t nev_; 
 
-    int nprocs_;
-    int my_rank_;
-    int *coords_;
-    int *dims_;
+    /**
+    * @brief The number of additional eigenvalues.
+    * 
+    * This member holds the number of extra eigenvalues (nex_) to compute in addition to nev_.
+    */
+    std::size_t nex_; 
 
-    MatrixType *Hmat_;
-    InputMultiVectorType *V1_;
-    std::unique_ptr<InputMultiVectorType> V2_;
-    std::unique_ptr<ResultMultiVectorType> W1_;
-    std::unique_ptr<ResultMultiVectorType> W2_;
+    /**
+    * @brief The total number of eigenvalues.
+    * 
+    * This member holds the total number of eigenvalues to compute, which is the sum of `nev_` and `nex_`.
+    */
+    std::size_t nevex_; 
 
-    std::unique_ptr<chase::distMatrix::RedundantMatrix<chase::Base<T>>> ritzv_;
-    std::unique_ptr<chase::distMatrix::RedundantMatrix<chase::Base<T>>> resid_;
-    std::unique_ptr<chase::distMatrix::RedundantMatrix<T>> A_;
+    /**
+    * @brief Lock state for the algorithm.
+    * 
+    * This value indicates whether certain parameters are locked, preventing changes during the 
+    * algorithm's execution.
+    */
+    std::size_t locked_; 
 
+    /**
+    * @brief The number of rows in the matrix.
+    * 
+    * This member holds the number of rows in the matrix H (also referred to as `N_`).
+    */
+    std::size_t N_; 
+
+    /**
+    * @brief The total number of MPI processes.
+    * 
+    * This integer stores the total number of processes involved in the parallel computation.
+    */
+    int nprocs_; 
+
+    /**
+    * @brief The rank of the current MPI process.
+    * 
+    * This integer stores the rank of the current process within the MPI communicator.
+    */
+    int my_rank_; 
+
+    /**
+    * @brief The MPI process coordinates.
+    * 
+    * This pointer stores the coordinates of the current process in the MPI grid.
+    */
+    int *coords_; 
+
+    /**
+    * @brief The dimensions of the MPI grid.
+    * 
+    * This pointer stores the dimensions of the MPI grid, used for distributing data across processes.
+    */
+    int *dims_; 
+
+    /**
+    * @brief Pointer to the matrix H.
+    * 
+    * This member points to the matrix `H` that is being solved in the algorithm.
+    */
+    MatrixType *Hmat_; 
+
+    /**
+    * @brief Pointer to the input multi-vector of eigenvectors.
+    * 
+    * This pointer stores the input eigenvectors used for the Chase algorithm.
+    */
+    InputMultiVectorType *V1_; 
+
+    /**
+    * @brief Unique pointer to a cloned input multi-vector.
+    * 
+    * This unique pointer holds a copy of the input multi-vector `V1_`, used for intermediate computations.
+    */
+    std::unique_ptr<InputMultiVectorType> V2_; 
+
+    /**
+    * @brief Unique pointer to the first result multi-vector.
+    * 
+    * This unique pointer holds a result multi-vector that is used for storing intermediate computation results.
+    */
+    std::unique_ptr<ResultMultiVectorType> W1_; 
+
+    /**
+    * @brief Unique pointer to the second result multi-vector.
+    * 
+    * This unique pointer holds another result multi-vector for storing additional intermediate computation results.
+    */
+    std::unique_ptr<ResultMultiVectorType> W2_; 
+
+    /**
+    * @brief Unique pointer to the Ritz values matrix.
+    * 
+    * This unique pointer holds the Ritz values, which are used in the Chase algorithm's eigenvalue computation.
+    */
+    std::unique_ptr<chase::distMatrix::RedundantMatrix<chase::Base<T>>> ritzv_; 
+
+    /**
+    * @brief Unique pointer to the residuals matrix.
+    * 
+    * This unique pointer stores the residuals of the computed eigenvalues during the Chase algorithm.
+    */
+    std::unique_ptr<chase::distMatrix::RedundantMatrix<chase::Base<T>>> resid_; 
+
+    /**
+    * @brief Unique pointer to an auxiliary matrix.
+    * 
+    * This unique pointer holds an auxiliary matrix used in the intermediate steps of the Chase algorithm.
+    */
+    std::unique_ptr<chase::distMatrix::RedundantMatrix<T>> A_; 
+
+    /**
+    * @brief Configuration for the Chase algorithm.
+    * 
+    * This member holds the configuration settings for the Chase algorithm, such as parameters for 
+    * matrix dimensions and other algorithmic settings.
+    */
     chase::ChaseConfig<T> config_;
 };
 

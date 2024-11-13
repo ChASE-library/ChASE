@@ -11,7 +11,7 @@
 
 /**
  * @page mpi_grid_module chase::grid Namespace
- * This module defines classes and enumerations for creating and managing 
+ * The `chase::grid` namespace defines classes and enumerations for creating and managing 
  * a 2D MPI grid, with support for row-major and column-major ordering. 
  * It includes both an abstract base class, `MpiGrid2DBase`, and a templated
  * derived class, `MpiGrid2D`, to configure the grid for use with 

@@ -6,15 +6,8 @@
 #include <vector>
 #include "algorithm/chaseBase.hpp"
 #include "linalg/matrix/matrix.hpp"
-#include "linalg/internal/cuda/cholqr.hpp"
-#include "linalg/internal/cuda/lanczos.hpp"
-#include "linalg/internal/cuda/shiftDiagonal.hpp"
-#include "linalg/internal/cuda/residuals.hpp"
-#include "linalg/internal/cuda/rayleighRitz.hpp"
-#include "linalg/internal/cuda/lacpy.hpp"
+#include "linalg/internal/cuda/cuda_kernels.hpp"
 #include "linalg/internal/cpu/symOrHerm.hpp"
-#include "linalg/internal/cuda/random_normal_distribution.hpp"
-
 #include "algorithm/types.hpp"
 
 #include "Impl/cuda/nvtx.hpp"
@@ -25,10 +18,87 @@ namespace chase
 {
 namespace Impl
 {
+/**
+ * @page ChaseGPUSeq
+ * 
+ * @section intro_sec Introduction
+ * This class implements the GPU-based sequential version of the Chase algorithm. It inherits from
+ * `ChaseBase` and provides methods for solving generalized eigenvalue problems using Lanczos
+ * iterations and various other matrix operations like QR factorization, HEMM, and Lanczos-based
+ * algorithms. The computations are offloaded to the GPU using CUDA, CUBLAS, and CUSOLVER for efficient
+ * matrix operations and eigenvalue solvers.
+ * 
+ * @section constructor_sec Constructors and Destructor
+ * The constructor and destructor for the `ChaseGPUSeq` class handle memory allocation, initialization
+ * of matrices and associated data structures on the GPU, as well as resource cleanup. 
+ * 
+ * @subsection constructor_details Detailed Constructor
+ * 
+ * The constructor takes in several parameters to initialize the algorithm's matrices and configuration:
+ * - `N`: The size of the matrix.
+ * - `nev`: The number of eigenvalues to compute.
+ * - `nex`: The number of extra vectors.
+ * - `H`: A pointer to the matrix \( H \).
+ * - `ldh`: The leading dimension of matrix \( H \).
+ * - `V1`: A pointer to the matrix \( V_1 \).
+ * - `ldv`: The leading dimension of matrix \( V_1 \).
+ * - `ritzv`: A pointer to the Ritz values vector.
+ * 
+ * The constructor allocates memory for the GPU matrices, initializes CUDA streams, and sets up CUBLAS
+ * and CUSOLVER handles. It also computes buffer sizes for various matrix operations.
+ * 
+ * @subsection destructor_details Destructor
+ * 
+ * The destructor ensures that all dynamically allocated memory and CUDA resources are properly freed
+ * by calling the appropriate `cudaFree`, `cublasDestroy`, and `cusolverDnDestroy` functions.
+ * 
+ * @section members_sec Private Members
+ * Private members are used to manage the algorithm's configuration and store matrices, as well as GPU
+ * resources for matrix operations:
+ * - `N_`: Size of the matrix.
+ * - `locked_`: A counter for the number of converged eigenvalues.
+ * - `nev_`: Number of eigenvalues to compute.
+ * - `nex_`: Number of extra vectors.
+ * - `nevex_`: The total number of eigenvalues and extra vectors.
+ * - `ldh_`: Leading dimension of matrix \( H \).
+ * - `ldv_`: Leading dimension of matrix \( V_1 \).
+ * - `H_`, `V1_`, `ritzv_`: Pointers to the input data matrices.
+ * - `tmp_`, `devInfo_`, `d_return_`, `d_work_`: Temporary buffers for GPU computations.
+ * - `Hmat_`, `Vec1_`, `Vec2_`, `A_`, `ritzvs_`, `resid_`: GPU matrices for computations and results.
+ * - `config_`: Configuration object for the Chase algorithm.
+ * - `stream_`, `cublasH_`, `cusolverH_`: CUDA stream and handles for CUBLAS and CUSOLVER.
+ * 
+ * These members are initialized during the constructor to ensure the algorithm operates correctly on the GPU.
+ */
+
+/**
+ * @brief GPU-based sequential Chase algorithm.
+ * 
+ * This class is responsible for solving generalized eigenvalue problems using GPU-based Lanczos
+ * iterations and other matrix operations. It uses CUDA, CUBLAS, and CUSOLVER libraries for efficient
+ * matrix operations and eigenvalue solvers.
+ * 
+ * @tparam T The data type (e.g., float, double).
+ */    
 template <class T>
 class ChaseGPUSeq : public ChaseBase<T>
 {
 public:
+    /**
+     * @brief Constructor for the ChaseGPUSeq class.
+     * 
+     * Initializes matrices and GPU resources, including CUDA streams, CUBLAS, and CUSOLVER handles.
+     * Allocates memory for the GPU matrices and computes necessary buffer sizes for matrix operations.
+     * 
+     * @param N The size of the matrix.
+     * @param nev The number of eigenvalues to compute.
+     * @param nex The number of extra vectors.
+     * @param H Pointer to the matrix \( H \).
+     * @param ldh The leading dimension of matrix \( H \).
+     * @param V1 Pointer to the matrix \( V_1 \).
+     * @param ldv The leading dimension of matrix \( V_1 \).
+     * @param ritzv Pointer to the Ritz values vector.
+     */
     ChaseGPUSeq(std::size_t N,
                 std::size_t nev,
                 std::size_t nex,
@@ -125,6 +195,11 @@ public:
 
     ChaseGPUSeq(const ChaseGPUSeq&) = delete;
 
+    /**
+     * @brief Destructor for the ChaseGPUSeq class.
+     * 
+     * Frees all dynamically allocated memory and destroys CUDA resources (CUBLAS, CUSOLVER, CUDA buffers).
+     */
     ~ChaseGPUSeq() 
     {
         SCOPED_NVTX_RANGE();
@@ -583,38 +658,36 @@ public:
     }
         
 private:
-    std::size_t N_;
-    std::size_t locked_;
-    std::size_t nev_;
-    std::size_t nex_;
-    std::size_t nevex_;
-    std::size_t ldh_;
-    std::size_t ldv_;
+    std::size_t N_;              /**< Size of the matrix. */
+    std::size_t locked_;         /**< Counter for the number of converged eigenvalues. */
+    std::size_t nev_;            /**< Number of eigenvalues to compute. */
+    std::size_t nex_;            /**< Number of extra vectors. */
+    std::size_t nevex_;          /**< Total number of eigenvalues and extra vectors. */
+    std::size_t ldh_;            /**< Leading dimension of matrix \( H \). */
+    std::size_t ldv_;            /**< Leading dimension of matrix \( V_1 \). */
 
-    bool is_sym_;
+    T *H_;                       /**< Pointer to the matrix \( H \). */
+    T *V1_;                      /**< Pointer to the matrix \( V_1 \). */
+    chase::Base<T> *ritzv_;      /**< Pointer to the Ritz values vector. */
+    T *tmp_;                     /**< Temporary buffer for GPU computations. */
+    bool is_sym_;                   ///< Flag for matrix symmetry.
 
-    T *H_;
-    T *V1_;
-    chase::Base<T> *ritzv_;
-    T *tmp_;
+    chase::matrix::Matrix<T, chase::platform::GPU> Hmat_;       /**< GPU matrix \( H \). */
+    chase::matrix::Matrix<T, chase::platform::GPU> Vec1_;       /**< GPU matrix \( V_1 \). */
+    chase::matrix::Matrix<T, chase::platform::GPU> Vec2_;       /**< GPU matrix for additional vectors. */
+    chase::matrix::Matrix<T, chase::platform::GPU> A_;          /**< GPU matrix for computations. */
+    chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU> ritzvs_; /**< GPU matrix for Ritz values. */
+    chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU> resid_;  /**< GPU matrix for residuals. */
+    chase::ChaseConfig<T> config_;   /**< Configuration object for the Chase algorithm. */
 
-    chase::matrix::Matrix<T, chase::platform::GPU> Hmat_;
-    chase::matrix::Matrix<T, chase::platform::GPU> Vec1_;
-    chase::matrix::Matrix<T, chase::platform::GPU> Vec2_;
-    chase::matrix::Matrix<T, chase::platform::GPU> A_;
-    chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU> ritzvs_;
-    chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU> resid_;
-    chase::ChaseConfig<T> config_;
+    cudaStream_t stream_;          /**< CUDA stream for asynchronous operations. */
+    cublasHandle_t cublasH_;       /**< CUBLAS handle for GPU-accelerated linear algebra operations. */
+    cusolverDnHandle_t cusolverH_; /**< CUSOLVER handle for eigenvalue computations. */
 
-    cudaStream_t stream_; 
-    cublasHandle_t cublasH_;      
-    cusolverDnHandle_t cusolverH_;
-
-
-    int* devInfo_;
-    T* d_return_;
-    T* d_work_;
-    int lwork_ = 0;
+    int* devInfo_;                 /**< Pointer to device information for CUDA operations. */
+    T* d_return_;                  /**< Pointer to device buffer for eigenvalues. */
+    T* d_work_;                    /**< Pointer to work buffer for matrix operations. */
+    int lwork_ = 0;                    /**< Workspace size for matrix operations. */
 }; 
 
 }    

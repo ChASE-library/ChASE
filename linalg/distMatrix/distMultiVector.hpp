@@ -26,7 +26,7 @@
 
 /**
  * @page chase_distMultiVector_namespace chase::distMultiVector Namespace
- * The chase::distMultiVector namespace contains classes, structures, and utilities for distributed block-vectors,
+ * The `chase::distMultiVector` namespace contains classes, structures, and utilities for distributed block-vectors,
  * including support for distributed multi-vector computations and precision conversion traits.
  */
 

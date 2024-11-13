@@ -2,7 +2,8 @@
 
 /**
  * \defgroup gpu_kernels chase::linalg::internal::cuda Namespace
- * \brief Kernels required by ChASE for the single GPU
+ * \brief The `chase::linalg::internal::cuda` namespace contains 
+ * kernels required by ChASE for the single GPU
  * @{
  */
 #include "linalg/internal/cuda/absTrace.cuh"

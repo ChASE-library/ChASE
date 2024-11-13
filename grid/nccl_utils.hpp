@@ -20,7 +20,7 @@ void checkNccl(ncclResult_t err, const char* const func, const char* const file,
 
 /**
  * @page chase_nccl_namespace chase::nccl Namespace
- * @brief  Namespace for NCCL type mappings, helper functions and templated communication functions.
+ * @brief  The `chase::nccl` namespace for NCCL type mappings, helper functions and templated communication functions.
  *
  * 
  * The `chase::nccl` namespace contains type mappings between C++ data types 

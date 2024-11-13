@@ -49,7 +49,7 @@ void checkCusolver(cusolverStatus_t status, const char* const func,
 
 /**
  * @page cusolverpp_namespace chase::linalg::cusolverpp Namespace
- * @brief A templated C++ interface to the cuSOLVER library.
+ * @brief The namespace `chase::linalg::cusolverpp` contains a templated C++ interface to the cuSOLVER library.
  *
  * This namespace contains templated functions that interface with the cuSOLVER library to provide efficient linear algebra and decomposition routines on GPUs.
  * The functions are templated to work with data types such as `float`, `double`, and `std::complex`, enabling efficient numerical computations in scientific applications.

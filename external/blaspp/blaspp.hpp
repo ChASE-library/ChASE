@@ -5,7 +5,7 @@
 
 /**
  * @page blaspp_namespace chase::linalg::blaspp Namespace
- * @brief A templated C++ interface to the BLAS library.
+ * @brief The ` chase::linalg::blaspp` namespace contains a templated C++ interface to the BLAS library.
  *
  * This namespace contains templated functions that interface with the BLAS library to provide efficient linear algebra routines.
  * The functions are templated to work with different data types such as `float`, `double`, and `std::complex`.

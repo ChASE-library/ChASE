@@ -47,7 +47,7 @@ void checkCublas(cublasStatus_t status, const char* const func,
  * @page cublaspp_namespace chase::linalg::cublaspp Namespace
  * @brief A templated C++ interface to the cuBLAS library.
  *
- * This namespace contains templated functions that interface with the cuBLAS library to provide efficient linear algebra routines on GPU.
+ * The `chase::linalg::cublaspp` namespace contains templated functions that interface with the cuBLAS library to provide efficient linear algebra routines on GPU.
  * The functions are templated to work with different data types such as `float`, `double`, and `std::complex`.
  * These functions allow for easy and efficient numerical computations in scientific computing.
  */

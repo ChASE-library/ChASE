@@ -2,7 +2,8 @@
 
 /**
  * \defgroup cpu_kernels chase::linalg::internal::cpu Namespace
- * \brief Kernels required by ChASE for the shared-memory CPU architectures
+ * \brief The `chase::linalg::internal::cpu` namespace contains k
+ * ernels required by ChASE for the shared-memory CPU architectures
  * @{
  */
 #include "linalg/internal/cpu/cholqr1.hpp"
