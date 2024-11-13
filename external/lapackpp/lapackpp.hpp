@@ -8,7 +8,7 @@
  * @page lapackpp_namespace chase::linalg::lapackpp Namespace
  * @brief A templated C++ interface to the LAPACK library.
  *
- * This namespace contains templated functions that interface with the LAPACK library to provide efficient linear algebra routines.
+ * This namespace `chase::linalg::lapackpp` contains templated functions that interface with the LAPACK library to provide efficient linear algebra routines.
  * The functions are templated to work with different data types such as `float`, `double`, and `std::complex`.
  * These functions allow for easy and efficient numerical computations in scientific computing.
  */

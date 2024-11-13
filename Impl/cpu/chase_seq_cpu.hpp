@@ -6,23 +6,60 @@
 #include <vector>
 #include "algorithm/chaseBase.hpp"
 #include "linalg/matrix/matrix.hpp"
-#include "linalg/internal/cpu/cholqr1.hpp"
-#include "linalg/internal/cpu/lanczos.hpp"
-#include "linalg/internal/cpu/residuals.hpp"
-#include "linalg/internal/cpu/rayleighRitz.hpp"
-#include "linalg/internal/cpu/symOrHerm.hpp"
+#include "linalg/internal/cpu/cpu_kernels.hpp"
 #include "algorithm/types.hpp"
-
+#include "external/blaspp/blaspp.hpp"
+#include "external/lapackpp/lapackpp.hpp"
 using namespace chase::linalg;
 
 namespace chase
 {
 namespace Impl
 {
+/**
+ * @page ChaseCPUSeq
+ * 
+ * @section intro_sec Introduction
+ * This class implements the CPU-based sequential version of the Chase algorithm. It inherits from
+ * `ChaseBase` and provides methods for solving generalized eigenvalue problems using Lanczos
+ * iterations and various other matrix operations like QR factorization, HEMM, and Lanczos-based
+ * algorithms.
+ * 
+ * @section constructor_sec Constructors and Destructor
+ * The constructor and destructor for the `ChaseCPUSeq` class are provided for memory management
+ * and initialization of matrices and related data structures.
+ * 
+ * @section members_sec Private Members
+ * Private members include matrix data, matrix dimensions, and configuration settings used
+ * throughout the algorithm. These members are initialized during construction.
+ */
+
+/**
+ * @brief CPU-based sequential Chase algorithm.
+ * 
+ * This class is responsible for solving generalized eigenvalue problems using CPU-based Lanczos
+ * iterations and other matrix operations.
+ * 
+ * @tparam T The data type (e.g., float, double).
+ */    
 template <class T>
 class ChaseCPUSeq : public ChaseBase<T>
 {
 public:
+    /**
+     * @brief Constructs the `ChaseCPUSeq` object.
+     * 
+     * Initializes the matrices, vectors, and configuration necessary for the computation.
+     * 
+     * @param N The size of the matrix (N x N).
+     * @param nev The number of eigenvalues to compute.
+     * @param nex The number of additional eigenvalues for extra space.
+     * @param H Pointer to the matrix of size N x N.
+     * @param ldh Leading dimension of H.
+     * @param V1 Pointer to the initial vector set of size N x (nev + nex).
+     * @param ldv Leading dimension of V1.
+     * @param ritzv Pointer to the Ritz values.
+     */
     ChaseCPUSeq(std::size_t N, 
                 std::size_t nev, 
                 std::size_t nex, 
@@ -50,8 +87,19 @@ public:
         A_ = chase::matrix::Matrix<T>(nevex_, nevex_);
     }
 
+    /**
+     * @brief Deleted copy constructor.
+     * 
+     * This class is not copyable, and the copy constructor is deleted to prevent
+     * object duplication.
+     */
     ChaseCPUSeq(const ChaseCPUSeq&) = delete;
-
+    /**
+     * @brief Destructor for the `ChaseCPUSeq` class.
+     * 
+     * The destructor is defined to clean up the allocated memory (if any) and
+     * perform necessary cleanup tasks.
+     */
     ~ChaseCPUSeq() {}
 
     std::size_t GetN() const override {return N_;}
@@ -65,6 +113,15 @@ public:
     ChaseConfig<T>& GetConfig() override {return config_; }
     int get_nprocs() override {return 1;}
 
+    /**
+    * @brief Loads matrix data from a binary file.
+    *
+    * This function reads the matrix data from a specified binary file and stores it
+    * in the internal matrix (Hmat_). The file is expected to contain the raw matrix
+    * data with a format that is compatible with the matrix's internal representation.
+    *
+    * @param filename The path to the binary file containing the matrix data.
+    */
     void loadProblemFromFile(std::string filename)
     {
         Hmat_.readFromBinaryFile(filename);
@@ -81,7 +138,7 @@ public:
     bool checkSymmetryEasy() override
     {
         is_sym_ = chase::linalg::internal::cpu::checkSymmetryEasy(N_, Hmat_.data(), Hmat_.ld());  
-        return is_sym_ = true;
+        return is_sym_;
     }
 
     bool isSym() {return is_sym_;}
@@ -98,7 +155,6 @@ public:
 
     void initVecs(bool random) override
     {
-
         if (random)
         {
             std::mt19937 gen(1337.0);
@@ -293,10 +349,10 @@ public:
                                         &alpha, 
                                         Hmat_.data(), 
                                         Hmat_.ld(),
-                                        Vec1_.data() + offset * N_ + locked_ * N_, 
+                                        Vec1_.data() + offset * Vec1_.ld() + locked_ * Vec1_.ld(), 
                                         Vec1_.ld(), 
                                         &beta,
-                                        Vec2_.data() + offset * N_ + locked_ * N_,
+                                        Vec2_.data() + offset * Vec2_.ld() + locked_ * Vec2_.ld(),
                                         Vec2_.ld());
         }                              
 
@@ -405,14 +461,14 @@ public:
     {
 
         std::size_t locked = (nev_ + nex_) - block;
-     
+   
         chase::linalg::internal::cpu::rayleighRitz(Hmat_.rows(),
                                                    Hmat_.data(),
                                                    Hmat_.ld(),
                                                    block, 
-                                                   Vec1_.data() + locked_ * N_,
+                                                   Vec1_.data() + locked_ * Vec1_.ld(),
                                                    Vec1_.ld(),
-                                                   Vec2_.data() + locked_ * N_,
+                                                   Vec2_.data() + locked_ * Vec2_.ld(),
                                                    Vec2_.ld(),
                                                    ritzvs_.data() + locked_,
                                                    A_.data()
@@ -429,11 +485,11 @@ public:
                                                 Hmat_.data(),
                                                 Hmat_.ld(),
                                                 unconverged,
-                                                ritzv,
-                                                Vec1_.data() + fixednev * N_,
+                                                ritzvs_.data() + fixednev,
+                                                Vec1_.data() + fixednev * Vec1_.ld(),
                                                 Vec1_.ld(),
-                                                resd,
-                                                Vec2_.data());
+                                                resid_.data() + fixednev,
+                                                Vec2_.data() + fixednev * Vec2_.ld());
     }
 
     void Swap(std::size_t i, std::size_t j) override
@@ -453,28 +509,25 @@ public:
     void End() override { }
         
 private:
-    std::size_t N_;
-    std::size_t locked_;
-    std::size_t nev_;
-    std::size_t nex_;
-    std::size_t nevex_;
-    std::size_t ldh_;
-    std::size_t ldv_;
-
-    bool is_sym_;
-
-    T *H_;
-    T *V1_;
-    chase::Base<T> *ritzv_;
-
-    chase::matrix::Matrix<T> Hmat_;
-    chase::matrix::Matrix<T> Vec1_;
-    chase::matrix::Matrix<T> Vec2_;
-    chase::matrix::Matrix<T> A_;
-    chase::matrix::Matrix<chase::Base<T>> ritzvs_;
-    chase::matrix::Matrix<chase::Base<T>> resid_;
-    chase::ChaseConfig<T> config_;
-
+    std::size_t N_;                  ///< Size of the matrix.
+    T* H_;                           ///< Pointer to the matrix H.
+    T* V1_;                          ///< Pointer to the initial vector set.
+    std::size_t ldh_;                ///< Leading dimension of H.
+    std::size_t ldv_;                ///< Leading dimension of V1.
+    chase::Base<T>* ritzv_;          ///< Pointer to the Ritz values.
+    std::size_t nev_;                ///< Number of eigenvalues to compute.
+    std::size_t nex_;                ///< Number of extra eigenvalues.
+    std::size_t nevex_;              ///< Total number of eigenvalues (nev + nex).
+    ChaseConfig<T> config_;          ///< Configuration object for settings.
+    
+    chase::matrix::Matrix<T> Hmat_;  ///< Matrix for H.
+    chase::matrix::Matrix<T> Vec1_; ///< Matrix for the first vector set.
+    chase::matrix::Matrix<T> Vec2_; ///< Matrix for the second vector set.
+    chase::matrix::Matrix<chase::Base<T>> resid_; ///< Residuals matrix.
+    chase::matrix::Matrix<chase::Base<T>> ritzvs_; ///< Ritz values matrix.
+    chase::matrix::Matrix<T> A_;    ///< Auxiliary matrix A for operations.
+    bool is_sym_;                   ///< Flag for matrix symmetry.
+    std::size_t locked_;            ///< Counter for the number of converged eigenvalues.
 }; 
 
 }    

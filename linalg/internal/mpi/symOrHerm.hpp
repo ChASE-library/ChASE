@@ -18,7 +18,23 @@ namespace internal
 {
 namespace mpi
 {
-
+    /**
+    * @brief Checks if a matrix is symmetric using a randomized approach.
+    *
+    * This function checks the symmetry of a square matrix \( H \) by performing two matrix-vector multiplications:
+    * 1. It computes \( u = H \cdot v \), where \( v \) is a random vector.
+    * 2. It computes \( uT = H^T \cdot v \), where \( H^T \) is the transpose of \( H \).
+    * The matrix is considered symmetric if the vectors \( u \) and \( uT \) are the same, i.e., \( u = uT \).
+    *
+    * This method is computationally efficient and uses random vectors to test symmetry with high probability.
+    * However, it is not a guarantee for exact symmetry due to numerical errors, but it can be a quick heuristic check.
+    *
+    * @tparam T Data type for the matrix (e.g., float, double).
+    * @param[in] N The size of the matrix (N x N).
+    * @param[in] H The matrix to be checked for symmetry (of size N x N).
+    * @param[in] ldh The leading dimension of the matrix H.
+    * @return `true` if the matrix is symmetric, `false` otherwise.
+    */ 
     template<typename MatrixType>
     bool checkSymmetryEasy(MatrixType& H) 
     {
@@ -83,7 +99,23 @@ namespace mpi
         return is_sym;
 
     }
-
+    /**
+    * @brief Converts a BlockBlock matrix to its Hermitian or symmetric form based on the given `uplo` argument.
+    *
+    * This function modifies the matrix \( H \) in-place such that it becomes symmetric or Hermitian, depending on the value of the `uplo` parameter.
+    * - If `uplo` is `'U'`, the function converts the upper triangular part of the matrix to the Hermitian form, by setting the lower triangular part to the conjugate transpose of the upper part.
+    * - If `uplo` is `'L'`, the function converts the lower triangular part of the matrix to the Hermitian form, by setting the upper triangular part to the conjugate transpose of the lower part.
+    *
+    * The function assumes that the matrix is square (N x N) and modifies the elements of the matrix in-place. The conjugation is done using the `conjugate` function.
+    *
+    * @tparam T Data type for the matrix (e.g., float, double, std::complex).
+    * @param[in] uplo A character indicating which part of the matrix to modify:
+    * - `'U'` for the upper triangular part.
+    * - `'L'` for the lower triangular part.
+    * @param[in,out] N The size of the matrix (N x N). The matrix is modified in-place.
+    * @param[in,out] H The matrix to be modified. It is transformed into a symmetric or Hermitian matrix.
+    * @param[in] ldh The leading dimension of the matrix H.
+    */
     template<typename T>
     void symOrHermMatrix(char uplo, chase::distMatrix::BlockBlockMatrix<T>& H) 
     {
@@ -155,7 +187,23 @@ namespace mpi
 #endif
     }
 
-
+    /**
+    * @brief Converts a BlockCyclic matrix to its Hermitian or symmetric form based on the given `uplo` argument.
+    *
+    * This function modifies the matrix \( H \) in-place such that it becomes symmetric or Hermitian, depending on the value of the `uplo` parameter.
+    * - If `uplo` is `'U'`, the function converts the upper triangular part of the matrix to the Hermitian form, by setting the lower triangular part to the conjugate transpose of the upper part.
+    * - If `uplo` is `'L'`, the function converts the lower triangular part of the matrix to the Hermitian form, by setting the upper triangular part to the conjugate transpose of the lower part.
+    *
+    * The function assumes that the matrix is square (N x N) and modifies the elements of the matrix in-place. The conjugation is done using the `conjugate` function.
+    *
+    * @tparam T Data type for the matrix (e.g., float, double, std::complex).
+    * @param[in] uplo A character indicating which part of the matrix to modify:
+    * - `'U'` for the upper triangular part.
+    * - `'L'` for the lower triangular part.
+    * @param[in,out] N The size of the matrix (N x N). The matrix is modified in-place.
+    * @param[in,out] H The matrix to be modified. It is transformed into a symmetric or Hermitian matrix.
+    * @param[in] ldh The leading dimension of the matrix H.
+    */
     template<typename T>
     void symOrHermMatrix(char uplo, chase::distMatrix::BlockCyclicMatrix<T>& H) 
     {

@@ -15,7 +15,24 @@ namespace internal
 {
 namespace mpi
 {
-
+    /**
+     * @brief Performs matrix multiplication between a block matrix and an input multi-vector, 
+     * and stores the result in a result multi-vector with an optional offset and sub-size for partial multiplication.
+     * 
+     * @tparam T Scalar type.
+     * @tparam MatrixType Type of the block matrix.
+     * @tparam InputMultiVectorType Type of the input multi-vector.
+     * @param alpha Pointer to the scalar factor for the multiplication.
+     * @param blockMatrix Block matrix used in the multiplication.
+     * @param input_multiVector Input multi-vector on which the multiplication is performed.
+     * @param beta Pointer to the scalar factor for the addition of the result.
+     * @param result_multiVector Multi-vector to store the multiplication result.
+     * @param offset Starting column offset in the input multi-vector.
+     * @param subSize Number of columns to multiply from the input multi-vector.
+     * 
+     * @throws std::runtime_error if the dimensions of input/output multi-vectors and blockMatrix are incompatible.
+     * @throws std::invalid_argument if offset or subSize are out of valid bounds.
+     */
     template <typename T, typename MatrixType, typename InputMultiVectorType>
     void MatrixMultiplyMultiVectors(T* alpha,
                                         MatrixType& blockMatrix,
@@ -138,6 +155,19 @@ namespace mpi
         }         
     }
 
+    /**
+     * @brief Performs full matrix multiplication between a block matrix and an input multi-vector,
+     * storing the result in a result multi-vector. This overload multiplies all columns.
+     * 
+     * @tparam T Scalar type.
+     * @tparam MatrixType Type of the block matrix.
+     * @tparam InputMultiVectorType Type of the input multi-vector.
+     * @param alpha Pointer to the scalar factor for the multiplication.
+     * @param blockMatrix Block matrix used in the multiplication.
+     * @param input_multiVector Input multi-vector on which the multiplication is performed.
+     * @param beta Pointer to the scalar factor for the addition of the result.
+     * @param result_multiVector Multi-vector to store the multiplication result.
+     */
     template <typename T, typename MatrixType, typename InputMultiVectorType>
     void MatrixMultiplyMultiVectors(T* alpha,
                                         MatrixType& blockMatrix,
@@ -154,6 +184,23 @@ namespace mpi
                                        input_multiVector.l_cols());
     }
 
+    /**
+     * @brief Asynchronously performs matrix multiplication and redistributes the result across MPI communicators.
+     * This function allows computation and redistribution overlap.
+     * 
+     * @tparam MatrixType Type of the block matrix.
+     * @tparam InputMultiVectorType Type of the input multi-vector.
+     * @param blockMatrix Block matrix used in the multiplication.
+     * @param input_multiVector Input multi-vector on which the multiplication is performed.
+     * @param result_multiVector Multi-vector to store the multiplication result.
+     * @param src_multiVector Source multi-vector for redistribution.
+     * @param target_multiVector Target multi-vector to store the redistributed result.
+     * @param offset Starting column offset in the input multi-vector.
+     * @param subSize Number of columns to multiply and redistribute from the input multi-vector.
+     * 
+     * @throws std::runtime_error if the dimensions of input/output multi-vectors and blockMatrix are incompatible.
+     * @throws std::invalid_argument if offset or subSize are out of valid bounds.
+     */
     template <typename MatrixType, typename InputMultiVectorType>    
     void MatrixMultiplyMultiVectorsAndRedistributeAsync(
                                         MatrixType& blockMatrix, 
@@ -283,6 +330,18 @@ namespace mpi
     
     }
 
+    /**
+     * @brief Performs asynchronous matrix multiplication and redistributes the result across MPI communicators,
+     * with a full column span multiplication and redistribution.
+     * 
+     * @tparam MatrixType Type of the block matrix.
+     * @tparam InputMultiVectorType Type of the input multi-vector.
+     * @param blockMatrix Block matrix used in the multiplication.
+     * @param input_multiVector Input multi-vector on which the multiplication is performed.
+     * @param result_multiVector Multi-vector to store the multiplication result.
+     * @param src_multiVector Source multi-vector for redistribution.
+     * @param target_multiVector Target multi-vector to store the redistributed result.
+     */
     template <typename MatrixType, typename InputMultiVectorType>    
     void MatrixMultiplyMultiVectorsAndRedistributeAsync(
                                         MatrixType& blockMatrix, 

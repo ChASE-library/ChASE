@@ -21,6 +21,23 @@ namespace internal
 {
 namespace mpi
 {
+    /**
+     * @brief Performs a one-step Cholesky-based QR decomposition.
+     * 
+     * Computes a Cholesky factorization-based QR decomposition for the input matrix `V` in an MPI-distributed setting. 
+     * If `A` is not provided, it is allocated internally.
+     * 
+     * @tparam T The data type of the matrix elements.
+     * 
+     * @param m The number of rows of matrix `V`.
+     * @param n The number of columns of matrix `V`.
+     * @param V Pointer to the matrix data in column-major order.
+     * @param ldv The leading dimension of matrix `V`.
+     * @param comm The MPI communicator for distributed operations.
+     * @param A Optional pointer to an allocated `n x n` matrix used in the Cholesky factorization.
+     * 
+     * @return int Returns 0 on success; non-zero on failure.
+     */    
     template<typename T>
     int cholQR1(std::size_t m, std::size_t n, T *V, int ldv, MPI_Comm comm, T *A = nullptr)
     {
@@ -88,7 +105,23 @@ namespace mpi
         }
     }
 
-
+    /**
+     * @brief Performs a two-step Cholesky-based QR decomposition.
+     * 
+     * Computes a Cholesky factorization-based QR decomposition with two Cholesky steps 
+     * for the input matrix `V` in an MPI-distributed setting. If `A` is not provided, it is allocated internally.
+     * 
+     * @tparam T The data type of the matrix elements.
+     * 
+     * @param m The number of rows of matrix `V`.
+     * @param n The number of columns of matrix `V`.
+     * @param V Pointer to the matrix data in column-major order.
+     * @param ldv The leading dimension of matrix `V`.
+     * @param comm The MPI communicator for distributed operations.
+     * @param A Optional pointer to an allocated `n x n` matrix used in the Cholesky factorization.
+     * 
+     * @return int Returns 0 on success; non-zero on failure.
+     */
     template<typename T>
     int cholQR2(std::size_t m, std::size_t n, T *V, int ldv, MPI_Comm comm, T *A = nullptr)
     {
@@ -187,6 +220,24 @@ namespace mpi
         }
     }
 
+    /**
+     * @brief Performs a two-step shifted Cholesky-based QR decomposition.
+     * 
+     * Computes a shifted Cholesky factorization-based QR decomposition with two Cholesky steps 
+     * for the input matrix `V` in an MPI-distributed setting. If `A` is not provided, it is allocated internally.
+     * 
+     * @tparam T The data type of the matrix elements.
+     * 
+     * @param N The size parameter used for calculating the diagonal shift.
+     * @param m The number of rows of matrix `V`.
+     * @param n The number of columns of matrix `V`.
+     * @param V Pointer to the matrix data in column-major order.
+     * @param ldv The leading dimension of matrix `V`.
+     * @param comm The MPI communicator for distributed operations.
+     * @param A Optional pointer to an allocated `n x n` matrix used in the Cholesky factorization.
+     * 
+     * @return int Returns 0 on success; non-zero on failure.
+     */
     template<typename T>
     int shiftedcholQR2(std::size_t N, std::size_t m, std::size_t n, T *V, int ldv, MPI_Comm comm, T *A = nullptr)
     { 
@@ -320,6 +371,18 @@ namespace mpi
 
     }
 
+    /**
+     * @brief Computes the Householder QR decomposition for a distributed multi-vector.
+     * 
+     * This function performs a QR factorization using Householder transformations on the input multi-vector `V`.
+     * Requires ScaLAPACK to be available for distributed QR computations.
+     * 
+     * @tparam InputMultiVectorType The type of the distributed multi-vector, containing matrix data.
+     * 
+     * @param V The distributed multi-vector on which QR decomposition is performed.
+     * 
+     * @throws std::runtime_error If ScaLAPACK is not available.
+     */
     template<typename InputMultiVectorType>
     void houseHoulderQR(InputMultiVectorType& V)
     {

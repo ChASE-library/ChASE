@@ -9,7 +9,7 @@
  * @page scalapackpp_namespace chase::linalg::scalapackpp Namespace
  * @brief A templated C++ interface to the ScaLAPACK library.
  *
- * This namespace contains templated functions that interface with the ScaLAPACK library to provide efficient distributed-memory linear algebra routines.
+ * This namespace `chase::linalg::scalapackpp` contains templated functions that interface with the ScaLAPACK library to provide efficient distributed-memory linear algebra routines.
  * The functions are templated to work with different data types such as `float`, `double`, and `std::complex`.
  * These functions allow for easy and efficient numerical computations in scientific computing.
  */

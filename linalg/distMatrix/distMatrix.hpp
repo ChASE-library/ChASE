@@ -24,7 +24,7 @@
 
 /**
  * @page chase_dist_matrix_namespace chase::distMatrix Namespace
- * The chase::distMatrix namespace contains a set of matrix types designed for distributed memory environments. 
+ * The `chase::distMatrix` namespace contains a set of matrix types designed for distributed memory environments. 
  * These matrices are meant to support different data distributions across multiple MPI processes.
  */
 

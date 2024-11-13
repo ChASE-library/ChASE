@@ -11,6 +11,16 @@ namespace internal
 {
 namespace mpi
 {
+    /**
+     * @brief Applies a shift to the diagonal elements of a BlockBlockMatrix.
+     *
+     * This function iterates over the local rows and columns of the distributed matrix `H`
+     * and adds a given shift value to the diagonal elements (where row index equals column index).
+     *
+     * @tparam T The data type of the matrix elements (e.g., `float`, `double`).
+     * @param H The BlockBlockMatrix whose diagonal elements will be shifted.
+     * @param shift The value to add to each diagonal element.
+     */    
     template<typename T>
     void shiftDiagonal(chase::distMatrix::BlockBlockMatrix<T, chase::platform::CPU>& H, T shift)
     {
@@ -33,6 +43,16 @@ namespace mpi
         }
     }
 
+    /**
+     * @brief Applies a shift to the diagonal elements of a BlockCyclicMatrix.
+     *
+     * This function iterates over the matrix blocks, identifying diagonal elements based on 
+     * global and local offsets, and adds a specified shift value to these elements.
+     *
+     * @tparam T The data type of the matrix elements (e.g., `float`, `double`).
+     * @param H The BlockCyclicMatrix whose diagonal elements will be shifted.
+     * @param shift The value to add to each diagonal element.
+     */
     template<typename T>
     void shiftDiagonal(chase::distMatrix::BlockCyclicMatrix<T, chase::platform::CPU>& H, T shift)
     {

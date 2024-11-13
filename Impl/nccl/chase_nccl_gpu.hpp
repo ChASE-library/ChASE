@@ -10,16 +10,10 @@
 #include "linalg/distMatrix/distMatrix.hpp"
 #include "linalg/distMatrix/distMultiVector.hpp"
 #include "grid/mpiGrid2D.hpp"
-#include "linalg/internal/nccl/cholqr.hpp"
-#include "linalg/internal/nccl/lanczos.hpp"
-#include "linalg/internal/nccl/residuals.hpp"
-#include "linalg/internal/nccl/rayleighRitz.hpp"
-#include "linalg/internal/nccl/shiftDiagonal.hpp"
-#include "linalg/internal/cuda/random_normal_distribution.cuh"
+#include "linalg/internal/nccl/nccl_kernels.hpp"
 #ifdef HAS_SCALAPACK
 #include "external/scalapackpp/scalapackpp.hpp"
 #endif
-#include "linalg/internal/nccl/symOrHerm.hpp"
 #include "algorithm/types.hpp"
 
 #include "Impl/config/config.hpp"
@@ -33,6 +27,42 @@ namespace chase
 {
 namespace Impl
 {
+/**
+ * @page ChaseNCCLGPU
+ * 
+ * @section intro_sec Introduction
+ * This class implements the GPU-based parallel version of the Chase algorithm using NVIDIA NCCL 
+ * (NVIDIA Collective Communication Library) for efficient multi-GPU communication. The class inherits 
+ * from `ChaseBase` and is designed for solving large-scale generalized eigenvalue problems on 
+ * distributed GPU environments. It operates on matrix and multi-vector data types, supporting 
+ * configurations where matrix data and eigenvectors are mapped to a shared MPI grid for distributed 
+ * computation.
+ * 
+ * @section constructor_sec Constructors and Destructor
+ * The constructor for `ChaseNCCLGPU` initializes essential components, including the Hamiltonian matrix, 
+ * input multi-vectors, result multi-vectors, and configurations for NVIDIA libraries such as cuBLAS 
+ * and cuSolver. It also sets up memory allocations for GPU-based operations and verifies that 
+ * the matrix is square and that the matrix and eigenvectors share the same MPI grid.
+ * 
+ * @section members_sec Private Members
+ * The private members include matrix and multi-vector data, configuration settings, and GPU-specific 
+ * resources like cuBLAS and cuSolver handles. Additional private members manage MPI-related properties, 
+ * including process rank and grid coordinates, as well as device memory allocations used for intermediate 
+ * computations.
+ */    
+
+/**
+* @brief GPU-based parallel Chase algorithm with NCCL.
+* 
+* This class provides an implementation of the Chase algorithm for solving generalized eigenvalue 
+* problems on GPU-based platforms. It leverages NVIDIA's NCCL for efficient GPU-to-GPU communication 
+* and cuSolver and cuBLAS for GPU-based linear algebra operations. Designed for distributed GPU 
+* environments, it operates on matrix and multi-vector data types with MPI parallelism.
+* 
+* @tparam MatrixType The matrix type, such as `chase::distMatrix::BlockBlockMatrix` or 
+*                    `chase::distMatrix::BlockCyclicMatrix`.
+* @tparam InputMultiVectorType The input multi-vector type, typically used for storing eigenvectors.
+*/ 
 template <typename MatrixType, typename InputMultiVectorType>
 class ChaseNCCLGPU : public ChaseBase<typename MatrixType::value_type>
 {
@@ -40,6 +70,19 @@ class ChaseNCCLGPU : public ChaseBase<typename MatrixType::value_type>
     using ResultMultiVectorType = typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type;
 
 public:
+    /**
+     * @brief Constructs the `ChaseNCCLGPU` object.
+     * 
+     * Initializes the Chase algorithm parameters, matrix data, multi-vector data, and GPU-specific 
+     * resources. Sets up memory allocations for intermediate data and configures cuBLAS and cuSolver 
+     * for GPU computation.
+     * 
+     * @param nev Number of eigenvalues to compute.
+     * @param nex Number of extra vectors for iterative refinement.
+     * @param H Pointer to the Hamiltonian matrix.
+     * @param V Pointer to the input multi-vector (typically for eigenvectors).
+     * @param ritzv Pointer to the Ritz values, used for storing eigenvalues.
+     */
     ChaseNCCLGPU(std::size_t nev,
                  std::size_t nex,
                  MatrixType *H,
@@ -744,50 +787,57 @@ public:
     }
 
 private:
+    /**
+     * @enum NextOp
+     * @brief Represents the next operation to be performed in the computation.
+     */
     enum NextOp
     {
-        cAb,
-        bAc
+        cAb, /**< Represents the operation `c = A * b`. */
+        bAc  /**< Represents the operation `b = A * c`. */
     };
-    NextOp next_; 
+    
+    NextOp next_; /**< Holds the next operation in the computation sequence. */
 
-    bool is_sym_;
-    std::size_t nev_;
-    std::size_t nex_;
-    std::size_t nevex_;
-    std::size_t locked_;
+    bool is_sym_; /**< Indicates whether the matrix is symmetric. */
+    
+    std::size_t nev_; /**< Number of eigenvalues to compute. */
+    std::size_t nex_; /**< Number of additional vectors for iterative refinement. */
+    std::size_t nevex_; /**< Total number of vectors (nev + nex) used in the algorithm. */
+    std::size_t locked_; /**< Count of locked vectors in the eigenvalue problem. */
+    
+    std::size_t N_; /**< Dimension of the square matrix. */
 
-    std::size_t N_; 
+    int nprocs_; /**< Total number of MPI processes. */
+    int my_rank_; /**< Rank of the current MPI process. */
+    int *coords_; /**< Pointer to coordinates of the current process in the MPI grid. */
+    int *dims_; /**< Pointer to dimensions of the MPI grid. */
 
-    int nprocs_;
-    int my_rank_;
-    int *coords_;
-    int *dims_;
+    MatrixType *Hmat_; /**< Pointer to the Hamiltonian matrix. */
+    InputMultiVectorType *V1_; /**< Pointer to the first input multi-vector for eigenvectors. */
+    std::unique_ptr<InputMultiVectorType> V2_; /**< Unique pointer to the second input multi-vector for computations. */
+    std::unique_ptr<ResultMultiVectorType> W1_; /**< Unique pointer to the first result multi-vector. */
+    std::unique_ptr<ResultMultiVectorType> W2_; /**< Unique pointer to the second result multi-vector. */
 
-    MatrixType *Hmat_;
-    InputMultiVectorType *V1_;
-    std::unique_ptr<InputMultiVectorType> V2_;
-    std::unique_ptr<ResultMultiVectorType> W1_;
-    std::unique_ptr<ResultMultiVectorType> W2_;
+    std::unique_ptr<chase::distMatrix::RedundantMatrix<chase::Base<T>, chase::platform::GPU>> ritzv_; /**< Matrix holding Ritz values (eigenvalues). */
+    std::unique_ptr<chase::distMatrix::RedundantMatrix<chase::Base<T>, chase::platform::GPU>> resid_; /**< Matrix holding residuals for eigenvalues. */
+    std::unique_ptr<chase::distMatrix::RedundantMatrix<T, chase::platform::GPU>> A_; /**< Auxiliary matrix for intermediate calculations. */
 
-    std::unique_ptr<chase::distMatrix::RedundantMatrix<chase::Base<T>, chase::platform::GPU>> ritzv_;
-    std::unique_ptr<chase::distMatrix::RedundantMatrix<chase::Base<T>, chase::platform::GPU>> resid_;
-    std::unique_ptr<chase::distMatrix::RedundantMatrix<T, chase::platform::GPU>> A_;
+    cudaStream_t stream_; /**< CUDA stream for asynchronous GPU operations. */
+    cublasHandle_t cublasH_; /**< Handle to the cuBLAS library for GPU linear algebra operations. */
+    cusolverDnHandle_t cusolverH_; /**< Handle to the cuSolver library for GPU-based eigenvalue solvers. */
+    curandStatePhilox4_32_10_t* states_ = NULL; /**< Random number generator state for GPU, used for initializations. */
 
-    cudaStream_t stream_; 
-    cublasHandle_t cublasH_;      
-    cusolverDnHandle_t cusolverH_;
-    curandStatePhilox4_32_10_t* states_ = NULL;
+    int* devInfo_; /**< Pointer to device memory for storing operation status (e.g., success or failure) in cuSolver calls. */
+    T* d_return_; /**< Pointer to device memory for storing results of GPU operations. */
+    T* d_work_; /**< Pointer to workspace on the device for GPU operations. */
+    int lwork_ = 0; /**< Size of the workspace on the device, used for GPU operations. */
 
-    int* devInfo_;
-    T* d_return_;
-    T* d_work_;
-    int lwork_ = 0;
+    std::size_t *d_diag_xoffs; /**< Pointer to device memory holding x offsets for diagonal elements in computations. */
+    std::size_t *d_diag_yoffs; /**< Pointer to device memory holding y offsets for diagonal elements in computations. */
+    std::size_t diag_cnt; /**< Count of diagonal elements used in the algorithm. */
 
-    std::size_t *d_diag_xoffs;
-    std::size_t *d_diag_yoffs;
-    std::size_t diag_cnt;
-    chase::ChaseConfig<T> config_;
+    chase::ChaseConfig<T> config_; /**< Configuration settings for the Chase algorithm, including problem parameters. */
 };
 
 }

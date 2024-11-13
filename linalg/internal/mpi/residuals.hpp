@@ -17,6 +17,33 @@ namespace internal
 {
 namespace mpi
 {
+    /**
+     * @brief Computes the residuals of the Ritz values using distributed matrix operations.
+     *
+     * This function calculates the residuals associated with the Ritz values, a key step in the Rayleigh-Ritz procedure
+     * for eigenvalue problems. It performs a distributed matrix-matrix multiplication and adjusts the results by the
+     * Ritz values. The final residuals are computed and gathered across all MPI processes.
+     *
+     * @tparam MatrixType Type of the input matrix, must support distributed matrix operations.
+     * @tparam InputMultiVectorType Type of the input multivector, used for eigenvector approximations.
+     *
+     * @param H Distributed matrix representing matrix in the eigenvalue problem.
+     * @param V1 The input multivector representing the orthonormal basis.
+     * @param V2 duplication of V1.
+     * @param W1 Multivector sotring H*V1.
+     * @param W2 Resulting multivector by redistribute V2 from column communicator based to row communicator based.
+     * @param ritzv Pointer to an array of Ritz values, used to adjust the residual computation.
+     * @param resids Pointer to an array to store the computed residuals.
+     * @param offset Starting index within the vector of residuals to be computed.
+     * @param subSize Number of residuals to compute starting from the offset.
+     *
+     * @throws std::invalid_argument if either `ritzv` or `resids` is a nullptr.
+     *
+     * @details
+     * The function first performs a distributed matrix-matrix multiplication and then iterates over each
+     * residual vector to apply the Ritz value shifts. The final residuals are normalized and gathered using MPI
+     * all-reduce operations. Each residual norm is calculated as the Euclidean norm of the adjusted vector.
+     */    
     template <typename MatrixType, typename InputMultiVectorType>
     void residuals(MatrixType& H,
                    InputMultiVectorType& V1,

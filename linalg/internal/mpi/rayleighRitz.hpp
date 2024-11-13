@@ -16,7 +16,29 @@ namespace linalg
 namespace internal
 {
 namespace mpi
-{              
+{         
+    /**
+     * @brief Performs the Rayleigh-Ritz procedure, reducing the matrix H using the basis vectors
+     * in V1 and V2, and storing the results in W1, W2, and the eigenvalues in ritzv.
+     * 
+     * This function computes the distributed matrix multiplication and reduction required
+     * for the Rayleigh-Ritz procedure. If matrix A is provided, it uses that as a workspace.
+     * Otherwise, a temporary matrix is created.
+     *
+     * @tparam MatrixType Type of the input matrix H.
+     * @tparam InputMultiVectorType Type of the input multivector V1 and V2.
+     * @param H The input matrix representing the system to be reduced.
+     * @param V1 The input multivector representing the orthonormal basis.
+     * @param V2 duplication of V1.
+     * @param W1 Multivector sotring H*V1.
+     * @param W2 Resulting multivector by redistribute V2 from column communicator based to row communicator based.
+     * @param ritzv Pointer to an array where computed eigenvalues of the reduced matrix will be stored.
+     * @param offset The starting offset in V1, V2, W1, and W2 for submatrix processing.
+     * @param subSize Size of the submatrix used in reduction.
+     * @param A Optional workspace matrix for storing intermediate results; if nullptr, a temporary matrix is created.
+     * 
+     * @throws std::invalid_argument if ritzv is a nullptr.
+     */                  
     template <typename MatrixType, typename InputMultiVectorType>
      void rayleighRitz(MatrixType& H,
                        InputMultiVectorType& V1,
