@@ -65,6 +65,7 @@ add_subdirectory(grid)
 add_subdirectory(external)
 add_subdirectory(linalg)
 add_subdirectory(Impl)
+add_subdirectory(interface)
 add_subdirectory(examples)
 
 add_executable( "chase_driver" tests/noinput.cpp )

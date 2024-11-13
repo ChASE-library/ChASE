@@ -1,0 +1,93 @@
+#include <complex.h>
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "interface/chase_c_interface.h"
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
+/* uniform distribution, (0..1] */
+double drand() { return (rand() + 1.0) / (RAND_MAX + 1.0); }
+
+/* normal distribution, centered on 0, std dev 1 */
+double random_normal()
+{
+    return sqrt(-2 * log(drand())) * cos(2 * M_PI * drand());
+}
+
+int main(int argc, char** argv)
+{
+    int N = 1001;
+    int nev = 100;
+    int nex = 40;
+    int idx_max = 5;
+    double perturb = 1e-4;
+
+    // config
+    int deg = 20;
+    double tol = 1e-10;
+    char mode = 'R';
+    char opt = 'S';
+    char qr = 'C';
+
+    printf("ChASE C example driver\n");
+
+    double _Complex* V =
+        (double _Complex*)malloc(sizeof(double _Complex) * N * (nev + nex));
+    double* Lambda = (double*)malloc(sizeof(double) * (nev + nex));
+    double _Complex* H =
+        (double _Complex*)malloc(sizeof(double _Complex) * N * N);
+
+    int init = 0;
+    zchase_init_(&N, &nev, &nex, H, &N, V, Lambda, &init);
+
+    // Generate Clement matrix
+    for (int i = 0; i < N; ++i)
+    {
+        H[i + N * i] = 0.0 + 0.0 * I;
+        if (i != N - 1)
+        {
+            double v = sqrt(i * (N + 1 - i));
+            H[i + 1 + N * i] = v + 0.0 * I;
+        }
+
+        if (i != N - 1)
+        {
+            double v = sqrt(i * (N + 1 - i));
+            H[i + N * (i + 1)] = v + 0.0 * I;
+        }
+    }
+
+    for (int idx = 0; idx < idx_max; ++idx)
+    {
+        printf("Starting Problem # %d\n", idx);
+        if (idx != 0)
+        {
+            printf("Using approximate solution\n");
+        }
+        
+        zchase_(&deg, &tol, &mode, &opt, &qr);
+
+        // Perturb Full Clement matrix
+        for (int i = 1; i < N; ++i)
+        {
+            for (int j = 1; j < i; ++j)
+            {
+                double randm = random_normal();
+                double _Complex element_perturbation =
+                    randm * perturb + randm * perturb * I;
+                H[j + N * i] += element_perturbation;
+                H[i + N * j] += conj(element_perturbation);
+            }
+        }
+
+        mode = 'A';
+    }
+
+    zchase_finalize_(&init);
+
+    return 0;
+}
