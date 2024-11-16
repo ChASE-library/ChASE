@@ -280,6 +280,7 @@ public:
     chase::Base<T>* GetResid() override { resid_->allocate_cpu_data(); return resid_->cpu_data(); }
     ChaseConfig<T>& GetConfig() override { return config_; }
     int get_nprocs() override { return nprocs_; }
+    int get_rank() { return my_rank_; }
 
     void loadProblemFromFile(std::string filename)
     {
