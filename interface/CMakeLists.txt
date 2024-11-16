@@ -6,6 +6,13 @@ else()
     target_link_libraries("chase_c_interface" PUBLIC chase_cpu)    
 endif()
 
+if(TARGET chase_nccl)
+    add_compile_definitions(HAS_NCCL=1)
+    target_link_libraries("chase_c_interface" PUBLIC chase_nccl)
+else()
+    target_link_libraries("chase_c_interface" PUBLIC chase_mpi)
+endif()
+
 target_include_directories("chase_c_interface" PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 enable_language( Fortran )

@@ -133,6 +133,7 @@ public:
     chase::Base<T>* GetResid() override { return resid_->l_data(); }
     ChaseConfig<T>& GetConfig() override { return config_; }
     int get_nprocs() override { return nprocs_; }
+    int get_rank() { return my_rank_; }
 
     void loadProblemFromFile(std::string filename)
     {
@@ -188,7 +189,6 @@ public:
                                          V1_->l_ld(), 
                                          V2_->l_data(), 
                                          V2_->l_ld());
-
         next_ = NextOp::bAc;
     }
 
