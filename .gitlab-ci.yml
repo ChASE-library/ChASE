@@ -9,7 +9,7 @@ build:
   - cmake --version
   - mkdir -p build
   - cd build
-  - FC=gfortran CC=gcc CXX=g++ cmake -DCHASE_ENABLE_MIXED_PRECISION=ON -DENABLE_TESTS=ON -DMPI_RUN_ARGS="--allow-run-as-root" ..
+  - FC=mpif90 CC=mpigcc CXX=mpicxx cmake -DCHASE_ENABLE_MIXED_PRECISION=ON -DENABLE_TESTS=ON -DMPI_RUN_ARGS="--allow-run-as-root" ..
   - make VERBOSE=1
   artifacts:
     paths:
