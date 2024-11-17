@@ -3,7 +3,7 @@ use mpi
 use chase_diag
 
 integer rank, size, ierr, init, i, j, k, comm
-integer m, n, xoff, yoff, xlen, ylen, x, y, x_g, y_g
+integer m, n, xoff, yoff, xlen, ylen, x, y, x_g, y_g, zero
 integer dims(2)
 integer nn, nev, nex, idx_max
 real(8) :: tmp, PI
@@ -18,7 +18,7 @@ call mpi_init(ierr)
 call mpi_comm_size(MPI_COMM_WORLD, size, ierr)
 call mpi_comm_rank(MPI_COMM_WORLD, rank, ierr)
 
-nn = 1001
+nn = 1000
 nev = 100
 nex = 40
 idx_max = 5
@@ -62,7 +62,12 @@ allocate(hh(nn, nn))
 allocate(v(m, nev + nex))
 allocate(lambda(nev + nex))
 
+#ifdef INTERFACE_BLOCK_CYCLIC    
+zero = 0
+call pzchase_init_blockcyclic(nn, nev, nex, m, n, h, m, v, lambda, dims(1), dims(2), major, zero, zero, comm, init)
+#else
 call pzchase_init(nn, nev, nex, m, n, h, m, v, lambda, dims(1), dims(2), major, comm, init)
+#endif
 
 !Generate Clement matrix in distributed manner
 do x = 1, xlen

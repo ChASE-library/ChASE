@@ -1,3 +1,5 @@
+option(CHASE_INTERFACE_WITH_BLOCKCYLIC "Build the C/FORTRAN interface for Block-Cyclic data layout" ON)
+
 add_library( "chase_c_interface" "chase_c_interface.cpp" )
 if(TARGET chase_gpu)
     add_compile_definitions(HAS_CUDA=1)
@@ -14,6 +16,10 @@ else()
 endif()
 
 target_include_directories("chase_c_interface" PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+if(CHASE_INTERFACE_WITH_BLOCKCYLIC)
+  target_compile_definitions(chase_c_interface PUBLIC INTERFACE_BLOCK_CYCLIC)
+endif()
 
 enable_language( Fortran )
 
@@ -39,4 +45,6 @@ target_include_directories(
 )
 
 target_link_libraries("chase_fortran_interface" PUBLIC chase_c_interface)
-
+if(CHASE_INTERFACE_WITH_BLOCKCYLIC)
+  target_compile_definitions(chase_fortran_interface PUBLIC INTERFACE_BLOCK_CYCLIC)
+endif()
