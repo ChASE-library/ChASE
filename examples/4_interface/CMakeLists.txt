@@ -11,3 +11,8 @@ target_link_libraries(4_f_serial_chase.exe chase_fortran_interface )
 set(CMAKE_Fortran_COMPILER ${MPI_Fortran_COMPILER})
 add_executable( "4_f_dist_chase.exe" 4_f_dist_chase.f90 )
 target_link_libraries(4_f_dist_chase.exe chase_fortran_interface )
+set_target_properties(
+  "4_f_dist_chase.exe"
+  PROPERTIES Fortran_PREPROCESS ON
+  POSITION_INDEPENDENT_CODE TRUE
+)

@@ -4,6 +4,7 @@
 #include <memory>
 
 #include "algorithm/performance.hpp"
+#include "chase_c_interface.h"
 
 #ifdef HAS_CUDA
 #include "Impl/cuda/chase_seq_gpu.hpp"
@@ -21,13 +22,30 @@ using ARCH = chase::platform::GPU;
 template<typename T>
 using DistSolverBlockType = chase::Impl::ChaseNCCLGPU<chase::distMatrix::BlockBlockMatrix<T, ARCH>,                                                      
                                                      chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, ARCH>>;
+template<typename MatrixType>
+using DistSolverType = chase::Impl::ChaseNCCLGPU<MatrixType, typename ColumnMultiVectorType<MatrixType>::type>;                                                     
 #else
 #include "Impl/mpi/chase_mpi_cpu.hpp"
 using ARCH = chase::platform::CPU;
 template<typename T>
 using DistSolverBlockType = chase::Impl::ChaseMPICPU<chase::distMatrix::BlockBlockMatrix<T, ARCH>,                                                      
                                                      chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, ARCH>>;
+template<typename MatrixType>
+using DistSolverType = chase::Impl::ChaseMPICPU<MatrixType, typename ColumnMultiVectorType<MatrixType>::type>; 
 #endif
+
+#ifdef INTERFACE_BLOCK_CYCLIC
+template <typename T>
+using BlockMatrixType = chase::distMatrix::BlockCyclicMatrix<T, ARCH>;
+template<typename T>
+using DistMultiVector1DColumn = chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, chase::distMultiVector::CommunicatorType::column, ARCH>;
+#else
+template <typename T>
+using BlockMatrixType = chase::distMatrix::BlockBlockMatrix<T, ARCH>;
+template<typename T>
+using DistMultiVector1DColumn = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, ARCH>;
+#endif
+
 
 class ChASE_SEQ
 {
@@ -181,58 +199,77 @@ void ChASE_SEQ_Solve(int* deg, chase::Base<T>* tol, char* mode, char* opt, char*
     std::cout << "\n\n\n";
 }
 
-class ChASE_DIST_BLOCK
+template<typename MatrixType>
+class ChASE_DIST
 {
+    using T = typename MatrixType::value_type;
 public:
-    template <typename T>
-    static int Initialize(int N, int nev, int nex, int m, int n, T* H, int ldh,
-                           T* V, chase::Base<T>* ritzv, int dim0, int dim1,
-                           char* grid_major, MPI_Comm comm);
+#ifdef INTERFACE_BLOCK_CYCLIC
+    static typename std::enable_if<std::is_same<MatrixType, chase::distMatrix::BlockCyclicMatrix<T, ARCH>>::value, int>::type
+    Initialize(int N, int nev, int nex, int mbsize, int nbsize,
+                                T* H, int ldh, T* V, chase::Base<T>* ritzv,
+                                int dim0, int dim1, char* grid_major, int irsrc,
+                                int icsrc, MPI_Comm comm);
+#else
+    static typename std::enable_if<std::is_same<MatrixType, chase::distMatrix::BlockBlockMatrix<T, ARCH>>::value, int>::type
+    Initialize(int N, int nev, int nex, int m, int n, T* H, int ldh,
+               T* V, chase::Base<T>* ritzv, int dim0, int dim1,
+               char* grid_major, MPI_Comm comm);
+#endif
 
-    template <typename T>
-    static void Solve(int* deg, chase::Base<T>* tol, char* mode, char* opt, char *qr);
-                     
-    template <typename T>
+    static DistSolverType<BlockMatrixType<std::complex<double>>> *zchaseDist;
+    static DistSolverType<BlockMatrixType<std::complex<float>>> *cchaseDist;
+    static DistSolverType<BlockMatrixType<float>> *schaseDist;
+    static DistSolverType<BlockMatrixType<double>> *dchaseDist;
+
+    static BlockMatrixType<std::complex<double>>* zHmat;
+    static BlockMatrixType<std::complex<float>>* cHmat;
+    static BlockMatrixType<double>* dHmat;
+    static BlockMatrixType<float>* sHmat;
+
+    static DistMultiVector1DColumn<std::complex<double>>* zVec;
+    static DistMultiVector1DColumn<std::complex<float>>* cVec;
+    static DistMultiVector1DColumn<double>* dVec;
+    static DistMultiVector1DColumn<float>* sVec;
+
+    static DistSolverType<MatrixType>* getChase();
     static int Finalize();
-
-    template <typename T>
-    static DistSolverBlockType<T>* getChase();
-
-    static DistSolverBlockType<std::complex<double>> *zchaseDist;
-    static DistSolverBlockType<std::complex<float>> *cchaseDist;
-    static DistSolverBlockType<double> *dchaseDist;
-    static DistSolverBlockType<float> *schaseDist;    
-
-    static chase::distMatrix::BlockBlockMatrix<std::complex<double>, ARCH>* zHmat;
-    static chase::distMatrix::BlockBlockMatrix<std::complex<float>, ARCH>* cHmat;
-    static chase::distMatrix::BlockBlockMatrix<double, ARCH>* dHmat;
-    static chase::distMatrix::BlockBlockMatrix<float, ARCH>* sHmat;
-
-    static chase::distMultiVector::DistMultiVector1D<std::complex<double>, chase::distMultiVector::CommunicatorType::column, ARCH>* zVec;
-    static chase::distMultiVector::DistMultiVector1D<std::complex<float>, chase::distMultiVector::CommunicatorType::column, ARCH>* cVec;
-    static chase::distMultiVector::DistMultiVector1D<double, chase::distMultiVector::CommunicatorType::column, ARCH>* dVec;
-    static chase::distMultiVector::DistMultiVector1D<float, chase::distMultiVector::CommunicatorType::column, ARCH>* sVec;
+    static void Solve(int* deg, chase::Base<T>* tol, char* mode, char* opt, char *qr);
 };
 
-DistSolverBlockType<std::complex<double>> *ChASE_DIST_BLOCK::zchaseDist = nullptr;
-DistSolverBlockType<std::complex<float>> *ChASE_DIST_BLOCK::cchaseDist = nullptr;
-DistSolverBlockType<double> *ChASE_DIST_BLOCK::dchaseDist = nullptr;
-DistSolverBlockType<float> *ChASE_DIST_BLOCK::schaseDist = nullptr;   
+template <typename MatrixType>
+DistSolverType<BlockMatrixType<std::complex<double>>> *ChASE_DIST<MatrixType>::zchaseDist = nullptr;
+template <typename MatrixType>
+DistSolverType<BlockMatrixType<std::complex<float>>> *ChASE_DIST<MatrixType>::cchaseDist = nullptr;
+template <typename MatrixType>
+DistSolverType<BlockMatrixType<float>> *ChASE_DIST<MatrixType>::schaseDist = nullptr;
+template <typename MatrixType>
+DistSolverType<BlockMatrixType<double>> *ChASE_DIST<MatrixType>::dchaseDist = nullptr;
 
-chase::distMatrix::BlockBlockMatrix<std::complex<double>, ARCH>* ChASE_DIST_BLOCK::zHmat = nullptr;
-chase::distMatrix::BlockBlockMatrix<std::complex<float>, ARCH>* ChASE_DIST_BLOCK::cHmat = nullptr;
-chase::distMatrix::BlockBlockMatrix<double, ARCH>* ChASE_DIST_BLOCK::dHmat = nullptr;
-chase::distMatrix::BlockBlockMatrix<float, ARCH>* ChASE_DIST_BLOCK::sHmat = nullptr;
+template <typename MatrixType>
+BlockMatrixType<std::complex<double>>* ChASE_DIST<MatrixType>::zHmat = nullptr;
+template <typename MatrixType>
+BlockMatrixType<std::complex<float>>* ChASE_DIST<MatrixType>::cHmat = nullptr;
+template <typename MatrixType>
+BlockMatrixType<double>* ChASE_DIST<MatrixType>::dHmat = nullptr;
+template <typename MatrixType>
+BlockMatrixType<float>* ChASE_DIST<MatrixType>::sHmat = nullptr;
 
-chase::distMultiVector::DistMultiVector1D<std::complex<double>, chase::distMultiVector::CommunicatorType::column, ARCH>*  ChASE_DIST_BLOCK::zVec = nullptr;
-chase::distMultiVector::DistMultiVector1D<std::complex<float>, chase::distMultiVector::CommunicatorType::column, ARCH>*  ChASE_DIST_BLOCK::cVec = nullptr;
-chase::distMultiVector::DistMultiVector1D<double, chase::distMultiVector::CommunicatorType::column, ARCH>*  ChASE_DIST_BLOCK::dVec = nullptr;
-chase::distMultiVector::DistMultiVector1D<float, chase::distMultiVector::CommunicatorType::column, ARCH>*  ChASE_DIST_BLOCK::sVec = nullptr;
+template <typename MatrixType>
+DistMultiVector1DColumn<std::complex<double>>* ChASE_DIST<MatrixType>::zVec = nullptr;
+template <typename MatrixType>
+DistMultiVector1DColumn<std::complex<float>>*  ChASE_DIST<MatrixType>::cVec = nullptr;
+template <typename MatrixType>
+DistMultiVector1DColumn<double>*  ChASE_DIST<MatrixType>::dVec = nullptr;
+template <typename MatrixType>
+DistMultiVector1DColumn<float>*  ChASE_DIST<MatrixType>::sVec = nullptr;
 
+#ifdef INTERFACE_BLOCK_CYCLIC
 template <>
-int ChASE_DIST_BLOCK::Initialize(int N, int nev, int nex, int m, int n, double* H, int ldh,
-                           double* V, double* ritzv, int dim0, int dim1,
-                           char* grid_major, MPI_Comm comm)
+int ChASE_DIST<BlockMatrixType<std::complex<double>>>::Initialize(int N, int nev, int nex, int mbsize, int nbsize,
+                            std::complex<double>* H, int ldh, std::complex<double>* V, chase::Base<std::complex<double>>* ritzv,
+                            int dim0, int dim1, char* grid_major, int irsrc,
+                            int icsrc, MPI_Comm comm)
 {
     std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid;
 
@@ -246,18 +283,25 @@ int ChASE_DIST_BLOCK::Initialize(int N, int nev, int nex, int m, int n, double* 
         throw std::runtime_error("Invalid grid major type, expected 'C' or 'R'.");
     }
 
-    dHmat = new chase::distMatrix::BlockBlockMatrix<double, ARCH>(m, n, ldh, H, mpi_grid);    
-    dVec = new chase::distMultiVector::DistMultiVector1D<double, chase::distMultiVector::CommunicatorType::column, ARCH>(m, nev + nex, m, V, mpi_grid);  
+    int *coord = mpi_grid->get_coords();
+    int *dim   = mpi_grid->get_dims();
 
-    dchaseDist = new DistSolverBlockType<double>(nev, nex, dHmat, dVec, ritzv);
+    std::size_t m, n, mblocks, nblocks;
+    std::tie(m, mblocks) = chase::numroc(N, mbsize, coord[0], dim[0]);
+    std::tie(n, nblocks) = chase::numroc(N, nbsize, coord[1], dim[1]);
 
-    return 1;
+    zHmat = new BlockMatrixType<std::complex<double>>(N, N, m, n, mbsize, nbsize, ldh, H, mpi_grid);    
+    zVec = new DistMultiVector1DColumn<std::complex<double>>(N, m, nev + nex, mbsize, m, V, mpi_grid);  
+
+    zchaseDist = new DistSolverType<BlockMatrixType<std::complex<double>>>(nev, nex, zHmat, zVec, ritzv);
+    return 1;    
 }
 
 template <>
-int ChASE_DIST_BLOCK::Initialize(int N, int nev, int nex, int m, int n, float* H, int ldh,
-                           float* V, float* ritzv, int dim0, int dim1,
-                           char* grid_major, MPI_Comm comm)
+int ChASE_DIST<BlockMatrixType<std::complex<float>>>::Initialize(int N, int nev, int nex, int mbsize, int nbsize,
+                            std::complex<float>* H, int ldh, std::complex<float>* V, chase::Base<std::complex<float>>* ritzv,
+                            int dim0, int dim1, char* grid_major, int irsrc,
+                            int icsrc, MPI_Comm comm)
 {
     std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid;
 
@@ -271,17 +315,25 @@ int ChASE_DIST_BLOCK::Initialize(int N, int nev, int nex, int m, int n, float* H
         throw std::runtime_error("Invalid grid major type, expected 'C' or 'R'.");
     }
 
-    sHmat = new chase::distMatrix::BlockBlockMatrix<float, ARCH>(m, n, ldh, H, mpi_grid);    
-    sVec = new chase::distMultiVector::DistMultiVector1D<float, chase::distMultiVector::CommunicatorType::column, ARCH>(m, nev + nex, m, V, mpi_grid);  
+    int *coord = mpi_grid->get_coords();
+    int *dim   = mpi_grid->get_dims();
 
-    schaseDist = new DistSolverBlockType<float>(nev, nex, sHmat, sVec, ritzv);
-    return 1;
+    std::size_t m, n, mblocks, nblocks;
+    std::tie(m, mblocks) = chase::numroc(N, mbsize, coord[0], dim[0]);
+    std::tie(n, nblocks) = chase::numroc(N, nbsize, coord[1], dim[1]);
+
+    cHmat = new BlockMatrixType<std::complex<float>>(N, N, m, n, mbsize, nbsize, ldh, H, mpi_grid);    
+    cVec = new DistMultiVector1DColumn<std::complex<float>>(N, m, nev + nex, mbsize, m, V, mpi_grid);  
+
+    cchaseDist = new DistSolverType<BlockMatrixType<std::complex<float>>>(nev, nex, cHmat, cVec, ritzv);
+    return 1;    
 }
 
 template <>
-int ChASE_DIST_BLOCK::Initialize(int N, int nev, int nex, int m, int n, std::complex<float>* H, int ldh,
-                           std::complex<float>* V, float* ritzv, int dim0, int dim1,
-                           char* grid_major, MPI_Comm comm)
+int ChASE_DIST<BlockMatrixType<float>>::Initialize(int N, int nev, int nex, int mbsize, int nbsize,
+                           float* H, int ldh, float* V, float* ritzv,
+                            int dim0, int dim1, char* grid_major, int irsrc,
+                            int icsrc, MPI_Comm comm)
 {
     std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid;
 
@@ -295,17 +347,25 @@ int ChASE_DIST_BLOCK::Initialize(int N, int nev, int nex, int m, int n, std::com
         throw std::runtime_error("Invalid grid major type, expected 'C' or 'R'.");
     }
 
-    cHmat = new chase::distMatrix::BlockBlockMatrix<std::complex<float>, ARCH>(m, n, ldh, H, mpi_grid);    
-    cVec = new chase::distMultiVector::DistMultiVector1D<std::complex<float>, chase::distMultiVector::CommunicatorType::column, ARCH>(m, nev + nex, m, V, mpi_grid);  
+    int *coord = mpi_grid->get_coords();
+    int *dim   = mpi_grid->get_dims();
 
-    cchaseDist = new DistSolverBlockType<std::complex<float>>(nev, nex, cHmat, cVec, ritzv);
-    return 1;
+    std::size_t m, n, mblocks, nblocks;
+    std::tie(m, mblocks) = chase::numroc(N, mbsize, coord[0], dim[0]);
+    std::tie(n, nblocks) = chase::numroc(N, nbsize, coord[1], dim[1]);
+
+    sHmat = new BlockMatrixType<float>(N, N, m, n, mbsize, nbsize, ldh, H, mpi_grid);    
+    sVec = new DistMultiVector1DColumn<float>(N, m, nev + nex, mbsize, m, V, mpi_grid);  
+
+    schaseDist = new DistSolverType<BlockMatrixType<float>>(nev, nex, sHmat, sVec, ritzv);
+    return 1;    
 }
 
 template <>
-int ChASE_DIST_BLOCK::Initialize(int N, int nev, int nex, int m, int n, std::complex<double>* H, int ldh,
-                           std::complex<double>* V, double* ritzv, int dim0, int dim1,
-                           char* grid_major, MPI_Comm comm)
+int ChASE_DIST<BlockMatrixType<double>>::Initialize(int N, int nev, int nex, int mbsize, int nbsize,
+                           double* H, int ldh, double* V, double* ritzv,
+                            int dim0, int dim1, char* grid_major, int irsrc,
+                            int icsrc, MPI_Comm comm)
 {
     std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid;
 
@@ -319,54 +379,145 @@ int ChASE_DIST_BLOCK::Initialize(int N, int nev, int nex, int m, int n, std::com
         throw std::runtime_error("Invalid grid major type, expected 'C' or 'R'.");
     }
 
-    zHmat = new chase::distMatrix::BlockBlockMatrix<std::complex<double>, ARCH>(m, n, ldh, H, mpi_grid);    
-    zVec = new chase::distMultiVector::DistMultiVector1D<std::complex<double>, chase::distMultiVector::CommunicatorType::column, ARCH>(m, nev + nex, m, V, mpi_grid);  
+    int *coord = mpi_grid->get_coords();
+    int *dim   = mpi_grid->get_dims();
 
-    zchaseDist = new DistSolverBlockType<std::complex<double>>(nev, nex, zHmat, zVec, ritzv);
+    std::size_t m, n, mblocks, nblocks;
+    std::tie(m, mblocks) = chase::numroc(N, mbsize, coord[0], dim[0]);
+    std::tie(n, nblocks) = chase::numroc(N, nbsize, coord[1], dim[1]);
+
+    dHmat = new BlockMatrixType<double>(N, N, m, n, mbsize, nbsize, ldh, H, mpi_grid);    
+    dVec = new DistMultiVector1DColumn<double>(N, m, nev + nex, mbsize, m, V, mpi_grid);  
+
+    dchaseDist = new DistSolverType<BlockMatrixType<double>>(nev, nex, dHmat, dVec, ritzv);
+    return 1;    
+}
+
+#else
+template <>
+int ChASE_DIST<BlockMatrixType<std::complex<double>>>::Initialize(int N, int nev, int nex, int m, int n, std::complex<double>* H, int ldh,
+                           std::complex<double>* V, chase::Base<std::complex<double>>* ritzv, int dim0, int dim1,
+                           char* grid_major, MPI_Comm comm) {
+
+    std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid;
+
+    if (*grid_major == 'R')
+    {
+        mpi_grid = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::RowMajor>>(dim0, dim1, comm);
+    }else if(*grid_major == 'C')
+    {
+        mpi_grid = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(dim0, dim1, comm);
+    }else {
+        throw std::runtime_error("Invalid grid major type, expected 'C' or 'R'.");
+    }
+
+    zHmat = new BlockMatrixType<std::complex<double>>(m, n, ldh, H, mpi_grid);    
+    zVec = new DistMultiVector1DColumn<std::complex<double>>(m, nev + nex, m, V, mpi_grid);  
+
+    zchaseDist = new DistSolverType<BlockMatrixType<std::complex<double>>>(nev, nex, zHmat, zVec, ritzv);
     return 1;
 }
 
 template <>
-int ChASE_DIST_BLOCK::Finalize<double>()
-{
-    delete dchaseDist;
-    dchaseDist = nullptr;
-    delete dHmat;
-    dHmat = nullptr;
-    delete dVec;
-    dVec = nullptr; 
+int ChASE_DIST<BlockMatrixType<std::complex<float>>>::Initialize(int N, int nev, int nex, int m, int n, std::complex<float>* H, int ldh,
+                           std::complex<float>* V, chase::Base<std::complex<float>>* ritzv, int dim0, int dim1,
+                           char* grid_major, MPI_Comm comm) {
 
-    return 0;
+    std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid;
+
+    if (*grid_major == 'R')
+    {
+        mpi_grid = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::RowMajor>>(dim0, dim1, comm);
+    }else if(*grid_major == 'C')
+    {
+        mpi_grid = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(dim0, dim1, comm);
+    }else {
+        throw std::runtime_error("Invalid grid major type, expected 'C' or 'R'.");
+    }
+
+    cHmat = new BlockMatrixType<std::complex<float>>(m, n, ldh, H, mpi_grid);    
+    cVec = new DistMultiVector1DColumn<std::complex<float>>(m, nev + nex, m, V, mpi_grid);  
+
+    cchaseDist = new DistSolverType<BlockMatrixType<std::complex<float>>>(nev, nex, cHmat, cVec, ritzv);
+    return 1;
 }
 
 template <>
-int ChASE_DIST_BLOCK::Finalize<float>()
-{
-    delete schaseDist;
-    schaseDist = nullptr;
-    delete sHmat;
-    sHmat = nullptr;
-    delete sVec;
-    sVec = nullptr; 
+int ChASE_DIST<BlockMatrixType<float>>::Initialize(int N, int nev, int nex, int m, int n, float* H, int ldh,
+                           float* V, chase::Base<float>* ritzv, int dim0, int dim1,
+                           char* grid_major, MPI_Comm comm) {
 
-    return 0;
+    std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid;
+
+    if (*grid_major == 'R')
+    {
+        mpi_grid = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::RowMajor>>(dim0, dim1, comm);
+    }else if(*grid_major == 'C')
+    {
+        mpi_grid = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(dim0, dim1, comm);
+    }else {
+        throw std::runtime_error("Invalid grid major type, expected 'C' or 'R'.");
+    }
+
+    sHmat = new BlockMatrixType<float>(m, n, ldh, H, mpi_grid);    
+    sVec = new DistMultiVector1DColumn<float>(m, nev + nex, m, V, mpi_grid);  
+
+    schaseDist = new DistSolverType<BlockMatrixType<float>>(nev, nex, sHmat, sVec, ritzv);
+    return 1;
 }
 
 template <>
-int ChASE_DIST_BLOCK::Finalize<std::complex<float>>()
+int ChASE_DIST<BlockMatrixType<double>>::Initialize(int N, int nev, int nex, int m, int n, double* H, int ldh,
+                           double* V, chase::Base<double>* ritzv, int dim0, int dim1,
+                           char* grid_major, MPI_Comm comm) {
+
+    std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid;
+
+    if (*grid_major == 'R')
+    {
+        mpi_grid = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::RowMajor>>(dim0, dim1, comm);
+    }else if(*grid_major == 'C')
+    {
+        mpi_grid = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(dim0, dim1, comm);
+    }else {
+        throw std::runtime_error("Invalid grid major type, expected 'C' or 'R'.");
+    }
+
+    dHmat = new BlockMatrixType<double>(m, n, ldh, H, mpi_grid);    
+    dVec = new DistMultiVector1DColumn<double>(m, nev + nex, m, V, mpi_grid);  
+
+    dchaseDist = new DistSolverType<BlockMatrixType<double>>(nev, nex, dHmat, dVec, ritzv);
+    return 1;
+}
+#endif
+/*
+*/
+template<>
+DistSolverType<BlockMatrixType<std::complex<double>>> *ChASE_DIST<BlockMatrixType<std::complex<double>>>::getChase()
 {
-    delete cchaseDist;
-    cchaseDist = nullptr;
-    delete cHmat;
-    cHmat = nullptr;
-    delete cVec;
-    cVec = nullptr; 
-        
-    return 0;
+    return zchaseDist;
 }
 
-template <>
-int ChASE_DIST_BLOCK::Finalize<std::complex<double>>()
+template<>
+DistSolverType<BlockMatrixType<std::complex<float>>> *ChASE_DIST<BlockMatrixType<std::complex<float>>>::getChase()
+{
+    return cchaseDist;
+}
+
+template<>
+DistSolverType<BlockMatrixType<double>> *ChASE_DIST<BlockMatrixType<double>>::getChase()
+{
+    return dchaseDist;
+}
+
+template<>
+DistSolverType<BlockMatrixType<float>> *ChASE_DIST<BlockMatrixType<float>>::getChase()
+{
+    return schaseDist;
+}
+
+template<>
+int ChASE_DIST<BlockMatrixType<std::complex<double>>>::Finalize()
 {
     delete zchaseDist;
     zchaseDist = nullptr;
@@ -377,30 +528,46 @@ int ChASE_DIST_BLOCK::Finalize<std::complex<double>>()
     return 0;
 }
 
-template <>
-DistSolverBlockType<std::complex<double>>* ChASE_DIST_BLOCK::getChase<std::complex<double>>() {
-    return zchaseDist;
-}
-
-template <>
-DistSolverBlockType<std::complex<float>>* ChASE_DIST_BLOCK::getChase<std::complex<float>>() {
-    return cchaseDist;
-}
-
-template <>
-DistSolverBlockType<double>* ChASE_DIST_BLOCK::getChase<double>() {
-    return dchaseDist;
-}
-
-template <>
-DistSolverBlockType<float>* ChASE_DIST_BLOCK::getChase<float>() {
-    return schaseDist;
-}
-
-template<typename T>
-void ChASE_DIST_BLOCK::Solve(int* deg, chase::Base<T>* tol, char* mode, char* opt, char *qr)
+template<>
+int ChASE_DIST<BlockMatrixType<std::complex<float>>>::Finalize()
 {
-    auto single = ChASE_DIST_BLOCK::getChase<T>();
+    delete cchaseDist;
+    cchaseDist = nullptr;
+    delete cHmat;
+    cHmat = nullptr;
+    delete cVec;
+    cVec = nullptr;    
+    return 0;
+}
+
+template<>
+int ChASE_DIST<BlockMatrixType<double>>::Finalize()
+{
+    delete dchaseDist;
+    dchaseDist = nullptr;
+    delete dHmat;
+    dHmat = nullptr;
+    delete dVec;
+    dVec = nullptr;    
+    return 0;
+}
+
+template<>
+int ChASE_DIST<BlockMatrixType<float>>::Finalize()
+{
+    delete schaseDist;
+    schaseDist = nullptr;
+    delete sHmat;
+    sHmat = nullptr;
+    delete sVec;
+    sVec = nullptr;    
+    return 0;
+}
+
+template<typename MatrixType>
+void ChASE_DIST<MatrixType>::Solve(int* deg, chase::Base<typename MatrixType::value_type>* tol, char* mode, char* opt, char *qr)
+{
+    auto single = ChASE_DIST<MatrixType>::getChase();
     
     chase::ChaseConfig<T>& config = single->GetConfig();
     config.SetTol(*tol);
@@ -436,7 +603,7 @@ void ChASE_DIST_BLOCK::Solve(int* deg, chase::Base<T>* tol, char* mode, char* op
                         << std::setw(width) << ritzv[i] << "  | "
                         << std::setw(width) << resid[i] << "  |\n";
         std::cout << "\n\n\n";  
-    }
+    }   
 }
 
 extern "C" {
@@ -496,11 +663,165 @@ void cchase_(int* deg, float* tol, char* mode, char* opt, char *qr)
     ChASE_SEQ_Solve<std::complex<float>>(deg, tol, mode, opt, qr);
 }
 
+#ifdef INTERFACE_BLOCK_CYCLIC
+void pdchase_init_blockcyclic_(int* N, int* nev, int* nex, int* mbsize,
+                                int* nbsize, double* H, int* ldh, double* V,
+                                double* ritzv, int* dim0, int* dim1,
+                                char* grid_major, int* irsrc, int* icsrc,
+                                MPI_Comm* comm, int* init)
+{
+    *init =  ChASE_DIST<BlockMatrixType<double>>::Initialize(*N, *nev, *nex, *mbsize, *nbsize, H,
+                                    *ldh, V, ritzv, *dim0, *dim1, grid_major,
+                                    *irsrc, *icsrc, *comm);    
+}                                
+
+void pdchase_init_blockcyclic_f_(int* N, int* nev, int* nex, int* mbsize,
+                                    int* nbsize, double* H, int* ldh,
+                                    double* V, double* ritzv, int* dim0,
+                                    int* dim1, char* grid_major, int* irsrc,
+                                    int* icsrc, MPI_Fint* fcomm, int* init)
+{
+    MPI_Comm comm = MPI_Comm_f2c(*fcomm);
+    *init = ChASE_DIST<BlockMatrixType<double>>::Initialize(*N, *nev, *nex, *mbsize, *nbsize, H,
+                                    *ldh, V, ritzv, *dim0, *dim1,
+                                    grid_major, *irsrc, *icsrc, comm);
+}
+
+void pschase_init_blockcyclic_(int* N, int* nev, int* nex, int* mbsize,
+                                int* nbsize, float* H, int* ldh, float* V,
+                                float* ritzv, int* dim0, int* dim1,
+                                char* grid_major, int* irsrc, int* icsrc,
+                                MPI_Comm* comm, int* init)
+{
+    *init =  ChASE_DIST<BlockMatrixType<float>>::Initialize(*N, *nev, *nex, *mbsize, *nbsize, H,
+                                    *ldh, V, ritzv, *dim0, *dim1, grid_major,
+                                    *irsrc, *icsrc, *comm);
+}                                
+
+void pschase_init_blockcyclic_f_(int* N, int* nev, int* nex, int* mbsize,
+                                    int* nbsize, float* H, int* ldh, float* V,
+                                    float* ritzv, int* dim0, int* dim1,
+                                    char* grid_major, int* irsrc, int* icsrc,
+                                    MPI_Fint* fcomm, int* init)
+{
+    MPI_Comm comm = MPI_Comm_f2c(*fcomm);
+    *init = ChASE_DIST<BlockMatrixType<float>>::Initialize(*N, *nev, *nex, *mbsize, *nbsize, H,
+                                    *ldh, V, ritzv, *dim0, *dim1, grid_major,
+                                    *irsrc, *icsrc, comm);
+}
+
+
+void pcchase_init_blockcyclic_(int* N, int* nev, int* nex, int* mbsize,
+                                int* nbsize, float _Complex* H, int* ldh,
+                                float _Complex* V, float* ritzv, int* dim0,
+                                int* dim1, char* grid_major, int* irsrc,
+                                int* icsrc, MPI_Comm* comm, int* init)
+{
+    *init = ChASE_DIST<BlockMatrixType<std::complex<float>>>::Initialize(
+        *N, *nev, *nex, *mbsize, *nbsize,
+        reinterpret_cast<std::complex<float>*>(H), *ldh,
+        reinterpret_cast<std::complex<float>*>(V), ritzv, *dim0, *dim1,
+        grid_major, *irsrc, *icsrc, *comm);
+
+}
+
+void pcchase_init_blockcyclic_f_(int* N, int* nev, int* nex, int* mbsize,
+                                    int* nbsize, float _Complex* H, int* ldh,
+                                    float _Complex* V, float* ritzv, int* dim0,
+                                    int* dim1, char* grid_major, int* irsrc,
+                                    int* icsrc, MPI_Fint* fcomm, int* init)
+{
+    MPI_Comm comm = MPI_Comm_f2c(*fcomm);
+    *init = ChASE_DIST<BlockMatrixType<std::complex<float>>>::Initialize(
+        *N, *nev, *nex, *mbsize, *nbsize,
+        reinterpret_cast<std::complex<float>*>(H), *ldh,
+        reinterpret_cast<std::complex<float>*>(V), ritzv, *dim0, *dim1,
+        grid_major, *irsrc, *icsrc, comm);
+}
+
+void pzchase_init_blockcyclic_(int* N, int* nev, int* nex, int* mbsize,
+                                int* nbsize, double _Complex* H, int* ldh,
+                                double _Complex* V, double* ritzv, int* dim0,
+                                int* dim1, char* grid_major, int* irsrc,
+                                int* icsrc, MPI_Comm* comm, int* init)
+{
+    *init = ChASE_DIST<BlockMatrixType<std::complex<double>>>::Initialize(
+        *N, *nev, *nex, *mbsize, *nbsize,
+        reinterpret_cast<std::complex<double>*>(H), *ldh,
+        reinterpret_cast<std::complex<double>*>(V), ritzv, *dim0, *dim1,
+        grid_major, *irsrc, *icsrc, *comm);
+}
+
+void pzchase_init_blockcyclic_f_(int* N, int* nev, int* nex, int* mbsize,
+                                    int* nbsize, double _Complex* H, int* ldh,
+                                    double _Complex* V, double* ritzv,
+                                    int* dim0, int* dim1, char* grid_major,
+                                    int* irsrc, int* icsrc, MPI_Fint* fcomm,
+                                    int* init)
+{
+    MPI_Comm comm = MPI_Comm_f2c(*fcomm);
+    *init = ChASE_DIST<BlockMatrixType<std::complex<double>>>::Initialize(
+        *N, *nev, *nex, *mbsize, *nbsize,
+        reinterpret_cast<std::complex<double>*>(H), *ldh,
+        reinterpret_cast<std::complex<double>*>(V), ritzv, *dim0, *dim1,
+        grid_major, *irsrc, *icsrc, comm);
+}
+
+void pdchase_init_(int* N, int* nev, int* nex, int* mbsize,
+                                int* nbsize, double* H, int* ldh, double* V,
+                                double* ritzv, int* dim0, int* dim1,
+                                char* grid_major, int* irsrc, int* icsrc,
+                                MPI_Comm* comm, int* init)
+{
+    *init =  ChASE_DIST<BlockMatrixType<double>>::Initialize(*N, *nev, *nex, *mbsize, *nbsize, H,
+                                    *ldh, V, ritzv, *dim0, *dim1, grid_major,
+                                    *irsrc, *icsrc, *comm);    
+}                                
+
+void pschase_init_(int* N, int* nev, int* nex, int* mbsize,
+                                int* nbsize, float* H, int* ldh, float* V,
+                                float* ritzv, int* dim0, int* dim1,
+                                char* grid_major, int* irsrc, int* icsrc,
+                                MPI_Comm* comm, int* init)
+{
+    *init =  ChASE_DIST<BlockMatrixType<float>>::Initialize(*N, *nev, *nex, *mbsize, *nbsize, H,
+                                    *ldh, V, ritzv, *dim0, *dim1, grid_major,
+                                    *irsrc, *icsrc, *comm);
+}                                
+
+void pcchase_init_(int* N, int* nev, int* nex, int* mbsize,
+                                int* nbsize, float _Complex* H, int* ldh,
+                                float _Complex* V, float* ritzv, int* dim0,
+                                int* dim1, char* grid_major, int* irsrc,
+                                int* icsrc, MPI_Comm* comm, int* init)
+{
+    *init = ChASE_DIST<BlockMatrixType<std::complex<float>>>::Initialize(
+        *N, *nev, *nex, *mbsize, *nbsize,
+        reinterpret_cast<std::complex<float>*>(H), *ldh,
+        reinterpret_cast<std::complex<float>*>(V), ritzv, *dim0, *dim1,
+        grid_major, *irsrc, *icsrc, *comm);
+
+}
+
+void pzchase_init_(int* N, int* nev, int* nex, int* mbsize,
+                                int* nbsize, double _Complex* H, int* ldh,
+                                double _Complex* V, double* ritzv, int* dim0,
+                                int* dim1, char* grid_major, int* irsrc,
+                                int* icsrc, MPI_Comm* comm, int* init)
+{
+    *init = ChASE_DIST<BlockMatrixType<std::complex<double>>>::Initialize(
+        *N, *nev, *nex, *mbsize, *nbsize,
+        reinterpret_cast<std::complex<double>*>(H), *ldh,
+        reinterpret_cast<std::complex<double>*>(V), ritzv, *dim0, *dim1,
+        grid_major, *irsrc, *icsrc, *comm);
+}
+
+#else
 void pdchase_init_(int* N, int* nev, int* nex, int* m, int* n, double* H,
                     int* ldh, double* V, double* ritzv, int* dim0, int* dim1,
                     char* grid_major, MPI_Comm* comm, int* init)
 {
-    *init = ChASE_DIST_BLOCK::Initialize<double>(*N, *nev, *nex, *m, *n, H, *ldh, V,
+    *init = ChASE_DIST<BlockMatrixType<double>>::Initialize(*N, *nev, *nex, *m, *n, H, *ldh, V,
                                     ritzv, *dim0, *dim1, grid_major, *comm);
 }
 
@@ -510,7 +831,7 @@ void pdchase_init_f_(int* N, int* nev, int* nex, int* m, int* n, double* H,
                         int* init)
 {
     MPI_Comm comm = MPI_Comm_f2c(*fcomm);
-    *init = ChASE_DIST_BLOCK::Initialize<double>(*N, *nev, *nex, *m, *n, H, *ldh, V,
+    *init = ChASE_DIST<BlockMatrixType<double>>::Initialize(*N, *nev, *nex, *m, *n, H, *ldh, V,
                                     ritzv, *dim0, *dim1, grid_major, comm);
 }
 
@@ -518,7 +839,7 @@ void pschase_init_(int* N, int* nev, int* nex, int* m, int* n, float* H,
                     int* ldh, float* V, float* ritzv, int* dim0, int* dim1,
                     char* grid_major, MPI_Comm* comm, int* init)
 {
-    *init = ChASE_DIST_BLOCK::Initialize<float>(*N, *nev, *nex, *m, *n, H, *ldh, V,
+    *init = ChASE_DIST<BlockMatrixType<float>>::Initialize(*N, *nev, *nex, *m, *n, H, *ldh, V,
                                     ritzv, *dim0, *dim1, grid_major, *comm);
 }                    
 
@@ -527,7 +848,7 @@ void pschase_init_f_(int* N, int* nev, int* nex, int* m, int* n, float* H,
                     char* grid_major, MPI_Fint* fcomm, int* init)
 {
     MPI_Comm comm = MPI_Comm_f2c(*fcomm);
-    *init = ChASE_DIST_BLOCK::Initialize<float>(*N, *nev, *nex, *m, *n, H, *ldh, V,
+    *init = ChASE_DIST<BlockMatrixType<float>>::Initialize(*N, *nev, *nex, *m, *n, H, *ldh, V,
                                     ritzv, *dim0, *dim1, grid_major, comm);   
 }
 
@@ -537,7 +858,7 @@ void pzchase_init_(int* N, int* nev, int* nex, int* m, int* n,
                     double* ritzv, int* dim0, int* dim1, char* grid_major,
                     MPI_Comm* comm, int* init)
 {
-    *init = ChASE_DIST_BLOCK::Initialize<std::complex<double>>(*N, *nev, *nex, *m, *n, 
+    *init = ChASE_DIST<BlockMatrixType<std::complex<double>>>::Initialize(*N, *nev, *nex, *m, *n, 
                                                          reinterpret_cast<std::complex<double>*>(H), *ldh, 
                                                          reinterpret_cast<std::complex<double>*>(V),
                                                          ritzv, *dim0, *dim1, grid_major, *comm);
@@ -549,7 +870,7 @@ void pzchase_init_f_(int* N, int* nev, int* nex, int* m, int* n,
                         MPI_Fint* fcomm, int* init)
 {
     MPI_Comm comm = MPI_Comm_f2c(*fcomm);
-    *init = ChASE_DIST_BLOCK::Initialize<std::complex<double>>(
+    *init = ChASE_DIST<BlockMatrixType<std::complex<double>>>::Initialize(
         *N, *nev, *nex, *m, *n, reinterpret_cast<std::complex<double>*>(H),
         *ldh, reinterpret_cast<std::complex<double>*>(V), ritzv, *dim0,
         *dim1, grid_major, comm);
@@ -560,7 +881,7 @@ void pcchase_init_(int* N, int* nev, int* nex, int* m, int* n,
                     float* ritzv, int* dim0, int* dim1, char* grid_major,
                     MPI_Comm* comm, int* init)
 {
-    *init = ChASE_DIST_BLOCK::Initialize<std::complex<float>>(*N, *nev, *nex, *m, *n, 
+    *init = ChASE_DIST<BlockMatrixType<std::complex<float>>>::Initialize(*N, *nev, *nex, *m, *n, 
                                                          reinterpret_cast<std::complex<float>*>(H), *ldh, 
                                                          reinterpret_cast<std::complex<float>*>(V),
                                                          ritzv, *dim0, *dim1, grid_major, *comm);
@@ -572,34 +893,33 @@ void pcchase_init_f_(int* N, int* nev, int* nex, int* m, int* n,
                         MPI_Fint* fcomm, int* init)
 {
     MPI_Comm comm = MPI_Comm_f2c(*fcomm);
-    *init = ChASE_DIST_BLOCK::Initialize<std::complex<float>>(
+    *init = ChASE_DIST<BlockMatrixType<std::complex<float>>>::Initialize(
         *N, *nev, *nex, *m, *n, reinterpret_cast<std::complex<float>*>(H),
         *ldh, reinterpret_cast<std::complex<float>*>(V), ritzv, *dim0,
         *dim1, grid_major, comm);
 }
+#endif
 
-
-void pdchase_finalize_(int* flag) { *flag = ChASE_DIST_BLOCK::Finalize<double>(); }
-
-void pschase_finalize_(int* flag) { *flag = ChASE_DIST_BLOCK::Finalize<float>(); }
-void pcchase_finalize_(int* flag) { *flag = ChASE_DIST_BLOCK::Finalize<std::complex<float>>(); }
-void pzchase_finalize_(int* flag) { *flag = ChASE_DIST_BLOCK::Finalize<std::complex<double>>(); }
+void pdchase_finalize_(int* flag) { *flag = ChASE_DIST<BlockMatrixType<double>>::Finalize(); }
+void pschase_finalize_(int* flag) { *flag = ChASE_DIST<BlockMatrixType<float>>::Finalize(); }
+void pcchase_finalize_(int* flag) { *flag = ChASE_DIST<BlockMatrixType<std::complex<float>>>::Finalize(); }
+void pzchase_finalize_(int* flag) { *flag =ChASE_DIST<BlockMatrixType<std::complex<double>>>::Finalize(); }
 
 void pdchase_(int* deg, double* tol, char* mode, char* opt, char *qr)
 {
-    ChASE_DIST_BLOCK::Solve<double>(deg, tol, mode, opt, qr);
+    ChASE_DIST<BlockMatrixType<double>>::Solve(deg, tol, mode, opt, qr);
 }
 void pschase_(int* deg, float* tol, char* mode, char* opt, char *qr)
 {
-    ChASE_DIST_BLOCK::Solve<float>(deg, tol, mode, opt, qr);
+    ChASE_DIST<BlockMatrixType<float>>::Solve(deg, tol, mode, opt, qr);
 }
 void pzchase_(int* deg, double* tol, char* mode, char* opt, char *qr)
 {
-    ChASE_DIST_BLOCK::Solve<std::complex<double>>(deg, tol, mode, opt, qr);
+    ChASE_DIST<BlockMatrixType<std::complex<double>>>::Solve(deg, tol, mode, opt, qr);
 }
 void pcchase_(int* deg, float* tol, char* mode, char* opt, char *qr)
 {
-    ChASE_DIST_BLOCK::Solve<std::complex<float>>(deg, tol, mode, opt, qr);
+    ChASE_DIST<BlockMatrixType<std::complex<float>>>::Solve(deg, tol, mode, opt, qr);
 }
 
 

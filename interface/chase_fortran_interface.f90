@@ -245,6 +245,39 @@ MODULE chase_diag
     END INTERFACE
 
     INTERFACE   
+        SUBROUTINE pdchase_init_blockcyclic(nn, nev, nex, mbsize, nbsize, h, ldh, v, ritzv, dim0, dim1, &
+            grid_major, irsrc, icsrc, fcomm, init) bind( c, name = 'pdchase_init_blockcyclic_f_' )
+      !> Initialization of distributed-memory ChASE with real scalar in double precison.
+      !> The matrix to be diagonalized is already in block-cyclic distribution.
+      !> It is linked to distributed multi-GPU ChASE when CUDA is detected.
+      !>    
+      !>
+      !> @param[in] nn global matrix size of the matrix to be diagonalized  
+      !> @param[in] nev number of desired eigenpairs
+      !> @param[in] nex extra searching space size   
+      !> @param[in] mbsize block size for the block-cyclic distribution for the rows of global matrix
+      !> @param[in] nbsize block size for the block-cyclic distribution for the cloumns of global matrix
+      !> @param[in] h pointer to the matrix to be diagonalized. `h` is a block-cyclic distribution of global matrix of size `mxn`, its leading dimension is `ldh`
+      !> @param[in] ldh leading dimension of `h` on each MPI process
+      !> @param[in,out] v `(mx(nev+nex))` matrix, input is the initial guess eigenvectors, and for output, the first `nev` columns are overwritten by the desired eigenvectors. `v` is only partially distributed within column communicator in 1D block-cyclic distribution with a same block factor `mbsize`. It is reduandant among different column communicator.
+      !> @param[in,out] ritzv an array of size `nev` which contains the desired eigenvalues
+      !> @param[in] dim0 row number of 2D MPI grid
+      !> @param[in] dim1 column number of 2D MPI grid      
+      !> @param[in] grid_major major of 2D MPI grid. Row major: `grid_major=R`, column major: `grid_major=C`
+      !> @param[in] irsrc process row over which the first row of the global matrix `h` is distributed.
+      !> @param[in] icsrc process column over which the first column of the global matrix `h` is distributed.      
+      !> @param[in] fcomm the working MPI-Fortran communicator      
+      !> @param[in,out] init a flag to indicate if ChASE has been initialized              
+            USE, INTRINSIC :: iso_c_binding
+            INTEGER(c_int)      :: nn, nev, nex, mbsize, nbsize, ldh, dim0, dim1, irsrc, icsrc, fcomm, init
+            REAL(c_double)      :: h(*), v(*)
+            REAL(c_double)      :: ritzv(*)
+            CHARACTER(len=1,kind=c_char)  :: grid_major
+
+        END SUBROUTINE pdchase_init_blockcyclic
+    END INTERFACE
+
+    INTERFACE   
         SUBROUTINE pdchase_finalize(flag) bind( c, name = 'pdchase_finalize_' )
       !> Finalize distributed-memory ChASE with real scalar in double precison.
       !>    
@@ -306,6 +339,39 @@ MODULE chase_diag
         END SUBROUTINE pschase_init
     END INTERFACE
     
+    INTERFACE
+        SUBROUTINE pschase_init_blockcyclic(nn, nev, nex, mbsize, nbsize, h, ldh, v, ritzv, dim0, dim1, &
+            grid_major, irsrc, icsrc, fcomm, init) bind( c, name = 'pschase_init_blockcyclic_f_' )
+      !> Initialization of distributed-memory ChASE with real scalar in single precison.
+      !> The matrix to be diagonalized is already in block-cyclic distribution.
+      !> It is linked to distributed multi-GPU ChASE when CUDA is detected.
+      !>    
+      !>
+      !> @param[in] nn global matrix size of the matrix to be diagonalized  
+      !> @param[in] nev number of desired eigenpairs
+      !> @param[in] nex extra searching space size   
+      !> @param[in] mbsize block size for the block-cyclic distribution for the rows of global matrix
+      !> @param[in] nbsize block size for the block-cyclic distribution for the cloumns of global matrix
+      !> @param[in] h pointer to the matrix to be diagonalized. `h` is a block-cyclic distribution of global matrix of size `mxn`, its leading dimension is `ldh`
+      !> @param[in] ldh leading dimension of `h` on each MPI process
+      !> @param[in,out] v `(mx(nev+nex))` matrix, input is the initial guess eigenvectors, and for output, the first `nev` columns are overwritten by the desired eigenvectors. `v` is only partially distributed within column communicator in 1D block-cyclic distribution with a same block factor `mbsize`. It is reduandant among different column communicator.
+      !> @param[in,out] ritzv an array of size `nev` which contains the desired eigenvalues
+      !> @param[in] dim0 row number of 2D MPI grid
+      !> @param[in] dim1 column number of 2D MPI grid      
+      !> @param[in] grid_major major of 2D MPI grid. Row major: `grid_major=R`, column major: `grid_major=C`
+      !> @param[in] irsrc process row over which the first row of the global matrix `h` is distributed.
+      !> @param[in] icsrc process column over which the first column of the global matrix `h` is distributed.      
+      !> @param[in] fcomm the working MPI-Fortran communicator      
+      !> @param[in,out] init a flag to indicate if ChASE has been initialized              
+            USE, INTRINSIC :: iso_c_binding
+            INTEGER(c_int)      :: nn, nev, nex, mbsize, nbsize, ldh, dim0, dim1, irsrc, icsrc, fcomm, init
+            REAL(c_float)      :: h(*), v(*)
+            REAL(c_float)      :: ritzv(*)
+            CHARACTER(len=1,kind=c_char)  :: grid_major
+
+        END SUBROUTINE pschase_init_blockcyclic
+    END INTERFACE
+
     INTERFACE  
         SUBROUTINE pschase_finalize(flag) bind( c, name = 'pschase_finalize_' )
       !> Finalize distributed-memory ChASE with real scalar in single precison.
@@ -367,6 +433,38 @@ MODULE chase_diag
         END SUBROUTINE pzchase_init
     END INTERFACE
 
+    INTERFACE
+        SUBROUTINE pzchase_init_blockcyclic(nn, nev, nex, mbsize, nbsize, h, ldh, v, ritzv, dim0, dim1, &
+            grid_major, irsrc, icsrc, fcomm, init) bind( c, name = 'pzchase_init_blockcyclic_f_' )
+      !> Initialization of distributed-memory ChASE with complex scalar in double precison.
+      !> The matrix to be diagonalized is already in block-cyclic distribution.
+      !> It is linked to distributed multi-GPU ChASE when CUDA is detected.
+      !>    
+      !>
+      !> @param[in] nn global matrix size of the matrix to be diagonalized  
+      !> @param[in] nev number of desired eigenpairs
+      !> @param[in] nex extra searching space size   
+      !> @param[in] mbsize block size for the block-cyclic distribution for the rows of global matrix
+      !> @param[in] nbsize block size for the block-cyclic distribution for the cloumns of global matrix
+      !> @param[in] h pointer to the matrix to be diagonalized. `h` is a block-cyclic distribution of global matrix of size `mxn`, its leading dimension is `ldh`
+      !> @param[in] ldh leading dimension of `h` on each MPI process
+      !> @param[in,out] v `(mx(nev+nex))` matrix, input is the initial guess eigenvectors, and for output, the first `nev` columns are overwritten by the desired eigenvectors. `v` is only partially distributed within column communicator in 1D block-cyclic distribution with a same block factor `mbsize`. It is reduandant among different column communicator.
+      !> @param[in,out] ritzv an array of size `nev` which contains the desired eigenvalues
+      !> @param[in] dim0 row number of 2D MPI grid
+      !> @param[in] dim1 column number of 2D MPI grid      
+      !> @param[in] grid_major major of 2D MPI grid. Row major: `grid_major=R`, column major: `grid_major=C`
+      !> @param[in] irsrc process row over which the first row of the global matrix `h` is distributed.
+      !> @param[in] icsrc process column over which the first column of the global matrix `h` is distributed.      
+      !> @param[in] fcomm the working MPI-Fortran communicator      
+      !> @param[in,out] init a flag to indicate if ChASE has been initialized              
+            USE, INTRINSIC :: iso_c_binding
+            INTEGER(c_int)      :: nn, nev, nex, mbsize, nbsize, ldh, dim0, dim1, irsrc, icsrc, fcomm, init
+            COMPLEX(c_double_complex)      :: h(*), v(*)
+            REAL(c_double)      :: ritzv(*)
+            CHARACTER(len=1,kind=c_char)  :: grid_major
+
+        END SUBROUTINE pzchase_init_blockcyclic
+    END INTERFACE
     
     INTERFACE     
         SUBROUTINE pzchase_finalize(flag) bind( c, name = 'pzchase_finalize_' )
@@ -427,6 +525,39 @@ MODULE chase_diag
             REAL(c_double)      :: ritzv(*)
             CHARACTER(len=1,kind=c_char)  :: grid_major
         END SUBROUTINE pcchase_init
+    END INTERFACE
+
+    INTERFACE
+        SUBROUTINE pcchase_init_blockcyclic(nn, nev, nex, mbsize, nbsize, h, ldh, v, ritzv, dim0, dim1, &
+            grid_major, irsrc, icsrc, fcomm, init) bind( c, name = 'pcchase_init_blockcyclic_f_' )
+      !> Initialization of distributed-memory ChASE with complex scalar in single precison.
+      !> The matrix to be diagonalized is already in block-cyclic distribution.
+      !> It is linked to distributed multi-GPU ChASE when CUDA is detected.
+      !>    
+      !>
+      !> @param[in] nn global matrix size of the matrix to be diagonalized  
+      !> @param[in] nev number of desired eigenpairs
+      !> @param[in] nex extra searching space size   
+      !> @param[in] mbsize block size for the block-cyclic distribution for the rows of global matrix
+      !> @param[in] nbsize block size for the block-cyclic distribution for the cloumns of global matrix
+      !> @param[in] h pointer to the matrix to be diagonalized. `h` is a block-cyclic distribution of global matrix of size `mxn`, its leading dimension is `ldh`
+      !> @param[in] ldh leading dimension of `h` on each MPI process
+      !> @param[in,out] v `(mx(nev+nex))` matrix, input is the initial guess eigenvectors, and for output, the first `nev` columns are overwritten by the desired eigenvectors. `v` is only partially distributed within column communicator in 1D block-cyclic distribution with a same block factor `mbsize`. It is reduandant among different column communicator.
+      !> @param[in,out] ritzv an array of size `nev` which contains the desired eigenvalues
+      !> @param[in] dim0 row number of 2D MPI grid
+      !> @param[in] dim1 column number of 2D MPI grid      
+      !> @param[in] grid_major major of 2D MPI grid. Row major: `grid_major=R`, column major: `grid_major=C`
+      !> @param[in] irsrc process row over which the first row of the global matrix `h` is distributed.
+      !> @param[in] icsrc process column over which the first column of the global matrix `h` is distributed.      
+      !> @param[in] fcomm the working MPI-Fortran communicator      
+      !> @param[in,out] init a flag to indicate if ChASE has been initialized              
+            USE, INTRINSIC :: iso_c_binding
+            INTEGER(c_int)      :: nn, nev, nex, mbsize, nbsize, ldh, dim0, dim1, irsrc, icsrc, fcomm, init
+            COMPLEX(c_float_complex)      :: h(*), v(*)
+            REAL(c_double)      :: ritzv(*)
+            CHARACTER(len=1,kind=c_char)  :: grid_major
+
+        END SUBROUTINE pcchase_init_blockcyclic
     END INTERFACE
 
     INTERFACE   
