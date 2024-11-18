@@ -97,3 +97,39 @@ if(CHASE_BUILD_WITH_DOCS)
     message(STATUS "Building Documentation of ChASE")
     add_subdirectory("docs")
 endif()
+
+
+##installation
+install( TARGETS chase_algorithm
+  EXPORT chase_targets
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  )
+
+install(DIRECTORY algorithm DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  FILES_MATCHING
+    PATTERN "*.hpp"
+    PATTERN "*.inc"
+)
+
+install(EXPORT chase_targets
+        NAMESPACE ChASE::
+        EXPORT_LINK_INTERFACE_LIBRARIES
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
+        FILE chaseTargets.cmake)
+
+include(CMakePackageConfigHelpers)
+
+configure_package_config_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Config.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/chase-config.cmake"
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ChASE
+)
+
+install(
+    FILES "${CMAKE_CURRENT_BINARY_DIR}/chase-config.cmake"
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ChASE
+)
+
+
