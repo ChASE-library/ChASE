@@ -11,6 +11,18 @@ target_link_libraries(chase_gpu
                         linalg_internal_cuda
                         matrix_gpu)
 
-target_include_directories(chase_gpu INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(chase_gpu INTERFACE 
+                                               $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+                                               "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/Impl/cuda>")
+
 target_compile_definitions(chase_gpu INTERFACE NO_MPI=1 HAS_CUDA=1)
 
+install(TARGETS chase_gpu
+  EXPORT chase_targets
+  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/Impl
+  FILES_MATCHING
+    PATTERN "*.hpp"
+)
