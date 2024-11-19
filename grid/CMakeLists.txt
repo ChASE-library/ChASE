@@ -29,7 +29,7 @@ if(NCCL_FOUND)
                                                 "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/grid>")
                                                 
     target_link_libraries(mpi_grid_nccl INTERFACE ${NCCL_LIBRARIES})
-    target_include_directories( mpi_grid_nccl INTERFACE ${NCCL_INCLUDE_DIRS})
+    #target_include_directories( mpi_grid_nccl INTERFACE ${NCCL_INCLUDE_DIRS})
     target_compile_definitions( mpi_grid_nccl INTERFACE "-DHAS_NCCL")
 
     install(TARGETS mpi_grid_nccl
