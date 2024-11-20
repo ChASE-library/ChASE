@@ -15,11 +15,25 @@ else()
     target_link_libraries("chase_c" PUBLIC chase_mpi)
 endif()
 
-target_include_directories("chase_c" PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories("chase_c" INTERFACE 
+                                               $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+                                               "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/interface>")
 
 if(CHASE_INTERFACE_WITH_BLOCKCYLIC)
   target_compile_definitions(chase_c PUBLIC INTERFACE_BLOCK_CYCLIC)
 endif()
+
+install(TARGETS chase_c
+  EXPORT chase_targets
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+)
+
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  FILES_MATCHING
+    PATTERN "*.h"
+)
 
 enable_language( Fortran )
 
@@ -41,10 +55,23 @@ target_include_directories(
   "chase_f"
   INTERFACE
   $<BUILD_INTERFACE:${MODULE_OUTPUT_DIR}>
-  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+  "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"  
 )
 
 target_link_libraries("chase_f" PUBLIC chase_c)
 if(CHASE_INTERFACE_WITH_BLOCKCYLIC)
   target_compile_definitions(chase_f PUBLIC INTERFACE_BLOCK_CYCLIC)
 endif()
+
+install( TARGETS chase_f
+  EXPORT chase_targets
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  )
+
+install(
+  DIRECTORY
+  "${MODULE_OUTPUT_DIR}/"
+  DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+)
+
