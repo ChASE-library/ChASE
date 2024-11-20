@@ -550,6 +550,14 @@ if(SCALAPACK_LIBRARIES)
         "${first_lib_path}"
         CACHE PATH "Installation directory of SCALAPACK library" FORCE)
   endif()
+
+  add_library(SCALAPACK::SCALAPACK INTERFACE IMPORTED)
+
+  # Set include directories and library location
+  set_target_properties(SCALAPACK::SCALAPACK PROPERTIES
+      INTERFACE_LINK_LIBRARIES "${SCALAPACK_LIBRARIES}"
+  )  
+
 endif()
 mark_as_advanced(SCALAPACK_DIR)
 mark_as_advanced(SCALAPACK_DIR_FOUND)

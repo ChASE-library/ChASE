@@ -121,6 +121,27 @@ install(EXPORT chase_targets
 
 include(CMakePackageConfigHelpers)
 
+set(IS_ENABLE_MPI OFF)
+set(IS_ENABLE_SCALAPACK OFF)
+set(IS_ENABLE_NCCL OFF)
+
+if(TARGET chase_mpi)
+    set(IS_ENABLE_MPI ON)
+endif()
+
+if(TARGET scalapackpp)
+    set(IS_ENABLE_SCALAPACK ON)
+endif()
+
+if(TARGET chase_nccl)
+    set(IS_ENABLE_NCCL ON)
+endif()
+
+# Convert booleans to "ON"/"OFF" strings for the config file
+set(IS_ENABLE_MPI_STRING ${IS_ENABLE_MPI})
+set(IS_ENABLE_SCALAPACK_STRING ${IS_ENABLE_SCALAPACK})
+set(IS_ENABLE_NCCL_STRING ${IS_ENABLE_NCCL})
+
 configure_package_config_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Config.cmake.in"
     "${CMAKE_CURRENT_BINARY_DIR}/chase-config.cmake"

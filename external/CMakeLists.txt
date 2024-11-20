@@ -47,7 +47,7 @@ if(SCALAPACK_FOUND)
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>" 
   )
   target_compile_definitions(scalapackpp INTERFACE HAS_SCALAPACK=1)
-  target_link_libraries(scalapackpp INTERFACE ${SCALAPACK_LIBRARIES})
+  target_link_libraries(scalapackpp INTERFACE SCALAPACK::SCALAPACK)
   message(STATUS "ScaLAPACK support enabled.")
 else()
     message(STATUS "No ScaLAPACK is detected.")
