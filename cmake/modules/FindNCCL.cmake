@@ -85,6 +85,14 @@ if(NCCL_FOUND)  # obtaining NCCL version and some sanity checks
   set (CMAKE_REQUIRED_INCLUDES ${OLD_CMAKE_REQUIRED_INCLUDES})
 
   message(STATUS "Found NCCL (include: ${NCCL_INCLUDE_DIRS}, library: ${NCCL_LIBRARIES})")
+  add_library(NCCL::NCCL INTERFACE IMPORTED)
+
+  # Set include directories and library location
+  set_target_properties(NCCL::NCCL PROPERTIES
+      INTERFACE_INCLUDE_DIRECTORIES "${NCCL_INCLUDE_DIRS}"
+      INTERFACE_LINK_LIBRARIES "${NCCL_LIBRARIES}"
+  )  
   mark_as_advanced(NCCL_ROOT_DIR NCCL_INCLUDE_DIRS NCCL_LIBRARIES)
+
 endif()
 

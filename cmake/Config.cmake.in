@@ -2,13 +2,44 @@
 
 include(CMakeFindDependencyMacro)
 
-# Find dependencies
-#find_dependency(BLAS REQUIRED)
-#find_dependency(LAPACK REQUIRED)
-#find_dependency(MPI)
+# Find mandatory dependencies
+if(NOT TARGET BLAS::BLAS)
+find_dependency(BLAS REQUIRED)
+endif()
+
+if(NOT TARGET LAPACK::LAPACK)
+find_dependency(LAPACK REQUIRED)
+endif()
 
 # Add the custom FindModules directory to the module path
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_LIST_DIR}/modules")
+
+set(IS_ENABLE_MPI @IS_ENABLE_MPI_STRING@)
+set(IS_ENABLE_SCALAPACK @IS_ENABLE_SCALAPACK_STRING@)
+set(IS_ENABLE_NCCL @IS_ENABLE_NCCL_STRING@)
+
+if(IS_ENABLE_MPI)
+    if(NOT TARGET MPI::MPI_CXX)
+        find_dependency(MPI REQUIRED)
+    endif()
+endif()
+
+if(IS_ENABLE_SCALAPACK)
+    if(NOT TARGET SCALAPACK::SCALAPACK)
+        enable_language(Fortran)
+        find_dependency(SCALAPACK REQUIRED)
+    endif()
+endif()
+
+if(IS_ENABLE_NCCL)
+    if(NOT TARGET NCCL::NCCL)
+        find_dependency(NCCL REQUIRED)
+    endif()
+
+    if(NOT TARGET CUDA::cublas)
+        find_package(CUDAToolkit REQUIRED)	
+    endif()
+endif()
 
 include("${CMAKE_CURRENT_LIST_DIR}/chaseTargets.cmake")
 check_required_components("@PROJECT_NAME@")
