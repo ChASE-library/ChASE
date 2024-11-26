@@ -1536,7 +1536,6 @@ private:
 template<typename T, typename Platform = chase::platform::CPU> 
 class BlockCyclicMatrix : public AbstractDistMatrix<T, BlockCyclicMatrix, Platform>
 {
-
 public:
     using platform_type = Platform; ///< Alias for platform type.
     using value_type = T;  ///< Alias for element type.
@@ -2195,7 +2194,9 @@ private:
                 }
 #endif
             }
-
+#ifdef HAS_CUDA
+            cudaDeviceSynchronize();
+#endif
             MPI_Bcast(buff_data, n_locs[coords[1]] *  m_locs[src], chase::mpi::getMPI_Type<T>(), src, mpi_grid_.get()->get_col_comm());
 
             for(auto p = 0; p < m_contiguous_global_offs_2[src][coords[1]].size(); p++)
@@ -2245,7 +2246,9 @@ private:
                     }
 #endif
                 }
-
+#ifdef HAS_CUDA
+                cudaDeviceSynchronize();
+#endif
                 MPI_Bcast(buff_data, M_ * n_contiguous_lens_2[coords[0]][src][q], chase::mpi::getMPI_Type<T>(), src, mpi_grid_.get()->get_row_comm());
    
                 if constexpr (std::is_same<Platform, chase::platform::CPU>::value){
@@ -2268,9 +2271,7 @@ private:
                                         targetMatrix->l_data() + targetMatrix->l_ld() * n_contiguous_global_offs_2[coords[0]][src][q], 
                                         targetMatrix->l_ld());                     
                 }
-#endif
- 
-                                        
+#endif                                        
             }
         }
     }

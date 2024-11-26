@@ -177,6 +177,22 @@ if(CMAKE_CUDA_COMPILER)
     INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
   )
 
+  add_library(linalg_internal_cuda_mpi INTERFACE)
+  target_include_directories(linalg_internal_cuda_mpi INTERFACE 
+                                                $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/internal/cuda_aware_mpi>
+                                                "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/linalg/internal/cuda_aware_mpi>")
+  target_link_libraries(linalg_internal_cuda_mpi INTERFACE mpi_grid linalg_internal_cuda)
+
+  install(TARGETS linalg_internal_cuda_mpi
+    EXPORT chase_targets
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  )
+
+  install(DIRECTORY internal/cuda_aware_mpi DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/linalg/internal
+    FILES_MATCHING
+      PATTERN "*.hpp"
+  )
+  
   if(TARGET mpi_grid_nccl)
     add_library(linalg_internal_nccl INTERFACE)
     target_include_directories(linalg_internal_nccl INTERFACE 
