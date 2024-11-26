@@ -759,6 +759,80 @@ TYPED_TEST(MatrixDistTest, BlockCyclicExternalMemoryAllocationGPU) {
     EXPECT_EQ(blockcyclicmatrix_.cpu_data(), data.data());    
 }
 
+#ifdef HAS_CUDA
+TYPED_TEST(MatrixDistTest, BlockCyclicRedistributionToRedundantGPU) {
+    using T = TypeParam;  // Get the current type
+    //using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type;
+    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
+    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid 
+            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(2, 2, MPI_COMM_WORLD);
+
+    std::size_t M = 5;
+    std::size_t N = 5;
+    std::size_t blocksize = 1;
+
+    auto redundantmatrix_ = chase::distMatrix::RedundantMatrix<T, chase::platform::GPU>(M, N, mpi_grid);
+    auto blockcyclicmatrix_ = chase::distMatrix::BlockCyclicMatrix<T, chase::platform::GPU>(M, N, blocksize, blocksize, mpi_grid);
+
+    redundantmatrix_.allocate_cpu_data();
+    blockcyclicmatrix_.allocate_cpu_data();
+
+    for(auto i = 0; i < redundantmatrix_.l_rows() * redundantmatrix_.l_cols(); i++)
+    {
+        redundantmatrix_.cpu_data()[i] = T(-1);
+    }
+
+    if(this->world_rank == 0)
+    {
+        blockcyclicmatrix_.cpu_data()[0] = T(0.0);
+        blockcyclicmatrix_.cpu_data()[1] = T(2.0);
+        blockcyclicmatrix_.cpu_data()[2] = T(4.0);
+        blockcyclicmatrix_.cpu_data()[3] = T(10.0);
+        blockcyclicmatrix_.cpu_data()[4] = T(12.0);
+        blockcyclicmatrix_.cpu_data()[5] = T(14.0);      
+        blockcyclicmatrix_.cpu_data()[6] = T(20.0);
+        blockcyclicmatrix_.cpu_data()[7] = T(22.0);
+        blockcyclicmatrix_.cpu_data()[8] = T(24.0);           
+    }else if(this->world_rank == 1)
+    {
+        blockcyclicmatrix_.cpu_data()[0] = T(1.0);
+        blockcyclicmatrix_.cpu_data()[1] = T(3.0);
+        blockcyclicmatrix_.cpu_data()[2] = T(11.0);
+        blockcyclicmatrix_.cpu_data()[3] = T(13.0);    
+        blockcyclicmatrix_.cpu_data()[4] = T(21.0);
+        blockcyclicmatrix_.cpu_data()[5] = T(23.0);           
+    }else if(this->world_rank == 2)
+    {
+        blockcyclicmatrix_.cpu_data()[0] = T(5.0);
+        blockcyclicmatrix_.cpu_data()[1] = T(7.0);
+        blockcyclicmatrix_.cpu_data()[2] = T(9.0);
+        blockcyclicmatrix_.cpu_data()[3] = T(15.0);    
+        blockcyclicmatrix_.cpu_data()[4] = T(17.0);
+        blockcyclicmatrix_.cpu_data()[5] = T(19.0);               
+    }else
+    {
+        blockcyclicmatrix_.cpu_data()[0] = T(6.0);
+        blockcyclicmatrix_.cpu_data()[1] = T(8.0);
+        blockcyclicmatrix_.cpu_data()[2] = T(16.0);
+        blockcyclicmatrix_.cpu_data()[3] = T(18.0);       
+    }
+
+    redundantmatrix_.H2D();
+    blockcyclicmatrix_.H2D();    
+
+    blockcyclicmatrix_.redistributeImpl(&redundantmatrix_);
+
+    redundantmatrix_.D2H();
+
+    for(auto i = 0; i < redundantmatrix_.l_rows() * redundantmatrix_.l_cols(); i++)
+    {
+
+        EXPECT_EQ(redundantmatrix_.cpu_data()[i], T(i));
+    } 
+}
+#endif
+
+
 #ifdef HAS_NCCL
 TYPED_TEST(MatrixDistTest, BlockCyclicRedistributionToRedundantGPUNCCL) {
     using T = TypeParam;  // Get the current type
@@ -773,7 +847,6 @@ TYPED_TEST(MatrixDistTest, BlockCyclicRedistributionToRedundantGPUNCCL) {
 
     auto redundantmatrix_ = chase::distMatrix::RedundantMatrix<T, chase::platform::GPU>(M, N, mpi_grid);
     auto blockcyclicmatrix_ = chase::distMatrix::BlockCyclicMatrix<T, chase::platform::GPU>(M, N, blocksize, blocksize, mpi_grid);
-
     redundantmatrix_.allocate_cpu_data();
     blockcyclicmatrix_.allocate_cpu_data();
 

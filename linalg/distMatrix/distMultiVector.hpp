@@ -1111,6 +1111,9 @@ private:
                     }
 #endif
                 }
+#ifdef HAS_CUDA
+            cudaDeviceSynchronize();
+#endif                
             }
         }else
         {

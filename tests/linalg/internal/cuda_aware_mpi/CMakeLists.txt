@@ -1,0 +1,7 @@
+setup_test(HEMMGPUDistTest hemm.cpp LIBRARIES chase_cuda_mpi)
+setup_test(CholQRGPUDistTest cholqr.cpp LIBRARIES chase_cuda_mpi)
+setup_test(LanczosGPUDistTest lanczos.cpp LIBRARIES chase_cuda_mpi)
+setup_test(RayleighRitzGPUDistTest rayleighRitz.cpp LIBRARIES chase_cuda_mpi)
+setup_test(ResidualsGPUDistTest residuals.cpp LIBRARIES chase_cuda_mpi)
+setup_test(shiftDiagonalGPUDistTest shiftDiagonal.cpp LIBRARIES chase_cuda_mpi)
+setup_test(symOrHermGPU2DistTest symOrHerm.cpp LIBRARIES chase_cuda_mpi)
