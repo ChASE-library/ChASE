@@ -7,6 +7,7 @@
 #include "linalg/distMatrix/distMatrix.hpp"
 #include "linalg/distMatrix/distMultiVector.hpp"
 #include "linalg/internal/nccl/hemm.hpp"
+#include "linalg/internal/nccl/nccl_kernels.hpp"
 #include "external/cublaspp/cublaspp.hpp"
 #include "external/cusolverpp/cusolverpp.hpp"
 
@@ -16,11 +17,9 @@ namespace linalg
 {
 namespace internal
 {
-namespace nccl
-{
 
     template <typename MatrixType, typename InputMultiVectorType>
-    void rayleighRitz(cublasHandle_t cublas_handle, 
+    void cuda_nccl::rayleighRitz(cublasHandle_t cublas_handle, 
                       cusolverDnHandle_t cusolver_handle,
                       MatrixType& H,
                       InputMultiVectorType& V1,
@@ -31,12 +30,13 @@ namespace nccl
                       std::size_t offset,
                       std::size_t subSize,
                       int* devInfo,
-                      typename MatrixType::value_type *workspace = nullptr,
-                      int lwork_heevd = 0,
-                      chase::distMatrix::RedundantMatrix<typename MatrixType::value_type, chase::platform::GPU>* A = nullptr                                         
+                      typename MatrixType::value_type *workspace,
+                      int lwork_heevd,
+                      chase::distMatrix::RedundantMatrix<typename MatrixType::value_type, chase::platform::GPU>* A                                         
                     )                
     {
         using T = typename MatrixType::value_type;
+        std::cout <<"NCCL Backend" << std::endl;
 
         std::unique_ptr<chase::distMatrix::RedundantMatrix<T, chase::platform::GPU>> A_ptr;
         std::size_t upperTriangularSize = std::size_t(subSize * (subSize + 1) / 2);
@@ -71,7 +71,7 @@ namespace nccl
             workspace = work_ptr.get();            
         }
         // Perform the distributed matrix-matrix multiplication
-        chase::linalg::internal::nccl::MatrixMultiplyMultiVectorsAndRedistributeAsync(
+        chase::linalg::internal::cuda_nccl::MatrixMultiplyMultiVectorsAndRedistributeAsync(
                         cublas_handle,
                         H, 
                         V1, 
@@ -153,7 +153,6 @@ namespace nccl
                                        V1.l_ld()));
     }
 
-}
 }
 }
 }

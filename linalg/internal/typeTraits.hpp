@@ -2,7 +2,6 @@
 
 #include "linalg/distMatrix/distMatrix.hpp"
 #include "linalg/distMatrix/distMultiVector.hpp"
-
 /**
  * @defgroup MultiVectorHelperTraits Multi-Vector Helper Traits
  * 

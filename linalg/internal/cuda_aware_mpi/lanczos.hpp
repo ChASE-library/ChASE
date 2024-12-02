@@ -7,7 +7,9 @@
 #include "linalg/distMatrix/distMatrix.hpp"
 #include "linalg/distMatrix/distMultiVector.hpp"
 #include "grid/mpiTypes.hpp"
-#include "linalg/internal/cuda_aware_mpi/hemm.hpp"
+//#include "linalg/internal/cuda_aware_mpi/hemm.hpp"
+#include "linalg/internal/cuda_aware_mpi/cuda_mpi_kernels.hpp"
+
 #include "../typeTraits.hpp"
 
 namespace chase
@@ -16,10 +18,8 @@ namespace linalg
 {
 namespace internal
 {
-namespace cuda_aware_mpi
-{
     template <typename MatrixType, typename InputMultiVectorType>
-    void lanczos(cublasHandle_t cublas_handle,
+    void cuda_mpi::lanczos(cublasHandle_t cublas_handle,
                  std::size_t M, 
                  std::size_t numvec,
                  MatrixType& H,
@@ -105,7 +105,7 @@ namespace cuda_aware_mpi
                 cudaMemcpy(V.l_data() + k * V.l_ld(), v_1.l_data() + i * v_1.l_ld(), v_1.l_rows() * sizeof(T), cudaMemcpyDeviceToDevice);
             }
 
-            chase::linalg::internal::cuda_aware_mpi::MatrixMultiplyMultiVectors(cublas_handle,
+            chase::linalg::internal::cuda_mpi::MatrixMultiplyMultiVectors(cublas_handle,
                                                                          &One, 
                                                                          H,
                                                                          v_1,
@@ -262,7 +262,7 @@ namespace cuda_aware_mpi
     }
 
     template <typename MatrixType, typename InputMultiVectorType>
-    void lanczos(cublasHandle_t cublas_handle,
+    void cuda_mpi::lanczos(cublasHandle_t cublas_handle,
                  std::size_t M,
                  MatrixType& H,
                  InputMultiVectorType& V,
@@ -332,7 +332,7 @@ namespace cuda_aware_mpi
                                                                       1));  
         for (std::size_t k = 0; k < M; k = k + 1)
         {
-            chase::linalg::internal::cuda_aware_mpi::MatrixMultiplyMultiVectors(cublas_handle,
+            chase::linalg::internal::cuda_mpi::MatrixMultiplyMultiVectors(cublas_handle,
                                                                          &One, 
                                                                          H,
                                                                          v_1,
@@ -430,8 +430,6 @@ namespace cuda_aware_mpi
         *upperb = std::max(std::abs(ritzv[0]), std::abs(ritzv[M - 1])) +
                   std::abs(r_beta);
     }
-
-}
 }
 }
 }

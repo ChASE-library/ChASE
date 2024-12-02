@@ -52,7 +52,7 @@ TYPED_TEST(CHOLQRNCCLDistTest, cholQR1GPU) {
     CHECK_CUDA_ERROR(cudaMalloc((void**)&d_V, sizeof(T) * xlen * this->n));
     read_vectors(V.data(), GetQRFileName<T>() + "cond_10.bin", xoff, xlen, this->N, this->n, 0);
     CHECK_CUDA_ERROR(cudaMemcpy(d_V, V.data(), sizeof(T) * xlen * this->n, cudaMemcpyHostToDevice));
-    int info = chase::linalg::internal::nccl::cholQR1<T>(this->cublasH_, this->cusolverH_, xlen, this->n, d_V, xlen, this->mpi_grid.get()->get_nccl_comm());
+    int info = chase::linalg::internal::cuda_nccl::cholQR1<T>(this->cublasH_, this->cusolverH_, xlen, this->n, d_V, xlen, this->mpi_grid.get()->get_nccl_comm());
     ASSERT_EQ(info, 0);
     CHECK_CUDA_ERROR(cudaMemcpy(V.data(), d_V, sizeof(T) * xlen * this->n, cudaMemcpyDeviceToHost));
     auto orth = orthogonality<T>(xlen, this->n, V.data(), xlen, MPI_COMM_WORLD);
@@ -72,7 +72,7 @@ TYPED_TEST(CHOLQRNCCLDistTest, cholQR1BadlyCondGPU) {
     CHECK_CUDA_ERROR(cudaMalloc((void**)&d_V, sizeof(T) * xlen * this->n));
     read_vectors(V.data(), GetQRFileName<T>() + "cond_1e4.bin", xoff, xlen, this->N, this->n, 0);
     CHECK_CUDA_ERROR(cudaMemcpy(d_V, V.data(), sizeof(T) * xlen * this->n, cudaMemcpyHostToDevice));
-    int info = chase::linalg::internal::nccl::cholQR1<T>(this->cublasH_, this->cusolverH_, xlen, this->n, d_V, xlen, this->mpi_grid.get()->get_nccl_comm());
+    int info = chase::linalg::internal::cuda_nccl::cholQR1<T>(this->cublasH_, this->cusolverH_, xlen, this->n, d_V, xlen, this->mpi_grid.get()->get_nccl_comm());
     ASSERT_EQ(info, 0);
     CHECK_CUDA_ERROR(cudaMemcpy(V.data(), d_V, sizeof(T) * xlen * this->n, cudaMemcpyDeviceToHost));
     auto orth = orthogonality<T>(xlen, this->n, V.data(), xlen, MPI_COMM_WORLD);
@@ -93,7 +93,7 @@ TYPED_TEST(CHOLQRNCCLDistTest, cholQR1illCondGPU) {
     CHECK_CUDA_ERROR(cudaMalloc((void**)&d_V, sizeof(T) * xlen * this->n));
     read_vectors(V.data(), GetQRFileName<T>() + "cond_ill.bin", xoff, xlen, this->N, this->n, 0);
     CHECK_CUDA_ERROR(cudaMemcpy(d_V, V.data(), sizeof(T) * xlen * this->n, cudaMemcpyHostToDevice));
-    int info = chase::linalg::internal::nccl::cholQR1<T>(this->cublasH_, this->cusolverH_, xlen, this->n, d_V, xlen, this->mpi_grid.get()->get_nccl_comm());
+    int info = chase::linalg::internal::cuda_nccl::cholQR1<T>(this->cublasH_, this->cusolverH_, xlen, this->n, d_V, xlen, this->mpi_grid.get()->get_nccl_comm());
     EXPECT_GT(info, 0);
     EXPECT_LE(info, this->n);
 }
@@ -110,7 +110,7 @@ TYPED_TEST(CHOLQRNCCLDistTest, cholQR2GPU) {
     CHECK_CUDA_ERROR(cudaMalloc((void**)&d_V, sizeof(T) * xlen * this->n));
     read_vectors(V.data(), GetQRFileName<T>() + "cond_1e4.bin", xoff, xlen, this->N, this->n, 0);
     CHECK_CUDA_ERROR(cudaMemcpy(d_V, V.data(), sizeof(T) * xlen * this->n, cudaMemcpyHostToDevice));
-    int info = chase::linalg::internal::nccl::cholQR2<T>(this->cublasH_, this->cusolverH_, xlen, this->n, d_V, xlen, this->mpi_grid.get()->get_nccl_comm());
+    int info = chase::linalg::internal::cuda_nccl::cholQR2<T>(this->cublasH_, this->cusolverH_, xlen, this->n, d_V, xlen, this->mpi_grid.get()->get_nccl_comm());
     ASSERT_EQ(info, 0);
     CHECK_CUDA_ERROR(cudaMemcpy(V.data(), d_V, sizeof(T) * xlen * this->n, cudaMemcpyDeviceToHost));
     auto orth = orthogonality<T>(xlen, this->n, V.data(), xlen, MPI_COMM_WORLD);
@@ -130,7 +130,7 @@ TYPED_TEST(CHOLQRNCCLDistTest, cholQR2IllCondGPU) {
     CHECK_CUDA_ERROR(cudaMalloc((void**)&d_V, sizeof(T) * xlen * this->n));
     read_vectors(V.data(), GetQRFileName<T>() + "cond_ill.bin", xoff, xlen, this->N, this->n, 0);
     CHECK_CUDA_ERROR(cudaMemcpy(d_V, V.data(), sizeof(T) * xlen * this->n, cudaMemcpyHostToDevice));
-    int info = chase::linalg::internal::nccl::cholQR2<T>(this->cublasH_, this->cusolverH_, xlen, this->n, d_V, xlen, this->mpi_grid.get()->get_nccl_comm());
+    int info = chase::linalg::internal::cuda_nccl::cholQR2<T>(this->cublasH_, this->cusolverH_, xlen, this->n, d_V, xlen, this->mpi_grid.get()->get_nccl_comm());
     EXPECT_GT(info, 0);
     EXPECT_LE(info, this->n);
 }
@@ -147,7 +147,7 @@ TYPED_TEST(CHOLQRNCCLDistTest, scholQRGPU) {
     CHECK_CUDA_ERROR(cudaMalloc((void**)&d_V, sizeof(T) * xlen * this->n));
     read_vectors(V.data(), GetQRFileName<T>() + "cond_ill.bin", xoff, xlen, this->N, this->n, 0);
     CHECK_CUDA_ERROR(cudaMemcpy(d_V, V.data(), sizeof(T) * xlen * this->n, cudaMemcpyHostToDevice));
-    int info = chase::linalg::internal::nccl::shiftedcholQR2<T>(this->cublasH_, this->cusolverH_, this->N, xlen, this->n, d_V, xlen, this->mpi_grid.get()->get_nccl_comm());
+    int info = chase::linalg::internal::cuda_nccl::shiftedcholQR2<T>(this->cublasH_, this->cusolverH_, this->N, xlen, this->n, d_V, xlen, this->mpi_grid.get()->get_nccl_comm());
     ASSERT_EQ(info, 0);
     CHECK_CUDA_ERROR(cudaMemcpy(V.data(), d_V, sizeof(T) * xlen * this->n, cudaMemcpyDeviceToHost));
     auto orth = orthogonality<T>(xlen, this->n, V.data(), xlen, MPI_COMM_WORLD);
@@ -170,7 +170,7 @@ TYPED_TEST(CHOLQRNCCLDistTest, modifiedGramSchmidtCholQRGPU) {
     CHECK_CUDA_ERROR(cudaMalloc((void**)&d_V, sizeof(T) * xlen * this->n));
     read_vectors(V.data(), GetQRFileName<T>() + "cond_ill.bin", xoff, xlen, this->N, this->n, 0);
     CHECK_CUDA_ERROR(cudaMemcpy(d_V, V.data(), sizeof(T) * xlen * this->n, cudaMemcpyHostToDevice));
-    int info = chase::linalg::internal::nccl::modifiedGramSchmidtCholQR<T>(this->cublasH_, this->cusolverH_, xlen, this->n, 0, d_V, xlen, mpi_grid.get()->get_nccl_comm());
+    int info = chase::linalg::internal::cuda_nccl::modifiedGramSchmidtCholQR<T>(this->cublasH_, this->cusolverH_, xlen, this->n, 0, d_V, xlen, mpi_grid.get()->get_nccl_comm());
     ASSERT_EQ(info, 0);
     CHECK_CUDA_ERROR(cudaMemcpy(V.data(), d_V, sizeof(T) * xlen * this->n, cudaMemcpyDeviceToHost));
     auto orth = orthogonality<T>(xlen, this->n, V.data(), xlen, MPI_COMM_WORLD);

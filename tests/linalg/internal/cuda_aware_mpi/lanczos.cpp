@@ -85,7 +85,7 @@ TYPED_TEST(LanczosGPUDistTest, mlanczosGPU){
 
     chase::Base<T> upperb;
 
-    chase::linalg::internal::cuda_aware_mpi::lanczos(this->cublasH_,
+    chase::linalg::internal::cuda_mpi::lanczos(this->cublasH_,
                                           this->M,
                                           this->numvec,
                                           H_,
@@ -134,7 +134,7 @@ TYPED_TEST(LanczosGPUDistTest, lanczosGPU) {
 
     chase::Base<T> upperb;
     
-    chase::linalg::internal::cuda_aware_mpi::lanczos(this->cublasH_,
+    chase::linalg::internal::cuda_mpi::lanczos(this->cublasH_,
                                           this->M,
                                           H_,
                                           V_,
@@ -172,7 +172,7 @@ TYPED_TEST(LanczosGPUDistTest, mlanczosGPUBlockCyclic){
 
     chase::Base<T> upperb;
 
-    chase::linalg::internal::cuda_aware_mpi::lanczos(this->cublasH_,
+    chase::linalg::internal::cuda_mpi::lanczos(this->cublasH_,
                                           this->M,
                                           this->numvec,
                                           H_,
@@ -222,7 +222,7 @@ TYPED_TEST(LanczosGPUDistTest, lanczosGPUBlockCyclic) {
 
     chase::Base<T> upperb;
     
-    chase::linalg::internal::cuda_aware_mpi::lanczos(this->cublasH_,
+    chase::linalg::internal::cuda_mpi::lanczos(this->cublasH_,
                                           this->M,
                                           H_,
                                           V_,

@@ -8,11 +8,12 @@ else()
     target_link_libraries("chase_c" PUBLIC chase_cpu)    
 endif()
 
-if(TARGET chase_nccl)
-    add_compile_definitions(HAS_NCCL=1)
-    target_link_libraries("chase_c" PUBLIC chase_nccl)
+if(TARGET pchase_gpu)
+    #add_compile_definitions(HAS_NCCL=1)
+    #add_compile_definitions(CHASE_INTERFACE_DISABLE_NCCL=1)
+    target_link_libraries("chase_c" PUBLIC pchase_gpu)
 else()
-    target_link_libraries("chase_c" PUBLIC chase_mpi)
+    target_link_libraries("chase_c" PUBLIC pchase_cpu)
 endif()
 
 target_include_directories("chase_c" INTERFACE 

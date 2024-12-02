@@ -67,7 +67,7 @@ TYPED_TEST(HEMMCPUDistTest, HEMMDistCorrectness) {
         }
     }
 
-    chase::linalg::internal::mpi::MatrixMultiplyMultiVectors(&alpha, H_, V_, &beta, W_, offset, subSize);
+    chase::linalg::internal::cpu_mpi::MatrixMultiplyMultiVectors(&alpha, H_, V_, &beta, W_, offset, subSize);
 
     for(auto i = 0; i < W_.l_cols(); i++)
     {
@@ -85,7 +85,7 @@ TYPED_TEST(HEMMCPUDistTest, HEMMDistCorrectness) {
         }
     }
 
-    chase::linalg::internal::mpi::MatrixMultiplyMultiVectors(&alpha, H_, W_, &beta, V_, offset, subSize);
+    chase::linalg::internal::cpu_mpi::MatrixMultiplyMultiVectors(&alpha, H_, W_, &beta, V_, offset, subSize);
 
     for(auto i = 0; i < V_.l_cols(); i++)
     {
@@ -116,18 +116,18 @@ TYPED_TEST(HEMMCPUDistTest, HEMMDistThrow)
 
     T alpha = T(1.0);
     T beta = T(2.0);
-    EXPECT_THROW({chase::linalg::internal::mpi::MatrixMultiplyMultiVectors(&alpha, H_, W_, &beta, V_);}, std::runtime_error);
-    EXPECT_THROW({chase::linalg::internal::mpi::MatrixMultiplyMultiVectors(&alpha, H_, V_, &beta, W_);}, std::runtime_error);
+    EXPECT_THROW({chase::linalg::internal::cpu_mpi::MatrixMultiplyMultiVectors(&alpha, H_, W_, &beta, V_);}, std::runtime_error);
+    EXPECT_THROW({chase::linalg::internal::cpu_mpi::MatrixMultiplyMultiVectors(&alpha, H_, V_, &beta, W_);}, std::runtime_error);
 
     auto H2_ = chase::distMatrix::BlockBlockMatrix<T>(10, 10, mpi_grid);
     auto V2_ = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column>(10, 4, mpi_grid);
     auto W2_ = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row>(10, 4, mpi_grid);
 
-    EXPECT_THROW({chase::linalg::internal::mpi::MatrixMultiplyMultiVectors(&alpha, H2_, W2_, &beta, V2_, 100, 2);}, std::invalid_argument);
-    EXPECT_THROW({chase::linalg::internal::mpi::MatrixMultiplyMultiVectors(&alpha, H2_, W2_, &beta, V2_, 0, 0);}, std::invalid_argument);
-    EXPECT_THROW({chase::linalg::internal::mpi::MatrixMultiplyMultiVectors(&alpha, H2_, W2_, &beta, V2_, 0, 100);}, std::invalid_argument);
-    EXPECT_THROW({chase::linalg::internal::mpi::MatrixMultiplyMultiVectors(&alpha, H2_, W2_, &beta, V2_, 0, 5);}, std::invalid_argument);
-    EXPECT_NO_THROW({chase::linalg::internal::mpi::MatrixMultiplyMultiVectors(&alpha, H2_, W2_, &beta, V2_, 0, 4);});
+    EXPECT_THROW({chase::linalg::internal::cpu_mpi::MatrixMultiplyMultiVectors(&alpha, H2_, W2_, &beta, V2_, 100, 2);}, std::invalid_argument);
+    EXPECT_THROW({chase::linalg::internal::cpu_mpi::MatrixMultiplyMultiVectors(&alpha, H2_, W2_, &beta, V2_, 0, 0);}, std::invalid_argument);
+    EXPECT_THROW({chase::linalg::internal::cpu_mpi::MatrixMultiplyMultiVectors(&alpha, H2_, W2_, &beta, V2_, 0, 100);}, std::invalid_argument);
+    EXPECT_THROW({chase::linalg::internal::cpu_mpi::MatrixMultiplyMultiVectors(&alpha, H2_, W2_, &beta, V2_, 0, 5);}, std::invalid_argument);
+    EXPECT_NO_THROW({chase::linalg::internal::cpu_mpi::MatrixMultiplyMultiVectors(&alpha, H2_, W2_, &beta, V2_, 0, 4);});
 }
 
 
@@ -174,7 +174,7 @@ TYPED_TEST(HEMMCPUDistTest, HEMMRedistribeAsyncDistCorrectness) {
         }
     }
 
-    chase::linalg::internal::mpi::MatrixMultiplyMultiVectorsAndRedistributeAsync(H_, V_, W_, V2_, W2_, offset, subSize);
+    chase::linalg::internal::cpu_mpi::MatrixMultiplyMultiVectorsAndRedistributeAsync(H_, V_, W_, V2_, W2_, offset, subSize);
 
     for(auto i = 0; i < W_.l_cols(); i++)
     {
@@ -208,7 +208,7 @@ TYPED_TEST(HEMMCPUDistTest, HEMMRedistribeAsyncDistCorrectness) {
         }
     }
 
-    chase::linalg::internal::mpi::MatrixMultiplyMultiVectorsAndRedistributeAsync(H_, W_, V_, W2_, V2_, offset, subSize);
+    chase::linalg::internal::cpu_mpi::MatrixMultiplyMultiVectorsAndRedistributeAsync(H_, W_, V_, W2_, V2_, offset, subSize);
 
     for(auto i = 0; i < V_.l_cols(); i++)
     {
@@ -259,8 +259,8 @@ TYPED_TEST(HEMMCPUDistTest, DistThrow)
 
     T alpha = T(1.0);
     T beta = T(2.0);
-    EXPECT_THROW({chase::linalg::internal::mpi::MatrixMultiplyMultiVectorsAndRedistributeAsync(H_, W_, V_, W2_, V2_);}, std::runtime_error);
-    EXPECT_THROW({chase::linalg::internal::mpi::MatrixMultiplyMultiVectorsAndRedistributeAsync(H_, V_, W_, V2_, W2_);}, std::runtime_error);
+    EXPECT_THROW({chase::linalg::internal::cpu_mpi::MatrixMultiplyMultiVectorsAndRedistributeAsync(H_, W_, V_, W2_, V2_);}, std::runtime_error);
+    EXPECT_THROW({chase::linalg::internal::cpu_mpi::MatrixMultiplyMultiVectorsAndRedistributeAsync(H_, V_, W_, V2_, W2_);}, std::runtime_error);
 
     auto H3_ = chase::distMatrix::BlockBlockMatrix<T>(10, 10, mpi_grid);
     auto V3_ = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column>(10, 4, mpi_grid);
@@ -268,11 +268,11 @@ TYPED_TEST(HEMMCPUDistTest, DistThrow)
     auto V4_ = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column>(10, 4, mpi_grid);
     auto W4_ = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row>(10, 4, mpi_grid);
 
-    EXPECT_THROW({chase::linalg::internal::mpi::MatrixMultiplyMultiVectorsAndRedistributeAsync(H3_, W3_, V3_, W4_, V4_, 100, 2);}, std::invalid_argument);
-    EXPECT_THROW({chase::linalg::internal::mpi::MatrixMultiplyMultiVectorsAndRedistributeAsync(H3_, W3_, V3_, W4_, V4_, 0, 0);}, std::invalid_argument);
-    EXPECT_THROW({chase::linalg::internal::mpi::MatrixMultiplyMultiVectorsAndRedistributeAsync(H3_, W3_, V3_, W4_, V4_, 0, 100);}, std::invalid_argument);
-    EXPECT_THROW({chase::linalg::internal::mpi::MatrixMultiplyMultiVectorsAndRedistributeAsync(H3_, W3_, V3_, W4_, V4_, 0, 5);}, std::invalid_argument);
-    EXPECT_NO_THROW({chase::linalg::internal::mpi::MatrixMultiplyMultiVectorsAndRedistributeAsync(H3_, W3_, V3_, W4_, V4_, 0, 4);});
+    EXPECT_THROW({chase::linalg::internal::cpu_mpi::MatrixMultiplyMultiVectorsAndRedistributeAsync(H3_, W3_, V3_, W4_, V4_, 100, 2);}, std::invalid_argument);
+    EXPECT_THROW({chase::linalg::internal::cpu_mpi::MatrixMultiplyMultiVectorsAndRedistributeAsync(H3_, W3_, V3_, W4_, V4_, 0, 0);}, std::invalid_argument);
+    EXPECT_THROW({chase::linalg::internal::cpu_mpi::MatrixMultiplyMultiVectorsAndRedistributeAsync(H3_, W3_, V3_, W4_, V4_, 0, 100);}, std::invalid_argument);
+    EXPECT_THROW({chase::linalg::internal::cpu_mpi::MatrixMultiplyMultiVectorsAndRedistributeAsync(H3_, W3_, V3_, W4_, V4_, 0, 5);}, std::invalid_argument);
+    EXPECT_NO_THROW({chase::linalg::internal::cpu_mpi::MatrixMultiplyMultiVectorsAndRedistributeAsync(H3_, W3_, V3_, W4_, V4_, 0, 4);});
 }
 
 //
@@ -318,7 +318,7 @@ TYPED_TEST(HEMMCPUDistTest, HEMMDistCorrectnessBlockCyclic) {
         }
     }
 
-    chase::linalg::internal::mpi::MatrixMultiplyMultiVectors(&alpha, H_, V_, &beta, W_, offset, subSize);
+    chase::linalg::internal::cpu_mpi::MatrixMultiplyMultiVectors(&alpha, H_, V_, &beta, W_, offset, subSize);
 
     for(auto i = 0; i < W_.l_cols(); i++)
     {
@@ -336,7 +336,7 @@ TYPED_TEST(HEMMCPUDistTest, HEMMDistCorrectnessBlockCyclic) {
         }
     }
 
-    chase::linalg::internal::mpi::MatrixMultiplyMultiVectors(&alpha, H_, W_, &beta, V_, offset, subSize);
+    chase::linalg::internal::cpu_mpi::MatrixMultiplyMultiVectors(&alpha, H_, W_, &beta, V_, offset, subSize);
 
     for(auto i = 0; i < V_.l_cols(); i++)
     {

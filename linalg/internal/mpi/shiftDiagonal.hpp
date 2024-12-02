@@ -2,14 +2,13 @@
 
 #include <omp.h>
 #include "linalg/distMatrix/distMatrix.hpp"
+#include "linalg/internal/mpi/mpi_kernels.hpp"
 
 namespace chase
 {
 namespace linalg
 {
 namespace internal
-{
-namespace mpi
 {
     /**
      * @brief Applies a shift to the diagonal elements of a BlockBlockMatrix.
@@ -22,7 +21,7 @@ namespace mpi
      * @param shift The value to add to each diagonal element.
      */    
     template<typename T>
-    void shiftDiagonal(chase::distMatrix::BlockBlockMatrix<T, chase::platform::CPU>& H, T shift)
+    void cpu_mpi::shiftDiagonal(chase::distMatrix::BlockBlockMatrix<T, chase::platform::CPU>& H, T shift)
     {
         std::size_t xlen = H.l_rows();
         std::size_t ylen = H.l_cols();
@@ -54,7 +53,7 @@ namespace mpi
      * @param shift The value to add to each diagonal element.
      */
     template<typename T>
-    void shiftDiagonal(chase::distMatrix::BlockCyclicMatrix<T, chase::platform::CPU>& H, T shift)
+    void cpu_mpi::shiftDiagonal(chase::distMatrix::BlockCyclicMatrix<T, chase::platform::CPU>& H, T shift)
     {
         auto m_contiguous_global_offs = H.m_contiguous_global_offs();
         auto n_contiguous_global_offs = H.n_contiguous_global_offs();
@@ -85,7 +84,6 @@ namespace mpi
 
     }    
 
-}
 }
 }
 }

@@ -3,8 +3,8 @@
 #include "residuals.cuh"
 #include "external/cublaspp/cublaspp.hpp"
 #include "linalg/matrix/matrix.hpp"
-#include "Impl/cuda/cuda_utils.hpp"
-#include "Impl/cuda/nvtx.hpp"
+#include "Impl/chase_gpu/cuda_utils.hpp"
+#include "Impl/chase_gpu/nvtx.hpp"
 
 namespace chase
 {

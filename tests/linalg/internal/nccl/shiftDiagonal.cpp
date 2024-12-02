@@ -78,7 +78,7 @@ TYPED_TEST(shiftDiagonalGPUNCCLDistTest, ShiftDistCorrectnessGPU) {
     CHECK_CUDA_ERROR(cudaMemcpy(d_diag_xoffs, diag_xoffs.data(), sizeof(std::size_t) * off_cnt , cudaMemcpyHostToDevice));
     CHECK_CUDA_ERROR(cudaMemcpy(d_diag_yoffs, diag_yoffs.data(), sizeof(std::size_t) * off_cnt , cudaMemcpyHostToDevice));
 
-    chase::linalg::internal::nccl::shiftDiagonal(H, d_diag_xoffs, d_diag_yoffs, off_cnt, chase::Base<T>(-5.0));
+    chase::linalg::internal::cuda_nccl::shiftDiagonal(H, d_diag_xoffs, d_diag_yoffs, off_cnt, chase::Base<T>(-5.0));
 
     H.D2H();
 

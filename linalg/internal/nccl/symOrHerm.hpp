@@ -8,6 +8,7 @@
 #include "linalg/distMatrix/distMatrix.hpp"
 #include "linalg/distMatrix/distMultiVector.hpp"
 #include "linalg/internal/nccl/hemm.hpp"
+#include "linalg/internal/nccl/nccl_kernels.hpp"
 #include "linalg/internal/cuda/random_normal_distribution.cuh"
 #include "../typeTraits.hpp"
 
@@ -17,11 +18,9 @@ namespace linalg
 {
 namespace internal
 {
-namespace nccl
-{
     //this function now assumes the hermitian matrix is provided on CPU
     template<typename MatrixType>
-    bool checkSymmetryEasy(cublasHandle_t cublas_handle, MatrixType& H) 
+    bool cuda_nccl::checkSymmetryEasy(cublasHandle_t cublas_handle, MatrixType& H) 
     {
         using T = typename MatrixType::value_type;
         using ColumnMultiVectorType = typename ColumnMultiVectorType<MatrixType>::type;
@@ -49,14 +48,14 @@ namespace nccl
 
         v.redistributeImpl(&v_2);
 
-        MatrixMultiplyMultiVectors(cublas_handle,
+        chase::linalg::internal::cuda_nccl::MatrixMultiplyMultiVectors(cublas_handle,
                                        &One, 
                                        H,
                                        v,
                                        &Zero,
                                        u);
 
-        MatrixMultiplyMultiVectors(cublas_handle,
+        chase::linalg::internal::cuda_nccl::MatrixMultiplyMultiVectors(cublas_handle,
                                        &One, 
                                        H,
                                        v_2,
@@ -97,7 +96,7 @@ namespace nccl
 
     //this function now assumes the hermitian matrix is provided on CPU
     template<typename T>
-    void symOrHermMatrix(char uplo, chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU>& H) 
+    void cuda_nccl::symOrHermMatrix(char uplo, chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU>& H) 
     {
 #ifdef HAS_SCALAPACK
         std::size_t *desc = H.scalapack_descriptor_init();
@@ -168,7 +167,7 @@ namespace nccl
     }
 
     template<typename T>
-    void symOrHermMatrix(char uplo, chase::distMatrix::BlockCyclicMatrix<T, chase::platform::GPU>& H) 
+    void cuda_nccl::symOrHermMatrix(char uplo, chase::distMatrix::BlockCyclicMatrix<T, chase::platform::GPU>& H) 
     {
 #ifdef HAS_SCALAPACK
         std::size_t *desc = H.scalapack_descriptor_init();
@@ -243,10 +242,6 @@ namespace nccl
         std::runtime_error("For ChASE-MPI, symOrHermMatrix requires ScaLAPACK, which is not detected\n");
 #endif
     }
-
-
-
-}
 }
 }
 }

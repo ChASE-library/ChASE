@@ -30,6 +30,26 @@
 namespace chase {
 namespace grid {
 
+namespace backend
+{
+    /**
+    * @ingroup PlatformTypes
+    * @brief Represents the CPU platform.
+    * 
+    * This structure is used to specify that an operation or matrix class
+    * is targeting the CPU platform.
+    */
+    struct MPI {};  
+    /**
+    * @ingroup PlatformTypes
+    * @brief Represents the GPU platform.
+    * 
+    * This structure is used to specify that an operation or matrix class
+    * is targeting the GPU platform.
+    */
+    struct NCCL {};  
+}
+
 /**
  * @ingroup grid_namespace
  * @brief Enumeration to specify the major ordering of the MPI grid.

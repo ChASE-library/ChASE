@@ -11,15 +11,15 @@
 #include "algorithm/performance.hpp"
 
 #ifdef HAS_NCCL
-#include "Impl/nccl/chase_nccl_gpu.hpp"
+#include "Impl/pchase_gpu/pchase_gpu.hpp"
 using ARCH = chase::platform::GPU;
 #elif defined(USE_MPI)
-#include "Impl/mpi/chase_mpi_cpu.hpp"
+#include "Impl/pchase_cpu/pchase_cpu.hpp"
 using ARCH = chase::platform::CPU;
 #else
-#include "Impl/cpu/chase_seq_cpu.hpp"
+#include "Impl/chase_cpu/chase_cpu.hpp"
 #ifdef HAS_CUDA
-#include "Impl/cuda/chase_seq_gpu.hpp"
+#include "Impl/chase_gpu/chase_gpu.hpp"
 #endif
 #endif
 
@@ -121,9 +121,9 @@ int do_chase(ChASE_DriverProblemConfig& conf)
     H = Hmat.l_data();
 #endif
 #ifdef USE_MPI
-    auto single = chase::Impl::ChaseMPICPU(nev, nex, &Hmat, &Vec, Lambda);
+    auto single = chase::Impl::pChASECPU(nev, nex, &Hmat, &Vec, Lambda);
 #elif HAS_NCCL
-    auto single = chase::Impl::ChaseNCCLGPU(nev, nex, &Hmat, &Vec, Lambda);
+    auto single = chase::Impl::pChASEGPU(nev, nex, &Hmat, &Vec, Lambda);
 #endif
 #else
     auto V__ = std::unique_ptr<T[]>(new T[N * (nev + nex)]);
@@ -132,9 +132,9 @@ int do_chase(ChASE_DriverProblemConfig& conf)
     T* V = V__.get();
     T *H = H__.get();   
 #ifdef HAS_CUDA
-    auto single = chase::Impl::ChaseGPUSeq(N, nev, nex, H, N, V, N, Lambda);
+    auto single = chase::Impl::ChASEGPU(N, nev, nex, H, N, V, N, Lambda);
 #else
-    auto single = chase::Impl::ChaseCPUSeq(N, nev, nex, H, N, V, N, Lambda);
+    auto single = chase::Impl::ChASECPU(N, nev, nex, H, N, V, N, Lambda);
 #endif    
 #endif
 

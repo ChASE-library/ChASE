@@ -5,7 +5,7 @@ target_link_libraries(chase_cpu INTERFACE chase_algorithm blaspp lapackpp linalg
 
 target_include_directories(chase_cpu INTERFACE 
                                                $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-                                               "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/Impl/cpu>")
+                                               "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/Impl/chase_cpu>")
 
 target_compile_definitions(chase_cpu INTERFACE NO_MPI=1)
 

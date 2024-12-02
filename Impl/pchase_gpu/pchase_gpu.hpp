@@ -10,25 +10,53 @@
 #include "linalg/distMatrix/distMatrix.hpp"
 #include "linalg/distMatrix/distMultiVector.hpp"
 #include "grid/mpiGrid2D.hpp"
+#include "linalg/internal/cuda_aware_mpi/cuda_mpi_kernels.hpp"
+#ifdef HAS_NCCL
 #include "linalg/internal/nccl/nccl_kernels.hpp"
+#endif
 #ifdef HAS_SCALAPACK
 #include "external/scalapackpp/scalapackpp.hpp"
 #endif
 #include "algorithm/types.hpp"
 
 #include "config/config.hpp"
-#include "Impl/cuda/nvtx.hpp"
+#include "Impl/chase_gpu/nvtx.hpp"
 
 #include "../../linalg/internal/typeTraits.hpp"
 
 using namespace chase::linalg;
 
+template <typename Backend>
+struct MGPUKernelNamspaceSelector;
+
+// Specialization for MPI backend
+template <>
+struct MGPUKernelNamspaceSelector<chase::grid::backend::MPI> {
+    using type = chase::linalg::internal::cuda_mpi; // Use the struct as a type
+    template <typename GridType>
+    static auto getColCommunicator(GridType* grid) {
+        return grid->get_col_comm(); // MPI communicator
+    }    
+};
+
+#ifdef HAS_NCCL
+// Specialization for NCCL backend
+template <>
+struct MGPUKernelNamspaceSelector<chase::grid::backend::NCCL> {
+    using type = chase::linalg::internal::cuda_nccl; // Use the struct as a type
+    template <typename GridType>
+    static auto getColCommunicator(GridType* grid) {
+        return grid->get_nccl_col_comm(); // NCCL communicator
+    }    
+};
+
+#endif
 namespace chase
 {
 namespace Impl
 {
 /**
- * @page ChaseNCCLGPU
+ * @page pChASEGPU
  * 
  * @section intro_sec Introduction
  * This class implements the GPU-based parallel version of the Chase algorithm using NVIDIA NCCL 
@@ -39,7 +67,7 @@ namespace Impl
  * computation.
  * 
  * @section constructor_sec Constructors and Destructor
- * The constructor for `ChaseNCCLGPU` initializes essential components, including the Hamiltonian matrix, 
+ * The constructor for `pChASEGPU` initializes essential components, including the Hamiltonian matrix, 
  * input multi-vectors, result multi-vectors, and configurations for NVIDIA libraries such as cuBLAS 
  * and cuSolver. It also sets up memory allocations for GPU-based operations and verifies that 
  * the matrix is square and that the matrix and eigenvectors share the same MPI grid.
@@ -63,15 +91,19 @@ namespace Impl
 *                    `chase::distMatrix::BlockCyclicMatrix`.
 * @tparam InputMultiVectorType The input multi-vector type, typically used for storing eigenvectors.
 */ 
-template <typename MatrixType, typename InputMultiVectorType>
-class ChaseNCCLGPU : public ChaseBase<typename MatrixType::value_type>
+template <typename MatrixType, typename InputMultiVectorType, typename BackendType = chase::grid::backend::NCCL>
+class pChASEGPU : public ChaseBase<typename MatrixType::value_type>
 {
     using T = typename MatrixType::value_type;
     using ResultMultiVectorType = typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type;
-
+    //using backend = typename chase::grid::backend::MPI;
+    using backend = BackendType;
+//    using kernelNamespace = typename MGPUKernelNamspaceSelector<backend>::type;
+    using kernelNamespace = typename MGPUKernelNamspaceSelector<backend>::type;
+    
 public:
     /**
-     * @brief Constructs the `ChaseNCCLGPU` object.
+     * @brief Constructs the `pChASEGPU` object.
      * 
      * Initializes the Chase algorithm parameters, matrix data, multi-vector data, and GPU-specific 
      * resources. Sets up memory allocations for intermediate data and configures cuBLAS and cuSolver 
@@ -83,7 +115,7 @@ public:
      * @param V Pointer to the input multi-vector (typically for eigenvectors).
      * @param ritzv Pointer to the Ritz values, used for storing eigenvalues.
      */
-    ChaseNCCLGPU(std::size_t nev,
+    pChASEGPU(std::size_t nev,
                  std::size_t nex,
                  MatrixType *H,
                  InputMultiVectorType *V,
@@ -250,9 +282,9 @@ public:
        
     }
 
-    ChaseNCCLGPU(const ChaseNCCLGPU&) = delete;
+    pChASEGPU(const pChASEGPU&) = delete;
 
-    ~ChaseNCCLGPU() 
+    ~pChASEGPU() 
     {
         SCOPED_NVTX_RANGE();
         
@@ -302,7 +334,7 @@ public:
     {
         SCOPED_NVTX_RANGE();
 
-        is_sym_ = chase::linalg::internal::nccl::checkSymmetryEasy(cublasH_, *Hmat_);  
+        is_sym_ = kernelNamespace::checkSymmetryEasy(cublasH_, *Hmat_);  
         return is_sym_;
     }
 
@@ -312,7 +344,7 @@ public:
     {
         SCOPED_NVTX_RANGE();
 
-        chase::linalg::internal::nccl::symOrHermMatrix(uplo, *Hmat_);   
+        kernelNamespace::symOrHermMatrix(uplo, *Hmat_);   
     }
 
     void Start() override
@@ -350,7 +382,7 @@ public:
     {   
         SCOPED_NVTX_RANGE();
 
-        chase::linalg::internal::nccl::lanczos(cublasH_,
+        kernelNamespace::lanczos(cublasH_,
                                               m, 
                                               *Hmat_, 
                                               *V1_, 
@@ -362,7 +394,7 @@ public:
     {
         SCOPED_NVTX_RANGE();
 
-        chase::linalg::internal::nccl::lanczos(cublasH_,
+        kernelNamespace::lanczos(cublasH_,
                                               M, 
                                               numvec, 
                                               *Hmat_, 
@@ -419,7 +451,8 @@ public:
         {
             next_ = NextOp::bAc;
         }        
-        chase::linalg::internal::nccl::shiftDiagonal(*Hmat_, d_diag_xoffs, d_diag_yoffs, diag_cnt, std::real(c));
+        
+        kernelNamespace::shiftDiagonal(*Hmat_, d_diag_xoffs, d_diag_yoffs, diag_cnt, std::real(c));
 
 #ifdef ENABLE_MIXED_PRECISION
         if constexpr (std::is_same<T, double>::value || std::is_same<T, std::complex<double>>::value)
@@ -466,7 +499,7 @@ public:
 
                 if (next_ == NextOp::bAc)
                 {
-                    chase::linalg::internal::nccl::MatrixMultiplyMultiVectors<singlePrecisionT>(cublasH_,
+                    kernelNamespace::template MatrixMultiplyMultiVectors<singlePrecisionT>(cublasH_,
                                                                                 &alpha_sp, 
                                                                                 *Hmat_sp, 
                                                                                 *V1_sp, 
@@ -478,7 +511,7 @@ public:
                 }
                 else
                 {
-                    chase::linalg::internal::nccl::MatrixMultiplyMultiVectors<singlePrecisionT>(cublasH_,
+                    kernelNamespace::template MatrixMultiplyMultiVectors<singlePrecisionT>(cublasH_,
                                                                                 &alpha_sp, 
                                                                                 *Hmat_sp, 
                                                                                 *W1_sp, 
@@ -494,7 +527,7 @@ public:
             {
                 if (next_ == NextOp::bAc)
                 {
-                    chase::linalg::internal::nccl::MatrixMultiplyMultiVectors(cublasH_,
+                    kernelNamespace::MatrixMultiplyMultiVectors(cublasH_,
                                                                                 &alpha, 
                                                                                 *Hmat_, 
                                                                                 *V1_, 
@@ -506,7 +539,7 @@ public:
                 }
                 else
                 {
-                    chase::linalg::internal::nccl::MatrixMultiplyMultiVectors(cublasH_,
+                    kernelNamespace::MatrixMultiplyMultiVectors(cublasH_,
                                                                                     &alpha, 
                                                                                     *Hmat_, 
                                                                                     *W1_, 
@@ -525,7 +558,7 @@ public:
         {
             if (next_ == NextOp::bAc)
             {
-                chase::linalg::internal::nccl::MatrixMultiplyMultiVectors(cublasH_,
+                kernelNamespace::MatrixMultiplyMultiVectors(cublasH_,
                                                                             &alpha, 
                                                                             *Hmat_, 
                                                                             *V1_, 
@@ -537,7 +570,7 @@ public:
             }
             else
             {
-                chase::linalg::internal::nccl::MatrixMultiplyMultiVectors(cublasH_,
+                kernelNamespace::MatrixMultiplyMultiVectors(cublasH_,
                                                                             &alpha, 
                                                                             *Hmat_, 
                                                                             *W1_, 
@@ -566,20 +599,21 @@ public:
         if (disable == 1)
         {
 #ifdef HAS_SCALAPACK
-            chase::linalg::internal::nccl::houseHoulderQR(*V1_);
+            kernelNamespace::houseHoulderQR(*V1_);
 #else
         std::runtime_error("For ChASE-MPI, distributed Householder QR requires ScaLAPACK, which is not detected\n");
 #endif
         }else if(nevex_ >= MINIMAL_N_INVOKE_MODIFIED_GRAM_SCHMIDT_QR_GPU_NCCL)
         {
-            info = chase::linalg::internal::nccl::modifiedGramSchmidtCholQR(cublasH_,
+            info = kernelNamespace::modifiedGramSchmidtCholQR(cublasH_,
                                                             cusolverH_,
                                                             V1_->l_rows(), 
                                                             V1_->l_cols(), 
                                                             locked_,
                                                             V1_->l_data(),  
                                                             V1_->l_ld(), 
-                                                            V1_->getMpiGrid()->get_nccl_col_comm(),
+                                                            MGPUKernelNamspaceSelector<backend>::getColCommunicator(V1_->getMpiGrid()),
+                                                            //V1_->getMpiGrid()->get_nccl_col_comm(),
                                                             d_work_,
                                                             lwork_,
                                                             A_->l_data());
@@ -604,14 +638,15 @@ public:
                 }
 
 
-                info = chase::linalg::internal::nccl::shiftedcholQR2(cublasH_,
+                info = kernelNamespace::shiftedcholQR2(cublasH_,
                                                                 cusolverH_,
                                                                 V1_->g_rows(),
                                                                 V1_->l_rows(), 
                                                                 V1_->l_cols(), 
                                                                 V1_->l_data(),  
                                                                 V1_->l_ld(), 
-                                                                V1_->getMpiGrid()->get_nccl_col_comm(),
+                                                                //V1_->getMpiGrid()->get_nccl_col_comm(),
+                                                                MGPUKernelNamspaceSelector<backend>::getColCommunicator(V1_->getMpiGrid()),
                                                                 d_work_,
                                                                 lwork_,
                                                                 A_->l_data());   
@@ -624,7 +659,7 @@ public:
                         std::cout << "CholeskyQR doesn't work, Househoulder QR will be used." << std::endl;
                     }
 #endif
-                    chase::linalg::internal::nccl::houseHoulderQR(*V1_);
+                    kernelNamespace::houseHoulderQR(*V1_);
 #else
                     std::runtime_error("For ChASE-MPI, distributed Householder QR requires ScaLAPACK, which is not detected\n");
 #endif      
@@ -652,27 +687,29 @@ public:
 
             if (cond > cond_threshold_upper)
             {
-                info = chase::linalg::internal::nccl::shiftedcholQR2(cublasH_,
+                info = kernelNamespace::shiftedcholQR2(cublasH_,
                                                                 cusolverH_,
                                                                 V1_->g_rows(),
                                                                 V1_->l_rows(), 
                                                                 V1_->l_cols(), 
                                                                 V1_->l_data(),  
                                                                 V1_->l_ld(), 
-                                                                V1_->getMpiGrid()->get_nccl_col_comm(),
+                                                                //V1_->getMpiGrid()->get_nccl_col_comm(),
+                                                                MGPUKernelNamspaceSelector<backend>::getColCommunicator(V1_->getMpiGrid()),
                                                                 d_work_,
                                                                 lwork_,
                                                                 A_->l_data());                                                
             }
             else if(cond < cond_threshold_lower)
             {
-                info = chase::linalg::internal::nccl::cholQR1(cublasH_,
+                info = kernelNamespace::cholQR1(cublasH_,
                                                                 cusolverH_,
                                                                 V1_->l_rows(), 
                                                                 V1_->l_cols(), 
                                                                 V1_->l_data(),  
                                                                 V1_->l_ld(), 
-                                                                V1_->getMpiGrid()->get_nccl_col_comm(),
+                                                                //V1_->getMpiGrid()->get_nccl_col_comm(),
+                                                                MGPUKernelNamspaceSelector<backend>::getColCommunicator(V1_->getMpiGrid()),
                                                                 d_work_,
                                                                 lwork_,
                                                                 A_->l_data());  
@@ -680,13 +717,14 @@ public:
             }
             else
             {                
-                info = chase::linalg::internal::nccl::cholQR2(cublasH_,
+                info = kernelNamespace::cholQR2(cublasH_,
                                                                 cusolverH_,
                                                                 V1_->l_rows(), 
                                                                 V1_->l_cols(), 
                                                                 V1_->l_data(),  
                                                                 V1_->l_ld(), 
-                                                                V1_->getMpiGrid()->get_nccl_col_comm(),
+                                                                //V1_->getMpiGrid()->get_nccl_col_comm(),
+                                                                MGPUKernelNamspaceSelector<backend>::getColCommunicator(V1_->getMpiGrid()),
                                                                 d_work_,
                                                                 lwork_,
                                                                 A_->l_data()); 
@@ -700,7 +738,7 @@ public:
                     std::cout << "CholeskyQR doesn't work, Househoulder QR will be used." << std::endl;
                 }
 #endif
-                chase::linalg::internal::nccl::houseHoulderQR(*V1_);
+                kernelNamespace::houseHoulderQR(*V1_);
 #else
                 std::runtime_error("For ChASE-MPI, distributed Householder QR requires ScaLAPACK, which is not detected\n");
 #endif
@@ -729,7 +767,7 @@ public:
     {
         SCOPED_NVTX_RANGE();
 
-        chase::linalg::internal::nccl::rayleighRitz(cublasH_,
+        kernelNamespace::rayleighRitz(cublasH_,
                                                    cusolverH_,
                                                    *Hmat_, 
                                                    *V1_, 
@@ -757,7 +795,7 @@ public:
     {
         SCOPED_NVTX_RANGE();
         
-        chase::linalg::internal::nccl::residuals(cublasH_,
+        kernelNamespace::residuals(cublasH_,
                                                 *Hmat_,
                                                 *V1_,
                                                 *V2_,

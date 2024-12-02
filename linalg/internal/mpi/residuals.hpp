@@ -6,7 +6,7 @@
 #include "external/lapackpp/lapackpp.hpp"
 #include "linalg/distMatrix/distMatrix.hpp"
 #include "linalg/distMatrix/distMultiVector.hpp"
-#include "linalg/internal/mpi/hemm.hpp"
+#include "linalg/internal/mpi/mpi_kernels.hpp"
 #include "../typeTraits.hpp"
 
 namespace chase
@@ -14,8 +14,6 @@ namespace chase
 namespace linalg
 {
 namespace internal
-{
-namespace mpi
 {
     /**
      * @brief Computes the residuals of the Ritz values using distributed matrix operations.
@@ -45,7 +43,7 @@ namespace mpi
      * all-reduce operations. Each residual norm is calculated as the Euclidean norm of the adjusted vector.
      */    
     template <typename MatrixType, typename InputMultiVectorType>
-    void residuals(MatrixType& H,
+    void cpu_mpi::residuals(MatrixType& H,
                    InputMultiVectorType& V1,
                    InputMultiVectorType& V2,
                    typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type& W1,
@@ -66,7 +64,7 @@ namespace mpi
         }
 
         // Perform the distributed matrix-matrix multiplication
-        chase::linalg::internal::mpi::MatrixMultiplyMultiVectorsAndRedistributeAsync(
+        chase::linalg::internal::cpu_mpi::MatrixMultiplyMultiVectorsAndRedistributeAsync(
                         H, 
                         V1, 
                         W1, 
@@ -102,8 +100,6 @@ namespace mpi
             resids[i + offset] = std::sqrt(resids[i + offset]);
         }
     }
-
-}
 }
 }
 }

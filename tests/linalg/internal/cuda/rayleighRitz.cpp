@@ -90,7 +90,7 @@ TYPED_TEST(rayleighRitzGPUTest, eigenpairs) {
     std::vector<chase::Base<T>> ritzv_data(this->n);
     chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU> ritzv(this->n, 1, this->n, ritzv_data.data());
 
-    CHECK_CUDA_ERROR(cudaMemcpy(V1.ata(), this->H.data(), this->N * this->n * sizeof(T), cudaMemcpyHostToDevice));
+    CHECK_CUDA_ERROR(cudaMemcpy(V1.data(), this->H.data(), this->N * this->n * sizeof(T), cudaMemcpyHostToDevice));
     CHECK_CUDA_ERROR(cudaMemcpy(ritzv.data(), this->evals.data(), this->n * sizeof(chase::Base<T>), cudaMemcpyHostToDevice));
     
     int* devInfo;

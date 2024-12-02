@@ -9,6 +9,7 @@
 #include "linalg/internal/cpu/utils.hpp"
 #include "linalg/distMatrix/distMatrix.hpp"
 #include "linalg/distMatrix/distMultiVector.hpp"
+#include "linalg/internal/mpi/mpi_kernels.hpp"
 
 using namespace chase::linalg::blaspp;
 using namespace chase::linalg::lapackpp;
@@ -18,8 +19,6 @@ namespace chase
 namespace linalg
 {
 namespace internal
-{
-namespace mpi
 {
     /**
      * @brief Performs a one-step Cholesky-based QR decomposition.
@@ -39,7 +38,7 @@ namespace mpi
      * @return int Returns 0 on success; non-zero on failure.
      */    
     template<typename T>
-    int cholQR1(std::size_t m, std::size_t n, T *V, int ldv, MPI_Comm comm, T *A = nullptr)
+    int cpu_mpi::cholQR1(std::size_t m, std::size_t n, T *V, int ldv, MPI_Comm comm, T *A)
     {
         T one = T(1.0);
         T zero = T(0.0);
@@ -123,7 +122,7 @@ namespace mpi
      * @return int Returns 0 on success; non-zero on failure.
      */
     template<typename T>
-    int cholQR2(std::size_t m, std::size_t n, T *V, int ldv, MPI_Comm comm, T *A = nullptr)
+    int cpu_mpi::cholQR2(std::size_t m, std::size_t n, T *V, int ldv, MPI_Comm comm, T *A)
     {
         T one = T(1.0);
         T zero = T(0.0);
@@ -239,7 +238,7 @@ namespace mpi
      * @return int Returns 0 on success; non-zero on failure.
      */
     template<typename T>
-    int shiftedcholQR2(std::size_t N, std::size_t m, std::size_t n, T *V, int ldv, MPI_Comm comm, T *A = nullptr)
+    int cpu_mpi::shiftedcholQR2(std::size_t N, std::size_t m, std::size_t n, T *V, int ldv, MPI_Comm comm, T *A)
     { 
         Base<T> shift;
         T one = T(1.0);
@@ -384,7 +383,7 @@ namespace mpi
      * @throws std::runtime_error If ScaLAPACK is not available.
      */
     template<typename InputMultiVectorType>
-    void houseHoulderQR(InputMultiVectorType& V)
+    void cpu_mpi::houseHoulderQR(InputMultiVectorType& V)
     {
         using T = typename InputMultiVectorType::value_type;
 
@@ -415,7 +414,6 @@ namespace mpi
 #endif
     }
 
-}
 }
 }
 }

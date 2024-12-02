@@ -38,7 +38,7 @@ TYPED_TEST(CHOLQRCPUDistTest, cholQR1) {
 
     auto machineEpsilon = MachineEpsilon<T>::value();
     read_vectors(V.data(), GetQRFileName<T>() + "cond_10.bin", xoff, xlen, this->N, this->n, 0);
-    int info = chase::linalg::internal::mpi::cholQR1<T>(xlen, this->n, V.data(), xlen, MPI_COMM_WORLD);
+    int info = chase::linalg::internal::cpu_mpi::cholQR1<T>(xlen, this->n, V.data(), xlen, MPI_COMM_WORLD);
     ASSERT_EQ(info, 0);
     auto orth = orthogonality<T>(xlen, this->n, V.data(), xlen, MPI_COMM_WORLD);
     ASSERT_NEAR(orth, machineEpsilon, machineEpsilon * 15);
@@ -55,7 +55,7 @@ TYPED_TEST(CHOLQRCPUDistTest, cholQR1BadlyCond) {
     std::vector<T> V(xlen * this->n);
     auto machineEpsilon = MachineEpsilon<T>::value();
     read_vectors(V.data(), GetQRFileName<T>() + "cond_1e4.bin", xoff, xlen, this->N, this->n, 0);
-    int info = chase::linalg::internal::mpi::cholQR1<T>(xlen, this->n, V.data(), xlen, MPI_COMM_WORLD);
+    int info = chase::linalg::internal::cpu_mpi::cholQR1<T>(xlen, this->n, V.data(), xlen, MPI_COMM_WORLD);
     ASSERT_EQ(info, 0);
     auto orth = orthogonality<T>(xlen, this->n, V.data(), xlen, MPI_COMM_WORLD);
     EXPECT_GT(orth, machineEpsilon );
@@ -72,7 +72,7 @@ TYPED_TEST(CHOLQRCPUDistTest, cholQR1IllCond) {
     std::vector<T> V(xlen * this->n);
     auto machineEpsilon = MachineEpsilon<T>::value();
     read_vectors(V.data(), GetQRFileName<T>() + "cond_ill.bin", xoff, xlen, this->N, this->n, 0);
-    int info = chase::linalg::internal::mpi::cholQR1<T>(xlen, this->n, V.data(), xlen, MPI_COMM_WORLD);
+    int info = chase::linalg::internal::cpu_mpi::cholQR1<T>(xlen, this->n, V.data(), xlen, MPI_COMM_WORLD);
     EXPECT_GT(info, 0);
     EXPECT_LE(info, this->n);
 }
@@ -87,7 +87,7 @@ TYPED_TEST(CHOLQRCPUDistTest, cholQR2) {
     std::vector<T> V(xlen * this->n);
     auto machineEpsilon = MachineEpsilon<T>::value();
     read_vectors(V.data(), GetQRFileName<T>() + "cond_1e4.bin", xoff, xlen, this->N, this->n, 0);
-    int info = chase::linalg::internal::mpi::cholQR2<T>(xlen, this->n, V.data(), xlen, MPI_COMM_WORLD);
+    int info = chase::linalg::internal::cpu_mpi::cholQR2<T>(xlen, this->n, V.data(), xlen, MPI_COMM_WORLD);
     ASSERT_EQ(info, 0);
     auto orth = orthogonality<T>(xlen, this->n, V.data(), xlen, MPI_COMM_WORLD);
     ASSERT_NEAR(orth, machineEpsilon, machineEpsilon * 15);
@@ -103,7 +103,7 @@ TYPED_TEST(CHOLQRCPUDistTest, cholQR2IllCond) {
     std::vector<T> V(xlen * this->n);
     auto machineEpsilon = MachineEpsilon<T>::value();
     read_vectors(V.data(), GetQRFileName<T>() + "cond_ill.bin", xoff, xlen, this->N, this->n, 0);
-    int info = chase::linalg::internal::mpi::cholQR2<T>(xlen, this->n, V.data(), xlen, MPI_COMM_WORLD);
+    int info = chase::linalg::internal::cpu_mpi::cholQR2<T>(xlen, this->n, V.data(), xlen, MPI_COMM_WORLD);
     EXPECT_GT(info, 0);
     EXPECT_LE(info, this->n);
 }
@@ -119,7 +119,7 @@ TYPED_TEST(CHOLQRCPUDistTest, scholQR) {
 
     auto machineEpsilon = MachineEpsilon<T>::value();
     read_vectors(V.data(), GetQRFileName<T>() + "cond_ill.bin", xoff, xlen, this->N, this->n, 0);
-    int info = chase::linalg::internal::mpi::shiftedcholQR2<T>(this->N, xlen, this->n, V.data(), xlen, MPI_COMM_WORLD);
+    int info = chase::linalg::internal::cpu_mpi::shiftedcholQR2<T>(this->N, xlen, this->n, V.data(), xlen, MPI_COMM_WORLD);
     ASSERT_EQ(info, 0);
     auto orth = orthogonality<T>(xlen, this->n, V.data(), xlen, MPI_COMM_WORLD);
     ASSERT_NEAR(orth, machineEpsilon, machineEpsilon * 10);
@@ -139,7 +139,7 @@ TYPED_TEST(CHOLQRCPUDistTest, scalapackHHQR) {
 
     auto machineEpsilon = MachineEpsilon<T>::value();
     read_vectors(V_.l_data(), GetQRFileName<T>() + "cond_ill.bin", xoff, xlen, this->N, this->n, 0);
-    chase::linalg::internal::mpi::houseHoulderQR(V_);
+    chase::linalg::internal::cpu_mpi::houseHoulderQR(V_);
     auto orth = orthogonality<T>(xlen, this->n, V_.l_data(), xlen, MPI_COMM_WORLD);
     ASSERT_NEAR(orth, machineEpsilon, machineEpsilon * 10);
 }

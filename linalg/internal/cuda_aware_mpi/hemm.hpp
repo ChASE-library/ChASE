@@ -6,6 +6,7 @@
 #include "linalg/distMatrix/distMatrix.hpp"
 #include "linalg/distMatrix/distMultiVector.hpp"
 #include "external/cublaspp/cublaspp.hpp"
+#include "linalg/internal/cuda_aware_mpi/cuda_mpi_kernels.hpp"
 #include "../typeTraits.hpp"
 
 namespace chase
@@ -14,10 +15,8 @@ namespace linalg
 {
 namespace internal
 {
-namespace cuda_aware_mpi
-{
     template <typename T, typename MatrixType, typename InputMultiVectorType>
-    void MatrixMultiplyMultiVectors(cublasHandle_t cublas_handle, T* alpha,
+    void cuda_mpi::MatrixMultiplyMultiVectors(cublasHandle_t cublas_handle, T* alpha,
                                         MatrixType& blockMatrix,
                                         InputMultiVectorType& input_multiVector,
                                         T* beta,
@@ -25,6 +24,7 @@ namespace cuda_aware_mpi
                                         std::size_t offset,
                                         std::size_t subSize) 
     {
+        //std::cout << "cuda mpi" << std::endl;
         // Ensure the platform type is chase::platform::GPU
         static_assert(std::is_same<typename MatrixType::platform_type, chase::platform::GPU>::value,
                     "Matrix type must be chase::platform::GPU");
@@ -141,13 +141,13 @@ namespace cuda_aware_mpi
     }
 
     template <typename T, typename MatrixType, typename InputMultiVectorType>
-    void MatrixMultiplyMultiVectors(cublasHandle_t cublas_handle, T* alpha,
+    void cuda_mpi::MatrixMultiplyMultiVectors(cublasHandle_t cublas_handle, T* alpha,
                                         MatrixType& blockMatrix,
                                         InputMultiVectorType& input_multiVector,
                                         T* beta,
                                         typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type& result_multiVector) 
     {
-        MatrixMultiplyMultiVectors(cublas_handle,
+        cuda_mpi::MatrixMultiplyMultiVectors(cublas_handle,
                                        alpha,
                                        blockMatrix, 
                                        input_multiVector, 
@@ -155,11 +155,12 @@ namespace cuda_aware_mpi
                                        result_multiVector,
                                        0,
                                        input_multiVector.l_cols());
-    }
+    }                                   
+
 
     //this operation do: W1<-1.0 * H * V1, while redistribute V2 to W2
     template <typename MatrixType, typename InputMultiVectorType>    
-    void MatrixMultiplyMultiVectorsAndRedistribute(cublasHandle_t cublas_handle,
+    void cuda_mpi::MatrixMultiplyMultiVectorsAndRedistribute(cublasHandle_t cublas_handle,
                                         MatrixType& blockMatrix, 
                                         InputMultiVectorType& input_multiVector, 
                                         typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type& result_multiVector,
@@ -292,7 +293,7 @@ namespace cuda_aware_mpi
     }
 
     template <typename MatrixType, typename InputMultiVectorType>    
-    void MatrixMultiplyMultiVectorsAndRedistribute(cublasHandle_t cublas_handle,
+    void cuda_mpi::MatrixMultiplyMultiVectorsAndRedistribute(cublasHandle_t cublas_handle,
                                         MatrixType& blockMatrix, 
                                         InputMultiVectorType& input_multiVector, 
                                         typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type& result_multiVector,
@@ -300,7 +301,7 @@ namespace cuda_aware_mpi
                                         typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type& target_multiVector)                                                                          
     {
 
-        MatrixMultiplyMultiVectorsAndRedistribute(cublas_handle,
+        cuda_mpi::MatrixMultiplyMultiVectorsAndRedistribute(cublas_handle,
                                                            blockMatrix, 
                                                            input_multiVector, 
                                                            result_multiVector,
@@ -310,7 +311,6 @@ namespace cuda_aware_mpi
                                                            input_multiVector.l_cols());
     }
 
-}
 }
 }
 }

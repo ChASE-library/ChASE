@@ -42,12 +42,12 @@ TYPED_TEST(SymOrHermCPUDistTest, UpperTriangularMatrix) {
     auto R = chase::distMatrix::RedundantMatrix<T>(N, N, N, U, mpi_grid);
     auto H = chase::distMatrix::BlockBlockMatrix<T>(N, N, mpi_grid);
     R.redistributeImpl(&H);
-    bool is_sym = chase::linalg::internal::mpi::checkSymmetryEasy(H); 
+    bool is_sym = chase::linalg::internal::cpu_mpi::checkSymmetryEasy(H); 
     EXPECT_FALSE(is_sym);
 #ifdef HAS_SCALAPACK
-    chase::linalg::internal::mpi::symOrHermMatrix('U', H);
+    chase::linalg::internal::cpu_mpi::symOrHermMatrix('U', H);
 
-    is_sym = chase::linalg::internal::mpi::checkSymmetryEasy(H);    
+    is_sym = chase::linalg::internal::cpu_mpi::checkSymmetryEasy(H);    
     EXPECT_TRUE(is_sym);
 #endif    
 }
@@ -70,12 +70,12 @@ TYPED_TEST(SymOrHermCPUDistTest, LowerTriangularMatrix) {
     auto H = chase::distMatrix::BlockBlockMatrix<T>(N, N, mpi_grid);
     R.redistributeImpl(&H);
 
-    bool is_sym = chase::linalg::internal::mpi::checkSymmetryEasy(H); 
+    bool is_sym = chase::linalg::internal::cpu_mpi::checkSymmetryEasy(H); 
     EXPECT_FALSE(is_sym);
 #ifdef HAS_SCALAPACK
-    chase::linalg::internal::mpi::symOrHermMatrix('L', H);
+    chase::linalg::internal::cpu_mpi::symOrHermMatrix('L', H);
 
-    is_sym = chase::linalg::internal::mpi::checkSymmetryEasy(H);    
+    is_sym = chase::linalg::internal::cpu_mpi::checkSymmetryEasy(H);    
     EXPECT_TRUE(is_sym);
 #endif    
 }

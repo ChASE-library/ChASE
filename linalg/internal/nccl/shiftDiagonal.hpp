@@ -3,17 +3,16 @@
 #include <omp.h>
 #include "linalg/distMatrix/distMatrix.hpp"
 #include "linalg/internal/cuda/shiftDiagonal.cuh"
+#include "linalg/internal/nccl/nccl_kernels.hpp"
+
 namespace chase
 {
 namespace linalg
 {
 namespace internal
-{
-namespace nccl
-{
-    
+{    
     template<typename MatrixType>
-    void shiftDiagonal(MatrixType& H, 
+    void cuda_nccl::shiftDiagonal(MatrixType& H, 
                        std::size_t* d_off_m, 
                        std::size_t* d_off_n, 
                        std::size_t offsize, 
@@ -27,7 +26,6 @@ namespace nccl
                                                                shift,
                                                                (cudaStream_t)0);
     }
-}
 }
 }
 }

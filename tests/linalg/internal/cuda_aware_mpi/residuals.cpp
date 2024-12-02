@@ -3,7 +3,6 @@
 #include <cmath>
 #include <random>
 #include <cstring>
-#include "linalg/internal/cuda_aware_mpi/hemm.hpp"
 #include "linalg/internal/cuda_aware_mpi/residuals.hpp"
 #include "tests/linalg/internal/utils.hpp"
 #include "grid/mpiGrid2D.hpp"
@@ -122,7 +121,7 @@ TYPED_TEST(ResidGPUDistTest, ResidCorrectnessGPU) {
     chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU> resids_(this->n, 1);
     chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU> ritzv_(this->n, 1, this->n, evals.data());
     resids_.allocate_cpu_data();
-    chase::linalg::internal::cuda_aware_mpi::residuals(this->cublasH_, H_, V_, V2_, W_, W2_, ritzv_, resids_, offset, subSize);
+    chase::linalg::internal::cuda_mpi::residuals(this->cublasH_, H_, V_, V2_, W_, W2_, ritzv_, resids_, offset, subSize);
 
     for(auto i = offset; i < offset + subSize; i++)
     {

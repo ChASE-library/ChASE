@@ -8,6 +8,7 @@
 #include "linalg/distMatrix/distMultiVector.hpp"
 #include "linalg/internal/nccl/hemm.hpp"
 #include "linalg/internal/cuda/residuals.cuh"
+#include "linalg/internal/nccl/nccl_kernels.hpp"
 #include "../typeTraits.hpp"
 
 
@@ -17,11 +18,8 @@ namespace linalg
 {
 namespace internal
 {
-namespace nccl
-{
-
     template <typename MatrixType, typename InputMultiVectorType>
-    void residuals(cublasHandle_t cublas_handle,
+    void cuda_nccl::residuals(cublasHandle_t cublas_handle,
                    MatrixType& H,
                    InputMultiVectorType& V1,
                    InputMultiVectorType& V2,
@@ -36,7 +34,7 @@ namespace nccl
         using T = typename MatrixType::value_type;
 
         // Perform the distributed matrix-matrix multiplication
-        chase::linalg::internal::nccl::MatrixMultiplyMultiVectorsAndRedistributeAsync(
+        chase::linalg::internal::cuda_nccl::MatrixMultiplyMultiVectorsAndRedistributeAsync(
                         cublas_handle,
                         H, 
                         V1, 
@@ -70,7 +68,6 @@ namespace nccl
         }   
     }
 
-}
 }
 }
 }

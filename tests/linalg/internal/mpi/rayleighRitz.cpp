@@ -108,7 +108,7 @@ TYPED_TEST(RRCPUDistTest, RRCorrectness) {
         }
     }
 
-    chase::linalg::internal::mpi::rayleighRitz(H_, V_, V2_, W_, W2_, ritzv.data(), offset, subSize);
+    chase::linalg::internal::cpu_mpi::rayleighRitz(H_, V_, V2_, W_, W2_, ritzv.data(), offset, subSize);
 
     for(auto i = offset; i < offset + subSize; i++)
     {

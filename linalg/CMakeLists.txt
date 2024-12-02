@@ -103,7 +103,23 @@ if(CMAKE_CUDA_COMPILER)
   endif()
 
   message("-- Configuring the build of CUDA with the compute capability of ${CMAKE_CUDA_ARCHITECTURES}")
-    
+
+  # Set the path to the test program
+  # !!!!! This is a temporary solution, because the query function is not supported by all MPI providers.
+  set(CUDA_AWARE_MPI_TEST_FILE ${CMAKE_SOURCE_DIR}/cmake/tests/cuda_aware_mpi_test.cpp)
+  include(CheckIncludeFiles)
+  include(CheckFunctionExists)
+
+  # Try to compile and run the test program
+  try_compile(CUDA_AWARE_MPI_SUPPORTED
+              ${CMAKE_BINARY_DIR}/cuda_aware_mpi_test
+              ${CUDA_AWARE_MPI_TEST_FILE}
+              LINK_LIBRARIES MPI::MPI_CXX CUDA::cudart)
+
+  if(NOT CUDA_AWARE_MPI_SUPPORTED)
+    message(FATAL_ERROR "CUDA-Aware MPI is required, for the distributed multiple-GPU ChASE")
+  endif()
+
   # Specify the CUDA source files
   set(CUDA_SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/internal/cuda/precision_conversion.cu

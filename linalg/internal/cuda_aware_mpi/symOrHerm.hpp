@@ -7,7 +7,7 @@
 #include "external/lapackpp/lapackpp.hpp"
 #include "linalg/distMatrix/distMatrix.hpp"
 #include "linalg/distMatrix/distMultiVector.hpp"
-#include "linalg/internal/cuda_aware_mpi/hemm.hpp"
+#include "linalg/internal/cuda_aware_mpi/cuda_mpi_kernels.hpp"
 #include "linalg/internal/cuda/random_normal_distribution.cuh"
 #include "../typeTraits.hpp"
 
@@ -17,11 +17,9 @@ namespace linalg
 {
 namespace internal
 {
-namespace cuda_aware_mpi
-{
     //this function now assumes the hermitian matrix is provided on CPU
     template<typename MatrixType>
-    bool checkSymmetryEasy(cublasHandle_t cublas_handle, MatrixType& H) 
+    bool cuda_mpi::checkSymmetryEasy(cublasHandle_t cublas_handle, MatrixType& H) 
     {
         using T = typename MatrixType::value_type;
         using ColumnMultiVectorType = typename ColumnMultiVectorType<MatrixType>::type;
@@ -49,14 +47,14 @@ namespace cuda_aware_mpi
 
         v.redistributeImpl(&v_2);
 
-        MatrixMultiplyMultiVectors(cublas_handle,
+        chase::linalg::internal::cuda_mpi::MatrixMultiplyMultiVectors(cublas_handle,
                                        &One, 
                                        H,
                                        v,
                                        &Zero,
                                        u);
 
-        MatrixMultiplyMultiVectors(cublas_handle,
+        chase::linalg::internal::cuda_mpi::MatrixMultiplyMultiVectors(cublas_handle,
                                        &One, 
                                        H,
                                        v_2,
@@ -97,7 +95,7 @@ namespace cuda_aware_mpi
 
     //this function now assumes the hermitian matrix is provided on CPU
     template<typename T>
-    void symOrHermMatrix(char uplo, chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU>& H) 
+    void cuda_mpi::symOrHermMatrix(char uplo, chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU>& H) 
     {
 #ifdef HAS_SCALAPACK
         std::size_t *desc = H.scalapack_descriptor_init();
@@ -168,7 +166,7 @@ namespace cuda_aware_mpi
     }
 
     template<typename T>
-    void symOrHermMatrix(char uplo, chase::distMatrix::BlockCyclicMatrix<T, chase::platform::GPU>& H) 
+    void cuda_mpi::symOrHermMatrix(char uplo, chase::distMatrix::BlockCyclicMatrix<T, chase::platform::GPU>& H) 
     {
 #ifdef HAS_SCALAPACK
         std::size_t *desc = H.scalapack_descriptor_init();
@@ -246,7 +244,6 @@ namespace cuda_aware_mpi
 
 
 
-}
 }
 }
 }

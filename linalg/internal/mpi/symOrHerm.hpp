@@ -7,7 +7,7 @@
 #include "external/lapackpp/lapackpp.hpp"
 #include "linalg/distMatrix/distMatrix.hpp"
 #include "linalg/distMatrix/distMultiVector.hpp"
-#include "linalg/internal/mpi/hemm.hpp"
+#include "linalg/internal/mpi/mpi_kernels.hpp"
 #include "../typeTraits.hpp"
 
 namespace chase
@@ -15,8 +15,6 @@ namespace chase
 namespace linalg
 {
 namespace internal
-{
-namespace mpi
 {
     /**
     * @brief Checks if a matrix is symmetric using a randomized approach.
@@ -36,7 +34,7 @@ namespace mpi
     * @return `true` if the matrix is symmetric, `false` otherwise.
     */ 
     template<typename MatrixType>
-    bool checkSymmetryEasy(MatrixType& H) 
+    bool cpu_mpi::checkSymmetryEasy(MatrixType& H) 
     {
 
         using T = typename MatrixType::value_type;
@@ -117,7 +115,7 @@ namespace mpi
     * @param[in] ldh The leading dimension of the matrix H.
     */
     template<typename T>
-    void symOrHermMatrix(char uplo, chase::distMatrix::BlockBlockMatrix<T>& H) 
+    void cpu_mpi::symOrHermMatrix(char uplo, chase::distMatrix::BlockBlockMatrix<T>& H) 
     {
 #ifdef HAS_SCALAPACK
         std::size_t *desc = H.scalapack_descriptor_init();
@@ -205,7 +203,7 @@ namespace mpi
     * @param[in] ldh The leading dimension of the matrix H.
     */
     template<typename T>
-    void symOrHermMatrix(char uplo, chase::distMatrix::BlockCyclicMatrix<T>& H) 
+    void cpu_mpi::symOrHermMatrix(char uplo, chase::distMatrix::BlockCyclicMatrix<T>& H) 
     {
 #ifdef HAS_SCALAPACK
         std::size_t *desc = H.scalapack_descriptor_init();
@@ -281,8 +279,6 @@ namespace mpi
 #endif
     }
 
-
-}
 }
 }
 }

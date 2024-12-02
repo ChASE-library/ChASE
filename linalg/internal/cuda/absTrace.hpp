@@ -3,7 +3,7 @@
 #include "absTrace.cuh"
 #include "linalg/matrix/matrix.hpp"
 #include "algorithm/types.hpp"
-#include "Impl/cuda/nvtx.hpp"
+#include "Impl/chase_gpu/nvtx.hpp"
 
 namespace chase
 {

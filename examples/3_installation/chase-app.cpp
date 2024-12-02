@@ -9,9 +9,9 @@
 
 #include "algorithm/performance.hpp"
 #ifdef USE_GPU
-#include "Impl/nccl/chase_nccl_gpu.hpp"
+#include "Impl/pchase_gpu/pchase_gpu.hpp"
 #else
-#include "Impl/mpi/chase_mpi_cpu.hpp"
+#include "Impl/pchase_cpu/pchase_cpu.hpp"
 #endif
 
 using T = std::complex<double>;
@@ -121,9 +121,9 @@ int main(int argc, char** argv)
             Clement_data[i + N * (i + 1)] = std::sqrt(i * (N + 1 - i));
     }
 #ifdef HAS_CUDA    
-    auto single = chase::Impl::ChaseNCCLGPU(nev, nex, &Hmat, &Vec, Lambda.data());
+    auto single = chase::Impl::pChASEGPU(nev, nex, &Hmat, &Vec, Lambda.data());
 #else
-    auto single = chase::Impl::ChaseMPICPU(nev, nex, &Hmat, &Vec, Lambda.data());
+    auto single = chase::Impl::pChASECPU(nev, nex, &Hmat, &Vec, Lambda.data());
 #endif
     //Setup configure for ChASE
     auto& config = single.GetConfig();

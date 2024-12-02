@@ -127,7 +127,7 @@ TYPED_TEST(RRGPUNCCLDistTest, RRCorrectnessGPU) {
     int* devInfo;
     CHECK_CUDA_ERROR(cudaMalloc((void**)&devInfo, sizeof(int)));    
 
-    chase::linalg::internal::nccl::rayleighRitz(this->cublasH_, 
+    chase::linalg::internal::cuda_nccl::rayleighRitz(this->cublasH_, 
                                                this->cusolverH_, 
                                                H_, 
                                                V_, 

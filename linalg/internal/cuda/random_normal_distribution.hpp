@@ -1,5 +1,5 @@
 #include "random_normal_distribution.cuh"
-#include "Impl/cuda/nvtx.hpp"
+#include "Impl/chase_gpu/nvtx.hpp"
 
 namespace chase
 {
