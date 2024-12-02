@@ -5,6 +5,7 @@
 #include "external/lapackpp/lapackpp.hpp"
 #include "linalg/distMatrix/distMatrix.hpp"
 #include "linalg/distMatrix/distMultiVector.hpp"
+#include "linalg/internal/mpi/mpi_kernels.hpp"
 #include "../typeTraits.hpp"
 
 namespace chase
@@ -12,8 +13,6 @@ namespace chase
 namespace linalg
 {
 namespace internal
-{
-namespace mpi
 {
     /**
      * @brief Performs matrix multiplication between a block matrix and an input multi-vector, 
@@ -34,7 +33,7 @@ namespace mpi
      * @throws std::invalid_argument if offset or subSize are out of valid bounds.
      */
     template <typename T, typename MatrixType, typename InputMultiVectorType>
-    void MatrixMultiplyMultiVectors(T* alpha,
+    void cpu_mpi::MatrixMultiplyMultiVectors(T* alpha,
                                         MatrixType& blockMatrix,
                                         InputMultiVectorType& input_multiVector,
                                         T* beta,
@@ -169,13 +168,13 @@ namespace mpi
      * @param result_multiVector Multi-vector to store the multiplication result.
      */
     template <typename T, typename MatrixType, typename InputMultiVectorType>
-    void MatrixMultiplyMultiVectors(T* alpha,
+    void cpu_mpi::MatrixMultiplyMultiVectors(T* alpha,
                                         MatrixType& blockMatrix,
                                         InputMultiVectorType& input_multiVector,
                                         T* beta,
                                         typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type& result_multiVector) 
     {
-        MatrixMultiplyMultiVectors(alpha,
+        cpu_mpi::MatrixMultiplyMultiVectors(alpha,
                                        blockMatrix, 
                                        input_multiVector, 
                                        beta,
@@ -202,7 +201,7 @@ namespace mpi
      * @throws std::invalid_argument if offset or subSize are out of valid bounds.
      */
     template <typename MatrixType, typename InputMultiVectorType>    
-    void MatrixMultiplyMultiVectorsAndRedistributeAsync(
+    void cpu_mpi::MatrixMultiplyMultiVectorsAndRedistributeAsync(
                                         MatrixType& blockMatrix, 
                                         InputMultiVectorType& input_multiVector, 
                                         typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type& result_multiVector,
@@ -343,14 +342,14 @@ namespace mpi
      * @param target_multiVector Target multi-vector to store the redistributed result.
      */
     template <typename MatrixType, typename InputMultiVectorType>    
-    void MatrixMultiplyMultiVectorsAndRedistributeAsync(
+    void cpu_mpi::MatrixMultiplyMultiVectorsAndRedistributeAsync(
                                         MatrixType& blockMatrix, 
                                         InputMultiVectorType& input_multiVector, 
                                         typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type& result_multiVector,
                                         InputMultiVectorType& src_multiVector,   
                                         typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type& target_multiVector)                                                                          
     {
-        MatrixMultiplyMultiVectorsAndRedistributeAsync(blockMatrix, 
+        cpu_mpi::MatrixMultiplyMultiVectorsAndRedistributeAsync(blockMatrix, 
                                                            input_multiVector, 
                                                            result_multiVector,
                                                            src_multiVector,
@@ -358,8 +357,6 @@ namespace mpi
                                                            0,
                                                            input_multiVector.l_cols());        
     }
-
-}
 }
 }
 }

@@ -7,15 +7,14 @@
 #include "linalg/distMatrix/distMatrix.hpp"
 #include "linalg/distMatrix/distMultiVector.hpp"
 #include "grid/mpiTypes.hpp"
-#include "linalg/internal/mpi/hemm.hpp"
+//#include "linalg/internal/mpi/hemm.hpp"
+#include "linalg/internal/mpi/mpi_kernels.hpp"
 
 namespace chase
 {
 namespace linalg
 {
 namespace internal
-{
-namespace mpi
 {
     /**
     * @brief Executes the Lanczos algorithm to generate a tridiagonal matrix representation.
@@ -42,7 +41,7 @@ namespace mpi
     * @throws std::runtime_error if the matrix `H` is not square or if `H` and `V` are not in the same MPI grid.
     */    
     template <typename MatrixType, typename InputMultiVectorType>
-    void lanczos(std::size_t M, 
+    void cpu_mpi::lanczos(std::size_t M, 
                  std::size_t numvec,
                  MatrixType& H,
                  InputMultiVectorType& V,
@@ -120,7 +119,7 @@ namespace mpi
                 std::memcpy(V.l_data() + k * V.l_ld(), v_1.l_data() + i * v_1.l_ld(), v_1.l_rows() * sizeof(T));
             }
 
-            chase::linalg::internal::mpi::MatrixMultiplyMultiVectors(&One, 
+            chase::linalg::internal::cpu_mpi::MatrixMultiplyMultiVectors(&One, 
                                                                          H,
                                                                          v_1,
                                                                          &Zero,
@@ -276,7 +275,7 @@ namespace mpi
     * @throws std::runtime_error if the matrix `H` is not square or if `H` and `V` are not in the same MPI grid.
     */
     template <typename MatrixType, typename InputMultiVectorType>
-    void lanczos(std::size_t M, 
+    void cpu_mpi::lanczos(std::size_t M, 
                  MatrixType& H,
                  InputMultiVectorType& V,
                  chase::Base<typename MatrixType::value_type>* upperb)
@@ -335,7 +334,7 @@ namespace mpi
 
         for (std::size_t k = 0; k < M; k = k + 1)
         {
-            chase::linalg::internal::mpi::MatrixMultiplyMultiVectors(&One, 
+            chase::linalg::internal::cpu_mpi::MatrixMultiplyMultiVectors(&One, 
                                                                          H,
                                                                          v_1,
                                                                          &Zero,
@@ -403,8 +402,6 @@ namespace mpi
         *upperb = std::max(std::abs(ritzv[0]), std::abs(ritzv[M - 1])) +
                   std::abs(r_beta);
     }
-
-}
 }
 }
 }

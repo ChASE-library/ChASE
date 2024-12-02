@@ -11,7 +11,7 @@
 #include <omp.h>
 #ifdef HAS_CUDA
 #include <cuda_runtime.h>
-#include "Impl/cuda/cuda_utils.hpp"
+#include "Impl/chase_gpu/cuda_utils.hpp"
 #include "external/cublaspp/cublaspp.hpp"
 #include "linalg/internal/cuda/precision_conversion.cuh"
 #endif

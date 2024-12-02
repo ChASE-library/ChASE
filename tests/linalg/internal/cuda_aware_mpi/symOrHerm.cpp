@@ -56,12 +56,12 @@ TYPED_TEST(SymOrHermGPUDistTest, UpperTriangularMatrix) {
         }
     }
     H.H2D();
-    bool is_sym = chase::linalg::internal::cuda_aware_mpi::checkSymmetryEasy(this->cublasH_, H); 
+    bool is_sym = chase::linalg::internal::cuda_mpi::checkSymmetryEasy(this->cublasH_, H); 
     EXPECT_FALSE(is_sym);
 #ifdef HAS_SCALAPACK
-    chase::linalg::internal::cuda_aware_mpi::symOrHermMatrix('U', H);
+    chase::linalg::internal::cuda_mpi::symOrHermMatrix('U', H);
     H.H2D();
-    is_sym = chase::linalg::internal::cuda_aware_mpi::checkSymmetryEasy(this->cublasH_, H);    
+    is_sym = chase::linalg::internal::cuda_mpi::checkSymmetryEasy(this->cublasH_, H);    
     EXPECT_TRUE(is_sym);
 #endif    
 }
@@ -91,12 +91,12 @@ TYPED_TEST(SymOrHermGPUDistTest, LowerTriangularMatrix) {
     }
     H.H2D();
 
-    bool is_sym = chase::linalg::internal::cuda_aware_mpi::checkSymmetryEasy(this->cublasH_, H); 
+    bool is_sym = chase::linalg::internal::cuda_mpi::checkSymmetryEasy(this->cublasH_, H); 
     EXPECT_FALSE(is_sym);
 #ifdef HAS_SCALAPACK
-    chase::linalg::internal::cuda_aware_mpi::symOrHermMatrix('L', H);
+    chase::linalg::internal::cuda_mpi::symOrHermMatrix('L', H);
     H.H2D();
-    is_sym = chase::linalg::internal::cuda_aware_mpi::checkSymmetryEasy(this->cublasH_, H);    
+    is_sym = chase::linalg::internal::cuda_mpi::checkSymmetryEasy(this->cublasH_, H);    
     EXPECT_TRUE(is_sym);
 #endif    
 }

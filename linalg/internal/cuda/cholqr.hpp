@@ -4,11 +4,11 @@
 #include <iomanip>
 #include "external/cublaspp/cublaspp.hpp"
 #include "external/cusolverpp/cusolverpp.hpp"
-#include "Impl/cuda/cuda_utils.hpp"
+#include "Impl/chase_gpu/cuda_utils.hpp"
 #include "linalg/matrix/matrix.hpp"
 #include "linalg/internal/cuda/absTrace.hpp"
 #include "linalg/internal/cuda/shiftDiagonal.hpp"
-#include "Impl/cuda/nvtx.hpp"
+#include "Impl/chase_gpu/nvtx.hpp"
 
 namespace chase
 {

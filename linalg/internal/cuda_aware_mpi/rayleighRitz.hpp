@@ -6,7 +6,7 @@
 #include "external/lapackpp/lapackpp.hpp"
 #include "linalg/distMatrix/distMatrix.hpp"
 #include "linalg/distMatrix/distMultiVector.hpp"
-#include "linalg/internal/cuda_aware_mpi/hemm.hpp"
+#include "linalg/internal/cuda_aware_mpi/cuda_mpi_kernels.hpp"
 #include "external/cublaspp/cublaspp.hpp"
 #include "external/cusolverpp/cusolverpp.hpp"
 
@@ -16,11 +16,9 @@ namespace linalg
 {
 namespace internal
 {
-namespace cuda_aware_mpi
-{
 
     template <typename MatrixType, typename InputMultiVectorType>
-    void rayleighRitz(cublasHandle_t cublas_handle, 
+    void cuda_mpi::rayleighRitz(cublasHandle_t cublas_handle, 
                       cusolverDnHandle_t cusolver_handle,
                       MatrixType& H,
                       InputMultiVectorType& V1,
@@ -31,12 +29,14 @@ namespace cuda_aware_mpi
                       std::size_t offset,
                       std::size_t subSize,
                       int* devInfo,
-                      typename MatrixType::value_type *workspace = nullptr,
-                      int lwork_heevd = 0,
-                      chase::distMatrix::RedundantMatrix<typename MatrixType::value_type, chase::platform::GPU>* A = nullptr                                         
+                      typename MatrixType::value_type *workspace,
+                      int lwork_heevd,
+                      chase::distMatrix::RedundantMatrix<typename MatrixType::value_type, chase::platform::GPU>* A                                         
                     )                
     {
         using T = typename MatrixType::value_type;
+
+        std::cout <<"MPI Backend" << std::endl;
 
         std::unique_ptr<chase::distMatrix::RedundantMatrix<T, chase::platform::GPU>> A_ptr;
         std::size_t upperTriangularSize = std::size_t(subSize * (subSize + 1) / 2);
@@ -71,7 +71,7 @@ namespace cuda_aware_mpi
             workspace = work_ptr.get();            
         }
         // Perform the distributed matrix-matrix multiplication
-        chase::linalg::internal::cuda_aware_mpi::MatrixMultiplyMultiVectorsAndRedistribute(
+        chase::linalg::internal::cuda_mpi::MatrixMultiplyMultiVectorsAndRedistribute(
                         cublas_handle,
                         H, 
                         V1, 
@@ -155,7 +155,6 @@ namespace cuda_aware_mpi
                                        V1.l_ld()));
     }
 
-}
 }
 }
 }

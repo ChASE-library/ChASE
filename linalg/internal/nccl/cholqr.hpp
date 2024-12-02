@@ -14,6 +14,7 @@
 #include "external/cusolverpp/cusolverpp.hpp"
 #include "linalg/internal/cuda/absTrace.cuh"
 #include "linalg/internal/cuda/shiftDiagonal.cuh"
+#include "linalg/internal/nccl/nccl_kernels.hpp"
 
 using namespace chase::linalg::blaspp;
 using namespace chase::linalg::lapackpp;
@@ -23,8 +24,6 @@ namespace chase
 namespace linalg
 {
 namespace internal
-{
-namespace nccl
 {
     /**
      * @brief Performs a distributed Cholesky QR decomposition on a matrix V.
@@ -46,7 +45,7 @@ namespace nccl
      * @return int Status code: 0 for success, non-zero for failure.
      */    
     template<typename T>
-    int cholQR1(cublasHandle_t cublas_handle,
+    int cuda_nccl::cholQR1(cublasHandle_t cublas_handle,
                 cusolverDnHandle_t cusolver_handle,
                 std::size_t m, 
                 std::size_t n, 
@@ -54,9 +53,9 @@ namespace nccl
                 int ldv, 
                 //MPI_Comm comm,
                 ncclComm_t comm,
-                T *workspace = nullptr,
-                int lwork = 0,                
-                T *A = nullptr)
+                T *workspace,
+                int lwork,                
+                T *A)
     {
         T one = T(1.0);
         T zero = T(0.0);
@@ -186,12 +185,12 @@ namespace nccl
      * @return int Status code: 0 for success, non-zero for failure.
      */
     template<typename InputMultiVectorType>
-    int cholQR1(cublasHandle_t cublas_handle,
+    int cuda_nccl::cholQR1(cublasHandle_t cublas_handle,
                 cusolverDnHandle_t cusolver_handle,
                 InputMultiVectorType& V, 
-                typename InputMultiVectorType::value_type *workspace = nullptr,
-                int lwork = 0,                
-                typename InputMultiVectorType::value_type *A = nullptr)
+                typename InputMultiVectorType::value_type *workspace,
+                int lwork,                
+                typename InputMultiVectorType::value_type *A)
     {
         using T = typename InputMultiVectorType::value_type;
 
@@ -316,16 +315,16 @@ namespace nccl
      * @return int Status code: 0 for success, non-zero for failure.
      */
     template<typename T>
-    int cholQR2(cublasHandle_t cublas_handle,
+    int cuda_nccl::cholQR2(cublasHandle_t cublas_handle,
                 cusolverDnHandle_t cusolver_handle,
                 std::size_t m, 
                 std::size_t n, 
                 T *V, 
                 int ldv, 
                 ncclComm_t comm,
-                T *workspace = nullptr,
-                int lwork = 0,                
-                T *A = nullptr)
+                T *workspace,
+                int lwork,                
+                T *A)
     {
         T one = T(1.0);
         T zero = T(0.0);
@@ -505,12 +504,12 @@ namespace nccl
     *          decomposition and may require a large amount of memory for larger matrices or vectors.
     */
     template<typename InputMultiVectorType>
-    int cholQR2(cublasHandle_t cublas_handle,
+    int cuda_nccl::cholQR2(cublasHandle_t cublas_handle,
                 cusolverDnHandle_t cusolver_handle,
                 InputMultiVectorType& V, 
-                typename InputMultiVectorType::value_type *workspace = nullptr,
-                int lwork = 0,                
-                typename InputMultiVectorType::value_type *A = nullptr)
+                typename InputMultiVectorType::value_type *workspace,
+                int lwork,                
+                typename InputMultiVectorType::value_type *A)
     {
         using T = typename InputMultiVectorType::value_type;
 
@@ -611,7 +610,7 @@ namespace nccl
     *          to handle the matrix size and any communication overhead.
     */
     template<typename T>
-    int shiftedcholQR2(cublasHandle_t cublas_handle,
+    int cuda_nccl::shiftedcholQR2(cublasHandle_t cublas_handle,
                 cusolverDnHandle_t cusolver_handle,
                 std::size_t N, 
                 std::size_t m, 
@@ -619,9 +618,9 @@ namespace nccl
                 T *V, 
                 int ldv, 
                 ncclComm_t comm,
-                T *workspace = nullptr,
-                int lwork = 0,                
-                T *A = nullptr)
+                T *workspace,
+                int lwork,                
+                T *A)
     {
         T one = T(1.0);
         T zero = T(0.0);
@@ -875,7 +874,7 @@ namespace nccl
     *          all required memory is allocated.
     */
     template<typename T>
-    int modifiedGramSchmidtCholQR(cublasHandle_t cublas_handle,
+    int cuda_nccl::modifiedGramSchmidtCholQR(cublasHandle_t cublas_handle,
                 cusolverDnHandle_t cusolver_handle,
                 std::size_t m, 
                 std::size_t n, 
@@ -883,9 +882,9 @@ namespace nccl
                 T *V, 
                 std::size_t ldv, 
                 ncclComm_t comm,
-                T *workspace = nullptr,
-                int lwork = 0,                
-                T *A = nullptr)
+                T *workspace,
+                int lwork,                
+                T *A)
     {
         T one = T(1.0);
         T negone = T(-1.0);
@@ -1123,7 +1122,7 @@ namespace nccl
     *   - `t_pgqr`: Computes the solution of the least squares problem or the Q matrix of the QR factorization.
     */
     template<typename InputMultiVectorType>
-    void houseHoulderQR(InputMultiVectorType& V)
+    void cuda_nccl::houseHoulderQR(InputMultiVectorType& V)
     {
         using T = typename InputMultiVectorType::value_type;
 
@@ -1156,9 +1155,6 @@ namespace nccl
         std::runtime_error("For ChASE-MPI, distributed Householder QR requires ScaLAPACK, which is not detected\n");
 #endif
     }
-
-
-}
 }
 }
 }

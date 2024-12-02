@@ -24,7 +24,7 @@ namespace chase
 namespace Impl
 {
 /**
- * @page ChaseMPICPU
+ * @page pChASECPU
  * 
  * @section intro_sec Introduction
  * This class implements the CPU-based parallel version of the Chase algorithm using MPI. 
@@ -33,7 +33,7 @@ namespace Impl
  * for communication across different processes in a distributed computing environment.
  * 
  * @section constructor_sec Constructors and Destructor
- * The constructor and destructor for the `ChaseMPICPU` class manage the initialization of the matrix 
+ * The constructor and destructor for the `pChASECPU` class manage the initialization of the matrix 
  * data, multi-vectors, and MPI communication. The constructor also ensures that the matrix is square 
  * and that the matrix and eigenvectors are mapped to the same MPI grid.
  * 
@@ -53,15 +53,16 @@ namespace Impl
  * @tparam MatrixType The matrix type, such as `chase::distMatrix::RedundantMatrix`.
  * @tparam InputMultiVectorType The input multi-vector type, typically used for eigenvectors.
  */
-template <typename MatrixType, typename InputMultiVectorType>
-class ChaseMPICPU : public ChaseBase<typename MatrixType::value_type>
+template <typename MatrixType, typename InputMultiVectorType, typename BackendType = chase::grid::backend::MPI>
+class pChASECPU : public ChaseBase<typename MatrixType::value_type>
 {
     using T = typename MatrixType::value_type;
     using ResultMultiVectorType = typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type;
-
+    static_assert(std::is_same_v<BackendType, chase::grid::backend::MPI>,
+                  "BackendType must be chase::grid::backend::MPI");
 public:
     /**
-     * @brief Constructor for the ChaseMPICPU class.
+     * @brief Constructor for the pChASECPU class.
      * 
      * Initializes the Chase algorithm with the given matrix, eigenvector, and Ritz values. The matrix 
      * and eigenvectors must be mapped to the same MPI grid. The constructor also verifies that the 
@@ -73,7 +74,7 @@ public:
      * @param V Pointer to the input multi-vector of eigenvectors.
      * @param ritzv Pointer to the Ritz values used in the algorithm.
      */
-    ChaseMPICPU(std::size_t nev,
+    pChASECPU(std::size_t nev,
                 std::size_t nex,
                 MatrixType *H,
                 InputMultiVectorType *V,
@@ -114,14 +115,14 @@ public:
      * The copy constructor is deleted to prevent copying of this class, as it manages
      * unique resources such as MPI communication.
      */
-    ChaseMPICPU(const ChaseMPICPU&) = delete;
+    pChASECPU(const pChASECPU&) = delete;
     /**
-     * @brief Destructor for the ChaseMPICPU class.
+     * @brief Destructor for the pChASECPU class.
      * 
      * Cleans up any resources allocated by the constructor, including matrix data and MPI-specific 
      * information.
      */
-    ~ChaseMPICPU() {}
+    ~pChASECPU() {}
 
     std::size_t GetN() const override { return N_; }
 
@@ -152,7 +153,7 @@ public:
 #endif
     bool checkSymmetryEasy() override
     {
-        is_sym_ = chase::linalg::internal::mpi::checkSymmetryEasy(*Hmat_);  
+        is_sym_ = chase::linalg::internal::cpu_mpi::checkSymmetryEasy(*Hmat_);  
         return is_sym_;
     }
 
@@ -160,7 +161,7 @@ public:
 
     void symOrHermMatrix(char uplo) override
     {
-        chase::linalg::internal::mpi::symOrHermMatrix(uplo, *Hmat_);   
+        chase::linalg::internal::cpu_mpi::symOrHermMatrix(uplo, *Hmat_);   
     }
 
     void Start() override
@@ -194,7 +195,7 @@ public:
 
     void Lanczos(std::size_t m, chase::Base<T>* upperb) override 
     {
-        chase::linalg::internal::mpi::lanczos(m, 
+        chase::linalg::internal::cpu_mpi::lanczos(m, 
                                               *Hmat_, 
                                               *V1_, 
                                               upperb);
@@ -203,7 +204,7 @@ public:
     void Lanczos(std::size_t M, std::size_t numvec, chase::Base<T>* upperb,
                          chase::Base<T>* ritzv, chase::Base<T>* Tau, chase::Base<T>* ritzV) override
     {
-        chase::linalg::internal::mpi::lanczos(M, 
+        chase::linalg::internal::cpu_mpi::lanczos(M, 
                                               numvec, 
                                               *Hmat_, 
                                               *V1_, 
@@ -247,7 +248,7 @@ public:
         {
             next_ = NextOp::bAc;
         }
-        chase::linalg::internal::mpi::shiftDiagonal(*Hmat_, c);
+        chase::linalg::internal::cpu_mpi::shiftDiagonal(*Hmat_, c);
 
 #ifdef ENABLE_MIXED_PRECISION
         if constexpr (std::is_same<T, double>::value || std::is_same<T, std::complex<double>>::value)
@@ -296,7 +297,7 @@ public:
 
                 if (next_ == NextOp::bAc)
                 {
-                    chase::linalg::internal::mpi::MatrixMultiplyMultiVectors(&alpha_sp, 
+                    chase::linalg::internal::cpu_mpi::MatrixMultiplyMultiVectors(&alpha_sp, 
                                                                                 *Hmat_sp, 
                                                                                 *V1_sp, 
                                                                                 &beta_sp, 
@@ -307,7 +308,7 @@ public:
                 }
                 else
                 {
-                    chase::linalg::internal::mpi::MatrixMultiplyMultiVectors<singlePrecisionT>(&alpha_sp, 
+                    chase::linalg::internal::cpu_mpi::MatrixMultiplyMultiVectors<singlePrecisionT>(&alpha_sp, 
                                                                                 *Hmat_sp, 
                                                                                 *W1_sp, 
                                                                                 &beta_sp, 
@@ -322,7 +323,7 @@ public:
             {
                 if (next_ == NextOp::bAc)
                 {
-                    chase::linalg::internal::mpi::MatrixMultiplyMultiVectors(&alpha, 
+                    chase::linalg::internal::cpu_mpi::MatrixMultiplyMultiVectors(&alpha, 
                                                                                 *Hmat_, 
                                                                                 *V1_, 
                                                                                 &beta, 
@@ -333,7 +334,7 @@ public:
                 }
                 else
                 {
-                    chase::linalg::internal::mpi::MatrixMultiplyMultiVectors(&alpha, 
+                    chase::linalg::internal::cpu_mpi::MatrixMultiplyMultiVectors(&alpha, 
                                                                                 *Hmat_, 
                                                                                 *W1_, 
                                                                                 &beta, 
@@ -350,7 +351,7 @@ public:
         {
             if (next_ == NextOp::bAc)
             {
-                chase::linalg::internal::mpi::MatrixMultiplyMultiVectors(&alpha, 
+                chase::linalg::internal::cpu_mpi::MatrixMultiplyMultiVectors(&alpha, 
                                                                             *Hmat_, 
                                                                             *V1_, 
                                                                             &beta, 
@@ -361,7 +362,7 @@ public:
             }
             else
             {
-                chase::linalg::internal::mpi::MatrixMultiplyMultiVectors(&alpha, 
+                chase::linalg::internal::cpu_mpi::MatrixMultiplyMultiVectors(&alpha, 
                                                                             *Hmat_, 
                                                                             *W1_, 
                                                                             &beta, 
@@ -403,7 +404,7 @@ public:
         if (disable == 1)
         {
 #ifdef HAS_SCALAPACK
-            chase::linalg::internal::mpi::houseHoulderQR(*V1_);
+            chase::linalg::internal::cpu_mpi::houseHoulderQR(*V1_);
 #else
         std::runtime_error("For ChASE-MPI, distributed Householder QR requires ScaLAPACK, which is not detected\n");
 #endif
@@ -423,7 +424,7 @@ public:
 
             if (cond > cond_threshold_upper)
             {
-                info = chase::linalg::internal::mpi::shiftedcholQR2(V1_->g_rows(),
+                info = chase::linalg::internal::cpu_mpi::shiftedcholQR2(V1_->g_rows(),
                                                                     V1_->l_rows(), 
                                                                     V1_->l_cols(), 
                                                                     V1_->l_data(),  
@@ -433,7 +434,7 @@ public:
             }
             else if(cond < cond_threshold_lower)
             {
-                info = chase::linalg::internal::mpi::cholQR1(V1_->l_rows(), 
+                info = chase::linalg::internal::cpu_mpi::cholQR1(V1_->l_rows(), 
                                                              V1_->l_cols(), 
                                                              V1_->l_data(),  
                                                              V1_->l_ld(), 
@@ -441,7 +442,7 @@ public:
             }
             else
             {
-                info = chase::linalg::internal::mpi::cholQR2(V1_->l_rows(), 
+                info = chase::linalg::internal::cpu_mpi::cholQR2(V1_->l_rows(), 
                                                              V1_->l_cols(), 
                                                              V1_->l_data(),  
                                                              V1_->l_ld(), 
@@ -457,7 +458,7 @@ public:
                     std::cout << "CholeskyQR doesn't work, Househoulder QR will be used." << std::endl;
                 }
 #endif
-                chase::linalg::internal::mpi::houseHoulderQR(*V1_);
+                chase::linalg::internal::cpu_mpi::houseHoulderQR(*V1_);
 #else
                 std::runtime_error("For ChASE-MPI, distributed Householder QR requires ScaLAPACK, which is not detected\n");
 #endif
@@ -483,7 +484,7 @@ public:
 
     void RR(chase::Base<T>* ritzv, std::size_t block) override 
     {
-        chase::linalg::internal::mpi::rayleighRitz(*Hmat_, 
+        chase::linalg::internal::cpu_mpi::rayleighRitz(*Hmat_, 
                                                    *V1_, 
                                                    *V2_, 
                                                    *W1_, 
@@ -504,7 +505,7 @@ public:
 
     void Resd(chase::Base<T>* ritzv, chase::Base<T>* resd, std::size_t fixednev) override 
     {
-        chase::linalg::internal::mpi::residuals(*Hmat_,
+        chase::linalg::internal::cpu_mpi::residuals(*Hmat_,
                                                 *V1_,
                                                 *V2_,
                                                 *W1_,

@@ -9,7 +9,7 @@
 #include "grid/mpiGrid2D.hpp"
 #include "linalg/matrix/matrix.hpp"
 #include "external/cusolverpp/cusolverpp.hpp"
-#include "Impl/cuda/cuda_utils.hpp"
+#include "Impl/chase_gpu/cuda_utils.hpp"
 //using T = std::complex<double>;
 using T = double;
 

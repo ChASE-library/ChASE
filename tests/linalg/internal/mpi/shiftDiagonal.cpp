@@ -42,7 +42,7 @@ TYPED_TEST(shiftDiagonalCPUDistTest, ShiftDistCorrectness) {
 
     auto H = chase::distMatrix::BlockBlockMatrix<T>(N, N, mpi_grid);
     R.redistributeImpl(&H);
-    chase::linalg::internal::mpi::shiftDiagonal(H, T(-5.0));
+    chase::linalg::internal::cpu_mpi::shiftDiagonal(H, T(-5.0));
 
     if(this->world_rank == 0 || this->world_rank == 3){
         for(auto i = 0; i < H.l_rows(); i++)

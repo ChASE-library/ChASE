@@ -7,7 +7,7 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <cusolverDn.h>
-#include "Impl/cuda/nvtx.hpp"
+#include "Impl/chase_gpu/nvtx.hpp"
 // Macro to check for cuSOLVER errors
 #define CHECK_CUSOLVER_ERROR(val) checkCusolver((val), #val, __FILE__, __LINE__)
 

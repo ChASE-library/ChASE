@@ -9,11 +9,11 @@
 
 #include "algorithm/performance.hpp"
 #ifdef HAS_CUDA
-#include "Impl/cuda/chase_seq_gpu.hpp"
+#include "Impl/chase_gpu/chase_gpu.hpp"
 #endif
-#include "Impl/cpu/chase_seq_cpu.hpp"
+#include "Impl/chase_cpu/chase_cpu.hpp"
 #ifdef USE_NVTX
-#include "Impl/cuda/nvtx.hpp"
+#include "Impl/chase_gpu/nvtx.hpp"
 #endif
 
 using T = std::complex<double>;
@@ -38,9 +38,9 @@ int main()
     auto Lambda = std::vector<Base<T>>(nev + nex);
     std::vector<T> H(N * LDH, T(0.0));
 #ifdef HAS_CUDA
-    chase::Impl::ChaseGPUSeq<T> single(N, nev, nex, H.data(), LDH, V.data(), N, Lambda.data());
+    chase::Impl::ChASEGPU<T> single(N, nev, nex, H.data(), LDH, V.data(), N, Lambda.data());
 #else
-    chase::Impl::ChaseCPUSeq<T> single(N, nev, nex, H.data(), LDH, V.data(), N, Lambda.data());
+    chase::Impl::ChASECPU<T> single(N, nev, nex, H.data(), LDH, V.data(), N, Lambda.data());
 #endif
     auto& config = single.GetConfig();
     config.SetTol(1e-10);

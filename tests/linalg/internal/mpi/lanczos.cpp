@@ -80,7 +80,7 @@ TYPED_TEST(LanczosCPUDistTest, mlanczos){
 
     chase::Base<T> upperb;
 
-    chase::linalg::internal::mpi::lanczos(this->M,
+    chase::linalg::internal::cpu_mpi::lanczos(this->M,
                                           this->numvec,
                                           H_,
                                           V_,
@@ -132,7 +132,7 @@ TYPED_TEST(LanczosCPUDistTest, lanczos) {
 
     chase::Base<T> upperb;
     
-    chase::linalg::internal::mpi::lanczos(this->M,
+    chase::linalg::internal::cpu_mpi::lanczos(this->M,
                                           H_,
                                           V_,
                                           &upperb);
@@ -167,7 +167,7 @@ TYPED_TEST(LanczosCPUDistTest, mlanczosBlockCyclic){
 
     chase::Base<T> upperb;
 
-    chase::linalg::internal::mpi::lanczos(this->M,
+    chase::linalg::internal::cpu_mpi::lanczos(this->M,
                                           this->numvec,
                                           H_,
                                           V_,
@@ -213,7 +213,7 @@ TYPED_TEST(LanczosCPUDistTest, lanczosBlockCyclic) {
 
     chase::Base<T> upperb;
     
-    chase::linalg::internal::mpi::lanczos(this->M,
+    chase::linalg::internal::cpu_mpi::lanczos(this->M,
                                           H_,
                                           V_,
                                           &upperb);

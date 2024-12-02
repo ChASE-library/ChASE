@@ -6,6 +6,7 @@
 #include "linalg/distMatrix/distMatrix.hpp"
 #include "linalg/distMatrix/distMultiVector.hpp"
 #include "external/cublaspp/cublaspp.hpp"
+#include "linalg/internal/nccl/nccl_kernels.hpp"
 #include "../typeTraits.hpp"
 
 namespace chase
@@ -14,10 +15,8 @@ namespace linalg
 {
 namespace internal
 {
-namespace nccl
-{
     template <typename T, typename MatrixType, typename InputMultiVectorType>
-    void MatrixMultiplyMultiVectors(cublasHandle_t cublas_handle, T* alpha,
+    void cuda_nccl::MatrixMultiplyMultiVectors(cublasHandle_t cublas_handle, T* alpha,
                                         MatrixType& blockMatrix,
                                         InputMultiVectorType& input_multiVector,
                                         T* beta,
@@ -298,13 +297,13 @@ namespace nccl
     }
 
     template <typename T, typename MatrixType, typename InputMultiVectorType>
-    void MatrixMultiplyMultiVectors(cublasHandle_t cublas_handle, T* alpha,
+    void cuda_nccl::MatrixMultiplyMultiVectors(cublasHandle_t cublas_handle, T* alpha,
                                         MatrixType& blockMatrix,
                                         InputMultiVectorType& input_multiVector,
                                         T* beta,
                                         typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type& result_multiVector) 
     {
-        MatrixMultiplyMultiVectors(cublas_handle,
+        cuda_nccl::MatrixMultiplyMultiVectors(cublas_handle,
                                        alpha,
                                        blockMatrix, 
                                        input_multiVector, 
@@ -316,7 +315,7 @@ namespace nccl
 
     //this operation do: W1<-1.0 * H * V1, while redistribute V2 to W2
     template <typename MatrixType, typename InputMultiVectorType>    
-    void MatrixMultiplyMultiVectorsAndRedistributeAsync(cublasHandle_t cublas_handle,
+    void cuda_nccl::MatrixMultiplyMultiVectorsAndRedistributeAsync(cublasHandle_t cublas_handle,
                                         MatrixType& blockMatrix, 
                                         InputMultiVectorType& input_multiVector, 
                                         typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type& result_multiVector,
@@ -445,7 +444,7 @@ namespace nccl
     }
 
     template <typename MatrixType, typename InputMultiVectorType>    
-    void MatrixMultiplyMultiVectorsAndRedistributeAsync(cublasHandle_t cublas_handle,
+    void cuda_nccl::MatrixMultiplyMultiVectorsAndRedistributeAsync(cublasHandle_t cublas_handle,
                                         MatrixType& blockMatrix, 
                                         InputMultiVectorType& input_multiVector, 
                                         typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type& result_multiVector,
@@ -462,8 +461,6 @@ namespace nccl
                                                            0,
                                                            input_multiVector.l_cols());
     }
-
-}
 }
 }
 }

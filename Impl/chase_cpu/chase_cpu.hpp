@@ -17,7 +17,7 @@ namespace chase
 namespace Impl
 {
 /**
- * @page ChaseCPUSeq
+ * @page ChASECPU
  * 
  * @section intro_sec Introduction
  * This class implements the CPU-based sequential version of the Chase algorithm. It inherits from
@@ -26,7 +26,7 @@ namespace Impl
  * algorithms.
  * 
  * @section constructor_sec Constructors and Destructor
- * The constructor and destructor for the `ChaseCPUSeq` class are provided for memory management
+ * The constructor and destructor for the `ChASECPU` class are provided for memory management
  * and initialization of matrices and related data structures.
  * 
  * @section members_sec Private Members
@@ -43,11 +43,11 @@ namespace Impl
  * @tparam T The data type (e.g., float, double).
  */    
 template <class T>
-class ChaseCPUSeq : public ChaseBase<T>
+class ChASECPU : public ChaseBase<T>
 {
 public:
     /**
-     * @brief Constructs the `ChaseCPUSeq` object.
+     * @brief Constructs the `ChASECPU` object.
      * 
      * Initializes the matrices, vectors, and configuration necessary for the computation.
      * 
@@ -60,7 +60,7 @@ public:
      * @param ldv Leading dimension of V1.
      * @param ritzv Pointer to the Ritz values.
      */
-    ChaseCPUSeq(std::size_t N, 
+    ChASECPU(std::size_t N, 
                 std::size_t nev, 
                 std::size_t nex, 
                 T* H, 
@@ -93,14 +93,14 @@ public:
      * This class is not copyable, and the copy constructor is deleted to prevent
      * object duplication.
      */
-    ChaseCPUSeq(const ChaseCPUSeq&) = delete;
+    ChASECPU(const ChASECPU&) = delete;
     /**
-     * @brief Destructor for the `ChaseCPUSeq` class.
+     * @brief Destructor for the `ChASECPU` class.
      * 
      * The destructor is defined to clean up the allocated memory (if any) and
      * perform necessary cleanup tasks.
      */
-    ~ChaseCPUSeq() {}
+    ~ChASECPU() {}
 
     std::size_t GetN() const override {return N_;}
 

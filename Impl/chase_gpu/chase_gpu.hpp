@@ -10,7 +10,7 @@
 #include "linalg/internal/cpu/symOrHerm.hpp"
 #include "algorithm/types.hpp"
 
-#include "Impl/cuda/nvtx.hpp"
+#include "Impl/chase_gpu/nvtx.hpp"
 
 using namespace chase::linalg;
 
@@ -19,7 +19,7 @@ namespace chase
 namespace Impl
 {
 /**
- * @page ChaseGPUSeq
+ * @page ChASEGPU
  * 
  * @section intro_sec Introduction
  * This class implements the GPU-based sequential version of the Chase algorithm. It inherits from
@@ -29,7 +29,7 @@ namespace Impl
  * matrix operations and eigenvalue solvers.
  * 
  * @section constructor_sec Constructors and Destructor
- * The constructor and destructor for the `ChaseGPUSeq` class handle memory allocation, initialization
+ * The constructor and destructor for the `ChASEGPU` class handle memory allocation, initialization
  * of matrices and associated data structures on the GPU, as well as resource cleanup. 
  * 
  * @subsection constructor_details Detailed Constructor
@@ -81,11 +81,11 @@ namespace Impl
  * @tparam T The data type (e.g., float, double).
  */    
 template <class T>
-class ChaseGPUSeq : public ChaseBase<T>
+class ChASEGPU : public ChaseBase<T>
 {
 public:
     /**
-     * @brief Constructor for the ChaseGPUSeq class.
+     * @brief Constructor for the ChASEGPU class.
      * 
      * Initializes matrices and GPU resources, including CUDA streams, CUBLAS, and CUSOLVER handles.
      * Allocates memory for the GPU matrices and computes necessary buffer sizes for matrix operations.
@@ -99,7 +99,7 @@ public:
      * @param ldv The leading dimension of matrix \( V_1 \).
      * @param ritzv Pointer to the Ritz values vector.
      */
-    ChaseGPUSeq(std::size_t N,
+    ChASEGPU(std::size_t N,
                 std::size_t nev,
                 std::size_t nex,
                 T *H,
@@ -193,14 +193,14 @@ public:
         CHECK_CUDA_ERROR(cudaMalloc((void**)&d_work_, sizeof(T) * lwork_));
     }
 
-    ChaseGPUSeq(const ChaseGPUSeq&) = delete;
+    ChASEGPU(const ChASEGPU&) = delete;
 
     /**
-     * @brief Destructor for the ChaseGPUSeq class.
+     * @brief Destructor for the ChASEGPU class.
      * 
      * Frees all dynamically allocated memory and destroys CUDA resources (CUBLAS, CUSOLVER, CUDA buffers).
      */
-    ~ChaseGPUSeq() 
+    ~ChASEGPU() 
     {
         SCOPED_NVTX_RANGE();
 

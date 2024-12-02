@@ -6,10 +6,9 @@
 #include "external/lapackpp/lapackpp.hpp"
 #include "linalg/distMatrix/distMatrix.hpp"
 #include "linalg/distMatrix/distMultiVector.hpp"
-#include "linalg/internal/cuda_aware_mpi/hemm.hpp"
 #include "linalg/internal/cuda/residuals.cuh"
+#include "linalg/internal/cuda_aware_mpi/cuda_mpi_kernels.hpp"
 #include "../typeTraits.hpp"
-
 
 namespace chase
 {
@@ -17,25 +16,22 @@ namespace linalg
 {
 namespace internal
 {
-namespace cuda_aware_mpi
-{
-
     template <typename MatrixType, typename InputMultiVectorType>
-    void residuals(cublasHandle_t cublas_handle,
-                   MatrixType& H,
-                   InputMultiVectorType& V1,
-                   InputMultiVectorType& V2,
-                   typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type& W1,
-                   typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type& W2,
-                   chase::matrix::Matrix<chase::Base<typename MatrixType::value_type>, typename MatrixType::platform_type>& ritzv,
-                   chase::matrix::Matrix<chase::Base<typename MatrixType::value_type>, typename MatrixType::platform_type>& resids,
-                   std::size_t offset,
-                   std::size_t subSize)     
+    void cuda_mpi::residuals(cublasHandle_t cublas_handle,
+                MatrixType& H,
+                InputMultiVectorType& V1,
+                InputMultiVectorType& V2,
+                typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type& W1,
+                typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type& W2,
+                chase::matrix::Matrix<chase::Base<typename MatrixType::value_type>, typename MatrixType::platform_type>& ritzv,
+                chase::matrix::Matrix<chase::Base<typename MatrixType::value_type>, typename MatrixType::platform_type>& resids,
+                std::size_t offset,
+                std::size_t subSize)     
     {
 
         using T = typename MatrixType::value_type;
         // Perform the distributed matrix-matrix multiplication
-        chase::linalg::internal::cuda_aware_mpi::MatrixMultiplyMultiVectorsAndRedistribute(
+        chase::linalg::internal::cuda_mpi::MatrixMultiplyMultiVectorsAndRedistribute(
                         cublas_handle,
                         H, 
                         V1, 
@@ -58,11 +54,11 @@ namespace cuda_aware_mpi
                                                     resids.data() + offset,
                                                     false, usedStream);  
         MPI_Allreduce(MPI_IN_PLACE,
-                      resids.data() + offset,
-                      subSize,
-                      chase::mpi::getMPI_Type<chase::Base<T>>(),
-                      MPI_SUM,
-                      V1.getMpiGrid()->get_row_comm());
+                    resids.data() + offset,
+                    subSize,
+                    chase::mpi::getMPI_Type<chase::Base<T>>(),
+                    MPI_SUM,
+                    V1.getMpiGrid()->get_row_comm());
 
         CHECK_CUDA_ERROR(cudaMemcpy(resids.cpu_data() + offset, resids.data() + offset, subSize * sizeof(chase::Base<T>), cudaMemcpyDeviceToHost ));
 
@@ -72,7 +68,6 @@ namespace cuda_aware_mpi
         }   
     }
 
-}
 }
 }
 }

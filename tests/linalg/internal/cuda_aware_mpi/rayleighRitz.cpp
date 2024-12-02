@@ -3,7 +3,6 @@
 #include <cmath>
 #include <random>
 #include <cstring>
-#include "linalg/internal/cuda_aware_mpi/hemm.hpp"
 #include "linalg/internal/cuda_aware_mpi/rayleighRitz.hpp"
 #include "tests/linalg/internal/utils.hpp"
 #include "grid/mpiGrid2D.hpp"
@@ -127,7 +126,7 @@ TYPED_TEST(RRGPUDistTest, RRCorrectnessGPU) {
     int* devInfo;
     CHECK_CUDA_ERROR(cudaMalloc((void**)&devInfo, sizeof(int)));    
 
-    chase::linalg::internal::cuda_aware_mpi::rayleighRitz(this->cublasH_, 
+    chase::linalg::internal::cuda_mpi::rayleighRitz(this->cublasH_, 
                                                this->cusolverH_, 
                                                H_, 
                                                V_, 

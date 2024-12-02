@@ -106,7 +106,7 @@ TYPED_TEST(ResidCPUDistTest, ResidCorrectness) {
         }
     }
 
-    chase::linalg::internal::mpi::residuals(H_, V_, V2_, W_, W2_, evals.data(), resids.data(), offset, subSize);
+    chase::linalg::internal::cpu_mpi::residuals(H_, V_, V2_, W_, W2_, evals.data(), resids.data(), offset, subSize);
 
     for(auto i = offset; i < offset + subSize; i++)
     {

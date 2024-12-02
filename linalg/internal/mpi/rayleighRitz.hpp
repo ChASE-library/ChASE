@@ -6,7 +6,7 @@
 #include "external/lapackpp/lapackpp.hpp"
 #include "linalg/distMatrix/distMatrix.hpp"
 #include "linalg/distMatrix/distMultiVector.hpp"
-#include "linalg/internal/mpi/hemm.hpp"
+#include "linalg/internal/mpi/mpi_kernels.hpp"
 #include "external/scalapackpp/scalapackpp.hpp"
 
 namespace chase
@@ -14,9 +14,7 @@ namespace chase
 namespace linalg
 {
 namespace internal
-{
-namespace mpi
-{         
+{        
     /**
      * @brief Performs the Rayleigh-Ritz procedure, reducing the matrix H using the basis vectors
      * in V1 and V2, and storing the results in W1, W2, and the eigenvalues in ritzv.
@@ -40,7 +38,7 @@ namespace mpi
      * @throws std::invalid_argument if ritzv is a nullptr.
      */                  
     template <typename MatrixType, typename InputMultiVectorType>
-     void rayleighRitz(MatrixType& H,
+     void cpu_mpi::rayleighRitz(MatrixType& H,
                        InputMultiVectorType& V1,
                        InputMultiVectorType& V2,
                        typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type& W1,
@@ -48,7 +46,7 @@ namespace mpi
                        chase::Base<typename MatrixType::value_type>* ritzv,
                        std::size_t offset,
                        std::size_t subSize,
-                       chase::distMatrix::RedundantMatrix<typename MatrixType::value_type, chase::platform::CPU>* A = nullptr)                
+                       chase::distMatrix::RedundantMatrix<typename MatrixType::value_type, chase::platform::CPU>* A)                
     {
         using T = typename MatrixType::value_type;
         
@@ -65,7 +63,7 @@ namespace mpi
         }
 
         // Perform the distributed matrix-matrix multiplication
-        chase::linalg::internal::mpi::MatrixMultiplyMultiVectorsAndRedistributeAsync(
+        chase::linalg::internal::cpu_mpi::MatrixMultiplyMultiVectorsAndRedistributeAsync(
                         H, 
                         V1, 
                         W1, 
@@ -124,8 +122,6 @@ namespace mpi
                                      V1.l_data() + offset * V1.l_ld(),
                                      V1.l_ld());
     }
-
-}
 }
 }
 }

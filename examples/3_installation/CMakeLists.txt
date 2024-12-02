@@ -6,11 +6,11 @@ project(chase-app VERSION 0.0.1 LANGUAGES C CXX Fortran)
 find_package( chase REQUIRED CONFIG)
 
 add_executable( "chase_app_cpu.exe" "chase-app.cpp")
-target_link_libraries( "chase_app_cpu.exe" PRIVATE ChASE::chase_mpi )
+target_link_libraries( "chase_app_cpu.exe" PRIVATE ChASE::pchase_cpu )
 
-if(TARGET ChASE::chase_nccl)
+if(TARGET ChASE::pchase_gpu)
     add_executable( "chase_app_gpu.exe" "chase-app.cpp")
-    target_link_libraries( "chase_app_gpu.exe" PRIVATE ChASE::chase_nccl )
+    target_link_libraries( "chase_app_gpu.exe" PRIVATE ChASE::pchase_gpu )
     target_compile_definitions( "chase_app_gpu.exe" PRIVATE USE_GPU=1)
 endif()
 

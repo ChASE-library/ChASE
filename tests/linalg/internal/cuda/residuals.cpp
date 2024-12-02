@@ -6,8 +6,8 @@
 #include "linalg/internal/cuda/residuals.hpp"
 #include "tests/linalg/internal/utils.hpp"
 #include "linalg/matrix/matrix.hpp"
-#include "Impl/cuda/cuda_utils.hpp"
-#include "linalg/lapackpp/lapackpp.hpp"
+#include "Impl/chase_gpu/cuda_utils.hpp"
+#include "external/lapackpp/lapackpp.hpp"
 
 template <typename T>
 class ResidsGPUTest : public ::testing::Test {

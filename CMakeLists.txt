@@ -125,7 +125,7 @@ set(IS_ENABLE_MPI OFF)
 set(IS_ENABLE_SCALAPACK OFF)
 set(IS_ENABLE_NCCL OFF)
 
-if(TARGET chase_mpi)
+if(TARGET pchase_cpu)
     set(IS_ENABLE_MPI ON)
 endif()
 
@@ -133,7 +133,7 @@ if(TARGET scalapackpp)
     set(IS_ENABLE_SCALAPACK ON)
 endif()
 
-if(TARGET chase_nccl)
+if(TARGET linalg_internal_nccl)
     set(IS_ENABLE_NCCL ON)
 endif()
 

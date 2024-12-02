@@ -14,6 +14,7 @@
 #include "external/cusolverpp/cusolverpp.hpp"
 #include "linalg/internal/cuda/absTrace.cuh"
 #include "linalg/internal/cuda/shiftDiagonal.cuh"
+#include "linalg/internal/cuda_aware_mpi/cuda_mpi_kernels.hpp"
 
 using namespace chase::linalg::blaspp;
 using namespace chase::linalg::lapackpp;
@@ -23,8 +24,6 @@ namespace chase
 namespace linalg
 {
 namespace internal
-{
-namespace cuda_aware_mpi
 {
     /**
      * @brief Performs a distributed Cholesky QR decomposition on a matrix V.
@@ -46,16 +45,16 @@ namespace cuda_aware_mpi
      * @return int Status code: 0 for success, non-zero for failure.
      */    
     template<typename T>
-    int cholQR1(cublasHandle_t cublas_handle,
+    int cuda_mpi::cholQR1(cublasHandle_t cublas_handle,
                 cusolverDnHandle_t cusolver_handle,
                 std::size_t m, 
                 std::size_t n, 
                 T *V, 
                 int ldv, 
                 MPI_Comm comm,
-                T *workspace = nullptr,
-                int lwork = 0,                
-                T *A = nullptr)
+                T *workspace,
+                int lwork,                
+                T *A)
     {
         T one = T(1.0);
         T zero = T(0.0);
@@ -195,16 +194,16 @@ namespace cuda_aware_mpi
      * @return int Status code: 0 for success, non-zero for failure.
      */
     template<typename T>
-    int cholQR2(cublasHandle_t cublas_handle,
+    int cuda_mpi::cholQR2(cublasHandle_t cublas_handle,
                 cusolverDnHandle_t cusolver_handle,
                 std::size_t m, 
                 std::size_t n, 
                 T *V, 
                 int ldv, 
                 MPI_Comm comm,
-                T *workspace = nullptr,
-                int lwork = 0,                
-                T *A = nullptr)
+                T *workspace,
+                int lwork,                
+                T *A)
     {
         T one = T(1.0);
         T zero = T(0.0);
@@ -407,7 +406,7 @@ namespace cuda_aware_mpi
     *          to handle the matrix size and any communication overhead.
     */
     template<typename T>
-    int shiftedcholQR2(cublasHandle_t cublas_handle,
+    int cuda_mpi::shiftedcholQR2(cublasHandle_t cublas_handle,
                 cusolverDnHandle_t cusolver_handle,
                 std::size_t N, 
                 std::size_t m, 
@@ -415,9 +414,9 @@ namespace cuda_aware_mpi
                 T *V, 
                 int ldv, 
                 MPI_Comm comm,
-                T *workspace = nullptr,
-                int lwork = 0,                
-                T *A = nullptr)
+                T *workspace,
+                int lwork,                
+                T *A)
     {
         T one = T(1.0);
         T zero = T(0.0);
@@ -689,7 +688,7 @@ namespace cuda_aware_mpi
     *          all required memory is allocated.
     */
     template<typename T>
-    int modifiedGramSchmidtCholQR(cublasHandle_t cublas_handle,
+    int cuda_mpi::modifiedGramSchmidtCholQR(cublasHandle_t cublas_handle,
                 cusolverDnHandle_t cusolver_handle,
                 std::size_t m, 
                 std::size_t n, 
@@ -697,9 +696,9 @@ namespace cuda_aware_mpi
                 T *V, 
                 std::size_t ldv, 
                 MPI_Comm comm,
-                T *workspace = nullptr,
-                int lwork = 0,                
-                T *A = nullptr)
+                T *workspace,
+                int lwork,                
+                T *A)
     {
         T one = T(1.0);
         T negone = T(-1.0);
@@ -957,7 +956,7 @@ namespace cuda_aware_mpi
     *   - `t_pgqr`: Computes the solution of the least squares problem or the Q matrix of the QR factorization.
     */
     template<typename InputMultiVectorType>
-    void houseHoulderQR(InputMultiVectorType& V)
+    void cuda_mpi::houseHoulderQR(InputMultiVectorType& V)
     {
         using T = typename InputMultiVectorType::value_type;
 
@@ -990,9 +989,6 @@ namespace cuda_aware_mpi
         std::runtime_error("For ChASE-MPI, distributed Householder QR requires ScaLAPACK, which is not detected\n");
 #endif
     }
-
-
-}
 }
 }
 }
