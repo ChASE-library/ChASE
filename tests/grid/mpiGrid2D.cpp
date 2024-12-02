@@ -4,7 +4,8 @@
 #include <mpi.h>
 #include "grid/mpiGrid2D.hpp"
 #ifdef HAS_NCCL
-#include "cuda/cuda_utils.hpp"
+#include "Impl/chase_gpu/cuda_utils.hpp"
+#include "grid/nccl_utils.hpp"
 #endif
 
 class MpiGrid2DTest : public ::testing::Test {
@@ -327,7 +328,7 @@ TEST_F(MpiGrid2DTest, NCCLAllreduceWrapper)
     CHECK_CUDA_ERROR(cudaMalloc(&data_sp_device, data_count * sizeof(float)));      
     CHECK_CUDA_ERROR(cudaMemcpy(data_sp_device, data_sp.data(), data_count * sizeof(float), cudaMemcpyHostToDevice));     
     MPI_Allreduce(MPI_IN_PLACE, data_sp.data(), data_count, MPI_FLOAT, MPI_SUM, comm);
-    CHECK_NCCL_ERROR(chase::Impl::nccl::ncclAllReduceWrapper(data_sp_device, data_sp_device, data_count, ncclSum, nccl_comm));
+    CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper(data_sp_device, data_sp_device, data_count, ncclSum, nccl_comm));
     CHECK_CUDA_ERROR(cudaMemcpy(data_sp_2.data(), data_sp_device, data_count * sizeof(float), cudaMemcpyDeviceToHost));     
     for(auto i = 0; i < data_count; i++){
         EXPECT_EQ(data_sp[i], data_sp_2[i]);
@@ -344,7 +345,7 @@ TEST_F(MpiGrid2DTest, NCCLAllreduceWrapper)
     CHECK_CUDA_ERROR(cudaMalloc(&data_dp_device, data_count * sizeof(double)));      
     CHECK_CUDA_ERROR(cudaMemcpy(data_dp_device, data_dp.data(), data_count * sizeof(double), cudaMemcpyHostToDevice));     
     MPI_Allreduce(MPI_IN_PLACE, data_dp.data(), data_count, MPI_DOUBLE, MPI_SUM, comm);
-    CHECK_NCCL_ERROR(chase::Impl::nccl::ncclAllReduceWrapper(data_dp_device, data_dp_device, data_count, ncclSum, nccl_comm));
+    CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper(data_dp_device, data_dp_device, data_count, ncclSum, nccl_comm));
     CHECK_CUDA_ERROR(cudaMemcpy(data_dp_2.data(), data_dp_device, data_count * sizeof(double), cudaMemcpyDeviceToHost));     
     for(auto i = 0; i < data_count; i++){
         EXPECT_EQ(data_dp[i], data_dp_2[i]);
@@ -361,7 +362,7 @@ TEST_F(MpiGrid2DTest, NCCLAllreduceWrapper)
     CHECK_CUDA_ERROR(cudaMalloc(&data_cp_device, data_count * sizeof(std::complex<float>)));      
     CHECK_CUDA_ERROR(cudaMemcpy(data_cp_device, data_cp.data(), data_count * sizeof(std::complex<float>), cudaMemcpyHostToDevice));     
     MPI_Allreduce(MPI_IN_PLACE, data_cp.data(), data_count, MPI_COMPLEX, MPI_SUM, comm);
-    CHECK_NCCL_ERROR(chase::Impl::nccl::ncclAllReduceWrapper(data_cp_device, data_cp_device, data_count, ncclSum, nccl_comm));
+    CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper(data_cp_device, data_cp_device, data_count, ncclSum, nccl_comm));
     CHECK_CUDA_ERROR(cudaMemcpy(data_cp_2.data(), data_cp_device, data_count * sizeof(std::complex<float>), cudaMemcpyDeviceToHost));     
     for(auto i = 0; i < data_count; i++){
         EXPECT_EQ(data_cp[i], data_cp_2[i]);
@@ -379,7 +380,7 @@ TEST_F(MpiGrid2DTest, NCCLAllreduceWrapper)
     CHECK_CUDA_ERROR(cudaMalloc(&data_zp_device, data_count * sizeof(std::complex<double>)));      
     CHECK_CUDA_ERROR(cudaMemcpy(data_zp_device, data_zp.data(), data_count * sizeof(std::complex<double>), cudaMemcpyHostToDevice));     
     MPI_Allreduce(MPI_IN_PLACE, data_zp.data(), data_count, MPI_DOUBLE_COMPLEX, MPI_SUM, comm);
-    CHECK_NCCL_ERROR(chase::Impl::nccl::ncclAllReduceWrapper(data_zp_device, data_zp_device, data_count, ncclSum, nccl_comm));
+    CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper(data_zp_device, data_zp_device, data_count, ncclSum, nccl_comm));
     CHECK_CUDA_ERROR(cudaMemcpy(data_zp_2.data(), data_zp_device, data_count * sizeof(std::complex<double>), cudaMemcpyDeviceToHost));     
     for(auto i = 0; i < data_count; i++){
         EXPECT_EQ(data_zp[i], data_zp_2[i]);
@@ -415,7 +416,7 @@ TEST_F(MpiGrid2DTest, NCCLBcasteWrapper)
     CHECK_CUDA_ERROR(cudaMalloc(&data_sp_device, data_count * sizeof(float)));      
     CHECK_CUDA_ERROR(cudaMemcpy(data_sp_device, data_sp.data(), data_count * sizeof(float), cudaMemcpyHostToDevice));   
 
-    CHECK_NCCL_ERROR(chase::Impl::nccl::ncclBcastWrapper(data_sp_device, data_count, 0, nccl_comm));
+    CHECK_NCCL_ERROR(chase::nccl::ncclBcastWrapper(data_sp_device, data_count, 0, nccl_comm));
     CHECK_CUDA_ERROR(cudaMemcpy(data_sp.data(), data_sp_device, data_count * sizeof(float), cudaMemcpyDeviceToHost));     
 
     for(auto i = 0; i < data_count; i++){
@@ -434,7 +435,7 @@ TEST_F(MpiGrid2DTest, NCCLBcasteWrapper)
     CHECK_CUDA_ERROR(cudaMalloc(&data_zp_device, data_count * sizeof(std::complex<double>)));      
     CHECK_CUDA_ERROR(cudaMemcpy(data_zp_device, data_zp.data(), data_count * sizeof(std::complex<double>), cudaMemcpyHostToDevice));   
 
-    CHECK_NCCL_ERROR(chase::Impl::nccl::ncclBcastWrapper(data_zp_device, data_count, 0, nccl_comm));
+    CHECK_NCCL_ERROR(chase::nccl::ncclBcastWrapper(data_zp_device, data_count, 0, nccl_comm));
     CHECK_CUDA_ERROR(cudaMemcpy(data_zp.data(), data_zp_device, data_count * sizeof(std::complex<double>), cudaMemcpyDeviceToHost));     
 
     for(auto i = 0; i < data_count; i++){
