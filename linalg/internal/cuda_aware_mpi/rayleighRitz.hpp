@@ -36,7 +36,7 @@ namespace internal
     {
         using T = typename MatrixType::value_type;
 
-        std::cout <<"MPI Backend" << std::endl;
+        //std::cout <<"MPI Backend" << std::endl;
 
         std::unique_ptr<chase::distMatrix::RedundantMatrix<T, chase::platform::GPU>> A_ptr;
         std::size_t upperTriangularSize = std::size_t(subSize * (subSize + 1) / 2);
