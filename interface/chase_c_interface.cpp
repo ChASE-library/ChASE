@@ -177,6 +177,7 @@ void ChASE_SEQ_Solve(int* deg, chase::Base<T>* tol, char* mode, char* opt, char*
     config.SetOpt(*opt == 'S');
     config.SetApprox(*mode == 'A');
     config.SetCholQR(*qr == 'C');
+    config.EnableSymCheck(false);
 
     chase::PerformanceDecoratorChase<T> performanceDecorator(single);
     chase::Solve(&performanceDecorator);   
@@ -297,15 +298,8 @@ int ChASE_DIST<BlockMatrixType<std::complex<double>>>::Initialize(int N, int nev
     zHmat = new BlockMatrixType<std::complex<double>>(N, N, m, n, mbsize, nbsize, ldh, H, mpi_grid);    
     zVec = new DistMultiVector1DColumn<std::complex<double>>(N, m, nev + nex, mbsize, m, V, mpi_grid);  
 
-    //const char* backend_env = std::getenv("CHASE_COMM_BACKEND");
-    //std::string backend(backend_env);
-    //if (backend == "MPI") {
-    //    zchaseDist = new DistSolverType<BlockMatrixType<std::complex<double>>, chase::grid::backend::MPI>(nev, nex, zHmat, zVec, ritzv);
-    //}
-    //else
-    {
-        zchaseDist = new DistSolverType<BlockMatrixType<std::complex<double>>>(nev, nex, zHmat, zVec, ritzv);
-    }
+    zchaseDist = new DistSolverType<BlockMatrixType<std::complex<double>>>(nev, nex, zHmat, zVec, ritzv);
+    
     return 1;    
 }
 
@@ -337,15 +331,8 @@ int ChASE_DIST<BlockMatrixType<std::complex<float>>>::Initialize(int N, int nev,
     cHmat = new BlockMatrixType<std::complex<float>>(N, N, m, n, mbsize, nbsize, ldh, H, mpi_grid);    
     cVec = new DistMultiVector1DColumn<std::complex<float>>(N, m, nev + nex, mbsize, m, V, mpi_grid);  
 
-    //const char* backend_env = std::getenv("CHASE_COMM_BACKEND");
-    //std::string backend(backend_env);
-    //if (backend == "MPI") {
-    //    cchaseDist = new DistSolverType<BlockMatrixType<std::complex<float>>, chase::grid::backend::MPI>(nev, nex, cHmat, cVec, ritzv);
-    //}
-    //else
-    {
-        cchaseDist = new DistSolverType<BlockMatrixType<std::complex<float>>>(nev, nex, cHmat, cVec, ritzv);
-    }
+    cchaseDist = new DistSolverType<BlockMatrixType<std::complex<float>>>(nev, nex, cHmat, cVec, ritzv);
+    
     return 1;    
 }
 
@@ -377,16 +364,8 @@ int ChASE_DIST<BlockMatrixType<float>>::Initialize(int N, int nev, int nex, int 
     sHmat = new BlockMatrixType<float>(N, N, m, n, mbsize, nbsize, ldh, H, mpi_grid);    
     sVec = new DistMultiVector1DColumn<float>(N, m, nev + nex, mbsize, m, V, mpi_grid);  
 
-    //const char* backend_env = std::getenv("CHASE_COMM_BACKEND");
-    //std::string backend(backend_env);
-    //if (backend == "MPI") {
-    //    schaseDist = new DistSolverType<BlockMatrixType<float>, chase::grid::backend::MPI>(nev, nex, sHmat, sVec, ritzv);
-    //}
-    //else
-    {
-        schaseDist = new DistSolverType<BlockMatrixType<float>>(nev, nex, sHmat, sVec, ritzv);
-    }    
-    
+    schaseDist = new DistSolverType<BlockMatrixType<float>>(nev, nex, sHmat, sVec, ritzv);
+        
     return 1;    
 }
 
@@ -418,15 +397,7 @@ int ChASE_DIST<BlockMatrixType<double>>::Initialize(int N, int nev, int nex, int
     dHmat = new BlockMatrixType<double>(N, N, m, n, mbsize, nbsize, ldh, H, mpi_grid);    
     dVec = new DistMultiVector1DColumn<double>(N, m, nev + nex, mbsize, m, V, mpi_grid);  
     
-    //const char* backend_env = std::getenv("CHASE_COMM_BACKEND");
-    //std::string backend(backend_env);
-    //if (backend == "MPI") {
-    //    dchaseDist = new DistSolverType<BlockMatrixType<double>, chase::grid::backend::MPI>(nev, nex, dHmat, dVec, ritzv);
-    //}
-    //else
-    {
-        dchaseDist = new DistSolverType<BlockMatrixType<double>>(nev, nex, dHmat, dVec, ritzv);
-    }    
+    dchaseDist = new DistSolverType<BlockMatrixType<double>>(nev, nex, dHmat, dVec, ritzv);
 
     return 1;    
 }
@@ -452,15 +423,7 @@ int ChASE_DIST<BlockMatrixType<std::complex<double>>>::Initialize(int N, int nev
     zHmat = new BlockMatrixType<std::complex<double>>(m, n, ldh, H, mpi_grid);    
     zVec = new DistMultiVector1DColumn<std::complex<double>>(m, nev + nex, m, V, mpi_grid);  
 
-    //const char* backend_env = std::getenv("CHASE_COMM_BACKEND");
-    //std::string backend(backend_env);
-    //if (backend == "MPI") {
-    //    zchaseDist = new DistSolverType<BlockMatrixType<std::complex<double>>, chase::grid::backend::MPI>(nev, nex, zHmat, zVec, ritzv);
-    //}
-    //else
-    {
-        zchaseDist = new DistSolverType<BlockMatrixType<std::complex<double>>>(nev, nex, zHmat, zVec, ritzv);
-    }
+    zchaseDist = new DistSolverType<BlockMatrixType<std::complex<double>>>(nev, nex, zHmat, zVec, ritzv);
 
     return 1;
 }
@@ -485,15 +448,7 @@ int ChASE_DIST<BlockMatrixType<std::complex<float>>>::Initialize(int N, int nev,
     cHmat = new BlockMatrixType<std::complex<float>>(m, n, ldh, H, mpi_grid);    
     cVec = new DistMultiVector1DColumn<std::complex<float>>(m, nev + nex, m, V, mpi_grid);  
 
-    //const char* backend_env = std::getenv("CHASE_COMM_BACKEND");
-    //std::string backend(backend_env);
-    //if (backend == "MPI") {
-    //    cchaseDist = new DistSolverType<BlockMatrixType<std::complex<float>>, chase::grid::backend::MPI>(nev, nex, cHmat, cVec, ritzv);
-    //}
-    //else
-    {
-        cchaseDist = new DistSolverType<BlockMatrixType<std::complex<float>>>(nev, nex, cHmat, cVec, ritzv);
-    }
+    cchaseDist = new DistSolverType<BlockMatrixType<std::complex<float>>>(nev, nex, cHmat, cVec, ritzv);
 
     return 1;
 }
@@ -518,16 +473,8 @@ int ChASE_DIST<BlockMatrixType<float>>::Initialize(int N, int nev, int nex, int 
     sHmat = new BlockMatrixType<float>(m, n, ldh, H, mpi_grid);    
     sVec = new DistMultiVector1DColumn<float>(m, nev + nex, m, V, mpi_grid);  
 
-    //const char* backend_env = std::getenv("CHASE_COMM_BACKEND");
-    //std::string backend(backend_env);
-    //if (backend == "MPI") {
-    //    schaseDist = new DistSolverType<BlockMatrixType<float>, chase::grid::backend::MPI>(nev, nex, sHmat, sVec, ritzv);
-    //}
-    //else
-    {
-        schaseDist = new DistSolverType<BlockMatrixType<float>>(nev, nex, sHmat, sVec, ritzv);
-    }    
-
+    schaseDist = new DistSolverType<BlockMatrixType<float>>(nev, nex, sHmat, sVec, ritzv);
+      
     return 1;
 }
 
@@ -551,15 +498,7 @@ int ChASE_DIST<BlockMatrixType<double>>::Initialize(int N, int nev, int nex, int
     dHmat = new BlockMatrixType<double>(m, n, ldh, H, mpi_grid);    
     dVec = new DistMultiVector1DColumn<double>(m, nev + nex, m, V, mpi_grid);  
 
-    //const char* backend_env = std::getenv("CHASE_COMM_BACKEND");
-    //std::string backend(backend_env);
-    //if (backend == "MPI") {
-    //    dchaseDist = new DistSolverType<BlockMatrixType<double>, chase::grid::backend::MPI>(nev, nex, dHmat, dVec, ritzv);
-    //}
-    //else
-    {
-        dchaseDist = new DistSolverType<BlockMatrixType<double>>(nev, nex, dHmat, dVec, ritzv);
-    } 
+    dchaseDist = new DistSolverType<BlockMatrixType<double>>(nev, nex, dHmat, dVec, ritzv);
 
     return 1;
 }
@@ -641,6 +580,7 @@ int ChASE_DIST<BlockMatrixType<float>>::Finalize()
 template<typename MatrixType>
 void ChASE_DIST<MatrixType>::Solve(int* deg, chase::Base<typename MatrixType::value_type>* tol, char* mode, char* opt, char *qr)
 {
+    using T = typename MatrixType::value_type;
     auto single = ChASE_DIST<MatrixType>::getChase();
     
     chase::ChaseConfig<T>& config = single->GetConfig();
@@ -649,7 +589,8 @@ void ChASE_DIST<MatrixType>::Solve(int* deg, chase::Base<typename MatrixType::va
     config.SetOpt(*opt == 'S');
     config.SetApprox(*mode == 'A');
     config.SetCholQR(*qr == 'C');
-
+    config.EnableSymCheck(false);
+    
     chase::PerformanceDecoratorChase<T> performanceDecorator(single);
 
     chase::Solve(&performanceDecorator);
