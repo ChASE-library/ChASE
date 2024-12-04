@@ -591,6 +591,85 @@ MODULE chase_diag
         END SUBROUTINE pcchase    
     END INTERFACE
 
+    INTERFACE
+        SUBROUTINE pschase_wrtHam(filename) bind( c, name = 'pschase_wrtHam_')
+        !>
+        !> @param[in] filename the name of output filename
+            USE, INTRINSIC :: iso_c_binding
+            CHARACTER(kind=c_char, len=1), dimension(*), intent(in) :: filename
+        
+        END SUBROUTINE    
+    END INTERFACE
+
+    INTERFACE
+        SUBROUTINE pdchase_wrtHam(filename) bind( c, name = 'pdchase_wrtHam_')
+        !>
+        !> @param[in] filename the name of output filename
+            USE, INTRINSIC :: iso_c_binding
+            CHARACTER(kind=c_char, len=1), dimension(*), intent(in) :: filename
+        
+        END SUBROUTINE    
+    END INTERFACE
+
+    INTERFACE
+        SUBROUTINE pcchase_wrtHam(filename) bind( c, name = 'pcchase_wrtHam_')
+        !>
+        !> @param[in] filename the name of output filename
+            USE, INTRINSIC :: iso_c_binding
+            CHARACTER(kind=c_char, len=1), dimension(*), intent(in) :: filename
+        
+        END SUBROUTINE    
+    END INTERFACE
+
+    INTERFACE
+        SUBROUTINE pzchase_wrtHam(filename) bind( c, name = 'pzchase_wrtHam_')
+        !>
+        !> @param[in] filename the name of output filename
+            USE, INTRINSIC :: iso_c_binding
+            CHARACTER(kind=c_char, len=1), dimension(*), intent(in) :: filename
+        
+        END SUBROUTINE    
+    END INTERFACE
+
+    INTERFACE
+        SUBROUTINE pschase_readHam(filename) bind( c, name = 'pschase_readHam_')
+        !>
+        !> @param[in] filename the name of output filename
+            USE, INTRINSIC :: iso_c_binding
+            CHARACTER(kind=c_char, len=1), dimension(*), intent(in) :: filename
+        
+        END SUBROUTINE    
+    END INTERFACE
+
+    INTERFACE
+        SUBROUTINE pdchase_readHam(filename) bind( c, name = 'pdchase_readHam_')
+        !>
+        !> @param[in] filename the name of output filename
+            USE, INTRINSIC :: iso_c_binding
+            CHARACTER(kind=c_char, len=1), dimension(*), intent(in) :: filename
+        
+        END SUBROUTINE    
+    END INTERFACE
+
+    INTERFACE
+        SUBROUTINE pcchase_readHam(filename) bind( c, name = 'pcchase_readHam_')
+        !>
+        !> @param[in] filename the name of output filename
+            USE, INTRINSIC :: iso_c_binding
+            CHARACTER(kind=c_char, len=1), dimension(*), intent(in) :: filename
+        
+        END SUBROUTINE    
+    END INTERFACE
+
+    INTERFACE
+        SUBROUTINE pzchase_readHam(filename) bind( c, name = 'pzchase_readHam_')
+        !>
+        !> @param[in] filename the name of output filename
+            USE, INTRINSIC :: iso_c_binding
+            CHARACTER(kind=c_char, len=1), dimension(*), intent(in) :: filename
+        
+        END SUBROUTINE    
+    END INTERFACE
 
 END MODULE chase_diag
 

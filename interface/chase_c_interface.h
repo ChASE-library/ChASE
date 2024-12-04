@@ -104,6 +104,16 @@ void pschase_(int* deg, float* tol, char* mode, char* opt, char *qr);
 void pzchase_(int* deg, double* tol, char* mode, char* opt, char *qr);
 void pcchase_(int* deg, float* tol, char* mode, char* opt, char *qr);
 
+void pschase_wrtHam_(const char* filename);
+void pdchase_wrtHam_(const char* filename);
+void pcchase_wrtHam_(const char* filename);
+void pzchase_wrtHam_(const char* filename);
+
+void pschase_readHam_(const char* filename);
+void pdchase_readHam_(const char* filename);
+void pcchase_readHam_(const char* filename);
+void pzchase_readHam_(const char* filename);
+
 #ifdef __cplusplus
 }
 #endif
