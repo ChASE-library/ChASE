@@ -320,6 +320,11 @@ public:
        Hmat_->readFromBinaryFile(filename);
     }
 
+    void saveProblemToFile(std::string filename)
+    {
+        Hmat_->saveToBinaryFile(filename);
+    }
+    
 #ifdef CHASE_OUTPUT
     //! Print some intermediate infos during the solving procedure
     void Output(std::string str) override

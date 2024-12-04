@@ -240,6 +240,9 @@ public:
     static DistSolverType<MatrixType>* getChase();
     static int Finalize();
     static void Solve(int* deg, chase::Base<T>* tol, char* mode, char* opt, char *qr);
+    static void WrteHam(const std::string& filename);
+    static void readHam(const std::string& filename);
+
 };
 
 template <typename MatrixType>
@@ -575,6 +578,20 @@ int ChASE_DIST<BlockMatrixType<float>>::Finalize()
     delete sVec;
     sVec = nullptr;    
     return 0;
+}
+
+template<typename MatrixType>
+void ChASE_DIST<MatrixType>::readHam(const std::string& filename)
+{
+    auto single = ChASE_DIST<MatrixType>::getChase();
+    single->loadProblemFromFile(filename);
+}
+
+template<typename MatrixType>
+void ChASE_DIST<MatrixType>::WrteHam(const std::string& filename)
+{
+    auto single = ChASE_DIST<MatrixType>::getChase();
+    single->saveProblemToFile(filename);
 }
 
 template<typename MatrixType>
@@ -935,6 +952,55 @@ void pzchase_(int* deg, double* tol, char* mode, char* opt, char *qr)
 void pcchase_(int* deg, float* tol, char* mode, char* opt, char *qr)
 {
     ChASE_DIST<BlockMatrixType<std::complex<float>>>::Solve(deg, tol, mode, opt, qr);
+}
+
+void pschase_wrtHam_(const char* filename)
+{
+    std::string filename_str(filename);
+    ChASE_DIST<BlockMatrixType<float>>::WrteHam(filename_str);
+}
+
+void pdchase_wrtHam_(const char* filename)
+{
+    std::string filename_str(filename);
+    ChASE_DIST<BlockMatrixType<double>>::WrteHam(filename_str);
+}
+
+void pcchase_wrtHam_(const char* filename)
+{
+    std::string filename_str(filename);
+    ChASE_DIST<BlockMatrixType<std::complex<float>>>::WrteHam(filename_str);
+}
+
+void pzchase_wrtHam_(const char* filename)
+{
+    std::string filename_str(filename);
+    ChASE_DIST<BlockMatrixType<std::complex<double>>>::WrteHam(filename_str);
+}
+
+
+void pschase_readHam_(const char* filename)
+{
+    std::string filename_str(filename);
+    ChASE_DIST<BlockMatrixType<float>>::readHam(filename_str);
+}
+
+void pdchase_readHam_(const char* filename)
+{
+    std::string filename_str(filename);
+    ChASE_DIST<BlockMatrixType<double>>::readHam(filename_str);
+}
+
+void pcchase_readHam_(const char* filename)
+{
+    std::string filename_str(filename);
+    ChASE_DIST<BlockMatrixType<std::complex<float>>>::readHam(filename_str);
+}
+
+void pzchase_readHam_(const char* filename)
+{
+    std::string filename_str(filename);
+    ChASE_DIST<BlockMatrixType<std::complex<double>>>::readHam(filename_str);
 }
 
 
