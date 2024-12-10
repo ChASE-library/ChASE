@@ -83,12 +83,12 @@ public:
     { 
         if(H->g_rows() != H->g_cols())
         {
-            std::runtime_error("ChASE requires the matrix solved to be squared");
+            throw std::runtime_error("ChASE requires the matrix solved to be squared");
         }
 
         if( H->getMpiGrid() != V->getMpiGrid())
         {   
-            std::runtime_error("ChASE requires the matrix and eigenvectors mapped to same MPI grid");
+            throw std::runtime_error("ChASE requires the matrix and eigenvectors mapped to same MPI grid");
         }
 
         Hmat_ = H;
@@ -411,7 +411,7 @@ public:
 #ifdef HAS_SCALAPACK
             chase::linalg::internal::cpu_mpi::houseHoulderQR(*V1_);
 #else
-        std::runtime_error("For ChASE-MPI, distributed Householder QR requires ScaLAPACK, which is not detected\n");
+            throw std::runtime_error("For ChASE-MPI, distributed Householder QR requires ScaLAPACK, which is not detected\n");
 #endif
         }
         else
@@ -465,7 +465,7 @@ public:
 #endif
                 chase::linalg::internal::cpu_mpi::houseHoulderQR(*V1_);
 #else
-                std::runtime_error("For ChASE-MPI, distributed Householder QR requires ScaLAPACK, which is not detected\n");
+                throw std::runtime_error("For ChASE-MPI, distributed Householder QR requires ScaLAPACK, which is not detected\n");
 #endif
             }
         }
