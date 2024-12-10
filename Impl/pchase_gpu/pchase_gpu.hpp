@@ -10,6 +10,7 @@
 #include "linalg/distMatrix/distMatrix.hpp"
 #include "linalg/distMatrix/distMultiVector.hpp"
 #include "grid/mpiGrid2D.hpp"
+#include "linalg/internal/cuda/cuda_kernels.hpp"
 #include "linalg/internal/cuda_aware_mpi/cuda_mpi_kernels.hpp"
 #ifdef HAS_NCCL
 #include "linalg/internal/nccl/nccl_kernels.hpp"
@@ -125,12 +126,12 @@ public:
 
         if(H->g_rows() != H->g_cols())
         {
-            std::runtime_error("ChASE requires the matrix solved to be squared");
+            throw std::runtime_error("ChASE requires the matrix solved to be squared");
         }
 
         if( H->getMpiGrid() != V->getMpiGrid())
         {   
-            std::runtime_error("ChASE requires the matrix and eigenvectors mapped to same MPI grid");
+            throw  std::runtime_error("ChASE requires the matrix and eigenvectors mapped to same MPI grid");
         }    
 
         N_ = H->g_rows();
@@ -606,7 +607,7 @@ public:
 #ifdef HAS_SCALAPACK
             kernelNamespace::houseHoulderQR(*V1_);
 #else
-        std::runtime_error("For ChASE-MPI, distributed Householder QR requires ScaLAPACK, which is not detected\n");
+            throw std::runtime_error("For ChASE-MPI, distributed Householder QR requires ScaLAPACK, which is not detected\n");
 #endif
         }else if(nevex_ >= MINIMAL_N_INVOKE_MODIFIED_GRAM_SCHMIDT_QR_GPU_NCCL)
         {
@@ -666,7 +667,7 @@ public:
 #endif
                     kernelNamespace::houseHoulderQR(*V1_);
 #else
-                    std::runtime_error("For ChASE-MPI, distributed Householder QR requires ScaLAPACK, which is not detected\n");
+                    throw std::runtime_error("For ChASE-MPI, distributed Householder QR requires ScaLAPACK, which is not detected\n");
 #endif      
                 }                                          
                                                                
@@ -745,7 +746,7 @@ public:
 #endif
                 kernelNamespace::houseHoulderQR(*V1_);
 #else
-                std::runtime_error("For ChASE-MPI, distributed Householder QR requires ScaLAPACK, which is not detected\n");
+                throw std::runtime_error("For ChASE-MPI, distributed Householder QR requires ScaLAPACK, which is not detected\n");
 #endif
             }
 

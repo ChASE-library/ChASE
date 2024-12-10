@@ -102,29 +102,29 @@ endif()
 #message("INTERFACE_COMPILE_DEFINITIONS: ${interface_defs}")
 
 # List all dependencies (linked targets)
-#get_target_property(linked_libraries pchase_gpu INTERFACE_LINK_LIBRARIES)
-#message("linked_libraries: ${linked_libraries}")
+get_target_property(linked_libraries pchase_gpu INTERFACE_LINK_LIBRARIES)
+message("linked_libraries: ${linked_libraries}")
 # Prepare a list to store definitions
-#set(all_inherited_defs "")
+set(all_inherited_defs "")
 
-#foreach(dep ${linked_libraries})
-#    # Check if the dependency is a valid target
-#    if(TARGET ${dep})
-#        # Get INTERFACE_COMPILE_DEFINITIONS from the dependency
-#        get_target_property(dep_defs ${dep} INTERFACE_COMPILE_DEFINITIONS)
-#        
-#        # Append to the list
-#        if(dep_defs)
-#            list(APPEND all_inherited_defs ${dep_defs})
-#        endif()
-#    endif()
-#endforeach()
+foreach(dep ${linked_libraries})
+    # Check if the dependency is a valid target
+    if(TARGET ${dep})
+        # Get INTERFACE_COMPILE_DEFINITIONS from the dependency
+        get_target_property(dep_defs ${dep} INTERFACE_COMPILE_DEFINITIONS)
+        
+        # Append to the list
+        if(dep_defs)
+            list(APPEND all_inherited_defs ${dep_defs})
+        endif()
+    endif()
+endforeach()
 
 # Remove duplicates (optional)
-#list(REMOVE_DUPLICATES all_inherited_defs)
+list(REMOVE_DUPLICATES all_inherited_defs)
 
 # Print all inherited definitions
-#message("Inherited compile definitions: ${all_inherited_defs}")
+message("Inherited compile definitions: ${all_inherited_defs}")
 #get_target_property(linked_libraries blaspp INTERFACE_LINK_LIBRARIES)
 #message("Libraries linked by blaspp: ${linked_libraries}")
 #get_target_property(blas_library ${linked_libraries} IMPORTED_LOCATION)
