@@ -13,3 +13,6 @@ build*/
 ./build
 build
 .vscode
+*.out
+*.err
+*.sh
