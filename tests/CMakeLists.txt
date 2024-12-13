@@ -59,5 +59,3 @@ add_subdirectory(matrix)
 if(TARGET mpi_grid)
 add_subdirectory(grid)
 endif()
-
-add_subdirectory(elpa)
