@@ -92,7 +92,7 @@ Multiple examples are provided, which helps user get familiar with ChASE.
 **Build ChASE with Examples** requires enable `-DBUILD_WITH_EXAMPLES=ON` flag when compiling ChASE library:
 
 ```bash
-cmake .. -DBUILD_WITH_EXAMPLES=ON
+cmake .. -DCHASE_BUILD_WITH_EXAMPLES=ON
 ```
 
 **5 examples are available** in folder [examples](https://github.com/ChASE-library/ChASE/tree/master/examples):
