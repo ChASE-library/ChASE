@@ -1,0 +1,413 @@
+// This file is a part of ChASE.
+// Copyright (c) 2015-2024, Simulation and Data Laboratory Quantum Materials,
+//   Forschungszentrum Juelich GmbH, Germany. All rights reserved.
+// License is 3-clause BSD:
+// https://github.com/ChASE-library/ChASE
+
+#pragma once
+
+#include "external/cublaspp/cublaspp.hpp"
+#include "external/cusolverpp/cusolverpp.hpp"
+#include "Impl/chase_gpu/cuda_utils.hpp"
+#include "linalg/matrix/matrix.hpp"
+#include "linalg/internal/cuda/lacpy.hpp"
+#include "Impl/chase_gpu/nvtx.hpp"
+
+using namespace chase::linalg;
+
+namespace chase
+{
+namespace linalg
+{
+namespace internal
+{
+namespace cuda
+{
+    /**
+     * @brief Performs the Lanczos algorithm for eigenvalue computation on a GPU using cuBLAS and CUDA.
+     * 
+     * This function performs the Lanczos algorithm on a matrix `H` (of size `M`), 
+     * computing an orthonormal basis `V` and the tridiagonal matrix `T` for the eigenvalue 
+     * problem. It also computes Ritz values and estimates of the upper bounds for the eigenvalues.
+     * 
+     * @tparam T The data type of the matrix elements (e.g., float or double).
+     * @param cublas_handle The cuBLAS handle to perform linear algebra operations on the GPU.
+     * @param M The number of Lanczos iterations.
+     * @param numvec The number of runs of Lanczos.
+     * @param H The matrix of size `M x M` that is the input for the Lanczos algorithm.
+     * @param V The matrix of size `M x numvec` that holds the orthonormal basis vectors.
+     * @param upperb Output parameter that will hold the upper bound for the Ritz values.
+     * @param ritzv Output array to hold the Ritz values computed during the Lanczos algorithm.
+     * @param Tau Output array to store the Tau values from the eigenvalue decomposition.
+     * @param ritzV Output array for storing the Ritz vectors.
+     */    
+    template<typename T>
+    void lanczos(cublasHandle_t cublas_handle, 
+                 std::size_t M, 
+                 std::size_t numvec,
+                 chase::matrix::Matrix<T, chase::platform::GPU>& H, 
+                 chase::matrix::Matrix<T, chase::platform::GPU>& V, 
+                 chase::Base<T>* upperb, 
+                 chase::Base<T>* ritzv, 
+                 chase::Base<T>* Tau, 
+                 chase::Base<T>* ritzV)
+    {
+        SCOPED_NVTX_RANGE();
+
+        T One = T(1.0);
+        T Zero = T(0.0);
+        std::size_t N = H.rows();
+        std::vector<chase::Base<T>> r_beta(numvec);
+        
+        std::vector<chase::Base<T>> d(M * numvec);
+        std::vector<chase::Base<T>> e(M * numvec);
+
+        std::vector<chase::Base<T>> real_alpha(numvec);
+        std::vector<T> alpha(numvec, T(1.0));
+        std::vector<T> beta(numvec, T(0.0));
+
+        auto v_0 = chase::matrix::Matrix<T, chase::platform::GPU>(N, numvec);
+        auto v_1 = chase::matrix::Matrix<T, chase::platform::GPU>(N, numvec);
+        auto v_2 = chase::matrix::Matrix<T, chase::platform::GPU>(N, numvec);
+        chase::linalg::internal::cuda::t_lacpy('A', 
+                                                N, 
+                                                numvec, 
+                                                V.data(), 
+                                                V.ld(), 
+                                                v_1.data(), 
+                                                v_1.ld());
+
+        for(auto i = 0; i < numvec; i++)
+        {
+            CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTnrm2(cublas_handle, 
+                                                                    v_1.rows(), 
+                                                                    v_1.data() + i * v_1.ld(),
+                                                                    1, 
+                                                                    &real_alpha[i]));
+        }
+
+        for(auto i = 0; i < numvec; i++)
+        {
+            alpha[i] = T(1 / real_alpha[i]);
+        }
+
+        for(auto i = 0; i < numvec; i++)
+        {
+              CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTscal(cublas_handle, 
+                                                                      v_1.rows(), 
+                                                                      &alpha[i], 
+                                                                      v_1.data() + i * v_1.ld(),
+                                                                      1));  
+        }
+
+        for (std::size_t k = 0; k < M; k = k + 1)
+        {
+            for(auto i = 0; i < numvec; i++){
+                CHECK_CUDA_ERROR( cudaMemcpy(V.data() + k * V.ld(), 
+                                             v_1.data() + i * v_1.ld(), 
+                                             v_1.rows() * sizeof(T),
+                                             cudaMemcpyDeviceToDevice ));
+            }
+
+            CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(cublas_handle,
+                                                                          CUBLAS_OP_N,
+                                                                          CUBLAS_OP_N,
+                                                                          H.rows(),
+                                                                          numvec,
+                                                                          H.cols(),
+                                                                          &One,
+                                                                          H.data(),
+                                                                          H.ld(),
+                                                                          v_1.data(),
+                                                                          v_1.ld(),
+                                                                          &Zero,
+                                                                          v_2.data(),
+                                                                          v_2.ld()));
+
+
+            for(auto i = 0; i < numvec; i++)
+            {
+                CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTdot(cublas_handle, 
+                                                                             v_1.rows(), 
+                                                                             v_1.data() + i * v_1.ld(), 
+                                                                             1, 
+                                                                             v_2.data() + i * v_2.ld(), 
+                                                                             1, 
+                                                                             &alpha[i])); 
+
+            }
+
+            for(auto i = 0; i < numvec; i++)
+            {
+                alpha[i] = -alpha[i];
+            }
+
+            for(auto i = 0; i < numvec; i++)
+            {
+                CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTaxpy(cublas_handle, 
+                                                                              v_1.rows(), 
+                                                                              &alpha[i], 
+                                                                              v_1.data() + i * v_1.ld(), 
+                                                                              1, 
+                                                                              v_2.data() + i * v_2.ld(), 
+                                                                              1));
+            }
+            
+            for(auto i = 0; i < numvec; i++)
+            {
+                alpha[i] = -alpha[i];
+            }
+
+            for(auto i = 0; i < numvec; i++)
+            {
+                d[k + M * i] = std::real(alpha[i]);
+            }
+
+            if(k > 0){
+                for(auto i = 0; i < numvec; i++)
+                {
+                    beta[i] = T(-r_beta[i]);
+                }
+                for(auto i = 0; i < numvec; i++)
+                {
+                    CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTaxpy(cublas_handle, 
+                                                                                v_0.rows(), 
+                                                                                &beta[i], 
+                                                                                v_0.data() + i * v_0.ld(), 
+                                                                                1, 
+                                                                                v_2.data() + i * v_2.ld(), 
+                                                                                1));                    
+                }                                
+            }
+
+            for(auto i = 0; i < numvec; i++)
+            {
+                beta[i] = -beta[i];
+            }
+
+            for(auto i = 0; i < numvec; i++)
+            {
+                CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTnrm2(cublas_handle, 
+                                                                        v_2.rows(), 
+                                                                        v_2.data() + i * v_2.ld(),
+                                                                        1, 
+                                                                        &r_beta[i]));                
+            }
+
+            for(auto i = 0; i < numvec; i++)
+            {
+                beta[i] = T(1 / r_beta[i]);
+            }
+
+            if (k == M - 1)
+                break;
+
+            for(auto i = 0; i < numvec; i++)
+            {
+                CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTscal(cublas_handle, 
+                                                                        v_2.rows(), 
+                                                                        &beta[i], 
+                                                                        v_2.data() + i * v_2.ld(),
+                                                                        1));              
+            }
+
+            for(auto i = 0; i < numvec; i++)
+            {
+                e[k + M * i] = r_beta[i];
+            }
+
+            v_1.swap(v_0);
+            v_1.swap(v_2);    
+                                
+        }
+
+        chase::linalg::internal::cuda::t_lacpy('A', 
+                                                N, 
+                                                numvec, 
+                                                v_1.data(),
+                                                v_1.ld(),
+                                                V.data(), 
+                                                V.ld());                
+
+        int notneeded_m;
+        std::size_t vl, vu;
+        Base<T> ul, ll;
+        int tryrac = 0;
+        std::vector<int> isuppz(2 * M);
+
+        for(auto i = 0; i < numvec; i++)
+        {
+            lapackpp::t_stemr(LAPACK_COL_MAJOR, 'V', 'A', M, d.data() + i * M, e.data() + i * M, ul, ll, vl, vu,
+                                &notneeded_m, ritzv + M * i, ritzV, M, M, isuppz.data(), &tryrac);
+            for (std::size_t k = 0; k < M; ++k)
+            {
+                Tau[k + i * M] = std::abs(ritzV[k * M]) * std::abs(ritzV[k * M]);
+            }
+        }
+
+        Base<T> max;
+        *upperb = std::max(std::abs(ritzv[0]), std::abs(ritzv[M - 1])) +
+                  std::abs(r_beta[0]);
+
+        for(auto i = 1; i < numvec; i++)
+        {
+          max = std::max(std::abs(ritzv[i * M]), std::abs(ritzv[ (i + 1) * M - 1])) +
+                  std::abs(r_beta[i]);
+          *upperb = std::max(max, *upperb);        
+        }               
+    }
+
+    /**
+    * @brief Performs the Lanczos algorithm on matrix H to compute the tridiagonal matrix and eigenvalues.
+    * 
+     * This version of the Lanczos algorithm is a simplified version that computes
+     * only the upper bound of the eigenvalue spectrum and does not compute
+     * eigenvectors. It operates similarly to the full Lanczos algorithm but
+     * omits the eigenvector computation step.
+    *
+    * @tparam T The data type of the matrix elements (e.g., float, double).
+    * 
+    * @param cublas_handle cuBLAS handle used to perform matrix operations.
+    * @param M Number of Lanczos iterations.
+    * @param H The input matrix \( H \) (square matrix).
+    * @param V The input matrix \( V \) (Lanczos starting vector).
+    * @param upperb Pointer to store the upper bound of the computed eigenvalues.
+    * 
+    * @note The function modifies the input matrices `H` and `V` during the computation.
+    *       It computes the tridiagonal matrix and updates the eigenvalues in `ritzv`, then stores
+    *       the upper bound of the eigenvalues in the `upperb` pointer.
+    */
+    template<typename T>
+    void lanczos(cublasHandle_t cublas_handle,
+                 std::size_t M, 
+                 chase::matrix::Matrix<T, chase::platform::GPU>& H,
+                 chase::matrix::Matrix<T, chase::platform::GPU>& V, 
+                 chase::Base<T>* upperb)
+    {
+        SCOPED_NVTX_RANGE();
+
+        T One = T(1.0);
+        T Zero = T(0.0);
+        chase::Base<T> r_beta;
+        std::size_t N = H.rows();
+
+        std::vector<Base<T>> d(M);
+        std::vector<Base<T>> e(M);
+
+        chase::Base<T> real_alpha;
+        T alpha = T(1.0);
+        T beta = T(0.0);
+
+        auto v_0 = chase::matrix::Matrix<T, chase::platform::GPU>(N, 1);
+        auto v_1 = chase::matrix::Matrix<T, chase::platform::GPU>(N, 1);
+        auto v_2 = chase::matrix::Matrix<T, chase::platform::GPU>(N, 1);
+
+        chase::linalg::internal::cuda::t_lacpy('A', 
+                                                N, 
+                                                1, 
+                                                V.data(), 
+                                                V.ld(), 
+                                                v_1.data(), 
+                                                v_1.ld());
+
+        CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTnrm2(cublas_handle, 
+                                                                v_1.rows(), 
+                                                                v_1.data(),
+                                                                1, 
+                                                                &real_alpha));        
+        alpha = T(1 / real_alpha);
+
+        CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTscal(cublas_handle, 
+                                                                v_1.rows(), 
+                                                                &alpha, 
+                                                                v_1.data(),
+                                                                1));          
+        for (std::size_t k = 0; k < M; k = k + 1)
+        {
+            CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(cublas_handle,
+                                                                          CUBLAS_OP_N,
+                                                                          CUBLAS_OP_N,
+                                                                          H.rows(),
+                                                                          1,
+                                                                          H.cols(),
+                                                                          &One,
+                                                                          H.data(),
+                                                                          H.ld(),
+                                                                          v_1.data(),
+                                                                          v_1.ld(),
+                                                                          &Zero,
+                                                                          v_2.data(),
+                                                                          v_2.ld()));
+
+            CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTdot(cublas_handle, 
+                                                                            v_1.rows(), 
+                                                                            v_1.data(), 
+                                                                            1, 
+                                                                            v_2.data(), 
+                                                                            1, 
+                                                                            &alpha)); 
+            alpha = -alpha;
+
+            CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTaxpy(cublas_handle, 
+                                                                            v_1.rows(), 
+                                                                            &alpha, 
+                                                                            v_1.data(), 
+                                                                            1, 
+                                                                            v_2.data(), 
+                                                                            1));
+            alpha = -alpha;
+
+            d[k] = std::real(alpha);
+            
+            if(k > 0){
+                beta = T(-r_beta);
+                CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTaxpy(cublas_handle, 
+                                                                            v_0.rows(), 
+                                                                            &beta, 
+                                                                            v_0.data(), 
+                                                                            1, 
+                                                                            v_2.data(), 
+                                                                            1));                                              
+            }
+
+            beta = -beta;
+
+            CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTnrm2(cublas_handle, 
+                                                                    v_2.rows(), 
+                                                                    v_2.data(),
+                                                                    1, 
+                                                                    &r_beta));  
+            beta = T(1 / r_beta);
+            
+            if (k == M - 1)
+                break;
+
+            CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTscal(cublas_handle, 
+                                                                    v_2.rows(), 
+                                                                    &beta, 
+                                                                    v_2.data(),
+                                                                    1));  
+            e[k] = r_beta;
+
+            v_1.swap(v_0);
+            v_1.swap(v_2);                        
+        }        
+
+        int notneeded_m;
+        std::size_t vl, vu;
+        Base<T> ul, ll;
+        int tryrac = 0;
+        std::vector<int> isuppz(2 * M);
+        std::vector<Base<T>> ritzv(M);
+
+        lapackpp::t_stemr<Base<T>>(LAPACK_COL_MAJOR, 'N', 'A', M, d.data(), e.data(), ul, ll, vl, vu,
+                         &notneeded_m, ritzv.data(), NULL, M, M, isuppz.data(), &tryrac);
+
+        *upperb = std::max(std::abs(ritzv[0]), std::abs(ritzv[M - 1])) +
+                  std::abs(r_beta);
+
+    }
+}
+}
+}
+}

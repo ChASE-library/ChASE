@@ -1,26 +1,34 @@
 cmake_minimum_required(VERSION 3.8)
 
-project(chase-app VERSION 0.0.1 LANGUAGES CXX)
+project(chase-app VERSION 0.0.1 LANGUAGES C CXX Fortran)
 
+#find_package(BLAS REQUIRED)
 find_package( chase REQUIRED CONFIG)
-############## Compile the CPU version of ChASE ######################
 
-message(STATUS "Compile the CPU version of ChASE as chase-app")
-add_executable(chase-app)
-target_sources(chase-app PRIVATE chase-app.cpp)
-target_link_libraries(chase-app PUBLIC ChASE::chase_mpi)
+add_executable( "chase_app_cpu.exe" "chase-app.cpp")
+target_link_libraries( "chase_app_cpu.exe" PRIVATE ChASE::pchase_cpu )
 
-############## Compile the multi-GPU version of ChASE #################
+if(TARGET ChASE::pchase_gpu)
+    add_executable( "chase_app_gpu.exe" "chase-app.cpp")
+    target_link_libraries( "chase_app_gpu.exe" PRIVATE ChASE::pchase_gpu )
+    target_compile_definitions( "chase_app_gpu.exe" PRIVATE USE_GPU=1)
+endif()
 
-### compile gpu version of application if ChASE implemented with GPUs #
-if(EXISTS "${CMAKE_PREFIX_PATH}/lib64/cmake/ChASE/chase-cuda.cmake")
-  message(STATUS "ChASE supports GPUs")
-  message(STATUS "Compile the GPU version of ChASE as chase-app-gpu")
+if(TARGET ChASE::chase_c)
+    message("-- ChASE C interface is detected")
+    add_executable( "chase_app_c.exe" chase-c.c )
+    target_link_libraries(chase_app_c.exe ChASE::chase_c)
+endif()
 
-  add_executable(chase-app-gpu)
-  target_sources(chase-app-gpu PRIVATE chase-app.cpp)
-  target_link_libraries(chase-app-gpu PUBLIC ChASE::chase_mpi ChASE::chase_cuda)
-  target_compile_definitions(chase-app-gpu PRIVATE DRIVER_BUILD_MGPU=1)
-
+if(TARGET ChASE::chase_f)
+    message("-- ChASE fortran interface is detected")
+    set(CMAKE_Fortran_COMPILER ${MPI_Fortran_COMPILER})
+    add_executable( "chase_app_fortran.exe" chase-f.f90 )
+    target_link_libraries(chase_app_fortran.exe  ChASE::chase_f )
+    set_target_properties(
+        "chase_app_fortran.exe"
+        PROPERTIES Fortran_PREPROCESS ON
+        POSITION_INDEPENDENT_CODE TRUE
+    )
 endif()
 

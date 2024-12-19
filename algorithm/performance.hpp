@@ -1,6 +1,5 @@
-/* -*- Mode: C++; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
 // This file is a part of ChASE.
-// Copyright (c) 2015-2023, Simulation and Data Laboratory Quantum Materials,
+// Copyright (c) 2015-2024, Simulation and Data Laboratory Quantum Materials,
 //   Forschungszentrum Juelich GmbH, Germany. All rights reserved.
 // License is 3-clause BSD:
 // https://github.com/ChASE-library/ChASE
@@ -15,6 +14,10 @@
 #include <chrono>
 #include <iostream>
 #include <vector>
+
+#ifdef HAS_CUDA
+#include <cuda_runtime.h>
+#endif
 
 #include "interface.hpp"
 #include "types.hpp"
@@ -371,10 +374,10 @@ private:
     \see Chase
  */
 template <class T>
-class PerformanceDecoratorChase : public chase::Chase<T>
+class PerformanceDecoratorChase : public chase::ChaseBase<T>
 {
 public:
-    PerformanceDecoratorChase(Chase<T>* chase) : chase_(chase), perf_() {}
+    PerformanceDecoratorChase(ChaseBase<T>* chase) : chase_(chase), perf_() {}
 
     void initVecs(bool random)
     {   
@@ -487,7 +490,7 @@ public:
 #endif
 
 private:
-    Chase<T>* chase_;
+    ChaseBase<T>* chase_;
     ChasePerfData<T> perf_;
 };
 

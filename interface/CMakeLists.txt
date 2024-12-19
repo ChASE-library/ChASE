@@ -1,37 +1,50 @@
-add_library( "chase_c" "chase_c.cpp" )
+option(CHASE_INTERFACE_WITH_BLOCKCYLIC "Build the C/FORTRAN interface for Block-Cyclic data layout" ON)
 
-if(TARGET chase_cuda)
-    add_compile_definitions(HAS_GPU=1)
-endif()
-
-if(TARGET chase_cuda)
-  enable_language(CUDA)
-  target_link_libraries("chase_c" PUBLIC chase_mpi chase_cuda)
+add_library( "chase_c" "chase_c_interface.cpp" )
+if(TARGET chase_gpu)
+    add_compile_definitions(HAS_CUDA=1)
+    target_link_libraries("chase_c" PUBLIC chase_gpu)
 else()
-  target_link_libraries("chase_c" PUBLIC chase_mpi)
+    target_link_libraries("chase_c" PUBLIC chase_cpu)    
 endif()
 
-install( TARGETS chase_c
-  EXPORT chase-c
+if(TARGET pchase_gpu)
+    #add_compile_definitions(HAS_NCCL=1)
+    #add_compile_definitions(CHASE_INTERFACE_DISABLE_NCCL=1)
+    target_link_libraries("chase_c" PUBLIC pchase_gpu)
+else()
+    target_link_libraries("chase_c" PUBLIC pchase_cpu)
+endif()
+
+target_include_directories("chase_c" INTERFACE 
+                                               $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+                                               "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/interface>")
+
+if(CHASE_INTERFACE_WITH_BLOCKCYLIC)
+  target_compile_definitions(chase_c PUBLIC INTERFACE_BLOCK_CYCLIC)
+endif()
+
+install(TARGETS chase_c
+  EXPORT chase_targets
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  )
+)
 
-install(EXPORT chase-c
-  NAMESPACE ChASE::
-  FILE chase-c.cmake
-  EXPORT_LINK_INTERFACE_LIBRARIES
-  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
-  )
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  FILES_MATCHING
+    PATTERN "*.h"
+)
 
 enable_language( Fortran )
+
 set(
   MODULE_OUTPUT_DIR
   "${CMAKE_CURRENT_BINARY_DIR}/Mod"
 )
 
-add_library("chase_f" "chase_f.f90")
+add_library("chase_f" "chase_fortran_interface.f90")
+
 set_target_properties(
   "chase_f"
   PROPERTIES Fortran_PREPROCESS ON
@@ -43,13 +56,16 @@ target_include_directories(
   "chase_f"
   INTERFACE
   $<BUILD_INTERFACE:${MODULE_OUTPUT_DIR}>
-  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+  "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"  
 )
 
 target_link_libraries("chase_f" PUBLIC chase_c)
+if(CHASE_INTERFACE_WITH_BLOCKCYLIC)
+  target_compile_definitions(chase_f PUBLIC INTERFACE_BLOCK_CYCLIC)
+endif()
 
 install( TARGETS chase_f
-  EXPORT chase-f
+  EXPORT chase_targets
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
   )
@@ -59,11 +75,4 @@ install(
   "${MODULE_OUTPUT_DIR}/"
   DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
 )
-
-install(EXPORT chase-f
-  NAMESPACE ChASE::
-  FILE chase-f.cmake
-  EXPORT_LINK_INTERFACE_LIBRARIES
-  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
-  )
 

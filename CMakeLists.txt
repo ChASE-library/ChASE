@@ -2,7 +2,7 @@
 cmake_minimum_required( VERSION 3.8 )
 
 project( ChASE LANGUAGES C CXX VERSION 1.3.0 )
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 # ## algorithm ##
 
 set(CMAKE_CXX_STANDARD 17)
@@ -21,55 +21,64 @@ target_include_directories( chase_algorithm INTERFACE
 target_compile_features(chase_algorithm INTERFACE cxx_auto_type)
 
 option( CHASE_OUTPUT "ChASE will provide output at each iteration")
+# Add an option to enable/disable OpenMP support
+option(CHASE_ENABLE_OPENMP "Enable OpenMP support" ON)
+option(CHASE_ENABLE_MIXED_PRECISION "Enable mixed precision support" OFF)
+option(CHASE_ENABLE_MPI_IO "Enable MPI IO to read Hamiltonian matrix from local" OFF)
+option(CHASE_USE_NVTX "Enable NVTX for profiling" OFF)
+option(CHASE_BUILD_WITH_EXAMPLES "Build the examples" OFF)
+option(CHASE_BUILD_WITH_DOCS "Build the docs" OFF)
+
 if( CHASE_OUTPUT )
   target_compile_definitions( chase_algorithm  INTERFACE "-DCHASE_OUTPUT" )
 endif()
+# Find OpenMP package if the option is enabled
+# Find OpenMP package if the option is enabled
+if(ENABLE_OPENMP)
+    find_package(OpenMP REQUIRED)
+    if(OpenMP_CXX_FOUND)
+        message(STATUS "OpenMP found, enabling OpenMP support")
+        
+        # Add OpenMP compiler flags globally
+        add_compile_options(${OpenMP_CXX_FLAGS})
+        
+        # Link OpenMP libraries globally
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+    else()
+        message(WARNING "OpenMP not found, building without OpenMP support")
+    endif()
+endif()
 
-option(ENABLE_NSIGHT "Enable profiling with Nvidia Nsight Systems" OFF)
-
-install( TARGETS chase_algorithm
-  EXPORT chase-headers
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  )
-
-
-install(DIRECTORY algorithm DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-  FILES_MATCHING
-    PATTERN "*.hpp"
-    PATTERN "*.inc"
-)
-
-install(EXPORT chase-headers
-  NAMESPACE ChASE::
-  FILE chase-header.cmake
-  EXPORT_LINK_INTERFACE_LIBRARIES
-  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
-  )
-
-## ChASE-MPI ##
-add_subdirectory( "ChASE-MPI/")
-
-## Tests
-add_executable( "chase_driver" tests/noinput.cpp )
-if(TARGET chase_cuda )
-  enable_language(CUDA)
-  target_link_libraries(chase_driver chase_mpi chase_cuda)
-  target_compile_definitions(chase_driver PRIVATE USE_GPU=1)
+# Add the flag to the preprocessor if the option is enabled
+if (CHASE_ENABLE_MIXED_PRECISION)
+    add_definitions(-DENABLE_MIXED_PRECISION)
+    message(STATUS "Mixed precision support enabled.")
 else()
-  target_link_libraries(chase_driver chase_mpi)
+    message(STATUS "Mixed precision support disabled.")
 endif()
 
-add_subdirectory("interface")
-
-# Examples
-option(BUILD_WITH_EXAMPLES "Build the examples" OFF)
-if(BUILD_WITH_EXAMPLES)
-        message(STATUS "Building the examples of ChASE")
-        add_subdirectory("./examples")
+if(CHASE_USE_NVTX)
+  target_compile_definitions( chase_algorithm  INTERFACE "-DUSE_NVTX" )
 endif()
 
+add_subdirectory(grid)
+add_subdirectory(external)
+add_subdirectory(linalg)
+add_subdirectory(Impl)
+add_subdirectory(interface)
+
+if(CHASE_BUILD_WITH_EXAMPLES)
+    add_subdirectory(examples)
+endif()
+
+add_executable( "chase_driver" tests/noinput.cpp )
+target_link_libraries(chase_driver chase_cpu)
+
+if(TARGET chase_gpu)
+add_executable( "chase_driver_gpu" tests/noinput.cpp )
+target_link_libraries(chase_driver_gpu chase_gpu)
+endif()
 
 option(ENABLE_TESTS "Enable unit tests." OFF)
 if(ENABLE_TESTS)
@@ -81,35 +90,100 @@ if(ENABLE_TESTS)
     set(MPI_RUN_ARGS  CACHE STRING "")
     set(MPI_TEST ON CACHE BOOL "Run test with mpi")
     add_subdirectory(tests)
-endif()
+endif() 
 
 # Documentation
-option(BUILD_WITH_DOCS "Build the examples" OFF)
-if(BUILD_WITH_DOCS)
+if(CHASE_BUILD_WITH_DOCS)
     message(STATUS "Building Documentation of ChASE")
-    add_subdirectory("./docs")
+    add_subdirectory("docs")
 endif()
 
-# Install ChASE as a CMake package
+#get_target_property(interface_defs mpi_grid_nccl INTERFACE_COMPILE_DEFINITIONS)
+#message("INTERFACE_COMPILE_DEFINITIONS: ${interface_defs}")
+
+# List all dependencies (linked targets)
+#get_target_property(linked_libraries pchase_gpu INTERFACE_LINK_LIBRARIES)
+#message("linked_libraries: ${linked_libraries}")
+# Prepare a list to store definitions
+#set(all_inherited_defs "")
+
+#foreach(dep ${linked_libraries})
+    # Check if the dependency is a valid target
+#    if(TARGET ${dep})
+        # Get INTERFACE_COMPILE_DEFINITIONS from the dependency
+#        get_target_property(dep_defs ${dep} INTERFACE_COMPILE_DEFINITIONS)
+        
+        # Append to the list
+#        if(dep_defs)
+#            list(APPEND all_inherited_defs ${dep_defs})
+#        endif()
+#    endif()
+#endforeach()
+
+# Remove duplicates (optional)
+#list(REMOVE_DUPLICATES all_inherited_defs)
+
+# Print all inherited definitions
+#message("Inherited compile definitions: ${all_inherited_defs}")
+#get_target_property(linked_libraries blaspp INTERFACE_LINK_LIBRARIES)
+#message("Libraries linked by blaspp: ${linked_libraries}")
+#get_target_property(blas_library ${linked_libraries} IMPORTED_LOCATION)
+#message("BLAS library path: ${blas_library}")
+
+
+##installation
+install( TARGETS chase_algorithm
+  EXPORT chase_targets
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  )
+
+install(DIRECTORY algorithm DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  FILES_MATCHING
+    PATTERN "*.hpp"
+    PATTERN "*.inc"
+)
+
+install(EXPORT chase_targets
+        NAMESPACE ChASE::
+        EXPORT_LINK_INTERFACE_LIBRARIES
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
+        FILE chaseTargets.cmake)
+
 include(CMakePackageConfigHelpers)
 
-if(TARGET chase_cuda )
-configure_package_config_file(
-    "cmake/Config_CUDA.cmake.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/chase-config.cmake"
-    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
-)
+set(IS_ENABLE_MPI OFF)
+set(IS_ENABLE_SCALAPACK OFF)
+set(IS_ENABLE_NCCL OFF)
 
-else()
-configure_package_config_file(
-    "cmake/Config.cmake.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/chase-config.cmake"
-    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
-)
-
+if(TARGET pchase_cpu)
+    set(IS_ENABLE_MPI ON)
 endif()
 
-install( FILES
-  "${CMAKE_CURRENT_BINARY_DIR}/chase-config.cmake"
-  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
-  )
+if(TARGET scalapackpp)
+    set(IS_ENABLE_SCALAPACK ON)
+endif()
+
+if(TARGET linalg_internal_nccl)
+    set(IS_ENABLE_NCCL ON)
+endif()
+
+# Convert booleans to "ON"/"OFF" strings for the config file
+set(IS_ENABLE_MPI_STRING ${IS_ENABLE_MPI})
+set(IS_ENABLE_SCALAPACK_STRING ${IS_ENABLE_SCALAPACK})
+set(IS_ENABLE_NCCL_STRING ${IS_ENABLE_NCCL})
+
+configure_package_config_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Config.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/chase-config.cmake"
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ChASE
+)
+
+install(
+    FILES "${CMAKE_CURRENT_BINARY_DIR}/chase-config.cmake"
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ChASE
+)
+
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/cmake/modules
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ChASE)

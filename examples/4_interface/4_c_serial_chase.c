@@ -1,16 +1,16 @@
 // This file is a part of ChASE.
-// Copyright (c) 2015-2023, Simulation and Data Laboratory Quantum Materials,
+// Copyright (c) 2015-2024, Simulation and Data Laboratory Quantum Materials,
 //   Forschungszentrum Juelich GmbH, Germany. All rights reserved.
 // License is 3-clause BSD:
 // https://github.com/ChASE-library/ChASE
 
 #include <complex.h>
 #include <math.h>
-#include <mpi.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "interface/chase_c_interface.h"
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
@@ -24,18 +24,8 @@ double random_normal()
     return sqrt(-2 * log(drand())) * cos(2 * M_PI * drand());
 }
 
-int zchase_init_(int* N, int* nev, int* nex, double _Complex* H, int *ldh,
-                 double _Complex* V, double* ritzv, int* init);
-void zchase_finalize_();
-void zchase_(int* deg, double* tol, char* mode, char* opt, char *qr);
-
 int main(int argc, char** argv)
 {
-    MPI_Init(&argc, &argv);
-    int rank = 0, size;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
-
     int N = 1001;
     int nev = 100;
     int nex = 40;
@@ -49,8 +39,7 @@ int main(int argc, char** argv)
     char opt = 'S';
     char qr = 'C';
 
-    if (rank == 0)
-        printf("ChASE C example driver\n");
+    printf("ChASE C example driver\n");
 
     double _Complex* V =
         (double _Complex*)malloc(sizeof(double _Complex) * N * (nev + nex));
@@ -80,15 +69,12 @@ int main(int argc, char** argv)
 
     for (int idx = 0; idx < idx_max; ++idx)
     {
-        if (rank == 0)
+        printf("Starting Problem # %d\n", idx);
+        if (idx != 0)
         {
-            printf("Starting Problem # %d\n", idx);
-            if (idx != 0)
-            {
-                printf("Using approximate solution\n");
-            }
+            printf("Using approximate solution\n");
         }
-
+        
         zchase_(&deg, &tol, &mode, &opt, &qr);
 
         // Perturb Full Clement matrix
@@ -108,5 +94,6 @@ int main(int argc, char** argv)
     }
 
     zchase_finalize_(&init);
-    MPI_Finalize();
+
+    return 0;
 }

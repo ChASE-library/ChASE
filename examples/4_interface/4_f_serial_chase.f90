@@ -1,14 +1,13 @@
 ! This file is a part of ChASE.
-! Copyright (c) 2015-2023, Simulation and Data Laboratory Quantum Materials,
+! Copyright (c) 2015-2024, Simulation and Data Laboratory Quantum Materials,
 !   Forschungszentrum Juelich GmbH, Germany. All rights reserved.
 ! License is 3-clause BSD:
 ! https://github.com/ChASE-library/ChASE
 
 PROGRAM main
-use mpi
 use chase_diag
 
-integer rank, size, ierr, init, i, j, k
+integer ierr, init, i, j, k
 integer N, nev, nex, idx_max
 real(8) :: perturb, tmp, PI
 real(8) :: tol
@@ -17,11 +16,6 @@ integer :: deg
 character        :: mode, opt, qr
 complex(8),  allocatable :: h(:,:), v(:,:)
 real(8), allocatable :: lambda(:)
-
-call mpi_init(ierr)
-call mpi_comm_size(MPI_COMM_WORLD, size, ierr)
-call mpi_comm_rank(MPI_COMM_WORLD, rank, ierr)
-
 
 N = 1001
 nev = 100
@@ -35,9 +29,7 @@ mode = 'R'
 opt = 'S'
 qr = 'C'
 
-if(rank == 0) then
-	print *, "ChASE Fortran example driver"
-end if
+print *, "ChASE Fortran example driver"
 
 allocate(h(N, N)) 
 allocate(v(N, nev+nex))
@@ -47,26 +39,24 @@ call zchase_init(N, nev, nex, h, N, v, lambda, init)
 
 ! Generate Clement matrix
 do i = 1, N
-	h(i, i) = complex(0,0)
+    h(i, i) = complex(0,0)
     do j = 1, N
-    	if (i .ne. N - 1) then
-  			tmp = real(i * (N + 1 - i))
-    		h(i+1, i) = complex(sqrt(tmp), 0)
-    	end if
+        if (i .lt. N) then  ! Prevent accessing out-of-bounds
+            tmp = real(i * (N + 1 - i))
+            h(i+1, i) = complex(sqrt(tmp), 0)
+        end if
 
-    	if (i .ne. N - 1) then
-  			tmp = real(i * (N + 1 - i))
-    		h(i, i + 1) = complex(sqrt(tmp), 0)
-    	end if
+        if (i .lt. N) then  ! Prevent accessing out-of-bounds
+            tmp = real(i * (N + 1 - i))
+            h(i, i + 1) = complex(sqrt(tmp), 0)
+        end if
     end do
 end do
 
 do idx = 1, idx_max
-	if(rank == 0) then 
-		print *, "Starting Problem #", idx
-		if(idx .ne. 0) then
-		    print *, "Using approximate solution"
-		end if
+	print *, "Starting Problem #", idx
+	if(idx .ne. 0) then
+		print *, "Using approximate solution"
 	end if
 
 	call zchase(deg, tol, mode, opt, qr)
@@ -84,10 +74,7 @@ do idx = 1, idx_max
 	mode = 'A'
 end do
 
-
 call zchase_finalize(init)
-call mpi_finalize(ierr)
-
 
 contains
 
@@ -105,3 +92,4 @@ subroutine random_normal(randn)
 end subroutine
 
 END PROGRAM
+

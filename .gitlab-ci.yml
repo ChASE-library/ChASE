@@ -13,14 +13,11 @@ build_cpu:
     name: opensuse:jsc-gcc12
 
   script:
-    - cmake --version
-    - mkdir -p build_cpu
-    - cd build_cpu
-    - export CFLAGS='-Wextra -Wall -pedantic'
-    - export CXXFLAGS='-Wextra -Wall -pedantic'
-    - export FFLAGS='-Wextra -Wall -pedantic'
-    - env CFLAGS="$CFLAGS --coverage" CXXFLAGS="$CXXFLAGS --coverage" FFLAGS="$FFLAGS --coverage" FC=gfortran CC=gcc CXX=g++ cmake -DENABLE_TESTS=ON -DMPI_RUN_ARGS="--allow-run-as-root" .. -DCMAKE_EXE_LINKER_FLAGS="--coverage"
-    - make VERBOSE=1
+  - cmake --version
+  - mkdir -p build
+  - cd build
+  - cmake -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_Fortran_COMPILER=mpifort -DCHASE_ENABLE_MIXED_PRECISION=ON -DENABLE_TESTS=ON -DMPI_RUN_ARGS="--allow-run-as-root" ..
+  - make VERBOSE=1
   artifacts:
     paths:
     - build_cpu/Makefile

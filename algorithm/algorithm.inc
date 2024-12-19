@@ -1,6 +1,5 @@
-/* -*- Mode: C++; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
 // This file is a part of ChASE.
-// Copyright (c) 2015-2023, Simulation and Data Laboratory Quantum Materials,
+// Copyright (c) 2015-2024, Simulation and Data Laboratory Quantum Materials,
 //   Forschungszentrum Juelich GmbH, Germany. All rights reserved.
 // License is 3-clause BSD:
 // https://github.com/ChASE-library/ChASE
@@ -17,13 +16,15 @@ void swap_kj(std::size_t k, std::size_t j, T* array)
 }
 
 template <class T>
-std::size_t Algorithm<T>::calc_degrees(Chase<T>* single, std::size_t N,
+std::size_t Algorithm<T>::calc_degrees(ChaseBase<T>* single, std::size_t N,
                                        std::size_t unconverged, std::size_t nex,
                                        Base<T> upperb, Base<T> lowerb,
                                        Base<T> tol, Base<T>* ritzv,
                                        Base<T>* resid, Base<T>* residLast,
                                        std::size_t* degrees, std::size_t locked)
 {
+    SCOPED_NVTX_RANGE();
+
     ChaseConfig<T> conf = single->GetConfig();
 
     Base<T> c = (upperb + lowerb) / 2; // Center of the interval.
@@ -68,12 +69,14 @@ std::size_t Algorithm<T>::calc_degrees(Chase<T>* single, std::size_t N,
 }
 
 template <class T>
-std::size_t Algorithm<T>::locking(Chase<T>* single, std::size_t N,
+std::size_t Algorithm<T>::locking(ChaseBase<T>* single, std::size_t N,
                                   std::size_t unconverged, Base<T> tol,
                                   Base<T>* Lritzv, Base<T>* resid,
                                   Base<T>* residLast, std::size_t* degrees,
                                   std::size_t locked)
 {
+    SCOPED_NVTX_RANGE();
+
     // we build the permutation
     std::vector<int> index(unconverged, 0);
     for (int i = 0; i != index.size(); i++)
@@ -118,11 +121,13 @@ std::size_t Algorithm<T>::locking(Chase<T>* single, std::size_t N,
 }
 
 template <class T>
-std::size_t Algorithm<T>::filter(Chase<T>* single, std::size_t n,
+std::size_t Algorithm<T>::filter(ChaseBase<T>* single, std::size_t n,
                                  std::size_t unprocessed, std::size_t deg,
                                  std::size_t* degrees, Base<T> lambda_1,
                                  Base<T> lower, Base<T> upper)
 {
+    SCOPED_NVTX_RANGE();
+
     Base<T> c = (upper + lower) / 2;
     Base<T> e = (upper - lower) / 2;
     Base<T> sigma_1 = e / (lambda_1 - c);
@@ -184,10 +189,12 @@ std::size_t Algorithm<T>::filter(Chase<T>* single, std::size_t n,
 }
 
 template <class T>
-std::size_t Algorithm<T>::lanczos(Chase<T>* single, int N, int numvec, int m,
+std::size_t Algorithm<T>::lanczos(ChaseBase<T>* single, int N, int numvec, int m,
                                   int nevex, Base<T>* upperb, bool mode,
                                   Base<T>* ritzv_)
 {
+    SCOPED_NVTX_RANGE();
+
     assert(m >= 1);
 
     if (!mode)
@@ -322,7 +329,7 @@ std::size_t Algorithm<T>::lanczos(Chase<T>* single, int N, int numvec, int m,
 }
 
 template <class T>
-void Algorithm<T>::solve(Chase<T>* single)
+void Algorithm<T>::solve(ChaseBase<T>* single)
 {
     ChaseConfig<T>& config = single->GetConfig();
 
@@ -406,16 +413,11 @@ void Algorithm<T>::solve(Chase<T>* single)
     }
     // --------------------------------- LANCZOS
     // ---------------------------------
-#ifdef USE_NSIGHT
-    nvtxRangePushA("Lanczos");
-#endif
     std::size_t DoSVectors =
         lanczos(single, N, num_lanczos,
                 std::min(nevex, std::min(N / 2, config.GetLanczosIter())),
                 nevex, &upperb, random, random ? ritzv : NULL);
-#ifdef USE_NSIGHT
-    nvtxRangePop();
-#endif
+
     std::size_t locked = 0;    // Number of converged eigenpairs.
     std::size_t iteration = 0; // Current iteration.
     lowerb = *std::max_element(ritzv, ritzv + unconverged);
@@ -482,15 +484,9 @@ void Algorithm<T>::solve(Chase<T>* single)
 
 #endif
         //------------------------------- FILTER -------------------------------
-#ifdef USE_NSIGHT
-        nvtxRangePushA("Filter");
-#endif
         std::size_t Av = filter(single, N, unconverged, deg, degrees, lambda,
                                 lowerb, upperb);
-#ifdef USE_NSIGHT
-        nvtxRangePop();
-        nvtxRangePushA("QR");
-#endif
+
         //----------------------------------- QR
         //-----------------------------------
         Base<T> cc = (upperb + lowerb) / 2; // Center of the interval.
@@ -511,27 +507,18 @@ void Algorithm<T>::solve(Chase<T>* single)
                       degrees[0]));
 
         single->QR(locked, cond);
-#ifdef USE_NSIGHT
-        nvtxRangePop();
-        nvtxRangePushA("RR");
-#endif
+
         // ----------------------------- RAYLEIGH  RITZ
         // ----------------------------
         single->RR(ritzv, unconverged);
-#ifdef USE_NSIGHT
-        nvtxRangePop();
-#endif
+
         // --------------------------- RESIDUAL & LOCKING
         // --------------------------
-#ifdef USE_NSIGHT
-        nvtxRangePushA("Resid");
-#endif
+
         for (auto i = 0; i < unconverged; ++i)
             residLast[i] = std::min(residLast[i], resid[i]);
         single->Resd(ritzv, resid, locked);
-#ifdef USE_NSIGHT
-        nvtxRangePop();
-#endif
+
         std::size_t new_converged =
             locking(single, N, unconverged - nex, tol, ritzv, resid, residLast,
                     degrees, locked);
@@ -552,9 +539,6 @@ void Algorithm<T>::solve(Chase<T>* single)
         iteration++;
     } // while ( converged < nev && iteration < omp_maxiter )
 
-#ifdef USE_NSIGHT
-    nvtxRangePushA("Sort");
-#endif
     //---------------------SORT-EIGENPAIRS-ACCORDING-TO-EIGENVALUES---------------
     for (auto i = 0; i < nev - 1; ++i)
         for (auto j = i + 1; j < nev; ++j)
@@ -565,9 +549,7 @@ void Algorithm<T>::solve(Chase<T>* single)
                 single->Swap(i, j);
             }
         }
-#ifdef USE_NSIGHT
-    nvtxRangePop();
-#endif
+
     single->End();
 }
 } // namespace chase
