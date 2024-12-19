@@ -44,7 +44,7 @@ test_cpu:
 build_gpu:
   stage: build   
   tags: 
-    - jureca
+    - juwels_booster
     - jacamar
     - login
     - shell
@@ -73,7 +73,7 @@ test_gpu:
   dependencies:
     - build_gpu  
   tags: 
-    - jureca
+    - juwels_booster
     - jacamar
     - compute
     - slurm
