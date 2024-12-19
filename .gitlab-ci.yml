@@ -14,9 +14,9 @@ build_cpu:
 
   script:
   - cmake --version
-  - mkdir -p build
-  - cd build
-  - cmake -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_Fortran_COMPILER=mpifort -DCHASE_ENABLE_MIXED_PRECISION=ON -DENABLE_TESTS=ON -DMPI_RUN_ARGS="--allow-run-as-root" ..
+  - mkdir -p build_cpu
+  - cd build_cpu
+  - env CFLAGS="$CFLAGS --coverage" CXXFLAGS="$CXXFLAGS --coverage" FFLAGS="$FFLAGS --coverage" cmake -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_Fortran_COMPILER=mpifort -DCHASE_ENABLE_MIXED_PRECISION=ON -DENABLE_TESTS=ON -DMPI_RUN_ARGS="--allow-run-as-root" .. -DCMAKE_EXE_LINKER_FLAGS="--coverage"
   - make VERBOSE=1
   artifacts:
     paths:
@@ -57,10 +57,10 @@ build_gpu:
     - cmake --version
     - mkdir -p build_gpu
     - cd build_gpu
-    - export CFLAGS='-Wextra -Wall -pedantic'
-    - export CXXFLAGS='-Wextra -Wall -pedantic'
-    - export FFLAGS='-Wextra -Wall -pedantic'
-    - env CFLAGS="$CFLAGS --coverage" CXXFLAGS="$CXXFLAGS --coverage" FFLAGS="$FFLAGS --coverage" cmake -DENABLE_TESTS=ON -DMPI_RUN="srun" .. -DCMAKE_EXE_LINKER_FLAGS="--coverage"
+    #- export CFLAGS='-Wextra -Wall -pedantic'
+    #- export CXXFLAGS='-Wextra -Wall -pedantic'
+    #- export FFLAGS='-Wextra -Wall -pedantic'
+    - env CFLAGS="$CFLAGS --coverage" CXXFLAGS="$CXXFLAGS --coverage" FFLAGS="$FFLAGS --coverage" cmake -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_Fortran_COMPILER=mpifort -DCHASE_ENABLE_MIXED_PRECISION=ON -DENABLE_TESTS=ON -DMPI_RUN="srun" .. -DCMAKE_EXE_LINKER_FLAGS="--coverage"
     - make VERBOSE=1
   artifacts:
     paths:
