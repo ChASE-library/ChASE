@@ -11,7 +11,6 @@
 #include <random>
 #include <type_traits>
 #include <vector>
-
 #include "algorithm/performance.hpp"
 #ifdef HAS_CUDA
 #include "Impl/pchase_gpu/pchase_gpu.hpp"
@@ -28,7 +27,6 @@ using BackendType = chase::grid::backend::NCCL;
 #else
 using ARCH = chase::platform::CPU;
 #endif
-
 
 int main(int argc, char** argv)
 {
@@ -128,6 +126,7 @@ int main(int argc, char** argv)
 #else
     auto single = chase::Impl::pChASECPU(nev, nex, &Hmat, &Vec, Lambda.data());
 #endif
+
     //Setup configure for ChASE
     auto& config = single.GetConfig();
     //Tolerance for Eigenpair convergence
