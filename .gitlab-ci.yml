@@ -1,5 +1,6 @@
 variables:
   SCHEDULER_PARAMETERS: '-Aslai -N1'
+  CUSTOM_CI_BUILDS_DIR: /p/scratch/cslai
 
 stages:
   - build
@@ -11,7 +12,18 @@ build_cpu:
   tags: [ docker-proton ]
   image:
     name: opensuse:jsc-gcc12
-
+  #rules:
+  #  - changes:
+  #    - '**/*.cpp' 
+  #    - '**/*.h'
+  #    - '**/*.hpp'
+  #    - '**/*.c'
+  #    - '**/*.cu'
+  #    - '**/*.cuh'
+  #    - '**/*.f90'
+  #    - '**/*.inc'    
+  #    - '**/*.cmake'
+  #    - '**/CMakeLists.txt' 
   script:
   - cmake --version
   - mkdir -p build_cpu
@@ -32,6 +44,17 @@ test_cpu:
   tags: [ docker-proton ]
   image:
     name: opensuse:jsc-gcc12
+  #rules:
+  #  - changes:
+  #    - '**/*.cpp' 
+  #    - '**/*.h'
+  #    - '**/*.hpp'
+  #    - '**/*.c'
+  #    - '**/*.f90'
+  #    - '**/*.inc'    
+  #    - '**/*.cmake'
+  #    - '**/CMakeLists.txt' 
+
   script:
     - cd build_cpu
     - CTEST_OUTPUT_ON_FAILURE=1 make test
@@ -48,6 +71,19 @@ build_gpu:
     - jacamar
     - login
     - shell
+  #rules:
+  #  - changes:
+  #    - '**/*.cpp' 
+  #    - '**/*.h'
+  #    - '**/*.hpp'
+  #    - '**/*.c'
+  #    - '**/*.cu'
+  #    - '**/*.cuh'
+  #    - '**/*.f90'
+  #    - '**/*.inc'    
+  #    - '**/*.cmake'
+  #    - '**/CMakeLists.txt'  
+
   id_tokens:
     SITE_ID_TOKEN:
       aud: https://gitlab.jsc.fz-juelich.de    
@@ -67,6 +103,7 @@ build_gpu:
     - build_gpu/Makefile
     - build_gpu/CTestTestfile.cmake
     - build_gpu/tests
+    expire_in: 1 week
 
 test_gpu:
   stage: test
@@ -77,6 +114,19 @@ test_gpu:
     - jacamar
     - compute
     - slurm
+  #rules:
+  #  - changes:
+  #    - '**/*.cpp' 
+  #    - '**/*.h'
+  #    - '**/*.hpp'
+  #    - '**/*.c'
+  #    - '**/*.cu'
+  #    - '**/*.cuh'
+  #    - '**/*.f90'
+  #    - '**/*.inc'    
+  #    - '**/*.cmake'
+  #    - '**/CMakeLists.txt'  
+       
   id_tokens:
     SITE_ID_TOKEN:
       aud: https://gitlab.jsc.fz-juelich.de    
@@ -90,6 +140,7 @@ test_gpu:
   artifacts:
     paths:
       - build_gpu/*
+    expire_in: 1 week
 
 coverage:
   stage: coverage   
@@ -100,6 +151,19 @@ coverage:
   tags: [ docker-proton ]
   image:
     name: opensuse:jsc-gcc12
+  #rules:
+  #  - changes:
+  #    - '**/*.cpp' 
+  #    - '**/*.h'
+  #    - '**/*.hpp'
+  #    - '**/*.c'
+  #    - '**/*.cu'
+  #    - '**/*.cuh'
+  #    - '**/*.f90'
+  #    - '**/*.inc'    
+  #    - '**/*.cmake'
+  #    - '**/CMakeLists.txt'  
+         
   script:
   # Merge the two coverage files
     - lcov --capture --directory ./build_cpu --output-file coverage_cpu.info

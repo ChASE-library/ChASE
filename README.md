@@ -16,25 +16,22 @@ ChASE is written in C++ using the modern software engineering concepts that favo
 - **Degree optimization:** For a fixed accuracy level, ChASE can optimize the degree of the Chebyshev polynomial filter so as to minimize the number of FLOPs necessary to reach convergence.
 - **Precision:** ChASE is also templated to work in *Single Precision* (SP) or *Double Precision* (DP).
 
-## Versions of the library
+## Builds of ChASE
 
-T
-Currently, the library comes in one main versions: 
-
-1. **ChASE-MPI**
-
-   ChASE-MPI is the default version of the library and can be installed with the minimum amount of dependencies (BLAS, LAPACK, and MPI).  It supports different configurations depending on the available hardware resources.
-
-   - **Shared memory build:** This is the simplest configuration and should be exclusively selected when ChASE is used on only one computing node or on a single CPU. 
+ChASE supports different builds for different systems with different architectures:
+   - **Shared memory build:** This is the simplest configuration and should be exclusively selected when ChASE is used on only one computing node or on a single GPU. 
    - **MPI+Threads build:** On multi-core homogeneous CPU clusters, ChASE is best used in its pure MPI build. In this configuration, ChASE is typically used with one MPI rank per NUMA domain and as many threads as number of available cores per NUMA domain.
-   - **GPU build:** ChASE-MPI can be configured to take advantage of GPUs on heterogeneous computing clusters. Currently we support the use of one GPU per MPI rank. Multiple-GPU per computing node can be used when MPI rank
-number per node equals to the GPU number per node.   
+   - **Multi-GPU build:** ChASE can be configured to take advantage of GPUs on heterogeneous computing clusters. Currently we support the use of one GPU per MPI rank. Multiple-GPU per computing node can be used when MPI rank number per node equals to the GPU number per node. 
+      - **NCCL Backend:** by default, ChASE uses **[NCCL](https://developer.nvidia.com/nccl)** as backend for the collective communications across different GPUs.
+      - **CUDA-Aware MPI Backend**: alternatively, CUDA-Aware MPI can be used for the communications.
+
+## Supported Data types 
    
-   ChASE-MPI support two types of data distribution of matrix `A` across 2D MPI grid:
-
-   - **Block Distribution**:  each MPI rank of 2D grid is assigned a block of dense matrix **A**.
-
-   - **Block-Cyclic Distribution**: an distribution scheme for implementation of dense matrix computations on distributed-memory machines, to improve the load balance of matrix computation if the amount of work differs for different entries of a matrix. For more details, please refer to [Netlib](https://www.netlib.org/scalapack/slug/node75.html) .
+   ChASE  supports different data types:
+   - **Shared memory build** requires dense matrices to be column major.
+   - **Distributed-memory build** support two types of data distribution of matrix `A` across 2D MPI/GPU grid:
+      - **Block Distribution**:  each MPI rank of 2D grid is assigned a block of dense matrix **A**.
+      - **Block-Cyclic Distribution**: an distribution scheme for implementation of dense matrix computations on distributed-memory machines, to improve the load balance of matrix computation if the amount of work differs for different entries of a matrix. For more details, please refer to [Netlib](https://www.netlib.org/scalapack/slug/node75.html) .
 
 ## Quick Start
 
@@ -73,7 +70,9 @@ cmake .. -DCMAKE_INSTALL_PREFIX=${ChASEROOT}
 make install
 ```
 
-More details about the installation on both local machine and clusters, please refer to [User Documentation](https://chase-library.github.io/ChASE/quick-start.html).
+More details about the installation on both local machine and clusters, please refer to [User Documentation](https://chase-library.github.io/ChASE/quick-start.html) (⚠️**To be updated**).
+
+<!-- a normal html comment 
 
 ## Documentation
 
@@ -84,12 +83,12 @@ Compiling the documentation in local requires  enable `-DBUILD_WITH_DOCS=ON` fla
 ```bash
 cmake .. -DBUILD_WITH_DOCS=ON
 ```
-
+-->
 ## Examples
 
 Multiple examples are provided, which helps user get familiar with ChASE. 
 
-**Build ChASE with Examples** requires enable `-DBUILD_WITH_EXAMPLES=ON` flag when compiling ChASE library:
+**Build ChASE with Examples** requires enable `-DCHASE_BUILD_WITH_EXAMPLES=ON` flag when compiling ChASE library:
 
 ```bash
 cmake .. -DCHASE_BUILD_WITH_EXAMPLES=ON
@@ -99,7 +98,7 @@ cmake .. -DCHASE_BUILD_WITH_EXAMPLES=ON
 
 0. The example [0_hello_world](https://github.com/ChASE-library/ChASE/tree/master/examples/0_hello_world) constructs a simple Clement matrix and find a given number of its eigenpairs.
 
-1. The example [1_sequence_eigenproblems](https://github.com/ChASE-library/ChASE/tree/master/examples/1_sequence_eigenproblems) illustrates how ChASE can be used to solve a sequence of eigenproblems.
+1. The example [1_sequence_eigenproblems](https://github.com/ChASE-library/ChASE/tree/master/examples/1_sequence_eigenproblems) illustrates how ChASE can be used to solve a sequence of eigenproblems. (⚠️**To be included**).
 2. The example [2_input_output](https://github.com/ChASE-library/ChASE/tree/master/examples/2_input_output) provides the configuration of parameters of ChASE from command line (supported by Boost); the parallel I/O which loads the local matrices into the computing nodes in parallel.
 3. The example [3_installation](https://github.com/ChASE-library/ChASE/tree/master/examples/3_installation) shows the way to link ChASE to other applications.
 4. The example [4_interface](https://github.com/ChASE-library/ChASE/tree/master/examples/4_interface) shows examples to use the C and Fortran interfaces of ChASE.
@@ -113,9 +112,9 @@ cmake .. -DCHASE_BUILD_WITH_EXAMPLES=ON
 
 ### Current contributors
 
+- Clément Richefort - Integration of ChASE into [YAMBO](https://www.yambo-code.eu/) code.
 - Davor Davidović – Advanced parallel GPU implementation and optimization
 - Nenad Mijić – ARM-based implementation and optimization, CholeskyQR, unitests, parallel IO
-
 
 ### Past contributors
 
@@ -132,17 +131,25 @@ cmake .. -DCHASE_BUILD_WITH_EXAMPLES=ON
 
 ## Contribution
 
-This repository mirrors the principal Gitlab repository. If you want to contribute as developer to this project please contact e.di.napoli@fz-juelich.de.
+This Github repository mirrors the principal Gitlab repository hosted at the Juelich Supercomputing Centre. There are two main ways you can contribute: 
+
+1. you can fork the open source ChASE repository on Github (https://github.com/ChASE-library/ChASE). Modify the source code (and relative inlined documentation, if necessary) and then submit a pull request. If you have not contributed to the ChASE library before, we will ask you to agree to a Collaboration Agreement (CLA) before the pull request can be approved. Currentlly there is no automatic mechanism to sign such an agreement and we need you to download the file CLA.pdf (that is part of the repository), print it, sign it, scan it and send it back to chase@fz-juelich.de. Upon reception of your signed CLA, your pull request will be reviewed and then eventually approved.
+2. Alternatively, if you want to contribute as a developer stably integrated into this project please contact us at chase@fz-juelich.de with a motivated request of collaboration. We will consider your request and get in touch with you to evaluate if and how to give you access directly to the Gitlab repository where the major developments of this software is carried out.
+
+An automatic process to approve a pull request and sign a CLA is under development and will soon substitute option 1. In the meantime, we ask you for your patience and understanding in having to follow such a time consuming procedure.
 
 ## How to Cite the Code
 
-The main reference of ChASE is [1] while [2] provides some early results on scalability and usage on sequences of eigenproblems generated by Materials Science applications.
+The main reference of ChASE is [1] while [2] provides some early results on scalability and usage on sequences of eigenproblems generated by Materials Science applications. [3] and [5] provides the distributed-memory multi-GPU implementation and performance analysis. 
 
 - [1] J. Winkelmann, P. Springer, and E. Di Napoli. *ChASE: a Chebyshev Accelerated Subspace iteration Eigensolver for sequences of Hermitian eigenvalue problems.* ACM Transaction on Mathematical Software, **45** Num.2, Art.21, (2019). [DOI:10.1145/3313828](https://doi.org/10.1145/3313828) , [[arXiv:1805.10121](https://arxiv.org/abs/1805.10121/) ]
 - [2] M. Berljafa, D. Wortmann, and E. Di Napoli. *An Optimized and Scalable Eigensolver for Sequences of Eigenvalue Problems.* Concurrency & Computation: Practice and Experience **27** (2015), pp. 905-922. [DOI:10.1002/cpe.3394](https://onlinelibrary.wiley.com/doi/pdf/10.1002/cpe.3394) , [[arXiv:1404.4161](https://arxiv.org/abs/1404.4161) ].
-- [3] X. Wu, D. Davidović, S. Achilles,E. Di Napoli. ChASE: a distributed hybrid CPU-GPU eigensolver for large-scale hermitian eigenvalue problems. Proceedings of the Platform for Advanced Scientific Computing Conference (PASC22). [DOI:10.1145/3539781.3539792](https://dl.acm.org/doi/10.1145/3539781.3539792) , [[arXiv:2205.02491](https://arxiv.org/pdf/2205.02491/) ].
+- [3] X. Wu, D. Davidović, S. Achilles,E. Di Napoli. *ChASE: a distributed hybrid CPU-GPU eigensolver for large-scale hermitian eigenvalue problems.* Proceedings of the Platform for Advanced Scientific Computing Conference (PASC22). [DOI:10.1145/3539781.3539792](https://dl.acm.org/doi/10.1145/3539781.3539792) , [[arXiv:2205.02491](https://arxiv.org/pdf/2205.02491/) ].
+- [4] X. Wu, E. Di Napoli. *Advancing the distributed Multi-GPU ChASE library through algorithm optimization and NCCL library.*  Proceedings of the SC'23 Workshops of The International Conference on High Performance Computing, Network, Storage, and Analysis (pp. 1688-1696). [DOI:10.1145/3624062.3624249](https://dl.acm.org/doi/abs/10.1145/3624062.3624249), [[arXiv:2309.15595](https://arxiv.org/pdf/2309.15595)].
 
 ## Copyright and License
 
 [3-Clause BSD License (BSD License 2.0)](https://github.com/ChASE-library/ChASE/blob/master/LICENSE)
+
+<!-- @Edo, add CLA here -->
 
