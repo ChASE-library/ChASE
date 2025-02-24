@@ -230,8 +230,10 @@ namespace cuda
                                                 V.ld());                
 
         int notneeded_m;
-        std::size_t vl, vu;
-        Base<T> ul, ll;
+        std::size_t vl = 0;
+        std::size_t vu = 0;
+        Base<T> ul = 0;
+        Base<T> ll = 0;
         int tryrac = 0;
         std::vector<int> isuppz(2 * M);
 
@@ -394,8 +396,10 @@ namespace cuda
         }        
 
         int notneeded_m;
-        std::size_t vl, vu;
-        Base<T> ul, ll;
+        std::size_t vl = 0;
+        std::size_t vu = 0;
+        Base<T> ul = 0;
+        Base<T> ll = 0;
         int tryrac = 0;
         std::vector<int> isuppz(2 * M);
         std::vector<Base<T>> ritzv(M);

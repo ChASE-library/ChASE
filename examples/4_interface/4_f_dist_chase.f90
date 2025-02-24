@@ -82,11 +82,11 @@ do x = 1, xlen
 	    y_g = yoff + y
 	    if(x_g == y_g + 1) then
 	       tmp = real(y_g * (nn + 1 - y_g))
-	       h(x, y) = complex(sqrt(tmp), 0)
+	       h(x, y) = cmplx(sqrt(tmp), 0)
 	    end if
 	    if(y_g == x_g + 1) then
 	       tmp = real(x_g * (nn + 1 - x_g))
-	       h(x, y) = complex(sqrt(tmp), 0)
+	       h(x, y) = cmplx(sqrt(tmp), 0)
 	    end if
 	end do 
 end do

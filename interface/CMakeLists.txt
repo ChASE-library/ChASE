@@ -36,7 +36,8 @@ install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} DESTINATION ${CMAKE_INSTALL_INCLUD
     PATTERN "*.h"
 )
 
-enable_language( Fortran )
+#set(CMAKE_Fortran_COMPILER nvfortran)
+#enable_language( Fortran )
 
 set(
   MODULE_OUTPUT_DIR

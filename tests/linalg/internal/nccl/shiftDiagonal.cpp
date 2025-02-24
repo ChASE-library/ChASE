@@ -34,7 +34,6 @@ TYPED_TEST(shiftDiagonalGPUNCCLDistTest, ShiftDistCorrectnessGPU) {
     using T = TypeParam;  // Get the current type
 
     std::size_t N = 10;
-    std::size_t n = 4;
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
     std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid 
             = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(2, 2, MPI_COMM_WORLD);

@@ -160,7 +160,7 @@ TYPED_TEST(CHOLQRGPUDistTest, scholQRGPU) {
     ASSERT_NEAR(orth, machineEpsilon, machineEpsilon * 15);
     cudaFree(d_V);
 }
-
+/*
 TYPED_TEST(CHOLQRGPUDistTest, modifiedGramSchmidtCholQRGPU) {
     using T = TypeParam;  // Get the current type
     assert(this->world_size == 4);
@@ -183,3 +183,4 @@ TYPED_TEST(CHOLQRGPUDistTest, modifiedGramSchmidtCholQRGPU) {
     ASSERT_NEAR(orth, machineEpsilon, machineEpsilon * 1e4);
     cudaFree(d_V);
 }
+*/

@@ -62,7 +62,7 @@ void read_vectors(T* Vec, std::string path_in,
         return;
     }
     std::cout << "READING MATRIX: " << path_in << "\n";
-    int i,j;
+    int j;
     for (j = 0; j < nevex; ++j) {
         file.seekg(((xoff) +  j*M) * sizeof(T));
         file.read(reinterpret_cast<char*>(Vec + xlen * j), xlen * sizeof(T));
