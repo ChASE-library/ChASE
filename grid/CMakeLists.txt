@@ -3,10 +3,14 @@ find_package(MPI)
 if(MPI_FOUND)
     add_library(mpi_grid INTERFACE)
     target_link_libraries(mpi_grid INTERFACE MPI::MPI_CXX)
+    
+    if(TARGET scalapackpp)
+        target_link_libraries(mpi_grid INTERFACE scalapackpp)
+    endif()
+
     target_include_directories(mpi_grid INTERFACE 
                                                 $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
                                                 "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/grid>")
-
 
     install(TARGETS mpi_grid
         EXPORT chase_targets
@@ -17,13 +21,17 @@ if(MPI_FOUND)
         FILES_MATCHING
         PATTERN "*.hpp"
     )
-
 endif()
 
 find_package(NCCL)
 if(NCCL_FOUND)
     add_library(mpi_grid_nccl INTERFACE)
     target_link_libraries(mpi_grid_nccl INTERFACE MPI::MPI_CXX)
+    
+    if(TARGET scalapackpp)
+        target_link_libraries(mpi_grid_nccl INTERFACE scalapackpp)
+    endif()
+
     target_include_directories(mpi_grid_nccl INTERFACE 
                                                 $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
                                                 "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/grid>")

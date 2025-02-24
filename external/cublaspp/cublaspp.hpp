@@ -888,6 +888,127 @@ cublasStatus_t cublasTtrsm(cublasHandle_t handle, cublasSideMode_t side,
                        reinterpret_cast<cuDoubleComplex*>(B), ldb);
 }
 
+/**
+ * @ingroup cuBlasFunctions
+ * @brief Performs an extended matrix-matrix product: C = alpha * A * B + beta * C
+ * Template specialization for float type
+ */
+template<cublasComputeType_t ComputeType = CUBLAS_COMPUTE_32F>
+cublasStatus_t cublasTgemmEx(cublasHandle_t handle, 
+                            cublasOperation_t transa,
+                            cublasOperation_t transb, 
+                            std::size_t m, 
+                            std::size_t n, 
+                            std::size_t k,
+                            const float* alpha,
+                            const float* A, 
+                            std::size_t lda,
+                            const float* B, 
+                            std::size_t ldb,
+                            const float* beta,
+                            float* C, 
+                            std::size_t ldc)
+{
+    return cublasGemmEx(handle, transa, transb, 
+                        m, n, k,
+                        alpha,
+                        A, CUDA_R_32F, lda,
+                        B, CUDA_R_32F, ldb,
+                        beta,
+                        C, CUDA_R_32F, ldc,
+                        ComputeType,
+                        CUBLAS_GEMM_DEFAULT);
+}
+
+/**
+ * @brief Template specialization for double type
+ */
+template<cublasComputeType_t ComputeType = CUBLAS_COMPUTE_32F_FAST_TF32>
+cublasStatus_t cublasTgemmEx(cublasHandle_t handle, 
+                            cublasOperation_t transa,
+                            cublasOperation_t transb, 
+                            std::size_t m, 
+                            std::size_t n, 
+                            std::size_t k,
+                            const double* alpha,
+                            const double* A, 
+                            std::size_t lda,
+                            const double* B, 
+                            std::size_t ldb,
+                            const double* beta,
+                            double* C, 
+                            std::size_t ldc)
+{
+    return cublasGemmEx(handle, transa, transb, 
+                        m, n, k,
+                        alpha,
+                        A, CUDA_R_64F, lda,
+                        B, CUDA_R_64F, ldb,
+                        beta,
+                        C, CUDA_R_64F, ldc,
+                        ComputeType,
+                        CUBLAS_GEMM_DEFAULT);
+}
+
+/**
+ * @brief Template specialization for complex<float> type
+ */
+template<cublasComputeType_t ComputeType = CUBLAS_COMPUTE_32F_FAST_TF32>
+cublasStatus_t cublasTgemmEx(cublasHandle_t handle, 
+                            cublasOperation_t transa,
+                            cublasOperation_t transb, 
+                            std::size_t m, 
+                            std::size_t n, 
+                            std::size_t k,
+                            const std::complex<float>* alpha,
+                            const std::complex<float>* A, 
+                            std::size_t lda,
+                            const std::complex<float>* B, 
+                            std::size_t ldb,
+                            const std::complex<float>* beta,
+                            std::complex<float>* C, 
+                            std::size_t ldc)
+{
+    return cublasGemmEx(handle, transa, transb, 
+                        m, n, k,
+                        alpha,
+                        A, CUDA_C_32F, lda,
+                        B, CUDA_C_32F, ldb,
+                        beta,
+                        C, CUDA_C_32F, ldc,
+                        ComputeType,
+                        CUBLAS_GEMM_DEFAULT);
+}
+
+/**
+ * @brief Template specialization for complex<double> type
+ */
+template<cublasComputeType_t ComputeType = CUBLAS_COMPUTE_64F>
+cublasStatus_t cublasTgemmEx(cublasHandle_t handle, 
+                            cublasOperation_t transa,
+                            cublasOperation_t transb, 
+                            std::size_t m, 
+                            std::size_t n, 
+                            std::size_t k,
+                            const std::complex<double>* alpha,
+                            const std::complex<double>* A, 
+                            std::size_t lda,
+                            const std::complex<double>* B, 
+                            std::size_t ldb,
+                            const std::complex<double>* beta,
+                            std::complex<double>* C, 
+                            std::size_t ldc)
+{
+    return cublasGemmEx(handle, transa, transb, 
+                        m, n, k,
+                        alpha,
+                        A, CUDA_C_64F, lda,
+                        B, CUDA_C_64F, ldb,
+                        beta,
+                        C, CUDA_C_64F, ldc,
+                        ComputeType,
+                        CUBLAS_GEMM_DEFAULT);
+}
 
 }
 }

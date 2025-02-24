@@ -464,10 +464,7 @@ public:
     }
 
     void RR(chase::Base<T>* ritzv, std::size_t block) override
-    {
-
-        std::size_t locked = (nev_ + nex_) - block;
-   
+    {   
         chase::linalg::internal::cpu::rayleighRitz(Hmat_.rows(),
                                                    Hmat_.data(),
                                                    Hmat_.ld(),

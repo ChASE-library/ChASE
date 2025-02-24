@@ -27,7 +27,6 @@ int main(int argc, char** argv)
     int N = 1000;
     int nev = 100;
     int nex = 40;
-    int idx_max = 5;
     int m;
     int n;
     int xoff, yoff, xlen, ylen;

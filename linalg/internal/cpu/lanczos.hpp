@@ -161,8 +161,10 @@ namespace cpu
         lapackpp::t_lacpy('A', N, numvec, v_1.data(), N, V, ldv);
 
         int notneeded_m;
-        std::size_t vl, vu;
-        Base<T> ul, ll;
+        std::size_t vl = 0;
+        std::size_t vu = 0;
+        Base<T> ul = 0;
+        Base<T> ll = 0;
         int tryrac = 0;
         std::vector<int> isuppz(2 * M);
 
@@ -266,8 +268,10 @@ namespace cpu
         }        
 
         int notneeded_m;
-        std::size_t vl, vu;
-        Base<T> ul, ll;
+        std::size_t vl = 0;
+        std::size_t vu = 0;
+        Base<T> ul = 0;
+        Base<T> ll = 0;
         int tryrac = 0;
         std::vector<int> isuppz(2 * M);
         std::vector<Base<T>> ritzv(M);

@@ -39,16 +39,16 @@ call zchase_init(N, nev, nex, h, N, v, lambda, init)
 
 ! Generate Clement matrix
 do i = 1, N
-    h(i, i) = complex(0,0)
+    h(i, i) = cmplx(0,0)
     do j = 1, N
         if (i .lt. N) then  ! Prevent accessing out-of-bounds
             tmp = real(i * (N + 1 - i))
-            h(i+1, i) = complex(sqrt(tmp), 0)
+            h(i+1, i) = cmplx(sqrt(tmp), 0)
         end if
 
         if (i .lt. N) then  ! Prevent accessing out-of-bounds
             tmp = real(i * (N + 1 - i))
-            h(i, i + 1) = complex(sqrt(tmp), 0)
+            h(i, i + 1) = cmplx(sqrt(tmp), 0)
         end if
     end do
 end do
@@ -65,7 +65,7 @@ do idx = 1, idx_max
 		do j = 2, i
 		    call random_normal(tmp)
 		    tmp = tmp * perturb
-		    cv = complex(tmp, tmp)
+		    cv = cmplx(tmp, tmp)
 		    h(j, i) = h(j,i) + cv
 		    h(i, j) = h(i, j) + conjg(cv)
 		end do 
@@ -92,4 +92,7 @@ subroutine random_normal(randn)
 end subroutine
 
 END PROGRAM
+
+
+
 

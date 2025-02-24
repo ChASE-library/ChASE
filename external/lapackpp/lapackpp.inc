@@ -463,7 +463,7 @@ std::size_t t_heevd(int matrix_layout, char jobz, char uplo, std::size_t n,
     // return LAPACKE_dsyevd(matrix_layout, jobz, uplo, n, a, lda, w);
     BlasInt n_ = n;
     BlasInt lda_ = lda;
-    BlasInt lwork, info, lrwork, liwork;
+    BlasInt lwork, info, liwork;
 
     double* work;
     double numwork;
@@ -500,7 +500,7 @@ std::size_t t_heevd(int matrix_layout, char jobz, char uplo, std::size_t n,
 
     BlasInt n_ = n;
     BlasInt lda_ = lda;
-    BlasInt lwork, info, lrwork, liwork;
+    BlasInt lwork, info, liwork;
 
     float* work;
     float numwork;

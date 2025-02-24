@@ -1,7 +1,7 @@
 # -*- Mode: cmake -*-
 cmake_minimum_required( VERSION 3.8 )
 
-project( ChASE LANGUAGES C CXX VERSION 1.3.0 )
+project( ChASE LANGUAGES C CXX Fortran VERSION 1.6.1 )
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 # ## algorithm ##
 
@@ -62,8 +62,8 @@ if(CHASE_USE_NVTX)
   target_compile_definitions( chase_algorithm  INTERFACE "-DUSE_NVTX" )
 endif()
 
-add_subdirectory(grid)
 add_subdirectory(external)
+add_subdirectory(grid)
 add_subdirectory(linalg)
 add_subdirectory(Impl)
 add_subdirectory(interface)

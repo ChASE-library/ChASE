@@ -235,8 +235,10 @@ namespace internal
                           V.l_ld());
 
         int notneeded_m;
-        std::size_t vl, vu;
-        Base<T> ul, ll;
+        std::size_t vl = 0;
+        std::size_t vu = 0;
+        chase::Base<T> ul = 0;
+        chase::Base<T> ll = 0;
         int tryrac = 0;
         std::vector<int> isuppz(2 * M);
 
@@ -396,8 +398,10 @@ namespace internal
         }
 
         int notneeded_m;
-        std::size_t vl, vu;
-        chase::Base<T> ul, ll;
+        std::size_t vl = 0;
+        std::size_t vu = 0;
+        chase::Base<T> ul = 0;
+        chase::Base<T> ll = 0;
         int tryrac = 0;
         std::vector<int> isuppz(2 * M);
         std::vector<chase::Base<T>> ritzv(M);

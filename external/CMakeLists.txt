@@ -1,7 +1,7 @@
 find_package(BLAS REQUIRED)
 find_package(LAPACK REQUIRED)
 
-enable_language( Fortran )
+#enable_language( Fortran )
 include( FortranCInterface )
 FortranCInterface_HEADER( ${CMAKE_BINARY_DIR}/fortran_mangle.h
   MACRO_NAMESPACE "FC_"
@@ -57,7 +57,7 @@ find_package(CUDAToolkit)
 
 if(CUDAToolkit_FOUND)
   add_library(cublaspp INTERFACE)
-  target_include_directories(scalapackpp INTERFACE
+  target_include_directories(cublaspp INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/cublaspp>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/external/cublaspp>
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>" 
@@ -65,7 +65,7 @@ if(CUDAToolkit_FOUND)
   target_link_libraries(cublaspp INTERFACE CUDA::cublas CUDA::cudart)
 
   add_library(cusolverpp INTERFACE)
-  target_include_directories(scalapackpp INTERFACE
+  target_include_directories(cublaspp INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/cusolverpp>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/external/cusolverpp>
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>" 

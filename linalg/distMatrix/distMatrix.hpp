@@ -494,15 +494,15 @@ public:
     /**
      * @brief Get the block size in the row direction (unused for redundant matrices).
      * 
-     * @return -1 as the block size is not applicable.
+     * @return 0 as the block size is not applicable.
      */    
-    std::size_t mb() const override { return -1;}
+    std::size_t mb() const override { return 0;}
     /**
      * @brief Get the block size in the column direction (unused for redundant matrices).
      * 
-     * @return -1 as the block size is not applicable.
+     * @return 0 as the block size is not applicable.
      */    
-    std::size_t nb() const override { return -1;} 
+    std::size_t nb() const override { return 0;} 
     /**
      * @brief Get the pointer to the local matrix data.
      *
@@ -1037,15 +1037,15 @@ public:
     /**
      * @brief Get the block size in the row direction (not implemented).
      *
-     * @return Always returns -1.
+     * @return Always returns 0.
      */    
-    std::size_t mb() const override { return -1;}
+    std::size_t mb() const override { return 0;}
     /**
      * @brief Get the block size in the column direction (not implemented).
      *
-     * @return Always returns -1.
+     * @return Always returns 0.
      */    
-    std::size_t nb() const override { return -1;}    
+    std::size_t nb() const override { return 0;}    
     /**
      * @brief Get the local data pointer for the matrix.
      *
