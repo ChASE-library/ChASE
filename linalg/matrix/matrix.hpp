@@ -892,16 +892,34 @@ class QuasiHermitianMatrix;
 
 template <typename T, template <typename> class Allocator>
 class QuasiHermitianMatrix<T, chase::platform::CPU, Allocator> : public Matrix<T, chase::platform::CPU, Allocator> {
-	public:
-    	QuasiHermitianMatrix(std::size_t rows, std::size_t cols) : chase::matrix::Matrix<T,chase::platform::CPU,Allocator>(rows, cols) {};
-
+public:
+    // Default constructor
+    QuasiHermitianMatrix() : Matrix<T, chase::platform::CPU, Allocator>() {}
+    
+    // Constructor with dimensions
+    QuasiHermitianMatrix(std::size_t rows, std::size_t cols) 
+        : Matrix<T, chase::platform::CPU, Allocator>(rows, cols) {}
+    
+    // Constructor with external data
+    QuasiHermitianMatrix(std::size_t rows, std::size_t cols, std::size_t ld, T* data)
+        : Matrix<T, chase::platform::CPU, Allocator>(rows, cols, ld, data) {}
 };
 
 #ifdef HAS_CUDA
 template <typename T, template <typename> class Allocator>
 class QuasiHermitianMatrix<T, chase::platform::GPU, Allocator> : public Matrix<T, chase::platform::GPU, Allocator> {
-	public:
-    	QuasiHermitianMatrix(std::size_t rows, std::size_t cols) : chase::matrix::Matrix<T,chase::platform::GPU,Allocator>(rows, cols) {};
+public:
+    // Default constructor
+    QuasiHermitianMatrix() : Matrix<T, chase::platform::GPU, Allocator>() {}
+    
+    // Constructor with dimensions
+    QuasiHermitianMatrix(std::size_t rows, std::size_t cols) 
+        : Matrix<T, chase::platform::GPU, Allocator>(rows, cols) {}
+    
+    // Constructor with external data
+    QuasiHermitianMatrix(std::size_t rows, std::size_t cols, std::size_t ld, T* data, 
+                         chase::matrix::BufferType buffer_type = chase::matrix::BufferType::CPU)
+        : Matrix<T, chase::platform::GPU, Allocator>(rows, cols, ld, data, buffer_type) {}
 
 };
 #endif
