@@ -48,7 +48,7 @@ namespace Impl
  * 
  * @tparam T The data type (e.g., float, double).
  */    
-template <class T>
+template <class T, typename MatrixType = chase::matrix::Matrix<T>>
 class ChASECPU : public ChaseBase<T>
 {
 public:
@@ -85,14 +85,15 @@ public:
                   nevex_(nev+nex),
                   config_(N, nev, nex)
     {
-        Hmat_ = chase::matrix::Matrix<T>(N_, N_, ldh_, H_);
+        //Hmat_ = chase::matrix::Matrix<T>(N_, N_, ldh_, H_);
+        Hmat_ = MatrixType(N_, N_, ldh_, H_);
         Vec1_ = chase::matrix::Matrix<T>(N_, nevex_, ldv_, V1_);
         Vec2_ = chase::matrix::Matrix<T>(N_, nevex_);
         resid_ = chase::matrix::Matrix<chase::Base<T>>(nevex_, 1);
         ritzvs_ = chase::matrix::Matrix<chase::Base<T>>(nevex_, 1, nevex_, ritzv_);
         A_ = chase::matrix::Matrix<T>(nevex_, nevex_);
     }
-
+    
     /**
      * @brief Deleted copy constructor.
      * 
@@ -523,7 +524,7 @@ private:
     std::size_t nevex_;              ///< Total number of eigenvalues (nev + nex).
     ChaseConfig<T> config_;          ///< Configuration object for settings.
     
-    chase::matrix::Matrix<T> Hmat_;  ///< Matrix for H.
+    MatrixType Hmat_;  ///< Matrix for H.
     chase::matrix::Matrix<T> Vec1_; ///< Matrix for the first vector set.
     chase::matrix::Matrix<T> Vec2_; ///< Matrix for the second vector set.
     chase::matrix::Matrix<chase::Base<T>> resid_; ///< Residuals matrix.

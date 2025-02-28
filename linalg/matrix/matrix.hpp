@@ -88,6 +88,13 @@ namespace platform
 }
 }
 
+/**
+ * @page platform_namespace chase::platform Namespace
+ * @brief Namespace containing platform-specific structures and identifiers.
+ *
+ * The `chase::platform` namespace includes identifiers for different platforms, such as CPU and GPU.
+ */
+
 /** @page chase_matrix
  *  @brief The Matrix Namespace
  * 
@@ -876,6 +883,25 @@ public:
      * @return The leading dimension of the matrix in CPU memory.
      */    
     std::size_t cpu_ld() const override { return cpu_ld_; }
+
+};
+#endif
+
+template <typename T, typename Platform = chase::platform::CPU, template <typename> class Allocator = DefaultAllocator<Platform>::template type>
+class QuasiHermitianMatrix;
+
+template <typename T, template <typename> class Allocator>
+class QuasiHermitianMatrix<T, chase::platform::CPU, Allocator> : public Matrix<T, chase::platform::CPU, Allocator> {
+	public:
+    	QuasiHermitianMatrix(std::size_t rows, std::size_t cols) : chase::matrix::Matrix<T,chase::platform::CPU,Allocator>(rows, cols) {};
+
+};
+
+#ifdef HAS_CUDA
+template <typename T, template <typename> class Allocator>
+class QuasiHermitianMatrix<T, chase::platform::GPU, Allocator> : public Matrix<T, chase::platform::GPU, Allocator> {
+	public:
+    	QuasiHermitianMatrix(std::size_t rows, std::size_t cols) : chase::matrix::Matrix<T,chase::platform::GPU,Allocator>(rows, cols) {};
 
 };
 #endif
