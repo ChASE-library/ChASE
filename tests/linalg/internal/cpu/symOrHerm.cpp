@@ -7,6 +7,7 @@
 #include <gtest/gtest.h>
 #include <complex>
 #include "linalg/internal/cpu/symOrHerm.hpp"
+#include "linalg/internal/cpu/utils.hpp"
 #include "tests/linalg/internal/cpu/TestConditions.hpp"
 #include "tests/linalg/internal/utils.hpp"
 #include "algorithm/types.hpp"
@@ -103,4 +104,26 @@ TYPED_TEST(SymOrHermCPUTest, NonSymmetricMatrixCheck) {
     H[6] = static_cast<T>(3); H[7] = static_cast<T>(5); H[8] = static_cast<T>(6);
 
     EXPECT_FALSE(chase::linalg::internal::cpu::checkSymmetryEasy(N, H.data(), N));
+}
+
+TYPED_TEST(SymOrHermCPUTest, PseudoHermitianMatrixCheck) {
+    const std::size_t N = 4;
+    
+    // Create matrix on heap using vector
+    std::vector<std::complex<double>> H(N * N);         
+    
+    // Initialize values explicitly
+    H[0]  = std::complex<double>(1.010,0); H[1]  = std::complex<double>(0,-0.20);
+    H[2]  = std::complex<double>(0.010,0); H[3]  = std::complex<double>(0,0.010);
+    H[4]  = std::complex<double>(0,0.200); H[5]  = std::complex<double>(1.010,0);
+    H[6]  = std::complex<double>(0,0.010); H[7]  = std::complex<double>(0.010,0);
+    H[8]  = std::complex<double>(-0.01,0); H[9]  = std::complex<double>(0,0.010);
+    H[10] = std::complex<double>(-1.01,0); H[11] = std::complex<double>(0,-0.20);
+    H[12] = std::complex<double>(0,0.010); H[13] = std::complex<double>(-0.01,0);
+    H[14] = std::complex<double>(0,0.200); H[15] = std::complex<double>(-1.01,0);
+
+    chase::linalg::internal::cpu::toggleLowerMatrixSign(N,N,&(H[0]),N);
+    
+    EXPECT_TRUE(chase::linalg::internal::cpu::checkSymmetryEasy(N, H.data(), N));
+
 }

@@ -149,6 +149,16 @@ public:
     }
 
     bool isSym() {return is_sym_;}
+    
+    bool checkPseudoHermicityEasy() override
+    {
+	chase::linalg::internal::cpu::toggleLowerMatrixSign(N_, N_, Hmat_.data(), Hmat_.ld());
+        is_pseudoHerm_ = chase::linalg::internal::cpu::checkSymmetryEasy(N_, Hmat_.data(), Hmat_.ld());  
+	chase::linalg::internal::cpu::toggleLowerMatrixSign(N_, N_, Hmat_.data(), Hmat_.ld());
+        return is_pseudoHerm_;
+    }
+    
+    bool isPseudoHerm() {return is_pseudoHerm_;}
 
     void symOrHermMatrix(char uplo) override
     {
@@ -531,6 +541,7 @@ private:
     chase::matrix::Matrix<chase::Base<T>> ritzvs_; ///< Ritz values matrix.
     chase::matrix::Matrix<T> A_;    ///< Auxiliary matrix A for operations.
     bool is_sym_;                   ///< Flag for matrix symmetry.
+    bool is_pseudoHerm_;            ///< Flag for matrix pseudo-hermicity.
     std::size_t locked_;            ///< Counter for the number of converged eigenvalues.
 }; 
 

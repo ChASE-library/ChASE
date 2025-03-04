@@ -454,6 +454,11 @@ public:
     {
         return chase_->checkSymmetryEasy();
     }
+    
+    bool checkPseudoHermicityEasy()
+    {
+        return chase_->checkPseudoHermicityEasy();
+    }
 
     void symOrHermMatrix(char uplo)
     {

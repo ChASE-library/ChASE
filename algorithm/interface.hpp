@@ -155,6 +155,14 @@ public:
      */    
     virtual bool checkSymmetryEasy() = 0;
     /**
+     * @brief Checks for easy pseudo-hermicity in the matrix.
+     * 
+     * This method performs a simple check for matrix pseudo-hermicity
+     * 
+     * @return `true` if the matrix is pseudo-hermicity, otherwise `false`.
+     */    
+    virtual bool checkPseudoHermicityEasy() = 0;
+    /**
      * @brief Sets matrix type for symmetric or Hermitian matrix.
      * 
      * This method defines whether the matrix is symmetric or Hermitian based on the specified input.

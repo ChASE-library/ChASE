@@ -169,6 +169,14 @@ public:
     }
 
     bool isSym() { return is_sym_; }
+    
+    bool checkPseudoHermicityEasy() override
+    {
+	is_pseudoHerm_= 0;
+        return is_pseudoHerm_;
+    }
+    
+    bool isPseudoHerm() {return is_pseudoHerm_;}
 
     void symOrHermMatrix(char uplo) override
     {
@@ -567,6 +575,13 @@ private:
     * It influences certain algorithmic steps to optimize performance or correctness.
     */
     bool is_sym_; 
+    /**
+    * @brief Flag indicating if the matrix is pseudo-hermitian.
+    * 
+    * This boolean value is used to track whether the matrix being processed is pseudo-hermitian.
+    * It influences certain algorithmic steps to optimize performance or correctness.
+    */
+    bool is_pseudoHerm_; 
 
     /**
     * @brief The number of eigenvalues to compute.

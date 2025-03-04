@@ -14,6 +14,7 @@
 #include "linalg/matrix/matrix.hpp"
 #include "linalg/internal/cuda/cuda_kernels.hpp"
 #include "linalg/internal/cpu/symOrHerm.hpp"
+#include "linalg/internal/cpu/utils.hpp"
 #include "algorithm/types.hpp"
 
 #include "Impl/chase_gpu/nvtx.hpp"
@@ -258,6 +259,17 @@ public:
     }
 
     bool isSym() { return is_sym_; }
+    
+    bool checkPseudoHermicityEasy() override
+    {
+        SCOPED_NVTX_RANGE();
+	chase::linalg::internal::cpu::toggleLowerMatrixSign(N_, N_, Hmat_.data(), Hmat_.ld());
+        is_pseudoHerm_ = chase::linalg::internal::cpu::checkSymmetryEasy(N_, Hmat_.data(), Hmat_.ld());  
+	chase::linalg::internal::cpu::toggleLowerMatrixSign(N_, N_, Hmat_.data(), Hmat_.ld());
+        return is_pseudoHerm_;
+    }
+    
+    bool isPseudoHerm() { return is_pseudoHerm_; }
 
     void symOrHermMatrix(char uplo) override
     {
@@ -676,7 +688,8 @@ private:
     T *V1_;                      /**< Pointer to the matrix \( V_1 \). */
     chase::Base<T> *ritzv_;      /**< Pointer to the Ritz values vector. */
     T *tmp_;                     /**< Temporary buffer for GPU computations. */
-    bool is_sym_;                   ///< Flag for matrix symmetry.
+    bool is_sym_;                ///< Flag for matrix symmetry.
+    bool is_pseudoHerm_;                ///< Flag for matrix symmetry.
 
     chase::matrix::Matrix<T, chase::platform::GPU> Hmat_;       /**< GPU matrix \( H \). */
     chase::matrix::Matrix<T, chase::platform::GPU> Vec1_;       /**< GPU matrix \( V_1 \). */
