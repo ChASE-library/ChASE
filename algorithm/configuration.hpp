@@ -197,16 +197,6 @@ public:
         \param flag A boolean parameter which admits either a `true` or `false`
        value.
      */
-    void SetApprox(bool flag) { approx_ = flag; }
-
-    //! Returns the value of the `optimization_` flag.
-    /*! The value of the `optimization_` flag indicates when ChASE
-        computes a polynomial degree optimized for each single desired
-        eigenpairs. The optimization minimizes the number of operations
-        required for the eigenpairs to have a residual which is just
-        below the specified tolerance threshold.
-        \return The value of the `optimization_` flag
-     */
     bool DoOptimization() const { return optimization_; }
 
     //! Sets the `optimization_` flag to either `true` or `false`.
@@ -217,59 +207,18 @@ public:
         \param flag A boolean parameter which admits either a `true` or `false`
        value.
      */
+    void SetApprox(bool flag) { approx_ = flag; }
+
+    //! Returns the value of the `optimization_` flag.
+    /*! The value of the `optimization_` flag indicates when ChASE
+        computes a polynomial degree optimized for each single desired
+        eigenpairs. The optimization minimizes the number of operations
+        required for the eigenpairs to have a residual which is just
+        below the specified tolerance threshold.
+        \return The value of the `optimization_` flag
+     */
     void SetOpt(bool flag) { optimization_ = flag; }
-
-    //! Returns the degree of the Chebyshev filter used by ChASE
-    /*!
-        The value returned is the degree used by the filter when it is
-        called (when ``optimization_ == 'true'`` this value is used only the
-        first time the filter is called)
-        \return The value used by the Chebyshev filter
-     */
-    std::size_t GetDeg() const { return deg_; }
-
-    //! Set the value of the initial degree of the Chebyshev filter.
-    /*!
-        Depending if the `optimization_` parameter is set to `false` or
-        `true`, the value of `_deg` is used by the Chebyshev filter
-        respectively every time or just the first time it is called.
-        \param _deg Value set by the expert user and should in general be
-       between *10* and *25*. The default value is *20*. If a odd value is
-       inserted, the function makes it even. This is necessary due to the
-       swapping of the matrix of vectors within the filter. It is strongly
-       suggested to avoid values above the higher between *40* and the value
-        returned by \ref GetMaxDeg().
-     */
-    void SetDeg(std::size_t _deg)
-    {
-        deg_ = _deg;
-        deg_ += deg_ % 2;
-    }
-
-    //! Returns the threshold value of the eigenpair's residual tolerance.
-    /*! The value of the tolerance is used as threshold for all the
-        residuals of the desired eigenpaits. Whenever an eigenpair's
-        residual decreases below such a value it is declared as
-        converged, and is consequently deflated and locked.
-        For an eigenpair \f$(\lambda_i,V_i)\f$, the residual in ChASE
-        is defined as the Euclidean norm: \f$||AV_i-\lambda_iV_i||_2\f$.
-        \return The value of the `tol_` parameter.
-     */
-    double GetTol() const { return tol_; }
-
-    //! Sets the value of the threshold of the eigenpair's residual tolerance.
-    /*! The value of the tolerance should be set carefully keeping in
-        mind that the residual of the eigenpairs is limited by the
-        accuracy of the dense eigensolver used within the Rayleigh-Ritz
-        procedure. As such it should hardly be set below \f$1e-14\f$ in
-        double precision. As a rule of thumb a minimum value of *1e-04*
-        and *1e-08* should be used respectively in single and double
-        precision.
-        \param _tol A type double number usually specified in scientific
-       notation (e.g. *1e-10*).
-     */
-    void SetTol(double _tol) { tol_ = _tol; }
-
+    
     //! Returns the integer value of the maximum degree used by the polynomial
     //! filter.
     /*! The value of `max_deg_` indicates the upper bound for the degree
@@ -348,6 +297,57 @@ public:
         \param maxIter Value of the maximum number of subspace iterations.
      */
     void SetMaxIter(std::size_t maxIter) { max_iter_ = maxIter; }
+
+    //! Returns the degree of the Chebyshev filter used by ChASE
+    /*!
+        The value returned is the degree used by the filter when it is
+        called (when ``optimization_ == 'true'`` this value is used only the
+        first time the filter is called)
+        \return The value used by the Chebyshev filter
+     */
+    std::size_t GetDeg() const { return deg_; }
+
+    //! Set the value of the initial degree of the Chebyshev filter.
+    /*!
+        Depending if the `optimization_` parameter is set to `false` or
+        `true`, the value of `_deg` is used by the Chebyshev filter
+        respectively every time or just the first time it is called.
+        \param _deg Value set by the expert user and should in general be
+       between *10* and *25*. The default value is *20*. If a odd value is
+       inserted, the function makes it even. This is necessary due to the
+       swapping of the matrix of vectors within the filter. It is strongly
+       suggested to avoid values above the higher between *40* and the value
+        returned by \ref GetMaxDeg().
+     */
+    void SetDeg(std::size_t _deg)
+    {
+        deg_ = _deg;
+        deg_ += deg_ % 2;
+    }
+
+    //! Returns the threshold value of the eigenpair's residual tolerance.
+    /*! The value of the tolerance is used as threshold for all the
+        residuals of the desired eigenpaits. Whenever an eigenpair's
+        residual decreases below such a value it is declared as
+        converged, and is consequently deflated and locked.
+        For an eigenpair \f$(\lambda_i,V_i)\f$, the residual in ChASE
+        is defined as the Euclidean norm: \f$||AV_i-\lambda_iV_i||_2\f$.
+        \return The value of the `tol_` parameter.
+     */
+    double GetTol() const { return tol_; }
+
+    //! Sets the value of the threshold of the eigenpair's residual tolerance.
+    /*! The value of the tolerance should be set carefully keeping in
+        mind that the residual of the eigenpairs is limited by the
+        accuracy of the dense eigensolver used within the Rayleigh-Ritz
+        procedure. As such it should hardly be set below \f$1e-14\f$ in
+        double precision. As a rule of thumb a minimum value of *1e-04*
+        and *1e-08* should be used respectively in single and double
+        precision.
+        \param _tol A type double number usually specified in scientific
+       notation (e.g. *1e-10*).
+     */
+    void SetTol(double _tol) { tol_ = _tol; }
 
     //! Returns the number of Lanczos iterations executed by ChASE.
     /*! In order to estimate the spectral bounds, ChASE executes a
@@ -465,22 +465,6 @@ private:
      */
     std::size_t const nex_;
 
-    //! An optional flag indicating if approximate eigenvectors are provided by
-    //! the user.
-    /*!
-        This variable is initialized by the constructor. Its default value is
-       set to `false`.
-     */
-    bool approx_;
-
-    //! An optional parameters limiting the total number of internal while loops
-    //! ChASE executes.
-    /*!
-        This variable is initialized by the constructor. Its default value is
-       *25*
-     */
-    std::size_t max_iter_;
-
     //! An optional parameters indicating the minimal value of the threshold
     //! below which the desired eigenpairs are declared converged.
     /*!
@@ -512,6 +496,22 @@ private:
        set to `true`.
      */
     bool optimization_;
+    
+    //! An optional flag indicating if approximate eigenvectors are provided by
+    //! the user.
+    /*!
+        This variable is initialized by the constructor. Its default value is
+       set to `false`.
+     */
+    bool approx_;
+    
+    //! An optional parameters limiting the total number of internal while loops
+    //! ChASE executes.
+    /*!
+        This variable is initialized by the constructor. Its default value is
+       *25*
+     */
+    std::size_t max_iter_;
 
     //! An optional parameter that limits from above the value of the allowed
     //! polynomial filter.
@@ -523,6 +523,7 @@ private:
         constructor. Its default value is set to *36* and *18* in double and
         single precision, respectively.
      */
+    
     std::size_t max_deg_;
 
     //! An optional parameter augmenting of few units the polynomial degree

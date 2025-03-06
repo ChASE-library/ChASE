@@ -122,7 +122,7 @@ TYPED_TEST(SymOrHermCPUTest, PseudoHermitianMatrixCheck) {
     H[12] = std::complex<double>(0,0.010); H[13] = std::complex<double>(-0.01,0);
     H[14] = std::complex<double>(0,0.200); H[15] = std::complex<double>(-1.01,0);
 
-    chase::linalg::internal::cpu::toggleLowerMatrixSign(N,N,&(H[0]),N);
+    chase::linalg::internal::cpu::flipLowerHalfMatrixSign(N,N,&(H[0]),N);
     
     EXPECT_TRUE(chase::linalg::internal::cpu::checkSymmetryEasy(N, H.data(), N));
 

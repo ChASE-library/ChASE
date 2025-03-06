@@ -263,9 +263,9 @@ public:
     bool checkPseudoHermicityEasy() override
     {
         SCOPED_NVTX_RANGE();
-	chase::linalg::internal::cpu::toggleLowerMatrixSign(N_, N_, Hmat_.data(), Hmat_.ld());
+	chase::linalg::internal::cpu::flipLowerHalfMatrixSign(N_, N_, Hmat_.data(), Hmat_.ld());
         is_pseudoHerm_ = chase::linalg::internal::cpu::checkSymmetryEasy(N_, Hmat_.data(), Hmat_.ld());  
-	chase::linalg::internal::cpu::toggleLowerMatrixSign(N_, N_, Hmat_.data(), Hmat_.ld());
+	chase::linalg::internal::cpu::flipLowerHalfMatrixSign(N_, N_, Hmat_.data(), Hmat_.ld());
         return is_pseudoHerm_;
     }
     

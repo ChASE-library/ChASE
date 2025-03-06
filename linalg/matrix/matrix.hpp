@@ -451,7 +451,7 @@ public:
      * @param data Pointer to the user-provided matrix data.
      */
     Matrix(std::size_t rows, std::size_t cols, std::size_t ld, T *data)
-        : data_(nullptr, [](T*){}), rows_(rows), cols_(cols), ld_(ld), external_data_(data), owns_mem_(false)       
+        : data_(nullptr, [](T*){}), external_data_(data), rows_(rows), cols_(cols), ld_(ld), owns_mem_(false)       
         {}
 
     /**
@@ -634,12 +634,12 @@ public:
      * @param buffer_type The type of external buffer (CPU or GPU).
      */
     Matrix(std::size_t rows, std::size_t cols, std::size_t ld, T *external_data, BufferType buffer_type = BufferType::CPU)
-        : rows_(rows), cols_(cols),
+        : gpu_data_(nullptr, [](T*){}), cpu_data_(nullptr, [](T*){}),
+	  external_gpu_data_(buffer_type == BufferType::GPU ? external_data : nullptr),
+          external_cpu_data_(buffer_type == BufferType::CPU ? external_data : nullptr),
+	  rows_(rows), cols_(cols),
           gpu_ld_(buffer_type == BufferType::GPU ? ld : rows), 
           cpu_ld_(buffer_type == BufferType::CPU ? ld : 0),
-          cpu_data_(nullptr, [](T*){}), gpu_data_(nullptr, [](T*){}),
-          external_gpu_data_(buffer_type == BufferType::GPU ? external_data : nullptr),
-          external_cpu_data_(buffer_type == BufferType::CPU ? external_data : nullptr),        
           owns_cpu_mem_(false),
           owns_gpu_mem_(buffer_type == BufferType::GPU ? false : true)
     {
@@ -669,14 +669,14 @@ public:
     Matrix(Matrix&& other) noexcept
         : gpu_data_(std::move(other.gpu_data_)), 
           cpu_data_(std::move(other.cpu_data_)), 
+          external_cpu_data_(other.external_cpu_data_),
+          external_gpu_data_(other.external_gpu_data_), 
           rows_(other.rows_),
           cols_(other.cols_), 
           gpu_ld_(other.gpu_ld_), 
           cpu_ld_(other.cpu_ld_),
           owns_cpu_mem_(other.owns_cpu_mem_),
-          owns_gpu_mem_(other.owns_gpu_mem_),
-          external_cpu_data_(other.external_cpu_data_),
-          external_gpu_data_(other.external_gpu_data_)   
+          owns_gpu_mem_(other.owns_gpu_mem_)
     {
 #ifdef ENABLE_MIXED_PRECISION
           this->single_precision_matrix_ = std::move(other.single_precision_matrix_);
@@ -703,12 +703,12 @@ public:
             // Transfer ownership
             gpu_data_ = std::move(other.gpu_data_);
             cpu_data_ = std::move(other.cpu_data_);
+            external_gpu_data_ = other.external_gpu_data_;            
+            external_cpu_data_ = other.external_cpu_data_;
             rows_ = other.rows_;
             cols_ = other.cols_;
             gpu_ld_ = other.gpu_ld_;
             cpu_ld_ = other.cpu_ld_;
-            external_cpu_data_ = other.external_cpu_data_;
-            external_gpu_data_ = other.external_gpu_data_;            
             owns_cpu_mem_ = other.owns_cpu_mem_;
             owns_gpu_mem_ = other.owns_gpu_mem_;
 #ifdef ENABLE_MIXED_PRECISION

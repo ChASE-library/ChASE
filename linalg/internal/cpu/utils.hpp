@@ -72,9 +72,9 @@ namespace cpu
     }
 
     /**
-    * @brief Toggle the sign of the lower part of the matrix
+    * @brief Flip the sign of the lower half part of the matrix
     *
-    * This function toggles the sign of the lower part of the matrix, i.e., the lower part is multiplied by -1.0
+    * This function toggles the sign of the lower half part of the matrix, i.e., the lower half part is multiplied by -1.0
     *
     * @tparam T Data type for the matrix elements (e.g., float, double).
     * @param[in] m The number of rows in the matrix \( A \).
@@ -84,15 +84,41 @@ namespace cpu
     * of one column and the start of the next column.
     */
     template<typename T>
-    void toggleLowerMatrixSign(std::size_t m, std::size_t n, T *A, std::size_t lda)
+    void flipLowerHalfMatrixSign(std::size_t m, std::size_t n, T *A, std::size_t lda)
     {
 	std::size_t half = m / 2;
 
-	for(auto i = half; i < m; i++)
+	for(auto j = 0; j < n; j++)
 	{
-	   for(auto j = 0; j < n; j++)
+	   for(auto i = half; i < m; i++)
 	   {
-	   	A[i*n + j] *= -1.0; //A[i*n + j];
+	   	A[j*m + i] *= -1.0;
+	   }
+	}
+    }
+    
+    /**
+    * @brief Flip the sign of the right part of the matrix
+    *
+    * This function toggles the sign of the right part of the matrix, i.e., the right part is multiplied by -1.0
+    *
+    * @tparam T Data type for the matrix elements (e.g., float, double).
+    * @param[in] m The number of rows in the matrix \( A \).
+    * @param[in] n The number of columns in the matrix \( A \).
+    * @param[in,out] A The matrix of size \( m \times n \), whose diagonal elements are shifted.
+    * @param[in] lda The leading dimension of the matrix \( A \), which is the number of elements between the start 
+    * of one column and the start of the next column.
+    */
+    template<typename T>
+    void flipRightHalfMatrixSign(std::size_t m, std::size_t n, T *A, std::size_t lda)
+    {
+	std::size_t half = n / 2;
+
+	for(auto j = half; j < n; j++)
+	{
+	   for(auto i = 0; i < m; i++)
+	   {
+	   	A[j*m + i] *= -1.0;
 	   }
 	}
     }

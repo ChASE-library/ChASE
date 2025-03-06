@@ -28,304 +28,334 @@ namespace Impl
  * @section intro_sec Introduction
  * This class implements the CPU-based sequential version of the Chase algorithm. It inherits from
  * `ChaseBase` and provides methods for solving generalized eigenvalue problems using Lanczos
- * iterations and various other matrix operations like QR factorization, HEMM, and Lanczos-based
- * algorithms.
- * 
- * @section constructor_sec Constructors and Destructor
- * The constructor and destructor for the `ChASECPU` class are provided for memory management
- * and initialization of matrices and related data structures.
- * 
- * @section members_sec Private Members
- * Private members include matrix data, matrix dimensions, and configuration settings used
- * throughout the algorithm. These members are initialized during construction.
- */
+	 * iterations and various other matrix operations like QR factorization, HEMM, and Lanczos-based
+	 * algorithms.
+	 * 
+	 * @section constructor_sec Constructors and Destructor
+	 * The constructor and destructor for the `ChASECPU` class are provided for memory management
+	 * and initialization of matrices and related data structures.
+	 * 
+	 * @section members_sec Private Members
+	 * Private members include matrix data, matrix dimensions, and configuration settings used
+	 * throughout the algorithm. These members are initialized during construction.
+	 */
 
-/**
- * @brief CPU-based sequential Chase algorithm.
- * 
- * This class is responsible for solving generalized eigenvalue problems using CPU-based Lanczos
- * iterations and other matrix operations.
- * 
- * @tparam T The data type (e.g., float, double).
- */    
-template <class T, typename MatrixType = chase::matrix::Matrix<T>>
-class ChASECPU : public ChaseBase<T>
-{
-public:
-    /**
-     * @brief Constructs the `ChASECPU` object.
-     * 
-     * Initializes the matrices, vectors, and configuration necessary for the computation.
-     * 
-     * @param N The size of the matrix (N x N).
-     * @param nev The number of eigenvalues to compute.
-     * @param nex The number of additional eigenvalues for extra space.
-     * @param H Pointer to the matrix of size N x N.
-     * @param ldh Leading dimension of H.
-     * @param V1 Pointer to the initial vector set of size N x (nev + nex).
-     * @param ldv Leading dimension of V1.
-     * @param ritzv Pointer to the Ritz values.
-     */
-    ChASECPU(std::size_t N, 
-                std::size_t nev, 
-                std::size_t nex, 
-                T* H, 
-                std::size_t ldh, 
-                T* V1, 
-                std::size_t ldv,
-                chase::Base<T>* ritzv)
-                : N_(N), 
-                  H_(H),
-                  V1_(V1),
-                  ldh_(ldh),
-                  ldv_(ldv),
-                  ritzv_(ritzv),
-                  nev_(nev), 
-                  nex_(nex), 
-                  nevex_(nev+nex),
-                  config_(N, nev, nex)
-    {
-        //Hmat_ = chase::matrix::Matrix<T>(N_, N_, ldh_, H_);
-        Hmat_ = MatrixType(N_, N_, ldh_, H_);
-        Vec1_ = chase::matrix::Matrix<T>(N_, nevex_, ldv_, V1_);
-        Vec2_ = chase::matrix::Matrix<T>(N_, nevex_);
-        resid_ = chase::matrix::Matrix<chase::Base<T>>(nevex_, 1);
-        ritzvs_ = chase::matrix::Matrix<chase::Base<T>>(nevex_, 1, nevex_, ritzv_);
-        A_ = chase::matrix::Matrix<T>(nevex_, nevex_);
-    }
-    
-    /**
-     * @brief Deleted copy constructor.
-     * 
-     * This class is not copyable, and the copy constructor is deleted to prevent
-     * object duplication.
-     */
-    ChASECPU(const ChASECPU&) = delete;
-    /**
-     * @brief Destructor for the `ChASECPU` class.
-     * 
-     * The destructor is defined to clean up the allocated memory (if any) and
-     * perform necessary cleanup tasks.
-     */
-    ~ChASECPU() {}
+	/**
+	 * @brief CPU-based sequential Chase algorithm.
+	 * 
+	 * This class is responsible for solving generalized eigenvalue problems using CPU-based Lanczos
+	 * iterations and other matrix operations.
+	 * 
+	 * @tparam T The data type (e.g., float, double).
+	 */    
+	template <class T, typename MatrixType = chase::matrix::Matrix<T>>
+	class ChASECPU : public ChaseBase<T>
+	{
+	public:
+	    /**
+	     * @brief Constructs the `ChASECPU` object.
+	     * 
+	     * Initializes the matrices, vectors, and configuration necessary for the computation.
+	     * 
+	     * @param N The size of the matrix (N x N).
+	     * @param nev The number of eigenvalues to compute.
+	     * @param nex The number of additional eigenvalues for extra space.
+	     * @param H Pointer to the matrix of size N x N.
+	     * @param ldh Leading dimension of H.
+	     * @param V1 Pointer to the initial vector set of size N x (nev + nex).
+	     * @param ldv Leading dimension of V1.
+	     * @param ritzv Pointer to the Ritz values.
+	     */
+	    ChASECPU(std::size_t N, 
+			std::size_t nev, 
+			std::size_t nex, 
+			T* H, 
+			std::size_t ldh, 
+			T* V1, 
+			std::size_t ldv,
+			chase::Base<T>* ritzv)
+			: N_(N), 
+			  H_(H),
+			  V1_(V1),
+			  ldh_(ldh),
+			  ldv_(ldv),
+			  ritzv_(ritzv),
+			  nev_(nev), 
+			  nex_(nex), 
+			  nevex_(nev+nex),
+			  config_(N, nev, nex)
+	    {
+		//Hmat_ = chase::matrix::Matrix<T>(N_, N_, ldh_, H_);
+		Hmat_ = MatrixType(N_, N_, ldh_, H_);
+		Vec1_ = chase::matrix::Matrix<T>(N_, nevex_, ldv_, V1_);
+		Vec2_ = chase::matrix::Matrix<T>(N_, nevex_);
+		resid_ = chase::matrix::Matrix<chase::Base<T>>(nevex_, 1);
+		ritzvs_ = chase::matrix::Matrix<chase::Base<T>>(nevex_, 1, nevex_, ritzv_);
+		A_ = chase::matrix::Matrix<T>(nevex_, nevex_);
+	    }
+	    
+	    /**
+	     * @brief Deleted copy constructor.
+	     * 
+	     * This class is not copyable, and the copy constructor is deleted to prevent
+	     * object duplication.
+	     */
+	    ChASECPU(const ChASECPU&) = delete;
+	    /**
+	     * @brief Destructor for the `ChASECPU` class.
+	     * 
+	     * The destructor is defined to clean up the allocated memory (if any) and
+	     * perform necessary cleanup tasks.
+	     */
+	    ~ChASECPU() {}
 
-    std::size_t GetN() const override {return N_;}
+	    std::size_t GetN() const override {return N_;}
 
-    std::size_t GetNev() override {return nev_;}
-    
-    std::size_t GetNex() override {return nex_;}
+	    std::size_t GetNev() override {return nev_;}
+	    
+	    std::size_t GetNex() override {return nex_;}
 
-    chase::Base<T>* GetRitzv() override {return ritzvs_.data(); }
-    chase::Base<T>* GetResid() override {return resid_.data(); }
-    ChaseConfig<T>& GetConfig() override {return config_; }
-    int get_nprocs() override {return 1;}
+	    chase::Base<T>* GetRitzv() override {return ritzvs_.data(); }
+	    chase::Base<T>* GetResid() override {return resid_.data(); }
+	    ChaseConfig<T>& GetConfig() override {return config_; }
+	    int get_nprocs() override {return 1;}
 
-    /**
-    * @brief Loads matrix data from a binary file.
-    *
-    * This function reads the matrix data from a specified binary file and stores it
-    * in the internal matrix (Hmat_). The file is expected to contain the raw matrix
-    * data with a format that is compatible with the matrix's internal representation.
-    *
-    * @param filename The path to the binary file containing the matrix data.
-    */
-    void loadProblemFromFile(std::string filename)
-    {
-        Hmat_.readFromBinaryFile(filename);
-    }
+	    /**
+	    * @brief Loads matrix data from a binary file.
+	    *
+	    * This function reads the matrix data from a specified binary file and stores it
+	    * in the internal matrix (Hmat_). The file is expected to contain the raw matrix
+	    * data with a format that is compatible with the matrix's internal representation.
+	    *
+	    * @param filename The path to the binary file containing the matrix data.
+	    */
+	    void loadProblemFromFile(std::string filename)
+	    {
+		Hmat_.readFromBinaryFile(filename);
+	    }
 
 #ifdef CHASE_OUTPUT
-    //! Print some intermediate infos during the solving procedure
-    void Output(std::string str) override
-    {
-        std::cout << str;
-    }
+	    //! Print some intermediate infos during the solving procedure
+	    void Output(std::string str) override
+	    {
+		std::cout << str;
+	    }
 #endif
 
-    bool checkSymmetryEasy() override
-    {
-        is_sym_ = chase::linalg::internal::cpu::checkSymmetryEasy(N_, Hmat_.data(), Hmat_.ld());  
-        return is_sym_;
-    }
+	    bool checkSymmetryEasy() override
+	    {
+		is_sym_ = chase::linalg::internal::cpu::checkSymmetryEasy(N_, Hmat_.data(), Hmat_.ld());  
+		return is_sym_;
+	    }
 
-    bool isSym() {return is_sym_;}
-    
-    bool checkPseudoHermicityEasy() override
-    {
-	chase::linalg::internal::cpu::toggleLowerMatrixSign(N_, N_, Hmat_.data(), Hmat_.ld());
-        is_pseudoHerm_ = chase::linalg::internal::cpu::checkSymmetryEasy(N_, Hmat_.data(), Hmat_.ld());  
-	chase::linalg::internal::cpu::toggleLowerMatrixSign(N_, N_, Hmat_.data(), Hmat_.ld());
-        return is_pseudoHerm_;
-    }
-    
-    bool isPseudoHerm() {return is_pseudoHerm_;}
+	    bool isSym() {return is_sym_;}
+	    
+	    bool checkPseudoHermicityEasy() override
+	    {
+		chase::linalg::internal::cpu::flipLowerHalfMatrixSign(N_, N_, Hmat_.data(), Hmat_.ld());
+		is_pseudoHerm_ = chase::linalg::internal::cpu::checkSymmetryEasy(N_, Hmat_.data(), Hmat_.ld());  
+		chase::linalg::internal::cpu::flipLowerHalfMatrixSign(N_, N_, Hmat_.data(), Hmat_.ld());
+		return is_pseudoHerm_;
+	    }
+	    
+	    bool isPseudoHerm() {return is_pseudoHerm_;}
 
-    void symOrHermMatrix(char uplo) override
-    {
-        chase::linalg::internal::cpu::symOrHermMatrix(uplo, N_, Hmat_.data(), Hmat_.ld());
-    }
+	    void symOrHermMatrix(char uplo) override
+	    {
+		chase::linalg::internal::cpu::symOrHermMatrix(uplo, N_, Hmat_.data(), Hmat_.ld());
+	    }
 
-    void Start() override
-    {
-        locked_ = 0;
-    }
+	    void Start() override
+	    {
+		locked_ = 0;
+	    }
 
-    void initVecs(bool random) override
-    {
-        if (random)
-        {
-            std::mt19937 gen(1337.0);
-            std::normal_distribution<> d;
-            for (auto j = 0; j < Vec1_.cols(); j++)
-            {
-                for (auto i = 0; i < Vec1_.rows(); i++)
-                {
-                    Vec1_.data()[i + j * Vec1_.ld()] = getRandomT<T>([&]() { return d(gen); });
-                }
-            }
-        }
+	    void initVecs(bool random) override
+	    {
+		if (random)
+		{
+		    std::mt19937 gen(1337.0);
+		    std::normal_distribution<> d;
+		    for (auto j = 0; j < Vec1_.cols(); j++)
+		    {
+			for (auto i = 0; i < Vec1_.rows(); i++)
+			{
+			    Vec1_.data()[i + j * Vec1_.ld()] = getRandomT<T>([&]() { return d(gen); });
+			}
+		    }
+		}
 
-        chase::linalg::lapackpp::t_lacpy('A', 
-                                          Vec1_.rows(), 
-                                          Vec1_.cols(), 
-                                          Vec1_.data(), 
-                                          Vec1_.ld(),
-                                          Vec2_.data(), 
-                                          Vec2_.ld());     
-    }
+		chase::linalg::lapackpp::t_lacpy('A', 
+						  Vec1_.rows(), 
+						  Vec1_.cols(), 
+						  Vec1_.data(), 
+						  Vec1_.ld(),
+						  Vec2_.data(), 
+						  Vec2_.ld());     
+	    }
 
-    void Lanczos(std::size_t m, chase::Base<T>* upperb) override
-    {
-        chase::linalg::internal::cpu::lanczos(m, 
-                                              Hmat_.rows(),
-                                              Hmat_.data(), 
-                                              Hmat_.ld(), 
-                                              Vec1_.data(), 
-                                              Vec1_.ld(), 
-                                              upperb);    
-    }
+	    void Lanczos(std::size_t m, chase::Base<T>* upperb) override
+	    {
 
-    void Lanczos(std::size_t M, std::size_t numvec, chase::Base<T>* upperb,
-                         chase::Base<T>* ritzv, chase::Base<T>* Tau, chase::Base<T>* ritzV) override
-    {
-        chase::linalg::internal::cpu::lanczos(M, 
-                                              numvec, 
-                                              Hmat_.rows(), 
-                                              Hmat_.data(), 
-                                              Hmat_.ld(), 
-                                              Vec1_.data(), 
-                                              Vec1_.ld(), 
-                                              upperb, 
-                                              ritzv, 
-                                              Tau,  
-                                              ritzV);       
-    }
+		if constexpr(std::is_same<MatrixType,chase::matrix::QuasiHermitianMatrix<T>>::value)
+		{
+			chase::linalg::internal::cpu::lanczos(m, 
+						      Hmat_.rows(),
+						      Hmat_.data(), 
+						      Hmat_.ld(), 
+						      Vec1_.data(), 
+						      Vec1_.ld(), 
+						      upperb);
+		}else
+		{
+			chase::linalg::internal::cpu::lanczos(m, 
+						      Hmat_.rows(),
+						      Hmat_.data(), 
+						      Hmat_.ld(), 
+						      Vec1_.data(), 
+						      Vec1_.ld(), 
+						      upperb);
+		}
 
-    void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc) override
-    {
-        
-        T alpha = T(1.0);
-        T beta = T(0.0);
+	    }
 
-        chase::linalg::blaspp::t_gemm(CblasColMajor, 
-                                      CblasNoTrans, 
-                                      CblasNoTrans,
-                                      N_, 
-                                      idx, 
-                                      m, 
-                                      &alpha,
-                                      Vec1_.data(), 
-                                      Vec1_.ld(), 
-                                      ritzVc, 
-                                      m, 
-                                      &beta, 
-                                      Vec2_.data(), 
-                                      Vec2_.ld());
+	    void Lanczos(std::size_t M, std::size_t numvec, chase::Base<T>* upperb,
+				 chase::Base<T>* ritzv, chase::Base<T>* Tau, chase::Base<T>* ritzV) override
+	    {
+		if constexpr(std::is_same<MatrixType,chase::matrix::QuasiHermitianMatrix<T>>::value)
+		{
+			chase::linalg::internal::cpu::quasi_hermitian_lanczos(M, 
+						      numvec, 
+						      Hmat_.rows(), 
+						      Hmat_.data(), 
+						      Hmat_.ld(), 
+						      Vec1_.data(), 
+						      Vec1_.ld(), 
+						      upperb, 
+						      ritzv, 
+						      Tau,  
+						      ritzV);
+		}else
+		{
+			chase::linalg::internal::cpu::lanczos(M, 
+						      numvec, 
+						      Hmat_.rows(), 
+						      Hmat_.data(), 
+						      Hmat_.ld(), 
+						      Vec1_.data(), 
+						      Vec1_.ld(), 
+						      upperb, 
+						      ritzv, 
+						      Tau,  
+						      ritzV);
+		}	
+	    }
 
-        chase::linalg::lapackpp::t_lacpy('A', 
-                                          Vec1_.rows(), 
-                                          m, 
-                                          Vec2_.data(), 
-                                          Vec2_.ld(),
-                                          Vec1_.data(), 
-                                          Vec1_.ld());
-    }
+	    void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc) override
+	    {
+		
+		T alpha = T(1.0);
+		T beta = T(0.0);
 
-    void Shift(T c, bool isunshift = false) override
-    {
-        for (auto i = 0; i < N_; ++i)
-        {
-            Hmat_.data()[i + i * Hmat_.ld()] += c;
-        }
+		chase::linalg::blaspp::t_gemm(CblasColMajor, 
+					      CblasNoTrans, 
+					      CblasNoTrans,
+					      N_, 
+					      idx, 
+					      m, 
+					      &alpha,
+					      Vec1_.data(), 
+					      Vec1_.ld(), 
+					      ritzVc, 
+					      m, 
+					      &beta, 
+					      Vec2_.data(), 
+					      Vec2_.ld());
+
+		chase::linalg::lapackpp::t_lacpy('A', 
+						  Vec1_.rows(), 
+						  m, 
+						  Vec2_.data(), 
+						  Vec2_.ld(),
+						  Vec1_.data(), 
+						  Vec1_.ld());
+	    }
+
+	    void Shift(T c, bool isunshift = false) override
+	    {
+		for (auto i = 0; i < N_; ++i)
+		{
+		    Hmat_.data()[i + i * Hmat_.ld()] += c;
+		}
 #ifdef ENABLE_MIXED_PRECISION
-        //mixed precision
-        if constexpr (std::is_same<T, double>::value || std::is_same<T, std::complex<double>>::value)
-        {
-            auto min = *std::min_element(resid_.data() + locked_, resid_.data() + nev_);
-            
-            if(min > 1e-3)
-            {
-                if(isunshift)
-                {
-                    if(Hmat_.isSinglePrecisionEnabled())
-                    {
-                        Hmat_.disableSinglePrecision();
-                    }
-                    if(Vec1_.isSinglePrecisionEnabled())
-                    {
-                        Vec1_.disableSinglePrecision(true);
-                    }   
-                    if(Vec2_.isSinglePrecisionEnabled())
-                    {
-                        Vec2_.disableSinglePrecision();
-                    }                                       
-                }else
-                {
-                    std::cout << "Enable Single Precision in Filter" << std::endl;
-                    Hmat_.enableSinglePrecision();
-                    Vec1_.enableSinglePrecision();
-                    Vec2_.enableSinglePrecision();  
-                }
-  
-            }else
-            {
-                if(Hmat_.isSinglePrecisionEnabled())
-                {
-                    Hmat_.disableSinglePrecision();
-                }
-                if(Vec1_.isSinglePrecisionEnabled())
-                {
-                    Vec1_.disableSinglePrecision(true);
-                }   
-                if(Vec2_.isSinglePrecisionEnabled())
-                {
-                    Vec2_.disableSinglePrecision();
-                }  
-            }
-        }
+		//mixed precision
+		if constexpr (std::is_same<T, double>::value || std::is_same<T, std::complex<double>>::value)
+		{
+		    auto min = *std::min_element(resid_.data() + locked_, resid_.data() + nev_);
+		    
+		    if(min > 1e-3)
+		    {
+			if(isunshift)
+			{
+			    if(Hmat_.isSinglePrecisionEnabled())
+			    {
+				Hmat_.disableSinglePrecision();
+			    }
+			    if(Vec1_.isSinglePrecisionEnabled())
+			    {
+				Vec1_.disableSinglePrecision(true);
+			    }   
+			    if(Vec2_.isSinglePrecisionEnabled())
+			    {
+				Vec2_.disableSinglePrecision();
+			    }                                       
+			}else
+			{
+			    std::cout << "Enable Single Precision in Filter" << std::endl;
+			    Hmat_.enableSinglePrecision();
+			    Vec1_.enableSinglePrecision();
+			    Vec2_.enableSinglePrecision();  
+			}
+	  
+		    }else
+		    {
+			if(Hmat_.isSinglePrecisionEnabled())
+			{
+			    Hmat_.disableSinglePrecision();
+			}
+			if(Vec1_.isSinglePrecisionEnabled())
+			{
+			    Vec1_.disableSinglePrecision(true);
+			}   
+			if(Vec2_.isSinglePrecisionEnabled())
+			{
+			    Vec2_.disableSinglePrecision();
+			}  
+		    }
+		}
 #endif               
-    }
-    
-    void HEMM(std::size_t block, T alpha, T beta, std::size_t offset) override
-    {
+	    }
+	    
+	    void HEMM(std::size_t block, T alpha, T beta, std::size_t offset) override
+	    {
 #ifdef ENABLE_MIXED_PRECISION
-        if constexpr (std::is_same<T, double>::value || std::is_same<T, std::complex<double>>::value)
-        {
-            using singlePrecisionT = typename chase::ToSinglePrecisionTrait<T>::Type;
-            auto min = *std::min_element(resid_.data() + locked_, resid_.data() + nev_);
-            if(min > 1e-3)
-            {
-                auto Hmat_sp = Hmat_.matrix_sp();
-                auto Vec1_sp = Vec1_.matrix_sp();
-                auto Vec2_sp = Vec2_.matrix_sp();
-                singlePrecisionT alpha_sp = static_cast<singlePrecisionT>(alpha);
-                singlePrecisionT beta_sp = static_cast<singlePrecisionT>(beta);
+		if constexpr (std::is_same<T, double>::value || std::is_same<T, std::complex<double>>::value)
+		{
+		    using singlePrecisionT = typename chase::ToSinglePrecisionTrait<T>::Type;
+		    auto min = *std::min_element(resid_.data() + locked_, resid_.data() + nev_);
+		    if(min > 1e-3)
+		    {
+			auto Hmat_sp = Hmat_.matrix_sp();
+			auto Vec1_sp = Vec1_.matrix_sp();
+			auto Vec2_sp = Vec2_.matrix_sp();
+			singlePrecisionT alpha_sp = static_cast<singlePrecisionT>(alpha);
+			singlePrecisionT beta_sp = static_cast<singlePrecisionT>(beta);
 
-                chase::linalg::blaspp::t_gemm<singlePrecisionT>(CblasColMajor, 
-                                            CblasNoTrans, 
-                                            CblasNoTrans, 
-                                            Hmat_sp->rows(),
-                                            block, 
+			chase::linalg::blaspp::t_gemm<singlePrecisionT>(CblasColMajor, 
+						    CblasNoTrans, 
+						    CblasNoTrans, 
+						    Hmat_sp->rows(),
+						    block, 
                                             Hmat_sp->cols(), 
                                             &alpha_sp, 
                                             Hmat_sp->data(), 
