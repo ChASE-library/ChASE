@@ -69,8 +69,8 @@ namespace Impl
 	    ChASECPU(std::size_t N, 
 			std::size_t nev, 
 			std::size_t nex, 
-			T* H, 
-			std::size_t ldh, 
+			T* H,
+		        std::size_t ldh,	
 			T* V1, 
 			std::size_t ldv,
 			chase::Base<T>* ritzv)
@@ -85,8 +85,47 @@ namespace Impl
 			  nevex_(nev+nex),
 			  config_(N, nev, nex)
 	    {
-		//Hmat_ = chase::matrix::Matrix<T>(N_, N_, ldh_, H_);
-		Hmat_ = MatrixType(N_, N_, ldh_, H_);
+		Hmat_ = new MatrixType(N_, N_, ldh_, H_);
+		Vec1_ = chase::matrix::Matrix<T>(N_, nevex_, ldv_, V1_);
+		Vec2_ = chase::matrix::Matrix<T>(N_, nevex_);
+		resid_ = chase::matrix::Matrix<chase::Base<T>>(nevex_, 1);
+		ritzvs_ = chase::matrix::Matrix<chase::Base<T>>(nevex_, 1, nevex_, ritzv_);
+		A_ = chase::matrix::Matrix<T>(nevex_, nevex_);
+	    }
+
+	    /**
+	     * @brief Constructs the `ChASECPU` object.
+	     * 
+	     * Initializes the matrices, vectors, and configuration necessary for the computation.
+	     * 
+	     * @param N The size of the matrix (N x N).
+	     * @param nev The number of eigenvalues to compute.
+	     * @param nex The number of additional eigenvalues for extra space.
+	     * @param H Pointer to the matrix of size N x N.
+	     * @param ldh Leading dimension of H.
+	     * @param V1 Pointer to the initial vector set of size N x (nev + nex).
+	     * @param ldv Leading dimension of V1.
+	     * @param ritzv Pointer to the Ritz values.
+	     */
+	    ChASECPU(std::size_t N, 
+			std::size_t nev, 
+			std::size_t nex, 
+			MatrixType *H, 
+			T* V1, 
+			std::size_t ldv,
+			chase::Base<T>* ritzv)
+			: N_(N), 
+			  H_(H->data()),
+			  V1_(V1),
+			  ldh_(H->ld()),
+			  ldv_(ldv),
+			  ritzv_(ritzv),
+			  nev_(nev), 
+			  nex_(nex), 
+			  nevex_(nev+nex),
+			  config_(N, nev, nex)
+	    {
+		Hmat_ = H;
 		Vec1_ = chase::matrix::Matrix<T>(N_, nevex_, ldv_, V1_);
 		Vec2_ = chase::matrix::Matrix<T>(N_, nevex_);
 		resid_ = chase::matrix::Matrix<chase::Base<T>>(nevex_, 1);
@@ -131,7 +170,7 @@ namespace Impl
 	    */
 	    void loadProblemFromFile(std::string filename)
 	    {
-		Hmat_.readFromBinaryFile(filename);
+		Hmat_->readFromBinaryFile(filename);
 	    }
 
 #ifdef CHASE_OUTPUT
@@ -144,7 +183,7 @@ namespace Impl
 
 	    bool checkSymmetryEasy() override
 	    {
-		is_sym_ = chase::linalg::internal::cpu::checkSymmetryEasy(N_, Hmat_.data(), Hmat_.ld());  
+		is_sym_ = chase::linalg::internal::cpu::checkSymmetryEasy(N_, Hmat_->data(), Hmat_->ld());  
 		return is_sym_;
 	    }
 
@@ -152,9 +191,12 @@ namespace Impl
 	    
 	    bool checkPseudoHermicityEasy() override
 	    {
-		chase::linalg::internal::cpu::flipLowerHalfMatrixSign(N_, N_, Hmat_.data(), Hmat_.ld());
-		is_pseudoHerm_ = chase::linalg::internal::cpu::checkSymmetryEasy(N_, Hmat_.data(), Hmat_.ld());  
-		chase::linalg::internal::cpu::flipLowerHalfMatrixSign(N_, N_, Hmat_.data(), Hmat_.ld());
+		chase::linalg::internal::cpu::flipLowerHalfMatrixSign(N_, N_, Hmat_->data(), Hmat_->ld());
+
+		is_pseudoHerm_ = chase::linalg::internal::cpu::checkSymmetryEasy(N_, Hmat_->data(), Hmat_->ld());
+
+		chase::linalg::internal::cpu::flipLowerHalfMatrixSign(N_, N_, Hmat_->data(), Hmat_->ld());
+
 		return is_pseudoHerm_;
 	    }
 	    
@@ -162,7 +204,7 @@ namespace Impl
 
 	    void symOrHermMatrix(char uplo) override
 	    {
-		chase::linalg::internal::cpu::symOrHermMatrix(uplo, N_, Hmat_.data(), Hmat_.ld());
+		chase::linalg::internal::cpu::symOrHermMatrix(uplo, N_, Hmat_->data(), Hmat_->ld());
 	    }
 
 	    void Start() override
@@ -200,18 +242,18 @@ namespace Impl
 		if constexpr(std::is_same<MatrixType,chase::matrix::QuasiHermitianMatrix<T>>::value)
 		{
 			chase::linalg::internal::cpu::lanczos(m, 
-						      Hmat_.rows(),
-						      Hmat_.data(), 
-						      Hmat_.ld(), 
+						      Hmat_->rows(),
+						      Hmat_->data(), 
+						      Hmat_->ld(), 
 						      Vec1_.data(), 
 						      Vec1_.ld(), 
 						      upperb);
 		}else
 		{
 			chase::linalg::internal::cpu::lanczos(m, 
-						      Hmat_.rows(),
-						      Hmat_.data(), 
-						      Hmat_.ld(), 
+						      Hmat_->rows(),
+						      Hmat_->data(), 
+						      Hmat_->ld(), 
 						      Vec1_.data(), 
 						      Vec1_.ld(), 
 						      upperb);
@@ -226,9 +268,7 @@ namespace Impl
 		{
 			chase::linalg::internal::cpu::quasi_hermitian_lanczos(M, 
 						      numvec, 
-						      Hmat_.rows(), 
-						      Hmat_.data(), 
-						      Hmat_.ld(), 
+						      Hmat_, 
 						      Vec1_.data(), 
 						      Vec1_.ld(), 
 						      upperb, 
@@ -239,9 +279,9 @@ namespace Impl
 		{
 			chase::linalg::internal::cpu::lanczos(M, 
 						      numvec, 
-						      Hmat_.rows(), 
-						      Hmat_.data(), 
-						      Hmat_.ld(), 
+						      Hmat_->rows(), 
+						      Hmat_->data(), 
+						      Hmat_->ld(), 
 						      Vec1_.data(), 
 						      Vec1_.ld(), 
 						      upperb, 
@@ -285,7 +325,7 @@ namespace Impl
 	    {
 		for (auto i = 0; i < N_; ++i)
 		{
-		    Hmat_.data()[i + i * Hmat_.ld()] += c;
+		    Hmat_->data()[i + i * Hmat_->ld()] += c;
 		}
 #ifdef ENABLE_MIXED_PRECISION
 		//mixed precision
@@ -297,9 +337,9 @@ namespace Impl
 		    {
 			if(isunshift)
 			{
-			    if(Hmat_.isSinglePrecisionEnabled())
+			    if(Hmat_->isSinglePrecisionEnabled())
 			    {
-				Hmat_.disableSinglePrecision();
+				Hmat_->disableSinglePrecision();
 			    }
 			    if(Vec1_.isSinglePrecisionEnabled())
 			    {
@@ -312,16 +352,16 @@ namespace Impl
 			}else
 			{
 			    std::cout << "Enable Single Precision in Filter" << std::endl;
-			    Hmat_.enableSinglePrecision();
+			    Hmat_->enableSinglePrecision();
 			    Vec1_.enableSinglePrecision();
 			    Vec2_.enableSinglePrecision();  
 			}
 	  
 		    }else
 		    {
-			if(Hmat_.isSinglePrecisionEnabled())
+			if(Hmat_->isSinglePrecisionEnabled())
 			{
-			    Hmat_.disableSinglePrecision();
+			    Hmat_->disableSinglePrecision();
 			}
 			if(Vec1_.isSinglePrecisionEnabled())
 			{
@@ -345,7 +385,7 @@ namespace Impl
 		    auto min = *std::min_element(resid_.data() + locked_, resid_.data() + nev_);
 		    if(min > 1e-3)
 		    {
-			auto Hmat_sp = Hmat_.matrix_sp();
+			auto Hmat_sp = Hmat_->matrix_sp();
 			auto Vec1_sp = Vec1_.matrix_sp();
 			auto Vec2_sp = Vec2_.matrix_sp();
 			singlePrecisionT alpha_sp = static_cast<singlePrecisionT>(alpha);
@@ -371,12 +411,12 @@ namespace Impl
                 chase::linalg::blaspp::t_gemm<T>(CblasColMajor, 
                                             CblasNoTrans, 
                                             CblasNoTrans, 
-                                            Hmat_.rows(),
+                                            Hmat_->rows(),
                                             block, 
-                                            Hmat_.cols(), 
+                                            Hmat_->cols(), 
                                             &alpha, 
-                                            Hmat_.data(), 
-                                            Hmat_.ld(),
+                                            Hmat_->data(), 
+                                            Hmat_->ld(),
                                             Vec1_.data() + offset * N_ + locked_ * N_, 
                                             Vec1_.ld(), 
                                             &beta,
@@ -390,12 +430,12 @@ namespace Impl
             chase::linalg::blaspp::t_gemm<T>(CblasColMajor, 
                                         CblasNoTrans, 
                                         CblasNoTrans, 
-                                        Hmat_.rows(),
+                                        Hmat_->rows(),
                                         block, 
-                                        Hmat_.cols(), 
+                                        Hmat_->cols(), 
                                         &alpha, 
-                                        Hmat_.data(), 
-                                        Hmat_.ld(),
+                                        Hmat_->data(), 
+                                        Hmat_->ld(),
                                         Vec1_.data() + offset * Vec1_.ld() + locked_ * Vec1_.ld(), 
                                         Vec1_.ld(), 
                                         &beta,
@@ -506,9 +546,9 @@ namespace Impl
 
     void RR(chase::Base<T>* ritzv, std::size_t block) override
     {   
-        chase::linalg::internal::cpu::rayleighRitz(Hmat_.rows(),
-                                                   Hmat_.data(),
-                                                   Hmat_.ld(),
+        chase::linalg::internal::cpu::rayleighRitz(Hmat_->rows(),
+                                                   Hmat_->data(),
+                                                   Hmat_->ld(),
                                                    block, 
                                                    Vec1_.data() + locked_ * Vec1_.ld(),
                                                    Vec1_.ld(),
@@ -525,9 +565,9 @@ namespace Impl
     {
         std::size_t unconverged = (nev_ + nex_) - fixednev;
 
-        chase::linalg::internal::cpu::residuals(Hmat_.rows(),
-                                                Hmat_.data(),
-                                                Hmat_.ld(),
+        chase::linalg::internal::cpu::residuals(Hmat_->rows(),
+                                                Hmat_->data(),
+                                                Hmat_->ld(),
                                                 unconverged,
                                                 ritzvs_.data() + fixednev,
                                                 Vec1_.data() + fixednev * Vec1_.ld(),
@@ -564,7 +604,7 @@ private:
     std::size_t nevex_;              ///< Total number of eigenvalues (nev + nex).
     ChaseConfig<T> config_;          ///< Configuration object for settings.
     
-    MatrixType Hmat_;  ///< Matrix for H.
+    MatrixType *Hmat_;  ///< Matrix for H.
     chase::matrix::Matrix<T> Vec1_; ///< Matrix for the first vector set.
     chase::matrix::Matrix<T> Vec2_; ///< Matrix for the second vector set.
     chase::matrix::Matrix<chase::Base<T>> resid_; ///< Residuals matrix.

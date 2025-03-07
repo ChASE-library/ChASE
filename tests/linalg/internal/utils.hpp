@@ -39,6 +39,12 @@ std::string GetQRFileName() {
     return "../QR_matrices/matrix_" + TypeName<T>::Get();
 }
 
+template<typename T>
+std::string GetBSEPath() {
+    //return "${ChASEROOT}/docs/BSE_matrices";
+    return "../data";
+}
+
 
 template<typename T>
 struct MachineEpsilon {

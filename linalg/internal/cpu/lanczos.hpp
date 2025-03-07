@@ -10,7 +10,7 @@
 #include "external/blaspp/blaspp.hpp"
 #include "external/lapackpp/lapackpp.hpp"
 #include "linalg/internal/cpu/utils.hpp"
-
+#include "linalg/matrix/matrix.hpp"
 using namespace chase::linalg;
 
 namespace chase
@@ -172,11 +172,22 @@ namespace cpu
         {
             lapackpp::t_stemr(LAPACK_COL_MAJOR, 'V', 'A', M, d.data() + i * M, e.data() + i * M, ul, ll, vl, vu,
                                 &notneeded_m, ritzv + M * i, ritzV, M, M, isuppz.data(), &tryrac);
+
             for (std::size_t k = 0; k < M; ++k)
             {
                 Tau[k + i * M] = std::abs(ritzV[k * M]) * std::abs(ritzV[k * M]);
             }
         }
+	
+	//std::cout << "Three first ritz values are : " << std::endl;
+	//std::cout << ritzv[0] << std::endl;
+	//std::cout << ritzv[1] << std::endl;
+	//std::cout << ritzv[2] << std::endl;
+	
+	//std::cout << "Three last ritz values are : " << std::endl;
+	//std::cout << ritzv[N-3] << std::endl;
+	//std::cout << ritzv[N-2] << std::endl;
+	//std::cout << ritzv[N-1] << std::endl;
 
         Base<T> max;
         *upperb = std::max(std::abs(ritzv[0]), std::abs(ritzv[M - 1])) +
@@ -310,7 +321,7 @@ namespace cpu
      */    
 
     template<typename T>
-    void quasi_hermitian_lanczos(std::size_t M, std::size_t numvec, std::size_t N, T *H, std::size_t ldh, T *V, std::size_t ldv, 
+    void quasi_hermitian_lanczos(std::size_t M, std::size_t numvec, chase::matrix::QuasiHermitianMatrix<T> * H, T *V, std::size_t ldv, 
                 Base<T>* upperb, Base<T>* ritzv, Base<T>* Tau, Base<T>* ritzV)
     {
         T One = T(1.0);
@@ -324,6 +335,8 @@ namespace cpu
         
         std::vector<Base<T>> r_beta(numvec);
 
+	std::size_t N = H->rows();
+
         std::vector<T> v_0(N * numvec, T(0.0));
         std::vector<T> v_1(N * numvec, T(0.0));
         std::vector<T> v_2(N * numvec, T(0.0)); // is w in JuChASE 
@@ -332,7 +345,7 @@ namespace cpu
         lapackpp::t_lacpy('A', N, numvec, V, ldv, v_1.data(), N);
 
         blaspp::t_gemm<T>(CblasColMajor, CblasConjTrans, CblasNoTrans, N,
-                  numvec, N, &One, H, ldh,
+                  numvec, N, &One, H->data(), H->ld(),
                   v_1.data(), N, &Zero, v_2.data(), N);
 
         lapackpp::t_lacpy('A', N, numvec, v_2.data(), N, Sv.data(), N);
@@ -415,9 +428,9 @@ namespace cpu
             v_1.swap(v_0);
 	    v_1.swap(v_2);
 	
-	    blaspp::t_gemm<T>(CblasColMajor, CblasConjTrans, CblasNoTrans, N,
-            	numvec, N, &One, H, ldh,
-                v_1.data(), N, &Zero, v_2.data(), N);
+            blaspp::t_gemm<T>(CblasColMajor, CblasConjTrans, CblasNoTrans, N,
+                  numvec, N, &One, H->data(), H->ld(),
+                  v_1.data(), N, &Zero, v_2.data(), N);
 	    
 	    lapackpp::t_lacpy('A', N, numvec, v_2.data(), N, Sv.data(), N);
 
@@ -489,7 +502,7 @@ namespace cpu
           max = std::max(std::abs(ritzv[i * M]), std::abs(ritzv[ (i + 1) * M - 1])) +
                   std::abs(r_beta[i]);
           *upperb = std::max(max, *upperb);        
-        }               
+        }
     }
 }
 }
