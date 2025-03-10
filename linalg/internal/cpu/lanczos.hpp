@@ -34,9 +34,7 @@ namespace cpu
      * @tparam T The data type for the matrix elements (e.g., float, double).
      * @param M The number of Lanczos iterations.
      * @param numvec The number of runs of Lanczos.
-     * @param N The size of the input matrix `H`.
      * @param H The input matrix for the Lanczos algorithm (of size `N x N`).
-     * @param ldh The leading dimension of `H` (number of rows).
      * @param V The input matrix used for storing vectors (of size `N x numvec`).
      * @param ldv The leading dimension of `V` (number of rows).
      * @param upperb A pointer to the upper bound of the eigenvalue spectrum.
@@ -45,11 +43,12 @@ namespace cpu
      * @param ritzV A pointer to store the Ritz eigenvectors.
      */    
     template<typename T>
-    void lanczos(std::size_t M, std::size_t numvec, std::size_t N, T *H, std::size_t ldh, T *V, std::size_t ldv, 
+    void lanczos(std::size_t M, std::size_t numvec, chase::matrix::Matrix<T> * H, T *V, std::size_t ldv, 
                 Base<T>* upperb, Base<T>* ritzv, Base<T>* Tau, Base<T>* ritzV)
     {
         T One = T(1.0);
         T Zero = T(0.0);
+	std::size_t N = H->rows(); // The size of the input matrix `H`.
         std::vector<Base<T>> r_beta(numvec);
         
         std::vector<Base<T>> d(M * numvec);
@@ -87,7 +86,7 @@ namespace cpu
             }
 
             blaspp::t_gemm<T>(CblasColMajor, CblasConjTrans, CblasNoTrans, N,
-                  numvec, N, &One, H, ldh,
+                  numvec, N, &One, H->data(), H->ld(),
                   v_1.data(), N, &Zero, v_2.data(), N);
 
             for(auto i = 0; i < numvec; i++)
@@ -211,19 +210,18 @@ namespace cpu
      *
      * @tparam T The data type for the matrix elements (e.g., float, double).
      * @param M The number of Lanczos iterations.
-     * @param N The size of the input matrix `H`.
      * @param H The input matrix for the Lanczos algorithm (of size `N x N`).
-     * @param ldh The leading dimension of `H` (number of rows).
      * @param V The input matrix used for storing vectors (of size `N x 1`).
      * @param ldv The leading dimension of `V` (number of rows).
      * @param upperb A pointer to the upper bound of the eigenvalue spectrum.
      */
     template<typename T>
-    void lanczos(std::size_t M, std::size_t N, T *H, std::size_t ldh, T *V, std::size_t ldv, 
+    void lanczos(std::size_t M, chase::matrix::Matrix<T> * H, T *V, std::size_t ldv, 
                 Base<T>* upperb)
     {
         T One = T(1.0);
         T Zero = T(0.0);
+	std::size_t N = H->rows();
         Base<T> r_beta;
         
         std::vector<Base<T>> d(M);
@@ -247,7 +245,7 @@ namespace cpu
         for (std::size_t k = 0; k < M; k = k + 1)
         {
             blaspp::t_gemm<T>(CblasColMajor, CblasConjTrans, CblasNoTrans, N,
-                  1, N, &One, H, ldh,
+                  1, N, &One, H->data(), H->ld(),
                   v_1.data(), N, &Zero, v_2.data(), N);
 
             alpha = blaspp::t_dot(N, v_1.data(), 1, v_2.data(), 1);
@@ -321,7 +319,7 @@ namespace cpu
      */    
 
     template<typename T>
-    void quasi_hermitian_lanczos(std::size_t M, std::size_t numvec, chase::matrix::QuasiHermitianMatrix<T> * H, T *V, std::size_t ldv, 
+    void lanczos(std::size_t M, std::size_t numvec, chase::matrix::QuasiHermitianMatrix<T> * H, T *V, std::size_t ldv, 
                 Base<T>* upperb, Base<T>* ritzv, Base<T>* Tau, Base<T>* ritzV)
     {
         T One = T(1.0);
@@ -504,6 +502,118 @@ namespace cpu
           *upperb = std::max(max, *upperb);        
         }
     }
+
+    /**
+     * @brief Lanczos algorithm for eigenvalue computation of quasi-hermitian matrices (simplified version).
+     *
+     * This version of the Lanczos algorithm is a simplified version that computes
+     * only the upper bound of the eigenvalue spectrum of quasi-hermitian matrices 
+     * and does not computei eigenvectors. It operates similarly to the full 
+     * Lanczos algorithm but omits the eigenvector computation step.
+     *
+     * @tparam T The data type for the matrix elements (e.g., float, double).
+     * @param M The number of Lanczos iterations.
+     * @param H The input quasi-hermitian matrix for the Lanczos algorithm (of size `N x N`).
+     * @param V The input matrix used for storing vectors (of size `N x 1`).
+     * @param ldv The leading dimension of `V` (number of rows).
+     * @param upperb A pointer to the upper bound of the eigenvalue spectrum.
+     */
+    template<typename T>
+    void lanczos(std::size_t M, chase::matrix::QuasiHermitianMatrix<T> * H, T *V, std::size_t ldv, 
+                Base<T>* upperb)
+    {
+        Base<T> r_beta;
+	std::size_t N = H->rows();
+        T One = T(1.0), Zero = T(0.0), alpha = T(1.0), beta = T(0.0);
+        
+        std::vector<Base<T>> d(M);
+        std::vector<Base<T>> e(M);
+
+        std::vector<T> v_0(N, T(0.0));
+        std::vector<T> v_1(N, T(0.0));
+        std::vector<T> v_2(N, T(0.0));
+	std::vector<T> Sv (N, T(0,0));
+        
+	lapackpp::t_lacpy('A', N, 1, V, ldv, v_1.data(), N);
+
+        blaspp::t_gemm<T>(CblasColMajor, CblasConjTrans, CblasNoTrans, N,
+                  1, N, &One, H->data(), H->ld(),
+                  v_1.data(), N, &Zero, v_2.data(), N);
+
+        lapackpp::t_lacpy('A', N, 1, v_2.data(), N, Sv.data(), N);
+	
+	chase::linalg::internal::cpu::flipLowerHalfMatrixSign(N,1, Sv.data(), N);
+	
+	beta = blaspp::t_dot(N,v_1.data(), 1, Sv.data(), 1);
+	
+	beta = 1.0 / sqrt(beta);
+        
+        blaspp::t_scal(N, &beta, v_1.data(), 1);
+       
+        blaspp::t_scal(N, &beta, v_2.data(), 1);
+
+        for (std::size_t k = 0; k < M; k = k + 1)
+        {
+	    alpha = blaspp::t_dot(N,v_2.data(), 1, Sv.data(), 1);
+	    	    
+	    alpha = -1.0 * alpha * beta;
+            
+            blaspp::t_axpy(N, &alpha, v_1.data(), 1, v_2.data(), 1);
+
+	    alpha = -alpha;
+
+            d[k] = std::real(alpha);
+
+	    if(k == M - 1) break;
+
+	    beta = -1.0 / beta;
+
+            blaspp::t_axpy(N, &beta, v_0.data(), 1, v_2.data(), 1);
+		
+	    beta = -beta;
+
+            v_1.swap(v_0);
+	    v_1.swap(v_2);
+	
+            blaspp::t_gemm<T>(CblasColMajor, CblasConjTrans, CblasNoTrans, N,
+                  1, N, &One, H->data(), H->ld(),
+                  v_1.data(), N, &Zero, v_2.data(), N);
+	    
+	    lapackpp::t_lacpy('A', N, 1, v_2.data(), N, Sv.data(), N);
+
+	    chase::linalg::internal::cpu::flipLowerHalfMatrixSign(N, 1, Sv.data(), N);
+	
+	    beta = blaspp::t_dot(N,v_1.data(), 1, Sv.data(), 1);
+	
+	    beta = sqrt(beta);
+	    
+	    r_beta = std::real(beta);
+            
+            e[k] = r_beta; 
+	
+	    beta = 1.0 / beta;
+        
+            blaspp::t_scal(N, &beta, v_1.data(), 1);
+	
+            blaspp::t_scal(N, &beta, v_2.data(), 1);
+        }        
+
+        int notneeded_m;
+        Base<T> ul = 0;
+        Base<T> ll = 0;
+        int tryrac = 0;
+        std::size_t vl = 0;
+        std::size_t vu = 0;
+        std::vector<int> isuppz(2 * M);
+        std::vector<Base<T>> ritzv(M);
+
+        lapackpp::t_stemr<Base<T>>(LAPACK_COL_MAJOR, 'N', 'A', M, d.data(), e.data(), ul, ll, vl, vu,
+                         &notneeded_m, ritzv.data(), NULL, M, M, isuppz.data(), &tryrac);
+
+        *upperb = std::max(std::abs(ritzv[0]), std::abs(ritzv[M - 1])) +
+                  std::abs(r_beta);
+    }
+
 }
 }
 }

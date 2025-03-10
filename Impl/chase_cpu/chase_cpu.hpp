@@ -238,35 +238,17 @@ namespace Impl
 
 	    void Lanczos(std::size_t m, chase::Base<T>* upperb) override
 	    {
-
-		if constexpr(std::is_same<MatrixType,chase::matrix::QuasiHermitianMatrix<T>>::value)
-		{
-			chase::linalg::internal::cpu::lanczos(m, 
-						      Hmat_->rows(),
-						      Hmat_->data(), 
-						      Hmat_->ld(), 
+		chase::linalg::internal::cpu::lanczos(m, 
+						      Hmat_,
 						      Vec1_.data(), 
 						      Vec1_.ld(), 
 						      upperb);
-		}else
-		{
-			chase::linalg::internal::cpu::lanczos(m, 
-						      Hmat_->rows(),
-						      Hmat_->data(), 
-						      Hmat_->ld(), 
-						      Vec1_.data(), 
-						      Vec1_.ld(), 
-						      upperb);
-		}
-
 	    }
 
 	    void Lanczos(std::size_t M, std::size_t numvec, chase::Base<T>* upperb,
 				 chase::Base<T>* ritzv, chase::Base<T>* Tau, chase::Base<T>* ritzV) override
 	    {
-		if constexpr(std::is_same<MatrixType,chase::matrix::QuasiHermitianMatrix<T>>::value)
-		{
-			chase::linalg::internal::cpu::quasi_hermitian_lanczos(M, 
+		chase::linalg::internal::cpu::lanczos(M, 
 						      numvec, 
 						      Hmat_, 
 						      Vec1_.data(), 
@@ -275,20 +257,6 @@ namespace Impl
 						      ritzv, 
 						      Tau,  
 						      ritzV);
-		}else
-		{
-			chase::linalg::internal::cpu::lanczos(M, 
-						      numvec, 
-						      Hmat_->rows(), 
-						      Hmat_->data(), 
-						      Hmat_->ld(), 
-						      Vec1_.data(), 
-						      Vec1_.ld(), 
-						      upperb, 
-						      ritzv, 
-						      Tau,  
-						      ritzV);
-		}	
 	    }
 
 	    void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc) override
