@@ -16,21 +16,25 @@ struct TypeName;
 template<>
 struct TypeName<float> {
     static std::string Get() { return "float_"; }
+    static std::string GetLong() { return "simple"; }
 };
 
 template<>
 struct TypeName<double> {
     static std::string Get() { return "double_"; }
+    static std::string GetLong() { return "double"; }
 };
 
 template<>
 struct TypeName<std::complex<float>> {
     static std::string Get() { return "cfloat_"; }
+    static std::string GetLong() { return "complex_simple"; }
 };
 
 template<>
 struct TypeName<std::complex<double>> {
     static std::string Get() { return "cdouble_"; }
+    static std::string GetLong() { return "complex_double"; }
 };
 
 
@@ -41,10 +45,38 @@ std::string GetQRFileName() {
 
 template<typename T>
 std::string GetBSEPath() {
-    //return "${ChASEROOT}/docs/BSE_matrices";
-    return "../data";
+    return "../BSE_matrices";
 }
 
+template<typename T>
+std::string GetBSETiny_MatrixFileName(){
+    return GetBSEPath<T>() + "/tiny_random_quasihermitian_" + TypeName<T>::GetLong() + ".bin";
+}
+
+template<typename T>
+std::string GetBSETiny_EigenvaluesFileName(){
+    return GetBSEPath<T>() + "/eigenvalues_tiny_random_quasihermitian_" + TypeName<T>::GetLong() + ".bin";
+}
+
+template<typename T>
+std::string GetBSETiny_SH_EigenvaluesFileName(){
+    return GetBSEPath<T>() + "/SH_eigenvalues_tiny_random_quasihermitian_" + TypeName<T>::GetLong() + ".bin";
+}
+
+template<typename T>
+std::string GetBSE_MatrixFileName(){
+    return GetBSEPath<T>() + "/random_quasihermitian_" + TypeName<T>::GetLong() + ".bin";
+}
+
+template<typename T>
+std::string GetBSE_EigenvaluesFileName(){
+    return GetBSEPath<T>() + "/eigenvalues_random_quasihermitian_" + TypeName<T>::GetLong() + ".bin";
+}
+
+template<typename T>
+std::string GetBSE_SH_EigenvaluesFileName(){
+    return GetBSEPath<T>() + "/SH_eigenvalues_random_quasihermitian_" + TypeName<T>::GetLong() + ".bin";
+}
 
 template<typename T>
 struct MachineEpsilon {

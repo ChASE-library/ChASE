@@ -361,7 +361,7 @@ namespace cpu
 	
 	for(auto i = 0; i < numvec; i++)
 	{
-		beta[i] = 1.0 / sqrt(beta[i]);
+		beta[i] = One / sqrt(beta[i]);
 	}
         
 	for(auto i = 0; i < numvec; i++)
@@ -388,7 +388,7 @@ namespace cpu
 	    
 	    for(auto i = 0; i < numvec; i++)
 	    {
-		alpha[i] = -1.0 * alpha[i] * beta[i];
+		alpha[i] = -alpha[i] * beta[i];
 	    }
             
 	    for(auto i = 0; i < numvec; i++)
@@ -410,7 +410,7 @@ namespace cpu
 
 	    for(auto i = 0; i < numvec; i++)
 	    {
-		beta[i] = -1.0 / beta[i];
+		beta[i] = -One / beta[i];
 	    }
 
 	    for(auto i = 0; i < numvec; i++)
@@ -420,7 +420,7 @@ namespace cpu
 		
 	    for(auto i = 0; i < numvec; i++)
 	    {
-		beta[i] = -1.0 * beta[i];
+		beta[i] = -beta[i];
 	    }
 
             v_1.swap(v_0);
@@ -456,7 +456,7 @@ namespace cpu
 	
 	    for(auto i = 0; i < numvec; i++)
 	    {
-		beta[i] = 1.0 / beta[i];
+		beta[i] = One / beta[i];
 	    }
         
 	    for(auto i = 0; i < numvec; i++)
@@ -532,7 +532,7 @@ namespace cpu
         std::vector<T> v_0(N, T(0.0));
         std::vector<T> v_1(N, T(0.0));
         std::vector<T> v_2(N, T(0.0));
-	std::vector<T> Sv (N, T(0,0));
+	std::vector<T> Sv (N, T(0.0));
         
 	lapackpp::t_lacpy('A', N, 1, V, ldv, v_1.data(), N);
 
@@ -546,7 +546,7 @@ namespace cpu
 	
 	beta = blaspp::t_dot(N,v_1.data(), 1, Sv.data(), 1);
 	
-	beta = 1.0 / sqrt(beta);
+	beta = One / sqrt(beta);
         
         blaspp::t_scal(N, &beta, v_1.data(), 1);
        
@@ -556,7 +556,7 @@ namespace cpu
         {
 	    alpha = blaspp::t_dot(N,v_2.data(), 1, Sv.data(), 1);
 	    	    
-	    alpha = -1.0 * alpha * beta;
+	    alpha = -alpha * beta;
             
             blaspp::t_axpy(N, &alpha, v_1.data(), 1, v_2.data(), 1);
 
@@ -566,7 +566,7 @@ namespace cpu
 
 	    if(k == M - 1) break;
 
-	    beta = -1.0 / beta;
+	    beta = -One / beta;
 
             blaspp::t_axpy(N, &beta, v_0.data(), 1, v_2.data(), 1);
 		
@@ -591,7 +591,7 @@ namespace cpu
             
             e[k] = r_beta; 
 	
-	    beta = 1.0 / beta;
+	    beta = One / beta;
         
             blaspp::t_scal(N, &beta, v_1.data(), 1);
 	
