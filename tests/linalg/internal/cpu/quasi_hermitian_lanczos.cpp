@@ -22,15 +22,11 @@ protected:
         std::mt19937 gen(1337.0);
         std::normal_distribution<> d;
 
+	//Standard variables init
         V.resize(N * M);
         
 	H = new chase::matrix::QuasiHermitianMatrix<T,chase::platform::CPU>(N,N);
 	exact_eigsl_H = new chase::matrix::Matrix<T,chase::platform::CPU>(N,1);
-
-	std::cout << GetBSE_MatrixFileName<T>() << std::endl;
-
-	H->readFromBinaryFile(GetBSE_MatrixFileName<T>());
-	exact_eigsl_H->readFromBinaryFile(GetBSE_EigenvaluesFileName<T>());
         
 	ritzv.resize(M * numvec);
         ritzV.resize(M * M);
@@ -40,14 +36,12 @@ protected:
         {
             V[i] =  getRandomT<T>([&]() { return d(gen); });
         }
-        
+
+        //Tiny variables init
         V_tiny.resize(N_tiny * M_tiny);
         
 	H_tiny = new chase::matrix::QuasiHermitianMatrix<T,chase::platform::CPU>(N_tiny,N_tiny);
 	exact_eigsl_H_tiny = new chase::matrix::Matrix<T,chase::platform::CPU>(N_tiny,1);
-
-	H_tiny->readFromBinaryFile(GetBSETiny_MatrixFileName<T>());
-	exact_eigsl_H_tiny->readFromBinaryFile(GetBSETiny_EigenvaluesFileName<T>());
         
 	ritzv_tiny.resize(M_tiny * numvec_tiny);
         ritzV_tiny.resize(M_tiny * M_tiny);
@@ -61,6 +55,7 @@ protected:
 
     void TearDown() override {}
 
+    //Standard variable sets
     std::size_t N = 200, M = 200, numvec = 1; 
     std::vector<T> V; 
     std::vector<chase::Base<T>> ritzv;
@@ -69,6 +64,7 @@ protected:
     chase::matrix::Matrix<T> * exact_eigsl_H; 
     chase::matrix::QuasiHermitianMatrix<T> * H;
     
+    //Tiny variable sets
     std::size_t N_tiny = 10, M_tiny = 10, numvec_tiny = 1;
     std::vector<T> V_tiny;
     std::vector<chase::Base<T>> ritzv_tiny;
@@ -84,6 +80,9 @@ TYPED_TEST_SUITE(QuasiHermitianLanczosCPUTest, TestTypes);
 TYPED_TEST(QuasiHermitianLanczosCPUTest, tinyQuasiHermitianSimplefiedLanczos) {
     using T = TypeParam;
 
+    this->H_tiny->readFromBinaryFile(GetBSE_TinyMatrix<T>());
+    this->exact_eigsl_H_tiny->readFromBinaryFile(GetBSE_TinyEigs<T>());
+
     chase::Base<T>  upperb;
 
     chase::linalg::internal::cpu::lanczos<T>(this->M_tiny, this->H_tiny, this->V_tiny.data(), this->N_tiny, &upperb);
@@ -95,6 +94,9 @@ TYPED_TEST(QuasiHermitianLanczosCPUTest, tinyQuasiHermitianSimplefiedLanczos) {
 
 TYPED_TEST(QuasiHermitianLanczosCPUTest, tinyQuasiHermitianLanczos) {
     using T = TypeParam;
+
+    this->H_tiny->readFromBinaryFile(GetBSE_TinyMatrix<T>());
+    this->exact_eigsl_H_tiny->readFromBinaryFile(GetBSE_TinyEigs<T>());
 
     chase::Base<T>  upperb;
 
@@ -111,6 +113,9 @@ TYPED_TEST(QuasiHermitianLanczosCPUTest, tinyQuasiHermitianLanczos) {
 TYPED_TEST(QuasiHermitianLanczosCPUTest, QuasiHermitianSimplefiedLanczos) {
     using T = TypeParam;
 
+    this->H->readFromBinaryFile(GetBSE_Matrix<T>());
+    this->exact_eigsl_H->readFromBinaryFile(GetBSE_Eigs<T>());
+
     chase::Base<T>  upperb;
 
     chase::linalg::internal::cpu::lanczos<T>(this->M, this->H, this->V.data(), this->N, &upperb);
@@ -121,6 +126,9 @@ TYPED_TEST(QuasiHermitianLanczosCPUTest, QuasiHermitianSimplefiedLanczos) {
 
 TYPED_TEST(QuasiHermitianLanczosCPUTest, QuasiHermitianLanczos) {
     using T = TypeParam;
+    
+    this->H->readFromBinaryFile(GetBSE_Matrix<T>());
+    this->exact_eigsl_H->readFromBinaryFile(GetBSE_Eigs<T>());
 
     chase::Base<T>  upperb;
 
