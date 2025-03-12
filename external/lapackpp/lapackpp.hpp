@@ -179,6 +179,32 @@ template <typename T>
 std::size_t t_heevd(int matrix_layout, char jobz, char uplo, std::size_t n,
                     T* a, std::size_t lda, Base<T>* w);
 
+/**
+ * @ingroup LapackFunctions
+ * @brief Computes all eigenvalues and, optionally, eigenvectors of a matrix.
+ * 
+ * This function computes all eigenvalues and, optionally, right eigenvectors 
+ * of a Hermitian.
+ * 
+ * @tparam T The data type of the matrix elements.
+ * 
+ * @param matrix_layout Specifies the memory layout (row-major or column-major).
+ * @param jobz Specifies whether to compute eigenvalues only or eigenvalues and eigenvectors:
+ *             - 'N' for eigenvalues only,
+ *             - 'V' for both eigenvalues and right eigenvectors.
+ * @param n The order of the matrix `A`.
+ * @param a The matrix `A` to compute eigenvalues and eigenvectors for.
+ * @param lda The leading dimension of `A`.
+ * @param wr Output, the real part of eigenvalues.
+ * @param wi Output, the imag part of eigenvalues.
+ * @param v Output, the eigenvectors.
+ * @param ldv The leading dimension of `v`.
+ * @return The optimal block size.
+ */
+template <typename T>
+std::size_t t_geev(int matrix_layout, char jobz, std::size_t n,
+                    T* a, std::size_t lda, Base<T>* wr, Base<T> * wi, T* v, std::size_t ldv);
+
 } //end of namespace lapackpp
 } //end of namespace linalg   
 } //end of namespace chase
