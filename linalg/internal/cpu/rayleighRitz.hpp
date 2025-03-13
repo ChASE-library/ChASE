@@ -136,7 +136,7 @@ namespace cpu
 	std::vector<T> diag(n, T(0.0)); 
 
 	//Allocate the space for the imaginary parts of ritz values
-	std::vector<T> ritzvi(n, T(0.0)); 
+	std::vector<Base<T>> ritzvi(n, Base<T>(0.0)); 
  
 	//Performs Q_2^T Q_2 for the construction of the dual basis, Q_2 is the lower part of Ql
 	blaspp::t_gemm(CblasColMajor, CblasConjTrans, CblasNoTrans, n, n, k, &alpha,
@@ -145,13 +145,13 @@ namespace cpu
        	//Compute the scaling weights such that diag = Ql^T Qr
 	for(auto i = 0; i < n; i++)
 	{
-		diag[i] = 1.0-A[i*(n+1)];
+		diag[i] = One-A[i*(n+1)];
 	}	
-
+	
        	//Matrix to compute the upper part of Ql
 	for(auto i = 0; i < n; i++)
 	{
-		A[i*(n+1)] = 1.0;
+		A[i*(n+1)] = One;
 	}
 
        	//Compute the upper part of Ql
@@ -162,14 +162,14 @@ namespace cpu
         blaspp::t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, N, n, k, &One,
                 H->data(), ldh, halfQ, k, &Zero, V, ldv);
 	
+	//Flip the sign of the lower part to emulate the multiplication H' * Ql 
+	alpha = -One;
+
        	//Matrix to compute the lower part of Ql
 	for(auto i = 0; i < n; i++)
 	{
-		A[i*(n+1)] = -1.0;
+		A[i*(n+1)] = alpha;
 	}
-
-	//Flip the sign of the lower part to emulate the multiplication H' * Ql 
-	alpha = -One;
 
        	//Compute the lower part of Ql
 	blaspp::t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, k, n, n, &alpha,

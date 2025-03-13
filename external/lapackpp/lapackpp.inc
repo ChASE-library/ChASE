@@ -768,7 +768,6 @@ std::size_t t_geev(int matrix_layout, char jobz, std::size_t n,
     
     FC_GLOBAL(zgeev, ZGEEV)
     (&jobvl, &jobz, &n_, a, &lda_, w, Vl, &ldvl_, V, &ldv_, work, &lwork, rwork, &info);
-    std::cout << info << std::endl;
     assert(info == 0);
 
     for(auto i=0; i<n; i++)

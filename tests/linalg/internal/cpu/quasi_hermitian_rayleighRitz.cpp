@@ -8,14 +8,14 @@
 #include <complex>
 #include <random>
 #include "external/blaspp/blaspp.hpp"
-#include "linalg/internal/cpu/lanczos.hpp"
+#include "linalg/internal/cpu/rayleighRitz.hpp"
 #include "linalg/internal/cpu/utils.hpp"
 #include "tests/linalg/internal/cpu/TestConditions.hpp"
 #include "tests/linalg/internal/utils.hpp"
 #include "linalg/matrix/matrix.hpp"
 
 template <typename T>
-class QuasiHermitianRRCPUTest : public ::testing::Test {
+class QuasiHermitianRayleighRitzCPUTest : public ::testing::Test {
 protected:
     void SetUp() override {
 
@@ -26,18 +26,32 @@ protected:
 	H = new chase::matrix::QuasiHermitianMatrix<T,chase::platform::CPU>(N,N);
 	exact_eigsl_H = new chase::matrix::Matrix<T,chase::platform::CPU>(N,1);
         
-        for(auto i = 0; i < N * nev; i++)
+	V.resize(N * nev);
+	Q.resize(N * nev);
+	W.resize(nev * nev);
+	G.resize(nev * nev);
+	halfQ.resize(k * nev);
+    	ritzv.resize(nev);
+
+        for(auto i = 0; i < nev; i++)
         {
-            V[i] =  getRandomT<T>([&]() { return d(gen); });
+	    Q.data()[i*(N+1)] = 1.0;
         }
 
         //Tiny variables init	
 	H_tiny = new chase::matrix::QuasiHermitianMatrix<T,chase::platform::CPU>(N_tiny,N_tiny);
 	exact_eigsl_H_tiny = new chase::matrix::Matrix<T,chase::platform::CPU>(N_tiny,1);
+
+	V_tiny.resize(N_tiny   * nev_tiny);
+	Q_tiny.resize(N_tiny   * nev_tiny);
+	W_tiny.resize(nev_tiny * nev_tiny);
+	G_tiny.resize(nev_tiny * nev_tiny);
+	halfQ_tiny.resize(k_tiny * nev_tiny);
+    	ritzv_tiny.resize(nev_tiny);
         
-        for(auto i = 0; i < N_tiny * nev_tiny; i++)
+        for(auto i = 0; i < nev_tiny; i++)
         {
-            V_tiny[i] =  getRandomT<T>([&]() { return d(gen); });
+	    Q_tiny.data()[i*(N_tiny+1)] = 1.0;
         }
     }
 
@@ -48,16 +62,13 @@ protected:
     std::size_t N = 2*k;
     std::size_t nev = N;
 
-    std::vector<T> V (N * nev, T(0.0));
-    std::vector<T> Q (N * nev, T(0.0));
-    std::vector<T> W((nev * nev, T(0.0));
-    std::vector<T> G((nev * nev, T(0.0));
-    std::vector<T> halfQ(k * nev, T(0.0));
-    std::vector<Base<T>> ritzv(nev, chase::Base<T>(0.0));
-
+    std::vector<T> V;
+    std::vector<T> Q;
+    std::vector<T> W;
+    std::vector<T> G;
+    std::vector<T> halfQ;
     std::vector<chase::Base<T>> ritzv;
-    std::vector<chase::Base<T>> ritzV;
-    std::vector<chase::Base<T>> Tau;
+
     chase::matrix::Matrix<T> * exact_eigsl_H; 
     chase::matrix::QuasiHermitianMatrix<T> * H;
     
@@ -66,45 +77,52 @@ protected:
     std::size_t N_tiny = 2*k_tiny;
     std::size_t nev_tiny = N_tiny;
 
-    std::vector<T> V_tiny (N_tiny * nev_tiny, T(0.0));
-    std::vector<T> Q_tiny (N_tiny * nev_tiny, T(0.0));
-    std::vector<T> W_tiny (nev_tiny * nev_tiny, T(0.0));
-    std::vector<T> G_tiny (nev_tiny * nev_tiny, T(0.0));
-    std::vector<T> halfQ_tiny (k_tiny * nev_tiny, T(0.0));
-    std::vector<Base<T>> ritzv_tiny(nev_tiny, chase::Base<T>(0.0));
+    std::vector<T> V_tiny;
+    std::vector<T> Q_tiny;
+    std::vector<T> W_tiny;
+    std::vector<T> G_tiny;
+    std::vector<T> halfQ_tiny;
+    std::vector<chase::Base<T>> ritzv_tiny;
+    
+    chase::matrix::Matrix<T> * exact_eigsl_H_tiny; 
+    chase::matrix::QuasiHermitianMatrix<T> * H_tiny;
 };
 
 using TestTypes = ::testing::Types<float, double, std::complex<float>, std::complex<double>>;
-TYPED_TEST_SUITE(QuasiHermitianRRCPUTest, TestTypes);
+TYPED_TEST_SUITE(QuasiHermitianRayleighRitzCPUTest, TestTypes);
 
-TYPED_TEST(QuasiHermitianRRCPUTest, QuasiHermitianRayleighRitz) {
+TYPED_TEST(QuasiHermitianRayleighRitzCPUTest, QuasiHermitianRayleighRitz) {
     using T = TypeParam;
 
     this->H->readFromBinaryFile(GetBSE_Matrix<T>());
     this->exact_eigsl_H->readFromBinaryFile(GetBSE_Eigs<T>());
 
     chase::linalg::internal::cpu::rayleighRitz(this->H,this->nev,this->Q.data(),this->N,
-			this->V.data(),this->nev,this->ritzv.data(),this->G.data(),this->halfQ.data());
+			this->V.data(),this->N,this->ritzv.data(),this->G.data(),this->halfQ.data());
+
+    std::sort(this->ritzv.begin(), this->ritzv.end());
 
     for(auto i = 0; i < this->nev; i++)
     {
-    	EXPECT_LT(T(this->ritzv.data()[i]),this->exact_eigsl_H->data()[i] + 1e3*MachineEpsilon<chase::Base<T>>::value());
-    	EXPECT_GT(T(this->ritzv.data()[i]),this->exact_eigsl_H->data()[i] - 1e3*MachineEpsilon<chase::Base<T>>::value());
+    	EXPECT_LT(this->ritzv.data()[i],std::real(this->exact_eigsl_H->data()[i]) + GetErrorTolerance<T>());//MachineEpsilon<chase::Base<T>>::value());
+    	EXPECT_GT(this->ritzv.data()[i],std::real(this->exact_eigsl_H->data()[i]) - GetErrorTolerance<T>());//MachineEpsilon<chase::Base<T>>::value());
     }
 }
 
-TYPED_TEST(QuasiHermitianRRCPUTest, tinyQuasiHermitianRayleighRitz) {
+TYPED_TEST(QuasiHermitianRayleighRitzCPUTest, tinyQuasiHermitianRayleighRitz) {
     using T = TypeParam;
 
     this->H_tiny->readFromBinaryFile(GetBSE_TinyMatrix<T>());
     this->exact_eigsl_H_tiny->readFromBinaryFile(GetBSE_TinyEigs<T>());
 
     chase::linalg::internal::cpu::rayleighRitz(this->H_tiny,this->nev_tiny,this->Q_tiny.data(),this->N_tiny,
-			this->V_tiny.data(),this->nev_tiny,this->ritzv_tiny.data(),this->G_tiny.data(),this->halfQ_tiny.data());
+			this->V_tiny.data(),this->N_tiny,this->ritzv_tiny.data(),this->G_tiny.data(),this->halfQ_tiny.data());
+
+    std::sort(this->ritzv_tiny.begin(), this->ritzv_tiny.end());
 
     for(auto i = 0; i < this->nev_tiny; i++)
     {
-    	EXPECT_LT(T(this->ritzv_tiny.data()[i]),this->exact_eigsl_H_tiny->data()[i] + 1e3*MachineEpsilon<chase::Base<T>>::value());
-    	EXPECT_GT(T(this->ritzv_tiny.data()[i]),this->exact_eigsl_H_tiny->data()[i] - 1e3*MachineEpsilon<chase::Base<T>>::value());
+    	EXPECT_LT(this->ritzv_tiny.data()[i],std::real(this->exact_eigsl_H_tiny->data()[i]) + GetErrorTolerance<T>());//MachineEpsilon<chase::Base<T>>::value());
+    	EXPECT_GT(this->ritzv_tiny.data()[i],std::real(this->exact_eigsl_H_tiny->data()[i]) - GetErrorTolerance<T>());//MachineEpsilon<chase::Base<T>>::value());
     }
 }
