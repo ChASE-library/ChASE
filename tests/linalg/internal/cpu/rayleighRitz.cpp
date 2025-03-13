@@ -11,6 +11,7 @@
 #include <cstring>
 #include "linalg/internal/cpu/rayleighRitz.hpp"
 #include "tests/linalg/internal/utils.hpp"
+#include "linalg/matrix/matrix.hpp"
 
 template <typename T>
 class rayleighRitzCPUTest : public ::testing::Test {
@@ -53,7 +54,7 @@ TYPED_TEST(rayleighRitzCPUTest, eigenpairs) {
     std::mt19937 gen(1337.0);
     std::normal_distribution<> d;
     std::vector<T> V(this->N * this->N);
-    std::vector<T> H2(this->N * this->N);
+    chase::matrix::Matrix<T> * H2 = new chase::matrix::Matrix<T>(this->N,this->N);
 
     for(auto i = 0; i < this->N * this->N; i++)
     {
@@ -67,18 +68,18 @@ TYPED_TEST(rayleighRitzCPUTest, eigenpairs) {
 
     chase::linalg::blaspp::t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, this->N, this->N, this->N,
                &One, this->H.data(), this->N, V.data(), this->N, &Zero,
-               H2.data(), this->N);
+               H2->data(), this->N);
 
     chase::linalg::blaspp::t_gemm(CblasColMajor, CblasNoTrans, CblasConjTrans, this->N, this->N, this->N,
-               &One, V.data(), this->N, H2.data(), this->N, &Zero,
+               &One, V.data(), this->N, H2->data(), this->N, &Zero,
                this->H.data(), this->N);
 
-    std::memcpy(H2.data(), this->H.data(), sizeof(T) * this->N * this->N);
+    std::memcpy(H2->data(), this->H.data(), sizeof(T) * this->N * this->N);
 
     chase::linalg::lapackpp::t_heevd(CblasColMajor, 'V', 'U', this->N,
                     this->H.data(), this->N, this->evals.data());
     
-    chase::linalg::internal::cpu::rayleighRitz(this->N, H2.data(), this->N, this->n, this->H.data(), this->N,
+    chase::linalg::internal::cpu::rayleighRitz(H2, this->n, this->H.data(), this->N,
                         this->W.data(), this->N, this->ritzv.data());
 
     //check the eigenvalues
@@ -90,7 +91,7 @@ TYPED_TEST(rayleighRitzCPUTest, eigenpairs) {
     // check the residuals
     T beta;
     chase::linalg::blaspp::t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, this->N, this->n, this->N,
-            &One, H2.data(), this->N, this->W.data(), this->N, &Zero, this->Q.data(), this->N);
+            &One, H2->data(), this->N, this->W.data(), this->N, &Zero, this->Q.data(), this->N);
 
     for (std::size_t i = 0; i < this->n; ++i)
     {

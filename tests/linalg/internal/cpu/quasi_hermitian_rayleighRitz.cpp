@@ -26,12 +26,11 @@ protected:
 	H = new chase::matrix::QuasiHermitianMatrix<T,chase::platform::CPU>(N,N);
 	exact_eigsl_H = new chase::matrix::Matrix<T,chase::platform::CPU>(N,1);
         
+    	ritzv.resize(nev);
 	V.resize(N * nev);
 	Q.resize(N * nev);
 	W.resize(nev * nev);
-	G.resize(nev * nev);
-	halfQ.resize(k * nev);
-    	ritzv.resize(nev);
+	Workspace.resize((std::size_t(N/2)+nev) * nev);
 
         for(auto i = 0; i < nev; i++)
         {
@@ -42,12 +41,11 @@ protected:
 	H_tiny = new chase::matrix::QuasiHermitianMatrix<T,chase::platform::CPU>(N_tiny,N_tiny);
 	exact_eigsl_H_tiny = new chase::matrix::Matrix<T,chase::platform::CPU>(N_tiny,1);
 
+    	ritzv_tiny.resize(nev_tiny);
 	V_tiny.resize(N_tiny   * nev_tiny);
 	Q_tiny.resize(N_tiny   * nev_tiny);
 	W_tiny.resize(nev_tiny * nev_tiny);
-	G_tiny.resize(nev_tiny * nev_tiny);
-	halfQ_tiny.resize(k_tiny * nev_tiny);
-    	ritzv_tiny.resize(nev_tiny);
+	Workspace_tiny.resize((std::size_t(N_tiny/2)+nev_tiny) * nev_tiny);
         
         for(auto i = 0; i < nev_tiny; i++)
         {
@@ -65,8 +63,7 @@ protected:
     std::vector<T> V;
     std::vector<T> Q;
     std::vector<T> W;
-    std::vector<T> G;
-    std::vector<T> halfQ;
+    std::vector<T> Workspace;
     std::vector<chase::Base<T>> ritzv;
 
     chase::matrix::Matrix<T> * exact_eigsl_H; 
@@ -80,8 +77,7 @@ protected:
     std::vector<T> V_tiny;
     std::vector<T> Q_tiny;
     std::vector<T> W_tiny;
-    std::vector<T> G_tiny;
-    std::vector<T> halfQ_tiny;
+    std::vector<T> Workspace_tiny;
     std::vector<chase::Base<T>> ritzv_tiny;
     
     chase::matrix::Matrix<T> * exact_eigsl_H_tiny; 
@@ -98,7 +94,7 @@ TYPED_TEST(QuasiHermitianRayleighRitzCPUTest, QuasiHermitianRayleighRitz) {
     this->exact_eigsl_H->readFromBinaryFile(GetBSE_Eigs<T>());
 
     chase::linalg::internal::cpu::rayleighRitz(this->H,this->nev,this->Q.data(),this->N,
-			this->V.data(),this->N,this->ritzv.data(),this->G.data(),this->halfQ.data());
+			this->V.data(),this->N,this->ritzv.data(),this->Workspace.data());
 
     std::sort(this->ritzv.begin(), this->ritzv.end());
 
@@ -116,7 +112,7 @@ TYPED_TEST(QuasiHermitianRayleighRitzCPUTest, tinyQuasiHermitianRayleighRitz) {
     this->exact_eigsl_H_tiny->readFromBinaryFile(GetBSE_TinyEigs<T>());
 
     chase::linalg::internal::cpu::rayleighRitz(this->H_tiny,this->nev_tiny,this->Q_tiny.data(),this->N_tiny,
-			this->V_tiny.data(),this->N_tiny,this->ritzv_tiny.data(),this->G_tiny.data(),this->halfQ_tiny.data());
+			this->V_tiny.data(),this->N_tiny,this->ritzv_tiny.data(),this->Workspace_tiny.data());
 
     std::sort(this->ritzv_tiny.begin(), this->ritzv_tiny.end());
 
