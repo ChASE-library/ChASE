@@ -92,7 +92,7 @@ namespace cpu
 	{
 	   for(auto i = half; i < m; i++)
 	   {
-	   	A[j*m + i] *= -1.0;
+	   	A[j * lda + i] *= -1.0;
 	   }
 	}
     }

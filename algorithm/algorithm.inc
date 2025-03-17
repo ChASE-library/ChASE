@@ -332,7 +332,7 @@ template <class T>
 void Algorithm<T>::solve(ChaseBase<T>* single)
 {
     ChaseConfig<T>& config = single->GetConfig();
-
+/*
     if(config.DoSymCheck())
     {
         if(single->checkSymmetryEasy())
@@ -361,6 +361,7 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
             return;
         }
     }
+    */
     single->Start();
 
     std::size_t N = config.GetN();

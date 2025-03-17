@@ -125,6 +125,7 @@ namespace Impl
 			  nevex_(nev+nex),
 			  config_(N, nev, nex)
 	    {
+		std::cout << N_ << std::endl;
 		Hmat_ = H;
 		Vec1_ = chase::matrix::Matrix<T>(N_, nevex_, ldv_, V1_);
 		Vec2_ = chase::matrix::Matrix<T>(N_, nevex_);
@@ -132,12 +133,12 @@ namespace Impl
 		ritzvs_ = chase::matrix::Matrix<chase::Base<T>>(nevex_, 1, nevex_, ritzv_);
 		if constexpr (std::is_same<MatrixType, chase::matrix::QuasiHermitianMatrix<T>>::value)
 		{
-			A_ = chase::matrix::Matrix<T>(nevex_, nevex_);
+			//Quasi Hermitian matrices require more space for the dual basis
+			A_ = chase::matrix::Matrix<T>(nevex_ + std::size_t(N/2), nevex_);
 		}
 		else
 		{
-			//Quasi Hermitian matrices require more space for the dual basis
-			A_ = chase::matrix::Matrix<T>(nevex_ + std::size_t(N/2), nevex_);
+			A_ = chase::matrix::Matrix<T>(nevex_, nevex_);
 		}
 	    }
 	    
@@ -431,7 +432,17 @@ namespace Impl
                                           Vec1_.data(), 
                                           Vec1_.ld(),
                                           Vec2_.data(), 
-                                          Vec2_.ld());   
+                                          Vec2_.ld());
+
+	if constexpr (std::is_same<MatrixType, chase::matrix::QuasiHermitianMatrix<T>>::value)
+	{
+		/* The right eigenvectors are not orthonormal in the QH case, but S-orthonormal.
+		 * Therefore, we S-orthonormalize the locked vectors against the current subspace
+		 * By flipping the sign of the lower part of the locked vectors. */
+		chase::linalg::internal::cpu::flipLowerHalfMatrixSign(Vec1_.rows(),locked_,Vec1_.data(),Vec1_.ld());
+		/* We do not need to flip back the sign of the locked vectors since they are stored 
+		 * in Vec2_ and will replace the fliped ones of Vec1_ at the end of QR. */
+	}
 
 
         int disable = config_.DoCholQR() ? 0 : 1;

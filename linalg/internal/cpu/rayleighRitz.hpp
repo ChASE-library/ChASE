@@ -106,6 +106,7 @@ namespace cpu
     void rayleighRitz(chase::matrix::QuasiHermitianMatrix<T> *H, std::size_t n, T *Q, std::size_t ldq, 
                       T * V, std::size_t ldv, Base<T> *ritzv, T *A = nullptr)
     {
+
 	std::size_t N   = H->rows();	
 	std::size_t ldh = H->ld();
 	std::size_t k   = N / 2;
@@ -143,9 +144,9 @@ namespace cpu
        	//Compute the scaling weights such that diag = Ql^T Qr
 	for(auto i = 0; i < n; i++)
 	{
-		diag[i] = One-A[i*(lda+1)];
+		diag[i] = One / (One-A[i*(lda+1)]);
 	}	
-	
+
        	//Matrix to compute the upper part of Ql
 	for(auto i = 0; i < n; i++)
 	{
@@ -179,7 +180,7 @@ namespace cpu
 	
 	//Flip the sign of the lower part of V to emulate the multiplication H' * Ql 
 	chase::linalg::internal::cpu::flipLowerHalfMatrixSign(N,n,V,ldv);
-
+	
 	//Last GEMM for the construction of the rayleigh Quotient : (H' * Ql)' * Qr
         blaspp::t_gemm(CblasColMajor, CblasConjTrans, CblasNoTrans, n, n, N,
                &One, V, ldv, Q, ldq, &Zero, A, lda); 
@@ -187,7 +188,7 @@ namespace cpu
 	//Scale the rows because Ql' * Qr = diag =/= I
 	for(auto i = 0; i < n; i++)
 	{
-		blaspp::t_scal(N, &diag[i], A + i, lda);
+		blaspp::t_scal(n, &diag[i], A + i, lda);
 	}
 
 	//Compute the eigenpairs of the non-hermitian rayleigh quotient
