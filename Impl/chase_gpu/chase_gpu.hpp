@@ -258,7 +258,7 @@ public:
         return is_sym_;
     }
 
-    bool isSym() { return is_sym_; }
+    bool isSym() override {return is_sym_;} 
     
     bool checkPseudoHermicityEasy() override
     {
@@ -618,6 +618,11 @@ public:
                                                     &A_);
  
         Vec1_.swap(Vec2_);
+    }
+    
+    void Sort(chase::Base<T> * ritzv, chase::Base<T> * residLast, chase::Base<T> * resid) override
+    {
+
     }
 
     void Resd(chase::Base<T>* ritzv, chase::Base<T>* resd, std::size_t fixednev) override

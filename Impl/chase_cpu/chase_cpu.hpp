@@ -125,7 +125,6 @@ namespace Impl
 			  nevex_(nev+nex),
 			  config_(N, nev, nex)
 	    {
-		std::cout << N_ << std::endl;
 		Hmat_ = H;
 		Vec1_ = chase::matrix::Matrix<T>(N_, nevex_, ldv_, V1_);
 		Vec2_ = chase::matrix::Matrix<T>(N_, nevex_);
@@ -133,11 +132,15 @@ namespace Impl
 		ritzvs_ = chase::matrix::Matrix<chase::Base<T>>(nevex_, 1, nevex_, ritzv_);
 		if constexpr (std::is_same<MatrixType, chase::matrix::QuasiHermitianMatrix<T>>::value)
 		{
+			is_sym_ = false;
+			is_pseudoHerm_ = true;
 			//Quasi Hermitian matrices require more space for the dual basis
 			A_ = chase::matrix::Matrix<T>(nevex_ + std::size_t(N/2), nevex_);
 		}
 		else
 		{
+			is_sym_ = true;
+			is_pseudoHerm_ = false;
 			A_ = chase::matrix::Matrix<T>(nevex_, nevex_);
 		}
 	    }
@@ -196,7 +199,7 @@ namespace Impl
 		return is_sym_;
 	    }
 
-	    bool isSym() {return is_sym_;}
+	    bool isSym() override {return is_sym_;} 
 	    
 	    bool checkPseudoHermicityEasy() override
 	    {
@@ -433,7 +436,7 @@ namespace Impl
                                           Vec1_.ld(),
                                           Vec2_.data(), 
                                           Vec2_.ld());
-
+	
 	if constexpr (std::is_same<MatrixType, chase::matrix::QuasiHermitianMatrix<T>>::value)
 	{
 		/* The right eigenvectors are not orthonormal in the QH case, but S-orthonormal.
@@ -515,6 +518,7 @@ namespace Impl
 #ifdef CHASE_OUTPUT
                 std::cout << "CholeskyQR doesn't work, Househoulder QR will be used." << std::endl;
 #endif
+
                 chase::linalg::internal::cpu::houseHoulderQR(Vec1_.rows(), 
                                                              Vec1_.cols(), 
                                                              Vec1_.data(), 
@@ -528,7 +532,7 @@ namespace Impl
                                           Vec2_.data(), 
                                           Vec2_.ld(),
                                           Vec1_.data(), 
-                                          Vec1_.ld());    
+                                          Vec1_.ld());   
     }
 
     void RR(chase::Base<T>* ritzv, std::size_t block) override
@@ -544,6 +548,53 @@ namespace Impl
                                                   );
 
         Vec1_.swap(Vec2_);
+    }
+
+    void Sort(chase::Base<T> * ritzv, chase::Base<T> * residLast, chase::Base<T> * resid) override
+    {
+
+	if constexpr (std::is_same<MatrixType, chase::matrix::QuasiHermitianMatrix<T>>::value)
+	{
+	/* Sorting all the eigenvalues is probably not necessary if Opt = False */
+	
+        //Sort eigenpairs in ascending order based on real part of eigenvalues
+        std::vector<std::size_t> indices(nevex_- locked_);
+        std::iota(indices.begin(), indices.end(), 0); // Fill with 0, 1, ..., n-1
+        std::sort(indices.begin(), indices.end(),
+                [&ritzv](std::size_t i1, std::size_t i2) { return ritzv[i1] < ritzv[i2]; });
+
+        // Create temporary storage for sorted eigenvalues and eigenvectors
+        std::vector<Base<T>> sorted_ritzv(nevex_- locked_);
+        std::vector<Base<T>> sorted_resid(nevex_ - locked_);
+        std::vector<Base<T>> sorted_residLast(nevex_ - locked_);
+
+        // Reorder eigenvalues and eigenvectors 
+        for (std::size_t i = 0; i < locked_; ++i){
+		for (std::size_t j = 0; j < N_; ++j)
+		{
+        		Vec2_.data()[j + i * N_] = Vec1_.data()[j + i * N_];
+        	}
+	}
+	
+        for (std::size_t i = 0; i < nevex_ - locked_; ++i) {
+        sorted_ritzv.data()[i]     = ritzv[indices[i]];
+	sorted_resid.data()[i]     = resid[indices[i]];
+	sorted_residLast.data()[i] = residLast[indices[i]];
+
+        // Copy the corresponding eigenvector column
+        for (std::size_t j = 0; j < N_; ++j) {
+                Vec2_.data()[j + (i + locked_) * N_] = Vec1_.data()[j + (indices[i] +locked_)* N_];
+                }
+        }
+
+        // Copy back to original arrays
+        std::copy(sorted_ritzv.begin(), sorted_ritzv.end(), ritzv);
+        std::copy(sorted_resid.begin(), sorted_resid.end(), resid);
+        std::copy(sorted_residLast.begin(), sorted_residLast.end(), residLast);
+        Vec1_.swap(Vec2_);
+
+	
+	}
     }
 
     void Resd(chase::Base<T>* ritzv, chase::Base<T>* resd, std::size_t fixednev) override

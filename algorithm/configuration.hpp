@@ -172,7 +172,7 @@ public:
      */
     ChaseConfig(std::size_t _N, std::size_t _nev, std::size_t _nex)
         : N_(_N), nev_(_nev), nex_(_nex), optimization_(true), approx_(false),
-          max_iter_(25), deg_extra_(2), num_lanczos_(4)
+          max_iter_(25), deg_extra_(2), num_lanczos_(4), decaying_rate_(1.0)
     {
         SetMaxDeg(chase_config_helper::initMaxDeg<T>(approx_, optimization_));
         SetDeg(chase_config_helper::initDeg<T>(approx_, optimization_));
@@ -438,6 +438,22 @@ public:
 
     void EnableSymCheck(bool flag) { sym_check_ = flag; }
     bool DoSymCheck() { return sym_check_; }
+    
+    //! Returns the decaying rate for the polynomial lower bound
+    /*! The lower bound of the chebyshev lower bound is set based 
+     *  on an approximation of the eigenvalues by few iterations of lanczos. 
+     *  It might be better to use under estimation of the lower bound in 
+     *  certain cases, for instance if the target eigenvalues are packed. 
+     */
+    float GetDecayingRate() const { return decaying_rate_; }
+
+    //! Sets the decaying rate for the polynomial lower bound
+    /*! The lower bound of the chebyshev lower bound is set based 
+     *  on an approximation of the eigenvalues by few iterations of lanczos. 
+     *  It might be better to use under estimation of the lower bound in 
+     *  certain cases, for instance if the target eigenvalues are packed. 
+     */
+    void SetDecayingRate(float decayingRate) { decaying_rate_ = decayingRate; }
 
 private:
     ///////////////////////////////////////////////////
@@ -555,6 +571,14 @@ private:
         default value is set to *4*.
      */
     std::size_t num_lanczos_;
+    
+    //! Optional parameter indicating the decaying rate of the lower bound
+    //! of the Chebyshev polynomial
+    /*!
+        This variable is initialized by the constructor. Its
+        default value is set to *1.0* (no decaying rate).
+     */
+    float decaying_rate_;
 
     //! Optional parameter indicating if CholeksyQR is disabled
     bool cholqr_ = true;

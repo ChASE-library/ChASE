@@ -350,7 +350,7 @@ public:
         return is_sym_;
     }
 
-    bool isSym() { return is_sym_; }
+    bool isSym() override {return is_sym_;} 
     
     bool checkPseudoHermicityEasy() override
     {
@@ -810,6 +810,11 @@ public:
                                          V1_->l_ld(),
                                          V2_->l_data() + locked_ * V2_->l_ld(),
                                          V2_->l_ld());       
+    }
+    
+    void Sort(chase::Base<T> * ritzv, chase::Base<T> * residLast, chase::Base<T> * resid) override
+    {
+
     }
 
     void Resd(chase::Base<T>* ritzv, chase::Base<T>* resd, std::size_t fixednev) override 

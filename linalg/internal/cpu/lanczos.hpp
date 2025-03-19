@@ -491,16 +491,7 @@ namespace cpu
             }
         }
 
-        Base<T> max;
-        *upperb = std::max(std::abs(ritzv[0]), std::abs(ritzv[M - 1])) +
-                  std::abs(r_beta[0]);
-
-        for(auto i = 1; i < numvec; i++)
-        {
-          max = std::max(std::abs(ritzv[i * M]), std::abs(ritzv[ (i + 1) * M - 1])) +
-                  std::abs(r_beta[i]);
-          *upperb = std::max(max, *upperb);        
-        }
+        *upperb = ritzv[M-1];
     }
 
     /**
@@ -609,9 +600,9 @@ namespace cpu
 
         lapackpp::t_stemr<Base<T>>(LAPACK_COL_MAJOR, 'N', 'A', M, d.data(), e.data(), ul, ll, vl, vu,
                          &notneeded_m, ritzv.data(), NULL, M, M, isuppz.data(), &tryrac);
+        
+	*upperb = ritzv[M-1];
 
-        *upperb = std::max(std::abs(ritzv[0]), std::abs(ritzv[M - 1])) +
-                  std::abs(r_beta);
     }
 
 }

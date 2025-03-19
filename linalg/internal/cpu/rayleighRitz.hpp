@@ -172,7 +172,7 @@ namespace cpu
 
        	//Compute the lower part of Ql
 	blaspp::t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, k, n, n, &alpha,
-		Q + k, ldq, A, lda, &Zero, halfQ, lda); //Performs Q_2
+		Q + k, ldq, A, lda, &Zero, halfQ, lda); //Performs -Q_2
 
        	//Add to V the result of the multiplication of the last k cols of H with the lower part of Ql
         blaspp::t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, N, n, k, &One,
@@ -194,6 +194,33 @@ namespace cpu
 	//Compute the eigenpairs of the non-hermitian rayleigh quotient
         lapackpp::t_geev(LAPACK_COL_MAJOR, 'V', n, A, lda, ritzv, ritzvi.data(), W, n);
 
+	//Sort indices based on ritz values
+	std::vector<std::size_t> indices(n);
+	std::iota(indices.begin(), indices.end(), 0); // Fill with 0, 1, ..., n-1
+	std::sort(indices.begin(), indices.end(), 
+			[&ritzv](std::size_t i1, std::size_t i2) { return ritzv[i1] < ritzv[i2]; });
+
+	// Create temporary storage for sorted eigenvalues and eigenvectors
+	std::vector<Base<T>> sorted_ritzv(n);
+	std::vector<Base<T>> sorted_ritzvi(n);
+	std::unique_ptr<T[]> sorted_W = std::unique_ptr<T[]>{new T[n * n]};
+
+	// Reorder eigenvalues and eigenvectors
+	for (std::size_t i = 0; i < n; ++i) {
+		sorted_ritzv[i] = ritzv[indices[i]];
+		sorted_ritzvi[i] = ritzvi[indices[i]];
+
+		// Copy the corresponding ritz vector column
+		for (std::size_t j = 0; j < n; ++j) {
+			sorted_W[j + i*n] = W[j + indices[i]*n];
+		}
+	}
+
+	// Copy back to original arrays
+	std::copy(sorted_ritzv.begin(), sorted_ritzv.end(), ritzv);
+	std::copy(sorted_ritzvi.begin(), sorted_ritzvi.end(), ritzvi.data());
+	std::copy(sorted_W.get(), sorted_W.get() + n * n, W);
+	
 	//Project ritz vectors back to the initial space
         blaspp::t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, N, n, n,
                &One, Q, ldq, W, n, &Zero, V, ldv);
