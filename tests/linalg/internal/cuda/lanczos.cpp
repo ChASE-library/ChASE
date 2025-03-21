@@ -70,7 +70,7 @@ TYPED_TEST_SUITE(LaczosGPUTest, TestTypes);
 TYPED_TEST(LaczosGPUTest, mlanczos) {
     using T = TypeParam;  // Get the current type
     chase::Base<T> upperb;
-    chase::matrix::Matrix<T, chase::platform::GPU> Hmat(this->N, this->N, this->N, this->H.data());
+    chase::matrix::Matrix<T, chase::platform::GPU> * Hmat = new chase::matrix::Matrix<T, chase::platform::GPU>(this->N, this->N, this->N, this->H.data());
     chase::matrix::Matrix<T, chase::platform::GPU> Vec(this->N, this->M, this->N, this->V.data());
     
     chase::linalg::internal::cuda::lanczos(this->cublasH_,
@@ -95,7 +95,7 @@ TYPED_TEST(LaczosGPUTest, mlanczos) {
 TYPED_TEST(LaczosGPUTest, lanczos) {
     using T = TypeParam;  // Get the current type
     chase::Base<T> upperb;
-    chase::matrix::Matrix<T, chase::platform::GPU> Hmat(this->N, this->N, this->N, this->H.data());
+    chase::matrix::Matrix<T, chase::platform::GPU> * Hmat = new chase::matrix::Matrix<T, chase::platform::GPU>(this->N, this->N, this->N, this->H.data());
     chase::matrix::Matrix<T, chase::platform::GPU> Vec(this->N, 1, this->N, this->V.data());
     
     chase::linalg::internal::cuda::lanczos(this->cublasH_,

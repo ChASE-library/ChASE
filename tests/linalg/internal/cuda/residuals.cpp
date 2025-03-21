@@ -71,7 +71,7 @@ TYPED_TEST(ResidsGPUTest, DiagonalMatrix) {
     }
 
     CHECK_CUDA_ERROR(cudaMemcpy(this->d_ritzv, this->evals.data(), this->N * sizeof(chase::Base<T>), cudaMemcpyHostToDevice));
-    chase::matrix::Matrix<T, chase::platform::GPU> Hmat(this->N, this->N, this->N, this->H.data());
+    chase::matrix::Matrix<T, chase::platform::GPU> * Hmat = new chase::matrix::Matrix<T, chase::platform::GPU>(this->N, this->N, this->N, this->H.data());
     chase::matrix::Matrix<T, chase::platform::GPU> V1(this->N, this->N, this->N, this->evecs.data());
     chase::linalg::internal::cuda::residuals(this->cublasH_, Hmat, V1, this->d_ritzv, this->d_resids, 0, this->N);
     CHECK_CUDA_ERROR(cudaMemcpy(this->resids.data(), this->d_resids, this->N * sizeof(chase::Base<T>), cudaMemcpyDeviceToHost));
@@ -121,7 +121,7 @@ TYPED_TEST(ResidsGPUTest, DenseMatrix) {
                     this->evecs.data(), this->N, this->evals.data());
 
     CHECK_CUDA_ERROR(cudaMemcpy(this->d_ritzv, this->evals.data(), this->N * sizeof(chase::Base<T>), cudaMemcpyHostToDevice));
-    chase::matrix::Matrix<T, chase::platform::GPU> Hmat(this->N, this->N, this->N, this->H.data());
+    chase::matrix::Matrix<T, chase::platform::GPU> * Hmat = new chase::matrix::Matrix<T, chase::platform::GPU>(this->N, this->N, this->N, this->H.data());
     chase::matrix::Matrix<T, chase::platform::GPU> V1(this->N, this->N, this->N, this->evecs.data());
     chase::linalg::internal::cuda::residuals(this->cublasH_, Hmat, V1, this->d_ritzv, this->d_resids, offset, subSize);
     CHECK_CUDA_ERROR(cudaMemcpy(this->resids.data() + offset, this->d_resids + offset, subSize * sizeof(chase::Base<T>), cudaMemcpyDeviceToHost));

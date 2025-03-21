@@ -87,7 +87,7 @@ namespace Impl
  * 
  * @tparam T The data type (e.g., float, double).
  */    
-template <class T>
+template <class T, typename MatrixType = chase::matrix::Matrix<T, chase::platform::GPU>>
 class ChASEGPU : public ChaseBase<T>
 {
 public:
@@ -128,12 +128,62 @@ public:
     {
         SCOPED_NVTX_RANGE();
 
-        Hmat_ = chase::matrix::Matrix<T, chase::platform::GPU>(N_, N_, ldh_, H_);
+        Hmat_ = new MatrixType(N_, N_, ldh_, H_);
         Vec1_ = chase::matrix::Matrix<T, chase::platform::GPU>(N_, nevex_, ldv_, V1_);
         Vec2_ = chase::matrix::Matrix<T, chase::platform::GPU>(N_, nevex_);
         resid_ = chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU>(nevex_, 1);
         ritzvs_ = chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU>(nevex_, 1, nevex_, ritzv_);
         A_ = chase::matrix::Matrix<T, chase::platform::GPU>(nevex_, nevex_);
+
+	CUBLAS_INIT();
+
+    }
+            
+    ChASEGPU(std::size_t N, 
+             std::size_t nev, 
+             std::size_t nex, 
+             MatrixType *H, 
+             T* V1, 
+             std::size_t ldv,
+             chase::Base<T>* ritzv)
+             : N_(N), 
+               H_(H->data()),
+               V1_(V1),
+               ldh_(H->ld()),
+               ldv_(ldv),
+               ritzv_(ritzv),
+               nev_(nev), 
+               nex_(nex), 
+               nevex_(nev+nex),
+               config_(N, nev, nex)
+    {
+        SCOPED_NVTX_RANGE();
+
+	Hmat_ = H;
+        Vec1_ = chase::matrix::Matrix<T, chase::platform::GPU>(N_, nevex_, ldv_, V1_);
+        Vec2_ = chase::matrix::Matrix<T, chase::platform::GPU>(N_, nevex_);
+        resid_ = chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU>(nevex_, 1);
+        ritzvs_ = chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU>(nevex_, 1, nevex_, ritzv_);
+        A_ = chase::matrix::Matrix<T, chase::platform::GPU>(nevex_, nevex_);
+               
+	if constexpr (std::is_same<MatrixType, chase::matrix::QuasiHermitianMatrix<T, chase::platform::GPU>>::value)    
+	{
+            is_sym_ = false;
+            is_pseudoHerm_ = true;
+            //Quasi Hermitian matrices require more space for the dual basis
+            //A_ = chase::matrix::Matrix<T>(nevex_ + std::size_t(N/2), nevex_);
+        }
+        else
+        {
+            is_sym_ = true;
+            is_pseudoHerm_ = false;
+            //A_ = chase::matrix::Matrix<T>(nevex_, nevex_);
+        }
+
+	CUBLAS_INIT();
+    }
+
+    void CUBLAS_INIT(){
 
         CHECK_CUBLAS_ERROR(cublasCreate(&cublasH_));
         CHECK_CUSOLVER_ERROR(cusolverDnCreate(&cusolverH_));
@@ -240,7 +290,7 @@ public:
     void loadProblemFromFile(std::string filename)
     {
         SCOPED_NVTX_RANGE();
-        Hmat_.readFromBinaryFile(filename);
+        Hmat_->readFromBinaryFile(filename);
     }
 
 #ifdef CHASE_OUTPUT
@@ -254,7 +304,7 @@ public:
     bool checkSymmetryEasy() override
     {
         SCOPED_NVTX_RANGE();
-        is_sym_ = chase::linalg::internal::cpu::checkSymmetryEasy(N_, Hmat_.cpu_data(), Hmat_.cpu_ld());  
+        is_sym_ = chase::linalg::internal::cpu::checkSymmetryEasy(N_, Hmat_->cpu_data(), Hmat_->cpu_ld());  
         return is_sym_;
     }
 
@@ -263,9 +313,9 @@ public:
     bool checkPseudoHermicityEasy() override
     {
         SCOPED_NVTX_RANGE();
-	chase::linalg::internal::cpu::flipLowerHalfMatrixSign(N_, N_, Hmat_.data(), Hmat_.ld());
-        is_pseudoHerm_ = chase::linalg::internal::cpu::checkSymmetryEasy(N_, Hmat_.data(), Hmat_.ld());  
-	chase::linalg::internal::cpu::flipLowerHalfMatrixSign(N_, N_, Hmat_.data(), Hmat_.ld());
+	chase::linalg::internal::cuda::flipLowerHalfMatrixSign(Hmat_);
+        is_pseudoHerm_ = chase::linalg::internal::cpu::checkSymmetryEasy(N_, Hmat_->cpu_data(), Hmat_->ld());  
+	chase::linalg::internal::cuda::flipLowerHalfMatrixSign(Hmat_);
         return is_pseudoHerm_;
     }
     
@@ -274,7 +324,7 @@ public:
     void symOrHermMatrix(char uplo) override
     {
         SCOPED_NVTX_RANGE();
-        chase::linalg::internal::cpu::symOrHermMatrix(uplo, N_, Hmat_.cpu_data(), Hmat_.cpu_ld());
+        chase::linalg::internal::cpu::symOrHermMatrix(uplo, N_, Hmat_->cpu_data(), Hmat_->cpu_ld());
     }
 
     void Start() override
@@ -299,7 +349,7 @@ public:
                                           Vec2_.data(), 
                                           Vec2_.ld());  
         
-        Hmat_.H2D();
+        Hmat_->H2D();
     }
 
     void Lanczos(std::size_t M, chase::Base<T>* upperb) override
@@ -381,9 +431,9 @@ public:
             {
                 if(isunshift)
                 {
-                    if(Hmat_.isSinglePrecisionEnabled())
+                    if(Hmat_->isSinglePrecisionEnabled())
                     {
-                        Hmat_.disableSinglePrecision();
+                        Hmat_->disableSinglePrecision();
                     }
                     if(Vec1_.isSinglePrecisionEnabled())
                     {
@@ -396,16 +446,16 @@ public:
                 }else
                 {
                     std::cout << "Enable Single Precision in Filter" << std::endl;
-                    Hmat_.enableSinglePrecision();
+                    Hmat_->enableSinglePrecision();
                     Vec1_.enableSinglePrecision();
                     Vec2_.enableSinglePrecision();  
                 }
   
             }else
             {
-                if(Hmat_.isSinglePrecisionEnabled())
+                if(Hmat_->isSinglePrecisionEnabled())
                 {
-                    Hmat_.disableSinglePrecision();
+                    Hmat_->disableSinglePrecision();
                 }
                 if(Vec1_.isSinglePrecisionEnabled())
                 {
@@ -431,7 +481,7 @@ public:
             auto min = *std::min_element(resid_.cpu_data() + locked_, resid_.cpu_data() + nev_);
             if(min > 1e-3)
             {
-                auto Hmat_sp = Hmat_.matrix_sp();
+                auto Hmat_sp = Hmat_->matrix_sp();
                 auto Vec1_sp = Vec1_.matrix_sp();
                 auto Vec2_sp = Vec2_.matrix_sp();
                 singlePrecisionT alpha_sp = static_cast<singlePrecisionT>(alpha);
@@ -457,12 +507,12 @@ public:
                 CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(cublasH_,
                                                                         CUBLAS_OP_N,
                                                                         CUBLAS_OP_N,
-                                                                        Hmat_.rows(),
+                                                                        Hmat_->rows(),
                                                                         block,
-                                                                        Hmat_.cols(),
+                                                                        Hmat_->cols(),
                                                                         &alpha,
-                                                                        Hmat_.data(),
-                                                                        Hmat_.ld(),
+                                                                        Hmat_->data(),
+                                                                        Hmat_->ld(),
                                                                         Vec1_.data() + offset * Vec1_.ld() + locked_ * Vec1_.ld(),
                                                                         Vec1_.ld(),
                                                                         &beta,
@@ -478,12 +528,12 @@ public:
             CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(cublasH_,
                                                                     CUBLAS_OP_N,
                                                                     CUBLAS_OP_N,
-                                                                    Hmat_.rows(),
+                                                                    Hmat_->rows(),
                                                                     block,
-                                                                    Hmat_.cols(),
+                                                                    Hmat_->cols(),
                                                                     &alpha,
-                                                                    Hmat_.data(),
-                                                                    Hmat_.ld(),
+                                                                    Hmat_->data(),
+                                                                    Hmat_->ld(),
                                                                     Vec1_.data() + offset * Vec1_.ld() + locked_ * Vec1_.ld(),
                                                                     Vec1_.ld(),
                                                                     &beta,
@@ -682,21 +732,21 @@ public:
         
 private:
     std::size_t N_;              /**< Size of the matrix. */
-    std::size_t locked_;         /**< Counter for the number of converged eigenvalues. */
+    T *H_;                       /**< Pointer to the matrix \( H \). */
+    T *V1_;                      /**< Pointer to the matrix \( V_1 \). */
+    std::size_t ldh_;            /**< Leading dimension of matrix \( H \). */
+    std::size_t ldv_;            /**< Leading dimension of matrix \( V_1 \). */
+    chase::Base<T> *ritzv_;      /**< Pointer to the Ritz values vector. */
     std::size_t nev_;            /**< Number of eigenvalues to compute. */
     std::size_t nex_;            /**< Number of extra vectors. */
     std::size_t nevex_;          /**< Total number of eigenvalues and extra vectors. */
-    std::size_t ldh_;            /**< Leading dimension of matrix \( H \). */
-    std::size_t ldv_;            /**< Leading dimension of matrix \( V_1 \). */
 
-    T *H_;                       /**< Pointer to the matrix \( H \). */
-    T *V1_;                      /**< Pointer to the matrix \( V_1 \). */
-    chase::Base<T> *ritzv_;      /**< Pointer to the Ritz values vector. */
     T *tmp_;                     /**< Temporary buffer for GPU computations. */
     bool is_sym_;                ///< Flag for matrix symmetry.
     bool is_pseudoHerm_;                ///< Flag for matrix symmetry.
 
-    chase::matrix::Matrix<T, chase::platform::GPU> Hmat_;       /**< GPU matrix \( H \). */
+    std::size_t locked_;         /**< Counter for the number of converged eigenvalues. */
+    MatrixType *Hmat_;       /**< GPU matrix \( H \). */
     chase::matrix::Matrix<T, chase::platform::GPU> Vec1_;       /**< GPU matrix \( V_1 \). */
     chase::matrix::Matrix<T, chase::platform::GPU> Vec2_;       /**< GPU matrix for additional vectors. */
     chase::matrix::Matrix<T, chase::platform::GPU> A_;          /**< GPU matrix for computations. */

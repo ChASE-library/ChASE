@@ -45,7 +45,7 @@ namespace cuda
     void lanczos(cublasHandle_t cublas_handle, 
                  std::size_t M, 
                  std::size_t numvec,
-                 chase::matrix::Matrix<T, chase::platform::GPU>& H, 
+                 chase::matrix::Matrix<T, chase::platform::GPU>* H, 
                  chase::matrix::Matrix<T, chase::platform::GPU>& V, 
                  chase::Base<T>* upperb, 
                  chase::Base<T>* ritzv, 
@@ -56,7 +56,7 @@ namespace cuda
 
         T One = T(1.0);
         T Zero = T(0.0);
-        std::size_t N = H.rows();
+        std::size_t N = H->rows();
         std::vector<chase::Base<T>> r_beta(numvec);
         
         std::vector<chase::Base<T>> d(M * numvec);
@@ -112,12 +112,12 @@ namespace cuda
             CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(cublas_handle,
                                                                           CUBLAS_OP_N,
                                                                           CUBLAS_OP_N,
-                                                                          H.rows(),
+                                                                          H->rows(),
                                                                           numvec,
-                                                                          H.cols(),
+                                                                          H->cols(),
                                                                           &One,
-                                                                          H.data(),
-                                                                          H.ld(),
+                                                                          H->data(),
+                                                                          H->ld(),
                                                                           v_1.data(),
                                                                           v_1.ld(),
                                                                           &Zero,
@@ -282,7 +282,7 @@ namespace cuda
     template<typename T>
     void lanczos(cublasHandle_t cublas_handle,
                  std::size_t M, 
-                 chase::matrix::Matrix<T, chase::platform::GPU>& H,
+                 chase::matrix::Matrix<T, chase::platform::GPU>* H,
                  chase::matrix::Matrix<T, chase::platform::GPU>& V, 
                  chase::Base<T>* upperb)
     {
@@ -291,7 +291,7 @@ namespace cuda
         T One = T(1.0);
         T Zero = T(0.0);
         chase::Base<T> r_beta;
-        std::size_t N = H.rows();
+        std::size_t N = H->rows();
 
         std::vector<Base<T>> d(M);
         std::vector<Base<T>> e(M);
@@ -329,12 +329,12 @@ namespace cuda
             CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(cublas_handle,
                                                                           CUBLAS_OP_N,
                                                                           CUBLAS_OP_N,
-                                                                          H.rows(),
+                                                                          H->rows(),
                                                                           1,
-                                                                          H.cols(),
+                                                                          H->cols(),
                                                                           &One,
-                                                                          H.data(),
-                                                                          H.ld(),
+                                                                          H->data(),
+                                                                          H->ld(),
                                                                           v_1.data(),
                                                                           v_1.ld(),
                                                                           &Zero,

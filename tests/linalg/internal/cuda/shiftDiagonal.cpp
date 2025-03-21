@@ -42,16 +42,17 @@ TYPED_TEST(shiftMatrixGPUTest, ShiftMatrix) {
         buffer[i] = i + 1;
     }
 
-    chase::matrix::Matrix<T, chase::platform::GPU> matrix(rows, cols, ld, buffer.data());
+    chase::matrix::Matrix<T, chase::platform::GPU> *matrix = new chase::matrix::Matrix<T, chase::platform::GPU>(rows, cols, ld, buffer.data());
     T expected[12] = {-1, 2, 3, 4, 5, 4, 7, 8, 9, 10, 9, 12};
 
     chase::linalg::internal::cuda::shiftDiagonal(matrix, shift);
     
-    matrix.D2H();
+    matrix->D2H();
 
     for(auto i = 0; i < ld * cols; i++)
     {
-        EXPECT_EQ(matrix.cpu_data()[i], expected[i]);
+        EXPECT_EQ(matrix->cpu_data()[i], expected[i]);
     }
-
+	
+    delete matrix;
 }

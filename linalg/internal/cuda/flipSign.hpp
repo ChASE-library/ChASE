@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "shiftDiagonal.cuh"
+#include "flipSign.cuh"
 #include "linalg/matrix/matrix.hpp"
 #include "algorithm/types.hpp"
 #include "Impl/chase_gpu/nvtx.hpp"
@@ -35,13 +35,12 @@ namespace cuda
      *       by the minimum of the number of rows and columns of `H`.
      */    
     template<typename T>
-    void shiftDiagonal(chase::matrix::Matrix<T, chase::platform::GPU> * H, chase::Base<T> shift, cudaStream_t* stream_ = nullptr)
+    void flipLowerHalfMatrixSign(chase::matrix::Matrix<T, chase::platform::GPU> * H, cudaStream_t* stream_ = nullptr)
     {
         SCOPED_NVTX_RANGE();
 
         cudaStream_t usedStream = (stream_ == nullptr) ? 0 : *stream_;
-        std::size_t n = std::min(H->rows(), H->cols());
-        chase_shift_matrix(H->data(), n, H->ld(), shift, usedStream);
+        chase_flipLowerHalfMatrixSign(H->data(), H->cols(), H->ld(), usedStream);
     }
 }
 }

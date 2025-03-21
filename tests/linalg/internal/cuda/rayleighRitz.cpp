@@ -90,7 +90,7 @@ TYPED_TEST(rayleighRitzGPUTest, eigenpairs) {
     chase::linalg::lapackpp::t_heevd(CblasColMajor, 'V', 'U', this->N,
                     this->H.data(), this->N, this->evals.data());
     
-    chase::matrix::Matrix<T, chase::platform::GPU> Hmat(this->N, this->N, this->N, H2.data());
+    chase::matrix::Matrix<T, chase::platform::GPU> * Hmat = new chase::matrix::Matrix<T, chase::platform::GPU>(this->N, this->N, this->N, H2.data());
     chase::matrix::Matrix<T, chase::platform::GPU> V1(this->N, this->n);
     chase::matrix::Matrix<T, chase::platform::GPU> V2(this->N, this->n);
     std::vector<chase::Base<T>> ritzv_data(this->n);

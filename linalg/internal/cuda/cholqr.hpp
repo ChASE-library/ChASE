@@ -52,7 +52,7 @@ namespace cuda
         SCOPED_NVTX_RANGE();
 
         T one = T(1.0);
-        T zero = T(0.0);
+        //T zero = T(0.0);
         chase::Base<T> One = Base<T>(1.0);
         chase::Base<T> Zero = Base<T>(0.0);
 
@@ -162,7 +162,7 @@ namespace cuda
         SCOPED_NVTX_RANGE();
 
         T one = T(1.0);
-        T zero = T(0.0);
+        //T zero = T(0.0);
         chase::Base<T> One = Base<T>(1.0);
         chase::Base<T> Zero = Base<T>(0.0);
 
@@ -305,7 +305,7 @@ namespace cuda
         SCOPED_NVTX_RANGE();
 
         T one = T(1.0);
-        T zero = T(0.0);
+        //T zero = T(0.0);
 
         chase::Base<T> One = Base<T>(1.0);
         chase::Base<T> Zero = Base<T>(0.0);
@@ -360,7 +360,7 @@ namespace cuda
         CHECK_CUDA_ERROR(cudaMemcpy(&nrmf, d_nrmf, sizeof(chase::Base<T>), cudaMemcpyDeviceToHost));
         shift = std::sqrt(V.rows()) * nrmf * std::numeric_limits<chase::Base<T>>::epsilon();
 
-        chase::linalg::internal::cuda::shiftDiagonal(*A, shift);
+        chase::linalg::internal::cuda::shiftDiagonal(A, shift);
 
         int* devInfo;
         CHECK_CUDA_ERROR(cudaMalloc((void**)&devInfo, sizeof(int)));

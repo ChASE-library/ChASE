@@ -600,7 +600,7 @@ public:
      * Initializes a matrix with no data and sets default values for dimensions and memory ownership flags.
      */
     Matrix()
-        : cpu_data_(nullptr, [](T*){}), gpu_data_(nullptr, [](T*){}), rows_(0), cols_(0), gpu_ld_(0),
+        : gpu_data_(nullptr, [](T*){}), cpu_data_(nullptr, [](T*){}), rows_(0), cols_(0), gpu_ld_(0),
           cpu_ld_(0), owns_cpu_mem_(false), owns_gpu_mem_(false)
         {}
 
@@ -612,7 +612,7 @@ public:
      * @param cols The number of columns in the matrix.
      */
     Matrix(std::size_t rows, std::size_t cols)
-        : cpu_data_(nullptr, [](T*){}), rows_(rows), cols_(cols), cpu_ld_(0), gpu_ld_(rows), owns_cpu_mem_(false), owns_gpu_mem_(true)
+        : gpu_data_(nullptr, [](T*){}), cpu_data_(nullptr, [](T*){}), rows_(rows), cols_(cols), gpu_ld_(rows), cpu_ld_(0), owns_cpu_mem_(false), owns_gpu_mem_(true)
     {     
         T* raw_data = allocator_.allocate(rows_ * cols_);
         CHECK_CUDA_ERROR(cudaMemset(raw_data, 0, rows * cols * sizeof(T)));
@@ -669,8 +669,8 @@ public:
     Matrix(Matrix&& other) noexcept
         : gpu_data_(std::move(other.gpu_data_)), 
           cpu_data_(std::move(other.cpu_data_)), 
-          external_cpu_data_(other.external_cpu_data_),
           external_gpu_data_(other.external_gpu_data_), 
+          external_cpu_data_(other.external_cpu_data_),
           rows_(other.rows_),
           cols_(other.cols_), 
           gpu_ld_(other.gpu_ld_), 
