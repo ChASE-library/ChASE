@@ -472,6 +472,10 @@ public:
     {
         return chase_->checkPseudoHermicityEasy();
     }
+    bool isPseudoHerm()
+    {
+        return chase_->isPseudoHerm();
+    }
 
     void symOrHermMatrix(char uplo)
     {

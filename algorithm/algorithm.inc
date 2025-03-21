@@ -243,10 +243,17 @@ std::size_t Algorithm<T>::lanczos(ChaseBase<T>* single, int N, int numvec, int m
         return 0.5 * (1 + std::erf(x / sqrt(2 * sigma * sigma)));
     };
 
-    for (auto i = 0; i < numvec * m-1; ++i)
+    std::size_t bound = m;
+    if(single->isPseudoHerm())
+    {
+	//The spectrum of a Pseudo-Hermitian matrix is symmetric over the y-axis.
+	bound /= 2; 
+    }
+
+    for (auto i = 0; i < numvec * bound-1; ++i)
     {
         curr = 0;
-        for (int j = 0; j < numvec * m; ++j)
+        for (int j = 0; j < numvec * bound; ++j)
         {
             if (ThetaSorted[i] < (Theta[j] - threshold))
                 curr += 0;
@@ -260,9 +267,9 @@ std::size_t Algorithm<T>::lanczos(ChaseBase<T>* single, int N, int numvec, int m
         if (curr > search)
         {
             if (std::abs(curr - search) < std::abs(prev - search))
-                lowerb = ThetaSorted[i+1];
-            else
                 lowerb = ThetaSorted[i];
+            else
+                lowerb = ThetaSorted[i-1];
             break;
         }
         prev = curr;
@@ -411,10 +418,18 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
     }
     // --------------------------------- LANCZOS
     // ---------------------------------
-        
-    lanczos(single, N, num_lanczos,
-                std::min(nevex, std::min(N / 2, config.GetLanczosIter())),
-                nevex, &upperb, random, random ? ritzv : NULL);
+
+    std::size_t lanczos_iter = std::min(nevex, std::min(N / 2, config.GetLanczosIter()));
+    if(single->isPseudoHerm() && 2.0*(lanczos_iter / 2) < lanczos_iter)
+    {
+	config.SetLanczosIter(lanczos_iter-1);
+	lanczos_iter = config.GetLanczosIter();
+	/* We enforce the number of ritz values to be even since the spectrum is symmetric
+	 * in the Pseudo-Hermitian case */
+
+    }
+    lanczos(single, N, num_lanczos,lanczos_iter,
+	    nevex, &upperb, random, random ? ritzv : NULL);
 
     std::size_t locked = 0;    // Number of converged eigenpairs.
     std::size_t iteration = 0; // Current iteration.
@@ -425,23 +440,29 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
 
     while (unconverged > nex && iteration < config.GetMaxIter())
     {
-        if (single->isSym() && unconverged < nevex)
+        int cnt;
+        for (cnt = 0; cnt < unconverged; cnt++)
         {
-	    lambda = *std::min_element(ritzv_, ritzv_ + nevex);
-			
-            int cnt;
-            for (cnt = 0; cnt < unconverged; cnt++)
-            {
-                if (resid[cnt] > 5e-1)
+        	if (resid[cnt] > 5e-1)
                 {
                     break;
                 }
-            }
-            if (cnt == unconverged)
-            {
-                lowerb = ritzv[unconverged - 1];
-            }
         }
+        if (cnt == unconverged)
+        {
+        	lowerb = ritzv[unconverged - 1];
+        }
+
+        if (single->isSym() && unconverged < nevex)
+        {
+	    lambda = *std::min_element(ritzv_, ritzv_ + nevex);
+        }
+	else if (single->isPseudoHerm() && unconverged < nevex)
+	{
+	    lambda = ritzv[std::distance(resid,std::min_element(resid, resid + unconverged))];
+            lowerb = std::min(ritzv[unconverged - 1],Base<T>(0.0));
+	}
+			
 
 #ifdef CHASE_OUTPUT
         {

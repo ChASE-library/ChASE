@@ -212,7 +212,7 @@ namespace Impl
 		return is_pseudoHerm_;
 	    }
 	    
-	    bool isPseudoHerm() {return is_pseudoHerm_;}
+	    bool isPseudoHerm() override {return is_pseudoHerm_;}
 
 	    void symOrHermMatrix(char uplo) override
 	    {

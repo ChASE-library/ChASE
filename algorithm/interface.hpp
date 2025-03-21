@@ -182,6 +182,14 @@ public:
      */    
     virtual bool checkPseudoHermicityEasy() = 0;
     /**
+     * @brief Returns if the matrix is Pseudo-Hermitian or not
+     * 
+     * This method simply returns if the matrix is Pseudo-Hermitian or not
+     * 
+     * @return `true` if the matrix is Pseudo-Hermitian, otherwise `false`.
+     */    
+    virtual bool isPseudoHerm() = 0;
+    /**
      * @brief Sets matrix type for symmetric or Hermitian matrix.
      * 
      * This method defines whether the matrix is symmetric or Hermitian based on the specified input.
