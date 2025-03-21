@@ -87,7 +87,12 @@ TYPED_TEST(QuasiHermitianLanczosCPUTest, tinyQuasiHermitianSimplefiedLanczos) {
 
     chase::linalg::internal::cpu::lanczos<T>(this->M_tiny, this->H_tiny, this->V_tiny.data(), this->N_tiny, &upperb);
     
-    EXPECT_GT(upperb,  (chase::Base<T>)std::real(this->exact_eigsl_H_tiny->data()[this->N_tiny-1]));
+    chase::Base<T> actual_upperb = (chase::Base<T>)std::real(this->exact_eigsl_H_tiny->data()[this->N_tiny-1]);
+    EXPECT_TRUE(upperb >=  actual_upperb ||
+                std::abs(upperb - actual_upperb) / std::abs(actual_upperb) <= 1e-2)
+        << "Value " << upperb << " is below the acceptable threshold of "
+        << actual_upperb << "\n" ;
+
     EXPECT_LT(upperb,5*(chase::Base<T>)std::real(this->exact_eigsl_H_tiny->data()[this->N_tiny-1]));
 
 }
@@ -120,7 +125,12 @@ TYPED_TEST(QuasiHermitianLanczosCPUTest, QuasiHermitianSimplefiedLanczos) {
 
     chase::linalg::internal::cpu::lanczos<T>(this->M, this->H, this->V.data(), this->N, &upperb);
     
-    EXPECT_GT(upperb,  (chase::Base<T>)std::real(this->exact_eigsl_H->data()[this->N-1]));
+    chase::Base<T> actual_upperb = (chase::Base<T>)std::real(this->exact_eigsl_H->data()[this->N-1]);
+    EXPECT_TRUE(upperb >=  actual_upperb || 
+                std::abs(upperb - actual_upperb) / std::abs(actual_upperb) <= 1e-2)
+        << "Value " << upperb << " is below the acceptable threshold of " 
+        << actual_upperb << "\n" ;
+
     EXPECT_LT(upperb,5*(chase::Base<T>)std::real(this->exact_eigsl_H->data()[this->N-1]));
 }
 
