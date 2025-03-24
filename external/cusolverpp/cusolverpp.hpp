@@ -968,6 +968,200 @@ cusolverStatus_t cusolverDnTpotrf(cusolverDnHandle_t handle,
         reinterpret_cast<cuDoubleComplex*>(Workspace), Lwork, devInfo);
 }
 
+cusolverStatus_t cusolverDnTgeev_bufferSize(
+    cusolverDnHandle_t handle,
+    cusolverDnParams_t params,
+    cusolverEigMode_t jobvl,
+    cusolverEigMode_t jobvr,
+    int64_t n,
+    const float* A, int64_t lda,
+    const float* W,
+    const float* VL, int64_t ldvl,
+    const float* VR, int64_t ldvr,
+    size_t* workspaceInBytesOnDevice,
+    size_t* workspaceInBytesOnHost)
+{
+    SCOPED_NVTX_RANGE();
+    return cusolverDnXgeev_bufferSize(handle, params, jobvl, jobvr, n,
+                                      CUDA_R_32F, A, lda,
+                                      CUDA_R_32F, W,
+                                      CUDA_R_32F, VL, ldvl,
+                                      CUDA_R_32F, VR, ldvr,
+                                      CUDA_R_32F,
+                                      workspaceInBytesOnDevice,
+                                      workspaceInBytesOnHost);
+}
+
+cusolverStatus_t cusolverDnTgeev_bufferSize(
+    cusolverDnHandle_t handle,
+    cusolverDnParams_t params,
+    cusolverEigMode_t jobvl,
+    cusolverEigMode_t jobvr,
+    int64_t n,
+    const double* A, int64_t lda,
+    const double* W,
+    const double* VL, int64_t ldvl,
+    const double* VR, int64_t ldvr,
+    size_t* workspaceInBytesOnDevice,
+    size_t* workspaceInBytesOnHost)
+{
+    SCOPED_NVTX_RANGE();
+    return cusolverDnXgeev_bufferSize(handle, params, jobvl, jobvr, n,
+                                      CUDA_R_64F, A, lda,
+                                      CUDA_R_64F, W,
+                                      CUDA_R_64F, VL, ldvl,
+                                      CUDA_R_64F, VR, ldvr,
+                                      CUDA_R_64F,
+                                      workspaceInBytesOnDevice,
+                                      workspaceInBytesOnHost);
+}
+
+cusolverStatus_t cusolverDnTgeev_bufferSize(
+    cusolverDnHandle_t handle,
+    cusolverDnParams_t params,
+    cusolverEigMode_t jobvl,
+    cusolverEigMode_t jobvr,
+    int64_t n,
+    const std::complex<float>* A, int64_t lda,
+    const std::complex<float>* W,
+    const std::complex<float>* VL, int64_t ldvl,
+    const std::complex<float>* VR, int64_t ldvr,
+    size_t* workspaceInBytesOnDevice,
+    size_t* workspaceInBytesOnHost)
+{
+    SCOPED_NVTX_RANGE();
+    return cusolverDnXgeev_bufferSize(handle, params, jobvl, jobvr, n,
+                                      CUDA_C_32F, reinterpret_cast<const cuComplex*>(A), lda,
+                                      CUDA_C_32F, reinterpret_cast<const cuComplex*>(W),
+                                      CUDA_C_32F, reinterpret_cast<const cuComplex*>(VL), ldvl,
+                                      CUDA_C_32F, reinterpret_cast<const cuComplex*>(VR), ldvr,
+                                      CUDA_C_32F,
+                                      workspaceInBytesOnDevice,
+                                      workspaceInBytesOnHost);
+}
+
+cusolverStatus_t cusolverDnTgeev_bufferSize(
+    cusolverDnHandle_t handle,
+    cusolverDnParams_t params,
+    cusolverEigMode_t jobvl,
+    cusolverEigMode_t jobvr,
+    int64_t n,
+    const std::complex<double>* A, int64_t lda,
+    const std::complex<double>* W,
+    const std::complex<double>* VL, int64_t ldvl,
+    const std::complex<double>* VR, int64_t ldvr,
+    size_t* workspaceInBytesOnDevice,
+    size_t* workspaceInBytesOnHost)
+{
+    SCOPED_NVTX_RANGE();
+    return cusolverDnXgeev_bufferSize(handle, params, jobvl, jobvr, n,
+                                      CUDA_C_64F, reinterpret_cast<const cuDoubleComplex*>(A), lda,
+                                      CUDA_C_64F, reinterpret_cast<const cuDoubleComplex*>(W),
+                                      CUDA_C_64F, reinterpret_cast<const cuDoubleComplex*>(VL), ldvl,
+                                      CUDA_C_64F, reinterpret_cast<const cuDoubleComplex*>(VR), ldvr,
+                                      CUDA_C_64F,
+                                      workspaceInBytesOnDevice,
+                                      workspaceInBytesOnHost);
+}
+
+
+cusolverStatus_t cusolverDnTgeev(
+    cusolverDnHandle_t handle,
+    cusolverDnParams_t params,
+    cusolverEigMode_t jobvl,
+    cusolverEigMode_t jobvr,
+    int64_t n,
+    float* A, int64_t lda,
+    float* W,
+    float* VL, int64_t ldvl,
+    float* VR, int64_t ldvr,
+    void* bufferOnDevice, size_t workspaceInBytesOnDevice,
+    void* bufferOnHost, size_t workspaceInBytesOnHost,
+    int* info)
+{
+    SCOPED_NVTX_RANGE();
+    return cusolverDnXgeev(handle, params, jobvl, jobvr, n,
+                           CUDA_R_32F, A, lda,
+                           CUDA_R_32F, W,
+                           CUDA_R_32F, VL, ldvl,
+                           CUDA_R_32F, VR, ldvr,
+                           CUDA_R_32F, bufferOnDevice, workspaceInBytesOnDevice,
+                           bufferOnHost, workspaceInBytesOnHost, info);
+}
+
+cusolverStatus_t cusolverDnTgeev(
+    cusolverDnHandle_t handle,
+    cusolverDnParams_t params,
+    cusolverEigMode_t jobvl,
+    cusolverEigMode_t jobvr,
+    int64_t n,
+    double* A, int64_t lda,
+    double* W,
+    double* VL, int64_t ldvl,
+    double* VR, int64_t ldvr,
+    void* bufferOnDevice, size_t workspaceInBytesOnDevice,
+    void* bufferOnHost, size_t workspaceInBytesOnHost,
+    int* info)
+{
+    SCOPED_NVTX_RANGE();
+    return cusolverDnXgeev(handle, params, jobvl, jobvr, n,
+                           CUDA_R_64F, A, lda,
+                           CUDA_R_64F, W,
+                           CUDA_R_64F, VL, ldvl,
+                           CUDA_R_64F, VR, ldvr,
+                           CUDA_R_64F, bufferOnDevice, workspaceInBytesOnDevice,
+                           bufferOnHost, workspaceInBytesOnHost, info);
+}
+
+cusolverStatus_t cusolverDnTgeev(
+    cusolverDnHandle_t handle,
+    cusolverDnParams_t params,
+    cusolverEigMode_t jobvl,
+    cusolverEigMode_t jobvr,
+    int64_t n,
+    std::complex<float>* A, int64_t lda,
+    std::complex<float>* W,
+    std::complex<float>* VL, int64_t ldvl,
+    std::complex<float>* VR, int64_t ldvr,
+    void* bufferOnDevice, size_t workspaceInBytesOnDevice,
+    void* bufferOnHost, size_t workspaceInBytesOnHost,
+    int* info)
+{
+    SCOPED_NVTX_RANGE();
+    return cusolverDnXgeev(handle, params, jobvl, jobvr, n,
+                           CUDA_C_32F, reinterpret_cast<cuComplex*>(A), lda,
+                           CUDA_C_32F, reinterpret_cast<cuComplex*>(W),
+                           CUDA_C_32F, reinterpret_cast<cuComplex*>(VL), ldvl,
+                           CUDA_C_32F, reinterpret_cast<cuComplex*>(VR), ldvr,
+                           CUDA_C_32F, bufferOnDevice, workspaceInBytesOnDevice,
+                           bufferOnHost, workspaceInBytesOnHost, info);
+}
+
+cusolverStatus_t cusolverDnTgeev(
+    cusolverDnHandle_t handle,
+    cusolverDnParams_t params,
+    cusolverEigMode_t jobvl,
+    cusolverEigMode_t jobvr,
+    int64_t n,
+    std::complex<double>* A, int64_t lda,
+    std::complex<double>* W,
+    std::complex<double>* VL, int64_t ldvl,
+    std::complex<double>* VR, int64_t ldvr,
+    void* bufferOnDevice, size_t workspaceInBytesOnDevice,
+    void* bufferOnHost, size_t workspaceInBytesOnHost,
+    int* info)
+{
+    SCOPED_NVTX_RANGE();
+    return cusolverDnXgeev(handle, params, jobvl, jobvr, n,
+                           CUDA_C_64F, reinterpret_cast<cuDoubleComplex*>(A), lda,
+                           CUDA_C_64F, reinterpret_cast<cuDoubleComplex*>(W),
+                           CUDA_C_64F, reinterpret_cast<cuDoubleComplex*>(VL), ldvl,
+                           CUDA_C_64F, reinterpret_cast<cuDoubleComplex*>(VR), ldvr,
+                           CUDA_C_64F, bufferOnDevice, workspaceInBytesOnDevice,
+                           bufferOnHost, workspaceInBytesOnHost, info);
+}
+
+
 }
 }
 }
