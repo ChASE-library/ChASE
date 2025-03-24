@@ -19,25 +19,25 @@ namespace cuda
     __global__ void sflipLowerHalfMatrixSign(float* A, std::size_t n, std::size_t lda)
     {
         std::size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
-        if ((idx % lda) < (lda / 2) && (idx / lda) < n)
+        if ((idx % lda) >= (lda / 2) && idx < lda*n)
             A[idx] = -1.0 * A[idx];
     }
     __global__ void dflipLowerHalfMatrixSign(double* A, std::size_t n, std::size_t lda)
     {
         std::size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
-        if ((idx % lda) < (lda / 2) && (idx / lda) < n)
+        if ((idx % lda) >= (lda / 2) && idx < lda*n)
             A[idx] = -1.0 * A[idx];
     }
     __global__ void cflipLowerHalfMatrixSign(cuComplex* A, std::size_t n, std::size_t lda)
     {
         std::size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
-        if ((idx % lda) < (lda / 2) && (idx / lda) < n)
+        if ((idx % lda) >= (lda / 2) && idx < lda*n)
             A[idx].x = -1.0 * A[idx].x;
     }
     __global__ void zflipLowerHalfMatrixSign(cuDoubleComplex* A, std::size_t n, std::size_t lda)
     {
         std::size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
-        if ((idx % lda) < (lda / 2) && (idx / lda) < n)
+        if ((idx % lda) >= (lda / 2) && idx < lda*n)
             A[idx].x = -1.0 * A[idx].x;
     }
 

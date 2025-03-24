@@ -1,4 +1,5 @@
 setup_test_serial(shiftDiagonalGPUTest shiftDiagonal.cpp LIBRARIES chase_gpu chase_cpu)
+setup_test_serial(flipLowerHalfSignGPUTest flipSign.cpp LIBRARIES chase_gpu chase_cpu)
 setup_test_serial(absTraceGPUTest absTrace.cpp LIBRARIES chase_gpu chase_cpu)
 setup_test_serial(lacpyGPUTest lacpy.cpp LIBRARIES chase_gpu chase_cpu)
 setup_test_serial(ResidGPUTest residuals.cpp LIBRARIES chase_gpu chase_cpu)

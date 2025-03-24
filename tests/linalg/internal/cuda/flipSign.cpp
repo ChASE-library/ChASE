@@ -9,11 +9,11 @@
 #include <random>
 #include <cmath>
 #include <cstring>
-#include "linalg/internal/cuda/shiftDiagonal.hpp"
+#include "linalg/internal/cuda/flipSign.hpp"
 
 
 template <typename T>
-class shiftMatrixGPUTest : public ::testing::Test {
+class flipLowerHalfSignGPUTest: public ::testing::Test {
 protected:
     void SetUp() override {}
 
@@ -21,31 +21,30 @@ protected:
 };
 
 using TestTypes = ::testing::Types<float, double, std::complex<float>, std::complex<double>>;
-TYPED_TEST_SUITE(shiftMatrixGPUTest, TestTypes);
+TYPED_TEST_SUITE(flipLowerHalfSignGPUTest, TestTypes);
 
-TYPED_TEST(shiftMatrixGPUTest, ShiftMatrix) {
+TYPED_TEST(flipLowerHalfSignGPUTest, flipSign) {
     using T = TypeParam;
 
     std::size_t rows = 4;
     std::size_t cols = 3;
     std::size_t ld = 4;
     std::vector<T> buffer(ld * cols);
-    chase::Base<T> shift = chase::Base<T>(-2.0);
 
     /*
-    1,5,9                     -1,5,9
-    2,6,10   --> shift -2 ->  2, 4, 10
-    3,7,11                    3, 7, 9
-    4,8,12                    4, 8, 12
+    1,5,9                                  1,  5,9
+    2,6,10   --> flip lower half sign ->   2,  6,10
+    3,7,11                                -3, -7,-11
+    4,8,12                                -4, -8,-12
      */
     for(auto i = 0; i < ld * cols; i++){
         buffer[i] = i + 1;
     }
 
     chase::matrix::Matrix<T, chase::platform::GPU> *matrix = new chase::matrix::Matrix<T, chase::platform::GPU>(rows, cols, ld, buffer.data());
-    T expected[12] = {-1, 2, 3, 4, 5, 4, 7, 8, 9, 10, 9, 12};
+    T expected[12] = {1, 2, -3, -4, 5, 6, -7, -8, 9, 10, -11, -12};
 
-    chase::linalg::internal::cuda::shiftDiagonal(matrix, shift);
+    chase::linalg::internal::cuda::flipLowerHalfMatrixSign(matrix);
     
     matrix->D2H();
 
