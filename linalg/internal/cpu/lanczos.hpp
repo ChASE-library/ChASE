@@ -342,7 +342,7 @@ namespace cpu
 
         lapackpp::t_lacpy('A', N, numvec, V, ldv, v_1.data(), N);
 
-        blaspp::t_gemm<T>(CblasColMajor, CblasConjTrans, CblasNoTrans, N,
+        blaspp::t_gemm<T>(CblasColMajor, CblasNoTrans, CblasNoTrans, N,
                   numvec, N, &One, H->data(), H->ld(),
                   v_1.data(), N, &Zero, v_2.data(), N);
 
@@ -426,7 +426,7 @@ namespace cpu
             v_1.swap(v_0);
 	    v_1.swap(v_2);
 	
-            blaspp::t_gemm<T>(CblasColMajor, CblasConjTrans, CblasNoTrans, N,
+            blaspp::t_gemm<T>(CblasColMajor, CblasNoTrans, CblasNoTrans, N,
                   numvec, N, &One, H->data(), H->ld(),
                   v_1.data(), N, &Zero, v_2.data(), N);
 	    
@@ -527,7 +527,7 @@ namespace cpu
         
 	lapackpp::t_lacpy('A', N, 1, V, ldv, v_1.data(), N);
 
-        blaspp::t_gemm<T>(CblasColMajor, CblasConjTrans, CblasNoTrans, N,
+        blaspp::t_gemm<T>(CblasColMajor, CblasNoTrans, CblasNoTrans, N,
                   1, N, &One, H->data(), H->ld(),
                   v_1.data(), N, &Zero, v_2.data(), N);
 
@@ -566,7 +566,7 @@ namespace cpu
             v_1.swap(v_0);
 	    v_1.swap(v_2);
 	
-            blaspp::t_gemm<T>(CblasColMajor, CblasConjTrans, CblasNoTrans, N,
+            blaspp::t_gemm<T>(CblasColMajor, CblasNoTrans, CblasNoTrans, N,
                   1, N, &One, H->data(), H->ld(),
                   v_1.data(), N, &Zero, v_2.data(), N);
 	    

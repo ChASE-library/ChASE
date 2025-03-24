@@ -12,8 +12,10 @@
 #include <cublas_v2.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
+#include <cuda_runtime_api.h>
 #include <cusolverDn.h>
 #include "Impl/chase_gpu/nvtx.hpp"
+
 // Macro to check for cuSOLVER errors
 #define CHECK_CUSOLVER_ERROR(val) checkCusolver((val), #val, __FILE__, __LINE__)
 
@@ -490,6 +492,38 @@ cusolverStatus_t cusolverDnTgqr(cusolverDnHandle_t handle, std::size_t m, std::s
         reinterpret_cast<cuDoubleComplex*>(work), lwork, devInfo);
 }
 
+/**
+ * @ingroup cuSolverFunctions
+ * @brief Get the buffer size for general real precision eigenvalue/eigenvector decomposition.
+ *
+ * This function queries the required buffer size for performing an eigenvalue decomposition of a
+ * real symmetric matrix A, storing the eigenvalues in W, and the eigenvectors in Q (if requested),
+ * using the cuSolver library with double precision.
+ *
+ * @param handle [in] cuSolver handle.
+ * @param jobz [in] Eigenvalue problem mode (whether to compute eigenvectors or not).
+ * @param uplo [in] Specifies whether the matrix is upper or lower triangular.
+ * @param n [in] The order of the matrix A (number of rows/columns).
+ * @param A [in] Pointer to the matrix A.
+ * @param lda [in] Leading dimension of matrix A.
+ * @param W [out] Pointer to the array for storing eigenvalues.
+ * @param lwork [out] Pointer to the integer value storing the required buffer size.
+ * @return cusolverStatus_t status of the function call.
+ *//*
+cusolverStatus_t cusolverDnTgeev_bufferSize(cusolverDnHandle_t handle,
+                                             cusolverEigMode_t jobz,
+                                             std::size_t n, float* A, std::size_t lda, 
+					     float *V, std::size_t ldv, float* W, int* lwork_gpu, int *lwork_cpu)
+{
+    // W must be of size 2xn. Yet, we omit left eigenvectors.
+    SCOPED_NVTX_RANGE();
+    cusolverDnParams_t params = NULL;
+    CHECK_CUSOLVER_ERROR(cusolverDnCreateParams(&params));
+    cudaDataType dataType = CUDA_R_32F;
+    return cusolverDnXgesvd_bufferSize(handle, params, CUSOLVER_EIG_MODE_NOVECTOR, jobz, n, dataType, A, lda,
+		    		      dataType, W, dataType, NULL, 1, dataType, V, ldv, dataType, lwork_gpu, lwork_cpu);
+}
+*/
 /**
  * @ingroup cuSolverFunctions
  * @brief Get the buffer size for real double precision eigenvalue/eigenvector decomposition.

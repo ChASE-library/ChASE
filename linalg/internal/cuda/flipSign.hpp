@@ -42,6 +42,15 @@ namespace cuda
         cudaStream_t usedStream = (stream_ == nullptr) ? 0 : *stream_;
         chase_flipLowerHalfMatrixSign(H->data(), H->cols(), H->ld(), usedStream);
     }
+    
+    template<typename T>
+    void flipLowerHalfMatrixSign(std::size_t m, std::size_t n, T * H_data, std::size_t ldh, cudaStream_t* stream_ = nullptr)
+    {
+        SCOPED_NVTX_RANGE();
+
+        cudaStream_t usedStream = (stream_ == nullptr) ? 0 : *stream_;
+        chase_flipLowerHalfMatrixSign(H_data, n, ldh, usedStream);
+    }
 }
 }
 }
