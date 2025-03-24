@@ -202,24 +202,19 @@ namespace cpu
 
 	// Create temporary storage for sorted eigenvalues and eigenvectors
 	std::vector<Base<T>> sorted_ritzv(n);
-	std::vector<Base<T>> sorted_ritzvi(n);
-	std::unique_ptr<T[]> sorted_W = std::unique_ptr<T[]>{new T[n * n]};
-
+        T *sorted_W = A;
 	// Reorder eigenvalues and eigenvectors
 	for (std::size_t i = 0; i < n; ++i) {
 		sorted_ritzv[i] = ritzv[indices[i]];
-		sorted_ritzvi[i] = ritzvi[indices[i]];
-
-		// Copy the corresponding ritz vector column
-		for (std::size_t j = 0; j < n; ++j) {
-			sorted_W[j + i*n] = W[j + indices[i]*n];
-		}
 	}
+
+        for (std::size_t i = 0; i < n; ++i) {
+            std::copy_n(W + indices[i] * n, n, sorted_W + i * n);
+        }
 
 	// Copy back to original arrays
 	std::copy(sorted_ritzv.begin(), sorted_ritzv.end(), ritzv);
-	std::copy(sorted_ritzvi.begin(), sorted_ritzvi.end(), ritzvi.data());
-	std::copy(sorted_W.get(), sorted_W.get() + n * n, W);
+	std::copy(sorted_W, sorted_W + n * n, W);
 	
 	//Project ritz vectors back to the initial space
         blaspp::t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, N, n, n,
