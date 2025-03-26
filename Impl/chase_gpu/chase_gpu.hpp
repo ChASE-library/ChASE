@@ -135,7 +135,7 @@ public:
         ritzvs_ = chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU>(nevex_, 1, nevex_, ritzv_);
         A_ = chase::matrix::Matrix<T, chase::platform::GPU>(nevex_, nevex_);
 
-	    if constexpr (std::is_same<MatrixType, chase::matrix::QuasiHermitianMatrix<T, chase::platform::GPU>>::value)    
+	if constexpr (std::is_same<MatrixType, chase::matrix::QuasiHermitianMatrix<T, chase::platform::GPU>>::value)    
 	    {
             is_sym_ = false;
             is_pseudoHerm_ = true;
@@ -232,9 +232,30 @@ public:
 
         lwork_ = (lwork_geqrf > lwork_orgqr) ? lwork_geqrf : lwork_orgqr;
 
-        int lwork_heevd = 0;
+        int lwork_eev = 0;
 
-        CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTheevd_bufferSize(
+	if constexpr (std::is_same<MatrixType, chase::matrix::QuasiHermitianMatrix<T>>::value){
+
+    		CHECK_CUSOLVER_ERROR(cusolverDnCreateParams(&params_));
+        	
+    		CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTgeev_bufferSize(
+                                                            cusolverH_,
+							    params_, 
+                                                            CUSOLVER_EIG_MODE_NOVECTOR, 
+                                                            CUSOLVER_EIG_MODE_VECTOR, 
+                                                            nevex_, 
+                                                            A_.data(), 
+                                                            A_.ld(), 
+                                                            ritzvs_.data(),
+							    NULL,1,
+							    Vec1_.data(),Vec1_.ld(),
+							    &lhwork_,
+                                                            &lwork_eev));
+        	
+		h_work_ = new T[lhwork_]();
+	}else{
+
+        	CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTheevd_bufferSize(
                                                             cusolverH_, 
                                                             CUSOLVER_EIG_MODE_VECTOR, 
                                                             CUBLAS_FILL_MODE_LOWER,
@@ -242,10 +263,13 @@ public:
                                                             A_.data(), 
                                                             A_.ld(), 
                                                             ritzvs_.data(), 
-                                                            &lwork_heevd));
-        if (lwork_heevd > lwork_)
+                                                            &lwork_eev));
+	}
+
+
+        if (lwork_eev > lwork_)
         {
-            lwork_ = lwork_heevd;
+            lwork_ = lwork_eev;
         }
 
         int lwork_potrf = 0;
@@ -287,6 +311,10 @@ public:
             CHECK_CUDA_ERROR(cudaFree(d_return_));
         if (tmp_)
             CHECK_CUDA_ERROR(cudaFree(tmp_));
+	
+	if constexpr (std::is_same<MatrixType, chase::matrix::QuasiHermitianMatrix<T>>::value){
+		delete [] h_work_;
+	}
 
     }
 
@@ -668,7 +696,26 @@ public:
     {
         SCOPED_NVTX_RANGE();
         std::size_t locked = (nev_ + nex_) - block;
-        chase::linalg::internal::cuda::rayleighRitz(cublasH_,
+	
+	if constexpr (std::is_same<MatrixType, chase::matrix::QuasiHermitianMatrix<T, chase::platform::GPU>>::value)    
+	{
+        	chase::linalg::internal::cuda::rayleighRitz(cublasH_,
+                                                    cusolverH_,
+						    params_,
+                                                    Hmat_,
+                                                    Vec1_,
+                                                    Vec2_,
+                                                    ritzvs_,
+                                                    locked,
+                                                    block,
+                                                    devInfo_,
+                                                    d_work_,
+                                                    lwork_,
+                                                    h_work_,
+                                                    lhwork_,
+                                                    &A_);
+        }else{
+        	chase::linalg::internal::cuda::rayleighRitz(cublasH_,
                                                     cusolverH_,
                                                     Hmat_,
                                                     Vec1_,
@@ -680,6 +727,7 @@ public:
                                                     d_work_,
                                                     lwork_,
                                                     &A_);
+        }
  
         Vec1_.swap(Vec2_);
     }
@@ -771,11 +819,15 @@ private:
     cudaStream_t stream_;          /**< CUDA stream for asynchronous operations. */
     cublasHandle_t cublasH_;       /**< CUBLAS handle for GPU-accelerated linear algebra operations. */
     cusolverDnHandle_t cusolverH_; /**< CUSOLVER handle for eigenvalue computations. */
+    cusolverDnParams_t params_;    /**< CUSOLVER structure with information for Xgeev. */
 
     int* devInfo_;                 /**< Pointer to device information for CUDA operations. */
     T* d_return_;                  /**< Pointer to device buffer for eigenvalues. */
     T* d_work_;                    /**< Pointer to work buffer for matrix operations. */
     int lwork_ = 0;                    /**< Workspace size for matrix operations. */
+
+    T* h_work_;                     /**< Pointer to work buffer on host for geev in the Quasi Hermitian case. */
+    int lhwork_ = 0;                /**< Workspace size for host geev operations in the Quasi Hermitian case. */
 }; 
 
 }    

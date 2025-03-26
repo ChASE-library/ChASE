@@ -7,3 +7,4 @@ setup_test_serial(RayleighRitzGPUTest rayleighRitz.cpp LIBRARIES chase_gpu chase
 setup_test_serial(CholQRGPUTest cholqr.cpp LIBRARIES chase_gpu chase_cpu)
 setup_test_serial(lanczosGPUTest lanczos.cpp LIBRARIES chase_gpu chase_cpu)
 setup_test_serial(QuasiHermitianLanczosGPUTest quasi_hermitian_lanczos.cpp LIBRARIES chase_gpu chase_cpu)
+setup_test_serial(QuasiHermitianRayleighRItzGPUTest quasi_hermitian_rayleighRitz.cpp LIBRARIES chase_gpu chase_cpu)
