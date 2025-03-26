@@ -137,7 +137,7 @@ namespace cpu
 	//Allocate the space for the imaginary parts of ritz values
 	std::vector<Base<T>> ritzvi(n, Base<T>(0.0)); 
  
-	//Performs Q_2^T Q_2 for the construction of the dual basis, Q_2 is the lower part of Ql
+	//Performs Q_2^T Q_2 for the construction of the dual basis, Q_2 is the lower part of Q
 	blaspp::t_gemm(CblasColMajor, CblasConjTrans, CblasNoTrans, n, n, k, &alpha,
 		Q + k, ldq, Q + k, ldq, &Zero, A, lda);
 

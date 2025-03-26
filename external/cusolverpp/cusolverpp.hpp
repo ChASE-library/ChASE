@@ -967,7 +967,7 @@ cusolverStatus_t cusolverDnTpotrf(cusolverDnHandle_t handle,
         handle, uplo, n, reinterpret_cast<cuDoubleComplex*>(A), lda,
         reinterpret_cast<cuDoubleComplex*>(Workspace), Lwork, devInfo);
 }
-
+/*
 cusolverStatus_t cusolverDnTgeev_bufferSize(
     cusolverDnHandle_t handle,
     cusolverDnParams_t params,
@@ -1160,7 +1160,7 @@ cusolverStatus_t cusolverDnTgeev(
                            CUDA_C_64F, bufferOnDevice, workspaceInBytesOnDevice,
                            bufferOnHost, workspaceInBytesOnHost, info);
 }
-
+*/
 
 }
 }

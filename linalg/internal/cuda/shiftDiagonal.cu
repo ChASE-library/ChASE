@@ -16,6 +16,8 @@ namespace internal
 {
 namespace cuda
 {
+    // ---------------------------------------- CUDA kernels ---------------------------------------------- //
+
     __global__ void sshift_matrix(float* A, std::size_t n, std::size_t lda, float shift)
     {
         std::size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
@@ -43,7 +45,6 @@ namespace cuda
             A[(idx) * lda + idx].x += shift;
 
     }
-
 
     __global__ void sshift_mgpu_matrix(float* A, std::size_t* off_m,
                                     std::size_t* off_n, std::size_t offsize,
@@ -96,6 +97,100 @@ namespace cuda
             A[ind].x += shift;
         }
     }
+    
+    __global__ void ssubtract_inverse_diagonal(float* A, std::size_t n, std::size_t lda, float coef,
+		    			       float* new_diag)
+    {
+        std::size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
+        if (idx < n)
+            new_diag[idx] = 1.0 / (coef - A[(idx) * lda + idx]);
+    }
+    __global__ void dsubtract_inverse_diagonal(double* A, std::size_t n, std::size_t lda, double coef,
+		    			       double* new_diag)
+    {
+        std::size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
+        if (idx < n)
+            new_diag[idx] = 1.0 / (coef - A[(idx) * lda + idx]);
+    }
+    __global__ void csubtract_inverse_diagonal(cuComplex* A, std::size_t n, std::size_t lda, float coef,
+		    			       float* new_diag)
+    {
+	//We assume the diagonal of A is real, and coef real. We quite new_diag complex for later operations
+        std::size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
+        if (idx < n)
+            new_diag[idx] = 1.0 / (coef - A[(idx) * lda + idx].x);
+    }
+    __global__ void zsubtract_inverse_diagonal(cuDoubleComplex* A, std::size_t n, std::size_t lda, double coef,
+		    			       double* new_diag)
+    {
+	//We assume the diagonal of A is real, and coef real. We quite new_diag complex for later operations
+        std::size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
+        if (idx < n)
+            new_diag[idx] = 1.0 / (coef - A[(idx) * lda + idx].x);
+    }
+    
+    __global__ void sset_diagonal(float* A, std::size_t n, std::size_t lda, float coef)
+    {
+        std::size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
+        if (idx < n)
+            A[(idx) * lda + idx] = coef;
+    }
+    __global__ void dset_diagonal(double* A, std::size_t n, std::size_t lda, double coef)
+    {
+        std::size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
+        if (idx < n)
+            A[(idx) * lda + idx] = coef;
+    }
+    __global__ void cset_diagonal(cuComplex* A, std::size_t n, std::size_t lda, cuComplex coef)
+    {
+        std::size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
+        if (idx < n){
+            A[(idx) * lda + idx].x = coef.x;
+            A[(idx) * lda + idx].y = coef.y;
+	}
+    }
+    __global__ void zset_diagonal(cuDoubleComplex* A, std::size_t n, std::size_t lda, cuDoubleComplex coef)
+    {
+        std::size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
+        if (idx < n){
+            A[(idx) * lda + idx].x = coef.x;
+            A[(idx) * lda + idx].y = coef.y;
+	}
+    }
+    __global__ void sscale_rows_matrix(float* A, std::size_t m, std::size_t n, std::size_t lda, float* coef)
+    {
+        std::size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
+	std::size_t coef_idx = idx % lda;
+        if (coef_idx < m && idx < lda*n)
+            A[idx] /= coef[coef_idx];
+    }
+    __global__ void dscale_rows_matrix(double* A, std::size_t m, std::size_t n, std::size_t lda, double* coef)
+    {
+        std::size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
+	std::size_t coef_idx = idx % lda;
+        if (coef_idx < m && idx < lda*n)
+            A[idx] /= coef[coef_idx];
+    }
+    __global__ void cscale_rows_matrix(cuComplex* A, std::size_t m, std::size_t n, std::size_t lda, float* coef)
+    {
+        std::size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
+	std::size_t coef_idx = idx % lda;
+        if (coef_idx < m && idx < lda*n){
+            A[idx].x /= coef[coef_idx];
+            A[idx].y /= coef[coef_idx];
+	}
+    }
+    __global__ void zscale_rows_matrix(cuDoubleComplex* A, std::size_t m, std::size_t n, std::size_t lda, double* coef)
+    {
+        std::size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
+	std::size_t coef_idx = idx % lda;
+        if (coef_idx < m && idx < lda*n){
+            A[idx].x /= coef[coef_idx];
+            A[idx].y /= coef[coef_idx];
+	}
+    }
+
+    // ------------------------------ ChASE templated calls to kernels ----------------------------------- //
 
     void chase_shift_matrix(float* A, std::size_t n, std::size_t lda, float shift, cudaStream_t stream_)
     {
@@ -186,7 +281,77 @@ namespace cuda
             reinterpret_cast<cuDoubleComplex*>(A), off_m, off_n,        //
             offsize, ldH, shift);
     }
+    
+    void chase_subtract_inverse_diagonal(float* A, std::size_t n, std::size_t lda, float coef,
+		    			  float* new_diag, cudaStream_t stream_)
+    {
+        std::size_t num_blocks = (n + (blockSize - 1)) / blockSize;
+        ssubtract_inverse_diagonal<<<num_blocks, blockSize, 0, stream_>>>(A, n, lda, coef, new_diag);
+    }
+    void chase_subtract_inverse_diagonal(double* A, std::size_t n, std::size_t lda, double coef,
+		    			  double* new_diag, cudaStream_t stream_)
+    {
+        std::size_t num_blocks = (n + (blockSize - 1)) / blockSize;
+        dsubtract_inverse_diagonal<<<num_blocks, blockSize, 0, stream_>>>(A, n, lda, coef, new_diag);
+    }
+    void chase_subtract_inverse_diagonal(std::complex<float>* A, std::size_t n, std::size_t lda, float coef,
+		    			  float* new_diag, cudaStream_t stream_)
+    {
+        std::size_t num_blocks = (n + (blockSize - 1)) / blockSize;
+        csubtract_inverse_diagonal<<<num_blocks, blockSize, 0, stream_>>>(
+            reinterpret_cast<cuComplex*>(A), n, lda, coef,new_diag);
+    }
+    void chase_subtract_inverse_diagonal(std::complex<double>* A, std::size_t n, std::size_t lda, double coef,
+		    			  double* new_diag, cudaStream_t stream_)
+    {
+        std::size_t num_blocks = (n + (blockSize - 1)) / blockSize;
+        zsubtract_inverse_diagonal<<<num_blocks, blockSize, 0, stream_>>>(
+            reinterpret_cast<cuDoubleComplex*>(A), n, lda, coef,new_diag);
+    }
+    
+    void chase_set_diagonal(float* A, std::size_t n, std::size_t lda, float coef, cudaStream_t stream_)
+    {
+        std::size_t num_blocks = (n + (blockSize - 1)) / blockSize;
+	sset_diagonal<<<num_blocks, blockSize, 0, stream_>>>(A, n, lda, coef);
+    }
+    void chase_set_diagonal(double* A, std::size_t n, std::size_t lda, double coef, cudaStream_t stream_)
+    {
+        std::size_t num_blocks = (n + (blockSize - 1)) / blockSize;
+        dset_diagonal<<<num_blocks, blockSize, 0, stream_>>>(A, n, lda, coef);
+    }
+    void chase_set_diagonal(std::complex<float>* A, std::size_t n, std::size_t lda, std::complex<float> coef, cudaStream_t stream_)
+    {
+        std::size_t num_blocks = (n + (blockSize - 1)) / blockSize;
+        cset_diagonal<<<num_blocks, blockSize, 0, stream_>>>(
+            reinterpret_cast<cuComplex*>(A), n, lda, make_cuComplex(std::real(coef),std::imag(coef)));
+    }
+    void chase_set_diagonal(std::complex<double>* A, std::size_t n, std::size_t lda, std::complex<double> coef, cudaStream_t stream_)
+    {
+        std::size_t num_blocks = (n + (blockSize - 1)) / blockSize;
+        zset_diagonal<<<num_blocks, blockSize, 0, stream_>>>(
+            reinterpret_cast<cuDoubleComplex*>(A), n, lda, make_cuDoubleComplex(std::real(coef),std::imag(coef)));
+    }
 
+    void chase_scale_rows_matrix(float* A, std::size_t m, std::size_t n, std::size_t lda, float* coef, cudaStream_t stream_)
+    {
+        std::size_t num_blocks = (n + (blockSize - 1)) / blockSize;
+	sscale_rows_matrix<<<num_blocks, blockSize, 0, stream_>>>(A, m, n, lda, coef);
+    }
+    void chase_scale_rows_matrix(double* A, std::size_t m, std::size_t n, std::size_t lda, double* coef, cudaStream_t stream_)
+    {
+        std::size_t num_blocks = (n + (blockSize - 1)) / blockSize;
+	dscale_rows_matrix<<<num_blocks, blockSize, 0, stream_>>>(A, m, n, lda, coef);
+    }
+    void chase_scale_rows_matrix(std::complex<float>* A, std::size_t m, std::size_t n, std::size_t lda, float* coef, cudaStream_t stream_)
+    {
+        std::size_t num_blocks = (n + (blockSize - 1)) / blockSize;
+	cscale_rows_matrix<<<num_blocks, blockSize, 0, stream_>>>(reinterpret_cast<cuComplex*>(A), m, n, lda, coef);
+    } 
+    void chase_scale_rows_matrix(std::complex<double>* A, std::size_t m, std::size_t n, std::size_t lda, double* coef, cudaStream_t stream_)
+    {
+        std::size_t num_blocks = (n + (blockSize - 1)) / blockSize;
+	zscale_rows_matrix<<<num_blocks, blockSize, 0, stream_>>>(reinterpret_cast<cuDoubleComplex*>(A), m, n, lda, coef);
+    }
 }
 }
 }
