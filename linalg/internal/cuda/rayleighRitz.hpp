@@ -11,6 +11,7 @@
 #include <thrust/copy.h>
 #include <thrust/fill.h>
 #include <thrust/sequence.h>
+#include <thrust/sort.h>
 
 #include "external/cublaspp/cublaspp.hpp"
 #include "external/cusolverpp/cusolverpp.hpp"
@@ -232,8 +233,21 @@ namespace cuda
 
 	T *halfQ = A->data() + n; //Should work. It points to a part of the workspace.
 
-	chase::matrix::Matrix<T, chase::platform::GPU> ritzv_complex(n,1);
+	chase::matrix::Matrix<T, chase::platform::GPU> ritzv_complex;
+	if constexpr (std::is_same<T, std::complex<chase::Base<T>>>::value)
+	{
+		ritzv_complex = chase::matrix::Matrix<T, chase::platform::GPU>(n,1);
+	}
+	else
+	{
+		ritzv_complex = chase::matrix::Matrix<T, chase::platform::GPU>(2*n,1);
+	}
 
+	ritzv_complex.allocate_cpu_data();
+	ritzv.allocate_cpu_data();
+            
+	//Allocating workspace memory
+	//std::cout << "Allocating workspace memory" << std::endl;
         if(d_workspace == nullptr || h_workspace == nullptr) //To update once Xgeev is plugged in
         {
 	    std::size_t temp_d_lwork = 0;
@@ -247,7 +261,7 @@ namespace cuda
                                                             n,
                                                             A->data(),
                                                             A->ld(),
-                                                            ritzv_complex.data() + offset,
+                                                            ritzv_complex.data(),
                                                             NULL,1,
                                                             V1.data() + offset * V1.ld(),V1.ld(),
                                                             &temp_d_lwork,
@@ -276,6 +290,7 @@ namespace cuda
 	chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU> diag(n,1);
         
 	//Performs Q_2^T Q_2 for the construction of the dual basis, Q_2 is the lower part of Q
+	//std::cout << "Performs Q_2^T Q_2 for the construction of the dual basis, Q_2 is the lower part of Q" << std::endl;
 	CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(cublas_handle, 
                          	       CUBLAS_OP_C, 
                                        CUBLAS_OP_N, 
@@ -292,6 +307,7 @@ namespace cuda
                                        lda));
 
        	//Pre-compute the scaling weights such that diag = Ql^T Qr
+	//std::cout << "Pre-compute the scaling weights such that diag = Ql^T Qr" << std::endl;
 	chase::linalg::internal::cuda::chase_subtract_inverse_diagonal(A->data(),
 				      n,
 				      lda,
@@ -299,12 +315,14 @@ namespace cuda
 				      diag.data(), usedStream);
 
 	//The Matrix A now contains the data for creating the upper part of Ql
+	//std::cout << "The Matrix A now contains the data for creating the upper part of Ql" << std::endl;
 	chase::linalg::internal::cuda::chase_set_diagonal(A->data(),
 				       n,
 				       lda,
 				       One, usedStream);
 
 	//Compute the upper part of Ql
+	//std::cout << "Compute the upper part of Ql" << std::endl;
 	CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(cublas_handle, 
                          	       CUBLAS_OP_N, 
                                        CUBLAS_OP_N, 
@@ -321,6 +339,7 @@ namespace cuda
                                        lda));
 
 	//Performs the multiplication of the first k cols of H with the upper part of Ql
+	//std::cout << "Performs the multiplication of the first k cols of H with the upper part of Ql" << std::endl;
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(cublas_handle, 
                          	       CUBLAS_OP_N, 
                                        CUBLAS_OP_N, 
@@ -339,12 +358,14 @@ namespace cuda
 	alpha = -One;
 		
 	//The Matrix A now contains the data for creating the upper part of Ql
+	//std::cout << "The Matrix A now contains the data for creating the upper part of Ql" << std::endl;
 	chase::linalg::internal::cuda::chase_set_diagonal(A->data(),
 				       n,
 				       lda,
 				       alpha, usedStream);
 	
 	//Compute the negative of the lower part of Ql
+	//std::cout << "Compute the negative of the lower part of Ql" << std::endl;
 	CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(cublas_handle, 
                          	       CUBLAS_OP_N, 
                                        CUBLAS_OP_N, 
@@ -361,6 +382,7 @@ namespace cuda
                                        lda));
 
 	//Performs the multiplication of the last k cols of H with the negative lower part of Ql
+	//std::cout << "Performs the multiplication of the last k cols of H with the negative lower part of Ql" << std::endl;
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(cublas_handle, 
                          	       CUBLAS_OP_N, 
                                        CUBLAS_OP_N, 
@@ -377,9 +399,11 @@ namespace cuda
                                        V2.ld()));
 
 	//Flip the sign of the lower part of V to emulate the multiplication H' * Ql
+	//std::cout << "Flip the sign of the lower part of V to emulate the multiplication H' * Ql" << std::endl;
 	chase::linalg::internal::cuda::flipLowerHalfMatrixSign(N,n,V2.data() + offset * V2.ld(),V2.ld(), &usedStream);
-
+	
 	//Last GEMM for the construction of the rayleigh Quotient : (H' * Ql)' * Qr
+	//std::cout << "Last GEMM for the construction of the rayleigh Quotient : (H' * Ql)' * Qr" << std::endl;
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(cublas_handle, 
                                        CUBLAS_OP_C, 
                                        CUBLAS_OP_N, 
@@ -396,9 +420,12 @@ namespace cuda
                                        lda));
        
 	//Scale the rows because Ql' * Qr = diag =/= I
+	//std::cout << "Scale the rows because Ql' * Qr = diag =/= I" << std::endl;
+
 	chase::linalg::internal::cuda::chase_scale_rows_matrix(A->data(),n,n,lda,diag.data(),usedStream);
 	
 	//Compute the eigenpairs of the non-hermitian rayleigh quotient	
+	//std::cout << "Compute the eigenpairs of the non-hermitian rayleigh quotient" << std::endl;
 	CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTgeev(cusolver_handle,
 					params,
 					CUSOLVER_EIG_MODE_NOVECTOR,
@@ -406,11 +433,11 @@ namespace cuda
 					n,
 					A->data(),
 					lda,
-					ritzv_complex.data() + offset,
+					ritzv_complex.data(),
 					NULL,
 					1,
-					V1.data() + offset * V1.ld(),
-					V1.ld(),
+					V2.data() + offset * V2.ld(),
+					V2.ld(),
 					d_workspace,
 					d_lwork,
 					h_workspace,
@@ -428,25 +455,57 @@ namespace cuda
             throw std::runtime_error("cusolver HEEVD failed in RayleighRitz");
         }       
 
-	//thrust::device_vector<int> indices(n);
-	//thrust::sequence(indices.begin(),indices.end());
 
-        CHECK_CUDA_ERROR(cudaMemcpy(ritzv_complex.cpu_data() + offset, 
-                                    ritzv_complex.data() + offset, 
-                                    subSize * sizeof(chase::Base<T>),
+	//std::cout << "Copying the complex ritz values back to cpu" << std::endl;
+	//thrust::device_vector<int> indices(n); //Does not compile, returns unimplemented on this system...
+	chase::Base<T> * ptx = ritzv.cpu_data() + offset;
+	if constexpr (std::is_same<T, std::complex<chase::Base<T>>>::value)
+	{
+		ritzv_complex.allocate_cpu_data();
+		ritzv_complex.D2H();
+		for(auto i = 0; i < n; i++){
+			ptx[i] = std::real(ritzv_complex.cpu_data()[i]);
+		}
+	}
+	else
+	{
+		CHECK_CUDA_ERROR(cudaMemcpy(ptx, 
+                                    ritzv_complex.data(), 
+                                    n * sizeof(chase::Base<T>),
                                     cudaMemcpyDeviceToHost));
+	}
+
+	std::vector<std::size_t> indices(n);
+	std::iota(indices.begin(), indices.end(), 0); // Fill with 0, 1, ..., n-1
+	std::sort(indices.begin(), indices.end(),
+			[&ptx](std::size_t i1, std::size_t i2) { return ptx[i1] < ptx[i2]; });
+
+	std::vector<Base<T>> sorted_ritzv(n);
+        T *d_sorted_W = A->data();
+	// Reorder eigenvalues and eigenvectors
+	for (std::size_t i = 0; i < n; ++i) {
+		sorted_ritzv[i] = ptx[indices[i]];
+        	CHECK_CUDA_ERROR(cudaMemcpy(d_sorted_W + i * lda, 
+                                    V2.data() + (offset + indices[i]) * V2.ld() , 
+                                    n * sizeof(T),
+                                    cudaMemcpyDeviceToDevice));
+	}
+	
+	std::copy(sorted_ritzv.begin(), sorted_ritzv.end(), ptx);
+	
+	ritzv.H2D();	
 
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(cublas_handle, 
                                        CUBLAS_OP_N, 
                                        CUBLAS_OP_N, 
-                                       V1.rows(), 
+                                       V2.rows(), 
                                        subSize, 
                                        subSize,
                                        &One, 
                                        V1.data() + offset * V1.ld(),
-                                       V1.ld(), 
-                                       A->data(),
-                                       subSize, 
+                                       V1.ld(),
+                                       d_sorted_W,
+                                       lda, 
                                        &Zero,
                                        V2.data() + offset * V2.ld(),
                                        V2.ld()));

@@ -40,7 +40,7 @@ namespace cuda
         SCOPED_NVTX_RANGE();
 
         cudaStream_t usedStream = (stream_ == nullptr) ? 0 : *stream_;
-        chase_flipLowerHalfMatrixSign(H->data(), H->cols(), H->ld(), usedStream);
+        chase_flipLowerHalfMatrixSign(H->data(),H->rows(),  H->cols(), H->ld(), usedStream);
     }
     
     template<typename T>
@@ -49,7 +49,7 @@ namespace cuda
         SCOPED_NVTX_RANGE();
 
         cudaStream_t usedStream = (stream_ == nullptr) ? 0 : *stream_;
-        chase_flipLowerHalfMatrixSign(H_data, n, ldh, usedStream);
+        chase_flipLowerHalfMatrixSign(H_data, m, n, ldh, usedStream);
     }
 }
 }

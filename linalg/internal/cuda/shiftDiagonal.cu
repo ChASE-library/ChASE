@@ -160,33 +160,38 @@ namespace cuda
     __global__ void sscale_rows_matrix(float* A, std::size_t m, std::size_t n, std::size_t lda, float* coef)
     {
         std::size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
-	std::size_t coef_idx = idx % lda;
-        if (coef_idx < m && idx < lda*n)
-            A[idx] /= coef[coef_idx];
+	std::size_t row = idx % m;
+	std::size_t col = idx / m;
+        if (idx < m*n)
+            A[row + lda * col] /= coef[row];
     }
     __global__ void dscale_rows_matrix(double* A, std::size_t m, std::size_t n, std::size_t lda, double* coef)
     {
         std::size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
-	std::size_t coef_idx = idx % lda;
-        if (coef_idx < m && idx < lda*n)
-            A[idx] /= coef[coef_idx];
+	std::size_t row = idx % m;
+	std::size_t col = idx / m;
+        if (idx < m*n)
+            A[row + lda * col] /= coef[row];
+	
     }
     __global__ void cscale_rows_matrix(cuComplex* A, std::size_t m, std::size_t n, std::size_t lda, float* coef)
     {
         std::size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
-	std::size_t coef_idx = idx % lda;
-        if (coef_idx < m && idx < lda*n){
-            A[idx].x /= coef[coef_idx];
-            A[idx].y /= coef[coef_idx];
+	std::size_t row = idx % m;
+	std::size_t col = idx / m;
+        if (idx < m*n){
+            A[row + lda * col].x /= coef[row];
+            A[row + lda * col].y /= coef[row];
 	}
     }
     __global__ void zscale_rows_matrix(cuDoubleComplex* A, std::size_t m, std::size_t n, std::size_t lda, double* coef)
     {
         std::size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
-	std::size_t coef_idx = idx % lda;
-        if (coef_idx < m && idx < lda*n){
-            A[idx].x /= coef[coef_idx];
-            A[idx].y /= coef[coef_idx];
+	std::size_t row = idx % m;
+	std::size_t col = idx / m;
+        if (idx < m*n){
+            A[row + lda * col].x /= coef[row];
+            A[row + lda * col].y /= coef[row];
 	}
     }
 
@@ -334,22 +339,22 @@ namespace cuda
 
     void chase_scale_rows_matrix(float* A, std::size_t m, std::size_t n, std::size_t lda, float* coef, cudaStream_t stream_)
     {
-        std::size_t num_blocks = (n + (blockSize - 1)) / blockSize;
+        std::size_t num_blocks = (n*m + (blockSize - 1)) / blockSize;
 	sscale_rows_matrix<<<num_blocks, blockSize, 0, stream_>>>(A, m, n, lda, coef);
     }
     void chase_scale_rows_matrix(double* A, std::size_t m, std::size_t n, std::size_t lda, double* coef, cudaStream_t stream_)
     {
-        std::size_t num_blocks = (n + (blockSize - 1)) / blockSize;
+        std::size_t num_blocks = (n*m + (blockSize - 1)) / blockSize;
 	dscale_rows_matrix<<<num_blocks, blockSize, 0, stream_>>>(A, m, n, lda, coef);
     }
     void chase_scale_rows_matrix(std::complex<float>* A, std::size_t m, std::size_t n, std::size_t lda, float* coef, cudaStream_t stream_)
     {
-        std::size_t num_blocks = (n + (blockSize - 1)) / blockSize;
+        std::size_t num_blocks = (n*m + (blockSize - 1)) / blockSize;
 	cscale_rows_matrix<<<num_blocks, blockSize, 0, stream_>>>(reinterpret_cast<cuComplex*>(A), m, n, lda, coef);
     } 
     void chase_scale_rows_matrix(std::complex<double>* A, std::size_t m, std::size_t n, std::size_t lda, double* coef, cudaStream_t stream_)
     {
-        std::size_t num_blocks = (n + (blockSize - 1)) / blockSize;
+        std::size_t num_blocks = (n*m + (blockSize - 1)) / blockSize;
 	zscale_rows_matrix<<<num_blocks, blockSize, 0, stream_>>>(reinterpret_cast<cuDoubleComplex*>(A), m, n, lda, coef);
     }
 }

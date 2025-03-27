@@ -33,6 +33,7 @@ protected:
         }
 
 	H = new chase::matrix::QuasiHermitianMatrix<T,chase::platform::GPU>(N,N);
+	H->allocate_cpu_data();
 	Q = chase::matrix::QuasiHermitianMatrix<T,chase::platform::GPU>(N,nev,N,Q_buffer.data());
 	V = chase::matrix::QuasiHermitianMatrix<T,chase::platform::GPU>(N,nev);
     	ritzv = chase::matrix::Matrix<chase::Base<T>,chase::platform::GPU>(nev,1); 
@@ -46,6 +47,7 @@ protected:
         }
 
 	H_tiny = new chase::matrix::QuasiHermitianMatrix<T,chase::platform::GPU>(N_tiny,N_tiny);
+	H_tiny->allocate_cpu_data();
 	Q_tiny = chase::matrix::QuasiHermitianMatrix<T,chase::platform::GPU>(N_tiny,nev_tiny,N_tiny,Q_buffer_tiny.data());
 	V_tiny = chase::matrix::QuasiHermitianMatrix<T,chase::platform::GPU>(N_tiny,nev_tiny);
     	ritzv_tiny = chase::matrix::Matrix<chase::Base<T>,chase::platform::GPU>(nev,1); 
@@ -89,24 +91,36 @@ protected:
 using TestTypes = ::testing::Types<float, double, std::complex<float>, std::complex<double>>;
 TYPED_TEST_SUITE(QuasiHermitianRayleighRitzGPUTest, TestTypes);
 
-/*TYPED_TEST(QuasiHermitianRayleighRitzGPUTest, QuasiHermitianRayleighRitz) {
+TYPED_TEST(QuasiHermitianRayleighRitzGPUTest, QuasiHermitianRayleighRitz) {
     using T = TypeParam;
 
     this->H->readFromBinaryFile(GetBSE_Matrix<T>());
+    this->H->H2D();
 
-    chase::linalg::internal::cpu::rayleighRitz(this->H,this->nev,this->Q.data(),this->N,
-			this->V.data(),this->N,this->ritzv.data(),this->Workspace.data());
+    int info = 0;
+
+    chase::linalg::internal::cuda::rayleighRitz(this->cublasH_,
+		    				this->cusolverH_,
+						this->params_,
+						this->H,
+						this->Q,
+						this->V,
+						this->ritzv,
+						(std::size_t)0,
+						this->nev,
+						&info);
     
-    this->exact_eigsl_H.readFromBinaryFile(GetBSE_Eigs<T>());
+    this->ritzv.D2H();
 
-    std::sort(this->ritzv.begin(), this->ritzv.end());
+    this->exact_eigsl_H.readFromBinaryFile(GetBSE_Eigs<T>());
 
     for(auto i = 0; i < this->nev; i++)
     {
-    	EXPECT_LT(this->ritzv.data()[i],std::real(this->exact_eigsl_H->data()[i]) + GetErrorTolerance<T>());//MachineEpsilon<chase::Base<T>>::value());
-    	EXPECT_GT(this->ritzv.data()[i],std::real(this->exact_eigsl_H->data()[i]) - GetErrorTolerance<T>());//MachineEpsilon<chase::Base<T>>::value());
+	std::cout << this->ritzv.cpu_data()[i] << "vs." << this->exact_eigsl_H.data()[i] << std::endl;
+    	EXPECT_LT(this->ritzv.cpu_data()[i],std::real(this->exact_eigsl_H.data()[i]) + GetErrorTolerance<T>());//MachineEpsilon<chase::Base<T>>::value());
+    	EXPECT_GT(this->ritzv.cpu_data()[i],std::real(this->exact_eigsl_H.data()[i]) - GetErrorTolerance<T>());//MachineEpsilon<chase::Base<T>>::value());
     }
-}*/
+}
 
 TYPED_TEST(QuasiHermitianRayleighRitzGPUTest, tinyQuasiHermitianRayleighRitz) {
     using T = TypeParam;
@@ -120,8 +134,8 @@ TYPED_TEST(QuasiHermitianRayleighRitzGPUTest, tinyQuasiHermitianRayleighRitz) {
 		    				this->cusolverH_,
 						this->params_,
 						this->H_tiny,
-						this->Q,
-						this->V,
+						this->Q_tiny,
+						this->V_tiny,
 						this->ritzv_tiny,
 						(std::size_t)0,
 						this->nev_tiny,
