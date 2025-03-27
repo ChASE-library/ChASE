@@ -234,9 +234,12 @@ public:
 
         int lwork_eev = 0;
 
-	if constexpr (std::is_same<MatrixType, chase::matrix::QuasiHermitianMatrix<T>>::value){
+	if constexpr (std::is_same<MatrixType, chase::matrix::QuasiHermitianMatrix<T, chase::platform::GPU>>::value){
 
     		CHECK_CUSOLVER_ERROR(cusolverDnCreateParams(&params_));
+/*
+		std::size_t temp_ldwork = 0;
+		std::size_t temp_lhwork = 0;
         	
     		CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTgeev_bufferSize(
                                                             cusolverH_,
@@ -249,10 +252,13 @@ public:
                                                             ritzvs_.data(),
 							    NULL,1,
 							    Vec1_.data(),Vec1_.ld(),
-							    &lhwork_,
-                                                            &lwork_eev));
+							    &temp_ldwork,
+							    &temp_lhwork));
+
+		lwork_eev = (int)temp_ldwork;
+		lhwork_   = (int)temp_lhwork;
         	
-		h_work_ = new T[lhwork_]();
+		h_work_ = new T[lhwork_]();*/
 	}else{
 
         	CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTheevd_bufferSize(
@@ -312,7 +318,7 @@ public:
         if (tmp_)
             CHECK_CUDA_ERROR(cudaFree(tmp_));
 	
-	if constexpr (std::is_same<MatrixType, chase::matrix::QuasiHermitianMatrix<T>>::value){
+	if constexpr (std::is_same<MatrixType, chase::matrix::QuasiHermitianMatrix<T, chase::platform::GPU>>::value){
 		delete [] h_work_;
 	}
 
@@ -595,7 +601,18 @@ public:
                                                 Vec1_.data(), 
                                                 Vec1_.ld(),
                                                 Vec2_.data(), 
-                                                Vec2_.ld());   
+                                                Vec2_.ld());  
+
+	if constexpr (std::is_same<MatrixType, chase::matrix::QuasiHermitianMatrix<T, chase::platform::GPU>>::value)
+	{
+		/* The right eigenvectors are not orthonormal in the QH case, but S-orthonormal.
+		 * Therefore, we S-orthonormalize the locked vectors against the current subspace
+		 * By flipping the sign of the lower part of the locked vectors. */
+		chase::linalg::internal::cuda::flipLowerHalfMatrixSign(Vec1_.rows(),locked_,Vec1_.data(),Vec1_.ld());
+		/* We do not need to flip back the sign of the locked vectors since they are stored
+		 * in Vec2_ and will replace the fliped ones of Vec1_ at the end of QR. */
+	}
+
 
         int disable = config_.DoCholQR() ? 0 : 1;
         char* cholddisable = getenv("CHASE_DISABLE_CHOLQR");
@@ -699,6 +716,8 @@ public:
 	
 	if constexpr (std::is_same<MatrixType, chase::matrix::QuasiHermitianMatrix<T, chase::platform::GPU>>::value)    
 	{
+
+		std::cout << "Here RR quasi" << std::endl;
         	chase::linalg::internal::cuda::rayleighRitz(cublasH_,
                                                     cusolverH_,
 						    params_,
@@ -708,13 +727,14 @@ public:
                                                     ritzvs_,
                                                     locked,
                                                     block,
-                                                    devInfo_,
+                                                    devInfo_);/*,
                                                     d_work_,
                                                     lwork_,
                                                     h_work_,
                                                     lhwork_,
-                                                    &A_);
+                                                    &A_);*/
         }else{
+		std::cout << "Standard RR !" << std::endl;
         	chase::linalg::internal::cuda::rayleighRitz(cublasH_,
                                                     cusolverH_,
                                                     Hmat_,

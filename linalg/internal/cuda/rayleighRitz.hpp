@@ -424,6 +424,13 @@ namespace cuda
 
 	chase::linalg::internal::cuda::chase_scale_rows_matrix(A->data(),n,n,lda,diag.data(),usedStream);
 	
+	for(auto i = 0; i < N; i++){
+		for(auto j = 0; j < n; j++){
+			std::cout << V1.cpu_data()[i + (offset + j) * V1.ld()] << " ";
+		}
+		std::cout << std::endl;
+	}
+	
 	//Compute the eigenpairs of the non-hermitian rayleigh quotient	
 	//std::cout << "Compute the eigenpairs of the non-hermitian rayleigh quotient" << std::endl;
 	CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTgeev(cusolver_handle,
@@ -443,6 +450,19 @@ namespace cuda
 					h_workspace,
 					h_lwork,
 					devInfo));
+
+	V2.D2H();
+
+	for(auto i = 0; i < n; i++){
+		for(auto j = 0; j < n; j++){
+			std::cout << V2.cpu_data()[i + (offset + j) * V2.ld()] << " ";
+		}
+		std::cout << std::endl;
+	}
+	
+	for(auto i = 0; i < n; i++){
+		std::cout << ritzv_complex.data() << std::endl;
+	}
 
         int info;
         CHECK_CUDA_ERROR(cudaMemcpy(&info, 
@@ -483,6 +503,7 @@ namespace cuda
 	std::vector<Base<T>> sorted_ritzv(n);
         T *d_sorted_W = A->data();
 	// Reorder eigenvalues and eigenvectors
+	
 	for (std::size_t i = 0; i < n; ++i) {
 		sorted_ritzv[i] = ptx[indices[i]];
         	CHECK_CUDA_ERROR(cudaMemcpy(d_sorted_W + i * lda, 
@@ -490,22 +511,30 @@ namespace cuda
                                     n * sizeof(T),
                                     cudaMemcpyDeviceToDevice));
 	}
-	
+
+	A->D2H();
+
 	std::copy(sorted_ritzv.begin(), sorted_ritzv.end(), ptx);
-	
-	ritzv.H2D();	
+	/*
+	for(auto i = 0; i < n; i++){
+		for(auto j = 0; j < n; j++){
+			std::cout << d_sorted_W[i + j * lda] << " ";
+		}
+		std::cout << std::endl;
+	}*/
+	ritzv.H2D();
 
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(cublas_handle, 
                                        CUBLAS_OP_N, 
                                        CUBLAS_OP_N, 
                                        V2.rows(), 
-                                       subSize, 
-                                       subSize,
+                                       n, 
+                                       n,
                                        &One, 
                                        V1.data() + offset * V1.ld(),
                                        V1.ld(),
                                        d_sorted_W,
-                                       lda, 
+                                       lda,
                                        &Zero,
                                        V2.data() + offset * V2.ld(),
                                        V2.ld()));

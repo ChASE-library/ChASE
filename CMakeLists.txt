@@ -80,6 +80,14 @@ add_executable( "chase_driver_gpu" tests/noinput.cpp )
 target_link_libraries(chase_driver_gpu chase_gpu)
 endif()
 
+add_executable( "quasi_chase_driver" tests/quasi_noinput.cpp )
+target_link_libraries(quasi_chase_driver chase_cpu)
+
+if(TARGET chase_gpu)
+add_executable( "quasi_chase_driver_gpu" tests/quasi_noinput.cpp )
+target_link_libraries(quasi_chase_driver_gpu chase_gpu)
+endif()
+
 option(ENABLE_TESTS "Enable unit tests." OFF)
 if(ENABLE_TESTS)
     MESSAGE("Test enabled. Finding GoogleTests.")
