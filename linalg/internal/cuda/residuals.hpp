@@ -66,7 +66,7 @@ namespace cuda
 
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(
                                                                 cublas_handle, 
-                                                                CUBLAS_OP_C, 
+                                                                CUBLAS_OP_N, 
                                                                 CUBLAS_OP_N, 
                                                                 H->rows(), 
                                                                 subSize, 

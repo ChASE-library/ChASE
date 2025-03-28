@@ -233,6 +233,9 @@ namespace cuda
 
 	T *halfQ = A->data() + n; //Should work. It points to a part of the workspace.
 
+    T *W;
+    CHECK_CUDA_ERROR(cudaMalloc((void**)&W, sizeof(T) * n * n));
+
 	chase::matrix::Matrix<T, chase::platform::GPU> ritzv_complex;
 	if constexpr (std::is_same<T, std::complex<chase::Base<T>>>::value)
 	{
@@ -244,10 +247,8 @@ namespace cuda
 	}
 
 	ritzv_complex.allocate_cpu_data();
-	ritzv.allocate_cpu_data();
-            
+
 	//Allocating workspace memory
-	//std::cout << "Allocating workspace memory" << std::endl;
         if(d_workspace == nullptr || h_workspace == nullptr) //To update once Xgeev is plugged in
         {
 	    std::size_t temp_d_lwork = 0;
@@ -288,7 +289,7 @@ namespace cuda
 	chase::Base<T> real_One = chase::Base<T>(1.0);
 
 	chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU> diag(n,1);
-        
+	diag.allocate_cpu_data();
 	//Performs Q_2^T Q_2 for the construction of the dual basis, Q_2 is the lower part of Q
 	//std::cout << "Performs Q_2^T Q_2 for the construction of the dual basis, Q_2 is the lower part of Q" << std::endl;
 	CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(cublas_handle, 
@@ -422,15 +423,17 @@ namespace cuda
 	//Scale the rows because Ql' * Qr = diag =/= I
 	//std::cout << "Scale the rows because Ql' * Qr = diag =/= I" << std::endl;
 
-	chase::linalg::internal::cuda::chase_scale_rows_matrix(A->data(),n,n,lda,diag.data(),usedStream);
-	
-	for(auto i = 0; i < N; i++){
-		for(auto j = 0; j < n; j++){
-			std::cout << V1.cpu_data()[i + (offset + j) * V1.ld()] << " ";
-		}
-		std::cout << std::endl;
+	//chase::linalg::internal::cuda::chase_scale_rows_matrix(A->data(),n,n,lda,diag.data(),usedStream);
+    	//Scale the rows because Ql' * Qr = diag =/= I
+        A->D2H();
+        diag.D2H();
+	for(auto i = 0; i < n; i++)
+	{
+        T diag_i = T(diag.cpu_data()[i]);
+		blaspp::t_scal(n, &diag_i, A->cpu_data() + i, lda);
 	}
-	
+    A->H2D();
+
 	//Compute the eigenpairs of the non-hermitian rayleigh quotient	
 	//std::cout << "Compute the eigenpairs of the non-hermitian rayleigh quotient" << std::endl;
 	CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTgeev(cusolver_handle,
@@ -443,26 +446,13 @@ namespace cuda
 					ritzv_complex.data(),
 					NULL,
 					1,
-					V2.data() + offset * V2.ld(),
-					V2.ld(),
+					W,
+					n,
 					d_workspace,
 					d_lwork,
 					h_workspace,
 					h_lwork,
 					devInfo));
-
-	V2.D2H();
-
-	for(auto i = 0; i < n; i++){
-		for(auto j = 0; j < n; j++){
-			std::cout << V2.cpu_data()[i + (offset + j) * V2.ld()] << " ";
-		}
-		std::cout << std::endl;
-	}
-	
-	for(auto i = 0; i < n; i++){
-		std::cout << ritzv_complex.data() << std::endl;
-	}
 
         int info;
         CHECK_CUDA_ERROR(cudaMemcpy(&info, 
@@ -478,11 +468,10 @@ namespace cuda
 
 	//std::cout << "Copying the complex ritz values back to cpu" << std::endl;
 	//thrust::device_vector<int> indices(n); //Does not compile, returns unimplemented on this system...
-	chase::Base<T> * ptx = ritzv.cpu_data() + offset;
+	chase::Base<T> *ptx = ritzv.cpu_data() + offset;
 	if constexpr (std::is_same<T, std::complex<chase::Base<T>>>::value)
 	{
-		ritzv_complex.allocate_cpu_data();
-		ritzv_complex.D2H();
+		ritzv_complex.D2H(); 
 		for(auto i = 0; i < n; i++){
 			ptx[i] = std::real(ritzv_complex.cpu_data()[i]);
 		}
@@ -506,22 +495,14 @@ namespace cuda
 	
 	for (std::size_t i = 0; i < n; ++i) {
 		sorted_ritzv[i] = ptx[indices[i]];
-        	CHECK_CUDA_ERROR(cudaMemcpy(d_sorted_W + i * lda, 
-                                    V2.data() + (offset + indices[i]) * V2.ld() , 
+        	CHECK_CUDA_ERROR(cudaMemcpy(d_sorted_W + i * n, 
+                                    W + indices[i] * n, 
                                     n * sizeof(T),
                                     cudaMemcpyDeviceToDevice));
 	}
 
-	A->D2H();
-
 	std::copy(sorted_ritzv.begin(), sorted_ritzv.end(), ptx);
-	/*
-	for(auto i = 0; i < n; i++){
-		for(auto j = 0; j < n; j++){
-			std::cout << d_sorted_W[i + j * lda] << " ";
-		}
-		std::cout << std::endl;
-	}*/
+
 	ritzv.H2D();
 
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(cublas_handle, 
@@ -534,12 +515,12 @@ namespace cuda
                                        V1.data() + offset * V1.ld(),
                                        V1.ld(),
                                        d_sorted_W,
-                                       lda,
+                                       n,
                                        &Zero,
                                        V2.data() + offset * V2.ld(),
                                        V2.ld()));
 
-
+        CHECK_CUDA_ERROR(cudaFree(W));
     } 
 }
 }

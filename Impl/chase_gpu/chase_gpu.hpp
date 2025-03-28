@@ -13,6 +13,7 @@
 #include "algorithm/chaseBase.hpp"
 #include "linalg/matrix/matrix.hpp"
 #include "linalg/internal/cuda/cuda_kernels.hpp"
+#include "linalg/internal/cpu/cpu_kernels.hpp"
 #include "linalg/internal/cpu/symOrHerm.hpp"
 #include "linalg/internal/cpu/utils.hpp"
 #include "algorithm/types.hpp"
@@ -133,20 +134,19 @@ public:
         Vec2_ = chase::matrix::Matrix<T, chase::platform::GPU>(N_, nevex_);
         resid_ = chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU>(nevex_, 1);
         ritzvs_ = chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU>(nevex_, 1, nevex_, ritzv_);
-        A_ = chase::matrix::Matrix<T, chase::platform::GPU>(nevex_, nevex_);
 
 	if constexpr (std::is_same<MatrixType, chase::matrix::QuasiHermitianMatrix<T, chase::platform::GPU>>::value)    
 	    {
             is_sym_ = false;
             is_pseudoHerm_ = true;
             //Quasi Hermitian matrices require more space for the dual basis
-            //A_ = chase::matrix::Matrix<T>(nevex_ + std::size_t(N/2), nevex_);
+            A_ = chase::matrix::Matrix<T, chase::platform::GPU>(nevex_ + std::size_t(N/2), nevex_);
         }
         else
         {
             is_sym_ = true;
             is_pseudoHerm_ = false;
-            //A_ = chase::matrix::Matrix<T>(nevex_, nevex_);
+            A_ = chase::matrix::Matrix<T, chase::platform::GPU>(nevex_, nevex_);
         }
         
 	CUBLAS_INIT();
@@ -178,20 +178,19 @@ public:
         Vec2_ = chase::matrix::Matrix<T, chase::platform::GPU>(N_, nevex_);
         resid_ = chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU>(nevex_, 1);
         ritzvs_ = chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU>(nevex_, 1, nevex_, ritzv_);
-        A_ = chase::matrix::Matrix<T, chase::platform::GPU>(nevex_, nevex_);
                
 	if constexpr (std::is_same<MatrixType, chase::matrix::QuasiHermitianMatrix<T, chase::platform::GPU>>::value)    
 	{
             is_sym_ = false;
             is_pseudoHerm_ = true;
             //Quasi Hermitian matrices require more space for the dual basis
-            //A_ = chase::matrix::Matrix<T>(nevex_ + std::size_t(N/2), nevex_);
+            A_ = chase::matrix::Matrix<T, chase::platform::GPU>(nevex_ + std::size_t(N/2), nevex_);
         }
         else
         {
             is_sym_ = true;
             is_pseudoHerm_ = false;
-            //A_ = chase::matrix::Matrix<T>(nevex_, nevex_);
+            A_ = chase::matrix::Matrix<T, chase::platform::GPU>(nevex_, nevex_);
         }
 
 	CUBLAS_INIT();
@@ -360,10 +359,14 @@ public:
     
     bool checkPseudoHermicityEasy() override
     {
+        
         SCOPED_NVTX_RANGE();
-	chase::linalg::internal::cuda::flipLowerHalfMatrixSign(Hmat_);
-        is_pseudoHerm_ = chase::linalg::internal::cpu::checkSymmetryEasy(N_, Hmat_->cpu_data(), Hmat_->ld());  
-	chase::linalg::internal::cuda::flipLowerHalfMatrixSign(Hmat_);
+		chase::linalg::internal::cpu::flipLowerHalfMatrixSign(N_, N_, Hmat_->cpu_data(), Hmat_->cpu_ld());
+
+		is_pseudoHerm_ = chase::linalg::internal::cpu::checkSymmetryEasy(N_, Hmat_->cpu_data(), Hmat_->cpu_ld());
+
+		chase::linalg::internal::cpu::flipLowerHalfMatrixSign(N_, N_, Hmat_->cpu_data(), Hmat_->cpu_ld());
+    
         return is_pseudoHerm_;
     }
     
@@ -716,8 +719,29 @@ public:
 	
 	if constexpr (std::is_same<MatrixType, chase::matrix::QuasiHermitianMatrix<T, chase::platform::GPU>>::value)    
 	{
-
+        /*
 		std::cout << "Here RR quasi" << std::endl;
+        Vec1_.D2H();
+        Vec2_.D2H();
+        ritzvs_.D2H();
+        chase::matrix::QuasiHermitianMatrix<T, chase::platform::CPU> H_cpu(Hmat_->rows(), Hmat_->cols());
+        std::copy(Hmat_->cpu_data(), Hmat_->cpu_data() + Hmat_->rows() * Hmat_->cols(), H_cpu.data());
+
+            chase::linalg::internal::cpu::rayleighRitz(&H_cpu,
+                                                   block, 
+                                                   Vec1_.cpu_data() + locked_ * Vec1_.ld(),
+                                                   Vec1_.ld(),
+                                                   Vec2_.cpu_data() + locked_ * Vec2_.ld(),
+                                                   Vec2_.ld(),
+                                                   ritzvs_.cpu_data() + locked_,
+                                                   A_.cpu_data()
+                                            );
+        ritzvs_.H2D();
+        Vec2_.H2D();
+        Vec1_.H2D();
+        */
+
+        
         	chase::linalg::internal::cuda::rayleighRitz(cublasH_,
                                                     cusolverH_,
 						    params_,
@@ -727,12 +751,7 @@ public:
                                                     ritzvs_,
                                                     locked,
                                                     block,
-                                                    devInfo_);/*,
-                                                    d_work_,
-                                                    lwork_,
-                                                    h_work_,
-                                                    lhwork_,
-                                                    &A_);*/
+                                                    devInfo_);
         }else{
 		std::cout << "Standard RR !" << std::endl;
         	chase::linalg::internal::cuda::rayleighRitz(cublasH_,

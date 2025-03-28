@@ -65,9 +65,9 @@ int main(int argc, char** argv){
 
 	// ============= ChASE READ Matrix ============ //
 	
-	size_t k = 5;
+	size_t k = 100;
 	//size_t k = 1472;
-	size_t N = 2*k, nev = 3, nex = 2; 
+	size_t N = 2*k, nev = 20, nex = 20; 
     
 	auto H  = new MatrixType(N,N);
 
@@ -75,8 +75,8 @@ int main(int argc, char** argv){
 		H->allocate_cpu_data();
 	#endif
 
-	//H->readFromBinaryFile("../../../Codes/chase-programs/data/cdouble_random_BSE.bin");
-	H->readFromBinaryFile("../../../Codes/chase-programs/data/cdouble_tiny_random_BSE.bin");
+	H->readFromBinaryFile("./BSE_matrices/cdouble_random_BSE.bin");
+	//H->readFromBinaryFile("./BSE_matrices/cdouble_tiny_random_BSE.bin");
 	//H->readFromBinaryFile("../data/2x2x2_Silicon_QuasiHermitian.bin");
 	
 	#ifdef HAS_CUDA	
@@ -97,18 +97,14 @@ int main(int argc, char** argv){
 
 	std::cout << std::endl;
 
-	auto V  = chase::matrix::Matrix<T,ARCH>(N,nev+nex);
-	auto HV = chase::matrix::Matrix<T,ARCH>(N,nev+nex);
+	std::vector<T> V(N*(nev+nex));
 	auto Lambda = std::vector<chase::Base<T>>(nev + nex);
 	
 	#ifdef HAS_CUDA
-    		V.allocate_cpu_data();
-		auto single = chase::Impl::ChASEGPU<T,MatrixType>(N, nev, nex, H, V.data(), V.ld(), Lambda.data());
+		auto single = chase::Impl::ChASEGPU<T,MatrixType>(N, nev, nex, H, V.data(), N, Lambda.data());
 	#else
-		auto single = chase::Impl::ChASECPU<T,MatrixType>(N, nev, nex, H, V.data(), V.ld(), Lambda.data());
+		auto single = chase::Impl::ChASECPU<T,MatrixType>(N, nev, nex, H, V.data(), N, Lambda.data());
 	#endif	
-
-	single.initVecs(true);
 
 	std::cout << "\n-----------------------------------------------------" << std::endl;
 	std::cout << "                      Matrix info                      " << std::endl;
