@@ -6,7 +6,7 @@
 
 #include "flipSign.cuh"
 
-#define blockSize 256
+const int blockSize = 256;
 
 namespace chase
 {
@@ -18,40 +18,55 @@ namespace cuda
 {
     __global__ void sflipLowerHalfMatrixSign(float* A, std::size_t m, std::size_t n, std::size_t lda)
     {
-        std::size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
-	std::size_t row = idx % (m / 2);
-	std::size_t col = idx / (m / 2);
-	if(idx < (m/2) * n)
-            A[m / 2 + row + lda * col] = -1.0 * A[m / 2 + row + lda * col];
+        const std::size_t half_m = m / 2;
+        const std::size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
+        const std::size_t col = idx / half_m;
+        const std::size_t row_offset = idx % half_m;
+        
+        if (col < n) {
+            const std::size_t row = half_m + row_offset;
+            A[row + lda * col] = -A[row + lda * col];
+        }
     }
     __global__ void dflipLowerHalfMatrixSign(double* A, std::size_t m, std::size_t n, std::size_t lda)
     {
-        std::size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
-	std::size_t row = idx % (m / 2);
-	std::size_t col = idx / (m / 2);
-	if(idx < (m/2) * n)
-            A[m / 2 + row + lda * col] = -1.0 * A[m / 2 + row + lda * col];
-	
+        const std::size_t half_m = m / 2;
+        const std::size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
+        const std::size_t col = idx / half_m;
+        const std::size_t row_offset = idx % half_m;
+        
+        if (col < n) {
+            const std::size_t row = half_m + row_offset;
+            A[row + lda * col] = -A[row + lda * col];
+        }
     }
     __global__ void cflipLowerHalfMatrixSign(cuComplex* A, std::size_t m, std::size_t n, std::size_t lda)
     {
-        std::size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
-	std::size_t row = idx % (m / 2);
-	std::size_t col = idx / (m / 2);
-	if(idx < (m/2) * n){
-            A[m / 2 + row + lda * col].x = -1.0 * A[m / 2 + row + lda * col].x;
-            A[m / 2 + row + lda * col].y = -1.0 * A[m / 2 + row + lda * col].y;
-	}
+        const std::size_t half_m = m / 2;
+        const std::size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
+        const std::size_t col = idx / half_m;
+        const std::size_t row_offset = idx % half_m;
+        
+        if (col < n) {
+            const std::size_t row = half_m + row_offset;
+            cuComplex& element = A[row + lda * col];
+            element.x = -element.x;
+            element.y = -element.y;
+        }
     }
     __global__ void zflipLowerHalfMatrixSign(cuDoubleComplex* A, std::size_t m, std::size_t n, std::size_t lda)
     {
-        std::size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
-	std::size_t row = idx % (m / 2);
-	std::size_t col = idx / (m / 2);
-	if(idx < (m/2) * n){
-            A[m / 2 + row + lda * col].x = -1.0 * A[m / 2 + row + lda * col].x;
-            A[m / 2 + row + lda * col].y = -1.0 * A[m / 2 + row + lda * col].y;
-	}
+        const std::size_t half_m = m / 2;
+        const std::size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
+        const std::size_t col = idx / half_m;
+        const std::size_t row_offset = idx % half_m;
+        
+        if (col < n) {
+            const std::size_t row = half_m + row_offset;
+            cuDoubleComplex& element = A[row + lda * col];
+            element.x = -element.x;
+            element.y = -element.y;
+        }
     }
 
     void chase_flipLowerHalfMatrixSign(float* A, std::size_t m, std::size_t n, std::size_t lda, cudaStream_t stream_)
