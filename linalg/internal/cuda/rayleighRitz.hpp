@@ -289,7 +289,7 @@ namespace cuda
 	chase::Base<T> real_One = chase::Base<T>(1.0);
 
 	chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU> diag(n,1);
-	diag.allocate_cpu_data();
+
 	//Performs Q_2^T Q_2 for the construction of the dual basis, Q_2 is the lower part of Q
 	//std::cout << "Performs Q_2^T Q_2 for the construction of the dual basis, Q_2 is the lower part of Q" << std::endl;
 	CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(cublas_handle, 
@@ -423,16 +423,7 @@ namespace cuda
 	//Scale the rows because Ql' * Qr = diag =/= I
 	//std::cout << "Scale the rows because Ql' * Qr = diag =/= I" << std::endl;
 
-	//chase::linalg::internal::cuda::chase_scale_rows_matrix(A->data(),n,n,lda,diag.data(),usedStream);
-    	//Scale the rows because Ql' * Qr = diag =/= I
-        A->D2H();
-        diag.D2H();
-	for(auto i = 0; i < n; i++)
-	{
-        T diag_i = T(diag.cpu_data()[i]);
-		blaspp::t_scal(n, &diag_i, A->cpu_data() + i, lda);
-	}
-    A->H2D();
+	chase::linalg::internal::cuda::chase_scale_rows_matrix(A->data(),n,n,lda,diag.data(),usedStream);
 
 	//Compute the eigenpairs of the non-hermitian rayleigh quotient	
 	//std::cout << "Compute the eigenpairs of the non-hermitian rayleigh quotient" << std::endl;

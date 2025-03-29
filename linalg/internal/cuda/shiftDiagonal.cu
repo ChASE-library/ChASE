@@ -163,7 +163,7 @@ namespace cuda
 	std::size_t row = idx % m;
 	std::size_t col = idx / m;
         if (idx < m*n)
-            A[row + lda * col] /= coef[row];
+            A[row + lda * col] *= coef[row];
     }
     __global__ void dscale_rows_matrix(double* A, std::size_t m, std::size_t n, std::size_t lda, double* coef)
     {
@@ -171,7 +171,7 @@ namespace cuda
 	std::size_t row = idx % m;
 	std::size_t col = idx / m;
         if (idx < m*n)
-            A[row + lda * col] /= coef[row];
+            A[row + lda * col] *= coef[row];
 	
     }
     __global__ void cscale_rows_matrix(cuComplex* A, std::size_t m, std::size_t n, std::size_t lda, float* coef)
@@ -180,8 +180,8 @@ namespace cuda
 	std::size_t row = idx % m;
 	std::size_t col = idx / m;
         if (idx < m*n){
-            A[row + lda * col].x /= coef[row];
-            A[row + lda * col].y /= coef[row];
+            A[row + lda * col].x *= coef[row];
+            A[row + lda * col].y *= coef[row];
 	}
     }
     __global__ void zscale_rows_matrix(cuDoubleComplex* A, std::size_t m, std::size_t n, std::size_t lda, double* coef)
@@ -190,8 +190,8 @@ namespace cuda
 	std::size_t row = idx % m;
 	std::size_t col = idx / m;
         if (idx < m*n){
-            A[row + lda * col].x /= coef[row];
-            A[row + lda * col].y /= coef[row];
+            A[row + lda * col].x *= coef[row];
+            A[row + lda * col].y *= coef[row];
 	}
     }
 
