@@ -40,7 +40,9 @@ namespace cuda
     * @param A Optional output matrix for the Cholesky factor (default: nullptr). 
     *           If not provided, a new matrix is allocated.
     * @return int An error code (0 indicates success, non-zero indicates failure).
-    */    
+    */
+
+       
     template<typename T>
     int cholQR1(cublasHandle_t cublas_handle,
                 cusolverDnHandle_t cusolver_handle,
@@ -50,6 +52,87 @@ namespace cuda
                 chase::matrix::Matrix<T, chase::platform::GPU> *A = nullptr)
     {
         SCOPED_NVTX_RANGE();
+/*
+        T one = T(1.0);
+        T zero = T(0.0);
+        int info = 1;
+        chase::Base<T> One = Base<T>(1.0);
+        chase::Base<T> Zero = Base<T>(0.0);
+        std::unique_ptr<T[]> ptr;
+
+        A->allocate_cpu_data();
+
+        cublasOperation_t transa;
+        if (sizeof(T) == sizeof(Base<T>))
+        {
+            transa = CUBLAS_OP_T;
+        }
+        else
+        {
+            transa = CUBLAS_OP_C;
+        }
+
+        CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTsyherk(cublas_handle, 
+                                                                  CUBLAS_FILL_MODE_UPPER, 
+                                                                  transa,
+                                                                  V.cols(), 
+                                                                  V.rows(), 
+                                                                  &One, 
+                                                                  V.data(), 
+                                                                  V.ld(), 
+                                                                  &Zero, 
+                                                                  A->data(), 
+                                                                  V.cols()));
+
+        V.D2H();
+        V.saveToBinaryFile("V.bin");
+        A->D2H();
+        A->saveToBinaryFile("A.bin");
+        //V.D2H();
+
+        //blaspp::t_syherk('U', 'C', V.cols(), V.rows(), &one, V.cpu_data(), V.cpu_ld(), &zero, A->cpu_data(), V.cols());
+        //info = lapackpp::t_potrf('U', V.cols(), A->cpu_data(), V.cols()); 
+        int* devInfo;
+        //A->H2D();
+        CHECK_CUDA_ERROR(cudaMalloc((void**)&devInfo, sizeof(int)));
+        CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTpotrf(cusolver_handle, 
+                                                                         CUBLAS_FILL_MODE_UPPER, 
+                                                                         V.cols(),
+                                                                         A->data(),
+                                                                         V.cols(), 
+                                                                         workspace, 
+                                                                         lwork, 
+                                                                         devInfo));
+        CHECK_CUDA_ERROR(cudaMemcpy(&info, devInfo, 1 * sizeof(int), cudaMemcpyDeviceToHost));
+
+        if(info != 0)
+        {
+            return info;
+        }
+        else
+        {
+            //blaspp::t_trsm('R', 'U', 'N', 'N', V.rows(), V.cols(), &one, A->cpu_data(), V.cols(), V.cpu_data(), V.cpu_ld()); 
+            //V.H2D();
+            CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTtrsm(cublas_handle, 
+                                                                    CUBLAS_SIDE_RIGHT, 
+                                                                    CUBLAS_FILL_MODE_UPPER,
+                                                                    CUBLAS_OP_N, 
+                                                                    CUBLAS_DIAG_NON_UNIT, 
+                                                                    V.rows(), 
+                                                                    V.cols(),
+                                                                    &one, 
+                                                                    A->data(), 
+                                                                    A->ld(), 
+                                                                    V.data(), 
+                                                                    V.ld()));            
+#ifdef CHASE_OUTPUT
+            std::cout << "choldegree: 1" << std::endl;
+#endif      
+            return info;        
+        }
+
+*/
+
 
         T one = T(1.0);
         //T zero = T(0.0);
@@ -71,7 +154,7 @@ namespace cuda
                                                                 CUBLAS_FILL_MODE_UPPER, 
                                                                 V.cols(), 
                                                                 A->data(), 
-                                                                A->ld(),
+                                                                V.cols(),
                                                                 &lwork));
             CHECK_CUDA_ERROR(cudaMalloc((void**)&workspace, sizeof(T) * lwork));
         }
@@ -96,7 +179,7 @@ namespace cuda
                                                                   V.ld(), 
                                                                   &Zero, 
                                                                   A->data(), 
-                                                                  A->ld()));
+                                                                  V.cols()));
         int* devInfo;
         CHECK_CUDA_ERROR(cudaMalloc((void**)&devInfo, sizeof(int)));
 
@@ -124,14 +207,14 @@ namespace cuda
                                                                     V.cols(),
                                                                     &one, 
                                                                     A->data(), 
-                                                                    A->ld(), 
+                                                                    V.cols(), 
                                                                     V.data(), 
                                                                     V.ld()));
 #ifdef CHASE_OUTPUT
             std::cout << "choldegree: 1" << std::endl;
 #endif                
             return info;
-        }
+        }      
     }
 
     /**
@@ -181,7 +264,7 @@ namespace cuda
                                                                 CUBLAS_FILL_MODE_UPPER, 
                                                                 V.cols(), 
                                                                 A->data(), 
-                                                                A->ld(),
+                                                                V.cols(),
                                                                 &lwork));
             CHECK_CUDA_ERROR(cudaMalloc((void**)&workspace, sizeof(T) * lwork));
         }
@@ -206,7 +289,7 @@ namespace cuda
                                                                   V.ld(), 
                                                                   &Zero, 
                                                                   A->data(), 
-                                                                  A->ld()));
+                                                                  V.cols()));
         int* devInfo;
         CHECK_CUDA_ERROR(cudaMalloc((void**)&devInfo, sizeof(int)));
 
@@ -234,7 +317,7 @@ namespace cuda
                                                                     V.cols(),
                                                                     &one, 
                                                                     A->data(), 
-                                                                    A->ld(), 
+                                                                    V.cols(), 
                                                                     V.data(), 
                                                                     V.ld()));
 
@@ -248,7 +331,7 @@ namespace cuda
                                                                     V.ld(), 
                                                                     &Zero, 
                                                                     A->data(), 
-                                                                    A->ld()));  
+                                                                    V.cols()));  
 
             CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTpotrf(cusolver_handle, 
                                                                             CUBLAS_FILL_MODE_UPPER, 
@@ -268,7 +351,7 @@ namespace cuda
                                                                     V.cols(),
                                                                     &one, 
                                                                     A->data(), 
-                                                                    A->ld(), 
+                                                                    V.cols(),    
                                                                     V.data(), 
                                                                     V.ld()));                                                                         
 #ifdef CHASE_OUTPUT
@@ -305,7 +388,7 @@ namespace cuda
         SCOPED_NVTX_RANGE();
 
         T one = T(1.0);
-        //T zero = T(0.0);
+        T zero = T(0.0);
 
         chase::Base<T> One = Base<T>(1.0);
         chase::Base<T> Zero = Base<T>(0.0);
@@ -324,7 +407,7 @@ namespace cuda
                                                                 CUBLAS_FILL_MODE_UPPER, 
                                                                 V.cols(), 
                                                                 A->data(), 
-                                                                A->ld(),
+                                                                V.cols(),    
                                                                 &lwork));
             CHECK_CUDA_ERROR(cudaMalloc((void**)&workspace, sizeof(T) * lwork));
         }
@@ -351,7 +434,7 @@ namespace cuda
                                                                   V.ld(), 
                                                                   &Zero, 
                                                                   A->data(), 
-                                                                  A->ld()));
+                                                                  V.cols()));
 
         chase::Base<T> nrmf = 0.0;
         chase::Base<T> *d_nrmf;
@@ -390,7 +473,7 @@ namespace cuda
                                                                 V.cols(),
                                                                 &one, 
                                                                 A->data(), 
-                                                                A->ld(), 
+                                                                V.cols(), 
                                                                 V.data(), 
                                                                 V.ld()));
 
@@ -404,7 +487,7 @@ namespace cuda
                                                                 V.ld(), 
                                                                 &Zero, 
                                                                 A->data(), 
-                                                                A->ld()));  
+                                                                V.cols()));  
 
         CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTpotrf(cusolver_handle, 
                                                                         CUBLAS_FILL_MODE_UPPER, 
@@ -431,7 +514,7 @@ namespace cuda
                                                                 V.cols(),
                                                                 &one, 
                                                                 A->data(), 
-                                                                A->ld(), 
+                                                                V.cols(), 
                                                                 V.data(), 
                                                                 V.ld()));
 
@@ -445,7 +528,7 @@ namespace cuda
                                                                 V.ld(), 
                                                                 &Zero, 
                                                                 A->data(), 
-                                                                A->ld()));  
+                                                                V.cols()));  
 
         CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTpotrf(cusolver_handle, 
                                                                         CUBLAS_FILL_MODE_UPPER, 
@@ -465,7 +548,7 @@ namespace cuda
                                                                 V.cols(),
                                                                 &one, 
                                                                 A->data(), 
-                                                                A->ld(), 
+                                                                V.cols(), 
                                                                 V.data(), 
                                                                 V.ld()));    
 
