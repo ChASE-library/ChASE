@@ -103,7 +103,7 @@ TYPED_TEST(shiftMatrixGPUTest, ScaleRows) {
     std::vector<chase::Base<T>> diag_vals(rows);
 
     for(auto i = 0; i < rows; i++){
-	    diag_vals[i] = -1.0*(i+1);
+	    diag_vals[i] = -1.0 / (i+1);
     }
 
     chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU> *coefs = new chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU>(rows,

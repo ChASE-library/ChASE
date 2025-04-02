@@ -38,7 +38,9 @@ protected:
 	V = chase::matrix::QuasiHermitianMatrix<T,chase::platform::GPU>(N,nev);
     	ritzv = chase::matrix::Matrix<chase::Base<T>,chase::platform::GPU>(nev,1); 
 	exact_eigsl_H = chase::matrix::Matrix<T,chase::platform::CPU>(N,1);
-        
+
+    ritzv.allocate_cpu_data();
+
         //Tiny variables init	
 	Q_buffer_tiny.resize(N_tiny * nev_tiny);
         for(auto i = 0; i < nev_tiny; i++)
@@ -52,6 +54,7 @@ protected:
 	V_tiny = chase::matrix::QuasiHermitianMatrix<T,chase::platform::GPU>(N_tiny,nev_tiny);
     	ritzv_tiny = chase::matrix::Matrix<chase::Base<T>,chase::platform::GPU>(nev,1); 
 	exact_eigsl_H_tiny = chase::matrix::Matrix<T,chase::platform::CPU>(N_tiny,1);
+    ritzv_tiny.allocate_cpu_data();
     }
 
     void TearDown() override {}
