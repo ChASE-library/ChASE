@@ -10,7 +10,7 @@ stages:
 build_cpu:
   stage: build 
   tags: [ public-docker ]
-  image: $CI_REGISTRY/nexgf/libnegf/rockylinux/openmpi-cpu
+  image: registry.jsc.fz-juelich.de/sharedrunner/opensuse
   script:
   - cmake --version
   - mkdir -p build_cpu
@@ -29,7 +29,7 @@ test_cpu:
   dependencies:
     - build_cpu
   tags: [ public-docker ]
-  image: $CI_REGISTRY/nexgf/libnegf/rockylinux/openmpi-cpu
+  image: registry.jsc.fz-juelich.de/sharedrunner/opensuse
   script:
     - cd build_cpu
     - CTEST_OUTPUT_ON_FAILURE=1 make test
