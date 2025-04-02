@@ -140,7 +140,9 @@ public:
             is_sym_ = false;
             is_pseudoHerm_ = true;
             //Quasi Hermitian matrices require more space for the dual basis
-            A_ = chase::matrix::Matrix<T, chase::platform::GPU>(nevex_ + std::size_t(N/2), nevex_);
+            A_ = chase::matrix::Matrix<T, chase::platform::GPU>(nevex_, nevex_);
+            std::size_t k = N/2;
+            halfQ_ = chase::matrix::Matrix<T, chase::platform::GPU>(k, nevex_);
         }
         else
         {
@@ -173,7 +175,7 @@ public:
     {
         SCOPED_NVTX_RANGE();
 
-	Hmat_ = H;
+	    Hmat_ = H;
         Vec1_ = chase::matrix::Matrix<T, chase::platform::GPU>(N_, nevex_, ldv_, V1_);
         Vec2_ = chase::matrix::Matrix<T, chase::platform::GPU>(N_, nevex_);
         resid_ = chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU>(nevex_, 1);
@@ -184,7 +186,9 @@ public:
             is_sym_ = false;
             is_pseudoHerm_ = true;
             //Quasi Hermitian matrices require more space for the dual basis
-            A_ = chase::matrix::Matrix<T, chase::platform::GPU>(nevex_ + std::size_t(N/2), nevex_);
+            A_ = chase::matrix::Matrix<T, chase::platform::GPU>(nevex_, nevex_);
+            std::size_t k = N/2;
+            halfQ_ = chase::matrix::Matrix<T, chase::platform::GPU>(k, nevex_);
         }
         else
         {
@@ -236,28 +240,28 @@ public:
 	if constexpr (std::is_same<MatrixType, chase::matrix::QuasiHermitianMatrix<T, chase::platform::GPU>>::value){
 
     		CHECK_CUSOLVER_ERROR(cusolverDnCreateParams(&params_));
-/*
-		std::size_t temp_ldwork = 0;
-		std::size_t temp_lhwork = 0;
+
+		    std::size_t temp_ldwork = 0;
+		    std::size_t temp_lhwork = 0;
         	
     		CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTgeev_bufferSize(
                                                             cusolverH_,
-							    params_, 
+							                                params_, 
                                                             CUSOLVER_EIG_MODE_NOVECTOR, 
                                                             CUSOLVER_EIG_MODE_VECTOR, 
                                                             nevex_, 
                                                             A_.data(), 
                                                             A_.ld(), 
-                                                            ritzvs_.data(),
-							    NULL,1,
-							    Vec1_.data(),Vec1_.ld(),
-							    &temp_ldwork,
-							    &temp_lhwork));
+                                                            halfQ_.data(),
+                                                            NULL,1,
+                                                            Vec1_.data(),Vec1_.ld(),
+                                                            &temp_ldwork,
+                                                            &temp_lhwork));
 
-		lwork_eev = (int)temp_ldwork;
-		lhwork_   = (int)temp_lhwork;
+            lwork_eev = (int)temp_ldwork;
+            lhwork_   = (int)temp_lhwork;
         	
-		h_work_ = new T[lhwork_]();*/
+            h_work_ = std::unique_ptr<T[]>(new T[lhwork_]);
 	}else{
 
         	CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTheevd_bufferSize(
@@ -316,10 +320,6 @@ public:
             CHECK_CUDA_ERROR(cudaFree(d_return_));
         if (tmp_)
             CHECK_CUDA_ERROR(cudaFree(tmp_));
-	
-	if constexpr (std::is_same<MatrixType, chase::matrix::QuasiHermitianMatrix<T, chase::platform::GPU>>::value){
-		delete [] h_work_;
-	}
 
     }
 
@@ -598,58 +598,101 @@ public:
     void QR(std::size_t fixednev, chase::Base<T> cond) override
     {
         SCOPED_NVTX_RANGE();
-        
-        // Always save the original vectors regardless of matrix type
         chase::linalg::internal::cuda::t_lacpy('A', 
-                                               Vec2_.rows(), 
-                                               locked_, 
-                                               Vec1_.data(), 
-                                               Vec1_.ld(),
-                                               Vec2_.data(), 
-                                               Vec2_.ld());  
+                                                Vec2_.rows(), 
+                                                locked_, 
+                                                Vec1_.data(), 
+                                                Vec1_.ld(),
+                                                Vec2_.data(), 
+                                                Vec2_.ld());   
 
-        // Special handling for QuasiHermitian matrices
         if constexpr (std::is_same<MatrixType, chase::matrix::QuasiHermitianMatrix<T, chase::platform::GPU>>::value)
         {
             /* The right eigenvectors are not orthonormal in the QH case, but S-orthonormal.
-             * Therefore, we S-orthonormalize the locked vectors against the current subspace
-             * By flipping the sign of the lower part of the locked vectors. */
-            chase::linalg::internal::cuda::flipLowerHalfMatrixSign(Vec1_.rows(), locked_, Vec1_.data(), Vec1_.ld());
-            
-            // For QuasiHermitian matrices, try shifted CholeskyQR first, then fall back to Householder
-            int info = chase::linalg::internal::cuda::shiftedcholQR2(cublasH_,
-                                                                     cusolverH_,
-                                                                     Vec1_,
-                                                                     d_work_,
-                                                                     lwork_,
-                                                                     &A_);
-                                                                     
-            if (info != 0)
-            {
-                #ifdef CHASE_OUTPUT
-                std::cout << "Shifted CholeskyQR failed for QuasiHermitian matrix, using Householder QR instead." << std::endl;
-                #endif
-                
-                chase::linalg::internal::cuda::houseHoulderQR(cusolverH_,
-                                                             Vec1_,
-                                                             d_return_,
-                                                             devInfo_,
-                                                             d_work_,
-                                                             lwork_);
-            }
+            * Therefore, we S-orthonormalize the locked vectors against the current subspace
+            * By flipping the sign of the lower part of the locked vectors. */
+            chase::linalg::internal::cuda::flipLowerHalfMatrixSign(Vec1_.rows(),locked_,Vec1_.data(),Vec1_.ld());
+            /* We do not need to flip back the sign of the locked vectors since they are stored
+            * in Vec2_ and will replace the fliped ones of Vec1_ at the end of QR. */
         }
-        else // Standard matrix case with condition number-based selection
+
+        int disable = config_.DoCholQR() ? 0 : 1;
+        char* cholddisable = getenv("CHASE_DISABLE_CHOLQR");
+        if (cholddisable) {
+            disable = std::atoi(cholddisable);
+        }
+
+        Base<T> cond_threshold_upper = (sizeof(Base<T>) == 8) ? 1e8 : 1e4;
+        Base<T> cond_threshold_lower = (sizeof(Base<T>) == 8) ? 2e1 : 1e1;
+
+        char* chol_threshold = getenv("CHASE_CHOLQR1_THLD");
+        if (chol_threshold)
         {
-            // Check if CholeskyQR is disabled via environment variable
-            int disable = config_.DoCholQR() ? 0 : 1;
-            char* cholddisable = getenv("CHASE_DISABLE_CHOLQR");
-            if (cholddisable) {
-                disable = std::atoi(cholddisable);
+            cond_threshold_lower = std::atof(chol_threshold);
+        }
+
+        //int display_bounds = 0;
+        //char* display_bounds_env = getenv("CHASE_DISPLAY_BOUNDS");
+        //if (display_bounds_env)
+        //{
+        //    display_bounds = std::atoi(display_bounds_env);
+        //}
+
+        if (disable == 1)
+        {
+            chase::linalg::internal::cuda::houseHoulderQR(cusolverH_,
+                                                        Vec1_,
+                                                        d_return_,
+                                                        devInfo_,
+                                                        d_work_,
+                                                        lwork_);
+        }
+        else
+        {
+#ifdef CHASE_OUTPUT
+        std::cout << std::setprecision(2) << "cond(V): " << cond << std::endl;
+#endif
+            //if (display_bounds != 0)
+            //{
+            //  dla_->estimated_cond_evaluator(locked_, cond);
+            //}
+            int info = 1;
+
+            if (cond > cond_threshold_upper)
+            {
+                
+                info = chase::linalg::internal::cuda::shiftedcholQR2(cublasH_,
+                                                              cusolverH_,
+                                                              Vec1_,
+                                                              d_work_,
+                                                              lwork_,
+                                                              &A_);
+            }
+            else if(cond < cond_threshold_lower)
+            {
+                info = chase::linalg::internal::cuda::cholQR1(cublasH_,
+                                                              cusolverH_,
+                                                              Vec1_,
+                                                              d_work_,
+                                                              lwork_,
+                                                              &A_); 
+            }
+            else
+            {
+                info = chase::linalg::internal::cuda::cholQR2(cublasH_,
+                                                              cusolverH_,
+                                                              Vec1_,
+                                                              d_work_,
+                                                              lwork_,
+                                                              &A_);
+  
             }
 
-            if (disable == 1)
+            if (info != 0)
             {
-                // Use Householder QR if CholeskyQR is disabled
+#ifdef CHASE_OUTPUT
+                std::cout << "CholeskyQR doesn't work, Househoulder QR will be used." << std::endl;
+#endif
                 chase::linalg::internal::cuda::houseHoulderQR(cusolverH_,
                                                             Vec1_,
                                                             d_return_,
@@ -657,78 +700,15 @@ public:
                                                             d_work_,
                                                             lwork_);
             }
-            else
-            {
-                // Configure thresholds based on precision
-                Base<T> cond_threshold_upper = (sizeof(Base<T>) == 8) ? 1e8 : 1e4;
-                Base<T> cond_threshold_lower = (sizeof(Base<T>) == 8) ? 2e1 : 1e1;
-
-                // Allow threshold adjustment via environment variable
-                char* chol_threshold = getenv("CHASE_CHOLQR1_THLD");
-                if (chol_threshold)
-                {
-                    cond_threshold_lower = std::atof(chol_threshold);
-                }
-
-                #ifdef CHASE_OUTPUT
-                std::cout << std::setprecision(2) << "cond(V): " << cond << std::endl;
-                #endif
-
-                // Select QR algorithm based on condition number
-                int info = 1;
-                if (cond > cond_threshold_upper)
-                {
-                    info = chase::linalg::internal::cuda::shiftedcholQR2(cublasH_,
-                                                                       cusolverH_,
-                                                                       Vec1_,
-                                                                       d_work_,
-                                                                       lwork_,
-                                                                       &A_);
-                }
-                else if(cond < cond_threshold_lower)
-                {
-                    info = chase::linalg::internal::cuda::cholQR1(cublasH_,
-                                                                cusolverH_,
-                                                                Vec1_,
-                                                                d_work_,
-                                                                lwork_,
-                                                                &A_); 
-                }
-                else
-                {
-                    info = chase::linalg::internal::cuda::cholQR2(cublasH_,
-                                                                cusolverH_,
-                                                                Vec1_,
-                                                                d_work_,
-                                                                lwork_,
-                                                                &A_);
-                }
-
-                // Fall back to Householder QR if any Cholesky method fails
-                if (info != 0)
-                {
-                    #ifdef CHASE_OUTPUT
-                    std::cout << "CholeskyQR failed, using Householder QR instead." << std::endl;
-                    #endif
-                    
-                    chase::linalg::internal::cuda::houseHoulderQR(cusolverH_,
-                                                                Vec1_,
-                                                                d_return_,
-                                                                devInfo_,
-                                                                d_work_,
-                                                                lwork_);
-                }
-            }
         }
 
-        // Restore locked vectors for both matrix types
         chase::linalg::internal::cuda::t_lacpy('A', 
-                                              Vec1_.rows(), 
-                                              locked_, 
-                                              Vec2_.data(), 
-                                              Vec2_.ld(),
-                                              Vec1_.data(), 
-                                              Vec1_.ld());    
+                                                Vec1_.rows(), 
+                                                locked_, 
+                                                Vec2_.data(), 
+                                                Vec2_.ld(),
+                                                Vec1_.data(), 
+                                                Vec1_.ld());    
     }
 
     void RR(chase::Base<T>* ritzv, std::size_t block) override
@@ -747,7 +727,13 @@ public:
                                                     ritzvs_,
                                                     locked,
                                                     block,
-                                                    devInfo_);
+                                                    devInfo_,
+                                                    d_work_,
+                                                    lwork_,
+                                                    h_work_.get(),
+                                                    lhwork_,
+                                                    &A_,
+                                                    &halfQ_);
         }else{
         	chase::linalg::internal::cuda::rayleighRitz(cublasH_,
                                                     cusolverH_,
@@ -848,6 +834,7 @@ private:
     chase::matrix::Matrix<T, chase::platform::GPU> A_;          /**< GPU matrix for computations. */
     chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU> ritzvs_; /**< GPU matrix for Ritz values. */
     chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU> resid_;  /**< GPU matrix for residuals. */
+    chase::matrix::Matrix<T, chase::platform::GPU> halfQ_; /**< GPU matrix for Ritz values. */
     chase::ChaseConfig<T> config_;   /**< Configuration object for the Chase algorithm. */
 
     cudaStream_t stream_;          /**< CUDA stream for asynchronous operations. */
@@ -860,7 +847,7 @@ private:
     T* d_work_;                    /**< Pointer to work buffer for matrix operations. */
     int lwork_ = 0;                    /**< Workspace size for matrix operations. */
 
-    T* h_work_;                     /**< Pointer to work buffer on host for geev in the Quasi Hermitian case. */
+    std::unique_ptr<T[]> h_work_;                     /**< Pointer to work buffer on host for geev in the Quasi Hermitian case. */
     int lhwork_ = 0;                /**< Workspace size for host geev operations in the Quasi Hermitian case. */
 }; 
 

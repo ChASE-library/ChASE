@@ -197,11 +197,11 @@ namespace cuda
     * 3. Solves the eigenvalue problem for A using LAPACK's `heevd` function, computing the Ritz values in `ritzv`.
     * 4. Computes the final approximation to the eigenvectors by multiplying Q with the computed eigenvectors.
     */ 
-    
+
     template<typename T>
     void rayleighRitz(cublasHandle_t cublas_handle, 
                       cusolverDnHandle_t cusolver_handle,
-		      cusolverDnParams_t params,
+		              cusolverDnParams_t params,
                       chase::matrix::QuasiHermitianMatrix<T, chase::platform::GPU> * H,
                       chase::matrix::Matrix<T, chase::platform::GPU>& V1,
                       chase::matrix::Matrix<T, chase::platform::GPU>& V2,
@@ -213,7 +213,8 @@ namespace cuda
                       int d_lwork = 0,
                       T *h_workspace = nullptr,
                       int h_lwork = 0,
-                      chase::matrix::Matrix<T, chase::platform::GPU> *A = nullptr)
+                      chase::matrix::Matrix<T, chase::platform::GPU> *A = nullptr,
+                      chase::matrix::Matrix<T, chase::platform::GPU> *half_Q = nullptr)
     {
         SCOPED_NVTX_RANGE();
 
@@ -221,32 +222,31 @@ namespace cuda
 	std::size_t ldh = H->ld();
 	std::size_t k = N/2;
 	std::size_t n = subSize;
-	std::size_t lda = n + k;
 
 	cudaStream_t usedStream;
         CHECK_CUBLAS_ERROR(cublasGetStream(cublas_handle, &usedStream));
 
         if(A == nullptr)
         {
-            A = new chase::matrix::Matrix<T, chase::platform::GPU>(lda, n);
+            A = new chase::matrix::Matrix<T, chase::platform::GPU>(n, n);
         }
 
-	T *halfQ = A->data() + n; //Should work. It points to a part of the workspace.
+        if(half_Q == nullptr)
+        {
+            half_Q = new chase::matrix::Matrix<T, chase::platform::GPU>(k, n);
+        }
 
-    T *W;
-    CHECK_CUDA_ERROR(cudaMalloc((void**)&W, sizeof(T) * n * n));
+    T *halfQ = half_Q->data();
 
-	chase::matrix::Matrix<T, chase::platform::GPU> ritzv_complex;
-	if constexpr (std::is_same<T, std::complex<chase::Base<T>>>::value)
-	{
-		ritzv_complex = chase::matrix::Matrix<T, chase::platform::GPU>(n,1);
-	}
-	else
-	{
-		ritzv_complex = chase::matrix::Matrix<T, chase::platform::GPU>(2*n,1);
-	}
+	//chase::matrix::Matrix<T, chase::platform::GPU> ritzv_complex;
+    std::vector<T> ritzvs_cmplex_cpu(n);
 
-	ritzv_complex.allocate_cpu_data();
+    //use halfQ as a workspace for the complex ritz values
+    //it should valid for complex valued types
+    //as ritzv_complex is used only after the lifetime of halfQ is over.
+    //for real valued types, halfQ row number should be at least 2.
+    //Thus N should be at least 4.
+    T *ritzv_complex = half_Q->data();
 
 	//Allocating workspace memory
         if(d_workspace == nullptr || h_workspace == nullptr) //To update once Xgeev is plugged in
@@ -261,8 +261,8 @@ namespace cuda
                                                             CUSOLVER_EIG_MODE_VECTOR,
                                                             n,
                                                             A->data(),
-                                                            A->ld(),
-                                                            ritzv_complex.data(),
+                                                            n,
+                                                            ritzv_complex,
                                                             NULL,1,
                                                             V1.data() + offset * V1.ld(),V1.ld(),
                                                             &temp_d_lwork,
@@ -305,13 +305,13 @@ namespace cuda
                                        V1.ld(),
                                        &Zero,
                                        A->data(),
-                                       lda));
+                                       n));
 
        	//Pre-compute the scaling weights such that diag = Ql^T Qr
 	//std::cout << "Pre-compute the scaling weights such that diag = Ql^T Qr" << std::endl;
 	chase::linalg::internal::cuda::chase_subtract_inverse_diagonal(A->data(),
 				      n,
-				      lda,
+				      n,
 				      real_One,
 				      diag.data(), usedStream);
 
@@ -319,7 +319,7 @@ namespace cuda
 	//std::cout << "The Matrix A now contains the data for creating the upper part of Ql" << std::endl;
 	chase::linalg::internal::cuda::chase_set_diagonal(A->data(),
 				       n,
-				       lda,
+				       n,
 				       One, usedStream);
 
 	//Compute the upper part of Ql
@@ -334,10 +334,10 @@ namespace cuda
                                        V1.data() + offset * V1.ld(),
                                        V1.ld(),
                                        A->data(),
-                                       lda,
+                                       n,
                                        &Zero,
                                        halfQ,
-                                       lda));
+                                       k));
 
 	//Performs the multiplication of the first k cols of H with the upper part of Ql
 	//std::cout << "Performs the multiplication of the first k cols of H with the upper part of Ql" << std::endl;
@@ -351,7 +351,7 @@ namespace cuda
                                        H->data(),
                                        ldh,
                                        halfQ,
-                                       lda,
+                                       k,
                                        &Zero,
                                        V2.data() + offset * V2.ld(),
                                        V2.ld()));
@@ -362,7 +362,7 @@ namespace cuda
 	//std::cout << "The Matrix A now contains the data for creating the upper part of Ql" << std::endl;
 	chase::linalg::internal::cuda::chase_set_diagonal(A->data(),
 				       n,
-				       lda,
+				       n,
 				       alpha, usedStream);
 	
 	//Compute the negative of the lower part of Ql
@@ -377,10 +377,10 @@ namespace cuda
                                        V1.data() + offset * V1.ld() + k,
                                        V1.ld(),
                                        A->data(),
-                                       lda,
+                                       n,
                                        &Zero,
                                        halfQ,
-                                       lda));
+                                       k));
 
 	//Performs the multiplication of the last k cols of H with the negative lower part of Ql
 	//std::cout << "Performs the multiplication of the last k cols of H with the negative lower part of Ql" << std::endl;
@@ -394,7 +394,7 @@ namespace cuda
                                        H->data() + k * ldh,
                                        ldh,
                                        halfQ,
-                                       lda,
+                                       k,
                                        &One,
                                        V2.data() + offset * V2.ld(),
                                        V2.ld()));
@@ -418,12 +418,14 @@ namespace cuda
                                        V1.ld(),
                                        &Zero, 
                                        A->data(),
-                                       lda));
+                                       n));
        
 	//Scale the rows because Ql' * Qr = diag =/= I
 	//std::cout << "Scale the rows because Ql' * Qr = diag =/= I" << std::endl;
 
-	chase::linalg::internal::cuda::chase_scale_rows_matrix(A->data(),n,n,lda,diag.data(),usedStream);
+	chase::linalg::internal::cuda::chase_scale_rows_matrix(A->data(),n,n,n,diag.data(),usedStream);
+
+    T *W = V2.data() + offset * V2.ld();
 
 	//Compute the eigenpairs of the non-hermitian rayleigh quotient	
 	//std::cout << "Compute the eigenpairs of the non-hermitian rayleigh quotient" << std::endl;
@@ -433,8 +435,8 @@ namespace cuda
 					CUSOLVER_EIG_MODE_VECTOR,
 					n,
 					A->data(),
-					lda,
-					ritzv_complex.data(),
+					n,
+					ritzv_complex,
 					NULL,
 					1,
 					W,
@@ -462,15 +464,15 @@ namespace cuda
 	chase::Base<T> *ptx = ritzv.cpu_data() + offset;
 	if constexpr (std::is_same<T, std::complex<chase::Base<T>>>::value)
 	{
-		ritzv_complex.D2H(); 
+        cudaMemcpy(ritzvs_cmplex_cpu.data(), ritzv_complex, n * sizeof(T), cudaMemcpyDeviceToHost);
 		for(auto i = 0; i < n; i++){
-			ptx[i] = std::real(ritzv_complex.cpu_data()[i]);
+			ptx[i] = std::real(ritzvs_cmplex_cpu[i]);
 		}
 	}
 	else
 	{
 		CHECK_CUDA_ERROR(cudaMemcpy(ptx, 
-                                    ritzv_complex.data(), 
+                                    ritzv_complex, 
                                     n * sizeof(chase::Base<T>),
                                     cudaMemcpyDeviceToHost));
 	}
@@ -510,9 +512,10 @@ namespace cuda
                                        &Zero,
                                        V2.data() + offset * V2.ld(),
                                        V2.ld()));
-
-        CHECK_CUDA_ERROR(cudaFree(W));
     } 
+
+
+
 }
 }
 }
