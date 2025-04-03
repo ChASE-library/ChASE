@@ -69,6 +69,16 @@ namespace cuda
     void chase_subtract_inverse_diagonal(std::complex<float>* A, std::size_t n, std::size_t lda, float coef, float* new_diag, cudaStream_t stream_);
     void chase_subtract_inverse_diagonal(std::complex<double>* A, std::size_t n, std::size_t lda, double coef, double* new_diag, cudaStream_t stream_);
     
+    __global__ void splus_inverse_diagonal(float* A, std::size_t n, std::size_t lda, float coef, float* new_diag);
+    __global__ void dplus_inverse_diagonal(double* A, std::size_t n, std::size_t lda, double coef, double* new_diag);
+    __global__ void cplus_inverse_diagonal(cuComplex* A, std::size_t n, std::size_t lda, float coef, double* new_diag);
+    __global__ void zplus_inverse_diagonal(cuDoubleComplex* A, std::size_t n, std::size_t lda, double coef, double* new_diag);
+    
+    void chase_plus_inverse_diagonal(float* A, std::size_t n, std::size_t lda, float coef, float* new_diag, cudaStream_t stream_);
+    void chase_plus_inverse_diagonal(double* A, std::size_t n, std::size_t lda, double coef, double* new_diag, cudaStream_t stream_);
+    void chase_plus_inverse_diagonal(std::complex<float>* A, std::size_t n, std::size_t lda, float coef, float* new_diag, cudaStream_t stream_);
+    void chase_plus_inverse_diagonal(std::complex<double>* A, std::size_t n, std::size_t lda, double coef, double* new_diag, cudaStream_t stream_);
+
     __global__ void sset_diagonal(float* A, std::size_t n, std::size_t lda, float coef);
     __global__ void dset_diagonal(double* A, std::size_t n, std::size_t lda, double coef);
     __global__ void cset_diagonal(cuComplex* A, std::size_t n, std::size_t lda, cuComplex coef);

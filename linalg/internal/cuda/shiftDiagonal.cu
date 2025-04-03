@@ -128,7 +128,38 @@ namespace cuda
         if (idx < n)
             new_diag[idx] = 1.0 / (coef - A[(idx) * lda + idx].x);
     }
-    
+
+    __global__ void splus_inverse_diagonal(float* A, std::size_t n, std::size_t lda, float coef,
+		    			       float* new_diag)
+    {
+        std::size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
+        if (idx < n)
+            new_diag[idx] = 1.0 / (coef + A[(idx) * lda + idx]);
+    }
+    __global__ void dplus_inverse_diagonal(double* A, std::size_t n, std::size_t lda, double coef,
+		    			       double* new_diag)
+    {
+        std::size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
+        if (idx < n)
+            new_diag[idx] = 1.0 / (coef + A[(idx) * lda + idx]);
+    }
+    __global__ void cplus_inverse_diagonal(cuComplex* A, std::size_t n, std::size_t lda, float coef,
+		    			       float* new_diag)
+    {
+	//We assume the diagonal of A is real, and coef real. We quite new_diag complex for later operations
+        std::size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
+        if (idx < n)
+            new_diag[idx] = 1.0 / (coef + A[(idx) * lda + idx].x);
+    }
+    __global__ void zplus_inverse_diagonal(cuDoubleComplex* A, std::size_t n, std::size_t lda, double coef,
+		    			       double* new_diag)
+    {
+	//We assume the diagonal of A is real, and coef real. We quite new_diag complex for later operations
+        std::size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
+        if (idx < n)
+            new_diag[idx] = 1.0 / (coef + A[(idx) * lda + idx].x);
+    }
+
     __global__ void sset_diagonal(float* A, std::size_t n, std::size_t lda, float coef)
     {
         std::size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
@@ -314,6 +345,34 @@ namespace cuda
             reinterpret_cast<cuDoubleComplex*>(A), n, lda, coef,new_diag);
     }
     
+    
+    void chase_plus_inverse_diagonal(float* A, std::size_t n, std::size_t lda, float coef,
+		    			  float* new_diag, cudaStream_t stream_)
+    {
+        std::size_t num_blocks = (n + (blockSize - 1)) / blockSize;
+        splus_inverse_diagonal<<<num_blocks, blockSize, 0, stream_>>>(A, n, lda, coef, new_diag);
+    }
+    void chase_plus_inverse_diagonal(double* A, std::size_t n, std::size_t lda, double coef,
+		    			  double* new_diag, cudaStream_t stream_)
+    {
+        std::size_t num_blocks = (n + (blockSize - 1)) / blockSize;
+        dplus_inverse_diagonal<<<num_blocks, blockSize, 0, stream_>>>(A, n, lda, coef, new_diag);
+    }
+    void chase_plus_inverse_diagonal(std::complex<float>* A, std::size_t n, std::size_t lda, float coef,
+		    			  float* new_diag, cudaStream_t stream_)
+    {
+        std::size_t num_blocks = (n + (blockSize - 1)) / blockSize;
+        cplus_inverse_diagonal<<<num_blocks, blockSize, 0, stream_>>>(
+            reinterpret_cast<cuComplex*>(A), n, lda, coef,new_diag);
+    }
+    void chase_plus_inverse_diagonal(std::complex<double>* A, std::size_t n, std::size_t lda, double coef,
+		    			  double* new_diag, cudaStream_t stream_)
+    {
+        std::size_t num_blocks = (n + (blockSize - 1)) / blockSize;
+        zplus_inverse_diagonal<<<num_blocks, blockSize, 0, stream_>>>(
+            reinterpret_cast<cuDoubleComplex*>(A), n, lda, coef,new_diag);
+    }
+
     void chase_set_diagonal(float* A, std::size_t n, std::size_t lda, float coef, cudaStream_t stream_)
     {
         std::size_t num_blocks = (n + (blockSize - 1)) / blockSize;

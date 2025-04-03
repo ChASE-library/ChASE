@@ -134,21 +134,17 @@ public:
         Vec2_ = chase::matrix::Matrix<T, chase::platform::GPU>(N_, nevex_);
         resid_ = chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU>(nevex_, 1);
         ritzvs_ = chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU>(nevex_, 1, nevex_, ritzv_);
+        A_ = chase::matrix::Matrix<T, chase::platform::GPU>(3 * nevex_, nevex_);
 
 	if constexpr (std::is_same<MatrixType, chase::matrix::QuasiHermitianMatrix<T, chase::platform::GPU>>::value)    
 	    {
             is_sym_ = false;
             is_pseudoHerm_ = true;
-            //Quasi Hermitian matrices require more space for the dual basis
-            A_ = chase::matrix::Matrix<T, chase::platform::GPU>(nevex_, nevex_);
-            std::size_t k = N/2;
-            halfQ_ = chase::matrix::Matrix<T, chase::platform::GPU>(k, nevex_);
         }
         else
         {
             is_sym_ = true;
             is_pseudoHerm_ = false;
-            A_ = chase::matrix::Matrix<T, chase::platform::GPU>(nevex_, nevex_);
         }
         
 	CUBLAS_INIT();
@@ -180,21 +176,17 @@ public:
         Vec2_ = chase::matrix::Matrix<T, chase::platform::GPU>(N_, nevex_);
         resid_ = chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU>(nevex_, 1);
         ritzvs_ = chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU>(nevex_, 1, nevex_, ritzv_);
-               
-	if constexpr (std::is_same<MatrixType, chase::matrix::QuasiHermitianMatrix<T, chase::platform::GPU>>::value)    
-	{
+        A_ = chase::matrix::Matrix<T, chase::platform::GPU>(3 * nevex_, nevex_);
+
+    	if constexpr (std::is_same<MatrixType, chase::matrix::QuasiHermitianMatrix<T, chase::platform::GPU>>::value)    
+	    {
             is_sym_ = false;
             is_pseudoHerm_ = true;
-            //Quasi Hermitian matrices require more space for the dual basis
-            A_ = chase::matrix::Matrix<T, chase::platform::GPU>(nevex_, nevex_);
-            std::size_t k = N/2;
-            halfQ_ = chase::matrix::Matrix<T, chase::platform::GPU>(k, nevex_);
         }
         else
         {
             is_sym_ = true;
             is_pseudoHerm_ = false;
-            A_ = chase::matrix::Matrix<T, chase::platform::GPU>(nevex_, nevex_);
         }
 
 	CUBLAS_INIT();
@@ -252,7 +244,7 @@ public:
                                                             nevex_, 
                                                             A_.data(), 
                                                             A_.ld(), 
-                                                            halfQ_.data(),
+                                                            Vec2_.data(),
                                                             NULL,1,
                                                             Vec1_.data(),Vec1_.ld(),
                                                             &temp_ldwork,
@@ -732,8 +724,7 @@ public:
                                                     lwork_,
                                                     h_work_.get(),
                                                     lhwork_,
-                                                    &A_,
-                                                    &halfQ_);
+                                                    &A_);
         }else{
         	chase::linalg::internal::cuda::rayleighRitz(cublasH_,
                                                     cusolverH_,
@@ -834,7 +825,6 @@ private:
     chase::matrix::Matrix<T, chase::platform::GPU> A_;          /**< GPU matrix for computations. */
     chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU> ritzvs_; /**< GPU matrix for Ritz values. */
     chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU> resid_;  /**< GPU matrix for residuals. */
-    chase::matrix::Matrix<T, chase::platform::GPU> halfQ_; /**< GPU matrix for Ritz values. */
     chase::ChaseConfig<T> config_;   /**< Configuration object for the Chase algorithm. */
 
     cudaStream_t stream_;          /**< CUDA stream for asynchronous operations. */

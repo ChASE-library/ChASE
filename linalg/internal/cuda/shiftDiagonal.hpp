@@ -115,6 +115,31 @@ namespace cuda
         cudaStream_t usedStream = (stream_ == nullptr) ? 0 : *stream_;
         chase_subtract_inverse_diagonal(H->data(), H->cols(), H->ld(), coef, new_diag, usedStream);
     }
+
+    /**
+     * @brief Returns the inverse of a real coefficient added to the real part of the diagonal of a matrix
+     * 
+     * This function computes the inverse entries of a given real value added to the real part of the diagonal of a matrix.
+     * The output vector, called new_diag, is a stored within the GPU memory.
+     * The operation is performed asynchronously using the provided CUDA stream, or the default stream if none is provided.
+     * 
+     * @tparam T The data type of the matrix elements (e.g., `float`, `double`).
+     * 
+     * @param H The matrix on which the diagonal elements will be shifted. It is a matrix on the GPU.
+     * @param values The real values for scaling the rows of H.
+     * @param stream_ Optional CUDA stream for asynchronous execution. If `nullptr`, the default stream is used.
+     * 
+     * @note The function modifies the matrix `H` in-place. 
+     */    
+    template<typename T>
+    void plusInverseDiagonal(chase::matrix::Matrix<T, chase::platform::GPU> * H, chase::Base<T> coef, chase::Base<T>* new_diag, cudaStream_t* stream_ = nullptr)
+    {
+        SCOPED_NVTX_RANGE();
+
+        cudaStream_t usedStream = (stream_ == nullptr) ? 0 : *stream_;
+        chase_plus_inverse_diagonal(H->data(), H->cols(), H->ld(), coef, new_diag, usedStream);
+    }
+
 }
 }
 }
