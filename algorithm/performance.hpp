@@ -346,11 +346,12 @@ private:
 
     std::size_t chase_iteration_count;
     std::size_t chase_filtered_vecs;
-    std::vector<std::size_t> chase_iter_blocksizes;
 
     std::vector<std::chrono::duration<double>> timings;
     std::vector<std::vector<TimePointType>> start_points;
     std::vector<std::vector<TimePointType>> end_points;
+
+    std::vector<std::size_t> chase_iter_blocksizes;
     int nprocs;
 };
 //! A derived class used to extract performance and configuration data.
@@ -415,6 +416,13 @@ public:
         perf_.add_iter_blocksize(block);
         perf_.end_clock(ChasePerfData<T>::TimePtrs::Rr);
     }
+    
+    void Sort(Base<T>* ritzv, Base<T>* residLast, Base<T>* resid)
+    {
+        //perf_.start_clock(ChasePerfData<T>::TimePtrs::Sort);
+        chase_->Sort(ritzv, residLast, resid);
+        //perf_.end_clock(ChasePerfData<T>::TimePtrs::Sort);
+    }
     void Resd(Base<T>* ritzv, Base<T>* resd, std::size_t fixednev)
     {
         perf_.start_clock(ChasePerfData<T>::TimePtrs::Resids_Locking);
@@ -453,6 +461,20 @@ public:
     bool checkSymmetryEasy()
     {
         return chase_->checkSymmetryEasy();
+    }
+    
+    bool isSym()
+    {
+        return chase_->isSym();
+    }
+    
+    bool checkPseudoHermicityEasy()
+    {
+        return chase_->checkPseudoHermicityEasy();
+    }
+    bool isPseudoHerm()
+    {
+        return chase_->isPseudoHerm();
     }
 
     void symOrHermMatrix(char uplo)

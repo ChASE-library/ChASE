@@ -26,4 +26,6 @@
 #include "linalg/internal/cuda/residuals.hpp"
 #include "linalg/internal/cuda/shiftDiagonal.cuh"
 #include "linalg/internal/cuda/shiftDiagonal.hpp"
+#include "linalg/internal/cuda/flipSign.cuh"
+#include "linalg/internal/cuda/flipSign.hpp"
 /** @} */

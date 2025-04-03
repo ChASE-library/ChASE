@@ -7,16 +7,19 @@
 #include <gtest/gtest.h>
 #include <complex>
 #include <random>
+#include "external/blaspp/blaspp.hpp"
 #include "linalg/internal/cpu/lanczos.hpp"
+#include "linalg/internal/cpu/utils.hpp"
 #include "tests/linalg/internal/cpu/TestConditions.hpp"
 #include "tests/linalg/internal/utils.hpp"
+#include "linalg/matrix/matrix.hpp"
 
 template <typename T>
 class LaczosCPUTest : public ::testing::Test {
 protected:
     void SetUp() override {
 
-        H.resize(N * N);
+        H = chase::matrix::Matrix<T>(N,N);
         V.resize(N * M);
         ritzv.resize(M * numvec);
         ritzV.resize(M * M);
@@ -34,11 +37,11 @@ protected:
         //Clement matrix has eigenvalues -(N-1),-(N-2)...(N-2), (N-1)
         for (auto i = 0; i < N; ++i)
         {
-            H[i + N * i] = 0;
+            H.data()[i + N * i] = 0;
             if (i != N - 1)
-                H[i + 1 + N * i] = std::sqrt(i * (N + 1 - i));
+                H.data()[i + 1 + N * i] = std::sqrt(i * (N + 1 - i));
             if (i != N - 1)
-                H[i + N * (i + 1)] = std::sqrt(i * (N + 1 - i));
+                H.data()[i + N * (i + 1)] = std::sqrt(i * (N + 1 - i));
         }
 
     }
@@ -48,8 +51,7 @@ protected:
     std::size_t M = 10;
     std::size_t numvec = 4;
     std::size_t N = 500;
-    std::vector<T> H;
-    std::size_t ldh = N;
+    chase::matrix::Matrix<T> H;
     std::vector<T> V;
     std::size_t ldv = N;
     std::vector<chase::Base<T>> ritzv;
@@ -63,7 +65,7 @@ TYPED_TEST_SUITE(LaczosCPUTest, TestTypes);
 TYPED_TEST(LaczosCPUTest, mlanczos) {
     using T = TypeParam;  // Get the current type
     chase::Base<T> upperb;
-    chase::linalg::internal::cpu::lanczos(this->M, this->numvec, this->N, this->H.data(), this->N, this->V.data(), this->N, 
+    chase::linalg::internal::cpu::lanczos(this->M, this->numvec, &(this->H), this->V.data(), this->N, 
                 &upperb, this->ritzv.data(), this->Tau.data(), this->ritzV.data());
 
     for(auto i = 0; i < this->numvec; i++)
@@ -78,8 +80,7 @@ TYPED_TEST(LaczosCPUTest, mlanczos) {
 TYPED_TEST(LaczosCPUTest, lanczos) {
     using T = TypeParam;  // Get the current type
     chase::Base<T> upperb;
-    chase::linalg::internal::cpu::lanczos(this->M, this->N, this->H.data(), this->N, this->V.data(), this->N, 
-                &upperb);
+    chase::linalg::internal::cpu::lanczos(this->M, &(this->H), this->V.data(), this->N,&upperb);
 
     EXPECT_GT(upperb, chase::Base<T>(this->N - 1) ); //the computed upper bound should larger than the max eigenvalues
     EXPECT_LT(upperb, chase::Base<T>(5 * (this->N - 1) ) );

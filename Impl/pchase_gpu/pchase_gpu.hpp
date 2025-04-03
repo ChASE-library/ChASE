@@ -350,7 +350,16 @@ public:
         return is_sym_;
     }
 
-    bool isSym() { return is_sym_; }
+    bool isSym() override {return is_sym_;} 
+    
+    bool checkPseudoHermicityEasy() override
+    {
+        SCOPED_NVTX_RANGE();
+	is_pseudoHerm_= 0;
+        return is_pseudoHerm_;
+    }
+    
+    bool isPseudoHerm() override { return is_pseudoHerm_; }
 
     void symOrHermMatrix(char uplo) override
     {
@@ -802,6 +811,11 @@ public:
                                          V2_->l_data() + locked_ * V2_->l_ld(),
                                          V2_->l_ld());       
     }
+    
+    void Sort(chase::Base<T> * ritzv, chase::Base<T> * residLast, chase::Base<T> * resid) override
+    {
+
+    }
 
     void Resd(chase::Base<T>* ritzv, chase::Base<T>* resd, std::size_t fixednev) override 
     {
@@ -851,6 +865,7 @@ private:
     NextOp next_; /**< Holds the next operation in the computation sequence. */
 
     bool is_sym_; /**< Indicates whether the matrix is symmetric. */
+    bool is_pseudoHerm_; /**< Indicates whether the matrix is pseudo-hermitian. */
     
     std::size_t nev_; /**< Number of eigenvalues to compute. */
     std::size_t nex_; /**< Number of additional vectors for iterative refinement. */

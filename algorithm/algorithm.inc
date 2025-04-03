@@ -85,39 +85,38 @@ std::size_t Algorithm<T>::locking(ChaseBase<T>* single, std::size_t N,
     }
     sort(index.begin(), index.end(),
          [&](const int& a, const int& b) { return (Lritzv[a] < Lritzv[b]); });
-
     std::size_t converged = 0;
-    for (auto k = 0; k < unconverged; ++k)
+
+    for (auto k = 0; k < unconverged; k++)
     {
+    
         auto j = index[k]; // walk through
-        if (resid[j] > tol)
+
+	if (resid[j] <= tol || (single->isSym() && resid[j] >= residLast[j]))
         {
-            // don't break if we did not make progress with last iteration
-            if (resid[j] < residLast[j])
-            {
-                break;
-            }
-            else
-            {
+		if(single->isSym() && resid[j] > tol && resid[j] >= residLast[j]){
 #ifdef CHASE_OUTPUT
-                std::ostringstream oss;
-                oss << "locking unconverged pair is:" << resid[j]
-                    << " was:" << residLast[j] << " tolerance is: " << tol
-                    << " val: " << Lritzv[j] << "\n";
-                single->Output(oss.str());
+                	std::ostringstream oss;
+                	oss << "locking unconverged pair is:" << resid[j]
+                   	<< " was:" << residLast[j] << " tolerance is: " << tol
+                   	<< " val: " << Lritzv[j] << "\n";
+                	single->Output(oss.str());
 #endif
-            }
-        }
-        if (j != converged)
-        {
-            swap_kj(j, converged, resid);     // if we filter again
-            swap_kj(j, converged, residLast); // if we filter again
-            swap_kj(j, converged, Lritzv);
-            single->Swap(j + locked, converged + locked);
-        }
-        converged++;
-    }
-    return converged;
+		}
+
+		if (j != converged)
+         	{
+            		swap_kj(j, converged, resid);     // if we filter again
+            		swap_kj(j, converged, residLast); // if we filter again
+            		swap_kj(j, converged, Lritzv);
+            		single->Swap(j + locked, converged + locked);
+         	}
+	
+        	converged++;
+   	}
+   }
+   
+   return converged;
 }
 
 template <class T>
@@ -214,7 +213,6 @@ std::size_t Algorithm<T>::lanczos(ChaseBase<T>* single, int N, int numvec, int m
     Base<T>* Tau = new Base<T>[numvec * m]();
 
     Base<T>* ritzV = new Base<T>[m * m]();
-    Base<T> upperb_;
     Base<T> lowerb, lambda;
 
     single->Lanczos(m, numvec, upperb, Theta, Tau, ritzV);
@@ -245,10 +243,17 @@ std::size_t Algorithm<T>::lanczos(ChaseBase<T>* single, int N, int numvec, int m
         return 0.5 * (1 + std::erf(x / sqrt(2 * sigma * sigma)));
     };
 
-    for (auto i = 0; i < numvec * m; ++i)
+    std::size_t bound = m;
+    if(single->isPseudoHerm())
+    {
+	//The spectrum of a Pseudo-Hermitian matrix is symmetric over the y-axis.
+	bound /= 2; 
+    }
+
+    for (auto i = 0; i < numvec * bound-1; ++i)
     {
         curr = 0;
-        for (int j = 0; j < numvec * m; ++j)
+        for (int j = 0; j < numvec * bound; ++j)
         {
             if (ThetaSorted[i] < (Theta[j] - threshold))
                 curr += 0;
@@ -264,7 +269,7 @@ std::size_t Algorithm<T>::lanczos(ChaseBase<T>* single, int N, int numvec, int m
             if (std::abs(curr - search) < std::abs(prev - search))
                 lowerb = ThetaSorted[i];
             else
-                lowerb = ThetaSorted[i - 1];
+                lowerb = ThetaSorted[i-1];
             break;
         }
         prev = curr;
@@ -318,7 +323,7 @@ std::size_t Algorithm<T>::lanczos(ChaseBase<T>* single, int N, int numvec, int m
         single->Swap(i, j);
         std::swap(ritzv_[i], ritzv_[j]);
     }
-
+    
     // Cleanup
     delete[] ThetaSorted;
     delete[] Theta;
@@ -332,7 +337,7 @@ template <class T>
 void Algorithm<T>::solve(ChaseBase<T>* single)
 {
     ChaseConfig<T>& config = single->GetConfig();
-
+/*
     if(config.DoSymCheck())
     {
         if(single->checkSymmetryEasy())
@@ -361,6 +366,7 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
             return;
         }
     }
+    */
     single->Start();
 
     std::size_t N = config.GetN();
@@ -380,7 +386,6 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
     Base<T> lowerb, upperb, lambda;
 
     Base<T> cond;
-    std::size_t last_degree;
 
     std::vector<std::size_t> degrees_(nev + nex);
     std::vector<Base<T>> residLast_(nevex);
@@ -413,35 +418,51 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
     }
     // --------------------------------- LANCZOS
     // ---------------------------------
-    std::size_t DoSVectors =
-        lanczos(single, N, num_lanczos,
-                std::min(nevex, std::min(N / 2, config.GetLanczosIter())),
-                nevex, &upperb, random, random ? ritzv : NULL);
+
+    std::size_t lanczos_iter = std::min(nevex, std::min(N / 2, config.GetLanczosIter()));
+    if(single->isPseudoHerm() && 2.0*(lanczos_iter / 2) < lanczos_iter)
+    {
+	config.SetLanczosIter(lanczos_iter-1);
+	lanczos_iter = config.GetLanczosIter();
+	/* We enforce the number of ritz values to be even since the spectrum is symmetric
+	 * in the Pseudo-Hermitian case */
+
+    }
+    lanczos(single, N, num_lanczos,lanczos_iter,
+	    nevex, &upperb, random, random ? ritzv : NULL);
 
     std::size_t locked = 0;    // Number of converged eigenpairs.
     std::size_t iteration = 0; // Current iteration.
-    lowerb = *std::max_element(ritzv, ritzv + unconverged);
+    lowerb = *std::max_element(ritzv, ritzv + unconverged); 
     lambda = *std::min_element(ritzv_, ritzv_ + nevex);
+
+    lowerb = lowerb * config.GetDecayingRate();
 
     while (unconverged > nex && iteration < config.GetMaxIter())
     {
-        if (unconverged < nevex)
+        int cnt;
+        for (cnt = 0; cnt < unconverged; cnt++)
         {
-            lambda = *std::min_element(ritzv_, ritzv_ + nevex);
-
-            int cnt;
-            for (cnt = 0; cnt < unconverged; cnt++)
-            {
-                if (resid[cnt] > 5e-1)
+        	if (resid[cnt] > 5e-1)
                 {
                     break;
                 }
-            }
-            if (cnt == unconverged)
-            {
-                lowerb = ritzv[unconverged - 1];
-            }
         }
+        if (cnt == unconverged)
+        {
+        	lowerb = ritzv[unconverged - 1];
+        }
+
+        if (single->isSym() && unconverged < nevex)
+        {
+	    lambda = *std::min_element(ritzv_, ritzv_ + nevex);
+        }
+	else if (single->isPseudoHerm() && unconverged < nevex)
+	{
+	    lambda = ritzv[std::distance(resid,std::min_element(resid, resid + unconverged))];
+            lowerb = std::min(ritzv[unconverged - 1],Base<T>(0.0));
+	}
+			
 
 #ifdef CHASE_OUTPUT
         {
@@ -464,27 +485,15 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
         }
         //-------------------------------- DEGREES
         //--------------------------------
-        last_degree = degrees[0];
         if (config.DoOptimization() && iteration != 0)
         {
             deg = calc_degrees(single, N, unconverged, nex, upperb, lowerb, tol,
                                ritzv, resid, residLast, degrees, locked);
         }
-#ifdef CHASE_OUTPUT
-        {
-            std::ostringstream oss;
-            oss << "degrees\tresid\tresidLast\tritzv\n";
-            for (std::size_t k = 0; k < std::min<std::size_t>(unconverged, 20);
-                 ++k)
-                oss << degrees[k] << "\t" << resid[k] << "\t" << residLast[k]
-                    << "\t" << ritzv[k] << "\n";
 
-            single->Output(oss.str());
-        }
-
-#endif
         //------------------------------- FILTER -------------------------------
-        std::size_t Av = filter(single, N, unconverged, deg, degrees, lambda,
+	
+	filter(single, N, unconverged, deg, degrees, lambda,
                                 lowerb, upperb);
 
         //----------------------------------- QR
@@ -505,22 +514,37 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
             std::pow(rho_1,
                      (*std::max_element(degrees, degrees + nev + nex - locked) -
                       degrees[0]));
-
-        single->QR(locked, cond);
+        
+	single->QR(locked, cond);
 
         // ----------------------------- RAYLEIGH  RITZ
         // ----------------------------
         single->RR(ritzv, unconverged);
 
         // --------------------------- RESIDUAL & LOCKING
-        // --------------------------
+        // --------------------------	
 
         for (auto i = 0; i < unconverged; ++i)
             residLast[i] = std::min(residLast[i], resid[i]);
+
         single->Resd(ritzv, resid, locked);
 
+#ifdef CHASE_OUTPUT
+        {
+            std::ostringstream oss;
+            oss << "degrees\tresid\tresidLast\tritzv\n";
+            for (std::size_t k = 0; k < std::min<std::size_t>(unconverged, 40);
+                 ++k)
+                oss << degrees[k] << "\t" << resid[k] << "\t" << residLast[k]
+                    << "\t" << ritzv[k] << "\n";
+
+            single->Output(oss.str());
+        }
+
+#endif
+
         std::size_t new_converged =
-            locking(single, N, unconverged - nex, tol, ritzv, resid, residLast,
+            locking(single, N, unconverged - single->isSym() * nex, tol, ritzv, resid, residLast,
                     degrees, locked);
 
         // ---------------------------- Update pointers
@@ -540,12 +564,13 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
     } // while ( converged < nev && iteration < omp_maxiter )
 
     //---------------------SORT-EIGENPAIRS-ACCORDING-TO-EIGENVALUES---------------
-    for (auto i = 0; i < nev - 1; ++i)
-        for (auto j = i + 1; j < nev; ++j)
+    for (auto i = 0; i < nev-1 + !single->isSym() * nex ; ++i)
+        for (auto j = i + 1; j < nev + !single->isSym() * nex; ++j)
         {
             if (ritzv_[i] > ritzv_[j])
             {
                 swap_kj(i, j, ritzv_);
+                swap_kj(i, j, resid_);
                 single->Swap(i, j);
             }
         }

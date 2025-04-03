@@ -85,6 +85,17 @@ public:
      */
     virtual void RR(Base<T>* ritzv, std::size_t block) = 0;
     /**
+     * @brief Sort the ritz values, the residuals, and the eigenvectors in ascending order.
+     * 
+     * This method sorts the ritz values, the residuals, and the ritz vectors in ascending order
+     * of the ritz values. 
+     * 
+     * @param ritzv Array to store the computed eigenvalues.
+     * @param residLast Array to store the residuals of the previous iteration.
+     * @param resid Array to store the residuals of the current iteration.
+     */
+    virtual void Sort(Base<T>* ritzv, Base<T>* residLast, Base<T>* resid) = 0;
+    /**
      * @brief Computes residuals for unconverged eigenpairs.
      * 
      * This method computes the residuals of the eigenpairs that have not yet converged.
@@ -154,6 +165,30 @@ public:
      * @return `true` if the matrix is symmetric, otherwise `false`.
      */    
     virtual bool checkSymmetryEasy() = 0;
+    /**
+     * @brief Returns if the matrix is Hermitian or not
+     * 
+     * This method simply returns if the matrix is Hermitian or not
+     * 
+     * @return `true` if the matrix is Hermitian, otherwise `false`.
+     */    
+    virtual bool isSym() = 0;
+    /**
+     * @brief Checks for easy pseudo-hermicity in the matrix.
+     * 
+     * This method performs a simple check for matrix pseudo-hermicity
+     * 
+     * @return `true` if the matrix is pseudo-hermicity, otherwise `false`.
+     */    
+    virtual bool checkPseudoHermicityEasy() = 0;
+    /**
+     * @brief Returns if the matrix is Pseudo-Hermitian or not
+     * 
+     * This method simply returns if the matrix is Pseudo-Hermitian or not
+     * 
+     * @return `true` if the matrix is Pseudo-Hermitian, otherwise `false`.
+     */    
+    virtual bool isPseudoHerm() = 0;
     /**
      * @brief Sets matrix type for symmetric or Hermitian matrix.
      * 

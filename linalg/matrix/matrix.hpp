@@ -88,6 +88,13 @@ namespace platform
 }
 }
 
+/**
+ * @page platform_namespace chase::platform Namespace
+ * @brief Namespace containing platform-specific structures and identifiers.
+ *
+ * The `chase::platform` namespace includes identifiers for different platforms, such as CPU and GPU.
+ */
+
 /** @page chase_matrix
  *  @brief The Matrix Namespace
  * 
@@ -444,7 +451,7 @@ public:
      * @param data Pointer to the user-provided matrix data.
      */
     Matrix(std::size_t rows, std::size_t cols, std::size_t ld, T *data)
-        : data_(nullptr, [](T*){}), rows_(rows), cols_(cols), ld_(ld), external_data_(data), owns_mem_(false)       
+        : data_(nullptr, [](T*){}), external_data_(data), rows_(rows), cols_(cols), ld_(ld), owns_mem_(false)       
         {}
 
     /**
@@ -593,7 +600,7 @@ public:
      * Initializes a matrix with no data and sets default values for dimensions and memory ownership flags.
      */
     Matrix()
-        : cpu_data_(nullptr, [](T*){}), gpu_data_(nullptr, [](T*){}), rows_(0), cols_(0), gpu_ld_(0),
+        : gpu_data_(nullptr, [](T*){}), cpu_data_(nullptr, [](T*){}), rows_(0), cols_(0), gpu_ld_(0),
           cpu_ld_(0), owns_cpu_mem_(false), owns_gpu_mem_(false)
         {}
 
@@ -605,7 +612,7 @@ public:
      * @param cols The number of columns in the matrix.
      */
     Matrix(std::size_t rows, std::size_t cols)
-        : cpu_data_(nullptr, [](T*){}), rows_(rows), cols_(cols), cpu_ld_(0), gpu_ld_(rows), owns_cpu_mem_(false), owns_gpu_mem_(true)
+        : gpu_data_(nullptr, [](T*){}), cpu_data_(nullptr, [](T*){}), rows_(rows), cols_(cols), gpu_ld_(rows), cpu_ld_(0), owns_cpu_mem_(false), owns_gpu_mem_(true)
     {     
         T* raw_data = allocator_.allocate(rows_ * cols_);
         CHECK_CUDA_ERROR(cudaMemset(raw_data, 0, rows * cols * sizeof(T)));
@@ -627,12 +634,12 @@ public:
      * @param buffer_type The type of external buffer (CPU or GPU).
      */
     Matrix(std::size_t rows, std::size_t cols, std::size_t ld, T *external_data, BufferType buffer_type = BufferType::CPU)
-        : rows_(rows), cols_(cols),
+        : gpu_data_(nullptr, [](T*){}), cpu_data_(nullptr, [](T*){}),
+	  external_gpu_data_(buffer_type == BufferType::GPU ? external_data : nullptr),
+          external_cpu_data_(buffer_type == BufferType::CPU ? external_data : nullptr),
+	  rows_(rows), cols_(cols),
           gpu_ld_(buffer_type == BufferType::GPU ? ld : rows), 
           cpu_ld_(buffer_type == BufferType::CPU ? ld : 0),
-          cpu_data_(nullptr, [](T*){}), gpu_data_(nullptr, [](T*){}),
-          external_gpu_data_(buffer_type == BufferType::GPU ? external_data : nullptr),
-          external_cpu_data_(buffer_type == BufferType::CPU ? external_data : nullptr),        
           owns_cpu_mem_(false),
           owns_gpu_mem_(buffer_type == BufferType::GPU ? false : true)
     {
@@ -662,14 +669,14 @@ public:
     Matrix(Matrix&& other) noexcept
         : gpu_data_(std::move(other.gpu_data_)), 
           cpu_data_(std::move(other.cpu_data_)), 
+          external_gpu_data_(other.external_gpu_data_), 
+          external_cpu_data_(other.external_cpu_data_),
           rows_(other.rows_),
           cols_(other.cols_), 
           gpu_ld_(other.gpu_ld_), 
           cpu_ld_(other.cpu_ld_),
           owns_cpu_mem_(other.owns_cpu_mem_),
-          owns_gpu_mem_(other.owns_gpu_mem_),
-          external_cpu_data_(other.external_cpu_data_),
-          external_gpu_data_(other.external_gpu_data_)   
+          owns_gpu_mem_(other.owns_gpu_mem_)
     {
 #ifdef ENABLE_MIXED_PRECISION
           this->single_precision_matrix_ = std::move(other.single_precision_matrix_);
@@ -696,12 +703,12 @@ public:
             // Transfer ownership
             gpu_data_ = std::move(other.gpu_data_);
             cpu_data_ = std::move(other.cpu_data_);
+            external_gpu_data_ = other.external_gpu_data_;            
+            external_cpu_data_ = other.external_cpu_data_;
             rows_ = other.rows_;
             cols_ = other.cols_;
             gpu_ld_ = other.gpu_ld_;
             cpu_ld_ = other.cpu_ld_;
-            external_cpu_data_ = other.external_cpu_data_;
-            external_gpu_data_ = other.external_gpu_data_;            
             owns_cpu_mem_ = other.owns_cpu_mem_;
             owns_gpu_mem_ = other.owns_gpu_mem_;
 #ifdef ENABLE_MIXED_PRECISION
@@ -876,6 +883,43 @@ public:
      * @return The leading dimension of the matrix in CPU memory.
      */    
     std::size_t cpu_ld() const override { return cpu_ld_; }
+
+};
+#endif
+
+template <typename T, typename Platform = chase::platform::CPU, template <typename> class Allocator = DefaultAllocator<Platform>::template type>
+class QuasiHermitianMatrix;
+
+template <typename T, template <typename> class Allocator>
+class QuasiHermitianMatrix<T, chase::platform::CPU, Allocator> : public Matrix<T, chase::platform::CPU, Allocator> {
+public:
+    // Default constructor
+    QuasiHermitianMatrix() : Matrix<T, chase::platform::CPU, Allocator>() {}
+    
+    // Constructor with dimensions
+    QuasiHermitianMatrix(std::size_t rows, std::size_t cols) 
+        : Matrix<T, chase::platform::CPU, Allocator>(rows, cols) {}
+    
+    // Constructor with external data
+    QuasiHermitianMatrix(std::size_t rows, std::size_t cols, std::size_t ld, T* data)
+        : Matrix<T, chase::platform::CPU, Allocator>(rows, cols, ld, data) {}
+};
+
+#ifdef HAS_CUDA
+template <typename T, template <typename> class Allocator>
+class QuasiHermitianMatrix<T, chase::platform::GPU, Allocator> : public Matrix<T, chase::platform::GPU, Allocator> {
+public:
+    // Default constructor
+    QuasiHermitianMatrix() : Matrix<T, chase::platform::GPU, Allocator>() {}
+    
+    // Constructor with dimensions
+    QuasiHermitianMatrix(std::size_t rows, std::size_t cols) 
+        : Matrix<T, chase::platform::GPU, Allocator>(rows, cols) {}
+    
+    // Constructor with external data
+    QuasiHermitianMatrix(std::size_t rows, std::size_t cols, std::size_t ld, T* data, 
+                         chase::matrix::BufferType buffer_type = chase::matrix::BufferType::CPU)
+        : Matrix<T, chase::platform::GPU, Allocator>(rows, cols, ld, data, buffer_type) {}
 
 };
 #endif

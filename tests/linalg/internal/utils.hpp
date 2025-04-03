@@ -10,35 +10,79 @@
 #include <iostream>
 #include <complex>
 
+#include "algorithm/types.hpp"
+
 template<typename T>
 struct TypeName;
 
 template<>
 struct TypeName<float> {
     static std::string Get() { return "float_"; }
+    static float GetTol() { return 1.0e-3; }
 };
 
 template<>
 struct TypeName<double> {
     static std::string Get() { return "double_"; }
+    static double GetTol() { return 1.0e-6; }
 };
 
 template<>
 struct TypeName<std::complex<float>> {
     static std::string Get() { return "cfloat_"; }
+    static float GetTol() { return 1.0e-3; }
 };
 
 template<>
 struct TypeName<std::complex<double>> {
     static std::string Get() { return "cdouble_"; }
+    static double GetTol() { return 1.0e-6; }
 };
 
+template<typename T>
+chase::Base<T> GetErrorTolerance(){
+	return TypeName<T>::GetTol();
+}
 
 template<typename T>
 std::string GetQRFileName() {
     return "../QR_matrices/matrix_" + TypeName<T>::Get();
 }
 
+template<typename T>
+std::string GetBSE_Path() {
+    return "../BSE_matrices";
+}
+
+template<typename T>
+std::string GetBSE_Matrix(){
+    return GetBSE_Path<T>() + "/" + TypeName<T>::Get() +"random_BSE.bin";
+}
+
+template<typename T>
+std::string GetBSE_TinyMatrix(){
+    return GetBSE_Path<T>() + "/" + TypeName<T>::Get() +"tiny_random_BSE.bin";
+}
+
+template<typename T>
+std::string GetBSE_Eigs(){
+    return GetBSE_Path<T>() + "/eigs_" + TypeName<T>::Get() +"random_BSE.bin";
+}
+
+template<typename T>
+std::string GetBSE_TinyEigs(){
+    return GetBSE_Path<T>() + "/eigs_" + TypeName<T>::Get() +"tiny_random_BSE.bin";
+}
+
+template<typename T>
+std::string GetBSE_SHEigs(){
+    return GetBSE_Path<T>() + "/SH_eigs_" + TypeName<T>::Get() +"random_BSE.bin";
+}
+
+template<typename T>
+std::string GetBSE_TinySHEigs(){
+    return GetBSE_Path<T>() + "/SH_eigs_" + TypeName<T>::Get() +"tiny_random_BSE.bin";
+}
 
 template<typename T>
 struct MachineEpsilon {

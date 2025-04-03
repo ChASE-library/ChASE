@@ -46,7 +46,7 @@ namespace cuda
     */    
     template<typename T>
     void residuals(cublasHandle_t cublas_handle, 
-                   chase::matrix::Matrix<T, chase::platform::GPU>& H,
+                   chase::matrix::Matrix<T, chase::platform::GPU>* H,
                    chase::matrix::Matrix<T, chase::platform::GPU>& V1,
                    chase::Base<T> *d_ritzv, 
                    chase::Base<T> *d_resids, 
@@ -66,14 +66,14 @@ namespace cuda
 
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(
                                                                 cublas_handle, 
-                                                                CUBLAS_OP_C, 
                                                                 CUBLAS_OP_N, 
-                                                                H.rows(), 
+                                                                CUBLAS_OP_N, 
+                                                                H->rows(), 
                                                                 subSize, 
-                                                                H.cols(), 
+                                                                H->cols(), 
                                                                 &alpha,
-                                                                H.data(), 
-                                                                H.ld(), 
+                                                                H->data(), 
+                                                                H->ld(), 
                                                                 V1.data() + offset * V1.ld(), 
                                                                 V1.ld(), 
                                                                 &beta, 

@@ -127,6 +127,27 @@ extern "C"
                            dcomplex* work, const BlasInt* lwork, double* rwork,
                            const BlasInt* lrwork, BlasInt* iwork,
                            const BlasInt* liwork, BlasInt* info);
+    // xGEEV
+    void FC_GLOBAL(sgeev,
+                   SGEEV)(const char* jobz, const char* uplo, const BlasInt* n,
+                           float* a, const BlasInt* lda, float* wr, float* wi,
+			   float* vl, const BlasInt* ldvl, float* vr, const BlasInt* ldvr,
+                           float* work, const BlasInt* lwork, BlasInt* info);
+    void FC_GLOBAL(dgeev,
+                   DGEEV)(const char* jobz, const char* uplo, const BlasInt* n,
+                           double* a, const BlasInt* lda, double* wr, double* wi,
+			   double* vl, const BlasInt* ldvl, double *vr, const BlasInt* ldvr,
+                           double* work, const BlasInt* lwork, BlasInt* info);
+    void FC_GLOBAL(cgeev,
+                   CGEEV)(const char* jobz, const char* uplo, const BlasInt* n,
+                           scomplex* a, const BlasInt* lda, scomplex* w,
+			   scomplex *vl, const BlasInt* ldvl, scomplex *vr, const BlasInt* ldvr,
+                           scomplex* work, const BlasInt* lwork, float* rwork, BlasInt* info);
+    void FC_GLOBAL(zgeev,
+                   ZGEEV)(const char* jobz, const char* uplo, const BlasInt* n,
+                           dcomplex* a, const BlasInt* lda, dcomplex* w,
+			   dcomplex *vl, const BlasInt* ldvl, dcomplex *vr, const BlasInt* ldvr,
+                           dcomplex* work, const BlasInt* lwork, double* rwork, BlasInt* info);
                                                       
 } // end of extern "C"
 } //end of namespace lapackpp

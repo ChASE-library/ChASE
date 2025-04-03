@@ -96,6 +96,41 @@ TYPED_TEST(MatrixCPUTest, SWAP) {
     EXPECT_EQ(matrix1.data(), array2);
 }
 
+TYPED_TEST(MatrixCPUTest, QuasiHermitianMatrix) {
+
+    std::size_t rows = 4, cols = 4;
+
+    std::complex<double> external_data[16] = {
+	    std::complex<double>(1.010,0),
+	    std::complex<double>(0,-0.20),
+	    std::complex<double>(0.010,0),
+	    std::complex<double>(0,0.010),
+	    std::complex<double>(0,0.200),
+	    std::complex<double>(1.010,0),
+	    std::complex<double>(0,0.100),
+	    std::complex<double>(0.100,0),
+	    std::complex<double>(-0.10,0),
+	    std::complex<double>(0,0.100),
+	    std::complex<double>(-1.01,0),
+	    std::complex<double>(0,-0.20),
+	    std::complex<double>(0,0.100),
+	    std::complex<double>(-0.10,0),
+	    std::complex<double>(0,0.200),
+	    std::complex<double>(-1.01,0)
+    };
+    
+    chase::matrix::QuasiHermitianMatrix<std::complex<double>> matrix(rows, cols, rows, external_data);
+    EXPECT_EQ(matrix.rows(), rows);
+    EXPECT_EQ(matrix.cols(), cols);
+    EXPECT_EQ(matrix.ld(), rows);
+    EXPECT_EQ(matrix.data(), external_data);
+
+    for(auto i = 0; i < rows * cols; i++)
+    {
+        EXPECT_EQ(matrix.data()[i], external_data[i]);
+    }
+}
+
 #ifdef ENABLE_MIXED_PRECISION
 TYPED_TEST(MatrixCPUTest, EnableSinglePrecision) {
     using T = TypeParam;  // Get the current type
