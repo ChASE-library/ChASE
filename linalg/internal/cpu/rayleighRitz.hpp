@@ -110,102 +110,80 @@ namespace cpu
 	std::size_t N   = H->rows();	
 	std::size_t ldh = H->ld();
 	std::size_t k   = N / 2;
-	std::size_t lda = n+k;
 
-	T alpha = T(2.0);
         T One   = T(1.0);
         T Zero  = T(0.0);
+        T NegOne = T(-1.0);
+        T NegativeTwo = T(-2.0);
 
         std::unique_ptr<T[]> ptrA;
 	//Allocate space for the rayleigh quotient
         if (A == nullptr)
         {
-            ptrA = std::unique_ptr<T[]>{new T[lda * n]};
+            ptrA = std::unique_ptr<T[]>{new T[3 * n * n]};
             A = ptrA.get();
         }
 
-        //Allocate the space for halfQ transformations. Half size of an explicit dual basis
-	T *halfQ = A + n; 
+        T* M = A + n * n;
+        T* W = A + 2 * n * n;
 
-	//Alocate space for the ritz vectors, but we can probably reuse halfQ workspace. Double free?
-	std::unique_ptr<T[]> ptrW = std::unique_ptr<T[]>{new T[n * n]};
-        T* W = ptrW.get();
-	
 	//Allocate the space for scaling weights. Can be Base<T> since reals?
 	std::vector<T> diag(n, T(0.0)); 
 
 	//Allocate the space for the imaginary parts of ritz values
 	std::vector<Base<T>> ritzvi(n, Base<T>(0.0)); 
  
+	blaspp::t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, N, n, N, &One,
+		H->data(), ldh, Q, ldq, &Zero, V, ldv);  //T = AQr
+
+        blaspp::t_gemm(CblasColMajor, CblasConjTrans, CblasNoTrans, n, n, N, &One, Q, ldq, V, ldv, &Zero, W, n);  //A = Qr^* T
+
 	//Performs Q_2^T Q_2 for the construction of the dual basis, Q_2 is the lower part of Q
-	blaspp::t_gemm(CblasColMajor, CblasConjTrans, CblasNoTrans, n, n, k, &alpha,
-		Q + k, ldq, Q + k, ldq, &Zero, A, lda);
+	blaspp::t_gemm(CblasColMajor, CblasConjTrans, CblasNoTrans, n, n, k, &NegativeTwo,
+		Q + k, ldq, Q + k, ldq, &Zero, M, n); //M = -2 Qr_2^* Qr_2
 
-       	//Compute the scaling weights such that diag = Ql^T Qr
-	for(auto i = 0; i < n; i++)
-	{
-		diag[i] = One / (One-A[i*(lda+1)]);
-	}	
+        // M = I - 2 Qr_2^* Qr_2
+        for(auto i = 0; i < n; i++)
+        {
+            diag[i] = T(1.0) / (T(1.0) + M[i*(n+1)]);
+        }
 
-       	//Matrix to compute the upper part of Ql
-	for(auto i = 0; i < n; i++)
-	{
-		A[i*(lda+1)] = One;
-	}
+        for(auto i = 0; i < n; i++)
+        {
+            M[i*(n+1)] = T(0.0);
+        }
 
-       	//Compute the upper part of Ql
-	blaspp::t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, k, n, n, &One,
-		Q, ldq, A, lda, &Zero, halfQ, lda); //Performs Q_1
+        blaspp::t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, n, n, n, &NegOne,
+                M, n, W, n, &Zero, A, n); //A = (Diag(M) - M) * A
 
-       	//Performs the multiplication of the first k cols of H with the upper part of Ql
-        blaspp::t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, N, n, k, &One,
-                H->data(), ldh, halfQ, lda, &Zero, V, ldv);
-	
-	//Flip the sign of the lower part to emulate the multiplication H' * Ql 
-	alpha = -One;
-
-       	//Matrix to compute the lower part of Ql
-	for(auto i = 0; i < n; i++)
-	{
-		A[i*(lda+1)] = alpha;
-	}
-
-       	//Compute the lower part of Ql
-	blaspp::t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, k, n, n, &alpha,
-		Q + k, ldq, A, lda, &Zero, halfQ, lda); //Performs -Q_2
-
-       	//Add to V the result of the multiplication of the last k cols of H with the lower part of Ql
-        blaspp::t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, N, n, k, &One,
-               	H->data() + k * N, ldh, halfQ, lda, &One, V, ldv);
-	
 	//Flip the sign of the lower part of V to emulate the multiplication H' * Ql 
-	chase::linalg::internal::cpu::flipLowerHalfMatrixSign(N,n,V,ldv);
-	
+	chase::linalg::internal::cpu::flipLowerHalfMatrixSign(N,n,V,ldv); //flip T
+
 	//Last GEMM for the construction of the rayleigh Quotient : (H' * Ql)' * Qr
         blaspp::t_gemm(CblasColMajor, CblasConjTrans, CblasNoTrans, n, n, N,
-               &One, V, ldv, Q, ldq, &Zero, A, lda); 
-
+               &One, Q, ldq, V, ldv, &One, A, n); 
+        
 	//Scale the rows because Ql' * Qr = diag =/= I
 	for(auto i = 0; i < n; i++)
 	{
-		blaspp::t_scal(n, &diag[i], A + i, lda);
+		blaspp::t_scal(n, &diag[i], A + i, n);
 	}
-
+        
 	//Compute the eigenpairs of the non-hermitian rayleigh quotient
-        lapackpp::t_geev(LAPACK_COL_MAJOR, 'V', n, A, lda, ritzv, ritzvi.data(), W, n);
+        lapackpp::t_geev(LAPACK_COL_MAJOR, 'V', n, A, n, ritzv, ritzvi.data(), W, n);
 
 	//Sort indices based on ritz values
+	std::vector<Base<T>> sorted_ritzv(ritzv, ritzv + n);
 	std::vector<std::size_t> indices(n);
 	std::iota(indices.begin(), indices.end(), 0); // Fill with 0, 1, ..., n-1
 	std::sort(indices.begin(), indices.end(), 
-			[&ritzv](std::size_t i1, std::size_t i2) { return ritzv[i1] < ritzv[i2]; });
+			[&sorted_ritzv](std::size_t i1, std::size_t i2) { return sorted_ritzv[i1] < sorted_ritzv[i2]; });
 
 	// Create temporary storage for sorted eigenvalues and eigenvectors
-	std::vector<Base<T>> sorted_ritzv(n);
         T *sorted_W = A;
 	// Reorder eigenvalues and eigenvectors
 	for (std::size_t i = 0; i < n; ++i) {
-		sorted_ritzv[i] = ritzv[indices[i]];
+		ritzv[i] = sorted_ritzv[indices[i]];
 	}
 
         for (std::size_t i = 0; i < n; ++i) {
@@ -213,7 +191,6 @@ namespace cpu
         }
 
 	// Copy back to original arrays
-	std::copy(sorted_ritzv.begin(), sorted_ritzv.end(), ritzv);
 	std::copy(sorted_W, sorted_W + n * n, W);
 	
 	//Project ritz vectors back to the initial space

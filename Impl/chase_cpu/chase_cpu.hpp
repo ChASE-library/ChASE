@@ -91,18 +91,18 @@ namespace Impl
 		resid_ = chase::matrix::Matrix<chase::Base<T>>(nevex_, 1);
 		ritzvs_ = chase::matrix::Matrix<chase::Base<T>>(nevex_, 1, nevex_, ritzv_);
 
+		A_ = chase::matrix::Matrix<T>(3 *nevex_, nevex_);
+		
 		if constexpr (std::is_same<MatrixType, chase::matrix::QuasiHermitianMatrix<T>>::value)
 		{
 			is_sym_ = false;
 			is_pseudoHerm_ = true;
 			//Quasi Hermitian matrices require more space for the dual basis
-			A_ = chase::matrix::Matrix<T>(nevex_ + std::size_t(N/2), nevex_);
 		}
 		else
 		{
 			is_sym_ = true;
 			is_pseudoHerm_ = false;
-			A_ = chase::matrix::Matrix<T>(nevex_, nevex_);
 		}
 
 	    }
@@ -144,18 +144,17 @@ namespace Impl
 		Vec2_ = chase::matrix::Matrix<T>(N_, nevex_);
 		resid_ = chase::matrix::Matrix<chase::Base<T>>(nevex_, 1);
 		ritzvs_ = chase::matrix::Matrix<chase::Base<T>>(nevex_, 1, nevex_, ritzv_);
+		A_ = chase::matrix::Matrix<T>(3 * nevex_, nevex_);
 		if constexpr (std::is_same<MatrixType, chase::matrix::QuasiHermitianMatrix<T>>::value)
 		{
 			is_sym_ = false;
 			is_pseudoHerm_ = true;
 			//Quasi Hermitian matrices require more space for the dual basis
-			A_ = chase::matrix::Matrix<T>(nevex_ + std::size_t(N/2), nevex_);
 		}
 		else
 		{
 			is_sym_ = true;
 			is_pseudoHerm_ = false;
-			A_ = chase::matrix::Matrix<T>(nevex_, nevex_);
 		}
 	    }
 	    

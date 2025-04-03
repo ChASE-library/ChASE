@@ -30,7 +30,7 @@ protected:
 	V.resize(N * nev);
 	Q.resize(N * nev);
 	W.resize(nev * nev);
-	Workspace.resize((std::size_t(N/2)+nev) * nev);
+	Workspace.resize(3 * nev * nev);
 
         for(auto i = 0; i < nev; i++)
         {
@@ -45,7 +45,7 @@ protected:
 	V_tiny.resize(N_tiny   * nev_tiny);
 	Q_tiny.resize(N_tiny   * nev_tiny);
 	W_tiny.resize(nev_tiny * nev_tiny);
-	Workspace_tiny.resize((std::size_t(N_tiny/2)+nev_tiny) * nev_tiny);
+	Workspace_tiny.resize(3 * nev_tiny * nev_tiny);
         
         for(auto i = 0; i < nev_tiny; i++)
         {
