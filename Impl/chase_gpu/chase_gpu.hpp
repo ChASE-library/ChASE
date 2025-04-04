@@ -231,6 +231,7 @@ public:
 
 	if constexpr (std::is_same<MatrixType, chase::matrix::QuasiHermitianMatrix<T, chase::platform::GPU>>::value){
 
+#ifdef XGEEV_EXISTS
     		CHECK_CUSOLVER_ERROR(cusolverDnCreateParams(&params_));
 
 		    std::size_t temp_ldwork = 0;
@@ -254,7 +255,7 @@ public:
             lhwork_   = (int)temp_lhwork;
         	
             h_work_ = std::unique_ptr<T[]>(new T[lhwork_]);
-
+#endif
 	}else{
 
         	CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTheevd_bufferSize(
