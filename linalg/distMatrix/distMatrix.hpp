@@ -95,6 +95,9 @@ template<typename T, typename Platform>
 class BlockBlockMatrix;
 
 template<typename T, typename Platform>
+class QuasiHermitianBlockBlockMatrix;
+
+template<typename T, typename Platform>
 class BlockCyclicMatrix;
 
 /**
@@ -1527,6 +1530,43 @@ private:
     std::size_t desc_[9];
 #endif
 };
+
+template <typename T, typename Platform = chase::platform::CPU>
+class QuasiHermitianBlockBlockMatrix;
+
+template <typename T>
+class QuasiHermitianBlockBlockMatrix<T, chase::platform::CPU> : public BlockBlockMatrix<T, chase::platform::CPU> {
+public:
+    // Default constructor
+    QuasiHermitianBlockBlockMatrix() : BlockBlockMatrix<T, chase::platform::CPU>() {}
+    
+    // Constructor with dimensions
+    QuasiHermitianBlockBlockMatrix(std::size_t M, std::size_t N, std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid) 
+        : BlockBlockMatrix<T, chase::platform::CPU>(M, N, mpi_grid) {}
+    
+    // Constructor with external data
+    QuasiHermitianBlockBlockMatrix(std::size_t m, std::size_t n, std::size_t ld, T* data, std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid)
+        : BlockBlockMatrix<T, chase::platform::CPU>(m, n, ld, data, mpi_grid) {}
+};
+
+#ifdef HAS_CUDA
+template <typename T>
+class QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU> : public BlockBlockMatrix<T, chase::platform::GPU> {
+public:
+    // Default constructor
+    QuasiHermitianBlockBlockMatrix() : BlockBlockMatrix<T, chase::platform::GPU>() {}
+    
+    // Constructor with dimensions
+    QuasiHermitianBlockBlockMatrix(std::size_t M, std::size_t N, std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid) 
+        : BlockBlockMatrix<T, chase::platform::GPU>(M, N, mpi_grid) {}
+    
+    // Constructor with external data
+    QuasiHermitianBlockBlockMatrix(std::size_t m, std::size_t n, std::size_t ld, T* data, std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid)
+        : BlockBlockMatrix<T, chase::platform::GPU>(m, n, ld, data, mpi_grid) {}
+
+};
+#endif
+
 
 /**
  * @brief A class representing a block-cyclic distributed matrix.

@@ -254,6 +254,7 @@ public:
             lhwork_   = (int)temp_lhwork;
         	
             h_work_ = std::unique_ptr<T[]>(new T[lhwork_]);
+
 	}else{
 
         	CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTheevd_bufferSize(
