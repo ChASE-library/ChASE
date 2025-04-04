@@ -968,6 +968,7 @@ cusolverStatus_t cusolverDnTpotrf(cusolverDnHandle_t handle,
         reinterpret_cast<cuDoubleComplex*>(Workspace), Lwork, devInfo);
 }
 
+#ifdef XGEEV_EXISTS
 cusolverStatus_t cusolverDnTgeev_bufferSize(
     cusolverDnHandle_t handle,
     cusolverDnParams_t params,
@@ -982,7 +983,6 @@ cusolverStatus_t cusolverDnTgeev_bufferSize(
     size_t* workspaceInBytesOnHost)
 {
     SCOPED_NVTX_RANGE();
-#ifdef XGEEV_EXISTS //Temporary solution to compile without NVIDIA CUDA 12.6.85
     return cusolverDnXgeev_bufferSize(handle, params, jobvl, jobvr, n,
                                       CUDA_R_32F, A, lda,
                                       CUDA_R_32F, W,
@@ -991,9 +991,6 @@ cusolverStatus_t cusolverDnTgeev_bufferSize(
                                       CUDA_R_32F,
                                       workspaceInBytesOnDevice,
                                       workspaceInBytesOnHost);
-#else
-    return CUSOLVER_STATUS_SUCCESS;
-#endif
 }
 
 cusolverStatus_t cusolverDnTgeev_bufferSize(
@@ -1010,7 +1007,6 @@ cusolverStatus_t cusolverDnTgeev_bufferSize(
     size_t* workspaceInBytesOnHost)
 {
     SCOPED_NVTX_RANGE();
-#ifdef XGEEV_EXISTS //Temporary solution to compile without NVIDIA CUDA 12.6.85
     return cusolverDnXgeev_bufferSize(handle, params, jobvl, jobvr, n,
                                       CUDA_R_64F, A, lda,
                                       CUDA_R_64F, W,
@@ -1019,9 +1015,6 @@ cusolverStatus_t cusolverDnTgeev_bufferSize(
                                       CUDA_R_64F,
                                       workspaceInBytesOnDevice,
                                       workspaceInBytesOnHost);
-#else
-    return CUSOLVER_STATUS_SUCCESS;
-#endif
 }
 
 cusolverStatus_t cusolverDnTgeev_bufferSize(
@@ -1038,7 +1031,6 @@ cusolverStatus_t cusolverDnTgeev_bufferSize(
     size_t* workspaceInBytesOnHost)
 {
     SCOPED_NVTX_RANGE();
-#ifdef XGEEV_EXISTS //Temporary solution to compile without NVIDIA CUDA 12.6.85
     return cusolverDnXgeev_bufferSize(handle, params, jobvl, jobvr, n,
                                       CUDA_C_32F, reinterpret_cast<const cuComplex*>(A), lda,
                                       CUDA_C_32F, reinterpret_cast<const cuComplex*>(W),
@@ -1047,9 +1039,6 @@ cusolverStatus_t cusolverDnTgeev_bufferSize(
                                       CUDA_C_32F,
                                       workspaceInBytesOnDevice,
                                       workspaceInBytesOnHost);
-#else
-    return CUSOLVER_STATUS_SUCCESS;
-#endif
 }
 
 cusolverStatus_t cusolverDnTgeev_bufferSize(
@@ -1066,7 +1055,6 @@ cusolverStatus_t cusolverDnTgeev_bufferSize(
     size_t* workspaceInBytesOnHost)
 {
     SCOPED_NVTX_RANGE();
-#ifdef XGEEV_EXISTS //Temporary solution to compile without NVIDIA CUDA 12.6.85
     return cusolverDnXgeev_bufferSize(handle, params, jobvl, jobvr, n,
                                       CUDA_C_64F, reinterpret_cast<const cuDoubleComplex*>(A), lda,
                                       CUDA_C_64F, reinterpret_cast<const cuDoubleComplex*>(W),
@@ -1075,9 +1063,6 @@ cusolverStatus_t cusolverDnTgeev_bufferSize(
                                       CUDA_C_64F,
                                       workspaceInBytesOnDevice,
                                       workspaceInBytesOnHost);
-#else
-    return CUSOLVER_STATUS_SUCCESS;
-#endif
 }
 
 
@@ -1096,7 +1081,6 @@ cusolverStatus_t cusolverDnTgeev(
     int* info)
 {
     SCOPED_NVTX_RANGE();
-#ifdef XGEEV_EXSISTS //Temporary solution to compile without NVIDIA CUDA 12.6.85
     return cusolverDnXgeev(handle, params, jobvl, jobvr, n,
                            CUDA_R_32F, A, lda,
                            CUDA_R_32F, W,
@@ -1104,9 +1088,6 @@ cusolverStatus_t cusolverDnTgeev(
                            CUDA_R_32F, VR, ldvr,
                            CUDA_R_32F, bufferOnDevice, workspaceInBytesOnDevice,
                            bufferOnHost, workspaceInBytesOnHost, info);
-#else
-    return CUSOLVER_STATUS_SUCCESS;
-#endif
 }
 
 cusolverStatus_t cusolverDnTgeev(
@@ -1124,7 +1105,6 @@ cusolverStatus_t cusolverDnTgeev(
     int* info)
 {
     SCOPED_NVTX_RANGE();
-#ifdef XGEEV_EXISTS //Temporary solution to compile without NVIDIA CUDA 12.6.85
     return cusolverDnXgeev(handle, params, jobvl, jobvr, n,
                            CUDA_R_64F, A, lda,
                            CUDA_R_64F, W,
@@ -1132,9 +1112,6 @@ cusolverStatus_t cusolverDnTgeev(
                            CUDA_R_64F, VR, ldvr,
                            CUDA_R_64F, bufferOnDevice, workspaceInBytesOnDevice,
                            bufferOnHost, workspaceInBytesOnHost, info);
-#else
-    return CUSOLVER_STATUS_SUCCESS;
-#endif
 }
 
 cusolverStatus_t cusolverDnTgeev(
@@ -1152,7 +1129,6 @@ cusolverStatus_t cusolverDnTgeev(
     int* info)
 {
     SCOPED_NVTX_RANGE();
-#ifdef XGEEV_EXISTS //Temporary solution to compile without NVIDIA CUDA 12.6.85
     return cusolverDnXgeev(handle, params, jobvl, jobvr, n,
                            CUDA_C_32F, reinterpret_cast<cuComplex*>(A), lda,
                            CUDA_C_32F, reinterpret_cast<cuComplex*>(W),
@@ -1160,9 +1136,6 @@ cusolverStatus_t cusolverDnTgeev(
                            CUDA_C_32F, reinterpret_cast<cuComplex*>(VR), ldvr,
                            CUDA_C_32F, bufferOnDevice, workspaceInBytesOnDevice,
                            bufferOnHost, workspaceInBytesOnHost, info);
-#else
-    return CUSOLVER_STATUS_SUCCESS;
-#endif
 }
 
 cusolverStatus_t cusolverDnTgeev(
@@ -1180,7 +1153,6 @@ cusolverStatus_t cusolverDnTgeev(
     int* info)
 {
     SCOPED_NVTX_RANGE();
-#ifdef XGEEV_EXISTS //Temporary solution to compile without NVIDIA CUDA 12.6.85
     return cusolverDnXgeev(handle, params, jobvl, jobvr, n,
                            CUDA_C_64F, reinterpret_cast<cuDoubleComplex*>(A), lda,
                            CUDA_C_64F, reinterpret_cast<cuDoubleComplex*>(W),
@@ -1188,11 +1160,8 @@ cusolverStatus_t cusolverDnTgeev(
                            CUDA_C_64F, reinterpret_cast<cuDoubleComplex*>(VR), ldvr,
                            CUDA_C_64F, bufferOnDevice, workspaceInBytesOnDevice,
                            bufferOnHost, workspaceInBytesOnHost, info);
-#else
-    return CUSOLVER_STATUS_SUCCESS;
-#endif
 }
-
+#endif
 
 }
 }
