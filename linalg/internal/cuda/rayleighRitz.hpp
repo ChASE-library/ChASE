@@ -361,6 +361,9 @@ namespace cuda
 
         //Compute the eigenpairs of the non-hermitian rayleigh quotient	
         //std::cout << "Compute the eigenpairs of the non-hermitian rayleigh quotient" << std::endl;
+#ifndef XGEEV_EXISTS
+	std::cout << "WARNING! XGeev not found in cuda. Returns zero..." << std::endl;
+#endif
         CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTgeev(cusolver_handle,
                         params,
                         CUSOLVER_EIG_MODE_NOVECTOR,
@@ -426,8 +429,8 @@ namespace cuda
         }
 
         std::copy(sorted_ritzv.begin(), sorted_ritzv.end(), ptx);
-
-        ritzv.H2D();
+        
+	ritzv.H2D();
 
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(cublas_handle, 
                                     CUBLAS_OP_N, 
