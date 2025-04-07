@@ -54,13 +54,16 @@ int main(int argc, char** argv){
 	#else
 		auto single = chase::Impl::ChASECPU<T,MatrixType>(N, nev, nex, H, V.data(), N, Lambda.data());
 	#endif	
-    	
+	
 	auto& config = single.GetConfig();
     	config.SetTol(1e-10);
-    	config.SetDeg(20);
-    	config.SetOpt(true);
+    	config.SetDeg(atoi(argv[5]));
+	if(argv[6][0] == 'Y'){
+    		config.SetOpt(true);
+	}else{
+    		config.SetOpt(false);
+	}
         config.SetMaxIter(50);
-	config.SetNumLanczos(4);
 
 	PerformanceDecoratorChase<T> performanceDecorator(&single);
 
