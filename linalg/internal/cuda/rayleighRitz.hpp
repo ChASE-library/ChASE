@@ -234,12 +234,13 @@ namespace cuda
 
         T *ritzv_complex = A->data() + n * n;
 
-	    //Allocating workspace memory
+#ifdef XGEEV_EXISTS
+        //Allocating workspace memory for Xgeev
         if(d_workspace == nullptr || h_workspace == nullptr) //To update once Xgeev is plugged in
         {
 	    std::size_t temp_d_lwork = 0;
 	    std::size_t temp_h_lwork = 0;
-
+	   
 	    CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTgeev_bufferSize(
                                                             cusolver_handle,
                                                             params,
@@ -267,10 +268,11 @@ namespace cuda
 		h_workspace = new T[h_lwork]();
 	    }
         }
+#endif
 
         T One   = T(1.0);
         T Zero  = T(0.0);
-	    T alpha = T(2.0);
+	T alpha = T(2.0);
         T NegOne = T(-1.0);
         T NegativeTwo = T(-2.0);
 
@@ -304,7 +306,7 @@ namespace cuda
                                         &One, 
                                         V1.data() + offset * V1.ld(), V1.ld(), V2.data() + offset * V2.ld(), V2.ld(), &Zero, W, n));  //A = Qr^* T
 
-	    CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(cublas_handle, 
+	CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(cublas_handle, 
                                         CUBLAS_OP_C, 
                                         CUBLAS_OP_N, 
                                         n, 
@@ -359,9 +361,13 @@ namespace cuda
 
     	chase::linalg::internal::cuda::chase_scale_rows_matrix(A->data(),n,n,n,diag.data(),usedStream);
 
-        //Compute the eigenpairs of the non-hermitian rayleigh quotient	
+	chase::Base<T> * ptx = ritzv.cpu_data() + offset;
+
+#ifdef XGEEV_EXISTS
+        
+        //Compute the eigenpairs of the non-hermitian rayleigh quotient on GPU	
         //std::cout << "Compute the eigenpairs of the non-hermitian rayleigh quotient" << std::endl;
-        CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTgeev(cusolver_handle,
+	CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTgeev(cusolver_handle,
                         params,
                         CUSOLVER_EIG_MODE_NOVECTOR,
                         CUSOLVER_EIG_MODE_VECTOR,
@@ -388,13 +394,12 @@ namespace cuda
         if(info != 0)
         {
             throw std::runtime_error("cusolver HEEVD failed in RayleighRitz");
-        }       
-
-        //std::cout << "Copying the complex ritz values back to cpu" << std::endl;
+        }
+        
+	//std::cout << "Copying the complex ritz values back to cpu" << std::endl;
         //thrust::device_vector<int> indices(n); //Does not compile, returns unimplemented on this system...
-        chase::Base<T> *ptx = ritzv.cpu_data() + offset;
         if constexpr (std::is_same<T, std::complex<chase::Base<T>>>::value)
-        {
+	{
             cudaMemcpy(ritzvs_cmplex_cpu.data(), ritzv_complex, n * sizeof(T), cudaMemcpyDeviceToHost);
             for(auto i = 0; i < n; i++){
                 ptx[i] = std::real(ritzvs_cmplex_cpu[i]);
@@ -408,6 +413,24 @@ namespace cuda
                                         cudaMemcpyDeviceToHost));
         }
 
+#else	
+#ifdef CHASE_OUTPUT
+	std::cout << "WARNING! XGeev not found in cuda. Compute Geev on CPU with Lapack..." << std::endl;
+#endif
+	std::vector<chase::Base<T>> ptx_imag = std::vector<chase::Base<T>>(n,chase::Base<T>(0.0));
+
+	A->allocate_cpu_data();
+
+	A->D2H();
+
+	T * W_cpu = A->cpu_data() + 2*n*n;
+	
+	//Compute the eigenpairs of the non-hermitian rayleigh quotient on the CPU
+        lapackpp::t_geev(LAPACK_COL_MAJOR, 'V', n, A->cpu_data(), n, ptx, ptx_imag.data(), W_cpu, n);
+
+	A->H2D();
+#endif
+
         std::vector<std::size_t> indices(n);
         std::iota(indices.begin(), indices.end(), 0); // Fill with 0, 1, ..., n-1
         std::sort(indices.begin(), indices.end(),
@@ -419,7 +442,7 @@ namespace cuda
         
         for (std::size_t i = 0; i < n; ++i) {
             sorted_ritzv[i] = ptx[indices[i]];
-                CHECK_CUDA_ERROR(cudaMemcpy(d_sorted_W + i * n, 
+            CHECK_CUDA_ERROR(cudaMemcpy(d_sorted_W + i * n, 
                                         W + indices[i] * n, 
                                         n * sizeof(T),
                                         cudaMemcpyDeviceToDevice));
@@ -427,7 +450,7 @@ namespace cuda
 
         std::copy(sorted_ritzv.begin(), sorted_ritzv.end(), ptx);
 
-        ritzv.H2D();
+	ritzv.H2D();
 
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(cublas_handle, 
                                     CUBLAS_OP_N, 
@@ -445,8 +468,6 @@ namespace cuda
                                     V2.ld()));
                                   
     } 
-
-
 
 }
 }

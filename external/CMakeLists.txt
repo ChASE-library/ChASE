@@ -53,9 +53,14 @@ else()
     message(STATUS "No ScaLAPACK is detected.")
 endif()
 
-find_package(CUDAToolkit)	  
-
+find_package(CUDAToolkit)
 if(CUDAToolkit_FOUND)
+	#  if(${CUDAToolkit_VERSION} VERSION_LESS 12.6.85)
+	#message(WARNING "CUDA VERSION = " ${CUDAToolkit_VERSION} " < 12.6.85! Xgeev kernel is not in this CUDA version. ChASE GPU will not work for Quasi-Hermitian problems.")
+	#else()
+	#target_compile_definitions( chase_algorithm  INTERFACE "-DXGEEV_EXISTS" )
+	#message(STATUS "CUDA VERSION = " ${CUDAToolkit_VERSION} " >= 12.6.85. Xgeev kernel exists. ChASE GPU will work for Quasi-Hermitian problems.")
+	#endif()
   add_library(cublaspp INTERFACE)
   target_include_directories(cublaspp INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/cublaspp>
@@ -71,6 +76,14 @@ if(CUDAToolkit_FOUND)
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>" 
   )
   target_link_libraries(cusolverpp INTERFACE CUDA::cusolver CUDA::cudart)
+
+  if(${CUDAToolkit_VERSION} VERSION_LESS 12.6.85)
+    message(WARNING "CUDA VERSION = " ${CUDAToolkit_VERSION} " < 12.6.85! Xgeev kernel is not in this CUDA version. ChASE GPU will not work for Quasi-Hermitian problems.")
+  else()
+    target_compile_definitions( cusolverpp  INTERFACE "-DXGEEV_EXISTS" )
+    message(STATUS "CUDA VERSION = " ${CUDAToolkit_VERSION} " >= 12.6.85. Xgeev kernel exists. ChASE GPU will work for Quasi-Hermitian problems.")
+  endif()
+
 endif()
 
 install(TARGETS blaspp

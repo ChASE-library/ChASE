@@ -75,7 +75,7 @@ int main(int argc, char** argv){
 		H->allocate_cpu_data();
 	#endif
 
-	H->readFromBinaryFile("./BSE_matrices/cdouble_random_BSE.bin");
+	H->readFromBinaryFile("../tests/linalg/internal/BSE_matrices/cdouble_random_BSE.bin");
 	//H->readFromBinaryFile("./BSE_matrices/cdouble_tiny_random_BSE.bin");
 	//H->readFromBinaryFile("../data/2x2x2_Silicon_QuasiHermitian.bin");
 	

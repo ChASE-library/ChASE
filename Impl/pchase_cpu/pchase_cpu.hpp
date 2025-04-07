@@ -114,6 +114,9 @@ public:
         coords_ = Hmat_->getMpiGrid()->get_coords();
         dims_ = Hmat_->getMpiGrid()->get_dims();
 
+	is_sym_ = true;
+	is_pseudoHerm_ = false;
+
     }
     /**
      * @brief Deleted copy constructor.
