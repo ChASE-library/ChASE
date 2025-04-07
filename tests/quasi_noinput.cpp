@@ -53,6 +53,7 @@ void subtract(T * data1, T* data2, size_t m, size_t n){
 
 int main(int argc, char** argv){
 
+/*
 	#ifdef HAS_CUDA
 		std::cout << "================= ChASE GPU mode ====================" << std::endl;
 	#else
@@ -62,12 +63,12 @@ int main(int argc, char** argv){
 	std::cout << "\n-----------------------------------------------------" << std::endl;
 	std::cout << "                 Reading matrix files                  " << std::endl;
 	std::cout << "-----------------------------------------------------\n" << std::endl;
-
+*/
 	// ============= ChASE READ Matrix ============ //
 	
-	size_t k = 100;
-	//size_t k = 1472;
-	size_t N = 2*k, nev = 20, nex = 20; 
+	//size_t k = 100;
+	size_t k = 750;
+	size_t N = 2*k, nev = 150, nex = 75; 
     
 	auto H  = new MatrixType(N,N);
 
@@ -75,27 +76,10 @@ int main(int argc, char** argv){
 		H->allocate_cpu_data();
 	#endif
 
-	H->readFromBinaryFile("../tests/linalg/internal/BSE_matrices/cdouble_random_BSE.bin");
+	//H->readFromBinaryFile("../tests/linalg/internal/BSE_matrices/cdouble_random_BSE.bin");
 	//H->readFromBinaryFile("./BSE_matrices/cdouble_tiny_random_BSE.bin");
-	//H->readFromBinaryFile("../data/2x2x2_Silicon_QuasiHermitian.bin");
-	
-	#ifdef HAS_CUDA	
-		std::cout << "Second element of first column " << H->cpu_data()[1] << std::endl;
-	#else
-		std::cout << "Second element of first column " << H->data()[1] << std::endl;
-	#endif
-/*
-	auto eigsl_H  = new chase::matrix::Matrix<T,ARCH>(N,1);
-	eigsl_H->readFromBinaryFile("../data/eigs_cdouble_random_BSE.bin");
-
-	std::cout << "Eigenvalues are : " << std::endl;
-	for(auto i = 0; i < nev; i++){
-		std::cout << std::real(eigsl_H->data()[i]) << " ";
-	}
-*/
-	//chase::linalg::internal::cpu::flipLowerHalfMatrixSign(N,N,H->data(),N);
-
-	std::cout << std::endl;
+	//H->readFromBinaryFile("../../../Data/Matrix/2x2x2_Silicon_QuasiHermitian.bin");
+	H->readFromBinaryFile("../../../Data/Matrix/cdouble_random_1500.bin");
 
 	std::vector<T> V(N*(nev+nex));
 	auto Lambda = std::vector<chase::Base<T>>(nev + nex);
@@ -105,7 +89,7 @@ int main(int argc, char** argv){
 	#else
 		auto single = chase::Impl::ChASECPU<T,MatrixType>(N, nev, nex, H, V.data(), N, Lambda.data());
 	#endif	
-
+/*
 	std::cout << "\n-----------------------------------------------------" << std::endl;
 	std::cout << "                      Matrix info                      " << std::endl;
 	std::cout << "-----------------------------------------------------\n" << std::endl;
@@ -121,7 +105,7 @@ int main(int argc, char** argv){
 	std::cout << "\n-----------------------------------------------------" << std::endl;
 	std::cout << "                     Chase Solver                      " << std::endl;
 	std::cout << "-----------------------------------------------------\n" << std::endl;
-
+*/
     	auto& config = single.GetConfig();
     	//Tolerance for Eigenpair convergence
     	config.SetTol(1e-10);
@@ -141,7 +125,7 @@ int main(int argc, char** argv){
         //Output
 
 	performanceDecorator.GetPerfData().print();
-           
+/*           
         Base<T>* resid = single.GetResid();
         std::cout << "Finished Problem #1"
         << "\n";
@@ -161,5 +145,6 @@ int main(int argc, char** argv){
         std::cout << "\n\n\n";
 
 	std::cout << "\n" << std::endl;
+*/
 	delete H;
 }

@@ -80,6 +80,22 @@ add_executable( "chase_driver_gpu" tests/noinput.cpp )
 target_link_libraries(chase_driver_gpu chase_gpu)
 endif()
 
+add_executable( "herm_chase_run" tests/herm_run.cpp )
+target_link_libraries(herm_chase_run chase_cpu)
+
+if(TARGET chase_gpu)
+add_executable( "herm_chase_run_gpu" tests/herm_run.cpp )
+target_link_libraries(herm_chase_run_gpu chase_gpu)
+endif()
+
+add_executable( "quasi_chase_run" tests/quasi_run.cpp )
+target_link_libraries(quasi_chase_run chase_cpu)
+
+if(TARGET chase_gpu)
+add_executable( "quasi_chase_run_gpu" tests/quasi_run.cpp )
+target_link_libraries(quasi_chase_run_gpu chase_gpu)
+endif()
+
 add_executable( "quasi_chase_driver" tests/quasi_noinput.cpp )
 target_link_libraries(quasi_chase_driver chase_cpu)
 
