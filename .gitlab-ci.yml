@@ -121,7 +121,7 @@ upload:
     - echo $SYSTEMNAME  
     - which git
     - wget https://gitlab.jsc.fz-juelich.de/chase/chase-library/ChASE/badges/58-implement-distributed-memory-chase-extension-for-bse-matrix/coverage.svg
-    - git clone https://oauth2:e5GW-Ayd5q97k7CgCfBu@gitlab.jsc.fz-juelich.de/chase/chase-library/ChASE.git
+    - git clone https://oauth2:89tfQQy8xV3XdV6-Vi88@gitlab.jsc.fz-juelich.de/chase/chase-library/ChASE.git
     - cd ChASE
     - git checkout gh-pages
     - mkdir -p _images/coverage
