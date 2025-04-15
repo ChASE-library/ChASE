@@ -14,25 +14,46 @@
 #include "linalg/distMatrix/distMultiVector.hpp"
 #include "linalg/internal/nccl/symOrHerm.hpp"
 
+// Global static resources that persist across all test suites
+namespace {
+    bool resources_initialized = false;
+    cublasHandle_t cublasH;
+    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid;
+}
+
 template <typename T>
 class SymOrHermGPUDistTest : public ::testing::Test {
 protected:
     void SetUp() override {
         MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
         MPI_Comm_size(MPI_COMM_WORLD, &world_size);  
-        mpi_grid = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(2, 2, MPI_COMM_WORLD);
-        CHECK_CUBLAS_ERROR(cublasCreate(&cublasH_));                 
+        ASSERT_EQ(world_size, 4);  // Ensure we're running with 4 processes
+        
+        if (!resources_initialized) {
+            mpi_grid = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(2, 2, MPI_COMM_WORLD);
+            CHECK_CUBLAS_ERROR(cublasCreate(&cublasH));
+            resources_initialized = true;
+        }
     }
 
     void TearDown() override {
-        if (cublasH_)
-            CHECK_CUBLAS_ERROR(cublasDestroy(cublasH_));        
+        // Don't free resources here - they will be reused
     }
 
     int world_rank;
     int world_size;    
-    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid;
-    cublasHandle_t cublasH_;
+};
+
+// Add a global test environment to handle resource cleanup at program exit
+class ResourceCleanupEnvironment : public ::testing::Environment {
+public:
+    ~ResourceCleanupEnvironment() override {
+        if (resources_initialized) {
+            CHECK_CUBLAS_ERROR(cublasDestroy(cublasH));
+            mpi_grid.reset();
+            resources_initialized = false;
+        }
+    }
 };
 
 using TestTypes = ::testing::Types<float, double, std::complex<float>, std::complex<double>>;
@@ -41,7 +62,6 @@ TYPED_TEST_SUITE(SymOrHermGPUDistTest, TestTypes);
 TYPED_TEST(SymOrHermGPUDistTest, UpperTriangularMatrix) {
     using T = TypeParam;
     const std::size_t N = 5;
-    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
     
     std::vector<T> U(N * N);
     // Initialize values explicitly
@@ -51,7 +71,7 @@ TYPED_TEST(SymOrHermGPUDistTest, UpperTriangularMatrix) {
     U[15] = static_cast<T>(0); U[16] = static_cast<T>(0); U[17] = static_cast<T>(0);  U[18] = static_cast<T>(13); U[19] = static_cast<T>(14);
     U[20] = static_cast<T>(0); U[21] = static_cast<T>(0); U[22] = static_cast<T>(0);  U[23] = static_cast<T>(0);  U[24] = static_cast<T>(15);
 
-    auto H = chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU>(N, N, this->mpi_grid);
+    auto H = chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU>(N, N, mpi_grid);
     H.allocate_cpu_data();
     std::size_t *goffs = H.g_offs(); 
 
@@ -61,12 +81,12 @@ TYPED_TEST(SymOrHermGPUDistTest, UpperTriangularMatrix) {
         }
     }
     H.H2D();
-    bool is_sym = chase::linalg::internal::cuda_nccl::checkSymmetryEasy(this->cublasH_, H); 
+    bool is_sym = chase::linalg::internal::cuda_nccl::checkSymmetryEasy(cublasH, H); 
     EXPECT_FALSE(is_sym);
 #ifdef HAS_SCALAPACK
     chase::linalg::internal::cuda_nccl::symOrHermMatrix('U', H);
     H.H2D();
-    is_sym = chase::linalg::internal::cuda_nccl::checkSymmetryEasy(this->cublasH_, H);    
+    is_sym = chase::linalg::internal::cuda_nccl::checkSymmetryEasy(cublasH, H);    
     EXPECT_TRUE(is_sym);
 #endif    
 }
@@ -74,7 +94,6 @@ TYPED_TEST(SymOrHermGPUDistTest, UpperTriangularMatrix) {
 TYPED_TEST(SymOrHermGPUDistTest, LowerTriangularMatrix) {
     using T = TypeParam;
     const std::size_t N = 5;
-    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
     
     std::vector<T> U(N * N);
     // Initialize values explicitly
@@ -84,7 +103,7 @@ TYPED_TEST(SymOrHermGPUDistTest, LowerTriangularMatrix) {
     U[15] = static_cast<T>(4); U[16] = static_cast<T>(8); U[17] = static_cast<T>(11); U[18] = static_cast<T>(13); U[19] = static_cast<T>(0);
     U[20] = static_cast<T>(5); U[21] = static_cast<T>(9); U[22] = static_cast<T>(12); U[23] = static_cast<T>(14); U[24] = static_cast<T>(15);
 
-    auto H = chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU>(N, N, this->mpi_grid);
+    auto H = chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU>(N, N, mpi_grid);
     H.allocate_cpu_data();
     std::size_t *goffs = H.g_offs(); 
 
@@ -95,12 +114,15 @@ TYPED_TEST(SymOrHermGPUDistTest, LowerTriangularMatrix) {
     }
     H.H2D();
 
-    bool is_sym = chase::linalg::internal::cuda_nccl::checkSymmetryEasy(this->cublasH_, H); 
+    bool is_sym = chase::linalg::internal::cuda_nccl::checkSymmetryEasy(cublasH, H); 
     EXPECT_FALSE(is_sym);
 #ifdef HAS_SCALAPACK
     chase::linalg::internal::cuda_nccl::symOrHermMatrix('L', H);
     H.H2D();
-    is_sym = chase::linalg::internal::cuda_nccl::checkSymmetryEasy(this->cublasH_, H);    
+    is_sym = chase::linalg::internal::cuda_nccl::checkSymmetryEasy(cublasH, H);    
     EXPECT_TRUE(is_sym);
 #endif    
 }
+
+// Add this at the end of the file, before main()
+::testing::Environment* const resource_env = ::testing::AddGlobalTestEnvironment(new ResourceCleanupEnvironment);
