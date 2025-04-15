@@ -6,7 +6,7 @@ stages:
   - build
   - test
   - coverage
-  #- upload 
+  - upload 
 
 build_cpu:
   stage: build 
@@ -105,4 +105,28 @@ coverage:
     - lcov --capture --directory ./build_gpu --output-file coverage.info
     - lcov --summary coverage.info
 
+upload:
+  stage: upload
+  dependencies:
+    - coverage  
+  tags: 
+    - juwels_booster
+    - jacamar
+    - login
+    - shell  
+  id_tokens:
+    SITE_ID_TOKEN:
+      aud: https://gitlab.jsc.fz-juelich.de    
+  script:
+    - echo $SYSTEMNAME  
+    - which git
+    - wget https://gitlab.jsc.fz-juelich.de/chase/chase-library/ChASE/badges/58-implement-distributed-memory-chase-extension-for-bse-matrix/coverage.svg
+    - git clone https://oauth2:e5GW-Ayd5q97k7CgCfBu@gitlab.jsc.fz-juelich.de/chase/chase-library/ChASE.git
+    - cd ChASE
+    - git checkout gh-pages
+    - mkdir -p _images/coverage
+    - mv ../coverage.svg _images/coverage
+    - git add _images/coverage/coverage.svg
+    - git commit -m "Update coverage"
+    - git push origin gh-pages  # Push to the public branch for GitHub Pages
 
