@@ -46,7 +46,7 @@ window.gon={};
 
 
 <meta name="csrf-param" content="authenticity_token" />
-<meta name="csrf-token" content="1YRaRfuTVwXET3CT_p_5rAqfelJRqXsJLdpDPAd-SeFj98ZuYuuSnJmvoIXl3gs4XCR63sAFv3Nu6MOECoFuxQ" />
+<meta name="csrf-token" content="uei7Tw9bVDzw9Ck8E79_T4FiddlowdhF7qL8nc-Thm5tzrOYxhzDoxInBwiRkGObhmh0SCHRlAFW-qkjhj2FRg" />
 <meta name="csp-nonce" />
 <meta name="action-cable-url" content="/-/cable" />
 <link href="/-/manifest.json" rel="manifest">
@@ -120,7 +120,7 @@ JSC login service
 
 </span>
 
-</button><input type="hidden" name="authenticity_token" value="AD9MTq0_le0lOPbXyTtGgKlUfKpgQmpP8KNGBntfoAy2TNBlNEdQdHjYJsHSerQU_-98JvHurjWzkca-dqCHKA" autocomplete="off" /></form>
+</button><input type="hidden" name="authenticity_token" value="NElnnA4MvG8k1D3jovWJ5tMH8CysNiwsQZcHwKeSlMfgb29Lx0sr8MYHE9cg2pUy1A3xveUmYGj5z1J-7jyX7w" autocomplete="off" /></form>
 <div class="gl-form-checkbox custom-control custom-checkbox">
 <input type="checkbox" name="js-remember-me-omniauth" id="js-remember-me-omniauth" class="custom-control-input" />
 <label class="custom-control-label" for="js-remember-me-omniauth"><span>Remember me
