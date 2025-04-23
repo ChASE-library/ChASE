@@ -16,6 +16,7 @@ ChASE is written in C++ using the modern software engineering concepts that favo
 - **Degree optimization:** For a fixed accuracy level, ChASE can optimize the degree of the Chebyshev polynomial filter so as to minimize the number of FLOPs necessary to reach convergence.
 - **Precision:** ChASE is also templated to work in *Single Precision* (SP) or *Double Precision* (DP).
 
+
 ## Builds of ChASE
 
 ChASE supports different builds for different systems with different architectures:
