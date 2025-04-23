@@ -6,24 +6,39 @@ stages:
   - build
   - test
   - coverage
-  #- upload 
+  # - upload
+
+.default_source_changes: &only_source_changes
+  rules:
+    - changes:
+        - Impl/**/*.{c,cc,cpp,h,hpp,cu,cuh,inc}
+        - algorithm/**/*.{c,cc,cpp,h,hpp,cu,cuh,inc}
+        - grid/**/*.{c,cc,cpp,h,hpp,cu,cuh,inc}
+        - external/**/*.{c,cc,cpp,h,hpp,cu,cuh,inc}
+        - linalg/**/*.{c,cc,cpp,h,hpp,cu,cuh,inc}
+        - tests/**/*.{c,cc,cpp,h,hpp,cu,cuh,inc}
+        - CMakeLists.txt
+        - cmake/**/*.{cmake}
+        - .gitlab-ci.yml
+    - when: never
 
 build_cpu:
-  stage: build 
+  stage: build
   tags: [ public-docker ]
   image:
     name: xinzhewu/hpc-gcc12-openmpi5-openblas-scalapack
+  <<: *only_source_changes
   script:
     - cmake --version
     - mkdir -p build_cpu
     - cd build_cpu
-    - env CFLAGS="$CFLAGS --coverage" CXXFLAGS="$CXXFLAGS --coverage" FFLAGS="$FFLAGS --coverage" cmake -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_Fortran_COMPILER=mpifort -DCHASE_ENABLE_MIXED_PRECISION=ON -DENABLE_TESTS=ON -DMPI_RUN_ARGS="--allow-run-as-root" .. -DCMAKE_EXE_LINKER_FLAGS="-lgfortran -Wl,--copy-dt-needed-entries --coverage"    
+    - env CFLAGS="$CFLAGS --coverage" CXXFLAGS="$CXXFLAGS --coverage" FFLAGS="$FFLAGS --coverage" cmake -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_Fortran_COMPILER=mpifort -DCHASE_ENABLE_MIXED_PRECISION=ON -DENABLE_TESTS=ON -DMPI_RUN_ARGS="--allow-run-as-root" .. -DCMAKE_EXE_LINKER_FLAGS="-lgfortran -Wl,--copy-dt-needed-entries --coverage"
     - make VERBOSE=1 -j4
   artifacts:
     paths:
-    - build_cpu/Makefile
-    - build_cpu/CTestTestfile.cmake
-    - build_cpu/tests
+      - build_cpu/Makefile
+      - build_cpu/CTestTestfile.cmake
+      - build_cpu/tests
     expire_in: 1 week
 
 test_cpu:
@@ -33,26 +48,27 @@ test_cpu:
   tags: [ public-docker ]
   image:
     name: xinzhewu/hpc-gcc12-openmpi5-openblas-scalapack
+  <<: *only_source_changes
   script:
     - cd build_cpu
     - CTEST_OUTPUT_ON_FAILURE=1 make test
     - rm -rf _deps
   artifacts:
     paths:
-      - build_cpu/*    
+      - build_cpu/*
     expire_in: 1 week
-      
+
 build_gpu:
-  stage: build   
-  tags: 
+  stage: build
+  tags:
     - juwels_booster
     - jacamar
     - login
     - shell
- 
   id_tokens:
     SITE_ID_TOKEN:
-      aud: https://gitlab.jsc.fz-juelich.de    
+      aud: https://gitlab.jsc.fz-juelich.de
+  <<: *only_source_changes
   script:
     - echo $SYSTEMNAME
     - module load Stages/2025 GCC/13.3.0 OpenMPI imkl CMake CUDA
@@ -63,30 +79,30 @@ build_gpu:
     - make VERBOSE=1 -j8
   artifacts:
     paths:
-    - build_gpu/Makefile
-    - build_gpu/CTestTestfile.cmake
-    - build_gpu/tests
+      - build_gpu/Makefile
+      - build_gpu/CTestTestfile.cmake
+      - build_gpu/tests
     expire_in: 1 week
 
 test_gpu:
   stage: test
   dependencies:
-    - build_gpu  
-  tags: 
+    - build_gpu
+  tags:
     - juwels_booster
     - jacamar
     - compute
-    - slurm  
-      
+    - slurm
   id_tokens:
     SITE_ID_TOKEN:
-      aud: https://gitlab.jsc.fz-juelich.de    
+      aud: https://gitlab.jsc.fz-juelich.de
+  <<: *only_source_changes
   script:
     - echo $SYSTEMNAME
     - module load Stages/2025 GCC/13.3.0 OpenMPI imkl CMake CUDA
-    - export CUDA_VISIBLE_DEVICES=0,1,2,3  
+    - export CUDA_VISIBLE_DEVICES=0,1,2,3
     - cd build_gpu
-    - CTEST_OUTPUT_ON_FAILURE=1 make test     
+    - CTEST_OUTPUT_ON_FAILURE=1 make test
     - rm -rf _deps
   artifacts:
     paths:
@@ -94,39 +110,14 @@ test_gpu:
     expire_in: 1 week
 
 coverage:
-  stage: coverage   
+  stage: coverage
   coverage: '/lines......: (\d+[.]\d+)/'
   dependencies:
     - test_gpu
   tags: [ public-docker ]
   image:
-    name: xinzhewu/lcov-gcc13.3.0          
+    name: xinzhewu/lcov-gcc13.3.0
+  <<: *only_source_changes
   script:
     - lcov --capture --directory ./build_gpu --output-file coverage.info
     - lcov --summary coverage.info
-
-#upload:
-#  stage: upload
-#  dependencies:
-#    - coverage  
-#  tags: 
-#    - juwels_booster
-#    - jacamar
-#    - login
-#    - shell  
-#  id_tokens:
-#    SITE_ID_TOKEN:
-#      aud: https://gitlab.jsc.fz-juelich.de    
-#  script:
-#    - echo $SYSTEMNAME  
-#    - which git
-#    - wget https://gitlab.jsc.fz-juelich.de/chase/chase-library/ChASE/badges/58-implement-distributed-memory-chase-extension-for-bse-matrix/coverage.svg
-#    - git clone https://oauth2:89tfQQy8xV3XdV6-Vi88@gitlab.jsc.fz-juelich.de/chase/chase-library/ChASE.git
-#    - cd ChASE
-#    - git checkout gh-pages
-#    - mkdir -p _images/coverage
-#    - mv ../coverage.svg _images/coverage
-#    - git add _images/coverage/coverage.svg
-#    - git commit -m "Update coverage"
-#    - git push origin gh-pages  # Push to the public branch for GitHub Pages
-
