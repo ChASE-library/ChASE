@@ -50,10 +50,6 @@ int main(int argc, char** argv)
     
     size_t N = 2*k, nev = 2, nex = 2;
     
-    //H->readFromBinaryFile("./tests/linalg/internal/BSE_matrices/cdouble_tiny_random_BSE.bin");
-    //H->readFromBinaryFile("./BSE_matrices/cdouble_tiny_random_BSE.bin");
-    //H->readFromBinaryFile("../data/2x2x2_Silicon_QuasiHermitian.bin");
-
     int *dims = mpi_grid.get()->get_dims();
     int *coords = mpi_grid.get()->get_coords();
 
@@ -70,6 +66,7 @@ int main(int argc, char** argv)
 		std::cout << "----------------------------------------------" << std::endl;
 		std::cout << "My rank is = " << world_rank << std::endl;
 		std::cout << "Coords     = " << coords[0] << " x " << coords[1] << std::endl;
+		std::cout << "Offsets    = " << Hmat.g_offs()[0] << " x " << Hmat.g_offs()[1] << std::endl;
 		std::cout << "My data    = " << std::endl;
 		for(auto i = 0; i < Hmat.l_rows(); i++){
 			std::cout << "["; 

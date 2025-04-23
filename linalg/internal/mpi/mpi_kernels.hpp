@@ -115,6 +115,9 @@ namespace internal
         template<typename T>
         static void shiftDiagonal(chase::distMatrix::BlockCyclicMatrix<T, chase::platform::CPU>& H, T shift);
         
+	template<typename T>
+        static void flipLowerHalfMatrixSign(chase::distMatrix::BlockBlockMatrix<T, chase::platform::CPU>& H);   
+        
         template<typename MatrixType>
         static bool checkSymmetryEasy(MatrixType& H); 
 

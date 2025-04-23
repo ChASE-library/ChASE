@@ -5,4 +5,5 @@ setup_test_serial(QuasiHermitianRayleighRitzCPUTest quasi_hermitian_rayleighRitz
 setup_test_serial(ResidualsCPUTest residuals.cpp LIBRARIES chase_cpu)
 setup_test_serial(RayleighRitzCPUTest rayleighRitz.cpp LIBRARIES chase_cpu)
 setup_test_serial(SymOrHermCPUTest symOrHerm.cpp LIBRARIES chase_cpu)
+setup_test_serial(flipSignCPUTest flipSign.cpp LIBRARIES chase_cpu)
 

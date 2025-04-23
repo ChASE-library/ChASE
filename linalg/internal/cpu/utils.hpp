@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "external/blaspp/blaspp.hpp"
 #include "algorithm/types.hpp"
 #include <algorithm>
 
@@ -88,12 +89,11 @@ namespace cpu
     {
 	std::size_t half = m / 2;
 
+	T alpha = -T(1.0);
+
 	for(auto j = 0; j < n; j++)
 	{
-	   for(auto i = half; i < m; i++)
-	   {
-	   	A[j * lda + i] *= -1.0;
-	   }
+           chase::linalg::blaspp::t_scal(m-half, &alpha, A+half + j*lda, 1);
 	}
     }
     
@@ -113,14 +113,10 @@ namespace cpu
     void flipRightHalfMatrixSign(std::size_t m, std::size_t n, T *A, std::size_t lda)
     {
 	std::size_t half = n / 2;
+	
+	T alpha = -T(1.0);
 
-	for(auto j = half; j < n; j++)
-	{
-	   for(auto i = 0; i < m; i++)
-	   {
-	   	A[j*m + i] *= -1.0;
-	   }
-	}
+        chase::linalg::blaspp::t_scal(m*half, &alpha, A + half * lda, 1);
     }
 
 }
