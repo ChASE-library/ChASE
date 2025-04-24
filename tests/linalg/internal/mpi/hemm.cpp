@@ -46,7 +46,7 @@ TYPED_TEST(HEMMCPUDistTest, HEMMDistCorrectness) {
 
     T alpha = T(2.0);
     T beta = T(3.0);
-    std::size_t offset = 1;
+    std::size_t offset = 0;
     std::size_t subSize = 2;
 
     for(auto i = 0; i < H_.l_cols(); i++)

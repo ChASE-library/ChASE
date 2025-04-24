@@ -12,6 +12,7 @@
 #include "linalg/distMatrix/distMatrix.hpp"
 #include "linalg/distMatrix/distMultiVector.hpp"
 #include "linalg/internal/mpi/mpi_kernels.hpp"
+#include "linalg/internal/mpi/flipSign.hpp"
 #include "../typeTraits.hpp"
 
 namespace chase
@@ -100,6 +101,13 @@ namespace internal
             }
 
             // Perform the matrix multiplication using BLAS
+
+	    if constexpr (std::is_same<MatrixType,chase::distMatrix::QuasiHermitianBlockBlockMatrix<T>>::value){
+		
+		chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(input_multiVector);
+
+	    }
+
             chase::linalg::blaspp::t_gemm(CblasColMajor, 
                                           CblasConjTrans, 
                                           CblasNoTrans, 
@@ -122,6 +130,11 @@ namespace internal
                          chase::mpi::getMPI_Type<T>(), 
                          MPI_SUM, 
                          input_multiVector.getMpiGrid()->get_col_comm());                      
+	    
+	    if constexpr (std::is_same<MatrixType,chase::distMatrix::QuasiHermitianBlockBlockMatrix<T>>::value){
+	
+		chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(result_multiVector);
+	    }
         }
         else // InputCommType is CommunicatorType::column
         {
@@ -280,6 +293,12 @@ namespace internal
         
         if constexpr (ExtractCommType<InputMultiVectorType>::value == chase::distMultiVector::CommunicatorType::column)
         {
+	    if constexpr (std::is_same<MatrixType,chase::distMatrix::QuasiHermitianBlockBlockMatrix<T>>::value){
+		
+		chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(input_multiVector);
+
+	    }
+
             // Perform the matrix multiplication using BLAS
             chase::linalg::blaspp::t_gemm(CblasColMajor, 
                                           CblasConjTrans, 
@@ -303,6 +322,13 @@ namespace internal
                          chase::mpi::getMPI_Type<T>(), 
                          MPI_SUM, 
                          input_multiVector.getMpiGrid()->get_col_comm());                      
+
+
+	    if constexpr (std::is_same<MatrixType,chase::distMatrix::QuasiHermitianBlockBlockMatrix<T>>::value){
+		
+		chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(result_multiVector);
+
+	    }
         }
         else // InputCommType is CommunicatorType::column
         {
