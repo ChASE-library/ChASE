@@ -81,10 +81,23 @@ struct cpu_mpi
                         chase::Base<typename MatrixType::value_type>* ritzv,
                         chase::Base<typename MatrixType::value_type>* Tau,
                         chase::Base<typename MatrixType::value_type>* ritzV);
+    
+    template <typename T, typename InputMultiVectorType>
+    static void lanczos(std::size_t M, std::size_t numvec, chase::distMatrix::QuasiHermitianBlockBlockMatrix<T>& H,
+                        InputMultiVectorType& V,
+                        chase::Base<T>* upperb,
+                        chase::Base<T>* ritzv,
+                        chase::Base<T>* Tau,
+                        chase::Base<T>* ritzV);
 
     template <typename MatrixType, typename InputMultiVectorType>
     static void lanczos(std::size_t M, MatrixType& H, InputMultiVectorType& V,
                         chase::Base<typename MatrixType::value_type>* upperb);
+    
+    template <typename T, typename InputMultiVectorType>
+    static void lanczos(std::size_t M, chase::distMatrix::QuasiHermitianBlockBlockMatrix<T>& H,
+                        InputMultiVectorType& V,
+                        chase::Base<T>* upperb);
 
     template <typename MatrixType, typename InputMultiVectorType>
     static void rayleighRitz(
@@ -146,6 +159,7 @@ struct cpu_mpi
 #include "linalg/internal/mpi/cholqr.hpp"
 #include "linalg/internal/mpi/hemm.hpp"
 #include "linalg/internal/mpi/lanczos.hpp"
+#include "linalg/internal/mpi/quasi_hermitian_lanczos.hpp"
 #include "linalg/internal/mpi/rayleighRitz.hpp"
 #include "linalg/internal/mpi/residuals.hpp"
 #include "linalg/internal/mpi/shiftDiagonal.hpp"

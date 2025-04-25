@@ -132,6 +132,12 @@ namespace internal
                          input_multiVector.getMpiGrid()->get_col_comm());                      
 	    
 	    if constexpr (std::is_same<MatrixType,chase::distMatrix::QuasiHermitianBlockBlockMatrix<T>>::value){
+		
+		chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(input_multiVector);
+
+	    }
+	    
+	    if constexpr (std::is_same<MatrixType,chase::distMatrix::QuasiHermitianBlockBlockMatrix<T>>::value){
 	
 		chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(result_multiVector);
 	    }
@@ -322,7 +328,12 @@ namespace internal
                          chase::mpi::getMPI_Type<T>(), 
                          MPI_SUM, 
                          input_multiVector.getMpiGrid()->get_col_comm());                      
+	    
+	    if constexpr (std::is_same<MatrixType,chase::distMatrix::QuasiHermitianBlockBlockMatrix<T>>::value){
+		
+		chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(input_multiVector);
 
+	    }
 
 	    if constexpr (std::is_same<MatrixType,chase::distMatrix::QuasiHermitianBlockBlockMatrix<T>>::value){
 		

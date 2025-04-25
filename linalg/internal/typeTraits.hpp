@@ -200,7 +200,7 @@ struct RowMultiVectorType<chase::distMatrix::BlockBlockMatrix<T, Platform>>
 
 /**
  * @ingroup MultiVectorHelperTraits
- * @brief Specialization for `QuasiHemitianBlockBlockMatrix`.
+ * @brief Specialization for `QuasiHermitianBlockBlockMatrix`.
  * 
  * This specialization defines the row multi-vector type for the `QuasiHermitianBlockBlockMatrix` type, which corresponds to a
  * `DistMultiVector1D` with a row communicator.

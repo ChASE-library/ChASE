@@ -358,7 +358,7 @@ namespace cpu
 	{
 		beta[i] = blaspp::t_dot(N,v_1.data() + i * N, 1, Sv.data() + i * N, 1);
 	}
-	
+
 	for(auto i = 0; i < numvec; i++)
 	{
 		beta[i] = One / sqrt(beta[i]);
@@ -438,7 +438,7 @@ namespace cpu
 	    {
 		beta[i] = blaspp::t_dot(N,v_1.data() + i * N, 1, Sv.data() + i * N, 1);
 	    }
-	
+
 	    for(auto i = 0; i < numvec; i++)
 	    {
 		beta[i] = sqrt(beta[i]);
@@ -468,7 +468,6 @@ namespace cpu
             {
             	blaspp::t_scal(N, &beta[i], v_2.data() + i * N, 1);
             }
-        
         }        
 
         lapackpp::t_lacpy('A', N, numvec, v_1.data(), N, V, ldv);

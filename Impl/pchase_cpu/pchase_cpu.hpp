@@ -227,13 +227,13 @@ public:
                          chase::Base<T>* ritzv, chase::Base<T>* Tau, chase::Base<T>* ritzV) override
     {
         chase::linalg::internal::cpu_mpi::lanczos(M, 
-                                              numvec, 
-                                              *Hmat_, 
-                                              *V1_, 
-                                              upperb, 
-                                              ritzv, 
-                                              Tau, 
-                                              ritzV);
+              	                              numvec, 
+                       	                      *Hmat_, 
+                               	              *V1_, 
+                                       	      upperb, 
+                                      	      ritzv, 
+                                      	      Tau, 
+                                       	      ritzV);
     }
 
     void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc) override

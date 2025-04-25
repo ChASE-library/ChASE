@@ -75,12 +75,10 @@ void cpu_mpi::flipLowerHalfMatrixSign(chase::distMultiVector::DistMultiVector1D<
 
     if (g_off >= V.g_rows() / 2)
     {
-
         chase::linalg::blaspp::t_scal(xlen * ylen, &alpha, V.l_data(), 1);
     }
     else if (g_off + xlen > V.g_rows() / 2)
     {
-
         auto shift = g_off + xlen - V.g_rows() / 2;
 
         for (auto i = 0; i < ylen; i++)

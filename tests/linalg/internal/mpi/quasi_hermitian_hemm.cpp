@@ -51,12 +51,13 @@ TYPED_TEST(QuasiHEMMCPUDistTest, QuasiHEMMDistCorrectness) {
     auto V_   = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column>(N, n, mpi_grid);
     auto W1_  = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row>(N, n, mpi_grid);
     auto W2_  = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row>(N, n, mpi_grid);
+    auto W3_  = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row>(N, n, mpi_grid);
 
     T alpha = T(1.0);
     T beta = T(0.0);
 
-    std::size_t offset = 1;
-    std::size_t subSize = 2;
+    std::size_t offset = 0;
+    std::size_t subSize = n;
 
     std::mt19937 gen(1337.0);
     std::normal_distribution<> d;
@@ -71,10 +72,10 @@ TYPED_TEST(QuasiHEMMCPUDistTest, QuasiHEMMDistCorrectness) {
 
     //SH x V = W1 => H x V = SW1 - we assume the standard HEMM works.
     chase::linalg::internal::cpu_mpi::MatrixMultiplyMultiVectors(&alpha, SH_, V_, &beta, W1_, offset, subSize);
-    
+
     //H x V = W2 => SH x V = SW2
     chase::linalg::internal::cpu_mpi::MatrixMultiplyMultiVectors(&alpha, H_, V_, &beta, W2_, offset, subSize);
-
+    
     //We check that SW2 = W1
     chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(W2_); //We assume the flipping function works
 
@@ -87,5 +88,5 @@ TYPED_TEST(QuasiHEMMCPUDistTest, QuasiHEMMDistCorrectness) {
 	    		EXPECT_EQ(W1_.l_data()[i * W1_.l_ld() + j], W2_.l_data()[i * W2_.l_ld() + j]);
         	}
 	}
-    }
+    }  
 }
