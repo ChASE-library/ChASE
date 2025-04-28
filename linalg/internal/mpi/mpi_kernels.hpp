@@ -110,6 +110,18 @@ struct cpu_mpi
         std::size_t subSize,
         chase::distMatrix::RedundantMatrix<typename MatrixType::value_type,
                                            chase::platform::CPU>* A = nullptr);
+    
+    template <typename T, typename InputMultiVectorType>
+    static void rayleighRitz(
+        chase::distMatrix::QuasiHermitianBlockBlockMatrix<T>& H, InputMultiVectorType& V1, InputMultiVectorType& V2,
+        typename ResultMultiVectorType<chase::distMatrix::QuasiHermitianBlockBlockMatrix<T>, InputMultiVectorType>::type&
+            W1,
+        typename ResultMultiVectorType<chase::distMatrix::QuasiHermitianBlockBlockMatrix<T>, InputMultiVectorType>::type&
+            W2,
+        chase::Base<T>* ritzv, std::size_t offset,
+        std::size_t subSize,
+        chase::distMatrix::RedundantMatrix<T,chase::platform::CPU>* A = nullptr);
+
 
     template <typename MatrixType, typename InputMultiVectorType>
     static void residuals(
@@ -161,6 +173,7 @@ struct cpu_mpi
 #include "linalg/internal/mpi/lanczos.hpp"
 #include "linalg/internal/mpi/quasi_hermitian_lanczos.hpp"
 #include "linalg/internal/mpi/rayleighRitz.hpp"
+#include "linalg/internal/mpi/quasi_hermitian_rayleighRitz.hpp"
 #include "linalg/internal/mpi/residuals.hpp"
 #include "linalg/internal/mpi/shiftDiagonal.hpp"
 #include "linalg/internal/mpi/symOrHerm.hpp"
