@@ -165,29 +165,36 @@ namespace internal
                                      W2.l_ld(), 
                                      W1.l_data() + offset * W1.l_ld(), 
                                      W1.l_ld(), 
-                                     &One, 
-                                     A->l_data(),  
+                                     &Zero, 
+                                     M,  
                                      subSize);
         
 	// Perform the MPI_Allreduce to sum up the results
         MPI_Allreduce(MPI_IN_PLACE, 
-                    A->l_data(), 
+                    M, 
                     subSize * subSize, 
                     chase::mpi::getMPI_Type<T>(), 
                     MPI_SUM, 
                     A->getMpiGrid()->get_row_comm());
+
+        chase::linalg::blaspp::t_axpy(subSize * subSize, 
+                                      &One, 
+                                      M, 
+                                      1, 
+                                      A->l_data(), 
+                                      1);
 	
 	//Scale the rows because Ql' * Qr = diag =/= I
         for(auto i = 0; i < subSize; i++)
         {
                 blaspp::t_scal(subSize, &diag[i], A->l_data() + i, subSize);
         }
-	
+
         //Compute the eigenpairs of the non-hermitian rayleigh quotient
-        lapackpp::t_geev(LAPACK_COL_MAJOR, 'V', subSize, A->l_data(), subSize, ritzv, ritzvi.data(), W, subSize);
-        
+        lapackpp::t_geev(LAPACK_COL_MAJOR, 'V', subSize, A->l_data(), subSize, ritzv+offset, ritzvi.data(), W, subSize);
+
         //Sort indices based on ritz values
-        std::vector<Base<T>> sorted_ritzv(ritzv, ritzv + subSize);
+        std::vector<Base<T>> sorted_ritzv(ritzv + offset, ritzv + subSize);
         std::vector<std::size_t> indices(subSize);
         std::iota(indices.begin(), indices.end(), 0); // Fill with 0, 1, ..., n-1
         std::sort(indices.begin(), indices.end(), 
@@ -197,15 +204,18 @@ namespace internal
         T *sorted_W = A->l_data();
         // Reorder eigenvalues and eigenvectors
         for (std::size_t i = 0; i < subSize; ++i) {
-                ritzv[i] = sorted_ritzv[indices[i]];
+                ritzv[i+offset] = sorted_ritzv[indices[i]];
         }
 
         for (std::size_t i = 0; i < subSize; ++i) {
             std::copy_n(W + indices[i] * subSize, subSize, sorted_W + i * subSize);
         }
-
+	
         // Copy back to original arrays
         std::copy(sorted_W, sorted_W + subSize * subSize, W);
+	
+	chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(W1);
+	chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(V2);
 
         // GEMM for applying eigenvectors back to V1 from V2 * A
         chase::linalg::blaspp::t_gemm(CblasColMajor,
@@ -222,7 +232,25 @@ namespace internal
                                      &Zero,
                                      V1.l_data() + offset * V1.l_ld(),
                                      V1.l_ld());
+    
+	int rank;
+	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+
+    	for(auto r = 0; r < 4; r++){
+		if(rank == r){
+			for(auto i = 0; i < V1.l_rows(); i++){
+				for(auto j = 0; j < V1.l_cols(); j++){
+					std::cout << V1.l_data()[j * subSize + i] << " ";
+				}
+				std::cout << std::endl;
+			}
+			std::cout << std::endl;
+		}
+		MPI_Barrier(MPI_COMM_WORLD);
+   	}
     }
+	
+
 }
 }
 }

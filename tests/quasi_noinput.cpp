@@ -66,9 +66,9 @@ int main(int argc, char** argv){
 */
 	// ============= ChASE READ Matrix ============ //
 	
-	//size_t k = 100;
-	size_t k = 750;
-	size_t N = 2*k, nev = 150, nex = 75; 
+	size_t k = 5;
+	//size_t k = 750;
+	size_t N = 2*k, nev = 5, nex = 0; 
     
 	auto H  = new MatrixType(N,N);
 
@@ -76,10 +76,10 @@ int main(int argc, char** argv){
 		H->allocate_cpu_data();
 	#endif
 
-	//H->readFromBinaryFile("../tests/linalg/internal/BSE_matrices/cdouble_random_BSE.bin");
+	H->readFromBinaryFile("../tests/linalg/internal/BSE_matrices/cdouble_tiny_random_BSE.bin");
 	//H->readFromBinaryFile("./BSE_matrices/cdouble_tiny_random_BSE.bin");
 	//H->readFromBinaryFile("../../../Data/Matrix/2x2x2_Silicon_QuasiHermitian.bin");
-	H->readFromBinaryFile("../../../Data/Matrix/cdouble_random_1500.bin");
+	//H->readFromBinaryFile("../../../Data/Matrix/cdouble_random_1500.bin");
 
 	std::vector<T> V(N*(nev+nex));
 	auto Lambda = std::vector<chase::Base<T>>(nev + nex);
@@ -108,15 +108,16 @@ int main(int argc, char** argv){
 */
     	auto& config = single.GetConfig();
     	//Tolerance for Eigenpair convergence
+    
+	single.initVecs(true);
+
+    	//Tolerance for Eigenpair convergence
     	config.SetTol(1e-10);
     	//Initial filtering degree
-    	config.SetDeg(20);
+    	config.SetDeg(10);
     	//Optimi(S)e degree
-    	config.SetOpt(true);
-	//ChASE Max iter
-        config.SetMaxIter(50);
-	config.SetNumLanczos(4);
-	//config.SetDecayingRate(0.90);
+    	config.SetOpt(false);
+    	config.SetMaxIter(25);
 
 	PerformanceDecoratorChase<T> performanceDecorator(&single);
 

@@ -55,19 +55,19 @@ void cpu_mpi::flipLowerHalfMatrixSign(
 }
 
 /**
- * @brief Flip the sign of a BlockBlockMatrix lower part.
+ * @brief Flip the sign of the lower part of a subset of a distMultiVector.
  *
- * This function flips the sign of the lower part of the BlockBlockMatrix `V`
+ * This function flips the sign of the lower part of a subset of the distMultiVector `V`
  *
  * @tparam T The data type of the matrix elements (e.g., `float`, `double`).
- * @param V The BlockBlockMatrix whose diagonal elements will be shifted.
+ * @param V The distMultiVector whose the sign of the lower part will be flipped.
+ * @param subSize The number of columns to be flipped
  */
 template <typename T, chase::distMultiVector::CommunicatorType comm_type>
 void cpu_mpi::flipLowerHalfMatrixSign(chase::distMultiVector::DistMultiVector1D<
-                                      T, comm_type, chase::platform::CPU>& V)
+                                      T, comm_type, chase::platform::CPU>& V, std::size_t subSize)
 {
     std::size_t xlen = V.l_rows();
-    std::size_t ylen = V.l_cols();
     std::size_t g_off = V.g_off();
     std::size_t v_ld = V.l_ld();
 
@@ -75,18 +75,33 @@ void cpu_mpi::flipLowerHalfMatrixSign(chase::distMultiVector::DistMultiVector1D<
 
     if (g_off >= V.g_rows() / 2)
     {
-        chase::linalg::blaspp::t_scal(xlen * ylen, &alpha, V.l_data(), 1);
+        chase::linalg::blaspp::t_scal(xlen * subSize, &alpha, V.l_data(), 1);
     }
     else if (g_off + xlen > V.g_rows() / 2)
     {
         auto shift = g_off + xlen - V.g_rows() / 2;
 
-        for (auto i = 0; i < ylen; i++)
+        for (auto i = 0; i < subSize; i++)
         {
             chase::linalg::blaspp::t_scal(xlen - shift, &alpha,
                                           V.l_data() + shift + i * v_ld, 1);
         }
     }
+}
+
+/**
+ * @brief Flip the sign of the whole lower part of a distMultiVector.
+ *
+ * This function flips the sign of the lower part of the distMultiVector `V`
+ *
+ * @tparam T The data type of the matrix elements (e.g., `float`, `double`).
+ * @param V The distMultiVector whose the sign of the lower part will be flipped.
+ */
+template <typename T, chase::distMultiVector::CommunicatorType comm_type>
+void cpu_mpi::flipLowerHalfMatrixSign(chase::distMultiVector::DistMultiVector1D<
+                                      T, comm_type, chase::platform::CPU>& V)
+{
+	cpu_mpi::flipLowerHalfMatrixSign(V,V.l_cols());
 }
 } // namespace internal
 } // namespace linalg

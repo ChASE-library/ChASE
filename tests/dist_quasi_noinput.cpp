@@ -49,7 +49,7 @@ int main(int argc, char** argv)
 
     size_t k = 5;
 
-    size_t N = 2 * k, nev = 2, nex = 2;
+    size_t N = 2 * k, nev = 5, nex = 5;
 
     int* dims = mpi_grid.get()->get_dims();
     int* coords = mpi_grid.get()->get_coords();
@@ -102,7 +102,6 @@ int main(int argc, char** argv)
     auto Vec = chase::distMultiVector::DistMultiVector1D<
         T, chase::distMultiVector::CommunicatorType::column, ARCH>(N, nev + nex,
                                                                    mpi_grid);
-
     if (world_rank == 0)
     {
 #ifdef HAS_CUDA
@@ -124,6 +123,8 @@ int main(int argc, char** argv)
 #else
     auto single = chase::Impl::pChASECPU(nev, nex, &Hmat, &Vec, Lambda.data());
 #endif
+
+    single.initVecs(true);
 
     // Setup configure for ChASE
     auto& config = single.GetConfig();
