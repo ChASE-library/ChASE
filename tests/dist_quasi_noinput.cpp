@@ -49,7 +49,7 @@ int main(int argc, char** argv)
 
     size_t k = 5;
 
-    size_t N = 2 * k, nev = 5, nex = 5;
+    size_t N = 2 * k, nev = 2, nex = 2;
 
     int* dims = mpi_grid.get()->get_dims();
     int* coords = mpi_grid.get()->get_coords();
@@ -68,10 +68,10 @@ int main(int argc, char** argv)
         "./tests/linalg/internal/BSE_matrices/cdouble_tiny_random_BSE.bin");
 
     auto Vcol = chase::distMultiVector::DistMultiVector1D<
-        T, chase::distMultiVector::CommunicatorType::column, ARCH>(N, N,
+        T, chase::distMultiVector::CommunicatorType::column, ARCH>(N, nev+nex,
                                                                    mpi_grid);
     auto Vrow = chase::distMultiVector::DistMultiVector1D<
-        T, chase::distMultiVector::CommunicatorType::row, ARCH>(N, N, mpi_grid);
+        T, chase::distMultiVector::CommunicatorType::row, ARCH>(N, nev+nex, mpi_grid);
     for (auto r = 0; r < world_size; r++)
     {
         if (world_rank == r)
@@ -85,13 +85,24 @@ int main(int argc, char** argv)
                       << Hmat.g_offs()[1] << std::endl;
             std::cout << "Vc Offset = " << Vcol.g_off() << std::endl;
             std::cout << "Vr Offset = " << Vrow.g_off() << std::endl;
-            std::cout << "My data    = " << std::endl;
-            for (auto i = 0; i < Hmat.l_rows(); i++)
+            std::cout << "My Vcol data    = " << std::endl;
+            for (auto i = 0; i < Vcol.l_rows(); i++)
             {
                 std::cout << "[";
-                for (auto j = 0; j < Hmat.l_cols(); j++)
+                for (auto j = 0; j < Vcol.l_cols(); j++)
                 {
-                    std::cout << Hmat.l_data()[i + j * Hmat.l_rows()] << " ";
+                    std::cout << Vcol.l_data()[i + j * Vcol.l_ld()] << " ";
+                }
+                std::cout << "]" << std::endl;
+            }
+
+            std::cout << "My Vrow data    = " << std::endl;
+            for (auto i = 0; i < Vrow.l_rows(); i++)
+            {
+                std::cout << "[";
+                for (auto j = 0; j < Vrow.l_cols(); j++)
+                {
+                    std::cout << Vrow.l_data()[i + j * Vrow.l_ld()] << " ";
                 }
                 std::cout << "]" << std::endl;
             }

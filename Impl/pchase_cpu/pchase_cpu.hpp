@@ -119,7 +119,6 @@ public:
                 is_pseudoHerm_ = true;
                 //Quasi Hermitian matrices require more space for the dual basis
         	A_ = std::make_unique<chase::distMatrix::RedundantMatrix<T>>(nevex_, 3*nevex_, Hmat_->getMpiGrid_shared_ptr());
-		std::cout << "Quasi hermitian matrix initialized." << std::endl;
          }
          else
          {
@@ -222,6 +221,7 @@ public:
                                          V2_->l_data(), 
                                          V2_->l_ld());
         next_ = NextOp::bAc;
+	
     }
 
     void Lanczos(std::size_t m, chase::Base<T>* upperb) override 
@@ -311,6 +311,7 @@ public:
 
     void HEMM(std::size_t block, T alpha, T beta, std::size_t offset) override 
     {
+
 #ifdef ENABLE_MIXED_PRECISION
         if constexpr (std::is_same<T, double>::value || std::is_same<T, std::complex<double>>::value)
         {
@@ -432,6 +433,8 @@ public:
         //{
         //    display_bounds = std::atoi(display_bounds_env);
         //}
+
+	
 	if constexpr (std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockBlockMatrix<T>>::value)
         {
                 /* The right eigenvectors are not orthonormal in the QH case, but S-orthonormal.
@@ -521,6 +524,7 @@ public:
                                          V1_->l_ld(),
                                          V2_->l_data() + V2_->l_ld() * locked_,
                                          V2_->l_ld());                                              
+	
     }
 
     void RR(chase::Base<T>* ritzv, std::size_t block) override 

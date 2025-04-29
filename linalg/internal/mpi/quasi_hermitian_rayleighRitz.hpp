@@ -80,6 +80,9 @@ namespace internal
 
         //Allocate the space for the imaginary parts of ritz values
         std::vector<Base<T>> ritzvi(subSize, Base<T>(0.0));
+    
+	int rank;
+	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 
         // Perform the distributed matrix-matrix multiplication
         chase::linalg::internal::cpu_mpi::MatrixMultiplyMultiVectorsAndRedistributeAsync(
@@ -113,7 +116,7 @@ namespace internal
                     chase::mpi::getMPI_Type<T>(), 
                     MPI_SUM, 
                     A->getMpiGrid()->get_row_comm());
-        
+		
 	chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(V2);
 	
 	chase::linalg::blaspp::t_gemm(CblasColMajor, 
@@ -153,7 +156,7 @@ namespace internal
                 M, subSize, W, subSize, &Zero, A->l_data(), subSize); //A = (Diag(M) - M) * A
 	
 	chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(W1);
-        
+	
 	chase::linalg::blaspp::t_gemm(CblasColMajor, 
                                      CblasConjTrans, 
                                      CblasNoTrans, 
@@ -192,9 +195,9 @@ namespace internal
 
         //Compute the eigenpairs of the non-hermitian rayleigh quotient
         lapackpp::t_geev(LAPACK_COL_MAJOR, 'V', subSize, A->l_data(), subSize, ritzv+offset, ritzvi.data(), W, subSize);
-
+    	
         //Sort indices based on ritz values
-        std::vector<Base<T>> sorted_ritzv(ritzv + offset, ritzv + subSize);
+        std::vector<Base<T>> sorted_ritzv(ritzv + offset, ritzv + offset + subSize);
         std::vector<std::size_t> indices(subSize);
         std::iota(indices.begin(), indices.end(), 0); // Fill with 0, 1, ..., n-1
         std::sort(indices.begin(), indices.end(), 
@@ -233,21 +236,6 @@ namespace internal
                                      V1.l_data() + offset * V1.l_ld(),
                                      V1.l_ld());
     
-	int rank;
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-
-    	for(auto r = 0; r < 4; r++){
-		if(rank == r){
-			for(auto i = 0; i < V1.l_rows(); i++){
-				for(auto j = 0; j < V1.l_cols(); j++){
-					std::cout << V1.l_data()[j * subSize + i] << " ";
-				}
-				std::cout << std::endl;
-			}
-			std::cout << std::endl;
-		}
-		MPI_Barrier(MPI_COMM_WORLD);
-   	}
     }
 	
 

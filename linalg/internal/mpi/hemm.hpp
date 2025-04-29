@@ -108,6 +108,14 @@ namespace internal
 
 	    }
 
+	    if(beta_tmp != T(0.0)){ 
+
+	    	if constexpr (std::is_same<MatrixType,chase::distMatrix::QuasiHermitianBlockBlockMatrix<T>>::value){
+	
+			chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(result_multiVector);
+	    	}
+	    }
+
             chase::linalg::blaspp::t_gemm(CblasColMajor, 
                                           CblasConjTrans, 
                                           CblasNoTrans, 
@@ -304,7 +312,7 @@ namespace internal
 		chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(input_multiVector);
 
 	    }
-
+	    
             // Perform the matrix multiplication using BLAS
             chase::linalg::blaspp::t_gemm(CblasColMajor, 
                                           CblasConjTrans, 

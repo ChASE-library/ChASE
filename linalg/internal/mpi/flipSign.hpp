@@ -79,7 +79,7 @@ void cpu_mpi::flipLowerHalfMatrixSign(chase::distMultiVector::DistMultiVector1D<
     }
     else if (g_off + xlen > V.g_rows() / 2)
     {
-        auto shift = g_off + xlen - V.g_rows() / 2;
+        auto shift = V.g_rows() / 2 - g_off;
 
         for (auto i = 0; i < subSize; i++)
         {
