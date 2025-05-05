@@ -37,7 +37,7 @@ TYPED_TEST(flipSignCPUDistTest, flipSignCorrectness)
 {
     using T = TypeParam; // Get the current type
 
-    std::size_t N = 10;
+    std::size_t N = 200;
     ASSERT_EQ(this->world_size, 4); // Ensure we're running with 4 processes
     std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>
         mpi_grid = std::make_shared<
@@ -75,7 +75,7 @@ TYPED_TEST(flipSignCPUDistTest, flipSignCorrectnessBlockCyclic)
 {
     using T = TypeParam; // Get the current type
 
-    std::size_t N = 10, mb = 2;
+    std::size_t N = 200, mb = 20;
     ASSERT_EQ(this->world_size, 4); // Ensure we're running with 4 processes
     std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>
         mpi_grid = std::make_shared<
@@ -116,7 +116,7 @@ TYPED_TEST(flipSignCPUDistTest, flipSignCommColMultiVectorsCorrectness)
 {
     using T = TypeParam; // Get the current type
 
-    std::size_t N = 10;
+    std::size_t N = 200;
     ASSERT_EQ(this->world_size, 4); // Ensure we're running with 4 processes
     std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>
         mpi_grid = std::make_shared<
@@ -155,7 +155,7 @@ TYPED_TEST(flipSignCPUDistTest, flipSignCommRowMultiVectorsCorrectness)
 {
     using T = TypeParam; // Get the current type
 
-    std::size_t N = 10;
+    std::size_t N = 200;
     ASSERT_EQ(this->world_size, 4); // Ensure we're running with 4 processes
     std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>
         mpi_grid = std::make_shared<
@@ -194,7 +194,7 @@ TYPED_TEST(flipSignCPUDistTest, flipSignCommColMultiVectorsBlockCyclicCorrectnes
 {
     using T = TypeParam; // Get the current type
 
-    std::size_t N = 10, mb = 4;
+    std::size_t N = 200, mb = 20;
     ASSERT_EQ(this->world_size, 4); // Ensure we're running with 4 processes
     std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>
         mpi_grid = std::make_shared<
@@ -232,7 +232,7 @@ TYPED_TEST(flipSignCPUDistTest, flipSignCommRowMultiVectorsBlockCyclicCorrectnes
 {
     using T = TypeParam; // Get the current type
 
-    std::size_t N = 10, mb = 4;
+    std::size_t N = 200, mb = 20;
     ASSERT_EQ(this->world_size, 4); // Ensure we're running with 4 processes
     std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>
         mpi_grid = std::make_shared<

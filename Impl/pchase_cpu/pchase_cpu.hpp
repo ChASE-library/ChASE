@@ -113,7 +113,8 @@ public:
         coords_ = Hmat_->getMpiGrid()->get_coords();
         dims_ = Hmat_->getMpiGrid()->get_dims();
 
-	 if constexpr (std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockBlockMatrix<T>>::value)
+	 if constexpr (std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockBlockMatrix<T>>::value || 
+		       std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T>>::value )
          {
                 is_sym_ = false;
                 is_pseudoHerm_ = true;
@@ -435,7 +436,8 @@ public:
         //}
 
 	
-	if constexpr (std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockBlockMatrix<T>>::value)
+	 if constexpr (std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockBlockMatrix<T>>::value || 
+		       std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T>>::value )
         {
                 /* The right eigenvectors are not orthonormal in the QH case, but S-orthonormal.
                  * Therefore, we S-orthonormalize the locked vectors against the current subspace
