@@ -29,28 +29,53 @@ template <typename T>
 void cpu_mpi::flipLowerHalfMatrixSign(
     chase::distMatrix::BlockBlockMatrix<T, chase::platform::CPU>& H)
 {
-    std::size_t xlen = H.l_rows();
-    std::size_t ylen = H.l_cols();
-    std::size_t* g_offs = H.g_offs();
-    std::size_t h_ld = H.l_ld();
-
     T alpha = -T(1.0);
 
-    if (g_offs[0] >= H.g_rows() / 2)
+    if (H.l_half() < H.l_rows())
     {
-
-        chase::linalg::blaspp::t_scal(xlen * ylen, &alpha, H.l_data(), 1);
+	if(H.l_half() == 0)
+	{
+        	chase::linalg::blaspp::t_scal(H.l_rows() * H.l_cols(), &alpha, H.l_data(), 1);
+	}
+	else
+	{
+        	for (auto i = 0; i < H.l_cols(); i++)
+        	{
+            		chase::linalg::blaspp::t_scal(H.l_rows() - H.l_half(), &alpha,
+                                          	      H.l_data() + H.l_half() + i * H.l_ld(), 1);
+       		}
+	}
     }
-    else if (g_offs[0] + xlen > H.g_rows() / 2)
+}
+
+/**
+ * @brief Flip the sign of a BlockCyclicMatrix lower part.
+ *
+ * This function flips the sign of the lower part of the BlockCyclicMatrix `H`
+ *
+ * @tparam T The data type of the matrix elements (e.g., `float`, `double`).
+ * @param H The BlockCyclicMatrix whose lower part will be flipped
+ */
+template <typename T>
+void cpu_mpi::flipLowerHalfMatrixSign(
+    chase::distMatrix::BlockCyclicMatrix<T, chase::platform::CPU>& H)
+{
+    T alpha = -T(1.0);
+
+    if (H.l_half() < H.l_rows())
     {
-
-        auto shift = g_offs[0] + xlen - H.g_rows() / 2;
-
-        for (auto i = 0; i < ylen; i++)
-        {
-            chase::linalg::blaspp::t_scal(xlen - shift, &alpha,
-                                          H.l_data() + shift + i * h_ld, 1);
-        }
+	if(H.l_half() == 0)
+	{
+        	chase::linalg::blaspp::t_scal(H.l_rows() * H.l_cols(), &alpha, H.l_data(), 1);
+	}
+	else
+	{
+        	for (auto i = 0; i < H.l_cols(); i++)
+        	{
+            		chase::linalg::blaspp::t_scal(H.l_rows() - H.l_half(), &alpha,
+                                          	      H.l_data() + H.l_half() + i * H.l_ld(), 1);
+       		}
+	}
     }
 }
 
@@ -67,25 +92,22 @@ template <typename T, chase::distMultiVector::CommunicatorType comm_type>
 void cpu_mpi::flipLowerHalfMatrixSign(chase::distMultiVector::DistMultiVector1D<
                                       T, comm_type, chase::platform::CPU>& V, std::size_t subSize)
 {
-    std::size_t xlen = V.l_rows();
-    std::size_t g_off = V.g_off();
-    std::size_t v_ld = V.l_ld();
-
     T alpha = -T(1.0);
 
-    if (g_off >= V.g_rows() / 2)
+    if (V.l_half() < V.l_rows())
     {
-        chase::linalg::blaspp::t_scal(xlen * subSize, &alpha, V.l_data(), 1);
-    }
-    else if (g_off + xlen > V.g_rows() / 2)
-    {
-        auto shift = V.g_rows() / 2 - g_off;
-
-        for (auto i = 0; i < subSize; i++)
-        {
-            chase::linalg::blaspp::t_scal(xlen - shift, &alpha,
-                                          V.l_data() + shift + i * v_ld, 1);
-        }
+	if(V.l_half() == 0)
+	{
+        	chase::linalg::blaspp::t_scal(V.l_rows() * subSize, &alpha, V.l_data(), 1);
+	}
+	else
+	{
+        	for (auto i = 0; i < subSize; i++)
+        	{
+            		chase::linalg::blaspp::t_scal(V.l_rows() - V.l_half(), &alpha,
+                                          	      V.l_data() + V.l_half() + i * V.l_ld(), 1);
+       		}
+	}
     }
 }
 
@@ -103,6 +125,54 @@ void cpu_mpi::flipLowerHalfMatrixSign(chase::distMultiVector::DistMultiVector1D<
 {
 	cpu_mpi::flipLowerHalfMatrixSign(V,V.l_cols());
 }
+
+/**
+ * @brief Flip the sign of the lower part of a subset of a distMultiVectorBlockCyclic.
+ *
+ * This function flips the sign of the lower part of a subset of the distMultiVectorBlockCyclic `V`
+ *
+ * @tparam T The data type of the matrix elements (e.g., `float`, `double`).
+ * @param V The distMultiVectorBlockCyclic whose the sign of the lower part will be flipped.
+ * @param subSize The number of columns to be flipped
+ */
+template <typename T, chase::distMultiVector::CommunicatorType comm_type>
+void cpu_mpi::flipLowerHalfMatrixSign(chase::distMultiVector::DistMultiVectorBlockCyclic1D<
+                                      T, comm_type, chase::platform::CPU>& V, std::size_t subSize)
+{
+    T alpha = -T(1.0);
+
+    if (V.l_half() < V.l_rows())
+    {
+	if(V.l_half() == 0)
+	{
+        	chase::linalg::blaspp::t_scal(V.l_rows() * subSize, &alpha, V.l_data(), 1);
+	}
+	else
+	{
+        	for (auto i = 0; i < subSize; i++)
+        	{
+            		chase::linalg::blaspp::t_scal(V.l_rows() - V.l_half(), &alpha,
+                                          	      V.l_data() + V.l_half() + i * V.l_ld(), 1);
+       		}
+	}
+    }
+}
+
+/**
+ * @brief Flip the sign of the whole lower part of a distMultiVectorBlockCyclic.
+ *
+ * This function flips the sign of the lower part of the distMultiVectorBlockCyclic `V`
+ *
+ * @tparam T The data type of the matrix elements (e.g., `float`, `double`).
+ * @param V The distMultiVectorBlockCyclic whose the sign of the lower part will be flipped.
+ */
+template <typename T, chase::distMultiVector::CommunicatorType comm_type>
+void cpu_mpi::flipLowerHalfMatrixSign(chase::distMultiVector::DistMultiVectorBlockCyclic1D<
+                                      T, comm_type, chase::platform::CPU>& V)
+{
+	cpu_mpi::flipLowerHalfMatrixSign(V,V.l_cols());
+}
+
 } // namespace internal
 } // namespace linalg
 } // namespace chase

@@ -147,6 +147,10 @@ struct cpu_mpi
     template <typename T>
     static void flipLowerHalfMatrixSign(
         chase::distMatrix::BlockBlockMatrix<T, chase::platform::CPU>& H);
+    
+    template <typename T>
+    static void flipLowerHalfMatrixSign(
+        chase::distMatrix::BlockCyclicMatrix<T, chase::platform::CPU>& H);
 
     template <typename T, chase::distMultiVector::CommunicatorType comm_type>
     static void flipLowerHalfMatrixSign(
@@ -156,6 +160,16 @@ struct cpu_mpi
     template <typename T, chase::distMultiVector::CommunicatorType comm_type>
     static void flipLowerHalfMatrixSign(
         chase::distMultiVector::DistMultiVector1D<T, comm_type,
+                                                  chase::platform::CPU>& V);
+    
+    template <typename T, chase::distMultiVector::CommunicatorType comm_type>
+    static void flipLowerHalfMatrixSign(
+        chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, comm_type,
+                                                  chase::platform::CPU>& V, std::size_t subSize);
+    
+    template <typename T, chase::distMultiVector::CommunicatorType comm_type>
+    static void flipLowerHalfMatrixSign(
+        chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, comm_type,
                                                   chase::platform::CPU>& V);
 
     template <typename MatrixType>

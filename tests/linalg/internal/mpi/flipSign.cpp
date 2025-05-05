@@ -71,6 +71,47 @@ TYPED_TEST(flipSignCPUDistTest, flipSignCorrectness)
     }
 }
 
+TYPED_TEST(flipSignCPUDistTest, flipSignCorrectnessBlockCyclic)
+{
+    using T = TypeParam; // Get the current type
+
+    std::size_t N = 10, mb = 2;
+    ASSERT_EQ(this->world_size, 4); // Ensure we're running with 4 processes
+    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>
+        mpi_grid = std::make_shared<
+            chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(
+            2, 2, MPI_COMM_WORLD);
+
+    auto H = chase::distMatrix::BlockCyclicMatrix<T, chase::platform::CPU>(
+        N, N, mb, mb, mpi_grid);
+
+    for (auto i = 0; i < H.l_rows() * H.l_cols(); i++)
+    {
+        H.l_data()[i] = T(1.0);
+    }
+
+    chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(H);
+
+    for(auto idx_i = 0; idx_i < H.mblocks(); idx_i++)
+    {
+    	for(auto idx_j = 0; idx_j < H.nblocks(); idx_j++)
+    	{
+		for(auto i = 0; i < H.m_contiguous_lens()[idx_i]; i++)
+		{
+			for(auto j = 0; j < H.n_contiguous_lens()[idx_j]; j++)
+			{
+				if(i + H.m_contiguous_global_offs()[idx_i] < (N / 2)){
+                			EXPECT_EQ(H.l_data()[(j + H.n_contiguous_local_offs()[idx_j]) * H.l_ld() + i + H.m_contiguous_local_offs()[idx_i]], T(1.0));
+				}else{
+
+                			EXPECT_EQ(H.l_data()[(j + H.n_contiguous_local_offs()[idx_j]) * H.l_ld() + i + H.m_contiguous_local_offs()[idx_i]], T(-1.0));
+				}
+			}
+		}
+    	}
+    }
+}
+
 TYPED_TEST(flipSignCPUDistTest, flipSignCommColMultiVectorsCorrectness)
 {
     using T = TypeParam; // Get the current type
@@ -146,5 +187,81 @@ TYPED_TEST(flipSignCPUDistTest, flipSignCommRowMultiVectorsCorrectness)
                 EXPECT_EQ(V.l_data()[i + j * V.l_ld()], -T(1.0));
             }
         }
+    }
+}
+
+TYPED_TEST(flipSignCPUDistTest, flipSignCommColMultiVectorsBlockCyclicCorrectness)
+{
+    using T = TypeParam; // Get the current type
+
+    std::size_t N = 10, mb = 4;
+    ASSERT_EQ(this->world_size, 4); // Ensure we're running with 4 processes
+    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>
+        mpi_grid = std::make_shared<
+            chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(
+            2, 2, MPI_COMM_WORLD);
+
+    auto V = chase::distMultiVector::DistMultiVectorBlockCyclic1D<
+        T, chase::distMultiVector::CommunicatorType::column,
+        chase::platform::CPU>(N, N, mb, mpi_grid);
+
+    for (auto i = 0; i < V.l_rows() * V.l_cols(); i++)
+    {
+        V.l_data()[i] = T(1.0);
+    }
+
+    chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(V);
+
+    for(auto idx_i = 0; idx_i < V.mblocks(); idx_i++)
+    {
+	    for(auto i = 0; i < V.m_contiguous_lens()[idx_i]; i++)
+	    {
+		for(auto j = 0; j < V.l_cols(); j++)
+		{
+			if(i + V.m_contiguous_global_offs()[idx_i] < (N / 2)){
+               			EXPECT_EQ(V.l_data()[j * V.l_ld() + i + V.m_contiguous_local_offs()[idx_i]], T(1.0));
+			}else{
+               			EXPECT_EQ(V.l_data()[j * V.l_ld() + i + V.m_contiguous_local_offs()[idx_i]], T(-1.0));
+			}
+		}
+            }
+    }
+}
+
+TYPED_TEST(flipSignCPUDistTest, flipSignCommRowMultiVectorsBlockCyclicCorrectness)
+{
+    using T = TypeParam; // Get the current type
+
+    std::size_t N = 10, mb = 4;
+    ASSERT_EQ(this->world_size, 4); // Ensure we're running with 4 processes
+    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>
+        mpi_grid = std::make_shared<
+            chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(
+            2, 2, MPI_COMM_WORLD);
+
+    auto V = chase::distMultiVector::DistMultiVectorBlockCyclic1D<
+        T, chase::distMultiVector::CommunicatorType::row,
+        chase::platform::CPU>(N, N, mb, mpi_grid);
+
+    for (auto i = 0; i < V.l_rows() * V.l_cols(); i++)
+    {
+        V.l_data()[i] = T(1.0);
+    }
+
+    chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(V);
+
+    for(auto idx_i = 0; idx_i < V.mblocks(); idx_i++)
+    {
+	    for(auto i = 0; i < V.m_contiguous_lens()[idx_i]; i++)
+	    {
+		for(auto j = 0; j < V.l_cols(); j++)
+		{
+			if(i + V.m_contiguous_global_offs()[idx_i] < (N / 2)){
+               			EXPECT_EQ(V.l_data()[j * V.l_ld() + i + V.m_contiguous_local_offs()[idx_i]], T(1.0));
+			}else{
+               			EXPECT_EQ(V.l_data()[j * V.l_ld() + i + V.m_contiguous_local_offs()[idx_i]], T(-1.0));
+			}
+		}
+            }
     }
 }

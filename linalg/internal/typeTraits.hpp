@@ -128,6 +128,20 @@ struct ResultMultiVectorType<chase::distMatrix::BlockCyclicMatrix<T, Platform>,
 
 /**
  * @ingroup MultiVectorHelperTraits
+ * @brief Specialization for `QuasiHermitianBlockCyclicMatrix` and `DistMultiVectorBlockCyclic1D`.
+ * 
+ * This specialization defines the result multi-vector type for operations involving a `QuasiHermitianBlockCyclicMatrix` and a
+ * `DistMultiVector1D` multi-vector type. It flips the communicator type as part of the deduction.
+ */
+template <typename T, chase::distMultiVector::CommunicatorType CommType, typename Platform>
+struct ResultMultiVectorType<chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T, Platform>,
+                            chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, CommType, Platform>> {
+    // Flip the communicator type and deduce result multi-vector type
+    using type = chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, FlipCommType<CommType>::value, Platform>;
+};
+
+/**
+ * @ingroup MultiVectorHelperTraits
  * @brief Deduction of column multi-vector type based on matrix type.
  * 
  * This struct defines the correct column multi-vector type for a given matrix type. It is used to define the 
@@ -177,6 +191,19 @@ struct ColumnMultiVectorType<chase::distMatrix::BlockCyclicMatrix<T, Platform>>
 
 /**
  * @ingroup MultiVectorHelperTraits
+ * @brief Specialization for `QuasiHermitianBlockCyclicMatrix`.
+ * 
+ * This specialization defines the column multi-vector type for the `QuasiHermitianBlockCyclicMatrix` type, which corresponds to a
+ * `DistMultiVector1D` with a column communicator.
+ */
+template <typename T, typename Platform>    
+struct ColumnMultiVectorType<chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T, Platform>>
+{
+    using type = chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, chase::distMultiVector::CommunicatorType::column, Platform>;
+};
+
+/**
+ * @ingroup MultiVectorHelperTraits
  * @brief Deduction of row multi-vector type based on matrix type.
  * 
  * This struct defines the correct row multi-vector type for a given matrix type. It is used to define the 
@@ -220,6 +247,19 @@ struct RowMultiVectorType<chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, P
  */
 template <typename T, typename Platform>    
 struct RowMultiVectorType<chase::distMatrix::BlockCyclicMatrix<T, Platform>>
+{
+    using type = chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, chase::distMultiVector::CommunicatorType::row, Platform>;
+};
+
+/**
+ * @ingroup MultiVectorHelperTraits
+ * @brief Specialization for `QuasiHermitianBlockCyclicMatrix`.
+ * 
+ * This specialization defines the row multi-vector type for the `QuasiHermitianBlockCyclicMatrix` type, which corresponds to a
+ * `DistMultiVector1D` with a row communicator.
+ */
+template <typename T, typename Platform>    
+struct RowMultiVectorType<chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T, Platform>>
 {
     using type = chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, chase::distMultiVector::CommunicatorType::row, Platform>;
 };

@@ -56,8 +56,6 @@ namespace internal
                  chase::Base<typename MatrixType::value_type> *Tau,
                  chase::Base<typename MatrixType::value_type> *ritzV)            
     {
-
-	std::cout << "ETENRING THE WRONG LANCZOS..." << std::endl;
         using T = typename MatrixType::value_type;
         using ResultMultiVectorType = typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type;
 

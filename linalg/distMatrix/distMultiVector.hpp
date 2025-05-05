@@ -192,7 +192,18 @@ public:
      * @brief Get the block size for block-cyclic distribution.
      * @return Block size for distribution.
      */
-    virtual std::size_t mb() const = 0;
+    virtual std::size_t mb() const = 0; 
+    /** 
+     * @brief Returns the number of row blocks.
+     * 
+     * @return The number of row blocks.
+     */   
+    virtual std::size_t mblocks() const = 0; 
+    /**
+     * @brief Get the local index for the lower half.
+     * @return The local index for the lower half.
+     */
+    virtual std::size_t l_half() const = 0;
 
     // virtual typename chase::platform::MatrixTypePlatform<T, Platform>::type&
     // loc_matrix() = 0;
@@ -533,6 +544,15 @@ public:
         {
             mb_ = (M_ - m_) / (dim - 1);
         }
+	
+	if(off_ + m_ > M_ / 2)
+	{
+		l_half_ = std::size_t(std::max(0, int(M_ / 2) - int(off_)));
+	}
+	else
+	{
+		l_half_ = m_;
+	} 
     }
     /**
      * @brief Constructs a distributed multivector with specified local
@@ -611,6 +631,15 @@ public:
         {
             mb_ = (M_ - m_) / (dim - 1);
         }
+	
+	if(off_ + m_ > M_ / 2)
+	{
+		l_half_ = std::size_t(std::max(0, int(M_ / 2) - int(off_)));
+	}
+	else
+	{
+		l_half_ = m_;
+	} 
     }
     /**
      * @brief Retrieves the distribution type of the multi-vector.
@@ -1041,6 +1070,18 @@ public:
      * @return The matrix block size.
      */
     std::size_t mb() const override { return mb_; }
+    /** 
+     * @brief Returns the number of row blocks.
+     * 
+     * @return The number of row blocks.
+     */   
+    std::size_t mblocks() const override {return mblocks_; }
+    /**
+     * @brief Get the block size used in the distributed matrix layout.
+     *
+     * @return The matrix block size.
+     */
+    std::size_t l_half() const override { return l_half_; }
     /**
      * @brief Access the raw pointer to the local matrix data.
      *
@@ -1151,6 +1192,18 @@ private:
      * @brief The block size used in the distributed matrix layout.
      */
     std::size_t mb_;
+    /**
+     * @brief The number of blocks along the row dimension.
+     *
+     * This is used to determine how the matrix is divided into smaller blocks
+     * for distributed computation.
+     */
+    std::size_t mblocks_;
+    /**
+     * @brief The local index of the lower half
+     */
+    std::size_t l_half_;
+
     // typename chase::platform::MatrixTypePlatform<T, Platform>::type
     // local_matrix_;
     /**
@@ -1785,6 +1838,8 @@ public:
         // local_matrix_ = typename chase::platform::MatrixTypePlatform<T,
         // Platform>::type(m_, n_);
         local_matrix_ = chase::matrix::Matrix<T, Platform>(m_, n_);
+
+	init_contiguous_buffer_info();	
     }
 
     /**
@@ -1844,8 +1899,10 @@ public:
         {
             ld_ = local_matrix_.ld();
         }
+	
+	init_contiguous_buffer_info();	
     }
-
+    
     /**
      * @brief Gets the distribution type of the multi-vector.
      *
@@ -2271,6 +2328,20 @@ public:
      * processes.
      */
     std::size_t mb() const override { return mb_; }
+    
+    /** 
+     * @brief Returns the number of row blocks.
+     * 
+     * @return The number of row blocks.
+     */   
+    std::size_t mblocks() const override { return mblocks_; }
+    
+    /**
+     * @brief Get the block size used in the distributed matrix layout.
+     *
+     * @return The matrix block size.
+     */
+    std::size_t l_half() const override { return l_half_; }
 
     /**
      * @brief Get the pointer to the local matrix data.
@@ -2285,6 +2356,10 @@ public:
     {
         return local_matrix_;
     }
+    
+    std::vector<std::size_t> m_contiguous_global_offs(){ return m_contiguous_global_offs_; }
+    std::vector<std::size_t> m_contiguous_local_offs(){ return m_contiguous_local_offs_; }
+    std::vector<std::size_t> m_contiguous_lens(){ return m_contiguous_lens_; }
 
 #ifdef HAS_SCALAPACK
     std::size_t* get_scalapack_desc() { return desc_; }
@@ -2414,6 +2489,74 @@ private:
      */
     std::size_t desc_[9];
 #endif
+
+    std::size_t l_half_; ///< Local index for the lower half
+    std::vector<std::size_t> m_contiguous_global_offs_;
+    std::vector<std::size_t> m_contiguous_local_offs_;
+    std::vector<std::size_t> m_contiguous_lens_;
+
+    void init_contiguous_buffer_info()
+    {
+	int axis;
+
+        if constexpr (comm_type == chase::distMultiVector::CommunicatorType::column)
+        {
+            axis = 0;
+        }
+        else if constexpr (comm_type == chase::distMultiVector::CommunicatorType::row)
+        {
+            axis = 1;
+        }
+
+        int coord =  mpi_grid_.get()->get_coords()[axis];
+        int dim = mpi_grid_.get()->get_dims()[axis];
+
+        std::size_t nr;
+        int sendr = 0;
+
+        for (std::size_t r = 0; r < M_; r += mb_, sendr = (sendr + 1) % dim)
+        {
+            nr = mb_;
+            if(M_ - r < mb_)
+            {
+                nr = M_ - r;
+            }
+
+            if(coord == sendr)
+            {
+                m_contiguous_global_offs_.push_back(r);
+                m_contiguous_lens_.push_back(nr);
+            }
+        }
+
+        m_contiguous_local_offs_.resize(mblocks_);
+
+        m_contiguous_local_offs_[0] = 0;
+
+        for (std::size_t i = 1; i < mblocks_; i++)
+        {
+            m_contiguous_local_offs_[i] = m_contiguous_local_offs_[i - 1] 
+                                          + m_contiguous_lens_[i - 1];
+        }
+
+	l_half_ = 0;
+	std::size_t idx = 0;
+
+	while(idx < mblocks_ && m_contiguous_global_offs_[idx] + m_contiguous_lens_[idx] <= (M_ / 2))
+    	{
+        	l_half_ += m_contiguous_lens_[idx];
+        	idx += 1;
+    	}
+	
+    	if(idx < mblocks_)
+    	{
+        	if(int(M_/2) - int(m_contiguous_global_offs_[idx]) > 0)
+        	{
+                	l_half_ += std::size_t(int(M_/2) - int(m_contiguous_global_offs_[idx]));
+        	}
+   	}
+
+    }
     // data for redistribution
     std::vector<std::size_t> orig_dests;
     std::vector<std::size_t> orig_srcs;
