@@ -22,6 +22,49 @@ namespace linalg
 namespace internal
 {        
     /**
+    * @brief Dispatch to the correct Rayleigh-Ritzprocedure based on Matrix Type
+    * 
+     * This function dispatches to the correct Rayleigh-Ritz procedure based on the matrix type
+     *
+     * @tparam MatrixType Type of the input matrix H.
+     * @tparam InputMultiVectorType Type of the input multivector V1 and V2.
+     * @param H The input matrix representing the system to be reduced.
+     * @param V1 The input multivector representing the orthonormal basis.
+     * @param V2 duplication of V1.
+     * @param W1 Multivector sotring H*V1.
+     * @param W2 Resulting multivector by redistribute V2 from column communicator based to row communicator based.
+     * @param ritzv Pointer to an array where computed eigenvalues of the reduced matrix will be stored.
+     * @param offset The starting offset in V1, V2, W1, and W2 for submatrix processing.
+     * @param subSize Size of the submatrix used in reduction.
+     * @param A Optional workspace matrix for storing intermediate results; if nullptr, a temporary matrix is created.
+     * 
+     */                  
+    template <typename MatrixType, typename InputMultiVectorType>
+     void cpu_mpi::rayleighRitz_dispatch(MatrixType& H,
+                       InputMultiVectorType& V1,
+                       InputMultiVectorType& V2,
+                       typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type& W1,
+                       typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type& W2,
+                       chase::Base<typename MatrixType::value_type>* ritzv,
+                       std::size_t offset,
+                       std::size_t subSize,
+                       chase::distMatrix::RedundantMatrix<typename MatrixType::value_type, chase::platform::CPU>* A)                
+    {
+        using T = typename MatrixType::value_type;
+
+	if constexpr (std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockBlockMatrix<T>>::value ||
+		      std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T>>::value)
+	{
+		cpu_mpi::quasi_hermitian_rayleighRitz(H, V1, V2, W1, W2, ritzv, offset, subSize, A);
+	}
+	else
+	{
+		cpu_mpi::rayleighRitz(H, V1, V2, W1, W2, ritzv, offset, subSize, A);
+	}
+
+    }
+
+    /**
      * @brief Performs the Rayleigh-Ritz procedure, reducing the matrix H using the basis vectors
      * in V1 and V2, and storing the results in W1, W2, and the eigenvalues in ritzv.
      * 

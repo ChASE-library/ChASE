@@ -227,7 +227,7 @@ public:
 
     void Lanczos(std::size_t m, chase::Base<T>* upperb) override 
     {
-        chase::linalg::internal::cpu_mpi::lanczos(m, 
+        chase::linalg::internal::cpu_mpi::lanczos_dispatch(m, 
                                               *Hmat_, 
                                               *V1_, 
                                               upperb);
@@ -236,7 +236,7 @@ public:
     void Lanczos(std::size_t M, std::size_t numvec, chase::Base<T>* upperb,
                          chase::Base<T>* ritzv, chase::Base<T>* Tau, chase::Base<T>* ritzV) override
     {
-        chase::linalg::internal::cpu_mpi::lanczos(M, 
+        chase::linalg::internal::cpu_mpi::lanczos_dispatch(M, 
               	                              numvec, 
                        	                      *Hmat_, 
                                	              *V1_, 
@@ -531,7 +531,7 @@ public:
 
     void RR(chase::Base<T>* ritzv, std::size_t block) override 
     {
-        chase::linalg::internal::cpu_mpi::rayleighRitz(*Hmat_, 
+        chase::linalg::internal::cpu_mpi::rayleighRitz_dispatch(*Hmat_, 
                                                    *V1_, 
                                                    *V2_, 
                                                    *W1_, 

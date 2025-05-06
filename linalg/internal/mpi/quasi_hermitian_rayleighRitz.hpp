@@ -45,17 +45,19 @@ namespace internal
      * 
      * @throws std::invalid_argument if ritzv is a nullptr.
      */                  
-    template <typename T, typename InputMultiVectorType>
-     void cpu_mpi::rayleighRitz(chase::distMatrix::QuasiHermitianBlockBlockMatrix<T>& H,
+    template <typename MatrixType, typename InputMultiVectorType>
+     void cpu_mpi::quasi_hermitian_rayleighRitz(MatrixType& H,
                        InputMultiVectorType& V1,
                        InputMultiVectorType& V2,
-                       typename ResultMultiVectorType<chase::distMatrix::QuasiHermitianBlockBlockMatrix<T>, InputMultiVectorType>::type& W1,
-                       typename ResultMultiVectorType<chase::distMatrix::QuasiHermitianBlockBlockMatrix<T>, InputMultiVectorType>::type& W2,
-                       chase::Base<T>* ritzv,
+                       typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type& W1,
+                       typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type& W2,
+                       chase::Base<typename MatrixType::value_type>* ritzv,
                        std::size_t offset,
                        std::size_t subSize,
-                       chase::distMatrix::RedundantMatrix<T, chase::platform::CPU>* A)                
+                       chase::distMatrix::RedundantMatrix<typename MatrixType::value_type, chase::platform::CPU>* A)                
     {
+        using T = typename MatrixType::value_type;
+
         if (ritzv == nullptr) {
             throw std::invalid_argument("ritzv cannot be a nullptr.");
         }

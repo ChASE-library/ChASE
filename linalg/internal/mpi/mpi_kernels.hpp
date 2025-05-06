@@ -75,6 +75,14 @@ struct cpu_mpi
             target_multiVector);
 
     template <typename MatrixType, typename InputMultiVectorType>
+    static void lanczos_dispatch(std::size_t M, std::size_t numvec, MatrixType& H,
+                        InputMultiVectorType& V,
+                        chase::Base<typename MatrixType::value_type>* upperb,
+                        chase::Base<typename MatrixType::value_type>* ritzv,
+                        chase::Base<typename MatrixType::value_type>* Tau,
+                        chase::Base<typename MatrixType::value_type>* ritzV);
+
+    template <typename MatrixType, typename InputMultiVectorType>
     static void lanczos(std::size_t M, std::size_t numvec, MatrixType& H,
                         InputMultiVectorType& V,
                         chase::Base<typename MatrixType::value_type>* upperb,
@@ -82,22 +90,37 @@ struct cpu_mpi
                         chase::Base<typename MatrixType::value_type>* Tau,
                         chase::Base<typename MatrixType::value_type>* ritzV);
     
-    template <typename T, typename InputMultiVectorType>
-    static void lanczos(std::size_t M, std::size_t numvec, chase::distMatrix::QuasiHermitianBlockBlockMatrix<T>& H,
+    template <typename MatrixType, typename InputMultiVectorType>
+    static void quasi_hermitian_lanczos(std::size_t M, std::size_t numvec, MatrixType& H,
                         InputMultiVectorType& V,
-                        chase::Base<T>* upperb,
-                        chase::Base<T>* ritzv,
-                        chase::Base<T>* Tau,
-                        chase::Base<T>* ritzV);
+                        chase::Base<typename MatrixType::value_type>* upperb,
+                        chase::Base<typename MatrixType::value_type>* ritzv,
+                        chase::Base<typename MatrixType::value_type>* Tau,
+                        chase::Base<typename MatrixType::value_type>* ritzV);
+
+    template <typename MatrixType, typename InputMultiVectorType>
+    static void lanczos_dispatch(std::size_t M, MatrixType& H, InputMultiVectorType& V,
+                        chase::Base<typename MatrixType::value_type>* upperb);
 
     template <typename MatrixType, typename InputMultiVectorType>
     static void lanczos(std::size_t M, MatrixType& H, InputMultiVectorType& V,
                         chase::Base<typename MatrixType::value_type>* upperb);
     
-    template <typename T, typename InputMultiVectorType>
-    static void lanczos(std::size_t M, chase::distMatrix::QuasiHermitianBlockBlockMatrix<T>& H,
-                        InputMultiVectorType& V,
-                        chase::Base<T>* upperb);
+    template <typename MatrixType, typename InputMultiVectorType>
+    static void quasi_hermitian_lanczos(std::size_t M, MatrixType& H, InputMultiVectorType& V,
+                        chase::Base<typename MatrixType::value_type>* upperb);
+
+    template <typename MatrixType, typename InputMultiVectorType>
+    static void rayleighRitz_dispatch(
+        MatrixType& H, InputMultiVectorType& V1, InputMultiVectorType& V2,
+        typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type&
+            W1,
+        typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type&
+            W2,
+        chase::Base<typename MatrixType::value_type>* ritzv, std::size_t offset,
+        std::size_t subSize,
+        chase::distMatrix::RedundantMatrix<typename MatrixType::value_type,
+                                           chase::platform::CPU>* A = nullptr);
 
     template <typename MatrixType, typename InputMultiVectorType>
     static void rayleighRitz(
@@ -111,17 +134,18 @@ struct cpu_mpi
         chase::distMatrix::RedundantMatrix<typename MatrixType::value_type,
                                            chase::platform::CPU>* A = nullptr);
     
-    template <typename T, typename InputMultiVectorType>
-    static void rayleighRitz(
-        chase::distMatrix::QuasiHermitianBlockBlockMatrix<T>& H, InputMultiVectorType& V1, InputMultiVectorType& V2,
-        typename ResultMultiVectorType<chase::distMatrix::QuasiHermitianBlockBlockMatrix<T>, InputMultiVectorType>::type&
+    template <typename MatrixType, typename InputMultiVectorType>
+    static void quasi_hermitian_rayleighRitz(
+        MatrixType& H, InputMultiVectorType& V1, InputMultiVectorType& V2,
+        typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type&
             W1,
-        typename ResultMultiVectorType<chase::distMatrix::QuasiHermitianBlockBlockMatrix<T>, InputMultiVectorType>::type&
+        typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type&
             W2,
-        chase::Base<T>* ritzv, std::size_t offset,
+        chase::Base<typename MatrixType::value_type>* ritzv, std::size_t offset,
         std::size_t subSize,
-        chase::distMatrix::RedundantMatrix<T,chase::platform::CPU>* A = nullptr);
-
+        chase::distMatrix::RedundantMatrix<typename MatrixType::value_type,
+                                           chase::platform::CPU>* A = nullptr);
+    
 
     template <typename MatrixType, typename InputMultiVectorType>
     static void residuals(

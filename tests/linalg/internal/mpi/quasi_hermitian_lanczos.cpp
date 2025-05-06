@@ -87,7 +87,7 @@ TYPED_TEST(QuasiHermitianLanczosCPUDistTest, tinyQuasiHermitianLanczos){
 
     chase::Base<T> upperb;
 
-    chase::linalg::internal::cpu_mpi::lanczos(this->M_tiny,
+    chase::linalg::internal::cpu_mpi::lanczos_dispatch(this->M_tiny,
                                           this->numvec_tiny,
                                           H_,
                                           V_,
@@ -131,7 +131,7 @@ TYPED_TEST(QuasiHermitianLanczosCPUDistTest, tinyQuasiHermitianSimplifiedLanczos
 
     chase::Base<T> upperb;
 
-    chase::linalg::internal::cpu_mpi::lanczos<T>(this->M_tiny, H_, V_, &upperb);
+    chase::linalg::internal::cpu_mpi::lanczos_dispatch(this->M_tiny, H_, V_, &upperb);
     
     chase::Base<T> actual_upperb = (chase::Base<T>)std::real(exact_eigsl_H.data()[this->N_tiny-1]);
     EXPECT_TRUE(upperb >=  actual_upperb ||
@@ -173,7 +173,7 @@ TYPED_TEST(QuasiHermitianLanczosCPUDistTest, QuasiHermitianLanczos){
 
     chase::Base<T> upperb;
 
-    chase::linalg::internal::cpu_mpi::lanczos(this->M,
+    chase::linalg::internal::cpu_mpi::lanczos_dispatch(this->M,
                                           this->numvec,
                                           H_,
                                           V_,
@@ -217,7 +217,7 @@ TYPED_TEST(QuasiHermitianLanczosCPUDistTest, QuasiHermitianSimplifiedLanczos) {
 
     chase::Base<T> upperb;
 
-    chase::linalg::internal::cpu_mpi::lanczos<T>(this->M, H_, V_, &upperb);
+    chase::linalg::internal::cpu_mpi::lanczos_dispatch(this->M, H_, V_, &upperb);
     
     chase::Base<T> actual_upperb = (chase::Base<T>)std::real(exact_eigsl_H.data()[this->N-1]);
     EXPECT_TRUE(upperb >=  actual_upperb ||

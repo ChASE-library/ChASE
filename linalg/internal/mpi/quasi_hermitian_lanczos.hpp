@@ -46,17 +46,18 @@ namespace internal
     * 
     * @throws std::runtime_error if the matrix `H` is not square or if `H` and `V` are not in the same MPI grid.
     */    
-    template <typename T, typename InputMultiVectorType>
-    void cpu_mpi::lanczos(std::size_t M, 
+    template <typename MatrixType, typename InputMultiVectorType>
+    void cpu_mpi::quasi_hermitian_lanczos(std::size_t M, 
                  std::size_t numvec,
-                 chase::distMatrix::QuasiHermitianBlockBlockMatrix<T> & H,
+                 MatrixType& H,
                  InputMultiVectorType& V,
-                 chase::Base<T> *upperb,
-                 chase::Base<T> *ritzv,
-                 chase::Base<T> *Tau,
-                 chase::Base<T> *ritzV)            
+                 chase::Base<typename MatrixType::value_type> *upperb,
+                 chase::Base<typename MatrixType::value_type> *ritzv,
+                 chase::Base<typename MatrixType::value_type> *Tau,
+                 chase::Base<typename MatrixType::value_type> *ritzV)            
     {
-        using ResultMultiVectorType = typename ResultMultiVectorType<chase::distMatrix::QuasiHermitianBlockBlockMatrix<T>, InputMultiVectorType>::type;
+        using T = typename MatrixType::value_type;
+        using ResultMultiVectorType = typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type;
 
         if(H.g_cols() != H.g_rows())
         {
@@ -338,13 +339,14 @@ namespace internal
     * 
     * @throws std::runtime_error if the matrix `H` is not square or if `H` and `V` are not in the same MPI grid.
     */
-    template <typename T, typename InputMultiVectorType>
-    void cpu_mpi::lanczos(std::size_t M, 
-                 chase::distMatrix::QuasiHermitianBlockBlockMatrix<T> & H,
+    template <typename MatrixType, typename InputMultiVectorType>
+    void cpu_mpi::quasi_hermitian_lanczos(std::size_t M, 
+                 MatrixType& H,
                  InputMultiVectorType& V,
-                 chase::Base<T> *upperb)
+                 chase::Base<typename MatrixType::value_type>* upperb)
     {
-        using ResultMultiVectorType = typename ResultMultiVectorType<chase::distMatrix::QuasiHermitianBlockBlockMatrix<T>, InputMultiVectorType>::type;
+        using T = typename MatrixType::value_type;
+        using ResultMultiVectorType = typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type;
 
         if(H.g_cols() != H.g_rows())
         {

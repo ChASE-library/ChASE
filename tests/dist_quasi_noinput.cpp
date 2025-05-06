@@ -62,23 +62,23 @@ int main(int argc, char** argv)
                   << std::endl;
     }
 
-    //auto Hmat = chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, ARCH>(
-    //    N, N, mpi_grid);
-
+    auto Hmat = chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, ARCH>(
+        N, N, mpi_grid);
+/*
     auto Hmat = chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T, ARCH>(
         N, N, mb, mb, mpi_grid);
-
+*/
     Hmat.readFromBinaryFile(
         "./tests/linalg/internal/BSE_matrices/cdouble_random_BSE.bin");
 
     auto Lambda = std::vector<chase::Base<T>>(nev + nex);
     
-    //auto Vec = chase::distMultiVector::DistMultiVector1D<
-    //    T, chase::distMultiVector::CommunicatorType::column, ARCH>(N, nev + nex, mpi_grid);
+    auto Vec = chase::distMultiVector::DistMultiVector1D<
+        T, chase::distMultiVector::CommunicatorType::column, ARCH>(N, nev + nex, mpi_grid);
 
-    auto Vec = chase::distMultiVector::DistMultiVectorBlockCyclic1D<
+    /*auto Vec = chase::distMultiVector::DistMultiVectorBlockCyclic1D<
         T, chase::distMultiVector::CommunicatorType::column, ARCH>(N, nev + nex,mb, mpi_grid);
-    
+    */
     if (world_rank == 0)
     {
 #ifdef HAS_CUDA
