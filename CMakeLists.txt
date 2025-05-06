@@ -109,6 +109,11 @@ add_executable( "dist_quasi_chase_driver" tests/dist_quasi_noinput.cpp )
 target_link_libraries(dist_quasi_chase_driver pchase_cpu)
 endif()
 
+if(TARGET pchase_gpu)
+add_executable( "dist_quasi_chase_driver_gpu" tests/dist_quasi_noinput.cpp )
+target_link_libraries(dist_quasi_chase_driver_gpu pchase_gpu)
+endif()
+
 option(ENABLE_TESTS "Enable unit tests." OFF)
 if(ENABLE_TESTS)
     MESSAGE("Test enabled. Finding GoogleTests.")

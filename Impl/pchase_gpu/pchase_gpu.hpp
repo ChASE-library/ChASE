@@ -230,7 +230,8 @@ public:
 
         std::vector<std::size_t> diag_xoffs, diag_yoffs;
 
-        if constexpr(std::is_same<MatrixType, chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU>>::value)
+        if constexpr(std::is_same<MatrixType, chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU>>::value || 
+		     std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU>>::value )
         {
             std::size_t *g_offs = Hmat_->g_offs();
 
@@ -245,7 +246,8 @@ public:
                     }
                 }
             }
-        }else if constexpr(std::is_same<MatrixType, chase::distMatrix::BlockCyclicMatrix<T, chase::platform::GPU>>::value)
+        }else if constexpr(std::is_same<MatrixType, chase::distMatrix::BlockCyclicMatrix<T, chase::platform::GPU>>::value ||
+		     	   std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T, chase::platform::GPU>>::value )
         {
             auto m_contiguous_global_offs = Hmat_->m_contiguous_global_offs();
             auto n_contiguous_global_offs = Hmat_->n_contiguous_global_offs();

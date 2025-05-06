@@ -193,6 +193,30 @@ namespace internal
                         std::size_t* d_off_n, 
                         std::size_t offsize, 
                         chase::Base<typename MatrixType::value_type> shift);
+        
+	template<typename T>
+        static void flipLowerHalfMatrixSign(chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU>& H);
+	
+	template<typename T>
+        static void flipLowerHalfMatrixSign(chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU>& H,
+			std::size_t offset, 
+			std::size_t subSize);
+	
+	template<typename T>
+        static void flipLowerHalfMatrixSign(chase::distMatrix::BlockCyclicMatrix<T, chase::platform::GPU>& H);
+
+	template<typename T>
+        static void flipLowerHalfMatrixSign(chase::distMatrix::BlockCyclicMatrix<T, chase::platform::GPU>& H,
+			std::size_t offset, 
+			std::size_t subSize);
+	
+	template<typename InputMultiVectorType>
+        static void flipLowerHalfMatrixSign(InputMultiVectorType& V);
+	
+	template<typename InputMultiVectorType>
+        static void flipLowerHalfMatrixSign(InputMultiVectorType& V, 
+			std::size_t offset, 
+			std::size_t subSize);
                                                                     
     };
 

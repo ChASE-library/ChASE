@@ -24,6 +24,10 @@ namespace cuda
     __global__ void cflipLowerHalfMatrixSign(cuComplex* A, std::size_t m, std::size_t n, std::size_t lda);
     __global__ void zflipLowerHalfMatrixSign(cuDoubleComplex* A, std::size_t m, std::size_t n, std::size_t lda);
 
+    __global__ void sflipMatrixSign(float* A, std::size_t m, std::size_t n, std::size_t lda);
+    __global__ void dflipMatrixSign(double* A, std::size_t m, std::size_t n, std::size_t lda);
+    __global__ void cflipMatrixSign(cuComplex* A, std::size_t m, std::size_t n, std::size_t lda);
+    __global__ void zflipMatrixSign(cuDoubleComplex* A, std::size_t m, std::size_t n, std::size_t lda);
 /*
     __global__ void sshift_mgpu_matrix(float* A, std::size_t* off_m,
                                     std::size_t* off_n, std::size_t offsize,
@@ -42,6 +46,11 @@ namespace cuda
     void chase_flipLowerHalfMatrixSign(double* A, std::size_t m, std::size_t n, std::size_t lda, cudaStream_t stream_);
     void chase_flipLowerHalfMatrixSign(std::complex<float>* A, std::size_t m, std::size_t n, std::size_t lda, cudaStream_t stream_);
     void chase_flipLowerHalfMatrixSign(std::complex<double>* A, std::size_t m, std::size_t n, std::size_t lda,  cudaStream_t stream_);
+    
+    void chase_flipMatrixSign(float* A, std::size_t m, std::size_t n, std::size_t lda, cudaStream_t stream_);
+    void chase_flipMatrixSign(double* A, std::size_t m, std::size_t n, std::size_t lda, cudaStream_t stream_);
+    void chase_flipMatrixSign(std::complex<float>* A, std::size_t m, std::size_t n, std::size_t lda, cudaStream_t stream_);
+    void chase_flipMatrixSign(std::complex<double>* A, std::size_t m, std::size_t n, std::size_t lda,  cudaStream_t stream_);
 
 /*
     void chase_shift_mgpu_matrix(float* A, std::size_t* off_m, std::size_t* off_n,
