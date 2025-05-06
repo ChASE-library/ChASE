@@ -76,7 +76,7 @@ TYPED_TEST(QuasiHermitianRRCPUDistTest, QuasiHermitianRRTinyCorrectness) {
 
     std::size_t offset = 0, subSize = this->N_tiny; 
 
-    chase::linalg::internal::cpu_mpi::rayleighRitz(H_, V1_, V2_, W1_, W2_, this->ritzv_tiny.data(), offset, subSize);
+    chase::linalg::internal::cpu_mpi::quasi_hermitian_rayleighRitz(H_, V1_, V2_, W1_, W2_, this->ritzv_tiny.data(), offset, subSize);
 
     for(auto i = offset; i < offset + subSize; i++)
     {
@@ -122,7 +122,7 @@ TYPED_TEST(QuasiHermitianRRCPUDistTest, QuasiHermitianRRCorrectness) {
 
     std::size_t offset = 0, subSize = this->N; 
 
-    chase::linalg::internal::cpu_mpi::rayleighRitz(H_, V1_, V2_, W1_, W2_, this->ritzv.data(), offset, subSize);
+    chase::linalg::internal::cpu_mpi::quasi_hermitian_rayleighRitz(H_, V1_, V2_, W1_, W2_, this->ritzv.data(), offset, subSize);
 
     for(auto i = offset; i < offset + subSize; i++)
     {
