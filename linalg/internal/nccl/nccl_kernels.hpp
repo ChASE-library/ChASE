@@ -198,18 +198,8 @@ namespace internal
         static void flipLowerHalfMatrixSign(chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU>& H);
 	
 	template<typename T>
-        static void flipLowerHalfMatrixSign(chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU>& H,
-			std::size_t offset, 
-			std::size_t subSize);
-	
-	template<typename T>
         static void flipLowerHalfMatrixSign(chase::distMatrix::BlockCyclicMatrix<T, chase::platform::GPU>& H);
 
-	template<typename T>
-        static void flipLowerHalfMatrixSign(chase::distMatrix::BlockCyclicMatrix<T, chase::platform::GPU>& H,
-			std::size_t offset, 
-			std::size_t subSize);
-	
 	template<typename InputMultiVectorType>
         static void flipLowerHalfMatrixSign(InputMultiVectorType& V);
 	

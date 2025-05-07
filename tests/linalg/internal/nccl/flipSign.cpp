@@ -58,9 +58,47 @@ TYPED_TEST_SUITE(flipSignGPUNCCLDistTest, TestTypes);
 TYPED_TEST(flipSignGPUNCCLDistTest, FlipSignCorrectnessGPU) {
     using T = TypeParam;  // Get the current type
 
-    std::size_t N = 10;
+    std::size_t N = 100, offset = 10, subSize = 90;
 
     auto H = chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU>(N, N, mpi_grid);
+    H.allocate_cpu_data();
+
+    for(auto i = 0; i < H.l_rows(); i++)
+    {
+    	for(auto j = 0; j < H.l_cols(); j++)
+        {
+        	H.cpu_data()[i + j * H.cpu_ld()] = T(1.0);
+        }
+    }
+
+    H.H2D();
+
+    chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(H, offset, subSize);
+
+    H.D2H();
+
+    for(auto i = 0; i < H.l_rows(); i++)
+    {
+    	for(auto j = 0; j < H.l_cols(); j++)
+        {
+		if(H.g_offs()[0] + i < H.g_rows() / 2 || j < offset)
+           	{ 
+        		EXPECT_EQ(H.cpu_data()[i + j * H.cpu_ld()], T(1.0));
+		}
+		else
+		{
+        		EXPECT_EQ(H.cpu_data()[i + j * H.cpu_ld()], -T(1.0));
+		}
+        }
+    }
+}
+
+TYPED_TEST(flipSignGPUNCCLDistTest, FlipSignBlockCyclicCorrectnessGPU) {
+    using T = TypeParam;  // Get the current type
+
+    std::size_t N = 100, mb = 20;
+
+    auto H = chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T, chase::platform::GPU>(N, N, mb, mb, mpi_grid);
     H.allocate_cpu_data();
 
     for(auto i = 0; i < H.l_rows(); i++)
@@ -77,21 +115,178 @@ TYPED_TEST(flipSignGPUNCCLDistTest, FlipSignCorrectnessGPU) {
 
     H.D2H();
 
-    for(auto i = 0; i < H.l_rows(); i++)
+    for(auto idx_i = 0; idx_i < H.mblocks(); idx_i++)
     {
-    	for(auto j = 0; j < H.l_cols(); j++)
+    	for(auto idx_j = 0; idx_j < H.nblocks(); idx_j++)
+    	{
+		for(auto i = 0; i < H.m_contiguous_lens()[idx_i]; i++)
+		{
+			for(auto j = 0; j < H.n_contiguous_lens()[idx_j]; j++)
+			{
+				if(i + H.m_contiguous_global_offs()[idx_i] < (N / 2)){
+                			EXPECT_EQ(H.cpu_data()[(j + H.n_contiguous_local_offs()[idx_j]) * H.cpu_ld() + i + H.m_contiguous_local_offs()[idx_i]], T(1.0));
+				}else{
+                			EXPECT_EQ(H.cpu_data()[(j + H.n_contiguous_local_offs()[idx_j]) * H.cpu_ld() + i + H.m_contiguous_local_offs()[idx_i]], T(-1.0));
+				}
+			}
+		}
+    	}
+    }
+}
+
+TYPED_TEST(flipSignGPUNCCLDistTest, FlipSignColMultiVectorsBlockBlockCorrectnessGPU) {
+    using T = TypeParam;  // Get the current type
+
+    std::size_t N = 100, n = 60, offset = 20, subSize = 40;
+
+    auto V = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(N, n, mpi_grid);
+    V.allocate_cpu_data();
+
+    for(auto i = 0; i < V.l_rows(); i++)
+    {
+    	for(auto j = 0; j < V.l_cols(); j++)
         {
-		if(H.g_offs()[0] + i >= H.g_rows() / 2)
+        	V.cpu_data()[i + j * V.cpu_ld()] = T(1.0);
+        }
+    }
+
+    V.H2D();
+
+    chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(V, offset, subSize);
+
+    V.D2H();
+
+    for(auto i = 0; i < V.l_rows(); i++)
+    {
+    	for(auto j = 0; j < V.l_cols(); j++)
+        {
+		if(V.g_off() + i < V.g_rows() / 2 || j < offset)
            	{ 
-        		EXPECT_EQ(H.cpu_data()[i + j * H.cpu_ld()], T(-1.0));
+        		EXPECT_EQ(V.cpu_data()[i + j * V.cpu_ld()], T(1.0));
 		}
 		else
 		{
-        		EXPECT_EQ(H.cpu_data()[i + j * H.cpu_ld()], T(1.0));
+        		EXPECT_EQ(V.cpu_data()[i + j * V.cpu_ld()], -T(1.0));
+		}
+        }
+    }
+
+}
+
+TYPED_TEST(flipSignGPUNCCLDistTest, FlipSignRowMultiVectorsBlockBlockCorrectnessGPU) {
+    using T = TypeParam;  // Get the current type
+
+    std::size_t N = 100, n = 60, offset = 20, subSize = 40;
+
+    auto V = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::GPU>(N, n, mpi_grid);
+    V.allocate_cpu_data();
+
+    for(auto i = 0; i < V.l_rows(); i++)
+    {
+    	for(auto j = 0; j < V.l_cols(); j++)
+        {
+        	V.cpu_data()[i + j * V.cpu_ld()] = T(1.0);
+        }
+    }
+
+    V.H2D();
+
+    chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(V, offset, subSize);
+
+    V.D2H();
+
+    for(auto i = 0; i < V.l_rows(); i++)
+    {
+    	for(auto j = 0; j < V.l_cols(); j++)
+        {
+		if(V.g_off() + i < V.g_rows() / 2 || j < offset)
+           	{ 
+        		EXPECT_EQ(V.cpu_data()[i + j * V.cpu_ld()], T(1.0));
+		}
+		else
+		{
+        		EXPECT_EQ(V.cpu_data()[i + j * V.cpu_ld()], -T(1.0));
 		}
         }
     }
 }
 
+TYPED_TEST(flipSignGPUNCCLDistTest, FlipSignColMultiVectorsBlockCyclicCorrectnessGPU) {
+    using T = TypeParam;  // Get the current type
+
+    std::size_t N = 100, n = 60, mb = 10, offset = 20, subSize = 40;
+
+    auto V = chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(N, n, mb, mpi_grid);
+    V.allocate_cpu_data();
+
+    for(auto i = 0; i < V.l_rows(); i++)
+    {
+    	for(auto j = 0; j < V.l_cols(); j++)
+        {
+        	V.cpu_data()[i + j * V.cpu_ld()] = T(1.0);
+        }
+    }
+
+    V.H2D();
+
+    chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(V, offset, subSize);
+
+    V.D2H();
+
+    for(auto idx_i = 0; idx_i < V.mblocks(); idx_i++)
+    {
+	    for(auto i = 0; i < V.m_contiguous_lens()[idx_i]; i++)
+	    {
+		for(auto j = 0; j < V.l_cols(); j++)
+		{
+			if(i + V.m_contiguous_global_offs()[idx_i] < (N / 2) || j < offset){
+                		EXPECT_EQ(V.cpu_data()[j * V.cpu_ld() + i + V.m_contiguous_local_offs()[idx_i]], T(1.0));
+			}else{
+                		EXPECT_EQ(V.cpu_data()[j * V.cpu_ld() + i + V.m_contiguous_local_offs()[idx_i]], T(-1.0));
+			}
+		}
+    	}
+    }
+
+}
+
+TYPED_TEST(flipSignGPUNCCLDistTest, FlipSignRowMultiVectorsBlockCyclicCorrectnessGPU) {
+    using T = TypeParam;  // Get the current type
+
+    std::size_t N = 100, n = 60, mb = 10, offset = 20, subSize = 40;
+
+    auto V = chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::GPU>(N, n, mb, mpi_grid);
+    V.allocate_cpu_data();
+
+    for(auto i = 0; i < V.l_rows(); i++)
+    {
+    	for(auto j = 0; j < V.l_cols(); j++)
+        {
+        	V.cpu_data()[i + j * V.cpu_ld()] = T(1.0);
+        }
+    }
+
+    V.H2D();
+
+    chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(V, offset, subSize);
+
+    V.D2H();
+
+    for(auto idx_i = 0; idx_i < V.mblocks(); idx_i++)
+    {
+	    for(auto i = 0; i < V.m_contiguous_lens()[idx_i]; i++)
+	    {
+		for(auto j = 0; j < V.l_cols(); j++)
+		{
+			if(i + V.m_contiguous_global_offs()[idx_i] < (N / 2) || j < offset){
+                		EXPECT_EQ(V.cpu_data()[j * V.cpu_ld() + i + V.m_contiguous_local_offs()[idx_i]], T(1.0));
+			}else{
+                		EXPECT_EQ(V.cpu_data()[j * V.cpu_ld() + i + V.m_contiguous_local_offs()[idx_i]], T(-1.0));
+			}
+		}
+    	}
+    }
+
+}
 // Add this at the end of the file, before main()
 ::testing::Environment* const resource_env = ::testing::AddGlobalTestEnvironment(new ResourceCleanupEnvironment);

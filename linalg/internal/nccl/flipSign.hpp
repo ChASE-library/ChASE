@@ -25,25 +25,9 @@ namespace internal
     }
     
     template<typename T>
-    void cuda_nccl::flipLowerHalfMatrixSign(chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU>& H,
-		    			    std::size_t offset,
-					    std::size_t subSize)
-    {
-        chase::linalg::internal::cuda::chase_flipMatrixSign(H.l_data() + H.l_half() + offset * H.l_ld(), H.l_rows() - H.l_half(), subSize, H.l_ld(),(cudaStream_t)0); 
-    }
-    
-    template<typename T>
     void cuda_nccl::flipLowerHalfMatrixSign(chase::distMatrix::BlockCyclicMatrix<T, chase::platform::GPU>& H)
     {
         chase::linalg::internal::cuda::chase_flipMatrixSign(H.l_data() + H.l_half(), H.l_rows() - H.l_half(), H.l_cols(), H.l_ld(), (cudaStream_t)0); 
-    }
-    
-    template<typename T>
-    void cuda_nccl::flipLowerHalfMatrixSign(chase::distMatrix::BlockCyclicMatrix<T, chase::platform::GPU>& H,
-		    			    std::size_t offset,
-					    std::size_t subSize)
-    {
-        chase::linalg::internal::cuda::chase_flipMatrixSign(H.l_data() + H.l_half() + offset * H.l_ld(), H.l_rows() - H.l_half(), subSize, H.l_ld(),(cudaStream_t)0); 
     }
     
     template<typename InputMultiVectorType>
