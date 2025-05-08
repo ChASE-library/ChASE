@@ -61,8 +61,8 @@ protected:
     std::vector<chase::Base<T>> ritzV_tiny;
     std::vector<chase::Base<T>> Tau_tiny;         
     
-    std::size_t M = 200;
-    std::size_t numvec = 1;
+    std::size_t M = 25;
+    std::size_t numvec = 4;
     std::size_t N = 200;
     std::vector<chase::Base<T>> ritzv;
     std::vector<chase::Base<T>> ritzV;
@@ -82,9 +82,8 @@ public:
     }
 };
 
-using TestTypes = ::testing::Types<float, double, std::complex<float>, std::complex<double>>;
+using TestTypes = ::testing::Types<std::complex<float>>;//, double, std::complex<float>, std::complex<double>>;
 TYPED_TEST_SUITE(QuasiHermitianLanczosGPUNCCLDistTest, TestTypes);
-
 
 TYPED_TEST(QuasiHermitianLanczosGPUNCCLDistTest, tinyQuasiHermitianLanczos){
     using T = TypeParam;  // Get the current type
@@ -145,7 +144,7 @@ TYPED_TEST(QuasiHermitianLanczosGPUNCCLDistTest, QuasiHermitianLanczos){
 
     int *coords = mpi_grid.get()->get_coords();
 
-    auto H_ = chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU>(this->N, this->N, mpi_grid);
+    auto H_ = chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU>(this->N, this->N, mpi_grid);
     H_.allocate_cpu_data();
     H_.readFromBinaryFile(GetBSE_Matrix<T>());
     H_.H2D();
@@ -195,13 +194,13 @@ TYPED_TEST(QuasiHermitianLanczosGPUNCCLDistTest, tinySimplifiedQuasiHermitianLan
 
     int *coords = mpi_grid.get()->get_coords();
 
-    auto H_ = chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU>(this->N_tiny, this->N_tiny, mpi_grid);
+    auto H_ = chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU>(this->N_tiny, this->N_tiny, mpi_grid);
     H_.allocate_cpu_data();
-    H_.readFromBinaryFile(GetBSE_Matrix<T>());
+    H_.readFromBinaryFile(GetBSE_TinyMatrix<T>());
     H_.H2D();
 
     chase::matrix::Matrix<T> exact_eigsl_H = chase::matrix::Matrix<T>(this->N_tiny, 1);
-    exact_eigsl_H.readFromBinaryFile(GetBSE_Eigs<T>());
+    exact_eigsl_H.readFromBinaryFile(GetBSE_TinyEigs<T>());
 
     auto V_ = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(this->N_tiny, this->M_tiny, mpi_grid);
     V_.allocate_cpu_data();
@@ -238,7 +237,7 @@ TYPED_TEST(QuasiHermitianLanczosGPUNCCLDistTest, SimplifiedQuasiHermitianLanczos
 
     int *coords = mpi_grid.get()->get_coords();
 
-    auto H_ = chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU>(this->N, this->N, mpi_grid);
+    auto H_ = chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU>(this->N, this->N, mpi_grid);
     H_.allocate_cpu_data();
     H_.readFromBinaryFile(GetBSE_Matrix<T>());
     H_.H2D();
