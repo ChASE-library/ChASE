@@ -243,7 +243,7 @@ namespace internal
 	    if constexpr (std::is_same<MatrixType,chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU>>::value ||
                           std::is_same<MatrixType,chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T, chase::platform::GPU>>::value ){
 
-                chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(input_multiVector);
+                chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(input_multiVector, offset, subSize);
             }
 
             if(beta_tmp != T(0.0)){
@@ -251,7 +251,7 @@ namespace internal
                 if constexpr (std::is_same<MatrixType,chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU>>::value ||
                           std::is_same<MatrixType,chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T, chase::platform::GPU>>::value ){
 
-                        chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(result_multiVector);
+                        chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(result_multiVector, offset, subSize);
                 }
             }
 
@@ -282,13 +282,13 @@ namespace internal
 	    if constexpr (std::is_same<MatrixType,chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU>>::value ||
                           std::is_same<MatrixType,chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T, chase::platform::GPU>>::value ){
 
-                chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(input_multiVector);
+                chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(input_multiVector, offset, subSize);
             }
 
             if constexpr (std::is_same<MatrixType,chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU>>::value ||
                           std::is_same<MatrixType,chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T, chase::platform::GPU>>::value ){
 
-                chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(result_multiVector);
+                chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(result_multiVector, offset, subSize);
            }
         }
         else // InputCommType is CommunicatorType::column
@@ -425,7 +425,7 @@ namespace internal
 	    if constexpr (std::is_same<MatrixType,chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU>>::value ||
                           std::is_same<MatrixType,chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T, chase::platform::GPU>>::value ){
 
-                chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(input_multiVector);
+                chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(input_multiVector, offset, subSize);
             }
 
             // Perform the matrix multiplication using BLAS
@@ -454,13 +454,13 @@ namespace internal
 	    if constexpr (std::is_same<MatrixType,chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU>>::value ||
                           std::is_same<MatrixType,chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T, chase::platform::GPU>>::value ){
 
-                chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(input_multiVector);
+                chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(input_multiVector, offset, subSize);
             }
 
             if constexpr (std::is_same<MatrixType,chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU>>::value ||
                           std::is_same<MatrixType,chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T, chase::platform::GPU>>::value ){
 
-                chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(result_multiVector);
+                chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(result_multiVector, offset, subSize);
            }
         }
         else // InputCommType is CommunicatorType::column

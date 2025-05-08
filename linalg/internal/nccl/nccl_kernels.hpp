@@ -80,6 +80,25 @@ namespace internal
                     MatrixType& H,
                     InputMultiVectorType& V,
                     chase::Base<typename MatrixType::value_type> *upperb);  
+        
+	template <typename MatrixType, typename InputMultiVectorType>
+        static void quasi_hermitian_lanczos(cublasHandle_t cublas_handle,
+                    std::size_t M, 
+                    std::size_t numvec,
+                    MatrixType& H,
+                    InputMultiVectorType& V,
+                    chase::Base<typename MatrixType::value_type> *upperb,
+                    chase::Base<typename MatrixType::value_type> *ritzv,
+                    chase::Base<typename MatrixType::value_type> *Tau,
+                    chase::Base<typename MatrixType::value_type> *ritzV);     
+
+        template <typename MatrixType, typename InputMultiVectorType>
+        static void quasi_hermitian_lanczos(cublasHandle_t cublas_handle,
+                    std::size_t M,
+                    MatrixType& H,
+                    InputMultiVectorType& V,
+                    chase::Base<typename MatrixType::value_type> *upperb);  
+
 
         template<typename T>
         static int cholQR1(cublasHandle_t cublas_handle,
@@ -217,6 +236,8 @@ namespace internal
 #include "linalg/internal/nccl/symOrHerm.hpp"
 #include "linalg/internal/nccl/hemm.hpp"
 #include "linalg/internal/nccl/lanczos.hpp"
+#include "linalg/internal/nccl/quasi_hermitian_lanczos.hpp"
+#include "linalg/internal/nccl/flipSign.hpp"
 #include "linalg/internal/nccl/cholqr.hpp"
 #include "linalg/internal/nccl/rayleighRitz.hpp"
 #include "linalg/internal/nccl/residuals.hpp"
