@@ -30,13 +30,12 @@ protected:
         MPI_Comm_size(MPI_COMM_WORLD, &world_size);        
         ASSERT_EQ(world_size, 4);  // Ensure we're running with 4 processes
         
-        mpi_grid = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(2, 2, MPI_COMM_WORLD);
         if (!resources_initialized) {
-            //mpi_grid = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(2, 2, MPI_COMM_WORLD);
+            mpi_grid = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(2, 2, MPI_COMM_WORLD);
+            CHECK_CUBLAS_ERROR(cublasCreate(&cublasH));
             resources_initialized = true;
         }
             
-	CHECK_CUBLAS_ERROR(cublasCreate(&cublasH));
     }
 
     void TearDown() override {
@@ -47,6 +46,7 @@ protected:
     int world_size;    
     
     static cublasHandle_t get_cublas_handle() { return cublasH; }
+    static std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> get_mpi_grid() { return mpi_grid; }
 };
 
 // Add a global test environment to handle resource cleanup at program exit
@@ -54,11 +54,16 @@ class ResourceCleanupEnvironment : public ::testing::Environment {
 public:
     ~ResourceCleanupEnvironment() override {
         if (resources_initialized) {
+            CHECK_CUBLAS_ERROR(cublasDestroy(cublasH));
             mpi_grid.reset();
             resources_initialized = false;
+            std::cout << "Resources freed at program exit" << std::endl;
         }
     }
 };
+
+// Register the global test environment
+::testing::Environment* const env = ::testing::AddGlobalTestEnvironment(new ResourceCleanupEnvironment());
 
 using TestTypes = ::testing::Types<float, double, std::complex<float>, std::complex<double>>;
 TYPED_TEST_SUITE(QuasiHEMMGPUNCCLDistTest, TestTypes);
@@ -68,25 +73,23 @@ TYPED_TEST(QuasiHEMMGPUNCCLDistTest, TinyQuasiHEMMDistCorrectness) {
     std::size_t N = 10;
     std::size_t n = 5;
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
-    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid 
-            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(2, 2, MPI_COMM_WORLD);
-
-    auto SH_ = chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU>(N, N, mpi_grid);
+    
+    auto SH_ = chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU>(N, N, this->get_mpi_grid());
     SH_.allocate_cpu_data();
     SH_.readFromBinaryFile(GetBSE_TinyMatrix<T>());
     SH_.H2D();
     chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(SH_); //We assume the flipping function works
 
-    auto H_  = chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU>(N, N, mpi_grid);
+    auto H_  = chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU>(N, N, this->get_mpi_grid());
     H_.allocate_cpu_data();
     H_.readFromBinaryFile(GetBSE_TinyMatrix<T>());
     H_.H2D();
 
-    auto V_   = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(N, n, mpi_grid);
+    auto V_   = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(N, n, this->get_mpi_grid());
     V_.allocate_cpu_data();
-    auto W1_  = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::GPU>(N, n, mpi_grid);
+    auto W1_  = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::GPU>(N, n, this->get_mpi_grid());
     W1_.allocate_cpu_data();
-    auto W2_  = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::GPU>(N, n, mpi_grid);
+    auto W2_  = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::GPU>(N, n, this->get_mpi_grid());
     W2_.allocate_cpu_data();
 
     T alpha = T(1.0);
@@ -139,25 +142,23 @@ TYPED_TEST(QuasiHEMMGPUNCCLDistTest, TinyQuasiHEMMBlockCyclicDistCorrectness) {
     std::size_t n = 5;
     std::size_t mb = 2;
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
-    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid 
-            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(2, 2, MPI_COMM_WORLD);
-
-    auto SH_ = chase::distMatrix::BlockCyclicMatrix<T, chase::platform::GPU>(N, N, mb, mb, mpi_grid);
+    
+    auto SH_ = chase::distMatrix::BlockCyclicMatrix<T, chase::platform::GPU>(N, N, mb, mb, this->get_mpi_grid());
     SH_.allocate_cpu_data();
     SH_.readFromBinaryFile(GetBSE_TinyMatrix<T>());
     SH_.H2D();
     chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(SH_); //We assume the flipping function works
 
-    auto H_  = chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T, chase::platform::GPU>(N, N, mb, mb, mpi_grid);
+    auto H_  = chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T, chase::platform::GPU>(N, N, mb, mb, this->get_mpi_grid());
     H_.allocate_cpu_data();
     H_.readFromBinaryFile(GetBSE_TinyMatrix<T>());
     H_.H2D();
 
-    auto V_   = chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(N, n, mb, mpi_grid);
+    auto V_   = chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(N, n, mb, this->get_mpi_grid());
     V_.allocate_cpu_data();
-    auto W1_  = chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::GPU>(N, n, mb, mpi_grid);
+    auto W1_  = chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::GPU>(N, n, mb, this->get_mpi_grid());
     W1_.allocate_cpu_data();
-    auto W2_  = chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::GPU>(N, n, mb, mpi_grid);
+    auto W2_  = chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::GPU>(N, n, mb, this->get_mpi_grid());
     W2_.allocate_cpu_data();
 
     T alpha = T(1.0);
@@ -209,25 +210,23 @@ TYPED_TEST(QuasiHEMMGPUNCCLDistTest, QuasiHEMMDistCorrectness) {
     std::size_t N = 200;
     std::size_t n = 20;
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
-    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid 
-            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(2, 2, MPI_COMM_WORLD);
-
-    auto SH_ = chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU>(N, N, mpi_grid);
+    
+    auto SH_ = chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU>(N, N, this->get_mpi_grid());
     SH_.allocate_cpu_data();
     SH_.readFromBinaryFile(GetBSE_Matrix<T>());
     SH_.H2D();
     chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(SH_); //We assume the flipping function works
 
-    auto H_  = chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU>(N, N, mpi_grid);
+    auto H_  = chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU>(N, N, this->get_mpi_grid());
     H_.allocate_cpu_data();
     H_.readFromBinaryFile(GetBSE_Matrix<T>());
     H_.H2D();
 
-    auto V_   = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(N, n, mpi_grid);
+    auto V_   = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(N, n, this->get_mpi_grid());
     V_.allocate_cpu_data();
-    auto W1_  = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::GPU>(N, n, mpi_grid);
+    auto W1_  = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::GPU>(N, n, this->get_mpi_grid());
     W1_.allocate_cpu_data();
-    auto W2_  = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::GPU>(N, n, mpi_grid);
+    auto W2_  = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::GPU>(N, n, this->get_mpi_grid());
     W2_.allocate_cpu_data();
 
     T alpha = T(1.0);
@@ -280,25 +279,23 @@ TYPED_TEST(QuasiHEMMGPUNCCLDistTest, QuasiHEMMBlockCyclicDistCorrectness) {
     std::size_t n = 20;
     std::size_t mb = 10;
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
-    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid 
-            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(2, 2, MPI_COMM_WORLD);
-
-    auto SH_ = chase::distMatrix::BlockCyclicMatrix<T, chase::platform::GPU>(N, N, mb, mb, mpi_grid);
+    
+    auto SH_ = chase::distMatrix::BlockCyclicMatrix<T, chase::platform::GPU>(N, N, mb, mb, this->get_mpi_grid());
     SH_.allocate_cpu_data();
     SH_.readFromBinaryFile(GetBSE_Matrix<T>());
     SH_.H2D();
     chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(SH_); //We assume the flipping function works
 
-    auto H_  = chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T, chase::platform::GPU>(N, N, mb, mb, mpi_grid);
+    auto H_  = chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T, chase::platform::GPU>(N, N, mb, mb, this->get_mpi_grid());
     H_.allocate_cpu_data();
     H_.readFromBinaryFile(GetBSE_Matrix<T>());
     H_.H2D();
 
-    auto V_   = chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(N, n, mb, mpi_grid);
+    auto V_   = chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(N, n, mb, this->get_mpi_grid());
     V_.allocate_cpu_data();
-    auto W1_  = chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::GPU>(N, n, mb, mpi_grid);
+    auto W1_  = chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::GPU>(N, n, mb, this->get_mpi_grid());
     W1_.allocate_cpu_data();
-    auto W2_  = chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::GPU>(N, n, mb, mpi_grid);
+    auto W2_  = chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::GPU>(N, n, mb, this->get_mpi_grid());
     W2_.allocate_cpu_data();
 
     T alpha = T(1.0);

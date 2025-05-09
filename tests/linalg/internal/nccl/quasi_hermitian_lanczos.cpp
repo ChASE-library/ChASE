@@ -39,13 +39,11 @@ protected:
         
 	ASSERT_EQ(world_size, 4);  // Ensure we're running with 4 processes
         
-        mpi_grid = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(2, 2, MPI_COMM_WORLD);
         if (!resources_initialized) {
-            //mpi_grid = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(2, 2, MPI_COMM_WORLD);
+            mpi_grid = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(2, 2, MPI_COMM_WORLD);
+            CHECK_CUBLAS_ERROR(cublasCreate(&cublasH));
             resources_initialized = true;
         }
-            
-	CHECK_CUBLAS_ERROR(cublasCreate(&cublasH));
     }
 
     void TearDown() override {        
@@ -69,6 +67,7 @@ protected:
     std::vector<chase::Base<T>> Tau;         
     
     static cublasHandle_t get_cublas_handle() { return cublasH; }
+    static std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> get_mpi_grid() { return mpi_grid; }
 };
 
 // Add a global test environment to handle resource cleanup at program exit
@@ -76,11 +75,16 @@ class ResourceCleanupEnvironment : public ::testing::Environment {
 public:
     ~ResourceCleanupEnvironment() override {
         if (resources_initialized) {
+            CHECK_CUBLAS_ERROR(cublasDestroy(cublasH));
             mpi_grid.reset();
             resources_initialized = false;
+            std::cout << "Resources freed at program exit" << std::endl;
         }
     }
 };
+
+// Register the global test environment
+::testing::Environment* const env = ::testing::AddGlobalTestEnvironment(new ResourceCleanupEnvironment());
 
 using TestTypes = ::testing::Types<float, double, std::complex<float>, std::complex<double>>;
 TYPED_TEST_SUITE(QuasiHermitianLanczosGPUNCCLDistTest, TestTypes);
@@ -89,12 +93,10 @@ TYPED_TEST(QuasiHermitianLanczosGPUNCCLDistTest, tinyQuasiHermitianLanczos){
     using T = TypeParam;  // Get the current type
 
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
-    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid 
-            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(2, 2, MPI_COMM_WORLD);
+    
+    int *coords = this->get_mpi_grid().get()->get_coords();
 
-    int *coords = mpi_grid.get()->get_coords();
-
-    auto H_ = chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU>(this->N_tiny, this->N_tiny, mpi_grid);
+    auto H_ = chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU>(this->N_tiny, this->N_tiny, this->get_mpi_grid());
     H_.allocate_cpu_data();
     H_.readFromBinaryFile(GetBSE_TinyMatrix<T>());
     H_.H2D();
@@ -102,7 +104,7 @@ TYPED_TEST(QuasiHermitianLanczosGPUNCCLDistTest, tinyQuasiHermitianLanczos){
     chase::matrix::Matrix<T> exact_eigsl_H = chase::matrix::Matrix<T>(this->N_tiny, 1);
     exact_eigsl_H.readFromBinaryFile(GetBSE_TinyEigs<T>());
 
-    auto V_ = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(this->N_tiny, this->M_tiny, mpi_grid);
+    auto V_ = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(this->N_tiny, this->M_tiny, this->get_mpi_grid());
     V_.allocate_cpu_data();
 
     std::mt19937 gen(1337.0 + coords[0]);
@@ -138,12 +140,10 @@ TYPED_TEST(QuasiHermitianLanczosGPUNCCLDistTest, QuasiHermitianLanczos){
     using T = TypeParam;  // Get the current type
 
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
-    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid 
-            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(2, 2, MPI_COMM_WORLD);
+    
+    int *coords = this->get_mpi_grid().get()->get_coords();
 
-    int *coords = mpi_grid.get()->get_coords();
-
-    auto H_ = chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU>(this->N, this->N, mpi_grid);
+    auto H_ = chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU>(this->N, this->N, this->get_mpi_grid());
     H_.allocate_cpu_data();
     H_.readFromBinaryFile(GetBSE_Matrix<T>());
     H_.H2D();
@@ -151,7 +151,7 @@ TYPED_TEST(QuasiHermitianLanczosGPUNCCLDistTest, QuasiHermitianLanczos){
     chase::matrix::Matrix<T> exact_eigsl_H = chase::matrix::Matrix<T>(this->N, 1);
     exact_eigsl_H.readFromBinaryFile(GetBSE_Eigs<T>());
 
-    auto V_ = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(this->N, this->M, mpi_grid);
+    auto V_ = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(this->N, this->M, this->get_mpi_grid());
     V_.allocate_cpu_data();
 
     std::mt19937 gen(1337.0 + coords[0]);
@@ -187,12 +187,10 @@ TYPED_TEST(QuasiHermitianLanczosGPUNCCLDistTest, tinySimplifiedQuasiHermitianLan
     using T = TypeParam;  // Get the current type
 
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
-    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid 
-            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(2, 2, MPI_COMM_WORLD);
+    
+    int *coords = this->get_mpi_grid().get()->get_coords();
 
-    int *coords = mpi_grid.get()->get_coords();
-
-    auto H_ = chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU>(this->N_tiny, this->N_tiny, mpi_grid);
+    auto H_ = chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU>(this->N_tiny, this->N_tiny, this->get_mpi_grid());
     H_.allocate_cpu_data();
     H_.readFromBinaryFile(GetBSE_TinyMatrix<T>());
     H_.H2D();
@@ -200,7 +198,7 @@ TYPED_TEST(QuasiHermitianLanczosGPUNCCLDistTest, tinySimplifiedQuasiHermitianLan
     chase::matrix::Matrix<T> exact_eigsl_H = chase::matrix::Matrix<T>(this->N_tiny, 1);
     exact_eigsl_H.readFromBinaryFile(GetBSE_TinyEigs<T>());
 
-    auto V_ = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(this->N_tiny, this->M_tiny, mpi_grid);
+    auto V_ = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(this->N_tiny, this->M_tiny, this->get_mpi_grid());
     V_.allocate_cpu_data();
 
     std::mt19937 gen(1337.0 + coords[0]);
@@ -230,12 +228,10 @@ TYPED_TEST(QuasiHermitianLanczosGPUNCCLDistTest, SimplifiedQuasiHermitianLanczos
     using T = TypeParam;  // Get the current type
 
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
-    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid 
-            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(2, 2, MPI_COMM_WORLD);
+    
+    int *coords = this->get_mpi_grid().get()->get_coords();
 
-    int *coords = mpi_grid.get()->get_coords();
-
-    auto H_ = chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU>(this->N, this->N, mpi_grid);
+    auto H_ = chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU>(this->N, this->N, this->get_mpi_grid());
     H_.allocate_cpu_data();
     H_.readFromBinaryFile(GetBSE_Matrix<T>());
     H_.H2D();
@@ -243,7 +239,7 @@ TYPED_TEST(QuasiHermitianLanczosGPUNCCLDistTest, SimplifiedQuasiHermitianLanczos
     chase::matrix::Matrix<T> exact_eigsl_H = chase::matrix::Matrix<T>(this->N, 1);
     exact_eigsl_H.readFromBinaryFile(GetBSE_Eigs<T>());
 
-    auto V_ = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(this->N, this->M, mpi_grid);
+    auto V_ = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(this->N, this->M, this->get_mpi_grid());
     V_.allocate_cpu_data();
 
     std::mt19937 gen(1337.0 + coords[0]);
