@@ -70,11 +70,10 @@ namespace internal
         CHECK_CUBLAS_ERROR(cublasGetStream(cublas_handle, &usedStream));
 
         std::unique_ptr<chase::distMatrix::RedundantMatrix<T, chase::platform::GPU>> A_ptr;
-        std::size_t upperTriangularSize = std::size_t(subSize * (subSize + 1) / 2);
 
         if (A == nullptr) {
             // Allocate A if not provided
-            A_ptr = std::make_unique<chase::distMatrix::RedundantMatrix<T, chase::platform::GPU>>(subSize, subSize, V1.getMpiGrid_shared_ptr());
+            A_ptr = std::make_unique<chase::distMatrix::RedundantMatrix<T, chase::platform::GPU>>(3*subSize, subSize, V1.getMpiGrid_shared_ptr());
             A = A_ptr.get();
         }
 
@@ -112,12 +111,16 @@ namespace internal
                 h_workspace = new T[h_lwork]();
             }
         }
+#else
+        if (A == nullptr) {
+		A->allocate_cpu_data();
+	}
 #endif
 
         T One    = T(1.0);
         T Zero   = T(0.0);
         T NegOne = -T(1.0);
-	chase::Base<T> real_One = chase::Base<T>(1.0);
+	chase::Base<T> real_Zero = chase::Base<T>(0.0);
 
 	T * M = A->l_data() + subSize * subSize; 
 	T * W = A->l_data() + 2 * subSize * subSize;
@@ -157,16 +160,9 @@ namespace internal
                                        W,
                                        subSize));
 
-        CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(W, W, subSize * subSize, ncclSum, A->getMpiGrid()->get_nccl_row_comm()));
-
         // Perform the MPI_Allreduce to sum up the results
-        MPI_Allreduce(MPI_IN_PLACE, 
-                    W, 
-                    subSize * subSize, 
-                    chase::mpi::getMPI_Type<T>(), 
-                    MPI_SUM, 
-                    A->getMpiGrid()->get_row_comm());
-		
+        CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(W, W, subSize * subSize, ncclSum, A->getMpiGrid()->get_nccl_row_comm()));
+	
 	chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(V2, offset, subSize);
 	
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(cublas_handle, 
@@ -177,26 +173,26 @@ namespace internal
                                        V2.l_rows(),
                                        &One, 
                                        V2.l_data() + offset * V2.l_ld(),
-                                       W2.l_ld(), 
+                                       V2.l_ld(), 
                                        V1.l_data() + offset * V1.l_ld(), 
                                        V1.l_ld(),
                                        &Zero, 
                                        M,
                                        subSize));
-
+	
         CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(M, M, subSize * subSize, ncclSum, A->getMpiGrid()->get_nccl_col_comm()));
 
         chase::linalg::internal::cuda::chase_plus_inverse_diagonal(M,
                                       subSize,
                                       subSize,
-                                      real_One,
+                                      real_Zero,
                                       diag.l_data(), usedStream);
 
         chase::linalg::internal::cuda::chase_set_diagonal(M,
                         subSize,
                         subSize,
                         Zero, usedStream);
-
+	
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(cublas_handle,
                                         CUBLAS_OP_N,
                                         CUBLAS_OP_N,
@@ -205,7 +201,7 @@ namespace internal
                                         subSize,
                                         &NegOne,
                                         M, subSize, W, subSize, &Zero, A->l_data(), subSize)); //A = (Diag(M) - M) * A
-
+	
 	chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(W1, offset, subSize);
 
         //Last GEMM for the construction of the rayleigh Quotient : (H' * Ql)' * Qr
@@ -234,12 +230,10 @@ namespace internal
                                                                 1));
 
         chase::linalg::internal::cuda::chase_scale_rows_matrix(A->l_data(),subSize,subSize,subSize,diag.l_data(),usedStream);
-
+	
         chase::Base<T> * ptx = ritzv.cpu_data() + offset;
 
 #ifdef XGEEV_EXISTS
-
-	std::cout << "XGEEV EXISTS!" << std::endl;
 
         //Compute the eigenpairs of the non-hermitian rayleigh quotient on GPU  
         //std::cout << "Compute the eigenpairs of the non-hermitian rayleigh quotient" << std::endl;
@@ -295,17 +289,7 @@ namespace internal
 #endif
         std::vector<chase::Base<T>> ptx_imag = std::vector<chase::Base<T>>(subSize,chase::Base<T>(0.0));
 
-        A->allocate_cpu_data();
-
         A->D2H();
-
-	if(H.grank() == 0){
-		A->D2H();
-		for(auto i = 0; i < subSize * subSize; i++){
-			std::cout << A->cpu_data()[i] << " ";
-		}
-		std::cout << std::endl;
-	}
 
         T * W_cpu = A->cpu_data() + 2*subSize*subSize;
 

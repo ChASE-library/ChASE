@@ -1,5 +1,5 @@
 setup_test(HEMMGPUNCCLDistTest hemm.cpp LIBRARIES pchase_gpu)
-setup_test(QuasiHEMMGPUDistTest quasi_hermitian_hemm.cpp LIBRARIES pchase_gpu)
+setup_test(QuasiHEMMGPUNCCLDistTest quasi_hermitian_hemm.cpp LIBRARIES pchase_gpu)
 setup_test(CholQRGPUNCCLDistTest cholqr.cpp LIBRARIES pchase_gpu)
 setup_test(RayleighRitzGPUNCCLDistTest rayleighRitz.cpp LIBRARIES pchase_gpu)
 setup_test(QuasiRayleighRitzGPUNCCLDistTest quasi_hermitian_rayleighRitz.cpp LIBRARIES pchase_gpu)

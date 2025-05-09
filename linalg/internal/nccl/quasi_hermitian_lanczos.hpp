@@ -103,7 +103,7 @@ namespace internal
                                                                      &Zero,
                                                                      v_w);
 
-	v_w.redistributeImpl(&v_2);
+	v_w.redistributeImplAsync(&v_2);
         
 	chase::linalg::internal::cuda::t_lacpy('A', Sv.l_rows(), numvec, v_2.l_data(), v_2.l_ld(), Sv.l_data(), Sv.l_ld());
 	
@@ -243,7 +243,7 @@ namespace internal
                         	                                           &Zero,
                                 	                                   v_w);
 
-	    v_w.redistributeImpl(&v_2);
+	    v_w.redistributeImplAsync(&v_2);
 	    
 	    chase::linalg::internal::cuda::t_lacpy('A', Sv.l_rows(), numvec, v_2.l_data(), v_2.l_ld(), Sv.l_data(), Sv.l_ld());
 
@@ -306,19 +306,6 @@ namespace internal
             }
         }
 
-	std::cout << "Arrived at the end of the loop ... " << std::endl;
-
-	for(auto i = 0; i < M * numvec; i++){
-		std::cout << d.data()[i] << " ";
-	}
-	std::cout << std::endl;
-	
-	for(auto i = 0; i < (M-1) * numvec; i++){
-		std::cout << e.data()[i] << " ";
-	}
-		
-	std::cout << std::endl;
-
 	chase::linalg::internal::cuda::t_lacpy('A',
         		                       v_1.l_rows(),
                           		       numvec,
@@ -337,6 +324,7 @@ namespace internal
 
         for(auto i = 0; i < numvec; i++)
         {
+
             lapackpp::t_stemr(LAPACK_COL_MAJOR, 'V', 'A', M, d.data() + i * M, e.data() + i * M, ul, ll, vl, vu,
                                 &notneeded_m, ritzv + M * i, ritzV, M, M, isuppz.data(), &tryrac);
 
@@ -347,6 +335,7 @@ namespace internal
         }
 
         *upperb = ritzv[M-1];
+
     }
 
     /**
@@ -420,7 +409,7 @@ namespace internal
                                                                      &Zero,
                                                                      v_w);
 
-	v_w.redistributeImpl(&v_2);
+	v_w.redistributeImplAsync(&v_2);
         
 	chase::linalg::internal::cuda::t_lacpy('A', Sv.l_rows(), 1, v_2.l_data(), v_2.l_ld(), Sv.l_data(), Sv.l_ld());
 	
@@ -515,7 +504,7 @@ namespace internal
                         	                                           &Zero,
                                 	                                   v_w);
 
-	    v_w.redistributeImpl(&v_2);
+	    v_w.redistributeImplAsync(&v_2);
 	    
 	    chase::linalg::internal::cuda::t_lacpy('A', Sv.l_rows(), 1, v_2.l_data(), v_2.l_ld(), Sv.l_data(), Sv.l_ld());
 

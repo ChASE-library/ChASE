@@ -23,7 +23,7 @@ namespace {
 }
 
 template <typename T>
-class QuasiHEMMGPUDistTest : public ::testing::Test {
+class QuasiHEMMGPUNCCLDistTest : public ::testing::Test {
 protected:
     void SetUp() override {
         MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
@@ -61,9 +61,9 @@ public:
 };
 
 using TestTypes = ::testing::Types<float, double, std::complex<float>, std::complex<double>>;
-TYPED_TEST_SUITE(QuasiHEMMGPUDistTest, TestTypes);
+TYPED_TEST_SUITE(QuasiHEMMGPUNCCLDistTest, TestTypes);
 
-TYPED_TEST(QuasiHEMMGPUDistTest, TinyQuasiHEMMDistCorrectness) {
+TYPED_TEST(QuasiHEMMGPUNCCLDistTest, TinyQuasiHEMMDistCorrectness) {
     using T = TypeParam;  // Get the current type
     std::size_t N = 10;
     std::size_t n = 5;
@@ -133,7 +133,7 @@ TYPED_TEST(QuasiHEMMGPUDistTest, TinyQuasiHEMMDistCorrectness) {
     }  
 }
 
-TYPED_TEST(QuasiHEMMGPUDistTest, TinyQuasiHEMMBlockCyclicDistCorrectness) {
+TYPED_TEST(QuasiHEMMGPUNCCLDistTest, TinyQuasiHEMMBlockCyclicDistCorrectness) {
     using T = TypeParam;  // Get the current type
     std::size_t N = 10;
     std::size_t n = 5;
@@ -204,7 +204,7 @@ TYPED_TEST(QuasiHEMMGPUDistTest, TinyQuasiHEMMBlockCyclicDistCorrectness) {
     }  
 }
 
-TYPED_TEST(QuasiHEMMGPUDistTest, QuasiHEMMDistCorrectness) {
+TYPED_TEST(QuasiHEMMGPUNCCLDistTest, QuasiHEMMDistCorrectness) {
     using T = TypeParam;  // Get the current type
     std::size_t N = 200;
     std::size_t n = 20;
@@ -274,7 +274,7 @@ TYPED_TEST(QuasiHEMMGPUDistTest, QuasiHEMMDistCorrectness) {
     }  
 }
 
-TYPED_TEST(QuasiHEMMGPUDistTest, QuasiHEMMBlockCyclicDistCorrectness) {
+TYPED_TEST(QuasiHEMMGPUNCCLDistTest, QuasiHEMMBlockCyclicDistCorrectness) {
     using T = TypeParam;  // Get the current type
     std::size_t N = 200;
     std::size_t n = 20;
