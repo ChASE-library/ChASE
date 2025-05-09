@@ -216,7 +216,7 @@ namespace internal
                                         W2.l_ld(),
                                         W1.l_data() + offset * W1.l_ld(),
                                         W1.l_ld(),
-                                        &One,
+                                        &Zero,
                                         M, subSize));
         
 	CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(M, M, subSize * subSize, ncclSum, A->getMpiGrid()->get_nccl_row_comm()));
@@ -285,7 +285,9 @@ namespace internal
 
 #else
 #ifdef CHASE_OUTPUT
-        std::cout << "WARNING! XGeev not found in cuda. Compute Geev on CPU with Lapack..." << std::endl;
+	if (H.grank() == 0){
+        	std::cout << "WARNING! XGeev not found in cuda. Compute Geev on CPU with Lapack..." << std::endl;
+	}
 #endif
         std::vector<chase::Base<T>> ptx_imag = std::vector<chase::Base<T>>(subSize,chase::Base<T>(0.0));
 
@@ -320,6 +322,9 @@ namespace internal
 
         ritzv.H2D();
 
+        chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(W1, offset, subSize);
+        chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(V2, offset, subSize);
+
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(cublas_handle,
                                     CUBLAS_OP_N,
                                     CUBLAS_OP_N,
@@ -327,13 +332,13 @@ namespace internal
                                     subSize,
                                     subSize,
                                     &One,
-                                    V1.l_data() + offset * V1.l_ld(),
-                                    V1.l_ld(),
+                                    V2.l_data() + offset * V2.l_ld(),
+                                    V2.l_ld(),
                                     d_sorted_W,
                                     subSize,
                                     &Zero,
-                                    V2.l_data() + offset * V2.l_ld(),
-                                    V2.l_ld()));
+                                    V1.l_data() + offset * V1.l_ld(),
+                                    V1.l_ld()));
     
     }	
 

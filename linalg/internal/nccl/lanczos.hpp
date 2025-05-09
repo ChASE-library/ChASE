@@ -56,11 +56,11 @@ namespace internal
 	if constexpr (std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU>>::value ||
 		      std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T, chase::platform::GPU>>::value)
 	{
-		cuda_nccl::quasi_hermitian_lanczos(M, numvec, H, V, upperb, ritzv, Tau, ritzV);
+		cuda_nccl::quasi_hermitian_lanczos(cublas_handle, M, numvec, H, V, upperb, ritzv, Tau, ritzV);
 	}
 	else
 	{
-		cuda_nccl::lanczos(M, numvec, H, V, upperb, ritzv, Tau, ritzV);
+		cuda_nccl::lanczos(cublas_handle, M, numvec, H, V, upperb, ritzv, Tau, ritzV);
 	}
     }
 
@@ -90,11 +90,11 @@ namespace internal
 	if constexpr (std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU>>::value ||
 		      std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T, chase::platform::GPU>>::value)
 	{
-		cuda_nccl::quasi_hermitian_lanczos(M, H, V, upperb);
+		cuda_nccl::quasi_hermitian_lanczos(cublas_handle, M, H, V, upperb);
 	}
 	else
 	{
-		cuda_nccl::lanczos(M, H, V, upperb);
+		cuda_nccl::lanczos(cublas_handle, M, H, V, upperb);
 	}
     }
 

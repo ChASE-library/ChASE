@@ -83,9 +83,6 @@ namespace internal
         //Allocate the space for the imaginary parts of ritz values
         std::vector<Base<T>> ritzvi(subSize, Base<T>(0.0));
     
-	int rank;
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-
         // Perform the distributed matrix-matrix multiplication
         chase::linalg::internal::cpu_mpi::MatrixMultiplyMultiVectorsAndRedistributeAsync(
                         H, 

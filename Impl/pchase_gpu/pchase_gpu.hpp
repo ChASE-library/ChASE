@@ -394,7 +394,7 @@ public:
     bool checkPseudoHermicityEasy() override
     {
         SCOPED_NVTX_RANGE();
-	is_pseudoHerm_= 0;
+	//is_pseudoHerm_= 0;
         return is_pseudoHerm_;
     }
     
@@ -660,7 +660,7 @@ public:
 		      std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T,chase::platform::GPU>>::value )
 
 	{	
-		chase::linalg::internal::flipLowerHalfMatrixSign(V1_, locked_, nevex_ - locked_);
+		chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(*V1_, 0, locked_);
 	}
 
         if (disable == 1)

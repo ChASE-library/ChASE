@@ -47,9 +47,9 @@ int main(int argc, char** argv)
             chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(
             dims_[0], dims_[1], MPI_COMM_WORLD);
 
-    size_t k = 100;
+    size_t k = 1472;
 
-    size_t N = 2 * k, nev = 20, nex = 10, mb = 20;
+    size_t N = 2 * k, nev = 200, nex = 100, mb = 40;
 
     int* dims = mpi_grid.get()->get_dims();
     int* coords = mpi_grid.get()->get_coords();
@@ -62,8 +62,8 @@ int main(int argc, char** argv)
                   << std::endl;
     }
 
-    auto Hmat = chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, ARCH>(
-        N, N, mpi_grid);
+    auto Hmat = chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T, ARCH>(
+        N, N, mb, mb, mpi_grid);
 
     #ifdef HAS_CUDA
     	Hmat.allocate_cpu_data();
@@ -74,12 +74,13 @@ int main(int argc, char** argv)
         N, N, mb, mb, mpi_grid);
 */
     Hmat.readFromBinaryFile(
-        "./tests/linalg/internal/BSE_matrices/cdouble_random_BSE.bin");
+	"../../../Data/Matrix/2x2x2_Silicon_QuasiHermitian.bin");
+    //    "./tests/linalg/internal/BSE_matrices/cdouble_random_BSE.bin");
 
     auto Lambda = std::vector<chase::Base<T>>(nev + nex);
     
-    auto Vec = chase::distMultiVector::DistMultiVector1D<
-        T, chase::distMultiVector::CommunicatorType::column, ARCH>(N, nev + nex, mpi_grid);
+    auto Vec = chase::distMultiVector::DistMultiVectorBlockCyclic1D<
+        T, chase::distMultiVector::CommunicatorType::column, ARCH>(N, nev + nex, mb, mpi_grid);
 
     /*auto Vec = chase::distMultiVector::DistMultiVectorBlockCyclic1D<
         T, chase::distMultiVector::CommunicatorType::column, ARCH>(N, nev + nex,mb, mpi_grid);
@@ -115,7 +116,7 @@ int main(int argc, char** argv)
     // Initial filtering degree
     config.SetDeg(10);
     // Optimi(S)e degree
-    config.SetOpt(false);
+    config.SetOpt(true);
     config.SetMaxIter(25);
 
     PerformanceDecoratorChase<T> performanceDecorator(&single);
