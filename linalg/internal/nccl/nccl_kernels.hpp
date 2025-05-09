@@ -64,6 +64,24 @@ namespace internal
                                             typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type& target_multiVector);
 
         template <typename MatrixType, typename InputMultiVectorType>
+        static void lanczos_dispatch(cublasHandle_t cublas_handle,
+                    std::size_t M, 
+                    std::size_t numvec,
+                    MatrixType& H,
+                    InputMultiVectorType& V,
+                    chase::Base<typename MatrixType::value_type> *upperb,
+                    chase::Base<typename MatrixType::value_type> *ritzv,
+                    chase::Base<typename MatrixType::value_type> *Tau,
+                    chase::Base<typename MatrixType::value_type> *ritzV);     
+
+        template <typename MatrixType, typename InputMultiVectorType>
+        static void lanczos_dispatch(cublasHandle_t cublas_handle,
+                    std::size_t M,
+                    MatrixType& H,
+                    InputMultiVectorType& V,
+                    chase::Base<typename MatrixType::value_type> *upperb); 
+
+        template <typename MatrixType, typename InputMultiVectorType>
         static void lanczos(cublasHandle_t cublas_handle,
                     std::size_t M, 
                     std::size_t numvec,
