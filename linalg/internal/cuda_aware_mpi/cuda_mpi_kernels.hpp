@@ -64,6 +64,24 @@ namespace internal
                                             typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type& target_multiVector);
 
         template <typename MatrixType, typename InputMultiVectorType>
+        static void lanczos_dispatch(cublasHandle_t cublas_handle,
+                    std::size_t M, 
+                    std::size_t numvec,
+                    MatrixType& H,
+                    InputMultiVectorType& V,
+                    chase::Base<typename MatrixType::value_type> *upperb,
+                    chase::Base<typename MatrixType::value_type> *ritzv,
+                    chase::Base<typename MatrixType::value_type> *Tau,
+                    chase::Base<typename MatrixType::value_type> *ritzV);     
+
+        template <typename MatrixType, typename InputMultiVectorType>
+        static void lanczos_dispatch(cublasHandle_t cublas_handle,
+                    std::size_t M,
+                    MatrixType& H,
+                    InputMultiVectorType& V,
+                    chase::Base<typename MatrixType::value_type> *upperb); 
+
+        template <typename MatrixType, typename InputMultiVectorType>
         static void lanczos(cublasHandle_t cublas_handle,
                     std::size_t M, 
                     std::size_t numvec,
@@ -76,6 +94,24 @@ namespace internal
 
         template <typename MatrixType, typename InputMultiVectorType>
         static void lanczos(cublasHandle_t cublas_handle,
+                    std::size_t M,
+                    MatrixType& H,
+                    InputMultiVectorType& V,
+                    chase::Base<typename MatrixType::value_type> *upperb);  
+	
+	template <typename MatrixType, typename InputMultiVectorType>
+        static void quasi_hermitian_lanczos(cublasHandle_t cublas_handle,
+                    std::size_t M, 
+                    std::size_t numvec,
+                    MatrixType& H,
+                    InputMultiVectorType& V,
+                    chase::Base<typename MatrixType::value_type> *upperb,
+                    chase::Base<typename MatrixType::value_type> *ritzv,
+                    chase::Base<typename MatrixType::value_type> *Tau,
+                    chase::Base<typename MatrixType::value_type> *ritzV);     
+
+        template <typename MatrixType, typename InputMultiVectorType>
+        static void quasi_hermitian_lanczos(cublasHandle_t cublas_handle,
                     std::size_t M,
                     MatrixType& H,
                     InputMultiVectorType& V,
@@ -149,6 +185,24 @@ namespace internal
                     typename MatrixType::value_type *workspace = nullptr,
                     int lwork_heevd = 0,
                     chase::distMatrix::RedundantMatrix<typename MatrixType::value_type, chase::platform::GPU>* A = nullptr);                
+	
+	template <typename MatrixType, typename InputMultiVectorType>
+        static void quasi_hermitian_rayleighRitz(cublasHandle_t cublas_handle, 
+                    cusolverDnHandle_t cusolver_handle,
+                    MatrixType& H,
+                    InputMultiVectorType& V1,
+                    InputMultiVectorType& V2,
+                    typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type& W1,
+                    typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type& W2,  
+                    chase::distMatrix::RedundantMatrix<chase::Base<typename MatrixType::value_type>, chase::platform::GPU>& ritzv, 
+                    std::size_t offset,
+                    std::size_t subSize,
+                    int* devInfo,
+                    typename MatrixType::value_type *d_workspace = nullptr,
+                    int d_lwork = 0,
+                    typename MatrixType::value_type *h_workspace = nullptr,
+                    int h_lwork = 0,
+                    chase::distMatrix::RedundantMatrix<typename MatrixType::value_type, chase::platform::GPU>* A = nullptr);                
 
         template <typename MatrixType, typename InputMultiVectorType>
         static void residuals(cublasHandle_t cublas_handle,
@@ -177,6 +231,20 @@ namespace internal
                         std::size_t* d_off_n, 
                         std::size_t offsize, 
                         chase::Base<typename MatrixType::value_type> shift);
+	
+	template<typename T>
+        static void flipLowerHalfMatrixSign(chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU>& H);
+	
+	template<typename T>
+        static void flipLowerHalfMatrixSign(chase::distMatrix::BlockCyclicMatrix<T, chase::platform::GPU>& H);
+
+	template<typename InputMultiVectorType>
+        static void flipLowerHalfMatrixSign(InputMultiVectorType& V);
+	
+	template<typename InputMultiVectorType>
+        static void flipLowerHalfMatrixSign(InputMultiVectorType& V, 
+			std::size_t offset, 
+			std::size_t subSize);
                                                                     
     };
 
@@ -184,10 +252,13 @@ namespace internal
 }
 }
 
+#include "linalg/internal/cuda_aware_mpi/flipSign.hpp"
 #include "linalg/internal/cuda_aware_mpi/symOrHerm.hpp"
 #include "linalg/internal/cuda_aware_mpi/hemm.hpp"
 #include "linalg/internal/cuda_aware_mpi/lanczos.hpp"
+#include "linalg/internal/cuda_aware_mpi/quasi_hermitian_lanczos.hpp"
 #include "linalg/internal/cuda_aware_mpi/cholqr.hpp"
 #include "linalg/internal/cuda_aware_mpi/rayleighRitz.hpp"
+#include "linalg/internal/cuda_aware_mpi/quasi_hermitian_rayleighRitz.hpp"
 #include "linalg/internal/cuda_aware_mpi/residuals.hpp"
 #include "linalg/internal/cuda_aware_mpi/shiftDiagonal.hpp"

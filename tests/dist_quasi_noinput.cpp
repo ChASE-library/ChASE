@@ -23,7 +23,7 @@ using namespace chase;
 
 #ifdef HAS_CUDA
 using ARCH = chase::platform::GPU;
-using BackendType = chase::grid::backend::NCCL;
+using BackendType = chase::grid::backend::MPI;
 #else
 using ARCH = chase::platform::CPU;
 #endif
