@@ -322,7 +322,6 @@ namespace internal
 
         ritzv.H2D();
 
-        chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(W1, offset, subSize);
         chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(V2, offset, subSize);
 
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(cublas_handle,

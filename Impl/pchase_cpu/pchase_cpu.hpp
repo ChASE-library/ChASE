@@ -442,7 +442,7 @@ public:
                 /* The right eigenvectors are not orthonormal in the QH case, but S-orthonormal.
                  * Therefore, we S-orthonormalize the locked vectors against the current subspace
                  * By flipping the sign of the lower part of the locked vectors. */
-                chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(*V1_, locked_);
+                chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(*V1_, 0, locked_);
                 /* We do not need to flip back the sign of the locked vectors since they are stored 
                  * in Vec2_ and will replace the fliped ones of Vec1_ at the end of QR. */
         }

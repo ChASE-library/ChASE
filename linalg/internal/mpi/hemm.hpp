@@ -105,7 +105,7 @@ namespace internal
 	    if constexpr (std::is_same<MatrixType,chase::distMatrix::QuasiHermitianBlockBlockMatrix<T>>::value || 
 			  std::is_same<MatrixType,chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T>>::value ){
 		
-		chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(input_multiVector);
+		chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(input_multiVector, offset, subSize);
 	    }
 
 	    if(beta_tmp != T(0.0)){ 
@@ -113,7 +113,7 @@ namespace internal
 	    	if constexpr (std::is_same<MatrixType,chase::distMatrix::QuasiHermitianBlockBlockMatrix<T>>::value || 
 			  std::is_same<MatrixType,chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T>>::value ){
 		
-			chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(result_multiVector);
+			chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(result_multiVector, offset, subSize);
 	    	}
 	    }
 
@@ -143,14 +143,14 @@ namespace internal
 	    if constexpr (std::is_same<MatrixType,chase::distMatrix::QuasiHermitianBlockBlockMatrix<T>>::value || 
 			  std::is_same<MatrixType,chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T>>::value ){
 		
-		chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(input_multiVector);
+		chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(input_multiVector, offset, subSize);
 	    }
 	    
 	    	
 	    if constexpr (std::is_same<MatrixType,chase::distMatrix::QuasiHermitianBlockBlockMatrix<T>>::value || 
 			  std::is_same<MatrixType,chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T>>::value ){
 		
-		chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(result_multiVector);
+		chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(result_multiVector, offset, subSize);
 	   }
         }
         else // InputCommType is CommunicatorType::column
@@ -313,7 +313,7 @@ namespace internal
 	    if constexpr (std::is_same<MatrixType,chase::distMatrix::QuasiHermitianBlockBlockMatrix<T>>::value || 
 			  std::is_same<MatrixType,chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T>>::value ){
 		
-		chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(input_multiVector);
+		chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(input_multiVector, offset, subSize);
 	    }
 	    
             // Perform the matrix multiplication using BLAS
@@ -343,14 +343,14 @@ namespace internal
 	    if constexpr (std::is_same<MatrixType,chase::distMatrix::QuasiHermitianBlockBlockMatrix<T>>::value || 
 			  std::is_same<MatrixType,chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T>>::value ){
 		
-		chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(input_multiVector);
+		chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(input_multiVector, offset, subSize);
 	    }
 	    
 	    	
 	    if constexpr (std::is_same<MatrixType,chase::distMatrix::QuasiHermitianBlockBlockMatrix<T>>::value || 
 			  std::is_same<MatrixType,chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T>>::value ){
 		
-		chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(result_multiVector);
+		chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(result_multiVector, offset, subSize);
 	   }
         }
         else // InputCommType is CommunicatorType::column

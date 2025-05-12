@@ -90,7 +90,7 @@ void cpu_mpi::flipLowerHalfMatrixSign(
  */
 template <typename T, chase::distMultiVector::CommunicatorType comm_type>
 void cpu_mpi::flipLowerHalfMatrixSign(chase::distMultiVector::DistMultiVector1D<
-                                      T, comm_type, chase::platform::CPU>& V, std::size_t subSize)
+                                      T, comm_type, chase::platform::CPU>& V, std::size_t offset, std::size_t subSize)
 {
     T alpha = -T(1.0);
 
@@ -98,11 +98,11 @@ void cpu_mpi::flipLowerHalfMatrixSign(chase::distMultiVector::DistMultiVector1D<
     {
 	if(V.l_half() == 0)
 	{
-        	chase::linalg::blaspp::t_scal(V.l_rows() * subSize, &alpha, V.l_data(), 1);
+        	chase::linalg::blaspp::t_scal(V.l_rows() * subSize, &alpha, V.l_data() + offset * V.l_ld(), 1);
 	}
 	else
 	{
-        	for (auto i = 0; i < subSize; i++)
+        	for (auto i = offset; i < subSize+offset; i++)
         	{
             		chase::linalg::blaspp::t_scal(V.l_rows() - V.l_half(), &alpha,
                                           	      V.l_data() + V.l_half() + i * V.l_ld(), 1);
@@ -123,7 +123,7 @@ template <typename T, chase::distMultiVector::CommunicatorType comm_type>
 void cpu_mpi::flipLowerHalfMatrixSign(chase::distMultiVector::DistMultiVector1D<
                                       T, comm_type, chase::platform::CPU>& V)
 {
-	cpu_mpi::flipLowerHalfMatrixSign(V,V.l_cols());
+	cpu_mpi::flipLowerHalfMatrixSign(V,0,V.l_cols());
 }
 
 /**
@@ -137,7 +137,7 @@ void cpu_mpi::flipLowerHalfMatrixSign(chase::distMultiVector::DistMultiVector1D<
  */
 template <typename T, chase::distMultiVector::CommunicatorType comm_type>
 void cpu_mpi::flipLowerHalfMatrixSign(chase::distMultiVector::DistMultiVectorBlockCyclic1D<
-                                      T, comm_type, chase::platform::CPU>& V, std::size_t subSize)
+                                      T, comm_type, chase::platform::CPU>& V, std::size_t offset, std::size_t subSize)
 {
     T alpha = -T(1.0);
 
@@ -145,11 +145,11 @@ void cpu_mpi::flipLowerHalfMatrixSign(chase::distMultiVector::DistMultiVectorBlo
     {
 	if(V.l_half() == 0)
 	{
-        	chase::linalg::blaspp::t_scal(V.l_rows() * subSize, &alpha, V.l_data(), 1);
+        	chase::linalg::blaspp::t_scal(V.l_rows() * subSize, &alpha, V.l_data() + offset * V.l_ld(), 1);
 	}
 	else
 	{
-        	for (auto i = 0; i < subSize; i++)
+        	for (auto i = offset; i < subSize+offset; i++)
         	{
             		chase::linalg::blaspp::t_scal(V.l_rows() - V.l_half(), &alpha,
                                           	      V.l_data() + V.l_half() + i * V.l_ld(), 1);
@@ -170,7 +170,7 @@ template <typename T, chase::distMultiVector::CommunicatorType comm_type>
 void cpu_mpi::flipLowerHalfMatrixSign(chase::distMultiVector::DistMultiVectorBlockCyclic1D<
                                       T, comm_type, chase::platform::CPU>& V)
 {
-	cpu_mpi::flipLowerHalfMatrixSign(V,V.l_cols());
+	cpu_mpi::flipLowerHalfMatrixSign(V,0,V.l_cols());
 }
 
 } // namespace internal

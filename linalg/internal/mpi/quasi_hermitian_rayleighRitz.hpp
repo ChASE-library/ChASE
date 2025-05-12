@@ -116,7 +116,7 @@ namespace internal
                     MPI_SUM, 
                     A->getMpiGrid()->get_row_comm());
 		
-	chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(V2);
+	chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(V2, offset, subSize);
 	
 	chase::linalg::blaspp::t_gemm(CblasColMajor, 
                                      CblasConjTrans, 
@@ -154,7 +154,7 @@ namespace internal
 	blaspp::t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, subSize, subSize, subSize, &NegOne,
                 M, subSize, W, subSize, &Zero, A->l_data(), subSize); //A = (Diag(M) - M) * A
 	
-	chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(W1);
+	chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(W1, offset, subSize);
 	
 	chase::linalg::blaspp::t_gemm(CblasColMajor, 
                                      CblasConjTrans, 
@@ -216,8 +216,7 @@ namespace internal
         // Copy back to original arrays
         std::copy(sorted_W, sorted_W + subSize * subSize, W);
 	
-	chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(W1);
-	chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(V2);
+	chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(V2, offset, subSize);
 
         // GEMM for applying eigenvectors back to V1 from V2 * A
         chase::linalg::blaspp::t_gemm(CblasColMajor,

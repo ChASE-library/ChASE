@@ -23,7 +23,7 @@ using namespace chase;
 
 #ifdef HAS_CUDA
 using ARCH = chase::platform::GPU;
-using BackendType = chase::grid::backend::MPI;
+using BackendType = chase::grid::backend::NCCL;
 #else
 using ARCH = chase::platform::CPU;
 #endif
@@ -62,8 +62,8 @@ int main(int argc, char** argv)
                   << std::endl;
     }
 
-    auto Hmat = chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T, ARCH>(
-        N, N, mb, mb, mpi_grid);
+    auto Hmat = chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, ARCH>(
+        N, N, mpi_grid);
 
     #ifdef HAS_CUDA
     	Hmat.allocate_cpu_data();
@@ -79,8 +79,8 @@ int main(int argc, char** argv)
 
     auto Lambda = std::vector<chase::Base<T>>(nev + nex);
     
-    auto Vec = chase::distMultiVector::DistMultiVectorBlockCyclic1D<
-        T, chase::distMultiVector::CommunicatorType::column, ARCH>(N, nev + nex, mb, mpi_grid);
+    auto Vec = chase::distMultiVector::DistMultiVector1D<
+        T, chase::distMultiVector::CommunicatorType::column, ARCH>(N, nev + nex, mpi_grid);
 
     /*auto Vec = chase::distMultiVector::DistMultiVectorBlockCyclic1D<
         T, chase::distMultiVector::CommunicatorType::column, ARCH>(N, nev + nex,mb, mpi_grid);

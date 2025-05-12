@@ -131,15 +131,17 @@ TYPED_TEST(flipSignCPUDistTest, flipSignCommColMultiVectorsCorrectness)
     {
         V.l_data()[i] = T(1.0);
     }
+    
+    std::size_t offset = 10, subSize = 190;
 
-    chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(V);
+    chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(V, offset, subSize);
 
     for (auto i = 0; i < V.l_rows(); i++)
     {
         for (auto j = 0; j < V.l_cols(); j++)
         {
             // assume is squared grid
-            if (this->world_rank == 0 || this->world_rank == 2)
+            if (this->world_rank == 0 || this->world_rank == 2 || j < offset)
             {
                 EXPECT_EQ(V.l_data()[i + j * V.l_ld()], T(1.0));
             }
