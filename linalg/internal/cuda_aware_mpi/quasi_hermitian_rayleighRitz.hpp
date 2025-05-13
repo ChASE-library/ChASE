@@ -48,6 +48,7 @@ namespace internal
     template <typename MatrixType, typename InputMultiVectorType>
     void cuda_mpi::quasi_hermitian_rayleighRitz(cublasHandle_t cublas_handle,
                       cusolverDnHandle_t cusolver_handle,
+		      cusolverDnParams_t params,
                       MatrixType& H,
                       InputMultiVectorType& V1,
                       InputMultiVectorType& V2,
@@ -75,6 +76,17 @@ namespace internal
             A_ptr = std::make_unique<chase::distMatrix::RedundantMatrix<T, chase::platform::GPU>>(3*subSize, subSize, V1.getMpiGrid_shared_ptr());
             A = A_ptr.get();
         }
+        
+	T One    = T(1.0);
+        T Zero   = T(0.0);
+        T NegOne = -T(1.0);
+	chase::Base<T> real_Zero = chase::Base<T>(0.0);
+
+	T * M = A->l_data() + subSize * subSize; 
+	T * W = A->l_data() + 2 * subSize * subSize;
+        T * ritzv_complex = A->l_data() + subSize * subSize;
+        
+	std::vector<T> ritzvs_cmplex_cpu(subSize);
 
 #ifdef XGEEV_EXISTS
         //Allocating workspace memory for Xgeev
@@ -115,17 +127,6 @@ namespace internal
 		A->allocate_cpu_data();
 	}
 #endif
-
-        T One    = T(1.0);
-        T Zero   = T(0.0);
-        T NegOne = -T(1.0);
-	chase::Base<T> real_Zero = chase::Base<T>(0.0);
-
-	T * M = A->l_data() + subSize * subSize; 
-	T * W = A->l_data() + 2 * subSize * subSize;
-        T * ritzv_complex = A->l_data() + subSize * subSize;
-        
-	std::vector<T> ritzvs_cmplex_cpu(subSize);
 
         //Allocate the space for scaling weights. Can be Base<T> since reals?	
 	chase::distMatrix::RedundantMatrix<chase::Base<typename MatrixType::value_type>, chase::platform::GPU> diag(1,subSize,V1.getMpiGrid_shared_ptr());

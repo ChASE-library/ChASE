@@ -206,6 +206,7 @@ namespace internal
 	template <typename MatrixType, typename InputMultiVectorType>
         static void quasi_hermitian_rayleighRitz(cublasHandle_t cublas_handle, 
                     cusolverDnHandle_t cusolver_handle,
+		    cusolverDnParams_t params,
                     MatrixType& H,
                     InputMultiVectorType& V1,
                     InputMultiVectorType& V2,

@@ -20,6 +20,7 @@ namespace {
     std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid;
     cublasHandle_t cublasH;
     cusolverDnHandle_t cusolverH;
+    cusolverDnParams_t params;
 }
 
 template <typename T>
@@ -30,7 +31,9 @@ protected:
         MPI_Comm_size(MPI_COMM_WORLD, &world_size);
 
         CHECK_CUBLAS_ERROR(cublasCreate(&cublasH));
-        CHECK_CUSOLVER_ERROR(cusolverDnCreate(&cusolverH));
+        CHECK_CUSOLVER_ERROR(cusolverDnCreate(&cusolverH));        
+	CHECK_CUSOLVER_ERROR(cusolverDnCreateParams(&params));
+
     }
 
     void TearDown() override {
@@ -44,6 +47,7 @@ protected:
 
     static cublasHandle_t get_cublas_handle() { return cublasH; }
     static cusolverDnHandle_t get_cusolver_handle() { return cusolverH; }
+    static cusolverDnParams_t get_cusolver_params() { return params; }
 };
 
 using TestTypes = ::testing::Types<float, double, std::complex<float>, std::complex<double>>;
@@ -95,16 +99,17 @@ TYPED_TEST(QuasiRayleighRitzGPUDistTest, TinyQuasiHermitianRRDistGPUCorrectness)
     CHECK_CUDA_ERROR(cudaMalloc((void**)&devInfo, sizeof(int)));
 
     chase::linalg::internal::cuda_mpi::quasi_hermitian_rayleighRitz(this->get_cublas_handle(), 
-		    						     this->get_cusolver_handle(), 
-								     H_, 
-								     V1_, 
-								     V2_, 
-								     W1_, 
-								     W2_, 
-								     ritzv_tiny, 
-								     offset, 
-								     subSize,
-								     devInfo);
+		    						    this->get_cusolver_handle(),
+								    this->get_cusolver_params(),
+								    H_, 
+								    V1_, 
+								    V2_, 
+								    W1_, 
+								    W2_, 
+								    ritzv_tiny, 
+								    offset, 
+								    subSize,
+								    devInfo);
 
     for(auto i = offset; i < offset + subSize; i++)
     {
@@ -166,16 +171,17 @@ TYPED_TEST(QuasiRayleighRitzGPUDistTest, QuasiHermitianRRDistGPUCorrectness) {
     CHECK_CUDA_ERROR(cudaMalloc((void**)&devInfo, sizeof(int)));
 
     chase::linalg::internal::cuda_mpi::quasi_hermitian_rayleighRitz(this->get_cublas_handle(), 
-		    						     this->get_cusolver_handle(), 
-								     H_, 
-								     V1_, 
-								     V2_, 
-								     W1_, 
-								     W2_, 
-								     ritzv, 
-								     offset, 
-								     subSize,
-								     devInfo);
+		    						    this->get_cusolver_handle(), 
+								    this->get_cusolver_params(),
+								    H_, 
+								    V1_, 
+								    V2_, 
+								    W1_, 
+								    W2_, 
+								    ritzv, 
+								    offset, 
+								    subSize,
+								    devInfo);
 
     for(auto i = offset; i < offset + subSize; i++)
     {

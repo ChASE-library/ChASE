@@ -207,8 +207,8 @@ public:
             	CHECK_CUSOLVER_ERROR(
                 	chase::linalg::cusolverpp::cusolverDnTgeev_bufferSize(
                     		cusolverH_, params_, CUSOLVER_EIG_MODE_NOVECTOR,
-                    		CUSOLVER_EIG_MODE_VECTOR, nevex_, A_.data(), A_.ld(),
-                    		V2_.data(), NULL, 1, V1_.data(), V1_.ld(),
+                    		CUSOLVER_EIG_MODE_VECTOR, nevex_, A_->l_data(), A_->l_ld(),
+                    		V2_->l_data(), NULL, 1, V1_->l_data(), V1_->l_ld(),
                     		&temp_ldwork, &temp_lhwork));
 
 		lwork_heevd = (int)temp_ldwork;
@@ -840,6 +840,7 @@ public:
 	{
         	kernelNamespace::quasi_hermitian_rayleighRitz(cublasH_,
                                                    cusolverH_,
+						   params_,
                                                    *Hmat_, 
                                                    *V1_, 
                                                    *V2_, 
@@ -963,6 +964,8 @@ private:
     cudaStream_t stream_; /**< CUDA stream for asynchronous GPU operations. */
     cublasHandle_t cublasH_; /**< Handle to the cuBLAS library for GPU linear algebra operations. */
     cusolverDnHandle_t cusolverH_; /**< Handle to the cuSolver library for GPU-based eigenvalue solvers. */
+    cusolverDnParams_t params_; /**< CUSOLVER structure with information for Xgeev. */
+
     curandStatePhilox4_32_10_t* states_ = NULL; /**< Random number generator state for GPU, used for initializations. */
 
     int* devInfo_; /**< Pointer to device memory for storing operation status (e.g., success or failure) in cuSolver calls. */

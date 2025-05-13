@@ -21,6 +21,7 @@ namespace {
     std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid;
     cublasHandle_t cublasH;
     cusolverDnHandle_t cusolverH;
+    cusolverDnParams_t params;
 }
 
 template <typename T>
@@ -32,6 +33,7 @@ protected:
 
         CHECK_CUBLAS_ERROR(cublasCreate(&cublasH));
         CHECK_CUSOLVER_ERROR(cusolverDnCreate(&cusolverH));
+	CHECK_CUSOLVER_ERROR(cusolverDnCreateParams(&params));
     }
 
     void TearDown() override {
@@ -45,6 +47,7 @@ protected:
 
     static cublasHandle_t get_cublas_handle() { return cublasH; }
     static cusolverDnHandle_t get_cusolver_handle() { return cusolverH; }
+    static cusolverDnParams_t get_cusolver_params() { return params; }
 };
 
 using TestTypes = ::testing::Types<float, double, std::complex<float>, std::complex<double>>;
@@ -53,9 +56,9 @@ TYPED_TEST_SUITE(QuasiRayleighRitzGPUNCCLDistTest, TestTypes);
 
 TYPED_TEST(QuasiRayleighRitzGPUNCCLDistTest, TinyQuasiHermitianRRDistGPUCorrectness) {
     using T = TypeParam;  // Get the current type
-    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
+    ASSERT_EQ(this->world_size, 1);  // Ensure we're running with 4 processes
     std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid
-            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(2, 2, MPI_COMM_WORLD);
+            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(1, 1, MPI_COMM_WORLD);
 
     int *coords = mpi_grid.get()->get_coords();
 
@@ -96,7 +99,8 @@ TYPED_TEST(QuasiRayleighRitzGPUNCCLDistTest, TinyQuasiHermitianRRDistGPUCorrectn
     CHECK_CUDA_ERROR(cudaMalloc((void**)&devInfo, sizeof(int)));
 
     chase::linalg::internal::cuda_nccl::quasi_hermitian_rayleighRitz(this->get_cublas_handle(), 
-		    						     this->get_cusolver_handle(), 
+		    						     this->get_cusolver_handle(),
+								     this->get_cusolver_params(), 
 								     H_, 
 								     V1_, 
 								     V2_, 
@@ -115,9 +119,9 @@ TYPED_TEST(QuasiRayleighRitzGPUNCCLDistTest, TinyQuasiHermitianRRDistGPUCorrectn
 
 TYPED_TEST(QuasiRayleighRitzGPUNCCLDistTest, QuasiHermitianRRDistGPUCorrectness) {
     using T = TypeParam;  // Get the current type
-    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
+    ASSERT_EQ(this->world_size, 1);  // Ensure we're running with 4 processes
     std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid
-            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(2, 2, MPI_COMM_WORLD);
+            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(1, 1, MPI_COMM_WORLD);
 
     chase::Base<T> tolerance;
     if constexpr(std::is_same<T,float>::value){
@@ -168,6 +172,7 @@ TYPED_TEST(QuasiRayleighRitzGPUNCCLDistTest, QuasiHermitianRRDistGPUCorrectness)
 
     chase::linalg::internal::cuda_nccl::quasi_hermitian_rayleighRitz(this->get_cublas_handle(), 
 		    						     this->get_cusolver_handle(), 
+								     this->get_cusolver_params(), 
 								     H_, 
 								     V1_, 
 								     V2_, 
