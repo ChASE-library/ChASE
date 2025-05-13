@@ -56,9 +56,9 @@ TYPED_TEST_SUITE(QuasiRayleighRitzGPUNCCLDistTest, TestTypes);
 
 TYPED_TEST(QuasiRayleighRitzGPUNCCLDistTest, TinyQuasiHermitianRRDistGPUCorrectness) {
     using T = TypeParam;  // Get the current type
-    ASSERT_EQ(this->world_size, 1);  // Ensure we're running with 4 processes
+    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
     std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid
-            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(1, 1, MPI_COMM_WORLD);
+            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(2, 2, MPI_COMM_WORLD);
 
     int *coords = mpi_grid.get()->get_coords();
 
@@ -119,9 +119,9 @@ TYPED_TEST(QuasiRayleighRitzGPUNCCLDistTest, TinyQuasiHermitianRRDistGPUCorrectn
 
 TYPED_TEST(QuasiRayleighRitzGPUNCCLDistTest, QuasiHermitianRRDistGPUCorrectness) {
     using T = TypeParam;  // Get the current type
-    ASSERT_EQ(this->world_size, 1);  // Ensure we're running with 4 processes
+    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
     std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid
-            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(1, 1, MPI_COMM_WORLD);
+            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(2, 2, MPI_COMM_WORLD);
 
     chase::Base<T> tolerance;
     if constexpr(std::is_same<T,float>::value){
