@@ -80,6 +80,22 @@ add_executable( "chase_driver_gpu" tests/noinput.cpp )
 target_link_libraries(chase_driver_gpu chase_gpu)
 endif()
 
+add_executable( "herm_chase_run" tests/herm_run.cpp )
+target_link_libraries(herm_chase_run chase_cpu)
+
+if(TARGET chase_gpu)
+add_executable( "herm_chase_run_gpu" tests/herm_run.cpp )
+target_link_libraries(herm_chase_run_gpu chase_gpu)
+endif()
+
+add_executable( "quasi_chase_run" tests/quasi_run.cpp )
+target_link_libraries(quasi_chase_run chase_cpu)
+
+if(TARGET chase_gpu)
+add_executable( "quasi_chase_run_gpu" tests/quasi_run.cpp )
+target_link_libraries(quasi_chase_run_gpu chase_gpu)
+endif()
+
 add_executable( "quasi_chase_driver" tests/quasi_noinput.cpp )
 target_link_libraries(quasi_chase_driver chase_cpu)
 
@@ -91,6 +107,11 @@ endif()
 if(TARGET pchase_cpu)
 add_executable( "dist_quasi_chase_driver" tests/dist_quasi_noinput.cpp )
 target_link_libraries(dist_quasi_chase_driver pchase_cpu)
+endif()
+
+if(TARGET pchase_gpu)
+add_executable( "dist_quasi_chase_driver_gpu" tests/dist_quasi_noinput.cpp )
+target_link_libraries(dist_quasi_chase_driver_gpu pchase_gpu)
 endif()
 
 option(ENABLE_TESTS "Enable unit tests." OFF)

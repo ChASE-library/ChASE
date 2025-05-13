@@ -1,0 +1,24 @@
+#!/bin/bash
+
+# Check if clang-format is available
+if ! command -v clang-format >/dev/null 2>&1; then
+    echo "[clang-format] not found. Skipping auto-formatting."
+    exit 0
+fi
+
+# Get list of staged C/C++ files
+files=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(cpp|cc|c|h|hpp)$')
+
+if [ -z "$files" ]; then
+    exit 0
+fi
+
+# Format and re-stage each file
+for file in $files; do
+    if [ -f "$file" ]; then
+        clang-format -i "$file"
+        git add "$file"
+        echo "[clang-format] formatted and staged $file"
+    fi
+done
+

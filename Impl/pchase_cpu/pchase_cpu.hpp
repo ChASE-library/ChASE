@@ -107,16 +107,26 @@ public:
 
         ritzv_ = std::make_unique<chase::distMatrix::RedundantMatrix<chase::Base<T>>>(nevex_, 1, nevex_, ritzv, Hmat_->getMpiGrid_shared_ptr());
         resid_ = std::make_unique<chase::distMatrix::RedundantMatrix<chase::Base<T>>>(nevex_, 1, Hmat_->getMpiGrid_shared_ptr());
-        A_ = std::make_unique<chase::distMatrix::RedundantMatrix<T>>(nevex_, nevex_, Hmat_->getMpiGrid_shared_ptr());
 
         MPI_Comm_rank(Hmat_->getMpiGrid()->get_comm(), &my_rank_);
         MPI_Comm_size(Hmat_->getMpiGrid()->get_comm(), &nprocs_);
         coords_ = Hmat_->getMpiGrid()->get_coords();
         dims_ = Hmat_->getMpiGrid()->get_dims();
 
-	is_sym_ = true;
-	is_pseudoHerm_ = false;
-
+	 if constexpr (std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockBlockMatrix<T>>::value || 
+		       std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T>>::value )
+         {
+                is_sym_ = false;
+                is_pseudoHerm_ = true;
+                //Quasi Hermitian matrices require more space for the dual basis
+        	A_ = std::make_unique<chase::distMatrix::RedundantMatrix<T>>(nevex_, 3*nevex_, Hmat_->getMpiGrid_shared_ptr());
+         }
+         else
+         {
+                is_sym_ = true;
+        	is_pseudoHerm_ = false;
+        	A_ = std::make_unique<chase::distMatrix::RedundantMatrix<T>>(nevex_, nevex_, Hmat_->getMpiGrid_shared_ptr());
+         }
     }
     /**
      * @brief Deleted copy constructor.
@@ -175,7 +185,6 @@ public:
     
     bool checkPseudoHermicityEasy() override
     {
-	is_pseudoHerm_= 0;
         return is_pseudoHerm_;
     }
     
@@ -213,11 +222,12 @@ public:
                                          V2_->l_data(), 
                                          V2_->l_ld());
         next_ = NextOp::bAc;
+	
     }
 
     void Lanczos(std::size_t m, chase::Base<T>* upperb) override 
     {
-        chase::linalg::internal::cpu_mpi::lanczos(m, 
+        chase::linalg::internal::cpu_mpi::lanczos_dispatch(m, 
                                               *Hmat_, 
                                               *V1_, 
                                               upperb);
@@ -226,14 +236,14 @@ public:
     void Lanczos(std::size_t M, std::size_t numvec, chase::Base<T>* upperb,
                          chase::Base<T>* ritzv, chase::Base<T>* Tau, chase::Base<T>* ritzV) override
     {
-        chase::linalg::internal::cpu_mpi::lanczos(M, 
-                                              numvec, 
-                                              *Hmat_, 
-                                              *V1_, 
-                                              upperb, 
-                                              ritzv, 
-                                              Tau, 
-                                              ritzV);
+        chase::linalg::internal::cpu_mpi::lanczos_dispatch(M, 
+              	                              numvec, 
+                       	                      *Hmat_, 
+                               	              *V1_, 
+                                       	      upperb, 
+                                      	      ritzv, 
+                                      	      Tau, 
+                                       	      ritzV);
     }
 
     void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc) override
@@ -302,6 +312,7 @@ public:
 
     void HEMM(std::size_t block, T alpha, T beta, std::size_t offset) override 
     {
+
 #ifdef ENABLE_MIXED_PRECISION
         if constexpr (std::is_same<T, double>::value || std::is_same<T, std::complex<double>>::value)
         {
@@ -406,6 +417,7 @@ public:
         if (cholddisable) {
             disable = std::atoi(cholddisable);
         }
+	disable = 1;
 
         Base<T> cond_threshold_upper = (sizeof(Base<T>) == 8) ? 1e8 : 1e4;
         Base<T> cond_threshold_lower = (sizeof(Base<T>) == 8) ? 2e1 : 1e1;
@@ -422,6 +434,18 @@ public:
         //{
         //    display_bounds = std::atoi(display_bounds_env);
         //}
+
+	
+	 if constexpr (std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockBlockMatrix<T>>::value || 
+		       std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T>>::value )
+        {
+                /* The right eigenvectors are not orthonormal in the QH case, but S-orthonormal.
+                 * Therefore, we S-orthonormalize the locked vectors against the current subspace
+                 * By flipping the sign of the lower part of the locked vectors. */
+                chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(*V1_, 0, locked_);
+                /* We do not need to flip back the sign of the locked vectors since they are stored 
+                 * in Vec2_ and will replace the fliped ones of Vec1_ at the end of QR. */
+        }
 
         if (disable == 1)
         {
@@ -502,11 +526,12 @@ public:
                                          V1_->l_ld(),
                                          V2_->l_data() + V2_->l_ld() * locked_,
                                          V2_->l_ld());                                              
+	
     }
 
     void RR(chase::Base<T>* ritzv, std::size_t block) override 
     {
-        chase::linalg::internal::cpu_mpi::rayleighRitz(*Hmat_, 
+        chase::linalg::internal::cpu_mpi::rayleighRitz_dispatch(*Hmat_, 
                                                    *V1_, 
                                                    *V2_, 
                                                    *W1_, 

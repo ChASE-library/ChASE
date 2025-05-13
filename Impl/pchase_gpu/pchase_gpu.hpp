@@ -149,7 +149,6 @@ public:
 
         ritzv_ = std::make_unique<chase::distMatrix::RedundantMatrix<chase::Base<T>, chase::platform::GPU>>(nevex_, 1, nevex_, ritzv, Hmat_->getMpiGrid_shared_ptr());
         resid_ = std::make_unique<chase::distMatrix::RedundantMatrix<chase::Base<T>, chase::platform::GPU>>(nevex_, 1, Hmat_->getMpiGrid_shared_ptr());
-        A_ = std::make_unique<chase::distMatrix::RedundantMatrix<T, chase::platform::GPU>>(nevex_, nevex_, Hmat_->getMpiGrid_shared_ptr());
 
         MPI_Comm_rank(Hmat_->getMpiGrid()->get_comm(), &my_rank_);
         MPI_Comm_size(Hmat_->getMpiGrid()->get_comm(), &nprocs_);
@@ -190,7 +189,43 @@ public:
 
         int lwork_heevd = 0;
 
-        CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTheevd_bufferSize(
+        if constexpr (std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockBlockMatrix<T,chase::platform::GPU>>::value ||
+		      std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T,chase::platform::GPU>>::value )
+
+	{
+	
+		is_sym_ = false;
+		is_pseudoHerm_ = true;
+        
+		A_ = std::make_unique<chase::distMatrix::RedundantMatrix<T, chase::platform::GPU>>(3*nevex_, nevex_, Hmat_->getMpiGrid_shared_ptr());
+#ifdef XGEEV_EXISTS
+		CHECK_CUSOLVER_ERROR(cusolverDnCreateParams(&params_));
+
+		std::size_t temp_ldwork = 0;
+		std::size_t temp_lhwork = 0;
+
+            	CHECK_CUSOLVER_ERROR(
+                	chase::linalg::cusolverpp::cusolverDnTgeev_bufferSize(
+                    		cusolverH_, params_, CUSOLVER_EIG_MODE_NOVECTOR,
+                    		CUSOLVER_EIG_MODE_VECTOR, nevex_, A_->l_data(), A_->l_ld(),
+                    		V2_->l_data(), NULL, 1, V1_->l_data(), V1_->l_ld(),
+                    		&temp_ldwork, &temp_lhwork));
+
+		lwork_heevd = (int)temp_ldwork;
+		lhwork_ = (int)temp_lhwork;
+
+		h_work_ = std::unique_ptr<T[]>(new T[lhwork_]);
+#endif
+	}
+	else
+	{
+	
+		is_sym_ = true;
+		is_pseudoHerm_ = false;
+
+		A_ = std::make_unique<chase::distMatrix::RedundantMatrix<T, chase::platform::GPU>>(nevex_, nevex_, Hmat_->getMpiGrid_shared_ptr());
+
+        	CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTheevd_bufferSize(
                                                             cusolverH_, 
                                                             CUSOLVER_EIG_MODE_VECTOR, 
                                                             CUBLAS_FILL_MODE_LOWER,
@@ -199,9 +234,11 @@ public:
                                                             A_->l_ld(), 
                                                             ritzv_->l_data(), 
                                                             &lwork_heevd));
-        if (lwork_heevd > lwork_)
+	}
+        	
+	if (lwork_heevd > lwork_)
         {
-            lwork_ = lwork_heevd;
+        	lwork_ = lwork_heevd;
         }
 
         int lwork_potrf = 0;
@@ -215,22 +252,23 @@ public:
                                                             &lwork_potrf));
         if (lwork_potrf > lwork_)
         {
-            lwork_ = lwork_potrf;
+        	lwork_ = lwork_potrf;
         }
 
         if(nevex_ * (nevex_ + 1) / 2 > lwork_)
         {
-            lwork_ = nevex_ * (nevex_ + 1) / 2;
-        }
+        	lwork_ = nevex_ * (nevex_ + 1) / 2;
+       	}
+
         CHECK_CUDA_ERROR(cudaMalloc((void**)&d_work_, sizeof(T) * lwork_));    
 
         CHECK_CUDA_ERROR(cudaMalloc((void**)&states_,
                              sizeof(curandStatePhilox4_32_10_t) * (256 * 32)));
 
-
         std::vector<std::size_t> diag_xoffs, diag_yoffs;
 
-        if constexpr(std::is_same<MatrixType, chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU>>::value)
+        if constexpr(std::is_same<MatrixType, chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU>>::value || 
+		     std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU>>::value )
         {
             std::size_t *g_offs = Hmat_->g_offs();
 
@@ -245,7 +283,8 @@ public:
                     }
                 }
             }
-        }else if constexpr(std::is_same<MatrixType, chase::distMatrix::BlockCyclicMatrix<T, chase::platform::GPU>>::value)
+        }else if constexpr(std::is_same<MatrixType, chase::distMatrix::BlockCyclicMatrix<T, chase::platform::GPU>>::value ||
+		     	   std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T, chase::platform::GPU>>::value )
         {
             auto m_contiguous_global_offs = Hmat_->m_contiguous_global_offs();
             auto n_contiguous_global_offs = Hmat_->n_contiguous_global_offs();
@@ -286,10 +325,7 @@ public:
 
         CHECK_CUDA_ERROR(cudaMemcpy(d_diag_xoffs, diag_xoffs.data(), sizeof(std::size_t) * diag_cnt , cudaMemcpyHostToDevice));
         CHECK_CUDA_ERROR(cudaMemcpy(d_diag_yoffs, diag_yoffs.data(), sizeof(std::size_t) * diag_cnt , cudaMemcpyHostToDevice));
-
-	is_sym_ = true;
-	is_pseudoHerm_ = false;
-       
+ 
     }
 
     pChASEGPU(const pChASEGPU&) = delete;
@@ -358,7 +394,7 @@ public:
     bool checkPseudoHermicityEasy() override
     {
         SCOPED_NVTX_RANGE();
-	is_pseudoHerm_= 0;
+	//is_pseudoHerm_= 0;
         return is_pseudoHerm_;
     }
     
@@ -406,7 +442,7 @@ public:
     {   
         SCOPED_NVTX_RANGE();
 
-        kernelNamespace::lanczos(cublasH_,
+        kernelNamespace::lanczos_dispatch(cublasH_,
                                               m, 
                                               *Hmat_, 
                                               *V1_, 
@@ -418,7 +454,7 @@ public:
     {
         SCOPED_NVTX_RANGE();
 
-        kernelNamespace::lanczos(cublasH_,
+        kernelNamespace::lanczos_dispatch(cublasH_,
                                               M, 
                                               numvec, 
                                               *Hmat_, 
@@ -619,6 +655,13 @@ public:
         }
 
         int info = 1;
+        
+	if constexpr (std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockBlockMatrix<T,chase::platform::GPU>>::value ||
+		      std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T,chase::platform::GPU>>::value )
+
+	{	
+		chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(*V1_, 0, locked_);
+	}
 
         if (disable == 1)
         {
@@ -791,7 +834,32 @@ public:
     {
         SCOPED_NVTX_RANGE();
 
-        kernelNamespace::rayleighRitz(cublasH_,
+        if constexpr (std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockBlockMatrix<T,chase::platform::GPU>>::value ||
+		      std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T,chase::platform::GPU>>::value )
+
+	{
+        	kernelNamespace::quasi_hermitian_rayleighRitz(cublasH_,
+                                                   cusolverH_,
+						   params_,
+                                                   *Hmat_, 
+                                                   *V1_, 
+                                                   *V2_, 
+                                                   *W1_, 
+                                                   *W2_, 
+                                                   *ritzv_, 
+                                                   locked_, 
+                                                   block,
+                                                   devInfo_,
+                                                   d_work_,
+                                                   lwork_,
+						   h_work_.get(),
+				   		   lhwork_,
+                                                   A_.get());
+	}
+	else
+	{
+
+        	kernelNamespace::rayleighRitz(cublasH_,
                                                    cusolverH_,
                                                    *Hmat_, 
                                                    *V1_, 
@@ -805,6 +873,7 @@ public:
                                                    d_work_,
                                                    lwork_,
                                                    A_.get());
+	}
 
         chase::linalg::internal::cuda::t_lacpy('A',
                                          V2_->l_rows(),
@@ -895,12 +964,19 @@ private:
     cudaStream_t stream_; /**< CUDA stream for asynchronous GPU operations. */
     cublasHandle_t cublasH_; /**< Handle to the cuBLAS library for GPU linear algebra operations. */
     cusolverDnHandle_t cusolverH_; /**< Handle to the cuSolver library for GPU-based eigenvalue solvers. */
+    cusolverDnParams_t params_; /**< CUSOLVER structure with information for Xgeev. */
+
     curandStatePhilox4_32_10_t* states_ = NULL; /**< Random number generator state for GPU, used for initializations. */
 
     int* devInfo_; /**< Pointer to device memory for storing operation status (e.g., success or failure) in cuSolver calls. */
     T* d_return_; /**< Pointer to device memory for storing results of GPU operations. */
     T* d_work_; /**< Pointer to workspace on the device for GPU operations. */
     int lwork_ = 0; /**< Size of the workspace on the device, used for GPU operations. */
+        
+    std::unique_ptr<T[]> h_work_; /**< Pointer to work buffer on host for geev
+                                     in the Quasi Hermitian case. */
+    int lhwork_ = 0; /**< Workspace size for host geev operations in the Quasi
+                        Hermitian case. */
 
     std::size_t *d_diag_xoffs; /**< Pointer to device memory holding x offsets for diagonal elements in computations. */
     std::size_t *d_diag_yoffs; /**< Pointer to device memory holding y offsets for diagonal elements in computations. */

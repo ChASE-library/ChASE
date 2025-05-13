@@ -22,6 +22,82 @@ namespace linalg
 {
 namespace internal
 {
+    /**
+    * @brief Dispatch to the correct Lanczos procedure based on Matrix Type
+    * 
+     * This function dispatches to the correct Lanczos procedure based on the matrix type
+    * 
+    * @tparam MatrixType Type of the input matrix, defining the value type and matrix operations.
+    * @tparam InputMultiVectorType Type of the multi-vector for initial Lanczos basis vectors.
+    * 
+    * @param M Number of Lanczos iterations.
+    * @param numvec The number of runs of Lanczos.
+    * @param H The input matrix representing the system for which eigenvalues are sought.
+    * @param V Initial Lanczos vectors; will be overwritten with orthonormalized basis vectors.
+    * @param upperb Pointer to a variable that stores the computed upper bound for the largest eigenvalue.
+    * @param ritzv Array storing the resulting Ritz values (eigenvalues).
+    * @param Tau Array of values representing convergence estimates.
+    * @param ritzV Vector storing the Ritz vectors associated with computed eigenvalues.
+    * 
+    */    
+    template <typename MatrixType, typename InputMultiVectorType>
+    void cuda_nccl::lanczos_dispatch(cublasHandle_t cublas_handle,
+		 std::size_t M, 
+                 std::size_t numvec,
+                 MatrixType& H,
+                 InputMultiVectorType& V,
+                 chase::Base<typename MatrixType::value_type> *upperb,
+                 chase::Base<typename MatrixType::value_type> *ritzv,
+                 chase::Base<typename MatrixType::value_type> *Tau,
+                 chase::Base<typename MatrixType::value_type> *ritzV)            
+    {
+        using T = typename MatrixType::value_type;
+    
+	if constexpr (std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU>>::value ||
+		      std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T, chase::platform::GPU>>::value)
+	{
+		cuda_nccl::quasi_hermitian_lanczos(cublas_handle, M, numvec, H, V, upperb, ritzv, Tau, ritzV);
+	}
+	else
+	{
+		cuda_nccl::lanczos(cublas_handle, M, numvec, H, V, upperb, ritzv, Tau, ritzV);
+	}
+    }
+
+    /**
+    * @brief Dispatch to the correct Simplified Lanczos procedure based on Matrix Type
+    * 
+     * This function dispatches to the correct Simplified Lanczos procedure based on the matrix type
+    * 
+    * @tparam MatrixType Type of the input matrix, defining the value type and matrix operations.
+    * @tparam InputMultiVectorType Type of the multi-vector for initial Lanczos basis vectors.
+    * 
+    * @param M Number of Lanczos iterations.
+    * @param H The input matrix representing the system for which eigenvalues are sought.
+    * @param V Initial Lanczos vectors; will be overwritten with orthonormalized basis vectors.
+    * @param upperb Pointer to a variable that stores the computed upper bound for the largest eigenvalue.
+    * 
+    */    
+    template <typename MatrixType, typename InputMultiVectorType>
+    void cuda_nccl::lanczos_dispatch(cublasHandle_t cublas_handle,
+		 std::size_t M, 
+                 MatrixType& H,
+                 InputMultiVectorType& V,
+                 chase::Base<typename MatrixType::value_type>* upperb)
+    {
+        using T = typename MatrixType::value_type;
+	
+	if constexpr (std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU>>::value ||
+		      std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T, chase::platform::GPU>>::value)
+	{
+		cuda_nccl::quasi_hermitian_lanczos(cublas_handle, M, H, V, upperb);
+	}
+	else
+	{
+		cuda_nccl::lanczos(cublas_handle, M, H, V, upperb);
+	}
+    }
+
     template <typename MatrixType, typename InputMultiVectorType>
     void cuda_nccl::lanczos(cublasHandle_t cublas_handle,
                  std::size_t M, 
@@ -431,6 +507,8 @@ namespace internal
         *upperb = std::max(std::abs(ritzv[0]), std::abs(ritzv[M - 1])) +
                   std::abs(r_beta);
     }
+
+
 
 }
 }

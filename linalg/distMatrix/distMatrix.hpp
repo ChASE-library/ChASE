@@ -100,6 +100,9 @@ class QuasiHermitianBlockBlockMatrix;
 template<typename T, typename Platform>
 class BlockCyclicMatrix;
 
+template<typename T, typename Platform>
+class QuasiHermitianBlockCyclicMatrix;
+
 /**
  * @class AbstractDistMatrix
  * @brief Abstract base class for distributed matrices
@@ -187,6 +190,11 @@ public:
      * @return Block size for distribution.
      */     
     virtual std::size_t nb() const = 0;  
+    /**
+     * @brief Get the local index for the lower half
+     * @return Index of the lower half
+     */     
+    virtual std::size_t l_half() const = 0;  
     //virtual std::unique_ptr<SinglePrecisionDerived> createSinglePrecisionMatrix() = 0;
     /**
      * @brief Get the global rank in the MPI communicator.
@@ -436,7 +444,7 @@ public:
      */    
     RedundantMatrix(std::size_t m, std::size_t n,
                     std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid)
-                    :m_(m), n_(n), ld_(m_), mpi_grid_(mpi_grid)
+                    :m_(m), n_(n), ld_(m_), mpi_grid_(mpi_grid), l_half_(m_/2)
     {
         M_ = m_;
         N_ = n_;
@@ -453,7 +461,7 @@ public:
      */
     RedundantMatrix(std::size_t m, std::size_t n, std::size_t ld, T *data, 
                     std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid)
-                    :m_(m), n_(n), ld_(ld), mpi_grid_(mpi_grid)
+                    :m_(m), n_(n), ld_(ld), mpi_grid_(mpi_grid), l_half_(m_/2)
     {
         M_ = m_;
         N_ = n_;        
@@ -506,6 +514,12 @@ public:
      * @return 0 as the block size is not applicable.
      */    
     std::size_t nb() const override { return 0;} 
+    /**
+     * @brief Get the local index for the lower half
+     *
+     * @return Index of the lower half
+     */     
+    std::size_t l_half() const override {return l_half_;}  
     /**
      * @brief Get the pointer to the local matrix data.
      *
@@ -668,6 +682,7 @@ private:
     std::size_t m_; ///< Local number of rows in the matrix
     std::size_t n_; ///< Local number of columns in the matrix
     std::size_t ld_; ///< Local leading dimension (stride)
+    std::size_t l_half_; //< Local index of the lower half 
 
     chase::matrix::Matrix<T, Platform> local_matrix_; ///< Local matrix holding the data
     std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid_; ///< Shared pointer to the MPI grid   
@@ -939,6 +954,15 @@ public:
             n_ = N_ - (dims_[1] - 1) * len;
         }
 
+	if(g_offs_[0] + m_ > M_ / 2)
+	{
+		l_half_ = std::size_t(std::max(0, int(M_ / 2) - int(g_offs_[0])));
+	}
+	else
+	{
+		l_half_ = m_;
+	}
+
         ld_ = m_;
         local_matrix_ = chase::matrix::Matrix<T, Platform>(m_, n_);     
     }
@@ -997,9 +1021,17 @@ public:
         {
             len = std::min(N_, N_ / dims_[1] + 1);
         }
-
+	
         g_offs_[1] = coord_[1] * len;
-     
+	
+	if(g_offs_[0] + m_ > M_ / 2)
+	{
+		l_half_ = std::size_t(std::max(0, int(M_ / 2) - int(g_offs_[0])));
+	}
+	else
+	{
+		l_half_ = m_;
+	} 
     }
     /**
      * @brief Get the global number of rows in the matrix.
@@ -1049,6 +1081,12 @@ public:
      * @return Always returns 0.
      */    
     std::size_t nb() const override { return 0;}    
+    /**
+     * @brief Get the local index for the lower half
+     *
+     * @return Index of the lower half
+     */     
+    std::size_t l_half() const override {return l_half_;}  
     /**
      * @brief Get the local data pointer for the matrix.
      *
@@ -1340,6 +1378,7 @@ private:
     std::size_t m_; ///< Local number of rows in the matrix
     std::size_t n_; ///< Local number of columns in the matrix
     std::size_t ld_; ///< Local leading dimension (stride)
+    std::size_t l_half_; ///< Local index of the lower half
     std::size_t g_offs_[2];
 
     chase::matrix::Matrix<T, Platform> local_matrix_;  ///< Local matrix holding the data
@@ -1609,7 +1648,7 @@ public:
      */    
     BlockCyclicMatrix(std::size_t M, std::size_t N, std::size_t mb, std::size_t nb,
                     std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid)
-                    :M_(M), N_(N), mpi_grid_(mpi_grid), mb_(mb), nb_(nb)
+                    :M_(M), N_(N), mpi_grid_(mpi_grid), mb_(mb), nb_(nb), l_half_(0)
     {
         int *dims_ = mpi_grid_.get()->get_dims();
         int *coord_ = mpi_grid_.get()->get_coords();
@@ -1642,7 +1681,7 @@ public:
                       std::size_t mb, std::size_t nb,
                       std::size_t ld, T *data,
                       std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid)
-                      : M_(M), N_(N), mpi_grid_(mpi_grid), mb_(mb), nb_(nb), ld_(ld)
+                      : M_(M), N_(N), mpi_grid_(mpi_grid), mb_(mb), nb_(nb), ld_(ld), l_half_(0)
     {
         int *dims_ = mpi_grid_.get()->get_dims();
         int *coord_ = mpi_grid_.get()->get_coords();
@@ -1716,6 +1755,12 @@ public:
      * @return The block size for columns.
      */    
     std::size_t nb() const override { return nb_;}
+    /**
+     * @brief Get the local index for the lower half
+     *
+     * @return Index of the lower half
+     */     
+    std::size_t l_half() const override {return l_half_; } 
      /** 
      * @brief Returns the number of row blocks.
      * 
@@ -1728,6 +1773,7 @@ public:
      * @return The number of column blocks.
      */    
     std::size_t nblocks() {return nblocks_; }
+    
     std::vector<std::size_t> m_contiguous_global_offs() { return m_contiguous_global_offs_; }
     std::vector<std::size_t> n_contiguous_global_offs() { return n_contiguous_global_offs_; }
     std::vector<std::size_t> m_contiguous_local_offs() { return m_contiguous_local_offs_; }
@@ -2080,7 +2126,8 @@ private:
     std::size_t mb_; ///< Block size for the row partitioning in the block-cyclic distribution
     std::size_t nb_; ///< Block size for the column partitioning in the block-cyclic distribution
     std::size_t mblocks_;
-    std::size_t nblocks_;    
+    std::size_t nblocks_;   
+    std::size_t l_half_; ///< Local index for the lower half
     std::vector<std::size_t> m_contiguous_global_offs_;
     std::vector<std::size_t> n_contiguous_global_offs_;
     std::vector<std::size_t> m_contiguous_local_offs_;
@@ -2146,6 +2193,22 @@ private:
             n_contiguous_local_offs_[j] = n_contiguous_local_offs_[j - 1] 
                                           + n_contiguous_lens_[j - 1];
         }
+
+	std::size_t idx = 0;
+
+	while(idx < mblocks_ && m_contiguous_global_offs_[idx] + m_contiguous_lens_[idx] <= (M_ / 2))
+    	{
+        	l_half_ += m_contiguous_lens_[idx];
+        	idx += 1;
+    	}
+	
+    	if(idx < mblocks_)
+    	{
+        	if(int(M_/2) - int(m_contiguous_global_offs_[idx]) > 0)
+        	{
+                	l_half_ += std::size_t(int(M_/2) - int(m_contiguous_global_offs_[idx]));
+        	}
+   	}
     }
 
     void redistributeToRedundant(RedundantMatrix<T, Platform>* targetMatrix)
@@ -2463,6 +2526,42 @@ private:
     std::size_t desc_[9];
 #endif
 };
+
+template <typename T, typename Platform = chase::platform::CPU>
+class QuasiHermitianBlockCyclicMatrix;
+
+template <typename T>
+class QuasiHermitianBlockCyclicMatrix<T, chase::platform::CPU> : public BlockCyclicMatrix<T, chase::platform::CPU> {
+public:
+    // Default constructor
+    QuasiHermitianBlockCyclicMatrix() : BlockCyclicMatrix<T, chase::platform::CPU>() {}
+    
+    // Constructor with dimensions
+    QuasiHermitianBlockCyclicMatrix(std::size_t M, std::size_t N, std::size_t mb, std::size_t nb, std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid) 
+        : BlockCyclicMatrix<T, chase::platform::CPU>(M, N, mb, nb, mpi_grid) {}
+    
+    // Constructor with external data
+    QuasiHermitianBlockCyclicMatrix(std::size_t M, std::size_t N, std::size_t m, std::size_t n, std::size_t mb, std::size_t nb, std::size_t ld, T* data, std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid)
+        : BlockCyclicMatrix<T, chase::platform::CPU>(M, N, m, n, mb, nb, ld, data, mpi_grid) {}
+};
+
+#ifdef HAS_CUDA
+template <typename T>
+class QuasiHermitianBlockCyclicMatrix<T, chase::platform::GPU> : public BlockCyclicMatrix<T, chase::platform::GPU> {
+public:
+    // Default constructor
+    QuasiHermitianBlockCyclicMatrix() : BlockCyclicMatrix<T, chase::platform::GPU>() {}
+    
+    // Constructor with dimensions
+    QuasiHermitianBlockCyclicMatrix(std::size_t M, std::size_t N, std::size_t mb, std::size_t nb, std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid) 
+        : BlockCyclicMatrix<T, chase::platform::GPU>(M, N, mb, nb, mpi_grid) {}
+    
+    // Constructor with external data
+    QuasiHermitianBlockCyclicMatrix(std::size_t M, std::size_t N, std::size_t m, std::size_t n, std::size_t mb, std::size_t nb, std::size_t ld, T* data, std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid)
+        : BlockCyclicMatrix<T, chase::platform::GPU>(M, N, m, n, mb, nb, ld, data, mpi_grid) {}
+
+};
+#endif
 
 /** @} */  // End of dist_matrix_classes group
 

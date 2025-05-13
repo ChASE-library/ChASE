@@ -15,19 +15,31 @@
 #include "linalg/distMatrix/distMatrix.hpp"
 #include "linalg/distMatrix/distMultiVector.hpp"
 
+
+// Global static resources that persist across all test suites
+namespace {
+    bool resources_initialized = false;
+    cublasHandle_t cublasH;
+    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid;
+}
+
 template <typename T>
-class ResidGPUDistTest : public ::testing::Test {
+class ResidGPUAwareMPIDistTest : public ::testing::Test {
 protected:
     void SetUp() override {
         MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
         MPI_Comm_size(MPI_COMM_WORLD, &world_size);  
-        mpi_grid = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(2, 2, MPI_COMM_WORLD);
-        CHECK_CUBLAS_ERROR(cublasCreate(&cublasH_));   
+        ASSERT_EQ(world_size, 4);  // Ensure we're running with 4 processes
+        
+        if (!resources_initialized) {
+            mpi_grid = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(2, 2, MPI_COMM_WORLD);
+            CHECK_CUBLAS_ERROR(cublasCreate(&cublasH));
+            resources_initialized = true;
+        }
     }
 
     void TearDown() override {
-        if (cublasH_)
-            CHECK_CUBLAS_ERROR(cublasDestroy(cublasH_));    
+        // Don't free resources here - they will be reused
     }
 
     int world_rank;
@@ -35,16 +47,25 @@ protected:
 
     std::size_t N = 50;
     std::size_t n = 10;    
-    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid;
-    cublasHandle_t cublasH_;
+};
+
+// Add a global test environment to handle resource cleanup at program exit
+class ResourceCleanupEnvironment : public ::testing::Environment {
+public:
+    ~ResourceCleanupEnvironment() override {
+        if (resources_initialized) {
+            CHECK_CUBLAS_ERROR(cublasDestroy(cublasH));
+            mpi_grid.reset();
+            resources_initialized = false;
+        }
+    }
 };
 
 using TestTypes = ::testing::Types<float, double, std::complex<float>, std::complex<double>>;
-TYPED_TEST_SUITE(ResidGPUDistTest, TestTypes);
+TYPED_TEST_SUITE(ResidGPUAwareMPIDistTest, TestTypes);
 
-TYPED_TEST(ResidGPUDistTest, ResidCorrectnessGPU) {
+TYPED_TEST(ResidGPUAwareMPIDistTest, ResidCorrectnessGPU) {
     using T = TypeParam;  // Get the current type
-    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
     auto machineEpsilon = MachineEpsilon<T>::value();
 
     std::size_t offset = 0;
@@ -83,13 +104,13 @@ TYPED_TEST(ResidGPUDistTest, ResidCorrectnessGPU) {
                &One, V.data(), this->N, H2.data(), this->N, &Zero,
                H.data(), this->N);
 
-    int *coords = this->mpi_grid.get()->get_coords();
+    int *coords = mpi_grid->get_coords();
 
-    auto H_ = chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU>(this->N, this->N, this->mpi_grid);
-    auto V_ = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(this->N, this->n, this->mpi_grid);
-    auto V2_ = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(this->N, this->n, this->mpi_grid);
-    auto W_ = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::GPU>(this->N, this->n, this->mpi_grid);  
-    auto W2_ = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::GPU>(this->N, this->n, this->mpi_grid);
+    auto H_ = chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU>(this->N, this->N, mpi_grid);
+    auto V_ = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(this->N, this->n, mpi_grid);
+    auto V2_ = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, chase::platform::GPU>(this->N, this->n, mpi_grid);
+    auto W_ = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::GPU>(this->N, this->n, mpi_grid);  
+    auto W2_ = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row, chase::platform::GPU>(this->N, this->n, mpi_grid);
 
     H_.allocate_cpu_data();
     V_.allocate_cpu_data();
@@ -127,10 +148,14 @@ TYPED_TEST(ResidGPUDistTest, ResidCorrectnessGPU) {
     chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU> resids_(this->n, 1);
     chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU> ritzv_(this->n, 1, this->n, evals.data());
     resids_.allocate_cpu_data();
-    chase::linalg::internal::cuda_mpi::residuals(this->cublasH_, H_, V_, V2_, W_, W2_, ritzv_, resids_, offset, subSize);
+    chase::linalg::internal::cuda_mpi::residuals(cublasH, H_, V_, V2_, W_, W2_, ritzv_, resids_, offset, subSize);
 
     for(auto i = offset; i < offset + subSize; i++)
     {
         EXPECT_NEAR(resids_.cpu_data()[i], machineEpsilon, 100 * machineEpsilon);
     }
 }
+
+// Add this at the end of the file, before main()
+::testing::Environment* const resource_env = ::testing::AddGlobalTestEnvironment(new ResourceCleanupEnvironment);
+

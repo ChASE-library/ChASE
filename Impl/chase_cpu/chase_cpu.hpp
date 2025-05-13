@@ -460,7 +460,6 @@ namespace Impl
 		 * in Vec2_ and will replace the fliped ones of Vec1_ at the end of QR. */
 	}
 
-
         int disable = config_.DoCholQR() ? 0 : 1;
         char* cholddisable = getenv("CHASE_DISABLE_CHOLQR");
         if (cholddisable) {

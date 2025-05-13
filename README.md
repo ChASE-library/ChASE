@@ -1,4 +1,4 @@
-[![License](https://img.shields.io/github/license/ChASE-library/ChASE)](https://github.com/ChASE-library/ChASE/blob/master/LICENSE) [![DOI](https://zenodo.org/badge/349075288.svg)](https://zenodo.org/badge/latestdoi/349075288) [![Latest Version](https://img.shields.io/github/v/release/ChASE-library/ChASE)](https://github.com/ChASE-library/ChASE/releases/latest) [![DOI](https://img.shields.io/badge/DOI-10.1145%2F3313828%20-orange)](https://doi.org/10.1145/3313828) [![DOI](https://img.shields.io/badge/DOI-10.1002%2Fcpe.3394%20-orange)](https://doi.org/10.1002/cpe.3394) [![coverage](https://gitlab.jsc.fz-juelich.de/chase/chase-library/ChASE/badges/master/coverage.svg?job=coverage)](https://gitlab.jsc.fz-juelich.de/chase/chase-library/ChASE/badges/master/coverage.svg) ![Coverage](https://chase-library.github.io/ChASE/_images/coverage/coverage.svg)
+[![License](https://img.shields.io/github/license/ChASE-library/ChASE)](https://github.com/ChASE-library/ChASE/blob/master/LICENSE) [![DOI](https://zenodo.org/badge/349075288.svg)](https://zenodo.org/badge/latestdoi/349075288) [![Latest Version](https://img.shields.io/github/v/release/ChASE-library/ChASE)](https://github.com/ChASE-library/ChASE/releases/latest) [![DOI](https://img.shields.io/badge/DOI-10.1145%2F3313828%20-orange)](https://doi.org/10.1145/3313828) [![DOI](https://img.shields.io/badge/DOI-10.1002%2Fcpe.3394%20-orange)](https://doi.org/10.1002/cpe.3394) [![coverage](https://gitlab.jsc.fz-juelich.de/chase/chase-library/ChASE/badges/master/coverage.svg?job=coverage)](https://gitlab.jsc.fz-juelich.de/chase/chase-library/ChASE/badges/master/coverage.svg)
 <img src="docs/images/ChASE_Logo_RGB.png" alt="Matrix Generation Pattern" style="zoom:40%;" />
 # ChASE: a Chebyshev Accelerated Subspace Eigensolver for Dense Eigenproblems
 
@@ -15,6 +15,7 @@ ChASE is written in C++ using the modern software engineering concepts that favo
 - **Vectors input:** Since it is based on subspace iteration, ChASE can receive as input a matrix of vector equal to the number of desired eigenvalues. ChASE can experience substantial speed-ups when this input matrix contains some information about the sought after eigenvectors.
 - **Degree optimization:** For a fixed accuracy level, ChASE can optimize the degree of the Chebyshev polynomial filter so as to minimize the number of FLOPs necessary to reach convergence.
 - **Precision:** ChASE is also templated to work in *Single Precision* (SP) or *Double Precision* (DP).
+
 
 ## Builds of ChASE
 

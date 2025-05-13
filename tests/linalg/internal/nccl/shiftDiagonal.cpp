@@ -13,18 +13,43 @@
 #include "linalg/distMatrix/distMatrix.hpp"
 #include "linalg/distMatrix/distMultiVector.hpp"
 
+// Global static resources that persist across all test suites
+namespace {
+    bool resources_initialized = false;
+    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid;
+}
+
 template <typename T>
 class shiftDiagonalGPUNCCLDistTest : public ::testing::Test {
 protected:
     void SetUp() override {
         MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
         MPI_Comm_size(MPI_COMM_WORLD, &world_size);        
+        ASSERT_EQ(world_size, 4);  // Ensure we're running with 4 processes
+        
+        if (!resources_initialized) {
+            mpi_grid = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(2, 2, MPI_COMM_WORLD);
+            resources_initialized = true;
+        }
     }
 
-    void TearDown() override {}
+    void TearDown() override {
+        // Don't free resources here - they will be reused
+    }
 
     int world_rank;
     int world_size;    
+};
+
+// Add a global test environment to handle resource cleanup at program exit
+class ResourceCleanupEnvironment : public ::testing::Environment {
+public:
+    ~ResourceCleanupEnvironment() override {
+        if (resources_initialized) {
+            mpi_grid.reset();
+            resources_initialized = false;
+        }
+    }
 };
 
 using TestTypes = ::testing::Types<float, double, std::complex<float>, std::complex<double>>;
@@ -34,9 +59,6 @@ TYPED_TEST(shiftDiagonalGPUNCCLDistTest, ShiftDistCorrectnessGPU) {
     using T = TypeParam;  // Get the current type
 
     std::size_t N = 10;
-    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
-    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid 
-            = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(2, 2, MPI_COMM_WORLD);
 
     auto H = chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU>(N, N, mpi_grid);
     H.allocate_cpu_data();
@@ -114,3 +136,6 @@ TYPED_TEST(shiftDiagonalGPUNCCLDistTest, ShiftDistCorrectnessGPU) {
    CHECK_CUDA_ERROR(cudaFree(d_diag_xoffs));     
    CHECK_CUDA_ERROR(cudaFree(d_diag_yoffs));     
 }
+
+// Add this at the end of the file, before main()
+::testing::Environment* const resource_env = ::testing::AddGlobalTestEnvironment(new ResourceCleanupEnvironment);

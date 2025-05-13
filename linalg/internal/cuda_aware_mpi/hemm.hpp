@@ -82,6 +82,21 @@ namespace internal
             {
                 beta_tmp = *beta; // If the first row, use the provided beta value
             }
+	    
+	    if constexpr (std::is_same<MatrixType,chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU>>::value ||
+                          std::is_same<MatrixType,chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T, chase::platform::GPU>>::value ){
+
+                chase::linalg::internal::cuda_mpi::flipLowerHalfMatrixSign(input_multiVector, offset, subSize);
+            }
+
+            if(beta_tmp != T(0.0)){
+
+                if constexpr (std::is_same<MatrixType,chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU>>::value ||
+                          std::is_same<MatrixType,chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T, chase::platform::GPU>>::value ){
+
+                        chase::linalg::internal::cuda_mpi::flipLowerHalfMatrixSign(result_multiVector, offset, subSize);
+                }
+            }
 
             // Perform the matrix multiplication using BLAS
             CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(cublas_handle,
@@ -105,6 +120,18 @@ namespace internal
                           chase::mpi::getMPI_Type<T>(),
                           MPI_SUM,
                           input_multiVector.getMpiGrid()->get_col_comm());
+	    
+	    if constexpr (std::is_same<MatrixType,chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU>>::value ||
+                          std::is_same<MatrixType,chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T, chase::platform::GPU>>::value ){
+
+                chase::linalg::internal::cuda_mpi::flipLowerHalfMatrixSign(input_multiVector, offset, subSize);
+            }
+
+            if constexpr (std::is_same<MatrixType,chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU>>::value ||
+                          std::is_same<MatrixType,chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T, chase::platform::GPU>>::value ){
+
+                chase::linalg::internal::cuda_mpi::flipLowerHalfMatrixSign(result_multiVector, offset, subSize);
+           }
                  
         }
         else // InputCommType is CommunicatorType::column
@@ -241,6 +268,12 @@ namespace internal
         
         if constexpr (ExtractCommType<InputMultiVectorType>::value == chase::distMultiVector::CommunicatorType::column)
         {
+	    if constexpr (std::is_same<MatrixType,chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU>>::value ||
+                          std::is_same<MatrixType,chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T, chase::platform::GPU>>::value ){
+
+                chase::linalg::internal::cuda_mpi::flipLowerHalfMatrixSign(input_multiVector, offset, subSize);
+            }
+
             // Perform the matrix multiplication using BLAS
             CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(cublas_handle,
                                                                     CUBLAS_OP_C,
@@ -264,7 +297,19 @@ namespace internal
                           result_multiVector.l_ld() * subSize, 
                           chase::mpi::getMPI_Type<T>(),
                           MPI_SUM,
-                          input_multiVector.getMpiGrid()->get_col_comm());                                            
+                          input_multiVector.getMpiGrid()->get_col_comm());                                           
+	   
+	    if constexpr (std::is_same<MatrixType,chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU>>::value ||
+                          std::is_same<MatrixType,chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T, chase::platform::GPU>>::value ){
+
+                chase::linalg::internal::cuda_mpi::flipLowerHalfMatrixSign(input_multiVector, offset, subSize);
+            }
+
+            if constexpr (std::is_same<MatrixType,chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU>>::value ||
+                          std::is_same<MatrixType,chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T, chase::platform::GPU>>::value ){
+
+                chase::linalg::internal::cuda_mpi::flipLowerHalfMatrixSign(result_multiVector, offset, subSize);
+           }
         }
         else // InputCommType is CommunicatorType::column
         {

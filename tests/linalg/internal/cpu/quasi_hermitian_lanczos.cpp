@@ -117,6 +117,10 @@ TYPED_TEST(QuasiHermitianLanczosCPUTest, tinyQuasiHermitianLanczos) {
     chase::Base<T> diff_min = std::norm(this->ritzv_tiny[0]        - std::real(this->exact_eigsl_H_tiny->data()[0])); 
     chase::Base<T> diff_max = std::norm(this->ritzv_tiny[this->M_tiny-1] - std::real(this->exact_eigsl_H_tiny->data()[this->N_tiny-1])); 
 
+    for(auto i = 0; i < this->M_tiny; i++){
+	std::cout << this->ritzv_tiny[i] << " " << std::endl;
+    }
+
     EXPECT_LT(diff_min,1e3*MachineEpsilon<chase::Base<T>>::value());
     EXPECT_LT(diff_max,1e3*MachineEpsilon<chase::Base<T>>::value());
 }
