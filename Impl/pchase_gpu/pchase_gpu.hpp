@@ -26,7 +26,7 @@
 #endif
 #include "algorithm/types.hpp"
 
-#include "config/config.hpp"
+#include "Impl/config/config.hpp"
 #include "Impl/chase_gpu/nvtx.hpp"
 
 #include "../../linalg/internal/typeTraits.hpp"

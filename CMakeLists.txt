@@ -88,6 +88,38 @@ add_executable( "herm_chase_run_gpu" tests/herm_run.cpp )
 target_link_libraries(herm_chase_run_gpu chase_gpu)
 endif()
 
+add_executable( "block_dist_herm_chase_run" tests/block_dist_herm_run.cpp )
+target_link_libraries(block_dist_herm_chase_run pchase_cpu)
+
+if(TARGET pchase_gpu)
+add_executable( "block_dist_herm_chase_run_gpu" tests/block_dist_herm_run.cpp )
+target_link_libraries(block_dist_herm_chase_run_gpu pchase_gpu)
+endif()
+
+add_executable( "block_dist_quasi_chase_run" tests/block_dist_quasi_run.cpp )
+target_link_libraries(block_dist_quasi_chase_run pchase_cpu)
+
+if(TARGET pchase_gpu)
+add_executable( "block_dist_quasi_chase_run_gpu" tests/block_dist_quasi_run.cpp )
+target_link_libraries(block_dist_quasi_chase_run_gpu pchase_gpu)
+endif()
+
+add_executable( "cyclic_dist_herm_chase_run" tests/cyclic_dist_herm_run.cpp )
+target_link_libraries(cyclic_dist_herm_chase_run pchase_cpu)
+
+if(TARGET pchase_gpu)
+add_executable( "cyclic_dist_herm_chase_run_gpu" tests/cyclic_dist_herm_run.cpp )
+target_link_libraries(cyclic_dist_herm_chase_run_gpu pchase_gpu)
+endif()
+
+add_executable( "cyclic_dist_quasi_chase_run" tests/cyclic_dist_quasi_run.cpp )
+target_link_libraries(cyclic_dist_quasi_chase_run pchase_cpu)
+
+if(TARGET pchase_gpu)
+add_executable( "cyclic_dist_quasi_chase_run_gpu" tests/cyclic_dist_quasi_run.cpp )
+target_link_libraries(cyclic_dist_quasi_chase_run_gpu pchase_gpu)
+endif()
+
 add_executable( "quasi_chase_run" tests/quasi_run.cpp )
 target_link_libraries(quasi_chase_run chase_cpu)
 
