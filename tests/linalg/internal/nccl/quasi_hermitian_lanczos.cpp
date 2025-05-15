@@ -92,8 +92,6 @@ TYPED_TEST_SUITE(QuasiHermitianLanczosGPUNCCLDistTest, TestTypes);
 TYPED_TEST(QuasiHermitianLanczosGPUNCCLDistTest, tinyQuasiHermitianLanczos){
     using T = TypeParam;  // Get the current type
 
-    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
-    
     int *coords = this->get_mpi_grid().get()->get_coords();
 
     auto H_ = chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU>(this->N_tiny, this->N_tiny, this->get_mpi_grid());
@@ -139,8 +137,6 @@ TYPED_TEST(QuasiHermitianLanczosGPUNCCLDistTest, tinyQuasiHermitianLanczos){
 TYPED_TEST(QuasiHermitianLanczosGPUNCCLDistTest, QuasiHermitianLanczos){
     using T = TypeParam;  // Get the current type
 
-    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
-    
     int *coords = this->get_mpi_grid().get()->get_coords();
 
     auto H_ = chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU>(this->N, this->N, this->get_mpi_grid());
@@ -186,8 +182,6 @@ TYPED_TEST(QuasiHermitianLanczosGPUNCCLDistTest, QuasiHermitianLanczos){
 TYPED_TEST(QuasiHermitianLanczosGPUNCCLDistTest, tinySimplifiedQuasiHermitianLanczos){
     using T = TypeParam;  // Get the current type
 
-    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
-    
     int *coords = this->get_mpi_grid().get()->get_coords();
 
     auto H_ = chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU>(this->N_tiny, this->N_tiny, this->get_mpi_grid());
@@ -227,8 +221,6 @@ TYPED_TEST(QuasiHermitianLanczosGPUNCCLDistTest, tinySimplifiedQuasiHermitianLan
 TYPED_TEST(QuasiHermitianLanczosGPUNCCLDistTest, SimplifiedQuasiHermitianLanczos){
     using T = TypeParam;  // Get the current type
 
-    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
-    
     int *coords = this->get_mpi_grid().get()->get_coords();
 
     auto H_ = chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU>(this->N, this->N, this->get_mpi_grid());

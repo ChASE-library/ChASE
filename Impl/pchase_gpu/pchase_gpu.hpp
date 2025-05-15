@@ -477,8 +477,10 @@ public:
         CHECK_CUDA_ERROR(cudaMalloc(&d_ritzVc_, m * idx * sizeof(T))); 
         d_ritzVc_ptr.reset(d_ritzVc_);
         d_ritzVc_ = d_ritzVc_ptr.get();
+
         CHECK_CUDA_ERROR(cudaMemcpy(d_ritzVc_, ritzVc, m * idx * sizeof(T),
                              cudaMemcpyHostToDevice));
+
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(cublasH_,
                                                       CUBLAS_OP_N,
                                                       CUBLAS_OP_N,

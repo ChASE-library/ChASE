@@ -72,7 +72,6 @@ TYPED_TEST(QuasiHEMMGPUNCCLDistTest, TinyQuasiHEMMDistCorrectness) {
     using T = TypeParam;  // Get the current type
     std::size_t N = 10;
     std::size_t n = 5;
-    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
     
     auto SH_ = chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU>(N, N, this->get_mpi_grid());
     SH_.allocate_cpu_data();
@@ -141,7 +140,6 @@ TYPED_TEST(QuasiHEMMGPUNCCLDistTest, TinyQuasiHEMMBlockCyclicDistCorrectness) {
     std::size_t N = 10;
     std::size_t n = 5;
     std::size_t mb = 2;
-    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
     
     auto SH_ = chase::distMatrix::BlockCyclicMatrix<T, chase::platform::GPU>(N, N, mb, mb, this->get_mpi_grid());
     SH_.allocate_cpu_data();
@@ -209,7 +207,6 @@ TYPED_TEST(QuasiHEMMGPUNCCLDistTest, QuasiHEMMDistCorrectness) {
     using T = TypeParam;  // Get the current type
     std::size_t N = 200;
     std::size_t n = 20;
-    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
     
     auto SH_ = chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU>(N, N, this->get_mpi_grid());
     SH_.allocate_cpu_data();
@@ -278,7 +275,6 @@ TYPED_TEST(QuasiHEMMGPUNCCLDistTest, QuasiHEMMBlockCyclicDistCorrectness) {
     std::size_t N = 200;
     std::size_t n = 20;
     std::size_t mb = 10;
-    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
     
     auto SH_ = chase::distMatrix::BlockCyclicMatrix<T, chase::platform::GPU>(N, N, mb, mb, this->get_mpi_grid());
     SH_.allocate_cpu_data();

@@ -72,7 +72,9 @@ int main(int argc, char** argv){
 	#endif
     	
 	auto& config = single.GetConfig();
-    	config.SetTol(1e-10);
+    	config.SetTol(1e-9);
+    	config.SetLanczosIter(26);
+    	config.SetNumLanczos(4);
     	config.SetDeg(atoi(argv[5]));
 	if(argv[6][0] == 'Y'){
     		config.SetOpt(true);

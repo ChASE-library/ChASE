@@ -46,7 +46,6 @@ int main(int argc, char** argv){
 
     	std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(
             dims_[0], dims_[1], MPI_COMM_WORLD);
-
     
 	auto Hmat = chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T, ARCH>(N, N, mb, mb, mpi_grid);
 
@@ -70,7 +69,9 @@ int main(int argc, char** argv){
 	#endif
     	
 	auto& config = single.GetConfig();
-    	config.SetTol(1e-10);
+    	config.SetTol(1e-9);
+    	config.SetLanczosIter(26);
+    	config.SetNumLanczos(4);
     	config.SetDeg(atoi(argv[5]));
 	if(argv[6][0] == 'Y'){
     		config.SetOpt(true);

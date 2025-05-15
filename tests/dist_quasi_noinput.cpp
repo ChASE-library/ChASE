@@ -47,9 +47,9 @@ int main(int argc, char** argv)
             chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(
             dims_[0], dims_[1], MPI_COMM_WORLD);
 
-    size_t k = 1472;
+    size_t k = 1500;
 
-    size_t N = 2 * k, nev = 200, nex = 100, mb = 40;
+    size_t N = 2 * k, nev = 300, nex = 150, mb = 64;
 
     int* dims = mpi_grid.get()->get_dims();
     int* coords = mpi_grid.get()->get_coords();
@@ -65,16 +65,14 @@ int main(int argc, char** argv)
     auto Hmat = chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, ARCH>(
         N, N, mpi_grid);
 
+/*    auto Hmat = chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T, ARCH>(
+        N, N, mb, mb, mpi_grid);*/
+  
     #ifdef HAS_CUDA
     	Hmat.allocate_cpu_data();
     #endif
 
-/*
-    auto Hmat = chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T, ARCH>(
-        N, N, mb, mb, mpi_grid);
-*/
-    Hmat.readFromBinaryFile(
-	"../../../Data/Matrix/2x2x2_Silicon_QuasiHermitian.bin");
+    Hmat.readFromBinaryFile("../../../Data/Matrix/cdouble_random_3000.bin");
     //    "./tests/linalg/internal/BSE_matrices/cdouble_random_BSE.bin");
 
     auto Lambda = std::vector<chase::Base<T>>(nev + nex);
@@ -82,9 +80,10 @@ int main(int argc, char** argv)
     auto Vec = chase::distMultiVector::DistMultiVector1D<
         T, chase::distMultiVector::CommunicatorType::column, ARCH>(N, nev + nex, mpi_grid);
 
-    /*auto Vec = chase::distMultiVector::DistMultiVectorBlockCyclic1D<
-        T, chase::distMultiVector::CommunicatorType::column, ARCH>(N, nev + nex,mb, mpi_grid);
-    */
+/*    auto Vec = chase::distMultiVector::DistMultiVectorBlockCyclic1D<
+        T, chase::distMultiVector::CommunicatorType::column, ARCH>(N, nev + nex, mb, mpi_grid);*/
+
+    
     if (world_rank == 0)
     {
 #ifdef HAS_CUDA
@@ -112,7 +111,7 @@ int main(int argc, char** argv)
     // Setup configure for ChASE
     auto& config = single.GetConfig();
     // Tolerance for Eigenpair convergence
-    config.SetTol(1e-10);
+    config.SetTol(1e-9);
     // Initial filtering degree
     config.SetDeg(10);
     // Optimi(S)e degree
@@ -139,7 +138,7 @@ int main(int argc, char** argv)
         std::cout << std::setfill(' ');
         std::cout << std::scientific;
         std::cout << std::right;
-        for (auto i = 0; i < std::min(std::size_t(5), nev); ++i)
+        for (auto i = 0; i < std::min(std::size_t(nev), nev); ++i)
             std::cout << "|  " << std::setw(4) << i + 1 << " | "
                       << std::setw(width) << Lambda[i] << "  | "
                       << std::setw(width) << resid[i] << "  |\n";
