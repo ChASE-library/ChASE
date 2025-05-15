@@ -448,10 +448,14 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
                     break;
                 }
         }
-        if (cnt == unconverged)
+        if (single->isSym() && cnt == unconverged)
         {
         	lowerb = ritzv[unconverged - 1];
         }
+	else if (single->isPseudoHerm() && cnt == unconverged)
+	{
+        	lowerb = std::min(ritzv[unconverged - 1], Base<T>(0.0));
+	}
 
         if (single->isSym() && unconverged < nevex)
         {

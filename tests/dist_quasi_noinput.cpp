@@ -47,9 +47,9 @@ int main(int argc, char** argv)
             chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(
             dims_[0], dims_[1], MPI_COMM_WORLD);
 
-    size_t k = 1500;
+    size_t k = 11776;
 
-    size_t N = 2 * k, nev = 300, nex = 150, mb = 64;
+    size_t N = 2 * k, nev = 100, nex = 50, mb = 64;
 
     int* dims = mpi_grid.get()->get_dims();
     int* coords = mpi_grid.get()->get_coords();
@@ -72,7 +72,18 @@ int main(int argc, char** argv)
     	Hmat.allocate_cpu_data();
     #endif
 
-    Hmat.readFromBinaryFile("../../../Data/Matrix/cdouble_random_3000.bin");
+    Hmat.readFromBinaryFile("../../../Codes/yambo-matrix-generation/generated_matrices/23552_double_QuasiHermitian_4xSilicon_BSE_matrix.bin");
+
+    if(world_rank == 0)
+    {
+    	std::cout << "First entry is : " << Hmat.cpu_data()[0] << std::endl;
+    }
+    
+    #ifdef HAS_CUDA
+	Hmat.H2D();
+    #endif
+
+    //"../../../Data/Matrix/cdouble_random_3000.bin");
     //    "./tests/linalg/internal/BSE_matrices/cdouble_random_BSE.bin");
 
     auto Lambda = std::vector<chase::Base<T>>(nev + nex);
@@ -98,7 +109,6 @@ int main(int argc, char** argv)
     }
 
 #ifdef HAS_CUDA
-    Hmat.allocate_cpu_data();
     auto single =
         chase::Impl::pChASEGPU<decltype(Hmat), decltype(Vec), BackendType>(
             nev, nex, &Hmat, &Vec, Lambda.data());
@@ -111,12 +121,13 @@ int main(int argc, char** argv)
     // Setup configure for ChASE
     auto& config = single.GetConfig();
     // Tolerance for Eigenpair convergence
-    config.SetTol(1e-9);
+    config.SetTol(1e-10);
     // Initial filtering degree
     config.SetDeg(10);
     // Optimi(S)e degree
     config.SetOpt(true);
     config.SetMaxIter(25);
+    config.SetLanczosIter(26);
 
     PerformanceDecoratorChase<T> performanceDecorator(&single);
 
@@ -129,7 +140,7 @@ int main(int argc, char** argv)
         Base<T>* resid = single.GetResid();
         std::cout << "Finished Problem #1"
                   << "\n";
-        std::cout << "Printing first 5 eigenvalues and residuals\n";
+        std::cout << "Printing first 10 eigenvalues and residuals\n";
         std::cout
             << "| Index |       Eigenvalue      |         Residual      |\n"
             << "|-------|-----------------------|-----------------------|\n";
@@ -138,7 +149,7 @@ int main(int argc, char** argv)
         std::cout << std::setfill(' ');
         std::cout << std::scientific;
         std::cout << std::right;
-        for (auto i = 0; i < std::min(std::size_t(nev), nev); ++i)
+        for (auto i = 0; i < std::min(std::size_t(10), nev); ++i)
             std::cout << "|  " << std::setw(4) << i + 1 << " | "
                       << std::setw(width) << Lambda[i] << "  | "
                       << std::setw(width) << resid[i] << "  |\n";
