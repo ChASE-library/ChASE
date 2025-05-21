@@ -38,8 +38,9 @@ using BackendType = chase::grid::backend::NCCL;
 
 int main(int argc, char** argv)
 {
-    size_t k = 1472;
-    size_t N = 2 * k, nev = 200, nex = 100;
+
+    std::string file_path(argv[1]);	
+    size_t N = atoi(argv[2]), nev = atoi(argv[3]), nex = atoi(argv[4]);
 
 #if defined(USE_MPI) || defined(HAS_NCCL)
 
@@ -132,7 +133,7 @@ int main(int argc, char** argv)
 #else
     auto single = chase::Impl::pChASECPU(nev, nex, &Hmat, &Vec, Lambda.data());
 #endif 
-    Hmat.readFromBinaryFile("../../../Data/Matrix/2x2x2_Silicon_QuasiHermitian.bin");
+    Hmat.readFromBinaryFile(file_path);
 
 #ifdef HAS_NCCL
     Hmat.H2D();
@@ -157,7 +158,7 @@ int main(int argc, char** argv)
     auto single = chase::Impl::ChASECPU<T,MatrixType>(N, nev, nex, Hmat, V.data(), N, Lambda.data());
 #endif
 	
-    Hmat->readFromBinaryFile("../../../Data/Matrix/2x2x2_Silicon_QuasiHermitian.bin");
+    Hmat->readFromBinaryFile(file_path);
 
 #ifdef HAS_CUDA
     Hmat->H2D();
@@ -165,8 +166,7 @@ int main(int argc, char** argv)
 
 #endif
 
-    std::cout << std::endl;
-    
+    std::cout << std::endl; 
     
     single.initVecs(true);
 
@@ -175,9 +175,14 @@ int main(int argc, char** argv)
     // Tolerance for Eigenpair convergence
     config.SetTol(1e-10);
     // Initial filtering degree
-    config.SetDeg(10);
+    config.SetDeg(atoi(argv[5]));
     // Optimi(S)e degree
-    config.SetOpt(true);
+    if(argv[6][0] == 'Y'){
+        config.SetOpt(true);
+    }else{
+        config.SetOpt(false);
+    }
+
     config.SetMaxIter(25);
     config.SetLanczosIter(26);
 
