@@ -288,6 +288,7 @@ int main(int argc, char** argv)
     desc.add<Value<std::size_t>>("", "numLanczos", "Sets the number of stochastic vectors used for the spectral estimates in Lanczos", 4, &conf.numLanczos);
     desc.add<Value<float>>("", "tol_f", "Sets the desired tolerance for float precision", 1e-5, &conf.tol_f);
     desc.add<Value<double>>("", "tol_d", "Sets the desired tolerance for double precision", 1e-10, &conf.tol_d);
+    desc.add<Value<std::size_t>>("", "maxIter", "Sets the maximum number of subspace iterations within ChASE.", 25, &conf.maxIter);
     desc.add<Value<bool>>("", "double", "Is matrix double valued, false indicates the single type", true, &conf.isdouble);    
     desc.add<Value<std::size_t>>("", "blocksize", "Sets the blocksize for the matrix", 64, &conf.blocksize);
     desc.add<Value<float>>("", "lowerb_decay", "Sets the decaying rate for the lower bound", 1.0, &conf.lowerb_decay);
