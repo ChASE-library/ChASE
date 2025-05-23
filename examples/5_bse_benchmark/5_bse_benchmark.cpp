@@ -278,7 +278,7 @@ int main(int argc, char** argv)
     popl::OptionParser desc("ChASE options");
     auto help_option = desc.add<Switch>("h", "help", "show this message");
     desc.add<Value<std::size_t>, Attribute::required>("", "n", "Size of the Input Matrix", 0, &conf.N);
-    desc.add<Value<std::size_t>>("", "nev", "Wanted Number of Eigenpairs", 0, &conf.nev);
+    desc.add<Value<std::size_t>, Attribute::required>("", "nev", "Wanted Number of Eigenpairs", 0, &conf.nev);
     desc.add<Value<std::size_t>>("", "nex", "Extra Search Dimensions", 25, &conf.nex);
     desc.add<Value<std::size_t>>("", "deg", "Initial filtering degree", 20, &conf.deg);
     desc.add<Value<std::size_t>>("", "maxDeg", "Sets the maximum value of the degree of the Chebyshev filter", 36, &conf.maxDeg);
