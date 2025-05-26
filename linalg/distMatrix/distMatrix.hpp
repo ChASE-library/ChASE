@@ -118,14 +118,19 @@ template <typename T, template <typename, typename> class Derived, typename Plat
 class AbstractDistMatrix {
 protected:
     // Single precision matrix
-#ifdef ENABLE_MIXED_PRECISION       
     using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type; /**< Single precision type */
     using SinglePrecisionDerived = Derived<SinglePrecisionType, Platform>; /**< Derived class in single precision */
     std::unique_ptr<SinglePrecisionDerived> single_precision_matrix_; /**< Pointer to single precision distMatrix */
     bool is_single_precision_enabled_ = false;  /**< Flag indicating if single precision is enabled */
+
+    // Double precision matrix
+    using DoublePrecisionType = typename chase::ToDoublePrecisionTrait<T>::Type; /**< Double precision type */
+    using DoublePrecisionDerived = Derived<DoublePrecisionType, Platform>; /**< Derived class in double precision */
+    std::unique_ptr<DoublePrecisionDerived> double_precision_matrix_; /**< Pointer to double precision distMatrix */
+    bool is_double_precision_enabled_ = false;  /**< Flag indicating if double precision is enabled */
+
     std::chrono::high_resolution_clock::time_point start, end; /**< Timing points for performance measurement */
-    std::chrono::duration<double> elapsed; /**< Duration for single precision operations */
-#endif
+    std::chrono::duration<double> elapsed; /**< Duration for precision operations */
 
 public:
     /**
@@ -275,7 +280,6 @@ public:
         return loc_matrix.cpu_ld();          
     }
 
-#ifdef ENABLE_MIXED_PRECISION       
     // Enable single precision for double types (and complex<double>)
     /**
      * @brief Enable single precision for double types.
@@ -324,6 +328,52 @@ public:
         }
     }
 
+    // Enable double precision for float types (and complex<float>)
+    /**
+     * @brief Enable double precision for float types.
+     */      
+    template <typename U = T, typename std::enable_if<std::is_same<U, float>::value || std::is_same<U, std::complex<float>>::value, int>::type = 0>
+    void enableDoublePrecision() {
+        if (!double_precision_matrix_) {
+            start = std::chrono::high_resolution_clock::now();
+
+            if constexpr(std::is_same<Derived<T, Platform>, chase::distMatrix::BlockCyclicMatrix<T, Platform>>::value)
+            {
+                double_precision_matrix_ = std::make_unique<DoublePrecisionDerived>(this->g_rows(), this->g_cols(), this->mb(), this->nb(), this->getMpiGrid_shared_ptr());
+            }else
+            {
+                double_precision_matrix_ = std::make_unique<DoublePrecisionDerived>(this->g_rows(), this->g_cols(), this->getMpiGrid_shared_ptr());
+            }
+            
+            if constexpr (std::is_same<Platform, chase::platform::CPU>::value) 
+            {
+                #pragma omp parallel for
+                for (std::size_t j = 0; j < this->l_cols(); ++j) {
+                    for (std::size_t i = 0; i < this->l_rows(); ++i) {
+                        double_precision_matrix_->l_data()[j * double_precision_matrix_.get()->l_ld() + i] 
+                                            = chase::convertToDoublePrecision(this->l_data()[j * this->l_ld() + i]);
+                    }
+                }
+            }else
+#ifdef HAS_CUDA            
+            {
+                chase::linalg::internal::cuda::convert_SP_TO_DP_GPU(this->l_data(), double_precision_matrix_->l_data(), this->l_cols() * this->l_rows());
+            }
+#else
+            {
+                throw std::runtime_error("GPU is not supported in AbstractDistMultiVector");
+            }
+#endif                  
+            is_double_precision_enabled_ = true;
+            end = std::chrono::high_resolution_clock::now();
+            elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
+
+            if(this->grank() == 0)
+                std::cout << "Double precision matrix enabled in AbstractDistMatrix in " << elapsed.count() << " s\n";
+        } else {
+            throw std::runtime_error("Double precision already enabled.");
+        }
+    }
 
     // Disable single precision for double types
     /**
@@ -369,6 +419,49 @@ public:
 
     }
 
+    // Disable double precision for float types
+    /**
+     * @brief Disable double precision and optionally copy data back.
+     * @param copyback Whether to copy data back to single precision.
+     */      
+    template <typename U = T, typename std::enable_if<std::is_same<U, float>::value || std::is_same<U, std::complex<float>>::value, int>::type = 0>
+    void disableDoublePrecision(bool copyback = false) {
+        start = std::chrono::high_resolution_clock::now();
+        if(copyback)
+        {
+            if (double_precision_matrix_) {
+                if constexpr (std::is_same<Platform, chase::platform::CPU>::value) 
+                {
+                    #pragma omp parallel for
+                    for (std::size_t j = 0; j < this->l_cols(); ++j) {
+                        for (std::size_t i = 0; i < this->l_rows(); ++i) {
+                            this->l_data()[j * this->l_ld() + i] = 
+                                    chase::convertToSinglePrecision<T>(double_precision_matrix_->l_data()[j * double_precision_matrix_.get()->l_ld() + i]);
+                        }
+                    }
+                }
+#ifdef HAS_CUDA            
+                {
+                    chase::linalg::internal::cuda::convert_DP_TO_SP_GPU(double_precision_matrix_->l_data(), this->l_data(), this->l_cols() * this->l_rows());
+                }
+#else
+                {
+                    throw std::runtime_error("GPU is not supported in AbstractDistMultiVector");
+                }
+#endif            
+            } else {
+                throw std::runtime_error("Double precision is not enabled.");
+            }
+        }
+        end = std::chrono::high_resolution_clock::now();
+        elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
+
+        if(this->grank() == 0)
+            std::cout << "Double precision matrix disabled in AbstractDistMatrix in " << elapsed.count() << " s\n";
+        double_precision_matrix_.reset();  // Free the double precision memory
+        is_double_precision_enabled_ = false;
+    }
+
     // Check if single precision is enabled
     /**
      * @brief Check if single precision is enabled.
@@ -377,6 +470,16 @@ public:
     template <typename U = T, typename std::enable_if<std::is_same<U, double>::value || std::is_same<U, std::complex<double>>::value, int>::type = 0>
     bool isSinglePrecisionEnabled() const {
         return is_single_precision_enabled_;
+    }
+
+    // Check if double precision is enabled
+    /**
+     * @brief Check if double precision is enabled.
+     * @return True if double precision is enabled, false otherwise.
+     */   
+    template <typename U = T, typename std::enable_if<std::is_same<U, float>::value || std::is_same<U, std::complex<float>>::value, int>::type = 0>
+    bool isDoublePrecisionEnabled() const {
+        return is_double_precision_enabled_;
     }
 
     // Get the single precision matrix itself
@@ -393,6 +496,20 @@ public:
         }
     }
 
+    // Get the double precision matrix itself
+    /**
+     * @brief Get the double precision multi-vector.
+     * @return Pointer to the double precision multi-vector.
+     */
+    template <typename U = T, typename std::enable_if<std::is_same<U, float>::value || std::is_same<U, std::complex<float>>::value, int>::type = 0>
+    DoublePrecisionDerived* getDoublePrecisionMatrix() {
+        if (is_double_precision_enabled_) {
+            return double_precision_matrix_.get();
+        } else {
+            throw std::runtime_error("Double precision is not enabled.");
+        }
+    }
+
     // If T is already single precision, these methods should not be available
     template <typename U = T, typename std::enable_if<!std::is_same<U, double>::value && !std::is_same<U, std::complex<double>>::value, int>::type = 0>
     void enableSinglePrecision() {
@@ -403,7 +520,117 @@ public:
     void disableSinglePrecision() {
         throw std::runtime_error("[DistMatrix]: Single precision operations not supported for this type.");
     }
+
+    // If T is already double precision, these methods should not be available
+    template <typename U = T, typename std::enable_if<!std::is_same<U, float>::value && !std::is_same<U, std::complex<float>>::value, int>::type = 0>
+    void enableDoublePrecision() {
+        throw std::runtime_error("[DistMatrix]: Double precision operations not supported for this type.");
+    }
+
+    template <typename U = T, typename std::enable_if<!std::is_same<U, float>::value && !std::is_same<U, std::complex<float>>::value, int>::type = 0>
+    void disableDoublePrecision() {
+        throw std::runtime_error("[DistMatrix]: Double precision operations not supported for this type.");
+    }
+
+    // Copy from double to single precision (if T is double)
+    template<typename U = T, typename std::enable_if<
+        std::is_same<U, double>::value || std::is_same<U, std::complex<double>>::value, int>::type = 0>
+    void copyTo() {
+        if (!single_precision_matrix_) {
+            throw std::runtime_error("Single precision matrix is not enabled.");
+        }
+
+        if constexpr (std::is_same<Platform, chase::platform::CPU>::value) {
+            #pragma omp parallel for        
+            for (std::size_t j = 0; j < this->l_cols(); ++j) {
+                for (std::size_t i = 0; i < this->l_rows(); ++i) {
+                    single_precision_matrix_->l_data()[j * single_precision_matrix_->l_ld() + i] = 
+                        static_cast<SinglePrecisionType>(this->l_data()[j * this->l_ld() + i]);
+                }
+            }
+        }
+#ifdef HAS_CUDA
+        else {
+            chase::linalg::internal::cuda::convert_DP_TO_SP_GPU(
+                this->l_data(), single_precision_matrix_->l_data(), this->l_rows() * this->l_cols());
+        }
 #endif
+    }
+
+    // Copy from single to double precision (if T is double)
+    template<typename U = T, typename std::enable_if<
+        std::is_same<U, double>::value || std::is_same<U, std::complex<double>>::value, int>::type = 0>
+    void copyBack() {
+        if (!single_precision_matrix_) {
+            throw std::runtime_error("Single precision matrix is not enabled.");
+        }
+
+        if constexpr (std::is_same<Platform, chase::platform::CPU>::value) {
+            #pragma omp parallel for        
+            for (std::size_t j = 0; j < this->l_cols(); ++j) {
+                for (std::size_t i = 0; i < this->l_rows(); ++i) {
+                    this->l_data()[j * this->l_ld() + i] = 
+                        static_cast<T>(single_precision_matrix_->l_data()[j * single_precision_matrix_->l_ld() + i]);
+                }
+            }
+        }
+#ifdef HAS_CUDA
+        else {
+            chase::linalg::internal::cuda::convert_SP_TO_DP_GPU(
+                single_precision_matrix_->l_data(), this->l_data(), this->l_rows() * this->l_cols());
+        }
+#endif
+    }
+
+    // Copy from single to double precision (if T is float)
+    template<typename U = T, typename std::enable_if<
+        std::is_same<U, float>::value || std::is_same<U, std::complex<float>>::value, int>::type = 0>
+    void copyTo() {
+        if (!double_precision_matrix_) {
+            throw std::runtime_error("Double precision matrix is not enabled.");
+        }
+
+        if constexpr (std::is_same<Platform, chase::platform::CPU>::value) {
+            #pragma omp parallel for        
+            for (std::size_t j = 0; j < this->l_cols(); ++j) {
+                for (std::size_t i = 0; i < this->l_rows(); ++i) {
+                    double_precision_matrix_->l_data()[j * double_precision_matrix_->l_ld() + i] = 
+                        static_cast<DoublePrecisionType>(this->l_data()[j * this->l_ld() + i]);
+                }
+            }
+        }
+#ifdef HAS_CUDA
+        else {
+            chase::linalg::internal::cuda::convert_SP_TO_DP_GPU(
+                this->l_data(), double_precision_matrix_->l_data(), this->l_rows() * this->l_cols());
+        }
+#endif
+    }
+
+    // Copy from double to single precision (if T is float)
+    template<typename U = T, typename std::enable_if<
+        std::is_same<U, float>::value || std::is_same<U, std::complex<float>>::value, int>::type = 0>
+    void copyBack() {
+        if (!double_precision_matrix_) {
+            throw std::runtime_error("Double precision matrix is not enabled.");
+        }
+
+        if constexpr (std::is_same<Platform, chase::platform::CPU>::value) {
+            #pragma omp parallel for        
+            for (std::size_t j = 0; j < this->l_cols(); ++j) {
+                for (std::size_t i = 0; i < this->l_rows(); ++i) {
+                    this->l_data()[j * this->l_ld() + i] = 
+                        static_cast<T>(double_precision_matrix_->l_data()[j * double_precision_matrix_->l_ld() + i]);
+                }
+            }
+        }
+#ifdef HAS_CUDA
+        else {
+            chase::linalg::internal::cuda::convert_DP_TO_SP_GPU(
+                double_precision_matrix_->l_data(), this->l_data(), this->l_rows() * this->l_cols());
+        }
+#endif
+    }
 };
 
 /**
@@ -682,7 +909,7 @@ private:
     std::size_t m_; ///< Local number of rows in the matrix
     std::size_t n_; ///< Local number of columns in the matrix
     std::size_t ld_; ///< Local leading dimension (stride)
-    std::size_t l_half_; //< Local index of the lower half 
+    std::size_t l_half_; ///< Local index of the lower half 
 
     chase::matrix::Matrix<T, Platform> local_matrix_; ///< Local matrix holding the data
     std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid_; ///< Shared pointer to the MPI grid   

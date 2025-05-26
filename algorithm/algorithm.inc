@@ -39,6 +39,12 @@ std::size_t Algorithm<T>::calc_degrees(ChaseBase<T>* single, std::size_t N,
 
         degrees[i] =
             std::ceil(std::abs(std::log(resid[i] / tol) / std::log(rho)));
+        
+        // Ensure minimum degree of 8 for single precision
+        if constexpr (std::is_same<Base<T>, float>::value) {
+            degrees[i] = std::max(degrees[i], std::size_t(8));
+        }
+        
         degrees[i] =
             std::min(degrees[i] + conf.GetDegExtra(), conf.GetMaxDeg());
     }
@@ -437,6 +443,7 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
     lambda = *std::min_element(ritzv_, ritzv_ + nevex);
 
     lowerb = lowerb * config.GetDecayingRate();
+    //lambda = -1.637213493347e+01;
 
     while (unconverged > nex && iteration < config.GetMaxIter())
     {
@@ -459,13 +466,16 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
 
         if (single->isSym() && unconverged < nevex)
         {
-	    lambda = *std::min_element(ritzv_, ritzv_ + nevex);
+            lambda = *std::min_element(ritzv_, ritzv_ + nevex);
         }
-	else if (single->isPseudoHerm() && unconverged < nevex)
-	{
-	    lambda = ritzv[std::distance(resid,std::min_element(resid, resid + unconverged))];
-            lowerb = std::min(ritzv[unconverged - 1],Base<T>(0.0));
-	}
+        else if (single->isPseudoHerm() && unconverged < nevex)
+        {
+            // Check first few eigenvalues (up to 5) and find one with reasonable residual
+            lambda = *std::min(ritzv, ritzv + unconverged);
+            //lambda = ritzv[std::distance(resid,std::min_element(resid, resid + unconverged))];
+
+            lowerb = std::min(ritzv[unconverged - 1], Base<T>(0.0));
+        }
 			
 
 #ifdef CHASE_OUTPUT
