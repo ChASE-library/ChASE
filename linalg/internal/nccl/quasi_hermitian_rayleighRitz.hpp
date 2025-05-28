@@ -241,8 +241,14 @@ namespace internal
 
         if constexpr (std::is_same<T, std::complex<float>>::value)
         {
-                A->copyToSubBlock(0, subSize * subSize);
-                //A->copyTo();
+                if(A->isDoublePrecisionEnabled())
+                {
+                    A->copyToSubBlock(0, subSize * subSize);
+                }
+                else
+                {
+                    A->enableDoublePrecision();
+                }
                 auto A_d = A->getDoublePrecisionMatrix();
                 std::complex<double> *W_d = A_d->l_data() + 2 * subSize * subSize;
                 std::complex<double> *ritzv_complex_d = A_d->l_data() + 1 * subSize * subSize;
