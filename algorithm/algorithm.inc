@@ -443,7 +443,6 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
     lambda = *std::min_element(ritzv_, ritzv_ + nevex);
 
     lowerb = lowerb * config.GetDecayingRate();
-    //lambda = -1.637213493347e+01;
 
     while (unconverged > nex && iteration < config.GetMaxIter())
     {

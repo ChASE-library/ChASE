@@ -241,27 +241,11 @@ namespace internal
 
         if constexpr (std::is_same<T, std::complex<float>>::value)
         {
-                /*
-                	T * M = A->l_data() + subSize * subSize; 
-	T * W = A->l_data() + 2 * subSize * subSize;
-        T * ritzv_complex = A->l_data() + subSize * subSize;
-                */
-                if(!A->isDoublePrecisionEnabled())
-                {
-                        A->enableDoublePrecision();
-                }
-                else
-                {
-                        A->copyTo();
-                }
-                
+                A->copyToSubBlock(0, subSize * subSize);
+                //A->copyTo();
                 auto A_d = A->getDoublePrecisionMatrix();
                 std::complex<double> *W_d = A_d->l_data() + 2 * subSize * subSize;
-                std::complex<double> *ritzv_complex_d = A_d->l_data() + subSize * subSize;
-
-                //std::complex<double> *work_d;
-                //CHECK_CUDA_ERROR(cudaMalloc((void**)&work_d, sizeof(std::complex<double>) * d_lwork));
-                //std::vector<std::complex<double>> work_h(h_lwork);
+                std::complex<double> *ritzv_complex_d = A_d->l_data() + 1 * subSize * subSize;
 
                 CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTgeev(cusolver_handle,
                                 params,
@@ -292,8 +276,8 @@ namespace internal
                         throw std::runtime_error("cusolver HEEVD failed in RayleighRitz");
                 }
                 
-                A->disableDoublePrecision(true);
-
+                A->copyBackSubBlock(subSize * subSize, 2 * subSize * subSize);
+                //A->copyBack();
                 if constexpr (std::is_same<T, std::complex<chase::Base<T>>>::value)
                 {
                         cudaMemcpy(ritzvs_cmplex_cpu.data(), ritzv_complex, subSize * sizeof(T), cudaMemcpyDeviceToHost);
@@ -308,8 +292,6 @@ namespace internal
                                                 subSize * sizeof(chase::Base<T>),
                                                 cudaMemcpyDeviceToHost));
                 }
-
-                //CHECK_CUDA_ERROR(cudaFree(work_d));
 
         }else
         {
@@ -365,56 +347,7 @@ namespace internal
         	std::cout << "WARNING! XGeev not found in cuda. Compute Geev on CPU with Lapack..." << std::endl;
 	}
 #endif
-        if constexpr (std::is_same<T, std::complex<float>>::value)
-        {
-                std::vector<chase::Base<T>> ptx_imag = std::vector<chase::Base<T>>(subSize,chase::Base<T>(0.0));
-
-                A->D2H();
-
-                T * W_cpu = A->cpu_data() + 2*subSize*subSize;
-
-                std::vector<double> ptx_imag_double(subSize,0.0);
-
-                std::vector<double> ptx_double(subSize,0.0);
-
-                std::vector<std::complex<double>> W_cpu_double(subSize*subSize,0.0);
-
-                std::vector<std::complex<double>> A_double(subSize*subSize,0.0);
-
-                for(std::size_t i = 0; i < subSize * subSize; i++)
-                {
-                        A_double[i] = (std::complex<double>)(A->cpu_data()[i]);
-                }
-
-                lapackpp::t_geev(LAPACK_COL_MAJOR, 'V', subSize, A_double.data(), subSize, ptx_double.data(), ptx_imag_double.data(), W_cpu_double.data(), subSize);
-
-                for(std::size_t i = 0; i < subSize; i++)
-                {
-                        ptx[i] = (float)(ptx_double[i]);
-                }
-
-                for(std::size_t i = 0; i < subSize * subSize; i++)
-                {
-                        W_cpu[i] = (std::complex<float>)(W_cpu_double[i]);
-                        A->cpu_data()[i] = (std::complex<float>)(A_double[i]);
-                }
-
-                A->H2D();
-        }
-        else
-        {
-                std::vector<chase::Base<T>> ptx_imag = std::vector<chase::Base<T>>(subSize,chase::Base<T>(0.0));
-
-                A->D2H();
-
-                T * W_cpu = A->cpu_data() + 2*subSize*subSize;
-
-                //Compute the eigenpairs of the non-hermitian rayleigh quotient on the CPU
-                lapackpp::t_geev(LAPACK_COL_MAJOR, 'V', subSize, A->cpu_data(), subSize, ptx, ptx_imag.data(), W_cpu, subSize);
-
-                A->H2D();
-        }
-/*
+        
         if constexpr (std::is_same<T, std::complex<float>>::value)
         {
             // Initialize vectors with proper size and type
@@ -471,7 +404,6 @@ namespace internal
 
                 A->H2D();
         }
-*/
 #endif
 
         std::vector<std::size_t> indices(subSize);

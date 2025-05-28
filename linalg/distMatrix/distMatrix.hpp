@@ -631,6 +631,138 @@ public:
         }
 #endif
     }
+
+    // Copy from double to single precision (if T is double)
+    template<typename U = T, typename std::enable_if<
+        std::is_same<U, double>::value || std::is_same<U, std::complex<double>>::value, int>::type = 0>
+    void copyToSubBlock(std::size_t offset, std::size_t count) {
+        if (!single_precision_matrix_) {
+            throw std::runtime_error("Single precision matrix is not enabled.");
+        }
+
+        // Validate sizes
+        if (offset + count > this->l_rows() * this->l_cols()) {
+            throw std::runtime_error("Subblock dimensions exceed matrix bounds");
+        }
+        if (offset + count > single_precision_matrix_->l_rows() * single_precision_matrix_->l_cols()) {
+            throw std::runtime_error("Subblock dimensions exceed single precision matrix bounds");
+        }
+
+        if constexpr (std::is_same<Platform, chase::platform::CPU>::value) {
+            #pragma omp parallel for        
+            for (std::size_t i = 0; i < count; ++i) {
+                single_precision_matrix_->l_data()[offset + i] = 
+                    static_cast<SinglePrecisionType>(this->l_data()[offset + i]);
+            }
+        }
+#ifdef HAS_CUDA
+        else {
+            chase::linalg::internal::cuda::convert_DP_TO_SP_GPU(
+                this->l_data() + offset,
+                single_precision_matrix_->l_data() + offset,
+                count);
+        }
+#endif
+    }
+
+    // Copy from single to double precision (if T is double)
+    template<typename U = T, typename std::enable_if<
+        std::is_same<U, double>::value || std::is_same<U, std::complex<double>>::value, int>::type = 0>
+    void copyBackSubBlock(std::size_t offset, std::size_t count) {
+        if (!single_precision_matrix_) {
+            throw std::runtime_error("Single precision matrix is not enabled.");
+        }
+
+        // Validate sizes
+        if (offset + count > this->l_rows() * this->l_cols()) {
+            throw std::runtime_error("Subblock dimensions exceed matrix bounds");
+        }
+        if (offset + count > single_precision_matrix_->l_rows() * single_precision_matrix_->l_cols()) {
+            throw std::runtime_error("Subblock dimensions exceed single precision matrix bounds");
+        }
+
+        if constexpr (std::is_same<Platform, chase::platform::CPU>::value) {
+            #pragma omp parallel for        
+            for (std::size_t i = 0; i < count; ++i) {
+                this->l_data()[offset + i] = 
+                    static_cast<T>(single_precision_matrix_->l_data()[offset + i]);
+            }
+        }
+#ifdef HAS_CUDA
+        else {
+            chase::linalg::internal::cuda::convert_SP_TO_DP_GPU(
+                single_precision_matrix_->l_data() + offset,
+                this->l_data() + offset,
+                count);
+        }
+#endif
+    }
+
+    // Copy from single to double precision (if T is float)
+    template<typename U = T, typename std::enable_if<
+        std::is_same<U, float>::value || std::is_same<U, std::complex<float>>::value, int>::type = 0>
+    void copyToSubBlock(std::size_t offset, std::size_t count) {
+        if (!double_precision_matrix_) {
+            throw std::runtime_error("Double precision matrix is not enabled.");
+        }
+
+        // Validate sizes
+        if (offset + count > this->l_rows() * this->l_cols()) {
+            throw std::runtime_error("Subblock dimensions exceed matrix bounds");
+        }
+        if (offset + count > double_precision_matrix_->l_rows() * double_precision_matrix_->l_cols()) {
+            throw std::runtime_error("Subblock dimensions exceed double precision matrix bounds");
+        }
+
+        if constexpr (std::is_same<Platform, chase::platform::CPU>::value) {
+            #pragma omp parallel for        
+            for (std::size_t i = 0; i < count; ++i) {
+                double_precision_matrix_->l_data()[offset + i] = 
+                    static_cast<DoublePrecisionType>(this->l_data()[offset + i]);
+            }
+        }
+#ifdef HAS_CUDA
+        else {
+            chase::linalg::internal::cuda::convert_SP_TO_DP_GPU(
+                this->l_data() + offset,
+                double_precision_matrix_->l_data() + offset,
+                count);
+        }
+#endif
+    }
+
+    // Copy from double to single precision (if T is float)
+    template<typename U = T, typename std::enable_if<
+        std::is_same<U, float>::value || std::is_same<U, std::complex<float>>::value, int>::type = 0>
+    void copyBackSubBlock(std::size_t offset, std::size_t count) {
+        if (!double_precision_matrix_) {
+            throw std::runtime_error("Double precision matrix is not enabled.");
+        }
+
+        // Validate sizes
+        if (offset + count > this->l_rows() * this->l_cols()) {
+            throw std::runtime_error("Subblock dimensions exceed matrix bounds");
+        }
+        if (offset + count > double_precision_matrix_->l_rows() * double_precision_matrix_->l_cols()) {
+            throw std::runtime_error("Subblock dimensions exceed double precision matrix bounds");
+        }
+
+        if constexpr (std::is_same<Platform, chase::platform::CPU>::value) {
+            #pragma omp parallel for        
+            for (std::size_t i = 0; i < count; ++i) {
+                this->l_data()[offset + i] = 
+                    static_cast<T>(double_precision_matrix_->l_data()[offset + i]);
+            }
+        }
+#ifdef HAS_CUDA
+        else {
+            chase::linalg::internal::cuda::convert_DP_TO_SP_GPU(
+                double_precision_matrix_->l_data() + offset,
+                this->l_data() + offset,
+                count);
+        }
+#endif
+    }
 };
 
 /**

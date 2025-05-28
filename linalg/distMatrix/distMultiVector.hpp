@@ -825,7 +825,7 @@ public:
             end - start);
 
         if (this->grank() == 0)
-            std::cout << "Double precision matrix copied to single precision in "
+            std::cout << "Single precision matrix copied to double precision in "
                          "AbstractDistMultiVector. \n";
     }
 

@@ -16,3 +16,4 @@ build
 *.out
 *.err
 *.sh
+/*install*/

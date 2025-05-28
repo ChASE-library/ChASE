@@ -326,6 +326,18 @@ public:
         CHECK_CUDA_ERROR(cudaMemcpy(d_diag_xoffs, diag_xoffs.data(), sizeof(std::size_t) * diag_cnt , cudaMemcpyHostToDevice));
         CHECK_CUDA_ERROR(cudaMemcpy(d_diag_yoffs, diag_yoffs.data(), sizeof(std::size_t) * diag_cnt , cudaMemcpyHostToDevice));
  
+        if constexpr (std::is_same<T, std::complex<float>>::value)
+        {
+            if(!A_->isDoublePrecisionEnabled())
+            {
+                A_->enableDoublePrecision();
+            }
+
+            if(!V1_->isDoublePrecisionEnabled())
+            {
+                V1_->enableDoublePrecision();
+            }            
+        }    
     }
 
     pChASEGPU(const pChASEGPU&) = delete;
@@ -758,21 +770,8 @@ public:
             {
                 if constexpr (std::is_same<T, std::complex<float>>::value)
                 {
-                    /*
-                    if(!V1_->isDoublePrecisionEnabled())
-                    {
-                        V1_->enableDoublePrecision();
-                    }else{
-                        V1_->copyTo();
-                    }
+                    V1_->copyTo();
 
-                    if(!A_->isDoublePrecisionEnabled())
-                    {
-                        A_->enableDoublePrecision();
-                    }
-                    */
-                    V1_->enableDoublePrecision();
-                    A_->enableDoublePrecision();
                     auto V1_d = V1_->getDoublePrecisionMatrix();
                     auto A_d = A_->getDoublePrecisionMatrix();
                     std::complex<double> *d_work_d ;
@@ -789,9 +788,7 @@ public:
                                                                 d_work_d,
                                                                 lwork_,
                                                                 A_d->l_data()); 
-                    //V1_->copyback();
-                    V1_->disableDoublePrecision(true);
-                    A_->disableDoublePrecision();
+                    V1_->copyback();
                 }
                 else
                 {
