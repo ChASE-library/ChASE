@@ -670,12 +670,11 @@ public:
 
         int info = 1;
         
-	if constexpr (std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockBlockMatrix<T,chase::platform::GPU>>::value ||
-		      std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T,chase::platform::GPU>>::value )
-
-	{	
-		chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(*V1_, 0, locked_);
-	}
+        if constexpr (std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockBlockMatrix<T,chase::platform::GPU>>::value ||
+                std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T,chase::platform::GPU>>::value )
+        {	
+            kernelNamespace::flipLowerHalfMatrixSign(*V1_, 0, locked_);
+        }
 
         if (disable == 1)
         {
@@ -789,6 +788,7 @@ public:
                                                                 lwork_,
                                                                 A_d->l_data()); 
                     V1_->copyback();
+                    CHECK_CUDA_ERROR(cudaFree(d_work_d));
                 }
                 else
                 {
