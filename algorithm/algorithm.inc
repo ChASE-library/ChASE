@@ -443,6 +443,17 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
     lambda = *std::min_element(ritzv_, ritzv_ + nevex);
 
     lowerb = lowerb * config.GetDecayingRate();
+    if(single->isPseudoHerm())
+    {
+        if(upperb > 0)
+        {
+            upperb = upperb * config.GetUpperbScaleRate();
+        }else
+        {
+            upperb = upperb / config.GetUpperbScaleRate();
+        }
+        
+    }
 
     while (unconverged > nex && iteration < config.GetMaxIter())
     {
@@ -577,17 +588,50 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
     } // while ( converged < nev && iteration < omp_maxiter )
 
     //---------------------SORT-EIGENPAIRS-ACCORDING-TO-EIGENVALUES---------------
-    for (auto i = 0; i < nev-1 + !single->isSym() * nex ; ++i)
-        for (auto j = i + 1; j < nev + !single->isSym() * nex; ++j)
-        {
-            if (ritzv_[i] > ritzv_[j])
-            {
-                swap_kj(i, j, ritzv_);
-                swap_kj(i, j, resid_);
-                single->Swap(i, j);
+    // Create a permutation vector to track the desired final positions of elements
+    // Size is nev + nex for non-symmetric case, just nev for symmetric case
+    std::vector<std::size_t> perm(nev + !single->isSym() * nex);
+    // Initialize permutation with identity mapping (0 to n-1)
+    std::iota(perm.begin(), perm.end(), 0);
+    // Sort the permutation indices based on eigenvalue ordering
+    // This creates a mapping from current positions to desired positions
+    std::sort(perm.begin(), perm.end(), [&](std::size_t i, std::size_t j) {
+        return ritzv_[i] < ritzv_[j];
+    }); 
+   
+    // Track which elements have been processed to avoid infinite loops
+    std::vector<bool> visited(perm.size(), false);
+
+    // Process each element in the permutation
+    for(auto i = 0; i < perm.size(); ++i)
+    {
+        // Skip if element is already in correct position or has been processed
+        if (visited[i] || perm[i] == i)
+            continue;
+
+        // Start a new cycle from current position
+        std::size_t current = i;
+        std::size_t next = perm[current];  
+
+        // Process the entire cycle
+        while (!visited[current]) {
+            visited[current] = true;
+
+            // Only swap if the next position is different from current
+            if (next != current) {
+                // Swap eigenvalues, residuals, and eigenvectors to their correct positions
+                swap_kj(current, next, ritzv_);
+                swap_kj(current, next, resid_);
+                single->Swap(current, next);
             }
+
+            // Move to next element in the cycle
+            current = next;
+            next = perm[current];
         }
+    }
 
     single->End();
+
 }
 } // namespace chase
