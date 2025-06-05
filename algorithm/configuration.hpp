@@ -173,7 +173,7 @@ public:
     ChaseConfig(std::size_t _N, std::size_t _nev, std::size_t _nex)
         : N_(_N), nev_(_nev), nex_(_nex), optimization_(true), approx_(false),
           max_iter_(25), deg_extra_(2), num_lanczos_(4), decaying_rate_(1.0),
-          upperb_scale_rate_(1.2)
+          upperb_scale_rate_(1.0)
     {
         SetMaxDeg(chase_config_helper::initMaxDeg<T>(approx_, optimization_));
         SetDeg(chase_config_helper::initDeg<T>(approx_, optimization_));

@@ -568,7 +568,7 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
 #endif
 
         std::size_t new_converged =
-            locking(single, N, unconverged - single->isSym() * nex, tol, ritzv, resid, residLast,
+            locking(single, N, unconverged - nex, tol, ritzv, resid, residLast,
                     degrees, locked);
 
         // ---------------------------- Update pointers
