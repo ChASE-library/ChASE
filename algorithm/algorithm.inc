@@ -589,8 +589,7 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
 
     //---------------------SORT-EIGENPAIRS-ACCORDING-TO-EIGENVALUES---------------
     // Create a permutation vector to track the desired final positions of elements
-    // Size is nev + nex for non-symmetric case, just nev for symmetric case
-    std::vector<std::size_t> perm(nev + !single->isSym() * nex);
+    std::vector<std::size_t> perm(nev);
     // Initialize permutation with identity mapping (0 to n-1)
     std::iota(perm.begin(), perm.end(), 0);
     // Sort the permutation indices based on eigenvalue ordering
