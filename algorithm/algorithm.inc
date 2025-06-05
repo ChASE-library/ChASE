@@ -602,33 +602,38 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
     std::vector<bool> visited(perm.size(), false);
 
     // Process each element in the permutation
-    for(auto i = 0; i < perm.size(); ++i)
-    {
-        // Skip if element is already in correct position or has been processed
-        if (visited[i] || perm[i] == i)
-            continue;
+    for (std::size_t i = 0; i < perm.size(); ++i) {
+        if (visited[i] || perm[i] == i) continue;
 
-        // Start a new cycle from current position
+        // Cycle decomposition start
         std::size_t current = i;
-        std::size_t next = perm[current];  
+        chase::Base<T> temp_ritz = ritzv_[i];
+        chase::Base<T> temp_resid = resid_[i];
 
-        // Process the entire cycle
+        std::vector<std::size_t> cycle_indices;
+
+        // Collect cycle indices
         while (!visited[current]) {
             visited[current] = true;
-
-            // Only swap if the next position is different from current
-            if (next != current) {
-                // Swap eigenvalues, residuals, and eigenvectors to their correct positions
-                swap_kj(current, next, ritzv_);
-                swap_kj(current, next, resid_);
-                single->Swap(current, next);
-            }
-
-            // Move to next element in the cycle
-            current = next;
-            next = perm[current];
+            cycle_indices.push_back(current);
+            current = perm[current];
         }
-    }
+
+        // Rotate ritzv_ and resid_ scalars along cycle
+        for (size_t k = 0; k < cycle_indices.size() - 1; ++k) {
+            ritzv_[cycle_indices[k]] = ritzv_[cycle_indices[k + 1]];
+            resid_[cycle_indices[k]] = resid_[cycle_indices[k + 1]];
+        }
+        ritzv_[cycle_indices.back()] = temp_ritz;
+        resid_[cycle_indices.back()] = temp_resid;
+
+        // Rotate eigenvectors along cycle by swapping adjacent pairs
+        // For a cycle of indices like [a, b, c, d], do swaps:
+        // Swap(a,b), Swap(b,c), Swap(c,d)
+        for (size_t k = 0; k < cycle_indices.size() - 1; ++k) {
+            single->Swap(cycle_indices[k], cycle_indices[k + 1]);
+        }
+    }    
 
     single->End();
 
