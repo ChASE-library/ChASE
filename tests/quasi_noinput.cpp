@@ -66,9 +66,9 @@ int main(int argc, char** argv){
 */
 	// ============= ChASE READ Matrix ============ //
 	
-	size_t k = 1472;
+	size_t k = 1500;
 	//size_t k = 750;
-	size_t N = 2*k, nev = 200, nex = 100; 
+	size_t N = 2*k, nev = 300, nex = 150; 
     
 	auto H  = new MatrixType(N,N);
 
@@ -78,8 +78,8 @@ int main(int argc, char** argv){
 
 	//H->readFromBinaryFile("../tests/linalg/internal/BSE_matrices/cdouble_tiny_random_BSE.bin");
 	//H->readFromBinaryFile("./BSE_matrices/cdouble_tiny_random_BSE.bin");
-	H->readFromBinaryFile("../../../Data/Matrix/2x2x2_Silicon_QuasiHermitian.bin");
-	//H->readFromBinaryFile("../../../Data/Matrix/cdouble_random_1500.bin");
+	//H->readFromBinaryFile("../../../Data/Matrix/2x2x2_Silicon_QuasiHermitian.bin");
+	H->readFromBinaryFile("../../../Data/Matrix/cdouble_random_3000.bin");
 
 	std::vector<T> V(N*(nev+nex));
 	auto Lambda = std::vector<chase::Base<T>>(nev + nex);

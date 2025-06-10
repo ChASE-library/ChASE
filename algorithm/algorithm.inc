@@ -39,6 +39,12 @@ std::size_t Algorithm<T>::calc_degrees(ChaseBase<T>* single, std::size_t N,
 
         degrees[i] =
             std::ceil(std::abs(std::log(resid[i] / tol) / std::log(rho)));
+        
+        // Ensure minimum degree of 8 for single precision
+        if constexpr (std::is_same<Base<T>, float>::value) {
+            degrees[i] = std::max(degrees[i], std::size_t(8));
+        }
+        
         degrees[i] =
             std::min(degrees[i] + conf.GetDegExtra(), conf.GetMaxDeg());
     }
@@ -437,6 +443,17 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
     lambda = *std::min_element(ritzv_, ritzv_ + nevex);
 
     lowerb = lowerb * config.GetDecayingRate();
+    if(single->isPseudoHerm())
+    {
+        if(upperb > 0)
+        {
+            upperb = upperb * config.GetUpperbScaleRate();
+        }else
+        {
+            upperb = upperb / config.GetUpperbScaleRate();
+        }
+        
+    }
 
     while (unconverged > nex && iteration < config.GetMaxIter())
     {
@@ -448,20 +465,27 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
                     break;
                 }
         }
-        if (cnt == unconverged)
+        if (single->isSym() && cnt == unconverged)
         {
         	lowerb = ritzv[unconverged - 1];
         }
+	else if (single->isPseudoHerm() && cnt == unconverged)
+	{
+        	lowerb = std::min(ritzv[unconverged - 1], Base<T>(0.0));
+	}
 
         if (single->isSym() && unconverged < nevex)
         {
-	    lambda = *std::min_element(ritzv_, ritzv_ + nevex);
+            lambda = *std::min_element(ritzv_, ritzv_ + nevex);
         }
-	else if (single->isPseudoHerm() && unconverged < nevex)
-	{
-	    lambda = ritzv[std::distance(resid,std::min_element(resid, resid + unconverged))];
-            lowerb = std::min(ritzv[unconverged - 1],Base<T>(0.0));
-	}
+        else if (single->isPseudoHerm() && unconverged < nevex)
+        {
+            // Check first few eigenvalues (up to 5) and find one with reasonable residual
+            lambda = *std::min(ritzv, ritzv + unconverged);
+            //lambda = ritzv[std::distance(resid,std::min_element(resid, resid + unconverged))];
+
+            lowerb = std::min(ritzv[unconverged - 1], Base<T>(0.0));
+        }
 			
 
 #ifdef CHASE_OUTPUT
@@ -544,7 +568,7 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
 #endif
 
         std::size_t new_converged =
-            locking(single, N, unconverged - single->isSym() * nex, tol, ritzv, resid, residLast,
+            locking(single, N, unconverged - nex, tol, ritzv, resid, residLast,
                     degrees, locked);
 
         // ---------------------------- Update pointers
@@ -564,17 +588,54 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
     } // while ( converged < nev && iteration < omp_maxiter )
 
     //---------------------SORT-EIGENPAIRS-ACCORDING-TO-EIGENVALUES---------------
-    for (auto i = 0; i < nev-1 + !single->isSym() * nex ; ++i)
-        for (auto j = i + 1; j < nev + !single->isSym() * nex; ++j)
-        {
-            if (ritzv_[i] > ritzv_[j])
-            {
-                swap_kj(i, j, ritzv_);
-                swap_kj(i, j, resid_);
-                single->Swap(i, j);
-            }
+    // Create a permutation vector to track the desired final positions of elements
+    std::vector<std::size_t> perm(nev);
+    // Initialize permutation with identity mapping (0 to n-1)
+    std::iota(perm.begin(), perm.end(), 0);
+    // Sort the permutation indices based on eigenvalue ordering
+    // This creates a mapping from current positions to desired positions
+    std::sort(perm.begin(), perm.end(), [&](std::size_t i, std::size_t j) {
+        return ritzv_[i] < ritzv_[j];
+    }); 
+   
+    // Track which elements have been processed to avoid infinite loops
+    std::vector<bool> visited(perm.size(), false);
+
+    // Process each element in the permutation
+    for (std::size_t i = 0; i < perm.size(); ++i) {
+        if (visited[i] || perm[i] == i) continue;
+
+        // Cycle decomposition start
+        std::size_t current = i;
+        chase::Base<T> temp_ritz = ritzv_[i];
+        chase::Base<T> temp_resid = resid_[i];
+
+        std::vector<std::size_t> cycle_indices;
+
+        // Collect cycle indices
+        while (!visited[current]) {
+            visited[current] = true;
+            cycle_indices.push_back(current);
+            current = perm[current];
         }
 
+        // Rotate ritzv_ and resid_ scalars along cycle
+        for (size_t k = 0; k < cycle_indices.size() - 1; ++k) {
+            ritzv_[cycle_indices[k]] = ritzv_[cycle_indices[k + 1]];
+            resid_[cycle_indices[k]] = resid_[cycle_indices[k + 1]];
+        }
+        ritzv_[cycle_indices.back()] = temp_ritz;
+        resid_[cycle_indices.back()] = temp_resid;
+
+        // Rotate eigenvectors along cycle by swapping adjacent pairs
+        // For a cycle of indices like [a, b, c, d], do swaps:
+        // Swap(a,b), Swap(b,c), Swap(c,d)
+        for (size_t k = 0; k < cycle_indices.size() - 1; ++k) {
+            single->Swap(cycle_indices[k], cycle_indices[k + 1]);
+        }
+    }    
+
     single->End();
+
 }
 } // namespace chase

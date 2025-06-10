@@ -106,7 +106,7 @@ namespace internal
 	v_w.redistributeImplAsync(&v_2);
         
 	chase::linalg::internal::cuda::t_lacpy('A', Sv.l_rows(), numvec, v_2.l_data(), v_2.l_ld(), Sv.l_data(), Sv.l_ld());
-	
+
 	chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(Sv);
 	
 	for(auto i = 0; i < numvec; i++)

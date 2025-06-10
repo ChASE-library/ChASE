@@ -113,7 +113,6 @@ class AbstractDistMultiVector
 {
 protected:
     // Single precision matrix
-#ifdef ENABLE_MIXED_PRECISION
     using SinglePrecisionType =
         typename chase::ToSinglePrecisionTrait<T>::Type; /**< Single precision
                                                             type */
@@ -129,7 +128,20 @@ protected:
         end; /**< Timing points for performance measurement */
     std::chrono::duration<double>
         elapsed; /**< Duration for single precision operations */
-#endif
+
+    // Double precision matrix
+    using DoublePrecisionType =
+        typename chase::ToDoublePrecisionTrait<T>::Type; /**< Double precision
+                                                           type */
+    using DoublePrecisionDerived =
+        Derived<DoublePrecisionType, comm_type,
+                Platform>; /**< Derived class in double precision */
+    std::unique_ptr<DoublePrecisionDerived>
+        double_precision_multivec_; /**< Pointer to double precision
+                                      multi-vector */
+    bool is_double_precision_enabled_ =
+        false; /**< Flag indicating if double precision is enabled */
+
 public:
     virtual ~AbstractDistMultiVector() = default;
     /**
@@ -230,7 +242,6 @@ public:
         auto& loc_matrix = this->loc_matrix();
         loc_matrix.allocate_cpu_data();
     }
-#ifdef ENABLE_MIXED_PRECISION
     // Enable single precision for double types (and complex<double>)
     /**
      * @brief Enable single precision for double types.
@@ -298,8 +309,7 @@ public:
 
             if (this->grank() == 0)
                 std::cout << "Single precision matrix enabled in "
-                             "AbstractDistMultiVector in "
-                          << elapsed.count() << " s\n";
+                             "AbstractDistMultiVector. \n";
         }
         else
         {
@@ -369,8 +379,7 @@ public:
 
         if (this->grank() == 0)
             std::cout << "Single precision matrix disabled in "
-                         "AbstractDistMultiVector in "
-                      << elapsed.count() << " s\n";
+                         "AbstractDistMultiVector. \n";
 
         single_precision_multivec_.reset(); // Free the single precision memory
         is_single_precision_enabled_ = false;
@@ -435,7 +444,403 @@ public:
         throw std::runtime_error("[DistMultiVector]: Single precision "
                                  "operations not supported for this type.");
     }
+
+    // Enable double precision for float types
+    template <typename U = T,
+              typename std::enable_if<
+                  std::is_same<U, float>::value ||
+                      std::is_same<U, std::complex<float>>::value,
+                  int>::type = 0>
+    void enableDoublePrecision()
+    {
+        if (!double_precision_multivec_)
+        {
+            start = std::chrono::high_resolution_clock::now();
+            if constexpr (std::is_same<Derived<T, comm_type, Platform>,
+                                       chase::distMultiVector::
+                                           DistMultiVectorBlockCyclic1D<
+                                               T, comm_type, Platform>>::value)
+            {
+                double_precision_multivec_ =
+                    std::make_unique<DoublePrecisionDerived>(
+                        this->g_rows(), this->g_cols(), this->mb(),
+                        this->getMpiGrid_shared_ptr());
+            }
+            else
+            {
+                double_precision_multivec_ =
+                    std::make_unique<DoublePrecisionDerived>(
+                        this->g_rows(), this->g_cols(),
+                        this->getMpiGrid_shared_ptr());
+            }
+
+            if constexpr (std::is_same<Platform, chase::platform::CPU>::value)
+            {
+#pragma omp parallel for collapse(2) schedule(static, 16)
+                for (std::size_t j = 0; j < this->l_cols(); ++j)
+                {
+                    for (std::size_t i = 0; i < this->l_rows(); ++i)
+                    {
+                        double_precision_multivec_->l_data()
+                            [j * double_precision_multivec_.get()->l_ld() + i] =
+                            chase::convertToDoublePrecision(
+                                this->l_data()[j * this->l_ld() + i]);
+                    }
+                }
+            }
+            else
+#ifdef HAS_CUDA
+            {
+                chase::linalg::internal::cuda::convert_SP_TO_DP_GPU(
+                    this->l_data(), double_precision_multivec_->l_data(),
+                    this->l_cols() * this->l_rows());
+            }
+#else
+            {
+                throw std::runtime_error(
+                    "GPU is not supported in AbstractDistMultiVector");
+            }
 #endif
+            is_double_precision_enabled_ = true;
+            end = std::chrono::high_resolution_clock::now();
+            elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(
+                end - start);
+
+            if (this->grank() == 0)
+                std::cout << "Double precision matrix enabled in "
+                             "AbstractDistMultiVector. \n";
+        }
+        else
+        {
+            throw std::runtime_error("Double precision already enabled.");
+        }
+    }
+
+    // Disable double precision for float types
+    template <typename U = T,
+              typename std::enable_if<
+                  std::is_same<U, float>::value ||
+                      std::is_same<U, std::complex<float>>::value,
+                  int>::type = 0>
+    void disableDoublePrecision(bool copyback = false)
+    {
+        start = std::chrono::high_resolution_clock::now();
+        if (copyback)
+        {
+            if (double_precision_multivec_)
+            {
+                if constexpr (std::is_same<Platform,
+                                           chase::platform::CPU>::value)
+                {
+#pragma omp parallel for collapse(2) schedule(static, 16)
+                    for (std::size_t j = 0; j < this->l_cols(); ++j)
+                    {
+                        for (std::size_t i = 0; i < this->l_rows(); ++i)
+                        {
+                            this->l_data()[j * this->l_ld() + i] =
+                                chase::convertToSinglePrecision<T>(
+                                    double_precision_multivec_->l_data()
+                                        [j * double_precision_multivec_.get()
+                                                 ->l_ld() +
+                                         i]);
+                        }
+                    }
+                }
+                else
+#ifdef HAS_CUDA
+                {
+                    chase::linalg::internal::cuda::convert_DP_TO_SP_GPU(
+                        double_precision_multivec_->l_data(), this->l_data(),
+                        this->l_cols() * this->l_rows());
+                }
+#else
+                {
+                    throw std::runtime_error(
+                        "GPU is not supported in AbstractDistMultiVector");
+                }
+#endif
+            }
+            else
+            {
+                throw std::runtime_error("Double precision is not enabled.");
+            }
+        }
+
+        double_precision_multivec_.reset(); // Free the double precision memory
+        is_double_precision_enabled_ = false;
+        end = std::chrono::high_resolution_clock::now();
+        elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(
+            end - start);
+
+        if (this->grank() == 0)
+            std::cout << "Double precision matrix disabled in "
+                         "AbstractDistMultiVector. \n";
+    }
+
+    // Check if double precision is enabled
+    template <typename U = T,
+              typename std::enable_if<
+                  std::is_same<U, float>::value ||
+                      std::is_same<U, std::complex<float>>::value,
+                  int>::type = 0>
+    bool isDoublePrecisionEnabled() const
+    {
+        return is_double_precision_enabled_;
+    }
+
+    // Get the double precision matrix itself
+    template <typename U = T,
+              typename std::enable_if<
+                  std::is_same<U, float>::value ||
+                      std::is_same<U, std::complex<float>>::value,
+                  int>::type = 0>
+    DoublePrecisionDerived* getDoublePrecisionMatrix()
+    {
+        if (is_double_precision_enabled_)
+        {
+            return double_precision_multivec_.get();
+        }
+        else
+        {
+            throw std::runtime_error("Double precision is not enabled.");
+        }
+    }
+
+    // If T is already double precision, these methods should not be available
+    template <typename U = T,
+              typename std::enable_if<
+                  !std::is_same<U, float>::value &&
+                      !std::is_same<U, std::complex<float>>::value,
+                  int>::type = 0>
+    void enableDoublePrecision()
+    {
+        throw std::runtime_error("[DistMultiVector]: Double precision "
+                                 "operations not supported for this type.");
+    }
+
+    template <typename U = T,
+              typename std::enable_if<
+                  !std::is_same<U, float>::value &&
+                      !std::is_same<U, std::complex<float>>::value,
+                  int>::type = 0>
+    void disableDoublePrecision()
+    {
+        throw std::runtime_error("[DistMultiVector]: Double precision "
+                                 "operations not supported for this type.");
+    }
+
+    // Copy from single to double precision (if T is double)
+    template <typename U = T,
+              typename std::enable_if<
+                  std::is_same<U, double>::value ||
+                      std::is_same<U, std::complex<double>>::value,
+                  int>::type = 0>
+    void copyback()
+    {
+        start = std::chrono::high_resolution_clock::now();
+        if (!single_precision_multivec_)
+        {
+            throw std::runtime_error("Single precision matrix is not enabled.");
+        }
+
+        if constexpr (std::is_same<Platform, chase::platform::CPU>::value)
+        {
+#pragma omp parallel for collapse(2) schedule(static, 16)
+            for (std::size_t j = 0; j < this->l_cols(); ++j)
+            {
+                for (std::size_t i = 0; i < this->l_rows(); ++i)
+                {
+                    this->l_data()[j * this->l_ld() + i] =
+                        chase::convertToDoublePrecision<T>(
+                            single_precision_multivec_->l_data()
+                                [j * single_precision_multivec_.get()->l_ld() + i]);
+                }
+            }
+        }
+        else
+#ifdef HAS_CUDA
+        {
+            chase::linalg::internal::cuda::convert_SP_TO_DP_GPU(
+                single_precision_multivec_->l_data(), this->l_data(),
+                this->l_cols() * this->l_rows());
+        }
+#else
+        {
+            throw std::runtime_error(
+                "GPU is not supported in AbstractDistMultiVector");
+        }
+#endif
+        end = std::chrono::high_resolution_clock::now();
+        elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(
+            end - start);
+
+        if (this->grank() == 0)
+            std::cout << "Single precision matrix copied back to double precision in "
+                         "AbstractDistMultiVector. \n";
+    }
+
+    // Copy from double to single precision (if T is float)
+    template <typename U = T,
+              typename std::enable_if<
+                  std::is_same<U, float>::value ||
+                      std::is_same<U, std::complex<float>>::value,
+                  int>::type = 0>
+    void copyback()
+    {
+        start = std::chrono::high_resolution_clock::now();
+        if (!double_precision_multivec_)
+        {
+            throw std::runtime_error("Double precision matrix is not enabled.");
+        }
+
+        if constexpr (std::is_same<Platform, chase::platform::CPU>::value)
+        {
+#pragma omp parallel for collapse(2) schedule(static, 16)
+            for (std::size_t j = 0; j < this->l_cols(); ++j)
+            {
+                for (std::size_t i = 0; i < this->l_rows(); ++i)
+                {
+                    this->l_data()[j * this->l_ld() + i] =
+                        chase::convertToSinglePrecision<T>(
+                            double_precision_multivec_->l_data()
+                                [j * double_precision_multivec_.get()->l_ld() + i]);
+                }
+            }
+        }
+        else
+#ifdef HAS_CUDA
+        {
+            chase::linalg::internal::cuda::convert_DP_TO_SP_GPU(
+                double_precision_multivec_->l_data(), this->l_data(),
+                this->l_cols() * this->l_rows());
+        }
+#else
+        {
+            throw std::runtime_error(
+                "GPU is not supported in AbstractDistMultiVector");
+        }
+#endif
+        end = std::chrono::high_resolution_clock::now();
+        elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(
+            end - start);
+
+        if (this->grank() == 0)
+            std::cout << "Double precision matrix copied back to single precision in "
+                         "AbstractDistMultiVector. \n";
+    }
+
+    // Copy from double to single precision (if T is double)
+    template <typename U = T,
+              typename std::enable_if<
+                  std::is_same<U, double>::value ||
+                      std::is_same<U, std::complex<double>>::value,
+                  int>::type = 0>
+    void copyTo()
+    {
+        start = std::chrono::high_resolution_clock::now();
+        if (!single_precision_multivec_)
+        {
+            throw std::runtime_error("Single precision matrix is not enabled.");
+        }
+
+        if constexpr (std::is_same<Platform, chase::platform::CPU>::value)
+        {
+#pragma omp parallel for collapse(2) schedule(static, 16)
+            for (std::size_t j = 0; j < this->l_cols(); ++j)
+            {
+                for (std::size_t i = 0; i < this->l_rows(); ++i)
+                {
+                    single_precision_multivec_->l_data()
+                        [j * single_precision_multivec_.get()->l_ld() + i] =
+                        chase::convertToSinglePrecision<T>(
+                            this->l_data()[j * this->l_ld() + i]);
+                }
+            }
+        }
+        else
+#ifdef HAS_CUDA
+        {
+            chase::linalg::internal::cuda::convert_DP_TO_SP_GPU(
+                this->l_data(), single_precision_multivec_->l_data(),
+                this->l_cols() * this->l_rows());
+        }
+#else
+        {
+            throw std::runtime_error(
+                "GPU is not supported in AbstractDistMultiVector");
+        }
+#endif
+        end = std::chrono::high_resolution_clock::now();
+        elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(
+            end - start);
+
+        if (this->grank() == 0)
+            std::cout << "Single precision matrix copied to double precision in "
+                         "AbstractDistMultiVector. \n";
+    }
+
+    // Copy from single to double precision (if T is float)
+    template <typename U = T,
+              typename std::enable_if<
+                  std::is_same<U, float>::value ||
+                      std::is_same<U, std::complex<float>>::value,
+                  int>::type = 0>
+    void copyTo()
+    {
+        start = std::chrono::high_resolution_clock::now();
+        if (!double_precision_multivec_)
+        {
+            throw std::runtime_error("Double precision matrix is not enabled.");
+        }
+
+        if constexpr (std::is_same<Platform, chase::platform::CPU>::value)
+        {
+#pragma omp parallel for collapse(2) schedule(static, 16)
+            for (std::size_t j = 0; j < this->l_cols(); ++j)
+            {
+                for (std::size_t i = 0; i < this->l_rows(); ++i)
+                {
+                    double_precision_multivec_->l_data()
+                        [j * double_precision_multivec_.get()->l_ld() + i] =
+                        chase::convertToDoublePrecision<T>(
+                            this->l_data()[j * this->l_ld() + i]);
+                }
+            }
+        }
+        else
+#ifdef HAS_CUDA
+        {
+            chase::linalg::internal::cuda::convert_SP_TO_DP_GPU(
+                this->l_data(), double_precision_multivec_->l_data(),
+                this->l_cols() * this->l_rows());
+        }
+#else
+        {
+            throw std::runtime_error(
+                "GPU is not supported in AbstractDistMultiVector");
+        }
+#endif
+        end = std::chrono::high_resolution_clock::now();
+        elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(
+            end - start);
+
+        if (this->grank() == 0)
+            std::cout << "Single precision matrix copied to double precision in "
+                         "AbstractDistMultiVector. \n";
+    }
+
+    // If T is neither float nor double, these methods should not be available
+    template <typename U = T,
+              typename std::enable_if<
+                  !std::is_same<U, float>::value &&
+                  !std::is_same<U, std::complex<float>>::value &&
+                  !std::is_same<U, double>::value &&
+                  !std::is_same<U, std::complex<double>>::value,
+                  int>::type = 0>
+    void copyTo()
+    {
+        throw std::runtime_error("[DistMultiVector]: CopyTo operations not supported for this type.");
+    }
 };
 
 /**
@@ -786,12 +1191,14 @@ public:
         std::swap(ld_, other.ld_);
         std::swap(mb_, other.mb_);
         local_matrix_.swap(other.local_matrix_);
-#ifdef ENABLE_MIXED_PRECISION
         std::swap(this->is_single_precision_enabled_,
                   other.is_single_precision_enabled_);
         std::swap(this->single_precision_multivec_,
                   other.single_precision_multivec_);
-#endif
+        std::swap(this->is_double_precision_enabled_,
+                  other.is_double_precision_enabled_);
+        std::swap(this->double_precision_multivec_,
+                  other.double_precision_multivec_);
     }
     /**
      * @brief Swaps columns i and j in the distributed multivector.
@@ -2048,12 +2455,14 @@ public:
         std::swap(ld_, other.ld_);
         std::swap(mblocks_, other.mblocks_);
         local_matrix_.swap(other.local_matrix_);
-#ifdef ENABLE_MIXED_PRECISION
         std::swap(this->is_single_precision_enabled_,
                   other.is_single_precision_enabled_);
         std::swap(this->single_precision_multivec_,
                   other.single_precision_multivec_);
-#endif
+        std::swap(this->is_double_precision_enabled_,
+                  other.is_double_precision_enabled_);
+        std::swap(this->double_precision_multivec_,
+                  other.double_precision_multivec_);
     }
 
     /**
@@ -2352,6 +2761,11 @@ public:
 
     // typename chase::platform::MatrixTypePlatform<T, Platform>::type&
     // loc_matrix() override { return local_matrix_;}
+    /**
+     * @brief Access the local matrix object.
+     *
+     * @return Reference to the local matrix of type chase::matrix::Matrix.
+     */
     chase::matrix::Matrix<T, Platform>& loc_matrix() override
     {
         return local_matrix_;

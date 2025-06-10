@@ -172,7 +172,8 @@ public:
      */
     ChaseConfig(std::size_t _N, std::size_t _nev, std::size_t _nex)
         : N_(_N), nev_(_nev), nex_(_nex), optimization_(true), approx_(false),
-          max_iter_(25), deg_extra_(2), num_lanczos_(4), decaying_rate_(1.0)
+          max_iter_(25), deg_extra_(2), num_lanczos_(4), decaying_rate_(1.0),
+          upperb_scale_rate_(1.0)
     {
         SetMaxDeg(chase_config_helper::initMaxDeg<T>(approx_, optimization_));
         SetDeg(chase_config_helper::initDeg<T>(approx_, optimization_));
@@ -455,6 +456,24 @@ public:
      */
     void SetDecayingRate(float decayingRate) { decaying_rate_ = decayingRate; }
 
+    //! Returns the scale rate for upperb based on its sign
+    /*!
+        This variable controls how upperb is scaled based on its sign.
+        For positive upperb, it's multiplied by this rate.
+        For negative upperb, it's multiplied by (2 - rate).
+        Default value is 1.2.
+     */
+    float GetUpperbScaleRate() const { return upperb_scale_rate_; }
+
+    //! Sets the scale rate for upperb based on its sign
+    /*!
+        This variable controls how upperb is scaled based on its sign.
+        For positive upperb, it's multiplied by this rate.
+        For negative upperb, it's multiplied by (2 - rate).
+        Default value is 1.2.
+     */
+    void SetUpperbScaleRate(float upperbScaleRate) { upperb_scale_rate_ = upperbScaleRate; }
+
 private:
     ///////////////////////////////////////////////////
     // General parameters of the eigensolver
@@ -584,6 +603,16 @@ private:
     bool cholqr_ = true;
 
     bool sym_check_ = true;
+
+    //! Optional parameter indicating the scale rate for upperb based on its sign
+    /*!
+        This variable is initialized by the constructor. Its
+        default value is set to 1.2.
+        For positive upperb, it's multiplied by this rate.
+        For negative upperb, it's multiplied by (2 - rate).
+     */
+    float upperb_scale_rate_;
+
 };
 
 template <typename T>

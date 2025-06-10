@@ -26,7 +26,7 @@
 #endif
 #include "algorithm/types.hpp"
 
-#include "config/config.hpp"
+#include "Impl/config/config.hpp"
 #include "Impl/chase_gpu/nvtx.hpp"
 
 #include "../../linalg/internal/typeTraits.hpp"
@@ -326,6 +326,18 @@ public:
         CHECK_CUDA_ERROR(cudaMemcpy(d_diag_xoffs, diag_xoffs.data(), sizeof(std::size_t) * diag_cnt , cudaMemcpyHostToDevice));
         CHECK_CUDA_ERROR(cudaMemcpy(d_diag_yoffs, diag_yoffs.data(), sizeof(std::size_t) * diag_cnt , cudaMemcpyHostToDevice));
  
+        if constexpr (std::is_same<T, std::complex<float>>::value)
+        {
+            if(!A_->isDoublePrecisionEnabled())
+            {
+                A_->enableDoublePrecision();
+            }
+
+            if(!V1_->isDoublePrecisionEnabled())
+            {
+                V1_->enableDoublePrecision();
+            }            
+        }    
     }
 
     pChASEGPU(const pChASEGPU&) = delete;
@@ -477,8 +489,10 @@ public:
         CHECK_CUDA_ERROR(cudaMalloc(&d_ritzVc_, m * idx * sizeof(T))); 
         d_ritzVc_ptr.reset(d_ritzVc_);
         d_ritzVc_ = d_ritzVc_ptr.get();
+
         CHECK_CUDA_ERROR(cudaMemcpy(d_ritzVc_, ritzVc, m * idx * sizeof(T),
                              cudaMemcpyHostToDevice));
+
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(cublasH_,
                                                       CUBLAS_OP_N,
                                                       CUBLAS_OP_N,
@@ -656,12 +670,11 @@ public:
 
         int info = 1;
         
-	if constexpr (std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockBlockMatrix<T,chase::platform::GPU>>::value ||
-		      std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T,chase::platform::GPU>>::value )
-
-	{	
-		chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(*V1_, 0, locked_);
-	}
+        if constexpr (std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockBlockMatrix<T,chase::platform::GPU>>::value ||
+                std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T,chase::platform::GPU>>::value )
+        {	
+            kernelNamespace::flipLowerHalfMatrixSign(*V1_, 0, locked_);
+        }
 
         if (disable == 1)
         {
@@ -754,6 +767,31 @@ public:
 
             if (cond > cond_threshold_upper)
             {
+                if constexpr (std::is_same<T, std::complex<float>>::value)
+                {
+                    V1_->copyTo();
+
+                    auto V1_d = V1_->getDoublePrecisionMatrix();
+                    auto A_d = A_->getDoublePrecisionMatrix();
+                    std::complex<double> *d_work_d ;
+                    CHECK_CUDA_ERROR(cudaMalloc((void**)&d_work_d, sizeof(std::complex<double>) * lwork_));
+                    info = kernelNamespace::shiftedcholQR2(cublasH_,
+                                                                cusolverH_,
+                                                                V1_->g_rows(),
+                                                                V1_->l_rows(), 
+                                                                V1_->l_cols(), 
+                                                                V1_d->l_data(),  
+                                                                V1_->l_ld(), 
+                                                                //V1_->getMpiGrid()->get_nccl_col_comm(),
+                                                                MGPUKernelNamspaceSelector<backend>::getColCommunicator(V1_->getMpiGrid()),
+                                                                d_work_d,
+                                                                lwork_,
+                                                                A_d->l_data()); 
+                    V1_->copyback();
+                    CHECK_CUDA_ERROR(cudaFree(d_work_d));
+                }
+                else
+                {
                 info = kernelNamespace::shiftedcholQR2(cublasH_,
                                                                 cusolverH_,
                                                                 V1_->g_rows(),
@@ -765,36 +803,107 @@ public:
                                                                 MGPUKernelNamspaceSelector<backend>::getColCommunicator(V1_->getMpiGrid()),
                                                                 d_work_,
                                                                 lwork_,
-                                                                A_->l_data());                                                
+                                                                A_->l_data()); 
+                }                                               
             }
             else if(cond < cond_threshold_lower)
             {
-                info = kernelNamespace::cholQR1(cublasH_,
+                /*if constexpr (std::is_same<T, std::complex<float>>::value)
+                {
+                    if(V1_->isDoublePrecisionEnabled())
+                    {
+                        V1_->disableDoublePrecision();
+                    }
+                    if(A_->isDoublePrecisionEnabled())
+                    {
+                        A_->disableDoublePrecision();
+                    }
+                }
+                */
+
+                /*if constexpr (std::is_same<T, std::complex<float>>::value)
+                {
+                    V1_->enableDoublePrecision();
+                    A_->enableDoublePrecision();
+                    auto V1_d = V1_->getDoublePrecisionMatrix();
+                    auto A_d = A_->getDoublePrecisionMatrix();
+                    info = kernelNamespace::cholQR1(cublasH_,
                                                                 cusolverH_,
                                                                 V1_->l_rows(), 
                                                                 V1_->l_cols(), 
-                                                                V1_->l_data(),  
+                                                                V1_d->l_data(),  
                                                                 V1_->l_ld(), 
                                                                 //V1_->getMpiGrid()->get_nccl_col_comm(),
                                                                 MGPUKernelNamspaceSelector<backend>::getColCommunicator(V1_->getMpiGrid()),
-                                                                d_work_,
+                                                                reinterpret_cast<std::complex<double>*>(d_work_),
                                                                 lwork_,
-                                                                A_->l_data());  
+                                                                A_d->l_data()); 
+                    V1_->disableDoublePrecision(true);
+                    A_->disableDoublePrecision();
+                }else*/
+                {
+                    info = kernelNamespace::cholQR1(cublasH_,
+                                                                    cusolverH_,
+                                                                    V1_->l_rows(), 
+                                                                    V1_->l_cols(), 
+                                                                    V1_->l_data(),  
+                                                                    V1_->l_ld(), 
+                                                                    //V1_->getMpiGrid()->get_nccl_col_comm(),
+                                                                    MGPUKernelNamspaceSelector<backend>::getColCommunicator(V1_->getMpiGrid()),
+                                                                    d_work_,
+                                                                    lwork_,
+                                                                    A_->l_data());  
+                }
+
                                                             
             }
             else
-            {                
-                info = kernelNamespace::cholQR2(cublasH_,
-                                                                cusolverH_,
-                                                                V1_->l_rows(), 
-                                                                V1_->l_cols(), 
-                                                                V1_->l_data(),  
-                                                                V1_->l_ld(), 
-                                                                //V1_->getMpiGrid()->get_nccl_col_comm(),
-                                                                MGPUKernelNamspaceSelector<backend>::getColCommunicator(V1_->getMpiGrid()),
-                                                                d_work_,
-                                                                lwork_,
-                                                                A_->l_data()); 
+            {   
+                /*if constexpr (std::is_same<T, std::complex<float>>::value)
+                {
+                    if(V1_->isDoublePrecisionEnabled())
+                    {
+                        V1_->disableDoublePrecision();
+                    }
+                    if(A_->isDoublePrecisionEnabled())
+                    {
+                        A_->disableDoublePrecision();
+                    }
+                }*/
+
+                /*if constexpr (std::is_same<T, std::complex<float>>::value)
+                {
+                    V1_->enableDoublePrecision();
+                    A_->enableDoublePrecision();
+                    auto V1_d = V1_->getDoublePrecisionMatrix();
+                    auto A_d = A_->getDoublePrecisionMatrix();
+                    info = kernelNamespace::cholQR2(cublasH_,
+                                                                    cusolverH_,
+                                                                    V1_->l_rows(), 
+                                                                    V1_->l_cols(), 
+                                                                    V1_d->l_data(),  
+                                                                    V1_->l_ld(), 
+                                                                    //V1_->getMpiGrid()->get_nccl_col_comm(),
+                                                                    MGPUKernelNamspaceSelector<backend>::getColCommunicator(V1_->getMpiGrid()),
+                                                                    reinterpret_cast<std::complex<double>*>(d_work_),
+                                                                    lwork_,
+                                                                    A_d->l_data()); 
+                    V1_->disableDoublePrecision(true);
+                    A_->disableDoublePrecision();
+                }else*/
+                {
+                    info = kernelNamespace::cholQR2(cublasH_,
+                                                                    cusolverH_,
+                                                                    V1_->l_rows(), 
+                                                                    V1_->l_cols(), 
+                                                                    V1_->l_data(),  
+                                                                    V1_->l_ld(), 
+                                                                    //V1_->getMpiGrid()->get_nccl_col_comm(),
+                                                                    MGPUKernelNamspaceSelector<backend>::getColCommunicator(V1_->getMpiGrid()),
+                                                                    d_work_,
+                                                                    lwork_,
+                                                                    A_->l_data()); 
+                }                             
             }
 
             if (info != 0)
@@ -919,7 +1028,7 @@ public:
     }
 
     void End() override {         
-        SCOPED_NVTX_RANGE();
+        SCOPED_NVTX_RANGE();     
         V1_->D2H(); 
     }
 

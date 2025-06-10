@@ -12,24 +12,37 @@
 #include <vector>
 
 #include "algorithm/performance.hpp"
-#ifdef HAS_CUDA
+
+#ifdef HAS_NCCL 
 #include "Impl/pchase_gpu/pchase_gpu.hpp"
-#else
+#elif defined(HAS_CUDA)
+#include "Impl/chase_gpu/chase_gpu.hpp"
+#elif defined(USE_MPI)
 #include "Impl/pchase_cpu/pchase_cpu.hpp"
+#else
+#include "Impl/chase_cpu/chase_cpu.hpp"
 #endif
 
 using T = std::complex<double>;
 using namespace chase;
 
-#ifdef HAS_CUDA
+#if defined(HAS_CUDA) || defined(HAS_NCCL)
 using ARCH = chase::platform::GPU;
-using BackendType = chase::grid::backend::NCCL;
 #else
 using ARCH = chase::platform::CPU;
 #endif
 
+#ifdef HAS_NCCL
+using BackendType = chase::grid::backend::NCCL;
+#endif
+
 int main(int argc, char** argv)
 {
+    size_t k = 1472;
+    size_t N = 2 * k, nev = 200, nex = 100;
+
+#if defined(USE_MPI) || defined(HAS_NCCL)
+
     MPI_Init(&argc, &argv);
 
     int world_rank;
@@ -40,73 +53,121 @@ int main(int argc, char** argv)
     int dims_[2];
     dims_[0] = dims_[1] = 0;
 
-    MPI_Dims_create(world_size, 2, dims_);
-
+    MPI_Dims_create(world_size, 2, dims_); 
+    
     std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>
         mpi_grid = std::make_shared<
             chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(
             dims_[0], dims_[1], MPI_COMM_WORLD);
-
-    size_t k = 1472;
-
-    size_t N = 2 * k, nev = 200, nex = 100, mb = 40;
 
     int* dims = mpi_grid.get()->get_dims();
     int* coords = mpi_grid.get()->get_coords();
 
     if (world_rank == 0)
     {
-        std::cout << "Matrix Size = " << N << std::endl;
-        std::cout << "World  Size = " << world_size << std::endl;
-        std::cout << "Dims        = " << dims[0] << " x " << dims[1]
-                  << std::endl;
+
+#endif
+#if defined(USE_MPI) || defined(HAS_NCCL) //Parallel Implementation //A
+    std::cout << "======================== Dist ChASE ";
+
+#if defined(USE_BLOCKCYCLIC) 
+    std::cout << "BlockCyclic ";
+#else
+    std::cout << "BlockBlock ";
+#endif
+
+#else
+    std::cout << "======================== Seq  ChASE ";
+#endif
+
+#if defined(USE_QUASI_HERMITIAN) //C
+    std::cout << "Quasi-Hermitian ";
+#else //C
+    std::cout << "Hermitian ";
+#endif //C
+
+    std::cout << "Matrix ";
+
+#ifdef HAS_CUDA//B
+    std::cout <<  "on GPU ========================" << std::endl;
+#else
+    std::cout <<  "on CPU ========================" << std::endl;
+#endif //B
+#if defined(USE_MPI) || defined(HAS_NCCL)
     }
 
-    auto Hmat = chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, ARCH>(
-        N, N, mpi_grid);
+    MPI_Barrier(MPI_COMM_WORLD);
+#endif
+    auto Lambda = std::vector<chase::Base<T>>(nev + nex);
 
-    #ifdef HAS_CUDA
-    	Hmat.allocate_cpu_data();
-    #endif
-
-/*
+#if defined(USE_MPI) || defined(HAS_NCCL) 
+    
+#ifdef USE_BLOCKCYCLIC 
+    std::size_t mb = 64;
+    auto Vec = chase::distMultiVector::DistMultiVectorBlockCyclic1D<
+        T, chase::distMultiVector::CommunicatorType::column, ARCH>(N, nev + nex, mb, mpi_grid);
+#ifdef USE_QUASI_HERMITIAN 
     auto Hmat = chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T, ARCH>(
         N, N, mb, mb, mpi_grid);
-*/
-    Hmat.readFromBinaryFile(
-	"../../../Data/Matrix/2x2x2_Silicon_QuasiHermitian.bin");
-    //    "./tests/linalg/internal/BSE_matrices/cdouble_random_BSE.bin");
-
-    auto Lambda = std::vector<chase::Base<T>>(nev + nex);
-    
+#else 
+    auto Hmat = chase::distMatrix::BlockCyclicMatrix<T, ARCH>(
+        N, N, mb, mb, mpi_grid);
+#endif 
+#else
     auto Vec = chase::distMultiVector::DistMultiVector1D<
         T, chase::distMultiVector::CommunicatorType::column, ARCH>(N, nev + nex, mpi_grid);
-
-    /*auto Vec = chase::distMultiVector::DistMultiVectorBlockCyclic1D<
-        T, chase::distMultiVector::CommunicatorType::column, ARCH>(N, nev + nex,mb, mpi_grid);
-    */
-    if (world_rank == 0)
-    {
-#ifdef HAS_CUDA
-        std::cout
-            << "======================== ChASE GPU ========================"
-            << std::endl;
-#else
-        std::cout
-            << "======================== ChASE CPU ========================"
-            << std::endl;
-#endif
-    }
-
-#ifdef HAS_CUDA
-    Hmat.allocate_cpu_data();
-    auto single =
-        chase::Impl::pChASEGPU<decltype(Hmat), decltype(Vec), BackendType>(
+#ifdef USE_QUASI_HERMITIAN
+    auto Hmat = chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, ARCH>(
+        N, N, mpi_grid);
+#else 
+    auto Hmat = chase::distMatrix::BlockBlockMatrix<T, ARCH>(
+        N, N, mpi_grid);
+#endif 
+#endif 
+#ifdef HAS_NCCL
+    auto single = chase::Impl::pChASEGPU<decltype(Hmat), decltype(Vec), BackendType>(
             nev, nex, &Hmat, &Vec, Lambda.data());
+	
+    Hmat.allocate_cpu_data();
 #else
     auto single = chase::Impl::pChASECPU(nev, nex, &Hmat, &Vec, Lambda.data());
+#endif 
+    Hmat.readFromBinaryFile("../../../Data/Matrix/2x2x2_Silicon_QuasiHermitian.bin");
+
+#ifdef HAS_NCCL
+    Hmat.H2D();
 #endif
 
+#else 
+    std::vector<T> V(N*(nev+nex));
+
+#ifdef USE_QUASI_HERMITIAN 
+    using MatrixType = chase::matrix::QuasiHermitianMatrix<T, ARCH>;
+#else //B
+    using MatrixType = chase::matrix::Matrix<T,ARCH>;
+#endif //B
+    
+    auto Hmat = new MatrixType(N,N);
+
+#ifdef HAS_CUDA 
+    auto single = chase::Impl::ChASEGPU<T,MatrixType>(N, nev, nex, Hmat, V.data(), N, Lambda.data());
+    	
+    Hmat->allocate_cpu_data();
+#else 
+    auto single = chase::Impl::ChASECPU<T,MatrixType>(N, nev, nex, Hmat, V.data(), N, Lambda.data());
+#endif
+	
+    Hmat->readFromBinaryFile("../../../Data/Matrix/2x2x2_Silicon_QuasiHermitian.bin");
+
+#ifdef HAS_CUDA
+    Hmat->H2D();
+#endif
+
+#endif
+
+    std::cout << std::endl;
+    
+    
     single.initVecs(true);
 
     // Setup configure for ChASE
@@ -118,19 +179,22 @@ int main(int argc, char** argv)
     // Optimi(S)e degree
     config.SetOpt(true);
     config.SetMaxIter(25);
+    config.SetLanczosIter(26);
 
     PerformanceDecoratorChase<T> performanceDecorator(&single);
 
     chase::Solve(&performanceDecorator);
 
+#if defined(USE_MPI) || defined(HAS_NCCL)
     // Output
     if (world_rank == 0)
     {
+#endif
         performanceDecorator.GetPerfData().print();
         Base<T>* resid = single.GetResid();
         std::cout << "Finished Problem #1"
                   << "\n";
-        std::cout << "Printing first 5 eigenvalues and residuals\n";
+        std::cout << "Printing first 10 eigenvalues and residuals\n";
         std::cout
             << "| Index |       Eigenvalue      |         Residual      |\n"
             << "|-------|-----------------------|-----------------------|\n";
@@ -139,12 +203,15 @@ int main(int argc, char** argv)
         std::cout << std::setfill(' ');
         std::cout << std::scientific;
         std::cout << std::right;
-        for (auto i = 0; i < std::min(std::size_t(5), nev); ++i)
+        for (auto i = 0; i < std::min(std::size_t(10), nev); ++i)
             std::cout << "|  " << std::setw(4) << i + 1 << " | "
                       << std::setw(width) << Lambda[i] << "  | "
                       << std::setw(width) << resid[i] << "  |\n";
         std::cout << "\n\n\n";
+#if defined(USE_MPI) || defined(HAS_NCCL)
     }
 
     MPI_Finalize();
+
+#endif
 }
