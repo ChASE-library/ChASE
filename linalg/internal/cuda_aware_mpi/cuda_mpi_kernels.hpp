@@ -204,6 +204,25 @@ namespace internal
                     typename MatrixType::value_type *h_workspace = nullptr,
                     int h_lwork = 0,
                     chase::distMatrix::RedundantMatrix<typename MatrixType::value_type, chase::platform::GPU>* A = nullptr);                
+	
+	template <typename MatrixType, typename InputMultiVectorType>
+        static void quasi_hermitian_rayleighRitz_v2(cublasHandle_t cublas_handle, 
+                    cusolverDnHandle_t cusolver_handle,
+		    cusolverDnParams_t params,
+                    MatrixType& H,
+                    InputMultiVectorType& V1,
+                    InputMultiVectorType& V2,
+                    typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type& W1,
+                    typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type& W2,  
+                    chase::distMatrix::RedundantMatrix<chase::Base<typename MatrixType::value_type>, chase::platform::GPU>& ritzv, 
+                    std::size_t offset,
+                    std::size_t subSize,
+                    int* devInfo,
+                    typename MatrixType::value_type *d_workspace = nullptr,
+                    int d_lwork = 0,
+                    //typename MatrixType::value_type *h_workspace = nullptr,
+                    //int h_lwork = 0,
+                    chase::distMatrix::RedundantMatrix<typename MatrixType::value_type, chase::platform::GPU>* A = nullptr);                
 
         template <typename MatrixType, typename InputMultiVectorType>
         static void residuals(cublasHandle_t cublas_handle,

@@ -146,6 +146,17 @@ struct cpu_mpi
         chase::distMatrix::RedundantMatrix<typename MatrixType::value_type,
                                            chase::platform::CPU>* A = nullptr);
     
+    template <typename MatrixType, typename InputMultiVectorType>
+    static void quasi_hermitian_rayleighRitz_v2(
+        MatrixType& H, InputMultiVectorType& V1, InputMultiVectorType& V2,
+        typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type&
+            W1,
+        typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type&
+            W2,
+        chase::Base<typename MatrixType::value_type>* ritzv, std::size_t offset,
+        std::size_t subSize,
+        chase::distMatrix::RedundantMatrix<typename MatrixType::value_type,
+                                           chase::platform::CPU>* A = nullptr);
 
     template <typename MatrixType, typename InputMultiVectorType>
     static void residuals(

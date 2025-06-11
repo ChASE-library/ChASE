@@ -441,7 +441,7 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
     std::size_t iteration = 0; // Current iteration.
     lowerb = *std::max_element(ritzv, ritzv + unconverged); 
     lambda = *std::min_element(ritzv_, ritzv_ + nevex);
-
+    Base<T> lambda_temp;
     lowerb = lowerb * config.GetDecayingRate();
     if(single->isPseudoHerm())
     {
@@ -481,7 +481,8 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
         else if (single->isPseudoHerm() && unconverged < nevex)
         {
             // Check first few eigenvalues (up to 5) and find one with reasonable residual
-            lambda = *std::min(ritzv, ritzv + unconverged);
+            lambda_temp = *std::min(ritzv, ritzv + unconverged);
+	    lambda = std::max(lambda,lambda_temp);
             //lambda = ritzv[std::distance(resid,std::min_element(resid, resid + unconverged))];
 
             lowerb = std::min(ritzv[unconverged - 1], Base<T>(0.0));

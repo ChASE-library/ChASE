@@ -197,7 +197,19 @@ public:
 		is_sym_ = false;
 		is_pseudoHerm_ = true;
         
-		A_ = std::make_unique<chase::distMatrix::RedundantMatrix<T, chase::platform::GPU>>(3*nevex_, nevex_, Hmat_->getMpiGrid_shared_ptr());
+		A_ = std::make_unique<chase::distMatrix::RedundantMatrix<T, chase::platform::GPU>>(2*nevex_, nevex_, Hmat_->getMpiGrid_shared_ptr());
+		//A_ = std::make_unique<chase::distMatrix::RedundantMatrix<T, chase::platform::GPU>>(3*nevex_, nevex_, Hmat_->getMpiGrid_shared_ptr());
+        	
+		CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTheevd_bufferSize(
+                                                            cusolverH_, 
+                                                            CUSOLVER_EIG_MODE_VECTOR, 
+                                                            CUBLAS_FILL_MODE_LOWER,
+                                                            nevex_, 
+                                                            A_->l_data(), 
+                                                            A_->l_ld(), 
+                                                            ritzv_->l_data(), 
+							    &lwork_heevd));
+/*
 #ifdef XGEEV_EXISTS
 		CHECK_CUSOLVER_ERROR(cusolverDnCreateParams(&params_));
 
@@ -216,6 +228,7 @@ public:
 
 		h_work_ = std::unique_ptr<T[]>(new T[lhwork_]);
 #endif
+*/
 	}
 	else
 	{
@@ -947,7 +960,7 @@ public:
 		      std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T,chase::platform::GPU>>::value )
 
 	{
-        	kernelNamespace::quasi_hermitian_rayleighRitz(cublasH_,
+        	kernelNamespace::quasi_hermitian_rayleighRitz_v2(cublasH_,
                                                    cusolverH_,
 						   params_,
                                                    *Hmat_, 
@@ -961,8 +974,8 @@ public:
                                                    devInfo_,
                                                    d_work_,
                                                    lwork_,
-						   h_work_.get(),
-				   		   lhwork_,
+						   //h_work_.get(),
+				   		   //lhwork_,
                                                    A_.get());
 	}
 	else

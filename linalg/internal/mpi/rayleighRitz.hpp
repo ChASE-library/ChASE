@@ -55,7 +55,7 @@ namespace internal
 	if constexpr (std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockBlockMatrix<T>>::value ||
 		      std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T>>::value)
 	{
-		cpu_mpi::quasi_hermitian_rayleighRitz(H, V1, V2, W1, W2, ritzv, offset, subSize, A);
+		cpu_mpi::quasi_hermitian_rayleighRitz_v2(H, V1, V2, W1, W2, ritzv, offset, subSize, A);
 	}
 	else
 	{
