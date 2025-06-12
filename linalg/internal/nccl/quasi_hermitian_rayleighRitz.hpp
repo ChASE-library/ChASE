@@ -660,6 +660,7 @@ namespace internal
                 auto ritzv_d = ritzv.getDoublePrecisionMatrix();
                 std::complex<double> *workspace_d;
                 cudaMalloc((void**)&workspace_d, sizeof(std::complex<double>) * lwork);
+	
                 CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTheevd(
                                         cusolver_handle,
                                         CUSOLVER_EIG_MODE_VECTOR,
