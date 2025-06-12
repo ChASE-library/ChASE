@@ -641,22 +641,59 @@ namespace internal
                                                                     M,
                                                                     subSize));
 
-        CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTheevd(
-                                       cusolver_handle,
-                                       CUSOLVER_EIG_MODE_VECTOR,
-                                       CUBLAS_FILL_MODE_LOWER,
-                                       subSize,
-                                       M,
-                                       subSize,
-                                       ritzv.l_data() + offset,
-                                       workspace, lwork, devInfo));
+        if constexpr (std::is_same<T, std::complex<float>>::value)
+        {
+                if(A->isDoublePrecisionEnabled())
+                {
+                    A->copyToSubBlock(subSize * subSize, subSize * subSize);
+                }
+                else
+                {
+                    A->enableDoublePrecision();
+                }
+
+                if(!ritzv.isDoublePrecisionEnabled())
+                {
+                    ritzv.enableDoublePrecision();
+                }
+                auto A_d = A->getDoublePrecisionMatrix();
+                auto ritzv_d = ritzv.getDoublePrecisionMatrix();
+                std::complex<double> *workspace_d;
+                cudaMalloc((void**)&workspace_d, sizeof(std::complex<double>) * lwork);
+                CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTheevd(
+                                        cusolver_handle,
+                                        CUSOLVER_EIG_MODE_VECTOR,
+                                        CUBLAS_FILL_MODE_LOWER,
+                                        subSize,
+                                        A_d->l_data() + subSize * subSize,
+                                        subSize,
+                                        ritzv_d->l_data() + offset,
+                                        workspace_d,
+                                        lwork,
+                                        devInfo));
+
+                ritzv.disableDoublePrecision(true);
+                A->copyBackSubBlock(subSize * subSize, subSize * subSize);
+                cudaFree(workspace_d);
+        }
+        else{
+                CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTheevd(
+                                        cusolver_handle,
+                                        CUSOLVER_EIG_MODE_VECTOR,
+                                        CUBLAS_FILL_MODE_LOWER,
+                                        subSize,
+                                        M,
+                                        subSize,
+                                        ritzv.l_data() + offset,
+                                        workspace, lwork, devInfo));
+        }
 
 	int info;
 	CHECK_CUDA_ERROR(cudaMemcpy(&info, devInfo, 1 * sizeof(int), cudaMemcpyDeviceToHost));
 
         if(info != 0)
         {
-            throw std::runtime_error("cusolver HEEVD failed in Quasi-Hermitian RayleighRitz");
+            throw std::runtime_error("cusolver HEEVD failed in Quasi-Hermitian RayleighRitz, return value: " + std::to_string(info));
         }
 
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTtrsm(cublas_handle,

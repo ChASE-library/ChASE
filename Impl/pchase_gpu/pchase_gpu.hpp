@@ -836,10 +836,12 @@ public:
 
                 /*if constexpr (std::is_same<T, std::complex<float>>::value)
                 {
-                    V1_->enableDoublePrecision();
-                    A_->enableDoublePrecision();
+                    V1_->copyTo();
+
                     auto V1_d = V1_->getDoublePrecisionMatrix();
                     auto A_d = A_->getDoublePrecisionMatrix();
+                    std::complex<double> *d_work_d ;
+                    CHECK_CUDA_ERROR(cudaMalloc((void**)&d_work_d, sizeof(std::complex<double>) * lwork_));
                     info = kernelNamespace::cholQR1(cublasH_,
                                                                 cusolverH_,
                                                                 V1_->l_rows(), 
@@ -851,8 +853,8 @@ public:
                                                                 reinterpret_cast<std::complex<double>*>(d_work_),
                                                                 lwork_,
                                                                 A_d->l_data()); 
-                    V1_->disableDoublePrecision(true);
-                    A_->disableDoublePrecision();
+                    V1_->copyback();
+                    CHECK_CUDA_ERROR(cudaFree(d_work_d));
                 }else*/
                 {
                     info = kernelNamespace::cholQR1(cublasH_,
@@ -886,10 +888,12 @@ public:
 
                 /*if constexpr (std::is_same<T, std::complex<float>>::value)
                 {
-                    V1_->enableDoublePrecision();
-                    A_->enableDoublePrecision();
+                    V1_->copyTo();
+
                     auto V1_d = V1_->getDoublePrecisionMatrix();
                     auto A_d = A_->getDoublePrecisionMatrix();
+                    std::complex<double> *d_work_d ;
+                    CHECK_CUDA_ERROR(cudaMalloc((void**)&d_work_d, sizeof(std::complex<double>) * lwork_));
                     info = kernelNamespace::cholQR2(cublasH_,
                                                                     cusolverH_,
                                                                     V1_->l_rows(), 
@@ -898,11 +902,11 @@ public:
                                                                     V1_->l_ld(), 
                                                                     //V1_->getMpiGrid()->get_nccl_col_comm(),
                                                                     MGPUKernelNamspaceSelector<backend>::getColCommunicator(V1_->getMpiGrid()),
-                                                                    reinterpret_cast<std::complex<double>*>(d_work_),
+                                                                    d_work_d,
                                                                     lwork_,
                                                                     A_d->l_data()); 
-                    V1_->disableDoublePrecision(true);
-                    A_->disableDoublePrecision();
+                    V1_->copyback();
+                    CHECK_CUDA_ERROR(cudaFree(d_work_d));
                 }else*/
                 {
                     info = kernelNamespace::cholQR2(cublasH_,
