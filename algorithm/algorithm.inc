@@ -125,6 +125,46 @@ std::size_t Algorithm<T>::locking(ChaseBase<T>* single, std::size_t N,
    return converged;
 }
 
+
+template <class T>
+std::size_t Algorithm<T>::locking_quasi(
+    ChaseBase<T>* single, std::size_t N,
+    std::size_t unconverged, std::size_t nex, Base<T> tol,
+    Base<T>* Lritzv, Base<T>* resid,
+    std::size_t* degrees, std::size_t locked)
+{
+    SCOPED_NVTX_RANGE();
+
+    // Build index vector for all unconverged eigenpairs
+    std::vector<int> index(unconverged); //unconverged = nev+nex-locked
+    std::iota(index.begin(), index.end(), 0);
+
+    // 1. Sort all by residuals (ascending)
+    std::sort(index.begin(), index.end(), //sort all nev + nex - locked residuals
+        [&](int a, int b) { return resid[a] < resid[b]; });
+
+    // 2. Sort first nev by |Lritzv| (ascending)
+    std::sort(index.begin(), index.begin() + unconverged - nex, //sort ritzv values only 1st nev-locked
+        [&](int a, int b) { return (Lritzv[a] < Lritzv[b]); });
+    
+
+    // 3. Locking step
+    std::size_t converged = 0;
+    for (std::size_t k = 0; k < unconverged - nex; ++k) {
+        int j = index[k];
+        if (resid[j] <= tol) {
+            if (j != converged) {
+                swap_kj(j, converged, resid);
+                swap_kj(j, converged, Lritzv);
+                swap_kj(j, converged, degrees);
+                single->Swap(j + locked, converged + locked);
+            }
+            ++converged;
+        }
+    }
+    return converged;
+}
+
 template <class T>
 std::size_t Algorithm<T>::filter(ChaseBase<T>* single, std::size_t n,
                                  std::size_t unprocessed, std::size_t deg,
@@ -481,8 +521,7 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
         else if (single->isPseudoHerm() && unconverged < nevex)
         {
             // Check first few eigenvalues (up to 5) and find one with reasonable residual
-            lambda_temp = *std::min(ritzv, ritzv + unconverged);
-	    lambda = std::max(lambda,lambda_temp);
+            lambda = *std::min(ritzv, ritzv + unconverged);
             //lambda = ritzv[std::distance(resid,std::min_element(resid, resid + unconverged))];
 
             lowerb = std::min(ritzv[unconverged - 1], Base<T>(0.0));
@@ -568,10 +607,15 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
 
 #endif
 
-        std::size_t new_converged =
-            locking(single, N, unconverged - nex, tol, ritzv, resid, residLast,
-                    degrees, locked);
+        std::size_t new_converged;
 
+        if(single->isSym()){
+            new_converged = locking(single, N, unconverged - single->isSym() * nex, tol, ritzv, resid, residLast,
+                        degrees, locked);
+        }else
+        {
+            new_converged = locking_quasi(single, N, unconverged, nex, tol, ritzv, resid, degrees, locked);
+        }
         // ---------------------------- Update pointers
         // ---------------------------- Since we double buffer we need the
         // entire locked portion in W and V

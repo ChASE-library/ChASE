@@ -558,8 +558,9 @@ namespace internal
                         offset,
                         subSize);
 	
-	chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(W1, offset, subSize);
-
+	chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(W1, offset, subSize );
+        cudaDeviceSynchronize();
+		
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(cublas_handle, 
                                        CUBLAS_OP_C, 
                                        CUBLAS_OP_N, 
@@ -593,7 +594,8 @@ namespace internal
 
 	
 	chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(V1, offset, subSize);
-	
+	cudaDeviceSynchronize();
+
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(cublas_handle, 
                                        CUBLAS_OP_C, 
                                        CUBLAS_OP_N, 
