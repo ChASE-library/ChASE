@@ -588,8 +588,13 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
         // --------------------------- RESIDUAL & LOCKING
         // --------------------------	
 
-        for (auto i = 0; i < unconverged; ++i)
-            residLast[i] = std::min(residLast[i], resid[i]);
+	if(single->isSym()){
+        	for (auto i = 0; i < unconverged; ++i)
+            		residLast[i] = std::min(residLast[i], resid[i]);
+	}else{
+        	for (auto i = 0; i < unconverged; ++i)
+            		residLast[i] = resid[i];
+	}
 
         single->Resd(ritzv, resid, locked);
 

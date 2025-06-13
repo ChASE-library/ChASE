@@ -55,6 +55,7 @@ struct BSE_DriverProblemConfig
     std::size_t numLanczos; // number of lanczos vectors
     std::size_t blocksize; // blocksize
     float lowerb_decay; // number of processes
+    std::size_t extraDeg; // added value of the degree of the Chebyshev filter
 
     std::string path_in; // path to the matrix input files
     bool isdouble;       
@@ -69,6 +70,7 @@ int bse_solve(BSE_DriverProblemConfig& conf)
     std::size_t deg = conf.deg;
     std::size_t maxDeg = conf.maxDeg;
     std::size_t maxIter = conf.maxIter;
+    std::size_t extraDeg = conf.extraDeg;
     chase::Base<T> tol; // desired tolerance
     std::string opt = conf.opt;
     std::string mode = conf.mode;
@@ -234,6 +236,7 @@ int bse_solve(BSE_DriverProblemConfig& conf)
     config.SetLanczosIter(lanczosIter);
     config.SetNumLanczos(numLanczos);
     config.SetMaxDeg(maxDeg);
+    config.SetDegExtra(extraDeg);
     config.SetApprox(mode == "A");
     config.SetDecayingRate(lowerb_decay);
     
@@ -282,6 +285,7 @@ int main(int argc, char** argv)
     desc.add<Value<std::size_t>>("", "nex", "Extra Search Dimensions", 25, &conf.nex);
     desc.add<Value<std::size_t>>("", "deg", "Initial filtering degree", 20, &conf.deg);
     desc.add<Value<std::size_t>>("", "maxDeg", "Sets the maximum value of the degree of the Chebyshev filter", 36, &conf.maxDeg);
+    desc.add<Value<std::size_t>>("", "extraDeg", "Increase the optimized degree of the Chebyshev filter by extraDeg", 0, &conf.extraDeg);
     desc.add<Value<std::string>>("", "opt", "Optimi(S)e degree, or do (N)ot optimise", "S", &conf.opt);
     desc.add<Value<std::string>>("", "mode", "Approximate (A) or Random (R)", "R", &conf.mode);
     desc.add<Value<std::size_t>>("", "lanczosIter", "Sets the number of Lanczos iterations executed by ChASE.", 26, &conf.lanczosIter);
