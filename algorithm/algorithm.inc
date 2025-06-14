@@ -512,6 +512,17 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
 	else if (single->isPseudoHerm() && cnt == unconverged)
 	{
         	lowerb = std::min(ritzv[unconverged - 1], Base<T>(0.0));
+            // Find the largest negative eigenvalue among unconverged ones
+            // First, find the index of the maximum negative value
+            /*auto max_neg_it = std::max_element(ritzv, ritzv + unconverged,
+                [](Base<T> a, Base<T> b) {
+                    // Only consider negative values and find the largest among them
+                    return (a < 0 && b < 0) ? (a < b) : (a < 0);
+                });
+            
+            // Set lowerb to the found value (will be negative)
+            lowerb = *max_neg_it;         
+            */   
 	}
 
         if (single->isSym() && unconverged < nevex)
@@ -521,7 +532,10 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
         else if (single->isPseudoHerm() && unconverged < nevex)
         {
             // Check first few eigenvalues (up to 5) and find one with reasonable residual
-            lambda = *std::min(ritzv, ritzv + unconverged);
+            //lambda = *std::min(ritzv, ritzv + unconverged);
+            lambda_temp = *std::min(ritzv, ritzv + unconverged);
+	        lambda = std::max(lambda,lambda_temp);
+
             //lambda = ritzv[std::distance(resid,std::min_element(resid, resid + unconverged))];
 
             lowerb = std::min(ritzv[unconverged - 1], Base<T>(0.0));

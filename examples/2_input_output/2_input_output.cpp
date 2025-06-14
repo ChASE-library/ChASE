@@ -435,6 +435,7 @@ int main(int argc, char* argv[])
     }
 
 #if defined(USE_MPI) || defined (HAS_NCCL)
+    MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();
 #endif
 
