@@ -117,9 +117,9 @@ public:
     
     static std::size_t locking_quasi(
         ChaseBase<T>* single, std::size_t N,
-        std::size_t unconverged, std::size_t nex, Base<T> tol,
-        Base<T>* Lritzv, Base<T>* resid,
-        std::size_t* degrees, std::size_t locked);
+        std::size_t unconverged, std::size_t nex, Base<T> tol, std::size_t* index,
+        Base<T>* Lritzv, Base<T>* resid, Base<T>* residLast,
+        std::size_t* degrees, std::size_t locked, std::size_t iteration);
             
     /**
      * @brief Implements the Chebyshev filter.

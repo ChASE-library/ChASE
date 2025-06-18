@@ -129,39 +129,57 @@ std::size_t Algorithm<T>::locking(ChaseBase<T>* single, std::size_t N,
 template <class T>
 std::size_t Algorithm<T>::locking_quasi(
     ChaseBase<T>* single, std::size_t N,
-    std::size_t unconverged, std::size_t nex, Base<T> tol,
-    Base<T>* Lritzv, Base<T>* resid,
-    std::size_t* degrees, std::size_t locked)
+    std::size_t unconverged, std::size_t nex, Base<T> tol, std::size_t *index,
+    Base<T>* Lritzv, Base<T>* resid, Base<T>* residLast,
+    std::size_t* degrees, std::size_t locked, std::size_t iteration)
 {
     SCOPED_NVTX_RANGE();
+   
+    std::vector<std::size_t> index_unconverged;
 
-    // Build index vector for all unconverged eigenpairs
-    std::vector<int> index(unconverged); //unconverged = nev+nex-locked
-    std::iota(index.begin(), index.end(), 0);
-
-    // 1. Sort all by residuals (ascending)
-    std::sort(index.begin(), index.end(), //sort all nev + nex - locked residuals
-        [&](int a, int b) { return resid[a] < resid[b]; });
-
-    // 2. Sort first nev by |Lritzv| (ascending)
-    std::sort(index.begin(), index.begin() + unconverged - nex, //sort ritzv values only 1st nev-locked
-        [&](int a, int b) { return (Lritzv[a] < Lritzv[b]); });
+    std::vector<Base<T>> residLast_unconverged(unconverged);
+    std::copy_n(resid, unconverged, residLast_unconverged.begin());
     
-
     // 3. Locking step
     std::size_t converged = 0;
-    for (std::size_t k = 0; k < unconverged - nex; ++k) {
+    for (std::size_t k = 0; k < unconverged-nex; ++k) {
         int j = index[k];
-        if (resid[j] <= tol) {
+
+        if (resid[j] <= tol || (resid[j] > tol && resid[j] >= residLast[k] && resid[j] < 10.0 * tol && iteration >= 4)) {
+		
+		if(resid[j] > tol && resid[j] >= residLast[k] && resid[j] < 10.0 * tol && iteration >=4){
+#ifdef CHASE_OUTPUT
+                	std::ostringstream oss;
+                	oss << "locking unconverged pair is:" << resid[j]
+                   	<< " was:" << residLast[k] << " tolerance is: " << tol
+                   	<< " val: " << Lritzv[j] << "\n";
+                	single->Output(oss.str());
+#endif
+		}
+
             if (j != converged) {
                 swap_kj(j, converged, resid);
                 swap_kj(j, converged, Lritzv);
                 swap_kj(j, converged, degrees);
                 single->Swap(j + locked, converged + locked);
-            }
+            }	
+                
             ++converged;
-        }
+
+    	}else{
+		index_unconverged.push_back(index[k]);
+    	}
     }
+
+    for(std::size_t k = unconverged-nex; k < unconverged; k++){
+		index_unconverged.push_back(index[k]);
+    }
+
+    for(std::size_t k = converged; k <  unconverged; k++)
+    {
+	residLast[k] = residLast_unconverged[index_unconverged[k-converged]];
+    }
+
     return converged;
 }
 
@@ -491,12 +509,20 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
         }else
         {
             upperb = upperb / config.GetUpperbScaleRate();
-        }
-        
+        } 
     }
+
+    std::size_t new_converged;
+    		
+    std::vector<std::size_t> index(unconverged); //unconverged = nev+nex-locked
+    std::vector<std::size_t> index_res(unconverged); //unconverged = nev+nex-locked
+    std::vector<std::size_t> index_temp(unconverged);
+
+    std::iota(index.begin(),index.end(),0);
 
     while (unconverged > nex && iteration < config.GetMaxIter())
     {
+	
         int cnt;
         for (cnt = 0; cnt < unconverged; cnt++)
         {
@@ -511,36 +537,12 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
         }
 	else if (single->isPseudoHerm() && cnt == unconverged)
 	{
-        	lowerb = std::min(ritzv[unconverged - 1], Base<T>(0.0));
-            // Find the largest negative eigenvalue among unconverged ones
-            // First, find the index of the maximum negative value
-            /*auto max_neg_it = std::max_element(ritzv, ritzv + unconverged,
-                [](Base<T> a, Base<T> b) {
-                    // Only consider negative values and find the largest among them
-                    return (a < 0 && b < 0) ? (a < b) : (a < 0);
-                });
-            
-            // Set lowerb to the found value (will be negative)
-            lowerb = *max_neg_it;         
-            */   
+		lowerb = ritzv[index.data()[std::size_t(unconverged*0.95) - 1]] * config.GetDecayingRate();
+		lowerb = std::min(lowerb,Base<T>(0.0));
+		
+            	lambda_temp = ritzv[index.data()[0]];
+	    	lambda = std::max(lambda,lambda_temp);
 	}
-
-        if (single->isSym() && unconverged < nevex)
-        {
-            lambda = *std::min_element(ritzv_, ritzv_ + nevex);
-        }
-        else if (single->isPseudoHerm() && unconverged < nevex)
-        {
-            // Check first few eigenvalues (up to 5) and find one with reasonable residual
-            //lambda = *std::min(ritzv, ritzv + unconverged);
-            lambda_temp = *std::min(ritzv, ritzv + unconverged);
-	        lambda = std::max(lambda,lambda_temp);
-
-            //lambda = ritzv[std::distance(resid,std::min_element(resid, resid + unconverged))];
-
-            lowerb = std::min(ritzv[unconverged - 1], Base<T>(0.0));
-        }
-			
 
 #ifdef CHASE_OUTPUT
         {
@@ -561,6 +563,12 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
             std::cout << "ASSERTION FAILURE lowerb > upperb\n";
             lowerb = upperb;
         }
+	
+	if(single->isSym()){
+        	for (auto i = 0; i < unconverged; ++i)
+            		residLast[i] = std::min(residLast[i], resid[i]);
+	}
+
         //-------------------------------- DEGREES
         //--------------------------------
         if (config.DoOptimization() && iteration != 0)
@@ -568,13 +576,13 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
             deg = calc_degrees(single, N, unconverged, nex, upperb, lowerb, tol,
                                ritzv, resid, residLast, degrees, locked);
         }
-
-        //------------------------------- FILTER -------------------------------
-	
+        
+	//------------------------------- FILTER -------------------------------
 	filter(single, N, unconverged, deg, degrees, lambda,
                                 lowerb, upperb);
 
-        //----------------------------------- QR
+        
+	//----------------------------------- QR
         //-----------------------------------
         Base<T> cc = (upperb + lowerb) / 2; // Center of the interval.
         Base<T> ee = (upperb - lowerb) / 2; // Half-length of the interval.
@@ -593,6 +601,7 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
                      (*std::max_element(degrees, degrees + nev + nex - locked) -
                       degrees[0]));
         
+	
 	single->QR(locked, cond);
 
         // ----------------------------- RAYLEIGH  RITZ
@@ -601,41 +610,54 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
 
         // --------------------------- RESIDUAL & LOCKING
         // --------------------------	
-
-	if(single->isSym()){
-        	for (auto i = 0; i < unconverged; ++i)
-            		residLast[i] = std::min(residLast[i], resid[i]);
-	}else{
-        	for (auto i = 0; i < unconverged; ++i)
-            		residLast[i] = resid[i];
-	}
-
         single->Resd(ritzv, resid, locked);
+
+	if(!single->isSym())
+	{
+    	    // Build index vector for all unconverged eigenpairs
+    	    std::iota(index_res.begin(), index_res.begin() + unconverged, 0);
+    	    
+	    // Build index vector for all unconverged eigenpairs
+    	    std::iota(index.begin(), index.begin() + unconverged, 0);
+
+    	    // 2. Sort first nev by |Lritzv| (ascending)
+    	    std::sort(index_res.begin(), index_res.begin() + unconverged, //sort ritzv values only 1st nev-locked
+            [&](int a, int b) { return (resid[a] < resid[b]); });
+
+	    std::sort(index.begin(), index.begin() + std::size_t(0.95*unconverged), //sort ritzv values only 1st nev-locked
+            [&](int a, int b) { return (ritzv[index_res.data()[a]] < ritzv[index_res.data()[b]]); });
+	    
+	    for(std::size_t k = 0; k < unconverged; k++) {
+		index_temp.data()[k] = index_res.data()[index.data()[k]];
+    	    }
+
+	    std::swap(index_temp,index);
+	}
 
 #ifdef CHASE_OUTPUT
         {
             std::ostringstream oss;
+	    oss << "unconverged = " << "\t" << unconverged << "\t" << "new_converged" << "\t" << new_converged << "\n";
             oss << "degrees\tresid\tresidLast\tritzv\n";
-            for (std::size_t k = 0; k < std::min<std::size_t>(unconverged, 40);
+
+            for (std::size_t k = 0; k < unconverged;
                  ++k)
-                oss << degrees[k] << "\t" << resid[k] << "\t" << residLast[k]
-                    << "\t" << ritzv[k] << "\n";
+                oss << index.data()[k] << "\t" << (degrees)[index.data()[k]] << "\t" << (resid)[index.data()[k]] << "\t" << (residLast)[k]
+                    << "\t" << (ritzv)[index.data()[k]] << "\n";
 
             single->Output(oss.str());
         }
-
 #endif
-
-        std::size_t new_converged;
 
         if(single->isSym()){
             new_converged = locking(single, N, unconverged - single->isSym() * nex, tol, ritzv, resid, residLast,
                         degrees, locked);
         }else
         {
-            new_converged = locking_quasi(single, N, unconverged, nex, tol, ritzv, resid, degrees, locked);
+            new_converged = locking_quasi(single, N, unconverged, nex, tol, index.data(), ritzv, resid, residLast, degrees, locked, iteration);
         }
-        // ---------------------------- Update pointers
+        
+	// ---------------------------- Update pointers
         // ---------------------------- Since we double buffer we need the
         // entire locked portion in W and V
         single->Lock(new_converged);

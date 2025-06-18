@@ -250,7 +250,7 @@ int bse_solve(BSE_DriverProblemConfig& conf)
         Base<T>* resid = single.GetResid();
         std::cout << "Finished Problem #"
                   << "\n";
-        std::cout << "Printing first 40 eigenvalues and residuals\n";
+        std::cout << "Printing first ALL eigenvalues and residuals\n";
         std::cout
             << "| Index |       Eigenvalue      |         Residual      |\n"
             << "|-------|-----------------------|-----------------------|\n";
@@ -259,7 +259,7 @@ int bse_solve(BSE_DriverProblemConfig& conf)
         std::cout << std::setfill(' ');
         std::cout << std::scientific;
         std::cout << std::right;
-        for (auto i = 0; i < std::min(std::size_t(40), nev); ++i)
+        for (auto i = 0; i < std::min(std::size_t(nev+nex), nev+nex); ++i)
             std::cout << "|  " << std::setw(4) << i + 1 << " | "
                       << std::setw(width) << Lambda[i] << "  | "
                       << std::setw(width) << resid[i] << "  |\n";
