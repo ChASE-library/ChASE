@@ -173,7 +173,7 @@ public:
     ChaseConfig(std::size_t _N, std::size_t _nev, std::size_t _nex)
         : N_(_N), nev_(_nev), nex_(_nex), optimization_(true), approx_(false),
           max_iter_(25), deg_extra_(2), num_lanczos_(4), decaying_rate_(1.0),
-          upperb_scale_rate_(1.0)
+          upperb_scale_rate_(1.0), cluster_aware_degrees_(true)
     {
         SetMaxDeg(chase_config_helper::initMaxDeg<T>(approx_, optimization_));
         SetDeg(chase_config_helper::initDeg<T>(approx_, optimization_));
@@ -456,6 +456,19 @@ public:
      */
     void SetDecayingRate(float decayingRate) { decaying_rate_ = decayingRate; }
 
+    //! Returns whether cluster-aware degree optimization is enabled
+    /*! When enabled, the algorithm detects clusters of eigenvalues and 
+     *  adjusts polynomial degrees accordingly to improve convergence for 
+     *  clustered eigenvalues.
+     */
+    bool UseClusterAwareDegrees() const { return cluster_aware_degrees_; }
+
+    //! Sets whether to use cluster-aware degree optimization
+    /*! This enables/disables the cluster detection algorithm that adjusts
+     *  polynomial degrees based on eigenvalue clustering patterns.
+     */
+    void SetClusterAwareDegrees(bool flag) { cluster_aware_degrees_ = flag; }
+
     //! Returns the scale rate for upperb based on its sign
     /*!
         This variable controls how upperb is scaled based on its sign.
@@ -612,6 +625,15 @@ private:
         For negative upperb, it's multiplied by (2 - rate).
      */
     float upperb_scale_rate_;
+
+    //! Optional parameter enabling cluster-aware degree optimization
+    /*!
+        When enabled, the algorithm detects eigenvalue clusters and adjusts
+        polynomial degrees to improve convergence for clustered eigenvalues.
+        This variable is initialized by the constructor. Its default value
+        is set to true.
+     */
+    bool cluster_aware_degrees_;
 
 };
 

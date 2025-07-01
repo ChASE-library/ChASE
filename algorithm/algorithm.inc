@@ -16,6 +16,104 @@ void swap_kj(std::size_t k, std::size_t j, T* array)
 }
 
 template <class T>
+void Algorithm<T>::detect_eigenvalue_clusters(Base<T>* ritzv, Base<T>* resid, 
+                                             Base<T> tol, std::size_t unconverged, 
+                                             std::size_t nex, Base<T> upperb, 
+                                             Base<T> lowerb, 
+                                             std::vector<Base<T>>& cluster_factors)
+{
+    // Initialize all factors to 1.0 (no adjustment)
+    cluster_factors.assign(unconverged - nex, 1.0);
+    
+    // === ENHANCED RESIDUAL-WEIGHTED CLUSTER DETECTION ===
+    const Base<T> cluster_threshold = std::abs(upperb - lowerb) * 1e-6; // Spatial threshold
+    const Base<T> min_spacing_factor = 0.5;  // Minimum spacing to prevent over-clustering
+    const Base<T> max_spacing_factor = 3.0;  // Maximum spacing to prevent excessive degrees
+    
+    // Step 1: Compute residual-based difficulty weights
+    std::vector<Base<T>> residual_weights(unconverged - nex);
+    Base<T> mean_residual = 0.0;
+    
+    for (std::size_t i = 0; i < unconverged - nex; ++i) {
+        mean_residual += resid[i];
+    }
+    mean_residual /= (unconverged - nex);
+    
+    for (std::size_t i = 0; i < unconverged - nex; ++i) {
+        // Weight based on how much worse this residual is compared to average
+        Base<T> relative_difficulty = resid[i] / (mean_residual + 1e-14);
+        
+        // Apply logarithmic scaling to prevent extreme weights
+        residual_weights[i] = 1.0 + std::log(1.0 + relative_difficulty);
+        
+        // Cap the residual weight to prevent excessive amplification
+        residual_weights[i] = std::min(residual_weights[i], Base<T>(2.5));
+    }
+    
+    // Step 2: Analyze spatial clustering with residual weighting
+    for (std::size_t i = 0; i < unconverged - nex; ++i) {
+        Base<T> spatial_clustering_factor = 1.0;
+        Base<T> convergence_difficulty_factor = residual_weights[i];
+        
+        // === SPATIAL CLUSTERING ANALYSIS ===
+        Base<T> local_density = 0.0;
+        std::size_t neighbors = 0;
+        
+        // Analyze local eigenvalue density around current eigenvalue
+        for (std::size_t j = 0; j < unconverged - nex; ++j) {
+            if (i != j) {
+                Base<T> distance = std::abs(ritzv[i] - ritzv[j]);
+                if (distance < cluster_threshold) {
+                    // Weight neighboring influence by their convergence difficulty
+                    Base<T> neighbor_weight = residual_weights[j];
+                    local_density += neighbor_weight / (distance + 1e-14);
+                    neighbors++;
+                }
+            }
+        }
+        
+        // Calculate spatial clustering factor
+        if (neighbors > 0) {
+            spatial_clustering_factor = 1.0 + std::log(1.0 + local_density * 0.1);
+        }
+        
+        // === RESIDUAL-WEIGHTED COMBINATION ===
+        // Combine spatial clustering with convergence difficulty
+        Base<T> combined_factor = spatial_clustering_factor * convergence_difficulty_factor;
+        
+        // === ADDITIONAL HEURISTICS ===
+        // Extra boost for eigenvalues that are both clustered AND struggling
+        if (neighbors > 2 && resid[i] > 2.0 * mean_residual) {
+            combined_factor *= 1.2; // 20% additional boost for problematic clusters
+        }
+        
+        // Boost for eigenvalues with stagnant convergence (high residual relative to tolerance)
+        if (resid[i] > 10.0 * tol) {
+            combined_factor *= 1.15; // 15% boost for eigenvalues far from convergence
+        }
+        
+        // Apply bounds to prevent extreme values
+        cluster_factors[i] = std::min(max_spacing_factor, 
+                                    std::max(min_spacing_factor, combined_factor));
+    }
+    
+    // Step 3: Apply smoothing to avoid abrupt degree changes
+    std::vector<Base<T>> temp_factors = cluster_factors;
+    for (std::size_t i = 1; i < unconverged - nex - 1; ++i) {
+        cluster_factors[i] = 0.25 * temp_factors[i-1] + 
+                           0.5 * temp_factors[i] + 
+                           0.25 * temp_factors[i+1];
+    }
+    
+    // Step 4: Final validation and adjustment
+    for (std::size_t i = 0; i < unconverged - nex; ++i) {
+        // Ensure factors are within valid bounds after smoothing
+        cluster_factors[i] = std::min(max_spacing_factor, 
+                                    std::max(min_spacing_factor, cluster_factors[i]));
+    }
+}
+
+template <class T>
 std::size_t Algorithm<T>::calc_degrees(ChaseBase<T>* single, std::size_t N,
                                        std::size_t unconverged, std::size_t nex,
                                        Base<T> upperb, Base<T> lowerb,
@@ -60,6 +158,167 @@ std::size_t Algorithm<T>::calc_degrees(ChaseBase<T>* single, std::size_t N,
     }
 
     // we sort according to degrees
+    for (std::size_t j = 0; j < unconverged - 1; ++j)
+        for (std::size_t k = j; k < unconverged; ++k)
+            if (degrees[k] < degrees[j])
+            {
+                swap_kj(k, j, degrees); // for filter
+                swap_kj(k, j, ritzv);
+                swap_kj(k, j, resid);
+                swap_kj(k, j, residLast);
+                single->Swap(k + locked, j + locked);
+            }
+
+    return degrees[unconverged - 1];
+}
+
+template <class T>
+std::size_t Algorithm<T>::calc_degrees_quasi(ChaseBase<T>* single, std::size_t N,
+                                             std::size_t unconverged, std::size_t nex,
+                                             Base<T> upperb, Base<T> lowerb,
+                                             Base<T> tol, Base<T>* ritzv,
+                                             Base<T>* resid, Base<T>* residLast,
+                                             std::size_t* degrees, std::size_t locked)
+{
+    SCOPED_NVTX_RANGE();
+
+    ChaseConfig<T> conf = single->GetConfig();
+
+    Base<T> c = (upperb + lowerb) / 2; // Center of the interval.
+    Base<T> e = (upperb - lowerb) / 2; // Half-length of the interval.
+    Base<T> rho;
+
+    // === CLUSTER DETECTION AND SPACING FACTORS (QUASI-HERMITIAN SPECIFIC) ===
+    // When cluster-aware degrees are disabled, fall back to original algorithm exactly
+    if (!conf.UseClusterAwareDegrees()) {
+        // Use original calc_degrees implementation exactly
+        for (std::size_t i = 0; i < unconverged - nex; ++i)
+        {
+            Base<T> t = (ritzv[i] - c) / e;
+            rho = std::max(std::abs(t - std::sqrt(std::abs(t * t - 1))),
+                           std::abs(t + std::sqrt(std::abs(t * t - 1))));
+
+            degrees[i] = std::ceil(std::abs(std::log(resid[i] / tol) / std::log(rho)));
+            
+            // Ensure minimum degree of 8 for single precision
+            if constexpr (std::is_same<Base<T>, float>::value) {
+                degrees[i] = std::max(degrees[i], std::size_t(8));
+            }
+            
+            degrees[i] = std::min(degrees[i] + conf.GetDegExtra(), conf.GetMaxDeg());
+        }
+
+        // Original nex region handling
+        for (std::size_t i = unconverged - nex; i < unconverged; ++i)
+        {
+            degrees[i] = degrees[unconverged - 1 - nex];
+        }
+
+        // Original even degree enforcement
+        for (std::size_t i = 0; i < unconverged; ++i)
+        {
+            degrees[i] += degrees[i] % 2;
+        }
+
+        // Original sorting
+        for (std::size_t j = 0; j < unconverged - 1; ++j)
+            for (std::size_t k = j; k < unconverged; ++k)
+                if (degrees[k] < degrees[j])
+                {
+                    swap_kj(k, j, degrees);
+                    swap_kj(k, j, ritzv);
+                    swap_kj(k, j, resid);
+                    swap_kj(k, j, residLast);
+                    single->Swap(k + locked, j + locked);
+                }
+
+        return degrees[unconverged - 1];
+    }
+
+    // If we reach here, cluster-aware degrees are enabled
+    std::vector<Base<T>> cluster_factors;
+    detect_eigenvalue_clusters(ritzv, resid, tol, unconverged, nex, 
+                              upperb, lowerb, cluster_factors);
+    
+    // === QUASI-HERMITIAN DEGREE CALCULATION WITH CLUSTER AWARENESS ===
+    for (std::size_t i = 0; i < unconverged - nex; ++i)
+    {
+        Base<T> t = (ritzv[i] - c) / e;
+        rho = std::max(std::abs(t - std::sqrt(std::abs(t * t - 1))),
+                       std::abs(t + std::sqrt(std::abs(t * t - 1))));
+
+        // Original degree calculation
+        Base<T> base_degree = std::ceil(std::abs(std::log(resid[i] / tol) / std::log(rho)));
+        
+        // Apply cluster-aware spacing factor
+        degrees[i] = std::size_t(base_degree * cluster_factors[i]);
+        
+        // Ensure minimum degree of 8 for single precision
+        if constexpr (std::is_same<Base<T>, float>::value) {
+            degrees[i] = std::max(degrees[i], std::size_t(8));
+        }
+        
+        // Apply additional quasi-hermitian specific adjustments
+        // For quasi-hermitian matrices, we might need more aggressive degrees
+        std::size_t quasi_bonus = 0;
+        if (std::abs(ritzv[i]) < std::abs(upperb - lowerb) * 0.1) {
+            // Near-zero eigenvalues in quasi-hermitian problems can be challenging
+            quasi_bonus = 2;
+        }
+        
+        degrees[i] = std::min(degrees[i] + conf.GetDegExtra() + quasi_bonus, conf.GetMaxDeg());
+        
+#ifdef CHASE_OUTPUT
+        // Debug output for residual-weighted cluster analysis
+        if (cluster_factors[i] > 1.5 || cluster_factors[i] < 0.8 || quasi_bonus > 0) {
+            std::ostringstream oss;
+            oss << "Residual-weighted cluster adjustment: eigenvalue[" << i << "] = " 
+                << ritzv[i] << ", residual = " << resid[i] 
+                << ", cluster_factor = " << cluster_factors[i] 
+                << ", quasi_bonus = " << quasi_bonus
+                << ", base_degree = " << base_degree 
+                << ", final_degree = " << degrees[i] << "\n";
+            single->Output(oss.str());
+        }
+#endif
+    }
+
+    // === ENHANCED NEX REGION HANDLING FOR QUASI-HERMITIAN ===
+    for (std::size_t i = unconverged - nex; i < unconverged; ++i)
+    {
+        // For quasi-hermitian, use weighted average to avoid ghost point contamination
+        if (unconverged - nex > 0) {
+            std::size_t ref_idx = std::min(unconverged - nex - 1, 
+                                         std::max(std::size_t(0), 
+                                                unconverged - nex - 3));
+            Base<T> avg_degree = 0.0;
+            std::size_t count = 0;
+            
+            for (std::size_t j = ref_idx; j < unconverged - nex; ++j) {
+                avg_degree += degrees[j];
+                count++;
+            }
+            
+            if (count > 0) {
+                degrees[i] = std::size_t(avg_degree / count);
+                // Add extra degree for nex region in quasi-hermitian case
+                degrees[i] = std::min(degrees[i] + 2, conf.GetMaxDeg());
+            } else {
+                degrees[i] = degrees[unconverged - 1 - nex];
+            }
+        } else {
+            degrees[i] = conf.GetDeg();
+        }
+    }
+
+    // === ENSURE ALL DEGREES ARE EVEN (CRITICAL FOR CHEBYSHEV STABILITY) ===
+    for (std::size_t i = 0; i < unconverged; ++i)
+    {
+        degrees[i] += degrees[i] % 2;  // Make even: add 1 if odd, add 0 if even
+    }
+
+    // === QUASI-HERMITIAN SPECIFIC SORTING ===
+    // Sort according to degrees for optimal filtering order
     for (std::size_t j = 0; j < unconverged - 1; ++j)
         for (std::size_t k = j; k < unconverged; ++k)
             if (degrees[k] < degrees[j])
@@ -147,7 +406,7 @@ std::size_t Algorithm<T>::locking_quasi(
 
         if (resid[j] <= tol || (resid[j] > tol && resid[j] >= residLast[k] && resid[j] < 10.0 * tol && iteration >= 4)) {
 		
-		if(resid[j] > tol && resid[j] >= residLast[k] && resid[j] < 10.0 * tol && iteration >=4){
+		if(resid[j] > tol && resid[j] > 3 * residLast[k] && resid[j] < 10.0 * tol && iteration >=4){
 #ifdef CHASE_OUTPUT
                 	std::ostringstream oss;
                 	oss << "locking unconverged pair is:" << resid[j]
@@ -573,8 +832,15 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
         //--------------------------------
         if (config.DoOptimization() && iteration != 0)
         {
-            deg = calc_degrees(single, N, unconverged, nex, upperb, lowerb, tol,
-                               ritzv, resid, residLast, degrees, locked);
+            if (single->isPseudoHerm()) {
+                // Use specialized quasi-hermitian degree calculation with cluster-aware features
+                deg = calc_degrees_quasi(single, N, unconverged, nex, upperb, lowerb, tol,
+                                        ritzv, resid, residLast, degrees, locked);
+            } else {
+                // Use standard hermitian degree calculation
+                deg = calc_degrees(single, N, unconverged, nex, upperb, lowerb, tol,
+                                  ritzv, resid, residLast, degrees, locked);
+            }
         }
         
 	//------------------------------- FILTER -------------------------------
