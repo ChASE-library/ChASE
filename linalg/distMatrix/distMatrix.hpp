@@ -1246,6 +1246,7 @@ public:
     using platform_type = Platform; ///< Platform type (e.g., CPU or GPU).
     using value_type = T;           ///< Alias for the element type.
     using matrix_type = BlockBlock; ///< Alias for the matrix type.
+    using hermitian_type = chase::matrix::Hermitian; ///< Alias for the Hermitian matrix type.
     /**
      * @brief Destructor for BlockBlockMatrix.
      */
@@ -1935,6 +1936,7 @@ class QuasiHermitianBlockBlockMatrix;
 template <typename T>
 class QuasiHermitianBlockBlockMatrix<T, chase::platform::CPU> : public BlockBlockMatrix<T, chase::platform::CPU> {
 public:
+    using hermitian_type = chase::matrix::QuasiHermitian; ///< Alias for the Quasi-Hermitian matrix type.
     // Default constructor
     QuasiHermitianBlockBlockMatrix() : BlockBlockMatrix<T, chase::platform::CPU>() {}
     
@@ -1951,6 +1953,7 @@ public:
 template <typename T>
 class QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU> : public BlockBlockMatrix<T, chase::platform::GPU> {
 public:
+    using hermitian_type = chase::matrix::QuasiHermitian; ///< Alias for the Quasi-Hermitian matrix type.
     // Default constructor
     QuasiHermitianBlockBlockMatrix() : BlockBlockMatrix<T, chase::platform::GPU>() {}
     
@@ -1984,6 +1987,7 @@ public:
     using platform_type = Platform; ///< Alias for platform type.
     using value_type = T;  ///< Alias for element type.
     using matrix_type = BlockCyclic; ///< Alias for matrix type.
+    using hermitian_type = chase::matrix::Hermitian; ///< Alias for the Hermitian matrix type.
     
     /**
      * @brief Destructor for `BlockCyclicMatrix`.
@@ -2892,6 +2896,7 @@ class QuasiHermitianBlockCyclicMatrix;
 template <typename T>
 class QuasiHermitianBlockCyclicMatrix<T, chase::platform::CPU> : public BlockCyclicMatrix<T, chase::platform::CPU> {
 public:
+    using hermitian_type = chase::matrix::QuasiHermitian; ///< Alias for the Quasi-Hermitian matrix type.
     // Default constructor
     QuasiHermitianBlockCyclicMatrix() : BlockCyclicMatrix<T, chase::platform::CPU>() {}
     
@@ -2908,6 +2913,7 @@ public:
 template <typename T>
 class QuasiHermitianBlockCyclicMatrix<T, chase::platform::GPU> : public BlockCyclicMatrix<T, chase::platform::GPU> {
 public:
+    using hermitian_type = chase::matrix::QuasiHermitian; ///< Alias for the Quasi-Hermitian matrix type.
     // Default constructor
     QuasiHermitianBlockCyclicMatrix() : BlockCyclicMatrix<T, chase::platform::GPU>() {}
     

@@ -28,6 +28,7 @@ option(CHASE_ENABLE_MPI_IO "Enable MPI IO to read Hamiltonian matrix from local"
 option(CHASE_USE_NVTX "Enable NVTX for profiling" OFF)
 option(CHASE_BUILD_WITH_EXAMPLES "Build the examples" OFF)
 option(CHASE_BUILD_WITH_DOCS "Build the docs" OFF)
+option(ChASE_DISPLAY_COND_V_SVD "Compute and display condition number of V from SVD" OFF)
 
 if( CHASE_OUTPUT )
   target_compile_definitions( chase_algorithm  INTERFACE "-DCHASE_OUTPUT" )
@@ -60,6 +61,10 @@ endif()
 
 if(CHASE_USE_NVTX)
   target_compile_definitions( chase_algorithm  INTERFACE "-DUSE_NVTX" )
+endif()
+
+if(ChASE_DISPLAY_COND_V_SVD)
+    add_definitions(-DChASE_DISPLAY_COND_V_SVD)
 endif()
 
 add_subdirectory(external)

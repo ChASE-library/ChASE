@@ -187,6 +187,9 @@ namespace internal
         template<typename InputMultiVectorType>
         static void houseHoulderQR(InputMultiVectorType& V);
         
+        template<typename InputMultiVectorType>
+        static chase::Base<typename InputMultiVectorType::value_type> computeConditionNumber(InputMultiVectorType& V);
+        
         template <typename MatrixType, typename InputMultiVectorType>
         static void rayleighRitz(cublasHandle_t cublas_handle, 
                     cusolverDnHandle_t cusolver_handle,

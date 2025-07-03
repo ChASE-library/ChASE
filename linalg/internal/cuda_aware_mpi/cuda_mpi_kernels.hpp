@@ -246,6 +246,9 @@ namespace internal
         static void flipLowerHalfMatrixSign(InputMultiVectorType& V, 
 			std::size_t offset, 
 			std::size_t subSize);
+
+        template<typename InputMultiVectorType>
+        static chase::Base<typename InputMultiVectorType::value_type> computeConditionNumber(InputMultiVectorType& V);
                                                                     
     };
 

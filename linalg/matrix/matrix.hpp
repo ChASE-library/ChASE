@@ -88,6 +88,13 @@ namespace platform
 }
 }
 
+namespace chase {
+namespace matrix {
+    struct Hermitian {};
+    struct QuasiHermitian {};
+}
+}
+
 /**
  * @page platform_namespace chase::platform Namespace
  * @brief Namespace containing platform-specific structures and identifiers.
@@ -601,6 +608,8 @@ private:
     Allocator<T> allocator_; ///< Memory allocator for matrix elements.
 
 public:
+    using hermitian_type = chase::matrix::Hermitian; ///< Alias for the Hermitian matrix type.
+
     /**
      * @brief Default constructor.
      * 
@@ -790,6 +799,8 @@ private:
     Allocator<T> allocator_; ///< Allocator used to manage memory.
 
 public:
+    using hermitian_type = chase::matrix::Hermitian; ///< Alias for the Hermitian matrix type.
+
     /**
      * @brief Default constructor for a Matrix.
      * Initializes a matrix with no data and sets default values for dimensions and memory ownership flags.
@@ -1085,6 +1096,7 @@ class QuasiHermitianMatrix;
 template <typename T, template <typename> class Allocator>
 class QuasiHermitianMatrix<T, chase::platform::CPU, Allocator> : public Matrix<T, chase::platform::CPU, Allocator> {
 public:
+    using hermitian_type = chase::matrix::QuasiHermitian; ///< Alias for the Quasi-Hermitian matrix type.
     // Default constructor
     QuasiHermitianMatrix() : Matrix<T, chase::platform::CPU, Allocator>() {}
     
@@ -1101,6 +1113,7 @@ public:
 template <typename T, template <typename> class Allocator>
 class QuasiHermitianMatrix<T, chase::platform::GPU, Allocator> : public Matrix<T, chase::platform::GPU, Allocator> {
 public:
+    using hermitian_type = chase::matrix::QuasiHermitian; ///< Alias for the Quasi-Hermitian matrix type.
     // Default constructor
     QuasiHermitianMatrix() : Matrix<T, chase::platform::GPU, Allocator>() {}
     

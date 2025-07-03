@@ -40,6 +40,9 @@ struct cpu_mpi
     template <typename InputMultiVectorType>
     static void houseHoulderQR(InputMultiVectorType& V);
 
+    template <typename InputMultiVectorType>
+    static chase::Base<typename InputMultiVectorType::value_type> computeConditionNumber(InputMultiVectorType& V);
+
     template <typename T, typename MatrixType, typename InputMultiVectorType>
     static void MatrixMultiplyMultiVectors(
         T* alpha, MatrixType& blockMatrix,

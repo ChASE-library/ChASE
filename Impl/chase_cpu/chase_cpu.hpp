@@ -450,15 +450,26 @@ namespace Impl
                                           Vec2_.data(), 
                                           Vec2_.ld());
 	
-	if constexpr (std::is_same<MatrixType, chase::matrix::QuasiHermitianMatrix<T>>::value)
-	{
-		/* The right eigenvectors are not orthonormal in the QH case, but S-orthonormal.
-		 * Therefore, we S-orthonormalize the locked vectors against the current subspace
-		 * By flipping the sign of the lower part of the locked vectors. */
-		chase::linalg::internal::cpu::flipLowerHalfMatrixSign(Vec1_.rows(),locked_,Vec1_.data(),Vec1_.ld());
-		/* We do not need to flip back the sign of the locked vectors since they are stored 
-		 * in Vec2_ and will replace the fliped ones of Vec1_ at the end of QR. */
-	}
+		if constexpr (std::is_same<MatrixType, chase::matrix::QuasiHermitianMatrix<T>>::value)
+		{
+			/* The right eigenvectors are not orthonormal in the QH case, but S-orthonormal.
+			* Therefore, we S-orthonormalize the locked vectors against the current subspace
+			* By flipping the sign of the lower part of the locked vectors. */
+			chase::linalg::internal::cpu::flipLowerHalfMatrixSign(Vec1_.rows(),locked_,Vec1_.data(),Vec1_.ld());
+			/* We do not need to flip back the sign of the locked vectors since they are stored 
+			* in Vec2_ and will replace the fliped ones of Vec1_ at the end of QR. */
+		}
+
+	
+		if constexpr (std::is_same<typename MatrixType::hermitian_type, chase::matrix::Hermitian>::value)
+        {
+#ifdef ChASE_DISPLAY_COND_V_SVD
+            std::vector<T> V_tmp(Vec1_.ld() * (Vec1_.cols() - locked_));
+            std::memcpy(V_tmp.data(), Vec1_.data() + locked_ * Vec1_.ld(), (Vec1_.cols() - locked_) * Vec1_.ld() * sizeof(T));
+            auto cond_v = chase::linalg::internal::cpu::computeConditionNumber(Vec1_.rows(), Vec1_.cols() - locked_, V_tmp.data(), Vec1_.ld());
+            std::cout << "Exact condition number of V from SVD: " << cond_v << std::endl;
+#endif
+        }
 
         int disable = config_.DoCholQR() ? 0 : 1;
         char* cholddisable = getenv("CHASE_DISABLE_CHOLQR");

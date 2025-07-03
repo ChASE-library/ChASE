@@ -558,6 +558,14 @@ public:
              * Vec1_ at the end of QR. */
         }
 
+    	if constexpr (std::is_same<typename MatrixType::hermitian_type, chase::matrix::Hermitian>::value)
+        {
+#ifdef ChASE_DISPLAY_COND_V_SVD
+            auto cond_v = chase::linalg::internal::cuda::computeConditionNumber(Vec1_.rows(), Vec1_.cols() - locked_, Vec1_.data() + locked_ * Vec1_.ld(), Vec1_.ld());
+            std::cout << "Exact condition number of V from SVD: " << cond_v << std::endl;
+#endif
+        }    
+
         int disable = config_.DoCholQR() ? 0 : 1;
         char* cholddisable = getenv("CHASE_DISABLE_CHOLQR");
         if (cholddisable)
