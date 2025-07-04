@@ -79,7 +79,7 @@ namespace cpu
     }
     
     /**
-    * @brief Perform the Rayleigh-Ritz procedure to compute eigenvalues and eigenvectors of a Quasi-Hermitian matrix.
+    * @brief Perform the Rayleigh-Ritz procedure to compute eigenvalues and eigenvectors of a Pseudo-Hermitian matrix.
     *
     * The Rayleigh-Ritz method computes an approximation to the eigenvalues and eigenvectors of a matrix
     * by projecting the matrix onto a subspace defined by a set of vectors (Q) and solving the eigenvalue
@@ -196,6 +196,116 @@ namespace cpu
 	//Project ritz vectors back to the initial space
         blaspp::t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, N, n, n,
                &One, Q, ldq, W, n, &Zero, V, ldv);
+
+    }
+    
+    /**
+    * @brief Perform the Rayleigh-Ritz procedure to compute eigenvalues and eigenvectors of a Quasi-Hermitian matrix.
+    *
+    * The Rayleigh-Ritz method computes an approximation to the eigenvalues and eigenvectors of a matrix
+    * by projecting the matrix onto a subspace defined by a set of vectors (Q) and solving the eigenvalue
+    * problem for the reduced matrix. The real parts of the computed Ritz values are stored in the `ritzv` array, and the 
+    * resulting right eigenvectors are stored in `V`.
+    *
+    * @tparam T Data type for the matrix (e.g., float, double, etc.).
+    * @param[in] H The Quasi-Hermitian input matrix (N x N).
+    * @param[in] n The number of vectors in Q (subspace size).
+    * @param[in] Q The input matrix of size (N x n), whose columns are the basis vectors for the subspace.
+    * @param[in] ldq The leading dimension of the matrix Q.
+    * @param[out] V The output matrix (N x n), which will store the result of the projection.
+    * @param[in] ldv The leading dimension of the matrix V.
+    * @param[out] ritzv The array of Ritz values, which contains the eigenvalue approximations.
+    * @param[in] A A temporary matrix used in intermediate calculations. If not provided, it is allocated internally.
+    *
+    * The procedure performs the following steps:
+    * 1. Computes the matrix-vector multiplication: V = H' * Q = S * H * S * Q.
+    * 2. Computes A = V' * Q, where V' is the conjugate transpose of V.
+    * 3. Solves the eigenvalue problem for A using LAPACK's `geev` function, computing the real part of Ritz values in `ritzv`.
+    * 4. Computes the final approximation to the eigenvectors by multiplying Q with the computed ritz vectors.
+    */    
+    template<typename T>
+    void rayleighRitz_v2(chase::matrix::QuasiHermitianMatrix<T> *H, std::size_t n, T *Q, std::size_t ldq, 
+                      T * V, std::size_t ldv, Base<T> *ritzv, T *A = nullptr)
+    {
+
+	std::size_t N   = H->rows();	
+	std::size_t ldh = H->ld();
+	std::size_t k   = N / 2;
+
+        T One   = T(1.0);
+        T Zero  = T(0.0);
+        T NegativeTwo = T(-2.0);
+
+        std::unique_ptr<T[]> ptrA;
+	//Allocate space for the rayleigh quotient
+        if (A == nullptr)
+        {
+            ptrA = std::unique_ptr<T[]>{new T[2 * n * n]};
+            A = ptrA.get();
+        }
+
+        T* M = A + n * n;
+
+	blaspp::t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, N, n, N, &One,
+		H->data(), ldh, Q, ldq, &Zero, V, ldv);  //T = AQ
+	
+	//Flip the sign of the lower part of T to emulate the multiplication SAQ
+	chase::linalg::internal::cpu::flipLowerHalfMatrixSign(N,n,V,ldv); //flip T
+
+        blaspp::t_gemm(CblasColMajor, CblasConjTrans, CblasNoTrans, n, n, N, &One, Q, ldq, V, ldv, &Zero, A, n);  //A = Q' T
+
+	//Factorize the HPD mat Q' SA Q
+	lapackpp::t_potrf('L',n,A,n);
+        
+	//Compute the matrix M  = Q' S Q = I - 2* Q_2' Q_2 assuming Q'Q = I
+	std::fill(M, M + n*n, 0);
+	for(auto i = 0; i < n; i++)
+        {
+            M[i*(n+1)] = T(1.0);
+        }
+
+	//Performs Q_2^T Q_2, Q_2 is the lower part of Q
+	blaspp::t_gemm(CblasColMajor, CblasConjTrans, CblasNoTrans, n, n, k, &NegativeTwo,
+		Q + k, ldq, Q + k, ldq, &One, M, n); //M = I -2 Q_2^* Q_2
+
+	//Create the inverse of the Hermitian Rayleigh Quotient by two successive trsm 
+	blaspp::t_trsm('L','L','N','N',n,n,&One,A,n,M,n);
+
+	blaspp::t_trsm('R','L','C','N',n,n,&One,A,n,M,n);
+        
+	//Compute the invtered ritz pairs of the Hermitian Rayleigh Quotient
+	lapackpp::t_heevd(LAPACK_COL_MAJOR, 'V', 'L', n, M, n, ritzv);
+
+	blaspp::t_trsm('L','L','C','N',n,n,&One,A,n,M,n);	
+	
+	//Sort pairs based on inverted ritz values and signs
+	std::size_t cnt = 0;
+
+	while(cnt < n && ritzv[cnt] < 0){
+		cnt++;
+	}
+
+	std::reverse(ritzv, ritzv+cnt);
+	
+	for(auto idx = 0; idx < cnt; idx++){
+
+		ritzv[idx] = 1.0 / ritzv[idx];
+
+		std::copy_n(M + (cnt - (idx + 1)) * n, n, A + idx * n);
+	}
+
+	std::reverse(ritzv+cnt, ritzv+n);
+
+	for(auto idx = cnt; idx < n; idx++){
+
+		ritzv[idx] = 1.0 / ritzv[idx];
+		
+		std::copy_n(M + (n - (idx + 1)) * n, n, A + idx * n);
+	}
+	
+	//Project ritz vectors back to the initial space
+        blaspp::t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, N, n, n,
+               &One, Q, ldq, A, n, &Zero, V, ldv);
 
     }
 }

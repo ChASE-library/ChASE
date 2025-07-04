@@ -91,6 +91,55 @@ public:
                                     Base<T>* ritzv, Base<T>* resid,
                                     Base<T>* residLast, std::size_t* degrees,
                                     std::size_t locked);
+    
+    /**
+     * @brief Specialized degree optimization for quasi-hermitian matrices with cluster-aware features.
+     * 
+     * This method provides enhanced degree optimization specifically designed for quasi-hermitian 
+     * eigenvalue problems, including cluster detection and adaptive degree spacing.
+     * 
+     * @param kernel A pointer to the `ChaseBase<T>` instance, which provides the necessary numerical operations.
+     * @param N The total size of the problem.
+     * @param unconverged The number of unconverged eigenpairs.
+     * @param nex The number of external searching space.
+     * @param upperb The upper bound for the spectrum.
+     * @param lowerb The lower bound for the spectrum.
+     * @param tol The tolerance for the degree calculation.
+     * @param ritzv The array storing the Ritz values.
+     * @param resid The array storing the residuals of the Ritz values.
+     * @param residLast The array storing the residuals from the previous iteration.
+     * @param degrees The array storing the degrees for each Ritz pair.
+     * @param locked The number of locked eigenpairs.
+     * 
+     * @return The optimized polynomial degree.
+     */
+    static std::size_t calc_degrees_quasi(ChaseBase<T>* kernel, std::size_t N,
+                                         std::size_t unconverged, std::size_t nex,
+                                         Base<T> upperb, Base<T> lowerb, Base<T> tol,
+                                         Base<T>* ritzv, Base<T>* resid,
+                                         Base<T>* residLast, std::size_t* degrees,
+                                         std::size_t locked);
+    
+    /**
+     * @brief Detects eigenvalue clusters and computes spacing factors for degree optimization.
+     * 
+     * This helper method analyzes eigenvalue clustering and computes spacing factors 
+     * to improve degree optimization for clustered eigenvalues.
+     * 
+     * @param ritzv The array storing the Ritz values.
+     * @param resid The array storing the residuals of the Ritz values.
+     * @param tol The convergence tolerance.
+     * @param unconverged The number of unconverged eigenpairs.
+     * @param nex The number of external searching space.
+     * @param upperb The upper bound for the spectrum.
+     * @param lowerb The lower bound for the spectrum.
+     * @param cluster_factors Output array for computed spacing factors.
+     */
+    static void detect_eigenvalue_clusters(Base<T>* ritzv, Base<T>* resid, 
+                                          Base<T> tol, std::size_t unconverged, 
+                                          std::size_t nex, Base<T> upperb, 
+                                          Base<T> lowerb, 
+                                          std::vector<Base<T>>& cluster_factors);
     /**
      * @brief Sorts the Ritz values based on residuals and locks the converged ones.
      * 
@@ -114,6 +163,13 @@ public:
                                Base<T>* ritzv, Base<T>* resid,
                                Base<T>* residLast, std::size_t* degrees,
                                std::size_t locked);
+    
+    static std::size_t locking_quasi(
+        ChaseBase<T>* single, std::size_t N,
+        std::size_t unconverged, std::size_t nex, Base<T> tol, std::size_t* index,
+        Base<T>* Lritzv, Base<T>* resid, Base<T>* residLast,
+        std::size_t* degrees, std::size_t locked, std::size_t iteration);
+            
     /**
      * @brief Implements the Chebyshev filter.
      * 

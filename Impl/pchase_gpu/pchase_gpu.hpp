@@ -195,7 +195,19 @@ public:
             is_sym_ = false;
             is_pseudoHerm_ = true;
         
-            A_ = std::make_unique<chase::distMatrix::RedundantMatrix<T, chase::platform::GPU>>(3*nevex_, nevex_, Hmat_->getMpiGrid_shared_ptr());
+		A_ = std::make_unique<chase::distMatrix::RedundantMatrix<T, chase::platform::GPU>>(2*nevex_, nevex_, Hmat_->getMpiGrid_shared_ptr());
+		//A_ = std::make_unique<chase::distMatrix::RedundantMatrix<T, chase::platform::GPU>>(3*nevex_, nevex_, Hmat_->getMpiGrid_shared_ptr());
+        	
+		CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTheevd_bufferSize(
+                                                            cusolverH_, 
+                                                            CUSOLVER_EIG_MODE_VECTOR, 
+                                                            CUBLAS_FILL_MODE_LOWER,
+                                                            nevex_, 
+                                                            A_->l_data(), 
+                                                            A_->l_ld(), 
+                                                            ritzv_->l_data(), 
+							    &lwork_heevd));
+/*
 #ifdef XGEEV_EXISTS
             CHECK_CUSOLVER_ERROR(cusolverDnCreateParams(&params_));
 
@@ -214,8 +226,28 @@ public:
 
             h_work_ = std::unique_ptr<T[]>(new T[lhwork_]);
 #endif
-        }
-        else
+*/
+	}
+	else
+	{
+	
+		is_sym_ = true;
+		is_pseudoHerm_ = false;
+
+		A_ = std::make_unique<chase::distMatrix::RedundantMatrix<T, chase::platform::GPU>>(nevex_, nevex_, Hmat_->getMpiGrid_shared_ptr());
+
+        	CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTheevd_bufferSize(
+                                                            cusolverH_, 
+                                                            CUSOLVER_EIG_MODE_VECTOR, 
+                                                            CUBLAS_FILL_MODE_LOWER,
+                                                            nevex_, 
+                                                            A_->l_data(), 
+                                                            A_->l_ld(), 
+                                                            ritzv_->l_data(), 
+                                                            &lwork_heevd));
+	}
+        	
+	if (lwork_heevd > lwork_)
         {
             is_sym_ = true;
             is_pseudoHerm_ = false;
@@ -831,10 +863,12 @@ public:
 
                 /*if constexpr (std::is_same<T, std::complex<float>>::value)
                 {
-                    V1_->enableDoublePrecision();
-                    A_->enableDoublePrecision();
+                    V1_->copyTo();
+
                     auto V1_d = V1_->getDoublePrecisionMatrix();
                     auto A_d = A_->getDoublePrecisionMatrix();
+                    std::complex<double> *d_work_d ;
+                    CHECK_CUDA_ERROR(cudaMalloc((void**)&d_work_d, sizeof(std::complex<double>) * lwork_));
                     info = kernelNamespace::cholQR1(cublasH_,
                                                                 cusolverH_,
                                                                 V1_->l_rows(), 
@@ -846,8 +880,8 @@ public:
                                                                 reinterpret_cast<std::complex<double>*>(d_work_),
                                                                 lwork_,
                                                                 A_d->l_data()); 
-                    V1_->disableDoublePrecision(true);
-                    A_->disableDoublePrecision();
+                    V1_->copyback();
+                    CHECK_CUDA_ERROR(cudaFree(d_work_d));
                 }else*/
                 {
                     info = kernelNamespace::cholQR1(cublasH_,
@@ -881,10 +915,12 @@ public:
 
                 /*if constexpr (std::is_same<T, std::complex<float>>::value)
                 {
-                    V1_->enableDoublePrecision();
-                    A_->enableDoublePrecision();
+                    V1_->copyTo();
+
                     auto V1_d = V1_->getDoublePrecisionMatrix();
                     auto A_d = A_->getDoublePrecisionMatrix();
+                    std::complex<double> *d_work_d ;
+                    CHECK_CUDA_ERROR(cudaMalloc((void**)&d_work_d, sizeof(std::complex<double>) * lwork_));
                     info = kernelNamespace::cholQR2(cublasH_,
                                                                     cusolverH_,
                                                                     V1_->l_rows(), 
@@ -893,11 +929,11 @@ public:
                                                                     V1_->l_ld(), 
                                                                     //V1_->getMpiGrid()->get_nccl_col_comm(),
                                                                     MGPUKernelNamspaceSelector<backend>::getColCommunicator(V1_->getMpiGrid()),
-                                                                    reinterpret_cast<std::complex<double>*>(d_work_),
+                                                                    d_work_d,
                                                                     lwork_,
                                                                     A_d->l_data()); 
-                    V1_->disableDoublePrecision(true);
-                    A_->disableDoublePrecision();
+                    V1_->copyback();
+                    CHECK_CUDA_ERROR(cudaFree(d_work_d));
                 }else*/
                 {
                     info = kernelNamespace::cholQR2(cublasH_,
@@ -954,7 +990,7 @@ public:
         if constexpr (std::is_same<typename MatrixType::hermitian_type, chase::matrix::QuasiHermitian>::value)
 
 	{
-        	kernelNamespace::quasi_hermitian_rayleighRitz(cublasH_,
+        	kernelNamespace::quasi_hermitian_rayleighRitz_v2(cublasH_,
                                                    cusolverH_,
 						   params_,
                                                    *Hmat_, 
@@ -968,8 +1004,8 @@ public:
                                                    devInfo_,
                                                    d_work_,
                                                    lwork_,
-						   h_work_.get(),
-				   		   lhwork_,
+						   //h_work_.get(),
+				   		   //lhwork_,
                                                    A_.get());
 	}
 	else

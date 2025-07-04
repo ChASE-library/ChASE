@@ -228,10 +228,18 @@ public:
      */
     ~MpiGrid2D()
     {
+        MPI_Barrier(comm_); 
+        if (row_comm_ != MPI_COMM_NULL) {
+            MPI_Comm_free(&row_comm_);
+        }
+        if (col_comm_ != MPI_COMM_NULL) {
+            MPI_Comm_free(&col_comm_);
+        }
 #ifdef HAS_NCCL
         CHECK_NCCL_ERROR(ncclCommDestroy(nccl_comm_));
         CHECK_NCCL_ERROR(ncclCommDestroy(nccl_row_comm_));
         CHECK_NCCL_ERROR(ncclCommDestroy(nccl_col_comm_));
+        MPI_Barrier(comm_); 
 #endif        
     } 
 

@@ -135,7 +135,7 @@ public:
             nevex_, 1);
         ritzvs_ = chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU>(
             nevex_, 1, nevex_, ritzv_);
-        A_ = chase::matrix::Matrix<T, chase::platform::GPU>(3 * nevex_, nevex_);
+        A_ = chase::matrix::Matrix<T, chase::platform::GPU>(2 * nevex_, nevex_);
 
         if constexpr (std::is_same<MatrixType,
                                    chase::matrix::QuasiHermitianMatrix<
@@ -169,7 +169,7 @@ public:
             nevex_, 1);
         ritzvs_ = chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU>(
             nevex_, 1, nevex_, ritzv_);
-        A_ = chase::matrix::Matrix<T, chase::platform::GPU>(3 * nevex_, nevex_);
+        A_ = chase::matrix::Matrix<T, chase::platform::GPU>(2 * nevex_, nevex_);
 
         if constexpr (std::is_same<MatrixType,
                                    chase::matrix::QuasiHermitianMatrix<
@@ -221,7 +221,12 @@ public:
                                    chase::matrix::QuasiHermitianMatrix<
                                        T, chase::platform::GPU>>::value)
         {
-
+            CHECK_CUSOLVER_ERROR(
+                chase::linalg::cusolverpp::cusolverDnTheevd_bufferSize(
+                    cusolverH_, CUSOLVER_EIG_MODE_VECTOR,
+                    CUBLAS_FILL_MODE_LOWER, nevex_, A_.data(), A_.ld(),
+                    ritzvs_.data(), &lwork_eev));
+/*
 #ifdef XGEEV_EXISTS
             CHECK_CUSOLVER_ERROR(cusolverDnCreateParams(&params_));
 
@@ -240,6 +245,7 @@ public:
 
             h_work_ = std::unique_ptr<T[]>(new T[lhwork_]);
 #endif
+*/
         }
         else
         {
@@ -652,10 +658,11 @@ public:
                                    chase::matrix::QuasiHermitianMatrix<
                                        T, chase::platform::GPU>>::value)
         {
-            chase::linalg::internal::cuda::rayleighRitz(
+            chase::linalg::internal::cuda::rayleighRitz_v2(
                 cublasH_, cusolverH_, params_, Hmat_, Vec1_, Vec2_, ritzvs_,
-                locked, block, devInfo_, d_work_, lwork_, h_work_.get(),
-                lhwork_, &A_);
+                locked, block, devInfo_, d_work_, lwork_, //h_work_.get(),
+                //lhwork_, 
+		&A_);
         }
         else
         {

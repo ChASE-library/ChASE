@@ -560,6 +560,20 @@ namespace Impl
 
     void RR(chase::Base<T>* ritzv, std::size_t block) override
     {   
+	if constexpr (std::is_same<MatrixType, chase::matrix::QuasiHermitianMatrix<T>>::value)
+	{
+        chase::linalg::internal::cpu::rayleighRitz_v2(Hmat_,
+                                                   block, 
+                                                   Vec1_.data() + locked_ * Vec1_.ld(),
+                                                   Vec1_.ld(),
+                                                   Vec2_.data() + locked_ * Vec2_.ld(),
+                                                   Vec2_.ld(),
+                                                   ritzvs_.data() + locked_,
+                                                   A_.data()
+                                                  );
+	}
+	else
+	{
         chase::linalg::internal::cpu::rayleighRitz(Hmat_,
                                                    block, 
                                                    Vec1_.data() + locked_ * Vec1_.ld(),
@@ -569,6 +583,7 @@ namespace Impl
                                                    ritzvs_.data() + locked_,
                                                    A_.data()
                                                   );
+	}
 
         Vec1_.swap(Vec2_);
     }
