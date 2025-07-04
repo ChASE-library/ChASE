@@ -869,7 +869,7 @@ public:
     using platform_type =
         Platform;         /**< Alias for the computational platform type. */
     using value_type = T; /**< Alias for the element type. */
-    // using communicator_type = comm_type;
+    static constexpr chase::distMultiVector::CommunicatorType communicator_type = comm_type;
 
     /**
      * @brief Default destructor.
@@ -2202,6 +2202,7 @@ class DistMultiVectorBlockCyclic1D
 public:
     using platform_type = Platform; ///< Alias for platform type.
     using value_type = T;           ///< Alias for element type.
+    static constexpr chase::distMultiVector::CommunicatorType communicator_type = comm_type;
 
     /**
      * @brief Destructor for the DistMultiVectorBlockCyclic1D class.

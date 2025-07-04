@@ -95,6 +95,19 @@ extern "C" void pdsyevd_(char *, char*, int *, double *, int *, int *, int *, do
 extern "C" void pcheevd_(char *, char*, int *, std::complex<float> *, int *, int *, int *, float *, std::complex<float> *, int *, int *, int *, std::complex<float> *, int *, float *, int *, int *, int *, int *);                        
 extern "C" void pzheevd_(char *, char*, int *, std::complex<double> *, int *, int *, int *, double *, std::complex<double> *, int *, int *, int *, std::complex<double> *, int *, double *, int *, int *, int *, int *);                        
 
+extern "C" void psgesvd_(char*, char*, int*, int*, float*, int*, int*, int*, 
+                         float*, float*, int*, int*, int*, float*, int*, int*, int*, 
+                         float*, int*, int*);
+extern "C" void pdgesvd_(char*, char*, int*, int*, double*, int*, int*, int*, 
+                         double*, double*, int*, int*, int*, double*, int*, int*, int*, 
+                         double*, int*, int*);
+extern "C" void pcgesvd_(char*, char*, int*, int*, std::complex<float>*, int*, int*, int*, 
+                         float*, std::complex<float>*, int*, int*, int*, std::complex<float>*, int*, int*, int*, 
+                         std::complex<float>*, int*, float*, int*);
+extern "C" void pzgesvd_(char*, char*, int*, int*, std::complex<double>*, int*, int*, int*, 
+                         double*, std::complex<double>*, int*, int*, int*, std::complex<double>*, int*, int*, int*, 
+                         std::complex<double>*, int*, double*, int*);
+
 /**
  * @ingroup ScalapackFunctions
  * @brief Computes the QR factorization of a distributed matrix.
@@ -211,6 +224,43 @@ void t_pgemr2d(std::size_t m, std::size_t n, T* A, int ia, int ja, std::size_t* 
 template <typename T>
 void t_pheevd(char jobz, char uplo, std::size_t N, T *A, std::size_t *desc_a,
                                        chase::Base<T>* W, T *Z, std::size_t *desc_z, int *info);
+
+/**
+ * @ingroup ScalapackFunctions
+ * @brief Computes the singular value decomposition (SVD) of a distributed matrix.
+ * 
+ * This function computes the SVD of a distributed matrix `A` using the divide-and-conquer algorithm.
+ * The SVD is: A = U * SIGMA * V^T, where U and V^T are orthogonal matrices and SIGMA is diagonal.
+ * 
+ * @tparam T The data type of the matrix elements.
+ * 
+ * @param jobu Specifies options for computing left singular vectors:
+ *             - 'N' for no left singular vectors,
+ *             - 'V' for all left singular vectors in U.
+ * @param jobvt Specifies options for computing right singular vectors:
+ *              - 'N' for no right singular vectors,
+ *              - 'V' for all right singular vectors in VT.
+ * @param m The number of rows in the matrix `A`.
+ * @param n The number of columns in the matrix `A`.
+ * @param A The matrix `A` to decompose. On exit, the contents are destroyed.
+ * @param ia The row index in the global matrix `A` indicating the starting position.
+ * @param ja The column index in the global matrix `A` indicating the starting position.
+ * @param desc_a Array descriptor for the distributed matrix `A`.
+ * @param s Output array containing the singular values in descending order.
+ * @param U Output matrix containing the left singular vectors if `jobu` is 'V'.
+ * @param iu The row index in the global matrix `U` indicating the starting position.
+ * @param ju The column index in the global matrix `U` indicating the starting position.
+ * @param desc_u Array descriptor for the distributed matrix `U`.
+ * @param VT Output matrix containing the right singular vectors (transposed) if `jobvt` is 'V'.
+ * @param ivt The row index in the global matrix `VT` indicating the starting position.
+ * @param jvt The column index in the global matrix `VT` indicating the starting position.
+ * @param desc_vt Array descriptor for the distributed matrix `VT`.
+ * @param info Output status information.
+ */
+template <typename T>
+void t_pgesvd(char jobu, char jobvt, std::size_t m, std::size_t n, T* A, int ia, int ja,
+              std::size_t* desc_a, chase::Base<T>* s, T* U, int iu, int ju, std::size_t* desc_u,
+              T* VT, int ivt, int jvt, std::size_t* desc_vt, int* info);
 
 } // namespace scalapackpp
 } // namespace linalg

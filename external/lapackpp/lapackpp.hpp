@@ -205,6 +205,38 @@ template <typename T>
 std::size_t t_geev(int matrix_layout, char jobz, std::size_t n,
                     T* a, std::size_t lda, Base<T>* wr, Base<T> * wi, T* v, std::size_t ldv);
 
+/**
+ * @ingroup LapackFunctions
+ * @brief Computes the singular value decomposition of a matrix.
+ * 
+ * This function computes the singular value decomposition of a matrix `A`.
+ * 
+ * @tparam T The data type of the matrix elements.
+ * 
+ * @param jobu Specifies whether to compute singular values only or singular values and vectors:
+ *             - 'N' for singular values only,
+ *             - 'S' for singular values and left singular vectors,
+ *             - 'O' for singular values and right singular vectors.    
+ * @param jobvt Specifies whether to compute singular values only or singular values and vectors:
+ *             - 'N' for singular values only,
+ *             - 'S' for singular values and left singular vectors,
+ *             - 'O' for singular values and right singular vectors.
+ * @param m The number of rows of matrix `A`.
+ * @param n The number of columns of matrix `A`.
+ * @param a The matrix `A` to compute singular value decomposition for.
+ * @param lda The leading dimension of `A`.
+ * @param s Output, the singular values.
+ * @param u Output, the left singular vectors.
+ * @param ldu The leading dimension of `u`.
+ * @param vt Output, the right singular vectors.
+ * @param ldvt The leading dimension of `vt`.
+ */
+template <typename T>
+void t_gesvd(const char jobu, const char jobvt, const std::size_t m,
+             const std::size_t n, T* A, const std::size_t lda, Base<T>* S, T* U,
+             const std::size_t ldu, T* Vt, const std::size_t ldvt);
+
+
 } //end of namespace lapackpp
 } //end of namespace linalg   
 } //end of namespace chase

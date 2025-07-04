@@ -113,8 +113,7 @@ public:
         coords_ = Hmat_->getMpiGrid()->get_coords();
         dims_ = Hmat_->getMpiGrid()->get_dims();
 
-	 if constexpr (std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockBlockMatrix<T>>::value || 
-		       std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T>>::value )
+        if constexpr (std::is_same<typename MatrixType::hermitian_type, chase::matrix::QuasiHermitian>::value)
          {
                 is_sym_ = false;
                 is_pseudoHerm_ = true;
@@ -417,7 +416,6 @@ public:
         if (cholddisable) {
             disable = std::atoi(cholddisable);
         }
-	disable = 1;
 
         Base<T> cond_threshold_upper = (sizeof(Base<T>) == 8) ? 1e8 : 1e4;
         Base<T> cond_threshold_lower = (sizeof(Base<T>) == 8) ? 2e1 : 1e1;
@@ -436,8 +434,7 @@ public:
         //}
 
 	
-	 if constexpr (std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockBlockMatrix<T>>::value || 
-		       std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T>>::value )
+        if constexpr (std::is_same<typename MatrixType::hermitian_type, chase::matrix::QuasiHermitian>::value)
         {
                 /* The right eigenvectors are not orthonormal in the QH case, but S-orthonormal.
                  * Therefore, we S-orthonormalize the locked vectors against the current subspace
@@ -446,6 +443,19 @@ public:
                 /* We do not need to flip back the sign of the locked vectors since they are stored 
                  * in Vec2_ and will replace the fliped ones of Vec1_ at the end of QR. */
         }
+
+#ifdef ChASE_DISPLAY_COND_V_SVD
+        if constexpr (std::is_same<typename MatrixType::matrix_type, chase::distMatrix::BlockCyclic>::value &&
+                      std::is_same<typename MatrixType::hermitian_type, chase::matrix::Hermitian>::value)
+        {
+            auto V_tmp = V1_->template clone2<InputMultiVectorType>(V1_->g_rows(), V1_->g_cols() - locked_);
+            std::memcpy(V_tmp->l_data(), V1_->l_data() + locked_ * V1_->l_ld(), (V1_->g_cols() - locked_) * V1_->l_ld() * sizeof(T));
+            auto cond_v = chase::linalg::internal::cpu_mpi::computeConditionNumber(*V_tmp);
+            if(my_rank_ == 0){
+                std::cout << "Exact condition number of V from SVD: " << cond_v << std::endl;
+            }
+        }
+#endif
 
         if (disable == 1)
         {

@@ -24,6 +24,7 @@
 #ifdef HAS_SCALAPACK
 #include "external/scalapackpp/scalapackpp.hpp"
 #endif
+#include "linalg/internal/mpi/cholqr.hpp"
 #include "algorithm/types.hpp"
 
 #include "Impl/config/config.hpp"
@@ -189,20 +190,17 @@ public:
 
         int lwork_heevd = 0;
 
-        if constexpr (std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockBlockMatrix<T,chase::platform::GPU>>::value ||
-		      std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T,chase::platform::GPU>>::value )
-
-	{
-	
-		is_sym_ = false;
-		is_pseudoHerm_ = true;
+        if constexpr (std::is_same<typename MatrixType::hermitian_type, chase::matrix::QuasiHermitian>::value)
+        {
+            is_sym_ = false;
+            is_pseudoHerm_ = true;
         
-		A_ = std::make_unique<chase::distMatrix::RedundantMatrix<T, chase::platform::GPU>>(3*nevex_, nevex_, Hmat_->getMpiGrid_shared_ptr());
+            A_ = std::make_unique<chase::distMatrix::RedundantMatrix<T, chase::platform::GPU>>(3*nevex_, nevex_, Hmat_->getMpiGrid_shared_ptr());
 #ifdef XGEEV_EXISTS
-		CHECK_CUSOLVER_ERROR(cusolverDnCreateParams(&params_));
+            CHECK_CUSOLVER_ERROR(cusolverDnCreateParams(&params_));
 
-		std::size_t temp_ldwork = 0;
-		std::size_t temp_lhwork = 0;
+            std::size_t temp_ldwork = 0;
+            std::size_t temp_lhwork = 0;
 
             	CHECK_CUSOLVER_ERROR(
                 	chase::linalg::cusolverpp::cusolverDnTgeev_bufferSize(
@@ -211,34 +209,33 @@ public:
                     		V2_->l_data(), NULL, 1, V1_->l_data(), V1_->l_ld(),
                     		&temp_ldwork, &temp_lhwork));
 
-		lwork_heevd = (int)temp_ldwork;
-		lhwork_ = (int)temp_lhwork;
+            lwork_heevd = (int)temp_ldwork;
+            lhwork_ = (int)temp_lhwork;
 
-		h_work_ = std::unique_ptr<T[]>(new T[lhwork_]);
+            h_work_ = std::unique_ptr<T[]>(new T[lhwork_]);
 #endif
-	}
-	else
-	{
-	
-		is_sym_ = true;
-		is_pseudoHerm_ = false;
-
-		A_ = std::make_unique<chase::distMatrix::RedundantMatrix<T, chase::platform::GPU>>(nevex_, nevex_, Hmat_->getMpiGrid_shared_ptr());
-
-        	CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTheevd_bufferSize(
-                                                            cusolverH_, 
-                                                            CUSOLVER_EIG_MODE_VECTOR, 
-                                                            CUBLAS_FILL_MODE_LOWER,
-                                                            nevex_, 
-                                                            A_->l_data(), 
-                                                            A_->l_ld(), 
-                                                            ritzv_->l_data(), 
-                                                            &lwork_heevd));
-	}
-        	
-	if (lwork_heevd > lwork_)
+        }
+        else
         {
-        	lwork_ = lwork_heevd;
+            is_sym_ = true;
+            is_pseudoHerm_ = false;
+
+            A_ = std::make_unique<chase::distMatrix::RedundantMatrix<T, chase::platform::GPU>>(nevex_, nevex_, Hmat_->getMpiGrid_shared_ptr());
+
+            CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTheevd_bufferSize(
+                                                                cusolverH_, 
+                                                                CUSOLVER_EIG_MODE_VECTOR, 
+                                                                CUBLAS_FILL_MODE_LOWER,
+                                                                nevex_, 
+                                                                A_->l_data(), 
+                                                                A_->l_ld(), 
+                                                                ritzv_->l_data(), 
+                                                                &lwork_heevd));
+        }
+        
+        if (lwork_heevd > lwork_)
+        {
+            lwork_ = lwork_heevd;
         }
 
         int lwork_potrf = 0;
@@ -252,13 +249,13 @@ public:
                                                             &lwork_potrf));
         if (lwork_potrf > lwork_)
         {
-        	lwork_ = lwork_potrf;
+            lwork_ = lwork_potrf;
         }
 
         if(nevex_ * (nevex_ + 1) / 2 > lwork_)
         {
-        	lwork_ = nevex_ * (nevex_ + 1) / 2;
-       	}
+            lwork_ = nevex_ * (nevex_ + 1) / 2;
+        }
 
         CHECK_CUDA_ERROR(cudaMalloc((void**)&d_work_, sizeof(T) * lwork_));    
 
@@ -267,8 +264,7 @@ public:
 
         std::vector<std::size_t> diag_xoffs, diag_yoffs;
 
-        if constexpr(std::is_same<MatrixType, chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU>>::value || 
-		     std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU>>::value )
+        if constexpr(std::is_same<typename MatrixType::matrix_type, chase::distMatrix::BlockBlock>::value)
         {
             std::size_t *g_offs = Hmat_->g_offs();
 
@@ -283,8 +279,7 @@ public:
                     }
                 }
             }
-        }else if constexpr(std::is_same<MatrixType, chase::distMatrix::BlockCyclicMatrix<T, chase::platform::GPU>>::value ||
-		     	   std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T, chase::platform::GPU>>::value )
+        }else if constexpr(std::is_same<typename MatrixType::matrix_type, chase::distMatrix::BlockCyclic>::value)
         {
             auto m_contiguous_global_offs = Hmat_->m_contiguous_global_offs();
             auto n_contiguous_global_offs = Hmat_->n_contiguous_global_offs();
@@ -670,12 +665,25 @@ public:
 
         int info = 1;
         
-        if constexpr (std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockBlockMatrix<T,chase::platform::GPU>>::value ||
-                std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T,chase::platform::GPU>>::value )
+        if constexpr (std::is_same<typename MatrixType::hermitian_type, chase::matrix::QuasiHermitian>::value)
         {	
             kernelNamespace::flipLowerHalfMatrixSign(*V1_, 0, locked_);
         }
+#ifdef ChASE_DISPLAY_COND_V_SVD
+        if constexpr (std::is_same<typename MatrixType::matrix_type, chase::distMatrix::BlockCyclic>::value &&
+                      std::is_same<typename MatrixType::hermitian_type, chase::matrix::Hermitian>::value)
+        {
+            static constexpr chase::distMultiVector::CommunicatorType communicator_type = InputMultiVectorType::communicator_type;
+            auto V_tmp = std::make_unique<chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, communicator_type, chase::platform::CPU>>(V1_->g_rows(), V1_->g_cols() - locked_, V1_->mb(), V1_->getMpiGrid_shared_ptr());
+            CHECK_CUDA_ERROR(cudaMemcpy(V_tmp->l_data(), V1_->l_data() + locked_ * V1_->l_ld(), (V1_->g_cols() - locked_) * V1_->l_ld() * sizeof(T), cudaMemcpyDeviceToHost));
+            //auto cond_v = kernelNamespace::computeConditionNumber(*V_tmp);
+            auto cond_v = chase::linalg::internal::cpu_mpi::computeConditionNumber(*V_tmp);
 
+            if(my_rank_ == 0){
+                std::cout << "Exact condition number of V from SVD: " << cond_v << std::endl;
+            }
+        }
+#endif
         if (disable == 1)
         {
 #ifdef HAS_SCALAPACK
@@ -943,8 +951,7 @@ public:
     {
         SCOPED_NVTX_RANGE();
 
-        if constexpr (std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockBlockMatrix<T,chase::platform::GPU>>::value ||
-		      std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T,chase::platform::GPU>>::value )
+        if constexpr (std::is_same<typename MatrixType::hermitian_type, chase::matrix::QuasiHermitian>::value)
 
 	{
         	kernelNamespace::quasi_hermitian_rayleighRitz(cublasH_,
