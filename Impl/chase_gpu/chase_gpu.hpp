@@ -561,7 +561,10 @@ public:
     	if constexpr (std::is_same<typename MatrixType::hermitian_type, chase::matrix::Hermitian>::value)
         {
 #ifdef ChASE_DISPLAY_COND_V_SVD
-            auto cond_v = chase::linalg::internal::cuda::computeConditionNumber(Vec1_.rows(), Vec1_.cols() - locked_, Vec1_.data() + locked_ * Vec1_.ld(), Vec1_.ld());
+            std::vector<T> V_tmp(Vec1_.ld() * (Vec1_.cols() - locked_));
+            CHECK_CUDA_ERROR(cudaMemcpy(V_tmp.data(), Vec1_.data() + locked_ * Vec1_.ld(), (Vec1_.cols() - locked_) * Vec1_.ld() * sizeof(T), cudaMemcpyDeviceToHost));
+            auto cond_v = chase::linalg::internal::cpu::computeConditionNumber(Vec1_.rows(), Vec1_.cols() - locked_, V_tmp.data(), Vec1_.ld());
+
             std::cout << "Exact condition number of V from SVD: " << cond_v << std::endl;
 #endif
         }    

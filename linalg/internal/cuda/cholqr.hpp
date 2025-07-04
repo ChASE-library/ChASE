@@ -629,66 +629,7 @@ namespace cuda
                                                                        lwork, 
                                                                        devInfo));
     }
-
-    template<typename T>
-    chase::Base<T> computeConditionNumber(std::size_t m, std::size_t n, T *V, std::size_t ldv)
-    {
-        std::vector<T> V_cpu(ldv * n);
-        CHECK_CUDA_ERROR(cudaMemcpy(V_cpu.data(), V, ldv * n * sizeof(T), cudaMemcpyDeviceToHost));
-
-        std::vector<chase::Base<T>> S(n);
-        T* U;
-        std::size_t ld = 1;
-        T* Vt;
-        std::size_t min_mn = std::min(m, n);
-
-        // Basic parameter validation
-        if (m == 0 || n == 0) {
-            std::cout << "Error: Invalid matrix dimensions m=" << m << ", n=" << n << std::endl;
-            return std::numeric_limits<chase::Base<T>>::infinity();
-        }
-
-        // Call Lapack SVD function
-        chase::linalg::lapackpp::t_gesvd('N', 'N', m, n, V_cpu.data(), ldv, S.data(), U, ld, Vt, ld);
-
-#ifdef CHASE_OUTPUT        
-        // Debug: Print singular values to understand what's happening
-        if (min_mn > 0) {
-            std::cout << "SVD Debug: Matrix size " << m << "x" << n << ", min_mn=" << min_mn << std::endl;
-            std::cout << "First 5 singular values: ";
-            for (int i = 0; i < std::min(5, (int)min_mn); i++) {
-                std::cout << S[i] << " ";
-            }
-            std::cout << std::endl;
-            if (min_mn > 5) {
-                std::cout << "Last 5 singular values: ";
-                for (int i = std::max(0, (int)min_mn - 5); i < (int)min_mn; i++) {
-                    std::cout << S[i] << " ";
-                }
-                std::cout << std::endl;
-            }
-        }
-#endif
-        chase::Base<T> cond_num = std::numeric_limits<chase::Base<T>>::infinity();
-        if (min_mn > 0) {
-            chase::Base<T> sigma_max = S[0];  // Singular values are sorted in descending order
-            chase::Base<T> sigma_min = S[min_mn - 1];
-            // Check for rank deficiency
-            const chase::Base<T> eps = std::numeric_limits<chase::Base<T>>::epsilon();
-            const chase::Base<T> tolerance = std::max(m, n) * sigma_max * eps;
-#ifdef CHASE_OUTPUT            
-            std::cout << "Condition number debug: sigma_max=" << sigma_max 
-                        << ", sigma_min=" << sigma_min 
-                        << ", tolerance=" << tolerance 
-                        << ", eps=" << eps << std::endl;      
-#endif
-            if (sigma_min > tolerance && sigma_min > 0) {
-                cond_num = sigma_max / sigma_min;
-            }
-        }
-
-        return cond_num;
-    }       
+       
 }
 }
 }

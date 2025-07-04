@@ -24,6 +24,7 @@
 #ifdef HAS_SCALAPACK
 #include "external/scalapackpp/scalapackpp.hpp"
 #endif
+#include "linalg/internal/mpi/cholqr.hpp"
 #include "algorithm/types.hpp"
 
 #include "Impl/config/config.hpp"
@@ -675,7 +676,9 @@ public:
             static constexpr chase::distMultiVector::CommunicatorType communicator_type = InputMultiVectorType::communicator_type;
             auto V_tmp = std::make_unique<chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, communicator_type, chase::platform::CPU>>(V1_->g_rows(), V1_->g_cols() - locked_, V1_->mb(), V1_->getMpiGrid_shared_ptr());
             CHECK_CUDA_ERROR(cudaMemcpy(V_tmp->l_data(), V1_->l_data() + locked_ * V1_->l_ld(), (V1_->g_cols() - locked_) * V1_->l_ld() * sizeof(T), cudaMemcpyDeviceToHost));
-            auto cond_v = kernelNamespace::computeConditionNumber(*V_tmp);
+            //auto cond_v = kernelNamespace::computeConditionNumber(*V_tmp);
+            auto cond_v = chase::linalg::internal::cpu_mpi::computeConditionNumber(*V_tmp);
+
             if(my_rank_ == 0){
                 std::cout << "Exact condition number of V from SVD: " << cond_v << std::endl;
             }
