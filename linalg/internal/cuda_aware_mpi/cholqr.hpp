@@ -995,6 +995,7 @@ namespace internal
         std::runtime_error("For ChASE-MPI, distributed Householder QR requires ScaLAPACK, which is not detected\n");
 #endif
     }
+
 }
 }
 }

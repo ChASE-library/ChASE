@@ -628,7 +628,8 @@ namespace cuda
                                                                        workspace, 
                                                                        lwork, 
                                                                        devInfo));
-    }   
+    }
+       
 }
 }
 }

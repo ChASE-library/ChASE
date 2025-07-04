@@ -8,6 +8,7 @@
 
 #include <limits>
 #include <iomanip>
+#include <stdexcept>
 #include "mpi.h"
 #include "grid/mpiTypes.hpp"
 #include "external/blaspp/blaspp.hpp"
@@ -21,6 +22,7 @@
 #include "linalg/internal/cuda/absTrace.cuh"
 #include "linalg/internal/cuda/shiftDiagonal.cuh"
 #include "linalg/internal/nccl/nccl_kernels.hpp"
+#include "external/scalapackpp/scalapackpp.hpp"
 
 using namespace chase::linalg::blaspp;
 using namespace chase::linalg::lapackpp;
@@ -1161,6 +1163,7 @@ namespace internal
         std::runtime_error("For ChASE-MPI, distributed Householder QR requires ScaLAPACK, which is not detected\n");
 #endif
     }
+
 }
 }
 }

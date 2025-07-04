@@ -593,6 +593,178 @@ void t_pgemr2d(std::size_t m, std::size_t n, T* A, int ia, int ja, std::size_t* 
     }
 }
 
+template <>
+void t_pgesvd(char jobu, char jobvt, std::size_t m, std::size_t n, double* A, int ia, int ja,
+              std::size_t* desc_a, double* s, double* U, int iu, int ju, std::size_t* desc_u,
+              double* VT, int ivt, int jvt, std::size_t* desc_vt, int* info)
+{
+    int* desc_a_ = new int[9];
+    int* desc_u_ = new int[9];
+    int* desc_vt_ = new int[9];
+    
+    for (int i = 0; i < 9; i++)
+    {
+        desc_a_[i] = static_cast<int>(desc_a[i]);
+        desc_u_[i] = static_cast<int>(desc_u[i]);
+        desc_vt_[i] = static_cast<int>(desc_vt[i]);
+    }
+    
+    int m_ = m;
+    int n_ = n;
+    
+    double* work;
+    double numwork;
+    int lwork, info_;
+    lwork = -1;
+    
+    pdgesvd_(&jobu, &jobvt, &m_, &n_, A, &ia, &ja, desc_a_, s, U, &iu, &ju, desc_u_, 
+             VT, &ivt, &jvt, desc_vt_, &numwork, &lwork, &info_);
+    
+    lwork = (int)numwork;
+    
+    auto wptr = std::unique_ptr<double[]>{new double[lwork]};
+    work = wptr.get();
+    
+    pdgesvd_(&jobu, &jobvt, &m_, &n_, A, &ia, &ja, desc_a_, s, U, &iu, &ju, desc_u_, 
+             VT, &ivt, &jvt, desc_vt_, work, &lwork, &info_);
+    
+    *info = info_;
+    // Note: info != 0 indicates SVD convergence issues or parameter errors
+    // Let the caller handle the error instead of asserting
+}
+
+template <>
+void t_pgesvd(char jobu, char jobvt, std::size_t m, std::size_t n, float* A, int ia, int ja,
+              std::size_t* desc_a, float* s, float* U, int iu, int ju, std::size_t* desc_u,
+              float* VT, int ivt, int jvt, std::size_t* desc_vt, int* info)
+{
+    int* desc_a_ = new int[9];
+    int* desc_u_ = new int[9];
+    int* desc_vt_ = new int[9];
+    
+    for (int i = 0; i < 9; i++)
+    {
+        desc_a_[i] = static_cast<int>(desc_a[i]);
+        desc_u_[i] = static_cast<int>(desc_u[i]);
+        desc_vt_[i] = static_cast<int>(desc_vt[i]);
+    }
+    
+    int m_ = m;
+    int n_ = n;
+    
+    float* work;
+    float numwork;
+    int lwork, info_;
+    lwork = -1;
+    
+    psgesvd_(&jobu, &jobvt, &m_, &n_, A, &ia, &ja, desc_a_, s, U, &iu, &ju, desc_u_, 
+             VT, &ivt, &jvt, desc_vt_, &numwork, &lwork, &info_);
+    
+    lwork = (int)numwork;
+    
+    auto wptr = std::unique_ptr<float[]>{new float[lwork]};
+    work = wptr.get();
+    
+    psgesvd_(&jobu, &jobvt, &m_, &n_, A, &ia, &ja, desc_a_, s, U, &iu, &ju, desc_u_, 
+             VT, &ivt, &jvt, desc_vt_, work, &lwork, &info_);
+    
+    *info = info_;
+    // Note: info != 0 indicates SVD convergence issues or parameter errors
+    // Let the caller handle the error instead of asserting
+}
+
+template <>
+void t_pgesvd(char jobu, char jobvt, std::size_t m, std::size_t n, std::complex<double>* A, int ia, int ja,
+              std::size_t* desc_a, double* s, std::complex<double>* U, int iu, int ju, std::size_t* desc_u,
+              std::complex<double>* VT, int ivt, int jvt, std::size_t* desc_vt, int* info)
+{
+    int* desc_a_ = new int[9];
+    int* desc_u_ = new int[9];
+    int* desc_vt_ = new int[9];
+    
+    for (int i = 0; i < 9; i++)
+    {
+        desc_a_[i] = static_cast<int>(desc_a[i]);
+        desc_u_[i] = static_cast<int>(desc_u[i]);
+        desc_vt_[i] = static_cast<int>(desc_vt[i]);
+    }
+    
+    int m_ = m;
+    int n_ = n;
+    
+    std::complex<double>* work;
+    std::complex<double> numwork;
+    int lwork, info_;
+    lwork = -1;
+    
+    double* rwork;
+    int lrwork = 1 + 4 * std::max(m, n);
+    
+    auto rwptr = std::unique_ptr<double[]>{new double[lrwork]};
+    rwork = rwptr.get();
+    
+    pzgesvd_(&jobu, &jobvt, &m_, &n_, A, &ia, &ja, desc_a_, s, U, &iu, &ju, desc_u_, 
+             VT, &ivt, &jvt, desc_vt_, &numwork, &lwork, rwork, &info_);
+    
+    lwork = (int)real(numwork);
+    
+    auto wptr = std::unique_ptr<std::complex<double>[]>{new std::complex<double>[lwork]};
+    work = wptr.get();
+    
+    pzgesvd_(&jobu, &jobvt, &m_, &n_, A, &ia, &ja, desc_a_, s, U, &iu, &ju, desc_u_, 
+             VT, &ivt, &jvt, desc_vt_, work, &lwork, rwork, &info_);
+
+    *info = info_;
+    // Note: info != 0 indicates SVD convergence issues or parameter errors
+    // Let the caller handle the error instead of asserting
+}
+
+template <>
+void t_pgesvd(char jobu, char jobvt, std::size_t m, std::size_t n, std::complex<float>* A, int ia, int ja,
+              std::size_t* desc_a, float* s, std::complex<float>* U, int iu, int ju, std::size_t* desc_u,
+              std::complex<float>* VT, int ivt, int jvt, std::size_t* desc_vt, int* info)
+{
+    int* desc_a_ = new int[9];
+    int* desc_u_ = new int[9];
+    int* desc_vt_ = new int[9];
+    
+    for (int i = 0; i < 9; i++)
+    {
+        desc_a_[i] = static_cast<int>(desc_a[i]);
+        desc_u_[i] = static_cast<int>(desc_u[i]);
+        desc_vt_[i] = static_cast<int>(desc_vt[i]);
+    }
+    
+    int m_ = m;
+    int n_ = n;
+    
+    std::complex<float>* work;
+    std::complex<float> numwork;
+    int lwork, info_;
+    lwork = -1;
+    
+    float* rwork;
+    int lrwork = 1 + 4 * std::max(m, n);
+    
+    auto rwptr = std::unique_ptr<float[]>{new float[lrwork]};
+    rwork = rwptr.get();
+    
+    pcgesvd_(&jobu, &jobvt, &m_, &n_, A, &ia, &ja, desc_a_, s, U, &iu, &ju, desc_u_, 
+             VT, &ivt, &jvt, desc_vt_, &numwork, &lwork, rwork, &info_);
+    
+    lwork = (int)real(numwork);
+    
+    auto wptr = std::unique_ptr<std::complex<float>[]>{new std::complex<float>[lwork]};
+    work = wptr.get();
+    
+    pcgesvd_(&jobu, &jobvt, &m_, &n_, A, &ia, &ja, desc_a_, s, U, &iu, &ju, desc_u_, 
+             VT, &ivt, &jvt, desc_vt_, work, &lwork, rwork, &info_);
+    
+    *info = info_;
+    // Note: info != 0 indicates SVD convergence issues or parameter errors
+    // Let the caller handle the error instead of asserting
+}
+
 }
 }
 }

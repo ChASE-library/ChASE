@@ -779,6 +779,123 @@ std::size_t t_geev(int matrix_layout, char jobz, std::size_t n,
     return info;
 }
 
+template<>
+void t_gesvd(const char jobu, const char jobvt, const std::size_t m, const std::size_t n, float *A,
+                const std::size_t lda, float *S, float *U, const std::size_t ldu, float *Vt, const std::size_t ldvt){
+    using T = std::remove_reference<decltype((A[0]))>::type;
+    BlasInt m_ = m;
+    BlasInt n_ = n;
+    BlasInt lda_ = lda;
+    BlasInt ldu_ = ldu;
+    BlasInt ldvt_ = ldvt;
+
+    T* work;
+    Base<T> *rwork = new Base<T>[5 * std::min(m, n)];
+    T numwork;
+    BlasInt lwork, info;
+
+    lwork = -1;
+    FC_GLOBAL(sgesvd, SGESVD)(&jobu, &jobvt, &m_, &n_, A, &lda_, S, U, &ldu_, Vt, &ldvt_, &numwork, &lwork, rwork, &info);
+    assert(info == 0);
+
+
+    lwork = static_cast<std::size_t>((numwork));
+    auto ptr = std::unique_ptr<T[]>{new T[lwork]};
+    work = ptr.get();
+
+    FC_GLOBAL(sgesvd, SGESVD)(&jobu, &jobvt, &m_, &n_, A, &lda_, S, U, &ldu_, Vt, &ldvt_, work, &lwork, rwork, &info);
+    assert(info == 0);
+}
+
+template<>
+void t_gesvd(const char jobu, const char jobvt, const std::size_t m, const std::size_t n, double *A,
+                const std::size_t lda, double *S, double *U, const std::size_t ldu, double *Vt, const std::size_t ldvt){
+    using T = std::remove_reference<decltype((A[0]))>::type;
+    BlasInt m_ = m;
+    BlasInt n_ = n;
+    BlasInt lda_ = lda;
+    BlasInt ldu_ = ldu;
+    BlasInt ldvt_ = ldvt;
+
+    T* work;
+    Base<T> *rwork = new Base<T>[5 * std::min(m, n)];
+    T numwork;
+    BlasInt lwork, info;
+
+    lwork = -1;
+    FC_GLOBAL(dgesvd, DGESVD)(&jobu, &jobvt, &m_, &n_, A, &lda_, S, U, &ldu_, Vt, &ldvt_, &numwork, &lwork, rwork, &info);
+    assert(info == 0);
+
+
+    lwork = static_cast<std::size_t>((numwork));
+    auto ptr = std::unique_ptr<T[]>{new T[lwork]};
+    work = ptr.get();
+
+    FC_GLOBAL(dgesvd, DGESVD)(&jobu, &jobvt, &m_, &n_, A, &lda_, S, U, &ldu_, Vt, &ldvt_, work, &lwork, rwork, &info);
+    assert(info == 0);
+
+}
+
+template<>
+void t_gesvd(const char jobu, const char jobvt, const std::size_t m, const std::size_t n, std::complex<float> *A,
+                const std::size_t lda, float *S, std::complex<float> *U, const std::size_t ldu, std::complex<float> *Vt, const std::size_t ldvt){
+    using T = std::remove_reference<decltype((A[0]))>::type;
+    BlasInt m_ = m;
+    BlasInt n_ = n;
+    BlasInt lda_ = lda;
+    BlasInt ldu_ = ldu;
+    BlasInt ldvt_ = ldvt;
+
+    T* work;
+    Base<T> *rwork = new Base<T>[5 * std::min(m, n)];
+    T numwork;
+    BlasInt lwork, info;
+
+    lwork = -1;
+    FC_GLOBAL(cgesvd, CGESVD)(&jobu, &jobvt, &m_, &n_, A, &lda_, S, U, &ldu_, Vt, &ldvt_, &numwork, &lwork, rwork, &info);
+    assert(info == 0);
+
+
+    lwork = static_cast<std::size_t>(real(numwork));
+    auto ptr = std::unique_ptr<T[]>{new T[lwork]};
+    work = ptr.get();
+
+    FC_GLOBAL(cgesvd, CGESVD)(&jobu, &jobvt, &m_, &n_, A, &lda_, S, U, &ldu_, Vt, &ldvt_, work, &lwork, rwork, &info);
+    assert(info == 0);
+}
+
+template<>
+void t_gesvd(const char jobu, const char jobvt, const std::size_t m, const std::size_t n, std::complex<double> *A,
+                const std::size_t lda, double *S, std::complex<double> *U, const std::size_t ldu, std::complex<double> *Vt, const std::size_t ldvt){
+    using T = std::remove_reference<decltype((A[0]))>::type;
+    BlasInt m_ = m;
+    BlasInt n_ = n;
+    BlasInt lda_ = lda;
+    BlasInt ldu_ = ldu;
+    BlasInt ldvt_ = ldvt;
+
+    T* work;
+    Base<T> *rwork = new Base<T>[5 * std::min(m, n)];
+    T numwork;
+    BlasInt lwork, info;
+
+    lwork = -1;
+    FC_GLOBAL(zgesvd, ZGESVD)(&jobu, &jobvt, &m_, &n_, A, &lda_, S, U, &ldu_, Vt, &ldvt_, &numwork, &lwork, rwork, &info);
+    assert(info == 0);
+
+
+    lwork = static_cast<std::size_t>(real(numwork));
+    auto ptr = std::unique_ptr<T[]>{new T[lwork]};
+    work = ptr.get();
+
+    FC_GLOBAL(zgesvd, ZGESVD)(&jobu, &jobvt, &m_, &n_, A, &lda_, S, U, &ldu_, Vt, &ldvt_, work, &lwork, rwork, &info);
+    assert(info == 0);
+
+    delete[] rwork;
+
+}
+
+
 } //end of namespace lapackpp
 } //end of namespace linalg   
 } //end of namespace chase
