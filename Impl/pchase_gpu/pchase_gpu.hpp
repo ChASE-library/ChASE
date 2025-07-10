@@ -246,25 +246,7 @@ public:
                                                             ritzv_->l_data(), 
                                                             &lwork_heevd));
 	}
-        	
-	if (lwork_heevd > lwork_)
-        {
-            is_sym_ = true;
-            is_pseudoHerm_ = false;
-
-            A_ = std::make_unique<chase::distMatrix::RedundantMatrix<T, chase::platform::GPU>>(nevex_, nevex_, Hmat_->getMpiGrid_shared_ptr());
-
-            CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTheevd_bufferSize(
-                                                                cusolverH_, 
-                                                                CUSOLVER_EIG_MODE_VECTOR, 
-                                                                CUBLAS_FILL_MODE_LOWER,
-                                                                nevex_, 
-                                                                A_->l_data(), 
-                                                                A_->l_ld(), 
-                                                                ritzv_->l_data(), 
-                                                                &lwork_heevd));
-        }
-        
+        	        
         if (lwork_heevd > lwork_)
         {
             lwork_ = lwork_heevd;
