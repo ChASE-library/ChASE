@@ -222,7 +222,22 @@ int bse_solve(BSE_DriverProblemConfig& conf)
 #endif
 
 #endif
-
+/*
+#ifndef USE_QUASI_HERMITIAN
+	
+#ifdef HAS_NCCL
+    	chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(Hmat);
+	Hmat.D2H();
+#elif defined(HAS_CUDA)
+    	chase::linalg::internal::cuda::flipLowerHalfMatrixSign(Hmat);
+	Hmat->D2H();
+#elif defined(USE_MPI)
+    	chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(Hmat);
+#else
+    	chase::linalg::internal::cpu::flipLowerHalfMatrixSign(Hmat);
+#endif
+#endif
+*/
     if (world_rank == 0)
     {
         std::cout << "Starting ChASE" << std::endl;
@@ -239,6 +254,7 @@ int bse_solve(BSE_DriverProblemConfig& conf)
     config.SetDegExtra(extraDeg);
     config.SetApprox(mode == "A");
     config.SetDecayingRate(lowerb_decay);
+    config.SetClusterAwareDegrees(false);
     
     PerformanceDecoratorChase<T> performanceDecorator(&single);
 
