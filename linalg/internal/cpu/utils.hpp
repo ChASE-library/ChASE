@@ -112,9 +112,9 @@ namespace cpu
     template<typename T>
     void flipRightHalfMatrixSign(std::size_t m, std::size_t n, T *A, std::size_t lda)
     {
-	std::size_t half = n / 2;
-	
-	T alpha = -T(1.0);
+        std::size_t half = n / 2;
+        
+        T alpha = -T(1.0);
 
         chase::linalg::blaspp::t_scal(m*half, &alpha, A + half * lda, 1);
     }

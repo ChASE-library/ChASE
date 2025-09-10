@@ -76,7 +76,7 @@ void cpu_mpi::flipLowerHalfMatrixSign(
                                           	      H.l_data() + H.l_half() + i * H.l_ld(), 1);
        		}
 	}
-    }
+    }		
 }
 
 /**
