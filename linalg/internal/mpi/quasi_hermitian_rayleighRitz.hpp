@@ -364,31 +364,21 @@ namespace internal
 
         blaspp::t_trsm('L','L','C','N',subSize,subSize,&One,A->l_data(),subSize,M,subSize);
 
-        //Sort pairs based on inverted ritz values and signs
-        std::size_t cnt = 0;
+	//Invert the ritz values and normalize the vectors
+        std::vector<T> norms(subSize);
 
-        while(cnt < subSize && ritzv[cnt+offset] < 0){
-                cnt++;
-        }
-
-        std::reverse(ritzv + offset, ritzv + cnt + offset);
-
-        for(auto idx = 0; idx < cnt; idx++){
-
+        for(auto idx = 0; idx < subSize; idx++)
+        {
                 ritzv[idx+offset] = 1.0 / ritzv[idx+offset];
-
-                std::copy_n(M + (cnt - (idx + 1)) * subSize, subSize, A->l_data() + idx * subSize);
         }
-
-        std::reverse(ritzv + cnt+offset, ritzv + subSize+offset);
-
-        for(auto idx = cnt; idx < subSize; idx++){
-
-                ritzv[idx+offset] = 1.0 / ritzv[idx+offset];
-
-                std::copy_n(M + (subSize - (idx + 1)) * subSize, subSize, A->l_data() + idx * subSize);
+        for(auto idx = 0; idx < subSize; idx++)
+        {
+                norms[idx] = T(1.0/blaspp::t_nrm2(subSize, M + idx * subSize, 1));
         }
-
+        for(auto idx = 0; idx < subSize; idx++)
+        {
+                blaspp::t_scal(subSize, &norms[idx], M + idx * subSize, 1);
+	}
         // GEMM for applying eigenvectors back to V1 from V2 * A
         chase::linalg::blaspp::t_gemm(CblasColMajor,
                                      CblasNoTrans,
@@ -399,7 +389,7 @@ namespace internal
                                      &One,
                                      V2.l_data() + offset * V2.l_ld(),
                                      V2.l_ld(),
-                                     A->l_data(),
+                                     M,
                                      subSize,
                                      &Zero,
                                      V1.l_data() + offset * V1.l_ld(),

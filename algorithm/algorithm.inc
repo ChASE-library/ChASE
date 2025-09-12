@@ -455,11 +455,16 @@ std::size_t Algorithm<T>::locking_quasi(
     {
 		index_unconverged.push_back(index[k]);
     }
+    //We need to update the index set for the eventual calculation of the new lowerb,
+    //because the all the sets and vectors will be shifted by converged.
+    std::copy_n(index_unconverged.begin(),unconverged-converged,index);
 
     for(std::size_t k = converged; k <  unconverged; k++)
     {
 	    residLast[k] = residLast_unconverged[index_unconverged[k-converged]];
     }
+
+    //
 
     return converged;
 }
@@ -825,26 +830,31 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
         }
         else if (single->isPseudoHerm() && cnt == unconverged)
         {
+	    if(lambda <= Base<T>(0.0)) // <- This condition must be true in the pseudo-hermitian case
+	    {
+		//Here, index[0] does not necessarily designates the smallest ritz value
+		//if ritzv has been shifted by converged. Instead, we compute the minimum - O(n).
+		lambda_temp = *std::min_element(ritzv, ritzv + unconverged);
+		if(lambda_temp <= Base<T>(0.0))
+		{
+            		lambda = std::max(lambda,lambda_temp);
+		}
+	    }
+    	}
+	if(single->isPseudoHerm() && locked == 0 && iteration > 0)
+	{
             if(config.GetDecayingRate() == 1.0)
             {
-                if(resid[index.data()[std::size_t(unconverged*0.95)-1]] < 1e-4){
-                    lowerb_temp = ritzv[index.data()[std::size_t(unconverged*0.95)-1]];
-                }
+                lowerb_temp = ritzv[index.data()[std::size_t(unconverged*0.95)-1]];
             }else
             {
                 lowerb_temp = ritzv[index.data()[std::size_t(unconverged*0.95)-1]] * config.GetDecayingRate();
             }
-
-	    std::cout << "LOWERB_TEMP = " << lowerb_temp << std::endl;
-	    lowerb = std::min(lowerb,(lowerb_temp+lowerb)/2);
-            //lowerb = std::min(lowerb,Base<T>(0.0));
-	    if(lambda <= Base<T>(0.0))
-	    {
-            	lambda_temp = ritzv[index.data()[0]];
-            	//lambda = std::max(lambda,lambda_temp);
-		//lambda = std::min(lambda,Base<T>(0.0));
-	    }
+	    //If no locking locking we assume that the unconverged ritz provides a descent lowerb. 
+	    //We keep it until convergence once we start locking. 
+	    lowerb = std::min(lowerb,lowerb_temp);
 	}
+	    
 
 #ifdef CHASE_OUTPUT
         {
@@ -909,9 +919,8 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
             std::pow(rho_1,
                      (*std::max_element(degrees, degrees + nev + nex - locked) -
                       degrees[0]));
-        
-	
-	    single->QR(locked, cond);
+        	
+	single->QR(locked, cond);
 
         // ----------------------------- RAYLEIGH  RITZ
         // ----------------------------

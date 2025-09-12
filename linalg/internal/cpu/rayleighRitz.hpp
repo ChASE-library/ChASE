@@ -277,35 +277,26 @@ namespace cpu
 	lapackpp::t_heevd(LAPACK_COL_MAJOR, 'V', 'L', n, M, n, ritzv);
 
 	blaspp::t_trsm('L','L','C','N',n,n,&One,A,n,M,n);	
-	
-	//Sort pairs based on inverted ritz values and signs
-	std::size_t cnt = 0;
 
-	while(cnt < n && ritzv[cnt] < 0){
-		cnt++;
-	}
+	//Invert the ritz values and normalize the vectors 	
+	std::vector<T> norms(n);
 
-	std::reverse(ritzv, ritzv+cnt);
-	
-	for(auto idx = 0; idx < cnt; idx++){
-
+	for(auto idx = 0; idx < n; idx++)
+	{
 		ritzv[idx] = 1.0 / ritzv[idx];
-
-		std::copy_n(M + (cnt - (idx + 1)) * n, n, A + idx * n);
+	}
+	for(auto idx = 0; idx < n; idx++)
+	{
+		norms[idx] = T(1.0/blaspp::t_nrm2(n, M + idx * n, 1));
+	}
+	for(auto idx = 0; idx < n; idx++)
+	{
+		blaspp::t_scal(n, &norms[idx], M + idx * n, 1);
 	}
 
-	std::reverse(ritzv+cnt, ritzv+n);
-
-	for(auto idx = cnt; idx < n; idx++){
-
-		ritzv[idx] = 1.0 / ritzv[idx];
-		
-		std::copy_n(M + (n - (idx + 1)) * n, n, A + idx * n);
-	}
-	
 	//Project ritz vectors back to the initial space
         blaspp::t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, N, n, n,
-               &One, Q, ldq, A, n, &Zero, V, ldv);
+               &One, Q, ldq, M, n, &Zero, V, ldv);
 
     }
 }

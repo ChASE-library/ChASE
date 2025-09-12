@@ -97,6 +97,18 @@ namespace cuda
             A[ind].x += shift;
         }
     }
+    __global__ void sinverse_entries(float* vector, std::size_t n)
+    {
+        std::size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
+        if (idx < n)
+            vector[idx] = 1.0 / vector[idx];
+    }
+    __global__ void dinverse_entries(double* vector, std::size_t n)
+    {
+        std::size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
+        if (idx < n)
+            vector[idx] = 1.0 / vector[idx];
+    }
     
     __global__ void ssubtract_inverse_diagonal(float* A, std::size_t n, std::size_t lda, float coef,
 		    			       float* new_diag)
@@ -317,7 +329,16 @@ namespace cuda
             reinterpret_cast<cuDoubleComplex*>(A), off_m, off_n,        //
             offsize, ldH, shift);
     }
-    
+    void chase_inverse_entries(float* vector, std::size_t n, cudaStream_t stream_)
+    {
+        std::size_t num_blocks = (n + (blockSize - 1)) / blockSize;
+        sinverse_entries<<<num_blocks, blockSize, 0, stream_>>>(vector, n);
+    }
+    void chase_inverse_entries(double* vector, std::size_t n, cudaStream_t stream_)
+    {
+        std::size_t num_blocks = (n + (blockSize - 1)) / blockSize;
+        dinverse_entries<<<num_blocks, blockSize, 0, stream_>>>(vector, n);
+    }
     void chase_subtract_inverse_diagonal(float* A, std::size_t n, std::size_t lda, float coef,
 		    			  float* new_diag, cudaStream_t stream_)
     {

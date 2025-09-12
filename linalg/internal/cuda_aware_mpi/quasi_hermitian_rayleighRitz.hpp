@@ -585,45 +585,38 @@ namespace internal
                                                                     M,
                                                                     subSize));
 
+	chase::linalg::internal::cuda::chase_inverse_entries(ritzv.l_data()+offset,subSize,usedStream);
+
         CHECK_CUDA_ERROR(cudaMemcpy(ritzv.cpu_data() + offset,
                                     ritzv.l_data() + offset,
                                     subSize * sizeof(chase::Base<T>),
                                     cudaMemcpyDeviceToHost));
 
-	std::size_t cnt = 0;
+        std::vector<chase::Base<T>> vectorNorms(subSize);
+        std::vector<T> norm_divider(subSize);
 
-        while(cnt < subSize && ritzv.cpu_data()[cnt+offset] < 0){
-                cnt++;
+        for(auto idx = 0; idx < subSize; idx++)
+        {
+                CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTnrm2(cublas_handle,
+                                                                    subSize,
+                                                                    M + idx * subSize,
+                                                                    1,
+                                                                    &vectorNorms[idx]));
         }
 
-        std::reverse(ritzv.cpu_data() + offset, ritzv.cpu_data() + offset+cnt);
-
-        for(auto idx = 0; idx < cnt; idx++){
-
-                ritzv.cpu_data()[idx+offset] = 1.0 / ritzv.cpu_data()[idx+offset];
-
-                CHECK_CUDA_ERROR(cudaMemcpy(A->l_data() + idx * subSize,
-                                            M + (cnt - (idx + 1)) * subSize,
-                                            subSize * sizeof(T),
-                                            cudaMemcpyDeviceToDevice));
+        for(auto idx = 0; idx < subSize; idx++)
+        {
+            norm_divider[idx] = T(1 / vectorNorms[idx]);
         }
 
-        std::reverse(ritzv.cpu_data() + offset+cnt, ritzv.cpu_data() + offset+subSize);
-
-        for(auto idx = cnt; idx < subSize; idx++){
-
-                ritzv.cpu_data()[idx+offset] = 1.0 / ritzv.cpu_data()[idx+offset];
-
-                CHECK_CUDA_ERROR(cudaMemcpy(A->l_data()  + idx * subSize,
-                                            M + (subSize - (idx + 1)) * subSize,
-                                            subSize * sizeof(T),
-                                            cudaMemcpyDeviceToDevice));
+        for(auto idx = 0; idx < subSize; idx++)
+        {
+              CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTscal(cublas_handle,
+                                                                      subSize,
+                                                                      &norm_divider[idx],
+                                                                      M + idx * subSize,
+                                                                      1));
         }
-
-        CHECK_CUDA_ERROR(cudaMemcpy(ritzv.l_data() + offset,
-                                    ritzv.cpu_data() + offset,
-                                    subSize * sizeof(chase::Base<T>),
-                                    cudaMemcpyHostToDevice));
 
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(cublas_handle,
                                     CUBLAS_OP_N,
@@ -634,13 +627,14 @@ namespace internal
                                     &One,
                                     V2.l_data() + offset * V2.l_ld(),
                                     V2.l_ld(),
-                                    A->l_data(),
+                                    M,
                                     subSize,
                                     &Zero,
                                     V1.l_data() + offset * V1.l_ld(),
                                     V1.l_ld()));
 
     }
+
 }
 }
 }

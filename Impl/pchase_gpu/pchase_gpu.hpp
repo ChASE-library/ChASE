@@ -158,9 +158,12 @@ public:
 
         CHECK_CUBLAS_ERROR(cublasCreate(&cublasH_));
         CHECK_CUSOLVER_ERROR(cusolverDnCreate(&cusolverH_));
-        //CHECK_CUDA_ERROR(cudaStreamCreate(&stream_));
-        //CHECK_CUBLAS_ERROR(cublasSetStream(cublasH_, stream_));
-        //CHECK_CUSOLVER_ERROR(cusolverDnSetStream(cusolverH_, stream_));
+
+#ifdef XGEEV_EXISTS	
+        CHECK_CUDA_ERROR(cudaStreamCreate(&stream_));
+        CHECK_CUBLAS_ERROR(cublasSetStream(cublasH_, stream_));
+        CHECK_CUSOLVER_ERROR(cusolverDnSetStream(cusolverH_, stream_));
+#endif
 
         CHECK_CUDA_ERROR(cudaMalloc((void**)&devInfo_, sizeof(int)));
         CHECK_CUDA_ERROR(cudaMalloc((void**)&d_return_, sizeof(T) * nevex_));
@@ -195,20 +198,9 @@ public:
             is_sym_ = false;
             is_pseudoHerm_ = true;
         
-		A_ = std::make_unique<chase::distMatrix::RedundantMatrix<T, chase::platform::GPU>>(2*nevex_, nevex_, Hmat_->getMpiGrid_shared_ptr());
-		//A_ = std::make_unique<chase::distMatrix::RedundantMatrix<T, chase::platform::GPU>>(3*nevex_, nevex_, Hmat_->getMpiGrid_shared_ptr());
-        	
-		CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTheevd_bufferSize(
-                                                            cusolverH_, 
-                                                            CUSOLVER_EIG_MODE_VECTOR, 
-                                                            CUBLAS_FILL_MODE_LOWER,
-                                                            nevex_, 
-                                                            A_->l_data(), 
-                                                            A_->l_ld(), 
-                                                            ritzv_->l_data(), 
-							    &lwork_heevd));
-/*
-#ifdef XGEEV_EXISTS
+#ifdef XGEEV_EXISTS	
+	    A_ = std::make_unique<chase::distMatrix::RedundantMatrix<T, chase::platform::GPU>>(3*nevex_, nevex_, Hmat_->getMpiGrid_shared_ptr());
+
             CHECK_CUSOLVER_ERROR(cusolverDnCreateParams(&params_));
 
             std::size_t temp_ldwork = 0;
@@ -225,12 +217,22 @@ public:
             lhwork_ = (int)temp_lhwork;
 
             h_work_ = std::unique_ptr<T[]>(new T[lhwork_]);
+#else	
+	    A_ = std::make_unique<chase::distMatrix::RedundantMatrix<T, chase::platform::GPU>>(2*nevex_, nevex_, Hmat_->getMpiGrid_shared_ptr());
+        	
+	    CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTheevd_bufferSize(
+                                                            cusolverH_, 
+                                                            CUSOLVER_EIG_MODE_VECTOR, 
+                                                            CUBLAS_FILL_MODE_LOWER,
+                                                            nevex_, 
+                                                            A_->l_data(), 
+                                                            A_->l_ld(), 
+                                                            ritzv_->l_data(), 
+							    &lwork_heevd));
 #endif
-*/
 	}
 	else
-	{
-	
+	{	
 		is_sym_ = true;
 		is_pseudoHerm_ = false;
 
@@ -970,8 +972,27 @@ public:
         SCOPED_NVTX_RANGE();
 
         if constexpr (std::is_same<typename MatrixType::hermitian_type, chase::matrix::QuasiHermitian>::value)
-
 	{
+#ifdef XGEEV_EXISTS
+
+        	kernelNamespace::quasi_hermitian_rayleighRitz(cublasH_,
+                                                   cusolverH_,
+						   params_,
+                                                   *Hmat_, 
+                                                   *V1_, 
+                                                   *V2_, 
+                                                   *W1_, 
+                                                   *W2_, 
+                                                   *ritzv_, 
+                                                   locked_, 
+                                                   block,
+                                                   devInfo_,
+                                                   d_work_,
+                                                   lwork_,
+						   h_work_.get(),
+				   		   lhwork_,
+                                                   A_.get());
+#else	
         	kernelNamespace::quasi_hermitian_rayleighRitz_v2(cublasH_,
                                                    cusolverH_,
 						   params_,
@@ -986,9 +1007,8 @@ public:
                                                    devInfo_,
                                                    d_work_,
                                                    lwork_,
-						   //h_work_.get(),
-				   		   //lhwork_,
                                                    A_.get());
+#endif
 	}
 	else
 	{

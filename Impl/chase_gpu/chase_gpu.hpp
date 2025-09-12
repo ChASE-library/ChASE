@@ -169,7 +169,11 @@ public:
             nevex_, 1);
         ritzvs_ = chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU>(
             nevex_, 1, nevex_, ritzv_);
+#ifdef XGEEV_EXISTS
+        A_ = chase::matrix::Matrix<T, chase::platform::GPU>(3 * nevex_, nevex_);
+#else
         A_ = chase::matrix::Matrix<T, chase::platform::GPU>(2 * nevex_, nevex_);
+#endif
 
         if constexpr (std::is_same<MatrixType,
                                    chase::matrix::QuasiHermitianMatrix<
@@ -221,12 +225,6 @@ public:
                                    chase::matrix::QuasiHermitianMatrix<
                                        T, chase::platform::GPU>>::value)
         {
-            CHECK_CUSOLVER_ERROR(
-                chase::linalg::cusolverpp::cusolverDnTheevd_bufferSize(
-                    cusolverH_, CUSOLVER_EIG_MODE_VECTOR,
-                    CUBLAS_FILL_MODE_LOWER, nevex_, A_.data(), A_.ld(),
-                    ritzvs_.data(), &lwork_eev));
-/*
 #ifdef XGEEV_EXISTS
             CHECK_CUSOLVER_ERROR(cusolverDnCreateParams(&params_));
 
@@ -244,12 +242,16 @@ public:
             lhwork_ = (int)temp_lhwork;
 
             h_work_ = std::unique_ptr<T[]>(new T[lhwork_]);
+#else
+            CHECK_CUSOLVER_ERROR(
+                chase::linalg::cusolverpp::cusolverDnTheevd_bufferSize(
+                    cusolverH_, CUSOLVER_EIG_MODE_VECTOR,
+                    CUBLAS_FILL_MODE_LOWER, nevex_, A_.data(), A_.ld(),
+                    ritzvs_.data(), &lwork_eev));
 #endif
-*/
         }
         else
         {
-
             CHECK_CUSOLVER_ERROR(
                 chase::linalg::cusolverpp::cusolverDnTheevd_bufferSize(
                     cusolverH_, CUSOLVER_EIG_MODE_VECTOR,
@@ -658,11 +660,16 @@ public:
                                    chase::matrix::QuasiHermitianMatrix<
                                        T, chase::platform::GPU>>::value)
         {
+#ifdef XGEEV_EXISTS
+            chase::linalg::internal::cuda::rayleighRitz(
+                cublasH_, cusolverH_, params_, Hmat_, Vec1_, Vec2_, ritzvs_,
+                locked, block, devInfo_, d_work_, lwork_,h_work_.get(),
+                lhwork_,&A_);
+#else
             chase::linalg::internal::cuda::rayleighRitz_v2(
                 cublasH_, cusolverH_, params_, Hmat_, Vec1_, Vec2_, ritzvs_,
-                locked, block, devInfo_, d_work_, lwork_, //h_work_.get(),
-                //lhwork_, 
-		&A_);
+                locked, block, devInfo_, d_work_, lwork_,&A_);
+#endif
         }
         else
         {
