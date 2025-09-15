@@ -28,6 +28,7 @@ option(CHASE_ENABLE_MPI_IO "Enable MPI IO to read Hamiltonian matrix from local"
 option(CHASE_USE_NVTX "Enable NVTX for profiling" OFF)
 option(CHASE_BUILD_WITH_EXAMPLES "Build the examples" OFF)
 option(CHASE_BUILD_WITH_DOCS "Build the docs" OFF)
+option(CHASE_ENABLE_XGEEV_RAYLEIGHRITZ "Enable solving pseudo-hermitian problems with XGEEV cusolver" OFF)
 option(ChASE_DISPLAY_COND_V_SVD "Compute and display condition number of V from SVD" OFF)
 
 if( CHASE_OUTPUT )
