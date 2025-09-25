@@ -222,22 +222,23 @@ int bse_solve(BSE_DriverProblemConfig& conf)
 #endif
 
 #endif
-/*
+
 #ifndef USE_QUASI_HERMITIAN
-	
+    //single.symOrHermMatrix('L');
+/*	
 #ifdef HAS_NCCL
-    	chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(Hmat);
-	Hmat.D2H();
+    	//chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(Hmat);
+	//Hmat.D2H();
 #elif defined(HAS_CUDA)
-    	chase::linalg::internal::cuda::flipLowerHalfMatrixSign(Hmat);
-	Hmat->D2H();
+    	//chase::linalg::internal::cuda::flipLowerHalfMatrixSign(Hmat);
+	//Hmat->D2H();
 #elif defined(USE_MPI)
     	chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(Hmat);
 #else
     	chase::linalg::internal::cpu::flipLowerHalfMatrixSign(Hmat);
+#endif*/
 #endif
-#endif
-*/
+
     if (world_rank == 0)
     {
         std::cout << "Starting ChASE" << std::endl;

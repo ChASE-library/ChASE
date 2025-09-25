@@ -277,6 +277,15 @@ public:
     * @return The number of MPI processes used, represented as an integer.
     */
     virtual int get_nprocs() = 0;
+    /**
+    * @brief Returns the MPI rank.
+    * 
+    * This method returns the MPI process. If sequential ChASE is used, 
+    * it returns `0`, indicating a single process is running.
+    * 
+    * @return The number of MPI processes used, represented as an integer.
+    */
+    virtual int get_rank() = 0;
 #ifdef CHASE_OUTPUT
     /**
     * @brief Prints intermediate information during the solving procedure.

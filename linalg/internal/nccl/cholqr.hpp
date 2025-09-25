@@ -65,6 +65,8 @@ namespace internal
                 int lwork,                
                 T *A)
     {
+
+	std::cout << "Inside Cholesky QR 1" << std::endl;
         T one = T(1.0);
         T zero = T(0.0);
         chase::Base<T> One = Base<T>(1.0);
@@ -102,6 +104,7 @@ namespace internal
             workspace = work_ptr.get();
         }
 
+	std::cout << "Buffer Size Ok." << std::endl;
         cublasOperation_t transa;
         if constexpr (std::is_same<T, std::complex<float>>::value || std::is_same<T, std::complex<double>>::value)
         {
@@ -123,6 +126,8 @@ namespace internal
                                                                   &Zero, 
                                                                   A, 
                                                                   n));
+	
+	std::cout << "SYHERK Ok." << std::endl;
 
         chase::linalg::internal::cuda::extractUpperTriangular(A, n, workspace, n);
         //CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(A, A, n * n, ncclSum, comm));
@@ -142,6 +147,7 @@ namespace internal
                                                                          devInfo));
         CHECK_CUDA_ERROR(cudaMemcpy(&info, devInfo, 1 * sizeof(int), cudaMemcpyDeviceToHost));                    
    
+	std::cout << "PACCKING POTRF and Memcpy Ok." << std::endl;
         if(info != 0)
         {
             CHECK_CUDA_ERROR(cudaFree(devInfo));
@@ -171,6 +177,7 @@ namespace internal
             }
 #endif
             CHECK_CUDA_ERROR(cudaFree(devInfo));
+	    std::cout << "CHOLESKY QR 1 DONE" << std::endl;
             return info;
         }   
         

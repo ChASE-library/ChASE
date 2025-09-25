@@ -642,7 +642,7 @@ namespace internal
                                                                     subSize,
                                                                     M,
                                                                     subSize));
-
+#ifdef QR_RR_DOUBLE_PRECISION
         if constexpr (std::is_same<T, std::complex<float>>::value)
         {
                 if(A->isDoublePrecisionEnabled())
@@ -680,6 +680,7 @@ namespace internal
                 cudaFree(workspace_d);
         }
         else{
+#endif
                 CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTheevd(
                                         cusolver_handle,
                                         CUSOLVER_EIG_MODE_VECTOR,
@@ -689,7 +690,9 @@ namespace internal
                                         subSize,
                                         ritzv.l_data() + offset,
                                         workspace, lwork, devInfo));
+#ifdef QR_RR_DOUBLE_PRECISION
         }
+#endif
 
 	int info;
 	CHECK_CUDA_ERROR(cudaMemcpy(&info, devInfo, 1 * sizeof(int), cudaMemcpyDeviceToHost));

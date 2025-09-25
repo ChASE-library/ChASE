@@ -28,8 +28,10 @@ option(CHASE_ENABLE_MPI_IO "Enable MPI IO to read Hamiltonian matrix from local"
 option(CHASE_USE_NVTX "Enable NVTX for profiling" OFF)
 option(CHASE_BUILD_WITH_EXAMPLES "Build the examples" OFF)
 option(CHASE_BUILD_WITH_DOCS "Build the docs" OFF)
+option(CHASE_SAVE_RESIDUALS "Print the residuals in an external file" OFF)
 option(CHASE_ENABLE_XGEEV_RAYLEIGHRITZ "Enable solving pseudo-hermitian problems with XGEEV cusolver" OFF)
 option(ChASE_DISPLAY_COND_V_SVD "Compute and display condition number of V from SVD" OFF)
+option(CHASE_QR_RR_DOUBLE_PRECISION "Operate QR and HEEVD in RR in Double Precision" OFF)
 
 if( CHASE_OUTPUT )
   target_compile_definitions( chase_algorithm  INTERFACE "-DCHASE_OUTPUT" )
@@ -64,8 +66,16 @@ if(CHASE_USE_NVTX)
   target_compile_definitions( chase_algorithm  INTERFACE "-DUSE_NVTX" )
 endif()
 
+if(CHASE_QR_RR_DOUBLE_PRECISION)
+  add_definitions(-DQR_RR_DOUBLE_PRECISION)
+endif()
+
 if(ChASE_DISPLAY_COND_V_SVD)
     add_definitions(-DChASE_DISPLAY_COND_V_SVD)
+endif()
+
+if(CHASE_SAVE_RESIDUALS)
+	add_definitions(-DCHASE_SAVE_RESIDUALS)
 endif()
 
 add_subdirectory(external)

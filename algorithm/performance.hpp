@@ -491,6 +491,8 @@ public:
     }
 
     int get_nprocs() { return chase_->get_nprocs(); }
+    
+    int get_rank() { return chase_->get_rank(); }
 
     void End()
     {

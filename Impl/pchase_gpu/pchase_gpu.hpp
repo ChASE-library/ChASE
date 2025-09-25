@@ -337,6 +337,7 @@ public:
         CHECK_CUDA_ERROR(cudaMemcpy(d_diag_xoffs, diag_xoffs.data(), sizeof(std::size_t) * diag_cnt , cudaMemcpyHostToDevice));
         CHECK_CUDA_ERROR(cudaMemcpy(d_diag_yoffs, diag_yoffs.data(), sizeof(std::size_t) * diag_cnt , cudaMemcpyHostToDevice));
  
+#ifdef QR_RR_DOUBLE_PRECISION
         if constexpr (std::is_same<T, std::complex<float>>::value)
         {
             if(!A_->isDoublePrecisionEnabled())
@@ -348,7 +349,8 @@ public:
             {
                 V1_->enableDoublePrecision();
             }            
-        }    
+        }
+#endif	
     }
 
     pChASEGPU(const pChASEGPU&) = delete;
@@ -368,7 +370,23 @@ public:
         if (d_return_)
             CHECK_CUDA_ERROR(cudaFree(d_return_));  
         if (states_)
-            CHECK_CUDA_ERROR(cudaFree(states_));            
+            CHECK_CUDA_ERROR(cudaFree(states_));                    
+	
+#ifdef QR_RR_DOUBLE_PRECISION
+	if constexpr (std::is_same<T, std::complex<float>>::value)
+        {
+            if(A_->isDoublePrecisionEnabled())
+            {
+                A_->disableDoublePrecision();
+            }
+
+            if(V1_->isDoublePrecisionEnabled())
+            {
+                V1_->disableDoublePrecision();
+            }            
+        } 
+#endif
+
     }
 
     std::size_t GetN() const override { return N_; }
@@ -791,6 +809,12 @@ public:
 
             if (cond > cond_threshold_upper)
             {
+#ifdef CHASE_OUTPUT
+                if(my_rank_ == 0){
+                    std::cout << "Entering Shifted Cholesky QR 2" << std::endl;
+                }
+#endif
+#ifdef QR_RR_DOUBLE_PRECISION
                 if constexpr (std::is_same<T, std::complex<float>>::value)
                 {
                     V1_->copyTo();
@@ -816,6 +840,7 @@ public:
                 }
                 else
                 {
+#endif
                 info = kernelNamespace::shiftedcholQR2(cublasH_,
                                                                 cusolverH_,
                                                                 V1_->g_rows(),
@@ -828,7 +853,9 @@ public:
                                                                 d_work_,
                                                                 lwork_,
                                                                 A_->l_data()); 
+#ifdef QR_RR_DOUBLE_PRECISION
                 }                                               
+#endif
             }
             else if(cond < cond_threshold_lower)
             {
@@ -845,7 +872,18 @@ public:
                 }
                 */
 
-                /*if constexpr (std::is_same<T, std::complex<float>>::value)
+#ifdef CHASE_OUTPUT
+                if(1){
+#ifdef QR_RR_DOUBLE_PRECISION 
+			std::cout << "QR_RR_DOUBLE ACTVIATED" << std::endl;
+#else
+			std::cout << "QR_RR_DOUBLE DISABLED" << std::endl;
+#endif
+		       	std::cout << "Entering Cholesky QR 1" << std::endl;
+                }
+#endif
+#ifdef QR_RR_DOUBLE_PRECISION
+                if constexpr (std::is_same<T, std::complex<float>>::value)
                 {
                     V1_->copyTo();
 
@@ -866,8 +904,9 @@ public:
                                                                 A_d->l_data()); 
                     V1_->copyback();
                     CHECK_CUDA_ERROR(cudaFree(d_work_d));
-                }else*/
+                }else
                 {
+#endif
                     info = kernelNamespace::cholQR1(cublasH_,
                                                                     cusolverH_,
                                                                     V1_->l_rows(), 
@@ -879,9 +918,9 @@ public:
                                                                     d_work_,
                                                                     lwork_,
                                                                     A_->l_data());  
+#ifdef QR_RR_DOUBLE_PRECISION
                 }
-
-                                                            
+#endif                                                      
             }
             else
             {   
@@ -897,7 +936,13 @@ public:
                     }
                 }*/
 
-                /*if constexpr (std::is_same<T, std::complex<float>>::value)
+#ifdef CHASE_OUTPUT
+                if(my_rank_ == 0){
+                    std::cout << "Entering Cholesky QR 2" << std::endl;
+                }
+#endif
+#ifdef QR_RR_DOUBLE_PRECISION
+                if constexpr (std::is_same<T, std::complex<float>>::value)
                 {
                     V1_->copyTo();
 
@@ -918,8 +963,9 @@ public:
                                                                     A_d->l_data()); 
                     V1_->copyback();
                     CHECK_CUDA_ERROR(cudaFree(d_work_d));
-                }else*/
+                }else
                 {
+#endif
                     info = kernelNamespace::cholQR2(cublasH_,
                                                                     cusolverH_,
                                                                     V1_->l_rows(), 
@@ -931,7 +977,9 @@ public:
                                                                     d_work_,
                                                                     lwork_,
                                                                     A_->l_data()); 
-                }                             
+#ifdef QR_RR_DOUBLE_PRECISION
+                }            
+#endif		
             }
 
             if (info != 0)

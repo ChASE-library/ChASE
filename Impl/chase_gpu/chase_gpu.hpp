@@ -317,6 +317,7 @@ public:
     }
     ChaseConfig<T>& GetConfig() override { return config_; }
     int get_nprocs() override { return 1; }
+    int get_rank() override { return 0; }
 
     void loadProblemFromFile(std::string filename)
     {
