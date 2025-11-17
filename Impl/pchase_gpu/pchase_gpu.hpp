@@ -810,9 +810,10 @@ public:
             if (cond > cond_threshold_upper)
             {
 #ifdef CHASE_OUTPUT
+		/*
                 if(my_rank_ == 0){
                     std::cout << "Entering Shifted Cholesky QR 2" << std::endl;
-                }
+                }*/
 #endif
 #ifdef QR_RR_DOUBLE_PRECISION
                 if constexpr (std::is_same<T, std::complex<float>>::value)
@@ -873,7 +874,7 @@ public:
                 */
 
 #ifdef CHASE_OUTPUT
-                if(1){
+                if(0){
 #ifdef QR_RR_DOUBLE_PRECISION 
 			std::cout << "QR_RR_DOUBLE ACTVIATED" << std::endl;
 #else
@@ -937,9 +938,10 @@ public:
                 }*/
 
 #ifdef CHASE_OUTPUT
+		/*
                 if(my_rank_ == 0){
                     std::cout << "Entering Cholesky QR 2" << std::endl;
-                }
+                }*/
 #endif
 #ifdef QR_RR_DOUBLE_PRECISION
                 if constexpr (std::is_same<T, std::complex<float>>::value)

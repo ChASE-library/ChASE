@@ -96,6 +96,7 @@ namespace internal
 
         chase::linalg::internal::cuda::t_lacpy('A', v_1.l_rows(), numvec, V.l_data(), V.l_ld(), v_1.l_data(), v_1.l_ld());
 	
+	CHECK_CUDA_ERROR(cudaDeviceSynchronize());
 	chase::linalg::internal::cuda_nccl::MatrixMultiplyMultiVectors(cublas_handle,
 								     &One, 
                                                                      H,
@@ -103,8 +104,10 @@ namespace internal
                                                                      &Zero,
                                                                      v_w);
 
+	CHECK_CUDA_ERROR(cudaDeviceSynchronize());
 	v_w.redistributeImplAsync(&v_2);
-        
+	CHECK_CUDA_ERROR(cudaDeviceSynchronize());
+
 	chase::linalg::internal::cuda::t_lacpy('A', Sv.l_rows(), numvec, v_2.l_data(), v_2.l_ld(), Sv.l_data(), Sv.l_ld());
 
 	chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(Sv);
@@ -125,6 +128,7 @@ namespace internal
 		real_beta[i] = std::real(beta[i]);
 	}
 
+        CHECK_CUDA_ERROR(cudaDeviceSynchronize());
         MPI_Allreduce(MPI_IN_PLACE, 
                     real_beta.data(), 
                     numvec, 
@@ -177,6 +181,7 @@ namespace internal
 		real_alpha[i] = std::real(alpha[i]);
 	    }
 
+	    CHECK_CUDA_ERROR(cudaDeviceSynchronize());
             MPI_Allreduce(MPI_IN_PLACE, 
                           real_alpha.data(), 
                           numvec, 
@@ -243,6 +248,7 @@ namespace internal
                         	                                           &Zero,
                                 	                                   v_w);
 
+	    CHECK_CUDA_ERROR(cudaDeviceSynchronize());
 	    v_w.redistributeImplAsync(&v_2);
 	    
 	    chase::linalg::internal::cuda::t_lacpy('A', Sv.l_rows(), numvec, v_2.l_data(), v_2.l_ld(), Sv.l_data(), Sv.l_ld());
@@ -265,6 +271,7 @@ namespace internal
 		real_beta[i] = std::real(beta[i]);
 	    }
 
+	    CHECK_CUDA_ERROR(cudaDeviceSynchronize());
             MPI_Allreduce(MPI_IN_PLACE,
   			  real_beta.data(), 
                     	  numvec, 

@@ -166,6 +166,7 @@ namespace internal
 	
 	chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(V2, offset, subSize);
 	
+	CHECK_CUDA_ERROR(cudaDeviceSynchronize());	
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(cublas_handle, 
                                        CUBLAS_OP_C, 
                                        CUBLAS_OP_N, 
@@ -180,7 +181,8 @@ namespace internal
                                        &Zero, 
                                        M,
                                        subSize));
-	
+
+        CHECK_CUDA_ERROR(cudaDeviceSynchronize());	
         CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(M, M, subSize * subSize, ncclSum, A->getMpiGrid()->get_nccl_col_comm()));
 
         chase::linalg::internal::cuda::chase_plus_inverse_diagonal(M,
@@ -219,7 +221,8 @@ namespace internal
                                         W1.l_ld(),
                                         &Zero,
                                         M, subSize));
-        
+                
+	CHECK_CUDA_ERROR(cudaDeviceSynchronize());
 	CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(M, M, subSize * subSize, ncclSum, A->getMpiGrid()->get_nccl_row_comm()));
 
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTaxpy(cublas_handle,
@@ -559,7 +562,6 @@ namespace internal
                         subSize);
 	
 	chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(W1, offset, subSize );
-        cudaDeviceSynchronize();
 		
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(cublas_handle, 
                                        CUBLAS_OP_C, 
@@ -581,6 +583,7 @@ namespace internal
         //CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(workspace, workspace, upperTriangularSize, ncclSum, A->getMpiGrid()->get_nccl_row_comm()));
         //chase::linalg::internal::cuda::unpackUpperTriangular(workspace, subSize, A->l_data(), subSize);
 
+        cudaDeviceSynchronize();
         CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(A->l_data(), A->l_data(), subSize * subSize, ncclSum, A->getMpiGrid()->get_nccl_row_comm()));
 
         CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTpotrf(cusolver_handle,
@@ -591,10 +594,8 @@ namespace internal
                                                                          workspace,
                                                                          lwork,
                                                                          devInfo));
-
 	
 	chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(V1, offset, subSize);
-	cudaDeviceSynchronize();
 
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(cublas_handle, 
                                        CUBLAS_OP_C, 
@@ -615,6 +616,7 @@ namespace internal
         //CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(workspace, workspace, upperTriangularSize, ncclSum, A->getMpiGrid()->get_nccl_col_comm()));
 	//chase::linalg::internal::cuda::unpackUpperTriangular(workspace, subSize, M, subSize);
         
+	cudaDeviceSynchronize();
 	CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(M, M, subSize * subSize, ncclSum, A->getMpiGrid()->get_nccl_col_comm()));
 
 	CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTtrsm(cublas_handle,

@@ -49,9 +49,9 @@ class ChasePerfData
 #endif
 
 public:
-    ChasePerfData()
+    ChasePerfData(int matrix_type = 0)
         : chase_iteration_count(0), chase_filtered_vecs(0), timings(7),
-           start_points(7), end_points(7), chase_iter_blocksizes(0)
+           start_points(7), end_points(7), chase_iter_blocksizes(0), matrix_type(matrix_type)
     {
     }
 
@@ -139,6 +139,12 @@ public:
 	    flop_count += 2. * block * block * block;
 	    // dtrsm
 	    flop_count += 2. * N * block * block;
+
+	    if(matrix_type == 1)
+	    {
+		//sign flip the locked vectors
+		flop_count += (chase_iter_blocksizes[0] - block) * (N/2);
+	    }
             
 	    // RR //
 
@@ -152,10 +158,25 @@ public:
             // 8MNK + 18MN
             // m = block, k = N, n = block
             flop_count += 2 * block * block * N;
-
+	
 	    // https://en.wikipedia.org/wiki/Divide-and-conquer_eigenvalue_algorithm
 	    // 4M^3
 	    flop_count += 4 * block * block * block;
+	    
+	    if(matrix_type == 1)
+	    {
+		//two sign flip operations
+		flop_count += 2 * block * (N/2);
+	    
+		//cholesky factorization of QSHQ
+	    	flop_count += 2. * block * block * block;
+	    
+		//three dtrsm
+	    	flop_count += 6. * block * block * block;
+		
+		//normalizing the ritz vectors after trsm
+	    	flop_count += 3 * block * block;
+	    }
 
             // W = V*Z
             // 2MNK
@@ -178,6 +199,11 @@ public:
         // 8MNK + 18MN
         flop_count +=
             2 * N * chase_filtered_vecs * N;
+
+	if(matrix_type == 1)
+	{
+	    flop_count += 2 * chase_filtered_vecs * (N/2);
+	}
 
 	flop_count *= factor;
 
@@ -203,8 +229,14 @@ public:
     {
         int factor = std::pow(4, int(sizeof(T) / sizeof(Base<T>)) - 1) ;
 
-        return 2 * factor * N * chase_filtered_vecs * N /
-               1e9;
+	std::size_t flop_count = 2 * factor * N * chase_filtered_vecs * N;
+
+	if(matrix_type == 1)
+	{
+		flop_count  += 2 * factor * (N/2) * chase_filtered_vecs;
+	}
+
+        return flop_count / 1e9;
     }
 
     void set_nprocs(int nProcs) { nprocs = nProcs; }
@@ -353,6 +385,7 @@ private:
 
     std::vector<std::size_t> chase_iter_blocksizes;
     int nprocs;
+    int matrix_type; // 0 stands for Hermitian, 1 for Pseudo-Hermitian
 };
 //! A derived class used to extract performance and configuration data.
 /*! This is a class derived from the Chase class which plays the
@@ -378,7 +411,7 @@ template <class T>
 class PerformanceDecoratorChase : public chase::ChaseBase<T>
 {
 public:
-    PerformanceDecoratorChase(ChaseBase<T>* chase) : chase_(chase), perf_() {}
+    PerformanceDecoratorChase(ChaseBase<T>* chase) : chase_(chase), perf_(!chase->isSym()) {}
 
     void initVecs(bool random)
     {   

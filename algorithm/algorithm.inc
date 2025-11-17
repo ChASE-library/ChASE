@@ -286,6 +286,7 @@ std::size_t Algorithm<T>::calc_degrees_quasi(ChaseBase<T>* single, std::size_t N
         
 #ifdef CHASE_OUTPUT
         // Debug output for residual-weighted cluster analysis
+	/*
         if (cluster_factors[i] > 1.5 || cluster_factors[i] < 0.8 || quasi_bonus > 0) {
             std::ostringstream oss;
             oss << "Residual-weighted cluster adjustment: eigenvalue[" << i << "] = " 
@@ -297,6 +298,7 @@ std::size_t Algorithm<T>::calc_degrees_quasi(ChaseBase<T>* single, std::size_t N
                 << ", final_degree = " << degrees[i] << "\n";
             single->Output(oss.str());
         }
+	*/
 #endif
     }
 
@@ -343,7 +345,10 @@ std::size_t Algorithm<T>::calc_degrees_quasi(ChaseBase<T>* single, std::size_t N
                 swap_kj(k, j, degrees); // for filter
                 swap_kj(k, j, ritzv);
                 swap_kj(k, j, resid);
-                swap_kj(k, j, residLast);
+		if(single->isSym())
+		{
+                	swap_kj(k, j, residLast);
+		}
                 single->Swap(k + locked, j + locked);
             }
 
@@ -421,11 +426,11 @@ std::size_t Algorithm<T>::locking_quasi(
     for (std::size_t k = 0; k < unconverged-nex; ++k) {
         int j = index[k];
 
-        if (resid[j] <= tol || (resid[j] > tol && resid[j] >= residLast[k] && resid[j] <= 1000.0 * tol && iteration >= 4)) 
+        if (resid[j] <= tol || (resid[j] > tol && resid[j] >= residLast[k] && resid[j] <= 100.0 * tol && iteration >= 4)) 
         {
 		
 #ifdef CHASE_OUTPUT
-            if(resid[j] > tol && resid[j] <= 100.0 * tol && resid[j] > residLast[k]  && iteration >=4)
+            if(resid[j] > tol && resid[j] <= 100.0 * tol && resid[j] >= residLast[k]  && iteration >=4)
             {
                         std::ostringstream oss;
                         oss << "locking unconverged pair is:" << resid[j]
@@ -568,15 +573,28 @@ std::size_t Algorithm<T>::lanczos(ChaseBase<T>* single, int N, int numvec, int m
 
     single->Lanczos(m, numvec, upperb, Theta, Tau, ritzV);
 
+
+
 #ifdef CHASE_OUTPUT
-    /*
-    std::cout << "THETA:";
+    {   
+    std::ostringstream oss;
+    
+    oss << "THETA:";
     for (std::size_t k = 0; k < numvec * m; ++k) {
-      if( k % 5 == 0 ) std::cout << "\n";
-      std::cout << Theta[k] << " ";
+      if( k % 5 == 0 ) oss << "\n";
+      oss << Theta[k] << " ";
     }
-    std::cout << "\n";
-  */
+    oss << "\n";
+    
+    oss << "TAU:";
+    for (std::size_t k = 0; k < numvec * m; ++k) {
+      if( k % 5 == 0 ) oss << "\n";
+      oss << Tau[k] << " ";
+    }
+    oss << "\n";
+        
+    single->Output(oss.str());
+    }
 #endif
 
     double* ThetaSorted = new double[numvec * m];
@@ -633,6 +651,20 @@ std::size_t Algorithm<T>::lanczos(ChaseBase<T>* single, int N, int numvec, int m
         }
         prev = curr;
     }
+
+#ifdef CHASE_OUTPUT
+    { 
+    std::ostringstream oss;
+    
+    oss << "m = " << m << std::endl;
+    oss << "numvec = " << numvec << std::endl;
+    oss << "bound  = " << bound << std::endl;
+    oss << "lowerb = " << lowerb << std::endl;
+    oss << "search = " << search << std::endl;
+        
+    single->Output(oss.str());
+    }
+#endif
 
     // Now we extract the Eigenvectors that correspond to eigenvalues < lowerb
     int idx = 0;
@@ -790,6 +822,7 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
 	    nevex, &upperb, random, random ? ritzv : NULL);
 
     std::size_t locked = 0;    // Number of converged eigenpairs.
+    std::size_t locked_prev = 0; //Number of converged eigenpairs of the previous iteration
     std::size_t iteration = 0; // Current iteration.
     lowerb = *std::max_element(ritzv, ritzv + unconverged); 
     lambda = *std::min_element(ritzv_, ritzv_ + nevex);
@@ -865,10 +898,10 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
 		/*auto it = std::min_element(ritzv, ritzv + unconverged);
 		std::size_t idx = std::distance(ritzv,it);
 		lambda_temp = ritzv[idx];*/
-		std::cout << lambda_temp << std::endl;
+		//Another option consists of setting lambda_temp at the end of the iteration. 
 		if(lambda_temp >= lambda)// && resid[idx] < 1e-3) //We check with this heuristic that the ritz value is not phantom
 		{
-            		lambda = std::max(lambda,lambda_temp);
+            		//lambda = std::max(lambda,lambda_temp);
 		}/*else
 		{
 			lambda_temp = ritzv[std::min_element(resid, resid + unconverged) - resid];
@@ -876,7 +909,7 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
 		}*/
 	    }
     	}
-	if(single->isPseudoHerm() && locked == 0 && iteration > 0)
+	if(single->isPseudoHerm() && iteration > 0 && (locked == 0 || locked == locked_prev))
 	{
             if(config.GetDecayingRate() == 1.0)
             {
@@ -930,8 +963,9 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
                 deg = calc_degrees_quasi(single, N, unconverged, nex, upperb, lowerb, tol,
                                         ritzv, resid, residLast, degrees, locked);
             } else {
-                // Use standard hermitian degree calculation
-                deg = calc_degrees(single, N, unconverged, nex, upperb, lowerb, tol,
+                // Normaly, we Use standard hermitian degree calculation. For the sake of comparing
+	        // the performance with the pseudo-hermitian case, we also enable the cluster detection feature
+                deg = calc_degrees_quasi(single, N, unconverged, nex, upperb, lowerb, tol,
                                   ritzv, resid, residLast, degrees, locked);
             }
         }
@@ -989,7 +1023,7 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
 	    }
 	    else
 	    {
-            	std::sort(index.begin(), index.begin() + std::size_t(0.6*unconverged), //sort ritzv values only 1st nev-locked
+            	std::sort(index.begin(), index.begin() + std::size_t(unconverged/nevex * unconverged), //sort ritzv values only 1st nev-locked
                 	[&](int a, int b) { return (ritzv[index_res.data()[a]] < ritzv[index_res.data()[b]]); });
 
 	    }
@@ -1046,6 +1080,8 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
         single->Lock(new_converged);
 
 	lambda_temp = ritzv[index.data()[0]];
+
+	locked_prev = locked;
 
         locked += new_converged;
         unconverged -= new_converged;

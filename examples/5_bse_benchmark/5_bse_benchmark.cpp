@@ -255,7 +255,7 @@ int bse_solve(BSE_DriverProblemConfig& conf)
     config.SetDegExtra(extraDeg);
     config.SetApprox(mode == "A");
     config.SetDecayingRate(lowerb_decay);
-    config.SetClusterAwareDegrees(false);
+    config.SetClusterAwareDegrees(true);
     
     PerformanceDecoratorChase<T> performanceDecorator(&single);
 
@@ -263,7 +263,7 @@ int bse_solve(BSE_DriverProblemConfig& conf)
 
     if (world_rank == 0)
     {
-        performanceDecorator.GetPerfData().print();
+        performanceDecorator.GetPerfData().print(N);
         Base<T>* resid = single.GetResid();
         std::cout << "Finished Problem #"
                   << "\n";
