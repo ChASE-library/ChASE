@@ -827,7 +827,7 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
     lowerb = *std::max_element(ritzv, ritzv + unconverged); 
     lambda = *std::min_element(ritzv_, ritzv_ + nevex);
     Base<T> lambda_temp, lowerb_temp;
-    lowerb = lowerb;// * config.GetDecayingRate();
+    lowerb = lowerb * config.GetDecayingRate();
     if(single->isPseudoHerm())
     {
         if(upperb > 0)
@@ -889,44 +889,20 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
         {
         	lowerb = ritzv[unconverged - 1];
         }
-        else if (single->isPseudoHerm() && iteration > 0 && unconverged > 20) //Stop changing parameters if only few left
-        {
-	    if(lambda <= Base<T>(0.0)) // <- This condition must be true in the pseudo-hermitian case
-	    {
-		//Here, index[0] does not necessarily designates the smallest ritz value
-		//if ritzv has been shifted by converged. Instead, we compute the minimum - O(n).
-		/*auto it = std::min_element(ritzv, ritzv + unconverged);
-		std::size_t idx = std::distance(ritzv,it);
-		lambda_temp = ritzv[idx];*/
-		//Another option consists of setting lambda_temp at the end of the iteration. 
-		if(lambda_temp >= lambda)// && resid[idx] < 1e-3) //We check with this heuristic that the ritz value is not phantom
-		{
-            		//lambda = std::max(lambda,lambda_temp);
-		}/*else
-		{
-			lambda_temp = ritzv[std::min_element(resid, resid + unconverged) - resid];
-            		lambda = std::max(lambda,lambda_temp);
-		}*/
-	    }
-    	}
-	if(single->isPseudoHerm() && iteration > 0 && (locked == 0 || locked == locked_prev))
-	{
-            if(config.GetDecayingRate() == 1.0)
-            {
-                lowerb_temp = ritzv[index.data()[std::size_t(unconverged*0.95)-1]];
-            }else
-            {
-                lowerb_temp = ritzv[index.data()[std::size_t(unconverged*0.95)-1]] * config.GetDecayingRate();
-            }
-	    //If no locking locking we assume that the unconverged ritz provides a descent lowerb. 
-	    //We keep it until convergence once we start locking. 
-	    //lowerb = std::min(lowerb,Base<T>((lowerb+lowerb_temp)/2.0));
-	    lowerb = std::min(lowerb,lowerb_temp);
 
-	}/*else if(single->isPseudoHerm() && locked > 0 && iteration > 4)
+        /*If no locking we assume that the unconverged ritz provides a descent lowerb. 
+	  We keep it until convergence once we start locking, except if one iteration
+	  does not provide convergence for at least one eigenvector.*/
+
+	if(single->isPseudoHerm() && iteration > 0 && iteration < 5)
 	{
-		lowerb = lowerb * 0.95;
-	}*/
+               
+	    lowerb_temp = ritzv[index.data()[std::size_t(unconverged*0.95)-1]] * config.GetDecayingRate();
+	    if(lowerb_temp > lambda)
+	    {
+	    	lowerb = std::min(lowerb,lowerb_temp);
+	    }
+	}
 	    
 
 #ifdef CHASE_OUTPUT
