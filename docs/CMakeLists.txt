@@ -52,3 +52,43 @@ doxygen_add_docs(Doxygen
     DOXYGEN_PROJECT_NAME ${CMAKE_PROJECT_NAME}
     DOXYGEN_PROJECT_NUMBER ${CMAKE_PROJECT_VERSION}
     COMMENT "Generating API documentation with Doxygen")
+
+#Sphinx
+find_package(Python REQUIRED)
+
+#find sphinx
+message( ${Python_EXECUTABLE})
+execute_process(COMMAND ${Python_EXECUTABLE} -c "import sphinx"  RESULT_VARIABLE sphinx_ret)
+
+if (sphinx_ret EQUAL "0")
+  set(Sphinx_FOUND 1)
+else()
+  set(Sphinx_FOUND 0)
+endif()
+
+if(Sphinx_FOUND)
+    message(STATUS "Sphinx is FOUND")
+else()
+    message(SEND_ERROR "Could not find Sphinx for Documentation")
+endif()
+
+#find breathe
+set(PYTHON_DEP_STRING "Please install Python package breathe (at least version 4.18.0) via: pip install breathe")
+
+execute_process(COMMAND ${Python_EXECUTABLE} -c "from packaging import version; import sys; import breathe; sys.exit(version.parse(\"4.18.0\") > version.parse(breathe.__version__))" RESULT_VARIABLE ret)
+if (ret)
+  message(FATAL_ERROR "Missing Documentation dependency breathe. ${PYTHON_DEP_STRING}")
+endif()
+
+set(SPHINX_SOURCE ${CMAKE_CURRENT_SOURCE_DIR})
+set(SPHINX_BUILD ${CMAKE_BINARY_DIR}/sphinx)
+set(SPHINX_HTML_INDEX_FILE ${SPHINX_BUILD}/html/index.html)
+
+#Sphinx HTML
+add_custom_target(Sphinx ALL
+                  COMMAND  ${Python_EXECUTABLE} -m sphinx -b html
+                  -Dbreathe_projects.ChASE=${DOXYGEN_OUTPUT_DIRECTORY}/xml
+                  ${SPHINX_SOURCE} ${SPHINX_BUILD}/html
+                  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+                  DEPENDS Doxygen
+                  COMMENT "Generating HTML documentation with Sphinx into {CMAKE_BINARY_DIR}/sphinx/")

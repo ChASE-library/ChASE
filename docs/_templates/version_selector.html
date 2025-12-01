@@ -1,0 +1,66 @@
+{# Version selector dropdown #}
+{%- if version_selector and versions -%}
+<div class="version-selector" style="margin: 10px 0; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 3px;">
+  <label for="version-select" style="display: block; color: #fcfcfc; font-size: 12px; margin-bottom: 5px; font-weight: bold;">
+    Version:
+  </label>
+  <select id="version-select" onchange="switchVersion(this.value)" style="width: 100%; padding: 5px; border: 1px solid #2980B9; border-radius: 3px; background: white; color: #333; font-size: 13px;">
+    {%- for ver_name, ver_url in versions.items() -%}
+    <option value="{{ ver_url }}" {%- if ver_name == current_version -%}selected{%- endif -%}>
+      {{ ver_name }}
+    </option>
+    {%- endfor -%}
+  </select>
+</div>
+{%- endif -%}
+
+<script>
+function switchVersion(url) {
+  // Get current path and determine base URL
+  const currentPath = window.location.pathname;
+  const pathParts = currentPath.split('/').filter(p => p);
+  
+  // Remove current version from path if present
+  const knownVersions = ['latest', 'v1.3.0', 'v1.4.0', 'v1.2.0'];
+  let relativePath = '';
+  if (pathParts.length > 0 && knownVersions.includes(pathParts[0])) {
+    // We're in a versioned path, get everything after version
+    relativePath = '/' + pathParts.slice(1).join('/');
+  } else {
+    // We're in root or unversioned, keep current path
+    relativePath = currentPath;
+  }
+  
+  // Construct new URL
+  const newUrl = url.replace(/\/$/, '') + relativePath;
+  window.location.href = newUrl;
+}
+
+// Auto-detect current version from URL and update selector
+(function() {
+  const currentPath = window.location.pathname;
+  const pathParts = currentPath.split('/').filter(p => p);
+  const knownVersions = ['latest', 'v1.3.0', 'v1.4.0', 'v1.2.0'];
+  
+  if (pathParts.length > 0 && knownVersions.includes(pathParts[0])) {
+    const currentVer = pathParts[0];
+    const selector = document.getElementById('version-select');
+    if (selector) {
+      // Find option matching current version
+      for (let option of selector.options) {
+        if (option.text.trim() === currentVer) {
+          selector.value = option.value;
+          break;
+        }
+      }
+    }
+  }
+})();
+</script>
+
+<style>
+.version-selector select:focus {
+  outline: 2px solid #2980B9;
+  outline-offset: 2px;
+}
+</style>
