@@ -180,9 +180,7 @@ html_context = {
     # Version selector configuration
     'current_version': version,
     'versions': {
-        'latest': '/latest/',
-        'v1.3.0': '/v1.3.0/',
-        'v1.4.0': '/v1.4.0/',
+        'latest': '/ChASE/latest/',
     },
     'version_selector': True,  # Enable version selector
      }
