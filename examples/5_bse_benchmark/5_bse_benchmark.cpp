@@ -263,7 +263,7 @@ int bse_solve(BSE_DriverProblemConfig& conf)
 
     if (world_rank == 0)
     {
-        performanceDecorator.GetPerfData().print(N);
+        performanceDecorator.GetPerfData().print(N,lanczosIter,numLanczos);
         Base<T>* resid = single.GetResid();
         std::cout << "Finished Problem #"
                   << "\n";

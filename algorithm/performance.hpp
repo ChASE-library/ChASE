@@ -123,11 +123,26 @@ public:
         ChASE and compare it with theoretical peak performance of the
         platform where the code is executed.
         \param N Size of the eigenproblem matrix
+        \param lanczosIter Number of Lanczos Iterations
+        \param numLanczos Number of Lanczos Vectors
         \return The total number of operations executed by ChASE.
      */
-    std::size_t get_flops(std::size_t N)
+    std::size_t get_flops(std::size_t N = 0, std::size_t lanczosIter = 0, std::size_t numLanczos = 0)
     {
-        std::size_t flop_count = 0;
+	// Lanczos //
+	// GEMM operations
+	std::size_t flop_count = lanczosIter * 2 * N * numLanczos * N;
+
+	if(matrix_type == 1)
+	{
+		// sign flip lower half of hermitian matrices
+		flop_count  += lanczosIter * (N/2) * numLanczos;
+	}
+
+	// stemr solve with eigenvectors O(n2) - https://www.cs.utexas.edu/~inderjit/public_papers/glued_mrr.pdf
+	flop_count += lanczosIter * lanczosIter * numLanczos * numLanczos;
+	
+	
 	int factor = std::pow(4, int(sizeof(T) / sizeof(Base<T>)) - 1) ;
         for (auto block : chase_iter_blocksizes)
         {
@@ -238,6 +253,37 @@ public:
 
         return flop_count / 1e9;
     }
+    
+    //! Returns the average number of FLOPs of the Lanczos Algorithm
+    /*! Similar to `get_flops`, this counter return the average number of
+        operations executed by the Lanczos algorithm alone. We approximate
+        the total number by the flops for the GEEM operations + an estimation
+        for the stemr algorithm. 
+        \param N Size of the eigenproblem matrix
+        \param lanczosIter Number of Lanczos Iterations
+        \param numLanczos Number of Lanczos Vectors
+        \return The average number of operations executed by Lanczos
+       filter.
+     */
+    std::size_t get_lanczos_flops(std::size_t N, std::size_t lanczosIter, std::size_t numLanczos)
+    {
+        int factor = std::pow(4, int(sizeof(T) / sizeof(Base<T>)) - 1) ;
+
+	std::size_t flop_count = lanczosIter * 2 * N * numLanczos * N;
+
+	if(matrix_type == 1)
+	{
+		// sign flip lower half of hermitian matrices
+		flop_count  += lanczosIter * (N/2) * numLanczos;
+	}
+
+	// stemr solve with eigenvectors - https://www.cs.utexas.edu/~inderjit/public_papers/glued_mrr.pdf
+	flop_count += lanczosIter * lanczosIter * numLanczos * numLanczos;
+
+	flop_count *= factor;
+
+        return flop_count / 1e9;
+    }
 
     void set_nprocs(int nProcs) { nprocs = nProcs; }
 
@@ -253,6 +299,14 @@ public:
     void start_clock(TimePtrs t)
     {
         start_points[t].push_back(getTimePoint());
+    }
+
+    void set_early_locked_residuals(std::vector<chase::Base<T>> early_locked_residuals)
+    {
+	if(early_locked_residuals.size())
+	{
+        	copy(early_locked_residuals.begin(),early_locked_residuals.end(),back_inserter(early_locked_residuals_));
+	}
     }
 
     void end_clock(TimePtrs t)
@@ -291,7 +345,7 @@ public:
         function returns total FLOPs and filter FLOPs, respectively.
         \param N Control parameter. By default equal to *0*.
      */
-    void print(std::size_t N = 0)
+    void print(std::size_t N = 0, std::size_t lanczosIter = 0, std::size_t numLanczos = 0)
     {
         this->calculateTimings();
 
@@ -312,19 +366,58 @@ public:
 
         if (N != 0)
         {
-            std::size_t flops = get_flops(N);
-            std::size_t filter_flops = get_filter_flops(N);
+            std::size_t flops = get_flops(N,lanczosIter,numLanczos);
+	    std::size_t lanczos_flops = 0;
+	    if(lanczosIter && numLanczos)
+	    {
+            	lanczos_flops = get_lanczos_flops(N,lanczosIter,numLanczos);
+            }
+            std::size_t filter_flops  = get_filter_flops(N);
 
             output_names.push_back("GFLOPS: All");
+	    if(lanczosIter && numLanczos)
+	    {
+            	output_names.push_back("GFLOPS: Lanczos");
+	    }
             output_names.push_back("GFLOPS: Filter");
 
             std::ostringstream stream;
             stream << std::scientific << std::setprecision(3) << static_cast<double>(flops);
             all_values.push_back(stream.str());
             stream.str("");
+	    if(lanczosIter && numLanczos)
+	    {
+            	stream << std::scientific << std::setprecision(3) << static_cast<double>(lanczos_flops);
+            	all_values.push_back(stream.str());
+            	stream.str("");
+            }
             stream << std::scientific << std::setprecision(3) << static_cast<double>(filter_flops);
             all_values.push_back(stream.str());
         }
+
+	std::size_t num = early_locked_residuals_.size();
+        output_names.push_back("Num. Early Locked");
+        std::ostringstream stream;
+        stream << std::scientific << std::to_string(num);
+        all_values.push_back(stream.str());
+
+	if(num)
+	{
+        	stream.str("");
+       
+		Base<T> avg = std::accumulate(early_locked_residuals_.begin(),early_locked_residuals_.end(),0.0);
+		avg /= num;
+		output_names.push_back("Avg. Early Locked");
+        	stream << std::scientific << std::setprecision(3) << static_cast<double>(avg);
+        	all_values.push_back(stream.str());
+
+	        stream.str("");
+	
+		Base<T> max = *std::max_element(early_locked_residuals_.begin(),early_locked_residuals_.end());
+		output_names.push_back("Max. Early Locked");
+        	stream << std::scientific << std::setprecision(3) << static_cast<double>(max);
+        	all_values.push_back(stream.str());
+	}
 
         printTable(output_names, 
                    all_values);
@@ -384,6 +477,7 @@ private:
     std::vector<std::vector<TimePointType>> end_points;
 
     std::vector<std::size_t> chase_iter_blocksizes;
+    std::vector<Base<T>> early_locked_residuals_;
     int nprocs;
     int matrix_type; // 0 stands for Hermitian, 1 for Pseudo-Hermitian
 };
@@ -526,6 +620,10 @@ public:
     int get_nprocs() { return chase_->get_nprocs(); }
     
     int get_rank() { return chase_->get_rank(); }
+ 
+    void set_early_locked_residuals(std::vector<Base<T>> early_locked_residuals) {
+	perf_.set_early_locked_residuals(early_locked_residuals); 
+    }
 
     void End()
     {
@@ -538,6 +636,8 @@ public:
     std::size_t GetNex() { return chase_->GetNex(); }
     Base<T>* GetRitzv() { return chase_->GetRitzv(); }
     Base<T>* GetResid() { return chase_->GetResid(); }
+    std::size_t GetLanczosIter() { return chase_->GetLanczosIter(); }
+    std::size_t GetNumLanczos()  { return chase_->GetNumLanczos(); }
     ChaseConfig<T>& GetConfig() { return chase_->GetConfig(); }
     ChasePerfData<T>& GetPerfData() { return perf_; }
 

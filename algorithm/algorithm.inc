@@ -359,7 +359,7 @@ template <class T>
 std::size_t Algorithm<T>::locking(ChaseBase<T>* single, std::size_t N,
                                   std::size_t unconverged, Base<T> tol,
                                   Base<T>* Lritzv, Base<T>* resid,
-                                  Base<T>* residLast, std::size_t* degrees,
+                                  Base<T>* residLast, std::vector<Base<T>> *early_locked_residuals, std::size_t* degrees,
                                   std::size_t locked)
 {
     SCOPED_NVTX_RANGE();
@@ -380,23 +380,24 @@ std::size_t Algorithm<T>::locking(ChaseBase<T>* single, std::size_t N,
 
 	    if (resid[j] <= tol || (single->isSym() && resid[j] >= residLast[j] && resid[j] < 100.0*tol))
         {
-#ifdef CHASE_OUTPUT
             if(single->isSym() && resid[j] > tol && resid[j] >= residLast[j] && resid[j] < 100.0*tol){
 
+#ifdef CHASE_OUTPUT
                     std::ostringstream oss;
                     oss << "locking unconverged pair is:" << resid[j]
                     << " was:" << residLast[j] << " tolerance is: " << tol
                     << " val: " << Lritzv[j] << "\n";
                     single->Output(oss.str());
-            }
 #endif
+		    early_locked_residuals->push_back(resid[j]);
+            }
 
-		    if (j != converged)
+		if (j != converged)
          	{
-            		swap_kj(j, converged, resid);     // if we filter again
-            		swap_kj(j, converged, residLast); // if we filter again
-            		swap_kj(j, converged, Lritzv);
-            		single->Swap(j + locked, converged + locked);
+            	    swap_kj(j, converged, resid);     // if we filter again
+            	    swap_kj(j, converged, residLast); // if we filter again
+            	    swap_kj(j, converged, Lritzv);
+            	    single->Swap(j + locked, converged + locked);
          	}
 	
         	converged++;
@@ -411,7 +412,7 @@ template <class T>
 std::size_t Algorithm<T>::locking_quasi(
     ChaseBase<T>* single, std::size_t N,
     std::size_t unconverged, std::size_t nex, Base<T> tol, std::size_t *index,
-    Base<T>* Lritzv, Base<T>* resid, Base<T>* residLast,
+    Base<T>* Lritzv, Base<T>* resid, Base<T>* residLast, std::vector<Base<T>> *early_locked_residuals,
     std::size_t* degrees, std::size_t locked, std::size_t iteration)
 {
     SCOPED_NVTX_RANGE();
@@ -426,19 +427,20 @@ std::size_t Algorithm<T>::locking_quasi(
     for (std::size_t k = 0; k < unconverged-nex; ++k) {
         int j = index[k];
 
-        if (resid[j] <= tol || (resid[j] > tol && resid[j] >= residLast[k] && resid[j] <= 100.0 * tol && iteration >= 4)) 
+        if (resid[j] <= tol || (resid[j] > tol && resid[j] >= residLast[k] && resid[j] <= 1000.0 * tol && iteration >= 4)) 
         {
 		
-#ifdef CHASE_OUTPUT
-            if(resid[j] > tol && resid[j] <= 100.0 * tol && resid[j] >= residLast[k]  && iteration >=4)
+            if(resid[j] > tol && resid[j] <= 1000.0 * tol && resid[j] >= residLast[k]  && iteration >=4)
             {
-                        std::ostringstream oss;
-                        oss << "locking unconverged pair is:" << resid[j]
-                        << " was:" << residLast[k] << " tolerance is: " << tol
-                        << " val: " << Lritzv[j] << "\n";
-                        single->Output(oss.str());
+#ifdef CHASE_OUTPUT
+                std::ostringstream oss;
+                oss << "locking unconverged pair is:" << resid[j]
+                << " was:" << residLast[k] << " tolerance is: " << tol
+                << " val: " << Lritzv[j] << "\n";
+                single->Output(oss.str());
+#endif		    
+		early_locked_residuals->push_back(resid[j]);
             }
-#endif
 
             if (j != converged) 
             {
@@ -469,8 +471,6 @@ std::size_t Algorithm<T>::locking_quasi(
 	    residLast[k] = residLast_unconverged[index_unconverged[k-converged]];
 	    //std::cout << "k = " << k << " residLast = " << residLast[k] << std::endl;
     }
-
-    //
 
     return converged;
 }
@@ -572,30 +572,6 @@ std::size_t Algorithm<T>::lanczos(ChaseBase<T>* single, int N, int numvec, int m
     Base<T> lowerb, lambda;
 
     single->Lanczos(m, numvec, upperb, Theta, Tau, ritzV);
-
-
-
-#ifdef CHASE_OUTPUT
-    {   
-    std::ostringstream oss;
-    
-    oss << "THETA:";
-    for (std::size_t k = 0; k < numvec * m; ++k) {
-      if( k % 5 == 0 ) oss << "\n";
-      oss << Theta[k] << " ";
-    }
-    oss << "\n";
-    
-    oss << "TAU:";
-    for (std::size_t k = 0; k < numvec * m; ++k) {
-      if( k % 5 == 0 ) oss << "\n";
-      oss << Tau[k] << " ";
-    }
-    oss << "\n";
-        
-    single->Output(oss.str());
-    }
-#endif
 
     double* ThetaSorted = new double[numvec * m];
     for (auto k = 0; k < numvec * m; ++k)
@@ -780,6 +756,7 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
 
     std::vector<std::size_t> degrees_(nev + nex);
     std::vector<Base<T>> residLast_(nevex);
+    std::vector<Base<T>> early_locked_residuals;
     // this will be copied into residLast
     for (auto i = 0; i < nevex; ++i)
     {
@@ -894,7 +871,7 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
 	  We keep it until convergence once we start locking, except if one iteration
 	  does not provide convergence for at least one eigenvector.*/
 
-	if(single->isPseudoHerm() && iteration > 0 && iteration < 5)
+	if(single->isPseudoHerm() && iteration > 0)
 	{
                
 	    lowerb_temp = ritzv[index.data()[std::size_t(unconverged*0.95)-1]] * config.GetDecayingRate();
@@ -999,8 +976,8 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
 	    }
 	    else
 	    {
-            	std::sort(index.begin(), index.begin() + std::size_t(unconverged/nevex * unconverged), //sort ritzv values only 1st nev-locked
-                	[&](int a, int b) { return (ritzv[index_res.data()[a]] < ritzv[index_res.data()[b]]); });
+            	std::sort(index.begin(), index.begin() + std::size_t(0.95*unconverged), //sort ritzv values only 1st nev-locked 
+                	[&](int a, int b) { return (ritzv[index_res.data()[a]] < ritzv[index_res.data()[b]]); }); //MIGHT BE WRONG HERE ACTUALLY. KEEP 0.95?
 
 	    }
             
@@ -1043,11 +1020,12 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
 #endif
 
         if(single->isSym()){
-            new_converged = locking(single, N, unconverged - single->isSym() * nex, tol, ritzv, resid, residLast,
+            new_converged = locking(single, N, unconverged - single->isSym() * nex, tol, ritzv, resid, residLast, &early_locked_residuals,
                         degrees, locked);
         }else
         {
-            new_converged = locking_quasi(single, N, unconverged, nex, tol, index.data(), ritzv, resid, residLast, degrees, locked, iteration);
+            new_converged = locking_quasi(single, N, unconverged, nex, tol, index.data(), ritzv, resid, residLast, &early_locked_residuals,
+			degrees, locked, iteration);
         }
         
 	    // ---------------------------- Update pointers
@@ -1116,7 +1094,9 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
         for (size_t k = 0; k < cycle_indices.size() - 1; ++k) {
             single->Swap(cycle_indices[k], cycle_indices[k + 1]);
         }
-    }    
+    }
+
+    single->set_early_locked_residuals(early_locked_residuals); 
 
 #ifdef CHASE_SAVE_RESIDUALS
 

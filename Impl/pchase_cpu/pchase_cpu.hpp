@@ -147,13 +147,17 @@ public:
     std::size_t GetNev() override { return nev_; }
     
     std::size_t GetNex() override { return nex_; }
+            
+    std::size_t GetLanczosIter() override {return lanczosIter_;}
+	    
+    std::size_t GetNumLanczos() override {return numLanczos_;}
 
     chase::Base<T>* GetRitzv() override { return ritzv_->l_data(); }
     chase::Base<T>* GetResid() override { return resid_->l_data(); }
     ChaseConfig<T>& GetConfig() override { return config_; }
     int get_nprocs() override { return nprocs_; }
     int get_rank() { return my_rank_; }
-
+    	    
     void loadProblemFromFile(std::string filename)
     {
         Hmat_->readFromBinaryFile(filename);
@@ -226,6 +230,8 @@ public:
 
     void Lanczos(std::size_t m, chase::Base<T>* upperb) override 
     {
+	lanczosIter_ = m;
+	numLanczos_  = 1;
         chase::linalg::internal::cpu_mpi::lanczos_dispatch(m, 
                                               *Hmat_, 
                                               *V1_, 
@@ -235,6 +241,8 @@ public:
     void Lanczos(std::size_t M, std::size_t numvec, chase::Base<T>* upperb,
                          chase::Base<T>* ritzv, chase::Base<T>* Tau, chase::Base<T>* ritzV) override
     {
+	lanczosIter_ = M;
+	numLanczos_  = numvec;
         chase::linalg::internal::cpu_mpi::lanczos_dispatch(M, 
               	                              numvec, 
                        	                      *Hmat_, 
@@ -667,6 +675,23 @@ private:
     * 
     * This integer stores the total number of processes involved in the parallel computation.
     */
+    
+    std::size_t lanczosIter_;
+
+    /**
+    * @brief The number of Lanczos Iterations.
+    * 
+    * This integer stores the total number of Runs of Lanczos.
+    */
+
+    std::size_t numLanczos_;
+
+    /**
+    * @brief The number of Runs of Lanczos.
+    * 
+    * This integer stores the total number of Runs of Lanczos.
+    */
+
     int nprocs_; 
 
     /**

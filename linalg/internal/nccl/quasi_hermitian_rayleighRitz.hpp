@@ -644,8 +644,8 @@ namespace internal
                                                                     subSize,
                                                                     M,
                                                                     subSize));
-#ifdef QR_RR_DOUBLE_PRECISION
-        if constexpr (std::is_same<T, std::complex<float>>::value)
+#ifdef RR_DOUBLE_PRECISION
+        if constexpr (0 && std::is_same<T, std::complex<float>>::value)
         {
                 if(A->isDoublePrecisionEnabled())
                 {
@@ -692,7 +692,7 @@ namespace internal
                                         subSize,
                                         ritzv.l_data() + offset,
                                         workspace, lwork, devInfo));
-#ifdef QR_RR_DOUBLE_PRECISION
+#ifdef RR_DOUBLE_PRECISION
         }
 #endif
 

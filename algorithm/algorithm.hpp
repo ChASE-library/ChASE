@@ -153,6 +153,7 @@ public:
      * @param ritzv The array storing the Ritz values.
      * @param resid The array storing the residuals of the Ritz values.
      * @param residLast The array storing the residuals from the previous iteration.
+     * @param early_locked_residuals The array storing the early locked residuals. 
      * @param degrees The array storing the degrees of the Ritz pairs.
      * @param locked The number of already locked eigenpairs.
      * 
@@ -161,13 +162,13 @@ public:
     static std::size_t locking(ChaseBase<T>* kernel, std::size_t N,
                                std::size_t unconverged, Base<T> tol,
                                Base<T>* ritzv, Base<T>* resid,
-                               Base<T>* residLast, std::size_t* degrees,
-                               std::size_t locked);
+                               Base<T>* residLast, std::vector<Base<T>>* early_locked_residuals,
+				std::size_t* degrees, std::size_t locked);
     
     static std::size_t locking_quasi(
         ChaseBase<T>* single, std::size_t N,
         std::size_t unconverged, std::size_t nex, Base<T> tol, std::size_t* index,
-        Base<T>* Lritzv, Base<T>* resid, Base<T>* residLast,
+        Base<T>* Lritzv, Base<T>* resid, Base<T>* residLast, std::vector<Base<T>>* early_locked_residuals,
         std::size_t* degrees, std::size_t locked, std::size_t iteration);
             
     /**

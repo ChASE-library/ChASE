@@ -337,18 +337,28 @@ public:
         CHECK_CUDA_ERROR(cudaMemcpy(d_diag_xoffs, diag_xoffs.data(), sizeof(std::size_t) * diag_cnt , cudaMemcpyHostToDevice));
         CHECK_CUDA_ERROR(cudaMemcpy(d_diag_yoffs, diag_yoffs.data(), sizeof(std::size_t) * diag_cnt , cudaMemcpyHostToDevice));
  
-#ifdef QR_RR_DOUBLE_PRECISION
+#ifdef QR_DOUBLE_PRECISION
+        if constexpr (std::is_same<T, std::complex<float>>::value)
+        {
+            if(!V1_->isDoublePrecisionEnabled())
+            {
+                V1_->enableDoublePrecision();
+            }            
+        }
         if constexpr (std::is_same<T, std::complex<float>>::value)
         {
             if(!A_->isDoublePrecisionEnabled())
             {
                 A_->enableDoublePrecision();
             }
-
-            if(!V1_->isDoublePrecisionEnabled())
+        }
+#elif RR_DOUBLE_PRECISION
+        if constexpr (std::is_same<T, std::complex<float>>::value)
+        {
+            if(!A_->isDoublePrecisionEnabled())
             {
-                V1_->enableDoublePrecision();
-            }            
+                A_->enableDoublePrecision();
+            }
         }
 #endif	
     }
@@ -372,20 +382,30 @@ public:
         if (states_)
             CHECK_CUDA_ERROR(cudaFree(states_));                    
 	
-#ifdef QR_RR_DOUBLE_PRECISION
-	if constexpr (std::is_same<T, std::complex<float>>::value)
+#ifdef QR_DOUBLE_PRECISION
+        if constexpr (std::is_same<T, std::complex<float>>::value)
         {
-            if(A_->isDoublePrecisionEnabled())
-            {
-                A_->disableDoublePrecision();
-            }
-
-            if(V1_->isDoublePrecisionEnabled())
+            if(!V1_->isDoublePrecisionEnabled())
             {
                 V1_->disableDoublePrecision();
             }            
-        } 
-#endif
+        }
+        if constexpr (std::is_same<T, std::complex<float>>::value)
+        {
+            if(!A_->isDoublePrecisionEnabled())
+            {
+                A_->disableDoublePrecision();
+            }
+        }
+#elif RR_DOUBLE_PRECISION
+        if constexpr (std::is_same<T, std::complex<float>>::value)
+        {
+            if(!A_->isDoublePrecisionEnabled())
+            {
+                A_->disableDoublePrecision();
+            }
+        }
+#endif	
 
     }
 
@@ -394,13 +414,17 @@ public:
     std::size_t GetNev() override { return nev_; }
     
     std::size_t GetNex() override { return nex_;}
+            
+    std::size_t GetLanczosIter() override {return lanczosIter_;}
+	    
+    std::size_t GetNumLanczos() override {return numLanczos_;}
 
     chase::Base<T>* GetRitzv() override { return ritzv_->cpu_data(); }
     chase::Base<T>* GetResid() override { resid_->allocate_cpu_data(); return resid_->cpu_data(); }
     ChaseConfig<T>& GetConfig() override { return config_; }
     int get_nprocs() override { return nprocs_; }
     int get_rank() { return my_rank_; }
-
+    	    
     void loadProblemFromFile(std::string filename)
     {
        SCOPED_NVTX_RANGE();
@@ -482,6 +506,9 @@ public:
     void Lanczos(std::size_t m, chase::Base<T>* upperb) override 
     {   
         SCOPED_NVTX_RANGE();
+	
+	lanczosIter_ = m;
+	numLanczos_  = 1;
 
         kernelNamespace::lanczos_dispatch(cublasH_,
                                               m, 
@@ -493,7 +520,11 @@ public:
     void Lanczos(std::size_t M, std::size_t numvec, chase::Base<T>* upperb,
                          chase::Base<T>* ritzv, chase::Base<T>* Tau, chase::Base<T>* ritzV) override
     {
+	
         SCOPED_NVTX_RANGE();
+
+	lanczosIter_ = M;
+	numLanczos_  = numvec;
 
         kernelNamespace::lanczos_dispatch(cublasH_,
                                               M, 
@@ -815,7 +846,7 @@ public:
                     std::cout << "Entering Shifted Cholesky QR 2" << std::endl;
                 }*/
 #endif
-#ifdef QR_RR_DOUBLE_PRECISION
+#ifdef QR_DOUBLE_PRECISION
                 if constexpr (std::is_same<T, std::complex<float>>::value)
                 {
                     V1_->copyTo();
@@ -854,7 +885,7 @@ public:
                                                                 d_work_,
                                                                 lwork_,
                                                                 A_->l_data()); 
-#ifdef QR_RR_DOUBLE_PRECISION
+#ifdef QR_DOUBLE_PRECISION
                 }                                               
 #endif
             }
@@ -875,7 +906,7 @@ public:
 
 #ifdef CHASE_OUTPUT
                 if(0){
-#ifdef QR_RR_DOUBLE_PRECISION 
+#ifdef QR_DOUBLE_PRECISION 
 			std::cout << "QR_RR_DOUBLE ACTVIATED" << std::endl;
 #else
 			std::cout << "QR_RR_DOUBLE DISABLED" << std::endl;
@@ -883,7 +914,7 @@ public:
 		       	std::cout << "Entering Cholesky QR 1" << std::endl;
                 }
 #endif
-#ifdef QR_RR_DOUBLE_PRECISION
+#ifdef QR_DOUBLE_PRECISION
                 if constexpr (std::is_same<T, std::complex<float>>::value)
                 {
                     V1_->copyTo();
@@ -919,7 +950,7 @@ public:
                                                                     d_work_,
                                                                     lwork_,
                                                                     A_->l_data());  
-#ifdef QR_RR_DOUBLE_PRECISION
+#ifdef QR_DOUBLE_PRECISION
                 }
 #endif                                                      
             }
@@ -943,7 +974,7 @@ public:
                     std::cout << "Entering Cholesky QR 2" << std::endl;
                 }*/
 #endif
-#ifdef QR_RR_DOUBLE_PRECISION
+#ifdef QR_DOUBLE_PRECISION
                 if constexpr (std::is_same<T, std::complex<float>>::value)
                 {
                     V1_->copyTo();
@@ -979,7 +1010,7 @@ public:
                                                                     d_work_,
                                                                     lwork_,
                                                                     A_->l_data()); 
-#ifdef QR_RR_DOUBLE_PRECISION
+#ifdef QR_DOUBLE_PRECISION
                 }            
 #endif		
             }
@@ -1147,6 +1178,8 @@ private:
     std::size_t nex_; /**< Number of additional vectors for iterative refinement. */
     std::size_t nevex_; /**< Total number of vectors (nev + nex) used in the algorithm. */
     std::size_t locked_; /**< Count of locked vectors in the eigenvalue problem. */
+    std::size_t lanczosIter_;    /**< Number of Lanczos Iterations.*/
+    std::size_t numLanczos_;     /**< Number of Runs of Lanczos.*/
     
     std::size_t N_; /**< Dimension of the square matrix. */
 

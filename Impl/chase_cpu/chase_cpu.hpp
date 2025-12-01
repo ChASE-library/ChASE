@@ -178,6 +178,10 @@ namespace Impl
 	    std::size_t GetNev() override {return nev_;}
 	    
 	    std::size_t GetNex() override {return nex_;}
+	    
+            std::size_t GetLanczosIter() override {return lanczosIter_;}
+	    
+	    std::size_t GetNumLanczos() override {return numLanczos_;}
 
 	    chase::Base<T>* GetRitzv() override {return ritzvs_.data(); }
 	    chase::Base<T>* GetResid() override {return resid_.data(); }
@@ -264,6 +268,8 @@ namespace Impl
 
 	    void Lanczos(std::size_t m, chase::Base<T>* upperb) override
 	    {
+			lanczosIter_ = m;
+			numLanczos_  = 1;
 			chase::linalg::internal::cpu::lanczos(m, 
 								Hmat_,
 								Vec1_.data(), 
@@ -274,6 +280,8 @@ namespace Impl
 	    void Lanczos(std::size_t M, std::size_t numvec, chase::Base<T>* upperb,
 				 chase::Base<T>* ritzv, chase::Base<T>* Tau, chase::Base<T>* ritzV) override
 	    {
+			lanczosIter_ = M;
+			numLanczos_  = numvec;
 			chase::linalg::internal::cpu::lanczos(M, 
 								numvec, 
 								Hmat_, 
@@ -674,6 +682,8 @@ private:
     std::size_t nev_;                ///< Number of eigenvalues to compute.
     std::size_t nex_;                ///< Number of extra eigenvalues.
     std::size_t nevex_;              ///< Total number of eigenvalues (nev + nex).
+    std::size_t lanczosIter_;        ///< Number of Lanczos Iterations.
+    std::size_t numLanczos_;         ///< Number of Runs of Lanczos.
     ChaseConfig<T> config_;          ///< Configuration object for settings.
     
     MatrixType *Hmat_;  ///< Matrix for H.
