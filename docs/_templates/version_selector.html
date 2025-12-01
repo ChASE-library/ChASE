@@ -20,8 +20,16 @@ function switchVersion(url) {
   const currentPath = window.location.pathname;
   const pathParts = currentPath.split('/').filter(p => p);
   
-  // Remove current version from path if present
-  const knownVersions = ['latest', 'v1.3.0', 'v1.4.0', 'v1.2.0'];
+  // Get known versions from the select options (dynamic, not hardcoded)
+  const selector = document.getElementById('version-select');
+  const knownVersions = [];
+  if (selector) {
+    for (let option of selector.options) {
+      const verName = option.text.trim();
+      knownVersions.push(verName);
+    }
+  }
+  
   let relativePath = '';
   if (pathParts.length > 0 && knownVersions.includes(pathParts[0])) {
     // We're in a versioned path, get everything after version
@@ -31,27 +39,41 @@ function switchVersion(url) {
     relativePath = currentPath;
   }
   
-  // Construct new URL
-  const newUrl = url.replace(/\/$/, '') + relativePath;
-  window.location.href = newUrl;
+  // Construct new URL - handle both absolute and relative paths
+  if (url.startsWith('http')) {
+    // Absolute URL
+    window.location.href = url;
+  } else {
+    // Relative URL - ensure it starts with /
+    const baseUrl = url.startsWith('/') ? url : '/' + url;
+    const cleanBase = baseUrl.replace(/\/$/, '');
+    const cleanPath = relativePath.startsWith('/') ? relativePath : '/' + relativePath;
+    window.location.href = cleanBase + cleanPath;
+  }
 }
 
 // Auto-detect current version from URL and update selector
 (function() {
   const currentPath = window.location.pathname;
   const pathParts = currentPath.split('/').filter(p => p);
-  const knownVersions = ['latest', 'v1.3.0', 'v1.4.0', 'v1.2.0'];
+  
+  // Get known versions from select options
+  const selector = document.getElementById('version-select');
+  if (!selector) return;
+  
+  const knownVersions = [];
+  for (let option of selector.options) {
+    const verName = option.text.trim();
+    knownVersions.push(verName);
+  }
   
   if (pathParts.length > 0 && knownVersions.includes(pathParts[0])) {
     const currentVer = pathParts[0];
-    const selector = document.getElementById('version-select');
-    if (selector) {
-      // Find option matching current version
-      for (let option of selector.options) {
-        if (option.text.trim() === currentVer) {
-          selector.value = option.value;
-          break;
-        }
+    // Find option matching current version
+    for (let option of selector.options) {
+      if (option.text.trim() === currentVer) {
+        selector.value = option.value;
+        break;
       }
     }
   }

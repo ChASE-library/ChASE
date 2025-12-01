@@ -1,0 +1,127 @@
+name: Deploy Documentation
+
+on:
+  push:
+    branches:
+      - master
+      - 'v*.*.*'  # Matches v1.3.0, v1.4.0, etc.
+    paths:
+      - 'docs/**'
+      - '.github/workflows/docs.yml'
+      - 'CMakeLists.txt'
+      - 'docs/CMakeLists.txt'
+      - 'scripts/build_docs.sh'
+  workflow_dispatch:  # Allow manual trigger
+    inputs:
+      branch:
+        description: 'Branch to build (default: current branch)'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for version detection
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y doxygen graphviz
+
+      - name: Install Python dependencies
+        run: |
+          pip install sphinx breathe sphinx-rtd-theme
+
+      - name: Determine version
+        id: version
+        run: |
+          if [ -n "${{ github.event.inputs.branch }}" ]; then
+            BRANCH_NAME="${{ github.event.inputs.branch }}"
+          else
+            BRANCH_NAME=${GITHUB_REF#refs/heads/}
+          fi
+          
+          if [ "$BRANCH_NAME" = "master" ]; then
+            echo "DOC_VERSION=latest" >> $GITHUB_OUTPUT
+            echo "VERSION_TAG=latest" >> $GITHUB_OUTPUT
+            echo "OUTPUT_DIR=latest" >> $GITHUB_OUTPUT
+          else
+            # Extract version from branch (e.g., v1.3.0 -> v1.3.0)
+            if [[ "$BRANCH_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+              echo "DOC_VERSION=$BRANCH_NAME" >> $GITHUB_OUTPUT
+              echo "VERSION_TAG=$BRANCH_NAME" >> $GITHUB_OUTPUT
+              echo "OUTPUT_DIR=$BRANCH_NAME" >> $GITHUB_OUTPUT
+            else
+              echo "DOC_VERSION=latest" >> $GITHUB_OUTPUT
+              echo "VERSION_TAG=latest" >> $GITHUB_OUTPUT
+              echo "OUTPUT_DIR=latest" >> $GITHUB_OUTPUT
+            fi
+          fi
+          echo "Building docs for branch: $BRANCH_NAME -> ${{ steps.version.outputs.OUTPUT_DIR }}"
+
+      - name: Build documentation
+        run: |
+          chmod +x scripts/build_docs.sh
+          ./scripts/build_docs.sh
+
+      - name: Prepare deployment
+        run: |
+          OUTPUT_DIR="${{ steps.version.outputs.OUTPUT_DIR }}"
+          mkdir -p deploy/$OUTPUT_DIR
+          cp -r build_docs/docs_output/* deploy/$OUTPUT_DIR/
+          
+          # Create root redirect for non-versioned access
+          cat > deploy/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <meta charset="utf-8">
+              <meta http-equiv="refresh" content="0; url=/latest/">
+              <link rel="canonical" href="/latest/" />
+              <title>ChASE Documentation</title>
+          </head>
+          <body>
+              <p>Redirecting to <a href="/latest/">latest documentation</a>...</p>
+              <script>window.location.replace("/latest/");</script>
+          </body>
+          </html>
+          EOF
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v3
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v2
+        with:
+          path: deploy
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2
+
