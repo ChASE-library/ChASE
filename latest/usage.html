@@ -52,12 +52,8 @@
   <label for="version-select" style="display: block; color: #fcfcfc; font-size: 12px; margin-bottom: 5px; font-weight: bold;">
     Version:
   </label>
-  <select id="version-select" onchange="switchVersion(this.value)" style="width: 100%; padding: 5px; border: 1px solid #2980B9; border-radius: 3px; background: white; color: #333; font-size: 13px;"><option value="/latest/">
+  <select id="version-select" onchange="switchVersion(this.value)" style="width: 100%; padding: 5px; border: 1px solid #2980B9; border-radius: 3px; background: white; color: #333; font-size: 13px;"><option value="/ChASE/latest/">
       latest
-    </option><option value="/v1.3.0/"selected>
-      v1.3.0
-    </option><option value="/v1.4.0/">
-      v1.4.0
     </option></select>
 </div><script>
 function switchVersion(url) {
@@ -75,25 +71,44 @@ function switchVersion(url) {
     }
   }
   
+  // Find the repository name in the path (e.g., "ChASE" in "/ChASE/latest/...")
+  // This handles project pages where URL is: username.github.io/repo-name/version/...
+  let repoName = '';
+  let versionIndex = -1;
+  
+  // Look for version in path (could be at index 1 or 2 depending on structure)
+  for (let i = 0; i < pathParts.length; i++) {
+    if (knownVersions.includes(pathParts[i])) {
+      versionIndex = i;
+      if (i > 0) {
+        repoName = pathParts[i - 1]; // Repository name is before version
+      }
+      break;
+    }
+  }
+  
+  // Get relative path (everything after version)
   let relativePath = '';
-  if (pathParts.length > 0 && knownVersions.includes(pathParts[0])) {
+  if (versionIndex >= 0) {
     // We're in a versioned path, get everything after version
-    relativePath = '/' + pathParts.slice(1).join('/');
+    relativePath = '/' + pathParts.slice(versionIndex + 1).join('/');
   } else {
-    // We're in root or unversioned, keep current path
+    // We're in root or unversioned, get current path
     relativePath = currentPath;
   }
   
-  // Construct new URL - handle both absolute and relative paths
+  // Construct new URL
+  // The URL from conf.py already includes the full path (e.g., "/ChASE/latest/")
+  // So we just need to append the relative path (page name)
+  const baseUrl = url.replace(/\/$/, ''); // Remove trailing slash
+  const cleanRelative = relativePath === '/' ? '' : relativePath.replace(/^\//, '');
+  
+  // If URL already includes the repo name, use it as-is
+  // Otherwise, we might need to add it (but conf.py should have it)
   if (url.startsWith('http')) {
-    // Absolute URL
-    window.location.href = url;
+    window.location.href = url + (cleanRelative ? '/' + cleanRelative : '');
   } else {
-    // Relative URL - ensure it starts with /
-    const baseUrl = url.startsWith('/') ? url : '/' + url;
-    const cleanBase = baseUrl.replace(/\/$/, '');
-    const cleanPath = relativePath.startsWith('/') ? relativePath : '/' + relativePath;
-    window.location.href = cleanBase + cleanPath;
+    window.location.href = baseUrl + (cleanRelative ? '/' + cleanRelative : '');
   }
 }
 
@@ -112,14 +127,20 @@ function switchVersion(url) {
     knownVersions.push(verName);
   }
   
-  if (pathParts.length > 0 && knownVersions.includes(pathParts[0])) {
-    const currentVer = pathParts[0];
-    // Find option matching current version
-    for (let option of selector.options) {
-      if (option.text.trim() === currentVer) {
-        selector.value = option.value;
-        break;
+  // Look for version in path (could be at index 0, 1, or 2 depending on structure)
+  // For project pages: /repo-name/version/... (version at index 1)
+  // For user pages: /version/... (version at index 0)
+  for (let i = 0; i < pathParts.length; i++) {
+    if (knownVersions.includes(pathParts[i])) {
+      const currentVer = pathParts[i];
+      // Find option matching current version
+      for (let option of selector.options) {
+        if (option.text.trim() === currentVer) {
+          selector.value = option.value;
+          break;
+        }
       }
+      break;
     }
   }
 })();
