@@ -25,15 +25,21 @@ Dependencies
 ------------
 
 In order to install the ChASE library on a general purpose computing cluster,
-one has to install or load the necessary dependencies. For the standard MPI
-version of the library these dependencies are the following:
+one has to install or load the necessary dependencies.
 
-* a ``C++`` Compiler;
-* a Message Passing Interface (MPI) implementation;
-* CMake (version 3.8 or higher);
-* a Basic Linear Algebra Subprograms (BLAS) and Linear Algebra PACKage (LAPACK) library;
-* a CUDA compiler (only for the GPU build of ChASE);
-* **Optional**: ScaLAPACK for using distributed Househoulder QR factorization
+**Required Dependencies:**
+   * A ``C++`` compiler with C++17 support (e.g., GCC 7+, Clang 5+, or Intel C++ 17+)
+   * `CMake <http://www.cmake.org/>`__ version 3.8 or higher
+   * `BLAS <http://netlib.org/blas>`__ (Basic Linear Algebra Subprograms)
+   * `LAPACK <http://netlib.org/lapack>`__ (Linear Algebra PACKage)
+
+**Optional Dependencies:**
+   * `MPI <http://en.wikipedia.org/wiki/Message_Passing_Interface>`__ - Required only for parallel implementations (pChASECPU, pChASEGPU). Not needed for sequential builds (ChASECPU, ChASEGPU).
+   * `CUDA <https://developer.nvidia.com/cuda-toolkit>`__ - Required only for GPU implementations (ChASEGPU, pChASEGPU)
+   * `ScaLAPACK <http://www.netlib.org/scalapack/>`__ - Optional, for distributed Householder QR factorization
+   * `NCCL <https://developer.nvidia.com/nccl>`__ - Optional, for optimized multi-GPU communication in pChASEGPU
+
+Note: For building examples with command-line parsing, the `popl <https://github.com/badaix/popl>`__ library is automatically downloaded by CMake using FetchContent. No manual installation is required.
 
 Loading Modules on Cluster
 ---------------------------
@@ -123,7 +129,7 @@ Building ChASE with Examples
 
 To build and install ChASE with examples, the 
 additional option to the cmake build process
-``-DBUILD_WITH_EXAMPLES=ON`` has to be turned on. The following
+``-DCHASE_BUILD_WITH_EXAMPLES=ON`` has to be turned on. The following
 instruction snippet builds ChASE with
 examples on the JUWELS cluster:
 
@@ -133,16 +139,16 @@ examples on the JUWELS cluster:
   cd ChASE/
   mkdir build
   cd build/
-  ml intel-para CMake Boost
+  ml intel-para CMake
   ##### If you want to install ChASE with GPU supporting, make sure CUDA is loaded #####
   ml load CUDA
-  cmake .. -DCMAKE_INSTALL_PREFIX=${ChASEROOT} -DBUILD_WITH_EXAMPLES=ON
+  cmake .. -DCMAKE_INSTALL_PREFIX=${ChASEROOT} -DCHASE_BUILD_WITH_EXAMPLES=ON
   make install
   ### Run example #0 ###
   ./examples/0_hello_world/0_hello_world
 
 An MPI launcher has to be used to run an example in parallel. For
-instance on the JUWELS cluster (or any other ``SLRUM`` based Cluster)
+instance on the JUWELS cluster (or any other ``SLURM`` based Cluster)
 the following command line runs the "`hello world`" example in parallel.
 
 .. code-block:: console
@@ -205,33 +211,62 @@ Memory Requirement
 An important aspect of executing ChASE on a parallel cluster is the
 memory footprint of the library. It is important to avoid that such
 memory footprint per MPI task exceeds the amount of main memory
-available to the compiled code. To help the user to make the correct
-decision in terms of resources a simple formula for **Block distribution** of matrix can be used ::
+available to the compiled code. The memory requirements differ between
+**Hermitian** and **Pseudo-Hermitian** (Quasi-Hermitian) eigenvalue problems
+due to the additional storage needed for the dual basis and oblique Rayleigh-Ritz
+procedure in the pseudo-Hermitian case.
+
+**Hermitian Eigenvalue Problems**
+
+For **Block distribution** of matrix, the memory requirement per MPI rank is::
 
   sizeof(float_type) *[n * m + 2 * (n + m) * block + 1 + 5*block + 2*pow(block,2)]/(1024^3) GigaByte
 
-where ``n`` and ``m`` are fractions of ``N`` which depend on the size
-of the MPI grid of processors. For instance in the job script above
-``n = N/nrows`` and ``m = N/ncols``, with the size of MPI grid ``nrows*ncols``. 
-Correspondingly ``N`` is
-the size of the eigenproblem and ``block`` is at most ``nev + nex``.
-Note that the factor ``sizeof(float_type)`` is valid for single precision real,
-double precision real, single precision complex and double precision complex floating numbers.
-The value of this factor for these four types of floating numbers are respectively:
-``4``, ``8``, ``8``, ``16``.
-
-For ChASE with **Block-Cyclic distribution** of matrix, additional memory of
+For **Block-Cyclic distribution** of matrix, additional memory of
 size ``sizeof(float_type) * N`` is required for managing the internal reshuffling
 for block-cyclic data layout. Thus the total memory required is::
 
   sizeof(float_type) *[n * m + 2 * (n + m) * block + N + 1 + 5*block + 2*pow(block,2)]/(1024^3) GigaByte
 
+**Pseudo-Hermitian Eigenvalue Problems**
 
-Using such a formula one can verify if the allocation of
+Pseudo-Hermitian problems (e.g., from Bethe-Salpeter Equation) require additional
+memory for the dual basis vectors and larger workspace matrices used in the
+oblique Rayleigh-Ritz procedure. For **Block distribution** of matrix, the
+memory requirement per MPI rank is::
+
+  sizeof(float_type) *[n * m + 4 * (n + m) * block + 3 * block * block + 1 + 5*block + 2*pow(block,2)]/(1024^3) GigaByte
+
+For **Block-Cyclic distribution** of matrix, additional memory of
+size ``sizeof(float_type) * N`` is required for managing the internal reshuffling::
+
+  sizeof(float_type) *[n * m + 4 * (n + m) * block + 3 * block * block + N + 1 + 5*block + 2*pow(block,2)]/(1024^3) GigaByte
+
+**Common Parameters**
+
+In the formulas above:
+   * ``n`` and ``m`` are fractions of ``N`` which depend on the size
+     of the MPI grid of processors. For instance in the job script above
+     ``n = N/nrows`` and ``m = N/ncols``, with the size of MPI grid ``nrows*ncols``.
+   * ``N`` is the size of the eigenproblem.
+   * ``block`` is at most ``nev + nex``, where ``nev`` is the number of wanted
+     eigenpairs and ``nex`` is the extra search dimensions.
+   * ``sizeof(float_type)`` is valid for single precision real,
+     double precision real, single precision complex and double precision complex floating numbers.
+     The value of this factor for these four types of floating numbers are respectively:
+     ``4``, ``8``, ``8``, ``16``.
+
+**Example**
+
+Using such formulas one can verify if the allocation of
 resources is enough to solve for the problem at hand. For instance, if we use **Block distribution**
-for a ``N = 360,000`` and a ``block = nev + nex = 3,000`` with ``1152`` MPI ranks in 2D MPI grid of size ``32x36``, 
-the requirement memory per MPI rank is ``1.989 GB``. For ChASE with **Block-Cyclic Distribution**: the memory requirement per MPI-rank
-is 1.992 GB, a littler larger than the former case.
+for a Hermitian problem with ``N = 360,000`` and a ``block = nev + nex = 3,000`` with ``1152`` MPI ranks in 2D MPI grid of size ``32x36``, 
+the required memory per MPI rank is ``1.989 GB``. For ChASE with **Block-Cyclic Distribution**: the memory requirement per MPI-rank
+is ``1.992 GB``, a little larger than the former case.
+
+For the same problem size but with a **Pseudo-Hermitian** matrix using **Block distribution**,
+the memory requirement per MPI rank is approximately ``2.45 GB``, reflecting the additional
+storage needed for the dual basis and oblique Rayleigh-Ritz workspace.
 
 
 ChASE with multi-GPUs
@@ -266,14 +301,169 @@ multi-GPUs per node and each GPU card bound to 1 MPI task:
 Estimating Memory Requirement
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-For ChASE with multi-GPUs using both **Block distribution** and **Block-Cyclic distribution**
-of matrix, the  memory requirement per GPU is always ::
+For ChASE with multi-GPUs, the memory requirements differ between Hermitian and
+Pseudo-Hermitian problems, similar to the CPU case.
+
+**Hermitian Eigenvalue Problems**
+
+For both **Block distribution** and **Block-Cyclic distribution** of matrix,
+the memory requirement per GPU is::
 
   sizeof(float_type) *[n * m + 2 * (n + m) * block + 1 + 5*block + 2*pow(block,2)]/(1024^3) GigaByte
+
+For **Block-Cyclic distribution**, add ``sizeof(float_type) * N/(1024^3)`` to account
+for the internal reshuffling buffer.
+
+**Pseudo-Hermitian Eigenvalue Problems**
+
+For **Block distribution** of matrix, the memory requirement per GPU is::
+
+  sizeof(float_type) *[n * m + 4 * (n + m) * block + 3 * block * block + 1 + 5*block + 2*pow(block,2)]/(1024^3) GigaByte
+
+For **Block-Cyclic distribution**, add ``sizeof(float_type) * N/(1024^3)`` to account
+for the internal reshuffling buffer.
+
+The parameters ``n``, ``m``, ``N``, ``block``, and ``sizeof(float_type)`` have the same
+meaning as described in the CPU memory requirement section above.
 
 .. warning::
 
     The estimation of memory requirement is only based on the algorithmic aspects of ChASE. The buffer and memory requirement of libraries such as ``MPI`` has not been considered. So despite the provided formulas to calculate the memory consumption, some combination of MPI libraries (e.g., ParastationMPI) could lead to the crash of ChASE with ``out of memory`` even if the memory available is within the estimated bounds. 
+
+
+CMake Configuration Options
+===========================
+
+This section provides a comprehensive list of all CMake configuration options
+available when building ChASE. These options can be set using the ``-D`` flag
+during the CMake configuration step, e.g., ``cmake .. -DOPTION_NAME=value``.
+
+ChASE-Specific Options
+-----------------------
+
+.. list-table:: ChASE CMake Configuration Options
+   :widths: 35 10 55
+   :header-rows: 1
+
+   * - Option Name
+     - Default
+     - Description
+   * - ``CHASE_OUTPUT``
+     - ``OFF``
+     - Enable output of intermediate convergence information and
+       performance reports of different numerical kernels at each
+       iteration. When enabled, ChASE will print detailed information
+       during the solution process.
+   * - ``CHASE_ENABLE_OPENMP``
+     - ``ON``
+     - Enable OpenMP support for multi-threading. This option enables
+       parallel execution within a single MPI rank using OpenMP threads.
+       Set to ``OFF`` to disable OpenMP support.
+   * - ``CHASE_ENABLE_MIXED_PRECISION``
+     - ``OFF``
+     - Enable mixed precision support. When enabled, ChASE can use
+       different floating-point precisions for different operations
+       to optimize performance while maintaining accuracy.
+   * - ``CHASE_ENABLE_MPI_IO``
+     - ``OFF``
+     - Enable MPI I/O functionality to read Hamiltonian matrices
+       from local files in parallel. This is useful for loading
+       large matrices distributed across multiple MPI processes.
+   * - ``CHASE_USE_NVTX``
+     - ``OFF``
+     - Enable NVIDIA Tools Extension (NVTX) for profiling GPU
+       operations. This option is useful for performance analysis
+       and debugging on NVIDIA GPUs using tools like Nsight Systems.
+   * - ``CHASE_BUILD_WITH_EXAMPLES``
+     - ``OFF``
+     - Build the example programs provided with ChASE. When enabled,
+       example executables will be built in the ``examples/``
+       directory. The ``popl`` library for command-line parsing
+       will be automatically downloaded if needed.
+   * - ``CHASE_BUILD_WITH_DOCS``
+     - ``OFF``
+     - Build the documentation using Sphinx. When enabled, HTML
+       documentation will be generated in the build directory.
+   * - ``ChASE_DISPLAY_COND_V_SVD``
+     - ``OFF``
+     - Compute and display the condition number of the matrix V
+       from the Singular Value Decomposition (SVD). This is useful
+       for debugging and understanding numerical stability.
+   * - ``ENABLE_TESTS``
+     - ``OFF``
+     - Enable building of unit tests. When enabled, GoogleTest
+       will be automatically downloaded and test executables will
+       be built. Requires MPI to be available for parallel tests.
+
+Standard CMake Options
+----------------------
+
+The following standard CMake variables can also be used to configure the build:
+
+**Installation Path:**
+   * ``CMAKE_INSTALL_PREFIX`` - Installation directory for ChASE (default: ``/usr/local`` on Unix systems)
+
+**Compiler Selection:**
+   * ``CMAKE_CXX_COMPILER`` - Path to the C++ compiler (e.g., ``/usr/bin/g++``, ``/usr/bin/clang++``)
+   * ``CMAKE_C_COMPILER`` - Path to the C compiler (e.g., ``/usr/bin/gcc``, ``/usr/bin/clang``)
+   * ``CMAKE_Fortran_COMPILER`` - Path to the Fortran compiler (e.g., ``/usr/bin/gfortran``)
+
+**MPI Configuration:**
+   * ``MPI_CXX_COMPILER`` - Path to the MPI C++ compiler wrapper (e.g., ``/usr/bin/mpicxx``)
+   * ``MPI_C_COMPILER`` - Path to the MPI C compiler wrapper (e.g., ``/usr/bin/mpicc``)
+   * ``MPI_Fortran_COMPILER`` - Path to the MPI Fortran compiler wrapper (e.g., ``/usr/bin/mpif90``)
+
+**CUDA Configuration:**
+   * ``CMAKE_CUDA_ARCHITECTURES`` - CUDA compute capability architectures to target. Can be a single
+     value (e.g., ``86`` for RTX 3090) or a semicolon-separated list (e.g., ``"70;75;80;86"``).
+     This option should always be set when building with CUDA support, regardless of CMake version.
+
+**Build Type:**
+   * ``CMAKE_BUILD_TYPE`` - Build type: ``Release`` (optimized, default), ``Debug`` (with debug symbols),
+     ``RelWithDebInfo`` (optimized with debug info), or ``MinSizeRel`` (minimum size)
+
+Example Usage
+-------------
+
+Here are some example CMake configuration commands demonstrating the use of various options:
+
+**Basic build with examples:**
+   .. code-block:: console
+
+      cmake .. -DCMAKE_INSTALL_PREFIX=/path/to/install \
+               -DCHASE_BUILD_WITH_EXAMPLES=ON
+
+**Build with GPU support and specific CUDA architecture:**
+   .. code-block:: console
+
+      cmake .. -DCMAKE_INSTALL_PREFIX=/path/to/install \
+               -DCMAKE_CUDA_ARCHITECTURES=86 \
+               -DCHASE_BUILD_WITH_EXAMPLES=ON
+
+**Build with debugging output and profiling:**
+   .. code-block:: console
+
+      cmake .. -DCMAKE_BUILD_TYPE=Debug \
+               -DCHASE_OUTPUT=ON \
+               -DCHASE_USE_NVTX=ON
+
+**Build with custom compilers and MPI:**
+   .. code-block:: console
+
+      cmake .. -DCMAKE_CXX_COMPILER=/usr/bin/g++-11 \
+               -DCMAKE_C_COMPILER=/usr/bin/gcc-11 \
+               -DMPI_CXX_COMPILER=/usr/bin/mpicxx \
+               -DCHASE_ENABLE_OPENMP=ON
+
+**Build with tests enabled:**
+   .. code-block:: console
+
+      cmake .. -DENABLE_TESTS=ON \
+               -DMPI_RUN=srun \
+               -DMPI_RUN_ARGS="--ntasks=4"
+
+Note: When using ``ENABLE_TESTS=ON``, you may also need to set ``MPI_RUN`` (the MPI launcher command,
+e.g., ``mpirun`` or ``srun``) and optionally ``MPI_RUN_ARGS`` (additional arguments for the MPI launcher).
 
 
 

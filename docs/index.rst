@@ -26,12 +26,10 @@ ChASE's Documentation
 
 .. toctree::
    :maxdepth: 2
-   :caption: DEVELOPER DOCUMENTATION
+   :caption: API REFERENCE
    :numbered:
    
-   algorithm
-   abstract
-   parallel
+   api/index
 
 Index
 ==================

@@ -21,6 +21,5 @@ With the help of the seperation of numerical kernels,
 Definition of Interface
 ------------------------
 
-.. doxygenclass:: chase::Chase
-   :project: ChASE
+For the complete API documentation of ``chase::ChaseBase``, please refer to :ref:`api_chasebase`.
 

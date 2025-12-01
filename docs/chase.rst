@@ -8,23 +8,51 @@ Overview
 =========
 
 The **Ch**\ ebyshev **A**\ ccelerated **S**\ ubspace **E**\ igensolver
-(ChASE) is a modern and scalable library to solve dense Hermitian (Symmetric)
-algebraic eigenvalue problems of the form
+(ChASE) is a modern and scalable library to solve two types of dense
+algebraic eigenvalue problems:
 
-.. math::
+1. **Hermitian (Symmetric) eigenvalue problems** of the form
 
-   A \hat{x} = \lambda \hat{x} \quad \textrm{with} \quad A^\dagger=A \in
-   \mathbb{C}^{n\times n}\ \ (A^T=A \in \mathbb{R}^{n\times n}),
+   .. math::
 
-where :math:`\hat{x} \in \mathbb{C}^{n}\backslash \{0\}` and
-:math:`\lambda \in \mathbb{R}` are the eigenvector and the eigenvalue
-of :math:`A`, respectively.
+      A \hat{x} = \lambda \hat{x} \quad \textrm{with} \quad A^\dagger=A \in
+      \mathbb{C}^{n\times n}\ \ (A^T=A \in \mathbb{R}^{n\times n}),
+
+   where :math:`\hat{x} \in \mathbb{C}^{n}\backslash \{0\}` and
+   :math:`\lambda \in \mathbb{R}` are the eigenvector and the eigenvalue
+   of :math:`A`, respectively.
+
+2. **Pseudo-Hermitian eigenvalue problems**, for example from Bethe-Salpeter
+   Equation (BSE). The Hamiltonian :math:`H` derived from the BSE equation is
+   of the form
+
+   .. math::
+
+      H := \begin{bmatrix}
+          A & B\\
+          -\bar{B} & -\bar{A}
+      \end{bmatrix} \quad \textrm{with} \quad A = A^* \quad \textrm{and} \quad B = B^T.
+
+   The :math:`m \times m` blocks :math:`A` and :math:`B` are respectively
+   referred to as resonant and coupling terms. The two blocks :math:`\bar{A}`
+   and :math:`\bar{B}` stand for the conjugate of :math:`A` and :math:`B`.
+   Because of the properties of :math:`A` and :math:`B` stated above,
+   :math:`\bar{A} = A^T` and :math:`\bar{B} = B^*`, and the size of :math:`H`
+   is :math:`n := 2m`. The Hamiltonian :math:`H` is termed a
+   pseudo-Hermitian matrix, as it satisfies the relation
+
+   .. math::
+
+      SH = H^*S \quad \textrm{with} \quad S := \begin{bmatrix}
+          I & 0 \\
+          0 & -I
+      \end{bmatrix}.
 
 Algorithm
 ==========
 
-.. image:: /images/ChASE_flowchart.png
-   :scale: 60 %
+.. image:: /images/flow-chart-chase_standalone.png
+   :scale: 90 %
    :align: center
 
 .. table::
@@ -40,7 +68,8 @@ Algorithm
    :math:`m[],\textsf{res}[]`      Vectors: optimized degrees, eigenpairs residuals
    FILTER                          Chebyshev polynomial filter aligning :math:`\hat{V}` to the desired eigenspace 	 
    ORTHONORMALIZE                  QR factorization orthogonalizing filtered vectors together with deflated ones
-   RAYLEIGH-RITZ                   Projection of :math:`A` into search space defined by :math:`\hat{Q}` and diagonalization of reduced problem
+   NORMAL-RAYLEIGH-RITZ            Projection of :math:`A` into search space defined by :math:`\hat{Q}` and diagonalization of reduced problem
+   OBLIQUE-RAYLEIGH-RITZ           Projection of :math:`H` into search space defined by :math:`\hat{Q}` and diagonalization of reduced problem
    DEFL&LOCK                       Deflation and locking of eigenpairs whose residuals are below the tolerance threshold
    DEGREES                         Computation of optimal polynomial degree for each vector in :math:`\hat{V}` 
    =============================== ===========================================================================================================

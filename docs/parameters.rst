@@ -155,6 +155,21 @@ Lanczos DoS (Spectral Estimator)
 								higher than ``20``.     
    ======================== =================================== ======================== ==================
 
+.. _configuration_object:
+
+Configuration Object
+====================
+
+The ``chase::ChaseConfig<T>`` class provides the API for configuring all ChASE
+parameters programmatically. This class is accessed through the ``GetConfig()``
+method of any ChASE solver instance.
+
+.. note::
+
+   For detailed API documentation of the ``chase::ChaseConfig<T>`` class, including
+   all available methods and their descriptions, please refer to the Doxygen-generated
+   documentation in the build directory or visit the online documentation.
+
 ..
   Parallel configuration
   ======================

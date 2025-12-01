@@ -28,18 +28,27 @@ It is also recommended that you check out the latest stable tag:
 
 .. code-block:: sh
 
-    git checkout v1.3.0
+    git checkout v1.6.0
 
 
 Dependencies
 ============
 
-In addition to a recent ``C++`` compiler ChASE's external dependencies are
-`CMake <http://www.cmake.org/>`__ , `MPI
-<http://en.wikipedia.org/wiki/Message_Passing_Interface>`__ , `BLAS <http://netlib.org/blas>`__ ,
-`LAPACK <http://netlib.org/lapack>`__. To enhance the usability of the
-ready-to-use examples, it is also necessary to install the `Boost
-<https://www.boost.org/>`__ library. 
+ChASE has the following dependencies:
+
+**Required Dependencies:**
+   * A ``C++`` compiler with C++17 support (e.g., GCC 7+, Clang 5+, or MSVC 2017+)
+   * `CMake <http://www.cmake.org/>`__ version 3.8 or higher
+   * `BLAS <http://netlib.org/blas>`__ (Basic Linear Algebra Subprograms)
+   * `LAPACK <http://netlib.org/lapack>`__ (Linear Algebra PACKage)
+
+**Optional Dependencies:**
+   * `MPI <http://en.wikipedia.org/wiki/Message_Passing_Interface>`__ - Required only for parallel implementations (pChASECPU, pChASEGPU). Not needed for sequential builds (ChASECPU, ChASEGPU).
+   * `CUDA <https://developer.nvidia.com/cuda-toolkit>`__ - Required only for GPU implementations (ChASEGPU, pChASEGPU)
+   * `ScaLAPACK <http://www.netlib.org/scalapack/>`__ - Optional, for distributed Householder QR factorization
+   * `NCCL <https://developer.nvidia.com/nccl>`__ - Optional, for optimized multi-GPU communication in pChASEGPU
+
+Note: For building examples with command-line parsing, the `popl <https://github.com/badaix/popl>`__ library is automatically downloaded by CMake using FetchContent. No manual installation is required. 
 
 Installing dependencies on Linux
 --------------------------------
@@ -78,18 +87,20 @@ the following commands::
     or
     sudo apt-get install libatlas-dev liblapack-dev
 
-Installing MPI
-^^^^^^^^^^^^^^
+Installing MPI (Optional)
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-ChASE requires an implementation of the Message Passing Interface
-(MPI) communication protocol. The two most commonly used
-MPI implementations are `MPICH <https://www.mpich.org>`_, and `OpenMPI
-<http://www.open-mpi.org/>`_.
+MPI is only required if you plan to use parallel implementations of ChASE
+(pChASECPU or pChASEGPU). For sequential builds (ChASECPU or ChASEGPU), MPI
+is not needed.
+
+If you need MPI, the two most commonly used MPI implementations are
+`MPICH <https://www.mpich.org>`_ and `OpenMPI <http://www.open-mpi.org/>`_.
 
 `MPICH <https://www.mpich.org>`_ can be installed by executing the
 following command::
 
-    sudo apt-get install libmpich2-dev
+    sudo apt-get install libmpich-dev
 
 while `OpenMPI <http://www.open-mpi.org/>`_ can be installed by executing::
 
@@ -137,13 +148,15 @@ which is provided out of the box, or one could install `OpenBLAS
 
 
 
-Installing MPI
-^^^^^^^^^^^^^^
+Installing MPI (Optional)
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-ChASE requires an implementation of the Message Passing Interface
-(MPI) communication protocol. The two most commonly used
-MPI implementations are `MPICH <https://www.mpich.org>`_, and `OpenMPI
-<http://www.open-mpi.org/>`_.
+MPI is only required if you plan to use parallel implementations of ChASE
+(pChASECPU or pChASEGPU). For sequential builds (ChASECPU or ChASEGPU), MPI
+is not needed.
+
+If you need MPI, the two most commonly used MPI implementations are
+`MPICH <https://www.mpich.org>`_ and `OpenMPI <http://www.open-mpi.org/>`_.
 
 `MPICH <https://www.mpich.org>`_ can be installed by executing the
 following commands::
@@ -170,9 +183,11 @@ Hermitian standard eigenproblem.
 Building and Installing the ChASE library
 ------------------------------------------
 
-On a Linux system with MPI and CMake installed in the standard
-locations, ChASE can be build by executing in order the
-following commands (after having cloned the repository):
+ChASE can be built for different configurations depending on your needs:
+
+**Sequential Build (Single Node)**
+   For sequential execution on a single node, you only need BLAS and LAPACK.
+   MPI is not required. This will build ChASECPU (and ChASEGPU if CUDA is available).
 
 .. code-block:: sh
       
@@ -182,24 +197,38 @@ following commands (after having cloned the repository):
     cmake .. -DCMAKE_INSTALL_PREFIX=${ChASEROOT}
     make install
 
-In the commands above, the variable ``${CHASEROOT}`` is the path to
-install ChASE on user's laptops.
-CMake will auto-detect the dependencies and select the default
-installed modules. In order to select a specific module installation,
-one can manually specify several build options,
-especially when multiple versions of libraries or several different
-compilers are available on the system. For instance, any ``C++``, ``C``, or
-``Fortran`` compiler can be selected by setting the
-``CMAKE_CXX_COMPILER``, ``CMAKE_C_COMPILER``, and
-``CMAKE_Fortran_COMPILER`` variables, respectively. The following
-provides an illustration of such setting. ::
+**Parallel Build (Multi-Node)**
+   For parallel execution across multiple nodes, MPI is required. This will
+   build pChASECPU (and pChASEGPU if CUDA is available).
+
+.. code-block:: sh
+      
+    cd ChASE/
+    mkdir build
+    cd build/
+    cmake .. -DCMAKE_INSTALL_PREFIX=${ChASEROOT}
+    make install
+
+In the commands above, the variable ``${ChASEROOT}`` is the path to install
+ChASE on your system. CMake will auto-detect the dependencies and select the
+default installed modules. If MPI is found, parallel implementations will be
+built automatically. If CUDA is found, GPU implementations will be built
+automatically.
+
+In order to select a specific module installation, especially when multiple
+versions of libraries or several different compilers are available on the
+system, you can manually specify build options. For instance, any ``C++``,
+``C``, or ``Fortran`` compiler can be selected by setting the
+``CMAKE_CXX_COMPILER``, ``CMAKE_C_COMPILER``, and ``CMAKE_Fortran_COMPILER``
+variables, respectively. The following provides an illustration of such setting::
 
     -D CMAKE_CXX_COMPILER=/usr/bin/g++ \
     -D CMAKE_C_COMPILER=/usr/bin/gcc   \
     -D CMAKE_Fortran_COMPILER=/usr/bin/gfortran
 
-Analogously, it may be necessary to manually specify the paths to the
-MPI implementation by, for example, setting the following variables. ::
+If MPI is installed but not in the default path, you may need to manually
+specify the paths to the MPI implementation by, for example, setting the
+following variables::
 
     -D MPI_CXX_COMPILER=/usr/bin/mpicxx \
     -D MPI_C_COMPILER=/usr/bin/mpicc \
@@ -220,34 +249,42 @@ Quick Hands-on by Examples
 ------------------------------
 
 For a quick test and usage of the library, we provide various ready-to-use
-examples which use ChASE to solve eigenproblems. Some of these examples make
-the additional use of the 
-``C++`` library ``Boost`` for the parsing of command line values. Thus
-``Boost`` should also be provided before the installation of ChASE if users
-would like to build ChASE with these examples.
-In order to build these examples together with ChASE
-the sequence of building commands should be slightly modified as
-below:
+examples which use ChASE to solve eigenproblems. Some of these examples use
+the `popl <https://github.com/badaix/popl>`__ library for command-line parsing,
+which is automatically downloaded by CMake during the build process. No
+manual installation is required.
+
+In order to build these examples together with ChASE, the sequence of
+building commands should be slightly modified as below:
 
 .. code-block:: sh
 
     cd ChASE/
     mkdir build
     cd build/
-    cmake .. -DCMAKE_INSTALL_PREFIX=${ChASEROOT} -DBUILD_WITH_EXAMPLES=ON
+    cmake .. -DCMAKE_INSTALL_PREFIX=${ChASEROOT} -DCHASE_BUILD_WITH_EXAMPLES=ON
     make install
 
-Executing ChASE using the ready-to-use examples is rather
-straightforward. For instance, :ref:`hello-world-chase` is executed by simply typing
-the line below:
+Executing ChASE using the ready-to-use examples is rather straightforward.
+The examples are built in the ``build/examples/`` directory. For instance,
+the hello world example can be executed as follows:
 
-.. code-block:: sh
+**Sequential execution (ChASECPU):**
+   If you built without MPI, the example will run sequentially::
 
-    ./0_hello_world/0_hello_world
+    ./examples/0_hello_world/0_hello_world
 
-In this example, a Clement matrix is generated and default values of parameters are used.  
+**Parallel execution (pChASECPU or pChASEGPU):**
+   If you built with MPI, you need to launch the example with an MPI launcher::
 
-To run this example with MPI, start the command with the mpi launcher of your choice, e.g. `mpirun` or `srun`.
+    mpirun -np 4 ./examples/0_hello_world/0_hello_world
+
+   or using SLURM::
+
+    srun -n 4 ./examples/0_hello_world/0_hello_world
+
+In this example, a Clement matrix is generated and default values of
+parameters are used.
 
 For sake of completeness we provide a complete list of parameters in this example below.
 

@@ -3,9 +3,9 @@
 Orthogonalization and Rayleigh-Ritz
 ===================================
 
-.. doxygenfunction:: chase::Chase::QR
+.. doxygenfunction:: chase::ChaseBase::QR
    :project: ChASE
 
 
-.. doxygenfunction:: chase::Chase::RR
+.. doxygenfunction:: chase::ChaseBase::RR
    :project: ChASE
