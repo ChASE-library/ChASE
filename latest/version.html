@@ -1,0 +1,442 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Versions of the library &mdash; ChASE v1.3.0 documentation</title>
+      <link rel="stylesheet" href="theme_overrides.css" type="text/css" />
+
+  
+    <link rel="shortcut icon" href="_static/ChASE_Logo_Favicon_RGB.png"/>
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=e49d06fc"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Licenses and Copyright" href="license.html" />
+    <link rel="prev" title="ChASE: an Iterative Solver for Dense Eigenproblems" href="chase.html" />
+     
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+    <link href="_static/theme_overrides.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+
+          
+          
+          <a href="index.html">
+            
+              <img src="_static/ChASE_Logo_RGB.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+  <div class="version-selector" style="margin: 10px 0; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 3px;">
+  <label for="version-select" style="display: block; color: #fcfcfc; font-size: 12px; margin-bottom: 5px; font-weight: bold;">
+    Version:
+  </label>
+  <select id="version-select" onchange="switchVersion(this.value)" style="width: 100%; padding: 5px; border: 1px solid #2980B9; border-radius: 3px; background: white; color: #333; font-size: 13px;"><option value="/latest/">
+      latest
+    </option><option value="/v1.3.0/"selected>
+      v1.3.0
+    </option><option value="/v1.4.0/">
+      v1.4.0
+    </option></select>
+</div><script>
+function switchVersion(url) {
+  // Get current path and determine base URL
+  const currentPath = window.location.pathname;
+  const pathParts = currentPath.split('/').filter(p => p);
+  
+  // Get known versions from the select options (dynamic, not hardcoded)
+  const selector = document.getElementById('version-select');
+  const knownVersions = [];
+  if (selector) {
+    for (let option of selector.options) {
+      const verName = option.text.trim();
+      knownVersions.push(verName);
+    }
+  }
+  
+  let relativePath = '';
+  if (pathParts.length > 0 && knownVersions.includes(pathParts[0])) {
+    // We're in a versioned path, get everything after version
+    relativePath = '/' + pathParts.slice(1).join('/');
+  } else {
+    // We're in root or unversioned, keep current path
+    relativePath = currentPath;
+  }
+  
+  // Construct new URL - handle both absolute and relative paths
+  if (url.startsWith('http')) {
+    // Absolute URL
+    window.location.href = url;
+  } else {
+    // Relative URL - ensure it starts with /
+    const baseUrl = url.startsWith('/') ? url : '/' + url;
+    const cleanBase = baseUrl.replace(/\/$/, '');
+    const cleanPath = relativePath.startsWith('/') ? relativePath : '/' + relativePath;
+    window.location.href = cleanBase + cleanPath;
+  }
+}
+
+// Auto-detect current version from URL and update selector
+(function() {
+  const currentPath = window.location.pathname;
+  const pathParts = currentPath.split('/').filter(p => p);
+  
+  // Get known versions from select options
+  const selector = document.getElementById('version-select');
+  if (!selector) return;
+  
+  const knownVersions = [];
+  for (let option of selector.options) {
+    const verName = option.text.trim();
+    knownVersions.push(verName);
+  }
+  
+  if (pathParts.length > 0 && knownVersions.includes(pathParts[0])) {
+    const currentVer = pathParts[0];
+    // Find option matching current version
+    for (let option of selector.options) {
+      if (option.text.trim() === currentVer) {
+        selector.value = option.value;
+        break;
+      }
+    }
+  }
+})();
+</script>
+
+<style>
+.version-selector select:focus {
+  outline: 2px solid #2980B9;
+  outline-offset: 2px;
+}
+</style>
+
+
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">INTRODUCTION</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="chase.html">ChASE: an Iterative Solver for Dense Eigenproblems</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Versions of the library</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#implementation-variants">Implementation Variants</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#sequential-implementations">Sequential Implementations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#parallel-implementations">Parallel Implementations</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#matrix-types">Matrix Types</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#sequential-non-distributed-matrix-types">Sequential (Non-Distributed) Matrix Types</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#hermitian-symmetric-matrices">Hermitian (Symmetric) Matrices</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pseudo-hermitian-quasi-hermitian-matrices">Pseudo-Hermitian (Quasi-Hermitian) Matrices</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#parallel-distributed-matrix-types">Parallel (Distributed) Matrix Types</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#id1">Hermitian (Symmetric) Matrices</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id2">Pseudo-Hermitian (Quasi-Hermitian) Matrices</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#matrix-distributions-parallel-implementations">Matrix Distributions (Parallel Implementations)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#block-distribution">Block Distribution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#block-cyclic-distribution">Block-Cyclic Distribution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#redundant-distribution">Redundant Distribution</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#backend-communication">Backend Communication</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">Licenses and Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="reference.html">References and Contributors</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">USER DOCUMENTATION</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="quick-start.html">1. Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">2. Installation and Setup on a Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">3. How to use ChASE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parameters.html">4. Parameters and Configurations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="module.html">5. Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="example.html">6. Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API REFERENCE</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api/index.html">1. API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ChASE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Versions of the library</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/version.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="versions-of-the-library">
+<h1>Versions of the library<a class="headerlink" href="#versions-of-the-library" title="Link to this heading"></a></h1>
+<p>ChASE is a modern C++ library for solving dense eigenvalue problems. The library
+provides multiple implementation variants to support different computing
+architectures and problem types. ChASE can be installed with minimal dependencies
+(BLAS, LAPACK) for sequential execution, or with MPI/ScaLAPACK for parallel
+execution on distributed systems.</p>
+<section id="implementation-variants">
+<h2>Implementation Variants<a class="headerlink" href="#implementation-variants" title="Link to this heading"></a></h2>
+<p>ChASE provides four main implementation classes, each optimized for different
+computing environments:</p>
+<section id="sequential-implementations">
+<h3>Sequential Implementations<a class="headerlink" href="#sequential-implementations" title="Link to this heading"></a></h3>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>ChASECPU</strong> (<code class="docutils literal notranslate"><span class="pre">chase::Impl::ChASECPU</span></code>): Sequential CPU implementation
+for single-node execution. This is the simplest configuration, suitable
+for single CPU systems or shared-memory multi-core systems. It uses BLAS
+and LAPACK for all numerical operations and supports both Hermitian and
+pseudo-Hermitian (Quasi-Hermitian) matrices.</p></li>
+<li><p><strong>ChASEGPU</strong> (<code class="docutils literal notranslate"><span class="pre">chase::Impl::ChASEGPU</span></code>): Sequential GPU implementation
+for single-node execution with GPU acceleration. This configuration
+offloads computations to GPU using CUDA, cuBLAS, and cuSOLVER libraries.
+Ideal for systems with one or more GPU cards, supporting both Hermitian
+and pseudo-Hermitian matrices.</p></li>
+</ul>
+</div></blockquote>
+</section>
+<section id="parallel-implementations">
+<h3>Parallel Implementations<a class="headerlink" href="#parallel-implementations" title="Link to this heading"></a></h3>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>pChASECPU</strong> (<code class="docutils literal notranslate"><span class="pre">chase::Impl::pChASECPU</span></code>): Parallel CPU implementation
+using MPI for distributed-memory systems. This configuration is best
+suited for multi-node CPU clusters. It uses ScaLAPACK for distributed
+linear algebra operations and supports multiple matrix distribution
+schemes (Block, Block-Cyclic). Typically used with one MPI rank per NUMA
+domain and OpenMP threads for intra-node parallelism.</p></li>
+<li><p><strong>pChASEGPU</strong> (<code class="docutils literal notranslate"><span class="pre">chase::Impl::pChASEGPU</span></code>): Parallel GPU implementation
+using MPI or NCCL for distributed-memory systems with GPU acceleration.
+This configuration supports both MPI (with CUDA-aware MPI) and NCCL
+backends for inter-node GPU communication. Currently supports one GPU
+card per MPI rank. Ideal for heterogeneous computing clusters with
+multiple GPU nodes.</p></li>
+</ul>
+</div></blockquote>
+</section>
+</section>
+<section id="matrix-types">
+<h2>Matrix Types<a class="headerlink" href="#matrix-types" title="Link to this heading"></a></h2>
+<p>ChASE supports two types of eigenvalue problems (Hermitian and Pseudo-Hermitian),
+each available in both sequential (non-distributed) and parallel (distributed)
+variants. The choice of matrix type depends on whether you are using sequential
+or parallel implementations.</p>
+<section id="sequential-non-distributed-matrix-types">
+<h3>Sequential (Non-Distributed) Matrix Types<a class="headerlink" href="#sequential-non-distributed-matrix-types" title="Link to this heading"></a></h3>
+<p>These matrix types are used with sequential implementations (ChASECPU and ChASEGPU):</p>
+<section id="hermitian-symmetric-matrices">
+<h4>Hermitian (Symmetric) Matrices<a class="headerlink" href="#hermitian-symmetric-matrices" title="Link to this heading"></a></h4>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>Matrix Type</strong>: <code class="docutils literal notranslate"><span class="pre">chase::matrix::Matrix&lt;T&gt;</span></code> (CPU) or <code class="docutils literal notranslate"><span class="pre">chase::matrix::Matrix&lt;T,</span> <span class="pre">chase::platform::GPU&gt;</span></code> (GPU)</p></li>
+<li><p><strong>Problem Form</strong>: <span class="math notranslate nohighlight">\(A \hat{x} = \lambda \hat{x}\)</span> where <span class="math notranslate nohighlight">\(A = A^*\)</span></p></li>
+<li><p><strong>Rayleigh-Ritz</strong>: Standard projection (NORMAL-RAYLEIGH-RITZ)</p></li>
+<li><p><strong>Orthonormalization</strong>: Standard QR factorization</p></li>
+</ul>
+</div></blockquote>
+</section>
+<section id="pseudo-hermitian-quasi-hermitian-matrices">
+<h4>Pseudo-Hermitian (Quasi-Hermitian) Matrices<a class="headerlink" href="#pseudo-hermitian-quasi-hermitian-matrices" title="Link to this heading"></a></h4>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>Matrix Type</strong>: <code class="docutils literal notranslate"><span class="pre">chase::matrix::QuasiHermitianMatrix&lt;T&gt;</span></code> (CPU) or <code class="docutils literal notranslate"><span class="pre">chase::matrix::QuasiHermitianMatrix&lt;T,</span> <span class="pre">chase::platform::GPU&gt;</span></code> (GPU)</p></li>
+<li><p><strong>Problem Form</strong>: BSE Hamiltonian <span class="math notranslate nohighlight">\(H\)</span> satisfying <span class="math notranslate nohighlight">\(SH = H^*S\)</span></p></li>
+<li><p><strong>Rayleigh-Ritz</strong>: Oblique projection with S-metric (OBLIQUE-RAYLEIGH-RITZ)</p></li>
+<li><p><strong>Orthonormalization</strong>: S-orthonormal QR factorization</p></li>
+<li><p><strong>Use Case</strong>: Bethe-Salpeter Equation (BSE) and similar applications</p></li>
+</ul>
+</div></blockquote>
+</section>
+</section>
+<section id="parallel-distributed-matrix-types">
+<h3>Parallel (Distributed) Matrix Types<a class="headerlink" href="#parallel-distributed-matrix-types" title="Link to this heading"></a></h3>
+<p>These matrix types are used with parallel implementations (pChASECPU and pChASEGPU)
+and support different distribution schemes across MPI processes:</p>
+<section id="id1">
+<h4>Hermitian (Symmetric) Matrices<a class="headerlink" href="#id1" title="Link to this heading"></a></h4>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>Block Distribution</strong>: <code class="docutils literal notranslate"><span class="pre">chase::distMatrix::BlockBlockMatrix&lt;T,</span> <span class="pre">Platform&gt;</span></code></p></li>
+<li><p><strong>Block-Cyclic Distribution</strong>: <code class="docutils literal notranslate"><span class="pre">chase::distMatrix::BlockCyclicMatrix&lt;T,</span> <span class="pre">Platform&gt;</span></code></p></li>
+<li><p><strong>Redundant Distribution</strong>: <code class="docutils literal notranslate"><span class="pre">chase::distMatrix::RedundantMatrix&lt;T,</span> <span class="pre">Platform&gt;</span></code></p></li>
+<li><p><strong>Problem Form</strong>: <span class="math notranslate nohighlight">\(A \hat{x} = \lambda \hat{x}\)</span> where <span class="math notranslate nohighlight">\(A = A^*\)</span></p></li>
+<li><p><strong>Rayleigh-Ritz</strong>: Standard projection (NORMAL-RAYLEIGH-RITZ)</p></li>
+<li><p><strong>Orthonormalization</strong>: Standard QR factorization</p></li>
+<li><p><strong>Platform</strong>: Can be <code class="docutils literal notranslate"><span class="pre">chase::platform::CPU</span></code> or <code class="docutils literal notranslate"><span class="pre">chase::platform::GPU</span></code></p></li>
+</ul>
+</div></blockquote>
+</section>
+<section id="id2">
+<h4>Pseudo-Hermitian (Quasi-Hermitian) Matrices<a class="headerlink" href="#id2" title="Link to this heading"></a></h4>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>Block Distribution</strong>: <code class="docutils literal notranslate"><span class="pre">chase::distMatrix::QuasiHermitianBlockBlockMatrix&lt;T,</span> <span class="pre">Platform&gt;</span></code></p></li>
+<li><p><strong>Block-Cyclic Distribution</strong>: <code class="docutils literal notranslate"><span class="pre">chase::distMatrix::QuasiHermitianBlockCyclicMatrix&lt;T,</span> <span class="pre">Platform&gt;</span></code></p></li>
+<li><p><strong>Problem Form</strong>: BSE Hamiltonian <span class="math notranslate nohighlight">\(H\)</span> satisfying <span class="math notranslate nohighlight">\(SH = H^*S\)</span></p></li>
+<li><p><strong>Rayleigh-Ritz</strong>: Oblique projection with S-metric (OBLIQUE-RAYLEIGH-RITZ)</p></li>
+<li><p><strong>Orthonormalization</strong>: S-orthonormal QR factorization</p></li>
+<li><p><strong>Use Case</strong>: Bethe-Salpeter Equation (BSE) and similar applications</p></li>
+<li><p><strong>Platform</strong>: Can be <code class="docutils literal notranslate"><span class="pre">chase::platform::CPU</span></code> or <code class="docutils literal notranslate"><span class="pre">chase::platform::GPU</span></code></p></li>
+</ul>
+</div></blockquote>
+</section>
+</section>
+</section>
+<section id="matrix-distributions-parallel-implementations">
+<h2>Matrix Distributions (Parallel Implementations)<a class="headerlink" href="#matrix-distributions-parallel-implementations" title="Link to this heading"></a></h2>
+<p>For parallel implementations (pChASECPU and pChASEGPU), ChASE organizes MPI
+processes in a 2D grid and supports multiple data distribution schemes for
+assigning sub-blocks of the dense matrix to different MPI ranks.</p>
+<section id="block-distribution">
+<h3>Block Distribution<a class="headerlink" href="#block-distribution" title="Link to this heading"></a></h3>
+<p>The <strong>Block Distribution</strong> (<code class="docutils literal notranslate"><span class="pre">chase::distMatrix::BlockBlockMatrix</span></code>) assigns
+each MPI rank of the 2D grid a contiguous block of the dense matrix. This
+distribution scheme is optimal for the <strong>Hermitian Matrix-Matrix Multiplication</strong>
+kernel, which is the most computationally intensive operation in ChASE. The
+block distribution results in large, contiguous matrix-matrix multiplications
+on each node, often achieving performance close to the hardware theoretical peak.
+Additionally, this data distribution allows efficient offloading of computations
+to GPU accelerators.</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}A=\left(\begin{array}{c|c|c}
+  A_{0,0} &amp; A_{0,1} &amp; A_{0,2}  \\
+  \hline
+  A_{1,0} &amp; A_{1,1} &amp; A_{1,2}  \\
+  \hline
+  A_{2,0} &amp; A_{2,1} &amp; A_{2,2}
+\end{array}\right)\end{split}\]</div>
+<p>The figure above shows an example of ChASE distributing a <span class="math notranslate nohighlight">\(n \times n\)</span>
+dense matrix <span class="math notranslate nohighlight">\(A\)</span> into a <span class="math notranslate nohighlight">\(3 \times 3\)</span> grid of MPI processes. In this
+example, the matrix <span class="math notranslate nohighlight">\(A\)</span> is split into a 2D grid of sub-matrices
+<span class="math notranslate nohighlight">\(A_{i,j}\)</span> where <span class="math notranslate nohighlight">\(i \in [0,2]\)</span> and <span class="math notranslate nohighlight">\(j \in [0,2]\)</span>. Each
+sub-matrix <span class="math notranslate nohighlight">\(A_{i,j}\)</span> is assigned to the corresponding MPI rank in the
+2D process grid.</p>
+</section>
+<section id="block-cyclic-distribution">
+<h3>Block-Cyclic Distribution<a class="headerlink" href="#block-cyclic-distribution" title="Link to this heading"></a></h3>
+<p>The <strong>Block-Cyclic Distribution</strong> (<code class="docutils literal notranslate"><span class="pre">chase::distMatrix::BlockCyclicMatrix</span></code>)
+is a 2D block-cyclic distribution scheme originally introduced for dense matrix
+computations on distributed-memory machines. Compared to the Block Distribution,
+the main advantage of the Block-Cyclic Distribution is improved load balance
+for matrix operations where the computational work varies across different
+matrix entries, such as QR and LU factorizations.</p>
+<p>Even though load balance is typically not a problem for ChASE (since the
+<strong>Hermitian Matrix-Matrix Multiplication</strong> kernel is well-balanced with Block
+Distribution), ChASE still provides the Block-Cyclic Distribution as an option
+to avoid data redistribution between different distribution schemes, which may
+be required for some applications, e.g., solving generalized eigenproblems
+with Cholesky factorization. In ChASE, the implementation with Block-Cyclic
+Distribution can achieve similar performance as the implementation with Block
+Distribution.</p>
+<a class="reference internal image-reference" href="_images/block-cyclic.png"><img alt="_images/block-cyclic.png" class="align-center" src="_images/block-cyclic.png" style="width: 240.5px; height: 241.0px;" />
+</a>
+<p>The figure above shows an example of ChASE distributing a <span class="math notranslate nohighlight">\(n \times n\)</span>
+dense matrix <span class="math notranslate nohighlight">\(A\)</span> into a <span class="math notranslate nohighlight">\(2 \times 2\)</span> grid of MPI processes in a
+block-cyclic scheme. Denoting the 4 MPI processes as <span class="math notranslate nohighlight">\(P_{0,0}\)</span>,
+<span class="math notranslate nohighlight">\(P_{0,1}\)</span>, <span class="math notranslate nohighlight">\(P_{1,0}\)</span>, and <span class="math notranslate nohighlight">\(P_{1,1}\)</span>, they are marked as
+green, red, blue and yellow, respectively in the figure above. In this example,
+the matrix <span class="math notranslate nohighlight">\(A\)</span> is split into a 2D grid of sub-matrices <span class="math notranslate nohighlight">\(A_{i,j}\)</span>
+where <span class="math notranslate nohighlight">\(i \in [0,3]\)</span> and <span class="math notranslate nohighlight">\(j \in [0,3]\)</span>. Each sub-matrix is assigned
+to one MPI process in a round-robin manner so that each MPI rank receives
+several non-adjacent blocks, improving load balance for certain operations.</p>
+<p>For more details about <strong>Block-Cyclic Distribution</strong>, please refer to the
+<a class="reference external" href="https://www.netlib.org/scalapack/slug/node75.html">Netlib ScaLAPACK documentation</a>.</p>
+</section>
+<section id="redundant-distribution">
+<h3>Redundant Distribution<a class="headerlink" href="#redundant-distribution" title="Link to this heading"></a></h3>
+<p>The <strong>Redundant Distribution</strong> (<code class="docutils literal notranslate"><span class="pre">chase::distMatrix::RedundantMatrix</span></code>) stores
+a complete copy of the matrix on each MPI rank. This distribution is useful
+for small to medium-sized matrices where communication overhead would be
+prohibitive, or for operations that require global access to the matrix data.</p>
+</section>
+</section>
+<section id="backend-communication">
+<h2>Backend Communication<a class="headerlink" href="#backend-communication" title="Link to this heading"></a></h2>
+<p>For parallel GPU implementations, ChASE supports multiple communication backends:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>MPI Backend</strong> (<code class="docutils literal notranslate"><span class="pre">chase::grid::backend::MPI</span></code>): Standard MPI
+communication, with support for CUDA-aware MPI when available. This
+backend is suitable for systems with standard MPI installations and
+provides good performance for inter-node communication.</p></li>
+<li><p><strong>NCCL Backend</strong> (<code class="docutils literal notranslate"><span class="pre">chase::grid::backend::NCCL</span></code>): NVIDIA Collective
+Communications Library for optimized GPU-to-GPU communication. This
+backend provides superior performance for multi-GPU systems, especially
+on systems with high-speed interconnects like NVLink or InfiniBand.</p></li>
+</ul>
+</div></blockquote>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="chase.html" class="btn btn-neutral float-left" title="ChASE: an Iterative Solver for Dense Eigenproblems" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="license.html" class="btn btn-neutral float-right" title="Licenses and Copyright" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, SimLab Quantum Materials.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

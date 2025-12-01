@@ -1,0 +1,604 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>1.1.1. chase::ChaseBase &mdash; ChASE v1.3.0 documentation</title>
+      <link rel="stylesheet" href="../theme_overrides.css" type="text/css" />
+
+  
+    <link rel="shortcut icon" href="../_static/ChASE_Logo_Favicon_RGB.png"/>
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=e49d06fc"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="1.1.2. chase::Algorithm" href="algorithm.html" />
+    <link rel="prev" title="1. API Reference" href="index.html" />
+     
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+    <link href="../_static/theme_overrides.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+
+          
+          
+          <a href="../index.html">
+            
+              <img src="../_static/ChASE_Logo_RGB.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+  <div class="version-selector" style="margin: 10px 0; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 3px;">
+  <label for="version-select" style="display: block; color: #fcfcfc; font-size: 12px; margin-bottom: 5px; font-weight: bold;">
+    Version:
+  </label>
+  <select id="version-select" onchange="switchVersion(this.value)" style="width: 100%; padding: 5px; border: 1px solid #2980B9; border-radius: 3px; background: white; color: #333; font-size: 13px;"><option value="/latest/">
+      latest
+    </option><option value="/v1.3.0/"selected>
+      v1.3.0
+    </option><option value="/v1.4.0/">
+      v1.4.0
+    </option></select>
+</div><script>
+function switchVersion(url) {
+  // Get current path and determine base URL
+  const currentPath = window.location.pathname;
+  const pathParts = currentPath.split('/').filter(p => p);
+  
+  // Get known versions from the select options (dynamic, not hardcoded)
+  const selector = document.getElementById('version-select');
+  const knownVersions = [];
+  if (selector) {
+    for (let option of selector.options) {
+      const verName = option.text.trim();
+      knownVersions.push(verName);
+    }
+  }
+  
+  let relativePath = '';
+  if (pathParts.length > 0 && knownVersions.includes(pathParts[0])) {
+    // We're in a versioned path, get everything after version
+    relativePath = '/' + pathParts.slice(1).join('/');
+  } else {
+    // We're in root or unversioned, keep current path
+    relativePath = currentPath;
+  }
+  
+  // Construct new URL - handle both absolute and relative paths
+  if (url.startsWith('http')) {
+    // Absolute URL
+    window.location.href = url;
+  } else {
+    // Relative URL - ensure it starts with /
+    const baseUrl = url.startsWith('/') ? url : '/' + url;
+    const cleanBase = baseUrl.replace(/\/$/, '');
+    const cleanPath = relativePath.startsWith('/') ? relativePath : '/' + relativePath;
+    window.location.href = cleanBase + cleanPath;
+  }
+}
+
+// Auto-detect current version from URL and update selector
+(function() {
+  const currentPath = window.location.pathname;
+  const pathParts = currentPath.split('/').filter(p => p);
+  
+  // Get known versions from select options
+  const selector = document.getElementById('version-select');
+  if (!selector) return;
+  
+  const knownVersions = [];
+  for (let option of selector.options) {
+    const verName = option.text.trim();
+    knownVersions.push(verName);
+  }
+  
+  if (pathParts.length > 0 && knownVersions.includes(pathParts[0])) {
+    const currentVer = pathParts[0];
+    // Find option matching current version
+    for (let option of selector.options) {
+      if (option.text.trim() === currentVer) {
+        selector.value = option.value;
+        break;
+      }
+    }
+  }
+})();
+</script>
+
+<style>
+.version-selector select:focus {
+  outline: 2px solid #2980B9;
+  outline-offset: 2px;
+}
+</style>
+
+
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">INTRODUCTION</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../chase.html">ChASE: an Iterative Solver for Dense Eigenproblems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../version.html">Versions of the library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../license.html">Licenses and Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reference.html">References and Contributors</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">USER DOCUMENTATION</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../quick-start.html">1. Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">2. Installation and Setup on a Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage.html">3. How to use ChASE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../parameters.html">4. Parameters and Configurations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../module.html">5. Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../example.html">6. Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API REFERENCE</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">1. API Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="index.html#core-algorithm">1.1. Core Algorithm</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">1.1.1. chase::ChaseBase</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4I0EN5chase9ChaseBaseE"><code class="docutils literal notranslate"><span class="pre">chase::ChaseBase</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="algorithm.html">1.1.2. chase::Algorithm</a></li>
+<li class="toctree-l3"><a class="reference internal" href="chaseconfig.html">1.1.3. chase::ChaseConfig</a></li>
+<li class="toctree-l3"><a class="reference internal" href="performance.html">1.1.4. Performance Classes</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#implementations">1.2. Implementations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#matrix-classes">1.3. Matrix Classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#grid-and-communication">1.4. Grid and Communication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#linear-algebra-kernels">1.5. Linear Algebra Kernels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#platform-types">1.6. Platform Types</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ChASE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html"><span class="section-number">1. </span>API Reference</a></li>
+      <li class="breadcrumb-item active"><span class="section-number">1.1.1. </span>chase::ChaseBase</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/api/chasebase.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="chase-chasebase">
+<span id="api-chasebase"></span><h1><span class="section-number">1.1.1. </span>chase::ChaseBase<a class="headerlink" href="#chase-chasebase" title="Link to this heading"></a></h1>
+<dl class="cpp class">
+<dt class="sig sig-object cpp" id="_CPPv4I0EN5chase9ChaseBaseE">
+<span id="_CPPv3I0EN5chase9ChaseBaseE"></span><span id="_CPPv2I0EN5chase9ChaseBaseE"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">T</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classchase_1_1ChaseBase"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ChaseBase</span></span></span><a class="headerlink" href="#_CPPv4I0EN5chase9ChaseBaseE" title="Link to this definition"></a><br /></dt>
+<dd><p>Base class for all ChASE algorithmic operations. </p>
+<p>This abstract class defines the common interface for all algorithmic operations in ChASE. Derived classes are expected to implement these methods, which include matrix factorization, eigenvalue problem solving, and other numerical operations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>T</strong> – The type of data used in matrix and vector operations (e.g., <code class="docutils literal notranslate"><span class="pre">float</span></code>, <code class="docutils literal notranslate"><span class="pre">double</span></code>). </p>
+</dd>
+</dl>
+<p>Subclassed by <a class="reference internal" href="implementations.html#classchase_1_1Impl_1_1ChASEGPU"><span class="std std-ref">chase::Impl::ChASEGPU&lt; double &gt;</span></a>, <a class="reference internal" href="implementations.html#classchase_1_1Impl_1_1ChASEGPU"><span class="std std-ref">chase::Impl::ChASEGPU&lt; float &gt;</span></a>, <a class="reference internal" href="implementations.html#classchase_1_1Impl_1_1ChASEGPU"><span class="std std-ref">chase::Impl::ChASEGPU&lt; std::complex&lt; double &gt; &gt;</span></a>, <a class="reference internal" href="implementations.html#classchase_1_1Impl_1_1ChASEGPU"><span class="std std-ref">chase::Impl::ChASEGPU&lt; std::complex&lt; float &gt; &gt;</span></a>, <a class="reference internal" href="implementations.html#classchase_1_1Impl_1_1ChASECPU"><span class="std std-ref">chase::Impl::ChASECPU&lt; T, MatrixType &gt;</span></a>, <a class="reference internal" href="implementations.html#classchase_1_1Impl_1_1ChASEGPU"><span class="std std-ref">chase::Impl::ChASEGPU&lt; T, MatrixType &gt;</span></a>, <a class="reference internal" href="performance.html#classchase_1_1PerformanceDecoratorChase"><span class="std std-ref">chase::PerformanceDecoratorChase&lt; T &gt;</span></a></p>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase9ChaseBase5ShiftE1Tb">
+<span id="_CPPv3N5chase9ChaseBase5ShiftE1Tb"></span><span id="_CPPv2N5chase9ChaseBase5ShiftE1Tb"></span><span id="chase::ChaseBase::Shift__T.b"></span><span class="target" id="classchase_1_1ChaseBase_1a7a2ad92ae9a1204cc77fe64ad975940e"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Shift</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN5chase9ChaseBaseE" title="chase::ChaseBase::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">c</span></span>, <span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">isunshift</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">false</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase9ChaseBase5ShiftE1Tb" title="Link to this definition"></a><br /></dt>
+<dd><p>Shifts the diagonal of matrix <code class="docutils literal notranslate"><span class="pre">A</span></code> with a specified value <code class="docutils literal notranslate"><span class="pre">c</span></code>. </p>
+<p>This method applies a shift to the diagonal of the matrix <code class="docutils literal notranslate"><span class="pre">A</span></code> by the specified amount <code class="docutils literal notranslate"><span class="pre">c</span></code>. Optionally, the shift can be undone if the <code class="docutils literal notranslate"><span class="pre">isunshift</span></code> flag is set to true.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>c</strong> – The shift value applied to the diagonal of matrix <code class="docutils literal notranslate"><span class="pre">A</span></code>. </p></li>
+<li><p><strong>isunshift</strong> – If true, undoes the shift applied to the diagonal. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase9ChaseBase4HEMMENSt6size_tE1T1TNSt6size_tE">
+<span id="_CPPv3N5chase9ChaseBase4HEMMENSt6size_tE1T1TNSt6size_tE"></span><span id="_CPPv2N5chase9ChaseBase4HEMMENSt6size_tE1T1TNSt6size_tE"></span><span id="chase::ChaseBase::HEMM__std::s.T.T.std::s"></span><span class="target" id="classchase_1_1ChaseBase_1a8c483fc5e3d563e298619de42d96652e"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">HEMM</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">nev</span></span>, <a class="reference internal" href="#_CPPv4I0EN5chase9ChaseBaseE" title="chase::ChaseBase::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">alpha</span></span>, <a class="reference internal" href="#_CPPv4I0EN5chase9ChaseBaseE" title="chase::ChaseBase::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">beta</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">offset</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase9ChaseBase4HEMMENSt6size_tE1T1TNSt6size_tE" title="Link to this definition"></a><br /></dt>
+<dd><p>Performs a matrix operation of the form (V1 = \alpha \cdot H \cdot V2 + \beta \cdot V1). </p>
+<p>This method computes the matrix operation for the input vectors (V1) and (V2) using scalars (\alpha) and (\beta), where (H) is a matrix and (V1) and (V2) are input vectors.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>nev</strong> – Number of eigenpairs involved in the operation. </p></li>
+<li><p><strong>alpha</strong> – Scalar that scales the result of (H \cdot V2). </p></li>
+<li><p><strong>beta</strong> – Scalar that scales the result of (V1). </p></li>
+<li><p><strong>offset</strong> – Column offset for the operation. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase9ChaseBase2QRENSt6size_tE4BaseI1TE">
+<span id="_CPPv3N5chase9ChaseBase2QRENSt6size_tE4BaseI1TE"></span><span id="_CPPv2N5chase9ChaseBase2QRENSt6size_tE4BaseI1TE"></span><span id="chase::ChaseBase::QR__std::s.Base:T:"></span><span class="target" id="classchase_1_1ChaseBase_1af3698145d13ebaed07325548a03af791"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">QR</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">fixednev</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase9ChaseBaseE" title="chase::ChaseBase::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">cond</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase9ChaseBase2QRENSt6size_tE4BaseI1TE" title="Link to this definition"></a><br /></dt>
+<dd><p>Performs QR factorization with optional Householder transformation. </p>
+<p>This method performs a QR factorization on the matrix, optionally using Householder transformations for the computation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fixednev</strong> – Total number of converged eigenpairs before the QR factorization. </p></li>
+<li><p><strong>cond</strong> – Condition number for controlling the factorization process. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase9ChaseBase2RREP4BaseI1TENSt6size_tE">
+<span id="_CPPv3N5chase9ChaseBase2RREP4BaseI1TENSt6size_tE"></span><span id="_CPPv2N5chase9ChaseBase2RREP4BaseI1TENSt6size_tE"></span><span id="chase::ChaseBase::RR__Base:T:P.std::s"></span><span class="target" id="classchase_1_1ChaseBase_1a04cbf7185a16bde67a70d870cf3a628f"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">RR</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase9ChaseBaseE" title="chase::ChaseBase::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ritzv</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">block</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase9ChaseBase2RREP4BaseI1TENSt6size_tE" title="Link to this definition"></a><br /></dt>
+<dd><p>Performs Rayleigh-Ritz projection for eigenproblem reduction. </p>
+<p>This method projects the eigenproblem into a smaller subspace, solves the smaller problem, and reconstructs the eigenvectors.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ritzv</strong> – Array to store the computed eigenvalues. </p></li>
+<li><p><strong>block</strong> – The number of non-converged eigenpairs used for the small eigenproblem. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase9ChaseBase4SortEP4BaseI1TEP4BaseI1TEP4BaseI1TE">
+<span id="_CPPv3N5chase9ChaseBase4SortEP4BaseI1TEP4BaseI1TEP4BaseI1TE"></span><span id="_CPPv2N5chase9ChaseBase4SortEP4BaseI1TEP4BaseI1TEP4BaseI1TE"></span><span id="chase::ChaseBase::Sort__Base:T:P.Base:T:P.Base:T:P"></span><span class="target" id="classchase_1_1ChaseBase_1acfefa7b0380aba7766672396e8b7a953"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Sort</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase9ChaseBaseE" title="chase::ChaseBase::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ritzv</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase9ChaseBaseE" title="chase::ChaseBase::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">residLast</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase9ChaseBaseE" title="chase::ChaseBase::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">resid</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase9ChaseBase4SortEP4BaseI1TEP4BaseI1TEP4BaseI1TE" title="Link to this definition"></a><br /></dt>
+<dd><p>Sort the ritz values, the residuals, and the eigenvectors in ascending order. </p>
+<p>This method sorts the ritz values, the residuals, and the ritz vectors in ascending order of the ritz values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ritzv</strong> – Array to store the computed eigenvalues. </p></li>
+<li><p><strong>residLast</strong> – Array to store the residuals of the previous iteration. </p></li>
+<li><p><strong>resid</strong> – Array to store the residuals of the current iteration. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase9ChaseBase4ResdEP4BaseI1TEP4BaseI1TENSt6size_tE">
+<span id="_CPPv3N5chase9ChaseBase4ResdEP4BaseI1TEP4BaseI1TENSt6size_tE"></span><span id="_CPPv2N5chase9ChaseBase4ResdEP4BaseI1TEP4BaseI1TENSt6size_tE"></span><span id="chase::ChaseBase::Resd__Base:T:P.Base:T:P.std::s"></span><span class="target" id="classchase_1_1ChaseBase_1aa230c7a338727bbad9f1e64508cf8938"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Resd</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase9ChaseBaseE" title="chase::ChaseBase::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ritzv</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase9ChaseBaseE" title="chase::ChaseBase::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">resd</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">fixednev</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase9ChaseBase4ResdEP4BaseI1TEP4BaseI1TENSt6size_tE" title="Link to this definition"></a><br /></dt>
+<dd><p>Computes residuals for unconverged eigenpairs. </p>
+<p>This method computes the residuals of the eigenpairs that have not yet converged.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ritzv</strong> – Array containing the eigenvalues. </p></li>
+<li><p><strong>resd</strong> – Array to store the computed residuals for each eigenpair. </p></li>
+<li><p><strong>fixednev</strong> – Number of converged eigenpairs, which helps determine the number of non-converged eigenpairs. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase9ChaseBase7LanczosENSt6size_tEP4BaseI1TE">
+<span id="_CPPv3N5chase9ChaseBase7LanczosENSt6size_tEP4BaseI1TE"></span><span id="_CPPv2N5chase9ChaseBase7LanczosENSt6size_tEP4BaseI1TE"></span><span id="chase::ChaseBase::Lanczos__std::s.Base:T:P"></span><span class="target" id="classchase_1_1ChaseBase_1af96f6694abe66bc547af993b27ce49ce"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Lanczos</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">m</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase9ChaseBaseE" title="chase::ChaseBase::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">upperb</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase9ChaseBase7LanczosENSt6size_tEP4BaseI1TE" title="Link to this definition"></a><br /></dt>
+<dd><p>Estimates the upper bound of the user-interested spectrum using Lanczos eigensolver. </p>
+<p>This method estimates the upper bound of the spectrum of interest using the Lanczos eigensolver.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>m</strong> – Number of iterative steps for the Lanczos method. </p></li>
+<li><p><strong>upperb</strong> – Pointer to store the estimated upper bound of the spectrum. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase9ChaseBase7LanczosENSt6size_tENSt6size_tEP4BaseI1TEP4BaseI1TEP4BaseI1TEP4BaseI1TE">
+<span id="_CPPv3N5chase9ChaseBase7LanczosENSt6size_tENSt6size_tEP4BaseI1TEP4BaseI1TEP4BaseI1TEP4BaseI1TE"></span><span id="_CPPv2N5chase9ChaseBase7LanczosENSt6size_tENSt6size_tEP4BaseI1TEP4BaseI1TEP4BaseI1TEP4BaseI1TE"></span><span id="chase::ChaseBase::Lanczos__std::s.std::s.Base:T:P.Base:T:P.Base:T:P.Base:T:P"></span><span class="target" id="classchase_1_1ChaseBase_1abc075d151644df1e8e20a9206c604251"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Lanczos</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">M</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">numvec</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase9ChaseBaseE" title="chase::ChaseBase::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">upperb</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase9ChaseBaseE" title="chase::ChaseBase::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ritzv</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase9ChaseBaseE" title="chase::ChaseBase::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">Tau</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase9ChaseBaseE" title="chase::ChaseBase::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ritzV</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase9ChaseBase7LanczosENSt6size_tENSt6size_tEP4BaseI1TEP4BaseI1TEP4BaseI1TEP4BaseI1TE" title="Link to this definition"></a><br /></dt>
+<dd><p>Performs Lanczos eigensolver with additional parameters for eigenvector and Tau storage. </p>
+<p>This method performs the Lanczos eigensolver with more advanced parameters, storing eigenvectors and Tau values for further computation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>M</strong> – Number of iterations for the Lanczos algorithm. </p></li>
+<li><p><strong>numvec</strong> – Number of vectors to be used in the Lanczos procedure. </p></li>
+<li><p><strong>upperb</strong> – Pointer to store the upper bound of the spectrum. </p></li>
+<li><p><strong>ritzv</strong> – Pointer to store the Ritz values. </p></li>
+<li><p><strong>Tau</strong> – Pointer to store the Tau values. </p></li>
+<li><p><strong>ritzV</strong> – Pointer to store the Ritz vectors. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase9ChaseBase10LanczosDosENSt6size_tENSt6size_tEP1T">
+<span id="_CPPv3N5chase9ChaseBase10LanczosDosENSt6size_tENSt6size_tEP1T"></span><span id="_CPPv2N5chase9ChaseBase10LanczosDosENSt6size_tENSt6size_tEP1T"></span><span id="chase::ChaseBase::LanczosDos__std::s.std::s.TP"></span><span class="target" id="classchase_1_1ChaseBase_1a58cab352d450d8643161c3886b7df3d1"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">LanczosDos</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">idx</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">m</span></span>, <a class="reference internal" href="#_CPPv4I0EN5chase9ChaseBaseE" title="chase::ChaseBase::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ritzVc</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase9ChaseBase10LanczosDosENSt6size_tENSt6size_tEP1T" title="Link to this definition"></a><br /></dt>
+<dd><p>Lanczos method for Density of States (DOS) computation. </p>
+<p>This method performs a Lanczos procedure for computing the density of states.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>idx</strong> – Index for the specific Lanczos vector. </p></li>
+<li><p><strong>m</strong> – Number of iterations for the Lanczos method. </p></li>
+<li><p><strong>ritzVc</strong> – Pointer to store the Ritz vectors. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase9ChaseBase4SwapENSt6size_tENSt6size_tE">
+<span id="_CPPv3N5chase9ChaseBase4SwapENSt6size_tENSt6size_tE"></span><span id="_CPPv2N5chase9ChaseBase4SwapENSt6size_tENSt6size_tE"></span><span id="chase::ChaseBase::Swap__std::s.std::s"></span><span class="target" id="classchase_1_1ChaseBase_1a24d6154ba86d68e201028de1534398e8"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Swap</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">i</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">j</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase9ChaseBase4SwapENSt6size_tENSt6size_tE" title="Link to this definition"></a><br /></dt>
+<dd><p>Swaps two columns in a matrix for Chebyshev filtering. </p>
+<p>This method swaps the specified columns of a matrix to facilitate Chebyshev filtering.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>i</strong> – One of the column indices to be swapped. </p></li>
+<li><p><strong>j</strong> – Another column index to be swapped. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase9ChaseBase4LockENSt6size_tE">
+<span id="_CPPv3N5chase9ChaseBase4LockENSt6size_tE"></span><span id="_CPPv2N5chase9ChaseBase4LockENSt6size_tE"></span><span id="chase::ChaseBase::Lock__std::s"></span><span class="target" id="classchase_1_1ChaseBase_1a5c8469de80d07677fd88e6c69826557b"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Lock</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">new_converged</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase9ChaseBase4LockENSt6size_tE" title="Link to this definition"></a><br /></dt>
+<dd><p>Locks the newly converged eigenvectors. </p>
+<p>This method locks the newly converged eigenvectors and increments the locked count.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>new_converged</strong> – The number of newly converged eigenvectors. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase9ChaseBase17checkSymmetryEasyEv">
+<span id="_CPPv3N5chase9ChaseBase17checkSymmetryEasyEv"></span><span id="_CPPv2N5chase9ChaseBase17checkSymmetryEasyEv"></span><span id="chase::ChaseBase::checkSymmetryEasy"></span><span class="target" id="classchase_1_1ChaseBase_1a0be8a534df6bbfc5b396e7dae6433f17"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">checkSymmetryEasy</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase9ChaseBase17checkSymmetryEasyEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Checks for easy symmetry in the matrix. </p>
+<p>This method performs a simple check for matrix symmetry.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">true</span></code> if the matrix is symmetric, otherwise <code class="docutils literal notranslate"><span class="pre">false</span></code>. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase9ChaseBase5isSymEv">
+<span id="_CPPv3N5chase9ChaseBase5isSymEv"></span><span id="_CPPv2N5chase9ChaseBase5isSymEv"></span><span id="chase::ChaseBase::isSym"></span><span class="target" id="classchase_1_1ChaseBase_1abfa0f8c55424302bddbd266a3b8fd0fe"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">isSym</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase9ChaseBase5isSymEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns if the matrix is Hermitian or not. </p>
+<p>This method simply returns if the matrix is Hermitian or not</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">true</span></code> if the matrix is Hermitian, otherwise <code class="docutils literal notranslate"><span class="pre">false</span></code>. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase9ChaseBase24checkPseudoHermicityEasyEv">
+<span id="_CPPv3N5chase9ChaseBase24checkPseudoHermicityEasyEv"></span><span id="_CPPv2N5chase9ChaseBase24checkPseudoHermicityEasyEv"></span><span id="chase::ChaseBase::checkPseudoHermicityEasy"></span><span class="target" id="classchase_1_1ChaseBase_1a9bdd46f0e138b5dd28021596c0e9ee13"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">checkPseudoHermicityEasy</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase9ChaseBase24checkPseudoHermicityEasyEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Checks for easy pseudo-hermicity in the matrix. </p>
+<p>This method performs a simple check for matrix pseudo-hermicity</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">true</span></code> if the matrix is pseudo-hermicity, otherwise <code class="docutils literal notranslate"><span class="pre">false</span></code>. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase9ChaseBase12isPseudoHermEv">
+<span id="_CPPv3N5chase9ChaseBase12isPseudoHermEv"></span><span id="_CPPv2N5chase9ChaseBase12isPseudoHermEv"></span><span id="chase::ChaseBase::isPseudoHerm"></span><span class="target" id="classchase_1_1ChaseBase_1ad05a391c8cc4a3b75faf1c02273baf77"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">isPseudoHerm</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase9ChaseBase12isPseudoHermEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns if the matrix is Pseudo-Hermitian or not. </p>
+<p>This method simply returns if the matrix is Pseudo-Hermitian or not</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">true</span></code> if the matrix is Pseudo-Hermitian, otherwise <code class="docutils literal notranslate"><span class="pre">false</span></code>. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase9ChaseBase15symOrHermMatrixEc">
+<span id="_CPPv3N5chase9ChaseBase15symOrHermMatrixEc"></span><span id="_CPPv2N5chase9ChaseBase15symOrHermMatrixEc"></span><span id="chase::ChaseBase::symOrHermMatrix__c"></span><span class="target" id="classchase_1_1ChaseBase_1a12489c060720a809a179b999bff07701"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">symOrHermMatrix</span></span></span><span class="sig-paren">(</span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">uplo</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase9ChaseBase15symOrHermMatrixEc" title="Link to this definition"></a><br /></dt>
+<dd><p>Sets matrix type for symmetric or Hermitian matrix. </p>
+<p>This method defines whether the matrix is symmetric or Hermitian based on the specified input.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>uplo</strong> – Specifies whether the upper or lower triangular part of the matrix is stored. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase9ChaseBase5StartEv">
+<span id="_CPPv3N5chase9ChaseBase5StartEv"></span><span id="_CPPv2N5chase9ChaseBase5StartEv"></span><span id="chase::ChaseBase::Start"></span><span class="target" id="classchase_1_1ChaseBase_1ac498b5a3aee39eda90e92842ef107a9a"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Start</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase9ChaseBase5StartEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Indicates the start of an eigenproblem solution. </p>
+<p>This method marks the beginning of the eigenproblem-solving process. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase9ChaseBase3EndEv">
+<span id="_CPPv3N5chase9ChaseBase3EndEv"></span><span id="_CPPv2N5chase9ChaseBase3EndEv"></span><span id="chase::ChaseBase::End"></span><span class="target" id="classchase_1_1ChaseBase_1ab554def6d20c59b1d54a0a51783f0830"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">End</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase9ChaseBase3EndEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Indicates the end of an eigenproblem solution. </p>
+<p>This method marks the conclusion of the eigenproblem-solving process. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase9ChaseBase8initVecsEb">
+<span id="_CPPv3N5chase9ChaseBase8initVecsEb"></span><span id="_CPPv2N5chase9ChaseBase8initVecsEb"></span><span id="chase::ChaseBase::initVecs__b"></span><span class="target" id="classchase_1_1ChaseBase_1ae729aced4c0e579849365432cb9821b1"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">initVecs</span></span></span><span class="sig-paren">(</span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">random</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase9ChaseBase8initVecsEb" title="Link to this definition"></a><br /></dt>
+<dd><p>Initializes vectors randomly, if necessary. </p>
+<p>This method initializes the vectors either randomly or from previously computed Ritz values, depending on the input flag.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>random</strong> – Flag to determine whether to initialize vectors randomly. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK5chase9ChaseBase4GetNEv">
+<span id="_CPPv3NK5chase9ChaseBase4GetNEv"></span><span id="_CPPv2NK5chase9ChaseBase4GetNEv"></span><span id="chase::ChaseBase::GetNC"></span><span class="target" id="classchase_1_1ChaseBase_1afc172ae96264475e3a603dc54075d2e9"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">GetN</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4NK5chase9ChaseBase4GetNEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the size of the matrix. </p>
+<p>This method returns the size of the matrix (number of rows or columns).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The size of the matrix. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase9ChaseBase6GetNevEv">
+<span id="_CPPv3N5chase9ChaseBase6GetNevEv"></span><span id="_CPPv2N5chase9ChaseBase6GetNevEv"></span><span id="chase::ChaseBase::GetNev"></span><span class="target" id="classchase_1_1ChaseBase_1abb257e59941f6c3a5d457b4f3c417ed5"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">GetNev</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase9ChaseBase6GetNevEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the number of eigenpairs to be computed. </p>
+<p>This method returns the number of eigenpairs that need to be computed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The number of eigenpairs. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase9ChaseBase6GetNexEv">
+<span id="_CPPv3N5chase9ChaseBase6GetNexEv"></span><span id="_CPPv2N5chase9ChaseBase6GetNexEv"></span><span id="chase::ChaseBase::GetNex"></span><span class="target" id="classchase_1_1ChaseBase_1a69e3fc3e050a79408d1ba6db3ceb1b94"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">GetNex</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase9ChaseBase6GetNexEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the value of <code class="docutils literal notranslate"><span class="pre">nex</span></code>, which is used for specifying the number of eigenpairs. </p>
+<p>This method returns the size or number of eigenpairs required by the algorithm for the computation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The number of eigenpairs as a <code class="docutils literal notranslate"><span class="pre">std::size_t</span></code> value. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase9ChaseBase8GetRitzvEv">
+<span id="_CPPv3N5chase9ChaseBase8GetRitzvEv"></span><span id="_CPPv2N5chase9ChaseBase8GetRitzvEv"></span><span id="chase::ChaseBase::GetRitzv"></span><span class="target" id="classchase_1_1ChaseBase_1a4e8cd62bf82346e6b9cec8531cff8b63"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase9ChaseBaseE" title="chase::ChaseBase::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">GetRitzv</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase9ChaseBase8GetRitzvEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the computed Ritz values. </p>
+<p>This method provides access to the Ritz values computed during the algorithm’s execution. These values are typically used for eigenvalue approximations and further analysis.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A pointer to an array of Ritz values of type <code class="docutils literal notranslate"><span class="pre">Base&lt;T&gt;</span></code>. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase9ChaseBase8GetResidEv">
+<span id="_CPPv3N5chase9ChaseBase8GetResidEv"></span><span id="_CPPv2N5chase9ChaseBase8GetResidEv"></span><span id="chase::ChaseBase::GetResid"></span><span class="target" id="classchase_1_1ChaseBase_1a2ed8ceff6ed74fd2178c6694271fa8cb"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase9ChaseBaseE" title="chase::ChaseBase::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">GetResid</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase9ChaseBase8GetResidEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the residuals of computed Ritz pairs. </p>
+<p>This method returns the residuals associated with the Ritz values. Residuals are often used to measure the accuracy or convergence of the eigenvalue problem solution.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A pointer to an array of residuals corresponding to the Ritz values of type <code class="docutils literal notranslate"><span class="pre">Base&lt;T&gt;</span></code>. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase9ChaseBase9GetConfigEv">
+<span id="_CPPv3N5chase9ChaseBase9GetConfigEv"></span><span id="_CPPv2N5chase9ChaseBase9GetConfigEv"></span><span id="chase::ChaseBase::GetConfig"></span><span class="target" id="classchase_1_1ChaseBase_1a45f8e1c8c39f8b0da6d00fdf6f97f3ce"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><a class="reference internal" href="chaseconfig.html#_CPPv4I0EN5chase11ChaseConfigE" title="chase::ChaseConfig"><span class="n"><span class="pre">ChaseConfig</span></span></a><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase9ChaseBaseE" title="chase::ChaseBase::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">GetConfig</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase9ChaseBase9GetConfigEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the configuration parameters used in the algorithm. </p>
+<p>This method provides access to the configuration object that contains various algorithm settings, parameters, and options.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A reference to a <code class="docutils literal notranslate"><a class="reference internal" href="chaseconfig.html#classchase_1_1ChaseConfig"><span class="std std-ref"><span class="pre">ChaseConfig</span></span></a><span class="pre">&lt;T&gt;</span></code> class containing the configuration parameters. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase9ChaseBase10get_nprocsEv">
+<span id="_CPPv3N5chase9ChaseBase10get_nprocsEv"></span><span id="_CPPv2N5chase9ChaseBase10get_nprocsEv"></span><span id="chase::ChaseBase::get_nprocs"></span><span class="target" id="classchase_1_1ChaseBase_1a7df36da959bfa1028f8a20e72b1408dd"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_nprocs</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase9ChaseBase10get_nprocsEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the number of MPI processes used. </p>
+<p>This method returns the number of MPI processes involved in the computation. If sequential ChASE is used, it returns <code class="docutils literal notranslate"><span class="pre">1</span></code>, indicating a single process is running.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The number of MPI processes used, represented as an integer. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase9ChaseBase6OutputENSt6stringE">
+<span id="_CPPv3N5chase9ChaseBase6OutputENSt6stringE"></span><span id="_CPPv2N5chase9ChaseBase6OutputENSt6stringE"></span><span id="chase::ChaseBase::Output__ss"></span><span class="target" id="classchase_1_1ChaseBase_1adc948c4ca298bf2b827d84ae3005d0c4"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Output</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">string</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">str</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase9ChaseBase6OutputENSt6stringE" title="Link to this definition"></a><br /></dt>
+<dd><p>Prints intermediate information during the solving procedure. </p>
+<p>This method is used to output intermediate information or debug data during the execution of the algorithm. It is typically enabled when debugging or logging is required.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>str</strong> – A string containing the information to be printed. </p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="1. API Reference" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="algorithm.html" class="btn btn-neutral float-right" title="1.1.2. chase::Algorithm" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, SimLab Quantum Materials.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

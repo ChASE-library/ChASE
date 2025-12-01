@@ -1,0 +1,414 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>C++ Code &mdash; ChASE v1.3.0 documentation</title>
+      <link rel="stylesheet" href="../theme_overrides.css" type="text/css" />
+
+  
+    <link rel="shortcut icon" href="../_static/ChASE_Logo_Favicon_RGB.png"/>
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=e49d06fc"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+     
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+    <link href="../_static/theme_overrides.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+
+          
+          
+          <a href="../index.html">
+            
+              <img src="../_static/ChASE_Logo_RGB.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+  <div class="version-selector" style="margin: 10px 0; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 3px;">
+  <label for="version-select" style="display: block; color: #fcfcfc; font-size: 12px; margin-bottom: 5px; font-weight: bold;">
+    Version:
+  </label>
+  <select id="version-select" onchange="switchVersion(this.value)" style="width: 100%; padding: 5px; border: 1px solid #2980B9; border-radius: 3px; background: white; color: #333; font-size: 13px;"><option value="/latest/">
+      latest
+    </option><option value="/v1.3.0/"selected>
+      v1.3.0
+    </option><option value="/v1.4.0/">
+      v1.4.0
+    </option></select>
+</div><script>
+function switchVersion(url) {
+  // Get current path and determine base URL
+  const currentPath = window.location.pathname;
+  const pathParts = currentPath.split('/').filter(p => p);
+  
+  // Get known versions from the select options (dynamic, not hardcoded)
+  const selector = document.getElementById('version-select');
+  const knownVersions = [];
+  if (selector) {
+    for (let option of selector.options) {
+      const verName = option.text.trim();
+      knownVersions.push(verName);
+    }
+  }
+  
+  let relativePath = '';
+  if (pathParts.length > 0 && knownVersions.includes(pathParts[0])) {
+    // We're in a versioned path, get everything after version
+    relativePath = '/' + pathParts.slice(1).join('/');
+  } else {
+    // We're in root or unversioned, keep current path
+    relativePath = currentPath;
+  }
+  
+  // Construct new URL - handle both absolute and relative paths
+  if (url.startsWith('http')) {
+    // Absolute URL
+    window.location.href = url;
+  } else {
+    // Relative URL - ensure it starts with /
+    const baseUrl = url.startsWith('/') ? url : '/' + url;
+    const cleanBase = baseUrl.replace(/\/$/, '');
+    const cleanPath = relativePath.startsWith('/') ? relativePath : '/' + relativePath;
+    window.location.href = cleanBase + cleanPath;
+  }
+}
+
+// Auto-detect current version from URL and update selector
+(function() {
+  const currentPath = window.location.pathname;
+  const pathParts = currentPath.split('/').filter(p => p);
+  
+  // Get known versions from select options
+  const selector = document.getElementById('version-select');
+  if (!selector) return;
+  
+  const knownVersions = [];
+  for (let option of selector.options) {
+    const verName = option.text.trim();
+    knownVersions.push(verName);
+  }
+  
+  if (pathParts.length > 0 && knownVersions.includes(pathParts[0])) {
+    const currentVer = pathParts[0];
+    // Find option matching current version
+    for (let option of selector.options) {
+      if (option.text.trim() === currentVer) {
+        selector.value = option.value;
+        break;
+      }
+    }
+  }
+})();
+</script>
+
+<style>
+.version-selector select:focus {
+  outline: 2px solid #2980B9;
+  outline-offset: 2px;
+}
+</style>
+
+
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">INTRODUCTION</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../chase.html">ChASE: an Iterative Solver for Dense Eigenproblems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../version.html">Versions of the library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../license.html">Licenses and Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reference.html">References and Contributors</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">USER DOCUMENTATION</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../quick-start.html">1. Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">2. Installation and Setup on a Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage.html">3. How to use ChASE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../parameters.html">4. Parameters and Configurations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../module.html">5. Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../example.html">6. Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API REFERENCE</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../api/index.html">1. API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ChASE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">C++ Code</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/example/helloworld.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="c-code">
+<h1>C++ Code<a class="headerlink" href="#c-code" title="Link to this heading"></a></h1>
+<p>This example shows the way to construct ChASE with both block
+distribution and block-cyclic distribution of the Hermtian matrix.</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;complex&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;memory&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;random&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;vector&gt;</span>
+
+<span class="cm">/*include ChASE headers*/</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;algorithm/performance.hpp&quot;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;ChASE-MPI/chase_mpi.hpp&quot;</span>
+<span class="cm">/*include ChASE-MPI interface for Pure-CPU distributed-memory systems*/</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;ChASE-MPI/impl/chase_mpidla_blaslapack.hpp&quot;</span>
+
+<span class="k">using</span><span class="w"> </span><span class="n">T</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">complex</span><span class="o">&lt;</span><span class="kt">double</span><span class="o">&gt;</span><span class="p">;</span>
+<span class="k">using</span><span class="w"> </span><span class="k">namespace</span><span class="w"> </span><span class="nn">chase</span><span class="p">;</span>
+<span class="k">using</span><span class="w"> </span><span class="k">namespace</span><span class="w"> </span><span class="nn">chase</span><span class="o">::</span><span class="nn">mpi</span><span class="p">;</span>
+
+<span class="cm">/*use ChASE-MPI without GPU support*/</span>
+<span class="k">typedef</span><span class="w"> </span><span class="n">ChaseMpi</span><span class="o">&lt;</span><span class="n">ChaseMpiDLABlaslapack</span><span class="p">,</span><span class="w"> </span><span class="n">T</span><span class="o">&gt;</span><span class="w"> </span><span class="n">CHASE</span><span class="p">;</span>
+<span class="cm">/*</span>
+<span class="cm">// For ChASE-MPI without MPI</span>
+<span class="cm">typedef ChaseMpi&lt;ChaseMpiDLABlaslapackSeq, T&gt; CHASE;</span>
+<span class="cm">// For ChASE-MPI with MPI + multiGPUs</span>
+<span class="cm">typedef ChaseMpi&lt;ChaseMpiDLAMultiGPU, T&gt; CHASE;</span>
+<span class="cm">*/</span>
+
+<span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">argc</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="o">**</span><span class="w"> </span><span class="n">argv</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">  </span><span class="n">MPI_Init</span><span class="p">(</span><span class="nb">NULL</span><span class="p">,</span><span class="w"> </span><span class="nb">NULL</span><span class="p">);</span>
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="n">rank</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="p">;</span>
+<span class="w">  </span><span class="n">MPI_Comm_rank</span><span class="p">(</span><span class="n">MPI_COMM_WORLD</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">rank</span><span class="p">);</span>
+<span class="w">  </span><span class="n">MPI_Comm_size</span><span class="p">(</span><span class="n">MPI_COMM_WORLD</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">size</span><span class="p">);</span>
+
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span><span class="w"> </span><span class="n">N</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1001</span><span class="p">;</span><span class="w"> </span><span class="c1">//problem size</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span><span class="w"> </span><span class="n">nev</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">40</span><span class="p">;</span><span class="w"> </span><span class="c1">//number of eigenpairs to be computed</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span><span class="w"> </span><span class="n">nex</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">20</span><span class="p">;</span><span class="w"> </span><span class="c1">//extra searching space</span>
+
+<span class="cp">#ifdef USE_BLOCK_CYCLIC</span>
+<span class="w">  </span><span class="cm">/*parameters of block-cyclic data layout*/</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span><span class="w"> </span><span class="n">NB</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">50</span><span class="p">;</span><span class="w"> </span><span class="c1">//block size for block-cyclic data layout</span>
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="n">dims</span><span class="p">[</span><span class="mi">2</span><span class="p">];</span>
+<span class="w">  </span><span class="n">dims</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dims</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">  </span><span class="c1">//MPI proc grid = dims[0] x dims[1]</span>
+<span class="w">  </span><span class="n">MPI_Dims_create</span><span class="p">(</span><span class="n">size</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">dims</span><span class="p">);</span>
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="n">irsrc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="n">icsrc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="cp">#endif</span>
+
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">mt19937</span><span class="w"> </span><span class="n">gen</span><span class="p">(</span><span class="mf">1337.0</span><span class="p">);</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">normal_distribution</span><span class="o">&lt;&gt;</span><span class="w"> </span><span class="n">d</span><span class="p">;</span>
+
+<span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="n">V</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">N</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="n">nev</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">nex</span><span class="p">));</span><span class="w"> </span><span class="c1">//eigevectors</span>
+<span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="n">Lambda</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Base</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&gt;</span><span class="p">(</span><span class="n">nev</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">nex</span><span class="p">);</span><span class="w"> </span><span class="c1">//eigenvalues</span>
+
+<span class="w">  </span><span class="cm">/*construct eigenproblem to be solved*/</span>
+<span class="cp">#ifdef USE_BLOCK_CYCLIC</span>
+<span class="w">  </span><span class="cm">/*Use block-cyclic layout to distribute matrix*/</span>
+<span class="w">  </span><span class="n">CHASE</span><span class="w"> </span><span class="n">single</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">ChaseMpiProperties</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">N</span><span class="p">,</span><span class="w"> </span><span class="n">NB</span><span class="p">,</span><span class="w"> </span><span class="n">NB</span><span class="p">,</span><span class="w"> </span><span class="n">nev</span><span class="p">,</span><span class="w"> </span><span class="n">nex</span><span class="p">,</span><span class="w"> </span><span class="n">dims</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="w"> </span><span class="n">dims</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="w"> </span><span class="p">(</span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="s">&quot;C&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">irsrc</span><span class="p">,</span><span class="w"> </span><span class="n">icsrc</span><span class="p">,</span><span class="w"> </span><span class="n">MPI_COMM_WORLD</span><span class="p">),</span>
+<span class="w">        </span><span class="n">V</span><span class="p">.</span><span class="n">data</span><span class="p">(),</span><span class="w"> </span><span class="n">Lambda</span><span class="p">.</span><span class="n">data</span><span class="p">());</span>
+<span class="cp">#else</span>
+<span class="w">  </span><span class="cm">/*Use block layout to distribute matrix*/</span>
+<span class="w">  </span><span class="n">CHASE</span><span class="w"> </span><span class="n">single</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">ChaseMpiProperties</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">N</span><span class="p">,</span><span class="w"> </span><span class="n">nev</span><span class="p">,</span><span class="w"> </span><span class="n">nex</span><span class="p">,</span><span class="w"> </span><span class="n">MPI_COMM_WORLD</span><span class="p">),</span><span class="w"> </span><span class="n">V</span><span class="p">.</span><span class="n">data</span><span class="p">(),</span>
+<span class="w">             </span><span class="n">Lambda</span><span class="p">.</span><span class="n">data</span><span class="p">());</span>
+<span class="cp">#endif</span>
+
+<span class="w">  </span><span class="cm">/*Setup configuration for ChASE*/</span>
+<span class="w">  </span><span class="k">auto</span><span class="o">&amp;</span><span class="w"> </span><span class="n">config</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">single</span><span class="p">.</span><span class="n">GetConfig</span><span class="p">();</span>
+<span class="w">  </span><span class="cm">/*Tolerance for Eigenpair convergence*/</span>
+<span class="w">  </span><span class="n">config</span><span class="p">.</span><span class="n">SetTol</span><span class="p">(</span><span class="mf">1e-10</span><span class="p">);</span>
+<span class="w">  </span><span class="cm">/*Initial filtering degree*/</span>
+<span class="w">  </span><span class="n">config</span><span class="p">.</span><span class="n">SetDeg</span><span class="p">(</span><span class="mi">20</span><span class="p">);</span>
+<span class="w">  </span><span class="cm">/*Optimi(S)e degree*/</span>
+<span class="w">  </span><span class="n">config</span><span class="p">.</span><span class="n">SetOpt</span><span class="p">(</span><span class="nb">true</span><span class="p">);</span>
+<span class="w">  </span><span class="n">config</span><span class="p">.</span><span class="n">SetMaxIter</span><span class="p">(</span><span class="mi">25</span><span class="p">);</span>
+
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">rank</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
+<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Solving a symmetrized Clement matrices (&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">N</span>
+<span class="w">              </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;x&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">N</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;)&quot;</span>
+<span class="cp">#ifdef USE_BLOCK_CYCLIC</span>
+<span class="w">          </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot; with block-cyclic data layout: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">NB</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;x&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">NB</span>
+<span class="cp">#endif</span>
+<span class="w">    </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="sc">&#39;\n&#39;</span>
+<span class="w">          </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">config</span><span class="p">;</span>
+
+<span class="w">  </span><span class="cm">/*randomize V as the initial guess*/</span>
+<span class="w">  </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">N</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="n">nev</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">nex</span><span class="p">);</span><span class="w"> </span><span class="o">++</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">V</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">T</span><span class="p">(</span><span class="n">d</span><span class="p">(</span><span class="n">gen</span><span class="p">),</span><span class="w"> </span><span class="n">d</span><span class="p">(</span><span class="n">gen</span><span class="p">));</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="w"> </span><span class="n">H</span><span class="p">(</span><span class="n">N</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">N</span><span class="p">,</span><span class="w"> </span><span class="n">T</span><span class="p">(</span><span class="mf">0.0</span><span class="p">));</span>
+
+<span class="w">  </span><span class="cm">/*Generate Clement matrix*/</span>
+<span class="w">  </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">auto</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">N</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">H</span><span class="p">[</span><span class="n">i</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">N</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">N</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="n">H</span><span class="p">[</span><span class="n">i</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">N</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">sqrt</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="n">N</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">i</span><span class="p">));</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">N</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="n">H</span><span class="p">[</span><span class="n">i</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">N</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">sqrt</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="n">N</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">i</span><span class="p">));</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">rank</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Starting Problem #1&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">setprecision</span><span class="p">(</span><span class="mi">16</span><span class="p">);</span>
+
+<span class="cp">#ifdef USE_BLOCK_CYCLIC</span>
+<span class="w">  </span><span class="cm">/*local block number = mblocks x nblocks*/</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span><span class="w"> </span><span class="n">mblocks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">single</span><span class="p">.</span><span class="n">get_mblocks</span><span class="p">();</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span><span class="w"> </span><span class="n">nblocks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">single</span><span class="p">.</span><span class="n">get_nblocks</span><span class="p">();</span>
+
+<span class="w">  </span><span class="cm">/*local matrix size = m x n*/</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">single</span><span class="p">.</span><span class="n">get_m</span><span class="p">();</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">single</span><span class="p">.</span><span class="n">get_n</span><span class="p">();</span>
+
+<span class="w">  </span><span class="cm">/*global and local offset/length of each block of block-cyclic data*/</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span><span class="w"> </span><span class="o">*</span><span class="n">r_offs</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="n">c_offs</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="n">r_lens</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="n">c_lens</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="n">r_offs_l</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="n">c_offs_l</span><span class="p">;</span>
+<span class="w">  </span><span class="n">single</span><span class="p">.</span><span class="n">get_offs_lens</span><span class="p">(</span><span class="n">r_offs</span><span class="p">,</span><span class="w"> </span><span class="n">r_lens</span><span class="p">,</span><span class="w"> </span><span class="n">r_offs_l</span><span class="p">,</span><span class="w"> </span><span class="n">c_offs</span><span class="p">,</span><span class="w"> </span><span class="n">c_lens</span><span class="p">,</span><span class="w"> </span><span class="n">c_offs_l</span><span class="p">);</span>
+
+<span class="w">  </span><span class="cm">/*distribute Clement matrix into block cyclic data layout */</span>
+<span class="w">  </span><span class="k">for</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span><span class="w"> </span><span class="n">j</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">j</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">nblocks</span><span class="p">;</span><span class="w"> </span><span class="n">j</span><span class="o">++</span><span class="p">){</span>
+<span class="w">      </span><span class="k">for</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">mblocks</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">){</span>
+<span class="w">          </span><span class="k">for</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span><span class="w"> </span><span class="n">q</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">q</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">c_lens</span><span class="p">[</span><span class="n">j</span><span class="p">];</span><span class="w"> </span><span class="n">q</span><span class="o">++</span><span class="p">){</span>
+<span class="w">              </span><span class="k">for</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">r_lens</span><span class="p">[</span><span class="n">i</span><span class="p">];</span><span class="w"> </span><span class="n">p</span><span class="o">++</span><span class="p">){</span>
+<span class="w">                  </span><span class="n">single</span><span class="p">.</span><span class="n">GetMatrixPtr</span><span class="p">()[(</span><span class="n">q</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">c_offs_l</span><span class="p">[</span><span class="n">j</span><span class="p">])</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">r_offs_l</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">H</span><span class="p">[(</span><span class="n">q</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">c_offs</span><span class="p">[</span><span class="n">j</span><span class="p">])</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">N</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">r_offs</span><span class="p">[</span><span class="n">i</span><span class="p">]];</span>
+<span class="w">              </span><span class="p">}</span>
+<span class="w">          </span><span class="p">}</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="cp">#else</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span><span class="w"> </span><span class="n">xoff</span><span class="p">,</span><span class="w"> </span><span class="n">yoff</span><span class="p">,</span><span class="w"> </span><span class="n">xlen</span><span class="p">,</span><span class="w"> </span><span class="n">ylen</span><span class="p">;</span>
+
+<span class="w">  </span><span class="cm">/*Get Offset and length of block of H on each node*/</span>
+<span class="w">  </span><span class="n">single</span><span class="p">.</span><span class="n">GetOff</span><span class="p">(</span><span class="o">&amp;</span><span class="n">xoff</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">yoff</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">xlen</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">ylen</span><span class="p">);</span>
+
+<span class="w">  </span><span class="cm">/*Load different blocks of H to each node*/</span>
+<span class="w">  </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">xlen</span><span class="p">;</span><span class="w"> </span><span class="n">x</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">ylen</span><span class="p">;</span><span class="w"> </span><span class="n">y</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">single</span><span class="p">.</span><span class="n">GetMatrixPtr</span><span class="p">()[</span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">xlen</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">y</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">H</span><span class="p">.</span><span class="n">at</span><span class="p">((</span><span class="n">xoff</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">N</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="p">(</span><span class="n">yoff</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">y</span><span class="p">));</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="cp">#endif</span>
+
+<span class="w">  </span><span class="cm">/*Performance Decorator to meaure the performance of kernels of ChASE*/</span>
+<span class="w">  </span><span class="n">PerformanceDecoratorChase</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="w"> </span><span class="n">performanceDecorator</span><span class="p">(</span><span class="o">&amp;</span><span class="n">single</span><span class="p">);</span>
+<span class="w">  </span><span class="cm">/*Solve the eigenproblem*/</span>
+<span class="w">  </span><span class="n">chase</span><span class="o">::</span><span class="n">Solve</span><span class="p">(</span><span class="o">&amp;</span><span class="n">performanceDecorator</span><span class="p">);</span>
+<span class="w">  </span><span class="cm">/*Output*/</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">rank</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">performanceDecorator</span><span class="p">.</span><span class="n">GetPerfData</span><span class="p">().</span><span class="n">print</span><span class="p">();</span>
+<span class="w">    </span><span class="n">Base</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;*</span><span class="w"> </span><span class="n">resid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">single</span><span class="p">.</span><span class="n">GetResid</span><span class="p">();</span>
+<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Finished Problem #1&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Printing first 5 eigenvalues and residuals</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span>
+<span class="w">        </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;| Index |       Eigenvalue      |         Residual      |</span><span class="se">\n</span><span class="s">&quot;</span>
+<span class="w">        </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;|-------|-----------------------|-----------------------|</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span><span class="w"> </span><span class="n">width</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">20</span><span class="p">;</span>
+<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">setprecision</span><span class="p">(</span><span class="mi">12</span><span class="p">);</span>
+<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">setfill</span><span class="p">(</span><span class="sc">&#39; &#39;</span><span class="p">);</span>
+<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">scientific</span><span class="p">;</span>
+<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">right</span><span class="p">;</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">auto</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">min</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span><span class="p">(</span><span class="mi">5</span><span class="p">),</span><span class="w"> </span><span class="n">nev</span><span class="p">);</span><span class="w"> </span><span class="o">++</span><span class="n">i</span><span class="p">)</span>
+<span class="w">      </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;|  &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">setw</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot; | &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">setw</span><span class="p">(</span><span class="n">width</span><span class="p">)</span>
+<span class="w">                </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">Lambda</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;  | &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">setw</span><span class="p">(</span><span class="n">width</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">resid</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+<span class="w">                </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;  |</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+<span class="w">      </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;</span><span class="se">\n\n\n</span><span class="s">&quot;</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="n">MPI_Finalize</span><span class="p">();</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="execution">
+<h1>Execution<a class="headerlink" href="#execution" title="Link to this heading"></a></h1>
+<p>The execution of this example through the command line is:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>mpirun<span class="w"> </span>-np<span class="w"> </span><span class="si">${</span><span class="nv">NPROCS</span><span class="si">}</span><span class="w"> </span>./0_hello_world/0_hello_world
+</pre></div>
+</div>
+<p>For the execution of this example with <strong>Block-Cyclic Distribution</strong>,
+it can be done as:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>mpirun<span class="w"> </span>-np<span class="w"> </span><span class="si">${</span><span class="nv">NPROCS</span><span class="si">}</span><span class="w"> </span>./0_hello_world/0_hello_world_block_cyclic
+</pre></div>
+</div>
+</section>
+<section id="output">
+<h1>Output<a class="headerlink" href="#output" title="Link to this heading"></a></h1>
+<p>The output of this example gives the timings of important kernels of ChASE and prints the first
+5 computed eigenvalues and related residuals.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="w"> </span>ChASE<span class="w"> </span>timings:
+<span class="w"> </span><span class="p">|</span><span class="w"> </span>Size<span class="w">  </span><span class="p">|</span><span class="w"> </span>Iterations<span class="w"> </span><span class="p">|</span><span class="w"> </span>Vecs<span class="w">   </span><span class="p">|</span><span class="w">  </span>All<span class="w">       </span><span class="p">|</span><span class="w"> </span>Lanczos<span class="w">    </span><span class="p">|</span><span class="w"> </span>Filter<span class="w">     </span><span class="p">|</span><span class="w"> </span>QR<span class="w">         </span><span class="p">|</span><span class="w"> </span>RR<span class="w">         </span><span class="p">|</span><span class="w"> </span>Resid<span class="w">      </span><span class="p">|</span>
+<span class="w"> </span><span class="p">|</span><span class="w">     </span><span class="m">1</span><span class="w"> </span><span class="p">|</span><span class="w">          </span><span class="m">9</span><span class="w"> </span><span class="p">|</span><span class="w">  </span><span class="m">18700</span><span class="w"> </span><span class="p">|</span><span class="w">   </span><span class="m">0</span>.726643<span class="w"> </span><span class="p">|</span><span class="w">   </span><span class="m">0</span>.215907<span class="w"> </span><span class="p">|</span><span class="w">   </span><span class="m">0</span>.313806<span class="w"> </span><span class="p">|</span><span class="w">  </span><span class="m">0</span>.0701111<span class="w"> </span><span class="p">|</span><span class="w">  </span><span class="m">0</span>.0685877<span class="w"> </span><span class="p">|</span><span class="w">  </span><span class="m">0</span>.0267064<span class="w"> </span><span class="p">|</span>
+Finished<span class="w"> </span>Problem
+Printing<span class="w"> </span>first<span class="w"> </span><span class="m">5</span><span class="w"> </span>eigenvalues<span class="w"> </span>and<span class="w"> </span>residuals
+<span class="p">|</span><span class="w"> </span>Index<span class="w"> </span><span class="p">|</span><span class="w">       </span>Eigenvalue<span class="w">      </span><span class="p">|</span><span class="w">         </span>Residual<span class="w">      </span><span class="p">|</span>
+<span class="p">|</span>-------<span class="p">|</span>-----------------------<span class="p">|</span>-----------------------<span class="p">|</span>
+<span class="p">|</span><span class="w">     </span><span class="m">1</span><span class="w"> </span><span class="p">|</span><span class="w">  </span>-1.001999052554e+03<span class="w">  </span><span class="p">|</span><span class="w">   </span><span class="m">5</span>.031097871974e-05<span class="w">  </span><span class="p">|</span>
+<span class="p">|</span><span class="w">     </span><span class="m">2</span><span class="w"> </span><span class="p">|</span><span class="w">  </span>-9.999980537536e+02<span class="w">  </span><span class="p">|</span><span class="w">   </span><span class="m">6</span>.316669642834e-02<span class="w">  </span><span class="p">|</span>
+<span class="p">|</span><span class="w">     </span><span class="m">3</span><span class="w"> </span><span class="p">|</span><span class="w">  </span>-9.979970534604e+02<span class="w">  </span><span class="p">|</span><span class="w">   </span><span class="m">8</span>.933118471008e-02<span class="w">  </span><span class="p">|</span>
+<span class="p">|</span><span class="w">     </span><span class="m">4</span><span class="w"> </span><span class="p">|</span><span class="w">  </span>-9.959960516707e+02<span class="w">  </span><span class="p">|</span><span class="w">   </span><span class="m">1</span>.094079046013e-01<span class="w">  </span><span class="p">|</span>
+<span class="p">|</span><span class="w">     </span><span class="m">5</span><span class="w"> </span><span class="p">|</span><span class="w">  </span>-9.939950483800e+02<span class="w">  </span><span class="p">|</span><span class="w">   </span><span class="m">1</span>.263333629940e-01<span class="w">  </span><span class="p">|</span>
+</pre></div>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, SimLab Quantum Materials.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

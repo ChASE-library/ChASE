@@ -1,0 +1,347 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>1. API Reference &mdash; ChASE v1.3.0 documentation</title>
+      <link rel="stylesheet" href="../theme_overrides.css" type="text/css" />
+
+  
+    <link rel="shortcut icon" href="../_static/ChASE_Logo_Favicon_RGB.png"/>
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=e49d06fc"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="1.1.1. chase::ChaseBase" href="chasebase.html" />
+    <link rel="prev" title="6.2.1. ChASE Object and Configuration" href="../example/io.html" />
+     
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+    <link href="../_static/theme_overrides.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+
+          
+          
+          <a href="../index.html">
+            
+              <img src="../_static/ChASE_Logo_RGB.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+  <div class="version-selector" style="margin: 10px 0; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 3px;">
+  <label for="version-select" style="display: block; color: #fcfcfc; font-size: 12px; margin-bottom: 5px; font-weight: bold;">
+    Version:
+  </label>
+  <select id="version-select" onchange="switchVersion(this.value)" style="width: 100%; padding: 5px; border: 1px solid #2980B9; border-radius: 3px; background: white; color: #333; font-size: 13px;"><option value="/latest/">
+      latest
+    </option><option value="/v1.3.0/"selected>
+      v1.3.0
+    </option><option value="/v1.4.0/">
+      v1.4.0
+    </option></select>
+</div><script>
+function switchVersion(url) {
+  // Get current path and determine base URL
+  const currentPath = window.location.pathname;
+  const pathParts = currentPath.split('/').filter(p => p);
+  
+  // Get known versions from the select options (dynamic, not hardcoded)
+  const selector = document.getElementById('version-select');
+  const knownVersions = [];
+  if (selector) {
+    for (let option of selector.options) {
+      const verName = option.text.trim();
+      knownVersions.push(verName);
+    }
+  }
+  
+  let relativePath = '';
+  if (pathParts.length > 0 && knownVersions.includes(pathParts[0])) {
+    // We're in a versioned path, get everything after version
+    relativePath = '/' + pathParts.slice(1).join('/');
+  } else {
+    // We're in root or unversioned, keep current path
+    relativePath = currentPath;
+  }
+  
+  // Construct new URL - handle both absolute and relative paths
+  if (url.startsWith('http')) {
+    // Absolute URL
+    window.location.href = url;
+  } else {
+    // Relative URL - ensure it starts with /
+    const baseUrl = url.startsWith('/') ? url : '/' + url;
+    const cleanBase = baseUrl.replace(/\/$/, '');
+    const cleanPath = relativePath.startsWith('/') ? relativePath : '/' + relativePath;
+    window.location.href = cleanBase + cleanPath;
+  }
+}
+
+// Auto-detect current version from URL and update selector
+(function() {
+  const currentPath = window.location.pathname;
+  const pathParts = currentPath.split('/').filter(p => p);
+  
+  // Get known versions from select options
+  const selector = document.getElementById('version-select');
+  if (!selector) return;
+  
+  const knownVersions = [];
+  for (let option of selector.options) {
+    const verName = option.text.trim();
+    knownVersions.push(verName);
+  }
+  
+  if (pathParts.length > 0 && knownVersions.includes(pathParts[0])) {
+    const currentVer = pathParts[0];
+    // Find option matching current version
+    for (let option of selector.options) {
+      if (option.text.trim() === currentVer) {
+        selector.value = option.value;
+        break;
+      }
+    }
+  }
+})();
+</script>
+
+<style>
+.version-selector select:focus {
+  outline: 2px solid #2980B9;
+  outline-offset: 2px;
+}
+</style>
+
+
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">INTRODUCTION</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../chase.html">ChASE: an Iterative Solver for Dense Eigenproblems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../version.html">Versions of the library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../license.html">Licenses and Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reference.html">References and Contributors</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">USER DOCUMENTATION</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../quick-start.html">1. Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">2. Installation and Setup on a Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage.html">3. How to use ChASE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../parameters.html">4. Parameters and Configurations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../module.html">5. Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../example.html">6. Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API REFERENCE</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">1. API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#core-algorithm">1.1. Core Algorithm</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="chasebase.html">1.1.1. chase::ChaseBase</a></li>
+<li class="toctree-l3"><a class="reference internal" href="algorithm.html">1.1.2. chase::Algorithm</a></li>
+<li class="toctree-l3"><a class="reference internal" href="chaseconfig.html">1.1.3. chase::ChaseConfig</a></li>
+<li class="toctree-l3"><a class="reference internal" href="performance.html">1.1.4. Performance Classes</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#implementations">1.2. Implementations</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="implementations.html">1.2.1. Implementation Classes</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#matrix-classes">1.3. Matrix Classes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="matrices.html">1.3.1. Matrix Classes</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#grid-and-communication">1.4. Grid and Communication</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="grid.html">1.4.1. Grid and Communication</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#linear-algebra-kernels">1.5. Linear Algebra Kernels</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="kernels.html">1.5.1. Linear Algebra Kernels</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#platform-types">1.6. Platform Types</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="platform.html">1.6.1. Platform Types</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ChASE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><span class="section-number">1. </span>API Reference</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/api/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="api-reference">
+<span id="id1"></span><h1><span class="section-number">1. </span>API Reference<a class="headerlink" href="#api-reference" title="Link to this heading"></a></h1>
+<p>This section contains the complete API reference for all ChASE classes, namespaces, and functions.
+The documentation is automatically generated from the source code using Doxygen and integrated
+into Sphinx using Breathe.</p>
+<section id="core-algorithm">
+<h2><span class="section-number">1.1. </span>Core Algorithm<a class="headerlink" href="#core-algorithm" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="chasebase.html">1.1.1. chase::ChaseBase</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="chasebase.html#_CPPv4I0EN5chase9ChaseBaseE"><code class="docutils literal notranslate"><span class="pre">chase::ChaseBase</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="algorithm.html">1.1.2. chase::Algorithm</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="algorithm.html#_CPPv4I0EN5chase9AlgorithmE"><code class="docutils literal notranslate"><span class="pre">chase::Algorithm</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="chaseconfig.html">1.1.3. chase::ChaseConfig</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="chaseconfig.html#_CPPv4I0EN5chase11ChaseConfigE"><code class="docutils literal notranslate"><span class="pre">chase::ChaseConfig</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="performance.html">1.1.4. Performance Classes</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="performance.html#chase-chaseperfdata">1.1.4.1. chase::ChasePerfData</a></li>
+<li class="toctree-l2"><a class="reference internal" href="performance.html#chase-performancedecoratorchase">1.1.4.2. chase::PerformanceDecoratorChase</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="implementations">
+<h2><span class="section-number">1.2. </span>Implementations<a class="headerlink" href="#implementations" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="implementations.html">1.2.1. Implementation Classes</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="implementations.html#chase-impl-chasecpu">1.2.1.1. chase::Impl::ChASECPU</a></li>
+<li class="toctree-l2"><a class="reference internal" href="implementations.html#chase-impl-chasegpu">1.2.1.2. chase::Impl::ChASEGPU</a></li>
+<li class="toctree-l2"><a class="reference internal" href="implementations.html#chase-impl-pchasecpu">1.2.1.3. chase::Impl::pChASECPU</a></li>
+<li class="toctree-l2"><a class="reference internal" href="implementations.html#chase-impl-pchasegpu">1.2.1.4. chase::Impl::pChASEGPU</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="matrix-classes">
+<h2><span class="section-number">1.3. </span>Matrix Classes<a class="headerlink" href="#matrix-classes" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="matrices.html">1.3.1. Matrix Classes</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="matrices.html#sequential-matrices">1.3.1.1. Sequential Matrices</a></li>
+<li class="toctree-l2"><a class="reference internal" href="matrices.html#chase-matrix-matrix">1.3.1.2. chase::matrix::Matrix</a></li>
+<li class="toctree-l2"><a class="reference internal" href="matrices.html#chase-matrix-quasihermitianmatrix">1.3.1.3. chase::matrix::QuasiHermitianMatrix</a></li>
+<li class="toctree-l2"><a class="reference internal" href="matrices.html#distributed-matrices">1.3.1.4. Distributed Matrices</a></li>
+<li class="toctree-l2"><a class="reference internal" href="matrices.html#chase-distmatrix-blockblockmatrix">1.3.1.5. chase::distMatrix::BlockBlockMatrix</a></li>
+<li class="toctree-l2"><a class="reference internal" href="matrices.html#chase-distmatrix-blockcyclicmatrix">1.3.1.6. chase::distMatrix::BlockCyclicMatrix</a></li>
+<li class="toctree-l2"><a class="reference internal" href="matrices.html#chase-distmatrix-redundantmatrix">1.3.1.7. chase::distMatrix::RedundantMatrix</a></li>
+<li class="toctree-l2"><a class="reference internal" href="matrices.html#chase-distmatrix-quasihermitianblockblockmatrix">1.3.1.8. chase::distMatrix::QuasiHermitianBlockBlockMatrix</a></li>
+<li class="toctree-l2"><a class="reference internal" href="matrices.html#chase-distmatrix-quasihermitianblockcyclicmatrix">1.3.1.9. chase::distMatrix::QuasiHermitianBlockCyclicMatrix</a></li>
+<li class="toctree-l2"><a class="reference internal" href="matrices.html#distributed-multi-vectors">1.3.1.10. Distributed Multi-Vectors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="matrices.html#chase-distmultivector-distmultivector1d">1.3.1.11. chase::distMultiVector::DistMultiVector1D</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="grid-and-communication">
+<h2><span class="section-number">1.4. </span>Grid and Communication<a class="headerlink" href="#grid-and-communication" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="grid.html">1.4.1. Grid and Communication</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="grid.html#chase-grid-mpigrid2d">1.4.1.1. chase::grid::MpiGrid2D</a></li>
+<li class="toctree-l2"><a class="reference internal" href="grid.html#chase-grid-mpigrid2dbase">1.4.1.2. chase::grid::MpiGrid2DBase</a></li>
+<li class="toctree-l2"><a class="reference internal" href="grid.html#backend-types">1.4.1.3. Backend Types</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="linear-algebra-kernels">
+<h2><span class="section-number">1.5. </span>Linear Algebra Kernels<a class="headerlink" href="#linear-algebra-kernels" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="kernels.html">1.5.1. Linear Algebra Kernels</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="kernels.html#chase-linalg-internal-cpu">1.5.1.1. chase::linalg::internal::cpu</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kernels.html#chase-linalg-internal-cuda">1.5.1.2. chase::linalg::internal::cuda</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kernels.html#chase-linalg-internal-mpi">1.5.1.3. chase::linalg::internal::mpi</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kernels.html#chase-linalg-internal-nccl">1.5.1.4. chase::linalg::internal::nccl</a></li>
+<li class="toctree-l2"><a class="reference internal" href="kernels.html#chase-linalg-internal-cuda-aware-mpi">1.5.1.5. chase::linalg::internal::cuda_aware_mpi</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="platform-types">
+<h2><span class="section-number">1.6. </span>Platform Types<a class="headerlink" href="#platform-types" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="platform.html">1.6.1. Platform Types</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="platform.html#chase-platform-namespace">1.6.1.1. chase::platform Namespace</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../example/io.html" class="btn btn-neutral float-left" title="6.2.1. ChASE Object and Configuration" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="chasebase.html" class="btn btn-neutral float-right" title="1.1.1. chase::ChaseBase" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, SimLab Quantum Materials.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

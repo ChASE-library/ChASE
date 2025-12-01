@@ -1,0 +1,417 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>1.1.2. chase::Algorithm &mdash; ChASE v1.3.0 documentation</title>
+      <link rel="stylesheet" href="../theme_overrides.css" type="text/css" />
+
+  
+    <link rel="shortcut icon" href="../_static/ChASE_Logo_Favicon_RGB.png"/>
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=e49d06fc"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="1.1.3. chase::ChaseConfig" href="chaseconfig.html" />
+    <link rel="prev" title="1.1.1. chase::ChaseBase" href="chasebase.html" />
+     
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+    <link href="../_static/theme_overrides.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+
+          
+          
+          <a href="../index.html">
+            
+              <img src="../_static/ChASE_Logo_RGB.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+  <div class="version-selector" style="margin: 10px 0; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 3px;">
+  <label for="version-select" style="display: block; color: #fcfcfc; font-size: 12px; margin-bottom: 5px; font-weight: bold;">
+    Version:
+  </label>
+  <select id="version-select" onchange="switchVersion(this.value)" style="width: 100%; padding: 5px; border: 1px solid #2980B9; border-radius: 3px; background: white; color: #333; font-size: 13px;"><option value="/latest/">
+      latest
+    </option><option value="/v1.3.0/"selected>
+      v1.3.0
+    </option><option value="/v1.4.0/">
+      v1.4.0
+    </option></select>
+</div><script>
+function switchVersion(url) {
+  // Get current path and determine base URL
+  const currentPath = window.location.pathname;
+  const pathParts = currentPath.split('/').filter(p => p);
+  
+  // Get known versions from the select options (dynamic, not hardcoded)
+  const selector = document.getElementById('version-select');
+  const knownVersions = [];
+  if (selector) {
+    for (let option of selector.options) {
+      const verName = option.text.trim();
+      knownVersions.push(verName);
+    }
+  }
+  
+  let relativePath = '';
+  if (pathParts.length > 0 && knownVersions.includes(pathParts[0])) {
+    // We're in a versioned path, get everything after version
+    relativePath = '/' + pathParts.slice(1).join('/');
+  } else {
+    // We're in root or unversioned, keep current path
+    relativePath = currentPath;
+  }
+  
+  // Construct new URL - handle both absolute and relative paths
+  if (url.startsWith('http')) {
+    // Absolute URL
+    window.location.href = url;
+  } else {
+    // Relative URL - ensure it starts with /
+    const baseUrl = url.startsWith('/') ? url : '/' + url;
+    const cleanBase = baseUrl.replace(/\/$/, '');
+    const cleanPath = relativePath.startsWith('/') ? relativePath : '/' + relativePath;
+    window.location.href = cleanBase + cleanPath;
+  }
+}
+
+// Auto-detect current version from URL and update selector
+(function() {
+  const currentPath = window.location.pathname;
+  const pathParts = currentPath.split('/').filter(p => p);
+  
+  // Get known versions from select options
+  const selector = document.getElementById('version-select');
+  if (!selector) return;
+  
+  const knownVersions = [];
+  for (let option of selector.options) {
+    const verName = option.text.trim();
+    knownVersions.push(verName);
+  }
+  
+  if (pathParts.length > 0 && knownVersions.includes(pathParts[0])) {
+    const currentVer = pathParts[0];
+    // Find option matching current version
+    for (let option of selector.options) {
+      if (option.text.trim() === currentVer) {
+        selector.value = option.value;
+        break;
+      }
+    }
+  }
+})();
+</script>
+
+<style>
+.version-selector select:focus {
+  outline: 2px solid #2980B9;
+  outline-offset: 2px;
+}
+</style>
+
+
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">INTRODUCTION</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../chase.html">ChASE: an Iterative Solver for Dense Eigenproblems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../version.html">Versions of the library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../license.html">Licenses and Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reference.html">References and Contributors</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">USER DOCUMENTATION</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../quick-start.html">1. Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">2. Installation and Setup on a Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage.html">3. How to use ChASE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../parameters.html">4. Parameters and Configurations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../module.html">5. Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../example.html">6. Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API REFERENCE</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">1. API Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="index.html#core-algorithm">1.1. Core Algorithm</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="chasebase.html">1.1.1. chase::ChaseBase</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">1.1.2. chase::Algorithm</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#_CPPv4I0EN5chase9AlgorithmE"><code class="docutils literal notranslate"><span class="pre">chase::Algorithm</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="chaseconfig.html">1.1.3. chase::ChaseConfig</a></li>
+<li class="toctree-l3"><a class="reference internal" href="performance.html">1.1.4. Performance Classes</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#implementations">1.2. Implementations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#matrix-classes">1.3. Matrix Classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#grid-and-communication">1.4. Grid and Communication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#linear-algebra-kernels">1.5. Linear Algebra Kernels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#platform-types">1.6. Platform Types</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ChASE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html"><span class="section-number">1. </span>API Reference</a></li>
+      <li class="breadcrumb-item active"><span class="section-number">1.1.2. </span>chase::Algorithm</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/api/algorithm.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="chase-algorithm">
+<span id="api-algorithm"></span><h1><span class="section-number">1.1.2. </span>chase::Algorithm<a class="headerlink" href="#chase-algorithm" title="Link to this heading"></a></h1>
+<dl class="cpp class">
+<dt class="sig sig-object cpp" id="_CPPv4I0EN5chase9AlgorithmE">
+<span id="_CPPv3I0EN5chase9AlgorithmE"></span><span id="_CPPv2I0EN5chase9AlgorithmE"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">T</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classchase_1_1Algorithm"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Algorithm</span></span></span><a class="headerlink" href="#_CPPv4I0EN5chase9AlgorithmE" title="Link to this definition"></a><br /></dt>
+<dd><p>Implementation of ChASE solver using the abstract of interfaces of numerical components defined in class chase::ChASE. </p>
+<p>This class contains the essential methods to solve eigenproblems using the ChASE algorithm, including Lanczos for spectrum bounds estimation, Chebyshev filters, and degree optimization for the filter.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>T</strong> – The data type used in the solver (e.g., <code class="docutils literal notranslate"><span class="pre">float</span></code>, <code class="docutils literal notranslate"><span class="pre">double</span></code>). </p>
+</dd>
+</dl>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-static-functions">Public Static Functions</p>
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase9Algorithm5solveEP9ChaseBaseI1TE">
+<span id="_CPPv3N5chase9Algorithm5solveEP9ChaseBaseI1TE"></span><span id="_CPPv2N5chase9Algorithm5solveEP9ChaseBaseI1TE"></span><span id="chase::Algorithm::solve__ChaseBase:T:P"></span><span class="target" id="classchase_1_1Algorithm_1ad4ac346ea01809af5e857eafad27b87a"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">solve</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">ChaseBase</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase9AlgorithmE" title="chase::Algorithm::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">single</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase9Algorithm5solveEP9ChaseBaseI1TE" title="Link to this definition"></a><br /></dt>
+<dd><p>Solves eigenproblems using the ChASE solver. </p>
+<p>This static method is used to solve eigenvalue problems using the ChASE algorithm, utilizing the provided kernel (which is a <code class="docutils literal notranslate"><a class="reference internal" href="chasebase.html#classchase_1_1ChaseBase"><span class="std std-ref"><span class="pre">ChaseBase</span></span></a><span class="pre">&lt;T&gt;</span></code>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>single</strong> – A pointer to an object that implements the <code class="docutils literal notranslate"><a class="reference internal" href="chasebase.html#classchase_1_1ChaseBase"><span class="std std-ref"><span class="pre">ChaseBase</span></span></a><span class="pre">&lt;T&gt;</span></code> interface. The object contains the actual computation logic for the solver. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase9Algorithm12calc_degreesEP9ChaseBaseI1TENSt6size_tENSt6size_tENSt6size_tE4BaseI1TE4BaseI1TE4BaseI1TEP4BaseI1TEP4BaseI1TEP4BaseI1TEPNSt6size_tENSt6size_tE">
+<span id="_CPPv3N5chase9Algorithm12calc_degreesEP9ChaseBaseI1TENSt6size_tENSt6size_tENSt6size_tE4BaseI1TE4BaseI1TE4BaseI1TEP4BaseI1TEP4BaseI1TEP4BaseI1TEPNSt6size_tENSt6size_tE"></span><span id="_CPPv2N5chase9Algorithm12calc_degreesEP9ChaseBaseI1TENSt6size_tENSt6size_tENSt6size_tE4BaseI1TE4BaseI1TE4BaseI1TEP4BaseI1TEP4BaseI1TEP4BaseI1TEPNSt6size_tENSt6size_tE"></span><span id="chase::Algorithm::calc_degrees__ChaseBase:T:P.std::s.std::s.std::s.Base:T:.Base:T:.Base:T:.Base:T:P.Base:T:P.Base:T:P.std::sP.std::s"></span><span class="target" id="classchase_1_1Algorithm_1af27fd19f7a38e2883ee15b9d85522aed"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">calc_degrees</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">ChaseBase</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase9AlgorithmE" title="chase::Algorithm::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">kernel</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">N</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">unconverged</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">nex</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase9AlgorithmE" title="chase::Algorithm::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">upperb</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase9AlgorithmE" title="chase::Algorithm::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">lowerb</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase9AlgorithmE" title="chase::Algorithm::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">tol</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase9AlgorithmE" title="chase::Algorithm::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ritzv</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase9AlgorithmE" title="chase::Algorithm::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">resid</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase9AlgorithmE" title="chase::Algorithm::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">residLast</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">degrees</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">locked</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase9Algorithm12calc_degreesEP9ChaseBaseI1TENSt6size_tENSt6size_tENSt6size_tE4BaseI1TE4BaseI1TE4BaseI1TEP4BaseI1TEP4BaseI1TEP4BaseI1TEPNSt6size_tENSt6size_tE" title="Link to this definition"></a><br /></dt>
+<dd><p>Optimizes the degree of the Chebyshev polynomial based on the convergence of Ritz pairs. </p>
+<p>This method optimizes the degree of the Chebyshev polynomial filter, adjusting it dynamically based on the convergence behavior of the Ritz pairs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>kernel</strong> – A pointer to the <code class="docutils literal notranslate"><a class="reference internal" href="chasebase.html#classchase_1_1ChaseBase"><span class="std std-ref"><span class="pre">ChaseBase</span></span></a><span class="pre">&lt;T&gt;</span></code> instance, which provides the necessary numerical operations. </p></li>
+<li><p><strong>N</strong> – The total size of the problem. </p></li>
+<li><p><strong>unconverged</strong> – The number of unconverged eigenpairs. </p></li>
+<li><p><strong>nex</strong> – The number of external searching space. </p></li>
+<li><p><strong>upperb</strong> – The upper bound for the spectrum. </p></li>
+<li><p><strong>lowerb</strong> – The lower bound for the spectrum. </p></li>
+<li><p><strong>tol</strong> – The tolerance for the degree calculation. </p></li>
+<li><p><strong>ritzv</strong> – The array storing the Ritz values. </p></li>
+<li><p><strong>resid</strong> – The array storing the residuals of the Ritz values. </p></li>
+<li><p><strong>residLast</strong> – The array storing the residuals from the previous iteration. </p></li>
+<li><p><strong>degrees</strong> – The array storing the degrees for each Ritz pair. </p></li>
+<li><p><strong>locked</strong> – The number of locked eigenpairs.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The optimized polynomial degree. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase9Algorithm18calc_degrees_quasiEP9ChaseBaseI1TENSt6size_tENSt6size_tENSt6size_tE4BaseI1TE4BaseI1TE4BaseI1TEP4BaseI1TEP4BaseI1TEP4BaseI1TEPNSt6size_tENSt6size_tE">
+<span id="_CPPv3N5chase9Algorithm18calc_degrees_quasiEP9ChaseBaseI1TENSt6size_tENSt6size_tENSt6size_tE4BaseI1TE4BaseI1TE4BaseI1TEP4BaseI1TEP4BaseI1TEP4BaseI1TEPNSt6size_tENSt6size_tE"></span><span id="_CPPv2N5chase9Algorithm18calc_degrees_quasiEP9ChaseBaseI1TENSt6size_tENSt6size_tENSt6size_tE4BaseI1TE4BaseI1TE4BaseI1TEP4BaseI1TEP4BaseI1TEP4BaseI1TEPNSt6size_tENSt6size_tE"></span><span id="chase::Algorithm::calc_degrees_quasi__ChaseBase:T:P.std::s.std::s.std::s.Base:T:.Base:T:.Base:T:.Base:T:P.Base:T:P.Base:T:P.std::sP.std::s"></span><span class="target" id="classchase_1_1Algorithm_1af0316678a6474e130e92e742ea53d55c"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">calc_degrees_quasi</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">ChaseBase</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase9AlgorithmE" title="chase::Algorithm::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">kernel</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">N</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">unconverged</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">nex</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase9AlgorithmE" title="chase::Algorithm::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">upperb</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase9AlgorithmE" title="chase::Algorithm::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">lowerb</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase9AlgorithmE" title="chase::Algorithm::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">tol</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase9AlgorithmE" title="chase::Algorithm::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ritzv</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase9AlgorithmE" title="chase::Algorithm::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">resid</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase9AlgorithmE" title="chase::Algorithm::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">residLast</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">degrees</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">locked</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase9Algorithm18calc_degrees_quasiEP9ChaseBaseI1TENSt6size_tENSt6size_tENSt6size_tE4BaseI1TE4BaseI1TE4BaseI1TEP4BaseI1TEP4BaseI1TEP4BaseI1TEPNSt6size_tENSt6size_tE" title="Link to this definition"></a><br /></dt>
+<dd><p>Specialized degree optimization for quasi-hermitian matrices with cluster-aware features. </p>
+<p>This method provides enhanced degree optimization specifically designed for quasi-hermitian eigenvalue problems, including cluster detection and adaptive degree spacing.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>kernel</strong> – A pointer to the <code class="docutils literal notranslate"><a class="reference internal" href="chasebase.html#classchase_1_1ChaseBase"><span class="std std-ref"><span class="pre">ChaseBase</span></span></a><span class="pre">&lt;T&gt;</span></code> instance, which provides the necessary numerical operations. </p></li>
+<li><p><strong>N</strong> – The total size of the problem. </p></li>
+<li><p><strong>unconverged</strong> – The number of unconverged eigenpairs. </p></li>
+<li><p><strong>nex</strong> – The number of external searching space. </p></li>
+<li><p><strong>upperb</strong> – The upper bound for the spectrum. </p></li>
+<li><p><strong>lowerb</strong> – The lower bound for the spectrum. </p></li>
+<li><p><strong>tol</strong> – The tolerance for the degree calculation. </p></li>
+<li><p><strong>ritzv</strong> – The array storing the Ritz values. </p></li>
+<li><p><strong>resid</strong> – The array storing the residuals of the Ritz values. </p></li>
+<li><p><strong>residLast</strong> – The array storing the residuals from the previous iteration. </p></li>
+<li><p><strong>degrees</strong> – The array storing the degrees for each Ritz pair. </p></li>
+<li><p><strong>locked</strong> – The number of locked eigenpairs.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The optimized polynomial degree. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase9Algorithm26detect_eigenvalue_clustersEP4BaseI1TEP4BaseI1TE4BaseI1TENSt6size_tENSt6size_tE4BaseI1TE4BaseI1TERNSt6vectorI4BaseI1TEEE">
+<span id="_CPPv3N5chase9Algorithm26detect_eigenvalue_clustersEP4BaseI1TEP4BaseI1TE4BaseI1TENSt6size_tENSt6size_tE4BaseI1TE4BaseI1TERNSt6vectorI4BaseI1TEEE"></span><span id="_CPPv2N5chase9Algorithm26detect_eigenvalue_clustersEP4BaseI1TEP4BaseI1TE4BaseI1TENSt6size_tENSt6size_tE4BaseI1TE4BaseI1TERNSt6vectorI4BaseI1TEEE"></span><span id="chase::Algorithm::detect_eigenvalue_clusters__Base:T:P.Base:T:P.Base:T:.std::s.std::s.Base:T:.Base:T:.std::vector:Base:T::R"></span><span class="target" id="classchase_1_1Algorithm_1aa3bbb83088b6bc35f626d92b9b01834a"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">detect_eigenvalue_clusters</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase9AlgorithmE" title="chase::Algorithm::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ritzv</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase9AlgorithmE" title="chase::Algorithm::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">resid</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase9AlgorithmE" title="chase::Algorithm::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">tol</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">unconverged</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">nex</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase9AlgorithmE" title="chase::Algorithm::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">upperb</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase9AlgorithmE" title="chase::Algorithm::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">lowerb</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase9AlgorithmE" title="chase::Algorithm::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">cluster_factors</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase9Algorithm26detect_eigenvalue_clustersEP4BaseI1TEP4BaseI1TE4BaseI1TENSt6size_tENSt6size_tE4BaseI1TE4BaseI1TERNSt6vectorI4BaseI1TEEE" title="Link to this definition"></a><br /></dt>
+<dd><p>Detects eigenvalue clusters and computes spacing factors for degree optimization. </p>
+<p>This helper method analyzes eigenvalue clustering and computes spacing factors to improve degree optimization for clustered eigenvalues.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ritzv</strong> – The array storing the Ritz values. </p></li>
+<li><p><strong>resid</strong> – The array storing the residuals of the Ritz values. </p></li>
+<li><p><strong>tol</strong> – The convergence tolerance. </p></li>
+<li><p><strong>unconverged</strong> – The number of unconverged eigenpairs. </p></li>
+<li><p><strong>nex</strong> – The number of external searching space. </p></li>
+<li><p><strong>upperb</strong> – The upper bound for the spectrum. </p></li>
+<li><p><strong>lowerb</strong> – The lower bound for the spectrum. </p></li>
+<li><p><strong>cluster_factors</strong> – Output array for computed spacing factors. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase9Algorithm7lockingEP9ChaseBaseI1TENSt6size_tENSt6size_tE4BaseI1TEP4BaseI1TEP4BaseI1TEP4BaseI1TEPNSt6size_tENSt6size_tE">
+<span id="_CPPv3N5chase9Algorithm7lockingEP9ChaseBaseI1TENSt6size_tENSt6size_tE4BaseI1TEP4BaseI1TEP4BaseI1TEP4BaseI1TEPNSt6size_tENSt6size_tE"></span><span id="_CPPv2N5chase9Algorithm7lockingEP9ChaseBaseI1TENSt6size_tENSt6size_tE4BaseI1TEP4BaseI1TEP4BaseI1TEP4BaseI1TEPNSt6size_tENSt6size_tE"></span><span id="chase::Algorithm::locking__ChaseBase:T:P.std::s.std::s.Base:T:.Base:T:P.Base:T:P.Base:T:P.std::sP.std::s"></span><span class="target" id="classchase_1_1Algorithm_1a043809f19db409a6ce97cc48c702b1eb"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">locking</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">ChaseBase</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase9AlgorithmE" title="chase::Algorithm::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">kernel</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">N</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">unconverged</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase9AlgorithmE" title="chase::Algorithm::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">tol</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase9AlgorithmE" title="chase::Algorithm::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ritzv</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase9AlgorithmE" title="chase::Algorithm::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">resid</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase9AlgorithmE" title="chase::Algorithm::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">residLast</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">degrees</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">locked</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase9Algorithm7lockingEP9ChaseBaseI1TENSt6size_tENSt6size_tE4BaseI1TEP4BaseI1TEP4BaseI1TEP4BaseI1TEPNSt6size_tENSt6size_tE" title="Link to this definition"></a><br /></dt>
+<dd><p>Sorts the Ritz values based on residuals and locks the converged ones. </p>
+<p>This method sorts the Ritz values according to their residuals and locks the converged eigenpairs to prevent further processing.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>kernel</strong> – A pointer to the <code class="docutils literal notranslate"><a class="reference internal" href="chasebase.html#classchase_1_1ChaseBase"><span class="std std-ref"><span class="pre">ChaseBase</span></span></a><span class="pre">&lt;T&gt;</span></code> instance. </p></li>
+<li><p><strong>N</strong> – The total size of the problem. </p></li>
+<li><p><strong>unconverged</strong> – The number of unconverged eigenpairs. </p></li>
+<li><p><strong>tol</strong> – The convergence tolerance for residuals. </p></li>
+<li><p><strong>ritzv</strong> – The array storing the Ritz values. </p></li>
+<li><p><strong>resid</strong> – The array storing the residuals of the Ritz values. </p></li>
+<li><p><strong>residLast</strong> – The array storing the residuals from the previous iteration. </p></li>
+<li><p><strong>degrees</strong> – The array storing the degrees of the Ritz pairs. </p></li>
+<li><p><strong>locked</strong> – The number of already locked eigenpairs.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The number of locked eigenpairs. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase9Algorithm13locking_quasiEP9ChaseBaseI1TENSt6size_tENSt6size_tENSt6size_tE4BaseI1TEPNSt6size_tEP4BaseI1TEP4BaseI1TEP4BaseI1TEPNSt6size_tENSt6size_tENSt6size_tE">
+<span id="_CPPv3N5chase9Algorithm13locking_quasiEP9ChaseBaseI1TENSt6size_tENSt6size_tENSt6size_tE4BaseI1TEPNSt6size_tEP4BaseI1TEP4BaseI1TEP4BaseI1TEPNSt6size_tENSt6size_tENSt6size_tE"></span><span id="_CPPv2N5chase9Algorithm13locking_quasiEP9ChaseBaseI1TENSt6size_tENSt6size_tENSt6size_tE4BaseI1TEPNSt6size_tEP4BaseI1TEP4BaseI1TEP4BaseI1TEPNSt6size_tENSt6size_tENSt6size_tE"></span><span id="chase::Algorithm::locking_quasi__ChaseBase:T:P.std::s.std::s.std::s.Base:T:.std::sP.Base:T:P.Base:T:P.Base:T:P.std::sP.std::s.std::s"></span><span class="target" id="classchase_1_1Algorithm_1a325d99c71654d6ca4a1cb929772bc308"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">locking_quasi</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">ChaseBase</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase9AlgorithmE" title="chase::Algorithm::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">single</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">N</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">unconverged</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">nex</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase9AlgorithmE" title="chase::Algorithm::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">tol</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">index</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase9AlgorithmE" title="chase::Algorithm::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">Lritzv</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase9AlgorithmE" title="chase::Algorithm::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">resid</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase9AlgorithmE" title="chase::Algorithm::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">residLast</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">degrees</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">locked</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">iteration</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase9Algorithm13locking_quasiEP9ChaseBaseI1TENSt6size_tENSt6size_tENSt6size_tE4BaseI1TEPNSt6size_tEP4BaseI1TEP4BaseI1TEP4BaseI1TEPNSt6size_tENSt6size_tENSt6size_tE" title="Link to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase9Algorithm6filterEP9ChaseBaseI1TENSt6size_tENSt6size_tENSt6size_tEPNSt6size_tE4BaseI1TE4BaseI1TE4BaseI1TE">
+<span id="_CPPv3N5chase9Algorithm6filterEP9ChaseBaseI1TENSt6size_tENSt6size_tENSt6size_tEPNSt6size_tE4BaseI1TE4BaseI1TE4BaseI1TE"></span><span id="_CPPv2N5chase9Algorithm6filterEP9ChaseBaseI1TENSt6size_tENSt6size_tENSt6size_tEPNSt6size_tE4BaseI1TE4BaseI1TE4BaseI1TE"></span><span id="chase::Algorithm::filter__ChaseBase:T:P.std::s.std::s.std::s.std::sP.Base:T:.Base:T:.Base:T:"></span><span class="target" id="classchase_1_1Algorithm_1a485c9ba7ed53d499b916f05a57cb79f6"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">filter</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">ChaseBase</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase9AlgorithmE" title="chase::Algorithm::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">kernel</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">n</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">unprocessed</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">deg</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">degrees</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase9AlgorithmE" title="chase::Algorithm::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">lambda_1</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase9AlgorithmE" title="chase::Algorithm::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">lower</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase9AlgorithmE" title="chase::Algorithm::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">upper</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase9Algorithm6filterEP9ChaseBaseI1TENSt6size_tENSt6size_tENSt6size_tEPNSt6size_tE4BaseI1TE4BaseI1TE4BaseI1TE" title="Link to this definition"></a><br /></dt>
+<dd><p>Implements the Chebyshev filter. </p>
+<p>This method applies the Chebyshev filter for eigenvalue problems, typically used in conjunction with the other methods for solving large eigenvalue problems efficiently.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>kernel</strong> – A pointer to the <code class="docutils literal notranslate"><a class="reference internal" href="chasebase.html#classchase_1_1ChaseBase"><span class="std std-ref"><span class="pre">ChaseBase</span></span></a><span class="pre">&lt;T&gt;</span></code> instance. </p></li>
+<li><p><strong>n</strong> – The number of vectors. </p></li>
+<li><p><strong>unprocessed</strong> – The number of unprocessed vectors. </p></li>
+<li><p><strong>deg</strong> – The degree of the Chebyshev filter. </p></li>
+<li><p><strong>degrees</strong> – An array containing the degrees of each Ritz pair. </p></li>
+<li><p><strong>lambda_1</strong> – The lower bound for the Chebyshev filter. </p></li>
+<li><p><strong>lower</strong> – The lower bound of the spectrum. </p></li>
+<li><p><strong>upper</strong> – The upper bound of the spectrum.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The number of processed vectors after applying the filter. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase9Algorithm7lanczosEP9ChaseBaseI1TEiiiiP4BaseI1TEbP4BaseI1TE">
+<span id="_CPPv3N5chase9Algorithm7lanczosEP9ChaseBaseI1TEiiiiP4BaseI1TEbP4BaseI1TE"></span><span id="_CPPv2N5chase9Algorithm7lanczosEP9ChaseBaseI1TEiiiiP4BaseI1TEbP4BaseI1TE"></span><span id="chase::Algorithm::lanczos__ChaseBase:T:P.i.i.i.i.Base:T:P.b.Base:T:P"></span><span class="target" id="classchase_1_1Algorithm_1a2426bbdbe301006851ba7d802762d24a"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">lanczos</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">ChaseBase</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase9AlgorithmE" title="chase::Algorithm::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">kernel</span></span>, <span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">N</span></span>, <span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">numvec</span></span>, <span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">m</span></span>, <span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">nevex</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase9AlgorithmE" title="chase::Algorithm::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">upperb</span></span>, <span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">mode</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase9AlgorithmE" title="chase::Algorithm::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ritzv_</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase9Algorithm7lanczosEP9ChaseBaseI1TEiiiiP4BaseI1TEbP4BaseI1TE" title="Link to this definition"></a><br /></dt>
+<dd><p>Implements the Lanczos method to estimate bounds in ChASE. </p>
+<p>This method uses the Lanczos algorithm to estimate the required spectrum bounds for ChASE.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>kernel</strong> – A pointer to the <code class="docutils literal notranslate"><a class="reference internal" href="chasebase.html#classchase_1_1ChaseBase"><span class="std std-ref"><span class="pre">ChaseBase</span></span></a><span class="pre">&lt;T&gt;</span></code> instance. </p></li>
+<li><p><strong>N</strong> – The total size of the problem. </p></li>
+<li><p><strong>numvec</strong> – The number of vectors. </p></li>
+<li><p><strong>m</strong> – The number of Lanczos iterations. </p></li>
+<li><p><strong>nevex</strong> – The number of eigenpairs to be computed. </p></li>
+<li><p><strong>upperb</strong> – The array storing the upper bounds of the spectrum. </p></li>
+<li><p><strong>mode</strong> – A boolean indicating whether to run Lanczos in a specific mode. </p></li>
+<li><p><strong>ritzv_</strong> – The array storing the Ritz values.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The number of bounds estimated by Lanczos. </p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="chasebase.html" class="btn btn-neutral float-left" title="1.1.1. chase::ChaseBase" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="chaseconfig.html" class="btn btn-neutral float-right" title="1.1.3. chase::ChaseConfig" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, SimLab Quantum Materials.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

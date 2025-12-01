@@ -1,0 +1,1100 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Index &mdash; ChASE v1.3.0 documentation</title>
+      <link rel="stylesheet" href="theme_overrides.css" type="text/css" />
+
+  
+    <link rel="shortcut icon" href="_static/ChASE_Logo_Favicon_RGB.png"/>
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=e49d06fc"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="#" />
+    <link rel="search" title="Search" href="search.html" />
+     
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+    <link href="_static/theme_overrides.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+
+          
+          
+          <a href="index.html">
+            
+              <img src="_static/ChASE_Logo_RGB.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+  <div class="version-selector" style="margin: 10px 0; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 3px;">
+  <label for="version-select" style="display: block; color: #fcfcfc; font-size: 12px; margin-bottom: 5px; font-weight: bold;">
+    Version:
+  </label>
+  <select id="version-select" onchange="switchVersion(this.value)" style="width: 100%; padding: 5px; border: 1px solid #2980B9; border-radius: 3px; background: white; color: #333; font-size: 13px;"><option value="/latest/">
+      latest
+    </option><option value="/v1.3.0/"selected>
+      v1.3.0
+    </option><option value="/v1.4.0/">
+      v1.4.0
+    </option></select>
+</div><script>
+function switchVersion(url) {
+  // Get current path and determine base URL
+  const currentPath = window.location.pathname;
+  const pathParts = currentPath.split('/').filter(p => p);
+  
+  // Get known versions from the select options (dynamic, not hardcoded)
+  const selector = document.getElementById('version-select');
+  const knownVersions = [];
+  if (selector) {
+    for (let option of selector.options) {
+      const verName = option.text.trim();
+      knownVersions.push(verName);
+    }
+  }
+  
+  let relativePath = '';
+  if (pathParts.length > 0 && knownVersions.includes(pathParts[0])) {
+    // We're in a versioned path, get everything after version
+    relativePath = '/' + pathParts.slice(1).join('/');
+  } else {
+    // We're in root or unversioned, keep current path
+    relativePath = currentPath;
+  }
+  
+  // Construct new URL - handle both absolute and relative paths
+  if (url.startsWith('http')) {
+    // Absolute URL
+    window.location.href = url;
+  } else {
+    // Relative URL - ensure it starts with /
+    const baseUrl = url.startsWith('/') ? url : '/' + url;
+    const cleanBase = baseUrl.replace(/\/$/, '');
+    const cleanPath = relativePath.startsWith('/') ? relativePath : '/' + relativePath;
+    window.location.href = cleanBase + cleanPath;
+  }
+}
+
+// Auto-detect current version from URL and update selector
+(function() {
+  const currentPath = window.location.pathname;
+  const pathParts = currentPath.split('/').filter(p => p);
+  
+  // Get known versions from select options
+  const selector = document.getElementById('version-select');
+  if (!selector) return;
+  
+  const knownVersions = [];
+  for (let option of selector.options) {
+    const verName = option.text.trim();
+    knownVersions.push(verName);
+  }
+  
+  if (pathParts.length > 0 && knownVersions.includes(pathParts[0])) {
+    const currentVer = pathParts[0];
+    // Find option matching current version
+    for (let option of selector.options) {
+      if (option.text.trim() === currentVer) {
+        selector.value = option.value;
+        break;
+      }
+    }
+  }
+})();
+</script>
+
+<style>
+.version-selector select:focus {
+  outline: 2px solid #2980B9;
+  outline-offset: 2px;
+}
+</style>
+
+
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">INTRODUCTION</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="chase.html">ChASE: an Iterative Solver for Dense Eigenproblems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="version.html">Versions of the library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">Licenses and Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="reference.html">References and Contributors</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">USER DOCUMENTATION</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="quick-start.html">1. Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">2. Installation and Setup on a Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">3. How to use ChASE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parameters.html">4. Parameters and Configurations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="module.html">5. Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="example.html">6. Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API REFERENCE</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api/index.html">1. API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ChASE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Index</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+
+<h1 id="index">Index</h1>
+
+<div class="genindex-jumpbox">
+ <a href="#C"><strong>C</strong></a>
+ 
+</div>
+<h2 id="C">C</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/algorithm.html#_CPPv4I0EN5chase9AlgorithmE">chase::Algorithm (C++ class)</a>
+</li>
+      <li><a href="api/algorithm.html#_CPPv4N5chase9Algorithm12calc_degreesEP9ChaseBaseI1TENSt6size_tENSt6size_tENSt6size_tE4BaseI1TE4BaseI1TE4BaseI1TEP4BaseI1TEP4BaseI1TEP4BaseI1TEPNSt6size_tENSt6size_tE">chase::Algorithm::calc_degrees (C++ function)</a>
+</li>
+      <li><a href="api/algorithm.html#_CPPv4N5chase9Algorithm18calc_degrees_quasiEP9ChaseBaseI1TENSt6size_tENSt6size_tENSt6size_tE4BaseI1TE4BaseI1TE4BaseI1TEP4BaseI1TEP4BaseI1TEP4BaseI1TEPNSt6size_tENSt6size_tE">chase::Algorithm::calc_degrees_quasi (C++ function)</a>
+</li>
+      <li><a href="api/algorithm.html#_CPPv4N5chase9Algorithm26detect_eigenvalue_clustersEP4BaseI1TEP4BaseI1TE4BaseI1TENSt6size_tENSt6size_tE4BaseI1TE4BaseI1TERNSt6vectorI4BaseI1TEEE">chase::Algorithm::detect_eigenvalue_clusters (C++ function)</a>
+</li>
+      <li><a href="api/algorithm.html#_CPPv4N5chase9Algorithm6filterEP9ChaseBaseI1TENSt6size_tENSt6size_tENSt6size_tEPNSt6size_tE4BaseI1TE4BaseI1TE4BaseI1TE">chase::Algorithm::filter (C++ function)</a>
+</li>
+      <li><a href="api/algorithm.html#_CPPv4N5chase9Algorithm7lanczosEP9ChaseBaseI1TEiiiiP4BaseI1TEbP4BaseI1TE">chase::Algorithm::lanczos (C++ function)</a>
+</li>
+      <li><a href="api/algorithm.html#_CPPv4N5chase9Algorithm7lockingEP9ChaseBaseI1TENSt6size_tENSt6size_tE4BaseI1TEP4BaseI1TEP4BaseI1TEP4BaseI1TEPNSt6size_tENSt6size_tE">chase::Algorithm::locking (C++ function)</a>
+</li>
+      <li><a href="api/algorithm.html#_CPPv4N5chase9Algorithm13locking_quasiEP9ChaseBaseI1TENSt6size_tENSt6size_tENSt6size_tE4BaseI1TEPNSt6size_tEP4BaseI1TEP4BaseI1TEP4BaseI1TEPNSt6size_tENSt6size_tENSt6size_tE">chase::Algorithm::locking_quasi (C++ function)</a>
+</li>
+      <li><a href="api/algorithm.html#_CPPv4N5chase9Algorithm5solveEP9ChaseBaseI1TE">chase::Algorithm::solve (C++ function)</a>
+</li>
+      <li><a href="api/chasebase.html#_CPPv4I0EN5chase9ChaseBaseE">chase::ChaseBase (C++ class)</a>
+</li>
+      <li><a href="api/chasebase.html#_CPPv4N5chase9ChaseBase24checkPseudoHermicityEasyEv">chase::ChaseBase::checkPseudoHermicityEasy (C++ function)</a>
+</li>
+      <li><a href="api/chasebase.html#_CPPv4N5chase9ChaseBase17checkSymmetryEasyEv">chase::ChaseBase::checkSymmetryEasy (C++ function)</a>
+</li>
+      <li><a href="api/chasebase.html#_CPPv4N5chase9ChaseBase3EndEv">chase::ChaseBase::End (C++ function)</a>
+</li>
+      <li><a href="api/chasebase.html#_CPPv4N5chase9ChaseBase10get_nprocsEv">chase::ChaseBase::get_nprocs (C++ function)</a>
+</li>
+      <li><a href="api/chasebase.html#_CPPv4N5chase9ChaseBase9GetConfigEv">chase::ChaseBase::GetConfig (C++ function)</a>
+</li>
+      <li><a href="api/chasebase.html#_CPPv4NK5chase9ChaseBase4GetNEv">chase::ChaseBase::GetN (C++ function)</a>
+</li>
+      <li><a href="api/chasebase.html#_CPPv4N5chase9ChaseBase6GetNevEv">chase::ChaseBase::GetNev (C++ function)</a>
+</li>
+      <li><a href="api/chasebase.html#_CPPv4N5chase9ChaseBase6GetNexEv">chase::ChaseBase::GetNex (C++ function)</a>
+</li>
+      <li><a href="api/chasebase.html#_CPPv4N5chase9ChaseBase8GetResidEv">chase::ChaseBase::GetResid (C++ function)</a>
+</li>
+      <li><a href="api/chasebase.html#_CPPv4N5chase9ChaseBase8GetRitzvEv">chase::ChaseBase::GetRitzv (C++ function)</a>
+</li>
+      <li><a href="api/chasebase.html#_CPPv4N5chase9ChaseBase4HEMMENSt6size_tE1T1TNSt6size_tE">chase::ChaseBase::HEMM (C++ function)</a>
+</li>
+      <li><a href="api/chasebase.html#_CPPv4N5chase9ChaseBase8initVecsEb">chase::ChaseBase::initVecs (C++ function)</a>
+</li>
+      <li><a href="api/chasebase.html#_CPPv4N5chase9ChaseBase12isPseudoHermEv">chase::ChaseBase::isPseudoHerm (C++ function)</a>
+</li>
+      <li><a href="api/chasebase.html#_CPPv4N5chase9ChaseBase5isSymEv">chase::ChaseBase::isSym (C++ function)</a>
+</li>
+      <li><a href="api/chasebase.html#_CPPv4N5chase9ChaseBase7LanczosENSt6size_tENSt6size_tEP4BaseI1TEP4BaseI1TEP4BaseI1TEP4BaseI1TE">chase::ChaseBase::Lanczos (C++ function)</a>, <a href="api/chasebase.html#_CPPv4N5chase9ChaseBase7LanczosENSt6size_tEP4BaseI1TE">[1]</a>
+</li>
+      <li><a href="api/chasebase.html#_CPPv4N5chase9ChaseBase10LanczosDosENSt6size_tENSt6size_tEP1T">chase::ChaseBase::LanczosDos (C++ function)</a>
+</li>
+      <li><a href="api/chasebase.html#_CPPv4N5chase9ChaseBase4LockENSt6size_tE">chase::ChaseBase::Lock (C++ function)</a>
+</li>
+      <li><a href="api/chasebase.html#_CPPv4N5chase9ChaseBase6OutputENSt6stringE">chase::ChaseBase::Output (C++ function)</a>
+</li>
+      <li><a href="QR-RR.html#_CPPv4N5chase9ChaseBase2QRENSt6size_tE4BaseI1TE">chase::ChaseBase::QR (C++ function)</a>, <a href="api/chasebase.html#_CPPv4N5chase9ChaseBase2QRENSt6size_tE4BaseI1TE">[1]</a>
+</li>
+      <li><a href="api/chasebase.html#_CPPv4N5chase9ChaseBase4ResdEP4BaseI1TEP4BaseI1TENSt6size_tE">chase::ChaseBase::Resd (C++ function)</a>
+</li>
+      <li><a href="QR-RR.html#_CPPv4N5chase9ChaseBase2RREP4BaseI1TENSt6size_tE">chase::ChaseBase::RR (C++ function)</a>, <a href="api/chasebase.html#_CPPv4N5chase9ChaseBase2RREP4BaseI1TENSt6size_tE">[1]</a>
+</li>
+      <li><a href="api/chasebase.html#_CPPv4N5chase9ChaseBase5ShiftE1Tb">chase::ChaseBase::Shift (C++ function)</a>
+</li>
+      <li><a href="api/chasebase.html#_CPPv4N5chase9ChaseBase4SortEP4BaseI1TEP4BaseI1TEP4BaseI1TE">chase::ChaseBase::Sort (C++ function)</a>
+</li>
+      <li><a href="api/chasebase.html#_CPPv4N5chase9ChaseBase5StartEv">chase::ChaseBase::Start (C++ function)</a>
+</li>
+      <li><a href="api/chasebase.html#_CPPv4N5chase9ChaseBase4SwapENSt6size_tENSt6size_tE">chase::ChaseBase::Swap (C++ function)</a>
+</li>
+      <li><a href="api/chasebase.html#_CPPv4N5chase9ChaseBase15symOrHermMatrixEc">chase::ChaseBase::symOrHermMatrix (C++ function)</a>
+</li>
+      <li><a href="api/chaseconfig.html#_CPPv4I0EN5chase11ChaseConfigE">chase::ChaseConfig (C++ class)</a>
+</li>
+      <li><a href="api/chaseconfig.html#_CPPv4N5chase11ChaseConfig11ChaseConfigENSt6size_tENSt6size_tENSt6size_tE">chase::ChaseConfig::ChaseConfig (C++ function)</a>
+</li>
+      <li><a href="api/chaseconfig.html#_CPPv4N5chase11ChaseConfig8DoCholQREv">chase::ChaseConfig::DoCholQR (C++ function)</a>
+</li>
+      <li><a href="api/chaseconfig.html#_CPPv4NK5chase11ChaseConfig14DoOptimizationEv">chase::ChaseConfig::DoOptimization (C++ function)</a>
+</li>
+      <li><a href="api/chaseconfig.html#_CPPv4N5chase11ChaseConfig10DoSymCheckEv">chase::ChaseConfig::DoSymCheck (C++ function)</a>
+</li>
+      <li><a href="api/chaseconfig.html#_CPPv4N5chase11ChaseConfig14EnableSymCheckEb">chase::ChaseConfig::EnableSymCheck (C++ function)</a>
+</li>
+      <li><a href="api/chaseconfig.html#_CPPv4NK5chase11ChaseConfig15GetDecayingRateEv">chase::ChaseConfig::GetDecayingRate (C++ function)</a>
+</li>
+      <li><a href="api/chaseconfig.html#_CPPv4NK5chase11ChaseConfig6GetDegEv">chase::ChaseConfig::GetDeg (C++ function)</a>
+</li>
+      <li><a href="api/chaseconfig.html#_CPPv4NK5chase11ChaseConfig11GetDegExtraEv">chase::ChaseConfig::GetDegExtra (C++ function)</a>
+</li>
+      <li><a href="api/chaseconfig.html#_CPPv4NK5chase11ChaseConfig14GetLanczosIterEv">chase::ChaseConfig::GetLanczosIter (C++ function)</a>
+</li>
+      <li><a href="api/chaseconfig.html#_CPPv4NK5chase11ChaseConfig9GetMaxDegEv">chase::ChaseConfig::GetMaxDeg (C++ function)</a>
+</li>
+      <li><a href="api/chaseconfig.html#_CPPv4NK5chase11ChaseConfig10GetMaxIterEv">chase::ChaseConfig::GetMaxIter (C++ function)</a>
+</li>
+      <li><a href="api/chaseconfig.html#_CPPv4NK5chase11ChaseConfig4GetNEv">chase::ChaseConfig::GetN (C++ function)</a>
+</li>
+      <li><a href="api/chaseconfig.html#_CPPv4NK5chase11ChaseConfig6GetNevEv">chase::ChaseConfig::GetNev (C++ function)</a>
+</li>
+      <li><a href="api/chaseconfig.html#_CPPv4NK5chase11ChaseConfig6GetNexEv">chase::ChaseConfig::GetNex (C++ function)</a>
+</li>
+      <li><a href="api/chaseconfig.html#_CPPv4NK5chase11ChaseConfig13GetNumLanczosEv">chase::ChaseConfig::GetNumLanczos (C++ function)</a>
+</li>
+      <li><a href="api/chaseconfig.html#_CPPv4NK5chase11ChaseConfig6GetTolEv">chase::ChaseConfig::GetTol (C++ function)</a>
+</li>
+      <li><a href="api/chaseconfig.html#_CPPv4NK5chase11ChaseConfig18GetUpperbScaleRateEv">chase::ChaseConfig::GetUpperbScaleRate (C++ function)</a>
+</li>
+      <li><a href="api/chaseconfig.html#_CPPv4N5chase11ChaseConfig9SetApproxEb">chase::ChaseConfig::SetApprox (C++ function)</a>
+</li>
+      <li><a href="api/chaseconfig.html#_CPPv4N5chase11ChaseConfig9SetCholQREb">chase::ChaseConfig::SetCholQR (C++ function)</a>
+</li>
+      <li><a href="api/chaseconfig.html#_CPPv4N5chase11ChaseConfig22SetClusterAwareDegreesEb">chase::ChaseConfig::SetClusterAwareDegrees (C++ function)</a>
+</li>
+      <li><a href="api/chaseconfig.html#_CPPv4N5chase11ChaseConfig15SetDecayingRateEf">chase::ChaseConfig::SetDecayingRate (C++ function)</a>
+</li>
+      <li><a href="api/chaseconfig.html#_CPPv4N5chase11ChaseConfig6SetDegENSt6size_tE">chase::ChaseConfig::SetDeg (C++ function)</a>
+</li>
+      <li><a href="api/chaseconfig.html#_CPPv4N5chase11ChaseConfig11SetDegExtraENSt6size_tE">chase::ChaseConfig::SetDegExtra (C++ function)</a>
+</li>
+      <li><a href="api/chaseconfig.html#_CPPv4N5chase11ChaseConfig14SetLanczosIterENSt6size_tE">chase::ChaseConfig::SetLanczosIter (C++ function)</a>
+</li>
+      <li><a href="api/chaseconfig.html#_CPPv4N5chase11ChaseConfig9SetMaxDegENSt6size_tE">chase::ChaseConfig::SetMaxDeg (C++ function)</a>
+</li>
+      <li><a href="api/chaseconfig.html#_CPPv4N5chase11ChaseConfig10SetMaxIterENSt6size_tE">chase::ChaseConfig::SetMaxIter (C++ function)</a>
+</li>
+      <li><a href="api/chaseconfig.html#_CPPv4N5chase11ChaseConfig13SetNumLanczosENSt6size_tE">chase::ChaseConfig::SetNumLanczos (C++ function)</a>
+</li>
+      <li><a href="api/chaseconfig.html#_CPPv4N5chase11ChaseConfig6SetOptEb">chase::ChaseConfig::SetOpt (C++ function)</a>
+</li>
+      <li><a href="api/chaseconfig.html#_CPPv4N5chase11ChaseConfig6SetTolEd">chase::ChaseConfig::SetTol (C++ function)</a>
+</li>
+      <li><a href="api/chaseconfig.html#_CPPv4N5chase11ChaseConfig18SetUpperbScaleRateEf">chase::ChaseConfig::SetUpperbScaleRate (C++ function)</a>
+</li>
+      <li><a href="api/chaseconfig.html#_CPPv4NK5chase11ChaseConfig9UseApproxEv">chase::ChaseConfig::UseApprox (C++ function)</a>
+</li>
+      <li><a href="api/chaseconfig.html#_CPPv4NK5chase11ChaseConfig22UseClusterAwareDegreesEv">chase::ChaseConfig::UseClusterAwareDegrees (C++ function)</a>
+</li>
+      <li><a href="api/performance.html#_CPPv4I0EN5chase13ChasePerfDataE">chase::ChasePerfData (C++ class)</a>
+</li>
+      <li><a href="api/performance.html#_CPPv4N5chase13ChasePerfData17add_filtered_vecsENSt6size_tE">chase::ChasePerfData::add_filtered_vecs (C++ function)</a>
+</li>
+      <li><a href="api/performance.html#_CPPv4N5chase13ChasePerfData18add_iter_blocksizeENSt6size_tE">chase::ChasePerfData::add_iter_blocksize (C++ function)</a>
+</li>
+      <li><a href="api/performance.html#_CPPv4N5chase13ChasePerfData14add_iter_countENSt6size_tE">chase::ChasePerfData::add_iter_count (C++ function)</a>
+</li>
+      <li><a href="api/performance.html#_CPPv4N5chase13ChasePerfData13ChasePerfDataEv">chase::ChasePerfData::ChasePerfData (C++ function)</a>
+</li>
+      <li><a href="api/performance.html#_CPPv4N5chase13ChasePerfData9end_clockE8TimePtrs">chase::ChasePerfData::end_clock (C++ function)</a>
+</li>
+      <li><a href="api/performance.html#_CPPv4N5chase13ChasePerfData16get_filter_flopsENSt6size_tE">chase::ChasePerfData::get_filter_flops (C++ function)</a>
+</li>
+      <li><a href="api/performance.html#_CPPv4N5chase13ChasePerfData17get_filtered_vecsEv">chase::ChasePerfData::get_filtered_vecs (C++ function)</a>
+</li>
+      <li><a href="api/performance.html#_CPPv4N5chase13ChasePerfData9get_flopsENSt6size_tE">chase::ChasePerfData::get_flops (C++ function)</a>
+</li>
+      <li><a href="api/performance.html#_CPPv4N5chase13ChasePerfData14get_iter_countEv">chase::ChasePerfData::get_iter_count (C++ function)</a>
+</li>
+      <li><a href="api/performance.html#_CPPv4N5chase13ChasePerfData11get_timingsEv">chase::ChasePerfData::get_timings (C++ function)</a>
+</li>
+      <li><a href="api/performance.html#_CPPv4N5chase13ChasePerfData12getTimePointEv">chase::ChasePerfData::getTimePoint (C++ function)</a>
+</li>
+      <li><a href="api/performance.html#_CPPv4N5chase13ChasePerfData5printENSt6size_tE">chase::ChasePerfData::print (C++ function)</a>
+</li>
+      <li><a href="api/performance.html#_CPPv4N5chase13ChasePerfData5ResetEv">chase::ChasePerfData::Reset (C++ function)</a>
+</li>
+      <li><a href="api/performance.html#_CPPv4N5chase13ChasePerfData10set_nprocsEi">chase::ChasePerfData::set_nprocs (C++ function)</a>
+</li>
+      <li><a href="api/performance.html#_CPPv4N5chase13ChasePerfData11start_clockE8TimePtrs">chase::ChasePerfData::start_clock (C++ function)</a>
+</li>
+      <li><a href="api/performance.html#_CPPv4N5chase13ChasePerfData8TimePtrsE">chase::ChasePerfData::TimePtrs (C++ enum)</a>
+</li>
+      <li><a href="api/performance.html#_CPPv4N5chase13ChasePerfData8TimePtrs3AllE">chase::ChasePerfData::TimePtrs::All (C++ enumerator)</a>
+</li>
+      <li><a href="api/performance.html#_CPPv4N5chase13ChasePerfData8TimePtrs6FilterE">chase::ChasePerfData::TimePtrs::Filter (C++ enumerator)</a>
+</li>
+      <li><a href="api/performance.html#_CPPv4N5chase13ChasePerfData8TimePtrs8InitVecsE">chase::ChasePerfData::TimePtrs::InitVecs (C++ enumerator)</a>
+</li>
+      <li><a href="api/performance.html#_CPPv4N5chase13ChasePerfData8TimePtrs7LanczosE">chase::ChasePerfData::TimePtrs::Lanczos (C++ enumerator)</a>
+</li>
+      <li><a href="api/performance.html#_CPPv4N5chase13ChasePerfData8TimePtrs2QrE">chase::ChasePerfData::TimePtrs::Qr (C++ enumerator)</a>
+</li>
+      <li><a href="api/performance.html#_CPPv4N5chase13ChasePerfData8TimePtrs14Resids_LockingE">chase::ChasePerfData::TimePtrs::Resids_Locking (C++ enumerator)</a>
+</li>
+      <li><a href="api/performance.html#_CPPv4N5chase13ChasePerfData8TimePtrs2RrE">chase::ChasePerfData::TimePtrs::Rr (C++ enumerator)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4I00EN5chase10distMatrix16BlockBlockMatrixE">chase::distMatrix::BlockBlockMatrix (C++ class)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4N5chase10distMatrix16BlockBlockMatrix16BlockBlockMatrixENSt6size_tENSt6size_tENSt10shared_ptrIN5chase4grid13MpiGrid2DBaseEEE">chase::distMatrix::BlockBlockMatrix::BlockBlockMatrix (C++ function)</a>, <a href="api/matrices.html#_CPPv4N5chase10distMatrix16BlockBlockMatrix16BlockBlockMatrixENSt6size_tENSt6size_tENSt6size_tEP1TNSt10shared_ptrIN5chase4grid13MpiGrid2DBaseEEE">[1]</a>, <a href="api/matrices.html#_CPPv4N5chase10distMatrix16BlockBlockMatrix16BlockBlockMatrixEv">[2]</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4I0EN5chase10distMatrix16BlockBlockMatrix16cloneMultiVectorE15CloneVectorTypeNSt6size_tENSt6size_tE">chase::distMatrix::BlockBlockMatrix::cloneMultiVector (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4NK5chase10distMatrix16BlockBlockMatrix6g_colsEv">chase::distMatrix::BlockBlockMatrix::g_cols (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4N5chase10distMatrix16BlockBlockMatrix6g_offsEv">chase::distMatrix::BlockBlockMatrix::g_offs (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4NK5chase10distMatrix16BlockBlockMatrix6g_rowsEv">chase::distMatrix::BlockBlockMatrix::g_rows (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4N5chase10distMatrix16BlockBlockMatrix18get_scalapack_descEv">chase::distMatrix::BlockBlockMatrix::get_scalapack_desc (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4NK5chase10distMatrix16BlockBlockMatrix10getMpiGridEv">chase::distMatrix::BlockBlockMatrix::getMpiGrid (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4NK5chase10distMatrix16BlockBlockMatrix21getMpiGrid_shared_ptrEv">chase::distMatrix::BlockBlockMatrix::getMpiGrid_shared_ptr (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4N5chase10distMatrix16BlockBlockMatrix14hermitian_typeE">chase::distMatrix::BlockBlockMatrix::hermitian_type (C++ type)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4NK5chase10distMatrix16BlockBlockMatrix6l_colsEv">chase::distMatrix::BlockBlockMatrix::l_cols (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4N5chase10distMatrix16BlockBlockMatrix6l_dataEv">chase::distMatrix::BlockBlockMatrix::l_data (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4NK5chase10distMatrix16BlockBlockMatrix6l_halfEv">chase::distMatrix::BlockBlockMatrix::l_half (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4NK5chase10distMatrix16BlockBlockMatrix4l_ldEv">chase::distMatrix::BlockBlockMatrix::l_ld (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4NK5chase10distMatrix16BlockBlockMatrix6l_rowsEv">chase::distMatrix::BlockBlockMatrix::l_rows (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4N5chase10distMatrix16BlockBlockMatrix10loc_matrixEv">chase::distMatrix::BlockBlockMatrix::loc_matrix (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4N5chase10distMatrix16BlockBlockMatrix11matrix_typeE">chase::distMatrix::BlockBlockMatrix::matrix_type (C++ type)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4NK5chase10distMatrix16BlockBlockMatrix2mbEv">chase::distMatrix::BlockBlockMatrix::mb (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4NK5chase10distMatrix16BlockBlockMatrix2nbEv">chase::distMatrix::BlockBlockMatrix::nb (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4N5chase10distMatrix16BlockBlockMatrix13platform_typeE">chase::distMatrix::BlockBlockMatrix::platform_type (C++ type)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4N5chase10distMatrix16BlockBlockMatrix18readFromBinaryFileERKNSt6stringE">chase::distMatrix::BlockBlockMatrix::readFromBinaryFile (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4II00E0EN5chase10distMatrix16BlockBlockMatrix16redistributeImplEvP10targetTypeI1T8PlatformE">chase::distMatrix::BlockBlockMatrix::redistributeImpl (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4N5chase10distMatrix16BlockBlockMatrix16saveToBinaryFileERKNSt6stringE">chase::distMatrix::BlockBlockMatrix::saveToBinaryFile (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4N5chase10distMatrix16BlockBlockMatrix25scalapack_descriptor_initEv">chase::distMatrix::BlockBlockMatrix::scalapack_descriptor_init (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4N5chase10distMatrix16BlockBlockMatrix10value_typeE">chase::distMatrix::BlockBlockMatrix::value_type (C++ type)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4N5chase10distMatrix16BlockBlockMatrixD0Ev">chase::distMatrix::BlockBlockMatrix::~BlockBlockMatrix (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4I00EN5chase10distMatrix17BlockCyclicMatrixE">chase::distMatrix::BlockCyclicMatrix (C++ class)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4N5chase10distMatrix17BlockCyclicMatrix17BlockCyclicMatrixENSt6size_tENSt6size_tENSt6size_tENSt6size_tENSt10shared_ptrIN5chase4grid13MpiGrid2DBaseEEE">chase::distMatrix::BlockCyclicMatrix::BlockCyclicMatrix (C++ function)</a>, <a href="api/matrices.html#_CPPv4N5chase10distMatrix17BlockCyclicMatrix17BlockCyclicMatrixENSt6size_tENSt6size_tENSt6size_tENSt6size_tENSt6size_tENSt6size_tENSt6size_tEP1TNSt10shared_ptrIN5chase4grid13MpiGrid2DBaseEEE">[1]</a>, <a href="api/matrices.html#_CPPv4N5chase10distMatrix17BlockCyclicMatrix17BlockCyclicMatrixEv">[2]</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4I0EN5chase10distMatrix17BlockCyclicMatrix16cloneMultiVectorE15CloneVectorTypeNSt6size_tENSt6size_tE">chase::distMatrix::BlockCyclicMatrix::cloneMultiVector (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4NK5chase10distMatrix17BlockCyclicMatrix6g_colsEv">chase::distMatrix::BlockCyclicMatrix::g_cols (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4NK5chase10distMatrix17BlockCyclicMatrix6g_rowsEv">chase::distMatrix::BlockCyclicMatrix::g_rows (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4N5chase10distMatrix17BlockCyclicMatrix18get_scalapack_descEv">chase::distMatrix::BlockCyclicMatrix::get_scalapack_desc (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4NK5chase10distMatrix17BlockCyclicMatrix10getMpiGridEv">chase::distMatrix::BlockCyclicMatrix::getMpiGrid (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4NK5chase10distMatrix17BlockCyclicMatrix21getMpiGrid_shared_ptrEv">chase::distMatrix::BlockCyclicMatrix::getMpiGrid_shared_ptr (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4N5chase10distMatrix17BlockCyclicMatrix14hermitian_typeE">chase::distMatrix::BlockCyclicMatrix::hermitian_type (C++ type)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4NK5chase10distMatrix17BlockCyclicMatrix6l_colsEv">chase::distMatrix::BlockCyclicMatrix::l_cols (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4N5chase10distMatrix17BlockCyclicMatrix6l_dataEv">chase::distMatrix::BlockCyclicMatrix::l_data (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4NK5chase10distMatrix17BlockCyclicMatrix6l_halfEv">chase::distMatrix::BlockCyclicMatrix::l_half (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4NK5chase10distMatrix17BlockCyclicMatrix4l_ldEv">chase::distMatrix::BlockCyclicMatrix::l_ld (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4NK5chase10distMatrix17BlockCyclicMatrix6l_rowsEv">chase::distMatrix::BlockCyclicMatrix::l_rows (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4N5chase10distMatrix17BlockCyclicMatrix10loc_matrixEv">chase::distMatrix::BlockCyclicMatrix::loc_matrix (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4N5chase10distMatrix17BlockCyclicMatrix24m_contiguous_global_offsEv">chase::distMatrix::BlockCyclicMatrix::m_contiguous_global_offs (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4N5chase10distMatrix17BlockCyclicMatrix17m_contiguous_lensEv">chase::distMatrix::BlockCyclicMatrix::m_contiguous_lens (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4N5chase10distMatrix17BlockCyclicMatrix23m_contiguous_local_offsEv">chase::distMatrix::BlockCyclicMatrix::m_contiguous_local_offs (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4N5chase10distMatrix17BlockCyclicMatrix11matrix_typeE">chase::distMatrix::BlockCyclicMatrix::matrix_type (C++ type)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4NK5chase10distMatrix17BlockCyclicMatrix2mbEv">chase::distMatrix::BlockCyclicMatrix::mb (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4N5chase10distMatrix17BlockCyclicMatrix7mblocksEv">chase::distMatrix::BlockCyclicMatrix::mblocks (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4N5chase10distMatrix17BlockCyclicMatrix24n_contiguous_global_offsEv">chase::distMatrix::BlockCyclicMatrix::n_contiguous_global_offs (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4N5chase10distMatrix17BlockCyclicMatrix17n_contiguous_lensEv">chase::distMatrix::BlockCyclicMatrix::n_contiguous_lens (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4N5chase10distMatrix17BlockCyclicMatrix23n_contiguous_local_offsEv">chase::distMatrix::BlockCyclicMatrix::n_contiguous_local_offs (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4NK5chase10distMatrix17BlockCyclicMatrix2nbEv">chase::distMatrix::BlockCyclicMatrix::nb (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4N5chase10distMatrix17BlockCyclicMatrix7nblocksEv">chase::distMatrix::BlockCyclicMatrix::nblocks (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4N5chase10distMatrix17BlockCyclicMatrix13platform_typeE">chase::distMatrix::BlockCyclicMatrix::platform_type (C++ type)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4N5chase10distMatrix17BlockCyclicMatrix18readFromBinaryFileERKNSt6stringE">chase::distMatrix::BlockCyclicMatrix::readFromBinaryFile (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4II00E0EN5chase10distMatrix17BlockCyclicMatrix16redistributeImplEvP10targetTypeI1T8PlatformE">chase::distMatrix::BlockCyclicMatrix::redistributeImpl (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4II00E0EN5chase10distMatrix17BlockCyclicMatrix21redistributeImplAsyncEvP10targetTypeI1T8PlatformEP12cudaStream_t">chase::distMatrix::BlockCyclicMatrix::redistributeImplAsync (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4N5chase10distMatrix17BlockCyclicMatrix16saveToBinaryFileERKNSt6stringE">chase::distMatrix::BlockCyclicMatrix::saveToBinaryFile (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4N5chase10distMatrix17BlockCyclicMatrix25scalapack_descriptor_initEv">chase::distMatrix::BlockCyclicMatrix::scalapack_descriptor_init (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4N5chase10distMatrix17BlockCyclicMatrix10value_typeE">chase::distMatrix::BlockCyclicMatrix::value_type (C++ type)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4N5chase10distMatrix17BlockCyclicMatrixD0Ev">chase::distMatrix::BlockCyclicMatrix::~BlockCyclicMatrix (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4I00EN5chase10distMatrix30QuasiHermitianBlockBlockMatrixE">chase::distMatrix::QuasiHermitianBlockBlockMatrix (C++ class)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4I00EN5chase10distMatrix31QuasiHermitianBlockCyclicMatrixE">chase::distMatrix::QuasiHermitianBlockCyclicMatrix (C++ class)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4I00EN5chase10distMatrix15RedundantMatrixE">chase::distMatrix::RedundantMatrix (C++ class)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4NK5chase10distMatrix15RedundantMatrix6g_colsEv">chase::distMatrix::RedundantMatrix::g_cols (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4NK5chase10distMatrix15RedundantMatrix6g_rowsEv">chase::distMatrix::RedundantMatrix::g_rows (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4NK5chase10distMatrix15RedundantMatrix10getMpiGridEv">chase::distMatrix::RedundantMatrix::getMpiGrid (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4NK5chase10distMatrix15RedundantMatrix21getMpiGrid_shared_ptrEv">chase::distMatrix::RedundantMatrix::getMpiGrid_shared_ptr (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4NK5chase10distMatrix15RedundantMatrix6l_colsEv">chase::distMatrix::RedundantMatrix::l_cols (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4N5chase10distMatrix15RedundantMatrix6l_dataEv">chase::distMatrix::RedundantMatrix::l_data (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4NK5chase10distMatrix15RedundantMatrix6l_halfEv">chase::distMatrix::RedundantMatrix::l_half (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4NK5chase10distMatrix15RedundantMatrix4l_ldEv">chase::distMatrix::RedundantMatrix::l_ld (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4NK5chase10distMatrix15RedundantMatrix6l_rowsEv">chase::distMatrix::RedundantMatrix::l_rows (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4N5chase10distMatrix15RedundantMatrix10loc_matrixEv">chase::distMatrix::RedundantMatrix::loc_matrix (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4N5chase10distMatrix15RedundantMatrix15mapToNewMpiGridENSt10shared_ptrIN5chase4grid13MpiGrid2DBaseEEE">chase::distMatrix::RedundantMatrix::mapToNewMpiGrid (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4N5chase10distMatrix15RedundantMatrix11matrix_typeE">chase::distMatrix::RedundantMatrix::matrix_type (C++ type)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4NK5chase10distMatrix15RedundantMatrix2mbEv">chase::distMatrix::RedundantMatrix::mb (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4NK5chase10distMatrix15RedundantMatrix2nbEv">chase::distMatrix::RedundantMatrix::nb (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4N5chase10distMatrix15RedundantMatrix13platform_typeE">chase::distMatrix::RedundantMatrix::platform_type (C++ type)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4II00E0EN5chase10distMatrix15RedundantMatrix16redistributeImplEvP10targetTypeI1T8PlatformE">chase::distMatrix::RedundantMatrix::redistributeImpl (C++ function)</a>, <a href="api/matrices.html#_CPPv4II00E0EN5chase10distMatrix15RedundantMatrix16redistributeImplEvP10targetTypeI1T8PlatformENSt6size_tENSt6size_tENSt6size_tENSt6size_tE">[1]</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4I0EN5chase10distMatrix15RedundantMatrix18redistributeImpl_2EvP16TargetMatrixType">chase::distMatrix::RedundantMatrix::redistributeImpl_2 (C++ function)</a>, <a href="api/matrices.html#_CPPv4I0EN5chase10distMatrix15RedundantMatrix18redistributeImpl_2EvP16TargetMatrixTypeNSt6size_tENSt6size_tENSt6size_tENSt6size_tE">[1]</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4N5chase10distMatrix15RedundantMatrix15RedundantMatrixENSt6size_tENSt6size_tENSt10shared_ptrIN5chase4grid13MpiGrid2DBaseEEE">chase::distMatrix::RedundantMatrix::RedundantMatrix (C++ function)</a>, <a href="api/matrices.html#_CPPv4N5chase10distMatrix15RedundantMatrix15RedundantMatrixENSt6size_tENSt6size_tENSt6size_tEP1TNSt10shared_ptrIN5chase4grid13MpiGrid2DBaseEEE">[1]</a>, <a href="api/matrices.html#_CPPv4N5chase10distMatrix15RedundantMatrix15RedundantMatrixEv">[2]</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4N5chase10distMatrix15RedundantMatrix10value_typeE">chase::distMatrix::RedundantMatrix::value_type (C++ type)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4N5chase10distMatrix15RedundantMatrixD0Ev">chase::distMatrix::RedundantMatrix::~RedundantMatrix (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4I0_16CommunicatorType0EN5chase15distMultiVector17DistMultiVector1DE">chase::distMultiVector::DistMultiVector1D (C++ class)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4I0EN5chase15distMultiVector17DistMultiVector1D5cloneE9CloneTypeNSt6size_tENSt6size_tE">chase::distMultiVector::DistMultiVector1D::clone (C++ function)</a>, <a href="api/matrices.html#_CPPv4I0EN5chase15distMultiVector17DistMultiVector1D5cloneE9CloneTypev">[1]</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4I0EN5chase15distMultiVector17DistMultiVector1D6clone2ENSt10unique_ptrI9CloneTypeEENSt6size_tENSt6size_tE">chase::distMultiVector::DistMultiVector1D::clone2 (C++ function)</a>, <a href="api/matrices.html#_CPPv4I0EN5chase15distMultiVector17DistMultiVector1D6clone2ENSt10unique_ptrI9CloneTypeEEv">[1]</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4N5chase15distMultiVector17DistMultiVector1D17communicator_typeE">chase::distMultiVector::DistMultiVector1D::communicator_type (C++ member)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4N5chase15distMultiVector17DistMultiVector1D8cpu_dataEv">chase::distMultiVector::DistMultiVector1D::cpu_data (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4N5chase15distMultiVector17DistMultiVector1D6cpu_ldEv">chase::distMultiVector::DistMultiVector1D::cpu_ld (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4N5chase15distMultiVector17DistMultiVector1D3D2HEv">chase::distMultiVector::DistMultiVector1D::D2H (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4N5chase15distMultiVector17DistMultiVector1D17DistMultiVector1DENSt6size_tENSt6size_tENSt10shared_ptrIN5chase4grid13MpiGrid2DBaseEEE">chase::distMultiVector::DistMultiVector1D::DistMultiVector1D (C++ function)</a>, <a href="api/matrices.html#_CPPv4N5chase15distMultiVector17DistMultiVector1D17DistMultiVector1DENSt6size_tENSt6size_tENSt6size_tEP1TNSt10shared_ptrIN5chase4grid13MpiGrid2DBaseEEE">[1]</a>, <a href="api/matrices.html#_CPPv4N5chase15distMultiVector17DistMultiVector1D17DistMultiVector1DEv">[2]</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4NK5chase15distMultiVector17DistMultiVector1D6g_colsEv">chase::distMultiVector::DistMultiVector1D::g_cols (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4NK5chase15distMultiVector17DistMultiVector1D5g_offEv">chase::distMultiVector::DistMultiVector1D::g_off (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4NK5chase15distMultiVector17DistMultiVector1D6g_rowsEv">chase::distMultiVector::DistMultiVector1D::g_rows (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4N5chase15distMultiVector17DistMultiVector1D18get_scalapack_descEv">chase::distMultiVector::DistMultiVector1D::get_scalapack_desc (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4NK5chase15distMultiVector17DistMultiVector1D10getMpiGridEv">chase::distMultiVector::DistMultiVector1D::getMpiGrid (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4NK5chase15distMultiVector17DistMultiVector1D21getMpiGrid_shared_ptrEv">chase::distMultiVector::DistMultiVector1D::getMpiGrid_shared_ptr (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4NK5chase15distMultiVector17DistMultiVector1D30getMultiVectorCommunicatorTypeEv">chase::distMultiVector::DistMultiVector1D::getMultiVectorCommunicatorType (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4NK5chase15distMultiVector17DistMultiVector1D30getMultiVectorDistributionTypeEv">chase::distMultiVector::DistMultiVector1D::getMultiVectorDistributionType (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4N5chase15distMultiVector17DistMultiVector1D3H2DEv">chase::distMultiVector::DistMultiVector1D::H2D (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4NK5chase15distMultiVector17DistMultiVector1D6l_colsEv">chase::distMultiVector::DistMultiVector1D::l_cols (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4N5chase15distMultiVector17DistMultiVector1D6l_dataEv">chase::distMultiVector::DistMultiVector1D::l_data (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4NK5chase15distMultiVector17DistMultiVector1D6l_halfEv">chase::distMultiVector::DistMultiVector1D::l_half (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4NK5chase15distMultiVector17DistMultiVector1D4l_ldEv">chase::distMultiVector::DistMultiVector1D::l_ld (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4NK5chase15distMultiVector17DistMultiVector1D6l_rowsEv">chase::distMultiVector::DistMultiVector1D::l_rows (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4N5chase15distMultiVector17DistMultiVector1D10loc_matrixEv">chase::distMultiVector::DistMultiVector1D::loc_matrix (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4NK5chase15distMultiVector17DistMultiVector1D2mbEv">chase::distMultiVector::DistMultiVector1D::mb (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4NK5chase15distMultiVector17DistMultiVector1D7mblocksEv">chase::distMultiVector::DistMultiVector1D::mblocks (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4N5chase15distMultiVector17DistMultiVector1D13platform_typeE">chase::distMultiVector::DistMultiVector1D::platform_type (C++ type)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4I_16CommunicatorType0EN5chase15distMultiVector17DistMultiVector1D16redistributeImplEvP17DistMultiVector1DI1T16target_comm_type13OtherPlatformE">chase::distMultiVector::DistMultiVector1D::redistributeImpl (C++ function)</a>, <a href="api/matrices.html#_CPPv4I_16CommunicatorType0EN5chase15distMultiVector17DistMultiVector1D16redistributeImplEvP17DistMultiVector1DI1T16target_comm_type13OtherPlatformENSt6size_tENSt6size_tE">[1]</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4I_16CommunicatorTypeEN5chase15distMultiVector17DistMultiVector1D21redistributeImplAsyncEvP17DistMultiVector1DI1T16target_comm_typeN5chase8platform3GPUEENSt6size_tENSt6size_tEP12cudaStream_t">chase::distMultiVector::DistMultiVector1D::redistributeImplAsync (C++ function)</a>, <a href="api/matrices.html#_CPPv4I_16CommunicatorTypeEN5chase15distMultiVector17DistMultiVector1D21redistributeImplAsyncEvP17DistMultiVector1DI1T16target_comm_typeN5chase8platform3GPUEEP12cudaStream_t">[1]</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4N5chase15distMultiVector17DistMultiVector1D25scalapack_descriptor_initEv">chase::distMultiVector::DistMultiVector1D::scalapack_descriptor_init (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4I_16CommunicatorType0EN5chase15distMultiVector17DistMultiVector1D4swapEvR17DistMultiVector1DI1T13OtherCommType13OtherPlatformE">chase::distMultiVector::DistMultiVector1D::swap (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4N5chase15distMultiVector17DistMultiVector1D7swap_ijENSt6size_tENSt6size_tE">chase::distMultiVector::DistMultiVector1D::swap_ij (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4N5chase15distMultiVector17DistMultiVector1D10value_typeE">chase::distMultiVector::DistMultiVector1D::value_type (C++ type)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4N5chase15distMultiVector17DistMultiVector1DD0Ev">chase::distMultiVector::DistMultiVector1D::~DistMultiVector1D (C++ function)</a>
+</li>
+      <li><a href="api/grid.html#_CPPv4I_9GridMajorEN5chase4grid9MpiGrid2DE">chase::grid::MpiGrid2D (C++ class)</a>
+</li>
+      <li><a href="api/grid.html#_CPPv4N5chase4grid9MpiGrid2D22get_blacs_colcomm_ctxtEv">chase::grid::MpiGrid2D::get_blacs_colcomm_ctxt (C++ function)</a>
+</li>
+      <li><a href="api/grid.html#_CPPv4N5chase4grid9MpiGrid2D21get_blacs_comm2D_ctxtEv">chase::grid::MpiGrid2D::get_blacs_comm2D_ctxt (C++ function)</a>
+</li>
+      <li><a href="api/grid.html#_CPPv4N5chase4grid9MpiGrid2D22get_blacs_rowcomm_ctxtEv">chase::grid::MpiGrid2D::get_blacs_rowcomm_ctxt (C++ function)</a>
+</li>
+      <li><a href="api/grid.html#_CPPv4NK5chase4grid9MpiGrid2D12get_col_commEv">chase::grid::MpiGrid2D::get_col_comm (C++ function)</a>
+</li>
+      <li><a href="api/grid.html#_CPPv4NK5chase4grid9MpiGrid2D8get_commEv">chase::grid::MpiGrid2D::get_comm (C++ function)</a>
+</li>
+      <li><a href="api/grid.html#_CPPv4N5chase4grid9MpiGrid2D10get_coordsEv">chase::grid::MpiGrid2D::get_coords (C++ function)</a>
+</li>
+      <li><a href="api/grid.html#_CPPv4N5chase4grid9MpiGrid2D8get_dimsEv">chase::grid::MpiGrid2D::get_dims (C++ function)</a>
+</li>
+      <li><a href="api/grid.html#_CPPv4NK5chase4grid9MpiGrid2D10get_myRankEv">chase::grid::MpiGrid2D::get_myRank (C++ function)</a>
+</li>
+      <li><a href="api/grid.html#_CPPv4NK5chase4grid9MpiGrid2D17get_nccl_col_commEv">chase::grid::MpiGrid2D::get_nccl_col_comm (C++ function)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="api/grid.html#_CPPv4NK5chase4grid9MpiGrid2D13get_nccl_commEv">chase::grid::MpiGrid2D::get_nccl_comm (C++ function)</a>
+</li>
+      <li><a href="api/grid.html#_CPPv4NK5chase4grid9MpiGrid2D17get_nccl_row_commEv">chase::grid::MpiGrid2D::get_nccl_row_comm (C++ function)</a>
+</li>
+      <li><a href="api/grid.html#_CPPv4NK5chase4grid9MpiGrid2D10get_nprocsEv">chase::grid::MpiGrid2D::get_nprocs (C++ function)</a>
+</li>
+      <li><a href="api/grid.html#_CPPv4NK5chase4grid9MpiGrid2D12get_row_commEv">chase::grid::MpiGrid2D::get_row_comm (C++ function)</a>
+</li>
+      <li><a href="api/grid.html#_CPPv4NK5chase4grid9MpiGrid2D12getGridMajorEv">chase::grid::MpiGrid2D::getGridMajor (C++ function)</a>
+</li>
+      <li><a href="api/grid.html#_CPPv4N5chase4grid9MpiGrid2D9MpiGrid2DE8MPI_Comm">chase::grid::MpiGrid2D::MpiGrid2D (C++ function)</a>, <a href="api/grid.html#_CPPv4N5chase4grid9MpiGrid2D9MpiGrid2DEii8MPI_Comm">[1]</a>
+</li>
+      <li><a href="api/grid.html#_CPPv4NK5chase4grid9MpiGrid2DneERK9MpiGrid2DI10MajorOrderE">chase::grid::MpiGrid2D::operator!= (C++ function)</a>
+</li>
+      <li><a href="api/grid.html#_CPPv4NK5chase4grid9MpiGrid2DeqERK9MpiGrid2DI10MajorOrderE">chase::grid::MpiGrid2D::operator== (C++ function)</a>
+</li>
+      <li><a href="api/grid.html#_CPPv4N5chase4grid9MpiGrid2DD0Ev">chase::grid::MpiGrid2D::~MpiGrid2D (C++ function)</a>
+</li>
+      <li><a href="api/grid.html#_CPPv4N5chase4grid13MpiGrid2DBaseE">chase::grid::MpiGrid2DBase (C++ class)</a>
+</li>
+      <li><a href="api/grid.html#_CPPv4N5chase4grid13MpiGrid2DBase22get_blacs_colcomm_ctxtEv">chase::grid::MpiGrid2DBase::get_blacs_colcomm_ctxt (C++ function)</a>
+</li>
+      <li><a href="api/grid.html#_CPPv4N5chase4grid13MpiGrid2DBase21get_blacs_comm2D_ctxtEv">chase::grid::MpiGrid2DBase::get_blacs_comm2D_ctxt (C++ function)</a>
+</li>
+      <li><a href="api/grid.html#_CPPv4N5chase4grid13MpiGrid2DBase22get_blacs_rowcomm_ctxtEv">chase::grid::MpiGrid2DBase::get_blacs_rowcomm_ctxt (C++ function)</a>
+</li>
+      <li><a href="api/grid.html#_CPPv4NK5chase4grid13MpiGrid2DBase12get_col_commEv">chase::grid::MpiGrid2DBase::get_col_comm (C++ function)</a>
+</li>
+      <li><a href="api/grid.html#_CPPv4NK5chase4grid13MpiGrid2DBase8get_commEv">chase::grid::MpiGrid2DBase::get_comm (C++ function)</a>
+</li>
+      <li><a href="api/grid.html#_CPPv4N5chase4grid13MpiGrid2DBase10get_coordsEv">chase::grid::MpiGrid2DBase::get_coords (C++ function)</a>
+</li>
+      <li><a href="api/grid.html#_CPPv4N5chase4grid13MpiGrid2DBase8get_dimsEv">chase::grid::MpiGrid2DBase::get_dims (C++ function)</a>
+</li>
+      <li><a href="api/grid.html#_CPPv4NK5chase4grid13MpiGrid2DBase10get_myRankEv">chase::grid::MpiGrid2DBase::get_myRank (C++ function)</a>
+</li>
+      <li><a href="api/grid.html#_CPPv4NK5chase4grid13MpiGrid2DBase17get_nccl_col_commEv">chase::grid::MpiGrid2DBase::get_nccl_col_comm (C++ function)</a>
+</li>
+      <li><a href="api/grid.html#_CPPv4NK5chase4grid13MpiGrid2DBase13get_nccl_commEv">chase::grid::MpiGrid2DBase::get_nccl_comm (C++ function)</a>
+</li>
+      <li><a href="api/grid.html#_CPPv4NK5chase4grid13MpiGrid2DBase17get_nccl_row_commEv">chase::grid::MpiGrid2DBase::get_nccl_row_comm (C++ function)</a>
+</li>
+      <li><a href="api/grid.html#_CPPv4NK5chase4grid13MpiGrid2DBase10get_nprocsEv">chase::grid::MpiGrid2DBase::get_nprocs (C++ function)</a>
+</li>
+      <li><a href="api/grid.html#_CPPv4NK5chase4grid13MpiGrid2DBase12get_row_commEv">chase::grid::MpiGrid2DBase::get_row_comm (C++ function)</a>
+</li>
+      <li><a href="api/grid.html#_CPPv4NK5chase4grid13MpiGrid2DBase12getGridMajorEv">chase::grid::MpiGrid2DBase::getGridMajor (C++ function)</a>
+</li>
+      <li><a href="api/grid.html#_CPPv4N5chase4grid13MpiGrid2DBaseD0Ev">chase::grid::MpiGrid2DBase::~MpiGrid2DBase (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4I00EN5chase4Impl8ChASECPUE">chase::Impl::ChASECPU (C++ class)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASECPU8ChASECPUENSt6size_tENSt6size_tENSt6size_tEP10MatrixTypeP1TNSt6size_tEPN5chase4BaseI1TEE">chase::Impl::ChASECPU::ChASECPU (C++ function)</a>, <a href="api/implementations.html#_CPPv4N5chase4Impl8ChASECPU8ChASECPUENSt6size_tENSt6size_tENSt6size_tEP1TNSt6size_tEP1TNSt6size_tEPN5chase4BaseI1TEE">[1]</a>, <a href="api/implementations.html#_CPPv4N5chase4Impl8ChASECPU8ChASECPUERK8ChASECPU">[2]</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASECPU24checkPseudoHermicityEasyEv">chase::Impl::ChASECPU::checkPseudoHermicityEasy (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASECPU17checkSymmetryEasyEv">chase::Impl::ChASECPU::checkSymmetryEasy (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASECPU3EndEv">chase::Impl::ChASECPU::End (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASECPU10get_nprocsEv">chase::Impl::ChASECPU::get_nprocs (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASECPU9GetConfigEv">chase::Impl::ChASECPU::GetConfig (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4NK5chase4Impl8ChASECPU4GetNEv">chase::Impl::ChASECPU::GetN (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASECPU6GetNevEv">chase::Impl::ChASECPU::GetNev (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASECPU6GetNexEv">chase::Impl::ChASECPU::GetNex (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASECPU8GetResidEv">chase::Impl::ChASECPU::GetResid (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASECPU8GetRitzvEv">chase::Impl::ChASECPU::GetRitzv (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASECPU4HEMMENSt6size_tE1T1TNSt6size_tE">chase::Impl::ChASECPU::HEMM (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASECPU8initVecsEb">chase::Impl::ChASECPU::initVecs (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASECPU12isPseudoHermEv">chase::Impl::ChASECPU::isPseudoHerm (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASECPU5isSymEv">chase::Impl::ChASECPU::isSym (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASECPU7LanczosENSt6size_tENSt6size_tEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEE">chase::Impl::ChASECPU::Lanczos (C++ function)</a>, <a href="api/implementations.html#_CPPv4N5chase4Impl8ChASECPU7LanczosENSt6size_tEPN5chase4BaseI1TEE">[1]</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASECPU10LanczosDosENSt6size_tENSt6size_tEP1T">chase::Impl::ChASECPU::LanczosDos (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASECPU19loadProblemFromFileENSt6stringE">chase::Impl::ChASECPU::loadProblemFromFile (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASECPU4LockENSt6size_tE">chase::Impl::ChASECPU::Lock (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASECPU6OutputENSt6stringE">chase::Impl::ChASECPU::Output (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASECPU2QRENSt6size_tEN5chase4BaseI1TEE">chase::Impl::ChASECPU::QR (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASECPU4ResdEPN5chase4BaseI1TEEPN5chase4BaseI1TEENSt6size_tE">chase::Impl::ChASECPU::Resd (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASECPU2RREPN5chase4BaseI1TEENSt6size_tE">chase::Impl::ChASECPU::RR (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASECPU5ShiftE1Tb">chase::Impl::ChASECPU::Shift (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASECPU4SortEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEE">chase::Impl::ChASECPU::Sort (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASECPU5StartEv">chase::Impl::ChASECPU::Start (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASECPU4SwapENSt6size_tENSt6size_tE">chase::Impl::ChASECPU::Swap (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASECPU15symOrHermMatrixEc">chase::Impl::ChASECPU::symOrHermMatrix (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASECPUD0Ev">chase::Impl::ChASECPU::~ChASECPU (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4I00EN5chase4Impl8ChASEGPUE">chase::Impl::ChASEGPU (C++ class)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASEGPU8ChASEGPUENSt6size_tENSt6size_tENSt6size_tEP10MatrixTypeP1TNSt6size_tEPN5chase4BaseI1TEE">chase::Impl::ChASEGPU::ChASEGPU (C++ function)</a>, <a href="api/implementations.html#_CPPv4N5chase4Impl8ChASEGPU8ChASEGPUENSt6size_tENSt6size_tENSt6size_tEP1TNSt6size_tEP1TNSt6size_tEPN5chase4BaseI1TEE">[1]</a>, <a href="api/implementations.html#_CPPv4N5chase4Impl8ChASEGPU8ChASEGPUERK8ChASEGPU">[2]</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASEGPU24checkPseudoHermicityEasyEv">chase::Impl::ChASEGPU::checkPseudoHermicityEasy (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASEGPU17checkSymmetryEasyEv">chase::Impl::ChASEGPU::checkSymmetryEasy (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASEGPU11CUBLAS_INITEv">chase::Impl::ChASEGPU::CUBLAS_INIT (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASEGPU3EndEv">chase::Impl::ChASEGPU::End (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASEGPU10get_nprocsEv">chase::Impl::ChASEGPU::get_nprocs (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASEGPU9GetConfigEv">chase::Impl::ChASEGPU::GetConfig (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4NK5chase4Impl8ChASEGPU4GetNEv">chase::Impl::ChASEGPU::GetN (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASEGPU6GetNevEv">chase::Impl::ChASEGPU::GetNev (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASEGPU6GetNexEv">chase::Impl::ChASEGPU::GetNex (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASEGPU8GetResidEv">chase::Impl::ChASEGPU::GetResid (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASEGPU8GetRitzvEv">chase::Impl::ChASEGPU::GetRitzv (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASEGPU4HEMMENSt6size_tE1T1TNSt6size_tE">chase::Impl::ChASEGPU::HEMM (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASEGPU8initVecsEb">chase::Impl::ChASEGPU::initVecs (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASEGPU12isPseudoHermEv">chase::Impl::ChASEGPU::isPseudoHerm (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASEGPU5isSymEv">chase::Impl::ChASEGPU::isSym (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASEGPU7LanczosENSt6size_tENSt6size_tEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEE">chase::Impl::ChASEGPU::Lanczos (C++ function)</a>, <a href="api/implementations.html#_CPPv4N5chase4Impl8ChASEGPU7LanczosENSt6size_tEPN5chase4BaseI1TEE">[1]</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASEGPU10LanczosDosENSt6size_tENSt6size_tEP1T">chase::Impl::ChASEGPU::LanczosDos (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASEGPU19loadProblemFromFileENSt6stringE">chase::Impl::ChASEGPU::loadProblemFromFile (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASEGPU4LockENSt6size_tE">chase::Impl::ChASEGPU::Lock (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASEGPU6OutputENSt6stringE">chase::Impl::ChASEGPU::Output (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASEGPU2QRENSt6size_tEN5chase4BaseI1TEE">chase::Impl::ChASEGPU::QR (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASEGPU4ResdEPN5chase4BaseI1TEEPN5chase4BaseI1TEENSt6size_tE">chase::Impl::ChASEGPU::Resd (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASEGPU2RREPN5chase4BaseI1TEENSt6size_tE">chase::Impl::ChASEGPU::RR (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASEGPU5ShiftE1Tb">chase::Impl::ChASEGPU::Shift (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASEGPU4SortEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEE">chase::Impl::ChASEGPU::Sort (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASEGPU5StartEv">chase::Impl::ChASEGPU::Start (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASEGPU4SwapENSt6size_tENSt6size_tE">chase::Impl::ChASEGPU::Swap (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASEGPU15symOrHermMatrixEc">chase::Impl::ChASEGPU::symOrHermMatrix (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl8ChASEGPUD0Ev">chase::Impl::ChASEGPU::~ChASEGPU (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4I000EN5chase4Impl9pChASECPUE">chase::Impl::pChASECPU (C++ class)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASECPU24checkPseudoHermicityEasyEv">chase::Impl::pChASECPU::checkPseudoHermicityEasy (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASECPU17checkSymmetryEasyEv">chase::Impl::pChASECPU::checkSymmetryEasy (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASECPU3EndEv">chase::Impl::pChASECPU::End (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASECPU10get_nprocsEv">chase::Impl::pChASECPU::get_nprocs (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASECPU8get_rankEv">chase::Impl::pChASECPU::get_rank (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASECPU9GetConfigEv">chase::Impl::pChASECPU::GetConfig (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4NK5chase4Impl9pChASECPU4GetNEv">chase::Impl::pChASECPU::GetN (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASECPU6GetNevEv">chase::Impl::pChASECPU::GetNev (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASECPU6GetNexEv">chase::Impl::pChASECPU::GetNex (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASECPU8GetResidEv">chase::Impl::pChASECPU::GetResid (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASECPU8GetRitzvEv">chase::Impl::pChASECPU::GetRitzv (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASECPU4HEMMENSt6size_tE1T1TNSt6size_tE">chase::Impl::pChASECPU::HEMM (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASECPU8initVecsEb">chase::Impl::pChASECPU::initVecs (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASECPU12isPseudoHermEv">chase::Impl::pChASECPU::isPseudoHerm (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASECPU5isSymEv">chase::Impl::pChASECPU::isSym (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASECPU7LanczosENSt6size_tENSt6size_tEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEE">chase::Impl::pChASECPU::Lanczos (C++ function)</a>, <a href="api/implementations.html#_CPPv4N5chase4Impl9pChASECPU7LanczosENSt6size_tEPN5chase4BaseI1TEE">[1]</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASECPU10LanczosDosENSt6size_tENSt6size_tEP1T">chase::Impl::pChASECPU::LanczosDos (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASECPU19loadProblemFromFileENSt6stringE">chase::Impl::pChASECPU::loadProblemFromFile (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASECPU4LockENSt6size_tE">chase::Impl::pChASECPU::Lock (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASECPU6OutputENSt6stringE">chase::Impl::pChASECPU::Output (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASECPU9pChASECPUENSt6size_tENSt6size_tEP10MatrixTypeP20InputMultiVectorTypePN5chase4BaseI1TEE">chase::Impl::pChASECPU::pChASECPU (C++ function)</a>, <a href="api/implementations.html#_CPPv4N5chase4Impl9pChASECPU9pChASECPUERK9pChASECPU">[1]</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASECPU2QRENSt6size_tEN5chase4BaseI1TEE">chase::Impl::pChASECPU::QR (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASECPU4ResdEPN5chase4BaseI1TEEPN5chase4BaseI1TEENSt6size_tE">chase::Impl::pChASECPU::Resd (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASECPU2RREPN5chase4BaseI1TEENSt6size_tE">chase::Impl::pChASECPU::RR (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASECPU17saveProblemToFileENSt6stringE">chase::Impl::pChASECPU::saveProblemToFile (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASECPU5ShiftE1Tb">chase::Impl::pChASECPU::Shift (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASECPU4SortEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEE">chase::Impl::pChASECPU::Sort (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASECPU5StartEv">chase::Impl::pChASECPU::Start (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASECPU4SwapENSt6size_tENSt6size_tE">chase::Impl::pChASECPU::Swap (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASECPU15symOrHermMatrixEc">chase::Impl::pChASECPU::symOrHermMatrix (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASECPUD0Ev">chase::Impl::pChASECPU::~pChASECPU (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4I000EN5chase4Impl9pChASEGPUE">chase::Impl::pChASEGPU (C++ class)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASEGPU24checkPseudoHermicityEasyEv">chase::Impl::pChASEGPU::checkPseudoHermicityEasy (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASEGPU17checkSymmetryEasyEv">chase::Impl::pChASEGPU::checkSymmetryEasy (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASEGPU3EndEv">chase::Impl::pChASEGPU::End (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASEGPU10get_nprocsEv">chase::Impl::pChASEGPU::get_nprocs (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASEGPU8get_rankEv">chase::Impl::pChASEGPU::get_rank (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASEGPU9GetConfigEv">chase::Impl::pChASEGPU::GetConfig (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4NK5chase4Impl9pChASEGPU4GetNEv">chase::Impl::pChASEGPU::GetN (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASEGPU6GetNevEv">chase::Impl::pChASEGPU::GetNev (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASEGPU6GetNexEv">chase::Impl::pChASEGPU::GetNex (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASEGPU8GetResidEv">chase::Impl::pChASEGPU::GetResid (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASEGPU8GetRitzvEv">chase::Impl::pChASEGPU::GetRitzv (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASEGPU4HEMMENSt6size_tE1T1TNSt6size_tE">chase::Impl::pChASEGPU::HEMM (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASEGPU8initVecsEb">chase::Impl::pChASEGPU::initVecs (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASEGPU12isPseudoHermEv">chase::Impl::pChASEGPU::isPseudoHerm (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASEGPU5isSymEv">chase::Impl::pChASEGPU::isSym (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASEGPU7LanczosENSt6size_tENSt6size_tEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEE">chase::Impl::pChASEGPU::Lanczos (C++ function)</a>, <a href="api/implementations.html#_CPPv4N5chase4Impl9pChASEGPU7LanczosENSt6size_tEPN5chase4BaseI1TEE">[1]</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASEGPU10LanczosDosENSt6size_tENSt6size_tEP1T">chase::Impl::pChASEGPU::LanczosDos (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASEGPU19loadProblemFromFileENSt6stringE">chase::Impl::pChASEGPU::loadProblemFromFile (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASEGPU4LockENSt6size_tE">chase::Impl::pChASEGPU::Lock (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASEGPU6OutputENSt6stringE">chase::Impl::pChASEGPU::Output (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASEGPU9pChASEGPUENSt6size_tENSt6size_tEP10MatrixTypeP20InputMultiVectorTypePN5chase4BaseI1TEE">chase::Impl::pChASEGPU::pChASEGPU (C++ function)</a>, <a href="api/implementations.html#_CPPv4N5chase4Impl9pChASEGPU9pChASEGPUERK9pChASEGPU">[1]</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASEGPU2QRENSt6size_tEN5chase4BaseI1TEE">chase::Impl::pChASEGPU::QR (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASEGPU4ResdEPN5chase4BaseI1TEEPN5chase4BaseI1TEENSt6size_tE">chase::Impl::pChASEGPU::Resd (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASEGPU2RREPN5chase4BaseI1TEENSt6size_tE">chase::Impl::pChASEGPU::RR (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASEGPU17saveProblemToFileENSt6stringE">chase::Impl::pChASEGPU::saveProblemToFile (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASEGPU5ShiftE1Tb">chase::Impl::pChASEGPU::Shift (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASEGPU4SortEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEE">chase::Impl::pChASEGPU::Sort (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASEGPU5StartEv">chase::Impl::pChASEGPU::Start (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASEGPU4SwapENSt6size_tENSt6size_tE">chase::Impl::pChASEGPU::Swap (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASEGPU15symOrHermMatrixEc">chase::Impl::pChASEGPU::symOrHermMatrix (C++ function)</a>
+</li>
+      <li><a href="api/implementations.html#_CPPv4N5chase4Impl9pChASEGPUD0Ev">chase::Impl::pChASEGPU::~pChASEGPU (C++ function)</a>
+</li>
+      <li><a href="api/kernels.html#_CPPv4N5chase6linalg8internal3cpuE">chase::linalg::internal::cpu (C++ type)</a>
+</li>
+      <li><a href="api/kernels.html#_CPPv4I0EN5chase6linalg8internal3cpu17checkSymmetryEasyEbNSt6size_tEP1TNSt6size_tE">chase::linalg::internal::cpu::checkSymmetryEasy (C++ function)</a>
+</li>
+      <li><a href="api/kernels.html#_CPPv4I0EN5chase6linalg8internal3cpu7cholQR1EiNSt6size_tENSt6size_tEP1TiP1T">chase::linalg::internal::cpu::cholQR1 (C++ function)</a>
+</li>
+      <li><a href="api/kernels.html#_CPPv4I0EN5chase6linalg8internal3cpu7cholQR2EiNSt6size_tENSt6size_tEP1TiP1T">chase::linalg::internal::cpu::cholQR2 (C++ function)</a>
+</li>
+      <li><a href="api/kernels.html#_CPPv4I0EN5chase6linalg8internal3cpu22computeConditionNumberEN5chase4BaseI1TEENSt6size_tENSt6size_tEP1TNSt6size_tE">chase::linalg::internal::cpu::computeConditionNumber (C++ function)</a>
+</li>
+      <li><a href="api/kernels.html#_CPPv4I0EN5chase6linalg8internal3cpu21computeDiagonalAbsSumEvNSt6size_tENSt6size_tEP1TNSt6size_tEP4BaseI1TE">chase::linalg::internal::cpu::computeDiagonalAbsSum (C++ function)</a>
+</li>
+      <li><a href="api/kernels.html#_CPPv4I0EN5chase6linalg8internal3cpu23flipLowerHalfMatrixSignEvNSt6size_tENSt6size_tEP1TNSt6size_tE">chase::linalg::internal::cpu::flipLowerHalfMatrixSign (C++ function)</a>
+</li>
+      <li><a href="api/kernels.html#_CPPv4I0EN5chase6linalg8internal3cpu23flipRightHalfMatrixSignEvNSt6size_tENSt6size_tEP1TNSt6size_tE">chase::linalg::internal::cpu::flipRightHalfMatrixSign (C++ function)</a>
+</li>
+      <li><a href="api/kernels.html#_CPPv4I0EN5chase6linalg8internal3cpu14houseHoulderQREvNSt6size_tENSt6size_tEP1TNSt6size_tE">chase::linalg::internal::cpu::houseHoulderQR (C++ function)</a>
+</li>
+      <li><a href="api/kernels.html#_CPPv4I0EN5chase6linalg8internal3cpu7lanczosEvNSt6size_tENSt6size_tEPN5chase6matrix20QuasiHermitianMatrixI1TEEP1TNSt6size_tEP4BaseI1TEP4BaseI1TEP4BaseI1TEP4BaseI1TE">chase::linalg::internal::cpu::lanczos (C++ function)</a>, <a href="api/kernels.html#_CPPv4I0EN5chase6linalg8internal3cpu7lanczosEvNSt6size_tENSt6size_tEPN5chase6matrix6MatrixI1TEEP1TNSt6size_tEP4BaseI1TEP4BaseI1TEP4BaseI1TEP4BaseI1TE">[1]</a>, <a href="api/kernels.html#_CPPv4I0EN5chase6linalg8internal3cpu7lanczosEvNSt6size_tEPN5chase6matrix20QuasiHermitianMatrixI1TEEP1TNSt6size_tEP4BaseI1TE">[2]</a>, <a href="api/kernels.html#_CPPv4I0EN5chase6linalg8internal3cpu7lanczosEvNSt6size_tEPN5chase6matrix6MatrixI1TEEP1TNSt6size_tEP4BaseI1TE">[3]</a>
+</li>
+      <li><a href="api/kernels.html#_CPPv4I0EN5chase6linalg8internal3cpu12rayleighRitzEvPN5chase6matrix20QuasiHermitianMatrixI1TEENSt6size_tEP1TNSt6size_tEP1TNSt6size_tEP4BaseI1TEP1T">chase::linalg::internal::cpu::rayleighRitz (C++ function)</a>, <a href="api/kernels.html#_CPPv4I0EN5chase6linalg8internal3cpu12rayleighRitzEvPN5chase6matrix6MatrixI1TEENSt6size_tEP1TNSt6size_tEP1TNSt6size_tEP4BaseI1TEP1T">[1]</a>
+</li>
+      <li><a href="api/kernels.html#_CPPv4I0EN5chase6linalg8internal3cpu15rayleighRitz_v2EvPN5chase6matrix20QuasiHermitianMatrixI1TEENSt6size_tEP1TNSt6size_tEP1TNSt6size_tEP4BaseI1TEP1T">chase::linalg::internal::cpu::rayleighRitz_v2 (C++ function)</a>
+</li>
+      <li><a href="api/kernels.html#_CPPv4I0EN5chase6linalg8internal3cpu9residualsEvNSt6size_tEP1TNSt6size_tENSt6size_tEP4BaseI1TEP1TNSt6size_tEP4BaseI1TEP1T">chase::linalg::internal::cpu::residuals (C++ function)</a>
+</li>
+      <li><a href="api/kernels.html#_CPPv4I0EN5chase6linalg8internal3cpu14shiftedcholQR2EiNSt6size_tENSt6size_tEP1TiP1T">chase::linalg::internal::cpu::shiftedcholQR2 (C++ function)</a>
+</li>
+      <li><a href="api/kernels.html#_CPPv4I0EN5chase6linalg8internal3cpu19shiftMatrixDiagonalEvNSt6size_tENSt6size_tEP1TNSt6size_tE1T">chase::linalg::internal::cpu::shiftMatrixDiagonal (C++ function)</a>
+</li>
+      <li><a href="api/kernels.html#_CPPv4I0EN5chase6linalg8internal3cpu15symOrHermMatrixEvcNSt6size_tEP1TNSt6size_tE">chase::linalg::internal::cpu::symOrHermMatrix (C++ function)</a>
+</li>
+      <li><a href="api/kernels.html#_CPPv4N5chase6linalg8internal4cudaE">chase::linalg::internal::cuda (C++ type)</a>
+</li>
+      <li><a href="api/kernels.html#_CPPv4I0EN5chase6linalg8internal4cuda8absTraceEvRN5chase6matrix6MatrixI1TN5chase8platform3GPUEEEPN5chase4BaseI1TEEP12cudaStream_t">chase::linalg::internal::cuda::absTrace (C++ function)</a>
+</li>
+      <li><a href="api/kernels.html#_CPPv4I0EN5chase6linalg8internal4cuda7cholQR1Ei14cublasHandle_t18cusolverDnHandle_tRN5chase6matrix6MatrixI1TN5chase8platform3GPUEEEP1TiPN5chase6matrix6MatrixI1TN5chase8platform3GPUEEE">chase::linalg::internal::cuda::cholQR1 (C++ function)</a>
+</li>
+      <li><a href="api/kernels.html#_CPPv4I0EN5chase6linalg8internal4cuda7cholQR2Ei14cublasHandle_t18cusolverDnHandle_tRN5chase6matrix6MatrixI1TN5chase8platform3GPUEEEP1TiPN5chase6matrix6MatrixI1TN5chase8platform3GPUEEE">chase::linalg::internal::cuda::cholQR2 (C++ function)</a>
+</li>
+      <li><a href="api/kernels.html#_CPPv4I0EN5chase6linalg8internal4cuda22extractUpperTriangularEvP1TNSt6size_tEP1TNSt6size_tEP12cudaStream_t">chase::linalg::internal::cuda::extractUpperTriangular (C++ function)</a>
+</li>
+      <li><a href="api/kernels.html#_CPPv4I0EN5chase6linalg8internal4cuda23flipLowerHalfMatrixSignEvNSt6size_tENSt6size_tEP1TNSt6size_tEP12cudaStream_t">chase::linalg::internal::cuda::flipLowerHalfMatrixSign (C++ function)</a>, <a href="api/kernels.html#_CPPv4I0EN5chase6linalg8internal4cuda23flipLowerHalfMatrixSignEvPN5chase6matrix6MatrixI1TN5chase8platform3GPUEEEP12cudaStream_t">[1]</a>
+</li>
+      <li><a href="api/kernels.html#_CPPv4I0EN5chase6linalg8internal4cuda14houseHoulderQREv18cusolverDnHandle_tRN5chase6matrix6MatrixI1TN5chase8platform3GPUEEEP1TPiP1Ti">chase::linalg::internal::cuda::houseHoulderQR (C++ function)</a>
+</li>
+      <li><a href="api/kernels.html#_CPPv4I0EN5chase6linalg8internal4cuda19init_random_vectorsEvP1TNSt6size_tEP12cudaStream_t">chase::linalg::internal::cuda::init_random_vectors (C++ function)</a>
+</li>
+      <li><a href="api/kernels.html#_CPPv4I0EN5chase6linalg8internal4cuda7lanczosEv14cublasHandle_tNSt6size_tENSt6size_tEPN5chase6matrix20QuasiHermitianMatrixI1TN5chase8platform3GPUEEERN5chase6matrix6MatrixI1TN5chase8platform3GPUEEEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEE">chase::linalg::internal::cuda::lanczos (C++ function)</a>, <a href="api/kernels.html#_CPPv4I0EN5chase6linalg8internal4cuda7lanczosEv14cublasHandle_tNSt6size_tENSt6size_tEPN5chase6matrix6MatrixI1TN5chase8platform3GPUEEERN5chase6matrix6MatrixI1TN5chase8platform3GPUEEEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEE">[1]</a>, <a href="api/kernels.html#_CPPv4I0EN5chase6linalg8internal4cuda7lanczosEv14cublasHandle_tNSt6size_tEPN5chase6matrix20QuasiHermitianMatrixI1TN5chase8platform3GPUEEERN5chase6matrix6MatrixI1TN5chase8platform3GPUEEEPN5chase4BaseI1TEE">[2]</a>, <a href="api/kernels.html#_CPPv4I0EN5chase6linalg8internal4cuda7lanczosEv14cublasHandle_tNSt6size_tEPN5chase6matrix6MatrixI1TN5chase8platform3GPUEEERN5chase6matrix6MatrixI1TN5chase8platform3GPUEEEPN5chase4BaseI1TEE">[3]</a>
+</li>
+      <li><a href="api/kernels.html#_CPPv4I0EN5chase6linalg8internal4cuda19plusInverseDiagonalEvPN5chase6matrix6MatrixI1TN5chase8platform3GPUEEEN5chase4BaseI1TEEPN5chase4BaseI1TEEP12cudaStream_t">chase::linalg::internal::cuda::plusInverseDiagonal (C++ function)</a>
+</li>
+      <li><a href="api/kernels.html#_CPPv4I0EN5chase6linalg8internal4cuda12rayleighRitzEv14cublasHandle_t18cusolverDnHandle_t18cusolverDnParams_tPN5chase6matrix20QuasiHermitianMatrixI1TN5chase8platform3GPUEEERN5chase6matrix6MatrixI1TN5chase8platform3GPUEEERN5chase6matrix6MatrixI1TN5chase8platform3GPUEEERN5chase6matrix6MatrixIN5chase4BaseI1TEEN5chase8platform3GPUEEENSt6size_tENSt6size_tEPiP1TiP1TiPN5chase6matrix6MatrixI1TN5chase8platform3GPUEEE">chase::linalg::internal::cuda::rayleighRitz (C++ function)</a>, <a href="api/kernels.html#_CPPv4I0EN5chase6linalg8internal4cuda12rayleighRitzEv14cublasHandle_t18cusolverDnHandle_tPN5chase6matrix6MatrixI1TN5chase8platform3GPUEEERN5chase6matrix6MatrixI1TN5chase8platform3GPUEEERN5chase6matrix6MatrixI1TN5chase8platform3GPUEEERN5chase6matrix6MatrixIN5chase4BaseI1TEEN5chase8platform3GPUEEENSt6size_tENSt6size_tEPiP1TiPN5chase6matrix6MatrixI1TN5chase8platform3GPUEEE">[1]</a>
+</li>
+      <li><a href="api/kernels.html#_CPPv4I0EN5chase6linalg8internal4cuda15rayleighRitz_v2Ev14cublasHandle_t18cusolverDnHandle_t18cusolverDnParams_tPN5chase6matrix20QuasiHermitianMatrixI1TN5chase8platform3GPUEEERN5chase6matrix6MatrixI1TN5chase8platform3GPUEEERN5chase6matrix6MatrixI1TN5chase8platform3GPUEEERN5chase6matrix6MatrixIN5chase4BaseI1TEEN5chase8platform3GPUEEENSt6size_tENSt6size_tEPiP1TiPN5chase6matrix6MatrixI1TN5chase8platform3GPUEEE">chase::linalg::internal::cuda::rayleighRitz_v2 (C++ function)</a>
+</li>
+      <li><a href="api/kernels.html#_CPPv4I0EN5chase6linalg8internal4cuda9residualsEv14cublasHandle_tPN5chase6matrix6MatrixI1TN5chase8platform3GPUEEERN5chase6matrix6MatrixI1TN5chase8platform3GPUEEEPN5chase4BaseI1TEEPN5chase4BaseI1TEENSt6size_tENSt6size_tEPN5chase6matrix6MatrixI1TN5chase8platform3GPUEEE">chase::linalg::internal::cuda::residuals (C++ function)</a>
+</li>
+      <li><a href="api/kernels.html#_CPPv4I0EN5chase6linalg8internal4cuda15scaleMatrixRowsEvPN5chase6matrix6MatrixI1TN5chase8platform3GPUEEEPN5chase4BaseI1TEEP12cudaStream_t">chase::linalg::internal::cuda::scaleMatrixRows (C++ function)</a>
+</li>
+      <li><a href="api/kernels.html#_CPPv4I0EN5chase6linalg8internal4cuda11setDiagonalEvPN5chase6matrix6MatrixI1TN5chase8platform3GPUEEE1TP12cudaStream_t">chase::linalg::internal::cuda::setDiagonal (C++ function)</a>
+</li>
+      <li><a href="api/kernels.html#_CPPv4I0EN5chase6linalg8internal4cuda13shiftDiagonalEvPN5chase6matrix6MatrixI1TN5chase8platform3GPUEEEN5chase4BaseI1TEEP12cudaStream_t">chase::linalg::internal::cuda::shiftDiagonal (C++ function)</a>
+</li>
+      <li><a href="api/kernels.html#_CPPv4I0EN5chase6linalg8internal4cuda14shiftedcholQR2Ei14cublasHandle_t18cusolverDnHandle_tRN5chase6matrix6MatrixI1TN5chase8platform3GPUEEEP1TiPN5chase6matrix6MatrixI1TN5chase8platform3GPUEEE">chase::linalg::internal::cuda::shiftedcholQR2 (C++ function)</a>
+</li>
+      <li><a href="api/kernels.html#_CPPv4I0EN5chase6linalg8internal4cuda23subtractInverseDiagonalEvPN5chase6matrix6MatrixI1TN5chase8platform3GPUEEEN5chase4BaseI1TEEPN5chase4BaseI1TEEP12cudaStream_t">chase::linalg::internal::cuda::subtractInverseDiagonal (C++ function)</a>
+</li>
+      <li><a href="api/kernels.html#_CPPv4I0EN5chase6linalg8internal4cuda7t_lacpyEvcNSt6size_tENSt6size_tEP1TNSt6size_tEP1TNSt6size_tEP12cudaStream_t">chase::linalg::internal::cuda::t_lacpy (C++ function)</a>
+</li>
+      <li><a href="api/kernels.html#_CPPv4I0EN5chase6linalg8internal4cuda21unpackUpperTriangularEvP1TNSt6size_tEP1TNSt6size_tEP12cudaStream_t">chase::linalg::internal::cuda::unpackUpperTriangular (C++ function)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4I00I0E0EN5chase6matrix6MatrixE">chase::matrix::Matrix (C++ class)</a>
+</li>
+      <li><a href="api/matrices.html#_CPPv4I00I0E0EN5chase6matrix20QuasiHermitianMatrixE">chase::matrix::QuasiHermitianMatrix (C++ class)</a>
+</li>
+      <li><a href="api/performance.html#_CPPv4I0EN5chase25PerformanceDecoratorChaseE">chase::PerformanceDecoratorChase (C++ class)</a>
+</li>
+      <li><a href="api/performance.html#_CPPv4N5chase25PerformanceDecoratorChase24checkPseudoHermicityEasyEv">chase::PerformanceDecoratorChase::checkPseudoHermicityEasy (C++ function)</a>
+</li>
+      <li><a href="api/performance.html#_CPPv4N5chase25PerformanceDecoratorChase17checkSymmetryEasyEv">chase::PerformanceDecoratorChase::checkSymmetryEasy (C++ function)</a>
+</li>
+      <li><a href="api/performance.html#_CPPv4N5chase25PerformanceDecoratorChase3EndEv">chase::PerformanceDecoratorChase::End (C++ function)</a>
+</li>
+      <li><a href="api/performance.html#_CPPv4N5chase25PerformanceDecoratorChase10get_nprocsEv">chase::PerformanceDecoratorChase::get_nprocs (C++ function)</a>
+</li>
+      <li><a href="api/performance.html#_CPPv4N5chase25PerformanceDecoratorChase9GetConfigEv">chase::PerformanceDecoratorChase::GetConfig (C++ function)</a>
+</li>
+      <li><a href="api/performance.html#_CPPv4NK5chase25PerformanceDecoratorChase4GetNEv">chase::PerformanceDecoratorChase::GetN (C++ function)</a>
+</li>
+      <li><a href="api/performance.html#_CPPv4N5chase25PerformanceDecoratorChase6GetNevEv">chase::PerformanceDecoratorChase::GetNev (C++ function)</a>
+</li>
+      <li><a href="api/performance.html#_CPPv4N5chase25PerformanceDecoratorChase6GetNexEv">chase::PerformanceDecoratorChase::GetNex (C++ function)</a>
+</li>
+      <li><a href="api/performance.html#_CPPv4N5chase25PerformanceDecoratorChase11GetPerfDataEv">chase::PerformanceDecoratorChase::GetPerfData (C++ function)</a>
+</li>
+      <li><a href="api/performance.html#_CPPv4N5chase25PerformanceDecoratorChase8GetResidEv">chase::PerformanceDecoratorChase::GetResid (C++ function)</a>
+</li>
+      <li><a href="api/performance.html#_CPPv4N5chase25PerformanceDecoratorChase8GetRitzvEv">chase::PerformanceDecoratorChase::GetRitzv (C++ function)</a>
+</li>
+      <li><a href="api/performance.html#_CPPv4N5chase25PerformanceDecoratorChase4HEMMENSt6size_tE1T1TNSt6size_tE">chase::PerformanceDecoratorChase::HEMM (C++ function)</a>
+</li>
+      <li><a href="api/performance.html#_CPPv4N5chase25PerformanceDecoratorChase8initVecsEb">chase::PerformanceDecoratorChase::initVecs (C++ function)</a>
+</li>
+      <li><a href="api/performance.html#_CPPv4N5chase25PerformanceDecoratorChase12isPseudoHermEv">chase::PerformanceDecoratorChase::isPseudoHerm (C++ function)</a>
+</li>
+      <li><a href="api/performance.html#_CPPv4N5chase25PerformanceDecoratorChase5isSymEv">chase::PerformanceDecoratorChase::isSym (C++ function)</a>
+</li>
+      <li><a href="api/performance.html#_CPPv4N5chase25PerformanceDecoratorChase7LanczosENSt6size_tENSt6size_tEP4BaseI1TEP4BaseI1TEP4BaseI1TEP4BaseI1TE">chase::PerformanceDecoratorChase::Lanczos (C++ function)</a>, <a href="api/performance.html#_CPPv4N5chase25PerformanceDecoratorChase7LanczosENSt6size_tEP4BaseI1TE">[1]</a>
+</li>
+      <li><a href="api/performance.html#_CPPv4N5chase25PerformanceDecoratorChase10LanczosDosENSt6size_tENSt6size_tEP1T">chase::PerformanceDecoratorChase::LanczosDos (C++ function)</a>
+</li>
+      <li><a href="api/performance.html#_CPPv4N5chase25PerformanceDecoratorChase4LockENSt6size_tE">chase::PerformanceDecoratorChase::Lock (C++ function)</a>
+</li>
+      <li><a href="api/performance.html#_CPPv4N5chase25PerformanceDecoratorChase6OutputENSt6stringE">chase::PerformanceDecoratorChase::Output (C++ function)</a>
+</li>
+      <li><a href="api/performance.html#_CPPv4N5chase25PerformanceDecoratorChase25PerformanceDecoratorChaseEP9ChaseBaseI1TE">chase::PerformanceDecoratorChase::PerformanceDecoratorChase (C++ function)</a>
+</li>
+      <li><a href="api/performance.html#_CPPv4N5chase25PerformanceDecoratorChase2QRENSt6size_tE4BaseI1TE">chase::PerformanceDecoratorChase::QR (C++ function)</a>
+</li>
+      <li><a href="api/performance.html#_CPPv4N5chase25PerformanceDecoratorChase4ResdEP4BaseI1TEP4BaseI1TENSt6size_tE">chase::PerformanceDecoratorChase::Resd (C++ function)</a>
+</li>
+      <li><a href="api/performance.html#_CPPv4N5chase25PerformanceDecoratorChase2RREP4BaseI1TENSt6size_tE">chase::PerformanceDecoratorChase::RR (C++ function)</a>
+</li>
+      <li><a href="api/performance.html#_CPPv4N5chase25PerformanceDecoratorChase5ShiftE1Tb">chase::PerformanceDecoratorChase::Shift (C++ function)</a>
+</li>
+      <li><a href="api/performance.html#_CPPv4N5chase25PerformanceDecoratorChase4SortEP4BaseI1TEP4BaseI1TEP4BaseI1TE">chase::PerformanceDecoratorChase::Sort (C++ function)</a>
+</li>
+      <li><a href="api/performance.html#_CPPv4N5chase25PerformanceDecoratorChase5StartEv">chase::PerformanceDecoratorChase::Start (C++ function)</a>
+</li>
+      <li><a href="api/performance.html#_CPPv4N5chase25PerformanceDecoratorChase4SwapENSt6size_tENSt6size_tE">chase::PerformanceDecoratorChase::Swap (C++ function)</a>
+</li>
+      <li><a href="api/performance.html#_CPPv4N5chase25PerformanceDecoratorChase15symOrHermMatrixEc">chase::PerformanceDecoratorChase::symOrHermMatrix (C++ function)</a>
+</li>
+      <li><a href="api/platform.html#_CPPv4N5chase8platformE">chase::platform (C++ type)</a>
+</li>
+      <li><a href="api/platform.html#_CPPv4N5chase8platform3CPUE">chase::platform::CPU (C++ struct)</a>
+</li>
+      <li><a href="api/platform.html#_CPPv4N5chase8platform3GPUE">chase::platform::GPU (C++ struct)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, SimLab Quantum Materials.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
