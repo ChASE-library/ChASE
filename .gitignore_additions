@@ -1,0 +1,10 @@
+# Documentation guide files (reference only, not needed for CI/CD)
+CODEBASE_STRUCTURE.md
+docs/CI_*.md
+docs/DEPLOYMENT_STEPS.md
+docs/GH_PAGES_MIGRATION.md
+docs/QUICK_VALIDATION.md
+docs/VERSION_SELECTOR_FIX.md
+docs/WORKFLOW_VALIDATION_GUIDE.md
+docs/MODULES_TO_DOCUMENT.md
+docs/GITLAB_CI_DOCS_SNIPPET.yml
