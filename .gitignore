@@ -15,5 +15,4 @@ build
 .vscode
 *.out
 *.err
-*.sh
 /*install*/

@@ -1,0 +1,37 @@
+{% extends "!layout.html" %}
+
+
+{% block rootrellink %}
+        <li><a href="{{ pathto('index') }}">home</a>|&nbsp;</li>
+        <li><a href="{{ pathto('search') }}">search</a>|&nbsp;</li>
+{% endblock %}
+
+
+{% block relbar1 %}
+
+<div style="background-color: white; text-align: left; padding: 10px 10px 15px 15px">
+<a href="{{ pathto('index') }}"><img src="{{
+pathto("_static/logo.png", 1) }}" border="0" alt="ChASE"/></a>
+</div>
+{{ super() }}
+{% endblock %}
+
+{# Add version selector to sidebar #}
+{% block sidebartitle %}
+{{ super() }}
+{% if version_selector and versions %}
+  {% include "version_selector.html" %}
+{% endif %}
+{% endblock %}
+
+{% block extrahead %}
+    {{ super() }}
+    <link rel="stylesheet" href="{{ pathto('_static/css/theme.css', 1) }}" type="text/css" />
+    <link href="{{ pathto("_static/theme_overrides.css", True) }}" rel="stylesheet" type="text/css">
+{% endblock %}
+
+{# put the sidebar before the body #}
+{% block sidebar1 %}{{ sidebar() }}{% endblock %}
+{% block sidebar2 %}{% endblock %}
+
+
