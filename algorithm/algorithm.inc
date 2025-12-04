@@ -378,8 +378,14 @@ std::size_t Algorithm<T>::locking(ChaseBase<T>* single, std::size_t N,
     {
         auto j = index[k]; // walk through
 
-	    if (resid[j] <= tol || (single->isSym() && resid[j] >= residLast[j] && resid[j] < 100.0*tol))
+#ifndef CHASE_SAVE_RESIDUALS
+        if (resid[j] <= tol || (single->isSym() && resid[j] >= residLast[j] && resid[j] < 100.0*tol))
+#else
+	if (resid[j] <= tol)
+#endif
         {
+
+#ifndef CHASE_SAVE_RESIDUALS
             if(single->isSym() && resid[j] > tol && resid[j] >= residLast[j] && resid[j] < 100.0*tol){
 
 #ifdef CHASE_OUTPUT
@@ -391,7 +397,7 @@ std::size_t Algorithm<T>::locking(ChaseBase<T>* single, std::size_t N,
 #endif
 		    early_locked_residuals->push_back(resid[j]);
             }
-
+#endif
 		if (j != converged)
          	{
             	    swap_kj(j, converged, resid);     // if we filter again
@@ -427,9 +433,14 @@ std::size_t Algorithm<T>::locking_quasi(
     for (std::size_t k = 0; k < unconverged-nex; ++k) {
         int j = index[k];
 
+#ifndef CHASE_SAVE_RESIDUALS
         if (resid[j] <= tol || (resid[j] > tol && resid[j] >= residLast[k] && resid[j] <= 1000.0 * tol && iteration >= 4)) 
+#else
+	if (resid[j] <= tol)
+#endif
         {
 		
+#ifndef CHASE_SAVE_RESIDUALS
             if(resid[j] > tol && resid[j] <= 1000.0 * tol && resid[j] >= residLast[k]  && iteration >=4)
             {
 #ifdef CHASE_OUTPUT
@@ -441,7 +452,7 @@ std::size_t Algorithm<T>::locking_quasi(
 #endif		    
 		early_locked_residuals->push_back(resid[j]);
             }
-
+#endif
             if (j != converged) 
             {
                 swap_kj(j, converged, resid);
@@ -827,14 +838,12 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
 #ifdef CHASE_SAVE_RESIDUALS
 		
 	std::ofstream residual_file;
+    	std::vector<std::size_t> index_write(unconverged);
 		
-	std::cout << "ENTERING PRINT!!!!" << std::endl;
-        
 	//single->Resd(ritzv, resid, locked);
 
 	if(!single->get_rank())
 	{
-		std::cout << "PRINTING!!!!" << std::endl;
 		std::string residual_file_name;
 		residual_file_name = "residual_file_" + std::to_string(N);
 
@@ -1009,11 +1018,17 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
 	{
 		for(std::size_t idx = 0; idx < nev + nex - unconverged; idx++)
 		{
-			residual_file << iteration << "," << tol << "\n";
+			residual_file << iteration << "," << -1.0 << "\n";
 		}
+            	// Build index vector for all unconverged eigenpairs
+            	std::iota(index_write.begin(), index_write.begin() + unconverged, 0);
+
+            	std::sort(index_write.begin(), index_write.begin() + unconverged,
+                	[&](int a, int b) { return (ritzv[a] < ritzv[b]); });
+
 		for(std::size_t idx = 0; idx < unconverged; idx++)
 		{
-			residual_file << iteration << "," << resid[index.data()[idx]] << "\n";
+			residual_file << iteration << "," << resid[index_write.data()[idx]] << "\n";
 		}
 	}
 

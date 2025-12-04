@@ -159,7 +159,8 @@ public:
         CHECK_CUBLAS_ERROR(cublasCreate(&cublasH_));
         CHECK_CUSOLVER_ERROR(cusolverDnCreate(&cusolverH_));
 
-#ifdef XGEEV_EXISTS	
+#ifdef XGEEV_EXISTS
+	std::cout << "XGEEV ACTIVATED !" << std::endl;	
         CHECK_CUDA_ERROR(cudaStreamCreate(&stream_));
         CHECK_CUBLAS_ERROR(cublasSetStream(cublasH_, stream_));
         CHECK_CUSOLVER_ERROR(cusolverDnSetStream(cusolverH_, stream_));
@@ -1055,7 +1056,7 @@ public:
         if constexpr (std::is_same<typename MatrixType::hermitian_type, chase::matrix::QuasiHermitian>::value)
 	{
 #ifdef XGEEV_EXISTS
-
+		std::cout << "Entering XGEEV..." << std::endl;
         	kernelNamespace::quasi_hermitian_rayleighRitz(cublasH_,
                                                    cusolverH_,
 						   params_,
