@@ -164,7 +164,28 @@ public:
                                Base<T>* ritzv, Base<T>* resid,
                                Base<T>* residLast, std::vector<Base<T>>* early_locked_residuals,
 				std::size_t* degrees, std::size_t locked);
-    
+
+    /**
+     * @brief Specialized locking for quasi-hermitian matrices.
+     * 
+     * This method is used to lock the converged eigenpairs for quasi-hermitian matrices.
+     * 
+     * @param single A pointer to the `ChaseBase<T>` instance.
+     * @param N The total size of the problem.
+     * @param unconverged The number of unconverged eigenpairs.
+     * @param nex The number of external searching space.
+     * @param tol The convergence tolerance for residuals.
+     * @param index The array storing the indices of the unconverged eigenpairs.
+     * @param Lritzv The array storing the Ritz values.
+     * @param resid The array storing the residuals of the Ritz values.
+     * @param residLast The array storing the residuals from the previous iteration.
+     * @param early_locked_residuals The array storing the early locked residuals. 
+     * @param degrees The array storing the degrees of the Ritz pairs.
+     * @param locked The number of already locked eigenpairs.
+     * @param iteration The iteration number.
+     * 
+     * @return The number of locked eigenpairs.
+     */                
     static std::size_t locking_quasi(
         ChaseBase<T>* single, std::size_t N,
         std::size_t unconverged, std::size_t nex, Base<T> tol, std::size_t* index,
