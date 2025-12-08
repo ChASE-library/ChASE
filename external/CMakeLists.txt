@@ -55,6 +55,9 @@ endif()
 
 find_package(CUDAToolkit)
 if(CUDAToolkit_FOUND)
+  if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+      set(CMAKE_CUDA_ARCHITECTURES "80;90" CACHE STRING "CUDA architectures to build for")
+  endif()
   add_library(cublaspp INTERFACE)
   target_include_directories(cublaspp INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/cublaspp>
