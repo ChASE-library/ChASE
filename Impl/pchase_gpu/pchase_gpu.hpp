@@ -160,10 +160,15 @@ public:
         CHECK_CUSOLVER_ERROR(cusolverDnCreate(&cusolverH_));
 
 #ifdef XGEEV_EXISTS
-	std::cout << "XGEEV ACTIVATED !" << std::endl;	
-        CHECK_CUDA_ERROR(cudaStreamCreate(&stream_));
-        CHECK_CUBLAS_ERROR(cublasSetStream(cublasH_, stream_));
-        CHECK_CUSOLVER_ERROR(cusolverDnSetStream(cusolverH_, stream_));
+#ifdef CHASE_OUTPUT
+	    if (my_rank_ == 0)
+	    {
+	        std::cout << "XGEEV ACTIVATED !" << std::endl;	
+	    }
+#endif
+        //CHECK_CUDA_ERROR(cudaStreamCreate(&stream_));
+        //CHECK_CUBLAS_ERROR(cublasSetStream(cublasH_, stream_));
+        //CHECK_CUSOLVER_ERROR(cusolverDnSetStream(cusolverH_, stream_));
 #endif
 
         CHECK_CUDA_ERROR(cudaMalloc((void**)&devInfo_, sizeof(int)));
@@ -339,14 +344,15 @@ public:
         CHECK_CUDA_ERROR(cudaMemcpy(d_diag_yoffs, diag_yoffs.data(), sizeof(std::size_t) * diag_cnt , cudaMemcpyHostToDevice));
  
 #ifdef QR_DOUBLE_PRECISION
-        if constexpr (std::is_same<T, std::complex<float>>::value)
+        if constexpr (std::is_same<T, std::complex<float>>::value || std::is_same<T, float>::value)
         {
             if(!V1_->isDoublePrecisionEnabled())
             {
                 V1_->enableDoublePrecision();
             }            
+            CHECK_CUDA_ERROR(cudaMalloc((void**)&d_work_d, sizeof(typename chase::ToDoublePrecisionTrait<T>::Type) * lwork_));
         }
-        if constexpr (std::is_same<T, std::complex<float>>::value)
+        if constexpr (std::is_same<T, std::complex<float>>::value || std::is_same<T, float>::value)
         {
             if(!A_->isDoublePrecisionEnabled())
             {
@@ -354,7 +360,7 @@ public:
             }
         }
 #elif RR_DOUBLE_PRECISION
-        if constexpr (std::is_same<T, std::complex<float>>::value)
+        if constexpr (std::is_same<T, std::complex<float>>::value || std::is_same<T, float>::value)
         {
             if(!A_->isDoublePrecisionEnabled())
             {
@@ -384,14 +390,15 @@ public:
             CHECK_CUDA_ERROR(cudaFree(states_));                    
 	
 #ifdef QR_DOUBLE_PRECISION
-        if constexpr (std::is_same<T, std::complex<float>>::value)
+        if constexpr (std::is_same<T, std::complex<float>>::value || std::is_same<T, float>::value)
         {
             if(!V1_->isDoublePrecisionEnabled())
             {
                 V1_->disableDoublePrecision();
-            }            
+            }
+            CHECK_CUDA_ERROR(cudaFree(d_work_d));
         }
-        if constexpr (std::is_same<T, std::complex<float>>::value)
+        if constexpr (std::is_same<T, std::complex<float>>::value || std::is_same<T, float>::value)
         {
             if(!A_->isDoublePrecisionEnabled())
             {
@@ -399,7 +406,7 @@ public:
             }
         }
 #elif RR_DOUBLE_PRECISION
-        if constexpr (std::is_same<T, std::complex<float>>::value)
+        if constexpr (std::is_same<T, std::complex<float>>::value || std::is_same<T, float>::value)
         {
             if(!A_->isDoublePrecisionEnabled())
             {
@@ -848,14 +855,12 @@ public:
                 }*/
 #endif
 #ifdef QR_DOUBLE_PRECISION
-                if constexpr (std::is_same<T, std::complex<float>>::value)
+                if constexpr (std::is_same<T, std::complex<float>>::value || std::is_same<T, float>::value)
                 {
                     V1_->copyTo();
 
                     auto V1_d = V1_->getDoublePrecisionMatrix();
                     auto A_d = A_->getDoublePrecisionMatrix();
-                    std::complex<double> *d_work_d ;
-                    CHECK_CUDA_ERROR(cudaMalloc((void**)&d_work_d, sizeof(std::complex<double>) * lwork_));
                     info = kernelNamespace::shiftedcholQR2(cublasH_,
                                                                 cusolverH_,
                                                                 V1_->g_rows(),
@@ -865,11 +870,10 @@ public:
                                                                 V1_->l_ld(), 
                                                                 //V1_->getMpiGrid()->get_nccl_col_comm(),
                                                                 MGPUKernelNamspaceSelector<backend>::getColCommunicator(V1_->getMpiGrid()),
-                                                                d_work_d,
+                                                                reinterpret_cast<typename chase::ToDoublePrecisionTrait<T>::Type*>(d_work_d),
                                                                 lwork_,
                                                                 A_d->l_data()); 
                     V1_->copyback();
-                    CHECK_CUDA_ERROR(cudaFree(d_work_d));
                 }
                 else
                 {
@@ -892,7 +896,7 @@ public:
             }
             else if(cond < cond_threshold_lower)
             {
-                /*if constexpr (std::is_same<T, std::complex<float>>::value)
+                /*if constexpr (std::is_same<T, std::complex<float>>::value || std::is_same<T, float>::value)
                 {
                     if(V1_->isDoublePrecisionEnabled())
                     {
@@ -916,14 +920,12 @@ public:
                 }
 #endif
 #ifdef QR_DOUBLE_PRECISION
-                if constexpr (std::is_same<T, std::complex<float>>::value)
+                if constexpr (std::is_same<T, std::complex<float>>::value || std::is_same<T, float>::value)
                 {
                     V1_->copyTo();
 
                     auto V1_d = V1_->getDoublePrecisionMatrix();
                     auto A_d = A_->getDoublePrecisionMatrix();
-                    std::complex<double> *d_work_d ;
-                    CHECK_CUDA_ERROR(cudaMalloc((void**)&d_work_d, sizeof(std::complex<double>) * lwork_));
                     info = kernelNamespace::cholQR1(cublasH_,
                                                                 cusolverH_,
                                                                 V1_->l_rows(), 
@@ -932,11 +934,10 @@ public:
                                                                 V1_->l_ld(), 
                                                                 //V1_->getMpiGrid()->get_nccl_col_comm(),
                                                                 MGPUKernelNamspaceSelector<backend>::getColCommunicator(V1_->getMpiGrid()),
-                                                                reinterpret_cast<std::complex<double>*>(d_work_),
+                                                                reinterpret_cast<typename chase::ToDoublePrecisionTrait<T>::Type*>(d_work_d),
                                                                 lwork_,
                                                                 A_d->l_data()); 
                     V1_->copyback();
-                    CHECK_CUDA_ERROR(cudaFree(d_work_d));
                 }else
                 {
 #endif
@@ -957,7 +958,7 @@ public:
             }
             else
             {   
-                /*if constexpr (std::is_same<T, std::complex<float>>::value)
+                /*if constexpr (std::is_same<T, std::complex<float>>::value || std::is_same<T, float>::value)
                 {
                     if(V1_->isDoublePrecisionEnabled())
                     {
@@ -976,14 +977,12 @@ public:
                 }*/
 #endif
 #ifdef QR_DOUBLE_PRECISION
-                if constexpr (std::is_same<T, std::complex<float>>::value)
+                if constexpr (std::is_same<T, std::complex<float>>::value || std::is_same<T, float>::value)
                 {
                     V1_->copyTo();
 
                     auto V1_d = V1_->getDoublePrecisionMatrix();
                     auto A_d = A_->getDoublePrecisionMatrix();
-                    std::complex<double> *d_work_d ;
-                    CHECK_CUDA_ERROR(cudaMalloc((void**)&d_work_d, sizeof(std::complex<double>) * lwork_));
                     info = kernelNamespace::cholQR2(cublasH_,
                                                                     cusolverH_,
                                                                     V1_->l_rows(), 
@@ -992,11 +991,10 @@ public:
                                                                     V1_->l_ld(), 
                                                                     //V1_->getMpiGrid()->get_nccl_col_comm(),
                                                                     MGPUKernelNamspaceSelector<backend>::getColCommunicator(V1_->getMpiGrid()),
-                                                                    d_work_d,
+                                                                    reinterpret_cast<typename chase::ToDoublePrecisionTrait<T>::Type*>(d_work_d),
                                                                     lwork_,
                                                                     A_d->l_data()); 
                     V1_->copyback();
-                    CHECK_CUDA_ERROR(cudaFree(d_work_d));
                 }else
                 {
 #endif
@@ -1210,7 +1208,8 @@ private:
     T* d_return_; /**< Pointer to device memory for storing results of GPU operations. */
     T* d_work_; /**< Pointer to workspace on the device for GPU operations. */
     int lwork_ = 0; /**< Size of the workspace on the device, used for GPU operations. */
-        
+    void *d_work_d ;
+    
     std::unique_ptr<T[]> h_work_; /**< Pointer to work buffer on host for geev
                                      in the Quasi Hermitian case. */
     int lhwork_ = 0; /**< Workspace size for host geev operations in the Quasi
