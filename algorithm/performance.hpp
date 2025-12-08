@@ -14,6 +14,7 @@
 #include <chrono>
 #include <iostream>
 #include <vector>
+#include <algorithm>
 
 #ifdef HAS_CUDA
 #include <cuda_runtime.h>
