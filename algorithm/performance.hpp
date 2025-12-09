@@ -401,21 +401,30 @@ public:
         stream << std::scientific << std::to_string(num);
         all_values.push_back(stream.str());
 
-	if(num)
+	if(1 || num)
 	{
-        	stream.str("");
-       
-		Base<T> avg = std::accumulate(early_locked_residuals_.begin(),early_locked_residuals_.end(),0.0);
-		avg /= num;
+        	stream.str(""); 
 		output_names.push_back("Avg. Early Locked");
-        	stream << std::scientific << std::setprecision(3) << static_cast<double>(avg);
+		if(num)
+	 	{
+			Base<T> avg = std::accumulate(early_locked_residuals_.begin(),early_locked_residuals_.end(),0.0);
+			avg /= num;
+        		stream << std::scientific << std::setprecision(3) << static_cast<double>(avg);
+		}else{
+        		stream << std::scientific << std::setprecision(3) << static_cast<double>(0.0);
+		}
         	all_values.push_back(stream.str());
 
-	        stream.str("");
-	
-		Base<T> max = *std::max_element(early_locked_residuals_.begin(),early_locked_residuals_.end());
+	        stream.str("");	
 		output_names.push_back("Max. Early Locked");
-        	stream << std::scientific << std::setprecision(3) << static_cast<double>(max);
+		if(num)
+	 	{
+			Base<T> max = *std::max_element(early_locked_residuals_.begin(),early_locked_residuals_.end());
+        		stream << std::scientific << std::setprecision(3) << static_cast<double>(max);
+		}else{
+        		stream << std::scientific << std::setprecision(3) << static_cast<double>(0.0);
+		}
+
         	all_values.push_back(stream.str());
 	}
 
