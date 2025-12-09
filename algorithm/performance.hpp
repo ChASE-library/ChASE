@@ -14,6 +14,7 @@
 #include <chrono>
 #include <iostream>
 #include <vector>
+#include <algorithm>
 
 #ifdef HAS_CUDA
 #include <cuda_runtime.h>
@@ -305,7 +306,7 @@ public:
     {
 	if(early_locked_residuals.size())
 	{
-        	copy(early_locked_residuals.begin(),early_locked_residuals.end(),back_inserter(early_locked_residuals_));
+        	std::copy(early_locked_residuals.begin(),early_locked_residuals.end(),back_inserter(early_locked_residuals_));
 	}
     }
 

@@ -241,7 +241,11 @@ namespace internal
 
         //Compute the eigenpairs of the non-hermitian rayleigh quotient on GPU  
         //std::cout << "Compute the eigenpairs of the non-hermitian rayleigh quotient" << std::endl;
-
+#ifdef CHASE_OUTPUT
+        if (H.grank() == 0){
+            std::cout << "Compute the eigenpairs of the non-hermitian rayleigh quotient" << std::endl;
+	}
+#endif
         if constexpr (std::is_same<T, std::complex<float>>::value)
         {
                 if(A->isDoublePrecisionEnabled())
