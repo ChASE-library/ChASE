@@ -1054,7 +1054,6 @@ public:
         if constexpr (std::is_same<typename MatrixType::hermitian_type, chase::matrix::QuasiHermitian>::value)
 	{
 #ifdef XGEEV_EXISTS
-		/*std::cout << "Entering XGEEV..." << std::endl;*/
         	kernelNamespace::quasi_hermitian_rayleighRitz(cublasH_,
                                                    cusolverH_,
 						   params_,

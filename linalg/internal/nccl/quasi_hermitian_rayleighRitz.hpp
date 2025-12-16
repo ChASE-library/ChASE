@@ -65,6 +65,12 @@ namespace internal
                       int h_lwork,
                       chase::distMatrix::RedundantMatrix<typename MatrixType::value_type, chase::platform::GPU>* A) 
     {
+
+#ifdef CHASE_OUTPUT
+        if (H.grank() == 0){
+            std::cout << "Constructing the non-hermitian Rayleigh-Quotient..." << std::endl;
+	}
+#endif
         using T = typename MatrixType::value_type;
 
         cudaStream_t usedStream;
@@ -162,7 +168,9 @@ namespace internal
                                        subSize));
 
         // Perform the MPI_Allreduce to sum up the results
+        CHECK_CUDA_ERROR(cudaDeviceSynchronize());	
         CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(W, W, subSize * subSize, ncclSum, A->getMpiGrid()->get_nccl_row_comm()));
+        CHECK_CUDA_ERROR(cudaDeviceSynchronize());	
 	
 	chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(V2, offset, subSize);
 	
@@ -184,6 +192,7 @@ namespace internal
 
         CHECK_CUDA_ERROR(cudaDeviceSynchronize());	
         CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(M, M, subSize * subSize, ncclSum, A->getMpiGrid()->get_nccl_col_comm()));
+        CHECK_CUDA_ERROR(cudaDeviceSynchronize());	
 
         chase::linalg::internal::cuda::chase_plus_inverse_diagonal(M,
                                       subSize,
@@ -224,6 +233,7 @@ namespace internal
                 
 	CHECK_CUDA_ERROR(cudaDeviceSynchronize());
 	CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(M, M, subSize * subSize, ncclSum, A->getMpiGrid()->get_nccl_row_comm()));
+	CHECK_CUDA_ERROR(cudaDeviceSynchronize());
 
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTaxpy(cublas_handle,
                                                                 subSize * subSize,
@@ -239,14 +249,12 @@ namespace internal
 
 #ifdef XGEEV_EXISTS
 
-        //Compute the eigenpairs of the non-hermitian rayleigh quotient on GPU  
-        //std::cout << "Compute the eigenpairs of the non-hermitian rayleigh quotient" << std::endl;
 #ifdef CHASE_OUTPUT
         if (H.grank() == 0){
             std::cout << "Compute the eigenpairs of the non-hermitian rayleigh quotient" << std::endl;
 	}
 #endif
-        if constexpr (std::is_same<T, std::complex<float>>::value)
+        if constexpr (0 && std::is_same<T, std::complex<float>>::value)
         {
                 if(A->isDoublePrecisionEnabled())
                 {
@@ -337,6 +345,12 @@ namespace internal
                         throw std::runtime_error("cusolver HEEVD failed in RayleighRitz");
                 }
 
+#ifdef CHASE_OUTPUT
+	        if (H.grank() == 0){
+        	    std::cout << "Eigenvalues of the non-Hermitian rayleigh-quotient computed with GEEV." << std::endl;
+		}
+#endif
+
                 //std::cout << "Copying the complex ritz values back to cpu" << std::endl;
                 //thrust::device_vector<int> indices(n); //Does not compile, returns unimplemented on this system...
                 if constexpr (std::is_same<T, std::complex<chase::Base<T>>>::value)
@@ -361,7 +375,7 @@ namespace internal
 	}
 #endif
         
-        if constexpr (std::is_same<T, std::complex<float>>::value)
+        if constexpr (0 && std::is_same<T, std::complex<float>>::value)
         {
             // Initialize vectors with proper size and type
             std::vector<chase::Base<T>> ptx_imag(subSize, chase::Base<T>(0.0));
@@ -649,7 +663,7 @@ namespace internal
                                                                     M,
                                                                     subSize));
 #ifdef RR_DOUBLE_PRECISION
-        if constexpr (0 && std::is_same<T, std::complex<float>>::value)
+        if constexpr (std::is_same<T, std::complex<float>>::value)
         {
                 if(A->isDoublePrecisionEnabled())
                 {

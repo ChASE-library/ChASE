@@ -839,8 +839,6 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
 		
 	std::ofstream residual_file;
     	std::vector<std::size_t> index_write(unconverged);
-		
-	//single->Resd(ritzv, resid, locked);
 
 	if(!single->get_rank())
 	{
@@ -925,9 +923,7 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
                 deg = calc_degrees_quasi(single, N, unconverged, nex, upperb, lowerb, tol,
                                         ritzv, resid, residLast, degrees, locked);
             } else {
-                // Normaly, we Use standard hermitian degree calculation. For the sake of comparing
-	        // the performance with the pseudo-hermitian case, we also enable the cluster detection feature
-                deg = calc_degrees_quasi(single, N, unconverged, nex, upperb, lowerb, tol,
+                deg = calc_degrees(single, N, unconverged, nex, upperb, lowerb, tol,
                                   ritzv, resid, residLast, degrees, locked);
             }
         }
@@ -1014,6 +1010,14 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
 
 #ifdef CHASE_SAVE_RESIDUALS
 
+#ifdef CHASE_OUTPUT
+        {
+            std::ostringstream oss;
+		
+	    oss << "Saving the residuals into << residual_file_name << std::endl;
+            single->Output(oss.str());
+        }
+#endif
 	if(!single->get_rank())
 	{
 		for(std::size_t idx = 0; idx < nev + nex - unconverged; idx++)
