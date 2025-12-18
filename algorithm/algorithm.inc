@@ -1014,7 +1014,7 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
         {
             std::ostringstream oss;
 		
-	    oss << "Saving the residuals into << residual_file_name << std::endl;
+	    oss << "Saving the residuals into" << residual_file_name << std::endl;
             single->Output(oss.str());
         }
 #endif
