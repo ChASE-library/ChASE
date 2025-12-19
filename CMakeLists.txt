@@ -88,13 +88,6 @@ if(CHASE_PRINT_DEBUG)
     add_definitions(-DCHASE_PRINT_DEBUG)
 endif()
 
-
-
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    message(STATUS "Build type is Debug")
-    add_definitions(-DNDEBUG)
-endif()
-
 add_subdirectory(external)
 add_subdirectory(grid)
 add_subdirectory(linalg)
