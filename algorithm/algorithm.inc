@@ -285,8 +285,10 @@ std::size_t Algorithm<T>::calc_degrees_pseudo(ChaseBase<T>* single, std::size_t 
         degrees[i] = std::min(degrees[i] + conf.GetDegExtra() + pseudo_bonus, conf.GetMaxDeg());
         
 #ifdef CHASE_OUTPUT
+
+#ifndef NDEBUG
         // Debug output for residual-weighted cluster analysis
-	/*
+	
         if (cluster_factors[i] > 1.5 || cluster_factors[i] < 0.8 || pseudo_bonus > 0) {
             std::ostringstream oss;
             oss << "Residual-weighted cluster adjustment: eigenvalue[" << i << "] = " 
@@ -298,7 +300,8 @@ std::size_t Algorithm<T>::calc_degrees_pseudo(ChaseBase<T>* single, std::size_t 
                 << ", final_degree = " << degrees[i] << "\n";
             single->Output(oss.str());
         }
-	*/
+#endif
+
 #endif
     }
 
@@ -640,7 +643,8 @@ std::size_t Algorithm<T>::lanczos(ChaseBase<T>* single, int N, int numvec, int m
     }
 
 #ifdef CHASE_OUTPUT
-    { 
+    {
+#ifdef CHASE_PRINT_DEBUG 
     std::ostringstream oss;
     
     oss << "m = " << m << std::endl;
@@ -650,6 +654,7 @@ std::size_t Algorithm<T>::lanczos(ChaseBase<T>* single, int N, int numvec, int m
     oss << "search = " << search << std::endl;
         
     single->Output(oss.str());
+#endif
     }
 #endif
 
@@ -999,8 +1004,11 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
 	    oss << "unconverged = " << "\t" << unconverged << "\t" << "new_converged" << "\t" << new_converged << "\n";
             oss << "index\tdegrees\tresid\tresidLast\tritzv\n";
 
-            for (std::size_t k = 0; k < unconverged;
-                 ++k)
+#ifdef CHASE_PRINT_DEBUG 
+        for (std::size_t k = 0; k < unconverged; ++k)
+#else
+	for (std::size_t k = 0; k < std::min(std::size_t(20),unconverged); ++k)
+#endif    
                 oss << index.data()[k] << "\t" << (degrees)[index.data()[k]] << "\t" << (resid)[index.data()[k]] << "\t" << (residLast)[k]
                     << "\t" << (ritzv)[index.data()[k]] << "\n";
 

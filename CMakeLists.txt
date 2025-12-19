@@ -32,6 +32,7 @@ option(CHASE_SAVE_RESIDUALS "Print the residuals in an external file" OFF)
 option(CHASE_ENABLE_XGEEV_RAYLEIGHRITZ "Enable solving pseudo-hermitian problems with XGEEV cusolver" OFF)
 option(ChASE_DISPLAY_COND_V_SVD "Compute and display condition number of V from SVD" OFF)
 option(CHASE_QR_DOUBLE_PRECISION "Operate QR in Double Precision" ON)
+option(CHASE_PRINT_DEBUG "Print additional information for debugging purpose" OFF)
 option(CHASE_RR_DOUBLE_PRECISION "Operate HEEVD in RR for pseudo-hermitian matrices in Double Precision" OFF)
 
 if( CHASE_OUTPUT )
@@ -80,7 +81,18 @@ if(ChASE_DISPLAY_COND_V_SVD)
 endif()
 
 if(CHASE_SAVE_RESIDUALS)
-	add_definitions(-DCHASE_SAVE_RESIDUALS)
+    add_definitions(-DCHASE_SAVE_RESIDUALS)
+endif()
+
+if(CHASE_PRINT_DEBUG)
+    add_definitions(-DCHASE_PRINT_DEBUG)
+endif()
+
+
+
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    message(STATUS "Build type is Debug")
+    add_definitions(-DNDEBUG)
 endif()
 
 add_subdirectory(external)
