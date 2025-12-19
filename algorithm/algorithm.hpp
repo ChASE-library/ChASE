@@ -93,9 +93,9 @@ public:
                                     std::size_t locked);
     
     /**
-     * @brief Specialized degree optimization for quasi-hermitian matrices with cluster-aware features.
+     * @brief Specialized degree optimization for pseudo-hermitian matrices with cluster-aware features.
      * 
-     * This method provides enhanced degree optimization specifically designed for quasi-hermitian 
+     * This method provides enhanced degree optimization specifically designed for pseudo-hermitian 
      * eigenvalue problems, including cluster detection and adaptive degree spacing.
      * 
      * @param kernel A pointer to the `ChaseBase<T>` instance, which provides the necessary numerical operations.
@@ -113,7 +113,7 @@ public:
      * 
      * @return The optimized polynomial degree.
      */
-    static std::size_t calc_degrees_quasi(ChaseBase<T>* kernel, std::size_t N,
+    static std::size_t calc_degrees_pseudo(ChaseBase<T>* kernel, std::size_t N,
                                          std::size_t unconverged, std::size_t nex,
                                          Base<T> upperb, Base<T> lowerb, Base<T> tol,
                                          Base<T>* ritzv, Base<T>* resid,
@@ -166,9 +166,9 @@ public:
 				std::size_t* degrees, std::size_t locked);
 
     /**
-     * @brief Specialized locking for quasi-hermitian matrices.
+     * @brief Specialized locking for pseudo-hermitian matrices.
      * 
-     * This method is used to lock the converged eigenpairs for quasi-hermitian matrices.
+     * This method is used to lock the converged eigenpairs for pseudo-hermitian matrices.
      * 
      * @param single A pointer to the `ChaseBase<T>` instance.
      * @param N The total size of the problem.
@@ -186,7 +186,7 @@ public:
      * 
      * @return The number of locked eigenpairs.
      */                
-    static std::size_t locking_quasi(
+    static std::size_t locking_pseudo(
         ChaseBase<T>* single, std::size_t N,
         std::size_t unconverged, std::size_t nex, Base<T> tol, std::size_t* index,
         Base<T>* Lritzv, Base<T>* resid, Base<T>* residLast, std::vector<Base<T>>* early_locked_residuals,

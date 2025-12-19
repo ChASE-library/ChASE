@@ -30,7 +30,7 @@ using ARCH = chase::platform::GPU;
 #else
 using ARCH = chase::platform::CPU;
 #endif
-using MatrixType = chase::matrix::QuasiHermitianMatrix<T,ARCH>;
+using MatrixType = chase::matrix::PseudoHermitianMatrix<T,ARCH>;
 //using MatrixType = chase::matrix::Matrix<T,ARCH>;
 
 P data_norm(T * data, size_t m, size_t n){

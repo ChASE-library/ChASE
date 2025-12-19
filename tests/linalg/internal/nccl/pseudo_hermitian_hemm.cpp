@@ -9,8 +9,8 @@
 #include <cmath>
 #include <cstring>
 #include "tests/linalg/internal/utils.hpp"
-#include "linalg/internal/cuda_aware_mpi/cuda_mpi_kernels.hpp"
-#include "linalg/internal/cuda_aware_mpi/flipSign.hpp"
+#include "linalg/internal/nccl/nccl_kernels.hpp"
+#include "linalg/internal/nccl/flipSign.hpp"
 #include "grid/mpiGrid2D.hpp"
 #include "linalg/distMatrix/distMatrix.hpp"
 #include "linalg/distMatrix/distMultiVector.hpp"
@@ -23,7 +23,7 @@ namespace {
 }
 
 template <typename T>
-class QuasiHEMMGPUNCCLDistTest : public ::testing::Test {
+class PseudoHEMMGPUNCCLDistTest : public ::testing::Test {
 protected:
     void SetUp() override {
         MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
@@ -66,21 +66,20 @@ public:
 ::testing::Environment* const env = ::testing::AddGlobalTestEnvironment(new ResourceCleanupEnvironment());
 
 using TestTypes = ::testing::Types<float, double, std::complex<float>, std::complex<double>>;
-TYPED_TEST_SUITE(QuasiHEMMGPUNCCLDistTest, TestTypes);
+TYPED_TEST_SUITE(PseudoHEMMGPUNCCLDistTest, TestTypes);
 
-TYPED_TEST(QuasiHEMMGPUNCCLDistTest, TinyQuasiHEMMDistCorrectness) {
+TYPED_TEST(PseudoHEMMGPUNCCLDistTest, TinyPseudoHEMMDistCorrectness) {
     using T = TypeParam;  // Get the current type
     std::size_t N = 10;
     std::size_t n = 5;
-    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
     
     auto SH_ = chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU>(N, N, this->get_mpi_grid());
     SH_.allocate_cpu_data();
     SH_.readFromBinaryFile(GetBSE_TinyMatrix<T>());
     SH_.H2D();
-    chase::linalg::internal::cuda_mpi::flipLowerHalfMatrixSign(SH_); //We assume the flipping function works
+    chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(SH_); //We assume the flipping function works
 
-    auto H_  = chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU>(N, N, this->get_mpi_grid());
+    auto H_  = chase::distMatrix::PseudoHermitianBlockBlockMatrix<T, chase::platform::GPU>(N, N, this->get_mpi_grid());
     H_.allocate_cpu_data();
     H_.readFromBinaryFile(GetBSE_TinyMatrix<T>());
     H_.H2D();
@@ -112,15 +111,15 @@ TYPED_TEST(QuasiHEMMGPUNCCLDistTest, TinyQuasiHEMMDistCorrectness) {
     V_.H2D();
 
     //SH x V = W1 => H x V = SW1 - we assume the standard HEMM works.
-    chase::linalg::internal::cuda_mpi::MatrixMultiplyMultiVectors(this->get_cublas_handle(), &alpha, SH_, V_, &beta, W1_, offset, subSize);
+    chase::linalg::internal::cuda_nccl::MatrixMultiplyMultiVectors(this->get_cublas_handle(), &alpha, SH_, V_, &beta, W1_, offset, subSize);
      
     W1_.D2H();
 
     //H x V = W2 => SH x V = SW2
-    chase::linalg::internal::cuda_mpi::MatrixMultiplyMultiVectors(this->get_cublas_handle(), &alpha, H_, V_, &beta, W2_, offset, subSize);
+    chase::linalg::internal::cuda_nccl::MatrixMultiplyMultiVectors(this->get_cublas_handle(), &alpha, H_, V_, &beta, W2_, offset, subSize);
      
     //We check that SW2 = W1
-    chase::linalg::internal::cuda_mpi::flipLowerHalfMatrixSign(W2_); //We assume the flipping function works
+    chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(W2_); //We assume the flipping function works
     
     W2_.D2H();
 
@@ -136,20 +135,19 @@ TYPED_TEST(QuasiHEMMGPUNCCLDistTest, TinyQuasiHEMMDistCorrectness) {
     }  
 }
 
-TYPED_TEST(QuasiHEMMGPUNCCLDistTest, TinyQuasiHEMMBlockCyclicDistCorrectness) {
+TYPED_TEST(PseudoHEMMGPUNCCLDistTest, TinyPseudoHEMMBlockCyclicDistCorrectness) {
     using T = TypeParam;  // Get the current type
     std::size_t N = 10;
     std::size_t n = 5;
     std::size_t mb = 2;
-    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
     
     auto SH_ = chase::distMatrix::BlockCyclicMatrix<T, chase::platform::GPU>(N, N, mb, mb, this->get_mpi_grid());
     SH_.allocate_cpu_data();
     SH_.readFromBinaryFile(GetBSE_TinyMatrix<T>());
     SH_.H2D();
-    chase::linalg::internal::cuda_mpi::flipLowerHalfMatrixSign(SH_); //We assume the flipping function works
+    chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(SH_); //We assume the flipping function works
 
-    auto H_  = chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T, chase::platform::GPU>(N, N, mb, mb, this->get_mpi_grid());
+    auto H_  = chase::distMatrix::PseudoHermitianBlockCyclicMatrix<T, chase::platform::GPU>(N, N, mb, mb, this->get_mpi_grid());
     H_.allocate_cpu_data();
     H_.readFromBinaryFile(GetBSE_TinyMatrix<T>());
     H_.H2D();
@@ -181,15 +179,15 @@ TYPED_TEST(QuasiHEMMGPUNCCLDistTest, TinyQuasiHEMMBlockCyclicDistCorrectness) {
     V_.H2D();
 
     //SH x V = W1 => H x V = SW1 - we assume the standard HEMM works.
-    chase::linalg::internal::cuda_mpi::MatrixMultiplyMultiVectors(this->get_cublas_handle(), &alpha, SH_, V_, &beta, W1_, offset, subSize);
+    chase::linalg::internal::cuda_nccl::MatrixMultiplyMultiVectors(this->get_cublas_handle(), &alpha, SH_, V_, &beta, W1_, offset, subSize);
     
     W1_.D2H();
 
     //H x V = W2 => SH x V = SW2
-    chase::linalg::internal::cuda_mpi::MatrixMultiplyMultiVectors(this->get_cublas_handle(), &alpha, H_, V_, &beta, W2_, offset, subSize);
+    chase::linalg::internal::cuda_nccl::MatrixMultiplyMultiVectors(this->get_cublas_handle(), &alpha, H_, V_, &beta, W2_, offset, subSize);
      
     //We check that SW2 = W1
-    chase::linalg::internal::cuda_mpi::flipLowerHalfMatrixSign(W2_); //We assume the flipping function works
+    chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(W2_); //We assume the flipping function works
     
     W2_.D2H();
 
@@ -205,19 +203,18 @@ TYPED_TEST(QuasiHEMMGPUNCCLDistTest, TinyQuasiHEMMBlockCyclicDistCorrectness) {
     }  
 }
 
-TYPED_TEST(QuasiHEMMGPUNCCLDistTest, QuasiHEMMDistCorrectness) {
+TYPED_TEST(PseudoHEMMGPUNCCLDistTest, PseudoHEMMDistCorrectness) {
     using T = TypeParam;  // Get the current type
     std::size_t N = 200;
     std::size_t n = 20;
-    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
     
     auto SH_ = chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU>(N, N, this->get_mpi_grid());
     SH_.allocate_cpu_data();
     SH_.readFromBinaryFile(GetBSE_Matrix<T>());
     SH_.H2D();
-    chase::linalg::internal::cuda_mpi::flipLowerHalfMatrixSign(SH_); //We assume the flipping function works
+    chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(SH_); //We assume the flipping function works
 
-    auto H_  = chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU>(N, N, this->get_mpi_grid());
+    auto H_  = chase::distMatrix::PseudoHermitianBlockBlockMatrix<T, chase::platform::GPU>(N, N, this->get_mpi_grid());
     H_.allocate_cpu_data();
     H_.readFromBinaryFile(GetBSE_Matrix<T>());
     H_.H2D();
@@ -249,15 +246,15 @@ TYPED_TEST(QuasiHEMMGPUNCCLDistTest, QuasiHEMMDistCorrectness) {
     V_.H2D();
 
     //SH x V = W1 => H x V = SW1 - we assume the standard HEMM works.
-    chase::linalg::internal::cuda_mpi::MatrixMultiplyMultiVectors(this->get_cublas_handle(), &alpha, SH_, V_, &beta, W1_, offset, subSize);
+    chase::linalg::internal::cuda_nccl::MatrixMultiplyMultiVectors(this->get_cublas_handle(), &alpha, SH_, V_, &beta, W1_, offset, subSize);
     
     W1_.D2H();
 
     //H x V = W2 => SH x V = SW2
-    chase::linalg::internal::cuda_mpi::MatrixMultiplyMultiVectors(this->get_cublas_handle(), &alpha, H_, V_, &beta, W2_, offset, subSize);
+    chase::linalg::internal::cuda_nccl::MatrixMultiplyMultiVectors(this->get_cublas_handle(), &alpha, H_, V_, &beta, W2_, offset, subSize);
      
     //We check that SW2 = W1
-    chase::linalg::internal::cuda_mpi::flipLowerHalfMatrixSign(W2_); //We assume the flipping function works
+    chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(W2_); //We assume the flipping function works
     
     W2_.D2H();
 
@@ -273,20 +270,19 @@ TYPED_TEST(QuasiHEMMGPUNCCLDistTest, QuasiHEMMDistCorrectness) {
     }  
 }
 
-TYPED_TEST(QuasiHEMMGPUNCCLDistTest, QuasiHEMMBlockCyclicDistCorrectness) {
+TYPED_TEST(PseudoHEMMGPUNCCLDistTest, PseudoHEMMBlockCyclicDistCorrectness) {
     using T = TypeParam;  // Get the current type
     std::size_t N = 200;
     std::size_t n = 20;
     std::size_t mb = 10;
-    ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
     
     auto SH_ = chase::distMatrix::BlockCyclicMatrix<T, chase::platform::GPU>(N, N, mb, mb, this->get_mpi_grid());
     SH_.allocate_cpu_data();
     SH_.readFromBinaryFile(GetBSE_Matrix<T>());
     SH_.H2D();
-    chase::linalg::internal::cuda_mpi::flipLowerHalfMatrixSign(SH_); //We assume the flipping function works
+    chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(SH_); //We assume the flipping function works
 
-    auto H_  = chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T, chase::platform::GPU>(N, N, mb, mb, this->get_mpi_grid());
+    auto H_  = chase::distMatrix::PseudoHermitianBlockCyclicMatrix<T, chase::platform::GPU>(N, N, mb, mb, this->get_mpi_grid());
     H_.allocate_cpu_data();
     H_.readFromBinaryFile(GetBSE_Matrix<T>());
     H_.H2D();
@@ -318,15 +314,15 @@ TYPED_TEST(QuasiHEMMGPUNCCLDistTest, QuasiHEMMBlockCyclicDistCorrectness) {
     V_.H2D();
 
     //SH x V = W1 => H x V = SW1 - we assume the standard HEMM works.
-    chase::linalg::internal::cuda_mpi::MatrixMultiplyMultiVectors(this->get_cublas_handle(), &alpha, SH_, V_, &beta, W1_, offset, subSize);
+    chase::linalg::internal::cuda_nccl::MatrixMultiplyMultiVectors(this->get_cublas_handle(), &alpha, SH_, V_, &beta, W1_, offset, subSize);
     
     W1_.D2H();
 
     //H x V = W2 => SH x V = SW2
-    chase::linalg::internal::cuda_mpi::MatrixMultiplyMultiVectors(this->get_cublas_handle(), &alpha, H_, V_, &beta, W2_, offset, subSize);
+    chase::linalg::internal::cuda_nccl::MatrixMultiplyMultiVectors(this->get_cublas_handle(), &alpha, H_, V_, &beta, W2_, offset, subSize);
      
     //We check that SW2 = W1
-    chase::linalg::internal::cuda_mpi::flipLowerHalfMatrixSign(W2_); //We assume the flipping function works
+    chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(W2_); //We assume the flipping function works
     
     W2_.D2H();
 

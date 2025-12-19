@@ -47,7 +47,7 @@ namespace internal
     * @throws std::runtime_error if the matrix `H` is not square or if `H` and `V` are not in the same MPI grid.
     */    
     template <typename MatrixType, typename InputMultiVectorType>
-    void cuda_nccl::quasi_hermitian_lanczos(cublasHandle_t cublas_handle,
+    void cuda_nccl::pseudo_hermitian_lanczos(cublasHandle_t cublas_handle,
 		 std::size_t M, 
                  std::size_t numvec,
                  MatrixType& H,
@@ -364,7 +364,7 @@ namespace internal
     * @throws std::runtime_error if the matrix `H` is not square or if `H` and `V` are not in the same MPI grid.
     */
     template <typename MatrixType, typename InputMultiVectorType>
-    void cuda_nccl::quasi_hermitian_lanczos(cublasHandle_t cublas_handle,
+    void cuda_nccl::pseudo_hermitian_lanczos(cublasHandle_t cublas_handle,
 		 std::size_t M, 
                  MatrixType& H,
                  InputMultiVectorType& V,

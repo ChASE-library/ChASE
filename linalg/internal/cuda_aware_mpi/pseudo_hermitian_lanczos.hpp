@@ -55,7 +55,7 @@ namespace internal
  * are not in the same MPI grid.
  */
 template <typename MatrixType, typename InputMultiVectorType>
-void cuda_mpi::quasi_hermitian_lanczos(
+void cuda_mpi::pseudo_hermitian_lanczos(
     cublasHandle_t cublas_handle, std::size_t M, std::size_t numvec,
     MatrixType& H, InputMultiVectorType& V,
     chase::Base<typename MatrixType::value_type>* upperb,
@@ -338,7 +338,7 @@ void cuda_mpi::quasi_hermitian_lanczos(
  * are not in the same MPI grid.
  */
 template <typename MatrixType, typename InputMultiVectorType>
-void cuda_mpi::quasi_hermitian_lanczos(
+void cuda_mpi::pseudo_hermitian_lanczos(
     cublasHandle_t cublas_handle, std::size_t M, MatrixType& H,
     InputMultiVectorType& V,
     chase::Base<typename MatrixType::value_type>* upperb)

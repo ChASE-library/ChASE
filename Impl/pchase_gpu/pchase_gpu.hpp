@@ -199,7 +199,7 @@ public:
 
         int lwork_heevd = 0;
 
-        if constexpr (std::is_same<typename MatrixType::hermitian_type, chase::matrix::QuasiHermitian>::value)
+        if constexpr (std::is_same<typename MatrixType::hermitian_type, chase::matrix::PseudoHermitian>::value)
         {
             is_sym_ = false;
             is_pseudoHerm_ = true;
@@ -738,7 +738,7 @@ public:
 
         int info = 1;
         
-        if constexpr (std::is_same<typename MatrixType::hermitian_type, chase::matrix::QuasiHermitian>::value)
+        if constexpr (std::is_same<typename MatrixType::hermitian_type, chase::matrix::PseudoHermitian>::value)
         {	
             kernelNamespace::flipLowerHalfMatrixSign(*V1_, 0, locked_);
         }
@@ -1051,10 +1051,10 @@ public:
     {
         SCOPED_NVTX_RANGE();
 
-        if constexpr (std::is_same<typename MatrixType::hermitian_type, chase::matrix::QuasiHermitian>::value)
+        if constexpr (std::is_same<typename MatrixType::hermitian_type, chase::matrix::PseudoHermitian>::value)
 	{
 #ifdef XGEEV_EXISTS
-        	kernelNamespace::quasi_hermitian_rayleighRitz(cublasH_,
+        	kernelNamespace::pseudo_hermitian_rayleighRitz(cublasH_,
                                                    cusolverH_,
 						   params_,
                                                    *Hmat_, 
@@ -1072,7 +1072,7 @@ public:
 				   		   lhwork_,
                                                    A_.get());
 #else	
-        	kernelNamespace::quasi_hermitian_rayleighRitz_v2(cublasH_,
+        	kernelNamespace::pseudo_hermitian_rayleighRitz_v2(cublasH_,
                                                    cusolverH_,
 						   params_,
                                                    *Hmat_, 
@@ -1210,8 +1210,8 @@ private:
     void *d_work_d ;
     
     std::unique_ptr<T[]> h_work_; /**< Pointer to work buffer on host for geev
-                                     in the Quasi Hermitian case. */
-    int lhwork_ = 0; /**< Workspace size for host geev operations in the Quasi
+                                     in the Pseudo Hermitian case. */
+    int lhwork_ = 0; /**< Workspace size for host geev operations in the Pseudo
                         Hermitian case. */
 
     std::size_t *d_diag_xoffs; /**< Pointer to device memory holding x offsets for diagonal elements in computations. */

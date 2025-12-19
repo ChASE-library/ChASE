@@ -55,10 +55,10 @@ namespace internal
     {
         using T = typename MatrixType::value_type;
 
-        if constexpr (std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU>>::value ||
-                      std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T, chase::platform::GPU>>::value)
+        if constexpr (std::is_same<MatrixType, chase::distMatrix::PseudoHermitianBlockBlockMatrix<T, chase::platform::GPU>>::value ||
+                      std::is_same<MatrixType, chase::distMatrix::PseudoHermitianBlockCyclicMatrix<T, chase::platform::GPU>>::value)
         {
-                cuda_mpi::quasi_hermitian_lanczos(cublas_handle, M, numvec, H, V, upperb, ritzv, Tau, ritzV);
+                cuda_mpi::pseudo_hermitian_lanczos(cublas_handle, M, numvec, H, V, upperb, ritzv, Tau, ritzV);
         }
         else
         {
@@ -89,10 +89,10 @@ namespace internal
     {
         using T = typename MatrixType::value_type;
 
-        if constexpr (std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU>>::value ||
-                      std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T, chase::platform::GPU>>::value)
+        if constexpr (std::is_same<MatrixType, chase::distMatrix::PseudoHermitianBlockBlockMatrix<T, chase::platform::GPU>>::value ||
+                      std::is_same<MatrixType, chase::distMatrix::PseudoHermitianBlockCyclicMatrix<T, chase::platform::GPU>>::value)
         {
-                cuda_mpi::quasi_hermitian_lanczos(cublas_handle, M, H, V, upperb);
+                cuda_mpi::pseudo_hermitian_lanczos(cublas_handle, M, H, V, upperb);
         }
         else
         {

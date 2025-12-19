@@ -94,7 +94,7 @@ struct cpu_mpi
                         chase::Base<typename MatrixType::value_type>* ritzV);
     
     template <typename MatrixType, typename InputMultiVectorType>
-    static void quasi_hermitian_lanczos(std::size_t M, std::size_t numvec, MatrixType& H,
+    static void pseudo_hermitian_lanczos(std::size_t M, std::size_t numvec, MatrixType& H,
                         InputMultiVectorType& V,
                         chase::Base<typename MatrixType::value_type>* upperb,
                         chase::Base<typename MatrixType::value_type>* ritzv,
@@ -110,7 +110,7 @@ struct cpu_mpi
                         chase::Base<typename MatrixType::value_type>* upperb);
     
     template <typename MatrixType, typename InputMultiVectorType>
-    static void quasi_hermitian_lanczos(std::size_t M, MatrixType& H, InputMultiVectorType& V,
+    static void pseudo_hermitian_lanczos(std::size_t M, MatrixType& H, InputMultiVectorType& V,
                         chase::Base<typename MatrixType::value_type>* upperb);
 
     template <typename MatrixType, typename InputMultiVectorType>
@@ -138,7 +138,7 @@ struct cpu_mpi
                                            chase::platform::CPU>* A = nullptr);
     
     template <typename MatrixType, typename InputMultiVectorType>
-    static void quasi_hermitian_rayleighRitz(
+    static void pseudo_hermitian_rayleighRitz(
         MatrixType& H, InputMultiVectorType& V1, InputMultiVectorType& V2,
         typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type&
             W1,
@@ -150,7 +150,7 @@ struct cpu_mpi
                                            chase::platform::CPU>* A = nullptr);
     
     template <typename MatrixType, typename InputMultiVectorType>
-    static void quasi_hermitian_rayleighRitz_v2(
+    static void pseudo_hermitian_rayleighRitz_v2(
         MatrixType& H, InputMultiVectorType& V1, InputMultiVectorType& V2,
         typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type&
             W1,
@@ -232,9 +232,9 @@ struct cpu_mpi
 #include "linalg/internal/mpi/cholqr.hpp"
 #include "linalg/internal/mpi/hemm.hpp"
 #include "linalg/internal/mpi/lanczos.hpp"
-#include "linalg/internal/mpi/quasi_hermitian_lanczos.hpp"
+#include "linalg/internal/mpi/pseudo_hermitian_lanczos.hpp"
 #include "linalg/internal/mpi/rayleighRitz.hpp"
-#include "linalg/internal/mpi/quasi_hermitian_rayleighRitz.hpp"
+#include "linalg/internal/mpi/pseudo_hermitian_rayleighRitz.hpp"
 #include "linalg/internal/mpi/residuals.hpp"
 #include "linalg/internal/mpi/shiftDiagonal.hpp"
 #include "linalg/internal/mpi/symOrHerm.hpp"

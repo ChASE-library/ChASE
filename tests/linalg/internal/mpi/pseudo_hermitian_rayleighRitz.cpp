@@ -19,7 +19,7 @@
 #include "linalg/distMatrix/distMultiVector.hpp"
 
 template <typename T>
-class QuasiHermitianRRCPUDistTest : public ::testing::Test {
+class PseudoHermitianRRCPUDistTest : public ::testing::Test {
 protected:
     void SetUp() override {
         MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
@@ -44,10 +44,10 @@ protected:
 };
 
 using TestTypes = ::testing::Types<float, double, std::complex<float>, std::complex<double>>;
-TYPED_TEST_SUITE(QuasiHermitianRRCPUDistTest, TestTypes);
+TYPED_TEST_SUITE(PseudoHermitianRRCPUDistTest, TestTypes);
 
 
-TYPED_TEST(QuasiHermitianRRCPUDistTest, QuasiHermitianRRTinyCorrectness) {
+TYPED_TEST(PseudoHermitianRRCPUDistTest, PseudoHermitianRRTinyCorrectness) {
     using T = TypeParam;  // Get the current type
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
     std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid
@@ -55,7 +55,7 @@ TYPED_TEST(QuasiHermitianRRCPUDistTest, QuasiHermitianRRTinyCorrectness) {
 
     int *coords = mpi_grid.get()->get_coords();
 
-    auto H_ = chase::distMatrix::QuasiHermitianBlockBlockMatrix<T>(this->N_tiny, this->N_tiny, mpi_grid);
+    auto H_ = chase::distMatrix::PseudoHermitianBlockBlockMatrix<T>(this->N_tiny, this->N_tiny, mpi_grid);
     H_.readFromBinaryFile(GetBSE_TinyMatrix<T>());
 
     chase::matrix::Matrix<T> exact_eigsl_H = chase::matrix::Matrix<T>(this->N_tiny, 1);
@@ -76,7 +76,7 @@ TYPED_TEST(QuasiHermitianRRCPUDistTest, QuasiHermitianRRTinyCorrectness) {
 
     std::size_t offset = 0, subSize = this->N_tiny; 
 
-    chase::linalg::internal::cpu_mpi::quasi_hermitian_rayleighRitz(H_, V1_, V2_, W1_, W2_, this->ritzv_tiny.data(), offset, subSize);
+    chase::linalg::internal::cpu_mpi::pseudo_hermitian_rayleighRitz(H_, V1_, V2_, W1_, W2_, this->ritzv_tiny.data(), offset, subSize);
 
     for(auto i = offset; i < offset + subSize; i++)
     {
@@ -84,7 +84,7 @@ TYPED_TEST(QuasiHermitianRRCPUDistTest, QuasiHermitianRRTinyCorrectness) {
     }
 }
 
-TYPED_TEST(QuasiHermitianRRCPUDistTest, QuasiHermitianRRCorrectness) {
+TYPED_TEST(PseudoHermitianRRCPUDistTest, PseudoHermitianRRCorrectness) {
     using T = TypeParam;  // Get the current type
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
     std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid
@@ -101,7 +101,7 @@ TYPED_TEST(QuasiHermitianRRCPUDistTest, QuasiHermitianRRCorrectness) {
 
     int *coords = mpi_grid.get()->get_coords();
 
-    auto H_ = chase::distMatrix::QuasiHermitianBlockBlockMatrix<T>(this->N, this->N, mpi_grid);
+    auto H_ = chase::distMatrix::PseudoHermitianBlockBlockMatrix<T>(this->N, this->N, mpi_grid);
     H_.readFromBinaryFile(GetBSE_Matrix<T>());
 
     chase::matrix::Matrix<T> exact_eigsl_H = chase::matrix::Matrix<T>(this->N, 1);
@@ -122,7 +122,7 @@ TYPED_TEST(QuasiHermitianRRCPUDistTest, QuasiHermitianRRCorrectness) {
 
     std::size_t offset = 0, subSize = this->N; 
 
-    chase::linalg::internal::cpu_mpi::quasi_hermitian_rayleighRitz(H_, V1_, V2_, W1_, W2_, this->ritzv.data(), offset, subSize);
+    chase::linalg::internal::cpu_mpi::pseudo_hermitian_rayleighRitz(H_, V1_, V2_, W1_, W2_, this->ritzv.data(), offset, subSize);
 
     for(auto i = offset; i < offset + subSize; i++)
     {

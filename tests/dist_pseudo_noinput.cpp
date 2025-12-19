@@ -80,8 +80,8 @@ int main(int argc, char** argv)
     std::cout << "======================== Seq  ChASE ";
 #endif
 
-#if defined(USE_QUASI_HERMITIAN) //C
-    std::cout << "Quasi-Hermitian ";
+#if defined(USE_PSEUDO_HERMITIAN) //C
+    std::cout << "Pseudo-Hermitian ";
 #else //C
     std::cout << "Hermitian ";
 #endif //C
@@ -106,8 +106,8 @@ int main(int argc, char** argv)
     std::size_t mb = 64;
     auto Vec = chase::distMultiVector::DistMultiVectorBlockCyclic1D<
         T, chase::distMultiVector::CommunicatorType::column, ARCH>(N, nev + nex, mb, mpi_grid);
-#ifdef USE_QUASI_HERMITIAN 
-    auto Hmat = chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T, ARCH>(
+#ifdef USE_PSEUDO_HERMITIAN 
+    auto Hmat = chase::distMatrix::PseudoHermitianBlockCyclicMatrix<T, ARCH>(
         N, N, mb, mb, mpi_grid);
 #else 
     auto Hmat = chase::distMatrix::BlockCyclicMatrix<T, ARCH>(
@@ -116,8 +116,8 @@ int main(int argc, char** argv)
 #else
     auto Vec = chase::distMultiVector::DistMultiVector1D<
         T, chase::distMultiVector::CommunicatorType::column, ARCH>(N, nev + nex, mpi_grid);
-#ifdef USE_QUASI_HERMITIAN
-    auto Hmat = chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, ARCH>(
+#ifdef USE_PSEUDO_HERMITIAN
+    auto Hmat = chase::distMatrix::PseudoHermitianBlockBlockMatrix<T, ARCH>(
         N, N, mpi_grid);
 #else 
     auto Hmat = chase::distMatrix::BlockBlockMatrix<T, ARCH>(
@@ -141,8 +141,8 @@ int main(int argc, char** argv)
 #else 
     std::vector<T> V(N*(nev+nex));
 
-#ifdef USE_QUASI_HERMITIAN 
-    using MatrixType = chase::matrix::QuasiHermitianMatrix<T, ARCH>;
+#ifdef USE_PSEUDO_HERMITIAN 
+    using MatrixType = chase::matrix::PseudoHermitianMatrix<T, ARCH>;
 #else //B
     using MatrixType = chase::matrix::Matrix<T,ARCH>;
 #endif //B

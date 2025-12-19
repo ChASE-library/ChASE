@@ -9,7 +9,7 @@
 #include <cmath>
 #include <cstring>
 #include <random>
-#include "linalg/internal/mpi/quasi_hermitian_lanczos.hpp"
+#include "linalg/internal/mpi/pseudo_hermitian_lanczos.hpp"
 #include "tests/linalg/internal/utils.hpp"
 #include "grid/mpiGrid2D.hpp"
 #include "linalg/matrix/matrix.hpp"
@@ -17,7 +17,7 @@
 #include "linalg/distMatrix/distMultiVector.hpp"
 
 template <typename T>
-class QuasiHermitianLanczosCPUDistTest : public ::testing::Test {
+class PseudoHermitianLanczosCPUDistTest : public ::testing::Test {
 protected:
     void SetUp() override {
         MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
@@ -54,10 +54,10 @@ protected:
 };
 
 using TestTypes = ::testing::Types<float, double, std::complex<float>, std::complex<double>>;
-TYPED_TEST_SUITE(QuasiHermitianLanczosCPUDistTest, TestTypes);
+TYPED_TEST_SUITE(PseudoHermitianLanczosCPUDistTest, TestTypes);
 
 
-TYPED_TEST(QuasiHermitianLanczosCPUDistTest, tinyQuasiHermitianLanczos){
+TYPED_TEST(PseudoHermitianLanczosCPUDistTest, tinyPseudoHermitianLanczos){
     using T = TypeParam;  // Get the current type
 
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
@@ -66,7 +66,7 @@ TYPED_TEST(QuasiHermitianLanczosCPUDistTest, tinyQuasiHermitianLanczos){
 
     int *coords = mpi_grid.get()->get_coords();
 
-    auto H_ = chase::distMatrix::QuasiHermitianBlockBlockMatrix<T>(this->N_tiny, this->N_tiny, mpi_grid);
+    auto H_ = chase::distMatrix::PseudoHermitianBlockBlockMatrix<T>(this->N_tiny, this->N_tiny, mpi_grid);
     H_.readFromBinaryFile(GetBSE_TinyMatrix<T>());
 
     chase::matrix::Matrix<T> exact_eigsl_H = chase::matrix::Matrix<T>(this->N_tiny, 1);
@@ -103,7 +103,7 @@ TYPED_TEST(QuasiHermitianLanczosCPUDistTest, tinyQuasiHermitianLanczos){
     EXPECT_LT(diff_max,1e3*MachineEpsilon<chase::Base<T>>::value());
 }
 
-TYPED_TEST(QuasiHermitianLanczosCPUDistTest, tinyQuasiHermitianSimplifiedLanczos) {
+TYPED_TEST(PseudoHermitianLanczosCPUDistTest, tinyPseudoHermitianSimplifiedLanczos) {
     using T = TypeParam;
 
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
@@ -112,7 +112,7 @@ TYPED_TEST(QuasiHermitianLanczosCPUDistTest, tinyQuasiHermitianSimplifiedLanczos
 
     int *coords = mpi_grid.get()->get_coords();
 
-    auto H_ = chase::distMatrix::QuasiHermitianBlockBlockMatrix<T>(this->N_tiny, this->N_tiny, mpi_grid);
+    auto H_ = chase::distMatrix::PseudoHermitianBlockBlockMatrix<T>(this->N_tiny, this->N_tiny, mpi_grid);
     H_.readFromBinaryFile(GetBSE_TinyMatrix<T>());
 
     chase::matrix::Matrix<T> exact_eigsl_H = chase::matrix::Matrix<T>(this->N_tiny, 1);
@@ -143,7 +143,7 @@ TYPED_TEST(QuasiHermitianLanczosCPUDistTest, tinyQuasiHermitianSimplifiedLanczos
 
 }
 
-TYPED_TEST(QuasiHermitianLanczosCPUDistTest, QuasiHermitianLanczos){
+TYPED_TEST(PseudoHermitianLanczosCPUDistTest, PseudoHermitianLanczos){
     using T = TypeParam;  // Get the current type
 
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
@@ -152,7 +152,7 @@ TYPED_TEST(QuasiHermitianLanczosCPUDistTest, QuasiHermitianLanczos){
 
     int *coords = mpi_grid.get()->get_coords();
 
-    auto H_ = chase::distMatrix::QuasiHermitianBlockBlockMatrix<T>(this->N, this->N, mpi_grid);
+    auto H_ = chase::distMatrix::PseudoHermitianBlockBlockMatrix<T>(this->N, this->N, mpi_grid);
     H_.readFromBinaryFile(GetBSE_Matrix<T>());
 
     chase::matrix::Matrix<T> exact_eigsl_H = chase::matrix::Matrix<T>(this->N, 1);
@@ -189,7 +189,7 @@ TYPED_TEST(QuasiHermitianLanczosCPUDistTest, QuasiHermitianLanczos){
     EXPECT_LT(diff_max,1e3*MachineEpsilon<chase::Base<T>>::value());
 }
 
-TYPED_TEST(QuasiHermitianLanczosCPUDistTest, QuasiHermitianSimplifiedLanczos) {
+TYPED_TEST(PseudoHermitianLanczosCPUDistTest, PseudoHermitianSimplifiedLanczos) {
     using T = TypeParam;
 
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
@@ -198,7 +198,7 @@ TYPED_TEST(QuasiHermitianLanczosCPUDistTest, QuasiHermitianSimplifiedLanczos) {
 
     int *coords = mpi_grid.get()->get_coords();
 
-    auto H_ = chase::distMatrix::QuasiHermitianBlockBlockMatrix<T>(this->N, this->N, mpi_grid);
+    auto H_ = chase::distMatrix::PseudoHermitianBlockBlockMatrix<T>(this->N, this->N, mpi_grid);
     H_.readFromBinaryFile(GetBSE_Matrix<T>());
 
     chase::matrix::Matrix<T> exact_eigsl_H = chase::matrix::Matrix<T>(this->N, 1);

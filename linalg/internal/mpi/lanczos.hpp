@@ -53,10 +53,10 @@ namespace internal
     {
         using T = typename MatrixType::value_type;
     
-	if constexpr (std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockBlockMatrix<T>>::value ||
-		      std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T>>::value)
+	if constexpr (std::is_same<MatrixType, chase::distMatrix::PseudoHermitianBlockBlockMatrix<T>>::value ||
+		      std::is_same<MatrixType, chase::distMatrix::PseudoHermitianBlockCyclicMatrix<T>>::value)
 	{
-		cpu_mpi::quasi_hermitian_lanczos(M, numvec, H, V, upperb, ritzv, Tau, ritzV);
+		cpu_mpi::pseudo_hermitian_lanczos(M, numvec, H, V, upperb, ritzv, Tau, ritzV);
 	}
 	else
 	{
@@ -86,10 +86,10 @@ namespace internal
     {
         using T = typename MatrixType::value_type;
 	
-	if constexpr (std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockBlockMatrix<T>>::value ||
-		      std::is_same<MatrixType, chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T>>::value)
+	if constexpr (std::is_same<MatrixType, chase::distMatrix::PseudoHermitianBlockBlockMatrix<T>>::value ||
+		      std::is_same<MatrixType, chase::distMatrix::PseudoHermitianBlockCyclicMatrix<T>>::value)
 	{
-		cpu_mpi::quasi_hermitian_lanczos(M, H, V, upperb);
+		cpu_mpi::pseudo_hermitian_lanczos(M, H, V, upperb);
 	}
 	else
 	{

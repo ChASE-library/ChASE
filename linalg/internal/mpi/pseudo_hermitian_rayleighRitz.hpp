@@ -46,7 +46,7 @@ namespace internal
      * @throws std::invalid_argument if ritzv is a nullptr.
      */                  
     template <typename MatrixType, typename InputMultiVectorType>
-     void cpu_mpi::quasi_hermitian_rayleighRitz(MatrixType& H,
+     void cpu_mpi::pseudo_hermitian_rayleighRitz(MatrixType& H,
                        InputMultiVectorType& V1,
                        InputMultiVectorType& V2,
                        typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type& W1,
@@ -259,7 +259,7 @@ namespace internal
      * @throws std::invalid_argument if ritzv is a nullptr.
      */                  
     template <typename MatrixType, typename InputMultiVectorType>
-     void cpu_mpi::quasi_hermitian_rayleighRitz_v2(MatrixType& H,
+     void cpu_mpi::pseudo_hermitian_rayleighRitz_v2(MatrixType& H,
                        InputMultiVectorType& V1,
                        InputMultiVectorType& V2,
                        typename ResultMultiVectorType<MatrixType, InputMultiVectorType>::type& W1,

@@ -113,11 +113,11 @@ public:
         coords_ = Hmat_->getMpiGrid()->get_coords();
         dims_ = Hmat_->getMpiGrid()->get_dims();
 
-        if constexpr (std::is_same<typename MatrixType::hermitian_type, chase::matrix::QuasiHermitian>::value)
+        if constexpr (std::is_same<typename MatrixType::hermitian_type, chase::matrix::PseudoHermitian>::value)
          {
                 is_sym_ = false;
                 is_pseudoHerm_ = true;
-                //Quasi Hermitian matrices require more space for the dual basis
+                //Pseudo Hermitian matrices require more space for the dual basis
         	A_ = std::make_unique<chase::distMatrix::RedundantMatrix<T>>(nevex_, 3*nevex_, Hmat_->getMpiGrid_shared_ptr());
          }
          else
@@ -442,7 +442,7 @@ public:
         //}
 
 	
-        if constexpr (std::is_same<typename MatrixType::hermitian_type, chase::matrix::QuasiHermitian>::value)
+        if constexpr (std::is_same<typename MatrixType::hermitian_type, chase::matrix::PseudoHermitian>::value)
         {
                 /* The right eigenvectors are not orthonormal in the QH case, but S-orthonormal.
                  * Therefore, we S-orthonormalize the locked vectors against the current subspace

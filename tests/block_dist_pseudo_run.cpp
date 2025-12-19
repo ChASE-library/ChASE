@@ -48,7 +48,7 @@ int main(int argc, char** argv){
             dims_[0], dims_[1], MPI_COMM_WORLD);
 
     
-	auto Hmat = chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, ARCH>(N, N, mpi_grid);
+	auto Hmat = chase::distMatrix::PseudoHermitianBlockBlockMatrix<T, ARCH>(N, N, mpi_grid);
 
 	#ifdef HAS_CUDA
     		Hmat.allocate_cpu_data();

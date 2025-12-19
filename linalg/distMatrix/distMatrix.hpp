@@ -95,13 +95,13 @@ template<typename T, typename Platform>
 class BlockBlockMatrix;
 
 template<typename T, typename Platform>
-class QuasiHermitianBlockBlockMatrix;
+class PseudoHermitianBlockBlockMatrix;
 
 template<typename T, typename Platform>
 class BlockCyclicMatrix;
 
 template<typename T, typename Platform>
-class QuasiHermitianBlockCyclicMatrix;
+class PseudoHermitianBlockCyclicMatrix;
 
 /**
  * @class AbstractDistMatrix
@@ -1931,38 +1931,38 @@ private:
 };
 
 template <typename T, typename Platform = chase::platform::CPU>
-class QuasiHermitianBlockBlockMatrix;
+class PseudoHermitianBlockBlockMatrix;
 
 template <typename T>
-class QuasiHermitianBlockBlockMatrix<T, chase::platform::CPU> : public BlockBlockMatrix<T, chase::platform::CPU> {
+class PseudoHermitianBlockBlockMatrix<T, chase::platform::CPU> : public BlockBlockMatrix<T, chase::platform::CPU> {
 public:
-    using hermitian_type = chase::matrix::QuasiHermitian; ///< Alias for the Quasi-Hermitian matrix type.
+    using hermitian_type = chase::matrix::PseudoHermitian; ///< Alias for the Pseudo-Hermitian matrix type.
     // Default constructor
-    QuasiHermitianBlockBlockMatrix() : BlockBlockMatrix<T, chase::platform::CPU>() {}
+    PseudoHermitianBlockBlockMatrix() : BlockBlockMatrix<T, chase::platform::CPU>() {}
     
     // Constructor with dimensions
-    QuasiHermitianBlockBlockMatrix(std::size_t M, std::size_t N, std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid) 
+    PseudoHermitianBlockBlockMatrix(std::size_t M, std::size_t N, std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid) 
         : BlockBlockMatrix<T, chase::platform::CPU>(M, N, mpi_grid) {}
     
     // Constructor with external data
-    QuasiHermitianBlockBlockMatrix(std::size_t m, std::size_t n, std::size_t ld, T* data, std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid)
+    PseudoHermitianBlockBlockMatrix(std::size_t m, std::size_t n, std::size_t ld, T* data, std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid)
         : BlockBlockMatrix<T, chase::platform::CPU>(m, n, ld, data, mpi_grid) {}
 };
 
 #ifdef HAS_CUDA
 template <typename T>
-class QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU> : public BlockBlockMatrix<T, chase::platform::GPU> {
+class PseudoHermitianBlockBlockMatrix<T, chase::platform::GPU> : public BlockBlockMatrix<T, chase::platform::GPU> {
 public:
-    using hermitian_type = chase::matrix::QuasiHermitian; ///< Alias for the Quasi-Hermitian matrix type.
+    using hermitian_type = chase::matrix::PseudoHermitian; ///< Alias for the Pseudo-Hermitian matrix type.
     // Default constructor
-    QuasiHermitianBlockBlockMatrix() : BlockBlockMatrix<T, chase::platform::GPU>() {}
+    PseudoHermitianBlockBlockMatrix() : BlockBlockMatrix<T, chase::platform::GPU>() {}
     
     // Constructor with dimensions
-    QuasiHermitianBlockBlockMatrix(std::size_t M, std::size_t N, std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid) 
+    PseudoHermitianBlockBlockMatrix(std::size_t M, std::size_t N, std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid) 
         : BlockBlockMatrix<T, chase::platform::GPU>(M, N, mpi_grid) {}
     
     // Constructor with external data
-    QuasiHermitianBlockBlockMatrix(std::size_t m, std::size_t n, std::size_t ld, T* data, std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid)
+    PseudoHermitianBlockBlockMatrix(std::size_t m, std::size_t n, std::size_t ld, T* data, std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid)
         : BlockBlockMatrix<T, chase::platform::GPU>(m, n, ld, data, mpi_grid) {}
 
 };
@@ -2891,38 +2891,38 @@ private:
 };
 
 template <typename T, typename Platform = chase::platform::CPU>
-class QuasiHermitianBlockCyclicMatrix;
+class PseudoHermitianBlockCyclicMatrix;
 
 template <typename T>
-class QuasiHermitianBlockCyclicMatrix<T, chase::platform::CPU> : public BlockCyclicMatrix<T, chase::platform::CPU> {
+class PseudoHermitianBlockCyclicMatrix<T, chase::platform::CPU> : public BlockCyclicMatrix<T, chase::platform::CPU> {
 public:
-    using hermitian_type = chase::matrix::QuasiHermitian; ///< Alias for the Quasi-Hermitian matrix type.
+    using hermitian_type = chase::matrix::PseudoHermitian; ///< Alias for the Pseudo-Hermitian matrix type.
     // Default constructor
-    QuasiHermitianBlockCyclicMatrix() : BlockCyclicMatrix<T, chase::platform::CPU>() {}
+    PseudoHermitianBlockCyclicMatrix() : BlockCyclicMatrix<T, chase::platform::CPU>() {}
     
     // Constructor with dimensions
-    QuasiHermitianBlockCyclicMatrix(std::size_t M, std::size_t N, std::size_t mb, std::size_t nb, std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid) 
+    PseudoHermitianBlockCyclicMatrix(std::size_t M, std::size_t N, std::size_t mb, std::size_t nb, std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid) 
         : BlockCyclicMatrix<T, chase::platform::CPU>(M, N, mb, nb, mpi_grid) {}
     
     // Constructor with external data
-    QuasiHermitianBlockCyclicMatrix(std::size_t M, std::size_t N, std::size_t m, std::size_t n, std::size_t mb, std::size_t nb, std::size_t ld, T* data, std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid)
+    PseudoHermitianBlockCyclicMatrix(std::size_t M, std::size_t N, std::size_t m, std::size_t n, std::size_t mb, std::size_t nb, std::size_t ld, T* data, std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid)
         : BlockCyclicMatrix<T, chase::platform::CPU>(M, N, m, n, mb, nb, ld, data, mpi_grid) {}
 };
 
 #ifdef HAS_CUDA
 template <typename T>
-class QuasiHermitianBlockCyclicMatrix<T, chase::platform::GPU> : public BlockCyclicMatrix<T, chase::platform::GPU> {
+class PseudoHermitianBlockCyclicMatrix<T, chase::platform::GPU> : public BlockCyclicMatrix<T, chase::platform::GPU> {
 public:
-    using hermitian_type = chase::matrix::QuasiHermitian; ///< Alias for the Quasi-Hermitian matrix type.
+    using hermitian_type = chase::matrix::PseudoHermitian; ///< Alias for the Pseudo-Hermitian matrix type.
     // Default constructor
-    QuasiHermitianBlockCyclicMatrix() : BlockCyclicMatrix<T, chase::platform::GPU>() {}
+    PseudoHermitianBlockCyclicMatrix() : BlockCyclicMatrix<T, chase::platform::GPU>() {}
     
     // Constructor with dimensions
-    QuasiHermitianBlockCyclicMatrix(std::size_t M, std::size_t N, std::size_t mb, std::size_t nb, std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid) 
+    PseudoHermitianBlockCyclicMatrix(std::size_t M, std::size_t N, std::size_t mb, std::size_t nb, std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid) 
         : BlockCyclicMatrix<T, chase::platform::GPU>(M, N, mb, nb, mpi_grid) {}
     
     // Constructor with external data
-    QuasiHermitianBlockCyclicMatrix(std::size_t M, std::size_t N, std::size_t m, std::size_t n, std::size_t mb, std::size_t nb, std::size_t ld, T* data, std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid)
+    PseudoHermitianBlockCyclicMatrix(std::size_t M, std::size_t N, std::size_t m, std::size_t n, std::size_t mb, std::size_t nb, std::size_t ld, T* data, std::shared_ptr<chase::grid::MpiGrid2DBase> mpi_grid)
         : BlockCyclicMatrix<T, chase::platform::GPU>(M, N, m, n, mb, nb, ld, data, mpi_grid) {}
 
 };

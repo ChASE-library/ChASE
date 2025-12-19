@@ -138,7 +138,7 @@ public:
         A_ = chase::matrix::Matrix<T, chase::platform::GPU>(2 * nevex_, nevex_);
 
         if constexpr (std::is_same<MatrixType,
-                                   chase::matrix::QuasiHermitianMatrix<
+                                   chase::matrix::PseudoHermitianMatrix<
                                        T, chase::platform::GPU>>::value)
         {
             is_sym_ = false;
@@ -176,7 +176,7 @@ public:
 #endif
 
         if constexpr (std::is_same<MatrixType,
-                                   chase::matrix::QuasiHermitianMatrix<
+                                   chase::matrix::PseudoHermitianMatrix<
                                        T, chase::platform::GPU>>::value)
         {
             is_sym_ = false;
@@ -222,7 +222,7 @@ public:
         int lwork_eev = 0;
 
         if constexpr (std::is_same<MatrixType,
-                                   chase::matrix::QuasiHermitianMatrix<
+                                   chase::matrix::PseudoHermitianMatrix<
                                        T, chase::platform::GPU>>::value)
         {
 #ifdef XGEEV_EXISTS
@@ -561,7 +561,7 @@ public:
                                                Vec2_.data(), Vec2_.ld());
 
         if constexpr (std::is_same<MatrixType,
-                                   chase::matrix::QuasiHermitianMatrix<
+                                   chase::matrix::PseudoHermitianMatrix<
                                        T, chase::platform::GPU>>::value)
         {
             /* The right eigenvectors are not orthonormal in the QH case, but
@@ -666,7 +666,7 @@ public:
         std::size_t locked = (nev_ + nex_) - block;
 
         if constexpr (std::is_same<MatrixType,
-                                   chase::matrix::QuasiHermitianMatrix<
+                                   chase::matrix::PseudoHermitianMatrix<
                                        T, chase::platform::GPU>>::value)
         {
 #ifdef XGEEV_EXISTS
@@ -777,8 +777,8 @@ private:
     int lwork_ = 0; /**< Workspace size for matrix operations. */
 
     std::unique_ptr<T[]> h_work_; /**< Pointer to work buffer on host for geev
-                                     in the Quasi Hermitian case. */
-    int lhwork_ = 0; /**< Workspace size for host geev operations in the Quasi
+                                     in the Pseudo Hermitian case. */
+    int lhwork_ = 0; /**< Workspace size for host geev operations in the Pseudo
                         Hermitian case. */
 };
 

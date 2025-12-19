@@ -173,7 +173,7 @@ std::size_t Algorithm<T>::calc_degrees(ChaseBase<T>* single, std::size_t N,
 }
 
 template <class T>
-std::size_t Algorithm<T>::calc_degrees_quasi(ChaseBase<T>* single, std::size_t N,
+std::size_t Algorithm<T>::calc_degrees_pseudo(ChaseBase<T>* single, std::size_t N,
                                              std::size_t unconverged, std::size_t nex,
                                              Base<T> upperb, Base<T> lowerb,
                                              Base<T> tol, Base<T>* ritzv,
@@ -188,7 +188,7 @@ std::size_t Algorithm<T>::calc_degrees_quasi(ChaseBase<T>* single, std::size_t N
     Base<T> e = (upperb - lowerb) / 2; // Half-length of the interval.
     Base<T> rho;
 
-    // === CLUSTER DETECTION AND SPACING FACTORS (QUASI-HERMITIAN SPECIFIC) ===
+    // === CLUSTER DETECTION AND SPACING FACTORS (PSEUDO-HERMITIAN SPECIFIC) ===
     // When cluster-aware degrees are disabled, fall back to original algorithm exactly
     if (!conf.UseClusterAwareDegrees()) {
         // Use original calc_degrees implementation exactly
@@ -240,7 +240,7 @@ std::size_t Algorithm<T>::calc_degrees_quasi(ChaseBase<T>* single, std::size_t N
     detect_eigenvalue_clusters(ritzv, resid, tol, unconverged, nex, 
                               upperb, lowerb, cluster_factors);
     
-    // === QUASI-HERMITIAN DEGREE CALCULATION WITH CLUSTER AWARENESS ===
+    // === PSEUDO-HERMITIAN DEGREE CALCULATION WITH CLUSTER AWARENESS ===
     for (std::size_t i = 0; i < unconverged - nex; ++i)
     {
         Base<T> t = (ritzv[i] - c) / e;
@@ -274,26 +274,26 @@ std::size_t Algorithm<T>::calc_degrees_quasi(ChaseBase<T>* single, std::size_t N
             degrees[i] = std::size_t(degrees[i] + stagnation_bonus);            
         }
 
-        // Apply additional quasi-hermitian specific adjustments
-        // For quasi-hermitian matrices, we might need more aggressive degrees
-        std::size_t quasi_bonus = 0;
+        // Apply additional pseudo-hermitian specific adjustments
+        // For pseudo-hermitian matrices, we might need more aggressive degrees
+        std::size_t pseudo_bonus = 0;
         if (std::abs(ritzv[i]) < std::abs(upperb - lowerb) * 0.1) {
-            // Near-zero eigenvalues in quasi-hermitian problems can be challenging
-            quasi_bonus = 2;
+            // Near-zero eigenvalues in pseudo-hermitian problems can be challenging
+            pseudo_bonus = 2;
         }
         
-        degrees[i] = std::min(degrees[i] + conf.GetDegExtra() + quasi_bonus, conf.GetMaxDeg());
+        degrees[i] = std::min(degrees[i] + conf.GetDegExtra() + pseudo_bonus, conf.GetMaxDeg());
         
 #ifdef CHASE_OUTPUT
         // Debug output for residual-weighted cluster analysis
 	/*
-        if (cluster_factors[i] > 1.5 || cluster_factors[i] < 0.8 || quasi_bonus > 0) {
+        if (cluster_factors[i] > 1.5 || cluster_factors[i] < 0.8 || pseudo_bonus > 0) {
             std::ostringstream oss;
             oss << "Residual-weighted cluster adjustment: eigenvalue[" << i << "] = " 
                 << ritzv[i] << ", residual = " << resid[i] 
                 << ", cluster_factor = " << cluster_factors[i] 
                 << ", stagnation_bonus = " << stagnation_bonus
-                << ", quasi_bonus = " << quasi_bonus
+                << ", pseudo_bonus = " << pseudo_bonus
                 << ", base_degree = " << base_degree 
                 << ", final_degree = " << degrees[i] << "\n";
             single->Output(oss.str());
@@ -302,10 +302,10 @@ std::size_t Algorithm<T>::calc_degrees_quasi(ChaseBase<T>* single, std::size_t N
 #endif
     }
 
-    // === ENHANCED NEX REGION HANDLING FOR QUASI-HERMITIAN ===
+    // === ENHANCED NEX REGION HANDLING FOR PSEUDO-HERMITIAN ===
     for (std::size_t i = unconverged - nex; i < unconverged; ++i)
     {
-        // For quasi-hermitian, use weighted average to avoid ghost point contamination
+        // For pseudo-hermitian, use weighted average to avoid ghost point contamination
         if (unconverged - nex > 0) {
             std::size_t ref_idx = std::min(unconverged - nex - 1, 
                                          std::max(std::size_t(0), 
@@ -320,7 +320,7 @@ std::size_t Algorithm<T>::calc_degrees_quasi(ChaseBase<T>* single, std::size_t N
             
             if (count > 0) {
                 degrees[i] = std::size_t(avg_degree / count);
-                // Add extra degree for nex region in quasi-hermitian case
+                // Add extra degree for nex region in pseudo-hermitian case
                 degrees[i] = std::min(degrees[i] + 2, conf.GetMaxDeg());
             } else {
                 degrees[i] = degrees[unconverged - 1 - nex];
@@ -336,7 +336,7 @@ std::size_t Algorithm<T>::calc_degrees_quasi(ChaseBase<T>* single, std::size_t N
         degrees[i] += degrees[i] % 2;  // Make even: add 1 if odd, add 0 if even
     }
 
-    // === QUASI-HERMITIAN SPECIFIC SORTING ===
+    // === PSEUDO-HERMITIAN SPECIFIC SORTING ===
     // Sort according to degrees for optimal filtering order
     for (std::size_t j = 0; j < unconverged - 1; ++j)
         for (std::size_t k = j; k < unconverged; ++k)
@@ -415,7 +415,7 @@ std::size_t Algorithm<T>::locking(ChaseBase<T>* single, std::size_t N,
 
 
 template <class T>
-std::size_t Algorithm<T>::locking_quasi(
+std::size_t Algorithm<T>::locking_pseudo(
     ChaseBase<T>* single, std::size_t N,
     std::size_t unconverged, std::size_t nex, Base<T> tol, std::size_t *index,
     Base<T>* Lritzv, Base<T>* resid, Base<T>* residLast, std::vector<Base<T>> *early_locked_residuals,
@@ -847,7 +847,7 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
 
 		if(single->isPseudoHerm())
 		{
-			residual_file_name = residual_file_name + "_quasi";
+			residual_file_name = residual_file_name + "_pseudo";
 		}
 
 #ifdef XGEEV_EXISTS
@@ -919,8 +919,8 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
         if (config.DoOptimization() && iteration != 0)
         {
             if (single->isPseudoHerm()) {
-                // Use specialized quasi-hermitian degree calculation with cluster-aware features
-                deg = calc_degrees_quasi(single, N, unconverged, nex, upperb, lowerb, tol,
+                // Use specialized pseudo-hermitian degree calculation with cluster-aware features
+                deg = calc_degrees_pseudo(single, N, unconverged, nex, upperb, lowerb, tol,
                                         ritzv, resid, residLast, degrees, locked);
             } else {
                 deg = calc_degrees(single, N, unconverged, nex, upperb, lowerb, tol,
@@ -1043,7 +1043,7 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
                         degrees, locked);
         }else
         {
-            new_converged = locking_quasi(single, N, unconverged, nex, tol, index.data(), ritzv, resid, residLast, &early_locked_residuals,
+            new_converged = locking_pseudo(single, N, unconverged, nex, tol, index.data(), ritzv, resid, residLast, &early_locked_residuals,
 			degrees, locked, iteration);
         }
         

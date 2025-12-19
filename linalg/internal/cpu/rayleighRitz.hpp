@@ -87,7 +87,7 @@ namespace cpu
     * resulting right eigenvectors are stored in `V`.
     *
     * @tparam T Data type for the matrix (e.g., float, double, etc.).
-    * @param[in] H The Quasi-Hermitian input matrix (N x N).
+    * @param[in] H The Pseudo-Hermitian input matrix (N x N).
     * @param[in] n The number of vectors in Q (subspace size).
     * @param[in] Q The input matrix of size (N x n), whose columns are the basis vectors for the subspace.
     * @param[in] ldq The leading dimension of the matrix Q.
@@ -103,7 +103,7 @@ namespace cpu
     * 4. Computes the final approximation to the eigenvectors by multiplying Q with the computed ritz vectors.
     */    
     template<typename T>
-    void rayleighRitz(chase::matrix::QuasiHermitianMatrix<T> *H, std::size_t n, T *Q, std::size_t ldq, 
+    void rayleighRitz(chase::matrix::PseudoHermitianMatrix<T> *H, std::size_t n, T *Q, std::size_t ldq, 
                       T * V, std::size_t ldv, Base<T> *ritzv, T *A = nullptr)
     {
 
@@ -200,7 +200,7 @@ namespace cpu
     }
     
     /**
-    * @brief Perform the Rayleigh-Ritz procedure to compute eigenvalues and eigenvectors of a Quasi-Hermitian matrix.
+    * @brief Perform the Rayleigh-Ritz procedure to compute eigenvalues and eigenvectors of a Pseudo-Hermitian matrix.
     *
     * The Rayleigh-Ritz method computes an approximation to the eigenvalues and eigenvectors of a matrix
     * by projecting the matrix onto a subspace defined by a set of vectors (Q) and solving the eigenvalue
@@ -208,7 +208,7 @@ namespace cpu
     * resulting right eigenvectors are stored in `V`.
     *
     * @tparam T Data type for the matrix (e.g., float, double, etc.).
-    * @param[in] H The Quasi-Hermitian input matrix (N x N).
+    * @param[in] H The Pseudo-Hermitian input matrix (N x N).
     * @param[in] n The number of vectors in Q (subspace size).
     * @param[in] Q The input matrix of size (N x n), whose columns are the basis vectors for the subspace.
     * @param[in] ldq The leading dimension of the matrix Q.
@@ -224,7 +224,7 @@ namespace cpu
     * 4. Computes the final approximation to the eigenvectors by multiplying Q with the computed ritz vectors.
     */    
     template<typename T>
-    void rayleighRitz_v2(chase::matrix::QuasiHermitianMatrix<T> *H, std::size_t n, T *Q, std::size_t ldq, 
+    void rayleighRitz_v2(chase::matrix::PseudoHermitianMatrix<T> *H, std::size_t n, T *Q, std::size_t ldq, 
                       T * V, std::size_t ldv, Base<T> *ritzv, T *A = nullptr)
     {
 

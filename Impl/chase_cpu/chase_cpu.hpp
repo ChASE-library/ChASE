@@ -93,11 +93,11 @@ namespace Impl
 
 			A_ = chase::matrix::Matrix<T>(3 *nevex_, nevex_);
 			
-			if constexpr (std::is_same<MatrixType, chase::matrix::QuasiHermitianMatrix<T>>::value)
+			if constexpr (std::is_same<MatrixType, chase::matrix::PseudoHermitianMatrix<T>>::value)
 			{
 				is_sym_ = false;
 				is_pseudoHerm_ = true;
-				//Quasi Hermitian matrices require more space for the dual basis
+				//Pseudo Hermitian matrices require more space for the dual basis
 			}
 			else
 			{
@@ -145,11 +145,11 @@ namespace Impl
 			resid_ = chase::matrix::Matrix<chase::Base<T>>(nevex_, 1);
 			ritzvs_ = chase::matrix::Matrix<chase::Base<T>>(nevex_, 1, nevex_, ritzv_);
 			A_ = chase::matrix::Matrix<T>(3 * nevex_, nevex_);
-			if constexpr (std::is_same<MatrixType, chase::matrix::QuasiHermitianMatrix<T>>::value)
+			if constexpr (std::is_same<MatrixType, chase::matrix::PseudoHermitianMatrix<T>>::value)
 			{
 				is_sym_ = false;
 				is_pseudoHerm_ = true;
-				//Quasi Hermitian matrices require more space for the dual basis
+				//Pseudo Hermitian matrices require more space for the dual basis
 			}
 			else
 			{
@@ -458,7 +458,7 @@ namespace Impl
                                           Vec2_.data(), 
                                           Vec2_.ld());
 	
-		if constexpr (std::is_same<MatrixType, chase::matrix::QuasiHermitianMatrix<T>>::value)
+		if constexpr (std::is_same<MatrixType, chase::matrix::PseudoHermitianMatrix<T>>::value)
 		{
 			/* The right eigenvectors are not orthonormal in the QH case, but S-orthonormal.
 			* Therefore, we S-orthonormalize the locked vectors against the current subspace
@@ -568,7 +568,7 @@ namespace Impl
 
     void RR(chase::Base<T>* ritzv, std::size_t block) override
     {   
-		if constexpr (std::is_same<MatrixType, chase::matrix::QuasiHermitianMatrix<T>>::value)
+		if constexpr (std::is_same<MatrixType, chase::matrix::PseudoHermitianMatrix<T>>::value)
 		{
 			chase::linalg::internal::cpu::rayleighRitz_v2(Hmat_,
 													block, 
@@ -599,7 +599,7 @@ namespace Impl
     void Sort(chase::Base<T> * ritzv, chase::Base<T> * residLast, chase::Base<T> * resid) override
     {
 
-		if constexpr (std::is_same<MatrixType, chase::matrix::QuasiHermitianMatrix<T>>::value)
+		if constexpr (std::is_same<MatrixType, chase::matrix::PseudoHermitianMatrix<T>>::value)
 		{
 		/* Sorting all the eigenvalues is probably not necessary if Opt = False */
 		

@@ -172,7 +172,7 @@ namespace cuda
     }
 
     /**
-    * @brief Perform the Rayleigh-Ritz procedure to compute eigenvalues and eigenvectors of a Quasi-Hermitian matrix.
+    * @brief Perform the Rayleigh-Ritz procedure to compute eigenvalues and eigenvectors of a Pseudo-Hermitian matrix.
     *
     * The Rayleigh-Ritz method computes an approximation to the eigenvalues and eigenvectors of a matrix
     * by projecting the matrix onto a subspace defined by a set of vectors (Q) and solving the eigenvalue
@@ -202,7 +202,7 @@ namespace cuda
     void rayleighRitz(cublasHandle_t cublas_handle, 
                       cusolverDnHandle_t cusolver_handle,
 		              cusolverDnParams_t params,
-                      chase::matrix::QuasiHermitianMatrix<T, chase::platform::GPU> * H,
+                      chase::matrix::PseudoHermitianMatrix<T, chase::platform::GPU> * H,
                       chase::matrix::Matrix<T, chase::platform::GPU>& V1,
                       chase::matrix::Matrix<T, chase::platform::GPU>& V2,
                       chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU>& ritzv,
@@ -470,7 +470,7 @@ namespace cuda
     } 
 
     /**
-    * @brief Perform the Rayleigh-Ritz procedure to compute eigenvalues and eigenvectors of a Quasi-Hermitian matrix.
+    * @brief Perform the Rayleigh-Ritz procedure to compute eigenvalues and eigenvectors of a Pseudo-Hermitian matrix.
     *
     * The Rayleigh-Ritz method computes an approximation to the eigenvalues and eigenvectors of a matrix
     * by projecting the matrix onto a subspace defined by a set of vectors (Q) and solving the eigenvalue
@@ -500,7 +500,7 @@ namespace cuda
     void rayleighRitz_v2(cublasHandle_t cublas_handle, 
                       cusolverDnHandle_t cusolver_handle,
 		      cusolverDnParams_t params,
-                      chase::matrix::QuasiHermitianMatrix<T, chase::platform::GPU> * H,
+                      chase::matrix::PseudoHermitianMatrix<T, chase::platform::GPU> * H,
                       chase::matrix::Matrix<T, chase::platform::GPU>& V1,
                       chase::matrix::Matrix<T, chase::platform::GPU>& V2,
                       chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU>& ritzv,
@@ -601,7 +601,7 @@ namespace cuda
 
         if(info != 0)
         {
-            throw std::runtime_error("cusolver POTRF Failed in Quasi-Hermitian RayleighRitz");
+            throw std::runtime_error("cusolver POTRF Failed in Pseudo-Hermitian RayleighRitz");
         }        
         
 	cudaMemset(M, 0, sizeof(T)*n*n);
@@ -666,7 +666,7 @@ namespace cuda
 
         if(info != 0)
         {
-            throw std::runtime_error("cusolver HEEVD failed in Quasi-Hermitian RayleighRitz");
+            throw std::runtime_error("cusolver HEEVD failed in Pseudo-Hermitian RayleighRitz");
         }        
 	
 	CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTtrsm(cublas_handle,

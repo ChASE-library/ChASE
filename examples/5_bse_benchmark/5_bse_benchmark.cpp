@@ -125,8 +125,8 @@ int bse_solve(BSE_DriverProblemConfig& conf)
         std::cout << "======================== Seq  ChASE ";
 #endif        
 
-#if defined(USE_QUASI_HERMITIAN) //C
-    std::cout << "Quasi-Hermitian ";
+#if defined(USE_PSEUDO_HERMITIAN) //C
+    std::cout << "Pseudo-Hermitian ";
 #else //C
     std::cout << "Hermitian ";
 #endif //C
@@ -151,8 +151,8 @@ int bse_solve(BSE_DriverProblemConfig& conf)
 #ifdef USE_BLOCKCYCLIC 
     auto Vec = chase::distMultiVector::DistMultiVectorBlockCyclic1D<
         T, chase::distMultiVector::CommunicatorType::column, ARCH>(N, nev + nex, mb, mpi_grid);
-#ifdef USE_QUASI_HERMITIAN 
-    auto Hmat = chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T, ARCH>(
+#ifdef USE_PSEUDO_HERMITIAN 
+    auto Hmat = chase::distMatrix::PseudoHermitianBlockCyclicMatrix<T, ARCH>(
         N, N, mb, mb, mpi_grid);
 #else 
     auto Hmat = chase::distMatrix::BlockCyclicMatrix<T, ARCH>(
@@ -161,8 +161,8 @@ int bse_solve(BSE_DriverProblemConfig& conf)
 #else
     auto Vec = chase::distMultiVector::DistMultiVector1D<
         T, chase::distMultiVector::CommunicatorType::column, ARCH>(N, nev + nex, mpi_grid);
-#ifdef USE_QUASI_HERMITIAN
-    auto Hmat = chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, ARCH>(
+#ifdef USE_PSEUDO_HERMITIAN
+    auto Hmat = chase::distMatrix::PseudoHermitianBlockBlockMatrix<T, ARCH>(
         N, N, mpi_grid);
 #else 
     auto Hmat = chase::distMatrix::BlockBlockMatrix<T, ARCH>(
@@ -193,8 +193,8 @@ int bse_solve(BSE_DriverProblemConfig& conf)
 #else 
     std::vector<T> V(N*(nev+nex));
 
-#ifdef USE_QUASI_HERMITIAN 
-    using MatrixType = chase::matrix::QuasiHermitianMatrix<T, ARCH>;
+#ifdef USE_PSEUDO_HERMITIAN 
+    using MatrixType = chase::matrix::PseudoHermitianMatrix<T, ARCH>;
 #else //B
     using MatrixType = chase::matrix::Matrix<T,ARCH>;
 #endif //B
@@ -223,7 +223,7 @@ int bse_solve(BSE_DriverProblemConfig& conf)
 
 #endif
 
-#ifndef USE_QUASI_HERMITIAN
+#ifndef USE_PSEUDO_HERMITIAN
     //single.symOrHermMatrix('L');
 /*	
 #ifdef HAS_NCCL
@@ -267,7 +267,7 @@ int bse_solve(BSE_DriverProblemConfig& conf)
         Base<T>* resid = single.GetResid();
         std::cout << "Finished Problem #"
                   << "\n";
-        std::cout << "Printing first ALL eigenvalues and residuals\n";
+        std::cout << "Printing first 20 eigenvalues and residuals\n";
         std::cout
             << "| Index |       Eigenvalue      |         Residual      |\n"
             << "|-------|-----------------------|-----------------------|\n";
@@ -276,7 +276,7 @@ int bse_solve(BSE_DriverProblemConfig& conf)
         std::cout << std::setfill(' ');
         std::cout << std::scientific;
         std::cout << std::right;
-        for (auto i = 0; i < std::min(std::size_t(nev+nex), nev+nex); ++i)
+        for (auto i = 0; i < std::min(std::size_t(20), nev+nex); ++i)
             std::cout << "|  " << std::setw(4) << i + 1 << " | "
                       << std::setw(width) << Lambda[i] << "  | "
                       << std::setw(width) << resid[i] << "  |\n";
