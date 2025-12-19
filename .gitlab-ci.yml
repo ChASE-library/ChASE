@@ -89,7 +89,7 @@ test_gpu:
   dependencies:
     - build_gpu
   tags:
-    - juwels_booster
+    - jureca
     - jacamar
     - compute
     - slurm
