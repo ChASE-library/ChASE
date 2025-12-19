@@ -158,9 +158,18 @@ public:
 
         CHECK_CUBLAS_ERROR(cublasCreate(&cublasH_));
         CHECK_CUSOLVER_ERROR(cusolverDnCreate(&cusolverH_));
+
+#ifdef XGEEV_EXISTS
+#ifdef CHASE_OUTPUT
+	    if (my_rank_ == 0)
+	    {
+	        std::cout << "XGEEV ACTIVATED !" << std::endl;	
+	    }
+#endif
         //CHECK_CUDA_ERROR(cudaStreamCreate(&stream_));
         //CHECK_CUBLAS_ERROR(cublasSetStream(cublasH_, stream_));
         //CHECK_CUSOLVER_ERROR(cusolverDnSetStream(cusolverH_, stream_));
+#endif
 
         CHECK_CUDA_ERROR(cudaMalloc((void**)&devInfo_, sizeof(int)));
         CHECK_CUDA_ERROR(cudaMalloc((void**)&d_return_, sizeof(T) * nevex_));
@@ -190,25 +199,14 @@ public:
 
         int lwork_heevd = 0;
 
-        if constexpr (std::is_same<typename MatrixType::hermitian_type, chase::matrix::QuasiHermitian>::value)
+        if constexpr (std::is_same<typename MatrixType::hermitian_type, chase::matrix::PseudoHermitian>::value)
         {
             is_sym_ = false;
             is_pseudoHerm_ = true;
         
-		A_ = std::make_unique<chase::distMatrix::RedundantMatrix<T, chase::platform::GPU>>(2*nevex_, nevex_, Hmat_->getMpiGrid_shared_ptr());
-		//A_ = std::make_unique<chase::distMatrix::RedundantMatrix<T, chase::platform::GPU>>(3*nevex_, nevex_, Hmat_->getMpiGrid_shared_ptr());
-        	
-		CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTheevd_bufferSize(
-                                                            cusolverH_, 
-                                                            CUSOLVER_EIG_MODE_VECTOR, 
-                                                            CUBLAS_FILL_MODE_LOWER,
-                                                            nevex_, 
-                                                            A_->l_data(), 
-                                                            A_->l_ld(), 
-                                                            ritzv_->l_data(), 
-							    &lwork_heevd));
-/*
-#ifdef XGEEV_EXISTS
+#ifdef XGEEV_EXISTS	
+	    A_ = std::make_unique<chase::distMatrix::RedundantMatrix<T, chase::platform::GPU>>(3*nevex_, nevex_, Hmat_->getMpiGrid_shared_ptr());
+
             CHECK_CUSOLVER_ERROR(cusolverDnCreateParams(&params_));
 
             std::size_t temp_ldwork = 0;
@@ -225,12 +223,22 @@ public:
             lhwork_ = (int)temp_lhwork;
 
             h_work_ = std::unique_ptr<T[]>(new T[lhwork_]);
+#else	
+	    A_ = std::make_unique<chase::distMatrix::RedundantMatrix<T, chase::platform::GPU>>(2*nevex_, nevex_, Hmat_->getMpiGrid_shared_ptr());
+        	
+	    CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTheevd_bufferSize(
+                                                            cusolverH_, 
+                                                            CUSOLVER_EIG_MODE_VECTOR, 
+                                                            CUBLAS_FILL_MODE_LOWER,
+                                                            nevex_, 
+                                                            A_->l_data(), 
+                                                            A_->l_ld(), 
+                                                            ritzv_->l_data(), 
+							    &lwork_heevd));
 #endif
-*/
 	}
 	else
-	{
-	
+	{	
 		is_sym_ = true;
 		is_pseudoHerm_ = false;
 
@@ -335,18 +343,31 @@ public:
         CHECK_CUDA_ERROR(cudaMemcpy(d_diag_xoffs, diag_xoffs.data(), sizeof(std::size_t) * diag_cnt , cudaMemcpyHostToDevice));
         CHECK_CUDA_ERROR(cudaMemcpy(d_diag_yoffs, diag_yoffs.data(), sizeof(std::size_t) * diag_cnt , cudaMemcpyHostToDevice));
  
-        if constexpr (std::is_same<T, std::complex<float>>::value)
+#ifdef QR_DOUBLE_PRECISION
+        if constexpr (std::is_same<T, std::complex<float>>::value || std::is_same<T, float>::value)
+        {
+            if(!V1_->isDoublePrecisionEnabled())
+            {
+                V1_->enableDoublePrecision();
+            }            
+            CHECK_CUDA_ERROR(cudaMalloc((void**)&d_work_d, sizeof(typename chase::ToDoublePrecisionTrait<T>::Type) * lwork_));
+        }
+        if constexpr (std::is_same<T, std::complex<float>>::value || std::is_same<T, float>::value)
         {
             if(!A_->isDoublePrecisionEnabled())
             {
                 A_->enableDoublePrecision();
             }
-
-            if(!V1_->isDoublePrecisionEnabled())
+        }
+#elif RR_DOUBLE_PRECISION
+        if constexpr (std::is_same<T, std::complex<float>>::value || std::is_same<T, float>::value)
+        {
+            if(!A_->isDoublePrecisionEnabled())
             {
-                V1_->enableDoublePrecision();
-            }            
-        }    
+                A_->enableDoublePrecision();
+            }
+        }
+#endif	
     }
 
     pChASEGPU(const pChASEGPU&) = delete;
@@ -366,7 +387,34 @@ public:
         if (d_return_)
             CHECK_CUDA_ERROR(cudaFree(d_return_));  
         if (states_)
-            CHECK_CUDA_ERROR(cudaFree(states_));            
+            CHECK_CUDA_ERROR(cudaFree(states_));                    
+	
+#ifdef QR_DOUBLE_PRECISION
+        if constexpr (std::is_same<T, std::complex<float>>::value || std::is_same<T, float>::value)
+        {
+            if(!V1_->isDoublePrecisionEnabled())
+            {
+                V1_->disableDoublePrecision();
+            }
+            CHECK_CUDA_ERROR(cudaFree(d_work_d));
+        }
+        if constexpr (std::is_same<T, std::complex<float>>::value || std::is_same<T, float>::value)
+        {
+            if(!A_->isDoublePrecisionEnabled())
+            {
+                A_->disableDoublePrecision();
+            }
+        }
+#elif RR_DOUBLE_PRECISION
+        if constexpr (std::is_same<T, std::complex<float>>::value || std::is_same<T, float>::value)
+        {
+            if(!A_->isDoublePrecisionEnabled())
+            {
+                A_->disableDoublePrecision();
+            }
+        }
+#endif	
+
     }
 
     std::size_t GetN() const override { return N_; }
@@ -374,13 +422,17 @@ public:
     std::size_t GetNev() override { return nev_; }
     
     std::size_t GetNex() override { return nex_;}
+            
+    std::size_t GetLanczosIter() override {return lanczosIter_;}
+	    
+    std::size_t GetNumLanczos() override {return numLanczos_;}
 
     chase::Base<T>* GetRitzv() override { return ritzv_->cpu_data(); }
     chase::Base<T>* GetResid() override { resid_->allocate_cpu_data(); return resid_->cpu_data(); }
     ChaseConfig<T>& GetConfig() override { return config_; }
     int get_nprocs() override { return nprocs_; }
     int get_rank() { return my_rank_; }
-
+    	    
     void loadProblemFromFile(std::string filename)
     {
        SCOPED_NVTX_RANGE();
@@ -462,6 +514,9 @@ public:
     void Lanczos(std::size_t m, chase::Base<T>* upperb) override 
     {   
         SCOPED_NVTX_RANGE();
+	
+	lanczosIter_ = m;
+	numLanczos_  = 1;
 
         kernelNamespace::lanczos_dispatch(cublasH_,
                                               m, 
@@ -473,7 +528,11 @@ public:
     void Lanczos(std::size_t M, std::size_t numvec, chase::Base<T>* upperb,
                          chase::Base<T>* ritzv, chase::Base<T>* Tau, chase::Base<T>* ritzV) override
     {
+	
         SCOPED_NVTX_RANGE();
+
+	lanczosIter_ = M;
+	numLanczos_  = numvec;
 
         kernelNamespace::lanczos_dispatch(cublasH_,
                                               M, 
@@ -679,7 +738,7 @@ public:
 
         int info = 1;
         
-        if constexpr (std::is_same<typename MatrixType::hermitian_type, chase::matrix::QuasiHermitian>::value)
+        if constexpr (std::is_same<typename MatrixType::hermitian_type, chase::matrix::PseudoHermitian>::value)
         {	
             kernelNamespace::flipLowerHalfMatrixSign(*V1_, 0, locked_);
         }
@@ -789,14 +848,19 @@ public:
 
             if (cond > cond_threshold_upper)
             {
-                if constexpr (std::is_same<T, std::complex<float>>::value)
+#ifdef CHASE_OUTPUT
+		/*
+                if(my_rank_ == 0){
+                    std::cout << "Entering Shifted Cholesky QR 2" << std::endl;
+                }*/
+#endif
+#ifdef QR_DOUBLE_PRECISION
+                if constexpr (std::is_same<T, std::complex<float>>::value || std::is_same<T, float>::value)
                 {
                     V1_->copyTo();
 
                     auto V1_d = V1_->getDoublePrecisionMatrix();
                     auto A_d = A_->getDoublePrecisionMatrix();
-                    std::complex<double> *d_work_d ;
-                    CHECK_CUDA_ERROR(cudaMalloc((void**)&d_work_d, sizeof(std::complex<double>) * lwork_));
                     info = kernelNamespace::shiftedcholQR2(cublasH_,
                                                                 cusolverH_,
                                                                 V1_->g_rows(),
@@ -806,14 +870,14 @@ public:
                                                                 V1_->l_ld(), 
                                                                 //V1_->getMpiGrid()->get_nccl_col_comm(),
                                                                 MGPUKernelNamspaceSelector<backend>::getColCommunicator(V1_->getMpiGrid()),
-                                                                d_work_d,
+                                                                reinterpret_cast<typename chase::ToDoublePrecisionTrait<T>::Type*>(d_work_d),
                                                                 lwork_,
                                                                 A_d->l_data()); 
                     V1_->copyback();
-                    CHECK_CUDA_ERROR(cudaFree(d_work_d));
                 }
                 else
                 {
+#endif
                 info = kernelNamespace::shiftedcholQR2(cublasH_,
                                                                 cusolverH_,
                                                                 V1_->g_rows(),
@@ -826,11 +890,13 @@ public:
                                                                 d_work_,
                                                                 lwork_,
                                                                 A_->l_data()); 
+#ifdef QR_DOUBLE_PRECISION
                 }                                               
+#endif
             }
             else if(cond < cond_threshold_lower)
             {
-                /*if constexpr (std::is_same<T, std::complex<float>>::value)
+                /*if constexpr (std::is_same<T, std::complex<float>>::value || std::is_same<T, float>::value)
                 {
                     if(V1_->isDoublePrecisionEnabled())
                     {
@@ -843,14 +909,23 @@ public:
                 }
                 */
 
-                /*if constexpr (std::is_same<T, std::complex<float>>::value)
+#ifdef CHASE_OUTPUT
+                if(0){
+#ifdef QR_DOUBLE_PRECISION 
+			std::cout << "QR_RR_DOUBLE ACTVIATED" << std::endl;
+#else
+			std::cout << "QR_RR_DOUBLE DISABLED" << std::endl;
+#endif
+		       	std::cout << "Entering Cholesky QR 1" << std::endl;
+                }
+#endif
+#ifdef QR_DOUBLE_PRECISION
+                if constexpr (std::is_same<T, std::complex<float>>::value || std::is_same<T, float>::value)
                 {
                     V1_->copyTo();
 
                     auto V1_d = V1_->getDoublePrecisionMatrix();
                     auto A_d = A_->getDoublePrecisionMatrix();
-                    std::complex<double> *d_work_d ;
-                    CHECK_CUDA_ERROR(cudaMalloc((void**)&d_work_d, sizeof(std::complex<double>) * lwork_));
                     info = kernelNamespace::cholQR1(cublasH_,
                                                                 cusolverH_,
                                                                 V1_->l_rows(), 
@@ -859,13 +934,13 @@ public:
                                                                 V1_->l_ld(), 
                                                                 //V1_->getMpiGrid()->get_nccl_col_comm(),
                                                                 MGPUKernelNamspaceSelector<backend>::getColCommunicator(V1_->getMpiGrid()),
-                                                                reinterpret_cast<std::complex<double>*>(d_work_),
+                                                                reinterpret_cast<typename chase::ToDoublePrecisionTrait<T>::Type*>(d_work_d),
                                                                 lwork_,
                                                                 A_d->l_data()); 
                     V1_->copyback();
-                    CHECK_CUDA_ERROR(cudaFree(d_work_d));
-                }else*/
+                }else
                 {
+#endif
                     info = kernelNamespace::cholQR1(cublasH_,
                                                                     cusolverH_,
                                                                     V1_->l_rows(), 
@@ -877,13 +952,13 @@ public:
                                                                     d_work_,
                                                                     lwork_,
                                                                     A_->l_data());  
+#ifdef QR_DOUBLE_PRECISION
                 }
-
-                                                            
+#endif                                                      
             }
             else
             {   
-                /*if constexpr (std::is_same<T, std::complex<float>>::value)
+                /*if constexpr (std::is_same<T, std::complex<float>>::value || std::is_same<T, float>::value)
                 {
                     if(V1_->isDoublePrecisionEnabled())
                     {
@@ -895,14 +970,19 @@ public:
                     }
                 }*/
 
-                /*if constexpr (std::is_same<T, std::complex<float>>::value)
+#ifdef CHASE_OUTPUT
+		/*
+                if(my_rank_ == 0){
+                    std::cout << "Entering Cholesky QR 2" << std::endl;
+                }*/
+#endif
+#ifdef QR_DOUBLE_PRECISION
+                if constexpr (std::is_same<T, std::complex<float>>::value || std::is_same<T, float>::value)
                 {
                     V1_->copyTo();
 
                     auto V1_d = V1_->getDoublePrecisionMatrix();
                     auto A_d = A_->getDoublePrecisionMatrix();
-                    std::complex<double> *d_work_d ;
-                    CHECK_CUDA_ERROR(cudaMalloc((void**)&d_work_d, sizeof(std::complex<double>) * lwork_));
                     info = kernelNamespace::cholQR2(cublasH_,
                                                                     cusolverH_,
                                                                     V1_->l_rows(), 
@@ -911,13 +991,13 @@ public:
                                                                     V1_->l_ld(), 
                                                                     //V1_->getMpiGrid()->get_nccl_col_comm(),
                                                                     MGPUKernelNamspaceSelector<backend>::getColCommunicator(V1_->getMpiGrid()),
-                                                                    d_work_d,
+                                                                    reinterpret_cast<typename chase::ToDoublePrecisionTrait<T>::Type*>(d_work_d),
                                                                     lwork_,
                                                                     A_d->l_data()); 
                     V1_->copyback();
-                    CHECK_CUDA_ERROR(cudaFree(d_work_d));
-                }else*/
+                }else
                 {
+#endif
                     info = kernelNamespace::cholQR2(cublasH_,
                                                                     cusolverH_,
                                                                     V1_->l_rows(), 
@@ -929,7 +1009,9 @@ public:
                                                                     d_work_,
                                                                     lwork_,
                                                                     A_->l_data()); 
-                }                             
+#ifdef QR_DOUBLE_PRECISION
+                }            
+#endif		
             }
 
             if (info != 0)
@@ -969,10 +1051,10 @@ public:
     {
         SCOPED_NVTX_RANGE();
 
-        if constexpr (std::is_same<typename MatrixType::hermitian_type, chase::matrix::QuasiHermitian>::value)
-
+        if constexpr (std::is_same<typename MatrixType::hermitian_type, chase::matrix::PseudoHermitian>::value)
 	{
-        	kernelNamespace::quasi_hermitian_rayleighRitz_v2(cublasH_,
+#ifdef XGEEV_EXISTS
+        	kernelNamespace::pseudo_hermitian_rayleighRitz(cublasH_,
                                                    cusolverH_,
 						   params_,
                                                    *Hmat_, 
@@ -986,9 +1068,26 @@ public:
                                                    devInfo_,
                                                    d_work_,
                                                    lwork_,
-						   //h_work_.get(),
-				   		   //lhwork_,
+						   h_work_.get(),
+				   		   lhwork_,
                                                    A_.get());
+#else	
+        	kernelNamespace::pseudo_hermitian_rayleighRitz_v2(cublasH_,
+                                                   cusolverH_,
+						   params_,
+                                                   *Hmat_, 
+                                                   *V1_, 
+                                                   *V2_, 
+                                                   *W1_, 
+                                                   *W2_, 
+                                                   *ritzv_, 
+                                                   locked_, 
+                                                   block,
+                                                   devInfo_,
+                                                   d_work_,
+                                                   lwork_,
+                                                   A_.get());
+#endif
 	}
 	else
 	{
@@ -1077,6 +1176,8 @@ private:
     std::size_t nex_; /**< Number of additional vectors for iterative refinement. */
     std::size_t nevex_; /**< Total number of vectors (nev + nex) used in the algorithm. */
     std::size_t locked_; /**< Count of locked vectors in the eigenvalue problem. */
+    std::size_t lanczosIter_;    /**< Number of Lanczos Iterations.*/
+    std::size_t numLanczos_;     /**< Number of Runs of Lanczos.*/
     
     std::size_t N_; /**< Dimension of the square matrix. */
 
@@ -1106,10 +1207,11 @@ private:
     T* d_return_; /**< Pointer to device memory for storing results of GPU operations. */
     T* d_work_; /**< Pointer to workspace on the device for GPU operations. */
     int lwork_ = 0; /**< Size of the workspace on the device, used for GPU operations. */
-        
+    void *d_work_d ;
+    
     std::unique_ptr<T[]> h_work_; /**< Pointer to work buffer on host for geev
-                                     in the Quasi Hermitian case. */
-    int lhwork_ = 0; /**< Workspace size for host geev operations in the Quasi
+                                     in the Pseudo Hermitian case. */
+    int lhwork_ = 0; /**< Workspace size for host geev operations in the Pseudo
                         Hermitian case. */
 
     std::size_t *d_diag_xoffs; /**< Pointer to device memory holding x offsets for diagonal elements in computations. */

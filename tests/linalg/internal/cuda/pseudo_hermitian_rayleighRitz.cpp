@@ -13,7 +13,7 @@
 #include "linalg/matrix/matrix.hpp"
 
 template <typename T>
-class QuasiHermitianRayleighRitzGPUTest : public ::testing::Test {
+class PseudoHermitianRayleighRitzGPUTest : public ::testing::Test {
 protected:
     void SetUp() override {
 	CHECK_CUBLAS_ERROR(cublasCreate(&cublasH_));        
@@ -32,10 +32,10 @@ protected:
 	    Q_buffer.data()[i*(N+1)] = 1.0;
         }
 
-	H = new chase::matrix::QuasiHermitianMatrix<T,chase::platform::GPU>(N,N);
+	H = new chase::matrix::PseudoHermitianMatrix<T,chase::platform::GPU>(N,N);
 	H->allocate_cpu_data();
-	Q = chase::matrix::QuasiHermitianMatrix<T,chase::platform::GPU>(N,nev,N,Q_buffer.data());
-	V = chase::matrix::QuasiHermitianMatrix<T,chase::platform::GPU>(N,nev);
+	Q = chase::matrix::PseudoHermitianMatrix<T,chase::platform::GPU>(N,nev,N,Q_buffer.data());
+	V = chase::matrix::PseudoHermitianMatrix<T,chase::platform::GPU>(N,nev);
     	ritzv = chase::matrix::Matrix<chase::Base<T>,chase::platform::GPU>(nev,1); 
 	exact_eigsl_H = chase::matrix::Matrix<T,chase::platform::CPU>(N,1);
 
@@ -48,10 +48,10 @@ protected:
 	    Q_buffer_tiny.data()[i*(N_tiny+1)] = 1.0;
         }
 
-	H_tiny = new chase::matrix::QuasiHermitianMatrix<T,chase::platform::GPU>(N_tiny,N_tiny);
+	H_tiny = new chase::matrix::PseudoHermitianMatrix<T,chase::platform::GPU>(N_tiny,N_tiny);
 	H_tiny->allocate_cpu_data();
-	Q_tiny = chase::matrix::QuasiHermitianMatrix<T,chase::platform::GPU>(N_tiny,nev_tiny,N_tiny,Q_buffer_tiny.data());
-	V_tiny = chase::matrix::QuasiHermitianMatrix<T,chase::platform::GPU>(N_tiny,nev_tiny);
+	Q_tiny = chase::matrix::PseudoHermitianMatrix<T,chase::platform::GPU>(N_tiny,nev_tiny,N_tiny,Q_buffer_tiny.data());
+	V_tiny = chase::matrix::PseudoHermitianMatrix<T,chase::platform::GPU>(N_tiny,nev_tiny);
     	ritzv_tiny = chase::matrix::Matrix<chase::Base<T>,chase::platform::GPU>(nev,1); 
 	exact_eigsl_H_tiny = chase::matrix::Matrix<T,chase::platform::CPU>(N_tiny,1);
     ritzv_tiny.allocate_cpu_data();
@@ -69,7 +69,7 @@ protected:
     chase::matrix::Matrix<T,chase::platform::GPU> Q; 
     chase::matrix::Matrix<T,chase::platform::GPU> V; 
     chase::matrix::Matrix<chase::Base<T>,chase::platform::GPU> ritzv; 
-    chase::matrix::QuasiHermitianMatrix<T,chase::platform::GPU> * H;
+    chase::matrix::PseudoHermitianMatrix<T,chase::platform::GPU> * H;
     chase::matrix::Matrix<T,chase::platform::CPU> exact_eigsl_H; 
     
     //Tiny variable sets
@@ -82,7 +82,7 @@ protected:
     chase::matrix::Matrix<T,chase::platform::GPU> Q_tiny; 
     chase::matrix::Matrix<T,chase::platform::GPU> V_tiny; 
     chase::matrix::Matrix<chase::Base<T>,chase::platform::GPU> ritzv_tiny; 
-    chase::matrix::QuasiHermitianMatrix<T,chase::platform::GPU> * H_tiny;
+    chase::matrix::PseudoHermitianMatrix<T,chase::platform::GPU> * H_tiny;
     chase::matrix::Matrix<T,chase::platform::CPU> exact_eigsl_H_tiny; 
 
     cublasHandle_t cublasH_;
@@ -92,9 +92,9 @@ protected:
 };
 
 using TestTypes = ::testing::Types<float, double, std::complex<float>, std::complex<double>>;
-TYPED_TEST_SUITE(QuasiHermitianRayleighRitzGPUTest, TestTypes);
+TYPED_TEST_SUITE(PseudoHermitianRayleighRitzGPUTest, TestTypes);
 
-TYPED_TEST(QuasiHermitianRayleighRitzGPUTest, QuasiHermitianRayleighRitz) {
+TYPED_TEST(PseudoHermitianRayleighRitzGPUTest, PseudoHermitianRayleighRitz) {
     using T = TypeParam;
 
     this->H->readFromBinaryFile(GetBSE_Matrix<T>());
@@ -125,7 +125,7 @@ TYPED_TEST(QuasiHermitianRayleighRitzGPUTest, QuasiHermitianRayleighRitz) {
     }
 }
 
-TYPED_TEST(QuasiHermitianRayleighRitzGPUTest, tinyQuasiHermitianRayleighRitz) {
+TYPED_TEST(PseudoHermitianRayleighRitzGPUTest, tinyPseudoHermitianRayleighRitz) {
     using T = TypeParam;
 
     this->H_tiny->readFromBinaryFile(GetBSE_TinyMatrix<T>());

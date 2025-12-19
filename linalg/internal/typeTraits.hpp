@@ -100,13 +100,13 @@ struct ResultMultiVectorType<chase::distMatrix::BlockBlockMatrix<T, Platform>,
 
 /**
  * @ingroup MultiVectorHelperTraits
- * @brief Specialization for `QuasiHermitianBlockBlockMatrix` and `DistMultiVector1D`.
+ * @brief Specialization for `PseudoHermitianBlockBlockMatrix` and `DistMultiVector1D`.
  * 
- * This specialization defines the result multi-vector type for operations involving a `QuasiHermitianBlockBlockMatrix` and a
+ * This specialization defines the result multi-vector type for operations involving a `PseudoHermitianBlockBlockMatrix` and a
  * `DistMultiVector1D` multi-vector type. It flips the communicator type as part of the deduction.
  */
 template <typename T, chase::distMultiVector::CommunicatorType CommType, typename Platform>
-struct ResultMultiVectorType<chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, Platform>,
+struct ResultMultiVectorType<chase::distMatrix::PseudoHermitianBlockBlockMatrix<T, Platform>,
                             chase::distMultiVector::DistMultiVector1D<T, CommType, Platform>> {
     // Flip the communicator type and deduce result multi-vector type
     using type = chase::distMultiVector::DistMultiVector1D<T, FlipCommType<CommType>::value, Platform>;
@@ -128,13 +128,13 @@ struct ResultMultiVectorType<chase::distMatrix::BlockCyclicMatrix<T, Platform>,
 
 /**
  * @ingroup MultiVectorHelperTraits
- * @brief Specialization for `QuasiHermitianBlockCyclicMatrix` and `DistMultiVectorBlockCyclic1D`.
+ * @brief Specialization for `PseudoHermitianBlockCyclicMatrix` and `DistMultiVectorBlockCyclic1D`.
  * 
- * This specialization defines the result multi-vector type for operations involving a `QuasiHermitianBlockCyclicMatrix` and a
+ * This specialization defines the result multi-vector type for operations involving a `PseudoHermitianBlockCyclicMatrix` and a
  * `DistMultiVector1D` multi-vector type. It flips the communicator type as part of the deduction.
  */
 template <typename T, chase::distMultiVector::CommunicatorType CommType, typename Platform>
-struct ResultMultiVectorType<chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T, Platform>,
+struct ResultMultiVectorType<chase::distMatrix::PseudoHermitianBlockCyclicMatrix<T, Platform>,
                             chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, CommType, Platform>> {
     // Flip the communicator type and deduce result multi-vector type
     using type = chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, FlipCommType<CommType>::value, Platform>;
@@ -165,13 +165,13 @@ struct ColumnMultiVectorType<chase::distMatrix::BlockBlockMatrix<T, Platform>>
 
 /**
  * @ingroup MultiVectorHelperTraits
- * @brief Specialization for `QuasiHermitianBlockBlockMatrix`.
+ * @brief Specialization for `PseudoHermitianBlockBlockMatrix`.
  * 
- * This specialization defines the column multi-vector type for the `QuasiHermitianBlockBlockMatrix` type, which corresponds to a
+ * This specialization defines the column multi-vector type for the `PseudoHermitianBlockBlockMatrix` type, which corresponds to a
  * `DistMultiVector1D` with a column communicator.
  */
 template <typename T, typename Platform>    
-struct ColumnMultiVectorType<chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, Platform>>
+struct ColumnMultiVectorType<chase::distMatrix::PseudoHermitianBlockBlockMatrix<T, Platform>>
 {
     using type = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, Platform>;
 };
@@ -191,13 +191,13 @@ struct ColumnMultiVectorType<chase::distMatrix::BlockCyclicMatrix<T, Platform>>
 
 /**
  * @ingroup MultiVectorHelperTraits
- * @brief Specialization for `QuasiHermitianBlockCyclicMatrix`.
+ * @brief Specialization for `PseudoHermitianBlockCyclicMatrix`.
  * 
- * This specialization defines the column multi-vector type for the `QuasiHermitianBlockCyclicMatrix` type, which corresponds to a
+ * This specialization defines the column multi-vector type for the `PseudoHermitianBlockCyclicMatrix` type, which corresponds to a
  * `DistMultiVector1D` with a column communicator.
  */
 template <typename T, typename Platform>    
-struct ColumnMultiVectorType<chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T, Platform>>
+struct ColumnMultiVectorType<chase::distMatrix::PseudoHermitianBlockCyclicMatrix<T, Platform>>
 {
     using type = chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, chase::distMultiVector::CommunicatorType::column, Platform>;
 };
@@ -227,13 +227,13 @@ struct RowMultiVectorType<chase::distMatrix::BlockBlockMatrix<T, Platform>>
 
 /**
  * @ingroup MultiVectorHelperTraits
- * @brief Specialization for `QuasiHermitianBlockBlockMatrix`.
+ * @brief Specialization for `PseudoHermitianBlockBlockMatrix`.
  * 
- * This specialization defines the row multi-vector type for the `QuasiHermitianBlockBlockMatrix` type, which corresponds to a
+ * This specialization defines the row multi-vector type for the `PseudoHermitianBlockBlockMatrix` type, which corresponds to a
  * `DistMultiVector1D` with a row communicator.
  */
 template <typename T, typename Platform>    
-struct RowMultiVectorType<chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, Platform>>
+struct RowMultiVectorType<chase::distMatrix::PseudoHermitianBlockBlockMatrix<T, Platform>>
 {
     using type = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::row, Platform>;
 };
@@ -253,13 +253,13 @@ struct RowMultiVectorType<chase::distMatrix::BlockCyclicMatrix<T, Platform>>
 
 /**
  * @ingroup MultiVectorHelperTraits
- * @brief Specialization for `QuasiHermitianBlockCyclicMatrix`.
+ * @brief Specialization for `PseudoHermitianBlockCyclicMatrix`.
  * 
- * This specialization defines the row multi-vector type for the `QuasiHermitianBlockCyclicMatrix` type, which corresponds to a
+ * This specialization defines the row multi-vector type for the `PseudoHermitianBlockCyclicMatrix` type, which corresponds to a
  * `DistMultiVector1D` with a row communicator.
  */
 template <typename T, typename Platform>    
-struct RowMultiVectorType<chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T, Platform>>
+struct RowMultiVectorType<chase::distMatrix::PseudoHermitianBlockCyclicMatrix<T, Platform>>
 {
     using type = chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, chase::distMultiVector::CommunicatorType::row, Platform>;
 };

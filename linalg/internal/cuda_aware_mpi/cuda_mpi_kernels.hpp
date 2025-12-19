@@ -100,7 +100,7 @@ namespace internal
                     chase::Base<typename MatrixType::value_type> *upperb);  
 	
 	template <typename MatrixType, typename InputMultiVectorType>
-        static void quasi_hermitian_lanczos(cublasHandle_t cublas_handle,
+        static void pseudo_hermitian_lanczos(cublasHandle_t cublas_handle,
                     std::size_t M, 
                     std::size_t numvec,
                     MatrixType& H,
@@ -111,7 +111,7 @@ namespace internal
                     chase::Base<typename MatrixType::value_type> *ritzV);     
 
         template <typename MatrixType, typename InputMultiVectorType>
-        static void quasi_hermitian_lanczos(cublasHandle_t cublas_handle,
+        static void pseudo_hermitian_lanczos(cublasHandle_t cublas_handle,
                     std::size_t M,
                     MatrixType& H,
                     InputMultiVectorType& V,
@@ -187,7 +187,7 @@ namespace internal
                     chase::distMatrix::RedundantMatrix<typename MatrixType::value_type, chase::platform::GPU>* A = nullptr);                
 	
 	template <typename MatrixType, typename InputMultiVectorType>
-        static void quasi_hermitian_rayleighRitz(cublasHandle_t cublas_handle, 
+        static void pseudo_hermitian_rayleighRitz(cublasHandle_t cublas_handle, 
                     cusolverDnHandle_t cusolver_handle,
 		    cusolverDnParams_t params,
                     MatrixType& H,
@@ -206,7 +206,7 @@ namespace internal
                     chase::distMatrix::RedundantMatrix<typename MatrixType::value_type, chase::platform::GPU>* A = nullptr);                
 	
 	template <typename MatrixType, typename InputMultiVectorType>
-        static void quasi_hermitian_rayleighRitz_v2(cublasHandle_t cublas_handle, 
+        static void pseudo_hermitian_rayleighRitz_v2(cublasHandle_t cublas_handle, 
                     cusolverDnHandle_t cusolver_handle,
 		    cusolverDnParams_t params,
                     MatrixType& H,
@@ -276,9 +276,9 @@ namespace internal
 #include "linalg/internal/cuda_aware_mpi/symOrHerm.hpp"
 #include "linalg/internal/cuda_aware_mpi/hemm.hpp"
 #include "linalg/internal/cuda_aware_mpi/lanczos.hpp"
-#include "linalg/internal/cuda_aware_mpi/quasi_hermitian_lanczos.hpp"
+#include "linalg/internal/cuda_aware_mpi/pseudo_hermitian_lanczos.hpp"
 #include "linalg/internal/cuda_aware_mpi/cholqr.hpp"
 #include "linalg/internal/cuda_aware_mpi/rayleighRitz.hpp"
-#include "linalg/internal/cuda_aware_mpi/quasi_hermitian_rayleighRitz.hpp"
+#include "linalg/internal/cuda_aware_mpi/pseudo_hermitian_rayleighRitz.hpp"
 #include "linalg/internal/cuda_aware_mpi/residuals.hpp"
 #include "linalg/internal/cuda_aware_mpi/shiftDiagonal.hpp"

@@ -294,10 +294,10 @@ namespace cpu
     }
 
     /**
-     * @brief Lanczos algorithm for eigenvalue computation of Quasi-Hermitian matrices.
+     * @brief Lanczos algorithm for eigenvalue computation of Pseudo-Hermitian matrices.
      *
      * This function performs the Lanczos algorithm, which is used to estimate
-     * the upper bound of spectra of the quasi-Hermitian matrix H, i.e., where H is pseudo-Hermitian
+     * the upper bound of spectra of the pseudo-Hermitian matrix H, i.e., where H is pseudo-Hermitian
      * and SH is Hermitian Positive Definite. The algorithm is iteratively applied to the matrix H, 
      * where the input matrix `H` is a square matrix of size `N x N`. The Lanczos algorithm
      * builds an orthonormal basis of the Krylov subspace, and the resulting 
@@ -319,7 +319,7 @@ namespace cpu
      */    
 
     template<typename T>
-    void lanczos(std::size_t M, std::size_t numvec, chase::matrix::QuasiHermitianMatrix<T> * H, T *V, std::size_t ldv, 
+    void lanczos(std::size_t M, std::size_t numvec, chase::matrix::PseudoHermitianMatrix<T> * H, T *V, std::size_t ldv, 
                 Base<T>* upperb, Base<T>* ritzv, Base<T>* Tau, Base<T>* ritzV)
     {
         T One = T(1.0);
@@ -494,22 +494,22 @@ namespace cpu
     }
 
     /**
-     * @brief Lanczos algorithm for eigenvalue computation of quasi-hermitian matrices (simplified version).
+     * @brief Lanczos algorithm for eigenvalue computation of pseudo-hermitian matrices (simplified version).
      *
      * This version of the Lanczos algorithm is a simplified version that computes
-     * only the upper bound of the eigenvalue spectrum of quasi-hermitian matrices 
+     * only the upper bound of the eigenvalue spectrum of pseudo-hermitian matrices 
      * and does not computei eigenvectors. It operates similarly to the full 
      * Lanczos algorithm but omits the eigenvector computation step.
      *
      * @tparam T The data type for the matrix elements (e.g., float, double).
      * @param M The number of Lanczos iterations.
-     * @param H The input quasi-hermitian matrix for the Lanczos algorithm (of size `N x N`).
+     * @param H The input pseudo-hermitian matrix for the Lanczos algorithm (of size `N x N`).
      * @param V The input matrix used for storing vectors (of size `N x 1`).
      * @param ldv The leading dimension of `V` (number of rows).
      * @param upperb A pointer to the upper bound of the eigenvalue spectrum.
      */
     template<typename T>
-    void lanczos(std::size_t M, chase::matrix::QuasiHermitianMatrix<T> * H, T *V, std::size_t ldv, 
+    void lanczos(std::size_t M, chase::matrix::PseudoHermitianMatrix<T> * H, T *V, std::size_t ldv, 
                 Base<T>* upperb)
     {
         Base<T> r_beta;

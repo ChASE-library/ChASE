@@ -172,7 +172,7 @@ namespace cuda
     }
 
     /**
-    * @brief Perform the Rayleigh-Ritz procedure to compute eigenvalues and eigenvectors of a Quasi-Hermitian matrix.
+    * @brief Perform the Rayleigh-Ritz procedure to compute eigenvalues and eigenvectors of a Pseudo-Hermitian matrix.
     *
     * The Rayleigh-Ritz method computes an approximation to the eigenvalues and eigenvectors of a matrix
     * by projecting the matrix onto a subspace defined by a set of vectors (Q) and solving the eigenvalue
@@ -202,7 +202,7 @@ namespace cuda
     void rayleighRitz(cublasHandle_t cublas_handle, 
                       cusolverDnHandle_t cusolver_handle,
 		              cusolverDnParams_t params,
-                      chase::matrix::QuasiHermitianMatrix<T, chase::platform::GPU> * H,
+                      chase::matrix::PseudoHermitianMatrix<T, chase::platform::GPU> * H,
                       chase::matrix::Matrix<T, chase::platform::GPU>& V1,
                       chase::matrix::Matrix<T, chase::platform::GPU>& V2,
                       chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU>& ritzv,
@@ -470,7 +470,7 @@ namespace cuda
     } 
 
     /**
-    * @brief Perform the Rayleigh-Ritz procedure to compute eigenvalues and eigenvectors of a Quasi-Hermitian matrix.
+    * @brief Perform the Rayleigh-Ritz procedure to compute eigenvalues and eigenvectors of a Pseudo-Hermitian matrix.
     *
     * The Rayleigh-Ritz method computes an approximation to the eigenvalues and eigenvectors of a matrix
     * by projecting the matrix onto a subspace defined by a set of vectors (Q) and solving the eigenvalue
@@ -500,7 +500,7 @@ namespace cuda
     void rayleighRitz_v2(cublasHandle_t cublas_handle, 
                       cusolverDnHandle_t cusolver_handle,
 		      cusolverDnParams_t params,
-                      chase::matrix::QuasiHermitianMatrix<T, chase::platform::GPU> * H,
+                      chase::matrix::PseudoHermitianMatrix<T, chase::platform::GPU> * H,
                       chase::matrix::Matrix<T, chase::platform::GPU>& V1,
                       chase::matrix::Matrix<T, chase::platform::GPU>& V2,
                       chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU>& ritzv,
@@ -601,7 +601,7 @@ namespace cuda
 
         if(info != 0)
         {
-            throw std::runtime_error("cusolver POTRF Failed in Quasi-Hermitian RayleighRitz");
+            throw std::runtime_error("cusolver POTRF Failed in Pseudo-Hermitian RayleighRitz");
         }        
         
 	cudaMemset(M, 0, sizeof(T)*n*n);
@@ -666,7 +666,7 @@ namespace cuda
 
         if(info != 0)
         {
-            throw std::runtime_error("cusolver HEEVD failed in Quasi-Hermitian RayleighRitz");
+            throw std::runtime_error("cusolver HEEVD failed in Pseudo-Hermitian RayleighRitz");
         }        
 	
 	CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTtrsm(cublas_handle,
@@ -681,47 +681,38 @@ namespace cuda
                                                                     n,
                                                                     M,
                                                                     n));
+	chase::linalg::internal::cuda::chase_inverse_entries(ritzv.data()+offset,subSize,usedStream);
 
-        CHECK_CUDA_ERROR(cudaMemcpy(ritzv.cpu_data() + offset, 
-                                    ritzv.data() + offset, 
-                                    n * sizeof(chase::Base<T>),
+        CHECK_CUDA_ERROR(cudaMemcpy(ritzv.cpu_data() + offset,
+                                    ritzv.data() + offset,
+                                    subSize * sizeof(chase::Base<T>),
                                     cudaMemcpyDeviceToHost));
 
-	//Sort pairs based on inverted ritz values and signs
-        std::size_t cnt = 0;
+        std::vector<chase::Base<T>> vectorNorms(subSize);
+        std::vector<T> norm_divider(subSize);
 
-        while(cnt < n && ritzv.cpu_data()[cnt+offset] < 0){
-                cnt++;
+        for(auto idx = 0; idx < subSize; idx++)
+        {
+                CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTnrm2(cublas_handle,
+                                                                    subSize,
+                                                                    M + idx * subSize,
+                                                                    1,
+                                                                    &vectorNorms[idx]));
         }
 
-        std::reverse(ritzv.cpu_data() + offset, ritzv.cpu_data() + offset+cnt);
-
-        for(auto idx = 0; idx < cnt; idx++){
-
-                ritzv.cpu_data()[idx+offset] = 1.0 / ritzv.cpu_data()[idx+offset];
-        
-		CHECK_CUDA_ERROR(cudaMemcpy(A->data() + idx * n, 
-                                    	    M + (cnt - (idx + 1)) * n, 
-                                     	    n * sizeof(T),
-                                    	    cudaMemcpyDeviceToDevice));
+        for(auto idx = 0; idx < subSize; idx++)
+        {
+            norm_divider[idx] = T(1 / vectorNorms[idx]);
         }
 
-        std::reverse(ritzv.cpu_data() + offset+cnt, ritzv.cpu_data() + offset+n);
-
-        for(auto idx = cnt; idx < n; idx++){
-
-                ritzv.cpu_data()[idx+offset] = 1.0 / ritzv.cpu_data()[idx+offset];
-		
-		CHECK_CUDA_ERROR(cudaMemcpy(A->data()  + idx * n, 
-                                    	    M + (n - (idx + 1)) * n, 
-                                     	    n * sizeof(T),
-                                    	    cudaMemcpyDeviceToDevice));
+        for(auto idx = 0; idx < subSize; idx++)
+        {
+              CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTscal(cublas_handle,
+                                                                      subSize,
+                                                                      &norm_divider[idx],
+                                                                      M + idx * subSize,
+                                                                      1));
         }
-        
-	CHECK_CUDA_ERROR(cudaMemcpy(ritzv.data() + offset, 
-                                    ritzv.cpu_data() + offset, 
-                                    n * sizeof(chase::Base<T>),
-                                    cudaMemcpyHostToDevice));
 
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(cublas_handle, 
                                        CUBLAS_OP_N, 
@@ -732,7 +723,7 @@ namespace cuda
                                        &One, 
                                        V1.data() + offset * V1.ld(),
                                        V1.ld(), 
-                                       A->data(),
+                                       M,
                                        n, 
                                        &Zero,
                                        V2.data() + offset * V2.ld(),

@@ -138,7 +138,7 @@ public:
         A_ = chase::matrix::Matrix<T, chase::platform::GPU>(2 * nevex_, nevex_);
 
         if constexpr (std::is_same<MatrixType,
-                                   chase::matrix::QuasiHermitianMatrix<
+                                   chase::matrix::PseudoHermitianMatrix<
                                        T, chase::platform::GPU>>::value)
         {
             is_sym_ = false;
@@ -169,10 +169,14 @@ public:
             nevex_, 1);
         ritzvs_ = chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU>(
             nevex_, 1, nevex_, ritzv_);
+#ifdef XGEEV_EXISTS
+        A_ = chase::matrix::Matrix<T, chase::platform::GPU>(3 * nevex_, nevex_);
+#else
         A_ = chase::matrix::Matrix<T, chase::platform::GPU>(2 * nevex_, nevex_);
+#endif
 
         if constexpr (std::is_same<MatrixType,
-                                   chase::matrix::QuasiHermitianMatrix<
+                                   chase::matrix::PseudoHermitianMatrix<
                                        T, chase::platform::GPU>>::value)
         {
             is_sym_ = false;
@@ -218,15 +222,9 @@ public:
         int lwork_eev = 0;
 
         if constexpr (std::is_same<MatrixType,
-                                   chase::matrix::QuasiHermitianMatrix<
+                                   chase::matrix::PseudoHermitianMatrix<
                                        T, chase::platform::GPU>>::value)
         {
-            CHECK_CUSOLVER_ERROR(
-                chase::linalg::cusolverpp::cusolverDnTheevd_bufferSize(
-                    cusolverH_, CUSOLVER_EIG_MODE_VECTOR,
-                    CUBLAS_FILL_MODE_LOWER, nevex_, A_.data(), A_.ld(),
-                    ritzvs_.data(), &lwork_eev));
-/*
 #ifdef XGEEV_EXISTS
             CHECK_CUSOLVER_ERROR(cusolverDnCreateParams(&params_));
 
@@ -244,12 +242,16 @@ public:
             lhwork_ = (int)temp_lhwork;
 
             h_work_ = std::unique_ptr<T[]>(new T[lhwork_]);
+#else
+            CHECK_CUSOLVER_ERROR(
+                chase::linalg::cusolverpp::cusolverDnTheevd_bufferSize(
+                    cusolverH_, CUSOLVER_EIG_MODE_VECTOR,
+                    CUBLAS_FILL_MODE_LOWER, nevex_, A_.data(), A_.ld(),
+                    ritzvs_.data(), &lwork_eev));
 #endif
-*/
         }
         else
         {
-
             CHECK_CUSOLVER_ERROR(
                 chase::linalg::cusolverpp::cusolverDnTheevd_bufferSize(
                     cusolverH_, CUSOLVER_EIG_MODE_VECTOR,
@@ -306,6 +308,10 @@ public:
     std::size_t GetNev() override { return nev_; }
 
     std::size_t GetNex() override { return nex_; }
+            
+    std::size_t GetLanczosIter() override {return lanczosIter_;}
+	    
+    std::size_t GetNumLanczos() override {return numLanczos_;}
 
     chase::Base<T>* GetRitzv() override { return ritzv_; }
     chase::Base<T>* GetResid() override
@@ -315,7 +321,8 @@ public:
     }
     ChaseConfig<T>& GetConfig() override { return config_; }
     int get_nprocs() override { return 1; }
-
+    int get_rank() override { return 0; }
+    	    
     void loadProblemFromFile(std::string filename)
     {
         SCOPED_NVTX_RANGE();
@@ -384,6 +391,8 @@ public:
     void Lanczos(std::size_t M, chase::Base<T>* upperb) override
     {
         SCOPED_NVTX_RANGE();
+	lanczosIter_ = M;
+	numLanczos_  = 1;
         chase::linalg::internal::cuda::lanczos(cublasH_, M, Hmat_, Vec1_,
                                                upperb);
     }
@@ -393,6 +402,8 @@ public:
                  chase::Base<T>* ritzV) override
     {
         SCOPED_NVTX_RANGE();
+	lanczosIter_ = M;
+	numLanczos_  = numvec;
         chase::linalg::internal::cuda::lanczos(
             cublasH_, M, numvec, Hmat_, Vec1_, upperb, ritzv, Tau, ritzV);
     }
@@ -550,7 +561,7 @@ public:
                                                Vec2_.data(), Vec2_.ld());
 
         if constexpr (std::is_same<MatrixType,
-                                   chase::matrix::QuasiHermitianMatrix<
+                                   chase::matrix::PseudoHermitianMatrix<
                                        T, chase::platform::GPU>>::value)
         {
             /* The right eigenvectors are not orthonormal in the QH case, but
@@ -655,14 +666,19 @@ public:
         std::size_t locked = (nev_ + nex_) - block;
 
         if constexpr (std::is_same<MatrixType,
-                                   chase::matrix::QuasiHermitianMatrix<
+                                   chase::matrix::PseudoHermitianMatrix<
                                        T, chase::platform::GPU>>::value)
         {
+#ifdef XGEEV_EXISTS
+            chase::linalg::internal::cuda::rayleighRitz(
+                cublasH_, cusolverH_, params_, Hmat_, Vec1_, Vec2_, ritzvs_,
+                locked, block, devInfo_, d_work_, lwork_,h_work_.get(),
+                lhwork_,&A_);
+#else
             chase::linalg::internal::cuda::rayleighRitz_v2(
                 cublasH_, cusolverH_, params_, Hmat_, Vec1_, Vec2_, ritzvs_,
-                locked, block, devInfo_, d_work_, lwork_, //h_work_.get(),
-                //lhwork_, 
-		&A_);
+                locked, block, devInfo_, d_work_, lwork_,&A_);
+#endif
         }
         else
         {
@@ -715,15 +731,17 @@ public:
     }
 
 private:
-    std::size_t N_;         /**< Size of the matrix. */
-    T* H_;                  /**< Pointer to the matrix \( H \). */
-    T* V1_;                 /**< Pointer to the matrix \( V_1 \). */
-    std::size_t ldh_;       /**< Leading dimension of matrix \( H \). */
-    std::size_t ldv_;       /**< Leading dimension of matrix \( V_1 \). */
-    chase::Base<T>* ritzv_; /**< Pointer to the Ritz values vector. */
-    std::size_t nev_;       /**< Number of eigenvalues to compute. */
-    std::size_t nex_;       /**< Number of extra vectors. */
-    std::size_t nevex_; /**< Total number of eigenvalues and extra vectors. */
+    std::size_t N_;              /**< Size of the matrix. */
+    T* H_;                       /**< Pointer to the matrix \( H \). */
+    T* V1_;                      /**< Pointer to the matrix \( V_1 \). */
+    std::size_t ldh_;            /**< Leading dimension of matrix \( H \). */
+    std::size_t ldv_;            /**< Leading dimension of matrix \( V_1 \). */
+    chase::Base<T>* ritzv_;      /**< Pointer to the Ritz values vector. */
+    std::size_t nev_;            /**< Number of eigenvalues to compute. */
+    std::size_t nex_;            /**< Number of extra vectors. */
+    std::size_t nevex_;          /**< Total number of eigenvalues and extra vectors. */
+    std::size_t lanczosIter_;    /**< Number of Lanczos Iterations.*/
+    std::size_t numLanczos_;     /**< Number of Runs of Lanczos.*/
 
     T* tmp_;             /**< Temporary buffer for GPU computations. */
     bool is_sym_;        ///< Flag for matrix symmetry.
@@ -759,8 +777,8 @@ private:
     int lwork_ = 0; /**< Workspace size for matrix operations. */
 
     std::unique_ptr<T[]> h_work_; /**< Pointer to work buffer on host for geev
-                                     in the Quasi Hermitian case. */
-    int lhwork_ = 0; /**< Workspace size for host geev operations in the Quasi
+                                     in the Pseudo Hermitian case. */
+    int lhwork_ = 0; /**< Workspace size for host geev operations in the Pseudo
                         Hermitian case. */
 };
 

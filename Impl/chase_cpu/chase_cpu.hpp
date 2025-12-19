@@ -93,11 +93,11 @@ namespace Impl
 
 			A_ = chase::matrix::Matrix<T>(3 *nevex_, nevex_);
 			
-			if constexpr (std::is_same<MatrixType, chase::matrix::QuasiHermitianMatrix<T>>::value)
+			if constexpr (std::is_same<MatrixType, chase::matrix::PseudoHermitianMatrix<T>>::value)
 			{
 				is_sym_ = false;
 				is_pseudoHerm_ = true;
-				//Quasi Hermitian matrices require more space for the dual basis
+				//Pseudo Hermitian matrices require more space for the dual basis
 			}
 			else
 			{
@@ -145,11 +145,11 @@ namespace Impl
 			resid_ = chase::matrix::Matrix<chase::Base<T>>(nevex_, 1);
 			ritzvs_ = chase::matrix::Matrix<chase::Base<T>>(nevex_, 1, nevex_, ritzv_);
 			A_ = chase::matrix::Matrix<T>(3 * nevex_, nevex_);
-			if constexpr (std::is_same<MatrixType, chase::matrix::QuasiHermitianMatrix<T>>::value)
+			if constexpr (std::is_same<MatrixType, chase::matrix::PseudoHermitianMatrix<T>>::value)
 			{
 				is_sym_ = false;
 				is_pseudoHerm_ = true;
-				//Quasi Hermitian matrices require more space for the dual basis
+				//Pseudo Hermitian matrices require more space for the dual basis
 			}
 			else
 			{
@@ -178,11 +178,16 @@ namespace Impl
 	    std::size_t GetNev() override {return nev_;}
 	    
 	    std::size_t GetNex() override {return nex_;}
+	    
+            std::size_t GetLanczosIter() override {return lanczosIter_;}
+	    
+	    std::size_t GetNumLanczos() override {return numLanczos_;}
 
 	    chase::Base<T>* GetRitzv() override {return ritzvs_.data(); }
 	    chase::Base<T>* GetResid() override {return resid_.data(); }
 	    ChaseConfig<T>& GetConfig() override {return config_; }
 	    int get_nprocs() override {return 1;}
+    	    int get_rank() override { return 0; }
 
 	    /**
 	    * @brief Loads matrix data from a binary file.
@@ -263,6 +268,8 @@ namespace Impl
 
 	    void Lanczos(std::size_t m, chase::Base<T>* upperb) override
 	    {
+			lanczosIter_ = m;
+			numLanczos_  = 1;
 			chase::linalg::internal::cpu::lanczos(m, 
 								Hmat_,
 								Vec1_.data(), 
@@ -273,6 +280,8 @@ namespace Impl
 	    void Lanczos(std::size_t M, std::size_t numvec, chase::Base<T>* upperb,
 				 chase::Base<T>* ritzv, chase::Base<T>* Tau, chase::Base<T>* ritzV) override
 	    {
+			lanczosIter_ = M;
+			numLanczos_  = numvec;
 			chase::linalg::internal::cpu::lanczos(M, 
 								numvec, 
 								Hmat_, 
@@ -449,7 +458,7 @@ namespace Impl
                                           Vec2_.data(), 
                                           Vec2_.ld());
 	
-		if constexpr (std::is_same<MatrixType, chase::matrix::QuasiHermitianMatrix<T>>::value)
+		if constexpr (std::is_same<MatrixType, chase::matrix::PseudoHermitianMatrix<T>>::value)
 		{
 			/* The right eigenvectors are not orthonormal in the QH case, but S-orthonormal.
 			* Therefore, we S-orthonormalize the locked vectors against the current subspace
@@ -559,7 +568,7 @@ namespace Impl
 
     void RR(chase::Base<T>* ritzv, std::size_t block) override
     {   
-		if constexpr (std::is_same<MatrixType, chase::matrix::QuasiHermitianMatrix<T>>::value)
+		if constexpr (std::is_same<MatrixType, chase::matrix::PseudoHermitianMatrix<T>>::value)
 		{
 			chase::linalg::internal::cpu::rayleighRitz_v2(Hmat_,
 													block, 
@@ -590,7 +599,7 @@ namespace Impl
     void Sort(chase::Base<T> * ritzv, chase::Base<T> * residLast, chase::Base<T> * resid) override
     {
 
-		if constexpr (std::is_same<MatrixType, chase::matrix::QuasiHermitianMatrix<T>>::value)
+		if constexpr (std::is_same<MatrixType, chase::matrix::PseudoHermitianMatrix<T>>::value)
 		{
 		/* Sorting all the eigenvalues is probably not necessary if Opt = False */
 		
@@ -673,6 +682,8 @@ private:
     std::size_t nev_;                ///< Number of eigenvalues to compute.
     std::size_t nex_;                ///< Number of extra eigenvalues.
     std::size_t nevex_;              ///< Total number of eigenvalues (nev + nex).
+    std::size_t lanczosIter_;        ///< Number of Lanczos Iterations.
+    std::size_t numLanczos_;         ///< Number of Runs of Lanczos.
     ChaseConfig<T> config_;          ///< Configuration object for settings.
     
     MatrixType *Hmat_;  ///< Matrix for H.

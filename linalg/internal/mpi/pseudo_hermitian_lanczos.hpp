@@ -47,7 +47,7 @@ namespace internal
     * @throws std::runtime_error if the matrix `H` is not square or if `H` and `V` are not in the same MPI grid.
     */    
     template <typename MatrixType, typename InputMultiVectorType>
-    void cpu_mpi::quasi_hermitian_lanczos(std::size_t M, 
+    void cpu_mpi::pseudo_hermitian_lanczos(std::size_t M, 
                  std::size_t numvec,
                  MatrixType& H,
                  InputMultiVectorType& V,
@@ -340,7 +340,7 @@ namespace internal
     * @throws std::runtime_error if the matrix `H` is not square or if `H` and `V` are not in the same MPI grid.
     */
     template <typename MatrixType, typename InputMultiVectorType>
-    void cpu_mpi::quasi_hermitian_lanczos(std::size_t M, 
+    void cpu_mpi::pseudo_hermitian_lanczos(std::size_t M, 
                  MatrixType& H,
                  InputMultiVectorType& V,
                  chase::Base<typename MatrixType::value_type>* upperb)

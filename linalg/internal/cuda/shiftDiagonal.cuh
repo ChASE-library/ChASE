@@ -59,6 +59,12 @@ namespace cuda
                                 std::size_t ldH, double shift,
                                 cudaStream_t stream_);
     
+    __global__ void sinverse_entries(float* A, std::size_t n);
+    __global__ void dinverse_entries(double* A, std::size_t n);
+    
+    void chase_inverse_entries(float* A, std::size_t n, cudaStream_t stream);
+    void chase_inverse_entries(double* A, std::size_t n, cudaStream_t stream);
+
     __global__ void ssubtract_inverse_diagonal(float* A, std::size_t n, std::size_t lda, float coef, float* new_diag);
     __global__ void dsubtract_inverse_diagonal(double* A, std::size_t n, std::size_t lda, double coef, double* new_diag);
     __global__ void csubtract_inverse_diagonal(cuComplex* A, std::size_t n, std::size_t lda, float coef, double* new_diag);

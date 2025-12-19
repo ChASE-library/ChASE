@@ -93,9 +93,9 @@ public:
                                     std::size_t locked);
     
     /**
-     * @brief Specialized degree optimization for quasi-hermitian matrices with cluster-aware features.
+     * @brief Specialized degree optimization for pseudo-hermitian matrices with cluster-aware features.
      * 
-     * This method provides enhanced degree optimization specifically designed for quasi-hermitian 
+     * This method provides enhanced degree optimization specifically designed for pseudo-hermitian 
      * eigenvalue problems, including cluster detection and adaptive degree spacing.
      * 
      * @param kernel A pointer to the `ChaseBase<T>` instance, which provides the necessary numerical operations.
@@ -113,7 +113,7 @@ public:
      * 
      * @return The optimized polynomial degree.
      */
-    static std::size_t calc_degrees_quasi(ChaseBase<T>* kernel, std::size_t N,
+    static std::size_t calc_degrees_pseudo(ChaseBase<T>* kernel, std::size_t N,
                                          std::size_t unconverged, std::size_t nex,
                                          Base<T> upperb, Base<T> lowerb, Base<T> tol,
                                          Base<T>* ritzv, Base<T>* resid,
@@ -153,6 +153,7 @@ public:
      * @param ritzv The array storing the Ritz values.
      * @param resid The array storing the residuals of the Ritz values.
      * @param residLast The array storing the residuals from the previous iteration.
+     * @param early_locked_residuals The array storing the early locked residuals. 
      * @param degrees The array storing the degrees of the Ritz pairs.
      * @param locked The number of already locked eigenpairs.
      * 
@@ -161,13 +162,34 @@ public:
     static std::size_t locking(ChaseBase<T>* kernel, std::size_t N,
                                std::size_t unconverged, Base<T> tol,
                                Base<T>* ritzv, Base<T>* resid,
-                               Base<T>* residLast, std::size_t* degrees,
-                               std::size_t locked);
-    
-    static std::size_t locking_quasi(
+                               Base<T>* residLast, std::vector<Base<T>>* early_locked_residuals,
+				std::size_t* degrees, std::size_t locked);
+
+    /**
+     * @brief Specialized locking for pseudo-hermitian matrices.
+     * 
+     * This method is used to lock the converged eigenpairs for pseudo-hermitian matrices.
+     * 
+     * @param single A pointer to the `ChaseBase<T>` instance.
+     * @param N The total size of the problem.
+     * @param unconverged The number of unconverged eigenpairs.
+     * @param nex The number of external searching space.
+     * @param tol The convergence tolerance for residuals.
+     * @param index The array storing the indices of the unconverged eigenpairs.
+     * @param Lritzv The array storing the Ritz values.
+     * @param resid The array storing the residuals of the Ritz values.
+     * @param residLast The array storing the residuals from the previous iteration.
+     * @param early_locked_residuals The array storing the early locked residuals. 
+     * @param degrees The array storing the degrees of the Ritz pairs.
+     * @param locked The number of already locked eigenpairs.
+     * @param iteration The iteration number.
+     * 
+     * @return The number of locked eigenpairs.
+     */                
+    static std::size_t locking_pseudo(
         ChaseBase<T>* single, std::size_t N,
         std::size_t unconverged, std::size_t nex, Base<T> tol, std::size_t* index,
-        Base<T>* Lritzv, Base<T>* resid, Base<T>* residLast,
+        Base<T>* Lritzv, Base<T>* resid, Base<T>* residLast, std::vector<Base<T>>* early_locked_residuals,
         std::size_t* degrees, std::size_t locked, std::size_t iteration);
             
     /**

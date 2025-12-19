@@ -9,7 +9,7 @@
 #include <cmath>
 #include <cstring>
 #include <random>
-#include "linalg/internal/nccl/quasi_hermitian_lanczos.hpp"
+#include "linalg/internal/nccl/pseudo_hermitian_lanczos.hpp"
 #include "tests/linalg/internal/utils.hpp"
 #include "grid/mpiGrid2D.hpp"
 #include "linalg/matrix/matrix.hpp"
@@ -23,7 +23,7 @@ namespace {
 }
 
 template <typename T>
-class QuasiHermitianLanczosGPUNCCLDistTest : public ::testing::Test {
+class PseudoHermitianLanczosGPUNCCLDistTest : public ::testing::Test {
 protected:
     void SetUp() override {
         MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
@@ -87,14 +87,14 @@ public:
 ::testing::Environment* const env = ::testing::AddGlobalTestEnvironment(new ResourceCleanupEnvironment());
 
 using TestTypes = ::testing::Types<float, double, std::complex<float>, std::complex<double>>;
-TYPED_TEST_SUITE(QuasiHermitianLanczosGPUNCCLDistTest, TestTypes);
+TYPED_TEST_SUITE(PseudoHermitianLanczosGPUNCCLDistTest, TestTypes);
 
-TYPED_TEST(QuasiHermitianLanczosGPUNCCLDistTest, tinyQuasiHermitianLanczos){
+TYPED_TEST(PseudoHermitianLanczosGPUNCCLDistTest, tinyPseudoHermitianLanczos){
     using T = TypeParam;  // Get the current type
 
     int *coords = this->get_mpi_grid().get()->get_coords();
 
-    auto H_ = chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU>(this->N_tiny, this->N_tiny, this->get_mpi_grid());
+    auto H_ = chase::distMatrix::PseudoHermitianBlockBlockMatrix<T, chase::platform::GPU>(this->N_tiny, this->N_tiny, this->get_mpi_grid());
     H_.allocate_cpu_data();
     H_.readFromBinaryFile(GetBSE_TinyMatrix<T>());
     H_.H2D();
@@ -118,7 +118,7 @@ TYPED_TEST(QuasiHermitianLanczosGPUNCCLDistTest, tinyQuasiHermitianLanczos){
 
     chase::Base<T> upperb;
 
-    chase::linalg::internal::cuda_nccl::quasi_hermitian_lanczos(this->get_cublas_handle(),
+    chase::linalg::internal::cuda_nccl::pseudo_hermitian_lanczos(this->get_cublas_handle(),
 		    			  this->M_tiny,
                                           this->numvec_tiny,
                                           H_,
@@ -134,12 +134,12 @@ TYPED_TEST(QuasiHermitianLanczosGPUNCCLDistTest, tinyQuasiHermitianLanczos){
     }
 }
 
-TYPED_TEST(QuasiHermitianLanczosGPUNCCLDistTest, QuasiHermitianLanczos){
+TYPED_TEST(PseudoHermitianLanczosGPUNCCLDistTest, PseudoHermitianLanczos){
     using T = TypeParam;  // Get the current type
 
     int *coords = this->get_mpi_grid().get()->get_coords();
 
-    auto H_ = chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU>(this->N, this->N, this->get_mpi_grid());
+    auto H_ = chase::distMatrix::PseudoHermitianBlockBlockMatrix<T, chase::platform::GPU>(this->N, this->N, this->get_mpi_grid());
     H_.allocate_cpu_data();
     H_.readFromBinaryFile(GetBSE_Matrix<T>());
     H_.H2D();
@@ -163,7 +163,7 @@ TYPED_TEST(QuasiHermitianLanczosGPUNCCLDistTest, QuasiHermitianLanczos){
 
     chase::Base<T> upperb;
 
-    chase::linalg::internal::cuda_nccl::quasi_hermitian_lanczos(this->get_cublas_handle(),
+    chase::linalg::internal::cuda_nccl::pseudo_hermitian_lanczos(this->get_cublas_handle(),
 		    			  this->M,
                                           this->numvec,
                                           H_,
@@ -179,12 +179,12 @@ TYPED_TEST(QuasiHermitianLanczosGPUNCCLDistTest, QuasiHermitianLanczos){
     }
 }
 
-TYPED_TEST(QuasiHermitianLanczosGPUNCCLDistTest, tinySimplifiedQuasiHermitianLanczos){
+TYPED_TEST(PseudoHermitianLanczosGPUNCCLDistTest, tinySimplifiedPseudoHermitianLanczos){
     using T = TypeParam;  // Get the current type
 
     int *coords = this->get_mpi_grid().get()->get_coords();
 
-    auto H_ = chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU>(this->N_tiny, this->N_tiny, this->get_mpi_grid());
+    auto H_ = chase::distMatrix::PseudoHermitianBlockBlockMatrix<T, chase::platform::GPU>(this->N_tiny, this->N_tiny, this->get_mpi_grid());
     H_.allocate_cpu_data();
     H_.readFromBinaryFile(GetBSE_TinyMatrix<T>());
     H_.H2D();
@@ -208,7 +208,7 @@ TYPED_TEST(QuasiHermitianLanczosGPUNCCLDistTest, tinySimplifiedQuasiHermitianLan
 
     chase::Base<T> upperb;
 
-    chase::linalg::internal::cuda_nccl::quasi_hermitian_lanczos(this->get_cublas_handle(),
+    chase::linalg::internal::cuda_nccl::pseudo_hermitian_lanczos(this->get_cublas_handle(),
 		    			  this->M_tiny,
                                           H_,
                                           V_,
@@ -218,12 +218,12 @@ TYPED_TEST(QuasiHermitianLanczosGPUNCCLDistTest, tinySimplifiedQuasiHermitianLan
 
 }
 
-TYPED_TEST(QuasiHermitianLanczosGPUNCCLDistTest, SimplifiedQuasiHermitianLanczos){
+TYPED_TEST(PseudoHermitianLanczosGPUNCCLDistTest, SimplifiedPseudoHermitianLanczos){
     using T = TypeParam;  // Get the current type
 
     int *coords = this->get_mpi_grid().get()->get_coords();
 
-    auto H_ = chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU>(this->N, this->N, this->get_mpi_grid());
+    auto H_ = chase::distMatrix::PseudoHermitianBlockBlockMatrix<T, chase::platform::GPU>(this->N, this->N, this->get_mpi_grid());
     H_.allocate_cpu_data();
     H_.readFromBinaryFile(GetBSE_Matrix<T>());
     H_.H2D();
@@ -247,7 +247,7 @@ TYPED_TEST(QuasiHermitianLanczosGPUNCCLDistTest, SimplifiedQuasiHermitianLanczos
 
     chase::Base<T> upperb;
 
-    chase::linalg::internal::cuda_nccl::quasi_hermitian_lanczos(this->get_cublas_handle(),
+    chase::linalg::internal::cuda_nccl::pseudo_hermitian_lanczos(this->get_cublas_handle(),
 		    			  this->M,
                                           H_,
                                           V_,

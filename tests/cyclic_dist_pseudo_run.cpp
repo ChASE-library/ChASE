@@ -47,7 +47,7 @@ int main(int argc, char** argv){
     	std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(
             dims_[0], dims_[1], MPI_COMM_WORLD);
     
-	auto Hmat = chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T, ARCH>(N, N, mb, mb, mpi_grid);
+	auto Hmat = chase::distMatrix::PseudoHermitianBlockCyclicMatrix<T, ARCH>(N, N, mb, mb, mpi_grid);
 
 	#ifdef HAS_CUDA
     		Hmat.allocate_cpu_data();

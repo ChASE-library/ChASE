@@ -23,7 +23,7 @@ namespace {
 }
 
 template <typename T>
-class QuasiHermitianLanczosGPUDistTest : public ::testing::Test {
+class PseudoHermitianLanczosGPUDistTest : public ::testing::Test {
 protected:
     void SetUp() override {
         MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
@@ -87,16 +87,16 @@ public:
 ::testing::Environment* const env = ::testing::AddGlobalTestEnvironment(new ResourceCleanupEnvironment());
 
 using TestTypes = ::testing::Types<float, double, std::complex<float>, std::complex<double>>;
-TYPED_TEST_SUITE(QuasiHermitianLanczosGPUDistTest, TestTypes);
+TYPED_TEST_SUITE(PseudoHermitianLanczosGPUDistTest, TestTypes);
 
-TYPED_TEST(QuasiHermitianLanczosGPUDistTest, tinyQuasiHermitianLanczos){
+TYPED_TEST(PseudoHermitianLanczosGPUDistTest, tinyPseudoHermitianLanczos){
     using T = TypeParam;  // Get the current type
 
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
     
     int *coords = this->get_mpi_grid().get()->get_coords();
 
-    auto H_ = chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU>(this->N_tiny, this->N_tiny, this->get_mpi_grid());
+    auto H_ = chase::distMatrix::PseudoHermitianBlockBlockMatrix<T, chase::platform::GPU>(this->N_tiny, this->N_tiny, this->get_mpi_grid());
     H_.allocate_cpu_data();
     H_.readFromBinaryFile(GetBSE_TinyMatrix<T>());
     H_.H2D();
@@ -120,7 +120,7 @@ TYPED_TEST(QuasiHermitianLanczosGPUDistTest, tinyQuasiHermitianLanczos){
 
     chase::Base<T> upperb;
 
-    chase::linalg::internal::cuda_mpi::quasi_hermitian_lanczos(this->get_cublas_handle(),
+    chase::linalg::internal::cuda_mpi::pseudo_hermitian_lanczos(this->get_cublas_handle(),
 		    			  this->M_tiny,
                                           this->numvec_tiny,
                                           H_,
@@ -136,14 +136,14 @@ TYPED_TEST(QuasiHermitianLanczosGPUDistTest, tinyQuasiHermitianLanczos){
     }
 }
 
-TYPED_TEST(QuasiHermitianLanczosGPUDistTest, QuasiHermitianLanczos){
+TYPED_TEST(PseudoHermitianLanczosGPUDistTest, PseudoHermitianLanczos){
     using T = TypeParam;  // Get the current type
 
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
     
     int *coords = this->get_mpi_grid().get()->get_coords();
 
-    auto H_ = chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU>(this->N, this->N, this->get_mpi_grid());
+    auto H_ = chase::distMatrix::PseudoHermitianBlockBlockMatrix<T, chase::platform::GPU>(this->N, this->N, this->get_mpi_grid());
     H_.allocate_cpu_data();
     H_.readFromBinaryFile(GetBSE_Matrix<T>());
     H_.H2D();
@@ -167,7 +167,7 @@ TYPED_TEST(QuasiHermitianLanczosGPUDistTest, QuasiHermitianLanczos){
 
     chase::Base<T> upperb;
 
-    chase::linalg::internal::cuda_mpi::quasi_hermitian_lanczos(this->get_cublas_handle(),
+    chase::linalg::internal::cuda_mpi::pseudo_hermitian_lanczos(this->get_cublas_handle(),
 		    			  this->M,
                                           this->numvec,
                                           H_,
@@ -183,14 +183,14 @@ TYPED_TEST(QuasiHermitianLanczosGPUDistTest, QuasiHermitianLanczos){
     }
 }
 
-TYPED_TEST(QuasiHermitianLanczosGPUDistTest, tinySimplifiedQuasiHermitianLanczos){
+TYPED_TEST(PseudoHermitianLanczosGPUDistTest, tinySimplifiedPseudoHermitianLanczos){
     using T = TypeParam;  // Get the current type
 
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
     
     int *coords = this->get_mpi_grid().get()->get_coords();
 
-    auto H_ = chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU>(this->N_tiny, this->N_tiny, this->get_mpi_grid());
+    auto H_ = chase::distMatrix::PseudoHermitianBlockBlockMatrix<T, chase::platform::GPU>(this->N_tiny, this->N_tiny, this->get_mpi_grid());
     H_.allocate_cpu_data();
     H_.readFromBinaryFile(GetBSE_TinyMatrix<T>());
     H_.H2D();
@@ -214,7 +214,7 @@ TYPED_TEST(QuasiHermitianLanczosGPUDistTest, tinySimplifiedQuasiHermitianLanczos
 
     chase::Base<T> upperb;
 
-    chase::linalg::internal::cuda_mpi::quasi_hermitian_lanczos(this->get_cublas_handle(),
+    chase::linalg::internal::cuda_mpi::pseudo_hermitian_lanczos(this->get_cublas_handle(),
 		    			  this->M_tiny,
                                           H_,
                                           V_,
@@ -224,14 +224,14 @@ TYPED_TEST(QuasiHermitianLanczosGPUDistTest, tinySimplifiedQuasiHermitianLanczos
 
 }
 
-TYPED_TEST(QuasiHermitianLanczosGPUDistTest, SimplifiedQuasiHermitianLanczos){
+TYPED_TEST(PseudoHermitianLanczosGPUDistTest, SimplifiedPseudoHermitianLanczos){
     using T = TypeParam;  // Get the current type
 
     ASSERT_EQ(this->world_size, 4);  // Ensure we're running with 4 processes
     
     int *coords = this->get_mpi_grid().get()->get_coords();
 
-    auto H_ = chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU>(this->N, this->N, this->get_mpi_grid());
+    auto H_ = chase::distMatrix::PseudoHermitianBlockBlockMatrix<T, chase::platform::GPU>(this->N, this->N, this->get_mpi_grid());
     H_.allocate_cpu_data();
     H_.readFromBinaryFile(GetBSE_Matrix<T>());
     H_.H2D();
@@ -255,7 +255,7 @@ TYPED_TEST(QuasiHermitianLanczosGPUDistTest, SimplifiedQuasiHermitianLanczos){
 
     chase::Base<T> upperb;
 
-    chase::linalg::internal::cuda_mpi::quasi_hermitian_lanczos(this->get_cublas_handle(),
+    chase::linalg::internal::cuda_mpi::pseudo_hermitian_lanczos(this->get_cublas_handle(),
 		    			  this->M,
                                           H_,
                                           V_,

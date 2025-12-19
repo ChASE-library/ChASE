@@ -98,7 +98,7 @@ TYPED_TEST(flipSignGPUNCCLDistTest, FlipSignBlockCyclicCorrectnessGPU) {
 
     std::size_t N = 100, mb = 20;
 
-    auto H = chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T, chase::platform::GPU>(N, N, mb, mb, mpi_grid);
+    auto H = chase::distMatrix::PseudoHermitianBlockCyclicMatrix<T, chase::platform::GPU>(N, N, mb, mb, mpi_grid);
     H.allocate_cpu_data();
 
     for(auto i = 0; i < H.l_rows(); i++)

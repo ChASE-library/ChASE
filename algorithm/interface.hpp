@@ -242,6 +242,18 @@ public:
     */
     virtual std::size_t GetNex() = 0;
     /**
+    * @brief Returns the number of Lanczos Iterations.
+    * 
+    * @return The number of Lanczos Iterations as a `std::size_t` value.
+    */
+    virtual std::size_t GetLanczosIter() = 0;
+    /**
+    * @brief Returns the number of runs of Lanczos.
+    * 
+    * @return The number of runs of Lanczos as a `std::size_t` value.
+    */
+    virtual std::size_t GetNumLanczos() = 0;
+    /**
     * @brief Returns the computed Ritz values.
     * 
     * This method provides access to the Ritz values computed during the algorithm's execution. These values
@@ -277,6 +289,23 @@ public:
     * @return The number of MPI processes used, represented as an integer.
     */
     virtual int get_nprocs() = 0;
+    /**
+    * @brief Returns the MPI rank.
+    * 
+    * This method returns the MPI process. If sequential ChASE is used, 
+    * it returns `0`, indicating a single process is running.
+    * 
+    * @return The number of MPI processes used, represented as an integer.
+    */
+    virtual int get_rank() = 0;
+    /**
+    * @brief Save the residuals of early locked eigenpairs
+    * 
+    * This method enables saving statistical data on the early locked eigenpairs
+    * to further extract statistical information. 
+    */
+    virtual void set_early_locked_residuals(std::vector<Base<T>> early_locked_residuals){};
+
 #ifdef CHASE_OUTPUT
     /**
     * @brief Prints intermediate information during the solving procedure.

@@ -211,7 +211,7 @@ namespace internal
                     for(std::size_t q = 0; q < n_contiguous_lens[j]; q++){
                         for(std::size_t p = 0; p < m_contiguous_lens[i]; p++){
                             if(q + n_contiguous_global_offs[j] == p + m_contiguous_global_offs[i]){
-                                H.cpu_data()[(q + n_contiguous_local_offs[j]) * H.cpu_ld()  + p + m_contiguous_global_offs[i]] *= T(0.5);
+                                H.cpu_data()[(q + n_contiguous_local_offs[j]) * H.cpu_ld()  + p + m_contiguous_local_offs[i]] *= T(0.5);
                             }
                             else if(q + n_contiguous_global_offs[j] > p + m_contiguous_global_offs[i])
                             {

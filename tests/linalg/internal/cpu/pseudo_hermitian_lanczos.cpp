@@ -15,7 +15,7 @@
 #include "linalg/matrix/matrix.hpp"
 
 template <typename T>
-class QuasiHermitianLanczosCPUTest : public ::testing::Test {
+class PseudoHermitianLanczosCPUTest : public ::testing::Test {
 protected:
     void SetUp() override {
 
@@ -25,7 +25,7 @@ protected:
 	//Standard variables init
         V.resize(N * M);
         
-	H = new chase::matrix::QuasiHermitianMatrix<T,chase::platform::CPU>(N,N);
+	H = new chase::matrix::PseudoHermitianMatrix<T,chase::platform::CPU>(N,N);
 	exact_eigsl_H = new chase::matrix::Matrix<T,chase::platform::CPU>(N,1);
         
 	ritzv.resize(M * numvec);
@@ -40,7 +40,7 @@ protected:
         //Tiny variables init
         V_tiny.resize(N_tiny * M_tiny);
         
-	H_tiny = new chase::matrix::QuasiHermitianMatrix<T,chase::platform::CPU>(N_tiny,N_tiny);
+	H_tiny = new chase::matrix::PseudoHermitianMatrix<T,chase::platform::CPU>(N_tiny,N_tiny);
 	exact_eigsl_H_tiny = new chase::matrix::Matrix<T,chase::platform::CPU>(N_tiny,1);
         
 	ritzv_tiny.resize(M_tiny * numvec_tiny);
@@ -68,7 +68,7 @@ protected:
     std::vector<chase::Base<T>> ritzV;
     std::vector<chase::Base<T>> Tau;
     chase::matrix::Matrix<T> * exact_eigsl_H; 
-    chase::matrix::QuasiHermitianMatrix<T> * H;
+    chase::matrix::PseudoHermitianMatrix<T> * H;
     
     //Tiny variable sets
     std::size_t N_tiny = 10, M_tiny = 10, numvec_tiny = 1;
@@ -77,13 +77,13 @@ protected:
     std::vector<chase::Base<T>> ritzV_tiny;
     std::vector<chase::Base<T>> Tau_tiny;
     chase::matrix::Matrix<T> * exact_eigsl_H_tiny; 
-    chase::matrix::QuasiHermitianMatrix<T> * H_tiny;
+    chase::matrix::PseudoHermitianMatrix<T> * H_tiny;
 };
 
 using TestTypes = ::testing::Types<float, double, std::complex<float>, std::complex<double>>;
-TYPED_TEST_SUITE(QuasiHermitianLanczosCPUTest, TestTypes);
+TYPED_TEST_SUITE(PseudoHermitianLanczosCPUTest, TestTypes);
 
-TYPED_TEST(QuasiHermitianLanczosCPUTest, tinyQuasiHermitianSimplefiedLanczos) {
+TYPED_TEST(PseudoHermitianLanczosCPUTest, tinyPseudoHermitianSimplefiedLanczos) {
     using T = TypeParam;
 
     this->H_tiny->readFromBinaryFile(GetBSE_TinyMatrix<T>());
@@ -103,7 +103,7 @@ TYPED_TEST(QuasiHermitianLanczosCPUTest, tinyQuasiHermitianSimplefiedLanczos) {
 
 }
 
-TYPED_TEST(QuasiHermitianLanczosCPUTest, tinyQuasiHermitianLanczos) {
+TYPED_TEST(PseudoHermitianLanczosCPUTest, tinyPseudoHermitianLanczos) {
     using T = TypeParam;
 
     this->H_tiny->readFromBinaryFile(GetBSE_TinyMatrix<T>());
@@ -125,7 +125,7 @@ TYPED_TEST(QuasiHermitianLanczosCPUTest, tinyQuasiHermitianLanczos) {
     EXPECT_LT(diff_max,1e3*MachineEpsilon<chase::Base<T>>::value());
 }
 
-TYPED_TEST(QuasiHermitianLanczosCPUTest, QuasiHermitianSimplefiedLanczos) {
+TYPED_TEST(PseudoHermitianLanczosCPUTest, PseudoHermitianSimplefiedLanczos) {
     using T = TypeParam;
 
     this->H->readFromBinaryFile(GetBSE_Matrix<T>());
@@ -144,7 +144,7 @@ TYPED_TEST(QuasiHermitianLanczosCPUTest, QuasiHermitianSimplefiedLanczos) {
     EXPECT_LT(upperb,5*(chase::Base<T>)std::real(this->exact_eigsl_H->data()[this->N-1]));
 }
 
-TYPED_TEST(QuasiHermitianLanczosCPUTest, QuasiHermitianLanczos) {
+TYPED_TEST(PseudoHermitianLanczosCPUTest, PseudoHermitianLanczos) {
     using T = TypeParam;
     
     this->H->readFromBinaryFile(GetBSE_Matrix<T>());

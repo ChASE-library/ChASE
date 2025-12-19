@@ -15,7 +15,7 @@
 #include "linalg/matrix/matrix.hpp"
 
 template <typename T>
-class QuasiHermitianRayleighRitzCPUTest : public ::testing::Test {
+class PseudoHermitianRayleighRitzCPUTest : public ::testing::Test {
 protected:
     void SetUp() override {
 
@@ -23,7 +23,7 @@ protected:
         std::normal_distribution<> d;
 
         //Standard variables init
-	H = new chase::matrix::QuasiHermitianMatrix<T,chase::platform::CPU>(N,N);
+	H = new chase::matrix::PseudoHermitianMatrix<T,chase::platform::CPU>(N,N);
 	exact_eigsl_H = new chase::matrix::Matrix<T,chase::platform::CPU>(N,1);
         
     	ritzv.resize(nev);
@@ -38,7 +38,7 @@ protected:
         }
 
         //Tiny variables init	
-	H_tiny = new chase::matrix::QuasiHermitianMatrix<T,chase::platform::CPU>(N_tiny,N_tiny);
+	H_tiny = new chase::matrix::PseudoHermitianMatrix<T,chase::platform::CPU>(N_tiny,N_tiny);
 	exact_eigsl_H_tiny = new chase::matrix::Matrix<T,chase::platform::CPU>(N_tiny,1);
 
     	ritzv_tiny.resize(nev_tiny);
@@ -67,7 +67,7 @@ protected:
     std::vector<chase::Base<T>> ritzv;
 
     chase::matrix::Matrix<T> * exact_eigsl_H; 
-    chase::matrix::QuasiHermitianMatrix<T> * H;
+    chase::matrix::PseudoHermitianMatrix<T> * H;
     
     //Tiny variable sets
     std::size_t k_tiny = 5;
@@ -81,13 +81,13 @@ protected:
     std::vector<chase::Base<T>> ritzv_tiny;
     
     chase::matrix::Matrix<T> * exact_eigsl_H_tiny; 
-    chase::matrix::QuasiHermitianMatrix<T> * H_tiny;
+    chase::matrix::PseudoHermitianMatrix<T> * H_tiny;
 };
 
 using TestTypes = ::testing::Types<float, double, std::complex<float>, std::complex<double>>;
-TYPED_TEST_SUITE(QuasiHermitianRayleighRitzCPUTest, TestTypes);
+TYPED_TEST_SUITE(PseudoHermitianRayleighRitzCPUTest, TestTypes);
 
-TYPED_TEST(QuasiHermitianRayleighRitzCPUTest, QuasiHermitianRayleighRitz) {
+TYPED_TEST(PseudoHermitianRayleighRitzCPUTest, PseudoHermitianRayleighRitz) {
     using T = TypeParam;
 
     this->H->readFromBinaryFile(GetBSE_Matrix<T>());
@@ -105,7 +105,7 @@ TYPED_TEST(QuasiHermitianRayleighRitzCPUTest, QuasiHermitianRayleighRitz) {
     }
 }
 
-TYPED_TEST(QuasiHermitianRayleighRitzCPUTest, tinyQuasiHermitianRayleighRitz) {
+TYPED_TEST(PseudoHermitianRayleighRitzCPUTest, tinyPseudoHermitianRayleighRitz) {
     using T = TypeParam;
 
     this->H_tiny->readFromBinaryFile(GetBSE_TinyMatrix<T>());

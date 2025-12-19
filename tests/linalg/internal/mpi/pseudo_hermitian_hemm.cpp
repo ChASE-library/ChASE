@@ -15,7 +15,7 @@
 #include "linalg/distMatrix/distMultiVector.hpp"
 
 template <typename T>
-class QuasiHEMMCPUDistTest : public ::testing::Test {
+class PseudoHEMMCPUDistTest : public ::testing::Test {
 protected:
     void SetUp() override {
         MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
@@ -30,9 +30,9 @@ protected:
 };
 
 using TestTypes = ::testing::Types<float, double, std::complex<float>, std::complex<double>>;
-TYPED_TEST_SUITE(QuasiHEMMCPUDistTest, TestTypes);
+TYPED_TEST_SUITE(PseudoHEMMCPUDistTest, TestTypes);
 
-TYPED_TEST(QuasiHEMMCPUDistTest, QuasiHEMMDistCorrectness) {
+TYPED_TEST(PseudoHEMMCPUDistTest, PseudoHEMMDistCorrectness) {
     using T = TypeParam;  // Get the current type
     std::size_t N = 200;
     std::size_t n = 20;
@@ -44,7 +44,7 @@ TYPED_TEST(QuasiHEMMCPUDistTest, QuasiHEMMDistCorrectness) {
     SH_.readFromBinaryFile(GetBSE_Matrix<T>());
     chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(SH_); //We assume the flipping function works
 
-    auto H_  = chase::distMatrix::QuasiHermitianBlockBlockMatrix<T>(N, N, mpi_grid);
+    auto H_  = chase::distMatrix::PseudoHermitianBlockBlockMatrix<T>(N, N, mpi_grid);
     H_.readFromBinaryFile(GetBSE_Matrix<T>());
 
     auto V_   = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column>(N, n, mpi_grid);
@@ -90,7 +90,7 @@ TYPED_TEST(QuasiHEMMCPUDistTest, QuasiHEMMDistCorrectness) {
     }  
 }
 
-TYPED_TEST(QuasiHEMMCPUDistTest, QuasiHEMMDistBlockCyclicCorrectness) {
+TYPED_TEST(PseudoHEMMCPUDistTest, PseudoHEMMDistBlockCyclicCorrectness) {
     using T = TypeParam;  // Get the current type
     std::size_t N = 200;
     std::size_t n = 20;
@@ -103,7 +103,7 @@ TYPED_TEST(QuasiHEMMCPUDistTest, QuasiHEMMDistBlockCyclicCorrectness) {
     SH_.readFromBinaryFile(GetBSE_Matrix<T>());
     chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(SH_); //We assume the flipping function works
 
-    auto H_  = chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T>(N, N, mb, mb, mpi_grid);
+    auto H_  = chase::distMatrix::PseudoHermitianBlockCyclicMatrix<T>(N, N, mb, mb, mpi_grid);
     H_.readFromBinaryFile(GetBSE_Matrix<T>());
 
     auto V_   = chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, chase::distMultiVector::CommunicatorType::column>(N, n, mb, mpi_grid);
@@ -149,7 +149,7 @@ TYPED_TEST(QuasiHEMMCPUDistTest, QuasiHEMMDistBlockCyclicCorrectness) {
     }  
 }
 
-TYPED_TEST(QuasiHEMMCPUDistTest, TinyQuasiHEMMDistCorrectness) {
+TYPED_TEST(PseudoHEMMCPUDistTest, TinyPseudoHEMMDistCorrectness) {
     using T = TypeParam;  // Get the current type
     std::size_t N = 10;
     std::size_t n = 4;
@@ -161,7 +161,7 @@ TYPED_TEST(QuasiHEMMCPUDistTest, TinyQuasiHEMMDistCorrectness) {
     SH_.readFromBinaryFile(GetBSE_TinyMatrix<T>());
     chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(SH_); //We assume the flipping function works
 
-    auto H_  = chase::distMatrix::QuasiHermitianBlockBlockMatrix<T>(N, N, mpi_grid);
+    auto H_  = chase::distMatrix::PseudoHermitianBlockBlockMatrix<T>(N, N, mpi_grid);
     H_.readFromBinaryFile(GetBSE_TinyMatrix<T>());
 
     auto V_   = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column>(N, n, mpi_grid);
@@ -207,7 +207,7 @@ TYPED_TEST(QuasiHEMMCPUDistTest, TinyQuasiHEMMDistCorrectness) {
     }  
 }
 
-TYPED_TEST(QuasiHEMMCPUDistTest, TinyQuasiHEMMDistBlockCyclicCorrectness) {
+TYPED_TEST(PseudoHEMMCPUDistTest, TinyPseudoHEMMDistBlockCyclicCorrectness) {
     using T = TypeParam;  // Get the current type
     std::size_t N = 10;
     std::size_t n = 4;
@@ -220,7 +220,7 @@ TYPED_TEST(QuasiHEMMCPUDistTest, TinyQuasiHEMMDistBlockCyclicCorrectness) {
     SH_.readFromBinaryFile(GetBSE_TinyMatrix<T>());
     chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(SH_); //We assume the flipping function works
 
-    auto H_  = chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T>(N, N, mb, mb, mpi_grid);
+    auto H_  = chase::distMatrix::PseudoHermitianBlockCyclicMatrix<T>(N, N, mb, mb, mpi_grid);
     H_.readFromBinaryFile(GetBSE_TinyMatrix<T>());
 
     auto V_   = chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, chase::distMultiVector::CommunicatorType::column>(N, n, mb, mpi_grid);

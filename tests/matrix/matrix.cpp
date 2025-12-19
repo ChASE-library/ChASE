@@ -96,7 +96,7 @@ TYPED_TEST(MatrixCPUTest, SWAP) {
     EXPECT_EQ(matrix1.data(), array2);
 }
 
-TYPED_TEST(MatrixCPUTest, QuasiHermitianMatrix) {
+TYPED_TEST(MatrixCPUTest, PseudoHermitianMatrix) {
 
     std::size_t rows = 4, cols = 4;
 
@@ -119,7 +119,7 @@ TYPED_TEST(MatrixCPUTest, QuasiHermitianMatrix) {
 	    std::complex<double>(-1.01,0)
     };
     
-    chase::matrix::QuasiHermitianMatrix<std::complex<double>> matrix(rows, cols, rows, external_data);
+    chase::matrix::PseudoHermitianMatrix<std::complex<double>> matrix(rows, cols, rows, external_data);
     EXPECT_EQ(matrix.rows(), rows);
     EXPECT_EQ(matrix.cols(), cols);
     EXPECT_EQ(matrix.ld(), rows);

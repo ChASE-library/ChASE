@@ -30,7 +30,7 @@ using ARCH = chase::platform::GPU;
 #else
 using ARCH = chase::platform::CPU;
 #endif
-using MatrixType = chase::matrix::QuasiHermitianMatrix<T,ARCH>;
+using MatrixType = chase::matrix::PseudoHermitianMatrix<T,ARCH>;
 
 int main(int argc, char** argv){
 

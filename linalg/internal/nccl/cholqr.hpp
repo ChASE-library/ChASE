@@ -65,6 +65,7 @@ namespace internal
                 int lwork,                
                 T *A)
     {
+
         T one = T(1.0);
         T zero = T(0.0);
         chase::Base<T> One = Base<T>(1.0);
@@ -123,6 +124,7 @@ namespace internal
                                                                   &Zero, 
                                                                   A, 
                                                                   n));
+	
 
         chase::linalg::internal::cuda::extractUpperTriangular(A, n, workspace, n);
         //CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(A, A, n * n, ncclSum, comm));
