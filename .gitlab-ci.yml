@@ -61,7 +61,7 @@ test_cpu:
 build_gpu:
   stage: build
   tags:
-    - jusuf
+    - juwels_booster
     - jacamar
     - login
     - shell
@@ -89,7 +89,7 @@ test_gpu:
   dependencies:
     - build_gpu
   tags:
-    - jusuf
+    - juwels_booster
     - jacamar
     - compute
     - slurm
