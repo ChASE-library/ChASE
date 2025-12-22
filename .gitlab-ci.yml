@@ -152,7 +152,7 @@ coverage:
 
 # ---------------- GitLab Pages Deployment ----------------
 pages:
-  stage: deploy
+  stage: coverage
   dependencies:
     - coverage
   script:
