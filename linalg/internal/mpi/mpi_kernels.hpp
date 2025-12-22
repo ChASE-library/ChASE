@@ -33,6 +33,14 @@ struct cpu_mpi
     static int cholQR2(std::size_t m, std::size_t n, T* V, int ldv,
                        MPI_Comm comm, T* A = nullptr);
 
+    template <typename InputMultiVectorType>
+    static int cholQR1(InputMultiVectorType& V, 
+                      typename InputMultiVectorType::value_type *A = nullptr);
+
+    template <typename InputMultiVectorType>
+    static int cholQR2(InputMultiVectorType& V, 
+                      typename InputMultiVectorType::value_type *A = nullptr);
+
     template <typename T>
     static int shiftedcholQR2(std::size_t N, std::size_t m, std::size_t n, T* V,
                               int ldv, MPI_Comm comm, T* A = nullptr);

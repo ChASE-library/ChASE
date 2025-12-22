@@ -126,6 +126,31 @@ public:
         	is_pseudoHerm_ = false;
         	A_ = std::make_unique<chase::distMatrix::RedundantMatrix<T>>(nevex_, nevex_, Hmat_->getMpiGrid_shared_ptr());
          }
+
+#ifdef QR_DOUBLE_PRECISION
+        if constexpr (std::is_same<T, std::complex<float>>::value || std::is_same<T, float>::value)
+        {
+            if(!V1_->isDoublePrecisionEnabled())
+            {
+                V1_->enableDoublePrecision();
+            }
+        }
+        if constexpr (std::is_same<T, std::complex<float>>::value || std::is_same<T, float>::value)
+        {
+            if(!A_->isDoublePrecisionEnabled())
+            {
+                A_->enableDoublePrecision();
+            }
+        }
+#elif RR_DOUBLE_PRECISION
+        if constexpr (std::is_same<T, std::complex<float>>::value || std::is_same<T, float>::value)
+        {
+            if(!A_->isDoublePrecisionEnabled())
+            {
+                A_->enableDoublePrecision();
+            }
+        }
+#endif
     }
     /**
      * @brief Deleted copy constructor.
@@ -488,6 +513,25 @@ public:
 
             if (cond > cond_threshold_upper)
             {
+#ifdef QR_DOUBLE_PRECISION
+                if constexpr (std::is_same<T, std::complex<float>>::value || std::is_same<T, float>::value)
+                {
+                    V1_->copyTo();
+
+                    auto V1_d = V1_->getDoublePrecisionMatrix();
+                    auto A_d = A_->getDoublePrecisionMatrix();
+                    info = chase::linalg::internal::cpu_mpi::shiftedcholQR2(V1_->g_rows(),
+                                                                        V1_d->l_rows(), 
+                                                                        V1_d->l_cols(), 
+                                                                        V1_d->l_data(),  
+                                                                        V1_d->l_ld(), 
+                                                                        V1_->getMpiGrid()->get_col_comm(), 
+                                                                        A_d->l_data());
+                    V1_->copyback();
+                }
+                else
+                {
+#endif
                 info = chase::linalg::internal::cpu_mpi::shiftedcholQR2(V1_->g_rows(),
                                                                     V1_->l_rows(), 
                                                                     V1_->l_cols(), 
@@ -495,23 +539,66 @@ public:
                                                                     V1_->l_ld(), 
                                                                     V1_->getMpiGrid()->get_col_comm(), 
                                                                     A_->l_data());
+#ifdef QR_DOUBLE_PRECISION
+                }
+#endif
             }
             else if(cond < cond_threshold_lower)
             {
+#ifdef QR_DOUBLE_PRECISION
+                if constexpr (std::is_same<T, std::complex<float>>::value || std::is_same<T, float>::value)
+                {
+                    V1_->copyTo();
+
+                    auto V1_d = V1_->getDoublePrecisionMatrix();
+                    info = chase::linalg::internal::cpu_mpi::cholQR1(V1_d->l_rows(), 
+                                                                   V1_d->l_cols(), 
+                                                                   V1_d->l_data(),  
+                                                                   V1_d->l_ld(), 
+                                                                   V1_->getMpiGrid()->get_col_comm());
+                    V1_->copyback();
+                }
+                else
+                {
+#endif
                 info = chase::linalg::internal::cpu_mpi::cholQR1(V1_->l_rows(), 
                                                              V1_->l_cols(), 
                                                              V1_->l_data(),  
                                                              V1_->l_ld(), 
                                                              V1_->getMpiGrid()->get_col_comm());
+#ifdef QR_DOUBLE_PRECISION
+                }
+#endif
             }
             else
             {
+#ifdef QR_DOUBLE_PRECISION
+                if constexpr (std::is_same<T, std::complex<float>>::value || std::is_same<T, float>::value)
+                {
+                    V1_->copyTo();
+
+                    auto V1_d = V1_->getDoublePrecisionMatrix();
+                    auto A_d = A_->getDoublePrecisionMatrix();
+                    info = chase::linalg::internal::cpu_mpi::cholQR2(V1_d->l_rows(), 
+                                                                   V1_d->l_cols(), 
+                                                                   V1_d->l_data(),  
+                                                                   V1_d->l_ld(), 
+                                                                   V1_->getMpiGrid()->get_col_comm(),
+                                                                   A_d->l_data());
+                    V1_->copyback();
+                }
+                else
+                {
+#endif
                 info = chase::linalg::internal::cpu_mpi::cholQR2(V1_->l_rows(), 
                                                              V1_->l_cols(), 
                                                              V1_->l_data(),  
                                                              V1_->l_ld(), 
                                                              V1_->getMpiGrid()->get_col_comm(),
-                                                             A_->l_data()); 
+                                                             A_->l_data());
+#ifdef QR_DOUBLE_PRECISION
+                }
+#endif
             }
 
             if (info != 0)
@@ -549,7 +636,10 @@ public:
 
     void RR(chase::Base<T>* ritzv, std::size_t block) override 
     {
-        chase::linalg::internal::cpu_mpi::rayleighRitz_dispatch(*Hmat_, 
+        if constexpr (std::is_same<typename MatrixType::hermitian_type, chase::matrix::PseudoHermitian>::value)
+	{
+#ifdef XGEEV_EXISTS
+        	chase::linalg::internal::cpu_mpi::pseudo_hermitian_rayleighRitz(*Hmat_, 
                                                    *V1_, 
                                                    *V2_, 
                                                    *W1_, 
@@ -558,6 +648,30 @@ public:
                                                    locked_, 
                                                    block,
                                                    A_.get());
+#else	
+        	chase::linalg::internal::cpu_mpi::pseudo_hermitian_rayleighRitz_v2(*Hmat_, 
+                                                   *V1_, 
+                                                   *V2_, 
+                                                   *W1_, 
+                                                   *W2_, 
+                                                   ritzv_->l_data(), 
+                                                   locked_, 
+                                                   block,
+                                                   A_.get());
+#endif
+	}
+	else
+	{
+        	chase::linalg::internal::cpu_mpi::rayleighRitz(*Hmat_, 
+                                                   *V1_, 
+                                                   *V2_, 
+                                                   *W1_, 
+                                                   *W2_, 
+                                                   ritzv_->l_data(), 
+                                                   locked_, 
+                                                   block,
+                                                   A_.get());
+	}
 
         chase::linalg::lapackpp::t_lacpy('A',
                                          V2_->l_rows(),

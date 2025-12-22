@@ -226,6 +226,159 @@ namespace internal
     }
 
     /**
+     * @brief Variant of cholQR1 for InputMultiVectorType.
+     * 
+     * This variant works with InputMultiVectorType and performs the Cholesky QR decomposition in the same
+     * manner as cholQR1, but with different input data type handling. The use of MPI ensures that the 
+     * computation is parallelized across multiple processes.
+     * 
+     * @tparam InputMultiVectorType The type of the input multi-vector (e.g., a distributed matrix type).
+     * 
+     * @param V The input matrix to decompose.
+     * @param A Optional pointer to an allocated matrix used in the Cholesky factorization.
+     * 
+     * @return int Status code: 0 for success, non-zero on failure.
+     */
+    template<typename InputMultiVectorType>
+    int cpu_mpi::cholQR1(InputMultiVectorType& V, 
+                        typename InputMultiVectorType::value_type *A)
+    {
+        using T = typename InputMultiVectorType::value_type;
+
+        T one = T(1.0);
+        T zero = T(0.0);
+        int info = 1;
+        
+        std::unique_ptr<T[]> ptr;
+
+        if (A == nullptr)
+        {
+            ptr = std::unique_ptr<T[]>{new T[V.l_cols() * V.l_cols()]};
+            A = ptr.get();
+        }
+
+        blaspp::t_syherk('U', 
+                         'C', 
+                         V.l_cols(), 
+                         V.l_rows(), 
+                         &one, 
+                         V.l_data(), 
+                         V.l_ld(), 
+                         &zero, 
+                         A, 
+                         V.l_cols());
+
+        MPI_Allreduce(MPI_IN_PLACE, 
+                      A, 
+                      V.l_cols() * V.l_cols(), 
+                      chase::mpi::getMPI_Type<T>(),
+                      MPI_SUM,
+                      V.getMpiGrid()->get_col_comm());
+
+        info = lapackpp::t_potrf('U', 
+                                 V.l_cols(), 
+                                 A, 
+                                 V.l_cols()); 
+   
+        if(info != 0)
+        {
+            return info;
+        }
+        else
+        {
+            blaspp::t_trsm('R', 
+                           'U', 
+                           'N', 
+                           'N', 
+                           V.l_rows(), 
+                           V.l_cols(), 
+                           &one, 
+                           A, 
+                           V.l_cols(), 
+                           V.l_data(), 
+                           V.l_ld()); 
+#ifdef CHASE_OUTPUT
+            int grank;
+            MPI_Comm_rank(MPI_COMM_WORLD, &grank);
+            if(grank == 0)
+            {
+                std::cout << "choldegree: 1" << std::endl;
+            }
+#endif      
+            return info;              
+        }
+    }
+
+    /**
+     * @brief Performs a Cholesky QR decomposition on an input multi-vector type.
+     * 
+     * This function computes the Cholesky QR decomposition of the input matrix or multi-vector `V`
+     * using BLAS and LAPACK on the CPU. It is designed to work with multi-vector input types 
+     * where `V` can be a matrix or a vector, and the decomposition is performed in parallel on multiple CPUs.
+     * The function also allows for memory optimization through an optional workspace buffer for 
+     * intermediate calculations.
+     * 
+     * @tparam InputMultiVectorType The type of the input multi-vector (e.g., a matrix or vector type).
+     * 
+     * @param V The input multi-vector (matrix or vector) to decompose. It will be modified during the process.
+     * @param A Optional matrix to store the result of the factorization. If not provided, one will be 
+     *        allocated internally.
+     * 
+     * @return int Status code indicating the success or failure of the computation.
+     *         - 0 for success.
+     *         - Non-zero value indicates failure.
+     * 
+     * @note This function assumes the input multi-vector `V` is stored in a format compatible with
+     *       BLAS and LAPACK. The input matrix must be stored in column-major format.
+     * 
+     * @note This function supports mixed precision when ENABLE_MIXED_PRECISION is defined. For double
+     *       precision types, it can use single precision for the first Cholesky QR step to improve
+     *       performance while maintaining accuracy.
+     */
+    template<typename InputMultiVectorType>
+    int cpu_mpi::cholQR2(InputMultiVectorType& V, 
+                        typename InputMultiVectorType::value_type *A)
+    {
+        using T = typename InputMultiVectorType::value_type;
+
+        T one = T(1.0);
+        T zero = T(0.0);
+        int info = 0;
+        
+        std::unique_ptr<T[]> ptr;
+
+        if (A == nullptr)
+        {
+            ptr = std::unique_ptr<T[]>{new T[V.l_cols() * V.l_cols()]};
+            A = ptr.get();
+        }
+
+#ifdef ENABLE_MIXED_PRECISION
+        if constexpr (std::is_same<T, double>::value || std::is_same<T, std::complex<double>>::value)
+        {
+            std::cout << "In cholqr2, the first cholqr using Single Precision" << std::endl;
+            V.enableSinglePrecision();
+            auto V_sp = V.getSinglePrecisionMatrix();
+            info = cholQR1(*V_sp);
+            V.disableSinglePrecision(true);
+        }else
+        {
+            info = cholQR1(V, A);
+        }      
+#else
+        info = cholQR1(V, A);
+#endif
+        if(info != 0)
+        {
+            return info;
+        }
+
+        info = cholQR1(V, A);
+
+        return info;       
+    }
+
+    /**
      * @brief Performs a two-step shifted Cholesky-based QR decomposition.
      * 
      * Computes a shifted Cholesky factorization-based QR decomposition with two Cholesky steps 

@@ -232,14 +232,14 @@ namespace internal
         chase::linalg::scalapackpp::t_ptranc(H.g_rows(), 
                                              H.g_cols(), 
                                              One, 
-                                             H.l_data(), 
+                                             H.cpu_data(), 
                                              one, one, desc, Zero, tmp.data(), one, one, desc);
         #pragma omp parallel for
         for(auto j = 0; j < H.l_cols(); j++)
         {
             for(auto i = 0; i < H.l_rows(); i++)
             {
-                H.l_data()[i + j * H.l_ld()] += tmp[i + j * H.l_rows()];
+                H.cpu_data()[i + j * H.l_ld()] += tmp[i + j * H.l_rows()];
             }
         }
               

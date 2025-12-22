@@ -47,9 +47,6 @@ namespace internal
                         offset,
                         subSize);
 
-        cudaStream_t usedStream;
-        CHECK_CUBLAS_ERROR(cublasGetStream(cublas_handle, &usedStream));
-
         chase::linalg::internal::cuda::residual_gpu(W1.l_rows(), 
                                                     subSize, 
                                                     W1.l_data() +  offset * W1.l_ld(), 
@@ -58,7 +55,8 @@ namespace internal
                                                     W2.l_ld(), 
                                                     ritzv.data() + offset,
                                                     resids.data() + offset,
-                                                    false, usedStream);  
+                                                    false, (cudaStream_t)0);  
+        CHECK_CUDA_ERROR(cudaDeviceSynchronize());
         MPI_Allreduce(MPI_IN_PLACE,
                     resids.data() + offset,
                     subSize,

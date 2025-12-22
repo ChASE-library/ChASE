@@ -64,6 +64,12 @@ namespace internal
                       int h_lwork,
                       chase::distMatrix::RedundantMatrix<typename MatrixType::value_type, chase::platform::GPU>* A) 
     {
+
+#ifdef CHASE_OUTPUT
+        if (H.grank() == 0){
+            std::cout << "Constructing the non-hermitian Rayleigh-Quotient..." << std::endl;
+	}
+#endif
         using T = typename MatrixType::value_type;
 
         cudaStream_t usedStream;
@@ -161,17 +167,18 @@ namespace internal
                                        subSize));
 
         // Perform the MPI_Allreduce to sum up the results
-	
-        CHECK_CUDA_ERROR(cudaDeviceSynchronize());
+        CHECK_CUDA_ERROR(cudaDeviceSynchronize());	
         MPI_Allreduce(MPI_IN_PLACE,
                       W,
                       subSize*subSize,
                       chase::mpi::getMPI_Type<T>(),
                       MPI_SUM,
                       A->getMpiGrid()->get_row_comm());
+        CHECK_CUDA_ERROR(cudaDeviceSynchronize());
 
 	chase::linalg::internal::cuda_mpi::flipLowerHalfMatrixSign(V2, offset, subSize);
 	
+	CHECK_CUDA_ERROR(cudaDeviceSynchronize());	
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(cublas_handle, 
                                        CUBLAS_OP_C, 
                                        CUBLAS_OP_N, 
@@ -187,13 +194,14 @@ namespace internal
                                        M,
                                        subSize));
 	
-        CHECK_CUDA_ERROR(cudaDeviceSynchronize());
+        CHECK_CUDA_ERROR(cudaDeviceSynchronize());	
         MPI_Allreduce(MPI_IN_PLACE,
                       M,
                       subSize*subSize,
                       chase::mpi::getMPI_Type<T>(),
                       MPI_SUM,
                       A->getMpiGrid()->get_col_comm());
+        CHECK_CUDA_ERROR(cudaDeviceSynchronize());	
 
         chase::linalg::internal::cuda::chase_plus_inverse_diagonal(M,
                                       subSize,
@@ -231,15 +239,15 @@ namespace internal
                                         W1.l_ld(),
                                         &Zero,
                                         M, subSize));
-        
-	
-        CHECK_CUDA_ERROR(cudaDeviceSynchronize());
-        MPI_Allreduce(MPI_IN_PLACE,
+                
+	CHECK_CUDA_ERROR(cudaDeviceSynchronize());
+	MPI_Allreduce(MPI_IN_PLACE,
                       M,
                       subSize*subSize,
                       chase::mpi::getMPI_Type<T>(),
                       MPI_SUM,
                       A->getMpiGrid()->get_row_comm());
+	CHECK_CUDA_ERROR(cudaDeviceSynchronize());
 
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTaxpy(cublas_handle,
                                                                 subSize * subSize,
@@ -255,9 +263,74 @@ namespace internal
 
 #ifdef XGEEV_EXISTS
 
-        //Compute the eigenpairs of the non-hermitian rayleigh quotient on GPU  
-        //std::cout << "Compute the eigenpairs of the non-hermitian rayleigh quotient" << std::endl;
-        CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTgeev(cusolver_handle,
+#ifdef CHASE_OUTPUT
+        if (H.grank() == 0){
+            std::cout << "Compute the eigenpairs of the non-hermitian rayleigh quotient" << std::endl;
+	}
+#endif
+        if constexpr (0 && std::is_same<T, std::complex<float>>::value)
+        {
+                if(A->isDoublePrecisionEnabled())
+                {
+                    A->copyToSubBlock(0, subSize * subSize);
+                }
+                else
+                {
+                    A->enableDoublePrecision();
+                }
+                auto A_d = A->getDoublePrecisionMatrix();
+                std::complex<double> *W_d = A_d->l_data() + 2 * subSize * subSize;
+                std::complex<double> *ritzv_complex_d = A_d->l_data() + 1 * subSize * subSize;
+
+                CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTgeev(cusolver_handle,
+                                params,
+                                CUSOLVER_EIG_MODE_NOVECTOR,
+                                CUSOLVER_EIG_MODE_VECTOR,
+                                subSize,
+                                A_d->l_data(),
+                                subSize,
+                                ritzv_complex_d,
+                                NULL,
+                                1,
+                                W_d,
+                                subSize,
+                                reinterpret_cast<std::complex<double>*>(d_workspace),
+                                d_lwork,
+                                reinterpret_cast<std::complex<double>*>(h_workspace),
+                                h_lwork,
+                                devInfo));
+
+                int info;
+                CHECK_CUDA_ERROR(cudaMemcpy(&info,
+                                        devInfo,
+                                        1 * sizeof(int),
+                                        cudaMemcpyDeviceToHost));
+
+                if(info != 0)
+                {
+                        throw std::runtime_error("cusolver HEEVD failed in RayleighRitz");
+                }
+                
+                A->copyBackSubBlock(subSize * subSize, 2 * subSize * subSize);
+                //A->copyBack();
+                if constexpr (std::is_same<T, std::complex<chase::Base<T>>>::value)
+                {
+                        cudaMemcpy(ritzvs_cmplex_cpu.data(), ritzv_complex, subSize * sizeof(T), cudaMemcpyDeviceToHost);
+                        for(auto i = 0; i < subSize; i++){
+                                ptx[i] = std::real(ritzvs_cmplex_cpu[i]);
+                        }
+                }
+                else
+                {
+                        CHECK_CUDA_ERROR(cudaMemcpy(ptx,
+                                                ritzv_complex,
+                                                subSize * sizeof(chase::Base<T>),
+                                                cudaMemcpyDeviceToHost));
+                }
+
+        }else
+        {
+                CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTgeev(cusolver_handle,
                         params,
                         CUSOLVER_EIG_MODE_NOVECTOR,
                         CUSOLVER_EIG_MODE_VECTOR,
@@ -281,14 +354,20 @@ namespace internal
                                     1 * sizeof(int),
                                     cudaMemcpyDeviceToHost));
 
-        if(info != 0)
-        {
-            throw std::runtime_error("cusolver HEEVD failed in RayleighRitz");
-        }
+                if(info != 0)
+                {
+                        throw std::runtime_error("cusolver HEEVD failed in RayleighRitz");
+                }
 
-        //std::cout << "Copying the complex ritz values back to cpu" << std::endl;
-        //thrust::device_vector<int> indices(n); //Does not compile, returns unimplemented on this system...
-        if constexpr (std::is_same<T, std::complex<chase::Base<T>>>::value)
+#ifdef CHASE_OUTPUT
+	        if (H.grank() == 0){
+        	    std::cout << "Eigenvalues of the non-Hermitian rayleigh-quotient computed with GEEV." << std::endl;
+		}
+#endif
+
+                //std::cout << "Copying the complex ritz values back to cpu" << std::endl;
+                //thrust::device_vector<int> indices(n); //Does not compile, returns unimplemented on this system...
+                if constexpr (std::is_same<T, std::complex<chase::Base<T>>>::value)
         {
             cudaMemcpy(ritzvs_cmplex_cpu.data(), ritzv_complex, subSize * sizeof(T), cudaMemcpyDeviceToHost);
             for(auto i = 0; i < subSize; i++){
@@ -300,25 +379,72 @@ namespace internal
             CHECK_CUDA_ERROR(cudaMemcpy(ptx,
                                         ritzv_complex,
                                         subSize * sizeof(chase::Base<T>),
-                                        cudaMemcpyDeviceToHost));
+                                                cudaMemcpyDeviceToHost));
+                }
         }
-
 #else
 #ifdef CHASE_OUTPUT
 	if (H.grank() == 0){
         	std::cout << "WARNING! XGeev not found in cuda. Compute Geev on CPU with Lapack..." << std::endl;
 	}
 #endif
-        std::vector<chase::Base<T>> ptx_imag = std::vector<chase::Base<T>>(subSize,chase::Base<T>(0.0));
+        
+        if constexpr (0 && std::is_same<T, std::complex<float>>::value)
+        {
+            // Initialize vectors with proper size and type
+            std::vector<chase::Base<T>> ptx_imag(subSize, chase::Base<T>(0.0));
+            std::vector<double> ptx_imag_double(subSize, 0.0);
+            std::vector<double> ptx_double(subSize, 0.0);
+            std::vector<std::complex<double>> W_cpu_double(subSize * subSize, 0.0);
+            std::vector<std::complex<double>> A_double(subSize * subSize, 0.0);
 
-        A->D2H();
+            // Transfer data from device to host
+            A->D2H();
+            T* W_cpu = A->cpu_data() + 2 * subSize * subSize;
 
-        T * W_cpu = A->cpu_data() + 2*subSize*subSize;
+            // Convert single precision to double precision
+            std::transform(A->cpu_data(), 
+                         A->cpu_data() + subSize * subSize,
+                         A_double.begin(),
+                         [](const T& val) { return static_cast<std::complex<double>>(val); });
 
-        //Compute the eigenpairs of the non-hermitian rayleigh quotient on the CPU
-        lapackpp::t_geev(LAPACK_COL_MAJOR, 'V', subSize, A->cpu_data(), subSize, ptx, ptx_imag.data(), W_cpu, subSize);
+            // Compute eigenvalues and eigenvectors in double precision
+            lapackpp::t_geev(LAPACK_COL_MAJOR, 'V', subSize, 
+                            A_double.data(), subSize,
+                            ptx_double.data(), ptx_imag_double.data(),
+                            W_cpu_double.data(), subSize);
 
-        A->H2D();
+            // Convert results back to single precision
+            std::transform(ptx_double.begin(), ptx_double.end(),
+                         ptx,
+                         [](double val) { return static_cast<float>(val); });
+
+            // Convert W and A back to single precision
+            std::transform(W_cpu_double.begin(), W_cpu_double.end(),
+                         W_cpu,
+                         [](const std::complex<double>& val) { return static_cast<std::complex<float>>(val); });
+            
+            std::transform(A_double.begin(), A_double.end(),
+                         A->cpu_data(),
+                         [](const std::complex<double>& val) { return static_cast<std::complex<float>>(val); });
+
+            // Transfer data back to device
+            A->H2D();
+        }
+        
+        else
+        {
+                std::vector<chase::Base<T>> ptx_imag = std::vector<chase::Base<T>>(subSize,chase::Base<T>(0.0));
+
+                A->D2H();
+
+                T * W_cpu = A->cpu_data() + 2*subSize*subSize;
+
+                //Compute the eigenpairs of the non-hermitian rayleigh quotient on the CPU
+                lapackpp::t_geev(LAPACK_COL_MAJOR, 'V', subSize, A->cpu_data(), subSize, ptx, ptx_imag.data(), W_cpu, subSize);
+
+                A->H2D();
+        }
 #endif
 
         std::vector<std::size_t> indices(subSize);
@@ -553,8 +679,46 @@ namespace internal
                                                                     subSize,
                                                                     M,
                                                                     subSize));
+#ifdef RR_DOUBLE_PRECISION
+        if constexpr (std::is_same<T, std::complex<float>>::value)
+        {
+                if(A->isDoublePrecisionEnabled())
+                {
+                    A->copyToSubBlock(subSize * subSize, subSize * subSize);
+                }
+                else
+                {
+                    A->enableDoublePrecision();
+                }
 
-        CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTheevd(
+                if(!ritzv.isDoublePrecisionEnabled())
+                {
+                    ritzv.enableDoublePrecision();
+                }
+                auto A_d = A->getDoublePrecisionMatrix();
+                auto ritzv_d = ritzv.getDoublePrecisionMatrix();
+                std::complex<double> *workspace_d;
+                cudaMalloc((void**)&workspace_d, sizeof(std::complex<double>) * lwork);
+	
+                CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTheevd(
+                                        cusolver_handle,
+                                        CUSOLVER_EIG_MODE_VECTOR,
+                                        CUBLAS_FILL_MODE_LOWER,
+                                        subSize,
+                                        A_d->l_data() + subSize * subSize,
+                                        subSize,
+                                        ritzv_d->l_data() + offset,
+                                        workspace_d,
+                                        lwork,
+                                        devInfo));
+
+                ritzv.disableDoublePrecision(true);
+                A->copyBackSubBlock(subSize * subSize, subSize * subSize);
+                cudaFree(workspace_d);
+        }
+        else{
+#endif
+                CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTheevd(
                                        cusolver_handle,
                                        CUSOLVER_EIG_MODE_VECTOR,
                                        CUBLAS_FILL_MODE_LOWER,
@@ -563,13 +727,16 @@ namespace internal
                                        subSize,
                                        ritzv.l_data() + offset,
                                        workspace, lwork, devInfo));
+#ifdef RR_DOUBLE_PRECISION
+        }
+#endif
 
-        int info;
-        CHECK_CUDA_ERROR(cudaMemcpy(&info, devInfo, 1 * sizeof(int), cudaMemcpyDeviceToHost));
+	int info;
+	CHECK_CUDA_ERROR(cudaMemcpy(&info, devInfo, 1 * sizeof(int), cudaMemcpyDeviceToHost));
 
         if(info != 0)
         {
-            throw std::runtime_error("cusolver HEEVD failed in Pseudo-Hermitian RayleighRitz");
+            throw std::runtime_error("cusolver HEEVD failed in Pseudo-Hermitian RayleighRitz, return value: " + std::to_string(info));
         }
 
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTtrsm(cublas_handle,

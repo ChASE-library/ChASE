@@ -701,7 +701,7 @@ public:
                 for (std::size_t i = 0; i < this->l_rows(); ++i)
                 {
                     this->l_data()[j * this->l_ld() + i] =
-                        chase::convertToSinglePrecision<T>(
+                        static_cast<T>(
                             double_precision_multivec_->l_data()
                                 [j * double_precision_multivec_.get()->l_ld() + i]);
                 }

@@ -129,6 +129,14 @@ namespace internal
                     int lwork = 0,                
                     T *A = nullptr);
 
+        template<typename InputMultiVectorType>
+        static int cholQR1(cublasHandle_t cublas_handle,
+                cusolverDnHandle_t cusolver_handle,
+                InputMultiVectorType& V, 
+                typename InputMultiVectorType::value_type *workspace=nullptr,
+                int lwork = 0,                
+                typename InputMultiVectorType::value_type *A = nullptr);
+                                        
         template<typename T>
         static int cholQR2(cublasHandle_t cublas_handle,
                     cusolverDnHandle_t cusolver_handle,
@@ -141,6 +149,14 @@ namespace internal
                     int lwork = 0,                
                     T *A = nullptr);
 
+        template<typename InputMultiVectorType>
+        static int cholQR2(cublasHandle_t cublas_handle,
+                cusolverDnHandle_t cusolver_handle,
+                InputMultiVectorType& V, 
+                typename InputMultiVectorType::value_type *workspace = nullptr,
+                int lwork = 0,                
+                typename InputMultiVectorType::value_type *A = nullptr);
+                                        
         template<typename T>
         static int shiftedcholQR2(cublasHandle_t cublas_handle,
                     cusolverDnHandle_t cusolver_handle,

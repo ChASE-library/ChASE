@@ -56,6 +56,11 @@ namespace internal
                        std::size_t subSize,
                        chase::distMatrix::RedundantMatrix<typename MatrixType::value_type, chase::platform::CPU>* A)                
     {
+#ifdef CHASE_OUTPUT
+        if (H.grank() == 0){
+            std::cout << "Constructing the non-hermitian Rayleigh-Quotient..." << std::endl;
+	}
+#endif
         using T = typename MatrixType::value_type;
 
         if (ritzv == nullptr) {
@@ -192,8 +197,57 @@ namespace internal
                 blaspp::t_scal(subSize, &diag[i], A->l_data() + i, subSize);
         }
 
+#ifdef CHASE_OUTPUT
+        if (H.grank() == 0){
+            std::cout << "Compute the eigenpairs of the non-hermitian rayleigh quotient" << std::endl;
+	}
+#endif
+
         //Compute the eigenpairs of the non-hermitian rayleigh quotient
-        lapackpp::t_geev(LAPACK_COL_MAJOR, 'V', subSize, A->l_data(), subSize, ritzv+offset, ritzvi.data(), W, subSize);
+        if constexpr (0 && std::is_same<T, std::complex<float>>::value)
+        {
+            if(A->isDoublePrecisionEnabled())
+            {
+                A->copyToSubBlock(0, subSize * subSize);
+            }
+            else
+            {
+                A->enableDoublePrecision();
+            }
+            auto A_d = A->getDoublePrecisionMatrix();
+            std::complex<double> *W_d = A_d->l_data() + 2 * subSize * subSize;
+            std::vector<chase::Base<T>> ptx_imag(subSize, chase::Base<T>(0.0));
+            std::vector<double> ptx_imag_double(subSize, 0.0);
+            std::vector<double> ptx_double(subSize, 0.0);
+
+            // Compute eigenvalues and eigenvectors in double precision
+            lapackpp::t_geev(LAPACK_COL_MAJOR, 'V', subSize, 
+                            A_d->l_data(), subSize,
+                            ptx_double.data(), ptx_imag_double.data(),
+                            W_d, subSize);
+
+            // Convert results back to single precision
+            std::transform(ptx_double.begin(), ptx_double.end(),
+                         ritzv + offset,
+                         [](double val) { return static_cast<float>(val); });
+
+            // Copy W back to single precision
+            std::transform(W_d, W_d + subSize * subSize,
+                         W,
+                         [](const std::complex<double>& val) { return static_cast<std::complex<float>>(val); });
+
+            A->copyBackSubBlock(0, subSize * subSize);
+        }
+        else
+        {
+            lapackpp::t_geev(LAPACK_COL_MAJOR, 'V', subSize, A->l_data(), subSize, ritzv+offset, ritzvi.data(), W, subSize);
+        }
+
+#ifdef CHASE_OUTPUT
+	if (H.grank() == 0){
+            std::cout << "Eigenvalues of the non-Hermitian rayleigh-quotient computed with GEEV." << std::endl;
+	}
+#endif
     	
         //Sort indices based on ritz values
         std::vector<Base<T>> sorted_ritzv(ritzv + offset, ritzv + offset + subSize);
@@ -360,7 +414,44 @@ namespace internal
         blaspp::t_trsm('R','L','C','N',subSize,subSize,&One,A->l_data(),subSize,M,subSize);
 
         //Compute the invtered ritz pairs of the Hermitian Rayleigh Quotient
-        lapackpp::t_heevd(LAPACK_COL_MAJOR, 'V', 'L', subSize, M, subSize, ritzv + offset);
+#ifdef RR_DOUBLE_PRECISION
+        if constexpr (std::is_same<T, std::complex<float>>::value)
+        {
+            // Note: For CPU version, we need to work with M which is a pointer into A
+            // We'll need to create a temporary matrix or use the API differently
+            // Since M is at offset subSize*subSize in A, we can use copyToSubBlock
+            if(A->isDoublePrecisionEnabled())
+            {
+                A->copyToSubBlock(subSize * subSize, subSize * subSize);
+            }
+            else
+            {
+                A->enableDoublePrecision();
+            }
+            auto A_d = A->getDoublePrecisionMatrix();
+            std::complex<double> *M_d = A_d->l_data() + subSize * subSize;
+            
+            // Create temporary ritzv storage for double precision
+            std::vector<double> ritzv_double(subSize);
+
+            // Compute eigenvalues in double precision
+            lapackpp::t_heevd(LAPACK_COL_MAJOR, 'V', 'L', subSize, M_d, subSize, ritzv_double.data());
+
+            // Convert ritzv back to single precision
+            std::transform(ritzv_double.begin(), ritzv_double.end(),
+                         ritzv + offset,
+                         [](double val) { return static_cast<float>(val); });
+
+            // Copy M back from double precision
+            A->copyBackSubBlock(subSize * subSize, subSize * subSize);
+        }
+        else
+        {
+#endif
+            lapackpp::t_heevd(LAPACK_COL_MAJOR, 'V', 'L', subSize, M, subSize, ritzv + offset);
+#ifdef RR_DOUBLE_PRECISION
+        }
+#endif
 
         blaspp::t_trsm('L','L','C','N',subSize,subSize,&One,A->l_data(),subSize,M,subSize);
 
@@ -369,6 +460,10 @@ namespace internal
 
         for(auto idx = 0; idx < subSize; idx++)
         {
+                if(ritzv[idx+offset] == 0.0)
+                {
+                    throw std::runtime_error("HEEVD failed in Pseudo-Hermitian RayleighRitz: zero eigenvalue encountered at index " + std::to_string(idx));
+                }
                 ritzv[idx+offset] = 1.0 / ritzv[idx+offset];
         }
         for(auto idx = 0; idx < subSize; idx++)

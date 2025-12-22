@@ -179,6 +179,140 @@ namespace internal
         
     }
 
+    /**
+     * @brief Variant of cholQR1 for InputMultiVectorType.
+     * 
+     * This variant works with InputMultiVectorType and performs the Cholesky QR decomposition in the same
+     * manner as cholQR1, but with different input data type handling. The use of CUDA-Aware MPI ensures that the 
+     * computation is parallelized across multiple GPUs.
+     * 
+     * @param cublas_handle The cuBLAS handle for linear algebra operations.
+     * @param cusolver_handle The cuSolver handle for Cholesky factorization.
+     * @param V The input matrix to decompose.
+     * @param workspace Optional workspace buffer.
+     * @param lwork The size of the workspace buffer.
+     * @param A Optional matrix for storing the factorization result.
+     * 
+     * @return int Status code: 0 for success, non-zero for failure.
+     */
+    template<typename InputMultiVectorType>
+    int cuda_mpi::cholQR1(cublasHandle_t cublas_handle,
+                cusolverDnHandle_t cusolver_handle,
+                InputMultiVectorType& V, 
+                typename InputMultiVectorType::value_type *workspace,
+                int lwork,                
+                typename InputMultiVectorType::value_type *A)
+    {
+        using T = typename InputMultiVectorType::value_type;
+
+        T one = T(1.0);
+        T zero = T(0.0);
+        chase::Base<T> One = Base<T>(1.0);
+        chase::Base<T> Zero = Base<T>(0.0);
+
+        int info = 1;
+
+        std::unique_ptr<T, chase::cuda::utils::CudaDeleter> A_ptr = nullptr;
+        if(A == nullptr)
+        {
+            CHECK_CUDA_ERROR(cudaMalloc(&A, V.l_cols() * V.l_cols() * sizeof(T))); 
+            A_ptr.reset(A);
+            A = A_ptr.get();          
+        }
+
+        std::unique_ptr<T, chase::cuda::utils::CudaDeleter> work_ptr = nullptr;
+        if(workspace == nullptr)
+        {
+            lwork = 0;
+            CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTpotrf_bufferSize(
+                                                                cusolver_handle, 
+                                                                CUBLAS_FILL_MODE_UPPER, 
+                                                                V.l_cols(), 
+                                                                A, 
+                                                                V.l_cols(),
+                                                                &lwork));
+            CHECK_CUDA_ERROR(cudaMalloc((void**)&workspace, sizeof(T) * lwork));
+            work_ptr.reset(workspace);
+            workspace = work_ptr.get();
+        }
+
+        cublasOperation_t transa;
+        if constexpr (std::is_same<T, std::complex<float>>::value || std::is_same<T, std::complex<double>>::value)
+        {
+            transa = CUBLAS_OP_C;
+        }
+        else
+        {
+            transa = CUBLAS_OP_T;
+        }
+
+        CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTsyherk(cublas_handle, 
+                                                                  CUBLAS_FILL_MODE_UPPER, 
+                                                                  transa,
+                                                                  V.l_cols(), 
+                                                                  V.l_rows(), 
+                                                                  &One, 
+                                                                  V.l_data(), 
+                                                                  V.l_ld(), 
+                                                                  &Zero, 
+                                                                  A, 
+                                                                  V.l_cols()));
+
+        CHECK_CUDA_ERROR(cudaDeviceSynchronize());
+        MPI_Allreduce(MPI_IN_PLACE, 
+                      A, 
+                      V.l_cols() * V.l_cols(), 
+                      chase::mpi::getMPI_Type<T>(),
+                      MPI_SUM,
+                      V.getMpiGrid()->get_col_comm());
+        CHECK_CUDA_ERROR(cudaDeviceSynchronize());
+
+        int* devInfo;
+        CHECK_CUDA_ERROR(cudaMalloc((void**)&devInfo, sizeof(int)));
+
+        CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTpotrf(cusolver_handle, 
+                                                                         CUBLAS_FILL_MODE_UPPER, 
+                                                                         V.l_cols(),
+                                                                         A,
+                                                                         V.l_cols(), 
+                                                                         workspace, 
+                                                                         lwork, 
+                                                                         devInfo));
+        CHECK_CUDA_ERROR(cudaMemcpy(&info, devInfo, 1 * sizeof(int), cudaMemcpyDeviceToHost));                    
+   
+        if(info != 0)
+        {
+            CHECK_CUDA_ERROR(cudaFree(devInfo));
+            return info;
+        }
+        else
+        {
+            CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTtrsm(cublas_handle, 
+                                                                    CUBLAS_SIDE_RIGHT, 
+                                                                    CUBLAS_FILL_MODE_UPPER,
+                                                                    CUBLAS_OP_N, 
+                                                                    CUBLAS_DIAG_NON_UNIT, 
+                                                                    V.l_rows(), 
+                                                                    V.l_cols(),
+                                                                    &one, 
+                                                                    A, 
+                                                                    V.l_cols(), 
+                                                                    V.l_data(), 
+                                                                    V.l_ld()));
+#ifdef CHASE_OUTPUT
+
+            int grank;
+            MPI_Comm_rank(MPI_COMM_WORLD, &grank);
+            if(grank == 0)
+            {
+                std::cout << "choldegree: 1" << std::endl;
+            }
+#endif
+            CHECK_CUDA_ERROR(cudaFree(devInfo));
+            return info;
+        }   
+        
+    }
 
     /**
      * @brief A second variant of cholQR for distributed systems using CUDA-Aware-MPI.
@@ -370,7 +504,104 @@ namespace internal
         }   
     }
 
+    /**
+    * @brief Performs a Cholesky QR decomposition on an input multi-vector type.
+    * 
+    * This function computes the Cholesky QR decomposition of the input matrix or multi-vector `V`
+    * using cuBLAS and cuSolver on the GPU. It is designed to work with multi-vector input types 
+    * where `V` can be a matrix or a vector, and the decomposition is performed in parallel on a GPU.
+    * The function also allows for memory optimization through an optional workspace buffer for 
+    * intermediate calculations.
+    * 
+    * @tparam InputMultiVectorType The type of the input multi-vector (e.g., a matrix or vector type).
+    * 
+    * @param cublas_handle The cuBLAS handle used for performing linear algebra operations on the GPU.
+    * @param cusolver_handle The cuSolver handle used for performing the Cholesky factorization on the GPU.
+    * @param V The input multi-vector (matrix or vector) to decompose. It will be modified during the process.
+    * @param workspace Optional workspace buffer for temporary memory usage during the computation.
+    *        If not provided, a buffer will be allocated automatically.
+    * @param lwork The size of the workspace buffer. If not provided, the function will attempt to 
+    *        determine the optimal size for the workspace.
+    * @param A Optional matrix to store the result of the factorization. If not provided, one will be 
+    *        allocated internally.
+    * 
+    * @return int Status code indicating the success or failure of the computation.
+    *         - 0 for success.
+    *         - Non-zero value indicates failure.
+    * 
+    * @note This function assumes the input multi-vector `V` is stored in a format compatible with
+    *       cuBLAS and cuSolver. The input matrix must be stored in column-major format.
+    * 
+    * @warning Make sure the appropriate GPU resources (memory and compute capability) are available
+    *          when calling this function, as it relies on cuBLAS and cuSolver for the Cholesky 
+    *          decomposition and may require a large amount of memory for larger matrices or vectors.
+    */
+    template<typename InputMultiVectorType>
+    int cuda_mpi::cholQR2(cublasHandle_t cublas_handle,
+                cusolverDnHandle_t cusolver_handle,
+                InputMultiVectorType& V, 
+                typename InputMultiVectorType::value_type *workspace,
+                int lwork,                
+                typename InputMultiVectorType::value_type *A)
+    {
+        using T = typename InputMultiVectorType::value_type;
 
+        T one = T(1.0);
+        T zero = T(0.0);
+        chase::Base<T> One = Base<T>(1.0);
+        chase::Base<T> Zero = Base<T>(0.0);
+
+        int info = 0;
+
+        std::unique_ptr<T, chase::cuda::utils::CudaDeleter> A_ptr = nullptr;
+        if(A == nullptr)
+        {
+            CHECK_CUDA_ERROR(cudaMalloc(&A, V.l_cols() * V.l_cols() * sizeof(T))); 
+            A_ptr.reset(A);
+            A = A_ptr.get();          
+        }
+
+        std::unique_ptr<T, chase::cuda::utils::CudaDeleter> work_ptr = nullptr;
+        if(workspace == nullptr)
+        {
+            lwork = 0;
+            CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTpotrf_bufferSize(
+                                                                cusolver_handle, 
+                                                                CUBLAS_FILL_MODE_UPPER, 
+                                                                V.l_cols(), 
+                                                                A, 
+                                                                V.l_cols(),
+                                                                &lwork));
+            CHECK_CUDA_ERROR(cudaMalloc((void**)&workspace, sizeof(T) * lwork));
+            work_ptr.reset(workspace);
+            workspace = work_ptr.get();
+        }
+
+#ifdef ENABLE_MIXED_PRECISION
+        if constexpr (std::is_same<T, double>::value || std::is_same<T, std::complex<double>>::value)
+        {
+            std::cout << "In cholqr2, the first cholqr using Single Precision" << std::endl;
+            using singlePrecisionT = typename chase::ToSinglePrecisionTrait<T>::Type;
+            V.enableSinglePrecision();
+            auto V_sp = V.getSinglePrecisionMatrix();
+            info = cholQR1<singlePrecisionT>(cublas_handle, cusolver_handle, *V_sp);
+            V.disableSinglePrecision(true);
+        }else
+        {
+            info = cholQR1<T>(cublas_handle, cusolver_handle, V, workspace, lwork, A);
+        }      
+#else
+        info = cholQR1<T>(cublas_handle, cusolver_handle, V, workspace, lwork, A);
+#endif
+        if(info != 0)
+        {
+            return info;
+        }
+
+        info = cholQR1<T>(cublas_handle, cusolver_handle, V, workspace, lwork, A);
+
+        return info;       
+    }
 
     /**
     * @brief Performs a shifted Cholesky QR decomposition on a matrix with optional communication support.
