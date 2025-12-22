@@ -120,4 +120,41 @@ coverage:
   <<: *only_source_changes
   script:
     - lcov --capture --directory ./build_gpu --output-file coverage.info
-    - lcov --summary coverage.info
+    # Extract total coverage percentage
+    - |
+      COV=$(lcov --summary coverage.info | grep -oP 'lines.*: \K\d+\.\d+')
+      echo "Total coverage = ${COV}%"
+
+    # Choose badge color
+    - |
+      if (( $(echo "$COV < 70" | bc -l) )); then COLOR=red
+      elif (( $(echo "$COV < 85" | bc -l) )); then COLOR=yellow
+      else COLOR=brightgreen
+      fi
+
+    # Create Shields-compatible JSON
+    - |
+      mkdir -p coverage
+      cat <<EOF > coverage/coverage.json
+      {
+        "schemaVersion": 1,
+        "label": "coverage (master)",
+        "message": "${COV}%",
+        "color": "${COLOR}"
+      }
+      EOF
+
+    # Push to public badge repository
+    - |
+      git config --global user.name "ChASE CI BOT"
+      git config --global user.email "chase@fz-juelich.de"
+
+      git clone https://oauth2:${BADGE_PUSH_TOKEN}@gitlab.jsc.fz-juelich.de/wu7/chase-coverage-badges.git badge_repo
+      cd badge_repo
+
+      mkdir -p coverage
+      cp ../coverage/coverage.json coverage/
+
+      git add coverage/coverage.json
+      git commit -m "Update coverage badge" || echo "No changes"
+      git push origin main
