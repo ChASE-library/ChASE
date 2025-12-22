@@ -84,10 +84,6 @@ if(CHASE_SAVE_RESIDUALS)
     add_definitions(-DCHASE_SAVE_RESIDUALS)
 endif()
 
-if(CHASE_PRINT_DEBUG)
-    add_definitions(-DCHASE_PRINT_DEBUG)
-endif()
-
 add_subdirectory(external)
 add_subdirectory(grid)
 add_subdirectory(linalg)

@@ -644,16 +644,16 @@ std::size_t Algorithm<T>::lanczos(ChaseBase<T>* single, int N, int numvec, int m
 
 #ifdef CHASE_OUTPUT
     {
-#ifdef CHASE_PRINT_DEBUG 
-    std::ostringstream oss;
-    
-    oss << "m = " << m << std::endl;
-    oss << "numvec = " << numvec << std::endl;
-    oss << "bound  = " << bound << std::endl;
-    oss << "lowerb = " << lowerb << std::endl;
-    oss << "search = " << search << std::endl;
+#ifndef NDEBUG 
+        std::ostringstream oss;
         
-    single->Output(oss.str());
+        oss << "m = " << m << std::endl;
+        oss << "numvec = " << numvec << std::endl;
+        oss << "bound  = " << bound << std::endl;
+        oss << "lowerb = " << lowerb << std::endl;
+        oss << "search = " << search << std::endl;
+            
+        single->Output(oss.str());
 #endif
     }
 #endif
@@ -1004,7 +1004,7 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
 	    oss << "unconverged = " << "\t" << unconverged << "\t" << "new_converged" << "\t" << new_converged << "\n";
             oss << "index\tdegrees\tresid\tresidLast\tritzv\n";
 
-#ifdef CHASE_PRINT_DEBUG 
+#ifndef NDEBUG 
         for (std::size_t k = 0; k < unconverged; ++k)
 #else
 	for (std::size_t k = 0; k < std::min(std::size_t(20),unconverged); ++k)
