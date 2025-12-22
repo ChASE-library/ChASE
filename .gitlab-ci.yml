@@ -68,7 +68,7 @@ build_gpu:
     - shell
   id_tokens:
     SITE_ID_TOKEN:
-      aud: https://gitlab.jsc.fz-juelich.de    
+      aud: https://gitlab.jsc.fz-juelich.de
   <<: *only_source_changes
   script:
     - echo $SYSTEMNAME
@@ -76,14 +76,13 @@ build_gpu:
     - cmake --version
     - mkdir -p build_gpu
     - cd build_gpu
-    - env CFLAGS="$CFLAGS --coverage" CXXFLAGS="$CXXFLAGS --coverage" FFLAGS="$FFLAGS --coverage" \
-      cmake -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_Fortran_COMPILER=mpifort \
-      -DCHASE_ENABLE_MIXED_PRECISION=ON -DENABLE_TESTS=ON -DMPI_RUN="srun" .. \
-      -DCMAKE_EXE_LINKER_FLAGS="--coverage"
+    - env CFLAGS="$CFLAGS --coverage" CXXFLAGS="$CXXFLAGS --coverage" FFLAGS="$FFLAGS --coverage" cmake -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_Fortran_COMPILER=mpifort -DCHASE_ENABLE_MIXED_PRECISION=ON -DENABLE_TESTS=ON -DMPI_RUN="srun" .. -DCMAKE_EXE_LINKER_FLAGS="--coverage"
     - make VERBOSE=1 -j8
   artifacts:
     paths:
-      - build_gpu/*
+      - build_gpu/Makefile
+      - build_gpu/CTestTestfile.cmake
+      - build_gpu/tests
     expire_in: 1 week
 
 test_gpu_coverage:
