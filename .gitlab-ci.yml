@@ -157,7 +157,6 @@ pages:
     - coverage
   script:
     - echo "Publishing coverage badge to Pages..."
-    - echo "Branch: $CI_COMMIT_REF_NAME"
   artifacts:
     paths:
       - public
