@@ -153,6 +153,11 @@ int do_chase(ChASE_DriverProblemConfig& conf)
     config.SetMaxDeg(maxDeg);
     config.SetMaxIter(maxIter);
 
+    if(grank == 0)
+    {
+        std::cout << config << std::endl;
+    }
+
     if (!sequence)
     {
         bgn = end = 1;

@@ -664,6 +664,10 @@ std::ostream& operator<<(std::ostream& oss_, const ChaseConfig<T>& rhs)
         << "Parameters for Spectral Estimates"
         << "\n";
     pretty_print(oss, "# of Lanczos Iterations:", rhs.GetLanczosIter());
+    pretty_print(oss, "# of Lanczos Vectors:", rhs.GetNumLanczos());
+    pretty_print(oss, "Decaying Rate:", rhs.GetDecayingRate());
+    pretty_print(oss, "Upperb Scale Rate:", rhs.GetUpperbScaleRate());
+    pretty_print(oss, "Cluster-Aware Degrees:", rhs.UseClusterAwareDegrees());
     oss << "\n";
 
     oss_ << oss.str();

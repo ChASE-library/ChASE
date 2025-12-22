@@ -257,10 +257,12 @@ int bse_solve(BSE_DriverProblemConfig& conf)
     config.SetDecayingRate(lowerb_decay);
     config.SetClusterAwareDegrees(true);
     
+    if(world_rank == 0)
+    {
+        std::cout << config << std::endl;
+    }    
     PerformanceDecoratorChase<T> performanceDecorator(&single);
-
     chase::Solve(&performanceDecorator);
-
     if (world_rank == 0)
     {
         performanceDecorator.GetPerfData().print(N,lanczosIter,numLanczos);
@@ -276,10 +278,15 @@ int bse_solve(BSE_DriverProblemConfig& conf)
         std::cout << std::setfill(' ');
         std::cout << std::scientific;
         std::cout << std::right;
+#ifndef NDEBUG
+    for (auto i = 0; i < nev+nex; ++i)
+#else
         for (auto i = 0; i < std::min(std::size_t(20), nev+nex); ++i)
-            std::cout << "|  " << std::setw(4) << i + 1 << " | "
+#endif
+        {    std::cout << "|  " << std::setw(4) << i + 1 << " | "
                       << std::setw(width) << Lambda[i] << "  | "
                       << std::setw(width) << resid[i] << "  |\n";
+        }
         std::cout << "\n\n\n";
     }
     return 0;
