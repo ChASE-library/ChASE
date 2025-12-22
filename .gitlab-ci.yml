@@ -166,7 +166,7 @@ coverage_upload:
     - set -e
     - echo "Uploading coverage badge"
 
-    - git config --global user.name "ChASE CI BOT"
+    - git config --global user.name "ChASE Bot"
     - git config --global user.email "chase@fz-juelich.de"
 
     - git clone https://oauth2:${BADGE_PUSH_TOKEN}@gitlab.jsc.fz-juelich.de/wu7/chase-coverage-badges.git badge_repo
