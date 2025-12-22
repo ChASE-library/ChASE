@@ -120,4 +120,44 @@ coverage:
   <<: *only_source_changes
   script:
     - lcov --capture --directory ./build_gpu --output-file coverage.info
-    - lcov --summary coverage.info
+    - lcov --summary coverage.info | tee coverage.txt
+    # Extract total coverage
+    - |
+      COV=$(grep -oP 'lines.*: \K\d+\.\d+' coverage.txt)
+      echo "Total coverage = ${COV}%"
+
+    # Badge color
+    - |
+      if (( $(echo "$COV < 70" | bc -l) )); then COLOR=red
+      elif (( $(echo "$COV < 85" | bc -l) )); then COLOR=yellow
+      else COLOR=brightgreen
+      fi
+
+    # Generate Shields-compatible JSON
+    - |
+      mkdir -p public
+      cat <<EOF > public/coverage.json
+      {
+        "schemaVersion": 1,
+        "label": "coverage (master)",
+        "message": "${COV}%",
+        "color": "${COLOR}"
+      }
+      EOF
+
+  artifacts:
+    paths:
+      - public
+    expire_in: 1 week    
+
+# ---------------- GitLab Pages Deployment ----------------
+pages:
+  stage: deploy
+  dependencies:
+    - coverage
+  script:
+    - echo "Publishing coverage badge to Pages..."
+  artifacts:
+    paths:
+      - public
+    expire_in: never
