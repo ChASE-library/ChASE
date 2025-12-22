@@ -27,7 +27,8 @@ target_include_directories(pchase_gpu INTERFACE
                                                "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/Impl/pchase_gpu>"
                                                "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/config>")
 
-target_compile_definitions(pchase_gpu INTERFACE NO_MPI=0)
+# NO_MPI should not be defined for parallel targets - this allows MPI headers to be included
+# Serial targets (chase_cpu/chase_gpu) define NO_MPI to exclude MPI headers
 
 if(CHASE_ENABLE_MPI_IO)
     target_compile_definitions( pchase_gpu INTERFACE

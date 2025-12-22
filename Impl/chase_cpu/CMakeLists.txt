@@ -7,7 +7,8 @@ target_include_directories(chase_cpu INTERFACE
                                                $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
                                                "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/Impl/chase_cpu>")
 
-target_compile_definitions(chase_cpu INTERFACE NO_MPI=1)
+# NO_MPI is not defined here to avoid conflicts when chase_c links to both serial and parallel targets
+# The interface layer (chase_c) will handle NO_MPI definition based on actual usage
 
 install(TARGETS chase_cpu
   EXPORT chase_targets
