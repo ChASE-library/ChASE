@@ -6,7 +6,7 @@ stages:
   - build
   - test
   - coverage
-  # - upload
+  - upload
 
 .default_source_changes: &only_source_changes
   rules:
@@ -58,6 +58,7 @@ test_cpu:
       - build_cpu/*
     expire_in: 1 week
 
+# ---------------- GPU Jobs ----------------
 build_gpu:
   stage: build
   tags:
@@ -67,7 +68,7 @@ build_gpu:
     - shell
   id_tokens:
     SITE_ID_TOKEN:
-      aud: https://gitlab.jsc.fz-juelich.de
+      aud: https://gitlab.jsc.fz-juelich.de    
   <<: *only_source_changes
   script:
     - echo $SYSTEMNAME
@@ -75,16 +76,17 @@ build_gpu:
     - cmake --version
     - mkdir -p build_gpu
     - cd build_gpu
-    - env CFLAGS="$CFLAGS --coverage" CXXFLAGS="$CXXFLAGS --coverage" FFLAGS="$FFLAGS --coverage" cmake -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_Fortran_COMPILER=mpifort -DCHASE_ENABLE_MIXED_PRECISION=ON -DENABLE_TESTS=ON -DMPI_RUN="srun" .. -DCMAKE_EXE_LINKER_FLAGS="--coverage"
+    - env CFLAGS="$CFLAGS --coverage" CXXFLAGS="$CXXFLAGS --coverage" FFLAGS="$FFLAGS --coverage" \
+      cmake -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_Fortran_COMPILER=mpifort \
+      -DCHASE_ENABLE_MIXED_PRECISION=ON -DENABLE_TESTS=ON -DMPI_RUN="srun" .. \
+      -DCMAKE_EXE_LINKER_FLAGS="--coverage"
     - make VERBOSE=1 -j8
   artifacts:
     paths:
-      - build_gpu/Makefile
-      - build_gpu/CTestTestfile.cmake
-      - build_gpu/tests
+      - build_gpu/*
     expire_in: 1 week
 
-test_gpu:
+test_gpu_coverage:
   stage: test
   dependencies:
     - build_gpu
@@ -95,47 +97,28 @@ test_gpu:
     - slurm
   id_tokens:
     SITE_ID_TOKEN:
-      aud: https://gitlab.jsc.fz-juelich.de
+      aud: https://gitlab.jsc.fz-juelich.de    
   <<: *only_source_changes
   script:
     - echo $SYSTEMNAME
     - module load Stages/2025 GCC/13.3.0 OpenMPI imkl CMake CUDA
     - export CUDA_VISIBLE_DEVICES=0,1,2,3
     - cd build_gpu
+    # Run tests
     - CTEST_OUTPUT_ON_FAILURE=1 make test
-    - rm -rf _deps
-  artifacts:
-    paths:
-      - build_gpu/*
-    expire_in: 1 week
-
-coverage:
-  stage: coverage
-  coverage: '/lines......: (\d+[.]\d+)/'
-  dependencies:
-    - test_gpu
-  tags: [ public-docker ]
-  image:
-    name: xinzhewu/lcov-gcc13.3.0
-  <<: *only_source_changes
-  script:
-    - lcov --capture --directory ./build_gpu --output-file coverage.info
+    # Generate coverage
+    - lcov --capture --directory ./ --output-file coverage.info
     - lcov --summary coverage.info | tee coverage.txt
-    # Extract total coverage
     - |
       COV=$(grep -oP 'lines.*: \K\d+\.\d+' coverage.txt)
       echo "Total coverage = ${COV}%"
-
-    # Badge color
     - |
       if (( $(echo "$COV < 70" | bc -l) )); then COLOR=red
       elif (( $(echo "$COV < 85" | bc -l) )); then COLOR=yellow
       else COLOR=brightgreen
       fi
-
-    # Generate Shields-compatible JSON
+    - mkdir -p public
     - |
-      mkdir -p public
       cat <<EOF > public/coverage.json
       {
         "schemaVersion": 1,
@@ -144,17 +127,16 @@ coverage:
         "color": "${COLOR}"
       }
       EOF
-
   artifacts:
     paths:
       - public
-    expire_in: 1 week    
+    expire_in: 1 week
 
 # ---------------- GitLab Pages Deployment ----------------
 pages:
-  stage: coverage
+  stage: upload
   dependencies:
-    - coverage
+    - test_gpu_coverage
   script:
     - echo "Publishing coverage badge to Pages..."
   artifacts:
