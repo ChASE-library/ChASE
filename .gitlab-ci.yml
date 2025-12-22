@@ -6,7 +6,7 @@ stages:
   - build
   - test
   - coverage
-  # - upload
+  - upload
 
 .default_source_changes: &only_source_changes
   rules:
@@ -109,7 +109,7 @@ test_gpu:
       - build_gpu/*
     expire_in: 1 week
 
-coverage:
+coverage_generate:
   stage: coverage
   coverage: '/lines......: (\d+[.]\d+)/'
   dependencies:
@@ -120,7 +120,8 @@ coverage:
   <<: *only_source_changes
   script:
     - lcov --capture --directory ./build_gpu --output-file coverage.info
-    # Extract total coverage percentage
+
+    # Extract coverage number
     - |
       COV=$(lcov --summary coverage.info | grep -oP 'lines.*: \K\d+\.\d+')
       echo "Total coverage = ${COV}%"
@@ -143,18 +144,43 @@ coverage:
         "color": "${COLOR}"
       }
       EOF
+  artifacts:
+    paths:
+      - coverage/coverage.json
+    expire_in: 1 week
 
-    # Push to public badge repository
+coverage_upload:
+  stage: upload
+  dependencies:
+    - coverage_generate
+  tags:
+    - juwels_booster
+    - jacamar
+    - login
+    - shell
+  id_tokens:
+    SITE_ID_TOKEN:
+      aud: https://gitlab.jsc.fz-juelich.de
+  <<: *only_source_changes
+  script:
+    - set -e
+    - echo "Uploading coverage badge"
+
+    - git config --global user.name "ChASE CI BOT"
+    - git config --global user.email "chase@fz-juelich.de"
+
+    - git clone https://oauth2:${BADGE_PUSH_TOKEN}@gitlab.jsc.fz-juelich.de/wu7/chase-coverage-badges.git badge_repo
+    - cd badge_repo
+
+    - mkdir -p coverage
+    - cp ../coverage/coverage.json coverage/coverage.json
+
+    - git add coverage/coverage.json
     - |
-      git config --global user.name "ChASE CI BOT"
-      git config --global user.email "chase@fz-juelich.de"
+      if git diff --cached --quiet; then
+        echo "Coverage unchanged, nothing to push"
+        exit 0
+      fi
 
-      git clone https://oauth2:${BADGE_PUSH_TOKEN}@gitlab.jsc.fz-juelich.de/wu7/chase-coverage-badges.git badge_repo
-      cd badge_repo
-
-      mkdir -p coverage
-      cp ../coverage/coverage.json coverage/
-
-      git add coverage/coverage.json
-      git commit -m "Update coverage badge" || echo "No changes"
-      git push origin main
+    - git commit -m "Update ChASE coverage badge"
+    - git push origin main
