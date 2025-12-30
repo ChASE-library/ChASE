@@ -222,6 +222,13 @@ public:
             lwork_heevd = (int)temp_ldwork;
             lhwork_ = (int)temp_lhwork;
 
+#ifdef CHASE_OUTPUT
+	    if (my_rank_ == 0)
+	    {
+	        std::cout << "GEEV GPU WORKSPACE SIZE = " << lwork_heevd << std::endl;	
+	        std::cout << "GEEV CPU WORKSPACE SIZE = " << temp_lhwork << std::endl;	
+	    }
+#endif
             h_work_ = std::unique_ptr<T[]>(new T[lhwork_]);
 #else	
 	    A_ = std::make_unique<chase::distMatrix::RedundantMatrix<T, chase::platform::GPU>>(2*nevex_, nevex_, Hmat_->getMpiGrid_shared_ptr());
@@ -235,6 +242,13 @@ public:
                                                             A_->l_ld(), 
                                                             ritzv_->l_data(), 
 							    &lwork_heevd));
+#ifdef CHASE_OUTPUT
+	    if (my_rank_ == 0)
+	    {
+	        std::cout << "HEEVD GPU WORKSPACE SIZE = " << lwork_heevd << std::endl;	
+	        std::cout << "HEEVD CPU WORKSPACE SIZE = " << 0 << std::endl;	
+	    }
+#endif
 #endif
 	}
 	else
