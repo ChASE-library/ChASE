@@ -890,7 +890,11 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
 	    if(lowerb_temp > lambda)
 	    {
 	    	lowerb = std::min(lowerb,lowerb_temp);
-	    }
+	    }/*
+	    if(iteration > 3)
+		{
+			lambda = std::max(lambda,lambda_temp);
+		}	*/
 	}
 	    
 

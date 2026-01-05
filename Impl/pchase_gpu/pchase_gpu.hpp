@@ -216,7 +216,7 @@ public:
                 	chase::linalg::cusolverpp::cusolverDnTgeev_bufferSize(
                     		cusolverH_, params_, CUSOLVER_EIG_MODE_NOVECTOR,
                     		CUSOLVER_EIG_MODE_VECTOR, nevex_, A_->l_data(), A_->l_ld(),
-                    		V2_->l_data(), NULL, 1, V1_->l_data(), V1_->l_ld(),
+                    		V2_->l_data(), NULL, 1, V1_->l_data(), nevex_,//V1_->l_ld(),
                     		&temp_ldwork, &temp_lhwork));
 
             lwork_heevd = (int)temp_ldwork;

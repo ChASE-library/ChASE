@@ -168,9 +168,7 @@ namespace internal
                                        subSize));
 
         // Perform the MPI_Allreduce to sum up the results
-        CHECK_CUDA_ERROR(cudaDeviceSynchronize());	
         CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(W, W, subSize * subSize, ncclSum, A->getMpiGrid()->get_nccl_row_comm()));
-        CHECK_CUDA_ERROR(cudaDeviceSynchronize());	
 	
 	chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(V2, offset, subSize);
 	
@@ -190,9 +188,7 @@ namespace internal
                                        M,
                                        subSize));
 
-        CHECK_CUDA_ERROR(cudaDeviceSynchronize());	
         CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(M, M, subSize * subSize, ncclSum, A->getMpiGrid()->get_nccl_col_comm()));
-        CHECK_CUDA_ERROR(cudaDeviceSynchronize());	
 
         chase::linalg::internal::cuda::chase_plus_inverse_diagonal(M,
                                       subSize,
@@ -231,9 +227,7 @@ namespace internal
                                         &Zero,
                                         M, subSize));
                 
-	CHECK_CUDA_ERROR(cudaDeviceSynchronize());
 	CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(M, M, subSize * subSize, ncclSum, A->getMpiGrid()->get_nccl_row_comm()));
-	CHECK_CUDA_ERROR(cudaDeviceSynchronize());
 
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTaxpy(cublas_handle,
                                                                 subSize * subSize,
@@ -601,7 +595,6 @@ namespace internal
         //CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(workspace, workspace, upperTriangularSize, ncclSum, A->getMpiGrid()->get_nccl_row_comm()));
         //chase::linalg::internal::cuda::unpackUpperTriangular(workspace, subSize, A->l_data(), subSize);
 
-        cudaDeviceSynchronize();
         CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(A->l_data(), A->l_data(), subSize * subSize, ncclSum, A->getMpiGrid()->get_nccl_row_comm()));
 
         CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTpotrf(cusolver_handle,
@@ -634,7 +627,6 @@ namespace internal
         //CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(workspace, workspace, upperTriangularSize, ncclSum, A->getMpiGrid()->get_nccl_col_comm()));
 	//chase::linalg::internal::cuda::unpackUpperTriangular(workspace, subSize, M, subSize);
         
-	cudaDeviceSynchronize();
 	CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(M, M, subSize * subSize, ncclSum, A->getMpiGrid()->get_nccl_col_comm()));
 
 	CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTtrsm(cublas_handle,
