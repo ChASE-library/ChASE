@@ -843,11 +843,11 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
 #ifdef CHASE_SAVE_RESIDUALS
 		
 	std::ofstream residual_file;
+	std::string residual_file_name;
     	std::vector<std::size_t> index_write(unconverged);
 
 	if(!single->get_rank())
 	{
-		std::string residual_file_name;
 		residual_file_name = "residual_file_" + std::to_string(N);
 
 		if(single->isPseudoHerm())
