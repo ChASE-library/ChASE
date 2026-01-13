@@ -27,7 +27,6 @@
 #include "linalg/internal/mpi/cholqr.hpp"
 #include "algorithm/types.hpp"
 
-#include "Impl/config/config.hpp"
 #include "Impl/chase_gpu/nvtx.hpp"
 
 #include "../../linalg/internal/typeTraits.hpp"
@@ -778,7 +777,7 @@ public:
 #else
             throw std::runtime_error("For ChASE-MPI, distributed Householder QR requires ScaLAPACK, which is not detected\n");
 #endif
-        }else if(nevex_ >= MINIMAL_N_INVOKE_MODIFIED_GRAM_SCHMIDT_QR_GPU_NCCL)
+        }/*else if(nevex_ >= MINIMAL_N_INVOKE_MODIFIED_GRAM_SCHMIDT_QR_GPU_NCCL)
         {
             info = kernelNamespace::modifiedGramSchmidtCholQR(cublasH_,
                                                             cusolverH_,
@@ -841,7 +840,8 @@ public:
                 }                                          
                                                                
             }
-        }else
+        }*/
+        else
         {
             Base<T> cond_threshold_upper = (sizeof(Base<T>) == 8) ? 1e8 : 1e4;
             Base<T> cond_threshold_lower = (sizeof(Base<T>) == 8) ? 2e1 : 1e1;

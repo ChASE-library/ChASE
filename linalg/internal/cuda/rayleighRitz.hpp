@@ -6,13 +6,6 @@
 
 #pragma once
 
-#include <thrust/host_vector.h>
-#include <thrust/device_vector.h>
-#include <thrust/copy.h>
-#include <thrust/fill.h>
-#include <thrust/sequence.h>
-#include <thrust/sort.h>
-
 #include "external/cublaspp/cublaspp.hpp"
 #include "external/cusolverpp/cusolverpp.hpp"
 #include "Impl/chase_gpu/cuda_utils.hpp"
