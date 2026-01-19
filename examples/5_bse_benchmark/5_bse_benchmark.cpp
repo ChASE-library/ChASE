@@ -159,14 +159,20 @@ int bse_solve(BSE_DriverProblemConfig& conf)
         N, N, mb, mb, mpi_grid);
 #endif 
 #else
-    auto Vec = chase::distMultiVector::DistMultiVector1D<
-        T, chase::distMultiVector::CommunicatorType::column, ARCH>(N, nev + nex, mpi_grid);
+    //auto m = N / dims_[0];
+    //auto n = m;
+    //auto ldh = m;
+    //auto LV = new T[m*(nev+nex)]();
+    auto Vec = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, ARCH>(N, nev + nex, mpi_grid);
+    //auto Vec = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, ARCH>(m, nev + nex, m, LV, mpi_grid);
 #ifdef USE_PSEUDO_HERMITIAN
-    auto Hmat = chase::distMatrix::PseudoHermitianBlockBlockMatrix<T, ARCH>(
-        N, N, mpi_grid);
+    auto Hmat = chase::distMatrix::PseudoHermitianBlockBlockMatrix<T, ARCH>(N, N, mpi_grid);
+    //auto LH = new T[m*n]();
+    //auto Hmat = chase::distMatrix::PseudoHermitianBlockBlockMatrix<T, ARCH>(m,n,ldh,LH,mpi_grid);
 #else 
-    auto Hmat = chase::distMatrix::BlockBlockMatrix<T, ARCH>(
-        N, N, mpi_grid);
+    auto Hmat = chase::distMatrix::BlockBlockMatrix<T, ARCH>(N, N, mpi_grid);
+    //auto LH = new T[m*n]();
+    //auto Hmat = chase::distMatrix::BlockBlockMatrix<T, ARCH>(m,n,ldh,LH,mpi_grid);
 #endif 
 #endif 
 #ifdef HAS_NCCL
@@ -260,7 +266,7 @@ int bse_solve(BSE_DriverProblemConfig& conf)
     if(world_rank == 0)
     {
         std::cout << config << std::endl;
-    }    
+    }   
     PerformanceDecoratorChase<T> performanceDecorator(&single);
     chase::Solve(&performanceDecorator);
     if (world_rank == 0)

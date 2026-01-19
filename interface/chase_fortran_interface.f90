@@ -472,12 +472,13 @@ MODULE chase_diag
         END SUBROUTINE pzchase_init_blockcyclic
     END INTERFACE
     
-    INTERFACE     
+    INTERFACE   
         SUBROUTINE pzchase_finalize(flag) bind( c, name = 'pzchase_finalize_' )
       !> Finalize distributed-memory ChASE with complex scalar in double precison.
+      !> Handles both regular and pseudo-Hermitian matrix types automatically.
       !>    
       !>
-      !> @param[in,out] flag A flag to indicate if ChASE has been cleared up              
+      !> @param[in,out] flag A flag to indicate if ChASE has been cleared up            
             USE, INTRINSIC :: iso_c_binding
             INTEGER(c_int)      :: flag
 
@@ -487,6 +488,7 @@ MODULE chase_diag
     INTERFACE     
         SUBROUTINE pzchase(deg, tol, mode, opt, qr) bind( c, name = 'pzchase_' )
       !> Solve the eigenvalue by the previously constructed distributed-memory ChASE (complex scalar in double precision).
+      !> Handles both regular and pseudo-Hermitian matrix types automatically.
       !> The buffer of matrix to be diagonalized, of ritz pairs have provided during the initialization of solver.
       !>    
       !>
@@ -569,6 +571,7 @@ MODULE chase_diag
     INTERFACE   
         SUBROUTINE pcchase_finalize(flag) bind( c, name = 'pcchase_finalize_' )
       !> Finalize distributed-memory ChASE with complex scalar in single precison.
+      !> Handles both regular and pseudo-Hermitian matrix types automatically.
       !>    
       !>
       !> @param[in,out] flag A flag to indicate if ChASE has been cleared up                
@@ -581,6 +584,7 @@ MODULE chase_diag
     INTERFACE       
         SUBROUTINE pcchase(deg, tol, mode, opt, qr) bind( c, name = 'pcchase_' )
       !> Solve the eigenvalue by the previously constructed distributed-memory ChASE (complex scalar in single precision).
+      !> Handles both regular and pseudo-Hermitian matrix types automatically.
       !> The buffer of matrix to be diagonalized, of ritz pairs have provided during the initialization of solver.
       !>    
       !>
@@ -619,7 +623,8 @@ MODULE chase_diag
 
     INTERFACE
         SUBROUTINE pcchase_wrtHam(filename) bind( c, name = 'pcchase_wrtHam_')
-        !>
+        !> Write Hamiltonian to file (complex single precision).
+        !> Handles both regular and pseudo-Hermitian matrix types automatically.
         !> @param[in] filename the name of output filename
             USE, INTRINSIC :: iso_c_binding
             CHARACTER(kind=c_char, len=1), dimension(*), intent(in) :: filename
@@ -629,7 +634,8 @@ MODULE chase_diag
 
     INTERFACE
         SUBROUTINE pzchase_wrtHam(filename) bind( c, name = 'pzchase_wrtHam_')
-        !>
+        !> Write Hamiltonian to file (complex double precision).
+        !> Handles both regular and pseudo-Hermitian matrix types automatically.
         !> @param[in] filename the name of output filename
             USE, INTRINSIC :: iso_c_binding
             CHARACTER(kind=c_char, len=1), dimension(*), intent(in) :: filename
@@ -659,8 +665,9 @@ MODULE chase_diag
 
     INTERFACE
         SUBROUTINE pcchase_readHam(filename) bind( c, name = 'pcchase_readHam_')
-        !>
-        !> @param[in] filename the name of output filename
+        !> Read Hamiltonian from file (complex single precision).
+        !> Handles both regular and pseudo-Hermitian matrix types automatically.
+        !> @param[in] filename the name of input filename
             USE, INTRINSIC :: iso_c_binding
             CHARACTER(kind=c_char, len=1), dimension(*), intent(in) :: filename
         
@@ -669,13 +676,139 @@ MODULE chase_diag
 
     INTERFACE
         SUBROUTINE pzchase_readHam(filename) bind( c, name = 'pzchase_readHam_')
-        !>
-        !> @param[in] filename the name of output filename
+        !> Read Hamiltonian from file (complex double precision).
+        !> Handles both regular and pseudo-Hermitian matrix types automatically.
+        !> @param[in] filename the name of input filename
             USE, INTRINSIC :: iso_c_binding
             CHARACTER(kind=c_char, len=1), dimension(*), intent(in) :: filename
         
         END SUBROUTINE    
     END INTERFACE
+
+    ! PseudoHermitian interfaces (BlockBlockMatrix)
+    INTERFACE
+        SUBROUTINE pzchase_init_pseudo(nn, nev, nex, m, n, h, ldh, v, ritzv, dim0, dim1, grid_major, fcomm, init) &
+            bind( c, name = 'pzchase_init_pseudo_f_' )
+      !> Initialization of distributed-memory ChASE with pseudo-Hermitian matrix (complex double precision, block-block distribution).
+      !> The matrix to be diagonalized is already in block-block distribution.
+      !>    
+      !> @param[in] nn global matrix size of the matrix to be diagonalized  
+      !> @param[in] nev number of desired eigenpairs
+      !> @param[in] nex extra searching space size      
+      !> @param[in] h pointer to the matrix to be diagonalized. `h` is a block-block distribution of global matrix of size `mxn`, its leading dimension is `ldh`
+      !> @param[in] ldh leading dimension of `h` on each MPI process
+      !> @param[in] m max row number of local matrix `h` on each MPI process
+      !> @param[in] n max column number of local matrix `h` on each MPI process
+      !> @param[in,out] v `(mx(nev+nex))` matrix, input is the initial guess eigenvectors, and for output, the first `nev` columns are overwritten by the desired eigenvectors. `v` is only partially distributed within column communicator. It is reduandant among different column communicator.
+      !> @param[in,out] ritzv an array of size `nev` which contains the desired eigenvalues
+      !> @param[in] dim0 row number of 2D MPI grid
+      !> @param[in] dim1 column number of 2D MPI grid      
+      !> @param[in] grid_major major of 2D MPI grid. Row major: `grid_major=R`, column major: `grid_major=C`
+      !> @param[in] fcomm the working MPI-Fortran communicator      
+      !> @param[in,out] init a flag to indicate if ChASE has been initialized              
+            USE, INTRINSIC :: iso_c_binding
+            INTEGER(c_int)      :: nn, nev, nex, m, n, ldh, dim0, dim1, fcomm, init
+            COMPLEX(c_double_complex)      :: h(*), v(*)
+            REAL(c_double)      :: ritzv(*)
+            CHARACTER(len=1,kind=c_char)  :: grid_major
+        END SUBROUTINE pzchase_init_pseudo
+    END INTERFACE
+
+    INTERFACE
+        SUBROUTINE pcchase_init_pseudo(nn, nev, nex, m, n, h, ldh, v, ritzv, dim0, dim1, grid_major, fcomm, init) &
+            bind( c, name = 'pcchase_init_pseudo_f_' )
+      !> Initialization of distributed-memory ChASE with pseudo-Hermitian matrix (complex single precision, block-block distribution).
+      !> The matrix to be diagonalized is already in block-block distribution.
+      !>    
+      !> @param[in] nn global matrix size of the matrix to be diagonalized  
+      !> @param[in] nev number of desired eigenpairs
+      !> @param[in] nex extra searching space size      
+      !> @param[in] h pointer to the matrix to be diagonalized. `h` is a block-block distribution of global matrix of size `mxn`, its leading dimension is `ldh`
+      !> @param[in] ldh leading dimension of `h` on each MPI process
+      !> @param[in] m max row number of local matrix `h` on each MPI process
+      !> @param[in] n max column number of local matrix `h` on each MPI process
+      !> @param[in,out] v `(mx(nev+nex))` matrix, input is the initial guess eigenvectors, and for output, the first `nev` columns are overwritten by the desired eigenvectors. `v` is only partially distributed within column communicator. It is reduandant among different column communicator.
+      !> @param[in,out] ritzv an array of size `nev` which contains the desired eigenvalues
+      !> @param[in] dim0 row number of 2D MPI grid
+      !> @param[in] dim1 column number of 2D MPI grid      
+      !> @param[in] grid_major major of 2D MPI grid. Row major: `grid_major=R`, column major: `grid_major=C`
+      !> @param[in] fcomm the working MPI-Fortran communicator      
+      !> @param[in,out] init a flag to indicate if ChASE has been initialized                  
+            USE, INTRINSIC :: iso_c_binding
+            INTEGER(c_int)      :: nn, nev, nex, m, n, ldh, dim0, dim1, fcomm, init
+            COMPLEX(c_float_complex)      :: h(*), v(*)
+            REAL(c_double)      :: ritzv(*)
+            CHARACTER(len=1,kind=c_char)  :: grid_major
+        END SUBROUTINE pcchase_init_pseudo
+    END INTERFACE
+
+    ! PseudoHermitian interfaces (BlockCyclicMatrix)
+    INTERFACE
+        SUBROUTINE pzchase_init_pseudo_blockcyclic(nn, nev, nex, mbsize, nbsize, h, ldh, v, ritzv, dim0, dim1, &
+            grid_major, irsrc, icsrc, fcomm, init) bind( c, name = 'pzchase_init_pseudo_blockcyclic_f_' )
+      !> Initialization of distributed-memory ChASE with pseudo-Hermitian matrix (complex double precision, block-cyclic distribution).
+      !> The matrix to be diagonalized is already in block-cyclic distribution.
+      !>    
+      !> @param[in] nn global matrix size of the matrix to be diagonalized  
+      !> @param[in] nev number of desired eigenpairs
+      !> @param[in] nex extra searching space size   
+      !> @param[in] mbsize block size for the block-cyclic distribution for the rows of global matrix
+      !> @param[in] nbsize block size for the block-cyclic distribution for the cloumns of global matrix
+      !> @param[in] h pointer to the matrix to be diagonalized. `h` is a block-cyclic distribution of global matrix of size `mxn`, its leading dimension is `ldh`
+      !> @param[in] ldh leading dimension of `h` on each MPI process
+      !> @param[in,out] v `(mx(nev+nex))` matrix, input is the initial guess eigenvectors, and for output, the first `nev` columns are overwritten by the desired eigenvectors. `v` is only partially distributed within column communicator in 1D block-cyclic distribution with a same block factor `mbsize`. It is reduandant among different column communicator.
+      !> @param[in,out] ritzv an array of size `nev` which contains the desired eigenvalues
+      !> @param[in] dim0 row number of 2D MPI grid
+      !> @param[in] dim1 column number of 2D MPI grid      
+      !> @param[in] grid_major major of 2D MPI grid. Row major: `grid_major=R`, column major: `grid_major=C`
+      !> @param[in] irsrc process row over which the first row of the global matrix `h` is distributed.
+      !> @param[in] icsrc process column over which the first column of the global matrix `h` is distributed.      
+      !> @param[in] fcomm the working MPI-Fortran communicator      
+      !> @param[in,out] init a flag to indicate if ChASE has been initialized              
+            USE, INTRINSIC :: iso_c_binding
+            INTEGER(c_int)      :: nn, nev, nex, mbsize, nbsize, ldh, dim0, dim1, irsrc, icsrc, fcomm, init
+            COMPLEX(c_double_complex)      :: h(*), v(*)
+            REAL(c_double)      :: ritzv(*)
+            CHARACTER(len=1,kind=c_char)  :: grid_major
+
+        END SUBROUTINE pzchase_init_pseudo_blockcyclic
+    END INTERFACE
+
+    INTERFACE
+        SUBROUTINE pcchase_init_pseudo_blockcyclic(nn, nev, nex, mbsize, nbsize, h, ldh, v, ritzv, dim0, dim1, &
+            grid_major, irsrc, icsrc, fcomm, init) bind( c, name = 'pcchase_init_pseudo_blockcyclic_f_' )
+      !> Initialization of distributed-memory ChASE with pseudo-Hermitian matrix (complex single precision, block-cyclic distribution).
+      !> The matrix to be diagonalized is already in block-cyclic distribution.
+      !>    
+      !> @param[in] nn global matrix size of the matrix to be diagonalized  
+      !> @param[in] nev number of desired eigenpairs
+      !> @param[in] nex extra searching space size   
+      !> @param[in] mbsize block size for the block-cyclic distribution for the rows of global matrix
+      !> @param[in] nbsize block size for the block-cyclic distribution for the cloumns of global matrix
+      !> @param[in] h pointer to the matrix to be diagonalized. `h` is a block-cyclic distribution of global matrix of size `mxn`, its leading dimension is `ldh`
+      !> @param[in] ldh leading dimension of `h` on each MPI process
+      !> @param[in,out] v `(mx(nev+nex))` matrix, input is the initial guess eigenvectors, and for output, the first `nev` columns are overwritten by the desired eigenvectors. `v` is only partially distributed within column communicator in 1D block-cyclic distribution with a same block factor `mbsize`. It is reduandant among different column communicator.
+      !> @param[in,out] ritzv an array of size `nev` which contains the desired eigenvalues
+      !> @param[in] dim0 row number of 2D MPI grid
+      !> @param[in] dim1 column number of 2D MPI grid      
+      !> @param[in] grid_major major of 2D MPI grid. Row major: `grid_major=R`, column major: `grid_major=C`
+      !> @param[in] irsrc process row over which the first row of the global matrix `h` is distributed.
+      !> @param[in] icsrc process column over which the first column of the global matrix `h` is distributed.      
+      !> @param[in] fcomm the working MPI-Fortran communicator      
+      !> @param[in,out] init a flag to indicate if ChASE has been initialized              
+            USE, INTRINSIC :: iso_c_binding
+            INTEGER(c_int)      :: nn, nev, nex, mbsize, nbsize, ldh, dim0, dim1, irsrc, icsrc, fcomm, init
+            COMPLEX(c_float_complex)      :: h(*), v(*)
+            REAL(c_double)      :: ritzv(*)
+            CHARACTER(len=1,kind=c_char)  :: grid_major
+
+        END SUBROUTINE pcchase_init_pseudo_blockcyclic
+    END INTERFACE
+
+    ! Note: The _pseudo interfaces for solve, finalize, write, and read have been unified
+    ! into the regular interfaces above. The regular pzchase, pcchase, pzchase_finalize, 
+    ! pcchase_finalize, pzchase_wrtHam, pcchase_wrtHam, pzchase_readHam, and pcchase_readHam
+    ! now handle both regular and pseudo-Hermitian types automatically by checking which type was initialized.
 
 END MODULE chase_diag
 

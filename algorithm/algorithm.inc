@@ -961,7 +961,7 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
                      (*std::max_element(degrees, degrees + nev + nex - locked) -
                       degrees[0]));
         	
-	single->QR(locked, cond);
+	    single->QR(locked, cond);
 
         // ----------------------------- RAYLEIGH  RITZ
         // ----------------------------

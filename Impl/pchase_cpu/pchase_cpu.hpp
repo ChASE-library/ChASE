@@ -443,7 +443,6 @@ public:
 
     void QR(std::size_t fixednev, chase::Base<T> cond) override 
     {
-
         int disable = config_.DoCholQR() ? 0 : 1;
         char* cholddisable = getenv("CHASE_DISABLE_CHOLQR");
         if (cholddisable) {
@@ -679,7 +678,7 @@ public:
                                          V1_->l_data() + locked_ * V1_->l_ld(),
                                          V1_->l_ld(),
                                          V2_->l_data() + locked_ * V2_->l_ld(),
-                                         V2_->l_ld());   
+                                         V2_->l_ld());  
     }
     
     void Sort(chase::Base<T> * ritzv, chase::Base<T> * residLast, chase::Base<T> * resid) override

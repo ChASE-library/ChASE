@@ -976,6 +976,7 @@ public:
         N_ = n_;
         uint64_t lv = static_cast<uint64_t>(m_);
         uint64_t res = 0;
+        std::size_t len;
 
         MPI_Comm comm;
 
@@ -1036,6 +1037,26 @@ public:
         {
             mb_ = (M_ - m_) / (dim - 1);
         }
+        
+        if (M_ % dim == 0)
+        {
+            len = M_ / dim;
+        }
+        else
+        {
+            len = std::min(M_, M_ / dim + 1);
+        }
+
+        if (coord < dim - 1)
+        {
+            m_ = len;
+        }
+        else
+        {
+            m_ = M_ - (dim - 1) * len;
+        }
+
+        off_ = coord * len;
 	
 	if(off_ + m_ > M_ / 2)
 	{
@@ -1044,7 +1065,7 @@ public:
 	else
 	{
 		l_half_ = m_;
-	} 
+	}
     }
     /**
      * @brief Retrieves the distribution type of the multi-vector.
