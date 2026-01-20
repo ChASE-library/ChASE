@@ -219,6 +219,90 @@ MODULE chase_diag
         END SUBROUTINE zchase    
     END INTERFACE
 
+    ! Sequential pseudo-Hermitian interfaces
+    INTERFACE
+        SUBROUTINE cchase_init_pseudo(n, nev, nex, h, ldh, v, ritzv, init) bind( c, name = 'cchase_init_pseudo_f_' )
+      !> Initialization of shared-memory ChASE with complex scalar in single precision for pseudo-Hermitian matrices.
+      !> It is linked to single-GPU ChASE when CUDA is detected.
+      !>    
+      !>
+      !> @param[in] n global matrix size of the matrix to be diagonalized  
+      !> @param[in] nev number of desired eigenpairs
+      !> @param[in] nex extra searching space size      
+      !> @param[in] h pointer to the matrix to be diagonalized
+      !> @param[in] ldh a leading dimension of h      
+      !> @param[in,out] v `(nx(nev+nex))` matrix, input is the initial guess eigenvectors, and for output, the first `nev` columns are overwritten by the desired eigenvectors
+      !> @param[in,out] ritzv an array of size `nev` which contains the desired eigenvalues
+      !> @param[in,out] init a flag to indicate if ChASE has been initialized            
+            USE, INTRINSIC :: iso_c_binding
+            INTEGER(c_int)      :: n, nev, nex, init, ldh
+            COMPLEX(c_float_complex)      :: h(n, *), v(n, *)
+            REAL(c_float)      :: ritzv(*)
+
+        END SUBROUTINE cchase_init_pseudo    
+    END INTERFACE
+
+
+    INTERFACE     
+        SUBROUTINE cchase_pseudo(deg, tol, mode, opt, qr) bind( c, name = 'cchase_pseudo_f_' )
+      !> Solve the eigenvalue by the previously constructed shared-memory ChASE (complex scalar in single precision for pseudo-Hermitian matrices).
+      !> The buffer of matrix to be diagonalized, of ritz pairs have provided during the initialization of solver.
+      !>    
+      !>
+      !> @param[in] deg initial degree of Cheyshev polynomial filter
+      !> @param[in] tol desired absolute tolerance of computed eigenpairs
+      !> @param[in] mode for sequences of eigenproblems, if reusing the eigenpairs obtained from last system. If `mode = A`, reuse, otherwise, not.  
+      !> @param[in] opt determining if using internal optimization of Chebyshev polynomial degree. If `opt=S`, use, otherwise, no.         
+      !> @param[in] qr determining if flexible CholeskyQR, if `qr=C` use, otherwise, no use.                       
+            USE, INTRINSIC :: iso_c_binding
+            INTEGER(c_int)      :: deg
+            REAL(c_float)      :: tol
+            CHARACTER(len=1,kind=c_char)  :: mode, opt, qr
+
+        END SUBROUTINE cchase_pseudo    
+    END INTERFACE
+
+    INTERFACE
+        SUBROUTINE zchase_init_pseudo(n, nev, nex, h, ldh, v, ritzv, init) bind( c, name = 'zchase_init_pseudo_f_' )
+      !> Initialization of shared-memory ChASE with complex scalar in double precision for pseudo-Hermitian matrices.
+      !> It is linked to single-GPU ChASE when CUDA is detected.
+      !>    
+      !>
+      !> @param[in] n global matrix size of the matrix to be diagonalized  
+      !> @param[in] nev number of desired eigenpairs
+      !> @param[in] nex extra searching space size      
+      !> @param[in] h pointer to the matrix to be diagonalized
+      !> @param[in] ldh a leading dimension of h      
+      !> @param[in,out] v `(nx(nev+nex))` matrix, input is the initial guess eigenvectors, and for output, the first `nev` columns are overwritten by the desired eigenvectors
+      !> @param[in,out] ritzv an array of size `nev` which contains the desired eigenvalues
+      !> @param[in,out] init a flag to indicate if ChASE has been initialized            
+            USE, INTRINSIC :: iso_c_binding
+            INTEGER(c_int)      :: n, nev, nex, init, ldh
+            COMPLEX(c_double_complex)      :: h(n, *), v(n, *)
+            REAL(c_double)      :: ritzv(*)
+
+        END SUBROUTINE zchase_init_pseudo    
+    END INTERFACE
+
+
+    INTERFACE     
+        SUBROUTINE zchase_pseudo(deg, tol, mode, opt, qr) bind( c, name = 'zchase_pseudo_f_' )
+      !> Solve the eigenvalue by the previously constructed shared-memory ChASE (complex scalar in double precision for pseudo-Hermitian matrices).
+      !> The buffer of matrix to be diagonalized, of ritz pairs have provided during the initialization of solver.
+      !>    
+      !>
+      !> @param[in] deg initial degree of Cheyshev polynomial filter
+      !> @param[in] tol desired absolute tolerance of computed eigenpairs
+      !> @param[in] mode for sequences of eigenproblems, if reusing the eigenpairs obtained from last system. If `mode = A`, reuse, otherwise, not.  
+      !> @param[in] opt determining if using internal optimization of Chebyshev polynomial degree. If `opt=S`, use, otherwise, no.         
+      !> @param[in] qr determining if flexible CholeskyQR, if `qr=C` use, otherwise, no use.                       
+            USE, INTRINSIC :: iso_c_binding
+            INTEGER(c_int)      :: deg
+            REAL(c_double)      :: tol
+            CHARACTER(len=1,kind=c_char)  :: mode, opt, qr
+
+        END SUBROUTINE zchase_pseudo    
+    END INTERFACE
 
     INTERFACE   
         SUBROUTINE pdchase_init(nn, nev, nex, m, n, h, ldh, v, ritzv, dim0, dim1, grid_major, fcomm, init) &
@@ -683,6 +767,47 @@ MODULE chase_diag
             CHARACTER(kind=c_char, len=1), dimension(*), intent(in) :: filename
         
         END SUBROUTINE    
+    END INTERFACE
+
+    ! Convenience aliases without leading 'p' (forward to the same implementation).
+    INTERFACE
+        SUBROUTINE schase_readHam(filename) bind( c, name = 'schase_readHam_')
+        !> Read Hamiltonian from file (real single precision).
+        !> Sequential/single-GPU interface (independent of pschase_readHam_).
+        !> @param[in] filename the name of input filename
+            USE, INTRINSIC :: iso_c_binding
+            CHARACTER(kind=c_char, len=1), dimension(*), intent(in) :: filename
+        END SUBROUTINE
+    END INTERFACE
+
+    INTERFACE
+        SUBROUTINE dchase_readHam(filename) bind( c, name = 'dchase_readHam_')
+        !> Read Hamiltonian from file (real double precision).
+        !> Sequential/single-GPU interface (independent of pdchase_readHam_).
+        !> @param[in] filename the name of input filename
+            USE, INTRINSIC :: iso_c_binding
+            CHARACTER(kind=c_char, len=1), dimension(*), intent(in) :: filename
+        END SUBROUTINE
+    END INTERFACE
+
+    INTERFACE
+        SUBROUTINE cchase_readHam(filename) bind( c, name = 'cchase_readHam_')
+        !> Read Hamiltonian from file (complex single precision).
+        !> Sequential/single-GPU interface (independent of pcchase_readHam_).
+        !> @param[in] filename the name of input filename
+            USE, INTRINSIC :: iso_c_binding
+            CHARACTER(kind=c_char, len=1), dimension(*), intent(in) :: filename
+        END SUBROUTINE
+    END INTERFACE
+
+    INTERFACE
+        SUBROUTINE zchase_readHam(filename) bind( c, name = 'zchase_readHam_')
+        !> Read Hamiltonian from file (complex double precision).
+        !> Sequential/single-GPU interface (independent of pzchase_readHam_).
+        !> @param[in] filename the name of input filename
+            USE, INTRINSIC :: iso_c_binding
+            CHARACTER(kind=c_char, len=1), dimension(*), intent(in) :: filename
+        END SUBROUTINE
     END INTERFACE
 
     ! PseudoHermitian interfaces (BlockBlockMatrix)

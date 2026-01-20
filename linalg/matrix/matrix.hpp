@@ -204,8 +204,6 @@ class Matrix;
 template <typename T, template <typename, typename, template <typename> class> class Derived, typename Platform, template <typename> class Allocator>
 class AbstractMatrix
 {
-    using value_type = T;
-    using platform_type = Platform;
 protected:
     using SinglePrecisionType = typename chase::ToSinglePrecisionTrait<T>::Type;
     using SinglePrecisionDerived = Derived<SinglePrecisionType, Platform, Allocator>;
@@ -222,6 +220,8 @@ protected:
     std::chrono::duration<double> elapsed;
 
 public:
+    using value_type = T;
+    using platform_type = Platform;
     virtual ~AbstractMatrix() = default;
     /// Returns a pointer to the matrix data.
     virtual T *        data() = 0;

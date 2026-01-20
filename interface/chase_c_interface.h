@@ -31,6 +31,15 @@ void schase_(int* deg, float* tol, char* mode, char* opt, char *qr);
 void zchase_(int* deg, double* tol, char* mode, char* opt, char *qr);
 void cchase_(int* deg, float* tol, char* mode, char* opt, char *qr);
 
+// Sequential pseudo-Hermitian initialization functions
+void cchase_init_pseudo_(int* N, int* nev, int* nex, float _Complex* H, int *ldh,
+                    float _Complex* V, float* ritzv, int* init);
+void zchase_init_pseudo_(int* N, int* nev, int* nex, double _Complex* H, int *ldh,
+                    double _Complex* V, double* ritzv, int* init);
+
+void cchase_pseudo_(int* deg, float* tol, char* mode, char* opt, char *qr);
+void zchase_pseudo_(int* deg, double* tol, char* mode, char* opt, char *qr);
+
 // BlockCyclic matrix initialization functions
 void pdchase_init_blockcyclic_(int* N, int* nev, int* nex, int* mbsize,
                                 int* nbsize, double* H, int* ldh, double* V,
@@ -117,6 +126,12 @@ void pschase_readHam_(const char* filename);
 void pdchase_readHam_(const char* filename);
 void pcchase_readHam_(const char* filename);
 void pzchase_readHam_(const char* filename);
+
+// Aliases without leading 'p' (convenience wrappers; forward to p*chase_readHam_)
+void schase_readHam_(const char* filename);
+void dchase_readHam_(const char* filename);
+void cchase_readHam_(const char* filename);
+void zchase_readHam_(const char* filename);
 
 #ifdef __cplusplus
 }
