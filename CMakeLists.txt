@@ -1,7 +1,7 @@
 # -*- Mode: cmake -*-
 cmake_minimum_required( VERSION 3.18 )
 
-project( ChASE LANGUAGES C CXX Fortran VERSION 1.6.1 )
+project( ChASE LANGUAGES C CXX Fortran VERSION 1.7.0 )
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 # ## algorithm ##
 
@@ -32,8 +32,12 @@ option(CHASE_SAVE_RESIDUALS "Print the residuals in an external file" OFF)
 option(CHASE_ENABLE_XGEEV_RAYLEIGHRITZ "Enable solving pseudo-hermitian problems with XGEEV cusolver" OFF)
 option(ChASE_DISPLAY_COND_V_SVD "Compute and display condition number of V from SVD" OFF)
 option(CHASE_QR_DOUBLE_PRECISION "Operate QR in Double Precision" ON)
-option(CHASE_PRINT_DEBUG "Print additional information for debugging purpose" OFF)
 option(CHASE_RR_DOUBLE_PRECISION "Operate HEEVD in RR for pseudo-hermitian matrices in Double Precision" OFF)
+option(CHASE_ENABLE_TESTS "Enable unit tests." OFF)
+
+if(NOT CMAKE_BUILD_TYPE STREQUAL "Release")
+    message(WARNING "For prodution, please consider CMAKE_BUILD_TYPE to be Release or RelWithDebInfo")
+endif()
 
 if( CHASE_OUTPUT )
   target_compile_definitions( chase_algorithm  INTERFACE "-DCHASE_OUTPUT" )
@@ -102,8 +106,7 @@ add_executable( "chase_driver_gpu" tests/noinput.cpp )
 target_link_libraries(chase_driver_gpu chase_gpu)
 endif()
 
-option(ENABLE_TESTS "Enable unit tests." OFF)
-if(ENABLE_TESTS)
+if(CHASE_ENABLE_TESTS)
     MESSAGE("Test enabled. Finding GoogleTests.")
     include(${CMAKE_SOURCE_DIR}/cmake/external/Gtest/FetchGtest.cmake)
     include(CTest)

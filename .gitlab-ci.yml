@@ -32,7 +32,7 @@ build_cpu:
     - cmake --version
     - mkdir -p build_cpu
     - cd build_cpu
-    - env CFLAGS="$CFLAGS --coverage" CXXFLAGS="$CXXFLAGS --coverage" FFLAGS="$FFLAGS --coverage" cmake -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_Fortran_COMPILER=mpifort -DCHASE_ENABLE_MIXED_PRECISION=ON -DENABLE_TESTS=ON -DMPI_RUN_ARGS="--allow-run-as-root" .. -DCMAKE_EXE_LINKER_FLAGS="-lgfortran -Wl,--copy-dt-needed-entries --coverage"
+    - env CFLAGS="$CFLAGS --coverage" CXXFLAGS="$CXXFLAGS --coverage" FFLAGS="$FFLAGS --coverage" cmake -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_Fortran_COMPILER=mpifort -DCHASE_ENABLE_MIXED_PRECISION=ON -DCHASE_ENABLE_TESTS=ON -DMPI_RUN_ARGS="--allow-run-as-root" .. -DCMAKE_EXE_LINKER_FLAGS="-lgfortran -Wl,--copy-dt-needed-entries --coverage"
     - make VERBOSE=1 -j4
   artifacts:
     paths:
@@ -75,7 +75,7 @@ build_gpu:
     - cmake --version
     - mkdir -p build_gpu
     - cd build_gpu
-    - env CFLAGS="$CFLAGS --coverage" CXXFLAGS="$CXXFLAGS --coverage" FFLAGS="$FFLAGS --coverage" cmake -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_Fortran_COMPILER=mpifort -DCHASE_ENABLE_MIXED_PRECISION=ON -DENABLE_TESTS=ON -DMPI_RUN="srun" .. -DCMAKE_EXE_LINKER_FLAGS="--coverage"
+    - env CFLAGS="$CFLAGS --coverage" CXXFLAGS="$CXXFLAGS --coverage" FFLAGS="$FFLAGS --coverage" cmake -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_Fortran_COMPILER=mpifort -DCHASE_ENABLE_MIXED_PRECISION=ON -DCHASE_NABLE_TESTS=ON -DMPI_RUN="srun" .. -DCMAKE_EXE_LINKER_FLAGS="--coverage"
     - make VERBOSE=1 -j8
   artifacts:
     paths:

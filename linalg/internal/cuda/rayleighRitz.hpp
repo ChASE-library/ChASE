@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <algorithm>  // For std::sort
+
 #include "external/cublaspp/cublaspp.hpp"
 #include "external/cusolverpp/cusolverpp.hpp"
 #include "Impl/chase_gpu/cuda_utils.hpp"

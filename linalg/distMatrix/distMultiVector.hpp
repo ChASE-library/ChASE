@@ -7,8 +7,9 @@
 #pragma once
 
 #include <complex>  // For std::complex types
-#include <iostream> // For std::cout
-#include <memory>   // For std::unique_ptr, std::shared_ptr
+#include <iostream>  // For std::cout
+#include <memory>    // For std::unique_ptr, std::shared_ptr
+#include <algorithm> // For std::max_element
 #include <mpi.h>
 #include <omp.h>     // For OpenMP parallelization
 #include <stdexcept> // For throwing runtime errors

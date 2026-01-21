@@ -10,6 +10,7 @@
 #include <memory>                  // For std::unique_ptr, std::shared_ptr
 #include <complex>                 // For std::complex types
 #include <stdexcept>               // For throwing runtime errors
+#include <algorithm>               // For std::max_element
 #include <omp.h>                   // For OpenMP parallelization
 #include <mpi.h>
 #include <chrono>
