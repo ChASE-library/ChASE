@@ -4,14 +4,13 @@
 // License is 3-clause BSD:
 // https://github.com/ChASE-library/ChASE
 
-#include <iostream>
-#include <vector>
 #include <complex>
+#include <iostream>
 #include <memory>
+#include <mpi.h>
 #include <random>
 #include <type_traits>
 #include <vector>
-#include <mpi.h>
 
 #include "algorithm/performance.hpp"
 #ifdef USE_GPU
@@ -36,14 +35,14 @@ int main(int argc, char** argv)
     int world_rank;
     int world_size;
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &world_size);  
+    MPI_Comm_size(MPI_COMM_WORLD, &world_size);
 
     std::size_t N = 1200;
     std::size_t nev = 80;
     std::size_t nex = 60;
     std::size_t idx_max = 3;
     Base<T> perturb = 1e-4;
-    
+
     std::mt19937 gen(1337.0);
     std::normal_distribution<> d;
 
@@ -52,11 +51,13 @@ int main(int argc, char** argv)
     // MPI proc grid = dims[0] x dims[1]
     MPI_Dims_create(world_size, 2, dims_);
 
-    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid 
-        = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(dims_[0], dims_[1], MPI_COMM_WORLD);
+    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>
+        mpi_grid = std::make_shared<
+            chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(
+            dims_[0], dims_[1], MPI_COMM_WORLD);
 
-    int *dims = mpi_grid.get()->get_dims();
-    int *coords = mpi_grid.get()->get_coords();
+    int* dims = mpi_grid.get()->get_dims();
+    int* coords = mpi_grid.get()->get_coords();
 
     std::size_t m, n;
 
@@ -69,7 +70,7 @@ int main(int argc, char** argv)
         m = std::min(N, N / dims[0] + 1);
     }
 
-    if(coords[0] == dims[0] - 1)
+    if (coords[0] == dims[0] - 1)
     {
         m = N - (dims[0] - 1) * m;
     }
@@ -83,32 +84,37 @@ int main(int argc, char** argv)
         n = std::min(N, N / dims[1] + 1);
     }
 
-    if(coords[1] == dims[1] - 1)
+    if (coords[1] == dims[1] - 1)
     {
         n = N - (dims[1] - 1) * n;
     }
-    
 
-    if(world_rank == 0)
+    if (world_rank == 0)
     {
-	std::cout << "Running ChASE: " <<
+        std::cout << "Running ChASE: " <<
 #ifdef USE_GPU
-		     "with GPU enabled" << 
+            "with GPU enabled" <<
 #else
-		     "without GPU enabled" << 	
+            "without GPU enabled" <<
 #endif
-        std::endl;		     
+            std::endl;
     }
 
     auto Lambda = std::vector<chase::Base<T>>(nev + nex);
     std::size_t blocksize = 64;
     auto Clement = chase::distMatrix::RedundantMatrix<T, ARCH>(N, N, mpi_grid);
-    auto Hmat = chase::distMatrix::BlockCyclicMatrix<T, ARCH>(N, N, blocksize, blocksize, mpi_grid);    
-    auto Vec = chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, chase::distMultiVector::CommunicatorType::column, ARCH>(N, nev + nex, blocksize, mpi_grid);
-//     auto Hmat = chase::distMatrix::BlockBlockMatrix<T, ARCH>(N, N, mpi_grid);    
-//    auto Vec = chase::distMultiVector::DistMultiVector1D<T, chase::distMultiVector::CommunicatorType::column, ARCH>(N, nev + nex, mpi_grid);
+    auto Hmat = chase::distMatrix::BlockCyclicMatrix<T, ARCH>(
+        N, N, blocksize, blocksize, mpi_grid);
+    auto Vec = chase::distMultiVector::DistMultiVectorBlockCyclic1D<
+        T, chase::distMultiVector::CommunicatorType::column, ARCH>(
+        N, nev + nex, blocksize, mpi_grid);
+    //     auto Hmat = chase::distMatrix::BlockBlockMatrix<T, ARCH>(N, N,
+    //     mpi_grid);
+    //    auto Vec = chase::distMultiVector::DistMultiVector1D<T,
+    //    chase::distMultiVector::CommunicatorType::column, ARCH>(N, nev + nex,
+    //    mpi_grid);
 
-    T *Clement_data;
+    T* Clement_data;
 #ifdef HAS_CUDA
     Clement.allocate_cpu_data();
     Hmat.allocate_cpu_data();
@@ -126,26 +132,25 @@ int main(int argc, char** argv)
         if (i != N - 1)
             Clement_data[i + N * (i + 1)] = std::sqrt(i * (N + 1 - i));
     }
-#ifdef HAS_CUDA    
+#ifdef HAS_CUDA
     auto single = chase::Impl::pChASEGPU(nev, nex, &Hmat, &Vec, Lambda.data());
 #else
     auto single = chase::Impl::pChASECPU(nev, nex, &Hmat, &Vec, Lambda.data());
 #endif
-    //Setup configure for ChASE
+    // Setup configure for ChASE
     auto& config = single.GetConfig();
-    //Tolerance for Eigenpair convergence
+    // Tolerance for Eigenpair convergence
     config.SetTol(1e-10);
-    //Initial filtering degree
+    // Initial filtering degree
     config.SetDeg(20);
-    //Optimi(S)e degree
+    // Optimi(S)e degree
     config.SetOpt(true);
     config.SetMaxIter(25);
 
     if (world_rank == 0)
         std::cout << "Solving a symmetrized Clement matrices (" << N << "x" << N
-                << ")"
-                << '\n'
-                << config;
+                  << ")" << '\n'
+                  << config;
 
     for (auto idx = 0; idx < idx_max; ++idx)
     {
@@ -157,25 +162,27 @@ int main(int argc, char** argv)
         }
         if (config.UseApprox())
         {
-            if (world_rank == 0) std::cout << "Using approximate solution\n";
+            if (world_rank == 0)
+                std::cout << "Using approximate solution\n";
         }
-        
-        //Performance Decorator to meaure the performance of kernels of ChASE
+
+        // Performance Decorator to meaure the performance of kernels of ChASE
         PerformanceDecoratorChase<T> performanceDecorator(&single);
-        //Solve the eigenproblem
+        // Solve the eigenproblem
         chase::Solve(&performanceDecorator);
 
-        //Output
+        // Output
         if (world_rank == 0)
         {
             performanceDecorator.GetPerfData().print();
             Base<T>* resid = single.GetResid();
             std::cout << "Finished Problem #1"
-                    << "\n";
+                      << "\n";
             std::cout << "Printing first 5 eigenvalues and residuals\n";
             std::cout
                 << "| Index |       Eigenvalue      |         Residual      |\n"
-                << "|-------|-----------------------|-----------------------|\n";
+                << "|-------|-----------------------|-----------------------|"
+                   "\n";
             std::size_t width = 20;
             std::cout << std::setprecision(12);
             std::cout << std::setfill(' ');
@@ -183,8 +190,8 @@ int main(int argc, char** argv)
             std::cout << std::right;
             for (auto i = 0; i < std::min(std::size_t(5), nev); ++i)
                 std::cout << "|  " << std::setw(4) << i + 1 << " | "
-                        << std::setw(width) << Lambda[i] << "  | "
-                        << std::setw(width) << resid[i] << "  |\n";
+                          << std::setw(width) << Lambda[i] << "  | "
+                          << std::setw(width) << resid[i] << "  |\n";
             std::cout << "\n\n\n";
         }
 
@@ -198,12 +205,8 @@ int main(int argc, char** argv)
                 Clement_data[j + N * i] += element_perturbation;
                 Clement_data[i + N * j] += std::conj(element_perturbation);
             }
-        } 
-        
-      
+        }
     }
-    
 
-    MPI_Finalize();   	
+    MPI_Finalize();
 }
-

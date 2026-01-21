@@ -8,13 +8,15 @@
 
 /**
  * \defgroup gpu_kernels chase::linalg::internal::cuda Namespace
- * \brief The `chase::linalg::internal::cuda` namespace contains 
+ * \brief The `chase::linalg::internal::cuda` namespace contains
  * kernels required by ChASE for the single GPU
  * @{
  */
 #include "linalg/internal/cuda/absTrace.cuh"
 #include "linalg/internal/cuda/absTrace.hpp"
 #include "linalg/internal/cuda/cholqr.hpp"
+#include "linalg/internal/cuda/flipSign.cuh"
+#include "linalg/internal/cuda/flipSign.hpp"
 #include "linalg/internal/cuda/lacpy.cuh"
 #include "linalg/internal/cuda/lacpy.hpp"
 #include "linalg/internal/cuda/lanczos.hpp"
@@ -26,6 +28,4 @@
 #include "linalg/internal/cuda/residuals.hpp"
 #include "linalg/internal/cuda/shiftDiagonal.cuh"
 #include "linalg/internal/cuda/shiftDiagonal.hpp"
-#include "linalg/internal/cuda/flipSign.cuh"
-#include "linalg/internal/cuda/flipSign.hpp"
 /** @} */

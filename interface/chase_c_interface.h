@@ -10,146 +10,149 @@
 #include <mpi.h>
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-void dchase_init_(int* N, int* nev, int* nex, double* H, int *ldh, double* V,
-                    double* ritzv, int* init);
-void schase_init_(int* N, int* nev, int* nex, float* H,  int *ldh, float* V,
-                    float* ritzv, int* init);
-void cchase_init_(int* N, int* nev, int* nex, float _Complex* H, int *ldh,
-                    float _Complex* V, float* ritzv, int* init);
-void zchase_init_(int* N, int* nev, int* nex, double _Complex* H, int *ldh,
-                    double _Complex* V, double* ritzv, int* init);
+    void dchase_init_(int* N, int* nev, int* nex, double* H, int* ldh,
+                      double* V, double* ritzv, int* init);
+    void schase_init_(int* N, int* nev, int* nex, float* H, int* ldh, float* V,
+                      float* ritzv, int* init);
+    void cchase_init_(int* N, int* nev, int* nex, float _Complex* H, int* ldh,
+                      float _Complex* V, float* ritzv, int* init);
+    void zchase_init_(int* N, int* nev, int* nex, double _Complex* H, int* ldh,
+                      double _Complex* V, double* ritzv, int* init);
 
-void dchase_finalize_(int* flag);
-void schase_finalize_(int* flag);
-void cchase_finalize_(int* flag);
-void zchase_finalize_(int* flag);
-void dchase_(int* deg, double* tol, char* mode, char* opt, char *qr);    
-void schase_(int* deg, float* tol, char* mode, char* opt, char *qr);     
-void zchase_(int* deg, double* tol, char* mode, char* opt, char *qr);
-void cchase_(int* deg, float* tol, char* mode, char* opt, char *qr);
+    void dchase_finalize_(int* flag);
+    void schase_finalize_(int* flag);
+    void cchase_finalize_(int* flag);
+    void zchase_finalize_(int* flag);
+    void dchase_(int* deg, double* tol, char* mode, char* opt, char* qr);
+    void schase_(int* deg, float* tol, char* mode, char* opt, char* qr);
+    void zchase_(int* deg, double* tol, char* mode, char* opt, char* qr);
+    void cchase_(int* deg, float* tol, char* mode, char* opt, char* qr);
 
-// Sequential pseudo-Hermitian initialization functions
-void cchase_init_pseudo_(int* N, int* nev, int* nex, float _Complex* H, int *ldh,
-                    float _Complex* V, float* ritzv, int* init);
-void zchase_init_pseudo_(int* N, int* nev, int* nex, double _Complex* H, int *ldh,
-                    double _Complex* V, double* ritzv, int* init);
+    // Sequential pseudo-Hermitian initialization functions
+    void cchase_init_pseudo_(int* N, int* nev, int* nex, float _Complex* H,
+                             int* ldh, float _Complex* V, float* ritzv,
+                             int* init);
+    void zchase_init_pseudo_(int* N, int* nev, int* nex, double _Complex* H,
+                             int* ldh, double _Complex* V, double* ritzv,
+                             int* init);
 
-void cchase_pseudo_(int* deg, float* tol, char* mode, char* opt, char *qr);
-void zchase_pseudo_(int* deg, double* tol, char* mode, char* opt, char *qr);
+    void cchase_pseudo_(int* deg, float* tol, char* mode, char* opt, char* qr);
+    void zchase_pseudo_(int* deg, double* tol, char* mode, char* opt, char* qr);
 
-// BlockCyclic matrix initialization functions
-void pdchase_init_blockcyclic_(int* N, int* nev, int* nex, int* mbsize,
-                                int* nbsize, double* H, int* ldh, double* V,
-                                double* ritzv, int* dim0, int* dim1,
-                                char* grid_major, int* irsrc, int* icsrc,
-                                MPI_Comm* comm, int* init);
+    // BlockCyclic matrix initialization functions
+    void pdchase_init_blockcyclic_(int* N, int* nev, int* nex, int* mbsize,
+                                   int* nbsize, double* H, int* ldh, double* V,
+                                   double* ritzv, int* dim0, int* dim1,
+                                   char* grid_major, int* irsrc, int* icsrc,
+                                   MPI_Comm* comm, int* init);
 
-void pschase_init_blockcyclic_(int* N, int* nev, int* nex, int* mbsize,
-                                int* nbsize, float* H, int* ldh, float* V,
-                                float* ritzv, int* dim0, int* dim1,
-                                char* grid_major, int* irsrc, int* icsrc,
-                                MPI_Comm* comm, int* init);
+    void pschase_init_blockcyclic_(int* N, int* nev, int* nex, int* mbsize,
+                                   int* nbsize, float* H, int* ldh, float* V,
+                                   float* ritzv, int* dim0, int* dim1,
+                                   char* grid_major, int* irsrc, int* icsrc,
+                                   MPI_Comm* comm, int* init);
 
-void pcchase_init_blockcyclic_(int* N, int* nev, int* nex, int* mbsize,
-                                int* nbsize, float _Complex* H, int* ldh,
-                                float _Complex* V, float* ritzv, int* dim0,
-                                int* dim1, char* grid_major, int* irsrc,
-                                int* icsrc, MPI_Comm* comm, int* init);
+    void pcchase_init_blockcyclic_(int* N, int* nev, int* nex, int* mbsize,
+                                   int* nbsize, float _Complex* H, int* ldh,
+                                   float _Complex* V, float* ritzv, int* dim0,
+                                   int* dim1, char* grid_major, int* irsrc,
+                                   int* icsrc, MPI_Comm* comm, int* init);
 
-void pzchase_init_blockcyclic_(int* N, int* nev, int* nex, int* mbsize,
-                                int* nbsize, double _Complex* H, int* ldh,
-                                double _Complex* V, double* ritzv, int* dim0,
-                                int* dim1, char* grid_major, int* irsrc,
-                                int* icsrc, MPI_Comm* comm, int* init);
+    void pzchase_init_blockcyclic_(int* N, int* nev, int* nex, int* mbsize,
+                                   int* nbsize, double _Complex* H, int* ldh,
+                                   double _Complex* V, double* ritzv, int* dim0,
+                                   int* dim1, char* grid_major, int* irsrc,
+                                   int* icsrc, MPI_Comm* comm, int* init);
 
-// PseudoHermitian BlockCyclic matrix initialization functions
-void pcchase_init_pseudo_blockcyclic_(int* N, int* nev, int* nex, int* mbsize,
-                                int* nbsize, float _Complex* H, int* ldh,
-                                float _Complex* V, float* ritzv, int* dim0,
-                                int* dim1, char* grid_major, int* irsrc,
-                                int* icsrc, MPI_Comm* comm, int* init);
+    // PseudoHermitian BlockCyclic matrix initialization functions
+    void pcchase_init_pseudo_blockcyclic_(
+        int* N, int* nev, int* nex, int* mbsize, int* nbsize, float _Complex* H,
+        int* ldh, float _Complex* V, float* ritzv, int* dim0, int* dim1,
+        char* grid_major, int* irsrc, int* icsrc, MPI_Comm* comm, int* init);
 
-void pzchase_init_pseudo_blockcyclic_(int* N, int* nev, int* nex, int* mbsize,
-                                int* nbsize, double _Complex* H, int* ldh,
-                                double _Complex* V, double* ritzv, int* dim0,
-                                int* dim1, char* grid_major, int* irsrc,
-                                int* icsrc, MPI_Comm* comm, int* init);
+    void pzchase_init_pseudo_blockcyclic_(
+        int* N, int* nev, int* nex, int* mbsize, int* nbsize,
+        double _Complex* H, int* ldh, double _Complex* V, double* ritzv,
+        int* dim0, int* dim1, char* grid_major, int* irsrc, int* icsrc,
+        MPI_Comm* comm, int* init);
 
-// BlockBlock matrix initialization functions
-void pdchase_init_(int* N, int* nev, int* nex, int* m, int* n, double* H,
-                    int* ldh, double* V, double* ritzv, int* dim0, int* dim1,
-                    char* grid_major, MPI_Comm* comm, int* init);
+    // BlockBlock matrix initialization functions
+    void pdchase_init_(int* N, int* nev, int* nex, int* m, int* n, double* H,
+                       int* ldh, double* V, double* ritzv, int* dim0, int* dim1,
+                       char* grid_major, MPI_Comm* comm, int* init);
 
-void pschase_init_(int* N, int* nev, int* nex, int* m, int* n, float* H,
-                    int* ldh, float* V, float* ritzv, int* dim0, int* dim1,
-                    char* grid_major, MPI_Comm* comm, int* init);
+    void pschase_init_(int* N, int* nev, int* nex, int* m, int* n, float* H,
+                       int* ldh, float* V, float* ritzv, int* dim0, int* dim1,
+                       char* grid_major, MPI_Comm* comm, int* init);
 
-void pcchase_init_(int* N, int* nev, int* nex, int* m, int* n,
-                    float _Complex* H, int* ldh, float _Complex* V,
-                    float* ritzv, int* dim0, int* dim1, char* grid_major,
-                    MPI_Comm* comm, int* init);
+    void pcchase_init_(int* N, int* nev, int* nex, int* m, int* n,
+                       float _Complex* H, int* ldh, float _Complex* V,
+                       float* ritzv, int* dim0, int* dim1, char* grid_major,
+                       MPI_Comm* comm, int* init);
 
-void pzchase_init_(int* N, int* nev, int* nex, int* m, int* n,
-                    double _Complex* H, int* ldh, double _Complex* V,
-                    double* ritzv, int* dim0, int* dim1, char* grid_major,
-                    MPI_Comm* comm, int* init);
+    void pzchase_init_(int* N, int* nev, int* nex, int* m, int* n,
+                       double _Complex* H, int* ldh, double _Complex* V,
+                       double* ritzv, int* dim0, int* dim1, char* grid_major,
+                       MPI_Comm* comm, int* init);
 
-// PseudoHermitian BlockBlock matrix initialization functions
-void pcchase_init_pseudo_(int* N, int* nev, int* nex, int* m, int* n,
-                    float _Complex* H, int* ldh, float _Complex* V,
-                    float* ritzv, int* dim0, int* dim1, char* grid_major,
-                    MPI_Comm* comm, int* init);
+    // PseudoHermitian BlockBlock matrix initialization functions
+    void pcchase_init_pseudo_(int* N, int* nev, int* nex, int* m, int* n,
+                              float _Complex* H, int* ldh, float _Complex* V,
+                              float* ritzv, int* dim0, int* dim1,
+                              char* grid_major, MPI_Comm* comm, int* init);
 
-void pzchase_init_pseudo_(int* N, int* nev, int* nex, int* m, int* n,
-                    double _Complex* H, int* ldh, double _Complex* V,
-                    double* ritzv, int* dim0, int* dim1, char* grid_major,
-                    MPI_Comm* comm, int* init);
-void pdchase_finalize_(int* flag);
-void pschase_finalize_(int* flag);
-void pcchase_finalize_(int* flag);
-void pzchase_finalize_(int* flag);
+    void pzchase_init_pseudo_(int* N, int* nev, int* nex, int* m, int* n,
+                              double _Complex* H, int* ldh, double _Complex* V,
+                              double* ritzv, int* dim0, int* dim1,
+                              char* grid_major, MPI_Comm* comm, int* init);
+    void pdchase_finalize_(int* flag);
+    void pschase_finalize_(int* flag);
+    void pcchase_finalize_(int* flag);
+    void pzchase_finalize_(int* flag);
 
-void pdchase_(int* deg, double* tol, char* mode, char* opt, char *qr);
-void pschase_(int* deg, float* tol, char* mode, char* opt, char *qr);
-void pcchase_(int* deg, float* tol, char* mode, char* opt, char *qr);
-void pzchase_(int* deg, double* tol, char* mode, char* opt, char *qr);
+    void pdchase_(int* deg, double* tol, char* mode, char* opt, char* qr);
+    void pschase_(int* deg, float* tol, char* mode, char* opt, char* qr);
+    void pcchase_(int* deg, float* tol, char* mode, char* opt, char* qr);
+    void pzchase_(int* deg, double* tol, char* mode, char* opt, char* qr);
 
-void pschase_wrtHam_(const char* filename);
-void pdchase_wrtHam_(const char* filename);
-void pcchase_wrtHam_(const char* filename);
-void pzchase_wrtHam_(const char* filename);
+    void pschase_wrtHam_(const char* filename);
+    void pdchase_wrtHam_(const char* filename);
+    void pcchase_wrtHam_(const char* filename);
+    void pzchase_wrtHam_(const char* filename);
 
-void pschase_readHam_(const char* filename);
-void pdchase_readHam_(const char* filename);
-void pcchase_readHam_(const char* filename);
-void pzchase_readHam_(const char* filename);
+    void pschase_readHam_(const char* filename);
+    void pdchase_readHam_(const char* filename);
+    void pcchase_readHam_(const char* filename);
+    void pzchase_readHam_(const char* filename);
 
-// Aliases without leading 'p' (convenience wrappers; forward to p*chase_readHam_)
-void schase_readHam_(const char* filename);
-void dchase_readHam_(const char* filename);
-void cchase_readHam_(const char* filename);
-void zchase_readHam_(const char* filename);
+    // Aliases without leading 'p' (convenience wrappers; forward to
+    // p*chase_readHam_)
+    void schase_readHam_(const char* filename);
+    void dchase_readHam_(const char* filename);
+    void cchase_readHam_(const char* filename);
+    void zchase_readHam_(const char* filename);
 
-// Unified configuration setter functions
-// These work regardless of matrix type, precision, or architecture
-// They automatically detect the active solver instance
-void chase_set_tol_(double* tol);
-void chase_set_deg_(int* deg);
-void chase_set_max_deg_(int* max_deg);
-void chase_set_deg_extra_(int* deg_extra);
-void chase_set_max_iter_(int* max_iter);
-void chase_set_lanczos_iter_(int* lanczos_iter);
-void chase_set_num_lanczos_(int* num_lanczos);
-void chase_set_approx_(int* flag);
-void chase_set_opt_(int* flag);
-void chase_set_cholqr_(int* flag);
-void chase_enable_sym_check_(int* flag);
-void chase_set_decaying_rate_(float* decaying_rate);
-void chase_set_cluster_aware_degrees_(int* flag);
-void chase_set_upperb_scale_rate_(float* upperb_scale_rate);
+    // Unified configuration setter functions
+    // These work regardless of matrix type, precision, or architecture
+    // They automatically detect the active solver instance
+    void chase_set_tol_(double* tol);
+    void chase_set_deg_(int* deg);
+    void chase_set_max_deg_(int* max_deg);
+    void chase_set_deg_extra_(int* deg_extra);
+    void chase_set_max_iter_(int* max_iter);
+    void chase_set_lanczos_iter_(int* lanczos_iter);
+    void chase_set_num_lanczos_(int* num_lanczos);
+    void chase_set_approx_(int* flag);
+    void chase_set_opt_(int* flag);
+    void chase_set_cholqr_(int* flag);
+    void chase_enable_sym_check_(int* flag);
+    void chase_set_decaying_rate_(float* decaying_rate);
+    void chase_set_cluster_aware_degrees_(int* flag);
+    void chase_set_upperb_scale_rate_(float* upperb_scale_rate);
 
 #ifdef __cplusplus
 }

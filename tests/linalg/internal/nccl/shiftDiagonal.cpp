@@ -4,72 +4,87 @@
 // License is 3-clause BSD:
 // https://github.com/ChASE-library/ChASE
 
-#include <gtest/gtest.h>
-#include <complex>
-#include <cmath>
-#include <cstring>
 #include "linalg/internal/nccl/shiftDiagonal.hpp"
 #include "grid/mpiGrid2D.hpp"
 #include "linalg/distMatrix/distMatrix.hpp"
 #include "linalg/distMatrix/distMultiVector.hpp"
+#include <cmath>
+#include <complex>
+#include <cstring>
+#include <gtest/gtest.h>
 
 // Global static resources that persist across all test suites
-namespace {
-    bool resources_initialized = false;
-    std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>> mpi_grid;
-}
+namespace
+{
+bool resources_initialized = false;
+std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>
+    mpi_grid;
+} // namespace
 
 template <typename T>
-class shiftDiagonalGPUNCCLDistTest : public ::testing::Test {
+class shiftDiagonalGPUNCCLDistTest : public ::testing::Test
+{
 protected:
-    void SetUp() override {
+    void SetUp() override
+    {
         MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
-        MPI_Comm_size(MPI_COMM_WORLD, &world_size);        
-        ASSERT_EQ(world_size, 4);  // Ensure we're running with 4 processes
-        
-        if (!resources_initialized) {
-            mpi_grid = std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(2, 2, MPI_COMM_WORLD);
+        MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+        ASSERT_EQ(world_size, 4); // Ensure we're running with 4 processes
+
+        if (!resources_initialized)
+        {
+            mpi_grid = std::make_shared<
+                chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(
+                2, 2, MPI_COMM_WORLD);
             resources_initialized = true;
         }
     }
 
-    void TearDown() override {
+    void TearDown() override
+    {
         // Don't free resources here - they will be reused
     }
 
     int world_rank;
-    int world_size;    
+    int world_size;
 };
 
 // Add a global test environment to handle resource cleanup at program exit
-class ResourceCleanupEnvironment : public ::testing::Environment {
+class ResourceCleanupEnvironment : public ::testing::Environment
+{
 public:
-    ~ResourceCleanupEnvironment() override {
-        if (resources_initialized) {
+    ~ResourceCleanupEnvironment() override
+    {
+        if (resources_initialized)
+        {
             mpi_grid.reset();
             resources_initialized = false;
         }
     }
 };
 
-using TestTypes = ::testing::Types<float, double, std::complex<float>, std::complex<double>>;
+using TestTypes =
+    ::testing::Types<float, double, std::complex<float>, std::complex<double>>;
 TYPED_TEST_SUITE(shiftDiagonalGPUNCCLDistTest, TestTypes);
 
-TYPED_TEST(shiftDiagonalGPUNCCLDistTest, ShiftDistCorrectnessGPU) {
-    using T = TypeParam;  // Get the current type
+TYPED_TEST(shiftDiagonalGPUNCCLDistTest, ShiftDistCorrectnessGPU)
+{
+    using T = TypeParam; // Get the current type
 
     std::size_t N = 10;
 
-    auto H = chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU>(N, N, mpi_grid);
+    auto H = chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU>(
+        N, N, mpi_grid);
     H.allocate_cpu_data();
 
-    if(this->world_rank == 0 || this->world_rank == 3){
-        for(auto i = 0; i < H.l_rows(); i++)
+    if (this->world_rank == 0 || this->world_rank == 3)
+    {
+        for (auto i = 0; i < H.l_rows(); i++)
         {
-            for(auto j = 0; j < H.l_cols(); j++)
+            for (auto j = 0; j < H.l_cols(); j++)
             {
-                //assume is squared grid
-                if(i == j)
+                // assume is squared grid
+                if (i == j)
                 {
                     H.cpu_data()[i + i * H.cpu_ld()] = T(1.0);
                 }
@@ -81,13 +96,13 @@ TYPED_TEST(shiftDiagonalGPUNCCLDistTest, ShiftDistCorrectnessGPU) {
 
     std::vector<std::size_t> diag_xoffs, diag_yoffs;
 
-    std::size_t *g_offs = H.g_offs();
+    std::size_t* g_offs = H.g_offs();
 
-    for(auto j = 0; j < H.l_cols(); j++)
+    for (auto j = 0; j < H.l_cols(); j++)
     {
-        for(auto i = 0; i < H.l_rows(); i++)
+        for (auto i = 0; i < H.l_rows(); i++)
         {
-            if(g_offs[0] + i == g_offs[1] + j)
+            if (g_offs[0] + i == g_offs[1] + j)
             {
                 diag_xoffs.push_back(i);
                 diag_yoffs.push_back(j);
@@ -98,27 +113,36 @@ TYPED_TEST(shiftDiagonalGPUNCCLDistTest, ShiftDistCorrectnessGPU) {
     std::size_t off_cnt = diag_xoffs.size();
 
     std::size_t *d_diag_xoffs, *d_diag_yoffs;
-    //std::size_t *d_diag_offs;
-    CHECK_CUDA_ERROR(cudaMalloc((void**)&d_diag_xoffs, sizeof(std::size_t) * off_cnt));    
-    CHECK_CUDA_ERROR(cudaMalloc((void**)&d_diag_yoffs, sizeof(std::size_t) * off_cnt));    
+    // std::size_t *d_diag_offs;
+    CHECK_CUDA_ERROR(
+        cudaMalloc((void**)&d_diag_xoffs, sizeof(std::size_t) * off_cnt));
+    CHECK_CUDA_ERROR(
+        cudaMalloc((void**)&d_diag_yoffs, sizeof(std::size_t) * off_cnt));
 
-    CHECK_CUDA_ERROR(cudaMemcpy(d_diag_xoffs, diag_xoffs.data(), sizeof(std::size_t) * off_cnt , cudaMemcpyHostToDevice));
-    CHECK_CUDA_ERROR(cudaMemcpy(d_diag_yoffs, diag_yoffs.data(), sizeof(std::size_t) * off_cnt , cudaMemcpyHostToDevice));
+    CHECK_CUDA_ERROR(cudaMemcpy(d_diag_xoffs, diag_xoffs.data(),
+                                sizeof(std::size_t) * off_cnt,
+                                cudaMemcpyHostToDevice));
+    CHECK_CUDA_ERROR(cudaMemcpy(d_diag_yoffs, diag_yoffs.data(),
+                                sizeof(std::size_t) * off_cnt,
+                                cudaMemcpyHostToDevice));
 
-    chase::linalg::internal::cuda_nccl::shiftDiagonal(H, d_diag_xoffs, d_diag_yoffs, off_cnt, chase::Base<T>(-5.0));
+    chase::linalg::internal::cuda_nccl::shiftDiagonal(
+        H, d_diag_xoffs, d_diag_yoffs, off_cnt, chase::Base<T>(-5.0));
 
     H.D2H();
 
-    if(this->world_rank == 0 || this->world_rank == 3){
-        for(auto i = 0; i < H.l_rows(); i++)
+    if (this->world_rank == 0 || this->world_rank == 3)
+    {
+        for (auto i = 0; i < H.l_rows(); i++)
         {
-            for(auto j = 0; j < H.l_cols(); j++)
+            for (auto j = 0; j < H.l_cols(); j++)
             {
-                //assume is squared grid
-                if(i == j)
+                // assume is squared grid
+                if (i == j)
                 {
                     EXPECT_EQ(H.cpu_data()[i + i * H.cpu_ld()], T(-4.0));
-                }else
+                }
+                else
                 {
                     EXPECT_EQ(H.cpu_data()[i + j * H.cpu_ld()], T(0.0));
                 }
@@ -127,15 +151,16 @@ TYPED_TEST(shiftDiagonalGPUNCCLDistTest, ShiftDistCorrectnessGPU) {
     }
     else
     {
-        for(auto i = 0; i < H.cpu_ld() * H.l_cols(); i++)
+        for (auto i = 0; i < H.cpu_ld() * H.l_cols(); i++)
         {
             EXPECT_EQ(H.cpu_data()[i], T(0.0));
         }
-    }  
-   
-   CHECK_CUDA_ERROR(cudaFree(d_diag_xoffs));     
-   CHECK_CUDA_ERROR(cudaFree(d_diag_yoffs));     
+    }
+
+    CHECK_CUDA_ERROR(cudaFree(d_diag_xoffs));
+    CHECK_CUDA_ERROR(cudaFree(d_diag_yoffs));
 }
 
 // Add this at the end of the file, before main()
-::testing::Environment* const resource_env = ::testing::AddGlobalTestEnvironment(new ResourceCleanupEnvironment);
+::testing::Environment* const resource_env =
+    ::testing::AddGlobalTestEnvironment(new ResourceCleanupEnvironment);

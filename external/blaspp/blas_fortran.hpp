@@ -56,7 +56,7 @@ extern "C"
     zcomplex FC_GLOBAL(zdotc, ZDOTC)(const BlasInt* n, const dcomplex* x,
                                      const BlasInt* incx, const dcomplex* y,
                                      const BlasInt* incy);
-                                
+
     // xSCAL
     void FC_GLOBAL(sscal, SSCAL)(const BlasInt* n, const float* alpha, float* x,
                                  const BlasInt* incx);
@@ -157,9 +157,9 @@ extern "C"
                                  const dcomplex* A, const BlasInt* ALDim,
                                  const dcomplex* B, const BlasInt* BLDim,
                                  const dcomplex* beta, dcomplex* C,
-                                 const BlasInt* CLDim);                                 
+                                 const BlasInt* CLDim);
 
 } // end of extern "C"
-} //end of namespace blaspp
-} //end of namespace linalg   
-} //end of namespace chase
+} // end of namespace blaspp
+} // end of namespace linalg
+} // end of namespace chase

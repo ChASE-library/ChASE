@@ -6,9 +6,9 @@
 
 #pragma once
 
+#include "external/blaspp/blas_fortran.hpp"
 #include <complex>
 #include <fortran_mangle.h>
-#include "external/blaspp/blas_fortran.hpp"
 
 namespace chase
 {
@@ -80,7 +80,7 @@ extern "C"
                                    BlasInt* info);
     void FC_GLOBAL(zpotrf, ZPOTRF)(const char* uplo, const BlasInt* n,
                                    dcomplex* a, const BlasInt* lda,
-                                   BlasInt* info);                           
+                                   BlasInt* info);
 
     // xSTEMR
     void FC_GLOBAL(sstemr,
@@ -128,26 +128,30 @@ extern "C"
                            const BlasInt* lrwork, BlasInt* iwork,
                            const BlasInt* liwork, BlasInt* info);
     // xGEEV
-    void FC_GLOBAL(sgeev,
-                   SGEEV)(const char* jobz, const char* uplo, const BlasInt* n,
-                           float* a, const BlasInt* lda, float* wr, float* wi,
-			   float* vl, const BlasInt* ldvl, float* vr, const BlasInt* ldvr,
-                           float* work, const BlasInt* lwork, BlasInt* info);
-    void FC_GLOBAL(dgeev,
-                   DGEEV)(const char* jobz, const char* uplo, const BlasInt* n,
-                           double* a, const BlasInt* lda, double* wr, double* wi,
-			   double* vl, const BlasInt* ldvl, double *vr, const BlasInt* ldvr,
-                           double* work, const BlasInt* lwork, BlasInt* info);
+    void FC_GLOBAL(sgeev, SGEEV)(const char* jobz, const char* uplo,
+                                 const BlasInt* n, float* a, const BlasInt* lda,
+                                 float* wr, float* wi, float* vl,
+                                 const BlasInt* ldvl, float* vr,
+                                 const BlasInt* ldvr, float* work,
+                                 const BlasInt* lwork, BlasInt* info);
+    void FC_GLOBAL(dgeev, DGEEV)(const char* jobz, const char* uplo,
+                                 const BlasInt* n, double* a,
+                                 const BlasInt* lda, double* wr, double* wi,
+                                 double* vl, const BlasInt* ldvl, double* vr,
+                                 const BlasInt* ldvr, double* work,
+                                 const BlasInt* lwork, BlasInt* info);
     void FC_GLOBAL(cgeev,
                    CGEEV)(const char* jobz, const char* uplo, const BlasInt* n,
-                           scomplex* a, const BlasInt* lda, scomplex* w,
-			   scomplex *vl, const BlasInt* ldvl, scomplex *vr, const BlasInt* ldvr,
-                           scomplex* work, const BlasInt* lwork, float* rwork, BlasInt* info);
+                          scomplex* a, const BlasInt* lda, scomplex* w,
+                          scomplex* vl, const BlasInt* ldvl, scomplex* vr,
+                          const BlasInt* ldvr, scomplex* work,
+                          const BlasInt* lwork, float* rwork, BlasInt* info);
     void FC_GLOBAL(zgeev,
                    ZGEEV)(const char* jobz, const char* uplo, const BlasInt* n,
-                           dcomplex* a, const BlasInt* lda, dcomplex* w,
-			   dcomplex *vl, const BlasInt* ldvl, dcomplex *vr, const BlasInt* ldvr,
-                           dcomplex* work, const BlasInt* lwork, double* rwork, BlasInt* info);
+                          dcomplex* a, const BlasInt* lda, dcomplex* w,
+                          dcomplex* vl, const BlasInt* ldvl, dcomplex* vr,
+                          const BlasInt* ldvr, dcomplex* work,
+                          const BlasInt* lwork, double* rwork, BlasInt* info);
 
     // xGESVD
     void FC_GLOBAL(sgesvd, SGESVD)(const char* jobu, const char* jobvt,
@@ -179,9 +183,7 @@ extern "C"
                                    dcomplex* work, const BlasInt* lwork,
                                    double* rwork, BlasInt* info);
 
-                           
-                                                      
 } // end of extern "C"
-} //end of namespace lapackpp
-} //end of namespace linalg   
-} //end of namespace chase
+} // end of namespace lapackpp
+} // end of namespace linalg
+} // end of namespace chase

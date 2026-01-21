@@ -6,10 +6,10 @@
 
 #include <complex.h>
 #include <math.h>
+#include <mpi.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <mpi.h>
 
 #include "interface/chase_c_interface.h"
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
@@ -76,7 +76,6 @@ int main(int argc, char** argv)
     double* Lambda = (double*)malloc(sizeof(double) * (nev + nex));
     double _Complex* H =
         (double _Complex*)malloc(sizeof(double _Complex) * m * n);
-
 
     pzchase_init_(&N, &nev, &nex, &m, &n, H, &m, V, Lambda, &dims[0], &dims[1],
                   (char*)"C", &comm, &init);

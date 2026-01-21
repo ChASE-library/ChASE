@@ -4,47 +4,67 @@
 // License is 3-clause BSD:
 // https://github.com/ChASE-library/ChASE
 
-#pragma once 
+#pragma once
 
-#include <complex>
+#include <iostream>  // For std::cerr, std::endl
+
+#include "Impl/chase_gpu/nvtx.hpp"
 #include "algorithm/types.hpp"
+#include <complex>
 #include <cuComplex.h>
 #include <cublas_v2.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <cuda_runtime_api.h>
 #include <cusolverDn.h>
-#include "Impl/chase_gpu/nvtx.hpp"
 
 // Macro to check for cuSOLVER errors
 #define CHECK_CUSOLVER_ERROR(val) checkCusolver((val), #val, __FILE__, __LINE__)
 
 // Function to check cuSOLVER errors
 void checkCusolver(cusolverStatus_t status, const char* const func,
-                   const char* const file, const std::size_t line) {
-    if (status != CUSOLVER_STATUS_SUCCESS) {
-        std::cerr << "cuSOLVER Runtime Error at: " << file << ":" << line << std::endl;
-        switch (status) {
+                   const char* const file, const std::size_t line)
+{
+    if (status != CUSOLVER_STATUS_SUCCESS)
+    {
+        std::cerr << "cuSOLVER Runtime Error at: " << file << ":" << line
+                  << std::endl;
+        switch (status)
+        {
             case CUSOLVER_STATUS_NOT_INITIALIZED:
-                std::cerr << "CUSOLVER_STATUS_NOT_INITIALIZED: The cuSOLVER library was not initialized." << std::endl;
+                std::cerr << "CUSOLVER_STATUS_NOT_INITIALIZED: The cuSOLVER "
+                             "library was not initialized."
+                          << std::endl;
                 break;
             case CUSOLVER_STATUS_ALLOC_FAILED:
-                std::cerr << "CUSOLVER_STATUS_ALLOC_FAILED: Resource allocation failed." << std::endl;
+                std::cerr << "CUSOLVER_STATUS_ALLOC_FAILED: Resource "
+                             "allocation failed."
+                          << std::endl;
                 break;
             case CUSOLVER_STATUS_INVALID_VALUE:
-                std::cerr << "CUSOLVER_STATUS_INVALID_VALUE: An invalid value was encountered." << std::endl;
+                std::cerr << "CUSOLVER_STATUS_INVALID_VALUE: An invalid value "
+                             "was encountered."
+                          << std::endl;
                 break;
             case CUSOLVER_STATUS_ARCH_MISMATCH:
-                std::cerr << "CUSOLVER_STATUS_ARCH_MISMATCH: The device architecture is not supported." << std::endl;
+                std::cerr << "CUSOLVER_STATUS_ARCH_MISMATCH: The device "
+                             "architecture is not supported."
+                          << std::endl;
                 break;
             case CUSOLVER_STATUS_EXECUTION_FAILED:
-                std::cerr << "CUSOLVER_STATUS_EXECUTION_FAILED: The execution failed." << std::endl;
+                std::cerr
+                    << "CUSOLVER_STATUS_EXECUTION_FAILED: The execution failed."
+                    << std::endl;
                 break;
             case CUSOLVER_STATUS_INTERNAL_ERROR:
-                std::cerr << "CUSOLVER_STATUS_INTERNAL_ERROR: An internal error occurred." << std::endl;
+                std::cerr << "CUSOLVER_STATUS_INTERNAL_ERROR: An internal "
+                             "error occurred."
+                          << std::endl;
                 break;
             case CUSOLVER_STATUS_MATRIX_TYPE_NOT_SUPPORTED:
-                std::cerr << "CUSOLVER_STATUS_MATRIX_TYPE_NOT_SUPPORTED: The matrix type is not supported." << std::endl;
+                std::cerr << "CUSOLVER_STATUS_MATRIX_TYPE_NOT_SUPPORTED: The "
+                             "matrix type is not supported."
+                          << std::endl;
                 break;
             default:
                 std::cerr << "Unknown cuSOLVER error." << std::endl;
@@ -57,18 +77,23 @@ void checkCusolver(cusolverStatus_t status, const char* const func,
 
 /**
  * @page cusolverpp_namespace chase::linalg::cusolverpp Namespace
- * @brief The namespace `chase::linalg::cusolverpp` contains a templated C++ interface to the cuSOLVER library.
+ * @brief The namespace `chase::linalg::cusolverpp` contains a templated C++
+ * interface to the cuSOLVER library.
  *
- * This namespace contains templated functions that interface with the cuSOLVER library to provide efficient linear algebra and decomposition routines on GPUs.
- * The functions are templated to work with data types such as `float`, `double`, and `std::complex`, enabling efficient numerical computations in scientific applications.
+ * This namespace contains templated functions that interface with the cuSOLVER
+ * library to provide efficient linear algebra and decomposition routines on
+ * GPUs. The functions are templated to work with data types such as `float`,
+ * `double`, and `std::complex`, enabling efficient numerical computations in
+ * scientific applications.
  */
 
 /**
  * @defgroup cuSolverFunctions cuSOLVER Routines
  * @brief Template functions that interface with cuSOLVER routines.
- * 
- * These functions provide common matrix decomposition and eigenvalue routines such as QR factorizations, Cholesky factorizations, and eigenvalue decompositions.
- * They support operations on both real and complex matrices.
+ *
+ * These functions provide common matrix decomposition and eigenvalue routines
+ * such as QR factorizations, Cholesky factorizations, and eigenvalue
+ * decompositions. They support operations on both real and complex matrices.
  */
 
 namespace chase
@@ -79,8 +104,9 @@ namespace cusolverpp
 {
 /**
  * @ingroup cuSolverFunctions
- * @brief Computes the workspace size for QR factorization of a general m-by-n matrix (single-precision).
- * 
+ * @brief Computes the workspace size for QR factorization of a general m-by-n
+ * matrix (single-precision).
+ *
  * @param handle cuSolver handle
  * @param m Number of rows of the matrix A
  * @param n Number of columns of the matrix A
@@ -89,8 +115,9 @@ namespace cusolverpp
  * @param Lwork Pointer to the workspace size (output)
  * @return cusolverStatus_t Status of the cuSolver routine
  */
-cusolverStatus_t cusolverDnTgeqrf_bufferSize(cusolverDnHandle_t handle, std::size_t m,
-                                             std::size_t n, float* A, std::size_t lda,
+cusolverStatus_t cusolverDnTgeqrf_bufferSize(cusolverDnHandle_t handle,
+                                             std::size_t m, std::size_t n,
+                                             float* A, std::size_t lda,
                                              int* Lwork)
 {
     SCOPED_NVTX_RANGE();
@@ -98,8 +125,9 @@ cusolverStatus_t cusolverDnTgeqrf_bufferSize(cusolverDnHandle_t handle, std::siz
 }
 /**
  * @ingroup cuSolverFunctions
- * @brief Computes the workspace size for QR factorization of a general m-by-n matrix (single-precision).
- * 
+ * @brief Computes the workspace size for QR factorization of a general m-by-n
+ * matrix (single-precision).
+ *
  * @param handle cuSolver handle
  * @param m Number of rows of the matrix A
  * @param n Number of columns of the matrix A
@@ -108,8 +136,9 @@ cusolverStatus_t cusolverDnTgeqrf_bufferSize(cusolverDnHandle_t handle, std::siz
  * @param Lwork Pointer to the workspace size (output)
  * @return cusolverStatus_t Status of the cuSolver routine
  */
-cusolverStatus_t cusolverDnTgeqrf_bufferSize(cusolverDnHandle_t handle, std::size_t m,
-                                             std::size_t n, double* A, std::size_t lda,
+cusolverStatus_t cusolverDnTgeqrf_bufferSize(cusolverDnHandle_t handle,
+                                             std::size_t m, std::size_t n,
+                                             double* A, std::size_t lda,
                                              int* Lwork)
 {
     SCOPED_NVTX_RANGE();
@@ -117,8 +146,9 @@ cusolverStatus_t cusolverDnTgeqrf_bufferSize(cusolverDnHandle_t handle, std::siz
 }
 /**
  * @ingroup cuSolverFunctions
- * @brief Computes the workspace size for QR factorization of a general m-by-n matrix (single-precision).
- * 
+ * @brief Computes the workspace size for QR factorization of a general m-by-n
+ * matrix (single-precision).
+ *
  * @param handle cuSolver handle
  * @param m Number of rows of the matrix A
  * @param n Number of columns of the matrix A
@@ -127,8 +157,9 @@ cusolverStatus_t cusolverDnTgeqrf_bufferSize(cusolverDnHandle_t handle, std::siz
  * @param Lwork Pointer to the workspace size (output)
  * @return cusolverStatus_t Status of the cuSolver routine
  */
-cusolverStatus_t cusolverDnTgeqrf_bufferSize(cusolverDnHandle_t handle, std::size_t m,
-                                             std::size_t n, std::complex<float>* A,
+cusolverStatus_t cusolverDnTgeqrf_bufferSize(cusolverDnHandle_t handle,
+                                             std::size_t m, std::size_t n,
+                                             std::complex<float>* A,
                                              std::size_t lda, int* Lwork)
 {
     SCOPED_NVTX_RANGE();
@@ -137,8 +168,9 @@ cusolverStatus_t cusolverDnTgeqrf_bufferSize(cusolverDnHandle_t handle, std::siz
 }
 /**
  * @ingroup cuSolverFunctions
- * @brief Computes the workspace size for QR factorization of a general m-by-n matrix (single-precision).
- * 
+ * @brief Computes the workspace size for QR factorization of a general m-by-n
+ * matrix (single-precision).
+ *
  * @param handle cuSolver handle
  * @param m Number of rows of the matrix A
  * @param n Number of columns of the matrix A
@@ -147,8 +179,9 @@ cusolverStatus_t cusolverDnTgeqrf_bufferSize(cusolverDnHandle_t handle, std::siz
  * @param Lwork Pointer to the workspace size (output)
  * @return cusolverStatus_t Status of the cuSolver routine
  */
-cusolverStatus_t cusolverDnTgeqrf_bufferSize(cusolverDnHandle_t handle, std::size_t m,
-                                             std::size_t n, std::complex<double>* A,
+cusolverStatus_t cusolverDnTgeqrf_bufferSize(cusolverDnHandle_t handle,
+                                             std::size_t m, std::size_t n,
+                                             std::complex<double>* A,
                                              std::size_t lda, int* Lwork)
 {
     SCOPED_NVTX_RANGE();
@@ -157,22 +190,25 @@ cusolverStatus_t cusolverDnTgeqrf_bufferSize(cusolverDnHandle_t handle, std::siz
 }
 /**
  * @ingroup cuSolverFunctions
- * @brief Performs QR factorization on a general m-by-n matrix (single-precision).
- * 
+ * @brief Performs QR factorization on a general m-by-n matrix
+ * (single-precision).
+ *
  * @param handle cuSolver handle
  * @param m Number of rows of the matrix A
  * @param n Number of columns of the matrix A
  * @param A Pointer to the matrix elements
  * @param lda Leading dimension of the matrix A
- * @param TAU Pointer to the output vector of scalar factors of the elementary reflectors
+ * @param TAU Pointer to the output vector of scalar factors of the elementary
+ * reflectors
  * @param Workspace Pointer to the workspace array
  * @param Lwork Size of the workspace array
  * @param devInfo Pointer to the device-side status code
  * @return cusolverStatus_t Status of the cuSolver routine
  */
-cusolverStatus_t cusolverDnTgeqrf(cusolverDnHandle_t handle, std::size_t m, std::size_t n,
-                                  float* A, std::size_t lda, float* TAU,
-                                  float* Workspace, std::size_t Lwork, int* devInfo)
+cusolverStatus_t cusolverDnTgeqrf(cusolverDnHandle_t handle, std::size_t m,
+                                  std::size_t n, float* A, std::size_t lda,
+                                  float* TAU, float* Workspace,
+                                  std::size_t Lwork, int* devInfo)
 {
     SCOPED_NVTX_RANGE();
     return cusolverDnSgeqrf(handle, m, n, A, lda, TAU, Workspace, Lwork,
@@ -180,22 +216,25 @@ cusolverStatus_t cusolverDnTgeqrf(cusolverDnHandle_t handle, std::size_t m, std:
 }
 /**
  * @ingroup cuSolverFunctions
- * @brief Performs QR factorization on a general m-by-n matrix (single-precision).
- * 
+ * @brief Performs QR factorization on a general m-by-n matrix
+ * (single-precision).
+ *
  * @param handle cuSolver handle
  * @param m Number of rows of the matrix A
  * @param n Number of columns of the matrix A
  * @param A Pointer to the matrix elements
  * @param lda Leading dimension of the matrix A
- * @param TAU Pointer to the output vector of scalar factors of the elementary reflectors
+ * @param TAU Pointer to the output vector of scalar factors of the elementary
+ * reflectors
  * @param Workspace Pointer to the workspace array
  * @param Lwork Size of the workspace array
  * @param devInfo Pointer to the device-side status code
  * @return cusolverStatus_t Status of the cuSolver routine
  */
-cusolverStatus_t cusolverDnTgeqrf(cusolverDnHandle_t handle, std::size_t m, std::size_t n,
-                                  double* A, std::size_t lda, double* TAU,
-                                  double* Workspace, std::size_t Lwork, int* devInfo)
+cusolverStatus_t cusolverDnTgeqrf(cusolverDnHandle_t handle, std::size_t m,
+                                  std::size_t n, double* A, std::size_t lda,
+                                  double* TAU, double* Workspace,
+                                  std::size_t Lwork, int* devInfo)
 {
     SCOPED_NVTX_RANGE();
     return cusolverDnDgeqrf(handle, m, n, A, lda, TAU, Workspace, Lwork,
@@ -203,24 +242,26 @@ cusolverStatus_t cusolverDnTgeqrf(cusolverDnHandle_t handle, std::size_t m, std:
 }
 /**
  * @ingroup cuSolverFunctions
- * @brief Performs QR factorization on a general m-by-n matrix (single-precision).
- * 
+ * @brief Performs QR factorization on a general m-by-n matrix
+ * (single-precision).
+ *
  * @param handle cuSolver handle
  * @param m Number of rows of the matrix A
  * @param n Number of columns of the matrix A
  * @param A Pointer to the matrix elements
  * @param lda Leading dimension of the matrix A
- * @param TAU Pointer to the output vector of scalar factors of the elementary reflectors
+ * @param TAU Pointer to the output vector of scalar factors of the elementary
+ * reflectors
  * @param Workspace Pointer to the workspace array
  * @param Lwork Size of the workspace array
  * @param devInfo Pointer to the device-side status code
  * @return cusolverStatus_t Status of the cuSolver routine
  */
-cusolverStatus_t cusolverDnTgeqrf(cusolverDnHandle_t handle, std::size_t m, std::size_t n,
-                                  std::complex<float>* A, std::size_t lda,
-                                  std::complex<float>* TAU,
-                                  std::complex<float>* Workspace, std::size_t Lwork,
-                                  int* devInfo)
+cusolverStatus_t cusolverDnTgeqrf(cusolverDnHandle_t handle, std::size_t m,
+                                  std::size_t n, std::complex<float>* A,
+                                  std::size_t lda, std::complex<float>* TAU,
+                                  std::complex<float>* Workspace,
+                                  std::size_t Lwork, int* devInfo)
 {
     SCOPED_NVTX_RANGE();
     return cusolverDnCgeqrf(handle, m, n, reinterpret_cast<cuComplex*>(A), lda,
@@ -230,24 +271,26 @@ cusolverStatus_t cusolverDnTgeqrf(cusolverDnHandle_t handle, std::size_t m, std:
 }
 /**
  * @ingroup cuSolverFunctions
- * @brief Performs QR factorization on a general m-by-n matrix (single-precision).
- * 
+ * @brief Performs QR factorization on a general m-by-n matrix
+ * (single-precision).
+ *
  * @param handle cuSolver handle
  * @param m Number of rows of the matrix A
  * @param n Number of columns of the matrix A
  * @param A Pointer to the matrix elements
  * @param lda Leading dimension of the matrix A
- * @param TAU Pointer to the output vector of scalar factors of the elementary reflectors
+ * @param TAU Pointer to the output vector of scalar factors of the elementary
+ * reflectors
  * @param Workspace Pointer to the workspace array
  * @param Lwork Size of the workspace array
  * @param devInfo Pointer to the device-side status code
  * @return cusolverStatus_t Status of the cuSolver routine
  */
-cusolverStatus_t cusolverDnTgeqrf(cusolverDnHandle_t handle, std::size_t m, std::size_t n,
-                                  std::complex<double>* A, std::size_t lda,
-                                  std::complex<double>* TAU,
-                                  std::complex<double>* Workspace, std::size_t Lwork,
-                                  int* devInfo)
+cusolverStatus_t cusolverDnTgeqrf(cusolverDnHandle_t handle, std::size_t m,
+                                  std::size_t n, std::complex<double>* A,
+                                  std::size_t lda, std::complex<double>* TAU,
+                                  std::complex<double>* Workspace,
+                                  std::size_t Lwork, int* devInfo)
 {
     SCOPED_NVTX_RANGE();
     return cusolverDnZgeqrf(handle, m, n, reinterpret_cast<cuDoubleComplex*>(A),
@@ -258,26 +301,33 @@ cusolverStatus_t cusolverDnTgeqrf(cusolverDnHandle_t handle, std::size_t m, std:
 
 /**
  * @ingroup cuSolverFunctions
- * @brief Computes the optimal buffer size for generating the unitary matrix Q 
- *        from the QR factorization of a matrix with single-precision floating-point values.
- * 
- * This function calculates the workspace size required for the `cusolverDnSorgqr` 
- * function, which generates the unitary matrix Q from the QR decomposition.
- * 
+ * @brief Computes the optimal buffer size for generating the unitary matrix Q
+ *        from the QR factorization of a matrix with single-precision
+ * floating-point values.
+ *
+ * This function calculates the workspace size required for the
+ * `cusolverDnSorgqr` function, which generates the unitary matrix Q from the QR
+ * decomposition.
+ *
  * @param handle [in] cuSOLVER handle to the context.
  * @param m [in] The number of rows in the matrix A.
  * @param n [in] The number of columns in the matrix A.
- * @param k [in] The number of elementary reflectors, or the rank of the matrix A.
+ * @param k [in] The number of elementary reflectors, or the rank of the matrix
+ * A.
  * @param A [in] Pointer to the matrix A, the input matrix.
  * @param lda [in] Leading dimension of the matrix A.
- * @param tau [in] Array of size k containing the scalar factors of the elementary reflectors.
- * @param lwork [out] Pointer to an integer where the size of the workspace is returned.
- * 
+ * @param tau [in] Array of size k containing the scalar factors of the
+ * elementary reflectors.
+ * @param lwork [out] Pointer to an integer where the size of the workspace is
+ * returned.
+ *
  * @return cusolverStatus_t Returns the status of the operation.
  */
-cusolverStatus_t cusolverDnTgqr_bufferSize(cusolverDnHandle_t handle, std::size_t m,
-                                           std::size_t n, std::size_t k, float* A, std::size_t lda,
-                                           float* tau, int* lwork)
+cusolverStatus_t cusolverDnTgqr_bufferSize(cusolverDnHandle_t handle,
+                                           std::size_t m, std::size_t n,
+                                           std::size_t k, float* A,
+                                           std::size_t lda, float* tau,
+                                           int* lwork)
 {
     SCOPED_NVTX_RANGE();
     return cusolverDnSorgqr_bufferSize(handle, m, n, k, A, lda, tau, lwork);
@@ -285,26 +335,33 @@ cusolverStatus_t cusolverDnTgqr_bufferSize(cusolverDnHandle_t handle, std::size_
 
 /**
  * @ingroup cuSolverFunctions
- * @brief Computes the optimal buffer size for generating the unitary matrix Q 
- *        from the QR factorization of a matrix with single-precision floating-point values.
- * 
- * This function calculates the workspace size required for the `cusolverDnSorgqr` 
- * function, which generates the unitary matrix Q from the QR decomposition.
- * 
+ * @brief Computes the optimal buffer size for generating the unitary matrix Q
+ *        from the QR factorization of a matrix with single-precision
+ * floating-point values.
+ *
+ * This function calculates the workspace size required for the
+ * `cusolverDnSorgqr` function, which generates the unitary matrix Q from the QR
+ * decomposition.
+ *
  * @param handle [in] cuSOLVER handle to the context.
  * @param m [in] The number of rows in the matrix A.
  * @param n [in] The number of columns in the matrix A.
- * @param k [in] The number of elementary reflectors, or the rank of the matrix A.
+ * @param k [in] The number of elementary reflectors, or the rank of the matrix
+ * A.
  * @param A [in] Pointer to the matrix A, the input matrix.
  * @param lda [in] Leading dimension of the matrix A.
- * @param tau [in] Array of size k containing the scalar factors of the elementary reflectors.
- * @param lwork [out] Pointer to an integer where the size of the workspace is returned.
- * 
+ * @param tau [in] Array of size k containing the scalar factors of the
+ * elementary reflectors.
+ * @param lwork [out] Pointer to an integer where the size of the workspace is
+ * returned.
+ *
  * @return cusolverStatus_t Returns the status of the operation.
  */
-cusolverStatus_t cusolverDnTgqr_bufferSize(cusolverDnHandle_t handle, std::size_t m,
-                                           std::size_t n, std::size_t k, double* A, std::size_t lda,
-                                           double* tau, int* lwork)
+cusolverStatus_t cusolverDnTgqr_bufferSize(cusolverDnHandle_t handle,
+                                           std::size_t m, std::size_t n,
+                                           std::size_t k, double* A,
+                                           std::size_t lda, double* tau,
+                                           int* lwork)
 {
     SCOPED_NVTX_RANGE();
     return cusolverDnDorgqr_bufferSize(handle, m, n, k, A, lda, tau, lwork);
@@ -312,27 +369,32 @@ cusolverStatus_t cusolverDnTgqr_bufferSize(cusolverDnHandle_t handle, std::size_
 
 /**
  * @ingroup cuSolverFunctions
- * @brief Computes the optimal buffer size for generating the unitary matrix Q 
- *        from the QR factorization of a matrix with single-precision floating-point values.
- * 
- * This function calculates the workspace size required for the `cusolverDnSorgqr` 
- * function, which generates the unitary matrix Q from the QR decomposition.
- * 
+ * @brief Computes the optimal buffer size for generating the unitary matrix Q
+ *        from the QR factorization of a matrix with single-precision
+ * floating-point values.
+ *
+ * This function calculates the workspace size required for the
+ * `cusolverDnSorgqr` function, which generates the unitary matrix Q from the QR
+ * decomposition.
+ *
  * @param handle [in] cuSOLVER handle to the context.
  * @param m [in] The number of rows in the matrix A.
  * @param n [in] The number of columns in the matrix A.
- * @param k [in] The number of elementary reflectors, or the rank of the matrix A.
+ * @param k [in] The number of elementary reflectors, or the rank of the matrix
+ * A.
  * @param A [in] Pointer to the matrix A, the input matrix.
  * @param lda [in] Leading dimension of the matrix A.
- * @param tau [in] Array of size k containing the scalar factors of the elementary reflectors.
- * @param lwork [out] Pointer to an integer where the size of the workspace is returned.
- * 
+ * @param tau [in] Array of size k containing the scalar factors of the
+ * elementary reflectors.
+ * @param lwork [out] Pointer to an integer where the size of the workspace is
+ * returned.
+ *
  * @return cusolverStatus_t Returns the status of the operation.
  */
-cusolverStatus_t cusolverDnTgqr_bufferSize(cusolverDnHandle_t handle, std::size_t m,
-                                           std::size_t n, std::size_t k, std::complex<float>* A,
-                                           std::size_t lda, std::complex<float>* tau,
-                                           int* lwork)
+cusolverStatus_t
+cusolverDnTgqr_bufferSize(cusolverDnHandle_t handle, std::size_t m,
+                          std::size_t n, std::size_t k, std::complex<float>* A,
+                          std::size_t lda, std::complex<float>* tau, int* lwork)
 {
     SCOPED_NVTX_RANGE();
     return cusolverDnCungqr_bufferSize(
@@ -342,28 +404,33 @@ cusolverStatus_t cusolverDnTgqr_bufferSize(cusolverDnHandle_t handle, std::size_
 
 /**
  * @ingroup cuSolverFunctions
- * @brief Computes the optimal buffer size for generating the unitary matrix Q 
- *        from the QR factorization of a matrix with single-precision floating-point values.
- * 
- * This function calculates the workspace size required for the `cusolverDnSorgqr` 
- * function, which generates the unitary matrix Q from the QR decomposition.
- * 
+ * @brief Computes the optimal buffer size for generating the unitary matrix Q
+ *        from the QR factorization of a matrix with single-precision
+ * floating-point values.
+ *
+ * This function calculates the workspace size required for the
+ * `cusolverDnSorgqr` function, which generates the unitary matrix Q from the QR
+ * decomposition.
+ *
  * @param handle [in] cuSOLVER handle to the context.
  * @param m [in] The number of rows in the matrix A.
  * @param n [in] The number of columns in the matrix A.
- * @param k [in] The number of elementary reflectors, or the rank of the matrix A.
+ * @param k [in] The number of elementary reflectors, or the rank of the matrix
+ * A.
  * @param A [in] Pointer to the matrix A, the input matrix.
  * @param lda [in] Leading dimension of the matrix A.
- * @param tau [in] Array of size k containing the scalar factors of the elementary reflectors.
- * @param lwork [out] Pointer to an integer where the size of the workspace is returned.
- * 
+ * @param tau [in] Array of size k containing the scalar factors of the
+ * elementary reflectors.
+ * @param lwork [out] Pointer to an integer where the size of the workspace is
+ * returned.
+ *
  * @return cusolverStatus_t Returns the status of the operation.
  */
-cusolverStatus_t cusolverDnTgqr_bufferSize(cusolverDnHandle_t handle, std::size_t m,
-                                           std::size_t n, std::size_t k,
-                                           std::complex<double>* A, std::size_t lda,
-                                           std::complex<double>* tau,
-                                           int* lwork)
+cusolverStatus_t
+cusolverDnTgqr_bufferSize(cusolverDnHandle_t handle, std::size_t m,
+                          std::size_t n, std::size_t k, std::complex<double>* A,
+                          std::size_t lda, std::complex<double>* tau,
+                          int* lwork)
 {
     SCOPED_NVTX_RANGE();
     return cusolverDnZungqr_bufferSize(
@@ -373,26 +440,32 @@ cusolverStatus_t cusolverDnTgqr_bufferSize(cusolverDnHandle_t handle, std::size_
 
 /**
  * @ingroup cuSolverFunctions
- * @brief Generates the unitary matrix Q from the QR factorization with single-precision floating-point values.
- * 
- * This function uses the `cusolverDnSorgqr` function to generate the unitary matrix Q from 
- * the QR decomposition of matrix A.
- * 
+ * @brief Generates the unitary matrix Q from the QR factorization with
+ * single-precision floating-point values.
+ *
+ * This function uses the `cusolverDnSorgqr` function to generate the unitary
+ * matrix Q from the QR decomposition of matrix A.
+ *
  * @param handle [in] cuSOLVER handle to the context.
  * @param m [in] The number of rows in the matrix A.
  * @param n [in] The number of columns in the matrix A.
- * @param k [in] The number of elementary reflectors, or the rank of the matrix A.
- * @param A [in,out] Pointer to the matrix A, which will be overwritten with the matrix Q.
+ * @param k [in] The number of elementary reflectors, or the rank of the matrix
+ * A.
+ * @param A [in,out] Pointer to the matrix A, which will be overwritten with the
+ * matrix Q.
  * @param lda [in] Leading dimension of the matrix A.
- * @param tau [in] Array of size k containing the scalar factors of the elementary reflectors.
+ * @param tau [in] Array of size k containing the scalar factors of the
+ * elementary reflectors.
  * @param work [in] Pointer to the workspace array.
  * @param lwork [in] The size of the workspace.
- * @param devInfo [out] Pointer to an integer that returns the status of the operation.
- * 
+ * @param devInfo [out] Pointer to an integer that returns the status of the
+ * operation.
+ *
  * @return cusolverStatus_t Returns the status of the operation.
  */
-cusolverStatus_t cusolverDnTgqr(cusolverDnHandle_t handle, std::size_t m, std::size_t n, std::size_t k,
-                                float* A, std::size_t lda, float* tau, float* work,
+cusolverStatus_t cusolverDnTgqr(cusolverDnHandle_t handle, std::size_t m,
+                                std::size_t n, std::size_t k, float* A,
+                                std::size_t lda, float* tau, float* work,
                                 std::size_t lwork, int* devInfo)
 {
     SCOPED_NVTX_RANGE();
@@ -401,26 +474,32 @@ cusolverStatus_t cusolverDnTgqr(cusolverDnHandle_t handle, std::size_t m, std::s
 
 /**
  * @ingroup cuSolverFunctions
- * @brief Generates the unitary matrix Q from the QR factorization with single-precision floating-point values.
- * 
- * This function uses the `cusolverDnSorgqr` function to generate the unitary matrix Q from 
- * the QR decomposition of matrix A.
- * 
+ * @brief Generates the unitary matrix Q from the QR factorization with
+ * single-precision floating-point values.
+ *
+ * This function uses the `cusolverDnSorgqr` function to generate the unitary
+ * matrix Q from the QR decomposition of matrix A.
+ *
  * @param handle [in] cuSOLVER handle to the context.
  * @param m [in] The number of rows in the matrix A.
  * @param n [in] The number of columns in the matrix A.
- * @param k [in] The number of elementary reflectors, or the rank of the matrix A.
- * @param A [in,out] Pointer to the matrix A, which will be overwritten with the matrix Q.
+ * @param k [in] The number of elementary reflectors, or the rank of the matrix
+ * A.
+ * @param A [in,out] Pointer to the matrix A, which will be overwritten with the
+ * matrix Q.
  * @param lda [in] Leading dimension of the matrix A.
- * @param tau [in] Array of size k containing the scalar factors of the elementary reflectors.
+ * @param tau [in] Array of size k containing the scalar factors of the
+ * elementary reflectors.
  * @param work [in] Pointer to the workspace array.
  * @param lwork [in] The size of the workspace.
- * @param devInfo [out] Pointer to an integer that returns the status of the operation.
- * 
+ * @param devInfo [out] Pointer to an integer that returns the status of the
+ * operation.
+ *
  * @return cusolverStatus_t Returns the status of the operation.
  */
-cusolverStatus_t cusolverDnTgqr(cusolverDnHandle_t handle, std::size_t m, std::size_t n, std::size_t k,
-                                double* A, std::size_t lda, double* tau, double* work,
+cusolverStatus_t cusolverDnTgqr(cusolverDnHandle_t handle, std::size_t m,
+                                std::size_t n, std::size_t k, double* A,
+                                std::size_t lda, double* tau, double* work,
                                 std::size_t lwork, int* devInfo)
 {
     SCOPED_NVTX_RANGE();
@@ -429,25 +508,31 @@ cusolverStatus_t cusolverDnTgqr(cusolverDnHandle_t handle, std::size_t m, std::s
 
 /**
  * @ingroup cuSolverFunctions
- * @brief Generates the unitary matrix Q from the QR factorization with single-precision floating-point values.
- * 
- * This function uses the `cusolverDnSorgqr` function to generate the unitary matrix Q from 
- * the QR decomposition of matrix A.
- * 
+ * @brief Generates the unitary matrix Q from the QR factorization with
+ * single-precision floating-point values.
+ *
+ * This function uses the `cusolverDnSorgqr` function to generate the unitary
+ * matrix Q from the QR decomposition of matrix A.
+ *
  * @param handle [in] cuSOLVER handle to the context.
  * @param m [in] The number of rows in the matrix A.
  * @param n [in] The number of columns in the matrix A.
- * @param k [in] The number of elementary reflectors, or the rank of the matrix A.
- * @param A [in,out] Pointer to the matrix A, which will be overwritten with the matrix Q.
+ * @param k [in] The number of elementary reflectors, or the rank of the matrix
+ * A.
+ * @param A [in,out] Pointer to the matrix A, which will be overwritten with the
+ * matrix Q.
  * @param lda [in] Leading dimension of the matrix A.
- * @param tau [in] Array of size k containing the scalar factors of the elementary reflectors.
+ * @param tau [in] Array of size k containing the scalar factors of the
+ * elementary reflectors.
  * @param work [in] Pointer to the workspace array.
  * @param lwork [in] The size of the workspace.
- * @param devInfo [out] Pointer to an integer that returns the status of the operation.
- * 
+ * @param devInfo [out] Pointer to an integer that returns the status of the
+ * operation.
+ *
  * @return cusolverStatus_t Returns the status of the operation.
  */
-cusolverStatus_t cusolverDnTgqr(cusolverDnHandle_t handle, std::size_t m, std::size_t n, std::size_t k,
+cusolverStatus_t cusolverDnTgqr(cusolverDnHandle_t handle, std::size_t m,
+                                std::size_t n, std::size_t k,
                                 std::complex<float>* A, std::size_t lda,
                                 std::complex<float>* tau,
                                 std::complex<float>* work, std::size_t lwork,
@@ -461,25 +546,31 @@ cusolverStatus_t cusolverDnTgqr(cusolverDnHandle_t handle, std::size_t m, std::s
 
 /**
  * @ingroup cuSolverFunctions
- * @brief Generates the unitary matrix Q from the QR factorization with single-precision floating-point values.
- * 
- * This function uses the `cusolverDnSorgqr` function to generate the unitary matrix Q from 
- * the QR decomposition of matrix A.
- * 
+ * @brief Generates the unitary matrix Q from the QR factorization with
+ * single-precision floating-point values.
+ *
+ * This function uses the `cusolverDnSorgqr` function to generate the unitary
+ * matrix Q from the QR decomposition of matrix A.
+ *
  * @param handle [in] cuSOLVER handle to the context.
  * @param m [in] The number of rows in the matrix A.
  * @param n [in] The number of columns in the matrix A.
- * @param k [in] The number of elementary reflectors, or the rank of the matrix A.
- * @param A [in,out] Pointer to the matrix A, which will be overwritten with the matrix Q.
+ * @param k [in] The number of elementary reflectors, or the rank of the matrix
+ * A.
+ * @param A [in,out] Pointer to the matrix A, which will be overwritten with the
+ * matrix Q.
  * @param lda [in] Leading dimension of the matrix A.
- * @param tau [in] Array of size k containing the scalar factors of the elementary reflectors.
+ * @param tau [in] Array of size k containing the scalar factors of the
+ * elementary reflectors.
  * @param work [in] Pointer to the workspace array.
  * @param lwork [in] The size of the workspace.
- * @param devInfo [out] Pointer to an integer that returns the status of the operation.
- * 
+ * @param devInfo [out] Pointer to an integer that returns the status of the
+ * operation.
+ *
  * @return cusolverStatus_t Returns the status of the operation.
  */
-cusolverStatus_t cusolverDnTgqr(cusolverDnHandle_t handle, std::size_t m, std::size_t n, std::size_t k,
+cusolverStatus_t cusolverDnTgqr(cusolverDnHandle_t handle, std::size_t m,
+                                std::size_t n, std::size_t k,
                                 std::complex<double>* A, std::size_t lda,
                                 std::complex<double>* tau,
                                 std::complex<double>* work, std::size_t lwork,
@@ -494,20 +585,24 @@ cusolverStatus_t cusolverDnTgqr(cusolverDnHandle_t handle, std::size_t m, std::s
 
 /**
  * @ingroup cuSolverFunctions
- * @brief Get the buffer size for general real precision eigenvalue/eigenvector decomposition.
+ * @brief Get the buffer size for general real precision eigenvalue/eigenvector
+ * decomposition.
  *
- * This function queries the required buffer size for performing an eigenvalue decomposition of a
- * real symmetric matrix A, storing the eigenvalues in W, and the eigenvectors in Q (if requested),
- * using the cuSolver library with double precision.
+ * This function queries the required buffer size for performing an eigenvalue
+ * decomposition of a real symmetric matrix A, storing the eigenvalues in W, and
+ * the eigenvectors in Q (if requested), using the cuSolver library with double
+ * precision.
  *
  * @param handle [in] cuSolver handle.
- * @param jobz [in] Eigenvalue problem mode (whether to compute eigenvectors or not).
+ * @param jobz [in] Eigenvalue problem mode (whether to compute eigenvectors or
+ * not).
  * @param uplo [in] Specifies whether the matrix is upper or lower triangular.
  * @param n [in] The order of the matrix A (number of rows/columns).
  * @param A [in] Pointer to the matrix A.
  * @param lda [in] Leading dimension of matrix A.
  * @param W [out] Pointer to the array for storing eigenvalues.
- * @param lwork [out] Pointer to the integer value storing the required buffer size.
+ * @param lwork [out] Pointer to the integer value storing the required buffer
+ * size.
  * @return cusolverStatus_t status of the function call.
  *//*
 cusolverStatus_t cusolverDnTgeev_bufferSize(cusolverDnHandle_t handle,
@@ -526,27 +621,30 @@ cusolverStatus_t cusolverDnTgeev_bufferSize(cusolverDnHandle_t handle,
 */
 /**
  * @ingroup cuSolverFunctions
- * @brief Get the buffer size for real double precision eigenvalue/eigenvector decomposition.
+ * @brief Get the buffer size for real double precision eigenvalue/eigenvector
+ * decomposition.
  *
- * This function queries the required buffer size for performing an eigenvalue decomposition of a
- * real symmetric matrix A, storing the eigenvalues in W, and the eigenvectors in Q (if requested),
- * using the cuSolver library with double precision.
+ * This function queries the required buffer size for performing an eigenvalue
+ * decomposition of a real symmetric matrix A, storing the eigenvalues in W, and
+ * the eigenvectors in Q (if requested), using the cuSolver library with double
+ * precision.
  *
  * @param handle [in] cuSolver handle.
- * @param jobz [in] Eigenvalue problem mode (whether to compute eigenvectors or not).
+ * @param jobz [in] Eigenvalue problem mode (whether to compute eigenvectors or
+ * not).
  * @param uplo [in] Specifies whether the matrix is upper or lower triangular.
  * @param n [in] The order of the matrix A (number of rows/columns).
  * @param A [in] Pointer to the matrix A.
  * @param lda [in] Leading dimension of matrix A.
  * @param W [out] Pointer to the array for storing eigenvalues.
- * @param lwork [out] Pointer to the integer value storing the required buffer size.
+ * @param lwork [out] Pointer to the integer value storing the required buffer
+ * size.
  * @return cusolverStatus_t status of the function call.
  */
-cusolverStatus_t cusolverDnTheevd_bufferSize(cusolverDnHandle_t handle,
-                                             cusolverEigMode_t jobz,
-                                             cublasFillMode_t uplo, std::size_t n,
-                                             float* A, std::size_t lda, float* W,
-                                             int* lwork)
+cusolverStatus_t
+cusolverDnTheevd_bufferSize(cusolverDnHandle_t handle, cusolverEigMode_t jobz,
+                            cublasFillMode_t uplo, std::size_t n, float* A,
+                            std::size_t lda, float* W, int* lwork)
 {
     SCOPED_NVTX_RANGE();
     return cusolverDnSsyevd_bufferSize(handle, jobz, uplo, n, A, lda, W, lwork);
@@ -554,27 +652,30 @@ cusolverStatus_t cusolverDnTheevd_bufferSize(cusolverDnHandle_t handle,
 
 /**
  * @ingroup cuSolverFunctions
- * @brief Get the buffer size for real double precision eigenvalue/eigenvector decomposition.
+ * @brief Get the buffer size for real double precision eigenvalue/eigenvector
+ * decomposition.
  *
- * This function queries the required buffer size for performing an eigenvalue decomposition of a
- * real symmetric matrix A, storing the eigenvalues in W, and the eigenvectors in Q (if requested),
- * using the cuSolver library with double precision.
+ * This function queries the required buffer size for performing an eigenvalue
+ * decomposition of a real symmetric matrix A, storing the eigenvalues in W, and
+ * the eigenvectors in Q (if requested), using the cuSolver library with double
+ * precision.
  *
  * @param handle [in] cuSolver handle.
- * @param jobz [in] Eigenvalue problem mode (whether to compute eigenvectors or not).
+ * @param jobz [in] Eigenvalue problem mode (whether to compute eigenvectors or
+ * not).
  * @param uplo [in] Specifies whether the matrix is upper or lower triangular.
  * @param n [in] The order of the matrix A (number of rows/columns).
  * @param A [in] Pointer to the matrix A.
  * @param lda [in] Leading dimension of matrix A.
  * @param W [out] Pointer to the array for storing eigenvalues.
- * @param lwork [out] Pointer to the integer value storing the required buffer size.
+ * @param lwork [out] Pointer to the integer value storing the required buffer
+ * size.
  * @return cusolverStatus_t status of the function call.
  */
-cusolverStatus_t cusolverDnTheevd_bufferSize(cusolverDnHandle_t handle,
-                                             cusolverEigMode_t jobz,
-                                             cublasFillMode_t uplo, std::size_t n,
-                                             double* A, std::size_t lda, double* W,
-                                             int* lwork)
+cusolverStatus_t
+cusolverDnTheevd_bufferSize(cusolverDnHandle_t handle, cusolverEigMode_t jobz,
+                            cublasFillMode_t uplo, std::size_t n, double* A,
+                            std::size_t lda, double* W, int* lwork)
 {
     SCOPED_NVTX_RANGE();
     return cusolverDnDsyevd_bufferSize(handle, jobz, uplo, n, A, lda, W, lwork);
@@ -582,27 +683,31 @@ cusolverStatus_t cusolverDnTheevd_bufferSize(cusolverDnHandle_t handle,
 
 /**
  * @ingroup cuSolverFunctions
- * @brief Get the buffer size for real double precision eigenvalue/eigenvector decomposition.
+ * @brief Get the buffer size for real double precision eigenvalue/eigenvector
+ * decomposition.
  *
- * This function queries the required buffer size for performing an eigenvalue decomposition of a
- * real symmetric matrix A, storing the eigenvalues in W, and the eigenvectors in Q (if requested),
- * using the cuSolver library with double precision.
+ * This function queries the required buffer size for performing an eigenvalue
+ * decomposition of a real symmetric matrix A, storing the eigenvalues in W, and
+ * the eigenvectors in Q (if requested), using the cuSolver library with double
+ * precision.
  *
  * @param handle [in] cuSolver handle.
- * @param jobz [in] Eigenvalue problem mode (whether to compute eigenvectors or not).
+ * @param jobz [in] Eigenvalue problem mode (whether to compute eigenvectors or
+ * not).
  * @param uplo [in] Specifies whether the matrix is upper or lower triangular.
  * @param n [in] The order of the matrix A (number of rows/columns).
  * @param A [in] Pointer to the matrix A.
  * @param lda [in] Leading dimension of matrix A.
  * @param W [out] Pointer to the array for storing eigenvalues.
- * @param lwork [out] Pointer to the integer value storing the required buffer size.
+ * @param lwork [out] Pointer to the integer value storing the required buffer
+ * size.
  * @return cusolverStatus_t status of the function call.
  */
-cusolverStatus_t cusolverDnTheevd_bufferSize(cusolverDnHandle_t handle,
-                                             cusolverEigMode_t jobz,
-                                             cublasFillMode_t uplo, std::size_t n,
-                                             std::complex<float>* A, std::size_t lda,
-                                             float* W, int* lwork)
+cusolverStatus_t
+cusolverDnTheevd_bufferSize(cusolverDnHandle_t handle, cusolverEigMode_t jobz,
+                            cublasFillMode_t uplo, std::size_t n,
+                            std::complex<float>* A, std::size_t lda, float* W,
+                            int* lwork)
 {
     SCOPED_NVTX_RANGE();
     return cusolverDnCheevd_bufferSize(
@@ -611,27 +716,31 @@ cusolverStatus_t cusolverDnTheevd_bufferSize(cusolverDnHandle_t handle,
 
 /**
  * @ingroup cuSolverFunctions
- * @brief Get the buffer size for real double precision eigenvalue/eigenvector decomposition.
+ * @brief Get the buffer size for real double precision eigenvalue/eigenvector
+ * decomposition.
  *
- * This function queries the required buffer size for performing an eigenvalue decomposition of a
- * real symmetric matrix A, storing the eigenvalues in W, and the eigenvectors in Q (if requested),
- * using the cuSolver library with double precision.
+ * This function queries the required buffer size for performing an eigenvalue
+ * decomposition of a real symmetric matrix A, storing the eigenvalues in W, and
+ * the eigenvectors in Q (if requested), using the cuSolver library with double
+ * precision.
  *
  * @param handle [in] cuSolver handle.
- * @param jobz [in] Eigenvalue problem mode (whether to compute eigenvectors or not).
+ * @param jobz [in] Eigenvalue problem mode (whether to compute eigenvectors or
+ * not).
  * @param uplo [in] Specifies whether the matrix is upper or lower triangular.
  * @param n [in] The order of the matrix A (number of rows/columns).
  * @param A [in] Pointer to the matrix A.
  * @param lda [in] Leading dimension of matrix A.
  * @param W [out] Pointer to the array for storing eigenvalues.
- * @param lwork [out] Pointer to the integer value storing the required buffer size.
+ * @param lwork [out] Pointer to the integer value storing the required buffer
+ * size.
  * @return cusolverStatus_t status of the function call.
  */
-cusolverStatus_t cusolverDnTheevd_bufferSize(cusolverDnHandle_t handle,
-                                             cusolverEigMode_t jobz,
-                                             cublasFillMode_t uplo, std::size_t n,
-                                             std::complex<double>* A, std::size_t lda,
-                                             double* W, int* lwork)
+cusolverStatus_t
+cusolverDnTheevd_bufferSize(cusolverDnHandle_t handle, cusolverEigMode_t jobz,
+                            cublasFillMode_t uplo, std::size_t n,
+                            std::complex<double>* A, std::size_t lda, double* W,
+                            int* lwork)
 {
     SCOPED_NVTX_RANGE();
     return cusolverDnZheevd_bufferSize(handle, jobz, uplo, n,
@@ -641,13 +750,16 @@ cusolverStatus_t cusolverDnTheevd_bufferSize(cusolverDnHandle_t handle,
 
 /**
  * @ingroup cuSolverFunctions
- * @brief Compute the eigenvalues and eigenvectors of a real single precision symmetric matrix.
+ * @brief Compute the eigenvalues and eigenvectors of a real single precision
+ * symmetric matrix.
  *
- * This function performs eigenvalue decomposition of a symmetric matrix A, computing the eigenvalues
- * in W and the eigenvectors in Q (if requested), using the cuSolver library with single precision.
+ * This function performs eigenvalue decomposition of a symmetric matrix A,
+ * computing the eigenvalues in W and the eigenvectors in Q (if requested),
+ * using the cuSolver library with single precision.
  *
  * @param handle [in] cuSolver handle.
- * @param jobz [in] Eigenvalue problem mode (whether to compute eigenvectors or not).
+ * @param jobz [in] Eigenvalue problem mode (whether to compute eigenvectors or
+ * not).
  * @param uplo [in] Specifies whether the matrix is upper or lower triangular.
  * @param n [in] The order of the matrix A (number of rows/columns).
  * @param A [in/out] Pointer to the matrix A.
@@ -660,8 +772,9 @@ cusolverStatus_t cusolverDnTheevd_bufferSize(cusolverDnHandle_t handle,
  */
 cusolverStatus_t cusolverDnTheevd(cusolverDnHandle_t handle,
                                   cusolverEigMode_t jobz, cublasFillMode_t uplo,
-                                  std::size_t n, float* A, std::size_t lda, float* W,
-                                  float* work, std::size_t lwork, int* devInfo)
+                                  std::size_t n, float* A, std::size_t lda,
+                                  float* W, float* work, std::size_t lwork,
+                                  int* devInfo)
 {
     SCOPED_NVTX_RANGE();
     return cusolverDnSsyevd(handle, jobz, uplo, n, A, lda, W, work, lwork,
@@ -670,13 +783,16 @@ cusolverStatus_t cusolverDnTheevd(cusolverDnHandle_t handle,
 
 /**
  * @ingroup cuSolverFunctions
- * @brief Compute the eigenvalues and eigenvectors of a real single precision symmetric matrix.
+ * @brief Compute the eigenvalues and eigenvectors of a real single precision
+ * symmetric matrix.
  *
- * This function performs eigenvalue decomposition of a symmetric matrix A, computing the eigenvalues
- * in W and the eigenvectors in Q (if requested), using the cuSolver library with single precision.
+ * This function performs eigenvalue decomposition of a symmetric matrix A,
+ * computing the eigenvalues in W and the eigenvectors in Q (if requested),
+ * using the cuSolver library with single precision.
  *
  * @param handle [in] cuSolver handle.
- * @param jobz [in] Eigenvalue problem mode (whether to compute eigenvectors or not).
+ * @param jobz [in] Eigenvalue problem mode (whether to compute eigenvectors or
+ * not).
  * @param uplo [in] Specifies whether the matrix is upper or lower triangular.
  * @param n [in] The order of the matrix A (number of rows/columns).
  * @param A [in/out] Pointer to the matrix A.
@@ -689,8 +805,9 @@ cusolverStatus_t cusolverDnTheevd(cusolverDnHandle_t handle,
  */
 cusolverStatus_t cusolverDnTheevd(cusolverDnHandle_t handle,
                                   cusolverEigMode_t jobz, cublasFillMode_t uplo,
-                                  std::size_t n, double* A, std::size_t lda, double* W,
-                                  double* work, std::size_t lwork, int* devInfo)
+                                  std::size_t n, double* A, std::size_t lda,
+                                  double* W, double* work, std::size_t lwork,
+                                  int* devInfo)
 {
     SCOPED_NVTX_RANGE();
     return cusolverDnDsyevd(handle, jobz, uplo, n, A, lda, W, work, lwork,
@@ -699,13 +816,16 @@ cusolverStatus_t cusolverDnTheevd(cusolverDnHandle_t handle,
 
 /**
  * @ingroup cuSolverFunctions
- * @brief Compute the eigenvalues and eigenvectors of a real single precision symmetric matrix.
+ * @brief Compute the eigenvalues and eigenvectors of a real single precision
+ * symmetric matrix.
  *
- * This function performs eigenvalue decomposition of a symmetric matrix A, computing the eigenvalues
- * in W and the eigenvectors in Q (if requested), using the cuSolver library with single precision.
+ * This function performs eigenvalue decomposition of a symmetric matrix A,
+ * computing the eigenvalues in W and the eigenvectors in Q (if requested),
+ * using the cuSolver library with single precision.
  *
  * @param handle [in] cuSolver handle.
- * @param jobz [in] Eigenvalue problem mode (whether to compute eigenvectors or not).
+ * @param jobz [in] Eigenvalue problem mode (whether to compute eigenvectors or
+ * not).
  * @param uplo [in] Specifies whether the matrix is upper or lower triangular.
  * @param n [in] The order of the matrix A (number of rows/columns).
  * @param A [in/out] Pointer to the matrix A.
@@ -718,9 +838,10 @@ cusolverStatus_t cusolverDnTheevd(cusolverDnHandle_t handle,
  */
 cusolverStatus_t cusolverDnTheevd(cusolverDnHandle_t handle,
                                   cusolverEigMode_t jobz, cublasFillMode_t uplo,
-                                  std::size_t n, std::complex<float>* A, std::size_t lda,
-                                  float* W, std::complex<float>* work,
-                                  std::size_t lwork, int* devInfo)
+                                  std::size_t n, std::complex<float>* A,
+                                  std::size_t lda, float* W,
+                                  std::complex<float>* work, std::size_t lwork,
+                                  int* devInfo)
 {
     SCOPED_NVTX_RANGE();
     return cusolverDnCheevd(handle, jobz, uplo, n,
@@ -730,13 +851,16 @@ cusolverStatus_t cusolverDnTheevd(cusolverDnHandle_t handle,
 
 /**
  * @ingroup cuSolverFunctions
- * @brief Compute the eigenvalues and eigenvectors of a real single precision symmetric matrix.
+ * @brief Compute the eigenvalues and eigenvectors of a real single precision
+ * symmetric matrix.
  *
- * This function performs eigenvalue decomposition of a symmetric matrix A, computing the eigenvalues
- * in W and the eigenvectors in Q (if requested), using the cuSolver library with single precision.
+ * This function performs eigenvalue decomposition of a symmetric matrix A,
+ * computing the eigenvalues in W and the eigenvectors in Q (if requested),
+ * using the cuSolver library with single precision.
  *
  * @param handle [in] cuSolver handle.
- * @param jobz [in] Eigenvalue problem mode (whether to compute eigenvectors or not).
+ * @param jobz [in] Eigenvalue problem mode (whether to compute eigenvectors or
+ * not).
  * @param uplo [in] Specifies whether the matrix is upper or lower triangular.
  * @param n [in] The order of the matrix A (number of rows/columns).
  * @param A [in/out] Pointer to the matrix A.
@@ -749,9 +873,10 @@ cusolverStatus_t cusolverDnTheevd(cusolverDnHandle_t handle,
  */
 cusolverStatus_t cusolverDnTheevd(cusolverDnHandle_t handle,
                                   cusolverEigMode_t jobz, cublasFillMode_t uplo,
-                                  std::size_t n, std::complex<double>* A, std::size_t lda,
-                                  double* W, std::complex<double>* work,
-                                  std::size_t lwork, int* devInfo)
+                                  std::size_t n, std::complex<double>* A,
+                                  std::size_t lda, double* W,
+                                  std::complex<double>* work, std::size_t lwork,
+                                  int* devInfo)
 {
     SCOPED_NVTX_RANGE();
     return cusolverDnZheevd(
@@ -760,24 +885,28 @@ cusolverStatus_t cusolverDnTheevd(cusolverDnHandle_t handle,
 }
 /**
  * @ingroup cuSolverFunctions
- * @brief Computes the optimal buffer size for the Cholesky factorization of a matrix.
+ * @brief Computes the optimal buffer size for the Cholesky factorization of a
+ * matrix.
  *
- * This function is a wrapper around the cuSolver function `cusolverDnSpotrf_bufferSize`.
- * It computes the size of the buffer needed to perform a Cholesky factorization for
- * a matrix with real single-precision elements.
+ * This function is a wrapper around the cuSolver function
+ * `cusolverDnSpotrf_bufferSize`. It computes the size of the buffer needed to
+ * perform a Cholesky factorization for a matrix with real single-precision
+ * elements.
  *
  * @param handle cuSolver handle
- * @param uplo Specifies whether the upper or lower triangular part of the matrix is stored
+ * @param uplo Specifies whether the upper or lower triangular part of the
+ * matrix is stored
  * @param n The order of the matrix A (number of rows/columns)
  * @param A Matrix A
  * @param lda Leading dimension of A
  * @param Lwork The size of the work array needed for the factorization
- * 
+ *
  * @return cusolverStatus_t Status of the operation
  */
 cusolverStatus_t cusolverDnTpotrf_bufferSize(cusolverDnHandle_t handle,
-                                             cublasFillMode_t uplo, std::size_t n,
-                                             float* A, std::size_t lda, int* Lwork)
+                                             cublasFillMode_t uplo,
+                                             std::size_t n, float* A,
+                                             std::size_t lda, int* Lwork)
 {
     SCOPED_NVTX_RANGE();
     return cusolverDnSpotrf_bufferSize(handle, uplo, n, A, lda, Lwork);
@@ -785,24 +914,28 @@ cusolverStatus_t cusolverDnTpotrf_bufferSize(cusolverDnHandle_t handle,
 
 /**
  * @ingroup cuSolverFunctions
- * @brief Computes the optimal buffer size for the Cholesky factorization of a matrix.
+ * @brief Computes the optimal buffer size for the Cholesky factorization of a
+ * matrix.
  *
- * This function is a wrapper around the cuSolver function `cusolverDnSpotrf_bufferSize`.
- * It computes the size of the buffer needed to perform a Cholesky factorization for
- * a matrix with real single-precision elements.
+ * This function is a wrapper around the cuSolver function
+ * `cusolverDnSpotrf_bufferSize`. It computes the size of the buffer needed to
+ * perform a Cholesky factorization for a matrix with real single-precision
+ * elements.
  *
  * @param handle cuSolver handle
- * @param uplo Specifies whether the upper or lower triangular part of the matrix is stored
+ * @param uplo Specifies whether the upper or lower triangular part of the
+ * matrix is stored
  * @param n The order of the matrix A (number of rows/columns)
  * @param A Matrix A
  * @param lda Leading dimension of A
  * @param Lwork The size of the work array needed for the factorization
- * 
+ *
  * @return cusolverStatus_t Status of the operation
  */
 cusolverStatus_t cusolverDnTpotrf_bufferSize(cusolverDnHandle_t handle,
-                                             cublasFillMode_t uplo, std::size_t n,
-                                             double* A, std::size_t lda, int* Lwork)
+                                             cublasFillMode_t uplo,
+                                             std::size_t n, double* A,
+                                             std::size_t lda, int* Lwork)
 {
     SCOPED_NVTX_RANGE();
     return cusolverDnDpotrf_bufferSize(handle, uplo, n, A, lda, Lwork);
@@ -810,25 +943,29 @@ cusolverStatus_t cusolverDnTpotrf_bufferSize(cusolverDnHandle_t handle,
 
 /**
  * @ingroup cuSolverFunctions
- * @brief Computes the optimal buffer size for the Cholesky factorization of a matrix.
+ * @brief Computes the optimal buffer size for the Cholesky factorization of a
+ * matrix.
  *
- * This function is a wrapper around the cuSolver function `cusolverDnSpotrf_bufferSize`.
- * It computes the size of the buffer needed to perform a Cholesky factorization for
- * a matrix with real single-precision elements.
+ * This function is a wrapper around the cuSolver function
+ * `cusolverDnSpotrf_bufferSize`. It computes the size of the buffer needed to
+ * perform a Cholesky factorization for a matrix with real single-precision
+ * elements.
  *
  * @param handle cuSolver handle
- * @param uplo Specifies whether the upper or lower triangular part of the matrix is stored
+ * @param uplo Specifies whether the upper or lower triangular part of the
+ * matrix is stored
  * @param n The order of the matrix A (number of rows/columns)
  * @param A Matrix A
  * @param lda Leading dimension of A
  * @param Lwork The size of the work array needed for the factorization
- * 
+ *
  * @return cusolverStatus_t Status of the operation
  */
 cusolverStatus_t cusolverDnTpotrf_bufferSize(cusolverDnHandle_t handle,
-                                             cublasFillMode_t uplo, std::size_t n,
-                                             std::complex<float>* A, std::size_t lda,
-                                             int* Lwork)
+                                             cublasFillMode_t uplo,
+                                             std::size_t n,
+                                             std::complex<float>* A,
+                                             std::size_t lda, int* Lwork)
 {
     SCOPED_NVTX_RANGE();
     return cusolverDnCpotrf_bufferSize(
@@ -837,25 +974,29 @@ cusolverStatus_t cusolverDnTpotrf_bufferSize(cusolverDnHandle_t handle,
 
 /**
  * @ingroup cuSolverFunctions
- * @brief Computes the optimal buffer size for the Cholesky factorization of a matrix.
+ * @brief Computes the optimal buffer size for the Cholesky factorization of a
+ * matrix.
  *
- * This function is a wrapper around the cuSolver function `cusolverDnSpotrf_bufferSize`.
- * It computes the size of the buffer needed to perform a Cholesky factorization for
- * a matrix with real single-precision elements.
+ * This function is a wrapper around the cuSolver function
+ * `cusolverDnSpotrf_bufferSize`. It computes the size of the buffer needed to
+ * perform a Cholesky factorization for a matrix with real single-precision
+ * elements.
  *
  * @param handle cuSolver handle
- * @param uplo Specifies whether the upper or lower triangular part of the matrix is stored
+ * @param uplo Specifies whether the upper or lower triangular part of the
+ * matrix is stored
  * @param n The order of the matrix A (number of rows/columns)
  * @param A Matrix A
  * @param lda Leading dimension of A
  * @param Lwork The size of the work array needed for the factorization
- * 
+ *
  * @return cusolverStatus_t Status of the operation
  */
 cusolverStatus_t cusolverDnTpotrf_bufferSize(cusolverDnHandle_t handle,
-                                             cublasFillMode_t uplo, std::size_t n,
-                                             std::complex<double>* A, std::size_t lda,
-                                             int* Lwork)
+                                             cublasFillMode_t uplo,
+                                             std::size_t n,
+                                             std::complex<double>* A,
+                                             std::size_t lda, int* Lwork)
 {
     SCOPED_NVTX_RANGE();
     return cusolverDnZpotrf_bufferSize(
@@ -867,10 +1008,12 @@ cusolverStatus_t cusolverDnTpotrf_bufferSize(cusolverDnHandle_t handle,
  * @brief Performs the Cholesky factorization of a matrix.
  *
  * This function is a wrapper around the cuSolver function `cusolverDnSpotrf`.
- * It performs the Cholesky factorization of a matrix with real single-precision elements.
+ * It performs the Cholesky factorization of a matrix with real single-precision
+ * elements.
  *
  * @param handle cuSolver handle
- * @param uplo Specifies whether the upper or lower triangular part of the matrix is stored
+ * @param uplo Specifies whether the upper or lower triangular part of the
+ * matrix is stored
  * @param n The order of the matrix A (number of rows/columns)
  * @param A Matrix A
  * @param lda Leading dimension of A
@@ -879,9 +1022,9 @@ cusolverStatus_t cusolverDnTpotrf_bufferSize(cusolverDnHandle_t handle,
  * @return cusolverStatus_t Status of the operation
  */
 cusolverStatus_t cusolverDnTpotrf(cusolverDnHandle_t handle,
-                                  cublasFillMode_t uplo, std::size_t n, float* A,
-                                  std::size_t lda, float* Workspace, std::size_t Lwork,
-                                  int* devInfo)
+                                  cublasFillMode_t uplo, std::size_t n,
+                                  float* A, std::size_t lda, float* Workspace,
+                                  std::size_t Lwork, int* devInfo)
 {
     SCOPED_NVTX_RANGE();
     return cusolverDnSpotrf(handle, uplo, n, A, lda, Workspace, Lwork, devInfo);
@@ -892,10 +1035,12 @@ cusolverStatus_t cusolverDnTpotrf(cusolverDnHandle_t handle,
  * @brief Performs the Cholesky factorization of a matrix.
  *
  * This function is a wrapper around the cuSolver function `cusolverDnSpotrf`.
- * It performs the Cholesky factorization of a matrix with real single-precision elements.
+ * It performs the Cholesky factorization of a matrix with real single-precision
+ * elements.
  *
  * @param handle cuSolver handle
- * @param uplo Specifies whether the upper or lower triangular part of the matrix is stored
+ * @param uplo Specifies whether the upper or lower triangular part of the
+ * matrix is stored
  * @param n The order of the matrix A (number of rows/columns)
  * @param A Matrix A
  * @param lda Leading dimension of A
@@ -904,9 +1049,9 @@ cusolverStatus_t cusolverDnTpotrf(cusolverDnHandle_t handle,
  * @return cusolverStatus_t Status of the operation
  */
 cusolverStatus_t cusolverDnTpotrf(cusolverDnHandle_t handle,
-                                  cublasFillMode_t uplo, std::size_t n, double* A,
-                                  std::size_t lda, double* Workspace, std::size_t Lwork,
-                                  int* devInfo)
+                                  cublasFillMode_t uplo, std::size_t n,
+                                  double* A, std::size_t lda, double* Workspace,
+                                  std::size_t Lwork, int* devInfo)
 {
     SCOPED_NVTX_RANGE();
     return cusolverDnDpotrf(handle, uplo, n, A, lda, Workspace, Lwork, devInfo);
@@ -917,10 +1062,12 @@ cusolverStatus_t cusolverDnTpotrf(cusolverDnHandle_t handle,
  * @brief Performs the Cholesky factorization of a matrix.
  *
  * This function is a wrapper around the cuSolver function `cusolverDnSpotrf`.
- * It performs the Cholesky factorization of a matrix with real single-precision elements.
+ * It performs the Cholesky factorization of a matrix with real single-precision
+ * elements.
  *
  * @param handle cuSolver handle
- * @param uplo Specifies whether the upper or lower triangular part of the matrix is stored
+ * @param uplo Specifies whether the upper or lower triangular part of the
+ * matrix is stored
  * @param n The order of the matrix A (number of rows/columns)
  * @param A Matrix A
  * @param lda Leading dimension of A
@@ -931,8 +1078,8 @@ cusolverStatus_t cusolverDnTpotrf(cusolverDnHandle_t handle,
 cusolverStatus_t cusolverDnTpotrf(cusolverDnHandle_t handle,
                                   cublasFillMode_t uplo, std::size_t n,
                                   std::complex<float>* A, std::size_t lda,
-                                  std::complex<float>* Workspace, std::size_t Lwork,
-                                  int* devInfo)
+                                  std::complex<float>* Workspace,
+                                  std::size_t Lwork, int* devInfo)
 {
     SCOPED_NVTX_RANGE();
     return cusolverDnCpotrf(handle, uplo, n, reinterpret_cast<cuComplex*>(A),
@@ -945,10 +1092,12 @@ cusolverStatus_t cusolverDnTpotrf(cusolverDnHandle_t handle,
  * @brief Performs the Cholesky factorization of a matrix.
  *
  * This function is a wrapper around the cuSolver function `cusolverDnSpotrf`.
- * It performs the Cholesky factorization of a matrix with real single-precision elements.
+ * It performs the Cholesky factorization of a matrix with real single-precision
+ * elements.
  *
  * @param handle cuSolver handle
- * @param uplo Specifies whether the upper or lower triangular part of the matrix is stored
+ * @param uplo Specifies whether the upper or lower triangular part of the
+ * matrix is stored
  * @param n The order of the matrix A (number of rows/columns)
  * @param A Matrix A
  * @param lda Leading dimension of A
@@ -959,8 +1108,8 @@ cusolverStatus_t cusolverDnTpotrf(cusolverDnHandle_t handle,
 cusolverStatus_t cusolverDnTpotrf(cusolverDnHandle_t handle,
                                   cublasFillMode_t uplo, std::size_t n,
                                   std::complex<double>* A, std::size_t lda,
-                                  std::complex<double>* Workspace, std::size_t Lwork,
-                                  int* devInfo)
+                                  std::complex<double>* Workspace,
+                                  std::size_t Lwork, int* devInfo)
 {
     SCOPED_NVTX_RANGE();
     return cusolverDnZpotrf(
@@ -970,199 +1119,139 @@ cusolverStatus_t cusolverDnTpotrf(cusolverDnHandle_t handle,
 
 #ifdef XGEEV_EXISTS
 cusolverStatus_t cusolverDnTgeev_bufferSize(
-    cusolverDnHandle_t handle,
-    cusolverDnParams_t params,
-    cusolverEigMode_t jobvl,
-    cusolverEigMode_t jobvr,
-    int64_t n,
-    const float* A, int64_t lda,
-    const float* W,
-    const float* VL, int64_t ldvl,
-    const float* VR, int64_t ldvr,
-    size_t* workspaceInBytesOnDevice,
+    cusolverDnHandle_t handle, cusolverDnParams_t params,
+    cusolverEigMode_t jobvl, cusolverEigMode_t jobvr, int64_t n, const float* A,
+    int64_t lda, const float* W, const float* VL, int64_t ldvl, const float* VR,
+    int64_t ldvr, size_t* workspaceInBytesOnDevice,
     size_t* workspaceInBytesOnHost)
 {
     SCOPED_NVTX_RANGE();
-    return cusolverDnXgeev_bufferSize(handle, params, jobvl, jobvr, n,
-                                      CUDA_R_32F, A, lda,
-                                      CUDA_R_32F, W,
-                                      CUDA_R_32F, VL, ldvl,
-                                      CUDA_R_32F, VR, ldvr,
-                                      CUDA_R_32F,
-                                      workspaceInBytesOnDevice,
-                                      workspaceInBytesOnHost);
+    return cusolverDnXgeev_bufferSize(
+        handle, params, jobvl, jobvr, n, CUDA_R_32F, A, lda, CUDA_R_32F, W,
+        CUDA_R_32F, VL, ldvl, CUDA_R_32F, VR, ldvr, CUDA_R_32F,
+        workspaceInBytesOnDevice, workspaceInBytesOnHost);
 }
 
 cusolverStatus_t cusolverDnTgeev_bufferSize(
-    cusolverDnHandle_t handle,
-    cusolverDnParams_t params,
-    cusolverEigMode_t jobvl,
-    cusolverEigMode_t jobvr,
-    int64_t n,
-    const double* A, int64_t lda,
-    const double* W,
-    const double* VL, int64_t ldvl,
-    const double* VR, int64_t ldvr,
-    size_t* workspaceInBytesOnDevice,
+    cusolverDnHandle_t handle, cusolverDnParams_t params,
+    cusolverEigMode_t jobvl, cusolverEigMode_t jobvr, int64_t n,
+    const double* A, int64_t lda, const double* W, const double* VL,
+    int64_t ldvl, const double* VR, int64_t ldvr,
+    size_t* workspaceInBytesOnDevice, size_t* workspaceInBytesOnHost)
+{
+    SCOPED_NVTX_RANGE();
+    return cusolverDnXgeev_bufferSize(
+        handle, params, jobvl, jobvr, n, CUDA_R_64F, A, lda, CUDA_R_64F, W,
+        CUDA_R_64F, VL, ldvl, CUDA_R_64F, VR, ldvr, CUDA_R_64F,
+        workspaceInBytesOnDevice, workspaceInBytesOnHost);
+}
+
+cusolverStatus_t cusolverDnTgeev_bufferSize(
+    cusolverDnHandle_t handle, cusolverDnParams_t params,
+    cusolverEigMode_t jobvl, cusolverEigMode_t jobvr, int64_t n,
+    const std::complex<float>* A, int64_t lda, const std::complex<float>* W,
+    const std::complex<float>* VL, int64_t ldvl, const std::complex<float>* VR,
+    int64_t ldvr, size_t* workspaceInBytesOnDevice,
     size_t* workspaceInBytesOnHost)
 {
     SCOPED_NVTX_RANGE();
-    return cusolverDnXgeev_bufferSize(handle, params, jobvl, jobvr, n,
-                                      CUDA_R_64F, A, lda,
-                                      CUDA_R_64F, W,
-                                      CUDA_R_64F, VL, ldvl,
-                                      CUDA_R_64F, VR, ldvr,
-                                      CUDA_R_64F,
-                                      workspaceInBytesOnDevice,
-                                      workspaceInBytesOnHost);
+    return cusolverDnXgeev_bufferSize(
+        handle, params, jobvl, jobvr, n, CUDA_C_32F,
+        reinterpret_cast<const cuComplex*>(A), lda, CUDA_C_32F,
+        reinterpret_cast<const cuComplex*>(W), CUDA_C_32F,
+        reinterpret_cast<const cuComplex*>(VL), ldvl, CUDA_C_32F,
+        reinterpret_cast<const cuComplex*>(VR), ldvr, CUDA_C_32F,
+        workspaceInBytesOnDevice, workspaceInBytesOnHost);
 }
 
 cusolverStatus_t cusolverDnTgeev_bufferSize(
-    cusolverDnHandle_t handle,
-    cusolverDnParams_t params,
-    cusolverEigMode_t jobvl,
-    cusolverEigMode_t jobvr,
-    int64_t n,
-    const std::complex<float>* A, int64_t lda,
-    const std::complex<float>* W,
-    const std::complex<float>* VL, int64_t ldvl,
-    const std::complex<float>* VR, int64_t ldvr,
-    size_t* workspaceInBytesOnDevice,
-    size_t* workspaceInBytesOnHost)
-{
-    SCOPED_NVTX_RANGE();
-    return cusolverDnXgeev_bufferSize(handle, params, jobvl, jobvr, n,
-                                      CUDA_C_32F, reinterpret_cast<const cuComplex*>(A), lda,
-                                      CUDA_C_32F, reinterpret_cast<const cuComplex*>(W),
-                                      CUDA_C_32F, reinterpret_cast<const cuComplex*>(VL), ldvl,
-                                      CUDA_C_32F, reinterpret_cast<const cuComplex*>(VR), ldvr,
-                                      CUDA_C_32F,
-                                      workspaceInBytesOnDevice,
-                                      workspaceInBytesOnHost);
-}
-
-cusolverStatus_t cusolverDnTgeev_bufferSize(
-    cusolverDnHandle_t handle,
-    cusolverDnParams_t params,
-    cusolverEigMode_t jobvl,
-    cusolverEigMode_t jobvr,
-    int64_t n,
-    const std::complex<double>* A, int64_t lda,
-    const std::complex<double>* W,
+    cusolverDnHandle_t handle, cusolverDnParams_t params,
+    cusolverEigMode_t jobvl, cusolverEigMode_t jobvr, int64_t n,
+    const std::complex<double>* A, int64_t lda, const std::complex<double>* W,
     const std::complex<double>* VL, int64_t ldvl,
     const std::complex<double>* VR, int64_t ldvr,
-    size_t* workspaceInBytesOnDevice,
-    size_t* workspaceInBytesOnHost)
+    size_t* workspaceInBytesOnDevice, size_t* workspaceInBytesOnHost)
 {
     SCOPED_NVTX_RANGE();
-    return cusolverDnXgeev_bufferSize(handle, params, jobvl, jobvr, n,
-                                      CUDA_C_64F, reinterpret_cast<const cuDoubleComplex*>(A), lda,
-                                      CUDA_C_64F, reinterpret_cast<const cuDoubleComplex*>(W),
-                                      CUDA_C_64F, reinterpret_cast<const cuDoubleComplex*>(VL), ldvl,
-                                      CUDA_C_64F, reinterpret_cast<const cuDoubleComplex*>(VR), ldvr,
-                                      CUDA_C_64F,
-                                      workspaceInBytesOnDevice,
-                                      workspaceInBytesOnHost);
+    return cusolverDnXgeev_bufferSize(
+        handle, params, jobvl, jobvr, n, CUDA_C_64F,
+        reinterpret_cast<const cuDoubleComplex*>(A), lda, CUDA_C_64F,
+        reinterpret_cast<const cuDoubleComplex*>(W), CUDA_C_64F,
+        reinterpret_cast<const cuDoubleComplex*>(VL), ldvl, CUDA_C_64F,
+        reinterpret_cast<const cuDoubleComplex*>(VR), ldvr, CUDA_C_64F,
+        workspaceInBytesOnDevice, workspaceInBytesOnHost);
 }
 
-
-cusolverStatus_t cusolverDnTgeev(
-    cusolverDnHandle_t handle,
-    cusolverDnParams_t params,
-    cusolverEigMode_t jobvl,
-    cusolverEigMode_t jobvr,
-    int64_t n,
-    float* A, int64_t lda,
-    float* W,
-    float* VL, int64_t ldvl,
-    float* VR, int64_t ldvr,
-    void* bufferOnDevice, size_t workspaceInBytesOnDevice,
-    void* bufferOnHost, size_t workspaceInBytesOnHost,
-    int* info)
+cusolverStatus_t
+cusolverDnTgeev(cusolverDnHandle_t handle, cusolverDnParams_t params,
+                cusolverEigMode_t jobvl, cusolverEigMode_t jobvr, int64_t n,
+                float* A, int64_t lda, float* W, float* VL, int64_t ldvl,
+                float* VR, int64_t ldvr, void* bufferOnDevice,
+                size_t workspaceInBytesOnDevice, void* bufferOnHost,
+                size_t workspaceInBytesOnHost, int* info)
 {
     SCOPED_NVTX_RANGE();
-    return cusolverDnXgeev(handle, params, jobvl, jobvr, n,
-                           CUDA_R_32F, A, lda,
-                           CUDA_R_32F, W,
-                           CUDA_R_32F, VL, ldvl,
-                           CUDA_R_32F, VR, ldvr,
-                           CUDA_R_32F, bufferOnDevice, workspaceInBytesOnDevice,
+    return cusolverDnXgeev(
+        handle, params, jobvl, jobvr, n, CUDA_R_32F, A, lda, CUDA_R_32F, W,
+        CUDA_R_32F, VL, ldvl, CUDA_R_32F, VR, ldvr, CUDA_R_32F, bufferOnDevice,
+        workspaceInBytesOnDevice, bufferOnHost, workspaceInBytesOnHost, info);
+}
+
+cusolverStatus_t
+cusolverDnTgeev(cusolverDnHandle_t handle, cusolverDnParams_t params,
+                cusolverEigMode_t jobvl, cusolverEigMode_t jobvr, int64_t n,
+                double* A, int64_t lda, double* W, double* VL, int64_t ldvl,
+                double* VR, int64_t ldvr, void* bufferOnDevice,
+                size_t workspaceInBytesOnDevice, void* bufferOnHost,
+                size_t workspaceInBytesOnHost, int* info)
+{
+    SCOPED_NVTX_RANGE();
+    return cusolverDnXgeev(
+        handle, params, jobvl, jobvr, n, CUDA_R_64F, A, lda, CUDA_R_64F, W,
+        CUDA_R_64F, VL, ldvl, CUDA_R_64F, VR, ldvr, CUDA_R_64F, bufferOnDevice,
+        workspaceInBytesOnDevice, bufferOnHost, workspaceInBytesOnHost, info);
+}
+
+cusolverStatus_t
+cusolverDnTgeev(cusolverDnHandle_t handle, cusolverDnParams_t params,
+                cusolverEigMode_t jobvl, cusolverEigMode_t jobvr, int64_t n,
+                std::complex<float>* A, int64_t lda, std::complex<float>* W,
+                std::complex<float>* VL, int64_t ldvl, std::complex<float>* VR,
+                int64_t ldvr, void* bufferOnDevice,
+                size_t workspaceInBytesOnDevice, void* bufferOnHost,
+                size_t workspaceInBytesOnHost, int* info)
+{
+    SCOPED_NVTX_RANGE();
+    return cusolverDnXgeev(handle, params, jobvl, jobvr, n, CUDA_C_32F,
+                           reinterpret_cast<cuComplex*>(A), lda, CUDA_C_32F,
+                           reinterpret_cast<cuComplex*>(W), CUDA_C_32F,
+                           reinterpret_cast<cuComplex*>(VL), ldvl, CUDA_C_32F,
+                           reinterpret_cast<cuComplex*>(VR), ldvr, CUDA_C_32F,
+                           bufferOnDevice, workspaceInBytesOnDevice,
                            bufferOnHost, workspaceInBytesOnHost, info);
 }
 
-cusolverStatus_t cusolverDnTgeev(
-    cusolverDnHandle_t handle,
-    cusolverDnParams_t params,
-    cusolverEigMode_t jobvl,
-    cusolverEigMode_t jobvr,
-    int64_t n,
-    double* A, int64_t lda,
-    double* W,
-    double* VL, int64_t ldvl,
-    double* VR, int64_t ldvr,
-    void* bufferOnDevice, size_t workspaceInBytesOnDevice,
-    void* bufferOnHost, size_t workspaceInBytesOnHost,
-    int* info)
+cusolverStatus_t
+cusolverDnTgeev(cusolverDnHandle_t handle, cusolverDnParams_t params,
+                cusolverEigMode_t jobvl, cusolverEigMode_t jobvr, int64_t n,
+                std::complex<double>* A, int64_t lda, std::complex<double>* W,
+                std::complex<double>* VL, int64_t ldvl,
+                std::complex<double>* VR, int64_t ldvr, void* bufferOnDevice,
+                size_t workspaceInBytesOnDevice, void* bufferOnHost,
+                size_t workspaceInBytesOnHost, int* info)
 {
     SCOPED_NVTX_RANGE();
-    return cusolverDnXgeev(handle, params, jobvl, jobvr, n,
-                           CUDA_R_64F, A, lda,
-                           CUDA_R_64F, W,
-                           CUDA_R_64F, VL, ldvl,
-                           CUDA_R_64F, VR, ldvr,
-                           CUDA_R_64F, bufferOnDevice, workspaceInBytesOnDevice,
-                           bufferOnHost, workspaceInBytesOnHost, info);
-}
-
-cusolverStatus_t cusolverDnTgeev(
-    cusolverDnHandle_t handle,
-    cusolverDnParams_t params,
-    cusolverEigMode_t jobvl,
-    cusolverEigMode_t jobvr,
-    int64_t n,
-    std::complex<float>* A, int64_t lda,
-    std::complex<float>* W,
-    std::complex<float>* VL, int64_t ldvl,
-    std::complex<float>* VR, int64_t ldvr,
-    void* bufferOnDevice, size_t workspaceInBytesOnDevice,
-    void* bufferOnHost, size_t workspaceInBytesOnHost,
-    int* info)
-{
-    SCOPED_NVTX_RANGE();
-    return cusolverDnXgeev(handle, params, jobvl, jobvr, n,
-                           CUDA_C_32F, reinterpret_cast<cuComplex*>(A), lda,
-                           CUDA_C_32F, reinterpret_cast<cuComplex*>(W),
-                           CUDA_C_32F, reinterpret_cast<cuComplex*>(VL), ldvl,
-                           CUDA_C_32F, reinterpret_cast<cuComplex*>(VR), ldvr,
-                           CUDA_C_32F, bufferOnDevice, workspaceInBytesOnDevice,
-                           bufferOnHost, workspaceInBytesOnHost, info);
-}
-
-cusolverStatus_t cusolverDnTgeev(
-    cusolverDnHandle_t handle,
-    cusolverDnParams_t params,
-    cusolverEigMode_t jobvl,
-    cusolverEigMode_t jobvr,
-    int64_t n,
-    std::complex<double>* A, int64_t lda,
-    std::complex<double>* W,
-    std::complex<double>* VL, int64_t ldvl,
-    std::complex<double>* VR, int64_t ldvr,
-    void* bufferOnDevice, size_t workspaceInBytesOnDevice,
-    void* bufferOnHost, size_t workspaceInBytesOnHost,
-    int* info)
-{
-    SCOPED_NVTX_RANGE();
-    return cusolverDnXgeev(handle, params, jobvl, jobvr, n,
-                           CUDA_C_64F, reinterpret_cast<cuDoubleComplex*>(A), lda,
+    return cusolverDnXgeev(handle, params, jobvl, jobvr, n, CUDA_C_64F,
+                           reinterpret_cast<cuDoubleComplex*>(A), lda,
                            CUDA_C_64F, reinterpret_cast<cuDoubleComplex*>(W),
-                           CUDA_C_64F, reinterpret_cast<cuDoubleComplex*>(VL), ldvl,
-                           CUDA_C_64F, reinterpret_cast<cuDoubleComplex*>(VR), ldvr,
+                           CUDA_C_64F, reinterpret_cast<cuDoubleComplex*>(VL),
+                           ldvl, CUDA_C_64F,
+                           reinterpret_cast<cuDoubleComplex*>(VR), ldvr,
                            CUDA_C_64F, bufferOnDevice, workspaceInBytesOnDevice,
                            bufferOnHost, workspaceInBytesOnHost, info);
 }
 #endif
 
-}
-}
-}
+} // namespace cusolverpp
+} // namespace linalg
+} // namespace chase

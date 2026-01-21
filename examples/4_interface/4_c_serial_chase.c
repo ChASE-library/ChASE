@@ -74,7 +74,7 @@ int main(int argc, char** argv)
         {
             printf("Using approximate solution\n");
         }
-        
+
         zchase_(&deg, &tol, &mode, &opt, &qr);
 
         // Perturb Full Clement matrix
