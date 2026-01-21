@@ -935,5 +935,152 @@ MODULE chase_diag
     ! pcchase_finalize, pzchase_wrtHam, pcchase_wrtHam, pzchase_readHam, and pcchase_readHam
     ! now handle both regular and pseudo-Hermitian types automatically by checking which type was initialized.
 
+    ! =======================================================================
+    ! Unified Configuration Setter Functions
+    ! These functions work regardless of matrix type, precision, architecture,
+    ! or distribution (sequential/distributed). They automatically detect the
+    ! active solver instance.
+    ! =======================================================================
+
+    INTERFACE
+        SUBROUTINE chase_set_tol(tol) bind( c, name = 'chase_set_tol_' )
+        !> Set the tolerance threshold for eigenpair residuals.
+        !> Works for all matrix types and precisions.
+        !> @param[in] tol desired absolute tolerance of computed eigenpairs
+            USE, INTRINSIC :: iso_c_binding
+            REAL(c_double), INTENT(IN) :: tol
+        END SUBROUTINE chase_set_tol
+    END INTERFACE
+
+    INTERFACE
+        SUBROUTINE chase_set_deg(deg) bind( c, name = 'chase_set_deg_' )
+        !> Set the initial degree of the Chebyshev filter.
+        !> Works for all matrix types and precisions.
+        !> @param[in] deg initial degree of Chebyshev polynomial filter
+            USE, INTRINSIC :: iso_c_binding
+            INTEGER(c_int), INTENT(IN) :: deg
+        END SUBROUTINE chase_set_deg
+    END INTERFACE
+
+    INTERFACE
+        SUBROUTINE chase_set_max_deg(max_deg) bind( c, name = 'chase_set_max_deg_' )
+        !> Set the maximum degree of the Chebyshev filter.
+        !> Works for all matrix types and precisions.
+        !> @param[in] max_deg maximum degree of Chebyshev polynomial filter
+            USE, INTRINSIC :: iso_c_binding
+            INTEGER(c_int), INTENT(IN) :: max_deg
+        END SUBROUTINE chase_set_max_deg
+    END INTERFACE
+
+    INTERFACE
+        SUBROUTINE chase_set_deg_extra(deg_extra) bind( c, name = 'chase_set_deg_extra_' )
+        !> Set the extra degree added to the polynomial filter.
+        !> Works for all matrix types and precisions.
+        !> @param[in] deg_extra extra degree value (usually 2-6)
+            USE, INTRINSIC :: iso_c_binding
+            INTEGER(c_int), INTENT(IN) :: deg_extra
+        END SUBROUTINE chase_set_deg_extra
+    END INTERFACE
+
+    INTERFACE
+        SUBROUTINE chase_set_max_iter(max_iter) bind( c, name = 'chase_set_max_iter_' )
+        !> Set the maximum number of subspace iterations.
+        !> Works for all matrix types and precisions.
+        !> @param[in] max_iter maximum number of subspace iterations (default: 25)
+            USE, INTRINSIC :: iso_c_binding
+            INTEGER(c_int), INTENT(IN) :: max_iter
+        END SUBROUTINE chase_set_max_iter
+    END INTERFACE
+
+    INTERFACE
+        SUBROUTINE chase_set_lanczos_iter(lanczos_iter) bind( c, name = 'chase_set_lanczos_iter_' )
+        !> Set the number of Lanczos iterations for spectral estimates.
+        !> Works for all matrix types and precisions.
+        !> @param[in] lanczos_iter number of Lanczos iterations (default: 25, range: 10-100)
+            USE, INTRINSIC :: iso_c_binding
+            INTEGER(c_int), INTENT(IN) :: lanczos_iter
+        END SUBROUTINE chase_set_lanczos_iter
+    END INTERFACE
+
+    INTERFACE
+        SUBROUTINE chase_set_num_lanczos(num_lanczos) bind( c, name = 'chase_set_num_lanczos_' )
+        !> Set the number of stochastic vectors for spectral estimates.
+        !> Works for all matrix types and precisions.
+        !> @param[in] num_lanczos number of stochastic vectors (default: 4, suggested max: 20)
+            USE, INTRINSIC :: iso_c_binding
+            INTEGER(c_int), INTENT(IN) :: num_lanczos
+        END SUBROUTINE chase_set_num_lanczos
+    END INTERFACE
+
+    INTERFACE
+        SUBROUTINE chase_set_approx(flag) bind( c, name = 'chase_set_approx_' )
+        !> Set the approximate mode flag.
+        !> Works for all matrix types and precisions.
+        !> @param[in] flag 1 to enable approximate mode, 0 to disable
+            USE, INTRINSIC :: iso_c_binding
+            INTEGER(c_int), INTENT(IN) :: flag
+        END SUBROUTINE chase_set_approx
+    END INTERFACE
+
+    INTERFACE
+        SUBROUTINE chase_set_opt(flag) bind( c, name = 'chase_set_opt_' )
+        !> Set the optimization flag for Chebyshev polynomial degree.
+        !> Works for all matrix types and precisions.
+        !> @param[in] flag 1 to enable optimization, 0 to disable
+            USE, INTRINSIC :: iso_c_binding
+            INTEGER(c_int), INTENT(IN) :: flag
+        END SUBROUTINE chase_set_opt
+    END INTERFACE
+
+    INTERFACE
+        SUBROUTINE chase_set_cholqr(flag) bind( c, name = 'chase_set_cholqr_' )
+        !> Set the CholQR flag (flexible CholeskyQR vs Householder QR).
+        !> Works for all matrix types and precisions.
+        !> @param[in] flag 1 to use flexible CholQR, 0 to use Householder QR
+            USE, INTRINSIC :: iso_c_binding
+            INTEGER(c_int), INTENT(IN) :: flag
+        END SUBROUTINE chase_set_cholqr
+    END INTERFACE
+
+    INTERFACE
+        SUBROUTINE chase_enable_sym_check(flag) bind( c, name = 'chase_enable_sym_check_' )
+        !> Enable or disable symmetry checking.
+        !> Works for all matrix types and precisions.
+        !> @param[in] flag 1 to enable symmetry check, 0 to disable
+            USE, INTRINSIC :: iso_c_binding
+            INTEGER(c_int), INTENT(IN) :: flag
+        END SUBROUTINE chase_enable_sym_check
+    END INTERFACE
+
+    INTERFACE
+        SUBROUTINE chase_set_decaying_rate(decaying_rate) bind( c, name = 'chase_set_decaying_rate_' )
+        !> Set the decaying rate for the polynomial lower bound.
+        !> Works for all matrix types and precisions.
+        !> @param[in] decaying_rate decaying rate value (default: 1.0)
+            USE, INTRINSIC :: iso_c_binding
+            REAL(c_float), INTENT(IN) :: decaying_rate
+        END SUBROUTINE chase_set_decaying_rate
+    END INTERFACE
+
+    INTERFACE
+        SUBROUTINE chase_set_cluster_aware_degrees(flag) bind( c, name = 'chase_set_cluster_aware_degrees_' )
+        !> Enable or disable cluster-aware degree optimization.
+        !> Works for all matrix types and precisions.
+        !> @param[in] flag 1 to enable cluster-aware degrees, 0 to disable (default: 1)
+            USE, INTRINSIC :: iso_c_binding
+            INTEGER(c_int), INTENT(IN) :: flag
+        END SUBROUTINE chase_set_cluster_aware_degrees
+    END INTERFACE
+
+    INTERFACE
+        SUBROUTINE chase_set_upperb_scale_rate(upperb_scale_rate) bind( c, name = 'chase_set_upperb_scale_rate_' )
+        !> Set the scale rate for upper bound based on its sign.
+        !> Works for all matrix types and precisions.
+        !> @param[in] upperb_scale_rate scale rate value (default: 1.2)
+            USE, INTRINSIC :: iso_c_binding
+            REAL(c_float), INTENT(IN) :: upperb_scale_rate
+        END SUBROUTINE chase_set_upperb_scale_rate
+    END INTERFACE
+
 END MODULE chase_diag
 

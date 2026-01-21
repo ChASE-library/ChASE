@@ -248,24 +248,16 @@ void ChASE_SEQ_Solve(int* deg, chase::Base<typename SeqMatrixType::value_type>* 
     config.SetOpt(*opt == 'S');
     config.SetApprox(*mode == 'A');
     config.SetCholQR(*qr == 'C');
-    config.EnableSymCheck(false);
-    config.SetDegExtra(0);
-    
-    // Set parameters for PseudoHermitian matrices
-    if constexpr (std::is_same_v<typename SeqMatrixType::hermitian_type, chase::matrix::PseudoHermitian>) {
-        config.SetDecayingRate(0.975);
-        config.SetLanczosIter(25);
-        config.SetNumLanczos(100);
-        config.SetMaxDeg(36);
-        config.SetClusterAwareDegrees(true);
-    }
+#ifdef CHASE_OUTPUT
+    std::cout << "Config: " << config << std::endl;
+#endif
 
     chase::PerformanceDecoratorChase<T> performanceDecorator(single);
     chase::Solve(&performanceDecorator);   
     
     chase::Base<T>* ritzv = single->GetRitzv();
     chase::Base<T>* resid = single->GetResid();
-    
+#ifdef CHASE_OUTPUT
     performanceDecorator.GetPerfData().print();
     std::cout << "\n\n";
     std::cout << "Printing first 5 eigenvalues and residuals\n";
@@ -283,6 +275,7 @@ void ChASE_SEQ_Solve(int* deg, chase::Base<typename SeqMatrixType::value_type>* 
                     << std::setw(width) << ritzv[i] << "  | "
                     << std::setw(width) << resid[i] << "  |\n";
     std::cout << "\n\n\n";
+#endif
 }
 
 template<typename MatrixType>
@@ -1040,18 +1033,7 @@ void ChASE_DIST<MatrixType>::Solve(int* deg, chase::Base<typename MatrixType::va
     config.SetOpt(*opt == 'S');
     config.SetApprox(*mode == 'A');
     config.SetCholQR(*qr == 'C');
-    config.EnableSymCheck(false);
-    config.SetDegExtra(0);
-    
-    // Set lowerb parameter to 0.97 for PseudoHermitian matrices
-    // Check if MatrixType is a PseudoHermitian type by checking the hermitian_type trait
-    if constexpr (std::is_same_v<typename MatrixType::hermitian_type, chase::matrix::PseudoHermitian>) {
-        config.SetDecayingRate(0.975);
-        config.SetLanczosIter(25);
-        config.SetNumLanczos(100);
-        config.SetMaxDeg(36);
-        config.SetClusterAwareDegrees(true);
-    }
+
 #ifdef CHASE_OUTPUT
     if(single->get_rank() == 0)
     {
@@ -1089,6 +1071,102 @@ void ChASE_DIST<MatrixType>::Solve(int* deg, chase::Base<typename MatrixType::va
         std::cout << "\n\n\n";  
     }   
 #endif
+}
+
+// ---------------------------------------------------------------------------
+// Unified Config Setter Functions
+// These functions work regardless of matrix type, precision, or architecture
+// ---------------------------------------------------------------------------
+
+// Helper function to get active config using getChase() pattern
+// First checks all distributed solvers (more common), then sequential solvers
+// A solver can only be either sequential OR distributed, not both
+template<typename T>
+chase::ChaseConfig<T>* getActiveConfig()
+{
+    // First, try all distributed solvers (most common use case)
+    if constexpr (std::is_same_v<T, double>) {
+        if (ChASE_DIST<chase::distMatrix::BlockCyclicMatrix<double, ARCH>>::dchaseDist_cyclic != nullptr) {
+            auto* dist = ChASE_DIST<chase::distMatrix::BlockCyclicMatrix<double, ARCH>>::getChase();
+            if (dist != nullptr) return &(dist->GetConfig());
+        }
+        if (ChASE_DIST<chase::distMatrix::BlockBlockMatrix<double, ARCH>>::dchaseDist_block != nullptr) {
+            auto* dist = ChASE_DIST<chase::distMatrix::BlockBlockMatrix<double, ARCH>>::getChase();
+            if (dist != nullptr) return &(dist->GetConfig());
+        }
+    } else if constexpr (std::is_same_v<T, float>) {
+        if (ChASE_DIST<chase::distMatrix::BlockCyclicMatrix<float, ARCH>>::schaseDist_cyclic != nullptr) {
+            auto* dist = ChASE_DIST<chase::distMatrix::BlockCyclicMatrix<float, ARCH>>::getChase();
+            if (dist != nullptr) return &(dist->GetConfig());
+        }
+        if (ChASE_DIST<chase::distMatrix::BlockBlockMatrix<float, ARCH>>::schaseDist_block != nullptr) {
+            auto* dist = ChASE_DIST<chase::distMatrix::BlockBlockMatrix<float, ARCH>>::getChase();
+            if (dist != nullptr) return &(dist->GetConfig());
+        }
+    } else if constexpr (std::is_same_v<T, std::complex<double>>) {
+        // Check pseudo-Hermitian first
+        if (ChASE_DIST<chase::distMatrix::PseudoHermitianBlockCyclicMatrix<std::complex<double>, ARCH>>::zchaseDist_pseudo_cyclic != nullptr) {
+            auto* dist = ChASE_DIST<chase::distMatrix::PseudoHermitianBlockCyclicMatrix<std::complex<double>, ARCH>>::getChase();
+            if (dist != nullptr) return &(dist->GetConfig());
+        }
+        if (ChASE_DIST<chase::distMatrix::PseudoHermitianBlockBlockMatrix<std::complex<double>, ARCH>>::zchaseDist_pseudo_block != nullptr) {
+            auto* dist = ChASE_DIST<chase::distMatrix::PseudoHermitianBlockBlockMatrix<std::complex<double>, ARCH>>::getChase();
+            if (dist != nullptr) return &(dist->GetConfig());
+        }
+        // Then check regular
+        if (ChASE_DIST<chase::distMatrix::BlockCyclicMatrix<std::complex<double>, ARCH>>::zchaseDist_cyclic != nullptr) {
+            auto* dist = ChASE_DIST<chase::distMatrix::BlockCyclicMatrix<std::complex<double>, ARCH>>::getChase();
+            if (dist != nullptr) return &(dist->GetConfig());
+        }
+        if (ChASE_DIST<chase::distMatrix::BlockBlockMatrix<std::complex<double>, ARCH>>::zchaseDist_block != nullptr) {
+            auto* dist = ChASE_DIST<chase::distMatrix::BlockBlockMatrix<std::complex<double>, ARCH>>::getChase();
+            if (dist != nullptr) return &(dist->GetConfig());
+        }
+    } else if constexpr (std::is_same_v<T, std::complex<float>>) {
+        // Check pseudo-Hermitian first
+        if (ChASE_DIST<chase::distMatrix::PseudoHermitianBlockCyclicMatrix<std::complex<float>, ARCH>>::cchaseDist_pseudo_cyclic != nullptr) {
+            auto* dist = ChASE_DIST<chase::distMatrix::PseudoHermitianBlockCyclicMatrix<std::complex<float>, ARCH>>::getChase();
+            if (dist != nullptr) return &(dist->GetConfig());
+        }
+        if (ChASE_DIST<chase::distMatrix::PseudoHermitianBlockBlockMatrix<std::complex<float>, ARCH>>::cchaseDist_pseudo_block != nullptr) {
+            auto* dist = ChASE_DIST<chase::distMatrix::PseudoHermitianBlockBlockMatrix<std::complex<float>, ARCH>>::getChase();
+            if (dist != nullptr) return &(dist->GetConfig());
+        }
+        // Then check regular
+        if (ChASE_DIST<chase::distMatrix::BlockCyclicMatrix<std::complex<float>, ARCH>>::cchaseDist_cyclic != nullptr) {
+            auto* dist = ChASE_DIST<chase::distMatrix::BlockCyclicMatrix<std::complex<float>, ARCH>>::getChase();
+            if (dist != nullptr) return &(dist->GetConfig());
+        }
+        if (ChASE_DIST<chase::distMatrix::BlockBlockMatrix<std::complex<float>, ARCH>>::cchaseDist_block != nullptr) {
+            auto* dist = ChASE_DIST<chase::distMatrix::BlockBlockMatrix<std::complex<float>, ARCH>>::getChase();
+            if (dist != nullptr) return &(dist->GetConfig());
+        }
+    }
+    
+    // Only check sequential solvers if no distributed solver was found
+    if constexpr (std::is_same_v<T, double>) {
+        auto* single = ChASE_SEQ<chase::matrix::Matrix<double, ARCH>>::getChase();
+        if (single != nullptr) return &(single->GetConfig());
+    } else if constexpr (std::is_same_v<T, float>) {
+        auto* single = ChASE_SEQ<chase::matrix::Matrix<float, ARCH>>::getChase();
+        if (single != nullptr) return &(single->GetConfig());
+    } else if constexpr (std::is_same_v<T, std::complex<double>>) {
+        // Check pseudo-Hermitian first
+        auto* single_pseudo = ChASE_SEQ<chase::matrix::PseudoHermitianMatrix<std::complex<double>, ARCH>>::getChase();
+        if (single_pseudo != nullptr) return &(single_pseudo->GetConfig());
+        // Then check regular
+        auto* single = ChASE_SEQ<chase::matrix::Matrix<std::complex<double>, ARCH>>::getChase();
+        if (single != nullptr) return &(single->GetConfig());
+    } else if constexpr (std::is_same_v<T, std::complex<float>>) {
+        // Check pseudo-Hermitian first
+        auto* single_pseudo = ChASE_SEQ<chase::matrix::PseudoHermitianMatrix<std::complex<float>, ARCH>>::getChase();
+        if (single_pseudo != nullptr) return &(single_pseudo->GetConfig());
+        // Then check regular
+        auto* single = ChASE_SEQ<chase::matrix::Matrix<std::complex<float>, ARCH>>::getChase();
+        if (single != nullptr) return &(single->GetConfig());
+    }
+    
+    return nullptr;
 }
 
 extern "C" {
@@ -1730,5 +1808,135 @@ void zchase_readHam_(const char* filename)
 // Note: The _pseudo functions have been unified into the regular functions above.
 // The regular pzchase_, pcchase_, pzchase_finalize_, pcchase_finalize_, etc. 
 // now handle both regular and pseudo-Hermitian types by checking pseudo-Hermitian solvers first.
+
+// Unified config setter functions - work for all types
+// Uses getChase() pattern similar to ChASE_SEQ_Solve
+// Silently returns if no solver is initialized (consistent with readHam behavior)
+void chase_set_tol_(double* tol)
+{
+    // Try all possible types
+    if (auto* config = getActiveConfig<double>()) { config->SetTol(*tol); return; }
+    if (auto* config = getActiveConfig<float>()) { config->SetTol(static_cast<float>(*tol)); return; }
+    if (auto* config = getActiveConfig<std::complex<double>>()) { config->SetTol(*tol); return; }
+    if (auto* config = getActiveConfig<std::complex<float>>()) { config->SetTol(static_cast<float>(*tol)); return; }
+    // If no solver is initialized, function returns silently (no error)
+}
+
+void chase_set_deg_(int* deg)
+{
+    std::size_t deg_val = static_cast<std::size_t>(*deg);
+    if (auto* config = getActiveConfig<double>()) { config->SetDeg(deg_val); return; }
+    if (auto* config = getActiveConfig<float>()) { config->SetDeg(deg_val); return; }
+    if (auto* config = getActiveConfig<std::complex<double>>()) { config->SetDeg(deg_val); return; }
+    if (auto* config = getActiveConfig<std::complex<float>>()) { config->SetDeg(deg_val); return; }
+}
+
+void chase_set_max_deg_(int* max_deg)
+{
+    std::size_t max_deg_val = static_cast<std::size_t>(*max_deg);
+    if (auto* config = getActiveConfig<double>()) { config->SetMaxDeg(max_deg_val); return; }
+    if (auto* config = getActiveConfig<float>()) { config->SetMaxDeg(max_deg_val); return; }
+    if (auto* config = getActiveConfig<std::complex<double>>()) { config->SetMaxDeg(max_deg_val); return; }
+    if (auto* config = getActiveConfig<std::complex<float>>()) { config->SetMaxDeg(max_deg_val); return; }
+}
+
+void chase_set_deg_extra_(int* deg_extra)
+{
+    std::size_t deg_extra_val = static_cast<std::size_t>(*deg_extra);
+    if (auto* config = getActiveConfig<double>()) { config->SetDegExtra(deg_extra_val); return; }
+    if (auto* config = getActiveConfig<float>()) { config->SetDegExtra(deg_extra_val); return; }
+    if (auto* config = getActiveConfig<std::complex<double>>()) { config->SetDegExtra(deg_extra_val); return; }
+    if (auto* config = getActiveConfig<std::complex<float>>()) { config->SetDegExtra(deg_extra_val); return; }
+}
+
+void chase_set_max_iter_(int* max_iter)
+{
+    std::size_t max_iter_val = static_cast<std::size_t>(*max_iter);
+    if (auto* config = getActiveConfig<double>()) { config->SetMaxIter(max_iter_val); return; }
+    if (auto* config = getActiveConfig<float>()) { config->SetMaxIter(max_iter_val); return; }
+    if (auto* config = getActiveConfig<std::complex<double>>()) { config->SetMaxIter(max_iter_val); return; }
+    if (auto* config = getActiveConfig<std::complex<float>>()) { config->SetMaxIter(max_iter_val); return; }
+}
+
+void chase_set_lanczos_iter_(int* lanczos_iter)
+{
+    std::size_t lanczos_iter_val = static_cast<std::size_t>(*lanczos_iter);
+    if (auto* config = getActiveConfig<double>()) { config->SetLanczosIter(lanczos_iter_val); return; }
+    if (auto* config = getActiveConfig<float>()) { config->SetLanczosIter(lanczos_iter_val); return; }
+    if (auto* config = getActiveConfig<std::complex<double>>()) { config->SetLanczosIter(lanczos_iter_val); return; }
+    if (auto* config = getActiveConfig<std::complex<float>>()) { config->SetLanczosIter(lanczos_iter_val); return; }
+}
+
+void chase_set_num_lanczos_(int* num_lanczos)
+{
+    std::size_t num_lanczos_val = static_cast<std::size_t>(*num_lanczos);
+    if (auto* config = getActiveConfig<double>()) { config->SetNumLanczos(num_lanczos_val); return; }
+    if (auto* config = getActiveConfig<float>()) { config->SetNumLanczos(num_lanczos_val); return; }
+    if (auto* config = getActiveConfig<std::complex<double>>()) { config->SetNumLanczos(num_lanczos_val); return; }
+    if (auto* config = getActiveConfig<std::complex<float>>()) { config->SetNumLanczos(num_lanczos_val); return; }
+}
+
+void chase_set_approx_(int* flag)
+{
+    bool flag_val = (*flag != 0);
+    if (auto* config = getActiveConfig<double>()) { config->SetApprox(flag_val); return; }
+    if (auto* config = getActiveConfig<float>()) { config->SetApprox(flag_val); return; }
+    if (auto* config = getActiveConfig<std::complex<double>>()) { config->SetApprox(flag_val); return; }
+    if (auto* config = getActiveConfig<std::complex<float>>()) { config->SetApprox(flag_val); return; }
+}
+
+void chase_set_opt_(int* flag)
+{
+    bool flag_val = (*flag != 0);
+    if (auto* config = getActiveConfig<double>()) { config->SetOpt(flag_val); return; }
+    if (auto* config = getActiveConfig<float>()) { config->SetOpt(flag_val); return; }
+    if (auto* config = getActiveConfig<std::complex<double>>()) { config->SetOpt(flag_val); return; }
+    if (auto* config = getActiveConfig<std::complex<float>>()) { config->SetOpt(flag_val); return; }
+}
+
+void chase_set_cholqr_(int* flag)
+{
+    bool flag_val = (*flag != 0);
+    if (auto* config = getActiveConfig<double>()) { config->SetCholQR(flag_val); return; }
+    if (auto* config = getActiveConfig<float>()) { config->SetCholQR(flag_val); return; }
+    if (auto* config = getActiveConfig<std::complex<double>>()) { config->SetCholQR(flag_val); return; }
+    if (auto* config = getActiveConfig<std::complex<float>>()) { config->SetCholQR(flag_val); return; }
+}
+
+void chase_enable_sym_check_(int* flag)
+{
+    bool flag_val = (*flag != 0);
+    if (auto* config = getActiveConfig<double>()) { config->EnableSymCheck(flag_val); return; }
+    if (auto* config = getActiveConfig<float>()) { config->EnableSymCheck(flag_val); return; }
+    if (auto* config = getActiveConfig<std::complex<double>>()) { config->EnableSymCheck(flag_val); return; }
+    if (auto* config = getActiveConfig<std::complex<float>>()) { config->EnableSymCheck(flag_val); return; }
+}
+
+void chase_set_decaying_rate_(float* decaying_rate)
+{
+    float rate_val = *decaying_rate;
+    if (auto* config = getActiveConfig<double>()) { config->SetDecayingRate(rate_val); return; }
+    if (auto* config = getActiveConfig<float>()) { config->SetDecayingRate(rate_val); return; }
+    if (auto* config = getActiveConfig<std::complex<double>>()) { config->SetDecayingRate(rate_val); return; }
+    if (auto* config = getActiveConfig<std::complex<float>>()) { config->SetDecayingRate(rate_val); return; }
+}
+
+void chase_set_cluster_aware_degrees_(int* flag)
+{
+    bool flag_val = (*flag != 0);
+    if (auto* config = getActiveConfig<double>()) { config->SetClusterAwareDegrees(flag_val); return; }
+    if (auto* config = getActiveConfig<float>()) { config->SetClusterAwareDegrees(flag_val); return; }
+    if (auto* config = getActiveConfig<std::complex<double>>()) { config->SetClusterAwareDegrees(flag_val); return; }
+    if (auto* config = getActiveConfig<std::complex<float>>()) { config->SetClusterAwareDegrees(flag_val); return; }
+}
+
+void chase_set_upperb_scale_rate_(float* upperb_scale_rate)
+{
+    float rate_val = *upperb_scale_rate;
+    if (auto* config = getActiveConfig<double>()) { config->SetUpperbScaleRate(rate_val); return; }
+    if (auto* config = getActiveConfig<float>()) { config->SetUpperbScaleRate(rate_val); return; }
+    if (auto* config = getActiveConfig<std::complex<double>>()) { config->SetUpperbScaleRate(rate_val); return; }
+    if (auto* config = getActiveConfig<std::complex<float>>()) { config->SetUpperbScaleRate(rate_val); return; }
+}
 
 }

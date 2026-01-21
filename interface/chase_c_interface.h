@@ -133,6 +133,24 @@ void dchase_readHam_(const char* filename);
 void cchase_readHam_(const char* filename);
 void zchase_readHam_(const char* filename);
 
+// Unified configuration setter functions
+// These work regardless of matrix type, precision, or architecture
+// They automatically detect the active solver instance
+void chase_set_tol_(double* tol);
+void chase_set_deg_(int* deg);
+void chase_set_max_deg_(int* max_deg);
+void chase_set_deg_extra_(int* deg_extra);
+void chase_set_max_iter_(int* max_iter);
+void chase_set_lanczos_iter_(int* lanczos_iter);
+void chase_set_num_lanczos_(int* num_lanczos);
+void chase_set_approx_(int* flag);
+void chase_set_opt_(int* flag);
+void chase_set_cholqr_(int* flag);
+void chase_enable_sym_check_(int* flag);
+void chase_set_decaying_rate_(float* decaying_rate);
+void chase_set_cluster_aware_degrees_(int* flag);
+void chase_set_upperb_scale_rate_(float* upperb_scale_rate);
+
 #ifdef __cplusplus
 }
 #endif

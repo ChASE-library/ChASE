@@ -77,17 +77,10 @@ int main(int argc, char** argv)
     double _Complex* H =
         (double _Complex*)malloc(sizeof(double _Complex) * m * n);
 
-#ifdef INTERFACE_BLOCK_CYCLIC    
-    int zero = 0;
-    pzchase_init_(&N, &nev, &nex, &m,
-                                    &n, H, &m, V, Lambda, &dims[0], &dims[1],
-                                    (char*)"C", &zero,
-                                    &zero,  &comm, &init);
-                                    
-#else
+
     pzchase_init_(&N, &nev, &nex, &m, &n, H, &m, V, Lambda, &dims[0], &dims[1],
                   (char*)"C", &comm, &init);
-#endif
+
     // Generate Clement matrix in distributed manner
     for (int x = 0; x < xlen; x++)
     {

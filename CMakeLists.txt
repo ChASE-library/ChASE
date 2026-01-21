@@ -102,68 +102,6 @@ add_executable( "chase_driver_gpu" tests/noinput.cpp )
 target_link_libraries(chase_driver_gpu chase_gpu)
 endif()
 
-#add_executable( "herm_chase_run_cpu" tests/dist_pseudo_noinput.cpp )
-#target_link_libraries("herm_chase_run_cpu" chase_cpu)
-
-#add_executable( "pseudo_chase_run_cpu" tests/dist_pseudo_noinput.cpp )
-#target_link_libraries("pseudo_chase_run_cpu" chase_cpu)
-#target_compile_definitions( "pseudo_chase_run_cpu" PRIVATE USE_PSEUDO_HERMITIAN=1)
-
-#if(TARGET chase_gpu)
-	#add_executable("herm_chase_run_gpu" tests/dist_pseudo_noinput.cpp)
-#target_link_libraries("herm_chase_run_gpu" chase_gpu)
-#target_compile_definitions("herm_chase_run_gpu" INTERFACE "-DHAS_CUDA")
-
-#add_executable("pseudo_chase_run_gpu" tests/dist_pseudo_noinput.cpp)
-#target_link_libraries("pseudo_chase_run_gpu" chase_gpu)
-#target_compile_definitions("pseudo_chase_run_gpu" PRIVATE USE_PSEUDO_HERMITIAN=1)
-#target_compile_definitions("pseudo_chase_run_gpu" INTERFACE "-DHAS_CUDA")
-#endif()
-
-#if(TARGET pchase_cpu)
-	#add_executable("herm_block_dist_chase_run_cpu" tests/dist_pseudo_noinput.cpp)
-#target_link_libraries("herm_block_dist_chase_run_cpu" pchase_cpu)
-#target_compile_definitions("herm_block_dist_chase_run_cpu" PRIVATE USE_MPI=1)
-
-#add_executable("pseudo_block_dist_chase_run_cpu" tests/dist_pseudo_noinput.cpp)
-#target_link_libraries("pseudo_block_dist_chase_run_cpu" pchase_cpu)
-#target_compile_definitions("pseudo_block_dist_chase_run_cpu" PRIVATE USE_PSEUDO_HERMITIAN=1)
-#target_compile_definitions("pseudo_block_dist_chase_run_cpu" PRIVATE USE_MPI=1)
-
-#add_executable("herm_cyclic_dist_chase_run_cpu" tests/dist_pseudo_noinput.cpp)
-#target_link_libraries("herm_cyclic_dist_chase_run_cpu" pchase_cpu)
-#target_compile_definitions("herm_cyclic_dist_chase_run_cpu" PRIVATE USE_BLOCKCYCLIC=1)
-#target_compile_definitions("herm_cyclic_dist_chase_run_cpu" PRIVATE USE_MPI=1)
-
-#add_executable("pseudo_cyclic_dist_chase_run_cpu" tests/dist_pseudo_noinput.cpp )
-#target_link_libraries("pseudo_cyclic_dist_chase_run_cpu" pchase_cpu)
-#target_compile_definitions("pseudo_cyclic_dist_chase_run_cpu" PRIVATE USE_BLOCKCYCLIC=1)
-#target_compile_definitions("pseudo_cyclic_dist_chase_run_cpu" PRIVATE USE_PSEUDO_HERMITIAN=1)
-#target_compile_definitions("pseudo_cyclic_dist_chase_run_cpu" PRIVATE USE_MPI=1)
-#endif()
-
-#if(TARGET pchase_gpu)
-	#add_executable("herm_block_dist_chase_run_gpu" tests/dist_pseudo_noinput.cpp)
-#target_link_libraries("herm_block_dist_chase_run_gpu" pchase_gpu)
-#target_compile_definitions("herm_block_dist_chase_run_gpu" INTERFACE "-DHAS_NCCL -DHAS_CUDA")
-
-#add_executable("pseudo_block_dist_chase_run_gpu" tests/dist_pseudo_noinput.cpp)
-#target_link_libraries("pseudo_block_dist_chase_run_gpu"  pchase_gpu)
-#target_compile_definitions("pseudo_block_dist_chase_run_gpu" PRIVATE USE_PSEUDO_HERMITIAN=1)
-#target_compile_definitions("pseudo_block_dist_chase_run_gpu" INTERFACE "-DHAS_NCCL -DHAS_CUDA")
-
-#add_executable("herm_cyclic_dist_chase_run_gpu" tests/dist_pseudo_noinput.cpp)
-#target_link_libraries("herm_cyclic_dist_chase_run_gpu" pchase_gpu)
-#target_compile_definitions("herm_cyclic_dist_chase_run_gpu" PRIVATE USE_BLOCKCYCLIC=1)
-#target_compile_definitions("herm_cyclic_dist_chase_run_gpu" INTERFACE "-DHAS_NCCL -DHAS_CUDA")
-
-#add_executable("pseudo_cyclic_dist_chase_run_gpu" tests/dist_pseudo_noinput.cpp)
-#target_link_libraries("pseudo_cyclic_dist_chase_run_gpu" pchase_gpu)
-#target_compile_definitions("pseudo_cyclic_dist_chase_run_gpu" PRIVATE USE_BLOCKCYCLIC=1)
-#target_compile_definitions("pseudo_cyclic_dist_chase_run_gpu" PRIVATE USE_PSEUDO_HERMITIAN=1)
-#target_compile_definitions("pseudo_cyclic_dist_chase_run_gpu" INTERFACE "-DHAS_NCCL" "-DHAS_CUDA")
-#endif()
-
 option(ENABLE_TESTS "Enable unit tests." OFF)
 if(ENABLE_TESTS)
     MESSAGE("Test enabled. Finding GoogleTests.")
@@ -181,39 +119,6 @@ if(CHASE_BUILD_WITH_DOCS)
     message(STATUS "Building Documentation of ChASE")
     add_subdirectory("docs")
 endif()
-
-#get_target_property(interface_defs mpi_grid_nccl INTERFACE_COMPILE_DEFINITIONS)
-#message("INTERFACE_COMPILE_DEFINITIONS: ${interface_defs}")
-
-# List all dependencies (linked targets)
-#get_target_property(linked_libraries pchase_gpu INTERFACE_LINK_LIBRARIES)
-#message("linked_libraries: ${linked_libraries}")
-# Prepare a list to store definitions
-#set(all_inherited_defs "")
-
-#foreach(dep ${linked_libraries})
-    # Check if the dependency is a valid target
-#    if(TARGET ${dep})
-        # Get INTERFACE_COMPILE_DEFINITIONS from the dependency
-#        get_target_property(dep_defs ${dep} INTERFACE_COMPILE_DEFINITIONS)
-        
-        # Append to the list
-#        if(dep_defs)
-#            list(APPEND all_inherited_defs ${dep_defs})
-#        endif()
-#    endif()
-#endforeach()
-
-# Remove duplicates (optional)
-#list(REMOVE_DUPLICATES all_inherited_defs)
-
-# Print all inherited definitions
-#message("Inherited compile definitions: ${all_inherited_defs}")
-#get_target_property(linked_libraries blaspp INTERFACE_LINK_LIBRARIES)
-#message("Libraries linked by blaspp: ${linked_libraries}")
-#get_target_property(blas_library ${linked_libraries} IMPORTED_LOCATION)
-#message("BLAS library path: ${blas_library}")
-
 
 ##installation
 install( TARGETS chase_algorithm
