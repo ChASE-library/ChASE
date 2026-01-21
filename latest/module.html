@@ -1,0 +1,912 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>5. Modules &mdash; ChASE v1.3.0 documentation</title>
+      <link rel="stylesheet" href="theme_overrides.css" type="text/css" />
+
+  
+    <link rel="shortcut icon" href="_static/ChASE_Logo_Favicon_RGB.png"/>
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=e49d06fc"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="6. Examples" href="example.html" />
+    <link rel="prev" title="4. Parameters and Configurations" href="parameters.html" />
+     
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+    <link href="_static/theme_overrides.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+
+          
+          
+          <a href="index.html">
+            
+              <img src="_static/ChASE_Logo_RGB.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+  <div class="version-selector" style="margin: 10px 0; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 3px;">
+  <label for="version-select" style="display: block; color: #fcfcfc; font-size: 12px; margin-bottom: 5px; font-weight: bold;">
+    Version:
+  </label>
+  <select id="version-select" onchange="switchVersion(this.value)" style="width: 100%; padding: 5px; border: 1px solid #2980B9; border-radius: 3px; background: white; color: #333; font-size: 13px;"><option value="/ChASE/latest/">
+      latest
+    </option></select>
+</div><script>
+function switchVersion(url) {
+  // Get current path and determine base URL
+  const currentPath = window.location.pathname;
+  const pathParts = currentPath.split('/').filter(p => p);
+  
+  // Get known versions from the select options (dynamic, not hardcoded)
+  const selector = document.getElementById('version-select');
+  const knownVersions = [];
+  if (selector) {
+    for (let option of selector.options) {
+      const verName = option.text.trim();
+      knownVersions.push(verName);
+    }
+  }
+  
+  // Find the repository name in the path (e.g., "ChASE" in "/ChASE/latest/...")
+  // This handles project pages where URL is: username.github.io/repo-name/version/...
+  let repoName = '';
+  let versionIndex = -1;
+  
+  // Look for version in path (could be at index 1 or 2 depending on structure)
+  for (let i = 0; i < pathParts.length; i++) {
+    if (knownVersions.includes(pathParts[i])) {
+      versionIndex = i;
+      if (i > 0) {
+        repoName = pathParts[i - 1]; // Repository name is before version
+      }
+      break;
+    }
+  }
+  
+  // Get relative path (everything after version)
+  let relativePath = '';
+  if (versionIndex >= 0) {
+    // We're in a versioned path, get everything after version
+    relativePath = '/' + pathParts.slice(versionIndex + 1).join('/');
+  } else {
+    // We're in root or unversioned, get current path
+    relativePath = currentPath;
+  }
+  
+  // Construct new URL
+  // The URL from conf.py already includes the full path (e.g., "/ChASE/latest/")
+  // So we just need to append the relative path (page name)
+  const baseUrl = url.replace(/\/$/, ''); // Remove trailing slash
+  const cleanRelative = relativePath === '/' ? '' : relativePath.replace(/^\//, '');
+  
+  // If URL already includes the repo name, use it as-is
+  // Otherwise, we might need to add it (but conf.py should have it)
+  if (url.startsWith('http')) {
+    window.location.href = url + (cleanRelative ? '/' + cleanRelative : '');
+  } else {
+    window.location.href = baseUrl + (cleanRelative ? '/' + cleanRelative : '');
+  }
+}
+
+// Auto-detect current version from URL and update selector
+(function() {
+  const currentPath = window.location.pathname;
+  const pathParts = currentPath.split('/').filter(p => p);
+  
+  // Get known versions from select options
+  const selector = document.getElementById('version-select');
+  if (!selector) return;
+  
+  const knownVersions = [];
+  for (let option of selector.options) {
+    const verName = option.text.trim();
+    knownVersions.push(verName);
+  }
+  
+  // Look for version in path (could be at index 0, 1, or 2 depending on structure)
+  // For project pages: /repo-name/version/... (version at index 1)
+  // For user pages: /version/... (version at index 0)
+  for (let i = 0; i < pathParts.length; i++) {
+    if (knownVersions.includes(pathParts[i])) {
+      const currentVer = pathParts[i];
+      // Find option matching current version
+      for (let option of selector.options) {
+        if (option.text.trim() === currentVer) {
+          selector.value = option.value;
+          break;
+        }
+      }
+      break;
+    }
+  }
+})();
+</script>
+
+<style>
+.version-selector select:focus {
+  outline: 2px solid #2980B9;
+  outline-offset: 2px;
+}
+</style>
+
+
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">INTRODUCTION</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="chase.html">ChASE: an Iterative Solver for Dense Eigenproblems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="version.html">Versions of the library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">Licenses and Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="reference.html">References and Contributors</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">USER DOCUMENTATION</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="quick-start.html">1. Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">2. Installation and Setup on a Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">3. How to use ChASE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parameters.html">4. Parameters and Configurations</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">5. Modules</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#overview">5.1. Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#core-algorithm-module">5.2. Core Algorithm Module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#chase-chasebase">5.2.1. chase::ChaseBase</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#chase-algorithm">5.2.2. chase::Algorithm</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#chase-chaseconfig">5.2.3. chase::ChaseConfig</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#chase-chaseperfdata">5.2.4. chase::ChasePerfData</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#chase-performancedecoratorchase">5.2.5. chase::PerformanceDecoratorChase</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#implementation-classes">5.3. Implementation Classes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#sequential-implementations">5.3.1. Sequential Implementations</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#chase-impl-chasecpu">5.3.1.1. chase::Impl::ChASECPU</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#chase-impl-chasegpu">5.3.1.2. chase::Impl::ChASEGPU</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#parallel-implementations">5.3.2. Parallel Implementations</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#chase-impl-pchasecpu">5.3.2.1. chase::Impl::pChASECPU</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#chase-impl-pchasegpu">5.3.2.2. chase::Impl::pChASEGPU</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#matrix-classes">5.4. Matrix Classes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#sequential-matrix-classes">5.4.1. Sequential Matrix Classes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#chase-matrix-matrix">5.4.1.1. chase::matrix::Matrix</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#chase-matrix-quasihermitianmatrix">5.4.1.2. chase::matrix::QuasiHermitianMatrix</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#type-tags">5.4.1.3. Type Tags</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#distributed-matrix-classes">5.4.2. Distributed Matrix Classes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#hermitian-distributed-matrices">5.4.2.1. Hermitian Distributed Matrices</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pseudo-hermitian-distributed-matrices">5.4.2.2. Pseudo-Hermitian Distributed Matrices</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#distributed-multi-vectors">5.4.2.3. Distributed Multi-Vectors</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#grid-and-communication">5.5. Grid and Communication</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#chase-grid-mpigrid2d">5.5.1. chase::grid::MpiGrid2D</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#chase-grid-mpigrid2dbase">5.5.2. chase::grid::MpiGrid2DBase</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#backend-types">5.5.3. Backend Types</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#chase-grid-backend-mpi">5.5.3.1. chase::grid::backend::MPI</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#chase-grid-backend-nccl">5.5.3.2. chase::grid::backend::NCCL</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#grid-major-ordering">5.5.4. Grid Major Ordering</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#linear-algebra-kernels">5.6. Linear Algebra Kernels</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#kernel-organization">5.6.1. Kernel Organization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#core-kernel-functions">5.6.2. Core Kernel Functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#type-traits">5.6.3. Type Traits</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#platform-types">5.7. Platform Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#type-utilities">5.8. Type Utilities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#c-and-fortran-interfaces">5.9. C and Fortran Interfaces</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#c-interface">5.9.1. C Interface</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#fortran-interface">5.9.2. Fortran Interface</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="example.html">6. Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API REFERENCE</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api/index.html">1. API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ChASE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><span class="section-number">5. </span>Modules</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/module.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="modules">
+<h1><span class="section-number">5. </span>Modules<a class="headerlink" href="#modules" title="Link to this heading"></a></h1>
+<section id="overview">
+<h2><span class="section-number">5.1. </span>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>The implementation of ChASE provides a stand-alone high-performance
+parallel library based on our original design of the Chebyshev
+accelerated subspace iteration algorithm. The ChASE library promises the portability
+to heterogeneous architectures and the easy integration into existing codes. This goal is
+achieved by separating the implementation of the ChASE algorithm from the required numerical
+kernels via an interface based on pure C++ abstract classes. Classes derived from this interface
+handle data distribution and (parallel) execution of each kernel. The required numerical kernels
+are based on Basic Linear Algebra Subprograms (BLAS)-3 compatible kernels, such as a (parallel)
+matrix-matrix multiplication and QR factorization. This modern “stand-alone” strategy grants
+ChASE an unprecedented degree of flexibility that makes the integration of this library in
+most application codes quite simple. ChASE efficiently uses available machine resources.</p>
+<p>All the implementation of ChASE take place within a C++ namespace <code class="docutils literal notranslate"><span class="pre">chase</span></code>. The library is
+organized into several key modules:</p>
+<ul class="simple">
+<li><p><strong>Core Algorithm Module</strong>: Abstract interfaces and algorithm implementation</p></li>
+<li><p><strong>Implementation Classes</strong>: Concrete implementations for different architectures</p></li>
+<li><p><strong>Matrix Classes</strong>: Sequential and distributed matrix types</p></li>
+<li><p><strong>Grid and Communication</strong>: MPI grid management and communication backends</p></li>
+<li><p><strong>Linear Algebra Kernels</strong>: Low-level numerical kernels for different platforms</p></li>
+<li><p><strong>Interface Modules</strong>: C and Fortran bindings</p></li>
+</ul>
+</section>
+<section id="core-algorithm-module">
+<h2><span class="section-number">5.2. </span>Core Algorithm Module<a class="headerlink" href="#core-algorithm-module" title="Link to this heading"></a></h2>
+<section id="chase-chasebase">
+<h3><span class="section-number">5.2.1. </span>chase::ChaseBase<a class="headerlink" href="#chase-chasebase" title="Link to this heading"></a></h3>
+<p>The numerical kernels required by ChASE algorithm are defined in the abstract base class
+<code class="docutils literal notranslate"><span class="pre">chase::ChaseBase&lt;T&gt;</span></code>. All the functions are defined as virtual functions, and further
+implementations are required targeting different computing architectures. It includes the
+following functionalities:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">HEMM()</span></code>: Hermitian Matrix-Matrix Multiplication</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">QR()</span></code>: QR factorization (with S-orthonormalization for pseudo-Hermitian matrices)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">RR()</span></code>: Rayleigh-Ritz projection and small problem solver
+- For Hermitian problems: Standard Rayleigh-Ritz projection
+- For Pseudo-Hermitian problems: Oblique Rayleigh-Ritz projection with S-metric</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Resd()</span></code>: Compute the eigenpair residuals</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Lanczos()</span></code>: Estimate the bounds of user-interested spectrum by Lanczos eigensolver</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">LanczosDos()</span></code>: Estimate the spectral distribution of eigenvalues</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Swap()</span></code>: Swap the two matrices of vectors used in the Chebyshev filter</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Lock()</span></code>: Lock the converged eigenpairs</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Shift()</span></code>: Shift the diagonal of matrix <code class="docutils literal notranslate"><span class="pre">A</span></code> used in the 3-term
+recurrence relation implemented in the Chebyshev filter</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">isSym()</span></code>: Check if the matrix is symmetric/Hermitian</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">isPseudoHerm()</span></code>: Check if the matrix is pseudo-Hermitian</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">GetConfig()</span></code>: Get the configuration object</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">GetResid()</span></code>: Get the residual vector</p></li>
+</ul>
+</div></blockquote>
+<p><strong>API Reference</strong>: <a class="reference internal" href="api/chasebase.html#api-chasebase"><span class="std std-ref">chase::ChaseBase</span></a></p>
+</section>
+<section id="chase-algorithm">
+<h3><span class="section-number">5.2.2. </span>chase::Algorithm<a class="headerlink" href="#chase-algorithm" title="Link to this heading"></a></h3>
+<p>The class <code class="docutils literal notranslate"><span class="pre">chase::Algorithm&lt;T&gt;</span></code> has awareness of the class <code class="docutils literal notranslate"><span class="pre">chase::ChaseBase&lt;T&gt;</span></code>, and
+it defines the algorithmic implementation of ChASE using the
+defined virtual kernels in <code class="docutils literal notranslate"><span class="pre">chase::ChaseBase&lt;T&gt;</span></code>. It includes the
+functionalities:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Chebyshev filter</p></li>
+<li><p>Calculation of degree of the filter</p></li>
+<li><p>Lanczos solver to estimate the bound of spectra</p></li>
+<li><p>Locking the converged Ritz pairs</p></li>
+<li><p>Convergence checking</p></li>
+</ul>
+</div></blockquote>
+<p>The function <code class="docutils literal notranslate"><span class="pre">chase::Solve(ChaseBase&lt;T&gt;*)</span></code> provides the main entry point for the ChASE
+algorithm by assembling the algorithms and numerical kernels implemented in <code class="docutils literal notranslate"><span class="pre">chase::ChaseBase&lt;T&gt;</span></code>
+and <code class="docutils literal notranslate"><span class="pre">chase::Algorithm&lt;T&gt;</span></code>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This class implements the ChASE algorithm using the virtual functions. It cannot run in practice
+until concrete implementations of these virtual functions are provided through the
+implementation classes (see <a class="reference internal" href="#implementation-classes"><span class="std std-ref">Implementation Classes</span></a>).</p>
+</div>
+<p><strong>API Reference</strong>: <a class="reference internal" href="api/algorithm.html#api-algorithm"><span class="std std-ref">chase::Algorithm</span></a></p>
+</section>
+<section id="chase-chaseconfig">
+<h3><span class="section-number">5.2.3. </span>chase::ChaseConfig<a class="headerlink" href="#chase-chaseconfig" title="Link to this heading"></a></h3>
+<p>The class <code class="docutils literal notranslate"><span class="pre">chase::Algorithm&lt;T&gt;</span></code> is aware of the class <code class="docutils literal notranslate"><span class="pre">chase::ChaseConfig&lt;T&gt;</span></code>, which
+defines the functions to set different parameters of ChASE.</p>
+<p>Besides setting up the standard parameters such as size of the
+matrix defining the eigenproblem, number of wanted
+eigenvalues, the public functions of this class
+initialize all internal parameters and allow the experienced
+user to set up the values of parameters of core functionalities
+(e.g. lanczos DoS). The aim is to influence the behavior of the
+library in special cases when the default values of the
+parameters return a sub-optimal efficiency in terms of
+performance and/or accuracy.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For more details of all available functions, please refer to
+<a class="reference internal" href="parameters.html#configuration-object"><span class="std std-ref">Configuration Object</span></a>.</p>
+</div>
+<p><strong>API Reference</strong>: <a class="reference internal" href="api/chaseconfig.html#api-chaseconfig"><span class="std std-ref">chase::ChaseConfig</span></a></p>
+</section>
+<section id="chase-chaseperfdata">
+<h3><span class="section-number">5.2.4. </span>chase::ChasePerfData<a class="headerlink" href="#chase-chaseperfdata" title="Link to this heading"></a></h3>
+<p>This class defines the performance data for different algorithm and numerical
+kernels of ChASE, e.g., the floating operations of ChASE for given size of matrix
+and a required number of eigenpairs to be computed.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">chase::ChasePerfData</span></code> class collects and handles information relative to the
+execution of the eigensolver. It collects information about</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Number of subspace iterations</p></li>
+<li><p>Number of filtered vectors</p></li>
+<li><p>Timings of each main algorithmic procedure (Lanczos, Filter, etc.)</p></li>
+<li><p>Number of FLOPs executed</p></li>
+</ul>
+</div></blockquote>
+<p>The number of iterations and filtered vectors can be used to
+monitor the behavior of the algorithm as it attempts to converge
+all the desired eigenpairs. The timings and number of FLOPs are
+used to measure performance, especially parallel performance. The
+timings are stored in a vector of objects derived by the class
+template <cite>std::chrono::duration</cite>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For more details of all available functions, including usage examples,
+please refer to the <a class="reference internal" href="usage.html"><span class="doc">How to use ChASE</span></a> documentation, specifically the
+“Performance Decorator” section.</p>
+</div>
+<p><strong>API Reference</strong>: <a class="reference internal" href="api/performance.html#api-performance"><span class="std std-ref">Performance Classes</span></a></p>
+</section>
+<section id="chase-performancedecoratorchase">
+<h3><span class="section-number">5.2.5. </span>chase::PerformanceDecoratorChase<a class="headerlink" href="#chase-performancedecoratorchase" title="Link to this heading"></a></h3>
+<p>This is a class derived from the <code class="docutils literal notranslate"><span class="pre">chase::ChaseBase&lt;T&gt;</span></code> which plays the
+role of decorator for performance measurement. All
+members of the <code class="docutils literal notranslate"><span class="pre">chase::ChaseBase&lt;T&gt;</span></code> class are virtual functions. These
+functions are re-implemented in the <code class="docutils literal notranslate"><span class="pre">chase::PerformanceDecoratorChase&lt;T&gt;</span></code>
+class. All derived members that provide an interface to
+computational kernels are re-implemented by <em>decorating</em> the
+original function with time pointers which are members of the
+<code class="docutils literal notranslate"><span class="pre">chase::ChasePerfData</span></code> class. All derived members that provide an
+interface to input or output data are called without any
+specific decoration. In addition to the virtual members of the
+<code class="docutils literal notranslate"><span class="pre">chase::ChaseBase&lt;T&gt;</span></code> class, the <code class="docutils literal notranslate"><span class="pre">chase::PerformanceDecoratorChase&lt;T&gt;</span></code> class has also among
+its public members a reference to an object of type
+<code class="docutils literal notranslate"><span class="pre">chase::ChasePerfData</span></code>. When using ChASE to solve an eigenvalue problem,
+the members of the PerformanceDecoratorChase are called instead
+of the virtual function members of the <code class="docutils literal notranslate"><span class="pre">chase::ChaseBase&lt;T&gt;</span></code> class. In this
+way, all parameters and counters are automatically invoked and
+returned in the correct order.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For more details of all available functions, including usage examples,
+please refer to the <a class="reference internal" href="usage.html"><span class="doc">How to use ChASE</span></a> documentation, specifically the
+“Performance Decorator” section.</p>
+</div>
+<p><strong>API Reference</strong>: <a class="reference internal" href="api/performance.html#api-performance"><span class="std std-ref">Performance Classes</span></a></p>
+</section>
+</section>
+<section id="implementation-classes">
+<span id="id1"></span><h2><span class="section-number">5.3. </span>Implementation Classes<a class="headerlink" href="#implementation-classes" title="Link to this heading"></a></h2>
+<p>The ChASE library provides four main implementation classes that derive from
+<code class="docutils literal notranslate"><span class="pre">chase::ChaseBase&lt;T&gt;</span></code> and provide concrete implementations of all virtual
+numerical kernels. These classes are located in the <code class="docutils literal notranslate"><span class="pre">chase::Impl</span></code> namespace.</p>
+<section id="sequential-implementations">
+<h3><span class="section-number">5.3.1. </span>Sequential Implementations<a class="headerlink" href="#sequential-implementations" title="Link to this heading"></a></h3>
+<section id="chase-impl-chasecpu">
+<h4><span class="section-number">5.3.1.1. </span>chase::Impl::ChASECPU<a class="headerlink" href="#chase-impl-chasecpu" title="Link to this heading"></a></h4>
+<p>The class <code class="docutils literal notranslate"><span class="pre">chase::Impl::ChASECPU&lt;T,</span> <span class="pre">MatrixType&gt;</span></code> provides a sequential CPU
+implementation of ChASE. It supports:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>Matrix Types</strong>:
+- <code class="docutils literal notranslate"><span class="pre">chase::matrix::Matrix&lt;T&gt;</span></code> for Hermitian (symmetric) eigenvalue problems
+- <code class="docutils literal notranslate"><span class="pre">chase::matrix::QuasiHermitianMatrix&lt;T&gt;</span></code> for pseudo-Hermitian eigenvalue problems</p></li>
+<li><p><strong>Backend</strong>: BLAS and LAPACK libraries for numerical computations</p></li>
+<li><p><strong>Use Case</strong>: Single-node, CPU-only eigenvalue problems</p></li>
+<li><p><strong>Platform</strong>: CPU only</p></li>
+</ul>
+</div></blockquote>
+<p>This implementation is suitable for problems that fit in the memory of a single
+node and do not require parallel computation.</p>
+<p><strong>API Reference</strong>: <a class="reference internal" href="api/implementations.html#api-implementations"><span class="std std-ref">Implementation Classes</span></a></p>
+</section>
+<section id="chase-impl-chasegpu">
+<h4><span class="section-number">5.3.1.2. </span>chase::Impl::ChASEGPU<a class="headerlink" href="#chase-impl-chasegpu" title="Link to this heading"></a></h4>
+<p>The class <code class="docutils literal notranslate"><span class="pre">chase::Impl::ChASEGPU&lt;T,</span> <span class="pre">MatrixType&gt;</span></code> provides a sequential GPU
+implementation of ChASE. It supports:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>Matrix Types</strong>:
+- <code class="docutils literal notranslate"><span class="pre">chase::matrix::Matrix&lt;T,</span> <span class="pre">chase::platform::GPU&gt;</span></code> for Hermitian problems
+- <code class="docutils literal notranslate"><span class="pre">chase::matrix::QuasiHermitianMatrix&lt;T,</span> <span class="pre">chase::platform::GPU&gt;</span></code> for pseudo-Hermitian problems</p></li>
+<li><p><strong>Backend</strong>: cuBLAS and cuSOLVER libraries for GPU computations</p></li>
+<li><p><strong>Use Case</strong>: Single-node, GPU-accelerated eigenvalue problems</p></li>
+<li><p><strong>Platform</strong>: GPU only</p></li>
+</ul>
+</div></blockquote>
+<p>This implementation is suitable for problems that fit in GPU memory and can
+benefit from GPU acceleration on a single node.</p>
+<p><strong>API Reference</strong>: <a class="reference internal" href="api/implementations.html#api-implementations"><span class="std std-ref">Implementation Classes</span></a></p>
+</section>
+</section>
+<section id="parallel-implementations">
+<h3><span class="section-number">5.3.2. </span>Parallel Implementations<a class="headerlink" href="#parallel-implementations" title="Link to this heading"></a></h3>
+<section id="chase-impl-pchasecpu">
+<h4><span class="section-number">5.3.2.1. </span>chase::Impl::pChASECPU<a class="headerlink" href="#chase-impl-pchasecpu" title="Link to this heading"></a></h4>
+<p>The class <code class="docutils literal notranslate"><span class="pre">chase::Impl::pChASECPU&lt;MatrixType,</span> <span class="pre">InputMultiVectorType,</span> <span class="pre">BackendType&gt;</span></code>
+provides a parallel CPU implementation of ChASE using MPI. It supports:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>Matrix Types</strong>: Distributed matrix classes
+- <code class="docutils literal notranslate"><span class="pre">chase::distMatrix::BlockBlockMatrix&lt;T,</span> <span class="pre">chase::platform::CPU&gt;</span></code>
+- <code class="docutils literal notranslate"><span class="pre">chase::distMatrix::BlockCyclicMatrix&lt;T,</span> <span class="pre">chase::platform::CPU&gt;</span></code>
+- <code class="docutils literal notranslate"><span class="pre">chase::distMatrix::RedundantMatrix&lt;T,</span> <span class="pre">chase::platform::CPU&gt;</span></code>
+- <code class="docutils literal notranslate"><span class="pre">chase::distMatrix::QuasiHermitianBlockBlockMatrix&lt;T,</span> <span class="pre">chase::platform::CPU&gt;</span></code>
+- <code class="docutils literal notranslate"><span class="pre">chase::distMatrix::QuasiHermitianBlockCyclicMatrix&lt;T,</span> <span class="pre">chase::platform::CPU&gt;</span></code></p></li>
+<li><p><strong>Backend</strong>:
+- <code class="docutils literal notranslate"><span class="pre">chase::grid::backend::MPI</span></code> for communication
+- ScaLAPACK for distributed linear algebra operations</p></li>
+<li><p><strong>Use Case</strong>: Multi-node, CPU-only eigenvalue problems</p></li>
+<li><p><strong>Platform</strong>: CPU with MPI</p></li>
+</ul>
+</div></blockquote>
+<p>This implementation is suitable for large-scale problems that require distributed
+memory computation across multiple nodes.</p>
+<p><strong>API Reference</strong>: <a class="reference internal" href="api/implementations.html#api-implementations"><span class="std std-ref">Implementation Classes</span></a></p>
+</section>
+<section id="chase-impl-pchasegpu">
+<h4><span class="section-number">5.3.2.2. </span>chase::Impl::pChASEGPU<a class="headerlink" href="#chase-impl-pchasegpu" title="Link to this heading"></a></h4>
+<p>The class <code class="docutils literal notranslate"><span class="pre">chase::Impl::pChASEGPU&lt;MatrixType,</span> <span class="pre">InputMultiVectorType,</span> <span class="pre">BackendType&gt;</span></code>
+provides a parallel GPU implementation of ChASE. It supports:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>Matrix Types</strong>: Distributed GPU matrix classes
+- <code class="docutils literal notranslate"><span class="pre">chase::distMatrix::BlockBlockMatrix&lt;T,</span> <span class="pre">chase::platform::GPU&gt;</span></code>
+- <code class="docutils literal notranslate"><span class="pre">chase::distMatrix::BlockCyclicMatrix&lt;T,</span> <span class="pre">chase::platform::GPU&gt;</span></code>
+- <code class="docutils literal notranslate"><span class="pre">chase::distMatrix::QuasiHermitianBlockBlockMatrix&lt;T,</span> <span class="pre">chase::platform::GPU&gt;</span></code>
+- <code class="docutils literal notranslate"><span class="pre">chase::distMatrix::QuasiHermitianBlockCyclicMatrix&lt;T,</span> <span class="pre">chase::platform::GPU&gt;</span></code></p></li>
+<li><p><strong>Backends</strong>:
+- <code class="docutils literal notranslate"><span class="pre">chase::grid::backend::MPI</span></code> for CPU-based MPI communication
+- <code class="docutils literal notranslate"><span class="pre">chase::grid::backend::NCCL</span></code> for GPU-to-GPU communication via NCCL</p></li>
+<li><p><strong>Use Case</strong>: Multi-node, multi-GPU eigenvalue problems</p></li>
+<li><p><strong>Platform</strong>: GPU with MPI/NCCL</p></li>
+</ul>
+</div></blockquote>
+<p>This implementation is suitable for large-scale problems that require distributed
+memory computation across multiple nodes with GPU acceleration. The NCCL backend
+provides optimized GPU-to-GPU communication for better performance.</p>
+<p><strong>API Reference</strong>: <a class="reference internal" href="api/implementations.html#api-implementations"><span class="std std-ref">Implementation Classes</span></a></p>
+</section>
+</section>
+</section>
+<section id="matrix-classes">
+<h2><span class="section-number">5.4. </span>Matrix Classes<a class="headerlink" href="#matrix-classes" title="Link to this heading"></a></h2>
+<p>The ChASE library provides matrix classes for both sequential and distributed
+computations, supporting both Hermitian and pseudo-Hermitian eigenvalue problems.</p>
+<section id="sequential-matrix-classes">
+<h3><span class="section-number">5.4.1. </span>Sequential Matrix Classes<a class="headerlink" href="#sequential-matrix-classes" title="Link to this heading"></a></h3>
+<section id="chase-matrix-matrix">
+<h4><span class="section-number">5.4.1.1. </span>chase::matrix::Matrix<a class="headerlink" href="#chase-matrix-matrix" title="Link to this heading"></a></h4>
+<p>The class <code class="docutils literal notranslate"><span class="pre">chase::matrix::Matrix&lt;T,</span> <span class="pre">Platform,</span> <span class="pre">Allocator&gt;</span></code> is the base matrix
+class for Hermitian (symmetric) eigenvalue problems. It provides:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>Template Parameters</strong>:
+- <code class="docutils literal notranslate"><span class="pre">T</span></code>: Scalar type (<code class="docutils literal notranslate"><span class="pre">float</span></code>, <code class="docutils literal notranslate"><span class="pre">double</span></code>, <code class="docutils literal notranslate"><span class="pre">std::complex&lt;float&gt;</span></code>, <code class="docutils literal notranslate"><span class="pre">std::complex&lt;double&gt;</span></code>)
+- <code class="docutils literal notranslate"><span class="pre">Platform</span></code>: <code class="docutils literal notranslate"><span class="pre">chase::platform::CPU</span></code> or <code class="docutils literal notranslate"><span class="pre">chase::platform::GPU</span></code>
+- <code class="docutils literal notranslate"><span class="pre">Allocator</span></code>: Memory allocator (optional)</p></li>
+<li><p><strong>Storage</strong>: Column-major storage compatible with BLAS/LAPACK</p></li>
+<li><p><strong>Use Case</strong>: Standard eigenvalue problems of the form <span class="math notranslate nohighlight">\(A \hat{x} = \lambda \hat{x}\)</span>
+where <span class="math notranslate nohighlight">\(A = A^\dagger\)</span> (or <span class="math notranslate nohighlight">\(A = A^T\)</span> for real matrices)</p></li>
+</ul>
+</div></blockquote>
+<p><strong>API Reference</strong>: <a class="reference internal" href="api/matrices.html#api-matrices"><span class="std std-ref">Matrix Classes</span></a></p>
+</section>
+<section id="chase-matrix-quasihermitianmatrix">
+<h4><span class="section-number">5.4.1.2. </span>chase::matrix::QuasiHermitianMatrix<a class="headerlink" href="#chase-matrix-quasihermitianmatrix" title="Link to this heading"></a></h4>
+<p>The class <code class="docutils literal notranslate"><span class="pre">chase::matrix::QuasiHermitianMatrix&lt;T,</span> <span class="pre">Platform,</span> <span class="pre">Allocator&gt;</span></code> is
+derived from <code class="docutils literal notranslate"><span class="pre">chase::matrix::Matrix&lt;T,</span> <span class="pre">Platform,</span> <span class="pre">Allocator&gt;</span></code> and is designed
+for pseudo-Hermitian eigenvalue problems, such as those arising from the
+Bethe-Salpeter Equation (BSE). It provides:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>Template Parameters</strong>: Same as <code class="docutils literal notranslate"><span class="pre">chase::matrix::Matrix</span></code></p></li>
+<li><p><strong>Storage</strong>: Same column-major storage, but with additional support for
+dual basis vectors required for pseudo-Hermitian problems</p></li>
+<li><p><strong>Use Case</strong>: Pseudo-Hermitian eigenvalue problems where the matrix satisfies
+<span class="math notranslate nohighlight">\(SH = H^*S\)</span> with a signature matrix <span class="math notranslate nohighlight">\(S\)</span></p></li>
+</ul>
+</div></blockquote>
+<p><strong>API Reference</strong>: <a class="reference internal" href="api/matrices.html#api-matrices"><span class="std std-ref">Matrix Classes</span></a></p>
+</section>
+<section id="type-tags">
+<h4><span class="section-number">5.4.1.3. </span>Type Tags<a class="headerlink" href="#type-tags" title="Link to this heading"></a></h4>
+<p>The library also provides type tags for matrix classification:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">chase::matrix::Hermitian</span></code>: Type tag for Hermitian matrices</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">chase::matrix::QuasiHermitian</span></code>: Type tag for pseudo-Hermitian matrices</p></li>
+</ul>
+</div></blockquote>
+</section>
+</section>
+<section id="distributed-matrix-classes">
+<h3><span class="section-number">5.4.2. </span>Distributed Matrix Classes<a class="headerlink" href="#distributed-matrix-classes" title="Link to this heading"></a></h3>
+<p>The distributed matrix classes are located in the <code class="docutils literal notranslate"><span class="pre">chase::distMatrix</span></code> namespace
+and support various distribution schemes for parallel computation.</p>
+<section id="hermitian-distributed-matrices">
+<h4><span class="section-number">5.4.2.1. </span>Hermitian Distributed Matrices<a class="headerlink" href="#hermitian-distributed-matrices" title="Link to this heading"></a></h4>
+<section id="chase-distmatrix-blockblockmatrix">
+<h5><span class="section-number">5.4.2.1.1. </span>chase::distMatrix::BlockBlockMatrix<a class="headerlink" href="#chase-distmatrix-blockblockmatrix" title="Link to this heading"></a></h5>
+<p>The class <code class="docutils literal notranslate"><span class="pre">chase::distMatrix::BlockBlockMatrix&lt;T,</span> <span class="pre">Platform&gt;</span></code> provides
+block-wise distribution of matrices across MPI processes. This distribution
+scheme is most efficient for matrix-matrix operations and is the default
+choice for many applications.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>Distribution</strong>: Block-wise (rectangular blocks)</p></li>
+<li><p><strong>Use Case</strong>: General-purpose distributed computation</p></li>
+<li><p><strong>Performance</strong>: Optimal for matrix-matrix multiplications</p></li>
+</ul>
+</div></blockquote>
+<p><strong>API Reference</strong>: <a class="reference internal" href="api/matrices.html#api-matrices"><span class="std std-ref">Matrix Classes</span></a></p>
+</section>
+<section id="chase-distmatrix-blockcyclicmatrix">
+<h5><span class="section-number">5.4.2.1.2. </span>chase::distMatrix::BlockCyclicMatrix<a class="headerlink" href="#chase-distmatrix-blockcyclicmatrix" title="Link to this heading"></a></h5>
+<p>The class <code class="docutils literal notranslate"><span class="pre">chase::distMatrix::BlockCyclicMatrix&lt;T,</span> <span class="pre">Platform&gt;</span></code> provides
+block-cyclic distribution of matrices across MPI processes. This distribution
+scheme provides better load balance for some operations.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>Distribution</strong>: Block-cyclic (round-robin block assignment)</p></li>
+<li><p><strong>Use Case</strong>: Applications requiring better load balance</p></li>
+<li><p><strong>Performance</strong>: Better for operations with irregular access patterns</p></li>
+</ul>
+</div></blockquote>
+<p><strong>API Reference</strong>: <a class="reference internal" href="api/matrices.html#api-matrices"><span class="std std-ref">Matrix Classes</span></a></p>
+</section>
+<section id="chase-distmatrix-redundantmatrix">
+<h5><span class="section-number">5.4.2.1.3. </span>chase::distMatrix::RedundantMatrix<a class="headerlink" href="#chase-distmatrix-redundantmatrix" title="Link to this heading"></a></h5>
+<p>The class <code class="docutils literal notranslate"><span class="pre">chase::distMatrix::RedundantMatrix&lt;T,</span> <span class="pre">Platform&gt;</span></code> stores a full
+copy of the matrix on each MPI rank. This is useful for small matrices or
+when redistribution is needed.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>Distribution</strong>: Full copy on each rank</p></li>
+<li><p><strong>Use Case</strong>: Small matrices, redistribution operations</p></li>
+<li><p><strong>Memory</strong>: Higher memory requirement (full matrix per rank)</p></li>
+</ul>
+</div></blockquote>
+<p><strong>API Reference</strong>: <a class="reference internal" href="api/matrices.html#api-matrices"><span class="std std-ref">Matrix Classes</span></a></p>
+</section>
+</section>
+<section id="pseudo-hermitian-distributed-matrices">
+<h4><span class="section-number">5.4.2.2. </span>Pseudo-Hermitian Distributed Matrices<a class="headerlink" href="#pseudo-hermitian-distributed-matrices" title="Link to this heading"></a></h4>
+<section id="chase-distmatrix-quasihermitianblockblockmatrix">
+<h5><span class="section-number">5.4.2.2.1. </span>chase::distMatrix::QuasiHermitianBlockBlockMatrix<a class="headerlink" href="#chase-distmatrix-quasihermitianblockblockmatrix" title="Link to this heading"></a></h5>
+<p>The class <code class="docutils literal notranslate"><span class="pre">chase::distMatrix::QuasiHermitianBlockBlockMatrix&lt;T,</span> <span class="pre">Platform&gt;</span></code>
+provides block-wise distribution for pseudo-Hermitian matrices.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>Distribution</strong>: Block-wise (same as BlockBlockMatrix)</p></li>
+<li><p><strong>Use Case</strong>: Distributed pseudo-Hermitian problems with block distribution</p></li>
+</ul>
+</div></blockquote>
+<p><strong>API Reference</strong>: <a class="reference internal" href="api/matrices.html#api-matrices"><span class="std std-ref">Matrix Classes</span></a></p>
+</section>
+<section id="chase-distmatrix-quasihermitianblockcyclicmatrix">
+<h5><span class="section-number">5.4.2.2.2. </span>chase::distMatrix::QuasiHermitianBlockCyclicMatrix<a class="headerlink" href="#chase-distmatrix-quasihermitianblockcyclicmatrix" title="Link to this heading"></a></h5>
+<p>The class <code class="docutils literal notranslate"><span class="pre">chase::distMatrix::QuasiHermitianBlockCyclicMatrix&lt;T,</span> <span class="pre">Platform&gt;</span></code>
+provides block-cyclic distribution for pseudo-Hermitian matrices.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>Distribution</strong>: Block-cyclic (same as BlockCyclicMatrix)</p></li>
+<li><p><strong>Use Case</strong>: Distributed pseudo-Hermitian problems with block-cyclic distribution</p></li>
+</ul>
+</div></blockquote>
+<p><strong>API Reference</strong>: <a class="reference internal" href="api/matrices.html#api-matrices"><span class="std std-ref">Matrix Classes</span></a></p>
+</section>
+</section>
+<section id="distributed-multi-vectors">
+<h4><span class="section-number">5.4.2.3. </span>Distributed Multi-Vectors<a class="headerlink" href="#distributed-multi-vectors" title="Link to this heading"></a></h4>
+<p>The library also provides distributed multi-vector classes for managing
+eigenvectors and workspace vectors in distributed memory:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">chase::distMultiVector::DistMultiVector1D&lt;T,</span> <span class="pre">CommunicatorType,</span> <span class="pre">Platform&gt;</span></code>:
+1D distributed multi-vector</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">chase::distMultiVector::DistMultiVectorBlockCyclic1D&lt;T,</span> <span class="pre">CommunicatorType,</span> <span class="pre">Platform&gt;</span></code>:
+1D block-cyclic distributed multi-vector</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">chase::distMultiVector::AbstractDistMultiVector&lt;T,</span> <span class="pre">CommunicatorType,</span> <span class="pre">Derived,</span> <span class="pre">Platform&gt;</span></code>:
+Abstract base class for distributed multi-vectors</p></li>
+</ul>
+</div></blockquote>
+<p>The <code class="docutils literal notranslate"><span class="pre">CommunicatorType</span></code> can be <code class="docutils literal notranslate"><span class="pre">row</span></code>, <code class="docutils literal notranslate"><span class="pre">column</span></code>, or <code class="docutils literal notranslate"><span class="pre">all</span></code>, determining
+which MPI communicator is used for the distribution.</p>
+<p><strong>API Reference</strong>: <a class="reference internal" href="api/matrices.html#api-matrices"><span class="std std-ref">Matrix Classes</span></a></p>
+</section>
+</section>
+</section>
+<section id="grid-and-communication">
+<h2><span class="section-number">5.5. </span>Grid and Communication<a class="headerlink" href="#grid-and-communication" title="Link to this heading"></a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">chase::grid</span></code> namespace provides classes and utilities for managing MPI
+process grids and communication backends.</p>
+<section id="chase-grid-mpigrid2d">
+<h3><span class="section-number">5.5.1. </span>chase::grid::MpiGrid2D<a class="headerlink" href="#chase-grid-mpigrid2d" title="Link to this heading"></a></h3>
+<p>The class <code class="docutils literal notranslate"><span class="pre">chase::grid::MpiGrid2D&lt;GridMajor&gt;</span></code> manages a 2D MPI process grid
+for distributed computation. It provides:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>Template Parameter</strong>: <code class="docutils literal notranslate"><span class="pre">GridMajor</span></code> - Either <code class="docutils literal notranslate"><span class="pre">chase::grid::GridMajor::RowMajor</span></code>
+or <code class="docutils literal notranslate"><span class="pre">chase::grid::GridMajor::ColMajor</span></code></p></li>
+<li><p><strong>Functionality</strong>:
+- Grid dimension and coordinate management
+- MPI communicator creation (row, column, and full grid communicators)
+- ScaLAPACK context integration (if ScaLAPACK is available)
+- NCCL communicator support (if NCCL is available)</p></li>
+<li><p><strong>Use Case</strong>: Required for all parallel implementations (pChASECPU, pChASEGPU)</p></li>
+</ul>
+</div></blockquote>
+<p>The grid is typically created with dimensions that factor the total number of MPI
+processes, e.g., for 16 processes, a 4x4 or 2x8 grid can be used.</p>
+<p><strong>API Reference</strong>: <a class="reference internal" href="api/grid.html#api-grid"><span class="std std-ref">Grid and Communication</span></a></p>
+</section>
+<section id="chase-grid-mpigrid2dbase">
+<h3><span class="section-number">5.5.2. </span>chase::grid::MpiGrid2DBase<a class="headerlink" href="#chase-grid-mpigrid2dbase" title="Link to this heading"></a></h3>
+<p>The class <code class="docutils literal notranslate"><span class="pre">chase::grid::MpiGrid2DBase</span></code> is the abstract base class for
+<code class="docutils literal notranslate"><span class="pre">chase::grid::MpiGrid2D</span></code>, providing the interface for grid management.</p>
+<p><strong>API Reference</strong>: <a class="reference internal" href="api/grid.html#api-grid"><span class="std std-ref">Grid and Communication</span></a></p>
+</section>
+<section id="backend-types">
+<h3><span class="section-number">5.5.3. </span>Backend Types<a class="headerlink" href="#backend-types" title="Link to this heading"></a></h3>
+<section id="chase-grid-backend-mpi">
+<h4><span class="section-number">5.5.3.1. </span>chase::grid::backend::MPI<a class="headerlink" href="#chase-grid-backend-mpi" title="Link to this heading"></a></h4>
+<p>The struct <code class="docutils literal notranslate"><span class="pre">chase::grid::backend::MPI</span></code> is a type tag indicating that MPI
+should be used for communication. This is the standard backend for CPU-based
+parallel computation and can also be used with CUDA-aware MPI for GPU computation.</p>
+<p><strong>API Reference</strong>: <a class="reference internal" href="api/grid.html#api-grid"><span class="std std-ref">Grid and Communication</span></a></p>
+</section>
+<section id="chase-grid-backend-nccl">
+<h4><span class="section-number">5.5.3.2. </span>chase::grid::backend::NCCL<a class="headerlink" href="#chase-grid-backend-nccl" title="Link to this heading"></a></h4>
+<p>The struct <code class="docutils literal notranslate"><span class="pre">chase::grid::backend::NCCL</span></code> is a type tag indicating that NCCL
+(NVIDIA Collective Communications Library) should be used for GPU-to-GPU
+communication. This backend provides optimized communication for multi-GPU
+setups and is only available when NCCL is enabled.</p>
+<p><strong>API Reference</strong>: <a class="reference internal" href="api/grid.html#api-grid"><span class="std std-ref">Grid and Communication</span></a></p>
+</section>
+</section>
+<section id="grid-major-ordering">
+<h3><span class="section-number">5.5.4. </span>Grid Major Ordering<a class="headerlink" href="#grid-major-ordering" title="Link to this heading"></a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">chase::grid::GridMajor</span></code> enumeration specifies the major ordering of the
+MPI grid:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">chase::grid::GridMajor::RowMajor</span></code>: Row-major grid layout</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">chase::grid::GridMajor::ColMajor</span></code>: Column-major grid layout (typically used)</p></li>
+</ul>
+</div></blockquote>
+</section>
+</section>
+<section id="linear-algebra-kernels">
+<h2><span class="section-number">5.6. </span>Linear Algebra Kernels<a class="headerlink" href="#linear-algebra-kernels" title="Link to this heading"></a></h2>
+<p>The ChASE library implements low-level numerical kernels in the
+<code class="docutils literal notranslate"><span class="pre">chase::linalg::internal</span></code> namespace. These kernels are organized by
+computational platform and provide the building blocks for the higher-level
+algorithm implementations.</p>
+<section id="kernel-organization">
+<h3><span class="section-number">5.6.1. </span>Kernel Organization<a class="headerlink" href="#kernel-organization" title="Link to this heading"></a></h3>
+<p>The kernels are organized into several sub-namespaces:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>``chase::linalg::internal::cpu``</strong>: CPU-based kernels using BLAS/LAPACK
+(<a class="reference internal" href="api/kernels.html#api-kernels"><span class="std std-ref">API Reference</span></a>)</p></li>
+<li><p><strong>``chase::linalg::internal::cuda``</strong>: GPU-based kernels using cuBLAS/cuSOLVER
+(<a class="reference internal" href="api/kernels.html#api-kernels"><span class="std std-ref">API Reference</span></a>)</p></li>
+<li><p><strong>``chase::linalg::internal::mpi``</strong>: Distributed CPU kernels using MPI and ScaLAPACK
+(<a class="reference internal" href="api/kernels.html#api-kernels"><span class="std std-ref">API Reference</span></a>)</p></li>
+<li><p><strong>``chase::linalg::internal::nccl``</strong>: Distributed GPU kernels using NCCL
+(<a class="reference internal" href="api/kernels.html#api-kernels"><span class="std std-ref">API Reference</span></a>)</p></li>
+<li><p><strong>``chase::linalg::internal::cuda_aware_mpi``</strong>: GPU kernels with CUDA-aware MPI
+(<a class="reference internal" href="api/kernels.html#api-kernels"><span class="std std-ref">API Reference</span></a>)</p></li>
+</ul>
+</div></blockquote>
+</section>
+<section id="core-kernel-functions">
+<h3><span class="section-number">5.6.2. </span>Core Kernel Functions<a class="headerlink" href="#core-kernel-functions" title="Link to this heading"></a></h3>
+<p>Each kernel namespace provides implementations of the following operations:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>Rayleigh-Ritz Projection</strong>:
+- <code class="docutils literal notranslate"><span class="pre">rayleighRitz()</span></code>: Standard Rayleigh-Ritz for Hermitian problems
+- <code class="docutils literal notranslate"><span class="pre">quasi_hermitian_rayleighRitz()</span></code>: Oblique Rayleigh-Ritz for pseudo-Hermitian problems</p></li>
+<li><p><strong>Lanczos Algorithm</strong>:
+- <code class="docutils literal notranslate"><span class="pre">lanczos()</span></code>: Spectrum estimation for Hermitian problems
+- <code class="docutils literal notranslate"><span class="pre">quasi_hermitian_lanczos()</span></code>: Spectrum estimation for pseudo-Hermitian problems</p></li>
+<li><p><strong>Matrix Operations</strong>:
+- <code class="docutils literal notranslate"><span class="pre">hemm()</span></code>: Hermitian matrix-matrix multiplication
+- <code class="docutils literal notranslate"><span class="pre">quasi_hermitian_hemm()</span></code>: Pseudo-Hermitian matrix-matrix multiplication</p></li>
+<li><p><strong>Factorization</strong>:
+- <code class="docutils literal notranslate"><span class="pre">cholqr()</span></code>: Cholesky-QR factorization (with S-orthonormalization for pseudo-Hermitian)</p></li>
+<li><p><strong>Residual Computation</strong>:
+- <code class="docutils literal notranslate"><span class="pre">residuals()</span></code>: Compute eigenpair residuals</p></li>
+<li><p><strong>Utility Functions</strong>:
+- <code class="docutils literal notranslate"><span class="pre">shiftDiagonal()</span></code>: Diagonal shifting for Chebyshev filter
+- <code class="docutils literal notranslate"><span class="pre">flipSign()</span></code>: Sign flipping operations
+- <code class="docutils literal notranslate"><span class="pre">symOrHerm()</span></code>: Symmetry/Hermiticity checks</p></li>
+</ul>
+</div></blockquote>
+</section>
+<section id="type-traits">
+<h3><span class="section-number">5.6.3. </span>Type Traits<a class="headerlink" href="#type-traits" title="Link to this heading"></a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">chase::linalg::internal</span></code> namespace also provides type traits for
+determining multi-vector types:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ResultMultiVectorType&lt;MatrixType,</span> <span class="pre">InputMultiVectorType&gt;</span></code>: Determines result
+multi-vector type for operations</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ColumnMultiVectorType&lt;MatrixType&gt;</span></code>: Column multi-vector type for a matrix</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">RowMultiVectorType&lt;MatrixType&gt;</span></code>: Row multi-vector type for a matrix</p></li>
+</ul>
+</div></blockquote>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Detailed documentation of these kernels is available in the developer
+documentation. For user-facing documentation, the implementation classes
+(see <a class="reference internal" href="#implementation-classes"><span class="std std-ref">Implementation Classes</span></a>) provide the main interface.</p>
+</div>
+</section>
+</section>
+<section id="platform-types">
+<h2><span class="section-number">5.7. </span>Platform Types<a class="headerlink" href="#platform-types" title="Link to this heading"></a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">chase::platform</span></code> namespace provides type tags for identifying computational
+platforms:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>``chase::platform::CPU``</strong>: CPU platform identifier</p></li>
+<li><p><strong>``chase::platform::GPU``</strong>: GPU platform identifier</p></li>
+</ul>
+</div></blockquote>
+<p>These types are used as template parameters in matrix classes and other components
+to specify the target platform for computation.</p>
+<p><strong>API Reference</strong>: <a class="reference internal" href="api/platform.html#api-platform"><span class="std std-ref">Platform Types</span></a></p>
+</section>
+<section id="type-utilities">
+<h2><span class="section-number">5.8. </span>Type Utilities<a class="headerlink" href="#type-utilities" title="Link to this heading"></a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">chase</span></code> namespace provides type utilities for working with complex numbers
+and precision conversion:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>``chase::Base&lt;T&gt;``</strong>: Type trait to extract the base type from
+<code class="docutils literal notranslate"><span class="pre">std::complex&lt;T&gt;</span></code>. For example, <code class="docutils literal notranslate"><span class="pre">chase::Base&lt;std::complex&lt;double&gt;&gt;</span></code>
+is <code class="docutils literal notranslate"><span class="pre">double</span></code>.</p></li>
+<li><p><strong>Precision Conversion Traits</strong>: Type traits for converting between single
+and double precision, supporting mixed-precision computations.</p></li>
+</ul>
+</div></blockquote>
+<p><strong>API Reference</strong>: See individual API pages above</p>
+</section>
+<section id="c-and-fortran-interfaces">
+<h2><span class="section-number">5.9. </span>C and Fortran Interfaces<a class="headerlink" href="#c-and-fortran-interfaces" title="Link to this heading"></a></h2>
+<p>The ChASE library provides C and Fortran interfaces for users who prefer not to
+use the C++ API directly. These interfaces are located in the <code class="docutils literal notranslate"><span class="pre">interface/</span></code>
+directory.</p>
+<section id="c-interface">
+<h3><span class="section-number">5.9.1. </span>C Interface<a class="headerlink" href="#c-interface" title="Link to this heading"></a></h3>
+<p>The C interface provides functions for initializing and solving eigenvalue
+problems. The function naming convention follows:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>Initialization functions</strong>: <code class="docutils literal notranslate"><span class="pre">{s|d|c|z}chase_init_</span></code> for sequential,
+<code class="docutils literal notranslate"><span class="pre">p{s|d|c|z}chase_init_</span></code> for parallel
+- <code class="docutils literal notranslate"><span class="pre">s</span></code>: single precision real
+- <code class="docutils literal notranslate"><span class="pre">d</span></code>: double precision real
+- <code class="docutils literal notranslate"><span class="pre">c</span></code>: single precision complex
+- <code class="docutils literal notranslate"><span class="pre">z</span></code>: double precision complex</p></li>
+<li><p><strong>Solver functions</strong>: <code class="docutils literal notranslate"><span class="pre">{s|d|c|z}chase_</span></code> for sequential,
+<code class="docutils literal notranslate"><span class="pre">p{s|d|c|z}chase_</span></code> for parallel</p></li>
+<li><p><strong>Finalization functions</strong>: <code class="docutils literal notranslate"><span class="pre">{s|d|c|z}chase_finalize_</span></code></p></li>
+<li><p><strong>Parallel variants</strong>: Additional functions for block-cyclic distribution,
+e.g., <code class="docutils literal notranslate"><span class="pre">p{s|d|c|z}chase_init_blockcyclic_</span></code></p></li>
+</ul>
+</div></blockquote>
+<dl class="simple">
+<dt>For example:</dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">zchase_init_()</span></code>: Initialize double-precision complex sequential solver</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pzchase_init_()</span></code>: Initialize double-precision complex parallel solver</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pzchase_init_blockcyclic_()</span></code>: Initialize with block-cyclic distribution</p></li>
+</ul>
+</dd>
+</dl>
+</section>
+<section id="fortran-interface">
+<h3><span class="section-number">5.9.2. </span>Fortran Interface<a class="headerlink" href="#fortran-interface" title="Link to this heading"></a></h3>
+<p>The Fortran interface provides the same functionality as the C interface but
+with Fortran naming conventions (without the trailing underscore). The interface
+uses <code class="docutils literal notranslate"><span class="pre">iso_c_binding</span></code> for interoperability with the C implementation.</p>
+<dl class="simple">
+<dt>For example:</dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">zchase_init()</span></code>: Fortran subroutine corresponding to <code class="docutils literal notranslate"><span class="pre">zchase_init_()</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pzchase_init()</span></code>: Fortran subroutine corresponding to <code class="docutils literal notranslate"><span class="pre">pzchase_init_()</span></code></p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For detailed documentation of the C and Fortran interfaces, including
+function signatures and usage examples, please refer to the
+<a class="reference internal" href="usage.html"><span class="doc">How to use ChASE</span></a> documentation and the example programs in the <code class="docutils literal notranslate"><span class="pre">examples/</span></code> directory.</p>
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="parameters.html" class="btn btn-neutral float-left" title="4. Parameters and Configurations" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="example.html" class="btn btn-neutral float-right" title="6. Examples" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, SimLab Quantum Materials.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,666 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>1.4.1. Grid and Communication &mdash; ChASE v1.3.0 documentation</title>
+      <link rel="stylesheet" href="../theme_overrides.css" type="text/css" />
+
+  
+    <link rel="shortcut icon" href="../_static/ChASE_Logo_Favicon_RGB.png"/>
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=e49d06fc"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="1.5.1. Linear Algebra Kernels" href="kernels.html" />
+    <link rel="prev" title="1.3.1. Matrix Classes" href="matrices.html" />
+     
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+    <link href="../_static/theme_overrides.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+
+          
+          
+          <a href="../index.html">
+            
+              <img src="../_static/ChASE_Logo_RGB.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+  <div class="version-selector" style="margin: 10px 0; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 3px;">
+  <label for="version-select" style="display: block; color: #fcfcfc; font-size: 12px; margin-bottom: 5px; font-weight: bold;">
+    Version:
+  </label>
+  <select id="version-select" onchange="switchVersion(this.value)" style="width: 100%; padding: 5px; border: 1px solid #2980B9; border-radius: 3px; background: white; color: #333; font-size: 13px;"><option value="/ChASE/latest/">
+      latest
+    </option></select>
+</div><script>
+function switchVersion(url) {
+  // Get current path and determine base URL
+  const currentPath = window.location.pathname;
+  const pathParts = currentPath.split('/').filter(p => p);
+  
+  // Get known versions from the select options (dynamic, not hardcoded)
+  const selector = document.getElementById('version-select');
+  const knownVersions = [];
+  if (selector) {
+    for (let option of selector.options) {
+      const verName = option.text.trim();
+      knownVersions.push(verName);
+    }
+  }
+  
+  // Find the repository name in the path (e.g., "ChASE" in "/ChASE/latest/...")
+  // This handles project pages where URL is: username.github.io/repo-name/version/...
+  let repoName = '';
+  let versionIndex = -1;
+  
+  // Look for version in path (could be at index 1 or 2 depending on structure)
+  for (let i = 0; i < pathParts.length; i++) {
+    if (knownVersions.includes(pathParts[i])) {
+      versionIndex = i;
+      if (i > 0) {
+        repoName = pathParts[i - 1]; // Repository name is before version
+      }
+      break;
+    }
+  }
+  
+  // Get relative path (everything after version)
+  let relativePath = '';
+  if (versionIndex >= 0) {
+    // We're in a versioned path, get everything after version
+    relativePath = '/' + pathParts.slice(versionIndex + 1).join('/');
+  } else {
+    // We're in root or unversioned, get current path
+    relativePath = currentPath;
+  }
+  
+  // Construct new URL
+  // The URL from conf.py already includes the full path (e.g., "/ChASE/latest/")
+  // So we just need to append the relative path (page name)
+  const baseUrl = url.replace(/\/$/, ''); // Remove trailing slash
+  const cleanRelative = relativePath === '/' ? '' : relativePath.replace(/^\//, '');
+  
+  // If URL already includes the repo name, use it as-is
+  // Otherwise, we might need to add it (but conf.py should have it)
+  if (url.startsWith('http')) {
+    window.location.href = url + (cleanRelative ? '/' + cleanRelative : '');
+  } else {
+    window.location.href = baseUrl + (cleanRelative ? '/' + cleanRelative : '');
+  }
+}
+
+// Auto-detect current version from URL and update selector
+(function() {
+  const currentPath = window.location.pathname;
+  const pathParts = currentPath.split('/').filter(p => p);
+  
+  // Get known versions from select options
+  const selector = document.getElementById('version-select');
+  if (!selector) return;
+  
+  const knownVersions = [];
+  for (let option of selector.options) {
+    const verName = option.text.trim();
+    knownVersions.push(verName);
+  }
+  
+  // Look for version in path (could be at index 0, 1, or 2 depending on structure)
+  // For project pages: /repo-name/version/... (version at index 1)
+  // For user pages: /version/... (version at index 0)
+  for (let i = 0; i < pathParts.length; i++) {
+    if (knownVersions.includes(pathParts[i])) {
+      const currentVer = pathParts[i];
+      // Find option matching current version
+      for (let option of selector.options) {
+        if (option.text.trim() === currentVer) {
+          selector.value = option.value;
+          break;
+        }
+      }
+      break;
+    }
+  }
+})();
+</script>
+
+<style>
+.version-selector select:focus {
+  outline: 2px solid #2980B9;
+  outline-offset: 2px;
+}
+</style>
+
+
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">INTRODUCTION</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../chase.html">ChASE: an Iterative Solver for Dense Eigenproblems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../version.html">Versions of the library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../license.html">Licenses and Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reference.html">References and Contributors</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">USER DOCUMENTATION</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../quick-start.html">1. Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">2. Installation and Setup on a Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage.html">3. How to use ChASE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../parameters.html">4. Parameters and Configurations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../module.html">5. Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../example.html">6. Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API REFERENCE</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">1. API Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="index.html#core-algorithm">1.1. Core Algorithm</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#implementations">1.2. Implementations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#matrix-classes">1.3. Matrix Classes</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="index.html#grid-and-communication">1.4. Grid and Communication</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">1.4.1. Grid and Communication</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#chase-grid-mpigrid2d">1.4.1.1. chase::grid::MpiGrid2D</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#chase-grid-mpigrid2dbase">1.4.1.2. chase::grid::MpiGrid2DBase</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backend-types">1.4.1.3. Backend Types</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#linear-algebra-kernels">1.5. Linear Algebra Kernels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#platform-types">1.6. Platform Types</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ChASE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html"><span class="section-number">1. </span>API Reference</a></li>
+      <li class="breadcrumb-item active"><span class="section-number">1.4.1. </span>Grid and Communication</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/api/grid.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="grid-and-communication">
+<span id="api-grid"></span><h1><span class="section-number">1.4.1. </span>Grid and Communication<a class="headerlink" href="#grid-and-communication" title="Link to this heading"></a></h1>
+<section id="chase-grid-mpigrid2d">
+<h2><span class="section-number">1.4.1.1. </span>chase::grid::MpiGrid2D<a class="headerlink" href="#chase-grid-mpigrid2d" title="Link to this heading"></a></h2>
+<dl class="cpp class">
+<dt class="sig sig-object cpp" id="_CPPv4I_9GridMajorEN5chase4grid9MpiGrid2DE">
+<span id="_CPPv3I_9GridMajorEN5chase4grid9MpiGrid2DE"></span><span id="_CPPv2I_9GridMajorEN5chase4grid9MpiGrid2DE"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">GridMajor</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">MajorOrder</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classchase_1_1grid_1_1MpiGrid2D"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">MpiGrid2D</span></span></span><span class="w"> </span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="k"><span class="pre">public</span></span><span class="w"> </span><span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">grid</span></span><span class="p"><span class="pre">::</span></span><a class="reference internal" href="#_CPPv4N5chase4grid13MpiGrid2DBaseE" title="chase::grid::MpiGrid2DBase"><span class="n"><span class="pre">MpiGrid2DBase</span></span></a><a class="headerlink" href="#_CPPv4I_9GridMajorEN5chase4grid9MpiGrid2DE" title="Link to this definition"></a><br /></dt>
+<dd><p>Templated class for creating and managing a 2D MPI grid. </p>
+<p>The <code class="docutils literal notranslate"><a class="reference internal" href="#classchase_1_1grid_1_1MpiGrid2D"><span class="std std-ref"><span class="pre">MpiGrid2D</span></span></a></code> class is a templated class derived from <code class="docutils literal notranslate"><a class="reference internal" href="#classchase_1_1grid_1_1MpiGrid2DBase"><span class="std std-ref"><span class="pre">MpiGrid2DBase</span></span></a></code> that manages a 2D MPI grid with specified row and column dimensions. The grid can be configured to use either row-major or column-major ordering.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>MajorOrder</strong> – Specifies the major ordering of the grid (RowMajor or ColMajor). </p>
+</dd>
+</dl>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase4grid9MpiGrid2D9MpiGrid2DEii8MPI_Comm">
+<span id="_CPPv3N5chase4grid9MpiGrid2D9MpiGrid2DEii8MPI_Comm"></span><span id="_CPPv2N5chase4grid9MpiGrid2D9MpiGrid2DEii8MPI_Comm"></span><span id="chase::grid::MpiGrid2D::MpiGrid2D__i.i.MPI_Comm"></span><span class="target" id="classchase_1_1grid_1_1MpiGrid2D_1ac69dca2d2c023ec464950858b24486cd"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">MpiGrid2D</span></span></span><span class="sig-paren">(</span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">row_dim</span></span>, <span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">col_dim</span></span>, <span class="n"><span class="pre">MPI_Comm</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">comm</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase4grid9MpiGrid2D9MpiGrid2DEii8MPI_Comm" title="Link to this definition"></a><br /></dt>
+<dd><p>Constructs a 2D MPI grid with specified row and column dimensions. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>row_dim</strong> – Number of rows in the grid. </p></li>
+<li><p><strong>col_dim</strong> – Number of columns in the grid. </p></li>
+<li><p><strong>comm</strong> – MPI communicator used to create the grid. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase4grid9MpiGrid2D9MpiGrid2DE8MPI_Comm">
+<span id="_CPPv3N5chase4grid9MpiGrid2D9MpiGrid2DE8MPI_Comm"></span><span id="_CPPv2N5chase4grid9MpiGrid2D9MpiGrid2DE8MPI_Comm"></span><span id="chase::grid::MpiGrid2D::MpiGrid2D__MPI_Comm"></span><span class="target" id="classchase_1_1grid_1_1MpiGrid2D_1a73c62eb503cede3a5a89fa6983165949"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">MpiGrid2D</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">MPI_Comm</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">comm</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase4grid9MpiGrid2D9MpiGrid2DE8MPI_Comm" title="Link to this definition"></a><br /></dt>
+<dd><p>Constructs a 2D MPI grid with dimensions derived from the communicator. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>comm</strong> – MPI communicator used to create the grid. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase4grid9MpiGrid2DD0Ev">
+<span id="_CPPv3N5chase4grid9MpiGrid2DD0Ev"></span><span id="_CPPv2N5chase4grid9MpiGrid2DD0Ev"></span><span id="chase::grid::MpiGrid2D::~MpiGrid2D"></span><span class="target" id="classchase_1_1grid_1_1MpiGrid2D_1afeb3b2e52490ce3b1f10c8c9a1edad55"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">~MpiGrid2D</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase4grid9MpiGrid2DD0Ev" title="Link to this definition"></a><br /></dt>
+<dd><p>Destructor to clean up resources associated with the MPI grid. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK5chase4grid9MpiGrid2DeqERK9MpiGrid2DI10MajorOrderE">
+<span id="_CPPv3NK5chase4grid9MpiGrid2DeqERK9MpiGrid2DI10MajorOrderE"></span><span id="_CPPv2NK5chase4grid9MpiGrid2DeqERK9MpiGrid2DI10MajorOrderE"></span><span id="chase::grid::MpiGrid2D::eq-operator__MpiGrid2D:MajorOrder:CRC"></span><span class="target" id="classchase_1_1grid_1_1MpiGrid2D_1a10b7e437e1df42b2a0057ed7b2588934"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="o"><span class="pre">==</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I_9GridMajorEN5chase4grid9MpiGrid2DE" title="chase::grid::MpiGrid2D"><span class="n"><span class="pre">MpiGrid2D</span></span></a><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I_9GridMajorEN5chase4grid9MpiGrid2DE" title="chase::grid::MpiGrid2D::MajorOrder"><span class="n"><span class="pre">MajorOrder</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">other</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK5chase4grid9MpiGrid2DeqERK9MpiGrid2DI10MajorOrderE" title="Link to this definition"></a><br /></dt>
+<dd><p>Equality operator to compare two <code class="docutils literal notranslate"><a class="reference internal" href="#classchase_1_1grid_1_1MpiGrid2D"><span class="std std-ref"><span class="pre">MpiGrid2D</span></span></a></code> instances. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>other</strong> – The other <code class="docutils literal notranslate"><a class="reference internal" href="#classchase_1_1grid_1_1MpiGrid2D"><span class="std std-ref"><span class="pre">MpiGrid2D</span></span></a></code> instance to compare with. </p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">true</span></code> if the two grids are identical, <code class="docutils literal notranslate"><span class="pre">false</span></code> otherwise. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK5chase4grid9MpiGrid2DneERK9MpiGrid2DI10MajorOrderE">
+<span id="_CPPv3NK5chase4grid9MpiGrid2DneERK9MpiGrid2DI10MajorOrderE"></span><span id="_CPPv2NK5chase4grid9MpiGrid2DneERK9MpiGrid2DI10MajorOrderE"></span><span id="chase::grid::MpiGrid2D::neq-operator__MpiGrid2D:MajorOrder:CRC"></span><span class="target" id="classchase_1_1grid_1_1MpiGrid2D_1acf1c6dc155f44e346e9c4247b8ec94ef"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="o"><span class="pre">!=</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I_9GridMajorEN5chase4grid9MpiGrid2DE" title="chase::grid::MpiGrid2D"><span class="n"><span class="pre">MpiGrid2D</span></span></a><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I_9GridMajorEN5chase4grid9MpiGrid2DE" title="chase::grid::MpiGrid2D::MajorOrder"><span class="n"><span class="pre">MajorOrder</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">other</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK5chase4grid9MpiGrid2DneERK9MpiGrid2DI10MajorOrderE" title="Link to this definition"></a><br /></dt>
+<dd><p>Inequality operator to compare two <code class="docutils literal notranslate"><a class="reference internal" href="#classchase_1_1grid_1_1MpiGrid2D"><span class="std std-ref"><span class="pre">MpiGrid2D</span></span></a></code> instances. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>other</strong> – The other <code class="docutils literal notranslate"><a class="reference internal" href="#classchase_1_1grid_1_1MpiGrid2D"><span class="std std-ref"><span class="pre">MpiGrid2D</span></span></a></code> instance to compare with. </p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">true</span></code> if the two grids are different, <code class="docutils literal notranslate"><span class="pre">false</span></code> otherwise. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK5chase4grid9MpiGrid2D12get_row_commEv">
+<span id="_CPPv3NK5chase4grid9MpiGrid2D12get_row_commEv"></span><span id="_CPPv2NK5chase4grid9MpiGrid2D12get_row_commEv"></span><span id="chase::grid::MpiGrid2D::get_row_commC"></span><span class="target" id="classchase_1_1grid_1_1MpiGrid2D_1a8b6ba037904070920a2db62680fbc16d"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">MPI_Comm</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_row_comm</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4NK5chase4grid9MpiGrid2D12get_row_commEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the row communicator for the grid. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>MPI_Comm Row communicator. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK5chase4grid9MpiGrid2D12get_col_commEv">
+<span id="_CPPv3NK5chase4grid9MpiGrid2D12get_col_commEv"></span><span id="_CPPv2NK5chase4grid9MpiGrid2D12get_col_commEv"></span><span id="chase::grid::MpiGrid2D::get_col_commC"></span><span class="target" id="classchase_1_1grid_1_1MpiGrid2D_1ac1b1067255895056aad5d654ab843b49"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">MPI_Comm</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_col_comm</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4NK5chase4grid9MpiGrid2D12get_col_commEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the column communicator for the grid. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>MPI_Comm Column communicator. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK5chase4grid9MpiGrid2D8get_commEv">
+<span id="_CPPv3NK5chase4grid9MpiGrid2D8get_commEv"></span><span id="_CPPv2NK5chase4grid9MpiGrid2D8get_commEv"></span><span id="chase::grid::MpiGrid2D::get_commC"></span><span class="target" id="classchase_1_1grid_1_1MpiGrid2D_1a6c13bf7b7294d08e0071cb3eee1956d5"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">MPI_Comm</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_comm</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4NK5chase4grid9MpiGrid2D8get_commEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the global communicator for the grid. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>MPI_Comm Global communicator. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK5chase4grid9MpiGrid2D10get_nprocsEv">
+<span id="_CPPv3NK5chase4grid9MpiGrid2D10get_nprocsEv"></span><span id="_CPPv2NK5chase4grid9MpiGrid2D10get_nprocsEv"></span><span id="chase::grid::MpiGrid2D::get_nprocsC"></span><span class="target" id="classchase_1_1grid_1_1MpiGrid2D_1a7e4af882d1a7c58123f4f974b814fb47"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_nprocs</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4NK5chase4grid9MpiGrid2D10get_nprocsEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the number of processes in the grid. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int Number of processes. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK5chase4grid9MpiGrid2D10get_myRankEv">
+<span id="_CPPv3NK5chase4grid9MpiGrid2D10get_myRankEv"></span><span id="_CPPv2NK5chase4grid9MpiGrid2D10get_myRankEv"></span><span id="chase::grid::MpiGrid2D::get_myRankC"></span><span class="target" id="classchase_1_1grid_1_1MpiGrid2D_1ad18523116f94191eb896454039781103"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_myRank</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4NK5chase4grid9MpiGrid2D10get_myRankEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the rank of the current process in the grid. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int Rank of the current process. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase4grid9MpiGrid2D10get_coordsEv">
+<span id="_CPPv3N5chase4grid9MpiGrid2D10get_coordsEv"></span><span id="_CPPv2N5chase4grid9MpiGrid2D10get_coordsEv"></span><span id="chase::grid::MpiGrid2D::get_coords"></span><span class="target" id="classchase_1_1grid_1_1MpiGrid2D_1a13865c116b65aa23a3c3a263544f0183"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">get_coords</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N5chase4grid9MpiGrid2D10get_coordsEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the coordinates of the current process in the grid. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Pointer to an array containing the coordinates. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase4grid9MpiGrid2D8get_dimsEv">
+<span id="_CPPv3N5chase4grid9MpiGrid2D8get_dimsEv"></span><span id="_CPPv2N5chase4grid9MpiGrid2D8get_dimsEv"></span><span id="chase::grid::MpiGrid2D::get_dims"></span><span class="target" id="classchase_1_1grid_1_1MpiGrid2D_1adcaa94c920477a88440f8a2be8dae3fb"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">get_dims</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N5chase4grid9MpiGrid2D8get_dimsEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the dimensions of the grid. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Pointer to an array containing the grid dimensions. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK5chase4grid9MpiGrid2D12getGridMajorEv">
+<span id="_CPPv3NK5chase4grid9MpiGrid2D12getGridMajorEv"></span><span id="_CPPv2NK5chase4grid9MpiGrid2D12getGridMajorEv"></span><span id="chase::grid::MpiGrid2D::getGridMajorC"></span><span class="target" id="classchase_1_1grid_1_1MpiGrid2D_1a4d5ff0dcda88a22a3dec8f471004c69a"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">GridMajor</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">getGridMajor</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4NK5chase4grid9MpiGrid2D12getGridMajorEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the major ordering of the grid. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>GridMajor The grid’s major ordering (RowMajor or ColMajor). </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK5chase4grid9MpiGrid2D13get_nccl_commEv">
+<span id="_CPPv3NK5chase4grid9MpiGrid2D13get_nccl_commEv"></span><span id="_CPPv2NK5chase4grid9MpiGrid2D13get_nccl_commEv"></span><span id="chase::grid::MpiGrid2D::get_nccl_commC"></span><span class="target" id="classchase_1_1grid_1_1MpiGrid2D_1ae48c446a0b01fab1097782f6caaa1269"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">ncclComm_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_nccl_comm</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4NK5chase4grid9MpiGrid2D13get_nccl_commEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the NCCL global communicator for the grid. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>MPI_Comm Global communicator. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK5chase4grid9MpiGrid2D17get_nccl_row_commEv">
+<span id="_CPPv3NK5chase4grid9MpiGrid2D17get_nccl_row_commEv"></span><span id="_CPPv2NK5chase4grid9MpiGrid2D17get_nccl_row_commEv"></span><span id="chase::grid::MpiGrid2D::get_nccl_row_commC"></span><span class="target" id="classchase_1_1grid_1_1MpiGrid2D_1a90988a68aba615beedd827729df4b28b"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">ncclComm_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_nccl_row_comm</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4NK5chase4grid9MpiGrid2D17get_nccl_row_commEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the NCCL row communicator for the grid. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>MPI_Comm Global communicator. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK5chase4grid9MpiGrid2D17get_nccl_col_commEv">
+<span id="_CPPv3NK5chase4grid9MpiGrid2D17get_nccl_col_commEv"></span><span id="_CPPv2NK5chase4grid9MpiGrid2D17get_nccl_col_commEv"></span><span id="chase::grid::MpiGrid2D::get_nccl_col_commC"></span><span class="target" id="classchase_1_1grid_1_1MpiGrid2D_1a00c6996b6d52fb3652d9993cd4de97b1"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">ncclComm_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_nccl_col_comm</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4NK5chase4grid9MpiGrid2D17get_nccl_col_commEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the NCCL column communicator for the grid. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>MPI_Comm Global communicator. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase4grid9MpiGrid2D22get_blacs_colcomm_ctxtEv">
+<span id="_CPPv3N5chase4grid9MpiGrid2D22get_blacs_colcomm_ctxtEv"></span><span id="_CPPv2N5chase4grid9MpiGrid2D22get_blacs_colcomm_ctxtEv"></span><span id="chase::grid::MpiGrid2D::get_blacs_colcomm_ctxt"></span><span class="target" id="classchase_1_1grid_1_1MpiGrid2D_1a6edab616c0e0f9a3c9f1c00e25461897"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_blacs_colcomm_ctxt</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N5chase4grid9MpiGrid2D22get_blacs_colcomm_ctxtEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the ScaLAPACK context of column communicator. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>MPI_Comm Global communicator. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase4grid9MpiGrid2D22get_blacs_rowcomm_ctxtEv">
+<span id="_CPPv3N5chase4grid9MpiGrid2D22get_blacs_rowcomm_ctxtEv"></span><span id="_CPPv2N5chase4grid9MpiGrid2D22get_blacs_rowcomm_ctxtEv"></span><span id="chase::grid::MpiGrid2D::get_blacs_rowcomm_ctxt"></span><span class="target" id="classchase_1_1grid_1_1MpiGrid2D_1a36c2dff3d6ef68aaa84151494a062563"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_blacs_rowcomm_ctxt</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N5chase4grid9MpiGrid2D22get_blacs_rowcomm_ctxtEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the ScaLAPACK context of row communicator. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>MPI_Comm Global communicator. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase4grid9MpiGrid2D21get_blacs_comm2D_ctxtEv">
+<span id="_CPPv3N5chase4grid9MpiGrid2D21get_blacs_comm2D_ctxtEv"></span><span id="_CPPv2N5chase4grid9MpiGrid2D21get_blacs_comm2D_ctxtEv"></span><span id="chase::grid::MpiGrid2D::get_blacs_comm2D_ctxt"></span><span class="target" id="classchase_1_1grid_1_1MpiGrid2D_1aaf8df6c26e703279902a80a392d7685d"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_blacs_comm2D_ctxt</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N5chase4grid9MpiGrid2D21get_blacs_comm2D_ctxtEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the ScaLAPACK context of 2D communicator. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>MPI_Comm Global communicator. </p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+</dd></dl>
+
+</section>
+<section id="chase-grid-mpigrid2dbase">
+<h2><span class="section-number">1.4.1.2. </span>chase::grid::MpiGrid2DBase<a class="headerlink" href="#chase-grid-mpigrid2dbase" title="Link to this heading"></a></h2>
+<dl class="cpp class">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase4grid13MpiGrid2DBaseE">
+<span id="_CPPv3N5chase4grid13MpiGrid2DBaseE"></span><span id="_CPPv2N5chase4grid13MpiGrid2DBaseE"></span><span id="chase::grid::MpiGrid2DBase"></span><span class="target" id="classchase_1_1grid_1_1MpiGrid2DBase"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">MpiGrid2DBase</span></span></span><a class="headerlink" href="#_CPPv4N5chase4grid13MpiGrid2DBaseE" title="Link to this definition"></a><br /></dt>
+<dd><p>Abstract base class for managing a 2D MPI grid. </p>
+<p>The <code class="docutils literal notranslate"><a class="reference internal" href="#classchase_1_1grid_1_1MpiGrid2DBase"><span class="std std-ref"><span class="pre">MpiGrid2DBase</span></span></a></code> class provides an abstract interface for managing an MPI 2D grid. It defines virtual functions for obtaining MPI communicators, grid coordinates, dimensions, and other relevant properties of the grid. It supports optional integration with NCCL and ScaLAPACK. </p>
+<p>Subclassed by <a class="reference internal" href="#classchase_1_1grid_1_1MpiGrid2D"><span class="std std-ref">chase::grid::MpiGrid2D&lt; MajorOrder &gt;</span></a></p>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase4grid13MpiGrid2DBaseD0Ev">
+<span id="_CPPv3N5chase4grid13MpiGrid2DBaseD0Ev"></span><span id="_CPPv2N5chase4grid13MpiGrid2DBaseD0Ev"></span><span id="chase::grid::MpiGrid2DBase::~MpiGrid2DBase"></span><span class="target" id="classchase_1_1grid_1_1MpiGrid2DBase_1af27e2413490e63a7197afc0f8d569a22"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">~MpiGrid2DBase</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">default</span></span><a class="headerlink" href="#_CPPv4N5chase4grid13MpiGrid2DBaseD0Ev" title="Link to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK5chase4grid13MpiGrid2DBase12get_row_commEv">
+<span id="_CPPv3NK5chase4grid13MpiGrid2DBase12get_row_commEv"></span><span id="_CPPv2NK5chase4grid13MpiGrid2DBase12get_row_commEv"></span><span id="chase::grid::MpiGrid2DBase::get_row_commC"></span><span class="target" id="classchase_1_1grid_1_1MpiGrid2DBase_1a058ed18d5cf79b556477494c046e467d"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">MPI_Comm</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_row_comm</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4NK5chase4grid13MpiGrid2DBase12get_row_commEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the row communicator for the grid. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>MPI_Comm Row communicator. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK5chase4grid13MpiGrid2DBase12get_col_commEv">
+<span id="_CPPv3NK5chase4grid13MpiGrid2DBase12get_col_commEv"></span><span id="_CPPv2NK5chase4grid13MpiGrid2DBase12get_col_commEv"></span><span id="chase::grid::MpiGrid2DBase::get_col_commC"></span><span class="target" id="classchase_1_1grid_1_1MpiGrid2DBase_1a690c535188185566bce1766d68978424"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">MPI_Comm</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_col_comm</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4NK5chase4grid13MpiGrid2DBase12get_col_commEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the column communicator for the grid. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>MPI_Comm Column communicator. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK5chase4grid13MpiGrid2DBase8get_commEv">
+<span id="_CPPv3NK5chase4grid13MpiGrid2DBase8get_commEv"></span><span id="_CPPv2NK5chase4grid13MpiGrid2DBase8get_commEv"></span><span id="chase::grid::MpiGrid2DBase::get_commC"></span><span class="target" id="classchase_1_1grid_1_1MpiGrid2DBase_1a40f625ae2ff4f3394194465ac1c0afcb"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">MPI_Comm</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_comm</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4NK5chase4grid13MpiGrid2DBase8get_commEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the global communicator for the grid. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>MPI_Comm Global communicator. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase4grid13MpiGrid2DBase10get_coordsEv">
+<span id="_CPPv3N5chase4grid13MpiGrid2DBase10get_coordsEv"></span><span id="_CPPv2N5chase4grid13MpiGrid2DBase10get_coordsEv"></span><span id="chase::grid::MpiGrid2DBase::get_coords"></span><span class="target" id="classchase_1_1grid_1_1MpiGrid2DBase_1a36fae6ef0975eac4cd9e2d3e7f2a6427"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">get_coords</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase4grid13MpiGrid2DBase10get_coordsEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the coordinates of the current process in the grid. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Pointer to an array containing the coordinates. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase4grid13MpiGrid2DBase8get_dimsEv">
+<span id="_CPPv3N5chase4grid13MpiGrid2DBase8get_dimsEv"></span><span id="_CPPv2N5chase4grid13MpiGrid2DBase8get_dimsEv"></span><span id="chase::grid::MpiGrid2DBase::get_dims"></span><span class="target" id="classchase_1_1grid_1_1MpiGrid2DBase_1a15d3539590c25e597fa965d936b77af6"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">get_dims</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase4grid13MpiGrid2DBase8get_dimsEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the dimensions of the grid. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Pointer to an array containing the grid dimensions. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK5chase4grid13MpiGrid2DBase10get_nprocsEv">
+<span id="_CPPv3NK5chase4grid13MpiGrid2DBase10get_nprocsEv"></span><span id="_CPPv2NK5chase4grid13MpiGrid2DBase10get_nprocsEv"></span><span id="chase::grid::MpiGrid2DBase::get_nprocsC"></span><span class="target" id="classchase_1_1grid_1_1MpiGrid2DBase_1aab823dfa4ff6241a33902b5f89192dfa"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_nprocs</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4NK5chase4grid13MpiGrid2DBase10get_nprocsEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the number of processes in the grid. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int Number of processes. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK5chase4grid13MpiGrid2DBase10get_myRankEv">
+<span id="_CPPv3NK5chase4grid13MpiGrid2DBase10get_myRankEv"></span><span id="_CPPv2NK5chase4grid13MpiGrid2DBase10get_myRankEv"></span><span id="chase::grid::MpiGrid2DBase::get_myRankC"></span><span class="target" id="classchase_1_1grid_1_1MpiGrid2DBase_1a97d702def811e883547eed16bae052a2"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_myRank</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4NK5chase4grid13MpiGrid2DBase10get_myRankEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the rank of the current process in the grid. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int Rank of the current process. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK5chase4grid13MpiGrid2DBase12getGridMajorEv">
+<span id="_CPPv3NK5chase4grid13MpiGrid2DBase12getGridMajorEv"></span><span id="_CPPv2NK5chase4grid13MpiGrid2DBase12getGridMajorEv"></span><span id="chase::grid::MpiGrid2DBase::getGridMajorC"></span><span class="target" id="classchase_1_1grid_1_1MpiGrid2DBase_1a9a8bc2a9e4db476470df23e9872b6142"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">GridMajor</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">getGridMajor</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4NK5chase4grid13MpiGrid2DBase12getGridMajorEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the major ordering of the grid. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>GridMajor The grid’s major ordering (RowMajor or ColMajor). </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK5chase4grid13MpiGrid2DBase13get_nccl_commEv">
+<span id="_CPPv3NK5chase4grid13MpiGrid2DBase13get_nccl_commEv"></span><span id="_CPPv2NK5chase4grid13MpiGrid2DBase13get_nccl_commEv"></span><span id="chase::grid::MpiGrid2DBase::get_nccl_commC"></span><span class="target" id="classchase_1_1grid_1_1MpiGrid2DBase_1aceb0c5cda43377dfc9abc7ff42708306"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">ncclComm_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_nccl_comm</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4NK5chase4grid13MpiGrid2DBase13get_nccl_commEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the NCCL global communicator for the grid. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>MPI_Comm Global communicator. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK5chase4grid13MpiGrid2DBase17get_nccl_row_commEv">
+<span id="_CPPv3NK5chase4grid13MpiGrid2DBase17get_nccl_row_commEv"></span><span id="_CPPv2NK5chase4grid13MpiGrid2DBase17get_nccl_row_commEv"></span><span id="chase::grid::MpiGrid2DBase::get_nccl_row_commC"></span><span class="target" id="classchase_1_1grid_1_1MpiGrid2DBase_1a424d47ba58a768d5991a62de9c4f549d"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">ncclComm_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_nccl_row_comm</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4NK5chase4grid13MpiGrid2DBase17get_nccl_row_commEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the NCCL row communicator for the grid. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>MPI_Comm Global communicator. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK5chase4grid13MpiGrid2DBase17get_nccl_col_commEv">
+<span id="_CPPv3NK5chase4grid13MpiGrid2DBase17get_nccl_col_commEv"></span><span id="_CPPv2NK5chase4grid13MpiGrid2DBase17get_nccl_col_commEv"></span><span id="chase::grid::MpiGrid2DBase::get_nccl_col_commC"></span><span class="target" id="classchase_1_1grid_1_1MpiGrid2DBase_1af31be30bb5c5bf90b31303fd0010b883"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">ncclComm_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_nccl_col_comm</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4NK5chase4grid13MpiGrid2DBase17get_nccl_col_commEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the NCCL column communicator for the grid. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>MPI_Comm Global communicator. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase4grid13MpiGrid2DBase22get_blacs_colcomm_ctxtEv">
+<span id="_CPPv3N5chase4grid13MpiGrid2DBase22get_blacs_colcomm_ctxtEv"></span><span id="_CPPv2N5chase4grid13MpiGrid2DBase22get_blacs_colcomm_ctxtEv"></span><span id="chase::grid::MpiGrid2DBase::get_blacs_colcomm_ctxt"></span><span class="target" id="classchase_1_1grid_1_1MpiGrid2DBase_1a0d18e9c8626385338c38aec44eb3daf8"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_blacs_colcomm_ctxt</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase4grid13MpiGrid2DBase22get_blacs_colcomm_ctxtEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the ScaLAPACK context of column communicator. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>MPI_Comm Global communicator. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase4grid13MpiGrid2DBase22get_blacs_rowcomm_ctxtEv">
+<span id="_CPPv3N5chase4grid13MpiGrid2DBase22get_blacs_rowcomm_ctxtEv"></span><span id="_CPPv2N5chase4grid13MpiGrid2DBase22get_blacs_rowcomm_ctxtEv"></span><span id="chase::grid::MpiGrid2DBase::get_blacs_rowcomm_ctxt"></span><span class="target" id="classchase_1_1grid_1_1MpiGrid2DBase_1a9094a88c32433ba003d2196866c9f6b8"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_blacs_rowcomm_ctxt</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase4grid13MpiGrid2DBase22get_blacs_rowcomm_ctxtEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the ScaLAPACK context of row communicator. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>MPI_Comm Global communicator. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase4grid13MpiGrid2DBase21get_blacs_comm2D_ctxtEv">
+<span id="_CPPv3N5chase4grid13MpiGrid2DBase21get_blacs_comm2D_ctxtEv"></span><span id="_CPPv2N5chase4grid13MpiGrid2DBase21get_blacs_comm2D_ctxtEv"></span><span id="chase::grid::MpiGrid2DBase::get_blacs_comm2D_ctxt"></span><span class="target" id="classchase_1_1grid_1_1MpiGrid2DBase_1a8a537c88224bae94ac76adffb59365b7"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_blacs_comm2D_ctxt</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase4grid13MpiGrid2DBase21get_blacs_comm2D_ctxtEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the ScaLAPACK context of 2D communicator. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>MPI_Comm Global communicator. </p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+</dd></dl>
+
+</section>
+<section id="backend-types">
+<h2><span class="section-number">1.4.1.3. </span>Backend Types<a class="headerlink" href="#backend-types" title="Link to this heading"></a></h2>
+<p>The backend types are documented as part of the namespace. For detailed information about
+<code class="docutils literal notranslate"><span class="pre">chase::grid::backend::MPI</span></code> and <code class="docutils literal notranslate"><span class="pre">chase::grid::backend::NCCL</span></code>, see the namespace documentation
+below or refer to the source code.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="matrices.html" class="btn btn-neutral float-left" title="1.3.1. Matrix Classes" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="kernels.html" class="btn btn-neutral float-right" title="1.5.1. Linear Algebra Kernels" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, SimLab Quantum Materials.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

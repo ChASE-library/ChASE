@@ -1,0 +1,326 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>References and Contributors &mdash; ChASE v1.3.0 documentation</title>
+      <link rel="stylesheet" href="theme_overrides.css" type="text/css" />
+
+  
+    <link rel="shortcut icon" href="_static/ChASE_Logo_Favicon_RGB.png"/>
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=e49d06fc"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="1. Quick Start" href="quick-start.html" />
+    <link rel="prev" title="Licenses and Copyright" href="license.html" />
+     
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+    <link href="_static/theme_overrides.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+
+          
+          
+          <a href="index.html">
+            
+              <img src="_static/ChASE_Logo_RGB.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+  <div class="version-selector" style="margin: 10px 0; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 3px;">
+  <label for="version-select" style="display: block; color: #fcfcfc; font-size: 12px; margin-bottom: 5px; font-weight: bold;">
+    Version:
+  </label>
+  <select id="version-select" onchange="switchVersion(this.value)" style="width: 100%; padding: 5px; border: 1px solid #2980B9; border-radius: 3px; background: white; color: #333; font-size: 13px;"><option value="/ChASE/latest/">
+      latest
+    </option></select>
+</div><script>
+function switchVersion(url) {
+  // Get current path and determine base URL
+  const currentPath = window.location.pathname;
+  const pathParts = currentPath.split('/').filter(p => p);
+  
+  // Get known versions from the select options (dynamic, not hardcoded)
+  const selector = document.getElementById('version-select');
+  const knownVersions = [];
+  if (selector) {
+    for (let option of selector.options) {
+      const verName = option.text.trim();
+      knownVersions.push(verName);
+    }
+  }
+  
+  // Find the repository name in the path (e.g., "ChASE" in "/ChASE/latest/...")
+  // This handles project pages where URL is: username.github.io/repo-name/version/...
+  let repoName = '';
+  let versionIndex = -1;
+  
+  // Look for version in path (could be at index 1 or 2 depending on structure)
+  for (let i = 0; i < pathParts.length; i++) {
+    if (knownVersions.includes(pathParts[i])) {
+      versionIndex = i;
+      if (i > 0) {
+        repoName = pathParts[i - 1]; // Repository name is before version
+      }
+      break;
+    }
+  }
+  
+  // Get relative path (everything after version)
+  let relativePath = '';
+  if (versionIndex >= 0) {
+    // We're in a versioned path, get everything after version
+    relativePath = '/' + pathParts.slice(versionIndex + 1).join('/');
+  } else {
+    // We're in root or unversioned, get current path
+    relativePath = currentPath;
+  }
+  
+  // Construct new URL
+  // The URL from conf.py already includes the full path (e.g., "/ChASE/latest/")
+  // So we just need to append the relative path (page name)
+  const baseUrl = url.replace(/\/$/, ''); // Remove trailing slash
+  const cleanRelative = relativePath === '/' ? '' : relativePath.replace(/^\//, '');
+  
+  // If URL already includes the repo name, use it as-is
+  // Otherwise, we might need to add it (but conf.py should have it)
+  if (url.startsWith('http')) {
+    window.location.href = url + (cleanRelative ? '/' + cleanRelative : '');
+  } else {
+    window.location.href = baseUrl + (cleanRelative ? '/' + cleanRelative : '');
+  }
+}
+
+// Auto-detect current version from URL and update selector
+(function() {
+  const currentPath = window.location.pathname;
+  const pathParts = currentPath.split('/').filter(p => p);
+  
+  // Get known versions from select options
+  const selector = document.getElementById('version-select');
+  if (!selector) return;
+  
+  const knownVersions = [];
+  for (let option of selector.options) {
+    const verName = option.text.trim();
+    knownVersions.push(verName);
+  }
+  
+  // Look for version in path (could be at index 0, 1, or 2 depending on structure)
+  // For project pages: /repo-name/version/... (version at index 1)
+  // For user pages: /version/... (version at index 0)
+  for (let i = 0; i < pathParts.length; i++) {
+    if (knownVersions.includes(pathParts[i])) {
+      const currentVer = pathParts[i];
+      // Find option matching current version
+      for (let option of selector.options) {
+        if (option.text.trim() === currentVer) {
+          selector.value = option.value;
+          break;
+        }
+      }
+      break;
+    }
+  }
+})();
+</script>
+
+<style>
+.version-selector select:focus {
+  outline: 2px solid #2980B9;
+  outline-offset: 2px;
+}
+</style>
+
+
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">INTRODUCTION</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="chase.html">ChASE: an Iterative Solver for Dense Eigenproblems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="version.html">Versions of the library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">Licenses and Copyright</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">References and Contributors</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#main-developers">Main developers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#current-contributors">Current Contributors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#past-contributors">Past Contributors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#how-to-reference-the-code">How to Reference the Code</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">USER DOCUMENTATION</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="quick-start.html">1. Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">2. Installation and Setup on a Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">3. How to use ChASE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parameters.html">4. Parameters and Configurations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="module.html">5. Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="example.html">6. Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API REFERENCE</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api/index.html">1. API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ChASE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">References and Contributors</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/reference.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="references-and-contributors">
+<h1>References and Contributors<a class="headerlink" href="#references-and-contributors" title="Link to this heading"></a></h1>
+<p>The path that leads to the current implementation of ChASE using modern
+<code class="docutils literal notranslate"><span class="pre">C++</span></code> design concepts started back in summer of 2012, when an
+initial Matlab prototype of the code was implemented in <code class="docutils literal notranslate"><span class="pre">C</span></code> and
+parallelized using OpenMP 3.0. Soon after a distributed version of the
+code was implemented based on MPI and the <a class="reference external" href="http://libelemental.org/">Elemental</a> library. The results of these
+implementations lead to a the first publications on the performance of
+the library on sequences of eigenvalue problems stemming from
+Materials Science applications. In the following three years, a first
+basic <code class="docutils literal notranslate"><span class="pre">C++</span></code> implementation on shared memory architectures and GPUs
+was developed. Eventually all these efforts lead to the current
+implementation in <code class="docutils literal notranslate"><span class="pre">C++</span></code> which is templated and separates algorithm
+from kernel implementation through the use of an abstract class.</p>
+<p>Approximately one year ago, the codebase underwent a major refactoring
+to improve modularity and maintainability. This refactoring effort
+reorganized the code structure, enhanced separation of concerns between
+different components (sequential vs. parallel implementations, CPU vs.
+GPU backends…), and established clearer namespace hierarchies.
+These improvements have led to the current well-structured codebase that
+supports multiple implementation variants (ChASECPU, ChASEGPU, pChASECPU,
+pChASEGPU) with a unified interface while maintaining high performance and
+extensibility.</p>
+<section id="main-developers">
+<h2>Main developers<a class="headerlink" href="#main-developers" title="Link to this heading"></a></h2>
+<blockquote>
+<div><ul class="simple">
+<li><p>Edoardo Di Napoli – Algorithm design and development</p></li>
+<li><p>Xinzhe Wu – Algorithm development, advanced parallel (MPI and GPU) implementation and optimization, developer documentation</p></li>
+<li><p>Clément Richefort – Algorithm development, advanced parallel (MPI and GPU) implementation and optimization, Pseudo-Hermitian project support, Integration of ChASE into YAMBO code.</p></li>
+</ul>
+</div></blockquote>
+</section>
+<section id="current-contributors">
+<h2>Current Contributors<a class="headerlink" href="#current-contributors" title="Link to this heading"></a></h2>
+</section>
+<section id="past-contributors">
+<h2>Past Contributors<a class="headerlink" href="#past-contributors" title="Link to this heading"></a></h2>
+<blockquote>
+<div><ul class="simple">
+<li><p>Davor Davidović – Advanced parallel GPU implementation and optimization</p></li>
+<li><p>Nenad Mijić – ARM-based implementation and optimization</p></li>
+<li><p>Xiao Zhang – Integration of ChASE into Jena BSE code</p></li>
+<li><p>Miriam Hinzen, Daniel Wortmann – Integration of ChASE into FLEUR code</p></li>
+<li><p>Sebastian Achilles – Library benchmarking on parallel platforms, documentation</p></li>
+<li><p>Jan Winkelmann – DoS algorithm development and advanced <code class="docutils literal notranslate"><span class="pre">C++</span></code> implementation</p></li>
+<li><p>Paul Springer – Advanced GPU implementation</p></li>
+<li><p>Marija Kranjcevic – OpenMP <code class="docutils literal notranslate"><span class="pre">C++</span></code> implementation</p></li>
+<li><p>Josip Zubrinic – Early GPU algorithm development and implementation</p></li>
+<li><p>Jens Rene Suckert – Lanczos algorithm and GPU implementation</p></li>
+<li><p>Mario Berljafa – Early <code class="docutils literal notranslate"><span class="pre">C</span></code> and <code class="docutils literal notranslate"><span class="pre">MPI</span></code> implementation using the Elemental library</p></li>
+</ul>
+</div></blockquote>
+</section>
+<section id="how-to-reference-the-code">
+<h2>How to Reference the Code<a class="headerlink" href="#how-to-reference-the-code" title="Link to this heading"></a></h2>
+<p>The main reference of ChASE is [1] while [2] provides some early
+results on scalability and usage on sequences of eigenproblems
+generated by Materials Science applications. Reference [4] describes
+the recent advances in distributed multi-GPU implementation using NCCL
+and algorithm optimizations.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>[1] J. Winkelmann, P. Springer, and E. Di Napoli. <em>ChASE: a
+Chebyshev Accelerated Subspace iteration Eigensolver for sequences
+of Hermitian eigenvalue problems.</em> ACM Transaction on Mathematical
+Software, <strong>45</strong> Num.2, Art.21, (2019). <a class="reference external" href="https://doi.org/10.1145/3313828">DOI:10.1145/3313828</a> , [<a class="reference external" href="https://arxiv.org/abs/1805.10121/">arXiv:1805.10121</a> ]</p></li>
+<li><p>[2] M. Berljafa, D. Wortmann, and E. Di Napoli. <em>An Optimized and
+Scalable Eigensolver for Sequences of Eigenvalue Problems.</em>
+Concurrency &amp; Computation: Practice and Experience <strong>27</strong> (2015),
+pp. 905-922. <a class="reference external" href="https://onlinelibrary.wiley.com/doi/pdf/10.1002/cpe.3394">DOI:10.1002/cpe.3394</a> , [<a class="reference external" href="https://arxiv.org/abs/1404.4161">arXiv:1404.4161</a> ].</p></li>
+<li><p>[3] X. Wu, D. Davidović, S. Achilles,E. Di Napoli. <em>ChASE: a distributed hybrid
+CPU-GPU eigensolver for large-scale hermitian eigenvalue problems.</em> Proceedings
+of the Platform for Advanced Scientific Computing Conference (PASC22).
+<a class="reference external" href="https://doi.org/10.1145/3539781.3539792">DOI:10.1145/3539781.3539792</a> , [<a class="reference external" href="https://arxiv.org/pdf/2205.02491/">arXiv:2205.02491</a> ]</p></li>
+<li><p>[4] X. Wu and E. Di Napoli. <em>Advancing the distributed Multi-GPU ChASE library
+through algorithm optimization and NCCL library.</em> Proceedings of the SC’23
+Workshops of the International Conference on High Performance Computing,
+Network, Storage, and Analysis (2023), pp. 1688-1696.
+<a class="reference external" href="https://doi.org/10.1145/3624062.3624249">DOI:10.1145/3624062.3624249</a> ,
+[<a class="reference external" href="https://arxiv.org/abs/2309.15595">arXiv:2309.15595</a> ]</p></li>
+</ul>
+</div></blockquote>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="license.html" class="btn btn-neutral float-left" title="Licenses and Copyright" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="quick-start.html" class="btn btn-neutral float-right" title="1. Quick Start" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, SimLab Quantum Materials.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

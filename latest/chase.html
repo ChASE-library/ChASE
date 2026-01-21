@@ -1,0 +1,370 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ChASE: an Iterative Solver for Dense Eigenproblems &mdash; ChASE v1.3.0 documentation</title>
+      <link rel="stylesheet" href="theme_overrides.css" type="text/css" />
+
+  
+    <link rel="shortcut icon" href="_static/ChASE_Logo_Favicon_RGB.png"/>
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=e49d06fc"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Versions of the library" href="version.html" />
+    <link rel="prev" title="ChASE’s Documentation" href="index.html" />
+     
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+    <link href="_static/theme_overrides.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+
+          
+          
+          <a href="index.html">
+            
+              <img src="_static/ChASE_Logo_RGB.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+  <div class="version-selector" style="margin: 10px 0; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 3px;">
+  <label for="version-select" style="display: block; color: #fcfcfc; font-size: 12px; margin-bottom: 5px; font-weight: bold;">
+    Version:
+  </label>
+  <select id="version-select" onchange="switchVersion(this.value)" style="width: 100%; padding: 5px; border: 1px solid #2980B9; border-radius: 3px; background: white; color: #333; font-size: 13px;"><option value="/ChASE/latest/">
+      latest
+    </option></select>
+</div><script>
+function switchVersion(url) {
+  // Get current path and determine base URL
+  const currentPath = window.location.pathname;
+  const pathParts = currentPath.split('/').filter(p => p);
+  
+  // Get known versions from the select options (dynamic, not hardcoded)
+  const selector = document.getElementById('version-select');
+  const knownVersions = [];
+  if (selector) {
+    for (let option of selector.options) {
+      const verName = option.text.trim();
+      knownVersions.push(verName);
+    }
+  }
+  
+  // Find the repository name in the path (e.g., "ChASE" in "/ChASE/latest/...")
+  // This handles project pages where URL is: username.github.io/repo-name/version/...
+  let repoName = '';
+  let versionIndex = -1;
+  
+  // Look for version in path (could be at index 1 or 2 depending on structure)
+  for (let i = 0; i < pathParts.length; i++) {
+    if (knownVersions.includes(pathParts[i])) {
+      versionIndex = i;
+      if (i > 0) {
+        repoName = pathParts[i - 1]; // Repository name is before version
+      }
+      break;
+    }
+  }
+  
+  // Get relative path (everything after version)
+  let relativePath = '';
+  if (versionIndex >= 0) {
+    // We're in a versioned path, get everything after version
+    relativePath = '/' + pathParts.slice(versionIndex + 1).join('/');
+  } else {
+    // We're in root or unversioned, get current path
+    relativePath = currentPath;
+  }
+  
+  // Construct new URL
+  // The URL from conf.py already includes the full path (e.g., "/ChASE/latest/")
+  // So we just need to append the relative path (page name)
+  const baseUrl = url.replace(/\/$/, ''); // Remove trailing slash
+  const cleanRelative = relativePath === '/' ? '' : relativePath.replace(/^\//, '');
+  
+  // If URL already includes the repo name, use it as-is
+  // Otherwise, we might need to add it (but conf.py should have it)
+  if (url.startsWith('http')) {
+    window.location.href = url + (cleanRelative ? '/' + cleanRelative : '');
+  } else {
+    window.location.href = baseUrl + (cleanRelative ? '/' + cleanRelative : '');
+  }
+}
+
+// Auto-detect current version from URL and update selector
+(function() {
+  const currentPath = window.location.pathname;
+  const pathParts = currentPath.split('/').filter(p => p);
+  
+  // Get known versions from select options
+  const selector = document.getElementById('version-select');
+  if (!selector) return;
+  
+  const knownVersions = [];
+  for (let option of selector.options) {
+    const verName = option.text.trim();
+    knownVersions.push(verName);
+  }
+  
+  // Look for version in path (could be at index 0, 1, or 2 depending on structure)
+  // For project pages: /repo-name/version/... (version at index 1)
+  // For user pages: /version/... (version at index 0)
+  for (let i = 0; i < pathParts.length; i++) {
+    if (knownVersions.includes(pathParts[i])) {
+      const currentVer = pathParts[i];
+      // Find option matching current version
+      for (let option of selector.options) {
+        if (option.text.trim() === currentVer) {
+          selector.value = option.value;
+          break;
+        }
+      }
+      break;
+    }
+  }
+})();
+</script>
+
+<style>
+.version-selector select:focus {
+  outline: 2px solid #2980B9;
+  outline-offset: 2px;
+}
+</style>
+
+
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">INTRODUCTION</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">ChASE: an Iterative Solver for Dense Eigenproblems</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#algorithm">Algorithm</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#use-case-and-features">Use Case and Features</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="version.html">Versions of the library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">Licenses and Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="reference.html">References and Contributors</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">USER DOCUMENTATION</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="quick-start.html">1. Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">2. Installation and Setup on a Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">3. How to use ChASE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parameters.html">4. Parameters and Configurations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="module.html">5. Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="example.html">6. Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API REFERENCE</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api/index.html">1. API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ChASE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">ChASE: an Iterative Solver for Dense Eigenproblems</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/chase.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <img alt="_images/ChASE_Logo_RGB.png" src="_images/ChASE_Logo_RGB.png" />
+<section id="chase-an-iterative-solver-for-dense-eigenproblems">
+<h1>ChASE: an Iterative Solver for Dense Eigenproblems<a class="headerlink" href="#chase-an-iterative-solver-for-dense-eigenproblems" title="Link to this heading"></a></h1>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>The <strong>Ch</strong>ebyshev <strong>A</strong>ccelerated <strong>S</strong>ubspace <strong>E</strong>igensolver
+(ChASE) is a modern and scalable library to solve two types of dense
+algebraic eigenvalue problems:</p>
+<ol class="arabic">
+<li><p><strong>Hermitian (Symmetric) eigenvalue problems</strong> of the form</p>
+<div class="math notranslate nohighlight">
+\[A \hat{x} = \lambda \hat{x} \quad \textrm{with} \quad A^\dagger=A \in
+\mathbb{C}^{n\times n}\ \ (A^T=A \in \mathbb{R}^{n\times n}),\]</div>
+<p>where <span class="math notranslate nohighlight">\(\hat{x} \in \mathbb{C}^{n}\backslash \{0\}\)</span> and
+<span class="math notranslate nohighlight">\(\lambda \in \mathbb{R}\)</span> are the eigenvector and the eigenvalue
+of <span class="math notranslate nohighlight">\(A\)</span>, respectively.</p>
+</li>
+<li><p><strong>Pseudo-Hermitian eigenvalue problems</strong>, for example from Bethe-Salpeter
+Equation (BSE). The Hamiltonian <span class="math notranslate nohighlight">\(H\)</span> derived from the BSE equation is
+of the form</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}H := \begin{bmatrix}
+    A &amp; B\\
+    -\bar{B} &amp; -\bar{A}
+\end{bmatrix} \quad \textrm{with} \quad A = A^* \quad \textrm{and} \quad B = B^T.\end{split}\]</div>
+<p>The <span class="math notranslate nohighlight">\(m \times m\)</span> blocks <span class="math notranslate nohighlight">\(A\)</span> and <span class="math notranslate nohighlight">\(B\)</span> are respectively
+referred to as resonant and coupling terms. The two blocks <span class="math notranslate nohighlight">\(\bar{A}\)</span>
+and <span class="math notranslate nohighlight">\(\bar{B}\)</span> stand for the conjugate of <span class="math notranslate nohighlight">\(A\)</span> and <span class="math notranslate nohighlight">\(B\)</span>.
+Because of the properties of <span class="math notranslate nohighlight">\(A\)</span> and <span class="math notranslate nohighlight">\(B\)</span> stated above,
+<span class="math notranslate nohighlight">\(\bar{A} = A^T\)</span> and <span class="math notranslate nohighlight">\(\bar{B} = B^*\)</span>, and the size of <span class="math notranslate nohighlight">\(H\)</span>
+is <span class="math notranslate nohighlight">\(n := 2m\)</span>. The Hamiltonian <span class="math notranslate nohighlight">\(H\)</span> is termed a
+pseudo-Hermitian matrix, as it satisfies the relation</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}SH = H^*S \quad \textrm{with} \quad S := \begin{bmatrix}
+    I &amp; 0 \\
+    0 &amp; -I
+\end{bmatrix}.\end{split}\]</div>
+</li>
+</ol>
+</section>
+<section id="algorithm">
+<h2>Algorithm<a class="headerlink" href="#algorithm" title="Link to this heading"></a></h2>
+<a class="reference internal image-reference" href="_images/flow-chart-chase_standalone.png"><img alt="_images/flow-chart-chase_standalone.png" class="align-center" src="_images/flow-chart-chase_standalone.png" style="width: 643.5px; height: 610.2px;" />
+</a>
+<table class="docutils align-default" id="flowchart-legenda">
+<colgroup>
+<col style="width: 15.4%" />
+<col style="width: 84.6%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><span class="math notranslate nohighlight">\(A, N\)</span></p></td>
+<td><p>The Hermitian matrix and corresponding rank.</p></td>
+</tr>
+<tr class="row-even"><td><p>nev,nex</p></td>
+<td><p>Number of desired eigenpairs, Extra size of search space</p></td>
+</tr>
+<tr class="row-odd"><td><p>tol,deg</p></td>
+<td><p>Threshold of residual’s tolerance, initial degree of Chebyshev polynomials</p></td>
+</tr>
+<tr class="row-even"><td><p><span class="math notranslate nohighlight">\(\hat{V},\hat{Q},\hat{X}\)</span></p></td>
+<td><p>Matrix of vectors: filtered, orthonormalized, deflated and locked</p></td>
+</tr>
+<tr class="row-odd"><td><p><span class="math notranslate nohighlight">\(\tilde{\Lambda},\Lambda\)</span></p></td>
+<td><p>Matrix of eigenvalues: computed, deflated and locked</p></td>
+</tr>
+<tr class="row-even"><td><p><span class="math notranslate nohighlight">\(m[],\textsf{res}[]\)</span></p></td>
+<td><p>Vectors: optimized degrees, eigenpairs residuals</p></td>
+</tr>
+<tr class="row-odd"><td><p>FILTER</p></td>
+<td><p>Chebyshev polynomial filter aligning <span class="math notranslate nohighlight">\(\hat{V}\)</span> to the desired eigenspace</p></td>
+</tr>
+<tr class="row-even"><td><p>ORTHONORMALIZE</p></td>
+<td><p>QR factorization orthogonalizing filtered vectors together with deflated ones</p></td>
+</tr>
+<tr class="row-odd"><td><p>NORMAL-RAYLEIGH-RITZ</p></td>
+<td><p>Projection of <span class="math notranslate nohighlight">\(A\)</span> into search space defined by <span class="math notranslate nohighlight">\(\hat{Q}\)</span> and diagonalization of reduced problem</p></td>
+</tr>
+<tr class="row-even"><td><p>OBLIQUE-RAYLEIGH-RITZ</p></td>
+<td><p>Projection of <span class="math notranslate nohighlight">\(H\)</span> into search space defined by <span class="math notranslate nohighlight">\(\hat{Q}\)</span> and diagonalization of reduced problem</p></td>
+</tr>
+<tr class="row-odd"><td><p>DEFL&amp;LOCK</p></td>
+<td><p>Deflation and locking of eigenpairs whose residuals are below the tolerance threshold</p></td>
+</tr>
+<tr class="row-even"><td><p>DEGREES</p></td>
+<td><p>Computation of optimal polynomial degree for each vector in <span class="math notranslate nohighlight">\(\hat{V}\)</span></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="use-case-and-features">
+<h2>Use Case and Features<a class="headerlink" href="#use-case-and-features" title="Link to this heading"></a></h2>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>Real and Complex:</strong> ChASE is templated for real and complex numbers. So it can
+be used to solve <em>real symmetric</em> eigenproblems as well as <em>complex
+Hermitian</em> ones.</p></li>
+<li><p><strong>Eigespectrum:</strong> ChASE algorithm is designed to solve for the
+<em>extremal portion</em> of the eigenspectrum (i.e., <span class="math notranslate nohighlight">\(\{\lambda_1,
+\dots ,\lambda_\textsf{nev}\}\)</span>). By default it computes the
+lowest portion of the spectrum but it can compute as well the
+largest portion by solving for <span class="math notranslate nohighlight">\(-A\)</span>. The library is
+particularly efficient when no more than 20% of the extremal
+portion of the eigenspectrum is sought after. For larger
+fractions the subspace iteration algorithm may struggle to be
+competitive. Converge could become an issue for fractions close
+to or larger than 50%.</p></li>
+<li><p><strong>Type of Problem:</strong> ChASE can currently handle only standard
+eigenvalue problems. Generalized eigenvalue problems of the form
+<span class="math notranslate nohighlight">\(A\hat{x} = \lambda B \hat{x}\)</span>, with <span class="math notranslate nohighlight">\(B\)</span> s.p.d., can
+be solved after factorizing <span class="math notranslate nohighlight">\(B = L L^T\)</span> and transforming
+the problem into standard form <span class="math notranslate nohighlight">\(A = L^{-1} A L^{-T}\)</span>.</p></li>
+<li><p><strong>Sequences:</strong> ChASE is particularly efficient when dealing with
+<em>sequences of eigenvalue problems</em>, where the eigenvectors
+solving for one problem can be use as input to accelerate the
+solution of the next one.</p></li>
+<li><p><strong>Vectors input:</strong> Since it is based on subspace iteration, ChASE
+can receive as input a matrix of vector <span class="math notranslate nohighlight">\(\hat{V}\)</span> equal to
+the number of desired eigenvalues. ChASE can experience
+substantial speed-ups when <span class="math notranslate nohighlight">\(\hat{V}\)</span> contains some
+information about the sought after eigenvectors.</p></li>
+<li><p><strong>Degree optimization:</strong> For a fixed accuracy level, ChASE can
+optimize the degree of the Chebyshev polynomial filter so as to
+minimize the number of FLOPs necessary to reach convergence.</p></li>
+<li><p><strong>Precision:</strong> ChASE is also templated to work in <em>Single
+Precision</em> (SP) or <em>Double Precision</em> (DP).</p></li>
+</ul>
+</div></blockquote>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="ChASE’s Documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="version.html" class="btn btn-neutral float-right" title="Versions of the library" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, SimLab Quantum Materials.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
