@@ -1,0 +1,1460 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>3. How to use ChASE &mdash; ChASE v1.3.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="_static/ChASE_Logo_Favicon_RGB.png"/>
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="theme_overrides.css" type="text/css" />
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="ChASE v1.3.0 documentation" href="index.html"/>
+        <link rel="next" title="4. Parameters and Configurations" href="parameters.html"/>
+        <link rel="prev" title="2. Installation and Setup on a Cluster" href="installation.html"/>
+    <link href="_static/theme_overrides.css" rel="stylesheet" type="text/css">
+
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html">
+          
+
+          
+            
+            <img src="_static/ChASE_Logo_RGB.png" class="logo" />
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                v1.3.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <p class="caption"><span class="caption-text">INTRODUCTION</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="chase.html">ChASE: an Iterative Solver for Dense Eigenproblems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="version.html">Versions of the library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">Licenses and Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="reference.html">References and Contributors</a></li>
+</ul>
+<p class="caption"><span class="caption-text">USER DOCUMENTATION</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="quick-start.html">1. Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">2. Installation and Setup on a Cluster</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">3. How to use ChASE</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#use-chase-as-a-standalone-solver">3.1. Use ChASE as a standalone solver</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#shared-memory-chase">3.1.1. Shared-Memory ChASE</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#include-headers">3.1.1.1. Include headers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#chase-solver">3.1.1.2. ChASE solver</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#distributed-memory-chase">3.1.2. Distributed-Memory ChASE</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#id1">3.1.2.1. Include headers</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#mpi-working-context">3.1.2.2. MPI working context</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id2">3.1.2.3. ChASE solver</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#parameter-configuration">3.1.3. Parameter Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#solve">3.1.4. Solve</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#an-isolated-problem">3.1.4.1. An isolated problem</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#a-sequence-of-problems">3.1.4.2. A sequence of problems</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#performance-decorator">3.1.5. Performance Decorator</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#extract-the-results">3.1.6. Extract the results</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#i-o">3.1.7. I/O</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#use-chase-from-external-applications">3.2. Use ChASE from external applications</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#compiling-with-cmake">3.2.1. Compiling with CMake</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#compiling-with-makefile">3.2.2. Compiling with Makefile</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#interface-to-c-fortran">3.3. Interface to C/Fortran</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#general-description">3.3.1. General Description</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#initialization-functions">3.3.2. Initialization Functions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#x-chase-init">3.3.2.1. &lt;x&gt;chase_init</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#p-x-chase-init">3.3.2.2. p&lt;x&gt;chase_init</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#p-x-chase-init-blockcyclic">3.3.2.3. p&lt;x&gt;chase_init_blockcyclic</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#solving-functions">3.3.3. Solving Functions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#x-chase">3.3.3.1. &lt;x&gt;chase</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#p-x-chase">3.3.3.2. p&lt;x&gt;chase</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#finalization-functions">3.3.4. Finalization Functions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#x-chase-finalize">3.3.4.1. &lt;x&gt;chase_finalize</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#p-x-chase-finalize">3.3.4.2. p&lt;x&gt;chase_finalize</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#examples">3.3.5. Examples</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#example-of-c-interface">3.3.5.1. Example of C interface</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#example-of-fortran-interface">3.3.5.2. Example of Fortran interface</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="parameters.html">4. Parameters and Configurations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="module.html">5. Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="example.html">6. Examples</a></li>
+</ul>
+<p class="caption"><span class="caption-text">DEVELOPER DOCUMENTATION</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="algorithm.html">1. General algorithm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="abstract.html">2. Virtual Abstract of Numerical Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parallel.html">3. Parallel implementations</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">ChASE</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li><span class="section-number">3. </span>How to use ChASE</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        
+          <a href="_sources/usage.rst.txt" rel="nofollow"> View page source</a>
+        
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="how-to-use-chase">
+<h1><span class="section-number">3. </span>How to use ChASE<a class="headerlink" href="#how-to-use-chase" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="use-chase-as-a-standalone-solver">
+<h2><span class="section-number">3.1. </span>Use ChASE as a standalone solver<a class="headerlink" href="#use-chase-as-a-standalone-solver" title="Permalink to this headline">¶</a></h2>
+<p>ChASE has multiple versions for both shared-memory and distributed-memory
+systems, with or without GPU supports. This section helps users use ChASE to solve
+their own problem on preferred architectures from scratch.</p>
+<p>In order to use ChASE, the first header file should be included is <code class="docutils literal notranslate"><span class="pre">ChASE-MPI/chase_mpi.hpp</span></code>, which is a common interface of ChASE solver. This header provides multiple constructors of
+class <code class="docutils literal notranslate"><span class="pre">ChaseMpi</span></code>, targeting different computing architectures.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>It is named as <code class="docutils literal notranslate"><span class="pre">ChASE-MPI</span></code>, but for current release
+version of ChASE, it should be included no matter shared-memory or distributed-memory versions of ChASE is selected to be used.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For all versions of ChASE, they share a same interface for the solving step, parameter configuration and performance decoration.</p>
+</div>
+<div class="section" id="shared-memory-chase">
+<h3><span class="section-number">3.1.1. </span>Shared-Memory ChASE<a class="headerlink" href="#shared-memory-chase" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="include-headers">
+<h4><span class="section-number">3.1.1.1. </span>Include headers<a class="headerlink" href="#include-headers" title="Permalink to this headline">¶</a></h4>
+<p>The shared-memory version of ChASE can be built with or without the support of
+Nvidia GPU. If GPU support is enabled, only 1 GPU card would be used.</p>
+<ul class="simple">
+<li><p>In order to use shared-memory version of ChASE with only CPU support, it is also necessary to include header <code class="docutils literal notranslate"><span class="pre">ChASE-MPI/impl/chase_mpidla_blaslapack_seq.hpp</span></code>. This header file provides an implementation of the templated class <code class="docutils literal notranslate"><span class="pre">ChaseMpiDLABlaslapackSeq</span></code> which provides the implementations of required dense linear algebra operations. Its template type determines the scalar type that the user would like to work with.</p></li>
+<li><p>In order to use shared-memory version of ChASE with GPU support, another header file <code class="docutils literal notranslate"><span class="pre">ChASE-MPI/impl/chase_mpidla_cuda_seq.hpp</span></code> should be included. This header file provides an implementation of the templated class <code class="docutils literal notranslate"><span class="pre">ChaseMpiDLACudaSeq</span></code> which provides the implementations of required dense linear algebra operations. Its template</p></li>
+</ul>
+<p>type determines the scalar type that the user would like to work with.</p>
+</div>
+<div class="section" id="chase-solver">
+<h4><span class="section-number">3.1.1.2. </span>ChASE solver<a class="headerlink" href="#chase-solver" title="Permalink to this headline">¶</a></h4>
+<p>A ChASE solver, which is in fact an instance of <code class="docutils literal notranslate"><span class="pre">ChaseMpi</span></code> should be constructed, before solving the eigenprolem. <code class="docutils literal notranslate"><span class="pre">ChaseMpi</span></code> is templated with 2 classes: <code class="docutils literal notranslate"><span class="pre">template</span> <span class="pre">&lt;typename&gt;</span> <span class="pre">class</span> <span class="pre">MF</span></code> and <code class="docutils literal notranslate"><span class="pre">class</span> <span class="pre">T</span></code>. The <code class="docutils literal notranslate"><span class="pre">T</span></code> is to determine the scalar type that the user
+would like to work with. For shared-memory ChASE <code class="docutils literal notranslate"><span class="pre">template</span> <span class="pre">&lt;typename&gt;</span> <span class="pre">class</span> <span class="pre">MF</span></code> should be
+either <code class="docutils literal notranslate"><span class="pre">ChaseMpiDLACudaSeq&lt;T&gt;</span></code> or <code class="docutils literal notranslate"><span class="pre">ChaseMpiDLABlaslapackSeq&lt;T&gt;</span></code>.</p>
+<p>With the combination of the templates <code class="docutils literal notranslate"><span class="pre">MF</span></code> and <code class="docutils literal notranslate"><span class="pre">T</span></code>, different instances of <code class="docutils literal notranslate"><span class="pre">ChaseMpi</span></code>
+can be constructed targeting different architectures and scalar types.</p>
+<p>For examples, if the user wants to use ChASE to solve an Hermitian matrix with double precision on GPU, an instance of <code class="docutils literal notranslate"><span class="pre">ChaseMpi</span></code> should be constructed as follows</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="c1">//N: global size of matrix to be diagonalized</span>
+<span class="c1">//nev: number of eigenpairs to be computed</span>
+<span class="c1">//nex: external searching space size</span>
+<span class="c1">//buffer for storing eigevectors</span>
+<span class="k">auto</span> <span class="n">V</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">complex</span><span class="o">&lt;</span><span class="kt">double</span><span class="o">&gt;&gt;</span><span class="p">(</span><span class="n">N</span> <span class="o">*</span> <span class="p">(</span><span class="n">nev</span> <span class="o">+</span> <span class="n">nex</span><span class="p">));</span>
+<span class="c1">//buffer for storing computed ritz values</span>
+<span class="k">auto</span> <span class="n">Lambda</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">double</span><span class="o">&gt;</span><span class="p">(</span><span class="n">nev</span> <span class="o">+</span> <span class="n">nex</span><span class="p">);</span>
+<span class="c1">//buffer for storing Hermitian matrix to be diagonalized</span>
+<span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">complex</span><span class="o">&lt;</span><span class="kt">double</span><span class="o">&gt;&gt;</span> <span class="n">H</span><span class="p">(</span><span class="n">N</span> <span class="o">*</span> <span class="n">N</span><span class="p">);</span>
+
+<span class="n">ChaseMpi</span><span class="o">&lt;</span><span class="n">ChaseMpiDLACudaSeq</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">complex</span><span class="o">&lt;</span><span class="kt">double</span><span class="o">&gt;&gt;</span> <span class="n">solver</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">nev</span><span class="p">,</span> <span class="n">nex</span><span class="p">,</span> <span class="n">V</span><span class="p">.</span><span class="n">data</span><span class="p">(),</span> <span class="n">Lambda</span><span class="p">.</span><span class="n">data</span><span class="p">(),</span> <span class="n">H</span><span class="p">.</span><span class="n">data</span><span class="p">());</span>
+</pre></div>
+</div>
+<p>For the details of APIs, please visit <a class="reference internal" href="module/chasempi.html#chasempi"><span class="std std-ref">ChaseMpi</span></a>.</p>
+</div>
+</div>
+<div class="section" id="distributed-memory-chase">
+<h3><span class="section-number">3.1.2. </span>Distributed-Memory ChASE<a class="headerlink" href="#distributed-memory-chase" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id1">
+<h4><span class="section-number">3.1.2.1. </span>Include headers<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h4>
+<p>The distributed-memory version of ChASE can be built with or without the support for
+Nvidia GPUs. If GPU support is enabled, it supports only 1 GPU per MPI rank.</p>
+<ul class="simple">
+<li><p><strong>CPU version</strong>: it is also necessary to include header <code class="docutils literal notranslate"><span class="pre">ChASE-MPI/impl/chase_mpidla_blaslapack.hpp</span></code>. This header file provides an implementation of a templated class <code class="docutils literal notranslate"><span class="pre">ChaseMpiDLABlaslapack</span></code> which provides the implementations of required dense linear algebra operations. Its template type determines the scalar type that the user would like to work with.</p></li>
+<li><p><strong>GPU version</strong>: another header file <code class="docutils literal notranslate"><span class="pre">ChASE-MPI/impl/chase_mpidla_mgpu.hpp</span></code> should be included. This header file provides an implementation of a templated class <code class="docutils literal notranslate"><span class="pre">ChaseMpiDLAMultiGPU</span></code> which provides the implementations of required dense linear algebra operations. Its template type determines the scalar type that the user would like to work with.</p></li>
+</ul>
+</div>
+<div class="section" id="mpi-working-context">
+<h4><span class="section-number">3.1.2.2. </span>MPI working context<a class="headerlink" href="#mpi-working-context" title="Permalink to this headline">¶</a></h4>
+<p>Unlike shared-memory ChASE, for distributed-memory ChASE, it is necessary to initialize a
+working MPI communicator for it. A class <code class="docutils literal notranslate"><span class="pre">ChaseMpiProperties</span></code> is designed which is able
+to construct a 2D MPI grid environment based on user’s configuration. Multiple constructors of this class are available:</p>
+<ul class="simple">
+<li><p>a constructor for <strong>Block Distribution</strong> with user-customized 2D MPI grid</p></li>
+<li><p>a constructor for <strong>Block Distribution</strong> with 2D MPI grid determined internally by ChASE (as square as possible)</p></li>
+<li><p>a constructor for <strong>Block-Cyclic Distribution</strong> with user-customized 2D MPI grid</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Apart from the setup of 2D MPI grid, this class allocates also the temporary buffers for ChASE and provides some utilities for facilitating the communications.</p>
+</div>
+<p>An example for the constructor for <strong>Block Distribution</strong> with 2D MPI grid determined internally is given as follows</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">auto</span> <span class="n">props</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ChaseMpiProperties</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">complex</span><span class="o">&lt;</span><span class="kt">double</span><span class="o">&gt;&gt;</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">nev</span><span class="p">,</span> <span class="n">nex</span><span class="p">,</span> <span class="n">MPI_COMM_WORLD</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>in which the input arguments are for: global matrix size, number of eigenpairs to compute,
+external searching space size, and working MPI communicator, respectively. A 2D MPI grid will be
+internally by ChASE which is as square as possible.</p>
+<p>An example for the constructor for <strong>Block Distribution</strong> with user-customized 2D MPI grid is given as follows</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">auto</span> <span class="n">props</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ChaseMpiProperties</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">nev</span><span class="p">,</span> <span class="n">nex</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">dims</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">dims</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="p">(</span><span class="kt">char</span><span class="o">*</span><span class="p">)</span><span class="s">&quot;C&quot;</span><span class="p">,</span> <span class="n">MPI_COMM_WORLD</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>in which the input arguments are for: global matrix size, number of eigenpairs to compute,
+external searching space size, the row number of local block of matrix, the column number of local block of matrix, row number of 2D MPI grid, column number of 2D MPI grid, the grid major of 2D MPI grid (‘C’ refers to column major), and working MPI communicator, respectively.</p>
+<p>An example for the constructor for <strong>Block-Cyclic Distribution</strong> with user-customized 2D MPI grid is given as follows</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">auto</span> <span class="n">props</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ChaseMpiProperties</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">NB</span><span class="p">,</span> <span class="n">NB</span><span class="p">,</span> <span class="n">nev</span><span class="p">,</span> <span class="n">nex</span><span class="p">,</span> <span class="n">dims</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">dims</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="p">(</span><span class="kt">char</span><span class="o">*</span><span class="p">)</span><span class="s">&quot;C&quot;</span><span class="p">,</span> <span class="n">irscr</span><span class="p">,</span> <span class="n">icsrc</span><span class="p">,</span> <span class="n">MPI_COMM_WORLD</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>in which the input arguments are for: global matrix size, the block factor of block-cyclic distribution for the 1st and 2nd dimension of 2D MPI grid, number of eigenpairs to compute,
+external searching space size, the row number of local block of matrix, the column number of local block of matrix, row number of 2D MPI grid, column number of 2D MPI grid, the grid major of 2D MPI grid (‘C’ refers to column major), process row/column over which the first row/column of the global matrix is distributed, and working MPI communicator, respectively.</p>
+</div>
+<div class="section" id="id2">
+<h4><span class="section-number">3.1.2.3. </span>ChASE solver<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h4>
+<p>Same as for shared-memory version of ChASE, the class <code class="docutils literal notranslate"><span class="pre">ChaseMpi</span></code> provides also constructors for the distributed-memory versions:</p>
+<ul class="simple">
+<li><p>a constructor with pre-allocated buffer <code class="docutils literal notranslate"><span class="pre">H</span></code> for Hermitian matrix and its leading dimension <code class="docutils literal notranslate"><span class="pre">ldh</span></code></p></li>
+<li><p>a constructor without a pre-allocated buffer for Hermitian matrix: in this case,
+the required buffer would be internally allocated, a <code class="docutils literal notranslate"><span class="pre">memcpy</span></code> operation is always
+required to copy from user-provided matrix to the internally allocated buffer. For
+some historic reasons, this version exists, and we are considering to remove it in
+near future.</p></li>
+<li><p>Unlike the constructor for shared-memory version of ChASE, the constructors of distributed-memory versions take an instance of <code class="docutils literal notranslate"><span class="pre">ChaseMpiProperties</span></code> as an input. This allows creating different ChASE solver with either <strong>Block Distribution</strong> or <strong>Block-Cyclic Distribution</strong> and user customized MPI configuration.</p></li>
+</ul>
+<p><code class="docutils literal notranslate"><span class="pre">ChaseMpi</span></code> is templated with 2 classes: <code class="docutils literal notranslate"><span class="pre">template</span> <span class="pre">&lt;typename&gt;</span> <span class="pre">class</span> <span class="pre">MF</span></code> and <code class="docutils literal notranslate"><span class="pre">class</span> <span class="pre">T</span></code>. The <code class="docutils literal notranslate"><span class="pre">T</span></code> is to determine the scalar type that the user
+would like to work with. For distributed-memory ChASE <code class="docutils literal notranslate"><span class="pre">template</span> <span class="pre">&lt;typename&gt;</span> <span class="pre">class</span> <span class="pre">MF</span></code> should be
+either <code class="docutils literal notranslate"><span class="pre">ChaseMpiDLABlaslapack&lt;T&gt;</span></code> or <code class="docutils literal notranslate"><span class="pre">ChaseMpiDLAMultiGPU&lt;T&gt;</span></code>.</p>
+<p>With the combination of the templates <code class="docutils literal notranslate"><span class="pre">MF</span></code> and <code class="docutils literal notranslate"><span class="pre">T</span></code>, different instances of <code class="docutils literal notranslate"><span class="pre">ChaseMpi</span></code> can be constructed targeting different architectures and scalar types.</p>
+<p>For examples, if users want to use ChASE to solve an Hermitian matrix with double precision which is to distribute in a <em>Block-Cyclic</em> fashion onto multi-GPUs, an instance of <code class="docutils literal notranslate"><span class="pre">ChaseMpi</span></code> should be constructed as follows</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="c1">//N: global size of matrix to be diagonalized</span>
+<span class="c1">//nev: number of eigenpairs to be computed</span>
+<span class="c1">//nex: external searching space size</span>
+<span class="c1">//NB: block factor for block-cyclic distribution</span>
+<span class="c1">//dims[0] x dims[1]: 2D MPI grid</span>
+<span class="c1">//irsrc, icsrc: over which processor row/column the block-cyclic distribution starts from</span>
+<span class="c1">//construct MPI context with block-cyclic distribution</span>
+<span class="k">auto</span> <span class="n">props</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ChaseMpiProperties</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">complex</span><span class="o">&lt;</span><span class="kt">double</span><span class="o">&gt;&gt;</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">NB</span><span class="p">,</span> <span class="n">NB</span><span class="p">,</span> <span class="n">nev</span><span class="p">,</span> <span class="n">nex</span><span class="p">,</span> <span class="n">dims</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">dims</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="p">(</span><span class="kt">char</span><span class="o">*</span><span class="p">)</span><span class="s">&quot;C&quot;</span><span class="p">,</span> <span class="n">irsrc</span><span class="p">,</span> <span class="n">icsrc</span><span class="p">,</span> <span class="n">MPI_COMM_WORLD</span><span class="p">);</span>
+<span class="c1">//buffer for storing eigevectors</span>
+<span class="k">auto</span> <span class="n">V</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">complex</span><span class="o">&lt;</span><span class="kt">double</span><span class="o">&gt;&gt;</span><span class="p">(</span><span class="n">props</span><span class="o">-&gt;</span><span class="n">get_m</span><span class="p">()</span> <span class="o">*</span> <span class="p">(</span><span class="n">nev</span> <span class="o">+</span> <span class="n">nex</span><span class="p">));</span>
+<span class="c1">//buffer for storing computed ritz values</span>
+<span class="k">auto</span> <span class="n">Lambda</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">double</span><span class="o">&gt;</span><span class="p">(</span><span class="n">nev</span> <span class="o">+</span> <span class="n">nex</span><span class="p">);</span>
+<span class="k">auto</span> <span class="n">ldh</span> <span class="o">=</span>  <span class="n">props</span><span class="o">-&gt;</span><span class="n">get_m</span><span class="p">();</span>
+<span class="c1">//buffer for storing Hermitian matrix to be diagonalized</span>
+<span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">H</span><span class="p">(</span> <span class="n">ldh</span> <span class="o">*</span>  <span class="n">props</span><span class="o">-&gt;</span><span class="n">get_n</span><span class="p">());</span>
+
+<span class="n">ChaseMpi</span><span class="o">&lt;</span><span class="n">ChaseMpiDLAMultiGPU</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">complex</span><span class="o">&lt;</span><span class="kt">double</span><span class="o">&gt;&gt;</span> <span class="n">solver</span><span class="p">(</span><span class="n">props</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">ldh</span><span class="p">,</span> <span class="n">V</span><span class="p">.</span><span class="n">data</span><span class="p">(),</span> <span class="n">Lambda</span><span class="p">.</span><span class="n">data</span><span class="p">());</span>
+</pre></div>
+</div>
+<p>Another example with <strong>Block Distribution</strong> and without pre-allocated buffer for Hermitian matrix is as follows:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="c1">//N: global size of matrix to be diagonalized</span>
+<span class="c1">//nev: number of eigenpairs to be computed</span>
+<span class="c1">//nex: external searching space size</span>
+<span class="c1">//construct MPI context with block-cyclic distribution</span>
+<span class="k">auto</span> <span class="n">props</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ChaseMpiProperties</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">complex</span><span class="o">&lt;</span><span class="kt">double</span><span class="o">&gt;&gt;</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">nev</span><span class="p">,</span> <span class="n">nex</span><span class="p">,</span> <span class="n">MPI_COMM_WORLD</span><span class="p">);</span>
+<span class="c1">//buffer for storing eigevectors</span>
+<span class="k">auto</span> <span class="n">V</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">complex</span><span class="o">&lt;</span><span class="kt">double</span><span class="o">&gt;&gt;</span><span class="p">(</span><span class="n">props</span><span class="o">-&gt;</span><span class="n">get_m</span><span class="p">()</span> <span class="o">*</span> <span class="p">(</span><span class="n">nev</span> <span class="o">+</span> <span class="n">nex</span><span class="p">));</span>
+<span class="c1">//buffer for storing computed ritz values</span>
+<span class="k">auto</span> <span class="n">Lambda</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">double</span><span class="o">&gt;</span><span class="p">(</span><span class="n">nev</span> <span class="o">+</span> <span class="n">nex</span><span class="p">);</span>
+
+<span class="n">ChaseMpi</span><span class="o">&lt;</span><span class="n">ChaseMpiDLAMultiGPU</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">complex</span><span class="o">&lt;</span><span class="kt">double</span><span class="o">&gt;&gt;</span> <span class="n">solver</span><span class="p">(</span><span class="n">props</span><span class="p">,</span> <span class="n">V</span><span class="p">.</span><span class="n">data</span><span class="p">(),</span> <span class="n">Lambda</span><span class="p">.</span><span class="n">data</span><span class="p">());</span>
+</pre></div>
+</div>
+<p>For the details of APIs, please visit <a class="reference internal" href="module/chasempi.html#chasempi"><span class="std std-ref">ChaseMpi</span></a>.</p>
+</div>
+</div>
+<div class="section" id="parameter-configuration">
+<h3><span class="section-number">3.1.3. </span>Parameter Configuration<a class="headerlink" href="#parameter-configuration" title="Permalink to this headline">¶</a></h3>
+<p>Before the starting of solving step, selected parameters are able to
+be customized by users. We give an example to show how to configure
+the parameters for a constructed instance of ChASE solver <code class="docutils literal notranslate"><span class="pre">solver</span></code>.</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cm">/*Setup configure for ChASE*/</span>
+<span class="k">auto</span><span class="o">&amp;</span> <span class="n">config</span> <span class="o">=</span> <span class="n">solver</span><span class="p">.</span><span class="n">GetConfig</span><span class="p">();</span>
+<span class="cm">/*Tolerance for Eigenpair convergence*/</span>
+<span class="n">config</span><span class="p">.</span><span class="n">SetTol</span><span class="p">(</span><span class="mf">1e-10</span><span class="p">);</span>
+<span class="cm">/*Initial filtering degree*/</span>
+<span class="n">config</span><span class="p">.</span><span class="n">SetDeg</span><span class="p">(</span><span class="mi">20</span><span class="p">);</span>
+<span class="cm">/*Optimi(S)e degree*/</span>
+<span class="n">config</span><span class="p">.</span><span class="n">SetOpt</span><span class="p">(</span><span class="nb">true</span><span class="p">);</span>
+<span class="cm">/*Set max iteration steps*/</span>
+<span class="n">config</span><span class="p">.</span><span class="n">SetMaxIter</span><span class="p">(</span><span class="mi">25</span><span class="p">);</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For all the versions of ChASE targeting different computing architectures,
+they share a uniform interface for the parameter configuration.</p>
+</div>
+<p>For more details about the APIs of parameter configuration, please visit :ref:`
+configuration_object`. For the usage and recommendation of values of these
+parameters, please visit <a class="reference internal" href="parameters.html#parameters-and-config"><span class="std std-ref">Parameters and Configurations</span></a>.</p>
+</div>
+<div class="section" id="solve">
+<h3><span class="section-number">3.1.4. </span>Solve<a class="headerlink" href="#solve" title="Permalink to this headline">¶</a></h3>
+<p>For both shared-memory and distributed versions of ChASE, they share an uniform interface
+for the solving step.</p>
+<p>Assume that an instance of <code class="docutils literal notranslate"><span class="pre">ChaseMpi</span></code> has been constructed with pre-allocated buffers
+for Hermitian matrix and desired eigenpairs.</p>
+<div class="section" id="an-isolated-problem">
+<h4><span class="section-number">3.1.4.1. </span>An isolated problem<a class="headerlink" href="#an-isolated-problem" title="Permalink to this headline">¶</a></h4>
+<p>When an isolated problem is to be solved, there would be three steps for solving:</p>
+<ul class="simple">
+<li><p>update the pre-allocated buffer of Hermitian matrix with the matrix to be diagonalized: e.g., through I/O, generation and redistribution</p></li>
+<li><p>set the parameter <cite>approx_</cite> to be <code class="docutils literal notranslate"><span class="pre">false</span></code>: <code class="docutils literal notranslate"><span class="pre">config.setApprox(false)</span></code></p></li>
+<li><p>solve the problem as: <code class="docutils literal notranslate"><span class="pre">chase::Solve(&amp;solver)</span></code>.</p></li>
+</ul>
+</div>
+<div class="section" id="a-sequence-of-problems">
+<h4><span class="section-number">3.1.4.2. </span>A sequence of problems<a class="headerlink" href="#a-sequence-of-problems" title="Permalink to this headline">¶</a></h4>
+<p>When a sequence of eigenproblems are to be solved one by one, the steps for solving are:</p>
+<ul class="simple">
+<li><p>for the 1st problem</p>
+<ul>
+<li><p>update the pre-allocated buffer of Hermitian matrix with the matrix to be diagonalized: e.g., through I/O, generation and redistribution</p></li>
+<li><p>set the parameter <cite>approx_</cite> to be <code class="docutils literal notranslate"><span class="pre">false</span></code>: <code class="docutils literal notranslate"><span class="pre">config.setApprox(false)</span></code></p></li>
+<li><p>solve the problem as: <code class="docutils literal notranslate"><span class="pre">chase::Solve(&amp;solver)</span></code>.</p></li>
+</ul>
+</li>
+<li><p>for the rest of problems (2nd, 3rd…)</p>
+<ul>
+<li><p>update the pre-allocated buffer of Hermitian matrix with the matrix to be diagonalized: e.g., through I/O, generation and redistribution</p></li>
+<li><p>set the parameter <cite>approx_</cite> to be <code class="docutils literal notranslate"><span class="pre">true</span></code>: <code class="docutils literal notranslate"><span class="pre">config.setApprox(true)</span></code></p></li>
+<li><p>solve the problems as: <code class="docutils literal notranslate"><span class="pre">chase::Solve(&amp;solver)</span></code>.</p></li>
+</ul>
+</li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul class="simple">
+<li><p>When the parameter <cite>approx_</cite> is set to be <code class="docutils literal notranslate"><span class="pre">false</span></code>, it means that the initial guess vectors are filled with random numbers respecting to normal distribution. ChASE generate internally these numbers in parallel.</p></li>
+<li><p>The buffer to the initial guess vectors should be allocated externally by users.</p></li>
+<li><p>For distributed-memory ChASE with GPUs, these random numbers are generated in parallel on GPUs.</p></li>
+</ul>
+</div>
+</div>
+</div>
+<div class="section" id="performance-decorator">
+<h3><span class="section-number">3.1.5. </span>Performance Decorator<a class="headerlink" href="#performance-decorator" title="Permalink to this headline">¶</a></h3>
+<p>A templated class <code class="docutils literal notranslate"><span class="pre">PerformanceDecoratorChase&lt;T&gt;</span></code> is also provided, which is
+able to record the performance of different numerical kernels in ChASE.
+This class is a derived class of the class <code class="docutils literal notranslate"><span class="pre">Chase&lt;T&gt;</span></code>. It
+is quite simple to use it, and we give an example to show how to decorate
+a constructed instance of ChASE solver <code class="docutils literal notranslate"><span class="pre">solver</span></code> as follows:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">PerformanceDecoratorChase</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">performanceDecorator</span><span class="p">(</span><span class="o">&amp;</span><span class="n">solver</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Then the solving step should go with the instance <code class="docutils literal notranslate"><span class="pre">performanceDecorator</span></code>, rather than
+<code class="docutils literal notranslate"><span class="pre">solver</span></code> itself:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">chase</span><span class="o">::</span><span class="n">Solve</span><span class="p">(</span><span class="o">&amp;</span><span class="n">performanceDecorator</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>After the solving step, the recorded performance can be printed out as follows:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">performanceDecorator</span><span class="p">.</span><span class="n">GetPerfData</span><span class="p">().</span><span class="n">print</span><span class="p">();</span>
+</pre></div>
+</div>
+<p>The output of this performance decorator is as follows :</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="p">|</span> Size  <span class="p">|</span> Iterations <span class="p">|</span> Vecs   <span class="p">|</span>  All       <span class="p">|</span> Lanczos    <span class="p">|</span> Filter     <span class="p">|</span> QR         <span class="p">|</span> RR         <span class="p">|</span> Resid      <span class="p">|</span>
+<span class="p">|</span>     <span class="m">1</span> <span class="p">|</span>          <span class="m">5</span> <span class="p">|</span>   <span class="m">7556</span> <span class="p">|</span>      <span class="m">1</span>.116 <span class="p">|</span>   <span class="m">0</span>.135028 <span class="p">|</span>    <span class="m">0</span>.87997 <span class="p">|</span>  <span class="m">0</span>.0164864 <span class="p">|</span>  <span class="m">0</span>.0494752 <span class="p">|</span>  <span class="m">0</span>.0310726 <span class="p">|</span>
+</pre></div>
+</div>
+<p>which represents respectively:</p>
+<ul class="simple">
+<li><p>the number of MPI processors in the working communicator,</p></li>
+<li><p>the iteration number for convergence,</p></li>
+<li><p>total number of matrix-vector product operations,</p></li>
+<li><p>the total time (s),</p></li>
+<li><p>the time cost of Lanczos, Filter, QR, RR and Residuals, respectively.</p></li>
+</ul>
+</div>
+<div class="section" id="extract-the-results">
+<h3><span class="section-number">3.1.6. </span>Extract the results<a class="headerlink" href="#extract-the-results" title="Permalink to this headline">¶</a></h3>
+<p>If an instance of <code class="docutils literal notranslate"><span class="pre">ChaseMpi</span></code> is constructed with user provided buffers <cite>V</cite> and <cite>Lambda</cite>,
+they will be overwritten by the desired eigenvectors and eigenvalues, respectively.</p>
+<p>To be more precise, the first <cite>nev</cite> columns of <cite>V</cite> and the first <cite>nev</cite> elements of <cite>Lambda</cite>
+would be the required eigenpairs.</p>
+<p>The residuals of all computed eigenpairs can be obtained as follows:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">Base</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;*</span> <span class="n">resid</span> <span class="o">=</span> <span class="n">single</span><span class="p">.</span><span class="n">GetResid</span><span class="p">();</span>
+</pre></div>
+</div>
+<p>in which <code class="docutils literal notranslate"><span class="pre">Base&lt;T&gt;</span></code> represents a basic type of a scalar type, e.g., <code class="docutils literal notranslate"><span class="pre">Base&lt;double&gt;</span></code> is <code class="docutils literal notranslate"><span class="pre">double</span></code> and <code class="docutils literal notranslate"><span class="pre">Base&lt;std::complex&lt;float&gt;&gt;</span></code> is <code class="docutils literal notranslate"><span class="pre">float</span></code>.</p>
+</div>
+<div class="section" id="i-o">
+<h3><span class="section-number">3.1.7. </span>I/O<a class="headerlink" href="#i-o" title="Permalink to this headline">¶</a></h3>
+<p>ChASE itself doesn’t provide any parallel I/O functions to load a large
+matrix from a binary file. The reason is that for the majority of applications of ChASE,
+the Hermitian matrix is supposed to be already well distributed by applications, it makes no
+sense to provide our own version of parallel I/O. This is also the motivation for us
+to provide multiple versions of ChASE with the support of both <strong>Block Distribution</strong>
+and <strong>Block-Cyclic Distribution</strong>, to adapt all the possible requirements
+of applications.</p>
+<p>However, for the users who want to test ChASE as a standalone eigensolver, a parallel I/O
+might be necessary. Hence, in this section, we provide a hint to load matrix in parallel from local binary file by using built-in functions of ChASE. This parallel I/O is not tuned for
+optimal performance, and we encourage the user to develop their own one based on some mature
+parallel I/O libraries, such as <a class="reference external" href="https://www.hdfgroup.org/solutions/hdf5">HDF5</a>
+and <a class="reference external" href="https://apps.fz-juelich.de/jsc/sionlib/docu/index.html">sionlib</a>.</p>
+<p>This is an example to load a matrix from local into block distribution data layout.</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="kt">void</span> <span class="n">readMatrix</span><span class="p">(</span><span class="n">T</span><span class="o">*</span> <span class="n">H</span><span class="p">,</span> <span class="cm">/*The pointer to store the local part of matrix on each MPI rank*/</span>
+                <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">path_in</span><span class="p">,</span> <span class="cm">/*The path to load binary file of matrix*/</span>
+                <span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">size</span><span class="p">,</span> <span class="cm">/*size = N * N, in which N is the size of matrix to be loaded*/</span>
+                <span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">xoff</span><span class="p">,</span>
+                <span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">yoff</span><span class="p">,</span>
+                <span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">xlen</span><span class="p">,</span>
+                <span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">ylen</span><span class="p">)</span>
+<span class="p">{</span>
+  <span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">N</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">sqrt</span><span class="p">(</span><span class="n">size</span><span class="p">);</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">ostringstream</span> <span class="n">problem</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">ostringstream</span><span class="o">::</span><span class="n">ate</span><span class="p">);</span>
+  <span class="n">problem</span> <span class="o">&lt;&lt;</span> <span class="n">path_in</span><span class="p">;</span>
+
+  <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">problem</span><span class="p">.</span><span class="n">str</span><span class="p">()</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">ifstream</span> <span class="n">input</span><span class="p">(</span><span class="n">problem</span><span class="p">.</span><span class="n">str</span><span class="p">().</span><span class="n">c_str</span><span class="p">(),</span> <span class="n">std</span><span class="o">::</span><span class="n">ios</span><span class="o">::</span><span class="n">binary</span><span class="p">);</span>
+  <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">input</span><span class="p">.</span><span class="n">is_open</span><span class="p">())</span> <span class="p">{</span>
+    <span class="k">throw</span> <span class="k">new</span> <span class="n">std</span><span class="o">::</span><span class="n">logic_error</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="p">(</span><span class="s">&quot;error reading file: &quot;</span><span class="p">)</span> <span class="o">+</span>
+                               <span class="n">problem</span><span class="p">.</span><span class="n">str</span><span class="p">());</span>
+  <span class="p">}</span>
+
+  <span class="k">for</span> <span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">y</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">y</span> <span class="o">&lt;</span> <span class="n">ylen</span><span class="p">;</span> <span class="n">y</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">input</span><span class="p">.</span><span class="n">seekg</span><span class="p">(((</span><span class="n">xoff</span><span class="p">)</span> <span class="o">+</span> <span class="n">N</span> <span class="o">*</span> <span class="p">(</span><span class="n">yoff</span> <span class="o">+</span> <span class="n">y</span><span class="p">))</span> <span class="o">*</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">T</span><span class="p">));</span>
+    <span class="n">input</span><span class="p">.</span><span class="n">read</span><span class="p">(</span><span class="k">reinterpret_cast</span><span class="o">&lt;</span><span class="kt">char</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">H</span> <span class="o">+</span> <span class="n">xlen</span> <span class="o">*</span> <span class="n">y</span><span class="p">),</span> <span class="n">xlen</span> <span class="o">*</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">T</span><span class="p">));</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>For the parameters <strong>xoff</strong>, <strong>yoff</strong>, <strong>xlen</strong> and <strong>ylen</strong>, they can
+be obtained by the member function <code class="docutils literal notranslate"><span class="pre">get_off</span></code> of <a class="reference internal" href="module/chasempiproperties.html#chasempiproperties"><span class="std std-ref">ChaseMpiProperties</span></a> class as follows.</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">xoff</span><span class="p">;</span>
+<span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">yoff</span><span class="p">;</span>
+<span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">xlen</span><span class="p">;</span>
+<span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">ylen</span><span class="p">;</span>
+
+<span class="n">props</span><span class="p">.</span><span class="n">GetOff</span><span class="p">(</span><span class="o">&amp;</span><span class="n">xoff</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">yoff</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">xlen</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">ylen</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>This is an example to load a matrix from local into block-cyclic distribution data layout.</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="kt">void</span> <span class="n">readMatrix</span><span class="p">(</span><span class="n">T</span><span class="o">*</span> <span class="n">H</span><span class="p">,</span> <span class="cm">/*The pointer to store the local part of matrix on each MPI rank*/</span>
+                <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">path_in</span><span class="p">,</span> <span class="cm">/*The path to load binary file of matrix*/</span>
+                <span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">size</span><span class="p">,</span> <span class="cm">/*size = N * N, in which N is the size of matrix to be loaded*/</span>
+                <span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">m</span><span class="p">,</span>
+                <span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">mblocks</span><span class="p">,</span>
+                <span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">nblocks</span><span class="p">,</span>
+                <span class="n">std</span><span class="o">::</span><span class="kt">size_t</span><span class="o">*</span> <span class="n">r_offs</span><span class="p">,</span>
+                <span class="n">std</span><span class="o">::</span><span class="kt">size_t</span><span class="o">*</span> <span class="n">r_lens</span><span class="p">,</span>
+                <span class="n">std</span><span class="o">::</span><span class="kt">size_t</span><span class="o">*</span> <span class="n">r_offs_l</span><span class="p">,</span>
+                <span class="n">std</span><span class="o">::</span><span class="kt">size_t</span><span class="o">*</span> <span class="n">c_offs</span><span class="p">,</span>
+                <span class="n">std</span><span class="o">::</span><span class="kt">size_t</span><span class="o">*</span> <span class="n">c_lens</span><span class="p">,</span>
+                <span class="n">std</span><span class="o">::</span><span class="kt">size_t</span><span class="o">*</span> <span class="n">c_offs_l</span><span class="p">){</span>
+
+  <span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">N</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">sqrt</span><span class="p">(</span><span class="n">size</span><span class="p">);</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">ostringstream</span> <span class="n">problem</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">ostringstream</span><span class="o">::</span><span class="n">ate</span><span class="p">);</span>
+  <span class="n">problem</span> <span class="o">&lt;&lt;</span> <span class="n">path_in</span><span class="p">;</span>
+
+  <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">problem</span><span class="p">.</span><span class="n">str</span><span class="p">()</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+
+  <span class="n">std</span><span class="o">::</span><span class="n">ifstream</span> <span class="n">input</span><span class="p">(</span><span class="n">problem</span><span class="p">.</span><span class="n">str</span><span class="p">().</span><span class="n">c_str</span><span class="p">(),</span> <span class="n">std</span><span class="o">::</span><span class="n">ios</span><span class="o">::</span><span class="n">binary</span><span class="p">);</span>
+  <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">input</span><span class="p">.</span><span class="n">is_open</span><span class="p">())</span> <span class="p">{</span>
+    <span class="k">throw</span> <span class="k">new</span> <span class="n">std</span><span class="o">::</span><span class="n">logic_error</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="p">(</span><span class="s">&quot;error reading file: &quot;</span><span class="p">)</span> <span class="o">+</span>
+                               <span class="n">problem</span><span class="p">.</span><span class="n">str</span><span class="p">());</span>
+  <span class="p">}</span>
+
+  <span class="k">for</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">nblocks</span><span class="p">;</span> <span class="n">j</span><span class="o">++</span><span class="p">){</span>
+    <span class="k">for</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">mblocks</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">){</span>
+      <span class="k">for</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">q</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">q</span> <span class="o">&lt;</span> <span class="n">c_lens</span><span class="p">[</span><span class="n">j</span><span class="p">];</span> <span class="n">q</span><span class="o">++</span><span class="p">){</span>
+          <span class="n">input</span><span class="p">.</span><span class="n">seekg</span><span class="p">(((</span><span class="n">q</span> <span class="o">+</span> <span class="n">c_offs</span><span class="p">[</span><span class="n">j</span><span class="p">])</span> <span class="o">*</span> <span class="n">N</span> <span class="o">+</span> <span class="n">r_offs</span><span class="p">[</span><span class="n">i</span><span class="p">])</span><span class="o">*</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">T</span><span class="p">));</span>
+          <span class="n">input</span><span class="p">.</span><span class="n">read</span><span class="p">(</span><span class="k">reinterpret_cast</span><span class="o">&lt;</span><span class="kt">char</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">H</span> <span class="o">+</span> <span class="p">(</span><span class="n">q</span> <span class="o">+</span> <span class="n">c_offs_l</span><span class="p">[</span><span class="n">j</span><span class="p">])</span> <span class="o">*</span> <span class="n">m</span> <span class="o">+</span> <span class="n">r_offs_l</span><span class="p">[</span><span class="n">i</span><span class="p">]),</span> <span class="n">r_lens</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">T</span><span class="p">));</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>For the parameters <strong>m</strong>, <strong>mblocks</strong>, <strong>nblocks</strong>, <strong>r_offs</strong>, <strong>r_lens</strong>, <strong>r_offs_l</strong>,
+<strong>c_offs</strong>, <strong>c_lens</strong> and <strong>c_offs_l</strong>,
+they can be obtained by the member functions <code class="docutils literal notranslate"><span class="pre">get_mblocks</span></code>, <code class="docutils literal notranslate"><span class="pre">get_nblocks</span></code>,
+<code class="docutils literal notranslate"><span class="pre">get_m</span></code>, <code class="docutils literal notranslate"><span class="pre">get_n</span></code>, and <code class="docutils literal notranslate"><span class="pre">get_offs_lens</span></code>  of <a class="reference internal" href="module/chasempiproperties.html#chasempiproperties"><span class="std std-ref">ChaseMpiProperties</span></a> class as follows.</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cm">/*local block number = mblocks x nblocks*/</span>
+<span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">mblocks</span> <span class="o">=</span> <span class="n">props</span><span class="p">.</span><span class="n">get_mblocks</span><span class="p">();</span>
+<span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">nblocks</span> <span class="o">=</span> <span class="n">props</span><span class="p">.</span><span class="n">get_nblocks</span><span class="p">();</span>
+
+<span class="cm">/*local matrix size = m x n*/</span>
+<span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">m</span> <span class="o">=</span> <span class="n">props</span><span class="p">.</span><span class="n">get_m</span><span class="p">();</span>
+<span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">n</span> <span class="o">=</span> <span class="n">props</span><span class="p">.</span><span class="n">get_n</span><span class="p">();</span>
+
+<span class="cm">/*global and local offset/length of each block of block-cyclic data*/</span>
+<span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="o">*</span><span class="n">r_offs</span><span class="p">,</span> <span class="o">*</span><span class="n">c_offs</span><span class="p">,</span> <span class="o">*</span><span class="n">r_lens</span><span class="p">,</span> <span class="o">*</span><span class="n">c_lens</span><span class="p">,</span> <span class="o">*</span><span class="n">r_offs_l</span><span class="p">,</span> <span class="o">*</span><span class="n">c_offs_l</span><span class="p">;</span>
+
+<span class="n">props</span><span class="p">.</span><span class="n">get_offs_lens</span><span class="p">(</span><span class="n">r_offs</span><span class="p">,</span> <span class="n">r_lens</span><span class="p">,</span> <span class="n">r_offs_l</span><span class="p">,</span> <span class="n">c_offs</span><span class="p">,</span> <span class="n">c_lens</span><span class="p">,</span> <span class="n">c_offs_l</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="use-chase-from-external-applications">
+<h2><span class="section-number">3.2. </span>Use ChASE from external applications<a class="headerlink" href="#use-chase-from-external-applications" title="Permalink to this headline">¶</a></h2>
+<p>In order to embed the ChASE library in an application software, ChASE
+can be opportunely linked following the instructions in this section.</p>
+<p>In this section, we give the guidelines for the integration
+of the ChASE library into a given application software.</p>
+<div class="section" id="compiling-with-cmake">
+<span id="link-by-cmake"></span><h3><span class="section-number">3.2.1. </span>Compiling with CMake<a class="headerlink" href="#compiling-with-cmake" title="Permalink to this headline">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">CMakeLists.txt</span></code> (see code window below) is an example on how to link ChASE installation
+using CMake. In this example ChASE is linked to a source file named <code class="docutils literal notranslate"><span class="pre">chase_app.cpp</span></code>.
+The <code class="docutils literal notranslate"><span class="pre">CMakeLists.txt</span></code> should then be included in the main directory
+of the application software as well as the <code class="docutils literal notranslate"><span class="pre">chase_app.cpp</span></code> file.</p>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">cmake_minimum_required</span><span class="p">(</span><span class="s">VERSION</span> <span class="s">3.8</span><span class="p">)</span>
+
+<span class="nb">project</span><span class="p">(</span><span class="s">chase-app</span> <span class="s">VERSION</span> <span class="s">0.0.1</span> <span class="s">LANGUAGES</span> <span class="s">CXX</span><span class="p">)</span>
+
+<span class="c">#find installation of ChASE</span>
+<span class="nb">find_package</span><span class="p">(</span> <span class="s">chase</span> <span class="s">REQUIRED</span> <span class="s">CONFIG</span><span class="p">)</span>
+
+<span class="nb">add_executable</span><span class="p">(</span><span class="o">${</span><span class="nv">PROJECT_NAME</span><span class="o">}</span><span class="p">)</span>
+
+<span class="c"># add the source file of application</span>
+<span class="nb">target_sources</span><span class="p">(</span><span class="o">${</span><span class="nv">PROJECT_NAME</span><span class="o">}</span> <span class="s">PRIVATE</span> <span class="s">chase_app.cpp</span><span class="p">)</span>
+
+<span class="c"># link to ChASE</span>
+<span class="nb">target_link_libraries</span><span class="p">(</span><span class="o">${</span><span class="nv">PROJECT_NAME</span><span class="o">}</span> <span class="s">PUBLIC</span> <span class="s">ChASE::chase_mpi</span><span class="p">)</span>
+
+<span class="c"># if users want to compile the application with multi-GPU version of ChASE</span>
+<span class="c"># the target should be linked to the both the library ChASE::chase_mpi</span>
+<span class="c"># and the library ChASE::chase_cuda</span>
+<span class="nb">target_link_libraries</span><span class="p">(</span><span class="o">${</span><span class="nv">PROJECT_NAME</span><span class="o">}</span> <span class="s">PUBLIC</span> <span class="s">ChASE::chase_cuda</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>With CMake, the application software can be compiled by the following commands:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">mkdir build &amp; cd build</span>
+<span class="go">cmake .. -DCMAKE_PREFIX_PATH=${ChASEROOT}</span>
+<span class="go">make</span>
+</pre></div>
+</div>
+<p><a class="reference external" href="https://github.com/ChASE-library/ChASE/tree/master/examples/3_installation">example: 3_installation</a>
+provides an example which illustrates the way to link ChASE by CMake with or without GPU supports.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>We highly recommend to link ChASE with CMake. The installation of ChASE allows to use CMake to find and link it easily.</p>
+</div>
+</div>
+<div class="section" id="compiling-with-makefile">
+<h3><span class="section-number">3.2.2. </span>Compiling with Makefile<a class="headerlink" href="#compiling-with-makefile" title="Permalink to this headline">¶</a></h3>
+<p>Similar as the direct linking, it is also possible to link ChASE by <code class="docutils literal notranslate"><span class="pre">Makefile</span></code>.
+Here below is a template of this <code class="docutils literal notranslate"><span class="pre">Makefile</span></code> for <a class="reference external" href="https://github.com/ChASE-library/ChASE/tree/master/examples/3_installation">example: 3_installation</a>.</p>
+<div class="highlight-Makefile notranslate"><div class="highlight"><pre><span></span><span class="nv">ChASEROOT</span> <span class="o">=</span> /The/installation/path/of/ChASE/on/your/platform
+
+<span class="nv">CXX</span> <span class="o">=</span> mpicxx <span class="c1">#or other mpi CXX compiler</span>
+
+<span class="nv">CXXFLAGS</span> <span class="o">=</span> <span class="se">\</span>
+    -Wall -fopenmp -MMD <span class="se">\</span>
+
+<span class="nv">INCLUDE_DIR</span> <span class="o">=</span> <span class="si">${</span><span class="nv">ChASEROOT</span><span class="si">}</span>/include <span class="c1">#include the headers of ChASE</span>
+
+<span class="nv">LIBS_BLASLAPACK</span> <span class="o">=</span> /your/BLAS/LAPACK/SCALAPACK/LIBRARIES
+
+<span class="c">## Optional for multi-GPU version of ChASE ##</span>
+<span class="nv">LIBS_CUDA</span> <span class="o">=</span> -lcublas -lcusolver -lcudart -lcurand <span class="c1">## link to the libraries of cuBLAS, cuSOLVER and CUDA runtime</span>
+
+<span class="c">## Optional for multi-GPU version of ChASE ##</span>
+<span class="nv">LIBS_CHASE_CUDA</span> <span class="o">=</span> <span class="si">${</span><span class="nv">ChASEROOT</span><span class="si">}</span>/lib64/libchase_cuda.a
+
+<span class="nf">chase-app</span><span class="o">:</span> <span class="n">LIBS</span> = ${<span class="n">LIBS_BLASLAPACK</span>} <span class="c">#executable generated by chase-app.cpp</span>
+
+<span class="nf">chase-app-gpu</span><span class="o">:</span> <span class="n">LIBS</span> = ${<span class="n">LIBS_BLASLAPACK</span>} -<span class="n">L</span>${<span class="n">LIBS_CHASE_CUDA</span>} ${<span class="n">LIBS_CUDA</span>} <span class="c">#executable generated by chase-app-gpu.cpp</span>
+
+<span class="nv">src</span> <span class="o">=</span> <span class="si">${</span><span class="nv">wildcard</span><span class="p"> *.cpp</span><span class="si">}</span>
+<span class="nv">exe</span> <span class="o">=</span> <span class="si">${</span><span class="nv">basename</span><span class="p"> </span><span class="si">${</span><span class="nv">src</span><span class="si">}}</span>
+
+<span class="nf">all</span><span class="o">:</span> <span class="k">$(</span><span class="nv">exe</span><span class="k">)</span>
+
+<span class="nf">.SUFFIXES</span><span class="o">:</span>
+
+<span class="nf">%</span><span class="o">:</span> %.<span class="n">cpp</span>
+        <span class="si">${</span><span class="nv">CXX</span><span class="si">}</span> <span class="si">${</span><span class="nv">CXXFLAGS</span><span class="si">}</span> <span class="si">${</span><span class="nv">LIBS</span><span class="si">}</span> -I<span class="si">${</span><span class="nv">INCLUDE_DIR</span><span class="si">}</span> -o <span class="nv">$@</span> $&lt;
+
+<span class="nf">clean</span><span class="o">:</span>
+        -rm -f <span class="k">$(</span>exe<span class="k">)</span> *.o
+
+<span class="cp">-include *.d</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="interface-to-c-fortran">
+<span id="c-fortran-interface"></span><h2><span class="section-number">3.3. </span>Interface to C/Fortran<a class="headerlink" href="#interface-to-c-fortran" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="general-description">
+<h3><span class="section-number">3.3.1. </span>General Description<a class="headerlink" href="#general-description" title="Permalink to this headline">¶</a></h3>
+<p>ChASE provides the interfaces to both C and Fortran.</p>
+<p>The usage of both C and Fortran interfaces are
+split into 3 steps:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>Initialization</strong>: initialization of the context for ChASE, including the setup of the MPI 2D grid, communicators and allocation of buffers, etc.</p></li>
+<li><p><strong>Solving</strong>: solving the given problem by ChASE within previously setup ChASE context</p></li>
+<li><p><strong>Finalization</strong>: Cleanup the ChASE context</p></li>
+</ul>
+</div></blockquote>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>When a sequence of eigenprblems are to be solved, multiple <strong>solving</strong> steps can be called in sequence after the <strong>Initialization</strong> step.
+It is the users’ responsibility to form a new eigenproblem by updating the buffer allocated for the Hermitian/Symmetric Matrix.</p>
+</div>
+<p>Both C and Fortran interfaces of ChASE provides 3 versions of utilization:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>Sequential ChASE</strong>: using the implementation of ChASE for shared-memory architectures.</p></li>
+<li><p><strong>Distributed-memory ChASE with Block-Block distribution</strong>: using the implementation of ChASE for distributed-memory architectures, with Block-Block data layout.</p></li>
+<li><p><strong>Distributed-memory ChASE with Block-Cyclic distribution</strong>: using the implementation of ChASE for distributed-memory architectures, with Block-Cyclic data layout.</p></li>
+</ul>
+</div></blockquote>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>When CUDA is detected, these interfaces would automatically use GPU(s).</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The naming logic of the interface functions are as follows:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>For the names of all the functions for distributed memory ChASE, they starts with a prefix <code class="docutils literal notranslate"><span class="pre">p</span></code>, which follows a same way of naming in ScaLAPACK.</p></li>
+<li><p>For the <strong>Block</strong> and <strong>Block-Cyclic</strong> data layouts:</p>
+<ul>
+<li><p>they share a same interface for <strong>Solving</strong> and <strong>Finalization</strong> steps</p></li>
+<li><p>but a different interface for the <strong>Initialization</strong> step. For <strong>Block-Cyclic</strong> data layout, the related <strong>Initialization function</strong> ends with a suffix <code class="docutils literal notranslate"><span class="pre">blockcyclic</span></code></p></li>
+</ul>
+</li>
+<li><p>The Fortran interfaces are implemented based on <code class="docutils literal notranslate"><span class="pre">iso_c_binding</span></code>. It is standard intrinsic module which defines named constants, types, and procedures for the inter-operation with C functions. C and Fortran functions share the same names. Additionally, unlike the Fortran routines, C functions has a suffix <cite>_</cite>.</p></li>
+</ul>
+</div></blockquote>
+</div>
+<p>Different scalar types are also supported by the interfaces of ChASE. We will use abbreviations <code class="docutils literal notranslate"><span class="pre">&lt;x&gt;</span></code> for the corresponding
+short type to make a more concise and clear presentation of the implemented functions.
+<code class="docutils literal notranslate"><span class="pre">Base&lt;x&gt;</span></code> is defined as the table below. Unless otherwise specified <code class="docutils literal notranslate"><span class="pre">&lt;x&gt;</span></code> has the following meanings:</p>
+<table class="colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 8%" />
+<col style="width: 31%" />
+<col style="width: 31%" />
+<col style="width: 31%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><code class="docutils literal notranslate"><span class="pre">&lt;x&gt;</span></code></p></th>
+<th class="head"><p>Type in C and Fortran</p></th>
+<th class="head"><p>Meaning</p></th>
+<th class="head"><p><code class="docutils literal notranslate"><span class="pre">Base&lt;x&gt;</span></code> in C and Fortran</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">s</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">float</span></code> and <code class="docutils literal notranslate"><span class="pre">c_float</span></code></p></td>
+<td><p>real single-precision</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">float</span></code> and <code class="docutils literal notranslate"><span class="pre">c_float</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">d</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">double</span></code> and <code class="docutils literal notranslate"><span class="pre">c_double</span></code></p></td>
+<td><p>real double-precision</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">double</span></code> and <code class="docutils literal notranslate"><span class="pre">c_double</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">c</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">float</span> <span class="pre">_Complex</span></code> and <code class="docutils literal notranslate"><span class="pre">c_float_complex</span></code></p></td>
+<td><p>complex single-precision</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">float</span></code> and <code class="docutils literal notranslate"><span class="pre">c_float</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">z</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">double</span> <span class="pre">_Complex</span></code> and <code class="docutils literal notranslate"><span class="pre">c_double_complex</span></code></p></td>
+<td><p>complex double precision</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">double</span></code> and <code class="docutils literal notranslate"><span class="pre">c_double</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="initialization-functions">
+<h3><span class="section-number">3.3.2. </span>Initialization Functions<a class="headerlink" href="#initialization-functions" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="x-chase-init">
+<h4><span class="section-number">3.3.2.1. </span>&lt;x&gt;chase_init<a class="headerlink" href="#x-chase-init" title="Permalink to this headline">¶</a></h4>
+<p><code class="docutils literal notranslate"><span class="pre">&lt;x&gt;chase_init</span></code> initialize the context for the shared-memory ChASE.
+ChASE is initialized with the buffers <code class="docutils literal notranslate"><span class="pre">h</span></code>, <code class="docutils literal notranslate"><span class="pre">v</span></code>, <code class="docutils literal notranslate"><span class="pre">ritzv</span></code>, which should be allocated
+externally by users. These buffers will be re-used when a sequence of eigenproblems are
+to be solved.</p>
+<p>The APIs for the C interfaces are as follows:</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span> <span class="n">schase_init_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span> <span class="n">n</span><span class="p">,</span> <span class="kt">int</span><span class="o">*</span> <span class="n">nev</span><span class="p">,</span> <span class="kt">int</span><span class="o">*</span> <span class="n">nex</span><span class="p">,</span> <span class="kt">float</span><span class="o">*</span> <span class="n">h</span><span class="p">,</span> <span class="kt">float</span><span class="o">*</span> <span class="n">v</span><span class="p">,</span> <span class="kt">float</span><span class="o">*</span> <span class="n">ritzv</span><span class="p">,</span> <span class="kt">int</span><span class="o">*</span> <span class="n">init</span><span class="p">)</span>
+<span class="kt">void</span> <span class="n">dchase_init_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span> <span class="n">n</span><span class="p">,</span> <span class="kt">int</span><span class="o">*</span> <span class="n">nev</span><span class="p">,</span> <span class="kt">int</span><span class="o">*</span> <span class="n">nex</span><span class="p">,</span> <span class="kt">double</span><span class="o">*</span> <span class="n">h</span><span class="p">,</span> <span class="kt">double</span><span class="o">*</span> <span class="n">v</span><span class="p">,</span> <span class="kt">double</span><span class="o">*</span> <span class="n">ritzv</span><span class="p">,</span> <span class="kt">int</span><span class="o">*</span> <span class="n">init</span><span class="p">)</span>
+<span class="kt">void</span> <span class="n">cchase_init_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span> <span class="n">n</span><span class="p">,</span> <span class="kt">int</span><span class="o">*</span> <span class="n">nev</span><span class="p">,</span> <span class="kt">int</span><span class="o">*</span> <span class="n">nex</span><span class="p">,</span> <span class="kt">float</span> <span class="kt">_Complex</span><span class="o">*</span> <span class="n">h</span><span class="p">,</span> <span class="kt">float</span> <span class="kt">_Complex</span><span class="o">*</span> <span class="n">v</span><span class="p">,</span> <span class="kt">float</span><span class="o">*</span> <span class="n">ritzv</span><span class="p">,</span> <span class="kt">int</span><span class="o">*</span> <span class="n">init</span><span class="p">)</span>
+<span class="kt">void</span> <span class="n">zchase_init_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span> <span class="n">n</span><span class="p">,</span> <span class="kt">int</span><span class="o">*</span> <span class="n">nev</span><span class="p">,</span> <span class="kt">int</span><span class="o">*</span> <span class="n">nex</span><span class="p">,</span> <span class="kt">double</span> <span class="kt">_Complex</span><span class="o">*</span> <span class="n">h</span><span class="p">,</span> <span class="kt">double</span> <span class="kt">_Complex</span><span class="o">*</span> <span class="n">v</span><span class="p">,</span> <span class="kt">double</span><span class="o">*</span> <span class="n">ritzv</span><span class="p">,</span> <span class="kt">int</span><span class="o">*</span> <span class="n">init</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The APIs for the Fortran interfaces are as follows:</p>
+<div class="highlight-Fortran notranslate"><div class="highlight"><pre><span></span><span class="k">SUBROUTINE </span><span class="n">schase_init</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">nev</span><span class="p">,</span> <span class="n">nex</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">ritzv</span><span class="p">,</span> <span class="n">init</span><span class="p">)</span>
+<span class="k">SUBROUTINE </span><span class="n">dchase_init</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">nev</span><span class="p">,</span> <span class="n">nex</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">ritzv</span><span class="p">,</span> <span class="n">init</span><span class="p">)</span>
+<span class="k">SUBROUTINE </span><span class="n">cchase_init</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">nev</span><span class="p">,</span> <span class="n">nex</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">ritzv</span><span class="p">,</span> <span class="n">init</span><span class="p">)</span>
+<span class="k">SUBROUTINE </span><span class="n">zchase_init</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">nev</span><span class="p">,</span> <span class="n">nex</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">ritzv</span><span class="p">,</span> <span class="n">init</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The interfaces of C and Fortran share the same parameters as follows:</p>
+<table class="colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 8%" />
+<col style="width: 17%" />
+<col style="width: 75%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Param.</p></th>
+<th class="head"><p>In/Out</p></th>
+<th class="head"><p>Meaning</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">n</span></code></p></td>
+<td><p>In</p></td>
+<td><p>global matrix size of the matrix to be diagonalized</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">nev</span></code></p></td>
+<td><p>In</p></td>
+<td><p>number of desired eigenpairs</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">nex</span></code></p></td>
+<td><p>In</p></td>
+<td><p>extra searching space size</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">h</span></code></p></td>
+<td><p>In</p></td>
+<td><p>pointer to the matrix to be diagonalized, with size of matrix <code class="docutils literal notranslate"><span class="pre">nxn</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">v</span></code></p></td>
+<td><p>In, Out</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">(nx(nev+nex))</span></code> matrix, input is the initial guess eigenvectors,
+and for output, the first <code class="docutils literal notranslate"><span class="pre">nev</span></code> columns
+are overwritten by the desired eigenvectors</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ritzv</span></code></p></td>
+<td><p>Out</p></td>
+<td><p>an array of size nev which contains the desired eigenvalues, it is of type <code class="docutils literal notranslate"><span class="pre">Base&lt;x&gt;</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">init</span></code></p></td>
+<td><p>Out</p></td>
+<td><p>a flag to indicate if ChASE has been initialized, if initialized, return <code class="docutils literal notranslate"><span class="pre">1</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="p-x-chase-init">
+<h4><span class="section-number">3.3.2.2. </span>p&lt;x&gt;chase_init<a class="headerlink" href="#p-x-chase-init" title="Permalink to this headline">¶</a></h4>
+<p><code class="docutils literal notranslate"><span class="pre">p&lt;x&gt;chase_init</span></code> initialize the context for the distributed-memory ChASE with <strong>Block Distribution</strong>. ChASE is initialized with the buffers <code class="docutils literal notranslate"><span class="pre">h</span></code>, <code class="docutils literal notranslate"><span class="pre">v</span></code>, <code class="docutils literal notranslate"><span class="pre">ritzv</span></code>, which should be allocated
+externally by users. These buffers will be re-used when a sequence of eigenproblems are
+to be solved.</p>
+<p>The APIs for the C interfaces are as follows:</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span> <span class="n">pschase_init_</span><span class="p">(</span><span class="kt">int</span> <span class="o">*</span><span class="n">nn</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">nev</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">nex</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">m</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">n</span><span class="p">,</span> <span class="kt">float</span> <span class="o">*</span><span class="n">h</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">ldh</span><span class="p">,</span>
+                   <span class="kt">float</span> <span class="o">*</span><span class="n">v</span><span class="p">,</span> <span class="kt">float</span> <span class="o">*</span><span class="n">ritzv</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">dim0</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">dim1</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">grid_major</span><span class="p">,</span>
+                   <span class="n">MPI_Comm</span> <span class="o">*</span><span class="n">comm</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">init</span><span class="p">)</span>
+<span class="kt">void</span> <span class="n">pdchase_init_</span><span class="p">(</span><span class="kt">int</span> <span class="o">*</span><span class="n">nn</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">nev</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">nex</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">m</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">n</span><span class="p">,</span> <span class="kt">double</span> <span class="o">*</span><span class="n">h</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">ldh</span><span class="p">,</span>
+                   <span class="kt">double</span> <span class="o">*</span><span class="n">v</span><span class="p">,</span> <span class="kt">double</span> <span class="o">*</span><span class="n">ritzv</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">dim0</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">dim1</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">grid_major</span><span class="p">,</span>
+                   <span class="n">MPI_Comm</span> <span class="o">*</span><span class="n">comm</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">init</span><span class="p">)</span>
+<span class="kt">void</span> <span class="n">pcchase_init_</span><span class="p">(</span><span class="kt">int</span> <span class="o">*</span><span class="n">nn</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">nev</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">nex</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">m</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">n</span><span class="p">,</span> <span class="kt">float</span> <span class="kt">_Complex</span> <span class="o">*</span><span class="n">h</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">ldh</span><span class="p">,</span>
+                   <span class="kt">float</span> <span class="kt">_Complex</span> <span class="o">*</span><span class="n">v</span><span class="p">,</span> <span class="kt">float</span> <span class="o">*</span><span class="n">ritzv</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">dim0</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">dim1</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">grid_major</span><span class="p">,</span>
+                   <span class="n">MPI_Comm</span> <span class="o">*</span><span class="n">comm</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">init</span><span class="p">)</span>
+<span class="kt">void</span> <span class="n">pzchase_init_</span><span class="p">(</span><span class="kt">int</span> <span class="o">*</span><span class="n">nn</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">nev</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">nex</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">m</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">n</span><span class="p">,</span> <span class="kt">double</span> <span class="kt">_Complex</span> <span class="o">*</span><span class="n">h</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">ldh</span><span class="p">,</span>
+                   <span class="kt">double</span> <span class="kt">_Complex</span> <span class="o">*</span><span class="n">v</span><span class="p">,</span> <span class="kt">double</span> <span class="o">*</span><span class="n">ritzv</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">dim0</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">dim1</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">grid_major</span><span class="p">,</span>
+                   <span class="n">MPI_Comm</span> <span class="o">*</span><span class="n">comm</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">init</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The APIs for the Fortran interfaces are as follows:</p>
+<div class="highlight-Fortran notranslate"><div class="highlight"><pre><span></span><span class="k">subroutine  </span><span class="n">pschase_init</span> <span class="p">(</span><span class="n">nn</span><span class="p">,</span> <span class="n">nev</span><span class="p">,</span> <span class="n">nex</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">ldh</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">ritzv</span><span class="p">,</span> <span class="n">dim0</span><span class="p">,</span> <span class="n">dim1</span><span class="p">,</span> <span class="n">grid_major</span><span class="p">,</span> <span class="n">fcomm</span><span class="p">,</span> <span class="n">init</span><span class="p">)</span>
+<span class="k">subroutine  </span><span class="n">pdchase_init</span> <span class="p">(</span><span class="n">nn</span><span class="p">,</span> <span class="n">nev</span><span class="p">,</span> <span class="n">nex</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">ldh</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">ritzv</span><span class="p">,</span> <span class="n">dim0</span><span class="p">,</span> <span class="n">dim1</span><span class="p">,</span> <span class="n">grid_major</span><span class="p">,</span> <span class="n">fcomm</span><span class="p">,</span> <span class="n">init</span><span class="p">)</span>
+<span class="k">subroutine  </span><span class="n">pcchase_init</span> <span class="p">(</span><span class="n">nn</span><span class="p">,</span> <span class="n">nev</span><span class="p">,</span> <span class="n">nex</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">ldh</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">ritzv</span><span class="p">,</span> <span class="n">dim0</span><span class="p">,</span> <span class="n">dim1</span><span class="p">,</span> <span class="n">grid_major</span><span class="p">,</span> <span class="n">fcomm</span><span class="p">,</span> <span class="n">init</span><span class="p">)</span>
+<span class="k">subroutine  </span><span class="n">pzchase_init</span> <span class="p">(</span><span class="n">nn</span><span class="p">,</span> <span class="n">nev</span><span class="p">,</span> <span class="n">nex</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">ldh</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">ritzv</span><span class="p">,</span> <span class="n">dim0</span><span class="p">,</span> <span class="n">dim1</span><span class="p">,</span> <span class="n">grid_major</span><span class="p">,</span> <span class="n">fcomm</span><span class="p">,</span> <span class="n">init</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The interfaces of C and Fortran share the same parameters as follows:</p>
+<table class="colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 8%" />
+<col style="width: 17%" />
+<col style="width: 75%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Param.</p></th>
+<th class="head"><p>In/Out</p></th>
+<th class="head"><p>Meaning</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">nn</span></code></p></td>
+<td><p>In</p></td>
+<td><p>global matrix size of the matrix to be diagonalized</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">nev</span></code></p></td>
+<td><p>In</p></td>
+<td><p>number of desired eigenpairs</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">nex</span></code></p></td>
+<td><p>In</p></td>
+<td><p>extra searching space size</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">m</span></code></p></td>
+<td><p>In</p></td>
+<td><p>max row number of local matrix h on each MPI process</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">n</span></code></p></td>
+<td><p>In</p></td>
+<td><p>max column number of local matrix h on each MPI process</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">h</span></code></p></td>
+<td><p>In</p></td>
+<td><p>pointer to the matrix to be diagonalized. <code class="docutils literal notranslate"><span class="pre">h</span></code> is a block-block distribution of global matrix.
+<code class="docutils literal notranslate"><span class="pre">h</span></code> is of size <code class="docutils literal notranslate"><span class="pre">mxn</span></code> with its leading dimension is <code class="docutils literal notranslate"><span class="pre">ldh</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ldh</span></code></p></td>
+<td><p>In</p></td>
+<td><p>leading dimension of <code class="docutils literal notranslate"><span class="pre">h</span></code> on each MPI process</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">v</span></code></p></td>
+<td><p>In, Out</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">(mx(nev+nex))</span></code> matrix, input is the initial guess eigenvectors, and for output, the first <code class="docutils literal notranslate"><span class="pre">nev</span></code>
+columns are overwritten by the desired eigenvectors. <code class="docutils literal notranslate"><span class="pre">v</span></code> is only partially distributed within column
+communicator. It is reduandant among different column communicator.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ritzv</span></code></p></td>
+<td><p>Out</p></td>
+<td><p>an array of size <code class="docutils literal notranslate"><span class="pre">nev</span></code> which contains the desired eigenvalues, it is of type <code class="docutils literal notranslate"><span class="pre">Base&lt;x&gt;</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">dim0</span></code></p></td>
+<td><p>In</p></td>
+<td><p>row number of 2D MPI grid</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">dim1</span></code></p></td>
+<td><p>In</p></td>
+<td><p>column number of 2D MPI grid</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">grid_major</span></code></p></td>
+<td><p>In</p></td>
+<td><p>major of 2D MPI grid. Row major: grid_major=’R’, column major: grid_major=’C’</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">comm</span></code> or <code class="docutils literal notranslate"><span class="pre">fcomm</span></code></p></td>
+<td><p>In</p></td>
+<td><p>the working MPI communicator. <code class="docutils literal notranslate"><span class="pre">comm</span></code> is for MPI-C communicator, and <code class="docutils literal notranslate"><span class="pre">fcomm</span></code> is for MPI-Fortran communicator.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">init</span></code></p></td>
+<td><p>Out</p></td>
+<td><p>a flag to indicate if ChASE has been initialized, if initialized, return <code class="docutils literal notranslate"><span class="pre">1</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="p-x-chase-init-blockcyclic">
+<h4><span class="section-number">3.3.2.3. </span>p&lt;x&gt;chase_init_blockcyclic<a class="headerlink" href="#p-x-chase-init-blockcyclic" title="Permalink to this headline">¶</a></h4>
+<p><code class="docutils literal notranslate"><span class="pre">p&lt;x&gt;chase_init_blockcyclic</span></code> initialize the context for the distributed-memory version of ChASE with <strong>Block-Cyclic Distribution</strong>. ChASE is initialized with the buffers <code class="docutils literal notranslate"><span class="pre">h</span></code>, <code class="docutils literal notranslate"><span class="pre">v</span></code>, <code class="docutils literal notranslate"><span class="pre">ritzv</span></code>, which should be allocated
+externally by users. These buffers will be re-used when a sequence of eigenproblems are
+to be solved.</p>
+<p>The APIs for the C interfaces are as follows:</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span> <span class="n">pschase_init_blockcyclic_</span><span class="p">(</span><span class="kt">int</span> <span class="o">*</span><span class="n">nn</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">nev</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">nex</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">mbsize</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">nbsize</span><span class="p">,</span>
+                               <span class="kt">float</span> <span class="o">*</span><span class="n">h</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">ldh</span><span class="p">,</span> <span class="kt">float</span> <span class="o">*</span><span class="n">v</span><span class="p">,</span> <span class="kt">float</span> <span class="o">*</span><span class="n">ritzv</span><span class="p">,</span>
+                               <span class="kt">int</span> <span class="o">*</span><span class="n">dim0</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">dim1</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">grid_major</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">irsrc</span><span class="p">,</span>
+                               <span class="kt">int</span> <span class="o">*</span><span class="n">icsrc</span><span class="p">,</span> <span class="n">MPI_Comm</span> <span class="o">*</span><span class="n">comm</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">init</span><span class="p">)</span>
+<span class="kt">void</span> <span class="n">pdchase_init_blockcyclic_</span><span class="p">(</span><span class="kt">int</span> <span class="o">*</span><span class="n">nn</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">nev</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">nex</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">mbsize</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">nbsize</span><span class="p">,</span>
+                               <span class="kt">double</span> <span class="o">*</span><span class="n">h</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">ldh</span><span class="p">,</span> <span class="kt">double</span> <span class="o">*</span><span class="n">v</span><span class="p">,</span> <span class="kt">double</span> <span class="o">*</span><span class="n">ritzv</span><span class="p">,</span>
+                               <span class="kt">int</span> <span class="o">*</span><span class="n">dim0</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">dim1</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">grid_major</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">irsrc</span><span class="p">,</span>
+                               <span class="kt">int</span> <span class="o">*</span><span class="n">icsrc</span><span class="p">,</span> <span class="n">MPI_Comm</span> <span class="o">*</span><span class="n">comm</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">init</span><span class="p">)</span>
+<span class="kt">void</span> <span class="n">pcchase_init_blockcyclic_</span><span class="p">(</span><span class="kt">int</span> <span class="o">*</span><span class="n">nn</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">nev</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">nex</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">mbsize</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">nbsize</span><span class="p">,</span>
+                               <span class="kt">float</span> <span class="kt">_Complex</span> <span class="o">*</span><span class="n">h</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">ldh</span><span class="p">,</span> <span class="kt">float</span> <span class="kt">_Complex</span> <span class="o">*</span><span class="n">v</span><span class="p">,</span> <span class="kt">float</span> <span class="o">*</span><span class="n">ritzv</span><span class="p">,</span>
+                               <span class="kt">int</span> <span class="o">*</span><span class="n">dim0</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">dim1</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">grid_major</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">irsrc</span><span class="p">,</span>
+                               <span class="kt">int</span> <span class="o">*</span><span class="n">icsrc</span><span class="p">,</span> <span class="n">MPI_Comm</span> <span class="o">*</span><span class="n">comm</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">init</span><span class="p">)</span>
+<span class="kt">void</span> <span class="n">pzchase_init_blockcyclic_</span><span class="p">(</span><span class="kt">int</span> <span class="o">*</span><span class="n">nn</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">nev</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">nex</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">mbsize</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">nbsize</span><span class="p">,</span>
+                               <span class="kt">double</span> <span class="kt">_Complex</span> <span class="o">*</span><span class="n">h</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">ldh</span><span class="p">,</span> <span class="kt">double</span> <span class="kt">_Complex</span> <span class="o">*</span><span class="n">v</span><span class="p">,</span> <span class="kt">double</span> <span class="o">*</span><span class="n">ritzv</span><span class="p">,</span>
+                               <span class="kt">int</span> <span class="o">*</span><span class="n">dim0</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">dim1</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">grid_major</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">irsrc</span><span class="p">,</span>
+                               <span class="kt">int</span> <span class="o">*</span><span class="n">icsrc</span><span class="p">,</span> <span class="n">MPI_Comm</span> <span class="o">*</span><span class="n">comm</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">init</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The APIs for the Fortran interfaces are as follows:</p>
+<div class="highlight-Fortran notranslate"><div class="highlight"><pre><span></span><span class="k">subroutine  </span><span class="n">pschase_init_blockcyclic</span> <span class="p">(</span><span class="n">nn</span><span class="p">,</span> <span class="n">nev</span><span class="p">,</span> <span class="n">nex</span><span class="p">,</span> <span class="n">mbsize</span><span class="p">,</span> <span class="n">nbsize</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">ldh</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">ritzv</span><span class="p">,</span> <span class="n">dim0</span><span class="p">,</span> <span class="n">dim1</span><span class="p">,</span> <span class="n">grid_major</span><span class="p">,</span> <span class="n">irsrc</span><span class="p">,</span> <span class="n">icsrc</span><span class="p">,</span> <span class="n">fcomm</span><span class="p">,</span> <span class="n">init</span><span class="p">)</span>
+<span class="k">subroutine  </span><span class="n">pdchase_init_blockcyclic</span> <span class="p">(</span><span class="n">nn</span><span class="p">,</span> <span class="n">nev</span><span class="p">,</span> <span class="n">nex</span><span class="p">,</span> <span class="n">mbsize</span><span class="p">,</span> <span class="n">nbsize</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">ldh</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">ritzv</span><span class="p">,</span> <span class="n">dim0</span><span class="p">,</span> <span class="n">dim1</span><span class="p">,</span> <span class="n">grid_major</span><span class="p">,</span> <span class="n">irsrc</span><span class="p">,</span> <span class="n">icsrc</span><span class="p">,</span> <span class="n">fcomm</span><span class="p">,</span> <span class="n">init</span><span class="p">)</span>
+<span class="k">subroutine  </span><span class="n">pcchase_init_blockcyclic</span> <span class="p">(</span><span class="n">nn</span><span class="p">,</span> <span class="n">nev</span><span class="p">,</span> <span class="n">nex</span><span class="p">,</span> <span class="n">mbsize</span><span class="p">,</span> <span class="n">nbsize</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">ldh</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">ritzv</span><span class="p">,</span> <span class="n">dim0</span><span class="p">,</span> <span class="n">dim1</span><span class="p">,</span> <span class="n">grid_major</span><span class="p">,</span> <span class="n">irsrc</span><span class="p">,</span> <span class="n">icsrc</span><span class="p">,</span> <span class="n">fcomm</span><span class="p">,</span> <span class="n">init</span><span class="p">)</span>
+<span class="k">subroutine  </span><span class="n">pzchase_init_blockcyclic</span> <span class="p">(</span><span class="n">nn</span><span class="p">,</span> <span class="n">nev</span><span class="p">,</span> <span class="n">nex</span><span class="p">,</span> <span class="n">mbsize</span><span class="p">,</span> <span class="n">nbsize</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">ldh</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">ritzv</span><span class="p">,</span> <span class="n">dim0</span><span class="p">,</span> <span class="n">dim1</span><span class="p">,</span> <span class="n">grid_major</span><span class="p">,</span> <span class="n">irsrc</span><span class="p">,</span> <span class="n">icsrc</span><span class="p">,</span> <span class="n">fcomm</span><span class="p">,</span> <span class="n">init</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The interfaces of C and Fortran share the same parameters as follows:</p>
+<table class="colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 8%" />
+<col style="width: 17%" />
+<col style="width: 75%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Param.</p></th>
+<th class="head"><p>In/Out</p></th>
+<th class="head"><p>Meaning</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">nn</span></code></p></td>
+<td><p>In</p></td>
+<td><p>global matrix size of the matrix to be diagonalized</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">nev</span></code></p></td>
+<td><p>In</p></td>
+<td><p>number of desired eigenpairs</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">nex</span></code></p></td>
+<td><p>In</p></td>
+<td><p>extra searching space size</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">mbsize</span></code></p></td>
+<td><p>In</p></td>
+<td><p>block size for the block-cyclic distribution for the rows of global matrix</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">nbsize</span></code></p></td>
+<td><p>In</p></td>
+<td><p>block size for the block-cyclic distribution for the cloumns of global matrix</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">h</span></code></p></td>
+<td><p>In</p></td>
+<td><p>pointer to the matrix to be diagonalized. <code class="docutils literal notranslate"><span class="pre">h</span></code> is a block-block distribution of global matrix.
+<code class="docutils literal notranslate"><span class="pre">h</span></code> is of size <code class="docutils literal notranslate"><span class="pre">mxn</span></code> with its leading dimension is <code class="docutils literal notranslate"><span class="pre">ldh</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ldh</span></code></p></td>
+<td><p>In</p></td>
+<td><p>leading dimension of <code class="docutils literal notranslate"><span class="pre">h</span></code> on each MPI process</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">v</span></code></p></td>
+<td><p>In, Out</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">(mx(nev+nex))</span></code> matrix, input is the initial guess eigenvectors, and for output, the first <code class="docutils literal notranslate"><span class="pre">nev</span></code>
+columns are overwritten by the desired eigenvectors. <code class="docutils literal notranslate"><span class="pre">v</span></code> is only partially distributed within column
+communicator. It is redundant among different column communicator.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ritzv</span></code></p></td>
+<td><p>Out</p></td>
+<td><p>an array of size <code class="docutils literal notranslate"><span class="pre">nev</span></code> which contains the desired eigenvalues, it is of type <code class="docutils literal notranslate"><span class="pre">Base&lt;x&gt;</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">dim0</span></code></p></td>
+<td><p>In</p></td>
+<td><p>row number of 2D MPI grid</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">dim1</span></code></p></td>
+<td><p>In</p></td>
+<td><p>column number of 2D MPI grid</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">irsrc</span></code></p></td>
+<td><p>In</p></td>
+<td><p>process row over which the first row of the global matrix <code class="docutils literal notranslate"><span class="pre">h</span></code> is distributed</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">icsrc</span></code></p></td>
+<td><p>In</p></td>
+<td><p>process column over which the first column of the global matrix <code class="docutils literal notranslate"><span class="pre">h</span></code> is distributed.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">grid_major</span></code></p></td>
+<td><p>In</p></td>
+<td><p>major of 2D MPI grid. Row major: grid_major=’R’, column major: grid_major=’C’</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">comm</span></code> or <code class="docutils literal notranslate"><span class="pre">fcomm</span></code></p></td>
+<td><p>In</p></td>
+<td><p>the working MPI communicator. <code class="docutils literal notranslate"><span class="pre">comm</span></code> is for MPI-C communicator, and <code class="docutils literal notranslate"><span class="pre">fcomm</span></code> is for MPI-Fortran communicator.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">init</span></code></p></td>
+<td><p>Out</p></td>
+<td><p>a flag to indicate if ChASE has been initialized, if initialized, return <code class="docutils literal notranslate"><span class="pre">1</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="section" id="solving-functions">
+<h3><span class="section-number">3.3.3. </span>Solving Functions<a class="headerlink" href="#solving-functions" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="x-chase">
+<h4><span class="section-number">3.3.3.1. </span>&lt;x&gt;chase<a class="headerlink" href="#x-chase" title="Permalink to this headline">¶</a></h4>
+<p><code class="docutils literal notranslate"><span class="pre">&lt;x&gt;chase</span></code> solves an eigenvalue problem with given configuration of parameters on shared-memory architectures. When CUDA is enabled, it will automatically use 1 GPU card.</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span> <span class="n">schase_</span><span class="p">(</span><span class="kt">int</span> <span class="o">*</span><span class="n">deg</span><span class="p">,</span> <span class="kt">double</span> <span class="o">*</span><span class="n">tol</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">mode</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">opt</span><span class="p">)</span>
+<span class="kt">void</span> <span class="n">dchase_</span><span class="p">(</span><span class="kt">int</span> <span class="o">*</span><span class="n">deg</span><span class="p">,</span> <span class="kt">double</span> <span class="o">*</span><span class="n">tol</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">mode</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">opt</span><span class="p">)</span>
+<span class="kt">void</span> <span class="n">cchase_</span><span class="p">(</span><span class="kt">int</span> <span class="o">*</span><span class="n">deg</span><span class="p">,</span> <span class="kt">double</span> <span class="o">*</span><span class="n">tol</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">mode</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">opt</span><span class="p">)</span>
+<span class="kt">void</span> <span class="n">zchase_</span><span class="p">(</span><span class="kt">int</span> <span class="o">*</span><span class="n">deg</span><span class="p">,</span> <span class="kt">double</span> <span class="o">*</span><span class="n">tol</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">mode</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">opt</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-Fortran notranslate"><div class="highlight"><pre><span></span><span class="k">subroutine  </span><span class="n">schase</span> <span class="p">(</span><span class="n">deg</span><span class="p">,</span> <span class="n">tol</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span> <span class="n">opt</span><span class="p">)</span>
+<span class="k">subroutine  </span><span class="n">dchase</span> <span class="p">(</span><span class="n">deg</span><span class="p">,</span> <span class="n">tol</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span> <span class="n">opt</span><span class="p">)</span>
+<span class="k">subroutine  </span><span class="n">cchase</span> <span class="p">(</span><span class="n">deg</span><span class="p">,</span> <span class="n">tol</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span> <span class="n">opt</span><span class="p">)</span>
+<span class="k">subroutine  </span><span class="n">zchase</span> <span class="p">(</span><span class="n">deg</span><span class="p">,</span> <span class="n">tol</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span> <span class="n">opt</span><span class="p">)</span>
+</pre></div>
+</div>
+<table class="colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 8%" />
+<col style="width: 17%" />
+<col style="width: 75%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Param.</p></th>
+<th class="head"><p>In/Out</p></th>
+<th class="head"><p>Meaning</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">deg</span></code></p></td>
+<td><p>In</p></td>
+<td><p>initial degree of Chebyshev polynomial filter</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">tol</span></code></p></td>
+<td><p>In</p></td>
+<td><p>desired absolute tolerance of computed eigenpairs</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">mode</span></code></p></td>
+<td><p>In</p></td>
+<td><p>for sequences of eigenproblems, if reusing the eigenpairs obtained from last system. If mode = ‘A’, reuse, otherwise, no.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">opt</span></code></p></td>
+<td><p>In</p></td>
+<td><p>determining if using internal optimization of Chebyshev polynomial degree. If opt=’S’, use, otherwise, no.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="p-x-chase">
+<h4><span class="section-number">3.3.3.2. </span>p&lt;x&gt;chase<a class="headerlink" href="#p-x-chase" title="Permalink to this headline">¶</a></h4>
+<p><code class="docutils literal notranslate"><span class="pre">p&lt;x&gt;chase</span></code> solves an eigenvalue problem with given configuration of parameters on distributed-memory architectures. When CUDA is enabled, it will automatically use multi-GPUs with the configuration 1GPU per MPI rank.</p>
+<p>The APIs for the C interfaces are as follows:</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span> <span class="n">pschase_</span><span class="p">(</span><span class="kt">int</span> <span class="o">*</span><span class="n">deg</span><span class="p">,</span> <span class="kt">double</span> <span class="o">*</span><span class="n">tol</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">mode</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">opt</span><span class="p">)</span>
+<span class="kt">void</span> <span class="n">pdchase_</span><span class="p">(</span><span class="kt">int</span> <span class="o">*</span><span class="n">deg</span><span class="p">,</span> <span class="kt">double</span> <span class="o">*</span><span class="n">tol</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">mode</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">opt</span><span class="p">)</span>
+<span class="kt">void</span> <span class="n">pcchase_</span><span class="p">(</span><span class="kt">int</span> <span class="o">*</span><span class="n">deg</span><span class="p">,</span> <span class="kt">double</span> <span class="o">*</span><span class="n">tol</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">mode</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">opt</span><span class="p">)</span>
+<span class="kt">void</span> <span class="n">pzchase_</span><span class="p">(</span><span class="kt">int</span> <span class="o">*</span><span class="n">deg</span><span class="p">,</span> <span class="kt">double</span> <span class="o">*</span><span class="n">tol</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">mode</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">opt</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The APIs for the Fortran interfaces are as follows:</p>
+<div class="highlight-Fortran notranslate"><div class="highlight"><pre><span></span><span class="k">subroutine  </span><span class="n">pschase</span> <span class="p">(</span><span class="n">deg</span><span class="p">,</span> <span class="n">tol</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span> <span class="n">opt</span><span class="p">)</span>
+<span class="k">subroutine  </span><span class="n">pdchase</span> <span class="p">(</span><span class="n">deg</span><span class="p">,</span> <span class="n">tol</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span> <span class="n">opt</span><span class="p">)</span>
+<span class="k">subroutine  </span><span class="n">pcchase</span> <span class="p">(</span><span class="n">deg</span><span class="p">,</span> <span class="n">tol</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span> <span class="n">opt</span><span class="p">)</span>
+<span class="k">subroutine  </span><span class="n">pzchase</span> <span class="p">(</span><span class="n">deg</span><span class="p">,</span> <span class="n">tol</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span> <span class="n">opt</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The interfaces of C and Fortran share the same parameters as follows:</p>
+<table class="colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 8%" />
+<col style="width: 17%" />
+<col style="width: 75%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Param.</p></th>
+<th class="head"><p>In/Out</p></th>
+<th class="head"><p>Meaning</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">deg</span></code></p></td>
+<td><p>In</p></td>
+<td><p>initial degree of Cheyshev polynomial filter</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">tol</span></code></p></td>
+<td><p>In</p></td>
+<td><p>desired absolute tolerance of computed eigenpairs</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">mode</span></code></p></td>
+<td><p>In</p></td>
+<td><p>for sequences of eigenproblems, if reusing the eigenpairs obtained from last system. If mode = ‘A’, reuse, otherwise, no.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">opt</span></code></p></td>
+<td><p>In</p></td>
+<td><p>determining if using internal optimization of Chebyshev polynomial degree. If opt=’S’, use, otherwise, no.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="section" id="finalization-functions">
+<h3><span class="section-number">3.3.4. </span>Finalization Functions<a class="headerlink" href="#finalization-functions" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="x-chase-finalize">
+<h4><span class="section-number">3.3.4.1. </span>&lt;x&gt;chase_finalize<a class="headerlink" href="#x-chase-finalize" title="Permalink to this headline">¶</a></h4>
+<p><code class="docutils literal notranslate"><span class="pre">&lt;x&gt;chase_finalize</span></code> cleans up the instances of shared-memory ChASE.</p>
+<p>The APIs for the C interfaces are as follows:</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span> <span class="n">schase_finalize_</span><span class="p">(</span><span class="kt">int</span> <span class="o">*</span><span class="n">flag</span><span class="p">)</span>
+<span class="kt">void</span> <span class="n">dchase_finalize_</span><span class="p">(</span><span class="kt">int</span> <span class="o">*</span><span class="n">flag</span><span class="p">)</span>
+<span class="kt">void</span> <span class="n">cchase_finalize_</span><span class="p">(</span><span class="kt">int</span> <span class="o">*</span><span class="n">flag</span><span class="p">)</span>
+<span class="kt">void</span> <span class="n">zchase_finalize_</span><span class="p">(</span><span class="kt">int</span> <span class="o">*</span><span class="n">flag</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The APIs for the Fortran interfaces are as follows:</p>
+<div class="highlight-Fortran notranslate"><div class="highlight"><pre><span></span><span class="k">subroutine  </span><span class="n">schase_finalize</span> <span class="p">(</span><span class="n">flag</span><span class="p">)</span>
+<span class="k">subroutine  </span><span class="n">dchase_finalize</span> <span class="p">(</span><span class="n">flag</span><span class="p">)</span>
+<span class="k">subroutine  </span><span class="n">cchase_finalize</span> <span class="p">(</span><span class="n">flag</span><span class="p">)</span>
+<span class="k">subroutine  </span><span class="n">zchase_finalize</span> <span class="p">(</span><span class="n">flag</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The interfaces of C and Fortran share the same parameters as follows:</p>
+<table class="colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 8%" />
+<col style="width: 17%" />
+<col style="width: 75%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Param.</p></th>
+<th class="head"><p>In/Out</p></th>
+<th class="head"><p>Meaning</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">flag</span></code></p></td>
+<td><p>Out</p></td>
+<td><p>A flag to indicate if ChASE has been cleared up. If ChASE has been cleaned up, <code class="docutils literal notranslate"><span class="pre">flag=0</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="p-x-chase-finalize">
+<h4><span class="section-number">3.3.4.2. </span>p&lt;x&gt;chase_finalize<a class="headerlink" href="#p-x-chase-finalize" title="Permalink to this headline">¶</a></h4>
+<p><code class="docutils literal notranslate"><span class="pre">p&lt;x&gt;chase_finalize</span></code> cleans up the instances of distributed-memory ChASE.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For <strong>Block Distribution</strong> and <strong>Block-Cyclic Distribution</strong> versions of ChASE, they share an uniform interface for the finalization.</p>
+</div>
+<p>The APIs for the C interfaces are as follows:</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span> <span class="n">pschase_finalize_</span><span class="p">(</span><span class="kt">int</span> <span class="o">*</span><span class="n">flag</span><span class="p">)</span>
+<span class="kt">void</span> <span class="n">pdchase_finalize_</span><span class="p">(</span><span class="kt">int</span> <span class="o">*</span><span class="n">flag</span><span class="p">)</span>
+<span class="kt">void</span> <span class="n">pcchase_finalize_</span><span class="p">(</span><span class="kt">int</span> <span class="o">*</span><span class="n">flag</span><span class="p">)</span>
+<span class="kt">void</span> <span class="n">pzchase_finalize_</span><span class="p">(</span><span class="kt">int</span> <span class="o">*</span><span class="n">flag</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The APIs for the Fortran interfaces are as follows:</p>
+<div class="highlight-Fortran notranslate"><div class="highlight"><pre><span></span><span class="k">subroutine  </span><span class="n">pschase_finalize</span> <span class="p">(</span><span class="n">flag</span><span class="p">)</span>
+<span class="k">subroutine  </span><span class="n">pdchase_finalize</span> <span class="p">(</span><span class="n">flag</span><span class="p">)</span>
+<span class="k">subroutine  </span><span class="n">pcchase_finalize</span> <span class="p">(</span><span class="n">flag</span><span class="p">)</span>
+<span class="k">subroutine  </span><span class="n">pzchase_finalize</span> <span class="p">(</span><span class="n">flag</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The interfaces of C and Fortran share the same parameters as follows:</p>
+<table class="colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 8%" />
+<col style="width: 17%" />
+<col style="width: 75%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Param.</p></th>
+<th class="head"><p>In/Out</p></th>
+<th class="head"><p>Meaning</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">flag</span></code></p></td>
+<td><p>Out</p></td>
+<td><p>A flag to indicate if ChASE has been cleared up. If ChASE has been cleaned up, <code class="docutils literal notranslate"><span class="pre">flag=0</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="section" id="examples">
+<h3><span class="section-number">3.3.5. </span>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h3>
+<p>A Snippet of examples for both C and Fortran interfaces are shown as follows.
+We provide completed examples for both C and Fortran interfaces with both shared-memory
+and distributed-memory architectures in <a class="reference external" href="https://github.com/ChASE-library/ChASE/tree/master/examples/4_interface">./examples/4_interface</a>.</p>
+<div class="section" id="example-of-c-interface">
+<h4><span class="section-number">3.3.5.1. </span>Example of C interface<a class="headerlink" href="#example-of-c-interface" title="Permalink to this headline">¶</a></h4>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="p">...</span>
+<span class="p">...</span>
+
+<span class="kt">void</span> <span class="n">pzchase_init_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span> <span class="n">N</span><span class="p">,</span> <span class="kt">int</span><span class="o">*</span> <span class="n">nev</span><span class="p">,</span> <span class="kt">int</span><span class="o">*</span> <span class="n">nex</span><span class="p">,</span> <span class="kt">int</span><span class="o">*</span> <span class="n">m</span><span class="p">,</span> <span class="kt">int</span><span class="o">*</span> <span class="n">n</span><span class="p">,</span>
+                   <span class="kt">double</span> <span class="kt">_Complex</span><span class="o">*</span> <span class="n">H</span><span class="p">,</span> <span class="kt">int</span><span class="o">*</span> <span class="n">ldh</span><span class="p">,</span> <span class="kt">double</span> <span class="kt">_Complex</span><span class="o">*</span> <span class="n">V</span><span class="p">,</span>
+                   <span class="kt">double</span><span class="o">*</span> <span class="n">ritzv</span><span class="p">,</span> <span class="kt">int</span><span class="o">*</span> <span class="n">dim0</span><span class="p">,</span> <span class="kt">int</span><span class="o">*</span> <span class="n">dim1</span><span class="p">,</span> <span class="kt">char</span><span class="o">*</span> <span class="n">grid_major</span><span class="p">,</span>
+                   <span class="n">MPI_Comm</span><span class="o">*</span> <span class="n">comm</span><span class="p">,</span> <span class="kt">int</span><span class="o">*</span> <span class="n">init</span><span class="p">);</span>
+<span class="kt">void</span> <span class="nf">pzchase_finalize_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span> <span class="n">flag</span><span class="p">);</span>
+<span class="kt">void</span> <span class="nf">pzchase_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span> <span class="n">deg</span><span class="p">,</span> <span class="kt">double</span><span class="o">*</span> <span class="n">tol</span><span class="p">,</span> <span class="kt">char</span><span class="o">*</span> <span class="n">mode</span><span class="p">,</span> <span class="kt">char</span><span class="o">*</span> <span class="n">opt</span><span class="p">);</span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span><span class="o">**</span> <span class="n">argv</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="n">MPI_Init</span><span class="p">(</span><span class="o">&amp;</span><span class="n">argc</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">argv</span><span class="p">);</span>
+    <span class="kt">int</span> <span class="n">rank</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">init</span><span class="p">;</span>
+
+    <span class="kt">int</span> <span class="n">N</span> <span class="o">=</span> <span class="mi">1001</span><span class="p">;</span> <span class="c1">//global size of matrix</span>
+    <span class="kt">int</span> <span class="n">nev</span> <span class="o">=</span> <span class="mi">100</span><span class="p">;</span> <span class="c1">//number of eigenparis to compute</span>
+    <span class="kt">int</span> <span class="n">nex</span> <span class="o">=</span> <span class="mi">40</span><span class="p">;</span> <span class="c1">//size of external searching space</span>
+    <span class="kt">int</span> <span class="n">m</span> <span class="o">=</span> <span class="mi">501</span><span class="p">;</span> <span class="c1">//number of rows of local matrix on each MPI rank</span>
+    <span class="kt">int</span> <span class="n">n</span> <span class="o">=</span> <span class="mi">501</span><span class="p">;</span> <span class="c1">//number of columns of local matrix on each MPI rank</span>
+    <span class="n">MPI_Comm</span> <span class="n">comm</span> <span class="o">=</span> <span class="n">MPI_COMM_WORLD</span><span class="p">;</span> <span class="c1">//working MPI communicator</span>
+    <span class="kt">int</span> <span class="n">dims</span><span class="p">[</span><span class="mi">2</span><span class="p">];</span>
+    <span class="n">dims</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span> <span class="c1">//row number of 2D MPI grid</span>
+    <span class="n">dims</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span> <span class="c1">//column number of 2D MPI grid</span>
+    <span class="c1">//allocate buffer to store computed eigenvectors</span>
+
+    <span class="kt">double</span> <span class="kt">_Complex</span><span class="o">*</span> <span class="n">V</span> <span class="o">=</span> <span class="p">(</span><span class="kt">double</span> <span class="kt">_Complex</span><span class="o">*</span><span class="p">)</span><span class="n">malloc</span><span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="kt">double</span> <span class="kt">_Complex</span><span class="p">)</span> <span class="o">*</span> <span class="n">m</span> <span class="o">*</span> <span class="p">(</span><span class="n">nev</span> <span class="o">+</span> <span class="n">nex</span><span class="p">));</span>
+    <span class="c1">//allocate buffer to store computed eigenvalues</span>
+    <span class="kt">double</span><span class="o">*</span> <span class="n">Lambda</span> <span class="o">=</span> <span class="p">(</span><span class="kt">double</span><span class="o">*</span><span class="p">)</span><span class="n">malloc</span><span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="kt">double</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">nev</span> <span class="o">+</span> <span class="n">nex</span><span class="p">));</span>
+    <span class="c1">//allocate buffer to store local block of Hermitian matrix on each MPI rank</span>
+    <span class="kt">double</span> <span class="kt">_Complex</span><span class="o">*</span> <span class="n">H</span> <span class="o">=</span> <span class="p">(</span><span class="kt">double</span> <span class="kt">_Complex</span><span class="o">*</span><span class="p">)</span><span class="n">malloc</span><span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="kt">double</span> <span class="kt">_Complex</span><span class="p">)</span> <span class="o">*</span> <span class="n">m</span> <span class="o">*</span> <span class="n">n</span><span class="p">);</span>
+
+    <span class="c1">// config</span>
+    <span class="kt">int</span> <span class="n">deg</span> <span class="o">=</span> <span class="mi">20</span><span class="p">;</span>
+    <span class="kt">double</span> <span class="n">tol</span> <span class="o">=</span> <span class="mf">1e-10</span><span class="p">;</span>
+    <span class="kt">char</span> <span class="n">mode</span> <span class="o">=</span> <span class="sc">&#39;R&#39;</span><span class="p">;</span>
+    <span class="kt">char</span> <span class="n">opt</span> <span class="o">=</span> <span class="sc">&#39;S&#39;</span><span class="p">;</span>
+
+    <span class="c1">//Initialize of ChASE</span>
+    <span class="n">pzchase_init_</span><span class="p">(</span><span class="o">&amp;</span><span class="n">N</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">nev</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">nex</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">m</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">n</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">m</span><span class="p">,</span> <span class="n">V</span><span class="p">,</span> <span class="n">Lambda</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">dims</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">&amp;</span><span class="n">dims</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+                  <span class="p">(</span><span class="kt">char</span><span class="o">*</span><span class="p">)</span><span class="s">&quot;C&quot;</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">comm</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">init</span><span class="p">);</span>
+
+    <span class="cm">/*</span>
+<span class="cm">        Generating or loading matrix into H</span>
+<span class="cm">    */</span>
+
+    <span class="c1">//solve 1st eigenproblem with defined configuration of parameters</span>
+    <span class="n">pzchase_</span><span class="p">(</span><span class="o">&amp;</span><span class="n">deg</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">tol</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">mode</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">opt</span><span class="p">);</span>
+
+    <span class="cm">/*</span>
+<span class="cm">        form a new eigenproblem by updating the buffer H</span>
+<span class="cm">    */</span>
+
+    <span class="c1">//Set the mode to &#39;A&#39;, which can recycle previous eigenvectors</span>
+    <span class="n">mode</span> <span class="o">=</span> <span class="sc">&#39;A&#39;</span><span class="p">;</span>
+
+    <span class="c1">//solve 2nd eigenproblem with updated parameters</span>
+    <span class="n">pzchase_</span><span class="p">(</span><span class="o">&amp;</span><span class="n">deg</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">tol</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">mode</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">opt</span><span class="p">);</span>
+
+
+    <span class="c1">//finalize and clean up</span>
+    <span class="n">pzchase_finalize_</span><span class="p">(</span><span class="o">&amp;</span><span class="n">init</span><span class="p">);</span>
+
+    <span class="n">MPI_Finalize</span><span class="p">();</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="example-of-fortran-interface">
+<h4><span class="section-number">3.3.5.2. </span>Example of Fortran interface<a class="headerlink" href="#example-of-fortran-interface" title="Permalink to this headline">¶</a></h4>
+<div class="highlight-Fortran notranslate"><div class="highlight"><pre><span></span><span class="k">PROGRAM </span><span class="n">main</span>
+<span class="k">use </span><span class="n">mpi</span>
+<span class="k">use </span><span class="n">chase_diag</span> <span class="c">!use chase fortran interface module</span>
+
+<span class="kt">integer </span><span class="n">ierr</span><span class="p">,</span> <span class="n">init</span><span class="p">,</span> <span class="n">comm</span>
+<span class="kt">integer </span><span class="n">m</span><span class="p">,</span> <span class="n">n</span>
+<span class="kt">integer </span><span class="n">dims</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="kt">integer </span><span class="n">nn</span><span class="p">,</span> <span class="n">nev</span><span class="p">,</span> <span class="n">nex</span>
+<span class="kt">real</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span> <span class="kd">::</span> <span class="n">tol</span>
+<span class="kt">integer</span> <span class="kd">::</span> <span class="n">deg</span>
+<span class="kt">character</span>        <span class="kd">::</span> <span class="n">mode</span><span class="p">,</span> <span class="n">opt</span><span class="p">,</span> <span class="n">major</span>
+<span class="kt">complex</span><span class="p">(</span><span class="mi">8</span><span class="p">),</span>  <span class="k">allocatable</span> <span class="kd">::</span> <span class="n">h</span><span class="p">(:,:),</span> <span class="n">v</span><span class="p">(:,:)</span>
+<span class="kt">real</span><span class="p">(</span><span class="mi">8</span><span class="p">),</span> <span class="k">allocatable</span> <span class="kd">::</span> <span class="n">lambda</span><span class="p">(:)</span>
+
+<span class="k">call </span><span class="n">mpi_init</span><span class="p">(</span><span class="n">ierr</span><span class="p">)</span>
+
+<span class="n">nn</span> <span class="o">=</span> <span class="mi">1001</span> <span class="c">! global size of matrix</span>
+<span class="n">nev</span> <span class="o">=</span> <span class="mi">100</span> <span class="c">! number of eigenparis to compute</span>
+<span class="n">nex</span> <span class="o">=</span> <span class="mi">40</span> <span class="c">! size of external searching space</span>
+
+<span class="n">comm</span> <span class="o">=</span> <span class="n">MPI_COMM_WORLD</span> <span class="c">! working MPI communicator</span>
+<span class="c">! config</span>
+<span class="n">deg</span> <span class="o">=</span> <span class="mi">20</span>
+<span class="n">tol</span> <span class="o">=</span> <span class="mf">1e-10</span>
+<span class="n">mode</span> <span class="o">=</span> <span class="s1">&#39;R&#39;</span>
+<span class="n">opt</span> <span class="o">=</span> <span class="s1">&#39;S&#39;</span>
+<span class="n">major</span> <span class="o">=</span> <span class="s1">&#39;C&#39;</span>
+
+<span class="n">dims</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">=</span> <span class="mi">2</span> <span class="c">! row number of 2D MPI grid</span>
+<span class="n">dims</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">=</span> <span class="mi">2</span> <span class="c">! column number of 2D MPI grid</span>
+
+<span class="n">m</span> <span class="o">=</span> <span class="mi">501</span> <span class="c">! number of rows of local matrix on each MPI rank</span>
+<span class="n">n</span> <span class="o">=</span> <span class="mi">501</span> <span class="c">! number of columns of local matrix on each MPI rank</span>
+
+<span class="k">allocate</span><span class="p">(</span><span class="n">h</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">))</span> <span class="c">! allocate buffer to store local block of Hermitian matrix on each MPI rank</span>
+<span class="k">allocate</span><span class="p">(</span><span class="n">v</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">nev</span> <span class="o">+</span> <span class="n">nex</span><span class="p">))</span> <span class="c">! allocate buffer to store computed eigenvectors</span>
+<span class="k">allocate</span><span class="p">(</span><span class="n">lambda</span><span class="p">(</span><span class="n">nev</span> <span class="o">+</span> <span class="n">nex</span><span class="p">))</span> <span class="c">! allocate buffer to store computed eigenvalues</span>
+
+<span class="c">! Initialize of ChASE</span>
+<span class="k">call </span><span class="n">pzchase_init</span><span class="p">(</span><span class="n">nn</span><span class="p">,</span> <span class="n">nev</span><span class="p">,</span> <span class="n">nex</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">lambda</span><span class="p">,</span> <span class="n">dims</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">dims</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="n">major</span><span class="p">,</span> <span class="n">comm</span><span class="p">,</span> <span class="n">init</span><span class="p">)</span>
+
+<span class="c">!</span>
+<span class="c">!      Generating or loading matrix into H</span>
+<span class="c">!</span>
+
+<span class="c">! solve 1st eigenproblem with defined configuration of parameters</span>
+<span class="k">call </span><span class="n">pzchase</span><span class="p">(</span><span class="n">deg</span><span class="p">,</span> <span class="n">tol</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span> <span class="n">opt</span><span class="p">)</span>
+
+<span class="c">!</span>
+<span class="c">!      form a new eigenproblem by updating the buffer H</span>
+<span class="c">!</span>
+<span class="c">! Set the mode to &#39;A&#39;, which can recycle previous eigenvectors</span>
+<span class="n">mode</span> <span class="o">=</span> <span class="s1">&#39;A&#39;</span>
+
+<span class="c">! solve 2nd eigenproblem with updated parameters</span>
+<span class="k">call </span><span class="n">pzchase</span><span class="p">(</span><span class="n">deg</span><span class="p">,</span> <span class="n">tol</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span> <span class="n">opt</span><span class="p">)</span>
+
+<span class="c">! finalize and clean up</span>
+<span class="k">call </span><span class="n">pzchase_finalize</span><span class="p">(</span><span class="n">init</span><span class="p">)</span>
+
+<span class="k">call </span><span class="n">mpi_finalize</span><span class="p">(</span><span class="n">ierr</span><span class="p">)</span>
+
+
+<span class="k">END PROGRAM</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="parameters.html" class="btn btn-neutral float-right" title="4. Parameters and Configurations" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="installation.html" class="btn btn-neutral" title="2. Installation and Setup on a Cluster" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2023, SimLab Quantum Materials.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'v1.3.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="_static/language_data.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

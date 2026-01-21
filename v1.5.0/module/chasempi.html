@@ -1,0 +1,649 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ChaseMpi &mdash; ChASE v1.3.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../_static/ChASE_Logo_Favicon_RGB.png"/>
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="../theme_overrides.css" type="text/css" />
+  
+
+  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="ChASE v1.3.0 documentation" href="../index.html"/>
+    <link href="../_static/theme_overrides.css" rel="stylesheet" type="text/css">
+
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html">
+          
+
+          
+            
+            <img src="../_static/ChASE_Logo_RGB.png" class="logo" />
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                v1.3.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <p class="caption"><span class="caption-text">INTRODUCTION</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../chase.html">ChASE: an Iterative Solver for Dense Eigenproblems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../version.html">Versions of the library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../license.html">Licenses and Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reference.html">References and Contributors</a></li>
+</ul>
+<p class="caption"><span class="caption-text">USER DOCUMENTATION</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../quick-start.html">1. Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">2. Installation and Setup on a Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage.html">3. How to use ChASE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../parameters.html">4. Parameters and Configurations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../module.html">5. Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../example.html">6. Examples</a></li>
+</ul>
+<p class="caption"><span class="caption-text">DEVELOPER DOCUMENTATION</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../algorithm.html">1. General algorithm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../abstract.html">2. Virtual Abstract of Numerical Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../parallel.html">3. Parallel implementations</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">ChASE</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+    <li>ChaseMpi</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        
+          <a href="../_sources/module/chasempi.rst.txt" rel="nofollow"> View page source</a>
+        
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="chasempi">
+<span id="id1"></span><h1>ChaseMpi<a class="headerlink" href="#chasempi" title="Permalink to this headline">¶</a></h1>
+<dl class="cpp class">
+<dt id="_CPPv4II0E00EN5chase3mpi8ChaseMpiE">
+<span id="_CPPv3II0E00EN5chase3mpi8ChaseMpiE"></span><span id="_CPPv2II0E00EN5chase3mpi8ChaseMpiE"></span>template&lt;template&lt;typename&gt; class <code class="sig-name descname">MF</code>, class <code class="sig-name descname">T</code>&gt;<br /><span class="target" id="classchase_1_1mpi_1_1_chase_mpi"></span><em class="property">class </em><code class="sig-prename descclassname"><a class="reference internal" href="../.unused_material/reference/chase.html#_CPPv45chaseP13MKL_Complex16iP13MKL_Complex16P13MKL_Complex16PdiKiKiPCiKdK15CHASE_MODE_TYPEK14CHASE_OPT_TYPE" title="chase">chase</a>::mpi<code class="sig-prename descclassname">::</code></code><code class="sig-name descname">ChaseMpi</code> : <em class="property">public</em> <a class="reference internal" href="../.unused_material/reference/chase.html#_CPPv45chaseP13MKL_Complex16iP13MKL_Complex16P13MKL_Complex16PdiKiKiPCiKdK15CHASE_MODE_TYPEK14CHASE_OPT_TYPE" title="chase">chase</a>::Chase&lt;<a class="reference internal" href="#_CPPv4II0E00EN5chase3mpi8ChaseMpiE" title="chase::mpi::ChaseMpi::T">T</a>&gt;<a class="headerlink" href="#_CPPv4II0E00EN5chase3mpi8ChaseMpiE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>A derived class of <a class="reference internal" href="../abstract.html#classchase_1_1_chase"><span class="std std-ref">Chase</span></a> to implement ChASE based on MPI and Dense Linear Algebra (<strong>DLA</strong>) routines. </p>
+<p>This is a calls derived from the <a class="reference internal" href="../abstract.html#classchase_1_1_chase"><span class="std std-ref">Chase</span></a> class which plays the role of interface for the kernels used by the library.<ul class="simple">
+<li><p>All members of the <a class="reference internal" href="../abstract.html#classchase_1_1_chase"><span class="std std-ref">Chase</span></a> class are virtual functions. These functions are re-implemented in the <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi"><span class="std std-ref">ChaseMpi</span></a> class.</p></li>
+<li><p>All the members functions of <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi"><span class="std std-ref">ChaseMpi</span></a>, which are the implementation of the virtual functions in class <a class="reference internal" href="../abstract.html#classchase_1_1_chase"><span class="std std-ref">Chase</span></a>, are implemented using the <em>DLA</em> routines provided by the class <a class="reference internal" href="chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>.</p></li>
+<li><p>The DLA functions in <a class="reference internal" href="chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a> are also vritual functions, which are differently implemented targeting different computing architectures (sequential/parallel, CPU/GPU, shared-memory/distributed-memory, etc). In the class <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi"><span class="std std-ref">ChaseMpi</span></a>, the calling of DLA functions are indeed calling their implementations from different derived classes. Thus this <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi"><span class="std std-ref">ChaseMpi</span></a> class is able to have customized implementation for various architectures.</p></li>
+<li><p>For the implementation of the class <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi"><span class="std std-ref">ChaseMpi</span></a> targeting distributed-memory platforms based on MPI, the setup of MPI environment and communication scheme, and the distribution of data (matrix, vectors) across MPI nodes are following the <a class="reference internal" href="chasempiproperties.html#classchase_1_1mpi_1_1_chase_mpi_properties"><span class="std std-ref">ChaseMpiProperties</span></a> class, the distribution of matrix can be either <strong>Block</strong> or <strong>Block-Cyclic</strong> scheme. <dl class="simple">
+<dt><strong>Template Parameters</strong></dt><dd><ul class="breatheparameterlist">
+<li><p><code class="docutils literal notranslate"><span class="pre">MF</span></code>: A class derived from <a class="reference internal" href="chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>, which indicates the selected implementation of DLA that to be used by <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi"><span class="std std-ref">ChaseMpi</span></a> Object. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">T</span></code>: the scalar type used for the application. ChASE is templated for real and complex numbers with both Single Precision and Double Precision, thus <code class="docutils literal notranslate"><span class="pre">T</span></code> can be one of <code class="docutils literal notranslate"><span class="pre">float</span></code>, <code class="docutils literal notranslate"><span class="pre">double</span></code>, <code class="docutils literal notranslate"><span class="pre">std::complex&lt;float&gt;</span></code> and <code class="docutils literal notranslate"><span class="pre">std::complex&lt;double&gt;</span></code>. </p></li>
+</ul>
+</dd>
+</dl>
+</p></li>
+</ul>
+</p>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric">Public Functions</p>
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi8ChaseMpi8ChaseMpiENSt6size_tENSt6size_tENSt6size_tEP1TP4BaseI1TEP1TP1TP4BaseI1TE">
+<span id="_CPPv3N5chase3mpi8ChaseMpi8ChaseMpiENSt6size_tENSt6size_tENSt6size_tEP1TP4BaseI1TEP1TP1TP4BaseI1TE"></span><span id="_CPPv2N5chase3mpi8ChaseMpi8ChaseMpiENSt6size_tENSt6size_tENSt6size_tEP1TP4BaseI1TEP1TP1TP4BaseI1TE"></span><span id="chase::mpi::ChaseMpi::ChaseMpi__std::s.std::s.std::s.TP.Base:T:P.TP.TP.Base:T:P"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_1aba894e2911d1de27cbf793c4fd30684f"></span><code class="sig-name descname">ChaseMpi</code><span class="sig-paren">(</span>std::size_t <em>N</em>, std::size_t <em>nev</em>, std::size_t <em>nex</em>, <a class="reference internal" href="#_CPPv4II0E00EN5chase3mpi8ChaseMpiE" title="chase::mpi::ChaseMpi::T">T</a> *<em>V1</em> = nullptr, Base&lt;<a class="reference internal" href="#_CPPv4II0E00EN5chase3mpi8ChaseMpiE" title="chase::mpi::ChaseMpi::T">T</a>&gt; *<em>ritzv</em> = nullptr, <a class="reference internal" href="#_CPPv4II0E00EN5chase3mpi8ChaseMpiE" title="chase::mpi::ChaseMpi::T">T</a> *<em>H</em> = nullptr, <a class="reference internal" href="#_CPPv4II0E00EN5chase3mpi8ChaseMpiE" title="chase::mpi::ChaseMpi::T">T</a> *<em>V2</em> = nullptr, Base&lt;<a class="reference internal" href="#_CPPv4II0E00EN5chase3mpi8ChaseMpiE" title="chase::mpi::ChaseMpi::T">T</a>&gt; *<em>resid</em> = nullptr<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi8ChaseMpi8ChaseMpiENSt6size_tENSt6size_tENSt6size_tEP1TP4BaseI1TEP1TP1TP4BaseI1TE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>A constructor of the <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi"><span class="std std-ref">ChaseMpi</span></a> class which gives an implenentation of ChASE for shared-memory architecture, without MPI.</p>
+<p>The private members of this classes are initialized by the parameters of this constructor.<ul class="simple">
+<li><p>For the variable <code class="docutils literal notranslate"><span class="pre">N_</span></code>, it is initialized by the first parameter of this constructor <code class="docutils literal notranslate"><span class="pre">N</span></code>.</p></li>
+<li><p>The variables <code class="docutils literal notranslate"><span class="pre">nev_</span></code> and and <code class="docutils literal notranslate"><span class="pre">nex_</span></code> are initialized by the parameters of this constructor <code class="docutils literal notranslate"><span class="pre">nev</span></code> and <code class="docutils literal notranslate"><span class="pre">nex</span></code>, respectively.</p></li>
+<li><p>The variable <code class="docutils literal notranslate"><span class="pre">rank_</span></code> is set to be 0 since non MPI is supported. The variable <code class="docutils literal notranslate"><span class="pre">locked_</span></code> is initially set to be 0.</p></li>
+<li><p>The variable <code class="docutils literal notranslate"><span class="pre">config_</span></code> is setup by the constructor of <a class="reference internal" href="config.html#classchase_1_1_chase_config"><span class="std std-ref">ChaseConfig</span></a> which takes the parameters <code class="docutils literal notranslate"><span class="pre">N</span></code>, <code class="docutils literal notranslate"><span class="pre">nev</span></code> and <code class="docutils literal notranslate"><span class="pre">nex</span></code>.</p></li>
+<li><p>The variable <code class="docutils literal notranslate"><span class="pre">matrices_</span></code> is setup directly by the constructor of <a class="reference internal" href="chasempimatrices.html#classchase_1_1mpi_1_1_chase_mpi_matrices"><span class="std std-ref">ChaseMpiMatrices</span></a> which takes the paramter <code class="docutils literal notranslate"><span class="pre">H</span></code>, <code class="docutils literal notranslate"><span class="pre">N</span></code>, <code class="docutils literal notranslate"><span class="pre">nev</span></code>, <code class="docutils literal notranslate"><span class="pre">nex</span></code>, <code class="docutils literal notranslate"><span class="pre">V1</span></code>, <code class="docutils literal notranslate"><span class="pre">ritzv</span></code>, <code class="docutils literal notranslate"><span class="pre">V2</span></code> and <code class="docutils literal notranslate"><span class="pre">resid</span></code>.</p></li>
+<li><p>The variable <code class="docutils literal notranslate"><span class="pre">dla_</span></code> is initialized by <code class="docutils literal notranslate"><span class="pre">MF</span></code> which is a derived class of <a class="reference internal" href="chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>. In ChASE, the candidates of <code class="docutils literal notranslate"><span class="pre">MF</span></code> for non-MPI case are the classes <code class="docutils literal notranslate"><a class="reference internal" href="../parallel/seq.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_blaslapack_seq"><span class="std std-ref"><span class="pre">ChaseMpiDLABlaslapackSeq</span></span></a></code>, <code class="docutils literal notranslate"><a class="reference internal" href="../parallel/seqinplace.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_blaslapack_seq_inplace"><span class="std std-ref"><span class="pre">ChaseMpiDLABlaslapackSeqInplace</span></span></a></code> and <code class="docutils literal notranslate"><a class="reference internal" href="../parallel/gpu_seq.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_cuda_seq"><span class="std std-ref"><span class="pre">ChaseMpiDLACudaSeq</span></span></a></code>.</p></li>
+</ul>
+</p>
+<p><dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">N</span></code>: size of the square matrix defining the eigenproblem. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">nev</span></code>: Number of desired extremal eigenvalues. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">nex</span></code>: Number of eigenvalues augmenting the search space. Usually a relatively small fraction of <code class="docutils literal notranslate"><span class="pre">nev</span></code>. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">V1</span></code>: a pointer to a rectangular matrix of size <code class="docutils literal notranslate"><span class="pre">N</span> <span class="pre">*</span> <span class="pre">(nev+nex)</span></code>. If <code class="docutils literal notranslate"><span class="pre">V1</span></code> is not provided by the user, it will be internally allocated in <a class="reference internal" href="chasempimatrices.html#classchase_1_1mpi_1_1_chase_mpi_matrices"><span class="std std-ref">ChaseMpiMatrices</span></a> class. After the solving step, the first <code class="docutils literal notranslate"><span class="pre">nev</span></code> columns of <code class="docutils literal notranslate"><span class="pre">V1</span></code> are overwritten by the desired Ritz vectors. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ritzv</span></code>: a pointer to an array to store the computed Ritz values. If <code class="docutils literal notranslate"><span class="pre">ritzv</span></code> is not provided by the user, it will be internally allocated in <a class="reference internal" href="chasempimatrices.html#classchase_1_1mpi_1_1_chase_mpi_matrices"><span class="std std-ref">ChaseMpiMatrices</span></a> class. Its minimal size should be <code class="docutils literal notranslate"><span class="pre">nev+nex</span></code>. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">H</span></code>: a pointer to the memory which stores local part of matrix on each MPI rank. If <code class="docutils literal notranslate"><span class="pre">H</span></code> is not provided by the user, it will be internally allocated in <a class="reference internal" href="chasempimatrices.html#classchase_1_1mpi_1_1_chase_mpi_matrices"><span class="std std-ref">ChaseMpiMatrices</span></a> class. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">V2</span></code>: a pointer to anther rectangular matrix of size <code class="docutils literal notranslate"><span class="pre">N</span> <span class="pre">*</span> <span class="pre">(nev+nex)</span></code>. f <code class="docutils literal notranslate"><span class="pre">V2</span></code> is not provided by the user, it will be internally allocated in <a class="reference internal" href="chasempimatrices.html#classchase_1_1mpi_1_1_chase_mpi_matrices"><span class="std std-ref">ChaseMpiMatrices</span></a> class. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">resid</span></code>: a pointer to an array to store the residual of computed eigenpairs. If <code class="docutils literal notranslate"><span class="pre">resid</span></code> is not provided by the user, it will be internally allocated in <a class="reference internal" href="chasempimatrices.html#classchase_1_1mpi_1_1_chase_mpi_matrices"><span class="std std-ref">ChaseMpiMatrices</span></a> class. Its minimal size should be <code class="docutils literal notranslate"><span class="pre">nev+nex</span></code>. </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi8ChaseMpi8ChaseMpiEP18ChaseMpiPropertiesI1TEP1TP4BaseI1TEP1TP4BaseI1TE">
+<span id="_CPPv3N5chase3mpi8ChaseMpi8ChaseMpiEP18ChaseMpiPropertiesI1TEP1TP4BaseI1TEP1TP4BaseI1TE"></span><span id="_CPPv2N5chase3mpi8ChaseMpi8ChaseMpiEP18ChaseMpiPropertiesI1TEP1TP4BaseI1TEP1TP4BaseI1TE"></span><span id="chase::mpi::ChaseMpi::ChaseMpi__ChaseMpiProperties:T:P.TP.Base:T:P.TP.Base:T:P"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_1a52875d589e89913da66483364a3bb371"></span><code class="sig-name descname">ChaseMpi</code><span class="sig-paren">(</span><a class="reference internal" href="chasempiproperties.html#_CPPv4I0EN5chase3mpi18ChaseMpiPropertiesE" title="chase::mpi::ChaseMpiProperties">ChaseMpiProperties</a>&lt;<a class="reference internal" href="#_CPPv4II0E00EN5chase3mpi8ChaseMpiE" title="chase::mpi::ChaseMpi::T">T</a>&gt; *<em>properties</em>, <a class="reference internal" href="#_CPPv4II0E00EN5chase3mpi8ChaseMpiE" title="chase::mpi::ChaseMpi::T">T</a> *<em>V1</em> = nullptr, Base&lt;<a class="reference internal" href="#_CPPv4II0E00EN5chase3mpi8ChaseMpiE" title="chase::mpi::ChaseMpi::T">T</a>&gt; *<em>ritzv</em> = nullptr, <a class="reference internal" href="#_CPPv4II0E00EN5chase3mpi8ChaseMpiE" title="chase::mpi::ChaseMpi::T">T</a> *<em>V2</em> = nullptr, Base&lt;<a class="reference internal" href="#_CPPv4II0E00EN5chase3mpi8ChaseMpiE" title="chase::mpi::ChaseMpi::T">T</a>&gt; *<em>resid</em> = nullptr<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi8ChaseMpi8ChaseMpiEP18ChaseMpiPropertiesI1TEP1TP4BaseI1TEP1TP4BaseI1TE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>A constructor of the <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi"><span class="std std-ref">ChaseMpi</span></a> class which gives an implenentation of ChASE for distributed-memory architecture, with the support of MPI. In this case, the buffer for matrix <code class="docutils literal notranslate"><span class="pre">H</span></code> is allocated internally.</p>
+<p>The private members of this classes are initialized by the parameters of this constructor.<ul class="simple">
+<li><p>For the variable <code class="docutils literal notranslate"><span class="pre">N_</span></code>, <code class="docutils literal notranslate"><span class="pre">nev_</span></code> and <code class="docutils literal notranslate"><span class="pre">nex_</span></code> are initialized by the first parameter of this constructor <code class="docutils literal notranslate"><span class="pre">properties_</span></code>.</p></li>
+<li><p>The variable <code class="docutils literal notranslate"><span class="pre">rank_</span></code> is initialized by <code class="docutils literal notranslate"><span class="pre">MPI_Comm_rank</span></code>. The variable <code class="docutils literal notranslate"><span class="pre">locked_</span></code> is initially set to be 0.</p></li>
+<li><p>The variable <code class="docutils literal notranslate"><span class="pre">config_</span></code> is setup by the constructor of <a class="reference internal" href="config.html#classchase_1_1_chase_config"><span class="std std-ref">ChaseConfig</span></a> which takes the parameters <code class="docutils literal notranslate"><span class="pre">N</span></code>, <code class="docutils literal notranslate"><span class="pre">nev</span></code> and <code class="docutils literal notranslate"><span class="pre">nex</span></code>.</p></li>
+<li><p>The variable <code class="docutils literal notranslate"><span class="pre">matrices_</span></code> is constructed by the <code class="docutils literal notranslate"><span class="pre">create_matrices</span></code> function defined in <a class="reference internal" href="chasempiproperties.html#classchase_1_1mpi_1_1_chase_mpi_properties"><span class="std std-ref">ChaseMpiProperties</span></a>.</p></li>
+<li><p>The variable <code class="docutils literal notranslate"><span class="pre">dla_</span></code> for the distributed-memory is initialized by the constructor of <a class="reference internal" href="../parallel/mpi_dla.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a"><span class="std std-ref">ChaseMpiDLA</span></a> which takes both <code class="docutils literal notranslate"><span class="pre">properties_</span></code> and <code class="docutils literal notranslate"><span class="pre">MF</span></code>. In MPI case, the implementation of are split into two classses:<ul>
+<li><p>the class <a class="reference internal" href="../parallel/mpi_dla.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a"><span class="std std-ref">ChaseMpiDLA</span></a> implements mainly the MPI collective communication part of ChASE with MPI support.</p></li>
+<li><p>The local computation tasks within each MPI is implemented by another two classes derived also from the class <a class="reference internal" href="chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>: <a class="reference internal" href="../parallel/cpu.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_blaslapack"><span class="std std-ref">ChaseMpiDLABlaslapack</span></a> for pure-CPUs version and <a class="reference internal" href="../parallel/gpu.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u"><span class="std std-ref">ChaseMpiDLAMultiGPU</span></a> for multi-GPUs version.</p></li>
+<li><p>Thus, for this constructor, a combination of <a class="reference internal" href="../parallel/mpi_dla.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a"><span class="std std-ref">ChaseMpiDLA</span></a> and one of <a class="reference internal" href="../parallel/cpu.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_blaslapack"><span class="std std-ref">ChaseMpiDLABlaslapack</span></a> and <a class="reference internal" href="../parallel/gpu.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u"><span class="std std-ref">ChaseMpiDLAMultiGPU</span></a> is required.</p></li>
+</ul>
+</p></li>
+</ul>
+</p>
+<p><dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">properties</span></code>: an object of <a class="reference internal" href="chasempiproperties.html#classchase_1_1mpi_1_1_chase_mpi_properties"><span class="std std-ref">ChaseMpiProperties</span></a> which setups the MPI environment and data distribution scheme for <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi"><span class="std std-ref">ChaseMpi</span></a> targeting distributed-memory systems. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">V1</span></code>: a pointer to a rectangular matrix of size <code class="docutils literal notranslate"><span class="pre">m</span> <span class="pre">*</span> <span class="pre">(nev+nex)</span></code>. <code class="docutils literal notranslate"><span class="pre">m</span></code> can be obtained through <a class="reference internal" href="chasempiproperties.html#classchase_1_1mpi_1_1_chase_mpi_properties_1a01fde078c77e8000431e6c09a487aed3"><span class="std std-ref">ChaseMpiProperties::get_m()</span></a>. <code class="docutils literal notranslate"><span class="pre">V1</span></code> is partially distributed within each <code class="docutils literal notranslate"><span class="pre">column</span> <span class="pre">communicator</span></code> and is redundant among different <code class="docutils literal notranslate"><span class="pre">column</span> <span class="pre">communicator</span></code>. If <code class="docutils literal notranslate"><span class="pre">V1</span></code> is not provided by the user, it will be internally allocated in <a class="reference internal" href="chasempimatrices.html#classchase_1_1mpi_1_1_chase_mpi_matrices"><span class="std std-ref">ChaseMpiMatrices</span></a> class. After the solving step, the first <code class="docutils literal notranslate"><span class="pre">nev</span></code> columns of <code class="docutils literal notranslate"><span class="pre">V1</span></code> are overwritten by the desired Ritz vectors. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ritzv</span></code>: a pointer to an array to store the computed Ritz values. If <code class="docutils literal notranslate"><span class="pre">ritzv</span></code> is not provided by the user, it will be internally allocated in <a class="reference internal" href="chasempimatrices.html#classchase_1_1mpi_1_1_chase_mpi_matrices"><span class="std std-ref">ChaseMpiMatrices</span></a> class. Its minimal size should be <code class="docutils literal notranslate"><span class="pre">nev+nex</span></code>. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">V2</span></code>: a pointer to anther rectangular matrix of size <code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">*</span> <span class="pre">(nev+nex)</span></code>. If <code class="docutils literal notranslate"><span class="pre">V2</span></code> is not provided by the user, it will be internally allocated in <a class="reference internal" href="chasempimatrices.html#classchase_1_1mpi_1_1_chase_mpi_matrices"><span class="std std-ref">ChaseMpiMatrices</span></a> class. <code class="docutils literal notranslate"><span class="pre">n</span></code> can be obtained through <a class="reference internal" href="chasempiproperties.html#classchase_1_1mpi_1_1_chase_mpi_properties_1a5f4e469bb77db1b27159008ae0674e5e"><span class="std std-ref">ChaseMpiProperties::get_n()</span></a>. <code class="docutils literal notranslate"><span class="pre">V2</span></code> is partially distributed within each <code class="docutils literal notranslate"><span class="pre">row</span> <span class="pre">communicator</span></code> and is redundant among different <code class="docutils literal notranslate"><span class="pre">row</span> <span class="pre">communicator</span></code>. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">resid</span></code>: a pointer to an array to store the residual of computed eigenpairs. If <code class="docutils literal notranslate"><span class="pre">resid</span></code> is not provided by the user, it will be internally allocated in <a class="reference internal" href="chasempimatrices.html#classchase_1_1mpi_1_1_chase_mpi_matrices"><span class="std std-ref">ChaseMpiMatrices</span></a> class. Its minimal size should be <code class="docutils literal notranslate"><span class="pre">nev+nex</span></code>. </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi8ChaseMpi8ChaseMpiEP18ChaseMpiPropertiesI1TEP1TNSt6size_tEP1TP4BaseI1TEP1TP4BaseI1TE">
+<span id="_CPPv3N5chase3mpi8ChaseMpi8ChaseMpiEP18ChaseMpiPropertiesI1TEP1TNSt6size_tEP1TP4BaseI1TEP1TP4BaseI1TE"></span><span id="_CPPv2N5chase3mpi8ChaseMpi8ChaseMpiEP18ChaseMpiPropertiesI1TEP1TNSt6size_tEP1TP4BaseI1TEP1TP4BaseI1TE"></span><span id="chase::mpi::ChaseMpi::ChaseMpi__ChaseMpiProperties:T:P.TP.std::s.TP.Base:T:P.TP.Base:T:P"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_1ab8446330e73526be940c09e7a8d9ac72"></span><code class="sig-name descname">ChaseMpi</code><span class="sig-paren">(</span><a class="reference internal" href="chasempiproperties.html#_CPPv4I0EN5chase3mpi18ChaseMpiPropertiesE" title="chase::mpi::ChaseMpiProperties">ChaseMpiProperties</a>&lt;<a class="reference internal" href="#_CPPv4II0E00EN5chase3mpi8ChaseMpiE" title="chase::mpi::ChaseMpi::T">T</a>&gt; *<em>properties</em>, <a class="reference internal" href="#_CPPv4II0E00EN5chase3mpi8ChaseMpiE" title="chase::mpi::ChaseMpi::T">T</a> *<em>H</em>, std::size_t <em>ldh</em>, <a class="reference internal" href="#_CPPv4II0E00EN5chase3mpi8ChaseMpiE" title="chase::mpi::ChaseMpi::T">T</a> *<em>V1</em>, Base&lt;<a class="reference internal" href="#_CPPv4II0E00EN5chase3mpi8ChaseMpiE" title="chase::mpi::ChaseMpi::T">T</a>&gt; *<em>ritzv</em>, <a class="reference internal" href="#_CPPv4II0E00EN5chase3mpi8ChaseMpiE" title="chase::mpi::ChaseMpi::T">T</a> *<em>V2</em> = nullptr, Base&lt;<a class="reference internal" href="#_CPPv4II0E00EN5chase3mpi8ChaseMpiE" title="chase::mpi::ChaseMpi::T">T</a>&gt; *<em>resid</em> = nullptr<span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi8ChaseMpi8ChaseMpiEP18ChaseMpiPropertiesI1TEP1TNSt6size_tEP1TP4BaseI1TEP1TP4BaseI1TE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>A constructor of the <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi"><span class="std std-ref">ChaseMpi</span></a> class which gives an implenentation of ChASE for distributed-memory architecture, with the support of MPI. In this case, the buffer for matrix <code class="docutils literal notranslate"><span class="pre">H</span></code> should be allocated externally and provided by users.</p>
+<p>The private members of this classes are initialized by the parameters of this constructor.<ul class="simple">
+<li><p>For the variable <code class="docutils literal notranslate"><span class="pre">N_</span></code>, <code class="docutils literal notranslate"><span class="pre">nev_</span></code> and <code class="docutils literal notranslate"><span class="pre">nex_</span></code> are initialized by the first parameter of this constructor <code class="docutils literal notranslate"><span class="pre">properties_</span></code>.</p></li>
+<li><p>The variable <code class="docutils literal notranslate"><span class="pre">rank_</span></code> is initialized by <code class="docutils literal notranslate"><span class="pre">MPI_Comm_rank</span></code>. The variable <code class="docutils literal notranslate"><span class="pre">locked_</span></code> is initially set to be 0.</p></li>
+<li><p>The variable <code class="docutils literal notranslate"><span class="pre">config_</span></code> is setup by the constructor of <a class="reference internal" href="config.html#classchase_1_1_chase_config"><span class="std std-ref">ChaseConfig</span></a> which takes the parameters <code class="docutils literal notranslate"><span class="pre">N</span></code>, <code class="docutils literal notranslate"><span class="pre">nev</span></code> and <code class="docutils literal notranslate"><span class="pre">nex</span></code>.</p></li>
+<li><p>The variable <code class="docutils literal notranslate"><span class="pre">matrices_</span></code> is constructed by the <code class="docutils literal notranslate"><span class="pre">create_matrices</span></code> function defined in <a class="reference internal" href="chasempiproperties.html#classchase_1_1mpi_1_1_chase_mpi_properties"><span class="std std-ref">ChaseMpiProperties</span></a>.</p></li>
+<li><p>The variable <code class="docutils literal notranslate"><span class="pre">dla_</span></code> for the distributed-memory is initialized by the constructor of <a class="reference internal" href="../parallel/mpi_dla.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a"><span class="std std-ref">ChaseMpiDLA</span></a> which takes both <code class="docutils literal notranslate"><span class="pre">properties_</span></code> and <code class="docutils literal notranslate"><span class="pre">MF</span></code>. In MPI case, the implementation of are split into two classses:<ul>
+<li><p>the class <a class="reference internal" href="../parallel/mpi_dla.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a"><span class="std std-ref">ChaseMpiDLA</span></a> implements mainly the MPI collective communication part of ChASE with MPI support.</p></li>
+<li><p>The local computation tasks within each MPI is implemented by another two classes derived also from the class <a class="reference internal" href="chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>: <a class="reference internal" href="../parallel/cpu.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_blaslapack"><span class="std std-ref">ChaseMpiDLABlaslapack</span></a> for pure-CPUs version and <a class="reference internal" href="../parallel/gpu.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u"><span class="std std-ref">ChaseMpiDLAMultiGPU</span></a> for multi-GPUs version.</p></li>
+<li><p>Thus, for this constructor, a combination of <a class="reference internal" href="../parallel/mpi_dla.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a"><span class="std std-ref">ChaseMpiDLA</span></a> and one of <a class="reference internal" href="../parallel/cpu.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_blaslapack"><span class="std std-ref">ChaseMpiDLABlaslapack</span></a> and <a class="reference internal" href="../parallel/gpu.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u"><span class="std std-ref">ChaseMpiDLAMultiGPU</span></a> is required.</p></li>
+</ul>
+</p></li>
+</ul>
+</p>
+<p><dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">properties</span></code>: an object of <a class="reference internal" href="chasempiproperties.html#classchase_1_1mpi_1_1_chase_mpi_properties"><span class="std std-ref">ChaseMpiProperties</span></a> which setups the MPI environment and data distribution scheme for <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi"><span class="std std-ref">ChaseMpi</span></a> targeting distributed-memory systems. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">H</span></code>: a pointer to a local matrix of the distributed Symmetric/Hermtitian matrix to be diagonalised. It should be provided and allocated by users. The minimal dimension is <code class="docutils literal notranslate"><span class="pre">mxn</span></code>, in which <code class="docutils literal notranslate"><span class="pre">m</span></code> and <code class="docutils literal notranslate"><span class="pre">n</span></code> can be obtained through <a class="reference internal" href="chasempiproperties.html#classchase_1_1mpi_1_1_chase_mpi_properties_1a01fde078c77e8000431e6c09a487aed3"><span class="std std-ref">ChaseMpiProperties::get_m()</span></a> and <a class="reference internal" href="chasempiproperties.html#classchase_1_1mpi_1_1_chase_mpi_properties_1a5f4e469bb77db1b27159008ae0674e5e"><span class="std std-ref">ChaseMpiProperties::get_n()</span></a>. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ldh</span></code>: leading dimension of local matrix <code class="docutils literal notranslate"><span class="pre">H</span></code>, it should be <code class="docutils literal notranslate"><span class="pre">&gt;=</span></code> <a class="reference internal" href="chasempiproperties.html#classchase_1_1mpi_1_1_chase_mpi_properties_1a01fde078c77e8000431e6c09a487aed3"><span class="std std-ref">ChaseMpiProperties::get_m()</span></a> </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">V1</span></code>: a pointer to a rectangular matrix of size <code class="docutils literal notranslate"><span class="pre">m</span> <span class="pre">*</span> <span class="pre">(nev+nex)</span></code>. <code class="docutils literal notranslate"><span class="pre">m</span></code> can be obtained through <a class="reference internal" href="chasempiproperties.html#classchase_1_1mpi_1_1_chase_mpi_properties_1a01fde078c77e8000431e6c09a487aed3"><span class="std std-ref">ChaseMpiProperties::get_m()</span></a>. <code class="docutils literal notranslate"><span class="pre">V1</span></code> is partially distributed within each <code class="docutils literal notranslate"><span class="pre">column</span> <span class="pre">communicator</span></code> and is redundant among different <code class="docutils literal notranslate"><span class="pre">column</span> <span class="pre">communicator</span></code>. If <code class="docutils literal notranslate"><span class="pre">V1</span></code> is not provided by the user, it will be internally allocated in <a class="reference internal" href="chasempimatrices.html#classchase_1_1mpi_1_1_chase_mpi_matrices"><span class="std std-ref">ChaseMpiMatrices</span></a> class. After the solving step, the first <code class="docutils literal notranslate"><span class="pre">nev</span></code> columns of <code class="docutils literal notranslate"><span class="pre">V1</span></code> are overwritten by the desired Ritz vectors. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ritzv</span></code>: a pointer to an array to store the computed Ritz values. If <code class="docutils literal notranslate"><span class="pre">ritzv</span></code> is not provided by the user, it will be internally allocated in <a class="reference internal" href="chasempimatrices.html#classchase_1_1mpi_1_1_chase_mpi_matrices"><span class="std std-ref">ChaseMpiMatrices</span></a> class. Its minimal size should be <code class="docutils literal notranslate"><span class="pre">nev+nex</span></code>. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">V2</span></code>: a pointer to anther rectangular matrix of size <code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">*</span> <span class="pre">(nev+nex)</span></code>. <code class="docutils literal notranslate"><span class="pre">V2</span></code> is partially distributed within each <code class="docutils literal notranslate"><span class="pre">row</span> <span class="pre">communicator</span></code> and is redundant among different <code class="docutils literal notranslate"><span class="pre">row</span> <span class="pre">communicator</span></code>. If <code class="docutils literal notranslate"><span class="pre">V2</span></code> is not provided by the user, it will be internally allocated in <a class="reference internal" href="chasempimatrices.html#classchase_1_1mpi_1_1_chase_mpi_matrices"><span class="std std-ref">ChaseMpiMatrices</span></a> class. <code class="docutils literal notranslate"><span class="pre">m</span></code> can be obtained through <a class="reference internal" href="chasempiproperties.html#classchase_1_1mpi_1_1_chase_mpi_properties_1a5f4e469bb77db1b27159008ae0674e5e"><span class="std std-ref">ChaseMpiProperties::get_n()</span></a>. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">resid</span></code>: a pointer to an array to store the residual of computed eigenpairs. If <code class="docutils literal notranslate"><span class="pre">resid</span></code> is not provided by the user, it will be internally allocated in <a class="reference internal" href="chasempimatrices.html#classchase_1_1mpi_1_1_chase_mpi_matrices"><span class="std std-ref">ChaseMpiMatrices</span></a> class. Its minimal size should be <code class="docutils literal notranslate"><span class="pre">nev+nex</span></code>. </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi8ChaseMpi8ChaseMpiERK8ChaseMpi">
+<span id="_CPPv3N5chase3mpi8ChaseMpi8ChaseMpiERK8ChaseMpi"></span><span id="_CPPv2N5chase3mpi8ChaseMpi8ChaseMpiERK8ChaseMpi"></span><span id="chase::mpi::ChaseMpi::ChaseMpi__ChaseMpiCR"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_1aa7e98fb6b9f97c64d57bd8bbec34b2d7"></span><code class="sig-name descname">ChaseMpi</code><span class="sig-paren">(</span><em class="property">const</em> <a class="reference internal" href="#_CPPv4N5chase3mpi8ChaseMpi8ChaseMpiERK8ChaseMpi" title="chase::mpi::ChaseMpi::ChaseMpi">ChaseMpi</a>&amp;<span class="sig-paren">)</span> = delete<a class="headerlink" href="#_CPPv4N5chase3mpi8ChaseMpi8ChaseMpiERK8ChaseMpi" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>It prevents the copy operation of the constructor of <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi"><span class="std std-ref">ChaseMpi</span></a>. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi8ChaseMpi9GetConfigEv">
+<span id="_CPPv3N5chase3mpi8ChaseMpi9GetConfigEv"></span><span id="_CPPv2N5chase3mpi8ChaseMpi9GetConfigEv"></span><span id="chase::mpi::ChaseMpi::GetConfig"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_1aa64b2b992dbf144cb1d3956ba09a40b9"></span><a class="reference internal" href="config.html#_CPPv4I0EN5chase11ChaseConfigE" title="chase::ChaseConfig">ChaseConfig</a>&lt;<a class="reference internal" href="#_CPPv4II0E00EN5chase3mpi8ChaseMpiE" title="chase::mpi::ChaseMpi::T">T</a>&gt; &amp;<code class="sig-name descname">GetConfig</code><span class="sig-paren">(</span><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi8ChaseMpi9GetConfigEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>This member function implements the virtual one declared in <a class="reference internal" href="../abstract.html#classchase_1_1_chase"><span class="std std-ref">Chase</span></a> class. <dl class="simple">
+<dt><strong>Return</strong></dt><dd><p><code class="docutils literal notranslate"><span class="pre">config_</span></code>: an object of <a class="reference internal" href="config.html#classchase_1_1_chase_config"><span class="std std-ref">ChaseConfig</span></a> class which defines the eigensolver. </p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4NK5chase3mpi8ChaseMpi4GetNEv">
+<span id="_CPPv3NK5chase3mpi8ChaseMpi4GetNEv"></span><span id="_CPPv2NK5chase3mpi8ChaseMpi4GetNEv"></span><span id="chase::mpi::ChaseMpi::GetNC"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_1a2718badf1d23d301573e31738b729b76"></span>std::size_t <code class="sig-name descname">GetN</code><span class="sig-paren">(</span><span class="sig-paren">)</span> <em class="property">const</em> <em class="property">override</em><a class="headerlink" href="#_CPPv4NK5chase3mpi8ChaseMpi4GetNEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>This member function implements the virtual one declared in <a class="reference internal" href="../abstract.html#classchase_1_1_chase"><span class="std std-ref">Chase</span></a> class. Returns the rank of matrix A which is distributed within 2D MPI grid. <dl class="simple">
+<dt><strong>Return</strong></dt><dd><p><code class="docutils literal notranslate"><span class="pre">N_</span></code>: the rank of matrix <code class="docutils literal notranslate"><span class="pre">A</span></code>. </p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi8ChaseMpi6GetNevEv">
+<span id="_CPPv3N5chase3mpi8ChaseMpi6GetNevEv"></span><span id="_CPPv2N5chase3mpi8ChaseMpi6GetNevEv"></span><span id="chase::mpi::ChaseMpi::GetNev"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_1a470b7885a382bcdc420551f204066f3e"></span>std::size_t <code class="sig-name descname">GetNev</code><span class="sig-paren">(</span><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi8ChaseMpi6GetNevEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>This member function implements the virtual one declared in <a class="reference internal" href="../abstract.html#classchase_1_1_chase"><span class="std std-ref">Chase</span></a> class. Returns Number of desired extremal eigenpairs, which was set by users. <dl class="simple">
+<dt><strong>Return</strong></dt><dd><p><code class="docutils literal notranslate"><span class="pre">nev_</span></code>: Number of desired extremal eigenpairs. </p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi8ChaseMpi6GetNexEv">
+<span id="_CPPv3N5chase3mpi8ChaseMpi6GetNexEv"></span><span id="_CPPv2N5chase3mpi8ChaseMpi6GetNexEv"></span><span id="chase::mpi::ChaseMpi::GetNex"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_1af598b640fe5117b34695d692f4fcaa03"></span>std::size_t <code class="sig-name descname">GetNex</code><span class="sig-paren">(</span><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi8ChaseMpi6GetNexEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>This member function implements the virtual one declared in <a class="reference internal" href="../abstract.html#classchase_1_1_chase"><span class="std std-ref">Chase</span></a> class. Returns the Increment of the search subspace so that its total size, which was set by users. <dl class="simple">
+<dt><strong>Return</strong></dt><dd><p><code class="docutils literal notranslate"><span class="pre">nex_</span></code>: Increment of the search subspace. </p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi8ChaseMpi8GetRitzvEv">
+<span id="_CPPv3N5chase3mpi8ChaseMpi8GetRitzvEv"></span><span id="_CPPv2N5chase3mpi8ChaseMpi8GetRitzvEv"></span><span id="chase::mpi::ChaseMpi::GetRitzv"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_1a596c529200e3d6c95de76327999188dc"></span>Base&lt;<a class="reference internal" href="#_CPPv4II0E00EN5chase3mpi8ChaseMpiE" title="chase::mpi::ChaseMpi::T">T</a>&gt; *<code class="sig-name descname">GetRitzv</code><span class="sig-paren">(</span><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi8ChaseMpi8GetRitzvEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>This member function implements the virtual one declared in <a class="reference internal" href="../abstract.html#classchase_1_1_chase"><span class="std std-ref">Chase</span></a> class. Returns the array which stores the computed Ritz values. <dl class="simple">
+<dt><strong>Return</strong></dt><dd><p><code class="docutils literal notranslate"><span class="pre">ritzv_</span></code>: an array stores the computed Ritz values. </p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi8ChaseMpi5ShiftE1Tb">
+<span id="_CPPv3N5chase3mpi8ChaseMpi5ShiftE1Tb"></span><span id="_CPPv2N5chase3mpi8ChaseMpi5ShiftE1Tb"></span><span id="chase::mpi::ChaseMpi::Shift__T.b"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_1acf84979b97d91ca332455e37e7f7ae33"></span>void <code class="sig-name descname">Shift</code><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4II0E00EN5chase3mpi8ChaseMpiE" title="chase::mpi::ChaseMpi::T">T</a> <em>c</em>, bool <em>isunshift</em> = false<span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi8ChaseMpi5ShiftE1Tb" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>This member function implements the virtual one declared in <a class="reference internal" href="../abstract.html#classchase_1_1_chase"><span class="std std-ref">Chase</span></a> class. This member function shifts the diagonal of matrix <code class="docutils literal notranslate"><span class="pre">A</span></code> with a shift value <code class="docutils literal notranslate"><span class="pre">c</span></code>. It is implemented by calling the different implementation in the derived class of <code class="docutils literal notranslate"><a class="reference internal" href="chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref"><span class="pre">ChaseMpiDLAInterface</span></span></a></code>. For the construction of <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi"><span class="std std-ref">ChaseMpi</span></a> with MPI, this function is naturally in parallel across the MPI nodes, since the shift operation only takes places on selected local matrices which stores in a distributed manner. <dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">c</span></code>: the shift value on the diagonal of matrix <code class="docutils literal notranslate"><span class="pre">A</span></code>. </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi8ChaseMpi4HEMMENSt6size_tE1T1TNSt6size_tE">
+<span id="_CPPv3N5chase3mpi8ChaseMpi4HEMMENSt6size_tE1T1TNSt6size_tE"></span><span id="_CPPv2N5chase3mpi8ChaseMpi4HEMMENSt6size_tE1T1TNSt6size_tE"></span><span id="chase::mpi::ChaseMpi::HEMM__std::s.T.T.std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_1a0cbeb5315c79a2b5e3e7c168ce4dd896"></span>void <code class="sig-name descname">HEMM</code><span class="sig-paren">(</span>std::size_t <em>block</em>, <a class="reference internal" href="#_CPPv4II0E00EN5chase3mpi8ChaseMpiE" title="chase::mpi::ChaseMpi::T">T</a> <em>alpha</em>, <a class="reference internal" href="#_CPPv4II0E00EN5chase3mpi8ChaseMpiE" title="chase::mpi::ChaseMpi::T">T</a> <em>beta</em>, std::size_t <em>offset</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi8ChaseMpi4HEMMENSt6size_tE1T1TNSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>This member function implements the virtual one declared in <a class="reference internal" href="../abstract.html#classchase_1_1_chase"><span class="std std-ref">Chase</span></a> class. This member function computes <span class="math notranslate nohighlight">\(V1 = alpha * H*V2 + beta * V1\)</span> or <span class="math notranslate nohighlight">\(V2 = alpha * H'*V1 + beta * V2\)</span>. This operation starts with an offset <code class="docutils literal notranslate"><span class="pre">offset</span></code> of column,</p>
+<p><dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">block</span></code>: the number of vectors in <code class="docutils literal notranslate"><span class="pre">V1</span></code> and <code class="docutils literal notranslate"><span class="pre">V2</span></code> for this <code class="docutils literal notranslate"><span class="pre">HEMM</span></code> operation. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">alpha</span></code>: a scalar of type <code class="docutils literal notranslate"><span class="pre">T</span></code> which scales <code class="docutils literal notranslate"><span class="pre">H*V1</span></code> or H*V2`.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">beta</span></code>: a scalar of type <code class="docutils literal notranslate"><span class="pre">T</span></code> which scales <code class="docutils literal notranslate"><span class="pre">V1</span></code> or <code class="docutils literal notranslate"><span class="pre">V2</span></code>, respectively.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">offset</span></code>: the offset of column which the <code class="docutils literal notranslate"><span class="pre">HEMM</span></code> starts from. </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi8ChaseMpi2QRENSt6size_tE4BaseI1TE">
+<span id="_CPPv3N5chase3mpi8ChaseMpi2QRENSt6size_tE4BaseI1TE"></span><span id="_CPPv2N5chase3mpi8ChaseMpi2QRENSt6size_tE4BaseI1TE"></span><span id="chase::mpi::ChaseMpi::QR__std::s.Base:T:"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_1a8e10ec9c211efcb619d0eab3405903c6"></span>void <code class="sig-name descname">QR</code><span class="sig-paren">(</span>std::size_t <em>fixednev</em>, Base&lt;<a class="reference internal" href="#_CPPv4II0E00EN5chase3mpi8ChaseMpiE" title="chase::mpi::ChaseMpi::T">T</a>&gt; <em>cond</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi8ChaseMpi2QRENSt6size_tE4BaseI1TE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>This member function performs a QR factorization with an explicit construction of the unitary matrix <code class="docutils literal notranslate"><span class="pre">Q</span></code>. After the explicit construction of Q, its first <code class="docutils literal notranslate"><span class="pre">locked_</span></code> number of vectors are overwritten by the converged eigenvectors stored previously.</p>
+<p>CholQR is used in default, and it can be disabled by adding a environment variable <code class="docutils literal notranslate"><span class="pre">CHASE_DISABLE_CHOLQR=1</span></code>. When CholQR is disabled, ScaLAPACK Householder QR is used whenever possible, <dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">fixednev</span></code>: total number of converged eigenpairs before this time QR factorization. </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi8ChaseMpi2RREP4BaseI1TENSt6size_tE">
+<span id="_CPPv3N5chase3mpi8ChaseMpi2RREP4BaseI1TENSt6size_tE"></span><span id="_CPPv2N5chase3mpi8ChaseMpi2RREP4BaseI1TENSt6size_tE"></span><span id="chase::mpi::ChaseMpi::RR__Base:T:P.std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_1adee1df6e4546123039761ea746ab0e4c"></span>void <code class="sig-name descname">RR</code><span class="sig-paren">(</span>Base&lt;<a class="reference internal" href="#_CPPv4II0E00EN5chase3mpi8ChaseMpiE" title="chase::mpi::ChaseMpi::T">T</a>&gt; *<em>ritzv</em>, std::size_t <em>block</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi8ChaseMpi2RREP4BaseI1TENSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>This member function implements the virtual one declared in <a class="reference internal" href="../abstract.html#classchase_1_1_chase"><span class="std std-ref">Chase</span></a> class. </p>
+<p>This function performs the Rayleigh-Ritz projection, which projects the eigenproblem to be a small one, then solves the small problem and reconstructs the eigenvectors. <dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ritzv</span></code>: a pointer to the array which stores the computed eigenvalues. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">block</span></code>: the number of non-converged eigenpairs, which determines the size of small eigenproblem. </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi8ChaseMpi4ResdEP4BaseI1TEP4BaseI1TENSt6size_tE">
+<span id="_CPPv3N5chase3mpi8ChaseMpi4ResdEP4BaseI1TEP4BaseI1TENSt6size_tE"></span><span id="_CPPv2N5chase3mpi8ChaseMpi4ResdEP4BaseI1TEP4BaseI1TENSt6size_tE"></span><span id="chase::mpi::ChaseMpi::Resd__Base:T:P.Base:T:P.std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_1a038a40a2a3ace783f92741387e896cbe"></span>void <code class="sig-name descname">Resd</code><span class="sig-paren">(</span>Base&lt;<a class="reference internal" href="#_CPPv4II0E00EN5chase3mpi8ChaseMpiE" title="chase::mpi::ChaseMpi::T">T</a>&gt; *<em>ritzv</em>, Base&lt;<a class="reference internal" href="#_CPPv4II0E00EN5chase3mpi8ChaseMpiE" title="chase::mpi::ChaseMpi::T">T</a>&gt; *<em>resid</em>, std::size_t <em>fixednev</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi8ChaseMpi4ResdEP4BaseI1TEP4BaseI1TENSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>This member function implements the virtual one declared in <a class="reference internal" href="../abstract.html#classchase_1_1_chase"><span class="std std-ref">Chase</span></a> class. This member function computes the residuals of unconverged eigenpairs.</p>
+<p><dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ritzv</span></code>: an array stores the eigenvalues. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">resid</span></code>: a pointer to an array which stores the residual for each eigenpairs. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fixednev</span></code>: number of converged eigenpairs. Thus the number of non-converged one which perform this operation of computing residual is <code class="docutils literal notranslate"><span class="pre">nev_</span> <span class="pre">+</span> <span class="pre">nex_</span> <span class="pre">+</span> <span class="pre">fixednev_</span></code>. </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi8ChaseMpi4SwapENSt6size_tENSt6size_tE">
+<span id="_CPPv3N5chase3mpi8ChaseMpi4SwapENSt6size_tENSt6size_tE"></span><span id="_CPPv2N5chase3mpi8ChaseMpi4SwapENSt6size_tENSt6size_tE"></span><span id="chase::mpi::ChaseMpi::Swap__std::s.std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_1aba7c2b328b12a4dd7d8bc209f6d58246"></span>void <code class="sig-name descname">Swap</code><span class="sig-paren">(</span>std::size_t <em>i</em>, std::size_t <em>j</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi8ChaseMpi4SwapENSt6size_tENSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>This member function implements the virtual one declared in <a class="reference internal" href="../abstract.html#classchase_1_1_chase"><span class="std std-ref">Chase</span></a> class. It swaps the two matrices of vectors used in the Chebyschev filter <dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">i</span></code>: one of the column index to be swapped </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">j</span></code>: another of the column index to be swapped rectangular matrices <code class="docutils literal notranslate"><span class="pre">approxV_</span></code> and <code class="docutils literal notranslate"><span class="pre">workspace_</span></code>. </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi8ChaseMpi7LanczosENSt6size_tEP4BaseI1TE">
+<span id="_CPPv3N5chase3mpi8ChaseMpi7LanczosENSt6size_tEP4BaseI1TE"></span><span id="_CPPv2N5chase3mpi8ChaseMpi7LanczosENSt6size_tEP4BaseI1TE"></span><span id="chase::mpi::ChaseMpi::Lanczos__std::s.Base:T:P"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_1a4621ca0d3579601cac773f10919fb25d"></span>void <code class="sig-name descname">Lanczos</code><span class="sig-paren">(</span>std::size_t <em>m</em>, Base&lt;<a class="reference internal" href="#_CPPv4II0E00EN5chase3mpi8ChaseMpiE" title="chase::mpi::ChaseMpi::T">T</a>&gt; *<em>upperb</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi8ChaseMpi7LanczosENSt6size_tEP4BaseI1TE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>This member function implements the virtual one declared in <a class="reference internal" href="../abstract.html#classchase_1_1_chase"><span class="std std-ref">Chase</span></a> class. It estimates the upper bound of user-interested spectrum by Lanczos eigensolver <dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">m</span></code>: the iterative steps for Lanczos eigensolver. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">upperb</span></code>: a pointer to the upper bound estimated by Lanczos eigensolver. </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi8ChaseMpi7LanczosENSt6size_tENSt6size_tEP4BaseI1TEP4BaseI1TEP4BaseI1TEP4BaseI1TE">
+<span id="_CPPv3N5chase3mpi8ChaseMpi7LanczosENSt6size_tENSt6size_tEP4BaseI1TEP4BaseI1TEP4BaseI1TEP4BaseI1TE"></span><span id="_CPPv2N5chase3mpi8ChaseMpi7LanczosENSt6size_tENSt6size_tEP4BaseI1TEP4BaseI1TEP4BaseI1TEP4BaseI1TE"></span><span id="chase::mpi::ChaseMpi::Lanczos__std::s.std::s.Base:T:P.Base:T:P.Base:T:P.Base:T:P"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_1ac76d6109b162d61ff5af43b58575fa3a"></span>void <code class="sig-name descname">Lanczos</code><span class="sig-paren">(</span>std::size_t <em>M</em>, std::size_t <em>idx</em>, Base&lt;<a class="reference internal" href="#_CPPv4II0E00EN5chase3mpi8ChaseMpiE" title="chase::mpi::ChaseMpi::T">T</a>&gt; *<em>upperb</em>, Base&lt;<a class="reference internal" href="#_CPPv4II0E00EN5chase3mpi8ChaseMpiE" title="chase::mpi::ChaseMpi::T">T</a>&gt; *<em>ritzv</em>, Base&lt;<a class="reference internal" href="#_CPPv4II0E00EN5chase3mpi8ChaseMpiE" title="chase::mpi::ChaseMpi::T">T</a>&gt; *<em>Tau</em>, Base&lt;<a class="reference internal" href="#_CPPv4II0E00EN5chase3mpi8ChaseMpiE" title="chase::mpi::ChaseMpi::T">T</a>&gt; *<em>ritzV</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi8ChaseMpi7LanczosENSt6size_tENSt6size_tEP4BaseI1TEP4BaseI1TEP4BaseI1TEP4BaseI1TE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>This member function implements the virtual one declared in <a class="reference internal" href="../abstract.html#classchase_1_1_chase"><span class="std std-ref">Chase</span></a> class. It estimates the upper bound of user-interested spectrum by Lanczos eigensolver </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi8ChaseMpi4LockENSt6size_tE">
+<span id="_CPPv3N5chase3mpi8ChaseMpi4LockENSt6size_tE"></span><span id="_CPPv2N5chase3mpi8ChaseMpi4LockENSt6size_tE"></span><span id="chase::mpi::ChaseMpi::Lock__std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_1a33a2c6b35089cfaefd009cd5a398f365"></span>void <code class="sig-name descname">Lock</code><span class="sig-paren">(</span>std::size_t <em>new_converged</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi8ChaseMpi4LockENSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>This member function implements the virtual one declared in <a class="reference internal" href="../abstract.html#classchase_1_1_chase"><span class="std std-ref">Chase</span></a> class. It locks the <code class="docutils literal notranslate"><span class="pre">new_converged</span></code> eigenvectors, which makes <code class="docutils literal notranslate"><span class="pre">locked_</span> <span class="pre">+=</span> <span class="pre">new_converged</span></code>. <dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">new_converged</span></code>: number of newly converged eigenpairs in the present iterative step. </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi8ChaseMpi10LanczosDosENSt6size_tENSt6size_tEP1T">
+<span id="_CPPv3N5chase3mpi8ChaseMpi10LanczosDosENSt6size_tENSt6size_tEP1T"></span><span id="_CPPv2N5chase3mpi8ChaseMpi10LanczosDosENSt6size_tENSt6size_tEP1T"></span><span id="chase::mpi::ChaseMpi::LanczosDos__std::s.std::s.TP"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_1adf7d200c8751544cb632bca5318588ba"></span>void <code class="sig-name descname">LanczosDos</code><span class="sig-paren">(</span>std::size_t <em>idx</em>, std::size_t <em>m</em>, <a class="reference internal" href="#_CPPv4II0E00EN5chase3mpi8ChaseMpiE" title="chase::mpi::ChaseMpi::T">T</a> *<em>ritzVc</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi8ChaseMpi10LanczosDosENSt6size_tENSt6size_tEP1T" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>This member function implements the virtual one declared in <a class="reference internal" href="../abstract.html#classchase_1_1_chase"><span class="std std-ref">Chase</span></a> class. It estimates the spectral distribution of eigenvalues. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi8ChaseMpi12GetMatrixPtrEv">
+<span id="_CPPv3N5chase3mpi8ChaseMpi12GetMatrixPtrEv"></span><span id="_CPPv2N5chase3mpi8ChaseMpi12GetMatrixPtrEv"></span><span id="chase::mpi::ChaseMpi::GetMatrixPtr"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_1ac0829d59521f6deca12bc290c34ccc3a"></span><a class="reference internal" href="#_CPPv4II0E00EN5chase3mpi8ChaseMpiE" title="chase::mpi::ChaseMpi::T">T</a> *<code class="sig-name descname">GetMatrixPtr</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi8ChaseMpi12GetMatrixPtrEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p><code class="docutils literal notranslate"><span class="pre">H_</span></code>: A pointer to the memory allocated to store (local part if applicable) of matrix <code class="docutils literal notranslate"><span class="pre">A</span></code>. </p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi8ChaseMpi8GetResidEv">
+<span id="_CPPv3N5chase3mpi8ChaseMpi8GetResidEv"></span><span id="_CPPv2N5chase3mpi8ChaseMpi8GetResidEv"></span><span id="chase::mpi::ChaseMpi::GetResid"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_1a3d91b59c1ddad6771c6f74fdf4705cd7"></span>Base&lt;<a class="reference internal" href="#_CPPv4II0E00EN5chase3mpi8ChaseMpiE" title="chase::mpi::ChaseMpi::T">T</a>&gt; *<code class="sig-name descname">GetResid</code><span class="sig-paren">(</span><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi8ChaseMpi8GetResidEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>This member function implements the virtual one declared in <a class="reference internal" href="../abstract.html#classchase_1_1_chase"><span class="std std-ref">Chase</span></a> class. <dl class="simple">
+<dt><strong>Return</strong></dt><dd><p><code class="docutils literal notranslate"><span class="pre">resid_</span></code>: a pointer to the memory allocated to store the residual of each computed eigenpair. </p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+</div>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric">Private Members</p>
+<dl class="cpp var">
+<dt id="_CPPv4N5chase3mpi8ChaseMpi2N_E">
+<span id="_CPPv3N5chase3mpi8ChaseMpi2N_E"></span><span id="_CPPv2N5chase3mpi8ChaseMpi2N_E"></span><span id="chase::mpi::ChaseMpi::N___std::sC"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_1a2ff458a54f240c071d4b046d500fcf9d"></span><em class="property">const</em> std::size_t <code class="sig-name descname">N_</code><a class="headerlink" href="#_CPPv4N5chase3mpi8ChaseMpi2N_E" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Global size of the matrix A defining the eigenproblem. </p>
+<p><ul class="simple">
+<li><p>For the constructor of class <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi"><span class="std std-ref">ChaseMpi</span></a> without MPI, this variable is initialized by the constructor using the value of the first of its input parameters <code class="docutils literal notranslate"><span class="pre">N</span></code>.</p></li>
+<li><p>For the constructor of class <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi"><span class="std std-ref">ChaseMpi</span></a> with MPI, this variable is initialized by <code class="docutils literal notranslate"><span class="pre">properties_</span></code>, a pointer to an object of <a class="reference internal" href="chasempiproperties.html#classchase_1_1mpi_1_1_chase_mpi_properties"><span class="std std-ref">ChaseMpiProperties</span></a>. This variable is private, it can be access by the member function <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_1a2718badf1d23d301573e31738b729b76"><span class="std std-ref">GetN()</span></a>. </p></li>
+</ul>
+</p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N5chase3mpi8ChaseMpi4nev_E">
+<span id="_CPPv3N5chase3mpi8ChaseMpi4nev_E"></span><span id="_CPPv2N5chase3mpi8ChaseMpi4nev_E"></span><span id="chase::mpi::ChaseMpi::nev___std::sC"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_1af8c3d5183d1d1be900d9954bb57cedf2"></span><em class="property">const</em> std::size_t <code class="sig-name descname">nev_</code><a class="headerlink" href="#_CPPv4N5chase3mpi8ChaseMpi4nev_E" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Number of desired extremal eigenpairs. </p>
+<p><ul class="simple">
+<li><p>For the constructor of class <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi"><span class="std std-ref">ChaseMpi</span></a> without MPI, this variable is initialized by the constructor using the value of the second of its input parameters <code class="docutils literal notranslate"><span class="pre">nev</span></code>.</p></li>
+<li><p>For the constructor of class <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi"><span class="std std-ref">ChaseMpi</span></a> with MPI, this variable is initialized by <code class="docutils literal notranslate"><span class="pre">properties</span></code>, a pointer to an object of <a class="reference internal" href="chasempiproperties.html#classchase_1_1mpi_1_1_chase_mpi_properties"><span class="std std-ref">ChaseMpiProperties</span></a>. This variable is private, it can be access by the member function <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_1a470b7885a382bcdc420551f204066f3e"><span class="std std-ref">GetNev()</span></a>. </p></li>
+</ul>
+</p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N5chase3mpi8ChaseMpi4nex_E">
+<span id="_CPPv3N5chase3mpi8ChaseMpi4nex_E"></span><span id="_CPPv2N5chase3mpi8ChaseMpi4nex_E"></span><span id="chase::mpi::ChaseMpi::nex___std::sC"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_1aad7e29175f5d0cee1b2fb7678acfabd2"></span><em class="property">const</em> std::size_t <code class="sig-name descname">nex_</code><a class="headerlink" href="#_CPPv4N5chase3mpi8ChaseMpi4nex_E" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Increment of the search subspace so that its total size is <code class="docutils literal notranslate"><span class="pre">nev+nex</span></code>. </p>
+<p><ul class="simple">
+<li><p>For the constructor of class <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi"><span class="std std-ref">ChaseMpi</span></a> without MPI, this variable is initialized by the constructor using the value of the third of its input parameters <code class="docutils literal notranslate"><span class="pre">nex</span></code>.</p></li>
+<li><p>For the constructor of class <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi"><span class="std std-ref">ChaseMpi</span></a> with MPI, this variable is initialized by <code class="docutils literal notranslate"><span class="pre">properties</span></code>, a pointer to an object of <a class="reference internal" href="chasempiproperties.html#classchase_1_1mpi_1_1_chase_mpi_properties"><span class="std std-ref">ChaseMpiProperties</span></a>. This variable is private, it can be access by the member function <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_1af598b640fe5117b34695d692f4fcaa03"><span class="std std-ref">GetNex()</span></a>. </p></li>
+</ul>
+</p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N5chase3mpi8ChaseMpi5rank_E">
+<span id="_CPPv3N5chase3mpi8ChaseMpi5rank_E"></span><span id="_CPPv2N5chase3mpi8ChaseMpi5rank_E"></span><span id="chase::mpi::ChaseMpi::rank___i"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_1a2abc2f398099bc0a27edb8ca418a0c4e"></span>int <code class="sig-name descname">rank_</code><a class="headerlink" href="#_CPPv4N5chase3mpi8ChaseMpi5rank_E" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>The rank of each MPI node with the working MPI communicator. </p>
+<p><ul class="simple">
+<li><p>For the constructor of class <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi"><span class="std std-ref">ChaseMpi</span></a> without MPI, this variable is <code class="docutils literal notranslate"><span class="pre">0</span></code>.</p></li>
+<li><p>For the constructor of class <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi"><span class="std std-ref">ChaseMpi</span></a> with MPI, this variable is gotten through MPI function <code class="docutils literal notranslate"><span class="pre">MPI_Comm_rank</span></code>. </p></li>
+</ul>
+</p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N5chase3mpi8ChaseMpi7locked_E">
+<span id="_CPPv3N5chase3mpi8ChaseMpi7locked_E"></span><span id="_CPPv2N5chase3mpi8ChaseMpi7locked_E"></span><span id="chase::mpi::ChaseMpi::locked___std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_1aff49ca34ab6e22d08f90be19ce52f8d8"></span>std::size_t <code class="sig-name descname">locked_</code><a class="headerlink" href="#_CPPv4N5chase3mpi8ChaseMpi7locked_E" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>The number of eigenvectors to be locked, which indicates the number of eigenpairs converged into acceptable tolerance.</p>
+<p><ul class="simple">
+<li><p>For the constructor of class <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi"><span class="std std-ref">ChaseMpi</span></a> without MPI, this variable is initialized <code class="docutils literal notranslate"><span class="pre">0</span></code>.</p></li>
+<li><p>For the constructor of class <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi"><span class="std std-ref">ChaseMpi</span></a> with MPI, this variable is initialized also <code class="docutils literal notranslate"><span class="pre">0</span></code>.</p></li>
+<li><p>During the process of ChASE solving eigenproblem, the value of this variable will increase with more and more eigenpairs computed. </p></li>
+</ul>
+</p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N5chase3mpi8ChaseMpi6ritzv_E">
+<span id="_CPPv3N5chase3mpi8ChaseMpi6ritzv_E"></span><span id="_CPPv2N5chase3mpi8ChaseMpi6ritzv_E"></span><span id="chase::mpi::ChaseMpi::ritzv___Base:T:P"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_1a9ba993db2944b06bde78bdf0a37232e0"></span>Base&lt;<a class="reference internal" href="#_CPPv4II0E00EN5chase3mpi8ChaseMpiE" title="chase::mpi::ChaseMpi::T">T</a>&gt; *<code class="sig-name descname">ritzv_</code><a class="headerlink" href="#_CPPv4N5chase3mpi8ChaseMpi6ritzv_E" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>A pointer to the memory allocated to store the computed eigenvalues. The values inside are always real since the matrix of eigenproblem is Hermitian (symmetric).</p>
+<p><ul class="simple">
+<li><p>For the constructor of class <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi"><span class="std std-ref">ChaseMpi</span></a> without MPI, the memory is allocated directly by <a class="reference internal" href="chasempimatrices.html#classchase_1_1mpi_1_1_chase_mpi_matrices"><span class="std std-ref">ChaseMpiMatrices</span></a> of size <code class="docutils literal notranslate"><span class="pre">nex_</span> <span class="pre">+</span> <span class="pre">nex_</span></code>.</p></li>
+<li><p>For the constructor of class <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi"><span class="std std-ref">ChaseMpi</span></a> with MPI, this variable is a pointer to a vector of size <code class="docutils literal notranslate"><span class="pre">nex_</span> <span class="pre">+</span> <span class="pre">nex_</span></code>, which are identical on each MPI node. It is initalized within the construction of <a class="reference internal" href="chasempimatrices.html#classchase_1_1mpi_1_1_chase_mpi_matrices"><span class="std std-ref">ChaseMpiMatrices</span></a>.</p></li>
+<li><p>The final converged eigenvalues will be stored in it.</p></li>
+<li><p>This variable is private, and it can be assessed through the member function <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_1a596c529200e3d6c95de76327999188dc"><span class="std std-ref">GetRitzv()</span></a>. </p></li>
+</ul>
+</p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N5chase3mpi8ChaseMpi6resid_E">
+<span id="_CPPv3N5chase3mpi8ChaseMpi6resid_E"></span><span id="_CPPv2N5chase3mpi8ChaseMpi6resid_E"></span><span id="chase::mpi::ChaseMpi::resid___Base:T:P"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_1ab0c049a61d0560ab9ed7ca7b9573fe50"></span>Base&lt;<a class="reference internal" href="#_CPPv4II0E00EN5chase3mpi8ChaseMpiE" title="chase::mpi::ChaseMpi::T">T</a>&gt; *<code class="sig-name descname">resid_</code><a class="headerlink" href="#_CPPv4N5chase3mpi8ChaseMpi6resid_E" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>A pointer to the memory allocated to store the residual of each computed eigenpair. The values inside are always real.</p>
+<p><ul class="simple">
+<li><p>For the constructor of class <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi"><span class="std std-ref">ChaseMpi</span></a> without MPI, the memory is allocated directly by <a class="reference internal" href="chasempimatrices.html#classchase_1_1mpi_1_1_chase_mpi_matrices"><span class="std std-ref">ChaseMpiMatrices</span></a> of size <code class="docutils literal notranslate"><span class="pre">nex_</span> <span class="pre">+</span> <span class="pre">nex_</span></code>.</p></li>
+<li><p>For the constructor of class <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi"><span class="std std-ref">ChaseMpi</span></a> with MPI, this variable is a pointer to a vector of size <code class="docutils literal notranslate"><span class="pre">nex_</span> <span class="pre">+</span> <span class="pre">nex_</span></code>, which are identical on each MPI node. It is initalized within the construction of <a class="reference internal" href="chasempimatrices.html#classchase_1_1mpi_1_1_chase_mpi_matrices"><span class="std std-ref">ChaseMpiMatrices</span></a>.</p></li>
+<li><p>The residuals of final converged eigenvalues will be stored in it.</p></li>
+<li><p>This variable is private, and it can be assessed through the member function <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_1a3d91b59c1ddad6771c6f74fdf4705cd7"><span class="std std-ref">GetResid()</span></a>. </p></li>
+</ul>
+</p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N5chase3mpi8ChaseMpi11properties_E">
+<span id="_CPPv3N5chase3mpi8ChaseMpi11properties_E"></span><span id="_CPPv2N5chase3mpi8ChaseMpi11properties_E"></span><span id="chase::mpi::ChaseMpi::properties___std::unique_ptr:ChaseMpiProperties:T::"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_1a389df4f13a07420e4967b88561d96c6e"></span>std::unique_ptr&lt;<a class="reference internal" href="chasempiproperties.html#_CPPv4I0EN5chase3mpi18ChaseMpiPropertiesE" title="chase::mpi::ChaseMpiProperties">ChaseMpiProperties</a>&lt;<a class="reference internal" href="#_CPPv4II0E00EN5chase3mpi8ChaseMpiE" title="chase::mpi::ChaseMpi::T">T</a>&gt;&gt; <code class="sig-name descname">properties_</code><a class="headerlink" href="#_CPPv4N5chase3mpi8ChaseMpi11properties_E" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>A smart pointer to an object of <a class="reference internal" href="chasempiproperties.html#classchase_1_1mpi_1_1_chase_mpi_properties"><span class="std std-ref">ChaseMpiProperties</span></a> class which is used by <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi"><span class="std std-ref">ChaseMpi</span></a> class. This variable only matters for the constructor of class <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi"><span class="std std-ref">ChaseMpi</span></a> with MPI. </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N5chase3mpi8ChaseMpi9matrices_E">
+<span id="_CPPv3N5chase3mpi8ChaseMpi9matrices_E"></span><span id="_CPPv2N5chase3mpi8ChaseMpi9matrices_E"></span><span id="chase::mpi::ChaseMpi::matrices___ChaseMpiMatrices:T:"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_1a2614e6561b88d0b2dfb94a5982657b15"></span><a class="reference internal" href="chasempimatrices.html#_CPPv4I0EN5chase3mpi16ChaseMpiMatricesE" title="chase::mpi::ChaseMpiMatrices">ChaseMpiMatrices</a>&lt;<a class="reference internal" href="#_CPPv4II0E00EN5chase3mpi8ChaseMpiE" title="chase::mpi::ChaseMpi::T">T</a>&gt; <code class="sig-name descname">matrices_</code><a class="headerlink" href="#_CPPv4N5chase3mpi8ChaseMpi9matrices_E" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>An object of <a class="reference internal" href="chasempimatrices.html#classchase_1_1mpi_1_1_chase_mpi_matrices"><span class="std std-ref">ChaseMpiMatrices</span></a> to setup the matrices and vectors used by <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi"><span class="std std-ref">ChaseMpi</span></a> class. </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N5chase3mpi8ChaseMpi4dla_E">
+<span id="_CPPv3N5chase3mpi8ChaseMpi4dla_E"></span><span id="_CPPv2N5chase3mpi8ChaseMpi4dla_E"></span><span id="chase::mpi::ChaseMpi::dla___std::unique_ptr:ChaseMpiDLAInterface:T::"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_1af920c26498369253384a8cda7e6888bb"></span>std::unique_ptr&lt;<a class="reference internal" href="chasempidlainterface.html#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface">ChaseMpiDLAInterface</a>&lt;<a class="reference internal" href="#_CPPv4II0E00EN5chase3mpi8ChaseMpiE" title="chase::mpi::ChaseMpi::T">T</a>&gt;&gt; <code class="sig-name descname">dla_</code><a class="headerlink" href="#_CPPv4N5chase3mpi8ChaseMpi4dla_E" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>A smart pointer to an object of <a class="reference internal" href="chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a> class which is used by <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi"><span class="std std-ref">ChaseMpi</span></a> class.</p>
+<p><ul class="simple">
+<li><p>For the constructor of class <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi"><span class="std std-ref">ChaseMpi</span></a> without MPI, this variable is initialized directly by the <strong>template parameter</strong> <code class="docutils literal notranslate"><span class="pre">MF</span></code>.</p></li>
+<li><p>For the constructor of class <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi"><span class="std std-ref">ChaseMpi</span></a> with MPI, this variable is implemented by considering <code class="docutils literal notranslate"><span class="pre">properties_</span></code> and <code class="docutils literal notranslate"><span class="pre">MF</span></code>. It is initalized within the construction of <a class="reference internal" href="chasempimatrices.html#classchase_1_1mpi_1_1_chase_mpi_matrices"><span class="std std-ref">ChaseMpiMatrices</span></a>. </p></li>
+</ul>
+</p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N5chase3mpi8ChaseMpi7config_E">
+<span id="_CPPv3N5chase3mpi8ChaseMpi7config_E"></span><span id="_CPPv2N5chase3mpi8ChaseMpi7config_E"></span><span id="chase::mpi::ChaseMpi::config___ChaseConfig:T:"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_1a05c2dadcace9f3f35edfca365f60ed67"></span><a class="reference internal" href="config.html#_CPPv4I0EN5chase11ChaseConfigE" title="chase::ChaseConfig">ChaseConfig</a>&lt;<a class="reference internal" href="#_CPPv4II0E00EN5chase3mpi8ChaseMpiE" title="chase::mpi::ChaseMpi::T">T</a>&gt; <code class="sig-name descname">config_</code><a class="headerlink" href="#_CPPv4N5chase3mpi8ChaseMpi7config_E" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>An object of <a class="reference internal" href="config.html#classchase_1_1_chase_config"><span class="std std-ref">ChaseConfig</span></a> class which setup all the parameters of ChASE, these parameters are either provided by users, or using the default values. This variable is initialized by the constructor of <a class="reference internal" href="config.html#classchase_1_1_chase_config"><span class="std std-ref">ChaseConfig</span></a> class by using <code class="docutils literal notranslate"><span class="pre">N</span></code>, <code class="docutils literal notranslate"><span class="pre">nev</span></code> and <code class="docutils literal notranslate"><span class="pre">nex</span></code>, which are the parameters of the constructors of <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi"><span class="std std-ref">ChaseMpi</span></a>. </p>
+</dd></dl>
+
+</div>
+</dd></dl>
+
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2023, SimLab Quantum Materials.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'v1.3.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="../_static/language_data.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

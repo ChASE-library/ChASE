@@ -1,0 +1,453 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>2. Virtual Abstract of Numerical Kernels &mdash; ChASE v1.3.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="_static/ChASE_Logo_Favicon_RGB.png"/>
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="theme_overrides.css" type="text/css" />
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="ChASE v1.3.0 documentation" href="index.html"/>
+        <link rel="next" title="3. Parallel implementations" href="parallel.html"/>
+        <link rel="prev" title="1.4. Algorithm optimizations" href="optimizations.html"/>
+    <link href="_static/theme_overrides.css" rel="stylesheet" type="text/css">
+
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html">
+          
+
+          
+            
+            <img src="_static/ChASE_Logo_RGB.png" class="logo" />
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                v1.3.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <p class="caption"><span class="caption-text">INTRODUCTION</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="chase.html">ChASE: an Iterative Solver for Dense Eigenproblems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="version.html">Versions of the library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">Licenses and Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="reference.html">References and Contributors</a></li>
+</ul>
+<p class="caption"><span class="caption-text">USER DOCUMENTATION</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="quick-start.html">1. Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">2. Installation and Setup on a Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">3. How to use ChASE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parameters.html">4. Parameters and Configurations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="module.html">5. Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="example.html">6. Examples</a></li>
+</ul>
+<p class="caption"><span class="caption-text">DEVELOPER DOCUMENTATION</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="algorithm.html">1. General algorithm</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">2. Virtual Abstract of Numerical Kernels</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#benefits">2.1. Benefits</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#definition-of-interface">2.2. Definition of Interface</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="parallel.html">3. Parallel implementations</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">ChASE</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li><span class="section-number">2. </span>Virtual Abstract of Numerical Kernels</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        
+          <a href="_sources/abstract.rst.txt" rel="nofollow"> View page source</a>
+        
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="virtual-abstract-of-numerical-kernels">
+<span id="virtual-abstrac-numerical-kernels"></span><h1><span class="section-number">2. </span>Virtual Abstract of Numerical Kernels<a class="headerlink" href="#virtual-abstract-of-numerical-kernels" title="Permalink to this headline">¶</a></h1>
+<p>ChASE relies on a modest number of numerical kernels whose calls execute almost all FLOPs.
+Because of its simple structure, there would be clear advantages in the separation of
+the numerical kernels from the algorithm implementation. In ChASE, the linear algebra
+kernels are separated from the main algorithm through the use of an object-oriented software interface.</p>
+<div class="section" id="benefits">
+<h2><span class="section-number">2.1. </span>Benefits<a class="headerlink" href="#benefits" title="Permalink to this headline">¶</a></h2>
+<p>With the help of the seperation of numerical kernels,</p>
+<ol class="arabic simple">
+<li><p>First, ChASE can be easily integrated into existing codes thanks to the relative simplicity of the software interface. For instance, the low-level kernels can be implemented according to an existing distribution of the matrix elements of A so as to avoid the need to re-distribute data;</p></li>
+<li><p>Second, ChASE can easily exploit existing linear algebra libraries such as BLAS and LAPACK all the way up to GPU-based kernels, and even complex distributed-memory dense linear algebra frameworks such as Elemental.</p></li>
+</ol>
+</div>
+<div class="section" id="definition-of-interface">
+<h2><span class="section-number">2.2. </span>Definition of Interface<a class="headerlink" href="#definition-of-interface" title="Permalink to this headline">¶</a></h2>
+<dl class="cpp class">
+<dt id="_CPPv4I0EN5chase5ChaseE">
+<span id="_CPPv3I0EN5chase5ChaseE"></span><span id="_CPPv2I0EN5chase5ChaseE"></span>template&lt;class <code class="sig-name descname">T</code>&gt;<br /><span class="target" id="classchase_1_1_chase"></span><em class="property">class </em><code class="sig-prename descclassname"><a class="reference internal" href=".unused_material/reference/chase.html#_CPPv45chaseP13MKL_Complex16iP13MKL_Complex16P13MKL_Complex16PdiKiKiPCiKdK15CHASE_MODE_TYPEK14CHASE_OPT_TYPE" title="chase">chase</a><code class="sig-prename descclassname">::</code></code><code class="sig-name descname">Chase</code><a class="headerlink" href="#_CPPv4I0EN5chase5ChaseE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Subclassed by <a class="reference internal" href="module/chasempi.html#classchase_1_1mpi_1_1_chase_mpi"><span class="std std-ref">chase::mpi::ChaseMpi&lt; MF, T &gt;</span></a>, <a class="reference internal" href="module/perf.html#classchase_1_1_performance_decorator_chase"><span class="std std-ref">chase::PerformanceDecoratorChase&lt; T &gt;</span></a></p>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric">Public Functions</p>
+<dl class="cpp function">
+<dt id="_CPPv4N5chase5Chase5ShiftE1Tb">
+<span id="_CPPv3N5chase5Chase5ShiftE1Tb"></span><span id="_CPPv2N5chase5Chase5ShiftE1Tb"></span><span id="chase::Chase::Shift__T.b"></span><span class="target" id="classchase_1_1_chase_1a40ba6246c9d190bcd4fc930fa07a2a2a"></span>void <code class="sig-name descname">Shift</code><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN5chase5ChaseE" title="chase::Chase::T">T</a> <em>c</em>, bool <em>isunshift</em> = false<span class="sig-paren">)</span> = 0<a class="headerlink" href="#_CPPv4N5chase5Chase5ShiftE1Tb" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>This member function shifts the diagonal of matrix <code class="docutils literal notranslate"><span class="pre">A</span></code> with a shift value <code class="docutils literal notranslate"><span class="pre">c</span></code>. <dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">c</span></code>: the shift value on the diagonal of matrix <code class="docutils literal notranslate"><span class="pre">A</span></code>. </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase5Chase4HEMMENSt6size_tE1T1TNSt6size_tE">
+<span id="_CPPv3N5chase5Chase4HEMMENSt6size_tE1T1TNSt6size_tE"></span><span id="_CPPv2N5chase5Chase4HEMMENSt6size_tE1T1TNSt6size_tE"></span><span id="chase::Chase::HEMM__std::s.T.T.std::s"></span><span class="target" id="classchase_1_1_chase_1aa908bbc4ef9086b8f5d819dd1e7221d6"></span>void <code class="sig-name descname">HEMM</code><span class="sig-paren">(</span>std::size_t <em>nev</em>, <a class="reference internal" href="#_CPPv4I0EN5chase5ChaseE" title="chase::Chase::T">T</a> <em>alpha</em>, <a class="reference internal" href="#_CPPv4I0EN5chase5ChaseE" title="chase::Chase::T">T</a> <em>beta</em>, std::size_t <em>offset</em><span class="sig-paren">)</span> = 0<a class="headerlink" href="#_CPPv4N5chase5Chase4HEMMENSt6size_tE1T1TNSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>This member function computes <span class="math notranslate nohighlight">\(V1 = alpha * H*V2 + beta * V1\)</span> or <span class="math notranslate nohighlight">\(V2 = alpha * H'*V1 + beta * V2\)</span>. This operation starts with an offset <code class="docutils literal notranslate"><span class="pre">offset</span></code> of column,</p>
+<p><dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">block</span></code>: the number of vectors in <code class="docutils literal notranslate"><span class="pre">V1</span></code> and <code class="docutils literal notranslate"><span class="pre">V2</span></code> for this <code class="docutils literal notranslate"><span class="pre">HEMM</span></code> operation. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">alpha</span></code>: a scalar of type <code class="docutils literal notranslate"><span class="pre">T</span></code> which scales <code class="docutils literal notranslate"><span class="pre">H*V1</span></code> or H*V2`.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">beta</span></code>: a scalar of type <code class="docutils literal notranslate"><span class="pre">T</span></code> which scales <code class="docutils literal notranslate"><span class="pre">V1</span></code> or <code class="docutils literal notranslate"><span class="pre">V2</span></code>, respectively.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">offset</span></code>: the offset of column which the <code class="docutils literal notranslate"><span class="pre">HEMM</span></code> starts from. </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase5Chase2QRENSt6size_tE4BaseI1TE">
+<span id="_CPPv3N5chase5Chase2QRENSt6size_tE4BaseI1TE"></span><span id="_CPPv2N5chase5Chase2QRENSt6size_tE4BaseI1TE"></span><span id="chase::Chase::QR__std::s.Base:T:"></span><span class="target" id="classchase_1_1_chase_1a81c7628094a98e76586e8d89f455f028"></span>void <code class="sig-name descname">QR</code><span class="sig-paren">(</span>std::size_t <em>fixednev</em>, Base&lt;<a class="reference internal" href="#_CPPv4I0EN5chase5ChaseE" title="chase::Chase::T">T</a>&gt; <em>cond</em><span class="sig-paren">)</span> = 0<a class="headerlink" href="#_CPPv4N5chase5Chase2QRENSt6size_tE4BaseI1TE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>This member function performs a QR factorization with an explicit construction of the unitary matrix <code class="docutils literal notranslate"><span class="pre">Q</span></code>.</p>
+<p>CholQR is used in default. Optionally, user can decide to use Househoulder QR. <dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">fixednev</span></code>: total number of converged eigenpairs before this time QR factorization. </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase5Chase2RREP4BaseI1TENSt6size_tE">
+<span id="_CPPv3N5chase5Chase2RREP4BaseI1TENSt6size_tE"></span><span id="_CPPv2N5chase5Chase2RREP4BaseI1TENSt6size_tE"></span><span id="chase::Chase::RR__Base:T:P.std::s"></span><span class="target" id="classchase_1_1_chase_1a8f9468c6c02d9ad01e2d698d5a33fccc"></span>void <code class="sig-name descname">RR</code><span class="sig-paren">(</span>Base&lt;<a class="reference internal" href="#_CPPv4I0EN5chase5ChaseE" title="chase::Chase::T">T</a>&gt; *<em>ritzv</em>, std::size_t <em>block</em><span class="sig-paren">)</span> = 0<a class="headerlink" href="#_CPPv4N5chase5Chase2RREP4BaseI1TENSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>This function performs the Rayleigh-Ritz projection, which projects the eigenproblem to be a small one, then solves the small problem and reconstructs the eigenvectors. <dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ritzv</span></code>: a pointer to the array which stores the computed eigenvalues. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">block</span></code>: the number of non-converged eigenpairs, which determines the size of small eigenproblem. </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase5Chase4ResdEP4BaseI1TEP4BaseI1TENSt6size_tE">
+<span id="_CPPv3N5chase5Chase4ResdEP4BaseI1TEP4BaseI1TENSt6size_tE"></span><span id="_CPPv2N5chase5Chase4ResdEP4BaseI1TEP4BaseI1TENSt6size_tE"></span><span id="chase::Chase::Resd__Base:T:P.Base:T:P.std::s"></span><span class="target" id="classchase_1_1_chase_1aa867631c14eaf2b8e8d45d6facfa6431"></span>void <code class="sig-name descname">Resd</code><span class="sig-paren">(</span>Base&lt;<a class="reference internal" href="#_CPPv4I0EN5chase5ChaseE" title="chase::Chase::T">T</a>&gt; *<em>ritzv</em>, Base&lt;<a class="reference internal" href="#_CPPv4I0EN5chase5ChaseE" title="chase::Chase::T">T</a>&gt; *<em>resd</em>, std::size_t <em>fixednev</em><span class="sig-paren">)</span> = 0<a class="headerlink" href="#_CPPv4N5chase5Chase4ResdEP4BaseI1TEP4BaseI1TENSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>This member function computes the residuals of unconverged eigenpairs. </p>
+<p><dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ritzv</span></code>: an array stores the eigenvalues. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">resid</span></code>: a pointer to an array which stores the residual for each eigenpairs. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fixednev</span></code>: number of converged eigenpairs. Thus the number of non-converged one which perform this operation of computing residual is <code class="docutils literal notranslate"><span class="pre">nev_</span> <span class="pre">+</span> <span class="pre">nex_</span> <span class="pre">+</span> <span class="pre">fixednev_</span></code>. </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase5Chase7LanczosENSt6size_tEP4BaseI1TE">
+<span id="_CPPv3N5chase5Chase7LanczosENSt6size_tEP4BaseI1TE"></span><span id="_CPPv2N5chase5Chase7LanczosENSt6size_tEP4BaseI1TE"></span><span id="chase::Chase::Lanczos__std::s.Base:T:P"></span><span class="target" id="classchase_1_1_chase_1acb6f687adba9c6715c42cfdd42979041"></span>void <code class="sig-name descname">Lanczos</code><span class="sig-paren">(</span>std::size_t <em>m</em>, Base&lt;<a class="reference internal" href="#_CPPv4I0EN5chase5ChaseE" title="chase::Chase::T">T</a>&gt; *<em>upperb</em><span class="sig-paren">)</span> = 0<a class="headerlink" href="#_CPPv4N5chase5Chase7LanczosENSt6size_tEP4BaseI1TE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>It estimates the upper bound of user-interested spectrum by Lanczos eigensolver <dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">m</span></code>: the iterative steps for Lanczos eigensolver. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">upperb</span></code>: a pointer to the upper bound estimated by Lanczos eigensolver. </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase5Chase7LanczosENSt6size_tENSt6size_tEP4BaseI1TEP4BaseI1TEP4BaseI1TEP4BaseI1TE">
+<span id="_CPPv3N5chase5Chase7LanczosENSt6size_tENSt6size_tEP4BaseI1TEP4BaseI1TEP4BaseI1TEP4BaseI1TE"></span><span id="_CPPv2N5chase5Chase7LanczosENSt6size_tENSt6size_tEP4BaseI1TEP4BaseI1TEP4BaseI1TEP4BaseI1TE"></span><span id="chase::Chase::Lanczos__std::s.std::s.Base:T:P.Base:T:P.Base:T:P.Base:T:P"></span><span class="target" id="classchase_1_1_chase_1a40f4c81d5bb9ae66cfcd34be03c2f55c"></span>void <code class="sig-name descname">Lanczos</code><span class="sig-paren">(</span>std::size_t <em>M</em>, std::size_t <em>idx</em>, Base&lt;<a class="reference internal" href="#_CPPv4I0EN5chase5ChaseE" title="chase::Chase::T">T</a>&gt; *<em>upperb</em>, Base&lt;<a class="reference internal" href="#_CPPv4I0EN5chase5ChaseE" title="chase::Chase::T">T</a>&gt; *<em>ritzv</em>, Base&lt;<a class="reference internal" href="#_CPPv4I0EN5chase5ChaseE" title="chase::Chase::T">T</a>&gt; *<em>Tau</em>, Base&lt;<a class="reference internal" href="#_CPPv4I0EN5chase5ChaseE" title="chase::Chase::T">T</a>&gt; *<em>ritzV</em><span class="sig-paren">)</span> = 0<a class="headerlink" href="#_CPPv4N5chase5Chase7LanczosENSt6size_tENSt6size_tEP4BaseI1TEP4BaseI1TEP4BaseI1TEP4BaseI1TE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>This member function implements the virtual one declared in <a class="reference internal" href="#classchase_1_1_chase"><span class="std std-ref">Chase</span></a> class. It estimates the upper bound of user-interested spectrum by Lanczos eigensolver </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase5Chase10LanczosDosENSt6size_tENSt6size_tEP1T">
+<span id="_CPPv3N5chase5Chase10LanczosDosENSt6size_tENSt6size_tEP1T"></span><span id="_CPPv2N5chase5Chase10LanczosDosENSt6size_tENSt6size_tEP1T"></span><span id="chase::Chase::LanczosDos__std::s.std::s.TP"></span><span class="target" id="classchase_1_1_chase_1aea0d73061f4a6381f6378b720c7a926b"></span>void <code class="sig-name descname">LanczosDos</code><span class="sig-paren">(</span>std::size_t <em>idx</em>, std::size_t <em>m</em>, <a class="reference internal" href="#_CPPv4I0EN5chase5ChaseE" title="chase::Chase::T">T</a> *<em>ritzVc</em><span class="sig-paren">)</span> = 0<a class="headerlink" href="#_CPPv4N5chase5Chase10LanczosDosENSt6size_tENSt6size_tEP1T" title="Permalink to this definition">¶</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase5Chase4SwapENSt6size_tENSt6size_tE">
+<span id="_CPPv3N5chase5Chase4SwapENSt6size_tENSt6size_tE"></span><span id="_CPPv2N5chase5Chase4SwapENSt6size_tENSt6size_tE"></span><span id="chase::Chase::Swap__std::s.std::s"></span><span class="target" id="classchase_1_1_chase_1af130fd87a17637aadaf1cfbab66c2830"></span>void <code class="sig-name descname">Swap</code><span class="sig-paren">(</span>std::size_t <em>i</em>, std::size_t <em>j</em><span class="sig-paren">)</span> = 0<a class="headerlink" href="#_CPPv4N5chase5Chase4SwapENSt6size_tENSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>This function swaps the two columns in a matrix used in the Chebyschev filter <dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">i</span></code>: one of the column index to be swapped </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">j</span></code>: another of the column index to be swapped </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase5Chase4LockENSt6size_tE">
+<span id="_CPPv3N5chase5Chase4LockENSt6size_tE"></span><span id="_CPPv2N5chase5Chase4LockENSt6size_tE"></span><span id="chase::Chase::Lock__std::s"></span><span class="target" id="classchase_1_1_chase_1afa97b2e98c6afb5ed2f65cde5521d986"></span>void <code class="sig-name descname">Lock</code><span class="sig-paren">(</span>std::size_t <em>new_converged</em><span class="sig-paren">)</span> = 0<a class="headerlink" href="#_CPPv4N5chase5Chase4LockENSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>It locks the <code class="docutils literal notranslate"><span class="pre">new_converged</span></code> eigenvectors, which makes <code class="docutils literal notranslate"><span class="pre">locked_</span> <span class="pre">+=</span> <span class="pre">new_converged</span></code>. <dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">new_converged</span></code>: number of newly converged eigenpairs in the present iterative step. </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase5Chase5StartEv">
+<span id="_CPPv3N5chase5Chase5StartEv"></span><span id="_CPPv2N5chase5Chase5StartEv"></span><span id="chase::Chase::Start"></span><span class="target" id="classchase_1_1_chase_1a62135128d7c597d30707dfc2e81b332f"></span>void <code class="sig-name descname">Start</code><span class="sig-paren">(</span><span class="sig-paren">)</span> = 0<a class="headerlink" href="#_CPPv4N5chase5Chase5StartEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>It indicates the starting point to solve a (new) eigenproblem. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase5Chase3EndEv">
+<span id="_CPPv3N5chase5Chase3EndEv"></span><span id="_CPPv2N5chase5Chase3EndEv"></span><span id="chase::Chase::End"></span><span class="target" id="classchase_1_1_chase_1ad0374cef90cda13312edefcb9eef0fc2"></span>void <code class="sig-name descname">End</code><span class="sig-paren">(</span><span class="sig-paren">)</span> = 0<a class="headerlink" href="#_CPPv4N5chase5Chase3EndEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>It indicates the ending point of solving an eigenproblem. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase5Chase8initVecsEb">
+<span id="_CPPv3N5chase5Chase8initVecsEb"></span><span id="_CPPv2N5chase5Chase8initVecsEb"></span><span id="chase::Chase::initVecs__b"></span><span class="target" id="classchase_1_1_chase_1a95f80a731ff24f48f2c09cc35804a62f"></span>void <code class="sig-name descname">initVecs</code><span class="sig-paren">(</span>bool <em>random</em><span class="sig-paren">)</span> = 0<a class="headerlink" href="#_CPPv4N5chase5Chase8initVecsEb" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>This member function initializes randomly the vectors when necessary. </p>
+<p><dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">random</span></code>: a boolean variable indicates if randomness of initial vectors is required.<ul>
+<li><p>For solving a sequence of eigenvalue problems, this variable is always <code class="docutils literal notranslate"><span class="pre">True</span></code> when solving the first problem.</p></li>
+<li><p>It could be false when the ritzv vectors from previous problem are recycled to speed up the convergence. </p></li>
+</ul>
+</p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4NK5chase5Chase4GetNEv">
+<span id="_CPPv3NK5chase5Chase4GetNEv"></span><span id="_CPPv2NK5chase5Chase4GetNEv"></span><span id="chase::Chase::GetNC"></span><span class="target" id="classchase_1_1_chase_1a11ebcceda456c3bf17747b4fe55df6f5"></span>std::size_t <code class="sig-name descname">GetN</code><span class="sig-paren">(</span><span class="sig-paren">)</span> <em class="property">const</em> = 0<a class="headerlink" href="#_CPPv4NK5chase5Chase4GetNEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Return size of matrix. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase5Chase6GetNevEv">
+<span id="_CPPv3N5chase5Chase6GetNevEv"></span><span id="_CPPv2N5chase5Chase6GetNevEv"></span><span id="chase::Chase::GetNev"></span><span class="target" id="classchase_1_1_chase_1a776f869ef8274176ec27f4267d4c6a23"></span>std::size_t <code class="sig-name descname">GetNev</code><span class="sig-paren">(</span><span class="sig-paren">)</span> = 0<a class="headerlink" href="#_CPPv4N5chase5Chase6GetNevEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Return the number of eigenpairs to be computed. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase5Chase6GetNexEv">
+<span id="_CPPv3N5chase5Chase6GetNexEv"></span><span id="_CPPv2N5chase5Chase6GetNexEv"></span><span id="chase::Chase::GetNex"></span><span class="target" id="classchase_1_1_chase_1abdd4ebbf71def91ed2d7b89a86415659"></span>std::size_t <code class="sig-name descname">GetNex</code><span class="sig-paren">(</span><span class="sig-paren">)</span> = 0<a class="headerlink" href="#_CPPv4N5chase5Chase6GetNexEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Return the external searching space size. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase5Chase8GetRitzvEv">
+<span id="_CPPv3N5chase5Chase8GetRitzvEv"></span><span id="_CPPv2N5chase5Chase8GetRitzvEv"></span><span id="chase::Chase::GetRitzv"></span><span class="target" id="classchase_1_1_chase_1ae53b055a9ef237dffbee589812ee5805"></span>Base&lt;<a class="reference internal" href="#_CPPv4I0EN5chase5ChaseE" title="chase::Chase::T">T</a>&gt; *<code class="sig-name descname">GetRitzv</code><span class="sig-paren">(</span><span class="sig-paren">)</span> = 0<a class="headerlink" href="#_CPPv4N5chase5Chase8GetRitzvEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Return the computed ritz values. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase5Chase8GetResidEv">
+<span id="_CPPv3N5chase5Chase8GetResidEv"></span><span id="_CPPv2N5chase5Chase8GetResidEv"></span><span id="chase::Chase::GetResid"></span><span class="target" id="classchase_1_1_chase_1aaacacc46686454da9d592fd2ebaf8aa0"></span>Base&lt;<a class="reference internal" href="#_CPPv4I0EN5chase5ChaseE" title="chase::Chase::T">T</a>&gt; *<code class="sig-name descname">GetResid</code><span class="sig-paren">(</span><span class="sig-paren">)</span> = 0<a class="headerlink" href="#_CPPv4N5chase5Chase8GetResidEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Return the residuals of computed ritz pairs. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase5Chase9GetConfigEv">
+<span id="_CPPv3N5chase5Chase9GetConfigEv"></span><span id="_CPPv2N5chase5Chase9GetConfigEv"></span><span id="chase::Chase::GetConfig"></span><span class="target" id="classchase_1_1_chase_1af654be3d909262412f325ac741cc832b"></span><a class="reference internal" href="module/config.html#_CPPv4I0EN5chase11ChaseConfigE" title="chase::ChaseConfig">ChaseConfig</a>&lt;<a class="reference internal" href="#_CPPv4I0EN5chase5ChaseE" title="chase::Chase::T">T</a>&gt; &amp;<code class="sig-name descname">GetConfig</code><span class="sig-paren">(</span><span class="sig-paren">)</span> = 0<a class="headerlink" href="#_CPPv4N5chase5Chase9GetConfigEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Return a class which contains the configuration parameters. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase5Chase10get_nprocsEv">
+<span id="_CPPv3N5chase5Chase10get_nprocsEv"></span><span id="_CPPv2N5chase5Chase10get_nprocsEv"></span><span id="chase::Chase::get_nprocs"></span><span class="target" id="classchase_1_1_chase_1a07e3061fc88a5e7a775ed876a6cbae1e"></span>int <code class="sig-name descname">get_nprocs</code><span class="sig-paren">(</span><span class="sig-paren">)</span> = 0<a class="headerlink" href="#_CPPv4N5chase5Chase10get_nprocsEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Return the number of MPI procs used, it is <code class="docutils literal notranslate"><span class="pre">1</span></code> when sequential ChASE is used </p>
+</dd></dl>
+
+</div>
+</dd></dl>
+
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="parallel.html" class="btn btn-neutral float-right" title="3. Parallel implementations" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="optimizations.html" class="btn btn-neutral" title="1.4. Algorithm optimizations" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2023, SimLab Quantum Materials.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'v1.3.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="_static/language_data.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

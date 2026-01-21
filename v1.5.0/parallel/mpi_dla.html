@@ -1,0 +1,415 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>3.1.3.1. Inter-node Implementation &mdash; ChASE v1.3.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../_static/ChASE_Logo_Favicon_RGB.png"/>
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="../theme_overrides.css" type="text/css" />
+  
+
+  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="ChASE v1.3.0 documentation" href="../index.html"/>
+        <link rel="up" title="3.1.3. Distributed-Memory Architecture" href="distm.html"/>
+        <link rel="next" title="3.1.3.2. CPUs in node" href="cpu.html"/>
+        <link rel="prev" title="3.1.3. Distributed-Memory Architecture" href="distm.html"/>
+    <link href="../_static/theme_overrides.css" rel="stylesheet" type="text/css">
+
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html">
+          
+
+          
+            
+            <img src="../_static/ChASE_Logo_RGB.png" class="logo" />
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                v1.3.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <p class="caption"><span class="caption-text">INTRODUCTION</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../chase.html">ChASE: an Iterative Solver for Dense Eigenproblems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../version.html">Versions of the library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../license.html">Licenses and Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reference.html">References and Contributors</a></li>
+</ul>
+<p class="caption"><span class="caption-text">USER DOCUMENTATION</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../quick-start.html">1. Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">2. Installation and Setup on a Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage.html">3. How to use ChASE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../parameters.html">4. Parameters and Configurations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../module.html">5. Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../example.html">6. Examples</a></li>
+</ul>
+<p class="caption"><span class="caption-text">DEVELOPER DOCUMENTATION</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../algorithm.html">1. General algorithm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../abstract.html">2. Virtual Abstract of Numerical Kernels</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../parallel.html">3. Parallel implementations</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="mpi.html">3.1. ChASE-MPI</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="comm.html">3.1.1. Interface for ChASE-MPI</a></li>
+<li class="toctree-l3"><a class="reference internal" href="shm.html">3.1.2. Shared Memory Architecture</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="distm.html">3.1.3. Distributed-Memory Architecture</a><ul class="current">
+<li class="toctree-l4 current"><a class="current reference internal" href="#">3.1.3.1. Inter-node Implementation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="cpu.html">3.1.3.2. CPUs in node</a></li>
+<li class="toctree-l4"><a class="reference internal" href="gpu.html">3.1.3.3. multi-GPUs in node</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">ChASE</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+        <li><a href="../parallel.html"><span class="section-number">3. </span>Parallel implementations</a> &raquo;</li>
+      
+        <li><a href="mpi.html"><span class="section-number">3.1. </span>ChASE-MPI</a> &raquo;</li>
+      
+        <li><a href="distm.html"><span class="section-number">3.1.3. </span>Distributed-Memory Architecture</a> &raquo;</li>
+      
+    <li><span class="section-number">3.1.3.1. </span>Inter-node Implementation</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        
+          <a href="../_sources/parallel/mpi_dla.rst.txt" rel="nofollow"> View page source</a>
+        
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="inter-node-implementation">
+<span id="para-chase-inter-node"></span><h1><span class="section-number">3.1.3.1. </span>Inter-node Implementation<a class="headerlink" href="#inter-node-implementation" title="Permalink to this headline">¶</a></h1>
+<dl class="cpp class">
+<dt id="_CPPv4I0EN5chase3mpi11ChaseMpiDLAE">
+<span id="_CPPv3I0EN5chase3mpi11ChaseMpiDLAE"></span><span id="_CPPv2I0EN5chase3mpi11ChaseMpiDLAE"></span>template&lt;class <code class="sig-name descname">T</code>&gt;<br /><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a"></span><em class="property">class </em><code class="sig-prename descclassname"><a class="reference internal" href="../.unused_material/reference/chase.html#_CPPv45chaseP13MKL_Complex16iP13MKL_Complex16P13MKL_Complex16PdiKiKiPCiKdK15CHASE_MODE_TYPEK14CHASE_OPT_TYPE" title="chase">chase</a>::mpi<code class="sig-prename descclassname">::</code></code><code class="sig-name descname">ChaseMpiDLA</code> : <em class="property">public</em> <a class="reference internal" href="../.unused_material/reference/chase.html#_CPPv45chaseP13MKL_Complex16iP13MKL_Complex16P13MKL_Complex16PdiKiKiPCiKdK15CHASE_MODE_TYPEK14CHASE_OPT_TYPE" title="chase">chase</a>::mpi::<a class="reference internal" href="../module/chasempidlainterface.html#_CPPv4I0EN5chase3mpi20ChaseMpiDLAInterfaceE" title="chase::mpi::ChaseMpiDLAInterface">ChaseMpiDLAInterface</a>&lt;<a class="reference internal" href="#_CPPv4I0EN5chase3mpi11ChaseMpiDLAE" title="chase::mpi::ChaseMpiDLA::T">T</a>&gt;<a class="headerlink" href="#_CPPv4I0EN5chase3mpi11ChaseMpiDLAE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>A derived class of <a class="reference internal" href="../module/chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a> which implements mostly the MPI collective communications part of ChASE-MPI targeting the distributed-memory systens with or w/o GPUs. </p>
+<p>The computation in node are mostly implemented in <a class="reference internal" href="cpu.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_blaslapack"><span class="std std-ref">ChaseMpiDLABlaslapack</span></a> and <a class="reference internal" href="gpu.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u"><span class="std std-ref">ChaseMpiDLAMultiGPU</span></a>. It supports both <code class="docutils literal notranslate"><span class="pre">Block</span> <span class="pre">Distribution</span></code> and <code class="docutils literal notranslate"><span class="pre">Block-Cyclic</span> <span class="pre">Distribution</span></code> schemes. </p>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric">Public Functions</p>
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi11ChaseMpiDLA14preApplicationEP1TNSt6size_tENSt6size_tE">
+<span id="_CPPv3N5chase3mpi11ChaseMpiDLA14preApplicationEP1TNSt6size_tENSt6size_tE"></span><span id="_CPPv2N5chase3mpi11ChaseMpiDLA14preApplicationEP1TNSt6size_tENSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLA::preApplication__TP.std::s.std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_1aaff6bbdd2cf159ecaa1f7006a229c17e"></span>void <code class="sig-name descname">preApplication</code><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi11ChaseMpiDLAE" title="chase::mpi::ChaseMpiDLA::T">T</a> *<em>V</em>, std::size_t <em>locked</em>, std::size_t <em>block</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi11ChaseMpiDLA14preApplicationEP1TNSt6size_tENSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>This function is for some pre-application steps for the distributed HEMM in ChASE. These steps may vary in different implementations targetting different architectures. These steps can be backup of some buffers, copy data from CPU to GPU, etc. <dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">V1</span></code>: a pointer to a matrix </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">locked</span></code>: an integer indicating the number of locked (converged) eigenvectors </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">block</span></code>: an integer indicating the number of non-locked (non-converged) eigenvectors </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi11ChaseMpiDLA5applyE1T1TNSt6size_tENSt6size_tENSt6size_tE">
+<span id="_CPPv3N5chase3mpi11ChaseMpiDLA5applyE1T1TNSt6size_tENSt6size_tENSt6size_tE"></span><span id="_CPPv2N5chase3mpi11ChaseMpiDLA5applyE1T1TNSt6size_tENSt6size_tENSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLA::apply__T.T.std::s.std::s.std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_1a583170f5870557c3ac40025ec99a7948"></span>void <code class="sig-name descname">apply</code><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi11ChaseMpiDLAE" title="chase::mpi::ChaseMpiDLA::T">T</a> <em>alpha</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi11ChaseMpiDLAE" title="chase::mpi::ChaseMpiDLA::T">T</a> <em>beta</em>, std::size_t <em>offset</em>, std::size_t <em>block</em>, std::size_t <em>locked</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi11ChaseMpiDLA5applyE1T1TNSt6size_tENSt6size_tENSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p><ul class="simple">
+<li><p>In <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_d_l_a"><span class="std std-ref">ChaseMpiDLA</span></a>, collective communication of <code class="docutils literal notranslate"><span class="pre">HEMM</span></code> operation based on MPI which <strong>ALLREDUCE</strong> the product of local matrices either within the column communicator or row communicator.</p></li>
+<li><p>The workflow is:<ul>
+<li><p>compute <code class="docutils literal notranslate"><span class="pre">B_</span> <span class="pre">=</span> <span class="pre">H</span> <span class="pre">*</span> <span class="pre">C_</span></code> (local computation)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Allreduce</span></code>(B_, MPI_SUM) (communication within colum communicator)</p></li>
+<li><p>switch operation</p></li>
+<li><p>compute <code class="docutils literal notranslate"><span class="pre">C_</span> <span class="pre">=</span> <span class="pre">H**H</span> <span class="pre">*</span> <span class="pre">B_</span></code> (local computation)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Allreduce</span></code>(C_, MPI_SUM) (communication within row communicator)</p></li>
+<li><p>switch operation</p></li>
+<li><p>…</p></li>
+</ul>
+</p></li>
+<li><p>This function implements mainly the collective communications, while the local computation is implemented in <a class="reference internal" href="cpu.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_blaslapack"><span class="std std-ref">ChaseMpiDLABlaslapack</span></a> and <a class="reference internal" href="gpu.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u"><span class="std std-ref">ChaseMpiDLAMultiGPU</span></a>, targetting different architectures</p></li>
+<li><p>the computation of local <code class="docutils literal notranslate"><span class="pre">GEMM</span></code> invokes<ul>
+<li><p>BLAS <code class="docutils literal notranslate"><span class="pre">GEMM</span></code> for pure-CPU distributed-memory ChASE, and it is implemented in <a class="reference internal" href="cpu.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_blaslapack_1ade18fee311a948d820d31d4b3243bc0f"><span class="std std-ref">ChaseMpiDLABlaslapack::apply()</span></a></p></li>
+<li><p>cuBLAS <code class="docutils literal notranslate"><span class="pre">GEMM</span></code> for multi-GPU distributed-memory ChASE, and it is implemented in <a class="reference internal" href="gpu.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u_1a86df9f212342893c06bd2cc1e7599836"><span class="std std-ref">ChaseMpiDLAMultiGPU::apply()</span></a> </p></li>
+</ul>
+</p></li>
+</ul>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi11ChaseMpiDLA15postApplicationEP1TNSt6size_tENSt6size_tE">
+<span id="_CPPv3N5chase3mpi11ChaseMpiDLA15postApplicationEP1TNSt6size_tENSt6size_tE"></span><span id="_CPPv2N5chase3mpi11ChaseMpiDLA15postApplicationEP1TNSt6size_tENSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLA::postApplication__TP.std::s.std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_1ae84ecd5c579514c0195a4d7de9f5ea78"></span>bool <code class="sig-name descname">postApplication</code><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi11ChaseMpiDLAE" title="chase::mpi::ChaseMpiDLA::T">T</a> *<em>V</em>, std::size_t <em>block</em>, std::size_t <em>locked</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi11ChaseMpiDLA15postApplicationEP1TNSt6size_tENSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Copy from buffer rectangular matrix <code class="docutils literal notranslate"><span class="pre">v1</span></code> to <code class="docutils literal notranslate"><span class="pre">v2</span></code>. For the implementation of distributed-memory ChASE, this operation performs a <code class="docutils literal notranslate"><span class="pre">copy</span></code> from a matrix distributed within each column communicator and redundant among different column communicators to a matrix redundantly distributed across all MPI procs. Then in the next iteration of ChASE-MPI, this operation takes places in the row communicator…</p>
+<p><dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">V</span></code>: the target buff </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">block</span></code>: number of columns to copy from <code class="docutils literal notranslate"><span class="pre">v1</span></code> to <code class="docutils literal notranslate"><span class="pre">v2</span></code> </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">locked</span></code>: number of converged eigenvectors. </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi11ChaseMpiDLA11shiftMatrixE1Tb">
+<span id="_CPPv3N5chase3mpi11ChaseMpiDLA11shiftMatrixE1Tb"></span><span id="_CPPv2N5chase3mpi11ChaseMpiDLA11shiftMatrixE1Tb"></span><span id="chase::mpi::ChaseMpiDLA::shiftMatrix__T.b"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_1a907ec4e146304bc6e2d7d5b6da79cb32"></span>void <code class="sig-name descname">shiftMatrix</code><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi11ChaseMpiDLAE" title="chase::mpi::ChaseMpiDLA::T">T</a> <em>c</em>, bool <em>isunshift</em> = false<span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi11ChaseMpiDLA11shiftMatrixE1Tb" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p><ul class="simple">
+<li><p>For <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_d_l_a"><span class="std std-ref">ChaseMpiDLA</span></a>, <code class="docutils literal notranslate"><span class="pre">shiftMatrix</span></code> is<ul>
+<li><p>implemented in nested loop for pure-CPU distributed-memory ChASE, and it is implemented in <a class="reference internal" href="cpu.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_blaslapack"><span class="std std-ref">ChaseMpiDLABlaslapack</span></a></p></li>
+<li><p>implemented on each GPU for multi-GPU distributed-memory ChASE, and it is implemented in <a class="reference internal" href="gpu.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u"><span class="std std-ref">ChaseMpiDLAMultiGPU</span></a> </p></li>
+</ul>
+</p></li>
+</ul>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi11ChaseMpiDLA8applyVecEP1TP1T">
+<span id="_CPPv3N5chase3mpi11ChaseMpiDLA8applyVecEP1TP1T"></span><span id="_CPPv2N5chase3mpi11ChaseMpiDLA8applyVecEP1TP1T"></span><span id="chase::mpi::ChaseMpiDLA::applyVec__TP.TP"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_1ab7c26306be02884107c72ba5d83b5566"></span>void <code class="sig-name descname">applyVec</code><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi11ChaseMpiDLAE" title="chase::mpi::ChaseMpiDLA::T">T</a> *<em>B</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi11ChaseMpiDLAE" title="chase::mpi::ChaseMpiDLA::T">T</a> *<em>C</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi11ChaseMpiDLA8applyVecEP1TP1T" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p><ul class="simple">
+<li><p>For <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_d_l_a"><span class="std std-ref">ChaseMpiDLA</span></a>, <code class="docutils literal notranslate"><span class="pre">applyVec</span></code> is implemented as with the functions defined in this class.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">applyVec</span></code> is used by <a class="reference internal" href="../module/chasempi.html#classchase_1_1mpi_1_1_chase_mpi_1a4621ca0d3579601cac773f10919fb25d"><span class="std std-ref">ChaseMpi::Lanczos()</span></a>, which requires the input arguments <code class="docutils literal notranslate"><span class="pre">B</span></code> and <code class="docutils literal notranslate"><span class="pre">C</span></code> to be vectors of size <code class="docutils literal notranslate"><span class="pre">N_</span></code> which is redundantly distributed across all MPI procs.</p></li>
+<li><p>Here are the details:<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">ChaseMpiDLA::preApplication(B,</span> <span class="pre">0,</span> <span class="pre">1)</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ChaseMpiDLA::apply(One,</span> <span class="pre">Zero,</span> <span class="pre">0,</span> <span class="pre">1,</span> <span class="pre">0)</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ChaseMpiDLA::postApplication(C,</span> <span class="pre">1,</span> <span class="pre">0)</span></code> </p></li>
+</ul>
+</p></li>
+</ul>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi11ChaseMpiDLA4axpyENSt6size_tEP1TP1TNSt6size_tEP1TNSt6size_tE">
+<span id="_CPPv3N5chase3mpi11ChaseMpiDLA4axpyENSt6size_tEP1TP1TNSt6size_tEP1TNSt6size_tE"></span><span id="_CPPv2N5chase3mpi11ChaseMpiDLA4axpyENSt6size_tEP1TP1TNSt6size_tEP1TNSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLA::axpy__std::s.TP.TP.std::s.TP.std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_1aa2eb39192ec2e17b21bc25ca4a7be0c1"></span>void <code class="sig-name descname">axpy</code><span class="sig-paren">(</span>std::size_t <em>N</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi11ChaseMpiDLAE" title="chase::mpi::ChaseMpiDLA::T">T</a> *<em>alpha</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi11ChaseMpiDLAE" title="chase::mpi::ChaseMpiDLA::T">T</a> *<em>x</em>, std::size_t <em>incx</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi11ChaseMpiDLAE" title="chase::mpi::ChaseMpiDLA::T">T</a> *<em>y</em>, std::size_t <em>incy</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi11ChaseMpiDLA4axpyENSt6size_tEP1TP1TNSt6size_tEP1TNSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>A <code class="docutils literal notranslate"><span class="pre">BLAS-like</span></code> function which performs a constant times a vector plus a vector.</p>
+<p><dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">[in]</span> <span class="pre">N</span></code>: number of elements in input vector(s). </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">[in]</span> <span class="pre">alpha</span></code>: a scalar times on <code class="docutils literal notranslate"><span class="pre">x</span></code> in <code class="docutils literal notranslate"><span class="pre">AXPY</span></code> operation. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">[in]</span> <span class="pre">x</span></code>: an array of type <code class="docutils literal notranslate"><span class="pre">T</span></code>, dimension <code class="docutils literal notranslate"><span class="pre">(</span> <span class="pre">1</span> <span class="pre">+</span> <span class="pre">(</span> <span class="pre">N</span> <span class="pre">-</span> <span class="pre">1</span> <span class="pre">)*abs(</span> <span class="pre">incx</span> <span class="pre">)</span></code>. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">[in]</span> <span class="pre">incx</span></code>: storage spacing between elements of <code class="docutils literal notranslate"><span class="pre">x</span></code>. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">[in/out]</span></code>: y: an array of type <code class="docutils literal notranslate"><span class="pre">T</span></code>, dimension <code class="docutils literal notranslate"><span class="pre">(</span> <span class="pre">1</span> <span class="pre">+</span> <span class="pre">(</span> <span class="pre">N</span> <span class="pre">-</span> <span class="pre">1</span> <span class="pre">)*abs(</span> <span class="pre">incy</span> <span class="pre">)</span></code>. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">[in]</span> <span class="pre">incy</span></code>: storage spacing between elements of <code class="docutils literal notranslate"><span class="pre">y</span></code>. </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi11ChaseMpiDLA4scalENSt6size_tEP1TP1TNSt6size_tE">
+<span id="_CPPv3N5chase3mpi11ChaseMpiDLA4scalENSt6size_tEP1TP1TNSt6size_tE"></span><span id="_CPPv2N5chase3mpi11ChaseMpiDLA4scalENSt6size_tEP1TP1TNSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLA::scal__std::s.TP.TP.std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_1a73dc24df54fe8c9298c8bc02e93b70a6"></span>void <code class="sig-name descname">scal</code><span class="sig-paren">(</span>std::size_t <em>N</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi11ChaseMpiDLAE" title="chase::mpi::ChaseMpiDLA::T">T</a> *<em>a</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi11ChaseMpiDLAE" title="chase::mpi::ChaseMpiDLA::T">T</a> *<em>x</em>, std::size_t <em>incx</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi11ChaseMpiDLA4scalENSt6size_tEP1TP1TNSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p><ul class="simple">
+<li><p>For <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_d_l_a"><span class="std std-ref">ChaseMpiDLA</span></a>, <code class="docutils literal notranslate"><span class="pre">scal</span></code> is implemented by calling the one in <a class="reference internal" href="cpu.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_blaslapack"><span class="std std-ref">ChaseMpiDLABlaslapack</span></a> and <a class="reference internal" href="gpu.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_multi_g_p_u"><span class="std std-ref">ChaseMpiDLAMultiGPU</span></a>.</p></li>
+<li><p>This implementation is the same for both with or w/o GPUs.</p></li>
+<li><p><strong>Parallelism is SUPPORT within node if multi-threading is actived</strong></p></li>
+<li><p>For the meaning of this function, please visit <a class="reference internal" href="../module/chasempidlainterface.html#classchase_1_1mpi_1_1_chase_mpi_d_l_a_interface"><span class="std std-ref">ChaseMpiDLAInterface</span></a>. </p></li>
+</ul>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi11ChaseMpiDLA4nrm2ENSt6size_tEP1TNSt6size_tE">
+<span id="_CPPv3N5chase3mpi11ChaseMpiDLA4nrm2ENSt6size_tEP1TNSt6size_tE"></span><span id="_CPPv2N5chase3mpi11ChaseMpiDLA4nrm2ENSt6size_tEP1TNSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLA::nrm2__std::s.TP.std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_1aef91ea38d7e827fce4998c255dbc3a92"></span>Base&lt;<a class="reference internal" href="#_CPPv4I0EN5chase3mpi11ChaseMpiDLAE" title="chase::mpi::ChaseMpiDLA::T">T</a>&gt; <code class="sig-name descname">nrm2</code><span class="sig-paren">(</span>std::size_t <em>n</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi11ChaseMpiDLAE" title="chase::mpi::ChaseMpiDLA::T">T</a> *<em>x</em>, std::size_t <em>incx</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi11ChaseMpiDLA4nrm2ENSt6size_tEP1TNSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>A <code class="docutils literal notranslate"><span class="pre">BLAS-like</span></code> function which returns the euclidean norm of a vector. </p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p>the euclidean norm of vector <code class="docutils literal notranslate"><span class="pre">x</span></code>. </p>
+</dd>
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">[in]</span> <span class="pre">N</span></code>: number of elements in input vector(s). </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">[in]</span> <span class="pre">x</span></code>: an array of type <code class="docutils literal notranslate"><span class="pre">T</span></code>, dimension <code class="docutils literal notranslate"><span class="pre">(</span> <span class="pre">1</span> <span class="pre">+</span> <span class="pre">(</span> <span class="pre">N</span> <span class="pre">-</span> <span class="pre">1</span> <span class="pre">)*abs(</span> <span class="pre">incx</span> <span class="pre">)</span></code>. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">[in]</span> <span class="pre">incx</span></code>: storage spacing between elements of <code class="docutils literal notranslate"><span class="pre">x</span></code>. </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi11ChaseMpiDLA3dotENSt6size_tEP1TNSt6size_tEP1TNSt6size_tE">
+<span id="_CPPv3N5chase3mpi11ChaseMpiDLA3dotENSt6size_tEP1TNSt6size_tEP1TNSt6size_tE"></span><span id="_CPPv2N5chase3mpi11ChaseMpiDLA3dotENSt6size_tEP1TNSt6size_tEP1TNSt6size_tE"></span><span id="chase::mpi::ChaseMpiDLA::dot__std::s.TP.std::s.TP.std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_d_l_a_1ac19d4788f156e15d487aaaccebc4e49e"></span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi11ChaseMpiDLAE" title="chase::mpi::ChaseMpiDLA::T">T</a> <code class="sig-name descname">dot</code><span class="sig-paren">(</span>std::size_t <em>n</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi11ChaseMpiDLAE" title="chase::mpi::ChaseMpiDLA::T">T</a> *<em>x</em>, std::size_t <em>incx</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi11ChaseMpiDLAE" title="chase::mpi::ChaseMpiDLA::T">T</a> *<em>y</em>, std::size_t <em>incy</em><span class="sig-paren">)</span> <em class="property">override</em><a class="headerlink" href="#_CPPv4N5chase3mpi11ChaseMpiDLA3dotENSt6size_tEP1TNSt6size_tEP1TNSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>A <code class="docutils literal notranslate"><span class="pre">BLAS-like</span></code> function which forms the dot product of two vectors. </p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p>the dot product of vectors <code class="docutils literal notranslate"><span class="pre">x</span></code> and <code class="docutils literal notranslate"><span class="pre">y</span></code>. </p>
+</dd>
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">[in]</span> <span class="pre">N</span></code>: number of elements in input vector(s). </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">[in]</span> <span class="pre">x</span></code>: an array of type <code class="docutils literal notranslate"><span class="pre">T</span></code>, dimension <code class="docutils literal notranslate"><span class="pre">(</span> <span class="pre">1</span> <span class="pre">+</span> <span class="pre">(</span> <span class="pre">N</span> <span class="pre">-</span> <span class="pre">1</span> <span class="pre">)*abs(</span> <span class="pre">incx</span> <span class="pre">)</span></code>. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">[in]</span> <span class="pre">incx</span></code>: storage spacing between elements of <code class="docutils literal notranslate"><span class="pre">x</span></code>. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">[in]</span> <span class="pre">y</span></code>: an array of type <code class="docutils literal notranslate"><span class="pre">T</span></code>, dimension <code class="docutils literal notranslate"><span class="pre">(</span> <span class="pre">1</span> <span class="pre">+</span> <span class="pre">(</span> <span class="pre">N</span> <span class="pre">-</span> <span class="pre">1</span> <span class="pre">)*abs(</span> <span class="pre">incy</span> <span class="pre">)</span></code>. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">[in]</span> <span class="pre">incy</span></code>: storage spacing between elements of <code class="docutils literal notranslate"><span class="pre">y</span></code>. </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+</div>
+</dd></dl>
+
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="cpu.html" class="btn btn-neutral float-right" title="3.1.3.2. CPUs in node" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="distm.html" class="btn btn-neutral" title="3.1.3. Distributed-Memory Architecture" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2023, SimLab Quantum Materials.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'v1.3.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="../_static/language_data.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

@@ -1,0 +1,1155 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ChaseMpiProperties &mdash; ChASE v1.3.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../_static/ChASE_Logo_Favicon_RGB.png"/>
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="../theme_overrides.css" type="text/css" />
+  
+
+  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="ChASE v1.3.0 documentation" href="../index.html"/>
+    <link href="../_static/theme_overrides.css" rel="stylesheet" type="text/css">
+
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html">
+          
+
+          
+            
+            <img src="../_static/ChASE_Logo_RGB.png" class="logo" />
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                v1.3.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <p class="caption"><span class="caption-text">INTRODUCTION</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../chase.html">ChASE: an Iterative Solver for Dense Eigenproblems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../version.html">Versions of the library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../license.html">Licenses and Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reference.html">References and Contributors</a></li>
+</ul>
+<p class="caption"><span class="caption-text">USER DOCUMENTATION</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../quick-start.html">1. Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">2. Installation and Setup on a Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage.html">3. How to use ChASE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../parameters.html">4. Parameters and Configurations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../module.html">5. Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../example.html">6. Examples</a></li>
+</ul>
+<p class="caption"><span class="caption-text">DEVELOPER DOCUMENTATION</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../algorithm.html">1. General algorithm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../abstract.html">2. Virtual Abstract of Numerical Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../parallel.html">3. Parallel implementations</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">ChASE</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+    <li>ChaseMpiProperties</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        
+          <a href="../_sources/module/chasempiproperties.rst.txt" rel="nofollow"> View page source</a>
+        
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="chasempiproperties">
+<span id="id1"></span><h1>ChaseMpiProperties<a class="headerlink" href="#chasempiproperties" title="Permalink to this headline">¶</a></h1>
+<dl class="cpp class">
+<dt id="_CPPv4I0EN5chase3mpi18ChaseMpiPropertiesE">
+<span id="_CPPv3I0EN5chase3mpi18ChaseMpiPropertiesE"></span><span id="_CPPv2I0EN5chase3mpi18ChaseMpiPropertiesE"></span>template&lt;class <code class="sig-name descname">T</code>&gt;<br /><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties"></span><em class="property">class </em><code class="sig-prename descclassname"><a class="reference internal" href="../.unused_material/reference/chase.html#_CPPv45chaseP13MKL_Complex16iP13MKL_Complex16P13MKL_Complex16PdiKiKiPCiKdK15CHASE_MODE_TYPEK14CHASE_OPT_TYPE" title="chase">chase</a>::mpi<code class="sig-prename descclassname">::</code></code><code class="sig-name descname">ChaseMpiProperties</code><a class="headerlink" href="#_CPPv4I0EN5chase3mpi18ChaseMpiPropertiesE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>A class to setup <strong>MPI</strong> properties and matrix distribution scheme for the implementation of ChASE on distributed-memory systems. </p>
+<p>The <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_properties"><span class="std std-ref">ChaseMpiProperties</span></a> class creates a 2D grid of MPI nodes with fixed width and height. It defines also the scheme to distribute an Hermitian matrix <code class="docutils literal notranslate"><span class="pre">A</span></code> of side <code class="docutils literal notranslate"><span class="pre">N</span></code> over this 2D grid of MPI nodes. Currently, two data distribution fashion are supported in ChASE.<ul class="simple">
+<li><p><strong>Block distribution</strong> scheme in which one submatrix of <code class="docutils literal notranslate"><span class="pre">A</span></code> is assigned to one single MPI node;</p></li>
+<li><p><strong>Block-Cyclic distribution</strong> scheme, which distributes a series of submatrices of <code class="docutils literal notranslate"><span class="pre">A</span></code> to the MPI nodes in a round-robin manner so that each MPI rank gets several non-adjacent blocks. More details about this distribution can be found on <a class="reference external" href="https://www.netlib.org/scalapack/slug/node75.html">Netlib</a>. <dl class="simple">
+<dt><strong>Template Parameters</strong></dt><dd><ul class="breatheparameterlist">
+<li><p><code class="docutils literal notranslate"><span class="pre">T</span></code>: the scalar type used for the application. ChASE is templated for real and complex scalars with both Single Precision and Double Precision, thus <code class="docutils literal notranslate"><span class="pre">T</span></code> can be one of <code class="docutils literal notranslate"><span class="pre">float</span></code>, <code class="docutils literal notranslate"><span class="pre">double</span></code>, <code class="docutils literal notranslate"><span class="pre">std::complex&lt;float&gt;</span></code> and <code class="docutils literal notranslate"><span class="pre">std::complex&lt;double&gt;</span></code>. </p></li>
+</ul>
+</dd>
+</dl>
+</p></li>
+</ul>
+</p>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric">Public Functions</p>
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties18ChaseMpiPropertiesENSt6size_tENSt6size_tENSt6size_tENSt6size_tENSt6size_tEiiPcii8MPI_Comm">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties18ChaseMpiPropertiesENSt6size_tENSt6size_tENSt6size_tENSt6size_tENSt6size_tEiiPcii8MPI_Comm"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties18ChaseMpiPropertiesENSt6size_tENSt6size_tENSt6size_tENSt6size_tENSt6size_tEiiPcii8MPI_Comm"></span><span id="chase::mpi::ChaseMpiProperties::ChaseMpiProperties__std::s.std::s.std::s.std::s.std::s.i.i.cP.i.i.MPI_Comm"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a3d635c1b381d99b16901e3b0cb3f5031"></span><code class="sig-name descname">ChaseMpiProperties</code><span class="sig-paren">(</span>std::size_t <em>N</em>, std::size_t <em>mb</em>, std::size_t <em>nb</em>, std::size_t <em>nev</em>, std::size_t <em>nex</em>, int <em>row_dim</em>, int <em>col_dim</em>, char *<em>grid_major</em>, int <em>irsrc</em>, int <em>icsrc</em>, MPI_Comm <em>comm</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties18ChaseMpiPropertiesENSt6size_tENSt6size_tENSt6size_tENSt6size_tENSt6size_tEiiPcii8MPI_Comm" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>A constructor of the class <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_properties"><span class="std std-ref">ChaseMpiProperties</span></a> which distributes matrix <code class="docutils literal notranslate"><span class="pre">A</span></code> in <strong>Block-Cyclic Distribution</strong>.</p>
+<p>It constructs a 2D grid of MPI ranks within the MPI communicator <code class="docutils literal notranslate"><span class="pre">comm_</span></code>.<ul class="simple">
+<li><p>The dimension of this 2D grid is determined by explicit values <code class="docutils literal notranslate"><span class="pre">row_dim</span></code> and <code class="docutils literal notranslate"><span class="pre">col_dim</span></code>, thus <code class="docutils literal notranslate"><span class="pre">row_dim</span> <span class="pre">*</span> <span class="pre">col_dim</span></code>.</p></li>
+<li><p>The major to index the coordinations of the MPI ranks is determined by the value of <code class="docutils literal notranslate"><span class="pre">grid_major</span></code>: if <code class="docutils literal notranslate"><span class="pre">grid_major=&quot;C&quot;</span></code>, they are indexed by <code class="docutils literal notranslate"><span class="pre">column</span> <span class="pre">major</span></code>, if <code class="docutils literal notranslate"><span class="pre">grid_major=&quot;R&quot;</span></code>, they are indexed by <code class="docutils literal notranslate"><span class="pre">Row</span> <span class="pre">major</span></code>.</p></li>
+<li><p>It distributes the Hermitian matrix <code class="docutils literal notranslate"><span class="pre">A</span></code> in a <strong>Block-Dsitribution</strong> scheme.</p></li>
+</ul>
+</p>
+<p>This constructor requires the explicit values for the initalization of the size <code class="docutils literal notranslate"><span class="pre">N</span></code> of the matrix <em>A</em>, the number of sought after extremal eigenvalues <code class="docutils literal notranslate"><span class="pre">nev</span></code>, and the number of extra eigenvalue <code class="docutils literal notranslate"><span class="pre">nex</span></code> which defines, together with <code class="docutils literal notranslate"><span class="pre">nev</span></code>, the search space, and the working MPI communicator <code class="docutils literal notranslate"><span class="pre">comm_</span></code> for the construction of eigenproblem. For the distribution in block-cyclic scheme, it requires also the dimensions of 2D grid <code class="docutils literal notranslate"><span class="pre">row_dim</span></code> and <code class="docutils literal notranslate"><span class="pre">col_dim</span></code>, the row and column blocking factors <code class="docutils literal notranslate"><span class="pre">mb</span></code> and <code class="docutils literal notranslate"><span class="pre">nb</span></code>, the major of grid indexing <code class="docutils literal notranslate"><span class="pre">grid_major</span></code>, and the process row/column over which the first row/column of the global matrix <code class="docutils literal notranslate"><span class="pre">A</span></code> is distributed.</p>
+<p>The parameters related to <strong>Block-Cyclic Distribution</strong> conforms equally with the <a class="reference external" href="https://www.netlib.org/scalapack/slug/node77.html">Array Descriptor</a> of in-core Dense Matrices in <strong>ScaLAPACK</strong>.</p>
+<p>All the private members are either initialized directly by these parameters, or setup within the construction of this constructor. <dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">N</span></code>: Size of the square matrix defining the eigenproblem. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mb</span></code>: Row blocking factor for <em>Block-Cyclic Distribution</em>. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">nb</span></code>: Column blocking factor for <em>Block-Cyclic Distribution</em>`. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">nev</span></code>: Number of desired extremal eigenvalues. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">nex</span></code>: Number of eigenvalues augmenting the search space. Usually a relatively small fraction of <code class="docutils literal notranslate"><span class="pre">nev</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">row_dim</span></code>: number of row in the 2D grid of MPI nodes to be constructed.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">col_dim</span></code>: number of column in the 2D grid of MPI nodes to be constructed.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">grid_major</span></code>: the type of numbering of the MPI ranks within the constructed 2D grid.<ul>
+<li><p>Row major numbering if <code class="docutils literal notranslate"><span class="pre">grid_major==&quot;C&quot;</span></code>.</p></li>
+<li><p>Column major numbering if <code class="docutils literal notranslate"><span class="pre">grid_major==&quot;R&quot;</span></code>. </p></li>
+</ul>
+</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">irsrc</span></code>: Process row over which the first row of the global matrix <code class="docutils literal notranslate"><span class="pre">A</span></code> is distributed.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">icsrc</span></code>: Process column over which the first column of the global matrix <code class="docutils literal notranslate"><span class="pre">A</span></code> is distributed.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">comm</span></code>: the working MPI communicator for ChASE. </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties18ChaseMpiPropertiesENSt6size_tENSt6size_tENSt6size_tENSt6size_tENSt6size_tEiiPc8MPI_Comm">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties18ChaseMpiPropertiesENSt6size_tENSt6size_tENSt6size_tENSt6size_tENSt6size_tEiiPc8MPI_Comm"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties18ChaseMpiPropertiesENSt6size_tENSt6size_tENSt6size_tENSt6size_tENSt6size_tEiiPc8MPI_Comm"></span><span id="chase::mpi::ChaseMpiProperties::ChaseMpiProperties__std::s.std::s.std::s.std::s.std::s.i.i.cP.MPI_Comm"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1aafb9174f699fc5f3d173fd318d58cd6b"></span><code class="sig-name descname">ChaseMpiProperties</code><span class="sig-paren">(</span>std::size_t <em>N</em>, std::size_t <em>nev</em>, std::size_t <em>nex</em>, std::size_t <em>m</em>, std::size_t <em>n</em>, int <em>npr</em>, int <em>npc</em>, char *<em>grid_major</em>, MPI_Comm <em>comm</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties18ChaseMpiPropertiesENSt6size_tENSt6size_tENSt6size_tENSt6size_tENSt6size_tEiiPc8MPI_Comm" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>A constructor of the class <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_properties"><span class="std std-ref">ChaseMpiProperties</span></a> which distributes matrix <code class="docutils literal notranslate"><span class="pre">A</span></code> in <code class="docutils literal notranslate"><span class="pre">Block</span> <span class="pre">Distribution</span></code>.</p>
+<p>It constructs a 2D grid of MPI ranks within the MPI communicator <code class="docutils literal notranslate"><span class="pre">comm_</span></code>.</p>
+<p><ul class="simple">
+<li><p>The dimensions of this 2D grid is determined by the input arguments <code class="docutils literal notranslate"><span class="pre">npr</span></code> and <code class="docutils literal notranslate"><span class="pre">npc</span></code>. The 2D grid is <code class="docutils literal notranslate"><span class="pre">npr</span> <span class="pre">x</span> <span class="pre">npc</span></code></p></li>
+<li><p>It distributes the Hermitian matrix <code class="docutils literal notranslate"><span class="pre">A</span></code> in a <strong>Block-Dsitribution</strong> scheme.</p></li>
+</ul>
+</p>
+<p>This constructor requires the explicit values for the initalization of the size <code class="docutils literal notranslate"><span class="pre">N</span></code> of the matrix <em>A</em>, the number of sought after extremal eigenvalues <code class="docutils literal notranslate"><span class="pre">nev</span></code>, and the number of extra eigenvalue <code class="docutils literal notranslate"><span class="pre">nex</span></code> which defines, together with <code class="docutils literal notranslate"><span class="pre">nev</span></code>, the search space, the dimension of local matrix <code class="docutils literal notranslate"><span class="pre">m</span></code> and <code class="docutils literal notranslate"><span class="pre">n</span></code>, the 2D MPI grid <code class="docutils literal notranslate"><span class="pre">npr</span></code> and <code class="docutils literal notranslate"><span class="pre">npc</span></code>, and the working MPI communicator <code class="docutils literal notranslate"><span class="pre">comm_</span></code>.</p>
+<p>All the private members are either initialized directly by these parameters, or setup within the construction of this constructor.</p>
+<p><dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">N</span></code>: Size of the square matrix defining the eigenproblem. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">nev</span></code>: Number of desired extremal eigenvalues. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">nex</span></code>: Number of eigenvalues augmenting the search space. Usually a relatively small fraction of <code class="docutils literal notranslate"><span class="pre">nev</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">m</span></code>: row number of local matrix on each MPI rank</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">n</span></code>: column number of local matrix on each MPI rank </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">npr</span></code>: row number of 2D MPI grid </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">npc</span></code>: column number of 2D MPI grid </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">grid_major</span></code>: the type of numbering of the MPI ranks within the constructed 2D grid.<ul>
+<li><p>Row major numbering if <code class="docutils literal notranslate"><span class="pre">grid_major==&quot;C&quot;</span></code>.</p></li>
+<li><p>Column major numbering if <code class="docutils literal notranslate"><span class="pre">grid_major==&quot;R&quot;</span></code>.</p></li>
+</ul>
+</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">comm</span></code>: the working MPI communicator for ChASE. </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties18ChaseMpiPropertiesENSt6size_tENSt6size_tENSt6size_tE8MPI_Comm">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties18ChaseMpiPropertiesENSt6size_tENSt6size_tENSt6size_tE8MPI_Comm"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties18ChaseMpiPropertiesENSt6size_tENSt6size_tENSt6size_tE8MPI_Comm"></span><span id="chase::mpi::ChaseMpiProperties::ChaseMpiProperties__std::s.std::s.std::s.MPI_Comm"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a6237975d71586c88167b20ba0337b193"></span><code class="sig-name descname">ChaseMpiProperties</code><span class="sig-paren">(</span>std::size_t <em>N</em>, std::size_t <em>nev</em>, std::size_t <em>nex</em>, MPI_Comm <em>comm</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties18ChaseMpiPropertiesENSt6size_tENSt6size_tENSt6size_tE8MPI_Comm" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>A constructor of the class <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_properties"><span class="std std-ref">ChaseMpiProperties</span></a> which distributes matrix <code class="docutils literal notranslate"><span class="pre">A</span></code> in <code class="docutils literal notranslate"><span class="pre">Block</span> <span class="pre">Distribution</span></code>.</p>
+<p>It constructs a 2D grid of MPI ranks within the MPI communicator <code class="docutils literal notranslate"><span class="pre">comm_</span></code>.</p>
+<p><ul class="simple">
+<li><p>The dimensions of this 2D grid is determined by <code class="docutils literal notranslate"><span class="pre">MPI_Cart_create</span></code> using all the available MPI nodes within <code class="docutils literal notranslate"><span class="pre">comm_</span></code>.</p></li>
+<li><p>It distributes the Hermitian matrix <code class="docutils literal notranslate"><span class="pre">A</span></code> in a <strong>Block-Dsitribution</strong> scheme.</p></li>
+</ul>
+</p>
+<p>This constructor requires the explicit values for the initalization of the size <code class="docutils literal notranslate"><span class="pre">N</span></code> of the matrix <em>A</em>, the number of sought after extremal eigenvalues <code class="docutils literal notranslate"><span class="pre">nev</span></code>, and the number of extra eigenvalue <code class="docutils literal notranslate"><span class="pre">nex</span></code> which defines, together with <code class="docutils literal notranslate"><span class="pre">nev</span></code>, the search space, and the working MPI communicator <code class="docutils literal notranslate"><span class="pre">comm_</span></code>.</p>
+<p>All the private members are either initialized directly by these parameters, or setup within the construction of this constructor.</p>
+<p><dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">N</span></code>: Size of the square matrix defining the eigenproblem. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">nev</span></code>: Number of desired extremal eigenvalues. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">nex</span></code>: Number of eigenvalues augmenting the search space. Usually a relatively small fraction of <code class="docutils literal notranslate"><span class="pre">nev</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">comm</span></code>: the working MPI communicator for ChASE. </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties5get_NEv">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties5get_NEv"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties5get_NEv"></span><span id="chase::mpi::ChaseMpiProperties::get_N"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a70a0338aefb7641cbcfcef13a4df0ac0"></span>std::size_t <code class="sig-name descname">get_N</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties5get_NEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Returns the rank of matrix <code class="docutils literal notranslate"><span class="pre">A</span></code> which is distributed within 2D MPI grid. </p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p><code class="docutils literal notranslate"><span class="pre">N_</span></code>: the rank of matrix <code class="docutils literal notranslate"><span class="pre">A</span></code>. </p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties7get_ldhEv">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties7get_ldhEv"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties7get_ldhEv"></span><span id="chase::mpi::ChaseMpiProperties::get_ldh"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a6efb6b163dcb2ec55d82b8db9f5b7170"></span>std::size_t <code class="sig-name descname">get_ldh</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties7get_ldhEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Return leading dimension of local part of Symmetric/Hermtian matrix on each MPI proc.</p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p><code class="docutils literal notranslate"><span class="pre">ldh_</span></code>, a private member of this class. </p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties5get_nEv">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties5get_nEv"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties5get_nEv"></span><span id="chase::mpi::ChaseMpiProperties::get_n"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a5f4e469bb77db1b27159008ae0674e5e"></span>std::size_t <code class="sig-name descname">get_n</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties5get_nEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Returns column number of the local matrix on each MPI node. </p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p><code class="docutils literal notranslate"><span class="pre">n_</span></code>: the column number of the local matrix on each MPI node. </p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties5get_mEv">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties5get_mEv"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties5get_mEv"></span><span id="chase::mpi::ChaseMpiProperties::get_m"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a01fde078c77e8000431e6c09a487aed3"></span>std::size_t <code class="sig-name descname">get_m</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties5get_mEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Returns row number of the local matrix. </p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p><code class="docutils literal notranslate"><span class="pre">m_</span></code>: Row number of the local matrix on each MPI node. </p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties13get_max_blockEv">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties13get_max_blockEv"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties13get_max_blockEv"></span><span id="chase::mpi::ChaseMpiProperties::get_max_block"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1aa7f0cb4e26ce8e478cd8b8839e7b2eb1"></span>std::size_t <code class="sig-name descname">get_max_block</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties13get_max_blockEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Returns the maximum column number of rectangular matrix <code class="docutils literal notranslate"><span class="pre">V</span></code>. </p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p><code class="docutils literal notranslate"><span class="pre">max_block_</span></code>: Maximum column number of matrix <code class="docutils literal notranslate"><span class="pre">V</span></code>. </p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties6GetNevEv">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties6GetNevEv"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties6GetNevEv"></span><span id="chase::mpi::ChaseMpiProperties::GetNev"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a42a36cdda20247c7db7468e69bcdeb4e"></span>std::size_t <code class="sig-name descname">GetNev</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties6GetNevEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Returns number of desired extremal eigenpairs, which was set by users. </p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p><code class="docutils literal notranslate"><span class="pre">nev_</span></code>: Number of desired extremal eigenpairs. </p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties6GetNexEv">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties6GetNexEv"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties6GetNexEv"></span><span id="chase::mpi::ChaseMpiProperties::GetNex"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1ad511910198f59a9225c1bd5b18aa50cc"></span>std::size_t <code class="sig-name descname">GetNex</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties6GetNexEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Returns the Increment of the search subspace so that its total size, which was set by users within <a class="reference internal" href="config.html#classchase_1_1_chase_config"><span class="std std-ref">chase::ChaseConfig</span></a>.</p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p><code class="docutils literal notranslate"><span class="pre">nex_</span></code>: Increment of the search subspace. </p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties6get_nbEv">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties6get_nbEv"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties6get_nbEv"></span><span id="chase::mpi::ChaseMpiProperties::get_nb"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a9cb96b61d83bdf9a3030d1791ed3a092"></span>std::size_t <code class="sig-name descname">get_nb</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties6get_nbEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Returns the column blocking factor, this function is useful for ChASE with <em>Block-Cyclic Distribution</em>.</p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p><code class="docutils literal notranslate"><span class="pre">nb_</span></code>: Column blocking factor. </p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties6get_mbEv">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties6get_mbEv"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties6get_mbEv"></span><span id="chase::mpi::ChaseMpiProperties::get_mb"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a263e63a736dcb2d899f485787ec07a37"></span>std::size_t <code class="sig-name descname">get_mb</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties6get_mbEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Returns the row blocking factor, this function is useful for ChASE with <em>Block-Cyclic Distribution</em>.</p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p><code class="docutils literal notranslate"><span class="pre">mb_</span></code>: Row blocking factor. </p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties12get_row_commEv">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties12get_row_commEv"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties12get_row_commEv"></span><span id="chase::mpi::ChaseMpiProperties::get_row_comm"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1ad39061c6f99d2b444c0a72e0f48b9e07"></span>MPI_Comm <code class="sig-name descname">get_row_comm</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties12get_row_commEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p><code class="docutils literal notranslate"><span class="pre">row_comm_</span></code>: the row communicator within 2D MPI grid. </p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties12get_col_commEv">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties12get_col_commEv"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties12get_col_commEv"></span><span id="chase::mpi::ChaseMpiProperties::get_col_comm"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1ac4b514a44b74638e1fa4940e6c27fb17"></span>MPI_Comm <code class="sig-name descname">get_col_comm</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties12get_col_commEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p><code class="docutils literal notranslate"><span class="pre">col_comm_</span></code>: the column communicator within 2D MPI grid. </p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties8get_dimsEv">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties8get_dimsEv"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties8get_dimsEv"></span><span id="chase::mpi::ChaseMpiProperties::get_dims"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a25bd9f1c4b0c383750ce9df865a6f654"></span>int *<code class="sig-name descname">get_dims</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties8get_dimsEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Returns the dimension of cartesian communicator grid. </p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p><code class="docutils literal notranslate"><span class="pre">dims_</span></code>: an array of size 2 which store the dimensions of the constructed 2D MPI grid. </p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties7get_offEv">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties7get_offEv"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties7get_offEv"></span><span id="chase::mpi::ChaseMpiProperties::get_off"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1ab5b3f46ff366d1ae0f93afad1a1cb2ff"></span>std::size_t *<code class="sig-name descname">get_off</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties7get_offEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>This member function is mostly used for ChASE with <em>Block-Distribution</em>. </p>
+<p>Returns offset of row and column of the local matrix on each MPI node regarding the index of row and column of global matrix <code class="docutils literal notranslate"><span class="pre">A</span></code>.</p>
+<p>For example, for a global matrix <code class="docutils literal notranslate"><span class="pre">A</span></code>, <code class="docutils literal notranslate"><span class="pre">A_sub</span></code> is a submatrix of <code class="docutils literal notranslate"><span class="pre">A</span></code> of size <code class="docutils literal notranslate"><span class="pre">m</span> <span class="pre">*</span> <span class="pre">n</span></code>, which is extracted out of <code class="docutils literal notranslate"><span class="pre">A</span></code> starting from the row indexing <code class="docutils literal notranslate"><span class="pre">i</span></code> and column indexing <code class="docutils literal notranslate"><span class="pre">j</span></code>. This member function returns <code class="docutils literal notranslate"><span class="pre">i</span></code> and <code class="docutils literal notranslate"><span class="pre">j</span></code> as an array of size 2 for the submatrix on each MPI rank.</p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p><code class="docutils literal notranslate"><span class="pre">off_</span></code>: an array of size 2 which stores the offset of row and column of the local matrix on each MPI node regarding the index of row and column of global matrix <code class="docutils literal notranslate"><span class="pre">A</span></code>. </p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties7get_offEPNSt6size_tEPNSt6size_tEPNSt6size_tEPNSt6size_tE">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties7get_offEPNSt6size_tEPNSt6size_tEPNSt6size_tEPNSt6size_tE"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties7get_offEPNSt6size_tEPNSt6size_tEPNSt6size_tEPNSt6size_tE"></span><span id="chase::mpi::ChaseMpiProperties::get_off__std::sP.std::sP.std::sP.std::sP"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a53dda16713cdb16edba0eae1066cc6eb"></span>void <code class="sig-name descname">get_off</code><span class="sig-paren">(</span>std::size_t *<em>xoff</em>, std::size_t *<em>yoff</em>, std::size_t *<em>xlen</em>, std::size_t *<em>ylen</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties7get_offEPNSt6size_tEPNSt6size_tEPNSt6size_tEPNSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>This member function is mostly used for ChASE with <em>Block-Distribution</em>. </p>
+<p>Return the offset and length along the two dimensions of the local matrix on each MPI node regarding the global index of matrix <code class="docutils literal notranslate"><span class="pre">A</span></code>.</p>
+<p>For example, for a global matrix <code class="docutils literal notranslate"><span class="pre">A</span></code>, <code class="docutils literal notranslate"><span class="pre">A_sub</span></code> is a submatrix of <code class="docutils literal notranslate"><span class="pre">A</span></code> of size <code class="docutils literal notranslate"><span class="pre">m</span> <span class="pre">*</span> <span class="pre">n</span></code>, which is extracted out of <code class="docutils literal notranslate"><span class="pre">A</span></code> starting from the row indexing <code class="docutils literal notranslate"><span class="pre">i</span></code> and column indexing <code class="docutils literal notranslate"><span class="pre">j</span></code>. This member function outputs <code class="docutils literal notranslate"><span class="pre">xoff=i</span></code>, <code class="docutils literal notranslate"><span class="pre">yoff=j</span></code>, <code class="docutils literal notranslate"><span class="pre">xlen=m</span></code>, and <code class="docutils literal notranslate"><span class="pre">ylen=n</span></code> for the submatrix on each MPI rank.</p>
+<p><dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">[in/out]</span></code>: <code class="docutils literal notranslate"><span class="pre">xoff</span></code> -&gt; the offset of row of the local matrix on each MPI node regarding the row index of matrix <code class="docutils literal notranslate"><span class="pre">A</span></code>. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">[in/out]</span></code>: <code class="docutils literal notranslate"><span class="pre">yoff</span></code> -&gt; the offset of column of the local matrix on each MPI node regarding the column index of matrix <code class="docutils literal notranslate"><span class="pre">A</span></code>. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">[in/out]</span></code>: <code class="docutils literal notranslate"><span class="pre">xlen</span></code> -&gt; the number of row of the local matrix on each MPI node. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">[in/out]</span></code>: <code class="docutils literal notranslate"><span class="pre">ylen</span></code> -&gt; the number of column of the local matrix on each MPI node. </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties11get_mblocksEv">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties11get_mblocksEv"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties11get_mblocksEv"></span><span id="chase::mpi::ChaseMpiProperties::get_mblocks"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a67575906cbce4b325ef184189941e60d"></span>std::size_t <code class="sig-name descname">get_mblocks</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties11get_mblocksEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>This member function is mostly used for ChASE with <em>Block-Cyclic Distribution</em>. The number of submatrix on each MPI node is <code class="docutils literal notranslate"><span class="pre">mblocks_</span> <span class="pre">*</span> <span class="pre">nblocks_</span></code>.</p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p><code class="docutils literal notranslate"><span class="pre">mblocks_</span></code>: the number of submatrices in the local matrix on each MPI node along the row direction. </p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties11get_nblocksEv">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties11get_nblocksEv"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties11get_nblocksEv"></span><span id="chase::mpi::ChaseMpiProperties::get_nblocks"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a38e1759088d51cad34e317f2615934b2"></span>std::size_t <code class="sig-name descname">get_nblocks</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties11get_nblocksEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>This member function is mostly used for ChASE with <em>Block-Cyclic Distribution</em>. The number of submatrix on each MPI node is <code class="docutils literal notranslate"><span class="pre">mblocks_</span> <span class="pre">*</span> <span class="pre">nblocks_</span></code>.</p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p><code class="docutils literal notranslate"><span class="pre">nblocks_</span></code>: the number of submatrices in the local matrix on each MPI node along the column direction. </p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties9get_irsrcEv">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties9get_irsrcEv"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties9get_irsrcEv"></span><span id="chase::mpi::ChaseMpiProperties::get_irsrc"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a3f33dab429394af0610ccc4c177be008"></span>int <code class="sig-name descname">get_irsrc</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties9get_irsrcEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>This member function only matters for the <em>Block-Cyclic Distribution</em>. </p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p><code class="docutils literal notranslate"><span class="pre">irsrc_</span></code>: the process row within 2D MPI grid over which the first row of the global matrix <code class="docutils literal notranslate"><span class="pre">A</span></code> is distributed. </p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties9get_icsrcEv">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties9get_icsrcEv"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties9get_icsrcEv"></span><span id="chase::mpi::ChaseMpiProperties::get_icsrc"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a41a4766cab1d2c399db2e3047ebbca70"></span>int <code class="sig-name descname">get_icsrc</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties9get_icsrcEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>This member function only matters for the <em>Block-Cyclic Distribution</em>. </p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p><code class="docutils literal notranslate"><span class="pre">icsrc_</span></code>: the process column within 2D MPI grid over which the first column of the global matrix <code class="docutils literal notranslate"><span class="pre">A</span></code> is distributed. </p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties12get_row_offsEv">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties12get_row_offsEv"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties12get_row_offsEv"></span><span id="chase::mpi::ChaseMpiProperties::get_row_offs"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a0e85b2127e6acdc7c1872f95680afe27"></span>std::size_t *<code class="sig-name descname">get_row_offs</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties12get_row_offsEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>This member function only matters for the <em>Block-Cyclic Distribution</em>. </p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p><code class="docutils literal notranslate"><span class="pre">r_offs_.get()</span></code>: the pointer to store offset of each subblock in local matrix along the row direction regarding the row direction of global matrix <code class="docutils literal notranslate"><span class="pre">A</span></code>. </p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties12get_row_lensEv">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties12get_row_lensEv"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties12get_row_lensEv"></span><span id="chase::mpi::ChaseMpiProperties::get_row_lens"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1abe3fb9e63fd167cde35279ed1cd083f9"></span>std::size_t *<code class="sig-name descname">get_row_lens</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties12get_row_lensEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>This member function only matters for the <em>Block-Cyclic Distribution</em>. </p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p><code class="docutils literal notranslate"><span class="pre">r_lens_.get()</span></code>: the pointer to store number of row of each subblock in local matrix along the row direction regarding the row direction of global matrix <code class="docutils literal notranslate"><span class="pre">A</span></code>. </p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties16get_row_offs_locEv">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties16get_row_offs_locEv"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties16get_row_offs_locEv"></span><span id="chase::mpi::ChaseMpiProperties::get_row_offs_loc"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a8443c30210812ae5dbb97e0f3a04254f"></span>std::size_t *<code class="sig-name descname">get_row_offs_loc</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties16get_row_offs_locEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>This member function only matters for the <em>Block-Cyclic Distribution</em>. </p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p><code class="docutils literal notranslate"><span class="pre">r_offs_l_.get()</span></code>: the pointer to store offset of each subblock in local matrix along the row direction regarding the row direction of local matrix. </p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties12get_col_offsEv">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties12get_col_offsEv"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties12get_col_offsEv"></span><span id="chase::mpi::ChaseMpiProperties::get_col_offs"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1aedddbb979868002d093e06d63c44f725"></span>std::size_t *<code class="sig-name descname">get_col_offs</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties12get_col_offsEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>This member function only matters for the <em>Block-Cyclic Distribution</em>. </p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p><code class="docutils literal notranslate"><span class="pre">c_offs_.get()</span></code>: the pointer to store offset of each subblock of local matrix along the column direction regarding the column direction of global matrix <code class="docutils literal notranslate"><span class="pre">A</span></code>. </p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties12get_col_lensEv">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties12get_col_lensEv"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties12get_col_lensEv"></span><span id="chase::mpi::ChaseMpiProperties::get_col_lens"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a37ad48efe186d7abe760a1c6abf9c7f1"></span>std::size_t *<code class="sig-name descname">get_col_lens</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties12get_col_lensEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>This member function only matters for the <em>Block-Cyclic Distribution</em>. </p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p><code class="docutils literal notranslate"><span class="pre">c_lens_.get()</span></code>: the pointer to store length of each subblock of local matrix along the column direction regarding the column direction of global matrix <code class="docutils literal notranslate"><span class="pre">A</span></code>. </p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties16get_col_offs_locEv">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties16get_col_offs_locEv"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties16get_col_offs_locEv"></span><span id="chase::mpi::ChaseMpiProperties::get_col_offs_loc"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a356ba306bdc836c9c705428638bea224"></span>std::size_t *<code class="sig-name descname">get_col_offs_loc</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties16get_col_offs_locEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>This member function only matters for the <em>Block-Cyclic Distribution</em>. </p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p><code class="docutils literal notranslate"><span class="pre">c_offs_l_.get()</span></code>: the pointer to store offset of each subblock in local matrix along the column direction regarding the column direction of local matrix. </p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties13get_offs_lensERPNSt6size_tERPNSt6size_tERPNSt6size_tERPNSt6size_tERPNSt6size_tERPNSt6size_tE">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties13get_offs_lensERPNSt6size_tERPNSt6size_tERPNSt6size_tERPNSt6size_tERPNSt6size_tERPNSt6size_tE"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties13get_offs_lensERPNSt6size_tERPNSt6size_tERPNSt6size_tERPNSt6size_tERPNSt6size_tERPNSt6size_tE"></span><span id="chase::mpi::ChaseMpiProperties::get_offs_lens__std::sPR.std::sPR.std::sPR.std::sPR.std::sPR.std::sPR"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1af54044075226b8285f34824f76b6b92c"></span>void <code class="sig-name descname">get_offs_lens</code><span class="sig-paren">(</span>std::size_t *&amp;<em>r_offs</em>, std::size_t *&amp;<em>r_lens</em>, std::size_t *&amp;<em>r_offs_l</em>, std::size_t *&amp;<em>c_offs</em>, std::size_t *&amp;<em>c_lens</em>, std::size_t *&amp;<em>c_offs_l</em><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties13get_offs_lensERPNSt6size_tERPNSt6size_tERPNSt6size_tERPNSt6size_tERPNSt6size_tERPNSt6size_tE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Return the pointers to <code class="docutils literal notranslate"><span class="pre">r_offs_</span></code>, <code class="docutils literal notranslate"><span class="pre">r_lens_</span></code>, <code class="docutils literal notranslate"><span class="pre">r_offs_l_</span></code>, <code class="docutils literal notranslate"><span class="pre">c_offs_</span></code>, <code class="docutils literal notranslate"><span class="pre">c_lens_</span></code> and <code class="docutils literal notranslate"><span class="pre">c_offs_l_</span></code> in single member function. This member function only matters for the <em>Block-Cyclic Distribution</em>.</p>
+<p><dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">[in/out]</span></code>: <code class="docutils literal notranslate"><span class="pre">r_offs</span></code> -&gt; the pointer to store offset of each subblock of local matrix along the row direction regarding the global indexing of matrix A. Its size is <code class="docutils literal notranslate"><span class="pre">mblocks_</span></code>, which can be obtained by <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_properties_1a67575906cbce4b325ef184189941e60d"><span class="std std-ref">get_mblocks()</span></a>. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">[in/out]</span></code>: <code class="docutils literal notranslate"><span class="pre">r_lens</span></code> -&gt; the pointer to store length of each subblock of local matrix along the row direction regarding the global indexing of matrix A. Its size is <code class="docutils literal notranslate"><span class="pre">mblocks_</span></code>, which can be obtained by <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_properties_1a67575906cbce4b325ef184189941e60d"><span class="std std-ref">get_mblocks()</span></a>. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">[in/out]</span></code>: <code class="docutils literal notranslate"><span class="pre">r_offs_l</span></code> -&gt; the pointer to store offset of each subblock of local matrix along the row direction regarding the indexing of local matrix. Its size is <code class="docutils literal notranslate"><span class="pre">mblocks_</span></code>, which can be obtained by <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_properties_1a67575906cbce4b325ef184189941e60d"><span class="std std-ref">get_mblocks()</span></a>. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">[in/out]</span></code>: <code class="docutils literal notranslate"><span class="pre">c_offs</span></code> -&gt; the pointer to store offset of each subblock of local matrix along the column direction regarding the global indexing of matrix A. Its size is <code class="docutils literal notranslate"><span class="pre">nblocks_</span></code>, which can be obtained by <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_properties_1a38e1759088d51cad34e317f2615934b2"><span class="std std-ref">get_nblocks()</span></a>. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">[in/out]</span></code>: <code class="docutils literal notranslate"><span class="pre">c_lens</span></code> -&gt; the pointer to store length of each subblock of local matrix along the column direction regarding the global indexing of matrix A. Its size is <code class="docutils literal notranslate"><span class="pre">nblocks_</span></code>, which can be obtained by <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_properties_1a38e1759088d51cad34e317f2615934b2"><span class="std std-ref">get_nblocks()</span></a>. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">[in/out]</span></code>: <code class="docutils literal notranslate"><span class="pre">c_offs_l</span></code> -&gt; the pointer to store offset of each subblock of local matrix along the column direction regarding the indexing of local matrix. Its size is <code class="docutils literal notranslate"><span class="pre">nblocks_</span></code>, which can be obtained by <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_properties_1a38e1759088d51cad34e317f2615934b2"><span class="std std-ref">get_nblocks()</span></a>. </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties14get_dataLayoutEv">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties14get_dataLayoutEv"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties14get_dataLayoutEv"></span><span id="chase::mpi::ChaseMpiProperties::get_dataLayout"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a25ef94ac18c235362d510985f75d06a3"></span>std::string <code class="sig-name descname">get_dataLayout</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties14get_dataLayoutEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">Block-Block</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Block-Cyclic</span></code> </p></li>
+</ul>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties9get_coordEv">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties9get_coordEv"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties9get_coordEv"></span><span id="chase::mpi::ChaseMpiProperties::get_coord"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a18ad3f8edb06300760cadc80bd6fe6b4"></span>int *<code class="sig-name descname">get_coord</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties9get_coordEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p><code class="docutils literal notranslate"><span class="pre">coord_</span></code>: the coordinates of each MPI rank in the cartesian communicator grid. </p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties7get_ldbEv">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties7get_ldbEv"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties7get_ldbEv"></span><span id="chase::mpi::ChaseMpiProperties::get_ldb"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1acb7e65f2481935407d035d224d6b12d5"></span>std::size_t <code class="sig-name descname">get_ldb</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties7get_ldbEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p><code class="docutils literal notranslate"><span class="pre">n_</span></code>: the leading dimension of the local matrix of <code class="docutils literal notranslate"><span class="pre">A</span></code> in the row dimension. </p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties7get_ldcEv">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties7get_ldcEv"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties7get_ldcEv"></span><span id="chase::mpi::ChaseMpiProperties::get_ldc"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1ad1e1f6d129d8a7ba10c6f52c251e325a"></span>std::size_t <code class="sig-name descname">get_ldc</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties7get_ldcEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p><code class="docutils literal notranslate"><span class="pre">m_</span></code>: the leading dimension of the local matrix of <code class="docutils literal notranslate"><span class="pre">A</span></code> in the column dimension. </p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties6get_C2Ev">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties6get_C2Ev"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties6get_C2Ev"></span><span id="chase::mpi::ChaseMpiProperties::get_C2"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a52bc68eb0fbe4b5b3c44469b22fa0912"></span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiPropertiesE" title="chase::mpi::ChaseMpiProperties::T">T</a> *<code class="sig-name descname">get_C2</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties6get_C2Ev" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p><code class="docutils literal notranslate"><span class="pre">C2_.get()</span></code>: the pointer to temporary buffer <code class="docutils literal notranslate"><span class="pre">C2_</span></code>. </p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties6get_B2Ev">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties6get_B2Ev"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties6get_B2Ev"></span><span id="chase::mpi::ChaseMpiProperties::get_B2"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a2e0d9c6fae6642ed7146039762724a90"></span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiPropertiesE" title="chase::mpi::ChaseMpiProperties::T">T</a> *<code class="sig-name descname">get_B2</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties6get_B2Ev" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p><code class="docutils literal notranslate"><span class="pre">B2_.get()</span></code>: the pointer to temporary buffer <code class="docutils literal notranslate"><span class="pre">B2_</span></code>. </p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties5get_AEv">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties5get_AEv"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties5get_AEv"></span><span id="chase::mpi::ChaseMpiProperties::get_A"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a37ddec8f0159c7976daf2dcea9b29172"></span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiPropertiesE" title="chase::mpi::ChaseMpiProperties::T">T</a> *<code class="sig-name descname">get_A</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties5get_AEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p><code class="docutils literal notranslate"><span class="pre">A_.get()</span></code>: the pointer to temporary buffer <code class="docutils literal notranslate"><span class="pre">A_</span></code>. </p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties5get_VEv">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties5get_VEv"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties5get_VEv"></span><span id="chase::mpi::ChaseMpiProperties::get_V"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1af24bb212ee738f6079337fcab0f70c9a"></span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiPropertiesE" title="chase::mpi::ChaseMpiProperties::T">T</a> *<code class="sig-name descname">get_V</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties5get_VEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p><code class="docutils literal notranslate"><span class="pre">V_.get()</span></code>: the pointer to temporary buffer <code class="docutils literal notranslate"><span class="pre">V_</span></code>. </p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties15get_blockcountsEv">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties15get_blockcountsEv"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties15get_blockcountsEv"></span><span id="chase::mpi::ChaseMpiProperties::get_blockcounts"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a038af537b19859e6736216152c82176f"></span><em class="property">const</em> std::vector&lt;std::vector&lt;int&gt;&gt; &amp;<code class="sig-name descname">get_blockcounts</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties15get_blockcountsEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p><code class="docutils literal notranslate"><span class="pre">block_counts_</span></code>: 2D array which stores the block number of local matrix on each MPI node in each dimension. </p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties13get_blocklensEv">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties13get_blocklensEv"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties13get_blocklensEv"></span><span id="chase::mpi::ChaseMpiProperties::get_blocklens"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a3e2118b05c1cd08a05a3efcd96a291ad"></span><em class="property">const</em> std::vector&lt;std::vector&lt;std::vector&lt;int&gt;&gt;&gt; &amp;<code class="sig-name descname">get_blocklens</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties13get_blocklensEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p><code class="docutils literal notranslate"><span class="pre">block_lens_</span></code>: 3D array which stores the size of each sublock on each MPI node in each dimension. </p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties15get_blockdisplsEv">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties15get_blockdisplsEv"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties15get_blockdisplsEv"></span><span id="chase::mpi::ChaseMpiProperties::get_blockdispls"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1ac5885c25dd38a8c40f6afd7f5a4e8f16"></span><em class="property">const</em> std::vector&lt;std::vector&lt;std::vector&lt;int&gt;&gt;&gt; &amp;<code class="sig-name descname">get_blockdispls</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties15get_blockdisplsEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p><code class="docutils literal notranslate"><span class="pre">block_displs_</span></code>: 3D array which stores the offset of each sublock on each MPI node in each dimension. </p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties12get_sendlensEv">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties12get_sendlensEv"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties12get_sendlensEv"></span><span id="chase::mpi::ChaseMpiProperties::get_sendlens"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a761b0fb24a35e1a71a33b738b4644759"></span><em class="property">const</em> std::vector&lt;std::vector&lt;int&gt;&gt; &amp;<code class="sig-name descname">get_sendlens</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties12get_sendlensEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p><code class="docutils literal notranslate"><span class="pre">send_lens_</span></code>: 2D array which stores the size of local matrix on each MPI node in each dimension. </p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties13get_g_offsetsEv">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties13get_g_offsetsEv"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties13get_g_offsetsEv"></span><span id="chase::mpi::ChaseMpiProperties::get_g_offsets"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a7fbf277b2bc96c833b940849853353b6"></span><em class="property">const</em> std::vector&lt;std::vector&lt;int&gt;&gt; &amp;<code class="sig-name descname">get_g_offsets</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties13get_g_offsetsEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p><code class="docutils literal notranslate"><span class="pre">g_offsets_</span></code>: 2D array which stores the offset of the first block (the most up and left one) on each MPI node in each dimension regarding the global indexing of matrix A. </p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties10get_nprocsEv">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties10get_nprocsEv"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties10get_nprocsEv"></span><span id="chase::mpi::ChaseMpiProperties::get_nprocs"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a129106637f396e4fc6f147044c164275"></span>int <code class="sig-name descname">get_nprocs</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties10get_nprocsEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Returns the total number of MPI nodes within MPI communicator where ChASE is working on.</p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p><code class="docutils literal notranslate"><span class="pre">nprocs_</span></code>: the total number of MPI nodes within the root MPI communicator. </p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties11get_my_rankEv">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties11get_my_rankEv"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties11get_my_rankEv"></span><span id="chase::mpi::ChaseMpiProperties::get_my_rank"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a72fb8c42b3a1d8f4dad22badc6ad09be"></span>int <code class="sig-name descname">get_my_rank</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties11get_my_rankEv" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Returns the rank of MPI node within 2D grid. </p>
+<p><dl class="simple">
+<dt><strong>Return</strong></dt><dd><p><code class="docutils literal notranslate"><span class="pre">rank_</span></code>: the rank of MPI node within 2D grid. </p>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4NK5chase3mpi18ChaseMpiProperties15create_matricesEP1TP4BaseI1TEP1TP4BaseI1TE">
+<span id="_CPPv3NK5chase3mpi18ChaseMpiProperties15create_matricesEP1TP4BaseI1TEP1TP4BaseI1TE"></span><span id="_CPPv2NK5chase3mpi18ChaseMpiProperties15create_matricesEP1TP4BaseI1TEP1TP4BaseI1TE"></span><span id="chase::mpi::ChaseMpiProperties::create_matrices__TP.Base:T:P.TP.Base:T:PC"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a7085af9434feede744b5336cdd58d355"></span><a class="reference internal" href="chasempimatrices.html#_CPPv4I0EN5chase3mpi16ChaseMpiMatricesE" title="chase::mpi::ChaseMpiMatrices">ChaseMpiMatrices</a>&lt;<a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiPropertiesE" title="chase::mpi::ChaseMpiProperties::T">T</a>&gt; <code class="sig-name descname">create_matrices</code><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiPropertiesE" title="chase::mpi::ChaseMpiProperties::T">T</a> *<em>V1</em> = nullptr, Base&lt;<a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiPropertiesE" title="chase::mpi::ChaseMpiProperties::T">T</a>&gt; *<em>ritzv</em> = nullptr, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiPropertiesE" title="chase::mpi::ChaseMpiProperties::T">T</a> *<em>V2</em> = nullptr, Base&lt;<a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiPropertiesE" title="chase::mpi::ChaseMpiProperties::T">T</a>&gt; *<em>resid</em> = nullptr<span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv4NK5chase3mpi18ChaseMpiProperties15create_matricesEP1TP4BaseI1TEP1TP4BaseI1TE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Create a <a class="reference internal" href="chasempimatrices.html#classchase_1_1mpi_1_1_chase_mpi_matrices"><span class="std std-ref">ChaseMpiMatrices</span></a> object which stores the operating matrices and vectors for ChASE-MPI.</p>
+<p><dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">V1</span></code>: a <code class="docutils literal notranslate"><span class="pre">m_</span> <span class="pre">*</span> <span class="pre">max_block_</span></code> rectangular matrix. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ritzv</span></code>: a <code class="docutils literal notranslate"><span class="pre">max_block_</span></code> vector which stores the computed Ritz values. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">V2</span></code>: a <code class="docutils literal notranslate"><span class="pre">n_</span> <span class="pre">*</span> <span class="pre">max_block_</span></code> rectangular matrix. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">resid</span></code>: a <code class="docutils literal notranslate"><span class="pre">max_block_</span></code> vector which stores the residual of each computed Ritz value. </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt id="_CPPv4NK5chase3mpi18ChaseMpiProperties15create_matricesEP1TNSt6size_tEP1TP4BaseI1TEP1TP4BaseI1TE">
+<span id="_CPPv3NK5chase3mpi18ChaseMpiProperties15create_matricesEP1TNSt6size_tEP1TP4BaseI1TEP1TP4BaseI1TE"></span><span id="_CPPv2NK5chase3mpi18ChaseMpiProperties15create_matricesEP1TNSt6size_tEP1TP4BaseI1TEP1TP4BaseI1TE"></span><span id="chase::mpi::ChaseMpiProperties::create_matrices__TP.std::s.TP.Base:T:P.TP.Base:T:PC"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a3a42c6cd9f54f83c5209f385a896d0c9"></span><a class="reference internal" href="chasempimatrices.html#_CPPv4I0EN5chase3mpi16ChaseMpiMatricesE" title="chase::mpi::ChaseMpiMatrices">ChaseMpiMatrices</a>&lt;<a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiPropertiesE" title="chase::mpi::ChaseMpiProperties::T">T</a>&gt; <code class="sig-name descname">create_matrices</code><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiPropertiesE" title="chase::mpi::ChaseMpiProperties::T">T</a> *<em>H</em>, std::size_t <em>ldh</em>, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiPropertiesE" title="chase::mpi::ChaseMpiProperties::T">T</a> *<em>V1</em> = nullptr, Base&lt;<a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiPropertiesE" title="chase::mpi::ChaseMpiProperties::T">T</a>&gt; *<em>ritzv</em> = nullptr, <a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiPropertiesE" title="chase::mpi::ChaseMpiProperties::T">T</a> *<em>V2</em> = nullptr, Base&lt;<a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiPropertiesE" title="chase::mpi::ChaseMpiProperties::T">T</a>&gt; *<em>resid</em> = nullptr<span class="sig-paren">)</span> <em class="property">const</em><a class="headerlink" href="#_CPPv4NK5chase3mpi18ChaseMpiProperties15create_matricesEP1TNSt6size_tEP1TP4BaseI1TEP1TP4BaseI1TE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Create a <a class="reference internal" href="chasempimatrices.html#classchase_1_1mpi_1_1_chase_mpi_matrices"><span class="std std-ref">ChaseMpiMatrices</span></a> object which stores the operating matrices and vectors for ChASE-MPI.</p>
+<p><dl class="simple">
+<dt><strong>Parameters</strong></dt><dd><ul class="breatheparameterlist simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">H</span></code>: a <code class="docutils literal notranslate"><span class="pre">m_</span> <span class="pre">*</span> <span class="pre">n_</span></code> rectangular matrix, with leading dimension <code class="docutils literal notranslate"><span class="pre">ldh</span></code> </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ldh</span></code>: leading dimension of <code class="docutils literal notranslate"><span class="pre">H</span></code>, which should be <code class="docutils literal notranslate"><span class="pre">&gt;=m_</span></code> </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">V1</span></code>: a <code class="docutils literal notranslate"><span class="pre">m_</span> <span class="pre">*</span> <span class="pre">max_block_</span></code> rectangular matrix. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ritzv</span></code>: a <code class="docutils literal notranslate"><span class="pre">max_block_</span></code> vector which stores the computed Ritz values. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">V2</span></code>: a <code class="docutils literal notranslate"><span class="pre">n_</span> <span class="pre">*</span> <span class="pre">max_block_</span></code> rectangular matrix. </p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">resid</span></code>: a <code class="docutils literal notranslate"><span class="pre">max_block_</span></code> vector which stores the residual of each computed Ritz value. </p></li>
+</ul>
+</dd>
+</dl>
+</p>
+</dd></dl>
+
+</div>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric">Private Members</p>
+<dl class="cpp var">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties2N_E">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties2N_E"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties2N_E"></span><span id="chase::mpi::ChaseMpiProperties::N___std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a82bac6833c3a0aed6028cca641acc849"></span>std::size_t <code class="sig-name descname">N_</code><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties2N_E" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Global size of the matrix <em>A</em> defining the eigenproblem. </p>
+<p>This variable is initialized by the constructor using the value of the first of its input parameter <code class="docutils literal notranslate"><span class="pre">N</span></code>.</p>
+<p>This variable is private, it can be accessed by the member function <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_properties_1a70a0338aefb7641cbcfcef13a4df0ac0"><span class="std std-ref">get_N()</span></a>. </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties4ldh_E">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties4ldh_E"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties4ldh_E"></span><span id="chase::mpi::ChaseMpiProperties::ldh___std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a81382a1ca0807cdd4fff574d4d718e9b"></span>std::size_t <code class="sig-name descname">ldh_</code><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties4ldh_E" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>The leading dimension of local part of Symmetric/Hermtian matrix on each MPI proc. It should be <code class="docutils literal notranslate"><span class="pre">&gt;=</span> <span class="pre">m_</span></code>. </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties4nev_E">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties4nev_E"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties4nev_E"></span><span id="chase::mpi::ChaseMpiProperties::nev___std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1ad028cfe8271861de9ead650e489beeda"></span>std::size_t <code class="sig-name descname">nev_</code><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties4nev_E" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Number of desired extremal eigenpairs. </p>
+<p>This variable is initialized by the constructor using the value of its input parameter <code class="docutils literal notranslate"><span class="pre">nev</span></code>.</p>
+<p>This variable is private, it can be accessed by the member function <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_properties_1a42a36cdda20247c7db7468e69bcdeb4e"><span class="std std-ref">GetNev()</span></a>. </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties4nex_E">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties4nex_E"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties4nex_E"></span><span id="chase::mpi::ChaseMpiProperties::nex___std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a323fb370daa9858c50ea87925bdadf9a"></span>std::size_t <code class="sig-name descname">nex_</code><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties4nex_E" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Increment of the search subspace so that its total size is <code class="docutils literal notranslate"><span class="pre">nev</span> <span class="pre">+</span> <span class="pre">nex</span></code>. </p>
+<p>This variable is initialized by the constructor using the value of its input parameter <code class="docutils literal notranslate"><span class="pre">nex</span></code>.</p>
+<p>This variable is private, it can be accessed by the member function <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_properties_1ad511910198f59a9225c1bd5b18aa50cc"><span class="std std-ref">GetNex()</span></a>. </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties10max_block_E">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties10max_block_E"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties10max_block_E"></span><span id="chase::mpi::ChaseMpiProperties::max_block___std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a751a4fa6305d5c07e5195ea074bc7d00"></span>std::size_t <code class="sig-name descname">max_block_</code><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties10max_block_E" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>This variable is initialized by the constructor using the <strong>sum</strong> of its input parameter <code class="docutils literal notranslate"><span class="pre">nex</span></code> and <code class="docutils literal notranslate"><span class="pre">nev</span></code>. Thus we have <code class="docutils literal notranslate"><span class="pre">max_block_=nev_+nex_</span></code>. This variable is private, it can be accessed by the member function <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_properties_1aa7f0cb4e26ce8e478cd8b8839e7b2eb1"><span class="std std-ref">get_max_block()</span></a>. </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties2n_E">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties2n_E"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties2n_E"></span><span id="chase::mpi::ChaseMpiProperties::n___std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a1b38c762d159ad2290c18ea193e257e1"></span>std::size_t <code class="sig-name descname">n_</code><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties2n_E" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Column number of the local matrix on each MPI node. </p>
+<p><ul class="simple">
+<li><p>For <em>Block Distribution</em>, this variable is initialized based on the global size of matrix <code class="docutils literal notranslate"><span class="pre">A</span></code> and dimension of the column of 2D MPI grid.</p></li>
+<li><p>For <em>Block-Cyclic Distribution</em>, it is determined also by block size of submatrices <code class="docutils literal notranslate"><span class="pre">nb_</span></code>, etc. This variable is private, it can be accessed by the member function <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_properties_1a5f4e469bb77db1b27159008ae0674e5e"><span class="std std-ref">get_n()</span></a>. </p></li>
+</ul>
+</p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties2m_E">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties2m_E"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties2m_E"></span><span id="chase::mpi::ChaseMpiProperties::m___std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1ae8cf1df23591ca75a8255763f400236b"></span>std::size_t <code class="sig-name descname">m_</code><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties2m_E" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Row number of the local matrix on each MPI node. </p>
+<p><ul class="simple">
+<li><p>For <em>Block Distribution</em>, this variable is initialized based on the global size of matrix <code class="docutils literal notranslate"><span class="pre">A</span></code> and dimension of the column of 2D MPI grid.</p></li>
+<li><p>For <em>Block-Cyclic Distribution</em>, it is determined also by block size of submatrices <code class="docutils literal notranslate"><span class="pre">mb_</span></code>, etc. This variable is private, it can be accessed by the member function <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_properties_1a01fde078c77e8000431e6c09a487aed3"><span class="std std-ref">get_m()</span></a>. </p></li>
+</ul>
+</p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties3nb_E">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties3nb_E"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties3nb_E"></span><span id="chase::mpi::ChaseMpiProperties::nb___std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a414b95011319c9cf3c6b8069a96d10a8"></span>std::size_t <code class="sig-name descname">nb_</code><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties3nb_E" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Column blocking factor. </p>
+<p><ul class="simple">
+<li><p>For <em>Block Distribution</em>, this variable equals to the variable <code class="docutils literal notranslate"><span class="pre">n_</span></code>.</p></li>
+<li><p>For <em>Block-Cyclic Distribution</em>, it is initialized by the parameter of the constructor <code class="docutils literal notranslate"><span class="pre">nb</span></code>, This variable is private, it can be accessed by the member function <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_properties_1a9cb96b61d83bdf9a3030d1791ed3a092"><span class="std std-ref">get_nb()</span></a>. </p></li>
+</ul>
+</p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties3mb_E">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties3mb_E"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties3mb_E"></span><span id="chase::mpi::ChaseMpiProperties::mb___std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a372ed371c115814d32082ab184cf2874"></span>std::size_t <code class="sig-name descname">mb_</code><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties3mb_E" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Row blocking factor. </p>
+<p><ul class="simple">
+<li><p>For <em>Block Distribution</em>, this variable equals to the variable <code class="docutils literal notranslate"><span class="pre">m_</span></code>.</p></li>
+<li><p>For <em>Block-Cyclic Distribution</em>, it is initialized by the parameter of the constructor <code class="docutils literal notranslate"><span class="pre">mb</span></code>, This variable is private, it can be accessed by the member function <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_properties_1a263e63a736dcb2d899f485787ec07a37"><span class="std std-ref">get_mb()</span></a>. </p></li>
+</ul>
+</p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties8nblocks_E">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties8nblocks_E"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties8nblocks_E"></span><span id="chase::mpi::ChaseMpiProperties::nblocks___std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a39a107a00990162e8ec51929d45eb8da"></span>std::size_t <code class="sig-name descname">nblocks_</code><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties8nblocks_E" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Number of submatrices along the column direction in the local matrix. Thus each local matrix is constructed by <code class="docutils literal notranslate"><span class="pre">mblocks_</span> <span class="pre">*</span> <span class="pre">nblocks_</span></code> blocks.</p>
+<p><ul class="simple">
+<li><p>For <em>Block Distribution</em>, this variable equals to 1.</p></li>
+<li><p>For <em>Block-Cyclic Distribution</em>, it is initialized during the construction of Block-Cyclic scheme, This variable is private, it can be accessed by the member function <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_properties_1a38e1759088d51cad34e317f2615934b2"><span class="std std-ref">get_nblocks()</span></a>. </p></li>
+</ul>
+</p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties8mblocks_E">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties8mblocks_E"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties8mblocks_E"></span><span id="chase::mpi::ChaseMpiProperties::mblocks___std::s"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a48bb1bd75e561c9a5fcc53754ea9bda9"></span>std::size_t <code class="sig-name descname">mblocks_</code><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties8mblocks_E" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Number of submatrices along the row direction in the local matrix. Thus each local matrix is constructed by <code class="docutils literal notranslate"><span class="pre">mblocks_</span> <span class="pre">*</span> <span class="pre">nblocks_</span></code> blocks.</p>
+<p><ul class="simple">
+<li><p>For <em>Block Distribution</em>, this variable equals to 1.</p></li>
+<li><p>For <em>Block-Cyclic Distribution</em>, it is initialized during the construction of Block-Cyclic scheme, This variable is private, it can be accessed by the member function <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_properties_1a67575906cbce4b325ef184189941e60d"><span class="std std-ref">get_mblocks()</span></a>. </p></li>
+</ul>
+</p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties6irsrc_E">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties6irsrc_E"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties6irsrc_E"></span><span id="chase::mpi::ChaseMpiProperties::irsrc___i"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1ad426bcf8b7af638f0cd139342e4ce33d"></span>int <code class="sig-name descname">irsrc_</code><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties6irsrc_E" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Process row over which the first row of the global matrix A is distributed.</p>
+<p>This variable matters only for the <em>Block-Cyclic Distribution</em>, it is initialized by the parameter irsrc of the constructor. This variable is private, it can be accessed by the member function <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_properties_1a3f33dab429394af0610ccc4c177be008"><span class="std std-ref">get_irsrc()</span></a>. </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties6icsrc_E">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties6icsrc_E"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties6icsrc_E"></span><span id="chase::mpi::ChaseMpiProperties::icsrc___i"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a7546db28246c5611dcd817f51517eaa0"></span>int <code class="sig-name descname">icsrc_</code><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties6icsrc_E" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Process column over which the first column of the global matrix A is distributed.</p>
+<p>This variable matters only for the <em>Block-Cyclic Distribution</em>, it is initialized by the parameter irsrc of the constructor. This variable is private, it can be accessed by the member function <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_properties_1a41a4766cab1d2c399db2e3047ebbca70"><span class="std std-ref">get_icsrc()</span></a>. </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties7r_offs_E">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties7r_offs_E"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties7r_offs_E"></span><span id="chase::mpi::ChaseMpiProperties::r_offs___std::unique_ptr:std::sA:"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1adc8ca977f06a450bc77006c5608547aa"></span>std::unique_ptr&lt;std::size_t[]&gt; <code class="sig-name descname">r_offs_</code><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties7r_offs_E" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Offset of each subblock (especially for <em>Block-Cyclic Distribution</em>) along the row direction regarding the global indexing of matrix <code class="docutils literal notranslate"><span class="pre">A</span></code>.</p>
+<p>This variable matters only for the <em>Block-Cyclic Distribution</em>, it is initialized during the setup of the <em>Block-Cyclic Distribution</em> scheme. This variable is private, it can be accessed by the member function <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_properties_1a0e85b2127e6acdc7c1872f95680afe27"><span class="std std-ref">get_row_offs()</span></a>. The size of this array is <code class="docutils literal notranslate"><span class="pre">mblocks_</span></code>. </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties7r_lens_E">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties7r_lens_E"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties7r_lens_E"></span><span id="chase::mpi::ChaseMpiProperties::r_lens___std::unique_ptr:std::sA:"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a008293d40ccf6a5119581707fed70002"></span>std::unique_ptr&lt;std::size_t[]&gt; <code class="sig-name descname">r_lens_</code><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties7r_lens_E" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Length of each subblock (especially for <em>Block-Cyclic Distribution</em>) along the row direction regarding the global indexing of matrix <code class="docutils literal notranslate"><span class="pre">A</span></code>.</p>
+<p>This variable matters only for the <em>Block-Cyclic Distribution</em>, it is initialized during the setup of the <em>Block-Cyclic Distribution</em> scheme. This variable is private, it can be accessed by the member function <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_properties_1abe3fb9e63fd167cde35279ed1cd083f9"><span class="std std-ref">get_row_lens()</span></a>. The size of this array is <code class="docutils literal notranslate"><span class="pre">mblocks_</span></code>. </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties9r_offs_l_E">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties9r_offs_l_E"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties9r_offs_l_E"></span><span id="chase::mpi::ChaseMpiProperties::r_offs_l___std::unique_ptr:std::sA:"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a984b22758e171d2d5539f9d5f12a45b9"></span>std::unique_ptr&lt;std::size_t[]&gt; <code class="sig-name descname">r_offs_l_</code><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties9r_offs_l_E" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Offset of each subblock (especially for <em>Block-Cyclic Distribution</em>) along the row direction regarding the indexing of local matrix on each MPI node.</p>
+<p>This variable matters only for the <em>Block-Cyclic Distribution</em>, it is initialized during the setup of the <em>Block-Cyclic Distribution</em> scheme. This variable is private, it can be accessed by the member function <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_properties_1a8443c30210812ae5dbb97e0f3a04254f"><span class="std std-ref">get_row_offs_loc()</span></a>. The size of this array is <code class="docutils literal notranslate"><span class="pre">mblocks_</span></code>. </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties7c_offs_E">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties7c_offs_E"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties7c_offs_E"></span><span id="chase::mpi::ChaseMpiProperties::c_offs___std::unique_ptr:std::sA:"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1adf72c0e812a5e6a0f5e088ce716060f7"></span>std::unique_ptr&lt;std::size_t[]&gt; <code class="sig-name descname">c_offs_</code><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties7c_offs_E" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Offset of each subblock (especially for <em>Block-Cyclic Distribution</em>) along the column direction regarding the global indexing of matrix <code class="docutils literal notranslate"><span class="pre">A</span></code>.</p>
+<p>This variable matters only for the <em>Block-Cyclic Distribution</em>, it is initialized during the setup of the <em>Block-Cyclic Distribution</em> scheme. This variable is private, it can be accessed by the member function <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_properties_1aedddbb979868002d093e06d63c44f725"><span class="std std-ref">get_col_offs()</span></a>. The size of this array is <code class="docutils literal notranslate"><span class="pre">nblocks_</span></code>. </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties7c_lens_E">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties7c_lens_E"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties7c_lens_E"></span><span id="chase::mpi::ChaseMpiProperties::c_lens___std::unique_ptr:std::sA:"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a138135ce449fb98610317ac9ebe38fec"></span>std::unique_ptr&lt;std::size_t[]&gt; <code class="sig-name descname">c_lens_</code><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties7c_lens_E" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Length of each subblock (especially for <em>Block-Cyclic Distribution</em>) along the column direction regarding the global indexing of matrix <code class="docutils literal notranslate"><span class="pre">A</span></code>.</p>
+<p>This variable matters only for the <em>Block-Cyclic Distribution</em>, it is initialized during the setup of the <em>Block-Cyclic Distribution</em> scheme. This variable is private, it can be accessed by the member function <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_properties_1a37ad48efe186d7abe760a1c6abf9c7f1"><span class="std std-ref">get_col_lens()</span></a>. The size of this array is <code class="docutils literal notranslate"><span class="pre">nblocks_</span></code>. </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties9c_offs_l_E">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties9c_offs_l_E"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties9c_offs_l_E"></span><span id="chase::mpi::ChaseMpiProperties::c_offs_l___std::unique_ptr:std::sA:"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1ae16c055e52c6449ff72d331e7a425911"></span>std::unique_ptr&lt;std::size_t[]&gt; <code class="sig-name descname">c_offs_l_</code><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties9c_offs_l_E" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Offset of each subblock (especially for <em>Block-Cyclic Distribution</em>) along the column direction regarding the indexing of local matrix on each MPI node.</p>
+<p>This variable matters only for the <em>Block-Cyclic Distribution</em>, it is initialized during the setup of the <em>Block-Cyclic Distribution</em> scheme. This variable is private, it can be accessed by the member function <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_properties_1a356ba306bdc836c9c705428638bea224"><span class="std std-ref">get_col_offs_loc()</span></a>. The size of this array is <code class="docutils literal notranslate"><span class="pre">nblocks_</span></code>. </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties13block_counts_E">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties13block_counts_E"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties13block_counts_E"></span><span id="chase::mpi::ChaseMpiProperties::block_counts___std::vector:std::vector:i::"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1ad34664993886d373cf8b1549b48e82cc"></span>std::vector&lt;std::vector&lt;int&gt;&gt; <code class="sig-name descname">block_counts_</code><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties13block_counts_E" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>2D array which stores the block number of local matrix on each MPI node in each dimension.</p>
+<p><ul>
+<li><p>This variable is equally shared by all the MPI nodes, which make the Block-Cyclic* scheme within each MPI node be visible to all other MPI nodes.<ul class="simple">
+<li><p>The variable is especically useful for the MPI communication in the case that global matrix cannot be equally distributed to each MPI node.</p></li>
+<li><p>For example, the block number within rank <code class="docutils literal notranslate"><span class="pre">i</span></code> (this rank is within row_comm_) along the row dimension is <code class="docutils literal notranslate"><span class="pre">block_counts_[0][i]</span></code>, and the block number within rank <code class="docutils literal notranslate"><span class="pre">j</span></code> (this rank is within col_comm_) along the column dimension is <code class="docutils literal notranslate"><span class="pre">block_counts_[1][j]</span></code>. For <em>Block-Distribution</em>, all the values in this 2D array equal to <strong>1</strong>.</p></li>
+</ul>
+</p>
+<p>This variable is private, it can be accessed by the member function <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_properties_1a038af537b19859e6736216152c82176f"><span class="std std-ref">get_blockcounts()</span></a>. </p>
+</li>
+</ul>
+</p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties11block_lens_E">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties11block_lens_E"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties11block_lens_E"></span><span id="chase::mpi::ChaseMpiProperties::block_lens___std::vector:std::vector:std::vector:i:::"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a8586e563f12ca6f34452d2a7ee03abc5"></span>std::vector&lt;std::vector&lt;std::vector&lt;int&gt;&gt;&gt; <code class="sig-name descname">block_lens_</code><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties11block_lens_E" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>3D array which stores the length of each sublock on each MPI node in each dimension.</p>
+<p><ul>
+<li><p>This variable is equally shared by all the MPI nodes, which make the Block-Cyclic* scheme within each MPI node be visible to all other MPI nodes.<ul class="simple">
+<li><p>The variable is especically useful for the MPI communication in the case that global matrix cannot be equally distributed to each MPI node.</p></li>
+<li><p>For example, the length of the block numbering <code class="docutils literal notranslate"><span class="pre">k</span></code> <em>th</em> within rank <code class="docutils literal notranslate"><span class="pre">i</span></code> (this rank is within row_comm_) along the row dimension is <code class="docutils literal notranslate"><span class="pre">block_lens_[0][i][k]</span></code>, and the length of the block numbering <code class="docutils literal notranslate"><span class="pre">k</span></code> <em>th</em> the block number within rank <code class="docutils literal notranslate"><span class="pre">j</span></code> (this rank is within col_comm_) along the column dimension is <code class="docutils literal notranslate"><span class="pre">block_lens_[1][j][k]</span></code>.</p></li>
+</ul>
+</p>
+<p>This variable is private, it can be accessed by the member function <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_properties_1a3e2118b05c1cd08a05a3efcd96a291ad"><span class="std std-ref">get_blocklens()</span></a>. </p>
+</li>
+</ul>
+</p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties13block_displs_E">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties13block_displs_E"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties13block_displs_E"></span><span id="chase::mpi::ChaseMpiProperties::block_displs___std::vector:std::vector:std::vector:i:::"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a0b153cc3ba94076f5e704976e4463b58"></span>std::vector&lt;std::vector&lt;std::vector&lt;int&gt;&gt;&gt; <code class="sig-name descname">block_displs_</code><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties13block_displs_E" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>3D array which stores the offset of each sublock on each MPI node in each dimension.</p>
+<p><ul>
+<li><p>This variable is equally shared by all the MPI nodes, which make the Block-Cyclic* scheme within each MPI node be visible to all other MPI nodes.<ul class="simple">
+<li><p>The variable is especically useful for the MPI communication in the case that global matrix cannot be equally distributed to each MPI node.</p></li>
+<li><p>For example, the offset of the block numbering <code class="docutils literal notranslate"><span class="pre">k</span></code> <em>th</em> within rank <code class="docutils literal notranslate"><span class="pre">i</span></code> (this rank is within row_comm_) along the row dimension is <code class="docutils literal notranslate"><span class="pre">block_displs_[0][i][k]</span></code>, and the offset of the block numbering <code class="docutils literal notranslate"><span class="pre">k</span></code> <em>th</em> the block number within rank <code class="docutils literal notranslate"><span class="pre">j</span></code> (this rank is within col_comm_) along the column dimension is <code class="docutils literal notranslate"><span class="pre">block_displs_[1][j][k]</span></code>.</p></li>
+</ul>
+</p>
+<p>This variable is private, it can be accessed by the member function <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_properties_1ac5885c25dd38a8c40f6afd7f5a4e8f16"><span class="std std-ref">get_blockdispls()</span></a>. </p>
+</li>
+</ul>
+</p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties10send_lens_E">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties10send_lens_E"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties10send_lens_E"></span><span id="chase::mpi::ChaseMpiProperties::send_lens___std::vector:std::vector:i::"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a4876ead193c048f8726429a3e619c0cf"></span>std::vector&lt;std::vector&lt;int&gt;&gt; <code class="sig-name descname">send_lens_</code><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties10send_lens_E" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>2D array which stores the length of local matrix on each MPI node in each dimension.</p>
+<p><ul>
+<li><p>This variable is equally shared by all the MPI nodes, which make the Block-Cyclic* scheme within each MPI node be visible to all other MPI nodes.<ul class="simple">
+<li><p>The variable is especically useful for the MPI communication in the case that global matrix cannot be equally distributed to each MPI node.</p></li>
+<li><p>For example, the length of local matrix within rank <code class="docutils literal notranslate"><span class="pre">i</span></code> (this rank is within row_comm_) along the row dimension is <code class="docutils literal notranslate"><span class="pre">send_lens_[0][i]</span></code>, and the block number within rank <code class="docutils literal notranslate"><span class="pre">j</span></code> (this rank is within col_comm_) along the column dimension is <code class="docutils literal notranslate"><span class="pre">send_lens_[1][j]</span></code>.</p></li>
+</ul>
+</p>
+<p>This variable is private, it can be accessed by the member function <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_properties_1a761b0fb24a35e1a71a33b738b4644759"><span class="std std-ref">get_sendlens()</span></a>. </p>
+</li>
+</ul>
+</p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties10g_offsets_E">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties10g_offsets_E"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties10g_offsets_E"></span><span id="chase::mpi::ChaseMpiProperties::g_offsets___std::vector:std::vector:i::"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a60ff3be93371e4daa341b34d2f5361f6"></span>std::vector&lt;std::vector&lt;int&gt;&gt; <code class="sig-name descname">g_offsets_</code><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties10g_offsets_E" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>2D array which stores the offset of the first block (the most up and left one) on each MPI node in each dimension regarding the global indexing of matrix <code class="docutils literal notranslate"><span class="pre">A</span></code>.</p>
+<p><ul>
+<li><p>This variable is equally shared by all the MPI nodes, which make the Block-Cyclic* scheme within each MPI node be visible to all other MPI nodes.<ul class="simple">
+<li><p>The variable is especically useful for the MPI communication in the case that global matrix cannot be equally distributed to each MPI node.</p></li>
+<li><p>For example, the offset of first block of local matrix within rank <code class="docutils literal notranslate"><span class="pre">i</span></code> (this rank is within row_comm_) along the row dimension is <code class="docutils literal notranslate"><span class="pre">g_offsets_[0][i]</span></code>, and the block number within rank <code class="docutils literal notranslate"><span class="pre">j</span></code> (this rank is within col_comm_) along the column dimension is <code class="docutils literal notranslate"><span class="pre">g_offsets_[1][j]</span></code>.</p></li>
+</ul>
+</p>
+<p>This variable is private, it can be accessed by the member function <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_properties_1a7fbf277b2bc96c833b940849853353b6"><span class="std std-ref">get_g_offsets()</span></a>. </p>
+</li>
+</ul>
+</p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties5comm_E">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties5comm_E"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties5comm_E"></span><span id="chase::mpi::ChaseMpiProperties::comm___MPI_Comm"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1ac6cfdec51af210bc4bffe726d343f2e1"></span>MPI_Comm <code class="sig-name descname">comm_</code><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties5comm_E" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>The MPI communicator which ChASE is working on. </p>
+<p>This variable is initialized by the constructor using the value of its input parameters <code class="docutils literal notranslate"><span class="pre">comm</span></code>. </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties7nprocs_E">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties7nprocs_E"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties7nprocs_E"></span><span id="chase::mpi::ChaseMpiProperties::nprocs___i"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a39291f9e343a484ab0940b02f9db4783"></span>int <code class="sig-name descname">nprocs_</code><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties7nprocs_E" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>Total number of MPI nodes in the MPI communicator which ChASE is working on. </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties5rank_E">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties5rank_E"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties5rank_E"></span><span id="chase::mpi::ChaseMpiProperties::rank___i"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1ac4eca83620def1eda4615c92501da65e"></span>int <code class="sig-name descname">rank_</code><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties5rank_E" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>The rank of each MPI node within the MPI communicator which ChASE is working on. </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties3C2_E">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties3C2_E"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties3C2_E"></span><span id="chase::mpi::ChaseMpiProperties::C2___std::unique_ptr:TA:"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1addda959a147f36f73b75684258b645c6"></span>std::unique_ptr&lt;<a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiPropertiesE" title="chase::mpi::ChaseMpiProperties::T">T</a>[]&gt; <code class="sig-name descname">C2_</code><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties3C2_E" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>A temporary memory allocated for distributed ChASE. </p>
+<p>This variable is initialized during the construction of <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_properties"><span class="std std-ref">ChaseMpiProperties</span></a> of size <code class="docutils literal notranslate"><span class="pre">m_</span> <span class="pre">*</span> <span class="pre">max_block_</span></code>.</p>
+<p>It can be accessed by the member function <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_properties_1a52bc68eb0fbe4b5b3c44469b22fa0912"><span class="std std-ref">get_C2()</span></a> </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties3B2_E">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties3B2_E"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties3B2_E"></span><span id="chase::mpi::ChaseMpiProperties::B2___std::unique_ptr:TA:"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1aa41e916b5ce43ce506f4f36d647da33b"></span>std::unique_ptr&lt;<a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiPropertiesE" title="chase::mpi::ChaseMpiProperties::T">T</a>[]&gt; <code class="sig-name descname">B2_</code><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties3B2_E" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>A temporary memory allocated for distributed ChASE. </p>
+<p>This variable is initialized during the construction of <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_properties"><span class="std std-ref">ChaseMpiProperties</span></a> of size <code class="docutils literal notranslate"><span class="pre">n_</span> <span class="pre">*</span> <span class="pre">max_block_</span></code>.</p>
+<p>It can be accessed by the member function <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_properties_1a2e0d9c6fae6642ed7146039762724a90"><span class="std std-ref">get_B2()</span></a> </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties2A_E">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties2A_E"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties2A_E"></span><span id="chase::mpi::ChaseMpiProperties::A___std::unique_ptr:TA:"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a6197fa81ee53805f7650cebe27625a4c"></span>std::unique_ptr&lt;<a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiPropertiesE" title="chase::mpi::ChaseMpiProperties::T">T</a>[]&gt; <code class="sig-name descname">A_</code><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties2A_E" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>A temporary memory allocated for distributed ChASE. </p>
+<p>This variable is initialized during the construction of <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_properties"><span class="std std-ref">ChaseMpiProperties</span></a> of size <code class="docutils literal notranslate"><span class="pre">max_block_</span> <span class="pre">*</span> <span class="pre">max_block_</span></code>.</p>
+<p>It can be accessed by the member function <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_properties_1a37ddec8f0159c7976daf2dcea9b29172"><span class="std std-ref">get_A()</span></a> </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties9row_comm_E">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties9row_comm_E"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties9row_comm_E"></span><span id="chase::mpi::ChaseMpiProperties::row_comm___MPI_Comm"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1aa4f978146ef4839d0f04fd1addef1986"></span>MPI_Comm <code class="sig-name descname">row_comm_</code><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties9row_comm_E" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>The row communicator of the constructed 2D grid of MPI codes. </p>
+<p>This variable is initialized in the constructor, after the construction of MPI 2D grid. This variable is private, it can be accessed by the member function <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_properties_1ad39061c6f99d2b444c0a72e0f48b9e07"><span class="std std-ref">get_row_comm()</span></a>. </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties9col_comm_E">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties9col_comm_E"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties9col_comm_E"></span><span id="chase::mpi::ChaseMpiProperties::col_comm___MPI_Comm"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1ab061b31c60a41075ded636f01394d639"></span>MPI_Comm <code class="sig-name descname">col_comm_</code><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties9col_comm_E" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>The column communicator of the constructed 2D grid of MPI codes. </p>
+<p>This variable is initialized in the constructor, after the construction of MPI 2D grid. This variable is private, it can be accessed by the member function <a class="reference internal" href="#classchase_1_1mpi_1_1_chase_mpi_properties_1ac4b514a44b74638e1fa4940e6c27fb17"><span class="std std-ref">get_col_comm()</span></a>. </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties5dims_E">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties5dims_E"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties5dims_E"></span><span id="chase::mpi::ChaseMpiProperties::dims___iA"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1afe7f79ab856969e35f9f212fe243923c"></span>int <code class="sig-name descname">dims_</code>[2]<a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties5dims_E" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>The array with two elements determines the dimension of 2D grid of MPI nodes.</p>
+<p><ul class="simple">
+<li><p>For <em>Block Distribution</em>,<ol class="lowerroman simple">
+<li><p>it can be initialized by <code class="docutils literal notranslate"><span class="pre">MPI_Dims_create</span></code> which creates a division of MPI ranks in a cartesian grid.</p></li>
+<li><p>it can be initialized by users with the input parameters, paramters <code class="docutils literal notranslate"><span class="pre">row_dim</span></code> and <code class="docutils literal notranslate"><span class="pre">col_dim</span></code>. More precise, we have <code class="docutils literal notranslate"><span class="pre">dims_[0]</span> <span class="pre">=</span> <span class="pre">row_dim</span></code> and <code class="docutils literal notranslate"><span class="pre">dims_[1]</span> <span class="pre">=</span> <span class="pre">col_dim</span></code>.</p></li>
+</ol>
+</p></li>
+<li><p>For <em>Block-Cyclic Distribution</em>, it is always initialized by the input paramters <code class="docutils literal notranslate"><span class="pre">row_dim</span></code> and <code class="docutils literal notranslate"><span class="pre">col_dim</span></code>. More precise, we have <code class="docutils literal notranslate"><span class="pre">dims_[0]</span> <span class="pre">=</span> <span class="pre">row_dim</span></code> and <code class="docutils literal notranslate"><span class="pre">dims_[1]</span> <span class="pre">=</span> <span class="pre">col_dim</span></code>. </p></li>
+</ul>
+</p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties6coord_E">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties6coord_E"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties6coord_E"></span><span id="chase::mpi::ChaseMpiProperties::coord___iA"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a8fd9a68ec8372eff11fe40b9241af0cb"></span>int <code class="sig-name descname">coord_</code>[2]<a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties6coord_E" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>The array with two elements indicates the coordinates of each MPI node within the 2D grid of MPI nodes.</p>
+<p>This variable is determined by the properties of 2D grid of MPI node. </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties4off_E">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties4off_E"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties4off_E"></span><span id="chase::mpi::ChaseMpiProperties::off___std::sA"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1ac65ce8a468b96fe2418e6e69d343e3bd"></span>std::size_t <code class="sig-name descname">off_</code>[2]<a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties4off_E" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>The array with two elements indicates the offset of the local matrix on each MPI node regarding the global index of matrix <code class="docutils literal notranslate"><span class="pre">A</span></code>.</p>
+<p>This variable is determined by the properties of 2D grid of MPI node, the size of matrix and the scheme of distribution across the 2D grid. </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties11data_layoutE">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties11data_layoutE"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties11data_layoutE"></span><span id="chase::mpi::ChaseMpiProperties::data_layout__ss"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a11cda6b05f85f6fdb70444342699adc0"></span>std::string <code class="sig-name descname">data_layout</code><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties11data_layoutE" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">Block-Block</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Block-Cyclic</span></code> </p></li>
+</ul>
+</p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt id="_CPPv4N5chase3mpi18ChaseMpiProperties2V_E">
+<span id="_CPPv3N5chase3mpi18ChaseMpiProperties2V_E"></span><span id="_CPPv2N5chase3mpi18ChaseMpiProperties2V_E"></span><span id="chase::mpi::ChaseMpiProperties::V___std::unique_ptr:TA:"></span><span class="target" id="classchase_1_1mpi_1_1_chase_mpi_properties_1a66b129e3fb05f8ff55e2c9a806833262"></span>std::unique_ptr&lt;<a class="reference internal" href="#_CPPv4I0EN5chase3mpi18ChaseMpiPropertiesE" title="chase::mpi::ChaseMpiProperties::T">T</a>[]&gt; <code class="sig-name descname">V_</code><a class="headerlink" href="#_CPPv4N5chase3mpi18ChaseMpiProperties2V_E" title="Permalink to this definition">¶</a><br /></dt>
+<dd><p>A temporary buffer of size <code class="docutils literal notranslate"><span class="pre">N_</span> <span class="pre">*</span> <span class="pre">max_block_</span></code>. It is allocated only when no ScaLAPACK is detected. </p>
+</dd></dl>
+
+</div>
+</dd></dl>
+
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2023, SimLab Quantum Materials.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'v1.3.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="../_static/language_data.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

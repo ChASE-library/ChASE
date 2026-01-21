@@ -1,0 +1,329 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Versions of the library &mdash; ChASE v1.3.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="_static/ChASE_Logo_Favicon_RGB.png"/>
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="theme_overrides.css" type="text/css" />
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="ChASE v1.3.0 documentation" href="index.html"/>
+        <link rel="next" title="Licenses and Copyright" href="license.html"/>
+        <link rel="prev" title="ChASE: an Iterative Solver for Dense Eigenproblems" href="chase.html"/>
+    <link href="_static/theme_overrides.css" rel="stylesheet" type="text/css">
+
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html">
+          
+
+          
+            
+            <img src="_static/ChASE_Logo_RGB.png" class="logo" />
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                v1.3.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <p class="caption"><span class="caption-text">INTRODUCTION</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="chase.html">ChASE: an Iterative Solver for Dense Eigenproblems</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Versions of the library</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#chase-mpi">ChASE-MPI</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#multi-configurations">Multi-Configurations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#matrix-distributions">Matrix Distributions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#block-distribution">Block Distribution</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#block-cyclic-distribution">Block-Cyclic Distribution</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">Licenses and Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="reference.html">References and Contributors</a></li>
+</ul>
+<p class="caption"><span class="caption-text">USER DOCUMENTATION</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="quick-start.html">1. Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">2. Installation and Setup on a Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">3. How to use ChASE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parameters.html">4. Parameters and Configurations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="module.html">5. Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="example.html">6. Examples</a></li>
+</ul>
+<p class="caption"><span class="caption-text">DEVELOPER DOCUMENTATION</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="algorithm.html">1. General algorithm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="abstract.html">2. Virtual Abstract of Numerical Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parallel.html">3. Parallel implementations</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">ChASE</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li>Versions of the library</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        
+          <a href="_sources/version.rst.txt" rel="nofollow"> View page source</a>
+        
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="versions-of-the-library">
+<h1>Versions of the library<a class="headerlink" href="#versions-of-the-library" title="Permalink to this headline">¶</a></h1>
+<p>Currently, the library consists of one major part, labelled ChASE-MPI, for
+solving dense eigenproblems. There will be another major part to support
+sparse eigenproblems in short future.
+ChASE-MPI can be installed with the minimum amount of dependencies (BLAS,
+LAPACK, and MPI).</p>
+<div class="section" id="chase-mpi">
+<h2>ChASE-MPI<a class="headerlink" href="#chase-mpi" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="multi-configurations">
+<h3>Multi-Configurations<a class="headerlink" href="#multi-configurations" title="Permalink to this headline">¶</a></h3>
+<p>ChASE-MPI supports different configurations depending on the available
+hardware resources.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>Shared memory build:</strong> This is the simplest configuration and
+should be exclusively selected when ChASE is used on only one
+computing node or on a single CPU. The simplicity of this
+configuration resides in the way the Matrix-Matrix kernel is
+implemented with respect to the full MPI build.</p></li>
+<li><p><strong>MPI+Threads build:</strong> On multi-core homogeneous CPU clusters ChASE
+is best used in its pure MPI build. In this configuration, ChASE
+is typically used with one MPI rank per NUMA domain and as
+many threads as number of available cores per NUMA domain.</p></li>
+<li><p><strong>GPU build:</strong> ChASE-MPI can be configured to take advantage of
+graphics card on heterogeneous computing clusters. Currently we
+support one GPU card per MPI rank.</p></li>
+</ul>
+</div></blockquote>
+</div>
+<div class="section" id="matrix-distributions">
+<h3>Matrix Distributions<a class="headerlink" href="#matrix-distributions" title="Permalink to this headline">¶</a></h3>
+<p>In ChASE-MPI, the MPI nodes are constructed as 2D grid, two data distributions
+are support to assigned sub-blocks of dense matrix <strong>A</strong> into different
+MPI nodes.</p>
+<div class="section" id="block-distribution">
+<h4>Block Distribution<a class="headerlink" href="#block-distribution" title="Permalink to this headline">¶</a></h4>
+<p>The first is called <strong>Block Distribution</strong>, in which each
+MPI rank of 2D grid is assigned a block of dense matrix <strong>A</strong>. The most important
+kernel of ChASE is the <strong>Hermitian Matrix-Matrix Multiplication</strong>. This
+block data distribution results in a matrix-matrix multiplications on each
+node that is large and contiguous, often resulting in a performance close to
+the hardware theoretical peak. In addition, this data distribution allows an easy
+offloading of the multiplication to accelerators such as GPUs.</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}A=\left(\begin{array}{c|c|c}
+  A_{0,0} &amp; A_{0,1} &amp; A_{0,2}  \\
+  \hline
+  A_{1,0} &amp; A_{1,1} &amp; A_{1,2}  \\
+  \hline
+  A_{2,0} &amp; A_{2,1} &amp; A_{2,2}
+\end{array}\right)\end{split}\]</div>
+<p>The figure above gives an example of ChASE which distributes a <span class="math notranslate nohighlight">\(n \times n\)</span>
+dense matrix <span class="math notranslate nohighlight">\(A\)</span> into a <span class="math notranslate nohighlight">\(3 \times 3\)</span> grid of MPI nodes. In this example,
+the matrix <cite>A</cite> is split into 2D, with a series of sub-matrices <span class="math notranslate nohighlight">\(A_{i,j}\)</span> in which
+<span class="math notranslate nohighlight">\(i \in [0,2]\)</span> and <span class="math notranslate nohighlight">\(j \in [0,2]\)</span>. Therefore, <span class="math notranslate nohighlight">\(A_{0,0}\)</span> is distributed
+to MPI rank 1, <span class="math notranslate nohighlight">\(A_{1,0}\)</span> is distributed to rank 2, <span class="math notranslate nohighlight">\(A_{2,0}\)</span> is distributed to rank 3, <span class="math notranslate nohighlight">\(A_{0,1}\)</span> is distributed to rank 4, <span class="math notranslate nohighlight">\(A_{1,1}\)</span> is distributed to rank 5, and so on.</p>
+</div>
+<div class="section" id="block-cyclic-distribution">
+<h4>Block-Cyclic Distribution<a class="headerlink" href="#block-cyclic-distribution" title="Permalink to this headline">¶</a></h4>
+<p>The second is called 2D <strong>Block-Cyclic Distribution</strong>. This distribution scheme was introduced
+for the implementation of dense matrix computations on distributed-memory machines. Compared to
+the <strong>Block Distribution</strong>, the main advantage of the Block-Cyclic Distribution is improving
+the load balance of matrix computation if the amount of work differs for different entries of a matrix,
+e.g., QR and LU factorization. A block distribution can lead to load imbalances.</p>
+<p>Even the load balance is not a problem for ChASE, in which the most important kernel <strong>Hermitian Matrix-Matrix Multiplication</strong>
+is well balanced with the <strong>Block Distribution</strong>, we still provide the <strong>Block-Cyclic Distribution</strong> as an option
+in ChASE to avoid the re-distribution between these two types of distributions, which might be
+required for some application, e.g., solving generalized eigenproblem by ChASE with Cholesky factorization.
+In <strong>ChASE</strong>, its implementation with <strong>Block-Cyclic Distribution</strong> can achieve similar performance
+as the implementation with <strong>Block Distribution</strong>.</p>
+<a class="reference internal image-reference" href="_images/block-cyclic.png"><img alt="_images/block-cyclic.png" class="align-center" src="_images/block-cyclic.png" style="width: 240.5px; height: 241.0px;" /></a>
+<p>The figure above show an example of ChASE which distributes a <span class="math notranslate nohighlight">\(n \times n\)</span>
+dense matrix <span class="math notranslate nohighlight">\(A\)</span> into a <span class="math notranslate nohighlight">\(2 \times 2\)</span> grid of MPI nodes in a block-cyclic scheme.
+Denoting the 4 MPI nodes as <span class="math notranslate nohighlight">\(P_{0,0}\)</span>, <span class="math notranslate nohighlight">\(P_{0,1}\)</span>, <span class="math notranslate nohighlight">\(P_{1,0}\)</span>, and <span class="math notranslate nohighlight">\(P_{1,1}\)</span>,
+they are marked as green, red, blue and yellow, respectively on the figure above.
+In this example, the matrix <cite>A</cite> is split into 2D, with a series of sub-matrices <span class="math notranslate nohighlight">\(A_{i,j}\)</span> in which
+<span class="math notranslate nohighlight">\(i \in [0,3]\)</span> and <span class="math notranslate nohighlight">\(j \in [0,3]\)</span>. Each sub-matrix is assigned to one MPI node
+in a round-robin manner so that each MPI rank gets several non-adjacent blocks.
+For more details about <strong>Block-Cyclic Distribution</strong>,
+please refer to <a class="reference external" href="https://www.netlib.org/scalapack/slug/node75.html">Netlib</a> website.</p>
+</div>
+</div>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="license.html" class="btn btn-neutral float-right" title="Licenses and Copyright" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="chase.html" class="btn btn-neutral" title="ChASE: an Iterative Solver for Dense Eigenproblems" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2023, SimLab Quantum Materials.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'v1.3.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="_static/language_data.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

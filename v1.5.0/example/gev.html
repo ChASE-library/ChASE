@@ -1,0 +1,399 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>ScaLAPACK interface &mdash; ChASE v1.3.0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="../_static/ChASE_Logo_Favicon_RGB.png"/>
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="../theme_overrides.css" type="text/css" />
+  
+
+  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="ChASE v1.3.0 documentation" href="../index.html"/>
+    <link href="../_static/theme_overrides.css" rel="stylesheet" type="text/css">
+
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html">
+          
+
+          
+            
+            <img src="../_static/ChASE_Logo_RGB.png" class="logo" />
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                v1.3.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <p class="caption"><span class="caption-text">INTRODUCTION</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../chase.html">ChASE: an Iterative Solver for Dense Eigenproblems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../version.html">Versions of the library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../license.html">Licenses and Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reference.html">References and Contributors</a></li>
+</ul>
+<p class="caption"><span class="caption-text">USER DOCUMENTATION</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../quick-start.html">1. Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">2. Installation and Setup on a Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage.html">3. How to use ChASE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../parameters.html">4. Parameters and Configurations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../module.html">5. Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../example.html">6. Examples</a></li>
+</ul>
+<p class="caption"><span class="caption-text">DEVELOPER DOCUMENTATION</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../algorithm.html">1. General algorithm</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../abstract.html">2. Virtual Abstract of Numerical Kernels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../parallel.html">3. Parallel implementations</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../index.html">ChASE</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../index.html">Docs</a> &raquo;</li>
+      
+    <li>ScaLAPACK interface</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        
+          <a href="../_sources/example/gev.rst.txt" rel="nofollow"> View page source</a>
+        
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="scalapack-interface">
+<h1>ScaLAPACK interface<a class="headerlink" href="#scalapack-interface" title="Permalink to this headline">¶</a></h1>
+<p>In this example, firstly we give an interface for the selected ScaLAPACK routines.
+More details of implementation, please visit
+<a class="reference external" href="https://gitlab.version.fz-juelich.de/SLai/ChASE/-/tree/cmake/examples/3_installation">4_gev</a>.</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cm">/*Returns the number of processes available for use.*/</span>
+<span class="kt">void</span> <span class="nf">blacs_pinfo</span><span class="p">(</span><span class="kt">int</span> <span class="o">*</span><span class="n">mypnum</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">nprocs</span><span class="p">);</span>
+<span class="cm">/*You call the BLACS_GET routine when you want the values the BLACS are using for internal defaults.*/</span>
+<span class="kt">void</span> <span class="nf">blacs_get</span><span class="p">(</span><span class="kt">int</span> <span class="o">*</span><span class="n">icontxt</span><span class="p">,</span> <span class="k">const</span> <span class="kt">int</span> <span class="o">*</span><span class="n">what</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">val</span> <span class="p">);</span>
+<span class="cm">/*Assigns available processes into BLACS process grid.*/</span>
+<span class="kt">void</span> <span class="nf">blacs_gridinit</span><span class="p">(</span><span class="kt">int</span> <span class="o">*</span><span class="n">icontxt</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="n">layout</span><span class="p">,</span> <span class="k">const</span> <span class="kt">int</span> <span class="o">*</span><span class="n">nprow</span><span class="p">,</span> <span class="k">const</span> <span class="kt">int</span> <span class="o">*</span><span class="n">npcol</span><span class="p">);</span>
+<span class="cm">/*Returns information on the current grid.*/</span>
+<span class="kt">void</span> <span class="nf">blacs_gridinfo</span><span class="p">(</span><span class="kt">int</span> <span class="o">*</span><span class="n">icontxt</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">nprow</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">npcol</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">myprow</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">mypcol</span><span class="p">);</span>
+<span class="cm">/*This function computes the local number of rows or columns of a block-cyclically</span>
+<span class="cm">  distributed matrix contained in a process row or process column, respectively,</span>
+<span class="cm">  indicated by the calling sequence argument iproc.*/</span>
+<span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">numroc</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="o">*</span><span class="n">n</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="o">*</span><span class="n">nb</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">iproc</span><span class="p">,</span> <span class="k">const</span> <span class="kt">int</span> <span class="o">*</span><span class="n">isrcproc</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">nprocs</span><span class="p">);</span>
+<span class="cm">/*This subroutine initializes a type-1 array descriptor with error checking.*/</span>
+<span class="kt">void</span> <span class="nf">descinit</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="o">*</span><span class="n">desc</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="o">*</span><span class="n">m</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="o">*</span><span class="n">n</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="o">*</span><span class="n">mb</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="o">*</span><span class="n">nb</span><span class="p">,</span>
+              <span class="k">const</span> <span class="kt">int</span> <span class="o">*</span><span class="n">irsrc</span><span class="p">,</span> <span class="k">const</span> <span class="kt">int</span> <span class="o">*</span><span class="n">icsrc</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">ictxt</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="o">*</span><span class="n">lld</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">info</span><span class="p">);</span>
+<span class="cm">/*Cholesky Factorization*/</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="kt">void</span> <span class="n">t_ppotrf</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="n">uplo</span><span class="p">,</span> <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">n</span><span class="p">,</span> <span class="n">T</span> <span class="o">*</span><span class="n">a</span><span class="p">,</span> <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">ia</span><span class="p">,</span>
+              <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">ja</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="o">*</span><span class="n">desc_a</span><span class="p">);</span>
+<span class="cm">/*Reduce generalized eigenproblem to a standard one*/</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="kt">void</span> <span class="n">t_psyhegst</span><span class="p">(</span><span class="k">const</span> <span class="kt">int</span> <span class="n">ibtype</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="n">uplo</span><span class="p">,</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">n</span><span class="p">,</span> <span class="n">T</span> <span class="o">*</span><span class="n">a</span><span class="p">,</span> <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">ia</span><span class="p">,</span>
+                <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">ja</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="o">*</span><span class="n">desc_a</span><span class="p">,</span> <span class="k">const</span> <span class="n">T</span> <span class="o">*</span><span class="n">b</span><span class="p">,</span> <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">ib</span><span class="p">,</span>
+                <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">jb</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="o">*</span><span class="n">desc_b</span><span class="p">,</span> <span class="n">Base</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="o">*</span><span class="n">scale</span><span class="p">);</span>
+<span class="cm">/*Solve a triangular linear system*/</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="kt">void</span> <span class="n">t_ptrtrs</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="n">uplo</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="n">trans</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="n">diag</span><span class="p">,</span> <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">n</span><span class="p">,</span>
+              <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">nhs</span><span class="p">,</span> <span class="n">T</span> <span class="o">*</span><span class="n">a</span><span class="p">,</span>  <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">ia</span><span class="p">,</span> <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">ja</span><span class="p">,</span>
+              <span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="o">*</span><span class="n">desc_a</span><span class="p">,</span> <span class="n">T</span> <span class="o">*</span><span class="n">b</span><span class="p">,</span> <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">ib</span><span class="p">,</span> <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">jb</span><span class="p">,</span>
+              <span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="o">*</span><span class="n">desc_b</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="choleksy-factorization-chase">
+<h1>Choleksy Factorization + ChASE<a class="headerlink" href="#choleksy-factorization-chase" title="Permalink to this headline">¶</a></h1>
+<p>A generalized eigenproblem can be solved by combing ChASE with ScaLAPACK as follows:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cm">/*...</span>
+<span class="cm">  ...</span>
+<span class="cm">  ...</span>
+<span class="cm">*/</span>
+<span class="c1">//Scalapack part</span>
+<span class="c1">//Initalize Scalapack environment</span>
+<span class="kt">int</span> <span class="n">myproc</span><span class="p">,</span> <span class="n">nprocs</span><span class="p">;</span>
+<span class="n">blacs_pinfo</span><span class="p">(</span> <span class="o">&amp;</span><span class="n">myproc</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">nprocs</span> <span class="p">);</span>
+<span class="kt">int</span> <span class="n">ictxt</span><span class="p">;</span>
+<span class="kt">int</span> <span class="n">val</span><span class="p">;</span>
+<span class="n">blacs_get</span><span class="p">(</span> <span class="o">&amp;</span><span class="n">ictxt</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">i_zero</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">val</span> <span class="p">);</span>
+<span class="n">blacs_gridinit</span><span class="p">(</span> <span class="o">&amp;</span><span class="n">ictxt</span><span class="p">,</span> <span class="n">major</span><span class="p">.</span><span class="n">at</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="o">&amp;</span><span class="n">dim0</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">dim1</span> <span class="p">);</span>
+<span class="kt">int</span> <span class="n">myrow</span><span class="p">,</span> <span class="n">mycol</span><span class="p">;</span>
+<span class="n">blacs_gridinfo</span><span class="p">(</span> <span class="o">&amp;</span><span class="n">ictxt</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">dim0</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">dim1</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">myrow</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">mycol</span><span class="p">);</span>
+
+<span class="c1">//get local size of matrix = N_loc_r x N_loc_c</span>
+<span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">N_loc_r</span><span class="p">,</span> <span class="n">N_loc_c</span><span class="p">;</span>
+
+<span class="n">N_loc_r</span> <span class="o">=</span> <span class="n">numroc</span><span class="p">(</span> <span class="o">&amp;</span><span class="n">N</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">mbsize</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">myrow</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">irsrc</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">dim0</span> <span class="p">);</span>
+<span class="n">N_loc_c</span> <span class="o">=</span> <span class="n">numroc</span><span class="p">(</span> <span class="o">&amp;</span><span class="n">N</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">nbsize</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">mycol</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">icsrc</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">dim1</span> <span class="p">);</span>
+
+<span class="c1">//for column major matrix, the leading dimension</span>
+<span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">lld_loc</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">max</span><span class="p">(</span><span class="n">N_loc_r</span><span class="p">,</span> <span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span><span class="p">)</span><span class="mi">1</span><span class="p">);</span>
+
+<span class="c1">//construct scalapack matrix descriptor</span>
+<span class="n">DESC</span>   <span class="n">desc</span><span class="p">;</span>
+<span class="kt">int</span>    <span class="n">info</span><span class="p">;</span>
+
+<span class="n">descinit</span><span class="p">(</span> <span class="n">desc</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">N</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">N</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">mbsize</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">nbsize</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">irsrc</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">irsrc</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">ictxt</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">lld_loc</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">info</span> <span class="p">);</span>
+
+<span class="c1">//ChASE part</span>
+<span class="c1">//eigenpairs of standard eigenproblem</span>
+<span class="k">auto</span> <span class="n">V__</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">T</span><span class="p">[]</span><span class="o">&gt;</span><span class="p">(</span><span class="k">new</span> <span class="n">T</span><span class="p">[</span><span class="n">N</span> <span class="o">*</span> <span class="p">(</span><span class="n">nev</span> <span class="o">+</span> <span class="n">nex</span><span class="p">)]);</span>
+<span class="k">auto</span> <span class="n">Lambda__</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">Base</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">[]</span><span class="o">&gt;</span><span class="p">(</span><span class="k">new</span> <span class="n">Base</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">[(</span><span class="n">nev</span> <span class="o">+</span> <span class="n">nex</span><span class="p">)]);</span>
+
+<span class="n">T</span><span class="o">*</span> <span class="n">V</span> <span class="o">=</span> <span class="n">V__</span><span class="p">.</span><span class="n">get</span><span class="p">();</span>
+<span class="n">Base</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;*</span> <span class="n">Lambda</span> <span class="o">=</span> <span class="n">Lambda__</span><span class="p">.</span><span class="n">get</span><span class="p">();</span>
+
+<span class="c1">//Setup ChASE environment for a standard eigenproblem</span>
+<span class="n">CHASE</span> <span class="nf">single</span><span class="p">(</span><span class="k">new</span> <span class="n">ChaseMpiProperties</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">mbsize</span><span class="p">,</span> <span class="n">nbsize</span><span class="p">,</span> <span class="n">nev</span><span class="p">,</span> <span class="n">nex</span><span class="p">,</span> <span class="n">dim0</span><span class="p">,</span>
+<span class="n">dim1</span><span class="p">,</span> <span class="k">const_cast</span><span class="o">&lt;</span><span class="kt">char</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">major</span><span class="p">.</span><span class="n">c_str</span><span class="p">()),</span> <span class="n">irsrc</span><span class="p">,</span> <span class="n">icsrc</span><span class="p">,</span> <span class="n">MPI_COMM_WORLD</span><span class="p">),</span> <span class="n">V</span><span class="p">,</span> <span class="n">Lambda</span><span class="p">);</span>
+
+<span class="n">ChaseConfig</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;</span> <span class="n">config</span> <span class="o">=</span> <span class="n">single</span><span class="p">.</span><span class="n">GetConfig</span><span class="p">();</span>
+<span class="n">config</span><span class="p">.</span><span class="n">SetTol</span><span class="p">(</span><span class="n">tol</span><span class="p">);</span>
+<span class="n">config</span><span class="p">.</span><span class="n">SetDeg</span><span class="p">(</span><span class="n">deg</span><span class="p">);</span>
+<span class="n">config</span><span class="p">.</span><span class="n">SetOpt</span><span class="p">(</span><span class="n">opt</span> <span class="o">==</span> <span class="s">&quot;S&quot;</span><span class="p">);</span>
+<span class="n">config</span><span class="p">.</span><span class="n">SetMaxIter</span><span class="p">(</span><span class="mi">100</span><span class="p">);</span>
+
+<span class="k">if</span> <span class="p">(</span><span class="n">rank</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span>
+            <span class="o">&lt;&lt;</span> <span class="n">config</span><span class="p">;</span>
+
+<span class="n">std</span><span class="o">::</span><span class="n">mt19937</span> <span class="n">gen</span><span class="p">(</span><span class="mf">1337.0</span><span class="p">);</span>
+<span class="n">std</span><span class="o">::</span><span class="n">normal_distribution</span><span class="o">&lt;&gt;</span> <span class="n">d</span><span class="p">;</span>
+
+<span class="n">T</span><span class="o">*</span> <span class="n">matrix</span> <span class="o">=</span> <span class="n">single</span><span class="p">.</span><span class="n">GetMatrixPtr</span><span class="p">();</span>
+
+<span class="c1">// Using ChASE-MPI functionalities to get some additional information</span>
+<span class="c1">// on the block cyclic data layout which faciliates the implementation</span>
+<span class="cm">/*local block number = mblocks x nblocks*/</span>
+<span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">mblocks</span> <span class="o">=</span> <span class="n">single</span><span class="p">.</span><span class="n">get_mblocks</span><span class="p">();</span>
+<span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">nblocks</span> <span class="o">=</span> <span class="n">single</span><span class="p">.</span><span class="n">get_nblocks</span><span class="p">();</span>
+
+<span class="cm">/*local matrix size = m x n*/</span>
+<span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">m</span> <span class="o">=</span> <span class="n">single</span><span class="p">.</span><span class="n">get_m</span><span class="p">();</span> <span class="c1">// should = N_loc_r</span>
+<span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">n</span> <span class="o">=</span> <span class="n">single</span><span class="p">.</span><span class="n">get_n</span><span class="p">();</span> <span class="c1">// should = N_loc_c</span>
+
+<span class="cm">/*global and local offset/length of each block of block-cyclic data*/</span>
+<span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="o">*</span><span class="n">r_offs</span><span class="p">,</span> <span class="o">*</span><span class="n">c_offs</span><span class="p">,</span> <span class="o">*</span><span class="n">r_lens</span><span class="p">,</span> <span class="o">*</span><span class="n">c_lens</span><span class="p">,</span> <span class="o">*</span><span class="n">r_offs_l</span><span class="p">,</span> <span class="o">*</span><span class="n">c_offs_l</span><span class="p">;</span>
+
+<span class="n">single</span><span class="p">.</span><span class="n">get_offs_lens</span><span class="p">(</span><span class="n">r_offs</span><span class="p">,</span> <span class="n">r_lens</span><span class="p">,</span> <span class="n">r_offs_l</span><span class="p">,</span> <span class="n">c_offs</span><span class="p">,</span> <span class="n">c_lens</span><span class="p">,</span> <span class="n">c_offs_l</span><span class="p">);</span>
+
+<span class="n">Base</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">scale</span><span class="p">;</span> <span class="c1">//for t_psy(he)gst in Scalapack</span>
+
+<span class="c1">// GEV: H * X = LAMBDA * S * X, in which H and S are local matrices</span>
+<span class="n">T</span> <span class="o">*</span><span class="n">H</span> <span class="o">=</span> <span class="k">new</span> <span class="n">T</span> <span class="p">[</span><span class="n">N_loc_r</span> <span class="o">*</span> <span class="n">N_loc_c</span><span class="p">];</span>
+<span class="n">T</span> <span class="o">*</span><span class="n">S</span> <span class="o">=</span> <span class="k">new</span> <span class="n">T</span> <span class="p">[</span><span class="n">N_loc_r</span> <span class="o">*</span> <span class="n">N_loc_c</span><span class="p">];</span>
+
+<span class="c1">//read matrix H from local</span>
+<span class="n">readMatrix</span><span class="p">(</span><span class="n">H</span><span class="p">,</span> <span class="n">path_in</span><span class="p">,</span> <span class="s">&quot;hmat&quot;</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="s">&quot;.bin&quot;</span><span class="p">,</span> <span class="n">N</span> <span class="o">*</span> <span class="n">N</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">mblocks</span><span class="p">,</span> <span class="n">nblocks</span><span class="p">,</span>
+       <span class="n">r_offs</span><span class="p">,</span> <span class="n">r_lens</span><span class="p">,</span> <span class="n">r_offs_l</span><span class="p">,</span> <span class="n">c_offs</span><span class="p">,</span> <span class="n">c_lens</span><span class="p">,</span> <span class="n">c_offs_l</span><span class="p">);</span>
+
+<span class="c1">//read matrix S from local</span>
+<span class="n">readMatrix</span><span class="p">(</span><span class="n">S</span><span class="p">,</span> <span class="n">path_in</span><span class="p">,</span> <span class="s">&quot;smat&quot;</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="s">&quot;.bin&quot;</span><span class="p">,</span> <span class="n">N</span> <span class="o">*</span> <span class="n">N</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">mblocks</span><span class="p">,</span> <span class="n">nblocks</span><span class="p">,</span>
+       <span class="n">r_offs</span><span class="p">,</span> <span class="n">r_lens</span><span class="p">,</span> <span class="n">r_offs_l</span><span class="p">,</span> <span class="n">c_offs</span><span class="p">,</span> <span class="n">c_lens</span><span class="p">,</span> <span class="n">c_offs_l</span><span class="p">);</span>
+
+<span class="c1">// Transform to standard problem using SCALAPACK</span>
+<span class="c1">// Cholesky Factorization of S = L * L^T, S is overwritten by L</span>
+<span class="n">t_ppotrf</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="sc">&#39;U&#39;</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">S</span><span class="p">,</span> <span class="n">sze_one</span><span class="p">,</span> <span class="n">sze_one</span><span class="p">,</span> <span class="n">desc</span><span class="p">);</span>
+
+<span class="c1">// Reduce H * X = eig * S ( X to the standard from H&#39; * X&#39; = eig * X&#39;</span>
+<span class="c1">// with H&#39; = L^{-1} * H * (L^T)^{-1}</span>
+<span class="n">t_psyhegst</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">i_one</span><span class="p">,</span> <span class="sc">&#39;U&#39;</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">sze_one</span><span class="p">,</span> <span class="n">sze_one</span><span class="p">,</span> <span class="n">desc</span><span class="p">,</span> <span class="n">S</span><span class="p">,</span> <span class="n">sze_one</span><span class="p">,</span> <span class="n">sze_one</span><span class="p">,</span> <span class="n">desc</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">scale</span><span class="p">);</span>
+
+<span class="c1">// Copy H into single.matrix()</span>
+<span class="n">std</span><span class="o">::</span><span class="n">memcpy</span><span class="p">(</span><span class="n">matrix</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">m</span> <span class="o">*</span> <span class="n">n</span> <span class="o">*</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">T</span><span class="p">));</span>
+
+<span class="n">config</span><span class="p">.</span><span class="n">SetApprox</span><span class="p">(</span><span class="nb">false</span><span class="p">);</span>
+<span class="c1">//random generated initial guess of V</span>
+<span class="k">for</span> <span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">N</span> <span class="o">*</span> <span class="p">(</span><span class="n">nev</span> <span class="o">+</span> <span class="n">nex</span><span class="p">);</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">V</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">T</span><span class="p">(</span><span class="n">d</span><span class="p">(</span><span class="n">gen</span><span class="p">),</span> <span class="n">d</span><span class="p">(</span><span class="n">gen</span><span class="p">));</span>
+<span class="p">}</span>
+
+<span class="n">PerformanceDecoratorChase</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">performanceDecorator</span><span class="p">(</span><span class="o">&amp;</span><span class="n">single</span><span class="p">);</span>
+
+<span class="c1">// ChASE to solve the standard eigenproblem H&#39; * X&#39; = eig * X&#39;</span>
+<span class="n">chase</span><span class="o">::</span><span class="n">Solve</span><span class="p">(</span><span class="o">&amp;</span><span class="n">performanceDecorator</span><span class="p">);</span>
+
+<span class="c1">//Scalapack part</span>
+<span class="c1">//In ChASE, the eigenvectors V is stored rebundantly on each proc</span>
+<span class="c1">//In order to recover the generalized eigenvectors by Scalapack, it should be</span>
+<span class="c1">//redistributed into block-cyclic format. We re-use H to restore V.</span>
+<span class="c1">//this part is in parallel implicitly</span>
+<span class="k">for</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">nblocks</span><span class="p">;</span> <span class="n">j</span><span class="o">++</span><span class="p">){</span>
+  <span class="k">for</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">mblocks</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">){</span>
+    <span class="k">for</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">q</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">q</span> <span class="o">&lt;</span> <span class="n">c_lens</span><span class="p">[</span><span class="n">j</span><span class="p">];</span> <span class="n">q</span><span class="o">++</span><span class="p">){</span>
+      <span class="k">for</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">p</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">p</span> <span class="o">&lt;</span> <span class="n">r_lens</span><span class="p">[</span><span class="n">i</span><span class="p">];</span> <span class="n">p</span><span class="o">++</span><span class="p">){</span>
+        <span class="k">if</span><span class="p">((</span><span class="n">q</span> <span class="o">+</span> <span class="n">c_offs</span><span class="p">[</span><span class="n">j</span><span class="p">])</span> <span class="o">*</span> <span class="n">N</span> <span class="o">+</span> <span class="n">p</span> <span class="o">+</span> <span class="n">r_offs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&lt;</span> <span class="p">(</span><span class="n">nev</span> <span class="o">+</span> <span class="n">nex</span><span class="p">)</span> <span class="o">*</span> <span class="n">N</span><span class="p">){</span>
+          <span class="n">H</span><span class="p">[(</span><span class="n">q</span> <span class="o">+</span> <span class="n">c_offs_l</span><span class="p">[</span><span class="n">j</span><span class="p">])</span> <span class="o">*</span> <span class="n">m</span> <span class="o">+</span> <span class="n">p</span> <span class="o">+</span> <span class="n">r_offs_l</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span> <span class="o">=</span> <span class="n">V</span><span class="p">[(</span><span class="n">q</span> <span class="o">+</span> <span class="n">c_offs</span><span class="p">[</span><span class="n">j</span><span class="p">])</span> <span class="o">*</span> <span class="n">N</span> <span class="o">+</span> <span class="n">p</span> <span class="o">+</span> <span class="n">r_offs</span><span class="p">[</span><span class="n">i</span><span class="p">]];</span>
+        <span class="p">}</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">//Now the first (nev+nex) columns of H (a global view) is overwritten by V</span>
+<span class="c1">//Recover the genealized eigenvectors X by solving X&#39; = L^T * X</span>
+<span class="n">t_ptrtrs</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="sc">&#39;U&#39;</span><span class="p">,</span><span class="sc">&#39;N&#39;</span><span class="p">,</span><span class="sc">&#39;N&#39;</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">nev</span> <span class="o">+</span> <span class="n">nex</span><span class="p">,</span> <span class="n">S</span><span class="p">,</span> <span class="n">sze_one</span><span class="p">,</span> <span class="n">sze_one</span><span class="p">,</span> <span class="n">desc</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">sze_one</span><span class="p">,</span> <span class="n">sze_one</span><span class="p">,</span> <span class="n">desc</span><span class="p">);</span>
+
+<span class="cm">/*...</span>
+<span class="cm">  ...</span>
+<span class="cm">  ...</span>
+<span class="cm">*/</span>
+</pre></div>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2023, SimLab Quantum Materials.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'v1.3.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="../_static/language_data.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

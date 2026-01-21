@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html class="html-devise-layout gl-light" lang="en">
+<head>
+<meta charset="utf-8">
+<meta content="IE=edge" http-equiv="X-UA-Compatible">
+<meta content="width=device-width, initial-scale=1" name="viewport">
+<title>Sign in · GitLab</title>
+<script>
+//<![CDATA[
+window.gon={};
+//]]>
+</script>
+
+
+
+
+
+
+<link rel="stylesheet" href="/assets/application-f3a46613d0c62857b36ab461ec6c150580272b96dd876596e93bbc5cf6371923.css" />
+<link rel="stylesheet" href="/assets/page_bundles/login-c86aaeb732c7cd4528094f168b9ad4a0408b971bd952f45a9a4dd714d1c9ecb1.css" /><link rel="stylesheet" href="/assets/page_bundles/commit_description-1e2cba4dda3c7b30dd84924809020c569f1308dea51520fe1dd5d4ce31403195.css" /><link rel="stylesheet" href="/assets/page_bundles/work_items-f8b0433a074a1464d564be96c61f98abba72c32c594f4624f237b4e41b1a5679.css" /><link rel="stylesheet" href="/assets/page_bundles/notes_shared-8b38073ba71abd72b511b161ac1c0567ac634b689428f7c74591325093229970.css" />
+<link rel="stylesheet" href="/assets/application_utilities-7844decc020ce5472253adae1ee2b329cdb6ddd08043b91daa3c9ed5530f5142.css" />
+<link rel="stylesheet" href="/assets/tailwind-18b323869d1bc4b21818cb0e7f501054cab3084c92dc5d4f272982507e17363f.css" />
+
+
+<link rel="stylesheet" href="/assets/fonts-fae5d3f79948bd85f18b6513a025f863b19636e85b09a1492907eb4b1bb0557b.css" />
+<link rel="stylesheet" href="/assets/highlight/themes/white-99cce4f4b362f6840d7134d4129668929fde49c4da11d6ebf17f99768adbd868.css" />
+
+
+<link rel="preload" href="/assets/application_utilities-7844decc020ce5472253adae1ee2b329cdb6ddd08043b91daa3c9ed5530f5142.css" as="style" type="text/css">
+<link rel="preload" href="/assets/application-f3a46613d0c62857b36ab461ec6c150580272b96dd876596e93bbc5cf6371923.css" as="style" type="text/css">
+<link rel="preload" href="/assets/highlight/themes/white-99cce4f4b362f6840d7134d4129668929fde49c4da11d6ebf17f99768adbd868.css" as="style" type="text/css">
+
+
+
+
+<script src="/assets/webpack/runtime.c217ba1f.bundle.js" defer="defer"></script>
+<script src="/assets/webpack/main.aa4dbbdf.chunk.js" defer="defer"></script>
+<script src="/assets/webpack/commons-pages.groups.new-pages.import.gitlab_projects.new-pages.import.manifest.new-pages.projects.n-a0973272.dc791a28.chunk.js" defer="defer"></script>
+<script src="/assets/webpack/commons-pages.groups.new-pages.import.gitlab_projects.new-pages.import.manifest.new-pages.projects.n-44c6c18e.5694c6d6.chunk.js" defer="defer"></script>
+<script src="/assets/webpack/commons-pages.search.show-super_sidebar.09c5c921.chunk.js" defer="defer"></script>
+<script src="/assets/webpack/super_sidebar.b794a9c8.chunk.js" defer="defer"></script>
+<script src="/assets/webpack/commons-pages.registrations.new-pages.sessions.new-pages.user_settings.profiles.show.139c2496.chunk.js" defer="defer"></script>
+<script src="/assets/webpack/commons-pages.admin.sessions-pages.sessions-pages.sessions.new.43e84c19.chunk.js" defer="defer"></script>
+<script src="/assets/webpack/pages.sessions.new.3e5231cb.chunk.js" defer="defer"></script>
+
+
+
+<meta name="csrf-param" content="authenticity_token" />
+<meta name="csrf-token" content="uei7Tw9bVDzw9Ck8E79_T4FiddlowdhF7qL8nc-Thm5tzrOYxhzDoxInBwiRkGObhmh0SCHRlAFW-qkjhj2FRg" />
+<meta name="csp-nonce" />
+<meta name="action-cable-url" content="/-/cable" />
+<link href="/-/manifest.json" rel="manifest">
+<link rel="icon" type="image/png" href="/assets/favicon-72a2cad5025aa931d6ea56c3201d1f18e68a8cd39788c7c80d5b2b82aa5143ef.png" id="favicon" data-original-href="/assets/favicon-72a2cad5025aa931d6ea56c3201d1f18e68a8cd39788c7c80d5b2b82aa5143ef.png" />
+<link rel="apple-touch-icon" type="image/x-icon" href="/assets/apple-touch-icon-b049d4bc0dd9626f31db825d61880737befc7835982586d015bded10b4435460.png" />
+<link href="/search/opensearch.xml" rel="search" title="Search GitLab" type="application/opensearchdescription+xml">
+
+
+
+
+<meta content="GitLab - JSC" name="description">
+<meta content="#ececef" name="theme-color">
+</head>
+
+<body class="gl-h-full login-page gl-browser-generic gl-platform-other" data-page="sessions:new" data-testid="login-page">
+
+<script>
+//<![CDATA[
+gl = window.gl || {};
+gl.client = {"isGeneric":true,"isOther":true};
+
+
+//]]>
+</script>
+
+
+
+
+<div class="gl-h-full gl-flex gl-flex-wrap">
+<div class="container gl-self-center">
+<div class="content">
+<div class="flash-container flash-container-page sticky" data-testid="flash-container">
+<div class="gl-alert flash-alert gl-alert-danger" data-testid="alert-danger" role="alert">
+<div class="gl-alert-icon-container">
+<svg class="s16 gl-alert-icon gl-alert-icon-no-title" data-testid="error-icon"><use href="/assets/icons-aa2c8ddf99d22b77153ca2bb092a23889c12c597fc8b8de94b0f730eb53513f6.svg#error"></use></svg>
+</div>
+<button class="gl-button btn btn-icon btn-sm btn-default btn-default-tertiary js-close gl-dismiss-btn " aria-label="Dismiss" type="button"><svg class="s16 gl-icon gl-button-icon " data-testid="close-icon"><use href="/assets/icons-aa2c8ddf99d22b77153ca2bb092a23889c12c597fc8b8de94b0f730eb53513f6.svg#close"></use></svg>
+
+</button>
+<div class="gl-alert-content" role="alert">
+<div class="gl-alert-body">
+You need to sign in or sign up before continuing.
+</div>
+</div>
+</div>
+<div id="js-global-alerts"></div>
+</div>
+
+<div class="row gl-mt-5 gl-gap-y-5">
+<div class="col-md order-12 sm-bg-gray">
+<div class="col-sm-12">
+<h1 class="gl-mb-5 gl-text-size-h2">
+GitLab - JSC
+</h1>
+<div id="js-custom-sign-in-description"><p data-sourcepos="1:1-1:64" dir="auto">This service is available for JSC members and project partners.</p>&#x000A;<hr data-sourcepos="3:1-4:0">&#x000A;<p data-sourcepos="5:1-5:104" dir="auto">Please contact <a href="mailto:version-admin.jsc@fz-juelich.de">version-admin.jsc@fz-juelich.de</a> to increase your project's limit or for further requests.</p>&#x000A;<hr data-sourcepos="7:1-8:0">&#x000A;<p data-sourcepos="9:1-9:48" dir="auto"><strong>Sign in using your JSC account.</strong></p>&#x000A;<p data-sourcepos="11:1-12:67" dir="auto">For further information, read the&#x000A;<a href="http://gitlab.pages.jsc.fz-juelich.de/" rel="nofollow noreferrer noopener" target="_blank">documentation</a>.</p></div>
+</div>
+</div>
+<div class="col-md order-md-12">
+<div class="col-sm-12 bar">
+<div class="gl-text-center gl-mb-5">
+<img alt="GitLab - JSC" class="gl-invisible gl-h-10 js-portrait-logo-detection lazy" data-src="/uploads/-/system/appearance/logo/1/logo_big.png" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" />
+</div>
+
+<div class="js-non-oauth-login">
+</div>
+<div class="gl-mt-5 gl-text-center gl-flex gl-flex-col gl-gap-3 js-oauth-login">
+<form class="js-omniauth-form" method="post" action="/users/auth/oauth2_generic"><button class="gl-button btn btn-block btn-md btn-default " type="submit"><span class="gl-button-text">
+<span class="gl-button-text">
+JSC login service
+</span>
+
+</span>
+
+</button><input type="hidden" name="authenticity_token" value="NElnnA4MvG8k1D3jovWJ5tMH8CysNiwsQZcHwKeSlMfgb29Lx0sr8MYHE9cg2pUy1A3xveUmYGj5z1J-7jyX7w" autocomplete="off" /></form>
+<div class="gl-form-checkbox custom-control custom-checkbox">
+<input type="checkbox" name="js-remember-me-omniauth" id="js-remember-me-omniauth" class="custom-control-input" />
+<label class="custom-control-label" for="js-remember-me-omniauth"><span>Remember me
+</span></label>
+</div>
+</div>
+
+
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="footer-container gl-w-full gl-self-end">
+<hr class="gl-m-0">
+<div class="container gl-py-5 gl-flex gl-justify-between gl-items-start">
+<div class="gl-hidden md:gl-flex gl-gap-5 gl-flex-wrap">
+<a href="/explore">Explore</a>
+<a href="/help">Help</a>
+<a href="https://about.gitlab.com">About GitLab</a>
+<a target="_blank" class="text-nowrap" rel="noopener noreferrer" href="https://forum.gitlab.com">Community forum</a>
+</div>
+<div class="js-language-switcher" data-locales="[{&quot;value&quot;:&quot;en&quot;,&quot;percentage&quot;:100,&quot;text&quot;:&quot;English&quot;},{&quot;value&quot;:&quot;fr&quot;,&quot;percentage&quot;:98,&quot;text&quot;:&quot;français&quot;},{&quot;value&quot;:&quot;de&quot;,&quot;percentage&quot;:96,&quot;text&quot;:&quot;Deutsch&quot;},{&quot;value&quot;:&quot;zh_CN&quot;,&quot;percentage&quot;:95,&quot;text&quot;:&quot;简体中文&quot;},{&quot;value&quot;:&quot;ja&quot;,&quot;percentage&quot;:94,&quot;text&quot;:&quot;日本語&quot;},{&quot;value&quot;:&quot;pt_BR&quot;,&quot;percentage&quot;:92,&quot;text&quot;:&quot;português (Brasil)&quot;}]"></div>
+
+</div>
+</div>
+
+
+</div>
+</body>
+</html>
