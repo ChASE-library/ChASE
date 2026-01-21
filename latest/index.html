@@ -53,6 +53,32 @@
   </label>
   <select id="version-select" onchange="switchVersion(this.value)" style="width: 100%; padding: 5px; border: 1px solid #2980B9; border-radius: 3px; background: white; color: #333; font-size: 13px;"><option value="/ChASE/latest/">
       latest
+    </option><option value="/ChASE/v1.0.0/">
+      v1.0.0
+    </option><option value="/ChASE/v1.1.0/">
+      v1.1.0
+    </option><option value="/ChASE/v1.1.1/">
+      v1.1.1
+    </option><option value="/ChASE/v1.1.2/">
+      v1.1.2
+    </option><option value="/ChASE/v1.2.0/">
+      v1.2.0
+    </option><option value="/ChASE/v1.2.1/">
+      v1.2.1
+    </option><option value="/ChASE/v1.3.0/"selected>
+      v1.3.0
+    </option><option value="/ChASE/v1.3.1/">
+      v1.3.1
+    </option><option value="/ChASE/v1.4.0/">
+      v1.4.0
+    </option><option value="/ChASE/v1.4.1/">
+      v1.4.1
+    </option><option value="/ChASE/v1.5.0/">
+      v1.5.0
+    </option><option value="/ChASE/v1.6.0/">
+      v1.6.0
+    </option><option value="/ChASE/v1.7.0-rc1/">
+      v1.7.0-rc1
     </option></select>
 </div><script>
 function switchVersion(url) {
@@ -160,6 +186,7 @@ function switchVersion(url) {
 <li class="toctree-l1"><a class="reference internal" href="version.html">Versions of the library</a></li>
 <li class="toctree-l1"><a class="reference internal" href="license.html">Licenses and Copyright</a></li>
 <li class="toctree-l1"><a class="reference internal" href="reference.html">References and Contributors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contribution.html">Contributing to ChASE</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">USER DOCUMENTATION</span></p>
 <ul>
@@ -225,6 +252,11 @@ function switchVersion(url) {
 <li class="toctree-l2"><a class="reference internal" href="reference.html#how-to-reference-the-code">How to Reference the Code</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="contribution.html">Contributing to ChASE</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="contribution.html#getting-started">Getting Started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contribution.html#auto-formatting-of-committed-codes">Auto Formatting of Committed Codes</a></li>
+</ul>
+</li>
 </ul>
 </div>
 <div class="toctree-wrapper compound">
@@ -253,7 +285,8 @@ function switchVersion(url) {
 <li class="toctree-l2"><a class="reference internal" href="parameters.html#general-parameters">4.1. General Parameters</a></li>
 <li class="toctree-l2"><a class="reference internal" href="parameters.html#chebyshev-filter">4.2. Chebyshev Filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="parameters.html#lanczos-dos-spectral-estimator">4.3. Lanczos DoS (Spectral Estimator)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="parameters.html#configuration-object">4.4. Configuration Object</a></li>
+<li class="toctree-l2"><a class="reference internal" href="parameters.html#additional-parameters">4.4. Additional Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="parameters.html#configuration-object">4.5. Configuration Object</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="module.html">5. Modules</a><ul>
@@ -269,11 +302,11 @@ function switchVersion(url) {
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="example.html">6. Examples</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="example.html#hello-world">6.1. 0. Hello World</a></li>
-<li class="toctree-l2"><a class="reference internal" href="example.html#parallel-i-o-and-configuration">6.2. 1. Parallel I/O and Configuration</a></li>
-<li class="toctree-l2"><a class="reference internal" href="example.html#installation-and-linking">6.3. 2. Installation and Linking</a></li>
-<li class="toctree-l2"><a class="reference internal" href="example.html#c-fortran-interface">6.4. 3. C/Fortran Interface</a></li>
-<li class="toctree-l2"><a class="reference internal" href="example.html#bse-benchmark">6.5. 4. BSE Benchmark</a></li>
+<li class="toctree-l2"><a class="reference internal" href="example.html#hello-world">6.1. Hello World</a></li>
+<li class="toctree-l2"><a class="reference internal" href="example.html#parallel-i-o-and-configuration">6.2. Parallel I/O and Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="example.html#installation-and-linking">6.3. Installation and Linking</a></li>
+<li class="toctree-l2"><a class="reference internal" href="example.html#c-fortran-interface">6.4. C/Fortran Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="example.html#bse-benchmark">6.5. BSE Benchmark</a></li>
 </ul>
 </li>
 </ul>

@@ -54,6 +54,32 @@
   </label>
   <select id="version-select" onchange="switchVersion(this.value)" style="width: 100%; padding: 5px; border: 1px solid #2980B9; border-radius: 3px; background: white; color: #333; font-size: 13px;"><option value="/ChASE/latest/">
       latest
+    </option><option value="/ChASE/v1.0.0/">
+      v1.0.0
+    </option><option value="/ChASE/v1.1.0/">
+      v1.1.0
+    </option><option value="/ChASE/v1.1.1/">
+      v1.1.1
+    </option><option value="/ChASE/v1.1.2/">
+      v1.1.2
+    </option><option value="/ChASE/v1.2.0/">
+      v1.2.0
+    </option><option value="/ChASE/v1.2.1/">
+      v1.2.1
+    </option><option value="/ChASE/v1.3.0/"selected>
+      v1.3.0
+    </option><option value="/ChASE/v1.3.1/">
+      v1.3.1
+    </option><option value="/ChASE/v1.4.0/">
+      v1.4.0
+    </option><option value="/ChASE/v1.4.1/">
+      v1.4.1
+    </option><option value="/ChASE/v1.5.0/">
+      v1.5.0
+    </option><option value="/ChASE/v1.6.0/">
+      v1.6.0
+    </option><option value="/ChASE/v1.7.0-rc1/">
+      v1.7.0-rc1
     </option></select>
 </div><script>
 function switchVersion(url) {
@@ -161,6 +187,7 @@ function switchVersion(url) {
 <li class="toctree-l1"><a class="reference internal" href="../version.html">Versions of the library</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../license.html">Licenses and Copyright</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../reference.html">References and Contributors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contribution.html">Contributing to ChASE</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">USER DOCUMENTATION</span></p>
 <ul>
@@ -230,7 +257,7 @@ function switchVersion(url) {
 <dd class="field-odd"><p><strong>T</strong> – The type of data used in matrix and vector operations (e.g., <code class="docutils literal notranslate"><span class="pre">float</span></code>, <code class="docutils literal notranslate"><span class="pre">double</span></code>). </p>
 </dd>
 </dl>
-<p>Subclassed by <a class="reference internal" href="implementations.html#classchase_1_1Impl_1_1ChASEGPU"><span class="std std-ref">chase::Impl::ChASEGPU&lt; double &gt;</span></a>, <a class="reference internal" href="implementations.html#classchase_1_1Impl_1_1ChASEGPU"><span class="std std-ref">chase::Impl::ChASEGPU&lt; float &gt;</span></a>, <a class="reference internal" href="implementations.html#classchase_1_1Impl_1_1ChASEGPU"><span class="std std-ref">chase::Impl::ChASEGPU&lt; std::complex&lt; double &gt; &gt;</span></a>, <a class="reference internal" href="implementations.html#classchase_1_1Impl_1_1ChASEGPU"><span class="std std-ref">chase::Impl::ChASEGPU&lt; std::complex&lt; float &gt; &gt;</span></a>, <a class="reference internal" href="implementations.html#classchase_1_1Impl_1_1ChASECPU"><span class="std std-ref">chase::Impl::ChASECPU&lt; T, MatrixType &gt;</span></a>, <a class="reference internal" href="implementations.html#classchase_1_1Impl_1_1ChASEGPU"><span class="std std-ref">chase::Impl::ChASEGPU&lt; T, MatrixType &gt;</span></a>, <a class="reference internal" href="performance.html#classchase_1_1PerformanceDecoratorChase"><span class="std std-ref">chase::PerformanceDecoratorChase&lt; T &gt;</span></a></p>
+<p>Subclassed by <a class="reference internal" href="implementations.html#classchase_1_1Impl_1_1ChASECPU"><span class="std std-ref">chase::Impl::ChASECPU&lt; T, MatrixType &gt;</span></a>, <a class="reference internal" href="implementations.html#classchase_1_1Impl_1_1ChASEGPU"><span class="std std-ref">chase::Impl::ChASEGPU&lt; T, MatrixType &gt;</span></a>, <a class="reference internal" href="performance.html#classchase_1_1PerformanceDecoratorChase"><span class="std std-ref">chase::PerformanceDecoratorChase&lt; T &gt;</span></a></p>
 <div class="breathe-sectiondef docutils container">
 <p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
 <dl class="cpp function">
@@ -527,6 +554,28 @@ function switchVersion(url) {
 </dd></dl>
 
 <dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase9ChaseBase14GetLanczosIterEv">
+<span id="_CPPv3N5chase9ChaseBase14GetLanczosIterEv"></span><span id="_CPPv2N5chase9ChaseBase14GetLanczosIterEv"></span><span id="chase::ChaseBase::GetLanczosIter"></span><span class="target" id="classchase_1_1ChaseBase_1a52cdc7b330a4ebfe72e43483b4777b56"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">GetLanczosIter</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase9ChaseBase14GetLanczosIterEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the number of Lanczos Iterations. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The number of Lanczos Iterations as a <code class="docutils literal notranslate"><span class="pre">std::size_t</span></code> value. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase9ChaseBase13GetNumLanczosEv">
+<span id="_CPPv3N5chase9ChaseBase13GetNumLanczosEv"></span><span id="_CPPv2N5chase9ChaseBase13GetNumLanczosEv"></span><span id="chase::ChaseBase::GetNumLanczos"></span><span class="target" id="classchase_1_1ChaseBase_1a51add84f9eee21376254e5ef237801b9"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">GetNumLanczos</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase9ChaseBase13GetNumLanczosEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the number of runs of Lanczos. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The number of runs of Lanczos as a <code class="docutils literal notranslate"><span class="pre">std::size_t</span></code> value. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4N5chase9ChaseBase8GetRitzvEv">
 <span id="_CPPv3N5chase9ChaseBase8GetRitzvEv"></span><span id="_CPPv2N5chase9ChaseBase8GetRitzvEv"></span><span id="chase::ChaseBase::GetRitzv"></span><span class="target" id="classchase_1_1ChaseBase_1a4e8cd62bf82346e6b9cec8531cff8b63"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase9ChaseBaseE" title="chase::ChaseBase::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">GetRitzv</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase9ChaseBase8GetRitzvEv" title="Link to this definition"></a><br /></dt>
 <dd><p>Returns the computed Ritz values. </p>
@@ -572,6 +621,25 @@ function switchVersion(url) {
 <dd class="field-odd"><p>The number of MPI processes used, represented as an integer. </p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase9ChaseBase8get_rankEv">
+<span id="_CPPv3N5chase9ChaseBase8get_rankEv"></span><span id="_CPPv2N5chase9ChaseBase8get_rankEv"></span><span id="chase::ChaseBase::get_rank"></span><span class="target" id="classchase_1_1ChaseBase_1a0ac2a92ea3ead1ff0a2ecbc8d9f1e77d"></span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_rank</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N5chase9ChaseBase8get_rankEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the MPI rank. </p>
+<p>This method returns the MPI process. If sequential ChASE is used, it returns <code class="docutils literal notranslate"><span class="pre">0</span></code>, indicating a single process is running.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The number of MPI processes used, represented as an integer. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase9ChaseBase26set_early_locked_residualsENSt6vectorI4BaseI1TEEE">
+<span id="_CPPv3N5chase9ChaseBase26set_early_locked_residualsENSt6vectorI4BaseI1TEEE"></span><span id="_CPPv2N5chase9ChaseBase26set_early_locked_residualsENSt6vectorI4BaseI1TEEE"></span><span id="chase::ChaseBase::set_early_locked_residuals__std::vector:Base:T::"></span><span class="target" id="classchase_1_1ChaseBase_1a11e079da1ca1727b6b9c557ef802b48e"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">set_early_locked_residuals</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase9ChaseBaseE" title="chase::ChaseBase::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">early_locked_residuals</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase9ChaseBase26set_early_locked_residualsENSt6vectorI4BaseI1TEEE" title="Link to this definition"></a><br /></dt>
+<dd><p>Save the residuals of early locked eigenpairs. </p>
+<p>This method enables saving statistical data on the early locked eigenpairs to further extract statistical information. </p>
 </dd></dl>
 
 <dl class="cpp function">

@@ -10,6 +10,7 @@ ChASE's Documentation
    version
    license
    reference
+   contribution
 
 .. toctree::
    :maxdepth: 2

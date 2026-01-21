@@ -54,6 +54,32 @@
   </label>
   <select id="version-select" onchange="switchVersion(this.value)" style="width: 100%; padding: 5px; border: 1px solid #2980B9; border-radius: 3px; background: white; color: #333; font-size: 13px;"><option value="/ChASE/latest/">
       latest
+    </option><option value="/ChASE/v1.0.0/">
+      v1.0.0
+    </option><option value="/ChASE/v1.1.0/">
+      v1.1.0
+    </option><option value="/ChASE/v1.1.1/">
+      v1.1.1
+    </option><option value="/ChASE/v1.1.2/">
+      v1.1.2
+    </option><option value="/ChASE/v1.2.0/">
+      v1.2.0
+    </option><option value="/ChASE/v1.2.1/">
+      v1.2.1
+    </option><option value="/ChASE/v1.3.0/"selected>
+      v1.3.0
+    </option><option value="/ChASE/v1.3.1/">
+      v1.3.1
+    </option><option value="/ChASE/v1.4.0/">
+      v1.4.0
+    </option><option value="/ChASE/v1.4.1/">
+      v1.4.1
+    </option><option value="/ChASE/v1.5.0/">
+      v1.5.0
+    </option><option value="/ChASE/v1.6.0/">
+      v1.6.0
+    </option><option value="/ChASE/v1.7.0-rc1/">
+      v1.7.0-rc1
     </option></select>
 </div><script>
 function switchVersion(url) {
@@ -161,6 +187,7 @@ function switchVersion(url) {
 <li class="toctree-l1"><a class="reference internal" href="../version.html">Versions of the library</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../license.html">Licenses and Copyright</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../reference.html">References and Contributors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contribution.html">Contributing to ChASE</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">USER DOCUMENTATION</span></p>
 <ul>
@@ -282,8 +309,8 @@ function switchVersion(url) {
 <div class="breathe-sectiondef docutils container">
 <p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
 <dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N5chase13ChasePerfData13ChasePerfDataEv">
-<span id="_CPPv3N5chase13ChasePerfData13ChasePerfDataEv"></span><span id="_CPPv2N5chase13ChasePerfData13ChasePerfDataEv"></span><span id="chase::ChasePerfData::ChasePerfData"></span><span class="target" id="classchase_1_1ChasePerfData_1aaf5f2808ed32b7c9b70777a989059ec5"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ChasePerfData</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase13ChasePerfData13ChasePerfDataEv" title="Link to this definition"></a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv4N5chase13ChasePerfData13ChasePerfDataEi">
+<span id="_CPPv3N5chase13ChasePerfData13ChasePerfDataEi"></span><span id="_CPPv2N5chase13ChasePerfData13ChasePerfDataEi"></span><span id="chase::ChasePerfData::ChasePerfData__i"></span><span class="target" id="classchase_1_1ChasePerfData_1a64bcdc3e63dc67f42e0111170b326384"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ChasePerfData</span></span></span><span class="sig-paren">(</span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">matrix_type</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase13ChasePerfData13ChasePerfDataEi" title="Link to this definition"></a><br /></dt>
 <dd></dd></dl>
 
 <dl class="cpp function">
@@ -321,13 +348,17 @@ function switchVersion(url) {
 <dd></dd></dl>
 
 <dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N5chase13ChasePerfData9get_flopsENSt6size_tE">
-<span id="_CPPv3N5chase13ChasePerfData9get_flopsENSt6size_tE"></span><span id="_CPPv2N5chase13ChasePerfData9get_flopsENSt6size_tE"></span><span id="chase::ChasePerfData::get_flops__std::s"></span><span class="target" id="classchase_1_1ChasePerfData_1a26a0b45439a19f37474365aeef3d2f2c"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_flops</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">N</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase13ChasePerfData9get_flopsENSt6size_tE" title="Link to this definition"></a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv4N5chase13ChasePerfData9get_flopsENSt6size_tENSt6size_tENSt6size_tE">
+<span id="_CPPv3N5chase13ChasePerfData9get_flopsENSt6size_tENSt6size_tENSt6size_tE"></span><span id="_CPPv2N5chase13ChasePerfData9get_flopsENSt6size_tENSt6size_tENSt6size_tE"></span><span id="chase::ChasePerfData::get_flops__std::s.std::s.std::s"></span><span class="target" id="classchase_1_1ChasePerfData_1a074981c19c0f10428c1a20f420e106c3"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_flops</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">N</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">lanczosIter</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">numLanczos</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase13ChasePerfData9get_flopsENSt6size_tENSt6size_tENSt6size_tE" title="Link to this definition"></a><br /></dt>
 <dd><p>Returns the total number of FLOPs executed by ChASE. </p>
 <p>When measuring performance, it is fundamental to understand how many operations a routine executes against the total time to solutions. This counter returns the total amount of operations executed by ChASE and can be used to extract the performance of ChASE and compare it with theoretical peak performance of the platform where the code is executed. </p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>N</strong> – Size of the eigenproblem matrix </p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>N</strong> – Size of the eigenproblem matrix </p></li>
+<li><p><strong>lanczosIter</strong> – Number of Lanczos Iterations </p></li>
+<li><p><strong>numLanczos</strong> – Number of Lanczos Vectors </p></li>
+</ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>The total number of operations executed by ChASE. </p>
@@ -346,6 +377,25 @@ function switchVersion(url) {
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>The total number of operations executed by the polynomial filter. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase13ChasePerfData17get_lanczos_flopsENSt6size_tENSt6size_tENSt6size_tE">
+<span id="_CPPv3N5chase13ChasePerfData17get_lanczos_flopsENSt6size_tENSt6size_tENSt6size_tE"></span><span id="_CPPv2N5chase13ChasePerfData17get_lanczos_flopsENSt6size_tENSt6size_tENSt6size_tE"></span><span id="chase::ChasePerfData::get_lanczos_flops__std::s.std::s.std::s"></span><span class="target" id="classchase_1_1ChasePerfData_1accd6e9e1cbe0abd1644c46d0dac1e85d"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_lanczos_flops</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">N</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">lanczosIter</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">numLanczos</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase13ChasePerfData17get_lanczos_flopsENSt6size_tENSt6size_tENSt6size_tE" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the average number of FLOPs of the Lanczos <a class="reference internal" href="algorithm.html#classchase_1_1Algorithm"><span class="std std-ref">Algorithm</span></a>. </p>
+<p>Similar to <code class="docutils literal notranslate"><span class="pre">get_flops</span></code>, this counter return the average number of operations executed by the Lanczos algorithm alone. We approximate the total number by the flops for the GEEM operations + an estimation for the stemr algorithm. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>N</strong> – Size of the eigenproblem matrix </p></li>
+<li><p><strong>lanczosIter</strong> – Number of Lanczos Iterations </p></li>
+<li><p><strong>numLanczos</strong> – Number of Lanczos Vectors </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The average number of operations executed by Lanczos filter. </p>
 </dd>
 </dl>
 </dd></dl>
@@ -376,6 +426,11 @@ function switchVersion(url) {
 <dd></dd></dl>
 
 <dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase13ChasePerfData26set_early_locked_residualsENSt6vectorIN5chase4BaseI1TEEEE">
+<span id="_CPPv3N5chase13ChasePerfData26set_early_locked_residualsENSt6vectorIN5chase4BaseI1TEEEE"></span><span id="_CPPv2N5chase13ChasePerfData26set_early_locked_residualsENSt6vectorIN5chase4BaseI1TEEEE"></span><span id="chase::ChasePerfData::set_early_locked_residuals__std::vector:chase::Base:T::"></span><span class="target" id="classchase_1_1ChasePerfData_1a07c4b0765e0aa2f27cfb70e6ce52ce83"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">set_early_locked_residuals</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase13ChasePerfDataE" title="chase::ChasePerfData::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">early_locked_residuals</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase13ChasePerfData26set_early_locked_residualsENSt6vectorIN5chase4BaseI1TEEEE" title="Link to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4N5chase13ChasePerfData9end_clockE8TimePtrs">
 <span id="_CPPv3N5chase13ChasePerfData9end_clockE8TimePtrs"></span><span id="_CPPv2N5chase13ChasePerfData9end_clockE8TimePtrs"></span><span id="chase::ChasePerfData::end_clock__TimePtrs"></span><span class="target" id="classchase_1_1ChasePerfData_1a740b4f40a74e7e6f5ced279c3a7d697e"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">end_clock</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4N5chase13ChasePerfData8TimePtrsE" title="chase::ChasePerfData::TimePtrs"><span class="n"><span class="pre">TimePtrs</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">t</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase13ChasePerfData9end_clockE8TimePtrs" title="Link to this definition"></a><br /></dt>
 <dd></dd></dl>
@@ -386,8 +441,8 @@ function switchVersion(url) {
 <dd></dd></dl>
 
 <dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N5chase13ChasePerfData5printENSt6size_tE">
-<span id="_CPPv3N5chase13ChasePerfData5printENSt6size_tE"></span><span id="_CPPv2N5chase13ChasePerfData5printENSt6size_tE"></span><span id="chase::ChasePerfData::print__std::s"></span><span class="target" id="classchase_1_1ChasePerfData_1ab58ef2e1dfec6d026a0e62ecab4f2ded"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">print</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">N</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase13ChasePerfData5printENSt6size_tE" title="Link to this definition"></a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv4N5chase13ChasePerfData5printENSt6size_tENSt6size_tENSt6size_tE">
+<span id="_CPPv3N5chase13ChasePerfData5printENSt6size_tENSt6size_tENSt6size_tE"></span><span id="_CPPv2N5chase13ChasePerfData5printENSt6size_tENSt6size_tENSt6size_tE"></span><span id="chase::ChasePerfData::print__std::s.std::s.std::s"></span><span class="target" id="classchase_1_1ChasePerfData_1a18d4fd9e55f507fa692571ea4d713c9b"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">print</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">N</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">lanczosIter</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">numLanczos</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase13ChasePerfData5printENSt6size_tENSt6size_tENSt6size_tE" title="Link to this definition"></a><br /></dt>
 <dd><p>Print function outputting counters and timings for all routines. </p>
 <p>It prints by default ( for N = 0) in the order,<ul class="simple">
 <li><p>size of the eigenproblem</p></li>
@@ -697,6 +752,25 @@ function switchVersion(url) {
 </dd></dl>
 
 <dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase25PerformanceDecoratorChase8get_rankEv">
+<span id="_CPPv3N5chase25PerformanceDecoratorChase8get_rankEv"></span><span id="_CPPv2N5chase25PerformanceDecoratorChase8get_rankEv"></span><span id="chase::PerformanceDecoratorChase::get_rank"></span><span class="target" id="classchase_1_1PerformanceDecoratorChase_1a5f20b144fbf3ffd942578130a20df999"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_rank</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase25PerformanceDecoratorChase8get_rankEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the MPI rank. </p>
+<p>This method returns the MPI process. If sequential ChASE is used, it returns <code class="docutils literal notranslate"><span class="pre">0</span></code>, indicating a single process is running.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The number of MPI processes used, represented as an integer. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase25PerformanceDecoratorChase26set_early_locked_residualsENSt6vectorI4BaseI1TEEE">
+<span id="_CPPv3N5chase25PerformanceDecoratorChase26set_early_locked_residualsENSt6vectorI4BaseI1TEEE"></span><span id="_CPPv2N5chase25PerformanceDecoratorChase26set_early_locked_residualsENSt6vectorI4BaseI1TEEE"></span><span id="chase::PerformanceDecoratorChase::set_early_locked_residuals__std::vector:Base:T::"></span><span class="target" id="classchase_1_1PerformanceDecoratorChase_1a9695c6d3ba651662531c7df4ccbdb6b0"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">set_early_locked_residuals</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase25PerformanceDecoratorChaseE" title="chase::PerformanceDecoratorChase::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">early_locked_residuals</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase25PerformanceDecoratorChase26set_early_locked_residualsENSt6vectorI4BaseI1TEEE" title="Link to this definition"></a><br /></dt>
+<dd><p>Save the residuals of early locked eigenpairs. </p>
+<p>This method enables saving statistical data on the early locked eigenpairs to further extract statistical information. </p>
+</dd></dl>
+
+<dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4N5chase25PerformanceDecoratorChase3EndEv">
 <span id="_CPPv3N5chase25PerformanceDecoratorChase3EndEv"></span><span id="_CPPv2N5chase25PerformanceDecoratorChase3EndEv"></span><span id="chase::PerformanceDecoratorChase::End"></span><span class="target" id="classchase_1_1PerformanceDecoratorChase_1a18730755c5f723edd575a66a88ef2bd3"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">End</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase25PerformanceDecoratorChase3EndEv" title="Link to this definition"></a><br /></dt>
 <dd><p>Indicates the end of an eigenproblem solution. </p>
@@ -759,6 +833,28 @@ function switchVersion(url) {
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>A pointer to an array of residuals corresponding to the Ritz values of type <code class="docutils literal notranslate"><span class="pre">Base&lt;T&gt;</span></code>. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase25PerformanceDecoratorChase14GetLanczosIterEv">
+<span id="_CPPv3N5chase25PerformanceDecoratorChase14GetLanczosIterEv"></span><span id="_CPPv2N5chase25PerformanceDecoratorChase14GetLanczosIterEv"></span><span id="chase::PerformanceDecoratorChase::GetLanczosIter"></span><span class="target" id="classchase_1_1PerformanceDecoratorChase_1a59bb30bd3895e2c85bc0a61ec22a5d95"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">GetLanczosIter</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase25PerformanceDecoratorChase14GetLanczosIterEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the number of Lanczos Iterations. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The number of Lanczos Iterations as a <code class="docutils literal notranslate"><span class="pre">std::size_t</span></code> value. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase25PerformanceDecoratorChase13GetNumLanczosEv">
+<span id="_CPPv3N5chase25PerformanceDecoratorChase13GetNumLanczosEv"></span><span id="_CPPv2N5chase25PerformanceDecoratorChase13GetNumLanczosEv"></span><span id="chase::PerformanceDecoratorChase::GetNumLanczos"></span><span class="target" id="classchase_1_1PerformanceDecoratorChase_1a8e1657089889692ceec486a4b1bfb86f"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">GetNumLanczos</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase25PerformanceDecoratorChase13GetNumLanczosEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the number of runs of Lanczos. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The number of runs of Lanczos as a <code class="docutils literal notranslate"><span class="pre">std::size_t</span></code> value. </p>
 </dd>
 </dl>
 </dd></dl>

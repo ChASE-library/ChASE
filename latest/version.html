@@ -55,6 +55,32 @@
   </label>
   <select id="version-select" onchange="switchVersion(this.value)" style="width: 100%; padding: 5px; border: 1px solid #2980B9; border-radius: 3px; background: white; color: #333; font-size: 13px;"><option value="/ChASE/latest/">
       latest
+    </option><option value="/ChASE/v1.0.0/">
+      v1.0.0
+    </option><option value="/ChASE/v1.1.0/">
+      v1.1.0
+    </option><option value="/ChASE/v1.1.1/">
+      v1.1.1
+    </option><option value="/ChASE/v1.1.2/">
+      v1.1.2
+    </option><option value="/ChASE/v1.2.0/">
+      v1.2.0
+    </option><option value="/ChASE/v1.2.1/">
+      v1.2.1
+    </option><option value="/ChASE/v1.3.0/"selected>
+      v1.3.0
+    </option><option value="/ChASE/v1.3.1/">
+      v1.3.1
+    </option><option value="/ChASE/v1.4.0/">
+      v1.4.0
+    </option><option value="/ChASE/v1.4.1/">
+      v1.4.1
+    </option><option value="/ChASE/v1.5.0/">
+      v1.5.0
+    </option><option value="/ChASE/v1.6.0/">
+      v1.6.0
+    </option><option value="/ChASE/v1.7.0-rc1/">
+      v1.7.0-rc1
     </option></select>
 </div><script>
 function switchVersion(url) {
@@ -168,12 +194,12 @@ function switchVersion(url) {
 <li class="toctree-l2"><a class="reference internal" href="#matrix-types">Matrix Types</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#sequential-non-distributed-matrix-types">Sequential (Non-Distributed) Matrix Types</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#hermitian-symmetric-matrices">Hermitian (Symmetric) Matrices</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#pseudo-hermitian-quasi-hermitian-matrices">Pseudo-Hermitian (Quasi-Hermitian) Matrices</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pseudo-hermitian-matrices">Pseudo-Hermitian Matrices</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#parallel-distributed-matrix-types">Parallel (Distributed) Matrix Types</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#id1">Hermitian (Symmetric) Matrices</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#id2">Pseudo-Hermitian (Quasi-Hermitian) Matrices</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id2">Pseudo-Hermitian Matrices</a></li>
 </ul>
 </li>
 </ul>
@@ -189,6 +215,7 @@ function switchVersion(url) {
 </li>
 <li class="toctree-l1"><a class="reference internal" href="license.html">Licenses and Copyright</a></li>
 <li class="toctree-l1"><a class="reference internal" href="reference.html">References and Contributors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contribution.html">Contributing to ChASE</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">USER DOCUMENTATION</span></p>
 <ul>
@@ -234,7 +261,10 @@ function switchVersion(url) {
 provides multiple implementation variants to support different computing
 architectures and problem types. ChASE can be installed with minimal dependencies
 (BLAS, LAPACK) for sequential execution, or with MPI/ScaLAPACK for parallel
-execution on distributed systems.</p>
+execution on distributed systems. The library also supports NVIDIA GPU
+acceleration with CUDA, cuBLAS, and cuSOLVER, and distributed GPU execution
+using NCCL (NVIDIA Collective Communications Library) for optimized multi-GPU
+communication.</p>
 <section id="implementation-variants">
 <h2>Implementation Variants<a class="headerlink" href="#implementation-variants" title="Link to this heading"></a></h2>
 <p>ChASE provides four main implementation classes, each optimized for different
@@ -247,11 +277,11 @@ computing environments:</p>
 for single-node execution. This is the simplest configuration, suitable
 for single CPU systems or shared-memory multi-core systems. It uses BLAS
 and LAPACK for all numerical operations and supports both Hermitian and
-pseudo-Hermitian (Quasi-Hermitian) matrices.</p></li>
+pseudo-Hermitian matrices.</p></li>
 <li><p><strong>ChASEGPU</strong> (<code class="docutils literal notranslate"><span class="pre">chase::Impl::ChASEGPU</span></code>): Sequential GPU implementation
-for single-node execution with GPU acceleration. This configuration
+for single-GPU execution with GPU acceleration. This configuration
 offloads computations to GPU using CUDA, cuBLAS, and cuSOLVER libraries.
-Ideal for systems with one or more GPU cards, supporting both Hermitian
+Ideal for systems with one GPU cards, supporting both Hermitian
 and pseudo-Hermitian matrices.</p></li>
 </ul>
 </div></blockquote>
@@ -262,8 +292,7 @@ and pseudo-Hermitian matrices.</p></li>
 <div><ul class="simple">
 <li><p><strong>pChASECPU</strong> (<code class="docutils literal notranslate"><span class="pre">chase::Impl::pChASECPU</span></code>): Parallel CPU implementation
 using MPI for distributed-memory systems. This configuration is best
-suited for multi-node CPU clusters. It uses ScaLAPACK for distributed
-linear algebra operations and supports multiple matrix distribution
+suited for multi-node CPU clusters. It supports block and block-cyclic matrix distribution
 schemes (Block, Block-Cyclic). Typically used with one MPI rank per NUMA
 domain and OpenMP threads for intra-node parallelism.</p></li>
 <li><p><strong>pChASEGPU</strong> (<code class="docutils literal notranslate"><span class="pre">chase::Impl::pChASEGPU</span></code>): Parallel GPU implementation
@@ -296,11 +325,11 @@ or parallel implementations.</p>
 </ul>
 </div></blockquote>
 </section>
-<section id="pseudo-hermitian-quasi-hermitian-matrices">
-<h4>Pseudo-Hermitian (Quasi-Hermitian) Matrices<a class="headerlink" href="#pseudo-hermitian-quasi-hermitian-matrices" title="Link to this heading"></a></h4>
+<section id="pseudo-hermitian-matrices">
+<h4>Pseudo-Hermitian Matrices<a class="headerlink" href="#pseudo-hermitian-matrices" title="Link to this heading"></a></h4>
 <blockquote>
 <div><ul class="simple">
-<li><p><strong>Matrix Type</strong>: <code class="docutils literal notranslate"><span class="pre">chase::matrix::QuasiHermitianMatrix&lt;T&gt;</span></code> (CPU) or <code class="docutils literal notranslate"><span class="pre">chase::matrix::QuasiHermitianMatrix&lt;T,</span> <span class="pre">chase::platform::GPU&gt;</span></code> (GPU)</p></li>
+<li><p><strong>Matrix Type</strong>: <code class="docutils literal notranslate"><span class="pre">chase::matrix::PseudoHermitianMatrix&lt;T&gt;</span></code> (CPU) or <code class="docutils literal notranslate"><span class="pre">chase::matrix::PseudoHermitianMatrix&lt;T,</span> <span class="pre">chase::platform::GPU&gt;</span></code> (GPU)</p></li>
 <li><p><strong>Problem Form</strong>: BSE Hamiltonian <span class="math notranslate nohighlight">\(H\)</span> satisfying <span class="math notranslate nohighlight">\(SH = H^*S\)</span></p></li>
 <li><p><strong>Rayleigh-Ritz</strong>: Oblique projection with S-metric (OBLIQUE-RAYLEIGH-RITZ)</p></li>
 <li><p><strong>Orthonormalization</strong>: S-orthonormal QR factorization</p></li>
@@ -328,11 +357,11 @@ and support different distribution schemes across MPI processes:</p>
 </div></blockquote>
 </section>
 <section id="id2">
-<h4>Pseudo-Hermitian (Quasi-Hermitian) Matrices<a class="headerlink" href="#id2" title="Link to this heading"></a></h4>
+<h4>Pseudo-Hermitian Matrices<a class="headerlink" href="#id2" title="Link to this heading"></a></h4>
 <blockquote>
 <div><ul class="simple">
-<li><p><strong>Block Distribution</strong>: <code class="docutils literal notranslate"><span class="pre">chase::distMatrix::QuasiHermitianBlockBlockMatrix&lt;T,</span> <span class="pre">Platform&gt;</span></code></p></li>
-<li><p><strong>Block-Cyclic Distribution</strong>: <code class="docutils literal notranslate"><span class="pre">chase::distMatrix::QuasiHermitianBlockCyclicMatrix&lt;T,</span> <span class="pre">Platform&gt;</span></code></p></li>
+<li><p><strong>Block Distribution</strong>: <code class="docutils literal notranslate"><span class="pre">chase::distMatrix::PseudoHermitianBlockBlockMatrix&lt;T,</span> <span class="pre">Platform&gt;</span></code></p></li>
+<li><p><strong>Block-Cyclic Distribution</strong>: <code class="docutils literal notranslate"><span class="pre">chase::distMatrix::PseudoHermitianBlockCyclicMatrix&lt;T,</span> <span class="pre">Platform&gt;</span></code></p></li>
 <li><p><strong>Problem Form</strong>: BSE Hamiltonian <span class="math notranslate nohighlight">\(H\)</span> satisfying <span class="math notranslate nohighlight">\(SH = H^*S\)</span></p></li>
 <li><p><strong>Rayleigh-Ritz</strong>: Oblique projection with S-metric (OBLIQUE-RAYLEIGH-RITZ)</p></li>
 <li><p><strong>Orthonormalization</strong>: S-orthonormal QR factorization</p></li>

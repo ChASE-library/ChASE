@@ -54,6 +54,32 @@
   </label>
   <select id="version-select" onchange="switchVersion(this.value)" style="width: 100%; padding: 5px; border: 1px solid #2980B9; border-radius: 3px; background: white; color: #333; font-size: 13px;"><option value="/ChASE/latest/">
       latest
+    </option><option value="/ChASE/v1.0.0/">
+      v1.0.0
+    </option><option value="/ChASE/v1.1.0/">
+      v1.1.0
+    </option><option value="/ChASE/v1.1.1/">
+      v1.1.1
+    </option><option value="/ChASE/v1.1.2/">
+      v1.1.2
+    </option><option value="/ChASE/v1.2.0/">
+      v1.2.0
+    </option><option value="/ChASE/v1.2.1/">
+      v1.2.1
+    </option><option value="/ChASE/v1.3.0/"selected>
+      v1.3.0
+    </option><option value="/ChASE/v1.3.1/">
+      v1.3.1
+    </option><option value="/ChASE/v1.4.0/">
+      v1.4.0
+    </option><option value="/ChASE/v1.4.1/">
+      v1.4.1
+    </option><option value="/ChASE/v1.5.0/">
+      v1.5.0
+    </option><option value="/ChASE/v1.6.0/">
+      v1.6.0
+    </option><option value="/ChASE/v1.7.0-rc1/">
+      v1.7.0-rc1
     </option></select>
 </div><script>
 function switchVersion(url) {
@@ -161,6 +187,7 @@ function switchVersion(url) {
 <li class="toctree-l1"><a class="reference internal" href="../version.html">Versions of the library</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../license.html">Licenses and Copyright</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../reference.html">References and Contributors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contribution.html">Contributing to ChASE</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">USER DOCUMENTATION</span></p>
 <ul>
@@ -327,6 +354,28 @@ function switchVersion(url) {
 </dd></dl>
 
 <dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase4Impl8ChASECPU14GetLanczosIterEv">
+<span id="_CPPv3N5chase4Impl8ChASECPU14GetLanczosIterEv"></span><span id="_CPPv2N5chase4Impl8ChASECPU14GetLanczosIterEv"></span><span id="chase::Impl::ChASECPU::GetLanczosIter"></span><span class="target" id="classchase_1_1Impl_1_1ChASECPU_1a2f54364e245f2c0f951df235e816ecaf"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">GetLanczosIter</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N5chase4Impl8ChASECPU14GetLanczosIterEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the number of Lanczos Iterations. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The number of Lanczos Iterations as a <code class="docutils literal notranslate"><span class="pre">std::size_t</span></code> value. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase4Impl8ChASECPU13GetNumLanczosEv">
+<span id="_CPPv3N5chase4Impl8ChASECPU13GetNumLanczosEv"></span><span id="_CPPv2N5chase4Impl8ChASECPU13GetNumLanczosEv"></span><span id="chase::Impl::ChASECPU::GetNumLanczos"></span><span class="target" id="classchase_1_1Impl_1_1ChASECPU_1a89bf7a8d46bd656d8929736afd975663"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">GetNumLanczos</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N5chase4Impl8ChASECPU13GetNumLanczosEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the number of runs of Lanczos. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The number of runs of Lanczos as a <code class="docutils literal notranslate"><span class="pre">std::size_t</span></code> value. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4N5chase4Impl8ChASECPU8GetRitzvEv">
 <span id="_CPPv3N5chase4Impl8ChASECPU8GetRitzvEv"></span><span id="_CPPv2N5chase4Impl8ChASECPU8GetRitzvEv"></span><span id="chase::Impl::ChASECPU::GetRitzv"></span><span class="target" id="classchase_1_1Impl_1_1ChASECPU_1ae6bfdb1c887534144e7d630b43410ec8"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I00EN5chase4Impl8ChASECPUE" title="chase::Impl::ChASECPU::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">GetRitzv</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N5chase4Impl8ChASECPU8GetRitzvEv" title="Link to this definition"></a><br /></dt>
 <dd><p>Returns the computed Ritz values. </p>
@@ -367,6 +416,18 @@ function switchVersion(url) {
 <span id="_CPPv3N5chase4Impl8ChASECPU10get_nprocsEv"></span><span id="_CPPv2N5chase4Impl8ChASECPU10get_nprocsEv"></span><span id="chase::Impl::ChASECPU::get_nprocs"></span><span class="target" id="classchase_1_1Impl_1_1ChASECPU_1a994b38debf76f858bee4a047afe88525"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_nprocs</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N5chase4Impl8ChASECPU10get_nprocsEv" title="Link to this definition"></a><br /></dt>
 <dd><p>Returns the number of MPI processes used. </p>
 <p>This method returns the number of MPI processes involved in the computation. If sequential ChASE is used, it returns <code class="docutils literal notranslate"><span class="pre">1</span></code>, indicating a single process is running.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The number of MPI processes used, represented as an integer. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase4Impl8ChASECPU8get_rankEv">
+<span id="_CPPv3N5chase4Impl8ChASECPU8get_rankEv"></span><span id="_CPPv2N5chase4Impl8ChASECPU8get_rankEv"></span><span id="chase::Impl::ChASECPU::get_rank"></span><span class="target" id="classchase_1_1Impl_1_1ChASECPU_1a693ae59507fc138756841cd035cbcdc0"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_rank</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N5chase4Impl8ChASECPU8get_rankEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the MPI rank. </p>
+<p>This method returns the MPI process. If sequential ChASE is used, it returns <code class="docutils literal notranslate"><span class="pre">0</span></code>, indicating a single process is running.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>The number of MPI processes used, represented as an integer. </p>
@@ -747,6 +808,28 @@ function switchVersion(url) {
 </dd></dl>
 
 <dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase4Impl8ChASEGPU14GetLanczosIterEv">
+<span id="_CPPv3N5chase4Impl8ChASEGPU14GetLanczosIterEv"></span><span id="_CPPv2N5chase4Impl8ChASEGPU14GetLanczosIterEv"></span><span id="chase::Impl::ChASEGPU::GetLanczosIter"></span><span class="target" id="classchase_1_1Impl_1_1ChASEGPU_1a0ae88c8181b0a3141ff9b372ec180aa7"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">GetLanczosIter</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N5chase4Impl8ChASEGPU14GetLanczosIterEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the number of Lanczos Iterations. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The number of Lanczos Iterations as a <code class="docutils literal notranslate"><span class="pre">std::size_t</span></code> value. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase4Impl8ChASEGPU13GetNumLanczosEv">
+<span id="_CPPv3N5chase4Impl8ChASEGPU13GetNumLanczosEv"></span><span id="_CPPv2N5chase4Impl8ChASEGPU13GetNumLanczosEv"></span><span id="chase::Impl::ChASEGPU::GetNumLanczos"></span><span class="target" id="classchase_1_1Impl_1_1ChASEGPU_1a2afda88f8285d2788ccde6b40c2c29f2"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">GetNumLanczos</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N5chase4Impl8ChASEGPU13GetNumLanczosEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the number of runs of Lanczos. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The number of runs of Lanczos as a <code class="docutils literal notranslate"><span class="pre">std::size_t</span></code> value. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4N5chase4Impl8ChASEGPU8GetRitzvEv">
 <span id="_CPPv3N5chase4Impl8ChASEGPU8GetRitzvEv"></span><span id="_CPPv2N5chase4Impl8ChASEGPU8GetRitzvEv"></span><span id="chase::Impl::ChASEGPU::GetRitzv"></span><span class="target" id="classchase_1_1Impl_1_1ChASEGPU_1af453d03b544459206fd24c0e8ccb799c"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I00EN5chase4Impl8ChASEGPUE" title="chase::Impl::ChASEGPU::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">GetRitzv</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N5chase4Impl8ChASEGPU8GetRitzvEv" title="Link to this definition"></a><br /></dt>
 <dd><p>Returns the computed Ritz values. </p>
@@ -787,6 +870,18 @@ function switchVersion(url) {
 <span id="_CPPv3N5chase4Impl8ChASEGPU10get_nprocsEv"></span><span id="_CPPv2N5chase4Impl8ChASEGPU10get_nprocsEv"></span><span id="chase::Impl::ChASEGPU::get_nprocs"></span><span class="target" id="classchase_1_1Impl_1_1ChASEGPU_1aa4a54b8f877cb7bea4017ff4a77defcd"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_nprocs</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N5chase4Impl8ChASEGPU10get_nprocsEv" title="Link to this definition"></a><br /></dt>
 <dd><p>Returns the number of MPI processes used. </p>
 <p>This method returns the number of MPI processes involved in the computation. If sequential ChASE is used, it returns <code class="docutils literal notranslate"><span class="pre">1</span></code>, indicating a single process is running.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The number of MPI processes used, represented as an integer. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase4Impl8ChASEGPU8get_rankEv">
+<span id="_CPPv3N5chase4Impl8ChASEGPU8get_rankEv"></span><span id="_CPPv2N5chase4Impl8ChASEGPU8get_rankEv"></span><span id="chase::Impl::ChASEGPU::get_rank"></span><span class="target" id="classchase_1_1Impl_1_1ChASEGPU_1abbabc8fbb3cebd44a07af9bfa4ee1592"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_rank</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N5chase4Impl8ChASEGPU8get_rankEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the MPI rank. </p>
+<p>This method returns the MPI process. If sequential ChASE is used, it returns <code class="docutils literal notranslate"><span class="pre">0</span></code>, indicating a single process is running.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>The number of MPI processes used, represented as an integer. </p>
@@ -1152,6 +1247,28 @@ function switchVersion(url) {
 </dd></dl>
 
 <dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase4Impl9pChASECPU14GetLanczosIterEv">
+<span id="_CPPv3N5chase4Impl9pChASECPU14GetLanczosIterEv"></span><span id="_CPPv2N5chase4Impl9pChASECPU14GetLanczosIterEv"></span><span id="chase::Impl::pChASECPU::GetLanczosIter"></span><span class="target" id="classchase_1_1Impl_1_1pChASECPU_1a96cffde1e8afb7a5fa2d271577948224"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">GetLanczosIter</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N5chase4Impl9pChASECPU14GetLanczosIterEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the number of Lanczos Iterations. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The number of Lanczos Iterations as a <code class="docutils literal notranslate"><span class="pre">std::size_t</span></code> value. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase4Impl9pChASECPU13GetNumLanczosEv">
+<span id="_CPPv3N5chase4Impl9pChASECPU13GetNumLanczosEv"></span><span id="_CPPv2N5chase4Impl9pChASECPU13GetNumLanczosEv"></span><span id="chase::Impl::pChASECPU::GetNumLanczos"></span><span class="target" id="classchase_1_1Impl_1_1pChASECPU_1a935a81bba14a587572c2b46f7b7ee495"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">GetNumLanczos</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N5chase4Impl9pChASECPU13GetNumLanczosEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the number of runs of Lanczos. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The number of runs of Lanczos as a <code class="docutils literal notranslate"><span class="pre">std::size_t</span></code> value. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4N5chase4Impl9pChASECPU8GetRitzvEv">
 <span id="_CPPv3N5chase4Impl9pChASECPU8GetRitzvEv"></span><span id="_CPPv2N5chase4Impl9pChASECPU8GetRitzvEv"></span><span id="chase::Impl::pChASECPU::GetRitzv"></span><span class="target" id="classchase_1_1Impl_1_1pChASECPU_1a0de0463165b94cd9104134f0c04afdfc"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">GetRitzv</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N5chase4Impl9pChASECPU8GetRitzvEv" title="Link to this definition"></a><br /></dt>
 <dd><p>Returns the computed Ritz values. </p>
@@ -1201,8 +1318,15 @@ function switchVersion(url) {
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4N5chase4Impl9pChASECPU8get_rankEv">
-<span id="_CPPv3N5chase4Impl9pChASECPU8get_rankEv"></span><span id="_CPPv2N5chase4Impl9pChASECPU8get_rankEv"></span><span id="chase::Impl::pChASECPU::get_rank"></span><span class="target" id="classchase_1_1Impl_1_1pChASECPU_1a17347c281ed944826224c13470e07b72"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_rank</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase4Impl9pChASECPU8get_rankEv" title="Link to this definition"></a><br /></dt>
-<dd></dd></dl>
+<span id="_CPPv3N5chase4Impl9pChASECPU8get_rankEv"></span><span id="_CPPv2N5chase4Impl9pChASECPU8get_rankEv"></span><span id="chase::Impl::pChASECPU::get_rank"></span><span class="target" id="classchase_1_1Impl_1_1pChASECPU_1a17347c281ed944826224c13470e07b72"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_rank</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase4Impl9pChASECPU8get_rankEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the MPI rank. </p>
+<p>This method returns the MPI process. If sequential ChASE is used, it returns <code class="docutils literal notranslate"><span class="pre">0</span></code>, indicating a single process is running.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The number of MPI processes used, represented as an integer. </p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4N5chase4Impl9pChASECPU19loadProblemFromFileENSt6stringE">
@@ -1301,13 +1425,37 @@ function switchVersion(url) {
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4N5chase4Impl9pChASECPU7LanczosENSt6size_tEPN5chase4BaseI1TEE">
-<span id="_CPPv3N5chase4Impl9pChASECPU7LanczosENSt6size_tEPN5chase4BaseI1TEE"></span><span id="_CPPv2N5chase4Impl9pChASECPU7LanczosENSt6size_tEPN5chase4BaseI1TEE"></span><span id="chase::Impl::pChASECPU::Lanczos__std::s.chase::Base:T:P"></span><span class="target" id="classchase_1_1Impl_1_1pChASECPU_1a6060f19babbc9c00effaa6330bab85ac"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Lanczos</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">m</span></span>, <span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">upperb</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N5chase4Impl9pChASECPU7LanczosENSt6size_tEPN5chase4BaseI1TEE" title="Link to this definition"></a><br /></dt>
-<dd></dd></dl>
+<span id="_CPPv3N5chase4Impl9pChASECPU7LanczosENSt6size_tEPN5chase4BaseI1TEE"></span><span id="_CPPv2N5chase4Impl9pChASECPU7LanczosENSt6size_tEPN5chase4BaseI1TEE"></span><span id="chase::Impl::pChASECPU::Lanczos__std::s.chase::Base:T:P"></span><span class="target" id="classchase_1_1Impl_1_1pChASECPU_1a6060f19babbc9c00effaa6330bab85ac"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Lanczos</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">m</span></span>, <span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">upperb</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N5chase4Impl9pChASECPU7LanczosENSt6size_tEPN5chase4BaseI1TEE" title="Link to this definition"></a><br /></dt>
+<dd><p>Estimates the upper bound of the user-interested spectrum using Lanczos eigensolver. </p>
+<p>This method estimates the upper bound of the spectrum of interest using the Lanczos eigensolver.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>m</strong> – Number of iterative steps for the Lanczos method. </p></li>
+<li><p><strong>upperb</strong> – Pointer to store the estimated upper bound of the spectrum. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4N5chase4Impl9pChASECPU7LanczosENSt6size_tENSt6size_tEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEE">
-<span id="_CPPv3N5chase4Impl9pChASECPU7LanczosENSt6size_tENSt6size_tEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEE"></span><span id="_CPPv2N5chase4Impl9pChASECPU7LanczosENSt6size_tENSt6size_tEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEE"></span><span id="chase::Impl::pChASECPU::Lanczos__std::s.std::s.chase::Base:T:P.chase::Base:T:P.chase::Base:T:P.chase::Base:T:P"></span><span class="target" id="classchase_1_1Impl_1_1pChASECPU_1aa6cde67da51ba01dfd10e7bc9c4e21e4"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Lanczos</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">M</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">numvec</span></span>, <span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">upperb</span></span>, <span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ritzv</span></span>, <span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">Tau</span></span>, <span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ritzV</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N5chase4Impl9pChASECPU7LanczosENSt6size_tENSt6size_tEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEE" title="Link to this definition"></a><br /></dt>
-<dd></dd></dl>
+<span id="_CPPv3N5chase4Impl9pChASECPU7LanczosENSt6size_tENSt6size_tEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEE"></span><span id="_CPPv2N5chase4Impl9pChASECPU7LanczosENSt6size_tENSt6size_tEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEE"></span><span id="chase::Impl::pChASECPU::Lanczos__std::s.std::s.chase::Base:T:P.chase::Base:T:P.chase::Base:T:P.chase::Base:T:P"></span><span class="target" id="classchase_1_1Impl_1_1pChASECPU_1aa6cde67da51ba01dfd10e7bc9c4e21e4"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Lanczos</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">M</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">numvec</span></span>, <span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">upperb</span></span>, <span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ritzv</span></span>, <span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">Tau</span></span>, <span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ritzV</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N5chase4Impl9pChASECPU7LanczosENSt6size_tENSt6size_tEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEE" title="Link to this definition"></a><br /></dt>
+<dd><p>Performs Lanczos eigensolver with additional parameters for eigenvector and Tau storage. </p>
+<p>This method performs the Lanczos eigensolver with more advanced parameters, storing eigenvectors and Tau values for further computation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>M</strong> – Number of iterations for the Lanczos algorithm. </p></li>
+<li><p><strong>numvec</strong> – Number of vectors to be used in the Lanczos procedure. </p></li>
+<li><p><strong>upperb</strong> – Pointer to store the upper bound of the spectrum. </p></li>
+<li><p><strong>ritzv</strong> – Pointer to store the Ritz values. </p></li>
+<li><p><strong>Tau</strong> – Pointer to store the Tau values. </p></li>
+<li><p><strong>ritzV</strong> – Pointer to store the Ritz vectors. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4N5chase4Impl9pChASECPU10LanczosDosENSt6size_tENSt6size_tEP1T">
@@ -1359,23 +1507,65 @@ function switchVersion(url) {
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4N5chase4Impl9pChASECPU2QRENSt6size_tEN5chase4BaseI1TEE">
-<span id="_CPPv3N5chase4Impl9pChASECPU2QRENSt6size_tEN5chase4BaseI1TEE"></span><span id="_CPPv2N5chase4Impl9pChASECPU2QRENSt6size_tEN5chase4BaseI1TEE"></span><span id="chase::Impl::pChASECPU::QR__std::s.chase::Base:T:"></span><span class="target" id="classchase_1_1Impl_1_1pChASECPU_1af5808ca33ea709fd0fa8050d5a4fca44"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">QR</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">fixednev</span></span>, <span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">cond</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N5chase4Impl9pChASECPU2QRENSt6size_tEN5chase4BaseI1TEE" title="Link to this definition"></a><br /></dt>
-<dd></dd></dl>
+<span id="_CPPv3N5chase4Impl9pChASECPU2QRENSt6size_tEN5chase4BaseI1TEE"></span><span id="_CPPv2N5chase4Impl9pChASECPU2QRENSt6size_tEN5chase4BaseI1TEE"></span><span id="chase::Impl::pChASECPU::QR__std::s.chase::Base:T:"></span><span class="target" id="classchase_1_1Impl_1_1pChASECPU_1af5808ca33ea709fd0fa8050d5a4fca44"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">QR</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">fixednev</span></span>, <span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">cond</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N5chase4Impl9pChASECPU2QRENSt6size_tEN5chase4BaseI1TEE" title="Link to this definition"></a><br /></dt>
+<dd><p>Performs QR factorization with optional Householder transformation. </p>
+<p>This method performs a QR factorization on the matrix, optionally using Householder transformations for the computation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fixednev</strong> – Total number of converged eigenpairs before the QR factorization. </p></li>
+<li><p><strong>cond</strong> – Condition number for controlling the factorization process. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4N5chase4Impl9pChASECPU2RREPN5chase4BaseI1TEENSt6size_tE">
-<span id="_CPPv3N5chase4Impl9pChASECPU2RREPN5chase4BaseI1TEENSt6size_tE"></span><span id="_CPPv2N5chase4Impl9pChASECPU2RREPN5chase4BaseI1TEENSt6size_tE"></span><span id="chase::Impl::pChASECPU::RR__chase::Base:T:P.std::s"></span><span class="target" id="classchase_1_1Impl_1_1pChASECPU_1ad19216dff9fe48706d0e1b4318bee4fb"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">RR</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ritzv</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">block</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N5chase4Impl9pChASECPU2RREPN5chase4BaseI1TEENSt6size_tE" title="Link to this definition"></a><br /></dt>
-<dd></dd></dl>
+<span id="_CPPv3N5chase4Impl9pChASECPU2RREPN5chase4BaseI1TEENSt6size_tE"></span><span id="_CPPv2N5chase4Impl9pChASECPU2RREPN5chase4BaseI1TEENSt6size_tE"></span><span id="chase::Impl::pChASECPU::RR__chase::Base:T:P.std::s"></span><span class="target" id="classchase_1_1Impl_1_1pChASECPU_1ad19216dff9fe48706d0e1b4318bee4fb"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">RR</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ritzv</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">block</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N5chase4Impl9pChASECPU2RREPN5chase4BaseI1TEENSt6size_tE" title="Link to this definition"></a><br /></dt>
+<dd><p>Performs Rayleigh-Ritz projection for eigenproblem reduction. </p>
+<p>This method projects the eigenproblem into a smaller subspace, solves the smaller problem, and reconstructs the eigenvectors.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ritzv</strong> – Array to store the computed eigenvalues. </p></li>
+<li><p><strong>block</strong> – The number of non-converged eigenpairs used for the small eigenproblem. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4N5chase4Impl9pChASECPU4SortEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEE">
-<span id="_CPPv3N5chase4Impl9pChASECPU4SortEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEE"></span><span id="_CPPv2N5chase4Impl9pChASECPU4SortEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEE"></span><span id="chase::Impl::pChASECPU::Sort__chase::Base:T:P.chase::Base:T:P.chase::Base:T:P"></span><span class="target" id="classchase_1_1Impl_1_1pChASECPU_1a1769ca29af74e7c6170b360aa6a779f4"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Sort</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ritzv</span></span>, <span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">residLast</span></span>, <span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">resid</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N5chase4Impl9pChASECPU4SortEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEE" title="Link to this definition"></a><br /></dt>
-<dd></dd></dl>
+<span id="_CPPv3N5chase4Impl9pChASECPU4SortEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEE"></span><span id="_CPPv2N5chase4Impl9pChASECPU4SortEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEE"></span><span id="chase::Impl::pChASECPU::Sort__chase::Base:T:P.chase::Base:T:P.chase::Base:T:P"></span><span class="target" id="classchase_1_1Impl_1_1pChASECPU_1a1769ca29af74e7c6170b360aa6a779f4"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Sort</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ritzv</span></span>, <span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">residLast</span></span>, <span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">resid</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N5chase4Impl9pChASECPU4SortEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEE" title="Link to this definition"></a><br /></dt>
+<dd><p>Sort the ritz values, the residuals, and the eigenvectors in ascending order. </p>
+<p>This method sorts the ritz values, the residuals, and the ritz vectors in ascending order of the ritz values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ritzv</strong> – Array to store the computed eigenvalues. </p></li>
+<li><p><strong>residLast</strong> – Array to store the residuals of the previous iteration. </p></li>
+<li><p><strong>resid</strong> – Array to store the residuals of the current iteration. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4N5chase4Impl9pChASECPU4ResdEPN5chase4BaseI1TEEPN5chase4BaseI1TEENSt6size_tE">
-<span id="_CPPv3N5chase4Impl9pChASECPU4ResdEPN5chase4BaseI1TEEPN5chase4BaseI1TEENSt6size_tE"></span><span id="_CPPv2N5chase4Impl9pChASECPU4ResdEPN5chase4BaseI1TEEPN5chase4BaseI1TEENSt6size_tE"></span><span id="chase::Impl::pChASECPU::Resd__chase::Base:T:P.chase::Base:T:P.std::s"></span><span class="target" id="classchase_1_1Impl_1_1pChASECPU_1a915efbecf195c61a5fb2a5bd8b7b20c7"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Resd</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ritzv</span></span>, <span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">resd</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">fixednev</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N5chase4Impl9pChASECPU4ResdEPN5chase4BaseI1TEEPN5chase4BaseI1TEENSt6size_tE" title="Link to this definition"></a><br /></dt>
-<dd></dd></dl>
+<span id="_CPPv3N5chase4Impl9pChASECPU4ResdEPN5chase4BaseI1TEEPN5chase4BaseI1TEENSt6size_tE"></span><span id="_CPPv2N5chase4Impl9pChASECPU4ResdEPN5chase4BaseI1TEEPN5chase4BaseI1TEENSt6size_tE"></span><span id="chase::Impl::pChASECPU::Resd__chase::Base:T:P.chase::Base:T:P.std::s"></span><span class="target" id="classchase_1_1Impl_1_1pChASECPU_1a915efbecf195c61a5fb2a5bd8b7b20c7"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Resd</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ritzv</span></span>, <span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">resd</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">fixednev</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N5chase4Impl9pChASECPU4ResdEPN5chase4BaseI1TEEPN5chase4BaseI1TEENSt6size_tE" title="Link to this definition"></a><br /></dt>
+<dd><p>Computes residuals for unconverged eigenpairs. </p>
+<p>This method computes the residuals of the eigenpairs that have not yet converged.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ritzv</strong> – Array containing the eigenvalues. </p></li>
+<li><p><strong>resd</strong> – Array to store the computed residuals for each eigenpair. </p></li>
+<li><p><strong>fixednev</strong> – Number of converged eigenpairs, which helps determine the number of non-converged eigenpairs. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4N5chase4Impl9pChASECPU4SwapENSt6size_tENSt6size_tE">
@@ -1497,6 +1687,28 @@ function switchVersion(url) {
 </dd></dl>
 
 <dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase4Impl9pChASEGPU14GetLanczosIterEv">
+<span id="_CPPv3N5chase4Impl9pChASEGPU14GetLanczosIterEv"></span><span id="_CPPv2N5chase4Impl9pChASEGPU14GetLanczosIterEv"></span><span id="chase::Impl::pChASEGPU::GetLanczosIter"></span><span class="target" id="classchase_1_1Impl_1_1pChASEGPU_1a008d144b0cda4dfe35fe9dc51024a470"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">GetLanczosIter</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N5chase4Impl9pChASEGPU14GetLanczosIterEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the number of Lanczos Iterations. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The number of Lanczos Iterations as a <code class="docutils literal notranslate"><span class="pre">std::size_t</span></code> value. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase4Impl9pChASEGPU13GetNumLanczosEv">
+<span id="_CPPv3N5chase4Impl9pChASEGPU13GetNumLanczosEv"></span><span id="_CPPv2N5chase4Impl9pChASEGPU13GetNumLanczosEv"></span><span id="chase::Impl::pChASEGPU::GetNumLanczos"></span><span class="target" id="classchase_1_1Impl_1_1pChASEGPU_1aafd959c8fd80cd84fc50a059de17370a"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">GetNumLanczos</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N5chase4Impl9pChASEGPU13GetNumLanczosEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the number of runs of Lanczos. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The number of runs of Lanczos as a <code class="docutils literal notranslate"><span class="pre">std::size_t</span></code> value. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4N5chase4Impl9pChASEGPU8GetRitzvEv">
 <span id="_CPPv3N5chase4Impl9pChASEGPU8GetRitzvEv"></span><span id="_CPPv2N5chase4Impl9pChASEGPU8GetRitzvEv"></span><span id="chase::Impl::pChASEGPU::GetRitzv"></span><span class="target" id="classchase_1_1Impl_1_1pChASEGPU_1a1ed575807f61c1ddc6962f327c47e4b0"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">GetRitzv</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N5chase4Impl9pChASEGPU8GetRitzvEv" title="Link to this definition"></a><br /></dt>
 <dd><p>Returns the computed Ritz values. </p>
@@ -1546,8 +1758,15 @@ function switchVersion(url) {
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4N5chase4Impl9pChASEGPU8get_rankEv">
-<span id="_CPPv3N5chase4Impl9pChASEGPU8get_rankEv"></span><span id="_CPPv2N5chase4Impl9pChASEGPU8get_rankEv"></span><span id="chase::Impl::pChASEGPU::get_rank"></span><span class="target" id="classchase_1_1Impl_1_1pChASEGPU_1a3dc9cfc5e5085a8dd7eeb9c1e35adb8d"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_rank</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase4Impl9pChASEGPU8get_rankEv" title="Link to this definition"></a><br /></dt>
-<dd></dd></dl>
+<span id="_CPPv3N5chase4Impl9pChASEGPU8get_rankEv"></span><span id="_CPPv2N5chase4Impl9pChASEGPU8get_rankEv"></span><span id="chase::Impl::pChASEGPU::get_rank"></span><span class="target" id="classchase_1_1Impl_1_1pChASEGPU_1a3dc9cfc5e5085a8dd7eeb9c1e35adb8d"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_rank</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase4Impl9pChASEGPU8get_rankEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the MPI rank. </p>
+<p>This method returns the MPI process. If sequential ChASE is used, it returns <code class="docutils literal notranslate"><span class="pre">0</span></code>, indicating a single process is running.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The number of MPI processes used, represented as an integer. </p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4N5chase4Impl9pChASEGPU19loadProblemFromFileENSt6stringE">
@@ -1646,13 +1865,37 @@ function switchVersion(url) {
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4N5chase4Impl9pChASEGPU7LanczosENSt6size_tEPN5chase4BaseI1TEE">
-<span id="_CPPv3N5chase4Impl9pChASEGPU7LanczosENSt6size_tEPN5chase4BaseI1TEE"></span><span id="_CPPv2N5chase4Impl9pChASEGPU7LanczosENSt6size_tEPN5chase4BaseI1TEE"></span><span id="chase::Impl::pChASEGPU::Lanczos__std::s.chase::Base:T:P"></span><span class="target" id="classchase_1_1Impl_1_1pChASEGPU_1a8eb6ab8bf8575582339ea1ae1b08648a"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Lanczos</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">m</span></span>, <span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">upperb</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N5chase4Impl9pChASEGPU7LanczosENSt6size_tEPN5chase4BaseI1TEE" title="Link to this definition"></a><br /></dt>
-<dd></dd></dl>
+<span id="_CPPv3N5chase4Impl9pChASEGPU7LanczosENSt6size_tEPN5chase4BaseI1TEE"></span><span id="_CPPv2N5chase4Impl9pChASEGPU7LanczosENSt6size_tEPN5chase4BaseI1TEE"></span><span id="chase::Impl::pChASEGPU::Lanczos__std::s.chase::Base:T:P"></span><span class="target" id="classchase_1_1Impl_1_1pChASEGPU_1a8eb6ab8bf8575582339ea1ae1b08648a"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Lanczos</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">m</span></span>, <span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">upperb</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N5chase4Impl9pChASEGPU7LanczosENSt6size_tEPN5chase4BaseI1TEE" title="Link to this definition"></a><br /></dt>
+<dd><p>Estimates the upper bound of the user-interested spectrum using Lanczos eigensolver. </p>
+<p>This method estimates the upper bound of the spectrum of interest using the Lanczos eigensolver.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>m</strong> – Number of iterative steps for the Lanczos method. </p></li>
+<li><p><strong>upperb</strong> – Pointer to store the estimated upper bound of the spectrum. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4N5chase4Impl9pChASEGPU7LanczosENSt6size_tENSt6size_tEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEE">
-<span id="_CPPv3N5chase4Impl9pChASEGPU7LanczosENSt6size_tENSt6size_tEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEE"></span><span id="_CPPv2N5chase4Impl9pChASEGPU7LanczosENSt6size_tENSt6size_tEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEE"></span><span id="chase::Impl::pChASEGPU::Lanczos__std::s.std::s.chase::Base:T:P.chase::Base:T:P.chase::Base:T:P.chase::Base:T:P"></span><span class="target" id="classchase_1_1Impl_1_1pChASEGPU_1a5ac1b86f97ad6242754fd3feef24a5b9"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Lanczos</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">M</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">numvec</span></span>, <span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">upperb</span></span>, <span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ritzv</span></span>, <span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">Tau</span></span>, <span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ritzV</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N5chase4Impl9pChASEGPU7LanczosENSt6size_tENSt6size_tEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEE" title="Link to this definition"></a><br /></dt>
-<dd></dd></dl>
+<span id="_CPPv3N5chase4Impl9pChASEGPU7LanczosENSt6size_tENSt6size_tEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEE"></span><span id="_CPPv2N5chase4Impl9pChASEGPU7LanczosENSt6size_tENSt6size_tEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEE"></span><span id="chase::Impl::pChASEGPU::Lanczos__std::s.std::s.chase::Base:T:P.chase::Base:T:P.chase::Base:T:P.chase::Base:T:P"></span><span class="target" id="classchase_1_1Impl_1_1pChASEGPU_1a5ac1b86f97ad6242754fd3feef24a5b9"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Lanczos</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">M</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">numvec</span></span>, <span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">upperb</span></span>, <span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ritzv</span></span>, <span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">Tau</span></span>, <span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ritzV</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N5chase4Impl9pChASEGPU7LanczosENSt6size_tENSt6size_tEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEE" title="Link to this definition"></a><br /></dt>
+<dd><p>Performs Lanczos eigensolver with additional parameters for eigenvector and Tau storage. </p>
+<p>This method performs the Lanczos eigensolver with more advanced parameters, storing eigenvectors and Tau values for further computation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>M</strong> – Number of iterations for the Lanczos algorithm. </p></li>
+<li><p><strong>numvec</strong> – Number of vectors to be used in the Lanczos procedure. </p></li>
+<li><p><strong>upperb</strong> – Pointer to store the upper bound of the spectrum. </p></li>
+<li><p><strong>ritzv</strong> – Pointer to store the Ritz values. </p></li>
+<li><p><strong>Tau</strong> – Pointer to store the Tau values. </p></li>
+<li><p><strong>ritzV</strong> – Pointer to store the Ritz vectors. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4N5chase4Impl9pChASEGPU10LanczosDosENSt6size_tENSt6size_tEP1T">
@@ -1704,23 +1947,65 @@ function switchVersion(url) {
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4N5chase4Impl9pChASEGPU2QRENSt6size_tEN5chase4BaseI1TEE">
-<span id="_CPPv3N5chase4Impl9pChASEGPU2QRENSt6size_tEN5chase4BaseI1TEE"></span><span id="_CPPv2N5chase4Impl9pChASEGPU2QRENSt6size_tEN5chase4BaseI1TEE"></span><span id="chase::Impl::pChASEGPU::QR__std::s.chase::Base:T:"></span><span class="target" id="classchase_1_1Impl_1_1pChASEGPU_1ab2eddf630dffbad08f41f5d3bb1042ad"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">QR</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">fixednev</span></span>, <span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">cond</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N5chase4Impl9pChASEGPU2QRENSt6size_tEN5chase4BaseI1TEE" title="Link to this definition"></a><br /></dt>
-<dd></dd></dl>
+<span id="_CPPv3N5chase4Impl9pChASEGPU2QRENSt6size_tEN5chase4BaseI1TEE"></span><span id="_CPPv2N5chase4Impl9pChASEGPU2QRENSt6size_tEN5chase4BaseI1TEE"></span><span id="chase::Impl::pChASEGPU::QR__std::s.chase::Base:T:"></span><span class="target" id="classchase_1_1Impl_1_1pChASEGPU_1ab2eddf630dffbad08f41f5d3bb1042ad"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">QR</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">fixednev</span></span>, <span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">cond</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N5chase4Impl9pChASEGPU2QRENSt6size_tEN5chase4BaseI1TEE" title="Link to this definition"></a><br /></dt>
+<dd><p>Performs QR factorization with optional Householder transformation. </p>
+<p>This method performs a QR factorization on the matrix, optionally using Householder transformations for the computation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fixednev</strong> – Total number of converged eigenpairs before the QR factorization. </p></li>
+<li><p><strong>cond</strong> – Condition number for controlling the factorization process. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4N5chase4Impl9pChASEGPU2RREPN5chase4BaseI1TEENSt6size_tE">
-<span id="_CPPv3N5chase4Impl9pChASEGPU2RREPN5chase4BaseI1TEENSt6size_tE"></span><span id="_CPPv2N5chase4Impl9pChASEGPU2RREPN5chase4BaseI1TEENSt6size_tE"></span><span id="chase::Impl::pChASEGPU::RR__chase::Base:T:P.std::s"></span><span class="target" id="classchase_1_1Impl_1_1pChASEGPU_1ac86ef2343d211fc70d08c20090988ed4"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">RR</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ritzv</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">block</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N5chase4Impl9pChASEGPU2RREPN5chase4BaseI1TEENSt6size_tE" title="Link to this definition"></a><br /></dt>
-<dd></dd></dl>
+<span id="_CPPv3N5chase4Impl9pChASEGPU2RREPN5chase4BaseI1TEENSt6size_tE"></span><span id="_CPPv2N5chase4Impl9pChASEGPU2RREPN5chase4BaseI1TEENSt6size_tE"></span><span id="chase::Impl::pChASEGPU::RR__chase::Base:T:P.std::s"></span><span class="target" id="classchase_1_1Impl_1_1pChASEGPU_1ac86ef2343d211fc70d08c20090988ed4"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">RR</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ritzv</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">block</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N5chase4Impl9pChASEGPU2RREPN5chase4BaseI1TEENSt6size_tE" title="Link to this definition"></a><br /></dt>
+<dd><p>Performs Rayleigh-Ritz projection for eigenproblem reduction. </p>
+<p>This method projects the eigenproblem into a smaller subspace, solves the smaller problem, and reconstructs the eigenvectors.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ritzv</strong> – Array to store the computed eigenvalues. </p></li>
+<li><p><strong>block</strong> – The number of non-converged eigenpairs used for the small eigenproblem. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4N5chase4Impl9pChASEGPU4SortEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEE">
-<span id="_CPPv3N5chase4Impl9pChASEGPU4SortEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEE"></span><span id="_CPPv2N5chase4Impl9pChASEGPU4SortEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEE"></span><span id="chase::Impl::pChASEGPU::Sort__chase::Base:T:P.chase::Base:T:P.chase::Base:T:P"></span><span class="target" id="classchase_1_1Impl_1_1pChASEGPU_1a9ed84710ae8691aeb1dc6102a3abc117"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Sort</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ritzv</span></span>, <span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">residLast</span></span>, <span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">resid</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N5chase4Impl9pChASEGPU4SortEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEE" title="Link to this definition"></a><br /></dt>
-<dd></dd></dl>
+<span id="_CPPv3N5chase4Impl9pChASEGPU4SortEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEE"></span><span id="_CPPv2N5chase4Impl9pChASEGPU4SortEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEE"></span><span id="chase::Impl::pChASEGPU::Sort__chase::Base:T:P.chase::Base:T:P.chase::Base:T:P"></span><span class="target" id="classchase_1_1Impl_1_1pChASEGPU_1a9ed84710ae8691aeb1dc6102a3abc117"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Sort</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ritzv</span></span>, <span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">residLast</span></span>, <span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">resid</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N5chase4Impl9pChASEGPU4SortEPN5chase4BaseI1TEEPN5chase4BaseI1TEEPN5chase4BaseI1TEE" title="Link to this definition"></a><br /></dt>
+<dd><p>Sort the ritz values, the residuals, and the eigenvectors in ascending order. </p>
+<p>This method sorts the ritz values, the residuals, and the ritz vectors in ascending order of the ritz values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ritzv</strong> – Array to store the computed eigenvalues. </p></li>
+<li><p><strong>residLast</strong> – Array to store the residuals of the previous iteration. </p></li>
+<li><p><strong>resid</strong> – Array to store the residuals of the current iteration. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4N5chase4Impl9pChASEGPU4ResdEPN5chase4BaseI1TEEPN5chase4BaseI1TEENSt6size_tE">
-<span id="_CPPv3N5chase4Impl9pChASEGPU4ResdEPN5chase4BaseI1TEEPN5chase4BaseI1TEENSt6size_tE"></span><span id="_CPPv2N5chase4Impl9pChASEGPU4ResdEPN5chase4BaseI1TEEPN5chase4BaseI1TEENSt6size_tE"></span><span id="chase::Impl::pChASEGPU::Resd__chase::Base:T:P.chase::Base:T:P.std::s"></span><span class="target" id="classchase_1_1Impl_1_1pChASEGPU_1a700197e3e4a8b1a068e54e4849e7aaee"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Resd</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ritzv</span></span>, <span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">resd</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">fixednev</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N5chase4Impl9pChASEGPU4ResdEPN5chase4BaseI1TEEPN5chase4BaseI1TEENSt6size_tE" title="Link to this definition"></a><br /></dt>
-<dd></dd></dl>
+<span id="_CPPv3N5chase4Impl9pChASEGPU4ResdEPN5chase4BaseI1TEEPN5chase4BaseI1TEENSt6size_tE"></span><span id="_CPPv2N5chase4Impl9pChASEGPU4ResdEPN5chase4BaseI1TEEPN5chase4BaseI1TEENSt6size_tE"></span><span id="chase::Impl::pChASEGPU::Resd__chase::Base:T:P.chase::Base:T:P.std::s"></span><span class="target" id="classchase_1_1Impl_1_1pChASEGPU_1a700197e3e4a8b1a068e54e4849e7aaee"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Resd</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ritzv</span></span>, <span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">resd</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">fixednev</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N5chase4Impl9pChASEGPU4ResdEPN5chase4BaseI1TEEPN5chase4BaseI1TEENSt6size_tE" title="Link to this definition"></a><br /></dt>
+<dd><p>Computes residuals for unconverged eigenpairs. </p>
+<p>This method computes the residuals of the eigenpairs that have not yet converged.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ritzv</strong> – Array containing the eigenvalues. </p></li>
+<li><p><strong>resd</strong> – Array to store the computed residuals for each eigenpair. </p></li>
+<li><p><strong>fixednev</strong> – Number of converged eigenpairs, which helps determine the number of non-converged eigenpairs. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4N5chase4Impl9pChASEGPU4SwapENSt6size_tENSt6size_tE">

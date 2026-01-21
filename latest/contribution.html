@@ -3,24 +3,24 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" data-content_root="./">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Search &mdash; ChASE v1.3.0 documentation</title>
+  <title>Contributing to ChASE &mdash; ChASE v1.3.0 documentation</title>
       <link rel="stylesheet" href="theme_overrides.css" type="text/css" />
 
   
     <link rel="shortcut icon" href="_static/ChASE_Logo_Favicon_RGB.png"/>
-    
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
       <script src="_static/documentation_options.js?v=e49d06fc"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
-    <script src="_static/searchtools.js"></script>
-    <script src="_static/language_data.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="#" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="1. Quick Start" href="quick-start.html" />
+    <link rel="prev" title="References and Contributors" href="reference.html" />
      
     <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link href="_static/theme_overrides.css" rel="stylesheet" type="text/css">
@@ -41,7 +41,7 @@
               <img src="_static/ChASE_Logo_RGB.png" class="logo" alt="Logo"/>
           </a>
 <div role="search">
-  <form id="rtd-search-form" class="wy-form" action="#" method="get">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
@@ -182,12 +182,24 @@ function switchVersion(url) {
 
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">INTRODUCTION</span></p>
-<ul>
+<ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="chase.html">ChASE: an Iterative Solver for Dense Eigenproblems</a></li>
 <li class="toctree-l1"><a class="reference internal" href="version.html">Versions of the library</a></li>
 <li class="toctree-l1"><a class="reference internal" href="license.html">Licenses and Copyright</a></li>
 <li class="toctree-l1"><a class="reference internal" href="reference.html">References and Contributors</a></li>
-<li class="toctree-l1"><a class="reference internal" href="contribution.html">Contributing to ChASE</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Contributing to ChASE</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#getting-started">Getting Started</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#create-an-issue-on-github">1. Create an Issue on GitHub</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#set-up-gitlab-account">2. Set Up GitLab Account</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#auto-formatting-of-committed-codes">Auto Formatting of Committed Codes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#usage">Usage</a></li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">USER DOCUMENTATION</span></p>
 <ul>
@@ -217,8 +229,9 @@ function switchVersion(url) {
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">Search</li>
+      <li class="breadcrumb-item active">Contributing to ChASE</li>
       <li class="wy-breadcrumbs-aside">
+            <a href="_sources/contribution.rst.txt" rel="nofollow"> View page source</a>
       </li>
   </ul>
   <hr/>
@@ -226,22 +239,79 @@ function switchVersion(url) {
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <noscript>
-  <div id="fallback" class="admonition warning">
-    <p class="last">
-      Please activate JavaScript to enable the search functionality.
-    </p>
-  </div>
-  </noscript>
+  <section id="contributing-to-chase">
+<h1>Contributing to ChASE<a class="headerlink" href="#contributing-to-chase" title="Link to this heading"></a></h1>
+<p>We welcome contributions to ChASE! This guide outlines the process for contributing to the project.</p>
+<section id="getting-started">
+<h2>Getting Started<a class="headerlink" href="#getting-started" title="Link to this heading"></a></h2>
+<section id="create-an-issue-on-github">
+<h3>1. Create an Issue on GitHub<a class="headerlink" href="#create-an-issue-on-github" title="Link to this heading"></a></h3>
+<p>If you’re interested in contributing to ChASE, please start by creating an issue on
+GitHub expressing your interest and describing what you’d like to work on. This helps
+us coordinate efforts and ensures your contribution aligns with the project’s goals.</p>
+</section>
+<section id="set-up-gitlab-account">
+<h3>2. Set Up GitLab Account<a class="headerlink" href="#set-up-gitlab-account" title="Link to this heading"></a></h3>
+<p>ChASE is developed on JSC GitLab, while GitHub serves as a mirror repository. To
+contribute code, you’ll need to:</p>
+<ul class="simple">
+<li><p>Create an account on JSC GitLab</p></li>
+<li><p>Request access to the ChASE repository</p></li>
+<li><p>Clone the repository from GitLab for development</p></li>
+</ul>
+<p>The GitHub repository is automatically synchronized from GitLab, so all active
+development happens on GitLab.</p>
+</section>
+</section>
+<section id="auto-formatting-of-committed-codes">
+<h2>Auto Formatting of Committed Codes<a class="headerlink" href="#auto-formatting-of-committed-codes" title="Link to this heading"></a></h2>
+<p>ChASE relies on <code class="docutils literal notranslate"><span class="pre">clang-format</span></code> to automatically format the codes pushed to the
+repository. This ensures consistent code style across the codebase.</p>
+<section id="prerequisites">
+<h3>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading"></a></h3>
+<p>Before committing code, make sure you have the following set up:</p>
+<ul>
+<li><p><strong>clang-format available</strong>: On JSC machines, load the Clang module:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">module</span><span class="w"> </span><span class="n">load</span><span class="w"> </span><span class="n">Clang</span>
+</pre></div>
+</div>
+</li>
+<li><p><strong>Clone ChASE git repository</strong>: Make sure you have cloned the ChASE repository
+from GitLab</p></li>
+<li><p><strong>Configure git hooks</strong>: In the root directory of ChASE, configure git to use
+the project’s hooks:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">git</span><span class="w"> </span><span class="n">config</span><span class="w"> </span><span class="n">core</span><span class="p">.</span><span class="n">hooksPath</span><span class="w"> </span><span class="p">.</span><span class="o">/</span><span class="n">docs</span><span class="o">/</span><span class="n">hooks</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</section>
+<section id="usage">
+<h3>Usage<a class="headerlink" href="#usage" title="Link to this heading"></a></h3>
+<p>Once the prerequisites are met, you can proceed with your normal git workflow:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>add<span class="w"> </span><span class="o">{</span>changed<span class="w"> </span>files<span class="o">}</span>
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;update xxxxx&quot;</span>
+</pre></div>
+</div>
+<p>When you commit, the git hook will automatically format your code using <code class="docutils literal notranslate"><span class="pre">clang-format</span></code>.
+You’ll see output like:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>[wu7@jwlogin21 ChASE-format]$ git commit -m &quot;test hooks&quot;
+[clang-format] formatted and staged Impl/chase_gpu/chase_gpu.hpp
+[58-implement-distributed-memory-chase-extension-for-bse-matrix a1a7583] test hooks
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+</pre></div>
+</div>
+</section>
+</section>
+</section>
 
-  
-  <div id="search-results">
-  
-  </div>
 
            </div>
           </div>
-          <footer>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="reference.html" class="btn btn-neutral float-left" title="References and Contributors" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="quick-start.html" class="btn btn-neutral float-right" title="1. Quick Start" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
 
   <hr/>
 
@@ -263,14 +333,7 @@ function switchVersion(url) {
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-  <script>
-    jQuery(function() { Search.loadIndex("searchindex.js"); });
-  </script>
-  
-  <script id="searchindexloader"></script>
-   
-
+  </script> 
 
 </body>
 </html>

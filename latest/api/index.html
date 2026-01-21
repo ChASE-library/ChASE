@@ -54,6 +54,32 @@
   </label>
   <select id="version-select" onchange="switchVersion(this.value)" style="width: 100%; padding: 5px; border: 1px solid #2980B9; border-radius: 3px; background: white; color: #333; font-size: 13px;"><option value="/ChASE/latest/">
       latest
+    </option><option value="/ChASE/v1.0.0/">
+      v1.0.0
+    </option><option value="/ChASE/v1.1.0/">
+      v1.1.0
+    </option><option value="/ChASE/v1.1.1/">
+      v1.1.1
+    </option><option value="/ChASE/v1.1.2/">
+      v1.1.2
+    </option><option value="/ChASE/v1.2.0/">
+      v1.2.0
+    </option><option value="/ChASE/v1.2.1/">
+      v1.2.1
+    </option><option value="/ChASE/v1.3.0/"selected>
+      v1.3.0
+    </option><option value="/ChASE/v1.3.1/">
+      v1.3.1
+    </option><option value="/ChASE/v1.4.0/">
+      v1.4.0
+    </option><option value="/ChASE/v1.4.1/">
+      v1.4.1
+    </option><option value="/ChASE/v1.5.0/">
+      v1.5.0
+    </option><option value="/ChASE/v1.6.0/">
+      v1.6.0
+    </option><option value="/ChASE/v1.7.0-rc1/">
+      v1.7.0-rc1
     </option></select>
 </div><script>
 function switchVersion(url) {
@@ -161,6 +187,7 @@ function switchVersion(url) {
 <li class="toctree-l1"><a class="reference internal" href="../version.html">Versions of the library</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../license.html">Licenses and Copyright</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../reference.html">References and Contributors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contribution.html">Contributing to ChASE</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">USER DOCUMENTATION</span></p>
 <ul>
@@ -279,13 +306,13 @@ into Sphinx using Breathe.</p>
 <li class="toctree-l1"><a class="reference internal" href="matrices.html">1.3.1. Matrix Classes</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="matrices.html#sequential-matrices">1.3.1.1. Sequential Matrices</a></li>
 <li class="toctree-l2"><a class="reference internal" href="matrices.html#chase-matrix-matrix">1.3.1.2. chase::matrix::Matrix</a></li>
-<li class="toctree-l2"><a class="reference internal" href="matrices.html#chase-matrix-quasihermitianmatrix">1.3.1.3. chase::matrix::QuasiHermitianMatrix</a></li>
+<li class="toctree-l2"><a class="reference internal" href="matrices.html#chase-matrix-pseudohermitianmatrix">1.3.1.3. chase::matrix::PseudoHermitianMatrix</a></li>
 <li class="toctree-l2"><a class="reference internal" href="matrices.html#distributed-matrices">1.3.1.4. Distributed Matrices</a></li>
 <li class="toctree-l2"><a class="reference internal" href="matrices.html#chase-distmatrix-blockblockmatrix">1.3.1.5. chase::distMatrix::BlockBlockMatrix</a></li>
 <li class="toctree-l2"><a class="reference internal" href="matrices.html#chase-distmatrix-blockcyclicmatrix">1.3.1.6. chase::distMatrix::BlockCyclicMatrix</a></li>
 <li class="toctree-l2"><a class="reference internal" href="matrices.html#chase-distmatrix-redundantmatrix">1.3.1.7. chase::distMatrix::RedundantMatrix</a></li>
-<li class="toctree-l2"><a class="reference internal" href="matrices.html#chase-distmatrix-quasihermitianblockblockmatrix">1.3.1.8. chase::distMatrix::QuasiHermitianBlockBlockMatrix</a></li>
-<li class="toctree-l2"><a class="reference internal" href="matrices.html#chase-distmatrix-quasihermitianblockcyclicmatrix">1.3.1.9. chase::distMatrix::QuasiHermitianBlockCyclicMatrix</a></li>
+<li class="toctree-l2"><a class="reference internal" href="matrices.html#chase-distmatrix-pseudohermitianblockblockmatrix">1.3.1.8. chase::distMatrix::PseudoHermitianBlockBlockMatrix</a></li>
+<li class="toctree-l2"><a class="reference internal" href="matrices.html#chase-distmatrix-pseudohermitianblockcyclicmatrix">1.3.1.9. chase::distMatrix::PseudoHermitianBlockCyclicMatrix</a></li>
 <li class="toctree-l2"><a class="reference internal" href="matrices.html#distributed-multi-vectors">1.3.1.10. Distributed Multi-Vectors</a></li>
 <li class="toctree-l2"><a class="reference internal" href="matrices.html#chase-distmultivector-distmultivector1d">1.3.1.11. chase::distMultiVector::DistMultiVector1D</a></li>
 </ul>

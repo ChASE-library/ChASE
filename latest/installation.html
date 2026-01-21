@@ -54,6 +54,32 @@
   </label>
   <select id="version-select" onchange="switchVersion(this.value)" style="width: 100%; padding: 5px; border: 1px solid #2980B9; border-radius: 3px; background: white; color: #333; font-size: 13px;"><option value="/ChASE/latest/">
       latest
+    </option><option value="/ChASE/v1.0.0/">
+      v1.0.0
+    </option><option value="/ChASE/v1.1.0/">
+      v1.1.0
+    </option><option value="/ChASE/v1.1.1/">
+      v1.1.1
+    </option><option value="/ChASE/v1.1.2/">
+      v1.1.2
+    </option><option value="/ChASE/v1.2.0/">
+      v1.2.0
+    </option><option value="/ChASE/v1.2.1/">
+      v1.2.1
+    </option><option value="/ChASE/v1.3.0/"selected>
+      v1.3.0
+    </option><option value="/ChASE/v1.3.1/">
+      v1.3.1
+    </option><option value="/ChASE/v1.4.0/">
+      v1.4.0
+    </option><option value="/ChASE/v1.4.1/">
+      v1.4.1
+    </option><option value="/ChASE/v1.5.0/">
+      v1.5.0
+    </option><option value="/ChASE/v1.6.0/">
+      v1.6.0
+    </option><option value="/ChASE/v1.7.0-rc1/">
+      v1.7.0-rc1
     </option></select>
 </div><script>
 function switchVersion(url) {
@@ -161,6 +187,7 @@ function switchVersion(url) {
 <li class="toctree-l1"><a class="reference internal" href="version.html">Versions of the library</a></li>
 <li class="toctree-l1"><a class="reference internal" href="license.html">Licenses and Copyright</a></li>
 <li class="toctree-l1"><a class="reference internal" href="reference.html">References and Contributors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contribution.html">Contributing to ChASE</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">USER DOCUMENTATION</span></p>
 <ul class="current">
@@ -360,13 +387,13 @@ examples on the JUWELS cluster:</p>
 <span class="go">cmake .. -DCMAKE_INSTALL_PREFIX=${ChASEROOT} -DCHASE_BUILD_WITH_EXAMPLES=ON</span>
 <span class="go">make install</span>
 <span class="gp">#</span><span class="c1">## Run example #0 ###</span>
-<span class="go">./examples/0_hello_world/0_hello_world</span>
+<span class="go">./examples/1_hello_world/1_hello_world</span>
 </pre></div>
 </div>
 <p>An MPI launcher has to be used to run an example in parallel. For
 instance on the JUWELS cluster (or any other <code class="docutils literal notranslate"><span class="pre">SLURM</span></code> based Cluster)
 the following command line runs the “<cite>hello world</cite>” example in parallel.</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">srun -n 2 ./examples/0_hello_world/0_hello_world</span>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">srun -n 2 ./examples/1_hello_world/1_hello_world</span>
 </pre></div>
 </div>
 <div class="admonition note">
@@ -421,7 +448,7 @@ example of a job script for a  <code class="docutils literal notranslate"><span 
 memory footprint of the library. It is important to avoid that such
 memory footprint per MPI task exceeds the amount of main memory
 available to the compiled code. The memory requirements differ between
-<strong>Hermitian</strong> and <strong>Pseudo-Hermitian</strong> (Quasi-Hermitian) eigenvalue problems
+<strong>Hermitian</strong> and <strong>Pseudo-Hermitian</strong> eigenvalue problems
 due to the additional storage needed for the dual basis and oblique Rayleigh-Ritz
 procedure in the pseudo-Hermitian case.</p>
 <p><strong>Hermitian Eigenvalue Problems</strong></p>
@@ -597,11 +624,29 @@ documentation will be generated in the build directory.</p></td>
 from the Singular Value Decomposition (SVD). This is useful
 for debugging and understanding numerical stability.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ENABLE_TESTS</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CHASE_ENABLE_TESTS</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">OFF</span></code></p></td>
-<td><p>Enable building of unit tests. When enabled, GoogleTest
-will be automatically downloaded and test executables will
-be built. Requires MPI to be available for parallel tests.</p></td>
+<td><p>Enable building of unit tests. When enabled, GoogleTest will be automatically downloaded and test executables will be built. Requires MPI to be available for parallel tests.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">CHASE_SAVE_RESIDUALS</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">OFF</span></code></p></td>
+<td><p>Save the residuals in an external file. When enabled, the residuals will be saved in an external file.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CHASE_ENABLE_XGEEV_RAYLEIGHRITZ</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">OFF</span></code></p></td>
+<td><p>Enable solving pseudo-Hermitian problems with XGEEV cusolver. When enabled, the pseudo-Hermitian problems will be solved with XGEEV cusolver.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">CHASE_DISPLAY_COND_V_SVD</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">OFF</span></code></p></td>
+<td><p>Compute and display the condition number of the matrix V from the Singular Value Decomposition (SVD). This is useful for debugging and understanding numerical stability.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CHASE_QR_DOUBLE_PRECISION</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ON</span></code></p></td>
+<td><p>Operate QR in Double Precision. When enabled, the QR factorization will be operated in double precision.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">CHASE_RR_DOUBLE_PRECISION</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">OFF</span></code></p></td>
+<td><p>Operate HEEVD in RR for pseudo-Hermitian matrices in Double Precision. When enabled, the HEEVD will be operated in double precision for pseudo-Hermitian matrices.</p></td>
 </tr>
 </tbody>
 </table>
@@ -633,7 +678,7 @@ This option should always be set when building with CUDA support, regardless of 
 </ul>
 </dd>
 <dt><strong>Build Type:</strong></dt><dd><ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">CMAKE_BUILD_TYPE</span></code> - Build type: <code class="docutils literal notranslate"><span class="pre">Release</span></code> (optimized, default), <code class="docutils literal notranslate"><span class="pre">Debug</span></code> (with debug symbols),
+<li><p><code class="docutils literal notranslate"><span class="pre">CMAKE_BUILD_TYPE</span></code> - Build type: <code class="docutils literal notranslate"><span class="pre">Release</span></code> (optimized), <code class="docutils literal notranslate"><span class="pre">Debug</span></code> (with debug symbols),
 <code class="docutils literal notranslate"><span class="pre">RelWithDebInfo</span></code> (optimized with debug info), or <code class="docutils literal notranslate"><span class="pre">MinSizeRel</span></code> (minimum size)</p></li>
 </ul>
 </dd>
@@ -667,14 +712,14 @@ This option should always be set when building with CUDA support, regardless of 
 </pre></div>
 </div>
 </dd>
-<dt><strong>Build with tests enabled:</strong></dt><dd><div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">cmake .. -DENABLE_TESTS=ON \</span>
+<dt><strong>Build with tests enabled:</strong></dt><dd><div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">cmake .. -DCHASE_ENABLE_TESTS=ON \</span>
 <span class="go">         -DMPI_RUN=srun \</span>
 <span class="go">         -DMPI_RUN_ARGS=&quot;--ntasks=4&quot;</span>
 </pre></div>
 </div>
 </dd>
 </dl>
-<p>Note: When using <code class="docutils literal notranslate"><span class="pre">ENABLE_TESTS=ON</span></code>, you may also need to set <code class="docutils literal notranslate"><span class="pre">MPI_RUN</span></code> (the MPI launcher command,
+<p>Note: When using <code class="docutils literal notranslate"><span class="pre">CHASE_ENABLE_TESTS=ON</span></code>, you may also need to set <code class="docutils literal notranslate"><span class="pre">MPI_RUN</span></code> (the MPI launcher command,
 e.g., <code class="docutils literal notranslate"><span class="pre">mpirun</span></code> or <code class="docutils literal notranslate"><span class="pre">srun</span></code>) and optionally <code class="docutils literal notranslate"><span class="pre">MPI_RUN_ARGS</span></code> (additional arguments for the MPI launcher).</p>
 </section>
 </section>

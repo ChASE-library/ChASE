@@ -183,7 +183,7 @@ The execution of this example through the command line is:
 
 .. code-block:: sh
 
-    mpirun -np ${NPROCS} ./0_hello_world/0_hello_world
+    mpirun -np ${NPROCS} ./1_hello_world/1_hello_world
 
 
 For the execution of this example with **Block-Cyclic Distribution**,
@@ -191,7 +191,7 @@ it can be done as:
 
 .. code-block:: sh
 
-    mpirun -np ${NPROCS} ./0_hello_world/0_hello_world_block_cyclic
+    mpirun -np ${NPROCS} ./1_hello_world/1_hello_world_block_cyclic
 
 
 Output

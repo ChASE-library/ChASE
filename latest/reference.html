@@ -19,7 +19,7 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="1. Quick Start" href="quick-start.html" />
+    <link rel="next" title="Contributing to ChASE" href="contribution.html" />
     <link rel="prev" title="Licenses and Copyright" href="license.html" />
      
     <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
@@ -54,6 +54,32 @@
   </label>
   <select id="version-select" onchange="switchVersion(this.value)" style="width: 100%; padding: 5px; border: 1px solid #2980B9; border-radius: 3px; background: white; color: #333; font-size: 13px;"><option value="/ChASE/latest/">
       latest
+    </option><option value="/ChASE/v1.0.0/">
+      v1.0.0
+    </option><option value="/ChASE/v1.1.0/">
+      v1.1.0
+    </option><option value="/ChASE/v1.1.1/">
+      v1.1.1
+    </option><option value="/ChASE/v1.1.2/">
+      v1.1.2
+    </option><option value="/ChASE/v1.2.0/">
+      v1.2.0
+    </option><option value="/ChASE/v1.2.1/">
+      v1.2.1
+    </option><option value="/ChASE/v1.3.0/"selected>
+      v1.3.0
+    </option><option value="/ChASE/v1.3.1/">
+      v1.3.1
+    </option><option value="/ChASE/v1.4.0/">
+      v1.4.0
+    </option><option value="/ChASE/v1.4.1/">
+      v1.4.1
+    </option><option value="/ChASE/v1.5.0/">
+      v1.5.0
+    </option><option value="/ChASE/v1.6.0/">
+      v1.6.0
+    </option><option value="/ChASE/v1.7.0-rc1/">
+      v1.7.0-rc1
     </option></select>
 </div><script>
 function switchVersion(url) {
@@ -167,6 +193,7 @@ function switchVersion(url) {
 <li class="toctree-l2"><a class="reference internal" href="#how-to-reference-the-code">How to Reference the Code</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="contribution.html">Contributing to ChASE</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">USER DOCUMENTATION</span></p>
 <ul>
@@ -228,7 +255,10 @@ GPU backends…), and established clearer namespace hierarchies.
 These improvements have led to the current well-structured codebase that
 supports multiple implementation variants (ChASECPU, ChASEGPU, pChASECPU,
 pChASEGPU) with a unified interface while maintaining high performance and
-extensibility.</p>
+extensibility. Following this refactoring, latest research efforts have
+extended ChASE to support pseudo-Hermitian eigenvalue problems, which has
+significantly broadened the library’s applicability to new domains, such as
+the Bethe-Salpeter Equation (BSE) in computational materials science.</p>
 <section id="main-developers">
 <h2>Main developers<a class="headerlink" href="#main-developers" title="Link to this heading"></a></h2>
 <blockquote>
@@ -287,6 +317,9 @@ Workshops of the International Conference on High Performance Computing,
 Network, Storage, and Analysis (2023), pp. 1688-1696.
 <a class="reference external" href="https://doi.org/10.1145/3624062.3624249">DOI:10.1145/3624062.3624249</a> ,
 [<a class="reference external" href="https://arxiv.org/abs/2309.15595">arXiv:2309.15595</a> ]</p></li>
+<li><p>[5] E. Di Napoli, C. Richefort, and X. Wu. <em>Chebyshev Accelerated Subspace
+Eigensolver for Pseudo-hermitian Hamiltonians.</em> arXiv preprint arXiv:2601.10557
+(2026). [<a class="reference external" href="https://arxiv.org/abs/2601.10557">arXiv:2601.10557</a> ]</p></li>
 </ul>
 </div></blockquote>
 </section>
@@ -297,7 +330,7 @@ Network, Storage, and Analysis (2023), pp. 1688-1696.
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="license.html" class="btn btn-neutral float-left" title="Licenses and Copyright" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="quick-start.html" class="btn btn-neutral float-right" title="1. Quick Start" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="contribution.html" class="btn btn-neutral float-right" title="Contributing to ChASE" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

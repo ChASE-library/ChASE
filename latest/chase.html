@@ -55,6 +55,32 @@
   </label>
   <select id="version-select" onchange="switchVersion(this.value)" style="width: 100%; padding: 5px; border: 1px solid #2980B9; border-radius: 3px; background: white; color: #333; font-size: 13px;"><option value="/ChASE/latest/">
       latest
+    </option><option value="/ChASE/v1.0.0/">
+      v1.0.0
+    </option><option value="/ChASE/v1.1.0/">
+      v1.1.0
+    </option><option value="/ChASE/v1.1.1/">
+      v1.1.1
+    </option><option value="/ChASE/v1.1.2/">
+      v1.1.2
+    </option><option value="/ChASE/v1.2.0/">
+      v1.2.0
+    </option><option value="/ChASE/v1.2.1/">
+      v1.2.1
+    </option><option value="/ChASE/v1.3.0/"selected>
+      v1.3.0
+    </option><option value="/ChASE/v1.3.1/">
+      v1.3.1
+    </option><option value="/ChASE/v1.4.0/">
+      v1.4.0
+    </option><option value="/ChASE/v1.4.1/">
+      v1.4.1
+    </option><option value="/ChASE/v1.5.0/">
+      v1.5.0
+    </option><option value="/ChASE/v1.6.0/">
+      v1.6.0
+    </option><option value="/ChASE/v1.7.0-rc1/">
+      v1.7.0-rc1
     </option></select>
 </div><script>
 function switchVersion(url) {
@@ -167,6 +193,7 @@ function switchVersion(url) {
 <li class="toctree-l1"><a class="reference internal" href="version.html">Versions of the library</a></li>
 <li class="toctree-l1"><a class="reference internal" href="license.html">Licenses and Copyright</a></li>
 <li class="toctree-l1"><a class="reference internal" href="reference.html">References and Contributors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contribution.html">Contributing to ChASE</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">USER DOCUMENTATION</span></p>
 <ul>
@@ -302,6 +329,9 @@ pseudo-Hermitian matrix, as it satisfies the relation</p>
 <li><p><strong>Real and Complex:</strong> ChASE is templated for real and complex numbers. So it can
 be used to solve <em>real symmetric</em> eigenproblems as well as <em>complex
 Hermitian</em> ones.</p></li>
+<li><p><strong>Hermitian and Pseudo-Hermitian:</strong> ChASE supports solving <em>Hermitian</em> and
+<em>pseudo-Hermitian</em> eigenproblems, including those arising from Bethe-Salpeter
+Equation (BSE) formulations.</p></li>
 <li><p><strong>Eigespectrum:</strong> ChASE algorithm is designed to solve for the
 <em>extremal portion</em> of the eigenspectrum (i.e., <span class="math notranslate nohighlight">\(\{\lambda_1,
 \dots ,\lambda_\textsf{nev}\}\)</span>). By default it computes the

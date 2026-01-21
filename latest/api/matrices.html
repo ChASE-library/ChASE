@@ -54,6 +54,32 @@
   </label>
   <select id="version-select" onchange="switchVersion(this.value)" style="width: 100%; padding: 5px; border: 1px solid #2980B9; border-radius: 3px; background: white; color: #333; font-size: 13px;"><option value="/ChASE/latest/">
       latest
+    </option><option value="/ChASE/v1.0.0/">
+      v1.0.0
+    </option><option value="/ChASE/v1.1.0/">
+      v1.1.0
+    </option><option value="/ChASE/v1.1.1/">
+      v1.1.1
+    </option><option value="/ChASE/v1.1.2/">
+      v1.1.2
+    </option><option value="/ChASE/v1.2.0/">
+      v1.2.0
+    </option><option value="/ChASE/v1.2.1/">
+      v1.2.1
+    </option><option value="/ChASE/v1.3.0/"selected>
+      v1.3.0
+    </option><option value="/ChASE/v1.3.1/">
+      v1.3.1
+    </option><option value="/ChASE/v1.4.0/">
+      v1.4.0
+    </option><option value="/ChASE/v1.4.1/">
+      v1.4.1
+    </option><option value="/ChASE/v1.5.0/">
+      v1.5.0
+    </option><option value="/ChASE/v1.6.0/">
+      v1.6.0
+    </option><option value="/ChASE/v1.7.0-rc1/">
+      v1.7.0-rc1
     </option></select>
 </div><script>
 function switchVersion(url) {
@@ -161,6 +187,7 @@ function switchVersion(url) {
 <li class="toctree-l1"><a class="reference internal" href="../version.html">Versions of the library</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../license.html">Licenses and Copyright</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../reference.html">References and Contributors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contribution.html">Contributing to ChASE</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">USER DOCUMENTATION</span></p>
 <ul>
@@ -180,13 +207,13 @@ function switchVersion(url) {
 <li class="toctree-l3 current"><a class="current reference internal" href="#">1.3.1. Matrix Classes</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#sequential-matrices">1.3.1.1. Sequential Matrices</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#chase-matrix-matrix">1.3.1.2. chase::matrix::Matrix</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#chase-matrix-quasihermitianmatrix">1.3.1.3. chase::matrix::QuasiHermitianMatrix</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#chase-matrix-pseudohermitianmatrix">1.3.1.3. chase::matrix::PseudoHermitianMatrix</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#distributed-matrices">1.3.1.4. Distributed Matrices</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#chase-distmatrix-blockblockmatrix">1.3.1.5. chase::distMatrix::BlockBlockMatrix</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#chase-distmatrix-blockcyclicmatrix">1.3.1.6. chase::distMatrix::BlockCyclicMatrix</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#chase-distmatrix-redundantmatrix">1.3.1.7. chase::distMatrix::RedundantMatrix</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#chase-distmatrix-quasihermitianblockblockmatrix">1.3.1.8. chase::distMatrix::QuasiHermitianBlockBlockMatrix</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#chase-distmatrix-quasihermitianblockcyclicmatrix">1.3.1.9. chase::distMatrix::QuasiHermitianBlockCyclicMatrix</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#chase-distmatrix-pseudohermitianblockblockmatrix">1.3.1.8. chase::distMatrix::PseudoHermitianBlockBlockMatrix</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#chase-distmatrix-pseudohermitianblockcyclicmatrix">1.3.1.9. chase::distMatrix::PseudoHermitianBlockCyclicMatrix</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#distributed-multi-vectors">1.3.1.10. Distributed Multi-Vectors</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#chase-distmultivector-distmultivector1d">1.3.1.11. chase::distMultiVector::DistMultiVector1D</a></li>
 </ul>
@@ -238,11 +265,11 @@ function switchVersion(url) {
 <dd></dd></dl>
 
 </section>
-<section id="chase-matrix-quasihermitianmatrix">
-<h2><span class="section-number">1.3.1.3. </span>chase::matrix::QuasiHermitianMatrix<a class="headerlink" href="#chase-matrix-quasihermitianmatrix" title="Link to this heading"></a></h2>
+<section id="chase-matrix-pseudohermitianmatrix">
+<h2><span class="section-number">1.3.1.3. </span>chase::matrix::PseudoHermitianMatrix<a class="headerlink" href="#chase-matrix-pseudohermitianmatrix" title="Link to this heading"></a></h2>
 <dl class="cpp class">
-<dt class="sig sig-object cpp" id="_CPPv4I00I0E0EN5chase6matrix20QuasiHermitianMatrixE">
-<span id="_CPPv3I00I0E0EN5chase6matrix20QuasiHermitianMatrixE"></span><span id="_CPPv2I00I0E0EN5chase6matrix20QuasiHermitianMatrixE"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">T</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Platform</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><a class="reference internal" href="platform.html#_CPPv4N5chase8platformE" title="chase::platform"><span class="n"><span class="pre">platform</span></span></a><span class="p"><span class="pre">::</span></span><a class="reference internal" href="platform.html#_CPPv4N5chase8platform3CPUE" title="chase::platform::CPU"><span class="n"><span class="pre">CPU</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Allocator</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="n"><span class="pre">DefaultAllocator</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I00I0E0EN5chase6matrix20QuasiHermitianMatrixE" title="chase::matrix::QuasiHermitianMatrix::Platform"><span class="n"><span class="pre">Platform</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">::</span></span><span class="k"><span class="pre">template</span></span><span class="w"> </span><span class="n"><span class="pre">type</span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classchase_1_1matrix_1_1QuasiHermitianMatrix"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">QuasiHermitianMatrix</span></span></span><a class="headerlink" href="#_CPPv4I00I0E0EN5chase6matrix20QuasiHermitianMatrixE" title="Link to this definition"></a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv4I00I0E0EN5chase6matrix21PseudoHermitianMatrixE">
+<span id="_CPPv3I00I0E0EN5chase6matrix21PseudoHermitianMatrixE"></span><span id="_CPPv2I00I0E0EN5chase6matrix21PseudoHermitianMatrixE"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">T</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Platform</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><a class="reference internal" href="platform.html#_CPPv4N5chase8platformE" title="chase::platform"><span class="n"><span class="pre">platform</span></span></a><span class="p"><span class="pre">::</span></span><a class="reference internal" href="platform.html#_CPPv4N5chase8platform3CPUE" title="chase::platform::CPU"><span class="n"><span class="pre">CPU</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Allocator</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="n"><span class="pre">DefaultAllocator</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I00I0E0EN5chase6matrix21PseudoHermitianMatrixE" title="chase::matrix::PseudoHermitianMatrix::Platform"><span class="n"><span class="pre">Platform</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">::</span></span><span class="k"><span class="pre">template</span></span><span class="w"> </span><span class="n"><span class="pre">type</span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classchase_1_1matrix_1_1PseudoHermitianMatrix"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">PseudoHermitianMatrix</span></span></span><a class="headerlink" href="#_CPPv4I00I0E0EN5chase6matrix21PseudoHermitianMatrixE" title="Link to this definition"></a><br /></dt>
 <dd></dd></dl>
 
 </section>
@@ -1259,19 +1286,19 @@ function switchVersion(url) {
 </dd></dl>
 
 </section>
-<section id="chase-distmatrix-quasihermitianblockblockmatrix">
-<h2><span class="section-number">1.3.1.8. </span>chase::distMatrix::QuasiHermitianBlockBlockMatrix<a class="headerlink" href="#chase-distmatrix-quasihermitianblockblockmatrix" title="Link to this heading"></a></h2>
+<section id="chase-distmatrix-pseudohermitianblockblockmatrix">
+<h2><span class="section-number">1.3.1.8. </span>chase::distMatrix::PseudoHermitianBlockBlockMatrix<a class="headerlink" href="#chase-distmatrix-pseudohermitianblockblockmatrix" title="Link to this heading"></a></h2>
 <dl class="cpp class">
-<dt class="sig sig-object cpp" id="_CPPv4I00EN5chase10distMatrix30QuasiHermitianBlockBlockMatrixE">
-<span id="_CPPv3I00EN5chase10distMatrix30QuasiHermitianBlockBlockMatrixE"></span><span id="_CPPv2I00EN5chase10distMatrix30QuasiHermitianBlockBlockMatrixE"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">T</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Platform</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classchase_1_1distMatrix_1_1QuasiHermitianBlockBlockMatrix"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">QuasiHermitianBlockBlockMatrix</span></span></span><a class="headerlink" href="#_CPPv4I00EN5chase10distMatrix30QuasiHermitianBlockBlockMatrixE" title="Link to this definition"></a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv4I00EN5chase10distMatrix31PseudoHermitianBlockBlockMatrixE">
+<span id="_CPPv3I00EN5chase10distMatrix31PseudoHermitianBlockBlockMatrixE"></span><span id="_CPPv2I00EN5chase10distMatrix31PseudoHermitianBlockBlockMatrixE"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">T</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Platform</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classchase_1_1distMatrix_1_1PseudoHermitianBlockBlockMatrix"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">PseudoHermitianBlockBlockMatrix</span></span></span><a class="headerlink" href="#_CPPv4I00EN5chase10distMatrix31PseudoHermitianBlockBlockMatrixE" title="Link to this definition"></a><br /></dt>
 <dd></dd></dl>
 
 </section>
-<section id="chase-distmatrix-quasihermitianblockcyclicmatrix">
-<h2><span class="section-number">1.3.1.9. </span>chase::distMatrix::QuasiHermitianBlockCyclicMatrix<a class="headerlink" href="#chase-distmatrix-quasihermitianblockcyclicmatrix" title="Link to this heading"></a></h2>
+<section id="chase-distmatrix-pseudohermitianblockcyclicmatrix">
+<h2><span class="section-number">1.3.1.9. </span>chase::distMatrix::PseudoHermitianBlockCyclicMatrix<a class="headerlink" href="#chase-distmatrix-pseudohermitianblockcyclicmatrix" title="Link to this heading"></a></h2>
 <dl class="cpp class">
-<dt class="sig sig-object cpp" id="_CPPv4I00EN5chase10distMatrix31QuasiHermitianBlockCyclicMatrixE">
-<span id="_CPPv3I00EN5chase10distMatrix31QuasiHermitianBlockCyclicMatrixE"></span><span id="_CPPv2I00EN5chase10distMatrix31QuasiHermitianBlockCyclicMatrixE"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">T</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Platform</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classchase_1_1distMatrix_1_1QuasiHermitianBlockCyclicMatrix"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">QuasiHermitianBlockCyclicMatrix</span></span></span><a class="headerlink" href="#_CPPv4I00EN5chase10distMatrix31QuasiHermitianBlockCyclicMatrixE" title="Link to this definition"></a><br /></dt>
+<dt class="sig sig-object cpp" id="_CPPv4I00EN5chase10distMatrix32PseudoHermitianBlockCyclicMatrixE">
+<span id="_CPPv3I00EN5chase10distMatrix32PseudoHermitianBlockCyclicMatrixE"></span><span id="_CPPv2I00EN5chase10distMatrix32PseudoHermitianBlockCyclicMatrixE"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">T</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Platform</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classchase_1_1distMatrix_1_1PseudoHermitianBlockCyclicMatrix"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">PseudoHermitianBlockCyclicMatrix</span></span></span><a class="headerlink" href="#_CPPv4I00EN5chase10distMatrix32PseudoHermitianBlockCyclicMatrixE" title="Link to this definition"></a><br /></dt>
 <dd></dd></dl>
 
 </section>

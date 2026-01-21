@@ -55,6 +55,32 @@
   </label>
   <select id="version-select" onchange="switchVersion(this.value)" style="width: 100%; padding: 5px; border: 1px solid #2980B9; border-radius: 3px; background: white; color: #333; font-size: 13px;"><option value="/ChASE/latest/">
       latest
+    </option><option value="/ChASE/v1.0.0/">
+      v1.0.0
+    </option><option value="/ChASE/v1.1.0/">
+      v1.1.0
+    </option><option value="/ChASE/v1.1.1/">
+      v1.1.1
+    </option><option value="/ChASE/v1.1.2/">
+      v1.1.2
+    </option><option value="/ChASE/v1.2.0/">
+      v1.2.0
+    </option><option value="/ChASE/v1.2.1/">
+      v1.2.1
+    </option><option value="/ChASE/v1.3.0/"selected>
+      v1.3.0
+    </option><option value="/ChASE/v1.3.1/">
+      v1.3.1
+    </option><option value="/ChASE/v1.4.0/">
+      v1.4.0
+    </option><option value="/ChASE/v1.4.1/">
+      v1.4.1
+    </option><option value="/ChASE/v1.5.0/">
+      v1.5.0
+    </option><option value="/ChASE/v1.6.0/">
+      v1.6.0
+    </option><option value="/ChASE/v1.7.0-rc1/">
+      v1.7.0-rc1
     </option></select>
 </div><script>
 function switchVersion(url) {
@@ -162,6 +188,7 @@ function switchVersion(url) {
 <li class="toctree-l1"><a class="reference internal" href="version.html">Versions of the library</a></li>
 <li class="toctree-l1"><a class="reference internal" href="license.html">Licenses and Copyright</a></li>
 <li class="toctree-l1"><a class="reference internal" href="reference.html">References and Contributors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contribution.html">Contributing to ChASE</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">USER DOCUMENTATION</span></p>
 <ul class="current">
@@ -195,7 +222,7 @@ function switchVersion(url) {
 <li class="toctree-l2"><a class="reference internal" href="#matrix-classes">5.4. Matrix Classes</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#sequential-matrix-classes">5.4.1. Sequential Matrix Classes</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#chase-matrix-matrix">5.4.1.1. chase::matrix::Matrix</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#chase-matrix-quasihermitianmatrix">5.4.1.2. chase::matrix::QuasiHermitianMatrix</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#chase-matrix-pseudohermitianmatrix">5.4.1.2. chase::matrix::PseudoHermitianMatrix</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#type-tags">5.4.1.3. Type Tags</a></li>
 </ul>
 </li>
@@ -438,7 +465,7 @@ implementation of ChASE. It supports:</p>
 <div><ul class="simple">
 <li><p><strong>Matrix Types</strong>:
 - <code class="docutils literal notranslate"><span class="pre">chase::matrix::Matrix&lt;T&gt;</span></code> for Hermitian (symmetric) eigenvalue problems
-- <code class="docutils literal notranslate"><span class="pre">chase::matrix::QuasiHermitianMatrix&lt;T&gt;</span></code> for pseudo-Hermitian eigenvalue problems</p></li>
+- <code class="docutils literal notranslate"><span class="pre">chase::matrix::PseudoHermitianMatrix&lt;T&gt;</span></code> for pseudo-Hermitian eigenvalue problems</p></li>
 <li><p><strong>Backend</strong>: BLAS and LAPACK libraries for numerical computations</p></li>
 <li><p><strong>Use Case</strong>: Single-node, CPU-only eigenvalue problems</p></li>
 <li><p><strong>Platform</strong>: CPU only</p></li>
@@ -456,7 +483,7 @@ implementation of ChASE. It supports:</p>
 <div><ul class="simple">
 <li><p><strong>Matrix Types</strong>:
 - <code class="docutils literal notranslate"><span class="pre">chase::matrix::Matrix&lt;T,</span> <span class="pre">chase::platform::GPU&gt;</span></code> for Hermitian problems
-- <code class="docutils literal notranslate"><span class="pre">chase::matrix::QuasiHermitianMatrix&lt;T,</span> <span class="pre">chase::platform::GPU&gt;</span></code> for pseudo-Hermitian problems</p></li>
+- <code class="docutils literal notranslate"><span class="pre">chase::matrix::PseudoHermitianMatrix&lt;T,</span> <span class="pre">chase::platform::GPU&gt;</span></code> for pseudo-Hermitian problems</p></li>
 <li><p><strong>Backend</strong>: cuBLAS and cuSOLVER libraries for GPU computations</p></li>
 <li><p><strong>Use Case</strong>: Single-node, GPU-accelerated eigenvalue problems</p></li>
 <li><p><strong>Platform</strong>: GPU only</p></li>
@@ -479,8 +506,8 @@ provides a parallel CPU implementation of ChASE using MPI. It supports:</p>
 - <code class="docutils literal notranslate"><span class="pre">chase::distMatrix::BlockBlockMatrix&lt;T,</span> <span class="pre">chase::platform::CPU&gt;</span></code>
 - <code class="docutils literal notranslate"><span class="pre">chase::distMatrix::BlockCyclicMatrix&lt;T,</span> <span class="pre">chase::platform::CPU&gt;</span></code>
 - <code class="docutils literal notranslate"><span class="pre">chase::distMatrix::RedundantMatrix&lt;T,</span> <span class="pre">chase::platform::CPU&gt;</span></code>
-- <code class="docutils literal notranslate"><span class="pre">chase::distMatrix::QuasiHermitianBlockBlockMatrix&lt;T,</span> <span class="pre">chase::platform::CPU&gt;</span></code>
-- <code class="docutils literal notranslate"><span class="pre">chase::distMatrix::QuasiHermitianBlockCyclicMatrix&lt;T,</span> <span class="pre">chase::platform::CPU&gt;</span></code></p></li>
+- <code class="docutils literal notranslate"><span class="pre">chase::distMatrix::PseudoHermitianBlockBlockMatrix&lt;T,</span> <span class="pre">chase::platform::CPU&gt;</span></code>
+- <code class="docutils literal notranslate"><span class="pre">chase::distMatrix::PseudoHermitianBlockCyclicMatrix&lt;T,</span> <span class="pre">chase::platform::CPU&gt;</span></code></p></li>
 <li><p><strong>Backend</strong>:
 - <code class="docutils literal notranslate"><span class="pre">chase::grid::backend::MPI</span></code> for communication
 - ScaLAPACK for distributed linear algebra operations</p></li>
@@ -501,8 +528,8 @@ provides a parallel GPU implementation of ChASE. It supports:</p>
 <li><p><strong>Matrix Types</strong>: Distributed GPU matrix classes
 - <code class="docutils literal notranslate"><span class="pre">chase::distMatrix::BlockBlockMatrix&lt;T,</span> <span class="pre">chase::platform::GPU&gt;</span></code>
 - <code class="docutils literal notranslate"><span class="pre">chase::distMatrix::BlockCyclicMatrix&lt;T,</span> <span class="pre">chase::platform::GPU&gt;</span></code>
-- <code class="docutils literal notranslate"><span class="pre">chase::distMatrix::QuasiHermitianBlockBlockMatrix&lt;T,</span> <span class="pre">chase::platform::GPU&gt;</span></code>
-- <code class="docutils literal notranslate"><span class="pre">chase::distMatrix::QuasiHermitianBlockCyclicMatrix&lt;T,</span> <span class="pre">chase::platform::GPU&gt;</span></code></p></li>
+- <code class="docutils literal notranslate"><span class="pre">chase::distMatrix::PseudoHermitianBlockBlockMatrix&lt;T,</span> <span class="pre">chase::platform::GPU&gt;</span></code>
+- <code class="docutils literal notranslate"><span class="pre">chase::distMatrix::PseudoHermitianBlockCyclicMatrix&lt;T,</span> <span class="pre">chase::platform::GPU&gt;</span></code></p></li>
 <li><p><strong>Backends</strong>:
 - <code class="docutils literal notranslate"><span class="pre">chase::grid::backend::MPI</span></code> for CPU-based MPI communication
 - <code class="docutils literal notranslate"><span class="pre">chase::grid::backend::NCCL</span></code> for GPU-to-GPU communication via NCCL</p></li>
@@ -540,9 +567,9 @@ where <span class="math notranslate nohighlight">\(A = A^\dagger\)</span> (or <s
 </div></blockquote>
 <p><strong>API Reference</strong>: <a class="reference internal" href="api/matrices.html#api-matrices"><span class="std std-ref">Matrix Classes</span></a></p>
 </section>
-<section id="chase-matrix-quasihermitianmatrix">
-<h4><span class="section-number">5.4.1.2. </span>chase::matrix::QuasiHermitianMatrix<a class="headerlink" href="#chase-matrix-quasihermitianmatrix" title="Link to this heading"></a></h4>
-<p>The class <code class="docutils literal notranslate"><span class="pre">chase::matrix::QuasiHermitianMatrix&lt;T,</span> <span class="pre">Platform,</span> <span class="pre">Allocator&gt;</span></code> is
+<section id="chase-matrix-pseudohermitianmatrix">
+<h4><span class="section-number">5.4.1.2. </span>chase::matrix::PseudoHermitianMatrix<a class="headerlink" href="#chase-matrix-pseudohermitianmatrix" title="Link to this heading"></a></h4>
+<p>The class <code class="docutils literal notranslate"><span class="pre">chase::matrix::PseudoHermitianMatrix&lt;T,</span> <span class="pre">Platform,</span> <span class="pre">Allocator&gt;</span></code> is
 derived from <code class="docutils literal notranslate"><span class="pre">chase::matrix::Matrix&lt;T,</span> <span class="pre">Platform,</span> <span class="pre">Allocator&gt;</span></code> and is designed
 for pseudo-Hermitian eigenvalue problems, such as those arising from the
 Bethe-Salpeter Equation (BSE). It provides:</p>
@@ -563,7 +590,7 @@ dual basis vectors required for pseudo-Hermitian problems</p></li>
 <blockquote>
 <div><ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">chase::matrix::Hermitian</span></code>: Type tag for Hermitian matrices</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">chase::matrix::QuasiHermitian</span></code>: Type tag for pseudo-Hermitian matrices</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">chase::matrix::PseudoHermitian</span></code>: Type tag for pseudo-Hermitian matrices</p></li>
 </ul>
 </div></blockquote>
 </section>
@@ -620,9 +647,9 @@ when redistribution is needed.</p>
 </section>
 <section id="pseudo-hermitian-distributed-matrices">
 <h4><span class="section-number">5.4.2.2. </span>Pseudo-Hermitian Distributed Matrices<a class="headerlink" href="#pseudo-hermitian-distributed-matrices" title="Link to this heading"></a></h4>
-<section id="chase-distmatrix-quasihermitianblockblockmatrix">
-<h5><span class="section-number">5.4.2.2.1. </span>chase::distMatrix::QuasiHermitianBlockBlockMatrix<a class="headerlink" href="#chase-distmatrix-quasihermitianblockblockmatrix" title="Link to this heading"></a></h5>
-<p>The class <code class="docutils literal notranslate"><span class="pre">chase::distMatrix::QuasiHermitianBlockBlockMatrix&lt;T,</span> <span class="pre">Platform&gt;</span></code>
+<section id="chase-distmatrix-pseudohermitianblockblockmatrix">
+<h5><span class="section-number">5.4.2.2.1. </span>chase::distMatrix::PseudoHermitianBlockBlockMatrix<a class="headerlink" href="#chase-distmatrix-pseudohermitianblockblockmatrix" title="Link to this heading"></a></h5>
+<p>The class <code class="docutils literal notranslate"><span class="pre">chase::distMatrix::PseudoHermitianBlockBlockMatrix&lt;T,</span> <span class="pre">Platform&gt;</span></code>
 provides block-wise distribution for pseudo-Hermitian matrices.</p>
 <blockquote>
 <div><ul class="simple">
@@ -632,9 +659,9 @@ provides block-wise distribution for pseudo-Hermitian matrices.</p>
 </div></blockquote>
 <p><strong>API Reference</strong>: <a class="reference internal" href="api/matrices.html#api-matrices"><span class="std std-ref">Matrix Classes</span></a></p>
 </section>
-<section id="chase-distmatrix-quasihermitianblockcyclicmatrix">
-<h5><span class="section-number">5.4.2.2.2. </span>chase::distMatrix::QuasiHermitianBlockCyclicMatrix<a class="headerlink" href="#chase-distmatrix-quasihermitianblockcyclicmatrix" title="Link to this heading"></a></h5>
-<p>The class <code class="docutils literal notranslate"><span class="pre">chase::distMatrix::QuasiHermitianBlockCyclicMatrix&lt;T,</span> <span class="pre">Platform&gt;</span></code>
+<section id="chase-distmatrix-pseudohermitianblockcyclicmatrix">
+<h5><span class="section-number">5.4.2.2.2. </span>chase::distMatrix::PseudoHermitianBlockCyclicMatrix<a class="headerlink" href="#chase-distmatrix-pseudohermitianblockcyclicmatrix" title="Link to this heading"></a></h5>
+<p>The class <code class="docutils literal notranslate"><span class="pre">chase::distMatrix::PseudoHermitianBlockCyclicMatrix&lt;T,</span> <span class="pre">Platform&gt;</span></code>
 provides block-cyclic distribution for pseudo-Hermitian matrices.</p>
 <blockquote>
 <div><ul class="simple">
@@ -756,13 +783,13 @@ algorithm implementations.</p>
 <div><ul class="simple">
 <li><p><strong>Rayleigh-Ritz Projection</strong>:
 - <code class="docutils literal notranslate"><span class="pre">rayleighRitz()</span></code>: Standard Rayleigh-Ritz for Hermitian problems
-- <code class="docutils literal notranslate"><span class="pre">quasi_hermitian_rayleighRitz()</span></code>: Oblique Rayleigh-Ritz for pseudo-Hermitian problems</p></li>
+- <code class="docutils literal notranslate"><span class="pre">pseudo_hermitian_rayleighRitz()</span></code>: Oblique Rayleigh-Ritz for pseudo-Hermitian problems</p></li>
 <li><p><strong>Lanczos Algorithm</strong>:
 - <code class="docutils literal notranslate"><span class="pre">lanczos()</span></code>: Spectrum estimation for Hermitian problems
-- <code class="docutils literal notranslate"><span class="pre">quasi_hermitian_lanczos()</span></code>: Spectrum estimation for pseudo-Hermitian problems</p></li>
+- <code class="docutils literal notranslate"><span class="pre">pseudo_hermitian_lanczos()</span></code>: Spectrum estimation for pseudo-Hermitian problems</p></li>
 <li><p><strong>Matrix Operations</strong>:
 - <code class="docutils literal notranslate"><span class="pre">hemm()</span></code>: Hermitian matrix-matrix multiplication
-- <code class="docutils literal notranslate"><span class="pre">quasi_hermitian_hemm()</span></code>: Pseudo-Hermitian matrix-matrix multiplication</p></li>
+- <code class="docutils literal notranslate"><span class="pre">pseudo_hermitian_hemm()</span></code>: Pseudo-Hermitian matrix-matrix multiplication</p></li>
 <li><p><strong>Factorization</strong>:
 - <code class="docutils literal notranslate"><span class="pre">cholqr()</span></code>: Cholesky-QR factorization (with S-orthonormalization for pseudo-Hermitian)</p></li>
 <li><p><strong>Residual Computation</strong>:

@@ -54,6 +54,32 @@
   </label>
   <select id="version-select" onchange="switchVersion(this.value)" style="width: 100%; padding: 5px; border: 1px solid #2980B9; border-radius: 3px; background: white; color: #333; font-size: 13px;"><option value="/ChASE/latest/">
       latest
+    </option><option value="/ChASE/v1.0.0/">
+      v1.0.0
+    </option><option value="/ChASE/v1.1.0/">
+      v1.1.0
+    </option><option value="/ChASE/v1.1.1/">
+      v1.1.1
+    </option><option value="/ChASE/v1.1.2/">
+      v1.1.2
+    </option><option value="/ChASE/v1.2.0/">
+      v1.2.0
+    </option><option value="/ChASE/v1.2.1/">
+      v1.2.1
+    </option><option value="/ChASE/v1.3.0/"selected>
+      v1.3.0
+    </option><option value="/ChASE/v1.3.1/">
+      v1.3.1
+    </option><option value="/ChASE/v1.4.0/">
+      v1.4.0
+    </option><option value="/ChASE/v1.4.1/">
+      v1.4.1
+    </option><option value="/ChASE/v1.5.0/">
+      v1.5.0
+    </option><option value="/ChASE/v1.6.0/">
+      v1.6.0
+    </option><option value="/ChASE/v1.7.0-rc1/">
+      v1.7.0-rc1
     </option></select>
 </div><script>
 function switchVersion(url) {
@@ -161,6 +187,7 @@ function switchVersion(url) {
 <li class="toctree-l1"><a class="reference internal" href="version.html">Versions of the library</a></li>
 <li class="toctree-l1"><a class="reference internal" href="license.html">Licenses and Copyright</a></li>
 <li class="toctree-l1"><a class="reference internal" href="reference.html">References and Contributors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contribution.html">Contributing to ChASE</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">USER DOCUMENTATION</span></p>
 <ul class="current">
@@ -214,9 +241,48 @@ function switchVersion(url) {
 <li class="toctree-l4"><a class="reference internal" href="#p-x-chase-finalize">3.3.4.2. p&lt;x&gt;chase_finalize</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#examples">3.3.5. Examples</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#example-of-c-interface">3.3.5.1. Example of C interface</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#example-of-fortran-interface">3.3.5.2. Example of Fortran interface</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pseudo-hermitian-interfaces">3.3.5. Pseudo-Hermitian Interfaces</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequential-pseudo-hermitian-initialization">3.3.6. Sequential Pseudo-Hermitian Initialization</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#x-chase-init-pseudo">3.3.6.1. &lt;x&gt;chase_init_pseudo</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#x-chase-pseudo">3.3.6.2. &lt;x&gt;chase_pseudo</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#distributed-pseudo-hermitian-initialization">3.3.7. Distributed Pseudo-Hermitian Initialization</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#p-x-chase-init-pseudo">3.3.7.1. p&lt;x&gt;chase_init_pseudo</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#p-x-chase-init-pseudo-blockcyclic">3.3.7.2. p&lt;x&gt;chase_init_pseudo_blockcyclic</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#i-o-functions">3.3.8. I/O Functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#writing-hamiltonian-to-file">3.3.9. Writing Hamiltonian to File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#p-x-chase-wrtham">3.3.9.1. p&lt;x&gt;chase_wrtHam</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#reading-hamiltonian-from-file">3.3.10. Reading Hamiltonian from File</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#p-x-chase-readham">3.3.10.1. p&lt;x&gt;chase_readHam</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#sequential-i-o-functions">3.3.11. Sequential I/O Functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#unified-configuration-setter-functions">3.3.12. Unified Configuration Setter Functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#available-configuration-setters">3.3.13. Available Configuration Setters</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#chase-set-tol">3.3.13.1. chase_set_tol</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#chase-set-deg">3.3.13.2. chase_set_deg</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#chase-set-max-deg">3.3.13.3. chase_set_max_deg</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#chase-set-deg-extra">3.3.13.4. chase_set_deg_extra</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#chase-set-max-iter">3.3.13.5. chase_set_max_iter</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#chase-set-lanczos-iter">3.3.13.6. chase_set_lanczos_iter</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#chase-set-num-lanczos">3.3.13.7. chase_set_num_lanczos</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#chase-set-approx">3.3.13.8. chase_set_approx</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#chase-set-opt">3.3.13.9. chase_set_opt</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#chase-set-cholqr">3.3.13.10. chase_set_cholqr</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#chase-enable-sym-check">3.3.13.11. chase_enable_sym_check</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#chase-set-decaying-rate">3.3.13.12. chase_set_decaying_rate</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#chase-set-cluster-aware-degrees">3.3.13.13. chase_set_cluster_aware_degrees</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#chase-set-upperb-scale-rate">3.3.13.14. chase_set_upperb_scale_rate</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#examples">3.3.14. Examples</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#example-of-c-interface">3.3.14.1. Example of C interface</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#example-of-fortran-interface">3.3.14.2. Example of Fortran interface</a></li>
 </ul>
 </li>
 </ul>
@@ -268,7 +334,7 @@ helps users use ChASE to solve their own eigenvalue problems on preferred archit
 <li><p><strong>Implementation Classes</strong>: <code class="docutils literal notranslate"><span class="pre">chase::Impl::ChASECPU</span></code>, <code class="docutils literal notranslate"><span class="pre">chase::Impl::ChASEGPU</span></code>,
 <code class="docutils literal notranslate"><span class="pre">chase::Impl::pChASECPU</span></code>, <code class="docutils literal notranslate"><span class="pre">chase::Impl::pChASEGPU</span></code></p></li>
 <li><p><strong>Matrix Types</strong>: Sequential matrices (<code class="docutils literal notranslate"><span class="pre">chase::matrix::Matrix&lt;T&gt;</span></code>,
-<code class="docutils literal notranslate"><span class="pre">chase::matrix::QuasiHermitianMatrix&lt;T&gt;</span></code>) and distributed matrices
+<code class="docutils literal notranslate"><span class="pre">chase::matrix::PseudoHermitianMatrix&lt;T&gt;</span></code>) and distributed matrices
 (<code class="docutils literal notranslate"><span class="pre">chase::distMatrix::BlockBlockMatrix&lt;T,</span> <span class="pre">Platform&gt;</span></code>,
 <code class="docutils literal notranslate"><span class="pre">chase::distMatrix::BlockCyclicMatrix&lt;T,</span> <span class="pre">Platform&gt;</span></code>, etc.)</p></li>
 <li><p><strong>Configuration</strong>: <code class="docutils literal notranslate"><span class="pre">chase::ChaseConfig&lt;T&gt;</span></code> for parameter setup</p></li>
@@ -322,8 +388,8 @@ for pseudo-Hermitian problems:</p>
 <span class="w">    </span><span class="n">N</span><span class="p">,</span><span class="w"> </span><span class="n">nev</span><span class="p">,</span><span class="w"> </span><span class="n">nex</span><span class="p">,</span><span class="w"> </span><span class="n">Hmat</span><span class="p">,</span><span class="w"> </span><span class="n">V</span><span class="p">.</span><span class="n">data</span><span class="p">(),</span><span class="w"> </span><span class="n">N</span><span class="p">,</span><span class="w"> </span><span class="n">Lambda</span><span class="p">.</span><span class="n">data</span><span class="p">());</span>
 
 <span class="c1">// For Pseudo-Hermitian problems (e.g., BSE)</span>
-<span class="k">auto</span><span class="w"> </span><span class="n">Hmat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">chase</span><span class="o">::</span><span class="n">matrix</span><span class="o">::</span><span class="n">QuasiHermitianMatrix</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">N</span><span class="p">,</span><span class="w"> </span><span class="n">N</span><span class="p">);</span>
-<span class="k">auto</span><span class="w"> </span><span class="n">solver</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">chase</span><span class="o">::</span><span class="n">Impl</span><span class="o">::</span><span class="n">ChASECPU</span><span class="o">&lt;</span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">chase</span><span class="o">::</span><span class="n">matrix</span><span class="o">::</span><span class="n">QuasiHermitianMatrix</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&gt;</span><span class="p">(</span>
+<span class="k">auto</span><span class="w"> </span><span class="n">Hmat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">chase</span><span class="o">::</span><span class="n">matrix</span><span class="o">::</span><span class="n">PseudoHermitianMatrix</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">N</span><span class="p">,</span><span class="w"> </span><span class="n">N</span><span class="p">);</span>
+<span class="k">auto</span><span class="w"> </span><span class="n">solver</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">chase</span><span class="o">::</span><span class="n">Impl</span><span class="o">::</span><span class="n">ChASECPU</span><span class="o">&lt;</span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">chase</span><span class="o">::</span><span class="n">matrix</span><span class="o">::</span><span class="n">PseudoHermitianMatrix</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&gt;</span><span class="p">(</span>
 <span class="w">    </span><span class="n">N</span><span class="p">,</span><span class="w"> </span><span class="n">nev</span><span class="p">,</span><span class="w"> </span><span class="n">nex</span><span class="p">,</span><span class="w"> </span><span class="n">Hmat</span><span class="p">,</span><span class="w"> </span><span class="n">V</span><span class="p">.</span><span class="n">data</span><span class="p">(),</span><span class="w"> </span><span class="n">N</span><span class="p">,</span><span class="w"> </span><span class="n">Lambda</span><span class="p">.</span><span class="n">data</span><span class="p">());</span>
 </pre></div>
 </div>
@@ -389,13 +455,13 @@ schemes (Block, Block-Cyclic, Redundant).</p>
 </pre></div>
 </div>
 <p><strong>Pseudo-Hermitian Matrices</strong></p>
-<p>For pseudo-Hermitian problems (e.g., BSE), use the QuasiHermitian variants:</p>
+<p>For pseudo-Hermitian problems (e.g., BSE), use the pseudo-Hermitian matrix variants:</p>
 <div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="c1">// Block distribution</span>
-<span class="k">auto</span><span class="w"> </span><span class="n">Hmat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">chase</span><span class="o">::</span><span class="n">distMatrix</span><span class="o">::</span><span class="n">QuasiHermitianBlockBlockMatrix</span><span class="o">&lt;</span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">ARCH</span><span class="o">&gt;</span><span class="p">(</span>
+<span class="k">auto</span><span class="w"> </span><span class="n">Hmat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">chase</span><span class="o">::</span><span class="n">distMatrix</span><span class="o">::</span><span class="n">PseudoHermitianBlockBlockMatrix</span><span class="o">&lt;</span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">ARCH</span><span class="o">&gt;</span><span class="p">(</span>
 <span class="w">    </span><span class="n">N</span><span class="p">,</span><span class="w"> </span><span class="n">N</span><span class="p">,</span><span class="w"> </span><span class="n">mpi_grid</span><span class="p">);</span>
 
 <span class="c1">// Block-Cyclic distribution</span>
-<span class="k">auto</span><span class="w"> </span><span class="n">Hmat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">chase</span><span class="o">::</span><span class="n">distMatrix</span><span class="o">::</span><span class="n">QuasiHermitianBlockCyclicMatrix</span><span class="o">&lt;</span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">ARCH</span><span class="o">&gt;</span><span class="p">(</span>
+<span class="k">auto</span><span class="w"> </span><span class="n">Hmat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">chase</span><span class="o">::</span><span class="n">distMatrix</span><span class="o">::</span><span class="n">PseudoHermitianBlockCyclicMatrix</span><span class="o">&lt;</span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">ARCH</span><span class="o">&gt;</span><span class="p">(</span>
 <span class="w">    </span><span class="n">N</span><span class="p">,</span><span class="w"> </span><span class="n">N</span><span class="p">,</span><span class="w"> </span><span class="n">blocksize</span><span class="p">,</span><span class="w"> </span><span class="n">blocksize</span><span class="p">,</span><span class="w"> </span><span class="n">mpi_grid</span><span class="p">);</span>
 </pre></div>
 </div>
@@ -569,8 +635,8 @@ numerical kernels in ChASE:</p>
 </pre></div>
 </div>
 <p>The output format is:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="p">|</span><span class="w"> </span>Size<span class="w">  </span><span class="p">|</span><span class="w"> </span>Iterations<span class="w"> </span><span class="p">|</span><span class="w"> </span>Vecs<span class="w">   </span><span class="p">|</span><span class="w">  </span>All<span class="w">       </span><span class="p">|</span><span class="w"> </span>Lanczos<span class="w">    </span><span class="p">|</span><span class="w"> </span>Filter<span class="w">     </span><span class="p">|</span><span class="w"> </span>QR<span class="w">         </span><span class="p">|</span><span class="w"> </span>RR<span class="w">         </span><span class="p">|</span><span class="w"> </span>Resid<span class="w">      </span><span class="p">|</span>
-<span class="p">|</span><span class="w">     </span><span class="m">1</span><span class="w"> </span><span class="p">|</span><span class="w">          </span><span class="m">5</span><span class="w"> </span><span class="p">|</span><span class="w">   </span><span class="m">7556</span><span class="w"> </span><span class="p">|</span><span class="w">      </span><span class="m">1</span>.116<span class="w"> </span><span class="p">|</span><span class="w">   </span><span class="m">0</span>.135028<span class="w"> </span><span class="p">|</span><span class="w">    </span><span class="m">0</span>.87997<span class="w"> </span><span class="p">|</span><span class="w">  </span><span class="m">0</span>.0164864<span class="w"> </span><span class="p">|</span><span class="w">  </span><span class="m">0</span>.0494752<span class="w"> </span><span class="p">|</span><span class="w">  </span><span class="m">0</span>.0310726<span class="w"> </span><span class="p">|</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="p">|</span><span class="w"> </span>MPI<span class="w"> </span>procs<span class="w"> </span><span class="p">|</span><span class="w"> </span>Iterations<span class="w"> </span><span class="p">|</span><span class="w">  </span>Vecs<span class="w"> </span><span class="p">|</span><span class="w">       </span>All<span class="w"> </span><span class="p">|</span><span class="w"> </span>Init<span class="w"> </span>Vecs<span class="w"> </span><span class="p">|</span><span class="w">   </span>Lanczos<span class="w"> </span><span class="p">|</span><span class="w">    </span>Filter<span class="w"> </span><span class="p">|</span><span class="w">        </span>QR<span class="w"> </span><span class="p">|</span><span class="w">        </span>RR<span class="w"> </span><span class="p">|</span><span class="w">     </span>Resid<span class="w"> </span><span class="p">|</span><span class="w"> </span>GFLOPS:<span class="w"> </span>All<span class="w"> </span><span class="p">|</span><span class="w"> </span>GFLOPS:<span class="w"> </span>Filter<span class="w"> </span><span class="p">|</span><span class="w"> </span>Num.<span class="w"> </span>Early<span class="w"> </span>Locked<span class="w"> </span><span class="p">|</span><span class="w"> </span>Avg.<span class="w"> </span>Early<span class="w"> </span>Locked<span class="w"> </span><span class="p">|</span><span class="w"> </span>Max.<span class="w"> </span>Early<span class="w"> </span>Locked<span class="w"> </span><span class="p">|</span>
+<span class="p">|</span><span class="w">         </span><span class="m">4</span><span class="w"> </span><span class="p">|</span><span class="w">          </span><span class="m">1</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="m">20000</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="m">7</span>.956e-01<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="m">2</span>.711e-03<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="m">6</span>.353e-01<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="m">2</span>.231e-02<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="m">3</span>.963e-02<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="m">6</span>.714e-02<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="m">1</span>.593e-03<span class="w"> </span><span class="p">|</span><span class="w">   </span><span class="m">1</span>.146e+03<span class="w"> </span><span class="p">|</span><span class="w">      </span><span class="m">1</span>.000e+03<span class="w"> </span><span class="p">|</span><span class="w">                 </span><span class="m">0</span><span class="w"> </span><span class="p">|</span><span class="w">         </span><span class="m">0</span>.000e+00<span class="w"> </span><span class="p">|</span><span class="w">         </span><span class="m">0</span>.000e+00<span class="w"> </span><span class="p">|</span>
 </pre></div>
 </div>
 <p>The columns represent:
@@ -797,7 +863,7 @@ a prefix <code class="docutils literal notranslate"><span class="pre">p</span></
 - But use different interfaces for the <strong>Initialization</strong> step. For</p>
 <blockquote>
 <div><p><strong>Block-Cyclic</strong> data layout, the related <strong>Initialization function</strong> ends
-with the suffix <code class="docutils literal notranslate"><span class="pre">blockcyclic</span></code></p>
+with the suffix <code class="docutils literal notranslate"><span class="pre">blockcyclic</span></code>.</p>
 </div></blockquote>
 </li>
 <li><p>The Fortran interfaces are implemented based on <code class="docutils literal notranslate"><span class="pre">iso_c_binding</span></code>, a standard
@@ -858,17 +924,17 @@ ChASE is initialized with the buffers <code class="docutils literal notranslate"
 allocated externally by users. These buffers will be re-used when a sequence of
 eigenproblems are to be solved.</p>
 <p>The APIs for the C interfaces are as follows:</p>
-<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">schase_init_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">nev</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">nex</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">h</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">ritzv</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">init</span><span class="p">)</span>
-<span class="kt">void</span><span class="w"> </span><span class="n">dchase_init_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">nev</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">nex</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="o">*</span><span class="w"> </span><span class="n">h</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="o">*</span><span class="w"> </span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="o">*</span><span class="w"> </span><span class="n">ritzv</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">init</span><span class="p">)</span>
-<span class="kt">void</span><span class="w"> </span><span class="n">cchase_init_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">nev</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">nex</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="w"> </span><span class="kt">_Complex</span><span class="o">*</span><span class="w"> </span><span class="n">h</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="w"> </span><span class="kt">_Complex</span><span class="o">*</span><span class="w"> </span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">ritzv</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">init</span><span class="p">)</span>
-<span class="kt">void</span><span class="w"> </span><span class="n">zchase_init_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">nev</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">nex</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="kt">_Complex</span><span class="o">*</span><span class="w"> </span><span class="n">h</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="kt">_Complex</span><span class="o">*</span><span class="w"> </span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="o">*</span><span class="w"> </span><span class="n">ritzv</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">init</span><span class="p">)</span>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">schase_init_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">nev</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">nex</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">h</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">ldh</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">ritzv</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">init</span><span class="p">)</span>
+<span class="kt">void</span><span class="w"> </span><span class="n">dchase_init_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">nev</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">nex</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="o">*</span><span class="w"> </span><span class="n">h</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">ldh</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="o">*</span><span class="w"> </span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="o">*</span><span class="w"> </span><span class="n">ritzv</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">init</span><span class="p">)</span>
+<span class="kt">void</span><span class="w"> </span><span class="n">cchase_init_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">nev</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">nex</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="w"> </span><span class="kt">_Complex</span><span class="o">*</span><span class="w"> </span><span class="n">h</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">ldh</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="w"> </span><span class="kt">_Complex</span><span class="o">*</span><span class="w"> </span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">ritzv</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">init</span><span class="p">)</span>
+<span class="kt">void</span><span class="w"> </span><span class="n">zchase_init_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">nev</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">nex</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="kt">_Complex</span><span class="o">*</span><span class="w"> </span><span class="n">h</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">ldh</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="kt">_Complex</span><span class="o">*</span><span class="w"> </span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="o">*</span><span class="w"> </span><span class="n">ritzv</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">init</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>The APIs for the Fortran interfaces are as follows:</p>
-<div class="highlight-Fortran notranslate"><div class="highlight"><pre><span></span><span class="k">SUBROUTINE </span><span class="n">schase_init</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">nev</span><span class="p">,</span><span class="w"> </span><span class="n">nex</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="p">,</span><span class="w"> </span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="n">ritzv</span><span class="p">,</span><span class="w"> </span><span class="n">init</span><span class="p">)</span>
-<span class="k">SUBROUTINE </span><span class="n">dchase_init</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">nev</span><span class="p">,</span><span class="w"> </span><span class="n">nex</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="p">,</span><span class="w"> </span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="n">ritzv</span><span class="p">,</span><span class="w"> </span><span class="n">init</span><span class="p">)</span>
-<span class="k">SUBROUTINE </span><span class="n">cchase_init</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">nev</span><span class="p">,</span><span class="w"> </span><span class="n">nex</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="p">,</span><span class="w"> </span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="n">ritzv</span><span class="p">,</span><span class="w"> </span><span class="n">init</span><span class="p">)</span>
-<span class="k">SUBROUTINE </span><span class="n">zchase_init</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">nev</span><span class="p">,</span><span class="w"> </span><span class="n">nex</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="p">,</span><span class="w"> </span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="n">ritzv</span><span class="p">,</span><span class="w"> </span><span class="n">init</span><span class="p">)</span>
+<div class="highlight-Fortran notranslate"><div class="highlight"><pre><span></span><span class="k">SUBROUTINE </span><span class="n">schase_init</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">nev</span><span class="p">,</span><span class="w"> </span><span class="n">nex</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="p">,</span><span class="w"> </span><span class="n">ldh</span><span class="p">,</span><span class="w"> </span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="n">ritzv</span><span class="p">,</span><span class="w"> </span><span class="n">init</span><span class="p">)</span>
+<span class="k">SUBROUTINE </span><span class="n">dchase_init</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">nev</span><span class="p">,</span><span class="w"> </span><span class="n">nex</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="p">,</span><span class="w"> </span><span class="n">ldh</span><span class="p">,</span><span class="w"> </span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="n">ritzv</span><span class="p">,</span><span class="w"> </span><span class="n">init</span><span class="p">)</span>
+<span class="k">SUBROUTINE </span><span class="n">cchase_init</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">nev</span><span class="p">,</span><span class="w"> </span><span class="n">nex</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="p">,</span><span class="w"> </span><span class="n">ldh</span><span class="p">,</span><span class="w"> </span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="n">ritzv</span><span class="p">,</span><span class="w"> </span><span class="n">init</span><span class="p">)</span>
+<span class="k">SUBROUTINE </span><span class="n">zchase_init</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">nev</span><span class="p">,</span><span class="w"> </span><span class="n">nex</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="p">,</span><span class="w"> </span><span class="n">ldh</span><span class="p">,</span><span class="w"> </span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="n">ritzv</span><span class="p">,</span><span class="w"> </span><span class="n">init</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>The interfaces of C and Fortran share the same parameters as follows:</p>
@@ -901,17 +967,21 @@ eigenproblems are to be solved.</p>
 <td><p>In</p></td>
 <td><p>pointer to the matrix to be diagonalized, with size of matrix <code class="docutils literal notranslate"><span class="pre">nxn</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">v</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ldh</span></code></p></td>
+<td><p>In</p></td>
+<td><p>leading dimension of <code class="docutils literal notranslate"><span class="pre">h</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">v</span></code></p></td>
 <td><p>In, Out</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">(nx(nev+nex))</span></code> matrix, input is the initial guess eigenvectors,
 and for output, the first <code class="docutils literal notranslate"><span class="pre">nev</span></code> columns
 are overwritten by the desired eigenvectors</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ritzv</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ritzv</span></code></p></td>
 <td><p>Out</p></td>
 <td><p>an array of size nev which contains the desired eigenvalues, it is of type <code class="docutils literal notranslate"><span class="pre">Base&lt;x&gt;</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">init</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">init</span></code></p></td>
 <td><p>Out</p></td>
 <td><p>a flag to indicate if ChASE has been initialized, if initialized, return <code class="docutils literal notranslate"><span class="pre">1</span></code></p></td>
 </tr>
@@ -1150,16 +1220,16 @@ is for MPI-Fortran communicator.</p></td>
 <p><code class="docutils literal notranslate"><span class="pre">&lt;x&gt;chase</span></code> solves an eigenvalue problem with given configuration of parameters
 on shared-memory architectures. When CUDA is enabled, it will automatically use
 1 GPU card.</p>
-<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">schase_</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="o">*</span><span class="n">deg</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="o">*</span><span class="n">tol</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">mode</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">opt</span><span class="p">)</span>
-<span class="kt">void</span><span class="w"> </span><span class="n">dchase_</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="o">*</span><span class="n">deg</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="o">*</span><span class="n">tol</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">mode</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">opt</span><span class="p">)</span>
-<span class="kt">void</span><span class="w"> </span><span class="n">cchase_</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="o">*</span><span class="n">deg</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="o">*</span><span class="n">tol</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">mode</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">opt</span><span class="p">)</span>
-<span class="kt">void</span><span class="w"> </span><span class="n">zchase_</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="o">*</span><span class="n">deg</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="o">*</span><span class="n">tol</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">mode</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">opt</span><span class="p">)</span>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">schase_</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="o">*</span><span class="n">deg</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="w"> </span><span class="o">*</span><span class="n">tol</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">mode</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">opt</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">qr</span><span class="p">)</span>
+<span class="kt">void</span><span class="w"> </span><span class="n">dchase_</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="o">*</span><span class="n">deg</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="o">*</span><span class="n">tol</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">mode</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">opt</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">qr</span><span class="p">)</span>
+<span class="kt">void</span><span class="w"> </span><span class="n">cchase_</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="o">*</span><span class="n">deg</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="w"> </span><span class="o">*</span><span class="n">tol</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">mode</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">opt</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">qr</span><span class="p">)</span>
+<span class="kt">void</span><span class="w"> </span><span class="n">zchase_</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="o">*</span><span class="n">deg</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="o">*</span><span class="n">tol</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">mode</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">opt</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">qr</span><span class="p">)</span>
 </pre></div>
 </div>
-<div class="highlight-Fortran notranslate"><div class="highlight"><pre><span></span><span class="k">subroutine  </span><span class="n">schase</span><span class="w"> </span><span class="p">(</span><span class="n">deg</span><span class="p">,</span><span class="w"> </span><span class="n">tol</span><span class="p">,</span><span class="w"> </span><span class="n">mode</span><span class="p">,</span><span class="w"> </span><span class="n">opt</span><span class="p">)</span>
-<span class="k">subroutine  </span><span class="n">dchase</span><span class="w"> </span><span class="p">(</span><span class="n">deg</span><span class="p">,</span><span class="w"> </span><span class="n">tol</span><span class="p">,</span><span class="w"> </span><span class="n">mode</span><span class="p">,</span><span class="w"> </span><span class="n">opt</span><span class="p">)</span>
-<span class="k">subroutine  </span><span class="n">cchase</span><span class="w"> </span><span class="p">(</span><span class="n">deg</span><span class="p">,</span><span class="w"> </span><span class="n">tol</span><span class="p">,</span><span class="w"> </span><span class="n">mode</span><span class="p">,</span><span class="w"> </span><span class="n">opt</span><span class="p">)</span>
-<span class="k">subroutine  </span><span class="n">zchase</span><span class="w"> </span><span class="p">(</span><span class="n">deg</span><span class="p">,</span><span class="w"> </span><span class="n">tol</span><span class="p">,</span><span class="w"> </span><span class="n">mode</span><span class="p">,</span><span class="w"> </span><span class="n">opt</span><span class="p">)</span>
+<div class="highlight-Fortran notranslate"><div class="highlight"><pre><span></span><span class="k">subroutine  </span><span class="n">schase</span><span class="w"> </span><span class="p">(</span><span class="n">deg</span><span class="p">,</span><span class="w"> </span><span class="n">tol</span><span class="p">,</span><span class="w"> </span><span class="n">mode</span><span class="p">,</span><span class="w"> </span><span class="n">opt</span><span class="p">,</span><span class="w"> </span><span class="n">qr</span><span class="p">)</span>
+<span class="k">subroutine  </span><span class="n">dchase</span><span class="w"> </span><span class="p">(</span><span class="n">deg</span><span class="p">,</span><span class="w"> </span><span class="n">tol</span><span class="p">,</span><span class="w"> </span><span class="n">mode</span><span class="p">,</span><span class="w"> </span><span class="n">opt</span><span class="p">,</span><span class="w"> </span><span class="n">qr</span><span class="p">)</span>
+<span class="k">subroutine  </span><span class="n">cchase</span><span class="w"> </span><span class="p">(</span><span class="n">deg</span><span class="p">,</span><span class="w"> </span><span class="n">tol</span><span class="p">,</span><span class="w"> </span><span class="n">mode</span><span class="p">,</span><span class="w"> </span><span class="n">opt</span><span class="p">,</span><span class="w"> </span><span class="n">qr</span><span class="p">)</span>
+<span class="k">subroutine  </span><span class="n">zchase</span><span class="w"> </span><span class="p">(</span><span class="n">deg</span><span class="p">,</span><span class="w"> </span><span class="n">tol</span><span class="p">,</span><span class="w"> </span><span class="n">mode</span><span class="p">,</span><span class="w"> </span><span class="n">opt</span><span class="p">,</span><span class="w"> </span><span class="n">qr</span><span class="p">)</span>
 </pre></div>
 </div>
 <table class="docutils align-default">
@@ -1193,6 +1263,11 @@ last system. If mode = ‘A’, reuse, otherwise, no.</p></td>
 <td><p>determining if using internal optimization of Chebyshev polynomial degree.
 If opt=’S’, use, otherwise, no.</p></td>
 </tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">qr</span></code></p></td>
+<td><p>In</p></td>
+<td><p>determining if using flexible CholeskyQR. If qr=’C’, use CholeskyQR,
+otherwise, use Householder QR.</p></td>
+</tr>
 </tbody>
 </table>
 </section>
@@ -1202,17 +1277,17 @@ If opt=’S’, use, otherwise, no.</p></td>
 on distributed-memory architectures. When CUDA is enabled, it will automatically use
 multi-GPUs with the configuration 1 GPU per MPI rank.</p>
 <p>The APIs for the C interfaces are as follows:</p>
-<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">pschase_</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="o">*</span><span class="n">deg</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="o">*</span><span class="n">tol</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">mode</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">opt</span><span class="p">)</span>
-<span class="kt">void</span><span class="w"> </span><span class="n">pdchase_</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="o">*</span><span class="n">deg</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="o">*</span><span class="n">tol</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">mode</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">opt</span><span class="p">)</span>
-<span class="kt">void</span><span class="w"> </span><span class="n">pcchase_</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="o">*</span><span class="n">deg</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="o">*</span><span class="n">tol</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">mode</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">opt</span><span class="p">)</span>
-<span class="kt">void</span><span class="w"> </span><span class="n">pzchase_</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="o">*</span><span class="n">deg</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="o">*</span><span class="n">tol</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">mode</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">opt</span><span class="p">)</span>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">pschase_</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="o">*</span><span class="n">deg</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="w"> </span><span class="o">*</span><span class="n">tol</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">mode</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">opt</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">qr</span><span class="p">)</span>
+<span class="kt">void</span><span class="w"> </span><span class="n">pdchase_</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="o">*</span><span class="n">deg</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="o">*</span><span class="n">tol</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">mode</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">opt</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">qr</span><span class="p">)</span>
+<span class="kt">void</span><span class="w"> </span><span class="n">pcchase_</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="o">*</span><span class="n">deg</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="w"> </span><span class="o">*</span><span class="n">tol</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">mode</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">opt</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">qr</span><span class="p">)</span>
+<span class="kt">void</span><span class="w"> </span><span class="n">pzchase_</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="o">*</span><span class="n">deg</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="o">*</span><span class="n">tol</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">mode</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">opt</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">qr</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>The APIs for the Fortran interfaces are as follows:</p>
-<div class="highlight-Fortran notranslate"><div class="highlight"><pre><span></span><span class="k">subroutine  </span><span class="n">pschase</span><span class="w"> </span><span class="p">(</span><span class="n">deg</span><span class="p">,</span><span class="w"> </span><span class="n">tol</span><span class="p">,</span><span class="w"> </span><span class="n">mode</span><span class="p">,</span><span class="w"> </span><span class="n">opt</span><span class="p">)</span>
-<span class="k">subroutine  </span><span class="n">pdchase</span><span class="w"> </span><span class="p">(</span><span class="n">deg</span><span class="p">,</span><span class="w"> </span><span class="n">tol</span><span class="p">,</span><span class="w"> </span><span class="n">mode</span><span class="p">,</span><span class="w"> </span><span class="n">opt</span><span class="p">)</span>
-<span class="k">subroutine  </span><span class="n">pcchase</span><span class="w"> </span><span class="p">(</span><span class="n">deg</span><span class="p">,</span><span class="w"> </span><span class="n">tol</span><span class="p">,</span><span class="w"> </span><span class="n">mode</span><span class="p">,</span><span class="w"> </span><span class="n">opt</span><span class="p">)</span>
-<span class="k">subroutine  </span><span class="n">pzchase</span><span class="w"> </span><span class="p">(</span><span class="n">deg</span><span class="p">,</span><span class="w"> </span><span class="n">tol</span><span class="p">,</span><span class="w"> </span><span class="n">mode</span><span class="p">,</span><span class="w"> </span><span class="n">opt</span><span class="p">)</span>
+<div class="highlight-Fortran notranslate"><div class="highlight"><pre><span></span><span class="k">subroutine  </span><span class="n">pschase</span><span class="w"> </span><span class="p">(</span><span class="n">deg</span><span class="p">,</span><span class="w"> </span><span class="n">tol</span><span class="p">,</span><span class="w"> </span><span class="n">mode</span><span class="p">,</span><span class="w"> </span><span class="n">opt</span><span class="p">,</span><span class="w"> </span><span class="n">qr</span><span class="p">)</span>
+<span class="k">subroutine  </span><span class="n">pdchase</span><span class="w"> </span><span class="p">(</span><span class="n">deg</span><span class="p">,</span><span class="w"> </span><span class="n">tol</span><span class="p">,</span><span class="w"> </span><span class="n">mode</span><span class="p">,</span><span class="w"> </span><span class="n">opt</span><span class="p">,</span><span class="w"> </span><span class="n">qr</span><span class="p">)</span>
+<span class="k">subroutine  </span><span class="n">pcchase</span><span class="w"> </span><span class="p">(</span><span class="n">deg</span><span class="p">,</span><span class="w"> </span><span class="n">tol</span><span class="p">,</span><span class="w"> </span><span class="n">mode</span><span class="p">,</span><span class="w"> </span><span class="n">opt</span><span class="p">,</span><span class="w"> </span><span class="n">qr</span><span class="p">)</span>
+<span class="k">subroutine  </span><span class="n">pzchase</span><span class="w"> </span><span class="p">(</span><span class="n">deg</span><span class="p">,</span><span class="w"> </span><span class="n">tol</span><span class="p">,</span><span class="w"> </span><span class="n">mode</span><span class="p">,</span><span class="w"> </span><span class="n">opt</span><span class="p">,</span><span class="w"> </span><span class="n">qr</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>The interfaces of C and Fortran share the same parameters as described for <code class="docutils literal notranslate"><span class="pre">&lt;x&gt;chase</span></code> above.</p>
@@ -1281,6 +1356,463 @@ they share a uniform interface for the finalization.</p>
 </pre></div>
 </div>
 <p>The interfaces of C and Fortran share the same parameters as described for <code class="docutils literal notranslate"><span class="pre">&lt;x&gt;chase_finalize</span></code> above.</p>
+</section>
+</section>
+<section id="pseudo-hermitian-interfaces">
+<h3><span class="section-number">3.3.5. </span>Pseudo-Hermitian Interfaces<a class="headerlink" href="#pseudo-hermitian-interfaces" title="Link to this heading"></a></h3>
+<p>ChASE provides specialized interfaces for pseudo-Hermitian eigenvalue problems
+(e.g., Bethe-Salpeter Equation). These interfaces use the same solving and
+finalization functions as the regular interfaces, but require separate
+initialization functions.</p>
+</section>
+<section id="sequential-pseudo-hermitian-initialization">
+<h3><span class="section-number">3.3.6. </span>Sequential Pseudo-Hermitian Initialization<a class="headerlink" href="#sequential-pseudo-hermitian-initialization" title="Link to this heading"></a></h3>
+<section id="x-chase-init-pseudo">
+<h4><span class="section-number">3.3.6.1. </span>&lt;x&gt;chase_init_pseudo<a class="headerlink" href="#x-chase-init-pseudo" title="Link to this heading"></a></h4>
+<p><code class="docutils literal notranslate"><span class="pre">&lt;x&gt;chase_init_pseudo</span></code> initializes the context for shared-memory ChASE with
+pseudo-Hermitian matrices. Currently only complex types (<code class="docutils literal notranslate"><span class="pre">c</span></code> and <code class="docutils literal notranslate"><span class="pre">z</span></code>) are
+supported.</p>
+<p>The APIs for the C interfaces are as follows:</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">cchase_init_pseudo_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">nev</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">nex</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="w"> </span><span class="kt">_Complex</span><span class="o">*</span><span class="w"> </span><span class="n">h</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">ldh</span><span class="p">,</span>
+<span class="w">                         </span><span class="kt">float</span><span class="w"> </span><span class="kt">_Complex</span><span class="o">*</span><span class="w"> </span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">ritzv</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">init</span><span class="p">)</span>
+<span class="kt">void</span><span class="w"> </span><span class="n">zchase_init_pseudo_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">nev</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">nex</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="kt">_Complex</span><span class="o">*</span><span class="w"> </span><span class="n">h</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">ldh</span><span class="p">,</span>
+<span class="w">                         </span><span class="kt">double</span><span class="w"> </span><span class="kt">_Complex</span><span class="o">*</span><span class="w"> </span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="o">*</span><span class="w"> </span><span class="n">ritzv</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">init</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The APIs for the Fortran interfaces are as follows:</p>
+<div class="highlight-Fortran notranslate"><div class="highlight"><pre><span></span><span class="k">SUBROUTINE </span><span class="n">cchase_init_pseudo</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">nev</span><span class="p">,</span><span class="w"> </span><span class="n">nex</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="p">,</span><span class="w"> </span><span class="n">ldh</span><span class="p">,</span><span class="w"> </span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="n">ritzv</span><span class="p">,</span><span class="w"> </span><span class="n">init</span><span class="p">)</span>
+<span class="k">SUBROUTINE </span><span class="n">zchase_init_pseudo</span><span class="p">(</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">nev</span><span class="p">,</span><span class="w"> </span><span class="n">nex</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="p">,</span><span class="w"> </span><span class="n">ldh</span><span class="p">,</span><span class="w"> </span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="n">ritzv</span><span class="p">,</span><span class="w"> </span><span class="n">init</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The parameters are the same as <code class="docutils literal notranslate"><span class="pre">&lt;x&gt;chase_init</span></code> described above.</p>
+</section>
+<section id="x-chase-pseudo">
+<h4><span class="section-number">3.3.6.2. </span>&lt;x&gt;chase_pseudo<a class="headerlink" href="#x-chase-pseudo" title="Link to this heading"></a></h4>
+<p><code class="docutils literal notranslate"><span class="pre">&lt;x&gt;chase_pseudo</span></code> solves a pseudo-Hermitian eigenvalue problem. Use this
+function after initializing with <code class="docutils literal notranslate"><span class="pre">&lt;x&gt;chase_init_pseudo</span></code>.</p>
+<p>The APIs for the C interfaces are as follows:</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">cchase_pseudo_</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="o">*</span><span class="n">deg</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="w"> </span><span class="o">*</span><span class="n">tol</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">mode</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">opt</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">qr</span><span class="p">)</span>
+<span class="kt">void</span><span class="w"> </span><span class="n">zchase_pseudo_</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="o">*</span><span class="n">deg</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="o">*</span><span class="n">tol</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">mode</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">opt</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">qr</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The APIs for the Fortran interfaces are as follows:</p>
+<div class="highlight-Fortran notranslate"><div class="highlight"><pre><span></span><span class="k">subroutine  </span><span class="n">cchase_pseudo</span><span class="w"> </span><span class="p">(</span><span class="n">deg</span><span class="p">,</span><span class="w"> </span><span class="n">tol</span><span class="p">,</span><span class="w"> </span><span class="n">mode</span><span class="p">,</span><span class="w"> </span><span class="n">opt</span><span class="p">,</span><span class="w"> </span><span class="n">qr</span><span class="p">)</span>
+<span class="k">subroutine  </span><span class="n">zchase_pseudo</span><span class="w"> </span><span class="p">(</span><span class="n">deg</span><span class="p">,</span><span class="w"> </span><span class="n">tol</span><span class="p">,</span><span class="w"> </span><span class="n">mode</span><span class="p">,</span><span class="w"> </span><span class="n">opt</span><span class="p">,</span><span class="w"> </span><span class="n">qr</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The parameters are the same as <code class="docutils literal notranslate"><span class="pre">&lt;x&gt;chase</span></code> described above.</p>
+</section>
+</section>
+<section id="distributed-pseudo-hermitian-initialization">
+<h3><span class="section-number">3.3.7. </span>Distributed Pseudo-Hermitian Initialization<a class="headerlink" href="#distributed-pseudo-hermitian-initialization" title="Link to this heading"></a></h3>
+<section id="p-x-chase-init-pseudo">
+<h4><span class="section-number">3.3.7.1. </span>p&lt;x&gt;chase_init_pseudo<a class="headerlink" href="#p-x-chase-init-pseudo" title="Link to this heading"></a></h4>
+<p><code class="docutils literal notranslate"><span class="pre">p&lt;x&gt;chase_init_pseudo</span></code> initializes the context for distributed-memory ChASE
+with pseudo-Hermitian matrices using <strong>Block Distribution</strong>. Currently only
+complex types (<code class="docutils literal notranslate"><span class="pre">c</span></code> and <code class="docutils literal notranslate"><span class="pre">z</span></code>) are supported.</p>
+<p>The APIs for the C interfaces are as follows:</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">pcchase_init_pseudo_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">nn</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">nev</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">nex</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">m</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">n</span><span class="p">,</span>
+<span class="w">                          </span><span class="kt">float</span><span class="w"> </span><span class="kt">_Complex</span><span class="o">*</span><span class="w"> </span><span class="n">h</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">ldh</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="w"> </span><span class="kt">_Complex</span><span class="o">*</span><span class="w"> </span><span class="n">v</span><span class="p">,</span>
+<span class="w">                          </span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">ritzv</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">dim0</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">dim1</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">grid_major</span><span class="p">,</span>
+<span class="w">                          </span><span class="n">MPI_Comm</span><span class="o">*</span><span class="w"> </span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">init</span><span class="p">)</span>
+<span class="kt">void</span><span class="w"> </span><span class="n">pzchase_init_pseudo_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">nn</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">nev</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">nex</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">m</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">n</span><span class="p">,</span>
+<span class="w">                          </span><span class="kt">double</span><span class="w"> </span><span class="kt">_Complex</span><span class="o">*</span><span class="w"> </span><span class="n">h</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">ldh</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="kt">_Complex</span><span class="o">*</span><span class="w"> </span><span class="n">v</span><span class="p">,</span>
+<span class="w">                          </span><span class="kt">double</span><span class="o">*</span><span class="w"> </span><span class="n">ritzv</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">dim0</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">dim1</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">grid_major</span><span class="p">,</span>
+<span class="w">                          </span><span class="n">MPI_Comm</span><span class="o">*</span><span class="w"> </span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">init</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The APIs for the Fortran interfaces are as follows:</p>
+<div class="highlight-Fortran notranslate"><div class="highlight"><pre><span></span><span class="k">subroutine  </span><span class="n">pcchase_init_pseudo</span><span class="w"> </span><span class="p">(</span><span class="n">nn</span><span class="p">,</span><span class="w"> </span><span class="n">nev</span><span class="p">,</span><span class="w"> </span><span class="n">nex</span><span class="p">,</span><span class="w"> </span><span class="n">m</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="p">,</span><span class="w"> </span><span class="n">ldh</span><span class="p">,</span><span class="w"> </span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="n">ritzv</span><span class="p">,</span><span class="w"> </span><span class="n">dim0</span><span class="p">,</span><span class="w"> </span><span class="n">dim1</span><span class="p">,</span><span class="w"> </span><span class="n">grid_major</span><span class="p">,</span><span class="w"> </span><span class="n">fcomm</span><span class="p">,</span><span class="w"> </span><span class="n">init</span><span class="p">)</span>
+<span class="k">subroutine  </span><span class="n">pzchase_init_pseudo</span><span class="w"> </span><span class="p">(</span><span class="n">nn</span><span class="p">,</span><span class="w"> </span><span class="n">nev</span><span class="p">,</span><span class="w"> </span><span class="n">nex</span><span class="p">,</span><span class="w"> </span><span class="n">m</span><span class="p">,</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="p">,</span><span class="w"> </span><span class="n">ldh</span><span class="p">,</span><span class="w"> </span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="n">ritzv</span><span class="p">,</span><span class="w"> </span><span class="n">dim0</span><span class="p">,</span><span class="w"> </span><span class="n">dim1</span><span class="p">,</span><span class="w"> </span><span class="n">grid_major</span><span class="p">,</span><span class="w"> </span><span class="n">fcomm</span><span class="p">,</span><span class="w"> </span><span class="n">init</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The parameters are the same as <code class="docutils literal notranslate"><span class="pre">p&lt;x&gt;chase_init</span></code> described above.</p>
+</section>
+<section id="p-x-chase-init-pseudo-blockcyclic">
+<h4><span class="section-number">3.3.7.2. </span>p&lt;x&gt;chase_init_pseudo_blockcyclic<a class="headerlink" href="#p-x-chase-init-pseudo-blockcyclic" title="Link to this heading"></a></h4>
+<p><code class="docutils literal notranslate"><span class="pre">p&lt;x&gt;chase_init_pseudo_blockcyclic</span></code> initializes the context for
+distributed-memory ChASE with pseudo-Hermitian matrices using <strong>Block-Cyclic
+Distribution</strong>. Currently only complex types (<code class="docutils literal notranslate"><span class="pre">c</span></code> and <code class="docutils literal notranslate"><span class="pre">z</span></code>) are supported.</p>
+<p>The APIs for the C interfaces are as follows:</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">pcchase_init_pseudo_blockcyclic_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">nn</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">nev</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">nex</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">mbsize</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">nbsize</span><span class="p">,</span>
+<span class="w">                                       </span><span class="kt">float</span><span class="w"> </span><span class="kt">_Complex</span><span class="o">*</span><span class="w"> </span><span class="n">h</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">ldh</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="w"> </span><span class="kt">_Complex</span><span class="o">*</span><span class="w"> </span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">ritzv</span><span class="p">,</span>
+<span class="w">                                       </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">dim0</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">dim1</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">grid_major</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">irsrc</span><span class="p">,</span>
+<span class="w">                                       </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">icsrc</span><span class="p">,</span><span class="w"> </span><span class="n">MPI_Comm</span><span class="o">*</span><span class="w"> </span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">init</span><span class="p">)</span>
+<span class="kt">void</span><span class="w"> </span><span class="n">pzchase_init_pseudo_blockcyclic_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">nn</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">nev</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">nex</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">mbsize</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">nbsize</span><span class="p">,</span>
+<span class="w">                                       </span><span class="kt">double</span><span class="w"> </span><span class="kt">_Complex</span><span class="o">*</span><span class="w"> </span><span class="n">h</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">ldh</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="kt">_Complex</span><span class="o">*</span><span class="w"> </span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="o">*</span><span class="w"> </span><span class="n">ritzv</span><span class="p">,</span>
+<span class="w">                                       </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">dim0</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">dim1</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">grid_major</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">irsrc</span><span class="p">,</span>
+<span class="w">                                       </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">icsrc</span><span class="p">,</span><span class="w"> </span><span class="n">MPI_Comm</span><span class="o">*</span><span class="w"> </span><span class="n">comm</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">init</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The APIs for the Fortran interfaces are as follows:</p>
+<div class="highlight-Fortran notranslate"><div class="highlight"><pre><span></span><span class="k">subroutine  </span><span class="n">pcchase_init_pseudo_blockcyclic</span><span class="w"> </span><span class="p">(</span><span class="n">nn</span><span class="p">,</span><span class="w"> </span><span class="n">nev</span><span class="p">,</span><span class="w"> </span><span class="n">nex</span><span class="p">,</span><span class="w"> </span><span class="n">mbsize</span><span class="p">,</span><span class="w"> </span><span class="n">nbsize</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="p">,</span><span class="w"> </span><span class="n">ldh</span><span class="p">,</span><span class="w"> </span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="n">ritzv</span><span class="p">,</span><span class="w"> </span><span class="n">dim0</span><span class="p">,</span><span class="w"> </span><span class="n">dim1</span><span class="p">,</span><span class="w"> </span><span class="n">grid_major</span><span class="p">,</span><span class="w"> </span><span class="n">irsrc</span><span class="p">,</span><span class="w"> </span><span class="n">icsrc</span><span class="p">,</span><span class="w"> </span><span class="n">fcomm</span><span class="p">,</span><span class="w"> </span><span class="n">init</span><span class="p">)</span>
+<span class="k">subroutine  </span><span class="n">pzchase_init_pseudo_blockcyclic</span><span class="w"> </span><span class="p">(</span><span class="n">nn</span><span class="p">,</span><span class="w"> </span><span class="n">nev</span><span class="p">,</span><span class="w"> </span><span class="n">nex</span><span class="p">,</span><span class="w"> </span><span class="n">mbsize</span><span class="p">,</span><span class="w"> </span><span class="n">nbsize</span><span class="p">,</span><span class="w"> </span><span class="n">h</span><span class="p">,</span><span class="w"> </span><span class="n">ldh</span><span class="p">,</span><span class="w"> </span><span class="n">v</span><span class="p">,</span><span class="w"> </span><span class="n">ritzv</span><span class="p">,</span><span class="w"> </span><span class="n">dim0</span><span class="p">,</span><span class="w"> </span><span class="n">dim1</span><span class="p">,</span><span class="w"> </span><span class="n">grid_major</span><span class="p">,</span><span class="w"> </span><span class="n">irsrc</span><span class="p">,</span><span class="w"> </span><span class="n">icsrc</span><span class="p">,</span><span class="w"> </span><span class="n">fcomm</span><span class="p">,</span><span class="w"> </span><span class="n">init</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The parameters are the same as <code class="docutils literal notranslate"><span class="pre">p&lt;x&gt;chase_init_blockcyclic</span></code> described above.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For pseudo-Hermitian problems, use the regular <code class="docutils literal notranslate"><span class="pre">p&lt;x&gt;chase</span></code> function for solving
+and <code class="docutils literal notranslate"><span class="pre">p&lt;x&gt;chase_finalize</span></code> for cleanup. The solver automatically detects the
+matrix type based on the initialization function used.</p>
+</div>
+</section>
+</section>
+<section id="i-o-functions">
+<h3><span class="section-number">3.3.8. </span>I/O Functions<a class="headerlink" href="#i-o-functions" title="Link to this heading"></a></h3>
+<p>ChASE provides functions to read and write Hamiltonian matrices to/from files.
+These functions work for both regular and pseudo-Hermitian matrices, automatically
+detecting the matrix type based on the initialization function used.</p>
+</section>
+<section id="writing-hamiltonian-to-file">
+<h3><span class="section-number">3.3.9. </span>Writing Hamiltonian to File<a class="headerlink" href="#writing-hamiltonian-to-file" title="Link to this heading"></a></h3>
+<section id="p-x-chase-wrtham">
+<h4><span class="section-number">3.3.9.1. </span>p&lt;x&gt;chase_wrtHam<a class="headerlink" href="#p-x-chase-wrtham" title="Link to this heading"></a></h4>
+<p><code class="docutils literal notranslate"><span class="pre">p&lt;x&gt;chase_wrtHam</span></code> writes the distributed Hamiltonian matrix to a file. This
+function works for both regular and pseudo-Hermitian matrices.</p>
+<p>The APIs for the C interfaces are as follows:</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">pschase_wrtHam_</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">filename</span><span class="p">)</span>
+<span class="kt">void</span><span class="w"> </span><span class="n">pdchase_wrtHam_</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">filename</span><span class="p">)</span>
+<span class="kt">void</span><span class="w"> </span><span class="n">pcchase_wrtHam_</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">filename</span><span class="p">)</span>
+<span class="kt">void</span><span class="w"> </span><span class="n">pzchase_wrtHam_</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">filename</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The APIs for the Fortran interfaces are as follows:</p>
+<div class="highlight-Fortran notranslate"><div class="highlight"><pre><span></span><span class="k">subroutine  </span><span class="n">pschase_wrtHam</span><span class="w"> </span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+<span class="k">subroutine  </span><span class="n">pdchase_wrtHam</span><span class="w"> </span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+<span class="k">subroutine  </span><span class="n">pcchase_wrtHam</span><span class="w"> </span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+<span class="k">subroutine  </span><span class="n">pzchase_wrtHam</span><span class="w"> </span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+</pre></div>
+</div>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 8.3%" />
+<col style="width: 16.7%" />
+<col style="width: 75.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Param.</p></th>
+<th class="head"><p>In/Out</p></th>
+<th class="head"><p>Meaning</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">filename</span></code></p></td>
+<td><p>In</p></td>
+<td><p>name of the output file</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="reading-hamiltonian-from-file">
+<h3><span class="section-number">3.3.10. </span>Reading Hamiltonian from File<a class="headerlink" href="#reading-hamiltonian-from-file" title="Link to this heading"></a></h3>
+<section id="p-x-chase-readham">
+<h4><span class="section-number">3.3.10.1. </span>p&lt;x&gt;chase_readHam<a class="headerlink" href="#p-x-chase-readham" title="Link to this heading"></a></h4>
+<p><code class="docutils literal notranslate"><span class="pre">p&lt;x&gt;chase_readHam</span></code> reads a distributed Hamiltonian matrix from a file. This
+function works for both regular and pseudo-Hermitian matrices.</p>
+<p>The APIs for the C interfaces are as follows:</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">pschase_readHam_</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">filename</span><span class="p">)</span>
+<span class="kt">void</span><span class="w"> </span><span class="n">pdchase_readHam_</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">filename</span><span class="p">)</span>
+<span class="kt">void</span><span class="w"> </span><span class="n">pcchase_readHam_</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">filename</span><span class="p">)</span>
+<span class="kt">void</span><span class="w"> </span><span class="n">pzchase_readHam_</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">filename</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The APIs for the Fortran interfaces are as follows:</p>
+<div class="highlight-Fortran notranslate"><div class="highlight"><pre><span></span><span class="k">subroutine  </span><span class="n">pschase_readHam</span><span class="w"> </span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+<span class="k">subroutine  </span><span class="n">pdchase_readHam</span><span class="w"> </span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+<span class="k">subroutine  </span><span class="n">pcchase_readHam</span><span class="w"> </span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+<span class="k">subroutine  </span><span class="n">pzchase_readHam</span><span class="w"> </span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+</pre></div>
+</div>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 8.3%" />
+<col style="width: 16.7%" />
+<col style="width: 75.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Param.</p></th>
+<th class="head"><p>In/Out</p></th>
+<th class="head"><p>Meaning</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">filename</span></code></p></td>
+<td><p>In</p></td>
+<td><p>name of the input file</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="sequential-i-o-functions">
+<h3><span class="section-number">3.3.11. </span>Sequential I/O Functions<a class="headerlink" href="#sequential-i-o-functions" title="Link to this heading"></a></h3>
+<p>For sequential/single-GPU interfaces, convenience aliases are provided:</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">schase_readHam_</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">filename</span><span class="p">)</span>
+<span class="kt">void</span><span class="w"> </span><span class="n">dchase_readHam_</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">filename</span><span class="p">)</span>
+<span class="kt">void</span><span class="w"> </span><span class="n">cchase_readHam_</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">filename</span><span class="p">)</span>
+<span class="kt">void</span><span class="w"> </span><span class="n">zchase_readHam_</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">filename</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-Fortran notranslate"><div class="highlight"><pre><span></span><span class="k">subroutine  </span><span class="n">schase_readHam</span><span class="w"> </span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+<span class="k">subroutine  </span><span class="n">dchase_readHam</span><span class="w"> </span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+<span class="k">subroutine  </span><span class="n">cchase_readHam</span><span class="w"> </span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+<span class="k">subroutine  </span><span class="n">zchase_readHam</span><span class="w"> </span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="unified-configuration-setter-functions">
+<h3><span class="section-number">3.3.12. </span>Unified Configuration Setter Functions<a class="headerlink" href="#unified-configuration-setter-functions" title="Link to this heading"></a></h3>
+<p>ChASE provides unified configuration setter functions that work regardless of
+matrix type (Hermitian or pseudo-Hermitian), precision, architecture (sequential
+or distributed), or distribution scheme (block or block-cyclic). These functions
+automatically detect the active solver instance.</p>
+<p>All configuration setters use the following C interface pattern:</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">chase_set_</span><span class="o">&lt;</span><span class="n">parameter</span><span class="o">&gt;</span><span class="n">_</span><span class="p">(</span><span class="o">&lt;</span><span class="n">type</span><span class="o">&gt;*</span><span class="w"> </span><span class="n">value</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>And the Fortran interface pattern:</p>
+<div class="highlight-Fortran notranslate"><div class="highlight"><pre><span></span><span class="k">subroutine  </span><span class="n">chase_set_</span><span class="o">&lt;</span><span class="k">parameter</span><span class="o">&gt;</span><span class="w"> </span><span class="p">(</span><span class="k">value</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="available-configuration-setters">
+<h3><span class="section-number">3.3.13. </span>Available Configuration Setters<a class="headerlink" href="#available-configuration-setters" title="Link to this heading"></a></h3>
+<section id="chase-set-tol">
+<h4><span class="section-number">3.3.13.1. </span>chase_set_tol<a class="headerlink" href="#chase-set-tol" title="Link to this heading"></a></h4>
+<p>Set the tolerance threshold for eigenpair residuals.</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">chase_set_tol_</span><span class="p">(</span><span class="kt">double</span><span class="o">*</span><span class="w"> </span><span class="n">tol</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-Fortran notranslate"><div class="highlight"><pre><span></span><span class="k">subroutine  </span><span class="n">chase_set_tol</span><span class="w"> </span><span class="p">(</span><span class="n">tol</span><span class="p">)</span>
+</pre></div>
+</div>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 8.3%" />
+<col style="width: 16.7%" />
+<col style="width: 75.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Param.</p></th>
+<th class="head"><p>In/Out</p></th>
+<th class="head"><p>Meaning</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">tol</span></code></p></td>
+<td><p>In</p></td>
+<td><p>desired absolute tolerance of computed eigenpairs</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="chase-set-deg">
+<h4><span class="section-number">3.3.13.2. </span>chase_set_deg<a class="headerlink" href="#chase-set-deg" title="Link to this heading"></a></h4>
+<p>Set the initial degree of the Chebyshev polynomial filter.</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">chase_set_deg_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">deg</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-Fortran notranslate"><div class="highlight"><pre><span></span><span class="k">subroutine  </span><span class="n">chase_set_deg</span><span class="w"> </span><span class="p">(</span><span class="n">deg</span><span class="p">)</span>
+</pre></div>
+</div>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 8.3%" />
+<col style="width: 16.7%" />
+<col style="width: 75.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Param.</p></th>
+<th class="head"><p>In/Out</p></th>
+<th class="head"><p>Meaning</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">deg</span></code></p></td>
+<td><p>In</p></td>
+<td><p>initial degree of Chebyshev polynomial filter</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="chase-set-max-deg">
+<h4><span class="section-number">3.3.13.3. </span>chase_set_max_deg<a class="headerlink" href="#chase-set-max-deg" title="Link to this heading"></a></h4>
+<p>Set the maximum degree of the Chebyshev polynomial filter.</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">chase_set_max_deg_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">max_deg</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-Fortran notranslate"><div class="highlight"><pre><span></span><span class="k">subroutine  </span><span class="n">chase_set_max_deg</span><span class="w"> </span><span class="p">(</span><span class="n">max_deg</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="chase-set-deg-extra">
+<h4><span class="section-number">3.3.13.4. </span>chase_set_deg_extra<a class="headerlink" href="#chase-set-deg-extra" title="Link to this heading"></a></h4>
+<p>Set the extra degree added to the polynomial filter.</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">chase_set_deg_extra_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">deg_extra</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-Fortran notranslate"><div class="highlight"><pre><span></span><span class="k">subroutine  </span><span class="n">chase_set_deg_extra</span><span class="w"> </span><span class="p">(</span><span class="n">deg_extra</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="chase-set-max-iter">
+<h4><span class="section-number">3.3.13.5. </span>chase_set_max_iter<a class="headerlink" href="#chase-set-max-iter" title="Link to this heading"></a></h4>
+<p>Set the maximum number of subspace iterations.</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">chase_set_max_iter_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">max_iter</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-Fortran notranslate"><div class="highlight"><pre><span></span><span class="k">subroutine  </span><span class="n">chase_set_max_iter</span><span class="w"> </span><span class="p">(</span><span class="n">max_iter</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="chase-set-lanczos-iter">
+<h4><span class="section-number">3.3.13.6. </span>chase_set_lanczos_iter<a class="headerlink" href="#chase-set-lanczos-iter" title="Link to this heading"></a></h4>
+<p>Set the number of Lanczos iterations for spectral estimates.</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">chase_set_lanczos_iter_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">lanczos_iter</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-Fortran notranslate"><div class="highlight"><pre><span></span><span class="k">subroutine  </span><span class="n">chase_set_lanczos_iter</span><span class="w"> </span><span class="p">(</span><span class="n">lanczos_iter</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="chase-set-num-lanczos">
+<h4><span class="section-number">3.3.13.7. </span>chase_set_num_lanczos<a class="headerlink" href="#chase-set-num-lanczos" title="Link to this heading"></a></h4>
+<p>Set the number of stochastic vectors for spectral estimates.</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">chase_set_num_lanczos_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">num_lanczos</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-Fortran notranslate"><div class="highlight"><pre><span></span><span class="k">subroutine  </span><span class="n">chase_set_num_lanczos</span><span class="w"> </span><span class="p">(</span><span class="n">num_lanczos</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="chase-set-approx">
+<h4><span class="section-number">3.3.13.8. </span>chase_set_approx<a class="headerlink" href="#chase-set-approx" title="Link to this heading"></a></h4>
+<p>Set the approximate mode flag.</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">chase_set_approx_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">flag</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-Fortran notranslate"><div class="highlight"><pre><span></span><span class="k">subroutine  </span><span class="n">chase_set_approx</span><span class="w"> </span><span class="p">(</span><span class="n">flag</span><span class="p">)</span>
+</pre></div>
+</div>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 8.3%" />
+<col style="width: 16.7%" />
+<col style="width: 75.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Param.</p></th>
+<th class="head"><p>In/Out</p></th>
+<th class="head"><p>Meaning</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">flag</span></code></p></td>
+<td><p>In</p></td>
+<td><p>1 to enable approximate mode, 0 to disable</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="chase-set-opt">
+<h4><span class="section-number">3.3.13.9. </span>chase_set_opt<a class="headerlink" href="#chase-set-opt" title="Link to this heading"></a></h4>
+<p>Set the optimization flag for Chebyshev polynomial degree.</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">chase_set_opt_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">flag</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-Fortran notranslate"><div class="highlight"><pre><span></span><span class="k">subroutine  </span><span class="n">chase_set_opt</span><span class="w"> </span><span class="p">(</span><span class="n">flag</span><span class="p">)</span>
+</pre></div>
+</div>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 8.3%" />
+<col style="width: 16.7%" />
+<col style="width: 75.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Param.</p></th>
+<th class="head"><p>In/Out</p></th>
+<th class="head"><p>Meaning</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">flag</span></code></p></td>
+<td><p>In</p></td>
+<td><p>1 to enable optimization, 0 to disable</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="chase-set-cholqr">
+<h4><span class="section-number">3.3.13.10. </span>chase_set_cholqr<a class="headerlink" href="#chase-set-cholqr" title="Link to this heading"></a></h4>
+<p>Set the CholQR flag (flexible CholeskyQR vs Householder QR).</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">chase_set_cholqr_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">flag</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-Fortran notranslate"><div class="highlight"><pre><span></span><span class="k">subroutine  </span><span class="n">chase_set_cholqr</span><span class="w"> </span><span class="p">(</span><span class="n">flag</span><span class="p">)</span>
+</pre></div>
+</div>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 8.3%" />
+<col style="width: 16.7%" />
+<col style="width: 75.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Param.</p></th>
+<th class="head"><p>In/Out</p></th>
+<th class="head"><p>Meaning</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">flag</span></code></p></td>
+<td><p>In</p></td>
+<td><p>1 to use flexible CholQR, 0 to use Householder QR</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="chase-enable-sym-check">
+<h4><span class="section-number">3.3.13.11. </span>chase_enable_sym_check<a class="headerlink" href="#chase-enable-sym-check" title="Link to this heading"></a></h4>
+<p>Enable or disable symmetry checking.</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">chase_enable_sym_check_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">flag</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-Fortran notranslate"><div class="highlight"><pre><span></span><span class="k">subroutine  </span><span class="n">chase_enable_sym_check</span><span class="w"> </span><span class="p">(</span><span class="n">flag</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="chase-set-decaying-rate">
+<h4><span class="section-number">3.3.13.12. </span>chase_set_decaying_rate<a class="headerlink" href="#chase-set-decaying-rate" title="Link to this heading"></a></h4>
+<p>Set the decaying rate for the polynomial lower bound.</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">chase_set_decaying_rate_</span><span class="p">(</span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">decaying_rate</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-Fortran notranslate"><div class="highlight"><pre><span></span><span class="k">subroutine  </span><span class="n">chase_set_decaying_rate</span><span class="w"> </span><span class="p">(</span><span class="n">decaying_rate</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="chase-set-cluster-aware-degrees">
+<h4><span class="section-number">3.3.13.13. </span>chase_set_cluster_aware_degrees<a class="headerlink" href="#chase-set-cluster-aware-degrees" title="Link to this heading"></a></h4>
+<p>Enable or disable cluster-aware degree optimization.</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">chase_set_cluster_aware_degrees_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">flag</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-Fortran notranslate"><div class="highlight"><pre><span></span><span class="k">subroutine  </span><span class="n">chase_set_cluster_aware_degrees</span><span class="w"> </span><span class="p">(</span><span class="n">flag</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="chase-set-upperb-scale-rate">
+<h4><span class="section-number">3.3.13.14. </span>chase_set_upperb_scale_rate<a class="headerlink" href="#chase-set-upperb-scale-rate" title="Link to this heading"></a></h4>
+<p>Set the scale rate for upper bound based on its sign.</p>
+<div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">chase_set_upperb_scale_rate_</span><span class="p">(</span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">upperb_scale_rate</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-Fortran notranslate"><div class="highlight"><pre><span></span><span class="k">subroutine  </span><span class="n">chase_set_upperb_scale_rate</span><span class="w"> </span><span class="p">(</span><span class="n">upperb_scale_rate</span><span class="p">)</span>
+</pre></div>
+</div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>In order to use C interfaces, it is necessary to link to <code class="docutils literal notranslate"><span class="pre">libchase_c.a</span></code>.
@@ -1290,12 +1822,12 @@ and <code class="docutils literal notranslate"><span class="pre">libchase_f.a</s
 </section>
 </section>
 <section id="examples">
-<h3><span class="section-number">3.3.5. </span>Examples<a class="headerlink" href="#examples" title="Link to this heading"></a></h3>
+<h3><span class="section-number">3.3.14. </span>Examples<a class="headerlink" href="#examples" title="Link to this heading"></a></h3>
 <p>Complete examples for both C and Fortran interfaces with both shared-memory
 and distributed-memory architectures are provided in
 <a class="reference external" href="https://github.com/ChASE-library/ChASE/tree/master/examples/4_interface">./examples/4_interface</a>.</p>
 <section id="example-of-c-interface">
-<h4><span class="section-number">3.3.5.1. </span>Example of C interface<a class="headerlink" href="#example-of-c-interface" title="Link to this heading"></a></h4>
+<h4><span class="section-number">3.3.14.1. </span>Example of C interface<a class="headerlink" href="#example-of-c-interface" title="Link to this heading"></a></h4>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;mpi.h&gt;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;chase_c.h&quot;</span><span class="c1">  // Include ChASE C interface header</span>
 
@@ -1334,6 +1866,7 @@ and distributed-memory architectures are provided in
 <span class="w">    </span><span class="kt">double</span><span class="w"> </span><span class="n">tol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1e-10</span><span class="p">;</span>
 <span class="w">    </span><span class="kt">char</span><span class="w"> </span><span class="n">mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="sc">&#39;R&#39;</span><span class="p">;</span>
 <span class="w">    </span><span class="kt">char</span><span class="w"> </span><span class="n">opt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="sc">&#39;S&#39;</span><span class="p">;</span>
+<span class="w">    </span><span class="kt">char</span><span class="w"> </span><span class="n">qr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="sc">&#39;H&#39;</span><span class="p">;</span><span class="w">  </span><span class="c1">// &#39;H&#39; for Householder QR, &#39;C&#39; for CholeskyQR</span>
 
 <span class="w">    </span><span class="c1">// Initialize ChASE</span>
 <span class="w">    </span><span class="n">pzchase_init_</span><span class="p">(</span><span class="o">&amp;</span><span class="n">N</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">nev</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">nex</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">m</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">H</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">m</span><span class="p">,</span><span class="w"> </span><span class="n">V</span><span class="p">,</span><span class="w"> </span><span class="n">Lambda</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">dims</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="w"> </span><span class="o">&amp;</span><span class="n">dims</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
@@ -1344,7 +1877,7 @@ and distributed-memory architectures are provided in
 <span class="cm">    */</span>
 
 <span class="w">    </span><span class="c1">// solve 1st eigenproblem with defined configuration of parameters</span>
-<span class="w">    </span><span class="n">pzchase_</span><span class="p">(</span><span class="o">&amp;</span><span class="n">deg</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">tol</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">mode</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">opt</span><span class="p">);</span>
+<span class="w">    </span><span class="n">pzchase_</span><span class="p">(</span><span class="o">&amp;</span><span class="n">deg</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">tol</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">mode</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">opt</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">qr</span><span class="p">);</span>
 
 <span class="w">    </span><span class="cm">/*</span>
 <span class="cm">        form a new eigenproblem by updating the buffer H</span>
@@ -1354,7 +1887,7 @@ and distributed-memory architectures are provided in
 <span class="w">    </span><span class="n">mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="sc">&#39;A&#39;</span><span class="p">;</span>
 
 <span class="w">    </span><span class="c1">// solve 2nd eigenproblem with updated parameters</span>
-<span class="w">    </span><span class="n">pzchase_</span><span class="p">(</span><span class="o">&amp;</span><span class="n">deg</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">tol</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">mode</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">opt</span><span class="p">);</span>
+<span class="w">    </span><span class="n">pzchase_</span><span class="p">(</span><span class="o">&amp;</span><span class="n">deg</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">tol</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">mode</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">opt</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">qr</span><span class="p">);</span>
 
 <span class="w">    </span><span class="c1">// finalize and clean up</span>
 <span class="w">    </span><span class="n">pzchase_finalize_</span><span class="p">(</span><span class="o">&amp;</span><span class="n">init</span><span class="p">);</span>
@@ -1366,7 +1899,7 @@ and distributed-memory architectures are provided in
 </div>
 </section>
 <section id="example-of-fortran-interface">
-<h4><span class="section-number">3.3.5.2. </span>Example of Fortran interface<a class="headerlink" href="#example-of-fortran-interface" title="Link to this heading"></a></h4>
+<h4><span class="section-number">3.3.14.2. </span>Example of Fortran interface<a class="headerlink" href="#example-of-fortran-interface" title="Link to this heading"></a></h4>
 <div class="highlight-Fortran notranslate"><div class="highlight"><pre><span></span><span class="k">PROGRAM </span><span class="n">main</span>
 <span class="k">use </span><span class="n">mpi</span>
 <span class="k">use </span><span class="n">chase_diag</span><span class="w"> </span><span class="c">! use chase fortran interface module</span>
@@ -1393,6 +1926,7 @@ and distributed-memory architectures are provided in
 <span class="n">tol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1e-10</span>
 <span class="n">mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;R&#39;</span>
 <span class="n">opt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;S&#39;</span>
+<span class="n">qr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;H&#39;</span><span class="w">  </span><span class="c">! &#39;H&#39; for Householder QR, &#39;C&#39; for CholeskyQR</span>
 <span class="n">major</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;C&#39;</span>
 
 <span class="n">dims</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="c">! row number of 2D MPI grid</span>
@@ -1413,7 +1947,7 @@ and distributed-memory architectures are provided in
 <span class="c">!</span>
 
 <span class="c">! solve 1st eigenproblem with defined configuration of parameters</span>
-<span class="k">call </span><span class="n">pzchase</span><span class="p">(</span><span class="n">deg</span><span class="p">,</span><span class="w"> </span><span class="n">tol</span><span class="p">,</span><span class="w"> </span><span class="n">mode</span><span class="p">,</span><span class="w"> </span><span class="n">opt</span><span class="p">)</span>
+<span class="k">call </span><span class="n">pzchase</span><span class="p">(</span><span class="n">deg</span><span class="p">,</span><span class="w"> </span><span class="n">tol</span><span class="p">,</span><span class="w"> </span><span class="n">mode</span><span class="p">,</span><span class="w"> </span><span class="n">opt</span><span class="p">,</span><span class="w"> </span><span class="n">qr</span><span class="p">)</span>
 
 <span class="c">!</span>
 <span class="c">!      form a new eigenproblem by updating the buffer H</span>
@@ -1422,7 +1956,7 @@ and distributed-memory architectures are provided in
 <span class="n">mode</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;A&#39;</span>
 
 <span class="c">! solve 2nd eigenproblem with updated parameters</span>
-<span class="k">call </span><span class="n">pzchase</span><span class="p">(</span><span class="n">deg</span><span class="p">,</span><span class="w"> </span><span class="n">tol</span><span class="p">,</span><span class="w"> </span><span class="n">mode</span><span class="p">,</span><span class="w"> </span><span class="n">opt</span><span class="p">)</span>
+<span class="k">call </span><span class="n">pzchase</span><span class="p">(</span><span class="n">deg</span><span class="p">,</span><span class="w"> </span><span class="n">tol</span><span class="p">,</span><span class="w"> </span><span class="n">mode</span><span class="p">,</span><span class="w"> </span><span class="n">opt</span><span class="p">,</span><span class="w"> </span><span class="n">qr</span><span class="p">)</span>
 
 <span class="c">! finalize and clean up</span>
 <span class="k">call </span><span class="n">pzchase_finalize</span><span class="p">(</span><span class="n">init</span><span class="p">)</span>

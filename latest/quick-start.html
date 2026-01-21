@@ -20,7 +20,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="2. Installation and Setup on a Cluster" href="installation.html" />
-    <link rel="prev" title="References and Contributors" href="reference.html" />
+    <link rel="prev" title="Contributing to ChASE" href="contribution.html" />
      
     <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link href="_static/theme_overrides.css" rel="stylesheet" type="text/css">
@@ -54,6 +54,32 @@
   </label>
   <select id="version-select" onchange="switchVersion(this.value)" style="width: 100%; padding: 5px; border: 1px solid #2980B9; border-radius: 3px; background: white; color: #333; font-size: 13px;"><option value="/ChASE/latest/">
       latest
+    </option><option value="/ChASE/v1.0.0/">
+      v1.0.0
+    </option><option value="/ChASE/v1.1.0/">
+      v1.1.0
+    </option><option value="/ChASE/v1.1.1/">
+      v1.1.1
+    </option><option value="/ChASE/v1.1.2/">
+      v1.1.2
+    </option><option value="/ChASE/v1.2.0/">
+      v1.2.0
+    </option><option value="/ChASE/v1.2.1/">
+      v1.2.1
+    </option><option value="/ChASE/v1.3.0/"selected>
+      v1.3.0
+    </option><option value="/ChASE/v1.3.1/">
+      v1.3.1
+    </option><option value="/ChASE/v1.4.0/">
+      v1.4.0
+    </option><option value="/ChASE/v1.4.1/">
+      v1.4.1
+    </option><option value="/ChASE/v1.5.0/">
+      v1.5.0
+    </option><option value="/ChASE/v1.6.0/">
+      v1.6.0
+    </option><option value="/ChASE/v1.7.0-rc1/">
+      v1.7.0-rc1
     </option></select>
 </div><script>
 function switchVersion(url) {
@@ -161,6 +187,7 @@ function switchVersion(url) {
 <li class="toctree-l1"><a class="reference internal" href="version.html">Versions of the library</a></li>
 <li class="toctree-l1"><a class="reference internal" href="license.html">Licenses and Copyright</a></li>
 <li class="toctree-l1"><a class="reference internal" href="reference.html">References and Contributors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contribution.html">Contributing to ChASE</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">USER DOCUMENTATION</span></p>
 <ul class="current">
@@ -463,16 +490,16 @@ The examples are built in the <code class="docutils literal notranslate"><span c
 the hello world example can be executed as follows:</p>
 <dl>
 <dt><strong>Sequential execution (ChASECPU):</strong></dt><dd><p>If you built without MPI, the example will run sequentially:</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="p">.</span><span class="o">/</span><span class="n">examples</span><span class="o">/</span><span class="mi">0</span><span class="n">_hello_world</span><span class="o">/</span><span class="mi">0</span><span class="n">_hello_world</span>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="p">.</span><span class="o">/</span><span class="n">examples</span><span class="o">/</span><span class="mi">1</span><span class="n">_hello_world</span><span class="o">/</span><span class="mi">1</span><span class="n">_hello_world</span>
 </pre></div>
 </div>
 </dd>
 <dt><strong>Parallel execution (pChASECPU or pChASEGPU):</strong></dt><dd><p>If you built with MPI, you need to launch the example with an MPI launcher:</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">mpirun</span><span class="w"> </span><span class="o">-</span><span class="n">np</span><span class="w"> </span><span class="mi">4</span><span class="w"> </span><span class="p">.</span><span class="o">/</span><span class="n">examples</span><span class="o">/</span><span class="mi">0</span><span class="n">_hello_world</span><span class="o">/</span><span class="mi">0</span><span class="n">_hello_world</span>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">mpirun</span><span class="w"> </span><span class="o">-</span><span class="n">np</span><span class="w"> </span><span class="mi">4</span><span class="w"> </span><span class="p">.</span><span class="o">/</span><span class="n">examples</span><span class="o">/</span><span class="mi">1</span><span class="n">_hello_world</span><span class="o">/</span><span class="mi">1</span><span class="n">_hello_world</span>
 </pre></div>
 </div>
 <p>or using SLURM:</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">srun</span><span class="w"> </span><span class="o">-</span><span class="n">n</span><span class="w"> </span><span class="mi">4</span><span class="w"> </span><span class="p">.</span><span class="o">/</span><span class="n">examples</span><span class="o">/</span><span class="mi">0</span><span class="n">_hello_world</span><span class="o">/</span><span class="mi">0</span><span class="n">_hello_world</span>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">srun</span><span class="w"> </span><span class="o">-</span><span class="n">n</span><span class="w"> </span><span class="mi">4</span><span class="w"> </span><span class="p">.</span><span class="o">/</span><span class="n">examples</span><span class="o">/</span><span class="mi">1</span><span class="n">_hello_world</span><span class="o">/</span><span class="mi">1</span><span class="n">_hello_world</span>
 </pre></div>
 </div>
 </dd>
@@ -529,7 +556,7 @@ to set up all the parameters of eigensolvers. For the suggestion of selecting va
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="reference.html" class="btn btn-neutral float-left" title="References and Contributors" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="contribution.html" class="btn btn-neutral float-left" title="Contributing to ChASE" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="installation.html" class="btn btn-neutral float-right" title="2. Installation and Setup on a Cluster" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
