@@ -81,6 +81,9 @@ Use Case and Features
    * **Real and Complex:** ChASE is templated for real and complex numbers. So it can
      be used to solve *real symmetric* eigenproblems as well as *complex
      Hermitian* ones.
+   * **Hermitian and Pseudo-Hermitian:** ChASE supports solving *Hermitian* and
+     *pseudo-Hermitian* eigenproblems, including those arising from Bethe-Salpeter
+     Equation (BSE) formulations.
    * **Eigespectrum:** ChASE algorithm is designed to solve for the
      *extremal portion* of the eigenspectrum (i.e., :math:`\{\lambda_1,
      \dots ,\lambda_\textsf{nev}\}`). By default it computes the

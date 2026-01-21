@@ -20,12 +20,13 @@ if [ "$BRANCH_NAME" = "master" ]; then
     VERSION_TAG="latest"
     OUTPUT_DIR="latest"
 else
-    if [[ "$BRANCH_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+    # Match both regular versions (v1.7.0) and release candidates (v1.7.0-rc1)
+    if [[ "$BRANCH_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-rc[0-9]+)?$ ]]; then
         DOC_VERSION="$BRANCH_NAME"
         VERSION_TAG="$BRANCH_NAME"
         OUTPUT_DIR="$BRANCH_NAME"
     else
-        echo "Warning: Branch '$BRANCH_NAME' doesn't match version pattern"
+        echo "Warning: Branch '$BRANCH_NAME' doesn't match version pattern (v*.*.* or v*.*.*-rc*)"
         echo "Deploying as 'latest'"
         DOC_VERSION="latest"
         VERSION_TAG="latest"

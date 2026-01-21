@@ -272,16 +272,16 @@ the hello world example can be executed as follows:
 **Sequential execution (ChASECPU):**
    If you built without MPI, the example will run sequentially::
 
-    ./examples/0_hello_world/0_hello_world
+    ./examples/1_hello_world/1_hello_world
 
 **Parallel execution (pChASECPU or pChASEGPU):**
    If you built with MPI, you need to launch the example with an MPI launcher::
 
-    mpirun -np 4 ./examples/0_hello_world/0_hello_world
+    mpirun -np 4 ./examples/1_hello_world/1_hello_world
 
    or using SLURM::
 
-    srun -n 4 ./examples/0_hello_world/0_hello_world
+    srun -n 4 ./examples/1_hello_world/1_hello_world
 
 In this example, a Clement matrix is generated and default values of
 parameters are used.

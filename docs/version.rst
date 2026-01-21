@@ -6,7 +6,10 @@ ChASE is a modern C++ library for solving dense eigenvalue problems. The library
 provides multiple implementation variants to support different computing
 architectures and problem types. ChASE can be installed with minimal dependencies
 (BLAS, LAPACK) for sequential execution, or with MPI/ScaLAPACK for parallel
-execution on distributed systems.
+execution on distributed systems. The library also supports NVIDIA GPU
+acceleration with CUDA, cuBLAS, and cuSOLVER, and distributed GPU execution
+using NCCL (NVIDIA Collective Communications Library) for optimized multi-GPU
+communication.
 
 Implementation Variants
 =======================
@@ -21,12 +24,12 @@ Sequential Implementations
      for single-node execution. This is the simplest configuration, suitable
      for single CPU systems or shared-memory multi-core systems. It uses BLAS
      and LAPACK for all numerical operations and supports both Hermitian and
-     pseudo-Hermitian (Quasi-Hermitian) matrices.
+     pseudo-Hermitian matrices.
 
    * **ChASEGPU** (``chase::Impl::ChASEGPU``): Sequential GPU implementation
-     for single-node execution with GPU acceleration. This configuration
+     for single-GPU execution with GPU acceleration. This configuration
      offloads computations to GPU using CUDA, cuBLAS, and cuSOLVER libraries.
-     Ideal for systems with one or more GPU cards, supporting both Hermitian
+     Ideal for systems with one GPU cards, supporting both Hermitian
      and pseudo-Hermitian matrices.
 
 Parallel Implementations
@@ -34,8 +37,7 @@ Parallel Implementations
 
    * **pChASECPU** (``chase::Impl::pChASECPU``): Parallel CPU implementation
      using MPI for distributed-memory systems. This configuration is best
-     suited for multi-node CPU clusters. It uses ScaLAPACK for distributed
-     linear algebra operations and supports multiple matrix distribution
+     suited for multi-node CPU clusters. It supports block and block-cyclic matrix distribution
      schemes (Block, Block-Cyclic). Typically used with one MPI rank per NUMA
      domain and OpenMP threads for intra-node parallelism.
 
@@ -67,10 +69,10 @@ Hermitian (Symmetric) Matrices
    * **Rayleigh-Ritz**: Standard projection (NORMAL-RAYLEIGH-RITZ)
    * **Orthonormalization**: Standard QR factorization
 
-Pseudo-Hermitian (Quasi-Hermitian) Matrices
+Pseudo-Hermitian Matrices
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-   * **Matrix Type**: ``chase::matrix::QuasiHermitianMatrix<T>`` (CPU) or ``chase::matrix::QuasiHermitianMatrix<T, chase::platform::GPU>`` (GPU)
+   * **Matrix Type**: ``chase::matrix::PseudoHermitianMatrix<T>`` (CPU) or ``chase::matrix::PseudoHermitianMatrix<T, chase::platform::GPU>`` (GPU)
    * **Problem Form**: BSE Hamiltonian :math:`H` satisfying :math:`SH = H^*S`
    * **Rayleigh-Ritz**: Oblique projection with S-metric (OBLIQUE-RAYLEIGH-RITZ)
    * **Orthonormalization**: S-orthonormal QR factorization
@@ -93,11 +95,11 @@ Hermitian (Symmetric) Matrices
    * **Orthonormalization**: Standard QR factorization
    * **Platform**: Can be ``chase::platform::CPU`` or ``chase::platform::GPU``
 
-Pseudo-Hermitian (Quasi-Hermitian) Matrices
+Pseudo-Hermitian Matrices
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-   * **Block Distribution**: ``chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, Platform>``
-   * **Block-Cyclic Distribution**: ``chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T, Platform>``
+   * **Block Distribution**: ``chase::distMatrix::PseudoHermitianBlockBlockMatrix<T, Platform>``
+   * **Block-Cyclic Distribution**: ``chase::distMatrix::PseudoHermitianBlockCyclicMatrix<T, Platform>``
    * **Problem Form**: BSE Hamiltonian :math:`H` satisfying :math:`SH = H^*S`
    * **Rayleigh-Ritz**: Oblique projection with S-metric (OBLIQUE-RAYLEIGH-RITZ)
    * **Orthonormalization**: S-orthonormal QR factorization

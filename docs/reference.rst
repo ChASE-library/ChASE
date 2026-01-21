@@ -23,7 +23,10 @@ GPU backends...), and established clearer namespace hierarchies.
 These improvements have led to the current well-structured codebase that
 supports multiple implementation variants (ChASECPU, ChASEGPU, pChASECPU,
 pChASEGPU) with a unified interface while maintaining high performance and
-extensibility.
+extensibility. Following this refactoring, latest research efforts have
+extended ChASE to support pseudo-Hermitian eigenvalue problems, which has
+significantly broadened the library's applicability to new domains, such as
+the Bethe-Salpeter Equation (BSE) in computational materials science.
 
 Main developers
 ================
@@ -96,4 +99,8 @@ and algorithm optimizations.
     Workshops of the International Conference on High Performance Computing, 
     Network, Storage, and Analysis (2023), pp. 1688-1696. 
     `DOI:10.1145/3624062.3624249 <https://doi.org/10.1145/3624062.3624249>`__ , 
-    [`arXiv:2309.15595 <https://arxiv.org/abs/2309.15595>`__ ] 
+    [`arXiv:2309.15595 <https://arxiv.org/abs/2309.15595>`__ ]
+
+  * [5] E. Di Napoli, C. Richefort, and X. Wu. *Chebyshev Accelerated Subspace 
+    Eigensolver for Pseudo-hermitian Hamiltonians.* arXiv preprint arXiv:2601.10557 
+    (2026). [`arXiv:2601.10557 <https://arxiv.org/abs/2601.10557>`__ ] 

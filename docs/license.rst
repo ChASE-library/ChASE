@@ -3,7 +3,7 @@ Licenses and Copyright
 ***********************
 *ChASE is licensed under the 3-clause BSD License (BSD License 2.0)*
 
-Copyright (c) 2015-2025, Simulation and Data Laboratory Quantum Materials,
+Copyright (c) 2015-2026, Simulation and Data Laboratory Quantum Materials,
 Forschungszentrum Juelich GmbH, Germany
 
 .. Copyright (c) 2016-2018, Aachen Institute for Advanced Study in
