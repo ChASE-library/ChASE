@@ -1,0 +1,733 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2. Installation and Setup on a Cluster &mdash; ChASE v1.3.0 documentation</title>
+      <link rel="stylesheet" href="theme_overrides.css" type="text/css" />
+
+  
+    <link rel="shortcut icon" href="_static/ChASE_Logo_Favicon_RGB.png"/>
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=e49d06fc"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="3. How to use ChASE" href="usage.html" />
+    <link rel="prev" title="1. Quick Start" href="quick-start.html" />
+     
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+    <link href="_static/theme_overrides.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+
+          
+          
+          <a href="index.html">
+            
+              <img src="_static/ChASE_Logo_RGB.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+  <div class="version-selector" style="margin: 10px 0; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 3px;">
+  <label for="version-select" style="display: block; color: #fcfcfc; font-size: 12px; margin-bottom: 5px; font-weight: bold;">
+    Version:
+  </label>
+  <select id="version-select" onchange="switchVersion(this.value)" style="width: 100%; padding: 5px; border: 1px solid #2980B9; border-radius: 3px; background: white; color: #333; font-size: 13px;"><option value="/ChASE/latest/">
+      latest
+    </option></select>
+</div><script>
+function switchVersion(url) {
+  // Get current path and determine base URL
+  const currentPath = window.location.pathname;
+  const pathParts = currentPath.split('/').filter(p => p);
+  
+  // Get known versions from the select options (dynamic, not hardcoded)
+  const selector = document.getElementById('version-select');
+  const knownVersions = [];
+  if (selector) {
+    for (let option of selector.options) {
+      const verName = option.text.trim();
+      knownVersions.push(verName);
+    }
+  }
+  
+  // Find the repository name in the path (e.g., "ChASE" in "/ChASE/latest/...")
+  // This handles project pages where URL is: username.github.io/repo-name/version/...
+  let repoName = '';
+  let versionIndex = -1;
+  
+  // Look for version in path (could be at index 1 or 2 depending on structure)
+  for (let i = 0; i < pathParts.length; i++) {
+    if (knownVersions.includes(pathParts[i])) {
+      versionIndex = i;
+      if (i > 0) {
+        repoName = pathParts[i - 1]; // Repository name is before version
+      }
+      break;
+    }
+  }
+  
+  // Get relative path (everything after version)
+  let relativePath = '';
+  if (versionIndex >= 0) {
+    // We're in a versioned path, get everything after version
+    relativePath = '/' + pathParts.slice(versionIndex + 1).join('/');
+  } else {
+    // We're in root or unversioned, get current path
+    relativePath = currentPath;
+  }
+  
+  // Construct new URL
+  // The URL from conf.py already includes the full path (e.g., "/ChASE/latest/")
+  // So we just need to append the relative path (page name)
+  const baseUrl = url.replace(/\/$/, ''); // Remove trailing slash
+  const cleanRelative = relativePath === '/' ? '' : relativePath.replace(/^\//, '');
+  
+  // If URL already includes the repo name, use it as-is
+  // Otherwise, we might need to add it (but conf.py should have it)
+  if (url.startsWith('http')) {
+    window.location.href = url + (cleanRelative ? '/' + cleanRelative : '');
+  } else {
+    window.location.href = baseUrl + (cleanRelative ? '/' + cleanRelative : '');
+  }
+}
+
+// Auto-detect current version from URL and update selector
+(function() {
+  const currentPath = window.location.pathname;
+  const pathParts = currentPath.split('/').filter(p => p);
+  
+  // Get known versions from select options
+  const selector = document.getElementById('version-select');
+  if (!selector) return;
+  
+  const knownVersions = [];
+  for (let option of selector.options) {
+    const verName = option.text.trim();
+    knownVersions.push(verName);
+  }
+  
+  // Look for version in path (could be at index 0, 1, or 2 depending on structure)
+  // For project pages: /repo-name/version/... (version at index 1)
+  // For user pages: /version/... (version at index 0)
+  for (let i = 0; i < pathParts.length; i++) {
+    if (knownVersions.includes(pathParts[i])) {
+      const currentVer = pathParts[i];
+      // Find option matching current version
+      for (let option of selector.options) {
+        if (option.text.trim() === currentVer) {
+          selector.value = option.value;
+          break;
+        }
+      }
+      break;
+    }
+  }
+})();
+</script>
+
+<style>
+.version-selector select:focus {
+  outline: 2px solid #2980B9;
+  outline-offset: 2px;
+}
+</style>
+
+
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">INTRODUCTION</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="chase.html">ChASE: an Iterative Solver for Dense Eigenproblems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="version.html">Versions of the library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">Licenses and Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="reference.html">References and Contributors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contribution.html">Contributing to ChASE</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">USER DOCUMENTATION</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="quick-start.html">1. Quick Start</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">2. Installation and Setup on a Cluster</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#library-dependencies">2.1. Library Dependencies</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#dependencies">2.1.1. Dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#loading-modules-on-cluster">2.1.2. Loading Modules on Cluster</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#installation">2.2. Installation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#installation-on-a-cpu-only-cluster">2.2.1. Installation on a CPU-only Cluster</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#installation-with-gpu-support">2.2.2. Installation with GPU Support</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#building-chase-with-examples">2.2.3. Building ChASE with Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#recommendation-on-the-usage-of-computing-resources">2.3. Recommendation on the usage of Computing Resources</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#chase-with-mpi-openmp">2.3.1. ChASE with MPI+OpenMP</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#allocating-ressources-and-running-jobs-slurm">2.3.1.1. Allocating Ressources and Running jobs (SLURM)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#memory-requirement">2.3.1.2. Memory Requirement</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#chase-with-multi-gpus">2.3.2. ChASE with multi-GPUs</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#id1">2.3.2.1. Allocating Ressources and Running jobs (SLURM)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#estimating-memory-requirement">2.3.2.2. Estimating Memory Requirement</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#cmake-configuration-options">2.4. CMake Configuration Options</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#chase-specific-options">2.4.1. ChASE-Specific Options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#standard-cmake-options">2.4.2. Standard CMake Options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#example-usage">2.4.3. Example Usage</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">3. How to use ChASE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parameters.html">4. Parameters and Configurations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="module.html">5. Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="example.html">6. Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API REFERENCE</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api/index.html">1. API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ChASE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><span class="section-number">2. </span>Installation and Setup on a Cluster</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/installation.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="installation-and-setup-on-a-cluster">
+<h1><span class="section-number">2. </span>Installation and Setup on a Cluster<a class="headerlink" href="#installation-and-setup-on-a-cluster" title="Link to this heading"></a></h1>
+<p>This section provides guidelines to install and setup the ChASE
+library on computing clusters.
+Each guideline is given as a step by step set of instructions to install ChASE on a
+cluster either with or w/o support for GPUs. After the setup of ChASE,
+users are provided with a description of how
+to link and integrate ChASE into their own codes.
+ChASE provides the interfaces to both <code class="docutils literal notranslate"><span class="pre">C</span></code> and <code class="docutils literal notranslate"><span class="pre">Fortran</span></code> ,
+thus such integration can be achieved either by using one of the
+interfaces provided by the library, or by following our instructions
+to implement the user’s own interface.</p>
+<section id="library-dependencies">
+<h2><span class="section-number">2.1. </span>Library Dependencies<a class="headerlink" href="#library-dependencies" title="Link to this heading"></a></h2>
+<p>This section gives a brief introduction to the ChASE library dependencies and
+on how to load the required libraries on a given supercomputer.</p>
+<section id="dependencies">
+<h3><span class="section-number">2.1.1. </span>Dependencies<a class="headerlink" href="#dependencies" title="Link to this heading"></a></h3>
+<p>In order to install the ChASE library on a general purpose computing cluster,
+one has to install or load the necessary dependencies.</p>
+<dl class="simple">
+<dt><strong>Required Dependencies:</strong></dt><dd><ul class="simple">
+<li><p>A <code class="docutils literal notranslate"><span class="pre">C++</span></code> compiler with C++17 support (e.g., GCC 7+, Clang 5+, or Intel C++ 17+)</p></li>
+<li><p><a class="reference external" href="http://www.cmake.org/">CMake</a> version 3.8 or higher</p></li>
+<li><p><a class="reference external" href="http://netlib.org/blas">BLAS</a> (Basic Linear Algebra Subprograms)</p></li>
+<li><p><a class="reference external" href="http://netlib.org/lapack">LAPACK</a> (Linear Algebra PACKage)</p></li>
+</ul>
+</dd>
+<dt><strong>Optional Dependencies:</strong></dt><dd><ul class="simple">
+<li><p><a class="reference external" href="http://en.wikipedia.org/wiki/Message_Passing_Interface">MPI</a> - Required only for parallel implementations (pChASECPU, pChASEGPU). Not needed for sequential builds (ChASECPU, ChASEGPU).</p></li>
+<li><p><a class="reference external" href="https://developer.nvidia.com/cuda-toolkit">CUDA</a> - Required only for GPU implementations (ChASEGPU, pChASEGPU)</p></li>
+<li><p><a class="reference external" href="http://www.netlib.org/scalapack/">ScaLAPACK</a> - Optional, for distributed Householder QR factorization</p></li>
+<li><p><a class="reference external" href="https://developer.nvidia.com/nccl">NCCL</a> - Optional, for optimized multi-GPU communication in pChASEGPU</p></li>
+</ul>
+</dd>
+</dl>
+<p>Note: For building examples with command-line parsing, the <a class="reference external" href="https://github.com/badaix/popl">popl</a> library is automatically downloaded by CMake using FetchContent. No manual installation is required.</p>
+</section>
+<section id="loading-modules-on-cluster">
+<h3><span class="section-number">2.1.2. </span>Loading Modules on Cluster<a class="headerlink" href="#loading-modules-on-cluster" title="Link to this heading"></a></h3>
+<p>CMake builds ChASE by automatically detecting the location of the
+installed dependencies. On most supercomputers it is sufficient to
+just load the corresponding modules, e.g. <code class="docutils literal notranslate"><span class="pre">module</span> <span class="pre">load</span>
+<span class="pre">&lt;modulename&gt;</span></code>. If you have loaded/installed multiple versions for the
+necessary compilers and libraries, then you have to provide CMake with
+specific paths so that it may choose the correct package. For more
+details, see <a class="reference internal" href="quick-start.html#build-label"><span class="std std-ref">Building and Installing the ChASE library</span></a>.</p>
+</section>
+</section>
+<section id="installation">
+<h2><span class="section-number">2.2. </span>Installation<a class="headerlink" href="#installation" title="Link to this heading"></a></h2>
+<p>This section has two main goals: First, it provides the instructions
+for the installation of ChASE on a given supercomputer
+with or w/o multi-GPUs supports. Second, it describes how the user can
+take advantage of a number of ready-to-use examples to build a
+simple driver and have a first try running ChASE on a cluster.</p>
+<section id="installation-on-a-cpu-only-cluster">
+<h3><span class="section-number">2.2.1. </span>Installation on a CPU-only Cluster<a class="headerlink" href="#installation-on-a-cpu-only-cluster" title="Link to this heading"></a></h3>
+<p>The following snippet shows how to install ChASE on the JUWELS cluster
+(the main general purpose cluster at the Jülich Supercomputing Centre):</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">git clone https://github.com/ChASE-library/ChASE.git</span>
+<span class="go">cd ChASE/</span>
+<span class="go">mkdir build</span>
+<span class="go">cd build/</span>
+<span class="gp">#</span><span class="c1">##       GCC      ###</span>
+<span class="go">ml GCC/8.3.0  ParaStationMPI/5.4.4-1 imkl CMake</span>
+<span class="go">cmake .. -DCMAKE_INSTALL_PREFIX=${ChASEROOT}</span>
+<span class="go">make install</span>
+<span class="gp">#</span><span class="c1">## Intel Compiler ###</span>
+<span class="go">ml intel-para CMake</span>
+<span class="go">cmake .. -DCMAKE_INSTALL_PREFIX=${ChASEROOT} -DCMAKE_C_COMPILER=icc -DCMAKE_CXX_COMPILER=icpc</span>
+<span class="go">make install</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For the installation with the <code class="docutils literal notranslate"><span class="pre">Intel</span> <span class="pre">Compiler</span></code>, two additional flags <code class="docutils literal notranslate"><span class="pre">-DCMAKE_C_FLAGS=-no-multibyte-chars</span></code> and <code class="docutils literal notranslate"><span class="pre">-DCMAKE_CXX_FLAGS=-no-multibyte-chars</span></code> might be required if
+the following error <code class="docutils literal notranslate"><span class="pre">Catastrophic</span> <span class="pre">error:</span> <span class="pre">could</span> <span class="pre">not</span> <span class="pre">set</span> <span class="pre">locale</span> <span class="pre">&quot;&quot;</span> <span class="pre">to</span>
+<span class="pre">allow</span> <span class="pre">processing</span> <span class="pre">of</span> <span class="pre">multibyte</span> <span class="pre">characters</span></code> are encountered, which are produced by an internal
+bug appearing in some versions of the Intel Compiler.</p>
+</div>
+</section>
+<section id="installation-with-gpu-support">
+<h3><span class="section-number">2.2.2. </span>Installation with GPU Support<a class="headerlink" href="#installation-with-gpu-support" title="Link to this heading"></a></h3>
+<p>In order to compile ChASE with GPU support one needs to have installed
+and loaded a CUDA compiler, which will also enable the use of
+<code class="docutils literal notranslate"><span class="pre">cuBLAS</span></code>, <code class="docutils literal notranslate"><span class="pre">cuSOLVER</span></code> and <code class="docutils literal notranslate"><span class="pre">cuRAND</span></code>. On the JUWELS cluster this can
+be achieved by loading the module CUDA in addition to the
+modules necessary to compile ChASE on a CPU-only cluster. Make sure, that
+ChASE is executed on a computer/node with at least one GPU device
+(e.g. check with <code class="docutils literal notranslate"><span class="pre">nvidia-smi</span></code>) and that the correct  CUDA
+compiler is loaded (e.g. check <code class="docutils literal notranslate"><span class="pre">which</span> <span class="pre">nvcc</span></code> or if you are using a module system
+look at <code class="docutils literal notranslate"><span class="pre">module</span> <span class="pre">list</span></code>). The following instruction snippet builds ChASE with CUDA
+support on JUWELS:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">git clone https://github.com/ChASE-library/ChASE.git</span>
+<span class="go">cd ChASE/</span>
+<span class="go">mkdir build</span>
+<span class="go">cd build/</span>
+<span class="go">ml GCC/8.3.0  ParaStationMPI/5.4.4-1 imkl CUDA CMake</span>
+<span class="go">cmake .. -DCMAKE_INSTALL_PREFIX=${ChASEROOT}</span>
+<span class="go">make install</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>It is also recommended to build ChASE with the configuration of CUDA compute compatibility through <code class="docutils literal notranslate"><span class="pre">CMAKE_CUDA_ARCHITECTURES</span></code>. If CUDA compute compatibility of your GPU is 8.6 (e.g. RTX 3090) you should build with <code class="docutils literal notranslate"><span class="pre">-DCMAKE_CUDA_ARCHITECTURES=86</span></code>. In the case you want to build code for more than one CUDA compute capability (e.g. 70, 75, 80 and 86) then build with <code class="docutils literal notranslate"><span class="pre">-DCMAKE_CUDA_ARCHITECTURES=&quot;70;75;80;86&quot;</span></code>.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">CMAKE_VERSION</span> <span class="pre">&lt;</span> <span class="pre">3.18</span></code> then CMake is not compliant with <em>CMAKE policy CMP0104</em> (introduced
+in CMake 3.18) which defines that the variable <code class="docutils literal notranslate"><span class="pre">CMAKE_CUDA_ARCHITECTURES</span></code> has to be initialized. In that case, the code generation flag has to be set manually.
+For simplicity and compatibility with newer (3.18+) CMake version, the <code class="docutils literal notranslate"><span class="pre">CMAKE_CUDA_ARCHITECTURES</span></code> variable has to be always set, not matter the cmake version.</p>
+</div>
+</section>
+<section id="building-chase-with-examples">
+<h3><span class="section-number">2.2.3. </span>Building ChASE with Examples<a class="headerlink" href="#building-chase-with-examples" title="Link to this heading"></a></h3>
+<p>To build and install ChASE with examples, the
+additional option to the cmake build process
+<code class="docutils literal notranslate"><span class="pre">-DCHASE_BUILD_WITH_EXAMPLES=ON</span></code> has to be turned on. The following
+instruction snippet builds ChASE with
+examples on the JUWELS cluster:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">git clone https://github.com/ChASE-library/ChASE.git</span>
+<span class="go">cd ChASE/</span>
+<span class="go">mkdir build</span>
+<span class="go">cd build/</span>
+<span class="go">ml intel-para CMake</span>
+<span class="gp">#</span><span class="c1">#### If you want to install ChASE with GPU supporting, make sure CUDA is loaded #####</span>
+<span class="go">ml load CUDA</span>
+<span class="go">cmake .. -DCMAKE_INSTALL_PREFIX=${ChASEROOT} -DCHASE_BUILD_WITH_EXAMPLES=ON</span>
+<span class="go">make install</span>
+<span class="gp">#</span><span class="c1">## Run example #0 ###</span>
+<span class="go">./examples/1_hello_world/1_hello_world</span>
+</pre></div>
+</div>
+<p>An MPI launcher has to be used to run an example in parallel. For
+instance on the JUWELS cluster (or any other <code class="docutils literal notranslate"><span class="pre">SLURM</span></code> based Cluster)
+the following command line runs the “<cite>hello world</cite>” example in parallel.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">srun -n 2 ./examples/1_hello_world/1_hello_world</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The output of intermediate convergence information and a simple performance report of
+different numerical kernels can be enabled when compiling ChASE with the flag <code class="docutils literal notranslate"><span class="pre">-DCHASE_OUTPUT=ON</span></code>.</p>
+</div>
+</section>
+</section>
+<section id="recommendation-on-the-usage-of-computing-resources">
+<h2><span class="section-number">2.3. </span>Recommendation on the usage of Computing Resources<a class="headerlink" href="#recommendation-on-the-usage-of-computing-resources" title="Link to this heading"></a></h2>
+<p>Attaining the best performance with the available computing resources
+requires to understand the inner working of the ChASE library. Since
+the standard user is not expected to have such an understanding, this section
+supplies a number of simple recommendations for the submission and
+execution of jobs involving ChASE on a given computing cluster.</p>
+<section id="chase-with-mpi-openmp">
+<h3><span class="section-number">2.3.1. </span>ChASE with MPI+OpenMP<a class="headerlink" href="#chase-with-mpi-openmp" title="Link to this heading"></a></h3>
+<p>Modern homogeneous supercomputers are often equipped with hundreds of thousands of nodes which
+are connected with fast networks. Each node is of NUMA (Non-uniform memory access) types, which
+composes several NUMA domains. Each NUMA domain has its local memory, and is able to access the
+local memory of another NUMA domain within the same node. Within a
+NUMA domain, a processor can access
+its own local memory faster than any other non-local memory.</p>
+<p>When running ChASE on modern homogeneous clusters in the <code class="docutils literal notranslate"><span class="pre">MPI/OpenMP</span></code> hybrid mode, this <cite>NUMA effect</cite>
+should be considered. In order to attain good performance, we recommend:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>Ensure each NUMA domain having at least 1 MPI task.</p></li>
+<li><p>Bind the CPUs to the relevant MPI tasks.</p></li>
+</ol>
+</div></blockquote>
+<section id="allocating-ressources-and-running-jobs-slurm">
+<h4><span class="section-number">2.3.1.1. </span>Allocating Ressources and Running jobs (SLURM)<a class="headerlink" href="#allocating-ressources-and-running-jobs-slurm" title="Link to this heading"></a></h4>
+<p>The optimal use of resources is usually achieved by carefully
+designing the script code which is used for the job submission. An
+example of a job script for a  <code class="docutils literal notranslate"><span class="pre">SLURM</span></code> scheduler is given below:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># This is an example on JUWELS, in which each node is composed of 2 NUMA sockets.</span>
+<span class="c1"># This example allocates 4 nodes, 8 MPI tasks, each socket has 1 task,</span>
+<span class="c1"># and 24 CPUs are bound to each MPI tasks.</span>
+<span class="c1">#!/bin/bash -x</span>
+<span class="c1">#SBATCH --nodes=4</span>
+<span class="c1">#SBATCH --ntasks=8</span>
+<span class="c1">#SBATCH --ntasks-per-socket=1</span>
+<span class="c1">#SBATCH --cpus-per-task=24</span>
+</pre></div>
+</div>
+</section>
+<section id="memory-requirement">
+<h4><span class="section-number">2.3.1.2. </span>Memory Requirement<a class="headerlink" href="#memory-requirement" title="Link to this heading"></a></h4>
+<p>An important aspect of executing ChASE on a parallel cluster is the
+memory footprint of the library. It is important to avoid that such
+memory footprint per MPI task exceeds the amount of main memory
+available to the compiled code. The memory requirements differ between
+<strong>Hermitian</strong> and <strong>Pseudo-Hermitian</strong> eigenvalue problems
+due to the additional storage needed for the dual basis and oblique Rayleigh-Ritz
+procedure in the pseudo-Hermitian case.</p>
+<p><strong>Hermitian Eigenvalue Problems</strong></p>
+<p>For <strong>Block distribution</strong> of matrix, the memory requirement per MPI rank is:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">sizeof</span><span class="p">(</span><span class="n">float_type</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="p">[</span><span class="n">n</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">m</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">block</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">5</span><span class="o">*</span><span class="n">block</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">2</span><span class="o">*</span><span class="n">pow</span><span class="p">(</span><span class="n">block</span><span class="p">,</span><span class="mi">2</span><span class="p">)]</span><span class="o">/</span><span class="p">(</span><span class="mi">1024</span><span class="o">^</span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="n">GigaByte</span>
+</pre></div>
+</div>
+<p>For <strong>Block-Cyclic distribution</strong> of matrix, additional memory of
+size <code class="docutils literal notranslate"><span class="pre">sizeof(float_type)</span> <span class="pre">*</span> <span class="pre">N</span></code> is required for managing the internal reshuffling
+for block-cyclic data layout. Thus the total memory required is:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">sizeof</span><span class="p">(</span><span class="n">float_type</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="p">[</span><span class="n">n</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">m</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">block</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">N</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">5</span><span class="o">*</span><span class="n">block</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">2</span><span class="o">*</span><span class="n">pow</span><span class="p">(</span><span class="n">block</span><span class="p">,</span><span class="mi">2</span><span class="p">)]</span><span class="o">/</span><span class="p">(</span><span class="mi">1024</span><span class="o">^</span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="n">GigaByte</span>
+</pre></div>
+</div>
+<p><strong>Pseudo-Hermitian Eigenvalue Problems</strong></p>
+<p>Pseudo-Hermitian problems (e.g., from Bethe-Salpeter Equation) require additional
+memory for the dual basis vectors and larger workspace matrices used in the
+oblique Rayleigh-Ritz procedure. For <strong>Block distribution</strong> of matrix, the
+memory requirement per MPI rank is:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">sizeof</span><span class="p">(</span><span class="n">float_type</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="p">[</span><span class="n">n</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">4</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">m</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">block</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">3</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">block</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">block</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">5</span><span class="o">*</span><span class="n">block</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">2</span><span class="o">*</span><span class="n">pow</span><span class="p">(</span><span class="n">block</span><span class="p">,</span><span class="mi">2</span><span class="p">)]</span><span class="o">/</span><span class="p">(</span><span class="mi">1024</span><span class="o">^</span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="n">GigaByte</span>
+</pre></div>
+</div>
+<p>For <strong>Block-Cyclic distribution</strong> of matrix, additional memory of
+size <code class="docutils literal notranslate"><span class="pre">sizeof(float_type)</span> <span class="pre">*</span> <span class="pre">N</span></code> is required for managing the internal reshuffling:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">sizeof</span><span class="p">(</span><span class="n">float_type</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="p">[</span><span class="n">n</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">4</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">m</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">block</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">3</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">block</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">block</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">N</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">5</span><span class="o">*</span><span class="n">block</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">2</span><span class="o">*</span><span class="n">pow</span><span class="p">(</span><span class="n">block</span><span class="p">,</span><span class="mi">2</span><span class="p">)]</span><span class="o">/</span><span class="p">(</span><span class="mi">1024</span><span class="o">^</span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="n">GigaByte</span>
+</pre></div>
+</div>
+<p><strong>Common Parameters</strong></p>
+<dl class="simple">
+<dt>In the formulas above:</dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">n</span></code> and <code class="docutils literal notranslate"><span class="pre">m</span></code> are fractions of <code class="docutils literal notranslate"><span class="pre">N</span></code> which depend on the size
+of the MPI grid of processors. For instance in the job script above
+<code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">=</span> <span class="pre">N/nrows</span></code> and <code class="docutils literal notranslate"><span class="pre">m</span> <span class="pre">=</span> <span class="pre">N/ncols</span></code>, with the size of MPI grid <code class="docutils literal notranslate"><span class="pre">nrows*ncols</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">N</span></code> is the size of the eigenproblem.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">block</span></code> is at most <code class="docutils literal notranslate"><span class="pre">nev</span> <span class="pre">+</span> <span class="pre">nex</span></code>, where <code class="docutils literal notranslate"><span class="pre">nev</span></code> is the number of wanted
+eigenpairs and <code class="docutils literal notranslate"><span class="pre">nex</span></code> is the extra search dimensions.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sizeof(float_type)</span></code> is valid for single precision real,
+double precision real, single precision complex and double precision complex floating numbers.
+The value of this factor for these four types of floating numbers are respectively:
+<code class="docutils literal notranslate"><span class="pre">4</span></code>, <code class="docutils literal notranslate"><span class="pre">8</span></code>, <code class="docutils literal notranslate"><span class="pre">8</span></code>, <code class="docutils literal notranslate"><span class="pre">16</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+<p><strong>Example</strong></p>
+<p>Using such formulas one can verify if the allocation of
+resources is enough to solve for the problem at hand. For instance, if we use <strong>Block distribution</strong>
+for a Hermitian problem with <code class="docutils literal notranslate"><span class="pre">N</span> <span class="pre">=</span> <span class="pre">360,000</span></code> and a <code class="docutils literal notranslate"><span class="pre">block</span> <span class="pre">=</span> <span class="pre">nev</span> <span class="pre">+</span> <span class="pre">nex</span> <span class="pre">=</span> <span class="pre">3,000</span></code> with <code class="docutils literal notranslate"><span class="pre">1152</span></code> MPI ranks in 2D MPI grid of size <code class="docutils literal notranslate"><span class="pre">32x36</span></code>,
+the required memory per MPI rank is <code class="docutils literal notranslate"><span class="pre">1.989</span> <span class="pre">GB</span></code>. For ChASE with <strong>Block-Cyclic Distribution</strong>: the memory requirement per MPI-rank
+is <code class="docutils literal notranslate"><span class="pre">1.992</span> <span class="pre">GB</span></code>, a little larger than the former case.</p>
+<p>For the same problem size but with a <strong>Pseudo-Hermitian</strong> matrix using <strong>Block distribution</strong>,
+the memory requirement per MPI rank is approximately <code class="docutils literal notranslate"><span class="pre">2.45</span> <span class="pre">GB</span></code>, reflecting the additional
+storage needed for the dual basis and oblique Rayleigh-Ritz workspace.</p>
+</section>
+</section>
+<section id="chase-with-multi-gpus">
+<h3><span class="section-number">2.3.2. </span>ChASE with multi-GPUs<a class="headerlink" href="#chase-with-multi-gpus" title="Link to this heading"></a></h3>
+<p>Currently, ChASE is able to offload almost all the intensive computations, e.g., Hermitian Matrix-Matrix
+Multiplications), QR factorization and Rayleigh-Ritz computation to GPUs.
+The multi-GPUs version of ChASE is able to use all available cards for
+each node. This multi-GPUs version supports 1 MPI task
+to manage only 1 bound GPU card. Some less intensive computation is also assigned to this MPI task and executed
+in multi-threading mode.</p>
+<section id="id1">
+<h4><span class="section-number">2.3.2.1. </span>Allocating Ressources and Running jobs (SLURM)<a class="headerlink" href="#id1" title="Link to this heading"></a></h4>
+<p>Below is an example of a job script for a <code class="docutils literal notranslate"><span class="pre">SLURM</span></code> scheduler which allocates
+multi-GPUs per node and each GPU card bound to 1 MPI task:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># This is an example on the JUWELS GPU partition, in which each node has 4 V100 NVIDIA GPUs.</span>
+<span class="c1"># This example allocates 4 nodes, 16 MPI tasks, each node has 4 task,</span>
+<span class="c1"># and 4 GPUs per node, each GPU card is bound to 1 MPI task.</span>
+<span class="c1">#!/bin/bash -x</span>
+<span class="c1">#SBATCH --nodes=4</span>
+<span class="c1">#SBATCH --ntasks=16</span>
+<span class="c1">#SBATCH --ntasks-per-node=4</span>
+<span class="c1">#SBATCH --cpus-per-task=24</span>
+<span class="c1">#SBATCH --gres=gpu:4</span>
+</pre></div>
+</div>
+</section>
+<section id="estimating-memory-requirement">
+<h4><span class="section-number">2.3.2.2. </span>Estimating Memory Requirement<a class="headerlink" href="#estimating-memory-requirement" title="Link to this heading"></a></h4>
+<p>For ChASE with multi-GPUs, the memory requirements differ between Hermitian and
+Pseudo-Hermitian problems, similar to the CPU case.</p>
+<p><strong>Hermitian Eigenvalue Problems</strong></p>
+<p>For both <strong>Block distribution</strong> and <strong>Block-Cyclic distribution</strong> of matrix,
+the memory requirement per GPU is:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">sizeof</span><span class="p">(</span><span class="n">float_type</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="p">[</span><span class="n">n</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">m</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">block</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">5</span><span class="o">*</span><span class="n">block</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">2</span><span class="o">*</span><span class="n">pow</span><span class="p">(</span><span class="n">block</span><span class="p">,</span><span class="mi">2</span><span class="p">)]</span><span class="o">/</span><span class="p">(</span><span class="mi">1024</span><span class="o">^</span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="n">GigaByte</span>
+</pre></div>
+</div>
+<p>For <strong>Block-Cyclic distribution</strong>, add <code class="docutils literal notranslate"><span class="pre">sizeof(float_type)</span> <span class="pre">*</span> <span class="pre">N/(1024^3)</span></code> to account
+for the internal reshuffling buffer.</p>
+<p><strong>Pseudo-Hermitian Eigenvalue Problems</strong></p>
+<p>For <strong>Block distribution</strong> of matrix, the memory requirement per GPU is:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">sizeof</span><span class="p">(</span><span class="n">float_type</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="p">[</span><span class="n">n</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">4</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">m</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">block</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">3</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">block</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">block</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">5</span><span class="o">*</span><span class="n">block</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">2</span><span class="o">*</span><span class="n">pow</span><span class="p">(</span><span class="n">block</span><span class="p">,</span><span class="mi">2</span><span class="p">)]</span><span class="o">/</span><span class="p">(</span><span class="mi">1024</span><span class="o">^</span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="n">GigaByte</span>
+</pre></div>
+</div>
+<p>For <strong>Block-Cyclic distribution</strong>, add <code class="docutils literal notranslate"><span class="pre">sizeof(float_type)</span> <span class="pre">*</span> <span class="pre">N/(1024^3)</span></code> to account
+for the internal reshuffling buffer.</p>
+<p>The parameters <code class="docutils literal notranslate"><span class="pre">n</span></code>, <code class="docutils literal notranslate"><span class="pre">m</span></code>, <code class="docutils literal notranslate"><span class="pre">N</span></code>, <code class="docutils literal notranslate"><span class="pre">block</span></code>, and <code class="docutils literal notranslate"><span class="pre">sizeof(float_type)</span></code> have the same
+meaning as described in the CPU memory requirement section above.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The estimation of memory requirement is only based on the algorithmic aspects of ChASE. The buffer and memory requirement of libraries such as <code class="docutils literal notranslate"><span class="pre">MPI</span></code> has not been considered. So despite the provided formulas to calculate the memory consumption, some combination of MPI libraries (e.g., ParastationMPI) could lead to the crash of ChASE with <code class="docutils literal notranslate"><span class="pre">out</span> <span class="pre">of</span> <span class="pre">memory</span></code> even if the memory available is within the estimated bounds.</p>
+</div>
+</section>
+</section>
+</section>
+<section id="cmake-configuration-options">
+<h2><span class="section-number">2.4. </span>CMake Configuration Options<a class="headerlink" href="#cmake-configuration-options" title="Link to this heading"></a></h2>
+<p>This section provides a comprehensive list of all CMake configuration options
+available when building ChASE. These options can be set using the <code class="docutils literal notranslate"><span class="pre">-D</span></code> flag
+during the CMake configuration step, e.g., <code class="docutils literal notranslate"><span class="pre">cmake</span> <span class="pre">..</span> <span class="pre">-DOPTION_NAME=value</span></code>.</p>
+<section id="chase-specific-options">
+<h3><span class="section-number">2.4.1. </span>ChASE-Specific Options<a class="headerlink" href="#chase-specific-options" title="Link to this heading"></a></h3>
+<table class="docutils align-default" id="id2">
+<caption><span class="caption-text">ChASE CMake Configuration Options</span><a class="headerlink" href="#id2" title="Link to this table"></a></caption>
+<colgroup>
+<col style="width: 35.0%" />
+<col style="width: 10.0%" />
+<col style="width: 55.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Option Name</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CHASE_OUTPUT</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">OFF</span></code></p></td>
+<td><p>Enable output of intermediate convergence information and
+performance reports of different numerical kernels at each
+iteration. When enabled, ChASE will print detailed information
+during the solution process.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">CHASE_ENABLE_OPENMP</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ON</span></code></p></td>
+<td><p>Enable OpenMP support for multi-threading. This option enables
+parallel execution within a single MPI rank using OpenMP threads.
+Set to <code class="docutils literal notranslate"><span class="pre">OFF</span></code> to disable OpenMP support.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CHASE_ENABLE_MIXED_PRECISION</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">OFF</span></code></p></td>
+<td><p>Enable mixed precision support. When enabled, ChASE can use
+different floating-point precisions for different operations
+to optimize performance while maintaining accuracy.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">CHASE_ENABLE_MPI_IO</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">OFF</span></code></p></td>
+<td><p>Enable MPI I/O functionality to read Hamiltonian matrices
+from local files in parallel. This is useful for loading
+large matrices distributed across multiple MPI processes.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CHASE_USE_NVTX</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">OFF</span></code></p></td>
+<td><p>Enable NVIDIA Tools Extension (NVTX) for profiling GPU
+operations. This option is useful for performance analysis
+and debugging on NVIDIA GPUs using tools like Nsight Systems.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">CHASE_BUILD_WITH_EXAMPLES</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">OFF</span></code></p></td>
+<td><p>Build the example programs provided with ChASE. When enabled,
+example executables will be built in the <code class="docutils literal notranslate"><span class="pre">examples/</span></code>
+directory. The <code class="docutils literal notranslate"><span class="pre">popl</span></code> library for command-line parsing
+will be automatically downloaded if needed.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CHASE_BUILD_WITH_DOCS</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">OFF</span></code></p></td>
+<td><p>Build the documentation using Sphinx. When enabled, HTML
+documentation will be generated in the build directory.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ChASE_DISPLAY_COND_V_SVD</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">OFF</span></code></p></td>
+<td><p>Compute and display the condition number of the matrix V
+from the Singular Value Decomposition (SVD). This is useful
+for debugging and understanding numerical stability.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CHASE_ENABLE_TESTS</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">OFF</span></code></p></td>
+<td><p>Enable building of unit tests. When enabled, GoogleTest will be automatically downloaded and test executables will be built. Requires MPI to be available for parallel tests.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">CHASE_SAVE_RESIDUALS</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">OFF</span></code></p></td>
+<td><p>Save the residuals in an external file. When enabled, the residuals will be saved in an external file.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CHASE_ENABLE_XGEEV_RAYLEIGHRITZ</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">OFF</span></code></p></td>
+<td><p>Enable solving pseudo-Hermitian problems with XGEEV cusolver. When enabled, the pseudo-Hermitian problems will be solved with XGEEV cusolver.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">CHASE_DISPLAY_COND_V_SVD</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">OFF</span></code></p></td>
+<td><p>Compute and display the condition number of the matrix V from the Singular Value Decomposition (SVD). This is useful for debugging and understanding numerical stability.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CHASE_QR_DOUBLE_PRECISION</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ON</span></code></p></td>
+<td><p>Operate QR in Double Precision. When enabled, the QR factorization will be operated in double precision.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">CHASE_RR_DOUBLE_PRECISION</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">OFF</span></code></p></td>
+<td><p>Operate HEEVD in RR for pseudo-Hermitian matrices in Double Precision. When enabled, the HEEVD will be operated in double precision for pseudo-Hermitian matrices.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="standard-cmake-options">
+<h3><span class="section-number">2.4.2. </span>Standard CMake Options<a class="headerlink" href="#standard-cmake-options" title="Link to this heading"></a></h3>
+<p>The following standard CMake variables can also be used to configure the build:</p>
+<dl class="simple">
+<dt><strong>Installation Path:</strong></dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">CMAKE_INSTALL_PREFIX</span></code> - Installation directory for ChASE (default: <code class="docutils literal notranslate"><span class="pre">/usr/local</span></code> on Unix systems)</p></li>
+</ul>
+</dd>
+<dt><strong>Compiler Selection:</strong></dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">CMAKE_CXX_COMPILER</span></code> - Path to the C++ compiler (e.g., <code class="docutils literal notranslate"><span class="pre">/usr/bin/g++</span></code>, <code class="docutils literal notranslate"><span class="pre">/usr/bin/clang++</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CMAKE_C_COMPILER</span></code> - Path to the C compiler (e.g., <code class="docutils literal notranslate"><span class="pre">/usr/bin/gcc</span></code>, <code class="docutils literal notranslate"><span class="pre">/usr/bin/clang</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CMAKE_Fortran_COMPILER</span></code> - Path to the Fortran compiler (e.g., <code class="docutils literal notranslate"><span class="pre">/usr/bin/gfortran</span></code>)</p></li>
+</ul>
+</dd>
+<dt><strong>MPI Configuration:</strong></dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">MPI_CXX_COMPILER</span></code> - Path to the MPI C++ compiler wrapper (e.g., <code class="docutils literal notranslate"><span class="pre">/usr/bin/mpicxx</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">MPI_C_COMPILER</span></code> - Path to the MPI C compiler wrapper (e.g., <code class="docutils literal notranslate"><span class="pre">/usr/bin/mpicc</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">MPI_Fortran_COMPILER</span></code> - Path to the MPI Fortran compiler wrapper (e.g., <code class="docutils literal notranslate"><span class="pre">/usr/bin/mpif90</span></code>)</p></li>
+</ul>
+</dd>
+<dt><strong>CUDA Configuration:</strong></dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">CMAKE_CUDA_ARCHITECTURES</span></code> - CUDA compute capability architectures to target. Can be a single
+value (e.g., <code class="docutils literal notranslate"><span class="pre">86</span></code> for RTX 3090) or a semicolon-separated list (e.g., <code class="docutils literal notranslate"><span class="pre">&quot;70;75;80;86&quot;</span></code>).
+This option should always be set when building with CUDA support, regardless of CMake version.</p></li>
+</ul>
+</dd>
+<dt><strong>Build Type:</strong></dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">CMAKE_BUILD_TYPE</span></code> - Build type: <code class="docutils literal notranslate"><span class="pre">Release</span></code> (optimized), <code class="docutils literal notranslate"><span class="pre">Debug</span></code> (with debug symbols),
+<code class="docutils literal notranslate"><span class="pre">RelWithDebInfo</span></code> (optimized with debug info), or <code class="docutils literal notranslate"><span class="pre">MinSizeRel</span></code> (minimum size)</p></li>
+</ul>
+</dd>
+</dl>
+</section>
+<section id="example-usage">
+<h3><span class="section-number">2.4.3. </span>Example Usage<a class="headerlink" href="#example-usage" title="Link to this heading"></a></h3>
+<p>Here are some example CMake configuration commands demonstrating the use of various options:</p>
+<dl>
+<dt><strong>Basic build with examples:</strong></dt><dd><div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">cmake .. -DCMAKE_INSTALL_PREFIX=/path/to/install \</span>
+<span class="go">         -DCHASE_BUILD_WITH_EXAMPLES=ON</span>
+</pre></div>
+</div>
+</dd>
+<dt><strong>Build with GPU support and specific CUDA architecture:</strong></dt><dd><div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">cmake .. -DCMAKE_INSTALL_PREFIX=/path/to/install \</span>
+<span class="go">         -DCMAKE_CUDA_ARCHITECTURES=86 \</span>
+<span class="go">         -DCHASE_BUILD_WITH_EXAMPLES=ON</span>
+</pre></div>
+</div>
+</dd>
+<dt><strong>Build with debugging output and profiling:</strong></dt><dd><div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">cmake .. -DCMAKE_BUILD_TYPE=Debug \</span>
+<span class="go">         -DCHASE_OUTPUT=ON \</span>
+<span class="go">         -DCHASE_USE_NVTX=ON</span>
+</pre></div>
+</div>
+</dd>
+<dt><strong>Build with custom compilers and MPI:</strong></dt><dd><div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">cmake .. -DCMAKE_CXX_COMPILER=/usr/bin/g++-11 \</span>
+<span class="go">         -DCMAKE_C_COMPILER=/usr/bin/gcc-11 \</span>
+<span class="go">         -DMPI_CXX_COMPILER=/usr/bin/mpicxx \</span>
+<span class="go">         -DCHASE_ENABLE_OPENMP=ON</span>
+</pre></div>
+</div>
+</dd>
+<dt><strong>Build with tests enabled:</strong></dt><dd><div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">cmake .. -DCHASE_ENABLE_TESTS=ON \</span>
+<span class="go">         -DMPI_RUN=srun \</span>
+<span class="go">         -DMPI_RUN_ARGS=&quot;--ntasks=4&quot;</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+<p>Note: When using <code class="docutils literal notranslate"><span class="pre">CHASE_ENABLE_TESTS=ON</span></code>, you may also need to set <code class="docutils literal notranslate"><span class="pre">MPI_RUN</span></code> (the MPI launcher command,
+e.g., <code class="docutils literal notranslate"><span class="pre">mpirun</span></code> or <code class="docutils literal notranslate"><span class="pre">srun</span></code>) and optionally <code class="docutils literal notranslate"><span class="pre">MPI_RUN_ARGS</span></code> (additional arguments for the MPI launcher).</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="quick-start.html" class="btn btn-neutral float-left" title="1. Quick Start" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="usage.html" class="btn btn-neutral float-right" title="3. How to use ChASE" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, SimLab Quantum Materials.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

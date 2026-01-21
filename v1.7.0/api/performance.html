@@ -1,0 +1,902 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>1.1.4. Performance Classes &mdash; ChASE v1.3.0 documentation</title>
+      <link rel="stylesheet" href="../theme_overrides.css" type="text/css" />
+
+  
+    <link rel="shortcut icon" href="../_static/ChASE_Logo_Favicon_RGB.png"/>
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=e49d06fc"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="1.2.1. Implementation Classes" href="implementations.html" />
+    <link rel="prev" title="1.1.3. chase::ChaseConfig" href="chaseconfig.html" />
+     
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+    <link href="../_static/theme_overrides.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+
+          
+          
+          <a href="../index.html">
+            
+              <img src="../_static/ChASE_Logo_RGB.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+  <div class="version-selector" style="margin: 10px 0; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 3px;">
+  <label for="version-select" style="display: block; color: #fcfcfc; font-size: 12px; margin-bottom: 5px; font-weight: bold;">
+    Version:
+  </label>
+  <select id="version-select" onchange="switchVersion(this.value)" style="width: 100%; padding: 5px; border: 1px solid #2980B9; border-radius: 3px; background: white; color: #333; font-size: 13px;"><option value="/ChASE/latest/">
+      latest
+    </option></select>
+</div><script>
+function switchVersion(url) {
+  // Get current path and determine base URL
+  const currentPath = window.location.pathname;
+  const pathParts = currentPath.split('/').filter(p => p);
+  
+  // Get known versions from the select options (dynamic, not hardcoded)
+  const selector = document.getElementById('version-select');
+  const knownVersions = [];
+  if (selector) {
+    for (let option of selector.options) {
+      const verName = option.text.trim();
+      knownVersions.push(verName);
+    }
+  }
+  
+  // Find the repository name in the path (e.g., "ChASE" in "/ChASE/latest/...")
+  // This handles project pages where URL is: username.github.io/repo-name/version/...
+  let repoName = '';
+  let versionIndex = -1;
+  
+  // Look for version in path (could be at index 1 or 2 depending on structure)
+  for (let i = 0; i < pathParts.length; i++) {
+    if (knownVersions.includes(pathParts[i])) {
+      versionIndex = i;
+      if (i > 0) {
+        repoName = pathParts[i - 1]; // Repository name is before version
+      }
+      break;
+    }
+  }
+  
+  // Get relative path (everything after version)
+  let relativePath = '';
+  if (versionIndex >= 0) {
+    // We're in a versioned path, get everything after version
+    relativePath = '/' + pathParts.slice(versionIndex + 1).join('/');
+  } else {
+    // We're in root or unversioned, get current path
+    relativePath = currentPath;
+  }
+  
+  // Construct new URL
+  // The URL from conf.py already includes the full path (e.g., "/ChASE/latest/")
+  // So we just need to append the relative path (page name)
+  const baseUrl = url.replace(/\/$/, ''); // Remove trailing slash
+  const cleanRelative = relativePath === '/' ? '' : relativePath.replace(/^\//, '');
+  
+  // If URL already includes the repo name, use it as-is
+  // Otherwise, we might need to add it (but conf.py should have it)
+  if (url.startsWith('http')) {
+    window.location.href = url + (cleanRelative ? '/' + cleanRelative : '');
+  } else {
+    window.location.href = baseUrl + (cleanRelative ? '/' + cleanRelative : '');
+  }
+}
+
+// Auto-detect current version from URL and update selector
+(function() {
+  const currentPath = window.location.pathname;
+  const pathParts = currentPath.split('/').filter(p => p);
+  
+  // Get known versions from select options
+  const selector = document.getElementById('version-select');
+  if (!selector) return;
+  
+  const knownVersions = [];
+  for (let option of selector.options) {
+    const verName = option.text.trim();
+    knownVersions.push(verName);
+  }
+  
+  // Look for version in path (could be at index 0, 1, or 2 depending on structure)
+  // For project pages: /repo-name/version/... (version at index 1)
+  // For user pages: /version/... (version at index 0)
+  for (let i = 0; i < pathParts.length; i++) {
+    if (knownVersions.includes(pathParts[i])) {
+      const currentVer = pathParts[i];
+      // Find option matching current version
+      for (let option of selector.options) {
+        if (option.text.trim() === currentVer) {
+          selector.value = option.value;
+          break;
+        }
+      }
+      break;
+    }
+  }
+})();
+</script>
+
+<style>
+.version-selector select:focus {
+  outline: 2px solid #2980B9;
+  outline-offset: 2px;
+}
+</style>
+
+
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">INTRODUCTION</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../chase.html">ChASE: an Iterative Solver for Dense Eigenproblems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../version.html">Versions of the library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../license.html">Licenses and Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reference.html">References and Contributors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contribution.html">Contributing to ChASE</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">USER DOCUMENTATION</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../quick-start.html">1. Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">2. Installation and Setup on a Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage.html">3. How to use ChASE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../parameters.html">4. Parameters and Configurations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../module.html">5. Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../example.html">6. Examples</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API REFERENCE</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">1. API Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="index.html#core-algorithm">1.1. Core Algorithm</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="chasebase.html">1.1.1. chase::ChaseBase</a></li>
+<li class="toctree-l3"><a class="reference internal" href="algorithm.html">1.1.2. chase::Algorithm</a></li>
+<li class="toctree-l3"><a class="reference internal" href="chaseconfig.html">1.1.3. chase::ChaseConfig</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">1.1.4. Performance Classes</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#chase-chaseperfdata">1.1.4.1. chase::ChasePerfData</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#chase-performancedecoratorchase">1.1.4.2. chase::PerformanceDecoratorChase</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#implementations">1.2. Implementations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#matrix-classes">1.3. Matrix Classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#grid-and-communication">1.4. Grid and Communication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#linear-algebra-kernels">1.5. Linear Algebra Kernels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#platform-types">1.6. Platform Types</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ChASE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html"><span class="section-number">1. </span>API Reference</a></li>
+      <li class="breadcrumb-item active"><span class="section-number">1.1.4. </span>Performance Classes</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/api/performance.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="performance-classes">
+<span id="api-performance"></span><h1><span class="section-number">1.1.4. </span>Performance Classes<a class="headerlink" href="#performance-classes" title="Link to this heading"></a></h1>
+<section id="chase-chaseperfdata">
+<h2><span class="section-number">1.1.4.1. </span>chase::ChasePerfData<a class="headerlink" href="#chase-chaseperfdata" title="Link to this heading"></a></h2>
+<dl class="cpp class">
+<dt class="sig sig-object cpp" id="_CPPv4I0EN5chase13ChasePerfDataE">
+<span id="_CPPv3I0EN5chase13ChasePerfDataE"></span><span id="_CPPv2I0EN5chase13ChasePerfDataE"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">T</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classchase_1_1ChasePerfData"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ChasePerfData</span></span></span><a class="headerlink" href="#_CPPv4I0EN5chase13ChasePerfDataE" title="Link to this definition"></a><br /></dt>
+<dd><p>ChASE class for collecting data relative to FLOPs, timings, etc. </p>
+<p>The <a class="reference internal" href="#classchase_1_1ChasePerfData"><span class="std std-ref">ChasePerfData</span></a> class collects and handles information relative to the execution of the eigensolver. It collects information about<ul class="simple">
+<li><p>Number of subspace iterations</p></li>
+<li><p>Number of filtered vectors</p></li>
+<li><p>Timings of each main algorithmic procedure (Lanczos, Filter, etc.)</p></li>
+<li><p>Number of FLOPs executed</p></li>
+</ul>
+</p>
+<p>The number of iterations and filtered vectors can be used to monitor the behavior of the algorithm as it attempts to converge all the desired eigenpairs. The timings and number of FLOPs are use to measure performance, especially parallel performance. The timings are stored in a vector of objects derived by the class template <code class="docutils literal notranslate"><span class="pre">std::chrono::duration</span></code>. </p>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-types">Public Types</p>
+<dl class="cpp enum">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase13ChasePerfData8TimePtrsE">
+<span id="_CPPv3N5chase13ChasePerfData8TimePtrsE"></span><span id="_CPPv2N5chase13ChasePerfData8TimePtrsE"></span><span class="target" id="classchase_1_1ChasePerfData_1a3dc42b2c4533e1e8e5ae0f3037f8d28f"></span><span class="k"><span class="pre">enum</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">TimePtrs</span></span></span><a class="headerlink" href="#_CPPv4N5chase13ChasePerfData8TimePtrsE" title="Link to this definition"></a><br /></dt>
+<dd><p><em>Values:</em></p>
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase13ChasePerfData8TimePtrs3AllE">
+<span id="_CPPv3N5chase13ChasePerfData8TimePtrs3AllE"></span><span id="_CPPv2N5chase13ChasePerfData8TimePtrs3AllE"></span><span class="target" id="classchase_1_1ChasePerfData_1a3dc42b2c4533e1e8e5ae0f3037f8d28fa59beb4a1e1ddcb41c712a4916b870c43"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">All</span></span></span><a class="headerlink" href="#_CPPv4N5chase13ChasePerfData8TimePtrs3AllE" title="Link to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase13ChasePerfData8TimePtrs8InitVecsE">
+<span id="_CPPv3N5chase13ChasePerfData8TimePtrs8InitVecsE"></span><span id="_CPPv2N5chase13ChasePerfData8TimePtrs8InitVecsE"></span><span class="target" id="classchase_1_1ChasePerfData_1a3dc42b2c4533e1e8e5ae0f3037f8d28fa84fc363fe826d8907132d22b9615b6de"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">InitVecs</span></span></span><a class="headerlink" href="#_CPPv4N5chase13ChasePerfData8TimePtrs8InitVecsE" title="Link to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase13ChasePerfData8TimePtrs7LanczosE">
+<span id="_CPPv3N5chase13ChasePerfData8TimePtrs7LanczosE"></span><span id="_CPPv2N5chase13ChasePerfData8TimePtrs7LanczosE"></span><span class="target" id="classchase_1_1ChasePerfData_1a3dc42b2c4533e1e8e5ae0f3037f8d28fa1daa2c3a930d64523a7cc811c40461c8"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Lanczos</span></span></span><a class="headerlink" href="#_CPPv4N5chase13ChasePerfData8TimePtrs7LanczosE" title="Link to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase13ChasePerfData8TimePtrs6FilterE">
+<span id="_CPPv3N5chase13ChasePerfData8TimePtrs6FilterE"></span><span id="_CPPv2N5chase13ChasePerfData8TimePtrs6FilterE"></span><span class="target" id="classchase_1_1ChasePerfData_1a3dc42b2c4533e1e8e5ae0f3037f8d28fac8d58308c80ffe1ce9d8cabb84dc7b32"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Filter</span></span></span><a class="headerlink" href="#_CPPv4N5chase13ChasePerfData8TimePtrs6FilterE" title="Link to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase13ChasePerfData8TimePtrs2QrE">
+<span id="_CPPv3N5chase13ChasePerfData8TimePtrs2QrE"></span><span id="_CPPv2N5chase13ChasePerfData8TimePtrs2QrE"></span><span class="target" id="classchase_1_1ChasePerfData_1a3dc42b2c4533e1e8e5ae0f3037f8d28faaf80758f7a6068a6b73298a65850508a"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Qr</span></span></span><a class="headerlink" href="#_CPPv4N5chase13ChasePerfData8TimePtrs2QrE" title="Link to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase13ChasePerfData8TimePtrs2RrE">
+<span id="_CPPv3N5chase13ChasePerfData8TimePtrs2RrE"></span><span id="_CPPv2N5chase13ChasePerfData8TimePtrs2RrE"></span><span class="target" id="classchase_1_1ChasePerfData_1a3dc42b2c4533e1e8e5ae0f3037f8d28fa91bf2b2462d9c770bb49ad1c6f5833e6"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Rr</span></span></span><a class="headerlink" href="#_CPPv4N5chase13ChasePerfData8TimePtrs2RrE" title="Link to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase13ChasePerfData8TimePtrs14Resids_LockingE">
+<span id="_CPPv3N5chase13ChasePerfData8TimePtrs14Resids_LockingE"></span><span id="_CPPv2N5chase13ChasePerfData8TimePtrs14Resids_LockingE"></span><span class="target" id="classchase_1_1ChasePerfData_1a3dc42b2c4533e1e8e5ae0f3037f8d28fa0d43d5179d15d7dceabc222d34e2a5ae"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Resids_Locking</span></span></span><a class="headerlink" href="#_CPPv4N5chase13ChasePerfData8TimePtrs14Resids_LockingE" title="Link to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase13ChasePerfData13ChasePerfDataEi">
+<span id="_CPPv3N5chase13ChasePerfData13ChasePerfDataEi"></span><span id="_CPPv2N5chase13ChasePerfData13ChasePerfDataEi"></span><span id="chase::ChasePerfData::ChasePerfData__i"></span><span class="target" id="classchase_1_1ChasePerfData_1a64bcdc3e63dc67f42e0111170b326384"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ChasePerfData</span></span></span><span class="sig-paren">(</span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">matrix_type</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase13ChasePerfData13ChasePerfDataEi" title="Link to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase13ChasePerfData5ResetEv">
+<span id="_CPPv3N5chase13ChasePerfData5ResetEv"></span><span id="_CPPv2N5chase13ChasePerfData5ResetEv"></span><span id="chase::ChasePerfData::Reset"></span><span class="target" id="classchase_1_1ChasePerfData_1ad16a94a4b3e122e302aaf9a71c0c453f"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Reset</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase13ChasePerfData5ResetEv" title="Link to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase13ChasePerfData14get_iter_countEv">
+<span id="_CPPv3N5chase13ChasePerfData14get_iter_countEv"></span><span id="_CPPv2N5chase13ChasePerfData14get_iter_countEv"></span><span id="chase::ChasePerfData::get_iter_count"></span><span class="target" id="classchase_1_1ChasePerfData_1a40b81b3734e5e1b26a7c9abdf46795d3"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_iter_count</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase13ChasePerfData14get_iter_countEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the number of total subspace iterations executed by ChASE. </p>
+<p>The <em>S</em> in ChASE stands for <em>Subspace iteration</em>. The main engine under the hood of ChASE is a <em>loop</em> enveloping all the main routines executed by the code. Because of this structure, ChASE is a truly iterative algorithm based on subspace filtering. Counting the number of times such a loop is repeated gives a measure of the effectiveness of the algorithm and it is usually a non-linear function of the spectral distribution. For example, when using the flag <code class="docutils literal notranslate"><span class="pre">approximate_</span> <span class="pre">=</span> <span class="pre">'true'</span></code> to solve a sequence of eigenproblems, one can observe that the number of subspace iteration decreases as a function of sequences index. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The total number of subspace iterations. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase13ChasePerfData17get_filtered_vecsEv">
+<span id="_CPPv3N5chase13ChasePerfData17get_filtered_vecsEv"></span><span id="_CPPv2N5chase13ChasePerfData17get_filtered_vecsEv"></span><span id="chase::ChasePerfData::get_filtered_vecs"></span><span class="target" id="classchase_1_1ChasePerfData_1aa83a77b8af43f021c10e99dfff6a760f"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_filtered_vecs</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase13ChasePerfData17get_filtered_vecsEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the cumulative number of times each column vector is filtered by one degree.</p>
+<p>The most computationally expensive routine of ChASE is the Chebyshev filter. Within the filter a matrix of vectors <em>V</em> is filtered with a varying degree each time a subspace iteration is executed. This counter return the total number of times each vector in <em>V</em> goes through a filtering step. For instance, when the flag <code class="docutils literal notranslate"><span class="pre">optim_</span> <span class="pre">=</span> <span class="pre">false</span></code>, such a number roughly corresponds to rank(V) x degree x iter_count. When the <code class="docutils literal notranslate"><span class="pre">optim_</span></code> is set to <code class="docutils literal notranslate"><span class="pre">true</span></code> such a calculation is quite more complicated. Roughly speaking, this counter is useful to monitor the convergence ration of the filtered vectors and together with <code class="docutils literal notranslate"><span class="pre">get_iter_count</span></code> convey the effectiveness of the algorithm. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Cumulative number of filtered vectors. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase13ChasePerfData11get_timingsEv">
+<span id="_CPPv3N5chase13ChasePerfData11get_timingsEv"></span><span id="_CPPv2N5chase13ChasePerfData11get_timingsEv"></span><span id="chase::ChasePerfData::get_timings"></span><span class="target" id="classchase_1_1ChasePerfData_1afac62cca3ec2313968c1dd5ec99b3ca4"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">chrono</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">duration</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">double</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_timings</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase13ChasePerfData11get_timingsEv" title="Link to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase13ChasePerfData9get_flopsENSt6size_tENSt6size_tENSt6size_tE">
+<span id="_CPPv3N5chase13ChasePerfData9get_flopsENSt6size_tENSt6size_tENSt6size_tE"></span><span id="_CPPv2N5chase13ChasePerfData9get_flopsENSt6size_tENSt6size_tENSt6size_tE"></span><span id="chase::ChasePerfData::get_flops__std::s.std::s.std::s"></span><span class="target" id="classchase_1_1ChasePerfData_1a074981c19c0f10428c1a20f420e106c3"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_flops</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">N</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">lanczosIter</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">numLanczos</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase13ChasePerfData9get_flopsENSt6size_tENSt6size_tENSt6size_tE" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the total number of FLOPs executed by ChASE. </p>
+<p>When measuring performance, it is fundamental to understand how many operations a routine executes against the total time to solutions. This counter returns the total amount of operations executed by ChASE and can be used to extract the performance of ChASE and compare it with theoretical peak performance of the platform where the code is executed. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>N</strong> – Size of the eigenproblem matrix </p></li>
+<li><p><strong>lanczosIter</strong> – Number of Lanczos Iterations </p></li>
+<li><p><strong>numLanczos</strong> – Number of Lanczos Vectors </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The total number of operations executed by ChASE. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase13ChasePerfData16get_filter_flopsENSt6size_tE">
+<span id="_CPPv3N5chase13ChasePerfData16get_filter_flopsENSt6size_tE"></span><span id="_CPPv2N5chase13ChasePerfData16get_filter_flopsENSt6size_tE"></span><span id="chase::ChasePerfData::get_filter_flops__std::s"></span><span class="target" id="classchase_1_1ChasePerfData_1ac3590b15551c6b5dba99048685a26249"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_filter_flops</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">N</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase13ChasePerfData16get_filter_flopsENSt6size_tE" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the total number of FLOPs of the Chebyshev filter. </p>
+<p>Similar to <code class="docutils literal notranslate"><span class="pre">get_flops</span></code>, this counter return the total number of operations executed by the Chebyshev filter alone. Since the filter is the routine that executes, on average, 80% of the total FLOPs of ChASE, this counter is a good indicator of the performance of the entire algorithm. Because the filter executes almost exclusively BLAS-3 operations, this counter is quite useful to monitor how well the filter is close to the peak performance of the platform where ChASE is executed. This can be quite useful to fine tune the use of the computational resources used. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>N</strong> – Size of the eigenproblem matrix </p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The total number of operations executed by the polynomial filter. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase13ChasePerfData17get_lanczos_flopsENSt6size_tENSt6size_tENSt6size_tE">
+<span id="_CPPv3N5chase13ChasePerfData17get_lanczos_flopsENSt6size_tENSt6size_tENSt6size_tE"></span><span id="_CPPv2N5chase13ChasePerfData17get_lanczos_flopsENSt6size_tENSt6size_tENSt6size_tE"></span><span id="chase::ChasePerfData::get_lanczos_flops__std::s.std::s.std::s"></span><span class="target" id="classchase_1_1ChasePerfData_1accd6e9e1cbe0abd1644c46d0dac1e85d"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_lanczos_flops</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">N</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">lanczosIter</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">numLanczos</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase13ChasePerfData17get_lanczos_flopsENSt6size_tENSt6size_tENSt6size_tE" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the average number of FLOPs of the Lanczos <a class="reference internal" href="algorithm.html#classchase_1_1Algorithm"><span class="std std-ref">Algorithm</span></a>. </p>
+<p>Similar to <code class="docutils literal notranslate"><span class="pre">get_flops</span></code>, this counter return the average number of operations executed by the Lanczos algorithm alone. We approximate the total number by the flops for the GEEM operations + an estimation for the stemr algorithm. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>N</strong> – Size of the eigenproblem matrix </p></li>
+<li><p><strong>lanczosIter</strong> – Number of Lanczos Iterations </p></li>
+<li><p><strong>numLanczos</strong> – Number of Lanczos Vectors </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The average number of operations executed by Lanczos filter. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase13ChasePerfData10set_nprocsEi">
+<span id="_CPPv3N5chase13ChasePerfData10set_nprocsEi"></span><span id="_CPPv2N5chase13ChasePerfData10set_nprocsEi"></span><span id="chase::ChasePerfData::set_nprocs__i"></span><span class="target" id="classchase_1_1ChasePerfData_1a1a1ff0fe5a0ed2bf3fc4190ed127a2c6"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">set_nprocs</span></span></span><span class="sig-paren">(</span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">nProcs</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase13ChasePerfData10set_nprocsEi" title="Link to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase13ChasePerfData14add_iter_countENSt6size_tE">
+<span id="_CPPv3N5chase13ChasePerfData14add_iter_countENSt6size_tE"></span><span id="_CPPv2N5chase13ChasePerfData14add_iter_countENSt6size_tE"></span><span id="chase::ChasePerfData::add_iter_count__std::s"></span><span class="target" id="classchase_1_1ChasePerfData_1a15f59d068b2fdec82de875187c4895f1"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">add_iter_count</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">add</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase13ChasePerfData14add_iter_countENSt6size_tE" title="Link to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase13ChasePerfData18add_iter_blocksizeENSt6size_tE">
+<span id="_CPPv3N5chase13ChasePerfData18add_iter_blocksizeENSt6size_tE"></span><span id="_CPPv2N5chase13ChasePerfData18add_iter_blocksizeENSt6size_tE"></span><span id="chase::ChasePerfData::add_iter_blocksize__std::s"></span><span class="target" id="classchase_1_1ChasePerfData_1a2f9f8ab27ce3fb290a94c21c72c45ace"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">add_iter_blocksize</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">nevex</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase13ChasePerfData18add_iter_blocksizeENSt6size_tE" title="Link to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase13ChasePerfData17add_filtered_vecsENSt6size_tE">
+<span id="_CPPv3N5chase13ChasePerfData17add_filtered_vecsENSt6size_tE"></span><span id="_CPPv2N5chase13ChasePerfData17add_filtered_vecsENSt6size_tE"></span><span id="chase::ChasePerfData::add_filtered_vecs__std::s"></span><span class="target" id="classchase_1_1ChasePerfData_1a1de99f878e0da92457dbd54b7baa4315"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">add_filtered_vecs</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">add</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase13ChasePerfData17add_filtered_vecsENSt6size_tE" title="Link to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase13ChasePerfData11start_clockE8TimePtrs">
+<span id="_CPPv3N5chase13ChasePerfData11start_clockE8TimePtrs"></span><span id="_CPPv2N5chase13ChasePerfData11start_clockE8TimePtrs"></span><span id="chase::ChasePerfData::start_clock__TimePtrs"></span><span class="target" id="classchase_1_1ChasePerfData_1af9c3388442efba1fd9a1a49a737e3f33"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">start_clock</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4N5chase13ChasePerfData8TimePtrsE" title="chase::ChasePerfData::TimePtrs"><span class="n"><span class="pre">TimePtrs</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">t</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase13ChasePerfData11start_clockE8TimePtrs" title="Link to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase13ChasePerfData26set_early_locked_residualsENSt6vectorIN5chase4BaseI1TEEEE">
+<span id="_CPPv3N5chase13ChasePerfData26set_early_locked_residualsENSt6vectorIN5chase4BaseI1TEEEE"></span><span id="_CPPv2N5chase13ChasePerfData26set_early_locked_residualsENSt6vectorIN5chase4BaseI1TEEEE"></span><span id="chase::ChasePerfData::set_early_locked_residuals__std::vector:chase::Base:T::"></span><span class="target" id="classchase_1_1ChasePerfData_1a07c4b0765e0aa2f27cfb70e6ce52ce83"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">set_early_locked_residuals</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase13ChasePerfDataE" title="chase::ChasePerfData::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">early_locked_residuals</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase13ChasePerfData26set_early_locked_residualsENSt6vectorIN5chase4BaseI1TEEEE" title="Link to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase13ChasePerfData9end_clockE8TimePtrs">
+<span id="_CPPv3N5chase13ChasePerfData9end_clockE8TimePtrs"></span><span id="_CPPv2N5chase13ChasePerfData9end_clockE8TimePtrs"></span><span id="chase::ChasePerfData::end_clock__TimePtrs"></span><span class="target" id="classchase_1_1ChasePerfData_1a740b4f40a74e7e6f5ced279c3a7d697e"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">end_clock</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4N5chase13ChasePerfData8TimePtrsE" title="chase::ChasePerfData::TimePtrs"><span class="n"><span class="pre">TimePtrs</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">t</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase13ChasePerfData9end_clockE8TimePtrs" title="Link to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase13ChasePerfData12getTimePointEv">
+<span id="_CPPv3N5chase13ChasePerfData12getTimePointEv"></span><span id="_CPPv2N5chase13ChasePerfData12getTimePointEv"></span><span id="chase::ChasePerfData::getTimePoint"></span><span class="target" id="classchase_1_1ChasePerfData_1a76e9a8e32fbe625231591d5a0ab68342"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">getTimePoint</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="o"><span class="pre">-&gt;</span></span><span class="w"> </span><span class="n"><span class="pre">TimePointType</span></span><a class="headerlink" href="#_CPPv4N5chase13ChasePerfData12getTimePointEv" title="Link to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase13ChasePerfData5printENSt6size_tENSt6size_tENSt6size_tE">
+<span id="_CPPv3N5chase13ChasePerfData5printENSt6size_tENSt6size_tENSt6size_tE"></span><span id="_CPPv2N5chase13ChasePerfData5printENSt6size_tENSt6size_tENSt6size_tE"></span><span id="chase::ChasePerfData::print__std::s.std::s.std::s"></span><span class="target" id="classchase_1_1ChasePerfData_1a18d4fd9e55f507fa692571ea4d713c9b"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">print</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">N</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">lanczosIter</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">numLanczos</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase13ChasePerfData5printENSt6size_tENSt6size_tENSt6size_tE" title="Link to this definition"></a><br /></dt>
+<dd><p>Print function outputting counters and timings for all routines. </p>
+<p>It prints by default ( for N = 0) in the order,<ul class="simple">
+<li><p>size of the eigenproblem</p></li>
+<li><p>total number of subspace iterations executed</p></li>
+<li><p>total number of filtered vectors</p></li>
+<li><p>time-to-solution of the following 6 main sections of the ChASE algorithm:<ol class="lowerroman simple">
+<li><p>Total time-to-solution</p></li>
+<li><p>Estimates of the spectral bounds based on Lanczos,</p></li>
+<li><p>Chebyshev filter,</p></li>
+<li><p>QR decomposition,</p></li>
+<li><p>Raleygh-Ritz procedure including the solution of the reduced dense problem,</p></li>
+<li><p>Computation of the eigenpairs residuals</p></li>
+</ol>
+</p></li>
+</ul>
+</p>
+<p>When the parameter <code class="docutils literal notranslate"><span class="pre">N</span></code> is set to be a number else than zero, the function returns total FLOPs and filter FLOPs, respectively. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>N</strong> – Control parameter. By default equal to <em>0</em>. </p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+</dd></dl>
+
+</section>
+<section id="chase-performancedecoratorchase">
+<h2><span class="section-number">1.1.4.2. </span>chase::PerformanceDecoratorChase<a class="headerlink" href="#chase-performancedecoratorchase" title="Link to this heading"></a></h2>
+<dl class="cpp class">
+<dt class="sig sig-object cpp" id="_CPPv4I0EN5chase25PerformanceDecoratorChaseE">
+<span id="_CPPv3I0EN5chase25PerformanceDecoratorChaseE"></span><span id="_CPPv2I0EN5chase25PerformanceDecoratorChaseE"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">T</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classchase_1_1PerformanceDecoratorChase"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">PerformanceDecoratorChase</span></span></span><span class="w"> </span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="k"><span class="pre">public</span></span><span class="w"> </span><span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">ChaseBase</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase25PerformanceDecoratorChaseE" title="chase::PerformanceDecoratorChase::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><a class="headerlink" href="#_CPPv4I0EN5chase25PerformanceDecoratorChaseE" title="Link to this definition"></a><br /></dt>
+<dd><p>A derived class used to extract performance and configuration data. </p>
+<p>This is a class derived from the Chase class which plays the role of interface for the kernels used by the library. All members of the Chase class are virtual functions. These functions are re-implemented in the <a class="reference internal" href="#classchase_1_1PerformanceDecoratorChase"><span class="std std-ref">PerformanceDecoratorChase</span></a> class. All derived members that provide an interface to computational kernels are reimplemented by <em>decorating</em> the original function with time pointers which are members of the <a class="reference internal" href="#classchase_1_1ChasePerfData"><span class="std std-ref">ChasePerfData</span></a> class. All derived members that provide an interface to input or output data are called without any specific decoration. In addition to the virtual member of the Chase class, the <a class="reference internal" href="#classchase_1_1PerformanceDecoratorChase"><span class="std std-ref">PerformanceDecoratorChase</span></a> class has also among its public members a reference to an object of type <a class="reference internal" href="#classchase_1_1ChasePerfData"><span class="std std-ref">ChasePerfData</span></a>. When using Chase to solve an eigenvalue problem, the members of the <a class="reference internal" href="#classchase_1_1PerformanceDecoratorChase"><span class="std std-ref">PerformanceDecoratorChase</span></a> are called instead of the virtual functions members of the Chase class. In this way, all parameters and counters are automatically invoked and returned in the correct order. <div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p>Chase </p>
+</div>
+</p>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase25PerformanceDecoratorChase25PerformanceDecoratorChaseEP9ChaseBaseI1TE">
+<span id="_CPPv3N5chase25PerformanceDecoratorChase25PerformanceDecoratorChaseEP9ChaseBaseI1TE"></span><span id="_CPPv2N5chase25PerformanceDecoratorChase25PerformanceDecoratorChaseEP9ChaseBaseI1TE"></span><span id="chase::PerformanceDecoratorChase::PerformanceDecoratorChase__ChaseBase:T:P"></span><span class="target" id="classchase_1_1PerformanceDecoratorChase_1aa8a866f2fd0925778e49b6fe05fc1a8b"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">PerformanceDecoratorChase</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">ChaseBase</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase25PerformanceDecoratorChaseE" title="chase::PerformanceDecoratorChase::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">chase</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase25PerformanceDecoratorChase25PerformanceDecoratorChaseEP9ChaseBaseI1TE" title="Link to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase25PerformanceDecoratorChase8initVecsEb">
+<span id="_CPPv3N5chase25PerformanceDecoratorChase8initVecsEb"></span><span id="_CPPv2N5chase25PerformanceDecoratorChase8initVecsEb"></span><span id="chase::PerformanceDecoratorChase::initVecs__b"></span><span class="target" id="classchase_1_1PerformanceDecoratorChase_1a02033df8972bff946ba54caa94cb0dad"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">initVecs</span></span></span><span class="sig-paren">(</span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">random</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase25PerformanceDecoratorChase8initVecsEb" title="Link to this definition"></a><br /></dt>
+<dd><p>Initializes vectors randomly, if necessary. </p>
+<p>This method initializes the vectors either randomly or from previously computed Ritz values, depending on the input flag.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>random</strong> – Flag to determine whether to initialize vectors randomly. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase25PerformanceDecoratorChase5ShiftE1Tb">
+<span id="_CPPv3N5chase25PerformanceDecoratorChase5ShiftE1Tb"></span><span id="_CPPv2N5chase25PerformanceDecoratorChase5ShiftE1Tb"></span><span id="chase::PerformanceDecoratorChase::Shift__T.b"></span><span class="target" id="classchase_1_1PerformanceDecoratorChase_1af4ea99ce5b633af82396530adcdf1f6b"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Shift</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN5chase25PerformanceDecoratorChaseE" title="chase::PerformanceDecoratorChase::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">c</span></span>, <span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">isunshift</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">false</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase25PerformanceDecoratorChase5ShiftE1Tb" title="Link to this definition"></a><br /></dt>
+<dd><p>Shifts the diagonal of matrix <code class="docutils literal notranslate"><span class="pre">A</span></code> with a specified value <code class="docutils literal notranslate"><span class="pre">c</span></code>. </p>
+<p>This method applies a shift to the diagonal of the matrix <code class="docutils literal notranslate"><span class="pre">A</span></code> by the specified amount <code class="docutils literal notranslate"><span class="pre">c</span></code>. Optionally, the shift can be undone if the <code class="docutils literal notranslate"><span class="pre">isunshift</span></code> flag is set to true.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>c</strong> – The shift value applied to the diagonal of matrix <code class="docutils literal notranslate"><span class="pre">A</span></code>. </p></li>
+<li><p><strong>isunshift</strong> – If true, undoes the shift applied to the diagonal. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase25PerformanceDecoratorChase4HEMMENSt6size_tE1T1TNSt6size_tE">
+<span id="_CPPv3N5chase25PerformanceDecoratorChase4HEMMENSt6size_tE1T1TNSt6size_tE"></span><span id="_CPPv2N5chase25PerformanceDecoratorChase4HEMMENSt6size_tE1T1TNSt6size_tE"></span><span id="chase::PerformanceDecoratorChase::HEMM__std::s.T.T.std::s"></span><span class="target" id="classchase_1_1PerformanceDecoratorChase_1a9e13d812c59e568c53c027271f428ecb"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">HEMM</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">nev</span></span>, <a class="reference internal" href="#_CPPv4I0EN5chase25PerformanceDecoratorChaseE" title="chase::PerformanceDecoratorChase::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">alpha</span></span>, <a class="reference internal" href="#_CPPv4I0EN5chase25PerformanceDecoratorChaseE" title="chase::PerformanceDecoratorChase::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">beta</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">offset</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase25PerformanceDecoratorChase4HEMMENSt6size_tE1T1TNSt6size_tE" title="Link to this definition"></a><br /></dt>
+<dd><p>Performs a matrix operation of the form (V1 = \alpha \cdot H \cdot V2 + \beta \cdot V1). </p>
+<p>This method computes the matrix operation for the input vectors (V1) and (V2) using scalars (\alpha) and (\beta), where (H) is a matrix and (V1) and (V2) are input vectors.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>nev</strong> – Number of eigenpairs involved in the operation. </p></li>
+<li><p><strong>alpha</strong> – Scalar that scales the result of (H \cdot V2). </p></li>
+<li><p><strong>beta</strong> – Scalar that scales the result of (V1). </p></li>
+<li><p><strong>offset</strong> – Column offset for the operation. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase25PerformanceDecoratorChase2QRENSt6size_tE4BaseI1TE">
+<span id="_CPPv3N5chase25PerformanceDecoratorChase2QRENSt6size_tE4BaseI1TE"></span><span id="_CPPv2N5chase25PerformanceDecoratorChase2QRENSt6size_tE4BaseI1TE"></span><span id="chase::PerformanceDecoratorChase::QR__std::s.Base:T:"></span><span class="target" id="classchase_1_1PerformanceDecoratorChase_1a5f681351594b02c6fd4e7e6bc4e6d458"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">QR</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">fixednev</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase25PerformanceDecoratorChaseE" title="chase::PerformanceDecoratorChase::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">cond</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase25PerformanceDecoratorChase2QRENSt6size_tE4BaseI1TE" title="Link to this definition"></a><br /></dt>
+<dd><p>Performs QR factorization with optional Householder transformation. </p>
+<p>This method performs a QR factorization on the matrix, optionally using Householder transformations for the computation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fixednev</strong> – Total number of converged eigenpairs before the QR factorization. </p></li>
+<li><p><strong>cond</strong> – Condition number for controlling the factorization process. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase25PerformanceDecoratorChase2RREP4BaseI1TENSt6size_tE">
+<span id="_CPPv3N5chase25PerformanceDecoratorChase2RREP4BaseI1TENSt6size_tE"></span><span id="_CPPv2N5chase25PerformanceDecoratorChase2RREP4BaseI1TENSt6size_tE"></span><span id="chase::PerformanceDecoratorChase::RR__Base:T:P.std::s"></span><span class="target" id="classchase_1_1PerformanceDecoratorChase_1a3a192b2dd37ad8bc1b52093afd1f1d5e"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">RR</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase25PerformanceDecoratorChaseE" title="chase::PerformanceDecoratorChase::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ritzv</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">block</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase25PerformanceDecoratorChase2RREP4BaseI1TENSt6size_tE" title="Link to this definition"></a><br /></dt>
+<dd><p>Performs Rayleigh-Ritz projection for eigenproblem reduction. </p>
+<p>This method projects the eigenproblem into a smaller subspace, solves the smaller problem, and reconstructs the eigenvectors.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ritzv</strong> – Array to store the computed eigenvalues. </p></li>
+<li><p><strong>block</strong> – The number of non-converged eigenpairs used for the small eigenproblem. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase25PerformanceDecoratorChase4SortEP4BaseI1TEP4BaseI1TEP4BaseI1TE">
+<span id="_CPPv3N5chase25PerformanceDecoratorChase4SortEP4BaseI1TEP4BaseI1TEP4BaseI1TE"></span><span id="_CPPv2N5chase25PerformanceDecoratorChase4SortEP4BaseI1TEP4BaseI1TEP4BaseI1TE"></span><span id="chase::PerformanceDecoratorChase::Sort__Base:T:P.Base:T:P.Base:T:P"></span><span class="target" id="classchase_1_1PerformanceDecoratorChase_1a48393043d8d2a6c6eeb994bfbd9145b2"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Sort</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase25PerformanceDecoratorChaseE" title="chase::PerformanceDecoratorChase::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ritzv</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase25PerformanceDecoratorChaseE" title="chase::PerformanceDecoratorChase::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">residLast</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase25PerformanceDecoratorChaseE" title="chase::PerformanceDecoratorChase::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">resid</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase25PerformanceDecoratorChase4SortEP4BaseI1TEP4BaseI1TEP4BaseI1TE" title="Link to this definition"></a><br /></dt>
+<dd><p>Sort the ritz values, the residuals, and the eigenvectors in ascending order. </p>
+<p>This method sorts the ritz values, the residuals, and the ritz vectors in ascending order of the ritz values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ritzv</strong> – Array to store the computed eigenvalues. </p></li>
+<li><p><strong>residLast</strong> – Array to store the residuals of the previous iteration. </p></li>
+<li><p><strong>resid</strong> – Array to store the residuals of the current iteration. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase25PerformanceDecoratorChase4ResdEP4BaseI1TEP4BaseI1TENSt6size_tE">
+<span id="_CPPv3N5chase25PerformanceDecoratorChase4ResdEP4BaseI1TEP4BaseI1TENSt6size_tE"></span><span id="_CPPv2N5chase25PerformanceDecoratorChase4ResdEP4BaseI1TEP4BaseI1TENSt6size_tE"></span><span id="chase::PerformanceDecoratorChase::Resd__Base:T:P.Base:T:P.std::s"></span><span class="target" id="classchase_1_1PerformanceDecoratorChase_1aa429a88656e5479c5ca99ed2e27f01b0"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Resd</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase25PerformanceDecoratorChaseE" title="chase::PerformanceDecoratorChase::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ritzv</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase25PerformanceDecoratorChaseE" title="chase::PerformanceDecoratorChase::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">resd</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">fixednev</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase25PerformanceDecoratorChase4ResdEP4BaseI1TEP4BaseI1TENSt6size_tE" title="Link to this definition"></a><br /></dt>
+<dd><p>Computes residuals for unconverged eigenpairs. </p>
+<p>This method computes the residuals of the eigenpairs that have not yet converged.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ritzv</strong> – Array containing the eigenvalues. </p></li>
+<li><p><strong>resd</strong> – Array to store the computed residuals for each eigenpair. </p></li>
+<li><p><strong>fixednev</strong> – Number of converged eigenpairs, which helps determine the number of non-converged eigenpairs. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase25PerformanceDecoratorChase7LanczosENSt6size_tEP4BaseI1TE">
+<span id="_CPPv3N5chase25PerformanceDecoratorChase7LanczosENSt6size_tEP4BaseI1TE"></span><span id="_CPPv2N5chase25PerformanceDecoratorChase7LanczosENSt6size_tEP4BaseI1TE"></span><span id="chase::PerformanceDecoratorChase::Lanczos__std::s.Base:T:P"></span><span class="target" id="classchase_1_1PerformanceDecoratorChase_1a31b6761506e02eab093882ba3814c3d4"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Lanczos</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">m</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase25PerformanceDecoratorChaseE" title="chase::PerformanceDecoratorChase::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">upperb</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase25PerformanceDecoratorChase7LanczosENSt6size_tEP4BaseI1TE" title="Link to this definition"></a><br /></dt>
+<dd><p>Estimates the upper bound of the user-interested spectrum using Lanczos eigensolver. </p>
+<p>This method estimates the upper bound of the spectrum of interest using the Lanczos eigensolver.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>m</strong> – Number of iterative steps for the Lanczos method. </p></li>
+<li><p><strong>upperb</strong> – Pointer to store the estimated upper bound of the spectrum. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase25PerformanceDecoratorChase7LanczosENSt6size_tENSt6size_tEP4BaseI1TEP4BaseI1TEP4BaseI1TEP4BaseI1TE">
+<span id="_CPPv3N5chase25PerformanceDecoratorChase7LanczosENSt6size_tENSt6size_tEP4BaseI1TEP4BaseI1TEP4BaseI1TEP4BaseI1TE"></span><span id="_CPPv2N5chase25PerformanceDecoratorChase7LanczosENSt6size_tENSt6size_tEP4BaseI1TEP4BaseI1TEP4BaseI1TEP4BaseI1TE"></span><span id="chase::PerformanceDecoratorChase::Lanczos__std::s.std::s.Base:T:P.Base:T:P.Base:T:P.Base:T:P"></span><span class="target" id="classchase_1_1PerformanceDecoratorChase_1a33c3e3f1458feb635367992a4e736f3d"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Lanczos</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">M</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">idx</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase25PerformanceDecoratorChaseE" title="chase::PerformanceDecoratorChase::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">upperb</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase25PerformanceDecoratorChaseE" title="chase::PerformanceDecoratorChase::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ritzv</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase25PerformanceDecoratorChaseE" title="chase::PerformanceDecoratorChase::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">Tau</span></span>, <span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase25PerformanceDecoratorChaseE" title="chase::PerformanceDecoratorChase::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ritzV</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase25PerformanceDecoratorChase7LanczosENSt6size_tENSt6size_tEP4BaseI1TEP4BaseI1TEP4BaseI1TEP4BaseI1TE" title="Link to this definition"></a><br /></dt>
+<dd><p>Performs Lanczos eigensolver with additional parameters for eigenvector and Tau storage. </p>
+<p>This method performs the Lanczos eigensolver with more advanced parameters, storing eigenvectors and Tau values for further computation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>M</strong> – Number of iterations for the Lanczos algorithm. </p></li>
+<li><p><strong>numvec</strong> – Number of vectors to be used in the Lanczos procedure. </p></li>
+<li><p><strong>upperb</strong> – Pointer to store the upper bound of the spectrum. </p></li>
+<li><p><strong>ritzv</strong> – Pointer to store the Ritz values. </p></li>
+<li><p><strong>Tau</strong> – Pointer to store the Tau values. </p></li>
+<li><p><strong>ritzV</strong> – Pointer to store the Ritz vectors. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase25PerformanceDecoratorChase10LanczosDosENSt6size_tENSt6size_tEP1T">
+<span id="_CPPv3N5chase25PerformanceDecoratorChase10LanczosDosENSt6size_tENSt6size_tEP1T"></span><span id="_CPPv2N5chase25PerformanceDecoratorChase10LanczosDosENSt6size_tENSt6size_tEP1T"></span><span id="chase::PerformanceDecoratorChase::LanczosDos__std::s.std::s.TP"></span><span class="target" id="classchase_1_1PerformanceDecoratorChase_1a07afc85a2dfa999af21589c693e57e72"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">LanczosDos</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">idx</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">m</span></span>, <a class="reference internal" href="#_CPPv4I0EN5chase25PerformanceDecoratorChaseE" title="chase::PerformanceDecoratorChase::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">ritzVc</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase25PerformanceDecoratorChase10LanczosDosENSt6size_tENSt6size_tEP1T" title="Link to this definition"></a><br /></dt>
+<dd><p>Lanczos method for Density of States (DOS) computation. </p>
+<p>This method performs a Lanczos procedure for computing the density of states.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>idx</strong> – Index for the specific Lanczos vector. </p></li>
+<li><p><strong>m</strong> – Number of iterations for the Lanczos method. </p></li>
+<li><p><strong>ritzVc</strong> – Pointer to store the Ritz vectors. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase25PerformanceDecoratorChase4SwapENSt6size_tENSt6size_tE">
+<span id="_CPPv3N5chase25PerformanceDecoratorChase4SwapENSt6size_tENSt6size_tE"></span><span id="_CPPv2N5chase25PerformanceDecoratorChase4SwapENSt6size_tENSt6size_tE"></span><span id="chase::PerformanceDecoratorChase::Swap__std::s.std::s"></span><span class="target" id="classchase_1_1PerformanceDecoratorChase_1a21b739620cee63e990cd97551dbca6e6"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Swap</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">i</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">j</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase25PerformanceDecoratorChase4SwapENSt6size_tENSt6size_tE" title="Link to this definition"></a><br /></dt>
+<dd><p>Swaps two columns in a matrix for Chebyshev filtering. </p>
+<p>This method swaps the specified columns of a matrix to facilitate Chebyshev filtering.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>i</strong> – One of the column indices to be swapped. </p></li>
+<li><p><strong>j</strong> – Another column index to be swapped. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase25PerformanceDecoratorChase4LockENSt6size_tE">
+<span id="_CPPv3N5chase25PerformanceDecoratorChase4LockENSt6size_tE"></span><span id="_CPPv2N5chase25PerformanceDecoratorChase4LockENSt6size_tE"></span><span id="chase::PerformanceDecoratorChase::Lock__std::s"></span><span class="target" id="classchase_1_1PerformanceDecoratorChase_1a33cbd7e57197252584c8248d9d198d67"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Lock</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">new_converged</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase25PerformanceDecoratorChase4LockENSt6size_tE" title="Link to this definition"></a><br /></dt>
+<dd><p>Locks the newly converged eigenvectors. </p>
+<p>This method locks the newly converged eigenvectors and increments the locked count.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>new_converged</strong> – The number of newly converged eigenvectors. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase25PerformanceDecoratorChase17checkSymmetryEasyEv">
+<span id="_CPPv3N5chase25PerformanceDecoratorChase17checkSymmetryEasyEv"></span><span id="_CPPv2N5chase25PerformanceDecoratorChase17checkSymmetryEasyEv"></span><span id="chase::PerformanceDecoratorChase::checkSymmetryEasy"></span><span class="target" id="classchase_1_1PerformanceDecoratorChase_1a70c08c0d83516256ed9a78427abff8dc"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">checkSymmetryEasy</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase25PerformanceDecoratorChase17checkSymmetryEasyEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Checks for easy symmetry in the matrix. </p>
+<p>This method performs a simple check for matrix symmetry.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">true</span></code> if the matrix is symmetric, otherwise <code class="docutils literal notranslate"><span class="pre">false</span></code>. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase25PerformanceDecoratorChase5isSymEv">
+<span id="_CPPv3N5chase25PerformanceDecoratorChase5isSymEv"></span><span id="_CPPv2N5chase25PerformanceDecoratorChase5isSymEv"></span><span id="chase::PerformanceDecoratorChase::isSym"></span><span class="target" id="classchase_1_1PerformanceDecoratorChase_1a6517303df74d1f9e206ff0367615fcdb"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">isSym</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase25PerformanceDecoratorChase5isSymEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns if the matrix is Hermitian or not. </p>
+<p>This method simply returns if the matrix is Hermitian or not</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">true</span></code> if the matrix is Hermitian, otherwise <code class="docutils literal notranslate"><span class="pre">false</span></code>. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase25PerformanceDecoratorChase24checkPseudoHermicityEasyEv">
+<span id="_CPPv3N5chase25PerformanceDecoratorChase24checkPseudoHermicityEasyEv"></span><span id="_CPPv2N5chase25PerformanceDecoratorChase24checkPseudoHermicityEasyEv"></span><span id="chase::PerformanceDecoratorChase::checkPseudoHermicityEasy"></span><span class="target" id="classchase_1_1PerformanceDecoratorChase_1a547ee39f87d8c8ee224861c15be6f69a"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">checkPseudoHermicityEasy</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase25PerformanceDecoratorChase24checkPseudoHermicityEasyEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Checks for easy pseudo-hermicity in the matrix. </p>
+<p>This method performs a simple check for matrix pseudo-hermicity</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">true</span></code> if the matrix is pseudo-hermicity, otherwise <code class="docutils literal notranslate"><span class="pre">false</span></code>. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase25PerformanceDecoratorChase12isPseudoHermEv">
+<span id="_CPPv3N5chase25PerformanceDecoratorChase12isPseudoHermEv"></span><span id="_CPPv2N5chase25PerformanceDecoratorChase12isPseudoHermEv"></span><span id="chase::PerformanceDecoratorChase::isPseudoHerm"></span><span class="target" id="classchase_1_1PerformanceDecoratorChase_1a2d6a43cbf697780133085529afdf37b6"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">isPseudoHerm</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase25PerformanceDecoratorChase12isPseudoHermEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns if the matrix is Pseudo-Hermitian or not. </p>
+<p>This method simply returns if the matrix is Pseudo-Hermitian or not</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">true</span></code> if the matrix is Pseudo-Hermitian, otherwise <code class="docutils literal notranslate"><span class="pre">false</span></code>. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase25PerformanceDecoratorChase15symOrHermMatrixEc">
+<span id="_CPPv3N5chase25PerformanceDecoratorChase15symOrHermMatrixEc"></span><span id="_CPPv2N5chase25PerformanceDecoratorChase15symOrHermMatrixEc"></span><span id="chase::PerformanceDecoratorChase::symOrHermMatrix__c"></span><span class="target" id="classchase_1_1PerformanceDecoratorChase_1a78b7ba1ecddcb414f60f15c04d25e04d"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">symOrHermMatrix</span></span></span><span class="sig-paren">(</span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">uplo</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase25PerformanceDecoratorChase15symOrHermMatrixEc" title="Link to this definition"></a><br /></dt>
+<dd><p>Sets matrix type for symmetric or Hermitian matrix. </p>
+<p>This method defines whether the matrix is symmetric or Hermitian based on the specified input.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>uplo</strong> – Specifies whether the upper or lower triangular part of the matrix is stored. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase25PerformanceDecoratorChase5StartEv">
+<span id="_CPPv3N5chase25PerformanceDecoratorChase5StartEv"></span><span id="_CPPv2N5chase25PerformanceDecoratorChase5StartEv"></span><span id="chase::PerformanceDecoratorChase::Start"></span><span class="target" id="classchase_1_1PerformanceDecoratorChase_1abfafe73e1bdbf89e5f2db70c566c76f7"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Start</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase25PerformanceDecoratorChase5StartEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Indicates the start of an eigenproblem solution. </p>
+<p>This method marks the beginning of the eigenproblem-solving process. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase25PerformanceDecoratorChase10get_nprocsEv">
+<span id="_CPPv3N5chase25PerformanceDecoratorChase10get_nprocsEv"></span><span id="_CPPv2N5chase25PerformanceDecoratorChase10get_nprocsEv"></span><span id="chase::PerformanceDecoratorChase::get_nprocs"></span><span class="target" id="classchase_1_1PerformanceDecoratorChase_1a272a37a8477f8379b416461d90b51f4f"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_nprocs</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase25PerformanceDecoratorChase10get_nprocsEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the number of MPI processes used. </p>
+<p>This method returns the number of MPI processes involved in the computation. If sequential ChASE is used, it returns <code class="docutils literal notranslate"><span class="pre">1</span></code>, indicating a single process is running.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The number of MPI processes used, represented as an integer. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase25PerformanceDecoratorChase8get_rankEv">
+<span id="_CPPv3N5chase25PerformanceDecoratorChase8get_rankEv"></span><span id="_CPPv2N5chase25PerformanceDecoratorChase8get_rankEv"></span><span id="chase::PerformanceDecoratorChase::get_rank"></span><span class="target" id="classchase_1_1PerformanceDecoratorChase_1a5f20b144fbf3ffd942578130a20df999"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_rank</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase25PerformanceDecoratorChase8get_rankEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the MPI rank. </p>
+<p>This method returns the MPI process. If sequential ChASE is used, it returns <code class="docutils literal notranslate"><span class="pre">0</span></code>, indicating a single process is running.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The number of MPI processes used, represented as an integer. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase25PerformanceDecoratorChase26set_early_locked_residualsENSt6vectorI4BaseI1TEEE">
+<span id="_CPPv3N5chase25PerformanceDecoratorChase26set_early_locked_residualsENSt6vectorI4BaseI1TEEE"></span><span id="_CPPv2N5chase25PerformanceDecoratorChase26set_early_locked_residualsENSt6vectorI4BaseI1TEEE"></span><span id="chase::PerformanceDecoratorChase::set_early_locked_residuals__std::vector:Base:T::"></span><span class="target" id="classchase_1_1PerformanceDecoratorChase_1a9695c6d3ba651662531c7df4ccbdb6b0"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">set_early_locked_residuals</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase25PerformanceDecoratorChaseE" title="chase::PerformanceDecoratorChase::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">early_locked_residuals</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase25PerformanceDecoratorChase26set_early_locked_residualsENSt6vectorI4BaseI1TEEE" title="Link to this definition"></a><br /></dt>
+<dd><p>Save the residuals of early locked eigenpairs. </p>
+<p>This method enables saving statistical data on the early locked eigenpairs to further extract statistical information. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase25PerformanceDecoratorChase3EndEv">
+<span id="_CPPv3N5chase25PerformanceDecoratorChase3EndEv"></span><span id="_CPPv2N5chase25PerformanceDecoratorChase3EndEv"></span><span id="chase::PerformanceDecoratorChase::End"></span><span class="target" id="classchase_1_1PerformanceDecoratorChase_1a18730755c5f723edd575a66a88ef2bd3"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">End</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase25PerformanceDecoratorChase3EndEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Indicates the end of an eigenproblem solution. </p>
+<p>This method marks the conclusion of the eigenproblem-solving process. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK5chase25PerformanceDecoratorChase4GetNEv">
+<span id="_CPPv3NK5chase25PerformanceDecoratorChase4GetNEv"></span><span id="_CPPv2NK5chase25PerformanceDecoratorChase4GetNEv"></span><span id="chase::PerformanceDecoratorChase::GetNC"></span><span class="target" id="classchase_1_1PerformanceDecoratorChase_1adc7f9379ac5d58be717bb2c6917d7118"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">GetN</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK5chase25PerformanceDecoratorChase4GetNEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the size of the matrix. </p>
+<p>This method returns the size of the matrix (number of rows or columns).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The size of the matrix. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase25PerformanceDecoratorChase6GetNevEv">
+<span id="_CPPv3N5chase25PerformanceDecoratorChase6GetNevEv"></span><span id="_CPPv2N5chase25PerformanceDecoratorChase6GetNevEv"></span><span id="chase::PerformanceDecoratorChase::GetNev"></span><span class="target" id="classchase_1_1PerformanceDecoratorChase_1ae1c1c58ac2c3bd9e15329cdc950ac01a"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">GetNev</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase25PerformanceDecoratorChase6GetNevEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the number of eigenpairs to be computed. </p>
+<p>This method returns the number of eigenpairs that need to be computed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The number of eigenpairs. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase25PerformanceDecoratorChase6GetNexEv">
+<span id="_CPPv3N5chase25PerformanceDecoratorChase6GetNexEv"></span><span id="_CPPv2N5chase25PerformanceDecoratorChase6GetNexEv"></span><span id="chase::PerformanceDecoratorChase::GetNex"></span><span class="target" id="classchase_1_1PerformanceDecoratorChase_1a87f1678f3c1d35955aecc104958d4d45"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">GetNex</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase25PerformanceDecoratorChase6GetNexEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the value of <code class="docutils literal notranslate"><span class="pre">nex</span></code>, which is used for specifying the number of eigenpairs. </p>
+<p>This method returns the size or number of eigenpairs required by the algorithm for the computation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The number of eigenpairs as a <code class="docutils literal notranslate"><span class="pre">std::size_t</span></code> value. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase25PerformanceDecoratorChase8GetRitzvEv">
+<span id="_CPPv3N5chase25PerformanceDecoratorChase8GetRitzvEv"></span><span id="_CPPv2N5chase25PerformanceDecoratorChase8GetRitzvEv"></span><span id="chase::PerformanceDecoratorChase::GetRitzv"></span><span class="target" id="classchase_1_1PerformanceDecoratorChase_1a2201bb54b50486d63158d0a34ca9d502"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase25PerformanceDecoratorChaseE" title="chase::PerformanceDecoratorChase::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">GetRitzv</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase25PerformanceDecoratorChase8GetRitzvEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the computed Ritz values. </p>
+<p>This method provides access to the Ritz values computed during the algorithm’s execution. These values are typically used for eigenvalue approximations and further analysis.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A pointer to an array of Ritz values of type <code class="docutils literal notranslate"><span class="pre">Base&lt;T&gt;</span></code>. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase25PerformanceDecoratorChase8GetResidEv">
+<span id="_CPPv3N5chase25PerformanceDecoratorChase8GetResidEv"></span><span id="_CPPv2N5chase25PerformanceDecoratorChase8GetResidEv"></span><span id="chase::PerformanceDecoratorChase::GetResid"></span><span class="target" id="classchase_1_1PerformanceDecoratorChase_1ae8c10186bdff065ea704e19d5b5390b0"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">Base</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase25PerformanceDecoratorChaseE" title="chase::PerformanceDecoratorChase::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">GetResid</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase25PerformanceDecoratorChase8GetResidEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the residuals of computed Ritz pairs. </p>
+<p>This method returns the residuals associated with the Ritz values. Residuals are often used to measure the accuracy or convergence of the eigenvalue problem solution.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A pointer to an array of residuals corresponding to the Ritz values of type <code class="docutils literal notranslate"><span class="pre">Base&lt;T&gt;</span></code>. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase25PerformanceDecoratorChase14GetLanczosIterEv">
+<span id="_CPPv3N5chase25PerformanceDecoratorChase14GetLanczosIterEv"></span><span id="_CPPv2N5chase25PerformanceDecoratorChase14GetLanczosIterEv"></span><span id="chase::PerformanceDecoratorChase::GetLanczosIter"></span><span class="target" id="classchase_1_1PerformanceDecoratorChase_1a59bb30bd3895e2c85bc0a61ec22a5d95"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">GetLanczosIter</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase25PerformanceDecoratorChase14GetLanczosIterEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the number of Lanczos Iterations. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The number of Lanczos Iterations as a <code class="docutils literal notranslate"><span class="pre">std::size_t</span></code> value. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase25PerformanceDecoratorChase13GetNumLanczosEv">
+<span id="_CPPv3N5chase25PerformanceDecoratorChase13GetNumLanczosEv"></span><span id="_CPPv2N5chase25PerformanceDecoratorChase13GetNumLanczosEv"></span><span id="chase::PerformanceDecoratorChase::GetNumLanczos"></span><span class="target" id="classchase_1_1PerformanceDecoratorChase_1a8e1657089889692ceec486a4b1bfb86f"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">GetNumLanczos</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase25PerformanceDecoratorChase13GetNumLanczosEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the number of runs of Lanczos. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The number of runs of Lanczos as a <code class="docutils literal notranslate"><span class="pre">std::size_t</span></code> value. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase25PerformanceDecoratorChase9GetConfigEv">
+<span id="_CPPv3N5chase25PerformanceDecoratorChase9GetConfigEv"></span><span id="_CPPv2N5chase25PerformanceDecoratorChase9GetConfigEv"></span><span id="chase::PerformanceDecoratorChase::GetConfig"></span><span class="target" id="classchase_1_1PerformanceDecoratorChase_1afe24f989fe849ccc9edd03e297fbeddb"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><a class="reference internal" href="chaseconfig.html#_CPPv4I0EN5chase11ChaseConfigE" title="chase::ChaseConfig"><span class="n"><span class="pre">ChaseConfig</span></span></a><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase25PerformanceDecoratorChaseE" title="chase::PerformanceDecoratorChase::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">GetConfig</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase25PerformanceDecoratorChase9GetConfigEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the configuration parameters used in the algorithm. </p>
+<p>This method provides access to the configuration object that contains various algorithm settings, parameters, and options.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A reference to a <code class="docutils literal notranslate"><a class="reference internal" href="chaseconfig.html#classchase_1_1ChaseConfig"><span class="std std-ref"><span class="pre">ChaseConfig</span></span></a><span class="pre">&lt;T&gt;</span></code> class containing the configuration parameters. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase25PerformanceDecoratorChase11GetPerfDataEv">
+<span id="_CPPv3N5chase25PerformanceDecoratorChase11GetPerfDataEv"></span><span id="_CPPv2N5chase25PerformanceDecoratorChase11GetPerfDataEv"></span><span id="chase::PerformanceDecoratorChase::GetPerfData"></span><span class="target" id="classchase_1_1PerformanceDecoratorChase_1a3044a3f99c106874d63b612d5477ec85"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0EN5chase13ChasePerfDataE" title="chase::ChasePerfData"><span class="n"><span class="pre">ChasePerfData</span></span></a><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase25PerformanceDecoratorChaseE" title="chase::PerformanceDecoratorChase::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">GetPerfData</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase25PerformanceDecoratorChase11GetPerfDataEv" title="Link to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase25PerformanceDecoratorChase6OutputENSt6stringE">
+<span id="_CPPv3N5chase25PerformanceDecoratorChase6OutputENSt6stringE"></span><span id="_CPPv2N5chase25PerformanceDecoratorChase6OutputENSt6stringE"></span><span id="chase::PerformanceDecoratorChase::Output__ss"></span><span class="target" id="classchase_1_1PerformanceDecoratorChase_1ac578ee7fafbc2caf4e9fa8b705a538be"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Output</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">string</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">str</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase25PerformanceDecoratorChase6OutputENSt6stringE" title="Link to this definition"></a><br /></dt>
+<dd><p>Prints intermediate information during the solving procedure. </p>
+<p>This method is used to output intermediate information or debug data during the execution of the algorithm. It is typically enabled when debugging or logging is required.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>str</strong> – A string containing the information to be printed. </p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="chaseconfig.html" class="btn btn-neutral float-left" title="1.1.3. chase::ChaseConfig" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="implementations.html" class="btn btn-neutral float-right" title="1.2.1. Implementation Classes" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, SimLab Quantum Materials.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

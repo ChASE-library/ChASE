@@ -1,0 +1,365 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>6. Examples &mdash; ChASE v1.3.0 documentation</title>
+      <link rel="stylesheet" href="theme_overrides.css" type="text/css" />
+
+  
+    <link rel="shortcut icon" href="_static/ChASE_Logo_Favicon_RGB.png"/>
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=e49d06fc"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="6.2.1. ChASE Object and Configuration" href="example/io.html" />
+    <link rel="prev" title="5. Modules" href="module.html" />
+     
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+    <link href="_static/theme_overrides.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+
+          
+          
+          <a href="index.html">
+            
+              <img src="_static/ChASE_Logo_RGB.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+  <div class="version-selector" style="margin: 10px 0; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 3px;">
+  <label for="version-select" style="display: block; color: #fcfcfc; font-size: 12px; margin-bottom: 5px; font-weight: bold;">
+    Version:
+  </label>
+  <select id="version-select" onchange="switchVersion(this.value)" style="width: 100%; padding: 5px; border: 1px solid #2980B9; border-radius: 3px; background: white; color: #333; font-size: 13px;"><option value="/ChASE/latest/">
+      latest
+    </option></select>
+</div><script>
+function switchVersion(url) {
+  // Get current path and determine base URL
+  const currentPath = window.location.pathname;
+  const pathParts = currentPath.split('/').filter(p => p);
+  
+  // Get known versions from the select options (dynamic, not hardcoded)
+  const selector = document.getElementById('version-select');
+  const knownVersions = [];
+  if (selector) {
+    for (let option of selector.options) {
+      const verName = option.text.trim();
+      knownVersions.push(verName);
+    }
+  }
+  
+  // Find the repository name in the path (e.g., "ChASE" in "/ChASE/latest/...")
+  // This handles project pages where URL is: username.github.io/repo-name/version/...
+  let repoName = '';
+  let versionIndex = -1;
+  
+  // Look for version in path (could be at index 1 or 2 depending on structure)
+  for (let i = 0; i < pathParts.length; i++) {
+    if (knownVersions.includes(pathParts[i])) {
+      versionIndex = i;
+      if (i > 0) {
+        repoName = pathParts[i - 1]; // Repository name is before version
+      }
+      break;
+    }
+  }
+  
+  // Get relative path (everything after version)
+  let relativePath = '';
+  if (versionIndex >= 0) {
+    // We're in a versioned path, get everything after version
+    relativePath = '/' + pathParts.slice(versionIndex + 1).join('/');
+  } else {
+    // We're in root or unversioned, get current path
+    relativePath = currentPath;
+  }
+  
+  // Construct new URL
+  // The URL from conf.py already includes the full path (e.g., "/ChASE/latest/")
+  // So we just need to append the relative path (page name)
+  const baseUrl = url.replace(/\/$/, ''); // Remove trailing slash
+  const cleanRelative = relativePath === '/' ? '' : relativePath.replace(/^\//, '');
+  
+  // If URL already includes the repo name, use it as-is
+  // Otherwise, we might need to add it (but conf.py should have it)
+  if (url.startsWith('http')) {
+    window.location.href = url + (cleanRelative ? '/' + cleanRelative : '');
+  } else {
+    window.location.href = baseUrl + (cleanRelative ? '/' + cleanRelative : '');
+  }
+}
+
+// Auto-detect current version from URL and update selector
+(function() {
+  const currentPath = window.location.pathname;
+  const pathParts = currentPath.split('/').filter(p => p);
+  
+  // Get known versions from select options
+  const selector = document.getElementById('version-select');
+  if (!selector) return;
+  
+  const knownVersions = [];
+  for (let option of selector.options) {
+    const verName = option.text.trim();
+    knownVersions.push(verName);
+  }
+  
+  // Look for version in path (could be at index 0, 1, or 2 depending on structure)
+  // For project pages: /repo-name/version/... (version at index 1)
+  // For user pages: /version/... (version at index 0)
+  for (let i = 0; i < pathParts.length; i++) {
+    if (knownVersions.includes(pathParts[i])) {
+      const currentVer = pathParts[i];
+      // Find option matching current version
+      for (let option of selector.options) {
+        if (option.text.trim() === currentVer) {
+          selector.value = option.value;
+          break;
+        }
+      }
+      break;
+    }
+  }
+})();
+</script>
+
+<style>
+.version-selector select:focus {
+  outline: 2px solid #2980B9;
+  outline-offset: 2px;
+}
+</style>
+
+
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">INTRODUCTION</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="chase.html">ChASE: an Iterative Solver for Dense Eigenproblems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="version.html">Versions of the library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">Licenses and Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="reference.html">References and Contributors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contribution.html">Contributing to ChASE</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">USER DOCUMENTATION</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="quick-start.html">1. Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">2. Installation and Setup on a Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">3. How to use ChASE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="parameters.html">4. Parameters and Configurations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="module.html">5. Modules</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">6. Examples</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#hello-world">6.1. Hello World</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#parallel-i-o-and-configuration">6.2. Parallel I/O and Configuration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="example/io.html">6.2.1. ChASE Object and Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="example/io.html#executables">6.2.2. Executables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="example/io.html#solving-single-problem">6.2.3. Solving single problem</a></li>
+<li class="toctree-l3"><a class="reference internal" href="example/io.html#solving-a-sequence-of-problems">6.2.4. Solving a sequence of problems</a></li>
+<li class="toctree-l3"><a class="reference internal" href="example/io.html#parser-of-command-line-arguments">6.2.5. Parser of command-line arguments</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#installation-and-linking">6.3. Installation and Linking</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#c-fortran-interface">6.4. C/Fortran Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#bse-benchmark">6.5. BSE Benchmark</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API REFERENCE</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api/index.html">1. API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ChASE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><span class="section-number">6. </span>Examples</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/example.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="examples">
+<span id="examples-chase"></span><h1><span class="section-number">6. </span>Examples<a class="headerlink" href="#examples" title="Link to this heading"></a></h1>
+<p>ChASE provides multiple examples to help users get familiar with the library.
+This section introduces these examples and explains what each one demonstrates.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>All examples are compiled when ChASE is built with the option
+<code class="docutils literal notranslate"><span class="pre">-DCHASE_BUILD_WITH_EXAMPLES=ON</span></code>.</p>
+<p>The examples use <code class="docutils literal notranslate"><span class="pre">popl</span></code> (Program Options Parser Library) for command-line
+argument parsing, which is automatically downloaded by CMake via FetchContent.
+No additional dependencies are required.</p>
+</div>
+<section id="hello-world">
+<span id="hello-world-chase"></span><h2><span class="section-number">6.1. </span>Hello World<a class="headerlink" href="#hello-world" title="Link to this heading"></a></h2>
+<p>The first example is
+<a class="reference external" href="https://github.com/ChASE-library/ChASE/tree/master/examples/1_hello_world">1_hello_world</a>.
+This example demonstrates:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Basic setup of ChASE for parallel computation (CPU or GPU)</p></li>
+<li><p>Construction of a Clement matrix</p></li>
+<li><p>Solving a sequence of eigenproblems with matrix perturbation</p></li>
+<li><p>Using the performance decorator to measure kernel performance</p></li>
+<li><p>Configuration of ChASE parameters</p></li>
+</ul>
+</div></blockquote>
+<p>The example constructs a simple Clement matrix and finds a given number of its
+eigenpairs. It then perturbs the matrix and solves the sequence of related
+eigenproblems, demonstrating how to reuse approximate solutions from previous
+problems for faster convergence.</p>
+</section>
+<section id="parallel-i-o-and-configuration">
+<h2><span class="section-number">6.2. </span>Parallel I/O and Configuration<a class="headerlink" href="#parallel-i-o-and-configuration" title="Link to this heading"></a></h2>
+<p>The second example is
+<a class="reference external" href="https://github.com/ChASE-library/ChASE/tree/master/examples/2_input_output">2_input_output</a>.
+This example demonstrates:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Command-line configuration of ChASE parameters using <code class="docutils literal notranslate"><span class="pre">popl</span></code></p></li>
+<li><p>Parallel I/O for loading distributed matrices from disk</p></li>
+<li><p>Handling sequences of eigenproblems with file-based input</p></li>
+<li><p>Support for both sequential and parallel implementations</p></li>
+<li><p>CPU and GPU implementations</p></li>
+</ul>
+</div></blockquote>
+<p>The example shows how to configure ChASE parameters from the command line and
+load matrices in parallel across multiple MPI processes. It supports both
+sequential (single-node) and parallel (multi-node) execution modes.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="example/io.html">6.2.1. ChASE Object and Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="example/io.html#executables">6.2.2. Executables</a></li>
+<li class="toctree-l1"><a class="reference internal" href="example/io.html#solving-single-problem">6.2.3. Solving single problem</a></li>
+<li class="toctree-l1"><a class="reference internal" href="example/io.html#solving-a-sequence-of-problems">6.2.4. Solving a sequence of problems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="example/io.html#parser-of-command-line-arguments">6.2.5. Parser of command-line arguments</a></li>
+</ul>
+</div>
+</section>
+<section id="installation-and-linking">
+<h2><span class="section-number">6.3. </span>Installation and Linking<a class="headerlink" href="#installation-and-linking" title="Link to this heading"></a></h2>
+<p>The third example is
+<a class="reference external" href="https://github.com/ChASE-library/ChASE/tree/master/examples/3_installation">3_installation</a>.
+This example demonstrates how to link ChASE to external applications through CMake.
+It includes:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>C++ application linking example (<code class="docutils literal notranslate"><span class="pre">chase-app.cpp</span></code>)</p></li>
+<li><p>C interface linking example (<code class="docutils literal notranslate"><span class="pre">chase-c.c</span></code>)</p></li>
+<li><p>Fortran interface linking example (<code class="docutils literal notranslate"><span class="pre">chase-f.f90</span></code>)</p></li>
+<li><p>CMake configuration files for linking ChASE</p></li>
+</ul>
+</div></blockquote>
+<p>This example does not build automatically with the compilation/installation of ChASE.
+It must be compiled independently by the user. For more information about linking
+ChASE to your application, please visit <a class="reference internal" href="usage.html#link-by-cmake"><span class="std std-ref">Compiling with CMake</span></a>.</p>
+</section>
+<section id="c-fortran-interface">
+<h2><span class="section-number">6.4. </span>C/Fortran Interface<a class="headerlink" href="#c-fortran-interface" title="Link to this heading"></a></h2>
+<p>The fourth example is
+<a class="reference external" href="https://github.com/ChASE-library/ChASE/tree/master/examples/4_interface">4_interface</a>.
+This example demonstrates the use of ChASE’s C and Fortran interfaces:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><strong>C Interface Examples</strong>:
+- <code class="docutils literal notranslate"><span class="pre">4_c_serial_chase.c</span></code>: Sequential ChASE using C interface
+- <code class="docutils literal notranslate"><span class="pre">4_c_dist_chase.c</span></code>: Parallel ChASE using C interface</p></li>
+<li><p><strong>Fortran Interface Examples</strong>:
+- <code class="docutils literal notranslate"><span class="pre">4_f_serial_chase.f90</span></code>: Sequential ChASE using Fortran interface
+- <code class="docutils literal notranslate"><span class="pre">4_f_dist_chase.f90</span></code>: Parallel ChASE using Fortran interface</p></li>
+</ul>
+</div></blockquote>
+<p>These examples show how to use ChASE from C and Fortran applications without
+directly using the C++ API. For more information about the C/Fortran interface,
+please visit <a class="reference internal" href="usage.html#c-fortran-interface"><span class="std std-ref">Interface to C/Fortran</span></a>.</p>
+</section>
+<section id="bse-benchmark">
+<h2><span class="section-number">6.5. </span>BSE Benchmark<a class="headerlink" href="#bse-benchmark" title="Link to this heading"></a></h2>
+<p>The fifth example is
+<a class="reference external" href="https://github.com/ChASE-library/ChASE/tree/master/examples/5_bse_benchmark">5_bse_benchmark</a>.
+This example demonstrates:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Solving pseudo-Hermitian eigenvalue problems (Bethe-Salpeter Equation)</p></li>
+<li><p>Using <code class="docutils literal notranslate"><span class="pre">chase::matrix::PseudoHermitianMatrix</span></code> for BSE problems</p></li>
+<li><p>Command-line configuration with extensive parameter options</p></li>
+<li><p>Support for both single and double precision</p></li>
+<li><p>Sequential and parallel implementations (CPU and GPU)</p></li>
+<li><p>Matrix input from files</p></li>
+</ul>
+</div></blockquote>
+<p>This example is specifically designed for BSE benchmark problems and shows how
+to use ChASE for pseudo-Hermitian eigenvalue problems, which require special
+handling compared to standard Hermitian problems.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="module.html" class="btn btn-neutral float-left" title="5. Modules" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="example/io.html" class="btn btn-neutral float-right" title="6.2.1. ChASE Object and Configuration" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, SimLab Quantum Materials.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

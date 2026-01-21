@@ -1,0 +1,388 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>6.2.1. ChASE Object and Configuration &mdash; ChASE v1.3.0 documentation</title>
+      <link rel="stylesheet" href="../theme_overrides.css" type="text/css" />
+
+  
+    <link rel="shortcut icon" href="../_static/ChASE_Logo_Favicon_RGB.png"/>
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=e49d06fc"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="1. API Reference" href="../api/index.html" />
+    <link rel="prev" title="6. Examples" href="../example.html" />
+     
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+    <link href="../_static/theme_overrides.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+
+          
+          
+          <a href="../index.html">
+            
+              <img src="../_static/ChASE_Logo_RGB.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+  <div class="version-selector" style="margin: 10px 0; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 3px;">
+  <label for="version-select" style="display: block; color: #fcfcfc; font-size: 12px; margin-bottom: 5px; font-weight: bold;">
+    Version:
+  </label>
+  <select id="version-select" onchange="switchVersion(this.value)" style="width: 100%; padding: 5px; border: 1px solid #2980B9; border-radius: 3px; background: white; color: #333; font-size: 13px;"><option value="/ChASE/latest/">
+      latest
+    </option></select>
+</div><script>
+function switchVersion(url) {
+  // Get current path and determine base URL
+  const currentPath = window.location.pathname;
+  const pathParts = currentPath.split('/').filter(p => p);
+  
+  // Get known versions from the select options (dynamic, not hardcoded)
+  const selector = document.getElementById('version-select');
+  const knownVersions = [];
+  if (selector) {
+    for (let option of selector.options) {
+      const verName = option.text.trim();
+      knownVersions.push(verName);
+    }
+  }
+  
+  // Find the repository name in the path (e.g., "ChASE" in "/ChASE/latest/...")
+  // This handles project pages where URL is: username.github.io/repo-name/version/...
+  let repoName = '';
+  let versionIndex = -1;
+  
+  // Look for version in path (could be at index 1 or 2 depending on structure)
+  for (let i = 0; i < pathParts.length; i++) {
+    if (knownVersions.includes(pathParts[i])) {
+      versionIndex = i;
+      if (i > 0) {
+        repoName = pathParts[i - 1]; // Repository name is before version
+      }
+      break;
+    }
+  }
+  
+  // Get relative path (everything after version)
+  let relativePath = '';
+  if (versionIndex >= 0) {
+    // We're in a versioned path, get everything after version
+    relativePath = '/' + pathParts.slice(versionIndex + 1).join('/');
+  } else {
+    // We're in root or unversioned, get current path
+    relativePath = currentPath;
+  }
+  
+  // Construct new URL
+  // The URL from conf.py already includes the full path (e.g., "/ChASE/latest/")
+  // So we just need to append the relative path (page name)
+  const baseUrl = url.replace(/\/$/, ''); // Remove trailing slash
+  const cleanRelative = relativePath === '/' ? '' : relativePath.replace(/^\//, '');
+  
+  // If URL already includes the repo name, use it as-is
+  // Otherwise, we might need to add it (but conf.py should have it)
+  if (url.startsWith('http')) {
+    window.location.href = url + (cleanRelative ? '/' + cleanRelative : '');
+  } else {
+    window.location.href = baseUrl + (cleanRelative ? '/' + cleanRelative : '');
+  }
+}
+
+// Auto-detect current version from URL and update selector
+(function() {
+  const currentPath = window.location.pathname;
+  const pathParts = currentPath.split('/').filter(p => p);
+  
+  // Get known versions from select options
+  const selector = document.getElementById('version-select');
+  if (!selector) return;
+  
+  const knownVersions = [];
+  for (let option of selector.options) {
+    const verName = option.text.trim();
+    knownVersions.push(verName);
+  }
+  
+  // Look for version in path (could be at index 0, 1, or 2 depending on structure)
+  // For project pages: /repo-name/version/... (version at index 1)
+  // For user pages: /version/... (version at index 0)
+  for (let i = 0; i < pathParts.length; i++) {
+    if (knownVersions.includes(pathParts[i])) {
+      const currentVer = pathParts[i];
+      // Find option matching current version
+      for (let option of selector.options) {
+        if (option.text.trim() === currentVer) {
+          selector.value = option.value;
+          break;
+        }
+      }
+      break;
+    }
+  }
+})();
+</script>
+
+<style>
+.version-selector select:focus {
+  outline: 2px solid #2980B9;
+  outline-offset: 2px;
+}
+</style>
+
+
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">INTRODUCTION</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../chase.html">ChASE: an Iterative Solver for Dense Eigenproblems</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../version.html">Versions of the library</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../license.html">Licenses and Copyright</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reference.html">References and Contributors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contribution.html">Contributing to ChASE</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">USER DOCUMENTATION</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../quick-start.html">1. Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">2. Installation and Setup on a Cluster</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage.html">3. How to use ChASE</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../parameters.html">4. Parameters and Configurations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../module.html">5. Modules</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../example.html">6. Examples</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../example.html#hello-world">6.1. Hello World</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../example.html#parallel-i-o-and-configuration">6.2. Parallel I/O and Configuration</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">6.2.1. ChASE Object and Configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#executables">6.2.2. Executables</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#solving-single-problem">6.2.3. Solving single problem</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#solving-a-sequence-of-problems">6.2.4. Solving a sequence of problems</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#parser-of-command-line-arguments">6.2.5. Parser of command-line arguments</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../example.html#installation-and-linking">6.3. Installation and Linking</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../example.html#c-fortran-interface">6.4. C/Fortran Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../example.html#bse-benchmark">6.5. BSE Benchmark</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API REFERENCE</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../api/index.html">1. API Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">ChASE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../example.html"><span class="section-number">6. </span>Examples</a></li>
+      <li class="breadcrumb-item active"><span class="section-number">6.2.1. </span>ChASE Object and Configuration</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/example/io.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="chase-object-and-configuration">
+<h1><span class="section-number">6.2.1. </span>ChASE Object and Configuration<a class="headerlink" href="#chase-object-and-configuration" title="Link to this heading"></a></h1>
+</section>
+<section id="executables">
+<h1><span class="section-number">6.2.2. </span>Executables<a class="headerlink" href="#executables" title="Link to this heading"></a></h1>
+<p>This examples provides multiple implementation of ChASE targeting different computing architectures with different data distribution scheme:</p>
+<ol class="arabic simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">2_input_output_seq</span></code>: sequential ChASE without MPI support, and <strong>Block Distribution</strong>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">2_input_output</span></code>: ChASE for distributed memory systems with MPI support (pure CPUs),  and <strong>Block Distribution</strong>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">2_input_output_block_cyclic</span></code>: ChASE for distributed memory systems with MPI support (pure CPUs),  and <strong>Block-Cyclic Distribution</strong>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">2_input_output_mgpu</span></code>: ChASE for distributed memory systems with MPI support (with GPUs),  and <strong>Block Distribution</strong>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">2_input_output_mgpu_block_cyclic</span></code>: ChASE for distributed memory systems with MPI support (with GPUs),  and <strong>Block-Cyclic Distribution</strong>.</p></li>
+</ol>
+<p>This example uses <cite>Boost</cite> for parsing the parameters, thus the
+required parameters and configuration can be gotten by the <cite>help</cite>
+flag:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>./2_input_output/2_input_output<span class="w"> </span>-h
+</pre></div>
+</div>
+</section>
+<section id="solving-single-problem">
+<h1><span class="section-number">6.2.3. </span>Solving single problem<a class="headerlink" href="#solving-single-problem" title="Link to this heading"></a></h1>
+<p>Here we utilize <code class="docutils literal notranslate"><span class="pre">2_input_output</span></code> as an example to illustrate the way to use ChASE to solve single eigenproblem with loading external matrix.</p>
+<p>The execution of this example through the command line is:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>mpirun<span class="w"> </span>-np<span class="w"> </span><span class="si">${</span><span class="nv">NPROCS</span><span class="si">}</span><span class="w"> </span>./2_input_output/2_input_output<span class="w"> </span>--path_in<span class="o">=</span><span class="si">${</span><span class="nv">MATRIX_BINARY_FILE</span><span class="si">}</span><span class="w"> </span>--n<span class="o">=</span><span class="si">${</span><span class="nv">RANK_OF_MATRIX</span><span class="si">}</span><span class="w"> </span>--nev<span class="o">=</span><span class="si">${</span><span class="nv">NB_of_WANTED_EIGENPAIRS</span><span class="si">}</span><span class="w"> </span>--nex<span class="o">=</span><span class="si">${</span><span class="nv">EXTERNAL_SEARCHNING_SPACE</span><span class="si">}</span><span class="w"> </span>--mode<span class="o">=</span>R
+</pre></div>
+</div>
+</section>
+<section id="solving-a-sequence-of-problems">
+<h1><span class="section-number">6.2.4. </span>Solving a sequence of problems<a class="headerlink" href="#solving-a-sequence-of-problems" title="Link to this heading"></a></h1>
+<p>Here we also utilize <code class="docutils literal notranslate"><span class="pre">2_input_output</span></code> as an example to illustrate the way to use ChASE to solve a sequence of eigenproblems with loading external matrix.</p>
+<p>The execution of this example through the command line is:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>mpirun<span class="w"> </span>-np<span class="w"> </span><span class="si">${</span><span class="nv">NPROCS</span><span class="si">}</span><span class="w"> </span>./2_input_output/2_input_output<span class="w"> </span>--path_in<span class="o">=</span><span class="si">${</span><span class="nv">DIRECTORY_STORE_MATRICES</span><span class="si">}</span><span class="w"> </span>--n<span class="o">=</span><span class="si">${</span><span class="nv">RANK_OF_MATRIX</span><span class="si">}</span><span class="w"> </span>--nev<span class="o">=</span><span class="si">${</span><span class="nv">NB_of_WANTED_EIGENPAIRS</span><span class="si">}</span><span class="w"> </span>--nex<span class="o">=</span><span class="si">${</span><span class="nv">EXTERNAL_SEARCHNING_SPACE</span><span class="si">}</span><span class="w"> </span>--legacy<span class="o">=</span><span class="nb">true</span><span class="w"> </span>--mode<span class="o">=</span>R<span class="w"> </span>--bgn<span class="o">=</span><span class="m">2</span><span class="w"> </span>--end<span class="o">=</span><span class="m">10</span><span class="w"> </span>--sequence<span class="o">=</span><span class="nb">true</span>
+</pre></div>
+</div>
+<p>In this example, for each physical system, a number (<code class="docutils literal notranslate"><span class="pre">N</span></code>) of matrices are available, which should be solved in sequence.
+All the matrices are named <code class="docutils literal notranslate"><span class="pre">gmat/</span> <span class="pre">/1/</span> <span class="pre">ell</span></code>, with <code class="docutils literal notranslate"><span class="pre">ell</span></code> varying from <code class="docutils literal notranslate"><span class="pre">1</span></code> to <code class="docutils literal notranslate"><span class="pre">N</span></code>. The flag <code class="docutils literal notranslate"><span class="pre">--legacy=true</span></code> enables
+searching the matrices conforming this naming policies in the directory <code class="docutils literal notranslate"><span class="pre">${DIRECTORY_STORE_MATRICES}</span></code>.</p>
+<p>In the execution example above, the first matrix to be solved is <code class="docutils literal notranslate"><span class="pre">gmat/</span> <span class="pre">/1/</span> <span class="pre">2</span></code>, the the last matrix  to be solved is <code class="docutils literal notranslate"><span class="pre">gmat/</span> <span class="pre">/1/</span> <span class="pre">10</span></code>.</p>
+</section>
+<section id="parser-of-command-line-arguments">
+<h1><span class="section-number">6.2.5. </span>Parser of command-line arguments<a class="headerlink" href="#parser-of-command-line-arguments" title="Link to this heading"></a></h1>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Parameter (default value)</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>-h [ –help ]</p></td>
+<td><p>show this message</p></td>
+</tr>
+<tr class="row-odd"><td><p>–n arg</p></td>
+<td><p>Size of the Input Matrix</p></td>
+</tr>
+<tr class="row-even"><td><p>–double arg (=1)</p></td>
+<td><p>Is matrix complex double valued, false indicates the
+single type</p></td>
+</tr>
+<tr class="row-odd"><td><p>–complex arg (=1)</p></td>
+<td><p>Matrix is complex valued</p></td>
+</tr>
+<tr class="row-even"><td><p>–nev arg</p></td>
+<td><p>Wanted Number of Eigenpairs</p></td>
+</tr>
+<tr class="row-odd"><td><p>–nex arg (=25)</p></td>
+<td><p>Extra Search Dimensions</p></td>
+</tr>
+<tr class="row-even"><td><p>–deg arg (=20)</p></td>
+<td><p>Initial filtering degree</p></td>
+</tr>
+<tr class="row-odd"><td><p>–bgn arg (=2)</p></td>
+<td><p>Start ell</p></td>
+</tr>
+<tr class="row-even"><td><p>–end arg (=2)</p></td>
+<td><p>End ell</p></td>
+</tr>
+<tr class="row-odd"><td><p>–tol arg (=1e-10)</p></td>
+<td><p>Tolerance for Eigenpair convergence</p></td>
+</tr>
+<tr class="row-even"><td><p>–path_in arg</p></td>
+<td><p>Path to the input matrix/matrices</p></td>
+</tr>
+<tr class="row-odd"><td><p>–mode arg (=A)</p></td>
+<td><p>valid values are R(andom) or A(pproximate)</p></td>
+</tr>
+<tr class="row-even"><td><p>–opt arg (=S)</p></td>
+<td><p>Optimi(S)e degree, or do (N)ot optimise</p></td>
+</tr>
+<tr class="row-odd"><td><p>–path_eigp arg</p></td>
+<td><p>Path to approximate solutions, only required when
+mode is Approximate, otherwise not used</p></td>
+</tr>
+<tr class="row-even"><td><p>–sequence arg (=0)</p></td>
+<td><p>Treat as sequence of Problems. Previous ChASE solution
+is used,when available</p></td>
+</tr>
+<tr class="row-odd"><td><p>–mbsize arg (=400)</p></td>
+<td><p>block size for the row, it only matters for <strong>Block-Cyclic Distribution</strong>.</p></td>
+</tr>
+<tr class="row-even"><td><p>–nbsize arg (=400)</p></td>
+<td><p>block size for the column, it only matters for <strong>Block-Cyclic Distribution</strong>.</p></td>
+</tr>
+<tr class="row-odd"><td><p>–dim0 arg (=0)</p></td>
+<td><p>row number of MPI proc grid, it only matters for <strong>Block-Cyclic Distribution</strong>.</p></td>
+</tr>
+<tr class="row-even"><td><p>–dim1 arg (=0)</p></td>
+<td><p>column number of MPI proc grid, it only matters for <strong>Block-Cyclic Distribution</strong>.</p></td>
+</tr>
+<tr class="row-odd"><td><p>–irsrc arg (=0)</p></td>
+<td><p>The process row over which the first row of matrix
+is distributed. It only matters for <strong>Block-Cyclic Distribution</strong>.</p></td>
+</tr>
+<tr class="row-even"><td><p>–icsrc arg (=0)</p></td>
+<td><p>The process column over which the first column of the
+array A isdistributed. It only matters for <strong>Block-Cyclic Distribution</strong>.</p></td>
+</tr>
+<tr class="row-odd"><td><p>–major arg (=C)</p></td>
+<td><p>Major of MPI proc grid, valid values are R(ow) or
+C(olumn). It only matters for <strong>Block-Cyclic Distribution</strong>.</p></td>
+</tr>
+<tr class="row-even"><td><p>–legacy arg (=0)</p></td>
+<td><p>Use legacy naming scheme?</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>We have generated a few number of matrices defining (sequences of) eigenproblems from multiple material science simulation codes, if you want to
+test with these matrices, please feel free to contact us.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For the fine tuning of more parameters in ChASE, please visit <a class="reference internal" href="../parameters.html#configuration-object"><span class="std std-ref">Configuration Object</span></a>, in which we provide a class
+to set up all the parameters of eigensolvers. For the suggestion of selecting values of parameters, please visit <a class="reference internal" href="../parameters.html#parameters-and-config"><span class="std std-ref">Parameters and Configurations</span></a>.</p>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../example.html" class="btn btn-neutral float-left" title="6. Examples" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../api/index.html" class="btn btn-neutral float-right" title="1. API Reference" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, SimLab Quantum Materials.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
