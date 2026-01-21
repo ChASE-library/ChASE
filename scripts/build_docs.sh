@@ -34,6 +34,21 @@ else
     fi
 fi
 
+# Update version list in conf.py before building
+if [ -f "scripts/update_version_list.py" ] && [ -f "docs/conf.py" ]; then
+    echo "Updating version list in conf.py..."
+    # Pass the current version being built so it's included even if tag doesn't exist yet
+    if [ "$VERSION_TAG" != "latest" ]; then
+        python3 scripts/update_version_list.py docs/conf.py "$VERSION_TAG" || {
+            echo "⚠️  Warning: Failed to update version list, continuing with existing versions"
+        }
+    else
+        python3 scripts/update_version_list.py docs/conf.py || {
+            echo "⚠️  Warning: Failed to update version list, continuing with existing versions"
+        }
+    fi
+fi
+
 # Update Sphinx conf.py with detected version
 if [ -f "docs/conf.py" ]; then
     if [ "$VERSION_TAG" != "latest" ]; then
@@ -44,8 +59,12 @@ if [ -f "docs/conf.py" ]; then
     fi
 fi
 
-# Create build directory
+# Create build directory (clean it first to ensure fresh build)
 BUILD_DIR="build_docs"
+if [ -d "$BUILD_DIR" ]; then
+    echo "Cleaning previous build directory..."
+    rm -rf "$BUILD_DIR"
+fi
 mkdir -p "$BUILD_DIR"
 cd "$BUILD_DIR"
 
