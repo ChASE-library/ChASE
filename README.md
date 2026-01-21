@@ -113,15 +113,14 @@ cmake .. -DCHASE_BUILD_WITH_EXAMPLES=ON
 
 - Edoardo Di Napoli – Algorithm design and development
 - Xinzhe Wu – Algorithm development, advanced parallel (MPI and GPU) implementation and optimization, developer documentation
+- Clément Richefort - Integration of ChASE into [YAMBO](https://www.yambo-code.eu/) code.
 
 ### Current contributors
 
-- Clément Richefort - Integration of ChASE into [YAMBO](https://www.yambo-code.eu/) code.
-- Davor Davidović – Advanced parallel GPU implementation and optimization
-- Nenad Mijić – ARM-based implementation and optimization, CholeskyQR, unitests, parallel IO
-
 ### Past contributors
 
+- Davor Davidović – Advanced parallel GPU implementation and optimization
+- Nenad Mijić – ARM-based implementation and optimization, CholeskyQR, unitests, parallel IO
 - Xiao Zhang – Integration of ChASE into Jena BSE code
 - Miriam Hinzen, Daniel Wortmann – Integration of ChASE into FLEUR code
 - Sebastian Achilles – Library benchmarking on parallel platforms, documentation
