@@ -15,6 +15,9 @@ if(TARGET pchase_gpu)
 else()
     target_link_libraries("chase_c" PUBLIC pchase_cpu)
 endif()
+# Note: NO_MPI is not defined here since chase_c always links to parallel targets (pchase_*)
+# which require MPI. Serial targets (chase_*) are linked for implementation but don't define NO_MPI
+# to avoid conflicts with parallel targets.
 
 target_include_directories("chase_c" INTERFACE 
                                                $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>

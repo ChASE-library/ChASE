@@ -73,8 +73,8 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'ChASE'
-copyright = u'2023, SimLab Quantum Materials'
-author = u'Edoardo Di Napoli'
+copyright = u'2026, SimLab Quantum Materials'
+author = u'Edoardo Di Napoli, Xinzhe Wu'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -181,6 +181,8 @@ html_context = {
     'current_version': version,
     'versions': {
         'latest': '/ChASE/latest/',
+        'v1.5.0': '/ChASE/v1.5.0/',
+        'v1.7.0': '/ChASE/v1.7.0/',
     },
     'version_selector': True,  # Enable version selector
      }

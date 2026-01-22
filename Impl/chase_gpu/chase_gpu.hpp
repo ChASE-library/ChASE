@@ -1,5 +1,5 @@
 // This file is a part of ChASE.
-// Copyright (c) 2015-2024, Simulation and Data Laboratory Quantum Materials,
+// Copyright (c) 2015-2026, Simulation and Data Laboratory Quantum Materials,
 //   Forschungszentrum Juelich GmbH, Germany. All rights reserved.
 // License is 3-clause BSD:
 // https://github.com/ChASE-library/ChASE
@@ -308,10 +308,10 @@ public:
     std::size_t GetNev() override { return nev_; }
 
     std::size_t GetNex() override { return nex_; }
-            
-    std::size_t GetLanczosIter() override {return lanczosIter_;}
-	    
-    std::size_t GetNumLanczos() override {return numLanczos_;}
+
+    std::size_t GetLanczosIter() override { return lanczosIter_; }
+
+    std::size_t GetNumLanczos() override { return numLanczos_; }
 
     chase::Base<T>* GetRitzv() override { return ritzv_; }
     chase::Base<T>* GetResid() override
@@ -322,7 +322,7 @@ public:
     ChaseConfig<T>& GetConfig() override { return config_; }
     int get_nprocs() override { return 1; }
     int get_rank() override { return 0; }
-    	    
+
     void loadProblemFromFile(std::string filename)
     {
         SCOPED_NVTX_RANGE();
@@ -391,8 +391,8 @@ public:
     void Lanczos(std::size_t M, chase::Base<T>* upperb) override
     {
         SCOPED_NVTX_RANGE();
-	lanczosIter_ = M;
-	numLanczos_  = 1;
+        lanczosIter_ = M;
+        numLanczos_ = 1;
         chase::linalg::internal::cuda::lanczos(cublasH_, M, Hmat_, Vec1_,
                                                upperb);
     }
@@ -402,8 +402,8 @@ public:
                  chase::Base<T>* ritzV) override
     {
         SCOPED_NVTX_RANGE();
-	lanczosIter_ = M;
-	numLanczos_  = numvec;
+        lanczosIter_ = M;
+        numLanczos_ = numvec;
         chase::linalg::internal::cuda::lanczos(
             cublasH_, M, numvec, Hmat_, Vec1_, upperb, ritzv, Tau, ritzV);
     }
@@ -575,16 +575,22 @@ public:
              * Vec1_ at the end of QR. */
         }
 
-    	if constexpr (std::is_same<typename MatrixType::hermitian_type, chase::matrix::Hermitian>::value)
+        if constexpr (std::is_same<typename MatrixType::hermitian_type,
+                                   chase::matrix::Hermitian>::value)
         {
 #ifdef ChASE_DISPLAY_COND_V_SVD
             std::vector<T> V_tmp(Vec1_.ld() * (Vec1_.cols() - locked_));
-            CHECK_CUDA_ERROR(cudaMemcpy(V_tmp.data(), Vec1_.data() + locked_ * Vec1_.ld(), (Vec1_.cols() - locked_) * Vec1_.ld() * sizeof(T), cudaMemcpyDeviceToHost));
-            auto cond_v = chase::linalg::internal::cpu::computeConditionNumber(Vec1_.rows(), Vec1_.cols() - locked_, V_tmp.data(), Vec1_.ld());
+            CHECK_CUDA_ERROR(
+                cudaMemcpy(V_tmp.data(), Vec1_.data() + locked_ * Vec1_.ld(),
+                           (Vec1_.cols() - locked_) * Vec1_.ld() * sizeof(T),
+                           cudaMemcpyDeviceToHost));
+            auto cond_v = chase::linalg::internal::cpu::computeConditionNumber(
+                Vec1_.rows(), Vec1_.cols() - locked_, V_tmp.data(), Vec1_.ld());
 
-            std::cout << "Exact condition number of V from SVD: " << cond_v << std::endl;
+            std::cout << "Exact condition number of V from SVD: " << cond_v
+                      << std::endl;
 #endif
-        }    
+        }
 
         int disable = config_.DoCholQR() ? 0 : 1;
         char* cholddisable = getenv("CHASE_DISABLE_CHOLQR");
@@ -672,12 +678,12 @@ public:
 #ifdef XGEEV_EXISTS
             chase::linalg::internal::cuda::rayleighRitz(
                 cublasH_, cusolverH_, params_, Hmat_, Vec1_, Vec2_, ritzvs_,
-                locked, block, devInfo_, d_work_, lwork_,h_work_.get(),
-                lhwork_,&A_);
+                locked, block, devInfo_, d_work_, lwork_, h_work_.get(),
+                lhwork_, &A_);
 #else
             chase::linalg::internal::cuda::rayleighRitz_v2(
                 cublasH_, cusolverH_, params_, Hmat_, Vec1_, Vec2_, ritzvs_,
-                locked, block, devInfo_, d_work_, lwork_,&A_);
+                locked, block, devInfo_, d_work_, lwork_, &A_);
 #endif
         }
         else
@@ -731,17 +737,17 @@ public:
     }
 
 private:
-    std::size_t N_;              /**< Size of the matrix. */
-    T* H_;                       /**< Pointer to the matrix \( H \). */
-    T* V1_;                      /**< Pointer to the matrix \( V_1 \). */
-    std::size_t ldh_;            /**< Leading dimension of matrix \( H \). */
-    std::size_t ldv_;            /**< Leading dimension of matrix \( V_1 \). */
-    chase::Base<T>* ritzv_;      /**< Pointer to the Ritz values vector. */
-    std::size_t nev_;            /**< Number of eigenvalues to compute. */
-    std::size_t nex_;            /**< Number of extra vectors. */
-    std::size_t nevex_;          /**< Total number of eigenvalues and extra vectors. */
-    std::size_t lanczosIter_;    /**< Number of Lanczos Iterations.*/
-    std::size_t numLanczos_;     /**< Number of Runs of Lanczos.*/
+    std::size_t N_;         /**< Size of the matrix. */
+    T* H_;                  /**< Pointer to the matrix \( H \). */
+    T* V1_;                 /**< Pointer to the matrix \( V_1 \). */
+    std::size_t ldh_;       /**< Leading dimension of matrix \( H \). */
+    std::size_t ldv_;       /**< Leading dimension of matrix \( V_1 \). */
+    chase::Base<T>* ritzv_; /**< Pointer to the Ritz values vector. */
+    std::size_t nev_;       /**< Number of eigenvalues to compute. */
+    std::size_t nex_;       /**< Number of extra vectors. */
+    std::size_t nevex_; /**< Total number of eigenvalues and extra vectors. */
+    std::size_t lanczosIter_; /**< Number of Lanczos Iterations.*/
+    std::size_t numLanczos_;  /**< Number of Runs of Lanczos.*/
 
     T* tmp_;             /**< Temporary buffer for GPU computations. */
     bool is_sym_;        ///< Flag for matrix symmetry.

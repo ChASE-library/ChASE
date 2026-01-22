@@ -1,5 +1,5 @@
 // This file is a part of ChASE.
-// Copyright (c) 2015-2024, Simulation and Data Laboratory Quantum Materials,
+// Copyright (c) 2015-2026, Simulation and Data Laboratory Quantum Materials,
 //   Forschungszentrum Juelich GmbH, Germany. All rights reserved.
 // License is 3-clause BSD:
 // https://github.com/ChASE-library/ChASE
@@ -219,7 +219,7 @@ public:
         \return The value of the `optimization_` flag
      */
     void SetOpt(bool flag) { optimization_ = flag; }
-    
+
     //! Returns the integer value of the maximum degree used by the polynomial
     //! filter.
     /*! The value of `max_deg_` indicates the upper bound for the degree
@@ -439,26 +439,26 @@ public:
 
     void EnableSymCheck(bool flag) { sym_check_ = flag; }
     bool DoSymCheck() { return sym_check_; }
-    
+
     //! Returns the decaying rate for the polynomial lower bound
-    /*! The lower bound of the chebyshev lower bound is set based 
-     *  on an approximation of the eigenvalues by few iterations of lanczos. 
-     *  It might be better to use under estimation of the lower bound in 
-     *  certain cases, for instance if the target eigenvalues are packed. 
+    /*! The lower bound of the chebyshev lower bound is set based
+     *  on an approximation of the eigenvalues by few iterations of lanczos.
+     *  It might be better to use under estimation of the lower bound in
+     *  certain cases, for instance if the target eigenvalues are packed.
      */
     float GetDecayingRate() const { return decaying_rate_; }
 
     //! Sets the decaying rate for the polynomial lower bound
-    /*! The lower bound of the chebyshev lower bound is set based 
-     *  on an approximation of the eigenvalues by few iterations of lanczos. 
-     *  It might be better to use under estimation of the lower bound in 
-     *  certain cases, for instance if the target eigenvalues are packed. 
+    /*! The lower bound of the chebyshev lower bound is set based
+     *  on an approximation of the eigenvalues by few iterations of lanczos.
+     *  It might be better to use under estimation of the lower bound in
+     *  certain cases, for instance if the target eigenvalues are packed.
      */
     void SetDecayingRate(float decayingRate) { decaying_rate_ = decayingRate; }
 
     //! Returns whether cluster-aware degree optimization is enabled
-    /*! When enabled, the algorithm detects clusters of eigenvalues and 
-     *  adjusts polynomial degrees accordingly to improve convergence for 
+    /*! When enabled, the algorithm detects clusters of eigenvalues and
+     *  adjusts polynomial degrees accordingly to improve convergence for
      *  clustered eigenvalues.
      */
     bool UseClusterAwareDegrees() const { return cluster_aware_degrees_; }
@@ -485,7 +485,10 @@ public:
         For negative upperb, it's multiplied by (2 - rate).
         Default value is 1.2.
      */
-    void SetUpperbScaleRate(float upperbScaleRate) { upperb_scale_rate_ = upperbScaleRate; }
+    void SetUpperbScaleRate(float upperbScaleRate)
+    {
+        upperb_scale_rate_ = upperbScaleRate;
+    }
 
 private:
     ///////////////////////////////////////////////////
@@ -544,7 +547,7 @@ private:
        set to `true`.
      */
     bool optimization_;
-    
+
     //! An optional flag indicating if approximate eigenvectors are provided by
     //! the user.
     /*!
@@ -552,7 +555,7 @@ private:
        set to `false`.
      */
     bool approx_;
-    
+
     //! An optional parameters limiting the total number of internal while loops
     //! ChASE executes.
     /*!
@@ -571,7 +574,7 @@ private:
         constructor. Its default value is set to *36* and *18* in double and
         single precision, respectively.
      */
-    
+
     std::size_t max_deg_;
 
     //! An optional parameter augmenting of few units the polynomial degree
@@ -603,7 +606,7 @@ private:
         default value is set to *4*.
      */
     std::size_t num_lanczos_;
-    
+
     //! Optional parameter indicating the decaying rate of the lower bound
     //! of the Chebyshev polynomial
     /*!
@@ -617,7 +620,8 @@ private:
 
     bool sym_check_ = true;
 
-    //! Optional parameter indicating the scale rate for upperb based on its sign
+    //! Optional parameter indicating the scale rate for upperb based on its
+    //! sign
     /*!
         This variable is initialized by the constructor. Its
         default value is set to 1.2.
@@ -634,7 +638,6 @@ private:
         is set to true.
      */
     bool cluster_aware_degrees_;
-
 };
 
 template <typename T>
@@ -664,6 +667,10 @@ std::ostream& operator<<(std::ostream& oss_, const ChaseConfig<T>& rhs)
         << "Parameters for Spectral Estimates"
         << "\n";
     pretty_print(oss, "# of Lanczos Iterations:", rhs.GetLanczosIter());
+    pretty_print(oss, "# of Lanczos Vectors:", rhs.GetNumLanczos());
+    pretty_print(oss, "Decaying Rate:", rhs.GetDecayingRate());
+    pretty_print(oss, "Upperb Scale Rate:", rhs.GetUpperbScaleRate());
+    pretty_print(oss, "Cluster-Aware Degrees:", rhs.UseClusterAwareDegrees());
     oss << "\n";
 
     oss_ << oss.str();

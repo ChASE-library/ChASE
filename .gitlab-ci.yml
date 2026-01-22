@@ -6,7 +6,7 @@ stages:
   - build
   - test
   - coverage
-  # - upload
+  - upload
 
 .default_source_changes: &only_source_changes
   rules:
@@ -32,7 +32,7 @@ build_cpu:
     - cmake --version
     - mkdir -p build_cpu
     - cd build_cpu
-    - env CFLAGS="$CFLAGS --coverage" CXXFLAGS="$CXXFLAGS --coverage" FFLAGS="$FFLAGS --coverage" cmake -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_Fortran_COMPILER=mpifort -DCHASE_ENABLE_MIXED_PRECISION=ON -DENABLE_TESTS=ON -DMPI_RUN_ARGS="--allow-run-as-root" .. -DCMAKE_EXE_LINKER_FLAGS="-lgfortran -Wl,--copy-dt-needed-entries --coverage"
+    - env CFLAGS="$CFLAGS --coverage" CXXFLAGS="$CXXFLAGS --coverage" FFLAGS="$FFLAGS --coverage" cmake -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_Fortran_COMPILER=mpifort -DCHASE_ENABLE_MIXED_PRECISION=ON -DCHASE_ENABLE_TESTS=ON -DMPI_RUN_ARGS="--allow-run-as-root" .. -DCMAKE_EXE_LINKER_FLAGS="-lgfortran -Wl,--copy-dt-needed-entries --coverage"
     - make VERBOSE=1 -j4
   artifacts:
     paths:
@@ -75,7 +75,7 @@ build_gpu:
     - cmake --version
     - mkdir -p build_gpu
     - cd build_gpu
-    - env CFLAGS="$CFLAGS --coverage" CXXFLAGS="$CXXFLAGS --coverage" FFLAGS="$FFLAGS --coverage" cmake -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_Fortran_COMPILER=mpifort -DCHASE_ENABLE_MIXED_PRECISION=ON -DENABLE_TESTS=ON -DMPI_RUN="srun" .. -DCMAKE_EXE_LINKER_FLAGS="--coverage"
+    - env CFLAGS="$CFLAGS --coverage" CXXFLAGS="$CXXFLAGS --coverage" FFLAGS="$FFLAGS --coverage" cmake -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_Fortran_COMPILER=mpifort -DCHASE_ENABLE_MIXED_PRECISION=ON -DCHASE_ENABLE_TESTS=ON -DMPI_RUN="srun" .. -DCMAKE_EXE_LINKER_FLAGS="--coverage"
     - make VERBOSE=1 -j8
   artifacts:
     paths:
@@ -109,7 +109,7 @@ test_gpu:
       - build_gpu/*
     expire_in: 1 week
 
-coverage:
+coverage_generate:
   stage: coverage
   coverage: '/lines......: (\d+[.]\d+)/'
   dependencies:
@@ -120,4 +120,67 @@ coverage:
   <<: *only_source_changes
   script:
     - lcov --capture --directory ./build_gpu --output-file coverage.info
-    - lcov --summary coverage.info
+
+    # Extract coverage number
+    - |
+      COV=$(lcov --summary coverage.info | grep -oP 'lines.*: \K\d+\.\d+')
+      echo "Total coverage = ${COV}%"
+
+    # Choose badge color
+    - |
+      if (( $(echo "$COV < 70" | bc -l) )); then COLOR=red
+      elif (( $(echo "$COV < 85" | bc -l) )); then COLOR=yellow
+      else COLOR=brightgreen
+      fi
+
+    # Create Shields-compatible JSON
+    - |
+      mkdir -p coverage
+      cat <<EOF > coverage/coverage.json
+      {
+        "schemaVersion": 1,
+        "label": "coverage (master)",
+        "message": "${COV}%",
+        "color": "${COLOR}"
+      }
+      EOF
+  artifacts:
+    paths:
+      - coverage/coverage.json
+    expire_in: 1 week
+
+coverage_upload:
+  stage: upload
+  dependencies:
+    - coverage_generate
+  tags:
+    - juwels_booster
+    - jacamar
+    - login
+    - shell
+  id_tokens:
+    SITE_ID_TOKEN:
+      aud: https://gitlab.jsc.fz-juelich.de
+  <<: *only_source_changes
+  script:
+    - set -e
+    - echo "Uploading coverage badge"
+
+    - git config --global user.name "ChASE Bot"
+    - git config --global user.email "chase@fz-juelich.de"
+
+    - git clone https://oauth2:${BADGE_PUSH_TOKEN}@gitlab.jsc.fz-juelich.de/wu7/chase-coverage-badges.git badge_repo
+    - cd badge_repo
+
+    - mkdir -p coverage
+    - cp ../coverage/coverage.json coverage/coverage.json
+
+    - git add coverage/coverage.json
+    - |
+      if git diff --cached --quiet; then
+        echo "Coverage unchanged, nothing to push"
+        exit 0
+      fi
+
+    - git commit -m "Update ChASE coverage badge"
+    - git push origin main

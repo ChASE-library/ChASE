@@ -18,11 +18,11 @@ This section introduces these examples and explains what each one demonstrates.
 
 .. _hello-world-chase:
 
-0. Hello World
+Hello World
 ================
 
 The first example is 
-`0_hello_world <https://github.com/ChASE-library/ChASE/tree/master/examples/0_hello_world>`_. 
+`1_hello_world <https://github.com/ChASE-library/ChASE/tree/master/examples/1_hello_world>`_. 
 This example demonstrates:
 
   * Basic setup of ChASE for parallel computation (CPU or GPU)
@@ -36,7 +36,7 @@ eigenpairs. It then perturbs the matrix and solves the sequence of related
 eigenproblems, demonstrating how to reuse approximate solutions from previous 
 problems for faster convergence.
 
-1. Parallel I/O and Configuration
+Parallel I/O and Configuration
 ===================================
 
 The second example is 
@@ -58,7 +58,7 @@ sequential (single-node) and parallel (multi-node) execution modes.
 
    example/io
 
-2. Installation and Linking
+Installation and Linking
 ============================
 
 The third example is 
@@ -75,7 +75,7 @@ This example does not build automatically with the compilation/installation of C
 It must be compiled independently by the user. For more information about linking 
 ChASE to your application, please visit :ref:`link_by_cmake`.
 
-3. C/Fortran Interface
+C/Fortran Interface
 ============================
 
 The fourth example is 
@@ -94,7 +94,7 @@ These examples show how to use ChASE from C and Fortran applications without
 directly using the C++ API. For more information about the C/Fortran interface, 
 please visit :ref:`c_fortran_interface`.
 
-4. BSE Benchmark
+BSE Benchmark
 ==================
 
 The fifth example is 
@@ -102,7 +102,7 @@ The fifth example is
 This example demonstrates:
 
   * Solving pseudo-Hermitian eigenvalue problems (Bethe-Salpeter Equation)
-  * Using ``chase::matrix::QuasiHermitianMatrix`` for BSE problems
+  * Using ``chase::matrix::PseudoHermitianMatrix`` for BSE problems
   * Command-line configuration with extensive parameter options
   * Support for both single and double precision
   * Sequential and parallel implementations (CPU and GPU)

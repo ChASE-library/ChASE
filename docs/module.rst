@@ -211,7 +211,7 @@ implementation of ChASE. It supports:
 
   * **Matrix Types**: 
     - ``chase::matrix::Matrix<T>`` for Hermitian (symmetric) eigenvalue problems
-    - ``chase::matrix::QuasiHermitianMatrix<T>`` for pseudo-Hermitian eigenvalue problems
+    - ``chase::matrix::PseudoHermitianMatrix<T>`` for pseudo-Hermitian eigenvalue problems
 
   * **Backend**: BLAS and LAPACK libraries for numerical computations
 
@@ -233,7 +233,7 @@ implementation of ChASE. It supports:
 
   * **Matrix Types**: 
     - ``chase::matrix::Matrix<T, chase::platform::GPU>`` for Hermitian problems
-    - ``chase::matrix::QuasiHermitianMatrix<T, chase::platform::GPU>`` for pseudo-Hermitian problems
+    - ``chase::matrix::PseudoHermitianMatrix<T, chase::platform::GPU>`` for pseudo-Hermitian problems
 
   * **Backend**: cuBLAS and cuSOLVER libraries for GPU computations
 
@@ -260,8 +260,8 @@ provides a parallel CPU implementation of ChASE using MPI. It supports:
     - ``chase::distMatrix::BlockBlockMatrix<T, chase::platform::CPU>``
     - ``chase::distMatrix::BlockCyclicMatrix<T, chase::platform::CPU>``
     - ``chase::distMatrix::RedundantMatrix<T, chase::platform::CPU>``
-    - ``chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, chase::platform::CPU>``
-    - ``chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T, chase::platform::CPU>``
+    - ``chase::distMatrix::PseudoHermitianBlockBlockMatrix<T, chase::platform::CPU>``
+    - ``chase::distMatrix::PseudoHermitianBlockCyclicMatrix<T, chase::platform::CPU>``
 
   * **Backend**: 
     - ``chase::grid::backend::MPI`` for communication
@@ -286,8 +286,8 @@ provides a parallel GPU implementation of ChASE. It supports:
   * **Matrix Types**: Distributed GPU matrix classes
     - ``chase::distMatrix::BlockBlockMatrix<T, chase::platform::GPU>``
     - ``chase::distMatrix::BlockCyclicMatrix<T, chase::platform::GPU>``
-    - ``chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, chase::platform::GPU>``
-    - ``chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T, chase::platform::GPU>``
+    - ``chase::distMatrix::PseudoHermitianBlockBlockMatrix<T, chase::platform::GPU>``
+    - ``chase::distMatrix::PseudoHermitianBlockCyclicMatrix<T, chase::platform::GPU>``
 
   * **Backends**: 
     - ``chase::grid::backend::MPI`` for CPU-based MPI communication
@@ -332,10 +332,10 @@ class for Hermitian (symmetric) eigenvalue problems. It provides:
 **API Reference**: :ref:`api_matrices`
 
 
-chase::matrix::QuasiHermitianMatrix
+chase::matrix::PseudoHermitianMatrix
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The class ``chase::matrix::QuasiHermitianMatrix<T, Platform, Allocator>`` is 
+The class ``chase::matrix::PseudoHermitianMatrix<T, Platform, Allocator>`` is 
 derived from ``chase::matrix::Matrix<T, Platform, Allocator>`` and is designed 
 for pseudo-Hermitian eigenvalue problems, such as those arising from the 
 Bethe-Salpeter Equation (BSE). It provides:
@@ -357,7 +357,7 @@ Type Tags
 The library also provides type tags for matrix classification:
 
   * ``chase::matrix::Hermitian``: Type tag for Hermitian matrices
-  * ``chase::matrix::QuasiHermitian``: Type tag for pseudo-Hermitian matrices
+  * ``chase::matrix::PseudoHermitian``: Type tag for pseudo-Hermitian matrices
 
 
 Distributed Matrix Classes
@@ -415,10 +415,10 @@ when redistribution is needed.
 Pseudo-Hermitian Distributed Matrices
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-chase::distMatrix::QuasiHermitianBlockBlockMatrix
+chase::distMatrix::PseudoHermitianBlockBlockMatrix
 """""""""""""""""""""""""""""""""""""""""""""""""
 
-The class ``chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, Platform>`` 
+The class ``chase::distMatrix::PseudoHermitianBlockBlockMatrix<T, Platform>`` 
 provides block-wise distribution for pseudo-Hermitian matrices.
 
   * **Distribution**: Block-wise (same as BlockBlockMatrix)
@@ -427,10 +427,10 @@ provides block-wise distribution for pseudo-Hermitian matrices.
 **API Reference**: :ref:`api_matrices`
 
 
-chase::distMatrix::QuasiHermitianBlockCyclicMatrix
+chase::distMatrix::PseudoHermitianBlockCyclicMatrix
 """"""""""""""""""""""""""""""""""""""""""""""""""
 
-The class ``chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T, Platform>`` 
+The class ``chase::distMatrix::PseudoHermitianBlockCyclicMatrix<T, Platform>`` 
 provides block-cyclic distribution for pseudo-Hermitian matrices.
 
   * **Distribution**: Block-cyclic (same as BlockCyclicMatrix)
@@ -563,15 +563,15 @@ Each kernel namespace provides implementations of the following operations:
 
   * **Rayleigh-Ritz Projection**:
     - ``rayleighRitz()``: Standard Rayleigh-Ritz for Hermitian problems
-    - ``quasi_hermitian_rayleighRitz()``: Oblique Rayleigh-Ritz for pseudo-Hermitian problems
+    - ``pseudo_hermitian_rayleighRitz()``: Oblique Rayleigh-Ritz for pseudo-Hermitian problems
 
   * **Lanczos Algorithm**:
     - ``lanczos()``: Spectrum estimation for Hermitian problems
-    - ``quasi_hermitian_lanczos()``: Spectrum estimation for pseudo-Hermitian problems
+    - ``pseudo_hermitian_lanczos()``: Spectrum estimation for pseudo-Hermitian problems
 
   * **Matrix Operations**:
     - ``hemm()``: Hermitian matrix-matrix multiplication
-    - ``quasi_hermitian_hemm()``: Pseudo-Hermitian matrix-matrix multiplication
+    - ``pseudo_hermitian_hemm()``: Pseudo-Hermitian matrix-matrix multiplication
 
   * **Factorization**:
     - ``cholqr()``: Cholesky-QR factorization (with S-orthonormalization for pseudo-Hermitian)

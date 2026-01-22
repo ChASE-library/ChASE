@@ -1,14 +1,15 @@
 // This file is a part of ChASE.
-// Copyright (c) 2015-2024, Simulation and Data Laboratory Quantum Materials,
+// Copyright (c) 2015-2026, Simulation and Data Laboratory Quantum Materials,
 //   Forschungszentrum Juelich GmbH, Germany. All rights reserved.
 // License is 3-clause BSD:
 // https://github.com/ChASE-library/ChASE
 
 #pragma once
 
-#include <complex>  // For std::complex types
-#include <iostream> // For std::cout
-#include <memory>   // For std::unique_ptr, std::shared_ptr
+#include <algorithm> // For std::max_element
+#include <complex>   // For std::complex types
+#include <iostream>  // For std::cout
+#include <memory>    // For std::unique_ptr, std::shared_ptr
 #include <mpi.h>
 #include <omp.h>     // For OpenMP parallelization
 #include <stdexcept> // For throwing runtime errors
@@ -204,13 +205,13 @@ public:
      * @brief Get the block size for block-cyclic distribution.
      * @return Block size for distribution.
      */
-    virtual std::size_t mb() const = 0; 
-    /** 
+    virtual std::size_t mb() const = 0;
+    /**
      * @brief Returns the number of row blocks.
-     * 
+     *
      * @return The number of row blocks.
-     */   
-    virtual std::size_t mblocks() const = 0; 
+     */
+    virtual std::size_t mblocks() const = 0;
     /**
      * @brief Get the local index for the lower half.
      * @return The local index for the lower half.
@@ -446,11 +447,11 @@ public:
     }
 
     // Enable double precision for float types
-    template <typename U = T,
-              typename std::enable_if<
-                  std::is_same<U, float>::value ||
-                      std::is_same<U, std::complex<float>>::value,
-                  int>::type = 0>
+    template <
+        typename U = T,
+        typename std::enable_if<std::is_same<U, float>::value ||
+                                    std::is_same<U, std::complex<float>>::value,
+                                int>::type = 0>
     void enableDoublePrecision()
     {
         if (!double_precision_multivec_)
@@ -517,11 +518,11 @@ public:
     }
 
     // Disable double precision for float types
-    template <typename U = T,
-              typename std::enable_if<
-                  std::is_same<U, float>::value ||
-                      std::is_same<U, std::complex<float>>::value,
-                  int>::type = 0>
+    template <
+        typename U = T,
+        typename std::enable_if<std::is_same<U, float>::value ||
+                                    std::is_same<U, std::complex<float>>::value,
+                                int>::type = 0>
     void disableDoublePrecision(bool copyback = false)
     {
         start = std::chrono::high_resolution_clock::now();
@@ -578,22 +579,22 @@ public:
     }
 
     // Check if double precision is enabled
-    template <typename U = T,
-              typename std::enable_if<
-                  std::is_same<U, float>::value ||
-                      std::is_same<U, std::complex<float>>::value,
-                  int>::type = 0>
+    template <
+        typename U = T,
+        typename std::enable_if<std::is_same<U, float>::value ||
+                                    std::is_same<U, std::complex<float>>::value,
+                                int>::type = 0>
     bool isDoublePrecisionEnabled() const
     {
         return is_double_precision_enabled_;
     }
 
     // Get the double precision matrix itself
-    template <typename U = T,
-              typename std::enable_if<
-                  std::is_same<U, float>::value ||
-                      std::is_same<U, std::complex<float>>::value,
-                  int>::type = 0>
+    template <
+        typename U = T,
+        typename std::enable_if<std::is_same<U, float>::value ||
+                                    std::is_same<U, std::complex<float>>::value,
+                                int>::type = 0>
     DoublePrecisionDerived* getDoublePrecisionMatrix()
     {
         if (is_double_precision_enabled_)
@@ -653,7 +654,8 @@ public:
                     this->l_data()[j * this->l_ld() + i] =
                         chase::convertToDoublePrecision<T>(
                             single_precision_multivec_->l_data()
-                                [j * single_precision_multivec_.get()->l_ld() + i]);
+                                [j * single_precision_multivec_.get()->l_ld() +
+                                 i]);
                 }
             }
         }
@@ -675,16 +677,17 @@ public:
             end - start);
 
         if (this->grank() == 0)
-            std::cout << "Single precision matrix copied back to double precision in "
-                         "AbstractDistMultiVector. \n";
+            std::cout
+                << "Single precision matrix copied back to double precision in "
+                   "AbstractDistMultiVector. \n";
     }
 
     // Copy from double to single precision (if T is float)
-    template <typename U = T,
-              typename std::enable_if<
-                  std::is_same<U, float>::value ||
-                      std::is_same<U, std::complex<float>>::value,
-                  int>::type = 0>
+    template <
+        typename U = T,
+        typename std::enable_if<std::is_same<U, float>::value ||
+                                    std::is_same<U, std::complex<float>>::value,
+                                int>::type = 0>
     void copyback()
     {
         start = std::chrono::high_resolution_clock::now();
@@ -700,10 +703,9 @@ public:
             {
                 for (std::size_t i = 0; i < this->l_rows(); ++i)
                 {
-                    this->l_data()[j * this->l_ld() + i] =
-                        chase::convertToSinglePrecision<T>(
-                            double_precision_multivec_->l_data()
-                                [j * double_precision_multivec_.get()->l_ld() + i]);
+                    this->l_data()[j * this->l_ld() + i] = static_cast<T>(
+                        double_precision_multivec_->l_data()
+                            [j * double_precision_multivec_.get()->l_ld() + i]);
                 }
             }
         }
@@ -725,8 +727,9 @@ public:
             end - start);
 
         if (this->grank() == 0)
-            std::cout << "Double precision matrix copied back to single precision in "
-                         "AbstractDistMultiVector. \n";
+            std::cout
+                << "Double precision matrix copied back to single precision in "
+                   "AbstractDistMultiVector. \n";
     }
 
     // Copy from double to single precision (if T is double)
@@ -775,16 +778,17 @@ public:
             end - start);
 
         if (this->grank() == 0)
-            std::cout << "Single precision matrix copied to double precision in "
-                         "AbstractDistMultiVector. \n";
+            std::cout
+                << "Single precision matrix copied to double precision in "
+                   "AbstractDistMultiVector. \n";
     }
 
     // Copy from single to double precision (if T is float)
-    template <typename U = T,
-              typename std::enable_if<
-                  std::is_same<U, float>::value ||
-                      std::is_same<U, std::complex<float>>::value,
-                  int>::type = 0>
+    template <
+        typename U = T,
+        typename std::enable_if<std::is_same<U, float>::value ||
+                                    std::is_same<U, std::complex<float>>::value,
+                                int>::type = 0>
     void copyTo()
     {
         start = std::chrono::high_resolution_clock::now();
@@ -825,21 +829,23 @@ public:
             end - start);
 
         if (this->grank() == 0)
-            std::cout << "Single precision matrix copied to double precision in "
-                         "AbstractDistMultiVector. \n";
+            std::cout
+                << "Single precision matrix copied to double precision in "
+                   "AbstractDistMultiVector. \n";
     }
 
     // If T is neither float nor double, these methods should not be available
     template <typename U = T,
               typename std::enable_if<
                   !std::is_same<U, float>::value &&
-                  !std::is_same<U, std::complex<float>>::value &&
-                  !std::is_same<U, double>::value &&
-                  !std::is_same<U, std::complex<double>>::value,
+                      !std::is_same<U, std::complex<float>>::value &&
+                      !std::is_same<U, double>::value &&
+                      !std::is_same<U, std::complex<double>>::value,
                   int>::type = 0>
     void copyTo()
     {
-        throw std::runtime_error("[DistMultiVector]: CopyTo operations not supported for this type.");
+        throw std::runtime_error("[DistMultiVector]: CopyTo operations not "
+                                 "supported for this type.");
     }
 };
 
@@ -869,7 +875,8 @@ public:
     using platform_type =
         Platform;         /**< Alias for the computational platform type. */
     using value_type = T; /**< Alias for the element type. */
-    static constexpr chase::distMultiVector::CommunicatorType communicator_type = comm_type;
+    static constexpr chase::distMultiVector::CommunicatorType
+        communicator_type = comm_type;
 
     /**
      * @brief Default destructor.
@@ -949,15 +956,15 @@ public:
         {
             mb_ = (M_ - m_) / (dim - 1);
         }
-	
-	if(off_ + m_ > M_ / 2)
-	{
-		l_half_ = std::size_t(std::max(0, int(M_ / 2) - int(off_)));
-	}
-	else
-	{
-		l_half_ = m_;
-	} 
+
+        if (off_ + m_ > M_ / 2)
+        {
+            l_half_ = std::size_t(std::max(0, int(M_ / 2) - int(off_)));
+        }
+        else
+        {
+            l_half_ = m_;
+        }
     }
     /**
      * @brief Constructs a distributed multivector with specified local
@@ -976,6 +983,7 @@ public:
         N_ = n_;
         uint64_t lv = static_cast<uint64_t>(m_);
         uint64_t res = 0;
+        std::size_t len;
 
         MPI_Comm comm;
 
@@ -1036,15 +1044,35 @@ public:
         {
             mb_ = (M_ - m_) / (dim - 1);
         }
-	
-	if(off_ + m_ > M_ / 2)
-	{
-		l_half_ = std::size_t(std::max(0, int(M_ / 2) - int(off_)));
-	}
-	else
-	{
-		l_half_ = m_;
-	} 
+
+        if (M_ % dim == 0)
+        {
+            len = M_ / dim;
+        }
+        else
+        {
+            len = std::min(M_, M_ / dim + 1);
+        }
+
+        if (coord < dim - 1)
+        {
+            m_ = len;
+        }
+        else
+        {
+            m_ = M_ - (dim - 1) * len;
+        }
+
+        off_ = coord * len;
+
+        if (off_ + m_ > M_ / 2)
+        {
+            l_half_ = std::size_t(std::max(0, int(M_ / 2) - int(off_)));
+        }
+        else
+        {
+            l_half_ = m_;
+        }
     }
     /**
      * @brief Retrieves the distribution type of the multi-vector.
@@ -1477,12 +1505,12 @@ public:
      * @return The matrix block size.
      */
     std::size_t mb() const override { return mb_; }
-    /** 
+    /**
      * @brief Returns the number of row blocks.
-     * 
+     *
      * @return The number of row blocks.
-     */   
-    std::size_t mblocks() const override {return mblocks_; }
+     */
+    std::size_t mblocks() const override { return mblocks_; }
     /**
      * @brief Get the block size used in the distributed matrix layout.
      *
@@ -2202,7 +2230,8 @@ class DistMultiVectorBlockCyclic1D
 public:
     using platform_type = Platform; ///< Alias for platform type.
     using value_type = T;           ///< Alias for element type.
-    static constexpr chase::distMultiVector::CommunicatorType communicator_type = comm_type;
+    static constexpr chase::distMultiVector::CommunicatorType
+        communicator_type = comm_type;
 
     /**
      * @brief Destructor for the DistMultiVectorBlockCyclic1D class.
@@ -2247,7 +2276,7 @@ public:
         // Platform>::type(m_, n_);
         local_matrix_ = chase::matrix::Matrix<T, Platform>(m_, n_);
 
-	init_contiguous_buffer_info();	
+        init_contiguous_buffer_info();
     }
 
     /**
@@ -2307,10 +2336,10 @@ public:
         {
             ld_ = local_matrix_.ld();
         }
-	
-	init_contiguous_buffer_info();	
+
+        init_contiguous_buffer_info();
     }
-    
+
     /**
      * @brief Gets the distribution type of the multi-vector.
      *
@@ -2738,14 +2767,14 @@ public:
      * processes.
      */
     std::size_t mb() const override { return mb_; }
-    
-    /** 
+
+    /**
      * @brief Returns the number of row blocks.
-     * 
+     *
      * @return The number of row blocks.
-     */   
+     */
     std::size_t mblocks() const override { return mblocks_; }
-    
+
     /**
      * @brief Get the block size used in the distributed matrix layout.
      *
@@ -2771,10 +2800,16 @@ public:
     {
         return local_matrix_;
     }
-    
-    std::vector<std::size_t> m_contiguous_global_offs(){ return m_contiguous_global_offs_; }
-    std::vector<std::size_t> m_contiguous_local_offs(){ return m_contiguous_local_offs_; }
-    std::vector<std::size_t> m_contiguous_lens(){ return m_contiguous_lens_; }
+
+    std::vector<std::size_t> m_contiguous_global_offs()
+    {
+        return m_contiguous_global_offs_;
+    }
+    std::vector<std::size_t> m_contiguous_local_offs()
+    {
+        return m_contiguous_local_offs_;
+    }
+    std::vector<std::size_t> m_contiguous_lens() { return m_contiguous_lens_; }
 
 #ifdef HAS_SCALAPACK
     std::size_t* get_scalapack_desc() { return desc_; }
@@ -2912,18 +2947,20 @@ private:
 
     void init_contiguous_buffer_info()
     {
-	int axis;
+        int axis;
 
-        if constexpr (comm_type == chase::distMultiVector::CommunicatorType::column)
+        if constexpr (comm_type ==
+                      chase::distMultiVector::CommunicatorType::column)
         {
             axis = 0;
         }
-        else if constexpr (comm_type == chase::distMultiVector::CommunicatorType::row)
+        else if constexpr (comm_type ==
+                           chase::distMultiVector::CommunicatorType::row)
         {
             axis = 1;
         }
 
-        int coord =  mpi_grid_.get()->get_coords()[axis];
+        int coord = mpi_grid_.get()->get_coords()[axis];
         int dim = mpi_grid_.get()->get_dims()[axis];
 
         std::size_t nr;
@@ -2932,12 +2969,12 @@ private:
         for (std::size_t r = 0; r < M_; r += mb_, sendr = (sendr + 1) % dim)
         {
             nr = mb_;
-            if(M_ - r < mb_)
+            if (M_ - r < mb_)
             {
                 nr = M_ - r;
             }
 
-            if(coord == sendr)
+            if (coord == sendr)
             {
                 m_contiguous_global_offs_.push_back(r);
                 m_contiguous_lens_.push_back(nr);
@@ -2950,27 +2987,29 @@ private:
 
         for (std::size_t i = 1; i < mblocks_; i++)
         {
-            m_contiguous_local_offs_[i] = m_contiguous_local_offs_[i - 1] 
-                                          + m_contiguous_lens_[i - 1];
+            m_contiguous_local_offs_[i] =
+                m_contiguous_local_offs_[i - 1] + m_contiguous_lens_[i - 1];
         }
 
-	l_half_ = 0;
-	std::size_t idx = 0;
+        l_half_ = 0;
+        std::size_t idx = 0;
 
-	while(idx < mblocks_ && m_contiguous_global_offs_[idx] + m_contiguous_lens_[idx] <= (M_ / 2))
-    	{
-        	l_half_ += m_contiguous_lens_[idx];
-        	idx += 1;
-    	}
-	
-    	if(idx < mblocks_)
-    	{
-        	if(int(M_/2) - int(m_contiguous_global_offs_[idx]) > 0)
-        	{
-                	l_half_ += std::size_t(int(M_/2) - int(m_contiguous_global_offs_[idx]));
-        	}
-   	}
+        while (idx < mblocks_ &&
+               m_contiguous_global_offs_[idx] + m_contiguous_lens_[idx] <=
+                   (M_ / 2))
+        {
+            l_half_ += m_contiguous_lens_[idx];
+            idx += 1;
+        }
 
+        if (idx < mblocks_)
+        {
+            if (int(M_ / 2) - int(m_contiguous_global_offs_[idx]) > 0)
+            {
+                l_half_ += std::size_t(int(M_ / 2) -
+                                       int(m_contiguous_global_offs_[idx]));
+            }
+        }
     }
     // data for redistribution
     std::vector<std::size_t> orig_dests;

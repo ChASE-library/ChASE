@@ -1,10 +1,10 @@
 // This file is a part of ChASE.
-// Copyright (c) 2015-2024, Simulation and Data Laboratory Quantum Materials,
+// Copyright (c) 2015-2026, Simulation and Data Laboratory Quantum Materials,
 //   Forschungszentrum Juelich GmbH, Germany. All rights reserved.
 // License is 3-clause BSD:
 // https://github.com/ChASE-library/ChASE
 
-#pragma once 
+#pragma once
 
 #include <assert.h>
 #include <memory>
@@ -48,7 +48,8 @@ template <>
 double t_norm_p2(const std::size_t n, const double* x)
 {
     double norm = 0;
-    for(int i = 0; i < n; i++){
+    for (int i = 0; i < n; i++)
+    {
         norm += t_sqrt_norm(x[i]);
     }
 
@@ -58,7 +59,8 @@ template <>
 float t_norm_p2(const std::size_t n, const float* x)
 {
     float norm = 0;
-    for(int i = 0; i < n; i++){
+    for (int i = 0; i < n; i++)
+    {
         norm += t_sqrt_norm(x[i]);
     }
 
@@ -68,7 +70,8 @@ template <>
 double t_norm_p2(const std::size_t n, const std::complex<double>* x)
 {
     double norm = 0;
-    for(int i = 0; i < n; i++){
+    for (int i = 0; i < n; i++)
+    {
         norm += t_sqrt_norm(x[i]);
     }
 
@@ -78,7 +81,8 @@ template <>
 float t_norm_p2(const std::size_t n, const std::complex<float>* x)
 {
     float norm = 0;
-    for(int i = 0; i < n; i++){
+    for (int i = 0; i < n; i++)
+    {
         norm += t_sqrt_norm(x[i]);
     }
 
@@ -149,14 +153,16 @@ double t_dot(const std::size_t n, const double* x, const std::size_t incx,
 template <typename T>
 std::complex<T> t_dot(const std::size_t n, const std::complex<T>* x,
                       const std::size_t incx, const std::complex<T>* y,
-                      const std::size_t incy) {
-  std::complex<T> gamma;
-  std::complex<T> alpha = 0;
-  for (BlasInt i = 0; i < n; ++i) {
-    alpha += std::conj(x[i * incx]) * y[i * incy];
-  }
+                      const std::size_t incy)
+{
+    std::complex<T> gamma;
+    std::complex<T> alpha = 0;
+    for (BlasInt i = 0; i < n; ++i)
+    {
+        alpha += std::conj(x[i * incx]) * y[i * incy];
+    }
 
-  return alpha;
+    return alpha;
 }
 
 // xSCAL
@@ -511,9 +517,8 @@ void t_gemm<std::complex<float>>(
     (&TA, &TB, &m_, &n_, &k_, alpha, a, &lda_, b, &ldb_, beta, c, &ldc_);
 }
 
-
-} //end of namespace blaspp
-} //end of namespace linalg   
-} //end of namespace chase
+} // end of namespace blaspp
+} // end of namespace linalg
+} // end of namespace chase
 
 #include "blaspp.inc"

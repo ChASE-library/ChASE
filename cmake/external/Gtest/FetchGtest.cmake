@@ -6,15 +6,7 @@ FetchContent_Declare(
     GIT_TAG main 
     )
 
-FetchContent_GetProperties(googletest)
-
-#FetchContent_MakeAvailable(googletest)
-
-if(NOT googletest_POPULATED)
-    FetchContent_Populate(googletest)
-
-    add_subdirectory(${googletest_SOURCE_DIR} ${googletest_BINARY_DIR} )
-endif()
+FetchContent_MakeAvailable(googletest)
 
 message(STATUS "Fetching Googletest was successful.")
 set(GTEST_FOUND TRUE CACHE BOOL "external GTest project found variable")

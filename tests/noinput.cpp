@@ -1,17 +1,16 @@
 // This file is a part of ChASE.
-// Copyright (c) 2015-2024, Simulation and Data Laboratory Quantum Materials,
+// Copyright (c) 2015-2026, Simulation and Data Laboratory Quantum Materials,
 //   Forschungszentrum Juelich GmbH, Germany. All rights reserved.
 // License is 3-clause BSD:
 // https://github.com/ChASE-library/ChASE
 
-#include <iostream>
-#include <vector>
 #include <complex>
+#include <iostream>
 #include <memory>
+#include <omp.h>
 #include <random>
 #include <type_traits>
 #include <vector>
-#include <omp.h>
 
 #include "algorithm/performance.hpp"
 #ifdef HAS_CUDA
@@ -33,20 +32,22 @@ int main()
     std::size_t nex = 60;
     std::size_t idx_max = 1;
     Base<T> perturb = 1e-4;
-    
+
     std::mt19937 gen(1337.0);
     std::normal_distribution<> d;
-   
+
     std::cout << "ChASE example driver\n"
-            << "Usage: ./driver \n";
+              << "Usage: ./driver \n";
 
     auto V = std::vector<T>(N * (nev + nex));
     auto Lambda = std::vector<Base<T>>(nev + nex);
     std::vector<T> H(N * LDH, T(0.0));
 #ifdef HAS_CUDA
-    chase::Impl::ChASEGPU<T> single(N, nev, nex, H.data(), LDH, V.data(), N, Lambda.data());
+    chase::Impl::ChASEGPU<T> single(N, nev, nex, H.data(), LDH, V.data(), N,
+                                    Lambda.data());
 #else
-    chase::Impl::ChASECPU<T> single(N, nev, nex, H.data(), LDH, V.data(), N, Lambda.data());
+    chase::Impl::ChASECPU<T> single(N, nev, nex, H.data(), LDH, V.data(), N,
+                                    Lambda.data());
 #endif
     auto& config = single.GetConfig();
     config.SetTol(1e-10);
@@ -54,17 +55,16 @@ int main()
     config.SetOpt(true);
     config.SetApprox(false);
 
-    std::cout << "Solving " << idx_max << " symmetrized Clement matrices ("
-                << N << "x" << N
-                << ") with element-wise random perturbation of " << perturb
-                << '\n'
-                << config;    
+    std::cout << "Solving " << idx_max << " symmetrized Clement matrices (" << N
+              << "x" << N << ") with element-wise random perturbation of "
+              << perturb << '\n'
+              << config;
 
     // Generate Clement matrix
 #ifdef USE_NVTX
     nvtxRangePushA("Generate Clement Matrix");
 #endif
-    #pragma omp parallel for
+#pragma omp parallel for
     for (auto i = 0; i < N; ++i)
     {
         H[i + N * i] = 0;
@@ -86,14 +86,14 @@ int main()
         {
             std::cout << "Using approximate solution\n";
         }
-    
+
         PerformanceDecoratorChase<T> performanceDecorator(&single);
 #ifdef USE_NVTX
-    nvtxRangePushA("ChASE solve");
-#endif        
+        nvtxRangePushA("ChASE solve");
+#endif
         chase::Solve(&performanceDecorator);
 #ifdef USE_NVTX
-    nvtxRangePop();
+        nvtxRangePop();
 #endif
         performanceDecorator.GetPerfData().print();
         Base<T>* resid = single.GetResid();
@@ -102,7 +102,7 @@ int main()
         std::cout
             << "| Index |       Eigenvalue      |         Residual      |\n"
             << "|-------|-----------------------|-----------------------|"
-                "\n";
+               "\n";
         std::size_t width = 20;
         std::cout << std::setprecision(12);
         std::cout << std::setfill(' ');
@@ -110,16 +110,16 @@ int main()
         std::cout << std::right;
         for (auto i = 0; i < std::min(std::size_t(5), nev); ++i)
             std::cout << "|  " << std::setw(4) << i + 1 << " | "
-                        << std::setw(width) << Lambda[i] << "  | "
-                        << std::setw(width) << resid[i] << "  |\n";
+                      << std::setw(width) << Lambda[i] << "  | "
+                      << std::setw(width) << resid[i] << "  |\n";
         std::cout << "\n\n\n";
-        
+
         config.SetApprox(true);
         // Perturb Full Clement matrix
 #ifdef USE_NVTX
-    nvtxRangePushA("Perturb Full Clement matrix");
-#endif       
-        #pragma omp parallel for
+        nvtxRangePushA("Perturb Full Clement matrix");
+#endif
+#pragma omp parallel for
         for (std::size_t i = 1; i < N; ++i)
         {
             for (std::size_t j = 1; j < i; ++j)
@@ -130,8 +130,7 @@ int main()
             }
         }
 #ifdef USE_NVTX
-    nvtxRangePop();
-#endif        
+        nvtxRangePop();
+#endif
     }
-    
 }

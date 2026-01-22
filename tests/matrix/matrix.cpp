@@ -1,19 +1,20 @@
 // This file is a part of ChASE.
-// Copyright (c) 2015-2024, Simulation and Data Laboratory Quantum Materials,
+// Copyright (c) 2015-2026, Simulation and Data Laboratory Quantum Materials,
 //   Forschungszentrum Juelich GmbH, Germany. All rights reserved.
 // License is 3-clause BSD:
 // https://github.com/ChASE-library/ChASE
 
-#include <gtest/gtest.h>
-#include <complex>
-#include <cmath>
-#include <cstring>
 #include "linalg/matrix/matrix.hpp"
-//#include "linalg/cublaspp/cublaspp.hpp"
+#include <cmath>
+#include <complex>
+#include <cstring>
+#include <gtest/gtest.h>
+// #include "linalg/cublaspp/cublaspp.hpp"
 
 // Helper function to create a temporary file with matrix data
-template<typename T>
-std::string createTempFile(const std::vector<T>& data, std::size_t size) {
+template <typename T>
+std::string createTempFile(const std::vector<T>& data, std::size_t size)
+{
     std::string filename = "temp_matrix_file.bin";
     std::ofstream file(filename, std::ios::binary);
     file.write(reinterpret_cast<const char*>(data.data()), size);
@@ -22,19 +23,21 @@ std::string createTempFile(const std::vector<T>& data, std::size_t size) {
 }
 
 template <typename T>
-class MatrixCPUTest : public ::testing::Test {
+class MatrixCPUTest : public ::testing::Test
+{
 protected:
-    void SetUp() override {
-    }
+    void SetUp() override {}
 
     void TearDown() override {}
 };
 
-using TestTypes = ::testing::Types<float, double, std::complex<float>, std::complex<double>>;
+using TestTypes =
+    ::testing::Types<float, double, std::complex<float>, std::complex<double>>;
 TYPED_TEST_SUITE(MatrixCPUTest, TestTypes);
 
-TYPED_TEST(MatrixCPUTest, InternalMemoryAllocation) {
-    using T = TypeParam;  // Get the current type
+TYPED_TEST(MatrixCPUTest, InternalMemoryAllocation)
+{
+    using T = TypeParam; // Get the current type
     std::size_t rows = 3, cols = 4;
     chase::matrix::Matrix<T, chase::platform::CPU> matrix(rows, cols);
     EXPECT_EQ(matrix.rows(), rows);
@@ -43,8 +46,9 @@ TYPED_TEST(MatrixCPUTest, InternalMemoryAllocation) {
     EXPECT_NE(matrix.data(), nullptr);
 }
 
-TYPED_TEST(MatrixCPUTest, ExternalMemoryUsage) {
-    using T = TypeParam;  // Get the current type
+TYPED_TEST(MatrixCPUTest, ExternalMemoryUsage)
+{
+    using T = TypeParam; // Get the current type
     std::size_t rows = 3, cols = 2;
     T external_data[9] = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0};
     chase::matrix::Matrix<T> matrix(rows, cols, rows, external_data);
@@ -53,35 +57,38 @@ TYPED_TEST(MatrixCPUTest, ExternalMemoryUsage) {
     EXPECT_EQ(matrix.ld(), rows);
     EXPECT_EQ(matrix.data(), external_data);
 
-    for(auto i = 0; i < rows * cols; i++)
+    for (auto i = 0; i < rows * cols; i++)
     {
         EXPECT_EQ(matrix.data()[i], external_data[i]);
     }
 }
 
-TYPED_TEST(MatrixCPUTest, DataAccessAndCorrectness) {
-    using T = TypeParam;  // Get the current type
+TYPED_TEST(MatrixCPUTest, DataAccessAndCorrectness)
+{
+    using T = TypeParam; // Get the current type
     std::size_t rows = 3, cols = 2;
     chase::matrix::Matrix<T, chase::platform::CPU> matrix(rows, cols);
-    T *data = matrix.data();
-    for (std::size_t i = 0; i < rows * cols; ++i) {
+    T* data = matrix.data();
+    for (std::size_t i = 0; i < rows * cols; ++i)
+    {
         data[i] = T(i + 1);
     }
 
-    for(auto i = 0; i < rows * cols; i++)
+    for (auto i = 0; i < rows * cols; i++)
     {
         EXPECT_EQ(matrix.data()[i], T(i + 1));
     }
 }
 
-TYPED_TEST(MatrixCPUTest, SWAP) {
-    using T = TypeParam;  // Get the current type
-    
+TYPED_TEST(MatrixCPUTest, SWAP)
+{
+    using T = TypeParam; // Get the current type
+
     T array1[4] = {0, 1, 2, 3};
     T array2[6] = {-1, -2, -3, -4, -5, -6};
     chase::matrix::Matrix<T, chase::platform::CPU> matrix1(2, 2, 2, array1);
     chase::matrix::Matrix<T, chase::platform::CPU> matrix2(3, 2, 3, array2);
-    
+
     matrix1.swap(matrix2);
     EXPECT_EQ(matrix1.rows(), 3);
     EXPECT_EQ(matrix1.cols(), 2);
@@ -96,51 +103,48 @@ TYPED_TEST(MatrixCPUTest, SWAP) {
     EXPECT_EQ(matrix1.data(), array2);
 }
 
-TYPED_TEST(MatrixCPUTest, PseudoHermitianMatrix) {
+TYPED_TEST(MatrixCPUTest, PseudoHermitianMatrix)
+{
 
     std::size_t rows = 4, cols = 4;
 
     std::complex<double> external_data[16] = {
-	    std::complex<double>(1.010,0),
-	    std::complex<double>(0,-0.20),
-	    std::complex<double>(0.010,0),
-	    std::complex<double>(0,0.010),
-	    std::complex<double>(0,0.200),
-	    std::complex<double>(1.010,0),
-	    std::complex<double>(0,0.100),
-	    std::complex<double>(0.100,0),
-	    std::complex<double>(-0.10,0),
-	    std::complex<double>(0,0.100),
-	    std::complex<double>(-1.01,0),
-	    std::complex<double>(0,-0.20),
-	    std::complex<double>(0,0.100),
-	    std::complex<double>(-0.10,0),
-	    std::complex<double>(0,0.200),
-	    std::complex<double>(-1.01,0)
-    };
-    
-    chase::matrix::PseudoHermitianMatrix<std::complex<double>> matrix(rows, cols, rows, external_data);
+        std::complex<double>(1.010, 0), std::complex<double>(0, -0.20),
+        std::complex<double>(0.010, 0), std::complex<double>(0, 0.010),
+        std::complex<double>(0, 0.200), std::complex<double>(1.010, 0),
+        std::complex<double>(0, 0.100), std::complex<double>(0.100, 0),
+        std::complex<double>(-0.10, 0), std::complex<double>(0, 0.100),
+        std::complex<double>(-1.01, 0), std::complex<double>(0, -0.20),
+        std::complex<double>(0, 0.100), std::complex<double>(-0.10, 0),
+        std::complex<double>(0, 0.200), std::complex<double>(-1.01, 0)};
+
+    chase::matrix::PseudoHermitianMatrix<std::complex<double>> matrix(
+        rows, cols, rows, external_data);
     EXPECT_EQ(matrix.rows(), rows);
     EXPECT_EQ(matrix.cols(), cols);
     EXPECT_EQ(matrix.ld(), rows);
     EXPECT_EQ(matrix.data(), external_data);
 
-    for(auto i = 0; i < rows * cols; i++)
+    for (auto i = 0; i < rows * cols; i++)
     {
         EXPECT_EQ(matrix.data()[i], external_data[i]);
     }
 }
 
 #ifdef ENABLE_MIXED_PRECISION
-TYPED_TEST(MatrixCPUTest, EnableSinglePrecision) {
-    using T = TypeParam;  // Get the current type
+TYPED_TEST(MatrixCPUTest, EnableSinglePrecision)
+{
+    using T = TypeParam; // Get the current type
     using singlePrecisionT = typename chase::ToSinglePrecisionTrait<T>::Type;
-    if constexpr (std::is_same<T, double>::value || std::is_same<T, std::complex<double>>::value) {
+    if constexpr (std::is_same<T, double>::value ||
+                  std::is_same<T, std::complex<double>>::value)
+    {
         std::size_t rows = 3, cols = 3;
         chase::matrix::Matrix<T, chase::platform::CPU> matrix(rows, cols);
 
-        T *data = matrix.data();
-        for (std::size_t i = 0; i < rows * cols; ++i) {
+        T* data = matrix.data();
+        for (std::size_t i = 0; i < rows * cols; ++i)
+        {
             data[i] = T(i + 1);
         }
 
@@ -150,20 +154,26 @@ TYPED_TEST(MatrixCPUTest, EnableSinglePrecision) {
         auto sp_data = matrix.matrix_sp();
 
         // Check if the single precision data is correctly converted
-        for (std::size_t i = 0; i < rows * cols; ++i) {
-            EXPECT_EQ(static_cast<singlePrecisionT>(matrix.data()[i]), sp_data->data()[i]);
+        for (std::size_t i = 0; i < rows * cols; ++i)
+        {
+            EXPECT_EQ(static_cast<singlePrecisionT>(matrix.data()[i]),
+                      sp_data->data()[i]);
         }
     }
 }
 
-TYPED_TEST(MatrixCPUTest, DisableSinglePrecisionWithCopyback) {
-    using T = TypeParam;  // Get the current type
-    if constexpr (std::is_same<T, double>::value || std::is_same<T, std::complex<double>>::value) {
+TYPED_TEST(MatrixCPUTest, DisableSinglePrecisionWithCopyback)
+{
+    using T = TypeParam; // Get the current type
+    if constexpr (std::is_same<T, double>::value ||
+                  std::is_same<T, std::complex<double>>::value)
+    {
         std::size_t rows = 3, cols = 3;
         chase::matrix::Matrix<T, chase::platform::CPU> matrix(rows, cols);
 
-        T *data = matrix.data();
-        for (std::size_t i = 0; i < rows * cols; ++i) {
+        T* data = matrix.data();
+        for (std::size_t i = 0; i < rows * cols; ++i)
+        {
             data[i] = T(i + 1);
         }
 
@@ -173,15 +183,19 @@ TYPED_TEST(MatrixCPUTest, DisableSinglePrecisionWithCopyback) {
         EXPECT_FALSE(matrix.isSinglePrecisionEnabled());
 
         // Check if the data was restored correctly
-        for (std::size_t i = 0; i < rows * cols; ++i) {
+        for (std::size_t i = 0; i < rows * cols; ++i)
+        {
             EXPECT_EQ(matrix.data()[i], T(i + 1));
         }
     }
 }
 
-TYPED_TEST(MatrixCPUTest, UnsupportedSinglePrecisionOperation) {
-    using T = TypeParam;  // Get the current type
-    if constexpr (std::is_same<T, float>::value || std::is_same<T, std::complex<float>>::value) {
+TYPED_TEST(MatrixCPUTest, UnsupportedSinglePrecisionOperation)
+{
+    using T = TypeParam; // Get the current type
+    if constexpr (std::is_same<T, float>::value ||
+                  std::is_same<T, std::complex<float>>::value)
+    {
         std::size_t rows = 3, cols = 3;
         chase::matrix::Matrix<T, chase::platform::CPU> matrix(rows, cols);
 
@@ -190,9 +204,12 @@ TYPED_TEST(MatrixCPUTest, UnsupportedSinglePrecisionOperation) {
     }
 }
 
-TYPED_TEST(MatrixCPUTest, SinglePrecisionMemoryDeallocation) {
-    using T = TypeParam;  // Get the current type
-    if constexpr (std::is_same<T, double>::value || std::is_same<T, std::complex<double>>::value) {
+TYPED_TEST(MatrixCPUTest, SinglePrecisionMemoryDeallocation)
+{
+    using T = TypeParam; // Get the current type
+    if constexpr (std::is_same<T, double>::value ||
+                  std::is_same<T, std::complex<double>>::value)
+    {
         std::size_t rows = 3, cols = 3;
         chase::matrix::Matrix<T, chase::platform::CPU> matrix(rows, cols);
 
@@ -207,19 +224,21 @@ TYPED_TEST(MatrixCPUTest, SinglePrecisionMemoryDeallocation) {
 
 #ifdef HAS_CUDA
 template <typename T>
-class MatrixGPUTest : public ::testing::Test {
+class MatrixGPUTest : public ::testing::Test
+{
 protected:
-    void SetUp() override {
-    }
+    void SetUp() override {}
 
     void TearDown() override {}
 };
 
-using TestTypes = ::testing::Types<float, double, std::complex<float>, std::complex<double>>;
+using TestTypes =
+    ::testing::Types<float, double, std::complex<float>, std::complex<double>>;
 TYPED_TEST_SUITE(MatrixGPUTest, TestTypes);
 
-TYPED_TEST(MatrixGPUTest, InternalMemoryAllocation) {
-    using T = TypeParam;  // Get the current type
+TYPED_TEST(MatrixGPUTest, InternalMemoryAllocation)
+{
+    using T = TypeParam; // Get the current type
     std::size_t rows = 3, cols = 4;
     chase::matrix::Matrix<T, chase::platform::GPU> matrix(rows, cols);
     EXPECT_EQ(matrix.rows(), rows);
@@ -227,15 +246,17 @@ TYPED_TEST(MatrixGPUTest, InternalMemoryAllocation) {
     EXPECT_EQ(matrix.ld(), rows);
     EXPECT_NE(matrix.data(), nullptr);
     EXPECT_EQ(matrix.cpu_ld(), 0);
-    EXPECT_THROW({matrix.cpu_data();}, std::runtime_error);
+    EXPECT_THROW({ matrix.cpu_data(); }, std::runtime_error);
     EXPECT_EQ(matrix.cpu_ld(), 0);
 }
 
-TYPED_TEST(MatrixGPUTest, ExternalCPUMemoryUsage) {
-    using T = TypeParam;  // Get the current type
+TYPED_TEST(MatrixGPUTest, ExternalCPUMemoryUsage)
+{
+    using T = TypeParam; // Get the current type
     std::size_t rows = 3, cols = 2;
     T external_data[9] = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0};
-    chase::matrix::Matrix<T, chase::platform::GPU> matrix(rows, cols, rows, external_data);
+    chase::matrix::Matrix<T, chase::platform::GPU> matrix(rows, cols, rows,
+                                                          external_data);
     EXPECT_EQ(matrix.rows(), rows);
     EXPECT_EQ(matrix.cols(), cols);
     EXPECT_EQ(matrix.cpu_ld(), rows);
@@ -243,62 +264,70 @@ TYPED_TEST(MatrixGPUTest, ExternalCPUMemoryUsage) {
     EXPECT_NE(matrix.data(), nullptr);
     EXPECT_EQ(matrix.ld(), rows);
 
-    for(auto i = 0; i < rows * cols; i++)
+    for (auto i = 0; i < rows * cols; i++)
     {
         EXPECT_EQ(matrix.cpu_data()[i], external_data[i]);
     }
 }
 
-TYPED_TEST(MatrixGPUTest, ExternalGPUMemoryUsage) {
-    using T = TypeParam;  // Get the current type
+TYPED_TEST(MatrixGPUTest, ExternalGPUMemoryUsage)
+{
+    using T = TypeParam; // Get the current type
     std::size_t rows = 3, cols = 2;
-    T *external_data;
-    CHECK_CUDA_ERROR(cudaMalloc((void**)&external_data, rows * cols * sizeof(T)));
+    T* external_data;
+    CHECK_CUDA_ERROR(
+        cudaMalloc((void**)&external_data, rows * cols * sizeof(T)));
     CHECK_CUDA_ERROR(cudaMemset(external_data, 0, rows * cols * sizeof(T)));
-    chase::matrix::Matrix<T, chase::platform::GPU> matrix(rows, cols, rows, external_data, chase::matrix::BufferType::GPU);
+    chase::matrix::Matrix<T, chase::platform::GPU> matrix(
+        rows, cols, rows, external_data, chase::matrix::BufferType::GPU);
     EXPECT_EQ(matrix.rows(), rows);
     EXPECT_EQ(matrix.cols(), cols);
     EXPECT_EQ(matrix.cpu_ld(), 0);
-    EXPECT_THROW({matrix.cpu_data();}, std::runtime_error);
+    EXPECT_THROW({ matrix.cpu_data(); }, std::runtime_error);
     EXPECT_EQ(matrix.data(), external_data);
     EXPECT_EQ(matrix.ld(), rows);
 
     matrix.D2H();
 
-    for(auto i = 0; i < rows * cols; i++)
+    for (auto i = 0; i < rows * cols; i++)
     {
         EXPECT_EQ(matrix.cpu_data()[i], T(0.0));
     }
 }
 
-TYPED_TEST(MatrixGPUTest, DataAccessAndCorrectness) {
-    using T = TypeParam;  // Get the current type
+TYPED_TEST(MatrixGPUTest, DataAccessAndCorrectness)
+{
+    using T = TypeParam; // Get the current type
     std::size_t rows = 3, cols = 2;
     std::vector<T> data(rows * cols);
-    T *cpu_data = data.data();
-    for (std::size_t i = 0; i < rows * cols; ++i) {
+    T* cpu_data = data.data();
+    for (std::size_t i = 0; i < rows * cols; ++i)
+    {
         cpu_data[i] = T(i + 1);
     }
-    chase::matrix::Matrix<T, chase::platform::GPU> matrix(rows, cols, rows, cpu_data);
+    chase::matrix::Matrix<T, chase::platform::GPU> matrix(rows, cols, rows,
+                                                          cpu_data);
 
     std::vector<T> gpu_copied(matrix.rows() * matrix.cols());
     CHECK_CUBLAS_ERROR(cublasGetMatrix(matrix.rows(), matrix.cols(), sizeof(T),
-                        matrix.data(), matrix.ld(), gpu_copied.data(), matrix.rows()));
-    
-    for(auto i = 0; i < rows * cols; i++)
+                                       matrix.data(), matrix.ld(),
+                                       gpu_copied.data(), matrix.rows()));
+
+    for (auto i = 0; i < rows * cols; i++)
     {
         EXPECT_EQ(gpu_copied.data()[i], T(i + 1));
     }
 }
 
-TYPED_TEST(MatrixGPUTest, SWAP) {
-    using T = TypeParam;  // Get the current type
-    
+TYPED_TEST(MatrixGPUTest, SWAP)
+{
+    using T = TypeParam; // Get the current type
+
     T array1[4] = {0, 1, 2, 3};
     T array2[6] = {-1, -2, -3, -4, -5, -6};
     chase::matrix::Matrix<T, chase::platform::GPU> matrix1(2, 2, 2, array1);
     chase::matrix::Matrix<T, chase::platform::GPU> matrix2(3, 2, 3, array2);
-    
+
     matrix1.swap(matrix2);
     EXPECT_EQ(matrix1.rows(), 3);
     EXPECT_EQ(matrix1.cols(), 2);
@@ -312,7 +341,7 @@ TYPED_TEST(MatrixGPUTest, SWAP) {
     EXPECT_NE(matrix2.cpu_data(), nullptr);
     EXPECT_NE(matrix1.cpu_data(), nullptr);
     EXPECT_NE(matrix2.data(), nullptr);
-    EXPECT_NE(matrix1.data(), nullptr); 
+    EXPECT_NE(matrix1.data(), nullptr);
 
     EXPECT_EQ(matrix2.cpu_data(), array1);
     EXPECT_EQ(matrix1.cpu_data(), array2);
@@ -320,36 +349,43 @@ TYPED_TEST(MatrixGPUTest, SWAP) {
     std::vector<T> gpu_copied_1(matrix1.rows() * matrix1.cols());
     std::vector<T> gpu_copied_2(matrix2.rows() * matrix2.cols());
 
-    CHECK_CUBLAS_ERROR(cublasGetMatrix(matrix1.rows(), matrix1.cols(), sizeof(T),
-                        matrix1.data(), matrix1.ld(), gpu_copied_1.data(), matrix1.rows()));
+    CHECK_CUBLAS_ERROR(cublasGetMatrix(matrix1.rows(), matrix1.cols(),
+                                       sizeof(T), matrix1.data(), matrix1.ld(),
+                                       gpu_copied_1.data(), matrix1.rows()));
 
-    CHECK_CUBLAS_ERROR(cublasGetMatrix(matrix2.rows(), matrix2.cols(), sizeof(T),
-                        matrix2.data(), matrix2.ld(), gpu_copied_2.data(), matrix2.rows()));
+    CHECK_CUBLAS_ERROR(cublasGetMatrix(matrix2.rows(), matrix2.cols(),
+                                       sizeof(T), matrix2.data(), matrix2.ld(),
+                                       gpu_copied_2.data(), matrix2.rows()));
 
-    for(auto i = 0; i < matrix1.rows() * matrix1.cols(); i++)
+    for (auto i = 0; i < matrix1.rows() * matrix1.cols(); i++)
     {
         gpu_copied_1.data()[i] = array2[i];
     }
 
-    for(auto i = 0; i < matrix2.rows() * matrix2.cols(); i++)
+    for (auto i = 0; i < matrix2.rows() * matrix2.cols(); i++)
     {
         gpu_copied_2.data()[i] = array1[i];
     }
 }
 
 #ifdef ENABLE_MIXED_PRECISION
-TYPED_TEST(MatrixGPUTest, EnableSinglePrecision) {
-    using T = TypeParam;  // Get the current type
+TYPED_TEST(MatrixGPUTest, EnableSinglePrecision)
+{
+    using T = TypeParam; // Get the current type
     using singlePrecisionT = typename chase::ToSinglePrecisionTrait<T>::Type;
-    if constexpr (std::is_same<T, double>::value || std::is_same<T, std::complex<double>>::value) {
+    if constexpr (std::is_same<T, double>::value ||
+                  std::is_same<T, std::complex<double>>::value)
+    {
         std::size_t rows = 3, cols = 3;
         std::vector<T> data(rows * cols);
 
-        for (std::size_t i = 0; i < rows * cols; ++i) {
+        for (std::size_t i = 0; i < rows * cols; ++i)
+        {
             data[i] = T(i + 1);
         }
 
-        chase::matrix::Matrix<T, chase::platform::GPU> matrix(rows, cols, rows, data.data());
+        chase::matrix::Matrix<T, chase::platform::GPU> matrix(rows, cols, rows,
+                                                              data.data());
 
         // Enable single precision
         matrix.enableSinglePrecision();
@@ -358,21 +394,28 @@ TYPED_TEST(MatrixGPUTest, EnableSinglePrecision) {
         sp_data->allocate_cpu_data();
         sp_data->D2H();
         // Check if the single precision data is correctly converted
-        for (std::size_t i = 0; i < rows * cols; ++i) {
-            EXPECT_EQ(static_cast<singlePrecisionT>(matrix.cpu_data()[i]), sp_data->cpu_data()[i]);
+        for (std::size_t i = 0; i < rows * cols; ++i)
+        {
+            EXPECT_EQ(static_cast<singlePrecisionT>(matrix.cpu_data()[i]),
+                      sp_data->cpu_data()[i]);
         }
     }
 }
 
-TYPED_TEST(MatrixGPUTest, DisableSinglePrecisionWithCopyback) {
-    using T = TypeParam;  // Get the current type
-    if constexpr (std::is_same<T, double>::value || std::is_same<T, std::complex<double>>::value) {
+TYPED_TEST(MatrixGPUTest, DisableSinglePrecisionWithCopyback)
+{
+    using T = TypeParam; // Get the current type
+    if constexpr (std::is_same<T, double>::value ||
+                  std::is_same<T, std::complex<double>>::value)
+    {
         std::size_t rows = 3, cols = 3;
         std::vector<T> data(rows * cols);
-        for (std::size_t i = 0; i < rows * cols; ++i) {
+        for (std::size_t i = 0; i < rows * cols; ++i)
+        {
             data[i] = T(i + 1);
-        }        
-        chase::matrix::Matrix<T, chase::platform::GPU> matrix(rows, cols, rows, data.data());
+        }
+        chase::matrix::Matrix<T, chase::platform::GPU> matrix(rows, cols, rows,
+                                                              data.data());
 
         // Enable and then disable single precision with copyback
         matrix.enableSinglePrecision();
@@ -383,15 +426,19 @@ TYPED_TEST(MatrixGPUTest, DisableSinglePrecisionWithCopyback) {
         EXPECT_FALSE(matrix.isSinglePrecisionEnabled());
         matrix.D2H();
         // Check if the data was restored correctly
-        for (std::size_t i = 0; i < rows * cols; ++i) {
+        for (std::size_t i = 0; i < rows * cols; ++i)
+        {
             EXPECT_EQ(matrix.cpu_data()[i], T(i + 1));
         }
     }
 }
 
-TYPED_TEST(MatrixGPUTest, UnsupportedSinglePrecisionOperation) {
-    using T = TypeParam;  // Get the current type
-    if constexpr (std::is_same<T, float>::value || std::is_same<T, std::complex<float>>::value) {
+TYPED_TEST(MatrixGPUTest, UnsupportedSinglePrecisionOperation)
+{
+    using T = TypeParam; // Get the current type
+    if constexpr (std::is_same<T, float>::value ||
+                  std::is_same<T, std::complex<float>>::value)
+    {
         std::size_t rows = 3, cols = 3;
         chase::matrix::Matrix<T, chase::platform::GPU> matrix(rows, cols);
 
@@ -400,9 +447,12 @@ TYPED_TEST(MatrixGPUTest, UnsupportedSinglePrecisionOperation) {
     }
 }
 
-TYPED_TEST(MatrixGPUTest, SinglePrecisionMemoryDeallocation) {
-    using T = TypeParam;  // Get the current type
-    if constexpr (std::is_same<T, double>::value || std::is_same<T, std::complex<double>>::value) {
+TYPED_TEST(MatrixGPUTest, SinglePrecisionMemoryDeallocation)
+{
+    using T = TypeParam; // Get the current type
+    if constexpr (std::is_same<T, double>::value ||
+                  std::is_same<T, std::complex<double>>::value)
+    {
         std::size_t rows = 3, cols = 3;
         chase::matrix::Matrix<T, chase::platform::GPU> matrix(rows, cols);
 

@@ -1,5 +1,5 @@
 // This file is a part of ChASE.
-// Copyright (c) 2015-2024, Simulation and Data Laboratory Quantum Materials,
+// Copyright (c) 2015-2026, Simulation and Data Laboratory Quantum Materials,
 //   Forschungszentrum Juelich GmbH, Germany. All rights reserved.
 // License is 3-clause BSD:
 // https://github.com/ChASE-library/ChASE
@@ -56,7 +56,7 @@ extern "C"
     zcomplex FC_GLOBAL(zdotc, ZDOTC)(const BlasInt* n, const dcomplex* x,
                                      const BlasInt* incx, const dcomplex* y,
                                      const BlasInt* incy);
-                                
+
     // xSCAL
     void FC_GLOBAL(sscal, SSCAL)(const BlasInt* n, const float* alpha, float* x,
                                  const BlasInt* incx);
@@ -157,9 +157,9 @@ extern "C"
                                  const dcomplex* A, const BlasInt* ALDim,
                                  const dcomplex* B, const BlasInt* BLDim,
                                  const dcomplex* beta, dcomplex* C,
-                                 const BlasInt* CLDim);                                 
+                                 const BlasInt* CLDim);
 
 } // end of extern "C"
-} //end of namespace blaspp
-} //end of namespace linalg   
-} //end of namespace chase
+} // end of namespace blaspp
+} // end of namespace linalg
+} // end of namespace chase

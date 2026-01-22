@@ -1,5 +1,5 @@
 // This file is a part of ChASE.
-// Copyright (c) 2015-2024, Simulation and Data Laboratory Quantum Materials,
+// Copyright (c) 2015-2026, Simulation and Data Laboratory Quantum Materials,
 //   Forschungszentrum Juelich GmbH, Germany. All rights reserved.
 // License is 3-clause BSD:
 // https://github.com/ChASE-library/ChASE
@@ -263,9 +263,8 @@ std::size_t t_gqr(int matrix_layout, std::size_t m, std::size_t n,
     assert(info == 0);
 
     lwork = static_cast<std::size_t>(real(numwork));
-    auto ptr = std::unique_ptr<std::complex<double>[]> {
-        new std::complex<double>[ lwork ]
-    };
+    auto ptr = std::unique_ptr<std::complex<double>[]>{
+        new std::complex<double>[lwork]};
     work = ptr.get();
 
     FC_GLOBAL(zungqr, ZUNGQR)
@@ -296,9 +295,8 @@ std::size_t t_gqr(int matrix_layout, std::size_t m, std::size_t n,
     assert(info == 0);
 
     lwork = static_cast<std::size_t>(real(numwork));
-    auto ptr = std::unique_ptr<std::complex<float>[]> {
-        new std::complex<float>[ lwork ]
-    };
+    auto ptr =
+        std::unique_ptr<std::complex<float>[]>{new std::complex<float>[lwork]};
     work = ptr.get();
 
     FC_GLOBAL(cungqr, CUNGQR)
@@ -556,9 +554,8 @@ std::size_t t_heevd(int matrix_layout, char jobz, char uplo, std::size_t n,
     assert(info == 0);
 
     lwork = static_cast<std::size_t>(real(numwork));
-    auto ptr = std::unique_ptr<std::complex<double>[]> {
-        new std::complex<double>[ lwork ]
-    };
+    auto ptr = std::unique_ptr<std::complex<double>[]>{
+        new std::complex<double>[lwork]};
     work = ptr.get();
 
     lrwork = static_cast<std::size_t>(rnumwork);
@@ -603,9 +600,8 @@ std::size_t t_heevd(int matrix_layout, char jobz, char uplo, std::size_t n,
     assert(info == 0);
 
     lwork = static_cast<std::size_t>(real(numwork));
-    auto ptr = std::unique_ptr<std::complex<float>[]> {
-        new std::complex<float>[ lwork ]
-    };
+    auto ptr =
+        std::unique_ptr<std::complex<float>[]>{new std::complex<float>[lwork]};
     work = ptr.get();
 
     lrwork = static_cast<std::size_t>(rnumwork);
@@ -624,24 +620,26 @@ std::size_t t_heevd(int matrix_layout, char jobz, char uplo, std::size_t n,
 }
 
 template <>
-std::size_t t_geev(int matrix_layout, char jobz, std::size_t n,
-                   float* a, std::size_t lda, float* wr, float* wi, float* V, std::size_t ldv)
+std::size_t t_geev(int matrix_layout, char jobz, std::size_t n, float* a,
+                   std::size_t lda, float* wr, float* wi, float* V,
+                   std::size_t ldv)
 {
-    BlasInt n_    = n;
-    BlasInt lda_  = lda;
-    BlasInt ldv_  = ldv;
-    
-    float * work;
+    BlasInt n_ = n;
+    BlasInt lda_ = lda;
+    BlasInt ldv_ = ldv;
+
+    float* work;
     float numwork;
 
     BlasInt lwork = -1, info;
-    
+
     char jobvl = 'N';
     BlasInt ldvl_ = 1;
-    float * Vl = (float *)0;
+    float* Vl = (float*)0;
 
     FC_GLOBAL(sgeev, SGEEV)
-    (&jobvl, &jobz, &n_, a, &lda_, wr, wi, Vl, &ldvl_, V, &ldv_, &numwork, &lwork, &info);
+    (&jobvl, &jobz, &n_, a, &lda_, wr, wi, Vl, &ldvl_, V, &ldv_, &numwork,
+     &lwork, &info);
     assert(info == 0);
 
     lwork = static_cast<std::size_t>(numwork);
@@ -649,31 +647,34 @@ std::size_t t_geev(int matrix_layout, char jobz, std::size_t n,
     work = ptr.data();
 
     FC_GLOBAL(sgeev, SGEEV)
-    (&jobvl, &jobz, &n_, a, &lda_, wr, wi, Vl, &ldvl_, V, &ldv_, work, &lwork, &info);
+    (&jobvl, &jobz, &n_, a, &lda_, wr, wi, Vl, &ldvl_, V, &ldv_, work, &lwork,
+     &info);
     assert(info == 0);
 
     return info;
 }
 
 template <>
-std::size_t t_geev(int matrix_layout, char jobz, std::size_t n,
-                    double* a, std::size_t lda, double* wr, double* wi, double* V, std::size_t ldv)
+std::size_t t_geev(int matrix_layout, char jobz, std::size_t n, double* a,
+                   std::size_t lda, double* wr, double* wi, double* V,
+                   std::size_t ldv)
 {
-    BlasInt n_    = n;
-    BlasInt lda_  = lda;
-    BlasInt ldv_  = ldv;
-    
-    double * work;
+    BlasInt n_ = n;
+    BlasInt lda_ = lda;
+    BlasInt ldv_ = ldv;
+
+    double* work;
     double numwork;
 
     BlasInt lwork = -1, info;
 
-    char jobvl = 'N'; 
+    char jobvl = 'N';
     BlasInt ldvl_ = 1;
-    double * Vl = (double *)0;
+    double* Vl = (double*)0;
 
     FC_GLOBAL(dgeev, DGEEV)
-    (&jobvl, &jobz, &n_, a, &lda_, wr, wi, Vl, &ldvl_, V, &ldv_, &numwork, &lwork, &info);
+    (&jobvl, &jobz, &n_, a, &lda_, wr, wi, Vl, &ldvl_, V, &ldv_, &numwork,
+     &lwork, &info);
     assert(info == 0);
 
     lwork = static_cast<std::size_t>(numwork);
@@ -681,7 +682,8 @@ std::size_t t_geev(int matrix_layout, char jobz, std::size_t n,
     work = ptr.data();
 
     FC_GLOBAL(dgeev, DGEEV)
-    (&jobvl, &jobz, &n_, a, &lda_, wr, wi, Vl, &ldvl_, V, &ldv_, work, &lwork, &info);
+    (&jobvl, &jobz, &n_, a, &lda_, wr, wi, Vl, &ldvl_, V, &ldv_, work, &lwork,
+     &info);
     assert(info == 0);
 
     return info;
@@ -689,45 +691,48 @@ std::size_t t_geev(int matrix_layout, char jobz, std::size_t n,
 
 template <>
 std::size_t t_geev(int matrix_layout, char jobz, std::size_t n,
-                   std::complex<float>* a, std::size_t lda, float* wr, float* wi, std::complex<float>* V, std::size_t ldv)
+                   std::complex<float>* a, std::size_t lda, float* wr,
+                   float* wi, std::complex<float>* V, std::size_t ldv)
 {
-    BlasInt n_    = n;
-    BlasInt lda_  = lda;
-    BlasInt ldv_  = ldv;
+    BlasInt n_ = n;
+    BlasInt lda_ = lda;
+    BlasInt ldv_ = ldv;
 
-    std::complex<float> * work;
+    std::complex<float>* work;
     std::complex<float> numwork;
-    
+
     BlasInt lwork = -1, info;
 
     char jobvl = 'N';
     BlasInt ldvl_ = 1;
-    std::complex<float> * Vl = (std::complex<float> *)0;
- 
-    auto wptr = std::unique_ptr<std::complex<float>[]>{new std::complex<float>[n]};
-    std::complex<float> * w = wptr.get();
-    
-    auto rptr = std::vector<float>(2*n);
-    float * rwork = rptr.data();
-    
+    std::complex<float>* Vl = (std::complex<float>*)0;
+
+    auto wptr =
+        std::unique_ptr<std::complex<float>[]>{new std::complex<float>[n]};
+    std::complex<float>* w = wptr.get();
+
+    auto rptr = std::vector<float>(2 * n);
+    float* rwork = rptr.data();
+
     FC_GLOBAL(cgeev, CGEEV)
-    (&jobvl, &jobz, &n_, a, &lda_, w, Vl, &ldvl_, V, &ldv_, &numwork, &lwork, rwork, &info);
+    (&jobvl, &jobz, &n_, a, &lda_, w, Vl, &ldvl_, V, &ldv_, &numwork, &lwork,
+     rwork, &info);
     assert(info == 0);
 
     lwork = static_cast<std::size_t>(real(numwork));
-    auto numptr = std::unique_ptr<std::complex<float>[]> {
-        new std::complex<float>[ lwork ]
-    };
+    auto numptr =
+        std::unique_ptr<std::complex<float>[]>{new std::complex<float>[lwork]};
     work = numptr.get();
-    
+
     FC_GLOBAL(cgeev, CGEEV)
-    (&jobvl, &jobz, &n_, a, &lda_, w, Vl, &ldvl_, V, &ldv_, work, &lwork, rwork, &info);
+    (&jobvl, &jobz, &n_, a, &lda_, w, Vl, &ldvl_, V, &ldv_, work, &lwork, rwork,
+     &info);
     assert(info == 0);
 
-    for(auto i=0; i<n; i++)
+    for (auto i = 0; i < n; i++)
     {
-	wr[i] = real(w[i]);
-	wi[i] = imag(w[i]);
+        wr[i] = real(w[i]);
+        wi[i] = imag(w[i]);
     }
 
     return info;
@@ -735,53 +740,58 @@ std::size_t t_geev(int matrix_layout, char jobz, std::size_t n,
 
 template <>
 std::size_t t_geev(int matrix_layout, char jobz, std::size_t n,
-                   std::complex<double>* a, std::size_t lda, double* wr, double* wi, std::complex<double>* V, std::size_t ldv)
+                   std::complex<double>* a, std::size_t lda, double* wr,
+                   double* wi, std::complex<double>* V, std::size_t ldv)
 {
-    BlasInt n_    = n;
-    BlasInt lda_  = lda;
-    BlasInt ldv_  = ldv;
+    BlasInt n_ = n;
+    BlasInt lda_ = lda;
+    BlasInt ldv_ = ldv;
 
-    std::complex<double> * work;
+    std::complex<double>* work;
     std::complex<double> numwork;
-    
+
     BlasInt lwork = -1, info;
 
     char jobvl = 'N';
     BlasInt ldvl_ = 1;
-    std::complex<double> * Vl = (std::complex<double> *)0;
-    
-    auto wptr = std::unique_ptr<std::complex<double>[]>{new std::complex<double>[n]};
-    std::complex<double> * w = wptr.get();
+    std::complex<double>* Vl = (std::complex<double>*)0;
 
-    auto rptr = std::vector<double>(2*n);
-    double * rwork = rptr.data();
+    auto wptr =
+        std::unique_ptr<std::complex<double>[]>{new std::complex<double>[n]};
+    std::complex<double>* w = wptr.get();
+
+    auto rptr = std::vector<double>(2 * n);
+    double* rwork = rptr.data();
 
     FC_GLOBAL(zgeev, ZGEEV)
-    (&jobvl, &jobz, &n_, a, &lda_, w, Vl, &ldvl_, V, &ldv_, &numwork, &lwork, rwork, &info);
+    (&jobvl, &jobz, &n_, a, &lda_, w, Vl, &ldvl_, V, &ldv_, &numwork, &lwork,
+     rwork, &info);
     assert(info == 0);
-    
+
     lwork = static_cast<std::size_t>(real(numwork));
-    auto numptr = std::unique_ptr<std::complex<double>[]> {
-        new std::complex<double>[ lwork ]
-    };
+    auto numptr = std::unique_ptr<std::complex<double>[]>{
+        new std::complex<double>[lwork]};
     work = numptr.get();
-    
+
     FC_GLOBAL(zgeev, ZGEEV)
-    (&jobvl, &jobz, &n_, a, &lda_, w, Vl, &ldvl_, V, &ldv_, work, &lwork, rwork, &info);
+    (&jobvl, &jobz, &n_, a, &lda_, w, Vl, &ldvl_, V, &ldv_, work, &lwork, rwork,
+     &info);
     assert(info == 0);
 
-    for(auto i=0; i<n; i++)
+    for (auto i = 0; i < n; i++)
     {
-	wr[i] = real(w[i]);
-	wi[i] = imag(w[i]);
+        wr[i] = real(w[i]);
+        wi[i] = imag(w[i]);
     }
 
     return info;
 }
 
-template<>
-void t_gesvd(const char jobu, const char jobvt, const std::size_t m, const std::size_t n, float *A,
-                const std::size_t lda, float *S, float *U, const std::size_t ldu, float *Vt, const std::size_t ldvt){
+template <>
+void t_gesvd(const char jobu, const char jobvt, const std::size_t m,
+             const std::size_t n, float* A, const std::size_t lda, float* S,
+             float* U, const std::size_t ldu, float* Vt, const std::size_t ldvt)
+{
     using T = std::remove_reference<decltype((A[0]))>::type;
     BlasInt m_ = m;
     BlasInt n_ = n;
@@ -790,26 +800,30 @@ void t_gesvd(const char jobu, const char jobvt, const std::size_t m, const std::
     BlasInt ldvt_ = ldvt;
 
     T* work;
-    Base<T> *rwork = new Base<T>[5 * std::min(m, n)];
+    Base<T>* rwork = new Base<T>[5 * std::min(m, n)];
     T numwork;
     BlasInt lwork, info;
 
     lwork = -1;
-    FC_GLOBAL(sgesvd, SGESVD)(&jobu, &jobvt, &m_, &n_, A, &lda_, S, U, &ldu_, Vt, &ldvt_, &numwork, &lwork, rwork, &info);
+    FC_GLOBAL(sgesvd, SGESVD)(&jobu, &jobvt, &m_, &n_, A, &lda_, S, U, &ldu_,
+                              Vt, &ldvt_, &numwork, &lwork, rwork, &info);
     assert(info == 0);
-
 
     lwork = static_cast<std::size_t>((numwork));
     auto ptr = std::unique_ptr<T[]>{new T[lwork]};
     work = ptr.get();
 
-    FC_GLOBAL(sgesvd, SGESVD)(&jobu, &jobvt, &m_, &n_, A, &lda_, S, U, &ldu_, Vt, &ldvt_, work, &lwork, rwork, &info);
+    FC_GLOBAL(sgesvd, SGESVD)(&jobu, &jobvt, &m_, &n_, A, &lda_, S, U, &ldu_,
+                              Vt, &ldvt_, work, &lwork, rwork, &info);
     assert(info == 0);
 }
 
-template<>
-void t_gesvd(const char jobu, const char jobvt, const std::size_t m, const std::size_t n, double *A,
-                const std::size_t lda, double *S, double *U, const std::size_t ldu, double *Vt, const std::size_t ldvt){
+template <>
+void t_gesvd(const char jobu, const char jobvt, const std::size_t m,
+             const std::size_t n, double* A, const std::size_t lda, double* S,
+             double* U, const std::size_t ldu, double* Vt,
+             const std::size_t ldvt)
+{
     using T = std::remove_reference<decltype((A[0]))>::type;
     BlasInt m_ = m;
     BlasInt n_ = n;
@@ -818,27 +832,30 @@ void t_gesvd(const char jobu, const char jobvt, const std::size_t m, const std::
     BlasInt ldvt_ = ldvt;
 
     T* work;
-    Base<T> *rwork = new Base<T>[5 * std::min(m, n)];
+    Base<T>* rwork = new Base<T>[5 * std::min(m, n)];
     T numwork;
     BlasInt lwork, info;
 
     lwork = -1;
-    FC_GLOBAL(dgesvd, DGESVD)(&jobu, &jobvt, &m_, &n_, A, &lda_, S, U, &ldu_, Vt, &ldvt_, &numwork, &lwork, rwork, &info);
+    FC_GLOBAL(dgesvd, DGESVD)(&jobu, &jobvt, &m_, &n_, A, &lda_, S, U, &ldu_,
+                              Vt, &ldvt_, &numwork, &lwork, rwork, &info);
     assert(info == 0);
-
 
     lwork = static_cast<std::size_t>((numwork));
     auto ptr = std::unique_ptr<T[]>{new T[lwork]};
     work = ptr.get();
 
-    FC_GLOBAL(dgesvd, DGESVD)(&jobu, &jobvt, &m_, &n_, A, &lda_, S, U, &ldu_, Vt, &ldvt_, work, &lwork, rwork, &info);
+    FC_GLOBAL(dgesvd, DGESVD)(&jobu, &jobvt, &m_, &n_, A, &lda_, S, U, &ldu_,
+                              Vt, &ldvt_, work, &lwork, rwork, &info);
     assert(info == 0);
-
 }
 
-template<>
-void t_gesvd(const char jobu, const char jobvt, const std::size_t m, const std::size_t n, std::complex<float> *A,
-                const std::size_t lda, float *S, std::complex<float> *U, const std::size_t ldu, std::complex<float> *Vt, const std::size_t ldvt){
+template <>
+void t_gesvd(const char jobu, const char jobvt, const std::size_t m,
+             const std::size_t n, std::complex<float>* A, const std::size_t lda,
+             float* S, std::complex<float>* U, const std::size_t ldu,
+             std::complex<float>* Vt, const std::size_t ldvt)
+{
     using T = std::remove_reference<decltype((A[0]))>::type;
     BlasInt m_ = m;
     BlasInt n_ = n;
@@ -847,26 +864,31 @@ void t_gesvd(const char jobu, const char jobvt, const std::size_t m, const std::
     BlasInt ldvt_ = ldvt;
 
     T* work;
-    Base<T> *rwork = new Base<T>[5 * std::min(m, n)];
+    Base<T>* rwork = new Base<T>[5 * std::min(m, n)];
     T numwork;
     BlasInt lwork, info;
 
     lwork = -1;
-    FC_GLOBAL(cgesvd, CGESVD)(&jobu, &jobvt, &m_, &n_, A, &lda_, S, U, &ldu_, Vt, &ldvt_, &numwork, &lwork, rwork, &info);
+    FC_GLOBAL(cgesvd, CGESVD)(&jobu, &jobvt, &m_, &n_, A, &lda_, S, U, &ldu_,
+                              Vt, &ldvt_, &numwork, &lwork, rwork, &info);
     assert(info == 0);
-
 
     lwork = static_cast<std::size_t>(real(numwork));
     auto ptr = std::unique_ptr<T[]>{new T[lwork]};
     work = ptr.get();
 
-    FC_GLOBAL(cgesvd, CGESVD)(&jobu, &jobvt, &m_, &n_, A, &lda_, S, U, &ldu_, Vt, &ldvt_, work, &lwork, rwork, &info);
+    FC_GLOBAL(cgesvd, CGESVD)(&jobu, &jobvt, &m_, &n_, A, &lda_, S, U, &ldu_,
+                              Vt, &ldvt_, work, &lwork, rwork, &info);
     assert(info == 0);
 }
 
-template<>
-void t_gesvd(const char jobu, const char jobvt, const std::size_t m, const std::size_t n, std::complex<double> *A,
-                const std::size_t lda, double *S, std::complex<double> *U, const std::size_t ldu, std::complex<double> *Vt, const std::size_t ldvt){
+template <>
+void t_gesvd(const char jobu, const char jobvt, const std::size_t m,
+             const std::size_t n, std::complex<double>* A,
+             const std::size_t lda, double* S, std::complex<double>* U,
+             const std::size_t ldu, std::complex<double>* Vt,
+             const std::size_t ldvt)
+{
     using T = std::remove_reference<decltype((A[0]))>::type;
     BlasInt m_ = m;
     BlasInt n_ = n;
@@ -875,71 +897,26 @@ void t_gesvd(const char jobu, const char jobvt, const std::size_t m, const std::
     BlasInt ldvt_ = ldvt;
 
     T* work;
-    Base<T> *rwork = new Base<T>[5 * std::min(m, n)];
+    Base<T>* rwork = new Base<T>[5 * std::min(m, n)];
     T numwork;
     BlasInt lwork, info;
 
     lwork = -1;
-    FC_GLOBAL(zgesvd, ZGESVD)(&jobu, &jobvt, &m_, &n_, A, &lda_, S, U, &ldu_, Vt, &ldvt_, &numwork, &lwork, rwork, &info);
+    FC_GLOBAL(zgesvd, ZGESVD)(&jobu, &jobvt, &m_, &n_, A, &lda_, S, U, &ldu_,
+                              Vt, &ldvt_, &numwork, &lwork, rwork, &info);
     assert(info == 0);
-
 
     lwork = static_cast<std::size_t>(real(numwork));
     auto ptr = std::unique_ptr<T[]>{new T[lwork]};
     work = ptr.get();
 
-    FC_GLOBAL(zgesvd, ZGESVD)(&jobu, &jobvt, &m_, &n_, A, &lda_, S, U, &ldu_, Vt, &ldvt_, work, &lwork, rwork, &info);
+    FC_GLOBAL(zgesvd, ZGESVD)(&jobu, &jobvt, &m_, &n_, A, &lda_, S, U, &ldu_,
+                              Vt, &ldvt_, work, &lwork, rwork, &info);
     assert(info == 0);
 
     delete[] rwork;
-
 }
 
-
-} //end of namespace lapackpp
-} //end of namespace linalg   
-} //end of namespace chase
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+} // end of namespace lapackpp
+} // end of namespace linalg
+} // end of namespace chase

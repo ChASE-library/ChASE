@@ -1,15 +1,15 @@
 // This file is a part of ChASE.
-// Copyright (c) 2015-2024, Simulation and Data Laboratory Quantum Materials,
+// Copyright (c) 2015-2026, Simulation and Data Laboratory Quantum Materials,
 //   Forschungszentrum Juelich GmbH, Germany. All rights reserved.
 // License is 3-clause BSD:
 // https://github.com/ChASE-library/ChASE
 
 #include <complex.h>
 #include <math.h>
+#include <mpi.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <mpi.h>
 
 #include "interface/chase_c_interface.h"
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
@@ -78,13 +78,11 @@ int main(int argc, char** argv)
     double _Complex* H =
         (double _Complex*)malloc(sizeof(double _Complex) * m * n);
 
-#ifdef INTERFACE_BLOCK_CYCLIC    
+#ifdef INTERFACE_BLOCK_CYCLIC
     int zero = 0;
-    pzchase_init_(&N, &nev, &nex, &m,
-                                    &n, H, &m, V, Lambda, &dims[0], &dims[1],
-                                    (char*)"C", &zero,
-                                    &zero,  &comm, &init);
-                                    
+    pzchase_init_(&N, &nev, &nex, &m, &n, H, &m, V, Lambda, &dims[0], &dims[1],
+                  (char*)"C", &zero, &zero, &comm, &init);
+
 #else
     pzchase_init_(&N, &nev, &nex, &m, &n, H, &m, V, Lambda, &dims[0], &dims[1],
                   (char*)"C", &comm, &init);

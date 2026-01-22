@@ -145,7 +145,7 @@ examples on the JUWELS cluster:
   cmake .. -DCMAKE_INSTALL_PREFIX=${ChASEROOT} -DCHASE_BUILD_WITH_EXAMPLES=ON
   make install
   ### Run example #0 ###
-  ./examples/0_hello_world/0_hello_world
+  ./examples/1_hello_world/1_hello_world
 
 An MPI launcher has to be used to run an example in parallel. For
 instance on the JUWELS cluster (or any other ``SLURM`` based Cluster)
@@ -153,7 +153,7 @@ the following command line runs the "`hello world`" example in parallel.
 
 .. code-block:: console
 
-  srun -n 2 ./examples/0_hello_world/0_hello_world
+  srun -n 2 ./examples/1_hello_world/1_hello_world
 
 
 .. note::
@@ -212,7 +212,7 @@ An important aspect of executing ChASE on a parallel cluster is the
 memory footprint of the library. It is important to avoid that such
 memory footprint per MPI task exceeds the amount of main memory
 available to the compiled code. The memory requirements differ between
-**Hermitian** and **Pseudo-Hermitian** (Quasi-Hermitian) eigenvalue problems
+**Hermitian** and **Pseudo-Hermitian** eigenvalue problems
 due to the additional storage needed for the dual basis and oblique Rayleigh-Ritz
 procedure in the pseudo-Hermitian case.
 
@@ -389,11 +389,24 @@ ChASE-Specific Options
      - Compute and display the condition number of the matrix V
        from the Singular Value Decomposition (SVD). This is useful
        for debugging and understanding numerical stability.
-   * - ``ENABLE_TESTS``
+   * - ``CHASE_ENABLE_TESTS``
      - ``OFF``
-     - Enable building of unit tests. When enabled, GoogleTest
-       will be automatically downloaded and test executables will
-       be built. Requires MPI to be available for parallel tests.
+     - Enable building of unit tests. When enabled, GoogleTest will be automatically downloaded and test executables will be built. Requires MPI to be available for parallel tests.
+   * - ``CHASE_SAVE_RESIDUALS``
+     - ``OFF``
+     - Save the residuals in an external file. When enabled, the residuals will be saved in an external file.
+   * - ``CHASE_ENABLE_XGEEV_RAYLEIGHRITZ``
+     - ``OFF``
+     - Enable solving pseudo-Hermitian problems with XGEEV cusolver. When enabled, the pseudo-Hermitian problems will be solved with XGEEV cusolver.
+   * - ``CHASE_DISPLAY_COND_V_SVD``
+     - ``OFF``
+     - Compute and display the condition number of the matrix V from the Singular Value Decomposition (SVD). This is useful for debugging and understanding numerical stability.
+   * - ``CHASE_QR_DOUBLE_PRECISION``
+     - ``ON``
+     - Operate QR in Double Precision. When enabled, the QR factorization will be operated in double precision.
+   * - ``CHASE_RR_DOUBLE_PRECISION``
+     - ``OFF``
+     - Operate HEEVD in RR for pseudo-Hermitian matrices in Double Precision. When enabled, the HEEVD will be operated in double precision for pseudo-Hermitian matrices.
 
 Standard CMake Options
 ----------------------
@@ -419,7 +432,7 @@ The following standard CMake variables can also be used to configure the build:
      This option should always be set when building with CUDA support, regardless of CMake version.
 
 **Build Type:**
-   * ``CMAKE_BUILD_TYPE`` - Build type: ``Release`` (optimized, default), ``Debug`` (with debug symbols),
+   * ``CMAKE_BUILD_TYPE`` - Build type: ``Release`` (optimized), ``Debug`` (with debug symbols),
      ``RelWithDebInfo`` (optimized with debug info), or ``MinSizeRel`` (minimum size)
 
 Example Usage
@@ -458,11 +471,11 @@ Here are some example CMake configuration commands demonstrating the use of vari
 **Build with tests enabled:**
    .. code-block:: console
 
-      cmake .. -DENABLE_TESTS=ON \
+      cmake .. -DCHASE_ENABLE_TESTS=ON \
                -DMPI_RUN=srun \
                -DMPI_RUN_ARGS="--ntasks=4"
 
-Note: When using ``ENABLE_TESTS=ON``, you may also need to set ``MPI_RUN`` (the MPI launcher command,
+Note: When using ``CHASE_ENABLE_TESTS=ON``, you may also need to set ``MPI_RUN`` (the MPI launcher command,
 e.g., ``mpirun`` or ``srun``) and optionally ``MPI_RUN_ARGS`` (additional arguments for the MPI launcher).
 
 

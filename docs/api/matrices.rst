@@ -15,10 +15,10 @@ chase::matrix::Matrix
    :protected-members:
    :undoc-members:
 
-chase::matrix::QuasiHermitianMatrix
-------------------------------------
+chase::matrix::PseudoHermitianMatrix
+-------------------------------------
 
-.. doxygenclass:: chase::matrix::QuasiHermitianMatrix
+.. doxygenclass:: chase::matrix::PseudoHermitianMatrix
    :project: ChASE
    :members:
    :protected-members:
@@ -54,19 +54,19 @@ chase::distMatrix::RedundantMatrix
    :protected-members:
    :undoc-members:
 
-chase::distMatrix::QuasiHermitianBlockBlockMatrix
--------------------------------------------------
+chase::distMatrix::PseudoHermitianBlockBlockMatrix
+--------------------------------------------------
 
-.. doxygenclass:: chase::distMatrix::QuasiHermitianBlockBlockMatrix
+.. doxygenclass:: chase::distMatrix::PseudoHermitianBlockBlockMatrix
    :project: ChASE
    :members:
    :protected-members:
    :undoc-members:
 
-chase::distMatrix::QuasiHermitianBlockCyclicMatrix
----------------------------------------------------
+chase::distMatrix::PseudoHermitianBlockCyclicMatrix
+----------------------------------------------------
 
-.. doxygenclass:: chase::distMatrix::QuasiHermitianBlockCyclicMatrix
+.. doxygenclass:: chase::distMatrix::PseudoHermitianBlockCyclicMatrix
    :project: ChASE
    :members:
    :protected-members:
@@ -84,3 +84,11 @@ chase::distMultiVector::DistMultiVector1D
    :protected-members:
    :undoc-members:
 
+chase::distMultiVector::DistMultiVectorBlockCyclic1D
+---------------------------------------------------
+
+.. doxygenclass:: chase::distMultiVector::DistMultiVectorBlockCyclic1D
+   :project: ChASE
+   :members:
+   :protected-members:
+   :undoc-members:

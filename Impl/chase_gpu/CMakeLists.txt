@@ -15,7 +15,9 @@ target_include_directories(chase_gpu INTERFACE
                                                $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
                                                "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/Impl/chase_gpu>")
 
-target_compile_definitions(chase_gpu INTERFACE NO_MPI=1 HAS_CUDA=1)
+# NO_MPI is not defined here to avoid conflicts when chase_c links to both serial and parallel targets
+# The interface layer (chase_c) will handle NO_MPI definition based on actual usage
+target_compile_definitions(chase_gpu INTERFACE HAS_CUDA=1)
 
 install(TARGETS chase_gpu
   EXPORT chase_targets

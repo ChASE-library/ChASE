@@ -14,7 +14,7 @@ The ChASE library is organized into the following main components:
 * **Implementation Classes**: ``chase::Impl::ChASECPU``, ``chase::Impl::ChASEGPU``,
   ``chase::Impl::pChASECPU``, ``chase::Impl::pChASEGPU``
 * **Matrix Types**: Sequential matrices (``chase::matrix::Matrix<T>``,
-  ``chase::matrix::QuasiHermitianMatrix<T>``) and distributed matrices
+  ``chase::matrix::PseudoHermitianMatrix<T>``) and distributed matrices
   (``chase::distMatrix::BlockBlockMatrix<T, Platform>``,
   ``chase::distMatrix::BlockCyclicMatrix<T, Platform>``, etc.)
 * **Configuration**: ``chase::ChaseConfig<T>`` for parameter setup
@@ -85,8 +85,8 @@ for pseudo-Hermitian problems:
         N, nev, nex, Hmat, V.data(), N, Lambda.data());
     
     // For Pseudo-Hermitian problems (e.g., BSE)
-    auto Hmat = new chase::matrix::QuasiHermitianMatrix<T>(N, N);
-    auto solver = chase::Impl::ChASECPU<T, chase::matrix::QuasiHermitianMatrix<T>>(
+    auto Hmat = new chase::matrix::PseudoHermitianMatrix<T>(N, N);
+    auto solver = chase::Impl::ChASECPU<T, chase::matrix::PseudoHermitianMatrix<T>>(
         N, nev, nex, Hmat, V.data(), N, Lambda.data());
 
 Parallel ChASE (Distributed-Memory)
@@ -163,16 +163,16 @@ Creating Distributed Matrices and Vectors
 
 **Pseudo-Hermitian Matrices**
 
-For pseudo-Hermitian problems (e.g., BSE), use the QuasiHermitian variants:
+For pseudo-Hermitian problems (e.g., BSE), use the pseudo-Hermitian matrix variants:
 
 .. code-block:: c++
 
     // Block distribution
-    auto Hmat = chase::distMatrix::QuasiHermitianBlockBlockMatrix<T, ARCH>(
+    auto Hmat = chase::distMatrix::PseudoHermitianBlockBlockMatrix<T, ARCH>(
         N, N, mpi_grid);
     
     // Block-Cyclic distribution
-    auto Hmat = chase::distMatrix::QuasiHermitianBlockCyclicMatrix<T, ARCH>(
+    auto Hmat = chase::distMatrix::PseudoHermitianBlockCyclicMatrix<T, ARCH>(
         N, N, blocksize, blocksize, mpi_grid);
 
 Creating the Solver
@@ -364,8 +364,9 @@ The output format is:
 
 .. code-block:: bash
 
-  | Size  | Iterations | Vecs   |  All       | Lanczos    | Filter     | QR         | RR         | Resid      |
-  |     1 |          5 |   7556 |      1.116 |   0.135028 |    0.87997 |  0.0164864 |  0.0494752 |  0.0310726 |
+  | MPI procs | Iterations |  Vecs |       All | Init Vecs |   Lanczos |    Filter |        QR |        RR |     Resid | GFLOPS: All | GFLOPS: Filter | Num. Early Locked | Avg. Early Locked | Max. Early Locked |
+  |         4 |          1 | 20000 | 7.956e-01 | 2.711e-03 | 6.353e-01 | 2.231e-02 | 3.963e-02 | 6.714e-02 | 1.593e-03 |   1.146e+03 |      1.000e+03 |                 0 |         0.000e+00 |         0.000e+00 |
+
 
 The columns represent:
 * **Size**: Number of MPI processes in the working communicator
@@ -611,7 +612,7 @@ Both C and Fortran interfaces of ChASE provide 3 versions of utilization:
       - They share the same interface for **Solving** and **Finalization** steps
       - But use different interfaces for the **Initialization** step. For
         **Block-Cyclic** data layout, the related **Initialization function** ends
-        with the suffix ``blockcyclic``
+        with the suffix ``blockcyclic``.
     - The Fortran interfaces are implemented based on ``iso_c_binding``, a standard
       intrinsic module which defines named constants, types, and procedures for
       inter-operation with C functions. C and Fortran functions share the same names.
@@ -662,19 +663,19 @@ The APIs for the C interfaces are as follows:
 
 .. code-block:: C
 
-  void schase_init_(int* n, int* nev, int* nex, float* h, float* v, float* ritzv, int* init)
-  void dchase_init_(int* n, int* nev, int* nex, double* h, double* v, double* ritzv, int* init)
-  void cchase_init_(int* n, int* nev, int* nex, float _Complex* h, float _Complex* v, float* ritzv, int* init)
-  void zchase_init_(int* n, int* nev, int* nex, double _Complex* h, double _Complex* v, double* ritzv, int* init)
+  void schase_init_(int* n, int* nev, int* nex, float* h, int* ldh, float* v, float* ritzv, int* init)
+  void dchase_init_(int* n, int* nev, int* nex, double* h, int* ldh, double* v, double* ritzv, int* init)
+  void cchase_init_(int* n, int* nev, int* nex, float _Complex* h, int* ldh, float _Complex* v, float* ritzv, int* init)
+  void zchase_init_(int* n, int* nev, int* nex, double _Complex* h, int* ldh, double _Complex* v, double* ritzv, int* init)
 
 The APIs for the Fortran interfaces are as follows:
 
 .. code-block:: Fortran
 
-  SUBROUTINE schase_init(n, nev, nex, h, v, ritzv, init)
-  SUBROUTINE dchase_init(n, nev, nex, h, v, ritzv, init)
-  SUBROUTINE cchase_init(n, nev, nex, h, v, ritzv, init)
-  SUBROUTINE zchase_init(n, nev, nex, h, v, ritzv, init)
+  SUBROUTINE schase_init(n, nev, nex, h, ldh, v, ritzv, init)
+  SUBROUTINE dchase_init(n, nev, nex, h, ldh, v, ritzv, init)
+  SUBROUTINE cchase_init(n, nev, nex, h, ldh, v, ritzv, init)
+  SUBROUTINE zchase_init(n, nev, nex, h, ldh, v, ritzv, init)
 
 The interfaces of C and Fortran share the same parameters as follows:
 
@@ -697,6 +698,9 @@ The interfaces of C and Fortran share the same parameters as follows:
    * - ``h``
      - In  
      - pointer to the matrix to be diagonalized, with size of matrix ``nxn``
+   * - ``ldh``
+     - In 
+     - leading dimension of ``h``
    * - ``v``
      - In, Out  
      - ``(nx(nev+nex))`` matrix, input is the initial guess eigenvectors,
@@ -913,17 +917,17 @@ on shared-memory architectures. When CUDA is enabled, it will automatically use
 
 .. code-block:: C
 
-  void schase_(int *deg, double *tol, char *mode, char *opt) 
-  void dchase_(int *deg, double *tol, char *mode, char *opt) 
-  void cchase_(int *deg, double *tol, char *mode, char *opt) 
-  void zchase_(int *deg, double *tol, char *mode, char *opt) 
+  void schase_(int *deg, float *tol, char *mode, char *opt, char *qr) 
+  void dchase_(int *deg, double *tol, char *mode, char *opt, char *qr) 
+  void cchase_(int *deg, float *tol, char *mode, char *opt, char *qr) 
+  void zchase_(int *deg, double *tol, char *mode, char *opt, char *qr) 
 
 .. code-block:: Fortran
 
-  subroutine  schase (deg, tol, mode, opt)
-  subroutine  dchase (deg, tol, mode, opt)
-  subroutine  cchase (deg, tol, mode, opt)
-  subroutine  zchase (deg, tol, mode, opt)
+  subroutine  schase (deg, tol, mode, opt, qr)
+  subroutine  dchase (deg, tol, mode, opt, qr)
+  subroutine  cchase (deg, tol, mode, opt, qr)
+  subroutine  zchase (deg, tol, mode, opt, qr)
 
 .. list-table:: 
    :widths: 4 8 36
@@ -946,6 +950,10 @@ on shared-memory architectures. When CUDA is enabled, it will automatically use
      - In 
      - determining if using internal optimization of Chebyshev polynomial degree.
        If opt='S', use, otherwise, no.
+   * - ``qr``
+     - In 
+     - determining if using flexible CholeskyQR. If qr='C', use CholeskyQR,
+       otherwise, use Householder QR.
 
 p<x>chase
 ^^^^^^^^^^
@@ -958,19 +966,19 @@ The APIs for the C interfaces are as follows:
 
 .. code-block:: C
 
-  void pschase_(int *deg, double *tol, char *mode, char *opt) 
-  void pdchase_(int *deg, double *tol, char *mode, char *opt) 
-  void pcchase_(int *deg, double *tol, char *mode, char *opt) 
-  void pzchase_(int *deg, double *tol, char *mode, char *opt) 
+  void pschase_(int *deg, float *tol, char *mode, char *opt, char *qr) 
+  void pdchase_(int *deg, double *tol, char *mode, char *opt, char *qr) 
+  void pcchase_(int *deg, float *tol, char *mode, char *opt, char *qr) 
+  void pzchase_(int *deg, double *tol, char *mode, char *opt, char *qr) 
 
 The APIs for the Fortran interfaces are as follows:
 
 .. code-block:: Fortran
 
-  subroutine  pschase (deg, tol, mode, opt)
-  subroutine  pdchase (deg, tol, mode, opt)
-  subroutine  pcchase (deg, tol, mode, opt)
-  subroutine  pzchase (deg, tol, mode, opt)
+  subroutine  pschase (deg, tol, mode, opt, qr)
+  subroutine  pdchase (deg, tol, mode, opt, qr)
+  subroutine  pcchase (deg, tol, mode, opt, qr)
+  subroutine  pzchase (deg, tol, mode, opt, qr)
 
 The interfaces of C and Fortran share the same parameters as described for ``<x>chase`` above.
 
@@ -1042,6 +1050,495 @@ The APIs for the Fortran interfaces are as follows:
 
 The interfaces of C and Fortran share the same parameters as described for ``<x>chase_finalize`` above.
 
+Pseudo-Hermitian Interfaces
+----------------------------
+
+ChASE provides specialized interfaces for pseudo-Hermitian eigenvalue problems
+(e.g., Bethe-Salpeter Equation). These interfaces use the same solving and
+finalization functions as the regular interfaces, but require separate
+initialization functions.
+
+Sequential Pseudo-Hermitian Initialization
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+<x>chase_init_pseudo
+""""""""""""""""""""
+
+``<x>chase_init_pseudo`` initializes the context for shared-memory ChASE with
+pseudo-Hermitian matrices. Currently only complex types (``c`` and ``z``) are
+supported.
+
+The APIs for the C interfaces are as follows:
+
+.. code-block:: C
+
+  void cchase_init_pseudo_(int* n, int* nev, int* nex, float _Complex* h, int* ldh,
+                           float _Complex* v, float* ritzv, int* init)
+  void zchase_init_pseudo_(int* n, int* nev, int* nex, double _Complex* h, int* ldh,
+                           double _Complex* v, double* ritzv, int* init)
+
+The APIs for the Fortran interfaces are as follows:
+
+.. code-block:: Fortran
+
+  SUBROUTINE cchase_init_pseudo(n, nev, nex, h, ldh, v, ritzv, init)
+  SUBROUTINE zchase_init_pseudo(n, nev, nex, h, ldh, v, ritzv, init)
+
+The parameters are the same as ``<x>chase_init`` described above.
+
+<x>chase_pseudo
+"""""""""""""""
+
+``<x>chase_pseudo`` solves a pseudo-Hermitian eigenvalue problem. Use this
+function after initializing with ``<x>chase_init_pseudo``.
+
+The APIs for the C interfaces are as follows:
+
+.. code-block:: C
+
+  void cchase_pseudo_(int *deg, float *tol, char *mode, char *opt, char *qr)
+  void zchase_pseudo_(int *deg, double *tol, char *mode, char *opt, char *qr)
+
+The APIs for the Fortran interfaces are as follows:
+
+.. code-block:: Fortran
+
+  subroutine  cchase_pseudo (deg, tol, mode, opt, qr)
+  subroutine  zchase_pseudo (deg, tol, mode, opt, qr)
+
+The parameters are the same as ``<x>chase`` described above.
+
+Distributed Pseudo-Hermitian Initialization
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+p<x>chase_init_pseudo
+""""""""""""""""""""""
+
+``p<x>chase_init_pseudo`` initializes the context for distributed-memory ChASE
+with pseudo-Hermitian matrices using **Block Distribution**. Currently only
+complex types (``c`` and ``z``) are supported.
+
+The APIs for the C interfaces are as follows:
+
+.. code-block:: C
+
+  void pcchase_init_pseudo_(int* nn, int* nev, int* nex, int* m, int* n,
+                            float _Complex* h, int* ldh, float _Complex* v,
+                            float* ritzv, int* dim0, int* dim1, char* grid_major,
+                            MPI_Comm* comm, int* init)
+  void pzchase_init_pseudo_(int* nn, int* nev, int* nex, int* m, int* n,
+                            double _Complex* h, int* ldh, double _Complex* v,
+                            double* ritzv, int* dim0, int* dim1, char* grid_major,
+                            MPI_Comm* comm, int* init)
+
+The APIs for the Fortran interfaces are as follows:
+
+.. code-block:: Fortran
+
+  subroutine  pcchase_init_pseudo (nn, nev, nex, m, n, h, ldh, v, ritzv, dim0, dim1, grid_major, fcomm, init)
+  subroutine  pzchase_init_pseudo (nn, nev, nex, m, n, h, ldh, v, ritzv, dim0, dim1, grid_major, fcomm, init)
+
+The parameters are the same as ``p<x>chase_init`` described above.
+
+p<x>chase_init_pseudo_blockcyclic
+"""""""""""""""""""""""""""""""""
+
+``p<x>chase_init_pseudo_blockcyclic`` initializes the context for
+distributed-memory ChASE with pseudo-Hermitian matrices using **Block-Cyclic
+Distribution**. Currently only complex types (``c`` and ``z``) are supported.
+
+The APIs for the C interfaces are as follows:
+
+.. code-block:: C
+
+  void pcchase_init_pseudo_blockcyclic_(int* nn, int* nev, int* nex, int* mbsize, int* nbsize,
+                                         float _Complex* h, int* ldh, float _Complex* v, float* ritzv,
+                                         int* dim0, int* dim1, char* grid_major, int* irsrc,
+                                         int* icsrc, MPI_Comm* comm, int* init)
+  void pzchase_init_pseudo_blockcyclic_(int* nn, int* nev, int* nex, int* mbsize, int* nbsize,
+                                         double _Complex* h, int* ldh, double _Complex* v, double* ritzv,
+                                         int* dim0, int* dim1, char* grid_major, int* irsrc,
+                                         int* icsrc, MPI_Comm* comm, int* init)
+
+The APIs for the Fortran interfaces are as follows:
+
+.. code-block:: Fortran
+
+  subroutine  pcchase_init_pseudo_blockcyclic (nn, nev, nex, mbsize, nbsize, h, ldh, v, ritzv, dim0, dim1, grid_major, irsrc, icsrc, fcomm, init)
+  subroutine  pzchase_init_pseudo_blockcyclic (nn, nev, nex, mbsize, nbsize, h, ldh, v, ritzv, dim0, dim1, grid_major, irsrc, icsrc, fcomm, init)
+
+The parameters are the same as ``p<x>chase_init_blockcyclic`` described above.
+
+.. note::
+  For pseudo-Hermitian problems, use the regular ``p<x>chase`` function for solving
+  and ``p<x>chase_finalize`` for cleanup. The solver automatically detects the
+  matrix type based on the initialization function used.
+
+I/O Functions
+-------------
+
+ChASE provides functions to read and write Hamiltonian matrices to/from files.
+These functions work for both regular and pseudo-Hermitian matrices, automatically
+detecting the matrix type based on the initialization function used.
+
+Writing Hamiltonian to File
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+p<x>chase_wrtHam
+""""""""""""""""
+
+``p<x>chase_wrtHam`` writes the distributed Hamiltonian matrix to a file. This
+function works for both regular and pseudo-Hermitian matrices.
+
+The APIs for the C interfaces are as follows:
+
+.. code-block:: C
+
+  void pschase_wrtHam_(const char* filename)
+  void pdchase_wrtHam_(const char* filename)
+  void pcchase_wrtHam_(const char* filename)
+  void pzchase_wrtHam_(const char* filename)
+
+The APIs for the Fortran interfaces are as follows:
+
+.. code-block:: Fortran
+
+  subroutine  pschase_wrtHam (filename)
+  subroutine  pdchase_wrtHam (filename)
+  subroutine  pcchase_wrtHam (filename)
+  subroutine  pzchase_wrtHam (filename)
+
+.. list-table:: 
+   :widths: 4 8 36
+   :header-rows: 1
+
+   * - Param.
+     - In/Out 
+     - Meaning
+   * - ``filename``
+     - In 
+     - name of the output file
+
+Reading Hamiltonian from File
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+p<x>chase_readHam
+"""""""""""""""""
+
+``p<x>chase_readHam`` reads a distributed Hamiltonian matrix from a file. This
+function works for both regular and pseudo-Hermitian matrices.
+
+The APIs for the C interfaces are as follows:
+
+.. code-block:: C
+
+  void pschase_readHam_(const char* filename)
+  void pdchase_readHam_(const char* filename)
+  void pcchase_readHam_(const char* filename)
+  void pzchase_readHam_(const char* filename)
+
+The APIs for the Fortran interfaces are as follows:
+
+.. code-block:: Fortran
+
+  subroutine  pschase_readHam (filename)
+  subroutine  pdchase_readHam (filename)
+  subroutine  pcchase_readHam (filename)
+  subroutine  pzchase_readHam (filename)
+
+.. list-table:: 
+   :widths: 4 8 36
+   :header-rows: 1
+
+   * - Param.
+     - In/Out 
+     - Meaning
+   * - ``filename``
+     - In 
+     - name of the input file
+
+Sequential I/O Functions
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+For sequential/single-GPU interfaces, convenience aliases are provided:
+
+.. code-block:: C
+
+  void schase_readHam_(const char* filename)
+  void dchase_readHam_(const char* filename)
+  void cchase_readHam_(const char* filename)
+  void zchase_readHam_(const char* filename)
+
+.. code-block:: Fortran
+
+  subroutine  schase_readHam (filename)
+  subroutine  dchase_readHam (filename)
+  subroutine  cchase_readHam (filename)
+  subroutine  zchase_readHam (filename)
+
+Unified Configuration Setter Functions
+---------------------------------------
+
+Name Convention
+^^^^^^^^^^^^^^^^^
+
+ChASE provides unified configuration setter functions that work regardless of
+matrix type (Hermitian or pseudo-Hermitian), precision, architecture (sequential
+or distributed), or distribution scheme (block or block-cyclic). These functions
+automatically detect the active solver instance.
+
+All configuration setters use the following C interface pattern:
+
+.. code-block:: C
+
+  void chase_set_<parameter>_(<type>* value)
+
+And the Fortran interface pattern:
+
+.. code-block:: Fortran
+
+  subroutine  chase_set_<parameter> (value)
+
+Available Configuration Setters
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+chase_set_tol
+"""""""""""""
+
+Set the tolerance threshold for eigenpair residuals.
+
+.. code-block:: C
+
+  void chase_set_tol_(double* tol)
+
+.. code-block:: Fortran
+
+  subroutine  chase_set_tol (tol)
+
+.. list-table:: 
+   :widths: 4 8 36
+   :header-rows: 1
+
+   * - Param.
+     - In/Out 
+     - Meaning
+   * - ``tol``
+     - In 
+     - desired absolute tolerance of computed eigenpairs
+
+chase_set_deg
+"""""""""""""
+
+Set the initial degree of the Chebyshev polynomial filter.
+
+.. code-block:: C
+
+  void chase_set_deg_(int* deg)
+
+.. code-block:: Fortran
+
+  subroutine  chase_set_deg (deg)
+
+.. list-table:: 
+   :widths: 4 8 36
+   :header-rows: 1
+
+   * - Param.
+     - In/Out 
+     - Meaning
+   * - ``deg``
+     - In 
+     - initial degree of Chebyshev polynomial filter
+
+chase_set_max_deg
+"""""""""""""""""
+
+Set the maximum degree of the Chebyshev polynomial filter.
+
+.. code-block:: C
+
+  void chase_set_max_deg_(int* max_deg)
+
+.. code-block:: Fortran
+
+  subroutine  chase_set_max_deg (max_deg)
+
+chase_set_deg_extra
+"""""""""""""""""""
+
+Set the extra degree added to the polynomial filter.
+
+.. code-block:: C
+
+  void chase_set_deg_extra_(int* deg_extra)
+
+.. code-block:: Fortran
+
+  subroutine  chase_set_deg_extra (deg_extra)
+
+chase_set_max_iter
+"""""""""""""""""""
+
+Set the maximum number of subspace iterations.
+
+.. code-block:: C
+
+  void chase_set_max_iter_(int* max_iter)
+
+.. code-block:: Fortran
+
+  subroutine  chase_set_max_iter (max_iter)
+
+chase_set_lanczos_iter
+""""""""""""""""""""""
+
+Set the number of Lanczos iterations for spectral estimates.
+
+.. code-block:: C
+
+  void chase_set_lanczos_iter_(int* lanczos_iter)
+
+.. code-block:: Fortran
+
+  subroutine  chase_set_lanczos_iter (lanczos_iter)
+
+chase_set_num_lanczos
+"""""""""""""""""""""
+
+Set the number of stochastic vectors for spectral estimates.
+
+.. code-block:: C
+
+  void chase_set_num_lanczos_(int* num_lanczos)
+
+.. code-block:: Fortran
+
+  subroutine  chase_set_num_lanczos (num_lanczos)
+
+chase_set_approx
+"""""""""""""""""
+
+Set the approximate mode flag.
+
+.. code-block:: C
+
+  void chase_set_approx_(int* flag)
+
+.. code-block:: Fortran
+
+  subroutine  chase_set_approx (flag)
+
+.. list-table:: 
+   :widths: 4 8 36
+   :header-rows: 1
+
+   * - Param.
+     - In/Out 
+     - Meaning
+   * - ``flag``
+     - In 
+     - 1 to enable approximate mode, 0 to disable
+
+chase_set_opt
+"""""""""""""
+
+Set the optimization flag for Chebyshev polynomial degree.
+
+.. code-block:: C
+
+  void chase_set_opt_(int* flag)
+
+.. code-block:: Fortran
+
+  subroutine  chase_set_opt (flag)
+
+.. list-table:: 
+   :widths: 4 8 36
+   :header-rows: 1
+
+   * - Param.
+     - In/Out 
+     - Meaning
+   * - ``flag``
+     - In 
+     - 1 to enable optimization, 0 to disable
+
+chase_set_cholqr
+"""""""""""""""""
+
+Set the CholQR flag (flexible CholeskyQR vs Householder QR).
+
+.. code-block:: C
+
+  void chase_set_cholqr_(int* flag)
+
+.. code-block:: Fortran
+
+  subroutine  chase_set_cholqr (flag)
+
+.. list-table:: 
+   :widths: 4 8 36
+   :header-rows: 1
+
+   * - Param.
+     - In/Out 
+     - Meaning
+   * - ``flag``
+     - In 
+     - 1 to use flexible CholQR, 0 to use Householder QR
+
+chase_enable_sym_check
+""""""""""""""""""""""
+
+Enable or disable symmetry checking.
+
+.. code-block:: C
+
+  void chase_enable_sym_check_(int* flag)
+
+.. code-block:: Fortran
+
+  subroutine  chase_enable_sym_check (flag)
+
+chase_set_decaying_rate
+"""""""""""""""""""""""
+
+Set the decaying rate for the polynomial lower bound.
+
+.. code-block:: C
+
+  void chase_set_decaying_rate_(float* decaying_rate)
+
+.. code-block:: Fortran
+
+  subroutine  chase_set_decaying_rate (decaying_rate)
+
+chase_set_cluster_aware_degrees
+""""""""""""""""""""""""""""""""
+
+Enable or disable cluster-aware degree optimization.
+
+.. code-block:: C
+
+  void chase_set_cluster_aware_degrees_(int* flag)
+
+.. code-block:: Fortran
+
+  subroutine  chase_set_cluster_aware_degrees (flag)
+
+chase_set_upperb_scale_rate
+"""""""""""""""""""""""""""
+
+Set the scale rate for upper bound based on its sign.
+
+.. code-block:: C
+
+  void chase_set_upperb_scale_rate_(float* upperb_scale_rate)
+
+.. code-block:: Fortran
+
+  subroutine  chase_set_upperb_scale_rate (upperb_scale_rate)
+
 .. note::
   In order to use C interfaces, it is necessary to link to ``libchase_c.a``.
   In order to use Fortran interfaces, it is required to link to both ``libchase_c.a``
@@ -1097,6 +1594,7 @@ Example of C interface
       double tol = 1e-10;
       char mode = 'R';
       char opt = 'S';
+      char qr = 'H';  // 'H' for Householder QR, 'C' for CholeskyQR
 
       // Initialize ChASE
       pzchase_init_(&N, &nev, &nex, &m, &n, H, &m, V, Lambda, &dims[0], &dims[1],
@@ -1107,7 +1605,7 @@ Example of C interface
       */
 
       // solve 1st eigenproblem with defined configuration of parameters
-      pzchase_(&deg, &tol, &mode, &opt);
+      pzchase_(&deg, &tol, &mode, &opt, &qr);
 
       /*
           form a new eigenproblem by updating the buffer H
@@ -1117,7 +1615,7 @@ Example of C interface
       mode = 'A';
 
       // solve 2nd eigenproblem with updated parameters
-      pzchase_(&deg, &tol, &mode, &opt);
+      pzchase_(&deg, &tol, &mode, &opt, &qr);
 
       // finalize and clean up
       pzchase_finalize_(&init);
@@ -1157,6 +1655,7 @@ Example of Fortran interface
   tol = 1e-10
   mode = 'R'
   opt = 'S'
+  qr = 'H'  ! 'H' for Householder QR, 'C' for CholeskyQR
   major = 'C'
 
   dims(1) = 2 ! row number of 2D MPI grid
@@ -1177,7 +1676,7 @@ Example of Fortran interface
   !
 
   ! solve 1st eigenproblem with defined configuration of parameters
-  call pzchase(deg, tol, mode, opt)
+  call pzchase(deg, tol, mode, opt, qr)
 
   !
   !      form a new eigenproblem by updating the buffer H
@@ -1186,7 +1685,7 @@ Example of Fortran interface
   mode = 'A'
   
   ! solve 2nd eigenproblem with updated parameters
-  call pzchase(deg, tol, mode, opt)
+  call pzchase(deg, tol, mode, opt, qr)
 
   ! finalize and clean up
   call pzchase_finalize(init)

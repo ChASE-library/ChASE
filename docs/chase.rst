@@ -33,12 +33,12 @@ algebraic eigenvalue problems:
           -\bar{B} & -\bar{A}
       \end{bmatrix} \quad \textrm{with} \quad A = A^* \quad \textrm{and} \quad B = B^T.
 
-   The :math:`m \times m` blocks :math:`A` and :math:`B` are respectively
+   The :math:`\frac{n}{2} \times \frac{n}{2}` blocks :math:`A` and :math:`B` are respectively
    referred to as resonant and coupling terms. The two blocks :math:`\bar{A}`
    and :math:`\bar{B}` stand for the conjugate of :math:`A` and :math:`B`.
    Because of the properties of :math:`A` and :math:`B` stated above,
    :math:`\bar{A} = A^T` and :math:`\bar{B} = B^*`, and the size of :math:`H`
-   is :math:`n := 2m`. The Hamiltonian :math:`H` is termed a
+   is :math:`n`. The Hamiltonian :math:`H` is termed a
    pseudo-Hermitian matrix, as it satisfies the relation
 
    .. math::
@@ -81,7 +81,10 @@ Use Case and Features
    * **Real and Complex:** ChASE is templated for real and complex numbers. So it can
      be used to solve *real symmetric* eigenproblems as well as *complex
      Hermitian* ones.
-   * **Eigespectrum:** ChASE algorithm is designed to solve for the
+   * **Hermitian and Pseudo-Hermitian:** ChASE supports solving *Hermitian* and
+     *pseudo-Hermitian* eigenproblems, including those arising from Bethe-Salpeter
+     Equation (BSE) formulations.
+   * **Eigenspectrum:** ChASE algorithm is designed to solve for the
      *extremal portion* of the eigenspectrum (i.e., :math:`\{\lambda_1,
      \dots ,\lambda_\textsf{nev}\}`). By default it computes the
      lowest portion of the spectrum but it can compute as well the
@@ -89,7 +92,7 @@ Use Case and Features
      particularly efficient when no more than 20% of the extremal
      portion of the eigenspectrum is sought after. For larger
      fractions the subspace iteration algorithm may struggle to be
-     competitive. Converge could become an issue for fractions close
+     competitive. Convergence could become an issue for fractions close
      to or larger than 50%.
    * **Type of Problem:** ChASE can currently handle only standard
      eigenvalue problems. Generalized eigenvalue problems of the form

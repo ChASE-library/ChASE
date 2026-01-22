@@ -16,3 +16,14 @@ build
 *.out
 *.err
 /*install*/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Temporary worktrees
+*_worktree/
+migrate_worktree/
+deploy_worktree/
+fix_worktree/
