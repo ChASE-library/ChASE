@@ -219,48 +219,25 @@ function switchVersion(url) {
 <li class="toctree-l4"><a class="reference internal" href="#p-x-chase-finalize">3.3.4.2. p&lt;x&gt;chase_finalize</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#pseudo-hermitian-interfaces">3.3.5. Pseudo-Hermitian Interfaces</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#sequential-pseudo-hermitian-initialization">3.3.6. Sequential Pseudo-Hermitian Initialization</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#x-chase-init-pseudo">3.3.6.1. &lt;x&gt;chase_init_pseudo</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#x-chase-pseudo">3.3.6.2. &lt;x&gt;chase_pseudo</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pseudo-hermitian-interfaces">3.3.5. Pseudo-Hermitian Interfaces</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#sequential-pseudo-hermitian-initialization">3.3.5.1. Sequential Pseudo-Hermitian Initialization</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#distributed-pseudo-hermitian-initialization">3.3.5.2. Distributed Pseudo-Hermitian Initialization</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#distributed-pseudo-hermitian-initialization">3.3.7. Distributed Pseudo-Hermitian Initialization</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#p-x-chase-init-pseudo">3.3.7.1. p&lt;x&gt;chase_init_pseudo</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#p-x-chase-init-pseudo-blockcyclic">3.3.7.2. p&lt;x&gt;chase_init_pseudo_blockcyclic</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#i-o-functions">3.3.6. I/O Functions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#writing-hamiltonian-to-file">3.3.6.1. Writing Hamiltonian to File</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#reading-hamiltonian-from-file">3.3.6.2. Reading Hamiltonian from File</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sequential-i-o-functions">3.3.6.3. Sequential I/O Functions</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#i-o-functions">3.3.8. I/O Functions</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#writing-hamiltonian-to-file">3.3.9. Writing Hamiltonian to File</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#p-x-chase-wrtham">3.3.9.1. p&lt;x&gt;chase_wrtHam</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#unified-configuration-setter-functions">3.3.7. Unified Configuration Setter Functions</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#name-convention">3.3.7.1. Name Convention</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#available-configuration-setters">3.3.7.2. Available Configuration Setters</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#reading-hamiltonian-from-file">3.3.10. Reading Hamiltonian from File</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#p-x-chase-readham">3.3.10.1. p&lt;x&gt;chase_readHam</a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="#sequential-i-o-functions">3.3.11. Sequential I/O Functions</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#unified-configuration-setter-functions">3.3.12. Unified Configuration Setter Functions</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#available-configuration-setters">3.3.13. Available Configuration Setters</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#chase-set-tol">3.3.13.1. chase_set_tol</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#chase-set-deg">3.3.13.2. chase_set_deg</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#chase-set-max-deg">3.3.13.3. chase_set_max_deg</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#chase-set-deg-extra">3.3.13.4. chase_set_deg_extra</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#chase-set-max-iter">3.3.13.5. chase_set_max_iter</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#chase-set-lanczos-iter">3.3.13.6. chase_set_lanczos_iter</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#chase-set-num-lanczos">3.3.13.7. chase_set_num_lanczos</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#chase-set-approx">3.3.13.8. chase_set_approx</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#chase-set-opt">3.3.13.9. chase_set_opt</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#chase-set-cholqr">3.3.13.10. chase_set_cholqr</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#chase-enable-sym-check">3.3.13.11. chase_enable_sym_check</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#chase-set-decaying-rate">3.3.13.12. chase_set_decaying_rate</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#chase-set-cluster-aware-degrees">3.3.13.13. chase_set_cluster_aware_degrees</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#chase-set-upperb-scale-rate">3.3.13.14. chase_set_upperb_scale_rate</a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="#examples">3.3.14. Examples</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#example-of-c-interface">3.3.14.1. Example of C interface</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#example-of-fortran-interface">3.3.14.2. Example of Fortran interface</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#examples">3.3.8. Examples</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#example-of-c-interface">3.3.8.1. Example of C interface</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#example-of-fortran-interface">3.3.8.2. Example of Fortran interface</a></li>
 </ul>
 </li>
 </ul>
@@ -1342,11 +1319,10 @@ they share a uniform interface for the finalization.</p>
 (e.g., Bethe-Salpeter Equation). These interfaces use the same solving and
 finalization functions as the regular interfaces, but require separate
 initialization functions.</p>
-</section>
 <section id="sequential-pseudo-hermitian-initialization">
-<h3><span class="section-number">3.3.6. </span>Sequential Pseudo-Hermitian Initialization<a class="headerlink" href="#sequential-pseudo-hermitian-initialization" title="Link to this heading"></a></h3>
+<h4><span class="section-number">3.3.5.1. </span>Sequential Pseudo-Hermitian Initialization<a class="headerlink" href="#sequential-pseudo-hermitian-initialization" title="Link to this heading"></a></h4>
 <section id="x-chase-init-pseudo">
-<h4><span class="section-number">3.3.6.1. </span>&lt;x&gt;chase_init_pseudo<a class="headerlink" href="#x-chase-init-pseudo" title="Link to this heading"></a></h4>
+<h5><span class="section-number">3.3.5.1.1. </span>&lt;x&gt;chase_init_pseudo<a class="headerlink" href="#x-chase-init-pseudo" title="Link to this heading"></a></h5>
 <p><code class="docutils literal notranslate"><span class="pre">&lt;x&gt;chase_init_pseudo</span></code> initializes the context for shared-memory ChASE with
 pseudo-Hermitian matrices. Currently only complex types (<code class="docutils literal notranslate"><span class="pre">c</span></code> and <code class="docutils literal notranslate"><span class="pre">z</span></code>) are
 supported.</p>
@@ -1365,7 +1341,7 @@ supported.</p>
 <p>The parameters are the same as <code class="docutils literal notranslate"><span class="pre">&lt;x&gt;chase_init</span></code> described above.</p>
 </section>
 <section id="x-chase-pseudo">
-<h4><span class="section-number">3.3.6.2. </span>&lt;x&gt;chase_pseudo<a class="headerlink" href="#x-chase-pseudo" title="Link to this heading"></a></h4>
+<h5><span class="section-number">3.3.5.1.2. </span>&lt;x&gt;chase_pseudo<a class="headerlink" href="#x-chase-pseudo" title="Link to this heading"></a></h5>
 <p><code class="docutils literal notranslate"><span class="pre">&lt;x&gt;chase_pseudo</span></code> solves a pseudo-Hermitian eigenvalue problem. Use this
 function after initializing with <code class="docutils literal notranslate"><span class="pre">&lt;x&gt;chase_init_pseudo</span></code>.</p>
 <p>The APIs for the C interfaces are as follows:</p>
@@ -1382,9 +1358,9 @@ function after initializing with <code class="docutils literal notranslate"><spa
 </section>
 </section>
 <section id="distributed-pseudo-hermitian-initialization">
-<h3><span class="section-number">3.3.7. </span>Distributed Pseudo-Hermitian Initialization<a class="headerlink" href="#distributed-pseudo-hermitian-initialization" title="Link to this heading"></a></h3>
+<h4><span class="section-number">3.3.5.2. </span>Distributed Pseudo-Hermitian Initialization<a class="headerlink" href="#distributed-pseudo-hermitian-initialization" title="Link to this heading"></a></h4>
 <section id="p-x-chase-init-pseudo">
-<h4><span class="section-number">3.3.7.1. </span>p&lt;x&gt;chase_init_pseudo<a class="headerlink" href="#p-x-chase-init-pseudo" title="Link to this heading"></a></h4>
+<h5><span class="section-number">3.3.5.2.1. </span>p&lt;x&gt;chase_init_pseudo<a class="headerlink" href="#p-x-chase-init-pseudo" title="Link to this heading"></a></h5>
 <p><code class="docutils literal notranslate"><span class="pre">p&lt;x&gt;chase_init_pseudo</span></code> initializes the context for distributed-memory ChASE
 with pseudo-Hermitian matrices using <strong>Block Distribution</strong>. Currently only
 complex types (<code class="docutils literal notranslate"><span class="pre">c</span></code> and <code class="docutils literal notranslate"><span class="pre">z</span></code>) are supported.</p>
@@ -1407,7 +1383,7 @@ complex types (<code class="docutils literal notranslate"><span class="pre">c</s
 <p>The parameters are the same as <code class="docutils literal notranslate"><span class="pre">p&lt;x&gt;chase_init</span></code> described above.</p>
 </section>
 <section id="p-x-chase-init-pseudo-blockcyclic">
-<h4><span class="section-number">3.3.7.2. </span>p&lt;x&gt;chase_init_pseudo_blockcyclic<a class="headerlink" href="#p-x-chase-init-pseudo-blockcyclic" title="Link to this heading"></a></h4>
+<h5><span class="section-number">3.3.5.2.2. </span>p&lt;x&gt;chase_init_pseudo_blockcyclic<a class="headerlink" href="#p-x-chase-init-pseudo-blockcyclic" title="Link to this heading"></a></h5>
 <p><code class="docutils literal notranslate"><span class="pre">p&lt;x&gt;chase_init_pseudo_blockcyclic</span></code> initializes the context for
 distributed-memory ChASE with pseudo-Hermitian matrices using <strong>Block-Cyclic
 Distribution</strong>. Currently only complex types (<code class="docutils literal notranslate"><span class="pre">c</span></code> and <code class="docutils literal notranslate"><span class="pre">z</span></code>) are supported.</p>
@@ -1436,16 +1412,16 @@ matrix type based on the initialization function used.</p>
 </div>
 </section>
 </section>
+</section>
 <section id="i-o-functions">
-<h3><span class="section-number">3.3.8. </span>I/O Functions<a class="headerlink" href="#i-o-functions" title="Link to this heading"></a></h3>
+<h3><span class="section-number">3.3.6. </span>I/O Functions<a class="headerlink" href="#i-o-functions" title="Link to this heading"></a></h3>
 <p>ChASE provides functions to read and write Hamiltonian matrices to/from files.
 These functions work for both regular and pseudo-Hermitian matrices, automatically
 detecting the matrix type based on the initialization function used.</p>
-</section>
 <section id="writing-hamiltonian-to-file">
-<h3><span class="section-number">3.3.9. </span>Writing Hamiltonian to File<a class="headerlink" href="#writing-hamiltonian-to-file" title="Link to this heading"></a></h3>
+<h4><span class="section-number">3.3.6.1. </span>Writing Hamiltonian to File<a class="headerlink" href="#writing-hamiltonian-to-file" title="Link to this heading"></a></h4>
 <section id="p-x-chase-wrtham">
-<h4><span class="section-number">3.3.9.1. </span>p&lt;x&gt;chase_wrtHam<a class="headerlink" href="#p-x-chase-wrtham" title="Link to this heading"></a></h4>
+<h5><span class="section-number">3.3.6.1.1. </span>p&lt;x&gt;chase_wrtHam<a class="headerlink" href="#p-x-chase-wrtham" title="Link to this heading"></a></h5>
 <p><code class="docutils literal notranslate"><span class="pre">p&lt;x&gt;chase_wrtHam</span></code> writes the distributed Hamiltonian matrix to a file. This
 function works for both regular and pseudo-Hermitian matrices.</p>
 <p>The APIs for the C interfaces are as follows:</p>
@@ -1484,9 +1460,9 @@ function works for both regular and pseudo-Hermitian matrices.</p>
 </section>
 </section>
 <section id="reading-hamiltonian-from-file">
-<h3><span class="section-number">3.3.10. </span>Reading Hamiltonian from File<a class="headerlink" href="#reading-hamiltonian-from-file" title="Link to this heading"></a></h3>
+<h4><span class="section-number">3.3.6.2. </span>Reading Hamiltonian from File<a class="headerlink" href="#reading-hamiltonian-from-file" title="Link to this heading"></a></h4>
 <section id="p-x-chase-readham">
-<h4><span class="section-number">3.3.10.1. </span>p&lt;x&gt;chase_readHam<a class="headerlink" href="#p-x-chase-readham" title="Link to this heading"></a></h4>
+<h5><span class="section-number">3.3.6.2.1. </span>p&lt;x&gt;chase_readHam<a class="headerlink" href="#p-x-chase-readham" title="Link to this heading"></a></h5>
 <p><code class="docutils literal notranslate"><span class="pre">p&lt;x&gt;chase_readHam</span></code> reads a distributed Hamiltonian matrix from a file. This
 function works for both regular and pseudo-Hermitian matrices.</p>
 <p>The APIs for the C interfaces are as follows:</p>
@@ -1525,7 +1501,7 @@ function works for both regular and pseudo-Hermitian matrices.</p>
 </section>
 </section>
 <section id="sequential-i-o-functions">
-<h3><span class="section-number">3.3.11. </span>Sequential I/O Functions<a class="headerlink" href="#sequential-i-o-functions" title="Link to this heading"></a></h3>
+<h4><span class="section-number">3.3.6.3. </span>Sequential I/O Functions<a class="headerlink" href="#sequential-i-o-functions" title="Link to this heading"></a></h4>
 <p>For sequential/single-GPU interfaces, convenience aliases are provided:</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">schase_readHam_</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">filename</span><span class="p">)</span>
 <span class="kt">void</span><span class="w"> </span><span class="n">dchase_readHam_</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">filename</span><span class="p">)</span>
@@ -1540,8 +1516,11 @@ function works for both regular and pseudo-Hermitian matrices.</p>
 </pre></div>
 </div>
 </section>
+</section>
 <section id="unified-configuration-setter-functions">
-<h3><span class="section-number">3.3.12. </span>Unified Configuration Setter Functions<a class="headerlink" href="#unified-configuration-setter-functions" title="Link to this heading"></a></h3>
+<h3><span class="section-number">3.3.7. </span>Unified Configuration Setter Functions<a class="headerlink" href="#unified-configuration-setter-functions" title="Link to this heading"></a></h3>
+<section id="name-convention">
+<h4><span class="section-number">3.3.7.1. </span>Name Convention<a class="headerlink" href="#name-convention" title="Link to this heading"></a></h4>
 <p>ChASE provides unified configuration setter functions that work regardless of
 matrix type (Hermitian or pseudo-Hermitian), precision, architecture (sequential
 or distributed), or distribution scheme (block or block-cyclic). These functions
@@ -1556,9 +1535,9 @@ automatically detect the active solver instance.</p>
 </div>
 </section>
 <section id="available-configuration-setters">
-<h3><span class="section-number">3.3.13. </span>Available Configuration Setters<a class="headerlink" href="#available-configuration-setters" title="Link to this heading"></a></h3>
+<h4><span class="section-number">3.3.7.2. </span>Available Configuration Setters<a class="headerlink" href="#available-configuration-setters" title="Link to this heading"></a></h4>
 <section id="chase-set-tol">
-<h4><span class="section-number">3.3.13.1. </span>chase_set_tol<a class="headerlink" href="#chase-set-tol" title="Link to this heading"></a></h4>
+<h5><span class="section-number">3.3.7.2.1. </span>chase_set_tol<a class="headerlink" href="#chase-set-tol" title="Link to this heading"></a></h5>
 <p>Set the tolerance threshold for eigenpair residuals.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">chase_set_tol_</span><span class="p">(</span><span class="kt">double</span><span class="o">*</span><span class="w"> </span><span class="n">tol</span><span class="p">)</span>
 </pre></div>
@@ -1587,7 +1566,7 @@ automatically detect the active solver instance.</p>
 </table>
 </section>
 <section id="chase-set-deg">
-<h4><span class="section-number">3.3.13.2. </span>chase_set_deg<a class="headerlink" href="#chase-set-deg" title="Link to this heading"></a></h4>
+<h5><span class="section-number">3.3.7.2.2. </span>chase_set_deg<a class="headerlink" href="#chase-set-deg" title="Link to this heading"></a></h5>
 <p>Set the initial degree of the Chebyshev polynomial filter.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">chase_set_deg_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">deg</span><span class="p">)</span>
 </pre></div>
@@ -1616,7 +1595,7 @@ automatically detect the active solver instance.</p>
 </table>
 </section>
 <section id="chase-set-max-deg">
-<h4><span class="section-number">3.3.13.3. </span>chase_set_max_deg<a class="headerlink" href="#chase-set-max-deg" title="Link to this heading"></a></h4>
+<h5><span class="section-number">3.3.7.2.3. </span>chase_set_max_deg<a class="headerlink" href="#chase-set-max-deg" title="Link to this heading"></a></h5>
 <p>Set the maximum degree of the Chebyshev polynomial filter.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">chase_set_max_deg_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">max_deg</span><span class="p">)</span>
 </pre></div>
@@ -1626,7 +1605,7 @@ automatically detect the active solver instance.</p>
 </div>
 </section>
 <section id="chase-set-deg-extra">
-<h4><span class="section-number">3.3.13.4. </span>chase_set_deg_extra<a class="headerlink" href="#chase-set-deg-extra" title="Link to this heading"></a></h4>
+<h5><span class="section-number">3.3.7.2.4. </span>chase_set_deg_extra<a class="headerlink" href="#chase-set-deg-extra" title="Link to this heading"></a></h5>
 <p>Set the extra degree added to the polynomial filter.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">chase_set_deg_extra_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">deg_extra</span><span class="p">)</span>
 </pre></div>
@@ -1636,7 +1615,7 @@ automatically detect the active solver instance.</p>
 </div>
 </section>
 <section id="chase-set-max-iter">
-<h4><span class="section-number">3.3.13.5. </span>chase_set_max_iter<a class="headerlink" href="#chase-set-max-iter" title="Link to this heading"></a></h4>
+<h5><span class="section-number">3.3.7.2.5. </span>chase_set_max_iter<a class="headerlink" href="#chase-set-max-iter" title="Link to this heading"></a></h5>
 <p>Set the maximum number of subspace iterations.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">chase_set_max_iter_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">max_iter</span><span class="p">)</span>
 </pre></div>
@@ -1646,7 +1625,7 @@ automatically detect the active solver instance.</p>
 </div>
 </section>
 <section id="chase-set-lanczos-iter">
-<h4><span class="section-number">3.3.13.6. </span>chase_set_lanczos_iter<a class="headerlink" href="#chase-set-lanczos-iter" title="Link to this heading"></a></h4>
+<h5><span class="section-number">3.3.7.2.6. </span>chase_set_lanczos_iter<a class="headerlink" href="#chase-set-lanczos-iter" title="Link to this heading"></a></h5>
 <p>Set the number of Lanczos iterations for spectral estimates.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">chase_set_lanczos_iter_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">lanczos_iter</span><span class="p">)</span>
 </pre></div>
@@ -1656,7 +1635,7 @@ automatically detect the active solver instance.</p>
 </div>
 </section>
 <section id="chase-set-num-lanczos">
-<h4><span class="section-number">3.3.13.7. </span>chase_set_num_lanczos<a class="headerlink" href="#chase-set-num-lanczos" title="Link to this heading"></a></h4>
+<h5><span class="section-number">3.3.7.2.7. </span>chase_set_num_lanczos<a class="headerlink" href="#chase-set-num-lanczos" title="Link to this heading"></a></h5>
 <p>Set the number of stochastic vectors for spectral estimates.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">chase_set_num_lanczos_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">num_lanczos</span><span class="p">)</span>
 </pre></div>
@@ -1666,7 +1645,7 @@ automatically detect the active solver instance.</p>
 </div>
 </section>
 <section id="chase-set-approx">
-<h4><span class="section-number">3.3.13.8. </span>chase_set_approx<a class="headerlink" href="#chase-set-approx" title="Link to this heading"></a></h4>
+<h5><span class="section-number">3.3.7.2.8. </span>chase_set_approx<a class="headerlink" href="#chase-set-approx" title="Link to this heading"></a></h5>
 <p>Set the approximate mode flag.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">chase_set_approx_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">flag</span><span class="p">)</span>
 </pre></div>
@@ -1695,7 +1674,7 @@ automatically detect the active solver instance.</p>
 </table>
 </section>
 <section id="chase-set-opt">
-<h4><span class="section-number">3.3.13.9. </span>chase_set_opt<a class="headerlink" href="#chase-set-opt" title="Link to this heading"></a></h4>
+<h5><span class="section-number">3.3.7.2.9. </span>chase_set_opt<a class="headerlink" href="#chase-set-opt" title="Link to this heading"></a></h5>
 <p>Set the optimization flag for Chebyshev polynomial degree.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">chase_set_opt_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">flag</span><span class="p">)</span>
 </pre></div>
@@ -1724,7 +1703,7 @@ automatically detect the active solver instance.</p>
 </table>
 </section>
 <section id="chase-set-cholqr">
-<h4><span class="section-number">3.3.13.10. </span>chase_set_cholqr<a class="headerlink" href="#chase-set-cholqr" title="Link to this heading"></a></h4>
+<h5><span class="section-number">3.3.7.2.10. </span>chase_set_cholqr<a class="headerlink" href="#chase-set-cholqr" title="Link to this heading"></a></h5>
 <p>Set the CholQR flag (flexible CholeskyQR vs Householder QR).</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">chase_set_cholqr_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">flag</span><span class="p">)</span>
 </pre></div>
@@ -1753,7 +1732,7 @@ automatically detect the active solver instance.</p>
 </table>
 </section>
 <section id="chase-enable-sym-check">
-<h4><span class="section-number">3.3.13.11. </span>chase_enable_sym_check<a class="headerlink" href="#chase-enable-sym-check" title="Link to this heading"></a></h4>
+<h5><span class="section-number">3.3.7.2.11. </span>chase_enable_sym_check<a class="headerlink" href="#chase-enable-sym-check" title="Link to this heading"></a></h5>
 <p>Enable or disable symmetry checking.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">chase_enable_sym_check_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">flag</span><span class="p">)</span>
 </pre></div>
@@ -1763,7 +1742,7 @@ automatically detect the active solver instance.</p>
 </div>
 </section>
 <section id="chase-set-decaying-rate">
-<h4><span class="section-number">3.3.13.12. </span>chase_set_decaying_rate<a class="headerlink" href="#chase-set-decaying-rate" title="Link to this heading"></a></h4>
+<h5><span class="section-number">3.3.7.2.12. </span>chase_set_decaying_rate<a class="headerlink" href="#chase-set-decaying-rate" title="Link to this heading"></a></h5>
 <p>Set the decaying rate for the polynomial lower bound.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">chase_set_decaying_rate_</span><span class="p">(</span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">decaying_rate</span><span class="p">)</span>
 </pre></div>
@@ -1773,7 +1752,7 @@ automatically detect the active solver instance.</p>
 </div>
 </section>
 <section id="chase-set-cluster-aware-degrees">
-<h4><span class="section-number">3.3.13.13. </span>chase_set_cluster_aware_degrees<a class="headerlink" href="#chase-set-cluster-aware-degrees" title="Link to this heading"></a></h4>
+<h5><span class="section-number">3.3.7.2.13. </span>chase_set_cluster_aware_degrees<a class="headerlink" href="#chase-set-cluster-aware-degrees" title="Link to this heading"></a></h5>
 <p>Enable or disable cluster-aware degree optimization.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">chase_set_cluster_aware_degrees_</span><span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="w"> </span><span class="n">flag</span><span class="p">)</span>
 </pre></div>
@@ -1783,7 +1762,7 @@ automatically detect the active solver instance.</p>
 </div>
 </section>
 <section id="chase-set-upperb-scale-rate">
-<h4><span class="section-number">3.3.13.14. </span>chase_set_upperb_scale_rate<a class="headerlink" href="#chase-set-upperb-scale-rate" title="Link to this heading"></a></h4>
+<h5><span class="section-number">3.3.7.2.14. </span>chase_set_upperb_scale_rate<a class="headerlink" href="#chase-set-upperb-scale-rate" title="Link to this heading"></a></h5>
 <p>Set the scale rate for upper bound based on its sign.</p>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">chase_set_upperb_scale_rate_</span><span class="p">(</span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">upperb_scale_rate</span><span class="p">)</span>
 </pre></div>
@@ -1799,13 +1778,14 @@ and <code class="docutils literal notranslate"><span class="pre">libchase_f.a</s
 </div>
 </section>
 </section>
+</section>
 <section id="examples">
-<h3><span class="section-number">3.3.14. </span>Examples<a class="headerlink" href="#examples" title="Link to this heading"></a></h3>
+<h3><span class="section-number">3.3.8. </span>Examples<a class="headerlink" href="#examples" title="Link to this heading"></a></h3>
 <p>Complete examples for both C and Fortran interfaces with both shared-memory
 and distributed-memory architectures are provided in
 <a class="reference external" href="https://github.com/ChASE-library/ChASE/tree/master/examples/4_interface">./examples/4_interface</a>.</p>
 <section id="example-of-c-interface">
-<h4><span class="section-number">3.3.14.1. </span>Example of C interface<a class="headerlink" href="#example-of-c-interface" title="Link to this heading"></a></h4>
+<h4><span class="section-number">3.3.8.1. </span>Example of C interface<a class="headerlink" href="#example-of-c-interface" title="Link to this heading"></a></h4>
 <div class="highlight-C notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;mpi.h&gt;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;chase_c.h&quot;</span><span class="c1">  // Include ChASE C interface header</span>
 
@@ -1877,7 +1857,7 @@ and distributed-memory architectures are provided in
 </div>
 </section>
 <section id="example-of-fortran-interface">
-<h4><span class="section-number">3.3.14.2. </span>Example of Fortran interface<a class="headerlink" href="#example-of-fortran-interface" title="Link to this heading"></a></h4>
+<h4><span class="section-number">3.3.8.2. </span>Example of Fortran interface<a class="headerlink" href="#example-of-fortran-interface" title="Link to this heading"></a></h4>
 <div class="highlight-Fortran notranslate"><div class="highlight"><pre><span></span><span class="k">PROGRAM </span><span class="n">main</span>
 <span class="k">use </span><span class="n">mpi</span>
 <span class="k">use </span><span class="n">chase_diag</span><span class="w"> </span><span class="c">! use chase fortran interface module</span>
@@ -1960,7 +1940,7 @@ and distributed-memory architectures are provided in
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2023, SimLab Quantum Materials.</p>
+    <p>&#169; Copyright 2026, SimLab Quantum Materials.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

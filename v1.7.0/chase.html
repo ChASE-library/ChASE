@@ -236,12 +236,12 @@ of the form</p>
     A &amp; B\\
     -\bar{B} &amp; -\bar{A}
 \end{bmatrix} \quad \textrm{with} \quad A = A^* \quad \textrm{and} \quad B = B^T.\end{split}\]</div>
-<p>The <span class="math notranslate nohighlight">\(m \times m\)</span> blocks <span class="math notranslate nohighlight">\(A\)</span> and <span class="math notranslate nohighlight">\(B\)</span> are respectively
+<p>The <span class="math notranslate nohighlight">\(\frac{n}{2} \times \frac{n}{2}\)</span> blocks <span class="math notranslate nohighlight">\(A\)</span> and <span class="math notranslate nohighlight">\(B\)</span> are respectively
 referred to as resonant and coupling terms. The two blocks <span class="math notranslate nohighlight">\(\bar{A}\)</span>
 and <span class="math notranslate nohighlight">\(\bar{B}\)</span> stand for the conjugate of <span class="math notranslate nohighlight">\(A\)</span> and <span class="math notranslate nohighlight">\(B\)</span>.
 Because of the properties of <span class="math notranslate nohighlight">\(A\)</span> and <span class="math notranslate nohighlight">\(B\)</span> stated above,
 <span class="math notranslate nohighlight">\(\bar{A} = A^T\)</span> and <span class="math notranslate nohighlight">\(\bar{B} = B^*\)</span>, and the size of <span class="math notranslate nohighlight">\(H\)</span>
-is <span class="math notranslate nohighlight">\(n := 2m\)</span>. The Hamiltonian <span class="math notranslate nohighlight">\(H\)</span> is termed a
+is <span class="math notranslate nohighlight">\(n\)</span>. The Hamiltonian <span class="math notranslate nohighlight">\(H\)</span> is termed a
 pseudo-Hermitian matrix, as it satisfies the relation</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}SH = H^*S \quad \textrm{with} \quad S := \begin{bmatrix}
@@ -310,7 +310,7 @@ Hermitian</em> ones.</p></li>
 <li><p><strong>Hermitian and Pseudo-Hermitian:</strong> ChASE supports solving <em>Hermitian</em> and
 <em>pseudo-Hermitian</em> eigenproblems, including those arising from Bethe-Salpeter
 Equation (BSE) formulations.</p></li>
-<li><p><strong>Eigespectrum:</strong> ChASE algorithm is designed to solve for the
+<li><p><strong>Eigenspectrum:</strong> ChASE algorithm is designed to solve for the
 <em>extremal portion</em> of the eigenspectrum (i.e., <span class="math notranslate nohighlight">\(\{\lambda_1,
 \dots ,\lambda_\textsf{nev}\}\)</span>). By default it computes the
 lowest portion of the spectrum but it can compute as well the
@@ -318,7 +318,7 @@ largest portion by solving for <span class="math notranslate nohighlight">\(-A\)
 particularly efficient when no more than 20% of the extremal
 portion of the eigenspectrum is sought after. For larger
 fractions the subspace iteration algorithm may struggle to be
-competitive. Converge could become an issue for fractions close
+competitive. Convergence could become an issue for fractions close
 to or larger than 50%.</p></li>
 <li><p><strong>Type of Problem:</strong> ChASE can currently handle only standard
 eigenvalue problems. Generalized eigenvalue problems of the form
@@ -355,7 +355,7 @@ Precision</em> (SP) or <em>Double Precision</em> (DP).</p></li>
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2023, SimLab Quantum Materials.</p>
+    <p>&#169; Copyright 2026, SimLab Quantum Materials.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

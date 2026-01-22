@@ -194,6 +194,7 @@ function switchVersion(url) {
 <li class="toctree-l4"><a class="reference internal" href="#chase-distmatrix-pseudohermitianblockcyclicmatrix">1.3.1.9. chase::distMatrix::PseudoHermitianBlockCyclicMatrix</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#distributed-multi-vectors">1.3.1.10. Distributed Multi-Vectors</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#chase-distmultivector-distmultivector1d">1.3.1.11. chase::distMultiVector::DistMultiVector1D</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#chase-distmultivector-distmultivectorblockcyclic1d">1.3.1.12. chase::distMultiVector::DistMultiVectorBlockCyclic1D</a></li>
 </ul>
 </li>
 </ul>
@@ -1792,6 +1793,497 @@ function switchVersion(url) {
 </dd></dl>
 
 </section>
+<section id="chase-distmultivector-distmultivectorblockcyclic1d">
+<h2><span class="section-number">1.3.1.12. </span>chase::distMultiVector::DistMultiVectorBlockCyclic1D<a class="headerlink" href="#chase-distmultivector-distmultivectorblockcyclic1d" title="Link to this heading"></a></h2>
+<dl class="cpp class">
+<dt class="sig sig-object cpp" id="_CPPv4I0_16CommunicatorType0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1DE">
+<span id="_CPPv3I0_16CommunicatorType0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1DE"></span><span id="_CPPv2I0_16CommunicatorType0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1DE"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">T</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">CommunicatorType</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">comm_type</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Platform</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><a class="reference internal" href="platform.html#_CPPv4N5chase8platformE" title="chase::platform"><span class="n"><span class="pre">platform</span></span></a><span class="p"><span class="pre">::</span></span><a class="reference internal" href="platform.html#_CPPv4N5chase8platform3CPUE" title="chase::platform::CPU"><span class="n"><span class="pre">CPU</span></span></a><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classchase_1_1distMultiVector_1_1DistMultiVectorBlockCyclic1D"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">DistMultiVectorBlockCyclic1D</span></span></span><span class="w"> </span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="k"><span class="pre">public</span></span><span class="w"> </span><span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">distMultiVector</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">AbstractDistMultiVector</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0_16CommunicatorType0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1DE" title="chase::distMultiVector::DistMultiVectorBlockCyclic1D::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_16CommunicatorType0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1DE" title="chase::distMultiVector::DistMultiVectorBlockCyclic1D::comm_type"><span class="n"><span class="pre">comm_type</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_16CommunicatorType0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1DE" title="chase::distMultiVector::DistMultiVectorBlockCyclic1D"><span class="n"><span class="pre">DistMultiVectorBlockCyclic1D</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><a class="reference internal" href="platform.html#_CPPv4N5chase8platformE" title="chase::platform"><span class="n"><span class="pre">platform</span></span></a><span class="p"><span class="pre">::</span></span><a class="reference internal" href="platform.html#_CPPv4N5chase8platform3CPUE" title="chase::platform::CPU"><span class="n"><span class="pre">CPU</span></span></a><span class="p"><span class="pre">&gt;</span></span><a class="headerlink" href="#_CPPv4I0_16CommunicatorType0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1DE" title="Link to this definition"></a><br /></dt>
+<dd><p>Distributed multi-vector with block-cyclic 1D distribution. </p>
+<p>A distributed block-cyclic 1D matrix, used to distribute a multi-vector either within the row or column communicator of a 2D MPI grid.</p>
+<p>This class template represents a distributed multi-vector with 1D block-cyclic data distribution, templated by type, communicator type, and platform.</p>
+<p>This class is designed to manage a block-cyclic 1D distribution of a matrix in a parallelized setting, supporting both CPU and GPU platforms. The matrix data is distributed in a way that each process stores a subset of the data. It can handle redistribution between different communicator types (row/column).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>T</strong> – The data type of the matrix elements. </p></li>
+<li><p><strong>comm_type</strong> – The type of communicator (either row or column). </p></li>
+<li><p><strong>Platform</strong> – The platform type, defaulting to CPU. </p></li>
+</ul>
+</dd>
+</dl>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-types">Public Types</p>
+<dl class="cpp type">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase15distMultiVector28DistMultiVectorBlockCyclic1D13platform_typeE">
+<span id="_CPPv3N5chase15distMultiVector28DistMultiVectorBlockCyclic1D13platform_typeE"></span><span id="_CPPv2N5chase15distMultiVector28DistMultiVectorBlockCyclic1D13platform_typeE"></span><span class="target" id="classchase_1_1distMultiVector_1_1DistMultiVectorBlockCyclic1D_1ac0b05ecbe59806bd130c5dfab1a01788"></span><span class="k"><span class="pre">using</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">platform_type</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_16CommunicatorType0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1DE" title="chase::distMultiVector::DistMultiVectorBlockCyclic1D::Platform"><span class="n"><span class="pre">Platform</span></span></a><a class="headerlink" href="#_CPPv4N5chase15distMultiVector28DistMultiVectorBlockCyclic1D13platform_typeE" title="Link to this definition"></a><br /></dt>
+<dd><p>Alias for platform type. </p>
+</dd></dl>
+
+<dl class="cpp type">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase15distMultiVector28DistMultiVectorBlockCyclic1D10value_typeE">
+<span id="_CPPv3N5chase15distMultiVector28DistMultiVectorBlockCyclic1D10value_typeE"></span><span id="_CPPv2N5chase15distMultiVector28DistMultiVectorBlockCyclic1D10value_typeE"></span><span class="target" id="classchase_1_1distMultiVector_1_1DistMultiVectorBlockCyclic1D_1aca033ab94e5644fcad4753298fd7348a"></span><span class="k"><span class="pre">using</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">value_type</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_16CommunicatorType0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1DE" title="chase::distMultiVector::DistMultiVectorBlockCyclic1D::T"><span class="n"><span class="pre">T</span></span></a><a class="headerlink" href="#_CPPv4N5chase15distMultiVector28DistMultiVectorBlockCyclic1D10value_typeE" title="Link to this definition"></a><br /></dt>
+<dd><p>Alias for element type. </p>
+</dd></dl>
+
+</div>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase15distMultiVector28DistMultiVectorBlockCyclic1DD0Ev">
+<span id="_CPPv3N5chase15distMultiVector28DistMultiVectorBlockCyclic1DD0Ev"></span><span id="_CPPv2N5chase15distMultiVector28DistMultiVectorBlockCyclic1DD0Ev"></span><span id="chase::distMultiVector::DistMultiVectorBlockCyclic1D::~DistMultiVectorBlockCyclic1D"></span><span class="target" id="classchase_1_1distMultiVector_1_1DistMultiVectorBlockCyclic1D_1a68046e7626d107d14c11eb2cc1422dca"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">~DistMultiVectorBlockCyclic1D</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N5chase15distMultiVector28DistMultiVectorBlockCyclic1DD0Ev" title="Link to this definition"></a><br /></dt>
+<dd><p>Destructor for the <a class="reference internal" href="#classchase_1_1distMultiVector_1_1DistMultiVectorBlockCyclic1D"><span class="std std-ref">DistMultiVectorBlockCyclic1D</span></a> class. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase15distMultiVector28DistMultiVectorBlockCyclic1D28DistMultiVectorBlockCyclic1DEv">
+<span id="_CPPv3N5chase15distMultiVector28DistMultiVectorBlockCyclic1D28DistMultiVectorBlockCyclic1DEv"></span><span id="_CPPv2N5chase15distMultiVector28DistMultiVectorBlockCyclic1D28DistMultiVectorBlockCyclic1DEv"></span><span id="chase::distMultiVector::DistMultiVectorBlockCyclic1D::DistMultiVectorBlockCyclic1D"></span><span class="target" id="classchase_1_1distMultiVector_1_1DistMultiVectorBlockCyclic1D_1afe225efc717e6bdad4f6e2b12ce9ff49"></span><span class="sig-name descname"><span class="n"><span class="pre">DistMultiVectorBlockCyclic1D</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase15distMultiVector28DistMultiVectorBlockCyclic1D28DistMultiVectorBlockCyclic1DEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Default constructor. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase15distMultiVector28DistMultiVectorBlockCyclic1D28DistMultiVectorBlockCyclic1DENSt6size_tENSt6size_tENSt6size_tENSt10shared_ptrIN5chase4grid13MpiGrid2DBaseEEE">
+<span id="_CPPv3N5chase15distMultiVector28DistMultiVectorBlockCyclic1D28DistMultiVectorBlockCyclic1DENSt6size_tENSt6size_tENSt6size_tENSt10shared_ptrIN5chase4grid13MpiGrid2DBaseEEE"></span><span id="_CPPv2N5chase15distMultiVector28DistMultiVectorBlockCyclic1D28DistMultiVectorBlockCyclic1DENSt6size_tENSt6size_tENSt6size_tENSt10shared_ptrIN5chase4grid13MpiGrid2DBaseEEE"></span><span id="chase::distMultiVector::DistMultiVectorBlockCyclic1D::DistMultiVectorBlockCyclic1D__std::s.std::s.std::s.std::shared_ptr:chase::grid::MpiGrid2DBase:"></span><span class="target" id="classchase_1_1distMultiVector_1_1DistMultiVectorBlockCyclic1D_1a5bca707239d1609ff9cb0b97bf1a7732"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">DistMultiVectorBlockCyclic1D</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">M</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">N</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">mb</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">shared_ptr</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">grid</span></span><span class="p"><span class="pre">::</span></span><a class="reference internal" href="grid.html#_CPPv4N5chase4grid13MpiGrid2DBaseE" title="chase::grid::MpiGrid2DBase"><span class="n"><span class="pre">MpiGrid2DBase</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">mpi_grid</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase15distMultiVector28DistMultiVectorBlockCyclic1D28DistMultiVectorBlockCyclic1DENSt6size_tENSt6size_tENSt6size_tENSt10shared_ptrIN5chase4grid13MpiGrid2DBaseEEE" title="Link to this definition"></a><br /></dt>
+<dd><p>Constructs a block-cyclic 1D distributed multi-vector. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>M</strong> – Total number of rows in the matrix. </p></li>
+<li><p><strong>N</strong> – Total number of columns in the matrix. </p></li>
+<li><p><strong>mb</strong> – The block size for distribution. </p></li>
+<li><p><strong>mpi_grid</strong> – A shared pointer to the 2D MPI grid used for distribution. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase15distMultiVector28DistMultiVectorBlockCyclic1D28DistMultiVectorBlockCyclic1DENSt6size_tENSt6size_tENSt6size_tENSt6size_tENSt6size_tEP1TNSt10shared_ptrIN5chase4grid13MpiGrid2DBaseEEE">
+<span id="_CPPv3N5chase15distMultiVector28DistMultiVectorBlockCyclic1D28DistMultiVectorBlockCyclic1DENSt6size_tENSt6size_tENSt6size_tENSt6size_tENSt6size_tEP1TNSt10shared_ptrIN5chase4grid13MpiGrid2DBaseEEE"></span><span id="_CPPv2N5chase15distMultiVector28DistMultiVectorBlockCyclic1D28DistMultiVectorBlockCyclic1DENSt6size_tENSt6size_tENSt6size_tENSt6size_tENSt6size_tEP1TNSt10shared_ptrIN5chase4grid13MpiGrid2DBaseEEE"></span><span id="chase::distMultiVector::DistMultiVectorBlockCyclic1D::DistMultiVectorBlockCyclic1D__std::s.std::s.std::s.std::s.std::s.TP.std::shared_ptr:chase::grid::MpiGrid2DBase:"></span><span class="target" id="classchase_1_1distMultiVector_1_1DistMultiVectorBlockCyclic1D_1a2c468acb2a9ce081b192de5e609958ac"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">DistMultiVectorBlockCyclic1D</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">M</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">m</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">n</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">mb</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">ld</span></span>, <a class="reference internal" href="#_CPPv4I0_16CommunicatorType0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1DE" title="chase::distMultiVector::DistMultiVectorBlockCyclic1D::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">data</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">shared_ptr</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">grid</span></span><span class="p"><span class="pre">::</span></span><a class="reference internal" href="grid.html#_CPPv4N5chase4grid13MpiGrid2DBaseE" title="chase::grid::MpiGrid2DBase"><span class="n"><span class="pre">MpiGrid2DBase</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">mpi_grid</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase15distMultiVector28DistMultiVectorBlockCyclic1D28DistMultiVectorBlockCyclic1DENSt6size_tENSt6size_tENSt6size_tENSt6size_tENSt6size_tEP1TNSt10shared_ptrIN5chase4grid13MpiGrid2DBaseEEE" title="Link to this definition"></a><br /></dt>
+<dd><p>Constructs a block-cyclic 1D distributed multi-vector with pre-allocated data. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>M</strong> – Total number of rows in the matrix. </p></li>
+<li><p><strong>m</strong> – The local number of rows in this process. </p></li>
+<li><p><strong>n</strong> – The number of columns. </p></li>
+<li><p><strong>mb</strong> – The block size for distribution. </p></li>
+<li><p><strong>ld</strong> – The leading dimension of the local matrix. </p></li>
+<li><p><strong>data</strong> – Pointer to the pre-allocated data for the matrix. </p></li>
+<li><p><strong>mpi_grid</strong> – A shared pointer to the 2D MPI grid used for distribution. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK5chase15distMultiVector28DistMultiVectorBlockCyclic1D30getMultiVectorDistributionTypeEv">
+<span id="_CPPv3NK5chase15distMultiVector28DistMultiVectorBlockCyclic1D30getMultiVectorDistributionTypeEv"></span><span id="_CPPv2NK5chase15distMultiVector28DistMultiVectorBlockCyclic1D30getMultiVectorDistributionTypeEv"></span><span id="chase::distMultiVector::DistMultiVectorBlockCyclic1D::getMultiVectorDistributionTypeC"></span><span class="target" id="classchase_1_1distMultiVector_1_1DistMultiVectorBlockCyclic1D_1aee9795146fbafebe744edcc2f92a3138"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">DistributionType</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">getMultiVectorDistributionType</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4NK5chase15distMultiVector28DistMultiVectorBlockCyclic1D30getMultiVectorDistributionTypeEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Gets the distribution type of the multi-vector. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The distribution type, which is always BlockCyclic. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK5chase15distMultiVector28DistMultiVectorBlockCyclic1D30getMultiVectorCommunicatorTypeEv">
+<span id="_CPPv3NK5chase15distMultiVector28DistMultiVectorBlockCyclic1D30getMultiVectorCommunicatorTypeEv"></span><span id="_CPPv2NK5chase15distMultiVector28DistMultiVectorBlockCyclic1D30getMultiVectorCommunicatorTypeEv"></span><span id="chase::distMultiVector::DistMultiVectorBlockCyclic1D::getMultiVectorCommunicatorTypeC"></span><span class="target" id="classchase_1_1distMultiVector_1_1DistMultiVectorBlockCyclic1D_1aed96720e8f06884f27699ab49189ae3f"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">CommunicatorType</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">getMultiVectorCommunicatorType</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4NK5chase15distMultiVector28DistMultiVectorBlockCyclic1D30getMultiVectorCommunicatorTypeEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Gets the communicator type used for distribution. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The communicator type, either row or column. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK5chase15distMultiVector28DistMultiVectorBlockCyclic1D10getMpiGridEv">
+<span id="_CPPv3NK5chase15distMultiVector28DistMultiVectorBlockCyclic1D10getMpiGridEv"></span><span id="_CPPv2NK5chase15distMultiVector28DistMultiVectorBlockCyclic1D10getMpiGridEv"></span><span id="chase::distMultiVector::DistMultiVectorBlockCyclic1D::getMpiGridC"></span><span class="target" id="classchase_1_1distMultiVector_1_1DistMultiVectorBlockCyclic1D_1aaa8b4d19e38693630fe4d1f63b6221b6"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">grid</span></span><span class="p"><span class="pre">::</span></span><a class="reference internal" href="grid.html#_CPPv4N5chase4grid13MpiGrid2DBaseE" title="chase::grid::MpiGrid2DBase"><span class="n"><span class="pre">MpiGrid2DBase</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">getMpiGrid</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4NK5chase15distMultiVector28DistMultiVectorBlockCyclic1D10getMpiGridEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Retrieves the 2D MPI grid. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A pointer to the MPI grid. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK5chase15distMultiVector28DistMultiVectorBlockCyclic1D21getMpiGrid_shared_ptrEv">
+<span id="_CPPv3NK5chase15distMultiVector28DistMultiVectorBlockCyclic1D21getMpiGrid_shared_ptrEv"></span><span id="_CPPv2NK5chase15distMultiVector28DistMultiVectorBlockCyclic1D21getMpiGrid_shared_ptrEv"></span><span id="chase::distMultiVector::DistMultiVectorBlockCyclic1D::getMpiGrid_shared_ptrC"></span><span class="target" id="classchase_1_1distMultiVector_1_1DistMultiVectorBlockCyclic1D_1a2d8ffd9b86648f82fff92e15105976d4"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">shared_ptr</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">grid</span></span><span class="p"><span class="pre">::</span></span><a class="reference internal" href="grid.html#_CPPv4N5chase4grid13MpiGrid2DBaseE" title="chase::grid::MpiGrid2DBase"><span class="n"><span class="pre">MpiGrid2DBase</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">getMpiGrid_shared_ptr</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4NK5chase15distMultiVector28DistMultiVectorBlockCyclic1D21getMpiGrid_shared_ptrEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Retrieves the 2D MPI grid as a shared pointer. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A shared pointer to the MPI grid. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4I0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1D5cloneE9CloneTypev">
+<span id="_CPPv3I0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1D5cloneEv"></span><span id="_CPPv2I0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1D5cloneEv"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">CloneType</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classchase_1_1distMultiVector_1_1DistMultiVectorBlockCyclic1D_1ae38f715919efad44be38e649b155a041"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1D5cloneE9CloneTypev" title="chase::distMultiVector::DistMultiVectorBlockCyclic1D::clone::CloneType"><span class="n"><span class="pre">CloneType</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">clone</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1D5cloneE9CloneTypev" title="Link to this definition"></a><br /></dt>
+<dd><p>Clones the current object into another instance of a different type. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>CloneType</strong> – The type of the clone. </p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A cloned instance of the current object. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4I0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1D5cloneE9CloneTypeNSt6size_tENSt6size_tE">
+<span id="_CPPv3I0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1D5cloneENSt6size_tENSt6size_tE"></span><span id="_CPPv2I0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1D5cloneENSt6size_tENSt6size_tE"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">CloneType</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classchase_1_1distMultiVector_1_1DistMultiVectorBlockCyclic1D_1ad793214aae3d0a467de7f5d74c3c1cc4"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1D5cloneE9CloneTypeNSt6size_tENSt6size_tE" title="chase::distMultiVector::DistMultiVectorBlockCyclic1D::clone::CloneType"><span class="n"><span class="pre">CloneType</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">clone</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">g_M</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">g_N</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1D5cloneE9CloneTypeNSt6size_tENSt6size_tE" title="Link to this definition"></a><br /></dt>
+<dd><p>Clones the current object with new global dimensions. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>CloneType</strong> – The type of the clone. </p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>g_M</strong> – New global row size. </p></li>
+<li><p><strong>g_N</strong> – New global column size. </p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A cloned instance with the updated global dimensions. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4I0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1D6clone2ENSt10unique_ptrI9CloneTypeEEv">
+<span id="_CPPv3I0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1D6clone2Ev"></span><span id="_CPPv2I0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1D6clone2Ev"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">CloneType</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classchase_1_1distMultiVector_1_1DistMultiVectorBlockCyclic1D_1ac89779a5ff1f82bc8dc47a9ff9877d04"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">unique_ptr</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1D6clone2ENSt10unique_ptrI9CloneTypeEEv" title="chase::distMultiVector::DistMultiVectorBlockCyclic1D::clone2::CloneType"><span class="n"><span class="pre">CloneType</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">clone2</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1D6clone2ENSt10unique_ptrI9CloneTypeEEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Clones the current object into a new instance of a different type, returned as a unique pointer. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>CloneType</strong> – The type of the clone. </p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A unique pointer to a cloned instance of the current object. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4I0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1D6clone2ENSt10unique_ptrI9CloneTypeEENSt6size_tENSt6size_tE">
+<span id="_CPPv3I0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1D6clone2ENSt6size_tENSt6size_tE"></span><span id="_CPPv2I0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1D6clone2ENSt6size_tENSt6size_tE"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">CloneType</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classchase_1_1distMultiVector_1_1DistMultiVectorBlockCyclic1D_1a93a2eed7cebf379c1a658fa683a76bb8"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">unique_ptr</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1D6clone2ENSt10unique_ptrI9CloneTypeEENSt6size_tENSt6size_tE" title="chase::distMultiVector::DistMultiVectorBlockCyclic1D::clone2::CloneType"><span class="n"><span class="pre">CloneType</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">clone2</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">g_M</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">g_N</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1D6clone2ENSt10unique_ptrI9CloneTypeEENSt6size_tENSt6size_tE" title="Link to this definition"></a><br /></dt>
+<dd><p>Clones the current object with new global dimensions, returned as a unique pointer. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>CloneType</strong> – The type of the clone. </p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>g_M</strong> – New global row size. </p></li>
+<li><p><strong>g_N</strong> – New global column size. </p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A unique pointer to a cloned instance with the updated global dimensions. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4I_16CommunicatorType0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1D4swapEvR28DistMultiVectorBlockCyclic1DI1T13OtherCommType13OtherPlatformE">
+<span id="_CPPv3I_16CommunicatorType0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1D4swapER28DistMultiVectorBlockCyclic1DI1T13OtherCommType13OtherPlatformE"></span><span id="_CPPv2I_16CommunicatorType0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1D4swapER28DistMultiVectorBlockCyclic1DI1T13OtherCommType13OtherPlatformE"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">CommunicatorType</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">OtherCommType</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">OtherPlatform</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classchase_1_1distMultiVector_1_1DistMultiVectorBlockCyclic1D_1a7fe5372cc8466d58ea8f4a0e1acadf92"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">swap</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0_16CommunicatorType0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1DE" title="chase::distMultiVector::DistMultiVectorBlockCyclic1D"><span class="n"><span class="pre">DistMultiVectorBlockCyclic1D</span></span></a><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0_16CommunicatorType0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1DE" title="chase::distMultiVector::DistMultiVectorBlockCyclic1D::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I_16CommunicatorType0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1D4swapEvR28DistMultiVectorBlockCyclic1DI1T13OtherCommType13OtherPlatformE" title="chase::distMultiVector::DistMultiVectorBlockCyclic1D::swap::OtherCommType"><span class="n"><span class="pre">OtherCommType</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I_16CommunicatorType0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1D4swapEvR28DistMultiVectorBlockCyclic1DI1T13OtherCommType13OtherPlatformE" title="chase::distMultiVector::DistMultiVectorBlockCyclic1D::swap::OtherPlatform"><span class="n"><span class="pre">OtherPlatform</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">other</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I_16CommunicatorType0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1D4swapEvR28DistMultiVectorBlockCyclic1DI1T13OtherCommType13OtherPlatformE" title="Link to this definition"></a><br /></dt>
+<dd><p>Swaps the contents of this matrix with another matrix of a compatible type. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>OtherCommType</strong> – The communicator type of the other matrix. </p></li>
+<li><p><strong>OtherPlatform</strong> – The platform type of the other matrix. </p></li>
+</ul>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>other</strong> – The other matrix to swap with. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase15distMultiVector28DistMultiVectorBlockCyclic1D7swap_ijENSt6size_tENSt6size_tE">
+<span id="_CPPv3N5chase15distMultiVector28DistMultiVectorBlockCyclic1D7swap_ijENSt6size_tENSt6size_tE"></span><span id="_CPPv2N5chase15distMultiVector28DistMultiVectorBlockCyclic1D7swap_ijENSt6size_tENSt6size_tE"></span><span id="chase::distMultiVector::DistMultiVectorBlockCyclic1D::swap_ij__std::s.std::s"></span><span class="target" id="classchase_1_1distMultiVector_1_1DistMultiVectorBlockCyclic1D_1a3c9503fc22a2b31c8070e7d02df34f4b"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">swap_ij</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">i</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">j</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase15distMultiVector28DistMultiVectorBlockCyclic1D7swap_ijENSt6size_tENSt6size_tE" title="Link to this definition"></a><br /></dt>
+<dd><p>Swaps columns i and j in the local matrix. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>i</strong> – The first column index to swap. </p></li>
+<li><p><strong>j</strong> – The second column index to swap. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase15distMultiVector28DistMultiVectorBlockCyclic1D3D2HEv">
+<span id="_CPPv3N5chase15distMultiVector28DistMultiVectorBlockCyclic1D3D2HEv"></span><span id="_CPPv2N5chase15distMultiVector28DistMultiVectorBlockCyclic1D3D2HEv"></span><span id="chase::distMultiVector::DistMultiVectorBlockCyclic1D::D2H"></span><span class="target" id="classchase_1_1distMultiVector_1_1DistMultiVectorBlockCyclic1D_1a1fd83dc2e226b9fef87706d66ef27153"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">D2H</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase15distMultiVector28DistMultiVectorBlockCyclic1D3D2HEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Transfers data from the device (GPU) to the host (CPU). </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase15distMultiVector28DistMultiVectorBlockCyclic1D3H2DEv">
+<span id="_CPPv3N5chase15distMultiVector28DistMultiVectorBlockCyclic1D3H2DEv"></span><span id="_CPPv2N5chase15distMultiVector28DistMultiVectorBlockCyclic1D3H2DEv"></span><span id="chase::distMultiVector::DistMultiVectorBlockCyclic1D::H2D"></span><span class="target" id="classchase_1_1distMultiVector_1_1DistMultiVectorBlockCyclic1D_1a60f8dc2c58b6f86fe0b4f5de94833dcb"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">H2D</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase15distMultiVector28DistMultiVectorBlockCyclic1D3H2DEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Transfers data from the host (CPU) to the device (GPU). </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase15distMultiVector28DistMultiVectorBlockCyclic1D8cpu_dataEv">
+<span id="_CPPv3N5chase15distMultiVector28DistMultiVectorBlockCyclic1D8cpu_dataEv"></span><span id="_CPPv2N5chase15distMultiVector28DistMultiVectorBlockCyclic1D8cpu_dataEv"></span><span id="chase::distMultiVector::DistMultiVectorBlockCyclic1D::cpu_data"></span><span class="target" id="classchase_1_1distMultiVector_1_1DistMultiVectorBlockCyclic1D_1aae798e96e2d55c84661211127c9d5767"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_16CommunicatorType0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1DE" title="chase::distMultiVector::DistMultiVectorBlockCyclic1D::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">cpu_data</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase15distMultiVector28DistMultiVectorBlockCyclic1D8cpu_dataEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Retrieves a pointer to the data on the CPU. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A pointer to the local matrix data on the CPU. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase15distMultiVector28DistMultiVectorBlockCyclic1D6cpu_ldEv">
+<span id="_CPPv3N5chase15distMultiVector28DistMultiVectorBlockCyclic1D6cpu_ldEv"></span><span id="_CPPv2N5chase15distMultiVector28DistMultiVectorBlockCyclic1D6cpu_ldEv"></span><span id="chase::distMultiVector::DistMultiVectorBlockCyclic1D::cpu_ld"></span><span class="target" id="classchase_1_1distMultiVector_1_1DistMultiVectorBlockCyclic1D_1afdb83ab00d9703c5847b25d8f253e996"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">cpu_ld</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase15distMultiVector28DistMultiVectorBlockCyclic1D6cpu_ldEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Retrieves the leading dimension of the data on the CPU. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The leading dimension of the local matrix on the CPU. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4I_16CommunicatorType0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1D16redistributeImplEvP28DistMultiVectorBlockCyclic1DI1T16target_comm_type13OtherPlatformENSt6size_tENSt6size_tE">
+<span id="_CPPv3I_16CommunicatorType0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1D16redistributeImplEP28DistMultiVectorBlockCyclic1DI1T16target_comm_type13OtherPlatformENSt6size_tENSt6size_tE"></span><span id="_CPPv2I_16CommunicatorType0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1D16redistributeImplEP28DistMultiVectorBlockCyclic1DI1T16target_comm_type13OtherPlatformENSt6size_tENSt6size_tE"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">CommunicatorType</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">target_comm_type</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">OtherPlatform</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classchase_1_1distMultiVector_1_1DistMultiVectorBlockCyclic1D_1a49e8ae76c6b174f995ed4b7d4197bebe"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">redistributeImpl</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0_16CommunicatorType0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1DE" title="chase::distMultiVector::DistMultiVectorBlockCyclic1D"><span class="n"><span class="pre">DistMultiVectorBlockCyclic1D</span></span></a><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0_16CommunicatorType0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1DE" title="chase::distMultiVector::DistMultiVectorBlockCyclic1D::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I_16CommunicatorType0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1D16redistributeImplEvP28DistMultiVectorBlockCyclic1DI1T16target_comm_type13OtherPlatformENSt6size_tENSt6size_tE" title="chase::distMultiVector::DistMultiVectorBlockCyclic1D::redistributeImpl::target_comm_type"><span class="n"><span class="pre">target_comm_type</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I_16CommunicatorType0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1D16redistributeImplEvP28DistMultiVectorBlockCyclic1DI1T16target_comm_type13OtherPlatformENSt6size_tENSt6size_tE" title="chase::distMultiVector::DistMultiVectorBlockCyclic1D::redistributeImpl::OtherPlatform"><span class="n"><span class="pre">OtherPlatform</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">targetMultiVector</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">offset</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">subsetSize</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I_16CommunicatorType0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1D16redistributeImplEvP28DistMultiVectorBlockCyclic1DI1T16target_comm_type13OtherPlatformENSt6size_tENSt6size_tE" title="Link to this definition"></a><br /></dt>
+<dd><p>Redistributes the multi-vector data between two matrices with different communicator types. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>target_comm_type</strong> – The target communicator type (row or column). </p></li>
+<li><p><strong>OtherPlatform</strong> – The target platform type. </p></li>
+</ul>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>targetMultiVector</strong> – The target multi-vector to redistribute data to. </p></li>
+<li><p><strong>offset</strong> – The starting offset for redistribution. </p></li>
+<li><p><strong>subsetSize</strong> – The number of elements to redistribute. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4I_16CommunicatorType0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1D16redistributeImplEvP28DistMultiVectorBlockCyclic1DI1T16target_comm_type13OtherPlatformE">
+<span id="_CPPv3I_16CommunicatorType0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1D16redistributeImplEP28DistMultiVectorBlockCyclic1DI1T16target_comm_type13OtherPlatformE"></span><span id="_CPPv2I_16CommunicatorType0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1D16redistributeImplEP28DistMultiVectorBlockCyclic1DI1T16target_comm_type13OtherPlatformE"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">CommunicatorType</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">target_comm_type</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">OtherPlatform</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classchase_1_1distMultiVector_1_1DistMultiVectorBlockCyclic1D_1a87191cac179e57562609c17c478c5d0f"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">redistributeImpl</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0_16CommunicatorType0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1DE" title="chase::distMultiVector::DistMultiVectorBlockCyclic1D"><span class="n"><span class="pre">DistMultiVectorBlockCyclic1D</span></span></a><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0_16CommunicatorType0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1DE" title="chase::distMultiVector::DistMultiVectorBlockCyclic1D::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I_16CommunicatorType0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1D16redistributeImplEvP28DistMultiVectorBlockCyclic1DI1T16target_comm_type13OtherPlatformE" title="chase::distMultiVector::DistMultiVectorBlockCyclic1D::redistributeImpl::target_comm_type"><span class="n"><span class="pre">target_comm_type</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I_16CommunicatorType0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1D16redistributeImplEvP28DistMultiVectorBlockCyclic1DI1T16target_comm_type13OtherPlatformE" title="chase::distMultiVector::DistMultiVectorBlockCyclic1D::redistributeImpl::OtherPlatform"><span class="n"><span class="pre">OtherPlatform</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">targetMultiVector</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I_16CommunicatorType0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1D16redistributeImplEvP28DistMultiVectorBlockCyclic1DI1T16target_comm_type13OtherPlatformE" title="Link to this definition"></a><br /></dt>
+<dd><p>Redistributes the multi-vector data between two matrices with different communicator types. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>target_comm_type</strong> – The target communicator type (row or column). </p></li>
+<li><p><strong>OtherPlatform</strong> – The target platform type. </p></li>
+</ul>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>targetMultiVector</strong> – The target multi-vector to redistribute data to. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4I_16CommunicatorTypeEN5chase15distMultiVector28DistMultiVectorBlockCyclic1D21redistributeImplAsyncEvP28DistMultiVectorBlockCyclic1DI1T16target_comm_typeN5chase8platform3GPUEENSt6size_tENSt6size_tEP12cudaStream_t">
+<span id="_CPPv3I_16CommunicatorTypeEN5chase15distMultiVector28DistMultiVectorBlockCyclic1D21redistributeImplAsyncEP28DistMultiVectorBlockCyclic1DI1T16target_comm_typeN5chase8platform3GPUEENSt6size_tENSt6size_tEP12cudaStream_t"></span><span id="_CPPv2I_16CommunicatorTypeEN5chase15distMultiVector28DistMultiVectorBlockCyclic1D21redistributeImplAsyncEP28DistMultiVectorBlockCyclic1DI1T16target_comm_typeN5chase8platform3GPUEENSt6size_tENSt6size_tEP12cudaStream_t"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">CommunicatorType</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">target_comm_type</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classchase_1_1distMultiVector_1_1DistMultiVectorBlockCyclic1D_1ae512d7c5dec477a5dca566d183746d66"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">redistributeImplAsync</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0_16CommunicatorType0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1DE" title="chase::distMultiVector::DistMultiVectorBlockCyclic1D"><span class="n"><span class="pre">DistMultiVectorBlockCyclic1D</span></span></a><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0_16CommunicatorType0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1DE" title="chase::distMultiVector::DistMultiVectorBlockCyclic1D::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I_16CommunicatorTypeEN5chase15distMultiVector28DistMultiVectorBlockCyclic1D21redistributeImplAsyncEvP28DistMultiVectorBlockCyclic1DI1T16target_comm_typeN5chase8platform3GPUEENSt6size_tENSt6size_tEP12cudaStream_t" title="chase::distMultiVector::DistMultiVectorBlockCyclic1D::redistributeImplAsync::target_comm_type"><span class="n"><span class="pre">target_comm_type</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><a class="reference internal" href="platform.html#_CPPv4N5chase8platformE" title="chase::platform"><span class="n"><span class="pre">platform</span></span></a><span class="p"><span class="pre">::</span></span><a class="reference internal" href="platform.html#_CPPv4N5chase8platform3GPUE" title="chase::platform::GPU"><span class="n"><span class="pre">GPU</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">targetMultiVector</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">offset</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">subsetSize</span></span>, <span class="n"><span class="pre">cudaStream_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">stream_</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">nullptr</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I_16CommunicatorTypeEN5chase15distMultiVector28DistMultiVectorBlockCyclic1D21redistributeImplAsyncEvP28DistMultiVectorBlockCyclic1DI1T16target_comm_typeN5chase8platform3GPUEENSt6size_tENSt6size_tEP12cudaStream_t" title="Link to this definition"></a><br /></dt>
+<dd><p>Asynchronously redistributes the multi-vector data between two matrices with different communicator types using NCCL. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>target_comm_type</strong> – The target communicator type (row or column). </p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>targetMultiVector</strong> – The target multi-vector to redistribute data to. </p></li>
+<li><p><strong>offset</strong> – The starting offset for redistribution. </p></li>
+<li><p><strong>subsetSize</strong> – The number of elements to redistribute. </p></li>
+<li><p><strong>stream_</strong> – Optional CUDA stream for asynchronous operation. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4I_16CommunicatorTypeEN5chase15distMultiVector28DistMultiVectorBlockCyclic1D21redistributeImplAsyncEvP28DistMultiVectorBlockCyclic1DI1T16target_comm_typeN5chase8platform3GPUEEP12cudaStream_t">
+<span id="_CPPv3I_16CommunicatorTypeEN5chase15distMultiVector28DistMultiVectorBlockCyclic1D21redistributeImplAsyncEP28DistMultiVectorBlockCyclic1DI1T16target_comm_typeN5chase8platform3GPUEEP12cudaStream_t"></span><span id="_CPPv2I_16CommunicatorTypeEN5chase15distMultiVector28DistMultiVectorBlockCyclic1D21redistributeImplAsyncEP28DistMultiVectorBlockCyclic1DI1T16target_comm_typeN5chase8platform3GPUEEP12cudaStream_t"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">CommunicatorType</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">target_comm_type</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classchase_1_1distMultiVector_1_1DistMultiVectorBlockCyclic1D_1a32fc141702a16c48d0200c340928c904"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">redistributeImplAsync</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0_16CommunicatorType0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1DE" title="chase::distMultiVector::DistMultiVectorBlockCyclic1D"><span class="n"><span class="pre">DistMultiVectorBlockCyclic1D</span></span></a><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0_16CommunicatorType0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1DE" title="chase::distMultiVector::DistMultiVectorBlockCyclic1D::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I_16CommunicatorTypeEN5chase15distMultiVector28DistMultiVectorBlockCyclic1D21redistributeImplAsyncEvP28DistMultiVectorBlockCyclic1DI1T16target_comm_typeN5chase8platform3GPUEEP12cudaStream_t" title="chase::distMultiVector::DistMultiVectorBlockCyclic1D::redistributeImplAsync::target_comm_type"><span class="n"><span class="pre">target_comm_type</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><a class="reference internal" href="platform.html#_CPPv4N5chase8platformE" title="chase::platform"><span class="n"><span class="pre">platform</span></span></a><span class="p"><span class="pre">::</span></span><a class="reference internal" href="platform.html#_CPPv4N5chase8platform3GPUE" title="chase::platform::GPU"><span class="n"><span class="pre">GPU</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">targetMultiVector</span></span>, <span class="n"><span class="pre">cudaStream_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n sig-param"><span class="pre">stream_</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">nullptr</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4I_16CommunicatorTypeEN5chase15distMultiVector28DistMultiVectorBlockCyclic1D21redistributeImplAsyncEvP28DistMultiVectorBlockCyclic1DI1T16target_comm_typeN5chase8platform3GPUEEP12cudaStream_t" title="Link to this definition"></a><br /></dt>
+<dd><p>Asynchronously redistributes the multi-vector data between two matrices with different communicator types using NCCL. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Template Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>target_comm_type</strong> – The target communicator type (row or column). </p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>targetMultiVector</strong> – The target multi-vector to redistribute data to. </p></li>
+<li><p><strong>stream_</strong> – Optional CUDA stream for asynchronous operation. </p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK5chase15distMultiVector28DistMultiVectorBlockCyclic1D6g_rowsEv">
+<span id="_CPPv3NK5chase15distMultiVector28DistMultiVectorBlockCyclic1D6g_rowsEv"></span><span id="_CPPv2NK5chase15distMultiVector28DistMultiVectorBlockCyclic1D6g_rowsEv"></span><span id="chase::distMultiVector::DistMultiVectorBlockCyclic1D::g_rowsC"></span><span class="target" id="classchase_1_1distMultiVector_1_1DistMultiVectorBlockCyclic1D_1a9b7802c1d10de3efe7bfad3c0e709118"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">g_rows</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4NK5chase15distMultiVector28DistMultiVectorBlockCyclic1D6g_rowsEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Get the global number of rows in the matrix. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The global number of rows in the matrix across all processes. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK5chase15distMultiVector28DistMultiVectorBlockCyclic1D6g_colsEv">
+<span id="_CPPv3NK5chase15distMultiVector28DistMultiVectorBlockCyclic1D6g_colsEv"></span><span id="_CPPv2NK5chase15distMultiVector28DistMultiVectorBlockCyclic1D6g_colsEv"></span><span id="chase::distMultiVector::DistMultiVectorBlockCyclic1D::g_colsC"></span><span class="target" id="classchase_1_1distMultiVector_1_1DistMultiVectorBlockCyclic1D_1a1417bd31cfa8ee61a6f0d9db134136c4"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">g_cols</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4NK5chase15distMultiVector28DistMultiVectorBlockCyclic1D6g_colsEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Get the global number of columns in the matrix. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The global number of columns in the matrix across all processes. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK5chase15distMultiVector28DistMultiVectorBlockCyclic1D5g_offEv">
+<span id="_CPPv3NK5chase15distMultiVector28DistMultiVectorBlockCyclic1D5g_offEv"></span><span id="_CPPv2NK5chase15distMultiVector28DistMultiVectorBlockCyclic1D5g_offEv"></span><span id="chase::distMultiVector::DistMultiVectorBlockCyclic1D::g_offC"></span><span class="target" id="classchase_1_1distMultiVector_1_1DistMultiVectorBlockCyclic1D_1a90805ed3733dfab82f61480c483b4ab3"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">g_off</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4NK5chase15distMultiVector28DistMultiVectorBlockCyclic1D5g_offEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Get the global offset. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The global offset of the local data. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK5chase15distMultiVector28DistMultiVectorBlockCyclic1D6l_rowsEv">
+<span id="_CPPv3NK5chase15distMultiVector28DistMultiVectorBlockCyclic1D6l_rowsEv"></span><span id="_CPPv2NK5chase15distMultiVector28DistMultiVectorBlockCyclic1D6l_rowsEv"></span><span id="chase::distMultiVector::DistMultiVectorBlockCyclic1D::l_rowsC"></span><span class="target" id="classchase_1_1distMultiVector_1_1DistMultiVectorBlockCyclic1D_1a96c43d6bd7cb062496687eff75cf0051"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">l_rows</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4NK5chase15distMultiVector28DistMultiVectorBlockCyclic1D6l_rowsEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Get the local number of rows in this process. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The local number of rows assigned to the current process. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK5chase15distMultiVector28DistMultiVectorBlockCyclic1D6l_colsEv">
+<span id="_CPPv3NK5chase15distMultiVector28DistMultiVectorBlockCyclic1D6l_colsEv"></span><span id="_CPPv2NK5chase15distMultiVector28DistMultiVectorBlockCyclic1D6l_colsEv"></span><span id="chase::distMultiVector::DistMultiVectorBlockCyclic1D::l_colsC"></span><span class="target" id="classchase_1_1distMultiVector_1_1DistMultiVectorBlockCyclic1D_1ab4a4c4f859e6d7f69d051aed5e1b405a"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">l_cols</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4NK5chase15distMultiVector28DistMultiVectorBlockCyclic1D6l_colsEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Get the local number of columns in this process. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The local number of columns assigned to the current process. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK5chase15distMultiVector28DistMultiVectorBlockCyclic1D4l_ldEv">
+<span id="_CPPv3NK5chase15distMultiVector28DistMultiVectorBlockCyclic1D4l_ldEv"></span><span id="_CPPv2NK5chase15distMultiVector28DistMultiVectorBlockCyclic1D4l_ldEv"></span><span id="chase::distMultiVector::DistMultiVectorBlockCyclic1D::l_ldC"></span><span class="target" id="classchase_1_1distMultiVector_1_1DistMultiVectorBlockCyclic1D_1aeaaf9a55a43ab1f645286b49aab34ad5"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">l_ld</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4NK5chase15distMultiVector28DistMultiVectorBlockCyclic1D4l_ldEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Get the leading dimension of the local matrix. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The leading dimension (stride) of the local matrix. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK5chase15distMultiVector28DistMultiVectorBlockCyclic1D2mbEv">
+<span id="_CPPv3NK5chase15distMultiVector28DistMultiVectorBlockCyclic1D2mbEv"></span><span id="_CPPv2NK5chase15distMultiVector28DistMultiVectorBlockCyclic1D2mbEv"></span><span id="chase::distMultiVector::DistMultiVectorBlockCyclic1D::mbC"></span><span class="target" id="classchase_1_1distMultiVector_1_1DistMultiVectorBlockCyclic1D_1afb450b975c14765d58f09f493304ace4"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">mb</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4NK5chase15distMultiVector28DistMultiVectorBlockCyclic1D2mbEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Get the block size for block-cyclic distribution. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The block size used when distributing the matrix across processes. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK5chase15distMultiVector28DistMultiVectorBlockCyclic1D7mblocksEv">
+<span id="_CPPv3NK5chase15distMultiVector28DistMultiVectorBlockCyclic1D7mblocksEv"></span><span id="_CPPv2NK5chase15distMultiVector28DistMultiVectorBlockCyclic1D7mblocksEv"></span><span id="chase::distMultiVector::DistMultiVectorBlockCyclic1D::mblocksC"></span><span class="target" id="classchase_1_1distMultiVector_1_1DistMultiVectorBlockCyclic1D_1abd263bc8f7d1c304d990f689cab46982"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">mblocks</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4NK5chase15distMultiVector28DistMultiVectorBlockCyclic1D7mblocksEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Returns the number of row blocks. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The number of row blocks. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK5chase15distMultiVector28DistMultiVectorBlockCyclic1D6l_halfEv">
+<span id="_CPPv3NK5chase15distMultiVector28DistMultiVectorBlockCyclic1D6l_halfEv"></span><span id="_CPPv2NK5chase15distMultiVector28DistMultiVectorBlockCyclic1D6l_halfEv"></span><span id="chase::distMultiVector::DistMultiVectorBlockCyclic1D::l_halfC"></span><span class="target" id="classchase_1_1distMultiVector_1_1DistMultiVectorBlockCyclic1D_1a4b76547ffb281d400ec669309cd6c02c"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">l_half</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4NK5chase15distMultiVector28DistMultiVectorBlockCyclic1D6l_halfEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Get the block size used in the distributed matrix layout. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The matrix block size. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase15distMultiVector28DistMultiVectorBlockCyclic1D6l_dataEv">
+<span id="_CPPv3N5chase15distMultiVector28DistMultiVectorBlockCyclic1D6l_dataEv"></span><span id="_CPPv2N5chase15distMultiVector28DistMultiVectorBlockCyclic1D6l_dataEv"></span><span id="chase::distMultiVector::DistMultiVectorBlockCyclic1D::l_data"></span><span class="target" id="classchase_1_1distMultiVector_1_1DistMultiVectorBlockCyclic1D_1ae2809df4979b0e65052825e9932ee9dc"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_16CommunicatorType0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1DE" title="chase::distMultiVector::DistMultiVectorBlockCyclic1D::T"><span class="n"><span class="pre">T</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">l_data</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N5chase15distMultiVector28DistMultiVectorBlockCyclic1D6l_dataEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Get the pointer to the local matrix data. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A pointer to the local matrix data stored in the current process. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase15distMultiVector28DistMultiVectorBlockCyclic1D10loc_matrixEv">
+<span id="_CPPv3N5chase15distMultiVector28DistMultiVectorBlockCyclic1D10loc_matrixEv"></span><span id="_CPPv2N5chase15distMultiVector28DistMultiVectorBlockCyclic1D10loc_matrixEv"></span><span id="chase::distMultiVector::DistMultiVectorBlockCyclic1D::loc_matrix"></span><span class="target" id="classchase_1_1distMultiVector_1_1DistMultiVectorBlockCyclic1D_1a40252efc4854c1832f239e484576e39d"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">matrix</span></span><span class="p"><span class="pre">::</span></span><a class="reference internal" href="#_CPPv4I00I0E0EN5chase6matrix6MatrixE" title="chase::matrix::Matrix"><span class="n"><span class="pre">Matrix</span></span></a><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0_16CommunicatorType0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1DE" title="chase::distMultiVector::DistMultiVectorBlockCyclic1D::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_16CommunicatorType0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1DE" title="chase::distMultiVector::DistMultiVectorBlockCyclic1D::Platform"><span class="n"><span class="pre">Platform</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">loc_matrix</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">override</span></span><a class="headerlink" href="#_CPPv4N5chase15distMultiVector28DistMultiVectorBlockCyclic1D10loc_matrixEv" title="Link to this definition"></a><br /></dt>
+<dd><p>Access the local matrix object. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Reference to the local matrix of type <a class="reference internal" href="#classchase_1_1matrix_1_1Matrix"><span class="std std-ref">chase::matrix::Matrix</span></a>. </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase15distMultiVector28DistMultiVectorBlockCyclic1D24m_contiguous_global_offsEv">
+<span id="_CPPv3N5chase15distMultiVector28DistMultiVectorBlockCyclic1D24m_contiguous_global_offsEv"></span><span id="_CPPv2N5chase15distMultiVector28DistMultiVectorBlockCyclic1D24m_contiguous_global_offsEv"></span><span id="chase::distMultiVector::DistMultiVectorBlockCyclic1D::m_contiguous_global_offs"></span><span class="target" id="classchase_1_1distMultiVector_1_1DistMultiVectorBlockCyclic1D_1aa3c646c3894ce49773bb7429da0ab36c"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">m_contiguous_global_offs</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase15distMultiVector28DistMultiVectorBlockCyclic1D24m_contiguous_global_offsEv" title="Link to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase15distMultiVector28DistMultiVectorBlockCyclic1D23m_contiguous_local_offsEv">
+<span id="_CPPv3N5chase15distMultiVector28DistMultiVectorBlockCyclic1D23m_contiguous_local_offsEv"></span><span id="_CPPv2N5chase15distMultiVector28DistMultiVectorBlockCyclic1D23m_contiguous_local_offsEv"></span><span id="chase::distMultiVector::DistMultiVectorBlockCyclic1D::m_contiguous_local_offs"></span><span class="target" id="classchase_1_1distMultiVector_1_1DistMultiVectorBlockCyclic1D_1a48a8f59cedbabc65f470bc87990e8df0"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">m_contiguous_local_offs</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase15distMultiVector28DistMultiVectorBlockCyclic1D23m_contiguous_local_offsEv" title="Link to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase15distMultiVector28DistMultiVectorBlockCyclic1D17m_contiguous_lensEv">
+<span id="_CPPv3N5chase15distMultiVector28DistMultiVectorBlockCyclic1D17m_contiguous_lensEv"></span><span id="_CPPv2N5chase15distMultiVector28DistMultiVectorBlockCyclic1D17m_contiguous_lensEv"></span><span id="chase::distMultiVector::DistMultiVectorBlockCyclic1D::m_contiguous_lens"></span><span class="target" id="classchase_1_1distMultiVector_1_1DistMultiVectorBlockCyclic1D_1a7418836b6d7a5db9b676802a37949821"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">vector</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">m_contiguous_lens</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase15distMultiVector28DistMultiVectorBlockCyclic1D17m_contiguous_lensEv" title="Link to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase15distMultiVector28DistMultiVectorBlockCyclic1D18get_scalapack_descEv">
+<span id="_CPPv3N5chase15distMultiVector28DistMultiVectorBlockCyclic1D18get_scalapack_descEv"></span><span id="_CPPv2N5chase15distMultiVector28DistMultiVectorBlockCyclic1D18get_scalapack_descEv"></span><span id="chase::distMultiVector::DistMultiVectorBlockCyclic1D::get_scalapack_desc"></span><span class="target" id="classchase_1_1distMultiVector_1_1DistMultiVectorBlockCyclic1D_1ab56cc75e9829fb641de9a785e2523c9a"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">get_scalapack_desc</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase15distMultiVector28DistMultiVectorBlockCyclic1D18get_scalapack_descEv" title="Link to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase15distMultiVector28DistMultiVectorBlockCyclic1D25scalapack_descriptor_initEv">
+<span id="_CPPv3N5chase15distMultiVector28DistMultiVectorBlockCyclic1D25scalapack_descriptor_initEv"></span><span id="_CPPv2N5chase15distMultiVector28DistMultiVectorBlockCyclic1D25scalapack_descriptor_initEv"></span><span id="chase::distMultiVector::DistMultiVectorBlockCyclic1D::scalapack_descriptor_init"></span><span class="target" id="classchase_1_1distMultiVector_1_1DistMultiVectorBlockCyclic1D_1a4e8fa2fbacca848c67f4c14d3ea10f7c"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">scalapack_descriptor_init</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5chase15distMultiVector28DistMultiVectorBlockCyclic1D25scalapack_descriptor_initEv" title="Link to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+</div>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-static-attributes">Public Static Attributes</p>
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N5chase15distMultiVector28DistMultiVectorBlockCyclic1D17communicator_typeE">
+<span id="_CPPv3N5chase15distMultiVector28DistMultiVectorBlockCyclic1D17communicator_typeE"></span><span id="_CPPv2N5chase15distMultiVector28DistMultiVectorBlockCyclic1D17communicator_typeE"></span><span id="chase::distMultiVector::DistMultiVectorBlockCyclic1D::communicator_type__chase::distMultiVector::CommunicatorType"></span><span class="target" id="classchase_1_1distMultiVector_1_1DistMultiVectorBlockCyclic1D_1a016257cc334ca0eb707d61f80076e1e2"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="n"><span class="pre">chase</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">distMultiVector</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">CommunicatorType</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">communicator_type</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0_16CommunicatorType0EN5chase15distMultiVector28DistMultiVectorBlockCyclic1DE" title="chase::distMultiVector::DistMultiVectorBlockCyclic1D::comm_type"><span class="n"><span class="pre">comm_type</span></span></a><a class="headerlink" href="#_CPPv4N5chase15distMultiVector28DistMultiVectorBlockCyclic1D17communicator_typeE" title="Link to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+</div>
+</dd></dl>
+
+</section>
 </section>
 
 
@@ -1805,7 +2297,7 @@ function switchVersion(url) {
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2023, SimLab Quantum Materials.</p>
+    <p>&#169; Copyright 2026, SimLab Quantum Materials.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

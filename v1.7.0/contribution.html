@@ -167,8 +167,9 @@ function switchVersion(url) {
 <li class="toctree-l1"><a class="reference internal" href="reference.html">References and Contributors</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Contributing to ChASE</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#getting-started">Getting Started</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#create-an-issue-on-github">1. Create an Issue on GitHub</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#set-up-gitlab-account">2. Set Up GitLab Account</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#express-interest-in-contributing">1. Express Interest in Contributing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sign-the-collaboration-agreement-cla">2. Sign the Collaboration Agreement (CLA)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#get-access-to-jsc-gitlab">3. Get Access to JSC GitLab</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#auto-formatting-of-committed-codes">Auto Formatting of Committed Codes</a><ul>
@@ -222,23 +223,51 @@ function switchVersion(url) {
 <p>We welcome contributions to ChASE! This guide outlines the process for contributing to the project.</p>
 <section id="getting-started">
 <h2>Getting Started<a class="headerlink" href="#getting-started" title="Link to this heading"></a></h2>
-<section id="create-an-issue-on-github">
-<h3>1. Create an Issue on GitHub<a class="headerlink" href="#create-an-issue-on-github" title="Link to this heading"></a></h3>
-<p>If you’re interested in contributing to ChASE, please start by creating an issue on
-GitHub expressing your interest and describing what you’d like to work on. This helps
-us coordinate efforts and ensures your contribution aligns with the project’s goals.</p>
+<section id="express-interest-in-contributing">
+<h3>1. Express Interest in Contributing<a class="headerlink" href="#express-interest-in-contributing" title="Link to this heading"></a></h3>
+<p>If you’re interested in contributing to ChASE, you have two options:</p>
+<p><strong>Option A: Create an Issue or Pull Request on GitHub</strong></p>
+<p>You can create an issue or pull request on the <a class="reference external" href="https://github.com/ChASE-library/ChASE">GitHub repository</a>
+to express your interest in contributing and describe what you’d like to work on. This
+is just to let us know about your interest - you don’t need to fork and contribute code
+directly on GitHub.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Since GitHub serves as a mirror repository from JSC GitLab, you cannot directly fork
+and contribute on GitHub. The GitHub repository is automatically synchronized from
+GitLab, so all active development happens on GitLab. After you express your interest,
+we will contact you to proceed with the contribution process.</p>
+</div>
+<p><strong>Option B: Contact the ChASE Team Directly</strong></p>
+<p>Alternatively, you can also contact us at <a class="reference external" href="mailto:chase&#37;&#52;&#48;fz-juelich&#46;de">chase<span>&#64;</span>fz-juelich<span>&#46;</span>de</a> with
+a motivated request of collaboration. We will consider your request and get in touch
+with you to evaluate if and how to give you access directly to the GitLab repository
+where the major developments of this software is carried out.</p>
 </section>
-<section id="set-up-gitlab-account">
-<h3>2. Set Up GitLab Account<a class="headerlink" href="#set-up-gitlab-account" title="Link to this heading"></a></h3>
-<p>ChASE is developed on JSC GitLab, while GitHub serves as a mirror repository. To
-contribute code, you’ll need to:</p>
+<section id="sign-the-collaboration-agreement-cla">
+<h3>2. Sign the Collaboration Agreement (CLA)<a class="headerlink" href="#sign-the-collaboration-agreement-cla" title="Link to this heading"></a></h3>
+<p>If you have not contributed to the ChASE library before, we will ask you to agree to a
+Collaboration Agreement (CLA) before your pull request can be approved.</p>
+<p>Currently, there is no automatic mechanism to sign such an agreement. You need to:</p>
 <ul class="simple">
-<li><p>Create an account on JSC GitLab</p></li>
-<li><p>Request access to the ChASE repository</p></li>
+<li><p>Download the file <a class="reference external" href="https://github.com/ChASE-library/ChASE/blob/master/CLA_ChASE.pdf">CLA_ChASE.pdf</a> (that is part of the repository)</p></li>
+<li><p>Print it</p></li>
+<li><p>Sign it</p></li>
+<li><p>Send it back to <a class="reference external" href="mailto:chase&#37;&#52;&#48;fz-juelich&#46;de">chase<span>&#64;</span>fz-juelich<span>&#46;</span>de</a></p></li>
+</ul>
+<p>Upon reception of your signed CLA, your request will be reviewed and then
+eventually go for the next step.</p>
+</section>
+<section id="get-access-to-jsc-gitlab">
+<h3>3. Get Access to JSC GitLab<a class="headerlink" href="#get-access-to-jsc-gitlab" title="Link to this heading"></a></h3>
+<p>After your request of contribution is approved and you’ve signed the CLA, the ChASE team will
+invite you to create an account on JSC GitLab for contributing. Once you have access:</p>
+<ul class="simple">
+<li><p>Create an account on JSC GitLab (if you don’t have one already)</p></li>
+<li><p>Accept the invitation to the ChASE repository</p></li>
 <li><p>Clone the repository from GitLab for development</p></li>
 </ul>
-<p>The GitHub repository is automatically synchronized from GitLab, so all active
-development happens on GitLab.</p>
+<p>All active development happens on GitLab, while GitHub serves as a mirror repository.</p>
 </section>
 </section>
 <section id="auto-formatting-of-committed-codes">
@@ -273,7 +302,7 @@ git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </sp
 </div>
 <p>When you commit, the git hook will automatically format your code using <code class="docutils literal notranslate"><span class="pre">clang-format</span></code>.
 You’ll see output like:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>[wu7@jwlogin21 ChASE-format]$ git commit -m &quot;test hooks&quot;
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>[hellochase@jwlogin21 ChASE-format]$ git commit -m &quot;test hooks&quot;
 [clang-format] formatted and staged Impl/chase_gpu/chase_gpu.hpp
 [58-implement-distributed-memory-chase-extension-for-bse-matrix a1a7583] test hooks
  1 file changed, 6 insertions(+), 6 deletions(-)
@@ -294,7 +323,7 @@ You’ll see output like:</p>
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2023, SimLab Quantum Materials.</p>
+    <p>&#169; Copyright 2026, SimLab Quantum Materials.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

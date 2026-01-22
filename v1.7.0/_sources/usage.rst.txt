@@ -1059,10 +1059,10 @@ finalization functions as the regular interfaces, but require separate
 initialization functions.
 
 Sequential Pseudo-Hermitian Initialization
--------------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 <x>chase_init_pseudo
-^^^^^^^^^^^^^^^^^^^^
+""""""""""""""""""""
 
 ``<x>chase_init_pseudo`` initializes the context for shared-memory ChASE with
 pseudo-Hermitian matrices. Currently only complex types (``c`` and ``z``) are
@@ -1087,7 +1087,7 @@ The APIs for the Fortran interfaces are as follows:
 The parameters are the same as ``<x>chase_init`` described above.
 
 <x>chase_pseudo
-^^^^^^^^^^^^^^^^
+"""""""""""""""
 
 ``<x>chase_pseudo`` solves a pseudo-Hermitian eigenvalue problem. Use this
 function after initializing with ``<x>chase_init_pseudo``.
@@ -1109,10 +1109,10 @@ The APIs for the Fortran interfaces are as follows:
 The parameters are the same as ``<x>chase`` described above.
 
 Distributed Pseudo-Hermitian Initialization
---------------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 p<x>chase_init_pseudo
-^^^^^^^^^^^^^^^^^^^^^^
+""""""""""""""""""""""
 
 ``p<x>chase_init_pseudo`` initializes the context for distributed-memory ChASE
 with pseudo-Hermitian matrices using **Block Distribution**. Currently only
@@ -1141,7 +1141,7 @@ The APIs for the Fortran interfaces are as follows:
 The parameters are the same as ``p<x>chase_init`` described above.
 
 p<x>chase_init_pseudo_blockcyclic
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+"""""""""""""""""""""""""""""""""
 
 ``p<x>chase_init_pseudo_blockcyclic`` initializes the context for
 distributed-memory ChASE with pseudo-Hermitian matrices using **Block-Cyclic
@@ -1182,10 +1182,10 @@ These functions work for both regular and pseudo-Hermitian matrices, automatical
 detecting the matrix type based on the initialization function used.
 
 Writing Hamiltonian to File
-----------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 p<x>chase_wrtHam
-^^^^^^^^^^^^^^^^
+""""""""""""""""
 
 ``p<x>chase_wrtHam`` writes the distributed Hamiltonian matrix to a file. This
 function works for both regular and pseudo-Hermitian matrices.
@@ -1220,10 +1220,10 @@ The APIs for the Fortran interfaces are as follows:
      - name of the output file
 
 Reading Hamiltonian from File
-------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 p<x>chase_readHam
-^^^^^^^^^^^^^^^^^
+"""""""""""""""""
 
 ``p<x>chase_readHam`` reads a distributed Hamiltonian matrix from a file. This
 function works for both regular and pseudo-Hermitian matrices.
@@ -1258,7 +1258,7 @@ The APIs for the Fortran interfaces are as follows:
      - name of the input file
 
 Sequential I/O Functions
-------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
 For sequential/single-GPU interfaces, convenience aliases are provided:
 
@@ -1279,6 +1279,9 @@ For sequential/single-GPU interfaces, convenience aliases are provided:
 Unified Configuration Setter Functions
 ---------------------------------------
 
+Name Convention
+^^^^^^^^^^^^^^^^^
+
 ChASE provides unified configuration setter functions that work regardless of
 matrix type (Hermitian or pseudo-Hermitian), precision, architecture (sequential
 or distributed), or distribution scheme (block or block-cyclic). These functions
@@ -1297,10 +1300,10 @@ And the Fortran interface pattern:
   subroutine  chase_set_<parameter> (value)
 
 Available Configuration Setters
---------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 chase_set_tol
-^^^^^^^^^^^^^
+"""""""""""""
 
 Set the tolerance threshold for eigenpair residuals.
 
@@ -1324,7 +1327,7 @@ Set the tolerance threshold for eigenpair residuals.
      - desired absolute tolerance of computed eigenpairs
 
 chase_set_deg
-^^^^^^^^^^^^^
+"""""""""""""
 
 Set the initial degree of the Chebyshev polynomial filter.
 
@@ -1348,7 +1351,7 @@ Set the initial degree of the Chebyshev polynomial filter.
      - initial degree of Chebyshev polynomial filter
 
 chase_set_max_deg
-^^^^^^^^^^^^^^^^^
+"""""""""""""""""
 
 Set the maximum degree of the Chebyshev polynomial filter.
 
@@ -1361,7 +1364,7 @@ Set the maximum degree of the Chebyshev polynomial filter.
   subroutine  chase_set_max_deg (max_deg)
 
 chase_set_deg_extra
-^^^^^^^^^^^^^^^^^^^^
+"""""""""""""""""""
 
 Set the extra degree added to the polynomial filter.
 
@@ -1374,7 +1377,7 @@ Set the extra degree added to the polynomial filter.
   subroutine  chase_set_deg_extra (deg_extra)
 
 chase_set_max_iter
-^^^^^^^^^^^^^^^^^^
+"""""""""""""""""""
 
 Set the maximum number of subspace iterations.
 
@@ -1387,7 +1390,7 @@ Set the maximum number of subspace iterations.
   subroutine  chase_set_max_iter (max_iter)
 
 chase_set_lanczos_iter
-^^^^^^^^^^^^^^^^^^^^^^^
+""""""""""""""""""""""
 
 Set the number of Lanczos iterations for spectral estimates.
 
@@ -1400,7 +1403,7 @@ Set the number of Lanczos iterations for spectral estimates.
   subroutine  chase_set_lanczos_iter (lanczos_iter)
 
 chase_set_num_lanczos
-^^^^^^^^^^^^^^^^^^^^^
+"""""""""""""""""""""
 
 Set the number of stochastic vectors for spectral estimates.
 
@@ -1413,7 +1416,7 @@ Set the number of stochastic vectors for spectral estimates.
   subroutine  chase_set_num_lanczos (num_lanczos)
 
 chase_set_approx
-^^^^^^^^^^^^^^^^
+"""""""""""""""""
 
 Set the approximate mode flag.
 
@@ -1437,7 +1440,7 @@ Set the approximate mode flag.
      - 1 to enable approximate mode, 0 to disable
 
 chase_set_opt
-^^^^^^^^^^^^^
+"""""""""""""
 
 Set the optimization flag for Chebyshev polynomial degree.
 
@@ -1461,7 +1464,7 @@ Set the optimization flag for Chebyshev polynomial degree.
      - 1 to enable optimization, 0 to disable
 
 chase_set_cholqr
-^^^^^^^^^^^^^^^^
+"""""""""""""""""
 
 Set the CholQR flag (flexible CholeskyQR vs Householder QR).
 
@@ -1485,7 +1488,7 @@ Set the CholQR flag (flexible CholeskyQR vs Householder QR).
      - 1 to use flexible CholQR, 0 to use Householder QR
 
 chase_enable_sym_check
-^^^^^^^^^^^^^^^^^^^^^^
+""""""""""""""""""""""
 
 Enable or disable symmetry checking.
 
@@ -1498,7 +1501,7 @@ Enable or disable symmetry checking.
   subroutine  chase_enable_sym_check (flag)
 
 chase_set_decaying_rate
-^^^^^^^^^^^^^^^^^^^^^^^
+"""""""""""""""""""""""
 
 Set the decaying rate for the polynomial lower bound.
 
@@ -1511,7 +1514,7 @@ Set the decaying rate for the polynomial lower bound.
   subroutine  chase_set_decaying_rate (decaying_rate)
 
 chase_set_cluster_aware_degrees
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+""""""""""""""""""""""""""""""""
 
 Enable or disable cluster-aware degree optimization.
 
@@ -1524,7 +1527,7 @@ Enable or disable cluster-aware degree optimization.
   subroutine  chase_set_cluster_aware_degrees (flag)
 
 chase_set_upperb_scale_rate
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+"""""""""""""""""""""""""""
 
 Set the scale rate for upper bound based on its sign.
 

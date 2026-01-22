@@ -84,3 +84,11 @@ chase::distMultiVector::DistMultiVector1D
    :protected-members:
    :undoc-members:
 
+chase::distMultiVector::DistMultiVectorBlockCyclic1D
+---------------------------------------------------
+
+.. doxygenclass:: chase::distMultiVector::DistMultiVectorBlockCyclic1D
+   :project: ChASE
+   :members:
+   :protected-members:
+   :undoc-members:

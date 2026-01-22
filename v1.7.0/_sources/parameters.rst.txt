@@ -117,8 +117,8 @@ Additional Parameters
      - ``1.0``
    * - :cpp:var:`upperb_scale_rate_`
      - An optional parameter controlling how the upper bound is scaled based on its sign. For positive upper bound, it's multiplied by this rate. For negative upper bound, it's multiplied by (2 - rate).
-     - Default value ``1.2`` works well for most cases. For positive upper bound, it's multiplied by this rate. For negative upper bound, it's multiplied by (2 - rate).
-     - ``1.2``
+     - Default value ``1.0`` works well for most cases. For positive upper bound, it's multiplied by this rate. For negative upper bound, it's multiplied by (2 - rate).
+     - ``1.0``
    * - :cpp:var:`cluster_aware_degrees_`
      - An optional flag indicating whether to use cluster-aware degree optimization. When enabled, the algorithm detects clusters of eigenvalues and adjusts polynomial degrees accordingly.
      - Enable cluster-aware degree optimization (``true``) to improve convergence for clustered eigenvalues. Disable (``false``) only if you experience performance issues.
