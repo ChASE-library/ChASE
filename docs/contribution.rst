@@ -6,25 +6,58 @@ We welcome contributions to ChASE! This guide outlines the process for contribut
 Getting Started
 ===============
 
-1. Create an Issue on GitHub
------------------------------
+1. Express Interest in Contributing
+------------------------------------
 
-If you're interested in contributing to ChASE, please start by creating an issue on
-GitHub expressing your interest and describing what you'd like to work on. This helps
-us coordinate efforts and ensures your contribution aligns with the project's goals.
+If you're interested in contributing to ChASE, you have two options:
 
-2. Set Up GitLab Account
--------------------------
+**Option A: Create an Issue or Pull Request on GitHub**
 
-ChASE is developed on JSC GitLab, while GitHub serves as a mirror repository. To
-contribute code, you'll need to:
+You can create an issue or pull request on the `GitHub repository <https://github.com/ChASE-library/ChASE>`_
+to express your interest in contributing and describe what you'd like to work on. This
+is just to let us know about your interest - you don't need to fork and contribute code
+directly on GitHub.
 
-* Create an account on JSC GitLab
-* Request access to the ChASE repository
+.. note::
+  Since GitHub serves as a mirror repository from JSC GitLab, you cannot directly fork
+  and contribute on GitHub. The GitHub repository is automatically synchronized from
+  GitLab, so all active development happens on GitLab. After you express your interest,
+  we will contact you to proceed with the contribution process.
+
+**Option B: Contact the ChASE Team Directly**
+
+Alternatively, you can also contact us at `chase@fz-juelich.de <mailto:chase@fz-juelich.de>`_ with
+a motivated request of collaboration. We will consider your request and get in touch
+with you to evaluate if and how to give you access directly to the GitLab repository
+where the major developments of this software is carried out.
+
+2. Sign the Collaboration Agreement (CLA)
+-------------------------------------------
+
+If you have not contributed to the ChASE library before, we will ask you to agree to a
+Collaboration Agreement (CLA) before your pull request can be approved.
+
+Currently, there is no automatic mechanism to sign such an agreement. You need to:
+
+* Download the file `CLA_ChASE.pdf <https://github.com/ChASE-library/ChASE/blob/master/CLA_ChASE.pdf>`_ (that is part of the repository)
+* Print it
+* Sign it
+* Send it back to `chase@fz-juelich.de <mailto:chase@fz-juelich.de>`_
+
+Upon reception of your signed CLA, your request will be reviewed and then
+eventually go for the next step.
+
+3. Get Access to JSC GitLab
+----------------------------
+
+After your request of contribution is approved and you've signed the CLA, the ChASE team will
+invite you to create an account on JSC GitLab for contributing. Once you have access:
+
+* Create an account on JSC GitLab (if you don't have one already)
+* Accept the invitation to the ChASE repository
 * Clone the repository from GitLab for development
 
-The GitHub repository is automatically synchronized from GitLab, so all active
-development happens on GitLab.
+All active development happens on GitLab, while GitHub serves as a mirror repository.
 
 Auto Formatting of Committed Codes
 ===================================
@@ -64,7 +97,7 @@ You'll see output like:
 
 .. code-block:: text
 
-   [wu7@jwlogin21 ChASE-format]$ git commit -m "test hooks"
+   [hellochase@jwlogin21 ChASE-format]$ git commit -m "test hooks"
    [clang-format] formatted and staged Impl/chase_gpu/chase_gpu.hpp
    [58-implement-distributed-memory-chase-extension-for-bse-matrix a1a7583] test hooks
     1 file changed, 6 insertions(+), 6 deletions(-)
