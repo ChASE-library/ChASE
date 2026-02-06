@@ -251,8 +251,9 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
         chase::linalg::internal::cuda_nccl::MatrixMultiplyMultiVectors(
             cublas_handle, &One, H, v_1, &Zero, v_w);
         
-        // Pass stream to ensure redistribution uses same stream as other operations
+        // Pass stream to redistribution and ensure it completes
         v_w.redistributeImplAsync(&v_2, &stream);
+        cudaStreamSynchronize(stream);  // Wait for NCCL operations to complete
 
         // Batched dot products with negation (single kernel launch, GPU-resident)
         // Computes d_alpha[i] = -conj(v_1[:,i]) · v_2[:,i] for all i in one pass
@@ -475,8 +476,9 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
         chase::linalg::internal::cuda_nccl::MatrixMultiplyMultiVectors(
             cublas_handle, &One, H, v_1, &Zero, v_w);
         
-        // Pass stream to ensure redistribution uses same stream as other operations  
+        // Pass stream to redistribution and ensure it completes
         v_w.redistributeImplAsync(&v_2, &stream);
+        cudaStreamSynchronize(stream);  // Wait for NCCL operations to complete
 
         for (auto i = 0; i < numvec; i++)
         {
@@ -717,8 +719,9 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
         chase::linalg::internal::cuda_nccl::MatrixMultiplyMultiVectors(
             cublas_handle, &One, H, v_1, &Zero, v_w);
 
-        // Pass stream to ensure redistribution uses same stream as other operations
+        // Pass stream to redistribution and ensure it completes
         v_w.redistributeImplAsync(&v_2, &stream);
+        cudaStreamSynchronize(stream);  // Wait for NCCL operations to complete
 
         // Dot product with negation (single-vector, but using batched kernel for consistency)
         batchedDotProduct(v_1.l_data(), v_2.l_data(), d_alpha,
@@ -733,6 +736,7 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTaxpy(
             cublas_handle, v_1.l_rows(), d_alpha, v_1.l_data(), 1, v_2.l_data(),
             1));
+        CHECK_CUDA_ERROR(cudaGetLastError());  // Check for errors from cuBLAS operation
 
         // Negate back to get positive alpha for storage
         negate(d_alpha, 1, &stream);
@@ -756,12 +760,13 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
         if (k > 0)
         {
             T beta_host = T(-r_beta_host);
-            // Use synchronous copy to ensure d_alpha is ready before cuBLAS uses it
-            cudaMemcpy(d_alpha, &beta_host, sizeof(T), cudaMemcpyHostToDevice);
+            // Use async copy with stream to maintain stream ordering
+            cudaMemcpyAsync(d_alpha, &beta_host, sizeof(T), cudaMemcpyHostToDevice, stream);
             
             CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTaxpy(
                 cublas_handle, v_0.l_rows(), d_alpha, v_0.l_data(), 1,
                 v_2.l_data(), 1));
+            CHECK_CUDA_ERROR(cudaGetLastError());  // Check for errors from cuBLAS operation
         }
 
         // Compute norm squared (GPU-resident)
@@ -928,8 +933,9 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
         chase::linalg::internal::cuda_nccl::MatrixMultiplyMultiVectors(
             cublas_handle, &One, H, v_1, &Zero, v_w);
 
-        // Pass stream to ensure redistribution uses same stream as other operations
+        // Pass stream to redistribution and ensure it completes
         v_w.redistributeImplAsync(&v_2, &stream);
+        cudaStreamSynchronize(stream);  // Wait for NCCL operations to complete
 
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTdot(
             cublas_handle, v_1.l_rows(), v_1.l_data(), 1, v_2.l_data(), 1,
