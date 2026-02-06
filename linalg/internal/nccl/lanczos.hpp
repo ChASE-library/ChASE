@@ -751,8 +751,8 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
         if (k > 0)
         {
             T beta_host = T(-r_beta_host);
-            cudaMemcpyAsync(d_alpha, &beta_host, sizeof(T),
-                           cudaMemcpyHostToDevice, stream);
+            // Use synchronous copy to ensure d_alpha is ready before cuBLAS uses it
+            cudaMemcpy(d_alpha, &beta_host, sizeof(T), cudaMemcpyHostToDevice);
             
             CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTaxpy(
                 cublas_handle, v_0.l_rows(), d_alpha, v_0.l_data(), 1,
