@@ -193,6 +193,20 @@ check-pkg-config:
 	@pkg-config --exists chase && echo "✓ ChASE found via pkg-config" || \
 		(echo "✗ ChASE not found! Set PKG_CONFIG_PATH" && exit 1)
 
+verify-interface:
+	@echo "Verifying ChASE C interface configuration..."
+	@echo "This checks what was compiled into libchase_c.a"
+	@echo "(This is fixed at ChASE build time and cannot be changed)"
+	@echo ""
+	@echo "Compile test program:"
+	@$(CXX) -o check_config_test \
+		-I$(shell pkg-config --variable=includedir chase) \
+		-x c++ - -lchase_c -L$(CHASE_LIBDIR) -lstdc++ <<< '\
+		extern "C" void chase_print_config_(); \
+		int main() { chase_print_config_(); return 0; }' 2>/dev/null && \
+		(echo "Running test..." && ./check_config_test && rm -f check_config_test) || \
+		echo "Note: chase_print_config_() requires rebuilt ChASE with new interface"
+
 help:
 	@echo "ChASE Makefile - Modern pkg-config Edition"
 	@echo "==========================================="

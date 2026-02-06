@@ -1,27 +1,51 @@
 option(CHASE_INTERFACE_WITH_BLOCKCYLIC "Build the C/FORTRAN interface for Block-Cyclic data layout" ON)
 
 add_library( "chase_c" "chase_c_interface.cpp" )
+
+# Link to appropriate backend libraries and set configuration macros
 if(TARGET chase_gpu)
-    add_compile_definitions(HAS_CUDA=1)
     target_link_libraries("chase_c" PUBLIC chase_gpu)
+    target_compile_definitions(chase_c PRIVATE HAS_CUDA=1)
 else()
     target_link_libraries("chase_c" PUBLIC chase_cpu)    
 endif()
 
 if(TARGET pchase_gpu)
-    #add_compile_definitions(HAS_NCCL=1)
-    #add_compile_definitions(CHASE_INTERFACE_DISABLE_NCCL=1)
     target_link_libraries("chase_c" PUBLIC pchase_gpu)
+    # NCCL detection: check if pchase_gpu has NCCL backend
+    if(TARGET NCCL::NCCL)
+        target_compile_definitions(chase_c PRIVATE HAS_NCCL=1)
+    endif()
 else()
     target_link_libraries("chase_c" PUBLIC pchase_cpu)
 endif()
+
+# MPI is always available for chase_c (required by pchase_* targets)
+if(TARGET MPI::MPI_CXX)
+    target_compile_definitions(chase_c PRIVATE HAS_MPI=1)
+endif()
+
+# ScaLAPACK detection (if available)
+if(ScaLAPACK_FOUND OR TARGET scalapack)
+    target_compile_definitions(chase_c PRIVATE HAS_SCALAPACK=1)
+endif()
+
+# Add dependency macros from chase_algorithm
+# These propagate the build options (GPU_RESIDENT_LANCZOS, QR_DOUBLE_PRECISION, etc.)
+target_link_libraries("chase_c" PRIVATE chase_algorithm)
 # Note: NO_MPI is not defined here since chase_c always links to parallel targets (pchase_*)
 # which require MPI. Serial targets (chase_*) are linked for implementation but don't define NO_MPI
 # to avoid conflicts with parallel targets.
 
-target_include_directories("chase_c" INTERFACE 
-                                               $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-                                               "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/interface>")
+target_include_directories("chase_c" 
+    INTERFACE 
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+        "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/interface>"
+    PRIVATE
+        # For building chase_c itself (needs chase_config.h)
+        $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>  # For generated chase_config.h
+        $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>  # For other includes
+)
 
 if(CHASE_INTERFACE_WITH_BLOCKCYLIC)
   target_compile_definitions(chase_c PUBLIC INTERFACE_BLOCK_CYCLIC)

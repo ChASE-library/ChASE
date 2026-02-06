@@ -24,21 +24,60 @@
 #define CHASE_VERSION "@PROJECT_VERSION@"
 
 // Build configuration options
+// Note: These macros may also be defined via -D flags from target properties.
+// We only define them here if not already defined to avoid redefinition warnings.
+#ifndef CHASE_OUTPUT
 #cmakedefine CHASE_OUTPUT
+#endif
+
+#ifndef CHASE_USE_NVTX
 #cmakedefine CHASE_USE_NVTX
+#endif
+
+#ifndef ENABLE_MIXED_PRECISION
 #cmakedefine ENABLE_MIXED_PRECISION
+#endif
+
+#ifndef QR_DOUBLE_PRECISION
 #cmakedefine QR_DOUBLE_PRECISION
+#endif
+
+#ifndef RR_DOUBLE_PRECISION
 #cmakedefine RR_DOUBLE_PRECISION
+#endif
+
+#ifndef ChASE_DISPLAY_COND_V_SVD
 #cmakedefine ChASE_DISPLAY_COND_V_SVD
+#endif
+
+#ifndef CHASE_SAVE_RESIDUALS
 #cmakedefine CHASE_SAVE_RESIDUALS
+#endif
+
+#ifndef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
 #cmakedefine CHASE_ENABLE_GPU_RESIDENT_LANCZOS
+#endif
+
+#ifndef XGEEV_EXISTS
 #cmakedefine XGEEV_EXISTS
+#endif
 
 // Feature detection (populated by CMake based on found dependencies)
+#ifndef HAS_MPI
 #cmakedefine HAS_MPI
+#endif
+
+#ifndef HAS_CUDA
 #cmakedefine HAS_CUDA
+#endif
+
+#ifndef HAS_NCCL
 #cmakedefine HAS_NCCL
+#endif
+
+#ifndef HAS_SCALAPACK
 #cmakedefine HAS_SCALAPACK
+#endif
 
 /**
  * @brief Check if ChASE was built with MPI support

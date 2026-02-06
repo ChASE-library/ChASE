@@ -9,7 +9,9 @@
 #include <iostream>
 #include <memory>
 #include <type_traits>
+#include <cstring>
 
+#include "chase_config.h"  // For version info and configuration
 #include "algorithm/performance.hpp"
 #include "chase_c_interface.h"
 
@@ -2882,5 +2884,121 @@ extern "C"
             config->SetUpperbScaleRate(rate_val);
             return;
         }
+    }
+
+    // ========================================================================
+    // Configuration Query Functions
+    // ========================================================================
+    // These functions allow C/Fortran users to query how ChASE was built.
+    // The returned configuration is baked into the compiled library and
+    // cannot be changed by the user.
+
+    void chase_get_version_(char* version, int* len)
+    {
+        const char* ver = CHASE_VERSION;
+        int ver_len = 0;
+        while (ver[ver_len] != '\0' && ver_len < *len - 1) {
+            version[ver_len] = ver[ver_len];
+            ver_len++;
+        }
+        version[ver_len] = '\0';
+        *len = ver_len;
+    }
+
+    void chase_has_cuda_(int* flag)
+    {
+        #ifdef HAS_CUDA
+        *flag = 1;
+        #else
+        *flag = 0;
+        #endif
+    }
+
+    void chase_has_nccl_(int* flag)
+    {
+        #ifdef HAS_NCCL
+        *flag = 1;
+        #else
+        *flag = 0;
+        #endif
+    }
+
+    void chase_has_scalapack_(int* flag)
+    {
+        #ifdef HAS_SCALAPACK
+        *flag = 1;
+        #else
+        *flag = 0;
+        #endif
+    }
+
+    void chase_has_mpi_(int* flag)
+    {
+        #ifdef HAS_MPI
+        *flag = 1;
+        #else
+        *flag = 0;
+        #endif
+    }
+
+    void chase_print_config_()
+    {
+        std::cout << "========================================" << std::endl;
+        std::cout << "ChASE Build Configuration" << std::endl;
+        std::cout << "========================================" << std::endl;
+        std::cout << "Version: " << CHASE_VERSION << std::endl;
+        std::cout << std::endl;
+        
+        std::cout << "Features Compiled Into This Library:" << std::endl;
+        
+        #ifdef HAS_MPI
+        std::cout << "  ✓ MPI support:       ENABLED" << std::endl;
+        #else
+        std::cout << "  ✗ MPI support:       DISABLED" << std::endl;
+        #endif
+        
+        #ifdef HAS_CUDA
+        std::cout << "  ✓ CUDA support:      ENABLED" << std::endl;
+        #else
+        std::cout << "  ✗ CUDA support:      DISABLED" << std::endl;
+        #endif
+        
+        #ifdef HAS_NCCL
+        std::cout << "  ✓ NCCL support:      ENABLED" << std::endl;
+        #else
+        std::cout << "  ✗ NCCL support:      DISABLED" << std::endl;
+        #endif
+        
+        #ifdef HAS_SCALAPACK
+        std::cout << "  ✓ ScaLAPACK support: ENABLED" << std::endl;
+        #else
+        std::cout << "  ✗ ScaLAPACK support: DISABLED" << std::endl;
+        #endif
+        
+        std::cout << std::endl;
+        std::cout << "Configuration Options:" << std::endl;
+        
+        #ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
+        std::cout << "  ✓ GPU-Resident Lanczos: ENABLED" << std::endl;
+        #else
+        std::cout << "  ✗ GPU-Resident Lanczos: DISABLED" << std::endl;
+        #endif
+        
+        #ifdef QR_DOUBLE_PRECISION
+        std::cout << "  ✓ QR Double Precision: ENABLED" << std::endl;
+        #else
+        std::cout << "  ✗ QR Double Precision: DISABLED" << std::endl;
+        #endif
+        
+        #ifdef CHASE_OUTPUT
+        std::cout << "  ✓ Debug Output: ENABLED" << std::endl;
+        #else
+        std::cout << "  ✗ Debug Output: DISABLED" << std::endl;
+        #endif
+        
+        std::cout << "========================================" << std::endl;
+        std::cout << "NOTE: This configuration is compiled into" << std::endl;
+        std::cout << "      the library and cannot be changed." << std::endl;
+        std::cout << "========================================" << std::endl;
     }
 }
