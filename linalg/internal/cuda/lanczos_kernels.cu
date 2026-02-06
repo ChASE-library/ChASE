@@ -201,10 +201,11 @@ __global__ void batched_sqrt_kernel(T* data, int n)
     }
 }
 
-template<typename T, typename RealT>
-__global__ void normalize_vectors_kernel(
-    T* vectors,
-    const RealT* norms_squared,
+// Explicit kernels for all types (no generic template to avoid CUDA issues)
+
+__global__ void normalize_vectors_double_kernel(
+    double* vectors,
+    const double* norms_squared,
     int rows,
     int numvec,
     int ld)
@@ -213,18 +214,31 @@ __global__ void normalize_vectors_kernel(
     int row_idx = blockIdx.x * blockDim.x + threadIdx.x;
     
     if (vec_idx < numvec && row_idx < rows) {
-        RealT norm_sq = norms_squared[vec_idx];
-        // Add epsilon to prevent division by zero or numerical instability
-        // Use different thresholds for float vs double
-        RealT eps = (sizeof(RealT) == sizeof(float)) ? RealT(1e-30) : RealT(1e-100);
-        RealT scale = rsqrt(fmax(norm_sq, eps));
-        
-        // Scale vector element
-        vectors[row_idx + vec_idx * ld] *= T(scale);
+        double norm_sq = norms_squared[vec_idx];
+        double safe_norm_sq = fmax(norm_sq, 1e-100);
+        double scale = rsqrt(safe_norm_sq);
+        vectors[row_idx + vec_idx * ld] *= scale;
     }
 }
 
-// Specialization for complex types
+__global__ void normalize_vectors_float_kernel(
+    float* vectors,
+    const float* norms_squared,
+    int rows,
+    int numvec,
+    int ld)
+{
+    int vec_idx = blockIdx.y;
+    int row_idx = blockIdx.x * blockDim.x + threadIdx.x;
+    
+    if (vec_idx < numvec && row_idx < rows) {
+        float norm_sq = norms_squared[vec_idx];
+        float safe_norm_sq = fmaxf(norm_sq, 1e-30f);
+        float scale = rsqrtf(safe_norm_sq);
+        vectors[row_idx + vec_idx * ld] *= scale;
+    }
+}
+
 __global__ void normalize_vectors_complex_double_kernel(
     cuDoubleComplex* vectors,
     const double* norms_squared,
@@ -684,7 +698,7 @@ void normalize_vectors_gpu(double* vectors, const double* norms_squared,
 {
     dim3 threads(LANCZOS_BLOCK_SIZE);
     dim3 blocks((rows + threads.x - 1) / threads.x, numvec);
-    normalize_vectors_kernel<<<blocks, threads, 0, stream>>>(
+    normalize_vectors_double_kernel<<<blocks, threads, 0, stream>>>(
         vectors, norms_squared, rows, numvec, ld);
 }
 
@@ -693,7 +707,7 @@ void normalize_vectors_gpu(float* vectors, const float* norms_squared,
 {
     dim3 threads(LANCZOS_BLOCK_SIZE);
     dim3 blocks((rows + threads.x - 1) / threads.x, numvec);
-    normalize_vectors_kernel<<<blocks, threads, 0, stream>>>(
+    normalize_vectors_float_kernel<<<blocks, threads, 0, stream>>>(
         vectors, norms_squared, rows, numvec, ld);
 }
 
