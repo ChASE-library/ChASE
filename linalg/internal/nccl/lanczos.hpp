@@ -221,6 +221,7 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
     using chase::linalg::internal::cuda::sqrtInplace;
     
     batchedNormSquared(v_1.l_data(), d_real_alpha, v_1.l_rows(), numvec, v_1.l_ld(), &stream);
+    CHECK_CUDA_ERROR(cudaGetLastError());  // Check for kernel launch errors
 
     // NCCL Allreduce: sum norms across column communicator (GPU-GPU)
     CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper(
@@ -250,6 +251,7 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
         // Computes d_alpha[i] = -conj(v_1[:,i]) · v_2[:,i] for all i in one pass
         batchedDotProduct(v_1.l_data(), v_2.l_data(), d_alpha, 
                          v_1.l_rows(), numvec, v_1.l_ld(), true, &stream);  // true = negate
+        CHECK_CUDA_ERROR(cudaGetLastError());  // Check for kernel launch errors
 
         // NCCL Allreduce (GPU-GPU) - sum the negative alphas
         CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper(
@@ -299,6 +301,7 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
 
         // Compute norms squared (GPU-resident)
         batchedNormSquared(v_2.l_data(), d_r_beta, v_2.l_rows(), numvec, v_2.l_ld(), &stream);
+        CHECK_CUDA_ERROR(cudaGetLastError());  // Check for kernel launch errors
 
         // NCCL Allreduce: sum norm squared
         CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper(
@@ -681,6 +684,7 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
     
     // Compute norm squared on GPU (single vector version)
     batchedNormSquared(v_1.l_data(), d_real_alpha, v_1.l_rows(), 1, v_1.l_ld(), &stream);
+    CHECK_CUDA_ERROR(cudaGetLastError());  // Check for kernel launch errors
 
     // NCCL Allreduce
     CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper(
@@ -704,6 +708,7 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
         // Dot product with negation (single-vector, but using batched kernel for consistency)
         batchedDotProduct(v_1.l_data(), v_2.l_data(), d_alpha,
                          v_1.l_rows(), 1, v_1.l_ld(), true, &stream);  // true = negate
+        CHECK_CUDA_ERROR(cudaGetLastError());  // Check for kernel launch errors
 
         // NCCL Allreduce (sum the negative alpha)
         CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper(
@@ -746,6 +751,7 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
 
         // Compute norm squared (GPU-resident)
         batchedNormSquared(v_2.l_data(), d_r_beta, v_2.l_rows(), 1, v_2.l_ld(), &stream);
+        CHECK_CUDA_ERROR(cudaGetLastError());  // Check for kernel launch errors
 
         // NCCL Allreduce: sum norm squared
         CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper(
