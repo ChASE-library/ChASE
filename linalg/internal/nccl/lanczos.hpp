@@ -185,6 +185,11 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
     cudaMalloc(&d_alpha, numvec * sizeof(T));
     cudaMalloc(&d_real_alpha, numvec * sizeof(RealT));
     cudaMalloc(&d_r_beta, numvec * sizeof(RealT));
+    
+    // Initialize to zero to prevent garbage values
+    cudaMemset(d_alpha, 0, numvec * sizeof(T));
+    cudaMemset(d_real_alpha, 0, numvec * sizeof(RealT));
+    cudaMemset(d_r_beta, 0, numvec * sizeof(RealT));
 
     // Host buffers (only for LAPACK and final results)
     std::vector<RealT> r_beta_host(numvec);
@@ -648,6 +653,11 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
     cudaMalloc(&d_alpha, sizeof(T));
     cudaMalloc(&d_real_alpha, sizeof(RealT));
     cudaMalloc(&d_r_beta, sizeof(RealT));
+    
+    // Initialize to zero to prevent garbage values
+    cudaMemset(d_alpha, 0, sizeof(T));
+    cudaMemset(d_real_alpha, 0, sizeof(RealT));
+    cudaMemset(d_r_beta, 0, sizeof(RealT));
 
     // Host buffers
     std::vector<RealT> d(M);
