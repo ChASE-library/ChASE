@@ -69,7 +69,9 @@ protected:
             CHECK_CUBLAS_ERROR(cublasCreate(&cublasH));
             CHECK_CUDA_ERROR(cudaStreamCreate(&stream));
             CHECK_CUBLAS_ERROR(cublasSetStream(cublasH, stream));
-
+#ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
+            CHECK_CUBLAS_ERROR(cublasSetPointerMode(cublasH, CUBLAS_POINTER_MODE_DEVICE));
+#endif 
             // Allocate Clement matrices
             Clement_size = N * N;
             Clement_z = new std::complex<double>[Clement_size];

@@ -70,6 +70,16 @@ int cuda_nccl::cholQR1(cublasHandle_t cublas_handle,
     int info = 1;
     std::size_t upperTriangularSize = std::size_t(n * (n + 1) / 2);
 
+    // Detailed timing events
+    cudaEvent_t ev_start, ev_syherk, ev_allreduce, ev_potrf, ev_trsm, ev_end;
+    cudaEventCreate(&ev_start);
+    cudaEventCreate(&ev_syherk);
+    cudaEventCreate(&ev_allreduce);
+    cudaEventCreate(&ev_potrf);
+    cudaEventCreate(&ev_trsm);
+    cudaEventCreate(&ev_end);
+    cudaEventRecord(ev_start);
+
     std::unique_ptr<T, chase::cuda::utils::CudaDeleter> A_ptr = nullptr;
     if (A == nullptr)
     {
@@ -109,13 +119,13 @@ int cuda_nccl::cholQR1(cublasHandle_t cublas_handle,
     CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTsyherk(
         cublas_handle, CUBLAS_FILL_MODE_UPPER, transa, n, m, &One, V, ldv,
         &Zero, A, n));
+    cudaEventRecord(ev_syherk);
 
     chase::linalg::internal::cuda::extractUpperTriangular(A, n, workspace, n);
-    // CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(A, A, n * n,
-    // ncclSum, comm));
     CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(
         workspace, workspace, upperTriangularSize, ncclSum, comm));
     chase::linalg::internal::cuda::unpackUpperTriangular(workspace, n, A, n);
+    cudaEventRecord(ev_allreduce);
 
     int* devInfo;
     CHECK_CUDA_ERROR(cudaMalloc((void**)&devInfo, sizeof(int)));
@@ -123,11 +133,19 @@ int cuda_nccl::cholQR1(cublasHandle_t cublas_handle,
     CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTpotrf(
         cusolver_handle, CUBLAS_FILL_MODE_UPPER, n, A, n, workspace, lwork,
         devInfo));
+    cudaEventRecord(ev_potrf);
+
     CHECK_CUDA_ERROR(
         cudaMemcpy(&info, devInfo, 1 * sizeof(int), cudaMemcpyDeviceToHost));
 
     if (info != 0)
     {
+        cudaEventDestroy(ev_start);
+        cudaEventDestroy(ev_syherk);
+        cudaEventDestroy(ev_allreduce);
+        cudaEventDestroy(ev_potrf);
+        cudaEventDestroy(ev_trsm);
+        cudaEventDestroy(ev_end);
         CHECK_CUDA_ERROR(cudaFree(devInfo));
         return info;
     }
@@ -136,15 +154,39 @@ int cuda_nccl::cholQR1(cublasHandle_t cublas_handle,
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTtrsm(
             cublas_handle, CUBLAS_SIDE_RIGHT, CUBLAS_FILL_MODE_UPPER,
             CUBLAS_OP_N, CUBLAS_DIAG_NON_UNIT, m, n, &one, A, n, V, ldv));
-#ifdef CHASE_OUTPUT
+        cudaEventRecord(ev_trsm);
+        cudaEventRecord(ev_end);
+        cudaEventSynchronize(ev_end);
 
+        // Calculate and print breakdown timing
+        float t_syherk, t_allreduce, t_potrf, t_trsm, t_total;
+        cudaEventElapsedTime(&t_syherk, ev_start, ev_syherk);
+        cudaEventElapsedTime(&t_allreduce, ev_syherk, ev_allreduce);
+        cudaEventElapsedTime(&t_potrf, ev_allreduce, ev_potrf);
+        cudaEventElapsedTime(&t_trsm, ev_potrf, ev_trsm);
+        cudaEventElapsedTime(&t_total, ev_start, ev_end);
+
+#ifdef CHASE_OUTPUT
         int grank;
         MPI_Comm_rank(MPI_COMM_WORLD, &grank);
         if (grank == 0)
         {
             std::cout << "choldegree: 1" << std::endl;
+            std::cout << std::setprecision(6) << std::fixed;
+            std::cout << "  [cholQR1 Breakdown] Total: " << t_total/1000.0 << " s" << std::endl;
+            std::cout << "    SYHERK:       " << t_syherk/1000.0 << " s (" << 100.0*t_syherk/t_total << "%)" << std::endl;
+            std::cout << "    AllReduce:    " << t_allreduce/1000.0 << " s (" << 100.0*t_allreduce/t_total << "%)" << std::endl;
+            std::cout << "    Cholesky:     " << t_potrf/1000.0 << " s (" << 100.0*t_potrf/t_total << "%)" << std::endl;
+            std::cout << "    TRSM:         " << t_trsm/1000.0 << " s (" << 100.0*t_trsm/t_total << "%)" << std::endl;
         }
 #endif
+        cudaEventDestroy(ev_start);
+        cudaEventDestroy(ev_syherk);
+        cudaEventDestroy(ev_allreduce);
+        cudaEventDestroy(ev_potrf);
+        cudaEventDestroy(ev_trsm);
+        cudaEventDestroy(ev_end);
+
         CHECK_CUDA_ERROR(cudaFree(devInfo));
         return info;
     }
@@ -229,6 +271,7 @@ int cuda_nccl::cholQR1(cublasHandle_t cublas_handle,
     CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTpotrf(
         cusolver_handle, CUBLAS_FILL_MODE_UPPER, V.l_cols(), A, V.l_cols(),
         workspace, lwork, devInfo));
+    
     CHECK_CUDA_ERROR(
         cudaMemcpy(&info, devInfo, 1 * sizeof(int), cudaMemcpyDeviceToHost));
 
@@ -243,8 +286,8 @@ int cuda_nccl::cholQR1(cublasHandle_t cublas_handle,
             cublas_handle, CUBLAS_SIDE_RIGHT, CUBLAS_FILL_MODE_UPPER,
             CUBLAS_OP_N, CUBLAS_DIAG_NON_UNIT, V.l_rows(), V.l_cols(), &one, A,
             V.l_cols(), V.l_data(), V.l_ld()));
-#ifdef CHASE_OUTPUT
 
+#ifdef CHASE_OUTPUT
         int grank;
         MPI_Comm_rank(MPI_COMM_WORLD, &grank);
         if (grank == 0)
@@ -252,6 +295,7 @@ int cuda_nccl::cholQR1(cublasHandle_t cublas_handle,
             std::cout << "choldegree: 1" << std::endl;
         }
 #endif
+        
         CHECK_CUDA_ERROR(cudaFree(devInfo));
         return info;
     }
@@ -281,6 +325,7 @@ int cuda_nccl::cholQR2(cublasHandle_t cublas_handle,
                        std::size_t n, T* V, int ldv, ncclComm_t comm,
                        T* workspace, int lwork, T* A)
 {
+
     T one = T(1.0);
     T zero = T(0.0);
     chase::Base<T> One = Base<T>(1.0);
@@ -288,6 +333,21 @@ int cuda_nccl::cholQR2(cublasHandle_t cublas_handle,
 
     int info = 0;
     std::size_t upperTriangularSize = std::size_t(n * (n + 1) / 2);
+
+    // Detailed timing events for cholQR2 (2 iterations)
+    cudaEvent_t ev_start, ev_syherk1, ev_allreduce1, ev_potrf1, ev_trsm1;
+    cudaEvent_t ev_syherk2, ev_allreduce2, ev_potrf2, ev_trsm2, ev_end;
+    cudaEventCreate(&ev_start);
+    cudaEventCreate(&ev_syherk1);
+    cudaEventCreate(&ev_allreduce1);
+    cudaEventCreate(&ev_potrf1);
+    cudaEventCreate(&ev_trsm1);
+    cudaEventCreate(&ev_syherk2);
+    cudaEventCreate(&ev_allreduce2);
+    cudaEventCreate(&ev_potrf2);
+    cudaEventCreate(&ev_trsm2);
+    cudaEventCreate(&ev_end);
+    cudaEventRecord(ev_start);
 
     std::unique_ptr<T, chase::cuda::utils::CudaDeleter> A_ptr = nullptr;
     if (A == nullptr)
@@ -324,14 +384,17 @@ int cuda_nccl::cholQR2(cublasHandle_t cublas_handle,
         transa = CUBLAS_OP_T;
     }
 
+    // === Iteration 1 ===
     CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTsyherk(
         cublas_handle, CUBLAS_FILL_MODE_UPPER, transa, n, m, &One, V, ldv,
         &Zero, A, n));
+    cudaEventRecord(ev_syherk1);
 
     chase::linalg::internal::cuda::extractUpperTriangular(A, n, workspace, n);
     CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(
         workspace, workspace, upperTriangularSize, ncclSum, comm));
     chase::linalg::internal::cuda::unpackUpperTriangular(workspace, n, A, n);
+    cudaEventRecord(ev_allreduce1);
 
     int* devInfo;
     CHECK_CUDA_ERROR(cudaMalloc((void**)&devInfo, sizeof(int)));
@@ -339,11 +402,23 @@ int cuda_nccl::cholQR2(cublasHandle_t cublas_handle,
     CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTpotrf(
         cusolver_handle, CUBLAS_FILL_MODE_UPPER, n, A, n, workspace, lwork,
         devInfo));
+    cudaEventRecord(ev_potrf1);
+
     CHECK_CUDA_ERROR(
         cudaMemcpy(&info, devInfo, 1 * sizeof(int), cudaMemcpyDeviceToHost));
 
     if (info != 0)
     {
+        cudaEventDestroy(ev_start);
+        cudaEventDestroy(ev_syherk1);
+        cudaEventDestroy(ev_allreduce1);
+        cudaEventDestroy(ev_potrf1);
+        cudaEventDestroy(ev_trsm1);
+        cudaEventDestroy(ev_syherk2);
+        cudaEventDestroy(ev_allreduce2);
+        cudaEventDestroy(ev_potrf2);
+        cudaEventDestroy(ev_trsm2);
+        cudaEventDestroy(ev_end);
         CHECK_CUDA_ERROR(cudaFree(devInfo));
         return info;
     }
@@ -352,33 +427,70 @@ int cuda_nccl::cholQR2(cublasHandle_t cublas_handle,
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTtrsm(
             cublas_handle, CUBLAS_SIDE_RIGHT, CUBLAS_FILL_MODE_UPPER,
             CUBLAS_OP_N, CUBLAS_DIAG_NON_UNIT, m, n, &one, A, n, V, ldv));
+        cudaEventRecord(ev_trsm1);
 
+        // === Iteration 2 ===
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTsyherk(
             cublas_handle, CUBLAS_FILL_MODE_UPPER, transa, n, m, &One, V, ldv,
             &Zero, A, n));
+        cudaEventRecord(ev_syherk2);
 
-        chase::linalg::internal::cuda::extractUpperTriangular(A, n, workspace,
-                                                              n);
+        chase::linalg::internal::cuda::extractUpperTriangular(A, n, workspace, n);
         CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(
             workspace, workspace, upperTriangularSize, ncclSum, comm));
-        chase::linalg::internal::cuda::unpackUpperTriangular(workspace, n, A,
-                                                             n);
+        chase::linalg::internal::cuda::unpackUpperTriangular(workspace, n, A, n);
+        cudaEventRecord(ev_allreduce2);
 
         CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTpotrf(
             cusolver_handle, CUBLAS_FILL_MODE_UPPER, n, A, n, workspace, lwork,
             devInfo));
+        cudaEventRecord(ev_potrf2);
 
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTtrsm(
             cublas_handle, CUBLAS_SIDE_RIGHT, CUBLAS_FILL_MODE_UPPER,
             CUBLAS_OP_N, CUBLAS_DIAG_NON_UNIT, m, n, &one, A, n, V, ldv));
+        cudaEventRecord(ev_trsm2);
+        cudaEventRecord(ev_end);
+        cudaEventSynchronize(ev_end);
+
+        // Calculate and print breakdown timing
+        float t_syherk1, t_allreduce1, t_potrf1, t_trsm1;
+        float t_syherk2, t_allreduce2, t_potrf2, t_trsm2, t_total;
+        cudaEventElapsedTime(&t_syherk1, ev_start, ev_syherk1);
+        cudaEventElapsedTime(&t_allreduce1, ev_syherk1, ev_allreduce1);
+        cudaEventElapsedTime(&t_potrf1, ev_allreduce1, ev_potrf1);
+        cudaEventElapsedTime(&t_trsm1, ev_potrf1, ev_trsm1);
+        cudaEventElapsedTime(&t_syherk2, ev_trsm1, ev_syherk2);
+        cudaEventElapsedTime(&t_allreduce2, ev_syherk2, ev_allreduce2);
+        cudaEventElapsedTime(&t_potrf2, ev_allreduce2, ev_potrf2);
+        cudaEventElapsedTime(&t_trsm2, ev_potrf2, ev_trsm2);
+        cudaEventElapsedTime(&t_total, ev_start, ev_end);
+
 #ifdef CHASE_OUTPUT
         int grank;
         MPI_Comm_rank(MPI_COMM_WORLD, &grank);
         if (grank == 0)
         {
             std::cout << "choldegree: 2" << std::endl;
+            std::cout << std::setprecision(6) << std::fixed;
+            std::cout << "  [cholQR2 Breakdown] Total: " << t_total/1000.0 << " s" << std::endl;
+            std::cout << "  Iter1: SYHERK=" << t_syherk1/1000.0 << "s, AllReduce=" << t_allreduce1/1000.0 
+                      << "s, Cholesky=" << t_potrf1/1000.0 << "s, TRSM=" << t_trsm1/1000.0 << "s" << std::endl;
+            std::cout << "  Iter2: SYHERK=" << t_syherk2/1000.0 << "s, AllReduce=" << t_allreduce2/1000.0 
+                      << "s, Cholesky=" << t_potrf2/1000.0 << "s, TRSM=" << t_trsm2/1000.0 << "s" << std::endl;
         }
 #endif
+        cudaEventDestroy(ev_start);
+        cudaEventDestroy(ev_syherk1);
+        cudaEventDestroy(ev_allreduce1);
+        cudaEventDestroy(ev_potrf1);
+        cudaEventDestroy(ev_trsm1);
+        cudaEventDestroy(ev_syherk2);
+        cudaEventDestroy(ev_allreduce2);
+        cudaEventDestroy(ev_potrf2);
+        cudaEventDestroy(ev_trsm2);
+        cudaEventDestroy(ev_end);
+
         CHECK_CUDA_ERROR(cudaFree(devInfo));
         return info;
     }
@@ -438,6 +550,21 @@ int cuda_nccl::cholQR2(cublasHandle_t cublas_handle,
     chase::Base<T> Zero = Base<T>(0.0);
 
     int info = 0;
+
+    // Detailed timing events
+    cudaEvent_t ev_start, ev_syherk1, ev_allreduce1, ev_potrf1, ev_trsm1;
+    cudaEvent_t ev_syherk2, ev_allreduce2, ev_potrf2, ev_trsm2, ev_end;
+    cudaEventCreate(&ev_start);
+    cudaEventCreate(&ev_syherk1);
+    cudaEventCreate(&ev_allreduce1);
+    cudaEventCreate(&ev_potrf1);
+    cudaEventCreate(&ev_trsm1);
+    cudaEventCreate(&ev_syherk2);
+    cudaEventCreate(&ev_allreduce2);
+    cudaEventCreate(&ev_potrf2);
+    cudaEventCreate(&ev_trsm2);
+    cudaEventCreate(&ev_end);
+    cudaEventRecord(ev_start);
 
     std::unique_ptr<T, chase::cuda::utils::CudaDeleter> A_ptr = nullptr;
     if (A == nullptr)
@@ -554,6 +681,27 @@ int cuda_nccl::shiftedcholQR2(cublasHandle_t cublas_handle,
     int info = 1;
     std::size_t upperTriangularSize = std::size_t(n * (n + 1) / 2);
 
+    // Detailed timing events for shiftedcholQR2 (3 iterations)
+    cudaEvent_t ev_start, ev_end;
+    cudaEvent_t ev_syherk1, ev_allreduce1, ev_potrf1, ev_trsm1;
+    cudaEvent_t ev_syherk2, ev_allreduce2, ev_potrf2, ev_trsm2;
+    cudaEvent_t ev_syherk3, ev_allreduce3, ev_potrf3, ev_trsm3;
+    cudaEventCreate(&ev_start);
+    cudaEventCreate(&ev_syherk1);
+    cudaEventCreate(&ev_allreduce1);
+    cudaEventCreate(&ev_potrf1);
+    cudaEventCreate(&ev_trsm1);
+    cudaEventCreate(&ev_syherk2);
+    cudaEventCreate(&ev_allreduce2);
+    cudaEventCreate(&ev_potrf2);
+    cudaEventCreate(&ev_trsm2);
+    cudaEventCreate(&ev_syherk3);
+    cudaEventCreate(&ev_allreduce3);
+    cudaEventCreate(&ev_potrf3);
+    cudaEventCreate(&ev_trsm3);
+    cudaEventCreate(&ev_end);
+    cudaEventRecord(ev_start);
+
     std::unique_ptr<T, chase::cuda::utils::CudaDeleter> A_ptr = nullptr;
     if (A == nullptr)
     {
@@ -590,14 +738,17 @@ int cuda_nccl::shiftedcholQR2(cublasHandle_t cublas_handle,
         transa = CUBLAS_OP_T;
     }
 
+    // === Iteration 1 (with shift) ===
     CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTsyherk(
         cublas_handle, CUBLAS_FILL_MODE_UPPER, transa, n, m, &One, V, ldv,
         &Zero, A, n));
+    cudaEventRecord(ev_syherk1);
 
     chase::linalg::internal::cuda::extractUpperTriangular(A, n, workspace, n);
     CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(
         workspace, workspace, upperTriangularSize, ncclSum, comm));
     chase::linalg::internal::cuda::unpackUpperTriangular(workspace, n, A, n);
+    cudaEventRecord(ev_allreduce1);
 
     chase::Base<T> nrmf = 0.0;
     chase::Base<T>* d_nrmf;
@@ -618,66 +769,132 @@ int cuda_nccl::shiftedcholQR2(cublasHandle_t cublas_handle,
     CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTpotrf(
         cusolver_handle, CUBLAS_FILL_MODE_UPPER, n, A, n, workspace, lwork,
         devInfo));
+    cudaEventRecord(ev_potrf1);
+
     CHECK_CUDA_ERROR(
         cudaMemcpy(&info, devInfo, 1 * sizeof(int), cudaMemcpyDeviceToHost));
 
     if (info != 0)
     {
+        cudaEventDestroy(ev_start);
+        cudaEventDestroy(ev_syherk1);
+        cudaEventDestroy(ev_allreduce1);
+        cudaEventDestroy(ev_potrf1);
+        cudaEventDestroy(ev_trsm1);
+        cudaEventDestroy(ev_syherk2);
+        cudaEventDestroy(ev_allreduce2);
+        cudaEventDestroy(ev_potrf2);
+        cudaEventDestroy(ev_trsm2);
+        cudaEventDestroy(ev_syherk3);
+        cudaEventDestroy(ev_allreduce3);
+        cudaEventDestroy(ev_potrf3);
+        cudaEventDestroy(ev_trsm3);
+        cudaEventDestroy(ev_end);
+        CHECK_CUDA_ERROR(cudaFree(d_nrmf));
         return info;
     }
 
     CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTtrsm(
         cublas_handle, CUBLAS_SIDE_RIGHT, CUBLAS_FILL_MODE_UPPER, CUBLAS_OP_N,
         CUBLAS_DIAG_NON_UNIT, m, n, &one, A, n, V, ldv));
+    cudaEventRecord(ev_trsm1);
 
+    // === Iteration 2 ===
     CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTsyherk(
         cublas_handle, CUBLAS_FILL_MODE_UPPER, transa, n, m, &One, V, ldv,
         &Zero, A, n));
+    cudaEventRecord(ev_syherk2);
 
-    // CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(A, A, n * n,
-    // ncclSum, comm));
     chase::linalg::internal::cuda::extractUpperTriangular(A, n, workspace, n);
     CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(
         workspace, workspace, upperTriangularSize, ncclSum, comm));
     chase::linalg::internal::cuda::unpackUpperTriangular(workspace, n, A, n);
+    cudaEventRecord(ev_allreduce2);
 
     CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTpotrf(
         cusolver_handle, CUBLAS_FILL_MODE_UPPER, n, A, n, workspace, lwork,
         devInfo));
+    cudaEventRecord(ev_potrf2);
 
     CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTtrsm(
         cublas_handle, CUBLAS_SIDE_RIGHT, CUBLAS_FILL_MODE_UPPER, CUBLAS_OP_N,
         CUBLAS_DIAG_NON_UNIT, m, n, &one, A, n, V, ldv));
+    cudaEventRecord(ev_trsm2);
+
+    // === Iteration 3 ===
     CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTsyherk(
         cublas_handle, CUBLAS_FILL_MODE_UPPER, transa, n, m, &One, V, ldv,
         &Zero, A, n));
+    cudaEventRecord(ev_syherk3);
 
-    // CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(A, A, n * n,
-    // ncclSum, comm));
     chase::linalg::internal::cuda::extractUpperTriangular(A, n, workspace, n);
     CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(
         workspace, workspace, upperTriangularSize, ncclSum, comm));
     chase::linalg::internal::cuda::unpackUpperTriangular(workspace, n, A, n);
+    cudaEventRecord(ev_allreduce3);
 
     CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTpotrf(
         cusolver_handle, CUBLAS_FILL_MODE_UPPER, n, A, n, workspace, lwork,
         devInfo));
+    cudaEventRecord(ev_potrf3);
 
     CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTtrsm(
         cublas_handle, CUBLAS_SIDE_RIGHT, CUBLAS_FILL_MODE_UPPER, CUBLAS_OP_N,
         CUBLAS_DIAG_NON_UNIT, m, n, &one, A, n, V, ldv));
+    cudaEventRecord(ev_trsm3);
+    cudaEventRecord(ev_end);
+    cudaEventSynchronize(ev_end);
+
+    // Calculate and print breakdown timing
+    float t_syherk1, t_allreduce1, t_potrf1, t_trsm1;
+    float t_syherk2, t_allreduce2, t_potrf2, t_trsm2;
+    float t_syherk3, t_allreduce3, t_potrf3, t_trsm3, t_total;
+    cudaEventElapsedTime(&t_syherk1, ev_start, ev_syherk1);
+    cudaEventElapsedTime(&t_allreduce1, ev_syherk1, ev_allreduce1);
+    cudaEventElapsedTime(&t_potrf1, ev_allreduce1, ev_potrf1);
+    cudaEventElapsedTime(&t_trsm1, ev_potrf1, ev_trsm1);
+    cudaEventElapsedTime(&t_syherk2, ev_trsm1, ev_syherk2);
+    cudaEventElapsedTime(&t_allreduce2, ev_syherk2, ev_allreduce2);
+    cudaEventElapsedTime(&t_potrf2, ev_allreduce2, ev_potrf2);
+    cudaEventElapsedTime(&t_trsm2, ev_potrf2, ev_trsm2);
+    cudaEventElapsedTime(&t_syherk3, ev_trsm2, ev_syherk3);
+    cudaEventElapsedTime(&t_allreduce3, ev_syherk3, ev_allreduce3);
+    cudaEventElapsedTime(&t_potrf3, ev_allreduce3, ev_potrf3);
+    cudaEventElapsedTime(&t_trsm3, ev_potrf3, ev_trsm3);
+    cudaEventElapsedTime(&t_total, ev_start, ev_end);
 
 #ifdef CHASE_OUTPUT
     int grank;
     MPI_Comm_rank(MPI_COMM_WORLD, &grank);
     if (grank == 0)
     {
-        std::cout << std::setprecision(2) << "choldegree: 2, shift = " << shift
-                  << std::endl;
+        std::cout << std::setprecision(6) << std::fixed;
+        std::cout << "choldegree: 2, shift = " << shift << std::endl;
+        std::cout << "  [shiftedCholQR2 Breakdown] Total: " << t_total/1000.0 << " s" << std::endl;
+        std::cout << "  Iter1(shifted): SYHERK=" << t_syherk1/1000.0 << "s, AllReduce=" << t_allreduce1/1000.0 
+                  << "s, Cholesky=" << t_potrf1/1000.0 << "s, TRSM=" << t_trsm1/1000.0 << "s" << std::endl;
+        std::cout << "  Iter2: SYHERK=" << t_syherk2/1000.0 << "s, AllReduce=" << t_allreduce2/1000.0 
+                  << "s, Cholesky=" << t_potrf2/1000.0 << "s, TRSM=" << t_trsm2/1000.0 << "s" << std::endl;
+        std::cout << "  Iter3: SYHERK=" << t_syherk3/1000.0 << "s, AllReduce=" << t_allreduce3/1000.0 
+                  << "s, Cholesky=" << t_potrf3/1000.0 << "s, TRSM=" << t_trsm3/1000.0 << "s" << std::endl;
     }
 #endif
-    CHECK_CUDA_ERROR(cudaFree(devInfo));
+    cudaEventDestroy(ev_start);
+    cudaEventDestroy(ev_syherk1);
+    cudaEventDestroy(ev_allreduce1);
+    cudaEventDestroy(ev_potrf1);
+    cudaEventDestroy(ev_trsm1);
+    cudaEventDestroy(ev_syherk2);
+    cudaEventDestroy(ev_allreduce2);
+    cudaEventDestroy(ev_potrf2);
+    cudaEventDestroy(ev_trsm2);
+    cudaEventDestroy(ev_syherk3);
+    cudaEventDestroy(ev_allreduce3);
+    cudaEventDestroy(ev_potrf3);
+    cudaEventDestroy(ev_trsm3);
+    cudaEventDestroy(ev_end);
 
+    CHECK_CUDA_ERROR(cudaFree(devInfo));
     CHECK_CUDA_ERROR(cudaFree(d_nrmf));
 
     return info;
