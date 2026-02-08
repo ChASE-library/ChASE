@@ -534,6 +534,1222 @@ __global__ void batched_norm_squared_complex_float_kernel(
 }
 
 // ============================================================================
+// Fused kernel: norm_squared + normalize (one block per vector)
+// ============================================================================
+
+__global__ void fused_norm_squared_normalize_double_kernel(
+    double* vectors, double* norms_squared,
+    int rows, int numvec, int ld)
+{
+    int vec_idx = blockIdx.x;
+    if (vec_idx >= numvec) return;
+
+    extern __shared__ double shared_fns_d[];
+    const double* v_vec = vectors + vec_idx * ld;
+
+    double sum = 0.0;
+    for (int i = threadIdx.x; i < rows; i += blockDim.x)
+        sum += v_vec[i] * v_vec[i];
+    shared_fns_d[threadIdx.x] = sum;
+    __syncthreads();
+
+    for (int s = blockDim.x / 2; s > 0; s >>= 1) {
+        if (threadIdx.x < s)
+            shared_fns_d[threadIdx.x] += shared_fns_d[threadIdx.x + s];
+        __syncthreads();
+    }
+
+    double norm_sq = shared_fns_d[0];
+    if (threadIdx.x == 0) {
+        norms_squared[vec_idx] = norm_sq;
+    }
+    double scale = rsqrt(fmax(norm_sq, 1e-100));
+    __syncthreads();
+
+    double* out_vec = vectors + vec_idx * ld;
+    for (int i = threadIdx.x; i < rows; i += blockDim.x)
+        out_vec[i] *= scale;
+}
+
+__global__ void fused_norm_squared_normalize_float_kernel(
+    float* vectors, float* norms_squared,
+    int rows, int numvec, int ld)
+{
+    int vec_idx = blockIdx.x;
+    if (vec_idx >= numvec) return;
+
+    extern __shared__ float shared_fns_f[];
+    const float* v_vec = vectors + vec_idx * ld;
+
+    float sum = 0.0f;
+    for (int i = threadIdx.x; i < rows; i += blockDim.x)
+        sum += v_vec[i] * v_vec[i];
+    shared_fns_f[threadIdx.x] = sum;
+    __syncthreads();
+
+    for (int s = blockDim.x / 2; s > 0; s >>= 1) {
+        if (threadIdx.x < s)
+            shared_fns_f[threadIdx.x] += shared_fns_f[threadIdx.x + s];
+        __syncthreads();
+    }
+
+    float norm_sq = shared_fns_f[0];
+    if (threadIdx.x == 0)
+        norms_squared[vec_idx] = norm_sq;
+    float scale = rsqrtf(fmaxf(norm_sq, 1e-30f));
+    __syncthreads();
+
+    float* out_vec = vectors + vec_idx * ld;
+    for (int i = threadIdx.x; i < rows; i += blockDim.x)
+        out_vec[i] *= scale;
+}
+
+__global__ void fused_norm_squared_normalize_complex_double_kernel(
+    cuDoubleComplex* vectors, double* norms_squared,
+    int rows, int numvec, int ld)
+{
+    int vec_idx = blockIdx.x;
+    if (vec_idx >= numvec) return;
+
+    extern __shared__ double shared_fns_cd[];
+    const cuDoubleComplex* v_vec = vectors + vec_idx * ld;
+
+    double sum = 0.0;
+    for (int i = threadIdx.x; i < rows; i += blockDim.x)
+        sum += v_vec[i].x * v_vec[i].x + v_vec[i].y * v_vec[i].y;
+    shared_fns_cd[threadIdx.x] = sum;
+    __syncthreads();
+
+    for (int s = blockDim.x / 2; s > 0; s >>= 1) {
+        if (threadIdx.x < s)
+            shared_fns_cd[threadIdx.x] += shared_fns_cd[threadIdx.x + s];
+        __syncthreads();
+    }
+
+    double norm_sq = shared_fns_cd[0];
+    if (threadIdx.x == 0)
+        norms_squared[vec_idx] = norm_sq;
+    double scale = rsqrt(fmax(norm_sq, 1e-100));
+    __syncthreads();
+
+    cuDoubleComplex* out_vec = vectors + vec_idx * ld;
+    for (int i = threadIdx.x; i < rows; i += blockDim.x) {
+        out_vec[i].x *= scale;
+        out_vec[i].y *= scale;
+    }
+}
+
+__global__ void fused_norm_squared_normalize_complex_float_kernel(
+    cuComplex* vectors, float* norms_squared,
+    int rows, int numvec, int ld)
+{
+    int vec_idx = blockIdx.x;
+    if (vec_idx >= numvec) return;
+
+    extern __shared__ float shared_fns_cf[];
+    const cuComplex* v_vec = vectors + vec_idx * ld;
+
+    float sum = 0.0f;
+    for (int i = threadIdx.x; i < rows; i += blockDim.x)
+        sum += v_vec[i].x * v_vec[i].x + v_vec[i].y * v_vec[i].y;
+    shared_fns_cf[threadIdx.x] = sum;
+    __syncthreads();
+
+    for (int s = blockDim.x / 2; s > 0; s >>= 1) {
+        if (threadIdx.x < s)
+            shared_fns_cf[threadIdx.x] += shared_fns_cf[threadIdx.x + s];
+        __syncthreads();
+    }
+
+    float norm_sq = shared_fns_cf[0];
+    if (threadIdx.x == 0)
+        norms_squared[vec_idx] = norm_sq;
+    float scale = rsqrtf(fmaxf(norm_sq, 1e-30f));
+    __syncthreads();
+
+    cuComplex* out_vec = vectors + vec_idx * ld;
+    for (int i = threadIdx.x; i < rows; i += blockDim.x) {
+        out_vec[i].x *= scale;
+        out_vec[i].y *= scale;
+    }
+}
+
+// ============================================================================
+// Fused kernel: dot(conj(v1)·v2), alpha=-dot, y+=alpha*x, then alpha_out=dot
+// ============================================================================
+
+__global__ void fused_dot_axpy_negate_double_kernel(
+    const double* v1, const double* v2, double* y, const double* x,
+    double* alpha_out, int rows, int numvec, int ld)
+{
+    int vec_idx = blockIdx.x;
+    if (vec_idx >= numvec) return;
+
+    extern __shared__ double shared_fdan_d[];
+    const double* v1_vec = v1 + vec_idx * ld;
+    const double* v2_vec = v2 + vec_idx * ld;
+
+    double sum = 0.0;
+    for (int i = threadIdx.x; i < rows; i += blockDim.x)
+        sum += v1_vec[i] * v2_vec[i];
+    shared_fdan_d[threadIdx.x] = sum;
+    __syncthreads();
+
+    for (int s = blockDim.x / 2; s > 0; s >>= 1) {
+        if (threadIdx.x < s)
+            shared_fdan_d[threadIdx.x] += shared_fdan_d[threadIdx.x + s];
+        __syncthreads();
+    }
+    double dot_val = shared_fdan_d[0];
+    double alpha = -dot_val;
+    if (threadIdx.x == 0)
+        alpha_out[vec_idx] = alpha;
+    __syncthreads();
+
+    double* y_vec = y + vec_idx * ld;
+    const double* x_vec = x + vec_idx * ld;
+    for (int i = threadIdx.x; i < rows; i += blockDim.x)
+        y_vec[i] += alpha * x_vec[i];
+
+    if (threadIdx.x == 0)
+        alpha_out[vec_idx] = dot_val;
+}
+
+__global__ void fused_dot_axpy_negate_float_kernel(
+    const float* v1, const float* v2, float* y, const float* x,
+    float* alpha_out, int rows, int numvec, int ld)
+{
+    int vec_idx = blockIdx.x;
+    if (vec_idx >= numvec) return;
+
+    extern __shared__ float shared_fdan_f[];
+    const float* v1_vec = v1 + vec_idx * ld;
+    const float* v2_vec = v2 + vec_idx * ld;
+
+    float sum = 0.0f;
+    for (int i = threadIdx.x; i < rows; i += blockDim.x)
+        sum += v1_vec[i] * v2_vec[i];
+    shared_fdan_f[threadIdx.x] = sum;
+    __syncthreads();
+
+    for (int s = blockDim.x / 2; s > 0; s >>= 1) {
+        if (threadIdx.x < s)
+            shared_fdan_f[threadIdx.x] += shared_fdan_f[threadIdx.x + s];
+        __syncthreads();
+    }
+    float dot_val = shared_fdan_f[0];
+    float alpha = -dot_val;
+    if (threadIdx.x == 0)
+        alpha_out[vec_idx] = alpha;
+    __syncthreads();
+
+    float* y_vec = y + vec_idx * ld;
+    const float* x_vec = x + vec_idx * ld;
+    for (int i = threadIdx.x; i < rows; i += blockDim.x)
+        y_vec[i] += alpha * x_vec[i];
+
+    if (threadIdx.x == 0)
+        alpha_out[vec_idx] = dot_val;
+}
+
+__global__ void fused_dot_axpy_negate_complex_double_kernel(
+    const cuDoubleComplex* v1, const cuDoubleComplex* v2,
+    cuDoubleComplex* y, const cuDoubleComplex* x,
+    cuDoubleComplex* alpha_out, int rows, int numvec, int ld)
+{
+    int vec_idx = blockIdx.x;
+    if (vec_idx >= numvec) return;
+
+    extern __shared__ double shared_fdan_cd[];  // [0]=real, [blockDim.x]=imag
+    double* sreal = shared_fdan_cd;
+    double* simag = &shared_fdan_cd[blockDim.x];
+
+    const cuDoubleComplex* v1_vec = v1 + vec_idx * ld;
+    const cuDoubleComplex* v2_vec = v2 + vec_idx * ld;
+
+    double sum_r = 0.0, sum_i = 0.0;
+    for (int i = threadIdx.x; i < rows; i += blockDim.x) {
+        sum_r += v1_vec[i].x * v2_vec[i].x + v1_vec[i].y * v2_vec[i].y;
+        sum_i += v1_vec[i].x * v2_vec[i].y - v1_vec[i].y * v2_vec[i].x;
+    }
+    sreal[threadIdx.x] = sum_r;
+    simag[threadIdx.x] = sum_i;
+    __syncthreads();
+
+    for (int s = blockDim.x / 2; s > 0; s >>= 1) {
+        if (threadIdx.x < s) {
+            sreal[threadIdx.x] += sreal[threadIdx.x + s];
+            simag[threadIdx.x] += simag[threadIdx.x + s];
+        }
+        __syncthreads();
+    }
+    double dr = sreal[0], di = simag[0];
+    double ar = -dr, ai = -di;
+    if (threadIdx.x == 0) {
+        alpha_out[vec_idx].x = ar;
+        alpha_out[vec_idx].y = ai;
+    }
+    __syncthreads();
+
+    cuDoubleComplex* y_vec = y + vec_idx * ld;
+    const cuDoubleComplex* x_vec = x + vec_idx * ld;
+    for (int i = threadIdx.x; i < rows; i += blockDim.x)
+        y_vec[i] = cuCadd(y_vec[i], make_cuDoubleComplex(ar * x_vec[i].x - ai * x_vec[i].y,
+                                                        ar * x_vec[i].y + ai * x_vec[i].x));
+
+    if (threadIdx.x == 0) {
+        alpha_out[vec_idx].x = dr;
+        alpha_out[vec_idx].y = di;
+    }
+}
+
+__global__ void fused_dot_axpy_negate_complex_float_kernel(
+    const cuComplex* v1, const cuComplex* v2,
+    cuComplex* y, const cuComplex* x,
+    cuComplex* alpha_out, int rows, int numvec, int ld)
+{
+    int vec_idx = blockIdx.x;
+    if (vec_idx >= numvec) return;
+
+    extern __shared__ float shared_fdan_cf[];
+    float* sreal = shared_fdan_cf;
+    float* simag = &shared_fdan_cf[blockDim.x];
+
+    const cuComplex* v1_vec = v1 + vec_idx * ld;
+    const cuComplex* v2_vec = v2 + vec_idx * ld;
+
+    float sum_r = 0.0f, sum_i = 0.0f;
+    for (int i = threadIdx.x; i < rows; i += blockDim.x) {
+        sum_r += v1_vec[i].x * v2_vec[i].x + v1_vec[i].y * v2_vec[i].y;
+        sum_i += v1_vec[i].x * v2_vec[i].y - v1_vec[i].y * v2_vec[i].x;
+    }
+    sreal[threadIdx.x] = sum_r;
+    simag[threadIdx.x] = sum_i;
+    __syncthreads();
+
+    for (int s = blockDim.x / 2; s > 0; s >>= 1) {
+        if (threadIdx.x < s) {
+            sreal[threadIdx.x] += sreal[threadIdx.x + s];
+            simag[threadIdx.x] += simag[threadIdx.x + s];
+        }
+        __syncthreads();
+    }
+    float dr = sreal[0], di = simag[0];
+    float ar = -dr, ai = -di;
+    if (threadIdx.x == 0) {
+        alpha_out[vec_idx].x = ar;
+        alpha_out[vec_idx].y = ai;
+    }
+    __syncthreads();
+
+    cuComplex* y_vec = y + vec_idx * ld;
+    const cuComplex* x_vec = x + vec_idx * ld;
+    for (int i = threadIdx.x; i < rows; i += blockDim.x)
+        y_vec[i] = cuCaddf(y_vec[i], make_cuComplex(ar * x_vec[i].x - ai * x_vec[i].y,
+                                                    ar * x_vec[i].y + ai * x_vec[i].x));
+
+    if (threadIdx.x == 0) {
+        alpha_out[vec_idx].x = dr;
+        alpha_out[vec_idx].y = di;
+    }
+}
+
+// ============================================================================
+// Fused for pseudo-Hermitian: copy src -> dst, flip sign of lower half (row >= m/2)
+// ============================================================================
+
+__global__ void lacpy_flip_lower_half_double_kernel(
+    const double* src, double* dst, int m, int n, int ld_src, int ld_dst)
+{
+    int half_m = m / 2;
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    int col = idx / m;
+    int row = idx % m;
+    if (col < n) {
+        double val = src[row + ld_src * col];
+        dst[row + ld_dst * col] = (row >= half_m) ? -val : val;
+    }
+}
+
+__global__ void lacpy_flip_lower_half_float_kernel(
+    const float* src, float* dst, int m, int n, int ld_src, int ld_dst)
+{
+    int half_m = m / 2;
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    int col = idx / m;
+    int row = idx % m;
+    if (col < n) {
+        float val = src[row + ld_src * col];
+        dst[row + ld_dst * col] = (row >= half_m) ? -val : val;
+    }
+}
+
+__global__ void lacpy_flip_lower_half_complex_double_kernel(
+    const cuDoubleComplex* src, cuDoubleComplex* dst,
+    int m, int n, int ld_src, int ld_dst)
+{
+    int half_m = m / 2;
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    int col = idx / m;
+    int row = idx % m;
+    if (col < n) {
+        cuDoubleComplex val = src[row + ld_src * col];
+        if (row >= half_m) {
+            dst[row + ld_dst * col].x = -val.x;
+            dst[row + ld_dst * col].y = -val.y;
+        } else {
+            dst[row + ld_dst * col] = val;
+        }
+    }
+}
+
+__global__ void lacpy_flip_lower_half_complex_float_kernel(
+    const cuComplex* src, cuComplex* dst,
+    int m, int n, int ld_src, int ld_dst)
+{
+    int half_m = m / 2;
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    int col = idx / m;
+    int row = idx % m;
+    if (col < n) {
+        cuComplex val = src[row + ld_src * col];
+        if (row >= half_m) {
+            dst[row + ld_dst * col].x = -val.x;
+            dst[row + ld_dst * col].y = -val.y;
+        } else {
+            dst[row + ld_dst * col] = val;
+        }
+    }
+}
+
+// ============================================================================
+// Batched scale two: v1[:,i] *= scale[i], v2[:,i] *= scale[i]
+// ============================================================================
+
+__global__ void batched_scale_two_double_kernel(
+    const double* scale, double* v1, double* v2,
+    int rows, int numvec, int ld)
+{
+    int vec_idx = blockIdx.y;
+    int row_idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (vec_idx < numvec && row_idx < rows) {
+        double s = scale[vec_idx];
+        int i = row_idx + vec_idx * ld;
+        v1[i] *= s;
+        v2[i] *= s;
+    }
+}
+
+__global__ void batched_scale_two_float_kernel(
+    const float* scale, float* v1, float* v2,
+    int rows, int numvec, int ld)
+{
+    int vec_idx = blockIdx.y;
+    int row_idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (vec_idx < numvec && row_idx < rows) {
+        float s = scale[vec_idx];
+        int i = row_idx + vec_idx * ld;
+        v1[i] *= s;
+        v2[i] *= s;
+    }
+}
+
+__global__ void batched_scale_two_complex_double_kernel(
+    const cuDoubleComplex* scale, cuDoubleComplex* v1, cuDoubleComplex* v2,
+    int rows, int numvec, int ld)
+{
+    int vec_idx = blockIdx.y;
+    int row_idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (vec_idx < numvec && row_idx < rows) {
+        cuDoubleComplex s = scale[vec_idx];
+        int i = row_idx + vec_idx * ld;
+        v1[i] = cuCmul(s, v1[i]);
+        v2[i] = cuCmul(s, v2[i]);
+    }
+}
+
+__global__ void batched_scale_two_complex_float_kernel(
+    const cuComplex* scale, cuComplex* v1, cuComplex* v2,
+    int rows, int numvec, int ld)
+{
+    int vec_idx = blockIdx.y;
+    int row_idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (vec_idx < numvec && row_idx < rows) {
+        cuComplex s = scale[vec_idx];
+        int i = row_idx + vec_idx * ld;
+        v1[i] = cuCmulf(s, v1[i]);
+        v2[i] = cuCmulf(s, v2[i]);
+    }
+}
+
+// ============================================================================
+// Pseudo-Hermitian: alpha[i] = -real(alpha[i]) * real_scale[i] (in-place)
+// ============================================================================
+
+__global__ void scale_complex_by_real_negate_double_kernel(
+    cuDoubleComplex* alpha, const double* real_scale, int numvec)
+{
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < numvec) {
+        double r = alpha[i].x;
+        alpha[i].x = -r * real_scale[i];
+        alpha[i].y = 0.0;
+    }
+}
+
+__global__ void scale_complex_by_real_negate_float_kernel(
+    cuComplex* alpha, const float* real_scale, int numvec)
+{
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < numvec) {
+        float r = alpha[i].x;
+        alpha[i].x = -r * real_scale[i];
+        alpha[i].y = 0.0f;
+    }
+}
+
+__global__ void scale_real_by_real_negate_double_kernel(
+    double* alpha, const double* real_scale, int numvec)
+{
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < numvec)
+        alpha[i] = -alpha[i] * real_scale[i];
+}
+
+__global__ void scale_real_by_real_negate_float_kernel(
+    float* alpha, const float* real_scale, int numvec)
+{
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < numvec)
+        alpha[i] = -alpha[i] * real_scale[i];
+}
+
+// ============================================================================
+// Pseudo-Hermitian single-vector init: copy+flip, dot, scale=1/sqrt(real(dot)), scale v1/v2
+// ============================================================================
+
+__global__ void pseudo_hermitian_init_single_double_kernel(
+    double* v_1, double* v_2, double* Sv,
+    double* d_beta, double* d_real_beta_prev, int rows, int ld)
+{
+    int half_m = rows / 2;
+    for (int i = threadIdx.x; i < rows; i += blockDim.x) {
+        double val = v_2[i];
+        Sv[i] = (i >= half_m) ? -val : val;
+    }
+    __syncthreads();
+
+    extern __shared__ double sh_phis_d[];
+    double sum = 0.0;
+    for (int i = threadIdx.x; i < rows; i += blockDim.x)
+        sum += v_1[i] * Sv[i];
+    sh_phis_d[threadIdx.x] = sum;
+    __syncthreads();
+    for (int s = blockDim.x / 2; s > 0; s >>= 1) {
+        if (threadIdx.x < s)
+            sh_phis_d[threadIdx.x] += sh_phis_d[threadIdx.x + s];
+        __syncthreads();
+    }
+    double real_dot = sh_phis_d[0];
+    double scale = 1.0 / sqrt(real_dot);
+    if (threadIdx.x == 0) {
+        *d_beta = scale;
+        *d_real_beta_prev = scale;
+    }
+    __syncthreads();
+
+    for (int i = threadIdx.x; i < rows; i += blockDim.x) {
+        v_1[i] *= scale;
+        v_2[i] *= scale;
+    }
+}
+
+__global__ void pseudo_hermitian_init_single_float_kernel(
+    float* v_1, float* v_2, float* Sv,
+    float* d_beta, float* d_real_beta_prev, int rows, int ld)
+{
+    int half_m = rows / 2;
+    for (int i = threadIdx.x; i < rows; i += blockDim.x) {
+        float val = v_2[i];
+        Sv[i] = (i >= half_m) ? -val : val;
+    }
+    __syncthreads();
+
+    extern __shared__ float sh_phis_f[];
+    float sum = 0.0f;
+    for (int i = threadIdx.x; i < rows; i += blockDim.x)
+        sum += v_1[i] * Sv[i];
+    sh_phis_f[threadIdx.x] = sum;
+    __syncthreads();
+    for (int s = blockDim.x / 2; s > 0; s >>= 1) {
+        if (threadIdx.x < s)
+            sh_phis_f[threadIdx.x] += sh_phis_f[threadIdx.x + s];
+        __syncthreads();
+    }
+    float real_dot = sh_phis_f[0];
+    float scale = 1.0f / sqrtf(real_dot);
+    if (threadIdx.x == 0) {
+        *d_beta = scale;
+        *d_real_beta_prev = scale;
+    }
+    __syncthreads();
+
+    for (int i = threadIdx.x; i < rows; i += blockDim.x) {
+        v_1[i] *= scale;
+        v_2[i] *= scale;
+    }
+}
+
+__global__ void pseudo_hermitian_init_single_complex_double_kernel(
+    cuDoubleComplex* v_1, cuDoubleComplex* v_2, cuDoubleComplex* Sv,
+    cuDoubleComplex* d_beta, double* d_real_beta_prev, int rows, int ld)
+{
+    int half_m = rows / 2;
+    for (int i = threadIdx.x; i < rows; i += blockDim.x) {
+        cuDoubleComplex val = v_2[i];
+        if (i >= half_m) {
+            Sv[i].x = -val.x;
+            Sv[i].y = -val.y;
+        } else {
+            Sv[i] = val;
+        }
+    }
+    __syncthreads();
+
+    extern __shared__ double sh_phis_cd[];  // [0..blockDim.x-1]=real, [blockDim.x..]=imag
+    double* sreal = sh_phis_cd;
+    double* simag = &sh_phis_cd[blockDim.x];
+    double sum_r = 0.0, sum_i = 0.0;
+    for (int i = threadIdx.x; i < rows; i += blockDim.x) {
+        sum_r += v_1[i].x * Sv[i].x + v_1[i].y * Sv[i].y;
+        sum_i += v_1[i].x * Sv[i].y - v_1[i].y * Sv[i].x;
+    }
+    sreal[threadIdx.x] = sum_r;
+    simag[threadIdx.x] = sum_i;
+    __syncthreads();
+    for (int s = blockDim.x / 2; s > 0; s >>= 1) {
+        if (threadIdx.x < s) {
+            sreal[threadIdx.x] += sreal[threadIdx.x + s];
+            simag[threadIdx.x] += simag[threadIdx.x + s];
+        }
+        __syncthreads();
+    }
+    double real_dot = sreal[0];
+    double scale = 1.0 / sqrt(real_dot);
+    if (threadIdx.x == 0) {
+        d_beta->x = scale;
+        d_beta->y = 0.0;
+        *d_real_beta_prev = scale;
+    }
+    __syncthreads();
+
+    for (int i = threadIdx.x; i < rows; i += blockDim.x) {
+        v_1[i].x *= scale;
+        v_1[i].y *= scale;
+        v_2[i].x *= scale;
+        v_2[i].y *= scale;
+    }
+}
+
+__global__ void pseudo_hermitian_init_single_complex_float_kernel(
+    cuComplex* v_1, cuComplex* v_2, cuComplex* Sv,
+    cuComplex* d_beta, float* d_real_beta_prev, int rows, int ld)
+{
+    int half_m = rows / 2;
+    for (int i = threadIdx.x; i < rows; i += blockDim.x) {
+        cuComplex val = v_2[i];
+        if (i >= half_m) {
+            Sv[i].x = -val.x;
+            Sv[i].y = -val.y;
+        } else {
+            Sv[i] = val;
+        }
+    }
+    __syncthreads();
+
+    extern __shared__ float sh_phis_cf[];
+    float* sreal = sh_phis_cf;
+    float* simag = &sh_phis_cf[blockDim.x];
+    float sum_r = 0.0f, sum_i = 0.0f;
+    for (int i = threadIdx.x; i < rows; i += blockDim.x) {
+        sum_r += v_1[i].x * Sv[i].x + v_1[i].y * Sv[i].y;
+        sum_i += v_1[i].x * Sv[i].y - v_1[i].y * Sv[i].x;
+    }
+    sreal[threadIdx.x] = sum_r;
+    simag[threadIdx.x] = sum_i;
+    __syncthreads();
+    for (int s = blockDim.x / 2; s > 0; s >>= 1) {
+        if (threadIdx.x < s) {
+            sreal[threadIdx.x] += sreal[threadIdx.x + s];
+            simag[threadIdx.x] += simag[threadIdx.x + s];
+        }
+        __syncthreads();
+    }
+    float real_dot = sreal[0];
+    float scale = 1.0f / sqrtf(real_dot);
+    if (threadIdx.x == 0) {
+        d_beta->x = scale;
+        d_beta->y = 0.0f;
+        *d_real_beta_prev = scale;
+    }
+    __syncthreads();
+
+    for (int i = threadIdx.x; i < rows; i += blockDim.x) {
+        v_1[i].x *= scale;
+        v_1[i].y *= scale;
+        v_2[i].x *= scale;
+        v_2[i].y *= scale;
+    }
+}
+
+// ============================================================================
+// Pseudo-Hermitian batched init: scale[i]=1/sqrt(real(d_beta[i])), write d_beta, d_real_beta_prev
+// ============================================================================
+
+__global__ void init_scale_from_dot_batched_double_kernel(
+    double* d_beta, double* d_real_beta_prev, int numvec)
+{
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < numvec) {
+        double scale = 1.0 / sqrt(d_beta[i]);
+        d_beta[i] = scale;
+        d_real_beta_prev[i] = scale;
+    }
+}
+
+__global__ void init_scale_from_dot_batched_float_kernel(
+    float* d_beta, float* d_real_beta_prev, int numvec)
+{
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < numvec) {
+        float scale = 1.0f / sqrtf(d_beta[i]);
+        d_beta[i] = scale;
+        d_real_beta_prev[i] = scale;
+    }
+}
+
+__global__ void init_scale_from_dot_batched_complex_double_kernel(
+    cuDoubleComplex* d_beta, double* d_real_beta_prev, int numvec)
+{
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < numvec) {
+        double r = d_beta[i].x;
+        double scale = 1.0 / sqrt(r);
+        d_beta[i].x = scale;
+        d_beta[i].y = 0.0;
+        d_real_beta_prev[i] = scale;
+    }
+}
+
+__global__ void init_scale_from_dot_batched_complex_float_kernel(
+    cuComplex* d_beta, float* d_real_beta_prev, int numvec)
+{
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < numvec) {
+        float r = d_beta[i].x;
+        float scale = 1.0f / sqrtf(r);
+        d_beta[i].x = scale;
+        d_beta[i].y = 0.0f;
+        d_real_beta_prev[i] = scale;
+    }
+}
+
+// ============================================================================
+// Pseudo-Hermitian batched fused init: lacpyFlip + dot + scale from dot + scale v1,v2 (one block per column)
+// ============================================================================
+
+__global__ void pseudo_hermitian_init_batched_double_kernel(
+    double* v_1, double* v_2, double* Sv,
+    double* d_beta, double* d_real_beta_prev, int rows, int numvec, int ld)
+{
+    int vec_idx = blockIdx.x;
+    if (vec_idx >= numvec) return;
+    int half_m = rows / 2;
+    double* v_2_vec = v_2 + vec_idx * ld;
+    double* Sv_vec = Sv + vec_idx * ld;
+    for (int i = threadIdx.x; i < rows; i += blockDim.x) {
+        double val = v_2_vec[i];
+        Sv_vec[i] = (i >= half_m) ? -val : val;
+    }
+    __syncthreads();
+    extern __shared__ double sh_phib_d[];
+    double* v_1_vec = v_1 + vec_idx * ld;
+    double sum = 0.0;
+    for (int i = threadIdx.x; i < rows; i += blockDim.x)
+        sum += v_1_vec[i] * Sv_vec[i];
+    sh_phib_d[threadIdx.x] = sum;
+    __syncthreads();
+    for (int s = blockDim.x / 2; s > 0; s >>= 1) {
+        if (threadIdx.x < s)
+            sh_phib_d[threadIdx.x] += sh_phib_d[threadIdx.x + s];
+        __syncthreads();
+    }
+    double scale = 1.0 / sqrt(sh_phib_d[0]);
+    if (threadIdx.x == 0) {
+        d_beta[vec_idx] = scale;
+        d_real_beta_prev[vec_idx] = scale;
+    }
+    __syncthreads();
+    for (int i = threadIdx.x; i < rows; i += blockDim.x) {
+        v_1_vec[i] *= scale;
+        v_2_vec[i] *= scale;
+    }
+}
+
+__global__ void pseudo_hermitian_init_batched_float_kernel(
+    float* v_1, float* v_2, float* Sv,
+    float* d_beta, float* d_real_beta_prev, int rows, int numvec, int ld)
+{
+    int vec_idx = blockIdx.x;
+    if (vec_idx >= numvec) return;
+    int half_m = rows / 2;
+    float* v_2_vec = v_2 + vec_idx * ld;
+    float* Sv_vec = Sv + vec_idx * ld;
+    for (int i = threadIdx.x; i < rows; i += blockDim.x) {
+        float val = v_2_vec[i];
+        Sv_vec[i] = (i >= half_m) ? -val : val;
+    }
+    __syncthreads();
+    extern __shared__ float sh_phib_f[];
+    float* v_1_vec = v_1 + vec_idx * ld;
+    float sum = 0.0f;
+    for (int i = threadIdx.x; i < rows; i += blockDim.x)
+        sum += v_1_vec[i] * Sv_vec[i];
+    sh_phib_f[threadIdx.x] = sum;
+    __syncthreads();
+    for (int s = blockDim.x / 2; s > 0; s >>= 1) {
+        if (threadIdx.x < s)
+            sh_phib_f[threadIdx.x] += sh_phib_f[threadIdx.x + s];
+        __syncthreads();
+    }
+    float scale = 1.0f / sqrtf(sh_phib_f[0]);
+    if (threadIdx.x == 0) {
+        d_beta[vec_idx] = scale;
+        d_real_beta_prev[vec_idx] = scale;
+    }
+    __syncthreads();
+    for (int i = threadIdx.x; i < rows; i += blockDim.x) {
+        v_1_vec[i] *= scale;
+        v_2_vec[i] *= scale;
+    }
+}
+
+__global__ void pseudo_hermitian_init_batched_complex_double_kernel(
+    cuDoubleComplex* v_1, cuDoubleComplex* v_2, cuDoubleComplex* Sv,
+    cuDoubleComplex* d_beta, double* d_real_beta_prev, int rows, int numvec, int ld)
+{
+    int vec_idx = blockIdx.x;
+    if (vec_idx >= numvec) return;
+    int half_m = rows / 2;
+    cuDoubleComplex* v_2_vec = v_2 + vec_idx * ld;
+    cuDoubleComplex* Sv_vec = Sv + vec_idx * ld;
+    for (int i = threadIdx.x; i < rows; i += blockDim.x) {
+        cuDoubleComplex val = v_2_vec[i];
+        if (i >= half_m) {
+            Sv_vec[i].x = -val.x;
+            Sv_vec[i].y = -val.y;
+        } else {
+            Sv_vec[i] = val;
+        }
+    }
+    __syncthreads();
+    extern __shared__ double sh_phib_cd[];
+    double* sreal = sh_phib_cd;
+    double* simag = &sh_phib_cd[blockDim.x];
+    cuDoubleComplex* v_1_vec = v_1 + vec_idx * ld;
+    double sum_r = 0.0, sum_i = 0.0;
+    for (int i = threadIdx.x; i < rows; i += blockDim.x) {
+        sum_r += v_1_vec[i].x * Sv_vec[i].x + v_1_vec[i].y * Sv_vec[i].y;
+        sum_i += v_1_vec[i].x * Sv_vec[i].y - v_1_vec[i].y * Sv_vec[i].x;
+    }
+    sreal[threadIdx.x] = sum_r;
+    simag[threadIdx.x] = sum_i;
+    __syncthreads();
+    for (int s = blockDim.x / 2; s > 0; s >>= 1) {
+        if (threadIdx.x < s) {
+            sreal[threadIdx.x] += sreal[threadIdx.x + s];
+            simag[threadIdx.x] += simag[threadIdx.x + s];
+        }
+        __syncthreads();
+    }
+    double scale = 1.0 / sqrt(sreal[0]);
+    if (threadIdx.x == 0) {
+        d_beta[vec_idx].x = scale;
+        d_beta[vec_idx].y = 0.0;
+        d_real_beta_prev[vec_idx] = scale;
+    }
+    __syncthreads();
+    for (int i = threadIdx.x; i < rows; i += blockDim.x) {
+        v_1_vec[i].x *= scale;
+        v_1_vec[i].y *= scale;
+        v_2_vec[i].x *= scale;
+        v_2_vec[i].y *= scale;
+    }
+}
+
+__global__ void pseudo_hermitian_init_batched_complex_float_kernel(
+    cuComplex* v_1, cuComplex* v_2, cuComplex* Sv,
+    cuComplex* d_beta, float* d_real_beta_prev, int rows, int numvec, int ld)
+{
+    int vec_idx = blockIdx.x;
+    if (vec_idx >= numvec) return;
+    int half_m = rows / 2;
+    cuComplex* v_2_vec = v_2 + vec_idx * ld;
+    cuComplex* Sv_vec = Sv + vec_idx * ld;
+    for (int i = threadIdx.x; i < rows; i += blockDim.x) {
+        cuComplex val = v_2_vec[i];
+        if (i >= half_m) {
+            Sv_vec[i].x = -val.x;
+            Sv_vec[i].y = -val.y;
+        } else {
+            Sv_vec[i] = val;
+        }
+    }
+    __syncthreads();
+    extern __shared__ float sh_phib_cf[];
+    float* sreal = sh_phib_cf;
+    float* simag = &sh_phib_cf[blockDim.x];
+    cuComplex* v_1_vec = v_1 + vec_idx * ld;
+    float sum_r = 0.0f, sum_i = 0.0f;
+    for (int i = threadIdx.x; i < rows; i += blockDim.x) {
+        sum_r += v_1_vec[i].x * Sv_vec[i].x + v_1_vec[i].y * Sv_vec[i].y;
+        sum_i += v_1_vec[i].x * Sv_vec[i].y - v_1_vec[i].y * Sv_vec[i].x;
+    }
+    sreal[threadIdx.x] = sum_r;
+    simag[threadIdx.x] = sum_i;
+    __syncthreads();
+    for (int s = blockDim.x / 2; s > 0; s >>= 1) {
+        if (threadIdx.x < s) {
+            sreal[threadIdx.x] += sreal[threadIdx.x + s];
+            simag[threadIdx.x] += simag[threadIdx.x + s];
+        }
+        __syncthreads();
+    }
+    float scale = 1.0f / sqrtf(sreal[0]);
+    if (threadIdx.x == 0) {
+        d_beta[vec_idx].x = scale;
+        d_beta[vec_idx].y = 0.0f;
+        d_real_beta_prev[vec_idx] = scale;
+    }
+    __syncthreads();
+    for (int i = threadIdx.x; i < rows; i += blockDim.x) {
+        v_1_vec[i].x *= scale;
+        v_1_vec[i].y *= scale;
+        v_2_vec[i].x *= scale;
+        v_2_vec[i].y *= scale;
+    }
+}
+
+// ============================================================================
+// Pseudo-Hermitian fused: dot(v_2,Sv)->alpha, alpha=-real(alpha)*real_beta_prev, v_2+=alpha*v_1
+// ============================================================================
+
+__global__ void fused_dot_scale_negate_axpy_ph_double_kernel(
+    const double* v_2, const double* Sv, double* d_alpha, const double* v_1,
+    double* v_2_out, const double* d_real_beta_prev,
+    int rows, int numvec, int ld)
+{
+    int vec_idx = blockIdx.x;
+    if (vec_idx >= numvec) return;
+    extern __shared__ double sh_fdsna_d[];
+    const double* v_2_vec = v_2 + vec_idx * ld;
+    const double* Sv_vec = Sv + vec_idx * ld;
+    double sum = 0.0;
+    for (int i = threadIdx.x; i < rows; i += blockDim.x)
+        sum += v_2_vec[i] * Sv_vec[i];
+    sh_fdsna_d[threadIdx.x] = sum;
+    __syncthreads();
+    for (int s = blockDim.x / 2; s > 0; s >>= 1) {
+        if (threadIdx.x < s)
+            sh_fdsna_d[threadIdx.x] += sh_fdsna_d[threadIdx.x + s];
+        __syncthreads();
+    }
+    double alpha_raw = sh_fdsna_d[0];
+    double rbp = d_real_beta_prev[vec_idx];
+    double alpha = -alpha_raw * rbp;
+    if (threadIdx.x == 0)
+        d_alpha[vec_idx] = alpha;
+    __syncthreads();
+    const double* v_1_vec = v_1 + vec_idx * ld;
+    double* v_2_out_vec = v_2_out + vec_idx * ld;
+    for (int i = threadIdx.x; i < rows; i += blockDim.x)
+        v_2_out_vec[i] += alpha * v_1_vec[i];
+}
+
+__global__ void fused_dot_scale_negate_axpy_ph_float_kernel(
+    const float* v_2, const float* Sv, float* d_alpha, const float* v_1,
+    float* v_2_out, const float* d_real_beta_prev,
+    int rows, int numvec, int ld)
+{
+    int vec_idx = blockIdx.x;
+    if (vec_idx >= numvec) return;
+    extern __shared__ float sh_fdsna_f[];
+    const float* v_2_vec = v_2 + vec_idx * ld;
+    const float* Sv_vec = Sv + vec_idx * ld;
+    float sum = 0.0f;
+    for (int i = threadIdx.x; i < rows; i += blockDim.x)
+        sum += v_2_vec[i] * Sv_vec[i];
+    sh_fdsna_f[threadIdx.x] = sum;
+    __syncthreads();
+    for (int s = blockDim.x / 2; s > 0; s >>= 1) {
+        if (threadIdx.x < s)
+            sh_fdsna_f[threadIdx.x] += sh_fdsna_f[threadIdx.x + s];
+        __syncthreads();
+    }
+    float alpha_raw = sh_fdsna_f[0];
+    float rbp = d_real_beta_prev[vec_idx];
+    float alpha = -alpha_raw * rbp;
+    if (threadIdx.x == 0)
+        d_alpha[vec_idx] = alpha;
+    __syncthreads();
+    const float* v_1_vec = v_1 + vec_idx * ld;
+    float* v_2_out_vec = v_2_out + vec_idx * ld;
+    for (int i = threadIdx.x; i < rows; i += blockDim.x)
+        v_2_out_vec[i] += alpha * v_1_vec[i];
+}
+
+__global__ void fused_dot_scale_negate_axpy_ph_complex_double_kernel(
+    const cuDoubleComplex* v_2, const cuDoubleComplex* Sv,
+    cuDoubleComplex* d_alpha, const cuDoubleComplex* v_1,
+    cuDoubleComplex* v_2_out, const double* d_real_beta_prev,
+    int rows, int numvec, int ld)
+{
+    int vec_idx = blockIdx.x;
+    if (vec_idx >= numvec) return;
+    extern __shared__ double sh_fdsna_cd[];
+    double* sreal = sh_fdsna_cd;
+    double* simag = &sh_fdsna_cd[blockDim.x];
+    const cuDoubleComplex* v_2_vec = v_2 + vec_idx * ld;
+    const cuDoubleComplex* Sv_vec = Sv + vec_idx * ld;
+    double sum_r = 0.0, sum_i = 0.0;
+    for (int i = threadIdx.x; i < rows; i += blockDim.x) {
+        sum_r += v_2_vec[i].x * Sv_vec[i].x + v_2_vec[i].y * Sv_vec[i].y;
+        sum_i += v_2_vec[i].x * Sv_vec[i].y - v_2_vec[i].y * Sv_vec[i].x;
+    }
+    sreal[threadIdx.x] = sum_r;
+    simag[threadIdx.x] = sum_i;
+    __syncthreads();
+    for (int s = blockDim.x / 2; s > 0; s >>= 1) {
+        if (threadIdx.x < s) {
+            sreal[threadIdx.x] += sreal[threadIdx.x + s];
+            simag[threadIdx.x] += simag[threadIdx.x + s];
+        }
+        __syncthreads();
+    }
+    double real_dot = sreal[0];
+    double rbp = d_real_beta_prev[vec_idx];
+    double alpha_r = -real_dot * rbp;
+    if (threadIdx.x == 0) {
+        d_alpha[vec_idx].x = alpha_r;
+        d_alpha[vec_idx].y = 0.0;
+    }
+    __syncthreads();
+    const cuDoubleComplex* v_1_vec = v_1 + vec_idx * ld;
+    cuDoubleComplex* v_2_out_vec = v_2_out + vec_idx * ld;
+    for (int i = threadIdx.x; i < rows; i += blockDim.x)
+        v_2_out_vec[i] = cuCadd(v_2_out_vec[i],
+                                 make_cuDoubleComplex(alpha_r * v_1_vec[i].x - 0.0 * v_1_vec[i].y,
+                                                      alpha_r * v_1_vec[i].y + 0.0 * v_1_vec[i].x));
+}
+
+__global__ void fused_dot_scale_negate_axpy_ph_complex_float_kernel(
+    const cuComplex* v_2, const cuComplex* Sv,
+    cuComplex* d_alpha, const cuComplex* v_1,
+    cuComplex* v_2_out, const float* d_real_beta_prev,
+    int rows, int numvec, int ld)
+{
+    int vec_idx = blockIdx.x;
+    if (vec_idx >= numvec) return;
+    extern __shared__ float sh_fdsna_cf[];
+    float* sreal = sh_fdsna_cf;
+    float* simag = &sh_fdsna_cf[blockDim.x];
+    const cuComplex* v_2_vec = v_2 + vec_idx * ld;
+    const cuComplex* Sv_vec = Sv + vec_idx * ld;
+    float sum_r = 0.0f, sum_i = 0.0f;
+    for (int i = threadIdx.x; i < rows; i += blockDim.x) {
+        sum_r += v_2_vec[i].x * Sv_vec[i].x + v_2_vec[i].y * Sv_vec[i].y;
+        sum_i += v_2_vec[i].x * Sv_vec[i].y - v_2_vec[i].y * Sv_vec[i].x;
+    }
+    sreal[threadIdx.x] = sum_r;
+    simag[threadIdx.x] = sum_i;
+    __syncthreads();
+    for (int s = blockDim.x / 2; s > 0; s >>= 1) {
+        if (threadIdx.x < s) {
+            sreal[threadIdx.x] += sreal[threadIdx.x + s];
+            simag[threadIdx.x] += simag[threadIdx.x + s];
+        }
+        __syncthreads();
+    }
+    float real_dot = sreal[0];
+    float rbp = d_real_beta_prev[vec_idx];
+    float alpha_r = -real_dot * rbp;
+    if (threadIdx.x == 0) {
+        d_alpha[vec_idx].x = alpha_r;
+        d_alpha[vec_idx].y = 0.0f;
+    }
+    __syncthreads();
+    const cuComplex* v_1_vec = v_1 + vec_idx * ld;
+    cuComplex* v_2_out_vec = v_2_out + vec_idx * ld;
+    for (int i = threadIdx.x; i < rows; i += blockDim.x)
+        v_2_out_vec[i] = cuCaddf(v_2_out_vec[i],
+                                  make_cuComplex(alpha_r * v_1_vec[i].x, alpha_r * v_1_vec[i].y));
+}
+
+// ============================================================================
+// Fused: lacpyFlipLowerHalf(v_2->Sv) + batchedDotProduct(v_1, Sv, d_beta)
+// ============================================================================
+
+__global__ void lacpy_flip_batched_dot_double_kernel(
+    const double* v_2, double* Sv, const double* v_1, double* d_beta,
+    int rows, int numvec, int ld_v2, int ld_sv, int ld_v1)
+{
+    int vec_idx = blockIdx.x;
+    if (vec_idx >= numvec) return;
+    int half_m = rows / 2;
+    const double* v_2_vec = v_2 + vec_idx * ld_v2;
+    double* Sv_vec = Sv + vec_idx * ld_sv;
+    for (int i = threadIdx.x; i < rows; i += blockDim.x) {
+        double val = v_2_vec[i];
+        Sv_vec[i] = (i >= half_m) ? -val : val;
+    }
+    __syncthreads();
+    const double* v_1_vec = v_1 + vec_idx * ld_v1;
+    extern __shared__ double sh_lfbd_d[];
+    double sum = 0.0;
+    for (int i = threadIdx.x; i < rows; i += blockDim.x)
+        sum += v_1_vec[i] * Sv_vec[i];
+    sh_lfbd_d[threadIdx.x] = sum;
+    __syncthreads();
+    for (int s = blockDim.x / 2; s > 0; s >>= 1) {
+        if (threadIdx.x < s)
+            sh_lfbd_d[threadIdx.x] += sh_lfbd_d[threadIdx.x + s];
+        __syncthreads();
+    }
+    if (threadIdx.x == 0)
+        d_beta[vec_idx] = sh_lfbd_d[0];
+}
+
+__global__ void lacpy_flip_batched_dot_float_kernel(
+    const float* v_2, float* Sv, const float* v_1, float* d_beta,
+    int rows, int numvec, int ld_v2, int ld_sv, int ld_v1)
+{
+    int vec_idx = blockIdx.x;
+    if (vec_idx >= numvec) return;
+    int half_m = rows / 2;
+    const float* v_2_vec = v_2 + vec_idx * ld_v2;
+    float* Sv_vec = Sv + vec_idx * ld_sv;
+    for (int i = threadIdx.x; i < rows; i += blockDim.x) {
+        float val = v_2_vec[i];
+        Sv_vec[i] = (i >= half_m) ? -val : val;
+    }
+    __syncthreads();
+    const float* v_1_vec = v_1 + vec_idx * ld_v1;
+    extern __shared__ float sh_lfbd_f[];
+    float sum = 0.0f;
+    for (int i = threadIdx.x; i < rows; i += blockDim.x)
+        sum += v_1_vec[i] * Sv_vec[i];
+    sh_lfbd_f[threadIdx.x] = sum;
+    __syncthreads();
+    for (int s = blockDim.x / 2; s > 0; s >>= 1) {
+        if (threadIdx.x < s)
+            sh_lfbd_f[threadIdx.x] += sh_lfbd_f[threadIdx.x + s];
+        __syncthreads();
+    }
+    if (threadIdx.x == 0)
+        d_beta[vec_idx] = sh_lfbd_f[0];
+}
+
+__global__ void lacpy_flip_batched_dot_complex_double_kernel(
+    const cuDoubleComplex* v_2, cuDoubleComplex* Sv,
+    const cuDoubleComplex* v_1, cuDoubleComplex* d_beta,
+    int rows, int numvec, int ld_v2, int ld_sv, int ld_v1)
+{
+    int vec_idx = blockIdx.x;
+    if (vec_idx >= numvec) return;
+    int half_m = rows / 2;
+    const cuDoubleComplex* v_2_vec = v_2 + vec_idx * ld_v2;
+    cuDoubleComplex* Sv_vec = Sv + vec_idx * ld_sv;
+    for (int i = threadIdx.x; i < rows; i += blockDim.x) {
+        cuDoubleComplex val = v_2_vec[i];
+        if (i >= half_m) {
+            Sv_vec[i].x = -val.x;
+            Sv_vec[i].y = -val.y;
+        } else {
+            Sv_vec[i] = val;
+        }
+    }
+    __syncthreads();
+    const cuDoubleComplex* v_1_vec = v_1 + vec_idx * ld_v1;
+    extern __shared__ double sh_lfbd_cd[];
+    double* sreal = sh_lfbd_cd;
+    double* simag = &sh_lfbd_cd[blockDim.x];
+    double sum_r = 0.0, sum_i = 0.0;
+    for (int i = threadIdx.x; i < rows; i += blockDim.x) {
+        sum_r += v_1_vec[i].x * Sv_vec[i].x + v_1_vec[i].y * Sv_vec[i].y;
+        sum_i += v_1_vec[i].x * Sv_vec[i].y - v_1_vec[i].y * Sv_vec[i].x;
+    }
+    sreal[threadIdx.x] = sum_r;
+    simag[threadIdx.x] = sum_i;
+    __syncthreads();
+    for (int s = blockDim.x / 2; s > 0; s >>= 1) {
+        if (threadIdx.x < s) {
+            sreal[threadIdx.x] += sreal[threadIdx.x + s];
+            simag[threadIdx.x] += simag[threadIdx.x + s];
+        }
+        __syncthreads();
+    }
+    if (threadIdx.x == 0) {
+        d_beta[vec_idx].x = sreal[0];
+        d_beta[vec_idx].y = simag[0];
+    }
+}
+
+__global__ void lacpy_flip_batched_dot_complex_float_kernel(
+    const cuComplex* v_2, cuComplex* Sv,
+    const cuComplex* v_1, cuComplex* d_beta,
+    int rows, int numvec, int ld_v2, int ld_sv, int ld_v1)
+{
+    int vec_idx = blockIdx.x;
+    if (vec_idx >= numvec) return;
+    int half_m = rows / 2;
+    const cuComplex* v_2_vec = v_2 + vec_idx * ld_v2;
+    cuComplex* Sv_vec = Sv + vec_idx * ld_sv;
+    for (int i = threadIdx.x; i < rows; i += blockDim.x) {
+        cuComplex val = v_2_vec[i];
+        if (i >= half_m) {
+            Sv_vec[i].x = -val.x;
+            Sv_vec[i].y = -val.y;
+        } else {
+            Sv_vec[i] = val;
+        }
+    }
+    __syncthreads();
+    const cuComplex* v_1_vec = v_1 + vec_idx * ld_v1;
+    extern __shared__ float sh_lfbd_cf[];
+    float* sreal = sh_lfbd_cf;
+    float* simag = &sh_lfbd_cf[blockDim.x];
+    float sum_r = 0.0f, sum_i = 0.0f;
+    for (int i = threadIdx.x; i < rows; i += blockDim.x) {
+        sum_r += v_1_vec[i].x * Sv_vec[i].x + v_1_vec[i].y * Sv_vec[i].y;
+        sum_i += v_1_vec[i].x * Sv_vec[i].y - v_1_vec[i].y * Sv_vec[i].x;
+    }
+    sreal[threadIdx.x] = sum_r;
+    simag[threadIdx.x] = sum_i;
+    __syncthreads();
+    for (int s = blockDim.x / 2; s > 0; s >>= 1) {
+        if (threadIdx.x < s) {
+            sreal[threadIdx.x] += sreal[threadIdx.x + s];
+            simag[threadIdx.x] += simag[threadIdx.x + s];
+        }
+        __syncthreads();
+    }
+    if (threadIdx.x == 0) {
+        d_beta[vec_idx].x = sreal[0];
+        d_beta[vec_idx].y = simag[0];
+    }
+}
+
+// ============================================================================
 // Host Wrapper Functions
 // ============================================================================
 
@@ -793,6 +2009,446 @@ void batched_norm_squared_gpu(const float* v, float* norms_squared,
     size_t shared_mem = threads * sizeof(float);
     batched_norm_squared_kernel<<<blocks, threads, shared_mem, stream>>>(
         v, norms_squared, rows, numvec, ld);
+}
+
+void fused_norm_squared_normalize_gpu(double* vectors, double* norms_squared,
+                                      int rows, int numvec, int ld,
+                                      cudaStream_t stream)
+{
+    int threads = LANCZOS_BLOCK_SIZE;
+    int blocks = numvec;
+    size_t shared_mem = threads * sizeof(double);
+    fused_norm_squared_normalize_double_kernel<<<blocks, threads, shared_mem, stream>>>(
+        vectors, norms_squared, rows, numvec, ld);
+}
+
+void fused_norm_squared_normalize_gpu(float* vectors, float* norms_squared,
+                                      int rows, int numvec, int ld,
+                                      cudaStream_t stream)
+{
+    int threads = LANCZOS_BLOCK_SIZE;
+    int blocks = numvec;
+    size_t shared_mem = threads * sizeof(float);
+    fused_norm_squared_normalize_float_kernel<<<blocks, threads, shared_mem, stream>>>(
+        vectors, norms_squared, rows, numvec, ld);
+}
+
+void fused_norm_squared_normalize_gpu(cuDoubleComplex* vectors,
+                                      double* norms_squared,
+                                      int rows, int numvec, int ld,
+                                      cudaStream_t stream)
+{
+    int threads = LANCZOS_BLOCK_SIZE;
+    int blocks = numvec;
+    size_t shared_mem = threads * sizeof(double);
+    fused_norm_squared_normalize_complex_double_kernel<<<blocks, threads, shared_mem, stream>>>(
+        vectors, norms_squared, rows, numvec, ld);
+}
+
+void fused_norm_squared_normalize_gpu(cuComplex* vectors, float* norms_squared,
+                                      int rows, int numvec, int ld,
+                                      cudaStream_t stream)
+{
+    int threads = LANCZOS_BLOCK_SIZE;
+    int blocks = numvec;
+    size_t shared_mem = threads * sizeof(float);
+    fused_norm_squared_normalize_complex_float_kernel<<<blocks, threads, shared_mem, stream>>>(
+        vectors, norms_squared, rows, numvec, ld);
+}
+
+void fused_dot_axpy_negate_gpu(const double* v1, const double* v2, double* y,
+                               const double* x, double* alpha_out,
+                               int rows, int numvec, int ld,
+                               cudaStream_t stream)
+{
+    int threads = LANCZOS_BLOCK_SIZE;
+    int blocks = numvec;
+    size_t shared_mem = threads * sizeof(double);
+    fused_dot_axpy_negate_double_kernel<<<blocks, threads, shared_mem, stream>>>(
+        v1, v2, y, x, alpha_out, rows, numvec, ld);
+}
+
+void fused_dot_axpy_negate_gpu(const float* v1, const float* v2, float* y,
+                               const float* x, float* alpha_out,
+                               int rows, int numvec, int ld,
+                               cudaStream_t stream)
+{
+    int threads = LANCZOS_BLOCK_SIZE;
+    int blocks = numvec;
+    size_t shared_mem = threads * sizeof(float);
+    fused_dot_axpy_negate_float_kernel<<<blocks, threads, shared_mem, stream>>>(
+        v1, v2, y, x, alpha_out, rows, numvec, ld);
+}
+
+void fused_dot_axpy_negate_gpu(const cuDoubleComplex* v1, const cuDoubleComplex* v2,
+                               cuDoubleComplex* y, const cuDoubleComplex* x,
+                               cuDoubleComplex* alpha_out,
+                               int rows, int numvec, int ld,
+                               cudaStream_t stream)
+{
+    int threads = LANCZOS_BLOCK_SIZE;
+    int blocks = numvec;
+    size_t shared_mem = threads * sizeof(double) * 2;
+    fused_dot_axpy_negate_complex_double_kernel<<<blocks, threads, shared_mem, stream>>>(
+        v1, v2, y, x, alpha_out, rows, numvec, ld);
+}
+
+void fused_dot_axpy_negate_gpu(const cuComplex* v1, const cuComplex* v2,
+                               cuComplex* y, const cuComplex* x,
+                               cuComplex* alpha_out,
+                               int rows, int numvec, int ld,
+                               cudaStream_t stream)
+{
+    int threads = LANCZOS_BLOCK_SIZE;
+    int blocks = numvec;
+    size_t shared_mem = threads * sizeof(float) * 2;
+    fused_dot_axpy_negate_complex_float_kernel<<<blocks, threads, shared_mem, stream>>>(
+        v1, v2, y, x, alpha_out, rows, numvec, ld);
+}
+
+void lacpy_flip_lower_half_gpu(const double* src, double* dst,
+                               int m, int n, int ld_src, int ld_dst,
+                               cudaStream_t stream)
+{
+    int total = m * n;
+    int threads = LANCZOS_BLOCK_SIZE;
+    int blocks = (total + threads - 1) / threads;
+    lacpy_flip_lower_half_double_kernel<<<blocks, threads, 0, stream>>>(
+        src, dst, m, n, ld_src, ld_dst);
+}
+
+void lacpy_flip_lower_half_gpu(const float* src, float* dst,
+                               int m, int n, int ld_src, int ld_dst,
+                               cudaStream_t stream)
+{
+    int total = m * n;
+    int threads = LANCZOS_BLOCK_SIZE;
+    int blocks = (total + threads - 1) / threads;
+    lacpy_flip_lower_half_float_kernel<<<blocks, threads, 0, stream>>>(
+        src, dst, m, n, ld_src, ld_dst);
+}
+
+void lacpy_flip_lower_half_gpu(const cuDoubleComplex* src, cuDoubleComplex* dst,
+                               int m, int n, int ld_src, int ld_dst,
+                               cudaStream_t stream)
+{
+    int total = m * n;
+    int threads = LANCZOS_BLOCK_SIZE;
+    int blocks = (total + threads - 1) / threads;
+    lacpy_flip_lower_half_complex_double_kernel<<<blocks, threads, 0, stream>>>(
+        src, dst, m, n, ld_src, ld_dst);
+}
+
+void lacpy_flip_lower_half_gpu(const cuComplex* src, cuComplex* dst,
+                               int m, int n, int ld_src, int ld_dst,
+                               cudaStream_t stream)
+{
+    int total = m * n;
+    int threads = LANCZOS_BLOCK_SIZE;
+    int blocks = (total + threads - 1) / threads;
+    lacpy_flip_lower_half_complex_float_kernel<<<blocks, threads, 0, stream>>>(
+        src, dst, m, n, ld_src, ld_dst);
+}
+
+void batched_scale_two_gpu(const double* scale, double* v1, double* v2,
+                           int rows, int numvec, int ld, cudaStream_t stream)
+{
+    dim3 threads(LANCZOS_BLOCK_SIZE);
+    dim3 blocks((rows + threads.x - 1) / threads.x, numvec);
+    batched_scale_two_double_kernel<<<blocks, threads, 0, stream>>>(
+        scale, v1, v2, rows, numvec, ld);
+}
+
+void batched_scale_two_gpu(const float* scale, float* v1, float* v2,
+                           int rows, int numvec, int ld, cudaStream_t stream)
+{
+    dim3 threads(LANCZOS_BLOCK_SIZE);
+    dim3 blocks((rows + threads.x - 1) / threads.x, numvec);
+    batched_scale_two_float_kernel<<<blocks, threads, 0, stream>>>(
+        scale, v1, v2, rows, numvec, ld);
+}
+
+void batched_scale_two_gpu(const cuDoubleComplex* scale,
+                           cuDoubleComplex* v1, cuDoubleComplex* v2,
+                           int rows, int numvec, int ld, cudaStream_t stream)
+{
+    dim3 threads(LANCZOS_BLOCK_SIZE);
+    dim3 blocks((rows + threads.x - 1) / threads.x, numvec);
+    batched_scale_two_complex_double_kernel<<<blocks, threads, 0, stream>>>(
+        scale, v1, v2, rows, numvec, ld);
+}
+
+void batched_scale_two_gpu(const cuComplex* scale, cuComplex* v1, cuComplex* v2,
+                           int rows, int numvec, int ld, cudaStream_t stream)
+{
+    dim3 threads(LANCZOS_BLOCK_SIZE);
+    dim3 blocks((rows + threads.x - 1) / threads.x, numvec);
+    batched_scale_two_complex_float_kernel<<<blocks, threads, 0, stream>>>(
+        scale, v1, v2, rows, numvec, ld);
+}
+
+void scale_complex_by_real_negate_gpu(cuDoubleComplex* alpha,
+                                      const double* real_scale,
+                                      int numvec, cudaStream_t stream)
+{
+    int threads = LANCZOS_BLOCK_SIZE;
+    int blocks = (numvec + threads - 1) / threads;
+    scale_complex_by_real_negate_double_kernel<<<blocks, threads, 0, stream>>>(
+        alpha, real_scale, numvec);
+}
+
+void scale_complex_by_real_negate_gpu(cuComplex* alpha,
+                                      const float* real_scale,
+                                      int numvec, cudaStream_t stream)
+{
+    int threads = LANCZOS_BLOCK_SIZE;
+    int blocks = (numvec + threads - 1) / threads;
+    scale_complex_by_real_negate_float_kernel<<<blocks, threads, 0, stream>>>(
+        alpha, real_scale, numvec);
+}
+
+void scale_real_by_real_negate_gpu(double* alpha, const double* real_scale,
+                                   int numvec, cudaStream_t stream)
+{
+    int threads = LANCZOS_BLOCK_SIZE;
+    int blocks = (numvec + threads - 1) / threads;
+    scale_real_by_real_negate_double_kernel<<<blocks, threads, 0, stream>>>(
+        alpha, real_scale, numvec);
+}
+
+void scale_real_by_real_negate_gpu(float* alpha, const float* real_scale,
+                                   int numvec, cudaStream_t stream)
+{
+    int threads = LANCZOS_BLOCK_SIZE;
+    int blocks = (numvec + threads - 1) / threads;
+    scale_real_by_real_negate_float_kernel<<<blocks, threads, 0, stream>>>(
+        alpha, real_scale, numvec);
+}
+
+void pseudo_hermitian_init_single_gpu(double* v_1, double* v_2,
+                                      double* Sv, double* d_beta,
+                                      double* d_real_beta_prev, int rows, int ld,
+                                      cudaStream_t stream)
+{
+    int threads = LANCZOS_BLOCK_SIZE;
+    size_t shmem = threads * sizeof(double);
+    pseudo_hermitian_init_single_double_kernel<<<1, threads, shmem, stream>>>(
+        v_1, v_2, Sv, d_beta, d_real_beta_prev, rows, ld);
+}
+
+void pseudo_hermitian_init_single_gpu(float* v_1, float* v_2,
+                                      float* Sv, float* d_beta,
+                                      float* d_real_beta_prev, int rows, int ld,
+                                      cudaStream_t stream)
+{
+    int threads = LANCZOS_BLOCK_SIZE;
+    size_t shmem = threads * sizeof(float);
+    pseudo_hermitian_init_single_float_kernel<<<1, threads, shmem, stream>>>(
+        v_1, v_2, Sv, d_beta, d_real_beta_prev, rows, ld);
+}
+
+void pseudo_hermitian_init_single_gpu(cuDoubleComplex* v_1,
+                                      cuDoubleComplex* v_2,
+                                      cuDoubleComplex* Sv,
+                                      cuDoubleComplex* d_beta,
+                                      double* d_real_beta_prev, int rows, int ld,
+                                      cudaStream_t stream)
+{
+    int threads = LANCZOS_BLOCK_SIZE;
+    size_t shmem = threads * sizeof(double) * 2;
+    pseudo_hermitian_init_single_complex_double_kernel<<<1, threads, shmem, stream>>>(
+        v_1, v_2, Sv, d_beta, d_real_beta_prev, rows, ld);
+}
+
+void pseudo_hermitian_init_single_gpu(cuComplex* v_1, cuComplex* v_2,
+                                      cuComplex* Sv, cuComplex* d_beta,
+                                      float* d_real_beta_prev, int rows, int ld,
+                                      cudaStream_t stream)
+{
+    int threads = LANCZOS_BLOCK_SIZE;
+    size_t shmem = threads * sizeof(float) * 2;
+    pseudo_hermitian_init_single_complex_float_kernel<<<1, threads, shmem, stream>>>(
+        v_1, v_2, Sv, d_beta, d_real_beta_prev, rows, ld);
+}
+
+void init_scale_from_dot_batched_gpu(double* d_beta, double* d_real_beta_prev,
+                                     int numvec, cudaStream_t stream)
+{
+    int threads = LANCZOS_BLOCK_SIZE;
+    int blocks = (numvec + threads - 1) / threads;
+    init_scale_from_dot_batched_double_kernel<<<blocks, threads, 0, stream>>>(
+        d_beta, d_real_beta_prev, numvec);
+}
+
+void init_scale_from_dot_batched_gpu(float* d_beta, float* d_real_beta_prev,
+                                     int numvec, cudaStream_t stream)
+{
+    int threads = LANCZOS_BLOCK_SIZE;
+    int blocks = (numvec + threads - 1) / threads;
+    init_scale_from_dot_batched_float_kernel<<<blocks, threads, 0, stream>>>(
+        d_beta, d_real_beta_prev, numvec);
+}
+
+void init_scale_from_dot_batched_gpu(cuDoubleComplex* d_beta,
+                                     double* d_real_beta_prev,
+                                     int numvec, cudaStream_t stream)
+{
+    int threads = LANCZOS_BLOCK_SIZE;
+    int blocks = (numvec + threads - 1) / threads;
+    init_scale_from_dot_batched_complex_double_kernel<<<blocks, threads, 0, stream>>>(
+        d_beta, d_real_beta_prev, numvec);
+}
+
+void init_scale_from_dot_batched_gpu(cuComplex* d_beta,
+                                     float* d_real_beta_prev,
+                                     int numvec, cudaStream_t stream)
+{
+    int threads = LANCZOS_BLOCK_SIZE;
+    int blocks = (numvec + threads - 1) / threads;
+    init_scale_from_dot_batched_complex_float_kernel<<<blocks, threads, 0, stream>>>(
+        d_beta, d_real_beta_prev, numvec);
+}
+
+void pseudo_hermitian_init_batched_gpu(double* v_1, double* v_2, double* Sv,
+                                       double* d_beta, double* d_real_beta_prev,
+                                       int rows, int numvec, int ld,
+                                       cudaStream_t stream)
+{
+    int threads = LANCZOS_BLOCK_SIZE;
+    size_t shmem = threads * sizeof(double);
+    pseudo_hermitian_init_batched_double_kernel<<<numvec, threads, shmem, stream>>>(
+        v_1, v_2, Sv, d_beta, d_real_beta_prev, rows, numvec, ld);
+}
+
+void pseudo_hermitian_init_batched_gpu(float* v_1, float* v_2, float* Sv,
+                                       float* d_beta, float* d_real_beta_prev,
+                                       int rows, int numvec, int ld,
+                                       cudaStream_t stream)
+{
+    int threads = LANCZOS_BLOCK_SIZE;
+    size_t shmem = threads * sizeof(float);
+    pseudo_hermitian_init_batched_float_kernel<<<numvec, threads, shmem, stream>>>(
+        v_1, v_2, Sv, d_beta, d_real_beta_prev, rows, numvec, ld);
+}
+
+void pseudo_hermitian_init_batched_gpu(cuDoubleComplex* v_1, cuDoubleComplex* v_2,
+                                       cuDoubleComplex* Sv,
+                                       cuDoubleComplex* d_beta,
+                                       double* d_real_beta_prev,
+                                       int rows, int numvec, int ld,
+                                       cudaStream_t stream)
+{
+    int threads = LANCZOS_BLOCK_SIZE;
+    size_t shmem = threads * sizeof(double) * 2;
+    pseudo_hermitian_init_batched_complex_double_kernel<<<numvec, threads, shmem, stream>>>(
+        v_1, v_2, Sv, d_beta, d_real_beta_prev, rows, numvec, ld);
+}
+
+void pseudo_hermitian_init_batched_gpu(cuComplex* v_1, cuComplex* v_2,
+                                       cuComplex* Sv, cuComplex* d_beta,
+                                       float* d_real_beta_prev,
+                                       int rows, int numvec, int ld,
+                                       cudaStream_t stream)
+{
+    int threads = LANCZOS_BLOCK_SIZE;
+    size_t shmem = threads * sizeof(float) * 2;
+    pseudo_hermitian_init_batched_complex_float_kernel<<<numvec, threads, shmem, stream>>>(
+        v_1, v_2, Sv, d_beta, d_real_beta_prev, rows, numvec, ld);
+}
+
+void fused_dot_scale_negate_axpy_ph_gpu(const double* v_2, const double* Sv,
+                                         double* d_alpha, const double* v_1,
+                                         double* v_2_out, const double* d_real_beta_prev,
+                                         int rows, int numvec, int ld,
+                                         cudaStream_t stream)
+{
+    int threads = LANCZOS_BLOCK_SIZE;
+    size_t shmem = threads * sizeof(double);
+    fused_dot_scale_negate_axpy_ph_double_kernel<<<numvec, threads, shmem, stream>>>(
+        v_2, Sv, d_alpha, v_1, v_2_out, d_real_beta_prev, rows, numvec, ld);
+}
+
+void fused_dot_scale_negate_axpy_ph_gpu(const float* v_2, const float* Sv,
+                                         float* d_alpha, const float* v_1,
+                                         float* v_2_out, const float* d_real_beta_prev,
+                                         int rows, int numvec, int ld,
+                                         cudaStream_t stream)
+{
+    int threads = LANCZOS_BLOCK_SIZE;
+    size_t shmem = threads * sizeof(float);
+    fused_dot_scale_negate_axpy_ph_float_kernel<<<numvec, threads, shmem, stream>>>(
+        v_2, Sv, d_alpha, v_1, v_2_out, d_real_beta_prev, rows, numvec, ld);
+}
+
+void fused_dot_scale_negate_axpy_ph_gpu(const cuDoubleComplex* v_2,
+                                         const cuDoubleComplex* Sv,
+                                         cuDoubleComplex* d_alpha,
+                                         const cuDoubleComplex* v_1,
+                                         cuDoubleComplex* v_2_out,
+                                         const double* d_real_beta_prev,
+                                         int rows, int numvec, int ld,
+                                         cudaStream_t stream)
+{
+    int threads = LANCZOS_BLOCK_SIZE;
+    size_t shmem = threads * sizeof(double) * 2;
+    fused_dot_scale_negate_axpy_ph_complex_double_kernel<<<numvec, threads, shmem, stream>>>(
+        v_2, Sv, d_alpha, v_1, v_2_out, d_real_beta_prev, rows, numvec, ld);
+}
+
+void fused_dot_scale_negate_axpy_ph_gpu(const cuComplex* v_2, const cuComplex* Sv,
+                                         cuComplex* d_alpha, const cuComplex* v_1,
+                                         cuComplex* v_2_out, const float* d_real_beta_prev,
+                                         int rows, int numvec, int ld,
+                                         cudaStream_t stream)
+{
+    int threads = LANCZOS_BLOCK_SIZE;
+    size_t shmem = threads * sizeof(float) * 2;
+    fused_dot_scale_negate_axpy_ph_complex_float_kernel<<<numvec, threads, shmem, stream>>>(
+        v_2, Sv, d_alpha, v_1, v_2_out, d_real_beta_prev, rows, numvec, ld);
+}
+
+void lacpy_flip_batched_dot_gpu(const double* v_2, double* Sv,
+                                 const double* v_1, double* d_beta,
+                                 int rows, int numvec, int ld_v2, int ld_sv,
+                                 int ld_v1, cudaStream_t stream)
+{
+    int threads = LANCZOS_BLOCK_SIZE;
+    size_t shmem = threads * sizeof(double);
+    lacpy_flip_batched_dot_double_kernel<<<numvec, threads, shmem, stream>>>(
+        v_2, Sv, v_1, d_beta, rows, numvec, ld_v2, ld_sv, ld_v1);
+}
+
+void lacpy_flip_batched_dot_gpu(const float* v_2, float* Sv,
+                                 const float* v_1, float* d_beta,
+                                 int rows, int numvec, int ld_v2, int ld_sv,
+                                 int ld_v1, cudaStream_t stream)
+{
+    int threads = LANCZOS_BLOCK_SIZE;
+    size_t shmem = threads * sizeof(float);
+    lacpy_flip_batched_dot_float_kernel<<<numvec, threads, shmem, stream>>>(
+        v_2, Sv, v_1, d_beta, rows, numvec, ld_v2, ld_sv, ld_v1);
+}
+
+void lacpy_flip_batched_dot_gpu(const cuDoubleComplex* v_2, cuDoubleComplex* Sv,
+                                 const cuDoubleComplex* v_1, cuDoubleComplex* d_beta,
+                                 int rows, int numvec, int ld_v2, int ld_sv,
+                                 int ld_v1, cudaStream_t stream)
+{
+    int threads = LANCZOS_BLOCK_SIZE;
+    size_t shmem = threads * sizeof(double) * 2;
+    lacpy_flip_batched_dot_complex_double_kernel<<<numvec, threads, shmem, stream>>>(
+        v_2, Sv, v_1, d_beta, rows, numvec, ld_v2, ld_sv, ld_v1);
+}
+
+void lacpy_flip_batched_dot_gpu(const cuComplex* v_2, cuComplex* Sv,
+                                 const cuComplex* v_1, cuComplex* d_beta,
+                                 int rows, int numvec, int ld_v2, int ld_sv,
+                                 int ld_v1, cudaStream_t stream)
+{
+    int threads = LANCZOS_BLOCK_SIZE;
+    size_t shmem = threads * sizeof(float) * 2;
+    lacpy_flip_batched_dot_complex_float_kernel<<<numvec, threads, shmem, stream>>>(
+        v_2, Sv, v_1, d_beta, rows, numvec, ld_v2, ld_sv, ld_v1);
 }
 
 } // namespace cuda
