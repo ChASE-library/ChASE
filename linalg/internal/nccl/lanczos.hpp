@@ -157,6 +157,9 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
     {
         throw std::runtime_error("Lanczos H and V have same number of rows");
     }
+    // Create stream for Lanczos operations
+    cudaStream_t stream;
+    cudaStreamCreate(&stream);
 
 #ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
 #ifdef CHASE_OUTPUT
@@ -172,10 +175,6 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
     // Get NCCL communicator from grid
     ncclComm_t nccl_comm = H.getMpiGrid()->get_nccl_col_comm();
     
-    // Create stream for Lanczos operations
-    cudaStream_t stream;
-    cudaStreamCreate(&stream);
-
     // ========================================================================
     // GPU-Resident: Allocate device buffers
     // ========================================================================
@@ -405,7 +404,6 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
     cudaFree(d_alpha);
     cudaFree(d_real_alpha);
     cudaFree(d_r_beta);
-    cudaStreamDestroy(stream);
 
 #else
 #ifdef CHASE_OUTPUT
@@ -605,6 +603,8 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
         *upperb = std::max(max, *upperb);
     }
 #endif // CHASE_ENABLE_GPU_RESIDENT_LANCZOS
+    cudaStreamDestroy(stream);
+
 }
 
 template <typename MatrixType, typename InputMultiVectorType>
@@ -631,6 +631,10 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
     {
         throw std::runtime_error("Lanczos H and V have same number of rows");
     }
+    
+    // Create stream for Lanczos operations
+    cudaStream_t stream;
+    cudaStreamCreate(&stream);
 
 #ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
 #ifdef CHASE_OUTPUT
@@ -645,10 +649,6 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
 
     // Get NCCL communicator from grid
     ncclComm_t nccl_comm = H.getMpiGrid()->get_nccl_col_comm();
-    
-    // Create stream for Lanczos operations
-    cudaStream_t stream;
-    cudaStreamCreate(&stream);
 
     // ========================================================================
     // GPU-Resident: Allocate device buffers
@@ -877,7 +877,6 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
     cudaFree(d_alpha);
     cudaFree(d_real_alpha);
     cudaFree(d_r_beta);
-    cudaStreamDestroy(stream);
 
 #else
 #ifdef CHASE_OUTPUT
@@ -1002,6 +1001,8 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
     *upperb =
         std::max(std::abs(ritzv[0]), std::abs(ritzv[M - 1])) + std::abs(r_beta);
 #endif // CHASE_ENABLE_GPU_RESIDENT_LANCZOS
+
+    cudaStreamDestroy(stream);
 }
 
 } // namespace internal
