@@ -25,7 +25,7 @@ using ARCH = chase::platform::GPU;
 #ifdef HAS_NCCL
 using BackendType = chase::grid::backend::NCCL;
 #else
-using BackendType = chase::grid::backend::NCCL;
+using BackendType = chase::grid::backend::MPI;
 #endif
 #else
 using ARCH = chase::platform::CPU;
