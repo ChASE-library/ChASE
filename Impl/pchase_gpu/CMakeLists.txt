@@ -10,8 +10,6 @@ target_link_libraries(pchase_gpu
                               linalg_internal_mpi 
                               linalg_internal_cuda
                               linalg_internal_cuda_mpi
-                              linalg_internal_nccl                              
-                              mpi_grid_nccl 
                               distMatrix_gpu)
 
 if(TARGET mpi_grid_nccl)
