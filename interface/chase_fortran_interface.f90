@@ -614,7 +614,7 @@ MODULE chase_diag
             USE, INTRINSIC :: iso_c_binding
             INTEGER(c_int)      :: nn, nev, nex, m, n, ldh, dim0, dim1, fcomm, init
             COMPLEX(c_float_complex)      :: h(*), v(*)
-            REAL(c_double)      :: ritzv(*)
+            REAL(c_float)      :: ritzv(*)
             CHARACTER(len=1,kind=c_char)  :: grid_major
         END SUBROUTINE pcchase_init
     END INTERFACE
@@ -646,7 +646,7 @@ MODULE chase_diag
             USE, INTRINSIC :: iso_c_binding
             INTEGER(c_int)      :: nn, nev, nex, mbsize, nbsize, ldh, dim0, dim1, irsrc, icsrc, fcomm, init
             COMPLEX(c_float_complex)      :: h(*), v(*)
-            REAL(c_double)      :: ritzv(*)
+            REAL(c_float)      :: ritzv(*)
             CHARACTER(len=1,kind=c_char)  :: grid_major
 
         END SUBROUTINE pcchase_init_blockcyclic
@@ -862,7 +862,7 @@ MODULE chase_diag
             USE, INTRINSIC :: iso_c_binding
             INTEGER(c_int)      :: nn, nev, nex, m, n, ldh, dim0, dim1, fcomm, init
             COMPLEX(c_float_complex)      :: h(*), v(*)
-            REAL(c_double)      :: ritzv(*)
+            REAL(c_float)      :: ritzv(*)
             CHARACTER(len=1,kind=c_char)  :: grid_major
         END SUBROUTINE pcchase_init_pseudo
     END INTERFACE
@@ -924,7 +924,7 @@ MODULE chase_diag
             USE, INTRINSIC :: iso_c_binding
             INTEGER(c_int)      :: nn, nev, nex, mbsize, nbsize, ldh, dim0, dim1, irsrc, icsrc, fcomm, init
             COMPLEX(c_float_complex)      :: h(*), v(*)
-            REAL(c_double)      :: ritzv(*)
+            REAL(c_float)      :: ritzv(*)
             CHARACTER(len=1,kind=c_char)  :: grid_major
 
         END SUBROUTINE pcchase_init_pseudo_blockcyclic
