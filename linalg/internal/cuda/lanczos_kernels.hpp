@@ -22,73 +22,7 @@ namespace cuda
 {
 
 /**
- * @brief Square elements in-place on GPU
- * 
- * @tparam T Data type (double or float)
- * @param data Input/output array on GPU
- * @param n Number of elements
- * @param stream_ Optional CUDA stream. If nullptr, uses default stream.
- */
-template <typename T>
-void squareInplace(T* data, int n, cudaStream_t* stream_ = nullptr)
-{
-    SCOPED_NVTX_RANGE();
-    cudaStream_t usedStream = (stream_ == nullptr) ? 0 : *stream_;
-    square_inplace_gpu(data, n, usedStream);
-}
-
-/**
- * @brief Negate array elements in-place on GPU
- * 
- * @tparam T Data type
- * @param data Input/output array on GPU
- * @param n Number of elements
- * @param stream_ Optional CUDA stream
- */
-template <typename T>
-void negate(T* data, int n, cudaStream_t* stream_ = nullptr)
-{
-    SCOPED_NVTX_RANGE();
-    cudaStream_t usedStream = (stream_ == nullptr) ? 0 : *stream_;
-    negate_gpu(data, n, usedStream);
-}
-
-template <typename T>
-void negate(std::complex<T>* data, int n, cudaStream_t* stream_ = nullptr)
-{
-    SCOPED_NVTX_RANGE();
-    cudaStream_t usedStream = (stream_ == nullptr) ? 0 : *stream_;
-    
-    if constexpr (std::is_same_v<T, double>) {
-        negate_gpu(reinterpret_cast<cuDoubleComplex*>(data), n, usedStream);
-    } else {
-        negate_gpu(reinterpret_cast<cuComplex*>(data), n, usedStream);
-    }
-}
-
-/**
- * @brief Take square root in-place on GPU
- * 
- * @tparam T Data type (double or float)
- * @param data Input/output array on GPU
- * @param n Number of elements
- * @param stream_ Optional CUDA stream
- */
-template <typename T>
-void sqrtInplace(T* data, int n, cudaStream_t* stream_ = nullptr)
-{
-    SCOPED_NVTX_RANGE();
-    cudaStream_t usedStream = (stream_ == nullptr) ? 0 : *stream_;
-    sqrt_inplace_gpu(data, n, usedStream);
-}
-
-/**
- * @brief Batched square root: data[i] = sqrt(data[i]) for all i in parallel
- * 
- * @tparam T Data type (double or float)
- * @param data Input/output array on GPU
- * @param n Number of elements
- * @param stream_ Optional CUDA stream
+ * @brief Element-wise sqrt in-place: data[i] = sqrt(data[i]) for all i.
  */
 template <typename T>
 void batchedSqrt(T* data, int n, cudaStream_t* stream_ = nullptr)
@@ -281,6 +215,149 @@ void batchedAxpy(const std::complex<T>* alpha, const std::complex<T>* x,
 }
 
 /**
+ * @brief Fused batched AXPY then negate: y[:,i] += alpha[i]*x[:,i], then alpha[i] = -alpha[i]
+ */
+template <typename T>
+void batchedAxpyThenNegate(T* alpha, const T* x, T* y, int rows, int numvec, int ld,
+                          cudaStream_t* stream_ = nullptr)
+{
+    SCOPED_NVTX_RANGE();
+    cudaStream_t usedStream = (stream_ == nullptr) ? 0 : *stream_;
+    batched_axpy_then_negate_gpu(alpha, x, y, rows, numvec, ld, usedStream);
+}
+
+template <typename T>
+void batchedAxpyThenNegate(std::complex<T>* alpha, const std::complex<T>* x,
+                          std::complex<T>* y, int rows, int numvec, int ld,
+                          cudaStream_t* stream_ = nullptr)
+{
+    SCOPED_NVTX_RANGE();
+    cudaStream_t usedStream = (stream_ == nullptr) ? 0 : *stream_;
+    if constexpr (std::is_same_v<T, double>) {
+        batched_axpy_then_negate_gpu(reinterpret_cast<cuDoubleComplex*>(alpha),
+                                     reinterpret_cast<const cuDoubleComplex*>(x),
+                                     reinterpret_cast<cuDoubleComplex*>(y),
+                                     rows, numvec, ld, usedStream);
+    } else {
+        batched_axpy_then_negate_gpu(reinterpret_cast<cuComplex*>(alpha),
+                                     reinterpret_cast<const cuComplex*>(x),
+                                     reinterpret_cast<cuComplex*>(y),
+                                     rows, numvec, ld, usedStream);
+    }
+}
+
+/**
+ * @brief Copy real array to T with negate on GPU: out[i] = T(-in[i]). For complex T: .x = -in[i], .y = 0.
+ */
+template <typename T>
+void copyRealNegateToT(const T* in, T* out, int n, cudaStream_t* stream_ = nullptr)
+{
+    SCOPED_NVTX_RANGE();
+    cudaStream_t usedStream = (stream_ == nullptr) ? 0 : *stream_;
+    copy_real_negate_to_T_gpu(in, out, n, usedStream);
+}
+
+template <typename T>
+void copyRealNegateToT(const T* in, std::complex<T>* out, int n,
+                      cudaStream_t* stream_ = nullptr)
+{
+    SCOPED_NVTX_RANGE();
+    cudaStream_t usedStream = (stream_ == nullptr) ? 0 : *stream_;
+    if constexpr (std::is_same_v<T, double>) {
+        copy_real_negate_to_T_gpu(in, reinterpret_cast<cuDoubleComplex*>(out), n, usedStream);
+    } else {
+        copy_real_negate_to_T_gpu(in, reinterpret_cast<cuComplex*>(out), n, usedStream);
+    }
+}
+
+/**
+ * @brief Extract real part of T array to RealT array on GPU: out[i] = real(alpha[i]). Avoids T on host.
+ */
+template <typename T>
+std::enable_if_t<std::is_floating_point_v<T>>
+getRealPart(const T* alpha, T* out, int n, cudaStream_t* stream_ = nullptr)
+{
+    SCOPED_NVTX_RANGE();
+    cudaStream_t usedStream = (stream_ == nullptr) ? 0 : *stream_;
+    real_part_gpu(alpha, out, n, usedStream);
+}
+
+template <typename RealT>
+void getRealPart(const std::complex<RealT>* alpha, RealT* out, int n,
+                 cudaStream_t* stream_ = nullptr)
+{
+    SCOPED_NVTX_RANGE();
+    cudaStream_t usedStream = (stream_ == nullptr) ? 0 : *stream_;
+    if constexpr (std::is_same_v<RealT, double>) {
+        real_part_gpu(reinterpret_cast<const cuDoubleComplex*>(alpha), out, n, usedStream);
+    } else {
+        real_part_gpu(reinterpret_cast<const cuComplex*>(alpha), out, n, usedStream);
+    }
+}
+
+/**
+ * @brief Copy real array to T on GPU: out[i] = T(in[i]). For complex T: .x = in[i], .y = 0.
+ */
+template <typename T>
+std::enable_if_t<std::is_floating_point_v<T>>
+copyRealToT(const T* in, T* out, int n, cudaStream_t* stream_ = nullptr)
+{
+    SCOPED_NVTX_RANGE();
+    cudaStream_t usedStream = (stream_ == nullptr) ? 0 : *stream_;
+    copy_real_to_T_gpu(in, out, n, usedStream);
+}
+
+template <typename RealT>
+void copyRealToT(const RealT* in, std::complex<RealT>* out, int n,
+                 cudaStream_t* stream_ = nullptr)
+{
+    SCOPED_NVTX_RANGE();
+    cudaStream_t usedStream = (stream_ == nullptr) ? 0 : *stream_;
+    if constexpr (std::is_same_v<RealT, double>) {
+        copy_real_to_T_gpu(in, reinterpret_cast<cuDoubleComplex*>(out), n, usedStream);
+    } else {
+        copy_real_to_T_gpu(in, reinterpret_cast<cuComplex*>(out), n, usedStream);
+    }
+}
+
+/**
+ * @brief Real reciprocal on GPU: out[i] = 1/in[i].
+ */
+template <typename RealT>
+std::enable_if_t<std::is_floating_point_v<RealT>>
+realReciprocal(const RealT* in, RealT* out, int n, cudaStream_t* stream_ = nullptr)
+{
+    SCOPED_NVTX_RANGE();
+    cudaStream_t usedStream = (stream_ == nullptr) ? 0 : *stream_;
+    real_reciprocal_gpu(in, out, n, usedStream);
+}
+
+/**
+ * @brief Copy real reciprocal to T on GPU: out[i] = T(1/in[i]).
+ */
+template <typename T>
+std::enable_if_t<std::is_floating_point_v<T>>
+copyRealReciprocalToT(const T* in, T* out, int n, cudaStream_t* stream_ = nullptr)
+{
+    SCOPED_NVTX_RANGE();
+    cudaStream_t usedStream = (stream_ == nullptr) ? 0 : *stream_;
+    copy_real_reciprocal_to_T_gpu(in, out, n, usedStream);
+}
+
+template <typename RealT>
+void copyRealReciprocalToT(const RealT* in, std::complex<RealT>* out, int n,
+                          cudaStream_t* stream_ = nullptr)
+{
+    SCOPED_NVTX_RANGE();
+    cudaStream_t usedStream = (stream_ == nullptr) ? 0 : *stream_;
+    if constexpr (std::is_same_v<RealT, double>) {
+        copy_real_reciprocal_to_T_gpu(in, reinterpret_cast<cuDoubleComplex*>(out), n, usedStream);
+    } else {
+        copy_real_reciprocal_to_T_gpu(in, reinterpret_cast<cuComplex*>(out), n, usedStream);
+    }
+}
+
+/**
  * @brief Batched norm computation (squared)
  * 
  * Computes norms_sq[i] = ||v[:,i]||² for i = 0..numvec-1
@@ -392,38 +469,6 @@ void fusedDotAxpyNegate(const std::complex<T>* v1, const std::complex<T>* v2,
             reinterpret_cast<const cuComplex*>(x),
             reinterpret_cast<cuComplex*>(alpha_out),
             rows, numvec, ld, usedStream);
-    }
-}
-
-/**
- * @brief Fused for pseudo-Hermitian: copy src -> dst, flip sign of lower half (row >= m/2)
- */
-template <typename T>
-void lacpyFlipLowerHalf(const T* src, T* dst, int m, int n, int ld_src,
-                        int ld_dst, cudaStream_t* stream_ = nullptr)
-{
-    SCOPED_NVTX_RANGE();
-    cudaStream_t usedStream = (stream_ == nullptr) ? 0 : *stream_;
-    lacpy_flip_lower_half_gpu(src, dst, m, n, ld_src, ld_dst, usedStream);
-}
-
-template <typename T>
-void lacpyFlipLowerHalf(const std::complex<T>* src, std::complex<T>* dst,
-                        int m, int n, int ld_src, int ld_dst,
-                        cudaStream_t* stream_ = nullptr)
-{
-    SCOPED_NVTX_RANGE();
-    cudaStream_t usedStream = (stream_ == nullptr) ? 0 : *stream_;
-    if constexpr (std::is_same_v<T, double>) {
-        lacpy_flip_lower_half_gpu(
-            reinterpret_cast<const cuDoubleComplex*>(src),
-            reinterpret_cast<cuDoubleComplex*>(dst),
-            m, n, ld_src, ld_dst, usedStream);
-    } else {
-        lacpy_flip_lower_half_gpu(
-            reinterpret_cast<const cuComplex*>(src),
-            reinterpret_cast<cuComplex*>(dst),
-            m, n, ld_src, ld_dst, usedStream);
     }
 }
 
@@ -550,48 +595,6 @@ inline void pseudoHermitianInitSingle(std::complex<float>* v_1,
         d_real_beta_prev, rows, ld, s);
 }
 
-/**
- * @brief Pseudo-Hermitian batched init: scale[i]=1/sqrt(real(d_beta[i])), write d_beta and d_real_beta_prev.
- * Call batchedScaleTwo(d_beta, v_1, v_2) after this.
- */
-inline void initScaleFromDotBatched(double* d_beta, double* d_real_beta_prev,
-                                    int numvec, cudaStream_t* stream_)
-{
-    SCOPED_NVTX_RANGE();
-    cudaStream_t s = (stream_ == nullptr) ? 0 : *stream_;
-    init_scale_from_dot_batched_gpu(d_beta, d_real_beta_prev, numvec, s);
-}
-
-inline void initScaleFromDotBatched(float* d_beta, float* d_real_beta_prev,
-                                    int numvec, cudaStream_t* stream_)
-{
-    SCOPED_NVTX_RANGE();
-    cudaStream_t s = (stream_ == nullptr) ? 0 : *stream_;
-    init_scale_from_dot_batched_gpu(d_beta, d_real_beta_prev, numvec, s);
-}
-
-inline void initScaleFromDotBatched(std::complex<double>* d_beta,
-                                    double* d_real_beta_prev,
-                                    int numvec, cudaStream_t* stream_)
-{
-    SCOPED_NVTX_RANGE();
-    cudaStream_t s = (stream_ == nullptr) ? 0 : *stream_;
-    init_scale_from_dot_batched_gpu(
-        reinterpret_cast<cuDoubleComplex*>(d_beta),
-        d_real_beta_prev, numvec, s);
-}
-
-inline void initScaleFromDotBatched(std::complex<float>* d_beta,
-                                    float* d_real_beta_prev,
-                                    int numvec, cudaStream_t* stream_)
-{
-    SCOPED_NVTX_RANGE();
-    cudaStream_t s = (stream_ == nullptr) ? 0 : *stream_;
-    init_scale_from_dot_batched_gpu(
-        reinterpret_cast<cuComplex*>(d_beta),
-        d_real_beta_prev, numvec, s);
-}
-
 inline void pseudoHermitianInitBatched(double* v_1, double* v_2, double* Sv,
                                         double* d_beta, double* d_real_beta_prev,
                                         int rows, int numvec, int ld,
@@ -656,7 +659,7 @@ inline void fusedDotScaleNegateAxpyPh(const double* v_2, const double* Sv,
 {
     SCOPED_NVTX_RANGE();
     cudaStream_t s = (stream_ == nullptr) ? 0 : *stream_;
-    fused_dot_scale_negate_axpy_ph_gpu(v_2, Sv, d_alpha, v_1, v_2_out,
+    ph_fused_dot_scale_negate_axpy_gpu(v_2, Sv, d_alpha, v_1, v_2_out,
                                         d_real_beta_prev, rows, numvec, ld, s);
 }
 inline void fusedDotScaleNegateAxpyPh(const float* v_2, const float* Sv,
@@ -668,7 +671,7 @@ inline void fusedDotScaleNegateAxpyPh(const float* v_2, const float* Sv,
 {
     SCOPED_NVTX_RANGE();
     cudaStream_t s = (stream_ == nullptr) ? 0 : *stream_;
-    fused_dot_scale_negate_axpy_ph_gpu(v_2, Sv, d_alpha, v_1, v_2_out,
+    ph_fused_dot_scale_negate_axpy_gpu(v_2, Sv, d_alpha, v_1, v_2_out,
                                         d_real_beta_prev, rows, numvec, ld, s);
 }
 inline void fusedDotScaleNegateAxpyPh(const std::complex<double>* v_2,
@@ -682,7 +685,7 @@ inline void fusedDotScaleNegateAxpyPh(const std::complex<double>* v_2,
 {
     SCOPED_NVTX_RANGE();
     cudaStream_t s = (stream_ == nullptr) ? 0 : *stream_;
-    fused_dot_scale_negate_axpy_ph_gpu(
+    ph_fused_dot_scale_negate_axpy_gpu(
         reinterpret_cast<const cuDoubleComplex*>(v_2),
         reinterpret_cast<const cuDoubleComplex*>(Sv),
         reinterpret_cast<cuDoubleComplex*>(d_alpha),
@@ -701,7 +704,7 @@ inline void fusedDotScaleNegateAxpyPh(const std::complex<float>* v_2,
 {
     SCOPED_NVTX_RANGE();
     cudaStream_t s = (stream_ == nullptr) ? 0 : *stream_;
-    fused_dot_scale_negate_axpy_ph_gpu(
+    ph_fused_dot_scale_negate_axpy_gpu(
         reinterpret_cast<const cuComplex*>(v_2),
         reinterpret_cast<const cuComplex*>(Sv),
         reinterpret_cast<cuComplex*>(d_alpha),
@@ -717,7 +720,7 @@ inline void lacpyFlipBatchedDot(const double* v_2, double* Sv,
 {
     SCOPED_NVTX_RANGE();
     cudaStream_t s = (stream_ == nullptr) ? 0 : *stream_;
-    lacpy_flip_batched_dot_gpu(v_2, Sv, v_1, d_beta, rows, numvec,
+    ph_lacpy_flip_batched_dot_gpu(v_2, Sv, v_1, d_beta, rows, numvec,
                                 ld_v2, ld_sv, ld_v1, s);
 }
 inline void lacpyFlipBatchedDot(const float* v_2, float* Sv,
@@ -727,7 +730,7 @@ inline void lacpyFlipBatchedDot(const float* v_2, float* Sv,
 {
     SCOPED_NVTX_RANGE();
     cudaStream_t s = (stream_ == nullptr) ? 0 : *stream_;
-    lacpy_flip_batched_dot_gpu(v_2, Sv, v_1, d_beta, rows, numvec,
+    ph_lacpy_flip_batched_dot_gpu(v_2, Sv, v_1, d_beta, rows, numvec,
                                 ld_v2, ld_sv, ld_v1, s);
 }
 inline void lacpyFlipBatchedDot(const std::complex<double>* v_2,
@@ -739,7 +742,7 @@ inline void lacpyFlipBatchedDot(const std::complex<double>* v_2,
 {
     SCOPED_NVTX_RANGE();
     cudaStream_t s = (stream_ == nullptr) ? 0 : *stream_;
-    lacpy_flip_batched_dot_gpu(
+    ph_lacpy_flip_batched_dot_gpu(
         reinterpret_cast<const cuDoubleComplex*>(v_2),
         reinterpret_cast<cuDoubleComplex*>(Sv),
         reinterpret_cast<const cuDoubleComplex*>(v_1),
@@ -755,7 +758,7 @@ inline void lacpyFlipBatchedDot(const std::complex<float>* v_2,
 {
     SCOPED_NVTX_RANGE();
     cudaStream_t s = (stream_ == nullptr) ? 0 : *stream_;
-    lacpy_flip_batched_dot_gpu(
+    ph_lacpy_flip_batched_dot_gpu(
         reinterpret_cast<const cuComplex*>(v_2),
         reinterpret_cast<cuComplex*>(Sv),
         reinterpret_cast<const cuComplex*>(v_1),

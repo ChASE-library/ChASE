@@ -20,6 +20,17 @@ namespace cuda
 // ============================================================================
 // Kernel Implementations
 // ============================================================================
+//
+// Naming convention:
+//   - Device kernels: <operation>_kernel (template) or <operation>_<type>_kernel
+//     (e.g. batched_scale_kernel, real_part_double_kernel).
+//   - Host launchers: <operation>_gpu in .cu/.cuh; C++ wrappers in .hpp use
+//     CamelCase (e.g. batchedSqrt, getRealPart).
+//   - Pseudo-Hermitian (PH) kernels: ph_<operation>_<type>_kernel and
+//     ph_<operation>_gpu (e.g. ph_fused_dot_scale_negate_axpy_double_kernel,
+//     ph_lacpy_flip_batched_dot_gpu). Single/batched init: pseudo_hermitian_init_*
+//
+// ============================================================================
 
 /**
  * @brief Batched scaling: v[:,i] = scale[i] * v[:,i] for all i
@@ -142,55 +153,229 @@ __global__ void batched_axpy_kernel<cuComplex>(
     }
 }
 
+/**
+ * @brief Batched AXPY then negate: y[:,i] += alpha[i]*x[:,i], then alpha[i] = -alpha[i]
+ * One block per vector so we can negate alpha after axpy without race (alpha cached in register).
+ */
 template<typename T>
-__global__ void square_inplace_kernel(T* data, int n)
+__global__ void batched_axpy_then_negate_kernel(
+    T* __restrict__ alpha,
+    const T* __restrict__ x,
+    T* __restrict__ y,
+    int rows, int numvec, int ld)
 {
-    int i = blockIdx.x * blockDim.x + threadIdx.x;
-    if (i < n) {
-        data[i] *= data[i];
+    int vec_idx = blockIdx.x;
+    if (vec_idx >= numvec) return;
+    T scale = alpha[vec_idx];
+    const T* x_vec = x + vec_idx * ld;
+    T* y_vec = y + vec_idx * ld;
+    for (int row_idx = threadIdx.x; row_idx < rows; row_idx += blockDim.x) {
+        y_vec[row_idx] = y_vec[row_idx] + scale * x_vec[row_idx];
     }
+    __syncthreads();
+    if (threadIdx.x == 0)
+        alpha[vec_idx] = -scale;
 }
 
-template<typename T>
-__global__ void negate_kernel(T* data, int n)
-{
-    int i = blockIdx.x * blockDim.x + threadIdx.x;
-    if (i < n) {
-        data[i] = -data[i];
-    }
-}
-
-// Specialization for cuComplex
 template<>
-__global__ void negate_kernel<cuComplex>(cuComplex* data, int n)
+__global__ void batched_axpy_then_negate_kernel<cuDoubleComplex>(
+    cuDoubleComplex* __restrict__ alpha,
+    const cuDoubleComplex* __restrict__ x,
+    cuDoubleComplex* __restrict__ y,
+    int rows, int numvec, int ld)
 {
-    int i = blockIdx.x * blockDim.x + threadIdx.x;
-    if (i < n) {
-        data[i] = make_cuComplex(-cuCrealf(data[i]), -cuCimagf(data[i]));
+    int vec_idx = blockIdx.x;
+    if (vec_idx >= numvec) return;
+    cuDoubleComplex scale = alpha[vec_idx];
+    const cuDoubleComplex* x_vec = x + vec_idx * ld;
+    cuDoubleComplex* y_vec = y + vec_idx * ld;
+    for (int row_idx = threadIdx.x; row_idx < rows; row_idx += blockDim.x) {
+        y_vec[row_idx] = cuCadd(y_vec[row_idx], cuCmul(scale, x_vec[row_idx]));
     }
+    __syncthreads();
+    if (threadIdx.x == 0)
+        alpha[vec_idx] = make_cuDoubleComplex(-scale.x, -scale.y);
 }
 
-// Specialization for cuDoubleComplex
 template<>
-__global__ void negate_kernel<cuDoubleComplex>(cuDoubleComplex* data, int n)
+__global__ void batched_axpy_then_negate_kernel<cuComplex>(
+    cuComplex* __restrict__ alpha,
+    const cuComplex* __restrict__ x,
+    cuComplex* __restrict__ y,
+    int rows, int numvec, int ld)
+{
+    int vec_idx = blockIdx.x;
+    if (vec_idx >= numvec) return;
+    cuComplex scale = alpha[vec_idx];
+    const cuComplex* x_vec = x + vec_idx * ld;
+    cuComplex* y_vec = y + vec_idx * ld;
+    for (int row_idx = threadIdx.x; row_idx < rows; row_idx += blockDim.x) {
+        y_vec[row_idx] = cuCaddf(y_vec[row_idx], cuCmulf(scale, x_vec[row_idx]));
+    }
+    __syncthreads();
+    if (threadIdx.x == 0)
+        alpha[vec_idx] = make_cuComplex(-cuCrealf(scale), -cuCimagf(scale));
+}
+
+/**
+ * @brief Copy real array to T with negate: out[i] = T(-in[i]). For complex T: out[i].x = -in[i], .y = 0.
+ */
+__global__ void copy_real_negate_to_T_double_kernel(const double* in, double* out, int n)
+{
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < n) out[i] = -in[i];
+}
+
+__global__ void copy_real_negate_to_T_float_kernel(const float* in, float* out, int n)
+{
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < n) out[i] = -in[i];
+}
+
+__global__ void copy_real_negate_to_T_complex_double_kernel(const double* in, cuDoubleComplex* out, int n)
 {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i < n) {
-        data[i] = make_cuDoubleComplex(-cuCreal(data[i]), -cuCimag(data[i]));
+        out[i].x = -in[i];
+        out[i].y = 0.0;
     }
 }
 
-template<typename T>
-__global__ void sqrt_inplace_kernel(T* data, int n)
+__global__ void copy_real_negate_to_T_complex_float_kernel(const float* in, cuComplex* out, int n)
 {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i < n) {
-        data[i] = sqrt(data[i]);
+        out[i].x = -in[i];
+        out[i].y = 0.0f;
     }
 }
 
 /**
- * @brief Batched sqrt: data[i] = sqrt(data[i]) for all i in parallel
+ * @brief Extract real part of T into RealT: out[i] = real(in[i]). For real T this is copy; for complex, out[i] = in[i].x.
+ */
+__global__ void real_part_double_kernel(const double* in, double* out, int n)
+{
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < n) out[i] = in[i];
+}
+
+__global__ void real_part_float_kernel(const float* in, float* out, int n)
+{
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < n) out[i] = in[i];
+}
+
+__global__ void real_part_complex_double_kernel(const cuDoubleComplex* in, double* out, int n)
+{
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < n) out[i] = in[i].x;
+}
+
+__global__ void real_part_complex_float_kernel(const cuComplex* in, float* out, int n)
+{
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < n) out[i] = in[i].x;
+}
+
+/**
+ * @brief Copy real to T: out[i] = T(in[i]). For complex T: out[i].x = in[i], .y = 0.
+ */
+__global__ void copy_real_to_T_double_kernel(const double* in, double* out, int n)
+{
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < n) out[i] = in[i];
+}
+
+__global__ void copy_real_to_T_float_kernel(const float* in, float* out, int n)
+{
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < n) out[i] = in[i];
+}
+
+__global__ void copy_real_to_T_complex_double_kernel(const double* in, cuDoubleComplex* out, int n)
+{
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < n) {
+        out[i].x = in[i];
+        out[i].y = 0.0;
+    }
+}
+
+__global__ void copy_real_to_T_complex_float_kernel(const float* in, cuComplex* out, int n)
+{
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < n) {
+        out[i].x = in[i];
+        out[i].y = 0.0f;
+    }
+}
+
+/**
+ * @brief Real reciprocal: out[i] = 1/in[i] (with safe divisor).
+ */
+__global__ void real_reciprocal_double_kernel(const double* in, double* out, int n)
+{
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < n) {
+        double x = in[i];
+        out[i] = (x != 0.0) ? (1.0 / x) : 1.0;
+    }
+}
+
+__global__ void real_reciprocal_float_kernel(const float* in, float* out, int n)
+{
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < n) {
+        float x = in[i];
+        out[i] = (x != 0.0f) ? (1.0f / x) : 1.0f;
+    }
+}
+
+/**
+ * @brief Copy real reciprocal to T: out[i] = T(1/in[i]). For complex: .x = 1/in[i], .y = 0.
+ */
+__global__ void copy_real_reciprocal_to_T_double_kernel(const double* in, double* out, int n)
+{
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < n) {
+        double x = in[i];
+        out[i] = (x != 0.0) ? (1.0 / x) : 1.0;
+    }
+}
+
+__global__ void copy_real_reciprocal_to_T_float_kernel(const float* in, float* out, int n)
+{
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < n) {
+        float x = in[i];
+        out[i] = (x != 0.0f) ? (1.0f / x) : 1.0f;
+    }
+}
+
+__global__ void copy_real_reciprocal_to_T_complex_double_kernel(const double* in, cuDoubleComplex* out, int n)
+{
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < n) {
+        double x = in[i];
+        double r = (x != 0.0) ? (1.0 / x) : 1.0;
+        out[i].x = r;
+        out[i].y = 0.0;
+    }
+}
+
+__global__ void copy_real_reciprocal_to_T_complex_float_kernel(const float* in, cuComplex* out, int n)
+{
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < n) {
+        float x = in[i];
+        float r = (x != 0.0f) ? (1.0f / x) : 1.0f;
+        out[i].x = r;
+        out[i].y = 0.0f;
+    }
+}
+
+/**
+ * @brief Element-wise sqrt in-place: data[i] = sqrt(data[i]).
  */
 template<typename T>
 __global__ void batched_sqrt_kernel(T* data, int n)
@@ -855,74 +1040,6 @@ __global__ void fused_dot_axpy_negate_complex_float_kernel(
 }
 
 // ============================================================================
-// Fused for pseudo-Hermitian: copy src -> dst, flip sign of lower half (row >= m/2)
-// ============================================================================
-
-__global__ void lacpy_flip_lower_half_double_kernel(
-    const double* src, double* dst, int m, int n, int ld_src, int ld_dst)
-{
-    int half_m = m / 2;
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    int col = idx / m;
-    int row = idx % m;
-    if (col < n) {
-        double val = src[row + ld_src * col];
-        dst[row + ld_dst * col] = (row >= half_m) ? -val : val;
-    }
-}
-
-__global__ void lacpy_flip_lower_half_float_kernel(
-    const float* src, float* dst, int m, int n, int ld_src, int ld_dst)
-{
-    int half_m = m / 2;
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    int col = idx / m;
-    int row = idx % m;
-    if (col < n) {
-        float val = src[row + ld_src * col];
-        dst[row + ld_dst * col] = (row >= half_m) ? -val : val;
-    }
-}
-
-__global__ void lacpy_flip_lower_half_complex_double_kernel(
-    const cuDoubleComplex* src, cuDoubleComplex* dst,
-    int m, int n, int ld_src, int ld_dst)
-{
-    int half_m = m / 2;
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    int col = idx / m;
-    int row = idx % m;
-    if (col < n) {
-        cuDoubleComplex val = src[row + ld_src * col];
-        if (row >= half_m) {
-            dst[row + ld_dst * col].x = -val.x;
-            dst[row + ld_dst * col].y = -val.y;
-        } else {
-            dst[row + ld_dst * col] = val;
-        }
-    }
-}
-
-__global__ void lacpy_flip_lower_half_complex_float_kernel(
-    const cuComplex* src, cuComplex* dst,
-    int m, int n, int ld_src, int ld_dst)
-{
-    int half_m = m / 2;
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    int col = idx / m;
-    int row = idx % m;
-    if (col < n) {
-        cuComplex val = src[row + ld_src * col];
-        if (row >= half_m) {
-            dst[row + ld_dst * col].x = -val.x;
-            dst[row + ld_dst * col].y = -val.y;
-        } else {
-            dst[row + ld_dst * col] = val;
-        }
-    }
-}
-
-// ============================================================================
 // Batched scale two: v1[:,i] *= scale[i], v2[:,i] *= scale[i]
 // ============================================================================
 
@@ -1203,58 +1320,6 @@ __global__ void pseudo_hermitian_init_single_complex_float_kernel(
 }
 
 // ============================================================================
-// Pseudo-Hermitian batched init: scale[i]=1/sqrt(real(d_beta[i])), write d_beta, d_real_beta_prev
-// ============================================================================
-
-__global__ void init_scale_from_dot_batched_double_kernel(
-    double* d_beta, double* d_real_beta_prev, int numvec)
-{
-    int i = blockIdx.x * blockDim.x + threadIdx.x;
-    if (i < numvec) {
-        double scale = 1.0 / sqrt(d_beta[i]);
-        d_beta[i] = scale;
-        d_real_beta_prev[i] = scale;
-    }
-}
-
-__global__ void init_scale_from_dot_batched_float_kernel(
-    float* d_beta, float* d_real_beta_prev, int numvec)
-{
-    int i = blockIdx.x * blockDim.x + threadIdx.x;
-    if (i < numvec) {
-        float scale = 1.0f / sqrtf(d_beta[i]);
-        d_beta[i] = scale;
-        d_real_beta_prev[i] = scale;
-    }
-}
-
-__global__ void init_scale_from_dot_batched_complex_double_kernel(
-    cuDoubleComplex* d_beta, double* d_real_beta_prev, int numvec)
-{
-    int i = blockIdx.x * blockDim.x + threadIdx.x;
-    if (i < numvec) {
-        double r = d_beta[i].x;
-        double scale = 1.0 / sqrt(r);
-        d_beta[i].x = scale;
-        d_beta[i].y = 0.0;
-        d_real_beta_prev[i] = scale;
-    }
-}
-
-__global__ void init_scale_from_dot_batched_complex_float_kernel(
-    cuComplex* d_beta, float* d_real_beta_prev, int numvec)
-{
-    int i = blockIdx.x * blockDim.x + threadIdx.x;
-    if (i < numvec) {
-        float r = d_beta[i].x;
-        float scale = 1.0f / sqrtf(r);
-        d_beta[i].x = scale;
-        d_beta[i].y = 0.0f;
-        d_real_beta_prev[i] = scale;
-    }
-}
-
-// ============================================================================
 // Pseudo-Hermitian batched fused init: lacpyFlip + dot + scale from dot + scale v1,v2 (one block per column)
 // ============================================================================
 
@@ -1444,7 +1509,7 @@ __global__ void pseudo_hermitian_init_batched_complex_float_kernel(
 // Pseudo-Hermitian fused: dot(v_2,Sv)->alpha, alpha=-real(alpha)*real_beta_prev, v_2+=alpha*v_1
 // ============================================================================
 
-__global__ void fused_dot_scale_negate_axpy_ph_double_kernel(
+__global__ void ph_fused_dot_scale_negate_axpy_double_kernel(
     const double* v_2, const double* Sv, double* d_alpha, const double* v_1,
     double* v_2_out, const double* d_real_beta_prev,
     int rows, int numvec, int ld)
@@ -1476,7 +1541,7 @@ __global__ void fused_dot_scale_negate_axpy_ph_double_kernel(
         v_2_out_vec[i] += alpha * v_1_vec[i];
 }
 
-__global__ void fused_dot_scale_negate_axpy_ph_float_kernel(
+__global__ void ph_fused_dot_scale_negate_axpy_float_kernel(
     const float* v_2, const float* Sv, float* d_alpha, const float* v_1,
     float* v_2_out, const float* d_real_beta_prev,
     int rows, int numvec, int ld)
@@ -1508,7 +1573,7 @@ __global__ void fused_dot_scale_negate_axpy_ph_float_kernel(
         v_2_out_vec[i] += alpha * v_1_vec[i];
 }
 
-__global__ void fused_dot_scale_negate_axpy_ph_complex_double_kernel(
+__global__ void ph_fused_dot_scale_negate_axpy_complex_double_kernel(
     const cuDoubleComplex* v_2, const cuDoubleComplex* Sv,
     cuDoubleComplex* d_alpha, const cuDoubleComplex* v_1,
     cuDoubleComplex* v_2_out, const double* d_real_beta_prev,
@@ -1552,7 +1617,7 @@ __global__ void fused_dot_scale_negate_axpy_ph_complex_double_kernel(
                                                       alpha_r * v_1_vec[i].y + 0.0 * v_1_vec[i].x));
 }
 
-__global__ void fused_dot_scale_negate_axpy_ph_complex_float_kernel(
+__global__ void ph_fused_dot_scale_negate_axpy_complex_float_kernel(
     const cuComplex* v_2, const cuComplex* Sv,
     cuComplex* d_alpha, const cuComplex* v_1,
     cuComplex* v_2_out, const float* d_real_beta_prev,
@@ -1599,7 +1664,7 @@ __global__ void fused_dot_scale_negate_axpy_ph_complex_float_kernel(
 // Fused: lacpyFlipLowerHalf(v_2->Sv) + batchedDotProduct(v_1, Sv, d_beta)
 // ============================================================================
 
-__global__ void lacpy_flip_batched_dot_double_kernel(
+__global__ void ph_lacpy_flip_batched_dot_double_kernel(
     const double* v_2, double* Sv, const double* v_1, double* d_beta,
     int rows, int numvec, int ld_v2, int ld_sv, int ld_v1)
 {
@@ -1629,7 +1694,7 @@ __global__ void lacpy_flip_batched_dot_double_kernel(
         d_beta[vec_idx] = sh_lfbd_d[0];
 }
 
-__global__ void lacpy_flip_batched_dot_float_kernel(
+__global__ void ph_lacpy_flip_batched_dot_float_kernel(
     const float* v_2, float* Sv, const float* v_1, float* d_beta,
     int rows, int numvec, int ld_v2, int ld_sv, int ld_v1)
 {
@@ -1659,7 +1724,7 @@ __global__ void lacpy_flip_batched_dot_float_kernel(
         d_beta[vec_idx] = sh_lfbd_f[0];
 }
 
-__global__ void lacpy_flip_batched_dot_complex_double_kernel(
+__global__ void ph_lacpy_flip_batched_dot_complex_double_kernel(
     const cuDoubleComplex* v_2, cuDoubleComplex* Sv,
     const cuDoubleComplex* v_1, cuDoubleComplex* d_beta,
     int rows, int numvec, int ld_v2, int ld_sv, int ld_v1)
@@ -1704,7 +1769,7 @@ __global__ void lacpy_flip_batched_dot_complex_double_kernel(
     }
 }
 
-__global__ void lacpy_flip_batched_dot_complex_float_kernel(
+__global__ void ph_lacpy_flip_batched_dot_complex_float_kernel(
     const cuComplex* v_2, cuComplex* Sv,
     const cuComplex* v_1, cuComplex* d_beta,
     int rows, int numvec, int ld_v2, int ld_sv, int ld_v1)
@@ -1821,60 +1886,170 @@ void batched_axpy_gpu(const float* alpha, const float* x,
     batched_axpy_kernel<<<blocks, threads, 0, stream>>>(alpha, x, y, rows, numvec, ld);
 }
 
-void square_inplace_gpu(double* data, int n, cudaStream_t stream)
+void batched_axpy_then_negate_gpu(double* alpha, const double* x, double* y,
+                                   int rows, int numvec, int ld,
+                                   cudaStream_t stream)
 {
     int threads = LANCZOS_BLOCK_SIZE;
-    int blocks = (n + threads - 1) / threads;
-    square_inplace_kernel<<<blocks, threads, 0, stream>>>(data, n);
+    int blocks = numvec;
+    batched_axpy_then_negate_kernel<<<blocks, threads, 0, stream>>>(
+        alpha, x, y, rows, numvec, ld);
 }
 
-void square_inplace_gpu(float* data, int n, cudaStream_t stream)
+void batched_axpy_then_negate_gpu(float* alpha, const float* x, float* y,
+                                   int rows, int numvec, int ld,
+                                   cudaStream_t stream)
 {
     int threads = LANCZOS_BLOCK_SIZE;
-    int blocks = (n + threads - 1) / threads;
-    square_inplace_kernel<<<blocks, threads, 0, stream>>>(data, n);
+    int blocks = numvec;
+    batched_axpy_then_negate_kernel<<<blocks, threads, 0, stream>>>(
+        alpha, x, y, rows, numvec, ld);
 }
 
-void negate_gpu(double* data, int n, cudaStream_t stream)
+void batched_axpy_then_negate_gpu(cuDoubleComplex* alpha, const cuDoubleComplex* x,
+                                   cuDoubleComplex* y, int rows, int numvec, int ld,
+                                   cudaStream_t stream)
 {
     int threads = LANCZOS_BLOCK_SIZE;
-    int blocks = (n + threads - 1) / threads;
-    negate_kernel<<<blocks, threads, 0, stream>>>(data, n);
+    int blocks = numvec;
+    batched_axpy_then_negate_kernel<<<blocks, threads, 0, stream>>>(
+        alpha, x, y, rows, numvec, ld);
 }
 
-void negate_gpu(float* data, int n, cudaStream_t stream)
+void batched_axpy_then_negate_gpu(cuComplex* alpha, const cuComplex* x,
+                                   cuComplex* y, int rows, int numvec, int ld,
+                                   cudaStream_t stream)
 {
     int threads = LANCZOS_BLOCK_SIZE;
-    int blocks = (n + threads - 1) / threads;
-    negate_kernel<<<blocks, threads, 0, stream>>>(data, n);
+    int blocks = numvec;
+    batched_axpy_then_negate_kernel<<<blocks, threads, 0, stream>>>(
+        alpha, x, y, rows, numvec, ld);
 }
 
-void negate_gpu(cuDoubleComplex* data, int n, cudaStream_t stream)
+void copy_real_negate_to_T_gpu(const double* in, double* out, int n, cudaStream_t stream)
 {
     int threads = LANCZOS_BLOCK_SIZE;
     int blocks = (n + threads - 1) / threads;
-    negate_kernel<<<blocks, threads, 0, stream>>>(data, n);
+    copy_real_negate_to_T_double_kernel<<<blocks, threads, 0, stream>>>(in, out, n);
 }
 
-void negate_gpu(cuComplex* data, int n, cudaStream_t stream)
+void copy_real_negate_to_T_gpu(const float* in, float* out, int n, cudaStream_t stream)
 {
     int threads = LANCZOS_BLOCK_SIZE;
     int blocks = (n + threads - 1) / threads;
-    negate_kernel<<<blocks, threads, 0, stream>>>(data, n);
+    copy_real_negate_to_T_float_kernel<<<blocks, threads, 0, stream>>>(in, out, n);
 }
 
-void sqrt_inplace_gpu(double* data, int n, cudaStream_t stream)
+void copy_real_negate_to_T_gpu(const double* in, cuDoubleComplex* out, int n, cudaStream_t stream)
 {
     int threads = LANCZOS_BLOCK_SIZE;
     int blocks = (n + threads - 1) / threads;
-    sqrt_inplace_kernel<<<blocks, threads, 0, stream>>>(data, n);
+    copy_real_negate_to_T_complex_double_kernel<<<blocks, threads, 0, stream>>>(in, out, n);
 }
 
-void sqrt_inplace_gpu(float* data, int n, cudaStream_t stream)
+void copy_real_negate_to_T_gpu(const float* in, cuComplex* out, int n, cudaStream_t stream)
 {
     int threads = LANCZOS_BLOCK_SIZE;
     int blocks = (n + threads - 1) / threads;
-    sqrt_inplace_kernel<<<blocks, threads, 0, stream>>>(data, n);
+    copy_real_negate_to_T_complex_float_kernel<<<blocks, threads, 0, stream>>>(in, out, n);
+}
+
+void real_part_gpu(const double* in, double* out, int n, cudaStream_t stream)
+{
+    int threads = LANCZOS_BLOCK_SIZE;
+    int blocks = (n + threads - 1) / threads;
+    real_part_double_kernel<<<blocks, threads, 0, stream>>>(in, out, n);
+}
+
+void real_part_gpu(const float* in, float* out, int n, cudaStream_t stream)
+{
+    int threads = LANCZOS_BLOCK_SIZE;
+    int blocks = (n + threads - 1) / threads;
+    real_part_float_kernel<<<blocks, threads, 0, stream>>>(in, out, n);
+}
+
+void real_part_gpu(const cuDoubleComplex* in, double* out, int n, cudaStream_t stream)
+{
+    int threads = LANCZOS_BLOCK_SIZE;
+    int blocks = (n + threads - 1) / threads;
+    real_part_complex_double_kernel<<<blocks, threads, 0, stream>>>(in, out, n);
+}
+
+void real_part_gpu(const cuComplex* in, float* out, int n, cudaStream_t stream)
+{
+    int threads = LANCZOS_BLOCK_SIZE;
+    int blocks = (n + threads - 1) / threads;
+    real_part_complex_float_kernel<<<blocks, threads, 0, stream>>>(in, out, n);
+}
+
+void copy_real_to_T_gpu(const double* in, double* out, int n, cudaStream_t stream)
+{
+    int threads = LANCZOS_BLOCK_SIZE;
+    int blocks = (n + threads - 1) / threads;
+    copy_real_to_T_double_kernel<<<blocks, threads, 0, stream>>>(in, out, n);
+}
+
+void copy_real_to_T_gpu(const float* in, float* out, int n, cudaStream_t stream)
+{
+    int threads = LANCZOS_BLOCK_SIZE;
+    int blocks = (n + threads - 1) / threads;
+    copy_real_to_T_float_kernel<<<blocks, threads, 0, stream>>>(in, out, n);
+}
+
+void copy_real_to_T_gpu(const double* in, cuDoubleComplex* out, int n, cudaStream_t stream)
+{
+    int threads = LANCZOS_BLOCK_SIZE;
+    int blocks = (n + threads - 1) / threads;
+    copy_real_to_T_complex_double_kernel<<<blocks, threads, 0, stream>>>(in, out, n);
+}
+
+void copy_real_to_T_gpu(const float* in, cuComplex* out, int n, cudaStream_t stream)
+{
+    int threads = LANCZOS_BLOCK_SIZE;
+    int blocks = (n + threads - 1) / threads;
+    copy_real_to_T_complex_float_kernel<<<blocks, threads, 0, stream>>>(in, out, n);
+}
+
+void real_reciprocal_gpu(const double* in, double* out, int n, cudaStream_t stream)
+{
+    int threads = LANCZOS_BLOCK_SIZE;
+    int blocks = (n + threads - 1) / threads;
+    real_reciprocal_double_kernel<<<blocks, threads, 0, stream>>>(in, out, n);
+}
+
+void real_reciprocal_gpu(const float* in, float* out, int n, cudaStream_t stream)
+{
+    int threads = LANCZOS_BLOCK_SIZE;
+    int blocks = (n + threads - 1) / threads;
+    real_reciprocal_float_kernel<<<blocks, threads, 0, stream>>>(in, out, n);
+}
+
+void copy_real_reciprocal_to_T_gpu(const double* in, double* out, int n, cudaStream_t stream)
+{
+    int threads = LANCZOS_BLOCK_SIZE;
+    int blocks = (n + threads - 1) / threads;
+    copy_real_reciprocal_to_T_double_kernel<<<blocks, threads, 0, stream>>>(in, out, n);
+}
+
+void copy_real_reciprocal_to_T_gpu(const float* in, float* out, int n, cudaStream_t stream)
+{
+    int threads = LANCZOS_BLOCK_SIZE;
+    int blocks = (n + threads - 1) / threads;
+    copy_real_reciprocal_to_T_float_kernel<<<blocks, threads, 0, stream>>>(in, out, n);
+}
+
+void copy_real_reciprocal_to_T_gpu(const double* in, cuDoubleComplex* out, int n, cudaStream_t stream)
+{
+    int threads = LANCZOS_BLOCK_SIZE;
+    int blocks = (n + threads - 1) / threads;
+    copy_real_reciprocal_to_T_complex_double_kernel<<<blocks, threads, 0, stream>>>(in, out, n);
+}
+
+void copy_real_reciprocal_to_T_gpu(const float* in, cuComplex* out, int n, cudaStream_t stream)
+{
+    int threads = LANCZOS_BLOCK_SIZE;
+    int blocks = (n + threads - 1) / threads;
+    copy_real_reciprocal_to_T_complex_float_kernel<<<blocks, threads, 0, stream>>>(in, out, n);
 }
 
 void batched_sqrt_gpu(double* data, int n, cudaStream_t stream)
@@ -2106,50 +2281,6 @@ void fused_dot_axpy_negate_gpu(const cuComplex* v1, const cuComplex* v2,
         v1, v2, y, x, alpha_out, rows, numvec, ld);
 }
 
-void lacpy_flip_lower_half_gpu(const double* src, double* dst,
-                               int m, int n, int ld_src, int ld_dst,
-                               cudaStream_t stream)
-{
-    int total = m * n;
-    int threads = LANCZOS_BLOCK_SIZE;
-    int blocks = (total + threads - 1) / threads;
-    lacpy_flip_lower_half_double_kernel<<<blocks, threads, 0, stream>>>(
-        src, dst, m, n, ld_src, ld_dst);
-}
-
-void lacpy_flip_lower_half_gpu(const float* src, float* dst,
-                               int m, int n, int ld_src, int ld_dst,
-                               cudaStream_t stream)
-{
-    int total = m * n;
-    int threads = LANCZOS_BLOCK_SIZE;
-    int blocks = (total + threads - 1) / threads;
-    lacpy_flip_lower_half_float_kernel<<<blocks, threads, 0, stream>>>(
-        src, dst, m, n, ld_src, ld_dst);
-}
-
-void lacpy_flip_lower_half_gpu(const cuDoubleComplex* src, cuDoubleComplex* dst,
-                               int m, int n, int ld_src, int ld_dst,
-                               cudaStream_t stream)
-{
-    int total = m * n;
-    int threads = LANCZOS_BLOCK_SIZE;
-    int blocks = (total + threads - 1) / threads;
-    lacpy_flip_lower_half_complex_double_kernel<<<blocks, threads, 0, stream>>>(
-        src, dst, m, n, ld_src, ld_dst);
-}
-
-void lacpy_flip_lower_half_gpu(const cuComplex* src, cuComplex* dst,
-                               int m, int n, int ld_src, int ld_dst,
-                               cudaStream_t stream)
-{
-    int total = m * n;
-    int threads = LANCZOS_BLOCK_SIZE;
-    int blocks = (total + threads - 1) / threads;
-    lacpy_flip_lower_half_complex_float_kernel<<<blocks, threads, 0, stream>>>(
-        src, dst, m, n, ld_src, ld_dst);
-}
-
 void batched_scale_two_gpu(const double* scale, double* v1, double* v2,
                            int rows, int numvec, int ld, cudaStream_t stream)
 {
@@ -2271,44 +2402,6 @@ void pseudo_hermitian_init_single_gpu(cuComplex* v_1, cuComplex* v_2,
         v_1, v_2, Sv, d_beta, d_real_beta_prev, rows, ld);
 }
 
-void init_scale_from_dot_batched_gpu(double* d_beta, double* d_real_beta_prev,
-                                     int numvec, cudaStream_t stream)
-{
-    int threads = LANCZOS_BLOCK_SIZE;
-    int blocks = (numvec + threads - 1) / threads;
-    init_scale_from_dot_batched_double_kernel<<<blocks, threads, 0, stream>>>(
-        d_beta, d_real_beta_prev, numvec);
-}
-
-void init_scale_from_dot_batched_gpu(float* d_beta, float* d_real_beta_prev,
-                                     int numvec, cudaStream_t stream)
-{
-    int threads = LANCZOS_BLOCK_SIZE;
-    int blocks = (numvec + threads - 1) / threads;
-    init_scale_from_dot_batched_float_kernel<<<blocks, threads, 0, stream>>>(
-        d_beta, d_real_beta_prev, numvec);
-}
-
-void init_scale_from_dot_batched_gpu(cuDoubleComplex* d_beta,
-                                     double* d_real_beta_prev,
-                                     int numvec, cudaStream_t stream)
-{
-    int threads = LANCZOS_BLOCK_SIZE;
-    int blocks = (numvec + threads - 1) / threads;
-    init_scale_from_dot_batched_complex_double_kernel<<<blocks, threads, 0, stream>>>(
-        d_beta, d_real_beta_prev, numvec);
-}
-
-void init_scale_from_dot_batched_gpu(cuComplex* d_beta,
-                                     float* d_real_beta_prev,
-                                     int numvec, cudaStream_t stream)
-{
-    int threads = LANCZOS_BLOCK_SIZE;
-    int blocks = (numvec + threads - 1) / threads;
-    init_scale_from_dot_batched_complex_float_kernel<<<blocks, threads, 0, stream>>>(
-        d_beta, d_real_beta_prev, numvec);
-}
-
 void pseudo_hermitian_init_batched_gpu(double* v_1, double* v_2, double* Sv,
                                        double* d_beta, double* d_real_beta_prev,
                                        int rows, int numvec, int ld,
@@ -2356,7 +2449,7 @@ void pseudo_hermitian_init_batched_gpu(cuComplex* v_1, cuComplex* v_2,
         v_1, v_2, Sv, d_beta, d_real_beta_prev, rows, numvec, ld);
 }
 
-void fused_dot_scale_negate_axpy_ph_gpu(const double* v_2, const double* Sv,
+void ph_fused_dot_scale_negate_axpy_gpu(const double* v_2, const double* Sv,
                                          double* d_alpha, const double* v_1,
                                          double* v_2_out, const double* d_real_beta_prev,
                                          int rows, int numvec, int ld,
@@ -2364,11 +2457,11 @@ void fused_dot_scale_negate_axpy_ph_gpu(const double* v_2, const double* Sv,
 {
     int threads = LANCZOS_BLOCK_SIZE;
     size_t shmem = threads * sizeof(double);
-    fused_dot_scale_negate_axpy_ph_double_kernel<<<numvec, threads, shmem, stream>>>(
+    ph_fused_dot_scale_negate_axpy_double_kernel<<<numvec, threads, shmem, stream>>>(
         v_2, Sv, d_alpha, v_1, v_2_out, d_real_beta_prev, rows, numvec, ld);
 }
 
-void fused_dot_scale_negate_axpy_ph_gpu(const float* v_2, const float* Sv,
+void ph_fused_dot_scale_negate_axpy_gpu(const float* v_2, const float* Sv,
                                          float* d_alpha, const float* v_1,
                                          float* v_2_out, const float* d_real_beta_prev,
                                          int rows, int numvec, int ld,
@@ -2376,11 +2469,11 @@ void fused_dot_scale_negate_axpy_ph_gpu(const float* v_2, const float* Sv,
 {
     int threads = LANCZOS_BLOCK_SIZE;
     size_t shmem = threads * sizeof(float);
-    fused_dot_scale_negate_axpy_ph_float_kernel<<<numvec, threads, shmem, stream>>>(
+    ph_fused_dot_scale_negate_axpy_float_kernel<<<numvec, threads, shmem, stream>>>(
         v_2, Sv, d_alpha, v_1, v_2_out, d_real_beta_prev, rows, numvec, ld);
 }
 
-void fused_dot_scale_negate_axpy_ph_gpu(const cuDoubleComplex* v_2,
+void ph_fused_dot_scale_negate_axpy_gpu(const cuDoubleComplex* v_2,
                                          const cuDoubleComplex* Sv,
                                          cuDoubleComplex* d_alpha,
                                          const cuDoubleComplex* v_1,
@@ -2391,11 +2484,11 @@ void fused_dot_scale_negate_axpy_ph_gpu(const cuDoubleComplex* v_2,
 {
     int threads = LANCZOS_BLOCK_SIZE;
     size_t shmem = threads * sizeof(double) * 2;
-    fused_dot_scale_negate_axpy_ph_complex_double_kernel<<<numvec, threads, shmem, stream>>>(
+    ph_fused_dot_scale_negate_axpy_complex_double_kernel<<<numvec, threads, shmem, stream>>>(
         v_2, Sv, d_alpha, v_1, v_2_out, d_real_beta_prev, rows, numvec, ld);
 }
 
-void fused_dot_scale_negate_axpy_ph_gpu(const cuComplex* v_2, const cuComplex* Sv,
+void ph_fused_dot_scale_negate_axpy_gpu(const cuComplex* v_2, const cuComplex* Sv,
                                          cuComplex* d_alpha, const cuComplex* v_1,
                                          cuComplex* v_2_out, const float* d_real_beta_prev,
                                          int rows, int numvec, int ld,
@@ -2403,51 +2496,51 @@ void fused_dot_scale_negate_axpy_ph_gpu(const cuComplex* v_2, const cuComplex* S
 {
     int threads = LANCZOS_BLOCK_SIZE;
     size_t shmem = threads * sizeof(float) * 2;
-    fused_dot_scale_negate_axpy_ph_complex_float_kernel<<<numvec, threads, shmem, stream>>>(
+    ph_fused_dot_scale_negate_axpy_complex_float_kernel<<<numvec, threads, shmem, stream>>>(
         v_2, Sv, d_alpha, v_1, v_2_out, d_real_beta_prev, rows, numvec, ld);
 }
 
-void lacpy_flip_batched_dot_gpu(const double* v_2, double* Sv,
+void ph_lacpy_flip_batched_dot_gpu(const double* v_2, double* Sv,
                                  const double* v_1, double* d_beta,
                                  int rows, int numvec, int ld_v2, int ld_sv,
                                  int ld_v1, cudaStream_t stream)
 {
     int threads = LANCZOS_BLOCK_SIZE;
     size_t shmem = threads * sizeof(double);
-    lacpy_flip_batched_dot_double_kernel<<<numvec, threads, shmem, stream>>>(
+    ph_lacpy_flip_batched_dot_double_kernel<<<numvec, threads, shmem, stream>>>(
         v_2, Sv, v_1, d_beta, rows, numvec, ld_v2, ld_sv, ld_v1);
 }
 
-void lacpy_flip_batched_dot_gpu(const float* v_2, float* Sv,
+void ph_lacpy_flip_batched_dot_gpu(const float* v_2, float* Sv,
                                  const float* v_1, float* d_beta,
                                  int rows, int numvec, int ld_v2, int ld_sv,
                                  int ld_v1, cudaStream_t stream)
 {
     int threads = LANCZOS_BLOCK_SIZE;
     size_t shmem = threads * sizeof(float);
-    lacpy_flip_batched_dot_float_kernel<<<numvec, threads, shmem, stream>>>(
+    ph_lacpy_flip_batched_dot_float_kernel<<<numvec, threads, shmem, stream>>>(
         v_2, Sv, v_1, d_beta, rows, numvec, ld_v2, ld_sv, ld_v1);
 }
 
-void lacpy_flip_batched_dot_gpu(const cuDoubleComplex* v_2, cuDoubleComplex* Sv,
+void ph_lacpy_flip_batched_dot_gpu(const cuDoubleComplex* v_2, cuDoubleComplex* Sv,
                                  const cuDoubleComplex* v_1, cuDoubleComplex* d_beta,
                                  int rows, int numvec, int ld_v2, int ld_sv,
                                  int ld_v1, cudaStream_t stream)
 {
     int threads = LANCZOS_BLOCK_SIZE;
     size_t shmem = threads * sizeof(double) * 2;
-    lacpy_flip_batched_dot_complex_double_kernel<<<numvec, threads, shmem, stream>>>(
+    ph_lacpy_flip_batched_dot_complex_double_kernel<<<numvec, threads, shmem, stream>>>(
         v_2, Sv, v_1, d_beta, rows, numvec, ld_v2, ld_sv, ld_v1);
 }
 
-void lacpy_flip_batched_dot_gpu(const cuComplex* v_2, cuComplex* Sv,
+void ph_lacpy_flip_batched_dot_gpu(const cuComplex* v_2, cuComplex* Sv,
                                  const cuComplex* v_1, cuComplex* d_beta,
                                  int rows, int numvec, int ld_v2, int ld_sv,
                                  int ld_v1, cudaStream_t stream)
 {
     int threads = LANCZOS_BLOCK_SIZE;
     size_t shmem = threads * sizeof(float) * 2;
-    lacpy_flip_batched_dot_complex_float_kernel<<<numvec, threads, shmem, stream>>>(
+    ph_lacpy_flip_batched_dot_complex_float_kernel<<<numvec, threads, shmem, stream>>>(
         v_2, Sv, v_1, d_beta, rows, numvec, ld_v2, ld_sv, ld_v1);
 }
 

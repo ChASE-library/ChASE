@@ -113,14 +113,18 @@ void cuda_nccl::pseudo_hermitian_lanczos(
     T* d_beta;
     RealT* d_real_alpha;
     RealT* d_real_beta;
+    RealT* d_real_beta_prev;  // 1/sqrt(real_dot) for alpha scaling, no host round-trip
+    T* d_beta_neg;           // -beta_prev for k>0 AXPY, allocated once
     cudaMalloc(&d_alpha, numvec * sizeof(T));
     cudaMalloc(&d_beta, numvec * sizeof(T));
     cudaMalloc(&d_real_alpha, numvec * sizeof(RealT));
     cudaMalloc(&d_real_beta, numvec * sizeof(RealT));
+    cudaMalloc(&d_real_beta_prev, numvec * sizeof(RealT));
+    cudaMalloc(&d_beta_neg, numvec * sizeof(T));
 
-    // Host buffers (needed for LAPACK and some operations)
-    std::vector<chase::Base<T>> real_beta(numvec);
-    std::vector<chase::Base<T>> real_alpha(numvec);
+    // Host buffers (RealT only: for LAPACK d/e and final scalars)
+    std::vector<RealT> real_beta(numvec);
+    std::vector<RealT> real_alpha(numvec);
 #else
 #ifdef CHASE_OUTPUT
     if (H.getMpiGrid()->get_myRank() == 0)
@@ -136,14 +140,18 @@ void cuda_nccl::pseudo_hermitian_lanczos(
     std::vector<chase::Base<T>> e(M * numvec);
 
 #ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
-    // Host-side arrays for LAPACK and HOST pointer mode operations
-    std::vector<T> alpha(numvec, T(1.0));
-    std::vector<T> beta(numvec, T(0.0));
-    
-    // Include fused kernel utilities
+    // Include fused kernel utilities (no host T for alpha/beta)
     using chase::linalg::internal::cuda::batchedDotProduct;
     using chase::linalg::internal::cuda::batchedAxpy;
     using chase::linalg::internal::cuda::batchedScale;
+    using chase::linalg::internal::cuda::batchedScaleTwo;
+    using chase::linalg::internal::cuda::batchedSqrt;
+    using chase::linalg::internal::cuda::getRealPart;
+    using chase::linalg::internal::cuda::copyRealToT;
+    using chase::linalg::internal::cuda::realReciprocal;
+    using chase::linalg::internal::cuda::copyRealReciprocalToT;
+    using chase::linalg::internal::cuda::copyRealNegateToT;
+    using chase::linalg::internal::cuda::scaleComplexByRealNegate;
     
     cublasSetStream(cublas_handle, stream);
 #else
@@ -181,52 +189,18 @@ void cuda_nccl::pseudo_hermitian_lanczos(
 
 #ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
     // ========================================================================
-    // INITIAL NORMALIZATION: Compute real(v_1 · Sv) then normalize
-    // Following EXACT algorithm as original MPI version
+    // INITIAL NORMALIZATION: real(v_1·Sv) on device, Allreduce RealT, beta on device
     // ========================================================================
-    
-    // Batched dot products: d_beta[i] = conj(v_1[:,i]) · Sv[:,i]
     batchedDotProduct(v_1.l_data(), Sv.l_data(), d_beta,
                      v_1.l_rows(), numvec, v_1.l_ld(), false, &stream);
-    
-    // Copy complex results to host, extract real parts
-    std::vector<T> beta_host_complex(numvec);
-    cudaMemcpyAsync(beta_host_complex.data(), d_beta, numvec * sizeof(T),
-                   cudaMemcpyDeviceToHost, stream);
-    cudaStreamSynchronize(stream);
-    
-    for (auto i = 0; i < numvec; i++)
-    {
-        real_beta[i] = std::real(beta_host_complex[i]);
-    }
-    
-    // Copy real parts to device for NCCL Allreduce
-    cudaMemcpyAsync(d_real_beta, real_beta.data(), numvec * sizeof(RealT),
-                   cudaMemcpyHostToDevice, stream);
-    
-    // NCCL Allreduce (sum real parts)
+    getRealPart(d_beta, d_real_beta, static_cast<int>(numvec), &stream);
     CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper(
         d_real_beta, d_real_beta, numvec, ncclSum, nccl_comm, &stream));
-    
-    // Copy back to host for sqrt computation
-    cudaMemcpyAsync(real_beta.data(), d_real_beta, numvec * sizeof(RealT),
-                   cudaMemcpyDeviceToHost, stream);
-    cudaStreamSynchronize(stream);
-    
-    // Compute beta = 1/sqrt(real_beta) for normalization
-    for (auto i = 0; i < numvec; i++)
-    {
-        beta[i] = One / std::sqrt(real_beta[i]);
-    }
-    
-    // Copy beta to device for batched scaling
-    cudaMemcpyAsync(d_beta, beta.data(), numvec * sizeof(T),
-                   cudaMemcpyHostToDevice, stream);
-    
-    // Scale v_1 and v_2 by beta (normalization)
+    batchedSqrt(d_real_beta, static_cast<int>(numvec), &stream);
+    realReciprocal(d_real_beta, d_real_beta_prev, static_cast<int>(numvec), &stream);
+    copyRealReciprocalToT(d_real_beta, d_beta, static_cast<int>(numvec), &stream);
     batchedScale(d_beta, v_1.l_data(), v_1.l_rows(), numvec, v_1.l_ld(), &stream);
     batchedScale(d_beta, v_2.l_data(), v_2.l_rows(), numvec, v_2.l_ld(), &stream);
-    cudaStreamSynchronize(stream);
 #else
     for (auto i = 0; i < numvec; i++)
     {
@@ -279,58 +253,24 @@ void cuda_nccl::pseudo_hermitian_lanczos(
         }
 
 #ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
-        // Step 1: Compute alpha = real(v_2 · Sv), allreduce, then alpha = -real_alpha * beta
-        
-        // Batched dot products: d_alpha[i] = conj(v_2[:,i]) · Sv[:,i]
+        // Step 1: real(v_2·Sv) on device, Allreduce RealT; alpha = -real_alpha*beta_prev on device
         batchedDotProduct(v_2.l_data(), Sv.l_data(), d_alpha,
                          v_2.l_rows(), numvec, v_2.l_ld(), false, &stream);
-        
-        // Copy to host and extract real parts
-        std::vector<T> alpha_host_complex(numvec);
-        cudaMemcpyAsync(alpha_host_complex.data(), d_alpha, numvec * sizeof(T),
-                       cudaMemcpyDeviceToHost, stream);
-        cudaStreamSynchronize(stream);
-        
-        for (auto i = 0; i < numvec; i++)
-        {
-            real_alpha[i] = std::real(alpha_host_complex[i]);
-        }
-        
-        // Copy real parts to device for NCCL Allreduce
-        cudaMemcpyAsync(d_real_alpha, real_alpha.data(), numvec * sizeof(RealT),
-                       cudaMemcpyHostToDevice, stream);
-        
-        // NCCL Allreduce (sum real parts)
+        getRealPart(d_alpha, d_real_alpha, static_cast<int>(numvec), &stream);
         CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper(
             d_real_alpha, d_real_alpha, numvec, ncclSum, nccl_comm, &stream));
-        
-        // Copy back to host
+        copyRealToT(d_real_alpha, d_alpha, static_cast<int>(numvec), &stream);
+        scaleComplexByRealNegate(d_alpha, d_real_beta_prev, static_cast<int>(numvec), &stream);
+        batchedAxpy(d_alpha, v_1.l_data(), v_2.l_data(),
+                   v_1.l_rows(), numvec, v_1.l_ld(), &stream);
+        // Store diagonal d[k] = -real_alpha*beta_prev (scaled value now in d_alpha)
+        getRealPart(d_alpha, d_real_alpha, static_cast<int>(numvec), &stream);
         cudaMemcpyAsync(real_alpha.data(), d_real_alpha, numvec * sizeof(RealT),
                        cudaMemcpyDeviceToHost, stream);
         cudaStreamSynchronize(stream);
-        
-        // Compute alpha = -real_alpha * beta (beta from previous iteration/init)
         for (auto i = 0; i < numvec; i++)
         {
-            alpha[i] = -real_alpha[i] * beta[i];
-        }
-        
-        // Step 2: AXPY: v_2[:,i] += alpha[i] * v_1[:,i]
-        cudaMemcpyAsync(d_alpha, alpha.data(), numvec * sizeof(T),
-                       cudaMemcpyHostToDevice, stream);
-        batchedAxpy(d_alpha, v_1.l_data(), v_2.l_data(),
-                   v_1.l_rows(), numvec, v_1.l_ld(), &stream);
-        cudaStreamSynchronize(stream);
-        
-        // Step 3: Negate alpha for storage in d array
-        for (auto i = 0; i < numvec; i++)
-        {
-            alpha[i] = -alpha[i];
-        }
-
-        for (auto i = 0; i < numvec; i++)
-        {
-            d[k + M * i] = std::real(alpha[i]);
+            d[k + M * i] = real_alpha[i];
         }
 #else
         for (auto i = 0; i < numvec; i++)
@@ -378,28 +318,10 @@ void cuda_nccl::pseudo_hermitian_lanczos(
             break;
 
 #ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
-        // Step 5: Compute -1/beta, AXPY with v_0, restore beta
-        // (Subtract previous vector contribution)
-        
-        for (auto i = 0; i < numvec; i++)
-        {
-            beta[i] = -One / beta[i];
-        }
-        
-        // Copy beta to device
-        cudaMemcpyAsync(d_beta, beta.data(), numvec * sizeof(T),
-                       cudaMemcpyHostToDevice, stream);
-        
-        // Batched AXPY: v_2[:,i] += beta[i] * v_0[:,i]
-        batchedAxpy(d_beta, v_0.l_data(), v_2.l_data(),
+        // Step 5: v_2 += (-sqrt(real_dot)) * v_0 = (-d_real_beta) * v_0 (same as ref: beta = -1/beta so coeff = -sqrt)
+        copyRealNegateToT(d_real_beta, d_beta_neg, static_cast<int>(numvec), &stream);
+        batchedAxpy(d_beta_neg, v_0.l_data(), v_2.l_data(),
                    v_0.l_rows(), numvec, v_0.l_ld(), &stream);
-        cudaStreamSynchronize(stream);
-        
-        // Restore beta sign
-        for (auto i = 0; i < numvec; i++)
-        {
-            beta[i] = -beta[i];
-        }
 #else
         for (auto i = 0; i < numvec; i++)
         {
@@ -437,60 +359,24 @@ void cuda_nccl::pseudo_hermitian_lanczos(
         cudaDeviceSynchronize();
 
 #ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
-        // Step 9: Compute beta = real(v_1 · Sv), allreduce, sqrt
-        
-        // Batched dot products: d_beta[i] = conj(v_1[:,i]) · Sv[:,i]
+        // Step 9: real(v_1·Sv) on device, Allreduce, sqrt; e[k]=sqrt; beta_prev=1/sqrt on device
         batchedDotProduct(v_1.l_data(), Sv.l_data(), d_beta,
                          v_1.l_rows(), numvec, v_1.l_ld(), false, &stream);
-        
-        // Copy to host and extract real parts
-        std::vector<T> beta_host_complex_loop(numvec);
-        cudaMemcpyAsync(beta_host_complex_loop.data(), d_beta, numvec * sizeof(T),
-                       cudaMemcpyDeviceToHost, stream);
-        cudaStreamSynchronize(stream);
-        
-        for (auto i = 0; i < numvec; i++)
-        {
-            real_beta[i] = std::real(beta_host_complex_loop[i]);
-        }
-        
-        // Copy real parts to device for NCCL Allreduce
-        cudaMemcpyAsync(d_real_beta, real_beta.data(), numvec * sizeof(RealT),
-                       cudaMemcpyHostToDevice, stream);
-        
-        // NCCL Allreduce (sum real parts)
+        getRealPart(d_beta, d_real_beta, static_cast<int>(numvec), &stream);
         CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper(
             d_real_beta, d_real_beta, numvec, ncclSum, nccl_comm, &stream));
-        
-        // Copy back to host for sqrt
+        batchedSqrt(d_real_beta, static_cast<int>(numvec), &stream);
         cudaMemcpyAsync(real_beta.data(), d_real_beta, numvec * sizeof(RealT),
                        cudaMemcpyDeviceToHost, stream);
+        realReciprocal(d_real_beta, d_real_beta_prev, static_cast<int>(numvec), &stream);
+        copyRealReciprocalToT(d_real_beta, d_beta, static_cast<int>(numvec), &stream);
+        batchedScaleTwo(d_beta, v_1.l_data(), v_2.l_data(),
+                       v_1.l_rows(), numvec, v_1.l_ld(), &stream);
         cudaStreamSynchronize(stream);
-
-        // Step 10: Compute sqrt and store in e array
-        for (auto i = 0; i < numvec; i++)
-        {
-            real_beta[i] = std::sqrt(real_beta[i]);
-        }
-
         for (auto i = 0; i < numvec; i++)
         {
             e[k + M * i] = real_beta[i];
         }
-
-        // Step 11: Compute beta = 1/sqrt(real_beta) for next iteration
-        for (auto i = 0; i < numvec; i++)
-        {
-            beta[i] = One / real_beta[i];
-        }
-        
-        // Step 12: Scale v_1 and v_2 by beta (normalization)
-        cudaMemcpyAsync(d_beta, beta.data(), numvec * sizeof(T),
-                       cudaMemcpyHostToDevice, stream);
-        
-        batchedScale(d_beta, v_1.l_data(), v_1.l_rows(), numvec, v_1.l_ld(), &stream);
-        batchedScale(d_beta, v_2.l_data(), v_2.l_rows(), numvec, v_2.l_ld(), &stream);
-        cudaStreamSynchronize(stream);
 #else
         for (auto i = 0; i < numvec; i++)
         {
@@ -549,6 +435,8 @@ void cuda_nccl::pseudo_hermitian_lanczos(
     cudaFree(d_beta);
     cudaFree(d_real_alpha);
     cudaFree(d_real_beta);
+    cudaFree(d_real_beta_prev);
+    cudaFree(d_beta_neg);
 #endif
 
     auto lapack_start = std::chrono::high_resolution_clock::now();
@@ -659,15 +547,26 @@ void cuda_nccl::pseudo_hermitian_lanczos(
     T* d_beta;
     RealT* d_real_alpha;
     RealT* d_real_beta;
+    RealT* d_real_beta_prev;
+    T* d_beta_neg;
     cudaMalloc(&d_alpha, sizeof(T));
     cudaMalloc(&d_beta, sizeof(T));
     cudaMalloc(&d_real_alpha, sizeof(RealT));
     cudaMalloc(&d_real_beta, sizeof(RealT));
+    cudaMalloc(&d_real_beta_prev, sizeof(RealT));
+    cudaMalloc(&d_beta_neg, sizeof(T));
     
-    // Include fused kernel utilities
     using chase::linalg::internal::cuda::batchedDotProduct;
     using chase::linalg::internal::cuda::batchedAxpy;
     using chase::linalg::internal::cuda::batchedScale;
+    using chase::linalg::internal::cuda::batchedScaleTwo;
+    using chase::linalg::internal::cuda::batchedSqrt;
+    using chase::linalg::internal::cuda::getRealPart;
+    using chase::linalg::internal::cuda::copyRealToT;
+    using chase::linalg::internal::cuda::realReciprocal;
+    using chase::linalg::internal::cuda::copyRealReciprocalToT;
+    using chase::linalg::internal::cuda::copyRealNegateToT;
+    using chase::linalg::internal::cuda::scaleComplexByRealNegate;
     
     cublasSetStream(cublas_handle, stream);
     
@@ -713,36 +612,15 @@ void cuda_nccl::pseudo_hermitian_lanczos(
     cudaDeviceSynchronize();
 
 #ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
-    // Dot product: beta = v_1 · Sv
+    // Init: real(v_1·Sv) on device, Allreduce, beta = 1/sqrt on device
     batchedDotProduct(v_1.l_data(), Sv.l_data(), d_beta,
                      v_1.l_rows(), 1, v_1.l_ld(), false, &stream);
-    
-    // Copy complex result to host and extract real part
-    T beta_complex_val;
-    cudaMemcpyAsync(&beta_complex_val, d_beta, sizeof(T),
-                   cudaMemcpyDeviceToHost, stream);
-    cudaStreamSynchronize(stream);
-    
-    real_beta = std::real(beta_complex_val);
-    
-    // Copy real part to device for NCCL Allreduce
-    cudaMemcpyAsync(d_real_beta, &real_beta, sizeof(RealT),
-                   cudaMemcpyHostToDevice, stream);
-    
+    getRealPart(d_beta, d_real_beta, 1, &stream);
     CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper(
         d_real_beta, d_real_beta, 1, ncclSum, nccl_comm, &stream));
-    
-    // Copy allreduced value back to host
-    cudaMemcpyAsync(&real_beta, d_real_beta, sizeof(RealT),
-                   cudaMemcpyDeviceToHost, stream);
-    cudaStreamSynchronize(stream);
-
-    beta = One / std::sqrt(real_beta);
-
-    // Copy beta to device for batched scaling
-    cudaMemcpyAsync(d_beta, &beta, sizeof(T), cudaMemcpyHostToDevice, stream);
-    
-    // Scale vectors using GPU-resident batched kernel
+    batchedSqrt(d_real_beta, 1, &stream);
+    realReciprocal(d_real_beta, d_real_beta_prev, 1, &stream);
+    copyRealReciprocalToT(d_real_beta, d_beta, 1, &stream);
     batchedScale(d_beta, v_1.l_data(), v_1.l_rows(), 1, v_1.l_ld(), &stream);
     batchedScale(d_beta, v_2.l_data(), v_2.l_rows(), 1, v_2.l_ld(), &stream);
 #else
@@ -770,42 +648,20 @@ void cuda_nccl::pseudo_hermitian_lanczos(
                    v_1.l_rows() * sizeof(T), cudaMemcpyDeviceToDevice);
 
 #ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
-        // Dot product: alpha = v_2 · Sv
+        // Alpha: real(v_2·Sv) on device, Allreduce; alpha = -real_alpha*beta_prev on device
         batchedDotProduct(v_2.l_data(), Sv.l_data(), d_alpha,
                          v_2.l_rows(), 1, v_2.l_ld(), false, &stream);
-        
-        // Copy complex result to host and extract real part
-        T alpha_complex_val;
-        cudaMemcpyAsync(&alpha_complex_val, d_alpha, sizeof(T),
-                       cudaMemcpyDeviceToHost, stream);
-        cudaStreamSynchronize(stream);
-        
-        real_alpha = std::real(alpha_complex_val);
-        
-        // Copy real part to device for NCCL Allreduce
-        cudaMemcpyAsync(d_real_alpha, &real_alpha, sizeof(RealT),
-                       cudaMemcpyHostToDevice, stream);
-        
+        getRealPart(d_alpha, d_real_alpha, 1, &stream);
         CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper(
             d_real_alpha, d_real_alpha, 1, ncclSum, nccl_comm, &stream));
-        
-        // Copy allreduced value back to host
         cudaMemcpyAsync(&real_alpha, d_real_alpha, sizeof(RealT),
                        cudaMemcpyDeviceToHost, stream);
-        cudaStreamSynchronize(stream);
-        
-        alpha = -real_alpha * beta;
-        
-        // AXPY: v_2 += alpha * v_1
-        cudaMemcpyAsync(d_alpha, &alpha, sizeof(T),
-                       cudaMemcpyHostToDevice, stream);
+        copyRealToT(d_real_alpha, d_alpha, 1, &stream);
+        scaleComplexByRealNegate(d_alpha, d_real_beta_prev, 1, &stream);
         batchedAxpy(d_alpha, v_1.l_data(), v_2.l_data(),
                    v_1.l_rows(), 1, v_1.l_ld(), &stream);
         cudaStreamSynchronize(stream);
-        
-        alpha = -alpha;
-
-        d[k] = std::real(alpha);
+        d[k] = -real_alpha;
 #else
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTdot(
             cublas_handle, v_2.l_rows(), v_2.l_data(), 1, Sv.l_data(), 1,
@@ -832,16 +688,9 @@ void cuda_nccl::pseudo_hermitian_lanczos(
             break;
 
 #ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
-        beta = -One / beta;
-        
-        // AXPY: v_2 += beta * v_0
-        cudaMemcpyAsync(d_beta, &beta, sizeof(T),
-                       cudaMemcpyHostToDevice, stream);
-        batchedAxpy(d_beta, v_0.l_data(), v_2.l_data(),
+        copyRealNegateToT(d_real_beta_prev, d_beta_neg, 1, &stream);
+        batchedAxpy(d_beta_neg, v_0.l_data(), v_2.l_data(),
                    v_0.l_rows(), 1, v_0.l_ld(), &stream);
-        cudaStreamSynchronize(stream);
-        
-        beta = -beta;
 #else
         beta = -One / beta;
 
@@ -868,42 +717,21 @@ void cuda_nccl::pseudo_hermitian_lanczos(
         cudaDeviceSynchronize();
 
 #ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
-        // Dot product: beta = v_1 · Sv
+        // real(v_1·Sv) on device, Allreduce, sqrt; e[k]=sqrt; beta_prev=1/sqrt on device
         batchedDotProduct(v_1.l_data(), Sv.l_data(), d_beta,
                          v_1.l_rows(), 1, v_1.l_ld(), false, &stream);
-        
-        // Copy complex result to host and extract real part
-        T beta_complex_loop_val;
-        cudaMemcpyAsync(&beta_complex_loop_val, d_beta, sizeof(T),
-                       cudaMemcpyDeviceToHost, stream);
-        cudaStreamSynchronize(stream);
-        
-        real_beta = std::real(beta_complex_loop_val);
-        
-        // Copy real part to device for NCCL Allreduce
-        cudaMemcpyAsync(d_real_beta, &real_beta, sizeof(RealT),
-                       cudaMemcpyHostToDevice, stream);
-        
+        getRealPart(d_beta, d_real_beta, 1, &stream);
         CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper(
             d_real_beta, d_real_beta, 1, ncclSum, nccl_comm, &stream));
-        
-        // Copy allreduced value back to host for sqrt computation
+        batchedSqrt(d_real_beta, 1, &stream);
         cudaMemcpyAsync(&real_beta, d_real_beta, sizeof(RealT),
                        cudaMemcpyDeviceToHost, stream);
+        realReciprocal(d_real_beta, d_real_beta_prev, 1, &stream);
+        copyRealReciprocalToT(d_real_beta, d_beta, 1, &stream);
+        batchedScaleTwo(d_beta, v_1.l_data(), v_2.l_data(),
+                       v_1.l_rows(), 1, v_1.l_ld(), &stream);
         cudaStreamSynchronize(stream);
-
-        real_beta = std::sqrt(real_beta);
         e[k] = real_beta;
-        
-        // Compute beta = 1/||v|| for use in next iteration
-        beta = One / real_beta;
-
-        // Copy beta to device for batched scaling
-        cudaMemcpyAsync(d_beta, &beta, sizeof(T), cudaMemcpyHostToDevice, stream);
-        
-        // Scale vectors using GPU-resident batched kernel
-        batchedScale(d_beta, v_1.l_data(), v_1.l_rows(), 1, v_1.l_ld(), &stream);
-        batchedScale(d_beta, v_2.l_data(), v_2.l_rows(), 1, v_2.l_ld(), &stream);
 #else
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTdot(
             cublas_handle, v_1.l_rows(), v_1.l_data(), 1, Sv.l_data(), 1,
@@ -934,6 +762,8 @@ void cuda_nccl::pseudo_hermitian_lanczos(
     cudaFree(d_beta);
     cudaFree(d_real_alpha);
     cudaFree(d_real_beta);
+    cudaFree(d_real_beta_prev);
+    cudaFree(d_beta_neg);
 #endif
 
     auto lapack_start = std::chrono::high_resolution_clock::now();

@@ -176,22 +176,29 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
     ncclComm_t nccl_comm = H.getMpiGrid()->get_nccl_col_comm();
     
     // ========================================================================
-    // GPU-Resident: Allocate device buffers
+    // GPU-Resident: Allocate device buffers (once, no allocation in loop)
     // ========================================================================
     T* d_alpha;
     RealT* d_real_alpha;
     RealT* d_r_beta;
+    RealT* d_beta_prev;   // previous iteration beta (after sqrt), for k>0 axpy
+    T* d_beta_neg;       // -beta for batched axpy, reused every k>0
     cudaMalloc(&d_alpha, numvec * sizeof(T));
     cudaMalloc(&d_real_alpha, numvec * sizeof(RealT));
     cudaMalloc(&d_r_beta, numvec * sizeof(RealT));
-    
+    cudaMalloc(&d_beta_prev, numvec * sizeof(RealT));
+    cudaMalloc(&d_beta_neg, numvec * sizeof(T));
+
     // Initialize to zero to prevent garbage values
     cudaMemset(d_alpha, 0, numvec * sizeof(T));
     cudaMemset(d_real_alpha, 0, numvec * sizeof(RealT));
     cudaMemset(d_r_beta, 0, numvec * sizeof(RealT));
+    cudaMemset(d_beta_prev, 0, numvec * sizeof(RealT));
+    cudaMemset(d_beta_neg, 0, numvec * sizeof(T));
 
-    // Host buffers (only for LAPACK and final results)
+    // Host buffers (only for LAPACK and final results; keep RealT only, no T on host)
     std::vector<RealT> r_beta_host(numvec);
+    std::vector<RealT> real_d_k_host(numvec);  // real(alpha) for current k
     std::vector<RealT> d(M * numvec);
     std::vector<RealT> e(M * numvec);
 
@@ -220,10 +227,12 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
     using chase::linalg::internal::cuda::batchedNormSquared;
     using chase::linalg::internal::cuda::batchedDotProduct;
     using chase::linalg::internal::cuda::batchedAxpy;
+    using chase::linalg::internal::cuda::batchedAxpyThenNegate;
     using chase::linalg::internal::cuda::normalizeVectors;
-    using chase::linalg::internal::cuda::negate;
-    using chase::linalg::internal::cuda::sqrtInplace;
-    
+    using chase::linalg::internal::cuda::batchedSqrt;
+    using chase::linalg::internal::cuda::copyRealNegateToT;
+    using chase::linalg::internal::cuda::getRealPart;
+
     batchedNormSquared(v_1.l_data(), d_real_alpha, v_1.l_rows(), numvec, v_1.l_ld(), &stream);
     CHECK_CUDA_ERROR(cudaGetLastError());  // Check for kernel launch errors
 
@@ -264,46 +273,21 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
         CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper(
             d_alpha, d_alpha, numvec, ncclSum, nccl_comm, &stream));
 
-        // Batched AXPY with NEGATIVE alpha: v_2[:,i] += (-alpha[i]) * v_1[:,i] for all i
-        // Single kernel launch replaces numvec separate cublasTaxpy calls
-        batchedAxpy(d_alpha, v_1.l_data(), v_2.l_data(), 
-                   v_1.l_rows(), numvec, v_1.l_ld(), &stream);
+        // Fused: Batched AXPY with NEGATIVE alpha then negate alpha for storage (single kernel)
+        batchedAxpyThenNegate(d_alpha, v_1.l_data(), v_2.l_data(),
+                              v_1.l_rows(), numvec, v_1.l_ld(), &stream);
 
-        // Negate back to get positive alpha for storage
-        negate(d_alpha, numvec, &stream);
-
-        // Copy alpha to host for d array (needed for LAPACK later)
-        std::vector<T> alpha_host(numvec);
-        cudaMemcpyAsync(alpha_host.data(), d_alpha, numvec * sizeof(T),
+        // Extract real(alpha) on GPU and copy to host for d[] (no T on host)
+        getRealPart(d_alpha, d_real_alpha, numvec, &stream);
+        cudaMemcpyAsync(real_d_k_host.data(), d_real_alpha, numvec * sizeof(RealT),
                        cudaMemcpyDeviceToHost, stream);
-        cudaStreamSynchronize(stream);
-        
-        for (auto i = 0; i < numvec; i++)
-        {
-            d[k + M * i] = std::real(alpha_host[i]);
-        }
 
-        // Subtract previous beta contribution (if k > 0)
+        // Subtract previous beta contribution (if k > 0) using device-resident beta (no host round-trip)
         if (k > 0)
         {
-            // Prepare negative beta values on GPU for batched AXPY
-            T* d_beta_neg;
-            cudaMalloc(&d_beta_neg, numvec * sizeof(T));
-            
-            // Convert RealT beta to T and copy to device
-            std::vector<T> beta_host_T(numvec);
-            for (auto i = 0; i < numvec; i++)
-            {
-                beta_host_T[i] = T(-r_beta_host[i]);
-            }
-            cudaMemcpyAsync(d_beta_neg, beta_host_T.data(), numvec * sizeof(T),
-                           cudaMemcpyHostToDevice, stream);
-            
-            // Batched AXPY: v_2[:,i] += (-beta[i]) * v_0[:,i] for all i
+            copyRealNegateToT(d_beta_prev, d_beta_neg, numvec, &stream);
             batchedAxpy(d_beta_neg, v_0.l_data(), v_2.l_data(),
                        v_0.l_rows(), numvec, v_0.l_ld(), &stream);
-            
-            cudaFree(d_beta_neg);
         }
 
         // Compute norms squared (GPU-resident)
@@ -314,29 +298,30 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
         CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper(
             d_r_beta, d_r_beta, numvec, ncclSum, nccl_comm, &stream));
 
-        // Copy norm squared to host and compute sqrt on host
-        cudaMemcpyAsync(r_beta_host.data(), d_r_beta, numvec * sizeof(RealT),
+        // Keep beta on device: copy d_r_beta (norm²) to d_beta_prev, then sqrt in place for next iteration
+        cudaMemcpyAsync(d_beta_prev, d_r_beta, numvec * sizeof(RealT),
+                       cudaMemcpyDeviceToDevice, stream);
+        batchedSqrt(d_beta_prev, numvec, &stream);
+
+        // Normalize v_2: v_2 *= 1/||v_2|| using norm² (d_r_beta still holds norm²)
+        normalizeVectors(v_2.l_data(), d_r_beta, v_2.l_rows(), numvec, v_2.l_ld(), &stream);
+
+        // Copy beta to host for e[k] and r_beta_host (async; one sync below for both alpha and beta)
+        cudaMemcpyAsync(r_beta_host.data(), d_beta_prev, numvec * sizeof(RealT),
                        cudaMemcpyDeviceToHost, stream);
+
+        // Single sync when we need host data for d[k] and e[k]
         cudaStreamSynchronize(stream);
-        
         for (auto i = 0; i < numvec; i++)
+            d[k + M * i] = real_d_k_host[i];
+        if (k < M - 1)
         {
-            r_beta_host[i] = std::sqrt(r_beta_host[i]);
+            for (auto i = 0; i < numvec; i++)
+                e[k + M * i] = r_beta_host[i];
         }
 
         if (k == M - 1)
-        {
             break;
-        }
-
-        // Normalize v_2: v_2 *= 1/||v_2|| using norm² still on GPU
-        normalizeVectors(v_2.l_data(), d_r_beta, v_2.l_rows(), numvec, v_2.l_ld(), &stream);
-
-        // Store e[k] for LAPACK
-        for (auto i = 0; i < numvec; i++)
-        {
-            e[k + M * i] = r_beta_host[i];
-        }
 
         v_1.swap(v_0);
         v_1.swap(v_2);
@@ -404,6 +389,8 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
     cudaFree(d_alpha);
     cudaFree(d_real_alpha);
     cudaFree(d_r_beta);
+    cudaFree(d_beta_prev);
+    cudaFree(d_beta_neg);
 
 #else
 #ifdef CHASE_OUTPUT
@@ -651,24 +638,30 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
     ncclComm_t nccl_comm = H.getMpiGrid()->get_nccl_col_comm();
 
     // ========================================================================
-    // GPU-Resident: Allocate device buffers
+    // GPU-Resident: Allocate device buffers (once, no allocation in loop)
     // ========================================================================
     T* d_alpha;
     RealT* d_real_alpha;
     RealT* d_r_beta;
+    RealT* d_beta_prev;   // previous iteration beta (after sqrt), for k>0 axpy
+    T* d_beta_neg;        // -beta for axpy, reused every k>0
     cudaMalloc(&d_alpha, sizeof(T));
     cudaMalloc(&d_real_alpha, sizeof(RealT));
     cudaMalloc(&d_r_beta, sizeof(RealT));
-    
-    // Initialize to zero to prevent garbage values
+    cudaMalloc(&d_beta_prev, sizeof(RealT));
+    cudaMalloc(&d_beta_neg, sizeof(T));
+
     cudaMemset(d_alpha, 0, sizeof(T));
     cudaMemset(d_real_alpha, 0, sizeof(RealT));
     cudaMemset(d_r_beta, 0, sizeof(RealT));
+    cudaMemset(d_beta_prev, 0, sizeof(RealT));
+    cudaMemset(d_beta_neg, 0, sizeof(T));
 
-    // Host buffers
+    // Host buffers (RealT only for LAPACK inputs, no T on host)
     std::vector<RealT> d(M);
     std::vector<RealT> e(M);
     RealT r_beta_host;
+    RealT real_d_k;  // real(alpha) for current k
 
     // Note: cublas_handle is already configured with CUBLAS_POINTER_MODE_DEVICE
     // in the pchase_gpu constructor, so all scalar pointers must be on device
@@ -693,10 +686,11 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
     using chase::linalg::internal::cuda::batchedNormSquared;
     using chase::linalg::internal::cuda::batchedDotProduct;
     using chase::linalg::internal::cuda::batchedAxpy;
+    using chase::linalg::internal::cuda::batchedAxpyThenNegate;
     using chase::linalg::internal::cuda::normalizeVectors;
-    using chase::linalg::internal::cuda::negate;
-    using chase::linalg::internal::cuda::sqrtInplace;
-    using chase::linalg::internal::cuda::squareInplace;
+    using chase::linalg::internal::cuda::batchedSqrt;
+    using chase::linalg::internal::cuda::copyRealNegateToT;
+    using chase::linalg::internal::cuda::getRealPart;
     
     // Compute norm squared on GPU (single vector version)
     batchedNormSquared(v_1.l_data(), d_real_alpha, v_1.l_rows(), 1, v_1.l_ld(), &stream);
@@ -732,81 +726,57 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
         CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper(
             d_alpha, d_alpha, 1, ncclSum, nccl_comm, &stream));
 
-        // AXPY with NEGATIVE alpha: v_2 = v_2 + (-alpha)*v_1
-        CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTaxpy(
-            cublas_handle, v_1.l_rows(), d_alpha, v_1.l_data(), 1, v_2.l_data(),
-            1));
-        CHECK_CUDA_ERROR(cudaGetLastError());  // Check for errors from cuBLAS operation
+        // Fused: AXPY with NEGATIVE alpha then negate alpha for storage (single kernel)
+        batchedAxpyThenNegate(d_alpha, v_1.l_data(), v_2.l_data(),
+                             v_1.l_rows(), 1, v_1.l_ld(), &stream);
 
-        // Negate back to get positive alpha for storage
-        negate(d_alpha, 1, &stream);
+        // Extract real(alpha) on GPU and copy to host for d[] (no T on host)
+        getRealPart(d_alpha, d_real_alpha, 1, &stream);
+        cudaMemcpyAsync(&real_d_k, d_real_alpha, sizeof(RealT), cudaMemcpyDeviceToHost, stream);
 
-        // Copy alpha to host for d array
-        T alpha_host;
-        cudaMemcpyAsync(&alpha_host, d_alpha, sizeof(T),
-                       cudaMemcpyDeviceToHost, stream);
-        cudaStreamSynchronize(stream);
-        d[k] = std::real(alpha_host);
-        
-#ifdef CHASE_OUTPUT
-        if (std::isnan(d[k]) || std::isinf(d[k])) {
-            if (H.getMpiGrid()->get_myRank() == 0) {
-                std::cout << "[LANCZOS DEBUG] d[" << k << "] = " << d[k] 
-                         << " (alpha_host = " << alpha_host << ")" << std::endl;
-            }
-        }
-#endif
-
+        // Subtract previous beta (if k > 0) using device-resident beta; use fused batchedAxpy (numvec=1)
         if (k > 0)
         {
-            T beta_host = T(-r_beta_host);
-            // Use async copy with stream to maintain stream ordering
-            cudaMemcpyAsync(d_alpha, &beta_host, sizeof(T), cudaMemcpyHostToDevice, stream);
-            
-            CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTaxpy(
-                cublas_handle, v_0.l_rows(), d_alpha, v_0.l_data(), 1,
-                v_2.l_data(), 1));
-            CHECK_CUDA_ERROR(cudaGetLastError());  // Check for errors from cuBLAS operation
+            copyRealNegateToT(d_beta_prev, d_beta_neg, 1, &stream);
+            batchedAxpy(d_beta_neg, v_0.l_data(), v_2.l_data(),
+                       v_0.l_rows(), 1, v_0.l_ld(), &stream);
         }
 
         // Compute norm squared (GPU-resident)
         batchedNormSquared(v_2.l_data(), d_r_beta, v_2.l_rows(), 1, v_2.l_ld(), &stream);
-        CHECK_CUDA_ERROR(cudaGetLastError());  // Check for kernel launch errors
-
-        // NCCL Allreduce: sum norm squared
+        CHECK_CUDA_ERROR(cudaGetLastError());
         CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper(
             d_r_beta, d_r_beta, 1, ncclSum, nccl_comm, &stream));
 
-        // Copy norm squared to host and compute sqrt on host
-        cudaMemcpyAsync(&r_beta_host, d_r_beta, sizeof(RealT),
-                       cudaMemcpyDeviceToHost, stream);
+        // Keep beta on device: copy d_r_beta to d_beta_prev, sqrt in place
+        cudaMemcpyAsync(d_beta_prev, d_r_beta, sizeof(RealT), cudaMemcpyDeviceToDevice, stream);
+        batchedSqrt(d_beta_prev, 1, &stream);
+
+        // Normalize v_2 using norm² (d_r_beta still holds norm²)
+        normalizeVectors(v_2.l_data(), d_r_beta, v_2.l_rows(), 1, v_2.l_ld(), &stream);
+
+        // Copy beta to host for e[k] and r_beta_host (async)
+        cudaMemcpyAsync(&r_beta_host, d_beta_prev, sizeof(RealT), cudaMemcpyDeviceToHost, stream);
+
+        // Single sync when we need host data for d[k] and e[k]
         cudaStreamSynchronize(stream);
-        
-        r_beta_host = std::sqrt(r_beta_host);
-        
+        d[k] = real_d_k;
+        if (k < M - 1)
+            e[k] = r_beta_host;
+
 #ifdef CHASE_OUTPUT
-        if (std::isnan(r_beta_host) || std::isinf(r_beta_host) || r_beta_host < 0) {
-            if (H.getMpiGrid()->get_myRank() == 0) {
-                std::cout << "[LANCZOS DEBUG] k=" << k << " r_beta_host = " << r_beta_host << std::endl;
-            }
+        if (std::isnan(d[k]) || std::isinf(d[k])) {
+            if (H.getMpiGrid()->get_myRank() == 0)
+                std::cout << "[LANCZOS DEBUG] d[" << k << "] = " << d[k] << std::endl;
+        }
+        if (k < M - 1 && (std::isnan(e[k]) || std::isinf(e[k]))) {
+            if (H.getMpiGrid()->get_myRank() == 0)
+                std::cout << "[LANCZOS DEBUG] e[" << k << "] = " << e[k] << std::endl;
         }
 #endif
 
         if (k == M - 1)
             break;
-
-        // Normalize v_2: v_2 *= 1/||v_2|| using norm² still on GPU
-        normalizeVectors(v_2.l_data(), d_r_beta, v_2.l_rows(), 1, v_2.l_ld(), &stream);
-        
-        e[k] = r_beta_host;
-        
-#ifdef CHASE_OUTPUT
-        if (std::isnan(e[k]) || std::isinf(e[k])) {
-            if (H.getMpiGrid()->get_myRank() == 0) {
-                std::cout << "[LANCZOS DEBUG] e[" << k << "] = " << e[k] << std::endl;
-            }
-        }
-#endif
 
         v_1.swap(v_0);
         v_1.swap(v_2);
@@ -877,6 +847,8 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
     cudaFree(d_alpha);
     cudaFree(d_real_alpha);
     cudaFree(d_r_beta);
+    cudaFree(d_beta_prev);
+    cudaFree(d_beta_neg);
 
 #else
 #ifdef CHASE_OUTPUT

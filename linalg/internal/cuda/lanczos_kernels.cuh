@@ -22,24 +22,6 @@ namespace cuda
 // Forward declarations of CUDA kernels
 
 /**
- * @brief Square elements in-place on GPU
- */
-template<typename T>
-__global__ void square_inplace_kernel(T* data, int n);
-
-/**
- * @brief Negate array elements in-place
- */
-template<typename T>
-__global__ void negate_kernel(T* data, int n);
-
-/**
- * @brief Take square root in-place
- */
-template<typename T>
-__global__ void sqrt_inplace_kernel(T* data, int n);
-
-/**
  * @brief Fused normalization: compute 1/sqrt(norm_squared) and scale vectors
  */
 template<typename T, typename RealT>
@@ -76,18 +58,7 @@ __global__ void batched_norm_squared_kernel(
 
 // Host callable functions for launching kernels
 
-void square_inplace_gpu(double* data, int n, cudaStream_t stream);
-void square_inplace_gpu(float* data, int n, cudaStream_t stream);
-
-void negate_gpu(double* data, int n, cudaStream_t stream);
-void negate_gpu(float* data, int n, cudaStream_t stream);
-void negate_gpu(cuDoubleComplex* data, int n, cudaStream_t stream);
-void negate_gpu(cuComplex* data, int n, cudaStream_t stream);
-
-void sqrt_inplace_gpu(double* data, int n, cudaStream_t stream);
-void sqrt_inplace_gpu(float* data, int n, cudaStream_t stream);
-
-// Batched sqrt: data[i] = sqrt(data[i])
+// Element-wise sqrt in-place: data[i] = sqrt(data[i])
 void batched_sqrt_gpu(double* data, int n, cudaStream_t stream);
 void batched_sqrt_gpu(float* data, int n, cudaStream_t stream);
 
@@ -137,6 +108,48 @@ void batched_axpy_gpu(const float* alpha, const float* x,
                      float* y, int rows, int numvec, int ld,
                      cudaStream_t stream);
 
+// Batched AXPY then negate: y[:,i] += alpha[i]*x[:,i], then alpha[i] = -alpha[i]
+void batched_axpy_then_negate_gpu(double* alpha, const double* x, double* y,
+                                  int rows, int numvec, int ld,
+                                  cudaStream_t stream);
+void batched_axpy_then_negate_gpu(float* alpha, const float* x, float* y,
+                                  int rows, int numvec, int ld,
+                                  cudaStream_t stream);
+void batched_axpy_then_negate_gpu(cuDoubleComplex* alpha, const cuDoubleComplex* x,
+                                  cuDoubleComplex* y, int rows, int numvec, int ld,
+                                  cudaStream_t stream);
+void batched_axpy_then_negate_gpu(cuComplex* alpha, const cuComplex* x,
+                                  cuComplex* y, int rows, int numvec, int ld,
+                                  cudaStream_t stream);
+
+// Copy real array to T with negate: out[i] = T(-in[i])
+void copy_real_negate_to_T_gpu(const double* in, double* out, int n, cudaStream_t stream);
+void copy_real_negate_to_T_gpu(const float* in, float* out, int n, cudaStream_t stream);
+void copy_real_negate_to_T_gpu(const double* in, cuDoubleComplex* out, int n, cudaStream_t stream);
+void copy_real_negate_to_T_gpu(const float* in, cuComplex* out, int n, cudaStream_t stream);
+
+// Extract real part: out[i] = real(in[i]) (RealT output; for complex T, out[i] = in[i].x)
+void real_part_gpu(const double* in, double* out, int n, cudaStream_t stream);
+void real_part_gpu(const float* in, float* out, int n, cudaStream_t stream);
+void real_part_gpu(const cuDoubleComplex* in, double* out, int n, cudaStream_t stream);
+void real_part_gpu(const cuComplex* in, float* out, int n, cudaStream_t stream);
+
+// Copy real to T: out[i] = T(in[i])
+void copy_real_to_T_gpu(const double* in, double* out, int n, cudaStream_t stream);
+void copy_real_to_T_gpu(const float* in, float* out, int n, cudaStream_t stream);
+void copy_real_to_T_gpu(const double* in, cuDoubleComplex* out, int n, cudaStream_t stream);
+void copy_real_to_T_gpu(const float* in, cuComplex* out, int n, cudaStream_t stream);
+
+// Real reciprocal: out[i] = 1/in[i]
+void real_reciprocal_gpu(const double* in, double* out, int n, cudaStream_t stream);
+void real_reciprocal_gpu(const float* in, float* out, int n, cudaStream_t stream);
+
+// Copy real reciprocal to T: out[i] = T(1/in[i])
+void copy_real_reciprocal_to_T_gpu(const double* in, double* out, int n, cudaStream_t stream);
+void copy_real_reciprocal_to_T_gpu(const float* in, float* out, int n, cudaStream_t stream);
+void copy_real_reciprocal_to_T_gpu(const double* in, cuDoubleComplex* out, int n, cudaStream_t stream);
+void copy_real_reciprocal_to_T_gpu(const float* in, cuComplex* out, int n, cudaStream_t stream);
+
 void batched_norm_squared_gpu(const cuDoubleComplex* v, double* norms_squared,
                               int rows, int numvec, int ld, cudaStream_t stream);
 void batched_norm_squared_gpu(const cuComplex* v, float* norms_squared,
@@ -179,20 +192,6 @@ void fused_dot_axpy_negate_gpu(const cuComplex* v1, const cuComplex* v2,
                                cuComplex* y, const cuComplex* x,
                                cuComplex* alpha_out,
                                int rows, int numvec, int ld,
-                               cudaStream_t stream);
-
-// Fused for pseudo-Hermitian: copy src -> dst and flip sign of lower half of dst
-void lacpy_flip_lower_half_gpu(const double* src, double* dst,
-                               int m, int n, int ld_src, int ld_dst,
-                               cudaStream_t stream);
-void lacpy_flip_lower_half_gpu(const float* src, float* dst,
-                               int m, int n, int ld_src, int ld_dst,
-                               cudaStream_t stream);
-void lacpy_flip_lower_half_gpu(const cuDoubleComplex* src, cuDoubleComplex* dst,
-                               int m, int n, int ld_src, int ld_dst,
-                               cudaStream_t stream);
-void lacpy_flip_lower_half_gpu(const cuComplex* src, cuComplex* dst,
-                               int m, int n, int ld_src, int ld_dst,
                                cudaStream_t stream);
 
 // Scale two vector sets by the same scale array: v1 *= scale, v2 *= scale
@@ -238,18 +237,6 @@ void pseudo_hermitian_init_single_gpu(cuComplex* v_1, cuComplex* v_2,
                                       float* d_real_beta_prev, int rows, int ld,
                                       cudaStream_t stream);
 
-// Pseudo-Hermitian batched init: scale[i]=1/sqrt(real(d_beta[i])), write d_beta, d_real_beta_prev (no scaling of v)
-void init_scale_from_dot_batched_gpu(double* d_beta, double* d_real_beta_prev,
-                                      int numvec, cudaStream_t stream);
-void init_scale_from_dot_batched_gpu(float* d_beta, float* d_real_beta_prev,
-                                      int numvec, cudaStream_t stream);
-void init_scale_from_dot_batched_gpu(cuDoubleComplex* d_beta,
-                                      double* d_real_beta_prev,
-                                      int numvec, cudaStream_t stream);
-void init_scale_from_dot_batched_gpu(cuComplex* d_beta,
-                                      float* d_real_beta_prev,
-                                      int numvec, cudaStream_t stream);
-
 // Pseudo-Hermitian batched fused init: lacpyFlip(v_2->Sv) + dot(v_1,Sv) + scale from dot + scale v_1,v_2 (one kernel)
 void pseudo_hermitian_init_batched_gpu(double* v_1, double* v_2, double* Sv,
                                        double* d_beta, double* d_real_beta_prev,
@@ -271,18 +258,18 @@ void pseudo_hermitian_init_batched_gpu(cuComplex* v_1, cuComplex* v_2,
                                        int rows, int numvec, int ld,
                                        cudaStream_t stream);
 
-// Pseudo-Hermitian fused: dot(v_2,Sv)->alpha, alpha=-real(alpha)*real_beta_prev, v_2_out+=alpha*v_1, output d_alpha
-void fused_dot_scale_negate_axpy_ph_gpu(const double* v_2, const double* Sv,
+// Pseudo-Hermitian fused: dot(v_2,Sv)->alpha, alpha=-real(alpha)*real_beta_prev, v_2_out+=alpha*v_1
+void ph_fused_dot_scale_negate_axpy_gpu(const double* v_2, const double* Sv,
                                          double* d_alpha, const double* v_1,
                                          double* v_2_out, const double* d_real_beta_prev,
                                          int rows, int numvec, int ld,
                                          cudaStream_t stream);
-void fused_dot_scale_negate_axpy_ph_gpu(const float* v_2, const float* Sv,
+void ph_fused_dot_scale_negate_axpy_gpu(const float* v_2, const float* Sv,
                                          float* d_alpha, const float* v_1,
                                          float* v_2_out, const float* d_real_beta_prev,
                                          int rows, int numvec, int ld,
                                          cudaStream_t stream);
-void fused_dot_scale_negate_axpy_ph_gpu(const cuDoubleComplex* v_2,
+void ph_fused_dot_scale_negate_axpy_gpu(const cuDoubleComplex* v_2,
                                          const cuDoubleComplex* Sv,
                                          cuDoubleComplex* d_alpha,
                                          const cuDoubleComplex* v_1,
@@ -290,26 +277,26 @@ void fused_dot_scale_negate_axpy_ph_gpu(const cuDoubleComplex* v_2,
                                          const double* d_real_beta_prev,
                                          int rows, int numvec, int ld,
                                          cudaStream_t stream);
-void fused_dot_scale_negate_axpy_ph_gpu(const cuComplex* v_2, const cuComplex* Sv,
+void ph_fused_dot_scale_negate_axpy_gpu(const cuComplex* v_2, const cuComplex* Sv,
                                          cuComplex* d_alpha, const cuComplex* v_1,
                                          cuComplex* v_2_out, const float* d_real_beta_prev,
                                          int rows, int numvec, int ld,
                                          cudaStream_t stream);
 
 // Fused: lacpyFlipLowerHalf(v_2->Sv) + batchedDotProduct(v_1, Sv, d_beta)
-void lacpy_flip_batched_dot_gpu(const double* v_2, double* Sv,
+void ph_lacpy_flip_batched_dot_gpu(const double* v_2, double* Sv,
                                  const double* v_1, double* d_beta,
                                  int rows, int numvec, int ld_v2, int ld_sv,
                                  int ld_v1, cudaStream_t stream);
-void lacpy_flip_batched_dot_gpu(const float* v_2, float* Sv,
+void ph_lacpy_flip_batched_dot_gpu(const float* v_2, float* Sv,
                                  const float* v_1, float* d_beta,
                                  int rows, int numvec, int ld_v2, int ld_sv,
                                  int ld_v1, cudaStream_t stream);
-void lacpy_flip_batched_dot_gpu(const cuDoubleComplex* v_2, cuDoubleComplex* Sv,
+void ph_lacpy_flip_batched_dot_gpu(const cuDoubleComplex* v_2, cuDoubleComplex* Sv,
                                  const cuDoubleComplex* v_1, cuDoubleComplex* d_beta,
                                  int rows, int numvec, int ld_v2, int ld_sv,
                                  int ld_v1, cudaStream_t stream);
-void lacpy_flip_batched_dot_gpu(const cuComplex* v_2, cuComplex* Sv,
+void ph_lacpy_flip_batched_dot_gpu(const cuComplex* v_2, cuComplex* Sv,
                                  const cuComplex* v_1, cuComplex* d_beta,
                                  int rows, int numvec, int ld_v2, int ld_sv,
                                  int ld_v1, cudaStream_t stream);
