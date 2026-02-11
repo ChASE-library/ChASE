@@ -163,7 +163,6 @@ TYPED_TEST(PseudoHermitianLanczosGPUTest, tinyPseudoHermitianLanczos)
     EXPECT_LT(diff_min, 5e3 * MachineEpsilon<chase::Base<T>>::value());
     EXPECT_LT(diff_max, 1e3 * MachineEpsilon<chase::Base<T>>::value());
 }
-
 TYPED_TEST(PseudoHermitianLanczosGPUTest, PseudoHermitianSimplefiedLanczos)
 {
     using T = TypeParam;
