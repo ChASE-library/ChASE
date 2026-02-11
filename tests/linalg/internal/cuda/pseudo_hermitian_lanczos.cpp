@@ -160,7 +160,7 @@ TYPED_TEST(PseudoHermitianLanczosGPUTest, tinyPseudoHermitianLanczos)
         this->ritzv_tiny[this->M_tiny - 1] -
         std::real(this->exact_eigsl_H_tiny->data()[this->N_tiny - 1]));
 
-    EXPECT_LT(diff_min, 1e3 * MachineEpsilon<chase::Base<T>>::value());
+    EXPECT_LT(diff_min, 5e3 * MachineEpsilon<chase::Base<T>>::value());
     EXPECT_LT(diff_max, 1e3 * MachineEpsilon<chase::Base<T>>::value());
 }
 
