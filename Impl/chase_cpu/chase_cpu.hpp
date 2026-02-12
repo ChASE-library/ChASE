@@ -526,60 +526,7 @@ public:
 
     void Sort(chase::Base<T>* ritzv, chase::Base<T>* residLast,
               chase::Base<T>* resid) override
-    {
-
-        if constexpr (std::is_same<
-                          MatrixType,
-                          chase::matrix::PseudoHermitianMatrix<T>>::value)
-        {
-            /* Sorting all the eigenvalues is probably not necessary if Opt =
-             * False */
-
-            // Sort eigenpairs in ascending order based on real part of
-            // eigenvalues
-            std::vector<std::size_t> indices(nevex_ - locked_);
-            std::iota(indices.begin(), indices.end(),
-                      0); // Fill with 0, 1, ..., n-1
-            std::sort(indices.begin(), indices.end(),
-                      [&ritzv](std::size_t i1, std::size_t i2)
-                      { return ritzv[i1] < ritzv[i2]; });
-
-            // Create temporary storage for sorted eigenvalues and eigenvectors
-            std::vector<Base<T>> sorted_ritzv(nevex_ - locked_);
-            std::vector<Base<T>> sorted_resid(nevex_ - locked_);
-            std::vector<Base<T>> sorted_residLast(nevex_ - locked_);
-
-            // Reorder eigenvalues and eigenvectors
-            for (std::size_t i = 0; i < locked_; ++i)
-            {
-                for (std::size_t j = 0; j < N_; ++j)
-                {
-                    Vec2_.data()[j + i * N_] = Vec1_.data()[j + i * N_];
-                }
-            }
-
-            for (std::size_t i = 0; i < nevex_ - locked_; ++i)
-            {
-                sorted_ritzv.data()[i] = ritzv[indices[i]];
-                sorted_resid.data()[i] = resid[indices[i]];
-                sorted_residLast.data()[i] = residLast[indices[i]];
-
-                // Copy the corresponding eigenvector column
-                for (std::size_t j = 0; j < N_; ++j)
-                {
-                    Vec2_.data()[j + (i + locked_) * N_] =
-                        Vec1_.data()[j + (indices[i] + locked_) * N_];
-                }
-            }
-
-            // Copy back to original arrays
-            std::copy(sorted_ritzv.begin(), sorted_ritzv.end(), ritzv);
-            std::copy(sorted_resid.begin(), sorted_resid.end(), resid);
-            std::copy(sorted_residLast.begin(), sorted_residLast.end(),
-                      residLast);
-            Vec1_.swap(Vec2_);
-        }
-    }
+    {}
 
     void Resd(chase::Base<T>* ritzv, chase::Base<T>* resd,
               std::size_t fixednev) override
@@ -607,7 +554,11 @@ public:
 
     void Lock(std::size_t new_converged) override { locked_ += new_converged; }
 
-    void End() override {}
+    void End() override {
+        //this operation is required because after multiple swaps, Vec1_, which contains the final eigenvectors, its buffer is 
+        //not pointing to the initial V1_ given by the user.
+        chase::linalg::lapackpp::t_lacpy('A', Vec1_.rows(), Vec1_.cols(), Vec1_.data(), Vec1_.ld(), V1_, ldv_);
+    }
 
 private:
     std::size_t N_;           ///< Size of the matrix.
