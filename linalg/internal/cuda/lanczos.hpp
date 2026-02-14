@@ -73,6 +73,8 @@ void lanczos(cublasHandle_t cublas_handle, std::size_t M, std::size_t numvec,
     // GPU-RESIDENT VERSION: Same structure as NCCL Lanczos (batched kernels +
     // device-resident scalars), without NCCL or redistribution.
     // ========================================================================
+    cudaStream_t stream_orig;
+    CHECK_CUBLAS_ERROR(cublasGetStream(cublas_handle, &stream_orig));
     cudaStream_t stream;
     CHECK_CUDA_ERROR(cudaStreamCreate(&stream));
     CHECK_CUBLAS_ERROR(cublasSetStream(cublas_handle, stream));
@@ -211,6 +213,7 @@ void lanczos(cublasHandle_t cublas_handle, std::size_t M, std::size_t numvec,
     CHECK_CUDA_ERROR(cudaFree(d_real_alpha));
     CHECK_CUDA_ERROR(cudaFree(d_r_beta));
     CHECK_CUDA_ERROR(cudaFree(d_beta_neg));
+    CHECK_CUBLAS_ERROR(cublasSetStream(cublas_handle, stream_orig));
     CHECK_CUDA_ERROR(cudaStreamDestroy(stream));
 
 #else
