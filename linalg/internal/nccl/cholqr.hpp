@@ -61,6 +61,16 @@ int cuda_nccl::cholQR1(cublasHandle_t cublas_handle,
                        // MPI_Comm comm,
                        ncclComm_t comm, T* workspace, int lwork, T* A)
 {
+    // No-op for zero dimensions: avoid cuBLAS/cuSOLVER with n=0 or m=0
+    // (can trigger driver bugs e.g. null deref in cuEGLApiInit on some systems)
+    if (n == 0 || m == 0)
+        return 0;
+
+    // cholQR1 passes host scalar pointers (&One, &Zero); ensure HOST pointer
+    // mode (GPU-resident Lanczos may leave the handle in DEVICE mode).
+    cublasPointerMode_t prev_mode = CUBLAS_POINTER_MODE_HOST;
+    CHECK_CUBLAS_ERROR(cublasGetPointerMode(cublas_handle, &prev_mode));
+    CHECK_CUBLAS_ERROR(cublasSetPointerMode(cublas_handle, CUBLAS_POINTER_MODE_HOST));
 
     T one = T(1.0);
     T zero = T(0.0);
@@ -147,6 +157,7 @@ int cuda_nccl::cholQR1(cublasHandle_t cublas_handle,
         cudaEventDestroy(ev_trsm);
         cudaEventDestroy(ev_end);
         CHECK_CUDA_ERROR(cudaFree(devInfo));
+        CHECK_CUBLAS_ERROR(cublasSetPointerMode(cublas_handle, prev_mode));
         return info;
     }
     else
@@ -188,6 +199,7 @@ int cuda_nccl::cholQR1(cublasHandle_t cublas_handle,
         cudaEventDestroy(ev_end);
 
         CHECK_CUDA_ERROR(cudaFree(devInfo));
+        CHECK_CUBLAS_ERROR(cublasSetPointerMode(cublas_handle, prev_mode));
         return info;
     }
 }

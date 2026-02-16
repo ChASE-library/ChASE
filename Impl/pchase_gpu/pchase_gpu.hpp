@@ -177,14 +177,7 @@ public:
         CHECK_CUBLAS_ERROR(cublasCreate(&cublasH_));
         CHECK_CUSOLVER_ERROR(cusolverDnCreate(&cusolverH_));
 
-#ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
-        // Create separate cuBLAS handles for Lanczos operations
-        CHECK_CUBLAS_ERROR(cublasCreate(&cublasH_lanczos_));
-        
-        // Set to DEVICE pointer mode for GPU-resident Lanczos (both Hermitian and pseudo-Hermitian)
-        // Batched kernels (dot, AXPY, scale) all use device pointers
-        CHECK_CUBLAS_ERROR(cublasSetPointerMode(cublasH_lanczos_, CUBLAS_POINTER_MODE_DEVICE));
-#endif
+
 #ifdef XGEEV_EXISTS
 #ifdef CHASE_OUTPUT
         if (my_rank_ == 0)
@@ -460,15 +453,15 @@ public:
             for (int i = 0; i < 3; i++)
             {
                 cudaEventRecord(start);
-                
-                // Minimal Lanczos: 1 iteration to warm up redistribute patterns
 #ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
-                cublasHandle_t handle = cublasH_lanczos_;
-                kernelNamespace::lanczos_dispatch(handle, 1, *Hmat_, *V1_, &dummy_upperb);
-#else
-                kernelNamespace::lanczos_dispatch(cublasH_, 1, *Hmat_, *V1_, &dummy_upperb);
+                cudaStream_t saved_stream = nullptr;
+                CHECK_CUBLAS_ERROR(cublasGetStream(cublasH_, &saved_stream));
 #endif
-                
+                // Minimal Lanczos: 1 iteration to warm up redistribute patterns
+                kernelNamespace::lanczos_dispatch(cublasH_, 1, *Hmat_, *V1_, &dummy_upperb);
+#ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
+                CHECK_CUBLAS_ERROR(cublasSetStream(cublasH_, saved_stream));
+#endif
                 cudaEventRecord(stop);
                 cudaEventSynchronize(stop);
                 
@@ -500,10 +493,7 @@ public:
             CHECK_CUBLAS_ERROR(cublasDestroy(cublasH_));
         if (cusolverH_)
             CHECK_CUSOLVER_ERROR(cusolverDnDestroy(cusolverH_));
-#ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
-        if (cublasH_lanczos_)
-            CHECK_CUBLAS_ERROR(cublasDestroy(cublasH_lanczos_));
-#endif
+
         if (d_work_)
             CHECK_CUDA_ERROR(cudaFree(d_work_));
         if (devInfo_)
@@ -643,11 +633,12 @@ public:
         numLanczos_ = 1;
 
 #ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
-        // Use unified cuBLAS handle for GPU-resident Lanczos
-        cublasHandle_t handle = cublasH_lanczos_;
-        kernelNamespace::lanczos_dispatch(handle, m, *Hmat_, *V1_, upperb);
-#else
+        cudaStream_t saved_stream = nullptr;
+        CHECK_CUBLAS_ERROR(cublasGetStream(cublasH_, &saved_stream));
+#endif
         kernelNamespace::lanczos_dispatch(cublasH_, m, *Hmat_, *V1_, upperb);
+#ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
+        CHECK_CUBLAS_ERROR(cublasSetStream(cublasH_, saved_stream));
 #endif
     }
 
@@ -662,13 +653,13 @@ public:
         numLanczos_ = numvec;
 
 #ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
-        // Use unified cuBLAS handle for GPU-resident Lanczos
-        cublasHandle_t handle = cublasH_lanczos_;
-        kernelNamespace::lanczos_dispatch(handle, M, numvec, *Hmat_, *V1_,
-                                          upperb, ritzv, Tau, ritzV);
-#else
+        cudaStream_t saved_stream = nullptr;
+        CHECK_CUBLAS_ERROR(cublasGetStream(cublasH_, &saved_stream));
+#endif
         kernelNamespace::lanczos_dispatch(cublasH_, M, numvec, *Hmat_, *V1_,
                                           upperb, ritzv, Tau, ritzV);
+#ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
+        CHECK_CUBLAS_ERROR(cublasSetStream(cublasH_, saved_stream));
 #endif
     }
 
@@ -1329,10 +1320,7 @@ private:
                                       GPU-based eigenvalue solvers. */
     cusolverDnParams_t
         params_; /**< CUSOLVER structure with information for Xgeev. */
-    
-#ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
-    cublasHandle_t cublasH_lanczos_; /**< Unified cuBLAS handle for GPU-resident Lanczos (DEVICE pointer mode). */
-#endif
+
 
     curandStatePhilox4_32_10_t* states_ =
         NULL; /**< Random number generator state for GPU, used for
