@@ -129,6 +129,7 @@ if(CMAKE_CUDA_COMPILER)
         ${CMAKE_CURRENT_SOURCE_DIR}/internal/cuda/lacpy.cu
         ${CMAKE_CURRENT_SOURCE_DIR}/internal/cuda/random_normal_distribution.cu
         ${CMAKE_CURRENT_SOURCE_DIR}/internal/cuda/residuals.cu
+        ${CMAKE_CURRENT_SOURCE_DIR}/internal/cuda/lanczos_kernels.cu
         )
   add_library( chase_cuda_kernels ${CUDA_SOURCES} )
   set_target_properties( chase_cuda_kernels 

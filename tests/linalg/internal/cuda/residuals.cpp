@@ -116,20 +116,22 @@ TYPED_TEST(ResidsGPUTest, DenseMatrix)
     }
 
     std::unique_ptr<T[]> tau(new T[this->N]);
+    std::vector<T> H_tmp(this->N * this->N);
 
     chase::linalg::lapackpp::t_geqrf(LAPACK_COL_MAJOR, this->N, this->N,
                                      V.data(), this->N, tau.get());
     chase::linalg::lapackpp::t_gqr(LAPACK_COL_MAJOR, this->N, this->N, this->N,
                                    V.data(), this->N, tau.get());
 
+    // H*V must not use H as output (BLAS in-place overlap is undefined)
     chase::linalg::blaspp::t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans,
                                   this->N, this->N, this->N, &One,
                                   this->H.data(), this->N, V.data(), this->N,
-                                  &Zero, this->H.data(), this->N);
+                                  &Zero, H_tmp.data(), this->N);
 
     chase::linalg::blaspp::t_gemm(CblasColMajor, CblasNoTrans, CblasConjTrans,
                                   this->N, this->N, this->N, &One, V.data(),
-                                  this->N, this->H.data(), this->N, &Zero,
+                                  this->N, H_tmp.data(), this->N, &Zero,
                                   this->evecs.data(), this->N);
 
     chase::linalg::lapackpp::t_lacpy('A', this->N, this->N, this->evecs.data(),

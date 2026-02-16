@@ -154,6 +154,15 @@ extern "C"
     void chase_set_cluster_aware_degrees_(int* flag);
     void chase_set_upperb_scale_rate_(float* upperb_scale_rate);
 
+    // Configuration query functions (NEW)
+    // Returns the build configuration that ChASE was compiled with
+    void chase_get_version_(char* version, int* len);
+    void chase_has_cuda_(int* flag);         // Returns 1 if built with CUDA, 0 otherwise
+    void chase_has_nccl_(int* flag);         // Returns 1 if built with NCCL, 0 otherwise
+    void chase_has_scalapack_(int* flag);    // Returns 1 if built with ScaLAPACK, 0 otherwise
+    void chase_has_mpi_(int* flag);          // Returns 1 if built with MPI, 0 otherwise
+    void chase_print_config_();              // Prints the build configuration to stdout
+
 #ifdef __cplusplus
 }
 #endif

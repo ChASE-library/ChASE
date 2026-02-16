@@ -1,0 +1,234 @@
+# ==============================================================================
+# Modern Makefile for ChASE using pkg-config
+# ==============================================================================
+#
+# This Makefile demonstrates how to build applications using ChASE with
+# pkg-config for automatic configuration. No manual flag specification needed!
+#
+# ------------------------------------------------------------------------------
+# PREREQUISITES
+# ------------------------------------------------------------------------------
+#
+# 1. ChASE must be installed with pkg-config support (built with new CMake)
+# 2. pkg-config tool must be available (standard on Unix-like systems)
+#
+# ------------------------------------------------------------------------------
+# SETUP
+# ------------------------------------------------------------------------------
+#
+# If ChASE is installed in a standard location (/usr, /usr/local), pkg-config
+# will find it automatically. Otherwise, set PKG_CONFIG_PATH:
+#
+#   export PKG_CONFIG_PATH=/path/to/chase/lib/pkgconfig:$PKG_CONFIG_PATH
+#   # or
+#   export PKG_CONFIG_PATH=/path/to/chase/lib64/pkgconfig:$PKG_CONFIG_PATH
+#
+# Verify pkg-config can find ChASE:
+#
+#   $ pkg-config --exists chase && echo "Found!" || echo "Not found"
+#
+# ------------------------------------------------------------------------------
+# USAGE
+# ------------------------------------------------------------------------------
+#
+# Build all examples:
+#   $ make
+#
+# Build specific example:
+#   $ make chase-app        # C++ example
+#   $ make chase-c          # C example
+#   $ make chase-f          # Fortran example
+#
+# Show ChASE configuration:
+#   $ make info
+#
+# Check pkg-config setup:
+#   $ make check-pkg-config
+#
+# Clean:
+#   $ make clean
+#
+# ------------------------------------------------------------------------------
+# HOW IT WORKS
+# ------------------------------------------------------------------------------
+#
+# Instead of manually specifying:
+#   INCLUDES = -I/path/to/chase/include
+#   DEFINES = -DCHASE_OUTPUT -DCHASE_ENABLE_GPU_RESIDENT_LANCZOS -D...
+#
+# We use pkg-config to get everything automatically:
+#   CHASE_CFLAGS := $(shell pkg-config --cflags chase)
+#   # Returns: -I/usr/local/include -DCHASE_OUTPUT -DCHASE_ENABLE_... (all flags)
+#
+# Feature detection is also automatic:
+#   CHASE_HAS_NCCL := $(shell pkg-config --variable=chase_has_nccl chase)
+#   # Returns: ON or OFF
+#
+# This ensures your build always matches how ChASE was configured!
+#
+# ------------------------------------------------------------------------------
+# ADVANTAGES OVER MANUAL CONFIGURATION
+# ------------------------------------------------------------------------------
+#
+# ✓ No ChASEROOT environment variable needed
+# ✓ No manual list of -D flags to maintain
+# ✓ No nm/grep hacks for feature detection
+# ✓ Always matches actual ChASE build configuration
+# ✓ Portable across different installations
+# ✓ Cleaner and more maintainable
+#
+# ==============================================================================
+
+C = mpicc
+CXX = mpicxx
+FORTRAN = mpif90
+
+CFLAGS = -fopenmp -MMD -lm
+CXXFLAGS = -fopenmp -MMD -lm
+FFLAGS = -fopenmp -MMD -cpp -lm
+
+# ============================================================================
+# NEW: Use pkg-config for automatic configuration
+# ============================================================================
+
+# Get all ChASE configuration automatically
+CHASE_CFLAGS := $(shell pkg-config --cflags chase)
+CHASE_LIBS := $(shell pkg-config --libs chase)
+
+# Query ChASE features (much cleaner than using nm!)
+CHASE_HAS_MPI := $(shell pkg-config --variable=chase_has_mpi chase)
+CHASE_HAS_NCCL := $(shell pkg-config --variable=chase_has_nccl chase)
+CHASE_HAS_SCALAPACK := $(shell pkg-config --variable=chase_has_scalapack chase)
+
+# Get ChASE installation prefix if needed for libraries
+CHASE_PREFIX := $(shell pkg-config --variable=prefix chase)
+CHASE_LIBDIR := $(shell pkg-config --variable=libdir chase)
+
+# ============================================================================
+# Build library dependencies based on what ChASE has
+# ============================================================================
+
+LIBS_BLASLAPACK = -lopenblas -lgfortran -lscalapack -lstdc++
+
+# Conditionally add GPU libraries if ChASE was built with them
+ifeq ($(CHASE_HAS_NCCL),ON)
+    LIBS_CUDA = -lcublas -lcusolver -lcudart -lcurand
+    LIBS_NCCL = -lnccl
+    LIBS_CHASE_CUDA = $(CHASE_LIBDIR)/libchase_cuda_kernels.a
+    GPU_LIBS = $(LIBS_CUDA) $(LIBS_NCCL) -Wl,--whole-archive $(LIBS_CHASE_CUDA) -Wl,--no-whole-archive
+else
+    GPU_LIBS =
+endif
+
+# C/Fortran interface libraries
+LIBS_CHASE_C = $(CHASE_LIBDIR)/libchase_c.a
+LIBS_CHASE_F = $(CHASE_LIBDIR)/libchase_f.a
+
+# Combined libraries
+LIBS = $(LIBS_BLASLAPACK) $(GPU_LIBS)
+
+# ============================================================================
+# Source files and executables
+# ============================================================================
+
+src = chase-app.cpp
+exe = chase-app
+
+src_c = chase-c.c
+exe_c = chase-c
+
+src_f = chase-f.f90
+exe_f = chase-f
+
+all: ${exe} ${exe_c} ${exe_f}
+
+.SUFFIXES:
+
+# ============================================================================
+# Build rules using pkg-config
+# ============================================================================
+
+$(exe): $(src)
+	@echo "Building C++ example with ChASE..."
+	@echo "  ChASE flags: $(CHASE_CFLAGS)"
+	@echo "  Features: MPI=$(CHASE_HAS_MPI) NCCL=$(CHASE_HAS_NCCL) ScaLAPACK=$(CHASE_HAS_SCALAPACK)"
+	$(CXX) $(CXXFLAGS) $(CHASE_CFLAGS) -o $@ $< $(LIBS)
+
+$(exe_c): $(src_c)
+	@echo "Building C example with ChASE..."
+	$(C) $(CFLAGS) $(CHASE_CFLAGS) -o $@ $< \
+		-L$(CHASE_LIBDIR) -lchase_c \
+		$(LIBS_BLASLAPACK) \
+		$(GPU_LIBS) \
+		-lm
+
+$(exe_f): $(src_f)
+	@echo "Building Fortran example with ChASE..."
+	$(FORTRAN) $(FFLAGS) $(CHASE_CFLAGS) -o $@ $< \
+		-L$(CHASE_LIBDIR) -lchase_c -lchase_f \
+		$(LIBS_BLASLAPACK) \
+		$(GPU_LIBS) \
+		-lm
+
+clean:
+	-rm -f $(exe) $(exe_c) $(exe_f) *.o *.d
+
+# ============================================================================
+# Utility targets
+# ============================================================================
+
+info:
+	@echo "ChASE Configuration (from pkg-config):"
+	@echo "  Installation prefix: $(CHASE_PREFIX)"
+	@echo "  Library directory:   $(CHASE_LIBDIR)"
+	@echo "  Compile flags:       $(CHASE_CFLAGS)"
+	@echo "  Link flags:          $(CHASE_LIBS)"
+	@echo ""
+	@echo "Feature Detection:"
+	@echo "  MPI support:       $(CHASE_HAS_MPI)"
+	@echo "  NCCL support:      $(CHASE_HAS_NCCL)"
+	@echo "  ScaLAPACK support: $(CHASE_HAS_SCALAPACK)"
+
+check-pkg-config:
+	@pkg-config --exists chase && echo "✓ ChASE found via pkg-config" || \
+		(echo "✗ ChASE not found! Set PKG_CONFIG_PATH" && exit 1)
+
+verify-interface:
+	@echo "Verifying ChASE C interface configuration..."
+	@echo "This checks what was compiled into libchase_c.a"
+	@echo "(This is fixed at ChASE build time and cannot be changed)"
+	@echo ""
+	@echo "Compile test program:"
+	@$(CXX) -o check_config_test \
+		-I$(shell pkg-config --variable=includedir chase) \
+		-x c++ - -lchase_c -L$(CHASE_LIBDIR) -lstdc++ <<< '\
+		extern "C" void chase_print_config_(); \
+		int main() { chase_print_config_(); return 0; }' 2>/dev/null && \
+		(echo "Running test..." && ./check_config_test && rm -f check_config_test) || \
+		echo "Note: chase_print_config_() requires rebuilt ChASE with new interface"
+
+help:
+	@echo "ChASE Makefile - Modern pkg-config Edition"
+	@echo "==========================================="
+	@echo ""
+	@echo "Targets:"
+	@echo "  make              - Build all examples (C++, C, Fortran)"
+	@echo "  make chase-app    - Build C++ example only"
+	@echo "  make chase-c      - Build C example only"
+	@echo "  make chase-f      - Build Fortran example only"
+	@echo "  make info         - Show ChASE configuration"
+	@echo "  make check-pkg-config - Verify pkg-config setup"
+	@echo "  make clean        - Remove built executables"
+	@echo "  make help         - Show this help"
+	@echo ""
+	@echo "Quick Reference - pkg-config Commands:"
+	@echo "  pkg-config --cflags chase          - Get compile flags"
+	@echo "  pkg-config --libs chase            - Get link flags"
+	@echo "  pkg-config --modversion chase      - Get ChASE version"
+	@echo "  pkg-config --variable=PREFIX chase - Get install prefix"
+	@echo ""
+	@echo "Setup (if ChASE not in standard location):"
+	@echo "  export PKG_CONFIG_PATH=/path/to/chase/lib64/pkgconfig:\$$PKG_CONFIG_PATH"
+	@echo ""
+
+.PHONY: all clean info check-pkg-config help

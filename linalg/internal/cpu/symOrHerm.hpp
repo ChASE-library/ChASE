@@ -8,6 +8,8 @@
 
 #include "algorithm/types.hpp"
 #include "external/blaspp/blaspp.hpp"
+#include <cmath>
+#include <limits>
 #include <random>
 #include <vector>
 
@@ -64,17 +66,19 @@ bool checkSymmetryEasy(std::size_t N, T* H, std::size_t ldh)
                                   N, 1, N, &One, H, ldh, v.data(), N, &Zero,
                                   uT.data(), N);
 
-    bool is_sym = true;
+    using R = chase::Base<T>;
+    const R eps = std::numeric_limits<R>::epsilon();
+    const R tol = static_cast<R>(N) * R(10) * eps;
+
     for (auto i = 0; i < N; i++)
     {
-        if (!(u[i] == uT[i]))
-        {
-            is_sym = false;
-            return is_sym;
-        }
+        R diff = std::abs(u[i] - uT[i]);
+        R scale = std::max(std::abs(u[i]), std::abs(uT[i])) + R(1);
+        if (diff > tol * scale)
+            return false;
     }
 
-    return is_sym;
+    return true;
 }
 /**
  * @brief Converts a matrix to its Hermitian or symmetric form based on the

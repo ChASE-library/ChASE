@@ -54,6 +54,22 @@ function(setup_test_serial name)
   add_test(NAME ${name} COMMAND ${MPI_RUN} ${MPI_RUN_ARGS} -n 1 $<TARGET_FILE:${name}> --gtest_output=xml:unittest_reports/${name}_report.xml)
 endfunction()
 
+# -----------------------------------------------------------------------------
+# Full solve tests (based on examples: noinput.cpp and 1_hello_world.cpp)
+# -----------------------------------------------------------------------------
+if(TARGET chase_gpu)
+  setup_test_serial(ChaseSerialSolveTest chase_serial_solve.cpp LIBRARIES chase_gpu chase_cpu)
+else()
+  setup_test_serial(ChaseSerialSolveTest chase_serial_solve.cpp LIBRARIES chase_cpu)
+endif()
+
+if(TARGET pchase_gpu)
+  setup_test(ChaseDistributedSolveTest chase_distributed_solve.cpp LIBRARIES pchase_gpu pchase_cpu)
+elseif(TARGET pchase_cpu)
+  setup_test(ChaseDistributedSolveTest chase_distributed_solve.cpp LIBRARIES pchase_cpu)
+endif()
+
+# -----------------------------------------------------------------------------
 add_subdirectory(linalg)
 add_subdirectory(matrix)
 if(TARGET mpi_grid)

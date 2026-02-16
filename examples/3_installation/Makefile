@@ -1,3 +1,6 @@
+# Modern Makefile for ChASE using pkg-config
+# This replaces manual configuration with automatic detection
+
 C = mpicc
 CXX = mpicxx
 FORTRAN = mpif90
@@ -6,40 +9,49 @@ CFLAGS = -fopenmp -MMD -lm
 CXXFLAGS = -fopenmp -MMD -lm
 FFLAGS = -fopenmp -MMD -cpp -lm
 
-INCLUDE_DIR = ${ChASEROOT}/include
+# ============================================================================
+# NEW: Use pkg-config for automatic configuration
+# ============================================================================
 
-LIBS_BLASLAPACK = -lopenblas -lgfortran -lscalapack -lstdc++ 
+# Get all ChASE configuration automatically
+CHASE_CFLAGS := $(shell pkg-config --cflags chase)
+CHASE_LIBS := $(shell pkg-config --libs chase)
 
-LIBS_CUDA = -lcublas -lcusolver -lcudart -lcurand 
-LIBS_NCCL = -lnccl
-LIBS_CHASE_CUDA = ${ChASEROOT}/lib64/libchase_cuda_kernels.a
-LIBS_CHASE_C = ${ChASEROOT}/lib64/libchase_c.a
-LIBS_CHASE_F = ${ChASEROOT}/lib64/libchase_f.a
+# Query ChASE features (much cleaner than using nm!)
+CHASE_HAS_MPI := $(shell pkg-config --variable=chase_has_mpi chase)
+CHASE_HAS_NCCL := $(shell pkg-config --variable=chase_has_nccl chase)
+CHASE_HAS_SCALAPACK := $(shell pkg-config --variable=chase_has_scalapack chase)
 
-DEFINES_CPU = -DCHASE_OUTPUT -DUSE_NVTX -DHAS_SCALAPACK
-DEFINES_GPU = -DHAS_CUDA -DHAS_NCCL -DUSE_GPU
+# Get ChASE installation prefix if needed for libraries
+CHASE_PREFIX := $(shell pkg-config --variable=prefix chase)
+CHASE_LIBDIR := $(shell pkg-config --variable=libdir chase)
 
-# Check if blockcyclic is present in the library (at least one occurrence)
-# this is only for C/Fortran interface
-ifeq ($(shell nm ${ChASEROOT}/lib64/libchase_c.a | grep -c blockcyclic), 0)
-    # If no blockcyclic is found, do nothing
+# ============================================================================
+# Build library dependencies based on what ChASE has
+# ============================================================================
+
+LIBS_BLASLAPACK = -lopenblas -lgfortran -lscalapack -lstdc++
+
+# Conditionally add GPU libraries if ChASE was built with them
+ifeq ($(CHASE_HAS_NCCL),ON)
+    LIBS_CUDA = -lcublas -lcusolver -lcudart -lcurand
+    LIBS_NCCL = -lnccl
+    LIBS_CHASE_CUDA = $(CHASE_LIBDIR)/libchase_cuda_kernels.a
+    GPU_LIBS = $(LIBS_CUDA) $(LIBS_NCCL) -Wl,--whole-archive $(LIBS_CHASE_CUDA) -Wl,--no-whole-archive
 else
-    # If at least one blockcyclic is found, append -DINTERFACE_BLOCK_CYCLIC to DEFINES
-    DEFINES_CPU := $(DEFINES_CPU) -DINTERFACE_BLOCK_CYCLIC
+    GPU_LIBS =
 endif
 
-## for the cpp example
-## This example assume NCCL is available if GPU is used.
-USE_GPU := $(shell nm ${ChASEROOT}/lib64/libchase_c.a | grep -E "cuda_mpi|cuda_nccl" > /dev/null && echo 1 || echo 0)
+# C/Fortran interface libraries
+LIBS_CHASE_C = $(CHASE_LIBDIR)/libchase_c.a
+LIBS_CHASE_F = $(CHASE_LIBDIR)/libchase_f.a
 
-# Set the appropriate defines based on USE_GPU flag
-ifeq ($(USE_GPU), 1)
-    DEFINES = ${DEFINES_CPU} ${DEFINES_GPU}
-    LIBS = ${LIBS_BLASLAPACK} ${LIBS_CUDA} ${LIBS_NCCL} -Wl,--whole-archive ${LIBS_CHASE_CUDA} -Wl,--no-whole-archive
-else
-    DEFINES = ${DEFINES_CPU}
-    LIBS = ${LIBS_BLASLAPACK}
-endif
+# Combined libraries
+LIBS = $(LIBS_BLASLAPACK) $(GPU_LIBS)
+
+# ============================================================================
+# Source files and executables
+# ============================================================================
 
 src = chase-app.cpp
 exe = chase-app
@@ -54,30 +66,53 @@ all: ${exe} ${exe_c} ${exe_f}
 
 .SUFFIXES:
 
+# ============================================================================
+# Build rules using pkg-config
+# ============================================================================
+
 $(exe): $(src)
-	${CXX} ${CXXFLAGS} ${DEFINES} ${LIBS} -I${INCLUDE_DIR} -o $@ $<
+	@echo "Building C++ example with ChASE..."
+	@echo "  ChASE flags: $(CHASE_CFLAGS)"
+	@echo "  Features: MPI=$(CHASE_HAS_MPI) NCCL=$(CHASE_HAS_NCCL) ScaLAPACK=$(CHASE_HAS_SCALAPACK)"
+	$(CXX) $(CXXFLAGS) $(CHASE_CFLAGS) -o $@ $< $(LIBS)
 
 $(exe_c): $(src_c)
-	${C} ${CFLAGS} ${DEFINES} -I${INCLUDE_DIR} chase-c.c \
-		-L${ChASEROOT}/lib64 -lchase_c \
-		${LIBS_BLASLAPACK} \
-		${LIBS_CUDA} \
-		${LIBS_NCCL} \
-		-Wl,--whole-archive ${LIBS_CHASE_CUDA} \
-		-Wl,--no-whole-archive \
-		-lm \
-		-o $@
+	@echo "Building C example with ChASE..."
+	$(C) $(CFLAGS) $(CHASE_CFLAGS) -o $@ $< \
+		-L$(CHASE_LIBDIR) -lchase_c \
+		$(LIBS_BLASLAPACK) \
+		$(GPU_LIBS) \
+		-lm
 
 $(exe_f): $(src_f)
-	${FORTRAN} ${FFLAGS} ${DEFINES} -I${INCLUDE_DIR} chase-f.f90 \
-		-L${ChASEROOT}/lib64 -lchase_c -lchase_f \
-		${LIBS_BLASLAPACK} \
-		${LIBS_CUDA} \
-		${LIBS_NCCL} \
-		-Wl,--whole-archive ${LIBS_CHASE_CUDA} \
-		-Wl,--no-whole-archive \
-		-lm \
-		-o $@
+	@echo "Building Fortran example with ChASE..."
+	$(FORTRAN) $(FFLAGS) $(CHASE_CFLAGS) -o $@ $< \
+		-L$(CHASE_LIBDIR) -lchase_c -lchase_f \
+		$(LIBS_BLASLAPACK) \
+		$(GPU_LIBS) \
+		-lm
 
 clean:
-	-rm -f $(exe) ${exe_c} ${exe_f} *.o *.d 
+	-rm -f $(exe) $(exe_c) $(exe_f) *.o *.d
+
+# ============================================================================
+# Utility targets
+# ============================================================================
+
+info:
+	@echo "ChASE Configuration (from pkg-config):"
+	@echo "  Installation prefix: $(CHASE_PREFIX)"
+	@echo "  Library directory:   $(CHASE_LIBDIR)"
+	@echo "  Compile flags:       $(CHASE_CFLAGS)"
+	@echo "  Link flags:          $(CHASE_LIBS)"
+	@echo ""
+	@echo "Feature Detection:"
+	@echo "  MPI support:       $(CHASE_HAS_MPI)"
+	@echo "  NCCL support:      $(CHASE_HAS_NCCL)"
+	@echo "  ScaLAPACK support: $(CHASE_HAS_SCALAPACK)"
+
+check-pkg-config:
+	@pkg-config --exists chase && echo "✓ ChASE found via pkg-config" || \
+		(echo "✗ ChASE not found! Set PKG_CONFIG_PATH" && exit 1)
+
+.PHONY: all clean info check-pkg-config

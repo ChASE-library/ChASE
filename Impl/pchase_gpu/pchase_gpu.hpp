@@ -177,6 +177,7 @@ public:
         CHECK_CUBLAS_ERROR(cublasCreate(&cublasH_));
         CHECK_CUSOLVER_ERROR(cusolverDnCreate(&cusolverH_));
 
+
 #ifdef XGEEV_EXISTS
 #ifdef CHASE_OUTPUT
         if (my_rank_ == 0)
@@ -410,6 +411,76 @@ public:
             }
         }
 #endif
+
+#ifdef HAS_NCCL
+        // NCCL warm-up: 1x1 matrix to warm up entire path
+        if constexpr (std::is_same<backend, chase::grid::backend::NCCL>::value)
+        {
+            cudaEvent_t start, stop;
+            cudaEventCreate(&start);
+            cudaEventCreate(&stop);
+            
+            std::size_t warmup_rows = 1;
+            std::size_t warmup_cols = 1;
+            
+            // Warm up cholQR1 (SYHERK/AllReduce/Cholesky/TRSM on column comm)
+            for (int i = 0; i < 3; i++)
+            {
+                cudaEventRecord(start);
+                
+                int info = kernelNamespace::cholQR1(
+                    cublasH_, cusolverH_, warmup_rows, warmup_cols,
+                    V1_->l_data(), V1_->l_ld(),
+                    MGPUKernelNamspaceSelector<backend>::getColCommunicator(
+                        V1_->getMpiGrid()),
+                    d_work_, lwork_, A_->l_data());
+                
+                cudaEventRecord(stop);
+                cudaEventSynchronize(stop);
+                
+                float ms = 0.0f;
+                cudaEventElapsedTime(&ms, start, stop);
+                
+                if (my_rank_ == 0)
+                {
+                    std::cout << "[cholQR1 warm-up " << (i+1) << "/3] 1x1 matrix: " 
+                              << ms << " ms (info=" << info << ")\n";
+                }
+            }
+            
+            // Warm up Lanczos (MatMul + redistribute P2P/AlltoAll patterns)
+            chase::Base<T> dummy_upperb = 1.0;
+            for (int i = 0; i < 3; i++)
+            {
+                cudaEventRecord(start);
+#ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
+                cudaStream_t saved_stream = nullptr;
+                CHECK_CUBLAS_ERROR(cublasGetStream(cublasH_, &saved_stream));
+#endif
+                // Minimal Lanczos: 1 iteration to warm up redistribute patterns
+                kernelNamespace::lanczos_dispatch(cublasH_, 1, *Hmat_, *V1_, &dummy_upperb);
+#ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
+                CHECK_CUBLAS_ERROR(cublasSetStream(cublasH_, saved_stream));
+#endif
+                cudaEventRecord(stop);
+                cudaEventSynchronize(stop);
+                
+                float ms = 0.0f;
+                cudaEventElapsedTime(&ms, start, stop);
+#ifdef CHASE_OUTPUT
+                if (my_rank_ == 0)
+                {
+                    std::cout << "[Lanczos warm-up " << (i+1) << "/3] 1 iteration: " 
+                              << ms << " ms\n";
+                }
+#endif
+            }
+            
+            cudaEventDestroy(start);
+            cudaEventDestroy(stop);
+        }
+#endif
+
     }
 
     pChASEGPU(const pChASEGPU&) = delete;
@@ -422,6 +493,7 @@ public:
             CHECK_CUBLAS_ERROR(cublasDestroy(cublasH_));
         if (cusolverH_)
             CHECK_CUSOLVER_ERROR(cusolverDnDestroy(cusolverH_));
+
         if (d_work_)
             CHECK_CUDA_ERROR(cudaFree(d_work_));
         if (devInfo_)
@@ -560,7 +632,14 @@ public:
         lanczosIter_ = m;
         numLanczos_ = 1;
 
+#ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
+        cudaStream_t saved_stream = nullptr;
+        CHECK_CUBLAS_ERROR(cublasGetStream(cublasH_, &saved_stream));
+#endif
         kernelNamespace::lanczos_dispatch(cublasH_, m, *Hmat_, *V1_, upperb);
+#ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
+        CHECK_CUBLAS_ERROR(cublasSetStream(cublasH_, saved_stream));
+#endif
     }
 
     void Lanczos(std::size_t M, std::size_t numvec, chase::Base<T>* upperb,
@@ -573,8 +652,15 @@ public:
         lanczosIter_ = M;
         numLanczos_ = numvec;
 
+#ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
+        cudaStream_t saved_stream = nullptr;
+        CHECK_CUBLAS_ERROR(cublasGetStream(cublasH_, &saved_stream));
+#endif
         kernelNamespace::lanczos_dispatch(cublasH_, M, numvec, *Hmat_, *V1_,
                                           upperb, ritzv, Tau, ritzV);
+#ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
+        CHECK_CUBLAS_ERROR(cublasSetStream(cublasH_, saved_stream));
+#endif
     }
 
     void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc) override
@@ -729,6 +815,16 @@ public:
     {
         SCOPED_NVTX_RANGE();
 
+        // Create CUDA events for detailed timing
+        cudaEvent_t qr_start, qr_flip_sign, qr_cholqr_start, qr_cholqr_end, qr_lacpy_start, qr_end;
+        cudaEventCreate(&qr_start);
+        cudaEventCreate(&qr_flip_sign);
+        cudaEventCreate(&qr_cholqr_start);
+        cudaEventCreate(&qr_cholqr_end);
+        cudaEventCreate(&qr_lacpy_start);
+        cudaEventCreate(&qr_end);
+        cudaEventRecord(qr_start);
+
         int disable = config_.DoCholQR() ? 0 : 1;
         char* cholddisable = getenv("CHASE_DISABLE_CHOLQR");
         if (cholddisable)
@@ -742,6 +838,11 @@ public:
                                    chase::matrix::PseudoHermitian>::value)
         {
             kernelNamespace::flipLowerHalfMatrixSign(*V1_, 0, locked_);
+            cudaEventRecord(qr_flip_sign);
+        }
+        else
+        {
+            cudaEventRecord(qr_flip_sign);
         }
 #ifdef ChASE_DISPLAY_COND_V_SVD
         if constexpr (std::is_same<typename MatrixType::matrix_type,
@@ -870,6 +971,8 @@ public:
 #endif
 
             int info = 1;
+
+            cudaEventRecord(qr_cholqr_start);
 
             if (cond > cond_threshold_upper)
             {
@@ -1030,6 +1133,8 @@ public:
 #endif
             }
 
+            cudaEventRecord(qr_cholqr_end);
+
             if (info != 0)
             {
 #ifdef HAS_SCALAPACK
@@ -1050,6 +1155,7 @@ public:
             }
         }
 
+        cudaEventRecord(qr_lacpy_start);
         chase::linalg::internal::cuda::t_lacpy('A', V2_->l_rows(), locked_,
                                                V2_->l_data(), V2_->l_ld(),
                                                V1_->l_data(), V1_->l_ld());
@@ -1058,6 +1164,33 @@ public:
             'A', V2_->l_rows(), nevex_ - locked_,
             V1_->l_data() + V1_->l_ld() * locked_, V1_->l_ld(),
             V2_->l_data() + V2_->l_ld() * locked_, V2_->l_ld());
+
+        cudaEventRecord(qr_end);
+        cudaEventSynchronize(qr_end);
+
+        // Calculate and print detailed timings
+        float time_flip_sign = 0.0f, time_cholqr = 0.0f, time_lacpy = 0.0f, time_total = 0.0f;
+        cudaEventElapsedTime(&time_flip_sign, qr_start, qr_flip_sign);
+        cudaEventElapsedTime(&time_cholqr, qr_cholqr_start, qr_cholqr_end);
+        cudaEventElapsedTime(&time_lacpy, qr_lacpy_start, qr_end);
+        cudaEventElapsedTime(&time_total, qr_start, qr_end);
+#ifdef CHASE_OUTPUT
+        if (my_rank_ == 0)
+        {
+            std::cout << std::setprecision(6) << std::fixed;
+            std::cout << "[QR Timing Rank 0] Total: " << time_total/1000.0 << " s, "
+                      << "FlipSign: " << time_flip_sign/1000.0 << " s, "
+                      << "CholQR: " << time_cholqr/1000.0 << " s, "
+                      << "Lacpy: " << time_lacpy/1000.0 << " s" << std::endl;
+        }
+#endif
+        // Cleanup events
+        cudaEventDestroy(qr_start);
+        cudaEventDestroy(qr_flip_sign);
+        cudaEventDestroy(qr_cholqr_start);
+        cudaEventDestroy(qr_cholqr_end);
+        cudaEventDestroy(qr_lacpy_start);
+        cudaEventDestroy(qr_end);
     }
 
     void RR(chase::Base<T>* ritzv, std::size_t block) override
@@ -1187,6 +1320,7 @@ private:
                                       GPU-based eigenvalue solvers. */
     cusolverDnParams_t
         params_; /**< CUSOLVER structure with information for Xgeev. */
+
 
     curandStatePhilox4_32_10_t* states_ =
         NULL; /**< Random number generator state for GPU, used for

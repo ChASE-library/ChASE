@@ -1,0 +1,23 @@
+# pkg-config file for ChASE
+# This allows non-CMake build systems to query ChASE configuration
+
+prefix=@CMAKE_INSTALL_PREFIX@
+exec_prefix=${prefix}
+includedir=${prefix}/@CMAKE_INSTALL_INCLUDEDIR@
+libdir=${prefix}/@CMAKE_INSTALL_LIBDIR@
+
+Name: ChASE
+Description: Chebyshev Accelerated Subspace Eigensolver
+Version: @PROJECT_VERSION@
+URL: https://github.com/ChASE-library/ChASE
+
+# Include directories
+Cflags: -I${includedir}@CHASE_COMPILE_DEFINITIONS@
+
+# Libraries (for non-header-only components like CUDA kernels)
+Libs: -L${libdir}@CHASE_LINK_LIBRARIES@
+
+# Configuration information for users
+chase_has_mpi=@IS_ENABLE_MPI@
+chase_has_nccl=@IS_ENABLE_NCCL@
+chase_has_scalapack=@IS_ENABLE_SCALAPACK@

@@ -40,6 +40,9 @@ protected:
                 chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(
                 2, 2, MPI_COMM_WORLD);
             CHECK_CUBLAS_ERROR(cublasCreate(&cublasH));
+#ifdef CHASE_ENABLE_GPU_RESIDENT_HEMM
+            CHECK_CUBLAS_ERROR(cublasSetPointerMode(cublasH, CUBLAS_POINTER_MODE_DEVICE));
+#endif
             resources_initialized = true;
         }
     }

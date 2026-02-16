@@ -13,10 +13,28 @@ add_library(chase_algorithm INTERFACE)
 
 include(GNUInstallDirs)
 
+# Detect features based on what CMake finds
+# These will be used in chase_config.h.in
+set(HAS_MPI OFF)
+set(HAS_CUDA OFF)
+set(HAS_NCCL OFF)
+set(HAS_SCALAPACK OFF)
+
+# Note: These are set later when dependencies are found
+# We'll update them before generating chase_config.h
+
 target_include_directories( chase_algorithm INTERFACE
   "$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}>"
+  "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>"  # For generated chase_config.h
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>  # <prefix>/include/mylib
 )
+
+# Optional: Force-include chase_config.h in all translation units
+# This ensures configuration is always consistent, but may increase compile times
+# Uncomment the line below to enable automatic inclusion:
+# target_compile_options(chase_algorithm INTERFACE 
+#   "$<BUILD_INTERFACE:-include;${CMAKE_CURRENT_BINARY_DIR}/chase_config.h>"
+#   "$<INSTALL_INTERFACE:-include;chase_config.h>")
 
 target_compile_features(chase_algorithm INTERFACE cxx_auto_type)
 
@@ -34,6 +52,8 @@ option(ChASE_DISPLAY_COND_V_SVD "Compute and display condition number of V from 
 option(CHASE_QR_DOUBLE_PRECISION "Operate QR in Double Precision" ON)
 option(CHASE_RR_DOUBLE_PRECISION "Operate HEEVD in RR for pseudo-hermitian matrices in Double Precision" OFF)
 option(CHASE_ENABLE_TESTS "Enable unit tests." OFF)
+#XZ: Will be removed once performance is confirmed
+option(CHASE_ENABLE_GPU_RESIDENT_LANCZOS "Enable GPU-resident Lanczos with fused kernels and NCCL (experimental)" ON)
 
 if(NOT CMAKE_BUILD_TYPE STREQUAL "Release")
     message(WARNING "For prodution, please consider CMAKE_BUILD_TYPE to be Release or RelWithDebInfo")
@@ -62,7 +82,7 @@ endif()
 
 # Add the flag to the preprocessor if the option is enabled
 if (CHASE_ENABLE_MIXED_PRECISION)
-    add_definitions(-DENABLE_MIXED_PRECISION)
+    target_compile_definitions(chase_algorithm INTERFACE "-DENABLE_MIXED_PRECISION")
     message(STATUS "Mixed precision support enabled.")
 else()
     message(STATUS "Mixed precision support disabled.")
@@ -73,19 +93,24 @@ if(CHASE_USE_NVTX)
 endif()
 
 if(CHASE_QR_DOUBLE_PRECISION)
-  add_definitions(-DQR_DOUBLE_PRECISION)
+  target_compile_definitions(chase_algorithm INTERFACE "-DQR_DOUBLE_PRECISION")
 endif()
 
 if(CHASE_RR_DOUBLE_PRECISION)
-  add_definitions(-DRR_DOUBLE_PRECISION)
+  target_compile_definitions(chase_algorithm INTERFACE "-DRR_DOUBLE_PRECISION")
 endif()
 
 if(ChASE_DISPLAY_COND_V_SVD)
-    add_definitions(-DChASE_DISPLAY_COND_V_SVD)
+    target_compile_definitions(chase_algorithm INTERFACE "-DChASE_DISPLAY_COND_V_SVD")
 endif()
 
 if(CHASE_SAVE_RESIDUALS)
-    add_definitions(-DCHASE_SAVE_RESIDUALS)
+    target_compile_definitions(chase_algorithm INTERFACE "-DCHASE_SAVE_RESIDUALS")
+endif()
+# XZ: Will be removed once performance is confirmed
+if(CHASE_ENABLE_GPU_RESIDENT_LANCZOS)
+    target_compile_definitions(chase_algorithm INTERFACE "-DCHASE_ENABLE_GPU_RESIDENT_LANCZOS")
+    message(STATUS "GPU-resident Lanczos with fused kernels enabled (experimental)")
 endif()
 
 add_subdirectory(external)
@@ -137,6 +162,11 @@ install(DIRECTORY algorithm DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     PATTERN "*.inc"
 )
 
+# Install the generated configuration header
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/chase_config.h"
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+
 install(EXPORT chase_targets
         NAMESPACE ChASE::
         EXPORT_LINK_INTERFACE_LIBRARIES
@@ -145,21 +175,65 @@ install(EXPORT chase_targets
 
 include(CMakePackageConfigHelpers)
 
+# Collect compile definitions for pkg-config
+set(CHASE_COMPILE_DEFINITIONS "")
+if(CHASE_OUTPUT)
+    set(CHASE_COMPILE_DEFINITIONS "${CHASE_COMPILE_DEFINITIONS} -DCHASE_OUTPUT")
+endif()
+if(CHASE_USE_NVTX)
+    set(CHASE_COMPILE_DEFINITIONS "${CHASE_COMPILE_DEFINITIONS} -DUSE_NVTX")
+endif()
+if(CHASE_ENABLE_MIXED_PRECISION)
+    set(CHASE_COMPILE_DEFINITIONS "${CHASE_COMPILE_DEFINITIONS} -DENABLE_MIXED_PRECISION")
+endif()
+if(CHASE_QR_DOUBLE_PRECISION)
+    set(CHASE_COMPILE_DEFINITIONS "${CHASE_COMPILE_DEFINITIONS} -DQR_DOUBLE_PRECISION")
+endif()
+if(CHASE_RR_DOUBLE_PRECISION)
+    set(CHASE_COMPILE_DEFINITIONS "${CHASE_COMPILE_DEFINITIONS} -DRR_DOUBLE_PRECISION")
+endif()
+if(ChASE_DISPLAY_COND_V_SVD)
+    set(CHASE_COMPILE_DEFINITIONS "${CHASE_COMPILE_DEFINITIONS} -DChASE_DISPLAY_COND_V_SVD")
+endif()
+if(CHASE_SAVE_RESIDUALS)
+    set(CHASE_COMPILE_DEFINITIONS "${CHASE_COMPILE_DEFINITIONS} -DCHASE_SAVE_RESIDUALS")
+endif()
+if(CHASE_ENABLE_GPU_RESIDENT_LANCZOS)
+    set(CHASE_COMPILE_DEFINITIONS "${CHASE_COMPILE_DEFINITIONS} -DCHASE_ENABLE_GPU_RESIDENT_LANCZOS")
+endif()
+
+set(CHASE_LINK_LIBRARIES "")
+
 set(IS_ENABLE_MPI OFF)
 set(IS_ENABLE_SCALAPACK OFF)
 set(IS_ENABLE_NCCL OFF)
 
 if(TARGET pchase_cpu)
     set(IS_ENABLE_MPI ON)
+    set(HAS_MPI ON)  # For chase_config.h
 endif()
 
 if(TARGET scalapackpp)
     set(IS_ENABLE_SCALAPACK ON)
+    set(HAS_SCALAPACK ON)  # For chase_config.h
 endif()
 
 if(TARGET linalg_internal_nccl)
     set(IS_ENABLE_NCCL ON)
+    set(HAS_NCCL ON)  # For chase_config.h
 endif()
+
+# Check if CUDA was found
+if(CMAKE_CUDA_COMPILER OR TARGET CUDA::cudart)
+    set(HAS_CUDA ON)
+endif()
+
+# Now generate configuration header with correct feature detection
+configure_file(
+  "${CMAKE_CURRENT_SOURCE_DIR}/chase_config.h.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/chase_config.h"
+  @ONLY
+)
 
 # Convert booleans to "ON"/"OFF" strings for the config file
 set(IS_ENABLE_MPI_STRING ${IS_ENABLE_MPI})
@@ -175,6 +249,18 @@ configure_package_config_file(
 install(
     FILES "${CMAKE_CURRENT_BINARY_DIR}/chase-config.cmake"
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ChASE
+)
+
+# Generate and install pkg-config file for non-CMake users
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/chase.pc.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/chase.pc"
+    @ONLY
+)
+
+install(
+    FILES "${CMAKE_CURRENT_BINARY_DIR}/chase.pc"
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
 )
 
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/cmake/modules
