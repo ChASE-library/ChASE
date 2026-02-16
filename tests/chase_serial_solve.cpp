@@ -140,6 +140,16 @@ TYPED_TEST(ChaseSerialSolveTest, ChaseCPU_Solve_Clement_Converges)
         EXPECT_LT(resid[i], tol)
             << "resid[" << i << "] = " << resid[i] << " should be below " << tol;
     }
+    //check the reiduals with this->V_.data(), this->H_.data(), this->Lambda_.data()
+    chase::linalg::internal::cpu::residuals(this->N_, this->H_.data(), this->LDH_, this->nev_, this->Lambda_.data(), this->V_.data(), this->N_, resid);
+    //make sure this residuals are below the tolerance. but not empty, as zero for example.
+    for (std::size_t i = 0; i < this->nev_; ++i)
+    {
+        EXPECT_LT(resid[i], tol)
+            << "resid[" << i << "] = " << resid[i] << " should be below " << tol;
+        EXPECT_NE(resid[i], 0)
+            << "resid[" << i << "] = " << resid[i] << " should not be zero";
+    }    
 }
 
 #ifdef HAS_CUDA
@@ -179,6 +189,17 @@ TYPED_TEST(ChaseSerialSolveTest, ChaseGPU_Solve_Clement_Converges)
             << "resid[" << i << "] is not finite";
         EXPECT_LT(resid[i], tol)
             << "resid[" << i << "] = " << resid[i] << " should be below " << tol;
+    }
+
+    //check the reiduals with this->V_.data(), this->H_.data(), this->Lambda_.data()
+    chase::linalg::internal::cpu::residuals(this->N_, this->H_.data(), this->LDH_, this->nev_, this->Lambda_.data(), this->V_.data(), this->N_, resid);
+    //make sure this residuals are below the tolerance. but not empty, as zero for example.
+    for (std::size_t i = 0; i < this->nev_; ++i)
+    {
+        EXPECT_LT(resid[i], tol)
+            << "resid[" << i << "] = " << resid[i] << " should be below " << tol;
+        EXPECT_NE(resid[i], 0)
+            << "resid[" << i << "] = " << resid[i] << " should not be zero";
     }
 }
 #endif

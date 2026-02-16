@@ -70,6 +70,31 @@ elseif(TARGET pchase_cpu)
 endif()
 
 # -----------------------------------------------------------------------------
+# Fortran interface tests (analogous to chase_serial_solve and chase_distributed_solve)
+# -----------------------------------------------------------------------------
+if(TARGET chase_f)
+  # Serial: single rank, Clement matrix, s/d/c/z chase (like ChaseSerialSolveTest)
+  add_executable(ChaseFortranSerialSolveTest chase_fortran_serial_solve.f90)
+  target_link_libraries(ChaseFortranSerialSolveTest PRIVATE chase_f MPI::MPI_Fortran)
+  set_target_properties(ChaseFortranSerialSolveTest PROPERTIES
+    LINKER_LANGUAGE Fortran
+    Fortran_PREPROCESS ON
+  )
+  add_test(NAME ChaseFortranSerialSolveTest
+    COMMAND ${MPI_RUN} ${MPI_RUN_ARGS} -n 1 $<TARGET_FILE:ChaseFortranSerialSolveTest>)
+
+  # Distributed: MPI block-block p*chase with Clement (like ChaseDistributedSolveTest)
+  add_executable(ChaseFortranDistributedSolveTest chase_fortran_distributed_solve.f90)
+  target_link_libraries(ChaseFortranDistributedSolveTest PRIVATE chase_f MPI::MPI_Fortran)
+  set_target_properties(ChaseFortranDistributedSolveTest PROPERTIES
+    LINKER_LANGUAGE Fortran
+    Fortran_PREPROCESS ON
+  )
+  add_test(NAME ChaseFortranDistributedSolveTest
+    COMMAND ${MPI_RUN} ${MPI_RUN_ARGS} -n 4 $<TARGET_FILE:ChaseFortranDistributedSolveTest>)
+endif()
+
+# -----------------------------------------------------------------------------
 add_subdirectory(linalg)
 add_subdirectory(matrix)
 if(TARGET mpi_grid)

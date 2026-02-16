@@ -738,7 +738,7 @@ public:
         //chase::linalg::lapackpp::t_lacpy('A', Vec1_.rows(), nev_ + nex_, Vec1_.cpu_data(), Vec1_.cpu_ld(), V1_, ldv_);
         //this operation is required because after multiple swaps, Vec1_, which contains the final eigenvectors, its buffer is 
         //not pointing to the initial V1_ given by the user.
-        CHECK_CUBLAS_ERROR(cublasGetMatrix(Vec1_.rows(), nev_ + nex_, sizeof(T), Vec1_.data(), Vec1_.ld(), Vec2_.cpu_data(), Vec2_.cpu_ld()));
+        CHECK_CUBLAS_ERROR(cublasGetMatrix(Vec1_.rows(), nev_ + nex_, sizeof(T), Vec1_.data(), Vec1_.ld(), V1_, ldv_));
     }
 
 private:

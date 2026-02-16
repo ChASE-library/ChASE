@@ -529,6 +529,7 @@ TYPED_TEST(ChaseDistributedSolveGPUBlockBlockTest, pChaseGPU_Solve_Clement_Block
                 << "resid[" << i << "] = " << resid[i] << " should be below " << tol;
         }
     }
+    
     delete single;
 }
 #endif
