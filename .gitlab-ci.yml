@@ -119,7 +119,8 @@ coverage_generate:
     name: xinzhewu/lcov-gcc13.3.0
   <<: *only_source_changes
   script:
-    - lcov --capture --directory ./build_gpu --output-file coverage.info
+    # Ignore gcov errors (e.g. stamp mismatch when artifacts from different runner)
+    - lcov --capture --directory ./build_gpu --output-file coverage.info --ignore-errors gcov
 
     # Extract coverage number
     - |
