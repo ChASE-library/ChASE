@@ -766,6 +766,160 @@ std::size_t Algorithm<T>::lanczos(ChaseBase<T>* single, int N, int numvec,
 }
 
 template <class T>
+std::size_t Algorithm<T>::lanczos_for_H2(ChaseBase<T>* single, int N,
+                                          int numvec, int m, int nevex,
+                                          Base<T>* upperb, bool mode,
+                                          Base<T>* ritzv_)
+{
+    SCOPED_NVTX_RANGE();
+
+    assert(m >= 1);
+
+    if (!mode)
+    {
+        single->Lanczos(m, upperb);
+        if (upperb)
+            *upperb = (*upperb) * (*upperb);
+        return 0;
+    }
+
+    // Same workflow as lanczos, but H² bounds: μ_1 = (min |λ|)²,
+    // μ_nevnex = (λ at DOS quantile)², b_sup = (max |λ|)²; use full Ritz set
+    // and search_hi = (N/2 - nev - nex - 1)/N for pseudo-Hermitian.
+    Base<T>* Theta = new Base<T>[numvec * m]();
+    Base<T>* Tau = new Base<T>[numvec * m]();
+    Base<T>* ritzV = new Base<T>[m * m]();
+
+    single->Lanczos(m, numvec, upperb, Theta, Tau, ritzV);
+
+    double* ThetaSorted = new double[numvec * m];
+    for (auto k = 0; k < numvec * m; ++k)
+        ThetaSorted[k] = Theta[k];
+    std::sort(ThetaSorted, ThetaSorted + numvec * m, std::less<double>());
+
+    const double sigma = 0.25;
+    const double thresh = 2 * sigma * sigma / 10;
+    const auto G = [&](double x) -> double
+    { return 0.5 * (1 + std::erf(x / std::sqrt(2 * sigma * sigma))); };
+
+    // H² bounds: b_sup = (max |λ|)², μ_1 = (min |λ|)²
+    Base<T> max_abs = 0;
+    Base<T> min_abs = std::abs(Theta[0]);
+    int i_minabs = 0;
+
+    for (int i = 0; i < numvec * m; ++i)
+    {
+        Base<T> a = std::abs(Theta[i]);
+        if (a > max_abs)
+            max_abs = a;
+        if (a < min_abs)
+        {
+            min_abs = a;
+            i_minabs = i;
+        }
+    }
+    Base<T> mu_1 = Theta[i_minabs] * Theta[i_minabs];
+    Base<T> b_sup_full = max_abs * max_abs;
+    if (upperb)
+        *upperb = b_sup_full;
+
+    // DOS quantile: search_hi = (N/2 - nev - nex - 1)/N; λ where CDF(λ) = search_hi
+    // (matches Julia _dos_quantile: Gaussian-broadened, return closer of i / i-1, else last)
+    ChaseConfig<T>& config = single->GetConfig();
+    std::size_t nev = config.GetNev();
+    std::size_t nex = config.GetNex();
+    double search_hi =
+        (static_cast<double>(N) / 2 - static_cast<double>(nev) -
+         static_cast<double>(nex) - 1) /
+        static_cast<double>(N);
+    if (search_hi < 0.0)
+        search_hi = 0.0;
+    if (search_hi > 1.0)
+        search_hi = 1.0;
+
+    Base<T> lambda_nevnex = static_cast<Base<T>>(ThetaSorted[numvec * m - 1]);
+    double prev = 0;
+    const std::size_t n_dos = numvec * m;
+    for (std::size_t i = 0; i < n_dos; ++i)
+    {
+        double curr = 0;
+        for (std::size_t j = 0; j < n_dos; ++j)
+        {
+            if (ThetaSorted[i] < (Theta[j] - thresh))
+                curr += 0;
+            else if (ThetaSorted[i] > (Theta[j] + thresh))
+                curr += Tau[j] * 1;
+            else
+                curr += Tau[j] * G(ThetaSorted[i] - Theta[j]);
+        }
+        curr /= numvec;
+
+        if (curr > search_hi)
+        {
+            if (std::abs(curr - search_hi) < std::abs(prev - search_hi))
+                lambda_nevnex = static_cast<Base<T>>(ThetaSorted[i]);
+            else
+                lambda_nevnex = static_cast<Base<T>>(
+                    i > 0 ? ThetaSorted[i - 1] : ThetaSorted[i]);
+            break;
+        }
+        prev = curr;
+        lambda_nevnex = static_cast<Base<T>>(ThetaSorted[i]);
+    }
+    Base<T> mu_nevnex = lambda_nevnex * lambda_nevnex;
+
+    // threshold_V = λ_nevnex (Julia): extract eigenvectors with eigenvalue ≤ λ_nevnex.
+    // C++ uses the last Lanczos run only; Julia fills from all nvec runs.
+    int idx = 0;
+    for (int i = 0; i < m; ++i)
+    {
+        if (Theta[(numvec - 1) * m + i] > lambda_nevnex)
+        {
+            idx = i - 1;
+            break;
+        }
+        idx = i + 1;  // all so far ≤ lambda_nevnex
+    }
+    if (idx < 0)
+        idx = 0;
+
+    if (idx > 0)
+    {
+        T* ritzVc = new T[m * m]();
+        for (auto i = 0; i < m * m; ++i)
+            ritzVc[i] = T(ritzV[i]);
+        single->LanczosDos(idx, m, ritzVc);
+        delete[] ritzVc;
+    }
+
+    // Fill ritzv_ with H² values: first idx entries = squared Ritz, then μ_1,
+    // last = μ_nevnex
+    if (ritzv_)
+    {
+        for (int i = 0; i < idx; ++i)
+            ritzv_[i] = Theta[(numvec - 1) * m + i] * Theta[(numvec - 1) * m + i];
+        for (int i = idx; i < nevex - 1; ++i)
+            ritzv_[i] = mu_1;
+        ritzv_[nevex - 1] = mu_nevnex;
+    }
+
+    // Intersperse (same as lanczos)
+    for (auto i = 1; i < idx; ++i)
+    {
+        auto j = i * (nevex / idx);
+        single->Swap(i, j);
+        if (ritzv_)
+            std::swap(ritzv_[i], ritzv_[j]);
+    }
+
+    delete[] ThetaSorted;
+    delete[] Theta;
+    delete[] Tau;
+    delete[] ritzV;
+    return static_cast<std::size_t>(idx);
+}
+
+template <class T>
 void Algorithm<T>::solve(ChaseBase<T>* single)
 {
     ChaseConfig<T>& config = single->GetConfig();

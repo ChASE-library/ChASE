@@ -95,6 +95,7 @@ if(TARGET chase_f)
 endif()
 
 # -----------------------------------------------------------------------------
+add_subdirectory(algorithm)
 add_subdirectory(linalg)
 add_subdirectory(matrix)
 if(TARGET mpi_grid)

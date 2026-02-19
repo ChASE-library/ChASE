@@ -11,7 +11,7 @@
 #include <assert.h>
 #include <iomanip>
 #include <random>
-
+#include <iostream>
 #include "Impl/chase_gpu/nvtx.hpp"
 #include "interface.hpp"
 
@@ -258,6 +258,22 @@ public:
     static std::size_t lanczos(ChaseBase<T>* kernel, int N, int numvec, int m,
                                int nevex, Base<T>* upperb, bool mode,
                                Base<T>* ritzv_);
+
+    /**
+     * @brief Lanczos for H² bounds (same logic as lanczos, values returned as
+     * power 2).
+     *
+     * Uses the same procedure as lanczos() but returns bounds for the spectrum
+     * of H²: upperb and the entries of ritzv_ are squared so that upperb ≈
+     * (max |λ(H)|)², ritzv_[0..nevex-2] carry λ² (e.g. μ_1 = (min |λ|)² in
+     * the first positions), and ritzv_[nevex-1] ≈ μ_nevnex (threshold²).
+     *
+     * @param kernel, N, numvec, m, nevex, upperb, mode, ritzv_ Same as lanczos().
+     * @return Same as lanczos() (number of extracted vectors).
+     */
+    static std::size_t lanczos_for_H2(ChaseBase<T>* kernel, int N, int numvec,
+                                      int m, int nevex, Base<T>* upperb,
+                                      bool mode, Base<T>* ritzv_);
 };
 
 /**
