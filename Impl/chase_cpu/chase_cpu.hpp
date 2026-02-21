@@ -74,26 +74,31 @@ public:
           nex_(nex), nevex_(nev + nex), config_(N, nev, nex)
     {
         Hmat_ = new MatrixType(N_, N_, ldh_, H_);
-        Vec1_ = chase::matrix::Matrix<T>(N_, nevex_, ldv_, V1_);
-        Vec2_ = chase::matrix::Matrix<T>(N_, nevex_);
-        resid_ = chase::matrix::Matrix<chase::Base<T>>(nevex_, 1);
-        ritzvs_ =
-            chase::matrix::Matrix<chase::Base<T>>(nevex_, 1, nevex_, ritzv_);
-
-        A_ = chase::matrix::Matrix<T>(3 * nevex_, nevex_);
-
         if constexpr (std::is_same<
                           MatrixType,
                           chase::matrix::PseudoHermitianMatrix<T>>::value)
         {
             is_sym_ = false;
             is_pseudoHerm_ = true;
-            // Pseudo Hermitian matrices require more space for the dual basis
+            Vec1_ = chase::matrix::Matrix<T>(N_, 2 * nevex_, ldv_, V1_);
+            Vec2_ = chase::matrix::Matrix<T>(N_, 2 * nevex_);
+            resid_ =
+                chase::matrix::Matrix<chase::Base<T>>(2 * nevex_, 1);
+            ritzvs_ = chase::matrix::Matrix<chase::Base<T>>(
+                2 * nevex_, 1, 2 * nevex_, ritzv_);
+            A_ = chase::matrix::Matrix<T>(3 * 2 * nevex_, 2 * nevex_);
+            H2_tmp_.resize(N_ * 2 * nevex_);
         }
         else
         {
             is_sym_ = true;
             is_pseudoHerm_ = false;
+            Vec1_ = chase::matrix::Matrix<T>(N_, nevex_, ldv_, V1_);
+            Vec2_ = chase::matrix::Matrix<T>(N_, nevex_);
+            resid_ = chase::matrix::Matrix<chase::Base<T>>(nevex_, 1);
+            ritzvs_ =
+                chase::matrix::Matrix<chase::Base<T>>(nevex_, 1, nevex_, ritzv_);
+            A_ = chase::matrix::Matrix<T>(3 * nevex_, nevex_);
         }
     }
 
@@ -119,24 +124,31 @@ public:
           config_(N, nev, nex)
     {
         Hmat_ = H;
-        Vec1_ = chase::matrix::Matrix<T>(N_, nevex_, ldv_, V1_);
-        Vec2_ = chase::matrix::Matrix<T>(N_, nevex_);
-        resid_ = chase::matrix::Matrix<chase::Base<T>>(nevex_, 1);
-        ritzvs_ =
-            chase::matrix::Matrix<chase::Base<T>>(nevex_, 1, nevex_, ritzv_);
-        A_ = chase::matrix::Matrix<T>(3 * nevex_, nevex_);
         if constexpr (std::is_same<
                           MatrixType,
                           chase::matrix::PseudoHermitianMatrix<T>>::value)
         {
             is_sym_ = false;
             is_pseudoHerm_ = true;
-            // Pseudo Hermitian matrices require more space for the dual basis
+            Vec1_ = chase::matrix::Matrix<T>(N_, 2 * nevex_, ldv_, V1_);
+            Vec2_ = chase::matrix::Matrix<T>(N_, 2 * nevex_);
+            resid_ =
+                chase::matrix::Matrix<chase::Base<T>>(2 * nevex_, 1);
+            ritzvs_ = chase::matrix::Matrix<chase::Base<T>>(
+                2 * nevex_, 1, 2 * nevex_, ritzv_);
+            A_ = chase::matrix::Matrix<T>(3 * 2 * nevex_, 2 * nevex_);
+            H2_tmp_.resize(N_ * 2 * nevex_);
         }
         else
         {
             is_sym_ = true;
             is_pseudoHerm_ = false;
+            Vec1_ = chase::matrix::Matrix<T>(N_, nevex_, ldv_, V1_);
+            Vec2_ = chase::matrix::Matrix<T>(N_, nevex_);
+            resid_ = chase::matrix::Matrix<chase::Base<T>>(nevex_, 1);
+            ritzvs_ =
+                chase::matrix::Matrix<chase::Base<T>>(nevex_, 1, nevex_, ritzv_);
+            A_ = chase::matrix::Matrix<T>(3 * nevex_, nevex_);
         }
     }
 
@@ -160,6 +172,11 @@ public:
     std::size_t GetNev() override { return nev_; }
 
     std::size_t GetNex() override { return nex_; }
+
+    std::size_t GetRitzvBlockSize() const override
+    {
+        return is_pseudoHerm_ ? 2 * nevex_ : nevex_;
+    }
 
     std::size_t GetLanczosIter() override { return lanczosIter_; }
 
@@ -243,6 +260,28 @@ public:
         chase::linalg::lapackpp::t_lacpy('A', Vec1_.rows(), Vec1_.cols(),
                                          Vec1_.data(), Vec1_.ld(), Vec2_.data(),
                                          Vec2_.ld());
+    }
+
+    void ReinitColumns(std::size_t fixednev, std::size_t const* col_indices,
+                      std::size_t n_indices) override
+    {
+        if (n_indices == 0)
+            return;
+        std::mt19937 gen(4242);
+        std::normal_distribution<> d;
+        for (std::size_t c = 0; c < n_indices; ++c)
+        {
+            std::size_t j = fixednev + col_indices[c];
+            for (auto i = 0; i < Vec1_.rows(); i++)
+                Vec1_.data()[i + j * Vec1_.ld()] =
+                    getRandomT<T>([&]() { return d(gen); });
+        }
+        for (std::size_t c = 0; c < n_indices; ++c)
+        {
+            std::size_t j = fixednev + col_indices[c];
+            for (auto i = 0; i < Vec2_.rows(); i++)
+                Vec2_.data()[i + j * Vec2_.ld()] = Vec1_.data()[i + j * Vec1_.ld()];
+        }
     }
 
     void Lanczos(std::size_t m, chase::Base<T>* upperb) override
@@ -337,8 +376,16 @@ public:
 #endif
     }
 
-    void HEMM(std::size_t block, T alpha, T beta, std::size_t offset) override
+    void HEMM(std::size_t block, T alpha, T beta, std::size_t offset_left,
+              std::size_t offset_right = 0) override
     {
+        std::size_t ncols =
+            (offset_right < block) ? (block - offset_right) : std::size_t(0);
+        if (ncols == 0)
+        {
+            Vec1_.swap(Vec2_);
+            return;
+        }
 #ifdef ENABLE_MIXED_PRECISION
         if constexpr (std::is_same<T, double>::value ||
                       std::is_same<T, std::complex<double>>::value)
@@ -358,19 +405,20 @@ public:
 
                 chase::linalg::blaspp::t_gemm<singlePrecisionT>(
                     CblasColMajor, CblasNoTrans, CblasNoTrans, Hmat_sp->rows(),
-                    block, Hmat_sp->cols(), &alpha_sp, Hmat_sp->data(),
-                    Hmat_sp->ld(), Vec1_sp->data() + offset * N_ + locked_ * N_,
+                    ncols, Hmat_sp->cols(), &alpha_sp, Hmat_sp->data(),
+                    Hmat_sp->ld(),
+                    Vec1_sp->data() + offset_left * N_ + locked_ * N_,
                     Vec1_sp->ld(), &beta_sp,
-                    Vec2_sp->data() + offset * N_ + locked_ * N_,
+                    Vec2_sp->data() + offset_left * N_ + locked_ * N_,
                     Vec2_sp->ld());
             }
             else
             {
                 chase::linalg::blaspp::t_gemm<T>(
                     CblasColMajor, CblasNoTrans, CblasNoTrans, Hmat_->rows(),
-                    block, Hmat_->cols(), &alpha, Hmat_->data(), Hmat_->ld(),
-                    Vec1_.data() + offset * N_ + locked_ * N_, Vec1_.ld(),
-                    &beta, Vec2_.data() + offset * N_ + locked_ * N_,
+                    ncols, Hmat_->cols(), &alpha, Hmat_->data(), Hmat_->ld(),
+                    Vec1_.data() + offset_left * N_ + locked_ * N_, Vec1_.ld(),
+                    &beta, Vec2_.data() + offset_left * N_ + locked_ * N_,
                     Vec2_.ld());
             }
         }
@@ -378,13 +426,61 @@ public:
 #endif
         {
             chase::linalg::blaspp::t_gemm<T>(
-                CblasColMajor, CblasNoTrans, CblasNoTrans, Hmat_->rows(), block,
-                Hmat_->cols(), &alpha, Hmat_->data(), Hmat_->ld(),
-                Vec1_.data() + offset * Vec1_.ld() + locked_ * Vec1_.ld(),
+                CblasColMajor, CblasNoTrans, CblasNoTrans, Hmat_->rows(),
+                ncols, Hmat_->cols(), &alpha, Hmat_->data(), Hmat_->ld(),
+                Vec1_.data() + offset_left * Vec1_.ld() + locked_ * Vec1_.ld(),
                 Vec1_.ld(), &beta,
-                Vec2_.data() + offset * Vec2_.ld() + locked_ * Vec2_.ld(),
+                Vec2_.data() + offset_left * Vec2_.ld() + locked_ * Vec2_.ld(),
                 Vec2_.ld());
         }
+
+        Vec1_.swap(Vec2_);
+    }
+
+    void HEMM_H2(std::size_t block, T alpha, T beta, T gamma,
+                 std::size_t offset_left,
+                 std::size_t offset_right = 0) override
+    {
+        std::size_t ncols =
+            (offset_right < block) ? (block - offset_right) : std::size_t(0);
+        if (ncols == 0)
+        {
+            Vec1_.swap(Vec2_);
+            return;
+        }
+        std::size_t col0 = offset_left + locked_;
+        T* V1 = Vec1_.data() + col0 * Vec1_.ld();
+        T* V2 = Vec2_.data() + col0 * Vec2_.ld();
+        std::size_t ld1 = Vec1_.ld();
+        std::size_t ld2 = Vec2_.ld();
+
+        if (H2_tmp_.size() < N_ * ncols)
+            H2_tmp_.resize(N_ * ncols);
+        T* tmp = H2_tmp_.data();
+        T one = T(1);
+        T zero = T(0);
+
+        // tmp = H * Vec1_[cols]
+        chase::linalg::blaspp::t_gemm<T>(
+            CblasColMajor, CblasNoTrans, CblasNoTrans,
+            static_cast<std::size_t>(Hmat_->rows()), ncols,
+            static_cast<std::size_t>(Hmat_->cols()), &one, Hmat_->data(),
+            Hmat_->ld(), V1, ld1, &zero, tmp, N_);
+
+        // Vec2_[cols] = beta*Vec2_[cols] + gamma*Vec1_[cols]
+        for (std::size_t j = 0; j < ncols; ++j)
+        {
+            chase::linalg::blaspp::t_scal(N_, &beta, V2 + j * ld2, 1);
+            chase::linalg::blaspp::t_axpy(N_, &gamma, V1 + j * ld1, 1,
+                                         V2 + j * ld2, 1);
+        }
+
+        // Vec2_[cols] += alpha * H * tmp
+        chase::linalg::blaspp::t_gemm<T>(
+            CblasColMajor, CblasNoTrans, CblasNoTrans,
+            static_cast<std::size_t>(Hmat_->rows()), ncols,
+            static_cast<std::size_t>(Hmat_->cols()), &alpha, Hmat_->data(),
+            Hmat_->ld(), tmp, N_, &one, V2, ld2);
 
         Vec1_.swap(Vec2_);
     }
@@ -531,7 +627,9 @@ public:
     void Resd(chase::Base<T>* ritzv, chase::Base<T>* resd,
               std::size_t fixednev) override
     {
-        std::size_t unconverged = (nev_ + nex_) - fixednev;
+        // Pseudo-Hermitian: subspace size is 2*nevex_; standard: nevex_
+        std::size_t unconverged =
+            (is_pseudoHerm_ ? 2 * nevex_ : (nev_ + nex_)) - fixednev;
 
         chase::linalg::internal::cpu::residuals(
             Hmat_->rows(), Hmat_->data(), Hmat_->ld(), unconverged,
@@ -580,6 +678,7 @@ private:
     chase::matrix::Matrix<chase::Base<T>> resid_;  ///< Residuals matrix.
     chase::matrix::Matrix<chase::Base<T>> ritzvs_; ///< Ritz values matrix.
     chase::matrix::Matrix<T> A_; ///< Auxiliary matrix A for operations.
+    std::vector<T> H2_tmp_;      ///< Temp for HEMM_H2 (H² filter step).
     bool is_sym_;                ///< Flag for matrix symmetry.
     bool is_pseudoHerm_;         ///< Flag for matrix pseudo-hermicity.
     std::size_t locked_; ///< Counter for the number of converged eigenvalues.

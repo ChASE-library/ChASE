@@ -9,9 +9,11 @@
 
 #include <algorithm>
 #include <assert.h>
+#include <cmath>
 #include <iomanip>
 #include <random>
 #include <iostream>
+#include <vector>
 #include "Impl/chase_gpu/nvtx.hpp"
 #include "interface.hpp"
 
@@ -69,6 +71,12 @@ public:
      * solver.
      */
     static void solve(ChaseBase<T>* single);
+    /**
+     * @brief Pseudo-Hermitian (e.g. BSE) solver path. Same interface as solve()
+     * but uses Lanczos for H², calc_degrees_pseudo_H2, filter_H2, and
+     * pseudo-Hermitian Rayleigh-Ritz. Implementation to be filled step by step.
+     */
+    static void solve_pseudo(ChaseBase<T>* single);
     /**
      * @brief Optimizes the degree of the Chebyshev polynomial based on the
      * convergence of Ritz pairs.
@@ -132,6 +140,21 @@ public:
                         Base<T> upperb, Base<T> lowerb, Base<T> tol,
                         Base<T>* ritzv, Base<T>* resid, Base<T>* residLast,
                         std::size_t* degrees, std::size_t locked);
+
+    /**
+     * @brief Degree optimization for Chebyshev filtering on H² (pseudo-Hermitian
+     * H). Uses λ² for ellipse, pair-symmetric degrees, and negative/positive
+     * ordering (asc/desc by degree).
+     * @param locked_left  Number of locked eigenpairs on the left (negative λ).
+     * @param locked_right Number of locked eigenpairs on the right (positive λ).
+     */
+    static std::size_t
+    calc_degrees_pseudo_H2(ChaseBase<T>* kernel, std::size_t N,
+                          std::size_t unconverged, std::size_t nex,
+                          Base<T> upperb, Base<T> lowerb, Base<T> tol,
+                          Base<T>* ritzv, Base<T>* resid, Base<T>* residLast,
+                          std::size_t* degrees, std::size_t locked_left,
+                          std::size_t locked_right);
 
     /**
      * @brief Detects eigenvalue clusters and computes spacing factors for
@@ -213,7 +236,9 @@ public:
                    Base<T>* Lritzv, Base<T>* resid, Base<T>* residLast,
                    std::vector<Base<T>>* early_locked_residuals,
                    std::size_t* degrees, std::size_t locked,
-                   std::size_t iteration);
+                   std::size_t iteration, std::size_t nev = 0,
+                   std::size_t n_found_neg = 0, std::size_t n_found_pos = 0,
+                   std::size_t n_skip_tail = 0);
 
     /**
      * @brief Implements the Chebyshev filter.
@@ -237,6 +262,15 @@ public:
                               std::size_t unprocessed, std::size_t deg,
                               std::size_t* degrees, Base<T> lambda_1,
                               Base<T> lower, Base<T> upper);
+    /**
+     * @brief Chebyshev filter on H² (pseudo-Hermitian H). Matches Julia
+     * ChebyshevFilterA2!: symmetric retirement (s, r = nevex-s+1), no shift of H,
+     * two matvecs per step via HEMM_H2.
+     */
+    static std::size_t filter_H2(ChaseBase<T>* kernel, std::size_t n,
+                                 std::size_t nevex, std::size_t* degrees,
+                                 Base<T> lambda_1, Base<T> lower,
+                                 Base<T> upper);
     /**
      * @brief Implements the Lanczos method to estimate bounds in ChASE.
      *
@@ -289,6 +323,17 @@ template <typename T>
 void Solve(ChaseBase<T>* single)
 {
     Algorithm<T>::solve(single);
+}
+
+/**
+ * @brief Pseudo-Hermitian (e.g. BSE) solver. Wrapper around
+ * Algorithm<T>::solve_pseudo(). Use when the matrix is pseudo-Hermitian and
+ * filtering is on H².
+ */
+template <typename T>
+void Solve_pseudo(ChaseBase<T>* single)
+{
+    Algorithm<T>::solve_pseudo(single);
 }
 
 } // namespace chase

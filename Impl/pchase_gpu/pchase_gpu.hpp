@@ -539,6 +539,11 @@ public:
 
     std::size_t GetNex() override { return nex_; }
 
+    std::size_t GetRitzvBlockSize() const override
+    {
+        return is_pseudoHerm_ ? 2 * nevex_ : nevex_;
+    }
+
     std::size_t GetLanczosIter() override { return lanczosIter_; }
 
     std::size_t GetNumLanczos() override { return numLanczos_; }
@@ -623,6 +628,27 @@ public:
 
         Hmat_->H2D();
         next_ = NextOp::bAc;
+    }
+
+    void ReinitColumns(std::size_t fixednev, std::size_t const* col_indices,
+                      std::size_t n_indices) override
+    {
+        SCOPED_NVTX_RANGE();
+        if (n_indices == 0)
+            return;
+        for (std::size_t c = 0; c < n_indices; ++c)
+        {
+            std::size_t j = fixednev + col_indices[c];
+            chase::linalg::internal::cuda::init_random_vectors(
+                V1_->l_data() + j * V1_->l_ld(), V1_->l_rows());
+        }
+        for (std::size_t c = 0; c < n_indices; ++c)
+        {
+            std::size_t j = fixednev + col_indices[c];
+            chase::linalg::internal::cuda::t_lacpy(
+                'A', V1_->l_rows(), 1, V1_->l_data() + j * V1_->l_ld(),
+                V1_->l_ld(), V2_->l_data() + j * V2_->l_ld(), V2_->l_ld());
+        }
     }
 
     void Lanczos(std::size_t m, chase::Base<T>* upperb) override
@@ -735,8 +761,16 @@ public:
 #endif
     }
 
-    void HEMM(std::size_t block, T alpha, T beta, std::size_t offset) override
+    void HEMM(std::size_t block, T alpha, T beta, std::size_t offset_left,
+              std::size_t offset_right = 0) override
     {
+        std::size_t ncols =
+            (offset_right < block) ? (block - offset_right) : std::size_t(0);
+        if (ncols == 0)
+        {
+            next_ = (next_ == NextOp::bAc) ? NextOp::cAb : NextOp::bAc;
+            return;
+        }
 #ifdef ENABLE_MIXED_PRECISION
         if constexpr (std::is_same<T, double>::value ||
                       std::is_same<T, std::complex<double>>::value)
@@ -759,16 +793,16 @@ public:
                 {
                     kernelNamespace::template MatrixMultiplyMultiVectors<
                         singlePrecisionT>(cublasH_, &alpha_sp, *Hmat_sp, *V1_sp,
-                                          &beta_sp, *W1_sp, offset + locked_,
-                                          block);
+                                          &beta_sp, *W1_sp,
+                                          offset_left + locked_, ncols);
                     next_ = NextOp::cAb;
                 }
                 else
                 {
                     kernelNamespace::template MatrixMultiplyMultiVectors<
                         singlePrecisionT>(cublasH_, &alpha_sp, *Hmat_sp, *W1_sp,
-                                          &beta_sp, *V1_sp, offset + locked_,
-                                          block);
+                                          &beta_sp, *V1_sp,
+                                          offset_left + locked_, ncols);
                     next_ = NextOp::bAc;
                 }
             }
@@ -778,14 +812,14 @@ public:
                 {
                     kernelNamespace::MatrixMultiplyMultiVectors(
                         cublasH_, &alpha, *Hmat_, *V1_, &beta, *W1_,
-                        offset + locked_, block);
+                        offset_left + locked_, ncols);
                     next_ = NextOp::cAb;
                 }
                 else
                 {
                     kernelNamespace::MatrixMultiplyMultiVectors(
                         cublasH_, &alpha, *Hmat_, *W1_, &beta, *V1_,
-                        offset + locked_, block);
+                        offset_left + locked_, ncols);
                     next_ = NextOp::bAc;
                 }
             }
@@ -798,17 +832,31 @@ public:
             {
                 kernelNamespace::MatrixMultiplyMultiVectors(
                     cublasH_, &alpha, *Hmat_, *V1_, &beta, *W1_,
-                    offset + locked_, block);
+                    offset_left + locked_, ncols);
                 next_ = NextOp::cAb;
             }
             else
             {
                 kernelNamespace::MatrixMultiplyMultiVectors(
                     cublasH_, &alpha, *Hmat_, *W1_, &beta, *V1_,
-                    offset + locked_, block);
+                    offset_left + locked_, ncols);
                 next_ = NextOp::bAc;
             }
         }
+    }
+
+    void HEMM_H2(std::size_t block, T alpha, T beta, T gamma,
+                 std::size_t offset_left,
+                 std::size_t offset_right = 0) override
+    {
+        (void)block;
+        (void)alpha;
+        (void)beta;
+        (void)gamma;
+        (void)offset_left;
+        (void)offset_right;
+        throw std::runtime_error(
+            "HEMM_H2 (Chebyshev filter on H²) not implemented for distributed GPU backend");
     }
 
     void QR(std::size_t fixednev, chase::Base<T> cond) override
@@ -1234,9 +1282,12 @@ public:
     {
         SCOPED_NVTX_RANGE();
 
+        // Pseudo-Hermitian: subspace size is 2*nevex_; standard: nevex_
+        std::size_t subSize =
+            (is_pseudoHerm_ ? 2 * nevex_ : nevex_) - locked_;
         kernelNamespace::residuals(cublasH_, *Hmat_, *V1_, *V2_, *W1_, *W2_,
                                    ritzv_->loc_matrix(), resid_->loc_matrix(),
-                                   locked_, nevex_ - locked_);
+                                   locked_, subSize);
     }
 
     void Swap(std::size_t i, std::size_t j) override

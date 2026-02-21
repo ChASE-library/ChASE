@@ -58,9 +58,27 @@ protected:
         {
             Q_tiny.data()[i * (N_tiny + 1)] = 1.0;
         }
+
+        // RR_v2 order test: subspace size n = 2*nev_v2, nev_v2 < N/2
+        nev_v2 = 20;
+        n_sub_v2 = 2 * nev_v2;  // 40
+        ritzv_v2.resize(n_sub_v2);
+        Q_v2.resize(N * n_sub_v2);
+        V_v2.resize(N * n_sub_v2);
+        Workspace_v2.resize(2 * n_sub_v2 * n_sub_v2);
+        for (auto i = 0; i < n_sub_v2; i++)
+            Q_v2.data()[i * (N + 1)] = 1.0;
     }
 
     void TearDown() override {}
+
+    // RR_v2 order test: subspace size 2*nev, nev < N/2
+    std::size_t nev_v2 = 20;
+    std::size_t n_sub_v2 = 40;
+    std::vector<chase::Base<T>> ritzv_v2;
+    std::vector<T> Q_v2;
+    std::vector<T> V_v2;
+    std::vector<T> Workspace_v2;
 
     // Standard variable sets
     std::size_t k = 100;
@@ -146,4 +164,39 @@ TYPED_TEST(PseudoHermitianRayleighRitzCPUTest, tinyPseudoHermitianRayleighRitz)
                       GetErrorTolerance<
                           T>()); // MachineEpsilon<chase::Base<T>>::value());
     }
+}
+
+// RR_v2: test order of Ritz values. Subspace size n = 2*nev (nev < N/2).
+// Currently relaxed: only check ascending order + finiteness (heevd order).
+// TODO (after filter implementation): Restore stricter checks — roughly half
+// negative, half positive; first half (negatives) descending (-0.1, -1, -10);
+// second half (positives) descending (10, 1, 0.1). May require sorting in
+// rayleighRitz_v2 or a matrix/subspace that yields ± pairing.
+TYPED_TEST(PseudoHermitianRayleighRitzCPUTest, PseudoHermitianRayleighRitz_v2_Order)
+{
+    using T = TypeParam;
+    using Base = chase::Base<T>;
+
+    this->H->readFromBinaryFile(GetBSE_Matrix<T>());
+    ASSERT_LT(this->nev_v2, this->N / 2)
+        << "nev_v2 must be < N/2";
+    ASSERT_EQ(this->n_sub_v2, 2 * this->nev_v2);
+
+    chase::linalg::internal::cpu::rayleighRitz_v2(
+        this->H, this->n_sub_v2, this->Q_v2.data(), this->N, this->V_v2.data(),
+        this->N, this->ritzv_v2.data(), this->Workspace_v2.data());
+
+    const std::size_t n = this->n_sub_v2;
+    const Base* r = this->ritzv_v2.data();
+    Base tol = GetErrorTolerance<T>();
+
+    // Ritz values should be in ascending order (heevd default)
+    for (std::size_t i = 0; i + 1 < n; i++)
+        EXPECT_LE(r[i], r[i + 1] + tol)
+            << "Ritz values should be ascending: r[" << i << "]=" << r[i]
+            << " r[" << (i + 1) << "]=" << r[i + 1];
+
+    // All finite
+    for (std::size_t i = 0; i < n; i++)
+        EXPECT_TRUE(std::isfinite(r[i])) << "r[" << i << "] not finite";
 }

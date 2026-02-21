@@ -558,10 +558,17 @@ public:
 
         chase_->Shift(c, isunshift);
     }
-    void HEMM(std::size_t nev, T alpha, T beta, std::size_t offset)
+    void HEMM(std::size_t nev, T alpha, T beta, std::size_t offset_left,
+              std::size_t offset_right = 0)
     {
-        chase_->HEMM(nev, alpha, beta, offset);
-        perf_.add_filtered_vecs(nev);
+        chase_->HEMM(nev, alpha, beta, offset_left, offset_right);
+        perf_.add_filtered_vecs(nev - offset_right);
+    }
+    void HEMM_H2(std::size_t nev, T alpha, T beta, T gamma,
+                 std::size_t offset_left, std::size_t offset_right = 0)
+    {
+        chase_->HEMM_H2(nev, alpha, beta, gamma, offset_left, offset_right);
+        perf_.add_filtered_vecs(2 * (nev - offset_right));
     }
 
     void QR(std::size_t fixednev, Base<T> cond)
@@ -657,6 +664,10 @@ public:
     std::size_t GetN() const { return chase_->GetN(); }
     std::size_t GetNev() { return chase_->GetNev(); }
     std::size_t GetNex() { return chase_->GetNex(); }
+    std::size_t GetRitzvBlockSize() const
+    {
+        return chase_->GetRitzvBlockSize();
+    }
     Base<T>* GetRitzv() { return chase_->GetRitzv(); }
     Base<T>* GetResid() { return chase_->GetResid(); }
     std::size_t GetLanczosIter() { return chase_->GetLanczosIter(); }

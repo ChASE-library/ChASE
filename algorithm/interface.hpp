@@ -70,9 +70,22 @@ public:
      * @param nev Number of eigenpairs involved in the operation.
      * @param alpha Scalar that scales the result of \(H \cdot V2\).
      * @param beta Scalar that scales the result of \(V1\).
-     * @param offset Column offset for the operation.
+     * @param offset_left Column offset (pointer shift: skip first offset_left
+     * columns of both matrices).
+     * @param offset_right Number of columns to discard from the end of the
+     * second matrix (RHS); effective number of columns is nev - offset_right.
      */
-    virtual void HEMM(std::size_t nev, T alpha, T beta, std::size_t offset) = 0;
+    virtual void HEMM(std::size_t nev, T alpha, T beta,
+                     std::size_t offset_left, std::size_t offset_right = 0) = 0;
+    /**
+     * @brief Performs one Chebyshev recurrence step for H²: Vec2 = alpha*H*(H*Vec1)
+     * + beta*Vec2 + gamma*Vec1 (on given column range). Used by the H² filter.
+     * H is not shifted; shift terms (c*I) are in gamma. Kernel may swap Vec1/Vec2
+     * after the call to match HEMM behavior.
+     */
+    virtual void HEMM_H2(std::size_t nev, T alpha, T beta, T gamma,
+                         std::size_t offset_left,
+                         std::size_t offset_right = 0) = 0;
     /**
      * @brief Performs QR factorization with optional Householder
      * transformation.
@@ -242,6 +255,24 @@ public:
      */
     virtual void initVecs(bool random) = 0;
     /**
+     * @brief Reinitialize selected columns of the subspace with random vectors.
+     *
+     * Used by outlier purge (pseudo-Hermitian): columns at fixednev+col_indices[i]
+     * are filled with random normal values. Default no-op for backends that do
+     * not use it.
+     *
+     * @param fixednev Number of locked columns (base offset).
+     * @param col_indices Indices of columns to reinit (0-based in unconverged block).
+     * @param n_indices Number of indices.
+     */
+    virtual void ReinitColumns(std::size_t fixednev, std::size_t const* col_indices,
+                               std::size_t n_indices)
+    {
+        (void)fixednev;
+        (void)col_indices;
+        (void)n_indices;
+    }
+    /**
      * @brief Returns the size of the matrix.
      *
      * This method returns the size of the matrix (number of rows or columns).
@@ -280,11 +311,31 @@ public:
      */
     virtual std::size_t GetNumLanczos() = 0;
     /**
+     * @brief Returns the number of elements in the Ritz/residual buffer.
+     *
+     * Use this to know the valid range for GetRitzv() and GetResid(): elements
+     * in [0, GetRitzvBlockSize()) are valid. For Hermitian/symmetric problems
+     * this is nev + nex. For pseudo-Hermitian (e.g. BSE) the subspace has
+     * 2*(nev+nex) columns, so the buffer size is 2*(nev+nex).
+     *
+     * @return The number of Ritz values (and residuals) in the buffer.
+     */
+    virtual std::size_t GetRitzvBlockSize() const = 0;
+    /**
      * @brief Returns the computed Ritz values.
      *
      * This method provides access to the Ritz values computed during the
-     * algorithm's execution. These values are typically used for eigenvalue
-     * approximations and further analysis.
+     * algorithm's execution. The buffer has GetRitzvBlockSize() elements.
+     *
+     * For Hermitian/symmetric: after solve(), the first nev entries are the
+     * requested eigenpairs.
+     *
+     * For pseudo-Hermitian: the buffer has 2*nevex elements. In the natural
+     * (Rayleigh–Ritz) order, the first half (0 .. nevex-1) are the negative
+     * block and the second half (nevex .. 2*nevex-1) the positive block. After
+     * solve_pseudo() returns, the algorithm reorders so that the first GetNev()
+     * entries are the requested positive eigenvalues (and the corresponding
+     * eigenvectors are in the first GetNev() columns of V).
      *
      * @return A pointer to an array of Ritz values of type `Base<T>`.
      */
@@ -292,9 +343,12 @@ public:
     /**
      * @brief Returns the residuals of computed Ritz pairs.
      *
-     * This method returns the residuals associated with the Ritz values.
-     * Residuals are often used to measure the accuracy or convergence of the
-     * eigenvalue problem solution.
+     * This method returns the residuals associated with the Ritz values. The
+     * buffer has GetRitzvBlockSize() elements and is in the same order as
+     * GetRitzv(). For pseudo-Hermitian, the layout matches the Ritz values
+     * (first half negative block, second half positive in natural order; after
+     * solve_pseudo(), the first GetNev() entries are the requested positive
+     * eigenpairs).
      *
      * @return A pointer to an array of residuals corresponding to the Ritz
      * values of type `Base<T>`.

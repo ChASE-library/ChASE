@@ -63,6 +63,11 @@ else()
   setup_test_serial(ChaseSerialSolveTest chase_serial_solve.cpp LIBRARIES chase_cpu)
 endif()
 
+# Pseudo-Hermitian (BSE) solve: Solve_pseudo with BSE matrix from build dir
+setup_test_serial(ChaseSerialSolvePseudoBSETest chase_serial_solve_pseudo_bse_test.cpp LIBRARIES chase_cpu)
+target_compile_definitions(ChaseSerialSolvePseudoBSETest PRIVATE
+  CHASE_TEST_BSE_DIR="${CMAKE_BINARY_DIR}/tests/linalg/internal/BSE_matrices")
+
 if(TARGET pchase_gpu)
   setup_test(ChaseDistributedSolveTest chase_distributed_solve.cpp LIBRARIES pchase_gpu pchase_cpu)
 elseif(TARGET pchase_cpu)
