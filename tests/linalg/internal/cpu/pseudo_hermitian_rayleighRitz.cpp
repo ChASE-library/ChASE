@@ -199,7 +199,7 @@ TYPED_TEST(PseudoHermitianRayleighRitzCPUTest, PseudoHermitianRayleighRitz_v2_Or
                 << "Positive Ritz values should be descending: r[" << i
                 << "]=" << r[i] << " r[" << (i + 1) << "]=" << r[i + 1];
     }
-..
+
     // All finite
     for (std::size_t i = 0; i < n; i++)
         EXPECT_TRUE(std::isfinite(r[i])) << "r[" << i << "] not finite";
