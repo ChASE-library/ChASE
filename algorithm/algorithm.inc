@@ -1254,7 +1254,7 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
 
     std::size_t lanczos_iter =
         std::min(nevex, std::min(N / 2, config.GetLanczosIter()));
-    if (single->isPseudoHerm() && 2.0 * (lanczos_iter / 2) < lanczos_iter)
+    if (2.0 * (lanczos_iter / 2) < lanczos_iter)
     {
         config.SetLanczosIter(lanczos_iter - 1);
         lanczos_iter = config.GetLanczosIter();
@@ -1272,17 +1272,7 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
     lambda = *std::min_element(ritzv_, ritzv_ + nevex);
     Base<T> lambda_temp, lowerb_temp;
     lowerb = lowerb * config.GetDecayingRate();
-    if (single->isPseudoHerm())
-    {
-        if (upperb > 0)
-        {
-            upperb = upperb * config.GetUpperbScaleRate();
-        }
-        else
-        {
-            upperb = upperb / config.GetUpperbScaleRate();
-        }
-    }
+
     std::size_t new_converged;
 
     std::vector<std::size_t> index(unconverged); // unconverged = nev+nex-locked
@@ -1336,18 +1326,6 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
           one iteration does not provide convergence for at least one
           eigenvector.*/
 
-        if (single->isPseudoHerm() && iteration > 0)
-        {
-
-            lowerb_temp =
-                ritzv[index.data()[std::size_t(unconverged * 0.95) - 1]] *
-                config.GetDecayingRate();
-            if (lowerb_temp > lambda)
-            {
-                lowerb = std::min(lowerb, lowerb_temp);
-            }
-        }
-
 #ifdef CHASE_OUTPUT
         {
             std::ostringstream oss;
@@ -1377,20 +1355,9 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
         //--------------------------------
         if (config.DoOptimization() && iteration != 0)
         {
-            if (single->isPseudoHerm())
-            {
-                // Use specialized pseudo-hermitian degree calculation with
-                // cluster-aware features
-                deg = calc_degrees_pseudo(single, N, unconverged, nex, upperb,
-                                          lowerb, tol, ritzv, resid, residLast,
-                                          degrees, locked);
-            }
-            else
-            {
-                deg =
-                    calc_degrees(single, N, unconverged, nex, upperb, lowerb,
-                                 tol, ritzv, resid, residLast, degrees, locked);
-            }
+            deg =
+                calc_degrees(single, N, unconverged, nex, upperb, lowerb,
+                                tol, ritzv, resid, residLast, degrees, locked);            
         }
 
         //------------------------------- FILTER -------------------------------

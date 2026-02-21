@@ -167,11 +167,8 @@ TYPED_TEST(PseudoHermitianRayleighRitzCPUTest, tinyPseudoHermitianRayleighRitz)
 }
 
 // RR_v2: test order of Ritz values. Subspace size n = 2*nev (nev < N/2).
-// Currently relaxed: only check ascending order + finiteness (heevd order).
-// TODO (after filter implementation): Restore stricter checks — roughly half
-// negative, half positive; first half (negatives) descending (-0.1, -1, -10);
-// second half (positives) descending (10, 1, 0.1). May require sorting in
-// rayleighRitz_v2 or a matrix/subspace that yields ± pairing.
+// Require: negative eigenvalues in ascending order, positive in descending,
+// and all finite.
 TYPED_TEST(PseudoHermitianRayleighRitzCPUTest, PseudoHermitianRayleighRitz_v2_Order)
 {
     using T = TypeParam;
@@ -190,12 +187,19 @@ TYPED_TEST(PseudoHermitianRayleighRitzCPUTest, PseudoHermitianRayleighRitz_v2_Or
     const Base* r = this->ritzv_v2.data();
     Base tol = GetErrorTolerance<T>();
 
-    // Ritz values should be in ascending order (heevd default)
+    // Negative Ritz values should be in ascending order; positive in descending
     for (std::size_t i = 0; i + 1 < n; i++)
-        EXPECT_LE(r[i], r[i + 1] + tol)
-            << "Ritz values should be ascending: r[" << i << "]=" << r[i]
-            << " r[" << (i + 1) << "]=" << r[i + 1];
-
+    {
+        if (r[i] < 0 && r[i + 1] < 0)
+            EXPECT_LE(r[i], r[i + 1] + tol)
+                << "Negative Ritz values should be ascending: r[" << i
+                << "]=" << r[i] << " r[" << (i + 1) << "]=" << r[i + 1];
+        else if (r[i] > 0 && r[i + 1] > 0)
+            EXPECT_GE(r[i], r[i + 1] - tol)
+                << "Positive Ritz values should be descending: r[" << i
+                << "]=" << r[i] << " r[" << (i + 1) << "]=" << r[i + 1];
+    }
+..
     // All finite
     for (std::size_t i = 0; i < n; i++)
         EXPECT_TRUE(std::isfinite(r[i])) << "r[" << i << "] not finite";

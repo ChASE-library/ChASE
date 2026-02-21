@@ -77,9 +77,9 @@ protected:
         numvec_ = 40;
         lanczos_iter_ = 50;
 
-        // Backend Lanczos writes vectors to V columns 0..M-1; need at least lanczos_iter_ columns.
-        V_.resize(n_ * std::max(nevex_, lanczos_iter_));
-        ritzv_.resize(nevex_);
+        // PseudoHermitian backend uses 2*nevex_ columns in V and 2*nevex_ ritz values; Lanczos writes to columns 0..M-1.
+        V_.resize(n_ * std::max(2 * nevex_, lanczos_iter_));
+        ritzv_.resize(2 * nevex_);
 
         Hmat_ = std::make_unique<chase::matrix::PseudoHermitianMatrix<T>>(
             n_, n_);
