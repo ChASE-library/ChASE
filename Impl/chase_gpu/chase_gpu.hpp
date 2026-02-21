@@ -129,26 +129,37 @@ public:
         SCOPED_NVTX_RANGE();
 
         Hmat_ = new MatrixType(N_, N_, ldh_, H_);
-        Vec1_ = chase::matrix::Matrix<T, chase::platform::GPU>(N_, nevex_, ldv_,
-                                                               V1_);
-        Vec2_ = chase::matrix::Matrix<T, chase::platform::GPU>(N_, nevex_);
-        resid_ = chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU>(
-            nevex_, 1);
-        ritzvs_ = chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU>(
-            nevex_, 1, nevex_, ritzv_);
-        A_ = chase::matrix::Matrix<T, chase::platform::GPU>(2 * nevex_, nevex_);
-
         if constexpr (std::is_same<MatrixType,
                                    chase::matrix::PseudoHermitianMatrix<
                                        T, chase::platform::GPU>>::value)
         {
             is_sym_ = false;
             is_pseudoHerm_ = true;
+            Vec1_ = chase::matrix::Matrix<T, chase::platform::GPU>(
+                N_, 2 * nevex_, ldv_, V1_);
+            Vec2_ = chase::matrix::Matrix<T, chase::platform::GPU>(N_, 2 * nevex_);
+            resid_ = chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU>(
+                2 * nevex_, 1);
+            ritzvs_ =
+                chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU>(
+                    2 * nevex_, 1, 2 * nevex_, ritzv_);
+            A_ = chase::matrix::Matrix<T, chase::platform::GPU>(3 * 2 * nevex_,
+                                                                 2 * nevex_);
         }
         else
         {
             is_sym_ = true;
             is_pseudoHerm_ = false;
+            Vec1_ = chase::matrix::Matrix<T, chase::platform::GPU>(N_, nevex_,
+                                                                    ldv_, V1_);
+            Vec2_ = chase::matrix::Matrix<T, chase::platform::GPU>(N_, nevex_);
+            resid_ = chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU>(
+                nevex_, 1);
+            ritzvs_ =
+                chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU>(
+                    nevex_, 1, nevex_, ritzv_);
+            A_ = chase::matrix::Matrix<T, chase::platform::GPU>(2 * nevex_,
+                                                                nevex_);
         }
 
         CUBLAS_INIT();
@@ -163,30 +174,42 @@ public:
         SCOPED_NVTX_RANGE();
 
         Hmat_ = H;
-        Vec1_ = chase::matrix::Matrix<T, chase::platform::GPU>(N_, nevex_, ldv_,
-                                                               V1_);
-        Vec2_ = chase::matrix::Matrix<T, chase::platform::GPU>(N_, nevex_);
-        resid_ = chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU>(
-            nevex_, 1);
-        ritzvs_ = chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU>(
-            nevex_, 1, nevex_, ritzv_);
-#ifdef XGEEV_EXISTS
-        A_ = chase::matrix::Matrix<T, chase::platform::GPU>(3 * nevex_, nevex_);
-#else
-        A_ = chase::matrix::Matrix<T, chase::platform::GPU>(2 * nevex_, nevex_);
-#endif
-
         if constexpr (std::is_same<MatrixType,
                                    chase::matrix::PseudoHermitianMatrix<
                                        T, chase::platform::GPU>>::value)
         {
             is_sym_ = false;
             is_pseudoHerm_ = true;
+            Vec1_ = chase::matrix::Matrix<T, chase::platform::GPU>(
+                N_, 2 * nevex_, ldv_, V1_);
+            Vec2_ = chase::matrix::Matrix<T, chase::platform::GPU>(N_, 2 * nevex_);
+            resid_ = chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU>(
+                2 * nevex_, 1);
+            ritzvs_ =
+                chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU>(
+                    2 * nevex_, 1, 2 * nevex_, ritzv_);
+            A_ = chase::matrix::Matrix<T, chase::platform::GPU>(3 * 2 * nevex_,
+                                                               2 * nevex_);
         }
         else
         {
             is_sym_ = true;
             is_pseudoHerm_ = false;
+            Vec1_ = chase::matrix::Matrix<T, chase::platform::GPU>(N_, nevex_,
+                                                                    ldv_, V1_);
+            Vec2_ = chase::matrix::Matrix<T, chase::platform::GPU>(N_, nevex_);
+            resid_ = chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU>(
+                nevex_, 1);
+            ritzvs_ =
+                chase::matrix::Matrix<chase::Base<T>, chase::platform::GPU>(
+                    nevex_, 1, nevex_, ritzv_);
+#ifdef XGEEV_EXISTS
+            A_ = chase::matrix::Matrix<T, chase::platform::GPU>(3 * nevex_,
+                                                               nevex_);
+#else
+            A_ = chase::matrix::Matrix<T, chase::platform::GPU>(2 * nevex_,
+                                                                nevex_);
+#endif
         }
 
         CUBLAS_INIT();
@@ -194,6 +217,8 @@ public:
 
     void CUBLAS_INIT()
     {
+        std::size_t block_size =
+            is_pseudoHerm_ ? 2 * nevex_ : nevex_;
 
         CHECK_CUBLAS_ERROR(cublasCreate(&cublasH_));
         CHECK_CUSOLVER_ERROR(cusolverDnCreate(&cusolverH_));
@@ -202,20 +227,30 @@ public:
         CHECK_CUSOLVER_ERROR(cusolverDnSetStream(cusolverH_, stream_));
 
         CHECK_CUDA_ERROR(cudaMalloc((void**)&devInfo_, sizeof(int)));
-        CHECK_CUDA_ERROR(cudaMalloc((void**)&d_return_, sizeof(T) * nevex_));
+        CHECK_CUDA_ERROR(cudaMalloc((void**)&d_return_, sizeof(T) * block_size));
         CHECK_CUDA_ERROR(cudaMalloc((void**)&tmp_, N_ * sizeof(T)));
+
+        if (is_pseudoHerm_)
+        {
+            CHECK_CUDA_ERROR(cudaMalloc((void**)&d_H2_tmp_,
+                                        N_ * 2 * nevex_ * sizeof(T)));
+        }
+        else
+        {
+            d_H2_tmp_ = nullptr;
+        }
 
         int lwork_geqrf = 0;
         int lwork_orgqr = 0;
 
         CHECK_CUSOLVER_ERROR(
             chase::linalg::cusolverpp::cusolverDnTgeqrf_bufferSize(
-                cusolverH_, N_, nevex_, Vec1_.data(), Vec1_.ld(),
+                cusolverH_, N_, block_size, Vec1_.data(), Vec1_.ld(),
                 &lwork_geqrf));
 
         CHECK_CUSOLVER_ERROR(
             chase::linalg::cusolverpp::cusolverDnTgqr_bufferSize(
-                cusolverH_, N_, nevex_, nevex_, Vec1_.data(), Vec1_.ld(),
+                cusolverH_, N_, block_size, block_size, Vec1_.data(), Vec1_.ld(),
                 d_return_, &lwork_orgqr));
 
         lwork_ = (lwork_geqrf > lwork_orgqr) ? lwork_geqrf : lwork_orgqr;
@@ -235,7 +270,7 @@ public:
             CHECK_CUSOLVER_ERROR(
                 chase::linalg::cusolverpp::cusolverDnTgeev_bufferSize(
                     cusolverH_, params_, CUSOLVER_EIG_MODE_NOVECTOR,
-                    CUSOLVER_EIG_MODE_VECTOR, nevex_, A_.data(), A_.ld(),
+                    CUSOLVER_EIG_MODE_VECTOR, block_size, A_.data(), A_.ld(),
                     Vec2_.data(), NULL, 1, Vec1_.data(), Vec1_.ld(),
                     &temp_ldwork, &temp_lhwork));
 
@@ -247,7 +282,7 @@ public:
             CHECK_CUSOLVER_ERROR(
                 chase::linalg::cusolverpp::cusolverDnTheevd_bufferSize(
                     cusolverH_, CUSOLVER_EIG_MODE_VECTOR,
-                    CUBLAS_FILL_MODE_LOWER, nevex_, A_.data(), A_.ld(),
+                    CUBLAS_FILL_MODE_LOWER, block_size, A_.data(), A_.ld(),
                     ritzvs_.data(), &lwork_eev));
 #endif
         }
@@ -269,8 +304,8 @@ public:
 
         CHECK_CUSOLVER_ERROR(
             chase::linalg::cusolverpp::cusolverDnTpotrf_bufferSize(
-                cusolverH_, CUBLAS_FILL_MODE_UPPER, nevex_, A_.data(), A_.ld(),
-                &lwork_potrf));
+                cusolverH_, CUBLAS_FILL_MODE_UPPER, block_size, A_.data(),
+                A_.ld(), &lwork_potrf));
         if (lwork_potrf > lwork_)
         {
             lwork_ = lwork_potrf;
@@ -302,6 +337,8 @@ public:
             CHECK_CUDA_ERROR(cudaFree(d_return_));
         if (tmp_)
             CHECK_CUDA_ERROR(cudaFree(tmp_));
+        if (d_H2_tmp_)
+            CHECK_CUDA_ERROR(cudaFree(d_H2_tmp_));
     }
 
     std::size_t GetN() const override { return N_; }
@@ -539,14 +576,39 @@ public:
                  std::size_t offset_left,
                  std::size_t offset_right = 0) override
     {
-        (void)block;
-        (void)alpha;
-        (void)beta;
-        (void)gamma;
-        (void)offset_left;
-        (void)offset_right;
-        throw std::runtime_error(
-            "HEMM_H2 (Chebyshev filter on H²) not implemented for GPU backend");
+        SCOPED_NVTX_RANGE();
+        std::size_t ncols =
+            (offset_right < block) ? (block - offset_right) : std::size_t(0);
+        if (ncols == 0)
+        {
+            Vec1_.swap(Vec2_);
+            return;
+        }
+        std::size_t col0 = offset_left + locked_;
+        T one = T(1);
+        T zero = T(0);
+
+        // tmp = H * Vec1_[cols]
+        CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(
+            cublasH_, CUBLAS_OP_N, CUBLAS_OP_N, Hmat_->rows(), ncols,
+            Hmat_->cols(), &one, Hmat_->data(), Hmat_->ld(),
+            Vec1_.data() + col0 * Vec1_.ld(), Vec1_.ld(), &zero, d_H2_tmp_, N_));
+
+        // Vec2_[cols] = alpha * H * tmp + beta * Vec2_[cols]
+        CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(
+            cublasH_, CUBLAS_OP_N, CUBLAS_OP_N, Hmat_->rows(), ncols,
+            Hmat_->cols(), &alpha, Hmat_->data(), Hmat_->ld(), d_H2_tmp_, N_,
+            &beta, Vec2_.data() + col0 * Vec2_.ld(), Vec2_.ld()));
+
+        // Vec2_[cols] += gamma * Vec1_[cols]
+        for (std::size_t j = 0; j < ncols; ++j)
+        {
+            CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTaxpy(
+                cublasH_, N_, &gamma, Vec1_.data() + col0 * Vec1_.ld() + j * Vec1_.ld(),
+                1, Vec2_.data() + col0 * Vec2_.ld() + j * Vec2_.ld(), 1));
+        }
+
+        Vec1_.swap(Vec2_);
     }
 
     void QR(std::size_t fixednev, chase::Base<T> cond) override
@@ -665,7 +727,7 @@ public:
     void RR(chase::Base<T>* ritzv, std::size_t block) override
     {
         SCOPED_NVTX_RANGE();
-        std::size_t locked = (nev_ + nex_) - block;
+        std::size_t locked = GetRitzvBlockSize() - block;
 
         if constexpr (std::is_same<MatrixType,
                                    chase::matrix::PseudoHermitianMatrix<
@@ -735,7 +797,9 @@ public:
         //chase::linalg::lapackpp::t_lacpy('A', Vec1_.rows(), nev_ + nex_, Vec1_.cpu_data(), Vec1_.cpu_ld(), V1_, ldv_);
         //this operation is required because after multiple swaps, Vec1_, which contains the final eigenvectors, its buffer is 
         //not pointing to the initial V1_ given by the user.
-        CHECK_CUBLAS_ERROR(cublasGetMatrix(Vec1_.rows(), nev_ + nex_, sizeof(T), Vec1_.data(), Vec1_.ld(), V1_, ldv_));
+        CHECK_CUBLAS_ERROR(cublasGetMatrix(Vec1_.rows(), Vec1_.cols(),
+                                           sizeof(T), Vec1_.data(), Vec1_.ld(),
+                                           V1_, ldv_));
     }
 
 private:
@@ -752,6 +816,8 @@ private:
     std::size_t numLanczos_;  /**< Number of Runs of Lanczos.*/
 
     T* tmp_;             /**< Temporary buffer for GPU computations. */
+    T* d_H2_tmp_ =
+        nullptr; /**< Temp for HEMM_H2 (H² filter), pseudo-Hermitian only. */
     bool is_sym_;        ///< Flag for matrix symmetry.
     bool is_pseudoHerm_; ///< Flag for matrix symmetry.
 

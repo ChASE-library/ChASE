@@ -162,12 +162,26 @@ public:
         W1_ = V1_->template clone2<ResultMultiVectorType>();
         W2_ = V1_->template clone2<ResultMultiVectorType>();
 
+        if constexpr (std::is_same<typename MatrixType::hermitian_type,
+                                   chase::matrix::PseudoHermitian>::value)
+        {
+            is_sym_ = false;
+            is_pseudoHerm_ = true;
+        }
+        else
+        {
+            is_sym_ = true;
+            is_pseudoHerm_ = false;
+        }
+
+        const std::size_t block_size =
+            is_pseudoHerm_ ? 2 * nevex_ : nevex_;
         ritzv_ = std::make_unique<chase::distMatrix::RedundantMatrix<
             chase::Base<T>, chase::platform::GPU>>(
-            nevex_, 1, nevex_, ritzv, Hmat_->getMpiGrid_shared_ptr());
+            block_size, 1, block_size, ritzv, Hmat_->getMpiGrid_shared_ptr());
         resid_ = std::make_unique<chase::distMatrix::RedundantMatrix<
             chase::Base<T>, chase::platform::GPU>>(
-            nevex_, 1, Hmat_->getMpiGrid_shared_ptr());
+            block_size, 1, Hmat_->getMpiGrid_shared_ptr());
 
         MPI_Comm_rank(Hmat_->getMpiGrid()->get_comm(), &my_rank_);
         MPI_Comm_size(Hmat_->getMpiGrid()->get_comm(), &nprocs_);
@@ -185,26 +199,23 @@ public:
             std::cout << "XGEEV ACTIVATED !" << std::endl;
         }
 #endif
-        // CHECK_CUDA_ERROR(cudaStreamCreate(&stream_));
-        // CHECK_CUBLAS_ERROR(cublasSetStream(cublasH_, stream_));
-        // CHECK_CUSOLVER_ERROR(cusolverDnSetStream(cusolverH_, stream_));
 #endif
 
         CHECK_CUDA_ERROR(cudaMalloc((void**)&devInfo_, sizeof(int)));
-        CHECK_CUDA_ERROR(cudaMalloc((void**)&d_return_, sizeof(T) * nevex_));
+        CHECK_CUDA_ERROR(cudaMalloc((void**)&d_return_, sizeof(T) * block_size));
 
         int lwork_geqrf = 0;
         int lwork_orgqr = 0;
 
         CHECK_CUSOLVER_ERROR(
             chase::linalg::cusolverpp::cusolverDnTgeqrf_bufferSize(
-                cusolverH_, N_, nevex_, V1_->l_data(), V1_->l_ld(),
+                cusolverH_, N_, block_size, V1_->l_data(), V1_->l_ld(),
                 &lwork_geqrf));
 
         CHECK_CUSOLVER_ERROR(
             chase::linalg::cusolverpp::cusolverDnTgqr_bufferSize(
-                cusolverH_, N_, nevex_, nevex_, V1_->l_data(), V1_->l_ld(),
-                d_return_, &lwork_orgqr));
+                cusolverH_, N_, block_size, block_size, V1_->l_data(),
+                V1_->l_ld(), d_return_, &lwork_orgqr));
 
         lwork_ = (lwork_geqrf > lwork_orgqr) ? lwork_geqrf : lwork_orgqr;
 
@@ -213,13 +224,10 @@ public:
         if constexpr (std::is_same<typename MatrixType::hermitian_type,
                                    chase::matrix::PseudoHermitian>::value)
         {
-            is_sym_ = false;
-            is_pseudoHerm_ = true;
-
 #ifdef XGEEV_EXISTS
             A_ = std::make_unique<
                 chase::distMatrix::RedundantMatrix<T, chase::platform::GPU>>(
-                3 * nevex_, nevex_, Hmat_->getMpiGrid_shared_ptr());
+                3 * 2 * nevex_, 2 * nevex_, Hmat_->getMpiGrid_shared_ptr());
 
             CHECK_CUSOLVER_ERROR(cusolverDnCreateParams(&params_));
 
@@ -229,10 +237,9 @@ public:
             CHECK_CUSOLVER_ERROR(
                 chase::linalg::cusolverpp::cusolverDnTgeev_bufferSize(
                     cusolverH_, params_, CUSOLVER_EIG_MODE_NOVECTOR,
-                    CUSOLVER_EIG_MODE_VECTOR, nevex_, A_->l_data(), A_->l_ld(),
-                    V2_->l_data(), NULL, 1, V1_->l_data(),
-                    nevex_, // V1_->l_ld(),
-                    &temp_ldwork, &temp_lhwork));
+                    CUSOLVER_EIG_MODE_VECTOR, block_size, A_->l_data(),
+                    A_->l_ld(), V2_->l_data(), NULL, 1, V1_->l_data(),
+                    V1_->l_ld(), &temp_ldwork, &temp_lhwork));
 
             lwork_heevd = (int)temp_ldwork;
             lhwork_ = (int)temp_lhwork;
@@ -250,28 +257,24 @@ public:
 #else
             A_ = std::make_unique<
                 chase::distMatrix::RedundantMatrix<T, chase::platform::GPU>>(
-                2 * nevex_, nevex_, Hmat_->getMpiGrid_shared_ptr());
+                2 * 2 * nevex_, 2 * nevex_, Hmat_->getMpiGrid_shared_ptr());
 
             CHECK_CUSOLVER_ERROR(
                 chase::linalg::cusolverpp::cusolverDnTheevd_bufferSize(
                     cusolverH_, CUSOLVER_EIG_MODE_VECTOR,
-                    CUBLAS_FILL_MODE_LOWER, nevex_, A_->l_data(), A_->l_ld(),
+                    CUBLAS_FILL_MODE_LOWER, block_size, A_->l_data(), A_->l_ld(),
                     ritzv_->l_data(), &lwork_heevd));
 #ifdef CHASE_OUTPUT
             if (my_rank_ == 0)
             {
                 std::cout << "HEEVD GPU WORKSPACE SIZE = " << lwork_heevd
                           << std::endl;
-                std::cout << "HEEVD CPU WORKSPACE SIZE = " << 0 << std::endl;
             }
 #endif
 #endif
         }
         else
         {
-            is_sym_ = true;
-            is_pseudoHerm_ = false;
-
             A_ = std::make_unique<
                 chase::distMatrix::RedundantMatrix<T, chase::platform::GPU>>(
                 nevex_, nevex_, Hmat_->getMpiGrid_shared_ptr());
@@ -292,16 +295,16 @@ public:
 
         CHECK_CUSOLVER_ERROR(
             chase::linalg::cusolverpp::cusolverDnTpotrf_bufferSize(
-                cusolverH_, CUBLAS_FILL_MODE_UPPER, nevex_, A_->l_data(),
+                cusolverH_, CUBLAS_FILL_MODE_UPPER, block_size, A_->l_data(),
                 A_->l_ld(), &lwork_potrf));
         if (lwork_potrf > lwork_)
         {
             lwork_ = lwork_potrf;
         }
 
-        if (nevex_ * (nevex_ + 1) / 2 > lwork_)
+        if (block_size * (block_size + 1) / 2 > lwork_)
         {
-            lwork_ = nevex_ * (nevex_ + 1) / 2;
+            lwork_ = block_size * (block_size + 1) / 2;
         }
 
         CHECK_CUDA_ERROR(cudaMalloc((void**)&d_work_, sizeof(T) * lwork_));
@@ -849,14 +852,50 @@ public:
                  std::size_t offset_left,
                  std::size_t offset_right = 0) override
     {
-        (void)block;
-        (void)alpha;
-        (void)beta;
-        (void)gamma;
-        (void)offset_left;
-        (void)offset_right;
-        throw std::runtime_error(
-            "HEMM_H2 (Chebyshev filter on H²) not implemented for distributed GPU backend");
+        SCOPED_NVTX_RANGE();
+        std::size_t ncols =
+            (offset_right < block) ? (block - offset_right) : std::size_t(0);
+        if (ncols == 0)
+        {
+            next_ = (next_ == NextOp::bAc) ? NextOp::cAb : NextOp::bAc;
+            return;
+        }
+        const std::size_t col0 = offset_left + locked_;
+        T one = T(1);
+        T zero = T(0);
+
+        if (next_ == NextOp::bAc)
+        {
+            kernelNamespace::MatrixMultiplyMultiVectors(
+                cublasH_, &one, *Hmat_, *V1_, &zero, *W1_, col0, ncols);
+            kernelNamespace::MatrixMultiplyMultiVectors(
+                cublasH_, &alpha, *Hmat_, *W1_, &beta, *V2_, col0, ncols);
+            for (std::size_t j = 0; j < ncols; ++j)
+            {
+                std::size_t col = col0 + j;
+                CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTaxpy(
+                    cublasH_, V2_->l_rows(), &gamma,
+                    V1_->l_data() + col * V1_->l_ld(), 1,
+                    V2_->l_data() + col * V2_->l_ld(), 1));
+            }
+            next_ = NextOp::cAb;
+        }
+        else
+        {
+            kernelNamespace::MatrixMultiplyMultiVectors(
+                cublasH_, &one, *Hmat_, *V2_, &zero, *W1_, col0, ncols);
+            kernelNamespace::MatrixMultiplyMultiVectors(
+                cublasH_, &alpha, *Hmat_, *W1_, &beta, *V1_, col0, ncols);
+            for (std::size_t j = 0; j < ncols; ++j)
+            {
+                std::size_t col = col0 + j;
+                CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTaxpy(
+                    cublasH_, V1_->l_rows(), &gamma,
+                    V2_->l_data() + col * V2_->l_ld(), 1,
+                    V1_->l_data() + col * V1_->l_ld(), 1));
+            }
+            next_ = NextOp::bAc;
+        }
     }
 
     void QR(std::size_t fixednev, chase::Base<T> cond) override
@@ -1208,8 +1247,9 @@ public:
                                                V2_->l_data(), V2_->l_ld(),
                                                V1_->l_data(), V1_->l_ld());
 
+        std::size_t unconverged_cols = GetRitzvBlockSize() - locked_;
         chase::linalg::internal::cuda::t_lacpy(
-            'A', V2_->l_rows(), nevex_ - locked_,
+            'A', V2_->l_rows(), unconverged_cols,
             V1_->l_data() + V1_->l_ld() * locked_, V1_->l_ld(),
             V2_->l_data() + V2_->l_ld() * locked_, V2_->l_ld());
 

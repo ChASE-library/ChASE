@@ -482,10 +482,10 @@ public:
         {
             // tmp = H*V1[cols] -> W2_ (column-comm input => row-comm result)
             chase::linalg::internal::cpu_mpi::MatrixMultiplyMultiVectors(
-                &one, *Hmat_, *V1_, &zero, *W2_, col0, ncols);
+                &one, *Hmat_, *V1_, &zero, *W1_, col0, ncols);
             // V2_[cols] = alpha * H * W2[cols] + beta * V2_[cols]
             chase::linalg::internal::cpu_mpi::MatrixMultiplyMultiVectors(
-                &alpha, *Hmat_, *W2_, &beta, *V2_, col0, ncols);
+                &alpha, *Hmat_, *W1_, &beta, *V2_, col0, ncols);
             // V2_[cols] += gamma*V1_[cols]
             for (std::size_t j = 0; j < ncols; ++j)
             {
@@ -499,10 +499,10 @@ public:
         }else{
             // tmp = H*V2[cols] -> W2_ (column-comm input => row-comm result)
             chase::linalg::internal::cpu_mpi::MatrixMultiplyMultiVectors(
-                &one, *Hmat_, *V2_, &zero, *W2_, col0, ncols);
+                &one, *Hmat_, *V2_, &zero, *W1_, col0, ncols);
             // V1_[cols] = alpha * H * W2[cols] + beta * V1_[cols]
             chase::linalg::internal::cpu_mpi::MatrixMultiplyMultiVectors(
-                &alpha, *Hmat_, *W2_, &beta, *V1_, col0, ncols);
+                &alpha, *Hmat_, *W1_, &beta, *V1_, col0, ncols);
             // V1_[cols] += gamma*V2_[cols]
             for (std::size_t j = 0; j < ncols; ++j)
             {
@@ -749,9 +749,11 @@ public:
         // Pseudo-Hermitian: subspace size is 2*nevex_; standard: nevex_
         std::size_t subSize =
             (is_pseudoHerm_ ? 2 * nevex_ : nevex_) - locked_;
+
         chase::linalg::internal::cpu_mpi::residuals(
             *Hmat_, *V1_, *V2_, *W1_, *W2_, ritzv_->l_data(), resid_->l_data(),
             locked_, subSize);
+        
     }
 
     void Swap(std::size_t i, std::size_t j) override
