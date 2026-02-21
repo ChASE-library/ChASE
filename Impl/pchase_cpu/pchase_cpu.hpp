@@ -13,6 +13,7 @@
 #include "linalg/distMatrix/distMultiVector.hpp"
 #include "linalg/internal/mpi/mpi_kernels.hpp"
 #include "linalg/matrix/matrix.hpp"
+#include <algorithm>
 #include <cstring>
 #include <memory>
 #include <random>
@@ -115,31 +116,41 @@ public:
         W1_ = V1_->template clone2<ResultMultiVectorType>();
         W2_ = V1_->template clone2<ResultMultiVectorType>();
 
-        ritzv_ = std::make_unique<
-            chase::distMatrix::RedundantMatrix<chase::Base<T>>>(
-            nevex_, 1, nevex_, ritzv, Hmat_->getMpiGrid_shared_ptr());
-        resid_ = std::make_unique<
-            chase::distMatrix::RedundantMatrix<chase::Base<T>>>(
-            nevex_, 1, Hmat_->getMpiGrid_shared_ptr());
-
         MPI_Comm_rank(Hmat_->getMpiGrid()->get_comm(), &my_rank_);
         MPI_Comm_size(Hmat_->getMpiGrid()->get_comm(), &nprocs_);
         coords_ = Hmat_->getMpiGrid()->get_coords();
         dims_ = Hmat_->getMpiGrid()->get_dims();
 
+        // Set matrix type before allocating ritzv_/resid_/A_/ (pseudo uses 2*nevex)
         if constexpr (std::is_same<typename MatrixType::hermitian_type,
                                    chase::matrix::PseudoHermitian>::value)
         {
             is_sym_ = false;
             is_pseudoHerm_ = true;
-            // Pseudo Hermitian matrices require more space for the dual basis
-            A_ = std::make_unique<chase::distMatrix::RedundantMatrix<T>>(
-                nevex_, 3 * nevex_, Hmat_->getMpiGrid_shared_ptr());
         }
         else
         {
             is_sym_ = true;
             is_pseudoHerm_ = false;
+        }
+
+        const std::size_t block_size =
+            is_pseudoHerm_ ? 2 * nevex_ : nevex_;
+        ritzv_ = std::make_unique<
+            chase::distMatrix::RedundantMatrix<chase::Base<T>>>(
+            block_size, 1, block_size, ritzv, Hmat_->getMpiGrid_shared_ptr());
+        resid_ = std::make_unique<
+            chase::distMatrix::RedundantMatrix<chase::Base<T>>>(
+            block_size, 1, Hmat_->getMpiGrid_shared_ptr());
+
+        if (is_pseudoHerm_)
+        {
+            // Pseudo Hermitian: align with serial (3*2*nevex_, 2*nevex_)
+            A_ = std::make_unique<chase::distMatrix::RedundantMatrix<T>>(
+                3 * 2 * nevex_, 2 * nevex_, Hmat_->getMpiGrid_shared_ptr());
+        }
+        else
+        {
             A_ = std::make_unique<chase::distMatrix::RedundantMatrix<T>>(
                 nevex_, nevex_, Hmat_->getMpiGrid_shared_ptr());
         }
@@ -456,14 +467,53 @@ public:
                  std::size_t offset_left,
                  std::size_t offset_right = 0) override
     {
-        (void)block;
-        (void)alpha;
-        (void)beta;
-        (void)gamma;
-        (void)offset_left;
-        (void)offset_right;
-        throw std::runtime_error(
-            "HEMM_H2 (Chebyshev filter on H²) not implemented for distributed CPU backend");
+        std::size_t ncols =
+            (offset_right < block) ? (block - offset_right) : std::size_t(0);
+        if (ncols == 0)
+        {
+            next_ = (next_ == NextOp::bAc) ? NextOp::cAb : NextOp::bAc;
+            return;
+        }
+        const std::size_t col0 = offset_left + locked_;
+        T one = T(1);
+        T zero = T(0);
+
+        if (next_ == NextOp::bAc)
+        {
+            // tmp = H*V1[cols] -> W2_ (column-comm input => row-comm result)
+            chase::linalg::internal::cpu_mpi::MatrixMultiplyMultiVectors(
+                &one, *Hmat_, *V1_, &zero, *W2_, col0, ncols);
+            // V2_[cols] = alpha * H * W2[cols] + beta * V2_[cols]
+            chase::linalg::internal::cpu_mpi::MatrixMultiplyMultiVectors(
+                &alpha, *Hmat_, *W2_, &beta, *V2_, col0, ncols);
+            // V2_[cols] += gamma*V1_[cols]
+            for (std::size_t j = 0; j < ncols; ++j)
+            {
+                std::size_t col = col0 + j;
+                chase::linalg::blaspp::t_axpy(
+                    V2_->l_rows(), &gamma,
+                    V1_->l_data() + col * V1_->l_ld(), 1,
+                    V2_->l_data() + col * V2_->l_ld(), 1);
+            }
+            next_ = NextOp::cAb;
+        }else{
+            // tmp = H*V2[cols] -> W2_ (column-comm input => row-comm result)
+            chase::linalg::internal::cpu_mpi::MatrixMultiplyMultiVectors(
+                &one, *Hmat_, *V2_, &zero, *W2_, col0, ncols);
+            // V1_[cols] = alpha * H * W2[cols] + beta * V1_[cols]
+            chase::linalg::internal::cpu_mpi::MatrixMultiplyMultiVectors(
+                &alpha, *Hmat_, *W2_, &beta, *V1_, col0, ncols);
+            // V1_[cols] += gamma*V2_[cols]
+            for (std::size_t j = 0; j < ncols; ++j)
+            {
+                std::size_t col = col0 + j;
+                chase::linalg::blaspp::t_axpy(
+                    V1_->l_rows(), &gamma,
+                    V2_->l_data() + col * V2_->l_ld(), 1,
+                    V1_->l_data() + col * V1_->l_ld(), 1);
+            }
+            next_ = NextOp::bAc;
+        }
     }
 
     void QR(std::size_t fixednev, chase::Base<T> cond) override
@@ -654,8 +704,9 @@ public:
                                          V2_->l_data(), V2_->l_ld(),
                                          V1_->l_data(), V1_->l_ld());
 
+        std::size_t unconverged_cols = GetRitzvBlockSize() - locked_;
         chase::linalg::lapackpp::t_lacpy(
-            'A', V2_->l_rows(), nevex_ - locked_,
+            'A', V2_->l_rows(), unconverged_cols,
             V1_->l_data() + V1_->l_ld() * locked_, V1_->l_ld(),
             V2_->l_data() + V2_->l_ld() * locked_, V2_->l_ld());
     }

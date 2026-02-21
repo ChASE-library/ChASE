@@ -467,20 +467,19 @@ public:
             static_cast<std::size_t>(Hmat_->cols()), &one, Hmat_->data(),
             Hmat_->ld(), V1, ld1, &zero, tmp, N_);
 
-        // Vec2_[cols] = beta*Vec2_[cols] + gamma*Vec1_[cols]
-        for (std::size_t j = 0; j < ncols; ++j)
-        {
-            chase::linalg::blaspp::t_scal(N_, &beta, V2 + j * ld2, 1);
-            chase::linalg::blaspp::t_axpy(N_, &gamma, V1 + j * ld1, 1,
-                                         V2 + j * ld2, 1);
-        }
-
-        // Vec2_[cols] += alpha * H * tmp
+        // Vec2_[cols] = alpha * H * tmp + beta * Vec2_[cols]
         chase::linalg::blaspp::t_gemm<T>(
             CblasColMajor, CblasNoTrans, CblasNoTrans,
             static_cast<std::size_t>(Hmat_->rows()), ncols,
             static_cast<std::size_t>(Hmat_->cols()), &alpha, Hmat_->data(),
-            Hmat_->ld(), tmp, N_, &one, V2, ld2);
+            Hmat_->ld(), tmp, N_, &beta, V2, ld2);
+
+        // Vec2_[cols] += gamma*Vec1_[cols]
+        for (std::size_t j = 0; j < ncols; ++j)
+        {
+            chase::linalg::blaspp::t_axpy(N_, &gamma, V1 + j * ld1, 1,
+                                         V2 + j * ld2, 1);
+        }
 
         Vec1_.swap(Vec2_);
     }

@@ -74,6 +74,13 @@ elseif(TARGET pchase_cpu)
   setup_test(ChaseDistributedSolveTest chase_distributed_solve.cpp LIBRARIES pchase_cpu)
 endif()
 
+# Distributed Solve_pseudo with BSE matrix (same as serial BSE test)
+if(TARGET pchase_cpu)
+  setup_test(ChaseDistributedSolvePseudoBSETest chase_distributed_solve_pseudo_bse_test.cpp LIBRARIES pchase_cpu)
+  target_compile_definitions(ChaseDistributedSolvePseudoBSETest PRIVATE
+    CHASE_TEST_BSE_DIR="${CMAKE_BINARY_DIR}/tests/linalg/internal/BSE_matrices")
+endif()
+
 # -----------------------------------------------------------------------------
 # Fortran interface tests (analogous to chase_serial_solve and chase_distributed_solve)
 # -----------------------------------------------------------------------------
