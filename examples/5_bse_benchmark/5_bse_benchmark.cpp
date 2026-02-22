@@ -12,6 +12,7 @@
 #include <type_traits>
 #include <vector>
 
+#include "algorithm/algorithm.hpp"
 #include "algorithm/performance.hpp"
 
 #ifdef HAS_NCCL
@@ -143,14 +144,22 @@ int bse_solve(BSE_DriverProblemConfig& conf)
     std::chrono::high_resolution_clock::time_point start, end;
     std::chrono::duration<double> elapsed;
 
-    auto Lambda = std::vector<chase::Base<T>>(nev + nex);
+    // For pseudo-Hermitian (Solve_pseudo), subspace and ritzv buffer size is 2*(nev+nex).
+    const std::size_t nevex = nev + nex;
+    const std::size_t ritzv_size =
+#ifdef USE_PSEUDO_HERMITIAN
+        2 * nevex;
+#else
+        nevex;
+#endif
+    auto Lambda = std::vector<chase::Base<T>>(ritzv_size);
 
 #if defined(USE_MPI) || defined(HAS_NCCL)
 
 #ifdef USE_BLOCKCYCLIC
     auto Vec = chase::distMultiVector::DistMultiVectorBlockCyclic1D<
         T, chase::distMultiVector::CommunicatorType::column, ARCH>(
-        N, nev + nex, mb, mpi_grid);
+        N, ritzv_size, mb, mpi_grid);
 #ifdef USE_PSEUDO_HERMITIAN
     auto Hmat = chase::distMatrix::PseudoHermitianBlockCyclicMatrix<T, ARCH>(
         N, N, mb, mb, mpi_grid);
@@ -164,7 +173,7 @@ int bse_solve(BSE_DriverProblemConfig& conf)
     // auto ldh = m;
     // auto LV = new T[m*(nev+nex)]();
     auto Vec = chase::distMultiVector::DistMultiVector1D<
-        T, chase::distMultiVector::CommunicatorType::column, ARCH>(N, nev + nex,
+        T, chase::distMultiVector::CommunicatorType::column, ARCH>(N, ritzv_size,
                                                                    mpi_grid);
     // auto Vec = chase::distMultiVector::DistMultiVector1D<T,
     // chase::distMultiVector::CommunicatorType::column, ARCH>(m, nev + nex, m,
@@ -206,7 +215,7 @@ int bse_solve(BSE_DriverProblemConfig& conf)
 #endif
 
 #else
-    std::vector<T> V(N * (nev + nex));
+    std::vector<T> V(N * ritzv_size);
 
 #ifdef USE_PSEUDO_HERMITIAN
     using MatrixType = chase::matrix::PseudoHermitianMatrix<T, ARCH>;
@@ -280,13 +289,19 @@ int bse_solve(BSE_DriverProblemConfig& conf)
         std::cout << config << std::endl;
     }
     PerformanceDecoratorChase<T> performanceDecorator(&single);
+#ifdef USE_PSEUDO_HERMITIAN
+    chase::Solve_pseudo(&performanceDecorator);
+#else
     chase::Solve(&performanceDecorator);
+#endif
     if (world_rank == 0)
     {
         performanceDecorator.GetPerfData().print(N, lanczosIter, numLanczos);
         Base<T>* resid = single.GetResid();
         std::cout << "Finished Problem #"
                   << "\n";
+        // For pseudo-Hermitian, first GetNev() entries are the requested positive eigenvalues.
+        std::size_t n_ev_print = single.GetNev();
         std::cout << "Printing first 20 eigenvalues and residuals\n";
         std::cout
             << "| Index |       Eigenvalue      |         Residual      |\n"
@@ -297,9 +312,9 @@ int bse_solve(BSE_DriverProblemConfig& conf)
         std::cout << std::scientific;
         std::cout << std::right;
 #ifndef NDEBUG
-        for (auto i = 0; i < nev + nex; ++i)
+        for (auto i = 0; i < n_ev_print; ++i)
 #else
-        for (auto i = 0; i < std::min(std::size_t(20), nev + nex); ++i)
+        for (auto i = 0; i < std::min(std::size_t(20), n_ev_print); ++i)
 #endif
         {
             std::cout << "|  " << std::setw(4) << i + 1 << " | "

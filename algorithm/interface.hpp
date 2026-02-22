@@ -87,6 +87,18 @@ public:
                          std::size_t offset_left,
                          std::size_t offset_right = 0) = 0;
     /**
+     * @brief Optional hook: start of filter phase (e.g. for timing).
+     * Used for Filter timing in both Hermitian and pseudo-Hermitian paths;
+     * default no-op.
+     */
+    virtual void FilterPhaseStart() {}
+    /**
+     * @brief Optional hook: end of filter phase (e.g. for timing).
+     * Used for Filter timing in both Hermitian and pseudo-Hermitian paths;
+     * default no-op.
+     */
+    virtual void FilterPhaseEnd() {}
+    /**
      * @brief Performs QR factorization with optional Householder
      * transformation.
      *

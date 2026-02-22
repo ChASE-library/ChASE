@@ -12,6 +12,7 @@
 #include <cstring>
 
 #include "chase_config.h"  // For version info and configuration
+#include "algorithm/algorithm.hpp"
 #include "algorithm/performance.hpp"
 #include "chase_c_interface.h"
 
@@ -315,7 +316,10 @@ void ChASE_SEQ_Solve(int* deg,
 #endif
 
     chase::PerformanceDecoratorChase<T> performanceDecorator(single);
-    chase::Solve(&performanceDecorator);
+    if (single->isPseudoHerm())
+        chase::Solve_pseudo(&performanceDecorator);
+    else
+        chase::Solve(&performanceDecorator);
 
     chase::Base<T>* ritzv = single->GetRitzv();
     chase::Base<T>* resid = single->GetResid();
@@ -961,7 +965,7 @@ int ChASE_DIST<chase::distMatrix::PseudoHermitianBlockBlockMatrix<
         std::complex<double>, ARCH>(m, n, ldh, H, mpi_grid);
     zVec_block = new chase::distMultiVector::DistMultiVector1D<
         std::complex<double>, chase::distMultiVector::CommunicatorType::column,
-        ARCH>(m, nev + nex, m, V, mpi_grid);
+        ARCH>(m, 2 * (nev + nex), m, V, mpi_grid);
 
     // Create solver with PseudoHermitianBlockBlockMatrix type - solver will
     // detect PseudoHermitian at compile time
@@ -1008,7 +1012,7 @@ int ChASE_DIST<chase::distMatrix::PseudoHermitianBlockBlockMatrix<
         std::complex<float>, ARCH>(m, n, ldh, H, mpi_grid);
     cVec_block = new chase::distMultiVector::DistMultiVector1D<
         std::complex<float>, chase::distMultiVector::CommunicatorType::column,
-        ARCH>(m, nev + nex, m, V, mpi_grid);
+        ARCH>(m, 2 * (nev + nex), m, V, mpi_grid);
 
     // Create solver with PseudoHermitianBlockBlockMatrix type - solver will
     // detect PseudoHermitian at compile time
@@ -1069,7 +1073,7 @@ int ChASE_DIST<chase::distMatrix::PseudoHermitianBlockCyclicMatrix<
                                         mpi_grid);
     zVec_cyclic = new chase::distMultiVector::DistMultiVectorBlockCyclic1D<
         std::complex<double>, chase::distMultiVector::CommunicatorType::column,
-        ARCH>(N, m, nev + nex, mbsize, m, V, mpi_grid);
+        ARCH>(N, m, 2 * (nev + nex), mbsize, m, V, mpi_grid);
 
     // Create solver with PseudoHermitianBlockCyclicMatrix type - solver will
     // detect PseudoHermitian at compile time
@@ -1126,7 +1130,7 @@ int ChASE_DIST<chase::distMatrix::PseudoHermitianBlockCyclicMatrix<
                                        mpi_grid);
     cVec_cyclic = new chase::distMultiVector::DistMultiVectorBlockCyclic1D<
         std::complex<float>, chase::distMultiVector::CommunicatorType::column,
-        ARCH>(N, m, nev + nex, mbsize, m, V, mpi_grid);
+        ARCH>(N, m, 2 * (nev + nex), mbsize, m, V, mpi_grid);
 
     // Create solver with PseudoHermitianBlockCyclicMatrix type - solver will
     // detect PseudoHermitian at compile time
@@ -1433,7 +1437,10 @@ void ChASE_DIST<MatrixType>::Solve(
 
     chase::PerformanceDecoratorChase<T> performanceDecorator(single);
 
-    chase::Solve(&performanceDecorator);
+    if (single->isPseudoHerm())
+        chase::Solve_pseudo(&performanceDecorator);
+    else
+        chase::Solve(&performanceDecorator);
 
     chase::Base<T>* ritzv = single->GetRitzv();
     chase::Base<T>* resid = single->GetResid();

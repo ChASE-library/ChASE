@@ -6,6 +6,9 @@
 
 #include "algorithm/algorithm.hpp"
 #include "Impl/chase_cpu/chase_cpu.hpp"
+#ifdef HAS_CUDA
+#include "Impl/chase_gpu/chase_gpu.hpp"
+#endif
 #include "linalg/matrix/matrix.hpp"
 #include <algorithm>
 #include <complex>
@@ -21,6 +24,8 @@
 using namespace chase;
 
 using T = std::complex<double>;
+
+enum class Backend { CPU, GPU };
 
 // Resolve path to a file in BSE_matrices (build dir or source dir).
 static std::string get_BSE_path(const char* filename)
@@ -77,9 +82,17 @@ static void nev_smallest_positive_eigs(const T* eigs_H, std::size_t n,
 }
 
 // Unit test: Solve_pseudo with BSE matrix from CHASE_TEST_BSE_DIR.
-// No expectations yet; use printing to verify setup step by step as
-// solve_pseudo is implemented.
-class ChaseSerialSolvePseudoBSETest : public ::testing::Test
+// Supports both CPU and GPU backends (GPU when HAS_CUDA is defined).
+//
+// Notes on CPU vs GPU output:
+// - H² bounds (lambda_1, mu_nevnex, b_sup) before the 1st iteration can differ slightly:
+//   they come from Lanczos for H², which uses random initial vectors. CPU and GPU use
+//   different RNGs (host vs device), so the Lanczos runs differ and the estimates differ.
+// - "CholeskyQR doesn't work, Householder QR will be used" may appear on GPU (not CPU)
+//   when the filter subspace V is very ill-conditioned (e.g. cond(V) ~ 1e20). The GPU
+//   Cholesky path (cuBLAS/cuSOLVER) can fail numerically in that regime; the fallback
+//   to Householder QR is correct and both backends still converge.
+class ChaseSerialSolvePseudoBSETest : public ::testing::TestWithParam<Backend>
 {
 protected:
     void SetUp() override
@@ -118,20 +131,43 @@ protected:
     std::unique_ptr<chase::matrix::PseudoHermitianMatrix<T>> Hmat_;
 };
 
-TEST_F(ChaseSerialSolvePseudoBSETest, SolvePseudo_BSE_Matrix)
+TEST_P(ChaseSerialSolvePseudoBSETest, SolvePseudo_BSE_Matrix)
 {
+    const Backend backend = GetParam();
+#ifdef HAS_CUDA
+    if (backend == Backend::GPU) { /* GPU test runs when HAS_CUDA */ }
+#else
+    if (backend == Backend::GPU)
+        GTEST_SKIP() << "GPU backend not built (no HAS_CUDA)";
+#endif
+
     int rank = 0;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     if (rank != 0)
         return;
 
-    std::cout << "[Solve_pseudo BSE] n=" << n_ << " nev=" << nev_
+    const bool use_gpu = (backend == Backend::GPU);
+    const char* mode_str = use_gpu ? "GPU" : "CPU";
+    std::cout << "[Solve_pseudo BSE " << mode_str << "] n=" << n_ << " nev=" << nev_
               << " nex=" << nex_ << " nevex=" << nevex_ << std::endl;
 
     chase::ChaseBase<T>* single = nullptr;
-    chase::Impl::ChASECPU<T, chase::matrix::PseudoHermitianMatrix<T>> cpu_single(
-        n_, nev_, nex_, Hmat_.get(), V_.data(), n_, Lambda_.data());
-    single = &cpu_single;
+    if (backend == Backend::CPU)
+    {
+        auto* cpu_single = new chase::Impl::ChASECPU<T, chase::matrix::PseudoHermitianMatrix<T>>(
+            n_, nev_, nex_, Hmat_.get(), V_.data(), n_, Lambda_.data());
+        single = cpu_single;
+    }
+#ifdef HAS_CUDA
+    else
+    {
+        using GPUMatrixType =
+            chase::matrix::PseudoHermitianMatrix<T, chase::platform::GPU>;
+        auto* gpu_single = new chase::Impl::ChASEGPU<T, GPUMatrixType>(
+            n_, nev_, nex_, Hmat_->data(), Hmat_->ld(), V_.data(), n_, Lambda_.data());
+        single = gpu_single;
+    }
+#endif
 
     auto& config = single->GetConfig();
     config.SetTol(1e-10);
@@ -139,14 +175,58 @@ TEST_F(ChaseSerialSolvePseudoBSETest, SolvePseudo_BSE_Matrix)
     config.SetOpt(true);
     config.SetApprox(false);
     config.SetMaxIter(25);
-    config.SetNumLanczos(40);
+    config.SetNumLanczos(10);
     config.SetLanczosIter(50);
 
-    std::cout << "[Solve_pseudo BSE] calling Solve_pseudo..." << std::endl;
+    std::cout << "[Solve_pseudo BSE " << mode_str << "] calling Solve_pseudo..." << std::endl;
     ASSERT_NO_THROW(chase::Solve_pseudo(single));
-    std::cout << "[Solve_pseudo BSE] Solve_pseudo returned." << std::endl;
+    std::cout << "[Solve_pseudo BSE " << mode_str << "] Solve_pseudo returned." << std::endl;
 
-    // Print three H² bounds from direct-solver eigenvalues (reference)
+    std::size_t nev_out = single->GetNev();
+    chase::Base<T>* ritzv = single->GetRitzv();
+    chase::Base<T>* resid = single->GetResid();
+    ASSERT_NE(resid, nullptr);
+
+    const chase::Base<T> tol = config.GetTol();
+    for (std::size_t i = 0; i < nev_out; ++i)
+    {
+        EXPECT_TRUE(std::isfinite(Lambda_.data()[i]))
+            << "Lambda[" << i << "] is not finite";
+        EXPECT_TRUE(std::isfinite(resid[i]))
+            << "resid[" << i << "] is not finite";
+        EXPECT_LE(resid[i], tol)
+            << "resid[" << i << "] = " << resid[i] << " should be <= " << tol;
+    }
+
+    // Recompute residuals from user pointers: eigenvalues Lambda_.data() (same as GetRitzv()),
+    // eigenvectors V_.data(). For GPU, ChASEGPU::End() copies eigenvectors back to V_.data()
+    // so both backends have valid CPU data here. Use explicit loops: res_j = ||H*v_j - lambda_j*v_j||.
+    const T* H = Hmat_->data();
+    const std::size_t ldh = Hmat_->ld();
+    const std::size_t ldv = n_;
+    std::vector<chase::Base<T>> resids_recomputed(nev_out);
+    for (std::size_t j = 0; j < nev_out; ++j)
+    {
+        const T* v = V_.data() + j * ldv;
+        const chase::Base<T> lam = Lambda_.data()[j];
+        std::vector<T> w(n_, T(0));
+        for (std::size_t i = 0; i < n_; ++i)
+        {
+            for (std::size_t k = 0; k < n_; ++k)
+                w[i] += H[i + k * ldh] * v[k];
+            w[i] -= lam * v[i];
+        }
+        chase::Base<T> nrm = 0;
+        for (std::size_t i = 0; i < n_; ++i)
+            nrm += std::norm(w[i]);
+        resids_recomputed[j] = std::sqrt(nrm);
+    }
+    for (std::size_t i = 0; i < nev_out; ++i)
+        EXPECT_LE(resids_recomputed[i], tol)
+            << "Recomputed residual[" << i << "] (||H*v - lambda*v||) = "
+            << resids_recomputed[i] << " > tol = " << tol;
+
+    // Optional: print H² reference bounds (eigs file on disk; same for both backends)
     std::string eigs_path = get_BSE_path("eigs_cdouble_random_BSE.bin");
     std::ifstream eigs_probe(eigs_path, std::ios::binary);
     if (eigs_probe.good())
@@ -156,110 +236,35 @@ TEST_F(ChaseSerialSolvePseudoBSETest, SolvePseudo_BSE_Matrix)
         eigs_H.readFromBinaryFile(eigs_path);
         std::vector<chase::Base<T>> eig_H2_sorted;
         sorted_H2_from_eigs(eigs_H.data(), n_, eig_H2_sorted);
-
         chase::Base<T> lambda_1_exact = eig_H2_sorted[0];
         chase::Base<T> b_sup_exact = eig_H2_sorted[n_ - 1];
         std::size_t idx_nevnex = 2 * nevex_ - 1;
         chase::Base<T> mu_nevnex_exact =
             (idx_nevnex < n_) ? eig_H2_sorted[idx_nevnex] : eig_H2_sorted[n_ - 1];
-
-        std::cout << "[Solve_pseudo BSE] H² bounds from direct solver: lambda_1 = "
-                  << std::scientific << std::setprecision(6) << lambda_1_exact
-                  << "  lower(mu_nevnex) = " << std::setprecision(6)
-                  << mu_nevnex_exact << "  b_sup = " << std::setprecision(6)
-                  << b_sup_exact << std::endl;
+        std::cout << "[Solve_pseudo BSE " << mode_str << "] H² bounds (ref): lambda_1 = "
+                  << std::scientific << lambda_1_exact
+                  << "  mu_nevnex = " << mu_nevnex_exact
+                  << "  b_sup = " << b_sup_exact << std::endl;
     }
+
+    // Free backend-specific object (no-op for stack-based CPU in old design; here we used new)
+    if (backend == Backend::CPU)
+        delete static_cast<chase::Impl::ChASECPU<T, chase::matrix::PseudoHermitianMatrix<T>>*>(single);
+#ifdef HAS_CUDA
     else
     {
-        std::cout << "[Solve_pseudo BSE] eigs file not found, skipping exact bounds."
-                  << std::endl;
+        using GPUMatrixType =
+            chase::matrix::PseudoHermitianMatrix<T, chase::platform::GPU>;
+        delete static_cast<chase::Impl::ChASEGPU<T, GPUMatrixType>*>(single);
     }
-
-    // After solve_pseudo(): first GetNev() Ritz values = smallest nev positive eigenvalues;
-    // first GetNev() columns of V = corresponding eigenvectors (same permutation applied).
-    std::size_t nev_out = single->GetNev();
-    chase::Base<T>* ritzv = single->GetRitzv();
-    chase::Base<T>* resid = single->GetResid();
-    std::cout << "[Solve_pseudo BSE] Requested positive eigenvalues: nev = "
-              << nev_out << " (buffer size = " << single->GetRitzvBlockSize()
-              << "). First nev columns of V = eigenvectors for these eigenvalues.\n";
-
-    // First nev from user buffer (Lambda_.data()) and from residuals (copy to vector for .data()).
-    std::cout << "[Solve_pseudo BSE] First nev from Lambda_.data() (user ritzv buffer):\n";
-    for (std::size_t i = 0; i < nev_out; ++i)
-        std::cout << "  lambda[" << i << "] = " << std::fixed << std::setprecision(8)
-                  << Lambda_.data()[i] << "\n";
-    std::vector<chase::Base<T>> residuals(nev_out);
-    for (std::size_t i = 0; i < nev_out; ++i)
-        residuals[i] = resid[i];
-    std::cout << "[Solve_pseudo BSE] First nev from residuals.data() (from GetResid()):\n";
-    for (std::size_t i = 0; i < nev_out; ++i)
-        std::cout << "  residual[" << i << "] = " << std::scientific << std::setprecision(6)
-                  << residuals.data()[i] << "\n";
-
-    std::vector<chase::Base<T>> ref_pos;
-    std::string eigs_path_ref = get_BSE_path("eigs_cdouble_random_BSE.bin");
-    std::ifstream eigs_ref(eigs_path_ref, std::ios::binary);
-    if (eigs_ref.good())
-    {
-        eigs_ref.close();
-        chase::matrix::Matrix<T> eigs_H_ref(n_, 1);
-        eigs_H_ref.readFromBinaryFile(eigs_path_ref);
-        nev_smallest_positive_eigs(eigs_H_ref.data(), n_, nev_, ref_pos);
-    }
-
-    std::cout << "[Solve_pseudo BSE] Computed vs reference (nev smallest positive):\n"
-              << "    i     lambda_computed   lambda_ref        residual      |err|\n";
-    std::cout << std::fixed << std::setprecision(8);
-    for (std::size_t i = 0; i < nev_out; ++i)
-    {
-        chase::Base<T> lam = ritzv[i];
-        chase::Base<T> res = resid[i];
-        chase::Base<T> ref = (i < ref_pos.size()) ? ref_pos[i] : chase::Base<T>(-1);
-        chase::Base<T> err = (i < ref_pos.size())
-                                 ? std::abs(lam - ref)
-                                 : chase::Base<T>(-1);
-        std::cout << "  " << std::setw(3) << i << "  " << std::setw(16) << lam
-                  << "  " << std::setw(16)
-                  << (ref >= 0 ? ref : std::numeric_limits<chase::Base<T>>::quiet_NaN())
-                  << "  " << std::scientific << std::setw(12) << res << "  "
-                  << std::scientific
-                  << (err >= 0 ? err : std::numeric_limits<chase::Base<T>>::quiet_NaN())
-                  << "\n";
-    }
-
-    // Recompute residuals from ritzv and V pointers: ||H*v_j - lambda_j*v_j||
-    std::vector<chase::Base<T>> resids_recomputed(nev_out);
-    const T* H = Hmat_->data();
-    const std::size_t ldh = Hmat_->ld();
-    for (std::size_t j = 0; j < nev_out; ++j)
-    {
-        const T* v = V_.data() + j * n_;
-        const chase::Base<T> lam = Lambda_.data()[j];
-        std::vector<T> w(n_, T(0));
-        for (std::size_t i = 0; i < n_; ++i)
-            for (std::size_t k = 0; k < n_; ++k)
-                w[i] += H[i + k * ldh] * v[k];
-        for (std::size_t i = 0; i < n_; ++i)
-            w[i] -= lam * v[i];
-        chase::Base<T> nrm = 0;
-        for (std::size_t i = 0; i < n_; ++i)
-            nrm += std::norm(w[i]);
-        resids_recomputed[j] = std::sqrt(nrm);
-    }
-    const chase::Base<T> tol = config.GetTol();
-    std::cout << "[Solve_pseudo BSE] Recomputed residuals (||H*v - lambda*v||) from "
-                 "Lambda_.data() and V_.data():\n"
-              << "    i   residual_recomputed   residual_from_GetResid()   status\n";
-    for (std::size_t i = 0; i < nev_out; ++i)
-    {
-        chase::Base<T> r_re = resids_recomputed[i];
-        chase::Base<T> r_get = resid[i];
-        bool ok = (r_re <= tol);
-        std::cout << "  " << std::setw(3) << i << "  " << std::scientific
-                  << std::setprecision(6) << std::setw(18) << r_re << "  "
-                  << std::setw(18) << r_get << "  " << (ok ? "ok" : "FAIL") << "\n";
-        EXPECT_LE(r_re, tol) << "Recomputed residual[" << i << "] = " << r_re
-                             << " > tol = " << tol;
-    }
+#endif
 }
+
+// Instantiate: CPU always; CPU+GPU when HAS_CUDA
+#ifdef HAS_CUDA
+INSTANTIATE_TEST_SUITE_P(CPU_and_GPU, ChaseSerialSolvePseudoBSETest,
+                         ::testing::Values(Backend::CPU, Backend::GPU));
+#else
+INSTANTIATE_TEST_SUITE_P(CPU_only, ChaseSerialSolvePseudoBSETest,
+                         ::testing::Values(Backend::CPU));
+#endif

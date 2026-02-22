@@ -32,7 +32,9 @@ extern "C"
     void zchase_(int* deg, double* tol, char* mode, char* opt, char* qr);
     void cchase_(int* deg, float* tol, char* mode, char* opt, char* qr);
 
-    // Sequential pseudo-Hermitian initialization functions
+    // Sequential pseudo-Hermitian: use Solve_pseudo (called automatically from
+    // cchase_pseudo_/zchase_pseudo_). Caller must allocate V with 2*(nev+nex)
+    // columns and ritzv with 2*(nev+nex) elements.
     void cchase_init_pseudo_(int* N, int* nev, int* nex, float _Complex* H,
                              int* ldh, float _Complex* V, float* ritzv,
                              int* init);

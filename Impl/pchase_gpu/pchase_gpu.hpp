@@ -12,6 +12,7 @@
 #include "linalg/distMatrix/distMatrix.hpp"
 #include "linalg/distMatrix/distMultiVector.hpp"
 #include "linalg/internal/cuda/cuda_kernels.hpp"
+#include "linalg/internal/cuda/lanczos_kernels.hpp"
 #include "linalg/internal/cuda_aware_mpi/cuda_mpi_kernels.hpp"
 #include "linalg/matrix/matrix.hpp"
 #include <cstring>
@@ -639,11 +640,16 @@ public:
         SCOPED_NVTX_RANGE();
         if (n_indices == 0)
             return;
+        int mpi_col_rank;
+        MPI_Comm_rank(Hmat_->getMpiGrid()->get_col_comm(), &mpi_col_rank);
+        unsigned long long base_seed = 1337 + static_cast<unsigned long long>(mpi_col_rank);
         for (std::size_t c = 0; c < n_indices; ++c)
         {
             std::size_t j = fixednev + col_indices[c];
-            chase::linalg::internal::cuda::init_random_vectors(
-                V1_->l_data() + j * V1_->l_ld(), V1_->l_rows());
+            unsigned long long seed = base_seed + static_cast<unsigned long long>(j) * 1000uLL;
+            chase::linalg::internal::cuda::chase_rand_normal(
+                seed, states_, V1_->l_data() + j * V1_->l_ld(), V1_->l_rows(),
+                (cudaStream_t)0);
         }
         for (std::size_t c = 0; c < n_indices; ++c)
         {
@@ -870,14 +876,11 @@ public:
                 cublasH_, &one, *Hmat_, *V1_, &zero, *W1_, col0, ncols);
             kernelNamespace::MatrixMultiplyMultiVectors(
                 cublasH_, &alpha, *Hmat_, *W1_, &beta, *V2_, col0, ncols);
-            for (std::size_t j = 0; j < ncols; ++j)
-            {
-                std::size_t col = col0 + j;
-                CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTaxpy(
-                    cublasH_, V2_->l_rows(), &gamma,
-                    V1_->l_data() + col * V1_->l_ld(), 1,
-                    V2_->l_data() + col * V2_->l_ld(), 1));
-            }
+            chase::linalg::internal::cuda::batchedAxpyScalar(
+                gamma, V1_->l_data() + col0 * V1_->l_ld(),
+                V2_->l_data() + col0 * V2_->l_ld(),
+                static_cast<int>(V2_->l_rows()), static_cast<int>(ncols),
+                static_cast<int>(V1_->l_ld()), static_cast<int>(V2_->l_ld()));
             next_ = NextOp::cAb;
         }
         else
@@ -886,14 +889,11 @@ public:
                 cublasH_, &one, *Hmat_, *V2_, &zero, *W1_, col0, ncols);
             kernelNamespace::MatrixMultiplyMultiVectors(
                 cublasH_, &alpha, *Hmat_, *W1_, &beta, *V1_, col0, ncols);
-            for (std::size_t j = 0; j < ncols; ++j)
-            {
-                std::size_t col = col0 + j;
-                CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTaxpy(
-                    cublasH_, V1_->l_rows(), &gamma,
-                    V2_->l_data() + col * V2_->l_ld(), 1,
-                    V1_->l_data() + col * V1_->l_ld(), 1));
-            }
+            chase::linalg::internal::cuda::batchedAxpyScalar(
+                gamma, V2_->l_data() + col0 * V2_->l_ld(),
+                V1_->l_data() + col0 * V1_->l_ld(),
+                static_cast<int>(V1_->l_rows()), static_cast<int>(ncols),
+                static_cast<int>(V2_->l_ld()), static_cast<int>(V1_->l_ld()));
             next_ = NextOp::bAc;
         }
     }

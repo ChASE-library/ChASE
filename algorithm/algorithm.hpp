@@ -329,6 +329,10 @@ void Solve(ChaseBase<T>* single)
  * @brief Pseudo-Hermitian (e.g. BSE) solver. Wrapper around
  * Algorithm<T>::solve_pseudo(). Use when the matrix is pseudo-Hermitian and
  * filtering is on H².
+ *
+ * The kernel must provide a subspace of size 2*(nev+nex) (vectors and
+ * GetRitzvBlockSize() = 2*(nev+nex)). Allocate V with 2*(nev+nex) columns and
+ * the ritzv/resid buffer with 2*(nev+nex) elements before calling.
  */
 template <typename T>
 void Solve_pseudo(ChaseBase<T>* single)

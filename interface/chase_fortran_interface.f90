@@ -231,8 +231,8 @@ MODULE chase_diag
       !> @param[in] nex extra searching space size      
       !> @param[in] h pointer to the matrix to be diagonalized
       !> @param[in] ldh a leading dimension of h      
-      !> @param[in,out] v `(nx(nev+nex))` matrix, input is the initial guess eigenvectors, and for output, the first `nev` columns are overwritten by the desired eigenvectors
-      !> @param[in,out] ritzv an array of size `nev` which contains the desired eigenvalues
+      !> @param[in,out] v matrix of size `(n x 2*(nev+nex))`; first `nev` columns hold computed eigenvectors on output
+      !> @param[in,out] ritzv array of size `2*(nev+nex)`; first `nev` entries hold the desired positive eigenvalues
       !> @param[in,out] init a flag to indicate if ChASE has been initialized            
             USE, INTRINSIC :: iso_c_binding
             INTEGER(c_int)      :: n, nev, nex, init, ldh
@@ -273,8 +273,8 @@ MODULE chase_diag
       !> @param[in] nex extra searching space size      
       !> @param[in] h pointer to the matrix to be diagonalized
       !> @param[in] ldh a leading dimension of h      
-      !> @param[in,out] v `(nx(nev+nex))` matrix, input is the initial guess eigenvectors, and for output, the first `nev` columns are overwritten by the desired eigenvectors
-      !> @param[in,out] ritzv an array of size `nev` which contains the desired eigenvalues
+      !> @param[in,out] v matrix of size `(n x 2*(nev+nex))`; first `nev` columns hold computed eigenvectors on output
+      !> @param[in,out] ritzv array of size `2*(nev+nex)`; first `nev` entries hold the desired positive eigenvalues
       !> @param[in,out] init a flag to indicate if ChASE has been initialized            
             USE, INTRINSIC :: iso_c_binding
             INTEGER(c_int)      :: n, nev, nex, init, ldh

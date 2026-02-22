@@ -154,6 +154,58 @@ __global__ void batched_axpy_kernel<cuComplex>(
 }
 
 /**
+ * @brief Batched AXPY with single scalar: y[:,i] += alpha * x[:,i] for all i.
+ * Uses separate leading dimensions so x and y may have different ld (e.g. V1 vs V2 in distributed).
+ */
+template<typename T>
+__global__ void batched_axpy_scalar_kernel(
+    T alpha,
+    const T* __restrict__ x,
+    T* __restrict__ y,
+    int rows, int numvec, int ldx, int ldy)
+{
+    int vec_idx = blockIdx.y;
+    int row_idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (vec_idx < numvec && row_idx < rows) {
+        int idx_x = row_idx + vec_idx * ldx;
+        int idx_y = row_idx + vec_idx * ldy;
+        y[idx_y] = y[idx_y] + alpha * x[idx_x];
+    }
+}
+
+template<>
+__global__ void batched_axpy_scalar_kernel<cuDoubleComplex>(
+    cuDoubleComplex alpha,
+    const cuDoubleComplex* __restrict__ x,
+    cuDoubleComplex* __restrict__ y,
+    int rows, int numvec, int ldx, int ldy)
+{
+    int vec_idx = blockIdx.y;
+    int row_idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (vec_idx < numvec && row_idx < rows) {
+        int idx_x = row_idx + vec_idx * ldx;
+        int idx_y = row_idx + vec_idx * ldy;
+        y[idx_y] = cuCadd(y[idx_y], cuCmul(alpha, x[idx_x]));
+    }
+}
+
+template<>
+__global__ void batched_axpy_scalar_kernel<cuComplex>(
+    cuComplex alpha,
+    const cuComplex* __restrict__ x,
+    cuComplex* __restrict__ y,
+    int rows, int numvec, int ldx, int ldy)
+{
+    int vec_idx = blockIdx.y;
+    int row_idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (vec_idx < numvec && row_idx < rows) {
+        int idx_x = row_idx + vec_idx * ldx;
+        int idx_y = row_idx + vec_idx * ldy;
+        y[idx_y] = cuCaddf(y[idx_y], cuCmulf(alpha, x[idx_x]));
+    }
+}
+
+/**
  * @brief Batched AXPY then negate: y[:,i] += alpha[i]*x[:,i], then alpha[i] = -alpha[i]
  * One block per vector so we can negate alpha after axpy without race (alpha cached in register).
  */
@@ -1884,6 +1936,42 @@ void batched_axpy_gpu(const float* alpha, const float* x,
     dim3 threads(256);
     dim3 blocks((rows + threads.x - 1) / threads.x, numvec);
     batched_axpy_kernel<<<blocks, threads, 0, stream>>>(alpha, x, y, rows, numvec, ld);
+}
+
+void batched_axpy_scalar_gpu(cuDoubleComplex alpha, const cuDoubleComplex* x,
+                             cuDoubleComplex* y, int rows, int numvec, int ldx, int ldy,
+                             cudaStream_t stream)
+{
+    dim3 threads(256);
+    dim3 blocks((rows + threads.x - 1) / threads.x, numvec);
+    batched_axpy_scalar_kernel<<<blocks, threads, 0, stream>>>(alpha, x, y, rows, numvec, ldx, ldy);
+}
+
+void batched_axpy_scalar_gpu(cuComplex alpha, const cuComplex* x,
+                             cuComplex* y, int rows, int numvec, int ldx, int ldy,
+                             cudaStream_t stream)
+{
+    dim3 threads(256);
+    dim3 blocks((rows + threads.x - 1) / threads.x, numvec);
+    batched_axpy_scalar_kernel<<<blocks, threads, 0, stream>>>(alpha, x, y, rows, numvec, ldx, ldy);
+}
+
+void batched_axpy_scalar_gpu(double alpha, const double* x,
+                             double* y, int rows, int numvec, int ldx, int ldy,
+                             cudaStream_t stream)
+{
+    dim3 threads(256);
+    dim3 blocks((rows + threads.x - 1) / threads.x, numvec);
+    batched_axpy_scalar_kernel<<<blocks, threads, 0, stream>>>(alpha, x, y, rows, numvec, ldx, ldy);
+}
+
+void batched_axpy_scalar_gpu(float alpha, const float* x,
+                             float* y, int rows, int numvec, int ldx, int ldy,
+                             cudaStream_t stream)
+{
+    dim3 threads(256);
+    dim3 blocks((rows + threads.x - 1) / threads.x, numvec);
+    batched_axpy_scalar_kernel<<<blocks, threads, 0, stream>>>(alpha, x, y, rows, numvec, ldx, ldy);
 }
 
 void batched_axpy_then_negate_gpu(double* alpha, const double* x, double* y,

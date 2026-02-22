@@ -108,6 +108,20 @@ void batched_axpy_gpu(const float* alpha, const float* x,
                      float* y, int rows, int numvec, int ld,
                      cudaStream_t stream);
 
+// Batched AXPY with single scalar: y[:,i] += alpha * x[:,i] (ldx, ldy may differ)
+void batched_axpy_scalar_gpu(cuDoubleComplex alpha, const cuDoubleComplex* x,
+                             cuDoubleComplex* y, int rows, int numvec, int ldx, int ldy,
+                             cudaStream_t stream);
+void batched_axpy_scalar_gpu(cuComplex alpha, const cuComplex* x,
+                             cuComplex* y, int rows, int numvec, int ldx, int ldy,
+                             cudaStream_t stream);
+void batched_axpy_scalar_gpu(double alpha, const double* x,
+                             double* y, int rows, int numvec, int ldx, int ldy,
+                             cudaStream_t stream);
+void batched_axpy_scalar_gpu(float alpha, const float* x,
+                             float* y, int rows, int numvec, int ldx, int ldy,
+                             cudaStream_t stream);
+
 // Batched AXPY then negate: y[:,i] += alpha[i]*x[:,i], then alpha[i] = -alpha[i]
 void batched_axpy_then_negate_gpu(double* alpha, const double* x, double* y,
                                   int rows, int numvec, int ld,

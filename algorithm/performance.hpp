@@ -551,11 +551,8 @@ public:
 
     void Shift(T c, bool isunshift = false)
     {
-        if (isunshift)
-            perf_.end_clock(ChasePerfData<T>::TimePtrs::Filter);
-        else
-            perf_.start_clock(ChasePerfData<T>::TimePtrs::Filter);
-
+        // Filter timing is unified via FilterPhaseStart/FilterPhaseEnd for both
+        // Hermitian and pseudo-Hermitian paths; Shift only updates the matrix.
         chase_->Shift(c, isunshift);
     }
     void HEMM(std::size_t nev, T alpha, T beta, std::size_t offset_left,
@@ -569,6 +566,16 @@ public:
     {
         chase_->HEMM_H2(nev, alpha, beta, gamma, offset_left, offset_right);
         perf_.add_filtered_vecs(2 * (nev - offset_right));
+    }
+    void FilterPhaseStart() override
+    {
+        perf_.start_clock(ChasePerfData<T>::TimePtrs::Filter);
+        chase_->FilterPhaseStart();
+    }
+    void FilterPhaseEnd() override
+    {
+        perf_.end_clock(ChasePerfData<T>::TimePtrs::Filter);
+        chase_->FilterPhaseEnd();
     }
 
     void QR(std::size_t fixednev, Base<T> cond)

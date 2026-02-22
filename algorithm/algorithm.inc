@@ -784,6 +784,7 @@ std::size_t Algorithm<T>::filter(ChaseBase<T>* single, std::size_t n,
     std::size_t num_mult = 0;
     std::size_t Av = 0;
 
+    single->FilterPhaseStart();
     //----------------------------------- A = A-cI
     //-------------------------------
     single->Shift(-c);
@@ -830,6 +831,7 @@ std::size_t Algorithm<T>::filter(ChaseBase<T>* single, std::size_t n,
 
     //----------------------------------RESTORE-A---------------------------------
     single->Shift(+c, true);
+    single->FilterPhaseEnd();
 
     return Av;
 }
@@ -1722,7 +1724,9 @@ void Algorithm<T>::solve_pseudo(ChaseBase<T>* single)
             residLast[i] = resid[i];
 
         // ------------------------------ FILTER (H²) --------------------------
+        single->FilterPhaseStart();
         filter_H2(single, N, unconverged, degrees, lambda_1, lower, b_sup);
+        single->FilterPhaseEnd();
 
         // --------------------------------- QR --------------------------------
         Base<T> cc = (b_sup + lower) / 2;
@@ -1764,7 +1768,7 @@ void Algorithm<T>::solve_pseudo(ChaseBase<T>* single)
         std::size_t n_pos = unconverged - n_neg;
 
         // --------------- Outlier purge (Julia): ± pairs in boundary with |λ| ratio > threshold ---------------
-        constexpr Base<T> PURGE_RATIO_THRESHOLD = 2.0;
+        constexpr Base<T> PURGE_RATIO_THRESHOLD = 1.5;
         std::vector<std::size_t> reinit_indices;
         std::size_t npairs = std::min(nex, std::min(n_neg, n_pos));
         for (std::size_t k = 0; k < npairs; ++k)

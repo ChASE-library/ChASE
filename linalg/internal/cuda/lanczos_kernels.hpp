@@ -215,6 +215,43 @@ void batchedAxpy(const std::complex<T>* alpha, const std::complex<T>* x,
 }
 
 /**
+ * @brief Batched AXPY with single scalar: y[:,i] += alpha * x[:,i] for i = 0..numvec-1.
+ * Uses separate leading dimensions (ldx for x, ldy for y) so V1 and V2 can differ (e.g. distributed).
+ */
+template <typename T>
+void batchedAxpyScalar(T alpha, const T* x, T* y, int rows, int numvec, int ldx, int ldy,
+                      cudaStream_t* stream_ = nullptr)
+{
+    SCOPED_NVTX_RANGE();
+    cudaStream_t usedStream = (stream_ == nullptr) ? 0 : *stream_;
+    batched_axpy_scalar_gpu(alpha, x, y, rows, numvec, ldx, ldy, usedStream);
+}
+
+template <typename T>
+void batchedAxpyScalar(std::complex<T> alpha, const std::complex<T>* x,
+                      std::complex<T>* y, int rows, int numvec, int ldx, int ldy,
+                      cudaStream_t* stream_ = nullptr)
+{
+    SCOPED_NVTX_RANGE();
+    cudaStream_t usedStream = (stream_ == nullptr) ? 0 : *stream_;
+    if constexpr (std::is_same_v<T, double>) {
+        cuDoubleComplex a = make_cuDoubleComplex(static_cast<double>(alpha.real()),
+                                                 static_cast<double>(alpha.imag()));
+        batched_axpy_scalar_gpu(a,
+                                reinterpret_cast<const cuDoubleComplex*>(x),
+                                reinterpret_cast<cuDoubleComplex*>(y),
+                                rows, numvec, ldx, ldy, usedStream);
+    } else {
+        cuComplex a = make_cuComplex(static_cast<float>(alpha.real()),
+                                     static_cast<float>(alpha.imag()));
+        batched_axpy_scalar_gpu(a,
+                                reinterpret_cast<const cuComplex*>(x),
+                                reinterpret_cast<cuComplex*>(y),
+                                rows, numvec, ldx, ldy, usedStream);
+    }
+}
+
+/**
  * @brief Fused batched AXPY then negate: y[:,i] += alpha[i]*x[:,i], then alpha[i] = -alpha[i]
  */
 template <typename T>

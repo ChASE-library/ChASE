@@ -12,6 +12,7 @@
 #include "linalg/internal/cpu/symOrHerm.hpp"
 #include "linalg/internal/cpu/utils.hpp"
 #include "linalg/internal/cuda/cuda_kernels.hpp"
+#include "linalg/internal/cuda/lanczos_kernels.hpp"
 #include "external/lapackpp/lapackpp.hpp"
 #include "linalg/matrix/matrix.hpp"
 #include <cstring>
@@ -459,6 +460,8 @@ public:
         numLanczos_ = 1;
         chase::linalg::internal::cuda::lanczos(cublasH_, M, Hmat_, Vec1_,
                                                upperb);
+        // Restore cublas stream (internal lanczos may use a temporary stream)
+        CHECK_CUBLAS_ERROR(cublasSetStream(cublasH_, stream_));
     }
 
     void Lanczos(std::size_t M, std::size_t numvec, chase::Base<T>* upperb,
@@ -470,6 +473,8 @@ public:
         numLanczos_ = numvec;
         chase::linalg::internal::cuda::lanczos(
             cublasH_, M, numvec, Hmat_, Vec1_, upperb, ritzv, Tau, ritzV);
+        // Restore cublas stream (internal lanczos uses a temporary stream and destroys it)
+        CHECK_CUBLAS_ERROR(cublasSetStream(cublasH_, stream_));
     }
 
     void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc) override
@@ -600,13 +605,12 @@ public:
             Hmat_->cols(), &alpha, Hmat_->data(), Hmat_->ld(), d_H2_tmp_, N_,
             &beta, Vec2_.data() + col0 * Vec2_.ld(), Vec2_.ld()));
 
-        // Vec2_[cols] += gamma * Vec1_[cols]
-        for (std::size_t j = 0; j < ncols; ++j)
-        {
-            CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTaxpy(
-                cublasH_, N_, &gamma, Vec1_.data() + col0 * Vec1_.ld() + j * Vec1_.ld(),
-                1, Vec2_.data() + col0 * Vec2_.ld() + j * Vec2_.ld(), 1));
-        }
+        // Vec2_[cols] += gamma * Vec1_[cols] (batched AXPY, single scalar)
+        chase::linalg::internal::cuda::batchedAxpyScalar(
+            gamma, Vec1_.data() + col0 * Vec1_.ld(),
+            Vec2_.data() + col0 * Vec2_.ld(),
+            static_cast<int>(N_), static_cast<int>(ncols),
+            static_cast<int>(Vec1_.ld()), static_cast<int>(Vec2_.ld()), &stream_);
 
         Vec1_.swap(Vec2_);
     }
