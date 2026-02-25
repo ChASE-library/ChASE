@@ -230,6 +230,11 @@ public:
      *
      * @return The number of locked eigenpairs.
      */
+    /** Reinit outlier ± boundary pairs (|λ| ratio > threshold). Returns number reinitialized (n_skip_tail for locking_pseudo). */
+    static std::size_t reinit_phantom_eigenvectors_pseudo(
+        ChaseBase<T>* single, std::size_t unconverged, std::size_t locked,
+        std::size_t nex, Base<T>* ritzv);
+
     static std::size_t
     locking_pseudo(ChaseBase<T>* single, std::size_t N, std::size_t unconverged,
                    std::size_t nex, Base<T> tol, std::size_t* index,
