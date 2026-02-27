@@ -157,8 +157,6 @@ std::size_t Algorithm<T>::calc_degrees(ChaseBase<T>* single, std::size_t N,
         degrees[i] =
             std::ceil(std::abs(std::log(resid[i] / tol) / std::log(rho)));
 
-        //TODO : Multiply by a factor to account for the cluster detection and spacing factors, here
-
         // Ensure minimum degree of 8 for single precision
         if constexpr (std::is_same<Base<T>, float>::value)
         {
@@ -207,6 +205,12 @@ std::size_t Algorithm<T>::calc_degrees_pseudo_H2(
     const std::size_t deg_extra = conf.GetDegExtra();
     const std::size_t deg_max = conf.GetMaxDeg();
 
+    std::vector<Base<T>> cluster_factors;
+    if (conf.UseClusterAwareDegrees())
+    {
+        detect_eigenvalue_clusters(ritzv, resid, tol, unconverged, nex, upperb, lowerb, cluster_factors);
+    }
+
     // H² spectrum interval: center and half-length (for Chebyshev ellipse)
     Base<T> c_h2 = (upperb + lowerb) / 2;
     Base<T> e_h2 = (upperb - lowerb) / 2;
@@ -250,6 +254,38 @@ std::size_t Algorithm<T>::calc_degrees_pseudo_H2(
             {
                 deg = static_cast<std::size_t>(
                     std::ceil(std::abs(static_cast<double>(log_ratio))));
+
+                if (conf.UseClusterAwareDegrees())
+                {
+                    deg = static_cast<std::size_t>(deg * cluster_factors[i]);
+
+                    // === STAGNATION DETECTION ===
+                    std::size_t stagnation_bonus = 0.0;
+                    Base<T> stagnation_residual_threshold = tol * 10.0; // 10x tolerance
+
+                    if (resid[i] <= stagnation_residual_threshold)
+                    {
+                        Base<T> residual_change = std::abs(resid[i] - residLast[i]);
+                        Base<T> relative_change = residual_change / (resid[i] + 1e-14);
+                        Base<T> relative_stagnation = 0.1; // 10% relative change
+                        if (relative_change < relative_stagnation)
+                        {
+                            // Residual is stagnating - increase degrees
+                            stagnation_bonus = 6;
+                        }
+                        deg = std::size_t(deg + stagnation_bonus);
+                    }
+
+                    std::size_t pseudo_bonus = 0;
+                    if (std::abs(ritzv[i]) < std::abs(upperb - lowerb) * 0.1)
+                    {
+                        // Near-zero eigenvalues in pseudo-hermitian problems can be
+                        // challenging
+                        pseudo_bonus = 2;
+                    }
+                    deg = std::size_t(deg + pseudo_bonus);
+                }
+
                 deg = std::min(deg + deg_extra, deg_max);
             }
         }
@@ -263,14 +299,6 @@ std::size_t Algorithm<T>::calc_degrees_pseudo_H2(
     std::size_t tail_deg = (n_main > 0) ? degrees[n_main - 1] : (deg_max + (deg_max % 2));
     for (std::size_t i = n_main; i < unconverged; ++i)
         degrees[i] = tail_deg;
-
-    // Pair-wise symmetric degrees: pair i with (unconverged - 1 - i), both get max
-    for (std::size_t i = 0; i < unconverged / 2; ++i)
-    {
-        std::size_t j = unconverged - 1 - i;
-        std::size_t m = std::max(degrees[i], degrees[j]);
-        degrees[i] = degrees[j] = m;
-    }
 
     // Compute indices: negatives and positives (order by degree in the two loops below).
     std::vector<std::size_t> idx_neg, idx_pos;
@@ -337,6 +365,21 @@ std::size_t Algorithm<T>::calc_degrees_pseudo_H2(
                 swap_kj(p, q, residLast);
             }
         }
+    }
+
+#ifdef CHASE_OUTPUT
+    std::ostringstream oss;
+    oss << "Number of negative eigenvalues: " << idx_neg.size() << "\n";
+    oss << "Number of positive eigenvalues: " << idx_pos.size() << "\n";
+    single->Output(oss.str());
+#endif
+
+    // Pair-wise symmetric degrees: pair i with (unconverged - 1 - i), both get max
+    for (std::size_t i = 0; i < unconverged / 2; ++i)
+    {
+        std::size_t j = unconverged - 1 - i;
+        std::size_t m = std::max(degrees[i], degrees[j]);
+        degrees[i] = degrees[j] = m;
     }
 
     const std::size_t* max_deg_ptr =
@@ -1085,6 +1128,7 @@ std::size_t Algorithm<T>::lanczos_for_H2(ChaseBase<T>* single, int N,
     Base<T> lambda_nevnex = static_cast<Base<T>>(ThetaSorted[numvec * m - 1]);
     double prev = 0;
     const std::size_t n_dos = numvec * m;
+    // TODO : Update lambda_nevnex IF = lambda1. 
     for (std::size_t i = 0; i < n_dos; ++i)
     {
         double curr = 0;
@@ -1110,6 +1154,10 @@ std::size_t Algorithm<T>::lanczos_for_H2(ChaseBase<T>* single, int N,
         }
         prev = curr;
         lambda_nevnex = static_cast<Base<T>>(ThetaSorted[i]);
+        /*if(lambda_nevnex == Theta[i_minabs])
+        {
+            lambda_nevnex = static_cast<Base<T>>(ThetaSorted[i+1]);
+        }*/
     }
     Base<T> mu_nevnex = lambda_nevnex * lambda_nevnex;
 
@@ -1879,59 +1927,49 @@ void Algorithm<T>::solve_pseudo(ChaseBase<T>* single)
         ++iteration;
     }
 
-    // TODO : Final output it too complicated. My IQ is to low to understand it.
-
-    // --------------- Final output (Julia: copy positive locked, sort ascending) ---------
-    // Reorder so first nev positions are positive locked eigenpairs sorted by eigenvalue.
+    // --------------- Final output: smallest positive first, then the rest ---------
+    // Sort so positive Ritz values come first (ascending), then non-positive (ascending).
     std::size_t n_reorder = locked + unconverged;
     if (n_reorder == 0)
         n_reorder = 1;
-    std::vector<std::size_t> idx_pos_locked;
-    for (std::size_t i = 0; i < locked; ++i)
-        if (ritzv_[i] > Base<T>(0))
-            idx_pos_locked.push_back(i);
-    std::sort(idx_pos_locked.begin(), idx_pos_locked.end(),
+
+    std::vector<std::size_t> perm(n_reorder);
+    std::iota(perm.begin(), perm.end(), 0);
+    std::sort(perm.begin(), perm.end(),
               [&](std::size_t i, std::size_t j) {
+                  bool i_pos = (ritzv_[i] > Base<T>(0));
+                  bool j_pos = (ritzv_[j] > Base<T>(0));
+                  if (i_pos && !j_pos) return true;
+                  if (!i_pos && j_pos) return false;
                   return ritzv_[i] < ritzv_[j];
               });
-    // Permutation: first positions = positive locked (sorted), then the rest
-    std::vector<std::size_t> perm(n_reorder);
-    std::size_t p = 0;
-    for (std::size_t i : idx_pos_locked)
-        perm[p++] = i;
-    for (std::size_t i = 0; i < locked && p < n_reorder; ++i)
-        if (ritzv_[i] <= Base<T>(0))
-            perm[p++] = i;
-    for (std::size_t i = locked; i < n_reorder; ++i)
-        perm[p++] = i;
-    std::vector<std::size_t> inv_perm(n_reorder);
-    for (std::size_t i = 0; i < n_reorder; ++i)
-        inv_perm[perm[i]] = i;
+
     std::vector<bool> visited(n_reorder, false);
     for (std::size_t i = 0; i < n_reorder; ++i)
     {
-        if (visited[i] || inv_perm[i] == i)
+        if (visited[i] || perm[i] == i)
             continue;
+
         std::size_t current = i;
+        Base<T> temp_ritz = ritzv_[i];
+        Base<T> temp_resid = resid_[i];
         std::vector<std::size_t> cycle_indices;
+
         while (!visited[current])
         {
             visited[current] = true;
             cycle_indices.push_back(current);
-            current = inv_perm[current];
+            current = perm[current];
         }
-        // Content at cycle[k] goes to inv_perm[cycle[k]] = cycle[k+1]. Forward rotation.
-        const std::size_t L = cycle_indices.size();
-        Base<T> temp_ritz = ritzv_[cycle_indices[L - 1]];
-        Base<T> temp_resid = resid_[cycle_indices[L - 1]];
-        for (std::size_t k = L - 1; k >= 1; --k)
+
+        for (std::size_t k = 0; k < cycle_indices.size() - 1; ++k)
         {
-            ritzv_[cycle_indices[k]] = ritzv_[cycle_indices[k - 1]];
-            resid_[cycle_indices[k]] = resid_[cycle_indices[k - 1]];
-            single->Swap(cycle_indices[k], cycle_indices[k - 1]);
+            ritzv_[cycle_indices[k]] = ritzv_[cycle_indices[k + 1]];
+            resid_[cycle_indices[k]] = resid_[cycle_indices[k + 1]];
+            single->Swap(cycle_indices[k], cycle_indices[k + 1]);
         }
-        ritzv_[cycle_indices[0]] = temp_ritz;
-        resid_[cycle_indices[0]] = temp_resid;
+        ritzv_[cycle_indices.back()] = temp_ritz;
+        resid_[cycle_indices.back()] = temp_resid;
     }
 
     single->set_early_locked_residuals(early_locked_residuals);

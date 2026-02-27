@@ -15,6 +15,18 @@
 #include "algorithm/algorithm.hpp"
 #include "algorithm/performance.hpp"
 
+#if defined(USE_MPI) && !defined(HAS_NCCL)
+#include "linalg/internal/mpi/shiftDiagonal.hpp"
+#include "linalg/internal/mpi/flipSign.hpp"
+#elif defined(HAS_CUDA) && !defined(USE_MPI) && !defined(HAS_NCCL)
+#include "linalg/internal/cuda/shiftDiagonal.hpp"
+#include "linalg/internal/cuda/flipSign.hpp"
+#elif !defined(HAS_CUDA) && !defined(USE_MPI) && !defined(HAS_NCCL)
+#include "linalg/internal/cpu/utils.hpp"
+#elif defined(HAS_NCCL)
+#include "linalg/internal/nccl/flipSign.hpp"
+#endif
+
 #ifdef HAS_NCCL
 #include "Impl/pchase_gpu/pchase_gpu.hpp"
 #elif defined(HAS_CUDA)
@@ -60,6 +72,7 @@ struct BSE_DriverProblemConfig
 
     std::string path_in; // path to the matrix input files
     bool isdouble;
+    double shiftDiag; // shift applied to the matrix diagonal (e.g. for BSE)
 };
 
 template <typename T>
@@ -72,6 +85,7 @@ int bse_solve(BSE_DriverProblemConfig& conf)
     std::size_t maxDeg = conf.maxDeg;
     std::size_t maxIter = conf.maxIter;
     std::size_t extraDeg = conf.extraDeg;
+    T shiftDiag = T(chase::Base<T>(conf.shiftDiag));
     chase::Base<T> tol; // desired tolerance
     std::string opt = conf.opt;
     std::string mode = conf.mode;
@@ -198,6 +212,8 @@ int bse_solve(BSE_DriverProblemConfig& conf)
 
     Hmat.allocate_cpu_data();
 #else
+
+    
     auto single = chase::Impl::pChASECPU(nev, nex, &Hmat, &Vec, Lambda.data());
 #endif
 
@@ -212,10 +228,62 @@ int bse_solve(BSE_DriverProblemConfig& conf)
     }
 #ifdef HAS_NCCL
     Hmat.H2D();
+    if (shiftDiag != chase::Base<T>(0))
+    {
+        if (world_rank == 0)
+        {
+            std::cout << "Shift diagonal: " << shiftDiag << std::endl;
+            std::cout << "Value of the first diagonal element: " << Hmat.cpu_data()[0] << std::endl;
+        }
+        if (world_rank == world_size - 1)
+        {
+            std::cout << "Shift diagonal: " << shiftDiag << std::endl;
+            std::cout << "Value of the last diagonal element: " << Hmat.cpu_data()[Hmat.l_rows() * Hmat.l_cols() - 1] << std::endl;
+        }
+        chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(Hmat);
+        single.Shift(shiftDiag);
+        chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(Hmat);
+        Hmat.D2H();
+        if (world_rank == 0)
+        {
+            std::cout << "AFTER SHIFT : Value of the first diagonal element: " << Hmat.cpu_data()[0] << std::endl;
+        }
+        if (world_rank == world_size - 1)
+        {
+            std::cout << "AFTER SHIFT : Value of the last diagonal element: " << Hmat.cpu_data()[Hmat.l_rows() * Hmat.l_cols() - 1] << std::endl;
+        }
+    }
+#else
+    if (shiftDiag != chase::Base<T>(0))
+    {
+        if (world_rank == 0)
+        {
+            std::cout << "Shift diagonal: " << shiftDiag << std::endl;
+            std::cout << "Value of the first diagonal element: " << Hmat.l_data()[0] << std::endl;
+        }
+        if (world_rank == world_size - 1)
+        {
+            std::cout << "Shift diagonal: " << shiftDiag << std::endl;
+            std::cout << "Value of the last diagonal element: " << Hmat.l_data()[Hmat.l_rows() * Hmat.l_cols() - 1] << std::endl;
+        }
+        
+        chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(Hmat);
+        chase::linalg::internal::cpu_mpi::shiftDiagonal(Hmat, shiftDiag);
+        chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(Hmat);
+        if (world_rank == 0)
+        {
+            std::cout << "AFTER SHIFT : Value of the first diagonal element: " << Hmat.l_data()[0] << std::endl;
+        }
+        if (world_rank == world_size - 1)
+        {
+            std::cout << "AFTER SHIFT : Value of the last diagonal element: " << Hmat.l_data()[Hmat.l_rows() * Hmat.l_cols() - 1] << std::endl;
+        }
+    }
 #endif
-
 #else
     std::vector<T> V(N * ritzv_size);
+
+
 
 #ifdef USE_PSEUDO_HERMITIAN
     using MatrixType = chase::matrix::PseudoHermitianMatrix<T, ARCH>;
@@ -246,6 +314,22 @@ int bse_solve(BSE_DriverProblemConfig& conf)
 
 #ifdef HAS_CUDA
     Hmat->H2D();
+    if (shiftDiag != chase::Base<T>(0))
+    {
+        chase::linalg::internal::cuda::flipLowerHalfMatrixSign(Hmat, nullptr);
+        chase::linalg::internal::cuda::shiftDiagonal(Hmat, chase::Base<T>(std::real(shiftDiag)), nullptr);
+        chase::linalg::internal::cuda::flipLowerHalfMatrixSign(Hmat, nullptr);
+    }
+#else
+    if (shiftDiag != chase::Base<T>(0))
+    {
+        chase::linalg::internal::cpu::flipLowerHalfMatrixSign(N, N, Hmat->data(),
+                                                             Hmat->ld());
+        chase::linalg::internal::cpu::shiftMatrixDiagonal(
+            N, N, Hmat->data(), Hmat->ld(), static_cast<T>(shiftDiag));
+        chase::linalg::internal::cpu::flipLowerHalfMatrixSign(N, N, Hmat->data(),
+                                                             Hmat->ld());
+    }
 #endif
 
 #endif
@@ -385,6 +469,9 @@ int main(int argc, char** argv)
     desc.add<Value<float>>("", "lowerb_decay",
                            "Sets the decaying rate for the lower bound", 1.0,
                            &conf.lowerb_decay);
+    desc.add<Value<double>>("", "shiftDiag",
+                           "Sets the shift value for the diagonal", 0.0,
+                           &conf.shiftDiag);
     auto path_in_options = desc.add<Value<std::string>, Attribute::required>(
         "", "path_in", "Path to the input matrix/matrices", "d", &conf.path_in);
 
