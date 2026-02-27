@@ -1977,6 +1977,108 @@ public:
         }
     }
 
+    /**
+     * @brief Save the first diagonal block (top-left N/2 x N/2) to a binary file.
+     *
+     * Writes only the leading principal submatrix of size (M_/2) x (N_/2) to file.
+     * Same conventions as saveToBinaryFile (CPU buffer only on GPU, collective MPI I/O).
+     * Used mostly for saving resonant states.
+     *
+     * @param filename Name of the file where the block is saved.
+     * @throws std::runtime_error If the matrix data is not initialized.
+     */
+    void saveFirstDiagonalBlockToBinaryFile(const std::string& filename)
+    {
+        MPI_File fileHandle;
+        MPI_Status status;
+        T* buff;
+        if constexpr (std::is_same<Platform, chase::platform::GPU>::value)
+        {
+            if (local_matrix_.cpu_data() == nullptr)
+            {
+                throw std::runtime_error(
+                    "[BlockBlockMatrix]: only can save data from CPU buffer");
+            }
+            buff = local_matrix_.cpu_data();
+        }
+        else
+        {
+            buff = local_matrix_.data();
+        }
+
+        if (MPI_File_open(this->mpi_grid_.get()->get_comm(), filename.data(),
+                          MPI_MODE_CREATE | MPI_MODE_WRONLY,
+                          MPI_INFO_NULL, &fileHandle) != MPI_SUCCESS)
+        {
+            if (this->grank() == 0)
+                std::cout << "Can't open input matrix - " << filename
+                << std::endl;
+                MPI_Abort(this->mpi_grid_.get()->get_comm(), EXIT_FAILURE);
+        }
+
+        if (this->l_data() == nullptr)
+        {
+            throw std::runtime_error(
+                "[BlockBlockMatrix]: Original data is not initialized.");
+        }
+
+        const std::size_t block_M = M_ / 2;
+        const std::size_t block_N = N_ / 2;
+
+        const std::size_t row_start = g_offs_[0];
+        const std::size_t col_start = g_offs_[1];
+        std::size_t local_block_m = 0;
+        std::size_t local_block_n = 0;
+        if (row_start < block_M && col_start < block_N)
+        {
+            local_block_m = std::min(m_, block_M - row_start);
+            local_block_n = std::min(n_, block_N - col_start);
+        }
+
+        MPI_Datatype file_subarray;
+        if (local_block_m > 0 && local_block_n > 0)
+        {
+            int global_block_size[] = {static_cast<int>(block_M), static_cast<int>(block_N)};
+            int local_block_size[] = {static_cast<int>(local_block_m), static_cast<int>(local_block_n)};
+            int offsets[] = {static_cast<int>(row_start), static_cast<int>(col_start)};
+            MPI_Type_create_subarray(2, global_block_size, local_block_size,
+                                     offsets, MPI_ORDER_FORTRAN,
+                                     chase::mpi::getMPI_Type<T>(), &file_subarray);
+            MPI_Type_commit(&file_subarray);
+            MPI_File_set_view(fileHandle, 0, chase::mpi::getMPI_Type<T>(), file_subarray,
+                              "native", MPI_INFO_NULL);
+
+            int local_full_size[] = {static_cast<int>(m_), static_cast<int>(n_)};
+            int local_sub_size[] = {static_cast<int>(local_block_m), static_cast<int>(local_block_n)};
+            int local_starts[] = {0, 0};
+            MPI_Datatype mem_subarray;
+            MPI_Type_create_subarray(2, local_full_size, local_sub_size,
+                                     local_starts, MPI_ORDER_FORTRAN,
+                                     chase::mpi::getMPI_Type<T>(), &mem_subarray);
+            MPI_Type_commit(&mem_subarray);
+            MPI_File_write_all(fileHandle, buff, 1, mem_subarray, &status);
+            MPI_Type_free(&mem_subarray);
+            MPI_Type_free(&file_subarray);
+        }
+        else
+        {
+            int blocklength = 0;
+            MPI_Aint displacement = 0;
+            MPI_Datatype oldtype = chase::mpi::getMPI_Type<T>();
+            MPI_Type_create_struct(1, &blocklength, &displacement, &oldtype, &file_subarray);
+            MPI_Type_commit(&file_subarray);
+            MPI_File_set_view(fileHandle, 0, chase::mpi::getMPI_Type<T>(), file_subarray,
+                              "native", MPI_INFO_NULL);
+            MPI_File_write_all(fileHandle, buff, 0, chase::mpi::getMPI_Type<T>(), &status);
+            MPI_Type_free(&file_subarray);
+        }
+
+        if (MPI_File_close(&fileHandle) != MPI_SUCCESS)
+        {
+            MPI_Abort(this->mpi_grid_.get()->get_comm(), EXIT_FAILURE);
+        }
+    }
+
     // Read matrix data from a binary file
     /**
      * @brief Read matrix data from a binary file.

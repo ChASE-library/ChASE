@@ -73,6 +73,7 @@ struct BSE_DriverProblemConfig
     std::string path_in; // path to the matrix input files
     bool isdouble;
     double shiftDiag; // shift applied to the matrix diagonal (e.g. for BSE)
+    bool saveResonant = false; // if true, save first diagonal block (N/2 x N/2) to file (distributed BlockBlock only)
 };
 
 template <typename T>
@@ -226,6 +227,21 @@ int bse_solve(BSE_DriverProblemConfig& conf)
         std::cout << "Time taken to read matrix: " << elapsed.count()
                   << " seconds" << std::endl;
     }
+#ifndef USE_BLOCKCYCLIC
+    if (conf.saveResonant)
+    {
+        std::string path_block = path_in;
+        std::size_t dot = path_in.find_last_of('.');
+        if (dot != std::string::npos)
+            path_block = path_in.substr(0, dot) + "_resonant" + path_in.substr(dot);
+        else
+            path_block = path_in + "_resonant.bin";
+        Hmat.saveFirstDiagonalBlockToBinaryFile(path_block);
+        if (world_rank == 0)
+            std::cout << "Saved first diagonal block (N/2 x N/2) to " << path_block << std::endl;
+    }
+#endif
+
 #ifdef HAS_NCCL
     Hmat.H2D();
     if (shiftDiag != chase::Base<T>(0))
@@ -280,6 +296,7 @@ int bse_solve(BSE_DriverProblemConfig& conf)
         }
     }
 #endif
+
 #else
     std::vector<T> V(N * ritzv_size);
 
@@ -472,6 +489,9 @@ int main(int argc, char** argv)
     desc.add<Value<double>>("", "shiftDiag",
                            "Sets the shift value for the diagonal", 0.0,
                            &conf.shiftDiag);
+    desc.add<Value<bool>>("", "saveResonant",
+                          "Save first diagonal block (N/2 x N/2) to path_in_resonant.bin (BlockBlock only)", false,
+                          &conf.saveResonant);
     auto path_in_options = desc.add<Value<std::string>, Attribute::required>(
         "", "path_in", "Path to the input matrix/matrices", "d", &conf.path_in);
 

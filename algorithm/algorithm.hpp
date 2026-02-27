@@ -245,6 +245,16 @@ public:
                    std::size_t n_found_neg = 0, std::size_t n_found_pos = 0,
                    std::size_t n_skip_tail = 0);
 
+    static std::size_t
+    locking_pseudo_v2(ChaseBase<T>* single, std::size_t N, std::size_t unconverged,
+                    std::size_t nex, Base<T> tol, std::size_t* index,
+                    Base<T>* Lritzv, Base<T>* resid, Base<T>* residLast,
+                    std::vector<Base<T>>* early_locked_residuals,
+                    std::size_t* degrees, std::size_t locked,
+                    std::size_t iteration, std::size_t nev = 0,
+                    std::size_t n_found_neg = 0, std::size_t n_found_pos = 0,
+                    std::size_t n_skip_tail = 0);
+
     /**
      * @brief Implements the Chebyshev filter.
      *
