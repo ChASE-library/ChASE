@@ -125,6 +125,7 @@ if(CMAKE_CUDA_COMPILER)
         ${CMAKE_CURRENT_SOURCE_DIR}/internal/cuda/precision_conversion.cu
         ${CMAKE_CURRENT_SOURCE_DIR}/internal/cuda/shiftDiagonal.cu
 	${CMAKE_CURRENT_SOURCE_DIR}/internal/cuda/flipSign.cu
+        ${CMAKE_CURRENT_SOURCE_DIR}/internal/cuda/conjugate.cu
         ${CMAKE_CURRENT_SOURCE_DIR}/internal/cuda/absTrace.cu
         ${CMAKE_CURRENT_SOURCE_DIR}/internal/cuda/lacpy.cu
         ${CMAKE_CURRENT_SOURCE_DIR}/internal/cuda/random_normal_distribution.cu

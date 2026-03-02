@@ -457,6 +457,7 @@ void rayleighRitz_v2(
     T One = T(1.0);
     T Zero = T(0.0);
     T NegativeTwo = T(-2.0);
+    T NegativeOne = T(-1.0);
 
     chase::Base<T> real_One = chase::Base<T>(1.0);
 
@@ -508,6 +509,9 @@ void rayleighRitz_v2(
         cublas_handle, CUBLAS_SIDE_RIGHT, CUBLAS_FILL_MODE_LOWER, CUBLAS_OP_C,
         CUBLAS_DIAG_NON_UNIT, n, n, &One, A->data(), n, M, n));
 
+    CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTscal(
+        cublas_handle, n * n, &NegativeOne, M, 1));
+
     CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTheevd(
         cusolver_handle, CUSOLVER_EIG_MODE_VECTOR, CUBLAS_FILL_MODE_LOWER, n, M,
         n, ritzv.data() + offset, workspace, lwork, devInfo));
@@ -520,6 +524,11 @@ void rayleighRitz_v2(
         throw std::runtime_error(
             "cusolver HEEVD failed in Pseudo-Hermitian RayleighRitz");
     }
+
+    // Flip the sign of the Ritz values
+    chase::Base<T> ritz_minus_one = chase::Base<T>(-1.0);
+    CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTscal(
+        cublas_handle, n, &ritz_minus_one, ritzv.data() + offset, 1));
 
     CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTtrsm(
         cublas_handle, CUBLAS_SIDE_LEFT, CUBLAS_FILL_MODE_LOWER, CUBLAS_OP_C,

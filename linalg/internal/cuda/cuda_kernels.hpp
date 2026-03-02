@@ -15,6 +15,8 @@
 #include "linalg/internal/cuda/absTrace.cuh"
 #include "linalg/internal/cuda/absTrace.hpp"
 #include "linalg/internal/cuda/cholqr.hpp"
+#include "linalg/internal/cuda/conjugate.cuh"
+#include "linalg/internal/cuda/conjugate.hpp"
 #include "linalg/internal/cuda/flipSign.cuh"
 #include "linalg/internal/cuda/flipSign.hpp"
 #include "linalg/internal/cuda/lacpy.cuh"

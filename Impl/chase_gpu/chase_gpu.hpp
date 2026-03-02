@@ -615,7 +615,31 @@ public:
         Vec1_.swap(Vec2_);
     }
 
-    void ApplyKconjugate(std::size_t /* block */) override {}
+    void ApplyKconjugate(std::size_t block) override
+    {
+        SCOPED_NVTX_RANGE();
+        if constexpr (std::is_same<MatrixType,
+                                   chase::matrix::PseudoHermitianMatrix<
+                                       T, chase::platform::GPU>>::value)
+        {
+            // Symmetric locking: layout [locked_ | first half | second half | locked_].
+            // Rows: 0..N/2-1 = upper block, N/2..N-1 = lower block.
+            // Active first half [locked_, locked_+block), second half [locked_+block, locked_+2*block).
+            // K-conjugation: set second-half cols = conjugate(first-half) with block swap.
+
+            std::size_t col_second = locked_ + block;
+            // Copy upper block of first half → lower block of second half (will conjugate below)
+            chase::linalg::internal::cuda::t_lacpy('A', Vec1_.rows() / 2, block,
+            Vec1_.data() + locked_ * Vec1_.ld(), Vec1_.ld(), Vec1_.data() + col_second * Vec1_.ld() + Vec1_.rows() / 2, Vec1_.ld());
+
+            // Copy lower block of first half → upper block of second half (will conjugate below)
+            chase::linalg::internal::cuda::t_lacpy('A', Vec1_.rows() / 2, block,
+            Vec1_.data() + locked_ * Vec1_.ld() + Vec1_.rows() / 2, Vec1_.ld(), Vec1_.data() + col_second * Vec1_.ld(), Vec1_.ld());
+
+            // Overwrite second half with conjugate of first half (element-wise)
+            chase::linalg::internal::cuda::conjugate_inplace(Vec1_.data() + col_second * Vec1_.ld(), Vec1_.rows(), block, Vec1_.ld(), stream_);
+        }
+    }
 
     void QR(std::size_t fixednev, chase::Base<T> cond) override
     {
@@ -628,12 +652,19 @@ public:
                                    chase::matrix::PseudoHermitianMatrix<
                                        T, chase::platform::GPU>>::value)
         {
+            // Symmetric locking: layout [locked_ | active 2*unconverged | locked_]. Save both sides.
+            chase::linalg::internal::cuda::t_lacpy('A', Vec2_.rows(), locked_,
+            Vec1_.data() + (Vec1_.cols() - locked_ ) * Vec1_.ld(), Vec1_.ld(), Vec2_.data() + (Vec2_.cols() - locked_ ) * Vec2_.ld(),
+            Vec2_.ld());
             /* The right eigenvectors are not orthonormal in the QH case, but
              * S-orthonormal. Therefore, we S-orthonormalize the locked vectors
              * against the current subspace By flipping the sign of the lower
              * part of the locked vectors. */
             chase::linalg::internal::cuda::flipLowerHalfMatrixSign(
                 Vec1_.rows(), locked_, Vec1_.data(), Vec1_.ld());
+
+            chase::linalg::internal::cuda::flipLowerHalfMatrixSign(
+                Vec1_.rows(), locked_, Vec1_.data() +  (Vec1_.cols() - locked_) * Vec1_.ld(), Vec1_.ld());
             /* We do not need to flip back the sign of the locked vectors since
              * they are stored in Vec2_ and will replace the fliped ones of
              * Vec1_ at the end of QR. */
@@ -728,12 +759,20 @@ public:
         chase::linalg::internal::cuda::t_lacpy('A', Vec1_.rows(), locked_,
                                                Vec2_.data(), Vec2_.ld(),
                                                Vec1_.data(), Vec1_.ld());
+
+        if constexpr (std::is_same<MatrixType,
+                            chase::matrix::PseudoHermitianMatrix<T, chase::platform::GPU>>::value)
+        {
+            chase::linalg::internal::cuda::t_lacpy('A', Vec1_.rows(), locked_,
+            Vec2_.data() + (Vec2_.cols() - locked_ ) * Vec2_.ld(),Vec2_.ld(),
+            Vec1_.data() + (Vec1_.cols() - locked_ ) * Vec1_.ld(), Vec1_.ld());
+        }
     }
 
     void RR(chase::Base<T>* ritzv, std::size_t block) override
     {
         SCOPED_NVTX_RANGE();
-        std::size_t locked = GetRitzvBlockSize() - block;
+        //std::size_t locked = GetRitzvBlockSize() - block;
 
         if constexpr (std::is_same<MatrixType,
                                    chase::matrix::PseudoHermitianMatrix<
@@ -742,18 +781,18 @@ public:
 #ifdef XGEEV_EXISTS
             chase::linalg::internal::cuda::rayleighRitz(
                 cublasH_, cusolverH_, params_, Hmat_, Vec1_, Vec2_, ritzvs_,
-                locked, block, devInfo_, d_work_, lwork_, h_work_.get(),
+                locked_, 2*block, devInfo_, d_work_, lwork_, h_work_.get(),
                 lhwork_, &A_);
 #else
             chase::linalg::internal::cuda::rayleighRitz_v2(
                 cublasH_, cusolverH_, params_, Hmat_, Vec1_, Vec2_, ritzvs_,
-                locked, block, devInfo_, d_work_, lwork_, &A_);
+                locked_, 2*block, devInfo_, d_work_, lwork_, &A_);
 #endif
         }
         else
         {
             chase::linalg::internal::cuda::rayleighRitz(
-                cublasH_, cusolverH_, Hmat_, Vec1_, Vec2_, ritzvs_, locked,
+                cublasH_, cusolverH_, Hmat_, Vec1_, Vec2_, ritzvs_, locked_,
                 block, devInfo_, d_work_, lwork_, &A_);
         }
 
@@ -770,8 +809,9 @@ public:
     {
         SCOPED_NVTX_RANGE();
         // Pseudo-Hermitian: subspace size is 2*nevex_; standard: nevex_
-        std::size_t unconverged =
-            (is_pseudoHerm_ ? 2 * nevex_ : (nev_ + nex_)) - fixednev;
+        std::size_t unconverged = 
+            (is_pseudoHerm_ ? (2 * (nevex_  - fixednev)) : (nev_ + nex_ - fixednev));
+
         chase::linalg::internal::cuda::residuals(cublasH_, Hmat_, Vec1_,
                                                  ritzvs_.data(), resid_.data(),
                                                  fixednev, unconverged, &Vec2_);
