@@ -516,6 +516,8 @@ public:
         }
     }
 
+    void ApplyKconjugate(std::size_t /* block */) override {}
+
     void QR(std::size_t fixednev, chase::Base<T> cond) override
     {
         int disable = config_.DoCholQR() ? 0 : 1;

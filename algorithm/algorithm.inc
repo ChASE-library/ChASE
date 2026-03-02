@@ -197,7 +197,7 @@ std::size_t Algorithm<T>::calc_degrees_pseudo_H2(
     ChaseBase<T>* single, std::size_t N, std::size_t unconverged,
     std::size_t nex, Base<T> upperb, Base<T> lowerb, Base<T> tol,
     Base<T>* ritzv, Base<T>* resid, Base<T>* residLast, std::size_t* degrees,
-    std::size_t locked_left, std::size_t locked_right)
+    std::size_t locked)
 {
     SCOPED_NVTX_RANGE();
 
@@ -222,12 +222,8 @@ std::size_t Algorithm<T>::calc_degrees_pseudo_H2(
         return deg_max + (deg_max % 2);
     }
 
-    // Main block: discard nex from both sides of unconverged block (total 2*nex).
     // ritzv, resid, residLast, degrees are already shifted (no locked values).
-    const std::size_t n_main =
-        (unconverged >= 2 * nex) ? (unconverged - 2 * nex) : 0;
-
-    for (std::size_t i = 0; i < n_main; ++i)
+    for (std::size_t i = 0; i < unconverged; ++i)
     {
         Base<T> lambda_ritz = ritzv[i];           // H Ritz value (real)
         Base<T> lambda_sq = lambda_ritz * lambda_ritz; // H² eigenvalue
@@ -257,7 +253,14 @@ std::size_t Algorithm<T>::calc_degrees_pseudo_H2(
 
                 if (conf.UseClusterAwareDegrees())
                 {
-                    deg = static_cast<std::size_t>(deg * cluster_factors[i]);
+                    if (i < cluster_factors.size())
+                    {
+                        deg = static_cast<std::size_t>(deg * cluster_factors[i]);
+                    }
+                    else
+                    {
+                        deg = static_cast<std::size_t>(deg * 1.0);
+                    }
 
                     // === STAGNATION DETECTION ===
                     std::size_t stagnation_bonus = 0.0;
@@ -296,91 +299,17 @@ std::size_t Algorithm<T>::calc_degrees_pseudo_H2(
         degrees[i] = deg + (deg % 2); // force even
     }
 
-    std::size_t tail_deg = (n_main > 0) ? degrees[n_main - 1] : (deg_max + (deg_max % 2));
-    for (std::size_t i = n_main; i < unconverged; ++i)
-        degrees[i] = tail_deg;
-
-    // Compute indices: negatives and positives (order by degree in the two loops below).
-    std::vector<std::size_t> idx_neg, idx_pos;
-    for (std::size_t i = 0; i < unconverged; ++i)
-    {
-        if (ritzv[i] < Base<T>(0))
-            idx_neg.push_back(i);
-        else
-            idx_pos.push_back(i);
-    }
-
-    std::sort(idx_neg.begin(), idx_neg.end(),
-              [degrees](std::size_t a, std::size_t b) { return degrees[a] < degrees[b]; });
-    std::sort(idx_pos.begin(), idx_pos.end(),
-              [degrees](std::size_t a, std::size_t b) { return degrees[a] > degrees[b]; });
-
-    // Partition: swap negative with positive when negative is at a higher index (negatives first).
-    for (std::size_t j = 0; j < idx_neg.size(); ++j)
-    {
-        for (std::size_t k = 0; k < idx_pos.size(); ++k)
-        {
-            if (idx_neg[j] > idx_pos[k])
-            {
-                std::size_t p = idx_neg[j], q = idx_pos[k];
-                single->Swap(p + locked_left, q + locked_left);
-                swap_kj(p, q, degrees);
-                swap_kj(p, q, ritzv);
-                swap_kj(p, q, resid);
-                swap_kj(p, q, residLast);
-                std::swap(idx_neg[j], idx_pos[k]);
-            }
-        }
-    }
-
-    // Sort negative columns by degree ascending: swap kernel and arrays when order is wrong.
-    for (std::size_t j = 0; j + 1 < idx_neg.size(); ++j)
-    {
-        for (std::size_t k = j + 1; k < idx_neg.size(); ++k)
-        {
-            if (degrees[idx_neg[k]] < degrees[idx_neg[j]])
-            {
-                std::size_t p = idx_neg[j], q = idx_neg[k];
-                single->Swap(p + locked_left, q + locked_left);
-                swap_kj(p, q, degrees);
-                swap_kj(p, q, ritzv);
-                swap_kj(p, q, resid);
-                swap_kj(p, q, residLast);
-            }
-        }
-    }
-
-    // Sort positive columns by degree descending: swap kernel and arrays when order is wrong.
-    for (std::size_t j = 0; j + 1 < idx_pos.size(); ++j)
-    {
-        for (std::size_t k = j + 1; k < idx_pos.size(); ++k)
-        {
-            if (degrees[idx_pos[k]] > degrees[idx_pos[j]])
-            {
-                std::size_t p = idx_pos[j], q = idx_pos[k];
-                single->Swap(p + locked_left, q + locked_left);
-                swap_kj(p, q, degrees);
-                swap_kj(p, q, ritzv);
-                swap_kj(p, q, resid);
-                swap_kj(p, q, residLast);
-            }
-        }
-    }
-
-#ifdef CHASE_OUTPUT
-    std::ostringstream oss;
-    oss << "Number of negative eigenvalues: " << idx_neg.size() << "\n";
-    oss << "Number of positive eigenvalues: " << idx_pos.size() << "\n";
-    single->Output(oss.str());
-#endif
-
-    // Pair-wise symmetric degrees: pair i with (unconverged - 1 - i), both get max
-    for (std::size_t i = 0; i < unconverged / 2; ++i)
-    {
-        std::size_t j = unconverged - 1 - i;
-        std::size_t m = std::max(degrees[i], degrees[j]);
-        degrees[i] = degrees[j] = m;
-    }
+    // Assume positive Ritz values in [0, unconverged). Sort these columns by degree (ascending).
+        // Original sorting
+        for (std::size_t j = 0; j < unconverged - 1; ++j)
+            for (std::size_t k = j; k < unconverged; ++k)
+                if (degrees[k] < degrees[j])
+                {
+                    swap_kj(k, j, degrees);
+                    swap_kj(k, j, ritzv);
+                    swap_kj(k, j, resid);
+                    single->Swap(k + locked, j + locked);
+                }
 
     const std::size_t* max_deg_ptr =
         std::max_element(degrees, degrees + unconverged); //What is the max degree for?
@@ -801,6 +730,99 @@ std::size_t Algorithm<T>::locking_pseudo_v2(
 }
 
 template <class T>
+std::size_t Algorithm<T>::locking_pseudo_v3(
+    ChaseBase<T>* single, std::size_t N, std::size_t unconverged,
+    std::size_t nex, Base<T> tol, std::size_t* index, Base<T>* Lritzv,
+    Base<T>* resid, Base<T>* residLast,
+    std::vector<Base<T>>* early_locked_residuals, std::size_t* degrees,
+    std::size_t locked, std::size_t iteration, std::size_t nev)
+{
+    SCOPED_NVTX_RANGE();
+
+    std::vector<std::size_t> index_converged;
+    std::vector<std::size_t> index_unconverged;
+    std::vector<Base<T>> residLast_unconverged(2*unconverged);
+
+    std::copy_n(resid, 2*unconverged, residLast_unconverged.begin());
+
+    std::size_t converged = 0;
+
+    for (std::size_t k = 0; k < unconverged-nex; k++)
+    {
+        std::size_t j = index[k];
+
+#ifndef CHASE_SAVE_RESIDUALS
+        if ((resid[j] <= tol || (0 && resid[j] > tol && resid[j] >= residLast[k] &&
+                                resid[j] <= 1000.0 * tol && iteration >= 4)))
+#else
+        if (resid[j] <= tol)
+#endif
+        {
+
+#ifndef CHASE_SAVE_RESIDUALS
+            if (0 && resid[j] > tol && resid[j] <= 1000.0 * tol &&
+                resid[j] >= residLast[k] && iteration >= 4)
+            {
+#ifdef CHASE_OUTPUT
+                std::ostringstream oss;
+                oss << "early locking unconverged pair is:" << resid[j]
+                    << " was:" << residLast[k] << " tolerance is: " << tol
+                    << " val: " << Lritzv[j] << "\n";
+                single->Output(oss.str());
+#endif
+                early_locked_residuals->push_back(resid[j]);
+                early_locked_residuals->push_back(resid[2*unconverged-j-1]);
+            }
+#ifdef CHASE_OUTPUT
+            else{
+                std::ostringstream oss;
+                oss << "locking converged pair is:" << j << " " << resid[j]
+                    << " was:" << residLast[k] << " tolerance is: " << tol
+                    << " val: " << Lritzv[j] << "\n";
+
+                oss << "locking converged pair is:" << 2*unconverged-j-1 << " " << resid[2*unconverged-j-1]
+                    << " was:" << residLast[k] << " tolerance is: " << tol
+                    << " val: " << Lritzv[2*unconverged-j-1] << "\n";
+                single->Output(oss.str());
+            }
+#endif
+            if (j != converged)
+            {
+                swap_kj(j, converged, resid);
+                swap_kj(j, converged, Lritzv);
+                single->Swap(j + locked, converged + locked);
+                
+                swap_kj(2*unconverged-j-1, 2*unconverged-converged-1, resid);
+                swap_kj(2*unconverged-j-1, 2*unconverged-converged-1, Lritzv);
+                single->Swap(2*unconverged-j-1 + locked, 2*unconverged-converged-1 + locked);
+            }
+
+            index_converged.push_back(j);
+
+            converged++;
+#endif
+        }
+        else
+        {
+            index_unconverged.push_back(j);
+        }
+    }
+
+    for (std::size_t k = unconverged-nex; k < unconverged; ++k)
+    {
+        index_unconverged.push_back(index[k]);
+    }
+
+    for (std::size_t i = converged; i < unconverged; ++i)
+    {
+        residLast[i] = residLast_unconverged[index_unconverged[i - converged]];
+        residLast[2*unconverged-converged-1-(i-converged)] = residLast_unconverged[index_unconverged[i - converged]];
+    }
+
+    return converged;
+}
+
+template <class T>
 std::size_t Algorithm<T>::locking_pseudo(
     ChaseBase<T>* single, std::size_t N, std::size_t unconverged,
     std::size_t nex, Base<T> tol, std::size_t* index, Base<T>* Lritzv,
@@ -1018,27 +1040,25 @@ std::size_t Algorithm<T>::filter_H2(ChaseBase<T>* single, std::size_t n,
 
     std::size_t Av = 0;
 
-    // First step: W = alpha*(H²*V - c*V), alpha = sigma_1 / e_half
+    // First step: W = alpha*(H²*V - c*V) on first half only (cols [0, unconverged))
     T alpha_first = T(sigma_1 / e_half);
     T gamma_first = T(-alpha_first * c);
     single->HEMM_H2(unconverged, alpha_first, T(0), gamma_first, 0, 0);
     Av += 2 * unconverged;
 
-    // Recurrence: t = 2 .. deg_max. Active columns [s, r] with r = nevex - s - 1
-    // (0-based). Retire from both ends when degrees[s] <= t.
+    // Recurrence: t = 2 .. deg_max. Active columns [s, unconverged); retire only from the left.
     std::size_t s = 0;
     for (std::size_t t = 2; t <= deg_max; ++t)
     {
-        std::size_t r = unconverged - s;
-        if (s >= r)
+        if (s >= unconverged)
             break;
-        std::size_t active_count = r - s;
+        std::size_t active_count = unconverged - s;
 
         Base<T> tau = 1.0 / (2.0 / sigma_1 - sigma);
         T alpha = T(2.0 * tau / e_half);
         Base<T> beta_recur = sigma * tau;
 
-        single->HEMM_H2(unconverged, alpha, T(-beta_recur), T(-alpha * c), s, 2 * s);
+        single->HEMM_H2(unconverged, alpha, T(-beta_recur), T(-alpha * c), s, s);
         Av += 2 * active_count;
 
         sigma = tau;
@@ -1815,7 +1835,7 @@ void Algorithm<T>::solve_pseudo(ChaseBase<T>* single)
     const std::size_t nev = config.GetNev();
     const std::size_t nex = config.GetNex();
     const std::size_t nevex = nev + nex;
-    std::size_t unconverged = 2 * nevex; // subspace size for pseudo
+    std::size_t unconverged = nevex; // subspace size for pseudo
 
     Base<T>* ritzv_ = single->GetRitzv();
     Base<T>* ritzv = ritzv_;
@@ -1824,7 +1844,7 @@ void Algorithm<T>::solve_pseudo(ChaseBase<T>* single)
     std::size_t deg = config.GetDeg();
     deg += deg % 2;
     deg = std::min(deg, config.GetMaxDeg());
-    std::vector<std::size_t> degrees_(2 * nevex);
+    std::vector<std::size_t> degrees_(2*nevex);
     for (std::size_t i = 0; i < unconverged; ++i)
     {
         degrees_[i] = deg;
@@ -1835,7 +1855,7 @@ void Algorithm<T>::solve_pseudo(ChaseBase<T>* single)
     const double tol = config.GetTol();
     Base<T>* resid_ = single->GetResid();
     std::vector<Base<T>> residLast_(2 * nevex);
-    for (std::size_t i = 0; i < unconverged; ++i)
+    for (std::size_t i = 0; i < 2*unconverged; ++i)
     {
         resid_[i] = std::numeric_limits<Base<T>>::max();
         residLast_[i] = std::numeric_limits<Base<T>>::max();
@@ -1895,10 +1915,8 @@ void Algorithm<T>::solve_pseudo(ChaseBase<T>* single)
 #endif
 
     //Initalize index vectors to keep track of the residuals and the indices of the eigenpairs
-    std::vector<std::size_t> index(unconverged); //initial unconverged = 2*(nev+nex)
-    std::iota(index.begin(), index.begin() + unconverged, 0);
-    std::vector<std::size_t> index_left(nevex);
-    std::vector<std::size_t> index_right(nevex);
+    std::vector<std::size_t> index(2*unconverged); //initial unconverged = 2*(nev+nex)
+    std::iota(index.begin(), index.begin() + 2*unconverged, 0);
 
     std::vector<std::size_t> index_temp(unconverged);
     std::vector<std::size_t> index_res(unconverged);
@@ -1906,13 +1924,11 @@ void Algorithm<T>::solve_pseudo(ChaseBase<T>* single)
     Base<T> cond;
     std::vector<Base<T>> early_locked_residuals;
 
-    std::size_t locked_left = 0, locked_right = 0, locked = 0;
-    std::size_t n_found_pos = 0, n_found_neg = 0, n_found = 0;
+    std::size_t locked = 0;
     std::size_t prev_new_converged = 0;
-
-
     std::size_t iteration = 0;
-    while (n_found_pos < nev && unconverged > 0 && iteration < config.GetMaxIter())
+
+    while (locked < nev && unconverged > 0 && iteration < config.GetMaxIter())
     {
         // Update lower parameter in [lambda_1, lower, b_sup] for the polynomial of H2
         if (iteration > 0)
@@ -1923,7 +1939,6 @@ void Algorithm<T>::solve_pseudo(ChaseBase<T>* single)
             {
                 lower = new_mu_nevex;
             }
-
         }
 
 #ifdef CHASE_OUTPUT
@@ -1942,16 +1957,18 @@ void Algorithm<T>::solve_pseudo(ChaseBase<T>* single)
 
         if (config.DoOptimization() && iteration != 0)
         {
-            // compute new degrees and reorder based on new degrees
+            // compute new degrees and reorder based on new degrees (symmetric locking: locked_left = locked_right = locked)
             deg = calc_degrees_pseudo_H2(
                 single, N, unconverged, nex, b_sup, lower, tol, ritzv, resid,
-                residLast, degrees, locked, locked_right);
+                residLast, degrees, locked);
         }
 
         // ------------------------------ FILTER (H²) --------------------------
         single->FilterPhaseStart();
         filter_H2(single, N, unconverged, degrees, lambda_1, lower, b_sup);
         single->FilterPhaseEnd();
+        
+        single->ApplyKconjugate(unconverged);
 
         Base<T> cc = (b_sup + lower) / 2;
         Base<T> ee = (b_sup - lower) / 2;
@@ -1985,45 +2002,6 @@ void Algorithm<T>::solve_pseudo(ChaseBase<T>* single)
                 
         std::iota(index.begin(), index.begin() + unconverged, 0);
 
-        // Build index vector for unconverged: neg (95% by |λ| then 5% largest resid), pos (5% largest resid then 95% by |λ|).
-
-        /*std::iota(index_temp.begin(), index_temp.begin() + unconverged, 0);
-
-        std::vector<std::size_t> neg_idx, pos_idx;
-        neg_idx.reserve(unconverged);
-        pos_idx.reserve(unconverged);
-        for (std::size_t i = 0; i < unconverged; ++i)
-        {
-            if (ritzv[i] <= Base<T>(0))
-                neg_idx.push_back(index[i]);
-            else
-                pos_idx.push_back(index[i]);
-        }
-
-        const std::size_t n_neg = neg_idx.size();
-        const std::size_t n_pos = pos_idx.size();
-
-        std::size_t neg_tail_count = (n_neg > 0) ? std::max(std::size_t(1), static_cast<std::size_t>(std::ceil(0.05 * n_neg))) : 0;
-        std::sort(neg_idx.begin(), neg_idx.end(), [&](std::size_t i, std::size_t j) { return resid[i] > resid[j]; });
-        auto neg_tail_end_it = neg_idx.begin() + static_cast<std::ptrdiff_t>(std::min(neg_tail_count, n_neg));
-        std::vector<std::size_t> neg_tail(neg_idx.begin(), neg_tail_end_it);   // 5% largest residual
-        std::vector<std::size_t> neg_rest(neg_tail_end_it, neg_idx.end());     // 95%
-        std::sort(neg_rest.begin(), neg_rest.end(), [&](std::size_t i, std::size_t j) { return ritzv[i] < ritzv[j]; });
-
-        std::size_t pos_head_count = (n_pos > 0) ? std::max(std::size_t(1), static_cast<std::size_t>(std::ceil(0.05 * n_pos))) : 0;
-        std::sort(pos_idx.begin(), pos_idx.end(), [&](std::size_t i, std::size_t j) { return resid[i] > resid[j]; });
-        auto pos_head_end = pos_idx.begin() + static_cast<std::ptrdiff_t>(std::min(pos_head_count, n_pos));
-        std::vector<std::size_t> pos_head(pos_idx.begin(), pos_head_end);
-        std::vector<std::size_t> pos_rest(pos_head_end, pos_idx.end());
-        std::sort(pos_rest.begin(), pos_rest.end(), [&](std::size_t i, std::size_t j) { return ritzv[i] > ritzv[j]; });
-
-        std::size_t p = 0;
-        for (std::size_t i : neg_rest) index_temp[p++] = i;
-        for (std::size_t i : neg_tail) index_temp[p++] = i;
-        for (std::size_t i : pos_head) index_temp[p++] = i;
-        for (std::size_t i : pos_rest) index_temp[p++] = i;
-        std::swap(index, index_temp);*/
-
         std::size_t n_reinit = 0;//reinit_phantom_eigenvectors_pseudo(single, unconverged, locked, nex, ritzv);
 
 #ifdef CHASE_OUTPUT
@@ -2033,7 +2011,7 @@ void Algorithm<T>::solve_pseudo(ChaseBase<T>* single)
                 << "new_converged" << "\t" << prev_new_converged << "\n";
             oss << "index\tdegrees\tresid\tresidLast\tritzv\n";
             
-            for (std::size_t i = 0; i < unconverged; ++i)
+            for (std::size_t i = 0; i < 2*unconverged; ++i)
             {
                 oss << index[i] << "\t" << degrees[index[i]] << "\t"
                     << resid[index[i]] << "\t" << residLast[i] << "\t" << ritzv[index[i]]
@@ -2061,23 +2039,11 @@ void Algorithm<T>::solve_pseudo(ChaseBase<T>* single)
         new_mu_nevex = ritzv[idx_new_mu] * config.GetDecayingRate();
 
         // --------------- Locking ----------------------------------------------
-        std::size_t n_found_neg = locked - n_found_pos;  // Julia: lock neg first, then pos
-        std::size_t new_converged = locking_pseudo_v2(
+        std::size_t new_converged = locking_pseudo_v3(
             single, N, unconverged, nex, tol, index.data(), ritzv, resid,
-            residLast, &early_locked_residuals, degrees, locked, iteration, nev,
-            n_found_neg, n_found_pos, n_reinit);
+            residLast, &early_locked_residuals, degrees, locked, iteration, nev);
 
-        // Count how many newly locked are positive (Julia: care about n_found_pos < nev)
-        std::size_t new_pos = 0;
-        for (std::size_t i = 0; i < new_converged; ++i)
-        {
-            if (ritzv[i] > Base<T>(0))
-            {
-                ++new_pos;
-            }
-        }
-        
-        n_found_pos += new_pos;
+        //new_converged is the number of newly locked positive eigenpairs
 
         single->Lock(new_converged);
 
@@ -2093,7 +2059,7 @@ void Algorithm<T>::solve_pseudo(ChaseBase<T>* single)
         {
             std::ostringstream oss;
             oss << "new_converged = " << new_converged
-                << "  locked = " << locked << "  n_found_pos = " << n_found_pos
+                << "  locked = " << locked
                 << "\n";
             single->Output(oss.str());
         }

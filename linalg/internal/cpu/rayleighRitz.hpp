@@ -272,6 +272,7 @@ void rayleighRitz_v2(chase::matrix::PseudoHermitianMatrix<T>* H, std::size_t n,
     T One = T(1.0);
     T Zero = T(0.0);
     T NegativeTwo = T(-2.0);
+    T NegativeOne = T(-1.0);
 
     std::unique_ptr<T[]> ptrA;
     // Allocate space for the rayleigh quotient
@@ -314,8 +315,15 @@ void rayleighRitz_v2(chase::matrix::PseudoHermitianMatrix<T>* H, std::size_t n,
 
     blaspp::t_trsm('R', 'L', 'C', 'N', n, n, &One, A, n, M, n);
 
+    // Flip the sign of the Rayleigh-Quotient to obtain ritz values in positive-negative order
+    blaspp::t_scal(n * n, &NegativeOne, M, 1);
+
     // Compute the invtered ritz pairs of the Hermitian Rayleigh Quotient
     lapackpp::t_heevd(LAPACK_COL_MAJOR, 'V', 'L', n, M, n, ritzv);
+
+    // Flip the sign of the Ritz values
+    Base<T> ritz_minus_one = Base<T>(-1.0);
+    blaspp::t_scal(n, &ritz_minus_one, ritzv, 1);
 
     blaspp::t_trsm('L', 'L', 'C', 'N', n, n, &One, A, n, M, n);
 

@@ -145,6 +145,7 @@ public:
      * @brief Degree optimization for Chebyshev filtering on H² (pseudo-Hermitian
      * H). Uses λ² for ellipse, pair-symmetric degrees, and negative/positive
      * ordering (asc/desc by degree).
+     * We assume symmetric locking: locked_left = locked_right = locked (pass the same value for both).
      * @param locked_left  Number of locked eigenpairs on the left (negative λ).
      * @param locked_right Number of locked eigenpairs on the right (positive λ).
      */
@@ -153,8 +154,7 @@ public:
                           std::size_t unconverged, std::size_t nex,
                           Base<T> upperb, Base<T> lowerb, Base<T> tol,
                           Base<T>* ritzv, Base<T>* resid, Base<T>* residLast,
-                          std::size_t* degrees, std::size_t locked_left,
-                          std::size_t locked_right);
+                          std::size_t* degrees, std::size_t locked);
 
     /**
      * @brief Detects eigenvalue clusters and computes spacing factors for
@@ -254,6 +254,14 @@ public:
                     std::size_t iteration, std::size_t nev = 0,
                     std::size_t n_found_neg = 0, std::size_t n_found_pos = 0,
                     std::size_t n_skip_tail = 0);
+
+    static std::size_t
+    locking_pseudo_v3(ChaseBase<T>* single, std::size_t N, std::size_t unconverged,
+                    std::size_t nex, Base<T> tol, std::size_t* index,
+                    Base<T>* Lritzv, Base<T>* resid, Base<T>* residLast,
+                    std::vector<Base<T>>* early_locked_residuals,
+                    std::size_t* degrees, std::size_t locked,
+                    std::size_t iteration, std::size_t nev = 0);
 
     /**
      * @brief Implements the Chebyshev filter.

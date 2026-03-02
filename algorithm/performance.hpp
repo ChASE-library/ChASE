@@ -567,6 +567,12 @@ public:
         chase_->HEMM_H2(nev, alpha, beta, gamma, offset_left, offset_right);
         perf_.add_filtered_vecs(2 * (nev - offset_right));
     }
+    void ApplyKconjugate(std::size_t block) override
+    {
+    //    perf_.start_clock(ChasePerfData<T>::TimePtrs::ApplyKconjugate);
+        chase_->ApplyKconjugate(block);
+    //    perf_.end_clock(ChasePerfData<T>::TimePtrs::ApplyKconjugate);
+    }
     void FilterPhaseStart() override
     {
         perf_.start_clock(ChasePerfData<T>::TimePtrs::Filter);

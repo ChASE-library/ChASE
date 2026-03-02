@@ -86,6 +86,18 @@ public:
     virtual void HEMM_H2(std::size_t nev, T alpha, T beta, T gamma,
                          std::size_t offset_left,
                          std::size_t offset_right = 0) = 0;
+
+    /**
+     * @brief Applies K-conjugation: copies the conjugate of the first \p block columns of the upper row
+     * block to the last \p block columns of the lower row block, and the conjugate of the first \p block
+     * columns of the lower row block to the last \p block columns of the upper row
+     * block. For pseudo-Hermitian (e.g. BSE), the subspace is N×2*nevex with upper =
+     * first N/2 rows and lower = last N/2 rows.
+     * Column layout assumes symmetric locking: [locked | first half | second half | locked]
+     * (locked_left = locked_right = locked).
+     * @param block Number of columns (first half of active block) to apply K-conjugation to.
+     */
+    virtual void ApplyKconjugate(std::size_t block) = 0;
     /**
      * @brief Optional hook: start of filter phase (e.g. for timing).
      * Used for Filter timing in both Hermitian and pseudo-Hermitian paths;

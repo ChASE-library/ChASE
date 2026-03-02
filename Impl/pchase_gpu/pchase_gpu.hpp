@@ -898,6 +898,8 @@ public:
         }
     }
 
+    void ApplyKconjugate(std::size_t /* block */) override {}
+
     void QR(std::size_t fixednev, chase::Base<T> cond) override
     {
         SCOPED_NVTX_RANGE();

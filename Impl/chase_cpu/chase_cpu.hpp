@@ -484,6 +484,37 @@ public:
         Vec1_.swap(Vec2_);
     }
 
+    void ApplyKconjugate(std::size_t block) override
+    {
+        if constexpr (std::is_same<MatrixType,
+                                   chase::matrix::PseudoHermitianMatrix<T>>::value)
+        {
+            // Symmetric locking: layout [locked_ | first half | second half | locked_].
+            // Rows: 0..N/2-1 = upper block, N/2..N-1 = lower block.
+            // Active first half [locked_, locked_+block), second half [locked_+block, locked_+2*block).
+            // K-conjugation: set second-half cols = conjugate(first-half) with block swap.
+
+            std::size_t col_second = locked_ + block;
+            // Copy upper block of first half → lower block of second half (will conjugate below)
+            chase::linalg::lapackpp::t_lacpy('A', Vec1_.rows() / 2, block,
+            Vec1_.data() + locked_ * Vec1_.ld(), Vec1_.ld(), Vec1_.data() + col_second * Vec1_.ld() + Vec1_.rows() / 2, Vec1_.ld());
+
+            // Copy lower block of first half → upper block of second half (will conjugate below)
+            chase::linalg::lapackpp::t_lacpy('A', Vec1_.rows() / 2, block,
+            Vec1_.data() + locked_ * Vec1_.ld() + Vec1_.rows() / 2, Vec1_.ld(), Vec1_.data() + col_second * Vec1_.ld(), Vec1_.ld());
+
+            // Overwrite second half with conjugate of first half (element-wise)
+            for(size_t j = 0; j < block; ++j)
+            {
+                for(size_t i = 0; i < Vec1_.rows(); ++i)
+                {
+                    Vec1_.data()[(j + col_second) * Vec1_.ld() + i] =
+                        conjugate(Vec1_.data()[(j + col_second) * Vec1_.ld() + i]);
+                }
+            }
+        }
+    }
+
     void QR(std::size_t fixednev, chase::Base<T> cond) override
     {
 
@@ -495,12 +526,20 @@ public:
                           MatrixType,
                           chase::matrix::PseudoHermitianMatrix<T>>::value)
         {
+            // In the pseudo-hermitian case : Symmetric locking: layout [locked_ | active 2*unconverged | locked_]. Save both sides.
+            chase::linalg::lapackpp::t_lacpy('A', Vec2_.rows(), locked_,
+            Vec1_.data() + (Vec1_.cols() - locked_ ) * Vec1_.ld(), Vec1_.ld(), Vec2_.data() + (Vec2_.cols() - locked_ ) * Vec2_.ld(),
+            Vec2_.ld());
+
             /* The right eigenvectors are not orthonormal in the QH case, but
              * S-orthonormal. Therefore, we S-orthonormalize the locked vectors
              * against the current subspace By flipping the sign of the lower
              * part of the locked vectors. */
             chase::linalg::internal::cpu::flipLowerHalfMatrixSign(
                 Vec1_.rows(), locked_, Vec1_.data(), Vec1_.ld());
+
+            chase::linalg::internal::cpu::flipLowerHalfMatrixSign(
+                Vec1_.rows(), locked_, Vec1_.data() +  (Vec1_.cols() - locked_) * Vec1_.ld(), Vec1_.ld());
             /* We do not need to flip back the sign of the locked vectors since
              * they are stored in Vec2_ and will replace the fliped ones of
              * Vec1_ at the end of QR. */
@@ -595,6 +634,14 @@ public:
         chase::linalg::lapackpp::t_lacpy('A', Vec1_.rows(), locked_,
                                          Vec2_.data(), Vec2_.ld(), Vec1_.data(),
                                          Vec1_.ld());
+
+        if constexpr (std::is_same<MatrixType,
+                            chase::matrix::PseudoHermitianMatrix<T>>::value)
+        {
+            chase::linalg::lapackpp::t_lacpy('A', Vec1_.rows(), locked_,
+            Vec2_.data() + (Vec2_.cols() - locked_ ) * Vec2_.ld(),Vec2_.ld(),
+            Vec1_.data() + (Vec1_.cols() - locked_ ) * Vec1_.ld(), Vec1_.ld());
+        }
     }
 
     void RR(chase::Base<T>* ritzv, std::size_t block) override
@@ -604,7 +651,7 @@ public:
                           chase::matrix::PseudoHermitianMatrix<T>>::value)
         {
             chase::linalg::internal::cpu::rayleighRitz_v2(
-                Hmat_, block, Vec1_.data() + locked_ * Vec1_.ld(), Vec1_.ld(),
+                Hmat_, 2*block, Vec1_.data() + locked_ * Vec1_.ld(), Vec1_.ld(),
                 Vec2_.data() + locked_ * Vec2_.ld(), Vec2_.ld(),
                 ritzvs_.data() + locked_, A_.data());
         }
@@ -627,8 +674,8 @@ public:
               std::size_t fixednev) override
     {
         // Pseudo-Hermitian: subspace size is 2*nevex_; standard: nevex_
-        std::size_t unconverged =
-            (is_pseudoHerm_ ? 2 * nevex_ : (nev_ + nex_)) - fixednev;
+        std::size_t unconverged = 
+            (is_pseudoHerm_ ? (2 * (nevex_  - fixednev)) : (nev_ + nex_ - fixednev));
 
         chase::linalg::internal::cpu::residuals(
             Hmat_->rows(), Hmat_->data(), Hmat_->ld(), unconverged,
