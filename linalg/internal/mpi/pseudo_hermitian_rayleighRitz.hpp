@@ -298,6 +298,14 @@ void cpu_mpi::pseudo_hermitian_rayleighRitz_v2(
         throw std::invalid_argument("ritzv cannot be a nullptr.");
     }
 
+#ifdef CHASE_OUTPUT
+    if (H.grank() == 0)
+    {
+        std::cout << "Entering pseudo_hermitian_rayleighRitz_v2..."
+                  << std::endl;
+    }
+#endif
+
     std::unique_ptr<chase::distMatrix::RedundantMatrix<T, chase::platform::CPU>>
         A_ptr;
 
@@ -361,7 +369,11 @@ void cpu_mpi::pseudo_hermitian_rayleighRitz_v2(
     blaspp::t_trsm('R', 'L', 'C', 'N', subSize, subSize, &One, A->l_data(),
                    subSize, M, subSize);
 
-    // Compute the invtered ritz pairs of the Hermitian Rayleigh Quotient
+    // Flip sign of Rayleigh-Quotient M to order the eigenvalues in positive-negative order
+    T NegOne = T(-1.0);
+    blaspp::t_scal(subSize * subSize, &NegOne, M, 1);
+
+    // Compute the inverted ritz pairs of the Hermitian Rayleigh Quotient
 #ifdef RR_DOUBLE_PRECISION
     if constexpr (std::is_same<T, std::complex<float>>::value)
     {
@@ -401,6 +413,10 @@ void cpu_mpi::pseudo_hermitian_rayleighRitz_v2(
 #ifdef RR_DOUBLE_PRECISION
     }
 #endif
+
+    // Flip sign of ritz values for pseudo-Hermitian (H²) convention
+    chase::Base<T> ritz_neg_one = chase::Base<T>(-1.0);
+    blaspp::t_scal(subSize, &ritz_neg_one, ritzv + offset, 1);
 
     blaspp::t_trsm('L', 'L', 'C', 'N', subSize, subSize, &One, A->l_data(),
                    subSize, M, subSize);

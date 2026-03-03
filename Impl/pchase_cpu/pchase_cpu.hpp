@@ -516,7 +516,159 @@ public:
         }
     }
 
-    void ApplyKconjugate(std::size_t /* block */) override {}
+    void ApplyKconjugate(std::size_t block) override {
+        if constexpr (std::is_same<typename MatrixType::hermitian_type,
+                                   chase::matrix::PseudoHermitian>::value)
+        {
+            // Symmetric locking: layout [locked_ | first half | second half | locked_].
+            // Rows: 0..N/2-1 = upper block, N/2..N-1 = lower block.
+            // Active first half [locked_, locked_+block), second half [locked_+block, locked_+2*block).
+            // K-conjugation: set second-half cols = conjugate(first-half) with block swap.
+
+            //First, we need to know to whom each rank has to send and receive data.
+
+            if(my_rank_ == 0)
+            {
+                std::cout << "ApplyKconjugate..." << std::endl;
+            }
+            MPI_Barrier(MPI_COMM_WORLD);
+
+            chase::grid::MpiGrid2DBase* grid = V1_->getMpiGrid();
+            MPI_Comm col_comm = grid->get_col_comm();
+            int col_rank = 0;
+            int col_size = 0;
+            MPI_Comm_rank(col_comm, &col_rank);
+            MPI_Comm_size(col_comm, &col_size);
+
+            std::size_t half = N_ / 2;
+            std::size_t col_second = locked_ + block;
+
+            // First, we determine the local sizes of everyone.
+            std::vector<std::size_t> local_rows(static_cast<std::size_t>(col_size));
+            std::vector<std::size_t> global_offs(static_cast<std::size_t>(col_size));
+
+            std::size_t my_l_rows = V1_->l_rows();
+            MPI_Allgather(&my_l_rows, 1, MPI_UNSIGNED_LONG, local_rows.data(),
+                          1, MPI_UNSIGNED_LONG, col_comm);
+
+            if(my_rank_ == 0)
+            {
+                std::cout << "All gather completed..." << std::endl;
+            }
+            MPI_Barrier(MPI_COMM_WORLD);
+
+            global_offs[0] = 0;
+            for (std::size_t i = 1; i < col_size; ++i)
+            {
+                global_offs[i] = global_offs[i-1] + local_rows[i-1];
+            }
+
+            //Second, we determine at which global rows and how many rows to send the data to.
+            int send_upper_to_g_off = -1;
+            int send_lower_to_g_off = -1;
+
+            std::size_t send_upper_to_len = 0;
+            std::size_t send_lower_to_len = 0;
+
+            int send_upper_to_local_idx;
+            int send_lower_to_local_idx;
+
+            if(V1_->g_off() >= half)
+            {
+                send_upper_to_local_idx = 0;
+                send_upper_to_g_off = V1_->g_off() - half;
+                send_upper_to_len = V1_->l_rows();
+            }
+            else
+            {
+                send_lower_to_local_idx = 0;
+                send_lower_to_g_off = V1_->g_off() + half;
+                send_lower_to_len = V1_->l_rows();
+
+                if(V1_->g_off() + V1_->l_rows() > half)
+                {                
+                    //If this is true, then data is located at the middle and should therefore be sent upward.
+                    //Some ranks may need to send both upward and downward.
+                    send_upper_to_g_off = 0;
+                    send_upper_to_len = half - V1_->g_off();
+                    send_upper_to_local_idx = send_upper_to_len;
+                    send_lower_to_len = send_lower_to_len - send_upper_to_len;
+                    send_lower_to_local_idx = 0;
+                }
+            }
+
+            //Third, we need to determine to whom we have to send the data to.
+            std::vector<int> send_upper_to_ranks;
+            std::vector<int> send_lower_to_ranks;
+
+            std::vector<int> send_upper_to_ranks_len(col_size);
+            std::vector<int> send_lower_to_ranks_len(col_size);
+
+            std::vector<int> send_upper_to_ranks_local_idx(col_size);
+            std::vector<int> send_lower_to_ranks_local_idx(col_size);
+
+            int r = 0;
+            while(r < col_size && send_upper_to_len > 0)
+            {
+                //std::cout << "my_rank is " << my_rank_ << " r is " << r << " global_offs[r] is " << global_offs[r] << " send_upper_to_g_off is " << send_upper_to_g_off << std::endl;
+                if(global_offs[r] >= send_upper_to_g_off)
+                {
+                    send_upper_to_ranks.push_back(r);
+                    send_upper_to_ranks_len[r] = std::min(local_rows[r], send_upper_to_len);
+                    send_upper_to_ranks_local_idx[r] = send_upper_to_local_idx;
+                    send_upper_to_len -= send_upper_to_ranks_len[r];
+                    send_upper_to_local_idx += send_upper_to_ranks_len[r];
+                }
+                r++;
+            }
+
+            for(auto i = 0; i < send_upper_to_ranks.size(); i++)
+            {
+                int sendrecv_rank = send_upper_to_ranks[i];
+                std::cout << "my_rank is " << my_rank_ << " sendrecv_rank is " << sendrecv_rank << " send_upper_to_ranks_local_idx[sendrecv_rank] is " << send_upper_to_ranks_local_idx[sendrecv_rank] << std::endl;
+                MPI_Sendrecv(V1_->l_data() + locked_ * V1_->l_ld() + send_upper_to_ranks_local_idx[sendrecv_rank], send_upper_to_ranks_len[sendrecv_rank] * block,
+                             chase::mpi::getMPI_Type<T>(), sendrecv_rank, 0,
+                             V1_->l_data() + col_second * V1_->l_ld() + send_upper_to_ranks_local_idx[sendrecv_rank], send_upper_to_ranks_len[sendrecv_rank] * block,
+                             chase::mpi::getMPI_Type<T>(), sendrecv_rank, 1,
+                             col_comm, MPI_STATUS_IGNORE);
+            }
+
+            r = 0;
+            while(r < col_size && send_lower_to_len > 0)
+            {
+                //std::cout << "my_rank is " << my_rank_ << " r is " << r << "/" << row_size << " global_offs[r] is " << global_offs[r] << " send_lower_to_g_off is " << send_lower_to_g_off << std::endl;
+                if(global_offs[r] >= send_lower_to_g_off)
+                {
+                    send_lower_to_ranks.push_back(r);
+                    send_lower_to_ranks_len[r] = std::min(local_rows[r], send_lower_to_len);
+                    send_lower_to_ranks_local_idx[r] = send_lower_to_local_idx;
+                    send_lower_to_len -= send_lower_to_ranks_len[r];
+                    send_lower_to_local_idx += send_lower_to_ranks_len[r];
+                }
+                r++;
+            }
+
+            for(auto i = 0; i < send_lower_to_ranks.size(); i++)
+            {
+                int sendrecv_rank = send_lower_to_ranks[i];
+                std::cout << "my_rank is " << my_rank_ << " sendrecv_rank is " << sendrecv_rank << " send_lower_to_ranks_local_idx[sendrecv_rank] is " << send_lower_to_ranks_local_idx[sendrecv_rank] << std::endl;
+                MPI_Sendrecv(V1_->l_data() + locked_ * V1_->l_ld() + send_lower_to_ranks_local_idx[sendrecv_rank], send_lower_to_ranks_len[sendrecv_rank] * block,
+                             chase::mpi::getMPI_Type<T>(), sendrecv_rank, 1,
+                             V1_->l_data() + col_second * V1_->l_ld() + send_lower_to_ranks_local_idx[sendrecv_rank], send_lower_to_ranks_len[sendrecv_rank] * block,
+                             chase::mpi::getMPI_Type<T>(), sendrecv_rank, 0,
+                             col_comm, MPI_STATUS_IGNORE);
+            }
+
+            for(size_t j = 0; j < block; ++j)
+            {
+                for(size_t i = 0; i < V1_->l_rows(); ++i)
+                {
+                    V1_->l_data()[(j + col_second) * V1_->l_ld() + i] =
+                        conjugate(V1_->l_data()[(j + col_second) * V1_->l_ld() + i]);
+                }
+            }
+        }
+    }
 
     void QR(std::size_t fixednev, chase::Base<T> cond) override
     {
@@ -552,6 +704,8 @@ public:
              * part of the locked vectors. */
             chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(*V1_, 0,
                                                                       locked_);
+
+            chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(*V1_, V1_->l_cols() - locked_, locked_);
             /* We do not need to flip back the sign of the locked vectors since
              * they are stored in Vec2_ and will replace the fliped ones of
              * Vec1_ at the end of QR. */
@@ -711,6 +865,17 @@ public:
             'A', V2_->l_rows(), unconverged_cols,
             V1_->l_data() + V1_->l_ld() * locked_, V1_->l_ld(),
             V2_->l_data() + V2_->l_ld() * locked_, V2_->l_ld());
+
+        /*if constexpr (std::is_same<typename MatrixType::hermitian_type,
+            chase::matrix::PseudoHermitian>::value)
+        {
+            chase::linalg::lapackpp::t_lacpy(
+            'A', V1_->l_rows(), locked_,
+            V2_->l_data() + (V2_->g_cols() - locked_) * V2_->l_ld(),
+            V2_->l_ld(),
+            V1_->l_data() + (V1_->g_cols() - locked_) * V1_->l_ld(),
+            V1_->l_ld());
+        }*/
     }
 
     void RR(chase::Base<T>* ritzv, std::size_t block) override
@@ -721,23 +886,25 @@ public:
 #ifdef XGEEV_EXISTS
             chase::linalg::internal::cpu_mpi::pseudo_hermitian_rayleighRitz(
                 *Hmat_, *V1_, *V2_, *W1_, *W2_, ritzv_->l_data(), locked_,
-                block, A_.get());
+                2*block, A_.get());
 #else
             chase::linalg::internal::cpu_mpi::pseudo_hermitian_rayleighRitz_v2(
                 *Hmat_, *V1_, *V2_, *W1_, *W2_, ritzv_->l_data(), locked_,
-                block, A_.get());
+                2*block, A_.get());
 #endif
+            chase::linalg::lapackpp::t_lacpy(
+                'A', V2_->l_rows(), 2*block, V1_->l_data() + locked_ * V1_->l_ld(),
+                V1_->l_ld(), V2_->l_data() + locked_ * V2_->l_ld(), V2_->l_ld());
         }
         else
         {
             chase::linalg::internal::cpu_mpi::rayleighRitz(
                 *Hmat_, *V1_, *V2_, *W1_, *W2_, ritzv_->l_data(), locked_,
                 block, A_.get());
+            chase::linalg::lapackpp::t_lacpy(
+                'A', V2_->l_rows(), block, V1_->l_data() + locked_ * V1_->l_ld(),
+                V1_->l_ld(), V2_->l_data() + locked_ * V2_->l_ld(), V2_->l_ld());
         }
-
-        chase::linalg::lapackpp::t_lacpy(
-            'A', V2_->l_rows(), block, V1_->l_data() + locked_ * V1_->l_ld(),
-            V1_->l_ld(), V2_->l_data() + locked_ * V2_->l_ld(), V2_->l_ld());
     }
 
     void Sort(chase::Base<T>* ritzv, chase::Base<T>* residLast,
@@ -750,7 +917,7 @@ public:
     {
         // Pseudo-Hermitian: subspace size is 2*nevex_; standard: nevex_
         std::size_t subSize =
-            (is_pseudoHerm_ ? 2 * nevex_ : nevex_) - locked_;
+        (is_pseudoHerm_ ? 2 * nevex_ : nevex_) - locked_;
 
         chase::linalg::internal::cpu_mpi::residuals(
             *Hmat_, *V1_, *V2_, *W1_, *W2_, ritzv_->l_data(), resid_->l_data(),

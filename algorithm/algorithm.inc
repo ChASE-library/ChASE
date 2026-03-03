@@ -1878,12 +1878,29 @@ void Algorithm<T>::solve_pseudo(ChaseBase<T>* single)
         config.SetLanczosIter(lanczos_iter - 1);
         lanczos_iter = config.GetLanczosIter();
     }
+
+#ifdef CHASE_OUTPUT
+    {
+        std::ostringstream oss;
+        oss << "entering lanczos_for_H2..." << std::endl;
+        single->Output(oss.str());
+    }
+#endif
+    
     std::size_t idx = lanczos_for_H2(single, static_cast<int>(N),
                                      static_cast<int>(num_lanczos),
                                      static_cast<int>(lanczos_iter),
                                      static_cast<int>(nevex), &upperb, true,
                                      ritzv_);
     (void)idx; // used when filter/QR/locking are implemented
+
+    #ifdef CHASE_OUTPUT
+    {
+        std::ostringstream oss;
+        oss << "exiting lanczos_for_H2..." << std::endl;
+        single->Output(oss.str());
+    }
+#endif
 
     // H² bounds: b_sup = upperb, μ_1 = (min λ²), μ_nevnex = ritzv_[nevex-1]
     Base<T> mu_1 = *std::min_element(ritzv_, ritzv_ + nevex - 1); 
