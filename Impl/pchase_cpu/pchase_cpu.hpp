@@ -541,11 +541,13 @@ public:
             MPI_Comm_size(col_comm, &col_size);
 
             std::size_t half = N_ / 2;
-            std::size_t col_second = locked_ + block;
+            //std::size_t col_second = locked_ + block;
+            std::size_t col_second = 2*nevex_ - locked_- block;
 
             // First, we determine the local sizes of everyone.
             std::vector<std::size_t> local_rows(static_cast<std::size_t>(col_size));
             std::vector<std::size_t> global_offs(static_cast<std::size_t>(col_size));
+            std::vector<std::size_t> global_lims(static_cast<std::size_t>(col_size));
 
             std::size_t my_l_rows = V1_->l_rows();
             MPI_Allgather(&my_l_rows, 1, MPI_UNSIGNED_LONG, local_rows.data(),
@@ -558,9 +560,11 @@ public:
             MPI_Barrier(MPI_COMM_WORLD);
 
             global_offs[0] = 0;
+            global_lims[0] = local_rows[0];
             for (std::size_t i = 1; i < col_size; ++i)
             {
                 global_offs[i] = global_offs[i-1] + local_rows[i-1];
+                global_lims[i] = global_lims[i-1] + local_rows[i];
             }
 
             //Second, we determine at which global rows and how many rows to send the data to.
@@ -581,7 +585,7 @@ public:
             }
             else
             {
-                send_lower_to_local_idx = 0;
+                send_lower_to_local_idx = 0; //This is wrong in the 3x3 case.
                 send_lower_to_g_off = V1_->g_off() + half;
                 send_lower_to_len = V1_->l_rows();
 
@@ -594,6 +598,7 @@ public:
                     send_upper_to_local_idx = send_upper_to_len;
                     send_lower_to_len = send_lower_to_len - send_upper_to_len;
                     send_lower_to_local_idx = 0;
+                    //send_lower_to_g_off = V1_->g_off() + half - send_upper_to_len;// Problem is here.
                 }
             }
 
@@ -611,11 +616,11 @@ public:
             while(r < col_size && send_upper_to_len > 0)
             {
                 //std::cout << "my_rank is " << my_rank_ << " r is " << r << " global_offs[r] is " << global_offs[r] << " send_upper_to_g_off is " << send_upper_to_g_off << std::endl;
-                if(global_offs[r] >= send_upper_to_g_off)
+                if(global_lims[r] > send_upper_to_g_off)
                 {
                     send_upper_to_ranks.push_back(r);
                     send_upper_to_ranks_len[r] = std::min(local_rows[r], send_upper_to_len);
-                    send_upper_to_ranks_local_idx[r] = send_upper_to_local_idx;
+                    send_upper_to_ranks_local_idx[r] = send_upper_to_local_idx;//This is wrong in the 3x3 case.
                     send_upper_to_len -= send_upper_to_ranks_len[r];
                     send_upper_to_local_idx += send_upper_to_ranks_len[r];
                 }
@@ -625,23 +630,33 @@ public:
             for(auto i = 0; i < send_upper_to_ranks.size(); i++)
             {
                 int sendrecv_rank = send_upper_to_ranks[i];
-                std::cout << "my_rank is " << my_rank_ << " sendrecv_rank is " << sendrecv_rank << " send_upper_to_ranks_local_idx[sendrecv_rank] is " << send_upper_to_ranks_local_idx[sendrecv_rank] << std::endl;
-                MPI_Sendrecv(V1_->l_data() + locked_ * V1_->l_ld() + send_upper_to_ranks_local_idx[sendrecv_rank], send_upper_to_ranks_len[sendrecv_rank] * block,
-                             chase::mpi::getMPI_Type<T>(), sendrecv_rank, 0,
-                             V1_->l_data() + col_second * V1_->l_ld() + send_upper_to_ranks_local_idx[sendrecv_rank], send_upper_to_ranks_len[sendrecv_rank] * block,
-                             chase::mpi::getMPI_Type<T>(), sendrecv_rank, 1,
-                             col_comm, MPI_STATUS_IGNORE);
+                if(sendrecv_rank == col_rank)
+                {
+                    std::cout << "COPY : my_rank is " << my_rank_ << " sendrecv_rank is " << sendrecv_rank << " send_upper_to_ranks_local_idx[sendrecv_rank] is " << send_upper_to_ranks_local_idx[sendrecv_rank]                    << "copying size is " << send_upper_to_ranks_len[sendrecv_rank] << std::endl;
+                    chase::linalg::lapackpp::t_lacpy('A', send_upper_to_ranks_len[sendrecv_rank], block,
+                        V1_->l_data() + locked_ * V1_->l_ld() + send_upper_to_ranks_local_idx[sendrecv_rank], V1_->l_ld(), 
+                        V1_->l_data() + col_second * V1_->l_ld() + send_lower_to_ranks_local_idx[sendrecv_rank], V1_->l_ld());
+                }else
+                {
+                    std::cout << "MPI : my_rank is " << my_rank_ << " sendrecv_rank is " << sendrecv_rank << " send_upper_to_ranks_local_idx[sendrecv_rank] is " << send_upper_to_ranks_local_idx[sendrecv_rank]
+                    << " sending size is " << send_upper_to_ranks_len[sendrecv_rank] << " vs " << "receiving size is " << send_upper_to_ranks_len[sendrecv_rank] << std::endl;
+                    MPI_Sendrecv(V1_->l_data() + locked_ * V1_->l_ld() + send_upper_to_ranks_local_idx[sendrecv_rank], send_upper_to_ranks_len[sendrecv_rank] * block,
+                                chase::mpi::getMPI_Type<T>(), sendrecv_rank, 0,
+                                V1_->l_data() + col_second * V1_->l_ld() + send_upper_to_ranks_local_idx[sendrecv_rank], send_upper_to_ranks_len[sendrecv_rank] * block,
+                                chase::mpi::getMPI_Type<T>(), sendrecv_rank, 1,
+                                col_comm, MPI_STATUS_IGNORE);
+                }
             }
 
             r = 0;
             while(r < col_size && send_lower_to_len > 0)
             {
                 //std::cout << "my_rank is " << my_rank_ << " r is " << r << "/" << row_size << " global_offs[r] is " << global_offs[r] << " send_lower_to_g_off is " << send_lower_to_g_off << std::endl;
-                if(global_offs[r] >= send_lower_to_g_off)
+                if(global_lims[r] > send_lower_to_g_off)
                 {
                     send_lower_to_ranks.push_back(r);
                     send_lower_to_ranks_len[r] = std::min(local_rows[r], send_lower_to_len);
-                    send_lower_to_ranks_local_idx[r] = send_lower_to_local_idx;
+                    send_lower_to_ranks_local_idx[r] = send_lower_to_local_idx;//This is wrong in the 3x3 case.
                     send_lower_to_len -= send_lower_to_ranks_len[r];
                     send_lower_to_local_idx += send_lower_to_ranks_len[r];
                 }
@@ -651,12 +666,21 @@ public:
             for(auto i = 0; i < send_lower_to_ranks.size(); i++)
             {
                 int sendrecv_rank = send_lower_to_ranks[i];
-                std::cout << "my_rank is " << my_rank_ << " sendrecv_rank is " << sendrecv_rank << " send_lower_to_ranks_local_idx[sendrecv_rank] is " << send_lower_to_ranks_local_idx[sendrecv_rank] << std::endl;
-                MPI_Sendrecv(V1_->l_data() + locked_ * V1_->l_ld() + send_lower_to_ranks_local_idx[sendrecv_rank], send_lower_to_ranks_len[sendrecv_rank] * block,
-                             chase::mpi::getMPI_Type<T>(), sendrecv_rank, 1,
-                             V1_->l_data() + col_second * V1_->l_ld() + send_lower_to_ranks_local_idx[sendrecv_rank], send_lower_to_ranks_len[sendrecv_rank] * block,
-                             chase::mpi::getMPI_Type<T>(), sendrecv_rank, 0,
-                             col_comm, MPI_STATUS_IGNORE);
+                if(sendrecv_rank == col_rank)
+                {
+                    std::cout << "COPY : my_rank is " << my_rank_ << " sendrecv_rank is " << sendrecv_rank << " send_lower_to_ranks_local_idx[sendrecv_rank] is " << send_lower_to_ranks_local_idx[sendrecv_rank] << std::endl;
+                    chase::linalg::lapackpp::t_lacpy('A', send_lower_to_ranks_len[sendrecv_rank], block,
+                        V1_->l_data() + locked_ * V1_->l_ld() + send_lower_to_ranks_local_idx[sendrecv_rank], V1_->l_ld(), 
+                        V1_->l_data() + col_second * V1_->l_ld() + send_upper_to_ranks_local_idx[sendrecv_rank], V1_->l_ld());
+                }else{
+                    std::cout << "MPI : my_rank is " << my_rank_ << " sendrecv_rank is " << sendrecv_rank << " send_lower_to_ranks_local_idx[sendrecv_rank] is " << send_lower_to_ranks_local_idx[sendrecv_rank]
+                    << " sending size is " << send_lower_to_ranks_len[sendrecv_rank] << " vs " << "receiving size is " << send_lower_to_ranks_len[sendrecv_rank] << std::endl;
+                    MPI_Sendrecv(V1_->l_data() + locked_ * V1_->l_ld() + send_lower_to_ranks_local_idx[sendrecv_rank], send_lower_to_ranks_len[sendrecv_rank] * block,
+                                chase::mpi::getMPI_Type<T>(), sendrecv_rank, 1,
+                                V1_->l_data() + col_second * V1_->l_ld() + send_lower_to_ranks_local_idx[sendrecv_rank], send_lower_to_ranks_len[sendrecv_rank] * block,
+                                chase::mpi::getMPI_Type<T>(), sendrecv_rank, 0,
+                                col_comm, MPI_STATUS_IGNORE);
+                }
             }
 
             for(size_t j = 0; j < block; ++j)
