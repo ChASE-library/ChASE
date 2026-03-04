@@ -791,10 +791,10 @@ std::size_t Algorithm<T>::locking_pseudo_v3(
                 swap_kj(j, converged, resid);
                 swap_kj(j, converged, Lritzv);
                 single->Swap(j + locked, converged + locked);
-                
-                swap_kj(2*unconverged-j-1, 2*unconverged-converged-1, resid);
+
+                /*swap_kj(2*unconverged-j-1, 2*unconverged-converged-1, resid);
                 swap_kj(2*unconverged-j-1, 2*unconverged-converged-1, Lritzv);
-                single->Swap(2*unconverged-j-1 + locked, 2*unconverged-converged-1 + locked);
+                single->Swap(2*unconverged-j-1 + locked, 2*unconverged-converged-1 + locked);*/
             }
 
             index_converged.push_back(j);
@@ -1917,6 +1917,7 @@ void Algorithm<T>::solve_pseudo(ChaseBase<T>* single)
     Base<T> lambda_1 = mu_1;  
     Base<T> lower = mu_nevnex;
     Base<T> new_mu_nevex = lower;
+    Base<T> new_lambda_1 = lambda_1;
     Base<T> b_sup = upperb;    
     lower = lower * config.GetDecayingRate();
 
@@ -1951,6 +1952,12 @@ void Algorithm<T>::solve_pseudo(ChaseBase<T>* single)
         if (iteration > 0)
         {
             new_mu_nevex = new_mu_nevex * new_mu_nevex;
+            new_lambda_1 = new_lambda_1 * new_lambda_1;
+
+            if (new_lambda_1 < lambda_1)
+            {
+                //lambda_1 = new_lambda_1;
+            }
             
             if (new_mu_nevex < lower && new_mu_nevex > lambda_1)
             {
@@ -2017,7 +2024,7 @@ void Algorithm<T>::solve_pseudo(ChaseBase<T>* single)
         // ------------------------- RESIDUALS ---------------------------------
         single->Resd(ritzv, resid, locked);
                 
-        std::iota(index.begin(), index.begin() + unconverged, 0);
+        std::iota(index.begin(), index.begin() + 2*unconverged, 0);
 
         std::size_t n_reinit = 0;//reinit_phantom_eigenvectors_pseudo(single, unconverged, locked, nex, ritzv);
 
@@ -2054,11 +2061,14 @@ void Algorithm<T>::solve_pseudo(ChaseBase<T>* single)
 
         std::size_t idx_new_mu = index_temp.data()[std::size_t(unconverged*0.95)-1];
         new_mu_nevex = ritzv[idx_new_mu] * config.GetDecayingRate();
+        new_lambda_1 = ritzv[index_temp.data()[0]];
 
         // --------------- Locking ----------------------------------------------
         std::size_t new_converged = locking_pseudo_v3(
             single, N, unconverged, nex, tol, index.data(), ritzv, resid,
             residLast, &early_locked_residuals, degrees, locked, iteration, nev);
+
+        single->ApplyKconjugate(new_converged);
 
         //new_converged is the number of newly locked positive eigenpairs
 

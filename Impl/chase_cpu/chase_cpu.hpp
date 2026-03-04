@@ -494,7 +494,9 @@ public:
             // Active first half [locked_, locked_+block), second half [locked_+block, locked_+2*block).
             // K-conjugation: set second-half cols = conjugate(first-half) with block swap.
 
-            std::size_t col_second = locked_ + block;
+            //std::size_t col_second = locked_ + block;
+            std::size_t col_second = 2*nevex_ - locked_- block;
+
             // Copy upper block of first half → lower block of second half (will conjugate below)
             chase::linalg::lapackpp::t_lacpy('A', Vec1_.rows() / 2, block,
             Vec1_.data() + locked_ * Vec1_.ld(), Vec1_.ld(), Vec1_.data() + col_second * Vec1_.ld() + Vec1_.rows() / 2, Vec1_.ld());
