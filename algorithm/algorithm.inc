@@ -2068,7 +2068,10 @@ void Algorithm<T>::solve_pseudo(ChaseBase<T>* single)
             single, N, unconverged, nex, tol, index.data(), ritzv, resid,
             residLast, &early_locked_residuals, degrees, locked, iteration, nev);
 
-        single->ApplyKconjugate(new_converged);
+        if(new_converged > 0)
+        {
+            single->ApplyKconjugate(new_converged);
+        }
 
         //new_converged is the number of newly locked positive eigenpairs
 

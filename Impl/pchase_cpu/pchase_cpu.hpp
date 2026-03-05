@@ -527,12 +527,6 @@ public:
 
             //First, we need to know to whom each rank has to send and receive data.
 
-            if(my_rank_ == 0)
-            {
-                std::cout << "ApplyKconjugate..." << std::endl;
-            }
-            MPI_Barrier(MPI_COMM_WORLD);
-
             chase::grid::MpiGrid2DBase* grid = V1_->getMpiGrid();
             MPI_Comm col_comm = grid->get_col_comm();
             int col_rank = 0;
@@ -553,12 +547,6 @@ public:
             MPI_Allgather(&my_l_rows, 1, MPI_UNSIGNED_LONG, local_rows.data(),
                           1, MPI_UNSIGNED_LONG, col_comm);
 
-            if(my_rank_ == 0)
-            {
-                std::cout << "All gather completed..." << std::endl;
-            }
-            MPI_Barrier(MPI_COMM_WORLD);
-
             global_offs[0] = 0;
             global_lims[0] = local_rows[0];
             for (std::size_t i = 1; i < col_size; ++i)
@@ -574,18 +562,18 @@ public:
             std::size_t send_upper_to_len = 0;
             std::size_t send_lower_to_len = 0;
 
-            int send_upper_to_local_idx;
-            int send_lower_to_local_idx;
+            int send_upper_my_local_idx;
+            int send_lower_my_local_idx;
 
             if(V1_->g_off() >= half)
             {
-                send_upper_to_local_idx = 0;
+                send_upper_my_local_idx = 0;
                 send_upper_to_g_off = V1_->g_off() - half;
                 send_upper_to_len = V1_->l_rows();
             }
             else
             {
-                send_lower_to_local_idx = 0; //This is wrong in the 3x3 case.
+                send_lower_my_local_idx = 0; //This is wrong in the 3x3 case.
                 send_lower_to_g_off = V1_->g_off() + half;
                 send_lower_to_len = V1_->l_rows();
 
@@ -594,10 +582,10 @@ public:
                     //If this is true, then data is located at the middle and should therefore be sent upward.
                     //Some ranks may need to send both upward and downward.
                     send_upper_to_g_off = 0;
-                    send_upper_to_len = half - V1_->g_off();
-                    send_upper_to_local_idx = send_upper_to_len;
-                    send_lower_to_len = send_lower_to_len - send_upper_to_len;
-                    send_lower_to_local_idx = 0;
+                    send_lower_to_len = half - V1_->g_off();//490
+                    send_upper_to_len = V1_->l_rows() - send_lower_to_len; //492
+                    send_upper_my_local_idx = send_lower_to_len; //490
+                    send_lower_my_local_idx = 0;
                     //send_lower_to_g_off = V1_->g_off() + half - send_upper_to_len;// Problem is here.
                 }
             }
@@ -609,20 +597,31 @@ public:
             std::vector<int> send_upper_to_ranks_len(col_size);
             std::vector<int> send_lower_to_ranks_len(col_size);
 
-            std::vector<int> send_upper_to_ranks_local_idx(col_size);
-            std::vector<int> send_lower_to_ranks_local_idx(col_size);
+            std::vector<int> send_upper_to_my_local_idx(col_size);
+            std::vector<int> send_lower_to_my_local_idx(col_size);
 
             int r = 0;
+            bool non_contiguous = false;
+ 
             while(r < col_size && send_upper_to_len > 0)
             {
-                //std::cout << "my_rank is " << my_rank_ << " r is " << r << " global_offs[r] is " << global_offs[r] << " send_upper_to_g_off is " << send_upper_to_g_off << std::endl;
                 if(global_lims[r] > send_upper_to_g_off)
                 {
                     send_upper_to_ranks.push_back(r);
-                    send_upper_to_ranks_len[r] = std::min(local_rows[r], send_upper_to_len);
-                    send_upper_to_ranks_local_idx[r] = send_upper_to_local_idx;//This is wrong in the 3x3 case.
+                    if(global_offs[r] < send_upper_to_g_off)
+                    {
+                        send_upper_to_ranks_len[r] = local_rows[r] - (send_upper_to_g_off - global_offs[r]);//490
+                    }else
+                    {
+                        send_upper_to_ranks_len[r] = std::min(local_rows[r], send_upper_to_len);
+                    }
+                    if(send_upper_to_ranks_len[r] != V1_->l_rows() && non_contiguous == false)
+                    {
+                        non_contiguous = true;
+                    }
+                    send_upper_to_my_local_idx[r] = send_upper_my_local_idx;//490
                     send_upper_to_len -= send_upper_to_ranks_len[r];
-                    send_upper_to_local_idx += send_upper_to_ranks_len[r];
+                    send_upper_my_local_idx += send_upper_to_ranks_len[r];
                 }
                 r++;
             }
@@ -632,54 +631,94 @@ public:
                 int sendrecv_rank = send_upper_to_ranks[i];
                 if(sendrecv_rank == col_rank)
                 {
-                    std::cout << "COPY : my_rank is " << my_rank_ << " sendrecv_rank is " << sendrecv_rank << " send_upper_to_ranks_local_idx[sendrecv_rank] is " << send_upper_to_ranks_local_idx[sendrecv_rank]                    << "copying size is " << send_upper_to_ranks_len[sendrecv_rank] << std::endl;
                     chase::linalg::lapackpp::t_lacpy('A', send_upper_to_ranks_len[sendrecv_rank], block,
-                        V1_->l_data() + locked_ * V1_->l_ld() + send_upper_to_ranks_local_idx[sendrecv_rank], V1_->l_ld(), 
-                        V1_->l_data() + col_second * V1_->l_ld() + send_lower_to_ranks_local_idx[sendrecv_rank], V1_->l_ld());
+                        V1_->l_data() + locked_ * V1_->l_ld() + send_upper_to_my_local_idx[sendrecv_rank], V1_->l_ld(), 
+                        V1_->l_data() + col_second * V1_->l_ld() + 0, V1_->l_ld());
                 }else
                 {
-                    std::cout << "MPI : my_rank is " << my_rank_ << " sendrecv_rank is " << sendrecv_rank << " send_upper_to_ranks_local_idx[sendrecv_rank] is " << send_upper_to_ranks_local_idx[sendrecv_rank]
-                    << " sending size is " << send_upper_to_ranks_len[sendrecv_rank] << " vs " << "receiving size is " << send_upper_to_ranks_len[sendrecv_rank] << std::endl;
-                    MPI_Sendrecv(V1_->l_data() + locked_ * V1_->l_ld() + send_upper_to_ranks_local_idx[sendrecv_rank], send_upper_to_ranks_len[sendrecv_rank] * block,
-                                chase::mpi::getMPI_Type<T>(), sendrecv_rank, 0,
-                                V1_->l_data() + col_second * V1_->l_ld() + send_upper_to_ranks_local_idx[sendrecv_rank], send_upper_to_ranks_len[sendrecv_rank] * block,
-                                chase::mpi::getMPI_Type<T>(), sendrecv_rank, 1,
-                                col_comm, MPI_STATUS_IGNORE);
-                }
+                    if(non_contiguous == true)
+                    {
+                        int sendrecv_row_size = send_upper_to_ranks_len[sendrecv_rank]; //Different than V1_->l_rows()
+                        int l_ld = static_cast<int>(V1_->l_ld());
+                        MPI_Datatype sendrecv_non_contiguous_block;
+                        MPI_Type_vector(block, sendrecv_row_size, l_ld, chase::mpi::getMPI_Type<T>(), &sendrecv_non_contiguous_block);
+                        MPI_Type_commit(&sendrecv_non_contiguous_block);
+
+                        T* send_ptr = V1_->l_data() + locked_ * V1_->l_ld() + send_upper_to_my_local_idx[sendrecv_rank];
+                        T* recv_ptr = V1_->l_data() + col_second * V1_->l_ld() + send_upper_to_my_local_idx[sendrecv_rank];
+
+                        MPI_Sendrecv(send_ptr, 1, sendrecv_non_contiguous_block, sendrecv_rank, 0,recv_ptr, 1, sendrecv_non_contiguous_block, sendrecv_rank, 1,col_comm, MPI_STATUS_IGNORE);
+
+                        MPI_Type_free(&sendrecv_non_contiguous_block);
+                    }else
+                    {
+                        MPI_Sendrecv(V1_->l_data() + locked_ * V1_->l_ld() + send_upper_to_my_local_idx[sendrecv_rank], send_upper_to_ranks_len[sendrecv_rank] * block,
+                                    chase::mpi::getMPI_Type<T>(), sendrecv_rank, 0,
+                                    V1_->l_data() + col_second * V1_->l_ld() + send_upper_to_my_local_idx[sendrecv_rank], send_upper_to_ranks_len[sendrecv_rank] * block,
+                                    chase::mpi::getMPI_Type<T>(), sendrecv_rank, 1,
+                                    col_comm, MPI_STATUS_IGNORE);
+                    }
+                }  
             }
 
             r = 0;
+            non_contiguous = false;
             while(r < col_size && send_lower_to_len > 0)
             {
-                //std::cout << "my_rank is " << my_rank_ << " r is " << r << "/" << row_size << " global_offs[r] is " << global_offs[r] << " send_lower_to_g_off is " << send_lower_to_g_off << std::endl;
                 if(global_lims[r] > send_lower_to_g_off)
                 {
                     send_lower_to_ranks.push_back(r);
-                    send_lower_to_ranks_len[r] = std::min(local_rows[r], send_lower_to_len);
-                    send_lower_to_ranks_local_idx[r] = send_lower_to_local_idx;//This is wrong in the 3x3 case.
+                    if(global_offs[r] < send_lower_to_g_off)
+                    {
+                        send_lower_to_ranks_len[r] = local_rows[r] - (send_lower_to_g_off - global_offs[r]);//490
+                    }else
+                    {
+                        send_lower_to_ranks_len[r] = std::min(local_rows[r], send_lower_to_len);
+                    }
+                    if(send_lower_to_ranks_len[r] != V1_->l_rows() && non_contiguous == false)
+                    {
+                        non_contiguous = true;
+                    }
+                    send_lower_to_my_local_idx[r] = send_lower_my_local_idx;
                     send_lower_to_len -= send_lower_to_ranks_len[r];
-                    send_lower_to_local_idx += send_lower_to_ranks_len[r];
+                    send_lower_my_local_idx += send_lower_to_ranks_len[r];
                 }
                 r++;
             }
+
 
             for(auto i = 0; i < send_lower_to_ranks.size(); i++)
             {
                 int sendrecv_rank = send_lower_to_ranks[i];
                 if(sendrecv_rank == col_rank)
                 {
-                    std::cout << "COPY : my_rank is " << my_rank_ << " sendrecv_rank is " << sendrecv_rank << " send_lower_to_ranks_local_idx[sendrecv_rank] is " << send_lower_to_ranks_local_idx[sendrecv_rank] << std::endl;
                     chase::linalg::lapackpp::t_lacpy('A', send_lower_to_ranks_len[sendrecv_rank], block,
-                        V1_->l_data() + locked_ * V1_->l_ld() + send_lower_to_ranks_local_idx[sendrecv_rank], V1_->l_ld(), 
-                        V1_->l_data() + col_second * V1_->l_ld() + send_upper_to_ranks_local_idx[sendrecv_rank], V1_->l_ld());
-                }else{
-                    std::cout << "MPI : my_rank is " << my_rank_ << " sendrecv_rank is " << sendrecv_rank << " send_lower_to_ranks_local_idx[sendrecv_rank] is " << send_lower_to_ranks_local_idx[sendrecv_rank]
-                    << " sending size is " << send_lower_to_ranks_len[sendrecv_rank] << " vs " << "receiving size is " << send_lower_to_ranks_len[sendrecv_rank] << std::endl;
-                    MPI_Sendrecv(V1_->l_data() + locked_ * V1_->l_ld() + send_lower_to_ranks_local_idx[sendrecv_rank], send_lower_to_ranks_len[sendrecv_rank] * block,
+                        V1_->l_data() + locked_ * V1_->l_ld() + 0, V1_->l_ld(), 
+                        V1_->l_data() + col_second * V1_->l_ld() + send_lower_to_ranks_len[sendrecv_rank], V1_->l_ld());
+                }else
+                {
+                    if(non_contiguous == true)
+                    {
+                        int sendrecv_row_size = send_lower_to_ranks_len[sendrecv_rank]; //Different than V1_->l_rows()
+                        int l_ld = static_cast<int>(V1_->l_ld());
+                        MPI_Datatype sendrecv_non_contiguous_block;
+                        MPI_Type_vector(block, sendrecv_row_size, l_ld, chase::mpi::getMPI_Type<T>(), &sendrecv_non_contiguous_block);
+                        MPI_Type_commit(&sendrecv_non_contiguous_block);
+
+                        T* send_ptr = V1_->l_data() + locked_ * V1_->l_ld() + send_lower_to_my_local_idx[sendrecv_rank];
+                        T* recv_ptr = V1_->l_data() + col_second * V1_->l_ld() + send_lower_to_my_local_idx[sendrecv_rank];
+
+                        MPI_Sendrecv(send_ptr, 1, sendrecv_non_contiguous_block, sendrecv_rank, 1,recv_ptr, 1, sendrecv_non_contiguous_block, sendrecv_rank, 0,col_comm, MPI_STATUS_IGNORE);
+
+                        MPI_Type_free(&sendrecv_non_contiguous_block);
+                    }else
+                    {
+                    MPI_Sendrecv(V1_->l_data() + locked_ * V1_->l_ld() + send_lower_to_my_local_idx[sendrecv_rank], send_lower_to_ranks_len[sendrecv_rank] * block,
                                 chase::mpi::getMPI_Type<T>(), sendrecv_rank, 1,
-                                V1_->l_data() + col_second * V1_->l_ld() + send_lower_to_ranks_local_idx[sendrecv_rank], send_lower_to_ranks_len[sendrecv_rank] * block,
+                                V1_->l_data() + col_second * V1_->l_ld() + send_lower_to_my_local_idx[sendrecv_rank], send_lower_to_ranks_len[sendrecv_rank] * block,
                                 chase::mpi::getMPI_Type<T>(), sendrecv_rank, 0,
                                 col_comm, MPI_STATUS_IGNORE);
+                    }
                 }
             }
 
