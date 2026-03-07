@@ -569,6 +569,11 @@ void cuda_nccl::pseudo_hermitian_rayleighRitz_v2(
         cublas_handle, CUBLAS_SIDE_RIGHT, CUBLAS_FILL_MODE_LOWER, CUBLAS_OP_C,
         CUBLAS_DIAG_NON_UNIT, subSize, subSize, &One, A->l_data(), subSize, M,
         subSize));
+
+    T NegOne = T(-1.0);
+    CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTscal(
+        cublas_handle, subSize * subSize, &NegOne, M, 1));
+
 #ifdef RR_DOUBLE_PRECISION
     if constexpr (std::is_same<T, std::complex<float>>::value)
     {
@@ -628,6 +633,10 @@ void cuda_nccl::pseudo_hermitian_rayleighRitz_v2(
 
     chase::linalg::internal::cuda::chase_inverse_entries(
         ritzv.l_data() + offset, subSize, usedStream);
+
+    chase::Base<T> ritz_neg_one = chase::Base<T>(-1.0);
+    CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTscal(
+        cublas_handle, subSize, &ritz_neg_one, ritzv.l_data() + offset, 1));
 
     CHECK_CUDA_ERROR(
         cudaMemcpy(ritzv.cpu_data() + offset, ritzv.l_data() + offset,

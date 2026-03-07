@@ -520,216 +520,21 @@ public:
         if constexpr (std::is_same<typename MatrixType::hermitian_type,
                                    chase::matrix::PseudoHermitian>::value)
         {
+            V1_->Kconjugate(block, locked_);
+
+            std::size_t col_second = V1_->g_cols() - locked_ - block;
+            
+            chase::linalg::lapackpp::t_lacpy(
+                'A', V2_->l_rows(), block,
+                V1_->l_data() + V1_->l_ld() * col_second, V1_->l_ld(),
+                V2_->l_data() + V2_->l_ld() * col_second, V2_->l_ld());
+
             // Symmetric locking: layout [locked_ | first half | second half | locked_].
             // Rows: 0..N/2-1 = upper block, N/2..N-1 = lower block.
             // Active first half [locked_, locked_+block), second half [locked_+block, locked_+2*block).
             // K-conjugation: set second-half cols = conjugate(first-half) with block swap.
 
             //First, we need to know to whom each rank has to send and receive data.
-
-            chase::grid::MpiGrid2DBase* grid = V1_->getMpiGrid();
-            MPI_Comm col_comm = grid->get_col_comm();
-            int col_rank = 0;
-            int col_size = 0;
-            MPI_Comm_rank(col_comm, &col_rank);
-            MPI_Comm_size(col_comm, &col_size);
-
-            std::size_t half = N_ / 2;
-            //std::size_t col_second = locked_ + block;
-            std::size_t col_second = 2*nevex_ - locked_- block;
-
-            // First, we determine the local sizes of everyone.
-            std::vector<std::size_t> local_rows(static_cast<std::size_t>(col_size));
-            std::vector<std::size_t> global_offs(static_cast<std::size_t>(col_size));
-            std::vector<std::size_t> global_lims(static_cast<std::size_t>(col_size));
-
-            std::size_t my_l_rows = V1_->l_rows();
-            MPI_Allgather(&my_l_rows, 1, MPI_UNSIGNED_LONG, local_rows.data(),
-                          1, MPI_UNSIGNED_LONG, col_comm);
-
-            global_offs[0] = 0;
-            global_lims[0] = local_rows[0];
-            for (std::size_t i = 1; i < col_size; ++i)
-            {
-                global_offs[i] = global_offs[i-1] + local_rows[i-1];
-                global_lims[i] = global_lims[i-1] + local_rows[i];
-            }
-
-            //Second, we determine at which global rows and how many rows to send the data to.
-            int send_upper_to_g_off = -1;
-            int send_lower_to_g_off = -1;
-
-            std::size_t send_upper_to_len = 0;
-            std::size_t send_lower_to_len = 0;
-
-            int send_upper_my_local_idx;
-            int send_lower_my_local_idx;
-
-            if(V1_->g_off() >= half)
-            {
-                send_upper_my_local_idx = 0;
-                send_upper_to_g_off = V1_->g_off() - half;
-                send_upper_to_len = V1_->l_rows();
-            }
-            else
-            {
-                send_lower_my_local_idx = 0; //This is wrong in the 3x3 case.
-                send_lower_to_g_off = V1_->g_off() + half;
-                send_lower_to_len = V1_->l_rows();
-
-                if(V1_->g_off() + V1_->l_rows() > half)
-                {                
-                    //If this is true, then data is located at the middle and should therefore be sent upward.
-                    //Some ranks may need to send both upward and downward.
-                    send_upper_to_g_off = 0;
-                    send_lower_to_len = half - V1_->g_off();//490
-                    send_upper_to_len = V1_->l_rows() - send_lower_to_len; //492
-                    send_upper_my_local_idx = send_lower_to_len; //490
-                    send_lower_my_local_idx = 0;
-                    //send_lower_to_g_off = V1_->g_off() + half - send_upper_to_len;// Problem is here.
-                }
-            }
-
-            //Third, we need to determine to whom we have to send the data to.
-            std::vector<int> send_upper_to_ranks;
-            std::vector<int> send_lower_to_ranks;
-
-            std::vector<int> send_upper_to_ranks_len(col_size);
-            std::vector<int> send_lower_to_ranks_len(col_size);
-
-            std::vector<int> send_upper_to_my_local_idx(col_size);
-            std::vector<int> send_lower_to_my_local_idx(col_size);
-
-            int r = 0;
-            bool non_contiguous = false;
- 
-            while(r < col_size && send_upper_to_len > 0)
-            {
-                if(global_lims[r] > send_upper_to_g_off)
-                {
-                    send_upper_to_ranks.push_back(r);
-                    if(global_offs[r] < send_upper_to_g_off)
-                    {
-                        send_upper_to_ranks_len[r] = local_rows[r] - (send_upper_to_g_off - global_offs[r]);//490
-                    }else
-                    {
-                        send_upper_to_ranks_len[r] = std::min(local_rows[r], send_upper_to_len);
-                    }
-                    if(send_upper_to_ranks_len[r] != V1_->l_rows() && non_contiguous == false)
-                    {
-                        non_contiguous = true;
-                    }
-                    send_upper_to_my_local_idx[r] = send_upper_my_local_idx;//490
-                    send_upper_to_len -= send_upper_to_ranks_len[r];
-                    send_upper_my_local_idx += send_upper_to_ranks_len[r];
-                }
-                r++;
-            }
-
-            for(auto i = 0; i < send_upper_to_ranks.size(); i++)
-            {
-                int sendrecv_rank = send_upper_to_ranks[i];
-                if(sendrecv_rank == col_rank)
-                {
-                    chase::linalg::lapackpp::t_lacpy('A', send_upper_to_ranks_len[sendrecv_rank], block,
-                        V1_->l_data() + locked_ * V1_->l_ld() + send_upper_to_my_local_idx[sendrecv_rank], V1_->l_ld(), 
-                        V1_->l_data() + col_second * V1_->l_ld() + 0, V1_->l_ld());
-                }else
-                {
-                    if(non_contiguous == true)
-                    {
-                        int sendrecv_row_size = send_upper_to_ranks_len[sendrecv_rank]; //Different than V1_->l_rows()
-                        int l_ld = static_cast<int>(V1_->l_ld());
-                        MPI_Datatype sendrecv_non_contiguous_block;
-                        MPI_Type_vector(block, sendrecv_row_size, l_ld, chase::mpi::getMPI_Type<T>(), &sendrecv_non_contiguous_block);
-                        MPI_Type_commit(&sendrecv_non_contiguous_block);
-
-                        T* send_ptr = V1_->l_data() + locked_ * V1_->l_ld() + send_upper_to_my_local_idx[sendrecv_rank];
-                        T* recv_ptr = V1_->l_data() + col_second * V1_->l_ld() + send_upper_to_my_local_idx[sendrecv_rank];
-
-                        MPI_Sendrecv(send_ptr, 1, sendrecv_non_contiguous_block, sendrecv_rank, 0,recv_ptr, 1, sendrecv_non_contiguous_block, sendrecv_rank, 1,col_comm, MPI_STATUS_IGNORE);
-
-                        MPI_Type_free(&sendrecv_non_contiguous_block);
-                    }else
-                    {
-                        MPI_Sendrecv(V1_->l_data() + locked_ * V1_->l_ld() + send_upper_to_my_local_idx[sendrecv_rank], send_upper_to_ranks_len[sendrecv_rank] * block,
-                                    chase::mpi::getMPI_Type<T>(), sendrecv_rank, 0,
-                                    V1_->l_data() + col_second * V1_->l_ld() + send_upper_to_my_local_idx[sendrecv_rank], send_upper_to_ranks_len[sendrecv_rank] * block,
-                                    chase::mpi::getMPI_Type<T>(), sendrecv_rank, 1,
-                                    col_comm, MPI_STATUS_IGNORE);
-                    }
-                }  
-            }
-
-            r = 0;
-            non_contiguous = false;
-            while(r < col_size && send_lower_to_len > 0)
-            {
-                if(global_lims[r] > send_lower_to_g_off)
-                {
-                    send_lower_to_ranks.push_back(r);
-                    if(global_offs[r] < send_lower_to_g_off)
-                    {
-                        send_lower_to_ranks_len[r] = local_rows[r] - (send_lower_to_g_off - global_offs[r]);//490
-                    }else
-                    {
-                        send_lower_to_ranks_len[r] = std::min(local_rows[r], send_lower_to_len);
-                    }
-                    if(send_lower_to_ranks_len[r] != V1_->l_rows() && non_contiguous == false)
-                    {
-                        non_contiguous = true;
-                    }
-                    send_lower_to_my_local_idx[r] = send_lower_my_local_idx;
-                    send_lower_to_len -= send_lower_to_ranks_len[r];
-                    send_lower_my_local_idx += send_lower_to_ranks_len[r];
-                }
-                r++;
-            }
-
-
-            for(auto i = 0; i < send_lower_to_ranks.size(); i++)
-            {
-                int sendrecv_rank = send_lower_to_ranks[i];
-                if(sendrecv_rank == col_rank)
-                {
-                    chase::linalg::lapackpp::t_lacpy('A', send_lower_to_ranks_len[sendrecv_rank], block,
-                        V1_->l_data() + locked_ * V1_->l_ld() + 0, V1_->l_ld(), 
-                        V1_->l_data() + col_second * V1_->l_ld() + send_lower_to_ranks_len[sendrecv_rank], V1_->l_ld());
-                }else
-                {
-                    if(non_contiguous == true)
-                    {
-                        int sendrecv_row_size = send_lower_to_ranks_len[sendrecv_rank]; //Different than V1_->l_rows()
-                        int l_ld = static_cast<int>(V1_->l_ld());
-                        MPI_Datatype sendrecv_non_contiguous_block;
-                        MPI_Type_vector(block, sendrecv_row_size, l_ld, chase::mpi::getMPI_Type<T>(), &sendrecv_non_contiguous_block);
-                        MPI_Type_commit(&sendrecv_non_contiguous_block);
-
-                        T* send_ptr = V1_->l_data() + locked_ * V1_->l_ld() + send_lower_to_my_local_idx[sendrecv_rank];
-                        T* recv_ptr = V1_->l_data() + col_second * V1_->l_ld() + send_lower_to_my_local_idx[sendrecv_rank];
-
-                        MPI_Sendrecv(send_ptr, 1, sendrecv_non_contiguous_block, sendrecv_rank, 1,recv_ptr, 1, sendrecv_non_contiguous_block, sendrecv_rank, 0,col_comm, MPI_STATUS_IGNORE);
-
-                        MPI_Type_free(&sendrecv_non_contiguous_block);
-                    }else
-                    {
-                    MPI_Sendrecv(V1_->l_data() + locked_ * V1_->l_ld() + send_lower_to_my_local_idx[sendrecv_rank], send_lower_to_ranks_len[sendrecv_rank] * block,
-                                chase::mpi::getMPI_Type<T>(), sendrecv_rank, 1,
-                                V1_->l_data() + col_second * V1_->l_ld() + send_lower_to_my_local_idx[sendrecv_rank], send_lower_to_ranks_len[sendrecv_rank] * block,
-                                chase::mpi::getMPI_Type<T>(), sendrecv_rank, 0,
-                                col_comm, MPI_STATUS_IGNORE);
-                    }
-                }
-            }
-
-            for(size_t j = 0; j < block; ++j)
-            {
-                for(size_t i = 0; i < V1_->l_rows(); ++i)
-                {
-                    V1_->l_data()[(j + col_second) * V1_->l_ld() + i] =
-                        conjugate(V1_->l_data()[(j + col_second) * V1_->l_ld() + i]);
-                }
-            }
         }
     }
 
@@ -757,7 +562,7 @@ public:
         //{
         //     display_bounds = std::atoi(display_bounds_env);
         // }
-
+        
         if constexpr (std::is_same<typename MatrixType::hermitian_type,
                                    chase::matrix::PseudoHermitian>::value)
         {
@@ -768,7 +573,7 @@ public:
             chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(*V1_, 0,
                                                                       locked_);
 
-            chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(*V1_, V1_->l_cols() - locked_, locked_);
+            chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(*V1_, V1_->g_cols() - locked_, locked_);
             /* We do not need to flip back the sign of the locked vectors since
              * they are stored in Vec2_ and will replace the fliped ones of
              * Vec1_ at the end of QR. */
@@ -923,13 +728,8 @@ public:
                                          V2_->l_data(), V2_->l_ld(),
                                          V1_->l_data(), V1_->l_ld());
 
-        std::size_t unconverged_cols = GetRitzvBlockSize() - locked_;
-        chase::linalg::lapackpp::t_lacpy(
-            'A', V2_->l_rows(), unconverged_cols,
-            V1_->l_data() + V1_->l_ld() * locked_, V1_->l_ld(),
-            V2_->l_data() + V2_->l_ld() * locked_, V2_->l_ld());
-
-        /*if constexpr (std::is_same<typename MatrixType::hermitian_type,
+        std::size_t unconverged_cols = 0;
+        if constexpr (std::is_same<typename MatrixType::hermitian_type,
             chase::matrix::PseudoHermitian>::value)
         {
             chase::linalg::lapackpp::t_lacpy(
@@ -938,7 +738,16 @@ public:
             V2_->l_ld(),
             V1_->l_data() + (V1_->g_cols() - locked_) * V1_->l_ld(),
             V1_->l_ld());
-        }*/
+
+            unconverged_cols = GetRitzvBlockSize() - 2*locked_;
+        }else{
+            unconverged_cols = GetRitzvBlockSize() - locked_;
+        }
+
+        chase::linalg::lapackpp::t_lacpy(
+            'A', V2_->l_rows(), unconverged_cols,
+            V1_->l_data() + V1_->l_ld() * locked_, V1_->l_ld(),
+            V2_->l_data() + V2_->l_ld() * locked_, V2_->l_ld());
     }
 
     void RR(chase::Base<T>* ritzv, std::size_t block) override

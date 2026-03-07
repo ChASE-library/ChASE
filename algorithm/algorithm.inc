@@ -1058,7 +1058,7 @@ std::size_t Algorithm<T>::filter_H2(ChaseBase<T>* single, std::size_t n,
         T alpha = T(2.0 * tau / e_half);
         Base<T> beta_recur = sigma * tau;
 
-        single->HEMM_H2(unconverged, alpha, T(-beta_recur), T(-alpha * c), s, s);
+        single->HEMM_H2(unconverged, alpha, T(-beta_recur), T(-alpha * c), s, 0);
         Av += 2 * active_count;
 
         sigma = tau;
@@ -2068,10 +2068,10 @@ void Algorithm<T>::solve_pseudo(ChaseBase<T>* single)
             single, N, unconverged, nex, tol, index.data(), ritzv, resid,
             residLast, &early_locked_residuals, degrees, locked, iteration, nev);
 
-        if(new_converged > 0)
+        /*if(new_converged > 0)
         {
             single->ApplyKconjugate(new_converged);
-        }
+        }*/
 
         //new_converged is the number of newly locked positive eigenpairs
 

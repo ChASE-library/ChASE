@@ -898,7 +898,19 @@ public:
         }
     }
 
-    void ApplyKconjugate(std::size_t /* block */) override {}
+    void ApplyKconjugate(std::size_t block) override {
+        if constexpr (std::is_same<typename MatrixType::hermitian_type,
+            chase::matrix::PseudoHermitian>::value)
+        {
+            V1_->Kconjugate(block, locked_);
+            // Symmetric locking: layout [locked_ | first half | second half | locked_].
+            // Rows: 0..N/2-1 = upper block, N/2..N-1 = lower block.
+            // Active first half [locked_, locked_+block), second half [locked_+block, locked_+2*block).
+            // K-conjugation: set second-half cols = conjugate(first-half) with block swap.
+
+            //First, we need to know to whom each rank has to send and receive data.
+        }
+    }
 
     void QR(std::size_t fixednev, chase::Base<T> cond) override
     {
@@ -927,6 +939,8 @@ public:
                                    chase::matrix::PseudoHermitian>::value)
         {
             kernelNamespace::flipLowerHalfMatrixSign(*V1_, 0, locked_);
+            kernelNamespace::flipLowerHalfMatrixSign(*V1_, V1_->l_cols() - locked_, locked_);
+
             cudaEventRecord(qr_flip_sign);
         }
         else
@@ -1255,6 +1269,17 @@ public:
             V1_->l_data() + V1_->l_ld() * locked_, V1_->l_ld(),
             V2_->l_data() + V2_->l_ld() * locked_, V2_->l_ld());
 
+        if constexpr (std::is_same<typename MatrixType::hermitian_type,
+            chase::matrix::PseudoHermitian>::value)
+        {
+            chase::linalg::internal::cuda::t_lacpy(
+            'A', V1_->l_rows(), locked_,
+            V2_->l_data() + (V2_->g_cols() - locked_) * V2_->l_ld(),
+            V2_->l_ld(),
+            V1_->l_data() + (V1_->g_cols() - locked_) * V1_->l_ld(),
+            V1_->l_ld());
+        }
+
         cudaEventRecord(qr_end);
         cudaEventSynchronize(qr_end);
 
@@ -1293,13 +1318,17 @@ public:
 #ifdef XGEEV_EXISTS
             kernelNamespace::pseudo_hermitian_rayleighRitz(
                 cublasH_, cusolverH_, params_, *Hmat_, *V1_, *V2_, *W1_, *W2_,
-                *ritzv_, locked_, block, devInfo_, d_work_, lwork_,
+                *ritzv_, locked_, 2*block, devInfo_, d_work_, lwork_,
                 h_work_.get(), lhwork_, A_.get());
 #else
             kernelNamespace::pseudo_hermitian_rayleighRitz_v2(
                 cublasH_, cusolverH_, params_, *Hmat_, *V1_, *V2_, *W1_, *W2_,
-                *ritzv_, locked_, block, devInfo_, d_work_, lwork_, A_.get());
+                *ritzv_, locked_, 2*block, devInfo_, d_work_, lwork_, A_.get());
 #endif
+
+            chase::linalg::internal::cuda::t_lacpy(
+                'A', V2_->l_rows(), 2*block, V1_->l_data() + locked_ * V1_->l_ld(),
+                V1_->l_ld(), V2_->l_data() + locked_ * V2_->l_ld(), V2_->l_ld());
         }
         else
         {
@@ -1307,11 +1336,11 @@ public:
             kernelNamespace::rayleighRitz(
                 cublasH_, cusolverH_, *Hmat_, *V1_, *V2_, *W1_, *W2_, *ritzv_,
                 locked_, block, devInfo_, d_work_, lwork_, A_.get());
-        }
 
-        chase::linalg::internal::cuda::t_lacpy(
-            'A', V2_->l_rows(), block, V1_->l_data() + locked_ * V1_->l_ld(),
-            V1_->l_ld(), V2_->l_data() + locked_ * V2_->l_ld(), V2_->l_ld());
+            chase::linalg::internal::cuda::t_lacpy(
+                'A', V2_->l_rows(), block, V1_->l_data() + locked_ * V1_->l_ld(),
+                V1_->l_ld(), V2_->l_data() + locked_ * V2_->l_ld(), V2_->l_ld());
+        }
     }
 
     void Sort(chase::Base<T>* ritzv, chase::Base<T>* residLast,
