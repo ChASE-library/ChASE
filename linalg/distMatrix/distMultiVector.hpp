@@ -1702,10 +1702,26 @@ public:
                 }
                 cudaDeviceSynchronize();
 #endif
-    
+            if constexpr (std::is_same<Platform,chase::platform::CPU>::value)
+            {
                 MPI_Sendrecv(send_ptr, sendrecv_len * block, chase::mpi::getMPI_Type<T>(), sendrecv_rank, 0,
-                             recv_ptr, sendrecv_len * block, chase::mpi::getMPI_Type<T>(), sendrecv_rank, 1,
-                             col_comm, MPI_STATUS_IGNORE);
+                    recv_ptr, sendrecv_len * block, chase::mpi::getMPI_Type<T>(), sendrecv_rank, 1,
+                    col_comm, MPI_STATUS_IGNORE);
+            }
+#ifdef HAS_CUDA
+            else
+            {
+#ifdef HAS_NCCL
+            chase::nccl::ncclSendrecvWrapper(send_ptr, sendrecv_len * block, sendrecv_rank,
+                        recv_ptr, sendrecv_len * block, sendrecv_rank, this->mpi_grid_->get_nccl_col_comm());
+#else
+            MPI_Sendrecv(send_ptr, sendrecv_len * block, chase::mpi::getMPI_Type<T>(), sendrecv_rank, 0,
+                recv_ptr, sendrecv_len * block, chase::mpi::getMPI_Type<T>(), sendrecv_rank, 1,
+                col_comm, MPI_STATUS_IGNORE);
+#endif
+            }
+#endif
+
 #ifdef HAS_CUDA
                 cudaDeviceSynchronize();
 #endif
@@ -1783,9 +1799,27 @@ public:
                 }
                 cudaDeviceSynchronize();
 #endif
+
+                if constexpr (std::is_same<Platform,chase::platform::CPU>::value)
+                {
+                    MPI_Sendrecv(send_ptr, sendrecv_len * block, chase::mpi::getMPI_Type<T>(), sendrecv_rank, 1,
+                        recv_ptr, sendrecv_len * block, chase::mpi::getMPI_Type<T>(), sendrecv_rank, 0,
+                        col_comm, MPI_STATUS_IGNORE);
+                }
+#ifdef HAS_CUDA
+                else
+                {
+#ifdef HAS_NCCL
+                chase::nccl::ncclSendrecvWrapper(send_ptr, sendrecv_len * block, sendrecv_rank,
+                            recv_ptr, sendrecv_len * block, sendrecv_rank, this->mpi_grid_->get_nccl_col_comm());
+#else
                 MPI_Sendrecv(send_ptr, sendrecv_len * block, chase::mpi::getMPI_Type<T>(), sendrecv_rank, 1,
-                             recv_ptr, sendrecv_len * block, chase::mpi::getMPI_Type<T>(), sendrecv_rank, 0,
-                             col_comm, MPI_STATUS_IGNORE);
+                    recv_ptr, sendrecv_len * block, chase::mpi::getMPI_Type<T>(), sendrecv_rank, 0,
+                    col_comm, MPI_STATUS_IGNORE);
+#endif
+                }
+#endif
+
 #ifdef HAS_CUDA
                 cudaDeviceSynchronize();
 #endif

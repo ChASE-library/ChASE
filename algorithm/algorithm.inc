@@ -752,7 +752,7 @@ std::size_t Algorithm<T>::locking_pseudo_v3(
         std::size_t j = index[k];
 
 #ifndef CHASE_SAVE_RESIDUALS
-        if ((resid[j] <= tol || (0 && resid[j] > tol && resid[j] >= residLast[k] &&
+        if ((resid[j] <= tol || (resid[j] > tol && resid[j] >= residLast[k] &&
                                 resid[j] <= 1000.0 * tol && iteration >= 4)))
 #else
         if (resid[j] <= tol)
@@ -760,7 +760,7 @@ std::size_t Algorithm<T>::locking_pseudo_v3(
         {
 
 #ifndef CHASE_SAVE_RESIDUALS
-            if (0 && resid[j] > tol && resid[j] <= 1000.0 * tol &&
+            if (resid[j] > tol && resid[j] <= 1000.0 * tol &&
                 resid[j] >= residLast[k] && iteration >= 4)
             {
 #ifdef CHASE_OUTPUT
@@ -771,7 +771,7 @@ std::size_t Algorithm<T>::locking_pseudo_v3(
                 single->Output(oss.str());
 #endif
                 early_locked_residuals->push_back(resid[j]);
-                early_locked_residuals->push_back(resid[2*unconverged-j-1]);
+                //early_locked_residuals->push_back(resid[2*unconverged-j-1]);
             }
 #ifdef CHASE_OUTPUT
             else{
@@ -1943,6 +1943,7 @@ void Algorithm<T>::solve_pseudo(ChaseBase<T>* single)
     std::vector<Base<T>> early_locked_residuals;
 
     std::size_t locked = 0;
+    std::size_t new_converged = 0;
     std::size_t prev_new_converged = 0;
     std::size_t iteration = 0;
 
@@ -1954,7 +1955,7 @@ void Algorithm<T>::solve_pseudo(ChaseBase<T>* single)
             new_mu_nevex = new_mu_nevex * new_mu_nevex;
             new_lambda_1 = new_lambda_1 * new_lambda_1;
 
-            if (new_lambda_1 < lambda_1)
+            if (new_lambda_1 > lambda_1 && new_lambda_1 < new_mu_nevex)
             {
                 //lambda_1 = new_lambda_1;
             }
@@ -2064,14 +2065,14 @@ void Algorithm<T>::solve_pseudo(ChaseBase<T>* single)
         new_lambda_1 = ritzv[index_temp.data()[0]];
 
         // --------------- Locking ----------------------------------------------
-        std::size_t new_converged = locking_pseudo_v3(
+        new_converged = locking_pseudo_v3(
             single, N, unconverged, nex, tol, index.data(), ritzv, resid,
             residLast, &early_locked_residuals, degrees, locked, iteration, nev);
 
-        /*if(new_converged > 0)
+        if(new_converged > 0)
         {
             single->ApplyKconjugate(new_converged);
-        }*/
+        }
 
         //new_converged is the number of newly locked positive eigenpairs
 

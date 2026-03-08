@@ -653,21 +653,31 @@ public:
                                        T, chase::platform::GPU>>::value)
         {
             // Symmetric locking: layout [locked_ | active 2*unconverged | locked_]. Save both sides.
-            chase::linalg::internal::cuda::t_lacpy('A', Vec2_.rows(), locked_,
+            /*chase::linalg::internal::cuda::t_lacpy('A', Vec2_.rows(), locked_,
             Vec1_.data() + (Vec1_.cols() - locked_ ) * Vec1_.ld(), Vec1_.ld(), Vec2_.data() + (Vec2_.cols() - locked_ ) * Vec2_.ld(),
-            Vec2_.ld());
+            Vec2_.ld());*/
+
+            //std::size_t col_cpy = std::min(Vec1_.cols() - 2*locked_, locked_);
+            
+            chase::linalg::internal::cuda::t_lacpy('A', Vec1_.rows(), locked_,
+            Vec1_.data() + (Vec1_.cols() - locked_ ) * Vec1_.ld(), Vec1_.ld(), Vec2_.data() + locked_ * Vec2_.ld(),
+            Vec1_.ld());
+
             /* The right eigenvectors are not orthonormal in the QH case, but
              * S-orthonormal. Therefore, we S-orthonormalize the locked vectors
              * against the current subspace By flipping the sign of the lower
-             * part of the locked vectors. */
-            chase::linalg::internal::cuda::flipLowerHalfMatrixSign(
-                Vec1_.rows(), locked_, Vec1_.data(), Vec1_.ld());
+             * part of the locked vectors. First, we need to copy the unconverged 
+               vectors to the end of the vector space*/
+
+            chase::linalg::internal::cuda::t_lacpy('A', Vec1_.rows(), Vec1_.cols() - 2*locked_,
+            Vec1_.data() + locked_ * Vec1_.ld(), Vec1_.ld(),
+            Vec2_.data() + 2 * locked_ * Vec2_.ld(), Vec2_.ld());
+
+            Vec1_.swap(Vec2_);
 
             chase::linalg::internal::cuda::flipLowerHalfMatrixSign(
-                Vec1_.rows(), locked_, Vec1_.data() +  (Vec1_.cols() - locked_) * Vec1_.ld(), Vec1_.ld());
-            /* We do not need to flip back the sign of the locked vectors since
-             * they are stored in Vec2_ and will replace the fliped ones of
-             * Vec1_ at the end of QR. */
+                Vec1_.rows(), 2*locked_, Vec1_.data(), Vec1_.ld());
+
         }
 
         if constexpr (std::is_same<typename MatrixType::hermitian_type,
@@ -756,16 +766,27 @@ public:
             }
         }
 
-        chase::linalg::internal::cuda::t_lacpy('A', Vec1_.rows(), locked_,
-                                               Vec2_.data(), Vec2_.ld(),
-                                               Vec1_.data(), Vec1_.ld());
-
         if constexpr (std::is_same<MatrixType,
                             chase::matrix::PseudoHermitianMatrix<T, chase::platform::GPU>>::value)
         {
+            chase::linalg::internal::cuda::t_lacpy('A', Vec1_.rows(), Vec1_.cols() - 2*locked_,
+            Vec1_.data() + 2 * locked_ * Vec1_.ld(),Vec1_.ld(),
+            Vec2_.data() + locked_ * Vec2_.ld(), Vec2_.ld());
+
+            Vec1_.swap(Vec2_);
+
+            chase::linalg::internal::cuda::t_lacpy('A', Vec2_.rows(), locked_,
+            Vec1_.data(), Vec1_.ld(),
+            Vec2_.data(), Vec2_.ld());
+
+            chase::linalg::internal::cuda::t_lacpy('A', Vec2_.rows(), locked_,
+            Vec1_.data() + (Vec1_.cols() - locked_ ) * Vec1_.ld(), Vec1_.ld(),
+            Vec2_.data() + (Vec2_.cols() - locked_ ) * Vec2_.ld(), Vec2_.ld());
+
+        }else{
             chase::linalg::internal::cuda::t_lacpy('A', Vec1_.rows(), locked_,
-            Vec2_.data() + (Vec2_.cols() - locked_ ) * Vec2_.ld(),Vec2_.ld(),
-            Vec1_.data() + (Vec1_.cols() - locked_ ) * Vec1_.ld(), Vec1_.ld());
+                                               Vec2_.data(), Vec2_.ld(),
+                                               Vec1_.data(), Vec1_.ld());
         }
     }
 

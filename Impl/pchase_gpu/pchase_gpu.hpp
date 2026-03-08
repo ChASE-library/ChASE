@@ -938,8 +938,23 @@ public:
         if constexpr (std::is_same<typename MatrixType::hermitian_type,
                                    chase::matrix::PseudoHermitian>::value)
         {
-            kernelNamespace::flipLowerHalfMatrixSign(*V1_, 0, locked_);
-            kernelNamespace::flipLowerHalfMatrixSign(*V1_, V1_->l_cols() - locked_, locked_);
+            chase::linalg::internal::cuda::t_lacpy('A', V1_->l_rows(), locked_,
+            V1_->l_data() + (V1_->l_cols() - locked_ ) * V1_->l_ld(), V1_->l_ld(), V2_->l_data() + locked_ * V2_->l_ld(),
+            V1_->l_ld());
+
+            /* The right eigenvectors are not orthonormal in the QH case, but
+             * S-orthonormal. Therefore, we S-orthonormalize the locked vectors
+             * against the current subspace By flipping the sign of the lower
+             * part of the locked vectors. First, we need to copy the unconverged 
+               vectors to the end of the vector space*/
+
+            chase::linalg::internal::cuda::t_lacpy('A', V1_->l_rows(), V1_->l_cols() - 2*locked_,
+            V1_->l_data() + locked_ * V1_->l_ld(), V1_->l_ld(),
+            V2_->l_data() + 2 * locked_ * V2_->l_ld(), V2_->l_ld());
+
+            V1_->swap(*V2_);
+
+            kernelNamespace::flipLowerHalfMatrixSign(*V1_, 0, 2*locked_);
 
             cudaEventRecord(qr_flip_sign);
         }
@@ -1259,26 +1274,40 @@ public:
         }
 
         cudaEventRecord(qr_lacpy_start);
-        chase::linalg::internal::cuda::t_lacpy('A', V2_->l_rows(), locked_,
-                                               V2_->l_data(), V2_->l_ld(),
-                                               V1_->l_data(), V1_->l_ld());
 
         std::size_t unconverged_cols = GetRitzvBlockSize() - locked_;
-        chase::linalg::internal::cuda::t_lacpy(
-            'A', V2_->l_rows(), unconverged_cols,
-            V1_->l_data() + V1_->l_ld() * locked_, V1_->l_ld(),
-            V2_->l_data() + V2_->l_ld() * locked_, V2_->l_ld());
 
         if constexpr (std::is_same<typename MatrixType::hermitian_type,
             chase::matrix::PseudoHermitian>::value)
         {
-            chase::linalg::internal::cuda::t_lacpy(
-            'A', V1_->l_rows(), locked_,
-            V2_->l_data() + (V2_->g_cols() - locked_) * V2_->l_ld(),
-            V2_->l_ld(),
-            V1_->l_data() + (V1_->g_cols() - locked_) * V1_->l_ld(),
-            V1_->l_ld());
+            unconverged_cols = GetRitzvBlockSize() - 2*locked_;
+
+            chase::linalg::internal::cuda::t_lacpy('A', V1_->l_rows(), V1_->l_cols() - 2*locked_,
+            V1_->l_data() + 2 * locked_ * V1_->l_ld(),V1_->l_ld(),
+            V2_->l_data() + locked_ * V2_->l_ld(), V2_->l_ld());
+
+            V1_->swap(*V2_);
+
+            chase::linalg::internal::cuda::t_lacpy('A', V2_->l_rows(), locked_,
+            V1_->l_data(), V1_->l_ld(),
+            V2_->l_data(), V2_->l_ld());
+
+            chase::linalg::internal::cuda::t_lacpy('A', V2_->l_rows(), locked_,
+            V1_->l_data() + (V1_->l_cols() - locked_ ) * V1_->l_ld(), V1_->l_ld(),
+            V2_->l_data() + (V2_->l_cols() - locked_ ) * V2_->l_ld(), V2_->l_ld());
+
+        }else{
+            unconverged_cols = GetRitzvBlockSize() - locked_;
+
+            chase::linalg::internal::cuda::t_lacpy('A', V2_->l_rows(), locked_,
+            V2_->l_data(), V2_->l_ld(),
+            V1_->l_data(), V1_->l_ld());
         }
+        
+        chase::linalg::internal::cuda::t_lacpy(
+            'A', V2_->l_rows(), unconverged_cols,
+            V1_->l_data() + V1_->l_ld() * locked_, V1_->l_ld(),
+            V2_->l_data() + V2_->l_ld() * locked_, V2_->l_ld());
 
         cudaEventRecord(qr_end);
         cudaEventSynchronize(qr_end);

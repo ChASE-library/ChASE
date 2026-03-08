@@ -570,13 +570,29 @@ public:
              * S-orthonormal. Therefore, we S-orthonormalize the locked vectors
              * against the current subspace By flipping the sign of the lower
              * part of the locked vectors. */
-            chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(*V1_, 0,
-                                                                      locked_);
 
-            chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(*V1_, V1_->g_cols() - locked_, locked_);
             /* We do not need to flip back the sign of the locked vectors since
              * they are stored in Vec2_ and will replace the fliped ones of
              * Vec1_ at the end of QR. */
+                         
+            chase::linalg::lapackpp::t_lacpy('A', V1_->l_rows(), locked_,
+            V1_->l_data() + (V1_->l_cols() - locked_ ) * V1_->l_ld(), V1_->l_ld(), V2_->l_data() + locked_ * V2_->l_ld(),
+            V1_->l_ld());
+
+            /* The right eigenvectors are not orthonormal in the QH case, but
+             * S-orthonormal. Therefore, we S-orthonormalize the locked vectors
+             * against the current subspace By flipping the sign of the lower
+             * part of the locked vectors. First, we need to copy the unconverged 
+               vectors to the end of the vector space*/
+
+            chase::linalg::lapackpp::t_lacpy('A', V1_->l_rows(), V1_->l_cols() - 2*locked_,
+            V1_->l_data() + locked_ * V1_->l_ld(), V1_->l_ld(),
+            V2_->l_data() + 2 * locked_ * V2_->l_ld(), V2_->l_ld());
+
+            V1_->swap(*V2_);
+
+            chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(*V1_, 0,
+                2*locked_);
         }
 
 #ifdef ChASE_DISPLAY_COND_V_SVD
@@ -724,23 +740,37 @@ public:
             }
         }
 
-        chase::linalg::lapackpp::t_lacpy('A', V2_->l_rows(), locked_,
-                                         V2_->l_data(), V2_->l_ld(),
-                                         V1_->l_data(), V1_->l_ld());
-
         std::size_t unconverged_cols = 0;
         if constexpr (std::is_same<typename MatrixType::hermitian_type,
             chase::matrix::PseudoHermitian>::value)
         {
-            chase::linalg::lapackpp::t_lacpy(
+            chase::linalg::lapackpp::t_lacpy('A', V1_->l_rows(), V1_->l_cols() - 2*locked_,
+            V1_->l_data() + 2 * locked_ * V1_->l_ld(),V1_->l_ld(),
+            V2_->l_data() + locked_ * V2_->l_ld(), V2_->l_ld());
+
+            V1_->swap(*V2_);
+
+            chase::linalg::lapackpp::t_lacpy('A', V2_->l_rows(), locked_,
+            V1_->l_data(), V1_->l_ld(),
+            V2_->l_data(), V2_->l_ld());
+
+            chase::linalg::lapackpp::t_lacpy('A', V2_->l_rows(), locked_,
+            V1_->l_data() + (V1_->l_cols() - locked_ ) * V1_->l_ld(), V1_->l_ld(),
+            V2_->l_data() + (V2_->l_cols() - locked_ ) * V2_->l_ld(), V2_->l_ld());
+
+            /*chase::linalg::lapackpp::t_lacpy(
             'A', V1_->l_rows(), locked_,
             V2_->l_data() + (V2_->g_cols() - locked_) * V2_->l_ld(),
             V2_->l_ld(),
             V1_->l_data() + (V1_->g_cols() - locked_) * V1_->l_ld(),
-            V1_->l_ld());
+            V1_->l_ld());*/
 
             unconverged_cols = GetRitzvBlockSize() - 2*locked_;
         }else{
+            chase::linalg::lapackpp::t_lacpy('A', V2_->l_rows(), locked_,
+            V2_->l_data(), V2_->l_ld(),
+            V1_->l_data(), V1_->l_ld());
+            
             unconverged_cols = GetRitzvBlockSize() - locked_;
         }
 

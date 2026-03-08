@@ -248,5 +248,46 @@ ncclResult_t ncclBcastWrapper(T* buffer, std::size_t count, int root,
     return status;
 }
 
+/**
+ * @ingroup nccl_templated_communications
+ * @brief Templated NCCL Broadcast function wrapper.
+ *
+ * This function wraps the NCCL broadcast operation, adjusting the data
+ * count for complex types and handling different data types. It uses the
+ * appropriate NCCL data type and handles complex types by adjusting the
+ * data count accordingly.
+ *
+ * @tparam T The type of the elements to broadcast (supports real and complex
+ * types).
+ * @param buffer Pointer to the buffer to broadcast.
+ * @param count The number of elements to broadcast.
+ * @param root The root rank that broadcasts the data.
+ * @param comm The NCCL communicator.
+ * @param stream The CUDA stream for asynchronous operations (optional).
+ *
+ * @return NCCL result status.
+ */
+ template <typename T>
+ ncclResult_t ncclSendrecvWrapper(T* sendbuffer, std::size_t sendcount, int dest_rank,
+                                  T* recvbuffer, std::size_t recvcount, int src_rank,
+                                    ncclComm_t comm, cudaStream_t* stream = nullptr)
+ {
+     ncclDataType_t ncclType =
+         NcclType<T>::value; // Get the corresponding NCCL type
+     std::size_t adjustedSendCount =
+         sendcount * DataCountMultiplier<T>::value; // Adjust count for complex types
+    std::size_t adjustedRecvCount =
+         recvcount * DataCountMultiplier<T>::value; // Adjust count for complex types
+     cudaStream_t usedStream = (stream == nullptr) ? 0 : *stream;
+     ncclResult_t status;
+     // Call the NCCL broadcast function
+     ncclGroupStart();
+     status = ncclSend(sendbuffer, adjustedSendCount, ncclType, dest_rank, comm,
+        usedStream);
+    status = ncclRecv(recvbuffer, adjustedRecvCount, ncclType, src_rank, comm,
+        usedStream);
+    ncclGroupEnd();
+    return status;
+ }
 } // namespace nccl
 } // namespace chase
