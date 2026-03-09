@@ -1376,15 +1376,16 @@ public:
               chase::Base<T>* resid) override
     {
     }
-
+    //TODO / TO DO : Remove fixednev. 
     void Resd(chase::Base<T>* ritzv, chase::Base<T>* resd,
               std::size_t fixednev) override
     {
         SCOPED_NVTX_RANGE();
 
         // Pseudo-Hermitian: subspace size is 2*nevex_; standard: nevex_
-        std::size_t subSize =
-            (is_pseudoHerm_ ? 2 * nevex_ : nevex_) - locked_;
+        /*std::size_t subSize =
+            (is_pseudoHerm_ ? 2 * nevex_ : nevex_) - locked_;*/
+        std::size_t subSize = nevex_ - locked_;
         kernelNamespace::residuals(cublasH_, *Hmat_, *V1_, *V2_, *W1_, *W2_,
                                    ritzv_->loc_matrix(), resid_->loc_matrix(),
                                    locked_, subSize);

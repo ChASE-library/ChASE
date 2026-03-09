@@ -549,19 +549,19 @@ void rayleighRitz_v2(
             cublas_handle, subSize, M + idx * subSize, 1, &vectorNorms[idx]));
     }
 
-    for (auto idx = 0; idx < subSize; idx++)
+    for (auto idx = 0; idx < subSize/2; idx++)
     {
         norm_divider[idx] = T(1 / vectorNorms[idx]);
     }
 
-    for (auto idx = 0; idx < subSize; idx++)
+    for (auto idx = 0; idx < subSize/2; idx++)
     {
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTscal(
             cublas_handle, subSize, &norm_divider[idx], M + idx * subSize, 1));
     }
 
     CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(
-        cublas_handle, CUBLAS_OP_N, CUBLAS_OP_N, V1.rows(), n, n, &One,
+        cublas_handle, CUBLAS_OP_N, CUBLAS_OP_N, V1.rows(), n/2, n, &One,
         V1.data() + offset * V1.ld(), V1.ld(), M, n, &Zero,
         V2.data() + offset * V2.ld(), V2.ld()));
 }

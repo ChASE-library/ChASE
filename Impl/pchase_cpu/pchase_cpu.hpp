@@ -818,8 +818,9 @@ public:
               std::size_t fixednev) override
     {
         // Pseudo-Hermitian: subspace size is 2*nevex_; standard: nevex_
-        std::size_t subSize =
-        (is_pseudoHerm_ ? 2 * nevex_ : nevex_) - locked_;
+        /*std::size_t subSize =
+        (is_pseudoHerm_ ? 2 * nevex_ : nevex_) - locked_;*/
+        std::size_t subSize = nevex_ - locked_;
 
         chase::linalg::internal::cpu_mpi::residuals(
             *Hmat_, *V1_, *V2_, *W1_, *W2_, ritzv_->l_data(), resid_->l_data(),

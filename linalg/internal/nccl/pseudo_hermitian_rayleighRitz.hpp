@@ -645,25 +645,25 @@ void cuda_nccl::pseudo_hermitian_rayleighRitz_v2(
     std::vector<chase::Base<T>> vectorNorms(subSize);
     std::vector<T> norm_divider(subSize);
 
-    for (auto idx = 0; idx < subSize; idx++)
+    for (auto idx = 0; idx < subSize/2; idx++)
     {
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTnrm2(
             cublas_handle, subSize, M + idx * subSize, 1, &vectorNorms[idx]));
     }
 
-    for (auto idx = 0; idx < subSize; idx++)
+    for (auto idx = 0; idx < subSize/2; idx++)
     {
         norm_divider[idx] = T(1 / vectorNorms[idx]);
     }
 
-    for (auto idx = 0; idx < subSize; idx++)
+    for (auto idx = 0; idx < subSize/2; idx++)
     {
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTscal(
             cublas_handle, subSize, &norm_divider[idx], M + idx * subSize, 1));
     }
 
     CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(
-        cublas_handle, CUBLAS_OP_N, CUBLAS_OP_N, V2.l_rows(), subSize, subSize,
+        cublas_handle, CUBLAS_OP_N, CUBLAS_OP_N, V2.l_rows(), subSize/2, subSize,
         &One, V2.l_data() + offset * V2.l_ld(), V2.l_ld(), M, subSize, &Zero,
         V1.l_data() + offset * V1.l_ld(), V1.l_ld()));
 }

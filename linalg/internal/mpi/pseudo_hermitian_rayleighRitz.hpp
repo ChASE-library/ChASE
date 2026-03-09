@@ -418,6 +418,8 @@ void cpu_mpi::pseudo_hermitian_rayleighRitz_v2(
     chase::Base<T> ritz_neg_one = chase::Base<T>(-1.0);
     blaspp::t_scal(subSize, &ritz_neg_one, ritzv + offset, 1);
 
+    // TODO / TO DO : Solve with TRTRS here :
+
     blaspp::t_trsm('L', 'L', 'C', 'N', subSize, subSize, &One, A->l_data(),
                    subSize, M, subSize);
 
@@ -435,17 +437,17 @@ void cpu_mpi::pseudo_hermitian_rayleighRitz_v2(
         }
         ritzv[idx + offset] = 1.0 / ritzv[idx + offset];
     }
-    for (auto idx = 0; idx < subSize; idx++)
+    for (auto idx = 0; idx < subSize/2; idx++)
     {
         norms[idx] = T(1.0 / blaspp::t_nrm2(subSize, M + idx * subSize, 1));
     }
-    for (auto idx = 0; idx < subSize; idx++)
+    for (auto idx = 0; idx < subSize/2; idx++)
     {
         blaspp::t_scal(subSize, &norms[idx], M + idx * subSize, 1);
     }
     // GEMM for applying eigenvectors back to V1 from V2 * A
     chase::linalg::blaspp::t_gemm(
-        CblasColMajor, CblasNoTrans, CblasNoTrans, V2.l_rows(), subSize,
+        CblasColMajor, CblasNoTrans, CblasNoTrans, V2.l_rows(), subSize/2,
         subSize, &One, V2.l_data() + offset * V2.l_ld(), V2.l_ld(), M, subSize,
         &Zero, V1.l_data() + offset * V1.l_ld(), V1.l_ld());
 }

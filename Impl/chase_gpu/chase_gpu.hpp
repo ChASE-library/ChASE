@@ -825,19 +825,21 @@ public:
     {
     }
 
+    //TODO / TO DO : Remove fixednev. 
     void Resd(chase::Base<T>* ritzv, chase::Base<T>* resd,
               std::size_t fixednev) override
     {
         SCOPED_NVTX_RANGE();
         // Pseudo-Hermitian: subspace size is 2*nevex_; standard: nevex_
-        std::size_t unconverged = 
-            (is_pseudoHerm_ ? (2 * (nevex_  - fixednev)) : (nev_ + nex_ - fixednev));
+        /*std::size_t unconverged = 
+            (is_pseudoHerm_ ? (2 * (nevex_  - fixednev)) : (nev_ + nex_ - fixednev));*/
+        std::size_t subSize = nevex_ - locked_;
 
         chase::linalg::internal::cuda::residuals(cublasH_, Hmat_, Vec1_,
                                                  ritzvs_.data(), resid_.data(),
-                                                 fixednev, unconverged, &Vec2_);
-        CHECK_CUDA_ERROR(cudaMemcpy(resd, resid_.data() + fixednev,
-                                    unconverged * sizeof(chase::Base<T>),
+                                                 locked_, subSize, &Vec2_);
+        CHECK_CUDA_ERROR(cudaMemcpy(resd, resid_.data() + locked_,
+                                    subSize * sizeof(chase::Base<T>),
                                     cudaMemcpyDeviceToHost));
     }
 

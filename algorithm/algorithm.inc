@@ -775,15 +775,10 @@ std::size_t Algorithm<T>::locking_pseudo_v3(
             }
 #ifdef CHASE_OUTPUT
             else{
-                std::ostringstream oss;
+                /*std::ostringstream oss;
                 oss << "locking converged pair is:" << j << " " << resid[j]
                     << " was:" << residLast[k] << " tolerance is: " << tol
-                    << " val: " << Lritzv[j] << "\n";
-
-                oss << "locking converged pair is:" << 2*unconverged-j-1 << " " << resid[2*unconverged-j-1]
-                    << " was:" << residLast[k] << " tolerance is: " << tol
-                    << " val: " << Lritzv[2*unconverged-j-1] << "\n";
-                single->Output(oss.str());
+                    << " val: " << Lritzv[j] << "\n";*/
             }
 #endif
             if (j != converged)
@@ -816,7 +811,7 @@ std::size_t Algorithm<T>::locking_pseudo_v3(
     for (std::size_t i = converged; i < unconverged; ++i)
     {
         residLast[i] = residLast_unconverged[index_unconverged[i - converged]];
-        residLast[2*unconverged-converged-1-(i-converged)] = residLast_unconverged[index_unconverged[i - converged]];
+        //residLast[2*unconverged-converged-1-(i-converged)] = residLast_unconverged[index_unconverged[i - converged]];
     }
 
     return converged;
@@ -1995,6 +1990,7 @@ void Algorithm<T>::solve_pseudo(ChaseBase<T>* single)
         
         single->ApplyKconjugate(unconverged);
 
+        //TODO / TO DO : Compute cond on sqrt parameters instead. Probably inaccurate => ShiftedCholQR always.
         Base<T> cc = (b_sup + lower) / 2;
         Base<T> ee = (b_sup - lower) / 2;
         if (ee <= Base<T>(0))
@@ -2036,12 +2032,15 @@ void Algorithm<T>::solve_pseudo(ChaseBase<T>* single)
                 << "new_converged" << "\t" << prev_new_converged << "\n";
             oss << "index\tdegrees\tresid\tresidLast\tritzv\n";
             
-            for (std::size_t i = 0; i < 2*unconverged; ++i)
+            for (std::size_t i = 0; i < unconverged; ++i)
             {
                 oss << index[i] << "\t" << degrees[index[i]] << "\t"
                     << resid[index[i]] << "\t" << residLast[i] << "\t" << ritzv[index[i]]
                     << "\n";
             }
+
+            oss << "SYMMETRY CHECK : " << "\t" << ritzv[index[0]] << " =?= " << ritzv[index[2*unconverged-1]] << "\t"
+                << ritzv[index[unconverged-1]] << " =?= " << ritzv[index[unconverged]] << "\n";
 
             single->Output(oss.str());
         }

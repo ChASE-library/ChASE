@@ -691,18 +691,20 @@ public:
               chase::Base<T>* resid) override
     {}
 
+    //TODO / TO DO : Remove fixednev. 
     void Resd(chase::Base<T>* ritzv, chase::Base<T>* resd,
               std::size_t fixednev) override
     {
         // Pseudo-Hermitian: subspace size is 2*nevex_; standard: nevex_
-        std::size_t unconverged = 
-            (is_pseudoHerm_ ? (2 * (nevex_  - fixednev)) : (nev_ + nex_ - fixednev));
-
+        /*std::size_t unconverged = 
+            (is_pseudoHerm_ ? (2 * (nevex_  - fixednev)) : (nev_ + nex_ - fixednev));*/
+            
+        std::size_t subSize = nevex_ - locked_;
         chase::linalg::internal::cpu::residuals(
-            Hmat_->rows(), Hmat_->data(), Hmat_->ld(), unconverged,
-            ritzvs_.data() + fixednev, Vec1_.data() + fixednev * Vec1_.ld(),
-            Vec1_.ld(), resid_.data() + fixednev,
-            Vec2_.data() + fixednev * Vec2_.ld());
+            Hmat_->rows(), Hmat_->data(), Hmat_->ld(), subSize,
+            ritzvs_.data() + locked_, Vec1_.data() + locked_ * Vec1_.ld(),
+            Vec1_.ld(), resid_.data() + locked_,
+            Vec2_.data() + locked_ * Vec2_.ld());
     }
 
     void Swap(std::size_t i, std::size_t j) override

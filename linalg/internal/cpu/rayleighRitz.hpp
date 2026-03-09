@@ -325,6 +325,7 @@ void rayleighRitz_v2(chase::matrix::PseudoHermitianMatrix<T>* H, std::size_t n,
     Base<T> ritz_minus_one = Base<T>(-1.0);
     blaspp::t_scal(n, &ritz_minus_one, ritzv, 1);
 
+    // TODO / TO DO : Solve with TRTRS here :
     blaspp::t_trsm('L', 'L', 'C', 'N', n, n, &One, A, n, M, n);
 
     // Invert the ritz values and normalize the vectors
@@ -334,17 +335,17 @@ void rayleighRitz_v2(chase::matrix::PseudoHermitianMatrix<T>* H, std::size_t n,
     {
         ritzv[idx] = 1.0 / ritzv[idx];
     }
-    for (auto idx = 0; idx < n; idx++)
+    for (auto idx = 0; idx < n/2; idx++)
     {
         norms[idx] = T(1.0 / blaspp::t_nrm2(n, M + idx * n, 1));
     }
-    for (auto idx = 0; idx < n; idx++)
+    for (auto idx = 0; idx < n/2; idx++)
     {
         blaspp::t_scal(n, &norms[idx], M + idx * n, 1);
     }
 
     // Project ritz vectors back to the initial space
-    blaspp::t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, N, n, n, &One, Q,
+    blaspp::t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, N, n/2, n, &One, Q,
                    ldq, M, n, &Zero, V, ldv);
 }
 } // namespace cpu
