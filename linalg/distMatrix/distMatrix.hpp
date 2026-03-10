@@ -2112,8 +2112,6 @@ public:
         int one = 1;
         int info;
         int comm2D_ctxt = mpi_grid_.get()->get_blacs_comm2D_ctxt();
-        int grank;
-        MPI_Comm_rank(MPI_COMM_WORLD, &grank);
         if constexpr (std::is_same<Platform, chase::platform::GPU>::value)
         {
             if (local_matrix_.cpu_data() == nullptr)

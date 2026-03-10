@@ -414,10 +414,10 @@ private:
 #endif
 
 #ifdef HAS_SCALAPACK
-        int zero = 0;
         int one = 1;
-        int ictxt;
-        chase::linalg::scalapackpp::blacs_get_(&zero, &zero, &ictxt);
+        // Create BLACS contexts bound to the user communicator `comm_`
+        // instead of relying on the global BLACS system context.
+        int ictxt = chase::linalg::scalapackpp::Csys2blacs_handle(comm_);
         colComm1D_ctxt_ = ictxt;
         int userMap[dims_[0]];
         if (MajorOrder == GridMajor::ColMajor)
@@ -435,23 +435,24 @@ private:
             }
         }
 
-        chase::linalg::scalapackpp::blacs_gridmap_(&colComm1D_ctxt_, userMap,
-                                                   &dims_[0], &dims_[0], &one);
-
-        int ictxt_2;
-        chase::linalg::scalapackpp::blacs_get_(&zero, &zero, &ictxt_2);
+        // 1D column communicator context (dims_[0] x 1 grid) using C BLACS
+        chase::linalg::scalapackpp::Cblacs_gridmap(
+            &colComm1D_ctxt_, userMap, dims_[0], dims_[0], 1);
+        
+        // 2D BLACS grid context over the same communicator    
+        int ictxt_2 = chase::linalg::scalapackpp::Csys2blacs_handle(comm_);
         comm2D_ctxt_ = ictxt_2;
         if (MajorOrder == GridMajor::RowMajor)
         {
             char major = 'R';
-            chase::linalg::scalapackpp::blacs_gridinit_(&comm2D_ctxt_, &major,
-                                                        &dims_[0], &dims_[1]);
+            chase::linalg::scalapackpp::Cblacs_gridinit(&comm2D_ctxt_, &major,
+                                                        dims_[0], dims_[1]);
         }
         else
         {
             char major = 'C';
-            chase::linalg::scalapackpp::blacs_gridinit_(&comm2D_ctxt_, &major,
-                                                        &dims_[0], &dims_[1]);
+            chase::linalg::scalapackpp::Cblacs_gridinit(&comm2D_ctxt_, &major,
+                                                        dims_[0], dims_[1]);
         }
 #endif
     }
