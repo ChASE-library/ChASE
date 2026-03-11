@@ -1320,6 +1320,8 @@ public:
         cudaEventRecord(qr_end);
         cudaEventSynchronize(qr_end);
 
+        cudaDeviceSynchronize();
+
         // Calculate and print detailed timings
         float time_flip_sign = 0.0f, time_cholqr = 0.0f, time_lacpy = 0.0f, time_total = 0.0f;
         cudaEventElapsedTime(&time_flip_sign, qr_start, qr_flip_sign);
@@ -1351,6 +1353,8 @@ public:
     {
         SCOPED_NVTX_RANGE();
 
+        cudaDeviceSynchronize();
+
         if constexpr (std::is_same<typename MatrixType::hermitian_type,
                                    chase::matrix::PseudoHermitian>::value)
         {
@@ -1380,6 +1384,8 @@ public:
                 'A', V2_->l_rows(), block, V1_->l_data() + locked_ * V1_->l_ld(),
                 V1_->l_ld(), V2_->l_data() + locked_ * V2_->l_ld(), V2_->l_ld());
         }
+
+        cudaDeviceSynchronize();
     }
 
     void Sort(chase::Base<T>* ritzv, chase::Base<T>* residLast,

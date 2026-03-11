@@ -52,8 +52,8 @@ class ChasePerfData
 
 public:
     ChasePerfData(int matrix_type = 0)
-        : chase_iteration_count(0), chase_filtered_vecs(0), timings(7),
-          start_points(7), end_points(7), chase_iter_blocksizes(0),
+        : chase_iteration_count(0), chase_filtered_vecs(0), timings(8),
+          start_points(8), end_points(8), chase_iter_blocksizes(0),
           matrix_type(matrix_type)
     {
     }
@@ -64,6 +64,7 @@ public:
         InitVecs,
         Lanczos,
         Filter,
+        ApplyKconjugate,
         Qr,
         Rr,
         Resids_Locking
@@ -355,7 +356,7 @@ public:
 
         std::vector<std::string> output_names = {
             "MPI procs", "Iterations", "Vecs", "All", "Init Vecs",
-            "Lanczos",   "Filter",     "QR",   "RR",  "Resid"};
+            "Lanczos",   "Filter",     "Kconjugate", "QR",   "RR",  "Resid"};
 
         std::vector<std::string> all_values = {
             std::to_string(nprocs), std::to_string(chase_iteration_count),
@@ -569,9 +570,9 @@ public:
     }
     void ApplyKconjugate(std::size_t block) override
     {
-    //    perf_.start_clock(ChasePerfData<T>::TimePtrs::ApplyKconjugate);
+        perf_.start_clock(ChasePerfData<T>::TimePtrs::ApplyKconjugate);
         chase_->ApplyKconjugate(block);
-    //    perf_.end_clock(ChasePerfData<T>::TimePtrs::ApplyKconjugate);
+        perf_.end_clock(ChasePerfData<T>::TimePtrs::ApplyKconjugate);
     }
     void FilterPhaseStart() override
     {

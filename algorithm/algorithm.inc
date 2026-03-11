@@ -2006,7 +2006,21 @@ void Algorithm<T>::solve_pseudo(ChaseBase<T>* single)
         filter_H2(single, N, unconverged, degrees, lambda_1, lower, b_sup);
         single->FilterPhaseEnd();
         
+#ifdef CHASE_OUTPUT
+        {
+            std::ostringstream oss;
+            oss << "Applying K conjugate..." << std::endl;
+            single->Output(oss.str());
+        }
+#endif
         single->ApplyKconjugate(unconverged);
+#ifdef CHASE_OUTPUT
+        {
+            std::ostringstream oss;
+            oss << "Applied K conjugate..." << std::endl;
+            single->Output(oss.str());
+        }
+#endif
 
         //TODO / TO DO : Compute cond on sqrt parameters instead. Probably inaccurate => ShiftedCholQR always.
         Base<T> cc = (b_sup + lower) / 2;
