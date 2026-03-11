@@ -980,8 +980,11 @@ public:
         {
             l_half_ = m_;
         }
-
-        this->Init_Kconjugate();
+        if constexpr (comm_type ==
+            chase::distMultiVector::CommunicatorType::column)
+        {
+            this->Init_Kconjugate();
+        }
     }
     /**
      * @brief Constructs a distributed multivector with specified local
@@ -1712,8 +1715,11 @@ public:
             else
             {
 #ifdef HAS_NCCL
-            chase::nccl::ncclSendrecvWrapper(send_ptr, sendrecv_len * block, sendrecv_rank,
-                        recv_ptr, sendrecv_len * block, sendrecv_rank, this->mpi_grid_->get_nccl_col_comm());
+
+            CHECK_NCCL_ERROR(chase::nccl::ncclSendrecvWrapper(send_ptr, sendrecv_len * block, sendrecv_rank,
+                                                              recv_ptr, sendrecv_len * block, sendrecv_rank,
+                                                              this->mpi_grid_->get_nccl_col_comm()));
+
 #else
             MPI_Sendrecv(send_ptr, sendrecv_len * block, chase::mpi::getMPI_Type<T>(), sendrecv_rank, 0,
                 recv_ptr, sendrecv_len * block, chase::mpi::getMPI_Type<T>(), sendrecv_rank, 1,
@@ -1810,8 +1816,9 @@ public:
                 else
                 {
 #ifdef HAS_NCCL
-                chase::nccl::ncclSendrecvWrapper(send_ptr, sendrecv_len * block, sendrecv_rank,
-                            recv_ptr, sendrecv_len * block, sendrecv_rank, this->mpi_grid_->get_nccl_col_comm());
+                CHECK_NCCL_ERROR(chase::nccl::ncclSendrecvWrapper(send_ptr, sendrecv_len * block, sendrecv_rank,
+                                                                  recv_ptr, sendrecv_len * block, sendrecv_rank,
+                                                                  this->mpi_grid_->get_nccl_col_comm()));
 #else
                 MPI_Sendrecv(send_ptr, sendrecv_len * block, chase::mpi::getMPI_Type<T>(), sendrecv_rank, 1,
                     recv_ptr, sendrecv_len * block, chase::mpi::getMPI_Type<T>(), sendrecv_rank, 0,
@@ -1862,8 +1869,12 @@ public:
         {
             chase::linalg::internal::cuda::conjugate_inplace(this->l_data() + col_second * this->l_ld(),
                                                              this->l_rows(), block, this->l_ld(), 0);
+
+            cudaDeviceSynchronize();
         }
 #endif
+
+        MPI_Barrier(MPI_COMM_WORLD);
     }
 
     /**
