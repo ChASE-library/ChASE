@@ -2010,7 +2010,7 @@ void Algorithm<T>::solve_pseudo(ChaseBase<T>* single)
         {
             std::ostringstream oss;
             oss << "Applying K conjugate..." << std::endl;
-            single->Output(oss.str());
+            single->Output(LogLevel::Debug, oss.str(), "algorithm");
         }
 #endif
         single->ApplyKconjugate(unconverged);
@@ -2018,7 +2018,7 @@ void Algorithm<T>::solve_pseudo(ChaseBase<T>* single)
         {
             std::ostringstream oss;
             oss << "Applied K conjugate..." << std::endl;
-            single->Output(oss.str());
+            single->Output(LogLevel::Debug, oss.str(), "algorithm");
         }
 #endif
 

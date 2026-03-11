@@ -398,7 +398,7 @@ void cpu_mpi::houseHoulderQR(InputMultiVectorType& V)
                                        V.l_data(), one, one, desc, tau.data());
 
 #else
-    std::runtime_error("For ChASE-MPI, distributed Householder QR requires "
+    throw std::runtime_error("For ChASE-MPI, distributed Householder QR requires "
                        "ScaLAPACK, which is not detected\n");
 #endif
 }

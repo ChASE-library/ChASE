@@ -163,16 +163,16 @@ void cpu_mpi::lanczos(std::size_t M, std::size_t numvec, MatrixType& H,
 
     if (H.g_cols() != H.g_rows())
     {
-        std::runtime_error("Lanczos requires matrix to be squared");
+        throw std::runtime_error("Lanczos requires matrix to be squared");
     }
 
     if (H.getMpiGrid() != V.getMpiGrid())
     {
-        std::runtime_error("Lanczos requires H and V in same MPI grid");
+        throw std::runtime_error("Lanczos requires H and V in same MPI grid");
     }
     if (H.g_rows() != V.g_rows())
     {
-        std::runtime_error("Lanczos H and V have same number of rows");
+        throw std::runtime_error("Lanczos H and V have same number of rows");
     }
 
     std::vector<chase::Base<T>> r_beta(numvec);
@@ -380,17 +380,17 @@ void cpu_mpi::lanczos(std::size_t M, MatrixType& H, InputMultiVectorType& V,
 
     if (H.g_cols() != H.g_rows())
     {
-        std::runtime_error("Lanczos requires matrix to be squared");
+        throw std::runtime_error("Lanczos requires matrix to be squared");
     }
 
     if (H.getMpiGrid() != V.getMpiGrid())
     {
-        std::runtime_error("Lanczos requires H and V in same MPI grid");
+        throw std::runtime_error("Lanczos requires H and V in same MPI grid");
     }
 
     if (H.g_rows() != V.g_rows())
     {
-        std::runtime_error("Lanczos H and V have same number of rows");
+        throw std::runtime_error("Lanczos H and V have same number of rows");
     }
 
     std::vector<chase::Base<T>> d(M);

@@ -951,7 +951,7 @@ public:
         }
         else
         {
-            std::runtime_error("no CommunicatorType supported");
+            throw std::runtime_error("no CommunicatorType supported");
         }
 
         if (M_ % dim == 0)
@@ -1046,7 +1046,7 @@ public:
         }
         else
         {
-            std::runtime_error("no CommunicatorType supported");
+            throw std::runtime_error("no CommunicatorType supported");
         }
 
         MPI_Allreduce(&lv, &res, 1, MPI_UINT64_T, MPI_SUM, comm);
@@ -1081,7 +1081,7 @@ public:
         }
         else
         {
-            std::runtime_error("no CommunicatorType supported");
+            throw std::runtime_error("no CommunicatorType supported");
         }
 
         mb_ = m_;

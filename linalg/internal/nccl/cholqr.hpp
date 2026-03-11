@@ -1183,7 +1183,7 @@ void cuda_nccl::houseHoulderQR(InputMultiVectorType& V)
     V.H2D();
 
 #else
-    std::runtime_error("For ChASE-MPI, distributed Householder QR requires "
+    throw std::runtime_error("For ChASE-MPI, distributed Householder QR requires "
                        "ScaLAPACK, which is not detected\n");
 #endif
 }

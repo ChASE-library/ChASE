@@ -187,7 +187,7 @@ void cpu_mpi::symOrHermMatrix(char uplo,
         }
     }
 #else
-    std::runtime_error("For ChASE-MPI, symOrHermMatrix requires ScaLAPACK, "
+    throw std::runtime_error("For ChASE-MPI, symOrHermMatrix requires ScaLAPACK, "
                        "which is not detected\n");
 #endif
 }
@@ -314,7 +314,7 @@ void cpu_mpi::symOrHermMatrix(char uplo,
     }
 
 #else
-    std::runtime_error("For ChASE-MPI, symOrHermMatrix requires ScaLAPACK, "
+    throw std::runtime_error("For ChASE-MPI, symOrHermMatrix requires ScaLAPACK, "
                        "which is not detected\n");
 #endif
 }
