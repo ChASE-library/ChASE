@@ -12,8 +12,10 @@
 #include <memory>    // For std::unique_ptr, std::shared_ptr
 #include <mpi.h>
 #include <omp.h>     // For OpenMP parallelization
+#include <sstream>
 #include <stdexcept> // For throwing runtime errors
 
+#include "algorithm/logger.hpp"
 #include "algorithm/types.hpp"
 #include "external/lapackpp/lapackpp.hpp"
 #include "grid/mpiGrid2D.hpp"
@@ -310,8 +312,11 @@ public:
                 end - start);
 
             if (this->grank() == 0)
-                std::cout << "Single precision matrix enabled in "
-                             "AbstractDistMultiVector. \n";
+            {
+                chase::GetLogger().Log(chase::LogLevel::Debug, "linalg",
+                    "Single precision matrix enabled in AbstractDistMultiVector.",
+                    this->grank());
+            }
         }
         else
         {
@@ -380,8 +385,11 @@ public:
             end - start);
 
         if (this->grank() == 0)
-            std::cout << "Single precision matrix disabled in "
-                         "AbstractDistMultiVector. \n";
+        {
+            chase::GetLogger().Log(chase::LogLevel::Debug, "linalg",
+                "Single precision matrix disabled in AbstractDistMultiVector.",
+                this->grank());
+        }
 
         single_precision_multivec_.reset(); // Free the single precision memory
         is_single_precision_enabled_ = false;
@@ -509,8 +517,11 @@ public:
                 end - start);
 
             if (this->grank() == 0)
-                std::cout << "Double precision matrix enabled in "
-                             "AbstractDistMultiVector. \n";
+            {
+                chase::GetLogger().Log(chase::LogLevel::Debug, "linalg",
+                    "Double precision matrix enabled in AbstractDistMultiVector.",
+                    this->grank());
+            }
         }
         else
         {
@@ -575,8 +586,11 @@ public:
             end - start);
 
         if (this->grank() == 0)
-            std::cout << "Double precision matrix disabled in "
-                         "AbstractDistMultiVector. \n";
+        {
+            chase::GetLogger().Log(chase::LogLevel::Debug, "linalg",
+                "Double precision matrix disabled in AbstractDistMultiVector.",
+                this->grank());
+        }
     }
 
     // Check if double precision is enabled
@@ -678,9 +692,12 @@ public:
             end - start);
 
         if (this->grank() == 0)
-            std::cout
-                << "Single precision matrix copied back to double precision in "
-                   "AbstractDistMultiVector. \n";
+        {
+            chase::GetLogger().Log(chase::LogLevel::Debug, "linalg",
+                "Single precision matrix copied back to double precision in "
+                "AbstractDistMultiVector.",
+                this->grank());
+        }
     }
 
     // Copy from double to single precision (if T is float)
@@ -728,9 +745,12 @@ public:
             end - start);
 
         if (this->grank() == 0)
-            std::cout
-                << "Double precision matrix copied back to single precision in "
-                   "AbstractDistMultiVector. \n";
+        {
+            chase::GetLogger().Log(chase::LogLevel::Debug, "linalg",
+                "Double precision matrix copied back to single precision in "
+                "AbstractDistMultiVector.",
+                this->grank());
+        }
     }
 
     // Copy from double to single precision (if T is double)
@@ -779,9 +799,12 @@ public:
             end - start);
 
         if (this->grank() == 0)
-            std::cout
-                << "Single precision matrix copied to double precision in "
-                   "AbstractDistMultiVector. \n";
+        {
+            chase::GetLogger().Log(chase::LogLevel::Debug, "linalg",
+                "Double precision matrix copied to single precision in "
+                "AbstractDistMultiVector.",
+                this->grank());
+        }
     }
 
     // Copy from single to double precision (if T is float)
@@ -830,9 +853,12 @@ public:
             end - start);
 
         if (this->grank() == 0)
-            std::cout
-                << "Single precision matrix copied to double precision in "
-                   "AbstractDistMultiVector. \n";
+        {
+            chase::GetLogger().Log(chase::LogLevel::Debug, "linalg",
+                "Single precision matrix copied to double precision in "
+                "AbstractDistMultiVector.",
+                this->grank());
+        }
     }
 
     // If T is neither float nor double, these methods should not be available

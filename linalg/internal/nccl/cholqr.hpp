@@ -13,8 +13,10 @@
 #include "linalg/distMatrix/distMultiVector.hpp"
 #include "linalg/internal/cpu/utils.hpp"
 #include "mpi.h"
+#include "algorithm/logger.hpp"
 #include <iomanip>
 #include <limits>
+#include <sstream>
 #include <stdexcept>
 
 #include "external/cublaspp/cublaspp.hpp"
@@ -180,16 +182,21 @@ int cuda_nccl::cholQR1(cublasHandle_t cublas_handle,
 #ifdef CHASE_OUTPUT
         int grank;
         MPI_Comm_rank(MPI_COMM_WORLD, &grank);
-        if (grank == 0)
-        {
-            std::cout << "choldegree: 1" << std::endl;
-            std::cout << std::setprecision(6) << std::fixed;
-            std::cout << "  [cholQR1 Breakdown] Total: " << t_total/1000.0 << " s" << std::endl;
-            std::cout << "    SYHERK:       " << t_syherk/1000.0 << " s (" << 100.0*t_syherk/t_total << "%)" << std::endl;
-            std::cout << "    AllReduce:    " << t_allreduce/1000.0 << " s (" << 100.0*t_allreduce/t_total << "%)" << std::endl;
-            std::cout << "    Cholesky:     " << t_potrf/1000.0 << " s (" << 100.0*t_potrf/t_total << "%)" << std::endl;
-            std::cout << "    TRSM:         " << t_trsm/1000.0 << " s (" << 100.0*t_trsm/t_total << "%)" << std::endl;
-        }
+        chase::GetLogger().Log(chase::LogLevel::Info, "linalg", "choldegree: 1",
+            grank);
+        std::ostringstream oss;
+        oss << std::fixed << std::setprecision(6)
+            << "  [cholQR1 Breakdown] Total: " << t_total / 1000.0 << " s\n"
+            << "    SYHERK:       " << t_syherk / 1000.0 << " s ("
+            << 100.0 * t_syherk / t_total << "%)\n"
+            << "    AllReduce:    " << t_allreduce / 1000.0 << " s ("
+            << 100.0 * t_allreduce / t_total << "%)\n"
+            << "    Cholesky:     " << t_potrf / 1000.0 << " s ("
+            << 100.0 * t_potrf / t_total << "%)\n"
+            << "    TRSM:         " << t_trsm / 1000.0 << " s ("
+            << 100.0 * t_trsm / t_total << "%)";
+        chase::GetLogger().Log(chase::LogLevel::Info, "linalg", oss.str(),
+            grank);
 #endif
         cudaEventDestroy(ev_start);
         cudaEventDestroy(ev_syherk);
@@ -302,12 +309,10 @@ int cuda_nccl::cholQR1(cublasHandle_t cublas_handle,
 #ifdef CHASE_OUTPUT
         int grank;
         MPI_Comm_rank(MPI_COMM_WORLD, &grank);
-        if (grank == 0)
-        {
-            std::cout << "choldegree: 1" << std::endl;
-        }
+        chase::GetLogger().Log(chase::LogLevel::Info, "linalg", "choldegree: 1",
+            grank);
 #endif
-        
+
         CHECK_CUDA_ERROR(cudaFree(devInfo));
         return info;
     }
@@ -481,16 +486,19 @@ int cuda_nccl::cholQR2(cublasHandle_t cublas_handle,
 #ifdef CHASE_OUTPUT
         int grank;
         MPI_Comm_rank(MPI_COMM_WORLD, &grank);
-        if (grank == 0)
-        {
-            std::cout << "choldegree: 2" << std::endl;
-            std::cout << std::setprecision(6) << std::fixed;
-            std::cout << "  [cholQR2 Breakdown] Total: " << t_total/1000.0 << " s" << std::endl;
-            std::cout << "  Iter1: SYHERK=" << t_syherk1/1000.0 << "s, AllReduce=" << t_allreduce1/1000.0 
-                      << "s, Cholesky=" << t_potrf1/1000.0 << "s, TRSM=" << t_trsm1/1000.0 << "s" << std::endl;
-            std::cout << "  Iter2: SYHERK=" << t_syherk2/1000.0 << "s, AllReduce=" << t_allreduce2/1000.0 
-                      << "s, Cholesky=" << t_potrf2/1000.0 << "s, TRSM=" << t_trsm2/1000.0 << "s" << std::endl;
-        }
+        chase::GetLogger().Log(chase::LogLevel::Info, "linalg", "choldegree: 2",
+            grank);
+        std::ostringstream oss;
+        oss << std::fixed << std::setprecision(6)
+            << "  [cholQR2 Breakdown] Total: " << t_total / 1000.0 << " s\n"
+            << "  Iter1: SYHERK=" << t_syherk1 / 1000.0 << "s, AllReduce="
+            << t_allreduce1 / 1000.0 << "s, Cholesky=" << t_potrf1 / 1000.0
+            << "s, TRSM=" << t_trsm1 / 1000.0 << "s\n"
+            << "  Iter2: SYHERK=" << t_syherk2 / 1000.0 << "s, AllReduce="
+            << t_allreduce2 / 1000.0 << "s, Cholesky=" << t_potrf2 / 1000.0
+            << "s, TRSM=" << t_trsm2 / 1000.0 << "s";
+        chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(),
+            grank);
 #endif
         cudaEventDestroy(ev_start);
         cudaEventDestroy(ev_syherk1);
@@ -603,8 +611,10 @@ int cuda_nccl::cholQR2(cublasHandle_t cublas_handle,
     if constexpr (std::is_same<T, double>::value ||
                   std::is_same<T, std::complex<double>>::value)
     {
-        std::cout << "In cholqr2, the first cholqr using Single Precision"
-                  << std::endl;
+        int grank;
+        MPI_Comm_rank(MPI_COMM_WORLD, &grank);
+        chase::GetLogger().Log(chase::LogLevel::Info, "linalg",
+            "In cholqr2, the first cholqr using Single Precision", grank);
         using singlePrecisionT =
             typename chase::ToSinglePrecisionTrait<T>::Type;
         V.enableSinglePrecision();
@@ -878,18 +888,19 @@ int cuda_nccl::shiftedcholQR2(cublasHandle_t cublas_handle,
 #ifdef CHASE_OUTPUT
     int grank;
     MPI_Comm_rank(MPI_COMM_WORLD, &grank);
-    if (grank == 0)
-    {
-        std::cout << std::setprecision(6) << std::fixed;
-        std::cout << "choldegree: 2, shift = " << shift << std::endl;
-        std::cout << "  [shiftedCholQR2 Breakdown] Total: " << t_total/1000.0 << " s" << std::endl;
-        std::cout << "  Iter1(shifted): SYHERK=" << t_syherk1/1000.0 << "s, AllReduce=" << t_allreduce1/1000.0 
-                  << "s, Cholesky=" << t_potrf1/1000.0 << "s, TRSM=" << t_trsm1/1000.0 << "s" << std::endl;
-        std::cout << "  Iter2: SYHERK=" << t_syherk2/1000.0 << "s, AllReduce=" << t_allreduce2/1000.0 
-                  << "s, Cholesky=" << t_potrf2/1000.0 << "s, TRSM=" << t_trsm2/1000.0 << "s" << std::endl;
-        std::cout << "  Iter3: SYHERK=" << t_syherk3/1000.0 << "s, AllReduce=" << t_allreduce3/1000.0 
-                  << "s, Cholesky=" << t_potrf3/1000.0 << "s, TRSM=" << t_trsm3/1000.0 << "s" << std::endl;
-    }
+    std::ostringstream oss;
+    oss << std::fixed << std::setprecision(6) << "choldegree: 2, shift = "
+        << shift << "\n  [shiftedCholQR2 Breakdown] Total: " << t_total / 1000.0
+        << " s\n  Iter1(shifted): SYHERK=" << t_syherk1 / 1000.0
+        << "s, AllReduce=" << t_allreduce1 / 1000.0 << "s, Cholesky="
+        << t_potrf1 / 1000.0 << "s, TRSM=" << t_trsm1 / 1000.0
+        << "s\n  Iter2: SYHERK=" << t_syherk2 / 1000.0 << "s, AllReduce="
+        << t_allreduce2 / 1000.0 << "s, Cholesky=" << t_potrf2 / 1000.0
+        << "s, TRSM=" << t_trsm2 / 1000.0
+        << "s\n  Iter3: SYHERK=" << t_syherk3 / 1000.0 << "s, AllReduce="
+        << t_allreduce3 / 1000.0 << "s, Cholesky=" << t_potrf3 / 1000.0
+        << "s, TRSM=" << t_trsm3 / 1000.0 << "s";
+    chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(), grank);
 #endif
     cudaEventDestroy(ev_start);
     cudaEventDestroy(ev_syherk1);
@@ -1118,10 +1129,8 @@ int cuda_nccl::modifiedGramSchmidtCholQR(cublasHandle_t cublas_handle,
 #ifdef CHASE_OUTPUT
     int grank;
     MPI_Comm_rank(MPI_COMM_WORLD, &grank);
-    if (grank == 0)
-    {
-        std::cout << "Use Modified Gram-Schmidt QR" << std::endl;
-    }
+    chase::GetLogger().Log(chase::LogLevel::Info, "linalg",
+        "Use Modified Gram-Schmidt QR", grank);
 #endif
     return info;
 }

@@ -13,8 +13,10 @@
 #include <memory>   // For std::unique_ptr, std::shared_ptr
 #include <mpi.h>
 #include <omp.h>     // For OpenMP parallelization
+#include <sstream>
 #include <stdexcept> // For throwing runtime errors
 
+#include "algorithm/logger.hpp"
 #include "algorithm/types.hpp"
 #include "external/scalapackpp/scalapackpp.hpp"
 #include "grid/mpiGrid2D.hpp"
@@ -386,9 +388,13 @@ public:
                 end - start);
 
             if (this->grank() == 0)
-                std::cout << "Single precision matrix enabled in "
-                             "AbstractDistMatrix in "
-                          << elapsed.count() << " s\n";
+            {
+                std::ostringstream oss;
+                oss << "Single precision matrix enabled in AbstractDistMatrix in "
+                    << elapsed.count() << " s";
+                chase::GetLogger().Log(chase::LogLevel::Debug, "linalg",
+                    oss.str(), this->grank());
+            }
         }
         else
         {
@@ -461,9 +467,13 @@ public:
                 end - start);
 
             if (this->grank() == 0)
-                std::cout << "Double precision matrix enabled in "
-                             "AbstractDistMatrix in "
-                          << elapsed.count() << " s\n";
+            {
+                std::ostringstream oss;
+                oss << "Double precision matrix enabled in AbstractDistMatrix in "
+                    << elapsed.count() << " s";
+                chase::GetLogger().Log(chase::LogLevel::Debug, "linalg",
+                    oss.str(), this->grank());
+            }
         }
         else
         {
@@ -529,9 +539,13 @@ public:
             end - start);
 
         if (this->grank() == 0)
-            std::cout
-                << "Single precision matrix disabled in AbstractDistMatrix in "
-                << elapsed.count() << " s\n";
+        {
+            std::ostringstream oss;
+            oss << "Single precision matrix disabled in AbstractDistMatrix in "
+                << elapsed.count() << " s";
+            chase::GetLogger().Log(chase::LogLevel::Debug, "linalg",
+                oss.str(), this->grank());
+        }
         single_precision_matrix_.reset(); // Free the single precision memory
         is_single_precision_enabled_ = false;
     }
@@ -594,9 +608,13 @@ public:
             end - start);
 
         if (this->grank() == 0)
-            std::cout
-                << "Double precision matrix disabled in AbstractDistMatrix in "
-                << elapsed.count() << " s\n";
+        {
+            std::ostringstream oss;
+            oss << "Double precision matrix disabled in AbstractDistMatrix in "
+                << elapsed.count() << " s";
+            chase::GetLogger().Log(chase::LogLevel::Debug, "linalg",
+                oss.str(), this->grank());
+        }
         double_precision_matrix_.reset(); // Free the double precision memory
         is_double_precision_enabled_ = false;
     }
@@ -1941,8 +1959,13 @@ public:
                           &fileHandle) != MPI_SUCCESS)
         {
             if (this->grank() == 0)
-                std::cout << "Can't open input matrix - " << filename
-                          << std::endl;
+            {
+                std::ostringstream oss;
+                oss << "Can't open input matrix - " << filename;
+                chase::GetLogger().Log(chase::LogLevel::Error, "IO",
+                    oss.str(), this->grank());
+                throw std::runtime_error(oss.str());
+            }
             MPI_Abort(this->mpi_grid_.get()->get_comm(), EXIT_FAILURE);
         }
 
@@ -2011,9 +2034,14 @@ public:
                           MPI_INFO_NULL, &fileHandle) != MPI_SUCCESS)
         {
             if (this->grank() == 0)
-                std::cout << "Can't open input matrix - " << filename
-                << std::endl;
-                MPI_Abort(this->mpi_grid_.get()->get_comm(), EXIT_FAILURE);
+            {
+                std::ostringstream oss;
+                oss << "Can't open input matrix - " << filename;
+                chase::GetLogger().Log(chase::LogLevel::Error, "IO",
+                    oss.str(), this->grank());
+                throw std::runtime_error(oss.str());
+            }
+            MPI_Abort(this->mpi_grid_.get()->get_comm(), EXIT_FAILURE);
         }
 
         if (this->l_data() == nullptr)
@@ -2117,8 +2145,13 @@ public:
                           &fileHandle) != MPI_SUCCESS)
         {
             if (this->grank() == 0)
-                std::cout << "Can't open input matrix - " << filename
-                          << std::endl;
+            {
+                std::ostringstream oss;
+                oss << "Can't open input matrix - " << filename;
+                chase::GetLogger().Log(chase::LogLevel::Error, "IO",
+                    oss.str(), this->grank());
+                throw std::runtime_error(oss.str());
+            }
             MPI_Abort(this->mpi_grid_.get()->get_comm(), EXIT_FAILURE);
         }
 
@@ -2806,8 +2839,13 @@ public:
                           &fileHandle) != MPI_SUCCESS)
         {
             if (this->grank() == 0)
-                std::cout << "Can't open input matrix - " << filename
-                          << std::endl;
+            {
+                std::ostringstream oss;
+                oss << "Can't open input matrix - " << filename;
+                chase::GetLogger().Log(chase::LogLevel::Error, "IO",
+                    oss.str(), this->grank());
+                throw std::runtime_error(oss.str());
+            }
             MPI_Abort(this->mpi_grid_.get()->get_comm(), EXIT_FAILURE);
         }
 
@@ -2908,8 +2946,13 @@ public:
                           &fileHandle) != MPI_SUCCESS)
         {
             if (this->grank() == 0)
-                std::cout << "Can't open input matrix - " << filename
-                          << std::endl;
+            {
+                std::ostringstream oss;
+                oss << "Can't open input matrix - " << filename;
+                chase::GetLogger().Log(chase::LogLevel::Error, "IO",
+                    oss.str(), this->grank());
+                throw std::runtime_error(oss.str());
+            }
             MPI_Abort(this->mpi_grid_.get()->get_comm(), EXIT_FAILURE);
         }
 

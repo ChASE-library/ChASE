@@ -92,7 +92,9 @@ void cuda_nccl::pseudo_hermitian_lanczos(
 #ifdef CHASE_OUTPUT
     if (H.getMpiGrid()->get_myRank() == 0)
     {
-        std::cout << "[GPU-RESIDENT PSEUDO-HERMITIAN LANCZOS]: ENABLED, using NCCL + batched dot/AXPY/scale (DEVICE mode)" << std::endl;
+        std::ostringstream oss; 
+        oss << "[GPU-RESIDENT PSEUDO-HERMITIAN LANCZOS]: ENABLED, using NCCL + batched dot/AXPY/scale (DEVICE mode)";
+        chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(), H.getMpiGrid()->get_myRank());
     }
 #endif
     // ========================================================================
@@ -129,7 +131,9 @@ void cuda_nccl::pseudo_hermitian_lanczos(
 #ifdef CHASE_OUTPUT
     if (H.getMpiGrid()->get_myRank() == 0)
     {
-        std::cout << "[ORIGINAL MPI PSEUDO-HERMITIAN LANCZOS]: ENABLED, using MPI_Allreduce" << std::endl;  
+        std::ostringstream oss; 
+        oss << "[ORIGINAL MPI PSEUDO-HERMITIAN LANCZOS]: ENABLED, using MPI_Allreduce";
+        chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(), H.getMpiGrid()->get_myRank());
     }
 #endif
     std::vector<chase::Base<T>> real_beta(numvec);
@@ -467,10 +471,15 @@ void cuda_nccl::pseudo_hermitian_lanczos(
 #ifdef CHASE_OUTPUT
     if (H.getMpiGrid()->get_myRank() == 0)
     {
-        std::cout << "[PSEUDO-HERMITIAN LANCZOS TIMING] LAPACK t_stemr (CPU sequential):" << std::endl;
-        std::cout << "  numvec: " << numvec << ", M: " << M << std::endl;
-        std::cout << "  Total time: " << lapack_duration.count() / 1000.0 << " ms" << std::endl;
-        std::cout << "  Avg per solve: " << lapack_duration.count() / (double)numvec / 1000.0 << " ms" << std::endl;
+        std::ostringstream oss; 
+        oss << "[PSEUDO-HERMITIAN LANCZOS TIMING] LAPACK t_stemr (CPU sequential):";
+        chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(), H.getMpiGrid()->get_myRank());
+        oss << "  numvec: " << numvec << ", M: " << M;
+        chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(), H.getMpiGrid()->get_myRank());
+        oss << "  Total time: " << lapack_duration.count() / 1000.0 << " ms";
+        chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(), H.getMpiGrid()->get_myRank());
+        oss << "  Avg per solve: " << lapack_duration.count() / (double)numvec / 1000.0 << " ms";
+        chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(), H.getMpiGrid()->get_myRank());
     }
 #endif
     *upperb = ritzv[M - 1];
@@ -532,7 +541,9 @@ void cuda_nccl::pseudo_hermitian_lanczos(
 #ifdef CHASE_OUTPUT
     if (H.getMpiGrid()->get_myRank() == 0)
     {
-        std::cout << "[GPU-RESIDENT PSEUDO-HERMITIAN LANCZOS (SINGLE)]: ENABLED, using NCCL + batched dot/AXPY/scale (DEVICE mode)" << std::endl;
+        std::ostringstream oss; 
+        oss << "[GPU-RESIDENT PSEUDO-HERMITIAN LANCZOS (SINGLE)]: ENABLED, using NCCL + batched dot/AXPY/scale (DEVICE mode)";
+        chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(), H.getMpiGrid()->get_myRank());
     }
 #endif
     // GPU-resident setup
@@ -576,7 +587,9 @@ void cuda_nccl::pseudo_hermitian_lanczos(
 #ifdef CHASE_OUTPUT
     if (H.getMpiGrid()->get_myRank() == 0)
     {
-        std::cout << "[ORIGINAL MPI PSEUDO-HERMITIAN LANCZOS (SINGLE)]: ENABLED, using MPI_Allreduce" << std::endl;
+        std::ostringstream oss; 
+        oss << "[ORIGINAL MPI PSEUDO-HERMITIAN LANCZOS (SINGLE)]: ENABLED, using MPI_Allreduce";
+        chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(), H.getMpiGrid()->get_myRank());
     }
 #endif
     chase::Base<T> real_alpha;
@@ -786,9 +799,13 @@ void cuda_nccl::pseudo_hermitian_lanczos(
 #ifdef CHASE_OUTPUT
     if (H.getMpiGrid()->get_myRank() == 0)
     {
-        std::cout << "[PSEUDO-HERMITIAN LANCZOS TIMING - SINGLE VECTOR] LAPACK t_stemr (CPU):" << std::endl;
-        std::cout << "  M: " << M << std::endl;
-        std::cout << "  Time: " << lapack_duration.count() / 1000.0 << " ms" << std::endl;
+        std::ostringstream oss; 
+        oss << "[PSEUDO-HERMITIAN LANCZOS TIMING - SINGLE VECTOR] LAPACK t_stemr (CPU):";
+        chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(), H.getMpiGrid()->get_myRank());
+        oss << "  M: " << M;
+        chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(), H.getMpiGrid()->get_myRank());
+        oss << "  Time: " << lapack_duration.count() / 1000.0 << " ms";
+        chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(), H.getMpiGrid()->get_myRank());
     }
 #endif
     *upperb = ritzv[M - 1];

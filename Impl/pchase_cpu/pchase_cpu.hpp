@@ -15,8 +15,10 @@
 #include "linalg/matrix/matrix.hpp"
 #include <algorithm>
 #include <cstring>
+#include <iomanip>
 #include <memory>
 #include <random>
+#include <sstream>
 #include <vector>
 #ifdef HAS_SCALAPACK
 #include "external/scalapackpp/scalapackpp.hpp"
@@ -231,12 +233,10 @@ public:
 
 #ifdef CHASE_OUTPUT
     //! Print some intermediate infos during the solving procedure
-    void Output(std::string str) override
+    void Output(LogLevel level, std::string str,
+                const char* category = "algorithm") override
     {
-        if (my_rank_ == 0)
-        {
-            std::cout << str;
-        }
+        chase::GetLogger().Log(level, category, str, get_rank());
     }
 #endif
     bool checkSymmetryEasy() override
@@ -367,7 +367,8 @@ public:
             // Message on enabling single precision
             if (shouldEnableSP && my_rank_ == 0 && !isunshift)
             {
-                std::cout << "Enable Single Precision in Filter" << std::endl;
+                chase::GetLogger().Log(chase::LogLevel::Info, "linalg",
+                    "Enable Single Precision in Filter", my_rank_);
             }
         }
 #endif
@@ -631,8 +632,10 @@ public:
 #ifdef CHASE_OUTPUT
             if (my_rank_ == 0)
             {
-                std::cout << std::setprecision(2) << "cond(V): " << cond
-                          << std::endl;
+                std::ostringstream oss;
+                oss << std::setprecision(2) << "cond(V): " << cond;
+                chase::GetLogger().Log(chase::LogLevel::Info, "linalg",
+                    oss.str(), my_rank_);
             }
 #endif
             // if (display_bounds != 0)
@@ -726,9 +729,9 @@ public:
 #ifdef CHASE_OUTPUT
                 if (my_rank_ == 0)
                 {
-                    std::cout << "CholeskyQR doesn't work, Househoulder QR "
-                                 "will be used."
-                              << std::endl;
+                    chase::GetLogger().Log(chase::LogLevel::Warn, "linalg",
+                        "CholeskyQR doesn't work, Householder QR will be used.",
+                        my_rank_);
                 }
 #endif
                 chase::linalg::internal::cpu_mpi::houseHoulderQR(*V1_);

@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <stdexcept>
 #include "mpi.h"
 #ifdef HAS_SCALAPACK
 #include "external/scalapackpp/scalapackpp.hpp"
@@ -13,6 +14,10 @@
 #ifdef HAS_NCCL
 #include "grid/nccl_utils.hpp"
 #include <nccl.h>
+#endif
+
+#ifdef CHASE_OUTPUT
+#include "algorithm/logger.hpp"
 #endif
 
 /**
@@ -196,6 +201,24 @@ public:
     {
         dims_[0] = row_dim;
         dims_[1] = col_dim;
+
+        if(row_dim <= 0 || col_dim <= 0) {
+            throw std::invalid_argument("Row and column dimensions of 2D MPI grid must be greater than 0");
+        }
+
+        if(row_dim < col_dim) {
+            throw std::invalid_argument("Row dimension of 2D MPI grid must be greater than or equal to column dimension");
+        }
+
+#ifdef CHASE_OUTPUT
+        {
+            std::ostringstream oss;
+            oss << "Creating 2D MPI grid: rows=" << row_dim
+                << ", cols=" << col_dim << ", nprocs=" << nprocs_ << "\n";
+            chase::GetLogger().Log(chase::LogLevel::Trace, "grid", oss.str(), myrank_);
+        }
+#endif        
+
         MPI_Comm_size(comm_, &nprocs_);
         MPI_Comm_rank(comm_, &myrank_);
 #ifdef HAS_NCCL
@@ -208,6 +231,26 @@ public:
         cudaGetDeviceCount(&num_devices);
         // std::cout << "visible cuda devices = " << num_devices << std::endl;
         cudaSetDevice(shm_rank_);
+
+#ifdef CHASE_OUTPUT
+        {
+            cudaDeviceProp prop{};
+            cudaGetDeviceProperties(&prop, shm_rank_);
+    
+            std::ostringstream oss;
+            oss << "[GRID] MPI rank " << myrank_
+                << " (node-local rank " << shm_rank_
+                << ") bound to GPU device " << shm_rank_
+                << " out of " << num_devices << " visible devices\n"
+                << "       GPU name: " << prop.name << "\n";
+    
+            chase::GetLogger().Log(chase::LogLevel::Trace,
+                                   "grid",
+                                   oss.str(),
+                                   myrank_);
+        }
+#endif        
+
 #endif
         create2DGrid();
     }
@@ -223,6 +266,15 @@ public:
         MPI_Dims_create(nprocs_, 2, dims_);
         MPI_Comm_rank(comm_, &myrank_);
 
+#ifdef CHASE_OUTPUT
+        {
+            std::ostringstream oss;
+            oss << "Creating 2D MPI grid: rows=" << dims_[0]
+                << ", cols=" << dims_[1] << ", nprocs=" << nprocs_ << "\n";
+            chase::GetLogger().Log(chase::LogLevel::Trace, "grid", oss.str(), myrank_);
+        }
+#endif         
+
 #ifdef HAS_NCCL
         MPI_Comm shm_comm_;
         MPI_Comm_split_type(comm_, MPI_COMM_TYPE_SHARED, 0, MPI_INFO_NULL,
@@ -233,7 +285,28 @@ public:
         cudaGetDeviceCount(&num_devices);
         // std::cout << "visible cuda devices = " << num_devices << std::endl;
         cudaSetDevice(shm_rank_);
+
+#ifdef CHASE_OUTPUT
+        {
+            cudaDeviceProp prop{};
+            cudaGetDeviceProperties(&prop, shm_rank_);
+    
+            std::ostringstream oss;
+            oss << "[GRID] MPI rank " << myrank_
+                << " (node-local rank " << shm_rank_
+                << ") bound to GPU device " << shm_rank_
+                << " out of " << num_devices << " visible devices\n"
+                << "       GPU name: " << prop.name << "\n";
+    
+            chase::GetLogger().Log(chase::LogLevel::Trace,
+                                   "grid",
+                                   oss.str(),
+                                   myrank_);
+        }
+#endif 
+
 #endif
+
         create2DGrid();
     }
 

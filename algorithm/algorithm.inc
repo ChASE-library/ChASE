@@ -439,7 +439,6 @@ std::size_t Algorithm<T>::calc_degrees_pseudo(
 
 #ifdef CHASE_OUTPUT
 
-#ifndef NDEBUG
         // Debug output for residual-weighted cluster analysis
 
         if (cluster_factors[i] > 1.5 || cluster_factors[i] < 0.8 ||
@@ -453,10 +452,8 @@ std::size_t Algorithm<T>::calc_degrees_pseudo(
                 << ", pseudo_bonus = " << pseudo_bonus
                 << ", base_degree = " << base_degree
                 << ", final_degree = " << degrees[i] << "\n";
-            single->Output(oss.str());
+            single->Output(LogLevel::Debug, oss.str(), "algorithm");
         }
-#endif
-
 #endif
     }
 
@@ -560,7 +557,7 @@ std::size_t Algorithm<T>::locking(ChaseBase<T>* single, std::size_t N,
                 oss << "locking unconverged pair is:" << resid[j]
                     << " was:" << residLast[j] << " tolerance is: " << tol
                     << " val: " << Lritzv[j] << "\n";
-                single->Output(oss.str());
+                single->Output(LogLevel::Warn, oss.str(), "algorithm");
 #endif
                 early_locked_residuals->push_back(resid[j]);
             }
@@ -622,7 +619,7 @@ std::size_t Algorithm<T>::locking_pseudo_v2(
                 oss << "early locking unconverged pair is:" << resid[j]
                     << " was:" << residLast[k] << " tolerance is: " << tol
                     << " val: " << Lritzv[j] << "\n";
-                single->Output(oss.str());
+                single->Output(LogLevel::Warn, oss.str(), "algorithm");
 #endif
                 early_locked_residuals->push_back(resid[j]);
             }
@@ -632,7 +629,7 @@ std::size_t Algorithm<T>::locking_pseudo_v2(
                 oss << "locking converged pair is:" << j << " " << resid[j]
                     << " was:" << residLast[k] << " tolerance is: " << tol
                     << " val: " << Lritzv[j] << "\n";
-                single->Output(oss.str());
+                single->Output(LogLevel::Debug, oss.str(), "algorithm");
             }
 
 #endif
@@ -679,7 +676,7 @@ std::size_t Algorithm<T>::locking_pseudo_v2(
                 oss << "early locking unconverged pair is:" << resid[j]
                     << " was:" << residLast[k] << " tolerance is: " << tol
                     << " val: " << Lritzv[j] << "\n";
-                single->Output(oss.str());
+                single->Output(LogLevel::Warn, oss.str(), "algorithm");
 #endif
                 early_locked_residuals->push_back(resid[j]);
             }
@@ -689,7 +686,7 @@ std::size_t Algorithm<T>::locking_pseudo_v2(
                 oss << "locking converged pair is:" << j << " "<< resid[j]
                     << " was:" << residLast[k] << " tolerance is: " << tol
                     << " val: " << Lritzv[j] << "\n";
-                single->Output(oss.str());
+                single->Output(LogLevel::Debug, oss.str(), "algorithm");
             }
 
 #endif
@@ -768,17 +765,18 @@ std::size_t Algorithm<T>::locking_pseudo_v3(
                 oss << "early locking unconverged pair is:" << resid[j]
                     << " was:" << residLast[k] << " tolerance is: " << tol
                     << " val: " << Lritzv[j] << "\n";
-                single->Output(oss.str());
+                single->Output(LogLevel::Warn, oss.str(), "algorithm");
 #endif
                 early_locked_residuals->push_back(resid[j]);
                 //early_locked_residuals->push_back(resid[2*unconverged-j-1]);
             }
 #ifdef CHASE_OUTPUT
             else{
-                /*std::ostringstream oss;
+                std::ostringstream oss;
                 oss << "locking converged pair is:" << j << " " << resid[j]
                     << " was:" << residLast[k] << " tolerance is: " << tol
-                    << " val: " << Lritzv[j] << "\n";*/
+                    << " val: " << Lritzv[j] << "\n";
+                single->Output(LogLevel::Debug, oss.str(), "algorithm");       
             }
 #endif
             if (j != converged)
@@ -871,7 +869,7 @@ std::size_t Algorithm<T>::locking_pseudo(
                 oss << "early locking unconverged pair is:" << resid[j]
                     << " was:" << residLast[k] << " tolerance is: " << tol
                     << " val: " << Lritzv[j] << "\n";
-                single->Output(oss.str());
+                single->Output(LogLevel::Warn, oss.str(), "algorithm");
 #endif
                 early_locked_residuals->push_back(resid[j]);
             }
@@ -881,7 +879,7 @@ std::size_t Algorithm<T>::locking_pseudo(
                 oss << "locking converged pair is:" << j << " "<< idx << " "<< resid[j]
                     << " was:" << residLast[k] << " tolerance is: " << tol
                     << " val: " << Lritzv[j] << "\n";
-                single->Output(oss.str());
+                single->Output(LogLevel::Debug, oss.str(), "algorithm");
             }
 
 #endif
@@ -1147,7 +1145,6 @@ std::size_t Algorithm<T>::lanczos(ChaseBase<T>* single, int N, int numvec,
 
 #ifdef CHASE_OUTPUT
     {
-#ifndef NDEBUG
         std::ostringstream oss;
 
         oss << "m = " << m << std::endl;
@@ -1156,8 +1153,7 @@ std::size_t Algorithm<T>::lanczos(ChaseBase<T>* single, int N, int numvec,
         oss << "lowerb = " << lowerb << std::endl;
         oss << "search = " << search << std::endl;
 
-        single->Output(oss.str());
-#endif
+        single->Output(LogLevel::Debug, oss.str(), "algorithm");
     }
 #endif
 
@@ -1176,7 +1172,7 @@ std::size_t Algorithm<T>::lanczos(ChaseBase<T>* single, int N, int numvec,
     {
         std::ostringstream oss;
         oss << "extracted " << idx << " vectors from DoS\n";
-        single->Output(oss.str());
+        single->Output(LogLevel::Info, oss.str());
     }
 #endif
 
@@ -1380,6 +1376,13 @@ template <class T>
 void Algorithm<T>::solve(ChaseBase<T>* single)
 {
     ChaseConfig<T>& config = single->GetConfig();
+#ifdef CHASE_OUTPUT
+{
+    std::ostringstream cfg;
+    cfg << config;
+    single->Output(LogLevel::Debug, cfg.str(), "algorithm");
+}
+#endif    
     single->Start();
 
     std::size_t N = config.GetN();
@@ -1515,7 +1518,7 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
                 << std::setprecision(6) << upperb << "\t" << unconverged
                 << std::endl;
 
-            single->Output(oss.str());
+            single->Output(LogLevel::Info, oss.str(), "algorithm");
         }
 #endif
         if (lowerb > upperb)
@@ -1622,23 +1625,32 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
 
 #ifdef CHASE_OUTPUT
         {
-            std::ostringstream oss;
-            oss << "unconverged = " << "\t" << unconverged << "\t"
-                << "new_converged" << "\t" << new_converged << "\n";
-            oss << "index\tdegrees\tresid\tresidLast\tritzv\n";
+            auto level = config.GetLogLevel();
 
-#ifndef NDEBUG
-            for (std::size_t k = 0; k < unconverged; ++k)
-#else
-            for (std::size_t k = 0; k < std::min(std::size_t(20), unconverged);
-                 ++k)
-#endif
-                oss << index.data()[k] << "\t" << (degrees)[index.data()[k]]
-                    << "\t" << (resid)[index.data()[k]] << "\t"
-                    << (residLast)[k] << "\t" << (ritzv)[index.data()[k]]
-                    << "\n";
+            if (!(level == LogLevel::Warn || level == LogLevel::Error)) 
+            {
+                std::size_t max_to_print =
+                    (level == LogLevel::Debug || level == LogLevel::Trace)
+                        ? unconverged
+                        : std::min<std::size_t>(20, unconverged);
+                        
+                std::ostringstream oss;
+                oss << "unconverged = " << "\t" << unconverged << "\t"
+                    << "new_converged" << "\t" << new_converged << "\n";
+                oss << "index\tdegrees\tresid\tresidLast\tritzv\n";
 
-            single->Output(oss.str());
+
+                for (std::size_t k = 0; k < max_to_print;
+                    ++k)
+                    oss << index.data()[k] << "\t" << (degrees)[index.data()[k]]
+                        << "\t" << (resid)[index.data()[k]] << "\t"
+                        << (residLast)[k] << "\t" << (ritzv)[index.data()[k]]
+                        << "\n";
+
+                single->Output(level, oss.str(), "algorithm");
+            }
+
+            
         }
 #endif
 
@@ -1650,7 +1662,7 @@ void Algorithm<T>::solve(ChaseBase<T>* single)
 
             oss << "Saving the residuals into" << residual_file_name
                 << std::endl;
-            single->Output(oss.str());
+            single->Output(LogLevel::Debug, oss.str());
         }
 #endif
         if (!single->get_rank())
@@ -1812,7 +1824,7 @@ std::size_t Algorithm<T>::reinit_phantom_eigenvectors_pseudo(
             << " column(s) (outlier ± pairs, |λ| ratio > "
             << static_cast<double>(PURGE_RATIO_THRESHOLD)
             << "); excluding from bounds and locking this iter.\n";
-        single->Output(oss.str());
+        single->Output(LogLevel::Debug, oss.str(), "algorithm");
 #endif
     }
     return n_reinit;
@@ -1823,9 +1835,15 @@ void Algorithm<T>::solve_pseudo(ChaseBase<T>* single)
 {
     // Pseudo-Hermitian (BSE) path: subspace size 2*nevex; filter on H²; bounds
     // from Lanczos on H². Step 1: up to Lanczos and get bounds.
-    single->Start();
-
     ChaseConfig<T>& config = single->GetConfig();
+    single->Start();
+#ifdef CHASE_OUTPUT
+{
+    std::ostringstream cfg;
+    cfg << config;
+    single->Output(LogLevel::Debug, cfg.str(), "algorithm");
+}
+#endif
     const std::size_t N = config.GetN();
     const std::size_t nev = config.GetNev();
     const std::size_t nex = config.GetNex();
@@ -1878,7 +1896,7 @@ void Algorithm<T>::solve_pseudo(ChaseBase<T>* single)
     {
         std::ostringstream oss;
         oss << "entering lanczos_for_H2..." << std::endl;
-        single->Output(oss.str());
+        single->Output(LogLevel::Trace, oss.str(), "algorithm");
     }
 #endif
     
@@ -1893,7 +1911,7 @@ void Algorithm<T>::solve_pseudo(ChaseBase<T>* single)
     {
         std::ostringstream oss;
         oss << "exiting lanczos_for_H2..." << std::endl;
-        single->Output(oss.str());
+        single->Output(LogLevel::Trace, oss.str(), "algorithm");
     }
 #endif
 
@@ -1923,7 +1941,7 @@ void Algorithm<T>::solve_pseudo(ChaseBase<T>* single)
             << std::setprecision(6) << lambda_1 << "\t lower(mu_nevnex) = "
             << std::setprecision(6) << lower << "\t b_sup = "
             << std::setprecision(6) << b_sup << std::endl;
-        single->Output(oss.str());
+        single->Output(LogLevel::Info, oss.str(), "algorithm");
     }
 #endif
 
@@ -1969,7 +1987,7 @@ void Algorithm<T>::solve_pseudo(ChaseBase<T>* single)
                 << std::setprecision(6) << lower << "\t"
                 << std::setprecision(6) << b_sup << "\t" << unconverged
                 << std::endl;
-            single->Output(oss.str());
+            single->Output(LogLevel::Info, oss.str(), "algorithm");
         }
 #endif
 
@@ -2027,22 +2045,29 @@ void Algorithm<T>::solve_pseudo(ChaseBase<T>* single)
 
 #ifdef CHASE_OUTPUT
         {
-            std::ostringstream oss;
-            oss << "unconverged = " << "\t" << unconverged << "\t"
-                << "new_converged" << "\t" << prev_new_converged << "\n";
-            oss << "index\tdegrees\tresid\tresidLast\tritzv\n";
-            
+            // Residual table at Info level
+            std::ostringstream oss_res;
+            oss_res << "unconverged = " << "\t" << unconverged << "\t"
+                    << "new_converged" << "\t" << prev_new_converged << "\n";
+            oss_res << "index\tdegrees\tresid\tresidLast\tritzv\n";
+
             for (std::size_t i = 0; i < unconverged; ++i)
             {
-                oss << index[i] << "\t" << degrees[index[i]] << "\t"
-                    << resid[index[i]] << "\t" << residLast[i] << "\t" << ritzv[index[i]]
-                    << "\n";
+                oss_res << index[i] << "\t" << degrees[index[i]] << "\t"
+                        << resid[index[i]] << "\t" << residLast[i] << "\t"
+                        << ritzv[index[i]] << "\n";
             }
 
-            oss << "SYMMETRY CHECK : " << "\t" << ritzv[index[0]] << " =?= " << ritzv[index[2*unconverged-1]] << "\t"
-                << ritzv[index[unconverged-1]] << " =?= " << ritzv[index[unconverged]] << "\n";
+            single->Output(LogLevel::Info, oss_res.str(), "algorithm");
 
-            single->Output(oss.str());
+            // Symmetry check at Debug level
+            std::ostringstream oss_sym;
+            oss_sym << "SYMMETRY CHECK : "
+                    << "\t" << ritzv[index[0]] << " =?= " << ritzv[index[2 * unconverged - 1]]
+                    << "\t" << ritzv[index[unconverged - 1]] << " =?= " << ritzv[index[unconverged]]
+                    << "\n";
+
+            single->Output(LogLevel::Debug, oss_sym.str(), "algorithm");
         }
 #endif
         std::iota(index_temp.begin(), index_temp.begin() + unconverged, 0);
@@ -2091,7 +2116,7 @@ void Algorithm<T>::solve_pseudo(ChaseBase<T>* single)
             oss << "new_converged = " << new_converged
                 << "  locked = " << locked
                 << "\n";
-            single->Output(oss.str());
+            single->Output(LogLevel::Info, oss.str(), "algorithm");
         }
 #endif
         prev_new_converged = new_converged;

@@ -7,6 +7,7 @@
 #pragma once
 #include <numeric> //std::iota
 
+#include "algorithm/logger.hpp"
 #include "external/blaspp/blaspp.hpp"
 #include "external/cublaspp/cublaspp.hpp"
 #include "external/cusolverpp/cusolverpp.hpp"
@@ -69,11 +70,8 @@ void cuda_nccl::pseudo_hermitian_rayleighRitz(
 {
 
 #ifdef CHASE_OUTPUT
-    if (H.grank() == 0)
-    {
-        std::cout << "Constructing the non-hermitian Rayleigh-Quotient..."
-                  << std::endl;
-    }
+    chase::GetLogger().Log(chase::LogLevel::Info, "linalg",
+        "Constructing the non-hermitian Rayleigh-Quotient...", H.grank());
 #endif
     using T = typename MatrixType::value_type;
 
@@ -212,12 +210,9 @@ void cuda_nccl::pseudo_hermitian_rayleighRitz(
 #ifdef XGEEV_EXISTS
 
 #ifdef CHASE_OUTPUT
-    if (H.grank() == 0)
-    {
-        std::cout
-            << "Compute the eigenpairs of the non-hermitian rayleigh quotient"
-            << std::endl;
-    }
+    chase::GetLogger().Log(chase::LogLevel::Debug, "linalg",
+        "Compute the eigenpairs of the non-hermitian rayleigh quotient",
+        H.grank());
 #endif
     if constexpr (0 && std::is_same<T, std::complex<float>>::value)
     {
@@ -287,12 +282,10 @@ void cuda_nccl::pseudo_hermitian_rayleighRitz(
         }
 
 #ifdef CHASE_OUTPUT
-        if (H.grank() == 0)
-        {
-            std::cout << "Eigenvalues of the non-Hermitian rayleigh-quotient "
-                         "computed with GEEV."
-                      << std::endl;
-        }
+        chase::GetLogger().Log(chase::LogLevel::Debug, "linalg",
+            "Eigenvalues of the non-Hermitian rayleigh-quotient computed with "
+            "GEEV.",
+            H.grank());
 #endif
 
         // std::cout << "Copying the complex ritz values back to cpu" <<
@@ -316,12 +309,9 @@ void cuda_nccl::pseudo_hermitian_rayleighRitz(
     }
 #else
 #ifdef CHASE_OUTPUT
-    if (H.grank() == 0)
-    {
-        std::cout << "WARNING! XGeev not found in cuda. Compute Geev on CPU "
-                     "with Lapack..."
-                  << std::endl;
-    }
+    chase::GetLogger().Log(chase::LogLevel::Warn, "linalg",
+        "WARNING! XGeev not found in cuda. Compute Geev on CPU with Lapack...",
+        H.grank());
 #endif
 
     if constexpr (0 && std::is_same<T, std::complex<float>>::value)

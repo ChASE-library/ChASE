@@ -32,6 +32,9 @@
 
 #include "../../linalg/internal/typeTraits.hpp"
 
+#include <iomanip>
+#include <sstream>
+
 using namespace chase::linalg;
 
 template <typename Backend>
@@ -197,7 +200,9 @@ public:
 #ifdef CHASE_OUTPUT
         if (my_rank_ == 0)
         {
-            std::cout << "XGEEV ACTIVATED !" << std::endl;
+            std::ostringstream oss;
+            oss << "XGEEV ACTIVATED !";
+            chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(), my_rank_);
         }
 #endif
 #endif
@@ -248,10 +253,10 @@ public:
 #ifdef CHASE_OUTPUT
             if (my_rank_ == 0)
             {
-                std::cout << "GEEV GPU WORKSPACE SIZE = " << lwork_heevd
-                          << std::endl;
-                std::cout << "GEEV CPU WORKSPACE SIZE = " << temp_lhwork
-                          << std::endl;
+                std::ostringstream oss;
+                oss << "GEEV GPU WORKSPACE SIZE = " << lwork_heevd
+                    << "GEEV CPU WORKSPACE SIZE = " << temp_lhwork;
+                chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(), my_rank_);
             }
 #endif
             h_work_ = std::unique_ptr<T[]>(new T[lhwork_]);
@@ -268,8 +273,9 @@ public:
 #ifdef CHASE_OUTPUT
             if (my_rank_ == 0)
             {
-                std::cout << "HEEVD GPU WORKSPACE SIZE = " << lwork_heevd
-                          << std::endl;
+                std::ostringstream oss;
+                oss << "HEEVD GPU WORKSPACE SIZE = " << lwork_heevd;
+                chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(), my_rank_);
             }
 #endif
 #endif
@@ -445,11 +451,10 @@ public:
                 float ms = 0.0f;
                 cudaEventElapsedTime(&ms, start, stop);
                 
-                if (my_rank_ == 0)
-                {
-                    std::cout << "[cholQR1 warm-up " << (i+1) << "/3] 1x1 matrix: " 
-                              << ms << " ms (info=" << info << ")\n";
-                }
+                std::ostringstream oss;
+                oss << "[cholQR1 warm-up " << (i+1) << "/3] 1x1 matrix: " 
+                    << ms << " ms (info=" << info << ")";
+                chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(), my_rank_);
             }
             
             // Warm up Lanczos (MatMul + redistribute P2P/AlltoAll patterns)
@@ -474,8 +479,10 @@ public:
 #ifdef CHASE_OUTPUT
                 if (my_rank_ == 0)
                 {
-                    std::cout << "[Lanczos warm-up " << (i+1) << "/3] 1 iteration: " 
-                              << ms << " ms\n";
+                    std::ostringstream oss;
+                    oss << "[Lanczos warm-up " << (i+1) << "/3] 1 iteration: " 
+                        << ms << " ms";
+                    chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(), my_rank_);
                 }
 #endif
             }
@@ -575,12 +582,10 @@ public:
 
 #ifdef CHASE_OUTPUT
     //! Print some intermediate infos during the solving procedure
-    void Output(std::string str) override
+    void Output(LogLevel level, std::string str,
+                const char* category = "algorithm") override
     {
-        if (my_rank_ == 0)
-        {
-            std::cout << str;
-        }
+        chase::GetLogger().Log(level, category, str, get_rank());
     }
 #endif
     bool checkSymmetryEasy() override
@@ -764,7 +769,8 @@ public:
             // Message on enabling single precision
             if (shouldEnableSP && my_rank_ == 0 && !isunshift)
             {
-                std::cout << "Enable Single Precision in Filter" << std::endl;
+                chase::GetLogger().Log(chase::LogLevel::Info, "linalg",
+                    "Enable Single Precision in Filter", my_rank_);
             }
         }
 #endif
@@ -1083,8 +1089,10 @@ public:
 #ifdef CHASE_OUTPUT
             if (my_rank_ == 0)
             {
-                std::cout << std::setprecision(2) << "cond(V): " << cond
-                          << std::endl;
+                std::ostringstream oss;
+                oss << std::setprecision(2) << "cond(V): " << cond;
+                chase::GetLogger().Log(chase::LogLevel::Info, "linalg",
+                    oss.str(), my_rank_);
             }
 #endif
 
@@ -1259,9 +1267,9 @@ public:
 #ifdef CHASE_OUTPUT
                 if (my_rank_ == 0)
                 {
-                    std::cout << "CholeskyQR doesn't work, Househoulder QR "
-                                 "will be used."
-                              << std::endl;
+                    chase::GetLogger().Log(chase::LogLevel::Warn, "linalg",
+                        "CholeskyQR doesn't work, Householder QR will be used.",
+                        my_rank_);
                 }
 #endif
                 kernelNamespace::houseHoulderQR(*V1_);
@@ -1321,11 +1329,13 @@ public:
 #ifdef CHASE_OUTPUT
         if (my_rank_ == 0)
         {
-            std::cout << std::setprecision(6) << std::fixed;
-            std::cout << "[QR Timing Rank 0] Total: " << time_total/1000.0 << " s, "
-                      << "FlipSign: " << time_flip_sign/1000.0 << " s, "
-                      << "CholQR: " << time_cholqr/1000.0 << " s, "
-                      << "Lacpy: " << time_lacpy/1000.0 << " s" << std::endl;
+            std::ostringstream oss;
+            oss << std::setprecision(6) << std::fixed;
+            oss << "[QR Timing Rank 0] Total: " << time_total/1000.0 << " s, "
+                << "FlipSign: " << time_flip_sign/1000.0 << " s, "
+                << "CholQR: " << time_cholqr/1000.0 << " s, "
+                << "Lacpy: " << time_lacpy/1000.0 << " s";
+            chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(), my_rank_);
         }
 #endif
         // Cleanup events

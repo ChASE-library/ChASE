@@ -16,8 +16,10 @@
 #include "external/lapackpp/lapackpp.hpp"
 #include "linalg/matrix/matrix.hpp"
 #include <cstring>
+#include <iomanip>
 #include <memory>
 #include <random>
+#include <sstream>
 #include <vector>
 
 #include "Impl/chase_gpu/nvtx.hpp"
@@ -375,7 +377,11 @@ public:
 
 #ifdef CHASE_OUTPUT
     //! Print some intermediate infos during the solving procedure
-    void Output(std::string str) override { std::cout << str; }
+    void Output(LogLevel level, std::string str,
+                const char* category = "algorithm") override
+    {
+        chase::GetLogger().Log(level, category, str, get_rank());
+    }
 #endif
 
     bool checkSymmetryEasy() override
@@ -728,8 +734,10 @@ public:
         else
         {
 #ifdef CHASE_OUTPUT
-            std::cout << std::setprecision(2) << "cond(V): " << cond
-                      << std::endl;
+            std::ostringstream oss;
+            oss << std::setprecision(2) << "cond(V): " << cond << std::endl;
+            chase::GetLogger().Log(chase::LogLevel::Info, "linalg",
+                                  oss.str(), 0);
 #endif
             // if (display_bounds != 0)
             //{
@@ -757,9 +765,11 @@ public:
             if (info != 0)
             {
 #ifdef CHASE_OUTPUT
-                std::cout
-                    << "CholeskyQR doesn't work, Househoulder QR will be used."
+                std::ostringstream oss;
+                oss << "CholeskyQR doesn't work, Householder QR will be used."
                     << std::endl;
+                chase::GetLogger().Log(chase::LogLevel::Warn, "linalg",
+                                      oss.str(), 0);
 #endif
                 chase::linalg::internal::cuda::houseHoulderQR(
                     cusolverH_, Vec1_, d_return_, devInfo_, d_work_, lwork_);

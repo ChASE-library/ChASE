@@ -14,9 +14,11 @@
 #include "linalg/distMatrix/distMultiVector.hpp"
 #include "linalg/internal/cpu/utils.hpp"
 #include "linalg/internal/nccl/nccl_kernels.hpp"
+#include "algorithm/logger.hpp"
 #include <cstring>
 #include <chrono>
 #include <iostream>
+#include <sstream>
 
 #ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
 #include "grid/nccl_utils.hpp"
@@ -163,9 +165,11 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
 
 #ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
 #ifdef CHASE_OUTPUT
-    if (H.getMpiGrid()->get_myRank() == 0)
     {
-        std::cout << "[GPU-RESIDENT LANCZOS]: ENABLED, using NCCL + Fused Kernels" << std::endl;
+        std::ostringstream oss;
+        oss << "[GPU-RESIDENT LANCZOS]: ENABLED, using NCCL + Fused Kernels" << std::endl;
+        chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(),
+                               H.getMpiGrid()->get_myRank());
     }
 #endif
     // ========================================================================
@@ -362,12 +366,14 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
     auto lapack_end = std::chrono::high_resolution_clock::now();
     auto lapack_duration = std::chrono::duration_cast<std::chrono::microseconds>(lapack_end - lapack_start);
 #ifdef CHASE_OUTPUT
-    if (H.getMpiGrid()->get_myRank() == 0)
     {
-        std::cout << "[LANCZOS TIMING] LAPACK t_stemr (CPU sequential):" << std::endl;
-        std::cout << "  numvec: " << numvec << ", M: " << M << std::endl;
-        std::cout << "  Total time: " << lapack_duration.count() / 1000.0 << " ms" << std::endl;
-        std::cout << "  Avg per solve: " << lapack_duration.count() / (double)numvec / 1000.0 << " ms" << std::endl;
+        std::ostringstream oss;
+        oss << "[LANCZOS TIMING] LAPACK t_stemr (CPU sequential):" << std::endl;
+        oss << "  numvec: " << numvec << ", M: " << M << std::endl;
+        oss << "  Total time: " << lapack_duration.count() / 1000.0 << " ms" << std::endl;
+        oss << "  Avg per solve: " << lapack_duration.count() / (double)numvec / 1000.0 << " ms" << std::endl;
+        chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(),
+                               H.getMpiGrid()->get_myRank());
     }
 #endif
     RealT max;
@@ -394,9 +400,11 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
 
 #else
 #ifdef CHASE_OUTPUT
-    if (H.getMpiGrid()->get_myRank() == 0)
     {
-        std::cout << "[ORIGINAL MPI LANCZOS]: ENABLED, using MPI_Allreduce (not GPU-resident)" << std::endl;
+        std::ostringstream oss;
+        oss << "[ORIGINAL MPI LANCZOS]: ENABLED, using MPI_Allreduce (not GPU-resident)" << std::endl;
+        chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(),
+                               H.getMpiGrid()->get_myRank());
     }
 #endif
     // ========================================================================
@@ -625,9 +633,11 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
 
 #ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
 #ifdef CHASE_OUTPUT
-    if (H.getMpiGrid()->get_myRank() == 0)
     {
-        std::cout << "[GPU-RESIDENT LANCZOS (single-vec)]: ENABLED, using NCCL + Fused Kernels" << std::endl;
+        std::ostringstream oss;
+        oss << "[GPU-RESIDENT LANCZOS (single-vec)]: ENABLED, using NCCL + Fused Kernels" << std::endl;
+        chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(),
+                               H.getMpiGrid()->get_myRank());
     }
 #endif
     // ========================================================================
@@ -765,13 +775,15 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
             e[k] = r_beta_host;
 
 #ifdef CHASE_OUTPUT
-        if (std::isnan(d[k]) || std::isinf(d[k])) {
-            if (H.getMpiGrid()->get_myRank() == 0)
-                std::cout << "[LANCZOS DEBUG] d[" << k << "] = " << d[k] << std::endl;
-        }
-        if (k < M - 1 && (std::isnan(e[k]) || std::isinf(e[k]))) {
-            if (H.getMpiGrid()->get_myRank() == 0)
-                std::cout << "[LANCZOS DEBUG] e[" << k << "] = " << e[k] << std::endl;
+        {
+            std::ostringstream oss;
+            if (std::isnan(d[k]) || std::isinf(d[k]))
+                oss << "[LANCZOS DEBUG] d[" << k << "] = " << d[k] << std::endl;
+            if (k < M - 1 && (std::isnan(e[k]) || std::isinf(e[k])))
+                oss << "[LANCZOS DEBUG] e[" << k << "] = " << e[k] << std::endl;
+            if (!oss.str().empty())
+                chase::GetLogger().Log(chase::LogLevel::Warn, "linalg", oss.str(),
+                                       H.getMpiGrid()->get_myRank());
         }
 #endif
 
@@ -802,23 +814,24 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
 
     // Validate tridiagonal matrix elements before calling LAPACK
 #ifdef CHASE_OUTPUT
-    bool has_nan = false;
-    for (std::size_t i = 0; i < M; i++) {
-        if (std::isnan(d[i]) || std::isinf(d[i])) {
-            if (H.getMpiGrid()->get_myRank() == 0) {
-                std::cout << "[LANCZOS WARNING] d[" << i << "] = " << d[i] << std::endl;
+    {
+        std::ostringstream oss;
+        bool has_nan = false;
+        for (std::size_t i = 0; i < M; i++) {
+            if (std::isnan(d[i]) || std::isinf(d[i])) {
+                oss << "[LANCZOS WARNING] d[" << i << "] = " << d[i] << std::endl;
+                has_nan = true;
             }
-            has_nan = true;
-        }
-        if (i < M - 1 && (std::isnan(e[i]) || std::isinf(e[i]))) {
-            if (H.getMpiGrid()->get_myRank() == 0) {
-                std::cout << "[LANCZOS WARNING] e[" << i << "] = " << e[i] << std::endl;
+            if (i < M - 1 && (std::isnan(e[i]) || std::isinf(e[i]))) {
+                oss << "[LANCZOS WARNING] e[" << i << "] = " << e[i] << std::endl;
+                has_nan = true;
             }
-            has_nan = true;
         }
-    }
-    if (has_nan && H.getMpiGrid()->get_myRank() == 0) {
-        std::cout << "[LANCZOS WARNING] NaN/Inf detected in tridiagonal matrix!" << std::endl;
+        if (has_nan)
+            oss << "[LANCZOS WARNING] NaN/Inf detected in tridiagonal matrix!" << std::endl;
+        if (!oss.str().empty())
+            chase::GetLogger().Log(chase::LogLevel::Warn, "linalg", oss.str(),
+                                   H.getMpiGrid()->get_myRank());
     }
 #endif
 
@@ -830,11 +843,13 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
     auto lapack_duration = std::chrono::duration_cast<std::chrono::microseconds>(lapack_end - lapack_start);
     
 #ifdef CHASE_OUTPUT
-    if (H.getMpiGrid()->get_myRank() == 0)
     {
-        std::cout << "[LANCZOS TIMING - SINGLE VECTOR] LAPACK t_stemr (CPU):" << std::endl;
-        std::cout << "  M: " << M << std::endl;
-        std::cout << "  Time: " << lapack_duration.count() / 1000.0 << " ms" << std::endl;
+        std::ostringstream oss;
+        oss << "[LANCZOS TIMING - SINGLE VECTOR] LAPACK t_stemr (CPU):" << std::endl;
+        oss << "  M: " << M << std::endl;
+        oss << "  Time: " << lapack_duration.count() / 1000.0 << " ms" << std::endl;
+        chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(),
+                               H.getMpiGrid()->get_myRank());
     }
 #endif
     *upperb =
@@ -852,12 +867,14 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
 
 #else
 #ifdef CHASE_OUTPUT
-    if (H.getMpiGrid()->get_myRank() == 0)
     {
-        std::cout << "========================================" << std::endl;
-        std::cout << "ORIGINAL MPI LANCZOS (single-vec): ENABLED" << std::endl;
-        std::cout << "Using MPI_Allreduce (not GPU-resident)" << std::endl;
-        std::cout << "========================================" << std::endl;
+        std::ostringstream oss;
+        oss << "========================================" << std::endl;
+        oss << "ORIGINAL MPI LANCZOS (single-vec): ENABLED" << std::endl;
+        oss << "Using MPI_Allreduce (not GPU-resident)" << std::endl;
+        oss << "========================================" << std::endl;
+        chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(),
+                               H.getMpiGrid()->get_myRank());
     }
 #endif
     // ========================================================================

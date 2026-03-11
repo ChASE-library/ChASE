@@ -8,6 +8,7 @@
 
 #include "Impl/chase_gpu/cuda_utils.hpp"
 #include "Impl/chase_gpu/nvtx.hpp"
+#include "algorithm/logger.hpp"
 #include "external/cublaspp/cublaspp.hpp"
 #include "external/cusolverpp/cusolverpp.hpp"
 #include "linalg/internal/cuda/absTrace.hpp"
@@ -15,6 +16,7 @@
 #include "linalg/matrix/matrix.hpp"
 #include <iomanip>
 #include <limits>
+#include <sstream>
 
 namespace chase
 {
@@ -192,7 +194,8 @@ int cholQR1(cublasHandle_t cublas_handle, cusolverDnHandle_t cusolver_handle,
             CUBLAS_OP_N, CUBLAS_DIAG_NON_UNIT, V.rows(), V.cols(), &one,
             A->data(), V.cols(), V.data(), V.ld()));
 #ifdef CHASE_OUTPUT
-        std::cout << "choldegree: 1" << std::endl;
+        chase::GetLogger().Log(chase::LogLevel::Info, "linalg",
+            "choldegree: 1", 0);
 #endif
         return info;
     }
@@ -296,7 +299,8 @@ int cholQR2(cublasHandle_t cublas_handle, cusolverDnHandle_t cusolver_handle,
             CUBLAS_OP_N, CUBLAS_DIAG_NON_UNIT, V.rows(), V.cols(), &one,
             A->data(), V.cols(), V.data(), V.ld()));
 #ifdef CHASE_OUTPUT
-        std::cout << "choldegree: 2" << std::endl;
+        chase::GetLogger().Log(chase::LogLevel::Info, "linalg",
+            "choldegree: 2", 0);
 #endif
         return info;
     }
@@ -435,8 +439,9 @@ int shiftedcholQR2(cublasHandle_t cublas_handle,
         V.data(), V.ld()));
 
 #ifdef CHASE_OUTPUT
-    std::cout << std::setprecision(2) << "choldegree: 2, shift = " << shift
-              << std::endl;
+    std::ostringstream oss;
+    oss << std::setprecision(2) << "choldegree: 2, shift = " << shift;
+    chase::GetLogger().Log(chase::LogLevel::Info, "linalg", oss.str(), 0);
 #endif
     return info;
 }

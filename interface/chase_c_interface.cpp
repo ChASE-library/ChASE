@@ -8,11 +8,13 @@
 #include <iomanip>
 #include <iostream>
 #include <memory>
+#include <sstream>
 #include <type_traits>
 #include <cstring>
 
 #include "chase_config.h"  // For version info and configuration
 #include "algorithm/algorithm.hpp"
+#include "algorithm/logger.hpp"
 #include "algorithm/performance.hpp"
 #include "chase_c_interface.h"
 
@@ -311,9 +313,6 @@ void ChASE_SEQ_Solve(int* deg,
     config.SetOpt(*opt == 'S');
     config.SetApprox(*mode == 'A');
     config.SetCholQR(*qr == 'C');
-#ifdef CHASE_OUTPUT
-    std::cout << "Config: " << config << std::endl;
-#endif
 
     chase::PerformanceDecoratorChase<T> performanceDecorator(single);
     if (single->isPseudoHerm())
@@ -1428,13 +1427,6 @@ void ChASE_DIST<MatrixType>::Solve(
     config.SetApprox(*mode == 'A');
     config.SetCholQR(*qr == 'C');
 
-#ifdef CHASE_OUTPUT
-    if (single->get_rank() == 0)
-    {
-        std::cout << config << std::endl;
-    }
-#endif
-
     chase::PerformanceDecoratorChase<T> performanceDecorator(single);
 
     if (single->isPseudoHerm())
@@ -1450,22 +1442,20 @@ void ChASE_DIST<MatrixType>::Solve(
     {
         performanceDecorator.GetPerfData().print();
 
-        std::cout << "\n\n";
-        std::cout << "Printing first 5 eigenvalues and residuals\n";
-        std::cout
+        std::ostringstream oss;
+        oss << "\n\nPrinting first 20 eigenvalues and residuals\n"
             << "| Index |       Eigenvalue      |         Residual      |\n"
-            << "|-------|-----------------------|-----------------------|"
-               "\n";
+            << "|-------|-----------------------|-----------------------|\n";
         std::size_t width = 20;
-        std::cout << std::setprecision(12);
-        std::cout << std::setfill(' ');
-        std::cout << std::scientific;
-        std::cout << std::right;
-        for (auto i = 0; i < std::min(single->GetNev(), std::size_t(5)); ++i)
-            std::cout << "|  " << std::setw(4) << i + 1 << " | "
-                      << std::setw(width) << ritzv[i] << "  | "
-                      << std::setw(width) << resid[i] << "  |\n";
-        std::cout << "\n\n\n";
+        oss << std::setprecision(12) << std::setfill(' ') << std::scientific
+            << std::right;
+        for (auto i = 0; i < std::min(single->GetNev(), std::size_t(20)); ++i)
+            oss << "|  " << std::setw(4) << i + 1 << " | " << std::setw(width)
+                << ritzv[i] << "  | " << std::setw(width) << resid[i]
+                << "  |\n";
+        oss << "\n\n\n";
+        chase::GetLogger().Log(chase::LogLevel::Debug, "interface", oss.str(),
+                              single->get_rank());
     }
 #endif
 }
@@ -2950,62 +2940,52 @@ extern "C"
 
     void chase_print_config_()
     {
-        std::cout << "========================================" << std::endl;
-        std::cout << "ChASE Build Configuration" << std::endl;
-        std::cout << "========================================" << std::endl;
-        std::cout << "Version: " << CHASE_VERSION << std::endl;
-        std::cout << std::endl;
-        
-        std::cout << "Features Compiled Into This Library:" << std::endl;
-        
-        #ifdef HAS_MPI
-        std::cout << "  ✓ MPI support:       ENABLED" << std::endl;
-        #else
-        std::cout << "  ✗ MPI support:       DISABLED" << std::endl;
-        #endif
-        
-        #ifdef HAS_CUDA
-        std::cout << "  ✓ CUDA support:      ENABLED" << std::endl;
-        #else
-        std::cout << "  ✗ CUDA support:      DISABLED" << std::endl;
-        #endif
-        
-        #ifdef HAS_NCCL
-        std::cout << "  ✓ NCCL support:      ENABLED" << std::endl;
-        #else
-        std::cout << "  ✗ NCCL support:      DISABLED" << std::endl;
-        #endif
-        
-        #ifdef HAS_SCALAPACK
-        std::cout << "  ✓ ScaLAPACK support: ENABLED" << std::endl;
-        #else
-        std::cout << "  ✗ ScaLAPACK support: DISABLED" << std::endl;
-        #endif
-        
-        std::cout << std::endl;
-        std::cout << "Configuration Options:" << std::endl;
-        
-        #ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
-        std::cout << "  ✓ GPU-Resident Lanczos: ENABLED" << std::endl;
-        #else
-        std::cout << "  ✗ GPU-Resident Lanczos: DISABLED" << std::endl;
-        #endif
-        
-        #ifdef QR_DOUBLE_PRECISION
-        std::cout << "  ✓ QR Double Precision: ENABLED" << std::endl;
-        #else
-        std::cout << "  ✗ QR Double Precision: DISABLED" << std::endl;
-        #endif
-        
-        #ifdef CHASE_OUTPUT
-        std::cout << "  ✓ Debug Output: ENABLED" << std::endl;
-        #else
-        std::cout << "  ✗ Debug Output: DISABLED" << std::endl;
-        #endif
-        
-        std::cout << "========================================" << std::endl;
-        std::cout << "NOTE: This configuration is compiled into" << std::endl;
-        std::cout << "      the library and cannot be changed." << std::endl;
-        std::cout << "========================================" << std::endl;
+        std::ostringstream oss;
+        oss << "========================================\n"
+            << "ChASE Build Configuration\n"
+            << "========================================\n"
+            << "Version: " << CHASE_VERSION << "\n\n"
+            << "Features Compiled Into This Library:\n";
+#ifdef HAS_MPI
+        oss << "  ✓ MPI support:       ENABLED\n";
+#else
+        oss << "  ✗ MPI support:       DISABLED\n";
+#endif
+#ifdef HAS_CUDA
+        oss << "  ✓ CUDA support:      ENABLED\n";
+#else
+        oss << "  ✗ CUDA support:      DISABLED\n";
+#endif
+#ifdef HAS_NCCL
+        oss << "  ✓ NCCL support:      ENABLED\n";
+#else
+        oss << "  ✗ NCCL support:      DISABLED\n";
+#endif
+#ifdef HAS_SCALAPACK
+        oss << "  ✓ ScaLAPACK support: ENABLED\n";
+#else
+        oss << "  ✗ ScaLAPACK support: DISABLED\n";
+#endif
+        oss << "\nConfiguration Options:\n";
+#ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
+        oss << "  ✓ GPU-Resident Lanczos: ENABLED\n";
+#else
+        oss << "  ✗ GPU-Resident Lanczos: DISABLED\n";
+#endif
+#ifdef QR_DOUBLE_PRECISION
+        oss << "  ✓ QR Double Precision: ENABLED\n";
+#else
+        oss << "  ✗ QR Double Precision: DISABLED\n";
+#endif
+#ifdef CHASE_OUTPUT
+        oss << "  ✓ Debug Output: ENABLED\n";
+#else
+        oss << "  ✗ Debug Output: DISABLED\n";
+#endif
+        oss << "========================================\n"
+            << "NOTE: This configuration is compiled into\n"
+            << "      the library and cannot be changed.\n"
+            << "========================================\n";
+        chase::GetLogger().Log(chase::LogLevel::Warn, "interface", oss.str(), 0);
     }
 }

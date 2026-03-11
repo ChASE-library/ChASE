@@ -689,7 +689,8 @@ public:
     ChasePerfData<T>& GetPerfData() { return perf_; }
 
 #ifdef CHASE_OUTPUT
-    void Output(std::string str) { chase_->Output(str); }
+    void Output(LogLevel level, std::string str,
+                const char* category = "performance") { chase_->Output(level, str, category); }
 #endif
 
 private:

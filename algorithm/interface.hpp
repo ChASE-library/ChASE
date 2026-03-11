@@ -420,13 +420,16 @@ public:
     /**
      * @brief Prints intermediate information during the solving procedure.
      *
-     * This method is used to output intermediate information or debug data
-     * during the execution of the algorithm. It is typically enabled when
-     * debugging or logging is required.
+     * Level controls verbosity (Error < Warn < Info < Debug < Trace).
+     * Category can be used with ChaseLogger::SetCategoryFilter() to filter by source
+     * (e.g. "algorithm", "performance", "linalg", "interface"). Default "algorithm".
      *
-     * @param str A string containing the information to be printed.
+     * @param level Log level of this message.
+     * @param str   A string containing the information to be printed.
+     * @param category Optional category for filtering (default "algorithm").
      */
-    virtual void Output(std::string str) = 0;
+    virtual void Output(LogLevel level, std::string str,
+                        const char* category = "algorithm") = 0;
 #endif
 };
 /** @} */

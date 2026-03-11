@@ -13,8 +13,10 @@
 #include "linalg/internal/cpu/cpu_kernels.hpp"
 #include "linalg/matrix/matrix.hpp"
 #include <cstring>
+#include <iomanip>
 #include <memory>
 #include <random>
+#include <sstream>
 #include <vector>
 using namespace chase::linalg;
 
@@ -205,7 +207,11 @@ public:
 
 #ifdef CHASE_OUTPUT
     //! Print some intermediate infos during the solving procedure
-    void Output(std::string str) override { std::cout << str; }
+    void Output(LogLevel level, std::string str,
+                const char* category = "algorithm") override
+    {
+        chase::GetLogger().Log(level, category, str, get_rank());
+    }
 #endif
 
     bool checkSymmetryEasy() override
@@ -350,8 +356,14 @@ public:
                 }
                 else
                 {
-                    std::cout << "Enable Single Precision in Filter"
-                              << std::endl;
+#ifdef CHASE_OUTPUT
+                    std::ostringstream oss;
+                    oss << "Enable Single Precision in Filter" << std::endl;
+                    chase::GetLogger().Log(chase::LogLevel::Info, "linalg",
+                                          oss.str(), 0);
+#else
+                    (void)0;
+#endif
                     Hmat_->enableSinglePrecision();
                     Vec1_.enableSinglePrecision();
                     Vec2_.enableSinglePrecision();
@@ -600,8 +612,10 @@ public:
         else
         {
 #ifdef CHASE_OUTPUT
-            std::cout << std::setprecision(2) << "cond(V): " << cond
-                      << std::endl;
+            std::ostringstream oss;
+            oss << std::setprecision(2) << "cond(V): " << cond << std::endl;
+            chase::GetLogger().Log(chase::LogLevel::Info, "linalg",
+                                  oss.str(), 0);
 #endif
             // if (display_bounds != 0)
             //{
@@ -631,9 +645,11 @@ public:
             if (info != 0)
             {
 #ifdef CHASE_OUTPUT
-                std::cout
-                    << "CholeskyQR doesn't work, Househoulder QR will be used."
+                std::ostringstream oss;
+                oss << "CholeskyQR doesn't work, Householder QR will be used."
                     << std::endl;
+                chase::GetLogger().Log(chase::LogLevel::Warn, "linalg",
+                                      oss.str(), 0);
 #endif
 
                 chase::linalg::internal::cpu::houseHoulderQR(

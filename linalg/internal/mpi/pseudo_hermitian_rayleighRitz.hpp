@@ -63,8 +63,9 @@ void cpu_mpi::pseudo_hermitian_rayleighRitz(
 #ifdef CHASE_OUTPUT
     if (H.grank() == 0)
     {
-        std::cout << "Constructing the non-hermitian Rayleigh-Quotient..."
-                  << std::endl;
+        std::ostringstream oss;
+        oss << "Constructing the non-hermitian Rayleigh-Quotient...";
+        chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(), H.getMpiGrid()->get_myRank());
     }
 #endif
     using T = typename MatrixType::value_type;
@@ -166,9 +167,9 @@ void cpu_mpi::pseudo_hermitian_rayleighRitz(
 #ifdef CHASE_OUTPUT
     if (H.grank() == 0)
     {
-        std::cout
-            << "Compute the eigenpairs of the non-hermitian rayleigh quotient"
-            << std::endl;
+        std::ostringstream oss;
+        oss << "Compute the eigenpairs of the non-hermitian rayleigh quotient";
+        chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(), H.getMpiGrid()->get_myRank());
     }
 #endif
 
@@ -214,9 +215,9 @@ void cpu_mpi::pseudo_hermitian_rayleighRitz(
 #ifdef CHASE_OUTPUT
     if (H.grank() == 0)
     {
-        std::cout << "Eigenvalues of the non-Hermitian rayleigh-quotient "
-                     "computed with GEEV."
-                  << std::endl;
+        std::ostringstream oss;
+        oss << "Eigenvalues of the non-Hermitian rayleigh-quotient computed with GEEV.";
+        chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(), H.getMpiGrid()->get_myRank());
     }
 #endif
 
@@ -301,8 +302,9 @@ void cpu_mpi::pseudo_hermitian_rayleighRitz_v2(
 #ifdef CHASE_OUTPUT
     if (H.grank() == 0)
     {
-        std::cout << "Entering pseudo_hermitian_rayleighRitz_v2..."
-                  << std::endl;
+        std::ostringstream oss; 
+        oss << "Entering pseudo_hermitian_rayleighRitz_v2...";
+        chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(), H.getMpiGrid()->get_myRank());
     }
 #endif
 
