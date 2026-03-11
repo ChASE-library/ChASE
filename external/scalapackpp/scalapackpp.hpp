@@ -7,6 +7,7 @@
 #pragma once
 
 #include <complex>
+#include <mpi.h>
 
 #include "algorithm/types.hpp"
 
@@ -45,6 +46,12 @@ extern "C" void descinit_(int*, int*, int*, int*, int*, int*, int*, int*, int*,
 extern "C" void blacs_gridexit_(int*);
 extern "C" void blacs_gridmap_(int*, int*, int*, int*, int*);
 extern "C" int numroc_(std::size_t*, std::size_t*, int*, int*, int*);
+
+// C BLACS interface (used to bind BLACS contexts to an MPI_Comm instead of MPI_COMM_WORLD)
+extern "C" int Csys2blacs_handle(MPI_Comm);
+extern "C" void Cblacs_gridinit(int*, char*, int, int);
+extern "C" void Cblacs_gridmap(int*, int*, int, int, int);
+extern "C" void Cblacs_gridexit(int);
 
 extern "C" void pdgeqrf_(int*, int*, double*, int*, int*, int*, double*,
                          double*, int*, int*);
