@@ -31,7 +31,7 @@
 #include "Impl/chase_gpu/nvtx.hpp"
 
 #include "../../linalg/internal/typeTraits.hpp"
-
+#include "Impl/pchase_cpu/pchase_cpu.hpp"
 #include <iomanip>
 #include <sstream>
 
@@ -1004,106 +1004,37 @@ public:
 #endif
         if (disable == 1)
         {
-#ifdef HAS_NCCL
-            if constexpr (std::is_same<backend, chase::grid::backend::NCCL>::value)
+            
+            if(cond == 1.0)
             {
-                if(cond == 1.0)
+                info = kernelNamespace::cholQR1(
+                    cublasH_, cusolverH_, V1_->l_rows(), V1_->l_cols(),
+                    V1_->l_data(), V1_->l_ld(),
+                    // V1_->getMpiGrid()->get_nccl_col_comm(),
+                    MGPUKernelNamspaceSelector<backend>::getColCommunicator(
+                        V1_->getMpiGrid()),
+                    d_work_, lwork_, A_->l_data());
+            }
+            else
+            {
+                if constexpr (is_block_cyclic_1d_multivector<InputMultiVectorType>::value)
                 {
-                    info = kernelNamespace::cholQR1(
-                        cublasH_, cusolverH_, V1_->l_rows(), V1_->l_cols(),
-                        V1_->l_data(), V1_->l_ld(),
-                        // V1_->getMpiGrid()->get_nccl_col_comm(),
-                        MGPUKernelNamspaceSelector<backend>::getColCommunicator(
-                            V1_->getMpiGrid()),
-                        d_work_, lwork_, A_->l_data());
+#ifdef HAS_SCALAPACK
+                    kernelNamespace::houseHoulderQR(*V1_);
+#else
+                    throw std::runtime_error(
+                        "For ChASE-MPI, distributed Householder QR requires ScaLAPACK, "
+                        "which is not detected\n");
+#endif             
                 }
                 else
                 {
-                    chase::linalg::internal::cuda_nccl::houseQR1_formQ(
-                        cublasH_, *V1_, *V2_, d_work_, lwork_, 16u,
-                        cusolverH_);
+                    kernelNamespace::houseQR1_formQ(
+                    cublasH_, *V1_, *V2_, d_work_, lwork_, 16u,
+                    cusolverH_);
                 }
-            }
-            else
-#endif
-            {
-#ifdef HAS_SCALAPACK
-                kernelNamespace::houseHoulderQR(*V1_);
-#else
-                throw std::runtime_error(
-                    "For ChASE-MPI, distributed Householder QR requires ScaLAPACK, "
-                    "which is not detected\n");
-#endif
-            }
-        } /*else if(nevex_ >=
- MINIMAL_N_INVOKE_MODIFIED_GRAM_SCHMIDT_QR_GPU_NCCL)
-         {
-             info = kernelNamespace::modifiedGramSchmidtCholQR(cublasH_,
-                                                             cusolverH_,
-                                                             V1_->l_rows(),
-                                                             V1_->l_cols(),
-                                                             locked_,
-                                                             V1_->l_data(),
-                                                             V1_->l_ld(),
-                                                             MGPUKernelNamspaceSelector<backend>::getColCommunicator(V1_->getMpiGrid()),
-                                                             //V1_->getMpiGrid()->get_nccl_col_comm(),
-                                                             d_work_,
-                                                             lwork_,
-                                                             A_->l_data());
-
- #ifdef CHASE_OUTPUT
-             if(my_rank_ == 0){
-                 std::cout << "NEV+NEX is larger than: " <<
- MINIMAL_N_INVOKE_MODIFIED_GRAM_SCHMIDT_QR_GPU_NCCL << ", use
- modifiedGramSchmidtCholQR" << std::endl;
-             }
- #endif
-             if(info != 0)
-             {
-                 chase::linalg::internal::cuda::t_lacpy('A',
-                                                 V2_->l_rows(),
-                                                 V2_->l_cols(),
-                                                 V2_->l_data(),
-                                                 V2_->l_ld(),
-                                                 V1_->l_data(),
-                                                 V1_->l_ld());
-
-                 if(my_rank_ == 0){
-                     std::cout << "modifiedGramSchmidtCholQR doesn't work, try
- with shiftedcholQR2." << std::endl;
-                 }
-
-
-                 info = kernelNamespace::shiftedcholQR2(cublasH_,
-                                                                 cusolverH_,
-                                                                 V1_->g_rows(),
-                                                                 V1_->l_rows(),
-                                                                 V1_->l_cols(),
-                                                                 V1_->l_data(),
-                                                                 V1_->l_ld(),
-                                                                 //V1_->getMpiGrid()->get_nccl_col_comm(),
-                                                                 MGPUKernelNamspaceSelector<backend>::getColCommunicator(V1_->getMpiGrid()),
-                                                                 d_work_,
-                                                                 lwork_,
-                                                                 A_->l_data());
-
-                 if(info != 0)
-                 {
- #ifdef HAS_SCALAPACK
- #ifdef CHASE_OUTPUT
-                     if(my_rank_ == 0){
-                         std::cout << "CholeskyQR doesn't work, Househoulder QR
- will be used." << std::endl;
-                     }
- #endif
-                     kernelNamespace::houseHoulderQR(*V1_);
- #else
-                     throw std::runtime_error("For ChASE-MPI, distributed
- Householder QR requires ScaLAPACK, which is not detected\n"); #endif
-                 }
-
-             }
-         }*/
+            }  
+        }
         else
         {
             Base<T> cond_threshold_upper = (sizeof(Base<T>) == 8) ? 1e8 : 1e4;
@@ -1310,13 +1241,22 @@ public:
                 else
 #endif
                 {
+                    if constexpr (is_block_cyclic_1d_multivector<InputMultiVectorType>::value)
+                    {
 #ifdef HAS_SCALAPACK
-                    kernelNamespace::houseHoulderQR(*V1_);
+                        kernelNamespace::houseHoulderQR(*V1_);
 #else
-                    throw std::runtime_error(
-                        "For ChASE-MPI, distributed Householder QR requires "
-                        "ScaLAPACK, which is not detected\n");
+                        throw std::runtime_error(
+                            "For ChASE-MPI, distributed Householder QR requires "
+                            "ScaLAPACK, which is not detected\n");
 #endif
+                    }
+                    else
+                    {
+                        kernelNamespace::houseQR1_formQ(
+                            cublasH_, *V1_, *V2_, d_work_, lwork_, 16u,
+                            cusolverH_);
+                    }
                 }
             }
         }

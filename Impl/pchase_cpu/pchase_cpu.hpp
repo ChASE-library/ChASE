@@ -32,6 +32,18 @@ namespace chase
 {
 namespace Impl
 {
+    template <typename MultiVector>
+    struct is_block_cyclic_1d_multivector : std::false_type
+    {
+    };
+    
+    template <typename T, chase::distMultiVector::CommunicatorType comm_type,
+              typename Platform>
+    struct is_block_cyclic_1d_multivector<
+        chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, comm_type, Platform>>
+        : std::true_type
+    {
+    };    
 /**
  * @page pChASECPU
  *
