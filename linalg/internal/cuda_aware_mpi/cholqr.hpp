@@ -23,6 +23,7 @@
 #include "linalg/internal/cuda/absTrace.cuh"
 #include "linalg/internal/cuda/shiftDiagonal.cuh"
 #include "linalg/internal/cuda_aware_mpi/cuda_mpi_kernels.hpp"
+#include "linalg/internal/cuda_aware_mpi/householder_qr.hpp"
 
 using namespace chase::linalg::blaspp;
 using namespace chase::linalg::lapackpp;

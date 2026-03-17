@@ -154,6 +154,56 @@ struct cuda_mpi
     template <typename InputMultiVectorType>
     static void houseHoulderQR(InputMultiVectorType& V);
 
+    // CUDA-aware MPI Householder QR (mirroring NCCL APIs)
+    /** Distributed Householder QR + form Q. V must be on device; uses CUDA-aware MPI for collectives. */
+    template <typename T>
+    static void distributed_houseQR_formQ(
+        std::size_t m_global, std::size_t n, std::size_t l_rows,
+        std::size_t g_off, std::size_t ldv, T* V,
+        cublasHandle_t cublas_handle, T* d_workspace,
+        std::size_t lwork_elems, MPI_Comm mpi_comm_row);
+
+    /** Blocked distributed Householder QR + form Q. V on device; CUDA-aware MPI for collectives. */
+    template <typename T>
+    static void distributed_blocked_houseQR_formQ(
+        std::size_t m_global, std::size_t n, std::size_t l_rows,
+        std::size_t g_off, std::size_t ldv, T* V,
+        std::size_t nb,
+        cublasHandle_t cublas_handle, T* d_workspace,
+        std::size_t lwork_elems, MPI_Comm mpi_comm_row,
+        cusolverDnHandle_t cusolver_handle = nullptr);
+
+    /** Lightweight timing container for Householder panel factorization. */
+    struct HouseholderPanelTiming
+    {
+        float norm_ms          = 0.f;
+        float scalar_kernel_ms = 0.f;
+        float allreduce_tau_ms = 0.f;
+        float scal_ms          = 0.f;
+        float trail_ms         = 0.f;
+    };
+            
+    /** Panel factorization for columns [k, k+jb). Used by blocked/unblocked QR; swap for different strategy. */
+    template <typename T>
+    static void distributed_houseQR_panel_factor(
+        std::size_t n, std::size_t l_rows, std::size_t g_off,
+        std::size_t ldv, T* V, std::size_t k, std::size_t jb, T* d_tau,
+        cublasHandle_t cublas_handle,
+        chase::Base<T>* d_real_scalar, T* d_T_scalar,
+        T* d_one, T* d_zero, T* d_minus_one, T* d_panel_scalars, T* d_w,
+        MPI_Comm mpi_comm_row,
+        HouseholderPanelTiming* panel_timing = nullptr);
+
+    /** GPU-facing entry point for Householder QR (geqrf + form Q) using CUDA-aware MPI. */
+    template <typename InputMultiVectorType>
+    static void houseQR1_formQ(cublasHandle_t cublas_handle,
+                               InputMultiVectorType& V1,
+                               InputMultiVectorType& V2,
+                               typename InputMultiVectorType::value_type* workspace = nullptr,
+                               int lwork = 0,
+                               std::size_t nb = 16,
+                               cusolverDnHandle_t cusolver_handle = nullptr);
+
     template <typename MatrixType, typename InputMultiVectorType>
     static void rayleighRitz(
         cublasHandle_t cublas_handle, cusolverDnHandle_t cusolver_handle,
