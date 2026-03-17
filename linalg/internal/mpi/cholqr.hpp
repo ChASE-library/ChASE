@@ -80,8 +80,11 @@ int cpu_mpi::cholQR1(std::size_t m, std::size_t n, T* V, int ldv, MPI_Comm comm,
 #ifdef CHASE_OUTPUT
         int grank;
         MPI_Comm_rank(MPI_COMM_WORLD, &grank);
-        chase::GetLogger().Log(chase::LogLevel::Info, "linalg", "choldegree: 1",
-            grank);
+        if(grank == 0){
+            chase::GetLogger().Log(chase::LogLevel::Info, "linalg",
+                "choldegree: 1\n", 0);
+        }
+
 #endif
         return info;
     }
@@ -144,8 +147,10 @@ int cpu_mpi::cholQR2(std::size_t m, std::size_t n, T* V, int ldv, MPI_Comm comm,
 #ifdef CHASE_OUTPUT
         int grank;
         MPI_Comm_rank(MPI_COMM_WORLD, &grank);
-        chase::GetLogger().Log(chase::LogLevel::Info, "linalg", "choldegree: 2",
-            grank);
+        if(grank == 0){
+            chase::GetLogger().Log(chase::LogLevel::Info, "linalg", "choldegree: 2",
+                0);
+        }
 #endif
         return info;
     }
@@ -206,8 +211,10 @@ int cpu_mpi::cholQR1(InputMultiVectorType& V,
 #ifdef CHASE_OUTPUT
         int grank;
         MPI_Comm_rank(MPI_COMM_WORLD, &grank);
-        chase::GetLogger().Log(chase::LogLevel::Info, "linalg", "choldegree: 1",
-            grank);
+        if(grank == 0){
+            chase::GetLogger().Log(chase::LogLevel::Info, "linalg", "choldegree: 1",
+                grank);
+        }
 #endif
         return info;
     }
@@ -267,8 +274,10 @@ int cpu_mpi::cholQR2(InputMultiVectorType& V,
     {
         int grank;
         MPI_Comm_rank(MPI_COMM_WORLD, &grank);
-        chase::GetLogger().Log(chase::LogLevel::Info, "linalg",
-            "In cholqr2, the first cholqr using Single Precision", grank);
+        if(grank == 0){
+            chase::GetLogger().Log(chase::LogLevel::Info, "linalg",
+                "In cholqr2, the first cholqr using Single Precision", 0);
+        }
         V.enableSinglePrecision();
         auto V_sp = V.getSinglePrecisionMatrix();
         info = cholQR1(*V_sp);
@@ -359,8 +368,9 @@ int cpu_mpi::shiftedcholQR2(std::size_t N, std::size_t m, std::size_t n, T* V,
         MPI_Comm_rank(MPI_COMM_WORLD, &grank);
         std::ostringstream oss;
         oss << "choldegree: 2, shift = " << shift;
-        chase::GetLogger().Log(chase::LogLevel::Info, "linalg", oss.str(),
-            grank);
+        if(grank == 0){
+            chase::GetLogger().Log(chase::LogLevel::Info, "linalg", oss.str(), 0);
+        }
 #endif
         return info;
     }

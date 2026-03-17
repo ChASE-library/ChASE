@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <vector>
+
 /**
  * \defgroup mpi_kernels chase::linalg::internal::mpi Namespace
  * \brief The `chase::linalg::internal::mpi` namespace contains
@@ -47,6 +49,42 @@ struct cpu_mpi
 
     template <typename InputMultiVectorType>
     static void houseHoulderQR(InputMultiVectorType& V);
+
+    /** Factor columns [k, k+jb) of V (Householder panel). Writes tau to tau_vec.
+     *  Does not form T or trailing update. Used by formQ and blocked_formQ. */
+    template <typename T>
+    static void cpu_distributed_houseQR_panel_factor(std::size_t n,
+                                                     std::size_t l_rows,
+                                                     std::size_t g_off,
+                                                     std::size_t ldv,
+                                                     T* V,
+                                                     std::size_t k,
+                                                     std::size_t jb,
+                                                     std::vector<T>& tau_vec,
+                                                     MPI_Comm mpi_comm,
+                                                     std::vector<T>& w);
+
+    /** Distributed Householder QR + form Q on CPU (1-D row dist, MPI + BLAS).
+     *  V is overwritten with the first n columns of Q. */
+    template <typename T>
+    static void cpu_distributed_houseQR_formQ(std::size_t m_global,
+                                              std::size_t n,
+                                              std::size_t l_rows,
+                                              std::size_t g_off,
+                                              std::size_t ldv,
+                                              T* V,
+                                              MPI_Comm mpi_comm);
+
+    /** Blocked distributed Householder QR + form Q on CPU; nb = panel size. */
+    template <typename T>
+    static void cpu_distributed_blocked_houseQR_formQ(std::size_t m_global,
+                                                      std::size_t n,
+                                                      std::size_t l_rows,
+                                                      std::size_t g_off,
+                                                      std::size_t ldv,
+                                                      T* V,
+                                                      MPI_Comm mpi_comm,
+                                                      std::size_t nb = 64);
 
     template <typename InputMultiVectorType>
     static chase::Base<typename InputMultiVectorType::value_type>
@@ -249,3 +287,4 @@ struct cpu_mpi
 #include "linalg/internal/mpi/residuals.hpp"
 #include "linalg/internal/mpi/shiftDiagonal.hpp"
 #include "linalg/internal/mpi/symOrHerm.hpp"
+#include "linalg/internal/mpi/householder_qr.hpp"

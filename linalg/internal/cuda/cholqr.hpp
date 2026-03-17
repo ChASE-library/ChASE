@@ -195,7 +195,7 @@ int cholQR1(cublasHandle_t cublas_handle, cusolverDnHandle_t cusolver_handle,
             A->data(), V.cols(), V.data(), V.ld()));
 #ifdef CHASE_OUTPUT
         chase::GetLogger().Log(chase::LogLevel::Info, "linalg",
-            "choldegree: 1", 0);
+            "choldegree: 1\n", 0);
 #endif
         return info;
     }

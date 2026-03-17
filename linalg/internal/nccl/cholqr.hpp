@@ -182,8 +182,10 @@ int cuda_nccl::cholQR1(cublasHandle_t cublas_handle,
 #ifdef CHASE_OUTPUT
         int grank;
         MPI_Comm_rank(MPI_COMM_WORLD, &grank);
-        chase::GetLogger().Log(chase::LogLevel::Info, "linalg", "choldegree: 1",
-            grank);
+        if(grank == 0){
+        chase::GetLogger().Log(chase::LogLevel::Info, "linalg",
+            "choldegree: 1\n", 0);
+        }
         std::ostringstream oss;
         oss << std::fixed << std::setprecision(6)
             << "  [cholQR1 Breakdown] Total: " << t_total / 1000.0 << " s\n"
@@ -194,9 +196,11 @@ int cuda_nccl::cholQR1(cublasHandle_t cublas_handle,
             << "    Cholesky:     " << t_potrf / 1000.0 << " s ("
             << 100.0 * t_potrf / t_total << "%)\n"
             << "    TRSM:         " << t_trsm / 1000.0 << " s ("
-            << 100.0 * t_trsm / t_total << "%)";
-        chase::GetLogger().Log(chase::LogLevel::Info, "linalg", oss.str(),
-            grank);
+            << 100.0 * t_trsm / t_total << "%)\n";
+        if(grank == 0){
+            chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(),
+                0);
+        }
 #endif
         cudaEventDestroy(ev_start);
         cudaEventDestroy(ev_syherk);
@@ -309,8 +313,10 @@ int cuda_nccl::cholQR1(cublasHandle_t cublas_handle,
 #ifdef CHASE_OUTPUT
         int grank;
         MPI_Comm_rank(MPI_COMM_WORLD, &grank);
-        chase::GetLogger().Log(chase::LogLevel::Info, "linalg", "choldegree: 1",
-            grank);
+        if(grank == 0){
+            chase::GetLogger().Log(chase::LogLevel::Info, "linalg", "choldegree: 1\n",
+                0);
+        }
 #endif
 
         CHECK_CUDA_ERROR(cudaFree(devInfo));
@@ -486,8 +492,10 @@ int cuda_nccl::cholQR2(cublasHandle_t cublas_handle,
 #ifdef CHASE_OUTPUT
         int grank;
         MPI_Comm_rank(MPI_COMM_WORLD, &grank);
-        chase::GetLogger().Log(chase::LogLevel::Info, "linalg", "choldegree: 2",
-            grank);
+        if(grank == 0){
+            chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", "choldegree: 2\n",
+                0);
+        }
         std::ostringstream oss;
         oss << std::fixed << std::setprecision(6)
             << "  [cholQR2 Breakdown] Total: " << t_total / 1000.0 << " s\n"
@@ -496,9 +504,11 @@ int cuda_nccl::cholQR2(cublasHandle_t cublas_handle,
             << "s, TRSM=" << t_trsm1 / 1000.0 << "s\n"
             << "  Iter2: SYHERK=" << t_syherk2 / 1000.0 << "s, AllReduce="
             << t_allreduce2 / 1000.0 << "s, Cholesky=" << t_potrf2 / 1000.0
-            << "s, TRSM=" << t_trsm2 / 1000.0 << "s";
-        chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(),
-            grank);
+            << "s, TRSM=" << t_trsm2 / 1000.0 << "s\n";
+        if(grank == 0){ 
+            chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(),
+                0);
+        }
 #endif
         cudaEventDestroy(ev_start);
         cudaEventDestroy(ev_syherk1);
@@ -613,8 +623,10 @@ int cuda_nccl::cholQR2(cublasHandle_t cublas_handle,
     {
         int grank;
         MPI_Comm_rank(MPI_COMM_WORLD, &grank);
-        chase::GetLogger().Log(chase::LogLevel::Info, "linalg",
-            "In cholqr2, the first cholqr using Single Precision", grank);
+        if(grank == 0){
+            chase::GetLogger().Log(chase::LogLevel::Debug, "linalg",
+                "In cholqr2, the first cholqr using Single Precision\n", 0);
+        }
         using singlePrecisionT =
             typename chase::ToSinglePrecisionTrait<T>::Type;
         V.enableSinglePrecision();
@@ -812,7 +824,14 @@ int cuda_nccl::shiftedcholQR2(cublasHandle_t cublas_handle,
         cudaEventDestroy(ev_potrf3);
         cudaEventDestroy(ev_trsm3);
         cudaEventDestroy(ev_end);
-        CHECK_CUDA_ERROR(cudaFree(d_nrmf));
+        if (d_nrmf != nullptr)
+        {
+            CHECK_CUDA_ERROR(cudaFree(d_nrmf));
+        }
+        if (devInfo != nullptr)
+        {
+            CHECK_CUDA_ERROR(cudaFree(devInfo));
+        }
         return info;
     }
 
@@ -899,8 +918,10 @@ int cuda_nccl::shiftedcholQR2(cublasHandle_t cublas_handle,
         << "s, TRSM=" << t_trsm2 / 1000.0
         << "s\n  Iter3: SYHERK=" << t_syherk3 / 1000.0 << "s, AllReduce="
         << t_allreduce3 / 1000.0 << "s, Cholesky=" << t_potrf3 / 1000.0
-        << "s, TRSM=" << t_trsm3 / 1000.0 << "s";
-    chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(), grank);
+        << "s, TRSM=" << t_trsm3 / 1000.0 << "s\n";
+    if(grank == 0){
+        chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(), 0);
+    }
 #endif
     cudaEventDestroy(ev_start);
     cudaEventDestroy(ev_syherk1);
@@ -1129,8 +1150,10 @@ int cuda_nccl::modifiedGramSchmidtCholQR(cublasHandle_t cublas_handle,
 #ifdef CHASE_OUTPUT
     int grank;
     MPI_Comm_rank(MPI_COMM_WORLD, &grank);
-    chase::GetLogger().Log(chase::LogLevel::Info, "linalg",
-        "Use Modified Gram-Schmidt QR", grank);
+    if(grank == 0){
+        chase::GetLogger().Log(chase::LogLevel::Debug, "linalg",
+            "Use Modified Gram-Schmidt QR\n", 0);
+    }
 #endif
     return info;
 }

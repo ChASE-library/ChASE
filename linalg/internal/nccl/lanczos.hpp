@@ -187,11 +187,15 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
     RealT* d_r_beta;
     RealT* d_beta_prev;   // previous iteration beta (after sqrt), for k>0 axpy
     T* d_beta_neg;       // -beta for batched axpy, reused every k>0
+    RealT* d_d;          // device diagonal (deferred D2H)
+    RealT* e_d;          // device off-diagonal (deferred D2H)
     cudaMalloc(&d_alpha, numvec * sizeof(T));
     cudaMalloc(&d_real_alpha, numvec * sizeof(RealT));
     cudaMalloc(&d_r_beta, numvec * sizeof(RealT));
     cudaMalloc(&d_beta_prev, numvec * sizeof(RealT));
     cudaMalloc(&d_beta_neg, numvec * sizeof(T));
+    cudaMalloc(&d_d, M * numvec * sizeof(RealT));
+    cudaMalloc(&e_d, M * numvec * sizeof(RealT));
 
     // Initialize to zero to prevent garbage values
     cudaMemset(d_alpha, 0, numvec * sizeof(T));
@@ -200,9 +204,7 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
     cudaMemset(d_beta_prev, 0, numvec * sizeof(RealT));
     cudaMemset(d_beta_neg, 0, numvec * sizeof(T));
 
-    // Host buffers (only for LAPACK and final results; keep RealT only, no T on host)
-    std::vector<RealT> r_beta_host(numvec);
-    std::vector<RealT> real_d_k_host(numvec);  // real(alpha) for current k
+    // Host buffers (only for LAPACK; filled by single D2H after loop)
     std::vector<RealT> d(M * numvec);
     std::vector<RealT> e(M * numvec);
 
@@ -263,9 +265,8 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
         chase::linalg::internal::cuda_nccl::MatrixMultiplyMultiVectors(
             cublas_handle, &One, H, v_1, &Zero, v_w);
         
-        // Pass stream to redistribution and ensure it completes
+        // Redistribute on stream; next ops (dot, NCCL, etc.) are on same stream so run in order
         v_w.redistributeImplAsync(&v_2, &stream);
-        cudaStreamSynchronize(stream);  // Wait for NCCL operations to complete
 
         // Batched dot products with negation (single kernel launch, GPU-resident)
         // Computes d_alpha[i] = -conj(v_1[:,i]) · v_2[:,i] for all i in one pass
@@ -281,10 +282,10 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
         batchedAxpyThenNegate(d_alpha, v_1.l_data(), v_2.l_data(),
                               v_1.l_rows(), numvec, v_1.l_ld(), &stream);
 
-        // Extract real(alpha) on GPU and copy to host for d[] (no T on host)
+        // Extract real(alpha) on GPU; store in device buffer (deferred D2H)
         getRealPart(d_alpha, d_real_alpha, numvec, &stream);
-        cudaMemcpyAsync(real_d_k_host.data(), d_real_alpha, numvec * sizeof(RealT),
-                       cudaMemcpyDeviceToHost, stream);
+        cudaMemcpyAsync(d_d + k * numvec, d_real_alpha, numvec * sizeof(RealT),
+                       cudaMemcpyDeviceToDevice, stream);
 
         // Subtract previous beta contribution (if k > 0) using device-resident beta (no host round-trip)
         if (k > 0)
@@ -310,19 +311,10 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
         // Normalize v_2: v_2 *= 1/||v_2|| using norm² (d_r_beta still holds norm²)
         normalizeVectors(v_2.l_data(), d_r_beta, v_2.l_rows(), numvec, v_2.l_ld(), &stream);
 
-        // Copy beta to host for e[k] and r_beta_host (async; one sync below for both alpha and beta)
-        cudaMemcpyAsync(r_beta_host.data(), d_beta_prev, numvec * sizeof(RealT),
-                       cudaMemcpyDeviceToHost, stream);
-
-        // Single sync when we need host data for d[k] and e[k]
-        cudaStreamSynchronize(stream);
-        for (auto i = 0; i < numvec; i++)
-            d[k + M * i] = real_d_k_host[i];
+        // Store beta in device buffer for e[] (deferred D2H; only for k < M-1)
         if (k < M - 1)
-        {
-            for (auto i = 0; i < numvec; i++)
-                e[k + M * i] = r_beta_host[i];
-        }
+            cudaMemcpyAsync(e_d + k * numvec, d_beta_prev, numvec * sizeof(RealT),
+                           cudaMemcpyDeviceToDevice, stream);
 
         if (k == M - 1)
             break;
@@ -335,8 +327,28 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
                                            v_1.l_data(), v_1.l_ld(), V.l_data(),
                                            V.l_ld());
 
-    // Ensure all GPU operations complete
+    // Ensure all GPU operations complete; single D2H for d and e (was per-iteration sync)
     cudaStreamSynchronize(stream);
+    cudaMemcpy(d.data(), d_d, M * numvec * sizeof(RealT), cudaMemcpyDeviceToHost);
+    cudaMemcpy(e.data(), e_d, M * numvec * sizeof(RealT), cudaMemcpyDeviceToHost);
+    cudaFree(d_d);
+    cudaFree(e_d);
+
+    // Last beta per run for upper-bound (e_d layout: e[k*numvec+i]; last row is k=M-2)
+    std::vector<RealT> r_beta_last(numvec);
+    for (auto i = 0; i < numvec; i++)
+        r_beta_last[i] = e[(M - 2) * numvec + i];
+
+    // Transpose d, e from device layout (k*numvec+i) to LAPACK layout (i*M+k)
+    std::vector<RealT> d_tmp(M * numvec), e_tmp(M * numvec);
+    for (auto i = 0; i < numvec; i++)
+        for (std::size_t k = 0; k < M; k++)
+        {
+            d_tmp[i * M + k] = d[k * numvec + i];
+            e_tmp[i * M + k] = e[k * numvec + i];
+        }
+    d = std::move(d_tmp);
+    e = std::move(e_tmp);
 
     // ========================================================================
     // Eigenvalue computation (LAPACK on CPU)
@@ -378,13 +390,13 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
 #endif
     RealT max;
     *upperb = std::max(std::abs(ritzv[0]), std::abs(ritzv[M - 1])) +
-              std::abs(r_beta_host[0]);
+              std::abs(r_beta_last[0]);
 
     for (auto i = 1; i < numvec; i++)
     {
         max =
             std::max(std::abs(ritzv[i * M]), std::abs(ritzv[(i + 1) * M - 1])) +
-            std::abs(r_beta_host[i]);
+            std::abs(r_beta_last[i]);
         *upperb = std::max(max, *upperb);
     }
 
@@ -469,9 +481,8 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
         chase::linalg::internal::cuda_nccl::MatrixMultiplyMultiVectors(
             cublas_handle, &One, H, v_1, &Zero, v_w);
         
-        // Pass stream to redistribution and ensure it completes
+        // Redistribute on stream; next ops on same stream run in order
         v_w.redistributeImplAsync(&v_2, &stream);
-        cudaStreamSynchronize(stream);  // Wait for NCCL operations to complete
 
         for (auto i = 0; i < numvec; i++)
         {
@@ -654,12 +665,16 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
     RealT* d_real_alpha;
     RealT* d_r_beta;
     RealT* d_beta_prev;   // previous iteration beta (after sqrt), for k>0 axpy
-    T* d_beta_neg;        // -beta for axpy, reused every k>0
+    T* d_beta_neg;       // -beta for axpy, reused every k>0
+    RealT* d_d;          // device diagonal (deferred D2H)
+    RealT* e_d;          // device off-diagonal (deferred D2H)
     cudaMalloc(&d_alpha, sizeof(T));
     cudaMalloc(&d_real_alpha, sizeof(RealT));
     cudaMalloc(&d_r_beta, sizeof(RealT));
     cudaMalloc(&d_beta_prev, sizeof(RealT));
     cudaMalloc(&d_beta_neg, sizeof(T));
+    cudaMalloc(&d_d, M * sizeof(RealT));
+    cudaMalloc(&e_d, M * sizeof(RealT));
 
     cudaMemset(d_alpha, 0, sizeof(T));
     cudaMemset(d_real_alpha, 0, sizeof(RealT));
@@ -667,11 +682,9 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
     cudaMemset(d_beta_prev, 0, sizeof(RealT));
     cudaMemset(d_beta_neg, 0, sizeof(T));
 
-    // Host buffers (RealT only for LAPACK inputs, no T on host)
+    // Host buffers (filled by single D2H after loop)
     std::vector<RealT> d(M);
     std::vector<RealT> e(M);
-    RealT r_beta_host;
-    RealT real_d_k;  // real(alpha) for current k
 
     // Note: cublas_handle is already configured with CUBLAS_POINTER_MODE_DEVICE
     // in the pchase_gpu constructor, so all scalar pointers must be on device
@@ -723,9 +736,8 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
         chase::linalg::internal::cuda_nccl::MatrixMultiplyMultiVectors(
             cublas_handle, &One, H, v_1, &Zero, v_w);
 
-        // Pass stream to redistribution and ensure it completes
+        // Redistribute on stream; next ops on same stream run in order
         v_w.redistributeImplAsync(&v_2, &stream);
-        cudaStreamSynchronize(stream);  // Wait for NCCL operations to complete
 
         // Dot product with negation (single-vector, but using batched kernel for consistency)
         batchedDotProduct(v_1.l_data(), v_2.l_data(), d_alpha,
@@ -740,9 +752,9 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
         batchedAxpyThenNegate(d_alpha, v_1.l_data(), v_2.l_data(),
                              v_1.l_rows(), 1, v_1.l_ld(), &stream);
 
-        // Extract real(alpha) on GPU and copy to host for d[] (no T on host)
+        // Extract real(alpha) on GPU; store in device buffer (deferred D2H)
         getRealPart(d_alpha, d_real_alpha, 1, &stream);
-        cudaMemcpyAsync(&real_d_k, d_real_alpha, sizeof(RealT), cudaMemcpyDeviceToHost, stream);
+        cudaMemcpyAsync(d_d + k, d_real_alpha, sizeof(RealT), cudaMemcpyDeviceToDevice, stream);
 
         // Subtract previous beta (if k > 0) using device-resident beta; use fused batchedAxpy (numvec=1)
         if (k > 0)
@@ -765,27 +777,9 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
         // Normalize v_2 using norm² (d_r_beta still holds norm²)
         normalizeVectors(v_2.l_data(), d_r_beta, v_2.l_rows(), 1, v_2.l_ld(), &stream);
 
-        // Copy beta to host for e[k] and r_beta_host (async)
-        cudaMemcpyAsync(&r_beta_host, d_beta_prev, sizeof(RealT), cudaMemcpyDeviceToHost, stream);
-
-        // Single sync when we need host data for d[k] and e[k]
-        cudaStreamSynchronize(stream);
-        d[k] = real_d_k;
+        // Store beta in device buffer for e[] (deferred D2H; only for k < M-1)
         if (k < M - 1)
-            e[k] = r_beta_host;
-
-#ifdef CHASE_OUTPUT
-        {
-            std::ostringstream oss;
-            if (std::isnan(d[k]) || std::isinf(d[k]))
-                oss << "[LANCZOS DEBUG] d[" << k << "] = " << d[k] << std::endl;
-            if (k < M - 1 && (std::isnan(e[k]) || std::isinf(e[k])))
-                oss << "[LANCZOS DEBUG] e[" << k << "] = " << e[k] << std::endl;
-            if (!oss.str().empty())
-                chase::GetLogger().Log(chase::LogLevel::Warn, "linalg", oss.str(),
-                                       H.getMpiGrid()->get_myRank());
-        }
-#endif
+            cudaMemcpyAsync(e_d + k, d_beta_prev, sizeof(RealT), cudaMemcpyDeviceToDevice, stream);
 
         if (k == M - 1)
             break;
@@ -794,8 +788,12 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
         v_1.swap(v_2);
     }
 
-    // Ensure all GPU operations complete
+    // Ensure all GPU operations complete; single D2H for d and e (was per-iteration sync)
     cudaStreamSynchronize(stream);
+    cudaMemcpy(d.data(), d_d, M * sizeof(RealT), cudaMemcpyDeviceToHost);
+    cudaMemcpy(e.data(), e_d, M * sizeof(RealT), cudaMemcpyDeviceToHost);
+    cudaFree(d_d);
+    cudaFree(e_d);
 
     // ========================================================================
     // Eigenvalue computation (LAPACK on CPU)
@@ -852,8 +850,9 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
                                H.getMpiGrid()->get_myRank());
     }
 #endif
+    RealT last_beta = (M > 1) ? e[M - 2] : RealT(0);
     *upperb =
-        std::max(std::abs(ritzv[0]), std::abs(ritzv[M - 1])) + std::abs(r_beta_host);
+        std::max(std::abs(ritzv[0]), std::abs(ritzv[M - 1])) + std::abs(last_beta);
 
     // ========================================================================
     // Cleanup
@@ -921,9 +920,8 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
         chase::linalg::internal::cuda_nccl::MatrixMultiplyMultiVectors(
             cublas_handle, &One, H, v_1, &Zero, v_w);
 
-        // Pass stream to redistribution and ensure it completes
+        // Redistribute on stream; next ops on same stream run in order
         v_w.redistributeImplAsync(&v_2, &stream);
-        cudaStreamSynchronize(stream);  // Wait for NCCL operations to complete
 
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTdot(
             cublas_handle, v_1.l_rows(), v_1.l_data(), 1, v_2.l_data(), 1,

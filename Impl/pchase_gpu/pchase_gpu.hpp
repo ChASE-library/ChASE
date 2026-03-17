@@ -201,7 +201,7 @@ public:
         if (my_rank_ == 0)
         {
             std::ostringstream oss;
-            oss << "XGEEV ACTIVATED !";
+            oss << "XGEEV ACTIVATED !\n";
             chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(), my_rank_);
         }
 #endif
@@ -255,7 +255,7 @@ public:
             {
                 std::ostringstream oss;
                 oss << "GEEV GPU WORKSPACE SIZE = " << lwork_heevd
-                    << "GEEV CPU WORKSPACE SIZE = " << temp_lhwork;
+                    << ", GEEV CPU WORKSPACE SIZE = " << temp_lhwork << "\n";
                 chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(), my_rank_);
             }
 #endif
@@ -274,7 +274,7 @@ public:
             if (my_rank_ == 0)
             {
                 std::ostringstream oss;
-                oss << "HEEVD GPU WORKSPACE SIZE = " << lwork_heevd;
+                oss << "HEEVD GPU WORKSPACE SIZE = " << lwork_heevd << "\n";
                 chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(), my_rank_);
             }
 #endif
@@ -439,7 +439,7 @@ public:
                 cudaEventRecord(start);
                 
                 int info = kernelNamespace::cholQR1(
-                    cublasH_, cusolverH_, warmup_rows, warmup_cols,
+                    cublasH_, cusolverH_, V1_->l_rows(), V1_->l_cols(),
                     V1_->l_data(), V1_->l_ld(),
                     MGPUKernelNamspaceSelector<backend>::getColCommunicator(
                         V1_->getMpiGrid()),
@@ -453,7 +453,7 @@ public:
                 
                 std::ostringstream oss;
                 oss << "[cholQR1 warm-up " << (i+1) << "/3] 1x1 matrix: " 
-                    << ms << " ms (info=" << info << ")";
+                    << ms << " ms (info=" << info << ")\n";
                 chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(), my_rank_);
             }
             
@@ -467,7 +467,12 @@ public:
                 CHECK_CUBLAS_ERROR(cublasGetStream(cublasH_, &saved_stream));
 #endif
                 // Minimal Lanczos: 1 iteration to warm up redistribute patterns
-                kernelNamespace::lanczos_dispatch(cublasH_, 1, *Hmat_, *V1_, &dummy_upperb);
+                //kernelNamespace::lanczos_dispatch(cublasH_, 1, *Hmat_, *V1_, &dummy_upperb);
+                std::vector<Base<T>> Theta(40 * 20);
+                std::vector<Base<T>> Tau(40 * 20);
+                std::vector<Base<T>> ritzV(40 * 40);
+                kernelNamespace::lanczos_dispatch(cublasH_, 40, 20, *Hmat_, *V1_, &dummy_upperb, Theta.data(), Tau.data(), ritzV.data());
+                
 #ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
                 CHECK_CUBLAS_ERROR(cublasSetStream(cublasH_, saved_stream));
 #endif
@@ -481,7 +486,7 @@ public:
                 {
                     std::ostringstream oss;
                     oss << "[Lanczos warm-up " << (i+1) << "/3] 1 iteration: " 
-                        << ms << " ms";
+                        << ms << " ms\n";
                     chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(), my_rank_);
                 }
 #endif
@@ -999,13 +1004,37 @@ public:
 #endif
         if (disable == 1)
         {
-#ifdef HAS_SCALAPACK
-            kernelNamespace::houseHoulderQR(*V1_);
-#else
-            throw std::runtime_error(
-                "For ChASE-MPI, distributed Householder QR requires ScaLAPACK, "
-                "which is not detected\n");
+#ifdef HAS_NCCL
+            if constexpr (std::is_same<backend, chase::grid::backend::NCCL>::value)
+            {
+                if(cond == 1.0)
+                {
+                    info = kernelNamespace::cholQR1(
+                        cublasH_, cusolverH_, V1_->l_rows(), V1_->l_cols(),
+                        V1_->l_data(), V1_->l_ld(),
+                        // V1_->getMpiGrid()->get_nccl_col_comm(),
+                        MGPUKernelNamspaceSelector<backend>::getColCommunicator(
+                            V1_->getMpiGrid()),
+                        d_work_, lwork_, A_->l_data());
+                }
+                else
+                {
+                    chase::linalg::internal::cuda_nccl::houseQR1_formQ(
+                        cublasH_, *V1_, *V2_, d_work_, lwork_, 16u,
+                        cusolverH_);
+                }
+            }
+            else
 #endif
+            {
+#ifdef HAS_SCALAPACK
+                kernelNamespace::houseHoulderQR(*V1_);
+#else
+                throw std::runtime_error(
+                    "For ChASE-MPI, distributed Householder QR requires ScaLAPACK, "
+                    "which is not detected\n");
+#endif
+            }
         } /*else if(nevex_ >=
  MINIMAL_N_INVOKE_MODIFIED_GRAM_SCHMIDT_QR_GPU_NCCL)
          {
@@ -1263,21 +1292,32 @@ public:
 
             if (info != 0)
             {
-#ifdef HAS_SCALAPACK
 #ifdef CHASE_OUTPUT
                 if (my_rank_ == 0)
                 {
                     chase::GetLogger().Log(chase::LogLevel::Warn, "linalg",
-                        "CholeskyQR doesn't work, Householder QR will be used.",
+                        "CholeskyQR doesn't work, Householder QR will be used.\n",
                         my_rank_);
                 }
 #endif
-                kernelNamespace::houseHoulderQR(*V1_);
-#else
-                throw std::runtime_error(
-                    "For ChASE-MPI, distributed Householder QR requires "
-                    "ScaLAPACK, which is not detected\n");
+#ifdef HAS_NCCL
+                if constexpr (std::is_same<backend, chase::grid::backend::NCCL>::value)
+                {
+                    chase::linalg::internal::cuda_nccl::houseQR1_formQ(
+                        cublasH_, *V1_, *V2_, d_work_, lwork_, 16u,
+                        cusolverH_);
+                }
+                else
 #endif
+                {
+#ifdef HAS_SCALAPACK
+                    kernelNamespace::houseHoulderQR(*V1_);
+#else
+                    throw std::runtime_error(
+                        "For ChASE-MPI, distributed Householder QR requires "
+                        "ScaLAPACK, which is not detected\n");
+#endif
+                }
             }
         }
 
@@ -1333,10 +1373,10 @@ public:
         {
             std::ostringstream oss;
             oss << std::setprecision(6) << std::fixed;
-            oss << "[QR Timing Rank 0] Total: " << time_total/1000.0 << " s, "
+            oss << "\n[QR Timing Rank 0] Total: " << time_total/1000.0 << " s, "
                 << "FlipSign: " << time_flip_sign/1000.0 << " s, "
                 << "CholQR: " << time_cholqr/1000.0 << " s, "
-                << "Lacpy: " << time_lacpy/1000.0 << " s";
+                << "Lacpy: " << time_lacpy/1000.0 << " s\n";
             chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(), my_rank_);
         }
 #endif

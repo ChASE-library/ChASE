@@ -46,6 +46,16 @@ void cuda_nccl::flipLowerHalfMatrixSign(InputMultiVectorType& V)
 
 template <typename InputMultiVectorType>
 void cuda_nccl::flipLowerHalfMatrixSign(InputMultiVectorType& V,
+                                        cudaStream_t stream)
+{
+    // Forward to CUDA kernel using the provided stream
+    chase::linalg::internal::cuda::chase_flipMatrixSign(
+        V.l_data() + V.l_half(), V.l_rows() - V.l_half(), V.l_cols(), V.l_ld(),
+        stream);
+}
+
+template <typename InputMultiVectorType>
+void cuda_nccl::flipLowerHalfMatrixSign(InputMultiVectorType& V,
                                         std::size_t offset, std::size_t subSize)
 {
     chase::linalg::internal::cuda::chase_flipMatrixSign(

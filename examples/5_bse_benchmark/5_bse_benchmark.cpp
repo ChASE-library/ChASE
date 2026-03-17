@@ -207,17 +207,8 @@ int bse_solve(BSE_DriverProblemConfig& conf)
 #endif
 #endif
 #ifdef HAS_NCCL
-    auto single =
-        chase::Impl::pChASEGPU<decltype(Hmat), decltype(Vec), BackendType>(
-            nev, nex, &Hmat, &Vec, Lambda.data());
-
     Hmat.allocate_cpu_data();
-#else
-
-    
-    auto single = chase::Impl::pChASECPU(nev, nex, &Hmat, &Vec, Lambda.data());
 #endif
-
     start = std::chrono::high_resolution_clock::now();
     Hmat.readFromBinaryFile(path_in);
     end = std::chrono::high_resolution_clock::now();
@@ -240,6 +231,14 @@ int bse_solve(BSE_DriverProblemConfig& conf)
         if (world_rank == 0)
             std::cout << "Saved first diagonal block (N/2 x N/2) to " << path_block << std::endl;
     }
+#endif
+
+#ifdef HAS_NCCL
+    auto single =
+        chase::Impl::pChASEGPU<decltype(Hmat), decltype(Vec), BackendType>(
+            nev, nex, &Hmat, &Vec, Lambda.data());
+#else
+    auto single = chase::Impl::pChASECPU(nev, nex, &Hmat, &Vec, Lambda.data());
 #endif
 
 #ifdef HAS_NCCL
@@ -311,13 +310,7 @@ int bse_solve(BSE_DriverProblemConfig& conf)
     auto Hmat = new MatrixType(N, N);
 
 #ifdef HAS_CUDA
-    auto single = chase::Impl::ChASEGPU<T, MatrixType>(
-        N, nev, nex, Hmat, V.data(), N, Lambda.data());
-
     Hmat->allocate_cpu_data();
-#else
-    auto single = chase::Impl::ChASECPU<T, MatrixType>(
-        N, nev, nex, Hmat, V.data(), N, Lambda.data());
 #endif
     start = std::chrono::high_resolution_clock::now();
     Hmat->readFromBinaryFile(path_in);
@@ -330,7 +323,14 @@ int bse_solve(BSE_DriverProblemConfig& conf)
     }
 
 #ifdef HAS_CUDA
-    Hmat->H2D();
+    auto single = chase::Impl::ChASEGPU<T, MatrixType>(
+        N, nev, nex, Hmat, V.data(), N, Lambda.data());
+#else
+    auto single = chase::Impl::ChASECPU<T, MatrixType>(
+        N, nev, nex, Hmat, V.data(), N, Lambda.data());
+#endif
+
+#ifdef HAS_CUDA
     if (shiftDiag != chase::Base<T>(0))
     {
         chase::linalg::internal::cuda::flipLowerHalfMatrixSign(Hmat, nullptr);
@@ -353,18 +353,6 @@ int bse_solve(BSE_DriverProblemConfig& conf)
 
 #ifndef USE_PSEUDO_HERMITIAN
     // single.symOrHermMatrix('L');
-/*
-#ifdef HAS_NCCL
-        //chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(Hmat);
-        //Hmat.D2H();
-#elif defined(HAS_CUDA)
-        //chase::linalg::internal::cuda::flipLowerHalfMatrixSign(Hmat);
-        //Hmat->D2H();
-#elif defined(USE_MPI)
-        chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(Hmat);
-#else
-        chase::linalg::internal::cpu::flipLowerHalfMatrixSign(Hmat);
-#endif*/
 #endif
 
     if (world_rank == 0)

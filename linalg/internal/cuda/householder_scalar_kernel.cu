@@ -1,0 +1,396 @@
+// This file is a part of ChASE.
+// Copyright (c) 2015-2026, Simulation and Data Laboratory Quantum Materials,
+//   Forschungszentrum Juelich GmbH, Germany. All rights reserved.
+// License is 3-clause BSD:
+// https://github.com/ChASE-library/ChASE
+
+#include "householder_scalar_kernel.cuh"
+#include "householder_scalar_kernel.hpp"
+#include <climits>
+#include <complex>
+#include <limits>
+#include <sstream>
+#include <stdexcept>
+#include <type_traits>
+
+namespace chase
+{
+namespace linalg
+{
+namespace internal
+{
+namespace cuda
+{
+
+template <typename T, typename RealT>
+void run_householder_scalar_kernel(cudaStream_t stream, int pivot_here,
+                                  const T* d_x0, const RealT* d_nrm_sq, T* d_tau,
+                                  T* d_inv_denom, T* d_neg_beta, T* d_denom_bcast,
+                                  T* d_saved_rkk)
+{
+    if (stream == nullptr)
+        stream = 0;
+    if constexpr (std::is_same<T, float>::value)
+    {
+        householder_scalar_kernel_s<<<1, 1, 0, stream>>>(
+            pivot_here, d_x0, d_nrm_sq, d_tau, d_inv_denom, d_neg_beta,
+            d_denom_bcast, d_saved_rkk);
+    }
+    else if constexpr (std::is_same<T, double>::value)
+    {
+        householder_scalar_kernel_d<<<1, 1, 0, stream>>>(
+            pivot_here, d_x0, d_nrm_sq, d_tau, d_inv_denom, d_neg_beta,
+            d_denom_bcast, d_saved_rkk);
+    }
+    else if constexpr (std::is_same<T, std::complex<float>>::value)
+    {
+        householder_scalar_kernel_c<<<1, 1, 0, stream>>>(
+            pivot_here, reinterpret_cast<const cuComplex*>(d_x0),
+            reinterpret_cast<const float*>(d_nrm_sq),
+            reinterpret_cast<cuComplex*>(d_tau),
+            reinterpret_cast<cuComplex*>(d_inv_denom),
+            reinterpret_cast<cuComplex*>(d_neg_beta),
+            reinterpret_cast<cuComplex*>(d_denom_bcast),
+            reinterpret_cast<cuComplex*>(d_saved_rkk));
+    }
+    else
+    {
+        static_assert(std::is_same<T, std::complex<double>>::value, "T must be float, double, std::complex<float>, or std::complex<double>");
+        householder_scalar_kernel_z<<<1, 1, 0, stream>>>(
+            pivot_here, reinterpret_cast<const cuDoubleComplex*>(d_x0),
+            reinterpret_cast<const double*>(d_nrm_sq),
+            reinterpret_cast<cuDoubleComplex*>(d_tau),
+            reinterpret_cast<cuDoubleComplex*>(d_inv_denom),
+            reinterpret_cast<cuDoubleComplex*>(d_neg_beta),
+            reinterpret_cast<cuDoubleComplex*>(d_denom_bcast),
+            reinterpret_cast<cuDoubleComplex*>(d_saved_rkk));
+    }
+}
+
+template <typename T>
+void run_inv_denom_from_denom_bcast(cudaStream_t stream,
+                                    const T* d_denom_bcast, T* d_inv_denom)
+{
+    if (stream == nullptr)
+        stream = 0;
+    if constexpr (std::is_same<T, float>::value)
+    {
+        inv_denom_from_denom_bcast_s<<<1, 1, 0, stream>>>(d_denom_bcast, d_inv_denom);
+    }
+    else if constexpr (std::is_same<T, double>::value)
+    {
+        inv_denom_from_denom_bcast_d<<<1, 1, 0, stream>>>(d_denom_bcast, d_inv_denom);
+    }
+    else if constexpr (std::is_same<T, std::complex<float>>::value)
+    {
+        inv_denom_from_denom_bcast_c<<<1, 1, 0, stream>>>(
+            reinterpret_cast<const cuComplex*>(d_denom_bcast),
+            reinterpret_cast<cuComplex*>(d_inv_denom));
+    }
+    else
+    {
+        static_assert(std::is_same<T, std::complex<double>>::value, "T must be float, double, or complex");
+        inv_denom_from_denom_bcast_z<<<1, 1, 0, stream>>>(
+            reinterpret_cast<const cuDoubleComplex*>(d_denom_bcast),
+            reinterpret_cast<cuDoubleComplex*>(d_inv_denom));
+    }
+}
+
+template <typename T>
+void run_nonpivot_scal_if_denom_nonzero(cudaStream_t stream,
+                                       const T* d_denom_bcast, T* d_inv_denom,
+                                       T* d_V_col, int n)
+{
+    if (stream == nullptr)
+        stream = 0;
+    if (n <= 0)
+        return;
+    const int block = 256;
+    const int grid = (n + block - 1) / block;
+    if constexpr (std::is_same<T, float>::value)
+    {
+        nonpivot_scal_if_denom_nonzero_s<<<grid, block, 0, stream>>>(
+            d_denom_bcast, d_inv_denom, d_V_col, n);
+    }
+    else if constexpr (std::is_same<T, double>::value)
+    {
+        nonpivot_scal_if_denom_nonzero_d<<<grid, block, 0, stream>>>(
+            d_denom_bcast, d_inv_denom, d_V_col, n);
+    }
+    else if constexpr (std::is_same<T, std::complex<float>>::value)
+    {
+        nonpivot_scal_if_denom_nonzero_c<<<grid, block, 0, stream>>>(
+            reinterpret_cast<const cuComplex*>(d_denom_bcast),
+            reinterpret_cast<cuComplex*>(d_inv_denom),
+            reinterpret_cast<cuComplex*>(d_V_col), n);
+    }
+    else
+    {
+        static_assert(std::is_same<T, std::complex<double>>::value, "T must be float, double, or complex");
+        nonpivot_scal_if_denom_nonzero_z<<<grid, block, 0, stream>>>(
+            reinterpret_cast<const cuDoubleComplex*>(d_denom_bcast),
+            reinterpret_cast<cuDoubleComplex*>(d_inv_denom),
+            reinterpret_cast<cuDoubleComplex*>(d_V_col), n);
+    }
+}
+
+template <typename T>
+void run_guarded_scaling(cudaStream_t stream, int n, const T* d_tau,
+                         const T* d_inv_denom, T* d_V_col, bool pivot_here,
+                         int pivot_loc, const T* d_neg_beta)
+{
+    if (stream == nullptr)
+        stream = 0;
+    if (n <= 0)
+        return;
+    const int block = 256;
+    const int grid = (n + block - 1) / block;
+    const int pivot = pivot_here ? 1 : 0;
+    if constexpr (std::is_same<T, float>::value)
+    {
+        guarded_scaling_s<<<grid, block, 0, stream>>>(
+            n, d_tau, d_inv_denom, d_V_col, pivot, pivot_loc, d_neg_beta);
+    }
+    else if constexpr (std::is_same<T, double>::value)
+    {
+        guarded_scaling_d<<<grid, block, 0, stream>>>(
+            n, d_tau, d_inv_denom, d_V_col, pivot, pivot_loc, d_neg_beta);
+    }
+    else if constexpr (std::is_same<T, std::complex<float>>::value)
+    {
+        guarded_scaling_c<<<grid, block, 0, stream>>>(
+            n,
+            reinterpret_cast<const cuComplex*>(d_tau),
+            reinterpret_cast<const cuComplex*>(d_inv_denom),
+            reinterpret_cast<cuComplex*>(d_V_col),
+            pivot,
+            pivot_loc,
+            reinterpret_cast<const cuComplex*>(d_neg_beta));
+    }
+    else
+    {
+        static_assert(std::is_same<T, std::complex<double>>::value, "T must be float, double, or complex");
+        guarded_scaling_z<<<grid, block, 0, stream>>>(
+            n,
+            reinterpret_cast<const cuDoubleComplex*>(d_tau),
+            reinterpret_cast<const cuDoubleComplex*>(d_inv_denom),
+            reinterpret_cast<cuDoubleComplex*>(d_V_col),
+            pivot,
+            pivot_loc,
+            reinterpret_cast<const cuDoubleComplex*>(d_neg_beta));
+    }
+}
+
+template <typename T>
+void run_batch_save_restore_upper_triangular(cudaStream_t stream, T* d_V,
+                                             T* d_saved, std::size_t ldv,
+                                             std::size_t jb, std::size_t k,
+                                             std::size_t g_off,
+                                             std::size_t l_rows,
+                                             const T* d_one, const T* d_zero,
+                                             bool save_mode)
+{
+    if (stream == nullptr)
+        stream = 0;
+    if (jb == 0)
+        return;
+    (void)d_one;
+    (void)d_zero;
+
+    const int save_i = save_mode ? 1 : 0;
+    constexpr int tile = 16;
+    const dim3 block(tile, tile);
+    const std::size_t grid_x = (jb + tile - 1) / tile;
+    if (grid_x > static_cast<std::size_t>(UINT_MAX))
+        throw std::runtime_error("run_batch_save_restore_upper_triangular: grid dimension overflow");
+    const dim3 grid(static_cast<unsigned int>(grid_x),
+                    static_cast<unsigned int>(grid_x),
+                    1u);
+
+    (void)cudaGetLastError();
+    if constexpr (std::is_same<T, float>::value)
+    {
+        batch_save_restore_upper_triangular_s<<<grid, block, 0, stream>>>(
+            d_V, d_saved, ldv, jb, k, g_off, l_rows, save_i);
+    }
+    else if constexpr (std::is_same<T, double>::value)
+    {
+        batch_save_restore_upper_triangular_d<<<grid, block, 0, stream>>>(
+            d_V, d_saved, ldv, jb, k, g_off, l_rows, save_i);
+    }
+    else if constexpr (std::is_same<T, std::complex<float>>::value)
+    {
+        batch_save_restore_upper_triangular_c<<<grid, block, 0, stream>>>(
+            reinterpret_cast<cuComplex*>(d_V),
+            reinterpret_cast<cuComplex*>(d_saved),
+            ldv, jb, k, g_off, l_rows, save_i);
+    }
+    else
+    {
+        static_assert(std::is_same<T, std::complex<double>>::value,
+                      "T must be float, double, or complex");
+        batch_save_restore_upper_triangular_z<<<grid, block, 0, stream>>>(
+            reinterpret_cast<cuDoubleComplex*>(d_V),
+            reinterpret_cast<cuDoubleComplex*>(d_saved),
+            ldv, jb, k, g_off, l_rows, save_i);
+    }
+
+    const cudaError_t err = cudaPeekAtLastError();
+    if (err != cudaSuccess)
+    {
+        std::ostringstream oss;
+        oss << "batch_save_restore_upper_triangular kernel launch failed: "
+            << cudaGetErrorString(err)
+            << " (jb=" << jb << ", grid=" << grid.x << "x" << grid.y
+            << ", block=" << block.x << "x" << block.y
+            << ", ldv=" << ldv << ", k=" << k
+            << ", g_off=" << g_off << ", l_rows=" << l_rows << ")";
+        throw std::runtime_error(oss.str());
+    }
+}
+
+template <typename T>
+void run_init_identity_distributed(cudaStream_t stream, T* d_V, std::size_t ldv,
+                                   std::size_t n, std::size_t g_off,
+                                   std::size_t l_rows)
+{
+    if (stream == nullptr)
+        stream = 0;
+    if (n == 0 || l_rows == 0)
+        return;
+
+    constexpr int block = 256;
+    const std::size_t grid_x = (n + block - 1) / block;
+    if (grid_x > static_cast<std::size_t>(UINT_MAX))
+        throw std::runtime_error("run_init_identity_distributed: grid dimension overflow");
+    const dim3 grid(static_cast<unsigned int>(grid_x), 1u, 1u);
+
+    (void)cudaGetLastError();
+    if constexpr (std::is_same<T, float>::value)
+    {
+        init_identity_distributed_s<<<grid, block, 0, stream>>>(
+            d_V, ldv, n, g_off, l_rows);
+    }
+    else if constexpr (std::is_same<T, double>::value)
+    {
+        init_identity_distributed_d<<<grid, block, 0, stream>>>(
+            d_V, ldv, n, g_off, l_rows);
+    }
+    else if constexpr (std::is_same<T, std::complex<float>>::value)
+    {
+        init_identity_distributed_c<<<grid, block, 0, stream>>>(
+            reinterpret_cast<cuComplex*>(d_V), ldv, n, g_off, l_rows);
+    }
+    else
+    {
+        static_assert(std::is_same<T, std::complex<double>>::value,
+                      "T must be float, double, or complex");
+        init_identity_distributed_z<<<grid, block, 0, stream>>>(
+            reinterpret_cast<cuDoubleComplex*>(d_V), ldv, n, g_off, l_rows);
+    }
+
+    const cudaError_t err = cudaPeekAtLastError();
+    if (err != cudaSuccess)
+    {
+        std::ostringstream oss;
+        oss << "init_identity_distributed kernel launch failed: "
+            << cudaGetErrorString(err)
+            << " (n=" << n << ", l_rows=" << l_rows
+            << ", ldv=" << ldv << ", g_off=" << g_off
+            << ", grid=" << grid.x << ", block=" << block << ")";
+        throw std::runtime_error(oss.str());
+    }
+}
+
+template <typename T>
+void run_compute_T_block(cudaStream_t stream, T* Tb, T* d_S, const T* d_tau,
+                        int jb, int nb)
+{
+    if (stream == nullptr)
+        stream = 0;
+    if (jb <= 0)
+        return;
+    if (jb > nb)
+        throw std::runtime_error("run_compute_T_block: jb > nb");
+    (void)cudaGetLastError();
+    if constexpr (std::is_same<T, float>::value)
+    {
+        compute_T_block_s<<<1, 1, 0, stream>>>(Tb, d_S, d_tau, jb, nb);
+    }
+    else if constexpr (std::is_same<T, double>::value)
+    {
+        compute_T_block_d<<<1, 1, 0, stream>>>(Tb, d_S, d_tau, jb, nb);
+    }
+    else if constexpr (std::is_same<T, std::complex<float>>::value)
+    {
+        compute_T_block_c<<<1, 1, 0, stream>>>(
+            reinterpret_cast<cuComplex*>(Tb),
+            reinterpret_cast<const cuComplex*>(d_S),
+            reinterpret_cast<const cuComplex*>(d_tau),
+            jb, nb);
+    }
+    else
+    {
+        static_assert(std::is_same<T, std::complex<double>>::value,
+                      "T must be float, double, or complex");
+        compute_T_block_z<<<1, 1, 0, stream>>>(
+            reinterpret_cast<cuDoubleComplex*>(Tb),
+            reinterpret_cast<const cuDoubleComplex*>(d_S),
+            reinterpret_cast<const cuDoubleComplex*>(d_tau),
+            jb, nb);
+    }
+    cudaError_t err = cudaPeekAtLastError();
+    if (err != cudaSuccess)
+    {
+        std::ostringstream oss;
+        oss << "compute_T_block kernel launch failed: " << cudaGetErrorString(err);
+        throw std::runtime_error(oss.str());
+    }
+}
+
+// Explicit instantiations
+template void run_householder_scalar_kernel<float, float>(cudaStream_t, int,
+    const float*, const float*, float*, float*, float*, float*, float*);
+template void run_householder_scalar_kernel<double, double>(cudaStream_t, int,
+    const double*, const double*, double*, double*, double*, double*, double*);
+template void run_householder_scalar_kernel<std::complex<float>, float>(cudaStream_t, int,
+    const std::complex<float>*, const float*, std::complex<float>*, std::complex<float>*,
+    std::complex<float>*, std::complex<float>*, std::complex<float>*);
+template void run_householder_scalar_kernel<std::complex<double>, double>(cudaStream_t, int,
+    const std::complex<double>*, const double*, std::complex<double>*, std::complex<double>*,
+    std::complex<double>*, std::complex<double>*, std::complex<double>*);
+
+template void run_inv_denom_from_denom_bcast<float>(cudaStream_t, const float*, float*);
+template void run_inv_denom_from_denom_bcast<double>(cudaStream_t, const double*, double*);
+template void run_inv_denom_from_denom_bcast<std::complex<float>>(cudaStream_t, const std::complex<float>*, std::complex<float>*);
+template void run_inv_denom_from_denom_bcast<std::complex<double>>(cudaStream_t, const std::complex<double>*, std::complex<double>*);
+
+template void run_nonpivot_scal_if_denom_nonzero<float>(cudaStream_t, const float*, float*, float*, int);
+template void run_nonpivot_scal_if_denom_nonzero<double>(cudaStream_t, const double*, double*, double*, int);
+template void run_nonpivot_scal_if_denom_nonzero<std::complex<float>>(cudaStream_t, const std::complex<float>*, std::complex<float>*, std::complex<float>*, int);
+template void run_nonpivot_scal_if_denom_nonzero<std::complex<double>>(cudaStream_t, const std::complex<double>*, std::complex<double>*, std::complex<double>*, int);
+
+template void run_guarded_scaling<float>(cudaStream_t, int, const float*, const float*, float*, bool, int, const float*);
+template void run_guarded_scaling<double>(cudaStream_t, int, const double*, const double*, double*, bool, int, const double*);
+template void run_guarded_scaling<std::complex<float>>(cudaStream_t, int, const std::complex<float>*, const std::complex<float>*, std::complex<float>*, bool, int, const std::complex<float>*);
+template void run_guarded_scaling<std::complex<double>>(cudaStream_t, int, const std::complex<double>*, const std::complex<double>*, std::complex<double>*, bool, int, const std::complex<double>*);
+
+template void run_batch_save_restore_upper_triangular<float>(cudaStream_t, float*, float*, std::size_t, std::size_t, std::size_t, std::size_t, std::size_t, const float*, const float*, bool);
+template void run_batch_save_restore_upper_triangular<double>(cudaStream_t, double*, double*, std::size_t, std::size_t, std::size_t, std::size_t, std::size_t, const double*, const double*, bool);
+template void run_batch_save_restore_upper_triangular<std::complex<float>>(cudaStream_t, std::complex<float>*, std::complex<float>*, std::size_t, std::size_t, std::size_t, std::size_t, std::size_t, const std::complex<float>*, const std::complex<float>*, bool);
+template void run_batch_save_restore_upper_triangular<std::complex<double>>(cudaStream_t, std::complex<double>*, std::complex<double>*, std::size_t, std::size_t, std::size_t, std::size_t, std::size_t, const std::complex<double>*, const std::complex<double>*, bool);
+
+template void run_init_identity_distributed<float>(cudaStream_t, float*, std::size_t, std::size_t, std::size_t, std::size_t);
+template void run_init_identity_distributed<double>(cudaStream_t, double*, std::size_t, std::size_t, std::size_t, std::size_t);
+template void run_init_identity_distributed<std::complex<float>>(cudaStream_t, std::complex<float>*, std::size_t, std::size_t, std::size_t, std::size_t);
+template void run_init_identity_distributed<std::complex<double>>(cudaStream_t, std::complex<double>*, std::size_t, std::size_t, std::size_t, std::size_t);
+
+template void run_compute_T_block<float>(cudaStream_t, float*, float*, const float*, int, int);
+template void run_compute_T_block<double>(cudaStream_t, double*, double*, const double*, int, int);
+template void run_compute_T_block<std::complex<float>>(cudaStream_t, std::complex<float>*, std::complex<float>*, const std::complex<float>*, int, int);
+template void run_compute_T_block<std::complex<double>>(cudaStream_t, std::complex<double>*, std::complex<double>*, const std::complex<double>*, int, int);
+
+} // namespace cuda
+} // namespace internal
+} // namespace linalg
+} // namespace chase

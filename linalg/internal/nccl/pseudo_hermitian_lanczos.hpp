@@ -93,7 +93,7 @@ void cuda_nccl::pseudo_hermitian_lanczos(
     if (H.getMpiGrid()->get_myRank() == 0)
     {
         std::ostringstream oss; 
-        oss << "[GPU-RESIDENT PSEUDO-HERMITIAN LANCZOS]: ENABLED, using NCCL + batched dot/AXPY/scale (DEVICE mode)";
+        oss << "[GPU-RESIDENT PSEUDO-HERMITIAN LANCZOS]: ENABLED, using NCCL + batched dot/AXPY/scale (DEVICE mode)\n";
         chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(), H.getMpiGrid()->get_myRank());
     }
 #endif
@@ -104,10 +104,9 @@ void cuda_nccl::pseudo_hermitian_lanczos(
 
     // Get NCCL communicator from grid
     ncclComm_t nccl_comm = H.getMpiGrid()->get_nccl_col_comm();
-    
-    // Create stream for Lanczos operations
-    cudaStream_t stream;
-    cudaStreamCreate(&stream);
+
+    // Use default stream (nullptr) so performance.hpp CUDA events see Lanczos work
+    cudaStream_t stream = nullptr;
 
     // GPU-resident buffers for scalar results
     using RealT = chase::Base<T>;
@@ -123,6 +122,10 @@ void cuda_nccl::pseudo_hermitian_lanczos(
     cudaMalloc(&d_real_beta, numvec * sizeof(RealT));
     cudaMalloc(&d_real_beta_prev, numvec * sizeof(RealT));
     cudaMalloc(&d_beta_neg, numvec * sizeof(T));
+    RealT* d_d = nullptr;
+    RealT* e_d = nullptr;
+    cudaMalloc(&d_d, M * numvec * sizeof(RealT));
+    cudaMalloc(&e_d, M * numvec * sizeof(RealT));
 
     // Host buffers (RealT only: for LAPACK d/e and final scalars)
     std::vector<RealT> real_beta(numvec);
@@ -132,7 +135,7 @@ void cuda_nccl::pseudo_hermitian_lanczos(
     if (H.getMpiGrid()->get_myRank() == 0)
     {
         std::ostringstream oss; 
-        oss << "[ORIGINAL MPI PSEUDO-HERMITIAN LANCZOS]: ENABLED, using MPI_Allreduce";
+        oss << "[ORIGINAL MPI PSEUDO-HERMITIAN LANCZOS]: ENABLED, using MPI_Allreduce\n";
         chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(), H.getMpiGrid()->get_myRank());
     }
 #endif
@@ -142,6 +145,15 @@ void cuda_nccl::pseudo_hermitian_lanczos(
 
     std::vector<chase::Base<T>> d(M * numvec);
     std::vector<chase::Base<T>> e(M * numvec);
+
+    auto lanczos_start = std::chrono::high_resolution_clock::now();
+
+    // Enable fine-grain CUDA event timing only when high-verbosity logging is requested.
+    bool enable_fine_timers = false;
+#ifdef CHASE_OUTPUT
+    enable_fine_timers =
+        chase::GetLogger().GetLevel() >= chase::LogLevel::Trace;
+#endif
 
 #ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
     // Include fused kernel utilities (no host T for alpha/beta)
@@ -174,37 +186,100 @@ void cuda_nccl::pseudo_hermitian_lanczos(
     auto Sv = v_0.template clone<InputMultiVectorType>();
     auto v_w = V.template clone<ResultMultiVectorType>(N, numvec);
 
+    // Fine-grain timing via CUDA events (no sync in hot path)
+    auto matvec_time_us = 0.0;
+    auto redist_time_us = 0.0;
+    auto sync_alpha_time_us = 0.0;
+    auto sync_beta_time_us = 0.0;
+    auto alpha_step_time_us = 0.0;
+    auto beta_step_time_us = 0.0;
+    auto init_beta_time_us = 0.0;
+    std::vector<cudaEvent_t> ev_matvec_start;
+    std::vector<cudaEvent_t> ev_matvec_end;
+    std::vector<cudaEvent_t> ev_redist_start;
+    std::vector<cudaEvent_t> ev_redist_end;
+    std::vector<cudaEvent_t> ev_alpha_start;
+    std::vector<cudaEvent_t> ev_alpha_end;
+    std::vector<cudaEvent_t> ev_beta_start;
+    std::vector<cudaEvent_t> ev_beta_end;
+    cudaEvent_t ev_init_beta_start = nullptr, ev_init_beta_end = nullptr;
+    if (enable_fine_timers)
+    {
+        ev_matvec_start.resize(M + 1);
+        ev_matvec_end.resize(M + 1);
+        ev_redist_start.resize(M + 1);
+        ev_redist_end.resize(M + 1);
+        for (std::size_t i = 0; i <= M; i++)
+        {
+            cudaEventCreate(&ev_matvec_start[i]);
+            cudaEventCreate(&ev_matvec_end[i]);
+            cudaEventCreate(&ev_redist_start[i]);
+            cudaEventCreate(&ev_redist_end[i]);
+        }
+#ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
+        cudaEventCreate(&ev_init_beta_start);
+        cudaEventCreate(&ev_init_beta_end);
+        ev_alpha_start.resize(M);
+        ev_alpha_end.resize(M);
+        ev_beta_start.resize(M);
+        ev_beta_end.resize(M);
+        for (std::size_t i = 0; i < M; i++)
+        {
+            cudaEventCreate(&ev_alpha_start[i]);
+            cudaEventCreate(&ev_alpha_end[i]);
+            cudaEventCreate(&ev_beta_start[i]);
+            cudaEventCreate(&ev_beta_end[i]);
+        }
+#endif
+    }
+
     chase::linalg::internal::cuda::t_lacpy('A', v_1.l_rows(), numvec,
                                            V.l_data(), V.l_ld(), v_1.l_data(),
                                            v_1.l_ld());
 
+    if (enable_fine_timers)
+        cudaEventRecord(ev_matvec_start[0], stream);
     chase::linalg::internal::cuda_nccl::MatrixMultiplyMultiVectors(
         cublas_handle, &One, H, v_1, &Zero, v_w);
+    if (enable_fine_timers)
+        cudaEventRecord(ev_matvec_end[0], stream);
 
-    v_w.redistributeImplAsync(&v_2);
+    if (enable_fine_timers)
+        cudaEventRecord(ev_redist_start[0], stream);
+    v_w.redistributeImplAsync(&v_2, &stream);
+    if (enable_fine_timers)
+        cudaEventRecord(ev_redist_end[0], stream);
 
     chase::linalg::internal::cuda::t_lacpy('A', Sv.l_rows(), numvec,
                                            v_2.l_data(), v_2.l_ld(),
                                            Sv.l_data(), Sv.l_ld());
 
-    chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(Sv);
-    // Ensure flip operation completes (it uses default stream)
-    cudaDeviceSynchronize();
+    chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(Sv, stream);
 
 #ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
     // ========================================================================
     // INITIAL NORMALIZATION: real(v_1·Sv) on device, Allreduce RealT, beta on device
     // ========================================================================
+    if (enable_fine_timers)
+        cudaEventRecord(ev_init_beta_start, stream);
     batchedDotProduct(v_1.l_data(), Sv.l_data(), d_beta,
                      v_1.l_rows(), numvec, v_1.l_ld(), false, &stream);
     getRealPart(d_beta, d_real_beta, static_cast<int>(numvec), &stream);
+    auto comm_time_us = 0.0;
+    auto comm_start = std::chrono::high_resolution_clock::now();
     CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper(
         d_real_beta, d_real_beta, numvec, ncclSum, nccl_comm, &stream));
+    auto comm_end = std::chrono::high_resolution_clock::now();
+    comm_time_us += std::chrono::duration_cast<std::chrono::microseconds>(
+                        comm_end - comm_start)
+                        .count();
     batchedSqrt(d_real_beta, static_cast<int>(numvec), &stream);
     realReciprocal(d_real_beta, d_real_beta_prev, static_cast<int>(numvec), &stream);
     copyRealReciprocalToT(d_real_beta, d_beta, static_cast<int>(numvec), &stream);
     batchedScale(d_beta, v_1.l_data(), v_1.l_rows(), numvec, v_1.l_ld(), &stream);
     batchedScale(d_beta, v_2.l_data(), v_2.l_rows(), numvec, v_2.l_ld(), &stream);
+    if (enable_fine_timers)
+        cudaEventRecord(ev_init_beta_end, stream);
 #else
     for (auto i = 0; i < numvec; i++)
     {
@@ -258,24 +333,31 @@ void cuda_nccl::pseudo_hermitian_lanczos(
 
 #ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
         // Step 1: real(v_2·Sv) on device, Allreduce RealT; alpha = -real_alpha*beta_prev on device
+        if (enable_fine_timers)
+            cudaEventRecord(ev_alpha_start[k], stream);
         batchedDotProduct(v_2.l_data(), Sv.l_data(), d_alpha,
                          v_2.l_rows(), numvec, v_2.l_ld(), false, &stream);
         getRealPart(d_alpha, d_real_alpha, static_cast<int>(numvec), &stream);
+        comm_start = std::chrono::high_resolution_clock::now();
         CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper(
             d_real_alpha, d_real_alpha, numvec, ncclSum, nccl_comm, &stream));
+        comm_end = std::chrono::high_resolution_clock::now();
+        comm_time_us += std::chrono::duration_cast<std::chrono::microseconds>(
+                            comm_end - comm_start)
+                            .count();
         copyRealToT(d_real_alpha, d_alpha, static_cast<int>(numvec), &stream);
         scaleComplexByRealNegate(d_alpha, d_real_beta_prev, static_cast<int>(numvec), &stream);
         batchedAxpy(d_alpha, v_1.l_data(), v_2.l_data(),
                    v_1.l_rows(), numvec, v_1.l_ld(), &stream);
-        // Store diagonal d[k] = -real_alpha*beta_prev (scaled value now in d_alpha)
+        // Store diagonal d[k] = -real_alpha*beta_prev on device (deferred D2H to avoid sync per iter)
         getRealPart(d_alpha, d_real_alpha, static_cast<int>(numvec), &stream);
-        cudaMemcpyAsync(real_alpha.data(), d_real_alpha, numvec * sizeof(RealT),
-                       cudaMemcpyDeviceToHost, stream);
-        cudaStreamSynchronize(stream);
         for (auto i = 0; i < numvec; i++)
         {
-            d[k + M * i] = real_alpha[i];
+            cudaMemcpyAsync(d_d + (k + M * i), d_real_alpha + i, sizeof(RealT),
+                            cudaMemcpyDeviceToDevice, stream);
         }
+        if (enable_fine_timers)
+            cudaEventRecord(ev_alpha_end[k], stream);
 #else
         for (auto i = 0; i < numvec; i++)
         {
@@ -349,38 +431,53 @@ void cuda_nccl::pseudo_hermitian_lanczos(
         v_1.swap(v_0);
         v_1.swap(v_2);
 
+        std::size_t ev_idx = k + 1;
+        if (enable_fine_timers)
+            cudaEventRecord(ev_matvec_start[ev_idx], stream);
         chase::linalg::internal::cuda_nccl::MatrixMultiplyMultiVectors(
             cublas_handle, &One, H, v_1, &Zero, v_w);
+        if (enable_fine_timers)
+            cudaEventRecord(ev_matvec_end[ev_idx], stream);
 
-        v_w.redistributeImplAsync(&v_2);
+        if (enable_fine_timers)
+            cudaEventRecord(ev_redist_start[ev_idx], stream);
+        v_w.redistributeImplAsync(&v_2, &stream);
+        if (enable_fine_timers)
+            cudaEventRecord(ev_redist_end[ev_idx], stream);
 
         chase::linalg::internal::cuda::t_lacpy('A', Sv.l_rows(), numvec,
                                                v_2.l_data(), v_2.l_ld(),
                                                Sv.l_data(), Sv.l_ld());
 
-        chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(Sv);
-        // Ensure flip operation completes (it uses default stream)
-        cudaDeviceSynchronize();
+        chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(Sv, stream);
 
 #ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
         // Step 9: real(v_1·Sv) on device, Allreduce, sqrt; e[k]=sqrt; beta_prev=1/sqrt on device
+        if (enable_fine_timers)
+            cudaEventRecord(ev_beta_start[k], stream);
         batchedDotProduct(v_1.l_data(), Sv.l_data(), d_beta,
                          v_1.l_rows(), numvec, v_1.l_ld(), false, &stream);
         getRealPart(d_beta, d_real_beta, static_cast<int>(numvec), &stream);
+        comm_start = std::chrono::high_resolution_clock::now();
         CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper(
             d_real_beta, d_real_beta, numvec, ncclSum, nccl_comm, &stream));
+        comm_end = std::chrono::high_resolution_clock::now();
+        comm_time_us += std::chrono::duration_cast<std::chrono::microseconds>(
+                            comm_end - comm_start)
+                            .count();
         batchedSqrt(d_real_beta, static_cast<int>(numvec), &stream);
-        cudaMemcpyAsync(real_beta.data(), d_real_beta, numvec * sizeof(RealT),
-                       cudaMemcpyDeviceToHost, stream);
         realReciprocal(d_real_beta, d_real_beta_prev, static_cast<int>(numvec), &stream);
         copyRealReciprocalToT(d_real_beta, d_beta, static_cast<int>(numvec), &stream);
         batchedScaleTwo(d_beta, v_1.l_data(), v_2.l_data(),
                        v_1.l_rows(), numvec, v_1.l_ld(), &stream);
-        cudaStreamSynchronize(stream);
+        // Store e[k] on device (deferred D2H)
         for (auto i = 0; i < numvec; i++)
         {
-            e[k + M * i] = real_beta[i];
+            cudaMemcpyAsync(e_d + (k + M * i), d_real_beta + i, sizeof(RealT),
+                            cudaMemcpyDeviceToDevice, stream);
         }
+        if (enable_fine_timers)
+            cudaEventRecord(ev_beta_end[k], stream);
 #else
         for (auto i = 0; i < numvec; i++)
         {
@@ -431,9 +528,58 @@ void cuda_nccl::pseudo_hermitian_lanczos(
 
     chase::linalg::internal::cuda::t_lacpy('A', v_1.l_rows(), numvec,
                                            v_1.l_data(), v_1.l_ld(), V.l_data(),
-                                           V.l_ld());
+                                           V.l_ld(),&stream);
 
 #ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
+    // Single D2H for d and e (was per-iteration sync; now one sync after loop)
+    cudaStreamSynchronize(stream);
+#endif
+
+#ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
+    if (enable_fine_timers)
+    {
+        // Single D2H for d and e (was per-iteration sync; now one sync after loop)
+        float ev_ms = 0.0f;
+        cudaEventElapsedTime(&ev_ms, ev_init_beta_start, ev_init_beta_end);
+        init_beta_time_us = ev_ms * 1000.0;
+        for (std::size_t i = 0; i <= M; i++)
+        {
+            cudaEventElapsedTime(&ev_ms, ev_matvec_start[i], ev_matvec_end[i]);
+            matvec_time_us += ev_ms * 1000.0;
+            cudaEventElapsedTime(&ev_ms, ev_redist_start[i], ev_redist_end[i]);
+            redist_time_us += ev_ms * 1000.0;
+        }
+        for (std::size_t i = 0; i < M; i++)
+        {
+            cudaEventElapsedTime(&ev_ms, ev_alpha_start[i], ev_alpha_end[i]);
+            alpha_step_time_us += ev_ms * 1000.0;
+        }
+        for (std::size_t i = 0; i < M - 1; i++)
+        {
+            cudaEventElapsedTime(&ev_ms, ev_beta_start[i], ev_beta_end[i]);
+            beta_step_time_us += ev_ms * 1000.0;
+        }
+        for (std::size_t i = 0; i <= M; i++)
+        {
+            cudaEventDestroy(ev_matvec_start[i]);
+            cudaEventDestroy(ev_matvec_end[i]);
+            cudaEventDestroy(ev_redist_start[i]);
+            cudaEventDestroy(ev_redist_end[i]);
+        }
+        cudaEventDestroy(ev_init_beta_start);
+        cudaEventDestroy(ev_init_beta_end);
+        for (std::size_t i = 0; i < M; i++)
+        {
+            cudaEventDestroy(ev_alpha_start[i]);
+            cudaEventDestroy(ev_alpha_end[i]);
+            cudaEventDestroy(ev_beta_start[i]);
+            cudaEventDestroy(ev_beta_end[i]);
+        }
+    }
+    cudaMemcpy(d.data(), d_d, M * numvec * sizeof(RealT), cudaMemcpyDeviceToHost);
+    cudaMemcpy(e.data(), e_d, M * numvec * sizeof(RealT), cudaMemcpyDeviceToHost);
+    cudaFree(d_d);
+    cudaFree(e_d);
     // Clean up GPU resources
     cudaFree(d_alpha);
     cudaFree(d_beta);
@@ -467,22 +613,68 @@ void cuda_nccl::pseudo_hermitian_lanczos(
     }
     
     auto lapack_end = std::chrono::high_resolution_clock::now();
-    auto lapack_duration = std::chrono::duration_cast<std::chrono::microseconds>(lapack_end - lapack_start);
+    auto lapack_duration =
+        std::chrono::duration_cast<std::chrono::microseconds>(lapack_end - lapack_start);
+
+    *upperb = ritzv[M - 1];
+
+    // End-to-end time matching performance.hpp Lanczos scope (GPU+NCCL+D2H+LAPACK)
+    auto lanczos_end = std::chrono::high_resolution_clock::now();
+    auto lanczos_duration =
+        std::chrono::duration_cast<std::chrono::microseconds>(lanczos_end - lanczos_start);
 #ifdef CHASE_OUTPUT
     if (H.getMpiGrid()->get_myRank() == 0)
     {
-        std::ostringstream oss; 
-        oss << "[PSEUDO-HERMITIAN LANCZOS TIMING] LAPACK t_stemr (CPU sequential):";
-        chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(), H.getMpiGrid()->get_myRank());
-        oss << "  numvec: " << numvec << ", M: " << M;
-        chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(), H.getMpiGrid()->get_myRank());
-        oss << "  Total time: " << lapack_duration.count() / 1000.0 << " ms";
-        chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(), H.getMpiGrid()->get_myRank());
-        oss << "  Avg per solve: " << lapack_duration.count() / (double)numvec / 1000.0 << " ms";
-        chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(), H.getMpiGrid()->get_myRank());
+        std::ostringstream oss;
+        double lanczos_ms = lanczos_duration.count() / 1000.0;
+        double comm_ms = comm_time_us / 1000.0;
+        double redist_ms = redist_time_us / 1000.0;
+        double matvec_ms = matvec_time_us / 1000.0;
+        double sync_alpha_ms = sync_alpha_time_us / 1000.0;
+        double sync_beta_ms = sync_beta_time_us / 1000.0;
+#ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
+        double init_beta_ms = init_beta_time_us / 1000.0;
+        double alpha_step_ms = alpha_step_time_us / 1000.0;
+        double beta_step_ms = beta_step_time_us / 1000.0;
+        double other_ms = lanczos_ms - comm_ms - redist_ms - matvec_ms
+            - init_beta_ms - alpha_step_ms - beta_step_ms
+            - sync_alpha_ms - sync_beta_ms;
+        oss << "[PSEUDO-HERMITIAN LANCZOS TIMING] (NCCL, multi-vector)\n"
+            << "  numvec: " << numvec << ", M: " << M << "\n"
+            << "  Lanczos total (matches performance.hpp): " << lanczos_ms << " ms\n"
+            << "    Matvec (H*v, events):      " << matvec_ms << " ms\n"
+            << "    Redistribute:              " << redist_ms << " ms\n"
+            << "    Init norm (dot+scale):     " << init_beta_ms << " ms\n"
+            << "    Alpha step (dot+AXPY+d[k]): " << alpha_step_ms << " ms\n"
+            << "    Beta step (dot+scale+e[k]): " << beta_step_ms << " ms\n"
+            << "    NCCL AllReduce (CPU wall): " << comm_ms << " ms\n"
+            << "    Sync+D2H (alpha, d[k]):    " << sync_alpha_ms << " ms\n"
+            << "    Sync+D2H (beta, e[k]):     " << sync_beta_ms << " ms\n"
+            << "    Other (lacpy, flip, swap): " << other_ms << " ms\n"
+            << "  LAPACK t_stemr (CPU) total: " << lapack_duration.count() / 1000.0
+            << " ms\n"
+            << "  Avg LAPACK per solve: "
+            << lapack_duration.count() / (double)numvec / 1000.0 << " ms\n";
+#else
+        double other_ms = lanczos_ms - comm_ms - redist_ms - matvec_ms - sync_alpha_ms - sync_beta_ms;
+        oss << "[PSEUDO-HERMITIAN LANCZOS TIMING] (NCCL, multi-vector)\n"
+            << "  numvec: " << numvec << ", M: " << M << "\n"
+            << "  Lanczos total (matches performance.hpp): " << lanczos_ms << " ms\n"
+            << "    NCCL AllReduce time:       " << comm_ms << " ms\n"
+            << "    Redistribute:              " << redist_ms << " ms\n"
+            << "    Matvec (H*v, events):      " << matvec_ms << " ms\n"
+            << "    Sync+D2H (alpha, d[k]):    " << sync_alpha_ms << " ms\n"
+            << "    Sync+D2H (beta, e[k]):     " << sync_beta_ms << " ms\n"
+            << "    Other (BLAS, no sync):     " << other_ms << " ms\n"
+            << "  LAPACK t_stemr (CPU) total: " << lapack_duration.count() / 1000.0
+            << " ms\n"
+            << "  Avg LAPACK per solve: "
+            << lapack_duration.count() / (double)numvec / 1000.0 << " ms\n";
+#endif
+        chase::GetLogger().Log(chase::LogLevel::Trace, "linalg", oss.str(),
+                               H.getMpiGrid()->get_myRank());
     }
 #endif
-    *upperb = ritzv[M - 1];
 }
 
 /**
@@ -549,10 +741,10 @@ void cuda_nccl::pseudo_hermitian_lanczos(
     // GPU-resident setup
     using RealT = chase::Base<T>;
     ncclComm_t nccl_comm = H.getMpiGrid()->get_nccl_col_comm();
-    
-    cudaStream_t stream;
-    cudaStreamCreate(&stream);
-    
+
+    // Use default stream (nullptr) so performance.hpp CUDA events see Lanczos work
+    cudaStream_t stream = nullptr;
+
     // Device buffers for scalar results
     T* d_alpha;
     T* d_beta;
@@ -560,12 +752,16 @@ void cuda_nccl::pseudo_hermitian_lanczos(
     RealT* d_real_beta;
     RealT* d_real_beta_prev;
     T* d_beta_neg;
+    RealT* d_d;
+    RealT* e_d;
     cudaMalloc(&d_alpha, sizeof(T));
     cudaMalloc(&d_beta, sizeof(T));
     cudaMalloc(&d_real_alpha, sizeof(RealT));
     cudaMalloc(&d_real_beta, sizeof(RealT));
     cudaMalloc(&d_real_beta_prev, sizeof(RealT));
     cudaMalloc(&d_beta_neg, sizeof(T));
+    cudaMalloc(&d_d, M * sizeof(RealT));
+    cudaMalloc(&e_d, M * sizeof(RealT));
     
     using chase::linalg::internal::cuda::batchedDotProduct;
     using chase::linalg::internal::cuda::batchedAxpy;
@@ -615,14 +811,13 @@ void cuda_nccl::pseudo_hermitian_lanczos(
     chase::linalg::internal::cuda_nccl::MatrixMultiplyMultiVectors(
         cublas_handle, &One, H, v_1, &Zero, v_w);
 
-    v_w.redistributeImplAsync(&v_2);
+    auto redist_time_us = 0.0;
+    v_w.redistributeImplAsync(&v_2, &stream);
 
     chase::linalg::internal::cuda::t_lacpy('A', Sv.l_rows(), 1, v_2.l_data(),
                                            v_2.l_ld(), Sv.l_data(), Sv.l_ld());
 
-    chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(Sv);
-    // Ensure flip operation completes (it uses default stream)
-    cudaDeviceSynchronize();
+    chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(Sv, stream);
 
 #ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
     // Init: real(v_1·Sv) on device, Allreduce, beta = 1/sqrt on device
@@ -667,14 +862,11 @@ void cuda_nccl::pseudo_hermitian_lanczos(
         getRealPart(d_alpha, d_real_alpha, 1, &stream);
         CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper(
             d_real_alpha, d_real_alpha, 1, ncclSum, nccl_comm, &stream));
-        cudaMemcpyAsync(&real_alpha, d_real_alpha, sizeof(RealT),
-                       cudaMemcpyDeviceToHost, stream);
+        cudaMemcpyAsync(d_d + k, d_real_alpha, sizeof(RealT), cudaMemcpyDeviceToDevice, stream);
         copyRealToT(d_real_alpha, d_alpha, 1, &stream);
         scaleComplexByRealNegate(d_alpha, d_real_beta_prev, 1, &stream);
         batchedAxpy(d_alpha, v_1.l_data(), v_2.l_data(),
                    v_1.l_rows(), 1, v_1.l_ld(), &stream);
-        cudaStreamSynchronize(stream);
-        d[k] = -real_alpha;
 #else
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTdot(
             cublas_handle, v_2.l_rows(), v_2.l_data(), 1, Sv.l_data(), 1,
@@ -719,15 +911,13 @@ void cuda_nccl::pseudo_hermitian_lanczos(
         chase::linalg::internal::cuda_nccl::MatrixMultiplyMultiVectors(
             cublas_handle, &One, H, v_1, &Zero, v_w);
 
-        v_w.redistributeImplAsync(&v_2);
+        v_w.redistributeImplAsync(&v_2, &stream);
 
         chase::linalg::internal::cuda::t_lacpy('A', Sv.l_rows(), 1,
                                                v_2.l_data(), v_2.l_ld(),
                                                Sv.l_data(), Sv.l_ld());
 
-        chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(Sv);
-        // Ensure flip operation completes (it uses default stream)
-        cudaDeviceSynchronize();
+        chase::linalg::internal::cuda_nccl::flipLowerHalfMatrixSign(Sv, stream);
 
 #ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
         // real(v_1·Sv) on device, Allreduce, sqrt; e[k]=sqrt; beta_prev=1/sqrt on device
@@ -737,14 +927,11 @@ void cuda_nccl::pseudo_hermitian_lanczos(
         CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper(
             d_real_beta, d_real_beta, 1, ncclSum, nccl_comm, &stream));
         batchedSqrt(d_real_beta, 1, &stream);
-        cudaMemcpyAsync(&real_beta, d_real_beta, sizeof(RealT),
-                       cudaMemcpyDeviceToHost, stream);
+        cudaMemcpyAsync(e_d + k, d_real_beta, sizeof(RealT), cudaMemcpyDeviceToDevice, stream);
         realReciprocal(d_real_beta, d_real_beta_prev, 1, &stream);
         copyRealReciprocalToT(d_real_beta, d_beta, 1, &stream);
         batchedScaleTwo(d_beta, v_1.l_data(), v_2.l_data(),
                        v_1.l_rows(), 1, v_1.l_ld(), &stream);
-        cudaStreamSynchronize(stream);
-        e[k] = real_beta;
 #else
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTdot(
             cublas_handle, v_1.l_rows(), v_1.l_data(), 1, Sv.l_data(), 1,
@@ -770,7 +957,14 @@ void cuda_nccl::pseudo_hermitian_lanczos(
     }
 
 #ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
-    // Clean up GPU resources
+    // Single D2H for d and e (was per-iteration sync; now one sync after loop)
+    cudaStreamSynchronize(stream);
+    cudaMemcpy(d.data(), d_d, M * sizeof(RealT), cudaMemcpyDeviceToHost);
+    cudaMemcpy(e.data(), e_d, M * sizeof(RealT), cudaMemcpyDeviceToHost);
+    for (std::size_t k = 0; k < M; k++)
+        d[k] = -d[k];
+    cudaFree(d_d);
+    cudaFree(e_d);
     cudaFree(d_alpha);
     cudaFree(d_beta);
     cudaFree(d_real_alpha);

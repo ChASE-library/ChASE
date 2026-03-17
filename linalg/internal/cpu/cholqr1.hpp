@@ -64,7 +64,7 @@ int cholQR1(std::size_t m, std::size_t n, T* V, int ldv, T* A = nullptr)
         blaspp::t_trsm('R', 'U', 'N', 'N', m, n, &one, A, n, V, ldv);
 #ifdef CHASE_OUTPUT
         chase::GetLogger().Log(chase::LogLevel::Info, "linalg",
-            "choldegree: 1", 0);
+            "choldegree: 1\n", 0);
 #endif
         return info;
     }

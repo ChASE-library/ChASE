@@ -134,10 +134,8 @@ int cuda_mpi::cholQR1(cublasHandle_t cublas_handle,
             cublas_handle, CUBLAS_SIDE_RIGHT, CUBLAS_FILL_MODE_UPPER,
             CUBLAS_OP_N, CUBLAS_DIAG_NON_UNIT, m, n, &one, A, n, V, ldv));
 #ifdef CHASE_OUTPUT
-        int grank;
-        MPI_Comm_rank(MPI_COMM_WORLD, &grank);
-        chase::GetLogger().Log(chase::LogLevel::Info, "linalg", "choldegree: 1",
-            grank);
+        chase::GetLogger().Log(chase::LogLevel::Info, "linalg",
+            "choldegree: 1\n", 0);
 #endif
         CHECK_CUDA_ERROR(cudaFree(devInfo));
         return info;
