@@ -1005,35 +1005,11 @@ public:
         if (disable == 1)
         {
             
-            if(cond == 1.0)
-            {
-                info = kernelNamespace::cholQR1(
-                    cublasH_, cusolverH_, V1_->l_rows(), V1_->l_cols(),
-                    V1_->l_data(), V1_->l_ld(),
-                    // V1_->getMpiGrid()->get_nccl_col_comm(),
-                    MGPUKernelNamspaceSelector<backend>::getColCommunicator(
-                        V1_->getMpiGrid()),
-                    d_work_, lwork_, A_->l_data());
-            }
-            else
-            {
-                if constexpr (is_block_cyclic_1d_multivector<InputMultiVectorType>::value)
-                {
-#ifdef HAS_SCALAPACK
-                    kernelNamespace::houseHoulderQR(*V1_);
-#else
-                    throw std::runtime_error(
-                        "For ChASE-MPI, distributed Householder QR requires ScaLAPACK, "
-                        "which is not detected\n");
-#endif             
-                }
-                else
-                {
-                    kernelNamespace::houseQR1_formQ(
-                    cublasH_, *V1_, *V2_, d_work_, lwork_, 16u,
-                    cusolverH_);
-                }
-            }  
+            //cudaDeviceSynchronize();
+            kernelNamespace::houseQR1_formQ(
+            cublasH_, *V1_, *V2_, d_work_, lwork_, 16,
+            cusolverH_); 
+            //cudaDeviceSynchronize();
         }
         else
         {

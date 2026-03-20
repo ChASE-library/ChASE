@@ -88,6 +88,9 @@ void cuda_nccl::pseudo_hermitian_lanczos(
         throw std::runtime_error("Lanczos H and V have same number of rows");
     }
 
+    // Use default stream (nullptr) so performance.hpp CUDA events see Lanczos work
+    cudaStream_t stream = nullptr;
+
 #ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
 #ifdef CHASE_OUTPUT
     if (H.getMpiGrid()->get_myRank() == 0)
@@ -105,8 +108,6 @@ void cuda_nccl::pseudo_hermitian_lanczos(
     // Get NCCL communicator from grid
     ncclComm_t nccl_comm = H.getMpiGrid()->get_nccl_col_comm();
 
-    // Use default stream (nullptr) so performance.hpp CUDA events see Lanczos work
-    cudaStream_t stream = nullptr;
 
     // GPU-resident buffers for scalar results
     using RealT = chase::Base<T>;
@@ -627,7 +628,7 @@ void cuda_nccl::pseudo_hermitian_lanczos(
     {
         std::ostringstream oss;
         double lanczos_ms = lanczos_duration.count() / 1000.0;
-        double comm_ms = comm_time_us / 1000.0;
+        double comm_ms = 0.0;//comm_time_us / 1000.0;
         double redist_ms = redist_time_us / 1000.0;
         double matvec_ms = matvec_time_us / 1000.0;
         double sync_alpha_ms = sync_alpha_time_us / 1000.0;
@@ -729,6 +730,8 @@ void cuda_nccl::pseudo_hermitian_lanczos(
     std::vector<chase::Base<T>> d(M);
     std::vector<chase::Base<T>> e(M);
 
+    // Use default stream (nullptr) so performance.hpp CUDA events see Lanczos work
+    cudaStream_t stream = nullptr;
 #ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
 #ifdef CHASE_OUTPUT
     if (H.getMpiGrid()->get_myRank() == 0)
@@ -742,8 +745,6 @@ void cuda_nccl::pseudo_hermitian_lanczos(
     using RealT = chase::Base<T>;
     ncclComm_t nccl_comm = H.getMpiGrid()->get_nccl_col_comm();
 
-    // Use default stream (nullptr) so performance.hpp CUDA events see Lanczos work
-    cudaStream_t stream = nullptr;
 
     // Device buffers for scalar results
     T* d_alpha;

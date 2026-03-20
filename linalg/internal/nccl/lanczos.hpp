@@ -159,10 +159,9 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
     {
         throw std::runtime_error("Lanczos H and V have same number of rows");
     }
-    // Create stream for Lanczos operations
-    cudaStream_t stream;
-    cudaStreamCreate(&stream);
 
+    // Use default stream (nullptr) so performance.hpp CUDA events see Lanczos work
+    cudaStream_t stream = nullptr;
 #ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
 #ifdef CHASE_OUTPUT
     {
@@ -178,7 +177,10 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
 
     // Get NCCL communicator from grid
     ncclComm_t nccl_comm = H.getMpiGrid()->get_nccl_col_comm();
-    
+
+
+//    CHECK_CUBLAS_ERROR(cublasSetStream(cublas_handle, stream));
+
     // ========================================================================
     // GPU-Resident: Allocate device buffers (once, no allocation in loop)
     // ========================================================================
@@ -189,28 +191,24 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
     T* d_beta_neg;       // -beta for batched axpy, reused every k>0
     RealT* d_d;          // device diagonal (deferred D2H)
     RealT* e_d;          // device off-diagonal (deferred D2H)
-    cudaMalloc(&d_alpha, numvec * sizeof(T));
-    cudaMalloc(&d_real_alpha, numvec * sizeof(RealT));
-    cudaMalloc(&d_r_beta, numvec * sizeof(RealT));
-    cudaMalloc(&d_beta_prev, numvec * sizeof(RealT));
-    cudaMalloc(&d_beta_neg, numvec * sizeof(T));
-    cudaMalloc(&d_d, M * numvec * sizeof(RealT));
-    cudaMalloc(&e_d, M * numvec * sizeof(RealT));
+    CHECK_CUDA_ERROR(cudaMalloc(&d_alpha, numvec * sizeof(T)));
+    CHECK_CUDA_ERROR(cudaMalloc(&d_real_alpha, numvec * sizeof(RealT)));
+    CHECK_CUDA_ERROR(cudaMalloc(&d_r_beta, numvec * sizeof(RealT)));
+    CHECK_CUDA_ERROR(cudaMalloc(&d_beta_prev, numvec * sizeof(RealT)));
+    CHECK_CUDA_ERROR(cudaMalloc(&d_beta_neg, numvec * sizeof(T)));
+    CHECK_CUDA_ERROR(cudaMalloc(&d_d, M * numvec * sizeof(RealT)));
+    CHECK_CUDA_ERROR(cudaMalloc(&e_d, M * numvec * sizeof(RealT)));
 
     // Initialize to zero to prevent garbage values
-    cudaMemset(d_alpha, 0, numvec * sizeof(T));
-    cudaMemset(d_real_alpha, 0, numvec * sizeof(RealT));
-    cudaMemset(d_r_beta, 0, numvec * sizeof(RealT));
-    cudaMemset(d_beta_prev, 0, numvec * sizeof(RealT));
-    cudaMemset(d_beta_neg, 0, numvec * sizeof(T));
+    CHECK_CUDA_ERROR(cudaMemset(d_alpha, 0, numvec * sizeof(T)));
+    CHECK_CUDA_ERROR(cudaMemset(d_real_alpha, 0, numvec * sizeof(RealT)));
+    CHECK_CUDA_ERROR(cudaMemset(d_r_beta, 0, numvec * sizeof(RealT)));
+    CHECK_CUDA_ERROR(cudaMemset(d_beta_prev, 0, numvec * sizeof(RealT)));
+    CHECK_CUDA_ERROR(cudaMemset(d_beta_neg, 0, numvec * sizeof(T)));
 
     // Host buffers (only for LAPACK; filled by single D2H after loop)
     std::vector<RealT> d(M * numvec);
     std::vector<RealT> e(M * numvec);
-
-    // Note: cublas_handle is already configured with CUBLAS_POINTER_MODE_DEVICE
-    // in the pchase_gpu constructor, so all scalar pointers must be on device
-    cublasSetStream(cublas_handle, stream);
 
     T One = T(1.0);
     T Zero = T(0.0);
@@ -221,9 +219,47 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
     auto v_2 = v_0.template clone<InputMultiVectorType>();
     auto v_w = V.template clone<ResultMultiVectorType>(N, numvec);
 
+    // Clear any stale CUDA error state carried from previous stages so this
+    // probe diagnoses t_lacpy itself rather than aborting on unrelated errors.
+    auto pre_lanczos_err = cudaGetLastError();
+/*
+    #ifdef CHASE_OUTPUT
+    {
+        int dev = -1;
+        CHECK_CUDA_ERROR(cudaGetDevice(&dev));
+        cudaPointerAttributes src_attr{};
+        cudaPointerAttributes dst_attr{};
+        auto src_status = cudaPointerGetAttributes(&src_attr, V.l_data());
+        auto dst_status = cudaPointerGetAttributes(&dst_attr, v_1.l_data());
+
+        std::ostringstream oss;
+        oss << "[LANCZOS DEBUG] rank=" << H.getMpiGrid()->get_myRank()
+            << " cudaGetDevice=" << dev
+            << " pre_lanczos_err=" << static_cast<int>(pre_lanczos_err)
+            << " src_attr_status=" << static_cast<int>(src_status)
+            << " dst_attr_status=" << static_cast<int>(dst_status);
+        if (src_status == cudaSuccess && dst_status == cudaSuccess)
+        {
+            oss << " src_ptr_device=" << src_attr.device
+                << " dst_ptr_device=" << dst_attr.device
+                << " src_type=" << static_cast<int>(src_attr.type)
+                << " dst_type=" << static_cast<int>(dst_attr.type)
+                << " rows=" << v_1.l_rows()
+                << " numvec=" << numvec
+                << " src_ld=" << V.l_ld()
+                << " dst_ld=" << v_1.l_ld();
+        }
+        oss << "\n";
+        chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(),
+                               H.getMpiGrid()->get_myRank());
+    }
+#endif
+*/
     chase::linalg::internal::cuda::t_lacpy('A', v_1.l_rows(), numvec,
                                            V.l_data(), V.l_ld(), v_1.l_data(),
-                                           v_1.l_ld());
+                                           v_1.l_ld(), &stream);
+//    CHECK_CUDA_ERROR(cudaPeekAtLastError());  // launch/config errors
+//    CHECK_CUDA_ERROR(cudaStreamSynchronize(stream));  // runtime errors
 
     // ========================================================================
     // Initial normalization (GPU-resident)
@@ -609,7 +645,7 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
         *upperb = std::max(max, *upperb);
     }
 #endif // CHASE_ENABLE_GPU_RESIDENT_LANCZOS
-    cudaStreamDestroy(stream);
+//    cudaStreamDestroy(stream);
 
 }
 
@@ -638,9 +674,8 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
         throw std::runtime_error("Lanczos H and V have same number of rows");
     }
     
-    // Create stream for Lanczos operations
-    cudaStream_t stream;
-    cudaStreamCreate(&stream);
+    // Use default stream (nullptr) so performance.hpp CUDA events see Lanczos work
+    cudaStream_t stream = nullptr;
 
 #ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
 #ifdef CHASE_OUTPUT
@@ -989,7 +1024,7 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
         std::max(std::abs(ritzv[0]), std::abs(ritzv[M - 1])) + std::abs(r_beta);
 #endif // CHASE_ENABLE_GPU_RESIDENT_LANCZOS
 
-    cudaStreamDestroy(stream);
+    // stream is nullptr (default stream) in this overload; do not destroy it.
 }
 
 } // namespace internal

@@ -632,7 +632,9 @@ public:
         if (disable == 1)
         {
 #ifdef HAS_SCALAPACK
-            chase::linalg::internal::cpu_mpi::houseHoulderQR(*V1_);
+            //chase::linalg::internal::cpu_mpi::houseHoulderQR(*V1_);
+            chase::linalg::internal::cpu_mpi::cpu_distributed_blocked_houseQR_formQ(
+                *V1_, 16);
 #else
             throw std::runtime_error(
                 "For ChASE-MPI, distributed Householder QR requires ScaLAPACK, "

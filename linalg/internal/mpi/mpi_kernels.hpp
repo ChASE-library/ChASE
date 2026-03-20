@@ -75,6 +75,10 @@ struct cpu_mpi
                                               T* V,
                                               MPI_Comm mpi_comm);
 
+    /** High-level wrapper for distributed Householder QR + form Q. */
+    template <typename InputMultiVectorType>
+    static void cpu_distributed_houseQR_formQ(InputMultiVectorType& V);
+
     /** Blocked distributed Householder QR + form Q on CPU; nb = panel size. */
     template <typename T>
     static void cpu_distributed_blocked_houseQR_formQ(std::size_t m_global,
@@ -84,7 +88,12 @@ struct cpu_mpi
                                                       std::size_t ldv,
                                                       T* V,
                                                       MPI_Comm mpi_comm,
-                                                      std::size_t nb = 64);
+                                                      std::size_t nb = 16);
+
+    /** High-level wrapper for blocked distributed Householder QR + form Q. */
+    template <typename InputMultiVectorType>
+    static void cpu_distributed_blocked_houseQR_formQ(InputMultiVectorType& V,
+                                                      std::size_t nb = 16);
 
     template <typename InputMultiVectorType>
     static chase::Base<typename InputMultiVectorType::value_type>

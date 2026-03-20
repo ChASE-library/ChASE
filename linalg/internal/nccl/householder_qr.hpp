@@ -620,7 +620,6 @@ void cuda_nccl::distributed_blocked_houseQR_formQ(std::size_t m_global,
     }
 
     chase::linalg::internal::cuda_nccl::HouseholderPanelTiming panel_timing;
-
     // -------------------------------------------------------------------------
     // Main look-ahead loop.
     // -------------------------------------------------------------------------
@@ -924,6 +923,14 @@ void cuda_nccl::houseQR1_formQ(cublasHandle_t cublas_handle,
     CHECK_CUBLAS_ERROR(cublasSetStream(cublas_handle, qr_stream));
     if (cusolver_handle != nullptr)
         CHECK_CUSOLVER_ERROR(cusolverDnSetStream(cusolver_handle, qr_stream));
+ 
+    cudaEvent_t evt;
+    cudaEventCreate(&evt);
+    
+    // record completion in your stream
+    cudaEventRecord(evt, 0);
+    // make default stream wait
+    cudaStreamWaitEvent(qr_stream, evt, 0);
 
     std::size_t lwork_elems = (workspace && lwork > 0) ? static_cast<std::size_t>(lwork) : 0;
     cuda_nccl::distributed_blocked_houseQR_formQ<T>(

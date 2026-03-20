@@ -261,6 +261,14 @@ void cpu_mpi::cpu_distributed_houseQR_formQ(std::size_t m_global,
     }
 }
 
+template <typename InputMultiVectorType>
+void cpu_mpi::cpu_distributed_houseQR_formQ(InputMultiVectorType& V)
+{
+    cpu_mpi::cpu_distributed_houseQR_formQ<typename InputMultiVectorType::value_type>(
+        V.g_rows(), V.g_cols(), V.l_rows(), V.g_off(), V.l_ld(), V.l_data(),
+        V.getMpiGrid()->get_col_comm());
+}
+
 //==============================================================================
 // cpu_distributed_blocked_houseQR_formQ
 //
@@ -532,6 +540,15 @@ void cpu_mpi::cpu_distributed_blocked_houseQR_formQ(std::size_t m_global,
             }
         }
     }
+}
+
+template <typename InputMultiVectorType>
+void cpu_mpi::cpu_distributed_blocked_houseQR_formQ(InputMultiVectorType& V,
+                                                    std::size_t nb)
+{
+    cpu_mpi::cpu_distributed_blocked_houseQR_formQ<typename InputMultiVectorType::value_type>(
+        V.g_rows(), V.g_cols(), V.l_rows(), V.g_off(), V.l_ld(), V.l_data(),
+        V.getMpiGrid()->get_col_comm(), nb);
 }
 
 } // namespace internal
