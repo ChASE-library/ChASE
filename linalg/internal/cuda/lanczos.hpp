@@ -62,6 +62,15 @@ void lanczos(cublasHandle_t cublas_handle, std::size_t M, std::size_t numvec,
              chase::Base<T>* ritzV)
 {
     SCOPED_NVTX_RANGE();
+    if (M <= 0)
+    {
+        throw std::invalid_argument("lanczos: M, the number of Lanczos iterations, must be > 0");
+    }
+
+    if (numvec <= 0)
+    {
+        throw std::invalid_argument("lanczos: numvec, the number of Lanczos instances, must be >=1 ");
+    }
 
     using RealT = chase::Base<T>;
     T One = T(1.0);
@@ -76,31 +85,9 @@ void lanczos(cublasHandle_t cublas_handle, std::size_t M, std::size_t numvec,
     cudaStream_t stream_orig;
     CHECK_CUBLAS_ERROR(cublasGetStream(cublas_handle, &stream_orig));
     cudaStream_t stream;
-    CHECK_CUDA_ERROR(cudaStreamCreate(&stream));
+    CHECK_CUDA_ERROR(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
     CHECK_CUBLAS_ERROR(cublasSetStream(cublas_handle, stream));
-
-    T* d_alpha = nullptr;
-    RealT* d_real_alpha = nullptr;
-    RealT* d_r_beta = nullptr;
-    T* d_beta_neg = nullptr;
-    CHECK_CUDA_ERROR(cudaMalloc(&d_alpha, numvec * sizeof(T)));
-    CHECK_CUDA_ERROR(cudaMalloc(&d_real_alpha, numvec * sizeof(RealT)));
-    CHECK_CUDA_ERROR(cudaMalloc(&d_r_beta, numvec * sizeof(RealT)));
-    CHECK_CUDA_ERROR(cudaMalloc(&d_beta_neg, numvec * sizeof(T)));
-    CHECK_CUDA_ERROR(cudaMemset(d_alpha, 0, numvec * sizeof(T)));
-    CHECK_CUDA_ERROR(cudaMemset(d_real_alpha, 0, numvec * sizeof(RealT)));
-    CHECK_CUDA_ERROR(cudaMemset(d_r_beta, 0, numvec * sizeof(RealT)));
-
-    std::vector<RealT> r_beta_host(numvec);
-    std::vector<RealT> d(M * numvec);
-    std::vector<RealT> e(M * numvec);
-
-    auto v_0 = chase::matrix::Matrix<T, chase::platform::GPU>(N, numvec);
-    auto v_1 = chase::matrix::Matrix<T, chase::platform::GPU>(N, numvec);
-    auto v_2 = chase::matrix::Matrix<T, chase::platform::GPU>(N, numvec);
-
-    chase::linalg::internal::cuda::t_lacpy('A', N, numvec, V.data(), V.ld(),
-                                           v_1.data(), v_1.ld());
+    std::vector<RealT> d_tmp(M * numvec), e_tmp(M * numvec);
 
     using chase::linalg::internal::cuda::fusedNormSquaredNormalize;
     using chase::linalg::internal::cuda::fusedDotAxpyNegate;
@@ -108,13 +95,56 @@ void lanczos(cublasHandle_t cublas_handle, std::size_t M, std::size_t numvec,
     using chase::linalg::internal::cuda::batchedNormSquared;
     using chase::linalg::internal::cuda::normalizeVectors;
 
+    std::vector<RealT> d(M * numvec);
+    std::vector<RealT> e(M * numvec);
+    std::vector<RealT> de_host(2 * M * numvec);
+    std::vector<RealT> r_beta_host(numvec);
+
+    auto v_0 = chase::matrix::Matrix<T, chase::platform::GPU>(N, numvec);
+    auto v_1 = chase::matrix::Matrix<T, chase::platform::GPU>(N, numvec);
+    auto v_2 = chase::matrix::Matrix<T, chase::platform::GPU>(N, numvec);
+
+    /////////////////////////////////////////////////////
+    ////Lanczos internal stream wait for default stream//
+    /////////////////////////////////////////////////////
+    cudaEvent_t evt_begin;
+    CHECK_CUDA_ERROR(cudaEventCreate(&evt_begin));
+    CHECK_CUDA_ERROR(cudaEventRecord(evt_begin, stream_orig));
+    CHECK_CUDA_ERROR(cudaStreamWaitEvent(stream, evt_begin, 0));
+
+    T* d_alpha = nullptr;
+    RealT* d_real_alpha = nullptr;
+    RealT* d_r_beta = nullptr;
+    RealT* d_beta_prev = nullptr;
+    T* d_beta_neg = nullptr;
+    RealT* d_de = nullptr;
+    RealT* d_d = nullptr;
+    RealT* e_d = nullptr;
+    CHECK_CUDA_ERROR(cudaMallocAsync(&d_alpha, numvec * sizeof(T), stream));
+    CHECK_CUDA_ERROR(cudaMallocAsync(&d_real_alpha, numvec * sizeof(RealT), stream));
+    CHECK_CUDA_ERROR(cudaMallocAsync(&d_r_beta, numvec * sizeof(RealT), stream));
+    CHECK_CUDA_ERROR(cudaMallocAsync(&d_beta_prev, numvec * sizeof(RealT), stream));
+    CHECK_CUDA_ERROR(cudaMallocAsync(&d_beta_neg, numvec * sizeof(T), stream));
+    CHECK_CUDA_ERROR(cudaMallocAsync(&d_de, 2 * M * numvec * sizeof(RealT), stream));
+    d_d = d_de;
+    e_d = d_de + M * numvec;
+    CHECK_CUDA_ERROR(cudaMemsetAsync(d_alpha, 0, numvec * sizeof(T), stream));
+    CHECK_CUDA_ERROR(cudaMemsetAsync(d_real_alpha, 0, numvec * sizeof(RealT), stream));
+    CHECK_CUDA_ERROR(cudaMemsetAsync(d_r_beta, 0, numvec * sizeof(RealT), stream));
+    CHECK_CUDA_ERROR(cudaMemsetAsync(d_beta_prev, 0, numvec * sizeof(RealT), stream));
+    CHECK_CUDA_ERROR(cudaMemsetAsync(e_d, 0, M * numvec * sizeof(RealT), stream));
+        
+    CHECK_CUDA_ERROR(cudaMemsetAsync(v_0.data(), 0, v_0.ld() * numvec * sizeof(T), stream));
+
+    chase::linalg::internal::cuda::t_lacpy('A', N, numvec, V.data(), V.ld(),
+                                           v_1.data(), v_1.ld(), &stream);
+
     fusedNormSquaredNormalize(v_1.data(), d_real_alpha,
                               static_cast<int>(v_1.rows()),
                               static_cast<int>(numvec),
                               static_cast<int>(v_1.ld()), &stream);
 
-    std::vector<T> alpha_host(numvec);
-    for (std::size_t k = 0; k < M; k = k + 1)
+    for (std::size_t k = 0; k + 1 < M; ++k)
     {
         for (auto i = 0; i < numvec; i++)
         {
@@ -122,6 +152,7 @@ void lanczos(cublasHandle_t cublas_handle, std::size_t M, std::size_t numvec,
                 V.data() + k * V.ld(), v_1.data() + i * v_1.ld(),
                 v_1.rows() * sizeof(T), cudaMemcpyDeviceToDevice, stream));
         }
+        
 
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(
             cublas_handle, CUBLAS_OP_N, CUBLAS_OP_N, H->rows(),
@@ -134,40 +165,29 @@ void lanczos(cublasHandle_t cublas_handle, std::size_t M, std::size_t numvec,
                            static_cast<int>(numvec),
                            static_cast<int>(v_1.ld()), &stream);
 
-        CHECK_CUDA_ERROR(cudaMemcpyAsync(alpha_host.data(), d_alpha,
-                                        numvec * sizeof(T),
-                                        cudaMemcpyDeviceToHost, stream));
+        getRealPart(d_alpha, d_real_alpha, static_cast<int>(numvec), &stream);
+        CHECK_CUDA_ERROR(cudaMemcpyAsync(d_d + k * numvec, d_real_alpha,
+                                         numvec * sizeof(RealT),
+                                         cudaMemcpyDeviceToDevice, stream));
 
-        if (k > 0)
-        {
-            std::vector<T> beta_host_T(numvec);
-            for (auto i = 0; i < numvec; i++)
-                beta_host_T[i] = T(-r_beta_host[i]);
-            CHECK_CUDA_ERROR(cudaMemcpyAsync(d_beta_neg, beta_host_T.data(),
-                                             numvec * sizeof(T),
-                                             cudaMemcpyHostToDevice, stream));
-            batchedAxpy(d_beta_neg, v_0.data(), v_2.data(),
-                        static_cast<int>(v_0.rows()), static_cast<int>(numvec),
-                        static_cast<int>(v_0.ld()), &stream);
-        }
+        // Always apply previous-beta correction; first iteration is a no-op
+        // because d_beta_prev is initialized to zero.
+        copyRealNegateToT(d_beta_prev, d_beta_neg, static_cast<int>(numvec),
+                          &stream);
+        batchedAxpy(d_beta_neg, v_0.data(), v_2.data(),
+                    static_cast<int>(v_0.rows()), static_cast<int>(numvec),
+                    static_cast<int>(v_0.ld()), &stream);
 
         batchedNormSquared(v_2.data(), d_r_beta, static_cast<int>(v_2.rows()),
                            static_cast<int>(numvec), static_cast<int>(v_2.ld()),
                            &stream);
-        CHECK_CUDA_ERROR(cudaMemcpyAsync(r_beta_host.data(), d_r_beta,
-                                        numvec * sizeof(RealT),
-                                        cudaMemcpyDeviceToHost, stream));
-
-        CHECK_CUDA_ERROR(cudaStreamSynchronize(stream));
-        for (auto i = 0; i < numvec; i++)
-            d[k + M * i] = std::real(alpha_host[i]);
-        for (auto i = 0; i < numvec; i++)
-            r_beta_host[i] = std::sqrt(r_beta_host[i]);
-        for (auto i = 0; i < numvec; i++)
-            e[k + M * i] = r_beta_host[i];
-
-        if (k == M - 1)
-            break;
+        CHECK_CUDA_ERROR(cudaMemcpyAsync(d_beta_prev, d_r_beta,
+                                         numvec * sizeof(RealT),
+                                         cudaMemcpyDeviceToDevice, stream));
+        batchedSqrt(d_beta_prev, static_cast<int>(numvec), &stream);
+        CHECK_CUDA_ERROR(cudaMemcpyAsync(e_d + k * numvec, d_beta_prev,
+                                         numvec * sizeof(RealT),
+                                         cudaMemcpyDeviceToDevice, stream));
 
         normalizeVectors(v_2.data(), d_r_beta, static_cast<int>(v_2.rows()),
                         static_cast<int>(numvec), static_cast<int>(v_2.ld()),
@@ -177,9 +197,62 @@ void lanczos(cublasHandle_t cublas_handle, std::size_t M, std::size_t numvec,
         v_1.swap(v_2);
     }
 
+    {
+        const std::size_t k = M - 1;
+
+        CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(
+            cublas_handle, CUBLAS_OP_N, CUBLAS_OP_N, H->rows(),
+            static_cast<int>(numvec), H->cols(), &One, H->data(), H->ld(),
+            v_1.data(), v_1.ld(), &Zero, v_2.data(), v_2.ld()));
+
+        fusedDotAxpyNegate(v_1.data(), v_2.data(), v_2.data(), v_1.data(),
+                           d_alpha, static_cast<int>(v_1.rows()),
+                           static_cast<int>(numvec),
+                           static_cast<int>(v_1.ld()), &stream);
+
+        getRealPart(d_alpha, d_real_alpha, static_cast<int>(numvec), &stream);
+        CHECK_CUDA_ERROR(cudaMemcpyAsync(d_d + k * numvec, d_real_alpha,
+                                         numvec * sizeof(RealT),
+                                         cudaMemcpyDeviceToDevice, stream));
+
+        copyRealNegateToT(d_beta_prev, d_beta_neg, static_cast<int>(numvec),
+                          &stream);
+        batchedAxpy(d_beta_neg, v_0.data(), v_2.data(),
+                    static_cast<int>(v_0.rows()), static_cast<int>(numvec),
+                    static_cast<int>(v_0.ld()), &stream);
+
+        batchedNormSquared(v_2.data(), d_r_beta, static_cast<int>(v_2.rows()),
+                           static_cast<int>(numvec), static_cast<int>(v_2.ld()),
+                           &stream);
+        CHECK_CUDA_ERROR(cudaMemcpyAsync(d_beta_prev, d_r_beta,
+                                         numvec * sizeof(RealT),
+                                         cudaMemcpyDeviceToDevice, stream));
+        batchedSqrt(d_beta_prev, static_cast<int>(numvec), &stream);
+    }
+
     chase::linalg::internal::cuda::t_lacpy('A', N, numvec, v_1.data(), v_1.ld(),
-                                           V.data(), V.ld());
+                                           V.data(), V.ld(), &stream);
+    CHECK_CUDA_ERROR(cudaMemcpyAsync(de_host.data(), d_de,
+                                     2 * M * numvec * sizeof(RealT),
+                                     cudaMemcpyDeviceToHost, stream));
+    CHECK_CUDA_ERROR(cudaMemcpyAsync(r_beta_host.data(), d_beta_prev,
+                                numvec * sizeof(RealT), cudaMemcpyDeviceToHost, stream));
     CHECK_CUDA_ERROR(cudaStreamSynchronize(stream));
+
+    //std::copy(de_host.begin(), de_host.begin() + M * numvec, d.begin());
+    //std::copy(de_host.begin() + M * numvec, de_host.end(), e.begin());
+
+    // Transpose from device layout (k * numvec + i) to LAPACK layout (i * M + k).
+    for (std::size_t i = 0; i < numvec; ++i)
+    {
+        for (std::size_t k = 0; k < M; ++k)
+        {
+            d_tmp[i * M + k] = de_host[k * numvec + i];
+            e_tmp[i * M + k] = de_host[k * numvec + i + M * numvec];
+        }
+    }
+    d = std::move(d_tmp);
+    e = std::move(e_tmp);
 
     int notneeded_m;
     std::size_t vl = 0;
@@ -212,7 +285,15 @@ void lanczos(cublasHandle_t cublas_handle, std::size_t M, std::size_t numvec,
     CHECK_CUDA_ERROR(cudaFree(d_alpha));
     CHECK_CUDA_ERROR(cudaFree(d_real_alpha));
     CHECK_CUDA_ERROR(cudaFree(d_r_beta));
+    CHECK_CUDA_ERROR(cudaFree(d_beta_prev));
     CHECK_CUDA_ERROR(cudaFree(d_beta_neg));
+    CHECK_CUDA_ERROR(cudaFree(d_de));
+    cudaEvent_t evt_end;
+    CHECK_CUDA_ERROR(cudaEventCreate(&evt_end));
+    CHECK_CUDA_ERROR(cudaEventRecord(evt_end, stream));
+    CHECK_CUDA_ERROR(cudaStreamWaitEvent(stream_orig, evt_end, 0));
+    CHECK_CUDA_ERROR(cudaEventDestroy(evt_begin));
+    CHECK_CUDA_ERROR(cudaEventDestroy(evt_end));
     CHECK_CUBLAS_ERROR(cublasSetStream(cublas_handle, stream_orig));
     CHECK_CUDA_ERROR(cudaStreamDestroy(stream));
 
@@ -625,39 +706,61 @@ void lanczos(cublasHandle_t cublas_handle, std::size_t M, std::size_t numvec,
     // GPU-RESIDENT PSEUDO-HERMITIAN LANCZOS (numvec): Same structure as NCCL,
     // without NCCL or redistribution. Uses batched dot/axpy/scale and Sv.
     // ========================================================================
+    cudaStream_t stream_orig;
+    CHECK_CUBLAS_ERROR(cublasGetStream(cublas_handle, &stream_orig));    
     cudaStream_t stream;
-    CHECK_CUDA_ERROR(cudaStreamCreate(&stream));
+    CHECK_CUDA_ERROR(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
     CHECK_CUBLAS_ERROR(cublasSetStream(cublas_handle, stream));
-
-    T* d_alpha = nullptr;
-    T* d_beta = nullptr;
-    RealT* d_real_beta_prev = nullptr;
-    CHECK_CUDA_ERROR(cudaMalloc(&d_alpha, numvec * sizeof(T)));
-    CHECK_CUDA_ERROR(cudaMalloc(&d_beta, numvec * sizeof(T)));
-    CHECK_CUDA_ERROR(cudaMalloc(&d_real_beta_prev, numvec * sizeof(RealT)));
-    CHECK_CUDA_ERROR(cudaMemset(d_alpha, 0, numvec * sizeof(T)));
-    CHECK_CUDA_ERROR(cudaMemset(d_beta, 0, numvec * sizeof(T)));
-
-    std::vector<RealT> real_beta(numvec);
-    std::vector<RealT> d(M * numvec);
-    std::vector<RealT> e(M * numvec);
-    std::vector<T> beta(numvec, T(0.0));
-    std::vector<T> alpha_host(numvec);
-    std::vector<T> beta_host(numvec);
-    std::vector<RealT> real_beta_prev(numvec);
-
-    auto v_0 = chase::matrix::Matrix<T, chase::platform::GPU>(N, numvec);
-    auto v_1 = chase::matrix::Matrix<T, chase::platform::GPU>(N, numvec);
-    auto v_2 = chase::matrix::Matrix<T, chase::platform::GPU>(N, numvec);
-    auto Sv = chase::matrix::Matrix<T, chase::platform::GPU>(N, numvec);
 
     using chase::linalg::internal::cuda::batchedScaleTwo;
     using chase::linalg::internal::cuda::pseudoHermitianInitBatched;
     using chase::linalg::internal::cuda::fusedDotScaleNegateAxpyPh;
     using chase::linalg::internal::cuda::lacpyFlipBatchedDot;
 
+    std::vector<RealT> d_tmp(M * numvec), e_tmp(M * numvec);
+    std::vector<RealT> d(M * numvec);
+    std::vector<RealT> e(M * numvec);
+    std::vector<RealT> de_host(2 * M * numvec);
+
+    auto v_0 = chase::matrix::Matrix<T, chase::platform::GPU>(N, numvec);
+    auto v_1 = chase::matrix::Matrix<T, chase::platform::GPU>(N, numvec);
+    auto v_2 = chase::matrix::Matrix<T, chase::platform::GPU>(N, numvec);
+    auto Sv = chase::matrix::Matrix<T, chase::platform::GPU>(N, numvec);
+
+    /////////////////////////////////////////////////////
+    ////Lanczos internal stream wait for default stream//
+    /////////////////////////////////////////////////////
+    cudaEvent_t evt_begin;
+    CHECK_CUDA_ERROR(cudaEventCreate(&evt_begin));
+    CHECK_CUDA_ERROR(cudaEventRecord(evt_begin, stream_orig));
+    CHECK_CUDA_ERROR(cudaStreamWaitEvent(stream, evt_begin, 0));
+
+    T* d_alpha = nullptr;
+    T* d_beta = nullptr;
+    RealT* d_real_alpha = nullptr;
+    RealT* d_real_beta = nullptr;
+    RealT* d_real_beta_prev = nullptr;
+    RealT* d_de = nullptr;
+    RealT* d_d = nullptr;
+    RealT* e_d = nullptr;
+    CHECK_CUDA_ERROR(cudaMallocAsync(&d_alpha, numvec * sizeof(T), stream));
+    CHECK_CUDA_ERROR(cudaMallocAsync(&d_beta, numvec * sizeof(T), stream));
+    CHECK_CUDA_ERROR(cudaMallocAsync(&d_real_alpha, numvec * sizeof(RealT), stream));
+    CHECK_CUDA_ERROR(cudaMallocAsync(&d_real_beta, numvec * sizeof(RealT), stream));
+    CHECK_CUDA_ERROR(cudaMallocAsync(&d_real_beta_prev, numvec * sizeof(RealT), stream));
+    CHECK_CUDA_ERROR(cudaMallocAsync(&d_de, 2 * M * numvec * sizeof(RealT), stream));
+    d_d = d_de;
+    e_d = d_de + M * numvec;
+    CHECK_CUDA_ERROR(cudaMemsetAsync(d_alpha, 0, numvec * sizeof(T), stream));
+    CHECK_CUDA_ERROR(cudaMemsetAsync(d_beta, 0, numvec * sizeof(T), stream));
+    CHECK_CUDA_ERROR(cudaMemsetAsync(d_real_alpha, 0, numvec * sizeof(RealT), stream));
+    CHECK_CUDA_ERROR(cudaMemsetAsync(d_real_beta, 0, numvec * sizeof(RealT), stream));
+    CHECK_CUDA_ERROR(cudaMemsetAsync(d_real_beta_prev, 0, numvec * sizeof(RealT), stream));
+    CHECK_CUDA_ERROR(cudaMemsetAsync(e_d, 0, M * numvec * sizeof(RealT), stream));
+    CHECK_CUDA_ERROR(cudaMemsetAsync(v_0.data(), 0, v_0.ld() * numvec * sizeof(T), stream));
+
     chase::linalg::internal::cuda::t_lacpy('A', N, numvec, V.data(), V.ld(),
-                                           v_1.data(), v_1.ld());
+                                           v_1.data(), v_1.ld(), &stream);
 
     CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(
         cublas_handle, CUBLAS_OP_N, CUBLAS_OP_N, H->rows(),
@@ -667,14 +770,8 @@ void lanczos(cublasHandle_t cublas_handle, std::size_t M, std::size_t numvec,
                                d_real_beta_prev, static_cast<int>(N),
                                static_cast<int>(numvec),
                                static_cast<int>(v_1.ld()), &stream);
-    CHECK_CUDA_ERROR(cudaMemcpyAsync(beta_host.data(), d_beta,
-                                     numvec * sizeof(T),
-                                     cudaMemcpyDeviceToHost, stream));
-    CHECK_CUDA_ERROR(cudaStreamSynchronize(stream));
-    for (auto i = 0; i < numvec; i++)
-        beta[i] = beta_host[i];
 
-    for (std::size_t k = 0; k < M; k = k + 1)
+    for (std::size_t k = 0; k + 1 < M; ++k)
     {
         for (auto i = 0; i < numvec; i++)
         {
@@ -688,22 +785,19 @@ void lanczos(cublasHandle_t cublas_handle, std::size_t M, std::size_t numvec,
                                   static_cast<int>(v_2.rows()),
                                   static_cast<int>(numvec),
                                   static_cast<int>(v_1.ld()), &stream);
-        CHECK_CUDA_ERROR(cudaMemcpyAsync(alpha_host.data(), d_alpha,
-                                        numvec * sizeof(T),
-                                        cudaMemcpyDeviceToHost, stream));
+        getRealPart(d_alpha, d_real_alpha, static_cast<int>(numvec), &stream);
+        CHECK_CUDA_ERROR(cudaMemcpyAsync(d_d + k * numvec, d_real_alpha,
+                                         numvec * sizeof(RealT),
+                                         cudaMemcpyDeviceToDevice, stream));
 
-        if (k == M - 1)
-            break;
-
-        for (auto i = 0; i < numvec; i++)
-            beta[i] = -One / beta[i];
-        CHECK_CUDA_ERROR(cudaMemcpyAsync(d_beta, beta.data(), numvec * sizeof(T),
-                                         cudaMemcpyHostToDevice, stream));
+        // Coefficient for recurrence term: -1 / beta_prev where d_real_beta_prev = 1 / real(beta_prev).
+        realReciprocal(d_real_beta_prev, d_real_beta, static_cast<int>(numvec),
+                       &stream);
+        copyRealNegateToT(d_real_beta, d_beta, static_cast<int>(numvec),
+                          &stream);
         batchedAxpy(d_beta, v_0.data(), v_2.data(),
                     static_cast<int>(v_0.rows()), static_cast<int>(numvec),
                     static_cast<int>(v_0.ld()), &stream);
-        for (auto i = 0; i < numvec; i++)
-            beta[i] = -beta[i];
 
         v_1.swap(v_0);
         v_1.swap(v_2);
@@ -716,36 +810,61 @@ void lanczos(cublasHandle_t cublas_handle, std::size_t M, std::size_t numvec,
                             static_cast<int>(N), static_cast<int>(numvec),
                             static_cast<int>(v_2.ld()), static_cast<int>(Sv.ld()),
                             static_cast<int>(v_1.ld()), &stream);
-        CHECK_CUDA_ERROR(cudaMemcpyAsync(beta_host.data(), d_beta,
-                                         numvec * sizeof(T),
-                                         cudaMemcpyDeviceToHost, stream));
 
-        CHECK_CUDA_ERROR(cudaStreamSynchronize(stream));
-        for (auto i = 0; i < numvec; i++)
-            d[k + M * i] = -std::real(alpha_host[i]);
-        for (auto i = 0; i < numvec; i++)
-        {
-            real_beta[i] = std::sqrt(std::real(beta_host[i]));
-            e[k + M * i] = real_beta[i];
-            beta[i] = One / real_beta[i];
-        }
-        for (auto i = 0; i < numvec; i++)
-            real_beta_prev[i] = std::real(beta[i]);
-        CHECK_CUDA_ERROR(cudaMemcpyAsync(d_real_beta_prev,
-                                         real_beta_prev.data(),
+        getRealPart(d_beta, d_real_beta, static_cast<int>(numvec), &stream);
+        batchedSqrt(d_real_beta, static_cast<int>(numvec), &stream);
+        CHECK_CUDA_ERROR(cudaMemcpyAsync(e_d + k * numvec, d_real_beta,
                                          numvec * sizeof(RealT),
-                                         cudaMemcpyHostToDevice, stream));
-        CHECK_CUDA_ERROR(cudaMemcpyAsync(d_beta, beta.data(), numvec * sizeof(T),
-                                        cudaMemcpyHostToDevice, stream));
+                                         cudaMemcpyDeviceToDevice, stream));
+
+        // Prepare scaling factors for next iteration.
+        copyRealReciprocalToT(d_real_beta, d_beta, static_cast<int>(numvec),
+                              &stream);
+        realReciprocal(d_real_beta, d_real_beta_prev,
+                       static_cast<int>(numvec), &stream);
         batchedScaleTwo(d_beta, v_1.data(), v_2.data(),
                         static_cast<int>(v_1.rows()), static_cast<int>(numvec),
                         static_cast<int>(v_1.ld()), &stream);
-        CHECK_CUDA_ERROR(cudaStreamSynchronize(stream));
+    }
+
+    {
+        const std::size_t k = M - 1;
+
+        for (auto i = 0; i < numvec; i++)
+        {
+            CHECK_CUDA_ERROR(cudaMemcpyAsync(
+                V.data() + k * V.ld(), v_1.data() + i * v_1.ld(),
+                v_1.rows() * sizeof(T), cudaMemcpyDeviceToDevice, stream));
+        }
+
+        fusedDotScaleNegateAxpyPh(v_2.data(), Sv.data(), d_alpha,
+                                  v_1.data(), v_2.data(), d_real_beta_prev,
+                                  static_cast<int>(v_2.rows()),
+                                  static_cast<int>(numvec),
+                                  static_cast<int>(v_1.ld()), &stream);
+        getRealPart(d_alpha, d_real_alpha, static_cast<int>(numvec), &stream);
+        CHECK_CUDA_ERROR(cudaMemcpyAsync(d_d + k * numvec, d_real_alpha,
+                                         numvec * sizeof(RealT),
+                                         cudaMemcpyDeviceToDevice, stream));
     }
 
     chase::linalg::internal::cuda::t_lacpy('A', N, numvec, v_1.data(), v_1.ld(),
-                                           V.data(), V.ld());
+                                           V.data(), V.ld(), &stream);
+    CHECK_CUDA_ERROR(cudaMemcpyAsync(de_host.data(), d_de,
+                                     2 * M * numvec * sizeof(RealT),
+                                     cudaMemcpyDeviceToHost, stream));
     CHECK_CUDA_ERROR(cudaStreamSynchronize(stream));
+
+    for (std::size_t i = 0; i < numvec; ++i)
+    {
+        for (std::size_t k = 0; k < M; ++k)
+        {
+            d_tmp[i * M + k] = de_host[k * numvec + i];
+            e_tmp[i * M + k] = de_host[M * numvec + k * numvec + i];
+        }
+    }
+    d = std::move(d_tmp);
+    e = std::move(e_tmp);
 
     int notneeded_m;
     std::size_t vl = 0;
@@ -768,7 +887,17 @@ void lanczos(cublasHandle_t cublas_handle, std::size_t M, std::size_t numvec,
 
     CHECK_CUDA_ERROR(cudaFree(d_alpha));
     CHECK_CUDA_ERROR(cudaFree(d_beta));
+    CHECK_CUDA_ERROR(cudaFree(d_real_alpha));
+    CHECK_CUDA_ERROR(cudaFree(d_real_beta));
     CHECK_CUDA_ERROR(cudaFree(d_real_beta_prev));
+    CHECK_CUDA_ERROR(cudaFree(d_de));
+    cudaEvent_t evt_end;
+    CHECK_CUDA_ERROR(cudaEventCreate(&evt_end));
+    CHECK_CUDA_ERROR(cudaEventRecord(evt_end, stream));
+    CHECK_CUDA_ERROR(cudaStreamWaitEvent(stream_orig, evt_end, 0));
+    CHECK_CUDA_ERROR(cudaEventDestroy(evt_begin));
+    CHECK_CUDA_ERROR(cudaEventDestroy(evt_end));
+    CHECK_CUBLAS_ERROR(cublasSetStream(cublas_handle, stream_orig));
     CHECK_CUDA_ERROR(cudaStreamDestroy(stream));
 
 #else
