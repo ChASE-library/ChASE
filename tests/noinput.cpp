@@ -30,7 +30,7 @@ int main()
     std::size_t LDH = 1200;
     std::size_t nev = 80;
     std::size_t nex = 60;
-    std::size_t idx_max = 1;
+    std::size_t idx_max = 5;
     Base<T> perturb = 1e-4;
 
     std::mt19937 gen(1337.0);

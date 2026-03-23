@@ -466,8 +466,6 @@ public:
         numLanczos_ = 1;
         chase::linalg::internal::cuda::lanczos(cublasH_, M, Hmat_, Vec1_,
                                                upperb);
-        // Restore cublas stream (internal lanczos may use a temporary stream)
-        CHECK_CUBLAS_ERROR(cublasSetStream(cublasH_, stream_));
     }
 
     void Lanczos(std::size_t M, std::size_t numvec, chase::Base<T>* upperb,
@@ -479,8 +477,6 @@ public:
         numLanczos_ = numvec;
         chase::linalg::internal::cuda::lanczos(
             cublasH_, M, numvec, Hmat_, Vec1_, upperb, ritzv, Tau, ritzV);
-        // Restore cublas stream (internal lanczos uses a temporary stream and destroys it)
-        CHECK_CUBLAS_ERROR(cublasSetStream(cublasH_, stream_));
     }
 
     void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc) override
