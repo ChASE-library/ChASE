@@ -10,6 +10,8 @@
 #include "algorithm/types.hpp"
 #include "linalg/matrix/matrix.hpp"
 #include "shiftDiagonal.cuh"
+#include <cmath>
+#include <limits>
 
 namespace chase
 {
@@ -47,6 +49,25 @@ void shiftDiagonal(chase::matrix::Matrix<T, chase::platform::GPU>* H,
     cudaStream_t usedStream = (stream_ == nullptr) ? 0 : *stream_;
     std::size_t n = std::min(H->rows(), H->cols());
     chase_shift_matrix(H->data(), n, H->ld(), shift, usedStream);
+}
+
+/**
+ * @brief Shift diagonal using a device-resident scalar.
+ *
+ * Computes `H(ii) += (*d_shift) * scale` on GPU, avoiding D2H scalar copies.
+ */
+template <typename T>
+void shiftDiagonalFromDeviceShift(chase::matrix::Matrix<T, chase::platform::GPU>* H,
+                                  const chase::Base<T>* d_shift,
+                                  cudaStream_t* stream_ = nullptr)
+{
+    SCOPED_NVTX_RANGE();
+    cudaStream_t usedStream = (stream_ == nullptr) ? 0 : *stream_;
+    std::size_t n = std::min(H->rows(), H->cols());
+    chase::Base<T> scale =
+        std::sqrt(static_cast<chase::Base<T>>(H->rows())) *
+        std::numeric_limits<chase::Base<T>>::epsilon();
+    chase_shift_matrix_from_device_shift(H->data(), n, H->ld(), d_shift, scale, usedStream);
 }
 
 /**

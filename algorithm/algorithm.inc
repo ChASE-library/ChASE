@@ -1905,7 +1905,6 @@ void Algorithm<T>::solve_pseudo(ChaseBase<T>* single)
                                      static_cast<int>(lanczos_iter),
                                      static_cast<int>(nevex), &upperb, true,
                                      ritzv_);
-    (void)idx; // used when filter/QR/locking are implemented
 
     #ifdef CHASE_OUTPUT
     {
@@ -1933,6 +1932,7 @@ void Algorithm<T>::solve_pseudo(ChaseBase<T>* single)
     Base<T> new_lambda_1 = lambda_1;
     Base<T> b_sup = upperb;    
     lower = lower * config.GetDecayingRate();
+
 
 #ifdef CHASE_OUTPUT
     {

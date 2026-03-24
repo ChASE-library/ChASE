@@ -443,7 +443,7 @@ public:
                     V1_->l_data(), V1_->l_ld(),
                     MGPUKernelNamspaceSelector<backend>::getColCommunicator(
                         V1_->getMpiGrid()),
-                    d_work_, lwork_, A_->l_data());
+                    d_work_, lwork_, A_->l_data(), devInfo_);
                 
                 cudaEventRecord(stop);
                 cudaEventSynchronize(stop);
@@ -1004,13 +1004,42 @@ public:
 #endif
         if (disable == 1)
         {
-            
+#ifdef QR_DOUBLE_PRECISION
+            if constexpr (std::is_same<T, std::complex<float>>::value ||
+                            std::is_same<T, float>::value)
+            {
+                V1_->copyTo();
+
+                auto V1_d = V1_->getDoublePrecisionMatrix();
+                auto A_d = A_->getDoublePrecisionMatrix();
+                info = kernelNamespace::shiftedcholQR2(
+                    cublasH_, cusolverH_, V1_->g_rows(), V1_->l_rows(),
+                    V1_->l_cols(), V1_d->l_data(), V1_->l_ld(),
+                    // V1_->getMpiGrid()->get_nccl_col_comm(),
+                    MGPUKernelNamspaceSelector<backend>::getColCommunicator(
+                        V1_->getMpiGrid()),
+                    reinterpret_cast<
+                        typename chase::ToDoublePrecisionTrait<T>::Type*>(
+                        d_work_d),
+                    lwork_, A_d->l_data(), devInfo_);
+                V1_->copyback();
+            }
+            else
+            {
+                //cudaDeviceSynchronize();
+                kernelNamespace::houseQR1_formQ(
+                cublasH_, *V1_, *V2_, d_work_, lwork_, 16,
+                cusolverH_); 
+                //cudaDeviceSynchronize();
+            }
+#else            
             //cudaDeviceSynchronize();
             kernelNamespace::houseQR1_formQ(
             cublasH_, *V1_, *V2_, d_work_, lwork_, 16,
             cusolverH_); 
             //cudaDeviceSynchronize();
-        }
+#endif
+        }   
         else
         {
             Base<T> cond_threshold_upper = (sizeof(Base<T>) == 8) ? 1e8 : 1e4;
@@ -1061,7 +1090,7 @@ public:
                         reinterpret_cast<
                             typename chase::ToDoublePrecisionTrait<T>::Type*>(
                             d_work_d),
-                        lwork_, A_d->l_data());
+                        lwork_, A_d->l_data(), devInfo_);
                     V1_->copyback();
                 }
                 else
@@ -1073,7 +1102,7 @@ public:
                         // V1_->getMpiGrid()->get_nccl_col_comm(),
                         MGPUKernelNamspaceSelector<backend>::getColCommunicator(
                             V1_->getMpiGrid()),
-                        d_work_, lwork_, A_->l_data());
+                        d_work_, lwork_, A_->l_data(), devInfo_);
 #ifdef QR_DOUBLE_PRECISION
                 }
 #endif
@@ -1122,7 +1151,7 @@ public:
                         reinterpret_cast<
                             typename chase::ToDoublePrecisionTrait<T>::Type*>(
                             d_work_d),
-                        lwork_, A_d->l_data());
+                        lwork_, A_d->l_data(), devInfo_);
                     V1_->copyback();
                 }
                 else
@@ -1134,7 +1163,7 @@ public:
                         // V1_->getMpiGrid()->get_nccl_col_comm(),
                         MGPUKernelNamspaceSelector<backend>::getColCommunicator(
                             V1_->getMpiGrid()),
-                        d_work_, lwork_, A_->l_data());
+                        d_work_, lwork_, A_->l_data(), devInfo_);
 #ifdef QR_DOUBLE_PRECISION
                 }
 #endif
@@ -1177,7 +1206,7 @@ public:
                         reinterpret_cast<
                             typename chase::ToDoublePrecisionTrait<T>::Type*>(
                             d_work_d),
-                        lwork_, A_d->l_data());
+                        lwork_, A_d->l_data(), devInfo_);
                     V1_->copyback();
                 }
                 else
@@ -1189,7 +1218,7 @@ public:
                         // V1_->getMpiGrid()->get_nccl_col_comm(),
                         MGPUKernelNamspaceSelector<backend>::getColCommunicator(
                             V1_->getMpiGrid()),
-                        d_work_, lwork_, A_->l_data());
+                        d_work_, lwork_, A_->l_data(), devInfo_);
 #ifdef QR_DOUBLE_PRECISION
                 }
 #endif

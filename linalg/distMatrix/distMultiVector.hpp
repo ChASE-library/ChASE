@@ -1296,16 +1296,14 @@ public:
 #ifdef HAS_CUDA
         else
         {
-            T* tmp;
-            CHECK_CUDA_ERROR(cudaMalloc(&tmp, m_ * sizeof(T)));
-            chase::linalg::internal::cuda::t_lacpy(
-                'A', m_, 1, this->l_data() + i * ld_, 1, tmp, 1);
-            chase::linalg::internal::cuda::t_lacpy('A', m_, 1,
-                                                   this->l_data() + j * ld_, 1,
-                                                   this->l_data() + i * ld_, 1);
-            chase::linalg::internal::cuda::t_lacpy('A', m_, 1, tmp, 1,
-                                                   this->l_data() + j * ld_, 1);
-            cudaFree(tmp);
+            static thread_local cublasHandle_t swap_handle = nullptr;
+            if (swap_handle == nullptr)
+            {
+                CHECK_CUBLAS_ERROR(cublasCreate(&swap_handle));
+            }
+            CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTswap(
+                swap_handle, m_, this->l_data() + i * ld_, 1,
+                this->l_data() + j * ld_, 1));
         }
 #endif
     }
@@ -3016,16 +3014,14 @@ public:
 #ifdef HAS_CUDA
         else
         {
-            T* tmp;
-            CHECK_CUDA_ERROR(cudaMalloc(&tmp, m_ * sizeof(T)));
-            chase::linalg::internal::cuda::t_lacpy(
-                'A', m_, 1, this->l_data() + i * ld_, 1, tmp, 1);
-            chase::linalg::internal::cuda::t_lacpy('A', m_, 1,
-                                                   this->l_data() + j * ld_, 1,
-                                                   this->l_data() + i * ld_, 1);
-            chase::linalg::internal::cuda::t_lacpy('A', m_, 1, tmp, 1,
-                                                   this->l_data() + j * ld_, 1);
-            cudaFree(tmp);
+            static thread_local cublasHandle_t swap_handle = nullptr;
+            if (swap_handle == nullptr)
+            {
+                CHECK_CUBLAS_ERROR(cublasCreate(&swap_handle));
+            }
+            CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTswap(
+                swap_handle, m_, this->l_data() + i * ld_, 1,
+                this->l_data() + j * ld_, 1));
         }
 #endif
     }

@@ -169,7 +169,7 @@ __global__ void z_absTraceKernel(cuDoubleComplex* d_matrix, double* d_trace,
 void absTrace_gpu(float* d_matrix, float* d_trace, std::size_t n,
                   std::size_t ld, cudaStream_t stream_)
 {
-    cudaMemset(d_trace, 0, sizeof(float));
+    cudaMemsetAsync(d_trace, 0, sizeof(float), stream_);
     dim3 threads(NB_X);
     std::size_t gridSize = (n + NB_X - 1) / NB_X;
     dim3 grid(gridSize);
@@ -180,7 +180,7 @@ void absTrace_gpu(float* d_matrix, float* d_trace, std::size_t n,
 void absTrace_gpu(double* d_matrix, double* d_trace, std::size_t n,
                   std::size_t ld, cudaStream_t stream_)
 {
-    cudaMemset(d_trace, 0, sizeof(double));
+    cudaMemsetAsync(d_trace, 0, sizeof(double), stream_);
     dim3 threads(NB_X);
     std::size_t gridSize = (n + NB_X - 1) / NB_X;
     dim3 grid(gridSize);
@@ -191,7 +191,7 @@ void absTrace_gpu(double* d_matrix, double* d_trace, std::size_t n,
 void absTrace_gpu(std::complex<float>* d_matrix, float* d_trace, std::size_t n,
                   std::size_t ld, cudaStream_t stream_)
 {
-    cudaMemset(d_trace, 0, sizeof(float));
+    cudaMemsetAsync(d_trace, 0, sizeof(float), stream_);
     dim3 threads(NB_X);
     std::size_t gridSize = (n + NB_X - 1) / NB_X;
     dim3 grid(gridSize);
@@ -203,7 +203,7 @@ void absTrace_gpu(std::complex<float>* d_matrix, float* d_trace, std::size_t n,
 void absTrace_gpu(std::complex<double>* d_matrix, double* d_trace,
                   std::size_t n, std::size_t ld, cudaStream_t stream_)
 {
-    cudaMemset(d_trace, 0, sizeof(double));
+    cudaMemsetAsync(d_trace, 0, sizeof(double), stream_);
     dim3 threads(NB_X);
     std::size_t gridSize = (n + NB_X - 1) / NB_X;
     dim3 grid(gridSize);

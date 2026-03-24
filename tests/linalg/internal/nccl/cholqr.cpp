@@ -22,6 +22,7 @@ std::shared_ptr<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>
 cublasHandle_t cublasH;
 cusolverDnHandle_t cusolverH;
 cudaStream_t stream;
+int* devInfo = nullptr;
 int world_rank, world_size;
 std::complex<double>* d_V = nullptr; // Device memory for test vectors
 std::size_t d_V_size = 0;            // Current size of allocated device memory
@@ -50,6 +51,7 @@ protected:
             CHECK_CUBLAS_ERROR(cublasSetStream(cublasH, stream));
             CHECK_CUSOLVER_ERROR(cusolverDnCreate(&cusolverH));
             CHECK_CUSOLVER_ERROR(cusolverDnSetStream(cusolverH, stream));
+            CHECK_CUDA_ERROR(cudaMalloc((void**)&devInfo, sizeof(int)));
 
             resources_initialized = true;
         }
@@ -94,6 +96,7 @@ protected:
     static cublasHandle_t get_cublas_handle() { return cublasH; }
     static cusolverDnHandle_t get_cusolver_handle() { return cusolverH; }
     static cudaStream_t get_stream() { return stream; }
+    static int* get_dev_info() { return devInfo; }
     static int get_world_rank() { return world_rank; }
     static int get_world_size() { return world_size; }
     static std::complex<double>* get_device_vector() { return d_V; }
@@ -116,6 +119,11 @@ public:
             CHECK_CUBLAS_ERROR(cublasDestroy(cublasH));
             CHECK_CUSOLVER_ERROR(cusolverDnDestroy(cusolverH));
             CHECK_CUDA_ERROR(cudaStreamDestroy(stream));
+            if (devInfo != nullptr)
+            {
+                CHECK_CUDA_ERROR(cudaFree(devInfo));
+                devInfo = nullptr;
+            }
 
             // Reset the mpi_grid shared_ptr before program exit
             // This ensures the MpiGrid2D destructor is called only once
@@ -146,7 +154,8 @@ TYPED_TEST(CHOLQRNCCLDistTest, cholQR1GPU)
     int info = chase::linalg::internal::cuda_nccl::cholQR1<T>(
         this->get_cublas_handle(), this->get_cusolver_handle(), xlen, this->n,
         reinterpret_cast<T*>(this->get_device_vector()), xlen,
-        this->get_mpi_grid()->get_nccl_comm());
+        this->get_mpi_grid()->get_nccl_comm(), nullptr, 0, nullptr,
+        this->get_dev_info());
     ASSERT_EQ(info, 0);
     CHECK_CUDA_ERROR(
         cudaMemcpy(V.data(), reinterpret_cast<T*>(this->get_device_vector()),
@@ -171,7 +180,8 @@ TYPED_TEST(CHOLQRNCCLDistTest, cholQR1BadlyCondGPU)
     int info = chase::linalg::internal::cuda_nccl::cholQR1<T>(
         this->get_cublas_handle(), this->get_cusolver_handle(), xlen, this->n,
         reinterpret_cast<T*>(this->get_device_vector()), xlen,
-        this->get_mpi_grid()->get_nccl_comm());
+        this->get_mpi_grid()->get_nccl_comm(), nullptr, 0, nullptr,
+        this->get_dev_info());
     ASSERT_EQ(info, 0);
     CHECK_CUDA_ERROR(
         cudaMemcpy(V.data(), reinterpret_cast<T*>(this->get_device_vector()),
@@ -197,7 +207,8 @@ TYPED_TEST(CHOLQRNCCLDistTest, cholQR1illCondGPU)
     int info = chase::linalg::internal::cuda_nccl::cholQR1<T>(
         this->get_cublas_handle(), this->get_cusolver_handle(), xlen, this->n,
         reinterpret_cast<T*>(this->get_device_vector()), xlen,
-        this->get_mpi_grid()->get_nccl_comm());
+        this->get_mpi_grid()->get_nccl_comm(), nullptr, 0, nullptr,
+        this->get_dev_info());
     EXPECT_GT(info, 0);
     EXPECT_LE(info, this->n);
 }
@@ -218,7 +229,8 @@ TYPED_TEST(CHOLQRNCCLDistTest, cholQR2GPU)
     int info = chase::linalg::internal::cuda_nccl::cholQR2<T>(
         this->get_cublas_handle(), this->get_cusolver_handle(), xlen, this->n,
         reinterpret_cast<T*>(this->get_device_vector()), xlen,
-        this->get_mpi_grid()->get_nccl_comm());
+        this->get_mpi_grid()->get_nccl_comm(), nullptr, 0, nullptr,
+        this->get_dev_info());
     ASSERT_EQ(info, 0);
     CHECK_CUDA_ERROR(
         cudaMemcpy(V.data(), reinterpret_cast<T*>(this->get_device_vector()),
@@ -243,7 +255,8 @@ TYPED_TEST(CHOLQRNCCLDistTest, cholQR2IllCondGPU)
     int info = chase::linalg::internal::cuda_nccl::cholQR2<T>(
         this->get_cublas_handle(), this->get_cusolver_handle(), xlen, this->n,
         reinterpret_cast<T*>(this->get_device_vector()), xlen,
-        this->get_mpi_grid()->get_nccl_comm());
+        this->get_mpi_grid()->get_nccl_comm(), nullptr, 0, nullptr,
+        this->get_dev_info());
     EXPECT_GT(info, 0);
     EXPECT_LE(info, this->n);
 }
@@ -264,7 +277,8 @@ TYPED_TEST(CHOLQRNCCLDistTest, scholQRGPU)
     int info = chase::linalg::internal::cuda_nccl::shiftedcholQR2<T>(
         this->get_cublas_handle(), this->get_cusolver_handle(), this->N, xlen,
         this->n, reinterpret_cast<T*>(this->get_device_vector()), xlen,
-        this->get_mpi_grid()->get_nccl_comm());
+        this->get_mpi_grid()->get_nccl_comm(), nullptr, 0, nullptr,
+        this->get_dev_info());
     ASSERT_EQ(info, 0);
     CHECK_CUDA_ERROR(
         cudaMemcpy(V.data(), reinterpret_cast<T*>(this->get_device_vector()),

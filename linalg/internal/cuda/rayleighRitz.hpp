@@ -14,6 +14,7 @@
 #include "external/cublaspp/cublaspp.hpp"
 #include "external/cusolverpp/cusolverpp.hpp"
 #include "linalg/internal/cuda/flipSign.hpp"
+#include "linalg/internal/cuda/lanczos_kernels.hpp"
 #include "linalg/internal/cuda/shiftDiagonal.cuh"
 #include "linalg/matrix/matrix.hpp"
 
@@ -74,11 +75,35 @@ void rayleighRitz(
 {
     SCOPED_NVTX_RANGE();
 
+    cudaStream_t stream_orig_cublas = nullptr;
+    cudaStream_t stream_orig_cusolver = nullptr;
+    cudaStream_t compute_stream = nullptr;
+    cudaStream_t copy_stream = nullptr;
+    cudaEvent_t evt_begin = nullptr;
+    cudaEvent_t evt_ritz_ready = nullptr;
+    cudaEvent_t evt_end_compute = nullptr;
+    bool owns_A = false;
+    bool owns_workspace = false;
+    
     if (A == nullptr)
     {
         A = new chase::matrix::Matrix<T, chase::platform::GPU>(subSize,
                                                                subSize);
+        owns_A = true;
     }
+
+    CHECK_CUBLAS_ERROR(cublasGetStream(cublas_handle, &stream_orig_cublas));
+    CHECK_CUSOLVER_ERROR(cusolverDnGetStream(cusolver_handle, &stream_orig_cusolver));
+    CHECK_CUDA_ERROR(cudaStreamCreateWithFlags(&compute_stream, cudaStreamNonBlocking));
+    CHECK_CUDA_ERROR(cudaStreamCreateWithFlags(&copy_stream, cudaStreamNonBlocking));
+    CHECK_CUDA_ERROR(cudaEventCreate(&evt_begin));
+    CHECK_CUDA_ERROR(cudaEventCreate(&evt_ritz_ready));
+    CHECK_CUDA_ERROR(cudaEventCreate(&evt_end_compute));
+    CHECK_CUDA_ERROR(cudaEventRecord(evt_begin, stream_orig_cublas));
+    CHECK_CUDA_ERROR(cudaStreamWaitEvent(compute_stream, evt_begin, 0));
+    CHECK_CUBLAS_ERROR(cublasSetStream(cublas_handle, compute_stream));
+    CHECK_CUSOLVER_ERROR(cusolverDnSetStream(cusolver_handle, compute_stream));
+
 
     if (workspace == nullptr)
     {
@@ -89,7 +114,8 @@ void rayleighRitz(
                 CUBLAS_FILL_MODE_LOWER, subSize, A->data(), subSize,
                 ritzv.data(), &lwork_heevd));
         CHECK_CUDA_ERROR(
-            cudaMalloc((void**)&workspace, sizeof(T) * lwork_heevd));
+            cudaMallocAsync((void**)&workspace, sizeof(T) * lwork_heevd, compute_stream));
+        owns_workspace = true;
     }
 
     T One = T(1.0);
@@ -110,23 +136,56 @@ void rayleighRitz(
         subSize, A->data(), subSize, ritzv.data() + offset, workspace,
         lwork_heevd, devInfo));
 
-    int info;
-    CHECK_CUDA_ERROR(
-        cudaMemcpy(&info, devInfo, 1 * sizeof(int), cudaMemcpyDeviceToHost));
+    int info = 0;
+    CHECK_CUDA_ERROR(cudaMemcpyAsync(&info, devInfo, sizeof(int),
+                                     cudaMemcpyDeviceToHost, compute_stream));
+    CHECK_CUDA_ERROR(cudaStreamSynchronize(compute_stream));
 
     if (info != 0)
     {
+        CHECK_CUBLAS_ERROR(cublasSetStream(cublas_handle, stream_orig_cublas));
+        CHECK_CUSOLVER_ERROR(cusolverDnSetStream(cusolver_handle, stream_orig_cusolver));
+        CHECK_CUDA_ERROR(cudaEventDestroy(evt_begin));
+        CHECK_CUDA_ERROR(cudaEventDestroy(evt_ritz_ready));
+        CHECK_CUDA_ERROR(cudaEventDestroy(evt_end_compute));
+        CHECK_CUDA_ERROR(cudaStreamDestroy(copy_stream));
+        if (owns_workspace)
+            CHECK_CUDA_ERROR(cudaFreeAsync(workspace, compute_stream));
+        CHECK_CUDA_ERROR(cudaStreamSynchronize(compute_stream));
+        CHECK_CUDA_ERROR(cudaStreamDestroy(compute_stream));
+        if (owns_A)
+            delete A;
         throw std::runtime_error("cusolver HEEVD failed in RayleighRitz");
     }
 
-    CHECK_CUDA_ERROR(
-        cudaMemcpy(ritzv.cpu_data() + offset, ritzv.data() + offset,
-                   subSize * sizeof(chase::Base<T>), cudaMemcpyDeviceToHost));
+    // Overlap required Ritz D2H copy with trailing GEMM.
+    CHECK_CUDA_ERROR(cudaEventRecord(evt_ritz_ready, compute_stream));
+    CHECK_CUDA_ERROR(cudaStreamWaitEvent(copy_stream, evt_ritz_ready, 0));
+    CHECK_CUDA_ERROR(cudaMemcpyAsync(
+        ritzv.cpu_data() + offset, ritzv.data() + offset,
+        subSize * sizeof(chase::Base<T>), cudaMemcpyDeviceToHost, copy_stream));
 
     CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(
         cublas_handle, CUBLAS_OP_N, CUBLAS_OP_N, V1.rows(), subSize, subSize,
         &One, V1.data() + offset * V1.ld(), V1.ld(), A->data(), subSize, &Zero,
         V2.data() + offset * V2.ld(), V2.ld()));
+
+    CHECK_CUDA_ERROR(cudaEventRecord(evt_end_compute, compute_stream));
+    CHECK_CUDA_ERROR(cudaStreamWaitEvent(stream_orig_cublas, evt_end_compute, 0));
+    CHECK_CUDA_ERROR(cudaStreamSynchronize(copy_stream));
+
+    CHECK_CUBLAS_ERROR(cublasSetStream(cublas_handle, stream_orig_cublas));
+    CHECK_CUSOLVER_ERROR(cusolverDnSetStream(cusolver_handle, stream_orig_cusolver));
+    CHECK_CUDA_ERROR(cudaEventDestroy(evt_begin));
+    CHECK_CUDA_ERROR(cudaEventDestroy(evt_ritz_ready));
+    CHECK_CUDA_ERROR(cudaEventDestroy(evt_end_compute));
+    CHECK_CUDA_ERROR(cudaStreamDestroy(copy_stream));
+    if (owns_workspace)
+        CHECK_CUDA_ERROR(cudaFreeAsync(workspace, compute_stream));
+    CHECK_CUDA_ERROR(cudaStreamSynchronize(compute_stream));
+    CHECK_CUDA_ERROR(cudaStreamDestroy(compute_stream));
+    if (owns_A)
+        delete A;
 }
 
 /**
@@ -423,14 +482,43 @@ void rayleighRitz_v2(
     std::size_t ldh = H->ld();
     std::size_t k = N / 2;
     std::size_t n = subSize;
-
-    cudaStream_t usedStream;
-    CHECK_CUBLAS_ERROR(cublasGetStream(cublas_handle, &usedStream));
+    
+    bool owns_A = false;
+    bool owns_workspace = false;
 
     if (A == nullptr)
     {
         A = new chase::matrix::Matrix<T, chase::platform::GPU>(2 * n, n);
+        owns_A = true;
     }
+
+    T One = T(1.0);
+    T Zero = T(0.0);
+    T NegativeTwo = T(-2.0);
+    T NegativeOne = T(-1.0);
+
+    chase::Base<T> real_One = chase::Base<T>(1.0);
+
+    T* M = A->data() + n * n;    
+    cudaStream_t stream_orig_cublas = nullptr;
+    cudaStream_t stream_orig_cusolver = nullptr;
+    cudaStream_t compute_stream = nullptr;
+    cudaStream_t copy_stream = nullptr;
+    cudaEvent_t evt_begin = nullptr;
+    cudaEvent_t evt_ritz_ready = nullptr;
+    cudaEvent_t evt_end_compute = nullptr;
+    CHECK_CUBLAS_ERROR(cublasGetStream(cublas_handle, &stream_orig_cublas));
+    CHECK_CUSOLVER_ERROR(cusolverDnGetStream(cusolver_handle, &stream_orig_cusolver));
+    CHECK_CUDA_ERROR(cudaStreamCreateWithFlags(&compute_stream, cudaStreamNonBlocking));
+    CHECK_CUDA_ERROR(cudaStreamCreateWithFlags(&copy_stream, cudaStreamNonBlocking));
+    CHECK_CUDA_ERROR(cudaEventCreate(&evt_begin));
+    CHECK_CUDA_ERROR(cudaEventCreate(&evt_ritz_ready));
+    CHECK_CUDA_ERROR(cudaEventCreate(&evt_end_compute));
+    CHECK_CUDA_ERROR(cudaEventRecord(evt_begin, stream_orig_cublas));
+    CHECK_CUDA_ERROR(cudaStreamWaitEvent(compute_stream, evt_begin, 0));
+    CHECK_CUBLAS_ERROR(cublasSetStream(cublas_handle, compute_stream));
+    CHECK_CUSOLVER_ERROR(cusolverDnSetStream(cusolver_handle, compute_stream));
+
 
     // Allocating workspace memory for Xgeev
     if (workspace == nullptr) // To update once Xgeev is plugged in
@@ -451,17 +539,10 @@ void rayleighRitz_v2(
         if (lwork < lwork_potrf)
             lwork = lwork_potrf;
 
-        CHECK_CUDA_ERROR(cudaMalloc((void**)&workspace, sizeof(T) * lwork));
+        CHECK_CUDA_ERROR(
+            cudaMallocAsync((void**)&workspace, sizeof(T) * lwork, compute_stream));
+        owns_workspace = true;
     }
-
-    T One = T(1.0);
-    T Zero = T(0.0);
-    T NegativeTwo = T(-2.0);
-    T NegativeOne = T(-1.0);
-
-    chase::Base<T> real_One = chase::Base<T>(1.0);
-
-    T* M = A->data() + n * n;
 
     CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(
         cublas_handle, CUBLAS_OP_N, CUBLAS_OP_N, N, n, N, &One, H->data(), ldh,
@@ -470,7 +551,7 @@ void rayleighRitz_v2(
         V2.ld())); // T = AQr
 
     chase::linalg::internal::cuda::flipLowerHalfMatrixSign(
-        N, n, V2.data() + offset * V2.ld(), V2.ld(), &usedStream);
+        N, n, V2.data() + offset * V2.ld(), V2.ld(), &compute_stream);
 
     CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(
         cublas_handle, CUBLAS_OP_C, CUBLAS_OP_N, n, n, N, &One,
@@ -481,89 +562,142 @@ void rayleighRitz_v2(
         cusolver_handle, CUBLAS_FILL_MODE_LOWER, n, A->data(), n, workspace,
         lwork, devInfo));
 
-    int info;
-    CHECK_CUDA_ERROR(
-        cudaMemcpy(&info, devInfo, 1 * sizeof(int), cudaMemcpyDeviceToHost));
+    int info = 0;
+    CHECK_CUDA_ERROR(cudaMemcpyAsync(&info, devInfo, sizeof(int),
+                                     cudaMemcpyDeviceToHost, compute_stream));
+    CHECK_CUDA_ERROR(cudaStreamSynchronize(compute_stream));
 
+    bool potrf_failed = false;
     if (info != 0)
     {
+        potrf_failed = true;
+    }
+
+    if (!potrf_failed)
+    {
+        CHECK_CUDA_ERROR(cudaMemsetAsync(M, 0, sizeof(T) * n * n, compute_stream));
+
+        chase::linalg::internal::cuda::chase_set_diagonal(M, n, n, One, compute_stream);
+
+        CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(
+            cublas_handle, CUBLAS_OP_C, CUBLAS_OP_N, n, n, k, &NegativeTwo,
+            V1.data() + offset * V1.ld() + k, V1.ld(),
+            V1.data() + offset * V1.ld() + k, V1.ld(), &One, M,
+            n)); // M = I - 2 Qr_2^* Qr_2
+
+        CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTtrsm(
+            cublas_handle, CUBLAS_SIDE_LEFT, CUBLAS_FILL_MODE_LOWER, CUBLAS_OP_N,
+            CUBLAS_DIAG_NON_UNIT, n, n, &One, A->data(), n, M, n));
+
+        CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTtrsm(
+            cublas_handle, CUBLAS_SIDE_RIGHT, CUBLAS_FILL_MODE_LOWER, CUBLAS_OP_C,
+            CUBLAS_DIAG_NON_UNIT, n, n, &One, A->data(), n, M, n));
+
+        CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTscal(
+            cublas_handle, n * n, &NegativeOne, M, 1));
+
+        CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTheevd(
+            cusolver_handle, CUSOLVER_EIG_MODE_VECTOR, CUBLAS_FILL_MODE_LOWER, n, M,
+            n, ritzv.data() + offset, workspace, lwork, devInfo));
+
+        CHECK_CUDA_ERROR(cudaMemcpyAsync(&info, devInfo, sizeof(int),
+                                         cudaMemcpyDeviceToHost, compute_stream));
+        CHECK_CUDA_ERROR(cudaStreamSynchronize(compute_stream));
+
+        bool heevd_failed = (info != 0);
+        if (!heevd_failed)
+        {
+
+            // Flip the sign of the Ritz values
+            chase::Base<T> ritz_minus_one = chase::Base<T>(-1.0);
+            CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTscal(
+                cublas_handle, n, &ritz_minus_one, ritzv.data() + offset, 1));
+
+            CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTtrsm(
+                cublas_handle, CUBLAS_SIDE_LEFT, CUBLAS_FILL_MODE_LOWER, CUBLAS_OP_C,
+                CUBLAS_DIAG_NON_UNIT, n, n, &One, A->data(), n, M, n));
+            chase::linalg::internal::cuda::chase_inverse_entries(ritzv.data() + offset,
+                                                                 subSize, compute_stream);
+
+            // Overlap Ritz D2H with following compute work via copy stream.
+            CHECK_CUDA_ERROR(cudaEventRecord(evt_ritz_ready, compute_stream));
+            CHECK_CUDA_ERROR(cudaStreamWaitEvent(copy_stream, evt_ritz_ready, 0));
+            CHECK_CUDA_ERROR(cudaMemcpyAsync(
+                ritzv.cpu_data() + offset, ritzv.data() + offset,
+                subSize * sizeof(chase::Base<T>), cudaMemcpyDeviceToHost, copy_stream));
+
+            using RealT = chase::Base<T>;
+            using chase::linalg::internal::cuda::fusedNormSquaredNormalize;
+
+            RealT* d_col_norms = nullptr;
+            CHECK_CUDA_ERROR(cudaMallocAsync((void**)&d_col_norms,
+                                             (subSize / 2) * sizeof(RealT),
+                                             compute_stream));
+
+            // Full fused path: compute norm² and normalize first n/2 eigenvectors.
+            fusedNormSquaredNormalize(M, d_col_norms, static_cast<int>(subSize),
+                                      static_cast<int>(subSize / 2),
+                                      static_cast<int>(subSize), &compute_stream);
+
+            CHECK_CUDA_ERROR(cudaFreeAsync(d_col_norms, compute_stream));
+
+            CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(
+                cublas_handle, CUBLAS_OP_N, CUBLAS_OP_N, V1.rows(), n / 2, n, &One,
+                V1.data() + offset * V1.ld(), V1.ld(), M, n, &Zero,
+                V2.data() + offset * V2.ld(), V2.ld()));
+        }
+        else
+        {
+            CHECK_CUBLAS_ERROR(cublasSetStream(cublas_handle, stream_orig_cublas));
+            CHECK_CUSOLVER_ERROR(cusolverDnSetStream(cusolver_handle, stream_orig_cusolver));
+            CHECK_CUDA_ERROR(cudaEventDestroy(evt_begin));
+            CHECK_CUDA_ERROR(cudaEventDestroy(evt_ritz_ready));
+            CHECK_CUDA_ERROR(cudaEventDestroy(evt_end_compute));
+            CHECK_CUDA_ERROR(cudaStreamDestroy(copy_stream));
+            if (owns_workspace)
+                CHECK_CUDA_ERROR(cudaFreeAsync(workspace, compute_stream));
+            CHECK_CUDA_ERROR(cudaStreamSynchronize(compute_stream));
+            CHECK_CUDA_ERROR(cudaStreamDestroy(compute_stream));
+            if (owns_A)
+                delete A;
+            throw std::runtime_error(
+                "cusolver HEEVD failed in Pseudo-Hermitian RayleighRitz");
+        }
+    }
+    else
+    {
+        CHECK_CUBLAS_ERROR(cublasSetStream(cublas_handle, stream_orig_cublas));
+        CHECK_CUSOLVER_ERROR(cusolverDnSetStream(cusolver_handle, stream_orig_cusolver));
+        CHECK_CUDA_ERROR(cudaEventDestroy(evt_begin));
+        CHECK_CUDA_ERROR(cudaEventDestroy(evt_ritz_ready));
+        CHECK_CUDA_ERROR(cudaEventDestroy(evt_end_compute));
+        CHECK_CUDA_ERROR(cudaStreamDestroy(copy_stream));
+        if (owns_workspace)
+            CHECK_CUDA_ERROR(cudaFreeAsync(workspace, compute_stream));
+        CHECK_CUDA_ERROR(cudaStreamSynchronize(compute_stream));
+        CHECK_CUDA_ERROR(cudaStreamDestroy(compute_stream));
+        if (owns_A)
+            delete A;
         throw std::runtime_error(
             "cusolver POTRF Failed in Pseudo-Hermitian RayleighRitz");
     }
 
-    cudaMemset(M, 0, sizeof(T) * n * n);
+    CHECK_CUDA_ERROR(cudaEventRecord(evt_end_compute, compute_stream));
+    CHECK_CUDA_ERROR(cudaStreamWaitEvent(stream_orig_cublas, evt_end_compute, 0));
+    CHECK_CUDA_ERROR(cudaStreamSynchronize(copy_stream));
 
-    chase::linalg::internal::cuda::chase_set_diagonal(M, n, n, One, usedStream);
-
-    CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(
-        cublas_handle, CUBLAS_OP_C, CUBLAS_OP_N, n, n, k, &NegativeTwo,
-        V1.data() + offset * V1.ld() + k, V1.ld(),
-        V1.data() + offset * V1.ld() + k, V1.ld(), &One, M,
-        n)); // M = I - 2 Qr_2^* Qr_2
-
-    CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTtrsm(
-        cublas_handle, CUBLAS_SIDE_LEFT, CUBLAS_FILL_MODE_LOWER, CUBLAS_OP_N,
-        CUBLAS_DIAG_NON_UNIT, n, n, &One, A->data(), n, M, n));
-
-    CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTtrsm(
-        cublas_handle, CUBLAS_SIDE_RIGHT, CUBLAS_FILL_MODE_LOWER, CUBLAS_OP_C,
-        CUBLAS_DIAG_NON_UNIT, n, n, &One, A->data(), n, M, n));
-
-    CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTscal(
-        cublas_handle, n * n, &NegativeOne, M, 1));
-
-    CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTheevd(
-        cusolver_handle, CUSOLVER_EIG_MODE_VECTOR, CUBLAS_FILL_MODE_LOWER, n, M,
-        n, ritzv.data() + offset, workspace, lwork, devInfo));
-
-    CHECK_CUDA_ERROR(
-        cudaMemcpy(&info, devInfo, 1 * sizeof(int), cudaMemcpyDeviceToHost));
-
-    if (info != 0)
-    {
-        throw std::runtime_error(
-            "cusolver HEEVD failed in Pseudo-Hermitian RayleighRitz");
-    }
-
-    // Flip the sign of the Ritz values
-    chase::Base<T> ritz_minus_one = chase::Base<T>(-1.0);
-    CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTscal(
-        cublas_handle, n, &ritz_minus_one, ritzv.data() + offset, 1));
-
-    CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTtrsm(
-        cublas_handle, CUBLAS_SIDE_LEFT, CUBLAS_FILL_MODE_LOWER, CUBLAS_OP_C,
-        CUBLAS_DIAG_NON_UNIT, n, n, &One, A->data(), n, M, n));
-    chase::linalg::internal::cuda::chase_inverse_entries(ritzv.data() + offset,
-                                                         subSize, usedStream);
-
-    CHECK_CUDA_ERROR(
-        cudaMemcpy(ritzv.cpu_data() + offset, ritzv.data() + offset,
-                   subSize * sizeof(chase::Base<T>), cudaMemcpyDeviceToHost));
-
-    std::vector<chase::Base<T>> vectorNorms(subSize);
-    std::vector<T> norm_divider(subSize);
-
-    for (auto idx = 0; idx < subSize; idx++)
-    {
-        CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTnrm2(
-            cublas_handle, subSize, M + idx * subSize, 1, &vectorNorms[idx]));
-    }
-
-    for (auto idx = 0; idx < subSize/2; idx++)
-    {
-        norm_divider[idx] = T(1 / vectorNorms[idx]);
-    }
-
-    for (auto idx = 0; idx < subSize/2; idx++)
-    {
-        CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTscal(
-            cublas_handle, subSize, &norm_divider[idx], M + idx * subSize, 1));
-    }
-
-    CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(
-        cublas_handle, CUBLAS_OP_N, CUBLAS_OP_N, V1.rows(), n/2, n, &One,
-        V1.data() + offset * V1.ld(), V1.ld(), M, n, &Zero,
-        V2.data() + offset * V2.ld(), V2.ld()));
+    CHECK_CUBLAS_ERROR(cublasSetStream(cublas_handle, stream_orig_cublas));
+    CHECK_CUSOLVER_ERROR(cusolverDnSetStream(cusolver_handle, stream_orig_cusolver));
+    CHECK_CUDA_ERROR(cudaEventDestroy(evt_begin));
+    CHECK_CUDA_ERROR(cudaEventDestroy(evt_ritz_ready));
+    CHECK_CUDA_ERROR(cudaEventDestroy(evt_end_compute));
+    CHECK_CUDA_ERROR(cudaStreamDestroy(copy_stream));
+    if (owns_workspace)
+        CHECK_CUDA_ERROR(cudaFreeAsync(workspace, compute_stream));
+    CHECK_CUDA_ERROR(cudaStreamSynchronize(compute_stream));
+    CHECK_CUDA_ERROR(cudaStreamDestroy(compute_stream));
+    if (owns_A)
+        delete A;
 }
 
 } // namespace cuda

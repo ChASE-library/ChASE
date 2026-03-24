@@ -50,6 +50,24 @@ void chase_shift_matrix(std::complex<float>* A, std::size_t n, std::size_t lda,
 void chase_shift_matrix(std::complex<double>* A, std::size_t n, std::size_t lda,
                         double shift, cudaStream_t stream_);
 
+// Shift diagonal by device scalar: A(ii) += (*d_shift) * scale.
+void chase_shift_matrix_from_device_shift(float* A, std::size_t n,
+                                          std::size_t lda,
+                                          const float* d_shift, float scale,
+                                          cudaStream_t stream_);
+void chase_shift_matrix_from_device_shift(double* A, std::size_t n,
+                                          std::size_t lda,
+                                          const double* d_shift, double scale,
+                                          cudaStream_t stream_);
+void chase_shift_matrix_from_device_shift(std::complex<float>* A, std::size_t n,
+                                          std::size_t lda,
+                                          const float* d_shift, float scale,
+                                          cudaStream_t stream_);
+void chase_shift_matrix_from_device_shift(std::complex<double>* A,
+                                          std::size_t n, std::size_t lda,
+                                          const double* d_shift, double scale,
+                                          cudaStream_t stream_);
+
 void chase_shift_mgpu_matrix(float* A, std::size_t* off_m, std::size_t* off_n,
                              std::size_t offsize, std::size_t ldH, float shift,
                              cudaStream_t stream_);

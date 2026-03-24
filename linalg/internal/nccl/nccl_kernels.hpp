@@ -133,7 +133,8 @@ struct cuda_nccl
     static int cholQR1(cublasHandle_t cublas_handle,
                        cusolverDnHandle_t cusolver_handle, std::size_t m,
                        std::size_t n, T* V, int ldv, ncclComm_t comm,
-                       T* workspace = nullptr, int lwork = 0, T* A = nullptr);
+                       T* workspace = nullptr, int lwork = 0, T* A = nullptr,
+                       int* external_devInfo = nullptr);
 
     template <typename InputMultiVectorType>
     static int
@@ -141,13 +142,15 @@ struct cuda_nccl
             InputMultiVectorType& V,
             typename InputMultiVectorType::value_type* workspace = nullptr,
             int lwork = 0,
-            typename InputMultiVectorType::value_type* A = nullptr);
+            typename InputMultiVectorType::value_type* A = nullptr,
+            int* external_devInfo = nullptr);
 
     template <typename T>
     static int cholQR2(cublasHandle_t cublas_handle,
                        cusolverDnHandle_t cusolver_handle, std::size_t m,
                        std::size_t n, T* V, int ldv, ncclComm_t comm,
-                       T* workspace = nullptr, int lwork = 0, T* A = nullptr);
+                       T* workspace = nullptr, int lwork = 0, T* A = nullptr,
+                       int* external_devInfo = nullptr);
 
     template <typename InputMultiVectorType>
     static int
@@ -155,14 +158,16 @@ struct cuda_nccl
             InputMultiVectorType& V,
             typename InputMultiVectorType::value_type* workspace = nullptr,
             int lwork = 0,
-            typename InputMultiVectorType::value_type* A = nullptr);
+            typename InputMultiVectorType::value_type* A = nullptr,
+            int* external_devInfo = nullptr);
 
     template <typename T>
     static int shiftedcholQR2(cublasHandle_t cublas_handle,
                               cusolverDnHandle_t cusolver_handle, std::size_t N,
                               std::size_t m, std::size_t n, T* V, int ldv,
                               ncclComm_t comm, T* workspace = nullptr,
-                              int lwork = 0, T* A = nullptr);
+                              int lwork = 0, T* A = nullptr,
+                              int* external_devInfo = nullptr);
 
     template <typename T>
     static int modifiedGramSchmidtCholQR(
@@ -328,6 +333,12 @@ struct cuda_nccl
     static void flipLowerHalfMatrixSign(InputMultiVectorType& V,
                                         std::size_t offset,
                                         std::size_t subSize);
+
+    template <typename InputMultiVectorType>
+    static void flipLowerHalfMatrixSign(InputMultiVectorType& V,
+                                        std::size_t offset,
+                                        std::size_t subSize,
+                                        cudaStream_t stream);
 };
 
 } // namespace internal

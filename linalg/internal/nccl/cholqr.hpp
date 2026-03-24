@@ -22,8 +22,8 @@
 #include "external/cublaspp/cublaspp.hpp"
 #include "external/cusolverpp/cusolverpp.hpp"
 #include "external/scalapackpp/scalapackpp.hpp"
-#include "linalg/internal/cuda/absTrace.cuh"
-#include "linalg/internal/cuda/shiftDiagonal.cuh"
+#include "linalg/internal/cuda/absTrace.hpp"
+#include "linalg/internal/cuda/shiftDiagonal.hpp"
 #include "linalg/internal/nccl/nccl_kernels.hpp"
 
 using namespace chase::linalg::blaspp;
@@ -61,7 +61,8 @@ int cuda_nccl::cholQR1(cublasHandle_t cublas_handle,
                        cusolverDnHandle_t cusolver_handle, std::size_t m,
                        std::size_t n, T* V, int ldv,
                        // MPI_Comm comm,
-                       ncclComm_t comm, T* workspace, int lwork, T* A)
+                       ncclComm_t comm, T* workspace, int lwork, T* A,
+                       int* external_devInfo)
 {
     // No-op for zero dimensions: avoid cuBLAS/cuSOLVER with n=0 or m=0
     // (can trigger driver bugs e.g. null deref in cuEGLApiInit on some systems)
@@ -81,16 +82,6 @@ int cuda_nccl::cholQR1(cublasHandle_t cublas_handle,
 
     int info = 1;
     std::size_t upperTriangularSize = std::size_t(n * (n + 1) / 2);
-
-    // Detailed timing events
-    cudaEvent_t ev_start, ev_syherk, ev_allreduce, ev_potrf, ev_trsm, ev_end;
-    cudaEventCreate(&ev_start);
-    cudaEventCreate(&ev_syherk);
-    cudaEventCreate(&ev_allreduce);
-    cudaEventCreate(&ev_potrf);
-    cudaEventCreate(&ev_trsm);
-    cudaEventCreate(&ev_end);
-    cudaEventRecord(ev_start);
 
     std::unique_ptr<T, chase::cuda::utils::CudaDeleter> A_ptr = nullptr;
     if (A == nullptr)
@@ -117,6 +108,31 @@ int cuda_nccl::cholQR1(cublasHandle_t cublas_handle,
         workspace = work_ptr.get();
     }
 
+    // Detailed timing events
+    cudaEvent_t ev_start, ev_syherk, ev_allreduce, ev_potrf, ev_trsm, ev_end;
+    cudaStream_t stream_orig_cublas = nullptr;
+    cudaStream_t stream_orig_cusolver = nullptr;
+    cudaStream_t stream = nullptr;
+    cudaEvent_t evt_begin = nullptr;
+    cudaEvent_t evt_handoff = nullptr;
+    CHECK_CUBLAS_ERROR(cublasGetStream(cublas_handle, &stream_orig_cublas));
+    CHECK_CUSOLVER_ERROR(cusolverDnGetStream(cusolver_handle, &stream_orig_cusolver));
+    CHECK_CUDA_ERROR(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
+    CHECK_CUDA_ERROR(cudaEventCreate(&evt_begin));
+    CHECK_CUDA_ERROR(cudaEventCreate(&evt_handoff));
+    CHECK_CUDA_ERROR(cudaEventRecord(evt_begin, stream_orig_cublas));
+    CHECK_CUDA_ERROR(cudaStreamWaitEvent(stream, evt_begin, 0));
+    CHECK_CUBLAS_ERROR(cublasSetStream(cublas_handle, stream));
+    CHECK_CUSOLVER_ERROR(cusolverDnSetStream(cusolver_handle, stream));
+
+    cudaEventCreate(&ev_start);
+    cudaEventCreate(&ev_syherk);
+    cudaEventCreate(&ev_allreduce);
+    cudaEventCreate(&ev_potrf);
+    cudaEventCreate(&ev_trsm);
+    cudaEventCreate(&ev_end);
+    cudaEventRecord(ev_start);
+
     cublasOperation_t transa;
     if constexpr (std::is_same<T, std::complex<float>>::value ||
                   std::is_same<T, std::complex<double>>::value)
@@ -133,22 +149,30 @@ int cuda_nccl::cholQR1(cublasHandle_t cublas_handle,
         &Zero, A, n));
     cudaEventRecord(ev_syherk);
 
-    chase::linalg::internal::cuda::extractUpperTriangular(A, n, workspace, n);
+    chase::linalg::internal::cuda::extractUpperTriangular(A, n, workspace, n,
+                                                          &stream);
     CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(
-        workspace, workspace, upperTriangularSize, ncclSum, comm));
-    chase::linalg::internal::cuda::unpackUpperTriangular(workspace, n, A, n);
+        workspace, workspace, upperTriangularSize, ncclSum, comm, &stream));
+    chase::linalg::internal::cuda::unpackUpperTriangular(workspace, n, A, n,
+                                                         &stream);
     cudaEventRecord(ev_allreduce);
 
-    int* devInfo;
-    CHECK_CUDA_ERROR(cudaMalloc((void**)&devInfo, sizeof(int)));
+    int* devInfo = external_devInfo;
+    bool owns_devInfo = false;
+    if (devInfo == nullptr)
+    {
+        CHECK_CUDA_ERROR(cudaMallocAsync((void**)&devInfo, sizeof(int), stream));
+        owns_devInfo = true;
+    }
 
     CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTpotrf(
         cusolver_handle, CUBLAS_FILL_MODE_UPPER, n, A, n, workspace, lwork,
         devInfo));
     cudaEventRecord(ev_potrf);
 
-    CHECK_CUDA_ERROR(
-        cudaMemcpy(&info, devInfo, 1 * sizeof(int), cudaMemcpyDeviceToHost));
+    CHECK_CUDA_ERROR(cudaMemcpyAsync(&info, devInfo, sizeof(int),
+                                     cudaMemcpyDeviceToHost, stream));
+    CHECK_CUDA_ERROR(cudaStreamSynchronize(stream));
 
     if (info != 0)
     {
@@ -158,7 +182,13 @@ int cuda_nccl::cholQR1(cublasHandle_t cublas_handle,
         cudaEventDestroy(ev_potrf);
         cudaEventDestroy(ev_trsm);
         cudaEventDestroy(ev_end);
-        CHECK_CUDA_ERROR(cudaFree(devInfo));
+        if (owns_devInfo)
+            CHECK_CUDA_ERROR(cudaFree(devInfo));
+        CHECK_CUDA_ERROR(cudaEventDestroy(evt_begin));
+        CHECK_CUDA_ERROR(cudaEventDestroy(evt_handoff));
+        CHECK_CUDA_ERROR(cudaStreamDestroy(stream));
+        CHECK_CUBLAS_ERROR(cublasSetStream(cublas_handle, stream_orig_cublas));
+        CHECK_CUSOLVER_ERROR(cusolverDnSetStream(cusolver_handle, stream_orig_cusolver));
         CHECK_CUBLAS_ERROR(cublasSetPointerMode(cublas_handle, prev_mode));
         return info;
     }
@@ -209,7 +239,15 @@ int cuda_nccl::cholQR1(cublasHandle_t cublas_handle,
         cudaEventDestroy(ev_trsm);
         cudaEventDestroy(ev_end);
 
-        CHECK_CUDA_ERROR(cudaFree(devInfo));
+        CHECK_CUDA_ERROR(cudaEventRecord(evt_handoff, stream));
+        CHECK_CUDA_ERROR(cudaStreamWaitEvent(stream_orig_cublas, evt_handoff, 0));
+        if (owns_devInfo)
+            CHECK_CUDA_ERROR(cudaFree(devInfo));
+        CHECK_CUDA_ERROR(cudaEventDestroy(evt_begin));
+        CHECK_CUDA_ERROR(cudaEventDestroy(evt_handoff));
+        CHECK_CUDA_ERROR(cudaStreamDestroy(stream));
+        CHECK_CUBLAS_ERROR(cublasSetStream(cublas_handle, stream_orig_cublas));
+        CHECK_CUSOLVER_ERROR(cusolverDnSetStream(cusolver_handle, stream_orig_cusolver));
         CHECK_CUBLAS_ERROR(cublasSetPointerMode(cublas_handle, prev_mode));
         return info;
     }
@@ -237,7 +275,8 @@ int cuda_nccl::cholQR1(cublasHandle_t cublas_handle,
                        cusolverDnHandle_t cusolver_handle,
                        InputMultiVectorType& V,
                        typename InputMultiVectorType::value_type* workspace,
-                       int lwork, typename InputMultiVectorType::value_type* A)
+                       int lwork, typename InputMultiVectorType::value_type* A,
+                       int* external_devInfo)
 {
     using T = typename InputMultiVectorType::value_type;
 
@@ -288,8 +327,13 @@ int cuda_nccl::cholQR1(cublasHandle_t cublas_handle,
         A, A, V.l_cols() * V.l_cols(), ncclSum,
         V.getMpiGrid()->get_nccl_col_comm()));
 
-    int* devInfo;
-    CHECK_CUDA_ERROR(cudaMalloc((void**)&devInfo, sizeof(int)));
+    int* devInfo = external_devInfo;
+    bool owns_devInfo = false;
+    if (devInfo == nullptr)
+    {
+        CHECK_CUDA_ERROR(cudaMalloc((void**)&devInfo, sizeof(int)));
+        owns_devInfo = true;
+    }
 
     CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTpotrf(
         cusolver_handle, CUBLAS_FILL_MODE_UPPER, V.l_cols(), A, V.l_cols(),
@@ -300,7 +344,8 @@ int cuda_nccl::cholQR1(cublasHandle_t cublas_handle,
 
     if (info != 0)
     {
-        CHECK_CUDA_ERROR(cudaFree(devInfo));
+        if (owns_devInfo)
+            CHECK_CUDA_ERROR(cudaFree(devInfo));
         return info;
     }
     else
@@ -319,7 +364,8 @@ int cuda_nccl::cholQR1(cublasHandle_t cublas_handle,
         }
 #endif
 
-        CHECK_CUDA_ERROR(cudaFree(devInfo));
+        if (owns_devInfo)
+            CHECK_CUDA_ERROR(cudaFree(devInfo));
         return info;
     }
 }
@@ -346,7 +392,7 @@ template <typename T>
 int cuda_nccl::cholQR2(cublasHandle_t cublas_handle,
                        cusolverDnHandle_t cusolver_handle, std::size_t m,
                        std::size_t n, T* V, int ldv, ncclComm_t comm,
-                       T* workspace, int lwork, T* A)
+                       T* workspace, int lwork, T* A, int* external_devInfo)
 {
 
     T one = T(1.0);
@@ -356,21 +402,6 @@ int cuda_nccl::cholQR2(cublasHandle_t cublas_handle,
 
     int info = 0;
     std::size_t upperTriangularSize = std::size_t(n * (n + 1) / 2);
-
-    // Detailed timing events for cholQR2 (2 iterations)
-    cudaEvent_t ev_start, ev_syherk1, ev_allreduce1, ev_potrf1, ev_trsm1;
-    cudaEvent_t ev_syherk2, ev_allreduce2, ev_potrf2, ev_trsm2, ev_end;
-    cudaEventCreate(&ev_start);
-    cudaEventCreate(&ev_syherk1);
-    cudaEventCreate(&ev_allreduce1);
-    cudaEventCreate(&ev_potrf1);
-    cudaEventCreate(&ev_trsm1);
-    cudaEventCreate(&ev_syherk2);
-    cudaEventCreate(&ev_allreduce2);
-    cudaEventCreate(&ev_potrf2);
-    cudaEventCreate(&ev_trsm2);
-    cudaEventCreate(&ev_end);
-    cudaEventRecord(ev_start);
 
     std::unique_ptr<T, chase::cuda::utils::CudaDeleter> A_ptr = nullptr;
     if (A == nullptr)
@@ -396,6 +427,36 @@ int cuda_nccl::cholQR2(cublasHandle_t cublas_handle,
         workspace = work_ptr.get();
     }
 
+    // Detailed timing events for cholQR2 (2 iterations)
+    cudaStream_t stream_orig_cublas = nullptr;
+    cudaStream_t stream_orig_cusolver = nullptr;
+    cudaStream_t stream = nullptr;
+    cudaEvent_t evt_begin = nullptr;
+    cudaEvent_t evt_handoff = nullptr;
+    CHECK_CUBLAS_ERROR(cublasGetStream(cublas_handle, &stream_orig_cublas));
+    CHECK_CUSOLVER_ERROR(cusolverDnGetStream(cusolver_handle, &stream_orig_cusolver));
+    CHECK_CUDA_ERROR(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
+    CHECK_CUDA_ERROR(cudaEventCreate(&evt_begin));
+    CHECK_CUDA_ERROR(cudaEventCreate(&evt_handoff));
+    CHECK_CUDA_ERROR(cudaEventRecord(evt_begin, stream_orig_cublas));
+    CHECK_CUDA_ERROR(cudaStreamWaitEvent(stream, evt_begin, 0));
+    CHECK_CUBLAS_ERROR(cublasSetStream(cublas_handle, stream));
+    CHECK_CUSOLVER_ERROR(cusolverDnSetStream(cusolver_handle, stream));
+
+    cudaEvent_t ev_start, ev_syherk1, ev_allreduce1, ev_potrf1, ev_trsm1;
+    cudaEvent_t ev_syherk2, ev_allreduce2, ev_potrf2, ev_trsm2, ev_end;
+    cudaEventCreate(&ev_start);
+    cudaEventCreate(&ev_syherk1);
+    cudaEventCreate(&ev_allreduce1);
+    cudaEventCreate(&ev_potrf1);
+    cudaEventCreate(&ev_trsm1);
+    cudaEventCreate(&ev_syherk2);
+    cudaEventCreate(&ev_allreduce2);
+    cudaEventCreate(&ev_potrf2);
+    cudaEventCreate(&ev_trsm2);
+    cudaEventCreate(&ev_end);
+    cudaEventRecord(ev_start);
+
     cublasOperation_t transa;
     if constexpr (std::is_same<T, std::complex<float>>::value ||
                   std::is_same<T, std::complex<double>>::value)
@@ -413,22 +474,30 @@ int cuda_nccl::cholQR2(cublasHandle_t cublas_handle,
         &Zero, A, n));
     cudaEventRecord(ev_syherk1);
 
-    chase::linalg::internal::cuda::extractUpperTriangular(A, n, workspace, n);
+    chase::linalg::internal::cuda::extractUpperTriangular(A, n, workspace, n,
+                                                          &stream);
     CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(
-        workspace, workspace, upperTriangularSize, ncclSum, comm));
-    chase::linalg::internal::cuda::unpackUpperTriangular(workspace, n, A, n);
+        workspace, workspace, upperTriangularSize, ncclSum, comm, &stream));
+    chase::linalg::internal::cuda::unpackUpperTriangular(workspace, n, A, n,
+                                                         &stream);
     cudaEventRecord(ev_allreduce1);
 
-    int* devInfo;
-    CHECK_CUDA_ERROR(cudaMalloc((void**)&devInfo, sizeof(int)));
+    int* devInfo = external_devInfo;
+    bool owns_devInfo = false;
+    if (devInfo == nullptr)
+    {
+        CHECK_CUDA_ERROR(cudaMallocAsync((void**)&devInfo, sizeof(int), stream));
+        owns_devInfo = true;
+    }
 
     CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTpotrf(
         cusolver_handle, CUBLAS_FILL_MODE_UPPER, n, A, n, workspace, lwork,
         devInfo));
     cudaEventRecord(ev_potrf1);
 
-    CHECK_CUDA_ERROR(
-        cudaMemcpy(&info, devInfo, 1 * sizeof(int), cudaMemcpyDeviceToHost));
+    CHECK_CUDA_ERROR(cudaMemcpyAsync(&info, devInfo, sizeof(int),
+                                     cudaMemcpyDeviceToHost, stream));
+    CHECK_CUDA_ERROR(cudaStreamSynchronize(stream));
 
     if (info != 0)
     {
@@ -442,7 +511,13 @@ int cuda_nccl::cholQR2(cublasHandle_t cublas_handle,
         cudaEventDestroy(ev_potrf2);
         cudaEventDestroy(ev_trsm2);
         cudaEventDestroy(ev_end);
-        CHECK_CUDA_ERROR(cudaFree(devInfo));
+        if (owns_devInfo)
+            CHECK_CUDA_ERROR(cudaFree(devInfo));
+        CHECK_CUDA_ERROR(cudaEventDestroy(evt_begin));
+        CHECK_CUDA_ERROR(cudaEventDestroy(evt_handoff));
+        CHECK_CUDA_ERROR(cudaStreamDestroy(stream));
+        CHECK_CUBLAS_ERROR(cublasSetStream(cublas_handle, stream_orig_cublas));
+        CHECK_CUSOLVER_ERROR(cusolverDnSetStream(cusolver_handle, stream_orig_cusolver));
         return info;
     }
     else
@@ -458,10 +533,12 @@ int cuda_nccl::cholQR2(cublasHandle_t cublas_handle,
             &Zero, A, n));
         cudaEventRecord(ev_syherk2);
 
-        chase::linalg::internal::cuda::extractUpperTriangular(A, n, workspace, n);
+        chase::linalg::internal::cuda::extractUpperTriangular(A, n, workspace, n,
+                                                              &stream);
         CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(
-            workspace, workspace, upperTriangularSize, ncclSum, comm));
-        chase::linalg::internal::cuda::unpackUpperTriangular(workspace, n, A, n);
+            workspace, workspace, upperTriangularSize, ncclSum, comm, &stream));
+        chase::linalg::internal::cuda::unpackUpperTriangular(workspace, n, A, n,
+                                                             &stream);
         cudaEventRecord(ev_allreduce2);
 
         CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTpotrf(
@@ -521,7 +598,15 @@ int cuda_nccl::cholQR2(cublasHandle_t cublas_handle,
         cudaEventDestroy(ev_trsm2);
         cudaEventDestroy(ev_end);
 
-        CHECK_CUDA_ERROR(cudaFree(devInfo));
+        CHECK_CUDA_ERROR(cudaEventRecord(evt_handoff, stream));
+        CHECK_CUDA_ERROR(cudaStreamWaitEvent(stream_orig_cublas, evt_handoff, 0));
+        if (owns_devInfo)
+            CHECK_CUDA_ERROR(cudaFree(devInfo));
+        CHECK_CUDA_ERROR(cudaEventDestroy(evt_begin));
+        CHECK_CUDA_ERROR(cudaEventDestroy(evt_handoff));
+        CHECK_CUDA_ERROR(cudaStreamDestroy(stream));
+        CHECK_CUBLAS_ERROR(cublasSetStream(cublas_handle, stream_orig_cublas));
+        CHECK_CUSOLVER_ERROR(cusolverDnSetStream(cusolver_handle, stream_orig_cusolver));
         return info;
     }
 }
@@ -570,7 +655,8 @@ int cuda_nccl::cholQR2(cublasHandle_t cublas_handle,
                        cusolverDnHandle_t cusolver_handle,
                        InputMultiVectorType& V,
                        typename InputMultiVectorType::value_type* workspace,
-                       int lwork, typename InputMultiVectorType::value_type* A)
+                       int lwork, typename InputMultiVectorType::value_type* A,
+                       int* external_devInfo)
 {
     using T = typename InputMultiVectorType::value_type;
 
@@ -631,23 +717,26 @@ int cuda_nccl::cholQR2(cublasHandle_t cublas_handle,
             typename chase::ToSinglePrecisionTrait<T>::Type;
         V.enableSinglePrecision();
         auto V_sp = V.getSinglePrecisionMatrix();
-        info = cholQR1<singlePrecisionT>(cublas_handle, cusolver_handle, *V_sp);
+        info = cholQR1<singlePrecisionT>(cublas_handle, cusolver_handle, *V_sp,
+                                         nullptr, 0, nullptr, external_devInfo);
         V.disableSinglePrecision(true);
     }
     else
     {
-        info =
-            cholQR1<T>(cublas_handle, cusolver_handle, V, workspace, lwork, A);
+        info = cholQR1<T>(cublas_handle, cusolver_handle, V, workspace, lwork,
+                          A, external_devInfo);
     }
 #else
-    info = cholQR1<T>(cublas_handle, cusolver_handle, V, workspace, lwork, A);
+    info = cholQR1<T>(cublas_handle, cusolver_handle, V, workspace, lwork, A,
+                      external_devInfo);
 #endif
     if (info != 0)
     {
         return info;
     }
 
-    info = cholQR1<T>(cublas_handle, cusolver_handle, V, workspace, lwork, A);
+    info = cholQR1<T>(cublas_handle, cusolver_handle, V, workspace, lwork, A,
+                      external_devInfo);
 
     return info;
 }
@@ -704,37 +793,17 @@ template <typename T>
 int cuda_nccl::shiftedcholQR2(cublasHandle_t cublas_handle,
                               cusolverDnHandle_t cusolver_handle, std::size_t N,
                               std::size_t m, std::size_t n, T* V, int ldv,
-                              ncclComm_t comm, T* workspace, int lwork, T* A)
+                              ncclComm_t comm, T* workspace, int lwork, T* A,
+                              int* external_devInfo)
 {
     T one = T(1.0);
     T zero = T(0.0);
     chase::Base<T> One = Base<T>(1.0);
     chase::Base<T> Zero = Base<T>(0.0);
-    chase::Base<T> shift;
+    chase::Base<T> shift = 0;
 
     int info = 1;
     std::size_t upperTriangularSize = std::size_t(n * (n + 1) / 2);
-
-    // Detailed timing events for shiftedcholQR2 (3 iterations)
-    cudaEvent_t ev_start, ev_end;
-    cudaEvent_t ev_syherk1, ev_allreduce1, ev_potrf1, ev_trsm1;
-    cudaEvent_t ev_syherk2, ev_allreduce2, ev_potrf2, ev_trsm2;
-    cudaEvent_t ev_syherk3, ev_allreduce3, ev_potrf3, ev_trsm3;
-    cudaEventCreate(&ev_start);
-    cudaEventCreate(&ev_syherk1);
-    cudaEventCreate(&ev_allreduce1);
-    cudaEventCreate(&ev_potrf1);
-    cudaEventCreate(&ev_trsm1);
-    cudaEventCreate(&ev_syherk2);
-    cudaEventCreate(&ev_allreduce2);
-    cudaEventCreate(&ev_potrf2);
-    cudaEventCreate(&ev_trsm2);
-    cudaEventCreate(&ev_syherk3);
-    cudaEventCreate(&ev_allreduce3);
-    cudaEventCreate(&ev_potrf3);
-    cudaEventCreate(&ev_trsm3);
-    cudaEventCreate(&ev_end);
-    cudaEventRecord(ev_start);
 
     std::unique_ptr<T, chase::cuda::utils::CudaDeleter> A_ptr = nullptr;
     if (A == nullptr)
@@ -760,6 +829,42 @@ int cuda_nccl::shiftedcholQR2(cublasHandle_t cublas_handle,
         work_ptr.reset(workspace);
         workspace = work_ptr.get();
     }
+        
+    // Detailed timing events for shiftedcholQR2 (3 iterations)
+    cudaEvent_t ev_start, ev_end;
+    cudaEvent_t ev_syherk1, ev_allreduce1, ev_potrf1, ev_trsm1;
+    cudaEvent_t ev_syherk2, ev_allreduce2, ev_potrf2, ev_trsm2;
+    cudaEvent_t ev_syherk3, ev_allreduce3, ev_potrf3, ev_trsm3;
+    cudaEventCreate(&ev_start);
+    cudaEventCreate(&ev_syherk1);
+    cudaEventCreate(&ev_allreduce1);
+    cudaEventCreate(&ev_potrf1);
+    cudaEventCreate(&ev_trsm1);
+    cudaEventCreate(&ev_syherk2);
+    cudaEventCreate(&ev_allreduce2);
+    cudaEventCreate(&ev_potrf2);
+    cudaEventCreate(&ev_trsm2);
+    cudaEventCreate(&ev_syherk3);
+    cudaEventCreate(&ev_allreduce3);
+    cudaEventCreate(&ev_potrf3);
+    cudaEventCreate(&ev_trsm3);
+    cudaEventCreate(&ev_end);
+    cudaEventRecord(ev_start);
+
+    cudaStream_t stream_orig_cublas = nullptr;
+    cudaStream_t stream_orig_cusolver = nullptr;
+    cudaStream_t stream = nullptr;
+    cudaEvent_t evt_begin = nullptr;
+    cudaEvent_t evt_handoff = nullptr;
+    CHECK_CUBLAS_ERROR(cublasGetStream(cublas_handle, &stream_orig_cublas));
+    CHECK_CUSOLVER_ERROR(cusolverDnGetStream(cusolver_handle, &stream_orig_cusolver));
+    CHECK_CUDA_ERROR(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
+    CHECK_CUDA_ERROR(cudaEventCreate(&evt_begin));
+    CHECK_CUDA_ERROR(cudaEventCreate(&evt_handoff));
+    CHECK_CUDA_ERROR(cudaEventRecord(evt_begin, stream_orig_cublas));
+    CHECK_CUDA_ERROR(cudaStreamWaitEvent(stream, evt_begin, 0));
+    CHECK_CUBLAS_ERROR(cublasSetStream(cublas_handle, stream));
+    CHECK_CUSOLVER_ERROR(cusolverDnSetStream(cusolver_handle, stream));
 
     cublasOperation_t transa;
     if constexpr (std::is_same<T, std::complex<float>>::value ||
@@ -778,35 +883,53 @@ int cuda_nccl::shiftedcholQR2(cublasHandle_t cublas_handle,
         &Zero, A, n));
     cudaEventRecord(ev_syherk1);
 
-    chase::linalg::internal::cuda::extractUpperTriangular(A, n, workspace, n);
+    chase::linalg::internal::cuda::extractUpperTriangular(A, n, workspace, n,
+                                                          &stream);
     CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(
-        workspace, workspace, upperTriangularSize, ncclSum, comm));
-    chase::linalg::internal::cuda::unpackUpperTriangular(workspace, n, A, n);
+        workspace, workspace, upperTriangularSize, ncclSum, comm, &stream));
+    chase::linalg::internal::cuda::unpackUpperTriangular(workspace, n, A, n,
+                                                         &stream);
     cudaEventRecord(ev_allreduce1);
 
+    chase::Base<T>* d_nrmf = nullptr;
+    CHECK_CUDA_ERROR(cudaMallocAsync((void**)&d_nrmf, sizeof(chase::Base<T>), stream));
+    chase::matrix::Matrix<T, chase::platform::GPU> A_view(n, n, n, A);
+    chase::linalg::internal::cuda::absTrace(A_view, d_nrmf, &stream);
+#ifdef CHASE_OUTPUT
+    bool return_shift_enabled = false;
+    if (chase::GetLogger().GetLevel() >= chase::LogLevel::Info)
+    {
+        return_shift_enabled = true;
+    }
     chase::Base<T> nrmf = 0.0;
-    chase::Base<T>* d_nrmf;
-    CHECK_CUDA_ERROR(cudaMalloc((void**)&d_nrmf, sizeof(chase::Base<T>)));
-    chase::linalg::internal::cuda::absTrace_gpu(A, d_nrmf, n, n,
-                                                (cudaStream_t)0);
-    CHECK_CUDA_ERROR(cudaMemcpy(&nrmf, d_nrmf, sizeof(chase::Base<T>),
-                                cudaMemcpyDeviceToHost));
-    shift =
-        std::sqrt(N) * nrmf * std::numeric_limits<chase::Base<T>>::epsilon();
+    if (return_shift_enabled)
+    {
+        CHECK_CUDA_ERROR(cudaMemcpyAsync(&nrmf, d_nrmf, sizeof(chase::Base<T>),
+                                         cudaMemcpyDeviceToHost, stream));
+        CHECK_CUDA_ERROR(cudaStreamSynchronize(stream));
+        shift = std::sqrt(N) * nrmf *
+                std::numeric_limits<chase::Base<T>>::epsilon();
+    }
+#endif
+    chase::linalg::internal::cuda::shiftDiagonalFromDeviceShift(&A_view, d_nrmf,
+                                                                 &stream);
 
-    chase::linalg::internal::cuda::chase_shift_matrix(A, n, n, shift,
-                                                      (cudaStream_t)0);
-
-    int* devInfo;
-    CHECK_CUDA_ERROR(cudaMalloc((void**)&devInfo, sizeof(int)));
+    int* devInfo = external_devInfo;
+    bool owns_devInfo = false;
+    if (devInfo == nullptr)
+    {
+        CHECK_CUDA_ERROR(cudaMalloc((void**)&devInfo, sizeof(int)));
+        owns_devInfo = true;
+    }
 
     CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTpotrf(
         cusolver_handle, CUBLAS_FILL_MODE_UPPER, n, A, n, workspace, lwork,
         devInfo));
     cudaEventRecord(ev_potrf1);
 
-    CHECK_CUDA_ERROR(
-        cudaMemcpy(&info, devInfo, 1 * sizeof(int), cudaMemcpyDeviceToHost));
+    CHECK_CUDA_ERROR(cudaMemcpyAsync(&info, devInfo, sizeof(int),
+                                     cudaMemcpyDeviceToHost, stream));
+    CHECK_CUDA_ERROR(cudaStreamSynchronize(stream));
 
     if (info != 0)
     {
@@ -828,10 +951,15 @@ int cuda_nccl::shiftedcholQR2(cublasHandle_t cublas_handle,
         {
             CHECK_CUDA_ERROR(cudaFree(d_nrmf));
         }
-        if (devInfo != nullptr)
+        if (devInfo != nullptr && owns_devInfo)
         {
             CHECK_CUDA_ERROR(cudaFree(devInfo));
         }
+        CHECK_CUDA_ERROR(cudaEventDestroy(evt_begin));
+        CHECK_CUDA_ERROR(cudaEventDestroy(evt_handoff));
+        CHECK_CUDA_ERROR(cudaStreamDestroy(stream));
+        CHECK_CUBLAS_ERROR(cublasSetStream(cublas_handle, stream_orig_cublas));
+        CHECK_CUSOLVER_ERROR(cusolverDnSetStream(cusolver_handle, stream_orig_cusolver));
         return info;
     }
 
@@ -846,10 +974,12 @@ int cuda_nccl::shiftedcholQR2(cublasHandle_t cublas_handle,
         &Zero, A, n));
     cudaEventRecord(ev_syherk2);
 
-    chase::linalg::internal::cuda::extractUpperTriangular(A, n, workspace, n);
+    chase::linalg::internal::cuda::extractUpperTriangular(A, n, workspace, n,
+                                                          &stream);
     CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(
-        workspace, workspace, upperTriangularSize, ncclSum, comm));
-    chase::linalg::internal::cuda::unpackUpperTriangular(workspace, n, A, n);
+        workspace, workspace, upperTriangularSize, ncclSum, comm, &stream));
+    chase::linalg::internal::cuda::unpackUpperTriangular(workspace, n, A, n,
+                                                         &stream);
     cudaEventRecord(ev_allreduce2);
 
     CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTpotrf(
@@ -868,10 +998,12 @@ int cuda_nccl::shiftedcholQR2(cublasHandle_t cublas_handle,
         &Zero, A, n));
     cudaEventRecord(ev_syherk3);
 
-    chase::linalg::internal::cuda::extractUpperTriangular(A, n, workspace, n);
+    chase::linalg::internal::cuda::extractUpperTriangular(A, n, workspace, n,
+                                                          &stream);
     CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper<T>(
-        workspace, workspace, upperTriangularSize, ncclSum, comm));
-    chase::linalg::internal::cuda::unpackUpperTriangular(workspace, n, A, n);
+        workspace, workspace, upperTriangularSize, ncclSum, comm, &stream));
+    chase::linalg::internal::cuda::unpackUpperTriangular(workspace, n, A, n,
+                                                         &stream);
     cudaEventRecord(ev_allreduce3);
 
     CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTpotrf(
@@ -938,8 +1070,16 @@ int cuda_nccl::shiftedcholQR2(cublasHandle_t cublas_handle,
     cudaEventDestroy(ev_trsm3);
     cudaEventDestroy(ev_end);
 
-    CHECK_CUDA_ERROR(cudaFree(devInfo));
+    CHECK_CUDA_ERROR(cudaEventRecord(evt_handoff, stream));
+    CHECK_CUDA_ERROR(cudaStreamWaitEvent(stream_orig_cublas, evt_handoff, 0));
+    if (owns_devInfo)
+        CHECK_CUDA_ERROR(cudaFree(devInfo));
     CHECK_CUDA_ERROR(cudaFree(d_nrmf));
+    CHECK_CUDA_ERROR(cudaEventDestroy(evt_begin));
+    CHECK_CUDA_ERROR(cudaEventDestroy(evt_handoff));
+    CHECK_CUDA_ERROR(cudaStreamDestroy(stream));
+    CHECK_CUBLAS_ERROR(cublasSetStream(cublas_handle, stream_orig_cublas));
+    CHECK_CUSOLVER_ERROR(cusolverDnSetStream(cusolver_handle, stream_orig_cusolver));
 
     return info;
 }

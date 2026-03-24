@@ -80,7 +80,7 @@ namespace Impl
  * - `ldh_`: Leading dimension of matrix \( H \).
  * - `ldv_`: Leading dimension of matrix \( V_1 \).
  * - `H_`, `V1_`, `ritzv_`: Pointers to the input data matrices.
- * - `tmp_`, `devInfo_`, `d_return_`, `d_work_`: Temporary buffers for GPU
+ * - `devInfo_`, `d_return_`, `d_work_`: Temporary buffers for GPU
  * computations.
  * - `Hmat_`, `Vec1_`, `Vec2_`, `A_`, `ritzvs_`, `resid_`: GPU matrices for
  * computations and results.
@@ -231,7 +231,6 @@ public:
 
         CHECK_CUDA_ERROR(cudaMalloc((void**)&devInfo_, sizeof(int)));
         CHECK_CUDA_ERROR(cudaMalloc((void**)&d_return_, sizeof(T) * block_size));
-        CHECK_CUDA_ERROR(cudaMalloc((void**)&tmp_, N_ * sizeof(T)));
 
         if (is_pseudoHerm_)
         {
@@ -338,8 +337,6 @@ public:
             CHECK_CUDA_ERROR(cudaFree(devInfo_));
         if (d_return_)
             CHECK_CUDA_ERROR(cudaFree(d_return_));
-        if (tmp_)
-            CHECK_CUDA_ERROR(cudaFree(tmp_));
         if (d_H2_tmp_)
             CHECK_CUDA_ERROR(cudaFree(d_H2_tmp_));
     }
@@ -745,17 +742,17 @@ public:
             {
 
                 info = chase::linalg::internal::cuda::shiftedcholQR2(
-                    cublasH_, cusolverH_, Vec1_, d_work_, lwork_, &A_);
+                    cublasH_, cusolverH_, Vec1_, d_work_, lwork_, &A_, devInfo_);
             }
             else if (cond < cond_threshold_lower)
             {
                 info = chase::linalg::internal::cuda::cholQR1(
-                    cublasH_, cusolverH_, Vec1_, d_work_, lwork_, &A_);
+                    cublasH_, cusolverH_, Vec1_, d_work_, lwork_, &A_, devInfo_);
             }
             else
             {
                 info = chase::linalg::internal::cuda::cholQR2(
-                    cublasH_, cusolverH_, Vec1_, d_work_, lwork_, &A_);
+                    cublasH_, cusolverH_, Vec1_, d_work_, lwork_, &A_, devInfo_);
             }
 
             if (info != 0)
@@ -852,15 +849,9 @@ public:
     void Swap(std::size_t i, std::size_t j) override
     {
         SCOPED_NVTX_RANGE();
-        chase::linalg::internal::cuda::t_lacpy('A', Vec1_.rows(), 1,
-                                               Vec1_.data() + i * Vec1_.ld(),
-                                               Vec1_.ld(), tmp_, N_);
-        chase::linalg::internal::cuda::t_lacpy(
-            'A', Vec1_.rows(), 1, Vec1_.data() + j * Vec1_.ld(), Vec1_.ld(),
-            Vec1_.data() + i * Vec1_.ld(), Vec1_.ld());
-        chase::linalg::internal::cuda::t_lacpy('A', Vec1_.rows(), 1, tmp_, N_,
-                                               Vec1_.data() + j * Vec1_.ld(),
-                                               Vec1_.ld());
+        CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTswap(
+            cublasH_, Vec1_.rows(), Vec1_.data() + i * Vec1_.ld(), 1,
+            Vec1_.data() + j * Vec1_.ld(), 1));
     }
 
     void Lock(std::size_t new_converged) override { locked_ += new_converged; }
@@ -890,7 +881,6 @@ private:
     std::size_t lanczosIter_; /**< Number of Lanczos Iterations.*/
     std::size_t numLanczos_;  /**< Number of Runs of Lanczos.*/
 
-    T* tmp_;             /**< Temporary buffer for GPU computations. */
     T* d_H2_tmp_ =
         nullptr; /**< Temp for HEMM_H2 (H² filter), pseudo-Hermitian only. */
     bool is_sym_;        ///< Flag for matrix symmetry.
