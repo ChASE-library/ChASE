@@ -101,14 +101,14 @@ int main(int argc, char** argv)
         auto Lambda = std::vector<chase::Base<T>>(nev + nex);
         std::size_t blocksize = 64;
         auto Clement = chase::distMatrix::RedundantMatrix<T, ARCH>(N, N, mpi_grid);
-        //auto Hmat = chase::distMatrix::BlockCyclicMatrix<T, ARCH>(
-        //    N, N, blocksize, blocksize, mpi_grid);
-        //auto Vec = chase::distMultiVector::DistMultiVectorBlockCyclic1D<
-        //    T, chase::distMultiVector::CommunicatorType::column, ARCH>(
-        //    N, nev + nex, blocksize, mpi_grid);
-        auto Hmat = chase::distMatrix::BlockBlockMatrix<T, ARCH>(N, N, mpi_grid);
-        auto Vec = chase::distMultiVector::DistMultiVector1D<T,
-            chase::distMultiVector::CommunicatorType::column, ARCH>(N, nev + nex, mpi_grid);
+        auto Hmat = chase::distMatrix::BlockCyclicMatrix<T, ARCH>(
+            N, N, blocksize, blocksize, mpi_grid);
+        auto Vec = chase::distMultiVector::DistMultiVectorBlockCyclic1D<
+            T, chase::distMultiVector::CommunicatorType::column, ARCH>(
+            N, nev + nex, blocksize, mpi_grid);
+        //auto Hmat = chase::distMatrix::BlockBlockMatrix<T, ARCH>(N, N, mpi_grid);
+        //auto Vec = chase::distMultiVector::DistMultiVector1D<T,
+        //    chase::distMultiVector::CommunicatorType::column, ARCH>(N, nev + nex, mpi_grid);
 
         T* Clement_data;
     #ifdef HAS_CUDA

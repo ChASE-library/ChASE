@@ -50,10 +50,9 @@ struct cpu_mpi
     template <typename InputMultiVectorType>
     static void houseHoulderQR(InputMultiVectorType& V);
 
-    /** Factor columns [k, k+jb) of V (Householder panel). Writes tau to tau_vec.
-     *  Does not form T or trailing update. Used by formQ and blocked_formQ. */
+    /** Panel factor; 1-D **block** rows (g_off, l_rows). Assumes m_global >= n. */
     template <typename T>
-    static void cpu_distributed_houseQR_panel_factor(std::size_t n,
+    static void cpu_distributed_houseQR_panel_factor_1d_block(std::size_t n,
                                                      std::size_t l_rows,
                                                      std::size_t g_off,
                                                      std::size_t ldv,
@@ -64,10 +63,25 @@ struct cpu_mpi
                                                      MPI_Comm mpi_comm,
                                                      std::vector<T>& w);
 
-    /** Distributed Householder QR + form Q on CPU (1-D row dist, MPI + BLAS).
-     *  V is overwritten with the first n columns of Q. */
+    /** Panel factor; 1-D **block-cyclic** segments. Assumes m_global >= n. */
     template <typename T>
-    static void cpu_distributed_houseQR_formQ(std::size_t m_global,
+    static void cpu_distributed_houseQR_panel_factor_block_cyclic_1d(
+        std::size_t n,
+        std::size_t m_global,
+        const std::vector<std::size_t>& seg_global_offs,
+        const std::vector<std::size_t>& seg_local_offs,
+        const std::vector<std::size_t>& seg_lens,
+        std::size_t ldv,
+        T* V,
+        std::size_t k,
+        std::size_t jb,
+        std::vector<T>& tau_vec,
+        MPI_Comm mpi_comm,
+        std::vector<T>& w);
+
+    /** Unblocked QR + form Q; same layout as panel_factor_1d_block (m_global >= n). */
+    template <typename T>
+    static void cpu_distributed_houseQR_formQ_1d_block(std::size_t m_global,
                                               std::size_t n,
                                               std::size_t l_rows,
                                               std::size_t g_off,
@@ -75,13 +89,25 @@ struct cpu_mpi
                                               T* V,
                                               MPI_Comm mpi_comm);
 
-    /** High-level wrapper for distributed Householder QR + form Q. */
+    /** Unblocked QR + form Q; block-cyclic segments (m_global >= n). */
+    template <typename T>
+    static void cpu_distributed_houseQR_formQ_block_cyclic_1d(
+        std::size_t m_global,
+        std::size_t n,
+        const std::vector<std::size_t>& seg_global_offs,
+        const std::vector<std::size_t>& seg_local_offs,
+        const std::vector<std::size_t>& seg_lens,
+        std::size_t ldv,
+        T* V,
+        MPI_Comm mpi_comm);
+
+    /** formQ_1d_block or formQ_block_cyclic_1d via is_block_cyclic_1d_multivector. */
     template <typename InputMultiVectorType>
     static void cpu_distributed_houseQR_formQ(InputMultiVectorType& V);
 
-    /** Blocked distributed Householder QR + form Q on CPU; nb = panel size. */
+    /** Blocked compact-WY QR + form Q; same layout as panel_factor_1d_block (m_global >= n). */
     template <typename T>
-    static void cpu_distributed_blocked_houseQR_formQ(std::size_t m_global,
+    static void cpu_distributed_blocked_houseQR_formQ_1d_block(std::size_t m_global,
                                                       std::size_t n,
                                                       std::size_t l_rows,
                                                       std::size_t g_off,
@@ -90,7 +116,20 @@ struct cpu_mpi
                                                       MPI_Comm mpi_comm,
                                                       std::size_t nb = 16);
 
-    /** High-level wrapper for blocked distributed Householder QR + form Q. */
+    /** Blocked compact-WY QR + form Q; block-cyclic segments (m_global >= n). */
+    template <typename T>
+    static void cpu_distributed_blocked_houseQR_formQ_block_cyclic_1d(
+        std::size_t m_global,
+        std::size_t n,
+        const std::vector<std::size_t>& seg_global_offs,
+        const std::vector<std::size_t>& seg_local_offs,
+        const std::vector<std::size_t>& seg_lens,
+        std::size_t ldv,
+        T* V,
+        MPI_Comm mpi_comm,
+        std::size_t nb = 16);
+
+    /** blocked_formQ_1d_block or blocked_formQ_block_cyclic_1d. */
     template <typename InputMultiVectorType>
     static void cpu_distributed_blocked_houseQR_formQ(InputMultiVectorType& V,
                                                       std::size_t nb = 16);
