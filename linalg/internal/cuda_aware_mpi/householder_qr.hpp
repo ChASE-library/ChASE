@@ -259,12 +259,14 @@ void cuda_mpi::distributed_houseQR_formQ(std::size_t m_global,
                                          std::size_t g_off,
                                          std::size_t ldv,
                                          T*          V,
+                                         MPI_Comm    mpi_comm,
                                          cublasHandle_t cublas_handle,
                                          T* d_workspace,
                                          std::size_t lwork_elems,
                                          MPI_Comm mpi_col_comm)
 {
     using RealT = chase::Base<T>;
+    (void)mpi_comm;
 
     if (n == 0)
         return;
@@ -468,14 +470,15 @@ void cuda_mpi::distributed_blocked_houseQR_formQ(std::size_t m_global,
                                                  std::size_t g_off,
                                                  std::size_t ldv,
                                                  T*          V,
+                                                 MPI_Comm    mpi_comm,
                                                  std::size_t nb,
                                                  cublasHandle_t cublas_handle,
                                                  T* d_workspace,
                                                  std::size_t lwork_elems,
-                                                 MPI_Comm mpi_col_comm,
-                                                 cusolverDnHandle_t /* cusolver_handle */)
+                                                 MPI_Comm mpi_col_comm)
 {
     using RealT = chase::Base<T>;
+    (void)mpi_comm;
 
     if (n == 0)
         return;
@@ -483,7 +486,7 @@ void cuda_mpi::distributed_blocked_houseQR_formQ(std::size_t m_global,
     if (nb == 0 || nb >= n)
     {
         cuda_mpi::distributed_houseQR_formQ<T>(
-            m_global, n, l_rows, g_off, ldv, V,
+            m_global, n, l_rows, g_off, ldv, V, mpi_comm,
             cublas_handle, d_workspace, lwork_elems, mpi_col_comm);
         return;
     }
@@ -930,11 +933,9 @@ void cuda_mpi::distributed_blocked_houseQR_formQ(std::size_t m_global,
 template <typename InputMultiVectorType>
 void cuda_mpi::houseQR1_formQ(cublasHandle_t cublas_handle,
                                InputMultiVectorType& V1,
-                               InputMultiVectorType& V2,
                                typename InputMultiVectorType::value_type* workspace,
                                int lwork,
-                               std::size_t nb,
-                               cusolverDnHandle_t cusolver_handle)
+                               std::size_t nb)
 {
     using T = typename InputMultiVectorType::value_type;
 
@@ -951,32 +952,24 @@ void cuda_mpi::houseQR1_formQ(cublasHandle_t cublas_handle,
     cudaStream_t prev_cublas_stream = nullptr;
     CHECK_CUBLAS_ERROR(cublasGetStream(cublas_handle, &prev_cublas_stream));
 
-    cudaStream_t prev_cusolver_stream = nullptr;
-    if (cusolver_handle != nullptr)
-        CHECK_CUSOLVER_ERROR(cusolverDnGetStream(cusolver_handle, &prev_cusolver_stream));
-
     cudaStream_t qr_stream = nullptr;
     CHECK_CUDA_ERROR(cudaStreamCreateWithFlags(&qr_stream, cudaStreamNonBlocking));
     CHECK_CUBLAS_ERROR(cublasSetStream(cublas_handle, qr_stream));
-    if (cusolver_handle != nullptr)
-        CHECK_CUSOLVER_ERROR(cusolverDnSetStream(cusolver_handle, qr_stream));
 
     std::size_t lwork_elems = (workspace && lwork > 0) ? static_cast<std::size_t>(lwork) : 0;
     cuda_mpi::distributed_blocked_houseQR_formQ<T>(
         m_global, n, l_rows, g_off,
         ldv,
         V1.l_data(),
+        mpi_col_comm,
         nb,
         cublas_handle,
         workspace,
         lwork_elems,
-        mpi_col_comm,
-        cusolver_handle);
+        mpi_col_comm);
 
     // Restore original streams and destroy the temporary one.
     CHECK_CUBLAS_ERROR(cublasSetStream(cublas_handle, prev_cublas_stream));
-    if (cusolver_handle != nullptr)
-        CHECK_CUSOLVER_ERROR(cusolverDnSetStream(cusolver_handle, prev_cusolver_stream));
     CHECK_CUDA_ERROR(cudaStreamDestroy(qr_stream));
 }
 

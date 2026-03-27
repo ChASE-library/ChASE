@@ -52,8 +52,8 @@ option(ChASE_DISPLAY_COND_V_SVD "Compute and display condition number of V from 
 option(CHASE_QR_DOUBLE_PRECISION "Operate QR in Double Precision" ON)
 option(CHASE_RR_DOUBLE_PRECISION "Operate HEEVD in RR for pseudo-hermitian matrices in Double Precision" OFF)
 option(CHASE_ENABLE_TESTS "Enable unit tests." OFF)
-#XZ: Will be removed once performance is confirmed
-option(CHASE_ENABLE_GPU_RESIDENT_LANCZOS "Enable GPU-resident Lanczos with fused kernels and NCCL (experimental)" ON)
+# GPU-resident Lanczos (fused kernels + NCCL) is required for GPU Lanczos paths.
+set(CHASE_ENABLE_GPU_RESIDENT_LANCZOS ON)
 
 if(NOT CMAKE_BUILD_TYPE STREQUAL "Release")
     message(WARNING "For prodution, please consider CMAKE_BUILD_TYPE to be Release or RelWithDebInfo")
@@ -107,11 +107,8 @@ endif()
 if(CHASE_SAVE_RESIDUALS)
     target_compile_definitions(chase_algorithm INTERFACE "-DCHASE_SAVE_RESIDUALS")
 endif()
-# XZ: Will be removed once performance is confirmed
-if(CHASE_ENABLE_GPU_RESIDENT_LANCZOS)
-    target_compile_definitions(chase_algorithm INTERFACE "-DCHASE_ENABLE_GPU_RESIDENT_LANCZOS")
-    message(STATUS "GPU-resident Lanczos with fused kernels enabled (experimental)")
-endif()
+target_compile_definitions(chase_algorithm INTERFACE "-DCHASE_ENABLE_GPU_RESIDENT_LANCZOS")
+message(STATUS "GPU-resident Lanczos (required for distributed GPU Lanczos)")
 
 add_subdirectory(external)
 add_subdirectory(grid)
@@ -198,9 +195,7 @@ endif()
 if(CHASE_SAVE_RESIDUALS)
     set(CHASE_COMPILE_DEFINITIONS "${CHASE_COMPILE_DEFINITIONS} -DCHASE_SAVE_RESIDUALS")
 endif()
-if(CHASE_ENABLE_GPU_RESIDENT_LANCZOS)
-    set(CHASE_COMPILE_DEFINITIONS "${CHASE_COMPILE_DEFINITIONS} -DCHASE_ENABLE_GPU_RESIDENT_LANCZOS")
-endif()
+set(CHASE_COMPILE_DEFINITIONS "${CHASE_COMPILE_DEFINITIONS} -DCHASE_ENABLE_GPU_RESIDENT_LANCZOS")
 
 set(CHASE_LINK_LIBRARIES "")
 

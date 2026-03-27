@@ -165,6 +165,30 @@ public:
                                                                 nevex_);
         }
 
+#ifdef QR_DOUBLE_PRECISION
+        if constexpr (std::is_same<T, std::complex<float>>::value ||
+                      std::is_same<T, float>::value)
+        {
+            if (!Vec1_.isDoublePrecisionEnabled())
+            {
+                Vec1_.enableDoublePrecision();
+            }
+            if (!A_.isDoublePrecisionEnabled())
+            {
+                A_.enableDoublePrecision();
+            }
+        }
+#elif RR_DOUBLE_PRECISION
+        if constexpr (std::is_same<T, std::complex<float>>::value ||
+                      std::is_same<T, float>::value)
+        {
+            if (!A_.isDoublePrecisionEnabled())
+            {
+                A_.enableDoublePrecision();
+            }
+        }
+#endif
+
         CUBLAS_INIT();
     }
 
@@ -215,6 +239,30 @@ public:
 #endif
         }
 
+#ifdef QR_DOUBLE_PRECISION
+        if constexpr (std::is_same<T, std::complex<float>>::value ||
+                      std::is_same<T, float>::value)
+        {
+            if (!Vec1_.isDoublePrecisionEnabled())
+            {
+                Vec1_.enableDoublePrecision();
+            }
+            if (!A_.isDoublePrecisionEnabled())
+            {
+                A_.enableDoublePrecision();
+            }
+        }
+#elif RR_DOUBLE_PRECISION
+        if constexpr (std::is_same<T, std::complex<float>>::value ||
+                      std::is_same<T, float>::value)
+        {
+            if (!A_.isDoublePrecisionEnabled())
+            {
+                A_.enableDoublePrecision();
+            }
+        }
+#endif
+
         CUBLAS_INIT();
     }
 
@@ -226,11 +274,23 @@ public:
         CHECK_CUBLAS_ERROR(cublasCreate(&cublasH_));
         CHECK_CUSOLVER_ERROR(cusolverDnCreate(&cusolverH_));
         CHECK_CUDA_ERROR(cudaStreamCreate(&stream_));
+
         CHECK_CUBLAS_ERROR(cublasSetStream(cublasH_, stream_));
         CHECK_CUSOLVER_ERROR(cusolverDnSetStream(cusolverH_, stream_));
 
         CHECK_CUDA_ERROR(cudaMalloc((void**)&devInfo_, sizeof(int)));
         CHECK_CUDA_ERROR(cudaMalloc((void**)&d_return_, sizeof(T) * block_size));
+
+#ifdef QR_DOUBLE_PRECISION
+        if constexpr (std::is_same<T, float>::value ||
+                      std::is_same<T, std::complex<float>>::value)
+        {
+            CHECK_CUDA_ERROR(cudaMalloc(
+                (void**)&d_return_d_,
+                sizeof(typename chase::ToDoublePrecisionTrait<T>::Type) *
+                    block_size));
+        }
+#endif
 
         if (is_pseudoHerm_)
         {
@@ -313,6 +373,17 @@ public:
             lwork_ = lwork_potrf;
         }
         CHECK_CUDA_ERROR(cudaMalloc((void**)&d_work_, sizeof(T) * lwork_));
+
+#ifdef QR_DOUBLE_PRECISION
+        if constexpr (std::is_same<T, float>::value ||
+                      std::is_same<T, std::complex<float>>::value)
+        {
+            CHECK_CUDA_ERROR(cudaMalloc(
+                (void**)&d_work_d_,
+                sizeof(typename chase::ToDoublePrecisionTrait<T>::Type) *
+                    lwork_));
+        }
+#endif
     }
 
     ChASEGPU(const ChASEGPU&) = delete;
@@ -331,12 +402,29 @@ public:
             CHECK_CUBLAS_ERROR(cublasDestroy(cublasH_));
         if (cusolverH_)
             CHECK_CUSOLVER_ERROR(cusolverDnDestroy(cusolverH_));
+
         if (d_work_)
             CHECK_CUDA_ERROR(cudaFree(d_work_));
+#ifdef QR_DOUBLE_PRECISION
+        if constexpr (std::is_same<T, float>::value ||
+                      std::is_same<T, std::complex<float>>::value)
+        {
+            if (d_work_d_)
+                CHECK_CUDA_ERROR(cudaFree(d_work_d_));
+        }
+#endif
         if (devInfo_)
             CHECK_CUDA_ERROR(cudaFree(devInfo_));
         if (d_return_)
             CHECK_CUDA_ERROR(cudaFree(d_return_));
+#ifdef QR_DOUBLE_PRECISION
+        if constexpr (std::is_same<T, float>::value ||
+                      std::is_same<T, std::complex<float>>::value)
+        {
+            if (d_return_d_)
+                CHECK_CUDA_ERROR(cudaFree(d_return_d_));
+        }
+#endif
         if (d_H2_tmp_)
             CHECK_CUDA_ERROR(cudaFree(d_H2_tmp_));
     }
@@ -560,7 +648,7 @@ public:
             (offset_right < block) ? (block - offset_right) : std::size_t(0);
         if (ncols == 0)
         {
-            Vec1_.swap(Vec2_);
+            Vec1_.swapDataPointer(Vec2_);
             return;
         }
         {
@@ -573,7 +661,7 @@ public:
                 Vec2_.ld()));
         }
 
-        Vec1_.swap(Vec2_);
+        Vec1_.swapDataPointer(Vec2_);
     }
 
     void HEMM_H2(std::size_t block, T alpha, T beta, T gamma,
@@ -585,7 +673,7 @@ public:
             (offset_right < block) ? (block - offset_right) : std::size_t(0);
         if (ncols == 0)
         {
-            Vec1_.swap(Vec2_);
+            Vec1_.swapDataPointer(Vec2_);
             return;
         }
         std::size_t col0 = offset_left + locked_;
@@ -611,7 +699,7 @@ public:
             static_cast<int>(N_), static_cast<int>(ncols),
             static_cast<int>(Vec1_.ld()), static_cast<int>(Vec2_.ld()), &stream_);
 
-        Vec1_.swap(Vec2_);
+        Vec1_.swapDataPointer(Vec2_);
     }
 
     void ApplyKconjugate(std::size_t block) override
@@ -643,6 +731,7 @@ public:
     void QR(std::size_t fixednev, chase::Base<T> cond) override
     {
         SCOPED_NVTX_RANGE();
+
         chase::linalg::internal::cuda::t_lacpy('A', Vec2_.rows(), locked_,
                                                Vec1_.data(), Vec1_.ld(),
                                                Vec2_.data(), Vec2_.ld());
@@ -672,7 +761,7 @@ public:
             Vec1_.data() + locked_ * Vec1_.ld(), Vec1_.ld(),
             Vec2_.data() + 2 * locked_ * Vec2_.ld(), Vec2_.ld());
 
-            Vec1_.swap(Vec2_);
+            Vec1_.swapDataPointer(Vec2_);
 
             chase::linalg::internal::cuda::flipLowerHalfMatrixSign(
                 Vec1_.rows(), 2*locked_, Vec1_.data(), Vec1_.ld());
@@ -719,10 +808,27 @@ public:
         //     display_bounds = std::atoi(display_bounds_env);
         // }
 
-        if (disable == 1)
+        if (disable == 1 || cond != 1.0)
         {
-            chase::linalg::internal::cuda::houseHoulderQR(
-                cusolverH_, Vec1_, d_return_, devInfo_, d_work_, lwork_);
+#ifdef QR_DOUBLE_PRECISION
+            if constexpr (std::is_same<T, float>::value ||
+                          std::is_same<T, std::complex<float>>::value)
+            {
+                Vec1_.copyTo();
+                auto Vec1_d = Vec1_.matrix_dp();
+
+                chase::linalg::internal::cuda::houseHoulderQR(
+                    cusolverH_, *Vec1_d, d_return_d_, devInfo_, d_work_d_,
+                    lwork_);
+
+                Vec1_.copyBack();
+            }
+            else
+#endif
+            {
+                chase::linalg::internal::cuda::houseHoulderQR(
+                    cusolverH_, Vec1_, d_return_, devInfo_, d_work_, lwork_);
+            }
         }
         else
         {
@@ -740,19 +846,21 @@ public:
 
             if (cond > cond_threshold_upper)
             {
-
                 info = chase::linalg::internal::cuda::shiftedcholQR2(
-                    cublasH_, cusolverH_, Vec1_, d_work_, lwork_, &A_, devInfo_);
+                    cublasH_, cusolverH_, Vec1_, d_work_, lwork_, &A_,
+                    devInfo_);
             }
             else if (cond < cond_threshold_lower)
             {
                 info = chase::linalg::internal::cuda::cholQR1(
-                    cublasH_, cusolverH_, Vec1_, d_work_, lwork_, &A_, devInfo_);
+                    cublasH_, cusolverH_, Vec1_, d_work_, lwork_, &A_,
+                    devInfo_);
             }
             else
             {
                 info = chase::linalg::internal::cuda::cholQR2(
-                    cublasH_, cusolverH_, Vec1_, d_work_, lwork_, &A_, devInfo_);
+                    cublasH_, cusolverH_, Vec1_, d_work_, lwork_, &A_,
+                    devInfo_);
             }
 
             if (info != 0)
@@ -764,8 +872,27 @@ public:
                 chase::GetLogger().Log(chase::LogLevel::Warn, "linalg",
                                       oss.str(), 0);
 #endif
-                chase::linalg::internal::cuda::houseHoulderQR(
-                    cusolverH_, Vec1_, d_return_, devInfo_, d_work_, lwork_);
+#ifdef QR_DOUBLE_PRECISION
+                if constexpr (std::is_same<T, float>::value ||
+                              std::is_same<T, std::complex<float>>::value)
+                {
+                    Vec1_.copyTo();
+
+                    auto Vec1_d = Vec1_.matrix_dp();
+
+                    chase::linalg::internal::cuda::houseHoulderQR(
+                        cusolverH_, *Vec1_d, d_return_d_, devInfo_, d_work_d_,
+                        lwork_);
+
+                    Vec1_.copyBack();
+                }
+                else
+#endif
+                {
+                    chase::linalg::internal::cuda::houseHoulderQR(
+                        cusolverH_, Vec1_, d_return_, devInfo_, d_work_,
+                        lwork_);
+                }
             }
         }
 
@@ -776,7 +903,7 @@ public:
             Vec1_.data() + 2 * locked_ * Vec1_.ld(),Vec1_.ld(),
             Vec2_.data() + locked_ * Vec2_.ld(), Vec2_.ld());
 
-            Vec1_.swap(Vec2_);
+            Vec1_.swapDataPointer(Vec2_);
 
             chase::linalg::internal::cuda::t_lacpy('A', Vec2_.rows(), locked_,
             Vec1_.data(), Vec1_.ld(),
@@ -791,6 +918,7 @@ public:
                                                Vec2_.data(), Vec2_.ld(),
                                                Vec1_.data(), Vec1_.ld());
         }
+
     }
 
     void RR(chase::Base<T>* ritzv, std::size_t block) override
@@ -820,7 +948,7 @@ public:
                 block, devInfo_, d_work_, lwork_, &A_);
         }
 
-        Vec1_.swap(Vec2_);
+        Vec1_.swapDataPointer(Vec2_);
     }
 
     void Sort(chase::Base<T>* ritzv, chase::Base<T>* residLast,
@@ -864,8 +992,8 @@ public:
         //this operation is required because after multiple swaps, Vec1_, which contains the final eigenvectors, its buffer is 
         //not pointing to the initial V1_ given by the user.
         CHECK_CUBLAS_ERROR(cublasGetMatrix(Vec1_.rows(), Vec1_.cols(),
-                                           sizeof(T), Vec1_.data(), Vec1_.ld(),
-                                           V1_, ldv_));
+                                          sizeof(T), Vec1_.data(), Vec1_.ld(),
+                                          V1_, ldv_));
     }
 
 private:
@@ -914,6 +1042,13 @@ private:
     T* d_return_;   /**< Pointer to device buffer for eigenvalues. */
     T* d_work_;     /**< Pointer to work buffer for matrix operations. */
     int lwork_ = 0; /**< Workspace size for matrix operations. */
+
+#ifdef QR_DOUBLE_PRECISION
+    // DP workspace for Householder/Cholesky QR when T is float/complex<float>.
+    // Used only when `QR_DOUBLE_PRECISION` is enabled.
+    typename chase::ToDoublePrecisionTrait<T>::Type* d_return_d_ = nullptr;
+    typename chase::ToDoublePrecisionTrait<T>::Type* d_work_d_ = nullptr;
+#endif
 
     std::unique_ptr<T[]> h_work_; /**< Pointer to work buffer on host for geev
                                      in the Pseudo Hermitian case. */

@@ -14,9 +14,7 @@
 #include "linalg/internal/cuda/lacpy.hpp"
 #include "linalg/matrix/matrix.hpp"
 
-#ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
 #include "linalg/internal/cuda/lanczos_kernels.hpp"
-#endif
 
 using namespace chase::linalg;
 
@@ -77,7 +75,6 @@ void lanczos(cublasHandle_t cublas_handle, std::size_t M, std::size_t numvec,
     T Zero = T(0.0);
     std::size_t N = H->rows();
 
-#ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
     // ========================================================================
     // GPU-RESIDENT VERSION: Same structure as NCCL Lanczos (batched kernels +
     // device-resident scalars), without NCCL or redistribution.
@@ -139,6 +136,8 @@ void lanczos(cublasHandle_t cublas_handle, std::size_t M, std::size_t numvec,
     chase::linalg::internal::cuda::t_lacpy('A', N, numvec, V.data(), V.ld(),
                                            v_1.data(), v_1.ld(), &stream);
 
+    // Initial normalization:
+    //   s_i = ||v_1^{(i)}||_2^2,   v_1^{(i)} <- v_1^{(i)} / sqrt(s_i)
     fusedNormSquaredNormalize(v_1.data(), d_real_alpha,
                               static_cast<int>(v_1.rows()),
                               static_cast<int>(numvec),
@@ -159,25 +158,38 @@ void lanczos(cublasHandle_t cublas_handle, std::size_t M, std::size_t numvec,
             static_cast<int>(numvec), H->cols(), &One, H->data(), H->ld(),
             v_1.data(), v_1.ld(), &Zero, v_2.data(), v_2.ld()));
 
+        // Fused alpha update (per vector i):
+        //   alpha_k^{(i)} = <v_1^{(i)}, w^{(i)}>
+        //   w^{(i)} <- w^{(i)} - alpha_k^{(i)} v_1^{(i)}
+        // Kernel stores -alpha internally and re-negates for recurrence consistency.
         fusedDotAxpyNegate(v_1.data(), v_2.data(), v_2.data(), v_1.data(),
                            d_alpha,
                            static_cast<int>(v_1.rows()),
                            static_cast<int>(numvec),
                            static_cast<int>(v_1.ld()), &stream);
 
+        // Store diagonal entry:
+        //   d(k, i) = Re(alpha_k^(i))
         getRealPart(d_alpha, d_real_alpha, static_cast<int>(numvec), &stream);
         CHECK_CUDA_ERROR(cudaMemcpyAsync(d_d + k * numvec, d_real_alpha,
                                          numvec * sizeof(RealT),
                                          cudaMemcpyDeviceToDevice, stream));
 
-        // Always apply previous-beta correction; first iteration is a no-op
-        // because d_beta_prev is initialized to zero.
+        // Previous-basis correction:
+        //   w^{(i)} <- w^{(i)} - beta_{k-1}^{(i)} v_0^{(i)}
+        // First iteration is a no-op because beta_{-1}=0.
+        // Final-step recurrence correction:
+        //   w^(i) <- w^(i) - beta_{M-2}^(i) v_0^(i)
         copyRealNegateToT(d_beta_prev, d_beta_neg, static_cast<int>(numvec),
                           &stream);
         batchedAxpy(d_beta_neg, v_0.data(), v_2.data(),
                     static_cast<int>(v_0.rows()), static_cast<int>(numvec),
                     static_cast<int>(v_0.ld()), &stream);
 
+        // Beta computation:
+        //   r_i = ||w^{(i)}||_2^2,   beta_k^{(i)} = sqrt(r_i)
+        // Residual norm for upper-bound estimate:
+        //   r_i = ||w^(i)||_2^2,  beta_{M-1}^(i) = sqrt(r_i)
         batchedNormSquared(v_2.data(), d_r_beta, static_cast<int>(v_2.rows()),
                            static_cast<int>(numvec), static_cast<int>(v_2.ld()),
                            &stream);
@@ -189,12 +201,14 @@ void lanczos(cublasHandle_t cublas_handle, std::size_t M, std::size_t numvec,
                                          numvec * sizeof(RealT),
                                          cudaMemcpyDeviceToDevice, stream));
 
+        // Next Lanczos vector:
+        //   v_{k+1}^{(i)} = w^{(i)} / beta_k^{(i)} = w^{(i)} / sqrt(r_i)
         normalizeVectors(v_2.data(), d_r_beta, static_cast<int>(v_2.rows()),
                         static_cast<int>(numvec), static_cast<int>(v_2.ld()),
                         &stream);
 
-        v_1.swap(v_0);
-        v_1.swap(v_2);
+        v_1.swapDataPointer(v_0);
+        v_1.swapDataPointer(v_2);
     }
 
     {
@@ -205,6 +219,8 @@ void lanczos(cublasHandle_t cublas_handle, std::size_t M, std::size_t numvec,
             static_cast<int>(numvec), H->cols(), &One, H->data(), H->ld(),
             v_1.data(), v_1.ld(), &Zero, v_2.data(), v_2.ld()));
 
+        // Final iteration alpha update:
+        //   alpha_{M-1}^{(i)} = <v_1^{(i)}, w^{(i)}>,  w^{(i)} <- w^{(i)} - alpha_{M-1}^{(i)} v_1^{(i)}
         fusedDotAxpyNegate(v_1.data(), v_2.data(), v_2.data(), v_1.data(),
                            d_alpha, static_cast<int>(v_1.rows()),
                            static_cast<int>(numvec),
@@ -297,138 +313,6 @@ void lanczos(cublasHandle_t cublas_handle, std::size_t M, std::size_t numvec,
     CHECK_CUBLAS_ERROR(cublasSetStream(cublas_handle, stream_orig));
     CHECK_CUDA_ERROR(cudaStreamDestroy(stream));
 
-#else
-    // ========================================================================
-    // ORIGINAL VERSION: Per-vector cuBLAS calls (host-resident scalars).
-    // ========================================================================
-    std::vector<RealT> r_beta(numvec);
-    std::vector<RealT> d(M * numvec);
-    std::vector<RealT> e(M * numvec);
-    std::vector<RealT> real_alpha(numvec);
-    std::vector<T> alpha(numvec, T(1.0));
-    std::vector<T> beta(numvec, T(0.0));
-
-    auto v_0 = chase::matrix::Matrix<T, chase::platform::GPU>(N, numvec);
-    auto v_1 = chase::matrix::Matrix<T, chase::platform::GPU>(N, numvec);
-    auto v_2 = chase::matrix::Matrix<T, chase::platform::GPU>(N, numvec);
-    chase::linalg::internal::cuda::t_lacpy('A', N, numvec, V.data(), V.ld(),
-                                           v_1.data(), v_1.ld());
-
-    for (auto i = 0; i < numvec; i++)
-    {
-        CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTnrm2(
-            cublas_handle, v_1.rows(), v_1.data() + i * v_1.ld(), 1,
-            &real_alpha[i]));
-    }
-    for (auto i = 0; i < numvec; i++)
-        alpha[i] = T(1 / real_alpha[i]);
-    for (auto i = 0; i < numvec; i++)
-    {
-        CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTscal(
-            cublas_handle, v_1.rows(), &alpha[i], v_1.data() + i * v_1.ld(),
-            1));
-    }
-
-    for (std::size_t k = 0; k < M; k = k + 1)
-    {
-        for (auto i = 0; i < numvec; i++)
-        {
-            CHECK_CUDA_ERROR(
-                cudaMemcpy(V.data() + k * V.ld(), v_1.data() + i * v_1.ld(),
-                           v_1.rows() * sizeof(T), cudaMemcpyDeviceToDevice));
-        }
-        CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(
-            cublas_handle, CUBLAS_OP_N, CUBLAS_OP_N, H->rows(), numvec,
-            H->cols(), &One, H->data(), H->ld(), v_1.data(), v_1.ld(), &Zero,
-            v_2.data(), v_2.ld()));
-        for (auto i = 0; i < numvec; i++)
-        {
-            CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTdot(
-                cublas_handle, v_1.rows(), v_1.data() + i * v_1.ld(), 1,
-                v_2.data() + i * v_2.ld(), 1, &alpha[i]));
-        }
-        for (auto i = 0; i < numvec; i++)
-            alpha[i] = -alpha[i];
-        for (auto i = 0; i < numvec; i++)
-        {
-            CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTaxpy(
-                cublas_handle, v_1.rows(), &alpha[i], v_1.data() + i * v_1.ld(),
-                1, v_2.data() + i * v_2.ld(), 1));
-        }
-        for (auto i = 0; i < numvec; i++)
-            alpha[i] = -alpha[i];
-        for (auto i = 0; i < numvec; i++)
-            d[k + M * i] = std::real(alpha[i]);
-
-        if (k > 0)
-        {
-            for (auto i = 0; i < numvec; i++)
-                beta[i] = T(-r_beta[i]);
-            for (auto i = 0; i < numvec; i++)
-            {
-                CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTaxpy(
-                    cublas_handle, v_0.rows(), &beta[i],
-                    v_0.data() + i * v_0.ld(), 1, v_2.data() + i * v_2.ld(),
-                    1));
-            }
-        }
-        for (auto i = 0; i < numvec; i++)
-            beta[i] = -beta[i];
-        for (auto i = 0; i < numvec; i++)
-        {
-            CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTnrm2(
-                cublas_handle, v_2.rows(), v_2.data() + i * v_2.ld(), 1,
-                &r_beta[i]));
-        }
-        for (auto i = 0; i < numvec; i++)
-            beta[i] = T(1 / r_beta[i]);
-        if (k == M - 1)
-            break;
-        for (auto i = 0; i < numvec; i++)
-        {
-            CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTscal(
-                cublas_handle, v_2.rows(), &beta[i], v_2.data() + i * v_2.ld(),
-                1));
-        }
-        for (auto i = 0; i < numvec; i++)
-            e[k + M * i] = r_beta[i];
-        v_1.swap(v_0);
-        v_1.swap(v_2);
-    }
-
-    chase::linalg::internal::cuda::t_lacpy('A', N, numvec, v_1.data(), v_1.ld(),
-                                           V.data(), V.ld());
-
-    int notneeded_m;
-    std::size_t vl = 0;
-    std::size_t vu = 0;
-    Base<T> ul = 0;
-    Base<T> ll = 0;
-    int tryrac = 0;
-    std::vector<int> isuppz(2 * M);
-
-    for (auto i = 0; i < numvec; i++)
-    {
-        lapackpp::t_stemr(LAPACK_COL_MAJOR, 'V', 'A', M, d.data() + i * M,
-                          e.data() + i * M, ul, ll, vl, vu, &notneeded_m,
-                          ritzv + M * i, ritzV, M, M, isuppz.data(), &tryrac);
-        for (std::size_t k = 0; k < M; ++k)
-        {
-            Tau[k + i * M] = std::abs(ritzV[k * M]) * std::abs(ritzV[k * M]);
-        }
-    }
-
-    Base<T> max;
-    *upperb = std::max(std::abs(ritzv[0]), std::abs(ritzv[M - 1])) +
-              std::abs(r_beta[0]);
-    for (auto i = 1; i < numvec; i++)
-    {
-        max =
-            std::max(std::abs(ritzv[i * M]), std::abs(ritzv[(i + 1) * M - 1])) +
-            std::abs(r_beta[i]);
-        *upperb = std::max(max, *upperb);
-    }
-#endif
 }
 
 /**
@@ -466,7 +350,6 @@ void lanczos(cublasHandle_t cublas_handle, std::size_t M,
     T Zero = T(0.0);
     std::size_t N = H->rows();
 
-#ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
     // ========================================================================
     // GPU-RESIDENT VERSION: Same structure as NCCL single-vector Lanczos.
     // ========================================================================
@@ -520,6 +403,8 @@ void lanczos(cublasHandle_t cublas_handle, std::size_t M,
     using chase::linalg::internal::cuda::batchedNormSquared;
     using chase::linalg::internal::cuda::normalizeVectors;
 
+    // Initial normalization:
+    //   s = ||v_1||_2^2,   v_1 <- v_1 / sqrt(s)
     fusedNormSquaredNormalize(v_1.data(), d_real_alpha,
                               static_cast<int>(v_1.rows()), 1,
                               static_cast<int>(v_1.ld()), &stream);
@@ -531,19 +416,28 @@ void lanczos(cublasHandle_t cublas_handle, std::size_t M,
             &One, H->data(), H->ld(), v_1.data(), v_1.ld(), &Zero, v_2.data(),
             v_2.ld()));
 
+        // Fused alpha update:
+        //   alpha_k = <v_1, w>,   w <- w - alpha_k v_1
+        // Kernel stores -alpha internally and re-negates for recurrence consistency.
         fusedDotAxpyNegate(v_1.data(), v_2.data(), v_2.data(), v_1.data(),
                            d_alpha,
                            static_cast<int>(v_1.rows()), 1,
                            static_cast<int>(v_1.ld()), &stream);
+        // Store diagonal entry:
+        //   d(k) = Re(alpha_k)
         getRealPart(d_alpha, d_real_alpha, 1, &stream);
         CHECK_CUDA_ERROR(cudaMemcpyAsync(d_d + k, d_real_alpha, sizeof(RealT),
                                          cudaMemcpyDeviceToDevice, stream));
 
+        // Previous-basis correction:
+        //   w <- w - beta_{k-1} v_0
         copyRealNegateToT(d_beta_prev, d_beta_neg, 1, &stream);
         batchedAxpy(d_beta_neg, v_0.data(), v_2.data(),
                     static_cast<int>(v_0.rows()), 1,
                     static_cast<int>(v_0.ld()), &stream);
 
+        // Beta computation:
+        //   r = ||w||_2^2,   beta_k = sqrt(r)
         batchedNormSquared(v_2.data(), d_r_beta, static_cast<int>(v_2.rows()),
                            1, static_cast<int>(v_2.ld()), &stream);
         CHECK_CUDA_ERROR(cudaMemcpyAsync(d_beta_prev, d_r_beta, sizeof(RealT),
@@ -552,11 +446,13 @@ void lanczos(cublasHandle_t cublas_handle, std::size_t M,
         CHECK_CUDA_ERROR(cudaMemcpyAsync(e_d + k, d_beta_prev, sizeof(RealT),
                                          cudaMemcpyDeviceToDevice, stream));
 
+        // Next Lanczos vector:
+        //   v_{k+1} = w / beta_k = w / sqrt(r)
         normalizeVectors(v_2.data(), d_r_beta, static_cast<int>(v_2.rows()), 1,
                         static_cast<int>(v_2.ld()), &stream);
 
-        v_1.swap(v_0);
-        v_1.swap(v_2);
+        v_1.swapDataPointer(v_0);
+        v_1.swapDataPointer(v_2);
     }
 
     {
@@ -565,6 +461,8 @@ void lanczos(cublasHandle_t cublas_handle, std::size_t M,
             cublas_handle, CUBLAS_OP_N, CUBLAS_OP_N, H->rows(), 1, H->cols(),
             &One, H->data(), H->ld(), v_1.data(), v_1.ld(), &Zero, v_2.data(),
             v_2.ld()));
+        // Final iteration alpha update:
+        //   alpha_{M-1} = <v_1, w>,  w <- w - alpha_{M-1} v_1
         fusedDotAxpyNegate(v_1.data(), v_2.data(), v_2.data(), v_1.data(),
                            d_alpha, static_cast<int>(v_1.rows()), 1,
                            static_cast<int>(v_1.ld()), &stream);
@@ -618,88 +516,6 @@ void lanczos(cublasHandle_t cublas_handle, std::size_t M,
     CHECK_CUBLAS_ERROR(cublasSetStream(cublas_handle, stream_orig));
     CHECK_CUDA_ERROR(cudaStreamDestroy(stream));
 
-#else
-    // ========================================================================
-    // ORIGINAL VERSION: Host-resident scalars, single-vector cuBLAS.
-    // ========================================================================
-    RealT r_beta;
-    std::vector<RealT> d(M);
-    std::vector<RealT> e(M);
-    RealT real_alpha;
-    T alpha = T(1.0);
-    T beta = T(0.0);
-
-    auto v_0 = chase::matrix::Matrix<T, chase::platform::GPU>(N, 1);
-    auto v_1 = chase::matrix::Matrix<T, chase::platform::GPU>(N, 1);
-    auto v_2 = chase::matrix::Matrix<T, chase::platform::GPU>(N, 1);
-
-    chase::linalg::internal::cuda::t_lacpy('A', N, 1, V.data(), V.ld(),
-                                           v_1.data(), v_1.ld());
-
-    CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTnrm2(
-        cublas_handle, v_1.rows(), v_1.data(), 1, &real_alpha));
-    alpha = T(1 / real_alpha);
-
-    CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTscal(
-        cublas_handle, v_1.rows(), &alpha, v_1.data(), 1));
-    for (std::size_t k = 0; k < M; k = k + 1)
-    {
-        CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(
-            cublas_handle, CUBLAS_OP_N, CUBLAS_OP_N, H->rows(), 1, H->cols(),
-            &One, H->data(), H->ld(), v_1.data(), v_1.ld(), &Zero, v_2.data(),
-            v_2.ld()));
-
-        CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTdot(
-            cublas_handle, v_1.rows(), v_1.data(), 1, v_2.data(), 1, &alpha));
-        alpha = -alpha;
-
-        CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTaxpy(
-            cublas_handle, v_1.rows(), &alpha, v_1.data(), 1, v_2.data(), 1));
-        alpha = -alpha;
-
-        d[k] = std::real(alpha);
-
-        if (k > 0)
-        {
-            beta = T(-r_beta);
-            CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTaxpy(
-                cublas_handle, v_0.rows(), &beta, v_0.data(), 1, v_2.data(),
-                1));
-        }
-
-        beta = -beta;
-
-        CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTnrm2(
-            cublas_handle, v_2.rows(), v_2.data(), 1, &r_beta));
-        beta = T(1 / r_beta);
-
-        if (k == M - 1)
-            break;
-
-        CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTscal(
-            cublas_handle, v_2.rows(), &beta, v_2.data(), 1));
-        e[k] = r_beta;
-
-        v_1.swap(v_0);
-        v_1.swap(v_2);
-    }
-
-    int notneeded_m;
-    std::size_t vl = 0;
-    std::size_t vu = 0;
-    Base<T> ul = 0;
-    Base<T> ll = 0;
-    int tryrac = 0;
-    std::vector<int> isuppz(2 * M);
-    std::vector<Base<T>> ritzv(M);
-
-    lapackpp::t_stemr<Base<T>>(
-        LAPACK_COL_MAJOR, 'N', 'A', M, d.data(), e.data(), ul, ll, vl, vu,
-        &notneeded_m, ritzv.data(), NULL, M, M, isuppz.data(), &tryrac);
-
-    *upperb =
-        std::max(std::abs(ritzv[0]), std::abs(ritzv[M - 1])) + std::abs(r_beta);
-#endif
 }
 
 /**
@@ -742,7 +558,6 @@ void lanczos(cublasHandle_t cublas_handle, std::size_t M, std::size_t numvec,
     T Zero = T(0.0);
     std::size_t N = H->rows();
 
-#ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
     // ========================================================================
     // GPU-RESIDENT PSEUDO-HERMITIAN LANCZOS (numvec): Same structure as NCCL,
     // without NCCL or redistribution. Uses batched dot/axpy/scale and Sv.
@@ -807,6 +622,10 @@ void lanczos(cublasHandle_t cublas_handle, std::size_t M, std::size_t numvec,
         cublas_handle, CUBLAS_OP_N, CUBLAS_OP_N, H->rows(),
         static_cast<int>(numvec), H->cols(), &One, H->data(), H->ld(),
         v_1.data(), v_1.ld(), &Zero, v_2.data(), v_2.ld()));
+    // Pseudo-Hermitian initialization (per vector i):
+    //   w^(i) = H v_1^(i),   Sv^(i) = S w^(i)
+    //   beta_0^(i)^2 = <v_1^(i), Sv^(i)>,   d_real_beta_prev(i) <- 1 / beta_0^(i)
+    //   v_1^(i), v_2^(i) are scaled so the recurrence starts in normalized form.
     pseudoHermitianInitBatched(v_1.data(), v_2.data(), Sv.data(), d_beta,
                                d_real_beta_prev, static_cast<int>(N),
                                static_cast<int>(numvec),
@@ -821,17 +640,24 @@ void lanczos(cublasHandle_t cublas_handle, std::size_t M, std::size_t numvec,
                 v_1.rows() * sizeof(T), cudaMemcpyDeviceToDevice, stream));
         }
 
+        // Fused alpha step (per i):
+        //   alpha_k^(i) = <v_2^(i), Sv^(i)>
+        //   v_2^(i) <- v_2^(i) - alpha_k^(i) * (1 / beta_{k-1}^(i)) v_1^(i)
         fusedDotScaleNegateAxpyPh(v_2.data(), Sv.data(), d_alpha,
                                   v_1.data(), v_2.data(), d_real_beta_prev,
                                   static_cast<int>(v_2.rows()),
                                   static_cast<int>(numvec),
                                   static_cast<int>(v_1.ld()), &stream);
+        // Store diagonal entry:
+        //   d(k, i) = alpha_k^(i)
         getRealPart(d_alpha, d_real_alpha, static_cast<int>(numvec), &stream);
         CHECK_CUDA_ERROR(cudaMemcpyAsync(d_d + k * numvec, d_real_alpha,
                                          numvec * sizeof(RealT),
                                          cudaMemcpyDeviceToDevice, stream));
 
-        // Coefficient for recurrence term: -1 / beta_prev where d_real_beta_prev = 1 / real(beta_prev).
+        // Three-term recurrence correction:
+        //   v_2^(i) <- v_2^(i) - beta_{k-1}^(i) v_0^(i)
+        // Since d_real_beta_prev = 1 / beta_{k-1}, first recover beta_{k-1}.
         realReciprocal(d_real_beta_prev, d_real_beta, static_cast<int>(numvec),
                        &stream);
         copyRealNegateToT(d_real_beta, d_beta, static_cast<int>(numvec),
@@ -840,25 +666,35 @@ void lanczos(cublasHandle_t cublas_handle, std::size_t M, std::size_t numvec,
                     static_cast<int>(v_0.rows()), static_cast<int>(numvec),
                     static_cast<int>(v_0.ld()), &stream);
 
-        v_1.swap(v_0);
-        v_1.swap(v_2);
+        v_1.swapDataPointer(v_0);
+        v_1.swapDataPointer(v_2);
 
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(
             cublas_handle, CUBLAS_OP_N, CUBLAS_OP_N, H->rows(),
             static_cast<int>(numvec), H->cols(), &One, H->data(), H->ld(),
             v_1.data(), v_1.ld(), &Zero, v_2.data(), v_2.ld()));
+        // Build S*v_2 and off-diagonal coefficient (per i):
+        //   Sv^(i) = S v_2^(i)
+        //   beta_k^(i)^2 = <v_1^(i), Sv^(i)>
         lacpyFlipBatchedDot(v_2.data(), Sv.data(), v_1.data(), d_beta,
                             static_cast<int>(N), static_cast<int>(numvec),
                             static_cast<int>(v_2.ld()), static_cast<int>(Sv.ld()),
                             static_cast<int>(v_1.ld()), &stream);
 
+        // Off-diagonal magnitude:
+        //   beta_k^(i) = sqrt(beta_k^(i)^2)
         getRealPart(d_beta, d_real_beta, static_cast<int>(numvec), &stream);
         batchedSqrt(d_real_beta, static_cast<int>(numvec), &stream);
+        // Store off-diagonal entry:
+        //   e(k, i) = beta_k^(i), for k = 0..M-2
         CHECK_CUDA_ERROR(cudaMemcpyAsync(e_d + k * numvec, d_real_beta,
                                          numvec * sizeof(RealT),
                                          cudaMemcpyDeviceToDevice, stream));
 
-        // Prepare scaling factors for next iteration.
+        // Normalize next recurrence state:
+        //   beta_k^(i) = sqrt(beta_k^(i)^2)
+        //   d_real_beta_prev(i) <- 1 / beta_k^(i)
+        //   v_1^(i), v_2^(i) <- (1 / beta_k^(i)) * {v_1^(i), v_2^(i)}
         copyRealReciprocalToT(d_real_beta, d_beta, static_cast<int>(numvec),
                               &stream);
         realReciprocal(d_real_beta, d_real_beta_prev,
@@ -878,11 +714,16 @@ void lanczos(cublasHandle_t cublas_handle, std::size_t M, std::size_t numvec,
                 v_1.rows() * sizeof(T), cudaMemcpyDeviceToDevice, stream));
         }
 
+        // Final alpha step:
+        //   alpha_{M-1}^(i) = <v_2^(i), Sv^(i)>
+        //   v_2^(i) <- v_2^(i) - alpha_{M-1}^(i) * (1 / beta_{M-2}^(i)) v_1^(i)
         fusedDotScaleNegateAxpyPh(v_2.data(), Sv.data(), d_alpha,
                                   v_1.data(), v_2.data(), d_real_beta_prev,
                                   static_cast<int>(v_2.rows()),
                                   static_cast<int>(numvec),
                                   static_cast<int>(v_1.ld()), &stream);
+        // Store final diagonal entry:
+        //   d(M-1, i) = alpha_{M-1}^(i)
         getRealPart(d_alpha, d_real_alpha, static_cast<int>(numvec), &stream);
         CHECK_CUDA_ERROR(cudaMemcpyAsync(d_d + k * numvec, d_real_alpha,
                                          numvec * sizeof(RealT),
@@ -941,178 +782,6 @@ void lanczos(cublasHandle_t cublas_handle, std::size_t M, std::size_t numvec,
     CHECK_CUBLAS_ERROR(cublasSetStream(cublas_handle, stream_orig));
     CHECK_CUDA_ERROR(cudaStreamDestroy(stream));
 
-#else
-    // ========================================================================
-    // ORIGINAL VERSION: Per-vector cuBLAS, host-resident scalars.
-    // ========================================================================
-    std::vector<RealT> r_beta(numvec);
-    std::vector<RealT> d(M * numvec);
-    std::vector<RealT> e(M * numvec);
-    std::vector<RealT> real_alpha(numvec);
-    std::vector<T> alpha(numvec, T(1.0));
-    std::vector<T> beta(numvec, T(0.0));
-
-    auto v_0 = chase::matrix::Matrix<T, chase::platform::GPU>(N, numvec);
-    auto v_1 = chase::matrix::Matrix<T, chase::platform::GPU>(N, numvec);
-    auto v_2 = chase::matrix::Matrix<T, chase::platform::GPU>(N, numvec);
-    auto Sv = chase::matrix::Matrix<T, chase::platform::GPU>(N, numvec);
-
-    chase::linalg::internal::cuda::t_lacpy('A', N, numvec, V.data(), V.ld(),
-                                           v_1.data(), v_1.ld());
-
-    CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(
-        cublas_handle, CUBLAS_OP_N, CUBLAS_OP_N, H->rows(), numvec, H->cols(),
-        &One, H->data(), H->ld(), v_1.data(), v_1.ld(), &Zero, v_2.data(),
-        v_2.ld()));
-
-    chase::linalg::internal::cuda::t_lacpy('A', N, numvec, v_2.data(), v_2.ld(),
-                                           Sv.data(), Sv.ld());
-
-    chase::linalg::internal::cuda::flipLowerHalfMatrixSign(N, numvec, Sv.data(),
-                                                           N);
-
-    for (auto i = 0; i < numvec; i++)
-    {
-        CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTdot(
-            cublas_handle, v_1.rows(), v_1.data() + i * v_1.ld(), 1,
-            Sv.data() + i * Sv.ld(), 1, &beta[i]));
-    }
-
-    for (auto i = 0; i < numvec; i++)
-        beta[i] = One / sqrt(beta[i]);
-
-    for (auto i = 0; i < numvec; i++)
-    {
-        CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTscal(
-            cublas_handle, v_1.rows(), &beta[i], v_1.data() + i * v_1.ld(), 1));
-    }
-
-    for (auto i = 0; i < numvec; i++)
-    {
-        CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTscal(
-            cublas_handle, v_2.rows(), &beta[i], v_2.data() + i * v_2.ld(), 1));
-    }
-
-    for (std::size_t k = 0; k < M; k = k + 1)
-    {
-        for (auto i = 0; i < numvec; i++)
-        {
-            CHECK_CUDA_ERROR(
-                cudaMemcpy(V.data() + k * V.ld(), v_1.data() + i * v_1.ld(),
-                           v_1.rows() * sizeof(T), cudaMemcpyDeviceToDevice));
-        }
-
-        for (auto i = 0; i < numvec; i++)
-        {
-            CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTdot(
-                cublas_handle, v_2.rows(), v_2.data() + i * v_2.ld(), 1,
-                Sv.data() + i * Sv.ld(), 1, &alpha[i]));
-        }
-
-        for (auto i = 0; i < numvec; i++)
-            alpha[i] = -alpha[i] * beta[i];
-
-        for (auto i = 0; i < numvec; i++)
-        {
-            CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTaxpy(
-                cublas_handle, v_1.rows(), &alpha[i], v_1.data() + i * v_1.ld(),
-                1, v_2.data() + i * v_2.ld(), 1));
-        }
-
-        for (auto i = 0; i < numvec; i++)
-            alpha[i] = -alpha[i];
-
-        for (auto i = 0; i < numvec; i++)
-            d[k + M * i] = std::real(alpha[i]);
-
-        if (k == M - 1)
-            break;
-
-        for (auto i = 0; i < numvec; i++)
-            beta[i] = -One / beta[i];
-
-        for (auto i = 0; i < numvec; i++)
-        {
-            CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTaxpy(
-                cublas_handle, v_0.rows(), &beta[i], v_0.data() + i * v_0.ld(),
-                1, v_2.data() + i * v_2.ld(), 1));
-        }
-
-        for (auto i = 0; i < numvec; i++)
-            beta[i] = -beta[i];
-
-        v_1.swap(v_0);
-        v_1.swap(v_2);
-
-        CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(
-            cublas_handle, CUBLAS_OP_N, CUBLAS_OP_N, H->rows(), numvec,
-            H->cols(), &One, H->data(), H->ld(), v_1.data(), v_1.ld(), &Zero,
-            v_2.data(), v_2.ld()));
-
-        chase::linalg::internal::cuda::t_lacpy('A', N, numvec, v_2.data(),
-                                               v_2.ld(), Sv.data(), Sv.ld());
-
-        chase::linalg::internal::cuda::flipLowerHalfMatrixSign(N, numvec,
-                                                               Sv.data(), N);
-
-        for (auto i = 0; i < numvec; i++)
-        {
-            CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTdot(
-                cublas_handle, v_1.rows(), v_1.data() + i * v_1.ld(), 1,
-                Sv.data() + i * Sv.ld(), 1, &beta[i]));
-        }
-
-        for (auto i = 0; i < numvec; i++)
-            beta[i] = sqrt(beta[i]);
-
-        for (auto i = 0; i < numvec; i++)
-            r_beta[i] = std::real(beta[i]);
-
-        for (auto i = 0; i < numvec; i++)
-            e[k + M * i] = r_beta[i];
-
-        for (auto i = 0; i < numvec; i++)
-            beta[i] = One / beta[i];
-
-        for (auto i = 0; i < numvec; i++)
-        {
-            CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTscal(
-                cublas_handle, v_1.rows(), &beta[i], v_1.data() + i * v_1.ld(),
-                1));
-        }
-
-        for (auto i = 0; i < numvec; i++)
-        {
-            CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTscal(
-                cublas_handle, v_2.rows(), &beta[i], v_2.data() + i * v_2.ld(),
-                1));
-        }
-    }
-
-    chase::linalg::internal::cuda::t_lacpy('A', N, numvec, v_1.data(), v_1.ld(),
-                                           V.data(), V.ld());
-
-    int notneeded_m;
-    std::size_t vl = 0;
-    std::size_t vu = 0;
-    Base<T> ul = 0;
-    Base<T> ll = 0;
-    int tryrac = 0;
-    std::vector<int> isuppz(2 * M);
-
-    for (auto i = 0; i < numvec; i++)
-    {
-        lapackpp::t_stemr(LAPACK_COL_MAJOR, 'V', 'A', M, d.data() + i * M,
-                          e.data() + i * M, ul, ll, vl, vu, &notneeded_m,
-                          ritzv + M * i, ritzV, M, M, isuppz.data(), &tryrac);
-        for (std::size_t k = 0; k < M; ++k)
-        {
-            Tau[k + i * M] = std::abs(ritzV[k * M]) * std::abs(ritzV[k * M]);
-        }
-    }
-
-    *upperb = ritzv[M - 1];
-#endif
 }
 
 /**
@@ -1145,7 +814,6 @@ void lanczos(cublasHandle_t cublas_handle, std::size_t M,
     T Zero = T(0.0);
     std::size_t N = H->rows();
 
-#ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
     // ========================================================================
     // GPU-RESIDENT PSEUDO-HERMITIAN LANCZOS (single vector): batched kernels
     // with numvec=1, Sv and flip, no NCCL.
@@ -1215,6 +883,10 @@ void lanczos(cublasHandle_t cublas_handle, std::size_t M,
     CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(
         cublas_handle, CUBLAS_OP_N, CUBLAS_OP_N, H->rows(), 1, H->cols(), &One,
         H->data(), H->ld(), v_1.data(), v_1.ld(), &Zero, v_2.data(), v_2.ld()));
+    // Pseudo-Hermitian initialization:
+    //   w = H v_1,   Sv = S w
+    //   beta_0^2 = <v_1, Sv>,   d_real_beta_prev <- 1 / beta_0
+    //   v_1, v_2 are scaled to start the recurrence.
     pseudoHermitianInitSingle(v_1.data(), v_2.data(), Sv.data(), d_beta,
                               d_real_beta_prev, static_cast<int>(N),
                               static_cast<int>(v_1.ld()), &stream);
@@ -1225,36 +897,52 @@ void lanczos(cublasHandle_t cublas_handle, std::size_t M,
                                          v_1.rows() * sizeof(T),
                                          cudaMemcpyDeviceToDevice, stream));
 
+        // Fused alpha step:
+        //   alpha_k = <v_2, Sv>
+        //   v_2 <- v_2 - alpha_k * (1 / beta_{k-1}) v_1
         fusedDotScaleNegateAxpyPh(v_2.data(), Sv.data(), d_alpha,
                                   v_1.data(), v_2.data(), d_real_beta_prev,
                                   static_cast<int>(v_2.rows()), 1,
                                   static_cast<int>(v_1.ld()), &stream);
+        // Store diagonal entry:
+        //   d(k) = alpha_k
         getRealPart(d_alpha, d_real_alpha, 1, &stream);
         CHECK_CUDA_ERROR(cudaMemcpyAsync(d_d + k, d_real_alpha, sizeof(RealT),
                                          cudaMemcpyDeviceToDevice, stream));
 
+        // Three-term recurrence correction:
+        //   v_2 <- v_2 - beta_{k-1} v_0
         realReciprocal(d_real_beta_prev, d_real_beta, 1, &stream);
         copyRealNegateToT(d_real_beta, d_beta, 1, &stream);
         batchedAxpy(d_beta, v_0.data(), v_2.data(),
                     static_cast<int>(v_0.rows()), 1,
                     static_cast<int>(v_0.ld()), &stream);
 
-        v_1.swap(v_0);
-        v_1.swap(v_2);
+        v_1.swapDataPointer(v_0);
+        v_1.swapDataPointer(v_2);
 
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(
             cublas_handle, CUBLAS_OP_N, CUBLAS_OP_N, H->rows(), 1, H->cols(),
             &One, H->data(), H->ld(), v_1.data(), v_1.ld(), &Zero, v_2.data(),
             v_2.ld()));
+        // Build Sv and off-diagonal coefficient:
+        //   Sv = S v_2,   beta_k^2 = <v_1, Sv>
         lacpyFlipBatchedDot(v_2.data(), Sv.data(), v_1.data(), d_beta,
                             static_cast<int>(N), 1,
                             static_cast<int>(v_2.ld()), static_cast<int>(Sv.ld()),
                             static_cast<int>(v_1.ld()), &stream);
 
+        // Off-diagonal magnitude:
+        //   beta_k = sqrt(beta_k^2)
         getRealPart(d_beta, d_real_beta, 1, &stream);
         batchedSqrt(d_real_beta, 1, &stream);
+        // Store off-diagonal entry:
+        //   e(k) = beta_k, for k = 0..M-2
         CHECK_CUDA_ERROR(cudaMemcpyAsync(e_d + k, d_real_beta, sizeof(RealT),
                                          cudaMemcpyDeviceToDevice, stream));
+        // Normalize next recurrence state:
+        //   beta_k = sqrt(beta_k^2),  d_real_beta_prev <- 1 / beta_k
+        //   v_1, v_2 <- (1 / beta_k) * {v_1, v_2}
         copyRealReciprocalToT(d_real_beta, d_beta, 1, &stream);
         realReciprocal(d_real_beta, d_real_beta_prev, 1, &stream);
         batchedScaleTwo(d_beta, v_1.data(), v_2.data(),
@@ -1267,10 +955,15 @@ void lanczos(cublasHandle_t cublas_handle, std::size_t M,
         CHECK_CUDA_ERROR(cudaMemcpyAsync(V.data() + k * V.ld(), v_1.data(),
                                          v_1.rows() * sizeof(T),
                                          cudaMemcpyDeviceToDevice, stream));
+        // Final alpha step:
+        //   alpha_{M-1} = <v_2, Sv>
+        //   v_2 <- v_2 - alpha_{M-1} * (1 / beta_{M-2}) v_1
         fusedDotScaleNegateAxpyPh(v_2.data(), Sv.data(), d_alpha,
                                   v_1.data(), v_2.data(), d_real_beta_prev,
                                   static_cast<int>(v_2.rows()), 1,
                                   static_cast<int>(v_1.ld()), &stream);
+        // Store final diagonal entry:
+        //   d(M-1) = alpha_{M-1}
         getRealPart(d_alpha, d_real_alpha, 1, &stream);
         CHECK_CUDA_ERROR(cudaMemcpyAsync(d_d + k, d_real_alpha, sizeof(RealT),
                                          cudaMemcpyDeviceToDevice, stream));
@@ -1320,119 +1013,6 @@ void lanczos(cublasHandle_t cublas_handle, std::size_t M,
     CHECK_CUBLAS_ERROR(cublasSetStream(cublas_handle, stream_orig));
     CHECK_CUDA_ERROR(cudaStreamDestroy(stream));
 
-#else
-    // ========================================================================
-    // ORIGINAL VERSION: Host-resident scalars, per-call cuBLAS.
-    // ========================================================================
-    RealT r_beta;
-    std::vector<RealT> d(M);
-    std::vector<RealT> e(M);
-    RealT real_alpha;
-    T alpha, beta;
-
-    auto v_0 = chase::matrix::Matrix<T, chase::platform::GPU>(N, 1);
-    auto v_1 = chase::matrix::Matrix<T, chase::platform::GPU>(N, 1);
-    auto v_2 = chase::matrix::Matrix<T, chase::platform::GPU>(N, 1);
-    auto Sv = chase::matrix::Matrix<T, chase::platform::GPU>(N, 1);
-
-    chase::linalg::internal::cuda::t_lacpy('A', N, 1, V.data(), V.ld(),
-                                           v_1.data(), v_1.ld());
-
-    CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(
-        cublas_handle, CUBLAS_OP_N, CUBLAS_OP_N, H->rows(), 1, H->cols(), &One,
-        H->data(), H->ld(), v_1.data(), v_1.ld(), &Zero, v_2.data(), v_2.ld()));
-
-    chase::linalg::internal::cuda::t_lacpy('A', N, 1, v_2.data(), v_2.ld(),
-                                           Sv.data(), Sv.ld());
-
-    chase::linalg::internal::cuda::flipLowerHalfMatrixSign(N, 1, Sv.data(), N);
-
-    CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTdot(
-        cublas_handle, v_1.rows(), v_1.data(), 1, Sv.data(), 1, &beta));
-
-    beta = One / sqrt(beta);
-
-    CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTscal(
-        cublas_handle, v_1.rows(), &beta, v_1.data(), 1));
-    CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTscal(
-        cublas_handle, v_2.rows(), &beta, v_2.data(), 1));
-
-    for (std::size_t k = 0; k < M; k = k + 1)
-    {
-
-        CHECK_CUDA_ERROR(cudaMemcpy(V.data() + k * V.ld(), v_1.data(),
-                                    v_1.rows() * sizeof(T),
-                                    cudaMemcpyDeviceToDevice));
-
-        CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTdot(
-            cublas_handle, v_2.rows(), v_2.data(), 1, Sv.data(), 1, &alpha));
-        alpha = -alpha * beta;
-
-        CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTaxpy(
-            cublas_handle, v_1.rows(), &alpha, v_1.data(), 1, v_2.data(), 1));
-
-        alpha = -alpha;
-
-        d[k] = std::real(alpha);
-
-        if (k == M - 1)
-            break;
-
-        beta = -One / beta;
-
-        CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTaxpy(
-            cublas_handle, v_0.rows(), &beta, v_0.data(), 1, v_2.data(), 1));
-        beta = -beta;
-
-        v_1.swap(v_0);
-        v_1.swap(v_2);
-
-        CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(
-            cublas_handle, CUBLAS_OP_N, CUBLAS_OP_N, H->rows(), 1, H->cols(),
-            &One, H->data(), H->ld(), v_1.data(), v_1.ld(), &Zero, v_2.data(),
-            v_2.ld()));
-
-        chase::linalg::internal::cuda::t_lacpy('A', N, 1, v_2.data(), v_2.ld(),
-                                               Sv.data(), Sv.ld());
-
-        chase::linalg::internal::cuda::flipLowerHalfMatrixSign(N, 1, Sv.data(),
-                                                               N);
-
-        CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTdot(
-            cublas_handle, v_1.rows(), v_1.data(), 1, Sv.data(), 1, &beta));
-        beta = sqrt(beta);
-
-        r_beta = std::real(beta);
-
-        e[k] = r_beta;
-
-        beta = One / beta;
-
-        CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTscal(
-            cublas_handle, v_1.rows(), &beta, v_1.data(), 1));
-
-        CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTscal(
-            cublas_handle, v_2.rows(), &beta, v_2.data(), 1));
-    }
-
-    chase::linalg::internal::cuda::t_lacpy('A', N, 1, v_1.data(), v_1.ld(),
-                                           V.data(), V.ld());
-
-    int notneeded_m;
-    std::size_t vl = 0;
-    std::size_t vu = 0;
-    Base<T> ul = 0;
-    Base<T> ll = 0;
-    int tryrac = 0;
-    std::vector<int> isuppz(2 * M);
-    std::vector<Base<T>> ritzv(M);
-
-    lapackpp::t_stemr<Base<T>>(
-        LAPACK_COL_MAJOR, 'N', 'A', M, d.data(), e.data(), ul, ll, vl, vu,
-        &notneeded_m, ritzv.data(), NULL, M, M, isuppz.data(), &tryrac);
-
-    *upperb = ritzv.data()[M - 1];
-#endif
 }
 } // namespace cuda
 } // namespace internal

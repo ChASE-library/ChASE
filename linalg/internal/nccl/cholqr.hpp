@@ -70,7 +70,7 @@ int cuda_nccl::cholQR1(cublasHandle_t cublas_handle,
         return 0;
 
     // cholQR1 passes host scalar pointers (&One, &Zero); ensure HOST pointer
-    // mode (GPU-resident Lanczos may leave the handle in DEVICE mode).
+    // mode (other kernels may leave the handle in DEVICE mode).
     cublasPointerMode_t prev_mode = CUBLAS_POINTER_MODE_HOST;
     CHECK_CUBLAS_ERROR(cublasGetPointerMode(cublas_handle, &prev_mode));
     CHECK_CUBLAS_ERROR(cublasSetPointerMode(cublas_handle, CUBLAS_POINTER_MODE_HOST));

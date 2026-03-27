@@ -74,6 +74,7 @@ void rayleighRitz(
     chase::matrix::Matrix<T, chase::platform::GPU>* A = nullptr)
 {
     SCOPED_NVTX_RANGE();
+    int info = 0;
 
     cudaStream_t stream_orig_cublas = nullptr;
     cudaStream_t stream_orig_cusolver = nullptr;
@@ -131,12 +132,54 @@ void rayleighRitz(
         &One, V2.data() + offset * V2.ld(), V2.ld(),
         V1.data() + offset * V1.ld(), V1.ld(), &Zero, A->data(), subSize));
 
+#ifdef RR_DOUBLE_PRECISION
+    if constexpr (std::is_same<T, std::complex<float>>::value || std::is_same<T, float>::value)
+    {  
+        if (A->isDoublePrecisionEnabled())
+        {
+            A->copyToSubBlockAsync(0, subSize * subSize,
+                                   &compute_stream);
+        }
+        else
+        {
+            A->enableDoublePrecisionAsync(&compute_stream);
+        }
+        if (!ritzv.isDoublePrecisionEnabled())
+        {
+            ritzv.enableDoublePrecisionAsync(&compute_stream);
+        }
+        auto A_d = A->getDoublePrecisionMatrix();
+        auto ritzv_d = ritzv.getDoublePrecisionMatrix();
+        typename chase::ToDoublePrecisionTrait<T>::Type* workspace_d;
+        CHECK_CUDA_ERROR(cudaMallocAsync((void**)&workspace_d,
+                                         sizeof(typename chase::ToDoublePrecisionTrait<T>::Type) * lwork_heevd,
+                                         compute_stream));        
+        CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTheevd(
+            cusolver_handle, CUSOLVER_EIG_MODE_VECTOR, CUBLAS_FILL_MODE_LOWER,
+            subSize, A_d->data(), subSize,
+            ritzv_d->data() + offset, workspace_d, lwork_heevd, devInfo));
+        ritzv.disableDoublePrecisionAsync(true, &compute_stream);
+        A->copyBackSubBlockAsync(0, subSize * subSize,
+                                 &compute_stream);
+        CHECK_CUDA_ERROR(cudaFreeAsync(workspace_d, compute_stream));
+    }
+    else
+    { 
+#endif
+        CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTheevd(
+            cusolver_handle, CUSOLVER_EIG_MODE_VECTOR, CUBLAS_FILL_MODE_LOWER,
+            subSize, A->data(), subSize, ritzv.data() + offset, workspace,
+            lwork_heevd, devInfo));
+#ifdef RR_DOUBLE_PRECISION
+    }
+#endif
+    /*
     CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTheevd(
         cusolver_handle, CUSOLVER_EIG_MODE_VECTOR, CUBLAS_FILL_MODE_LOWER,
         subSize, A->data(), subSize, ritzv.data() + offset, workspace,
         lwork_heevd, devInfo));
+    */    
 
-    int info = 0;
     CHECK_CUDA_ERROR(cudaMemcpyAsync(&info, devInfo, sizeof(int),
                                      cudaMemcpyDeviceToHost, compute_stream));
     CHECK_CUDA_ERROR(cudaStreamSynchronize(compute_stream));
@@ -596,9 +639,49 @@ void rayleighRitz_v2(
         CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTscal(
             cublas_handle, n * n, &NegativeOne, M, 1));
 
+#ifdef RR_DOUBLE_PRECISION
+    if constexpr (std::is_same<T, std::complex<float>>::value || std::is_same<T, float>::value)
+    {  
+        if (A->isDoublePrecisionEnabled())
+        {
+            A->copyToSubBlockAsync(n * n, subSize * subSize,
+                                   &compute_stream);
+        }
+        else
+        {
+            A->enableDoublePrecisionAsync(&compute_stream);
+        }
+        if (!ritzv.isDoublePrecisionEnabled())
+        {
+            ritzv.enableDoublePrecisionAsync(&compute_stream);
+        }
+        auto A_d = A->getDoublePrecisionMatrix();
+        auto ritzv_d = ritzv.getDoublePrecisionMatrix();
+        typename ToDoublePrecisionTrait<T>::Type *M_d = A_d->data() + n * n;
+        typename chase::ToDoublePrecisionTrait<T>::Type* workspace_d;
+        CHECK_CUDA_ERROR(cudaMallocAsync((void**)&workspace_d,
+                                         sizeof(typename chase::ToDoublePrecisionTrait<T>::Type) * lwork,
+                                         compute_stream));        
+        CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTheevd(
+            cusolver_handle, CUSOLVER_EIG_MODE_VECTOR, CUBLAS_FILL_MODE_LOWER, n, M_d, n,
+            ritzv_d->data() + offset, workspace_d, lwork, devInfo));
+        ritzv.disableDoublePrecisionAsync(true, &compute_stream);
+        A->copyBackSubBlockAsync(n * n, subSize * subSize,
+                                 &compute_stream);
+        CHECK_CUDA_ERROR(cudaFreeAsync(workspace_d, compute_stream));
+    }
+    else
+    { 
+#endif
         CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTheevd(
             cusolver_handle, CUSOLVER_EIG_MODE_VECTOR, CUBLAS_FILL_MODE_LOWER, n, M,
             n, ritzv.data() + offset, workspace, lwork, devInfo));
+#ifdef RR_DOUBLE_PRECISION
+    }
+#endif
+//        CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTheevd(
+//            cusolver_handle, CUSOLVER_EIG_MODE_VECTOR, CUBLAS_FILL_MODE_LOWER, n, M,
+//            n, ritzv.data() + offset, workspace, lwork, devInfo));
 
         CHECK_CUDA_ERROR(cudaMemcpyAsync(&info, devInfo, sizeof(int),
                                          cudaMemcpyDeviceToHost, compute_stream));

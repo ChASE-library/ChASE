@@ -146,9 +146,36 @@ void cpu_mpi::rayleighRitz(
     MPI_Allreduce(MPI_IN_PLACE, A->l_data(), subSize * subSize,
                   chase::mpi::getMPI_Type<T>(), MPI_SUM,
                   A->getMpiGrid()->get_row_comm());
+ 
+#ifdef RR_DOUBLE_PRECISION
+    if constexpr (std::is_same<T, std::complex<float>>::value || std::is_same<T, float>::value)
+    {
+        if (A->isDoublePrecisionEnabled())
+        {
+            A->copyToSubBlock(0, subSize * subSize);
+        }
+        else
+        {
+            A->enableDoublePrecision();
+        }
 
-    chase::linalg::lapackpp::t_heevd(LAPACK_COL_MAJOR, 'V', 'L', subSize,
-                                     A->l_data(), subSize, ritzv + offset);
+        std::vector<double> ritzv_d(subSize);
+
+        auto A_d = A->getDoublePrecisionMatrix();
+        chase::linalg::lapackpp::t_heevd(LAPACK_COL_MAJOR, 'V', 'L', subSize,
+                                         A_d->l_data(), subSize, ritzv_d.data());
+        A->copyBackSubBlock(0, subSize * subSize);
+        std::transform(ritzv_d.begin(), ritzv_d.end(), ritzv + offset,
+                       [](double val) { return static_cast<float>(val); });
+    }
+    else
+    {
+#endif
+        chase::linalg::lapackpp::t_heevd(LAPACK_COL_MAJOR, 'V', 'L', subSize,
+                                        A->l_data(), subSize, ritzv + offset);
+#ifdef RR_DOUBLE_PRECISION
+    }
+#endif
 
     // GEMM for applying eigenvectors back to V1 from V2 * A
     chase::linalg::blaspp::t_gemm(

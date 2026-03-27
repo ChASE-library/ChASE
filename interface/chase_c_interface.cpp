@@ -2967,11 +2967,7 @@ extern "C"
         oss << "  ✗ ScaLAPACK support: DISABLED\n";
 #endif
         oss << "\nConfiguration Options:\n";
-#ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
-        oss << "  ✓ GPU-Resident Lanczos: ENABLED\n";
-#else
-        oss << "  ✗ GPU-Resident Lanczos: DISABLED\n";
-#endif
+        oss << "  ✓ GPU-Resident Lanczos: ENABLED (required)\n";
 #ifdef QR_DOUBLE_PRECISION
         oss << "  ✓ QR Double Precision: ENABLED\n";
 #else

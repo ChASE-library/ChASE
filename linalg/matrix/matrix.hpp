@@ -137,6 +137,10 @@ enum class BufferType
 };
 
 #ifdef HAS_CUDA
+using chase_cuda_stream_ptr_t = cudaStream_t*;
+#endif
+
+#ifdef HAS_CUDA
 /**
  * @ingroup Allocators
  * @brief Allocator for GPU memory allocation using CUDA.
@@ -617,7 +621,174 @@ public:
             throw std::runtime_error("Double precision is not enabled.");
         }
     }
+    
+    template <
+        typename U = T,
+        typename std::enable_if<std::is_same<U, float>::value ||
+                                    std::is_same<U, std::complex<float>>::value,
+                                int>::type = 0>
+    DoublePrecisionDerived* getDoublePrecisionMatrix()
+    {
+        return matrix_dp();
+    }
 
+#ifdef HAS_CUDA
+    template <
+        typename U = T,
+        typename std::enable_if<std::is_same<U, float>::value ||
+                                    std::is_same<U, std::complex<float>>::value,
+                                int>::type = 0>
+    void enableDoublePrecisionAsync(chase_cuda_stream_ptr_t stream_ = nullptr)
+    {
+        if (!double_precision_matrix_)
+        {
+            start = std::chrono::high_resolution_clock::now();
+            double_precision_matrix_ = std::make_unique<DoublePrecisionDerived>(
+                this->rows(), this->cols());
+        }
+
+        if constexpr (std::is_same<Platform, chase::platform::GPU>::value)
+        {
+            chase::linalg::internal::cuda::convert_SP_TO_DP_GPU(
+                this->data(), double_precision_matrix_->data(),
+                this->rows() * this->cols(), stream_);
+        }
+        else
+        {
+
+            throw std::runtime_error(
+                "GPU async double-precision conversion requires CUDA support.");
+        }
+        is_double_precision_enabled_ = true;
+        end = std::chrono::high_resolution_clock::now();
+        elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(
+            end - start);
+    }
+
+    template <
+        typename U = T,
+        typename std::enable_if<std::is_same<U, float>::value ||
+                                    std::is_same<U, std::complex<float>>::value,
+                                int>::type = 0>
+    void disableDoublePrecisionAsync(bool copyback = false,
+                                     chase_cuda_stream_ptr_t stream_ = nullptr)
+    {
+        if (!is_double_precision_enabled_)
+        {
+            throw std::runtime_error("Double precision is not enabled.");
+        }
+
+        if (double_precision_matrix_ == nullptr)
+        {
+            throw std::runtime_error("Original DP data is not initialized.");
+        }
+
+        if (copyback)
+        {
+            if constexpr (std::is_same<Platform, chase::platform::GPU>::value)
+            {
+                chase::linalg::internal::cuda::convert_DP_TO_SP_GPU(
+                    double_precision_matrix_->data(), this->data(),
+                    this->rows() * this->cols(), stream_);
+            }
+            else
+            {
+
+                throw std::runtime_error(
+                    "GPU async double-precision conversion requires CUDA support.");
+            }
+        }
+
+        double_precision_matrix_.reset();
+        is_double_precision_enabled_ = false;
+    }
+
+    template <
+        typename U = T,
+        typename std::enable_if<std::is_same<U, float>::value ||
+                                    std::is_same<U, std::complex<float>>::value,
+                                int>::type = 0>
+    void copyToSubBlockAsync(std::size_t offset, std::size_t size,
+                             chase_cuda_stream_ptr_t stream_ = nullptr)
+    {
+        if (!double_precision_matrix_)
+        {
+            throw std::runtime_error("Double precision matrix is not enabled.");
+        }
+
+        const std::size_t max_size = this->ld() * this->cols();
+        if (offset + size > max_size)
+        {
+            throw std::runtime_error(
+                "copyToSubBlockAsync range exceeds matrix storage.");
+        }
+
+        if constexpr (std::is_same<Platform, chase::platform::GPU>::value)
+        {
+            chase::linalg::internal::cuda::convert_SP_TO_DP_GPU(
+                this->data() + offset, double_precision_matrix_->data() + offset,
+                size, stream_);
+        }
+        else
+        {
+            throw std::runtime_error(
+                "GPU async sub-block copy requires CUDA support.");
+        }
+    }
+
+    template <
+        typename U = T,
+        typename std::enable_if<std::is_same<U, float>::value ||
+                                    std::is_same<U, std::complex<float>>::value,
+                                int>::type = 0>
+    void copyToSubBlock(std::size_t offset, std::size_t size)
+    {
+        copyToSubBlockAsync(offset, size, nullptr);
+    }
+
+    template <
+        typename U = T,
+        typename std::enable_if<std::is_same<U, float>::value ||
+                                    std::is_same<U, std::complex<float>>::value,
+                                int>::type = 0>
+    void copyBackSubBlockAsync(std::size_t offset, std::size_t size,
+                               chase_cuda_stream_ptr_t stream_ = nullptr)
+    {
+        if (!double_precision_matrix_)
+        {
+            throw std::runtime_error("Double precision matrix is not enabled.");
+        }
+
+        const std::size_t max_size = this->ld() * this->cols();
+        if (offset + size > max_size)
+        {
+            throw std::runtime_error(
+                "copyBackSubBlockAsync range exceeds matrix storage.");
+        }
+
+        if constexpr (std::is_same<Platform, chase::platform::GPU>::value)
+        {
+            chase::linalg::internal::cuda::convert_DP_TO_SP_GPU(
+                double_precision_matrix_->data() + offset, this->data() + offset,
+                size, stream_);
+        }
+        else
+        {
+            throw std::runtime_error(
+                "GPU async sub-block copy requires CUDA support.");
+        }
+    }
+
+    template <
+        typename U = T,
+        typename std::enable_if<std::is_same<U, float>::value ||
+                                    std::is_same<U, std::complex<float>>::value,
+                                int>::type = 0>
+    void copyBackSubBlock(std::size_t offset, std::size_t size)
+    {
+        copyBackSubBlockAsync(offset, size, nullptr);
+    }
+#endif
     // If T is already double precision, these methods should not be available
     template <typename U = T,
               typename std::enable_if<
@@ -964,6 +1135,14 @@ public:
                   other.double_precision_matrix_);
     }
 
+    // Swap only the underlying data pointers/ownership for data().
+    void swapDataPointer(Matrix& other)
+    {
+        std::swap(data_, other.data_);
+        std::swap(external_data_, other.external_data_);
+        std::swap(owns_mem_, other.owns_mem_);
+    }
+
     /**
      * @brief Get a pointer to the matrix data.
      *
@@ -1222,6 +1401,14 @@ public:
                   other.is_double_precision_enabled_);
         std::swap(this->double_precision_matrix_,
                   other.double_precision_matrix_);
+    }
+
+    // Swap only the underlying GPU data pointers/ownership for data().
+    void swapDataPointer(Matrix& other) noexcept
+    {
+        std::swap(gpu_data_, other.gpu_data_);
+        std::swap(external_gpu_data_, other.external_gpu_data_);
+        std::swap(owns_gpu_mem_, other.owns_gpu_mem_);
     }
 
     /**

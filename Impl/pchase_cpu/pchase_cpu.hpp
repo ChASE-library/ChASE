@@ -32,18 +32,6 @@ namespace chase
 {
 namespace Impl
 {
-    template <typename MultiVector>
-    struct is_block_cyclic_1d_multivector : std::false_type
-    {
-    };
-    
-    template <typename T, chase::distMultiVector::CommunicatorType comm_type,
-              typename Platform>
-    struct is_block_cyclic_1d_multivector<
-        chase::distMultiVector::DistMultiVectorBlockCyclic1D<T, comm_type, Platform>>
-        : std::true_type
-    {
-    };    
 /**
  * @page pChASECPU
  *
@@ -119,6 +107,21 @@ public:
         {
             throw std::runtime_error("ChASE requires the matrix and "
                                      "eigenvectors mapped to same MPI grid");
+        }
+
+        // Pseudo-Hermitian support currently assumes block-block data layout.
+        // Block-cyclic 1D multivectors are not supported for pseudo-Hermitian.
+        if constexpr (std::is_same<typename MatrixType::hermitian_type,
+                                   chase::matrix::PseudoHermitian>::value)
+        {
+            if constexpr (chase::distMultiVector::is_block_cyclic_1d_multivector<
+                              InputMultiVectorType>::value)
+            {
+                throw std::runtime_error(
+                    "Pseudo-Hermitian pChASECPU currently supports only "
+                    "block-block distributed multivectors (block-cyclic 1D not "
+                    "supported).");
+            }
         }
 
         Hmat_ = H;
@@ -602,7 +605,7 @@ public:
             V1_->l_data() + locked_ * V1_->l_ld(), V1_->l_ld(),
             V2_->l_data() + 2 * locked_ * V2_->l_ld(), V2_->l_ld());
 
-            V1_->swap(*V2_);
+            V1_->swap_l_data_ptr(*V2_);
 
             chase::linalg::internal::cpu_mpi::flipLowerHalfMatrixSign(*V1_, 0,
                 2*locked_);
@@ -629,17 +632,70 @@ public:
         }
 #endif
 
-        if (disable == 1)
+        if (disable == 1 || cond != 1.0)
         {
+#ifdef QR_DOUBLE_PRECISION
+            if constexpr (std::is_same<T, std::complex<float>>::value ||
+                          std::is_same<T, float>::value)
+            {
+                V1_->copyTo();
+                auto V1_d = V1_->getDoublePrecisionMatrix();
+                if constexpr (chase::distMultiVector::is_block_cyclic_1d_multivector<
+                                  InputMultiVectorType>::value)
+                {
 #ifdef HAS_SCALAPACK
-            //chase::linalg::internal::cpu_mpi::houseHoulderQR(*V1_);
-            chase::linalg::internal::cpu_mpi::cpu_distributed_blocked_houseQR_formQ(
-                *V1_, 16);
+#ifdef CHASE_OUTPUT
+                    if (my_rank_ == 0)
+                    {
+                        chase::GetLogger().Log(
+                            chase::LogLevel::Warn, "linalg",
+                            "[Warning] Using ScaLAPACK Householder QR because self-implemented Householder QR supports only block-block distribution.\n",
+                            my_rank_);
+                    }
+#endif                    
+                    chase::linalg::internal::cpu_mpi::houseHoulderQR(*V1_d);
 #else
-            throw std::runtime_error(
-                "For ChASE-MPI, distributed Householder QR requires ScaLAPACK, "
-                "which is not detected\n");
+                    throw std::runtime_error(
+                        "For ChASE-MPI, distributed Householder QR requires ScaLAPACK, "
+                        "which is not detected\n");
 #endif
+                }
+                else
+                {
+                    chase::linalg::internal::cpu_mpi::cpu_distributed_blocked_houseQR_formQ(
+                        *V1_d, 16);
+                }
+                V1_->copyback();
+            }
+            else
+#endif
+            {
+                if constexpr (chase::distMultiVector::is_block_cyclic_1d_multivector<
+                                  InputMultiVectorType>::value)
+                {
+#ifdef HAS_SCALAPACK
+#ifdef CHASE_OUTPUT
+                    if (my_rank_ == 0)
+                    {
+                        chase::GetLogger().Log(
+                            chase::LogLevel::Warn, "linalg",
+                            "[Warning] Using ScaLAPACK Householder QR because self-implemented Householder QR supports only block-block distribution.\n",
+                            0);
+                    }
+#endif
+                    chase::linalg::internal::cpu_mpi::houseHoulderQR(*V1_);
+#else
+                    throw std::runtime_error(
+                        "For ChASE-MPI, distributed Householder QR requires ScaLAPACK, "
+                        "which is not detected\n");
+#endif
+                }
+                else
+                {
+                    chase::linalg::internal::cpu_mpi::cpu_distributed_blocked_houseQR_formQ(
+                        *V1_, 16);
+                }
+            }
         }
         else
         {
@@ -739,7 +795,6 @@ public:
 
             if (info != 0)
             {
-#ifdef HAS_SCALAPACK
 #ifdef CHASE_OUTPUT
                 if (my_rank_ == 0)
                 {
@@ -748,12 +803,69 @@ public:
                         my_rank_);
                 }
 #endif
-                chase::linalg::internal::cpu_mpi::houseHoulderQR(*V1_);
+#ifdef QR_DOUBLE_PRECISION
+                if constexpr (std::is_same<T, std::complex<float>>::value ||
+                              std::is_same<T, float>::value)
+                {
+                    V1_->copyTo();
+                    auto V1_d = V1_->getDoublePrecisionMatrix();
+                    if constexpr (chase::distMultiVector::is_block_cyclic_1d_multivector<
+                                      InputMultiVectorType>::value)
+                    {
+#ifdef HAS_SCALAPACK
+#ifdef CHASE_OUTPUT
+                        if (my_rank_ == 0)
+                        {
+                            chase::GetLogger().Log(
+                                chase::LogLevel::Warn, "linalg",
+                                "[Warning] Using ScaLAPACK Householder QR because self-implemented Householder QR supports only block-block distribution.\n",
+                                0);
+                        }
+#endif                        
+                        chase::linalg::internal::cpu_mpi::houseHoulderQR(*V1_d);
 #else
-                throw std::runtime_error(
-                    "For ChASE-MPI, distributed Householder QR requires "
-                    "ScaLAPACK, which is not detected\n");
+                        throw std::runtime_error(
+                            "For ChASE-MPI, distributed Householder QR requires "
+                            "ScaLAPACK, which is not detected\n");
 #endif
+                    }
+                    else
+                    {
+
+                        chase::linalg::internal::cpu_mpi::cpu_distributed_blocked_houseQR_formQ(
+                            *V1_d, 16);
+                    }
+                    V1_->copyback();
+                }
+                else
+#endif
+                {
+                    if constexpr (chase::distMultiVector::is_block_cyclic_1d_multivector<
+                                      InputMultiVectorType>::value)
+                    {
+#ifdef HAS_SCALAPACK
+#ifdef CHASE_OUTPUT
+                        if (my_rank_ == 0)
+                        {
+                            chase::GetLogger().Log(
+                                chase::LogLevel::Warn, "linalg",
+                                "[Warning] Using ScaLAPACK Householder QR because self-implemented Householder QR supports only block-block distribution.\n",
+                                0);
+                        }
+#endif
+                        chase::linalg::internal::cpu_mpi::houseHoulderQR(*V1_);
+#else
+                        throw std::runtime_error(
+                            "For ChASE-MPI, distributed Householder QR requires "
+                            "ScaLAPACK, which is not detected\n");
+#endif
+                    }
+                    else
+                    {
+                        chase::linalg::internal::cpu_mpi::cpu_distributed_blocked_houseQR_formQ(
+                            *V1_, 16);
+                    }
+                }
             }
         }
 
@@ -765,7 +877,7 @@ public:
             V1_->l_data() + 2 * locked_ * V1_->l_ld(),V1_->l_ld(),
             V2_->l_data() + locked_ * V2_->l_ld(), V2_->l_ld());
 
-            V1_->swap(*V2_);
+            V1_->swap_l_data_ptr(*V2_);
 
             chase::linalg::lapackpp::t_lacpy('A', V2_->l_rows(), locked_,
             V1_->l_data(), V1_->l_ld(),

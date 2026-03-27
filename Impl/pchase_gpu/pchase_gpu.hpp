@@ -159,6 +159,21 @@ public:
                                      "eigenvectors mapped to same MPI grid");
         }
 
+        // Pseudo-Hermitian support currently assumes block-block data layout.
+        // Block-cyclic 1D multivectors are not supported for pseudo-Hermitian.
+        if constexpr (std::is_same<typename MatrixType::hermitian_type,
+                                   chase::matrix::PseudoHermitian>::value)
+        {
+            if constexpr (chase::distMultiVector::is_block_cyclic_1d_multivector<
+                              InputMultiVectorType>::value)
+            {
+                throw std::runtime_error(
+                    "Pseudo-Hermitian pChASEGPU currently supports only "
+                    "block-block distributed multivectors (block-cyclic 1D not "
+                    "supported).");
+            }
+        }
+
         N_ = H->g_rows();
         Hmat_ = H;
         V1_ = V;
@@ -398,6 +413,7 @@ public:
             {
                 V1_->enableDoublePrecision();
             }
+
             CHECK_CUDA_ERROR(cudaMalloc(
                 (void**)&d_work_d,
                 sizeof(typename chase::ToDoublePrecisionTrait<T>::Type) *
@@ -462,10 +478,8 @@ public:
             for (int i = 0; i < 3; i++)
             {
                 cudaEventRecord(start);
-#ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
                 cudaStream_t saved_stream = nullptr;
                 CHECK_CUBLAS_ERROR(cublasGetStream(cublasH_, &saved_stream));
-#endif
                 // Minimal Lanczos: 1 iteration to warm up redistribute patterns
                 //kernelNamespace::lanczos_dispatch(cublasH_, 1, *Hmat_, *V1_, &dummy_upperb);
                 std::vector<Base<T>> Theta(40 * 20);
@@ -473,9 +487,7 @@ public:
                 std::vector<Base<T>> ritzV(40 * 40);
                 kernelNamespace::lanczos_dispatch(cublasH_, 40, 20, *Hmat_, *V1_, &dummy_upperb, Theta.data(), Tau.data(), ritzV.data());
                 
-#ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
                 CHECK_CUBLAS_ERROR(cublasSetStream(cublasH_, saved_stream));
-#endif
                 cudaEventRecord(stop);
                 cudaEventSynchronize(stop);
                 
@@ -523,16 +535,17 @@ public:
         if constexpr (std::is_same<T, std::complex<float>>::value ||
                       std::is_same<T, float>::value)
         {
-            if (!V1_->isDoublePrecisionEnabled())
+            if (V1_->isDoublePrecisionEnabled())
             {
                 V1_->disableDoublePrecision();
             }
+
             CHECK_CUDA_ERROR(cudaFree(d_work_d));
         }
         if constexpr (std::is_same<T, std::complex<float>>::value ||
                       std::is_same<T, float>::value)
         {
-            if (!A_->isDoublePrecisionEnabled())
+            if (A_->isDoublePrecisionEnabled())
             {
                 A_->disableDoublePrecision();
             }
@@ -541,7 +554,7 @@ public:
         if constexpr (std::is_same<T, std::complex<float>>::value ||
                       std::is_same<T, float>::value)
         {
-            if (!A_->isDoublePrecisionEnabled())
+            if (A_->isDoublePrecisionEnabled())
             {
                 A_->disableDoublePrecision();
             }
@@ -677,14 +690,10 @@ public:
         lanczosIter_ = m;
         numLanczos_ = 1;
 
-#ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
         cudaStream_t saved_stream = nullptr;
         CHECK_CUBLAS_ERROR(cublasGetStream(cublasH_, &saved_stream));
-#endif
         kernelNamespace::lanczos_dispatch(cublasH_, m, *Hmat_, *V1_, upperb);
-#ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
         CHECK_CUBLAS_ERROR(cublasSetStream(cublasH_, saved_stream));
-#endif
     }
 
     void Lanczos(std::size_t M, std::size_t numvec, chase::Base<T>* upperb,
@@ -697,15 +706,11 @@ public:
         lanczosIter_ = M;
         numLanczos_ = numvec;
 
-#ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
         cudaStream_t saved_stream = nullptr;
         CHECK_CUBLAS_ERROR(cublasGetStream(cublasH_, &saved_stream));
-#endif
         kernelNamespace::lanczos_dispatch(cublasH_, M, numvec, *Hmat_, *V1_,
                                           upperb, ritzv, Tau, ritzV);
-#ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
         CHECK_CUBLAS_ERROR(cublasSetStream(cublasH_, saved_stream));
-#endif
     }
 
     void LanczosDos(std::size_t idx, std::size_t m, T* ritzVc) override
@@ -963,7 +968,7 @@ public:
             V1_->l_data() + locked_ * V1_->l_ld(), V1_->l_ld(),
             V2_->l_data() + 2 * locked_ * V2_->l_ld(), V2_->l_ld());
 
-            V1_->swap(*V2_);
+            V1_->swap_l_data_ptr(*V2_);
 
             kernelNamespace::flipLowerHalfMatrixSign(*V1_, 0, 2*locked_);
 
@@ -1002,43 +1007,69 @@ public:
             }
         }
 #endif
-        if (disable == 1)
+        if (disable == 1 || cond != 1.0)
         {
-#ifdef QR_DOUBLE_PRECISION
+#ifdef QR_DOUBLE_PRECISION  
             if constexpr (std::is_same<T, std::complex<float>>::value ||
-                            std::is_same<T, float>::value)
+                              std::is_same<T, float>::value)
             {
                 V1_->copyTo();
-
                 auto V1_d = V1_->getDoublePrecisionMatrix();
-                auto A_d = A_->getDoublePrecisionMatrix();
-                info = kernelNamespace::shiftedcholQR2(
-                    cublasH_, cusolverH_, V1_->g_rows(), V1_->l_rows(),
-                    V1_->l_cols(), V1_d->l_data(), V1_->l_ld(),
-                    // V1_->getMpiGrid()->get_nccl_col_comm(),
-                    MGPUKernelNamspaceSelector<backend>::getColCommunicator(
-                        V1_->getMpiGrid()),
-                    reinterpret_cast<
-                        typename chase::ToDoublePrecisionTrait<T>::Type*>(
-                        d_work_d),
-                    lwork_, A_d->l_data(), devInfo_);
+
+                if constexpr (chase::distMultiVector::is_block_cyclic_1d_multivector<InputMultiVectorType>::value)
+                {
+#ifdef HAS_SCALAPACK
+#ifdef CHASE_OUTPUT
+                    if (my_rank_ == 0)
+                    {
+                        chase::GetLogger().Log(
+                            chase::LogLevel::Warn, "linalg",
+                            "[Warning]: Using ScaLAPACK Householder QR because self-implemented Householder QR supports only block-block distribution.\n",
+                            0);
+                    }
+#endif
+                    kernelNamespace::houseHoulderQR(*V1_d);
+#else
+                    throw std::runtime_error(
+                        "For ChASE-MPI, distributed Householder QR requires "
+                        "ScaLAPACK, which is not detected\n");
+#endif
+                }
+                else
+                {
+                    kernelNamespace::houseQR1_formQ(
+                        cublasH_, *V1_d, reinterpret_cast<typename chase::ToDoublePrecisionTrait<T>::Type*>(d_work_), lwork_, 16);
+                }
                 V1_->copyback();
             }
             else
-            {
-                //cudaDeviceSynchronize();
-                kernelNamespace::houseQR1_formQ(
-                cublasH_, *V1_, *V2_, d_work_, lwork_, 16,
-                cusolverH_); 
-                //cudaDeviceSynchronize();
-            }
-#else            
-            //cudaDeviceSynchronize();
-            kernelNamespace::houseQR1_formQ(
-            cublasH_, *V1_, *V2_, d_work_, lwork_, 16,
-            cusolverH_); 
-            //cudaDeviceSynchronize();
 #endif
+            {
+                if constexpr (chase::distMultiVector::is_block_cyclic_1d_multivector<InputMultiVectorType>::value)
+                {
+#ifdef HAS_SCALAPACK
+#ifdef CHASE_OUTPUT
+                    if (my_rank_ == 0)
+                    {
+                        chase::GetLogger().Log(
+                            chase::LogLevel::Warn, "linalg",
+                            "[Warning]: Using ScaLAPACK Householder QR because self-implemented Householder QR supports only block-block distribution.\n",
+                            0);
+                    }
+#endif
+                    kernelNamespace::houseHoulderQR(*V1_);
+#else
+                    throw std::runtime_error(
+                        "For ChASE-MPI, distributed Householder QR requires "
+                        "ScaLAPACK, which is not detected\n");
+#endif
+                }else
+                {
+                    kernelNamespace::houseQR1_formQ(
+                        cublasH_, *V1_, d_work_, lwork_, 16);
+                }
+
+            }
         }   
         else
         {
@@ -1236,31 +1267,70 @@ public:
                         my_rank_);
                 }
 #endif
-#ifdef HAS_NCCL
-                if constexpr (std::is_same<backend, chase::grid::backend::NCCL>::value)
+#ifdef QR_DOUBLE_PRECISION
+                if constexpr (std::is_same<T, std::complex<float>>::value ||
+                              std::is_same<T, float>::value)
                 {
-                    chase::linalg::internal::cuda_nccl::houseQR1_formQ(
-                        cublasH_, *V1_, *V2_, d_work_, lwork_, 16u,
-                        cusolverH_);
+                    V1_->copyTo();
+                    auto V1_d = V1_->getDoublePrecisionMatrix();
+                    {
+                        if constexpr (chase::distMultiVector::is_block_cyclic_1d_multivector<InputMultiVectorType>::value)
+                        {
+#ifdef HAS_SCALAPACK
+#ifdef CHASE_OUTPUT
+                            if (my_rank_ == 0)
+                            {
+                                chase::GetLogger().Log(
+                                    chase::LogLevel::Warn, "linalg",
+                                    "[Warning]: Using ScaLAPACK Householder QR because self-implemented Householder QR supports only block-block distribution.\n",
+                                    0);
+                            }
+#endif
+                            kernelNamespace::houseHoulderQR(*V1_d);
+#else
+                            throw std::runtime_error(
+                                "For ChASE-MPI, distributed Householder QR requires "
+                                "ScaLAPACK, which is not detected\n");
+#endif
+                        }
+                        else
+                        {
+                            kernelNamespace::houseQR1_formQ(
+                                cublasH_, *V1_d,
+                                reinterpret_cast<typename chase::ToDoublePrecisionTrait<T>::Type*>(d_work_d),
+                                lwork_, 16u);
+                        }
+                    }
+                    V1_->copyback();
                 }
                 else
 #endif
                 {
-                    if constexpr (is_block_cyclic_1d_multivector<InputMultiVectorType>::value)
                     {
+                        if constexpr (chase::distMultiVector::is_block_cyclic_1d_multivector<InputMultiVectorType>::value)
+                        {
 #ifdef HAS_SCALAPACK
-                        kernelNamespace::houseHoulderQR(*V1_);
-#else
-                        throw std::runtime_error(
-                            "For ChASE-MPI, distributed Householder QR requires "
-                            "ScaLAPACK, which is not detected\n");
+#ifdef CHASE_OUTPUT
+                            if (my_rank_ == 0)
+                            {
+                                chase::GetLogger().Log(
+                                    chase::LogLevel::Warn, "linalg",
+                                    "[Warning]: Using ScaLAPACK Householder QR because self-implemented Householder QR supports only block-block distribution.\n",
+                                    0);
+                            }
 #endif
-                    }
-                    else
-                    {
-                        kernelNamespace::houseQR1_formQ(
-                            cublasH_, *V1_, *V2_, d_work_, lwork_, 16u,
-                            cusolverH_);
+                            kernelNamespace::houseHoulderQR(*V1_);
+#else
+                            throw std::runtime_error(
+                                "For ChASE-MPI, distributed Householder QR requires "
+                                "ScaLAPACK, which is not detected\n");
+#endif
+                        }
+                        else
+                        {
+                            kernelNamespace::houseQR1_formQ(
+                                cublasH_, *V1_, d_work_, lwork_, 16u);
+                        }
                     }
                 }
             }
@@ -1279,7 +1349,7 @@ public:
             V1_->l_data() + 2 * locked_ * V1_->l_ld(),V1_->l_ld(),
             V2_->l_data() + locked_ * V2_->l_ld(), V2_->l_ld());
 
-            V1_->swap(*V2_);
+            V1_->swap_l_data_ptr(*V2_);
 
             chase::linalg::internal::cuda::t_lacpy('A', V2_->l_rows(), locked_,
             V1_->l_data(), V1_->l_ld(),

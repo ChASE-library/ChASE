@@ -24,7 +24,6 @@
 #include "grid/nccl_utils.hpp"
 #include "external/blaspp/blaspp.hpp"
 #include "external/lapackpp/lapackpp.hpp"
-#include <cusolverDn.h>
 
 namespace chase
 {
@@ -451,8 +450,7 @@ void cuda_nccl::distributed_blocked_houseQR_formQ(std::size_t m_global,
                                                      cublasHandle_t cublas_handle,
                                                      T* d_workspace,
                                                      std::size_t lwork_elems,
-                                                     ncclComm_t nccl_col_comm,
-                                                     cusolverDnHandle_t /* cusolver_handle */)
+                                                     ncclComm_t nccl_col_comm)
 {
     using RealT = chase::Base<T>;
 
@@ -892,11 +890,9 @@ void cuda_nccl::distributed_blocked_houseQR_formQ(std::size_t m_global,
 template <typename InputMultiVectorType>
 void cuda_nccl::houseQR1_formQ(cublasHandle_t cublas_handle,
                                InputMultiVectorType& V1,
-                               InputMultiVectorType& V2,
                                typename InputMultiVectorType::value_type* workspace,
                                int lwork,
-                               std::size_t nb,
-                               cusolverDnHandle_t cusolver_handle)
+                               std::size_t nb)
 {
     using T = typename InputMultiVectorType::value_type;
 
@@ -914,15 +910,9 @@ void cuda_nccl::houseQR1_formQ(cublasHandle_t cublas_handle,
     cudaStream_t prev_cublas_stream = nullptr;
     CHECK_CUBLAS_ERROR(cublasGetStream(cublas_handle, &prev_cublas_stream));
 
-    cudaStream_t prev_cusolver_stream = nullptr;
-    if (cusolver_handle != nullptr)
-        CHECK_CUSOLVER_ERROR(cusolverDnGetStream(cusolver_handle, &prev_cusolver_stream));
-
     cudaStream_t qr_stream = nullptr;
     CHECK_CUDA_ERROR(cudaStreamCreateWithFlags(&qr_stream, cudaStreamNonBlocking));
     CHECK_CUBLAS_ERROR(cublasSetStream(cublas_handle, qr_stream));
-    if (cusolver_handle != nullptr)
-        CHECK_CUSOLVER_ERROR(cusolverDnSetStream(cusolver_handle, qr_stream));
  
     cudaEvent_t evt;
     cudaEventCreate(&evt);
@@ -942,13 +932,10 @@ void cuda_nccl::houseQR1_formQ(cublasHandle_t cublas_handle,
         cublas_handle,
         workspace,
         lwork_elems,
-        nccl_col_comm,
-        cusolver_handle);
+        nccl_col_comm);
 
     // Restore original streams and destroy the temporary one.
     CHECK_CUBLAS_ERROR(cublasSetStream(cublas_handle, prev_cublas_stream));
-    if (cusolver_handle != nullptr)
-        CHECK_CUSOLVER_ERROR(cusolverDnSetStream(cusolver_handle, prev_cusolver_stream));
     CHECK_CUDA_ERROR(cudaStreamDestroy(qr_stream));
 }
 

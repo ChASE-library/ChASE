@@ -159,19 +159,18 @@ struct cuda_mpi
     template <typename T>
     static void distributed_houseQR_formQ(
         std::size_t m_global, std::size_t n, std::size_t l_rows,
-        std::size_t g_off, std::size_t ldv, T* V,
+        std::size_t g_off, std::size_t ldv, T* V, MPI_Comm mpi_comm,
         cublasHandle_t cublas_handle, T* d_workspace,
-        std::size_t lwork_elems, MPI_Comm mpi_comm_row);
+        std::size_t lwork_elems, MPI_Comm mpi_col_comm);
 
     /** Blocked distributed Householder QR + form Q. V on device; CUDA-aware MPI for collectives. */
     template <typename T>
     static void distributed_blocked_houseQR_formQ(
         std::size_t m_global, std::size_t n, std::size_t l_rows,
-        std::size_t g_off, std::size_t ldv, T* V,
+        std::size_t g_off, std::size_t ldv, T* V, MPI_Comm mpi_comm,
         std::size_t nb,
         cublasHandle_t cublas_handle, T* d_workspace,
-        std::size_t lwork_elems, MPI_Comm mpi_comm_row,
-        cusolverDnHandle_t cusolver_handle = nullptr);
+        std::size_t lwork_elems, MPI_Comm mpi_col_comm);
 
     /** Lightweight timing container for Householder panel factorization. */
     struct HouseholderPanelTiming
@@ -198,11 +197,9 @@ struct cuda_mpi
     template <typename InputMultiVectorType>
     static void houseQR1_formQ(cublasHandle_t cublas_handle,
                                InputMultiVectorType& V1,
-                               InputMultiVectorType& V2,
-                               typename InputMultiVectorType::value_type* workspace = nullptr,
-                               int lwork = 0,
-                               std::size_t nb = 16,
-                               cusolverDnHandle_t cusolver_handle = nullptr);
+                               typename InputMultiVectorType::value_type* workspace,
+                               int lwork,
+                               std::size_t nb = 32);
 
     template <typename MatrixType, typename InputMultiVectorType>
     static void rayleighRitz(

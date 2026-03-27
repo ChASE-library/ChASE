@@ -102,6 +102,29 @@ public:
                 chase::matrix::Matrix<chase::Base<T>>(nevex_, 1, nevex_, ritzv_);
             A_ = chase::matrix::Matrix<T>(3 * nevex_, nevex_);
         }
+#ifdef QR_DOUBLE_PRECISION
+        if constexpr (std::is_same<T, std::complex<float>>::value ||
+                      std::is_same<T, float>::value)
+        {
+            if (!Vec1_.isDoublePrecisionEnabled())
+            {
+                Vec1_.enableDoublePrecision();
+            }
+            if (!A_.isDoublePrecisionEnabled())
+            {
+                A_.enableDoublePrecision();
+            }
+        }
+#elif RR_DOUBLE_PRECISION
+        if constexpr (std::is_same<T, std::complex<float>>::value ||
+                      std::is_same<T, float>::value)
+        {
+            if (!A_.isDoublePrecisionEnabled())
+            {
+                A_.enableDoublePrecision();
+            }
+        }
+#endif
     }
 
     /**
@@ -152,6 +175,29 @@ public:
                 chase::matrix::Matrix<chase::Base<T>>(nevex_, 1, nevex_, ritzv_);
             A_ = chase::matrix::Matrix<T>(3 * nevex_, nevex_);
         }
+#ifdef QR_DOUBLE_PRECISION
+        if constexpr (std::is_same<T, std::complex<float>>::value ||
+                      std::is_same<T, float>::value)
+        {
+            if (!Vec1_.isDoublePrecisionEnabled())
+            {
+                Vec1_.enableDoublePrecision();
+            }
+            if (!A_.isDoublePrecisionEnabled())
+            {
+                A_.enableDoublePrecision();
+            }
+        }
+#elif RR_DOUBLE_PRECISION
+        if constexpr (std::is_same<T, std::complex<float>>::value ||
+                      std::is_same<T, float>::value)
+        {
+            if (!A_.isDoublePrecisionEnabled())
+            {
+                A_.enableDoublePrecision();
+            }
+        }
+#endif
     }
 
     /**
@@ -395,7 +441,7 @@ public:
             (offset_right < block) ? (block - offset_right) : std::size_t(0);
         if (ncols == 0)
         {
-            Vec1_.swap(Vec2_);
+            Vec1_.swapDataPointer(Vec2_);
             return;
         }
 #ifdef ENABLE_MIXED_PRECISION
@@ -446,7 +492,7 @@ public:
                 Vec2_.ld());
         }
 
-        Vec1_.swap(Vec2_);
+        Vec1_.swapDataPointer(Vec2_);
     }
 
     void HEMM_H2(std::size_t block, T alpha, T beta, T gamma,
@@ -457,7 +503,7 @@ public:
             (offset_right < block) ? (block - offset_right) : std::size_t(0);
         if (ncols == 0)
         {
-            Vec1_.swap(Vec2_);
+            Vec1_.swapDataPointer(Vec2_);
             return;
         }
         std::size_t col0 = offset_left + locked_;
@@ -493,7 +539,7 @@ public:
                                          V2 + j * ld2, 1);
         }
 
-        Vec1_.swap(Vec2_);
+        Vec1_.swapDataPointer(Vec2_);
     }
 
     void ApplyKconjugate(std::size_t block) override
@@ -561,7 +607,7 @@ public:
             Vec1_.data() + locked_ * Vec1_.ld(), Vec1_.ld(),
             Vec2_.data() + 2 * locked_ * Vec2_.ld(), Vec2_.ld());
 
-            Vec1_.swap(Vec2_);
+            Vec1_.swapDataPointer(Vec2_);
 
             chase::linalg::internal::cpu::flipLowerHalfMatrixSign(
                 Vec1_.rows(), 2*locked_, Vec1_.data(), Vec1_.ld());
@@ -604,8 +650,20 @@ public:
         //     display_bounds = std::atoi(display_bounds_env);
         // }
 
-        if (disable == 1)
+        if (disable == 1 || cond != 1.0)
         {
+#ifdef QR_DOUBLE_PRECISION
+            if constexpr (std::is_same<T, std::complex<float>>::value ||
+                          std::is_same<T, float>::value)
+            {
+                Vec1_.copyTo();
+                auto V1_d = Vec1_.matrix_dp();
+                chase::linalg::internal::cpu::houseHoulderQR(
+                    V1_d->rows(), V1_d->cols(), V1_d->data(), V1_d->ld());
+                Vec1_.copyBack();
+            }
+            else
+#endif
             chase::linalg::internal::cpu::houseHoulderQR(
                 Vec1_.rows(), Vec1_.cols(), Vec1_.data(), Vec1_.ld());
         }
@@ -652,8 +710,22 @@ public:
                                       oss.str(), 0);
 #endif
 
-                chase::linalg::internal::cpu::houseHoulderQR(
-                    Vec1_.rows(), Vec1_.cols(), Vec1_.data(), Vec1_.ld());
+#ifdef QR_DOUBLE_PRECISION
+                if constexpr (std::is_same<T, std::complex<float>>::value ||
+                              std::is_same<T, float>::value)
+                {
+                    Vec1_.copyTo();
+                    auto V1_d = Vec1_.matrix_dp();
+                    chase::linalg::internal::cpu::houseHoulderQR(
+                        V1_d->rows(), V1_d->cols(), V1_d->data(), V1_d->ld());
+                    Vec1_.copyBack();
+                }
+                else
+#endif
+                {
+                    chase::linalg::internal::cpu::houseHoulderQR(
+                        Vec1_.rows(), Vec1_.cols(), Vec1_.data(), Vec1_.ld());
+                }
             }
         }
 
@@ -665,7 +737,7 @@ public:
             Vec1_.data() + 2 * locked_ * Vec1_.ld(),Vec1_.ld(),
             Vec2_.data() + locked_ * Vec2_.ld(), Vec2_.ld());
 
-            Vec1_.swap(Vec2_);
+            Vec1_.swapDataPointer(Vec2_);
 
             chase::linalg::lapackpp::t_lacpy('A', Vec2_.rows(), locked_,
             Vec1_.data(), Vec1_.ld(),
@@ -700,7 +772,7 @@ public:
                 ritzvs_.data() + locked_, A_.data());
         }
 
-        Vec1_.swap(Vec2_);
+        Vec1_.swapDataPointer(Vec2_);
     }
 
     void Sort(chase::Base<T>* ritzv, chase::Base<T>* residLast,
@@ -740,7 +812,10 @@ public:
     void End() override {
         //this operation is required because after multiple swaps, Vec1_, which contains the final eigenvectors, its buffer is 
         //not pointing to the initial V1_ given by the user.
-        chase::linalg::lapackpp::t_lacpy('A', Vec1_.rows(), Vec1_.cols(), Vec1_.data(), Vec1_.ld(), V1_, ldv_);
+        if (Vec1_.cpu_data() != V1_)
+        {
+            chase::linalg::lapackpp::t_lacpy('A', Vec1_.rows(), Vec1_.cols(), Vec1_.data(), Vec1_.ld(), V1_, ldv_);
+        }
     }
 
 private:

@@ -20,10 +20,8 @@
 #include <iostream>
 #include <sstream>
 
-#ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
 #include "grid/nccl_utils.hpp"
 #include "linalg/internal/cuda/lanczos_kernels.hpp"
-#endif
 
 namespace chase
 {
@@ -160,9 +158,6 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
         throw std::runtime_error("Lanczos H and V have same number of rows");
     }
 
-    // Use default stream (nullptr) so performance.hpp CUDA events see Lanczos work
-    cudaStream_t stream = nullptr;
-#ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
 #ifdef CHASE_OUTPUT
     {
         std::ostringstream oss;
@@ -177,38 +172,27 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
 
     // Get NCCL communicator from grid
     ncclComm_t nccl_comm = H.getMpiGrid()->get_nccl_col_comm();
-
-
-//    CHECK_CUBLAS_ERROR(cublasSetStream(cublas_handle, stream));
-
-    // ========================================================================
-    // GPU-Resident: Allocate device buffers (once, no allocation in loop)
-    // ========================================================================
-    T* d_alpha;
-    RealT* d_real_alpha;
-    RealT* d_r_beta;
-    RealT* d_beta_prev;   // previous iteration beta (after sqrt), for k>0 axpy
-    T* d_beta_neg;       // -beta for batched axpy, reused every k>0
-    RealT* d_d;          // device diagonal (deferred D2H)
-    RealT* e_d;          // device off-diagonal (deferred D2H)
-    CHECK_CUDA_ERROR(cudaMalloc(&d_alpha, numvec * sizeof(T)));
-    CHECK_CUDA_ERROR(cudaMalloc(&d_real_alpha, numvec * sizeof(RealT)));
-    CHECK_CUDA_ERROR(cudaMalloc(&d_r_beta, numvec * sizeof(RealT)));
-    CHECK_CUDA_ERROR(cudaMalloc(&d_beta_prev, numvec * sizeof(RealT)));
-    CHECK_CUDA_ERROR(cudaMalloc(&d_beta_neg, numvec * sizeof(T)));
-    CHECK_CUDA_ERROR(cudaMalloc(&d_d, M * numvec * sizeof(RealT)));
-    CHECK_CUDA_ERROR(cudaMalloc(&e_d, M * numvec * sizeof(RealT)));
-
-    // Initialize to zero to prevent garbage values
-    CHECK_CUDA_ERROR(cudaMemset(d_alpha, 0, numvec * sizeof(T)));
-    CHECK_CUDA_ERROR(cudaMemset(d_real_alpha, 0, numvec * sizeof(RealT)));
-    CHECK_CUDA_ERROR(cudaMemset(d_r_beta, 0, numvec * sizeof(RealT)));
-    CHECK_CUDA_ERROR(cudaMemset(d_beta_prev, 0, numvec * sizeof(RealT)));
-    CHECK_CUDA_ERROR(cudaMemset(d_beta_neg, 0, numvec * sizeof(T)));
+    using chase::linalg::internal::cuda::batchedNormSquared;
+    using chase::linalg::internal::cuda::batchedDotProduct;
+    using chase::linalg::internal::cuda::batchedAxpy;
+    using chase::linalg::internal::cuda::batchedAxpyThenNegate;
+    using chase::linalg::internal::cuda::normalizeVectors;
+    using chase::linalg::internal::cuda::batchedSqrt;
+    using chase::linalg::internal::cuda::copyRealNegateToT;
+    using chase::linalg::internal::cuda::getRealPart;
+    
+    cudaStream_t stream_orig;
+    CHECK_CUBLAS_ERROR(cublasGetStream(cublas_handle, &stream_orig));
+    cudaStream_t stream = nullptr;
+    //!!! SEEMS there is bug while using nonblocking stream, need to investigate!!!
+    //!!! For now, using default stream (nullptr)!!!
+    //CHECK_CUDA_ERROR(cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking));
+    CHECK_CUBLAS_ERROR(cublasSetStream(cublas_handle, stream));
 
     // Host buffers (only for LAPACK; filled by single D2H after loop)
     std::vector<RealT> d(M * numvec);
     std::vector<RealT> e(M * numvec);
+    std::vector<RealT> d_tmp(M * numvec), e_tmp(M * numvec);
 
     T One = T(1.0);
     T Zero = T(0.0);
@@ -219,42 +203,40 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
     auto v_2 = v_0.template clone<InputMultiVectorType>();
     auto v_w = V.template clone<ResultMultiVectorType>(N, numvec);
 
-    // Clear any stale CUDA error state carried from previous stages so this
-    // probe diagnoses t_lacpy itself rather than aborting on unrelated errors.
-    auto pre_lanczos_err = cudaGetLastError();
-/*
-    #ifdef CHASE_OUTPUT
-    {
-        int dev = -1;
-        CHECK_CUDA_ERROR(cudaGetDevice(&dev));
-        cudaPointerAttributes src_attr{};
-        cudaPointerAttributes dst_attr{};
-        auto src_status = cudaPointerGetAttributes(&src_attr, V.l_data());
-        auto dst_status = cudaPointerGetAttributes(&dst_attr, v_1.l_data());
+    /////////////////////////////////////////////////////
+    ////Lanczos internal stream wait for default stream//
+    /////////////////////////////////////////////////////
+    cudaEvent_t evt_begin;
+    CHECK_CUDA_ERROR(cudaEventCreate(&evt_begin));
+    CHECK_CUDA_ERROR(cudaEventRecord(evt_begin, stream_orig));
+    CHECK_CUDA_ERROR(cudaStreamWaitEvent(stream, evt_begin, 0));
+    
+    T* d_alpha;
+    RealT* d_real_alpha;
+    RealT* d_r_beta;
+    RealT* d_beta_prev;   // previous iteration beta (after sqrt), for k>0 axpy
+    T* d_beta_neg;       // -beta for batched axpy, reused every k>0
+    RealT* d_d;          // device diagonal (deferred D2H)
+    RealT* e_d;          // device off-diagonal (deferred D2H)
+    
+    CHECK_CUDA_ERROR(cudaMallocAsync(&d_alpha, numvec * sizeof(T), stream));
+    CHECK_CUDA_ERROR(cudaMallocAsync(&d_real_alpha, numvec * sizeof(RealT), stream));
+    CHECK_CUDA_ERROR(cudaMallocAsync(&d_r_beta, numvec * sizeof(RealT), stream));
+    CHECK_CUDA_ERROR(cudaMallocAsync(&d_beta_prev, numvec * sizeof(RealT), stream));
+    CHECK_CUDA_ERROR(cudaMallocAsync(&d_beta_neg, numvec * sizeof(T), stream));
+    CHECK_CUDA_ERROR(cudaMallocAsync(&d_d, M * numvec * sizeof(RealT), stream));
+    CHECK_CUDA_ERROR(cudaMallocAsync(&e_d, M * numvec * sizeof(RealT), stream));
 
-        std::ostringstream oss;
-        oss << "[LANCZOS DEBUG] rank=" << H.getMpiGrid()->get_myRank()
-            << " cudaGetDevice=" << dev
-            << " pre_lanczos_err=" << static_cast<int>(pre_lanczos_err)
-            << " src_attr_status=" << static_cast<int>(src_status)
-            << " dst_attr_status=" << static_cast<int>(dst_status);
-        if (src_status == cudaSuccess && dst_status == cudaSuccess)
-        {
-            oss << " src_ptr_device=" << src_attr.device
-                << " dst_ptr_device=" << dst_attr.device
-                << " src_type=" << static_cast<int>(src_attr.type)
-                << " dst_type=" << static_cast<int>(dst_attr.type)
-                << " rows=" << v_1.l_rows()
-                << " numvec=" << numvec
-                << " src_ld=" << V.l_ld()
-                << " dst_ld=" << v_1.l_ld();
-        }
-        oss << "\n";
-        chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(),
-                               H.getMpiGrid()->get_myRank());
-    }
-#endif
-*/
+    // Initialize to zero to prevent garbage values
+    CHECK_CUDA_ERROR(cudaMemsetAsync(d_alpha, 0, numvec * sizeof(T), stream));
+    CHECK_CUDA_ERROR(cudaMemsetAsync(d_real_alpha, 0, numvec * sizeof(RealT), stream));
+    CHECK_CUDA_ERROR(cudaMemsetAsync(d_r_beta, 0, numvec * sizeof(RealT), stream));
+    CHECK_CUDA_ERROR(cudaMemsetAsync(d_beta_prev, 0, numvec * sizeof(RealT), stream));    
+    CHECK_CUDA_ERROR(cudaMemsetAsync(d_beta_neg, 0, numvec * sizeof(T), stream));
+    cudaMemsetAsync(d_d, 0, M * numvec * sizeof(RealT), stream);
+    cudaMemsetAsync(e_d, 0, M * numvec * sizeof(RealT), stream);
+    cudaMemsetAsync(v_0.l_data(), 0, v_0.l_rows() * numvec * sizeof(T), stream);
+
     chase::linalg::internal::cuda::t_lacpy('A', v_1.l_rows(), numvec,
                                            V.l_data(), V.l_ld(), v_1.l_data(),
                                            v_1.l_ld(), &stream);
@@ -265,31 +247,24 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
     // Initial normalization (GPU-resident)
     // ========================================================================
     
-    // Compute norms squared on GPU (results stay on GPU)
-    using chase::linalg::internal::cuda::batchedNormSquared;
-    using chase::linalg::internal::cuda::batchedDotProduct;
-    using chase::linalg::internal::cuda::batchedAxpy;
-    using chase::linalg::internal::cuda::batchedAxpyThenNegate;
-    using chase::linalg::internal::cuda::normalizeVectors;
-    using chase::linalg::internal::cuda::batchedSqrt;
-    using chase::linalg::internal::cuda::copyRealNegateToT;
-    using chase::linalg::internal::cuda::getRealPart;
-
+    // Compute local norms (per vector i):
+    //   s_i^(loc) = ||v_1^(i)||_2^2
     batchedNormSquared(v_1.l_data(), d_real_alpha, v_1.l_rows(), numvec, v_1.l_ld(), &stream);
-    CHECK_CUDA_ERROR(cudaGetLastError());  // Check for kernel launch errors
 
-    // NCCL Allreduce: sum norms across column communicator (GPU-GPU)
+    // Global reduction across the column communicator:
+    //   s_i = sum_r s_i^(loc,r)
     CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper(
         d_real_alpha, d_real_alpha, numvec, ncclSum, nccl_comm, &stream));
 
-    // Normalize vectors: fused 1/sqrt + scale (single kernel launch)
+    // Initial normalization:
+    //   v_1^(i) <- v_1^(i) / sqrt(s_i)
     normalizeVectors(v_1.l_data(), d_real_alpha, v_1.l_rows(), numvec, v_1.l_ld(), &stream);
 
     // ========================================================================
     // Main Lanczos iteration loop
     // ========================================================================
     
-    for (std::size_t k = 0; k < M; k = k + 1)
+    for (std::size_t k = 0; k + 1 < M; ++k)
     {
         for (auto i = 0; i < numvec; i++)
         {
@@ -297,78 +272,127 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
                        v_1.l_rows() * sizeof(T), cudaMemcpyDeviceToDevice, stream);
         }
 
-        // Matrix-vector multiply
+        // Krylov expansion (distributed matvec):
+        //   w^(i) = H v_k^(i)
         chase::linalg::internal::cuda_nccl::MatrixMultiplyMultiVectors(
             cublas_handle, &One, H, v_1, &Zero, v_w);
         
-        // Redistribute on stream; next ops (dot, NCCL, etc.) are on same stream so run in order
+        // Redistribution to local panel layout:
+        //   v_2^(i) <- redistribute(w^(i))
+        // Next kernels run on same stream, preserving this dependency.
         v_w.redistributeImplAsync(&v_2, &stream);
 
-        // Batched dot products with negation (single kernel launch, GPU-resident)
-        // Computes d_alpha[i] = -conj(v_1[:,i]) · v_2[:,i] for all i in one pass
+        // Local alpha contribution (stored negated for fused update):
+        //   alpha_k^(i,loc) = <v_1^(i), w^(i)>_loc
+        //   d_alpha(i) <- -alpha_k^(i,loc)
         batchedDotProduct(v_1.l_data(), v_2.l_data(), d_alpha, 
                          v_1.l_rows(), numvec, v_1.l_ld(), true, &stream);  // true = negate
-        CHECK_CUDA_ERROR(cudaGetLastError());  // Check for kernel launch errors
 
-        // NCCL Allreduce (GPU-GPU) - sum the negative alphas
+        // Global alpha reduction:
+        //   d_alpha(i) <- -alpha_k^(i) = -sum_r alpha_k^(i,loc,r)
         CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper(
             d_alpha, d_alpha, numvec, ncclSum, nccl_comm, &stream));
 
-        // Fused: Batched AXPY with NEGATIVE alpha then negate alpha for storage (single kernel)
+        // Fused alpha correction (per i):
+        //   w^(i) <- w^(i) - alpha_k^(i) v_1^(i)
+        // and store alpha_k^(i) sign-corrected for tridiagonal diagonal entry d(k,i).
         batchedAxpyThenNegate(d_alpha, v_1.l_data(), v_2.l_data(),
                               v_1.l_rows(), numvec, v_1.l_ld(), &stream);
 
-        // Extract real(alpha) on GPU; store in device buffer (deferred D2H)
+        // Store tridiagonal diagonal entry:
+        //   d(k, i) = Re(alpha_k^(i))
         getRealPart(d_alpha, d_real_alpha, numvec, &stream);
         cudaMemcpyAsync(d_d + k * numvec, d_real_alpha, numvec * sizeof(RealT),
                        cudaMemcpyDeviceToDevice, stream);
 
-        // Subtract previous beta contribution (if k > 0) using device-resident beta (no host round-trip)
-        if (k > 0)
-        {
-            copyRealNegateToT(d_beta_prev, d_beta_neg, numvec, &stream);
-            batchedAxpy(d_beta_neg, v_0.l_data(), v_2.l_data(),
-                       v_0.l_rows(), numvec, v_0.l_ld(), &stream);
-        }
+        // Previous-basis correction:
+        //   w^(i) <- w^(i) - beta_{k-1}^(i) v_0^(i)
+        // First iteration is a no-op because beta_{-1}=0.
+        copyRealNegateToT(d_beta_prev, d_beta_neg, numvec, &stream);
+        batchedAxpy(d_beta_neg, v_0.l_data(), v_2.l_data(),
+                    v_0.l_rows(), numvec, v_0.l_ld(), &stream);
 
-        // Compute norms squared (GPU-resident)
+        // Local beta contribution:
+        //   r_i^(loc) = ||w^(i)||_2^2_loc
         batchedNormSquared(v_2.l_data(), d_r_beta, v_2.l_rows(), numvec, v_2.l_ld(), &stream);
-        CHECK_CUDA_ERROR(cudaGetLastError());  // Check for kernel launch errors
 
-        // NCCL Allreduce: sum norm squared
+        // Global beta norm:
+        //   r_i = sum_r r_i^(loc,r)
         CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper(
             d_r_beta, d_r_beta, numvec, ncclSum, nccl_comm, &stream));
 
-        // Keep beta on device: copy d_r_beta (norm²) to d_beta_prev, then sqrt in place for next iteration
+        // Beta value:
+        //   beta_k^(i) = sqrt(r_i)
+        // Keep beta_k on device for next recurrence step.
         cudaMemcpyAsync(d_beta_prev, d_r_beta, numvec * sizeof(RealT),
                        cudaMemcpyDeviceToDevice, stream);
         batchedSqrt(d_beta_prev, numvec, &stream);
 
-        // Normalize v_2: v_2 *= 1/||v_2|| using norm² (d_r_beta still holds norm²)
+        // Next Lanczos vector:
+        //   v_{k+1}^(i) = w^(i) / beta_k^(i) = w^(i) / sqrt(r_i)
         normalizeVectors(v_2.l_data(), d_r_beta, v_2.l_rows(), numvec, v_2.l_ld(), &stream);
 
-        // Store beta in device buffer for e[] (deferred D2H; only for k < M-1)
-        if (k < M - 1)
-            cudaMemcpyAsync(e_d + k * numvec, d_beta_prev, numvec * sizeof(RealT),
-                           cudaMemcpyDeviceToDevice, stream);
-
-        if (k == M - 1)
-            break;
+        // Store tridiagonal off-diagonal entry:
+        //   e(k, i) = beta_k^(i),  for k = 0..M-2
+        cudaMemcpyAsync(e_d + k * numvec, d_beta_prev, numvec * sizeof(RealT),
+                        cudaMemcpyDeviceToDevice, stream);
 
         v_1.swap(v_0);
         v_1.swap(v_2);
     }
 
+    {
+        const std::size_t k = M - 1;
+
+        for (auto i = 0; i < numvec; i++)
+        {
+            cudaMemcpyAsync(V.l_data() + k * V.l_ld(), v_1.l_data() + i * v_1.l_ld(),
+                            v_1.l_rows() * sizeof(T), cudaMemcpyDeviceToDevice, stream);
+        }
+
+        // Krylov expansion (distributed matvec):
+        //   w^(i) = H v_{M-1}^(i)
+        chase::linalg::internal::cuda_nccl::MatrixMultiplyMultiVectors(
+            cublas_handle, &One, H, v_1, &Zero, v_w);
+
+        // Redistribution to local panel layout:
+        //   v_2^(i) <- redistribute(w^(i))
+        v_w.redistributeImplAsync(&v_2, &stream);
+
+        // Local alpha contribution (stored negated for fused update):
+        //   alpha_{M-1}^(i,loc) = <v_1^(i), w^(i)>_loc
+        //   d_alpha(i) <- -alpha_{M-1}^(i,loc)
+        batchedDotProduct(v_1.l_data(), v_2.l_data(), d_alpha,
+                         v_1.l_rows(), numvec, v_1.l_ld(), true, &stream);
+
+        // Global alpha reduction:
+        //   d_alpha(i) <- -alpha_{M-1}^(i) = -sum_r alpha_{M-1}^(i,loc,r)
+        CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper(
+            d_alpha, d_alpha, numvec, ncclSum, nccl_comm, &stream));
+
+        // Fused alpha correction (per i):
+        //   w^(i) <- w^(i) - alpha_{M-1}^(i) v_1^(i)
+        // and store alpha_{M-1}^(i) sign-corrected for d(M-1,i).
+        batchedAxpyThenNegate(d_alpha, v_1.l_data(), v_2.l_data(),
+                              v_1.l_rows(), numvec, v_1.l_ld(), &stream);
+
+        // Store final tridiagonal diagonal entry:
+        //   d(M-1, i) = Re(alpha_{M-1}^(i))
+        getRealPart(d_alpha, d_real_alpha, numvec, &stream);
+        cudaMemcpyAsync(d_d + k * numvec, d_real_alpha, numvec * sizeof(RealT),
+                        cudaMemcpyDeviceToDevice, stream);
+    }
+
     chase::linalg::internal::cuda::t_lacpy('A', v_1.l_rows(), numvec,
                                            v_1.l_data(), v_1.l_ld(), V.l_data(),
-                                           V.l_ld());
+                                           V.l_ld(), &stream);
 
     // Ensure all GPU operations complete; single D2H for d and e (was per-iteration sync)
+    cudaMemcpyAsync(d.data(), d_d, M * numvec * sizeof(RealT), cudaMemcpyDeviceToHost, stream);
+    cudaMemcpyAsync(e.data(), e_d, M * numvec * sizeof(RealT), cudaMemcpyDeviceToHost, stream);
     cudaStreamSynchronize(stream);
-    cudaMemcpy(d.data(), d_d, M * numvec * sizeof(RealT), cudaMemcpyDeviceToHost);
-    cudaMemcpy(e.data(), e_d, M * numvec * sizeof(RealT), cudaMemcpyDeviceToHost);
-    cudaFree(d_d);
-    cudaFree(e_d);
+    cudaFreeAsync(d_d, stream);
+    cudaFreeAsync(e_d, stream);
 
     // Last beta per run for upper-bound (e_d layout: e[k*numvec+i]; last row is k=M-2)
     std::vector<RealT> r_beta_last(numvec);
@@ -376,7 +400,6 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
         r_beta_last[i] = e[(M - 2) * numvec + i];
 
     // Transpose d, e from device layout (k*numvec+i) to LAPACK layout (i*M+k)
-    std::vector<RealT> d_tmp(M * numvec), e_tmp(M * numvec);
     for (auto i = 0; i < numvec; i++)
         for (std::size_t k = 0; k < M; k++)
         {
@@ -446,207 +469,14 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
     cudaFree(d_beta_prev);
     cudaFree(d_beta_neg);
 
-#else
-#ifdef CHASE_OUTPUT
-    {
-        std::ostringstream oss;
-        oss << "[ORIGINAL MPI LANCZOS]: ENABLED, using MPI_Allreduce (not GPU-resident)" << std::endl;
-        chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(),
-                               H.getMpiGrid()->get_myRank());
-    }
-#endif
-    // ========================================================================
-    // ORIGINAL VERSION: MPI-based collectives (default)
-    // ========================================================================
-
-    std::vector<RealT> r_beta(numvec);
-
-    std::vector<RealT> d(M * numvec);
-    std::vector<RealT> e(M * numvec);
-
-    std::vector<RealT> real_alpha(numvec);
-    std::vector<T> alpha(numvec, T(1.0));
-    std::vector<T> beta(numvec, T(0.0));
-
-    T One = T(1.0);
-    T Zero = T(0.0);
-
-    std::size_t N = H.g_rows();
-
-    auto v_0 = V.template clone<InputMultiVectorType>(N, numvec);
-    auto v_1 = v_0.template clone<InputMultiVectorType>();
-    auto v_2 = v_0.template clone<InputMultiVectorType>();
-    auto v_w = V.template clone<ResultMultiVectorType>(N, numvec);
-
-    chase::linalg::internal::cuda::t_lacpy('A', v_1.l_rows(), numvec,
-                                           V.l_data(), V.l_ld(), v_1.l_data(),
-                                           v_1.l_ld());
-    for (auto i = 0; i < numvec; i++)
-    {
-        CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTnrm2(
-            cublas_handle, v_1.l_rows(), v_1.l_data() + i * v_1.l_ld(), 1,
-            &real_alpha[i]));
-        real_alpha[i] = std::pow(real_alpha[i], 2);
-    }
-
-    MPI_Allreduce(MPI_IN_PLACE, real_alpha.data(), numvec,
-                  chase::mpi::getMPI_Type<RealT>(), MPI_SUM,
-                  H.getMpiGrid()->get_col_comm());
-
-    for (auto i = 0; i < numvec; i++)
-    {
-        real_alpha[i] = std::sqrt(real_alpha[i]);
-        alpha[i] = T(1 / real_alpha[i]);
-    }
-
-    for (auto i = 0; i < numvec; i++)
-    {
-        CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTscal(
-            cublas_handle, v_1.l_rows(), &alpha[i],
-            v_1.l_data() + i * v_1.l_ld(), 1));
-    }
-
-    for (std::size_t k = 0; k < M; k = k + 1)
-    {
-        for (auto i = 0; i < numvec; i++)
-        {
-            cudaMemcpy(V.l_data() + k * V.l_ld(), v_1.l_data() + i * v_1.l_ld(),
-                       v_1.l_rows() * sizeof(T), cudaMemcpyDeviceToDevice);
-        }
-
-        chase::linalg::internal::cuda_nccl::MatrixMultiplyMultiVectors(
-            cublas_handle, &One, H, v_1, &Zero, v_w);
-        
-        // Redistribute on stream; next ops on same stream run in order
-        v_w.redistributeImplAsync(&v_2, &stream);
-
-        for (auto i = 0; i < numvec; i++)
-        {
-            CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTdot(
-                cublas_handle, v_1.l_rows(), v_1.l_data() + i * v_1.l_ld(), 1,
-                v_2.l_data() + i * v_2.l_ld(), 1, &alpha[i]));
-
-            alpha[i] = -alpha[i];
-        }
-
-        MPI_Allreduce(MPI_IN_PLACE, alpha.data(), numvec,
-                      chase::mpi::getMPI_Type<T>(), MPI_SUM,
-                      H.getMpiGrid()->get_col_comm());
-
-        for (auto i = 0; i < numvec; i++)
-        {
-            CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTaxpy(
-                cublas_handle, v_1.l_rows(), &alpha[i],
-                v_1.l_data() + i * v_1.l_ld(), 1, v_2.l_data() + i * v_2.l_ld(),
-                1));
-            alpha[i] = -alpha[i];
-        }
-
-        for (auto i = 0; i < numvec; i++)
-        {
-            d[k + M * i] = std::real(alpha[i]);
-        }
-        if (k > 0)
-        {
-            for (auto i = 0; i < numvec; i++)
-            {
-                beta[i] = T(-r_beta[i]);
-            }
-            for (auto i = 0; i < numvec; i++)
-            {
-                CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTaxpy(
-                    cublas_handle, v_0.l_rows(), &beta[i],
-                    v_0.l_data() + i * v_0.l_ld(), 1,
-                    v_2.l_data() + i * v_2.l_ld(), 1));
-            }
-        }
-
-        for (auto i = 0; i < numvec; i++)
-        {
-            beta[i] = -beta[i];
-        }
-
-        for (auto i = 0; i < numvec; i++)
-        {
-            CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTnrm2(
-                cublas_handle, v_2.l_rows(), v_2.l_data() + i * v_2.l_ld(), 1,
-                &r_beta[i]));
-
-            r_beta[i] = std::pow(r_beta[i], 2);
-        }
-
-        MPI_Allreduce(MPI_IN_PLACE, r_beta.data(), numvec,
-                      chase::mpi::getMPI_Type<RealT>(), MPI_SUM,
-                      H.getMpiGrid()->get_col_comm());
-
-        for (auto i = 0; i < numvec; i++)
-        {
-            r_beta[i] = std::sqrt(r_beta[i]);
-        }
-
-        for (auto i = 0; i < numvec; i++)
-        {
-            beta[i] = T(1 / r_beta[i]);
-        }
-
-        if (k == M - 1)
-        {
-            break;
-        }
-
-        for (auto i = 0; i < numvec; i++)
-        {
-            CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTscal(
-                cublas_handle, v_2.l_rows(), &beta[i],
-                v_2.l_data() + i * v_2.l_ld(), 1));
-        }
-
-        for (auto i = 0; i < numvec; i++)
-        {
-            e[k + M * i] = r_beta[i];
-        }
-
-        v_1.swap(v_0);
-        v_1.swap(v_2);
-    }
-
-    chase::linalg::internal::cuda::t_lacpy('A', v_1.l_rows(), numvec,
-                                           v_1.l_data(), v_1.l_ld(), V.l_data(),
-                                           V.l_ld());
-
-    int notneeded_m;
-    std::size_t vl = 0;
-    std::size_t vu = 0;
-    RealT ul = 0;
-    RealT ll = 0;
-    int tryrac = 0;
-    std::vector<int> isuppz(2 * M);
-
-    for (auto i = 0; i < numvec; i++)
-    {
-        lapackpp::t_stemr(LAPACK_COL_MAJOR, 'V', 'A', M, d.data() + i * M,
-                          e.data() + i * M, ul, ll, vl, vu, &notneeded_m,
-                          ritzv + M * i, ritzV, M, M, isuppz.data(), &tryrac);
-        for (std::size_t k = 0; k < M; ++k)
-        {
-            Tau[k + i * M] = std::abs(ritzV[k * M]) * std::abs(ritzV[k * M]);
-        }
-    }
-
-    RealT max;
-    *upperb = std::max(std::abs(ritzv[0]), std::abs(ritzv[M - 1])) +
-              std::abs(r_beta[0]);
-
-    for (auto i = 1; i < numvec; i++)
-    {
-        max =
-            std::max(std::abs(ritzv[i * M]), std::abs(ritzv[(i + 1) * M - 1])) +
-            std::abs(r_beta[i]);
-        *upperb = std::max(max, *upperb);
-    }
-#endif // CHASE_ENABLE_GPU_RESIDENT_LANCZOS
-//    cudaStreamDestroy(stream);
-
+    cudaEvent_t evt_end;
+    CHECK_CUDA_ERROR(cudaEventCreate(&evt_end));
+    CHECK_CUDA_ERROR(cudaEventRecord(evt_end, stream));
+    CHECK_CUDA_ERROR(cudaStreamWaitEvent(stream_orig, evt_end, 0));
+    CHECK_CUDA_ERROR(cudaEventDestroy(evt_begin));
+    CHECK_CUDA_ERROR(cudaEventDestroy(evt_end));
+    CHECK_CUBLAS_ERROR(cublasSetStream(cublas_handle, stream_orig));
+//    CHECK_CUDA_ERROR(cudaStreamDestroy(stream));
 }
 
 template <typename MatrixType, typename InputMultiVectorType>
@@ -674,10 +504,14 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
         throw std::runtime_error("Lanczos H and V have same number of rows");
     }
     
-    // Use default stream (nullptr) so performance.hpp CUDA events see Lanczos work
+    // Use default stream (nullptr) so performance.hpp CUDA events see Lanczos work.
+    // TODO(nonblocking-stream): investigate ordering hazards and re-enable a
+    // dedicated non-blocking stream once dependencies are fully validated.
+    cudaStream_t stream_orig;
+    CHECK_CUBLAS_ERROR(cublasGetStream(cublas_handle, &stream_orig));
     cudaStream_t stream = nullptr;
+    CHECK_CUBLAS_ERROR(cublasSetStream(cublas_handle, stream));
 
-#ifdef CHASE_ENABLE_GPU_RESIDENT_LANCZOS
 #ifdef CHASE_OUTPUT
     {
         std::ostringstream oss;
@@ -703,27 +537,33 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
     T* d_beta_neg;       // -beta for axpy, reused every k>0
     RealT* d_d;          // device diagonal (deferred D2H)
     RealT* e_d;          // device off-diagonal (deferred D2H)
-    cudaMalloc(&d_alpha, sizeof(T));
-    cudaMalloc(&d_real_alpha, sizeof(RealT));
-    cudaMalloc(&d_r_beta, sizeof(RealT));
-    cudaMalloc(&d_beta_prev, sizeof(RealT));
-    cudaMalloc(&d_beta_neg, sizeof(T));
-    cudaMalloc(&d_d, M * sizeof(RealT));
-    cudaMalloc(&e_d, M * sizeof(RealT));
+    /////////////////////////////////////////////////////
+    ////Lanczos internal stream wait for default stream//
+    /////////////////////////////////////////////////////
+    cudaEvent_t evt_begin;
+    CHECK_CUDA_ERROR(cudaEventCreate(&evt_begin));
+    CHECK_CUDA_ERROR(cudaEventRecord(evt_begin, stream_orig));
+    CHECK_CUDA_ERROR(cudaStreamWaitEvent(stream, evt_begin, 0));
 
-    cudaMemset(d_alpha, 0, sizeof(T));
-    cudaMemset(d_real_alpha, 0, sizeof(RealT));
-    cudaMemset(d_r_beta, 0, sizeof(RealT));
-    cudaMemset(d_beta_prev, 0, sizeof(RealT));
-    cudaMemset(d_beta_neg, 0, sizeof(T));
+    CHECK_CUDA_ERROR(cudaMallocAsync(&d_alpha, sizeof(T), stream));
+    CHECK_CUDA_ERROR(cudaMallocAsync(&d_real_alpha, sizeof(RealT), stream));
+    CHECK_CUDA_ERROR(cudaMallocAsync(&d_r_beta, sizeof(RealT), stream));
+    CHECK_CUDA_ERROR(cudaMallocAsync(&d_beta_prev, sizeof(RealT), stream));
+    CHECK_CUDA_ERROR(cudaMallocAsync(&d_beta_neg, sizeof(T), stream));
+    CHECK_CUDA_ERROR(cudaMallocAsync(&d_d, M * sizeof(RealT), stream));
+    CHECK_CUDA_ERROR(cudaMallocAsync(&e_d, M * sizeof(RealT), stream));
+
+    CHECK_CUDA_ERROR(cudaMemsetAsync(d_alpha, 0, sizeof(T), stream));
+    CHECK_CUDA_ERROR(cudaMemsetAsync(d_real_alpha, 0, sizeof(RealT), stream));
+    CHECK_CUDA_ERROR(cudaMemsetAsync(d_r_beta, 0, sizeof(RealT), stream));
+    CHECK_CUDA_ERROR(cudaMemsetAsync(d_beta_prev, 0, sizeof(RealT), stream));
+    CHECK_CUDA_ERROR(cudaMemsetAsync(d_beta_neg, 0, sizeof(T), stream));
+    CHECK_CUDA_ERROR(cudaMemsetAsync(d_d, 0, M * sizeof(RealT), stream));
+    CHECK_CUDA_ERROR(cudaMemsetAsync(e_d, 0, M * sizeof(RealT), stream));
 
     // Host buffers (filled by single D2H after loop)
     std::vector<RealT> d(M);
     std::vector<RealT> e(M);
-
-    // Note: cublas_handle is already configured with CUBLAS_POINTER_MODE_DEVICE
-    // in the pchase_gpu constructor, so all scalar pointers must be on device
-    cublasSetStream(cublas_handle, stream);
 
     T One = T(1.0);
     T Zero = T(0.0);
@@ -734,8 +574,11 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
     auto v_2 = v_0.template clone<InputMultiVectorType>();
     auto v_w = V.template clone<ResultMultiVectorType>(N, 1);
 
+    CHECK_CUDA_ERROR(cudaMemsetAsync(v_0.l_data(), 0, v_0.l_rows() * sizeof(T), stream));
+
     chase::linalg::internal::cuda::t_lacpy('A', v_1.l_rows(), 1, V.l_data(),
-                                           V.l_ld(), v_1.l_data(), v_1.l_ld());
+                                           V.l_ld(), v_1.l_data(), v_1.l_ld(),
+                                           &stream);
 
     // ========================================================================
     // Initial normalization (GPU-resident)
@@ -750,85 +593,131 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
     using chase::linalg::internal::cuda::copyRealNegateToT;
     using chase::linalg::internal::cuda::getRealPart;
     
-    // Compute norm squared on GPU (single vector version)
+    // Local norm:
+    //   s^(loc) = ||v_1||_2^2_loc
     batchedNormSquared(v_1.l_data(), d_real_alpha, v_1.l_rows(), 1, v_1.l_ld(), &stream);
-    CHECK_CUDA_ERROR(cudaGetLastError());  // Check for kernel launch errors
 
-    // NCCL Allreduce
+    // Global norm:
+    //   s = sum_r s^(loc,r)
     CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper(
         d_real_alpha, d_real_alpha, 1, ncclSum, nccl_comm, &stream));
 
-    // Normalize: fused sqrt + reciprocal + scale
+    // Initial normalization:
+    //   v_1 <- v_1 / sqrt(s)
     normalizeVectors(v_1.l_data(), d_real_alpha, v_1.l_rows(), 1, v_1.l_ld(), &stream);
 
     // ========================================================================
     // Main Lanczos iteration loop
     // ========================================================================
     
-    for (std::size_t k = 0; k < M; k = k + 1)
+    for (std::size_t k = 0; k + 1 < M; ++k)
     {
-        // Matrix-vector multiply
+        // Krylov expansion:
+        //   w = H v_k
         chase::linalg::internal::cuda_nccl::MatrixMultiplyMultiVectors(
             cublas_handle, &One, H, v_1, &Zero, v_w);
 
-        // Redistribute on stream; next ops on same stream run in order
+        // Redistribution to local layout:
+        //   v_2 <- redistribute(w)
         v_w.redistributeImplAsync(&v_2, &stream);
 
-        // Dot product with negation (single-vector, but using batched kernel for consistency)
+        // Local alpha contribution (negated storage):
+        //   d_alpha <- -<v_1, w>_loc
         batchedDotProduct(v_1.l_data(), v_2.l_data(), d_alpha,
                          v_1.l_rows(), 1, v_1.l_ld(), true, &stream);  // true = negate
-        CHECK_CUDA_ERROR(cudaGetLastError());  // Check for kernel launch errors
 
-        // NCCL Allreduce (sum the negative alpha)
+        // Global alpha:
+        //   d_alpha <- -alpha_k = -sum_r <v_1, w>_loc,r
         CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper(
             d_alpha, d_alpha, 1, ncclSum, nccl_comm, &stream));
 
-        // Fused: AXPY with NEGATIVE alpha then negate alpha for storage (single kernel)
+        // Fused alpha correction:
+        //   w <- w - alpha_k v_1
+        // and store sign-correct alpha_k for d(k).
         batchedAxpyThenNegate(d_alpha, v_1.l_data(), v_2.l_data(),
                              v_1.l_rows(), 1, v_1.l_ld(), &stream);
 
-        // Extract real(alpha) on GPU; store in device buffer (deferred D2H)
+        // Store diagonal entry:
+        //   d(k) = Re(alpha_k)
         getRealPart(d_alpha, d_real_alpha, 1, &stream);
         cudaMemcpyAsync(d_d + k, d_real_alpha, sizeof(RealT), cudaMemcpyDeviceToDevice, stream);
 
-        // Subtract previous beta (if k > 0) using device-resident beta; use fused batchedAxpy (numvec=1)
-        if (k > 0)
-        {
-            copyRealNegateToT(d_beta_prev, d_beta_neg, 1, &stream);
-            batchedAxpy(d_beta_neg, v_0.l_data(), v_2.l_data(),
-                       v_0.l_rows(), 1, v_0.l_ld(), &stream);
-        }
+        // Previous-basis correction:
+        //   w <- w - beta_{k-1} v_0
+        // First iteration is a no-op because beta_{-1}=0.
+        copyRealNegateToT(d_beta_prev, d_beta_neg, 1, &stream);
+        batchedAxpy(d_beta_neg, v_0.l_data(), v_2.l_data(),
+                    v_0.l_rows(), 1, v_0.l_ld(), &stream);
 
-        // Compute norm squared (GPU-resident)
+        // Local beta contribution:
+        //   r^(loc) = ||w||_2^2_loc
         batchedNormSquared(v_2.l_data(), d_r_beta, v_2.l_rows(), 1, v_2.l_ld(), &stream);
-        CHECK_CUDA_ERROR(cudaGetLastError());
         CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper(
             d_r_beta, d_r_beta, 1, ncclSum, nccl_comm, &stream));
 
-        // Keep beta on device: copy d_r_beta to d_beta_prev, sqrt in place
+        // Beta value:
+        //   beta_k = sqrt(sum_r r^(loc,r))
         cudaMemcpyAsync(d_beta_prev, d_r_beta, sizeof(RealT), cudaMemcpyDeviceToDevice, stream);
         batchedSqrt(d_beta_prev, 1, &stream);
 
-        // Normalize v_2 using norm² (d_r_beta still holds norm²)
+        // Next Lanczos vector:
+        //   v_{k+1} = w / beta_k = w / sqrt(r)
         normalizeVectors(v_2.l_data(), d_r_beta, v_2.l_rows(), 1, v_2.l_ld(), &stream);
 
-        // Store beta in device buffer for e[] (deferred D2H; only for k < M-1)
-        if (k < M - 1)
-            cudaMemcpyAsync(e_d + k, d_beta_prev, sizeof(RealT), cudaMemcpyDeviceToDevice, stream);
-
-        if (k == M - 1)
-            break;
+        // Store off-diagonal entry:
+        //   e(k) = beta_k, for k = 0..M-2
+        cudaMemcpyAsync(e_d + k, d_beta_prev, sizeof(RealT),
+                        cudaMemcpyDeviceToDevice, stream);
 
         v_1.swap(v_0);
         v_1.swap(v_2);
     }
 
+    {
+        const std::size_t k = M - 1;
+        cudaMemcpyAsync(V.l_data() + k * V.l_ld(), v_1.l_data(),
+                        v_1.l_rows() * sizeof(T), cudaMemcpyDeviceToDevice,
+                        stream);
+
+        // Krylov expansion:
+        //   w = H v_{M-1}
+        chase::linalg::internal::cuda_nccl::MatrixMultiplyMultiVectors(
+            cublas_handle, &One, H, v_1, &Zero, v_w);
+
+        // Redistribution to local layout:
+        //   v_2 <- redistribute(w)
+        v_w.redistributeImplAsync(&v_2, &stream);
+
+        // Local alpha contribution (negated storage):
+        //   d_alpha <- -<v_1, w>_loc
+        batchedDotProduct(v_1.l_data(), v_2.l_data(), d_alpha,
+                          v_1.l_rows(), 1, v_1.l_ld(), true, &stream);
+
+        // Global alpha:
+        //   d_alpha <- -alpha_{M-1} = -sum_r <v_1, w>_loc,r
+        CHECK_NCCL_ERROR(chase::nccl::ncclAllReduceWrapper(
+            d_alpha, d_alpha, 1, ncclSum, nccl_comm, &stream));
+
+        // Fused alpha correction:
+        //   w <- w - alpha_{M-1} v_1
+        batchedAxpyThenNegate(d_alpha, v_1.l_data(), v_2.l_data(),
+                              v_1.l_rows(), 1, v_1.l_ld(), &stream);
+
+        // Store final diagonal entry:
+        //   d(M-1) = Re(alpha_{M-1})
+        getRealPart(d_alpha, d_real_alpha, 1, &stream);
+        cudaMemcpyAsync(d_d + k, d_real_alpha, sizeof(RealT),
+                        cudaMemcpyDeviceToDevice, stream);
+    }
+
     // Ensure all GPU operations complete; single D2H for d and e (was per-iteration sync)
+    cudaMemcpyAsync(d.data(), d_d, M * sizeof(RealT), cudaMemcpyDeviceToHost,
+                    stream);
+    cudaMemcpyAsync(e.data(), e_d, M * sizeof(RealT), cudaMemcpyDeviceToHost,
+                    stream);
     cudaStreamSynchronize(stream);
-    cudaMemcpy(d.data(), d_d, M * sizeof(RealT), cudaMemcpyDeviceToHost);
-    cudaMemcpy(e.data(), e_d, M * sizeof(RealT), cudaMemcpyDeviceToHost);
-    cudaFree(d_d);
-    cudaFree(e_d);
+    cudaFreeAsync(d_d, stream);
+    cudaFreeAsync(e_d, stream);
 
     // ========================================================================
     // Eigenvalue computation (LAPACK on CPU)
@@ -899,131 +788,13 @@ void cuda_nccl::lanczos(cublasHandle_t cublas_handle, std::size_t M,
     cudaFree(d_beta_prev);
     cudaFree(d_beta_neg);
 
-#else
-#ifdef CHASE_OUTPUT
-    {
-        std::ostringstream oss;
-        oss << "========================================" << std::endl;
-        oss << "ORIGINAL MPI LANCZOS (single-vec): ENABLED" << std::endl;
-        oss << "Using MPI_Allreduce (not GPU-resident)" << std::endl;
-        oss << "========================================" << std::endl;
-        chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(),
-                               H.getMpiGrid()->get_myRank());
-    }
-#endif
-    // ========================================================================
-    // ORIGINAL VERSION: MPI-based collectives (default)
-    // ========================================================================
-
-    std::vector<RealT> d(M);
-    std::vector<RealT> e(M);
-
-    RealT real_alpha;
-    RealT r_beta;
-
-    T alpha = T(1.0);
-    T beta = T(0.0);
-    T One = T(1.0);
-    T Zero = T(0.0);
-
-    std::size_t N = H.g_rows();
-
-    auto v_0 = V.template clone<InputMultiVectorType>(N, 1);
-    auto v_1 = v_0.template clone<InputMultiVectorType>();
-    auto v_2 = v_0.template clone<InputMultiVectorType>();
-    auto v_w = V.template clone<ResultMultiVectorType>(N, 1);
-
-    chase::linalg::internal::cuda::t_lacpy('A', v_1.l_rows(), 1, V.l_data(),
-                                           V.l_ld(), v_1.l_data(), v_1.l_ld());
-
-    CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTnrm2(
-        cublas_handle, v_1.l_rows(), v_1.l_data(), 1, &real_alpha));
-    real_alpha = std::pow(real_alpha, 2);
-
-    MPI_Allreduce(MPI_IN_PLACE, &real_alpha, 1,
-                  chase::mpi::getMPI_Type<RealT>(), MPI_SUM,
-                  H.getMpiGrid()->get_col_comm());
-
-    real_alpha = std::sqrt(real_alpha);
-    alpha = T(1 / real_alpha);
-
-    CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTscal(
-        cublas_handle, v_1.l_rows(), &alpha, v_1.l_data(), 1));
-    
-    for (std::size_t k = 0; k < M; k = k + 1)
-    {
-        chase::linalg::internal::cuda_nccl::MatrixMultiplyMultiVectors(
-            cublas_handle, &One, H, v_1, &Zero, v_w);
-
-        // Redistribute on stream; next ops on same stream run in order
-        v_w.redistributeImplAsync(&v_2, &stream);
-
-        CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTdot(
-            cublas_handle, v_1.l_rows(), v_1.l_data(), 1, v_2.l_data(), 1,
-            &alpha));
-        alpha = -alpha;
-
-        MPI_Allreduce(MPI_IN_PLACE, &alpha, 1, chase::mpi::getMPI_Type<T>(),
-                      MPI_SUM, H.getMpiGrid()->get_col_comm());
-
-        CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTaxpy(
-            cublas_handle, v_1.l_rows(), &alpha, v_1.l_data(), 1, v_2.l_data(),
-            1));
-        alpha = -alpha;
-
-        d[k] = std::real(alpha);
-
-        if (k > 0)
-        {
-            beta = T(-r_beta);
-            CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTaxpy(
-                cublas_handle, v_0.l_rows(), &beta, v_0.l_data(), 1,
-                v_2.l_data(), 1));
-        }
-
-        beta = -beta;
-
-        CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTnrm2(
-            cublas_handle, v_2.l_rows(), v_2.l_data(), 1, &r_beta));
-
-        r_beta = std::pow(r_beta, 2);
-
-        MPI_Allreduce(MPI_IN_PLACE, &r_beta, 1,
-                      chase::mpi::getMPI_Type<RealT>(), MPI_SUM,
-                      H.getMpiGrid()->get_col_comm());
-
-        r_beta = std::sqrt(r_beta);
-
-        beta = T(1 / r_beta);
-
-        if (k == M - 1)
-            break;
-
-        CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTscal(
-            cublas_handle, v_2.l_rows(), &beta, v_2.l_data(), 1));
-        e[k] = r_beta;
-
-        v_1.swap(v_0);
-        v_1.swap(v_2);
-    }
-
-    int notneeded_m;
-    std::size_t vl = 0;
-    std::size_t vu = 0;
-    RealT ul = 0;
-    RealT ll = 0;
-    int tryrac = 0;
-    std::vector<int> isuppz(2 * M);
-    std::vector<RealT> ritzv(M);
-
-    lapackpp::t_stemr<RealT>(
-        LAPACK_COL_MAJOR, 'N', 'A', M, d.data(), e.data(), ul, ll, vl, vu,
-        &notneeded_m, ritzv.data(), NULL, M, M, isuppz.data(), &tryrac);
-
-    *upperb =
-        std::max(std::abs(ritzv[0]), std::abs(ritzv[M - 1])) + std::abs(r_beta);
-#endif // CHASE_ENABLE_GPU_RESIDENT_LANCZOS
-
+    cudaEvent_t evt_end;
+    CHECK_CUDA_ERROR(cudaEventCreate(&evt_end));
+    CHECK_CUDA_ERROR(cudaEventRecord(evt_end, stream));
+    CHECK_CUDA_ERROR(cudaStreamWaitEvent(stream_orig, evt_end, 0));
+    CHECK_CUDA_ERROR(cudaEventDestroy(evt_begin));
+    CHECK_CUDA_ERROR(cudaEventDestroy(evt_end));
+    CHECK_CUBLAS_ERROR(cublasSetStream(cublas_handle, stream_orig));
     // stream is nullptr (default stream) in this overload; do not destroy it.
 }
 

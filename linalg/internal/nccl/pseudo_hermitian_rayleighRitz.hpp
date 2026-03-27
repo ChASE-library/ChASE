@@ -611,7 +611,7 @@ void cuda_nccl::pseudo_hermitian_rayleighRitz_v2(
         cublas_handle, subSize * subSize, &NegOne, M, 1));
 
 #ifdef RR_DOUBLE_PRECISION
-    if constexpr (std::is_same<T, std::complex<float>>::value)
+    if constexpr (std::is_same<T, std::complex<float>>::value || std::is_same<T, float>::value)
     {
         if (A->isDoublePrecisionEnabled())
         {
@@ -629,9 +629,9 @@ void cuda_nccl::pseudo_hermitian_rayleighRitz_v2(
         }
         auto A_d = A->getDoublePrecisionMatrix();
         auto ritzv_d = ritzv.getDoublePrecisionMatrix();
-        std::complex<double>* workspace_d;
+        typename chase::ToDoublePrecisionTrait<T>::Type* workspace_d;
         CHECK_CUDA_ERROR(cudaMallocAsync((void**)&workspace_d,
-                                         sizeof(std::complex<double>) * lwork,
+                                         sizeof(typename chase::ToDoublePrecisionTrait<T>::Type) * lwork,
                                          compute_stream));
 
         CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTheevd(

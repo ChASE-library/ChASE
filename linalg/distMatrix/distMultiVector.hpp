@@ -97,6 +97,17 @@ class DistMultiVector1D;
 template <typename T, CommunicatorType comm_type, typename Platform>
 class DistMultiVectorBlockCyclic1D;
 
+template <typename MultiVector>
+struct is_block_cyclic_1d_multivector : std::false_type
+{
+};
+
+template <typename T, CommunicatorType comm_type, typename Platform>
+struct is_block_cyclic_1d_multivector<
+    DistMultiVectorBlockCyclic1D<T, comm_type, Platform>> : std::true_type
+{
+};
+
 /**
  * @brief Abstract base class for distributed multi-vectors.
  *
@@ -314,7 +325,7 @@ public:
             if (this->grank() == 0)
             {
                 chase::GetLogger().Log(chase::LogLevel::Debug, "linalg",
-                    "Single precision matrix enabled in AbstractDistMultiVector.",
+                    "Single precision matrix enabled in AbstractDistMultiVector.\n",
                     this->grank());
             }
         }
@@ -387,7 +398,7 @@ public:
         if (this->grank() == 0)
         {
             chase::GetLogger().Log(chase::LogLevel::Debug, "linalg",
-                "Single precision matrix disabled in AbstractDistMultiVector.",
+                "Single precision matrix disabled in AbstractDistMultiVector.\n",
                 this->grank());
         }
 
@@ -519,7 +530,7 @@ public:
             if (this->grank() == 0)
             {
                 chase::GetLogger().Log(chase::LogLevel::Debug, "linalg",
-                    "Double precision matrix enabled in AbstractDistMultiVector.",
+                    "Double precision matrix enabled in AbstractDistMultiVector.\n",
                     this->grank());
             }
         }
@@ -588,7 +599,7 @@ public:
         if (this->grank() == 0)
         {
             chase::GetLogger().Log(chase::LogLevel::Debug, "linalg",
-                "Double precision matrix disabled in AbstractDistMultiVector.",
+                "Double precision matrix disabled in AbstractDistMultiVector.\n",
                 this->grank());
         }
     }
@@ -695,7 +706,7 @@ public:
         {
             chase::GetLogger().Log(chase::LogLevel::Debug, "linalg",
                 "Single precision matrix copied back to double precision in "
-                "AbstractDistMultiVector.",
+                "AbstractDistMultiVector.\n",
                 this->grank());
         }
     }
@@ -748,7 +759,7 @@ public:
         {
             chase::GetLogger().Log(chase::LogLevel::Debug, "linalg",
                 "Double precision matrix copied back to single precision in "
-                "AbstractDistMultiVector.",
+                "AbstractDistMultiVector.\n",
                 this->grank());
         }
     }
@@ -802,7 +813,7 @@ public:
         {
             chase::GetLogger().Log(chase::LogLevel::Debug, "linalg",
                 "Double precision matrix copied to single precision in "
-                "AbstractDistMultiVector.",
+                "AbstractDistMultiVector.\n",
                 this->grank());
         }
     }
@@ -856,7 +867,7 @@ public:
         {
             chase::GetLogger().Log(chase::LogLevel::Debug, "linalg",
                 "Single precision matrix copied to double precision in "
-                "AbstractDistMultiVector.",
+                "AbstractDistMultiVector.\n",
                 this->grank());
         }
     }
@@ -1273,6 +1284,28 @@ public:
                   other.is_double_precision_enabled_);
         std::swap(this->double_precision_multivec_,
                   other.double_precision_multivec_);
+    }
+
+    template <CommunicatorType OtherCommType, typename OtherPlatform>
+    void swap_l_data_ptr(DistMultiVector1D<T, OtherCommType, OtherPlatform>& other)
+    {
+        if constexpr (comm_type != OtherCommType)
+        {
+            throw std::runtime_error(
+                "Cannot swap data pointer: Communicator types do not match.");
+        }
+        if constexpr (!std::is_same<Platform, OtherPlatform>::value)
+        {
+            throw std::runtime_error(
+                "Cannot swap data pointer: Platform types do not match.");
+        }
+        if (mpi_grid_.get() != other.mpi_grid_.get())
+        {
+            throw std::runtime_error(
+                "Cannot swap data pointer: MPI grids do not match.");
+        }
+
+        local_matrix_.swapDataPointer(other.local_matrix_);
     }
     /**
      * @brief Swaps columns i and j in the distributed multivector.
@@ -2990,6 +3023,30 @@ public:
                   other.is_double_precision_enabled_);
         std::swap(this->double_precision_multivec_,
                   other.double_precision_multivec_);
+    }
+
+    template <CommunicatorType OtherCommType, typename OtherPlatform>
+    void swap_l_data_ptr(
+        DistMultiVectorBlockCyclic1D<T, OtherCommType, OtherPlatform>& other)
+    {
+        if constexpr (comm_type != OtherCommType)
+        {
+            throw std::runtime_error(
+                "Cannot swap data pointer: Communicator types do not match.");
+        }
+
+        if constexpr (!std::is_same<Platform, OtherPlatform>::value)
+        {
+            throw std::runtime_error(
+                "Cannot swap data pointer: Platform types do not match.");
+        }
+        if (mpi_grid_.get() != other.mpi_grid_.get())
+        {
+            throw std::runtime_error(
+                "Cannot swap data pointer: MPI grids do not match.");
+        }
+
+        local_matrix_.swapDataPointer(other.local_matrix_);
     }
 
     /**

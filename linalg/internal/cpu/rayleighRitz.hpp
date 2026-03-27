@@ -83,7 +83,29 @@ void rayleighRitz(chase::matrix::Matrix<T>* H, std::size_t n, T* Q,
     blaspp::t_gemm(CblasColMajor, CblasConjTrans, CblasNoTrans, n, n, N, &One,
                    V, ldv, Q, ldq, &Zero, A, n);
 
-    lapackpp::t_heevd(LAPACK_COL_MAJOR, 'V', 'L', n, A, n, ritzv);
+    //lapackpp::t_heevd(LAPACK_COL_MAJOR, 'V', 'L', n, A, n, ritzv);
+#ifdef RR_DOUBLE_PRECISION
+    if constexpr (std::is_same<T, std::complex<float>>::value || std::is_same<T, float>::value)
+    {
+        std::vector<typename chase::ToDoublePrecisionTrait<T>::Type> A_d(n * n);
+        std::transform(A, A + n * n, A_d.begin(), [](T val) { return static_cast<typename chase::ToDoublePrecisionTrait<T>::Type>(val); });
+        
+        std::vector<double> ritzv_d(n);
+        chase::linalg::lapackpp::t_heevd(LAPACK_COL_MAJOR, 'V', 'L', n,
+                                         A_d.data(), n, ritzv_d.data());
+        std::transform(ritzv_d.begin(), ritzv_d.end(), ritzv,
+                       [](double val) { return static_cast<float>(val); });
+        std::transform(A_d.begin(), A_d.end(), A,
+                       [](typename chase::ToDoublePrecisionTrait<T>::Type val) { return static_cast<T>(val); });
+    }
+    else
+    {
+#endif
+        chase::linalg::lapackpp::t_heevd(LAPACK_COL_MAJOR, 'V', 'L', n,
+                                        A, n, ritzv);
+#ifdef RR_DOUBLE_PRECISION
+    }
+#endif
 
     blaspp::t_gemm(CblasColMajor, CblasNoTrans, CblasNoTrans, N, n, n, &One, Q,
                    ldq, A, n, &Zero, V, ldv);
@@ -319,8 +341,28 @@ void rayleighRitz_v2(chase::matrix::PseudoHermitianMatrix<T>* H, std::size_t n,
     blaspp::t_scal(n * n, &NegativeOne, M, 1);
 
     // Compute the invtered ritz pairs of the Hermitian Rayleigh Quotient
-    lapackpp::t_heevd(LAPACK_COL_MAJOR, 'V', 'L', n, M, n, ritzv);
-
+    //lapackpp::t_heevd(LAPACK_COL_MAJOR, 'V', 'L', n, M, n, ritzv);
+#ifdef RR_DOUBLE_PRECISION
+    if constexpr (std::is_same<T, std::complex<float>>::value || std::is_same<T, float>::value)
+    {
+        std::vector<typename chase::ToDoublePrecisionTrait<T>::Type> M_d(n * n);
+        std::transform(M, M + n * n, M_d.begin(), [](T val) { return static_cast<typename chase::ToDoublePrecisionTrait<T>::Type>(val); });
+        
+        std::vector<double> ritzv_d(n);
+        chase::linalg::lapackpp::t_heevd(LAPACK_COL_MAJOR, 'V', 'L', n,
+                                         M_d.data(), n, ritzv_d.data());
+        std::transform(ritzv_d.begin(), ritzv_d.end(), ritzv,
+                       [](double val) { return static_cast<float>(val); });
+        std::transform(M_d.begin(), M_d.end(), M,
+                       [](typename chase::ToDoublePrecisionTrait<T>::Type val) { return static_cast<T>(val); });                       
+    }
+    else
+    {
+#endif
+        chase::linalg::lapackpp::t_heevd(LAPACK_COL_MAJOR, 'V', 'L', n, M, n, ritzv);
+#ifdef RR_DOUBLE_PRECISION
+    }
+#endif
     // Flip the sign of the Ritz values
     Base<T> ritz_minus_one = Base<T>(-1.0);
     blaspp::t_scal(n, &ritz_minus_one, ritzv, 1);

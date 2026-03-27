@@ -99,10 +99,47 @@ void cuda_mpi::rayleighRitz(
                                                          A->l_data(), subSize);
     CHECK_CUDA_ERROR(cudaDeviceSynchronize());
 
-    CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTheevd(
-        cusolver_handle, CUSOLVER_EIG_MODE_VECTOR, CUBLAS_FILL_MODE_UPPER,
-        subSize, A->l_data(), subSize, ritzv.l_data() + offset, workspace,
-        lwork_heevd, devInfo));
+#ifdef RR_DOUBLE_PRECISION
+    if constexpr (std::is_same<T, std::complex<float>>::value || std::is_same<T, float>::value)
+    {
+        if (A->isDoublePrecisionEnabled())
+        {
+            A->copyToSubBlock(0, subSize * subSize);
+        }
+        else
+        {
+            A->enableDoublePrecision();
+        }
+
+        if (!ritzv.isDoublePrecisionEnabled())
+        {
+            ritzv.enableDoublePrecision();
+        }
+
+        auto A_d = A->getDoublePrecisionMatrix();
+        auto ritzv_d = ritzv.getDoublePrecisionMatrix();
+        typename chase::ToDoublePrecisionTrait<T>::Type* workspace_d;
+        CHECK_CUDA_ERROR(cudaMalloc((void**)&workspace_d,
+                                         sizeof(typename chase::ToDoublePrecisionTrait<T>::Type) * lwork_heevd));        
+        CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTheevd(
+            cusolver_handle, CUSOLVER_EIG_MODE_VECTOR, CUBLAS_FILL_MODE_UPPER,
+            subSize, A_d->l_data(), subSize,
+            ritzv_d->l_data() + offset, workspace_d, lwork_heevd, devInfo));
+        ritzv.disableDoublePrecision(true);
+        A->copyBackSubBlock(0, subSize * subSize);
+        CHECK_CUDA_ERROR(cudaFree(workspace_d));
+        CHECK_CUDA_ERROR(cudaDeviceSynchronize());
+    }
+    else
+    { 
+#endif
+        CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTheevd(
+            cusolver_handle, CUSOLVER_EIG_MODE_VECTOR, CUBLAS_FILL_MODE_UPPER,
+            subSize, A->l_data(), subSize, ritzv.l_data() + offset, workspace,
+            lwork_heevd, devInfo));
+#ifdef RR_DOUBLE_PRECISION
+    }
+#endif
 
     int info;
     CHECK_CUDA_ERROR(
