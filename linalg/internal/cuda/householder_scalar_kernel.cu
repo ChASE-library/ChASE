@@ -7,6 +7,7 @@
 #include "householder_scalar_kernel.cuh"
 #include "householder_scalar_kernel.hpp"
 #include <climits>
+#include <cstdint>
 #include <complex>
 #include <limits>
 #include <sstream>
@@ -303,6 +304,129 @@ void run_init_identity_distributed(cudaStream_t stream, T* d_V, std::size_t ldv,
 }
 
 template <typename T>
+void run_split_and_pad_v_column(cudaStream_t stream, T* d_V_col0,
+                                const std::uint64_t* d_row_global, int l_rows,
+                                std::uint64_t pivot_global, int pivot_here,
+                                int pivot_loc, const T* d_saved_rkk,
+                                T* d_r_diag_out)
+{
+    if (stream == nullptr)
+        stream = 0;
+    if (l_rows <= 0 || d_V_col0 == nullptr || d_row_global == nullptr)
+        return;
+    constexpr int block = 256;
+    const int grid = (l_rows + block - 1) / block;
+    if (grid <= 0)
+        return;
+    (void)cudaGetLastError();
+    if constexpr (std::is_same<T, float>::value)
+    {
+        split_and_pad_v_column_s<<<grid, block, 0, stream>>>(
+            d_V_col0, reinterpret_cast<const unsigned long long*>(d_row_global),
+            l_rows, static_cast<unsigned long long>(pivot_global), pivot_here,
+            pivot_loc,
+            reinterpret_cast<const float*>(d_saved_rkk),
+            reinterpret_cast<float*>(d_r_diag_out));
+    }
+    else if constexpr (std::is_same<T, double>::value)
+    {
+        split_and_pad_v_column_d<<<grid, block, 0, stream>>>(
+            d_V_col0, reinterpret_cast<const unsigned long long*>(d_row_global),
+            l_rows, static_cast<unsigned long long>(pivot_global), pivot_here,
+            pivot_loc,
+            reinterpret_cast<const double*>(d_saved_rkk),
+            reinterpret_cast<double*>(d_r_diag_out));
+    }
+    else if constexpr (std::is_same<T, std::complex<float>>::value)
+    {
+        split_and_pad_v_column_c<<<grid, block, 0, stream>>>(
+            reinterpret_cast<cuComplex*>(d_V_col0),
+            reinterpret_cast<const unsigned long long*>(d_row_global),
+            l_rows, static_cast<unsigned long long>(pivot_global), pivot_here,
+            pivot_loc,
+            reinterpret_cast<const cuComplex*>(d_saved_rkk),
+            reinterpret_cast<cuComplex*>(d_r_diag_out));
+    }
+    else
+    {
+        static_assert(std::is_same<T, std::complex<double>>::value,
+                      "T must be float, double, or complex");
+        split_and_pad_v_column_z<<<grid, block, 0, stream>>>(
+            reinterpret_cast<cuDoubleComplex*>(d_V_col0),
+            reinterpret_cast<const unsigned long long*>(d_row_global),
+            l_rows, static_cast<unsigned long long>(pivot_global), pivot_here,
+            pivot_loc,
+            reinterpret_cast<const cuDoubleComplex*>(d_saved_rkk),
+            reinterpret_cast<cuDoubleComplex*>(d_r_diag_out));
+    }
+    cudaError_t err = cudaPeekAtLastError();
+    if (err != cudaSuccess)
+    {
+        std::ostringstream oss;
+        oss << "split_and_pad_v_column kernel launch failed: "
+            << cudaGetErrorString(err) << " (l_rows=" << l_rows << ")";
+        throw std::runtime_error(oss.str());
+    }
+}
+
+template <typename T>
+void run_panel_pre_clean(cudaStream_t stream, T* d_V_panel, std::size_t ldv,
+                         const std::uint64_t* d_row_global, int l_rows,
+                         std::size_t k_col0, int jb_cols)
+{
+    if (stream == nullptr)
+        stream = 0;
+    if (jb_cols <= 0 || l_rows <= 0 || d_V_panel == nullptr ||
+        d_row_global == nullptr || ldv > static_cast<std::size_t>(INT_MAX))
+        return;
+    const int ldv_i = static_cast<int>(ldv);
+    constexpr int block = 256;
+    const int grid = (l_rows + block - 1) / block;
+    if (grid <= 0)
+        return;
+    (void)cudaGetLastError();
+    const unsigned long long k0 = static_cast<unsigned long long>(k_col0);
+    if constexpr (std::is_same<T, float>::value)
+    {
+        panel_pre_clean_s<<<grid, block, 0, stream>>>(
+            d_V_panel, ldv_i,
+            reinterpret_cast<const unsigned long long*>(d_row_global), l_rows,
+            k0, jb_cols);
+    }
+    else if constexpr (std::is_same<T, double>::value)
+    {
+        panel_pre_clean_d<<<grid, block, 0, stream>>>(
+            d_V_panel, ldv_i,
+            reinterpret_cast<const unsigned long long*>(d_row_global), l_rows,
+            k0, jb_cols);
+    }
+    else if constexpr (std::is_same<T, std::complex<float>>::value)
+    {
+        panel_pre_clean_c<<<grid, block, 0, stream>>>(
+            reinterpret_cast<cuComplex*>(d_V_panel), ldv_i,
+            reinterpret_cast<const unsigned long long*>(d_row_global), l_rows,
+            k0, jb_cols);
+    }
+    else
+    {
+        static_assert(std::is_same<T, std::complex<double>>::value,
+                      "T must be float, double, or complex");
+        panel_pre_clean_z<<<grid, block, 0, stream>>>(
+            reinterpret_cast<cuDoubleComplex*>(d_V_panel), ldv_i,
+            reinterpret_cast<const unsigned long long*>(d_row_global), l_rows,
+            k0, jb_cols);
+    }
+    cudaError_t err = cudaPeekAtLastError();
+    if (err != cudaSuccess)
+    {
+        std::ostringstream oss;
+        oss << "panel_pre_clean kernel launch failed: "
+            << cudaGetErrorString(err) << " (l_rows=" << l_rows << ")";
+        throw std::runtime_error(oss.str());
+    }
+}
+
+template <typename T>
 void run_compute_T_block(cudaStream_t stream, T* Tb, T* d_S, const T* d_tau,
                         int jb, int nb)
 {
@@ -384,6 +508,24 @@ template void run_init_identity_distributed<float>(cudaStream_t, float*, std::si
 template void run_init_identity_distributed<double>(cudaStream_t, double*, std::size_t, std::size_t, std::size_t, std::size_t);
 template void run_init_identity_distributed<std::complex<float>>(cudaStream_t, std::complex<float>*, std::size_t, std::size_t, std::size_t, std::size_t);
 template void run_init_identity_distributed<std::complex<double>>(cudaStream_t, std::complex<double>*, std::size_t, std::size_t, std::size_t, std::size_t);
+
+template void run_split_and_pad_v_column<float>(cudaStream_t, float*, const std::uint64_t*, int,
+    std::uint64_t, int, int, const float*, float*);
+template void run_split_and_pad_v_column<double>(cudaStream_t, double*, const std::uint64_t*, int,
+    std::uint64_t, int, int, const double*, double*);
+template void run_split_and_pad_v_column<std::complex<float>>(cudaStream_t, std::complex<float>*,
+    const std::uint64_t*, int, std::uint64_t, int, int, const std::complex<float>*, std::complex<float>*);
+template void run_split_and_pad_v_column<std::complex<double>>(cudaStream_t, std::complex<double>*,
+    const std::uint64_t*, int, std::uint64_t, int, int, const std::complex<double>*, std::complex<double>*);
+
+template void run_panel_pre_clean<float>(cudaStream_t, float*, std::size_t,
+    const std::uint64_t*, int, std::size_t, int);
+template void run_panel_pre_clean<double>(cudaStream_t, double*, std::size_t,
+    const std::uint64_t*, int, std::size_t, int);
+template void run_panel_pre_clean<std::complex<float>>(cudaStream_t, std::complex<float>*, std::size_t,
+    const std::uint64_t*, int, std::size_t, int);
+template void run_panel_pre_clean<std::complex<double>>(cudaStream_t, std::complex<double>*, std::size_t,
+    const std::uint64_t*, int, std::size_t, int);
 
 template void run_compute_T_block<float>(cudaStream_t, float*, float*, const float*, int, int);
 template void run_compute_T_block<double>(cudaStream_t, double*, double*, const double*, int, int);

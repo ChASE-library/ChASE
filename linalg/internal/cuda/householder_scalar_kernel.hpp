@@ -7,6 +7,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <cuda_runtime.h>
 
 namespace chase
@@ -66,6 +67,23 @@ void run_init_identity_distributed(cudaStream_t stream, T* d_V, std::size_t ldv,
 template <typename T>
 void run_compute_T_block(cudaStream_t stream, T* Tb, T* d_S, const T* d_tau,
                         int jb, int nb);
+
+// In-place WY cleaning for one panel column: zero rows with global index <
+// pivot; at pivot copy *d_saved_rkk to d_r_diag_out and set v to 1 (if
+// d_r_diag_out == nullptr, skip peel). d_V_col0 = V(0, col).
+template <typename T>
+void run_split_and_pad_v_column(cudaStream_t stream, T* d_V_col0,
+                                const std::uint64_t* d_row_global, int l_rows,
+                                std::uint64_t pivot_global, int pivot_here,
+                                int pivot_loc, const T* d_saved_rkk,
+                                T* d_r_diag_out);
+
+// Before panel factor column loop: for V(:, k..k+jb-1), zero local rows with
+// global row < k only (no R peel, pivot unchanged). d_V_panel = V + k*ldv.
+template <typename T>
+void run_panel_pre_clean(cudaStream_t stream, T* d_V_panel, std::size_t ldv,
+                         const std::uint64_t* d_row_global, int l_rows,
+                         std::size_t k_col0, int jb_cols);
 
 } // namespace cuda
 } // namespace internal

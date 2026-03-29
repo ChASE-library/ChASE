@@ -941,6 +941,31 @@ public:
         cudaEventCreate(&qr_lacpy_start);
         cudaEventCreate(&qr_end);
         cudaEventRecord(qr_start);
+        cudaEventRecord(qr_cholqr_start);
+        cudaEventRecord(qr_cholqr_end);
+
+        float time_hh_core_ms = 0.0f;
+        float time_hh_fallback_core_ms = 0.0f;
+        float time_chol_shifted_ms = 0.0f;
+        float time_chol1_ms = 0.0f;
+        float time_chol2_ms = 0.0f;
+        float time_copy_to_ms = 0.0f;
+        float time_copy_back_ms = 0.0f;
+
+        auto measure_cuda = [&](float& acc_ms, auto&& fn) {
+            cudaEvent_t ev_a, ev_b;
+            cudaEventCreate(&ev_a);
+            cudaEventCreate(&ev_b);
+            cudaEventRecord(ev_a);
+            fn();
+            cudaEventRecord(ev_b);
+            cudaEventSynchronize(ev_b);
+            float ms = 0.0f;
+            cudaEventElapsedTime(&ms, ev_a, ev_b);
+            acc_ms += ms;
+            cudaEventDestroy(ev_a);
+            cudaEventDestroy(ev_b);
+        };
 
         int disable = config_.DoCholQR() ? 0 : 1;
         char* cholddisable = getenv("CHASE_DISABLE_CHOLQR");
@@ -1013,27 +1038,53 @@ public:
             if constexpr (std::is_same<T, std::complex<float>>::value ||
                               std::is_same<T, float>::value)
             {
-                V1_->copyTo();
+                measure_cuda(time_copy_to_ms, [&]() { V1_->copyTo(); });
                 auto V1_d = V1_->getDoublePrecisionMatrix();
 
                 if constexpr (chase::distMultiVector::is_block_cyclic_1d_multivector<InputMultiVectorType>::value)
                 {
+#if defined(HAS_NCCL)
+                    if constexpr (std::is_same<backend,
+                                  chase::grid::backend::NCCL>::value)
+                    {
+#ifdef CHASE_OUTPUT
+                        if (my_rank_ == 0)
+                        {
+                            chase::GetLogger().Log(
+                                chase::LogLevel::Debug, "linalg",
+                                "Householder QR: NCCL GPU (block-cyclic 1D).\n",
+                                0);
+                        }
+#endif
+                        measure_cuda(time_hh_core_ms, [&]() {
+                            kernelNamespace::houseQR1_formQ(
+                                cublasH_, *V1_d,
+                                reinterpret_cast<typename chase::ToDoublePrecisionTrait<T>::Type*>(d_work_d),
+                                lwork_, 16);
+                        });
+                    }
+                    else
+#endif
+                    {
 #ifdef HAS_SCALAPACK
 #ifdef CHASE_OUTPUT
-                    if (my_rank_ == 0)
-                    {
-                        chase::GetLogger().Log(
-                            chase::LogLevel::Warn, "linalg",
-                            "[Warning]: Using ScaLAPACK Householder QR because self-implemented Householder QR supports only block-block distribution.\n",
-                            0);
-                    }
+                        if (my_rank_ == 0)
+                        {
+                            chase::GetLogger().Log(
+                                chase::LogLevel::Warn, "linalg",
+                                "[Warning]: Using ScaLAPACK Householder QR for block-cyclic 1D (MPI / non-NCCL build).\n",
+                                0);
+                        }
 #endif
-                    kernelNamespace::houseHoulderQR(*V1_d);
+                        measure_cuda(time_hh_core_ms, [&]() {
+                            kernelNamespace::houseHoulderQR(*V1_d);
+                        });
 #else
-                    throw std::runtime_error(
-                        "For ChASE-MPI, distributed Householder QR requires "
-                        "ScaLAPACK, which is not detected\n");
+                        throw std::runtime_error(
+                            "Block-cyclic 1D distributed Householder QR requires "
+                            "NCCL (backend::NCCL) or ScaLAPACK.\n");
 #endif
+                    }
                 }
                 else
                 {
@@ -1043,33 +1094,60 @@ public:
                             d_work_d),
                         lwork_, 16);
                 }
-                V1_->copyback();
+                measure_cuda(time_copy_back_ms, [&]() { V1_->copyback(); });
             }
             else
 #endif
             {
                 if constexpr (chase::distMultiVector::is_block_cyclic_1d_multivector<InputMultiVectorType>::value)
                 {
+#if defined(HAS_NCCL)
+                    if constexpr (std::is_same<backend,
+                                  chase::grid::backend::NCCL>::value)
+                    {
+#ifdef CHASE_OUTPUT
+                        if (my_rank_ == 0)
+                        {
+                            chase::GetLogger().Log(
+                                chase::LogLevel::Debug, "linalg",
+                                "Householder QR: NCCL GPU (block-cyclic 1D).\n",
+                                0);
+                        }
+#endif
+                        measure_cuda(time_hh_core_ms, [&]() {
+                            kernelNamespace::houseQR1_formQ(
+                                cublasH_, *V1_, d_work_, lwork_, 16);
+                        });
+                    }
+                    else
+#endif
+                    {
 #ifdef HAS_SCALAPACK
 #ifdef CHASE_OUTPUT
-                    if (my_rank_ == 0)
-                    {
-                        chase::GetLogger().Log(
-                            chase::LogLevel::Warn, "linalg",
-                            "[Warning]: Using ScaLAPACK Householder QR because self-implemented Householder QR supports only block-block distribution.\n",
-                            0);
-                    }
+                        if (my_rank_ == 0)
+                        {
+                            chase::GetLogger().Log(
+                                chase::LogLevel::Warn, "linalg",
+                                "[Warning]: Using ScaLAPACK Householder QR for block-cyclic 1D (MPI / non-NCCL build).\n",
+                                0);
+                        }
 #endif
-                    kernelNamespace::houseHoulderQR(*V1_);
+                        measure_cuda(time_hh_core_ms, [&]() {
+                            kernelNamespace::houseHoulderQR(*V1_);
+                        });
 #else
-                    throw std::runtime_error(
-                        "For ChASE-MPI, distributed Householder QR requires "
-                        "ScaLAPACK, which is not detected\n");
+                        throw std::runtime_error(
+                            "Block-cyclic 1D distributed Householder QR requires "
+                            "NCCL (backend::NCCL) or ScaLAPACK.\n");
 #endif
-                }else
+                    }
+                }
+                else
                 {
-                    kernelNamespace::houseQR1_formQ(
-                        cublasH_, *V1_, d_work_, lwork_, 16);
+                    measure_cuda(time_hh_core_ms, [&]() {
+                        kernelNamespace::houseQR1_formQ(
+                            cublasH_, *V1_, d_work_, lwork_, 16);
+                    });
                 }
 
             }
@@ -1111,32 +1189,36 @@ public:
                 if constexpr (std::is_same<T, std::complex<float>>::value ||
                               std::is_same<T, float>::value)
                 {
-                    V1_->copyTo();
+                    measure_cuda(time_copy_to_ms, [&]() { V1_->copyTo(); });
 
                     auto V1_d = V1_->getDoublePrecisionMatrix();
                     auto A_d = A_->getDoublePrecisionMatrix();
-                    info = kernelNamespace::shiftedcholQR2(
-                        cublasH_, cusolverH_, V1_->g_rows(), V1_->l_rows(),
-                        V1_->l_cols(), V1_d->l_data(), V1_->l_ld(),
-                        // V1_->getMpiGrid()->get_nccl_col_comm(),
-                        MGPUKernelNamspaceSelector<backend>::getColCommunicator(
-                            V1_->getMpiGrid()),
-                        reinterpret_cast<
-                            typename chase::ToDoublePrecisionTrait<T>::Type*>(
-                            d_work_d),
-                        lwork_, A_d->l_data(), devInfo_);
-                    V1_->copyback();
+                    measure_cuda(time_chol_shifted_ms, [&]() {
+                        info = kernelNamespace::shiftedcholQR2(
+                            cublasH_, cusolverH_, V1_->g_rows(), V1_->l_rows(),
+                            V1_->l_cols(), V1_d->l_data(), V1_->l_ld(),
+                            // V1_->getMpiGrid()->get_nccl_col_comm(),
+                            MGPUKernelNamspaceSelector<backend>::getColCommunicator(
+                                V1_->getMpiGrid()),
+                            reinterpret_cast<
+                                typename chase::ToDoublePrecisionTrait<T>::Type*>(
+                                d_work_d),
+                            lwork_, A_d->l_data(), devInfo_);
+                    });
+                    measure_cuda(time_copy_back_ms, [&]() { V1_->copyback(); });
                 }
                 else
                 {
 #endif
-                    info = kernelNamespace::shiftedcholQR2(
-                        cublasH_, cusolverH_, V1_->g_rows(), V1_->l_rows(),
-                        V1_->l_cols(), V1_->l_data(), V1_->l_ld(),
-                        // V1_->getMpiGrid()->get_nccl_col_comm(),
-                        MGPUKernelNamspaceSelector<backend>::getColCommunicator(
-                            V1_->getMpiGrid()),
-                        d_work_, lwork_, A_->l_data(), devInfo_);
+                    measure_cuda(time_chol_shifted_ms, [&]() {
+                        info = kernelNamespace::shiftedcholQR2(
+                            cublasH_, cusolverH_, V1_->g_rows(), V1_->l_rows(),
+                            V1_->l_cols(), V1_->l_data(), V1_->l_ld(),
+                            // V1_->getMpiGrid()->get_nccl_col_comm(),
+                            MGPUKernelNamspaceSelector<backend>::getColCommunicator(
+                                V1_->getMpiGrid()),
+                            d_work_, lwork_, A_->l_data(), devInfo_);
+                    });
 #ifdef QR_DOUBLE_PRECISION
                 }
 #endif
@@ -1172,32 +1254,36 @@ public:
                 if constexpr (std::is_same<T, std::complex<float>>::value ||
                               std::is_same<T, float>::value)
                 {
-                    V1_->copyTo();
+                    measure_cuda(time_copy_to_ms, [&]() { V1_->copyTo(); });
 
                     auto V1_d = V1_->getDoublePrecisionMatrix();
                     auto A_d = A_->getDoublePrecisionMatrix();
-                    info = kernelNamespace::cholQR1(
-                        cublasH_, cusolverH_, V1_->l_rows(), V1_->l_cols(),
-                        V1_d->l_data(), V1_->l_ld(),
-                        // V1_->getMpiGrid()->get_nccl_col_comm(),
-                        MGPUKernelNamspaceSelector<backend>::getColCommunicator(
-                            V1_->getMpiGrid()),
-                        reinterpret_cast<
-                            typename chase::ToDoublePrecisionTrait<T>::Type*>(
-                            d_work_d),
-                        lwork_, A_d->l_data(), devInfo_);
-                    V1_->copyback();
+                    measure_cuda(time_chol1_ms, [&]() {
+                        info = kernelNamespace::cholQR1(
+                            cublasH_, cusolverH_, V1_->l_rows(), V1_->l_cols(),
+                            V1_d->l_data(), V1_->l_ld(),
+                            // V1_->getMpiGrid()->get_nccl_col_comm(),
+                            MGPUKernelNamspaceSelector<backend>::getColCommunicator(
+                                V1_->getMpiGrid()),
+                            reinterpret_cast<
+                                typename chase::ToDoublePrecisionTrait<T>::Type*>(
+                                d_work_d),
+                            lwork_, A_d->l_data(), devInfo_);
+                    });
+                    measure_cuda(time_copy_back_ms, [&]() { V1_->copyback(); });
                 }
                 else
                 {
 #endif
-                    info = kernelNamespace::cholQR1(
-                        cublasH_, cusolverH_, V1_->l_rows(), V1_->l_cols(),
-                        V1_->l_data(), V1_->l_ld(),
-                        // V1_->getMpiGrid()->get_nccl_col_comm(),
-                        MGPUKernelNamspaceSelector<backend>::getColCommunicator(
-                            V1_->getMpiGrid()),
-                        d_work_, lwork_, A_->l_data(), devInfo_);
+                    measure_cuda(time_chol1_ms, [&]() {
+                        info = kernelNamespace::cholQR1(
+                            cublasH_, cusolverH_, V1_->l_rows(), V1_->l_cols(),
+                            V1_->l_data(), V1_->l_ld(),
+                            // V1_->getMpiGrid()->get_nccl_col_comm(),
+                            MGPUKernelNamspaceSelector<backend>::getColCommunicator(
+                                V1_->getMpiGrid()),
+                            d_work_, lwork_, A_->l_data(), devInfo_);
+                    });
 #ifdef QR_DOUBLE_PRECISION
                 }
 #endif
@@ -1227,32 +1313,36 @@ public:
                 if constexpr (std::is_same<T, std::complex<float>>::value ||
                               std::is_same<T, float>::value)
                 {
-                    V1_->copyTo();
+                    measure_cuda(time_copy_to_ms, [&]() { V1_->copyTo(); });
 
                     auto V1_d = V1_->getDoublePrecisionMatrix();
                     auto A_d = A_->getDoublePrecisionMatrix();
-                    info = kernelNamespace::cholQR2(
-                        cublasH_, cusolverH_, V1_->l_rows(), V1_->l_cols(),
-                        V1_d->l_data(), V1_->l_ld(),
-                        // V1_->getMpiGrid()->get_nccl_col_comm(),
-                        MGPUKernelNamspaceSelector<backend>::getColCommunicator(
-                            V1_->getMpiGrid()),
-                        reinterpret_cast<
-                            typename chase::ToDoublePrecisionTrait<T>::Type*>(
-                            d_work_d),
-                        lwork_, A_d->l_data(), devInfo_);
-                    V1_->copyback();
+                    measure_cuda(time_chol2_ms, [&]() {
+                        info = kernelNamespace::cholQR2(
+                            cublasH_, cusolverH_, V1_->l_rows(), V1_->l_cols(),
+                            V1_d->l_data(), V1_->l_ld(),
+                            // V1_->getMpiGrid()->get_nccl_col_comm(),
+                            MGPUKernelNamspaceSelector<backend>::getColCommunicator(
+                                V1_->getMpiGrid()),
+                            reinterpret_cast<
+                                typename chase::ToDoublePrecisionTrait<T>::Type*>(
+                                d_work_d),
+                            lwork_, A_d->l_data(), devInfo_);
+                    });
+                    measure_cuda(time_copy_back_ms, [&]() { V1_->copyback(); });
                 }
                 else
                 {
 #endif
-                    info = kernelNamespace::cholQR2(
-                        cublasH_, cusolverH_, V1_->l_rows(), V1_->l_cols(),
-                        V1_->l_data(), V1_->l_ld(),
-                        // V1_->getMpiGrid()->get_nccl_col_comm(),
-                        MGPUKernelNamspaceSelector<backend>::getColCommunicator(
-                            V1_->getMpiGrid()),
-                        d_work_, lwork_, A_->l_data(), devInfo_);
+                    measure_cuda(time_chol2_ms, [&]() {
+                        info = kernelNamespace::cholQR2(
+                            cublasH_, cusolverH_, V1_->l_rows(), V1_->l_cols(),
+                            V1_->l_data(), V1_->l_ld(),
+                            // V1_->getMpiGrid()->get_nccl_col_comm(),
+                            MGPUKernelNamspaceSelector<backend>::getColCommunicator(
+                                V1_->getMpiGrid()),
+                            d_work_, lwork_, A_->l_data(), devInfo_);
+                    });
 #ifdef QR_DOUBLE_PRECISION
                 }
 #endif
@@ -1274,37 +1364,65 @@ public:
                 if constexpr (std::is_same<T, std::complex<float>>::value ||
                               std::is_same<T, float>::value)
                 {
-                    V1_->copyTo();
+                    measure_cuda(time_copy_to_ms, [&]() { V1_->copyTo(); });
                     auto V1_d = V1_->getDoublePrecisionMatrix();
                     {
                         if constexpr (chase::distMultiVector::is_block_cyclic_1d_multivector<InputMultiVectorType>::value)
                         {
+#if defined(HAS_NCCL)
+                            if constexpr (std::is_same<backend,
+                                          chase::grid::backend::NCCL>::value)
+                            {
+#ifdef CHASE_OUTPUT
+                                if (my_rank_ == 0)
+                                {
+                                    chase::GetLogger().Log(
+                                        chase::LogLevel::Debug, "linalg",
+                                        "Householder QR (CholQR fallback): NCCL GPU (block-cyclic 1D).\n",
+                                        0);
+                                }
+#endif
+                                measure_cuda(time_hh_fallback_core_ms, [&]() {
+                                    kernelNamespace::houseQR1_formQ(
+                                        cublasH_, *V1_d,
+                                        reinterpret_cast<typename chase::ToDoublePrecisionTrait<T>::Type*>(d_work_d),
+                                        lwork_, 16u);
+                                });
+                            }
+                            else
+#endif
+                            {
 #ifdef HAS_SCALAPACK
 #ifdef CHASE_OUTPUT
-                            if (my_rank_ == 0)
-                            {
-                                chase::GetLogger().Log(
-                                    chase::LogLevel::Warn, "linalg",
-                                    "[Warning]: Using ScaLAPACK Householder QR because self-implemented Householder QR supports only block-block distribution.\n",
-                                    0);
-                            }
+                                if (my_rank_ == 0)
+                                {
+                                    chase::GetLogger().Log(
+                                        chase::LogLevel::Warn, "linalg",
+                                        "[Warning]: Using ScaLAPACK Householder QR for block-cyclic 1D (MPI / non-NCCL build).\n",
+                                        0);
+                                }
 #endif
-                            kernelNamespace::houseHoulderQR(*V1_d);
+                                measure_cuda(time_hh_fallback_core_ms, [&]() {
+                                    kernelNamespace::houseHoulderQR(*V1_d);
+                                });
 #else
-                            throw std::runtime_error(
-                                "For ChASE-MPI, distributed Householder QR requires "
-                                "ScaLAPACK, which is not detected\n");
+                                throw std::runtime_error(
+                                    "Block-cyclic 1D distributed Householder QR requires "
+                                    "NCCL (backend::NCCL) or ScaLAPACK.\n");
 #endif
+                            }
                         }
                         else
                         {
-                            kernelNamespace::houseQR1_formQ(
-                                cublasH_, *V1_d,
-                                reinterpret_cast<typename chase::ToDoublePrecisionTrait<T>::Type*>(d_work_d),
-                                lwork_, 16u);
+                            measure_cuda(time_hh_fallback_core_ms, [&]() {
+                                kernelNamespace::houseQR1_formQ(
+                                    cublasH_, *V1_d,
+                                    reinterpret_cast<typename chase::ToDoublePrecisionTrait<T>::Type*>(d_work_d),
+                                    lwork_, 16u);
+                            });
                         }
                     }
-                    V1_->copyback();
+                    measure_cuda(time_copy_back_ms, [&]() { V1_->copyback(); });
                 }
                 else
 #endif
@@ -1312,27 +1430,53 @@ public:
                     {
                         if constexpr (chase::distMultiVector::is_block_cyclic_1d_multivector<InputMultiVectorType>::value)
                         {
+#if defined(HAS_NCCL)
+                            if constexpr (std::is_same<backend,
+                                          chase::grid::backend::NCCL>::value)
+                            {
+#ifdef CHASE_OUTPUT
+                                if (my_rank_ == 0)
+                                {
+                                    chase::GetLogger().Log(
+                                        chase::LogLevel::Debug, "linalg",
+                                        "Householder QR (CholQR fallback): NCCL GPU (block-cyclic 1D).\n",
+                                        0);
+                                }
+#endif
+                                measure_cuda(time_hh_fallback_core_ms, [&]() {
+                                    kernelNamespace::houseQR1_formQ(
+                                        cublasH_, *V1_, d_work_, lwork_, 16u);
+                                });
+                            }
+                            else
+#endif
+                            {
 #ifdef HAS_SCALAPACK
 #ifdef CHASE_OUTPUT
-                            if (my_rank_ == 0)
-                            {
-                                chase::GetLogger().Log(
-                                    chase::LogLevel::Warn, "linalg",
-                                    "[Warning]: Using ScaLAPACK Householder QR because self-implemented Householder QR supports only block-block distribution.\n",
-                                    0);
-                            }
+                                if (my_rank_ == 0)
+                                {
+                                    chase::GetLogger().Log(
+                                        chase::LogLevel::Warn, "linalg",
+                                        "[Warning]: Using ScaLAPACK Householder QR for block-cyclic 1D (MPI / non-NCCL build).\n",
+                                        0);
+                                }
 #endif
-                            kernelNamespace::houseHoulderQR(*V1_);
+                                measure_cuda(time_hh_fallback_core_ms, [&]() {
+                                    kernelNamespace::houseHoulderQR(*V1_);
+                                });
 #else
-                            throw std::runtime_error(
-                                "For ChASE-MPI, distributed Householder QR requires "
-                                "ScaLAPACK, which is not detected\n");
+                                throw std::runtime_error(
+                                    "Block-cyclic 1D distributed Householder QR requires "
+                                    "NCCL (backend::NCCL) or ScaLAPACK.\n");
 #endif
+                            }
                         }
                         else
                         {
-                            kernelNamespace::houseQR1_formQ(
-                                cublasH_, *V1_, d_work_, lwork_, 16u);
+                            measure_cuda(time_hh_fallback_core_ms, [&]() {
+                                kernelNamespace::houseQR1_formQ(
+                                    cublasH_, *V1_, d_work_, lwork_, 16u);
+                            });
                         }
                     }
                 }
@@ -1395,6 +1539,13 @@ public:
                 << "FlipSign: " << time_flip_sign/1000.0 << " s, "
                 << "CholQR: " << time_cholqr/1000.0 << " s, "
                 << "Lacpy: " << time_lacpy/1000.0 << " s\n";
+            oss << "  Breakdown: copyTo=" << time_copy_to_ms/1000.0 << " s, "
+                << "copyBack=" << time_copy_back_ms/1000.0 << " s, "
+                << "HH(core)=" << time_hh_core_ms/1000.0 << " s, "
+                << "HH(fallback)=" << time_hh_fallback_core_ms/1000.0 << " s, "
+                << "ShiftedCholQR2=" << time_chol_shifted_ms/1000.0 << " s, "
+                << "CholQR1=" << time_chol1_ms/1000.0 << " s, "
+                << "CholQR2=" << time_chol2_ms/1000.0 << " s\n";
             chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(), my_rank_);
         }
 #endif

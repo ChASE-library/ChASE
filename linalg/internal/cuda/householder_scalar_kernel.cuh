@@ -677,6 +677,167 @@ __global__ void batch_save_restore_upper_triangular_z(
 }
 
 //-----------------------------------------------------------------------------
+// Split-and-Pad: after Householder scaling and intra-panel trailing update,
+// enforce WY-clean column v — global row < pivot -> 0; pivot -> 1 with R_kk
+// peeled to d_r_diag_out (optional). global row > pivot unchanged.
+// d_V_col0 points at V(0, col); entry i is at d_V_col0[i] (column-major, lda rows).
+//-----------------------------------------------------------------------------
+__global__ void split_and_pad_v_column_s(
+    float* d_V_col0, const unsigned long long* d_grow, int l_rows,
+    unsigned long long pivot_global, int pivot_here, int pivot_loc,
+    const float* d_saved_rkk, float* d_r_diag_out)
+{
+    const int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i >= l_rows)
+        return;
+    const unsigned long long g = d_grow[i];
+    float* v = d_V_col0 + i;
+    if (g < pivot_global)
+    {
+        *v = 0.f;
+        return;
+    }
+    if (g == pivot_global && pivot_here && i == pivot_loc)
+    {
+        if (d_r_diag_out != nullptr)
+            *d_r_diag_out = *d_saved_rkk;
+        *v = 1.f;
+        return;
+    }
+}
+
+__global__ void split_and_pad_v_column_d(
+    double* d_V_col0, const unsigned long long* d_grow, int l_rows,
+    unsigned long long pivot_global, int pivot_here, int pivot_loc,
+    const double* d_saved_rkk, double* d_r_diag_out)
+{
+    const int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i >= l_rows)
+        return;
+    const unsigned long long g = d_grow[i];
+    double* v = d_V_col0 + i;
+    if (g < pivot_global)
+    {
+        *v = 0.;
+        return;
+    }
+    if (g == pivot_global && pivot_here && i == pivot_loc)
+    {
+        if (d_r_diag_out != nullptr)
+            *d_r_diag_out = *d_saved_rkk;
+        *v = 1.;
+        return;
+    }
+}
+
+__global__ void split_and_pad_v_column_c(
+    cuComplex* d_V_col0, const unsigned long long* d_grow, int l_rows,
+    unsigned long long pivot_global, int pivot_here, int pivot_loc,
+    const cuComplex* d_saved_rkk, cuComplex* d_r_diag_out)
+{
+    const int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i >= l_rows)
+        return;
+    const unsigned long long g = d_grow[i];
+    cuComplex* v = d_V_col0 + i;
+    if (g < pivot_global)
+    {
+        *v = make_cuComplex(0.f, 0.f);
+        return;
+    }
+    if (g == pivot_global && pivot_here && i == pivot_loc)
+    {
+        if (d_r_diag_out != nullptr)
+            *d_r_diag_out = *d_saved_rkk;
+        *v = make_cuComplex(1.f, 0.f);
+        return;
+    }
+}
+
+__global__ void split_and_pad_v_column_z(
+    cuDoubleComplex* d_V_col0, const unsigned long long* d_grow, int l_rows,
+    unsigned long long pivot_global, int pivot_here, int pivot_loc,
+    const cuDoubleComplex* d_saved_rkk, cuDoubleComplex* d_r_diag_out)
+{
+    const int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i >= l_rows)
+        return;
+    const unsigned long long g = d_grow[i];
+    cuDoubleComplex* v = d_V_col0 + i;
+    if (g < pivot_global)
+    {
+        *v = make_cuDoubleComplex(0., 0.);
+        return;
+    }
+    if (g == pivot_global && pivot_here && i == pivot_loc)
+    {
+        if (d_r_diag_out != nullptr)
+            *d_r_diag_out = *d_saved_rkk;
+        *v = make_cuDoubleComplex(1., 0.);
+        return;
+    }
+}
+
+//-----------------------------------------------------------------------------
+// Panel pre-clean: V columns [k, k+jb) — zero entries on local rows with
+// global index < k_col0 only (no pivot patch, no R_kk peel). One launch for
+// the whole panel strip; avoids wiping valid upper-triangle data on future pivots.
+//-----------------------------------------------------------------------------
+__global__ void panel_pre_clean_s(float* d_V_panel, int ldv,
+    const unsigned long long* d_grow, int l_rows,
+    unsigned long long k_col0, int jb_cols)
+{
+    const int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i >= l_rows || jb_cols <= 0)
+        return;
+    if (d_grow[i] >= k_col0)
+        return;
+    for (int j = 0; j < jb_cols; ++j)
+        d_V_panel[i + j * ldv] = 0.f;
+}
+
+__global__ void panel_pre_clean_d(double* d_V_panel, int ldv,
+    const unsigned long long* d_grow, int l_rows,
+    unsigned long long k_col0, int jb_cols)
+{
+    const int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i >= l_rows || jb_cols <= 0)
+        return;
+    if (d_grow[i] >= k_col0)
+        return;
+    for (int j = 0; j < jb_cols; ++j)
+        d_V_panel[i + j * ldv] = 0.;
+}
+
+__global__ void panel_pre_clean_c(cuComplex* d_V_panel, int ldv,
+    const unsigned long long* d_grow, int l_rows,
+    unsigned long long k_col0, int jb_cols)
+{
+    const int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i >= l_rows || jb_cols <= 0)
+        return;
+    if (d_grow[i] >= k_col0)
+        return;
+    const cuComplex z0 = make_cuComplex(0.f, 0.f);
+    for (int j = 0; j < jb_cols; ++j)
+        d_V_panel[i + j * ldv] = z0;
+}
+
+__global__ void panel_pre_clean_z(cuDoubleComplex* d_V_panel, int ldv,
+    const unsigned long long* d_grow, int l_rows,
+    unsigned long long k_col0, int jb_cols)
+{
+    const int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i >= l_rows || jb_cols <= 0)
+        return;
+    if (d_grow[i] >= k_col0)
+        return;
+    const cuDoubleComplex z0 = make_cuDoubleComplex(0., 0.);
+    for (int j = 0; j < jb_cols; ++j)
+        d_V_panel[i + j * ldv] = z0;
+}
+
+//-----------------------------------------------------------------------------
 // Compact WY T-block from S = V^H V and tau.
 // T is lower triangular (column j: T(j,j)=tau_j, T(i,j)=-tau_j * (T(i,:)*S(:,j)) for i<j).
 // S and T are column-major; S is jb x jb (ld = jb), T is nb x nb (ld = nb).

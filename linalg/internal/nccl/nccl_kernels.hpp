@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 /**
  * \defgroup nccl_kernels chase::linalg::internal::nccl Namespace
  * \brief The `chase::linalg::internal::nccl` namespace contains
@@ -213,9 +215,14 @@ struct cuda_nccl
         float allreduce_tau_ms = 0.f;
         float scal_ms          = 0.f;
         float trail_ms         = 0.f;
+        /** Full panel: cudaEvent elapsed over entire jj loop (ms), debug/tuning only. */
+        float panel_total_ms   = 0.f;
     };
 
-    /** Panel factorization for columns [k, k+jb). Used by blocked/unblocked QR; swap for different strategy. */
+    /** Panel factorization for columns [k, k+jb) in regular 1D block-row layout.
+     *  This path keeps the established logical-cleaning flow (save/restore of
+     *  panel upper entries) used by the non-cyclic blocked/unblocked kernels.
+     */
     template <typename T>
     static void distributed_houseQR_panel_factor(
         std::size_t n, std::size_t l_rows, std::size_t g_off, std::size_t ldv,
@@ -225,6 +232,52 @@ struct cuda_nccl
         T* d_one, T* d_zero, T* d_minus_one, T* d_panel_scalars, T* d_w,
         ncclComm_t nccl_col_comm,
         HouseholderPanelTiming* panel_timing = nullptr);
+
+    /** Panel factorization for 1-D block-cyclic rows (segment metadata).
+     *  d_row_global[i] = global row index of local row i; l_rows must match segments.
+     *  d_r_diag may be null; if set, length >= n — pivot rank writes peeled R_kk per column. */
+    template <typename T>
+    static void distributed_houseQR_panel_factor_block_cyclic_1d(
+        std::size_t n, std::size_t m_global,
+        const std::vector<std::size_t>& seg_global_offs,
+        const std::vector<std::size_t>& seg_local_offs,
+        const std::vector<std::size_t>& seg_lens,
+        std::size_t ldv, T* V, std::size_t k, std::size_t jb, std::size_t nb_dist,
+        T* d_tau,
+        cublasHandle_t cublas_handle,
+        chase::Base<T>* d_real_scalar, T* d_T_scalar,
+        T* d_one, T* d_zero, T* d_minus_one, T* d_panel_scalars, T* d_w,
+        ncclComm_t nccl_col_comm,
+        std::size_t l_rows, const std::uint64_t* d_row_global, T* d_r_diag,
+        HouseholderPanelTiming* panel_timing = nullptr);
+
+    /** Unblocked distributed Householder QR + form Q for block-cyclic rows.
+     *  Uses physical cleaning (split-and-pad) so downstream GEMMs operate on
+     *  full-height local blocks directly.
+     */
+    template <typename T>
+    static void distributed_houseQR_formQ_block_cyclic_1d(
+        std::size_t m_global, std::size_t n,
+        const std::vector<std::size_t>& seg_global_offs,
+        const std::vector<std::size_t>& seg_local_offs,
+        const std::vector<std::size_t>& seg_lens,
+        std::size_t ldv, T* V, std::size_t nb_dist, MPI_Comm mpi_comm,
+        cublasHandle_t cublas_handle, T* d_workspace, std::size_t lwork_elems,
+        ncclComm_t nccl_col_comm);
+
+    /** Blocked distributed Householder QR + form Q for block-cyclic rows.
+     *  Golden-rules path: split-and-pad + big GEMM + one allreduce per block.
+     */
+    template <typename T>
+    static void distributed_blocked_houseQR_formQ_block_cyclic_1d(
+        std::size_t m_global, std::size_t n,
+        const std::vector<std::size_t>& seg_global_offs,
+        const std::vector<std::size_t>& seg_local_offs,
+        const std::vector<std::size_t>& seg_lens,
+        std::size_t ldv, T* V, MPI_Comm mpi_comm, std::size_t nb,
+        std::size_t nb_dist,
+        cublasHandle_t cublas_handle, T* d_workspace, std::size_t lwork_elems,
+        ncclComm_t nccl_col_comm);
 
     template <typename MatrixType, typename InputMultiVectorType>
     static void rayleighRitz(
