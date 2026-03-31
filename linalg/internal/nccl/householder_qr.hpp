@@ -59,6 +59,7 @@ void cuda_nccl::distributed_houseQR_panel_factor(
 
     cudaStream_t stream = nullptr;
     CHECK_CUBLAS_ERROR(cublasGetStream(cublas_handle, &stream));
+    CHECK_CUBLAS_ERROR(cublasSetPointerMode(cublas_handle, CUBLAS_POINTER_MODE_DEVICE));
 
     const bool enable_timing =
         (panel_timing != nullptr) &&

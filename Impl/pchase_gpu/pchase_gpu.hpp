@@ -1038,7 +1038,10 @@ public:
                 else
                 {
                     kernelNamespace::houseQR1_formQ(
-                        cublasH_, *V1_d, reinterpret_cast<typename chase::ToDoublePrecisionTrait<T>::Type*>(d_work_), lwork_, 16);
+                        cublasH_, *V1_d,
+                        reinterpret_cast<typename chase::ToDoublePrecisionTrait<T>::Type*>(
+                            d_work_d),
+                        lwork_, 16);
                 }
                 V1_->copyback();
             }

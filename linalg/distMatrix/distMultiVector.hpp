@@ -540,6 +540,60 @@ public:
         }
     }
 
+#ifdef HAS_CUDA
+    template <
+        typename U = T,
+        typename std::enable_if<std::is_same<U, float>::value ||
+                                    std::is_same<U, std::complex<float>>::value,
+                                int>::type = 0>
+    void enableDoublePrecisionAsync(cudaStream_t* stream_ = nullptr)
+    {
+        if (!double_precision_multivec_)
+        {
+            start = std::chrono::high_resolution_clock::now();
+            if constexpr (std::is_same<Derived<T, comm_type, Platform>,
+                                       chase::distMultiVector::
+                                           DistMultiVectorBlockCyclic1D<
+                                               T, comm_type, Platform>>::value)
+            {
+                double_precision_multivec_ =
+                    std::make_unique<DoublePrecisionDerived>(
+                        this->g_rows(), this->g_cols(), this->mb(),
+                        this->getMpiGrid_shared_ptr());
+            }
+            else
+            {
+                double_precision_multivec_ =
+                    std::make_unique<DoublePrecisionDerived>(
+                        this->g_rows(), this->g_cols(),
+                        this->getMpiGrid_shared_ptr());
+            }
+
+
+            chase::linalg::internal::cuda::convert_SP_TO_DP_GPU(
+                this->l_data(), double_precision_multivec_->l_data(),
+                this->l_cols() * this->l_rows(), stream_);
+            
+
+            is_double_precision_enabled_ = true;
+            end = std::chrono::high_resolution_clock::now();
+            elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(
+                end - start);
+
+            if (this->grank() == 0)
+            {
+                chase::GetLogger().Log(chase::LogLevel::Debug, "linalg",
+                    "Double precision matrix enabled in AbstractDistMultiVector.\n",
+                    this->grank());
+            }
+        }
+        else
+        {
+            throw std::runtime_error("Double precision already enabled.");
+        }
+    }
+#endif
+
     // Disable double precision for float types
     template <
         typename U = T,
@@ -603,6 +657,46 @@ public:
                 this->grank());
         }
     }
+
+#ifdef HAS_CUDA
+    template <
+        typename U = T,
+        typename std::enable_if<std::is_same<U, float>::value ||
+                                    std::is_same<U, std::complex<float>>::value,
+                                int>::type = 0>
+    void disableDoublePrecisionAsync(bool copyback = false,
+                                     cudaStream_t* stream_ = nullptr)
+    {
+        start = std::chrono::high_resolution_clock::now();
+        if (copyback)
+        {
+            if (double_precision_multivec_)
+            {
+                chase::linalg::internal::cuda::convert_DP_TO_SP_GPU(
+                    double_precision_multivec_->l_data(), this->l_data(),
+                    this->l_cols() * this->l_rows(), stream_);
+                
+            }
+            else
+            {
+                throw std::runtime_error("Double precision is not enabled.");
+            }
+        }
+
+        double_precision_multivec_.reset();
+        is_double_precision_enabled_ = false;
+        end = std::chrono::high_resolution_clock::now();
+        elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(
+            end - start);
+
+        if (this->grank() == 0)
+        {
+            chase::GetLogger().Log(chase::LogLevel::Debug, "linalg",
+                "Double precision matrix disabled in AbstractDistMultiVector.\n",
+                this->grank());
+        }
+    }
+#endif
 
     // Check if double precision is enabled
     template <
@@ -764,6 +858,38 @@ public:
         }
     }
 
+#ifdef HAS_CUDA
+    template <
+        typename U = T,
+        typename std::enable_if<std::is_same<U, float>::value ||
+                                    std::is_same<U, std::complex<float>>::value,
+                                int>::type = 0>
+    void copybackAsync(cudaStream_t* stream_ = nullptr)
+    {
+        start = std::chrono::high_resolution_clock::now();
+        if (!double_precision_multivec_)
+        {
+            throw std::runtime_error("Double precision matrix is not enabled.");
+        }
+
+        chase::linalg::internal::cuda::convert_DP_TO_SP_GPU(
+            double_precision_multivec_->l_data(), this->l_data(),
+            this->l_cols() * this->l_rows(), stream_);
+        
+        end = std::chrono::high_resolution_clock::now();
+        elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(
+            end - start);
+
+        if (this->grank() == 0)
+        {
+            chase::GetLogger().Log(chase::LogLevel::Debug, "linalg",
+                "Double precision matrix copied back to single precision in "
+                "AbstractDistMultiVector.\n",
+                this->grank());
+        }
+    }
+#endif
+
     // Copy from double to single precision (if T is double)
     template <typename U = T,
               typename std::enable_if<
@@ -871,6 +997,38 @@ public:
                 this->grank());
         }
     }
+
+#ifdef HAS_CUDA
+    template <
+        typename U = T,
+        typename std::enable_if<std::is_same<U, float>::value ||
+                                    std::is_same<U, std::complex<float>>::value,
+                                int>::type = 0>
+    void copyToAsync(cudaStream_t* stream_ = nullptr)
+    {
+        start = std::chrono::high_resolution_clock::now();
+        if (!double_precision_multivec_)
+        {
+            throw std::runtime_error("Double precision matrix is not enabled.");
+        }
+
+        chase::linalg::internal::cuda::convert_SP_TO_DP_GPU(
+            this->l_data(), double_precision_multivec_->l_data(),
+            this->l_cols() * this->l_rows(), stream_);
+        
+        end = std::chrono::high_resolution_clock::now();
+        elapsed = std::chrono::duration_cast<std::chrono::duration<double>>(
+            end - start);
+
+        if (this->grank() == 0)
+        {
+            chase::GetLogger().Log(chase::LogLevel::Debug, "linalg",
+                "Single precision matrix copied to double precision in "
+                "AbstractDistMultiVector.\n",
+                this->grank());
+        }
+    }
+#endif
 
     // If T is neither float nor double, these methods should not be available
     template <typename U = T,
