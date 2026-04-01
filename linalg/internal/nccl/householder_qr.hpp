@@ -1036,6 +1036,13 @@ void cuda_nccl::distributed_houseQR_formQ(std::size_t m_global,
     const bool enable_timing =
         static_cast<int>(chase::GetLogger().GetLevel()) >=
         static_cast<int>(chase::LogLevel::Debug);
+    const bool timing_blocking = []() {
+        const char* e = std::getenv("CHASE_QR_TIMING_BLOCKING");
+        if (e == nullptr) return false; // default: keep timing non-blocking
+        const std::string v(e);
+        return (v == "1" || v == "true" || v == "TRUE" ||
+                v == "on" || v == "ON");
+    }();
 
     cudaEvent_t ev_start = nullptr, ev_panel_end = nullptr, ev_formQ_end = nullptr;
     if (enable_timing)
@@ -1900,6 +1907,13 @@ void cuda_nccl::distributed_blocked_houseQR_formQ_block_cyclic_1d(
     const bool enable_timing =
         static_cast<int>(chase::GetLogger().GetLevel()) >=
         static_cast<int>(chase::LogLevel::Debug);
+    const bool timing_blocking = []() {
+        const char* e = std::getenv("CHASE_QR_TIMING_BLOCKING");
+        if (e == nullptr) return false; // default: keep timing non-blocking
+        const std::string v(e);
+        return (v == "1" || v == "true" || v == "TRUE" ||
+                v == "on" || v == "ON");
+    }();
     float t_panel_ms = 0.f, t_tbuild_ms = 0.f, t_trail_ms = 0.f;
     float t_initq_ms = 0.f, t_formq_ms = 0.f, t_total_ms = 0.f;
     float t_vhq_gemm_ms = 0.f, t_vhq_nccl_ms = 0.f;
@@ -1916,6 +1930,15 @@ void cuda_nccl::distributed_blocked_houseQR_formQ_block_cyclic_1d(
     auto time_scope = [&](float& acc_ms, auto&& fn) {
         if (!enable_timing)
         {
+            fn();
+#if STRICT_TIMING
+            CHECK_CUDA_ERROR(cudaStreamSynchronize(stream));
+#endif
+            return;
+        }
+        if (!timing_blocking)
+        {
+            // Production mode: never block host on per-phase timing.
             fn();
 #if STRICT_TIMING
             CHECK_CUDA_ERROR(cudaStreamSynchronize(stream));
@@ -2006,7 +2029,10 @@ void cuda_nccl::distributed_blocked_houseQR_formQ_block_cyclic_1d(
     }
 
     cudaStream_t stream_panel = nullptr;
-    CHECK_CUDA_ERROR(cudaStreamCreateWithFlags(&stream_panel, cudaStreamNonBlocking));
+    int prio_low = 0, prio_high = 0;
+    CHECK_CUDA_ERROR(cudaDeviceGetStreamPriorityRange(&prio_low, &prio_high));
+    CHECK_CUDA_ERROR(cudaStreamCreateWithPriority(
+        &stream_panel, cudaStreamNonBlocking, prio_high));
     cublasHandle_t cublas_panel = nullptr;
     CHECK_CUBLAS_ERROR(cublasCreate(&cublas_panel));
     CHECK_CUBLAS_ERROR(cublasSetPointerMode(cublas_panel, CUBLAS_POINTER_MODE_DEVICE));
