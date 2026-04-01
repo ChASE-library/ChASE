@@ -421,6 +421,136 @@ void run_split_and_pad_v_column(cudaStream_t stream, T* d_V_col0,
 }
 
 template <typename T>
+void run_fused_householder_finish_kernel(cudaStream_t stream, int pivot_here,
+                                         T* d_V_col0, int ldv,
+                                         const std::uint64_t* d_row_global,
+                                         int l_rows,
+                                         std::uint64_t pivot_global,
+                                         int pivot_loc,
+                                         int active_row_start,
+                                         const T* d_denom_bcast,
+                                         T* d_inv_denom,
+                                         const T* d_saved_rkk,
+                                         T* d_r_diag_out)
+{
+    (void)ldv;
+    if (stream == nullptr)
+        stream = 0;
+    if (l_rows <= 0 || d_V_col0 == nullptr || d_row_global == nullptr)
+        return;
+    constexpr int block = 256;
+    const int grid = (l_rows + block - 1) / block;
+    if (grid <= 0)
+        return;
+    if constexpr (std::is_same<T, float>::value)
+    {
+        fused_householder_finish_s<<<grid, block, 0, stream>>>(
+            d_V_col0, l_rows, active_row_start,
+            reinterpret_cast<const unsigned long long*>(d_row_global),
+            static_cast<unsigned long long>(pivot_global), pivot_here, pivot_loc,
+            reinterpret_cast<const float*>(d_denom_bcast),
+            reinterpret_cast<float*>(d_inv_denom),
+            reinterpret_cast<const float*>(d_saved_rkk),
+            reinterpret_cast<float*>(d_r_diag_out));
+    }
+    else if constexpr (std::is_same<T, double>::value)
+    {
+        fused_householder_finish_d<<<grid, block, 0, stream>>>(
+            d_V_col0, l_rows, active_row_start,
+            reinterpret_cast<const unsigned long long*>(d_row_global),
+            static_cast<unsigned long long>(pivot_global), pivot_here, pivot_loc,
+            reinterpret_cast<const double*>(d_denom_bcast),
+            reinterpret_cast<double*>(d_inv_denom),
+            reinterpret_cast<const double*>(d_saved_rkk),
+            reinterpret_cast<double*>(d_r_diag_out));
+    }
+    else if constexpr (std::is_same<T, std::complex<float>>::value)
+    {
+        fused_householder_finish_c<<<grid, block, 0, stream>>>(
+            reinterpret_cast<cuComplex*>(d_V_col0), l_rows, active_row_start,
+            reinterpret_cast<const unsigned long long*>(d_row_global),
+            static_cast<unsigned long long>(pivot_global), pivot_here, pivot_loc,
+            reinterpret_cast<const cuComplex*>(d_denom_bcast),
+            reinterpret_cast<cuComplex*>(d_inv_denom),
+            reinterpret_cast<const cuComplex*>(d_saved_rkk),
+            reinterpret_cast<cuComplex*>(d_r_diag_out));
+    }
+    else
+    {
+        static_assert(std::is_same<T, std::complex<double>>::value,
+                      "T must be float, double, or complex");
+        fused_householder_finish_z<<<grid, block, 0, stream>>>(
+            reinterpret_cast<cuDoubleComplex*>(d_V_col0), l_rows,
+            active_row_start,
+            reinterpret_cast<const unsigned long long*>(d_row_global),
+            static_cast<unsigned long long>(pivot_global), pivot_here, pivot_loc,
+            reinterpret_cast<const cuDoubleComplex*>(d_denom_bcast),
+            reinterpret_cast<cuDoubleComplex*>(d_inv_denom),
+            reinterpret_cast<const cuDoubleComplex*>(d_saved_rkk),
+            reinterpret_cast<cuDoubleComplex*>(d_r_diag_out));
+    }
+}
+
+template <typename T, typename RealT>
+void run_extract_real_part_from_scalar(cudaStream_t stream, const T* d_in,
+                                       RealT* d_out)
+{
+    if (stream == nullptr)
+        stream = 0;
+    if constexpr (std::is_same<T, float>::value || std::is_same<T, double>::value)
+    {
+        static_assert(std::is_same<T, RealT>::value, "real type mismatch");
+        cudaError_t err = cudaMemcpyAsync(
+            d_out, d_in, sizeof(RealT), cudaMemcpyDeviceToDevice, stream);
+        if (err != cudaSuccess)
+            throw std::runtime_error("run_extract_real_part_from_scalar memcpy failed");
+    }
+    else if constexpr (std::is_same<T, std::complex<float>>::value)
+    {
+        static_assert(std::is_same<RealT, float>::value, "real type mismatch");
+        extract_real_part_from_c<<<1, 1, 0, stream>>>(
+            reinterpret_cast<const cuComplex*>(d_in), d_out);
+    }
+    else
+    {
+        static_assert(std::is_same<T, std::complex<double>>::value &&
+                          std::is_same<RealT, double>::value,
+                      "T must be float, double, or complex");
+        extract_real_part_from_z<<<1, 1, 0, stream>>>(
+            reinterpret_cast<const cuDoubleComplex*>(d_in), d_out);
+    }
+}
+
+template <typename T>
+void run_copy_scalar_kernel(cudaStream_t stream, const T* d_src, T* d_dst)
+{
+    if (stream == nullptr)
+        stream = 0;
+    if constexpr (std::is_same<T, float>::value)
+    {
+        copy_scalar_s<<<1, 1, 0, stream>>>(d_src, d_dst);
+    }
+    else if constexpr (std::is_same<T, double>::value)
+    {
+        copy_scalar_d<<<1, 1, 0, stream>>>(d_src, d_dst);
+    }
+    else if constexpr (std::is_same<T, std::complex<float>>::value)
+    {
+        copy_scalar_c<<<1, 1, 0, stream>>>(
+            reinterpret_cast<const cuComplex*>(d_src),
+            reinterpret_cast<cuComplex*>(d_dst));
+    }
+    else
+    {
+        static_assert(std::is_same<T, std::complex<double>>::value,
+                      "T must be float, double, or complex");
+        copy_scalar_z<<<1, 1, 0, stream>>>(
+            reinterpret_cast<const cuDoubleComplex*>(d_src),
+            reinterpret_cast<cuDoubleComplex*>(d_dst));
+    }
+}
+
+template <typename T>
 void run_panel_pre_clean(cudaStream_t stream, T* d_V_panel, std::size_t ldv,
                          const std::uint64_t* d_row_global, int l_rows,
                          std::size_t k_col0, int jb_cols)
@@ -706,6 +836,24 @@ template void run_split_and_pad_v_column<std::complex<float>>(cudaStream_t, std:
     const std::uint64_t*, int, std::uint64_t, int, int, const std::complex<float>*, std::complex<float>*);
 template void run_split_and_pad_v_column<std::complex<double>>(cudaStream_t, std::complex<double>*,
     const std::uint64_t*, int, std::uint64_t, int, int, const std::complex<double>*, std::complex<double>*);
+template void run_fused_householder_finish_kernel<float>(cudaStream_t, int, float*, int,
+    const std::uint64_t*, int, std::uint64_t, int, int, const float*, float*, const float*, float*);
+template void run_fused_householder_finish_kernel<double>(cudaStream_t, int, double*, int,
+    const std::uint64_t*, int, std::uint64_t, int, int, const double*, double*, const double*, double*);
+template void run_fused_householder_finish_kernel<std::complex<float>>(cudaStream_t, int, std::complex<float>*, int,
+    const std::uint64_t*, int, std::uint64_t, int, int, const std::complex<float>*, std::complex<float>*,
+    const std::complex<float>*, std::complex<float>*);
+template void run_fused_householder_finish_kernel<std::complex<double>>(cudaStream_t, int, std::complex<double>*, int,
+    const std::uint64_t*, int, std::uint64_t, int, int, const std::complex<double>*, std::complex<double>*,
+    const std::complex<double>*, std::complex<double>*);
+template void run_extract_real_part_from_scalar<float, float>(cudaStream_t, const float*, float*);
+template void run_extract_real_part_from_scalar<double, double>(cudaStream_t, const double*, double*);
+template void run_extract_real_part_from_scalar<std::complex<float>, float>(cudaStream_t, const std::complex<float>*, float*);
+template void run_extract_real_part_from_scalar<std::complex<double>, double>(cudaStream_t, const std::complex<double>*, double*);
+template void run_copy_scalar_kernel<float>(cudaStream_t, const float*, float*);
+template void run_copy_scalar_kernel<double>(cudaStream_t, const double*, double*);
+template void run_copy_scalar_kernel<std::complex<float>>(cudaStream_t, const std::complex<float>*, std::complex<float>*);
+template void run_copy_scalar_kernel<std::complex<double>>(cudaStream_t, const std::complex<double>*, std::complex<double>*);
 
 template void run_panel_pre_clean<float>(cudaStream_t, float*, std::size_t,
     const std::uint64_t*, int, std::size_t, int);

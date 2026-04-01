@@ -110,6 +110,29 @@ void run_split_and_pad_v_column(cudaStream_t stream, T* d_V_col0,
                                 int pivot_loc, const T* d_saved_rkk,
                                 T* d_r_diag_out);
 
+// Stage-3 prep: fused finish kernel for block-cyclic panel column.
+// It performs post-comm scaling by denom, applies pivot fix-up (v[pivot]=1),
+// and optionally peels R_kk to d_r_diag_out in one launch.
+template <typename T>
+void run_fused_householder_finish_kernel(cudaStream_t stream, int pivot_here,
+                                         T* d_V_col0, int ldv,
+                                         const std::uint64_t* d_row_global,
+                                         int l_rows,
+                                         std::uint64_t pivot_global,
+                                         int pivot_loc,
+                                         int active_row_start,
+                                         const T* d_denom_bcast,
+                                         T* d_inv_denom,
+                                         const T* d_saved_rkk,
+                                         T* d_r_diag_out);
+
+template <typename T, typename RealT>
+void run_extract_real_part_from_scalar(cudaStream_t stream, const T* d_in,
+                                       RealT* d_out);
+
+template <typename T>
+void run_copy_scalar_kernel(cudaStream_t stream, const T* d_src, T* d_dst);
+
 // Before panel factor column loop: for V(:, k..k+jb-1), zero local rows with
 // global row < k only (no R peel, pivot unchanged). d_V_panel = V + k*ldv.
 template <typename T>

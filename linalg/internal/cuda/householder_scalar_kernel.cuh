@@ -887,6 +887,144 @@ __global__ void split_and_pad_v_column_z(
 }
 
 //-----------------------------------------------------------------------------
+// Stage-3 fused finish for block-cyclic panel column:
+// 1) use globally synchronized denom to scale active tail [active_row_start, l_rows)
+// 2) split-and-pad cleanup by global row index (g < pivot -> 0)
+// 3) pivot row fix-up v[pivot]=1 and optional R_kk peel
+//-----------------------------------------------------------------------------
+__global__ void fused_householder_finish_s(
+    float* d_V_col0, int l_rows, int active_row_start,
+    const unsigned long long* d_grow, unsigned long long pivot_global,
+    int pivot_here, int pivot_loc, const float* d_denom_bcast,
+    float* d_inv_denom, const float* d_saved_rkk, float* d_r_diag_out)
+{
+    const float x = *d_denom_bcast;
+    const bool do_scale = (x != 0.f && isfinite(x));
+    const float inv = do_scale ? (1.f / x) : 0.f;
+    if (blockIdx.x == 0 && threadIdx.x == 0)
+        *d_inv_denom = inv;
+    const int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i >= l_rows) return;
+    float* v = d_V_col0 + i;
+    const unsigned long long g = d_grow[i];
+    if (g < pivot_global) { *v = 0.f; return; }
+    if (pivot_here && i == pivot_loc && g == pivot_global)
+    {
+        if (d_r_diag_out) *d_r_diag_out = *d_saved_rkk;
+        *v = 1.f;
+        return;
+    }
+    if (do_scale && i >= active_row_start) *v *= inv;
+}
+
+__global__ void fused_householder_finish_d(
+    double* d_V_col0, int l_rows, int active_row_start,
+    const unsigned long long* d_grow, unsigned long long pivot_global,
+    int pivot_here, int pivot_loc, const double* d_denom_bcast,
+    double* d_inv_denom, const double* d_saved_rkk, double* d_r_diag_out)
+{
+    const double x = *d_denom_bcast;
+    const bool do_scale = (x != 0. && isfinite(x));
+    const double inv = do_scale ? (1. / x) : 0.;
+    if (blockIdx.x == 0 && threadIdx.x == 0)
+        *d_inv_denom = inv;
+    const int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i >= l_rows) return;
+    double* v = d_V_col0 + i;
+    const unsigned long long g = d_grow[i];
+    if (g < pivot_global) { *v = 0.; return; }
+    if (pivot_here && i == pivot_loc && g == pivot_global)
+    {
+        if (d_r_diag_out) *d_r_diag_out = *d_saved_rkk;
+        *v = 1.;
+        return;
+    }
+    if (do_scale && i >= active_row_start) *v *= inv;
+}
+
+__global__ void fused_householder_finish_c(
+    cuComplex* d_V_col0, int l_rows, int active_row_start,
+    const unsigned long long* d_grow, unsigned long long pivot_global,
+    int pivot_here, int pivot_loc, const cuComplex* d_denom_bcast,
+    cuComplex* d_inv_denom, const cuComplex* d_saved_rkk, cuComplex* d_r_diag_out)
+{
+    const cuComplex x = *d_denom_bcast;
+    const float ax = cuCabsf(x);
+    const bool do_scale = (ax != 0.f && isfinite(ax));
+    const cuComplex inv = do_scale ? cuCdivf(make_cuComplex(1.f, 0.f), x)
+                                   : make_cuComplex(0.f, 0.f);
+    if (blockIdx.x == 0 && threadIdx.x == 0)
+        *d_inv_denom = inv;
+    const int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i >= l_rows) return;
+    cuComplex* v = d_V_col0 + i;
+    const unsigned long long g = d_grow[i];
+    if (g < pivot_global) { *v = make_cuComplex(0.f, 0.f); return; }
+    if (pivot_here && i == pivot_loc && g == pivot_global)
+    {
+        if (d_r_diag_out) *d_r_diag_out = *d_saved_rkk;
+        *v = make_cuComplex(1.f, 0.f);
+        return;
+    }
+    if (do_scale && i >= active_row_start) *v = cuCmulf(*v, inv);
+}
+
+__global__ void fused_householder_finish_z(
+    cuDoubleComplex* d_V_col0, int l_rows, int active_row_start,
+    const unsigned long long* d_grow, unsigned long long pivot_global,
+    int pivot_here, int pivot_loc, const cuDoubleComplex* d_denom_bcast,
+    cuDoubleComplex* d_inv_denom, const cuDoubleComplex* d_saved_rkk,
+    cuDoubleComplex* d_r_diag_out)
+{
+    const cuDoubleComplex x = *d_denom_bcast;
+    const double ax = cuCabs(x);
+    const bool do_scale = (ax != 0. && isfinite(ax));
+    const cuDoubleComplex inv = do_scale ? cuCdiv(make_cuDoubleComplex(1., 0.), x)
+                                         : make_cuDoubleComplex(0., 0.);
+    if (blockIdx.x == 0 && threadIdx.x == 0)
+        *d_inv_denom = inv;
+    const int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i >= l_rows) return;
+    cuDoubleComplex* v = d_V_col0 + i;
+    const unsigned long long g = d_grow[i];
+    if (g < pivot_global) { *v = make_cuDoubleComplex(0., 0.); return; }
+    if (pivot_here && i == pivot_loc && g == pivot_global)
+    {
+        if (d_r_diag_out) *d_r_diag_out = *d_saved_rkk;
+        *v = make_cuDoubleComplex(1., 0.);
+        return;
+    }
+    if (do_scale && i >= active_row_start) *v = cuCmul(*v, inv);
+}
+
+__global__ void extract_real_part_from_c(const cuComplex* in, float* out)
+{
+    if (threadIdx.x == 0 && blockIdx.x == 0) *out = cuCrealf(*in);
+}
+
+__global__ void extract_real_part_from_z(const cuDoubleComplex* in, double* out)
+{
+    if (threadIdx.x == 0 && blockIdx.x == 0) *out = cuCreal(*in);
+}
+
+__global__ void copy_scalar_s(const float* src, float* dst)
+{
+    if (threadIdx.x == 0 && blockIdx.x == 0) *dst = *src;
+}
+__global__ void copy_scalar_d(const double* src, double* dst)
+{
+    if (threadIdx.x == 0 && blockIdx.x == 0) *dst = *src;
+}
+__global__ void copy_scalar_c(const cuComplex* src, cuComplex* dst)
+{
+    if (threadIdx.x == 0 && blockIdx.x == 0) *dst = *src;
+}
+__global__ void copy_scalar_z(const cuDoubleComplex* src, cuDoubleComplex* dst)
+{
+    if (threadIdx.x == 0 && blockIdx.x == 0) *dst = *src;
+}
+
+//-----------------------------------------------------------------------------
 // Panel pre-clean: V columns [k, k+jb) — zero entries on local rows with
 // global index < k_col0 only (no pivot patch, no R_kk peel). One launch for
 // the whole panel strip; avoids wiping valid upper-triangle data on future pivots.

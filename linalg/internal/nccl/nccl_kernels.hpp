@@ -265,7 +265,8 @@ struct cuda_nccl
         T* d_minus_one, T* d_panel_scalars, T* d_w, ncclComm_t nccl_col_comm,
         int col_rank, int col_size, std::size_t l_rows,
         const std::uint64_t* d_row_global, T* d_r_diag,
-        HouseholderPanelTiming* panel_timing);
+        HouseholderPanelTiming* panel_timing, T* d_sub_workspace,
+        std::size_t d_sub_workspace_elems);
 
     /** Unblocked distributed Householder QR + form Q for block-cyclic rows.
      *  Uses physical cleaning (split-and-pad) so downstream GEMMs operate on
