@@ -251,6 +251,22 @@ struct cuda_nccl
         std::size_t l_rows, const std::uint64_t* d_row_global, T* d_r_diag,
         HouseholderPanelTiming* panel_timing = nullptr);
 
+    /** Column sub-range of block-cyclic panel [jj_begin, jj_end); jb_panel_total fixes trailing width. */
+    template <typename T>
+    static void distributed_houseQR_panel_factor_block_cyclic_1d_columns(
+        std::size_t n, std::size_t m_global,
+        const std::vector<std::size_t>& seg_global_offs,
+        const std::vector<std::size_t>& seg_local_offs,
+        const std::vector<std::size_t>& seg_lens,
+        std::size_t ldv, T* V, std::size_t k, std::size_t jj_begin,
+        std::size_t jj_end, std::size_t jb_panel_total, std::size_t nb_dist,
+        T* d_tau, cublasHandle_t cublas_handle,
+        chase::Base<T>* d_real_scalar, T* d_T_scalar, T* d_one, T* d_zero,
+        T* d_minus_one, T* d_panel_scalars, T* d_w, ncclComm_t nccl_col_comm,
+        int col_rank, int col_size, std::size_t l_rows,
+        const std::uint64_t* d_row_global, T* d_r_diag,
+        HouseholderPanelTiming* panel_timing);
+
     /** Unblocked distributed Householder QR + form Q for block-cyclic rows.
      *  Uses physical cleaning (split-and-pad) so downstream GEMMs operate on
      *  full-height local blocks directly.

@@ -808,7 +808,7 @@ public:
         //     display_bounds = std::atoi(display_bounds_env);
         // }
 
-        if (disable == 1 || cond != 1.0)
+        if (disable == 1 && cond != static_cast<Base<T>>(1.0))
         {
 #ifdef QR_DOUBLE_PRECISION
             if constexpr (std::is_same<T, float>::value ||

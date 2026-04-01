@@ -390,7 +390,7 @@ int bse_solve(BSE_DriverProblemConfig& conf)
         std::cout << "Finished Problem #"
                   << "\n";
         // For pseudo-Hermitian, first GetNev() entries are the requested positive eigenvalues.
-        std::size_t n_ev_print = single.GetNev();
+        std::size_t n_ev_print = single.GetNev() + single.GetNex();
         std::cout << "Printing first 20 eigenvalues and residuals\n";
         std::cout
             << "| Index |       Eigenvalue      |         Residual      |\n"
@@ -403,7 +403,7 @@ int bse_solve(BSE_DriverProblemConfig& conf)
 #ifndef NDEBUG
         for (auto i = 0; i < n_ev_print; ++i)
 #else
-        for (auto i = 0; i < std::min(std::size_t(20), n_ev_print); ++i)
+        for (auto i = 0; i < std::min(n_ev_print, n_ev_print); ++i)
 #endif
         {
             std::cout << "|  " << std::setw(4) << i + 1 << " | "

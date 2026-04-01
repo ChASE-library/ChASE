@@ -51,6 +51,7 @@ option(CHASE_ENABLE_XGEEV_RAYLEIGHRITZ "Enable solving pseudo-hermitian problems
 option(ChASE_DISPLAY_COND_V_SVD "Compute and display condition number of V from SVD" OFF)
 option(CHASE_QR_DOUBLE_PRECISION "Operate QR in Double Precision" ON)
 option(CHASE_RR_DOUBLE_PRECISION "Operate HEEVD in RR for pseudo-hermitian matrices in Double Precision" OFF)
+option(CHASE_PANEL_HIPREC "Enable Split-Sync-Fix and high-precision panel protection" OFF)
 option(CHASE_ENABLE_TESTS "Enable unit tests." OFF)
 # GPU-resident Lanczos (fused kernels + NCCL) is required for GPU Lanczos paths.
 set(CHASE_ENABLE_GPU_RESIDENT_LANCZOS ON)
@@ -98,6 +99,10 @@ endif()
 
 if(CHASE_RR_DOUBLE_PRECISION)
   target_compile_definitions(chase_algorithm INTERFACE "-DRR_DOUBLE_PRECISION")
+endif()
+
+if(CHASE_PANEL_HIPREC)
+  target_compile_definitions(chase_algorithm INTERFACE "-DCHASE_PANEL_HIPREC=1")
 endif()
 
 if(ChASE_DISPLAY_COND_V_SVD)
@@ -188,6 +193,9 @@ if(CHASE_QR_DOUBLE_PRECISION)
 endif()
 if(CHASE_RR_DOUBLE_PRECISION)
     set(CHASE_COMPILE_DEFINITIONS "${CHASE_COMPILE_DEFINITIONS} -DRR_DOUBLE_PRECISION")
+endif()
+if(CHASE_PANEL_HIPREC)
+    set(CHASE_COMPILE_DEFINITIONS "${CHASE_COMPILE_DEFINITIONS} -DCHASE_PANEL_HIPREC=1")
 endif()
 if(ChASE_DISPLAY_COND_V_SVD)
     set(CHASE_COMPILE_DEFINITIONS "${CHASE_COMPILE_DEFINITIONS} -DChASE_DISPLAY_COND_V_SVD")

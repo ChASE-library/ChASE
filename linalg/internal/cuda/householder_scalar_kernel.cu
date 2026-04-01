@@ -23,6 +23,10 @@ namespace internal
 namespace cuda
 {
 
+namespace
+{
+} // namespace
+
 template <typename T, typename RealT>
 void run_householder_scalar_kernel(cudaStream_t stream, int pivot_here,
                                   const T* d_x0, const RealT* d_nrm_sq, T* d_tau,
@@ -132,6 +136,53 @@ void run_nonpivot_scal_if_denom_nonzero(cudaStream_t stream,
             reinterpret_cast<const cuDoubleComplex*>(d_denom_bcast),
             reinterpret_cast<cuDoubleComplex*>(d_inv_denom),
             reinterpret_cast<cuDoubleComplex*>(d_V_col), n);
+    }
+}
+
+template <typename T>
+void run_bc1d_post_comm_scal_pivot(cudaStream_t stream, int pivot_here,
+                                   const T* d_denom_bcast, T* d_inv_denom,
+                                   T* d_v_tail, int vr, int pivot_rel)
+{
+    if (stream == nullptr)
+        stream = 0;
+    if (vr <= 0 && !pivot_here)
+        return;
+    constexpr int kBlock = 256;
+    const int ph = pivot_here ? 1 : 0;
+    const int grid =
+        vr > 0 ? (static_cast<int>(vr) + kBlock - 1) / kBlock : 1;
+    if constexpr (std::is_same<T, float>::value)
+    {
+        bc1d_post_comm_scal_pivot_s<<<grid, kBlock, 0, stream>>>(
+            ph, pivot_rel, d_denom_bcast, d_inv_denom, d_v_tail, vr);
+    }
+    else if constexpr (std::is_same<T, double>::value)
+    {
+        bc1d_post_comm_scal_pivot_d<<<grid, kBlock, 0, stream>>>(
+            ph, pivot_rel, d_denom_bcast, d_inv_denom, d_v_tail, vr);
+    }
+    else if constexpr (std::is_same<T, std::complex<float>>::value)
+    {
+        bc1d_post_comm_scal_pivot_c<<<grid, kBlock, 0, stream>>>(
+            ph,
+            pivot_rel,
+            reinterpret_cast<const cuComplex*>(d_denom_bcast),
+            reinterpret_cast<cuComplex*>(d_inv_denom),
+            reinterpret_cast<cuComplex*>(d_v_tail),
+            vr);
+    }
+    else
+    {
+        static_assert(std::is_same<T, std::complex<double>>::value,
+                      "T must be float, double, or complex");
+        bc1d_post_comm_scal_pivot_z<<<grid, kBlock, 0, stream>>>(
+            ph,
+            pivot_rel,
+            reinterpret_cast<const cuDoubleComplex*>(d_denom_bcast),
+            reinterpret_cast<cuDoubleComplex*>(d_inv_denom),
+            reinterpret_cast<cuDoubleComplex*>(d_v_tail),
+            vr);
     }
 }
 
@@ -439,29 +490,63 @@ void run_compute_T_block(cudaStream_t stream, T* Tb, T* d_S, const T* d_tau,
     (void)cudaGetLastError();
     if constexpr (std::is_same<T, float>::value)
     {
-        compute_T_block_s<<<1, 1, 0, stream>>>(Tb, d_S, d_tau, jb, nb);
+        const int threads = std::max(1, std::min(128, jb));
+        const std::size_t shmem_bytes = static_cast<std::size_t>(jb) * sizeof(float);
+#if CHASE_PANEL_HIPREC
+        compute_T_block_s_dpacc<<<1, threads, shmem_bytes, stream>>>(Tb, d_S, d_tau, jb, nb);
+#else
+        compute_T_block_s<<<1, threads, shmem_bytes, stream>>>(Tb, d_S, d_tau, jb, nb);
+#endif
     }
     else if constexpr (std::is_same<T, double>::value)
     {
-        compute_T_block_d<<<1, 1, 0, stream>>>(Tb, d_S, d_tau, jb, nb);
+        const int threads = std::max(1, std::min(128, jb));
+        const std::size_t shmem_bytes = static_cast<std::size_t>(jb) * sizeof(double);
+#if CHASE_PANEL_HIPREC
+        compute_T_block_d_qdacc<<<1, threads, shmem_bytes, stream>>>(Tb, d_S, d_tau, jb, nb);
+#else
+        compute_T_block_d<<<1, threads, shmem_bytes, stream>>>(Tb, d_S, d_tau, jb, nb);
+#endif
     }
     else if constexpr (std::is_same<T, std::complex<float>>::value)
     {
-        compute_T_block_c<<<1, 1, 0, stream>>>(
+        const int threads = std::max(1, std::min(128, jb));
+        const std::size_t shmem_bytes =
+            static_cast<std::size_t>(jb) * sizeof(cuComplex);
+#if CHASE_PANEL_HIPREC
+        compute_T_block_c_dpacc<<<1, threads, shmem_bytes, stream>>>(
             reinterpret_cast<cuComplex*>(Tb),
             reinterpret_cast<const cuComplex*>(d_S),
             reinterpret_cast<const cuComplex*>(d_tau),
             jb, nb);
+#else
+        compute_T_block_c<<<1, threads, shmem_bytes, stream>>>(
+            reinterpret_cast<cuComplex*>(Tb),
+            reinterpret_cast<const cuComplex*>(d_S),
+            reinterpret_cast<const cuComplex*>(d_tau),
+            jb, nb);
+#endif
     }
     else
     {
         static_assert(std::is_same<T, std::complex<double>>::value,
                       "T must be float, double, or complex");
-        compute_T_block_z<<<1, 1, 0, stream>>>(
+        const int threads = std::max(1, std::min(128, jb));
+        const std::size_t shmem_bytes =
+            static_cast<std::size_t>(jb) * sizeof(cuDoubleComplex);
+#if CHASE_PANEL_HIPREC
+        compute_T_block_z_qdacc<<<1, threads, shmem_bytes, stream>>>(
             reinterpret_cast<cuDoubleComplex*>(Tb),
             reinterpret_cast<const cuDoubleComplex*>(d_S),
             reinterpret_cast<const cuDoubleComplex*>(d_tau),
             jb, nb);
+#else
+        compute_T_block_z<<<1, threads, shmem_bytes, stream>>>(
+            reinterpret_cast<cuDoubleComplex*>(Tb),
+            reinterpret_cast<const cuDoubleComplex*>(d_S),
+            reinterpret_cast<const cuDoubleComplex*>(d_tau),
+            jb, nb);
+#endif
     }
     cudaError_t err = cudaPeekAtLastError();
     if (err != cudaSuccess)
@@ -469,6 +554,105 @@ void run_compute_T_block(cudaStream_t stream, T* Tb, T* d_S, const T* d_tau,
         std::ostringstream oss;
         oss << "compute_T_block kernel launch failed: " << cudaGetErrorString(err);
         throw std::runtime_error(oss.str());
+    }
+}
+
+template <typename T>
+void run_split_to_hilo(cudaStream_t stream, const T* d_in, std::size_t count,
+                       double* d_hi, double* d_lo)
+{
+    if (stream == nullptr)
+        stream = 0;
+    if (count == 0)
+        return;
+
+    const std::size_t scalar_count = split_sync_scalar_count<T>(count);
+
+    constexpr int block = 256;
+    const int grid = static_cast<int>((scalar_count + block - 1) / block);
+
+    if constexpr (std::is_same<T, float>::value || std::is_same<T, double>::value)
+    {
+        split_to_hilo_kernel<T><<<grid, block, 0, stream>>>(
+            d_in, d_hi, d_lo, scalar_count);
+        if (cudaPeekAtLastError() != cudaSuccess)
+            throw std::runtime_error("split_to_hilo_kernel launch failed");
+
+        (void)d_hi;
+        (void)d_lo;
+    }
+    else if constexpr (std::is_same<T, std::complex<float>>::value)
+    {
+        const float* in_flat = reinterpret_cast<const float*>(d_in);
+
+        split_to_hilo_kernel<float><<<grid, block, 0, stream>>>(
+            in_flat, d_hi, d_lo, scalar_count);
+        if (cudaPeekAtLastError() != cudaSuccess)
+            throw std::runtime_error("split_to_hilo_kernel(complex<float>) failed");
+    }
+    else
+    {
+        static_assert(std::is_same<T, std::complex<double>>::value,
+                      "Unsupported type for split_to_hilo");
+        const double* in_flat = reinterpret_cast<const double*>(d_in);
+
+        split_to_hilo_kernel<double><<<grid, block, 0, stream>>>(
+            in_flat, d_hi, d_lo, scalar_count);
+        if (cudaPeekAtLastError() != cudaSuccess)
+            throw std::runtime_error("split_to_hilo_kernel(complex<double>) failed");
+    }
+}
+
+void run_renorm_hilo(cudaStream_t stream, double* d_hi, double* d_lo,
+                     std::size_t scalar_count)
+{
+    if (stream == nullptr)
+        stream = 0;
+    if (scalar_count == 0)
+        return;
+    constexpr int block = 256;
+    const int grid = static_cast<int>((scalar_count + block - 1) / block);
+    renorm_hilo_kernel<<<grid, block, 0, stream>>>(d_hi, d_lo, scalar_count);
+    if (cudaPeekAtLastError() != cudaSuccess)
+        throw std::runtime_error("renorm_hilo_kernel launch failed");
+}
+
+template <typename T>
+void run_merge_hilo_to_out(cudaStream_t stream, const double* d_hi,
+                           const double* d_lo, T* d_out, std::size_t count)
+{
+    if (stream == nullptr)
+        stream = 0;
+    if (count == 0)
+        return;
+    const std::size_t scalar_count = split_sync_scalar_count<T>(count);
+    constexpr int block = 256;
+    const int grid = static_cast<int>((scalar_count + block - 1) / block);
+
+    if constexpr (std::is_same<T, float>::value || std::is_same<T, double>::value)
+    {
+        merge_hilo_to_out_kernel<T><<<grid, block, 0, stream>>>(
+            d_hi, d_lo, d_out, scalar_count);
+        if (cudaPeekAtLastError() != cudaSuccess)
+            throw std::runtime_error("merge_hilo_to_out_kernel launch failed");
+    }
+    else if constexpr (std::is_same<T, std::complex<float>>::value)
+    {
+        float* out_flat = reinterpret_cast<float*>(d_out);
+        merge_hilo_to_out_kernel<float><<<grid, block, 0, stream>>>(
+            d_hi, d_lo, out_flat, scalar_count);
+        if (cudaPeekAtLastError() != cudaSuccess)
+            throw std::runtime_error("merge_hilo_to_out_kernel(complex<float>) failed");
+    }
+    else
+    {
+        static_assert(std::is_same<T, std::complex<double>>::value,
+                      "Unsupported type for merge_hilo_to_out");
+        double* out_flat = reinterpret_cast<double*>(d_out);
+        merge_hilo_to_out_kernel<double><<<grid, block, 0, stream>>>(
+            d_hi, d_lo, out_flat, scalar_count);
+        if (cudaPeekAtLastError() != cudaSuccess)
+            throw std::runtime_error("merge_hilo_to_out_kernel(complex<double>) failed");
     }
 }
 
@@ -493,6 +677,11 @@ template void run_nonpivot_scal_if_denom_nonzero<float>(cudaStream_t, const floa
 template void run_nonpivot_scal_if_denom_nonzero<double>(cudaStream_t, const double*, double*, double*, int);
 template void run_nonpivot_scal_if_denom_nonzero<std::complex<float>>(cudaStream_t, const std::complex<float>*, std::complex<float>*, std::complex<float>*, int);
 template void run_nonpivot_scal_if_denom_nonzero<std::complex<double>>(cudaStream_t, const std::complex<double>*, std::complex<double>*, std::complex<double>*, int);
+
+template void run_bc1d_post_comm_scal_pivot<float>(cudaStream_t, int, const float*, float*, float*, int, int);
+template void run_bc1d_post_comm_scal_pivot<double>(cudaStream_t, int, const double*, double*, double*, int, int);
+template void run_bc1d_post_comm_scal_pivot<std::complex<float>>(cudaStream_t, int, const std::complex<float>*, std::complex<float>*, std::complex<float>*, int, int);
+template void run_bc1d_post_comm_scal_pivot<std::complex<double>>(cudaStream_t, int, const std::complex<double>*, std::complex<double>*, std::complex<double>*, int, int);
 
 template void run_guarded_scaling<float>(cudaStream_t, int, const float*, const float*, float*, bool, int, const float*);
 template void run_guarded_scaling<double>(cudaStream_t, int, const double*, const double*, double*, bool, int, const double*);
@@ -531,6 +720,16 @@ template void run_compute_T_block<float>(cudaStream_t, float*, float*, const flo
 template void run_compute_T_block<double>(cudaStream_t, double*, double*, const double*, int, int);
 template void run_compute_T_block<std::complex<float>>(cudaStream_t, std::complex<float>*, std::complex<float>*, const std::complex<float>*, int, int);
 template void run_compute_T_block<std::complex<double>>(cudaStream_t, std::complex<double>*, std::complex<double>*, const std::complex<double>*, int, int);
+
+template void run_split_to_hilo<float>(cudaStream_t, const float*, std::size_t, double*, double*);
+template void run_split_to_hilo<double>(cudaStream_t, const double*, std::size_t, double*, double*);
+template void run_split_to_hilo<std::complex<float>>(cudaStream_t, const std::complex<float>*, std::size_t, double*, double*);
+template void run_split_to_hilo<std::complex<double>>(cudaStream_t, const std::complex<double>*, std::size_t, double*, double*);
+
+template void run_merge_hilo_to_out<float>(cudaStream_t, const double*, const double*, float*, std::size_t);
+template void run_merge_hilo_to_out<double>(cudaStream_t, const double*, const double*, double*, std::size_t);
+template void run_merge_hilo_to_out<std::complex<float>>(cudaStream_t, const double*, const double*, std::complex<float>*, std::size_t);
+template void run_merge_hilo_to_out<std::complex<double>>(cudaStream_t, const double*, const double*, std::complex<double>*, std::size_t);
 
 } // namespace cuda
 } // namespace internal

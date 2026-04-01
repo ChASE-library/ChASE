@@ -7,8 +7,10 @@
 #pragma once
 
 #include <cstddef>
+#include <complex>
 #include <cstdint>
 #include <cuda_runtime.h>
+#include "highprec_traits.cuh"
 
 namespace chase
 {
@@ -39,6 +41,13 @@ void run_nonpivot_scal_if_denom_nonzero(cudaStream_t stream,
                                        const T* d_denom_bcast, T* d_inv_denom,
                                        T* d_V_col, int n);
 
+// After NCCL(tau, denom): multi-block scale of v_tail; pivot row (index
+// pivot_rel within tail, or -1) is set to 1 without a second launch.
+template <typename T>
+void run_bc1d_post_comm_scal_pivot(cudaStream_t stream, int pivot_here,
+                                   const T* d_denom_bcast, T* d_inv_denom,
+                                   T* d_v_tail, int vr, int pivot_rel);
+
 // Scale V_col with inv_denom only when tau != 0. On pivot row write neg_beta.
 template <typename T>
 void run_guarded_scaling(cudaStream_t stream, int n, const T* d_tau,
@@ -67,6 +76,29 @@ void run_init_identity_distributed(cudaStream_t stream, T* d_V, std::size_t ldv,
 template <typename T>
 void run_compute_T_block(cudaStream_t stream, T* Tb, T* d_S, const T* d_tau,
                         int jb, int nb);
+
+template <typename T>
+constexpr std::size_t split_sync_scalar_count(std::size_t count)
+{
+    return count * (std::is_same<T, std::complex<float>>::value ||
+                    std::is_same<T, std::complex<double>>::value
+                        ? 2
+                        : 1);
+}
+
+// Split input to hi/lo double buffers (lo initialized to zero).
+template <typename T>
+void run_split_to_hilo(cudaStream_t stream, const T* d_in, std::size_t count,
+                       double* d_hi, double* d_lo);
+
+// Local renormalization: (hi, lo) <- two_sum(hi, lo)
+void run_renorm_hilo(cudaStream_t stream, double* d_hi, double* d_lo,
+                     std::size_t scalar_count);
+
+// Merge hi/lo back to output type T.
+template <typename T>
+void run_merge_hilo_to_out(cudaStream_t stream, const double* d_hi,
+                           const double* d_lo, T* d_out, std::size_t count);
 
 // In-place WY cleaning for one panel column: zero rows with global index <
 // pivot; at pivot copy *d_saved_rkk to d_r_diag_out and set v to 1 (if

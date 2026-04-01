@@ -32,6 +32,7 @@
 
 #include "../../linalg/internal/typeTraits.hpp"
 #include "Impl/pchase_cpu/pchase_cpu.hpp"
+#include <cstdlib>
 #include <iomanip>
 #include <sstream>
 
@@ -1032,7 +1033,16 @@ public:
             }
         }
 #endif
-        if (disable == 1 || cond != 1.0)
+        unsigned int householder_nb = 32u;
+        if (const char* hh_nb_env = std::getenv("CHASE_HOUSEHOLDER_NB"))
+        {
+            const long parsed = std::strtol(hh_nb_env, nullptr, 10);
+            if (parsed > 0)
+                householder_nb = static_cast<unsigned int>(parsed);
+        }
+
+        // CholQR when disable==0 (always), or disable==1 with cond==1.0 (CholQR1 path).
+        if (disable == 1 && cond != static_cast<Base<T>>(1.0))
         {
 #ifdef QR_DOUBLE_PRECISION  
             if constexpr (std::is_same<T, std::complex<float>>::value ||
@@ -1060,7 +1070,7 @@ public:
                             kernelNamespace::houseQR1_formQ(
                                 cublasH_, *V1_d,
                                 reinterpret_cast<typename chase::ToDoublePrecisionTrait<T>::Type*>(d_work_d),
-                                lwork_, 16);
+                                lwork_, householder_nb);
                         });
                     }
                     else
@@ -1116,7 +1126,7 @@ public:
 #endif
                         measure_cuda(time_hh_core_ms, [&]() {
                             kernelNamespace::houseQR1_formQ(
-                                cublasH_, *V1_, d_work_, lwork_, 16);
+                                cublasH_, *V1_, d_work_, lwork_, householder_nb);
                         });
                     }
                     else
@@ -1146,7 +1156,7 @@ public:
                 {
                     measure_cuda(time_hh_core_ms, [&]() {
                         kernelNamespace::houseQR1_formQ(
-                            cublasH_, *V1_, d_work_, lwork_, 16);
+                            cublasH_, *V1_, d_work_, lwork_, householder_nb);
                     });
                 }
 
@@ -1386,7 +1396,7 @@ public:
                                     kernelNamespace::houseQR1_formQ(
                                         cublasH_, *V1_d,
                                         reinterpret_cast<typename chase::ToDoublePrecisionTrait<T>::Type*>(d_work_d),
-                                        lwork_, 16u);
+                                        lwork_, householder_nb);
                                 });
                             }
                             else
@@ -1418,7 +1428,7 @@ public:
                                 kernelNamespace::houseQR1_formQ(
                                     cublasH_, *V1_d,
                                     reinterpret_cast<typename chase::ToDoublePrecisionTrait<T>::Type*>(d_work_d),
-                                    lwork_, 16u);
+                                    lwork_, householder_nb);
                             });
                         }
                     }
@@ -1445,7 +1455,7 @@ public:
 #endif
                                 measure_cuda(time_hh_fallback_core_ms, [&]() {
                                     kernelNamespace::houseQR1_formQ(
-                                        cublasH_, *V1_, d_work_, lwork_, 16u);
+                                        cublasH_, *V1_, d_work_, lwork_, householder_nb);
                                 });
                             }
                             else
@@ -1475,7 +1485,7 @@ public:
                         {
                             measure_cuda(time_hh_fallback_core_ms, [&]() {
                                 kernelNamespace::houseQR1_formQ(
-                                    cublasH_, *V1_, d_work_, lwork_, 16u);
+                                    cublasH_, *V1_, d_work_, lwork_, householder_nb);
                             });
                         }
                     }
