@@ -1902,6 +1902,8 @@ void cuda_nccl::distributed_blocked_houseQR_formQ_block_cyclic_1d(
         static_cast<int>(chase::LogLevel::Debug);
     float t_panel_ms = 0.f, t_tbuild_ms = 0.f, t_trail_ms = 0.f;
     float t_initq_ms = 0.f, t_formq_ms = 0.f, t_total_ms = 0.f;
+    float t_vhq_gemm_ms = 0.f, t_vhq_nccl_ms = 0.f;
+    float t_apply_t_ms = 0.f, t_rankk_update_ms = 0.f;
     cudaEvent_t ev_a = nullptr, ev_b = nullptr, ev_total_start = nullptr, ev_total_end = nullptr;
     if (enable_timing)
     {
@@ -1942,27 +1944,44 @@ void cuda_nccl::distributed_blocked_houseQR_formQ_block_cyclic_1d(
     nccl_fill_pivot_row_local_index(row_local, row_seg, n, seg_global_offs, seg_local_offs, nseg);
 
     const std::size_t num_blocks = (n + nb - 1) / nb;
+    int formq_chunks = 1;
+    if (const char* e = std::getenv("CHASE_FORMQ_CHUNKS"))
+    {
+        const int v = std::atoi(e);
+        if (v > 1) formq_chunks = v;
+    }
     chase::linalg::internal::cuda_nccl::HouseholderPanelTiming panel_blk;
     float sum_panel_cuda_wall_ms = 0.f;
 
-    RealT* d_real_scalar = nullptr;
-    T *d_T_scalar = nullptr, *d_one = nullptr, *d_zero = nullptr, *d_minus_one = nullptr;
-    T *d_panel_scalars = nullptr, *d_tau = nullptr, *d_VH = nullptr;
+    RealT* d_real_scalar[2] = {nullptr, nullptr};
+    T *d_T_scalar[2] = {nullptr, nullptr}, *d_one = nullptr, *d_zero = nullptr, *d_minus_one = nullptr;
+    T *d_panel_scalars[2] = {nullptr, nullptr}, *d_tau = nullptr, *d_VH = nullptr;
+    T *d_w_panel[2] = {nullptr, nullptr};
     T *d_T_blocks = nullptr, *d_W = nullptr, *d_TW = nullptr, *d_r_diag = nullptr;
+    T *d_W_buf[2] = {nullptr, nullptr}, *d_TW_buf[2] = {nullptr, nullptr};
     double* d_split_hi = nullptr;
     double* d_split_lo = nullptr;
     std::uint64_t* d_row_global = nullptr;
-    CHECK_CUDA_ERROR(cudaMalloc((void**)&d_real_scalar, sizeof(RealT)));
-    CHECK_CUDA_ERROR(cudaMalloc((void**)&d_T_scalar, sizeof(T)));
+    CHECK_CUDA_ERROR(cudaMalloc((void**)&d_real_scalar[0], sizeof(RealT)));
+    CHECK_CUDA_ERROR(cudaMalloc((void**)&d_real_scalar[1], sizeof(RealT)));
+    CHECK_CUDA_ERROR(cudaMalloc((void**)&d_T_scalar[0], sizeof(T)));
+    CHECK_CUDA_ERROR(cudaMalloc((void**)&d_T_scalar[1], sizeof(T)));
     CHECK_CUDA_ERROR(cudaMalloc((void**)&d_one, sizeof(T)));
     CHECK_CUDA_ERROR(cudaMalloc((void**)&d_zero, sizeof(T)));
     CHECK_CUDA_ERROR(cudaMalloc((void**)&d_minus_one, sizeof(T)));
-    CHECK_CUDA_ERROR(cudaMalloc((void**)&d_panel_scalars, 4 * sizeof(T)));
+    CHECK_CUDA_ERROR(cudaMalloc((void**)&d_panel_scalars[0], 4 * sizeof(T)));
+    CHECK_CUDA_ERROR(cudaMalloc((void**)&d_panel_scalars[1], 4 * sizeof(T)));
+    CHECK_CUDA_ERROR(cudaMalloc((void**)&d_w_panel[0], nb * sizeof(T)));
+    CHECK_CUDA_ERROR(cudaMalloc((void**)&d_w_panel[1], nb * sizeof(T)));
     CHECK_CUDA_ERROR(cudaMalloc((void**)&d_tau, n * sizeof(T)));
     CHECK_CUDA_ERROR(cudaMalloc((void**)&d_VH, l_rows * n * sizeof(T)));
     CHECK_CUDA_ERROR(cudaMalloc((void**)&d_T_blocks, num_blocks * nb * nb * sizeof(T)));
-    CHECK_CUDA_ERROR(cudaMalloc((void**)&d_W, nb * n * sizeof(T)));
-    CHECK_CUDA_ERROR(cudaMalloc((void**)&d_TW, nb * n * sizeof(T)));
+    CHECK_CUDA_ERROR(cudaMalloc((void**)&d_W_buf[0], nb * n * sizeof(T)));
+    CHECK_CUDA_ERROR(cudaMalloc((void**)&d_W_buf[1], nb * n * sizeof(T)));
+    CHECK_CUDA_ERROR(cudaMalloc((void**)&d_TW_buf[0], nb * n * sizeof(T)));
+    CHECK_CUDA_ERROR(cudaMalloc((void**)&d_TW_buf[1], nb * n * sizeof(T)));
+    d_W = d_W_buf[0];
+    d_TW = d_TW_buf[0];
     CHECK_CUDA_ERROR(cudaMalloc((void**)&d_r_diag, n * sizeof(T)));
     CHECK_CUDA_ERROR(cudaMalloc((void**)&d_split_hi,
         nb * n * chase::nccl::DataCountMultiplier<T>::value * sizeof(double)));
@@ -1986,28 +2005,53 @@ void cuda_nccl::distributed_blocked_houseQR_formQ_block_cyclic_1d(
             l_rows * sizeof(std::uint64_t), cudaMemcpyHostToDevice, stream));
     }
 
+    cudaStream_t stream_panel = nullptr;
+    CHECK_CUDA_ERROR(cudaStreamCreateWithFlags(&stream_panel, cudaStreamNonBlocking));
+    cublasHandle_t cublas_panel = nullptr;
+    CHECK_CUBLAS_ERROR(cublasCreate(&cublas_panel));
+    CHECK_CUBLAS_ERROR(cublasSetPointerMode(cublas_panel, CUBLAS_POINTER_MODE_DEVICE));
+    CHECK_CUBLAS_ERROR(cublasSetStream(cublas_panel, stream_panel));
+
+    std::vector<cudaEvent_t> event_cols_ready(num_blocks), event_panel_done(num_blocks);
+    for (std::size_t b = 0; b < num_blocks; ++b)
+    {
+        CHECK_CUDA_ERROR(cudaEventCreateWithFlags(&event_cols_ready[b], cudaEventDisableTiming));
+        CHECK_CUDA_ERROR(cudaEventCreateWithFlags(&event_panel_done[b], cudaEventDisableTiming));
+    }
+
+    // Prime pipeline with block-0 panel factor on stream_panel.
+    if (num_blocks > 0)
+    {
+        const std::size_t jb0 = std::min(nb, n);
+        CHECK_CUDA_ERROR(cudaEventRecord(event_cols_ready[0], stream));
+        CHECK_CUDA_ERROR(cudaStreamWaitEvent(stream_panel, event_cols_ready[0], 0));
+        cuda_nccl::distributed_houseQR_panel_factor_block_cyclic_1d<T>(
+            n, m_global, seg_global_offs, seg_local_offs, seg_lens, ldv, V, 0,
+            jb0, nb_dist, d_tau, cublas_panel, d_real_scalar[0], d_T_scalar[0],
+            d_one, d_zero, d_minus_one, d_panel_scalars[0], d_w_panel[0],
+            nccl_col_comm, l_rows, d_row_global, d_r_diag,
+            enable_timing ? &panel_blk : nullptr);
+        CHECK_CUDA_ERROR(cudaEventRecord(event_panel_done[0], stream_panel));
+        if (enable_timing)
+            sum_panel_cuda_wall_ms += panel_blk.panel_total_ms;
+    }
+
     // Forward blocked factor/update with physically cleaned V blocks.
     for (std::size_t b = 0; b < num_blocks; ++b)
     {
         const std::size_t k  = b * nb;
         const std::size_t jb = std::min(nb, n - k);
         T* Tb = d_T_blocks + b * nb * nb;
+        const int next = static_cast<int>(1 - (b % 2));
 
-        time_scope(t_panel_ms, [&]() {
-            cuda_nccl::distributed_houseQR_panel_factor_block_cyclic_1d<T>(
-                n, m_global, seg_global_offs, seg_local_offs, seg_lens, ldv,
-                V, k, jb, nb_dist, d_tau, cublas_handle, d_real_scalar, d_T_scalar,
-                d_one, d_zero, d_minus_one, d_panel_scalars, d_W, nccl_col_comm,
-                l_rows, d_row_global, d_r_diag,
-                enable_timing ? &panel_blk : nullptr);
-            if (enable_timing)
-                sum_panel_cuda_wall_ms += panel_blk.panel_total_ms;
-        });
+        CHECK_CUDA_ERROR(cudaStreamWaitEvent(stream, event_panel_done[b], 0));
+        // Keep aggregate panel timer semantics.
+        if (enable_timing)
+            t_panel_ms += panel_blk.panel_total_ms;
 
         // t_tbuild_ms: S = V^H V (GEMM K = l_rows), jb×jb AllReduce, optional
         // strict barrier, run_compute_T_block — not the T kernel in isolation.
         time_scope(t_tbuild_ms, [&]() {
-            CHECK_CUDA_ERROR(cudaMemsetAsync(d_TW, 0, jb * jb * sizeof(T), stream));
             CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(
                 cublas_handle, cublas_op_c, CUBLAS_OP_N,
                 jb, jb, l_rows, d_one,
@@ -2022,7 +2066,6 @@ void cuda_nccl::distributed_blocked_houseQR_formQ_block_cyclic_1d(
             chase::nccl::ncclAllReduceWrapper<T>(
                 d_TW, d_TW, jb * jb, ncclSum, nccl_col_comm, &stream);
 #endif
-            nccl_strict_stream_barrier(stream);
             chase::linalg::internal::cuda::run_compute_T_block<T>(
                 stream, Tb, d_TW, d_tau + k, static_cast<int>(jb), static_cast<int>(nb));
 #if CHASE_PANEL_HIPREC
@@ -2034,34 +2077,101 @@ void cuda_nccl::distributed_blocked_houseQR_formQ_block_cyclic_1d(
         if (n_trail > 0)
         {
             time_scope(t_trail_ms, [&]() {
-                CHECK_CUDA_ERROR(cudaMemsetAsync(d_W, 0, jb * n_trail * sizeof(T), stream));
+                const std::size_t jb_next = std::min(nb, n_trail);
+                const std::size_t n_rest = n_trail - jb_next;
+
+                // Phase A: update next panel columns first.
                 CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(
                     cublas_handle, cublas_op_c, CUBLAS_OP_N,
-                    jb, n_trail, l_rows, d_one,
+                    jb, jb_next, l_rows, d_one,
                     V + k * ldv, ldv,
                     V + (k + jb) * ldv, ldv,
                     d_zero, d_W, jb));
 #if CHASE_PANEL_HIPREC
                 nccl_split_sync_fix_allreduce<T>(
-                    stream, d_W, d_W, jb * n_trail, nccl_col_comm, d_split_hi,
-                    d_split_lo, cublas_handle, rank, b, "trail");
+                    stream, d_W, d_W, jb * jb_next, nccl_col_comm, d_split_hi,
+                    d_split_lo, cublas_handle, rank, b, "trail_next");
 #else
                 chase::nccl::ncclAllReduceWrapper<T>(
-                    d_W, d_W, jb * n_trail, ncclSum, nccl_col_comm, &stream);
+                    d_W, d_W, jb * jb_next, ncclSum, nccl_col_comm, &stream);
 #endif
-                CHECK_CUDA_ERROR(cudaMemsetAsync(d_TW, 0, jb * n_trail * sizeof(T), stream));
                 CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(
                     cublas_handle, CUBLAS_OP_C, CUBLAS_OP_N,
-                    jb, n_trail, jb, d_one, Tb, nb, d_W, jb, d_zero, d_TW, jb));
+                    jb, jb_next, jb, d_one, Tb, nb, d_W, jb, d_zero, d_TW, jb));
                 CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(
                     cublas_handle, CUBLAS_OP_N, CUBLAS_OP_N,
-                    l_rows, n_trail, jb, d_minus_one,
+                    l_rows, jb_next, jb, d_minus_one,
                     V + k * ldv, ldv,
                     d_TW, jb, d_one,
                     V + (k + jb) * ldv, ldv));
+
+                // Launch next panel as soon as next block columns are ready.
+                if (b + 1 < num_blocks)
+                {
+                    CHECK_CUDA_ERROR(cudaEventRecord(event_cols_ready[b + 1], stream));
+                    CHECK_CUDA_ERROR(cudaStreamWaitEvent(stream_panel, event_cols_ready[b + 1], 0));
+                    const std::size_t k_next  = k + jb;
+                    const std::size_t jb_fact = std::min(nb, n - k_next);
+                    cuda_nccl::distributed_houseQR_panel_factor_block_cyclic_1d<T>(
+                        n, m_global, seg_global_offs, seg_local_offs, seg_lens, ldv,
+                        V, k_next, jb_fact, nb_dist, d_tau, cublas_panel,
+                        d_real_scalar[next], d_T_scalar[next], d_one, d_zero,
+                        d_minus_one, d_panel_scalars[next], d_w_panel[next],
+                        nccl_col_comm, l_rows, d_row_global, d_r_diag,
+                        enable_timing ? &panel_blk : nullptr);
+                    CHECK_CUDA_ERROR(cudaEventRecord(event_panel_done[b + 1], stream_panel));
+                    if (enable_timing)
+                        sum_panel_cuda_wall_ms += panel_blk.panel_total_ms;
+                }
+
+                // Phase B: update remaining trailing columns while next panel runs.
+                if (n_rest > 0)
+                {
+                    CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(
+                        cublas_handle, cublas_op_c, CUBLAS_OP_N,
+                        jb, n_rest, l_rows, d_one,
+                        V + k * ldv, ldv,
+                        V + (k + jb + jb_next) * ldv, ldv,
+                        d_zero, d_W, jb));
+#if CHASE_PANEL_HIPREC
+                    nccl_split_sync_fix_allreduce<T>(
+                        stream, d_W, d_W, jb * n_rest, nccl_col_comm, d_split_hi,
+                        d_split_lo, cublas_handle, rank, b, "trail_rest");
+#else
+                    chase::nccl::ncclAllReduceWrapper<T>(
+                        d_W, d_W, jb * n_rest, ncclSum, nccl_col_comm, &stream);
+#endif
+                    CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(
+                        cublas_handle, CUBLAS_OP_C, CUBLAS_OP_N,
+                        jb, n_rest, jb, d_one, Tb, nb, d_W, jb, d_zero, d_TW, jb));
+                    CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(
+                        cublas_handle, CUBLAS_OP_N, CUBLAS_OP_N,
+                        l_rows, n_rest, jb, d_minus_one,
+                        V + k * ldv, ldv, d_TW, jb, d_one,
+                        V + (k + jb + jb_next) * ldv, ldv));
+                }
             });
         }
+        else if (b + 1 < num_blocks)
+        {
+            // No trailing matrix left to hide behind; launch next panel directly.
+            const std::size_t k_next  = k + jb;
+            const std::size_t jb_fact = std::min(nb, n - k_next);
+            CHECK_CUDA_ERROR(cudaEventRecord(event_cols_ready[b + 1], stream));
+            CHECK_CUDA_ERROR(cudaStreamWaitEvent(stream_panel, event_cols_ready[b + 1], 0));
+            cuda_nccl::distributed_houseQR_panel_factor_block_cyclic_1d<T>(
+                n, m_global, seg_global_offs, seg_local_offs, seg_lens, ldv, V,
+                k_next, jb_fact, nb_dist, d_tau, cublas_panel,
+                d_real_scalar[next], d_T_scalar[next], d_one, d_zero, d_minus_one,
+                d_panel_scalars[next], d_w_panel[next], nccl_col_comm, l_rows,
+                d_row_global, d_r_diag, enable_timing ? &panel_blk : nullptr);
+            CHECK_CUDA_ERROR(cudaEventRecord(event_panel_done[b + 1], stream_panel));
+            if (enable_timing)
+                sum_panel_cuda_wall_ms += panel_blk.panel_total_ms;
+        }
     }
+    if (num_blocks > 0)
+        CHECK_CUDA_ERROR(cudaStreamWaitEvent(stream, event_panel_done[num_blocks - 1], 0));
 
     time_scope(t_initq_ms, [&]() {
         chase::linalg::internal::cuda::t_lacpy('A', l_rows, n, V, ldv, d_VH, l_rows, &stream);
@@ -2081,36 +2191,54 @@ void cuda_nccl::distributed_blocked_houseQR_formQ_block_cyclic_1d(
         const std::size_t k = b * nb;
         const std::size_t jb = std::min(nb, n - k);
         const std::size_t n_cols = n - k;
+        const int bw = static_cast<int>(bb & 1u);
+        T* d_W_curr = d_W_buf[bw];
+        T* d_TW_curr = d_TW_buf[bw];
         T* Tb = d_T_blocks + b * nb * nb;
 
-        time_scope(t_formq_ms, [&]() {
-            CHECK_CUDA_ERROR(cudaMemsetAsync(d_W, 0, jb * n_cols * sizeof(T), stream));
-            CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(
-                cublas_handle, cublas_op_c, CUBLAS_OP_N,
-                jb, n_cols, l_rows, d_one,
-                d_VH + k * l_rows, l_rows,
-                V + k * ldv, ldv,
-                d_zero, d_W, jb));
+        const std::size_t chunks = std::max<std::size_t>(
+            1, std::min<std::size_t>(static_cast<std::size_t>(formq_chunks), n_cols));
+        for (std::size_t ch = 0; ch < chunks; ++ch)
+        {
+            const std::size_t c0 = (ch * n_cols) / chunks;
+            const std::size_t c1 = ((ch + 1) * n_cols) / chunks;
+            const std::size_t cw = c1 - c0;
+            if (cw == 0) continue;
+
+            time_scope(t_vhq_gemm_ms, [&]() {
+                CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(
+                    cublas_handle, cublas_op_c, CUBLAS_OP_N,
+                    jb, cw, l_rows, d_one,
+                    d_VH + k * l_rows, l_rows,
+                    V + (k + c0) * ldv, ldv,
+                    d_zero, d_W_curr, jb));
+            });
+            time_scope(t_vhq_nccl_ms, [&]() {
 #if CHASE_PANEL_HIPREC
-            nccl_split_sync_fix_allreduce<T>(
-                stream, d_W, d_W, jb * n_cols, nccl_col_comm, d_split_hi,
-                d_split_lo, cublas_handle, rank, b, "formQ");
+                nccl_split_sync_fix_allreduce<T>(
+                    stream, d_W_curr, d_W_curr, jb * cw, nccl_col_comm, d_split_hi,
+                    d_split_lo, cublas_handle, rank, b, "formQ_chunk");
 #else
-            chase::nccl::ncclAllReduceWrapper<T>(
-                d_W, d_W, jb * n_cols, ncclSum, nccl_col_comm, &stream);
+                chase::nccl::ncclAllReduceWrapper<T>(
+                    d_W_curr, d_W_curr, jb * cw, ncclSum, nccl_col_comm, &stream);
 #endif
-            CHECK_CUDA_ERROR(cudaMemsetAsync(d_TW, 0, jb * n_cols * sizeof(T), stream));
-            CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(
-                cublas_handle, CUBLAS_OP_N, CUBLAS_OP_N,
-                jb, n_cols, jb, d_one, Tb, nb, d_W, jb, d_zero, d_TW, jb));
-            CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(
-                cublas_handle, CUBLAS_OP_N, CUBLAS_OP_N,
-                l_rows, n_cols, jb, d_minus_one,
-                d_VH + k * l_rows, l_rows,
-                d_TW, jb, d_one,
-                V + k * ldv, ldv));
-        });
+            });
+            time_scope(t_apply_t_ms, [&]() {
+                CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(
+                    cublas_handle, CUBLAS_OP_N, CUBLAS_OP_N,
+                    jb, cw, jb, d_one, Tb, nb, d_W_curr, jb, d_zero, d_TW_curr, jb));
+            });
+            time_scope(t_rankk_update_ms, [&]() {
+                CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTgemm(
+                    cublas_handle, CUBLAS_OP_N, CUBLAS_OP_N,
+                    l_rows, cw, jb, d_minus_one,
+                    d_VH + k * l_rows, l_rows,
+                    d_TW_curr, jb, d_one,
+                    V + (k + c0) * ldv, ldv));
+            });
+        }
     }
+    t_formq_ms = t_vhq_gemm_ms + t_vhq_nccl_ms + t_apply_t_ms + t_rankk_update_ms;
 
     if (enable_timing)
     {
@@ -2128,6 +2256,12 @@ void cuda_nccl::distributed_blocked_houseQR_formQ_block_cyclic_1d(
                 << "trailing=" << (t_trail_ms / 1000.0) << " s  "
                 << "init_formQ=" << (t_initq_ms / 1000.0) << " s  "
                 << "formQ_backward=" << (t_formq_ms / 1000.0) << " s\n"
+                << "  Backward breakdown: vhq_gemm="
+                << (t_vhq_gemm_ms / 1000.0) << " s  vhq_nccl="
+                << (t_vhq_nccl_ms / 1000.0) << " s  apply_t="
+                << (t_apply_t_ms / 1000.0) << " s  rankk_update="
+                << (t_rankk_update_ms / 1000.0) << " s  chunks="
+                << formq_chunks << "\n"
                 << "  Panel CUDA wall (sum over blocks): " << sum_panel_cuda_wall_ms << " ms\n";
             chase::GetLogger().Log(chase::LogLevel::Debug, "linalg", oss.str(), rank);
         }
@@ -2137,9 +2271,23 @@ void cuda_nccl::distributed_blocked_houseQR_formQ_block_cyclic_1d(
         cudaEventDestroy(ev_total_end);
     }
 
-    cudaFree(d_real_scalar); cudaFree(d_T_scalar); cudaFree(d_one); cudaFree(d_zero);
-    cudaFree(d_minus_one); cudaFree(d_panel_scalars); cudaFree(d_tau); cudaFree(d_VH);
-    cudaFree(d_T_blocks); cudaFree(d_W); cudaFree(d_TW); cudaFree(d_r_diag);
+    for (std::size_t b = 0; b < num_blocks; ++b)
+    {
+        cudaEventDestroy(event_cols_ready[b]);
+        cudaEventDestroy(event_panel_done[b]);
+    }
+    cublasDestroy(cublas_panel);
+    cudaStreamDestroy(stream_panel);
+
+    cudaFree(d_real_scalar[0]); cudaFree(d_real_scalar[1]);
+    cudaFree(d_T_scalar[0]); cudaFree(d_T_scalar[1]);
+    cudaFree(d_w_panel[0]); cudaFree(d_w_panel[1]);
+    cudaFree(d_one); cudaFree(d_zero);
+    cudaFree(d_minus_one); cudaFree(d_panel_scalars[0]); cudaFree(d_panel_scalars[1]); cudaFree(d_tau); cudaFree(d_VH);
+    cudaFree(d_T_blocks);
+    cudaFree(d_W_buf[0]); cudaFree(d_W_buf[1]);
+    cudaFree(d_TW_buf[0]); cudaFree(d_TW_buf[1]);
+    cudaFree(d_r_diag);
     cudaFree(d_split_hi); cudaFree(d_split_lo);
     if (d_row_global) cudaFree(d_row_global);
     CHECK_CUBLAS_ERROR(cublasSetPointerMode(cublas_handle, CUBLAS_POINTER_MODE_HOST));
