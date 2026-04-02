@@ -2044,8 +2044,31 @@ void Algorithm<T>::solve_pseudo(ChaseBase<T>* single)
         cond = std::pow(rho_k, static_cast<Base<T>>(degrees[0])) *std::pow(rho_1,static_cast<Base<T>>(deg_max - degrees[0]));
 
         //TODO : I don't think that the condition number should be based on squared values. 
-
+#ifdef CHASE_OUTPUT
+        {
+            std::ostringstream oss;
+            oss << "[QR-HANG-TRACE][solve_pseudo] before QR: iter=" << iteration
+                << " locked=" << locked
+                << " unconverged=" << unconverged
+                << " cond=" << std::scientific << std::setprecision(6) << cond
+                << " lambda_1=" << lambda_1
+                << " lower=" << lower
+                << " b_sup=" << b_sup
+                << '\n';
+            single->Output(LogLevel::Debug, oss.str(), "algorithm");
+        }
+#endif
         single->QR(locked, cond);
+#ifdef CHASE_OUTPUT
+        {
+            std::ostringstream oss;
+            oss << "[QR-HANG-TRACE][solve_pseudo] after QR: iter=" << iteration
+                << " locked=" << locked
+                << " unconverged=" << unconverged
+                << '\n';
+            single->Output(LogLevel::Debug, oss.str(), "algorithm");
+        }
+#endif
 
         // ------------------------- RAYLEIGH-RITZ -----------------------------
         single->RR(ritzv, unconverged);

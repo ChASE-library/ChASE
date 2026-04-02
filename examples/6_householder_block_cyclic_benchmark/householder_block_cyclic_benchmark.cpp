@@ -16,6 +16,7 @@
 #include <numeric>
 #include <random>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 #include <mpi.h>
@@ -48,14 +49,14 @@ struct BenchConfig
     std::size_t warmup = 1;
     std::size_t iters = 5;
     std::string path_in;
+    std::string distribution = "blockcyclic";
     unsigned long long seed = 1337ull;
     bool use_input_matrix = false;
 };
 
-template <typename T>
+template <typename MultiVectorType>
 void fill_vectors_normal_gpu(
-    chase::distMultiVector::DistMultiVectorBlockCyclic1D<
-        T, chase::distMultiVector::CommunicatorType::column, ARCH>& V,
+    MultiVectorType& V,
     curandStatePhilox4_32_10_t* states, unsigned long long seed_base,
     MPI_Comm col_comm)
 {
@@ -95,7 +96,7 @@ void fill_vectors_from_matrix_binary(
 }
 
 template <typename T>
-int run_bench(const BenchConfig& cfg)
+int run_bench(const BenchConfig& cfg, bool use_block_cyclic)
 {
     int world_rank = 0, world_size = 0;
     MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
@@ -114,28 +115,12 @@ int run_bench(const BenchConfig& cfg)
         std::make_shared<chase::grid::MpiGrid2D<chase::grid::GridMajor::ColMajor>>(
             rows, cols, MPI_COMM_WORLD);
 
-    auto Vec = chase::distMultiVector::DistMultiVectorBlockCyclic1D<
-        T, chase::distMultiVector::CommunicatorType::column, ARCH>(
-        cfg.N, cfg.ncols, cfg.mb, mpi_grid);
-
     cublasHandle_t cublasH = nullptr;
     CHECK_CUBLAS_ERROR(cublasCreate(&cublasH));
 
     curandStatePhilox4_32_10_t* states = nullptr;
     CHECK_CUDA_ERROR(cudaMalloc(&states, kRandBlockDim * kRandGridDim *
                                              sizeof(curandStatePhilox4_32_10_t)));
-
-    auto init_vectors = [&](unsigned long long seed_shift) {
-        if (cfg.use_input_matrix)
-        {
-            fill_vectors_from_matrix_binary<T>(cfg.path_in, Vec, mpi_grid, cfg.N, cfg.mb);
-        }
-        else
-        {
-            fill_vectors_normal_gpu<T>(
-                Vec, states, cfg.seed + seed_shift, mpi_grid->get_col_comm());
-        }
-    };
 
     if (world_rank == 0)
     {
@@ -147,52 +132,108 @@ int run_bench(const BenchConfig& cfg)
                   << " warmup=" << cfg.warmup
                   << " iters=" << cfg.iters
                   << " grid=" << rows << "x" << cols
+                  << " distribution=" << (use_block_cyclic ? "blockcyclic" : "1d")
                   << (cfg.use_input_matrix ? " input=binary\n" : " input=normal\n");
     }
 
-    for (std::size_t w = 0; w < cfg.warmup; ++w)
+    auto run_with_vectors = [&](auto& Vec) {
+        using VecType = std::remove_reference_t<decltype(Vec)>;
+        auto init_vectors = [&](unsigned long long seed_shift) -> bool {
+            if (cfg.use_input_matrix)
+            {
+                if constexpr (chase::distMultiVector::is_block_cyclic_1d_multivector<VecType>::value)
+                {
+                    fill_vectors_from_matrix_binary<T>(cfg.path_in, Vec, mpi_grid, cfg.N, cfg.mb);
+                }
+                else
+                {
+                    if (world_rank == 0)
+                    {
+                        std::cerr
+                            << "--path_in is currently supported only with --distribution=blockcyclic.\n";
+                    }
+                    return false;
+                }
+            }
+            else
+            {
+                fill_vectors_normal_gpu(
+                    Vec, states, cfg.seed + seed_shift, mpi_grid->get_col_comm());
+            }
+            return true;
+        };
+
+        for (std::size_t w = 0; w < cfg.warmup; ++w)
+        {
+            if (!init_vectors(w))
+            {
+                return EXIT_FAILURE;
+            }
+            MPI_Barrier(MPI_COMM_WORLD);
+            chase::linalg::internal::cuda_nccl::HouseQRTuning tuning{};
+            tuning.outer_block_nb = static_cast<int>(cfg.nb);
+            chase::linalg::internal::cuda_nccl::houseQR1_formQ(
+                cublasH, Vec, nullptr, 0, &tuning);
+            CHECK_CUDA_ERROR(cudaDeviceSynchronize());
+        }
+
+        std::vector<double> timings(cfg.iters, 0.0);
+        for (std::size_t it = 0; it < cfg.iters; ++it)
+        {
+            if (!init_vectors(cfg.warmup + it))
+            {
+                return EXIT_FAILURE;
+            }
+            MPI_Barrier(MPI_COMM_WORLD);
+            CHECK_CUDA_ERROR(cudaDeviceSynchronize());
+            const double t0 = MPI_Wtime();
+            chase::linalg::internal::cuda_nccl::HouseQRTuning tuning{};
+            tuning.outer_block_nb = static_cast<int>(cfg.nb);
+            chase::linalg::internal::cuda_nccl::houseQR1_formQ(
+                cublasH, Vec, nullptr, 0, &tuning);
+            CHECK_CUDA_ERROR(cudaDeviceSynchronize());
+            const double t1 = MPI_Wtime();
+            double local = t1 - t0;
+            double global = 0.0;
+            MPI_Allreduce(&local, &global, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+            timings[it] = global;
+        }
+
+        if (world_rank == 0)
+        {
+            const double min_t = *std::min_element(timings.begin(), timings.end());
+            const double max_t = *std::max_element(timings.begin(), timings.end());
+            const double avg_t =
+                std::accumulate(timings.begin(), timings.end(), 0.0) /
+                static_cast<double>(timings.size());
+
+            std::cout << std::fixed << std::setprecision(6)
+                      << "houseQR1_formQ wall(s): min=" << min_t
+                      << " avg=" << avg_t
+                      << " max=" << max_t << "\n";
+        }
+        return EXIT_SUCCESS;
+    };
+
+    int rc = EXIT_SUCCESS;
+    if (use_block_cyclic)
     {
-        init_vectors(w);
-        MPI_Barrier(MPI_COMM_WORLD);
-        chase::linalg::internal::cuda_nccl::houseQR1_formQ(cublasH, Vec, nullptr, 0,
-                                                            cfg.nb);
-        CHECK_CUDA_ERROR(cudaDeviceSynchronize());
+        auto Vec = chase::distMultiVector::DistMultiVectorBlockCyclic1D<
+            T, chase::distMultiVector::CommunicatorType::column, ARCH>(
+            cfg.N, cfg.ncols, cfg.mb, mpi_grid);
+        rc = run_with_vectors(Vec);
     }
-
-    std::vector<double> timings(cfg.iters, 0.0);
-    for (std::size_t it = 0; it < cfg.iters; ++it)
+    else
     {
-        init_vectors(cfg.warmup + it);
-        MPI_Barrier(MPI_COMM_WORLD);
-        CHECK_CUDA_ERROR(cudaDeviceSynchronize());
-        const double t0 = MPI_Wtime();
-        chase::linalg::internal::cuda_nccl::houseQR1_formQ(cublasH, Vec, nullptr, 0,
-                                                            cfg.nb);
-        CHECK_CUDA_ERROR(cudaDeviceSynchronize());
-        const double t1 = MPI_Wtime();
-        double local = t1 - t0;
-        double global = 0.0;
-        MPI_Allreduce(&local, &global, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-        timings[it] = global;
-    }
-
-    if (world_rank == 0)
-    {
-        const double min_t = *std::min_element(timings.begin(), timings.end());
-        const double max_t = *std::max_element(timings.begin(), timings.end());
-        const double avg_t =
-            std::accumulate(timings.begin(), timings.end(), 0.0) /
-            static_cast<double>(timings.size());
-
-        std::cout << std::fixed << std::setprecision(6)
-                  << "houseQR1_formQ wall(s): min=" << min_t
-                  << " avg=" << avg_t
-                  << " max=" << max_t << "\n";
+        auto Vec = chase::distMultiVector::DistMultiVector1D<
+            T, chase::distMultiVector::CommunicatorType::column, ARCH>(
+            cfg.N, cfg.ncols, mpi_grid);
+        rc = run_with_vectors(Vec);
     }
 
     CHECK_CUDA_ERROR(cudaFree(states));
     CHECK_CUBLAS_ERROR(cublasDestroy(cublasH));
-    return EXIT_SUCCESS;
+    return rc;
 }
 } // namespace
 
@@ -225,6 +266,9 @@ int main(int argc, char** argv)
     desc.add<popl::Value<std::string>>("", "dtype",
         "data type: s=float, d=double, c=complex<float>, z=complex<double>",
         "z", &dtype);
+    desc.add<popl::Value<std::string>>("", "distribution",
+        "distribution: blockcyclic (default) or 1d",
+        "blockcyclic", &conf.distribution);
     try
     {
         desc.parse(argc, argv);
@@ -249,23 +293,47 @@ int main(int argc, char** argv)
     if (dtype.empty())
         dtype = "z";
     dtype[0] = static_cast<char>(std::tolower(dtype[0]));
+    if (conf.distribution.empty())
+        conf.distribution = "blockcyclic";
+    std::transform(conf.distribution.begin(), conf.distribution.end(),
+                   conf.distribution.begin(),
+                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+    bool use_block_cyclic = true;
+    if (conf.distribution == "1d" || conf.distribution == "block1d" ||
+        conf.distribution == "block")
+    {
+        use_block_cyclic = false;
+    }
+    else if (conf.distribution == "blockcyclic" ||
+             conf.distribution == "block_cyclic")
+    {
+        use_block_cyclic = true;
+    }
+    else
+    {
+        if (world_rank == 0)
+            std::cerr << "Unsupported --distribution='" << conf.distribution
+                      << "'. Use one of: blockcyclic, 1d.\n";
+        MPI_Finalize();
+        return EXIT_FAILURE;
+    }
 
     int rc = EXIT_FAILURE;
     if (dtype == "s")
     {
-        rc = run_bench<float>(conf);
+        rc = run_bench<float>(conf, use_block_cyclic);
     }
     else if (dtype == "d")
     {
-        rc = run_bench<double>(conf);
+        rc = run_bench<double>(conf, use_block_cyclic);
     }
     else if (dtype == "c")
     {
-        rc = run_bench<std::complex<float>>(conf);
+        rc = run_bench<std::complex<float>>(conf, use_block_cyclic);
     }
     else if (dtype == "z")
     {
-        rc = run_bench<std::complex<double>>(conf);
+        rc = run_bench<std::complex<double>>(conf, use_block_cyclic);
     }
     else
     {

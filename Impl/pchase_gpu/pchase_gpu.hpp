@@ -1041,6 +1041,25 @@ public:
                 householder_nb = static_cast<unsigned int>(parsed);
         }
 
+#if defined(HAS_NCCL)
+        chase::linalg::internal::cuda_nccl::HouseQRTuning hh_qr_tuning{};
+        hh_qr_tuning.outer_block_nb = static_cast<int>(householder_nb);
+#endif
+        auto call_houseqr_formq = [&](auto& vec, auto* work_ptr) {
+#if defined(HAS_NCCL)
+            if constexpr (std::is_same<backend, chase::grid::backend::NCCL>::value)
+            {
+                kernelNamespace::houseQR1_formQ(cublasH_, vec, work_ptr, lwork_,
+                                                &hh_qr_tuning);
+            }
+            else
+#endif
+            {
+                kernelNamespace::houseQR1_formQ(cublasH_, vec, work_ptr, lwork_,
+                                                householder_nb);
+            }
+        };
+
         // CholQR when disable==0 (always), or disable==1 with cond==1.0 (CholQR1 path).
         if (disable == 1 && cond != static_cast<Base<T>>(1.0))
         {
@@ -1067,10 +1086,9 @@ public:
                         }
 #endif
                         measure_cuda(time_hh_core_ms, [&]() {
-                            kernelNamespace::houseQR1_formQ(
-                                cublasH_, *V1_d,
-                                reinterpret_cast<typename chase::ToDoublePrecisionTrait<T>::Type*>(d_work_d),
-                                lwork_, householder_nb);
+                            call_houseqr_formq(
+                                *V1_d,
+                                reinterpret_cast<typename chase::ToDoublePrecisionTrait<T>::Type*>(d_work_d));
                         });
                     }
                     else
@@ -1098,11 +1116,10 @@ public:
                 }
                 else
                 {
-                    kernelNamespace::houseQR1_formQ(
-                        cublasH_, *V1_d,
+                    call_houseqr_formq(
+                        *V1_d,
                         reinterpret_cast<typename chase::ToDoublePrecisionTrait<T>::Type*>(
-                            d_work_d),
-                        lwork_, 16);
+                            d_work_d));
                 }
                 measure_cuda(time_copy_back_ms, [&]() { V1_->copyback(); });
             }
@@ -1125,8 +1142,7 @@ public:
                         }
 #endif
                         measure_cuda(time_hh_core_ms, [&]() {
-                            kernelNamespace::houseQR1_formQ(
-                                cublasH_, *V1_, d_work_, lwork_, householder_nb);
+                            call_houseqr_formq(*V1_, d_work_);
                         });
                     }
                     else
@@ -1155,8 +1171,7 @@ public:
                 else
                 {
                     measure_cuda(time_hh_core_ms, [&]() {
-                        kernelNamespace::houseQR1_formQ(
-                            cublasH_, *V1_, d_work_, lwork_, householder_nb);
+                        call_houseqr_formq(*V1_, d_work_);
                     });
                 }
 
@@ -1393,10 +1408,9 @@ public:
                                 }
 #endif
                                 measure_cuda(time_hh_fallback_core_ms, [&]() {
-                                    kernelNamespace::houseQR1_formQ(
-                                        cublasH_, *V1_d,
-                                        reinterpret_cast<typename chase::ToDoublePrecisionTrait<T>::Type*>(d_work_d),
-                                        lwork_, householder_nb);
+                                    call_houseqr_formq(
+                                        *V1_d,
+                                        reinterpret_cast<typename chase::ToDoublePrecisionTrait<T>::Type*>(d_work_d));
                                 });
                             }
                             else
@@ -1425,10 +1439,9 @@ public:
                         else
                         {
                             measure_cuda(time_hh_fallback_core_ms, [&]() {
-                                kernelNamespace::houseQR1_formQ(
-                                    cublasH_, *V1_d,
-                                    reinterpret_cast<typename chase::ToDoublePrecisionTrait<T>::Type*>(d_work_d),
-                                    lwork_, householder_nb);
+                                call_houseqr_formq(
+                                    *V1_d,
+                                    reinterpret_cast<typename chase::ToDoublePrecisionTrait<T>::Type*>(d_work_d));
                             });
                         }
                     }
@@ -1454,8 +1467,7 @@ public:
                                 }
 #endif
                                 measure_cuda(time_hh_fallback_core_ms, [&]() {
-                                    kernelNamespace::houseQR1_formQ(
-                                        cublasH_, *V1_, d_work_, lwork_, householder_nb);
+                                    call_houseqr_formq(*V1_, d_work_);
                                 });
                             }
                             else
@@ -1484,8 +1496,7 @@ public:
                         else
                         {
                             measure_cuda(time_hh_fallback_core_ms, [&]() {
-                                kernelNamespace::houseQR1_formQ(
-                                    cublasH_, *V1_, d_work_, lwork_, householder_nb);
+                                call_houseqr_formq(*V1_, d_work_);
                             });
                         }
                     }
