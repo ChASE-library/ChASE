@@ -51,6 +51,23 @@ void shiftDiagonal(chase::matrix::Matrix<T, chase::platform::GPU>* H,
     chase_shift_matrix(H->data(), n, H->ld(), shift, usedStream);
 }
 
+/** Add real \p shift to each diagonal entry (column-major: \c A[i+i*lda]).
+ *  Complex: increments the real part only (same as \c chase_shift_matrix). */
+template <typename T>
+void add_diagonal_shift(T* A, std::size_t n, std::size_t lda,
+                        chase::Base<T> shift, cudaStream_t stream_)
+{
+    SCOPED_NVTX_RANGE();
+    chase_shift_matrix(A, n, lda, shift, stream_);
+}
+
+template <typename T>
+void add_diagonal_shift(T* A, std::size_t n, chase::Base<T> shift,
+                        cudaStream_t stream_)
+{
+    add_diagonal_shift(A, n, n, shift, stream_);
+}
+
 /**
  * @brief Shift diagonal using a device-resident scalar.
  *

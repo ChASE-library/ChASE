@@ -5,6 +5,7 @@
 // https://github.com/ChASE-library/ChASE
 
 #pragma once
+#include <limits>
 #include <numeric> //std::iota
 
 #include "algorithm/logger.hpp"
@@ -15,7 +16,9 @@
 #include "grid/mpiTypes.hpp"
 #include "linalg/distMatrix/distMatrix.hpp"
 #include "linalg/distMatrix/distMultiVector.hpp"
+#include "linalg/internal/cuda/forceHermitian.hpp"
 #include "linalg/internal/cuda/lanczos_kernels.hpp"
+#include "linalg/internal/cuda/shiftDiagonal.hpp"
 #include "linalg/internal/nccl/hemm.hpp"
 #include "linalg/internal/nccl/nccl_kernels.hpp"
 #include "mpi.h"
@@ -459,7 +462,8 @@ void cuda_nccl::pseudo_hermitian_rayleighRitz_v2(
     T Zero = T(0.0);
     T NegOne = T(-1.0);
     chase::Base<T> ritz_neg_one = chase::Base<T>(-1.0);
-
+    chase::Base<T> shift = std::numeric_limits<chase::Base<T>>::epsilon() *
+                           chase::Base<T>(10.0);
     std::unique_ptr<chase::distMatrix::RedundantMatrix<T, chase::platform::GPU>>
         A_ptr;
     bool owns_workspace = false;
@@ -487,8 +491,6 @@ void cuda_nccl::pseudo_hermitian_rayleighRitz_v2(
     CHECK_CUDA_ERROR(cudaStreamWaitEvent(compute_stream, evt_begin, 0));
     CHECK_CUBLAS_ERROR(cublasSetStream(cublas_handle, compute_stream));
     CHECK_CUSOLVER_ERROR(cusolverDnSetStream(cusolver_handle, compute_stream));
-
-
 
     T* M = A->l_data() + subSize * subSize;
 
@@ -550,6 +552,10 @@ void cuda_nccl::pseudo_hermitian_rayleighRitz_v2(
         A->l_data(), A->l_data(), subSize * subSize, ncclSum,
         A->getMpiGrid()->get_nccl_row_comm(), &compute_stream));
 
+    // Fixed diagonal shift before Cholesky (no trace): A(ii) += 10 * eps.
+    chase::linalg::internal::cuda::add_diagonal_shift(
+        A->l_data(), subSize, shift, compute_stream);
+
     CHECK_CUSOLVER_ERROR(chase::linalg::cusolverpp::cusolverDnTpotrf(
         cusolver_handle, CUBLAS_FILL_MODE_LOWER, subSize, A->l_data(), subSize,
         workspace, lwork, devInfo));
@@ -606,6 +612,10 @@ void cuda_nccl::pseudo_hermitian_rayleighRitz_v2(
         cublas_handle, CUBLAS_SIDE_RIGHT, CUBLAS_FILL_MODE_LOWER, CUBLAS_OP_C,
         CUBLAS_DIAG_NON_UNIT, subSize, subSize, &One, A->l_data(), subSize, M,
         subSize));
+
+    // G = L^-1 M L^-H in M; enforce Hermitian symmetry before heevd (TRSM noise).
+    /*chase::linalg::internal::cuda::force_hermitian(M, subSize, subSize,
+                                                   compute_stream);*/
 
     CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTscal(
         cublas_handle, subSize * subSize, &NegOne, M, 1));

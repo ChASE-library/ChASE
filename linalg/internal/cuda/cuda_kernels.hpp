@@ -19,6 +19,7 @@
 #include "linalg/internal/cuda/conjugate.hpp"
 #include "linalg/internal/cuda/flipSign.cuh"
 #include "linalg/internal/cuda/flipSign.hpp"
+#include "linalg/internal/cuda/forceHermitian.hpp"
 #include "linalg/internal/cuda/lacpy.cuh"
 #include "linalg/internal/cuda/lacpy.hpp"
 #include "linalg/internal/cuda/lanczos.hpp"

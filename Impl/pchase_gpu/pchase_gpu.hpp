@@ -26,6 +26,7 @@
 #include "external/scalapackpp/scalapackpp.hpp"
 #endif
 #include "algorithm/types.hpp"
+#include "external/cublaspp/cublaspp.hpp"
 #include "linalg/internal/mpi/cholqr.hpp"
 
 #include "Impl/chase_gpu/nvtx.hpp"
@@ -648,7 +649,21 @@ public:
             chase::linalg::internal::cuda::chase_rand_normal(
                 seed, states_, V1_->l_data(), V1_->l_ld() * V1_->l_cols(),
                 (cudaStream_t)0);
+
+        /*    // Dampen components in the global lower half of rows (same split as l_half()).
+            const std::size_t m_lower = V1_->l_rows() - V1_->l_half();
+            if (m_lower > 0)
+            {
+                T scale = T(0.001);
+                for (std::size_t j = 0; j < V1_->l_cols(); ++j)
+                {
+                    CHECK_CUBLAS_ERROR(chase::linalg::cublaspp::cublasTscal(
+                        cublasH_, m_lower, &scale,
+                        V1_->l_data() + V1_->l_half() + j * V1_->l_ld(), 1));
+                }
+            }*/
         }
+        
 
         chase::linalg::internal::cuda::t_lacpy(
             'A', V1_->l_rows(), V1_->l_cols(), V1_->l_data(), V1_->l_ld(),
@@ -905,7 +920,7 @@ public:
             kernelNamespace::MatrixMultiplyMultiVectors(
                 cublasH_, &one, *Hmat_, *V2_, &zero, *W1_, col0, ncols);
             kernelNamespace::MatrixMultiplyMultiVectors(
-                cublasH_, &alpha, *Hmat_, *W1_, &beta, *V1_, col0, ncols);
+                cublasH_, &alpha, *Hmat_, *W1_, &beta, *V1_, col0, ncols);               
             chase::linalg::internal::cuda::batchedAxpyScalar(
                 gamma, V2_->l_data() + col0 * V2_->l_ld(),
                 V1_->l_data() + col0 * V1_->l_ld(),
@@ -1584,6 +1599,12 @@ public:
         SCOPED_NVTX_RANGE();
 
         cudaDeviceSynchronize();
+        CHECK_NCCL_ERROR(chase::nccl::ncclBcastWrapper<T>(
+            V1_->l_data(), V1_->l_ld() * V1_->l_cols(), 0,
+            V1_->getMpiGrid()->get_nccl_row_comm()));
+        chase::linalg::internal::cuda::t_lacpy('A', V2_->l_rows(), 
+        V2_->l_cols(), V1_->l_data(), V1_->l_ld(), 
+        V2_->l_data() + locked_ * V2_->l_ld(), V2_->l_ld());
 
         if constexpr (std::is_same<typename MatrixType::hermitian_type,
                                    chase::matrix::PseudoHermitian>::value)

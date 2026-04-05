@@ -130,6 +130,7 @@ if(CMAKE_CUDA_COMPILER)
         ${CMAKE_CURRENT_SOURCE_DIR}/internal/cuda/lacpy.cu
         ${CMAKE_CURRENT_SOURCE_DIR}/internal/cuda/random_normal_distribution.cu
         ${CMAKE_CURRENT_SOURCE_DIR}/internal/cuda/residuals.cu
+        ${CMAKE_CURRENT_SOURCE_DIR}/internal/cuda/forceHermitian.cu
         ${CMAKE_CURRENT_SOURCE_DIR}/internal/cuda/lanczos_kernels.cu
         ${CMAKE_CURRENT_SOURCE_DIR}/internal/cuda/householder_scalar_kernel.cu
         )
